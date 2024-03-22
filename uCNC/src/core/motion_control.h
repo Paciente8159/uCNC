@@ -84,7 +84,8 @@ extern "C"
 	} motion_data_t;
 
 #ifdef ENABLE_MOTION_CONTROL_MODULES
-	typedef struct homing_status_ {
+	typedef struct homing_status_
+	{
 		uint8_t axis;
 		uint8_t axis_limit;
 		uint8_t status;
@@ -107,7 +108,7 @@ extern "C"
 	uint8_t mc_update_tools(motion_data_t *block_data);
 
 	// mixed/special motions
-	uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit);
+	uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit);
 #ifndef DISABLE_PROBING_SUPPORT
 	uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data);
 #endif
@@ -115,8 +116,19 @@ extern "C"
 	void mc_get_position(float *target);
 	void mc_sync_position(void);
 
+	uint8_t mc_incremental_jog(float *target_offset, motion_data_t *block_data);
+
+	void mc_flush_pending_motion(void);
+
 #ifdef ENABLE_G39_H_MAPPING
 	uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data_t *block_data);
+#endif
+
+#ifdef ENABLE_MOTION_CONTROL_PLANNER_HIJACKING
+	// stores the motion controller reference positions
+	void mc_store(void);
+	// restores the motion controller reference positions
+	void mc_restore(void);
 #endif
 
 #ifdef ENABLE_MOTION_CONTROL_MODULES

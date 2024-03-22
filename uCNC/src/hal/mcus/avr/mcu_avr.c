@@ -51,22 +51,22 @@ static FORCEINLINE void mcu_clear_servos()
 	RTC_TIMSK = (1U << RTC_OCIEA);
 	RTC_TIFR = (1U << 2);
 #if ASSERT_PIN(SERVO0)
-	mcu_clear_output(SERVO0);
+	io_clear_output(SERVO0);
 #endif
 #if ASSERT_PIN(SERVO1)
-	mcu_clear_output(SERVO1);
+	io_clear_output(SERVO1);
 #endif
 #if ASSERT_PIN(SERVO2)
-	mcu_clear_output(SERVO2);
+	io_clear_output(SERVO2);
 #endif
 #if ASSERT_PIN(SERVO3)
-	mcu_clear_output(SERVO3);
+	io_clear_output(SERVO3);
 #endif
 #if ASSERT_PIN(SERVO4)
-	mcu_clear_output(SERVO4);
+	io_clear_output(SERVO4);
 #endif
 #if ASSERT_PIN(SERVO5)
-	mcu_clear_output(SERVO5);
+	io_clear_output(SERVO5);
 #endif
 }
 
@@ -92,42 +92,42 @@ ISR(RTC_COMPA_vect, ISR_BLOCK)
 	case SERVO0_FRAME:
 		RTC_OCRB = mcu_servos[0];
 		servo_loops = mcu_servos_loops[0];
-		mcu_set_output(SERVO0);
+		io_set_output(SERVO0);
 		break;
 #endif
 #if ASSERT_PIN(SERVO1)
 	case SERVO1_FRAME:
 		RTC_OCRB = mcu_servos[1];
 		servo_loops = mcu_servos_loops[1];
-		mcu_set_output(SERVO1);
+		io_set_output(SERVO1);
 		break;
 #endif
 #if ASSERT_PIN(SERVO2)
 	case SERVO2_FRAME:
 		RTC_OCRB = mcu_servos[2];
 		servo_loops = mcu_servos_loops[2];
-		mcu_set_output(SERVO2);
+		io_set_output(SERVO2);
 		break;
 #endif
 #if ASSERT_PIN(SERVO3)
 	case SERVO3_FRAME:
 		RTC_OCRB = mcu_servos[3];
 		servo_loops = mcu_servos_loops[3];
-		mcu_set_output(SERVO3);
+		io_set_output(SERVO3);
 		break;
 #endif
 #if ASSERT_PIN(SERVO4)
 	case SERVO4_FRAME:
 		RTC_OCRB = mcu_servos[4];
 		servo_loops = mcu_servos_loops[4];
-		mcu_set_output(SERVO4);
+		io_set_output(SERVO4);
 		break;
 #endif
 #if ASSERT_PIN(SERVO5)
 	case SERVO5_FRAME:
 		RTC_OCRB = mcu_servos[5];
 		servo_loops = mcu_servos_loops[5];
-		mcu_set_output(SERVO5);
+		io_set_output(SERVO5);
 		break;
 #endif
 	}
@@ -148,10 +148,14 @@ ISR(RTC_COMPA_vect, ISR_BLOCK)
 	ms_servo_counter = (servo_counter != 20) ? servo_counter : 0;
 
 #endif
+#ifndef DISABLE_RTC_CODE
 	uint32_t millis = mcu_runtime_ms;
 	millis++;
 	mcu_runtime_ms = millis;
 	mcu_rtc_cb(millis);
+#else
+	mcu_runtime_ms++;
+#endif
 }
 
 ISR(ITP_COMPA_vect, ISR_BLOCK)
@@ -372,10 +376,21 @@ ISR(PCINT2_vect, ISR_BLOCK) // input pin on change service routine
 #endif
 
 #ifdef MCU_HAS_UART
+DECL_BUFFER(uint8_t, uart_rx, RX_BUFFER_SIZE);
 ISR(COM_RX_vect, ISR_BLOCK)
 {
 #if !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
-	mcu_com_rx_cb(COM_INREG);
+	uint8_t c = COM_INREG;
+	if (mcu_com_rx_cb(c))
+	{
+		if (BUFFER_FULL(uart_rx))
+		{
+			c = OVF;
+		}
+
+		*(BUFFER_NEXT_FREE(uart_rx)) = c;
+		BUFFER_STORE(uart_rx);
+	}
 #else
 	mcu_uart_rx_cb(COM_INREG);
 #endif
@@ -384,28 +399,48 @@ ISR(COM_RX_vect, ISR_BLOCK)
 #ifndef UART_TX_BUFFER_SIZE
 #define UART_TX_BUFFER_SIZE 64
 #endif
-DECL_BUFFER(uint8_t, uart, UART_TX_BUFFER_SIZE);
+DECL_BUFFER(uint8_t, uart_tx, UART_TX_BUFFER_SIZE);
 ISR(COM_TX_vect, ISR_BLOCK)
 {
-	if (BUFFER_EMPTY(uart))
+	if (BUFFER_EMPTY(uart_tx))
 	{
 		CLEARBIT(UCSRB_REG, UDRIE_BIT);
 		return;
 	}
 	uint8_t c;
-	BUFFER_DEQUEUE(uart, &c);
+	BUFFER_DEQUEUE(uart_tx, &c);
 	COM_OUTREG = c;
 }
 
 #endif
 
 #if defined(MCU_HAS_UART2)
+DECL_BUFFER(uint8_t, uart2_rx, RX_BUFFER_SIZE);
 ISR(COM2_RX_vect, ISR_BLOCK)
 {
+	uint8_t c = COM2_INREG;
 #if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
-	mcu_com_rx_cb(COM2_INREG);
+	if (mcu_com_rx_cb(c))
+	{
+		if (BUFFER_FULL(uart2_rx))
+		{
+			c = OVF;
+		}
+
+		*(BUFFER_NEXT_FREE(uart2_rx)) = c;
+		BUFFER_STORE(uart2_rx);
+	}
 #else
-	mcu_uart2_rx_cb(COM2_INREG);
+	mcu_uart2_rx_cb(c);
+#ifndef UART2_DISABLE_BUFFER
+	if (BUFFER_FULL(uart2_rx))
+	{
+		c = OVF;
+	}
+
+	*(BUFFER_NEXT_FREE(uart2_rx)) = c;
+	BUFFER_STORE(uart2_rx);
+#endif
 #endif
 }
 
@@ -571,13 +606,30 @@ uint8_t mcu_get_servo(uint8_t servo)
 
 #ifdef MCU_HAS_UART
 
+uint8_t mcu_uart_getc(void)
+{
+	uint8_t c = 0;
+	BUFFER_DEQUEUE(uart_rx, &c);
+	return c;
+}
+
+uint8_t mcu_uart_available(void)
+{
+	return BUFFER_READ_AVAILABLE(uart_rx);
+}
+
+void mcu_uart_clear(void)
+{
+	BUFFER_CLEAR(uart_rx);
+}
+
 void mcu_uart_putc(uint8_t c)
 {
-	while (BUFFER_FULL(uart))
+	while (BUFFER_FULL(uart_tx))
 	{
 		mcu_uart_flush();
 	}
-	BUFFER_ENQUEUE(uart, &c);
+	BUFFER_ENQUEUE(uart_tx, &c);
 }
 
 void mcu_uart_flush(void)
@@ -586,13 +638,30 @@ void mcu_uart_flush(void)
 	{
 		SETBIT(UCSRB_REG, UDRIE_BIT);
 #if ASSERT_PIN(ACTIVITY_LED)
-		mcu_toggle_output(ACTIVITY_LED);
+		io_toggle_output(ACTIVITY_LED);
 #endif
 	}
 }
 #endif
 
 #ifdef MCU_HAS_UART2
+uint8_t mcu_uart2_getc(void)
+{
+	uint8_t c = 0;
+	BUFFER_DEQUEUE(uart2_rx, &c);
+	return c;
+}
+
+uint8_t mcu_uart2_available(void)
+{
+	return BUFFER_READ_AVAILABLE(uart2_rx);
+}
+
+void mcu_uart2_clear(void)
+{
+	BUFFER_CLEAR(uart2_rx);
+}
+
 void mcu_uart2_putc(uint8_t c)
 {
 	while (BUFFER_FULL(uart2))
@@ -608,7 +677,7 @@ void mcu_uart2_flush(void)
 	{
 		SETBIT(UCSRB_REG_2, UDRIE_BIT_2);
 #if ASSERT_PIN(ACTIVITY_LED)
-		mcu_toggle_output(ACTIVITY_LED);
+		io_toggle_output(ACTIVITY_LED);
 #endif
 	}
 }
@@ -617,10 +686,7 @@ void mcu_uart2_flush(void)
 // RealTime
 void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 {
-	if (frequency < F_STEP_MIN)
-		frequency = F_STEP_MIN;
-	if (frequency > F_STEP_MAX)
-		frequency = F_STEP_MAX;
+	frequency = CLAMP((float)F_STEP_MIN, frequency, (float)F_STEP_MAX);
 
 	uint32_t clocks = (uint32_t)floorf((float)F_CPU / frequency);
 	*prescaller = (1 << 3); // CTC mode
@@ -797,17 +863,14 @@ void mcu_stop_itp_isr(void)
 // gets the mcu running time in ms
 uint32_t mcu_millis()
 {
-	uint32_t val = mcu_runtime_ms;
-	return val;
+	return mcu_runtime_ms;
 }
 
 uint32_t mcu_micros()
 {
-	uint32_t rtc_elapsed = RTC_TCNT;
 	uint32_t ms = mcu_runtime_ms;
 
-	rtc_elapsed = ((rtc_elapsed * 1000) / RTC_OCRA) + (ms * 1000);
-	return rtc_elapsed;
+	return ((ms * 1000) + mcu_free_micros());
 }
 
 void mcu_start_rtc()
@@ -1009,18 +1072,23 @@ static void mcu_i2c_write_stop(bool *stop)
 {
 	if (*stop)
 	{
-		uint32_t ms_timeout = mcu_millis() + 25;
+		int32_t ms_timeout = 25;
 
 		TWCR = (1 << TWINT) | (1 << TWSTO) | (1 << TWEN);
-		while ((TWCR & (1 << TWSTO)) && (ms_timeout > mcu_millis()))
-			;
+		__TIMEOUT_MS__(ms_timeout)
+		{
+			if (!(TWCR & (1 << TWSTO)))
+			{
+				return;
+			}
+		}
 	}
 }
 
-static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
+static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop, uint32_t ms_timeout)
 {
 	bool stop __attribute__((__cleanup__(mcu_i2c_write_stop))) = send_stop;
-	uint32_t ms_timeout = mcu_millis() + 25;
+	int32_t timeout = ms_timeout;
 	if (send_start)
 	{
 		// init
@@ -1037,15 +1105,20 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 		}
 
 		TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN);
-		while (!(TWCR & (1 << TWINT)))
+		__TIMEOUT_MS__(timeout)
 		{
-			if (ms_timeout < mcu_millis())
+			if (TWCR & (1 << TWINT))
 			{
-				stop = true;
-				return I2C_NOTOK;
+				if (TW_STATUS != TW_START && TW_STATUS != TW_REP_START)
+				{
+					stop = true;
+					return I2C_NOTOK;
+				}
+				break;
 			}
 		}
-		if (TW_STATUS != TW_START && TW_STATUS != TW_REP_START)
+
+		__TIMEOUT_ASSERT__(timeout)
 		{
 			stop = true;
 			return I2C_NOTOK;
@@ -1054,64 +1127,64 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 
 	TWDR = data;
 	TWCR = (1 << TWINT) | (1 << TWEN);
-	while (!(TWCR & (1 << TWINT)))
+	timeout = ms_timeout;
+	__TIMEOUT_MS__(timeout)
 	{
-		if (ms_timeout < mcu_millis())
+		if (TWCR & (1 << TWINT))
 		{
-			stop = true;
-			return I2C_NOTOK;
+			switch (TW_STATUS)
+			{
+			case TW_MT_SLA_ACK:
+			case TW_MT_DATA_ACK:
+			case TW_MR_SLA_ACK:
+			case TW_MR_DATA_ACK:
+				break;
+			default:
+				stop = true;
+				return I2C_NOTOK;
+			}
+
+			return I2C_OK;
 		}
 	}
 
-	switch (TW_STATUS)
-	{
-	case TW_MT_SLA_ACK:
-	case TW_MT_DATA_ACK:
-	case TW_MR_SLA_ACK:
-	case TW_MR_DATA_ACK:
-		break;
-	default:
-		stop = true;
-		return I2C_NOTOK;
-	}
-
-	return I2C_OK;
+	stop = true;
+	return I2C_NOTOK;
 }
 
 static uint8_t mcu_i2c_read(uint8_t *data, bool with_ack, bool send_stop, uint32_t ms_timeout)
 {
 	*data = 0xFF;
-	ms_timeout += mcu_millis();
 	bool stop __attribute__((__cleanup__(mcu_i2c_write_stop))) = send_stop;
 
 	TWCR = (1 << TWINT) | (1 << TWEN) | ((!with_ack) ? 0 : (1 << TWEA));
-	while (!(TWCR & (1 << TWINT)))
+	__TIMEOUT_MS__(ms_timeout)
 	{
-		if (ms_timeout < mcu_millis())
+		if (TWCR & (1 << TWINT))
 		{
-			stop = true;
-			return I2C_NOTOK;
+			*data = TWDR;
+			return I2C_OK;
 		}
 	}
 
-	*data = TWDR;
-	return I2C_OK;
+	stop = true;
+	return I2C_NOTOK;
 }
 
 #ifndef mcu_i2c_send
 // master sends command to slave
-uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool release)
+uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool release, uint32_t ms_timeout)
 {
 	if (data && datalen)
 	{
-		if (mcu_i2c_write(address << 1, true, false) == I2C_OK) // start, send address, write
+		if (mcu_i2c_write(address << 1, true, false, ms_timeout) == I2C_OK) // start, send address, write
 		{
 			// send data, stop
 			do
 			{
 				datalen--;
 				bool last = (datalen == 0);
-				if (mcu_i2c_write(*data, false, (release & last)) != I2C_OK)
+				if (mcu_i2c_write(*data, false, (release & last), ms_timeout) != I2C_OK)
 				{
 					return I2C_NOTOK;
 				}
@@ -1133,7 +1206,7 @@ uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_
 {
 	if (data && datalen)
 	{
-		if (mcu_i2c_write((address << 1) | 0x01, true, false) == I2C_OK) // start, send address, write
+		if (mcu_i2c_write((address << 1) | 0x01, true, false, ms_timeout) == I2C_OK) // start, send address, write
 		{
 			do
 			{
@@ -1209,7 +1282,7 @@ ISR(TWI_vect, ISR_BLOCK)
 	case TW_SR_ARB_LOST_SLA_ACK:
 	case TW_SR_ARB_LOST_GCALL_ACK:
 		index++;
-		__attribute__((fallthrough));
+		__FALL_THROUGH__
 	case TW_SR_STOP: // stop or repeated start condition received
 		// sends the data
 		if (i < I2C_SLAVE_BUFFER_SIZE)
@@ -1230,7 +1303,7 @@ ISR(TWI_vect, ISR_BLOCK)
 	case TW_ST_SLA_ACK:
 	case TW_ST_ARB_LOST_SLA_ACK:
 		i = 0;
-		__attribute__((fallthrough));
+		__FALL_THROUGH__
 	case TW_ST_DATA_ACK: // byte sent, ack returned
 		// copy data to output register
 		TWDR = mcu_i2c_buffer[i++];

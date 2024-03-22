@@ -44,6 +44,7 @@
 
 #define KINEMATICS_MOTION_SEGMENT_INV_SIZE (1.0f / KINEMATICS_MOTION_SEGMENT_SIZE)
 
+static bool mc_flush_pending;
 static bool mc_checkmode;
 static int32_t mc_last_step_pos[STEPPER_COUNT];
 static float mc_last_target[AXIS_COUNT];
@@ -119,6 +120,11 @@ bool mc_toogle_checkmode(void)
 	return mc_checkmode;
 }
 
+static void FORCEINLINE mc_restore_step_mode(uint8_t *mode)
+{
+	itp_set_step_mode(*mode);
+}
+
 static uint8_t mc_line_segment(int32_t *step_new_pos, motion_data_t *block_data)
 {
 // resets accumulator vars of the block
@@ -164,9 +170,6 @@ static uint8_t mc_line_segment(int32_t *step_new_pos, motion_data_t *block_data)
 	{
 		return STATUS_OK;
 	}
-
-	// stores current step target position
-	memcpy(mc_last_step_pos, step_new_pos, sizeof(mc_last_step_pos));
 
 	if (!mc_checkmode) // check mode (gcode simulation) doesn't send code to planner
 	{
@@ -219,12 +222,21 @@ static uint8_t mc_line_segment(int32_t *step_new_pos, motion_data_t *block_data)
 		}
 #endif
 
-		while (planner_buffer_is_full())
+		bool mc_flushed = false;
+		while (planner_buffer_is_full() && !mc_flushed)
 		{
 			if (!cnc_dotasks())
 			{
 				return STATUS_CRITICAL_FAIL;
 			}
+			mc_flushed = mc_flush_pending;
+		}
+
+		mc_flush_pending = false;
+
+		if (mc_flushed)
+		{
+			return STATUS_JOG_CANCELED;
 		}
 
 #ifdef ENABLE_MOTION_CONTROL_MODULES
@@ -236,6 +248,9 @@ static uint8_t mc_line_segment(int32_t *step_new_pos, motion_data_t *block_data)
 		// dwell should only execute on the first request
 		block_data->dwell = 0;
 	}
+
+	// stores current step target position
+	memcpy(mc_last_step_pos, step_new_pos, sizeof(mc_last_step_pos));
 
 	return STATUS_OK;
 }
@@ -259,7 +274,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 #ifdef ENABLE_G39_H_MAPPING
 	// modify the gcode with Hmap
 	float target_hmap_offset = (CHECKFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_APPLY_HMAP)) ? (mc_apply_hmap(target)) : 0;
-	target[AXIS_Z] += target_hmap_offset;
+	target[AXIS_TOOL] += target_hmap_offset;
 #endif
 
 	// check travel limits (soft limits)
@@ -267,15 +282,22 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 	{
 #ifdef ENABLE_G39_H_MAPPING
 		// unmodify target
-		target[AXIS_Z] -= target_hmap_offset;
+		target[AXIS_TOOL] -= target_hmap_offset;
 #endif
 
+#ifndef MODIFY_SOFT_LIMIT_TO_ERROR
 		if (cnc_get_exec_state(EXEC_JOG))
 		{
+#elif !defined(ALLOW_MOTION_TO_CONTINUE)
+		itp_sync();
+		cnc_set_exec_state(EXEC_HOLD);
+#endif
 			return STATUS_TRAVEL_EXCEEDED;
+#ifndef MODIFY_SOFT_LIMIT_TO_ERROR
 		}
 		cnc_alarm(EXEC_ALARM_SOFT_LIMIT);
 		return STATUS_OK;
+#endif
 	}
 
 	uint8_t error = STATUS_OK;
@@ -286,7 +308,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 #ifdef ENABLE_G39_H_MAPPING
 	// modify the gcode with Hmap
 	float h_offset = (CHECKFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_APPLY_HMAP)) ? (mc_apply_hmap(prev_target)) : 0;
-	prev_target[AXIS_Z] += h_offset;
+	prev_target[AXIS_TOOL] += h_offset;
 #endif
 
 	// calculates the traveled distance
@@ -302,7 +324,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 
 // remove the hmap postion of the motion
 #ifdef ENABLE_G39_H_MAPPING
-	motion_segment[AXIS_Z] += (h_offset - target_hmap_offset);
+	motion_segment[AXIS_TOOL] += (h_offset - target_hmap_offset);
 #endif
 
 	// no motion. bail out.
@@ -310,7 +332,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 	{
 #ifdef ENABLE_G39_H_MAPPING
 		// unmodify target
-		target[AXIS_Z] -= target_hmap_offset;
+		target[AXIS_TOOL] -= target_hmap_offset;
 #endif
 		return STATUS_OK;
 	}
@@ -349,14 +371,14 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 	{
 #ifdef ENABLE_G39_H_MAPPING
 		// unmodify target
-		target[AXIS_Z] -= target_hmap_offset;
+		target[AXIS_TOOL] -= target_hmap_offset;
 #endif
 		return STATUS_OK;
 	}
 
 	// calculates the linear distance traveled
 	line_dist = fast_flt_sqrt(line_dist);
-	float inv_dist = 1.0f / line_dist;
+	float inv_dist = fast_flt_inv(line_dist);
 
 	// feed values
 	float max_feed = FLT_MAX;
@@ -377,24 +399,40 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 		dir_vect[i] = normal_vect;
 		normal_vect = ABS(normal_vect);
 		// denormalize max feed rate for each axis
-		float denorm_param = g_settings.max_feed_rate[i] / normal_vect;
+		float denorm_param = fast_flt_div(g_settings.max_feed_rate[i], normal_vect);
 		max_feed = MIN(max_feed, denorm_param);
-		denorm_param = g_settings.acceleration[i] / normal_vect;
+		denorm_param = fast_flt_div(g_settings.acceleration[i], normal_vect);
 		max_accel = MIN(max_accel, denorm_param);
 	}
 	max_feed *= inv_dist;
 	max_accel *= inv_dist;
 
 #ifdef ENABLE_LASER_PPI
+	g_settings.acceleration[STEPPER_COUNT - 1] = FLT_MAX;
+	float ppi_max_feedrate = FLT_MAX;
+	float ppi_step_rate = g_settings.step_per_mm[STEPPER_COUNT - 1];
+	if (g_settings.laser_mode & (LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE))
+	{
+		if (!ppi_step_rate)
+		{
+			ppi_step_rate = g_settings.laser_ppi * MM_INCH_MULT;
+		}
+	}
+	else
+	{
+		ppi_step_rate = 0;
+	}
+	g_settings.step_per_mm[STEPPER_COUNT - 1] = ppi_step_rate;
+	ppi_max_feedrate = (60000000.0f / (g_settings.laser_ppi_uswidth * ppi_step_rate));
 	mc_last_step_pos[STEPPER_COUNT - 1] = 0;
 	float laser_pulses_per_mm = 0;
 	if (block_data->motion_flags.bit.spindle_running && block_data->spindle)
 	{
-		laser_pulses_per_mm = g_settings.step_per_mm[STEPPER_COUNT - 1];
+		laser_pulses_per_mm = ppi_step_rate;
 		// modify PPI settings according o the S value
 		if (g_settings.laser_mode & LASER_PPI_MODE)
 		{
-			float laser_ppi_scale = (float)block_data->spindle / (float)g_settings.spindle_max_rpm;
+			float laser_ppi_scale = fast_flt_div((float)block_data->spindle, (float)g_settings.spindle_max_rpm);
 			if (g_settings.laser_mode & LASER_PPI_VARPOWER_MODE)
 			{
 				float blend = g_settings.laser_ppi_mixmode_ppi;
@@ -406,8 +444,9 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 
 		laser_pulses_per_mm *= line_dist;
 		// adjust max feed rate to ppi settings
-		max_feed = MIN(max_feed, g_settings.max_feed_rate[STEPPER_COUNT - 1] * inv_dist);
+		max_feed = MIN(max_feed, ppi_max_feedrate * inv_dist);
 	}
+
 	step_new_pos[STEPPER_COUNT - 1] = laser_pulses_per_mm;
 	if (step_new_pos[STEPPER_COUNT - 1] > max_steps)
 	{
@@ -429,7 +468,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 	block_data->feed = MIN(max_feed, step_feed);
 	block_data->max_feed = max_feed;
 
-	block_data->feed_conversion = line_dist / feed_convert_to_steps_per_sec;
+	block_data->feed_conversion = fast_flt_div(line_dist, feed_convert_to_steps_per_sec);
 
 #ifdef MOTION_SEGMENTED
 	// this contains a motion. Any tool update will be done here
@@ -464,7 +503,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 
 #ifdef ENABLE_G39_H_MAPPING
 		// unmodify target
-		prev_target[AXIS_Z] -= h_offset;
+		prev_target[AXIS_TOOL] -= h_offset;
 #endif
 	}
 
@@ -480,13 +519,13 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 
 #ifdef ENABLE_G39_H_MAPPING
 		h_offset = (CHECKFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_APPLY_HMAP)) ? (mc_apply_hmap(prev_target)) : 0;
-		prev_target[AXIS_Z] += h_offset;
+		prev_target[AXIS_TOOL] += h_offset;
 #endif
 		kinematics_coordinates_to_steps(prev_target, step_new_pos);
 		error = mc_line_segment(step_new_pos, block_data);
 #ifdef ENABLE_G39_H_MAPPING
 		// unmodify target
-		prev_target[AXIS_Z] -= h_offset;
+		prev_target[AXIS_TOOL] -= h_offset;
 #endif
 		if (error)
 		{
@@ -507,7 +546,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 
 #ifdef ENABLE_G39_H_MAPPING
 	// unmodify target
-	target[AXIS_Z] -= target_hmap_offset;
+	target[AXIS_TOOL] -= target_hmap_offset;
 #endif
 
 	// stores the new position for the next motion
@@ -656,7 +695,7 @@ uint8_t mc_dwell(motion_data_t *block_data)
 	if (!mc_checkmode) // check mode (gcode simulation) doesn't send code to planner
 	{
 		mc_update_tools(block_data);
-		cnc_delay_ms(block_data->dwell);
+		cnc_dwell_ms(block_data->dwell);
 	}
 
 	return STATUS_OK;
@@ -685,7 +724,10 @@ uint8_t mc_update_tools(motion_data_t *block_data)
 			return STATUS_CRITICAL_FAIL;
 		}
 		// synchronizes the tools
-		planner_sync_tools(block_data);
+		if (block_data)
+		{
+			planner_sync_tools(block_data);
+		}
 		itp_sync_spindle();
 	}
 #endif
@@ -699,14 +741,15 @@ void mc_home_axis_finalize(homing_status_t *status)
 }
 #endif
 
-uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
+uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 {
 	float target[AXIS_COUNT];
-	uint8_t axis_mask = (1 << axis);
 	motion_data_t block_data = {0};
 	uint8_t limits_flags;
+	uint8_t restore_step_mode __attribute__((__cleanup__(mc_restore_step_mode))) = itp_set_step_mode(ITP_STEP_MODE_REALTIME);
+
 #ifdef ENABLE_MOTION_CONTROL_MODULES
-	homing_status_t homing_status __attribute__((__cleanup__(mc_home_axis_finalize))) = {axis, axis_limit, STATUS_OK};
+	homing_status_t homing_status __attribute__((__cleanup__(mc_home_axis_finalize))) = {axis_mask, axis_limit, STATUS_OK};
 #endif
 
 #ifdef ENABLE_G39_H_MAPPING
@@ -728,8 +771,10 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 #endif
 	}
 
-	// locks limits to accept axis limit mask only or else throw error
+// locks limits to accept axis limit mask only or else throw error
+#ifdef ENABLE_MULTI_STEP_HOMING
 	io_lock_limits(axis_limit);
+#endif
 	io_invert_limits(0);
 	cnc_unlock(true);
 
@@ -739,19 +784,28 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 		return STATUS_CRITICAL_FAIL;
 	}
 
-	float max_home_dist;
-	max_home_dist = -g_settings.max_distance[axis] * 1.5f;
-
-	// checks homing dir
-	if (g_settings.homing_dir_invert_mask & axis_mask)
-	{
-		max_home_dist = -max_home_dist;
-	}
-
 	// sync's the motion control with the real time position
 	mc_sync_position();
 	mc_get_position(target);
-	target[axis] += max_home_dist;
+
+	// set's the homing distance for each axis
+	for (uint8_t i = 0; i < AXIS_COUNT; i++)
+	{
+		uint8_t imask = (1 << i);
+		if (imask & axis_mask)
+		{
+			float max_home_dist;
+			max_home_dist = -g_settings.max_distance[i] * 1.5f;
+
+			// checks homing dir
+			if (g_settings.homing_dir_invert_mask & axis_mask)
+			{
+				max_home_dist = -max_home_dist;
+			}
+			target[i] += max_home_dist;
+		}
+	}
+
 	// initializes planner block data
 	// memset(block_data.steps, 0, sizeof(block_data.steps));
 	// block_data.steps[axis] = max_home_dist;
@@ -761,8 +815,6 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 	block_data.motion_mode = MOTIONCONTROL_MODE_FEED;
 
 	cnc_unlock(true);
-	// re-flags homing clear by the unlock
-	cnc_set_exec_state(EXEC_HOMING);
 	mc_line(target, &block_data);
 
 	if (itp_sync() != STATUS_OK)
@@ -786,18 +838,28 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 		return STATUS_CRITICAL_FAIL;
 	}
 
-	// back off from switch at lower speed
-	max_home_dist = g_settings.homing_offset * 5.0f;
-
 	// sync's the motion control with the real time position
 	mc_sync_position();
 	mc_get_position(target);
-	if (g_settings.homing_dir_invert_mask & axis_mask)
+
+	// set's the homing distance for each axis
+	for (uint8_t i = 0; i < AXIS_COUNT; i++)
 	{
-		max_home_dist = -max_home_dist;
+		uint8_t imask = (1 << i);
+		if (imask & axis_mask)
+		{
+			// back off from switch at lower speed
+			float max_home_dist = g_settings.homing_offset * 5.0f;
+
+			// checks homing dir
+			if (g_settings.homing_dir_invert_mask & axis_mask)
+			{
+				max_home_dist = -max_home_dist;
+			}
+			target[i] += max_home_dist;
+		}
 	}
 
-	target[axis] += max_home_dist;
 	block_data.feed = g_settings.homing_slow_feed_rate;
 	// block_data.steps[axis] = max_home_dist;
 	// unlocks the machine for next motion (this will clear the EXEC_UNHOMED flag
@@ -805,8 +867,6 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 	io_invert_limits(axis_limit);
 
 	cnc_unlock(true);
-	// flags homing clear by the unlock
-	cnc_set_exec_state(EXEC_HOMING);
 	mc_line(target, &block_data);
 
 	if (itp_sync() != STATUS_OK)
@@ -845,6 +905,7 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data)
 {
 #if ASSERT_PIN(PROBE)
+	uint8_t restore_step_mode __attribute__((__cleanup__(mc_restore_step_mode))) = itp_set_step_mode(ITP_STEP_MODE_REALTIME);
 #ifdef ENABLE_G39_H_MAPPING
 	// disable hmap for probing motion
 	block_data->motion_mode &= ~MOTIONCONTROL_MODE_APPLY_HMAP;
@@ -866,34 +927,42 @@ uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data)
 		return STATUS_OK;
 	}
 
-	mc_line(target, block_data);
 	// enable the probe
 	io_enable_probe();
+	mc_line(target, block_data);
+
+	// similar to itp_sync
 	do
 	{
-		if (io_get_probe() ^ (flags & 0x01))
+		if (!cnc_dotasks())
 		{
-			mcu_probe_changed_cb();
 			break;
 		}
-	} while (cnc_dotasks() && cnc_get_exec_state(EXEC_RUN));
+		if (io_get_probe() ^ (flags & 0x01))
+		{
+#ifndef ENABLE_RT_PROBE_CHECKING
+			mcu_probe_changed_cb();
+#endif
+			break;
+		}
+	} while (!itp_is_empty() || !planner_buffer_is_empty());
 
+	// wait for a stop
+	while (cnc_dotasks() && cnc_get_exec_state(EXEC_RUN))
+		;
 	// disables the probe
 	io_disable_probe();
-
-	// clears HALT state if possible
-	cnc_unlock(true);
-
 	itp_clear();
-	planner_clear();
-	parser_update_probe_pos();
+	// clears the buffer but conserves the tool data
+	while (!planner_buffer_is_empty())
+	{
+		planner_discard_block();
+	}
+	// clears hold
+	cnc_clear_exec_state(EXEC_HOLD);
+
 	// sync the position of the motion control
 	mc_sync_position();
-	// HALT could not be cleared. Something is wrong
-	if (cnc_get_exec_state(EXEC_UNHOMED))
-	{
-		return STATUS_CRITICAL_FAIL;
-	}
 
 	cnc_delay_ms(g_settings.debounce_ms); // adds a delay before reading io pin (debounce)
 	probe_ok = io_get_probe();
@@ -906,7 +975,6 @@ uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data)
 		}
 		return STATUS_OK;
 	}
-
 #endif
 
 	return STATUS_PROBE_SUCCESS;
@@ -923,6 +991,44 @@ void mc_sync_position(void)
 	itp_get_rt_position(mc_last_step_pos);
 	kinematics_steps_to_coordinates(mc_last_step_pos, mc_last_target);
 	parser_sync_position();
+}
+
+uint8_t mc_incremental_jog(float *target_offset, motion_data_t *block_data)
+{
+	float new_target[AXIS_COUNT];
+	uint8_t state = cnc_get_exec_state(EXEC_ALLACTIVE);
+
+	if ((state & ~EXEC_JOG) || cnc_has_alarm()) // if any other than idle or jog discards the command
+	{
+		return STATUS_IDLE_ERROR;
+	}
+
+	cnc_set_exec_state(EXEC_JOG);
+
+	// gets the previous machine position (transformed to calculate the direction vector and traveled distance)
+	memcpy(new_target, mc_last_target, sizeof(mc_last_target));
+	for (uint8_t i = AXIS_COUNT; i != 0;)
+	{
+		i--;
+		new_target[i] += target_offset[i];
+	}
+
+	block_data->motion_flags.reg = g_planner_state.state_flags.reg;
+	block_data->spindle = g_planner_state.spindle_speed;
+
+	uint8_t error = mc_line(new_target, block_data);
+
+	if (error == STATUS_OK)
+	{
+		parser_sync_position();
+	}
+
+	return error;
+}
+
+void mc_flush_pending_motion(void)
+{
+	mc_flush_pending = true;
 }
 
 #ifdef ENABLE_G39_H_MAPPING
@@ -1054,9 +1160,9 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 		{
 			block_data->feed = FLT_MAX;
 			// retract if needed
-			if (position[AXIS_Z] < (target[AXIS_Z] + retract_h))
+			if (position[AXIS_TOOL] < (target[AXIS_TOOL] + retract_h))
 			{
-				position[AXIS_Z] = (target[AXIS_Z] + retract_h);
+				position[AXIS_TOOL] = (target[AXIS_TOOL] + retract_h);
 				error = mc_line(position, block_data);
 				if (error != STATUS_OK)
 				{
@@ -1082,9 +1188,9 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 
 			// store position
 			int32_t probe_position[STEPPER_COUNT];
-			itp_get_rt_position(probe_position);
+			parser_get_probe(probe_position);
 			kinematics_steps_to_coordinates(probe_position, position);
-			hmap_offsets[i + H_MAPING_GRID_FACTOR * j] = position[AXIS_Z];
+			hmap_offsets[i + H_MAPING_GRID_FACTOR * j] = position[AXIS_TOOL];
 			protocol_send_probe_result(1);
 
 			// update to new target
@@ -1096,9 +1202,9 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 
 	block_data->feed = FLT_MAX;
 	// fast retract if needed
-	if (position[AXIS_Z] < (target[AXIS_Z] + retract_h))
+	if (position[AXIS_TOOL] < (target[AXIS_TOOL] + retract_h))
 	{
-		position[AXIS_Z] = (target[AXIS_Z] + retract_h);
+		position[AXIS_TOOL] = (target[AXIS_TOOL] + retract_h);
 		error = mc_line(position, block_data);
 		if (error != STATUS_OK)
 		{
@@ -1118,7 +1224,7 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 
 	// move to 1st point at feed speed
 	block_data->feed = feed;
-	position[AXIS_Z] = hmap_offsets[0];
+	position[AXIS_TOOL] = hmap_offsets[0];
 	error = mc_line(position, block_data);
 	if (error != STATUS_OK)
 	{
@@ -1147,5 +1253,22 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 	mc_print_hmap();
 
 	return STATUS_OK;
+}
+#endif
+
+#ifdef ENABLE_MOTION_CONTROL_PLANNER_HIJACKING
+static int32_t mc_last_step_pos_copy[STEPPER_COUNT];
+static float mc_last_target_copy[AXIS_COUNT];
+// stores the motion controller reference positions
+void mc_store(void)
+{
+	memcpy(mc_last_step_pos_copy, mc_last_step_pos, sizeof(mc_last_step_pos));
+	memcpy(mc_last_target_copy, mc_last_target, sizeof(mc_last_target));
+}
+// restores the motion controller reference positions
+void mc_restore(void)
+{
+	memcpy(mc_last_step_pos, mc_last_step_pos_copy, sizeof(mc_last_step_pos));
+	memcpy(mc_last_target, mc_last_target_copy, sizeof(mc_last_target));
 }
 #endif

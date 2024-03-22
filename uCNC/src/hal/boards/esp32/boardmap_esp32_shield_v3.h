@@ -1,10 +1,10 @@
 /*
-	Name: tmcdriver.h
-	Description: TMC driver support µCNC.
+	Name: boardmap_esp32_shield_v3.h
+	Description: Contains all MCU and PIN definitions for Arduino UNO similar to Grbl 0.8 to run µCNC.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
-	Date: 20-03-2022
+	Date: 04/01/2024
 
 	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,17 +16,33 @@
 	See the	GNU General Public License for more details.
 */
 
-#ifndef TMCDRIVER_H
-#define TMCDRIVER_H
+#ifndef BOARDMAP_ESP_SHIELD_V3_H
+#define BOARDMAP_ESP_SHIELD_V3_H
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-#include "../module.h"
+#ifndef BOARD_NAME
+#define BOARD_NAME "ESP32 SHIELD V3"
+#endif
 
-	DECL_MODULE(tmcdriver);
+#include "boardmap_wemos_d1_r32.h"
+
+// swap limit z and replace pwm by spin enable pin
+#ifdef LIMIT_Z_BIT
+#undef LIMIT_Z_BIT
+#endif
+#ifdef PWM0_BIT
+#undef PWM0_BIT
+#endif
+
+// Grbl 0.8 limit z
+#define LIMIT_Z_BIT 23 // assigns LIMIT_Z pin
+
+// Grbl 0.8 spindle en
+#define PWM0_BIT 19 // assigns PWM0 pin
 
 #ifdef __cplusplus
 }

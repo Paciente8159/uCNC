@@ -11,9 +11,15 @@
 To configure µCNC to fit your hardware you can use [µCNC config builder web tool](https://paciente8159.github.io/uCNC-config-builder/) to generate the config override files.
 Although most of the options are configurable via the web tool, some options might be missing and you might need to add them manually (regarding tools or addon modules mostly).
 
-# VERSION 1.7+ NOTES
+# VERSION 1.8+ NOTES
 
-Version 1.7 introduced some small but breaking changes to modules function declarations. If you are upgrading from a previous version you need to upgrade the modules also. Modules for previous versions are available in the releases section of the [µCNC-modules repository](https://github.com/Paciente8159/uCNC-modules).
+Version 1.8 introduced several breaking changes from the previous version. These are:
+  - Tools functions declarations. This version also introduces a new IO HAL that makes io abstraction easier and more performant.
+  - New serial/multi-stream interface. All communications ports and extension modules (displays, SD cards, etc..) that communicate to the parser now do it via a custom serial stream implementation. Serial streams are segregated and responses are sent back to the source only instead of all ports. Some types of messages are still broadcast (like status reports, alarms and feedback messages).
+  - Modules now also defines HOOKs that can be used as hookable points for a single consumer function.
+  - There are several README documents that contain relevant information about parts of the system/HAL/modules etc. This makes it easier to keep the information up to date with each change.
+
+With version 1.8 µCNC is becomming too large for Atmega328P (still supports it, but barelly fits). For that reason and to keep giving support for this MCU a branch of version 1.7 will be maintained with all the latest bugfixes and patches.
 
 # IMPORTANT NOTE
 
@@ -54,7 +60,21 @@ You can also reach me at µCNC discord channel
 
 ## Current µCNC status
 
-µCNC current major version is v1.7. You can check all the new features, changes and bug fixes in the [CHANGELOG](https://github.com/Paciente8159/uCNC/blob/master/CHANGELOG.md).
+µCNC current major version is v1.8. You can check all the new features, changes and bug fixes in the [CHANGELOG](https://github.com/Paciente8159/uCNC/blob/master/CHANGELOG.md).
+
+Version 1.8 added the following new major features.
+
+- new IO HAL that simplifies io control and calls.
+- added support for motion control/planner hijack. This allows to stash and restore all current buffered motions to allow execution of a completly new set of intermediate motions.
+- added realtime modification of step and dir bits to be executed in the fly.
+- added new tool for plasma THC.
+- all analog inputs were modified from 8bit resolution to 10bit.
+- complete redesign of PID module and modified tools functions to make use of PID update loop.
+- complete redesign of serial communications to support and deal with multi-stream/origins.
+- complete redesign of multi-stepper axis and self-squaring axis.
+- initial support for Scara kinematics
+- endpoint interface module to allow development of web services and REST modules for WiFi (available on v1.8.1)
+- websocket interface module to allow development of web sockets modules for WiFi (available on v1.8.7)
 
 Version 1.7 added a new major feature.
 
@@ -125,7 +145,6 @@ List of Supported G-Codes since µCNC 1.3.0:
   - Outside the RS274NGC scope
     - Bilinear surface mapping: G39,G39.1,G39.2*
     - Servo Control: M10*
-    - Trinamic settings: M350* (set/get microsteps), M906* (set/get current), 913* (stealthchop threshold), 914* (stall sensitivity-stallGuard capable chips only), 920* (set/get register)
     - Digital pins/trimpot settings: M351* (set/get microsteps), M907* (set/get current via digipot)
     - Laser PPI M126*(mode) M127*(PPI) and M128*(Pulse width)
     - Valid Non-Command Words: E (used by 3D printing firmware like [Marlin](https://github.com/MarlinFirmware/Marlin)) (currently not used)
@@ -155,6 +174,15 @@ Other G/M codes available via [external modules](https://github.com/Paciente8159
   - Enable/disable analog output pin synched/immediately: M67/M68
   - Enable/disable a digital output that controls the PSU: M80/M81
   - Smoothieware laser clustering mode modified gcode
+  - Support for small LCD crystal displays with I2C interface
+  - Support for monochromatic 128x64 displays (like Reprap fullgraphic discount)
+  - Mobile web pendant via Wifi
+  - BL touch module
+  - SD card support using SPI
+  - Wait for digital/analog input: M66
+  - Set home position from current position: G28.1/G30.1
+  - Play tone via PWM pin: M300
+  - Trinamic driver support and config commands: M350* (set/get microsteps), M906* (set/get current), 913* (stealthchop threshold), 914* (stall sensitivity-stallGuard capable chips only), 920* (set/get register)
 
 **ALL custom G/M codes require at least ENABLE_PARSER_MODULES option enabled**
 
@@ -218,6 +246,7 @@ Currently µCNC supports the following kinematics:
 - CoreXY
 - Linear delta robot
 - Rotary delta robot
+- Scara
 
 ### µCNC roadmap
 
@@ -230,9 +259,10 @@ These changes are:
 
 Future versions are in plan for:
 
-- Add support for graphical LCD
+- Add support for Web interface
 - Add more GCode features and hardware modules
 - Add additional kinematics
+- Add HAL for new MCU
 
 ### Building µCNC
 

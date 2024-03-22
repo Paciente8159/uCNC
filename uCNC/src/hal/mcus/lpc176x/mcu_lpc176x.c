@@ -24,11 +24,12 @@
 
 #ifdef MCU_HAS_USB
 #ifdef USE_ARDUINO_CDC
-extern void mcu_usb_dotasks(void);
-extern void mcu_usb_init(void);
-extern char mcu_usb_getc(void);
-extern uint8_t mcu_usb_available(void);
-extern uint8_t mcu_usb_tx_available(void);
+extern void lpc176x_usb_dotasks(void);
+extern bool lpc176x_usb_available(void);
+extern uint8_t lpc176x_usb_getc(void);
+extern void lpc176x_usb_putc(uint8_t c);
+extern void lpc176x_usb_init(void);
+extern void lpc176x_usb_write(uint8_t *ptr, uint8_t len);
 #else
 #include <tusb_ucnc.h>
 #endif
@@ -39,7 +40,8 @@ extern uint8_t mcu_usb_tx_available(void);
  * Increments every millisecond
  * Can count up to almost 50 days
  **/
-static volatile uint32_t mcu_runtime_ms;
+// provided by the framework
+extern volatile uint64_t _millis;
 volatile bool lpc_global_isr_enabled;
 
 // define the mcu internal servo variables
@@ -50,22 +52,22 @@ static uint8_t mcu_servos[6];
 static FORCEINLINE void mcu_clear_servos()
 {
 #if ASSERT_PIN(SERVO0)
-	mcu_clear_output(SERVO0);
+	io_clear_output(SERVO0);
 #endif
 #if ASSERT_PIN(SERVO1)
-	mcu_clear_output(SERVO1);
+	io_clear_output(SERVO1);
 #endif
 #if ASSERT_PIN(SERVO2)
-	mcu_clear_output(SERVO2);
+	io_clear_output(SERVO2);
 #endif
 #if ASSERT_PIN(SERVO3)
-	mcu_clear_output(SERVO3);
+	io_clear_output(SERVO3);
 #endif
 #if ASSERT_PIN(SERVO4)
-	mcu_clear_output(SERVO4);
+	io_clear_output(SERVO4);
 #endif
 #if ASSERT_PIN(SERVO5)
-	mcu_clear_output(SERVO5);
+	io_clear_output(SERVO5);
 #endif
 }
 
@@ -79,38 +81,38 @@ static FORCEINLINE void mcu_set_servos()
 	{
 #if ASSERT_PIN(SERVO0)
 	case 0:
-		mcu_set_output(SERVO0);
+		io_set_output(SERVO0);
 		SERVO_TIMER_REG->MR1 = (SERVO_MIN + mcu_servos[0]);
 
 		break;
 #endif
 #if ASSERT_PIN(SERVO1)
 	case 1:
-		mcu_set_output(SERVO1);
+		io_set_output(SERVO1);
 		SERVO_TIMER_REG->MR1 = (SERVO_MIN + mcu_servos[1]);
 		break;
 #endif
 #if ASSERT_PIN(SERVO2)
 	case 2:
-		mcu_set_output(SERVO2);
+		io_set_output(SERVO2);
 		SERVO_TIMER_REG->MR1 = (SERVO_MIN + mcu_servos[2]);
 		break;
 #endif
 #if ASSERT_PIN(SERVO3)
 	case 3:
-		mcu_set_output(SERVO3);
+		io_set_output(SERVO3);
 		SERVO_TIMER_REG->MR1 = (SERVO_MIN + mcu_servos[3]);
 		break;
 #endif
 #if ASSERT_PIN(SERVO4)
 	case 4:
-		mcu_set_output(SERVO4);
+		io_set_output(SERVO4);
 		SERVO_TIMER_REG->MR1 = (SERVO_MIN + mcu_servos[4]);
 		break;
 #endif
 #if ASSERT_PIN(SERVO5)
 	case 5:
-		mcu_set_output(SERVO5);
+		io_set_output(SERVO5);
 		SERVO_TIMER_REG->MR1 = (SERVO_MIN + mcu_servos[5]);
 		break;
 #endif
@@ -175,10 +177,8 @@ void MCU_SERVO_ISR(void)
 void MCU_RTC_ISR(void)
 {
 	mcu_disable_global_isr();
-	uint32_t millis = mcu_runtime_ms;
-	millis++;
-	mcu_runtime_ms = millis;
-	mcu_rtc_cb(millis);
+	_millis++;
+	mcu_rtc_cb((uint32_t)_millis);
 	mcu_enable_global_isr();
 }
 
@@ -231,7 +231,9 @@ void mcu_clocks_init(void)
 #ifndef UART_TX_BUFFER_SIZE
 #define UART_TX_BUFFER_SIZE 64
 #endif
-DECL_BUFFER(uint8_t, uart, UART_TX_BUFFER_SIZE);
+DECL_BUFFER(uint8_t, uart_tx, UART_TX_BUFFER_SIZE);
+DECL_BUFFER(uint8_t, uart_rx, RX_BUFFER_SIZE);
+
 void MCU_COM_ISR(void)
 {
 	__ATOMIC_FORCEON__
@@ -256,9 +258,19 @@ void MCU_COM_ISR(void)
 
 		if (irqstatus == UART_IIR_INTID_RDA)
 		{
-			unsigned char c = (unsigned char)(COM_INREG & UART_RBR_MASKBIT);
+			uint8_t c = (uint8_t)(COM_INREG & UART_RBR_MASKBIT);
 #if !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
-			mcu_com_rx_cb(c);
+			if (mcu_com_rx_cb(c))
+			{
+				if (BUFFER_FULL(uart_rx))
+				{
+					c = OVF;
+				}
+
+				*(BUFFER_NEXT_FREE(uart_rx)) = c;
+				BUFFER_STORE(uart_rx);
+			}
+
 #else
 			mcu_uart_rx_cb(c);
 #endif
@@ -269,13 +281,13 @@ void MCU_COM_ISR(void)
 			// UART_IntConfig(COM_USART, UART_INTCFG_THRE, DISABLE);
 
 			mcu_enable_global_isr();
-			if (BUFFER_EMPTY(uart))
+			if (BUFFER_EMPTY(uart_tx))
 			{
 				COM_UART->IER &= ~UART_IER_THREINT_EN;
 				return;
 			}
 			uint8_t c = 0;
-			BUFFER_DEQUEUE(uart, &c);
+			BUFFER_DEQUEUE(uart_tx, &c);
 			COM_OUTREG = c;
 		}
 	}
@@ -286,7 +298,8 @@ void MCU_COM_ISR(void)
 #ifndef UART2_TX_BUFFER_SIZE
 #define UART2_TX_BUFFER_SIZE 64
 #endif
-DECL_BUFFER(uint8_t, uart2, UART2_TX_BUFFER_SIZE);
+DECL_BUFFER(uint8_t, uart2_rx, RX_BUFFER_SIZE);
+DECL_BUFFER(uint8_t, uart2_tx, UART2_TX_BUFFER_SIZE);
 void MCU_COM2_ISR(void)
 {
 	__ATOMIC_FORCEON__
@@ -311,39 +324,46 @@ void MCU_COM2_ISR(void)
 
 		if (irqstatus == UART_IIR_INTID_RDA)
 		{
-			unsigned char c = (unsigned char)(COM2_INREG & UART_RBR_MASKBIT);
+			uint8_t c = (uint8_t)(COM2_INREG & UART_RBR_MASKBIT);
 #if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
-			mcu_com_rx_cb(c);
+			if (mcu_com_rx_cb(c))
+			{
+				if (BUFFER_FULL(uart2_rx))
+				{
+					c = OVF;
+				}
+
+				*(BUFFER_NEXT_FREE(uart2_rx)) = c;
+				BUFFER_STORE(uart2_rx);
+			}
 #else
 			mcu_uart2_rx_cb(c);
+#ifndef UART2_DISABLE_BUFFER
+			if (BUFFER_FULL(uart2_rx))
+			{
+				c = OVF;
+			}
+
+			*(BUFFER_NEXT_FREE(uart2_rx)) = c;
+			BUFFER_STORE(uart2_rx);
+#endif
 #endif
 		}
 
 		if (irqstatus == UART_IIR_INTID_THRE)
 		{
 			mcu_enable_global_isr();
-			if (BUFFER_EMPTY(uart2))
+			if (BUFFER_EMPTY(uart2_tx))
 			{
 				COM2_UART->IER &= ~UART_IER_THREINT_EN;
 				return;
 			}
 			uint8_t c;
-			BUFFER_DEQUEUE(uart2, &c);
+			BUFFER_DEQUEUE(uart2_tx, &c);
 			COM2_OUTREG = c;
 		}
 	}
 }
-#endif
-
-#ifdef MCU_HAS_USB
-#ifndef USE_ARDUINO_CDC
-void USB_IRQHandler(void)
-{
-	mcu_disable_global_isr();
-	tusb_cdc_isr_handler();
-	mcu_enable_global_isr();
-}
-#endif
 #endif
 
 void mcu_usart_init(void)
@@ -396,7 +416,7 @@ void mcu_usart_init(void)
 
 #ifdef MCU_HAS_USB
 #ifdef USE_ARDUINO_CDC
-	mcu_usb_init();
+	lpc176x_usb_init();
 #else
 	// // // configure USB as Virtual COM port
 	LPC_PINCON->PINSEL1 &= ~((3 << 26) | (3 << 28)); /* P0.29 D+, P0.30 D- */
@@ -519,7 +539,7 @@ void mcu_disable_probe_isr(void)
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_get_analog
-uint8_t mcu_get_analog(uint8_t channel)
+uint16_t mcu_get_analog(uint8_t channel)
 {
 	return 0;
 }
@@ -569,66 +589,101 @@ uint8_t mcu_get_servo(uint8_t servo)
 #endif
 
 /**
- * sends a char either via uart (hardware, software or USB virtual COM port)
+ * sends a uint8_t either via uart (hardware, software or USB virtual COM port)
  * can be defined either as a function or a macro call
  * */
 #ifdef MCU_HAS_UART
+
+uint8_t mcu_uart_getc(void)
+{
+	uint8_t c = 0;
+	BUFFER_DEQUEUE(uart_rx, &c);
+	return c;
+}
+
+uint8_t mcu_uart_available(void)
+{
+	return BUFFER_READ_AVAILABLE(uart_rx);
+}
+
+void mcu_uart_clear(void)
+{
+	BUFFER_CLEAR(uart_rx);
+}
+
 void mcu_uart_putc(uint8_t c)
 {
-	while (BUFFER_FULL(uart))
+	while (BUFFER_FULL(uart_tx))
 	{
 		mcu_uart_flush();
 	}
-	BUFFER_ENQUEUE(uart, &c);
+	BUFFER_ENQUEUE(uart_tx, &c);
 }
 
 void mcu_uart_flush(void)
 {
 	if (!(COM_UART->IER & UART_IER_THREINT_EN)) // not ready start flushing
 	{
-		if (BUFFER_EMPTY(uart))
+		if (BUFFER_EMPTY(uart_tx))
 		{
 			return;
 		}
 		uint8_t c = 0;
-		BUFFER_DEQUEUE(uart, &c);
+		BUFFER_DEQUEUE(uart_tx, &c);
 		while (!CHECKBIT(COM_UART->LSR, 5))
 			;
 		COM_OUTREG = c;
 		COM_UART->IER |= UART_IER_THREINT_EN;
 #if ASSERT_PIN(ACTIVITY_LED)
-		mcu_toggle_output(ACTIVITY_LED);
+		io_toggle_output(ACTIVITY_LED);
 #endif
 	}
 }
 #endif
 
 #ifdef MCU_HAS_UART2
+uint8_t mcu_uart2_getc(void)
+{
+	uint8_t c = 0;
+	BUFFER_DEQUEUE(uart2_rx, &c);
+	return c;
+}
+
+uint8_t mcu_uart2_available(void)
+{
+	return BUFFER_READ_AVAILABLE(uart2_rx);
+}
+
+void mcu_uart2_clear(void)
+{
+	BUFFER_CLEAR(uart2_rx);
+}
+
 void mcu_uart2_putc(uint8_t c)
 {
-	while (BUFFER_FULL(uart2))
+	while (BUFFER_FULL(uart2_tx))
 	{
 		mcu_uart2_flush();
 	}
-	BUFFER_ENQUEUE(uart2, &c);
+	BUFFER_ENQUEUE(uart2_tx, &c);
 }
 
 void mcu_uart2_flush(void)
 {
 	if (!(COM2_UART->IER & UART_IER_THREINT_EN)) // not ready start flushing
 	{
-		if (BUFFER_EMPTY(uart2))
+		if (BUFFER_EMPTY(uart2_tx))
 		{
 			return;
 		}
 		uint8_t c = 0;
-		BUFFER_DEQUEUE(uart2, &c);
+		BUFFER_DEQUEUE(uart2_tx, &c);
 		while (!CHECKBIT(COM2_UART->LSR, 5))
 			;
 		COM2_OUTREG = c;
 		COM2_UART->IER |= UART_IER_THREINT_EN;
 #if ASSERT_PIN(ACTIVITY_LED)
-		mcu_toggle_output(ACTIVITY_LED);
+		io_toggle_output(ACTIVITY_LED);
 #endif
 	}
 }
@@ -663,6 +718,7 @@ void mcu_uart2_flush(void)
  * */
 void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 {
+	frequency = CLAMP((float)F_STEP_MIN, frequency, (float)F_STEP_MAX);
 	// up and down counter (generates half the step rate at each event)
 	uint32_t totalticks = (uint32_t)((float)1000000UL / frequency);
 	// *prescaller = 0;
@@ -748,8 +804,7 @@ void mcu_stop_itp_isr(void)
  * */
 uint32_t mcu_millis()
 {
-	uint32_t val = mcu_runtime_ms;
-	return val;
+	return (uint32_t)_millis;
 }
 
 /**
@@ -758,7 +813,7 @@ uint32_t mcu_millis()
  * */
 uint32_t mcu_micros()
 {
-	return ((mcu_runtime_ms * 1000) + ((SysTick->LOAD - SysTick->VAL) / (F_CPU / 1000000)));
+	return ((mcu_millis() * 1000) + mcu_free_micros());
 }
 
 #ifndef mcu_delay_us
@@ -772,7 +827,16 @@ void mcu_delay_us(uint16_t delay)
 #endif
 
 #ifdef MCU_HAS_USB
+DECL_BUFFER(uint8_t, usb_rx, RX_BUFFER_SIZE);
+
 #ifndef USE_ARDUINO_CDC
+void USB_IRQHandler(void)
+{
+	mcu_disable_global_isr();
+	tusb_cdc_isr_handler();
+	mcu_enable_global_isr();
+}
+
 void mcu_usb_putc(uint8_t c)
 {
 	if (!tusb_cdc_write_available())
@@ -788,9 +852,64 @@ void mcu_usb_flush(void)
 	while (!tusb_cdc_write_available())
 	{
 		mcu_dotasks(); // tinyusb device task
+		if (!tusb_cdc_connected)
+		{
+			return;
+		}
 	}
 }
+#else
+#ifndef USB_TX_BUFFER_SIZE
+#define USB_TX_BUFFER_SIZE 64
 #endif
+
+DECL_BUFFER(uint8_t, usb_tx, USB_TX_BUFFER_SIZE);
+void mcu_usb_flush(void)
+{
+	while (!BUFFER_EMPTY(usb_tx))
+	{
+		// use this of char is not 8bits
+		// uint8_t c = 0;
+		// BUFFER_DEQUEUE(usb_tx, &c);
+		// lpc176x_usb_putc(c);
+
+		// bulk sending
+		uint8_t tmp[USB_TX_BUFFER_SIZE + 1];
+		memset(tmp, 0, sizeof(tmp));
+		uint8_t r;
+
+		BUFFER_READ(usb_tx, tmp, USB_TX_BUFFER_SIZE, r);
+		lpc176x_usb_write(tmp, r);
+	}
+}
+
+void mcu_usb_putc(uint8_t c)
+{
+	while (BUFFER_FULL(usb_tx))
+	{
+		mcu_usb_flush();
+	}
+	BUFFER_ENQUEUE(usb_tx, &c);
+}
+#endif
+
+uint8_t mcu_usb_getc(void)
+{
+	char c = BUFFER_PEEK(usb_rx);
+	BUFFER_REMOVE(usb_rx);
+	return (uint8_t)c;
+}
+
+uint8_t mcu_usb_available(void)
+{
+	return BUFFER_READ_AVAILABLE(usb_rx);
+}
+
+void mcu_usb_clear(void)
+{
+	BUFFER_CLEAR(usb_rx);
+}
+
 #endif
 
 /**
@@ -802,25 +921,42 @@ void mcu_dotasks()
 {
 #ifdef MCU_HAS_USB
 #ifdef USE_ARDUINO_CDC
-	mcu_usb_flush();
-	mcu_usb_dotasks();
-	while (mcu_usb_available())
-	{
-		unsigned char c = (unsigned char)mcu_usb_getc();
+	lpc176x_usb_dotasks();
 #ifndef DETACH_USB_FROM_MAIN_PROTOCOL
-		mcu_com_rx_cb(c);
-#else
-		mcu_usb_rx_cb(c);
-#endif
+	while (lpc176x_usb_available())
+	{
+		uint8_t c = lpc176x_usb_getc();
+		if (mcu_com_rx_cb(c))
+		{
+			if (BUFFER_FULL(usb_rx))
+			{
+				c = OVF;
+			}
+
+			*(BUFFER_NEXT_FREE(usb_rx)) = c;
+			BUFFER_STORE(usb_rx);
+		}
 	}
+#else
+	mcu_usb_rx_cb(c);
+#endif
 #else
 	tusb_cdc_task(); // tinyusb device task
 
 	while (tusb_cdc_available())
 	{
-		unsigned char c = (unsigned char)tusb_cdc_read();
+		uint8_t c = (uint8_t)tusb_cdc_read();
 #ifndef DETACH_USB_FROM_MAIN_PROTOCOL
-		mcu_com_rx_cb(c);
+		if (mcu_com_rx_cb(c))
+		{
+			if (BUFFER_FULL(usb_rx))
+			{
+				c = OVF;
+			}
+
+			*(BUFFER_NEXT_FREE(usb_rx)) = c;
+			BUFFER_STORE(usb_rx);
+		}
 #else
 		mcu_usb_rx_cb(c);
 #endif
@@ -835,6 +971,9 @@ void mcu_dotasks()
  * */
 uint8_t mcu_eeprom_getc(uint16_t address)
 {
+	DEBUG_STR("EEPROM invalid address @ ");
+	DEBUG_INT(address);
+	DEBUG_PUTC('\n');
 	return 0;
 }
 
@@ -843,6 +982,9 @@ uint8_t mcu_eeprom_getc(uint16_t address)
  * */
 void mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
+	DEBUG_STR("EEPROM invalid address @ ");
+	DEBUG_INT(address);
+	DEBUG_PUTC('\n');
 }
 
 /**
@@ -866,30 +1008,31 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 
 #endif
 
-#ifdef MCU_HAS_I2C
+#if defined(MCU_HAS_I2C) && !defined(USE_ARDUINO_WIRE)
 #if I2C_ADDRESS == 0
 static void mcu_i2c_write_stop(bool *stop)
 {
 	if (*stop)
 	{
-		uint32_t ms_timeout = mcu_millis() + 25;
+		uint32_t ms_timeout = 25;
 
 		I2C_REG->I2CONCLR = I2C_I2CONCLR_SIC;
 		I2C_REG->I2CONSET = I2C_I2CONSET_STO;
 		// Wait for complete
-		while (!(I2C_REG->I2CONSET & I2C_I2CONSET_STO) && (ms_timeout > mcu_millis()))
-			;
+		__TIMEOUT_MS__(ms_timeout)
+		{
+			if (I2C_REG->I2CONSET & I2C_I2CONSET_STO)
+			{
+				return;
+			}
+		}
 	}
 }
 
-static void mcu_i2c_reset()
-{
-}
-
-static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
+static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop, uint32_t ms_timeout)
 {
 	bool stop __attribute__((__cleanup__(mcu_i2c_write_stop))) = send_stop;
-	uint32_t ms_timeout = mcu_millis() + 25;
+	int32_t timeout = ms_timeout;
 
 	if (send_start)
 	{
@@ -899,19 +1042,29 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 			I2C_REG->I2CONCLR = I2C_I2CONCLR_SIC;
 			I2C_REG->I2CONSET = I2C_I2CONSET_STO;
 			// Wait for complete
-			while (!(I2C_REG->I2CONSET & I2C_I2CONSET_STO) && (ms_timeout > mcu_millis()))
-				;
+			__TIMEOUT_MS__(timeout)
+			{
+				if (I2C_REG->I2CONSET & I2C_I2CONSET_STO)
+				{
+					break;
+				}
+			}
 		}
 		// Enter to Master Transmitter mode
 		I2C_REG->I2CONSET = I2C_I2CONSET_STA;
 		// Wait for complete
-		while (!(I2C_REG->I2CONSET & I2C_I2CONSET_SI))
+		timeout = ms_timeout;
+		__TIMEOUT_MS__(timeout)
 		{
-			if (ms_timeout < mcu_millis())
+			if (I2C_REG->I2CONSET & I2C_I2CONSET_SI)
 			{
-				stop = true;
-				return I2C_NOTOK;
+				break;
 			}
+		}
+		__TIMEOUT_ASSERT__(timeout)
+		{
+			stop = true;
+			return I2C_NOTOK;
 		}
 		I2C_REG->I2CONCLR = I2C_I2CONCLR_STAC;
 		if ((I2C_REG->I2STAT & I2C_STAT_CODE_BITMASK) != 0x08)
@@ -919,13 +1072,18 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 			I2C_REG->I2CONSET = I2C_I2CONSET_STO;
 			I2C_REG->I2CONCLR = I2C_I2CONCLR_SIC;
 			// Wait for complete
-			while (!(I2C_REG->I2CONSET & I2C_I2CONSET_STO))
+			timeout = ms_timeout;
+			__TIMEOUT_MS__(timeout)
 			{
-				if (ms_timeout < mcu_millis())
+				if (I2C_REG->I2CONSET & I2C_I2CONSET_STO)
 				{
-					stop = true;
-					return I2C_NOTOK;
+					break;
 				}
+			}
+			__TIMEOUT_ASSERT__(timeout)
+			{
+				stop = true;
+				return I2C_NOTOK;
 			}
 		}
 	}
@@ -936,13 +1094,19 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 	/* Make sure start bit is not active */
 	I2C_REG->I2DAT = data & I2C_I2DAT_BITMASK;
 	// Wait for complete
-	while (!(I2C_REG->I2CONSET & I2C_I2CONSET_SI))
+	timeout = ms_timeout;
+	__TIMEOUT_MS__(timeout)
 	{
-		if (ms_timeout < mcu_millis())
+		if (I2C_REG->I2CONSET & I2C_I2CONSET_SI)
 		{
-			stop = true;
-			return I2C_NOTOK;
+			break;
 		}
+	}
+
+	__TIMEOUT_ASSERT__(timeout)
+	{
+		stop = true;
+		return I2C_NOTOK;
 	}
 
 	switch ((I2C_REG->I2STAT & I2C_STAT_CODE_BITMASK))
@@ -963,7 +1127,6 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 static uint8_t mcu_i2c_read(uint8_t *data, bool with_ack, bool send_stop, uint32_t ms_timeout)
 {
 	*data = 0xFF;
-	ms_timeout += mcu_millis();
 	bool stop __attribute__((__cleanup__(mcu_i2c_write_stop))) = send_stop;
 
 	if (with_ack)
@@ -978,33 +1141,33 @@ static uint8_t mcu_i2c_read(uint8_t *data, bool with_ack, bool send_stop, uint32
 	I2C_REG->I2CONCLR = I2C_I2CONCLR_SIC;
 
 	// Wait for complete
-	while (!(I2C_REG->I2CONSET & I2C_I2CONSET_SI))
+	__TIMEOUT_MS__(ms_timeout)
 	{
-		if (ms_timeout < mcu_millis())
+		if (I2C_REG->I2CONSET & I2C_I2CONSET_SI)
 		{
-			stop = true;
-			return I2C_NOTOK;
+			*data = (uint8_t)(I2C_REG->I2DAT & I2C_I2DAT_BITMASK);
+			return I2C_OK;
 		}
 	}
 
-	*data = (uint8_t)(I2C_REG->I2DAT & I2C_I2DAT_BITMASK);
-	return I2C_OK;
+	stop = true;
+	return I2C_NOTOK;
 }
 
 #ifndef mcu_i2c_send
 // master sends command to slave
-uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool release)
+uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool release, uint32_t ms_timeout)
 {
 	if (data && datalen)
 	{
-		if (mcu_i2c_write(address << 1, true, false) == I2C_OK) // start, send address, write
+		if (mcu_i2c_write(address << 1, true, false, ms_timeout) == I2C_OK) // start, send address, write
 		{
 			// send data, stop
 			do
 			{
 				datalen--;
 				bool last = (datalen == 0);
-				if (mcu_i2c_write(*data, false, (release & last)) != I2C_OK)
+				if (mcu_i2c_write(*data, false, (release & last), ms_timeout) != I2C_OK)
 				{
 					return I2C_NOTOK;
 				}
@@ -1026,7 +1189,7 @@ uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_
 {
 	if (data && datalen)
 	{
-		if (mcu_i2c_write((address << 1) | 0x01, true, false) == I2C_OK) // start, send address, write
+		if (mcu_i2c_write((address << 1) | 0x01, true, false, ms_timeout) == I2C_OK) // start, send address, write
 		{
 			do
 			{
@@ -1089,7 +1252,7 @@ void I2C_ISR(void)
 	case 0x68:
 	case 0x78:
 		index++;
-		__attribute__((fallthrough));
+		__FALL_THROUGH__
 	case 0xA0: // stop or repeated start condition received
 		// sends the data
 		if (i < I2C_SLAVE_BUFFER_SIZE)
@@ -1110,7 +1273,7 @@ void I2C_ISR(void)
 	case 0xA8: // addressed, returned ack
 	case 0xB0: // arbitration lost, returned ack
 		i = 0;
-		__attribute__((fallthrough));
+		__FALL_THROUGH__
 	case 0xB8: // byte sent, ack returned
 		// copy data to output register
 		I2C_REG->I2DAT = mcu_i2c_buffer[i++];

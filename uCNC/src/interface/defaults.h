@@ -25,66 +25,66 @@ extern "C"
 #endif
 
 #define DEFAULT_ARRAY_0(y) \
-	{                      \
+	{                        \
 	}
 #define DEFAULT_ARRAY_1(y) \
-	{                      \
-		y                  \
+	{                        \
+		y                      \
 	}
 #define DEFAULT_ARRAY_2(y) \
-	{                      \
-		y, y               \
+	{                        \
+		y, y                   \
 	}
 #define DEFAULT_ARRAY_3(y) \
-	{                      \
-		y, y, y            \
+	{                        \
+		y, y, y                \
 	}
 #define DEFAULT_ARRAY_4(y) \
-	{                      \
-		y, y, y, y         \
+	{                        \
+		y, y, y, y             \
 	}
 #define DEFAULT_ARRAY_5(y) \
-	{                      \
-		y, y, y, y, y      \
+	{                        \
+		y, y, y, y, y          \
 	}
 #define DEFAULT_ARRAY_6(y) \
-	{                      \
-		y, y, y, y, y, y   \
+	{                        \
+		y, y, y, y, y, y       \
 	}
-#define DEFAULT_ARRAY_7(y)  \
-	{                       \
-		y, y, y, y, y, y, y \
+#define DEFAULT_ARRAY_7(y) \
+	{                        \
+		y, y, y, y, y, y, y    \
 	}
-#define DEFAULT_ARRAY_8(y)     \
-	{                          \
+#define DEFAULT_ARRAY_8(y) \
+	{                        \
 		y, y, y, y, y, y, y, y \
 	}
-#define DEFAULT_ARRAY_9(y)        \
-	{                             \
+#define DEFAULT_ARRAY_9(y)    \
+	{                           \
 		y, y, y, y, y, y, y, y, y \
 	}
-#define DEFAULT_ARRAY_10(y)          \
-	{                                \
+#define DEFAULT_ARRAY_10(y)      \
+	{                              \
 		y, y, y, y, y, y, y, y, y, y \
 	}
-#define DEFAULT_ARRAY_11(y)             \
-	{                                   \
+#define DEFAULT_ARRAY_11(y)         \
+	{                                 \
 		y, y, y, y, y, y, y, y, y, y, y \
 	}
-#define DEFAULT_ARRAY_12(y)                \
-	{                                      \
+#define DEFAULT_ARRAY_12(y)            \
+	{                                    \
 		y, y, y, y, y, y, y, y, y, y, y, y \
 	}
-#define DEFAULT_ARRAY_13(y)                   \
-	{                                         \
+#define DEFAULT_ARRAY_13(y)               \
+	{                                       \
 		y, y, y, y, y, y, y, y, y, y, y, y, y \
 	}
-#define DEFAULT_ARRAY_14(y)                      \
-	{                                            \
+#define DEFAULT_ARRAY_14(y)                  \
+	{                                          \
 		y, y, y, y, y, y, y, y, y, y, y, y, y, y \
 	}
-#define DEFAULT_ARRAY_15(y)                         \
-	{                                               \
+#define DEFAULT_ARRAY_15(y)                     \
+	{                                             \
 		y, y, y, y, y, y, y, y, y, y, y, y, y, y, y \
 	}
 #define _DEFAULT_ARRAY(x, y) DEFAULT_ARRAY_##x(y)
@@ -248,7 +248,7 @@ extern "C"
 #define DEFAULT_DELTA_BICEP_LENGTH 100
 #endif
 
-#if (!defined(DEFAULT_DELTA_FOREARM_LENGHT))
+#if (!defined(DEFAULT_DELTA_FOREARM_LENGTH))
 #define DEFAULT_DELTA_FOREARM_LENGTH 300
 #endif
 
@@ -262,6 +262,22 @@ extern "C"
 
 #if (!defined(DEFAULT_DELTA_BICEP_HOMING_ANGLE))
 #define DEFAULT_DELTA_BICEP_HOMING_ANGLE 0
+#endif
+
+#if (!defined(DEFAULT_SCARA_ARM_LENGTH))
+#define DEFAULT_SCARA_ARM_LENGTH 100
+#endif
+
+#if (!defined(DEFAULT_SCARA_FOREARM_LENGTH))
+#define DEFAULT_SCARA_FOREARM_LENGTH 80
+#endif
+
+#if (!defined(DEFAULT_SCARA_ARM_HOMING_ANGLE))
+#define DEFAULT_SCARA_ARM_HOMING_ANGLE 0
+#endif
+
+#if (!defined(DEFAULT_SCARA_FOREARM_HOMING_ANGLE))
+#define DEFAULT_SCARA_FOREARM_HOMING_ANGLE 0
 #endif
 
 // laser mode

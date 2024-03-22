@@ -40,9 +40,7 @@
 #error "The set FLASH_SIZE is beyond the chip capability"
 #endif
 
-// set the FLASH EEPROM SIZE
-#define FLASH_EEPROM_SIZE 0x400
-#define FLASH_EEPROM_SIZE_WORD (FLASH_EEPROM_SIZE >> 2)
+#define FLASH_EEPROM_SIZE_WORD (NVM_STORAGE_SIZE >> 2)
 #define FLASH_EEPROM_SIZE_WORD_ALIGNED (FLASH_EEPROM_SIZE_WORD << 2)
 
 #define FLASH_SECTOR_SIZE 0x20000UL
@@ -79,16 +77,27 @@ volatile bool stm32_global_isr_enabled;
 #ifndef UART_TX_BUFFER_SIZE
 #define UART_TX_BUFFER_SIZE 64
 #endif
-DECL_BUFFER(uint8_t, uart, UART_TX_BUFFER_SIZE);
+DECL_BUFFER(uint8_t, uart_tx, UART_TX_BUFFER_SIZE);
+DECL_BUFFER(uint8_t, uart_rx, RX_BUFFER_SIZE);
+
 void MCU_SERIAL_ISR(void)
 {
 	__ATOMIC_FORCEON__
 	{
 		if (COM_UART->SR & USART_SR_RXNE)
 		{
-			unsigned char c = COM_INREG;
+			uint8_t c = COM_INREG;
 #if !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
-			mcu_com_rx_cb(c);
+			if (mcu_com_rx_cb(c))
+			{
+				if (BUFFER_FULL(uart_rx))
+				{
+					c = OVF;
+				}
+
+				*(BUFFER_NEXT_FREE(uart_rx)) = c;
+				BUFFER_STORE(uart_rx);
+			}
 #else
 			mcu_uart_rx_cb(c);
 #endif
@@ -97,13 +106,13 @@ void MCU_SERIAL_ISR(void)
 		if ((COM_UART->SR & USART_SR_TXE) && (COM_UART->CR1 & USART_CR1_TXEIE))
 		{
 			mcu_enable_global_isr();
-			if (BUFFER_EMPTY(uart))
+			if (BUFFER_EMPTY(uart_tx))
 			{
 				COM_UART->CR1 &= ~(USART_CR1_TXEIE);
 				return;
 			}
 			uint8_t c;
-			BUFFER_DEQUEUE(uart, &c);
+			BUFFER_DEQUEUE(uart_tx, &c);
 			COM_OUTREG = c;
 		}
 	}
@@ -114,31 +123,51 @@ void MCU_SERIAL_ISR(void)
 #ifndef UART2_TX_BUFFER_SIZE
 #define UART2_TX_BUFFER_SIZE 64
 #endif
-DECL_BUFFER(uint8_t, uart2, UART2_TX_BUFFER_SIZE);
+DECL_BUFFER(uint8_t, uart2_tx, UART2_TX_BUFFER_SIZE);
+DECL_BUFFER(uint8_t, uart2_rx, RX_BUFFER_SIZE);
+
 void MCU_SERIAL2_ISR(void)
 {
 	__ATOMIC_FORCEON__
 	{
 		if (COM2_UART->SR & USART_SR_RXNE)
 		{
-			unsigned char c = COM2_INREG;
+			uint8_t c = COM2_INREG;
 #if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
-			mcu_com_rx_cb(c);
+			if (mcu_com_rx_cb(c))
+			{
+				if (BUFFER_FULL(uart2_rx))
+				{
+					c = OVF;
+				}
+
+				*(BUFFER_NEXT_FREE(uart2_rx)) = c;
+				BUFFER_STORE(uart2_rx);
+			}
 #else
 			mcu_uart2_rx_cb(c);
+#ifndef UART2_DISABLE_BUFFER
+			if (BUFFER_FULL(uart2_rx))
+			{
+				c = OVF;
+			}
+
+			*(BUFFER_NEXT_FREE(uart2_rx)) = c;
+			BUFFER_STORE(uart2_rx);
+#endif
 #endif
 		}
 
 		if ((COM2_UART->SR & USART_SR_TXE) && (COM2_UART->CR1 & USART_CR1_TXEIE))
 		{
 			mcu_enable_global_isr();
-			if (BUFFER_EMPTY(uart2))
+			if (BUFFER_EMPTY(uart2_tx))
 			{
 				COM2_UART->CR1 &= ~(USART_CR1_TXEIE);
 				return;
 			}
 			uint8_t c;
-			BUFFER_DEQUEUE(uart2, &c);
+			BUFFER_DEQUEUE(uart2_tx, &c);
 			COM2_OUTREG = c;
 		}
 	}
@@ -164,22 +193,22 @@ static uint8_t mcu_servos[6];
 static FORCEINLINE void mcu_clear_servos()
 {
 #if ASSERT_PIN(SERVO0)
-	mcu_clear_output(SERVO0);
+	io_clear_output(SERVO0);
 #endif
 #if ASSERT_PIN(SERVO1)
-	mcu_clear_output(SERVO1);
+	io_clear_output(SERVO1);
 #endif
 #if ASSERT_PIN(SERVO2)
-	mcu_clear_output(SERVO2);
+	io_clear_output(SERVO2);
 #endif
 #if ASSERT_PIN(SERVO3)
-	mcu_clear_output(SERVO3);
+	io_clear_output(SERVO3);
 #endif
 #if ASSERT_PIN(SERVO4)
-	mcu_clear_output(SERVO4);
+	io_clear_output(SERVO4);
 #endif
 #if ASSERT_PIN(SERVO5)
-	mcu_clear_output(SERVO5);
+	io_clear_output(SERVO5);
 #endif
 }
 
@@ -335,36 +364,36 @@ void osSystickHandler(void)
 #if ASSERT_PIN(SERVO0)
 	case SERVO0_FRAME:
 		servo_start_timeout(mcu_servos[0]);
-		mcu_set_output(SERVO0);
+		io_set_output(SERVO0);
 		break;
 #endif
 #if ASSERT_PIN(SERVO1)
 	case SERVO1_FRAME:
-		mcu_set_output(SERVO1);
+		io_set_output(SERVO1);
 		servo_start_timeout(mcu_servos[1]);
 		break;
 #endif
 #if ASSERT_PIN(SERVO2)
 	case SERVO2_FRAME:
-		mcu_set_output(SERVO2);
+		io_set_output(SERVO2);
 		servo_start_timeout(mcu_servos[2]);
 		break;
 #endif
 #if ASSERT_PIN(SERVO3)
 	case SERVO3_FRAME:
-		mcu_set_output(SERVO3);
+		io_set_output(SERVO3);
 		servo_start_timeout(mcu_servos[3]);
 		break;
 #endif
 #if ASSERT_PIN(SERVO4)
 	case SERVO4_FRAME:
-		mcu_set_output(SERVO4);
+		io_set_output(SERVO4);
 		servo_start_timeout(mcu_servos[4]);
 		break;
 #endif
 #if ASSERT_PIN(SERVO5)
 	case SERVO5_FRAME:
-		mcu_set_output(SERVO5);
+		io_set_output(SERVO5);
 		servo_start_timeout(mcu_servos[5]);
 		break;
 #endif
@@ -482,6 +511,25 @@ void mcu_usart_init(void)
 }
 
 #ifdef MCU_HAS_USB
+DECL_BUFFER(uint8_t, usb_rx, RX_BUFFER_SIZE);
+
+uint8_t mcu_usb_getc(void)
+{
+	uint8_t c = 0;
+	BUFFER_DEQUEUE(usb_rx, &c);
+	return c;
+}
+
+uint8_t mcu_usb_available(void)
+{
+	return BUFFER_READ_AVAILABLE(usb_rx);
+}
+
+void mcu_usb_clear(void)
+{
+	BUFFER_CLEAR(usb_rx);
+}
+
 void mcu_usb_putc(uint8_t c)
 {
 	if (!tusb_cdc_write_available())
@@ -497,19 +545,39 @@ void mcu_usb_flush(void)
 	while (!tusb_cdc_write_available())
 	{
 		mcu_dotasks(); // tinyusb device task
+		if (!tusb_cdc_connected)
+		{
+			return;
+		}
 	}
 }
 #endif
 
 #ifdef MCU_HAS_UART
+uint8_t mcu_uart_getc(void)
+{
+	uint8_t c = 0;
+	BUFFER_DEQUEUE(uart_rx, &c);
+	return c;
+}
+
+uint8_t mcu_uart_available(void)
+{
+	return BUFFER_READ_AVAILABLE(uart_rx);
+}
+
+void mcu_uart_clear(void)
+{
+	BUFFER_CLEAR(uart_rx);
+}
 
 void mcu_uart_putc(uint8_t c)
 {
-	while (BUFFER_FULL(uart))
+	while (BUFFER_FULL(uart_tx))
 	{
 		mcu_uart_flush();
 	}
-	BUFFER_ENQUEUE(uart, &c);
+	BUFFER_ENQUEUE(uart_tx, &c);
 }
 
 void mcu_uart_flush(void)
@@ -519,7 +587,7 @@ void mcu_uart_flush(void)
 	{
 		COM_UART->CR1 |= (USART_CR1_TXEIE);
 #if ASSERT_PIN(ACTIVITY_LED)
-		mcu_toggle_output(ACTIVITY_LED);
+		io_toggle_output(ACTIVITY_LED);
 #endif
 	}
 }
@@ -527,14 +595,30 @@ void mcu_uart_flush(void)
 #endif
 
 #ifdef MCU_HAS_UART2
+uint8_t mcu_uart2_getc(void)
+{
+	uint8_t c = 0;
+	BUFFER_DEQUEUE(uart2_rx, &c);
+	return c;
+}
+
+uint8_t mcu_uart2_available(void)
+{
+	return BUFFER_READ_AVAILABLE(uart2_rx);
+}
+
+void mcu_uart2_clear(void)
+{
+	BUFFER_CLEAR(uart2_rx);
+}
 
 void mcu_uart2_putc(uint8_t c)
 {
-	while (BUFFER_FULL(uart2))
+	while (BUFFER_FULL(uart2_tx))
 	{
 		mcu_uart2_flush();
 	}
-	BUFFER_ENQUEUE(uart2, &c);
+	BUFFER_ENQUEUE(uart2_tx, &c);
 }
 
 void mcu_uart2_flush(void)
@@ -543,7 +627,7 @@ void mcu_uart2_flush(void)
 	{
 		COM2_UART->CR1 |= (USART_CR1_TXEIE);
 #if ASSERT_PIN(ACTIVITY_LED)
-		mcu_toggle_output(ACTIVITY_LED);
+		io_toggle_output(ACTIVITY_LED);
 #endif
 	}
 }
@@ -562,9 +646,12 @@ void mcu_init(void)
 #endif
 #ifdef MCU_HAS_SPI
 	SPI_ENREG |= SPI_ENVAL;
-	mcu_config_af(SPI_SDI, SPI_AFIO);
-	mcu_config_af(SPI_CLK, SPI_AFIO);
-	mcu_config_af(SPI_SDO, SPI_AFIO);
+	mcu_config_af(SPI_SDI, SPI_SDI_AFIO);
+	mcu_config_af(SPI_CLK, SPI_CLK_AFIO);
+	mcu_config_af(SPI_SDO, SPI_SDO_AFIO);
+#if ASSERT_PIN_IO(SPI_CS)
+	mcu_config_af(SPI_CS, SPI_CS_AFIO);
+#endif
 	// initialize the SPI configuration register
 	SPI_REG->CR1 = SPI_CR1_SSM	   // software slave management enabled
 				   | SPI_CR1_SSI   // internal slave select
@@ -627,67 +714,6 @@ uint8_t mcu_get_servo(uint8_t servo)
 	return 0;
 }
 
-#ifndef mcu_get_input
-uint8_t mcu_get_input(uint8_t pin)
-{
-}
-#endif
-
-#ifndef mcu_get_output
-uint8_t mcu_get_output(uint8_t pin)
-{
-}
-#endif
-
-#ifndef mcu_set_output
-void mcu_set_output(uint8_t pin)
-{
-}
-#endif
-
-#ifndef mcu_clear_output
-void mcu_clear_output(uint8_t pin)
-{
-}
-#endif
-
-#ifndef mcu_toggle_output
-void mcu_toggle_output(uint8_t pin)
-{
-}
-#endif
-
-#ifndef mcu_enable_probe_isr
-void mcu_enable_probe_isr(void)
-{
-}
-#endif
-#ifndef mcu_disable_probe_isr
-void mcu_disable_probe_isr(void)
-{
-}
-#endif
-
-// Analog input
-#ifndef mcu_get_analog
-uint8_t mcu_get_analog(uint8_t channel)
-{
-}
-#endif
-
-// PWM
-#ifndef mcu_set_pwm
-void mcu_set_pwm(uint8_t pwm, uint8_t value)
-{
-}
-#endif
-
-#ifndef mcu_get_pwm
-uint8_t mcu_get_pwm(uint8_t pwm)
-{
-}
-#endif
-
 // ISR
 // enables all interrupts on the mcu. Must be called to enable all IRS functions
 #ifndef mcu_enable_global_isr
@@ -702,6 +728,8 @@ uint8_t mcu_get_pwm(uint8_t pwm)
 // convert step rate to clock cycles
 void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 {
+	frequency = CLAMP((float)F_STEP_MIN, frequency, (float)F_STEP_MAX);
+
 	// up and down counter (generates half the step rate at each event)
 	uint32_t totalticks = (uint32_t)((float)(TIMER_CLOCK >> 1) / frequency);
 	*prescaller = 1;
@@ -765,7 +793,7 @@ uint32_t mcu_millis()
 
 uint32_t mcu_micros()
 {
-	return ((mcu_runtime_ms * 1000) + ((SysTick->LOAD - SysTick->VAL) / (F_CPU / 1000000)));
+	return ((mcu_runtime_ms * 1000) + mcu_free_micros());
 }
 
 void mcu_rtc_init()
@@ -784,9 +812,18 @@ void mcu_dotasks()
 
 	while (tusb_cdc_available())
 	{
-		unsigned char c = (unsigned char)tusb_cdc_read();
+		uint8_t c = (uint8_t)tusb_cdc_read();
 #if !defined(DETACH_USB_FROM_MAIN_PROTOCOL)
-		mcu_com_rx_cb(c);
+		if (mcu_com_rx_cb(c))
+		{
+			if (BUFFER_FULL(usb_rx))
+			{
+				c = OVF;
+			}
+
+			*(BUFFER_NEXT_FREE(usb_rx)) = c;
+			BUFFER_STORE(usb_rx);
+		}
 #else
 		mcu_usb_rx_cb(c);
 #endif
@@ -835,6 +872,13 @@ static void mcu_eeprom_init(void)
 // Non volatile memory
 uint8_t mcu_eeprom_getc(uint16_t address)
 {
+	if (NVM_STORAGE_SIZE <= address)
+	{
+		DEBUG_STR("EEPROM invalid address @ ");
+		DEBUG_INT(address);
+		DEBUG_PUTC('\n');
+		return 0;
+	}
 	return stm32_eeprom_buffer[address];
 }
 
@@ -858,6 +902,12 @@ static void mcu_eeprom_erase(void)
 
 void mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
+	if (NVM_STORAGE_SIZE <= address)
+	{
+		DEBUG_STR("EEPROM invalid address @ ");
+		DEBUG_INT(address);
+		DEBUG_PUTC('\n');
+	}
 	// if the value of the eeprom is modified then it will be marked as dirty
 	// flash default value is 0xFF. If programming can change value from 1 to 0 but not the other way around
 	// if a bit is changed from 0 back to 1 then it will need to rewrite values in a new page
@@ -981,18 +1031,23 @@ void mcu_i2c_write_stop(bool *stop)
 {
 	if (*stop)
 	{
-		uint32_t ms_timeout = mcu_millis() + 25;
+		int32_t ms_timeout = 25;
 
 		I2C_REG->CR1 |= I2C_CR1_STOP;
-		while ((I2C_REG->CR1 & I2C_CR1_STOP) && (ms_timeout > mcu_millis()))
-			;
+		__TIMEOUT_MS__(ms_timeout)
+		{
+			if (I2C_REG->CR1 & I2C_CR1_STOP)
+			{
+				return;
+			}
+		}
 	}
 }
 
-static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
+static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop, uint32_t ms_timeout)
 {
 	bool stop __attribute__((__cleanup__(mcu_i2c_write_stop))) = send_stop;
-	uint32_t ms_timeout = mcu_millis() + 25;
+	int32_t timeout = ms_timeout;
 
 	uint32_t status = send_start ? I2C_SR1_ADDR : I2C_SR1_BTF;
 	I2C_REG->SR1 &= ~I2C_SR1_AF;
@@ -1020,19 +1075,26 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 
 		// init
 		I2C_REG->CR1 |= I2C_CR1_START;
-		while (!((I2C_REG->SR1 & I2C_SR1_SB) && (I2C_REG->SR2 & I2C_SR2_MSL) && (I2C_REG->SR2 & I2C_SR2_BUSY)))
+
+		__TIMEOUT_MS__(timeout)
 		{
+			if ((I2C_REG->SR1 & I2C_SR1_SB) && (I2C_REG->SR2 & I2C_SR2_MSL) && (I2C_REG->SR2 & I2C_SR2_BUSY))
+			{
+				break;
+			}
 			if (I2C_REG->SR1 & I2C_SR1_ARLO)
 			{
 				stop = false;
 				return I2C_NOTOK;
 			}
-			if (ms_timeout < mcu_millis())
-			{
-				stop = true;
-				return I2C_NOTOK;
-			}
 		}
+
+		__TIMEOUT_ASSERT__(timeout)
+		{
+			stop = true;
+			return I2C_NOTOK;
+		}
+
 		if (I2C_REG->SR1 & I2C_SR1_AF)
 		{
 			stop = true;
@@ -1041,8 +1103,13 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 	}
 
 	I2C_REG->DR = data;
-	while (!(I2C_REG->SR1 & status))
+	timeout = ms_timeout;
+	__TIMEOUT_MS__(timeout)
 	{
+		if (I2C_REG->SR1 & status)
+		{
+			break;
+		}
 		if (I2C_REG->SR1 & I2C_SR1_AF)
 		{
 			break;
@@ -1052,11 +1119,12 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 			stop = false;
 			return I2C_NOTOK;
 		}
-		if (ms_timeout < mcu_millis())
-		{
-			stop = true;
-			return I2C_NOTOK;
-		}
+	}
+
+	__TIMEOUT_ASSERT__(timeout)
+	{
+		stop = true;
+		return I2C_NOTOK;
 	}
 	// read SR2 to clear ADDR
 	if (send_start)
@@ -1076,44 +1144,46 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 static uint8_t mcu_i2c_read(uint8_t *data, bool with_ack, bool send_stop, uint32_t ms_timeout)
 {
 	*data = 0xFF;
-	ms_timeout += mcu_millis();
 	bool stop __attribute__((__cleanup__(mcu_i2c_write_stop))) = send_stop;
 
 	if (!with_ack)
 	{
 		I2C_REG->CR1 &= ~I2C_CR1_ACK;
+		stop = false;
+		mcu_i2c_write_stop(&send_stop);
 	}
 	else
 	{
 		I2C_REG->CR1 |= I2C_CR1_ACK;
 	}
 
-	while (!(I2C_REG->SR1 & I2C_SR1_RXNE))
+	__TIMEOUT_MS__(ms_timeout)
 	{
-		if (ms_timeout < mcu_millis())
+		if (I2C_REG->SR1 & I2C_SR1_RXNE)
 		{
-			return I2C_NOTOK;
+			*data = I2C_REG->DR;
+			return I2C_OK;
 		}
 	}
 
-	*data = I2C_REG->DR;
-	return I2C_OK;
+	stop = true;
+	return I2C_NOTOK;
 }
 
 #ifndef mcu_i2c_send
 // master sends command to slave
-uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool release)
+uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool release, uint32_t ms_timeout)
 {
 	if (data && datalen)
 	{
-		if (mcu_i2c_write(address << 1, true, false) == I2C_OK) // start, send address, write
+		if (mcu_i2c_write(address << 1, true, false, ms_timeout) == I2C_OK) // start, send address, write
 		{
 			// send data, stop
 			do
 			{
 				datalen--;
 				bool last = (datalen == 0);
-				if (mcu_i2c_write(*data, false, (release & last)) != I2C_OK)
+				if (mcu_i2c_write(*data, false, (release & last), ms_timeout) != I2C_OK)
 				{
 					return I2C_NOTOK;
 				}
@@ -1135,7 +1205,7 @@ uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_
 {
 	if (data && datalen)
 	{
-		if (mcu_i2c_write((address << 1) | 0x01, true, false) == I2C_OK) // start, send address, write
+		if (mcu_i2c_write((address << 1) | 0x01, true, false, ms_timeout) == I2C_OK) // start, send address, write
 		{
 			do
 			{
@@ -1160,8 +1230,10 @@ uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_
 void mcu_i2c_config(uint32_t frequency)
 {
 	RCC->APB1ENR |= I2C_APBEN;
-	mcu_config_output_af(I2C_CLK, GPIO_OUTALT_OD_50MHZ);
-	mcu_config_output_af(I2C_DATA, GPIO_OUTALT_OD_50MHZ);
+	mcu_config_opendrain(I2C_CLK);
+	mcu_config_opendrain(I2C_DATA);
+	mcu_config_af(I2C_CLK, GPIO_AF);
+	mcu_config_af(I2C_DATA, GPIO_AF);
 #ifdef SPI_REMAP
 	AFIO->MAPR |= I2C_REMAP;
 #endif

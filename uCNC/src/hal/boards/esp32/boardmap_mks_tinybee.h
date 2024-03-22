@@ -29,11 +29,11 @@ extern "C"
 #endif
 
 // Setup limit pins
-#define LIMIT_Z_BIT 22	// assigns LIMIT_Z pin
+#define LIMIT_Z_BIT 22 // assigns LIMIT_Z pin
 // #define LIMIT_Z_ISR		// assigns LIMIT_Z ISR
-#define LIMIT_Y_BIT 32	// assigns LIMIT_Y pin
+#define LIMIT_Y_BIT 32 // assigns LIMIT_Y pin
 // #define LIMIT_Y_ISR		// assigns LIMIT_Y ISR
-#define LIMIT_X_BIT 33	// assigns LIMIT_X pin
+#define LIMIT_X_BIT 33 // assigns LIMIT_X pin
 // #define LIMIT_X_ISR  	// assigns LIMIT_X ISR
 
 // Setup com pins
@@ -47,16 +47,20 @@ extern "C"
 #define DOUT8_BIT 27
 #define DOUT9_BIT 25
 #define DOUT10_BIT 26
+
+// bitbanging 74hc595 (not used)
 // uses 3 x 74HS595
-#define IC74HC595_COUNT 3
+// #define IC74HC595_COUNT 3
 // #define IC74HC595_DELAY_CYCLES 0
 
-//Use I2S to shift data in ESP32
-#define IC74HC595_CUSTOM_SHIFT_IO //Enables custom MCU data shift transmission. In ESP32 that is via I2S
+// Use I2S to shift data in ESP32
+#define IC74HC595_CUSTOM_SHIFT_IO // Enables custom MCU data shift transmission. In ESP32 that is via I2S
 #define IC74HC595_I2S_WS 26
 #define IC74HC595_I2S_CLK 25
 #define IC74HC595_I2S_DATA 27
 // #define IC74HC595_I2S_PORT 0
+// uses 3 x 74HS595 but for I2S use this value has to be set to 4 (I2S sends data as 32-bit (4bytes))
+#define IC74HC595_COUNT 4
 
 #define STEP0_EN_IO_OFFSET 0
 #define STEP0_IO_OFFSET 1
@@ -82,7 +86,7 @@ extern "C"
 #define DOUT2_IO_OFFSET 23
 	// Setup the Step Timer used has the heartbeat for µCNC
 	// Timer 1 is used by default
-	//#define ITP_TIMER 1
+	// #define ITP_TIMER 1
 
 	// RTC Timer on ESP32 is granteed by a FreeRTOS
 
@@ -93,31 +97,28 @@ extern "C"
 #define SPI_SDO_BIT 23
 #define SPI_SDI_BIT 19
 #define SPI_CS_BIT 5
-//sd card detect
+// sd card detect
 #define DIN19_BIT 34
 
-//pins for smart adapter
-//clk
+// pins for smart adapter
+// clk
 #define DOUT4_BIT 15
-//data
+// data
 #define DOUT5_BIT 21
-//cs
+// cs
 #define DOUT6_BIT 4
 
-//beep
+// beep
 #define DOUT7_IO_OFFSET 21
-//enc btn
+// enc btn
 #define DIN16_BIT 13
 #define DIN16_PULLUP
-//enc 1
+// enc 1
 #define DIN17_BIT 12
 #define DIN17_PULLUP
-//enc 2
+// enc 2
 #define DIN18_BIT 14
 #define DIN18_PULLUP
-
-// include the IO expander
-#include "../../../modules/ic74hc595.h"
 
 #ifdef __cplusplus
 }

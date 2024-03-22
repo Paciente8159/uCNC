@@ -24,7 +24,12 @@
 
 #define DECL_TOOL(tool) extern const tool_t tool
 
+#if TOOL_COUNT == 1
+#define tool_current TOOL1
+#else
 static tool_t tool_current;
+#endif
+static int16_t tool_current_speed;
 
 #ifdef TOOL1
 DECL_TOOL(TOOL1);
@@ -77,7 +82,13 @@ DECL_TOOL(TOOL16);
 
 void tool_init(void)
 {
-#if TOOL_COUNT > 0
+#if TOOL_COUNT == 1
+	if (tool_current.startup_code)
+	{
+		tool_current.startup_code();
+	}
+#endif
+#if TOOL_COUNT > 1
 #ifdef FORCE_GLOBALS_TO_0
 	memset(&tool_current, 0, sizeof(tool_t));
 #endif
@@ -87,7 +98,7 @@ void tool_init(void)
 
 void tool_change(uint8_t tool)
 {
-#if TOOL_COUNT > 0
+#if TOOL_COUNT > 1
 	tool_stop();
 	if (tool_current.shutdown_code)
 	{
@@ -191,6 +202,7 @@ void tool_change(uint8_t tool)
 void tool_set_speed(int16_t value)
 {
 #if TOOL_COUNT > 0
+	tool_current_speed = value;
 	if (tool_current.set_speed)
 	{
 		tool_current.set_speed(value);
@@ -205,18 +217,28 @@ uint16_t tool_get_speed()
 	{
 		return tool_current.get_speed();
 	}
+	return tool_get_setpoint();
 #endif
 	return 0;
 }
 
-int16_t tool_range_speed(int16_t value)
+int16_t tool_get_setpoint(void)
+{
+	// input value will always be positive
+#if TOOL_COUNT > 0
+	return tool_range_speed(tool_current_speed, 1);
+#endif
+	return 0;
+}
+
+int16_t tool_range_speed(int16_t value, uint8_t conv)
 {
 	// input value will always be positive
 #if TOOL_COUNT > 0
 	if (tool_current.range_speed)
 	{
 		value = ABS(value);
-		return tool_current.range_speed(value);
+		return tool_current.range_speed(value, conv);
 	}
 #endif
 	return value;
@@ -240,27 +262,14 @@ void tool_stop()
 #endif
 }
 
-void tool_pid_update(int16_t value)
+void tool_pid_update(void)
 {
-#if PID_CONTROLLERS > 0
+#ifdef ENABLE_TOOL_PID_CONTROLLER
 #if TOOL_COUNT > 0
 	if (tool_current.pid_update)
 	{
-		tool_current.pid_update(value);
+		tool_current.pid_update();
 	}
 #endif
 #endif
-}
-
-int16_t tool_pid_error(void)
-{
-#if PID_CONTROLLERS > 0
-#if TOOL_COUNT > 0
-	if (tool_current.pid_error)
-	{
-		return tool_current.pid_error();
-	}
-#endif
-#endif
-	return 0;
 }

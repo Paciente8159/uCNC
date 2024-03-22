@@ -74,7 +74,7 @@ extern "C"
 #define LIMIT_X_PORT A	// assigns LIMIT_X port
 #define LIMIT_Y_BIT 12	// assigns LIMIT_Y pin
 #define LIMIT_Y_PORT A	// assigns LIMIT_Y port
-#define LIMIT_Z_BIT 4	// assigns LIMIT_Z+ pin
+#define LIMIT_Z_BIT 4		// assigns LIMIT_Z+ pin
 #define LIMIT_Z_PORT C	// assigns LIMIT_Z+ port
 #define LIMIT_Z2_BIT 11 // assigns LIMIT_Z- pin
 #define LIMIT_Z2_PORT A // assigns LIMIT_Z- port
@@ -127,7 +127,7 @@ extern "C"
 // Setup the Step Timer used has the heartbeat for µCNC
 #define ITP_TIMER 5
 
-//software SPI for card access
+// software SPI for card access
 #define DOUT29_BIT 2
 #define DOUT29_PORT D
 #define DIN29_BIT 8
@@ -136,7 +136,7 @@ extern "C"
 #define DOUT30_PORT C
 #define SPI_CS_BIT 11
 #define SPI_CS_PORT C
-//SD detect pin
+// SD detect pin
 #define DIN19_BIT 12
 #define DIN19_PORT D
 

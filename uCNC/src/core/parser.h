@@ -109,10 +109,32 @@ extern "C"
 #define M49 0
 
 #define EXTENDED_GCODE_BASE 0
-#define EXTENDED_MCODE_BASE 1000
-#define EXTENDED_MCODE(X) (EXTENDED_MCODE_BASE + X)
-#define EXTENDED_GCODE(X) (EXTENDED_GCODE_BASE + X)
-#define EXTENDED_MOTION_GCODE(X) (-EXTENDED_GCODE(X))
+#define EXTENDED_MCODE_BASE 10000
+#define EXTENDED_MCODE(X) (EXTENDED_MCODE_BASE + (int16_t)(X * 10))
+#define EXTENDED_GCODE(X) (EXTENDED_GCODE_BASE + (int16_t)(X * 10))
+#define EXTENDED_MOTION_GCODE(X) (-X)
+
+#define PARSER_PARAM_SIZE (sizeof(float) * AXIS_COUNT)	 // parser parameters array size
+#define PARSER_PARAM_ADDR_OFFSET (PARSER_PARAM_SIZE + 1) // parser parameters array size + 1 crc byte
+#define G28HOME COORD_SYS_COUNT													 // G28 index
+#define G30HOME COORD_SYS_COUNT + 1											 // G30 index
+#define G92OFFSET COORD_SYS_COUNT + 2										 // G92 index
+
+#define PARSER_CORDSYS_ADDRESS SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET															// 1st coordinate system offset eeprom address (G54)
+#define G28ADDRESS (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (PARSER_PARAM_ADDR_OFFSET * G28HOME)) // G28 coordinate offset eeprom address
+#define G30ADDRESS (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (PARSER_PARAM_ADDR_OFFSET * G30HOME)) // G28 coordinate offset eeprom address
+#ifdef G92_STORE_NONVOLATILE
+#define G92ADDRESS (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (PARSER_PARAM_ADDR_OFFSET * G92OFFSET)) // G92 coordinate offset eeprom address
+#endif
+
+#define NUMBER_UNDEF 0
+#define NUMBER_OK 0x20
+#define NUMBER_ISFLOAT 0x40
+#define NUMBER_ISNEGATIVE 0x80
+
+#ifndef GRBL_CMD_MAX_LEN
+#define GRBL_CMD_MAX_LEN 32
+#endif
 
 // group masks
 #define GCODE_GROUP_MOTION 0x0001
@@ -153,6 +175,7 @@ extern "C"
 // only used in canned cycles and splines for now
 // can overlap same memory position
 #define GCODE_WORD_Q GCODE_WORD_D
+#define GCODE_WORD_E GCODE_WORD_A
 
 #define GCODE_WORD_TOOL (1 << AXIS_TOOL)
 
@@ -185,11 +208,11 @@ extern "C"
 		// 1byte
 		uint8_t motion_mantissa : 3;
 		uint8_t coord_system : 3;
-		#ifdef ENABLE_G39_H_MAPPING
-		uint8_t height_map_active: 1; // unused
-		#else
-		uint8_t : 1; // unused
-		#endif
+#ifdef ENABLE_G39_H_MAPPING
+		uint8_t height_map_active : 1; // unused
+#else
+	uint8_t : 1; // unused
+#endif
 		uint8_t : 1; // unused
 		// 1byte
 		uint8_t nonmodal : 4; // reset to 0 in every line (non persistent)
@@ -231,11 +254,11 @@ extern "C"
 
 	typedef struct
 	{
-		#ifndef ENABLE_PARSER_MODULES 
+#ifndef ENABLE_PARSER_MODULES
 		float xyzabc[AXIS_COUNT];
-		#else
-		float xyzabc[6];
-		#endif
+#else
+	float xyzabc[6];
+#endif
 		float ijk[3];
 		float d;
 		float f;
@@ -253,8 +276,8 @@ extern "C"
 	{
 		uint16_t groups;
 		uint16_t words;
-		int16_t group_extended : 15;
-		uint8_t group_0_1_useaxis : 1;
+		int16_t group_extended;
+		uint8_t group_0_1_useaxis;
 	} parser_cmd_explicit_t;
 
 	typedef struct
@@ -262,7 +285,9 @@ extern "C"
 		parser_groups_t groups;
 		float feedrate;
 #if TOOL_COUNT > 0
+#if TOOL_COUNT > 1
 		uint8_t tool_index;
+#endif
 		uint16_t spindle;
 #endif
 #ifdef GCODE_PROCESS_LINE_NUMBERS
@@ -272,10 +297,11 @@ extern "C"
 
 	void parser_init(void);
 	uint8_t parser_read_command(void);
-	void parser_get_modes(uint8_t *modalgroups, uint16_t *feed, uint16_t *spindle, uint8_t *coolant);
+	void parser_get_modes(uint8_t *modalgroups, uint16_t *feed, uint16_t *spindle);
 	void parser_get_coordsys(uint8_t system_num, float *axis);
 	bool parser_get_wco(float *axis);
 	void parser_sync_probe(void);
+	void parser_get_probe(int32_t *position);
 	void parser_update_probe_pos(void);
 	uint8_t parser_get_probe_result(void);
 	void parser_parameters_load(void);
@@ -286,17 +312,14 @@ extern "C"
 	void parser_machine_to_work(float *axis);
 	uint8_t parser_get_float(float *value);
 	uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
-#ifdef ENABLE_LASER_PPI
-	void parser_config_ppi(void);
-#endif
 
 #ifdef ENABLE_PARSER_MODULES
 	// generates a default delegate, event and handler hook
 	typedef struct gcode_parse_args_
 	{
-		unsigned char word;
+		uint8_t word;
 		uint8_t code;
-		uint8_t* error;
+		uint8_t *error;
 		float value;
 		parser_state_t *new_state;
 		parser_words_t *words;
@@ -307,7 +330,7 @@ extern "C"
 
 	typedef struct gcode_exec_args_
 	{
-		uint8_t* error;
+		uint8_t *error;
 		parser_state_t *new_state;
 		parser_words_t *words;
 		parser_cmd_explicit_t *cmd;
@@ -330,9 +353,9 @@ extern "C"
 	typedef struct grbl_cmd_args_
 	{
 		uint8_t *error;
-		unsigned char *cmd;
+		uint8_t *cmd;
 		uint8_t len;
-		char next_char;
+		uint8_t next_char;
 	} grbl_cmd_args_t;
 	DECL_EVENT_HANDLER(grbl_cmd);
 

@@ -10,11 +10,11 @@
 		it under the terms of the GNU General Public License as published by
 		the Free Software Foundation, either version 3 of the License, or
 		(at your option) any later version. Please see
-   <http://www.gnu.org/licenses/>
+	 <http://www.gnu.org/licenses/>
 
 		µCNC is distributed WITHOUT ANY WARRANTY;
 		Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A
-   PARTICULAR PURPOSE. See the	GNU General Public License for more details.
+	 PARTICULAR PURPOSE. See the	GNU General Public License for more details.
 */
 
 #ifndef CNC_CONFIG_H
@@ -100,6 +100,13 @@ extern "C"
 	 * */
 
 	// #define ECHO_CMD
+
+	/**
+	 * Debug command parsing time
+	 * Uncomment to enable. This measures the time it takes to execute a command line and place it in the planner
+	 * */
+
+	// #define ENABLE_PARSING_TIME_DEBUG
 
 	/**
 	 * Override default configuration settings. Use _PER_AXIS parameters to
@@ -204,6 +211,13 @@ extern "C"
 // #define DEFAULT_LASER_PPI_USWIDTH 1500
 
 /**
+ *
+ * Enables Plasma THC capabilities
+ *
+ * **/
+//  #define ENABLE_PLASMA_THC
+
+/**
  * Feed overrides increments and percentage ranges
  * */
 #define FEED_OVR_MAX 200
@@ -289,17 +303,29 @@ extern "C"
 	/**
 	 * enable step counting on sync motion command (needed for some Gcode extensions like G33)
 	 * */
-
 	// #define ENABLE_RT_SYNC_MOTIONS
+
+	/**
+	 * enable motion control and planner highjacking
+	 * this unlocks funtions to perform a full planner copy and restore
+	 * this requires some memory since the full planned contents must be stored and also the motion control reference position
+	 * */
+	// #define ENABLE_MOTION_CONTROL_PLANNER_HIJACKING
 
 	/**
 	 * Uncomment to enable module extensions
 	 * */
-#define ENABLE_MAIN_LOOP_MODULES
-// #define ENABLE_IO_MODULES
-// #define ENABLE_PARSER_MODULES
-// #define ENABLE_MOTION_CONTROL_MODULES
-// #define ENABLE_SETTINGS_MODULES
+	// #define ENABLE_MAIN_LOOP_MODULES
+	// #define ENABLE_IO_MODULES
+	// #define ENABLE_PARSER_MODULES
+	// #define ENABLE_MOTION_CONTROL_MODULES
+
+	/**
+	 * Settings extensions are enabled by default
+	 * Uncomment to disable this extension.
+	 * Some option might override this (like ENABLE_TOOL_PID_CONTROLLER)
+	 * */
+// #define DISABLE_SETTINGS_MODULES
 
 /**
  * Report specific options
@@ -312,28 +338,42 @@ extern "C"
 // values bellow 100ms have no effect
 #define STATUS_AUTOMATIC_REPORT_INTERVAL 0
 
-	/**
-	 *
-	 * Enable this option to set home has your machine origin.
-	 * When a machine homes each axis is set to 0 or max_axis_distance (settings $13x) depending on if the home direction invert mask is turned on or off (settting $23)
-	 * In practice $23 sets if the machine homes towards the origin (default) or away from the origin (inverted)
-	 * After homing the machine coordinate system is set in a way that the workable volume has always positive coordinates.
-	 * By enabling this option after homing the machine will set the homing position has it's origin.
-	 * Because of this the machine coordinate system might be offset to negative dimensions in some axis.
-	 * */
+/**
+ *
+ * Enable this option to set home has your machine origin.
+ * When a machine homes each axis is set to 0 or max_axis_distance (settings $13x) depending on if the home direction invert mask is turned on or off (settting $23)
+ * In practice $23 sets if the machine homes towards the origin (default) or away from the origin (inverted)
+ * After homing the machine coordinate system is set in a way that the workable volume has always positive coordinates.
+ * By enabling this option after homing the machine will set the homing position has it's origin.
+ * Because of this the machine coordinate system might be offset to negative dimensions in some axis.
+ * */
 
-	// #define SET_ORIGIN_AT_HOME_POS
+// #define SET_ORIGIN_AT_HOME_POS
 
-	/**
-	 *
-	 * Enable this option to allow the $H to be used to perform a software homing.
-	 * Software homing will only work if hardware limits are disabled.
-	 * This will apply the not execute the homing search motions but it will still
-	 * execute the pull-off motion before reset the coordinate system
-	 * 
-	 * */
+/**
+ *
+ * Enable this option to allow the $H to be used to perform a software homing.
+ * Software homing will only work if hardware limits are disabled.
+ * This will apply the not execute the homing search motions but it will still
+ * execute the pull-off motion before reset the coordinate system
+ *
+ * */
 
-	// #define ALLOW_SOFTWARE_HOMING
+// #define ALLOW_SOFTWARE_HOMING
+
+/**
+ * Enable this option to modify the behavior of software limits
+ * By default a motion that travels beyond software limits makes the controller send an alarm and halts the program
+ * You can modify this behavior to make the controller send an error and continue
+ * or set the machine into an hold and wait for the user to allow it to continue
+ * **/
+
+// #define MODIFY_SOFT_LIMIT_TO_ERROR
+#ifdef MODIFY_SOFT_LIMIT_TO_ERROR
+// uncomment this to allow motion to continue
+// otherwise it will put the machine in hold until the user allows it to continue
+// #define ALLOW_MOTION_TO_CONTINUE
+#endif
 
 	/**
 	 * If the type of machine supports skew and needs skew correction
@@ -426,18 +466,17 @@ extern "C"
 	 * with rounded speed transition between accel/deaccel and constant speed)
 	 * instead of constant acceleration (trapezoidal speed profile)
 	 *
+	 * -1 - selectable via setting $14
+	 *  0 - disabled
+	 *  1 - mild profile (smaller mid slope and higher initial and exit slopes)
+	 *  2 - medium profile (medium mid slope and medium initial and exit slopes)
+	 *  3 - stron profile (high mid slope and medium initial and exit slopes)
+	 *  4 - agressive (higher mid slope and smaller initial and exit slopes - uses bezier 5th order)
+	 *  5 - agressive2 (higher mid slope and smaller initial and exit slopes - uses tanh curve)
+	 *
 	 * */
 
-	// #define ENABLE_S_CURVE_ACCELERATION
-
-	/**
-	 * Enables legacy step interpolation generator (prior to version 1.4)
-	 * This runs a variable time window Riemman sum integrator (better performance).
-	 * S-Curve acceleration will disable this option
-	 * This produces option outputs code smaller size
-	 * */
-
-#define USE_LEGACY_STEP_INTERPOLATOR
+#define S_CURVE_ACCELERATION_LEVEL 0
 
 	/**
 	 * Forces pin pooling for all limits and control pins (with or without
@@ -467,7 +506,7 @@ extern "C"
 	 * helps to reduce code size if features are not needed
 	 * */
 #ifndef DISABLE_ALL_CONTROLS
-// #define DISABLE_ALL_CONTROLS
+#define DISABLE_ALL_CONTROLS
 #endif
 #ifndef DISABLE_ALL_LIMITS
 // #define DISABLE_ALL_LIMITS
@@ -487,9 +526,12 @@ extern "C"
 	/**
 	 * Modifies the startup message to emulate Grbl (required by some programs so
 	 * that uCNC is recognized a Grbl protocol controller device)
+	 * 0 - disables
+	 * 1 - partially emulates the startup message and prints unused settings to improve compatibility
+	 * 2 - full emulation of the grbl startup and info messages (this also makes command $IE available to print the firmware information in extended format)
 	 * */
 
-#define EMULATE_GRBL_STARTUP
+#define EMULATE_GRBL_STARTUP 1
 
 	/**
 	 *
@@ -513,6 +555,8 @@ extern "C"
 	 * */
 
 	// #define ENABLE_EXTRA_SYSTEM_CMDS
+	// uncomment o translate pins names when printing pins states with $P command
+	// #define ENABLE_PIN_TRANSLATIONS
 
 	/**
 	 * Compilation specific options

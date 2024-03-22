@@ -16,6 +16,7 @@
 	See the	GNU General Public License for more details.
 */
 
+#include "../cnc.h"
 #include "system_menu.h"
 #include <math.h>
 
@@ -96,7 +97,9 @@ DECL_MODULE(system_menu)
 	DECL_MENU(8, 1, STR_OVERRIDES);
 	DECL_MENU_VAR_CUSTOM_EDIT(8, ovf, STR_FEED_OVR, &g_planner_state.feed_override, VAR_TYPE_UINT8, system_menu_action_overrides, CONST_VARG('f'));
 	DECL_MENU_ACTION(8, ovf_100, STR_FEED_100, system_menu_action_rt_cmd, CONST_VARG(CMD_CODE_FEED_100));
+#if (TOOL_COUNT > 0)
 	DECL_MENU_VAR_CUSTOM_EDIT(8, ovt, STR_TOOL_OVR, &g_planner_state.spindle_speed_override, VAR_TYPE_UINT8, system_menu_action_overrides, CONST_VARG('s'));
+#endif
 	DECL_MENU_ACTION(8, ovt_100, STR_TOOL_100, system_menu_action_rt_cmd, CONST_VARG(CMD_CODE_SPINDLE_100));
 
 	// append Jog menu
@@ -125,12 +128,7 @@ DECL_MODULE(system_menu)
 	DECL_MENU(2, 1, STR_SETTINGS);
 
 	// settings menu
-	DECL_MENU_ACTION(2, set_load, STR_LOAD_SETTINGS, system_menu_action_settings_cmd, CONST_VARG(0));
-	DECL_MENU_ACTION(2, set_save, STR_SAVE_SETTINGS, system_menu_action_settings_cmd, CONST_VARG(1));
-	DECL_MENU_ACTION(2, set_reset, STR_RESET_SETTINGS, system_menu_action_settings_cmd, CONST_VARG(2));
 	DECL_MENU_GOTO(2, ioconfig, STR_IO_CONFIG, CONST_VARG(6));
-	DECL_MENU_VAR(2, s11, STR_G64_FACT, &g_settings.g64_angle_factor, VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(2, s12, STR_ARC_TOL, &g_settings.arc_tolerance, VAR_TYPE_FLOAT);
 	DECL_MENU_GOTO(2, gohome, STR_HOMING, CONST_VARG(3));
 #if (AXIS_COUNT > 0)
 	DECL_MENU_GOTO(2, goaxis, STR_AXIS, CONST_VARG(4));
@@ -138,6 +136,14 @@ DECL_MODULE(system_menu)
 #if (defined(ENABLE_SKEW_COMPENSATION) || (KINEMATIC == KINEMATIC_LINEAR_DELTA) || (KINEMATIC == KINEMATIC_DELTA))
 	DECL_MENU_GOTO(2, kinemats, STR_KINEMATICS, CONST_VARG(5));
 #endif
+	DECL_MENU_GOTO(2, other_config, STR_OTHER, CONST_VARG(9));
+	DECL_MENU_ACTION(2, set_load, STR_LOAD_SETTINGS, system_menu_action_settings_cmd, CONST_VARG(0));
+	DECL_MENU_ACTION(2, set_save, STR_SAVE_SETTINGS, system_menu_action_settings_cmd, CONST_VARG(1));
+	DECL_MENU_ACTION(2, set_reset, STR_RESET_SETTINGS, system_menu_action_settings_cmd, CONST_VARG(2));
+
+	DECL_MENU(9, 2, STR_OTHER);
+	DECL_MENU_VAR(9, s11, STR_G64_FACT, &g_settings.g64_angle_factor, VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(9, s12, STR_ARC_TOL, &g_settings.arc_tolerance, VAR_TYPE_FLOAT);
 
 	DECL_MENU(6, 2, STR_IO_CONFIG);
 	DECL_MENU_VAR(6, s2, STR_STEP_INV, &g_settings.dir_invert_mask, VAR_TYPE_UINT8);
@@ -157,11 +163,17 @@ DECL_MODULE(system_menu)
 	DECL_MENU_VAR(3, s20, STR_SOFTLIMITS, &g_settings.soft_limits_enabled, VAR_TYPE_BOOLEAN);
 	DECL_MENU_VAR(3, s21, STR_HARDLIMITS, &g_settings.hard_limits_enabled, VAR_TYPE_BOOLEAN);
 	DECL_MENU_VAR(3, s22, STR_ENABLE_HOMING, &g_settings.homing_enabled, VAR_TYPE_BOOLEAN);
-	DECL_MENU_VAR(3, s23, STR_DIR_INV_MASK, &g_settings.homing_dir_invert_mask, VAR_TYPE_BOOLEAN);
+	DECL_MENU_VAR(3, s23, STR_DIR_INV_MASK, &g_settings.homing_dir_invert_mask, VAR_TYPE_UINT8);
 	DECL_MENU_VAR(3, s24, STR_SLOW_FEED, &g_settings.homing_slow_feed_rate, VAR_TYPE_FLOAT);
 	DECL_MENU_VAR(3, s25, STR_FAST_FEED, &g_settings.homing_fast_feed_rate, VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(3, s26, STR_DEBOUNCEMS, &g_settings.debounce_ms, VAR_TYPE_BOOLEAN);
+	DECL_MENU_VAR(3, s26, STR_DEBOUNCEMS, &g_settings.debounce_ms, VAR_TYPE_UINT16);
 	DECL_MENU_VAR(3, s27, STR_OFFSET, &g_settings.homing_offset, VAR_TYPE_FLOAT);
+#if (KINEMATIC == KINEMATIC_DELTA)
+	DECL_MENU_VAR(3, s28, STR_OFFSET, &g_settings.delta_bicep_homing_angle, VAR_TYPE_FLOAT);
+#elif (KINEMATIC == KINEMATIC_SCARA)
+	DECL_MENU_VAR(3, s28, STR_OFFSET, &g_settings.scara_arm_homing_angle, VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(3, s29, STR_OFFSET, &g_settings.scara_forearm_homing_angle, VAR_TYPE_FLOAT);
+#endif
 
 	// append steppers settings menu
 	DECL_MENU(4, 2, STR_AXIS);
@@ -259,7 +271,7 @@ void system_menu_action(uint8_t action)
 	// kill alarm is active
 	if (cnc_get_exec_state(EXEC_INTERLOCKING_FAIL) || cnc_has_alarm())
 	{
-		// go idle (like popup) if normalized
+		// never go idle
 		g_system_menu.action_timeout = mcu_millis() + SYSTEM_MENU_MODAL_POPUP_MS;
 		g_system_menu.flags |= SYSTEM_MENU_MODE_REDRAW;
 		// leave. ignore all actions
@@ -425,7 +437,7 @@ void system_menu_render(void)
 				if (!item_index)
 				{
 					char buff[SYSTEM_MENU_MAX_STR_LEN];
-					rom_strcpy(buff, menu_page->page_label);
+					rom_strcpy((char *)buff, (const char *)menu_page->page_label);
 					system_menu_render_header(buff);
 				}
 
@@ -636,7 +648,7 @@ bool system_menu_action_rt_cmd(uint8_t action, system_menu_item_t *item)
 	{
 		cnc_call_rt_command((uint8_t)VARG_CONST(item->action_arg));
 		char buffer[SYSTEM_MENU_MAX_STR_LEN];
-		rom_strcpy(buffer, __romstr__(STR_RT_CMD_SENT));
+		rom_strcpy((char *)buffer, __romstr__(STR_RT_CMD_SENT));
 		system_menu_show_modal_popup(SYSTEM_MENU_MODAL_POPUP_MS, buffer);
 		return true;
 	}
@@ -647,11 +659,18 @@ bool system_menu_action_serial_cmd(uint8_t action, system_menu_item_t *item)
 {
 	if (action == SYSTEM_MENU_ACTION_SELECT && item)
 	{
-		if (serial_get_rx_freebytes() > 20)
+		if (serial_freebytes() > 20)
 		{
-			serial_inject_cmd((const char *)item->action_arg);
 			char buffer[SYSTEM_MENU_MAX_STR_LEN];
-			rom_strcpy(buffer, __romstr__(STR_CMD_SENT));
+			if (system_menu_send_cmd((const char *)item->action_arg) == STATUS_OK)
+			{
+				rom_strcpy((char *)buffer, __romstr__(STR_CMD_SENT));
+			}
+			else
+			{
+				rom_strcpy((char *)buffer, __romstr__(STR_CMD_NOTSENT));
+			}
+
 			system_menu_show_modal_popup(SYSTEM_MENU_MODAL_POPUP_MS, buffer);
 		}
 		return true;
@@ -673,17 +692,17 @@ static bool system_menu_action_overrides(uint8_t action, system_menu_item_t *ite
 	}
 	else if (g_system_menu.flags & SYSTEM_MENU_MODE_SIMPLE_EDIT)
 	{
-		char override = (char)VARG_CONST(item->action_arg);
+		uint8_t override = (uint8_t)VARG_CONST(item->action_arg);
 		switch (action)
 		{
 		case SYSTEM_MENU_ACTION_NEXT:
 			switch (override)
 			{
 			case 'f':
-				planner_feed_ovr_inc(FEED_OVR_FINE);
+				cnc_call_rt_command(CMD_CODE_FEED_INC_FINE);
 				break;
 			case 's':
-				planner_spindle_ovr_inc(SPINDLE_OVR_FINE);
+				cnc_call_rt_command(CMD_CODE_SPINDLE_INC_FINE);
 				break;
 			}
 			break;
@@ -691,10 +710,10 @@ static bool system_menu_action_overrides(uint8_t action, system_menu_item_t *ite
 			switch (override)
 			{
 			case 'f':
-				planner_feed_ovr_inc(-FEED_OVR_FINE);
+				cnc_call_rt_command(CMD_CODE_FEED_DEC_FINE);
 				break;
 			case 's':
-				planner_spindle_ovr_inc(-SPINDLE_OVR_FINE);
+				cnc_call_rt_command(CMD_CODE_SPINDLE_DEC_FINE);
 				break;
 			}
 			break;
@@ -727,17 +746,17 @@ static bool system_menu_action_jog(uint8_t action, system_menu_item_t *item)
 	else if (g_system_menu.flags & SYSTEM_MENU_MODE_SIMPLE_EDIT)
 	{
 		// one jog command at time
-		if (serial_get_rx_freebytes() > 32)
+		if (serial_freebytes() > 32)
 		{
 			char buffer[SYSTEM_MENU_MAX_STR_LEN];
 			memset(buffer, 0, SYSTEM_MENU_MAX_STR_LEN);
-			rom_strcpy(buffer, __romstr__("$J=G91"));
+			rom_strcpy((char *)buffer, __romstr__("$J=G91"));
 			char *ptr = buffer;
 			// search for the end of string
 			while (*++ptr)
 				;
 			// replaces the axis letter
-			*ptr++ = *((char *)item->action_arg);
+			*ptr++ = *((uint8_t *)item->action_arg);
 			switch (action)
 			{
 			case SYSTEM_MENU_ACTION_NEXT:
@@ -758,7 +777,11 @@ static bool system_menu_action_jog(uint8_t action, system_menu_item_t *item)
 			while (*++ptr)
 				;
 			*ptr++ = '\r';
-			serial_inject_cmd(buffer);
+			if (system_menu_send_cmd(buffer) != STATUS_OK)
+			{
+				rom_strcpy((char *)buffer, __romstr__(STR_CMD_NOTSENT));
+				system_menu_show_modal_popup(SYSTEM_MENU_MODAL_POPUP_MS, buffer);
+			}
 		}
 		return true;
 	}
@@ -776,15 +799,15 @@ static bool system_menu_action_settings_cmd(uint8_t action, system_menu_item_t *
 		{
 		case 0:
 			settings_init();
-			rom_strcpy(buffer, __romstr__(STR_SETTINGS_LOADED));
+			rom_strcpy((char *)buffer, __romstr__(STR_SETTINGS_LOADED));
 			break;
 		case 1:
 			settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
-			rom_strcpy(buffer, __romstr__(STR_SETTINGS_SAVED));
+			rom_strcpy((char *)buffer, __romstr__(STR_SETTINGS_SAVED));
 			break;
 		case 2:
 			settings_reset(false);
-			rom_strcpy(buffer, __romstr__(STR_SETTINGS_RESET));
+			rom_strcpy((char *)buffer, __romstr__(STR_SETTINGS_RESET));
 			break;
 		default:
 			break;
@@ -860,7 +883,7 @@ bool system_menu_action_edit_simple(uint8_t action, system_menu_item_t *item)
 		switch (vartype)
 		{
 		case VAR_TYPE_BOOLEAN:
-			(*(bool *)item->argptr) = (inc) ? 1 : 0;
+			(*(bool *)item->argptr) = inc;
 			break;
 		case VAR_TYPE_INT8:
 		case VAR_TYPE_UINT8:
@@ -909,7 +932,7 @@ bool system_menu_action_edit(uint8_t action, system_menu_item_t *item)
 			g_system_menu.flags ^= SYSTEM_MENU_MODE_MODIFY;
 		}
 		g_system_menu.flags |= SYSTEM_MENU_MODE_EDIT;
-		break;
+		return true;
 	case SYSTEM_MENU_ACTION_PREV:
 	case SYSTEM_MENU_ACTION_NEXT:
 		if (flags & SYSTEM_MENU_MODE_MODIFY)
@@ -921,13 +944,17 @@ bool system_menu_action_edit(uint8_t action, system_menu_item_t *item)
 				return false;
 			}
 
-			if (vartype == VAR_TYPE_FLOAT)
+			switch (vartype)
 			{
+			case VAR_TYPE_BOOLEAN:
+				modifier = (action == SYSTEM_MENU_ACTION_NEXT) ? 1 : 0;
+				break;
+			case VAR_TYPE_FLOAT:
 				modifier = (action == SYSTEM_MENU_ACTION_NEXT) ? powf(10.0f, (currentmult - 3)) : -powf(10.0f, (currentmult - 3));
-			}
-			else
-			{
+				break;
+			default:
 				modifier = (action == SYSTEM_MENU_ACTION_NEXT) ? powf(10.0f, currentmult) : -powf(10.0f, currentmult);
+				break;
 			}
 		}
 		else if (flags & SYSTEM_MENU_MODE_EDIT)
@@ -952,7 +979,7 @@ bool system_menu_action_edit(uint8_t action, system_menu_item_t *item)
 		switch (vartype)
 		{
 		case VAR_TYPE_BOOLEAN:
-			(*(bool *)item->argptr) = (modifier > 0) ? 1 : 0;
+			(*(bool *)item->argptr) = (modifier != 0);
 			break;
 		case VAR_TYPE_INT8:
 		case VAR_TYPE_UINT8:
@@ -990,10 +1017,12 @@ bool system_menu_action_edit(uint8_t action, system_menu_item_t *item)
 		case VAR_TYPE_INT16:
 		case VAR_TYPE_UINT16:
 			g_system_menu.current_multiplier = CLAMP(-1, currentmult, 4);
+			break;
 		case VAR_TYPE_INT32:
 		case VAR_TYPE_UINT32:
 		case VAR_TYPE_FLOAT:
 			g_system_menu.current_multiplier = CLAMP(-1, currentmult, 9);
+			break;
 		}
 	}
 
@@ -1070,6 +1099,12 @@ void __attribute__((weak)) system_menu_render_modal_popup(const char *__s)
 	// renders the modal popup message
 }
 
+// this needs to be implemented using a serial stream
+uint8_t __attribute__((weak)) system_menu_send_cmd(const char *__s)
+{
+	return STATUS_STREAM_FAILED;
+}
+
 /**
  * Helper µCNC render callbacks
  * **/
@@ -1110,7 +1145,7 @@ void system_menu_item_render_var_arg(uint8_t render_flags, system_menu_item_t *i
 		system_menu_flt_to_str(buffer, *((float *)item->argptr));
 		break;
 	default:
-		buff_ptr = (char *)item->argptr;
+		buff_ptr = item->argptr;
 		break;
 	}
 
@@ -1153,7 +1188,7 @@ void system_menu_var_to_str_set_buffer(char *ptr)
 	system_menu_var_to_str_set_buffer_ptr = ptr;
 }
 
-void system_menu_var_to_str(unsigned char c)
+void system_menu_var_to_str(char c)
 {
 	*system_menu_var_to_str_set_buffer_ptr = c;
 	*(++system_menu_var_to_str_set_buffer_ptr) = 0;

@@ -42,36 +42,34 @@
 #endif
 #endif
 
-static int16_t spindle_speed;
-
 void set_speed(int16_t value)
 {
 
 	if (value == 0)
 	{
 #if ASSERT_PIN(SPINDLE_RELAY_FWD)
-		mcu_clear_output(SPINDLE_RELAY_FWD);
+		io_clear_output(SPINDLE_RELAY_FWD);
 #endif
 #if ASSERT_PIN(SPINDLE_RELAY_REV)
-		mcu_clear_output(SPINDLE_RELAY_REV);
+		io_clear_output(SPINDLE_RELAY_REV);
 #endif
 	}
 	else if (value < 0)
 	{
 #if ASSERT_PIN(SPINDLE_RELAY_FWD)
-		mcu_clear_output(SPINDLE_RELAY_FWD);
+		io_clear_output(SPINDLE_RELAY_FWD);
 #endif
 #if ASSERT_PIN(SPINDLE_RELAY_REV)
-		mcu_set_output(SPINDLE_RELAY_REV);
+		io_set_output(SPINDLE_RELAY_REV);
 #endif
 	}
 	else
 	{
 #if ASSERT_PIN(SPINDLE_RELAY_REV)
-		mcu_clear_output(SPINDLE_RELAY_REV);
+		io_clear_output(SPINDLE_RELAY_REV);
 #endif
 #if ASSERT_PIN(SPINDLE_RELAY_FWD)
-		mcu_set_output(SPINDLE_RELAY_FWD);
+		io_set_output(SPINDLE_RELAY_FWD);
 #endif
 	}
 }
@@ -83,19 +81,11 @@ void set_coolant(uint8_t value)
 #endif
 }
 
-uint16_t get_speed(void)
-{
-	return ABS(spindle_speed);
-}
-
 const tool_t spindle_relay = {
 	.startup_code = NULL,
 	.shutdown_code = NULL,
-#if PID_CONTROLLERS > 0
 	.pid_update = NULL,
-	.pid_error = NULL,
-#endif
 	.range_speed = NULL,
-	.get_speed = &get_speed,
+	.get_speed = NULL,
 	.set_speed = &set_speed,
 	.set_coolant = &set_coolant};

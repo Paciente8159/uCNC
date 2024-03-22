@@ -54,10 +54,14 @@ extern void esp8266_eeprom_init(int size);
 
 ETSTimer esp8266_rtc_timer;
 
+#ifndef ITP_SAMPLE_RATE
+#define ITP_SAMPLE_RATE (F_STEP_MAX * 2)
+#endif
+
 #ifdef MCU_HAS_ONESHOT_TIMER
 static uint32_t esp8266_oneshot_counter;
 static uint32_t esp8266_oneshot_reload;
-static IRAM_ATTR void mcu_gen_oneshot(void)
+static FORCEINLINE void mcu_gen_oneshot(void)
 {
 	if (esp8266_oneshot_counter)
 	{
@@ -73,249 +77,178 @@ static IRAM_ATTR void mcu_gen_oneshot(void)
 }
 #endif
 
-uint8_t esp8266_pwm[16];
-static IRAM_ATTR void mcu_gen_pwm(void)
+#if SERVOS_MASK > 0
+static uint32_t servo_tick_counter = 0;
+static uint32_t servo_tick_alarm = 0;
+static uint8_t mcu_servos[6];
+static FORCEINLINE void servo_reset(void)
 {
-	static uint8_t pwm_counter = 0;
-	// software PWM
-	if (++pwm_counter < 127)
+#if ASSERT_PIN(SERVO0)
+	io_clear_output(SERVO0);
+#endif
+#if ASSERT_PIN(SERVO1)
+	io_clear_output(SERVO1);
+#endif
+#if ASSERT_PIN(SERVO2)
+	io_clear_output(SERVO2);
+#endif
+#if ASSERT_PIN(SERVO3)
+	io_clear_output(SERVO3);
+#endif
+#if ASSERT_PIN(SERVO4)
+	io_clear_output(SERVO4);
+#endif
+#if ASSERT_PIN(SERVO5)
+	io_clear_output(SERVO5);
+#endif
+}
+
+#define start_servo_timeout(timeout)                      \
+	{                                                       \
+		servo_tick_alarm = servo_tick_counter + timeout + 64; \
+	}
+
+static FORCEINLINE void servo_update(void)
+{
+	static uint8_t servo_counter = 0;
+
+	switch (servo_counter)
 	{
-#if ASSERT_PIN(PWM0)
-		if (pwm_counter > esp8266_pwm[0])
-		{
-			mcu_clear_output(PWM0);
-		}
+#if ASSERT_PIN(SERVO0)
+	case SERVO0_FRAME:
+		io_set_output(SERVO0);
+		start_servo_timeout(mcu_servos[0]);
+		break;
 #endif
-#if ASSERT_PIN(PWM1)
-		if (pwm_counter > esp8266_pwm[1])
-		{
-			mcu_clear_output(PWM1);
-		}
+#if ASSERT_PIN(SERVO1)
+	case SERVO1_FRAME:
+		io_set_output(SERVO1);
+		start_servo_timeout(mcu_servos[1]);
+		break;
 #endif
-#if ASSERT_PIN(PWM2)
-		if (pwm_counter > esp8266_pwm[2])
-		{
-			mcu_clear_output(PWM2);
-		}
+#if ASSERT_PIN(SERVO2)
+	case SERVO2_FRAME:
+		io_set_output(SERVO2);
+		start_servo_timeout(mcu_servos[2]);
+		break;
 #endif
-#if ASSERT_PIN(PWM3)
-		if (pwm_counter > esp8266_pwm[3])
-		{
-			mcu_clear_output(PWM3);
-		}
+#if ASSERT_PIN(SERVO3)
+	case SERVO3_FRAME:
+		io_set_output(SERVO3);
+		start_servo_timeout(mcu_servos[3]);
+		break;
 #endif
-#if ASSERT_PIN(PWM4)
-		if (pwm_counter > esp8266_pwm[4])
-		{
-			mcu_clear_output(PWM4);
-		}
+#if ASSERT_PIN(SERVO4)
+	case SERVO4_FRAME:
+		io_set_output(SERVO4);
+		start_servo_timeout(mcu_servos[4]);
+		break;
 #endif
-#if ASSERT_PIN(PWM5)
-		if (pwm_counter > esp8266_pwm[5])
-		{
-			mcu_clear_output(PWM5);
-		}
+#if ASSERT_PIN(SERVO5)
+	case SERVO5_FRAME:
+		io_set_output(SERVO5);
+		start_servo_timeout(mcu_servos[5]);
+		break;
 #endif
-#if ASSERT_PIN(PWM6)
-		if (pwm_counter > esp8266_pwm[6])
-		{
-			mcu_clear_output(PWM6);
-		}
+	}
+
+	servo_counter++;
+	servo_counter = (servo_counter != 20) ? servo_counter : 0;
+}
 #endif
-#if ASSERT_PIN(PWM7)
-		if (pwm_counter > esp8266_pwm[7])
-		{
-			mcu_clear_output(PWM7);
-		}
+
+static FORCEINLINE void mcu_gen_pwm_and_servo(void)
+{
+	static int16_t mcu_soft_io_counter;
+	int16_t t = mcu_soft_io_counter;
+	t--;
+	if (t <= 0)
+	{
+// updated software PWM pins
+#if defined(IC74HC595_HAS_PWMS) || defined(MCU_HAS_SOFT_PWM_TIMER)
+		io_soft_pwm_update();
 #endif
-#if ASSERT_PIN(PWM8)
-		if (pwm_counter > esp8266_pwm[8])
+
+		// update servo pins
+#if SERVOS_MASK > 0
+		// also run servo pin signals
+		uint32_t counter = servo_tick_counter;
+
+		// updated next servo output
+		if (!(counter & 0x7F))
 		{
-			mcu_clear_output(PWM8);
+			servo_update();
 		}
-#endif
-#if ASSERT_PIN(PWM9)
-		if (pwm_counter > esp8266_pwm[9])
+
+		// reached set tick alarm and resets all servo outputs
+		if (counter == servo_tick_alarm)
 		{
-			mcu_clear_output(PWM9);
+			servo_reset();
 		}
+
+		// resets every 3ms
+		servo_tick_counter = ++counter;
 #endif
-#if ASSERT_PIN(PWM10)
-		if (pwm_counter > esp8266_pwm[10])
-		{
-			mcu_clear_output(PWM10);
-		}
-#endif
-#if ASSERT_PIN(PWM11)
-		if (pwm_counter > esp8266_pwm[11])
-		{
-			mcu_clear_output(PWM11);
-		}
-#endif
-#if ASSERT_PIN(PWM12)
-		if (pwm_counter > esp8266_pwm[12])
-		{
-			mcu_clear_output(PWM12);
-		}
-#endif
-#if ASSERT_PIN(PWM13)
-		if (pwm_counter > esp8266_pwm[13])
-		{
-			mcu_clear_output(PWM13);
-		}
-#endif
-#if ASSERT_PIN(PWM14)
-		if (pwm_counter > esp8266_pwm[14])
-		{
-			mcu_clear_output(PWM14);
-		}
-#endif
-#if ASSERT_PIN(PWM15)
-		if (pwm_counter > esp8266_pwm[15])
-		{
-			mcu_clear_output(PWM15);
-		}
-#endif
+		mcu_soft_io_counter = (int16_t)roundf((float)ITP_SAMPLE_RATE / 128000.0f);
 	}
 	else
 	{
-		pwm_counter = 0;
-#if ASSERT_PIN(PWM0)
-		if (esp8266_pwm[0])
-		{
-			mcu_set_output(PWM0);
-		}
-#endif
-#if ASSERT_PIN(PWM1)
-		if (esp8266_pwm[1])
-		{
-			mcu_set_output(PWM1);
-		}
-#endif
-#if ASSERT_PIN(PWM2)
-		if (esp8266_pwm[2])
-		{
-			mcu_set_output(PWM2);
-		}
-#endif
-#if ASSERT_PIN(PWM3)
-		if (esp8266_pwm[3])
-		{
-			mcu_set_output(PWM3);
-		}
-#endif
-#if ASSERT_PIN(PWM4)
-		if (esp8266_pwm[4])
-		{
-			mcu_set_output(PWM4);
-		}
-#endif
-#if ASSERT_PIN(PWM5)
-		if (esp8266_pwm[5])
-		{
-			mcu_set_output(PWM5);
-		}
-#endif
-#if ASSERT_PIN(PWM6)
-		if (esp8266_pwm[6])
-		{
-			mcu_set_output(PWM6);
-		}
-#endif
-#if ASSERT_PIN(PWM7)
-		if (esp8266_pwm[7])
-		{
-			mcu_set_output(PWM7);
-		}
-#endif
-#if ASSERT_PIN(PWM8)
-		if (esp8266_pwm[8])
-		{
-			mcu_set_output(PWM8);
-		}
-#endif
-#if ASSERT_PIN(PWM9)
-		if (esp8266_pwm[9])
-		{
-			mcu_set_output(PWM9);
-		}
-#endif
-#if ASSERT_PIN(PWM10)
-		if (esp8266_pwm[10])
-		{
-			mcu_set_output(PWM10);
-		}
-#endif
-#if ASSERT_PIN(PWM11)
-		if (esp8266_pwm[11])
-		{
-			mcu_set_output(PWM11);
-		}
-#endif
-#if ASSERT_PIN(PWM12)
-		if (esp8266_pwm[12])
-		{
-			mcu_set_output(PWM12);
-		}
-#endif
-#if ASSERT_PIN(PWM13)
-		if (esp8266_pwm[13])
-		{
-			mcu_set_output(PWM13);
-		}
-#endif
-#if ASSERT_PIN(PWM14)
-		if (esp8266_pwm[14])
-		{
-			mcu_set_output(PWM14);
-		}
-#endif
-#if ASSERT_PIN(PWM15)
-		if (esp8266_pwm[15])
-		{
-			mcu_set_output(PWM15);
-		}
-#endif
+		mcu_soft_io_counter = t;
 	}
 }
 
-static uint32_t mcu_step_counter;
-static uint32_t mcu_step_reload;
-static IRAM_ATTR void mcu_gen_step(void)
+static volatile uint32_t mcu_itp_timer_reload;
+static volatile bool mcu_itp_timer_running;
+static FORCEINLINE void mcu_gen_step(void)
 {
-	if (mcu_step_reload)
+	static bool step_reset = true;
+	static int32_t mcu_itp_timer_counter;
+
+	// generate steps
+	if (mcu_itp_timer_running)
 	{
-		if (!--mcu_step_counter)
+		// stream mode tick
+		int32_t t = mcu_itp_timer_counter;
+		bool reset = step_reset;
+		t -= (int32_t)roundf(1000000.0f / (float)ITP_SAMPLE_RATE);
+		if (t <= 0)
 		{
-			static bool resetstep = false;
-			if (!resetstep)
+			if (!reset)
+			{
 				mcu_step_cb();
+			}
 			else
+			{
 				mcu_step_reset_cb();
-			resetstep = !resetstep;
-			mcu_step_counter = mcu_step_reload;
+			}
+			step_reset = !reset;
+			mcu_itp_timer_counter = mcu_itp_timer_reload + t;
+		}
+		else
+		{
+			mcu_itp_timer_counter = t;
 		}
 	}
 }
 
 IRAM_ATTR void mcu_din_isr(void)
 {
-	io_inputs_isr();
+	mcu_inputs_changed_cb();
 }
 
 IRAM_ATTR void mcu_probe_isr(void)
 {
-	io_probe_isr();
+	mcu_probe_changed_cb();
 }
 
 IRAM_ATTR void mcu_limits_isr(void)
 {
-	io_limits_isr();
+	mcu_limits_changed_cb();
 }
 
 IRAM_ATTR void mcu_controls_isr(void)
 {
-	io_controls_isr();
+	mcu_controls_changed_cb();
 }
 
 IRAM_ATTR void mcu_rtc_isr(void *arg)
@@ -326,17 +259,12 @@ IRAM_ATTR void mcu_rtc_isr(void *arg)
 
 IRAM_ATTR void mcu_itp_isr(void)
 {
-	// mcu_disable_global_isr();
-	// static bool resetstep = false;
-	// if (!resetstep)
-	// 	mcu_step_cb();
-	// else
-	// 	mcu_step_reset_cb();
-	// resetstep = !resetstep;
-	// mcu_enable_global_isr();
 	mcu_gen_step();
-	mcu_gen_pwm();
+	mcu_gen_pwm_and_servo();
 	mcu_gen_oneshot();
+#if defined(IC74HC595_HAS_STEPS) || defined(IC74HC595_HAS_DIRS) || defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS)
+	ic74hc595_shift_io_pins();
+#endif
 }
 
 // static void mcu_uart_isr(void *arg)
@@ -355,7 +283,7 @@ IRAM_ATTR void mcu_itp_isr(void)
 // 		CLEAR_PERI_REG_MASK(UART_INT_ENA(0), UART_RXFIFO_FULL_INT_ENA | UART_RXFIFO_TOUT_INT_ENA);
 // 		WRITE_PERI_REG(UART_INT_CLR(0), (READ_PERI_REG(UART_INT_ST(0)) & (UART_RXFIFO_FULL_INT_ST | UART_RXFIFO_TOUT_INT_ST)));
 // 		uint8_t fifo_len = (READ_PERI_REG(UART_STATUS(0)) >> UART_RXFIFO_CNT_S) & UART_RXFIFO_CNT;
-// 		unsigned char c = 0;
+// 		uint8_t c = 0;
 
 // 		for (uint8_t i = 0; i < fifo_len; i++)
 // 		{
@@ -400,6 +328,10 @@ static void mcu_usart_init(void)
 void mcu_init(void)
 {
 	mcu_io_init();
+#ifndef RAM_ONLY_SETTINGS
+	esp8266_eeprom_init(NVM_STORAGE_SIZE); // 2K Emulated EEPROM
+#endif
+
 	mcu_usart_init();
 
 	// init rtc
@@ -410,11 +342,8 @@ void mcu_init(void)
 	timer1_isr_init();
 	timer1_attachInterrupt(mcu_itp_isr);
 	timer1_enable(TIM_DIV1, TIM_EDGE, TIM_LOOP);
-	timer1_write(625);
+	timer1_write((APB_CLK_FREQ / ITP_SAMPLE_RATE));
 
-#ifndef RAM_ONLY_SETTINGS
-	esp8266_eeprom_init(1024); // 1K Emulated EEPROM
-#endif
 #ifdef MCU_HAS_SPI
 	esp8266_spi_init(SPI_FREQ, SPI_MODE);
 #endif
@@ -450,7 +379,7 @@ void mcu_disable_probe_isr(void)
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_get_analog
-uint8_t mcu_get_analog(uint8_t channel)
+uint16_t mcu_get_analog(uint8_t channel)
 {
 	return 0;
 }
@@ -476,6 +405,30 @@ uint8_t mcu_get_pwm(uint8_t pwm)
 	return 0;
 }
 #endif
+
+void mcu_set_servo(uint8_t servo, uint8_t value)
+{
+#if SERVOS_MASK > 0
+	mcu_servos[servo - SERVO_PINS_OFFSET] = value;
+#endif
+}
+
+/**
+ * gets the pwm for a servo (50Hz with tON between 1~2ms)
+ * can be defined either as a function or a macro call
+ * */
+uint8_t mcu_get_servo(uint8_t servo)
+{
+#if SERVOS_MASK > 0
+	uint8_t offset = servo - SERVO_PINS_OFFSET;
+
+	if ((1U << offset) & SERVOS_MASK)
+	{
+		return mcu_servos[offset];
+	}
+#endif
+	return 0;
+}
 
 // ISR
 /**
@@ -521,12 +474,13 @@ bool mcu_get_global_isr(void)
  * */
 void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 {
+	frequency = CLAMP((float)F_STEP_MIN, frequency, (float)F_STEP_MAX);
 	// up and down counter (generates half the step rate at each event)
-	uint32_t totalticks = (uint32_t)((float)(128000UL >> 1) / frequency);
-	*prescaller = 0;
+	uint32_t totalticks = (uint32_t)((500000.0f) / frequency);
+	*prescaller = 1;
 	while (totalticks > 0xFFFF)
 	{
-		(*prescaller) += 1;
+		(*prescaller) <<= 1;
 		totalticks >>= 1;
 	}
 
@@ -535,16 +489,25 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 
 float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller)
 {
-	return ((float)(128000UL >> 1) / (float)(((uint32_t)ticks) << prescaller));
+	uint32_t totalticks = (uint32_t)ticks * prescaller;
+	return 500000.0f / ((float)totalticks);
 }
 
 /**
  * starts the timer interrupt that generates the step pulses for the interpolator
  * */
+
 void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 {
-	mcu_step_reload = (((uint32_t)ticks) << prescaller);
-	mcu_step_counter = mcu_step_reload;
+	if (!mcu_itp_timer_running)
+	{
+		mcu_itp_timer_reload = ticks * prescaller;
+		mcu_itp_timer_running = true;
+	}
+	else
+	{
+		mcu_change_itp_isr(ticks, prescaller);
+	}
 }
 
 /**
@@ -552,8 +515,14 @@ void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
  * */
 void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller)
 {
-	mcu_step_reload = (((uint32_t)ticks) << prescaller);
-	mcu_step_counter = mcu_step_reload;
+	if (mcu_itp_timer_running)
+	{
+		mcu_itp_timer_reload = ticks * prescaller;
+	}
+	else
+	{
+		mcu_start_itp_isr(ticks, prescaller);
+	}
 }
 
 /**
@@ -561,7 +530,10 @@ void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller)
  * */
 void mcu_stop_itp_isr(void)
 {
-	mcu_step_reload = 0;
+	if (mcu_itp_timer_running)
+	{
+		mcu_itp_timer_running = false;
+	}
 }
 
 /**
@@ -583,6 +555,11 @@ void esp8266_delay_us(uint16_t delay)
 	uint32_t time = system_get_time() + delay - 1;
 	while (time > system_get_time())
 		;
+}
+
+uint32_t mcu_free_micros()
+{
+	return (uint32_t)(esp_system_get_time() % 1000);
 }
 
 /**

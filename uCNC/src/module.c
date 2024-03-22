@@ -18,11 +18,18 @@
 */
 
 #include "cnc.h"
-#include "modules/tmcdriver.h"
 #include "modules/digimstep.h"
 #include "modules/digipot.h"
 #include "modules/encoder.h"
 #include "modules/pid.h"
+#include "modules/endpoint.h"
+#include "modules/ic74hc595.h"
+#include "modules/modbus.h"
+#include "modules/softi2c.h"
+#include "modules/softspi.h"
+#include "modules/softuart.h"
+#include "modules/system_languages.h"
+#include "modules/system_menu.h"
 
 /**
  *
@@ -49,16 +56,16 @@ void mod_init(void)
 	LOAD_MODULE(digipot);
 #endif
 
-#if PID_CONTROLLERS > 0
-	LOAD_MODULE(pid);
-#endif
-
 #if ENCODERS > 0
 	LOAD_MODULE(encoder);
 #endif
 
-#ifdef ENABLE_TMC_DRIVERS
-	LOAD_MODULE(tmcdriver);
+#ifdef ENABLE_LASER_PPI
+	LOAD_MODULE(laser_ppi);
+#endif
+
+#ifdef ENABLE_PLASMA_THC
+	LOAD_MODULE(plasma_thc);
 #endif
 
 	load_modules();

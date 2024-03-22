@@ -26,10 +26,6 @@
 static volatile bool rp2040_global_isr_enabled;
 
 extern void rp2040_uart_init(int baud);
-extern void rp2040_uart_flush(void);
-extern void rp2040_uart_write(char c);
-extern bool rp2040_uart_rx_ready(void);
-extern bool rp2040_uart_tx_ready(void);
 extern void rp2040_uart_process(void);
 
 extern void rp2040_eeprom_init(int size);
@@ -38,6 +34,44 @@ extern void rp2040_eeprom_write(uint16_t address, uint8_t value);
 extern void rp2040_eeprom_flush(void);
 
 uint8_t rp2040_pwm[16];
+
+#ifdef IC74HC595_CUSTOM_SHIFT_IO
+
+#ifndef IC74HC595_PIO_FREQ
+#define IC74HC595_PIO_FREQ 20000000UL
+#endif
+
+#if IC74HC595_COUNT != 4
+#error "IC74HC595_COUNT must be 4 to use ESP32 I2S mode for IO shifting"
+#endif
+
+#ifdef IC74HC595_HAS_PWMS
+#warning "IC74HC595 on RP2040 does not support soft PWM yet!"
+#endif
+
+#include "pico/stdlib.h"
+#include "hardware/pio.h"
+#include "ic74hc595.pio.h"
+
+static PIO pio_ic74hc595;
+static uint sm_ic74hc595;
+
+void ic74hc595_pio_init()
+{
+	pio_ic74hc595 = pio0;
+	sm_ic74hc595 = 0;
+	uint offset = pio_add_program(pio_ic74hc595, &ic74hc595_program);
+	ic74hc595_program_init(pio_ic74hc595, sm_ic74hc595, offset, IC74HC595_PIO_DATA, IC74HC595_PIO_CLK, IC74HC595_PIO_LATCH, IC74HC595_PIO_FREQ);
+}
+
+// disable this function
+// IO will be updated at a fixed rate
+MCU_CALLBACK void ic74hc595_shift_io_pins(void)
+{
+	ic74hc595_program_write(pio_ic74hc595, sm_ic74hc595, *((volatile uint32_t *)&ic74hc595_io_pins[0]));
+}
+
+#endif
 
 void mcu_din_isr(void)
 {
@@ -175,22 +209,22 @@ static rp2040_alarm_t servo_alarm;
 static void mcu_clear_servos(void)
 {
 #if ASSERT_PIN(SERVO0)
-	mcu_clear_output(SERVO0);
+	io_clear_output(SERVO0);
 #endif
 #if ASSERT_PIN(SERVO1)
-	mcu_clear_output(SERVO1);
+	io_clear_output(SERVO1);
 #endif
 #if ASSERT_PIN(SERVO2)
-	mcu_clear_output(SERVO2);
+	io_clear_output(SERVO2);
 #endif
 #if ASSERT_PIN(SERVO3)
-	mcu_clear_output(SERVO3);
+	io_clear_output(SERVO3);
 #endif
 #if ASSERT_PIN(SERVO4)
-	mcu_clear_output(SERVO4);
+	io_clear_output(SERVO4);
 #endif
 #if ASSERT_PIN(SERVO5)
-	mcu_clear_output(SERVO5);
+	io_clear_output(SERVO5);
 #endif
 }
 #endif
@@ -212,36 +246,36 @@ void mcu_rtc_isr(void)
 #if ASSERT_PIN(SERVO0)
 	case SERVO0_FRAME:
 		servo_start_timeout(mcu_servos[0]);
-		mcu_set_output(SERVO0);
+		io_set_output(SERVO0);
 		break;
 #endif
 #if ASSERT_PIN(SERVO1)
 	case SERVO1_FRAME:
-		mcu_set_output(SERVO1);
+		io_set_output(SERVO1);
 		servo_start_timeout(mcu_servos[1]);
 		break;
 #endif
 #if ASSERT_PIN(SERVO2)
 	case SERVO2_FRAME:
-		mcu_set_output(SERVO2);
+		io_set_output(SERVO2);
 		servo_start_timeout(mcu_servos[2]);
 		break;
 #endif
 #if ASSERT_PIN(SERVO3)
 	case SERVO3_FRAME:
-		mcu_set_output(SERVO3);
+		io_set_output(SERVO3);
 		servo_start_timeout(mcu_servos[3]);
 		break;
 #endif
 #if ASSERT_PIN(SERVO4)
 	case SERVO4_FRAME:
-		mcu_set_output(SERVO4);
+		io_set_output(SERVO4);
 		servo_start_timeout(mcu_servos[4]);
 		break;
 #endif
 #if ASSERT_PIN(SERVO5)
 	case SERVO5_FRAME:
-		mcu_set_output(SERVO5);
+		io_set_output(SERVO5);
 		servo_start_timeout(mcu_servos[5]);
 		break;
 #endif
@@ -270,6 +304,14 @@ static void mcu_usart_init(void)
 void mcu_init(void)
 {
 	mcu_io_init();
+
+#ifdef IC74HC595_CUSTOM_SHIFT_IO
+	ic74hc595_pio_init();
+#endif
+#ifndef RAM_ONLY_SETTINGS
+	rp2040_eeprom_init(NVM_STORAGE_SIZE); // 2K Emulated EEPROM
+#endif
+
 	mcu_usart_init();
 
 	pinMode(LED_BUILTIN, OUTPUT);
@@ -282,9 +324,6 @@ void mcu_init(void)
 	servo_alarm.alarm_cb = &mcu_clear_servos;
 #endif
 
-#ifndef RAM_ONLY_SETTINGS
-	rp2040_eeprom_init(1024); // 1K Emulated EEPROM
-#endif
 #ifdef MCU_HAS_SPI
 	mcu_spi_config(SPI_FREQ, SPI_MODE);
 #endif
@@ -326,7 +365,7 @@ void mcu_disable_probe_isr(void)
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_get_analog
-uint8_t mcu_get_analog(uint8_t channel)
+uint16_t mcu_get_analog(uint8_t channel)
 {
 	return 0;
 }
@@ -422,6 +461,7 @@ static void mcu_itp_isr(void)
  * */
 void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 {
+	frequency = CLAMP((float)F_STEP_MIN, frequency, (float)F_STEP_MAX);
 	// up and down counter (generates half the step rate at each event)
 	uint32_t totalticks = (uint32_t)((float)(1000000UL >> 1) / frequency);
 	*prescaller = 1;
@@ -489,24 +529,6 @@ void mcu_stop_itp_isr(void)
 }
 
 /**
- * gets the MCU running time in milliseconds.
- * the time counting is controled by the internal RTC
- * */
-uint32_t mcu_millis()
-{
-	return millis();
-}
-
-/**
- * provides a delay in us (micro seconds)
- * the maximum allowed delay is 255 us
- * */
-uint32_t mcu_micros()
-{
-	return micros();
-}
-
-/**
  * runs all internal tasks of the MCU.
  * for the moment these are:
  *   - if USB is enabled and MCU uses tinyUSB framework run tinyUSB tud_task
@@ -522,6 +544,13 @@ void mcu_dotasks(void)
  * */
 uint8_t mcu_eeprom_getc(uint16_t address)
 {
+	if (NVM_STORAGE_SIZE <= address)
+	{
+		DEBUG_STR("EEPROM invalid address @ ");
+		DEBUG_INT(address);
+		DEBUG_PUTC('\n');
+		return 0;
+	}
 #ifndef RAM_ONLY_SETTINGS
 	return rp2040_eeprom_read(address);
 #else
@@ -534,6 +563,12 @@ uint8_t mcu_eeprom_getc(uint16_t address)
  * */
 void mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
+	if (NVM_STORAGE_SIZE <= address)
+	{
+		DEBUG_STR("EEPROM invalid address @ ");
+		DEBUG_INT(address);
+		DEBUG_PUTC('\n');
+	}
 #ifndef RAM_ONLY_SETTINGS
 	rp2040_eeprom_write(address, value);
 #endif

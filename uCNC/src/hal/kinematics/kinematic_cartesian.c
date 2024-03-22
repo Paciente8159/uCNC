@@ -46,65 +46,74 @@ void kinematics_apply_forward(int32_t *steps, float *axis)
 uint8_t kinematics_home(void)
 {
 	float target[AXIS_COUNT];
-	
+
 #ifndef DISABLE_ALL_LIMITS
-#ifndef DISABLE_Z_HOMING
-#if (defined(AXIS_Z) && (ASSERT_PIN(LIMIT_Z) || ASSERT_PIN(LIMIT_Z2)))
-	if (mc_home_axis(AXIS_Z, LIMIT_Z_MASK))
+#if AXIS_Z_HOMING_MASK != 0
+	if (mc_home_axis(AXIS_Z_HOMING_MASK, LINACT2_LIMIT_MASK))
 	{
 		return KINEMATIC_HOMING_ERROR_Z;
 	}
 #endif
-#endif
 
-#ifndef DISABLE_X_HOMING
-#if (defined(AXIS_X) && (ASSERT_PIN(LIMIT_X) || ASSERT_PIN(LIMIT_X2)))
-	if (mc_home_axis(AXIS_X, LIMIT_X_MASK))
+#ifndef ENABLE_XY_SIMULTANEOUS_HOMING
+
+#if AXIS_X_HOMING_MASK != 0
+	if (mc_home_axis(AXIS_X_HOMING_MASK, LINACT0_LIMIT_MASK))
 	{
 		return KINEMATIC_HOMING_ERROR_X;
 	}
 #endif
-#endif
 
-#ifndef DISABLE_Y_HOMING
-#if (defined(AXIS_Y) && (ASSERT_PIN(LIMIT_Y) || ASSERT_PIN(LIMIT_Y2)))
-	if (mc_home_axis(AXIS_Y, LIMIT_Y_MASK))
+#if AXIS_Y_HOMING_MASK != 0
+	if (mc_home_axis(AXIS_Y_HOMING_MASK, LINACT1_LIMIT_MASK))
 	{
 		return KINEMATIC_HOMING_ERROR_Y;
 	}
 #endif
+
+#else
+
+#if AXIS_X_HOMING_MASK != 0 && AXIS_Y_HOMING_MASK != 0
+	if (mc_home_axis(AXIS_X_HOMING_MASK | AXIS_Y_HOMING_MASK, LINACT0_LIMIT_MASK | LINACT1_LIMIT_MASK))
+	{
+		return KINEMATIC_HOMING_ERROR_XY;
+	}
+#elif AXIS_X_HOMING_MASK != 0
+	if (mc_home_axis(AXIS_X_HOMING_MASK, LINACT0_LIMIT_MASK))
+	{
+		return KINEMATIC_HOMING_ERROR_X;
+	}
+#elif AXIS_Y_HOMING_MASK != 0
+	if (mc_home_axis(AXIS_Y_HOMING_MASK, LINACT1_LIMIT_MASK))
+	{
+		return KINEMATIC_HOMING_ERROR_Y;
+	}
 #endif
 
-#ifndef DISABLE_A_HOMING
-#if (defined(AXIS_A) && ASSERT_PIN(LIMIT_A))
-	if (mc_home_axis(AXIS_A, LIMIT_A_MASK))
+#endif
+
+#if AXIS_A_HOMING_MASK != 0
+	if (mc_home_axis(AXIS_A_HOMING_MASK, LINACT3_LIMIT_MASK))
 	{
 		return KINEMATIC_HOMING_ERROR_A;
 	}
 #endif
-#endif
 
-#ifndef DISABLE_B_HOMING
-#if (defined(AXIS_B) && ASSERT_PIN(LIMIT_B))
-	if (mc_home_axis(AXIS_B, LIMIT_B_MASK))
+#if AXIS_B_HOMING_MASK != 0
+	if (mc_home_axis(AXIS_B_HOMING_MASK, LINACT4_LIMIT_MASK))
 	{
 		return KINEMATIC_HOMING_ERROR_B;
 	}
 #endif
-#endif
 
-#ifndef DISABLE_C_HOMING
-#if (defined(AXIS_C) && ASSERT_PIN(LIMIT_C))
-	if (mc_home_axis(AXIS_C, LIMIT_C_MASK))
+#if AXIS_C_HOMING_MASK != 0
+	if (mc_home_axis(AXIS_C_HOMING_MASK, LINACT5_LIMIT_MASK))
 	{
 		return KINEMATIC_HOMING_ERROR_C;
 	}
 #endif
-#endif
 
 	cnc_unlock(true);
-	// flags homing clear by the unlock
-	cnc_set_exec_state(EXEC_HOMING);
 	motion_data_t block_data = {0};
 	mc_get_position(target);
 
@@ -120,17 +129,15 @@ uint8_t kinematics_home(void)
 	mc_line(target, &block_data);
 	itp_sync();
 #endif
-	// unlocks the machine to go to offset
-	cnc_clear_exec_state(EXEC_HOMING);
 
 #ifdef SET_ORIGIN_AT_HOME_POS
 	memset(target, 0, sizeof(target));
 #else
-	for (uint8_t i = AXIS_COUNT; i != 0;)
-	{
-		i--;
-		target[i] = (!(g_settings.homing_dir_invert_mask & (1 << i)) ? 0 : g_settings.max_distance[i]);
-	}
+for (uint8_t i = AXIS_COUNT; i != 0;)
+{
+	i--;
+	target[i] = (!(g_settings.homing_dir_invert_mask & (1 << i)) ? 0 : g_settings.max_distance[i]);
+}
 #endif
 
 	// reset position
@@ -150,7 +157,7 @@ bool kinematics_check_boundaries(float *axis)
 	{
 		i--;
 #ifdef SET_ORIGIN_AT_HOME_POS
-		float value = !(g_settings.homing_dir_invert_mask & (1 << i)) ? -axis[i] : axis[i];
+		float value = !(g_settings.homing_dir_invert_mask & (1 << i)) ? axis[i] : -axis[i];
 #else
 		float value = axis[i];
 #endif

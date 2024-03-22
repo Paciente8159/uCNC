@@ -24,9 +24,38 @@ extern "C"
 {
 #endif
 
+// undefined pin
 #define UNDEF_PIN 0
-#define ASSERT_PIN(X) (X > 0)
-#define ASSERT_PIN_EXTENDER(X) (X >= 0)
+// assert pin (io or extended)
+#define _EVAL_DIO_(X) DIO##X
+#define EVAL_DIO(X) DIO##X
+
+#define ASSERT_PIN(X) (EVAL_DIO(X) != 0)
+// assert pin io
+#define ASSERT_PIN_IO(X) (EVAL_DIO(X) > 0)
+// assert pin extended
+#define ASSERT_PIN_EXTENDED(X) (EVAL_DIO(X) < 0)
+// assert pin extended offset
+#define ASSERT_IO_OFFSET(X) (X >= 0)
+
+#include "cnc_build.h"
+// make the needed includes (do not change the order)
+// include lists of available option
+#include "hal/boards/boards.h"
+#include "hal/mcus/mcus.h"
+#include "hal/kinematics/kinematics.h"
+// user configurations
+#include "../cnc_config.h"
+// board and mcu configurations
+#include "hal/boards/boarddefs.h" //configures the board IO and service interrupts
+// machine kinematics configurations
+#include "hal/kinematics/kinematicdefs.h" //configures the kinematics for the cnc machine
+// machine tools configurations
+#include "hal/tools/tool.h" //configures the kinematics for the cnc machine
+// final HAL configurations
+#include "../cnc_hal_config.h"		//inicializes the HAL hardcoded connections
+#include "../cnc_hal_overrides.h" //config override file
+#include "modules/ic74hc595.h"		// io extender
 
 	/**
 	 *
@@ -164,6 +193,22 @@ extern "C"
 
 #ifdef PROBE_PULLUP_ENABLE
 #define PROBE_PULLUP
+#endif
+
+#ifdef ENABLE_RT_PROBE_CHECKING
+#undef PROBE_ISR
+#endif
+
+#ifdef ENABLE_RT_LIMITS_CHECKING
+#undef LIMIT_X_ISR
+#undef LIMIT_X2_ISR
+#undef LIMIT_Y_ISR
+#undef LIMIT_Y2_ISR
+#undef LIMIT_Z_ISR
+#undef LIMIT_Z2_ISR
+#undef LIMIT_A_ISR
+#undef LIMIT_B_ISR
+#undef LIMIT_C_ISR
 #endif
 
 #ifdef ESTOP_PULLUP_ENABLE
@@ -305,280 +350,6 @@ extern "C"
 #define STEPPERS_ENCODERS_MASK 0
 #endif
 
-#ifndef PID_CONTROLLERS
-#define PID_CONTROLLERS 0
-#endif
-
-#if PID_CONTROLLERS > 0
-	/*PID controllers*/
-#if PID_CONTROLLERS == 1
-#define PID_DIVISIONS 0
-#elif PID_CONTROLLERS == 2
-#define PID_DIVISIONS 1
-#elif PID_CONTROLLERS <= 4
-#define PID_DIVISIONS 2
-#else
-#define PID_DIVISIONS 3
-#endif
-
-#define PID_SAMP_FREQ (1 << (10 - PID_DIVISIONS))
-#endif
-
-#if PID_CONTROLLERS > 0
-#ifdef PID0_DELTA
-#error "The PID0 is reserved for the tool PID"
-#else
-#define PID0_DELTA() tool_pid_error()
-#endif
-#ifdef PID0_OUTPUT
-#error "The PID0 is reserved for the tool PID"
-#else
-#define PID0_OUTPUT(X) tool_pid_update(X)
-#endif
-#ifdef PID0_STOP
-#error "The PID0 is reserved for the tool PID"
-#else
-#define PID0_STOP() tool_stop()
-#endif
-#ifndef PID0_FREQ_DIV
-#define PID0_FREQ_DIV 1
-#elif (PID0_FREQ_DIV < 1 || PID0_FREQ_DIV > PID_SAMP_FREQ)
-#error "The PID0 sampling frequency devider value must be between 1 and MAX SAMPLE RATE = 1000/log2(Total PID's)"
-#endif
-#endif
-#if PID_CONTROLLERS > 1
-#ifndef PID1_DELTA
-#error "The PID1 error is not defined"
-#endif
-#ifndef PID1_OUTPUT
-#error "The PID1 output is not defined"
-#endif
-#ifndef PID1_STOP
-#error "The PID1 stop is not defined"
-#endif
-#ifndef PID1_FREQ_DIV
-#define PID1_FREQ_DIV 1
-#elif (PID1_FREQ_DIV < 1 || PID1_FREQ_DIV > PID_SAMP_FREQ)
-#error "The PID1 sampling frequency devider value must be between 1 and MAX SAMPLE RATE = 1000/log2(Total PID's)"
-#endif
-#endif
-#if PID_CONTROLLERS > 2
-#ifndef PID2_DELTA
-#error "The PID2 error is not defined"
-#endif
-#ifndef PID2_OUTPUT
-#error "The PID2 output is not defined"
-#endif
-#ifndef PID2_STOP
-#error "The PID2 stop is not defined"
-#endif
-#ifndef PID2_FREQ_DIV
-#define PID2_FREQ_DIV 1
-#elif (PID2_FREQ_DIV < 1 || PID2_FREQ_DIV > PID_SAMP_FREQ)
-#error "The PID2 sampling frequency devider value must be between 1 and MAX SAMPLE RATE = 1000/log2(Total PID's)"
-#endif
-#endif
-#if PID_CONTROLLERS > 3
-#ifndef PID3_DELTA
-#error "The PID3 error is not defined"
-#endif
-#ifndef PID3_OUTPUT
-#error "The PID3 output is not defined"
-#endif
-#ifndef PID3_STOP
-#error "The PID3 stop is not defined"
-#endif
-#ifndef PID3_FREQ_DIV
-#define PID3_FREQ_DIV 1
-#elif (PID3_FREQ_DIV < 1 || PID3_FREQ_DIV > PID_SAMP_FREQ)
-#error "The PID3 sampling frequency devider value must be between 1 and MAX SAMPLE RATE = 1000/log2(Total PID's)"
-#endif
-#endif
-#if PID_CONTROLLERS > 4
-#ifndef PID4_DELTA
-#error "The PID4 error is not defined"
-#endif
-#ifndef PID4_OUTPUT
-#error "The PID4 output is not defined"
-#endif
-#ifndef PID4_STOP
-#error "The PID4 stop is not defined"
-#endif
-#ifndef PID4_FREQ_DIV
-#define PID4_FREQ_DIV 1
-#elif (PID4_FREQ_DIV < 1 || PID4_FREQ_DIV > PID_SAMP_FREQ)
-#error "The PID4 sampling frequency devider value must be between 1 and MAX SAMPLE RATE = 1000/log2(Total PID's)"
-#endif
-#endif
-#if PID_CONTROLLERS > 5
-#ifndef PID5_DELTA
-#error "The PID5 error is not defined"
-#endif
-#ifndef PID5_OUTPUT
-#error "The PID5 output is not defined"
-#endif
-#ifndef PID5_STOP
-#error "The PID5 stop is not defined"
-#endif
-#ifndef PID5_FREQ_DIV
-#define PID5_FREQ_DIV 1
-#elif (PID5_FREQ_DIV < 1 || PID5_FREQ_DIV > PID_SAMP_FREQ)
-#error "The PID5 sampling frequency devider value must be between 1 and MAX SAMPLE RATE = 1000/log2(Total PID's)"
-#endif
-#endif
-#if PID_CONTROLLERS > 6
-#ifndef PID6_DELTA
-#error "The PID6 error is not defined"
-#endif
-#ifndef PID6_OUTPUT
-#error "The PID6 output is not defined"
-#endif
-#ifndef PID6_STOP
-#error "The PID6 stop is not defined"
-#endif
-#ifndef PID6_FREQ_DIV
-#define PID6_FREQ_DIV 1
-#elif (PID6_FREQ_DIV < 1 || PID6_FREQ_DIV > PID_SAMP_FREQ)
-#error "The PID6 sampling frequency devider value must be between 1 and MAX SAMPLE RATE = 1000/log2(Total PID's)"
-#endif
-#endif
-#if PID_CONTROLLERS > 7
-#ifndef PID7_DELTA
-#error "The PID7 error is not defined"
-#endif
-#ifndef PID7_OUTPUT
-#error "The PID7 output is not defined"
-#endif
-#ifndef PID7_STOP
-#error "The PID7 stop is not defined"
-#endif
-#ifndef PID7_FREQ_DIV
-#define PID7_FREQ_DIV 1
-#elif (PID7_FREQ_DIV < 1 || PID7_FREQ_DIV > PID_SAMP_FREQ)
-#error "The PID7 sampling frequency devider value must be between 1 and MAX SAMPLE RATE = 1000/log2(Total PID's)"
-#endif
-#endif
-
-#ifdef STEPPER0_HAS_TMC
-#if (STEPPER0_TMC_INTERFACE == TMC_UART)
-// if driver uses uart set pins
-#if (!ASSERT_PIN(STEPPER0_UART_TX) || !ASSERT_PIN(STEPPER0_UART_RX))
-#undef STEPPER0_HAS_TMC
-#error "Stepper 0 undefined UART pins"
-#endif
-#elif (STEPPER0_TMC_INTERFACE == TMC_SPI)
-#if (!ASSERT_PIN(STEPPER0_UART_DO) || !ASSERT_PIN(STEPPER0_UART_DI) || !ASSERT_PIN(STEPPER0_UART_CLK) || !ASSERT_PIN(STEPPER0_UART_CS))
-#undef STEPPER0_HAS_TMC
-#error "Stepper 0 undefined SPI pins"
-#endif
-#endif
-#endif
-#ifdef STEPPER1_HAS_TMC
-#if (STEPPER1_TMC_INTERFACE == TMC_UART)
-// if driver uses uart set pins
-#if (!ASSERT_PIN(STEPPER1_UART_TX) || !ASSERT_PIN(STEPPER1_UART_RX))
-#undef STEPPER1_HAS_TMC
-#error "Stepper 1 undefined UART pins"
-#endif
-#elif (STEPPER1_TMC_INTERFACE == TMC_SPI)
-#if (!ASSERT_PIN(STEPPER1_UART_DO) || !ASSERT_PIN(STEPPER1_UART_DI) || !ASSERT_PIN(STEPPER1_UART_CLK) || !ASSERT_PIN(STEPPER1_UART_CS))
-#undef STEPPER1_HAS_TMC
-#error "Stepper 1 undefined SPI pins"
-#endif
-#endif
-#endif
-#ifdef STEPPER2_HAS_TMC
-#if (STEPPER2_TMC_INTERFACE == TMC_UART)
-// if driver uses uart set pins
-#if (!ASSERT_PIN(STEPPER2_UART_TX) || !ASSERT_PIN(STEPPER2_UART_RX))
-#undef STEPPER2_HAS_TMC
-#error "Stepper 2 undefined UART pins"
-#endif
-#elif (STEPPER2_TMC_INTERFACE == TMC_SPI)
-#if (!ASSERT_PIN(STEPPER2_UART_DO) || !ASSERT_PIN(STEPPER2_UART_DI) || !ASSERT_PIN(STEPPER2_UART_CLK) || !ASSERT_PIN(STEPPER2_UART_CS))
-#undef STEPPER2_HAS_TMC
-#error "Stepper 2 undefined SPI pins"
-#endif
-#endif
-#endif
-#ifdef STEPPER3_HAS_TMC
-#if (STEPPER3_TMC_INTERFACE == TMC_UART)
-// if driver uses uart set pins
-#if (!ASSERT_PIN(STEPPER3_UART_TX) || !ASSERT_PIN(STEPPER3_UART_RX))
-#undef STEPPER3_HAS_TMC
-#error "Stepper 3 undefined UART pins"
-#endif
-#elif (STEPPER3_TMC_INTERFACE == TMC_SPI)
-#if (!ASSERT_PIN(STEPPER3_UART_DO) || !ASSERT_PIN(STEPPER3_UART_DI) || !ASSERT_PIN(STEPPER3_UART_CLK) || !ASSERT_PIN(STEPPER3_UART_CS))
-#undef STEPPER3_HAS_TMC
-#error "Stepper 3 undefined SPI pins"
-#endif
-#endif
-#endif
-#ifdef STEPPER4_HAS_TMC
-#if (STEPPER4_TMC_INTERFACE == TMC_UART)
-// if driver uses uart set pins
-#if (!ASSERT_PIN(STEPPER4_UART_TX) || !ASSERT_PIN(STEPPER4_UART_RX))
-#undef STEPPER4_HAS_TMC
-#error "Stepper 4 undefined UART pins"
-#endif
-#elif (STEPPER4_TMC_INTERFACE == TMC_SPI)
-#if (!ASSERT_PIN(STEPPER4_UART_DO) || !ASSERT_PIN(STEPPER4_UART_DI) || !ASSERT_PIN(STEPPER4_UART_CLK) || !ASSERT_PIN(STEPPER4_UART_CS))
-#undef STEPPER4_HAS_TMC
-#error "Stepper 4 undefined SPI pins"
-#endif
-#endif
-#endif
-#ifdef STEPPER5_HAS_TMC
-#if (STEPPER5_TMC_INTERFACE == TMC_UART)
-// if driver uses uart set pins
-#if (!ASSERT_PIN(STEPPER5_UART_TX) || !ASSERT_PIN(STEPPER5_UART_RX))
-#undef STEPPER5_HAS_TMC
-#error "Stepper 5 undefined UART pins"
-#endif
-#elif (STEPPER5_TMC_INTERFACE == TMC_SPI)
-#if (!ASSERT_PIN(STEPPER5_UART_DO) || !ASSERT_PIN(STEPPER5_UART_DI) || !ASSERT_PIN(STEPPER5_UART_CLK) || !ASSERT_PIN(STEPPER5_UART_CS))
-#undef STEPPER5_HAS_TMC
-#error "Stepper 5 undefined SPI pins"
-#endif
-#endif
-#endif
-#ifdef STEPPER6_HAS_TMC
-#if (STEPPER6_TMC_INTERFACE == TMC_UART)
-// if driver uses uart set pins
-#if (!ASSERT_PIN(STEPPER6_UART_TX) || !ASSERT_PIN(STEPPER6_UART_RX))
-#undef STEPPER6_HAS_TMC
-#error "Stepper 6 undefined UART pins"
-#endif
-#elif (STEPPER6_TMC_INTERFACE == TMC_SPI)
-#if (!ASSERT_PIN(STEPPER6_UART_DO) || !ASSERT_PIN(STEPPER6_UART_DI) || !ASSERT_PIN(STEPPER6_UART_CLK) || !ASSERT_PIN(STEPPER6_UART_CS))
-#undef STEPPER6_HAS_TMC
-#error "Stepper 6 undefined SPI pins"
-#endif
-#endif
-#endif
-#ifdef STEPPER7_HAS_TMC
-#if (STEPPER7_TMC_INTERFACE == TMC_UART)
-// if driver uses uart set pins
-#if (!ASSERT_PIN(STEPPER7_UART_TX) || !ASSERT_PIN(STEPPER7_UART_RX))
-#undef STEPPER7_HAS_TMC
-#error "Stepper 7 undefined UART pins"
-#endif
-#elif (STEPPER7_TMC_INTERFACE == TMC_SPI)
-#if (!ASSERT_PIN(STEPPER7_UART_DO) || !ASSERT_PIN(STEPPER7_UART_DI) || !ASSERT_PIN(STEPPER7_UART_CLK) || !ASSERT_PIN(STEPPER7_UART_CS))
-#undef STEPPER7_HAS_TMC
-#error "Stepper 7 undefined SPI pins"
-#endif
-#endif
-#endif
-
-#if defined(STEPPER0_HAS_TMC) || defined(STEPPER1_HAS_TMC) || defined(STEPPER2_HAS_TMC) || defined(STEPPER3_HAS_TMC) || defined(STEPPER4_HAS_TMC) || defined(STEPPER5_HAS_TMC) || defined(STEPPER6_HAS_TMC) || defined(STEPPER7_HAS_TMC)
-#define ENABLE_TMC_DRIVERS
-#ifndef ENABLE_MAIN_LOOP_MODULES
-#define ENABLE_MAIN_LOOP_MODULES
-#endif
-#endif
-
 #if defined(STEPPER0_HAS_MSTEP) || defined(STEPPER1_HAS_MSTEP) || defined(STEPPER2_HAS_MSTEP) || defined(STEPPER3_HAS_MSTEP) || defined(STEPPER4_HAS_MSTEP) || defined(STEPPER5_HAS_MSTEP) || defined(STEPPER6_HAS_MSTEP) || defined(STEPPER7_HAS_MSTEP)
 #define ENABLE_DIGITAL_MSTEP
 #endif
@@ -592,7 +363,9 @@ extern "C"
 /*laser ppi*/
 #if (TOOL_COUNT < 1)
 #undef ENABLE_LASER_PPI
+#undef ENABLE_PLASMA_THC
 #endif
+
 #ifdef ENABLE_LASER_PPI
 #ifndef MCU_HAS_ONESHOT_TIMER
 #error "The current MCU does not support ONESHOT_TIMER or the ONESHOT_TIMER is not configured"
@@ -608,284 +381,39 @@ extern "C"
 #if (STEPPER_COUNT == 1)
 #undef STEPPER_COUNT
 #define STEPPER_COUNT 2
-#define LASER_PPI_MASK STEP1_MASK
 #elif (STEPPER_COUNT == 2)
 #undef STEPPER_COUNT
 #define STEPPER_COUNT 3
-#define LASER_PPI_MASK STEP2_MASK
 #elif (STEPPER_COUNT == 3)
 #undef STEPPER_COUNT
 #define STEPPER_COUNT 4
-#define LASER_PPI_MASK STEP3_MASK
 #elif (STEPPER_COUNT == 4)
 #undef STEPPER_COUNT
 #define STEPPER_COUNT 5
-#define LASER_PPI_MASK STEP4_MASK
 #elif (STEPPER_COUNT == 5)
 #undef STEPPER_COUNT
 #define STEPPER_COUNT 6
-#define LASER_PPI_MASK STEP5_MASK
 #elif (STEPPER_COUNT == 6)
 #undef STEPPER_COUNT
 #define STEPPER_COUNT 7
-#define LASER_PPI_MASK STEP6_MASK
 #endif
 #ifndef LASER_PPI
-#define LASER_PPI -1
+#define LASER_PPI UNDEF_PIN
 #endif
 // #ifdef STEP_ISR_SKIP_MAIN
 // #undef STEP_ISR_SKIP_MAIN
 // #warning "STEP_ISR_SKIP_MAIN was disabled for Laser PPI mode"
 // #endif
 #else
-#define LASER_PPI -1
-#endif
-
-#define __stepname_helper__(x) STEP##x##_MASK
-#define __stepname__(x) __stepname_helper__(x)
-
-#define __axisname_helper__(x) AXIS_##x
-#define __axisname__(x) __axisname_helper__(x)
-
-#define __limitname_helper__(x) LIMIT_##x##_MASK
-#define __limitname__(x) __limitname_helper__(x)
-
-#ifdef ENABLE_DUAL_DRIVE_AXIS
-
-#ifndef DUAL_DRIVE0_STEPPER
-#define DUAL_DRIVE0_STEPPER 6
-#endif
-#ifndef DUAL_DRIVE1_STEPPER
-#define DUAL_DRIVE1_STEPPER 7
-#endif
-#ifndef DUAL_DRIVE2_STEPPER
-#define DUAL_DRIVE2_STEPPER 6
-#endif
-#ifndef DUAL_DRIVE3_STEPPER
-#define DUAL_DRIVE3_STEPPER 7
-#endif
-
-#if (!defined(DUAL_DRIVE0_AXIS) && !defined(DUAL_DRIVE1_AXIS) && !defined(DUAL_DRIVE2_AXIS) && !defined(DUAL_DRIVE3_AXIS))
-#error "Enabling dual axis drive requires to configure at least one axis with dual drive"
-#endif
-
-#if (STEPPER_COUNT > 0 && (DUAL_DRIVE0_STEPPER == 0 || DUAL_DRIVE1_STEPPER == 0 || DUAL_DRIVE2_STEPPER == 0 || DUAL_DRIVE3_STEPPER == 0))
-#error "Stepper 0 cannot be used as a axis drive and a dual axis drive at the same time"
-#endif
-#if (STEPPER_COUNT > 1 && (DUAL_DRIVE0_STEPPER == 1 || DUAL_DRIVE1_STEPPER == 1 || DUAL_DRIVE2_STEPPER == 1 || DUAL_DRIVE3_STEPPER == 1))
-#error "Stepper 1 cannot be used as a axis drive and a dual axis drive at the same time"
-#endif
-#if (STEPPER_COUNT > 2 && (DUAL_DRIVE0_STEPPER == 2 || DUAL_DRIVE1_STEPPER == 2 || DUAL_DRIVE2_STEPPER == 2 || DUAL_DRIVE3_STEPPER == 2))
-#error "Stepper 2 cannot be used as a axis drive and a dual axis drive at the same time"
-#endif
-#if (STEPPER_COUNT > 3 && (DUAL_DRIVE0_STEPPER == 3 || DUAL_DRIVE1_STEPPER == 3 || DUAL_DRIVE2_STEPPER == 3 || DUAL_DRIVE3_STEPPER == 3))
-#error "Stepper 3 cannot be used as a axis drive and a dual axis drive at the same time"
-#endif
-#if (STEPPER_COUNT > 4 && (DUAL_DRIVE0_STEPPER == 4 || DUAL_DRIVE1_STEPPER == 4 || DUAL_DRIVE2_STEPPER == 4 || DUAL_DRIVE3_STEPPER == 4))
-#error "Stepper 4 cannot be used as a axis drive and a dual axis drive at the same time"
-#endif
-#if (STEPPER_COUNT > 5 && (DUAL_DRIVE0_STEPPER == 5 || DUAL_DRIVE1_STEPPER == 5 || DUAL_DRIVE2_STEPPER == 5 || DUAL_DRIVE3_STEPPER == 5))
-#error "Stepper 5 cannot be used as a axis drive and a dual axis drive at the same time"
-#endif
-
-// dual axis0
-#ifdef DUAL_DRIVE0_AXIS
-#define AXIS_DUAL0 __axisname__(DUAL_DRIVE0_AXIS)
-#define STEP_DUAL0 (1 << AXIS_DUAL0)
-#ifdef DUAL_DRIVE0_ENABLE_SELFSQUARING
-#define LIMIT_DUAL0_MASK (1 << AXIS_DUAL0)
-#endif
-#define STEP_DUAL0_MASK (1 << DUAL_DRIVE0_STEPPER)
-#endif
-
-// dual axis1
-#ifdef DUAL_DRIVE1_AXIS
-#define AXIS_DUAL1 __axisname__(DUAL_DRIVE1_AXIS)
-#define STEP_DUAL1 (1 << AXIS_DUAL1)
-#ifdef DUAL_DRIVE1_ENABLE_SELFSQUARING
-#define LIMIT_DUAL1_MASK (1 << AXIS_DUAL1)
-#endif
-#define STEP_DUAL1_MASK (1 << DUAL_DRIVE1_STEPPER)
-#endif
-
-// axis2 and 3 are only replicating axis (no self-squaring)
-
-// dual axis2
-#ifdef DUAL_DRIVE2_AXIS
-#define AXIS_DUAL2 __axisname__(DUAL_DRIVE2_AXIS)
-#define STEP_DUAL2 (1 << AXIS_DUAL2)
-#define STEP_DUAL2_MASK (1 << DUAL_DRIVE2_STEPPER)
-#endif
-
-// dual axis3
-#ifdef DUAL_DRIVE3_AXIS
-#define AXIS_DUAL3 __axisname__(DUAL_DRIVE3_AXIS)
-#define STEP_DUAL3 (1 << AXIS_DUAL3)
-#define STEP_DUAL3_MASK (1 << DUAL_DRIVE3_STEPPER)
-#endif
-
-#endif
-
-#ifndef LIMIT_DUAL0_MASK
-#define LIMIT_DUAL0_MASK 0
-#endif
-#ifndef LIMIT_DUAL1_MASK
-#define LIMIT_DUAL1_MASK 0
-#endif
-
-#define LIMITS_DUAL_MASK (LIMIT_DUAL0_MASK | LIMIT_DUAL1_MASK)
-
-#if (STEP0_MASK == STEP_DUAL0)
-#define STEP0_ITP_MASK (STEP0_MASK | STEP_DUAL0_MASK)
-#elif (STEP0_MASK == STEP_DUAL1)
-#define STEP0_ITP_MASK (STEP0_MASK | STEP_DUAL1_MASK)
-#elif (STEP0_MASK == STEP_DUAL2)
-#define STEP0_ITP_MASK (STEP0_MASK | STEP_DUAL2_MASK)
-#elif (STEP0_MASK == STEP_DUAL3)
-#define STEP0_ITP_MASK (STEP0_MASK | STEP_DUAL3_MASK)
-#else
-#define STEP0_ITP_MASK STEP0_MASK
-#endif
-#if (STEP1_MASK == STEP_DUAL0)
-#define STEP1_ITP_MASK (STEP1_MASK | STEP_DUAL0_MASK)
-#elif (STEP1_MASK == STEP_DUAL1)
-#define STEP1_ITP_MASK (STEP1_MASK | STEP_DUAL1_MASK)
-#elif (STEP1_MASK == STEP_DUAL2)
-#define STEP1_ITP_MASK (STEP1_MASK | STEP_DUAL2_MASK)
-#elif (STEP1_MASK == STEP_DUAL3)
-#define STEP1_ITP_MASK (STEP1_MASK | STEP_DUAL3_MASK)
-#else
-#define STEP1_ITP_MASK STEP1_MASK
-#endif
-#if (STEP2_MASK == STEP_DUAL0)
-#define STEP2_ITP_MASK (STEP2_MASK | STEP_DUAL0_MASK)
-#elif (STEP2_MASK == STEP_DUAL1)
-#define STEP2_ITP_MASK (STEP2_MASK | STEP_DUAL1_MASK)
-#elif (STEP2_MASK == STEP_DUAL2)
-#define STEP2_ITP_MASK (STEP2_MASK | STEP_DUAL2_MASK)
-#elif (STEP2_MASK == STEP_DUAL3)
-#define STEP2_ITP_MASK (STEP2_MASK | STEP_DUAL3_MASK)
-#else
-#define STEP2_ITP_MASK STEP2_MASK
-#endif
-#if (STEP3_MASK == STEP_DUAL0)
-#define STEP3_ITP_MASK (STEP3_MASK | STEP_DUAL0_MASK)
-#elif (STEP3_MASK == STEP_DUAL1)
-#define STEP3_ITP_MASK (STEP3_MASK | STEP_DUAL1_MASK)
-#elif (STEP3_MASK == STEP_DUAL2)
-#define STEP3_ITP_MASK (STEP3_MASK | STEP_DUAL2_MASK)
-#elif (STEP3_MASK == STEP_DUAL3)
-#define STEP3_ITP_MASK (STEP3_MASK | STEP_DUAL3_MASK)
-#else
-#define STEP3_ITP_MASK STEP3_MASK
-#endif
-#if (STEP4_MASK == STEP_DUAL0)
-#define STEP4_ITP_MASK (STEP4_MASK | STEP_DUAL0_MASK)
-#elif (STEP4_MASK == STEP_DUAL1)
-#define STEP4_ITP_MASK (STEP4_MASK | STEP_DUAL1_MASK)
-#elif (STEP4_MASK == STEP_DUAL2)
-#define STEP4_ITP_MASK (STEP4_MASK | STEP_DUAL2_MASK)
-#elif (STEP4_MASK == STEP_DUAL3)
-#define STEP4_ITP_MASK (STEP4_MASK | STEP_DUAL3_MASK)
-#else
-#define STEP4_ITP_MASK STEP4_MASK
-#endif
-#if (STEP5_MASK == STEP_DUAL0)
-#define STEP5_ITP_MASK (STEP5_MASK | STEP_DUAL0_MASK)
-#elif (STEP5_MASK == STEP_DUAL1)
-#define STEP5_ITP_MASK (STEP5_MASK | STEP_DUAL1_MASK)
-#elif (STEP5_MASK == STEP_DUAL2)
-#define STEP5_ITP_MASK (STEP5_MASK | STEP_DUAL2_MASK)
-#elif (STEP5_MASK == STEP_DUAL3)
-#define STEP5_ITP_MASK (STEP5_MASK | STEP_DUAL3_MASK)
-#else
-#define STEP5_ITP_MASK STEP5_MASK
-#endif
-
-#ifndef STEP_DUAL0
-#define STEP_DUAL0 -1
-#endif
-
-#ifndef STEP_DUAL1
-#define STEP_DUAL1 -1
-#endif
-
-#ifndef STEP_DUAL2
-#define STEP_DUAL2 -1
-#endif
-
-#ifndef STEP_DUAL3
-#define STEP_DUAL3 -1
-#endif
-
-#if (STEPPER_COUNT < 1 && DUAL_DRIVE0_STEPPER != 0 && DUAL_DRIVE1_STEPPER != 0 && DUAL_DRIVE2_STEPPER != 0 && DUAL_DRIVE3_STEPPER != 0)
-#ifdef STEP0
-#undef STEP0
-#endif
-#ifdef DIR0
-#undef DIR0
-#endif
-#endif
-#if (STEPPER_COUNT < 2 && DUAL_DRIVE0_STEPPER != 1 && DUAL_DRIVE1_STEPPER != 1 && DUAL_DRIVE2_STEPPER != 1 && DUAL_DRIVE3_STEPPER != 1)
-#ifdef STEP1
-#undef STEP1
-#endif
-#ifdef DIR1
-#undef DIR1
-#endif
-#endif
-#if (STEPPER_COUNT < 3 && DUAL_DRIVE0_STEPPER != 2 && DUAL_DRIVE1_STEPPER != 2 && DUAL_DRIVE2_STEPPER != 2 && DUAL_DRIVE3_STEPPER != 2)
-#ifdef STEP2
-#undef STEP2
-#endif
-#ifdef DIR2
-#undef DIR2
-#endif
-#endif
-#if (STEPPER_COUNT < 4 && DUAL_DRIVE0_STEPPER != 3 && DUAL_DRIVE1_STEPPER != 3 && DUAL_DRIVE2_STEPPER != 3 && DUAL_DRIVE3_STEPPER != 3)
-#ifdef STEP3
-#undef STEP3
-#endif
-#ifdef DIR3
-#undef DIR3
-#endif
-#endif
-#if (STEPPER_COUNT < 5 && DUAL_DRIVE0_STEPPER != 4 && DUAL_DRIVE1_STEPPER != 4 && DUAL_DRIVE2_STEPPER != 4 && DUAL_DRIVE3_STEPPER != 4)
-#ifdef STEP4
-#undef STEP4
-#endif
-#ifdef DIR4
-#undef DIR4
-#endif
-#endif
-#if (STEPPER_COUNT < 6 && DUAL_DRIVE0_STEPPER != 5 && DUAL_DRIVE1_STEPPER != 5 && DUAL_DRIVE2_STEPPER != 5 && DUAL_DRIVE3_STEPPER != 5)
-#ifdef STEP5
-#undef STEP5
-#endif
-#ifdef DIR5
-#undef DIR5
-#endif
-#endif
-#if (DUAL_DRIVE0_STEPPER != 6 && DUAL_DRIVE1_STEPPER != 6 && DUAL_DRIVE2_STEPPER != 6 && DUAL_DRIVE3_STEPPER != 6)
-#ifdef STEP6
-#undef STEP6
-#endif
-#ifdef DIR6
-#undef DIR6
-#endif
-#endif
-#if (DUAL_DRIVE0_STEPPER != 7 && DUAL_DRIVE1_STEPPER != 7 && DUAL_DRIVE2_STEPPER != 7 && DUAL_DRIVE3_STEPPER != 7)
-#ifdef STEP7
-#undef STEP7
-#endif
-#ifdef DIR7
-#undef DIR7
-#endif
+#define LASER_PPI UNDEF_PIN
 #endif
 
 /**
  * final pin cleaning and configuration
  **/
+#ifndef DIO0
+#define DIO0 UNDEF_PIN
+#endif
 #ifndef STEP0
 #define STEP0 UNDEF_PIN
 #ifdef DIO1
@@ -1951,7 +1479,161 @@ extern "C"
 #define DIO211 UNDEF_PIN
 #endif
 
-	// if the pins are undefined turn on option
+// set default limits and step associations
+#if ASSERT_PIN(LIMIT_X) && !defined(LIMIT_X_IO_MASK)
+#define LIMIT_X_IO_MASK STEP0_IO_MASK
+#elif !defined(LIMIT_X_IO_MASK)
+#define LIMIT_X_IO_MASK STEP_UNDEF_IO_MASK
+#endif
+#if ASSERT_PIN(LIMIT_Y) && !defined(LIMIT_Y_IO_MASK) && (AXIS_COUNT > 1)
+#define LIMIT_Y_IO_MASK STEP1_IO_MASK
+#elif !defined(LIMIT_Y_IO_MASK)
+#define LIMIT_Y_IO_MASK STEP_UNDEF_IO_MASK
+#endif
+#if ASSERT_PIN(LIMIT_Z) && !defined(LIMIT_Z_IO_MASK) && (AXIS_COUNT > 2)
+#define LIMIT_Z_IO_MASK STEP2_IO_MASK
+#elif !defined(LIMIT_Z_IO_MASK)
+#define LIMIT_Z_IO_MASK STEP_UNDEF_IO_MASK
+#endif
+#if ASSERT_PIN(LIMIT_A) && !defined(LIMIT_A_IO_MASK) && (AXIS_COUNT > 3)
+#define LIMIT_A_IO_MASK STEP3_IO_MASK
+#elif !defined(LIMIT_A_IO_MASK)
+#define LIMIT_A_IO_MASK STEP_UNDEF_IO_MASK
+#endif
+#if ASSERT_PIN(LIMIT_B) && !defined(LIMIT_B_IO_MASK) && (AXIS_COUNT > 4)
+#define LIMIT_B_IO_MASK STEP4_IO_MASK
+#elif !defined(LIMIT_B_IO_MASK)
+#define LIMIT_B_IO_MASK STEP_UNDEF_IO_MASK
+#endif
+#if ASSERT_PIN(LIMIT_C) && !defined(LIMIT_C_IO_MASK) && (AXIS_COUNT > 5)
+#define LIMIT_C_IO_MASK STEP5_IO_MASK
+#elif !defined(LIMIT_C_IO_MASK)
+#define LIMIT_C_IO_MASK STEP_UNDEF_IO_MASK
+#endif
+#if ASSERT_PIN(LIMIT_X2) && !defined(LIMIT_X2_IO_MASK)
+#define LIMIT_X2_IO_MASK STEP0_IO_MASK
+#elif !defined(LIMIT_X2_IO_MASK)
+#define LIMIT_X2_IO_MASK STEP_UNDEF_IO_MASK
+#endif
+#if ASSERT_PIN(LIMIT_Y2) && !defined(LIMIT_Y2_IO_MASK)
+#define LIMIT_Y2_IO_MASK STEP1_IO_MASK
+#elif !defined(LIMIT_Y2_IO_MASK)
+#define LIMIT_Y2_IO_MASK STEP_UNDEF_IO_MASK
+#endif
+#if ASSERT_PIN(LIMIT_Z2) && !defined(LIMIT_Z2_IO_MASK)
+#define LIMIT_Z2_IO_MASK STEP2_IO_MASK
+#elif !defined(LIMIT_Z2_IO_MASK)
+#define LIMIT_Z2_IO_MASK STEP_UNDEF_IO_MASK
+#endif
+
+// linear actuator and step associations
+#ifndef LINACT0_IO_MASK
+#define LINACT0_IO_MASK STEP0_IO_MASK
+#endif
+#ifndef LINACT1_IO_MASK
+#define LINACT1_IO_MASK STEP1_IO_MASK
+#endif
+#ifndef LINACT2_IO_MASK
+#define LINACT2_IO_MASK STEP2_IO_MASK
+#endif
+#ifndef LINACT3_IO_MASK
+#define LINACT3_IO_MASK STEP3_IO_MASK
+#endif
+#ifndef LINACT4_IO_MASK
+#define LINACT4_IO_MASK STEP4_IO_MASK
+#endif
+#ifndef LINACT5_IO_MASK
+#define LINACT5_IO_MASK STEP5_IO_MASK
+#endif
+#ifdef ENABLE_LASER_PPI
+#ifndef LASERPPI_IO_MASK
+#define LASERPPI_IO_MASK STEP7_IO_MASK
+#endif
+#endif
+
+// linear actuator limits and limits association
+#ifndef LINACT0_LIMIT_MASK
+#define LINACT0_LIMIT_MASK (LIMIT_X_IO_MASK | LIMIT_X2_IO_MASK)
+#endif
+#ifndef LINACT1_LIMIT_MASK
+#define LINACT1_LIMIT_MASK (LIMIT_Y_IO_MASK | LIMIT_Y2_IO_MASK)
+#endif
+#ifndef LINACT2_LIMIT_MASK
+#define LINACT2_LIMIT_MASK (LIMIT_Z_IO_MASK | LIMIT_Z2_IO_MASK)
+#endif
+#ifndef LINACT3_LIMIT_MASK
+#define LINACT3_LIMIT_MASK (LIMIT_A_IO_MASK)
+#endif
+#ifndef LINACT4_LIMIT_MASK
+#define LINACT4_LIMIT_MASK (LIMIT_B_IO_MASK)
+#endif
+#ifndef LINACT5_LIMIT_MASK
+#define LINACT5_LIMIT_MASK (LIMIT_C_IO_MASK)
+#endif
+
+#ifndef AXIS_X
+#undef LINACT0_IO_MASK
+#undef LINACT0_LIMIT_MASK
+#define LINACT0_IO_MASK 0
+#define LINACT0_LIMIT_MASK 0
+#endif
+#ifndef AXIS_Y
+#undef LINACT1_IO_MASK
+#undef LINACT1_LIMIT_MASK
+#if (defined(ENABLE_LASER_PPI) && STEPPER_COUNT == 2)
+#define LINACT1_IO_MASK LASERPPI_IO_MASK
+#else
+#define LINACT1_IO_MASK 0
+#endif
+#define LINACT1_LIMIT_MASK 0
+#endif
+#ifndef AXIS_Z
+#undef LINACT2_IO_MASK
+#undef LINACT2_LIMIT_MASK
+#if (defined(ENABLE_LASER_PPI) && STEPPER_COUNT == 3)
+#define LINACT2_IO_MASK LASERPPI_IO_MASK
+#else
+#define LINACT2_IO_MASK 0
+#endif
+#define LINACT2_LIMIT_MASK 0
+#endif
+#ifndef AXIS_A
+#undef LINACT3_IO_MASK
+#undef LINACT3_LIMIT_MASK
+#if (defined(ENABLE_LASER_PPI) && STEPPER_COUNT == 4)
+#define LINACT3_IO_MASK LASERPPI_IO_MASK
+#else
+#define LINACT3_IO_MASK 0
+#endif
+#define LINACT3_LIMIT_MASK 0
+#endif
+#ifndef AXIS_B
+#undef LINACT4_IO_MASK
+#undef LINACT4_LIMIT_MASK
+#if (defined(ENABLE_LASER_PPI) && STEPPER_COUNT == 5)
+#define LINACT4_IO_MASK LASERPPI_IO_MASK
+#else
+#define LINACT4_IO_MASK 0
+#endif
+#define LINACT4_LIMIT_MASK 0
+#endif
+#ifndef AXIS_C
+#undef LINACT5_IO_MASK
+#undef LINACT5_LIMIT_MASK
+#if (defined(ENABLE_LASER_PPI) && STEPPER_COUNT == 6)
+#define LINACT5_IO_MASK LASERPPI_IO_MASK
+#else
+#define LINACT5_IO_MASK 0
+#endif
+#define LINACT5_LIMIT_MASK 0
+#endif
+
+#define LIMITS_MASK (LINACT0_LIMIT_MASK | LINACT1_LIMIT_MASK | LINACT2_LIMIT_MASK | LINACT3_LIMIT_MASK | LINACT4_LIMIT_MASK | LINACT5_LIMIT_MASK)
+#define LIMITS_DELTA_MASK (LINACT0_LIMIT_MASK | LINACT1_LIMIT_MASK | LINACT2_LIMIT_MASK)
+
+// if the pins are undefined turn on option
+#define CONTROLS_MASK (ESTOP_MASK | FHOLD_MASK | CS_RES_MASK | SAFETY_DOOR_MASK)
+
 #if (!ASSERT_PIN(ESTOP) && !ASSERT_PIN(SAFETY_DOOR) && !ASSERT_PIN(FHOLD) && !ASSERT_PIN(CS_RES) && !defined(DISABLE_ALL_CONTROLS))
 #define DISABLE_ALL_CONTROLS
 #endif
@@ -2030,7 +1712,7 @@ extern "C"
 #define LIMIT_Z2_INV_MASK 4
 #endif
 
-#define LIMITS_INV_MASK (LIMIT_X_INV_MASK | LIMIT_Y_INV_MASK | LIMIT_Z_INV_MASK | LIMIT_A_INV_MASK | LIMIT_B_INV_MASK | LIMIT_B_INV_MASK)
+#define LIMITS_INV_MASK (LIMIT_X_INV_MASK | LIMIT_Y_INV_MASK | LIMIT_Z_INV_MASK | LIMIT_A_INV_MASK | LIMIT_B_INV_MASK | LIMIT_C_INV_MASK)
 #define LIMITS_DUAL_INV_MASK (LIMIT_X2_INV_MASK | LIMIT_Y2_INV_MASK | LIMIT_Z2_INV_MASK)
 
 #if (ASSERT_PIN(DIN0) && defined(DIN0_ISR))
@@ -2152,13 +1834,11 @@ typedef uint16_t step_t;
 #error "DSS_CUTOFF_FREQ should not be set above 1/8th of the max step rate"
 #endif
 
-#ifdef ENABLE_S_CURVE_ACCELERATION
-#ifdef USE_LEGACY_STEP_INTERPOLATOR
-#undef USE_LEGACY_STEP_INTERPOLATOR
-#endif
+#if ((S_CURVE_ACCELERATION_LEVEL < -1) || (S_CURVE_ACCELERATION_LEVEL > 5))
+#error "invalid s-curve velocity profile setting"
 #endif
 
-#if (defined(KINEMATICS_MOTION_BY_SEGMENTS))
+#if (defined(IS_DELTA_KINEMATICS))
 #ifdef ENABLE_DUAL_DRIVE_AXIS
 #error "Delta does not support dual drive axis"
 #endif
@@ -2257,6 +1937,137 @@ typedef uint16_t step_t;
 #error "Invalid config option STATUS_AUTOMATIC_REPORT_INTERVAL must be set between 0 and 1000"
 #endif
 
+#if defined(ENABLE_AXIS_AUTOLEVEL) || defined(IS_DELTA_KINEMATICS) || defined(ENABLE_XY_SIMULTANEOUS_HOMING)
+#define ENABLE_MULTI_STEP_HOMING
+#endif
+
+#if defined(AXIS_X) && LINACT0_LIMIT_MASK && !defined(DISABLE_X_HOMING)
+#define AXIS_X_HOMING_MASK (1 << AXIS_X)
+#else
+#define AXIS_X_HOMING_MASK 0
+#endif
+#if defined(AXIS_Y) && LINACT1_LIMIT_MASK && !defined(DISABLE_Y_HOMING)
+#define AXIS_Y_HOMING_MASK (1 << AXIS_Y)
+#else
+#define AXIS_Y_HOMING_MASK 0
+#endif
+#if defined(AXIS_Z) && LINACT2_LIMIT_MASK && !defined(DISABLE_Z_HOMING)
+#define AXIS_Z_HOMING_MASK (1 << AXIS_Z)
+#else
+#define AXIS_Z_HOMING_MASK 0
+#endif
+#if defined(AXIS_A) && LINACT3_LIMIT_MASK && !defined(DISABLE_A_HOMING)
+#define AXIS_A_HOMING_MASK (1 << AXIS_A)
+#else
+#define AXIS_A_HOMING_MASK 0
+#endif
+#if defined(AXIS_B) && LINACT4_LIMIT_MASK && !defined(DISABLE_B_HOMING)
+#define AXIS_B_HOMING_MASK (1 << AXIS_B)
+#else
+#define AXIS_B_HOMING_MASK 0
+#endif
+#if defined(AXIS_C) && LINACT5_LIMIT_MASK && !defined(DISABLE_C_HOMING)
+#define AXIS_C_HOMING_MASK (1 << AXIS_C)
+#else
+#define AXIS_C_HOMING_MASK 0
+#endif
+
+#if (LINACT0_IO_MASK & LINACT1_IO_MASK)
+#error "Linear actuator 0 and 1 have overlapped outputs and this can lead to unpredictable results"
+#endif
+#if (LINACT0_IO_MASK & LINACT2_IO_MASK)
+#error "Linear actuator 0 and 2 have overlapped outputs and this can lead to unpredictable results"
+#endif
+#if (LINACT0_IO_MASK & LINACT3_IO_MASK)
+#error "Linear actuator 0 and 3 have overlapped outputs and this can lead to unpredictable results"
+#endif
+#if (LINACT0_IO_MASK & LINACT4_IO_MASK)
+#error "Linear actuator 0 and 4 have overlapped outputs and this can lead to unpredictable results"
+#endif
+#if (LINACT0_IO_MASK & LINACT5_IO_MASK)
+#error "Linear actuator 0 and 5 have overlapped outputs and this can lead to unpredictable results"
+#endif
+#if (LINACT1_IO_MASK & LINACT2_IO_MASK)
+#error "Linear actuator 1 and 2 have overlapped outputs and this can lead to unpredictable results"
+#endif
+#if (LINACT1_IO_MASK & LINACT3_IO_MASK)
+#error "Linear actuator 1 and 3 have overlapped outputs and this can lead to unpredictable results"
+#endif
+#if (LINACT1_IO_MASK & LINACT4_IO_MASK)
+#error "Linear actuator 1 and 4 have overlapped outputs and this can lead to unpredictable results"
+#endif
+#if (LINACT1_IO_MASK & LINACT5_IO_MASK)
+#error "Linear actuator 1 and 5 have overlapped outputs and this can lead to unpredictable results"
+#endif
+#if (LINACT2_IO_MASK & LINACT3_IO_MASK)
+#error "Linear actuator 2 and 3 have overlapped outputs and this can lead to unpredictable results"
+#endif
+#if (LINACT2_IO_MASK & LINACT4_IO_MASK)
+#error "Linear actuator 2 and 4 have overlapped outputs and this can lead to unpredictable results"
+#endif
+#if (LINACT2_IO_MASK & LINACT5_IO_MASK)
+#error "Linear actuator 2 and 5 have overlapped outputs and this can lead to unpredictable results"
+#endif
+#if (LINACT3_IO_MASK & LINACT4_IO_MASK)
+#error "Linear actuator 3 and 4 have overlapped outputs and this can lead to unpredictable results"
+#endif
+#if (LINACT3_IO_MASK & LINACT5_IO_MASK)
+#error "Linear actuator 3 and 5 have overlapped outputs and this can lead to unpredictable results"
+#endif
+#if (LINACT4_IO_MASK & LINACT5_IO_MASK)
+#error "Linear actuator 4 and 5 have overlapped outputs and this can lead to unpredictable results"
+#endif
+
+#if (LINACT0_LIMIT_MASK & LINACT1_LIMIT_MASK)
+#error "Linear actuator 0 and 1 have overlapped input limits and this can lead to unpredictable results"
+#endif
+#if (LINACT0_LIMIT_MASK & LINACT2_LIMIT_MASK)
+#error "Linear actuator 0 and 2 have overlapped input limits and this can lead to unpredictable results"
+#endif
+#if (LINACT0_LIMIT_MASK & LINACT3_LIMIT_MASK)
+#error "Linear actuator 0 and 3 have overlapped input limits and this can lead to unpredictable results"
+#endif
+#if (LINACT0_LIMIT_MASK & LINACT4_LIMIT_MASK)
+#error "Linear actuator 0 and 4 have overlapped input limits and this can lead to unpredictable results"
+#endif
+#if (LINACT0_LIMIT_MASK & LINACT5_LIMIT_MASK)
+#error "Linear actuator 0 and 5 have overlapped input limits and this can lead to unpredictable results"
+#endif
+#if (LINACT1_LIMIT_MASK & LINACT2_LIMIT_MASK)
+#error "Linear actuator 1 and 2 have overlapped input limits and this can lead to unpredictable results"
+#endif
+#if (LINACT1_LIMIT_MASK & LINACT3_LIMIT_MASK)
+#error "Linear actuator 1 and 3 have overlapped input limits and this can lead to unpredictable results"
+#endif
+#if (LINACT1_LIMIT_MASK & LINACT4_LIMIT_MASK)
+#error "Linear actuator 1 and 4 have overlapped input limits and this can lead to unpredictable results"
+#endif
+#if (LINACT1_LIMIT_MASK & LINACT5_LIMIT_MASK)
+#error "Linear actuator 1 and 5 have overlapped input limits and this can lead to unpredictable results"
+#endif
+#if (LINACT2_LIMIT_MASK & LINACT3_LIMIT_MASK)
+#error "Linear actuator 2 and 3 have overlapped input limits and this can lead to unpredictable results"
+#endif
+#if (LINACT2_LIMIT_MASK & LINACT4_LIMIT_MASK)
+#error "Linear actuator 2 and 4 have overlapped input limits and this can lead to unpredictable results"
+#endif
+#if (LINACT2_LIMIT_MASK & LINACT5_LIMIT_MASK)
+#error "Linear actuator 2 and 5 have overlapped input limits and this can lead to unpredictable results"
+#endif
+#if (LINACT3_LIMIT_MASK & LINACT4_LIMIT_MASK)
+#error "Linear actuator 3 and 4 have overlapped input limits and this can lead to unpredictable results"
+#endif
+#if (LINACT3_LIMIT_MASK & LINACT5_LIMIT_MASK)
+#error "Linear actuator 3 and 5 have overlapped input limits and this can lead to unpredictable results"
+#endif
+#if (LINACT4_LIMIT_MASK & LINACT5_LIMIT_MASK)
+#error "Linear actuator 4 and 5 have overlapped input limits and this can lead to unpredictable results"
+#endif
+
+#if ((AXIS_COUNT != 2) && defined(USE_Y_AS_Z_ALIAS))
+#error "Y axis can only be used as a Z alias in 2 axis machines."
+#endif
+
 #ifdef MCU_HAS_I2C
 
 // defaults to master I2C
@@ -2275,6 +2086,51 @@ typedef uint16_t step_t;
 #warning "ENABLE_G39_H_MAPPING disabled via DISABLE_PROBING_SUPPORT"
 #endif
 #endif
+
+#ifndef AXIS_TOOL
+#ifdef ENABLE_G39_H_MAPPING
+#undef ENABLE_G39_H_MAPPING
+#warning "ENABLE_G39_H_MAPPING disabled via because AXIS_TOOL is not defined"
+#endif
+#endif
+
+#ifndef DISABLE_SETTINGS_MODULES
+#define ENABLE_SETTINGS_MODULES
+#endif
+
+#ifdef ENABLE_LASER_PPI
+// forces modes
+#ifndef ENABLE_RT_SYNC_MOTIONS
+#define ENABLE_RT_SYNC_MOTIONS
+#endif
+#ifndef ENABLE_PARSER_MODULES
+#define ENABLE_PARSER_MODULES
+#endif
+#endif
+
+#ifdef ENABLE_PLASMA_THC
+// forces modes
+#ifndef ENABLE_TOOL_PID_CONTROLLER
+#define ENABLE_TOOL_PID_CONTROLLER
+#endif
+#ifndef ENABLE_PARSER_MODULES
+#define ENABLE_PARSER_MODULES
+#endif
+#ifndef ENABLE_MOTION_CONTROL_PLANNER_HIJACKING
+#define ENABLE_MOTION_CONTROL_PLANNER_HIJACKING
+#endif
+#ifndef ENABLE_RT_SYNC_MOTIONS
+#define ENABLE_RT_SYNC_MOTIONS
+#endif
+#endif
+
+#ifdef ENABLE_TOOL_PID_CONTROLLER
+#ifndef ENABLE_SETTINGS_MODULES
+#define ENABLE_SETTINGS_MODULES
+#endif
+#endif
+
+#include "hal/io_hal.h"
 
 #ifdef __cplusplus
 }

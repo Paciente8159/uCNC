@@ -27,17 +27,39 @@
 #include <usb/mscuser.h>
 #include <CDCSerial.h>
 #include <usb/mscuser.h>
+#include <stdint.h>
 
 extern "C"
 {
 #include "../../../cnc.h"
 #ifdef USE_ARDUINO_CDC
-	void mcu_usb_dotasks(void)
+	void lpc176x_usb_dotasks(void)
 	{
 		MSC_RunDeferredCommands();
 	}
 
-	void mcu_usb_init(void)
+	bool lpc176x_usb_available(void)
+	{
+		return (UsbSerial.available() > 0);
+	}
+
+	uint8_t lpc176x_usb_getc(void)
+	{
+		return (uint8_t)UsbSerial.read();
+	}
+
+	void lpc176x_usb_putc(uint8_t c)
+	{
+		char a = (char)c;
+		UsbSerial.write(&a, 1);
+	}
+
+	void lpc176x_usb_write(uint8_t* ptr, uint8_t len)
+	{
+		UsbSerial.write((char*)ptr, len);
+	}
+
+	void lpc176x_usb_init(void)
 	{
 		USB_Init();			// USB Initialization
 		USB_Connect(false); // USB clear connection
@@ -46,61 +68,76 @@ extern "C"
 		while (!USB_Configuration && usb_timeout > mcu_millis())
 		{
 			mcu_delay_us(50);
-			mcu_usb_dotasks();
+			MSC_RunDeferredCommands();
 #if ASSERT_PIN(ACTIVITY_LED)
-			mcu_toggle_output(ACTIVITY_LED); // Flash quickly during USB initialization
+			io_toggle_output(ACTIVITY_LED); // Flash quickly during USB initialization
 #endif
 		}
 		UsbSerial.begin(BAUDRATE);
+// 		// BUFFER_CLEAR(usb_rx);
 	}
 
-#ifndef USB_TX_BUFFER_SIZE
-#define USB_TX_BUFFER_SIZE 64
 #endif
-	DECL_BUFFER(uint8_t, usb, USB_TX_BUFFER_SIZE);
-	void mcu_usb_flush(void)
-	{
-#ifdef MCU_HAS_USB
-#ifdef USE_ARDUINO_CDC
-		while (!BUFFER_EMPTY(usb))
-		{
-			char tmp[USB_TX_BUFFER_SIZE];
-			uint8_t r;
 
-			BUFFER_READ(usb, tmp, USB_TX_BUFFER_SIZE, r);
-			UsbSerial.write(tmp, r);
-			UsbSerial.flushTX();
-		}
+#if defined(MCU_HAS_I2C) && defined(USE_ARDUINO_WIRE)
+#include <Wire.h>
+#define I2C_REG Wire
+#if I2C_ADDRESS!=0
+#error "I2C slave mode not supported"
+#endif
+
+extern "C"
+{
+#if (I2C_ADDRESS != 0)
+	static uint8_t mcu_i2c_buffer_len;
+	static uint8_t mcu_i2c_buffer[I2C_SLAVE_BUFFER_SIZE];
+	void lpc176x_i2c_onreceive(int len)
+	{
+		uint8_t l = I2C_REG.readBytes(mcu_i2c_buffer, len);
+		mcu_i2c_slave_cb(mcu_i2c_buffer, &l);
+		mcu_i2c_buffer_len = l;
+	}
+
+	void lpc176x_i2c_onrequest(void)
+	{
+		I2C_REG.write(mcu_i2c_buffer, mcu_i2c_buffer_len);
+	}
+
+#endif
+
+	void mcu_i2c_config(uint32_t frequency)
+	{
+#if I2C_ADDRESS == 0
+		I2C_REG.begin();
 #else
-		tusb_cdc_flush();
-#endif
+		I2C_REG.onReceive(lpc176x_i2c_onreceive);
+		I2C_REG.onRequest(lpc176x_i2c_onrequest);
+		I2C_REG.begin(I2C_ADDRESS);
 #endif
 	}
 
-	void mcu_usb_putc(uint8_t c)
+	uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool release, uint32_t ms_timeout)
 	{
-		while (BUFFER_FULL(usb))
+		I2C_REG.beginTransmission(address);
+		I2C_REG.write(data, datalen);
+		return (I2C_REG.endTransmission() == 0) ? I2C_OK : I2C_NOTOK;
+	}
+
+	uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_t ms_timeout)
+	{
+		if (I2C_REG.requestFrom(address, datalen) == datalen)
 		{
-			mcu_usb_flush();
+			while(datalen--){
+				*data = (uint8_t)I2C_REG.read();
+				data++;
+			}
+			
+			return I2C_OK;
 		}
-		BUFFER_ENQUEUE(usb, &c);
-	}
 
-	char mcu_usb_getc(void)
-	{
-		int16_t c = UsbSerial.read();
-		return (uint8_t)((c >= 0) ? c : 0);
+		return I2C_NOTOK;
 	}
-
-	uint8_t mcu_usb_available(void)
-	{
-		return UsbSerial.available();
-	}
-
-	uint8_t mcu_usb_tx_available(void)
-	{
-		return (UsbSerial.availableForWrite() | (UsbSerial.host_connected ? 0 : 1));
-	}
+}
 #endif
 }
 #endif
