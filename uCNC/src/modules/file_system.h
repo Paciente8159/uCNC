@@ -88,6 +88,12 @@ extern "C"
 #ifndef FS_STR_MOUNTED
 #define FS_STR_MOUNTED "FS mounted"
 #endif
+#ifndef FS_STR_FILE_PREFIX
+#define FS_STR_FILE_PREFIX "File "
+#endif
+#ifndef FS_STR_SD_CONFIRM
+#define FS_STR_SD_CONFIRM "run?"
+#endif
 
 #ifdef __cplusplus
 }
