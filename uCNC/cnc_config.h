@@ -315,10 +315,10 @@ extern "C"
 	/**
 	 * Uncomment to enable module extensions
 	 * */
-	// #define ENABLE_MAIN_LOOP_MODULES
-	// #define ENABLE_IO_MODULES
-	// #define ENABLE_PARSER_MODULES
-	// #define ENABLE_MOTION_CONTROL_MODULES
+	#define ENABLE_MAIN_LOOP_MODULES
+	#define ENABLE_IO_MODULES
+	#define ENABLE_PARSER_MODULES
+	#define ENABLE_MOTION_CONTROL_MODULES
 
 	/**
 	 * Settings extensions are enabled by default
@@ -531,7 +531,7 @@ extern "C"
 	 * 2 - full emulation of the grbl startup and info messages (this also makes command $IE available to print the firmware information in extended format)
 	 * */
 
-#define EMULATE_GRBL_STARTUP 1
+#define EMULATE_GRBL_STARTUP 2
 
 	/**
 	 *

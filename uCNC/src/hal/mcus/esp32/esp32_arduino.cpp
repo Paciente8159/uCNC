@@ -418,35 +418,21 @@ extern "C"
 
 	int flash_fs_available(fs_file_t *fp)
 	{
-		if (fp->file_ptr)
-		{
-			return fileptr_t(fp->file_ptr).available();
-		}
-		return 0;
+		return fileptr_t(fp->file_ptr).available();
 	}
 
 	void flash_fs_close(fs_file_t *fp)
 	{
-		if (fp->file_ptr)
-		{
-			fileptr_t(fp->file_ptr).close();
-			free(fp->file_ptr);
-		}
-		free(fp);
+		fileptr_t(fp->file_ptr).close();
 	}
 
-	bool flash_fs_remove(char *path)
+	bool flash_fs_remove(const char *path)
 	{
 		return FLASH_FS.remove(path);
 	}
 
 	bool flash_fs_next_file(fs_file_t *fp, fs_file_info_t *finfo)
 	{
-		if (!fp->file_ptr)
-		{
-			return false;
-		}
-
 		File f = ((File *)fp->file_ptr)->openNextFile();
 		if (!f || !finfo)
 		{
@@ -463,23 +449,15 @@ extern "C"
 
 	size_t flash_fs_read(fs_file_t *fp, uint8_t *buffer, size_t len)
 	{
-		if (!fp->file_ptr)
-		{
-			return 0;
-		}
 		return fileptr_t(fp->file_ptr).read(buffer, len);
 	}
 
 	size_t flash_fs_write(fs_file_t *fp, const uint8_t *buffer, size_t len)
 	{
-		if (!fp->file_ptr)
-		{
-			return 0;
-		}
 		return fileptr_t(fp->file_ptr).write(buffer, len);
 	}
 
-	bool flash_fs_info(char *path, fs_file_info_t *finfo)
+	bool flash_fs_info(const char *path, fs_file_info_t *finfo)
 	{
 		File f = FLASH_FS.open(path, "r");
 		if (f && finfo)
@@ -496,7 +474,7 @@ extern "C"
 		return false;
 	}
 
-	fs_file_t *flash_fs_open(char *path, const char *mode)
+	fs_file_t *flash_fs_open(const char *path, const char *mode)
 	{
 		fs_file_t *fp = (fs_file_t *)calloc(1, sizeof(fs_file_t));
 		if (fp)
@@ -522,6 +500,26 @@ extern "C"
 			free(fp);
 		}
 		return NULL;
+	}
+
+	fs_file_t *flash_fs_opendir(const char *path)
+	{
+		return flash_fs_open(path, "d");
+	}
+
+	bool flash_fs_seek(fs_file_t *fp, uint32_t position)
+	{
+		return fp->fs_ptr->seek(fp, position);
+	}
+
+	bool flash_fs_mkdir(const char *path)
+	{
+		return FLASH_FS.mkdir(path);
+	}
+
+	bool flash_fs_rmdir(const char *path)
+	{
+		return FLASH_FS.rmdir(path);
 	}
 
 /**
@@ -755,9 +753,13 @@ extern "C"
 				.open = flash_fs_open,
 				.read = flash_fs_read,
 				.write = flash_fs_write,
+				.seek = flash_fs_seek,
 				.available = flash_fs_available,
 				.close = flash_fs_close,
 				.remove = flash_fs_remove,
+				.opendir = flash_fs_opendir,
+				.mkdir = flash_fs_mkdir,
+				.rmdir = flash_fs_rmdir,
 				.next_file = flash_fs_next_file,
 				.finfo = flash_fs_info,
 				.next = NULL};

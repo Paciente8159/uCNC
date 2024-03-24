@@ -38,7 +38,7 @@ static fs_file_info_t fs_pointed_file;
 static char *fs_filename(fs_file_info_t *finfo);
 
 // drive path is /<driver letter>(/<optional file path>)
-static fs_t *fs_search_drive(char *path)
+static fs_t *fs_search_drive(const char *path)
 {
 	if (!fs_default_drive || strlen(path) < 2)
 	{
@@ -87,7 +87,7 @@ static fs_t *fs_search_drive(char *path)
 }
 
 // emulates basic chdir and opens the dir or file if it exists
-static fs_file_t *fs_path_parse(fs_file_info_t *current_path, char *new_path, const char *mode)
+static fs_file_t *fs_path_parse(fs_file_info_t *current_path, const char *new_path, const char *mode)
 {
 	// current_path never exceeds FS_MAX_PATH_LEN
 	char full_path[FS_PATH_NAME_MAX_LEN];
@@ -108,7 +108,7 @@ static fs_file_t *fs_path_parse(fs_file_info_t *current_path, char *new_path, co
 		return NULL;
 	}
 
-	char *token_start = new_path;
+	char *token_start = (char *)new_path;
 
 	while (*token_start)
 	{
@@ -175,15 +175,16 @@ static fs_file_t *fs_path_parse(fs_file_info_t *current_path, char *new_path, co
 	// on the drive root
 	if (!strlen(&full_path[2]))
 	{
-		fp = fs->open("/", mode);
+		fp = fs->opendir("/");
 	}
 	else
 	{
-		fp = fs->open(&full_path[2], mode);
+		fp = (strcmp(mode, "d") == 0) ? fs->opendir(&full_path[2]) : fs->open(&full_path[2], mode);
 	}
 
 	if (fp)
 	{
+		fp->fs_ptr = fs;
 		if (current_path)
 		{
 			memset(current_path->full_name, 0, FS_PATH_NAME_MAX_LEN);
@@ -227,12 +228,12 @@ static void fs_dir_list(void)
 	serial_print_str(fs_filename(&fs_cwd));
 	protocol_send_string(MSG_EOL);
 
-	fs_file_t *dir = fs_open(fs_cwd.full_name, "r");
+	fs_file_t *dir = fs_opendir(fs_cwd.full_name);
 
 	while (true)
 	{
 		fs_file_info_t finfo;
-		if (!fs_nextfile(dir, &finfo))
+		if (!fs_next_file(dir, &finfo))
 		{
 			break;
 		}
@@ -270,7 +271,7 @@ void fs_cd(void)
 
 	newdir[i] = 0;
 
-	fs_file_t *dir = fs_path_parse(&fs_cwd, newdir, "r");
+	fs_file_t *dir = fs_path_parse(&fs_cwd, newdir, "d");
 	if (dir)
 	{
 		if (dir->file_info.is_dir)
@@ -350,12 +351,13 @@ static uint8_t running_file_getc(void)
 		if (avail)
 		{
 			fs_read(fs_running_file, &c, 1);
-			// auto close file
-			if (--avail)
-			{
-				fs_close(fs_running_file);
-				fs_running_file = NULL;
-			}
+			avail--;
+		}
+		// auto close file
+		if (!avail)
+		{
+			fs_close(fs_running_file);
+			fs_running_file = NULL;
 		}
 	}
 	return 0;
@@ -366,7 +368,7 @@ static uint8_t running_file_available()
 	uint8_t avail = 0;
 	if (fs_running_file)
 	{
-		uint8_t avail = (uint8_t)MIN(255, fs_available(fs_running_file));
+		avail = (uint8_t)MIN(255, fs_available(fs_running_file));
 	}
 
 	return avail;
@@ -398,6 +400,7 @@ void fs_file_run(void)
 	}
 
 	args[i] = 0;
+	file = args;
 
 	if (args[0] == '@')
 	{
@@ -598,7 +601,7 @@ void fs_file_json_api()
 			endpoint_send_str(200, "application/json", "\",\"data\":[");
 			fs_file_info_t child = {0};
 
-			while (fs_nextfile(file, &child))
+			while (fs_next_file(file, &child))
 			{
 				memset(urlpath, 0, 256);
 				if (child.is_dir)
@@ -610,7 +613,7 @@ void fs_file_json_api()
 					snprintf(urlpath, 256, "{\"type\":\"file\",\"name\":\"%s\",\"attr\":0,\"size\":%d,\"date\":0}", fs_filename(&child), child.size);
 				}
 
-				if (fs_nextfile(file, &child))
+				if (fs_next_file(file, &child))
 				{
 					// trailling comma
 					urlpath[strlen(urlpath)] = ',';
@@ -648,7 +651,7 @@ void fs_json_uploader()
 
 #endif
 
-static void system_menu_render_fs_item(uint8_t render_flags, system_menu_item_t *item)
+void system_menu_render_fs_item(uint8_t render_flags, system_menu_item_t *item)
 {
 	char buffer[SYSTEM_MENU_MAX_STR_LEN];
 
@@ -668,7 +671,7 @@ static void system_menu_render_fs_item(uint8_t render_flags, system_menu_item_t 
 	system_menu_item_render_arg(render_flags, buffer);
 }
 
-static bool system_menu_action_fs_item(uint8_t action, system_menu_item_t *item)
+bool system_menu_action_fs_item(uint8_t action, system_menu_item_t *item)
 {
 	if (action == SYSTEM_MENU_ACTION_SELECT)
 	{
@@ -680,7 +683,7 @@ static bool system_menu_action_fs_item(uint8_t action, system_menu_item_t *item)
 		else
 		{
 			// go back to root dir
-			fs_file_t *fp = fs_path_parse(&fs_sm_cwd, "/", "r");
+			fs_file_t *fp = fs_path_parse(&fs_sm_cwd, "/", "d");
 			fs_close(fp);
 			dir_level = 0;
 			// goto sd card menu
@@ -698,7 +701,7 @@ static bool system_menu_action_fs_item(uint8_t action, system_menu_item_t *item)
 
 // dynamic rendering of the sd card menu
 // lists all dirs and files
-static void system_menu_sd_card_render(uint8_t render_flags)
+void system_menu_fs_render(uint8_t render_flags)
 {
 	uint8_t cur_index = g_system_menu.current_index;
 
@@ -723,14 +726,14 @@ static void system_menu_sd_card_render(uint8_t render_flags)
 			system_menu_render_header(fs_filename(&fs_sm_cwd));
 		}
 		uint8_t index = 0;
-		fs_file_t *dir = fs_path_parse(&fs_sm_cwd, ".", "r");
+		fs_file_t *dir = fs_path_parse(&fs_sm_cwd, ".", "d");
 		if (dir)
 		{
 			if (dir->file_info.is_dir)
 			{
 				fs_file_info_t finfo = {0};
 
-				while (fs_nextfile(dir, &finfo))
+				while (fs_next_file(dir, &finfo))
 				{
 					if (system_menu_render_menu_item_filter(index))
 					{
@@ -759,7 +762,7 @@ static void system_menu_sd_card_render(uint8_t render_flags)
 	system_menu_render_footer();
 }
 
-bool system_menu_sd_card_action(uint8_t action)
+bool system_menu_fs_action(uint8_t action)
 {
 	uint8_t render_flags = g_system_menu.flags;
 	bool go_back = (g_system_menu.current_index < 0 || g_system_menu.current_multiplier < 0);
@@ -784,19 +787,15 @@ bool system_menu_sd_card_action(uint8_t action)
 				fs_running_file = fs_open(fs_pointed_file.full_name, "r");
 				if (fs_running_file)
 				{
-					protocol_send_string(MSG_START);
-					protocol_send_string(__romstr__(SD_STR_FILE_PREFIX SD_STR_SD_RUNNING " - "));
-					serial_print_int(file_runs);
-					protocol_send_string(MSG_END);
+					protocol_send_feedback(FS_STR_FILE_RUNNING);
 					system_menu_go_idle();
-					rom_strcpy(buffer, __romstr__(SD_STR_FILE_PREFIX SD_STR_SD_RUNNING));
+					rom_strcpy(buffer, __romstr__(FS_STR_FILE_RUNNING));
 					system_menu_show_modal_popup(SYSTEM_MENU_MODAL_POPUP_MS, buffer);
 				}
 				else
 				{
-					rom_strcpy(buffer, __romstr__(SD_STR_FILE_PREFIX SD_STR_SD_FAILED));
+					rom_strcpy(buffer, __romstr__(FS_STR_FILE_FAILED));
 					system_menu_show_modal_popup(SYSTEM_MENU_MODAL_POPUP_MS, buffer);
-					sd_fclose();
 				}
 			}
 		}
@@ -807,7 +806,7 @@ bool system_menu_sd_card_action(uint8_t action)
 				if (dir_level)
 				{
 					// up one dirs
-					fs_path_parse(&fs_sm_cwd, "..", "r");
+					fs_path_parse(&fs_sm_cwd, "..", "d");
 					g_system_menu.current_index = 0;
 					g_system_menu.current_multiplier = 0;
 					g_system_menu.total_items = 0;
@@ -825,7 +824,7 @@ bool system_menu_sd_card_action(uint8_t action)
 			{
 				if (fs_pointed_file.is_dir)
 				{
-					fs_file_t *fp = fs_path_parse(&fs_sm_cwd, fs_pointed_file.full_name, "r");
+					fs_file_t *fp = fs_path_parse(&fs_sm_cwd, fs_pointed_file.full_name, "d");
 					if (fp)
 					{
 						fs_close(fp);
@@ -836,7 +835,7 @@ bool system_menu_sd_card_action(uint8_t action)
 					}
 					else
 					{
-						rom_strcpy(buffer, __romstr__(SD_STR_SD_PREFIX SD_STR_SD_ERROR));
+						rom_strcpy(buffer, __romstr__(FS_STR_FILE_FAILED));
 						system_menu_show_modal_popup(SYSTEM_MENU_MODAL_POPUP_MS, buffer);
 					}
 				}
@@ -849,7 +848,7 @@ bool system_menu_sd_card_action(uint8_t action)
 			}
 			else
 			{
-				rom_strcpy(buffer, __romstr__(SD_STR_SD_PREFIX SD_STR_SD_ERROR));
+				rom_strcpy(buffer, __romstr__(FS_STR_FILE_FAILED));
 				system_menu_show_modal_popup(SYSTEM_MENU_MODAL_POPUP_MS, buffer);
 			}
 		}
@@ -910,43 +909,66 @@ DECL_MODULE(file_system)
 #endif
 }
 
-void fs_unmount(fs_t *drive)
+void fs_unmount(char drive)
 {
 	if (!fs_default_drive)
 	{
 		return;
 	}
 
-	fs_t *ptr = fs_default_drive;
+	fs_t *unmt = fs_default_drive;
 
-	if (ptr->drive == drive->drive)
+	// unmount default drive
+	if (fs_default_drive->drive == drive)
 	{
 		fs_default_drive = fs_default_drive->next;
-		drive->next = NULL;
+		return;
 	}
 
-	while (ptr->next->drive != drive->drive)
+	// search drive
+	while (unmt)
 	{
-		ptr = ptr->next;
+		if (unmt->drive == drive)
+		{
+			break;
+		}
+		unmt = unmt->next;
 	}
 
-	if (ptr->next->drive == drive->drive)
+	// unmount drive
+	if (unmt)
 	{
-		ptr->next = drive->next;
-		drive->next = NULL;
+		fs_t *prev = fs_default_drive;
+		while (prev->next != unmt)
+		{
+			prev = prev->next;
+		}
+
+		// unmount
+		prev->next = unmt->next;
 	}
 }
 
-fs_file_t *fs_open(char *path, const char *mode)
+fs_file_t *fs_open(const char *path, const char *mode)
 {
 	return fs_path_parse(NULL, path, mode);
+}
+
+fs_file_t *fs_opendir(const char *path)
+{
+	return fs_path_parse(NULL, path, "d");
 }
 
 void fs_close(fs_file_t *fp)
 {
 	if (fp)
 	{
-		fp->fs_ptr->close(fp);
+		if (fp->file_ptr)
+		{
+			fp->fs_ptr->close(fp);
+			free(fp->file_ptr);
+		}
+		free(fp);
 	}
 }
 
@@ -954,7 +976,10 @@ size_t fs_read(fs_file_t *fp, uint8_t *buffer, size_t len)
 {
 	if (fp)
 	{
-		return fp->fs_ptr->read(fp, buffer, len);
+		if (fp->file_ptr)
+		{
+			return fp->fs_ptr->read(fp, buffer, len);
+		}
 	}
 
 	return 0;
@@ -964,27 +989,53 @@ size_t fs_write(fs_file_t *fp, const uint8_t *buffer, size_t len)
 {
 	if (fp)
 	{
-		return fp->fs_ptr->write(fp, buffer, len);
+		if (fp->file_ptr)
+		{
+			return fp->fs_ptr->write(fp, buffer, len);
+		}
 	}
 
 	return 0;
+}
+
+bool fs_seek(fs_file_t *fp, uint32_t position)
+{
+	if (fp)
+	{
+		if (fp->file_ptr)
+		{
+			return fp->fs_ptr->seek(fp, position);
+		}
+	}
+
+	return false;
 }
 
 int fs_available(fs_file_t *fp)
 {
 	if (fp)
 	{
-		return fp->fs_ptr->available(fp);
+		if (fp->file_ptr)
+		{
+			return fp->fs_ptr->available(fp);
+		}
 	}
 
 	return 0;
 }
 
-bool fs_nextfile(fs_file_t *fp, fs_file_info_t *finfo)
+bool fs_next_file(fs_file_t *fp, fs_file_info_t *finfo)
 {
 	if (fp)
 	{
-		return fp->fs_ptr->next_file(fp, finfo);
+		if (fp->file_ptr)
+		{
+			if (finfo)
+			{
+				memset(finfo, 0, sizeof(fs_file_info_t));
+			}
+			return fp->fs_ptr->next_file(fp, finfo);
+		}
 	}
 
 	return false;
@@ -999,10 +1050,10 @@ static char *fs_filename(fs_file_info_t *finfo)
 		return name;
 	}
 
-	return "";
+	return (char *)"";
 }
 
-bool fs_remove(char *path)
+bool fs_remove(const char *path)
 {
 	fs_t *fs = fs_search_drive(path);
 	if (fs)
@@ -1010,5 +1061,25 @@ bool fs_remove(char *path)
 		return fs->remove(&path[2]);
 	}
 
+	return false;
+}
+
+bool fs_mkdir(const char *path)
+{
+	fs_t *fs = fs_search_drive(path);
+	if (fs)
+	{
+		return fs->mkdir(&path[2]);
+	}
+	return false;
+}
+
+bool fs_rmdir(const char *path)
+{
+	fs_t *fs = fs_search_drive(path);
+	if (fs)
+	{
+		return fs->rmdir(&path[2]);
+	}
 	return false;
 }
