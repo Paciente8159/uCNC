@@ -716,6 +716,12 @@ void __attribute__((weak)) mcu_io_init(void)
 #endif
 }
 
+#ifndef mcu_io_reset
+void __attribute__((weak)) mcu_io_reset(void)
+{
+}
+#endif
+
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 uint8_t __attribute__((weak)) mcu_custom_grbl_cmd(uint8_t *grbl_cmd_str, uint8_t grbl_cmd_len, uint8_t next_char)
 {
@@ -776,7 +782,7 @@ MCU_RX_CALLBACK void __attribute__((weak)) mcu_uart_rx_cb(uint8_t c) {}
 
 #ifdef MCU_HAS_UART2
 #ifdef DETACH_UART2_FROM_MAIN_PROTOCOL
-MCU_RX_CALLBACK void __attribute__((weak)) mcu_uart2_rx_cb(uint8_t c){}
+MCU_RX_CALLBACK void __attribute__((weak)) mcu_uart2_rx_cb(uint8_t c) {}
 #endif
 #endif
 

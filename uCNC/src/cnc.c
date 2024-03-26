@@ -112,6 +112,7 @@ void cnc_init(void)
 	cnc_state.loop_state = LOOP_STARTUP_RESET;
 	// initializes all systems
 	mcu_init();											// mcu
+	mcu_io_reset();									// add custom logic to set pins initial state
 	io_enable_steppers(~g_settings.step_enable_invert); // disables steppers at start
 	io_disable_probe();									// forces probe isr disabling
 	serial_init();										// serial
