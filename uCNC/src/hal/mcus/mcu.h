@@ -165,6 +165,13 @@ extern "C"
 	void mcu_io_init(void);
 
 	/**
+	 * This can be used to set the defaults state of IO pins on reset. (overridable)
+	 * */
+#ifndef mcu_io_reset
+	void mcu_io_reset(void);
+#endif
+
+	/**
 	 * initializes the mcu
 	 * this function needs to:
 	 *   - configure all IO pins (digital IO, PWM, Analog, etc...)
