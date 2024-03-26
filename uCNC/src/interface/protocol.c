@@ -355,7 +355,7 @@ void protocol_send_status(void)
 	float axis[MAX(AXIS_COUNT, 3)];
 
 	int32_t steppos[AXIS_TO_STEPPERS];
-	itp_get_rt_position(steppos);
+	io_get_steps_pos(steppos);
 	kinematics_steps_to_coordinates(steppos, axis);
 	float feed = itp_get_rt_feed(); // convert from mm/s to mm/m
 #if TOOL_COUNT > 0

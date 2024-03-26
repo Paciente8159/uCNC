@@ -579,6 +579,31 @@ void io_toggle_steps(uint8_t mask)
 #endif
 }
 
+void io_get_steps_pos(int32_t *position)
+{
+	itp_get_rt_position(position);
+	#if STEPPERS_ENCODERS_MASK != 0
+#if (defined(STEP0_ENCODER) && AXIS_TO_STEPPERS > 0)
+	position[0] = encoder_get_position(STEP0_ENCODER);
+#endif
+#if (defined(STEP1_ENCODER) && AXIS_TO_STEPPERS > 1)
+	position[1] = encoder_get_position(STEP1_ENCODER);
+#endif
+#if (defined(STEP2_ENCODER) && AXIS_TO_STEPPERS > 2)
+	position[2] = encoder_get_position(STEP2_ENCODER);
+#endif
+#if (defined(STEP3_ENCODER) && AXIS_TO_STEPPERS > 3)
+	position[3] = encoder_get_position(STEP3_ENCODER);
+#endif
+#if (defined(STEP4_ENCODER) && AXIS_TO_STEPPERS > 4)
+	position[4] = encoder_get_position(STEP4_ENCODER);
+#endif
+#if (defined(STEP5_ENCODER) && AXIS_TO_STEPPERS > 5)
+	position[5] = encoder_get_position(STEP5_ENCODER);
+#endif
+#endif
+}
+
 void io_set_dirs(uint8_t mask)
 {
 	mask ^= g_settings.dir_invert_mask;
