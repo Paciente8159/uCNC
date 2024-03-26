@@ -360,7 +360,8 @@ static uint8_t running_file_getc(void)
 			fs_running_file = NULL;
 		}
 	}
-	return 0;
+
+	return c;
 }
 
 static uint8_t running_file_available()
@@ -387,7 +388,7 @@ void fs_file_run(void)
 	uint8_t i = 0;
 	char args[RX_BUFFER_CAPACITY]; /* get parameters */
 	char *file;
-	uint32_t startline = 0;
+	uint32_t startline = 1;
 
 	while (serial_peek() == ' ')
 	{
@@ -416,6 +417,7 @@ void fs_file_run(void)
 
 	if (fp)
 	{
+		startline = MAX(1, startline);
 		protocol_send_string(MSG_START);
 		protocol_send_string(__romstr__("Running file from line - "));
 		serial_print_int(startline);
@@ -425,7 +427,7 @@ void fs_file_run(void)
 		// the output is sent to the current holding interface
 		fs_running_file = fp;
 		serial_stream_readonly(&running_file_getc, &running_file_available, &running_file_clear);
-		while (startline)
+		while (--startline)
 		{
 			parser_discard_command();
 		}
@@ -864,6 +866,12 @@ void fs_mount(fs_t *drive)
 	if (!drive)
 	{
 		return;
+	}
+
+	// upcase
+	if (drive->drive > 90)
+	{
+		drive->drive -= 32;
 	}
 
 	DEBUG_STR("mounting drive\n\r");

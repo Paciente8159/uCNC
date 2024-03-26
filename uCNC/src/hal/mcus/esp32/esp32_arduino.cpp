@@ -488,7 +488,8 @@ extern "C"
 					memset(fp->file_info.full_name, 0, sizeof(fp->file_info.full_name));
 					fp->file_info.full_name[0] = '/';
 					fp->file_info.full_name[1] = flash_fs.drive;
-					strncpy(&(fp->file_info.full_name[2]), ((File *)fp->file_ptr)->name(), FS_PATH_NAME_MAX_LEN - 2);
+					fp->file_info.full_name[2] = '/';
+					strncat(fp->file_info.full_name, ((File *)fp->file_ptr)->name(), FS_PATH_NAME_MAX_LEN - 3);
 					fp->file_info.is_dir = ((File *)fp->file_ptr)->isDirectory();
 					fp->file_info.size = ((File *)fp->file_ptr)->size();
 					fp->file_info.timestamp = (uint32_t)((File *)fp->file_ptr)->getLastWrite();
@@ -504,7 +505,7 @@ extern "C"
 
 	fs_file_t *flash_fs_opendir(const char *path)
 	{
-		return flash_fs_open(path, "d");
+		return flash_fs_open(path, "r");
 	}
 
 	bool flash_fs_seek(fs_file_t *fp, uint32_t position)
