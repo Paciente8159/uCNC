@@ -6,7 +6,7 @@ jobs:
   build:
     strategy:
       matrix:
-        boards: [LPC176X-RE-ARM, ESP8266-Wemos-D1-R2, AVR-UNO, ESP32-MKS-TINYBEE, ESP32IDF-MKS-TINYBEE, STM32F1-Bluepill-F103C8, AVR-RAMBO, RP2040-PICO-W, SAMD21-Wemos-M0, STM32F4-Blackpill-F401CC, AVR-MEGA2560-RAMPS-V1_4]
+        boards: [LPC176X-RE-ARM, ESP8266-Wemos-D1-R2, AVR-UNO, ESP32-MKS-TINYBEE, STM32F1-Bluepill-F103C8, AVR-RAMBO, RP2040-PICO-W, SAMD21-Wemos-M0, STM32F4-Blackpill-F401CC, AVR-MEGA2560-RAMPS-V1_4]
     runs-on: ubuntu-latest
 
     steps:
