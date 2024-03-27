@@ -375,7 +375,7 @@ bool rp2040_wifi_clientok(void)
 				server_client.stop();
 			}
 		}
-		server_client = telnet_server.available();
+		server_client = telnet_server.accept();
 		server_client.println("[MSG:New client connected]");
 		return false;
 	}
@@ -423,6 +423,7 @@ int flash_fs_available(fs_file_t *fp)
 
 void flash_fs_close(fs_file_t *fp)
 {
+	fileptr_t(fp->file_ptr).flush();
 	fileptr_t(fp->file_ptr).close();
 }
 
@@ -645,7 +646,7 @@ uint8_t endpoint_request_method(void)
 void endpoint_file_upload_name(char *filename, size_t maxlen)
 {
 	HTTPUpload &upload = web_server.upload();
-	strncpy(filename, upload.filename.c_str(), maxlen);
+	strncat(filename, upload.filename.c_str(), maxlen - strlen(filename));
 }
 
 #endif

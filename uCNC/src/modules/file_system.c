@@ -502,7 +502,7 @@ void fs_json_api(void)
 		while (ptr)
 		{
 			memset(path, 0, sizeof(path));
-			snprintf(path, 32, "{\"type\":\"drive\",\"name\":\"%c\"},", ptr->drive);
+			snprintf(path, 32, "{\"type\":\"drive\",\"name\":\"%c\"}", ptr->drive);
 			ptr = ptr->next;
 			if (ptr)
 			{
@@ -553,17 +553,10 @@ void fs_file_json_api()
 	endpoint_request_uri(urlpath, 256);
 	char *fs_url = &urlpath[FS_JSON_ENDPOINT_LEN];
 
-	if (strcmp(fs_url, "/") == 0)
-	{
-		fs_json_api();
-		return;
-	}
+	fs_file_info_t finfo;
+	fs_file_t *file;
 
-	fs_file_t *file = fs_open(fs_url, "r");
-
-	DEBUG_STR("fetch file\n\r");
-
-	if (!file)
+	if (!fs_finfo(fs_url, &finfo))
 	{
 		endpoint_send_str(404, "application/json", "{\"result\":\"notfound\"}");
 		return;
@@ -594,61 +587,116 @@ void fs_file_json_api()
 
 		break;
 	default: // handle as get
-		if (file->file_info.is_dir)
+		// is file
+		if (strlen(finfo.full_name) || finfo.is_dir)
 		{
-			// start chunck transmition;
-			endpoint_send(200, NULL, NULL, 0);
-			endpoint_send_str(200, "application/json", "{\"result\":\"ok\",\"path\":\"");
-			endpoint_send_str(200, "application/json", fs_url);
-			endpoint_send_str(200, "application/json", "\",\"data\":[");
-			fs_file_info_t child = {0};
-
-			while (fs_next_file(file, &child))
+			if (finfo.is_dir)
 			{
-				memset(urlpath, 0, 256);
-				if (child.is_dir)
-				{
-					snprintf(urlpath, 256, "{\"type\":\"dir\",\"name\":\"%s\",\"attr\":%d},", fs_filename(&child), 0);
-				}
-				else
-				{
-					snprintf(urlpath, 256, "{\"type\":\"file\",\"name\":\"%s\",\"attr\":0,\"size\":%d,\"date\":0}", fs_filename(&child), child.size);
-				}
+				// start chunck transmition;
+				endpoint_send(200, NULL, NULL, 0);
+				endpoint_send_str(200, "application/json", "{\"result\":\"ok\",\"path\":\"");
+				endpoint_send_str(200, "application/json", fs_url);
+				endpoint_send_str(200, "application/json", "\",\"data\":[");
+				fs_file_info_t child = {0};
+				file = fs_opendir(fs_url);
+				bool has_child = fs_next_file(file, &child);
 
-				if (fs_next_file(file, &child))
+				while (has_child)
 				{
-					// trailling comma
-					urlpath[strlen(urlpath)] = ',';
+					memset(urlpath, 0, 256);
+					if (child.is_dir)
+					{
+						snprintf(urlpath, 256, "{\"type\":\"dir\",\"name\":\"%s\",\"attr\":%d}", fs_filename(&child), 0);
+					}
+					else
+					{
+						snprintf(urlpath, 256, "{\"type\":\"file\",\"name\":\"%s\",\"attr\":0,\"size\":%d,\"date\":0}", fs_filename(&child), child.size);
+					}
+
+					has_child = fs_next_file(file, &child);
+					if (has_child)
+					{
+						// trailling comma
+						urlpath[strlen(urlpath)] = ',';
+					}
+					endpoint_send_str(200, "application/json", urlpath);
 				}
-				endpoint_send_str(200, "application/json", urlpath);
+				endpoint_send_str(200, "application/json", "]}\n");
+				// close the stream
+				endpoint_send(200, "application/json", NULL, 0);
+				fs_close(file);
 			}
-			endpoint_send_str(200, "application/json", "]}\n");
-			// close the stream
-			endpoint_send(200, "application/json", NULL, 0);
+			else
+			{
+				file = fs_open(fs_url, "r");
+				uint8_t content[ENDPOINT_MAX_CHUNCK_LEN / sizeof(char)];
+				if (finfo.size > ENDPOINT_MAX_CHUNCK_LEN)
+				{
+					endpoint_send(200, NULL, NULL, 0);
+				}
+				while (fs_available(file))
+				{
+					size_t content_len = fs_read(file, (uint8_t *)content, ENDPOINT_MAX_CHUNCK_LEN / sizeof(char));
+					endpoint_send(200, "application/octet-stream", content, content_len);
+				}
+				// close the stream
+				endpoint_send(200, "application/octet-stream", NULL, 0);
+				fs_close(file);
+			}
 		}
 		else
 		{
-			uint8_t content[ENDPOINT_MAX_CHUNCK_LEN / sizeof(char)];
-			if (file->file_info.size > ENDPOINT_MAX_CHUNCK_LEN)
-			{
-				endpoint_send(200, NULL, NULL, 0);
-			}
-			while (fs_available(file))
-			{
-				size_t content_len = fs_read(file, (uint8_t *)content, ENDPOINT_MAX_CHUNCK_LEN / sizeof(char));
-				endpoint_send(200, "application/octet-stream", content, content_len);
-			}
-			// close the stream
-			endpoint_send(200, "application/octet-stream", NULL, 0);
+			// is root dir
+			fs_json_api();
 		}
 		break;
 	}
-
-	fs_close(file);
 }
 
 void fs_json_uploader()
 {
+	static fs_file_t *file_upload = NULL;
+	char urlpath[256];
+	memset(urlpath, 0, sizeof(urlpath));
+	endpoint_request_uri(urlpath, 256);
+	if ((strncmp(urlpath, FS_JSON_ENDPOINT, FS_JSON_ENDPOINT_LEN) != 0) || (endpoint_request_method() != ENDPOINT_POST && endpoint_request_method() != ENDPOINT_PUT))
+	{
+		return;
+	}
+
+	char *file = &urlpath[FS_JSON_ENDPOINT_LEN];
+
+	fs_file_info_t finfo;
+
+	if (!fs_finfo(file, &finfo))
+	{
+		return;
+	}
+
+	endpoint_upload_t upload = endpoint_file_upload_status();
+	switch (upload.status)
+	{
+	case ENDPOINT_UPLOAD_START:
+		if (endpoint_request_method() == ENDPOINT_POST)
+		{
+			uint8_t len = strlen(urlpath);
+			if (urlpath[len - 1] != '/' && len < 256)
+			{
+				urlpath[len] = '/';
+				len++;
+			}
+			// append the file name
+			endpoint_file_upload_name(urlpath, 256);
+		}
+		file_upload = fs_open(file, "w");
+		break;
+	case ENDPOINT_UPLOAD_PART:
+		fs_write(file_upload, upload.data, upload.datalen);
+		break;
+	default:
+		fs_close(file_upload);
+		file_upload = NULL;
+	}
 }
 
 #endif
@@ -901,7 +949,7 @@ void fs_mount(fs_t *drive)
 	{
 		DEBUG_STR("adding json endpoints\n\r");
 #ifdef MCU_HAS_ENDPOINTS
-		endpoint_add(FS_JSON_ENDPOINT, ENDPOINT_ANY, fs_json_api, NULL);
+		endpoint_add(FS_JSON_ENDPOINT, ENDPOINT_ANY, fs_file_json_api, fs_json_uploader);
 		endpoint_add(FS_JSON_ENDPOINT "/*", ENDPOINT_ANY, fs_file_json_api, fs_json_uploader);
 #endif
 		RUNONCE_COMPLETE();
@@ -1047,6 +1095,36 @@ bool fs_next_file(fs_file_t *fp, fs_file_info_t *finfo)
 	}
 
 	return false;
+}
+
+bool fs_finfo(const char *path, fs_file_info_t *finfo)
+{
+	if (!finfo)
+	{
+		return false;
+	}
+
+	memset(finfo, 0, sizeof(fs_file_info_t));
+
+	// file system root
+	if (strlen(path) <= 1)
+	{
+		return true;
+	}
+
+	fs_t *fs = fs_search_drive(path);
+	if (!fs)
+	{
+		return false;
+	}
+
+	if (!strlen(&path[2]))
+	{
+		finfo->is_dir = true;
+		return fs->finfo("/", finfo);
+	}
+
+	return fs->finfo(&path[2], finfo);
 }
 
 static char *fs_filename(fs_file_info_t *finfo)

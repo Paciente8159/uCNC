@@ -645,7 +645,7 @@ extern "C"
 	void endpoint_file_upload_name(char *filename, size_t maxlen)
 	{
 		HTTPUpload &upload = web_server.upload();
-		strncpy(filename, upload.filename.c_str(), maxlen);
+		strncat(filename, upload.filename.c_str(), maxlen - strlen(filename));
 	}
 
 #endif
