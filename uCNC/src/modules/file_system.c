@@ -173,15 +173,19 @@ static fs_file_t *fs_path_parse(fs_file_info_t *current_path, const char *new_pa
 
 	fs_file_t *fp = NULL;
 	// on the drive root
-	if (!strlen(&full_path[2]))
-	{
-		fp = fs->opendir("/");
-		current_path->is_dir = true;
-	}
-	else
-	{
-		fp = (strcmp(mode, "d") == 0) ? fs->opendir(&full_path[2]) : fs->open(&full_path[2], mode);
-	}
+	// if (!strlen(&full_path[2]))
+	// {
+	// 	fp = fs->opendir("");
+	// 	if (current_path)
+	// 	{
+	// 		current_path->is_dir = true;
+	// 	}
+	// }
+	// else
+	// {
+	// 	fp = (strcmp(mode, "d") == 0) ? fs->opendir(&full_path[2]) : fs->open(&full_path[2], mode);
+	// }
+	fp = (strcmp(mode, "d") == 0) ? fs->opendir(&full_path[2]) : fs->open(&full_path[2], mode);
 
 	if (fp)
 	{
@@ -223,6 +227,9 @@ static void fs_dir_list(void)
 		}
 		return;
 	}
+
+	fs_file_info_t info;
+	fs_finfo(fs_cwd.full_name, &info);
 
 	// current dir
 	protocol_send_string(__romstr__("Index of /"));
@@ -1101,7 +1108,6 @@ bool fs_finfo(const char *path, fs_file_info_t *finfo)
 	if (!strlen(&path[2]))
 	{
 		finfo->is_dir = true;
-		return fs->finfo("/", finfo);
 	}
 
 	return fs->finfo(&path[2], finfo);
