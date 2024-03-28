@@ -186,7 +186,7 @@ static fs_file_t *fs_path_parse(fs_file_info_t *current_path, const char *new_pa
 	{
 		fp = (strcmp(mode, "d") == 0) ? fs->opendir(fp_path) : fs->open(fp_path, mode);
 	}
-	
+
 	if (fp)
 	{
 		fp->fs_ptr = fs;
@@ -209,6 +209,30 @@ static fs_file_t *fs_path_parse(fs_file_info_t *current_path, const char *new_pa
 }
 
 #ifdef ENABLE_PARSER_MODULES
+
+#ifdef ENABLE_MAIN_LOOP_MODULES
+DECL_BUFFER(uint8_t, fs_file_buffer, RX_BUFFER_SIZE);
+bool running_file_loop(void *args)
+{
+	if (fs_running_file)
+	{
+		size_t r = BUFFER_WRITE_AVAILABLE(fs_file_buffer);
+		uint8_t tmp[RX_BUFFER_SIZE];
+		size_t read = fs_read(fs_running_file, tmp, r);
+		uint8_t w = 0;
+		BUFFER_WRITE(fs_file_buffer, tmp, read, w);
+		if (read < r || !fs_available(fs_running_file))
+		{
+			fs_close(fs_running_file);
+			fs_running_file = NULL;
+		}
+	}
+
+	return EVENT_CONTINUE;
+}
+CREATE_EVENT_LISTENER(cnc_dotasks, running_file_loop);
+#endif
+
 static void fs_dir_list(void)
 {
 	// if current working directory not initialized
@@ -316,6 +340,9 @@ void fs_file_print(char *params)
 static uint8_t running_file_getc(void)
 {
 	uint8_t c = 0;
+#ifdef ENABLE_MAIN_LOOP_MODULES
+	BUFFER_DEQUEUE(fs_file_buffer, &c);
+#else
 	if (fs_running_file)
 	{
 		int avail = fs_available(fs_running_file);
@@ -331,23 +358,29 @@ static uint8_t running_file_getc(void)
 			fs_running_file = NULL;
 		}
 	}
-
+#endif
 	return c;
 }
 
 static uint8_t running_file_available()
 {
 	uint8_t avail = 0;
+#ifdef ENABLE_MAIN_LOOP_MODULES
+	avail = BUFFER_READ_AVAILABLE(fs_file_buffer);
+#else
 	if (fs_running_file)
 	{
 		avail = (uint8_t)MIN(255, fs_available(fs_running_file));
 	}
-
+#endif
 	return avail;
 }
 
 static void running_file_clear()
 {
+#ifdef ENABLE_MAIN_LOOP_MODULES
+	BUFFER_CLEAR(fs_file_buffer);
+#endif
 	if (fs_running_file)
 	{
 		fs_close(fs_running_file);
@@ -380,6 +413,15 @@ void fs_file_run(char *params)
 		serial_print_int(startline);
 		protocol_send_string(MSG_END);
 #ifdef DECL_SERIAL_STREAM
+#ifdef ENABLE_MAIN_LOOP_MODULES
+		// prefill buffer
+		BUFFER_CLEAR(fs_file_buffer);
+		size_t r = BUFFER_WRITE_AVAILABLE(fs_file_buffer);
+		uint8_t tmp[RX_BUFFER_SIZE];
+		size_t read = fs_read(fs_running_file, tmp, r);
+		uint8_t w = 0;
+		BUFFER_WRITE(fs_file_buffer, tmp, read, w);
+#endif
 		// open a readonly stream
 		// the output is sent to the current holding interface
 		fs_running_file = fp;
@@ -936,8 +978,19 @@ DECL_MODULE(file_system)
 {
 #ifdef ENABLE_PARSER_MODULES
 	ADD_EVENT_LISTENER(grbl_cmd, fs_cmd_parser);
+#ifdef ENABLE_MAIN_LOOP_MODULES
+	ADD_EVENT_LISTENER(cnc_dotasks, running_file_loop);
+#else
+#warning "Main loop extensions are not enabled. File running might be slower."
+#endif
 #else
 #warning "Parser extensions are not enabled. File commands will not work."
+#endif
+
+#ifdef ENABLE_MAIN_LOOP_MODULES
+	ADD_EVENT_LISTENER(cnc_dotasks, running_file_loop);
+#else
+#warning "Main loop extensions are not enabled. File running might be slower."
 #endif
 }
 

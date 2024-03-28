@@ -108,7 +108,7 @@ FORCEINLINE static void mmcsd_spi_speed(bool highspeed)
 #if (!defined(SD_CARD_USE_HW_SPI) || !defined(MCU_HAS_SPI))
 		mmcsd_spi.spidelay = SPI_DELAY(10000000UL);
 #else
-		mcu_spi_config(0, 100000UL);
+		mcu_spi_config(0, 16000000UL);
 #endif
 	}
 	else
