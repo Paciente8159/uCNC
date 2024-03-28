@@ -176,6 +176,7 @@ static fs_file_t *fs_path_parse(fs_file_info_t *current_path, const char *new_pa
 	if (!strlen(&full_path[2]))
 	{
 		fp = fs->opendir("/");
+		current_path->is_dir = true;
 	}
 	else
 	{
@@ -253,25 +254,9 @@ static void fs_dir_list(void)
 	fs_close(dir);
 }
 
-void fs_cd(void)
+void fs_cd(char *params)
 {
-	uint8_t i = 0;
-	char newdir[RX_BUFFER_CAPACITY]; /* File name */
-	memset(newdir, 0, RX_BUFFER_CAPACITY);
-
-	while (serial_peek() == ' ')
-	{
-		serial_getc();
-	}
-
-	while (serial_peek() != EOL)
-	{
-		newdir[i++] = serial_getc();
-	}
-
-	newdir[i] = 0;
-
-	fs_file_t *dir = fs_path_parse(&fs_cwd, newdir, "d");
+	fs_file_t *dir = fs_path_parse(&fs_cwd, params, "d");
 	if (dir)
 	{
 		if (dir->file_info.is_dir)
@@ -282,52 +267,35 @@ void fs_cd(void)
 		}
 		else
 		{
-			serial_print_str(newdir);
+			serial_print_str(params);
 			protocol_send_feedback(__romstr__(" is not a dir!"));
 		}
 		fs_close(dir);
 	}
 	else if (strlen(fs_cwd.full_name))
 	{
-		serial_print_str(newdir);
+		serial_print_str(params);
 		protocol_send_feedback(__romstr__("Dir not found!"));
 	}
 
 	protocol_send_string(MSG_EOL);
 }
 
-void fs_file_print(void)
+void fs_file_print(char *params)
 {
-	uint8_t i = 0;
-	char file[RX_BUFFER_CAPACITY]; /* File name */
-	memset(file, 0, RX_BUFFER_CAPACITY);
-
-	while (serial_peek() == ' ')
-	{
-		serial_getc();
-	}
-
-	while (serial_peek() != EOL)
-	{
-		file[i++] = serial_getc();
-	}
-
-	file[i] = 0;
-
-	fs_file_t *fp = fs_path_parse(&fs_cwd, file, "r");
+	fs_file_t *fp = fs_path_parse(&fs_cwd, params, "r");
 	if (fp)
 	{
 		while (fs_available(fp))
 		{
-			memset(file, 0, RX_BUFFER_CAPACITY);
-			i = (uint8_t)fs_read(fp, (uint8_t *)file, RX_BUFFER_CAPACITY - 1); /* Read the data */
-			if (!i)
+			char c = 0;
+			/* Read the data */
+			if (!fs_read(fp, (uint8_t *)&c, sizeof(char)))
 			{
 				protocol_send_feedback(__romstr__("File read error!"));
 				break;
 			}
-			file[i] = 0;
-			serial_print_str(file);
+			serial_putc(c);
 		}
 
 		fs_close(fp);
@@ -383,29 +351,15 @@ static void running_file_clear()
 	}
 }
 
-void fs_file_run(void)
+void fs_file_run(char *params)
 {
-	uint8_t i = 0;
-	char args[RX_BUFFER_CAPACITY]; /* get parameters */
 	char *file;
 	uint32_t startline = 1;
+	file = params;
 
-	while (serial_peek() == ' ')
+	if (params[0] == '@')
 	{
-		serial_getc();
-	}
-
-	while (serial_peek() != EOL)
-	{
-		args[i++] = serial_getc();
-	}
-
-	args[i] = 0;
-	file = args;
-
-	if (args[0] == '@')
-	{
-		startline = (uint32_t)strtol(&args[1], &file, 10);
+		startline = (uint32_t)strtol(&params[1], &file, 10);
 	}
 
 	while (*file == ' ')
@@ -444,8 +398,34 @@ void fs_file_run(void)
 bool fs_cmd_parser(void *args)
 {
 	grbl_cmd_args_t *cmd = args;
+	size_t i = 0;
+	char params[RX_BUFFER_CAPACITY]; /* get remaining command parammeters */
 
 	strupr((char *)cmd->cmd);
+
+	if (cmd->next_char != EOL)
+	{
+		if (cmd->next_char != ' ')
+		{
+			params[i++] = cmd->next_char;
+		}
+
+		/* get remaining command parammeters */
+		while (serial_peek() == ' ')
+		{
+			serial_getc();
+		}
+
+		while (serial_peek() != EOL)
+		{
+			params[i++] = serial_getc();
+		}
+
+		/*get EOL*/
+		serial_getc();
+	}
+
+	params[i] = 0;
 
 	if (!strcmp("LS", (char *)(cmd->cmd)))
 	{
@@ -456,21 +436,21 @@ bool fs_cmd_parser(void *args)
 
 	if (!strcmp("CD", (char *)(cmd->cmd)))
 	{
-		fs_cd();
+		fs_cd(params);
 		*(cmd->error) = STATUS_OK;
 		return EVENT_HANDLED;
 	}
 
 	if (!strcmp("LPR", (char *)(cmd->cmd)))
 	{
-		fs_file_print();
+		fs_file_print(params);
 		*(cmd->error) = STATUS_OK;
 		return EVENT_HANDLED;
 	}
 
 	if (!strcmp("RUN", (char *)(cmd->cmd)))
 	{
-		fs_file_run();
+		fs_file_run(params);
 		*(cmd->error) = STATUS_OK;
 		return EVENT_HANDLED;
 	}
