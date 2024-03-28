@@ -190,6 +190,13 @@ bool sd_fs_finfo(const char *path, fs_file_info_t *finfo)
 	}
 	memset(finfo, 0, sizeof(fs_file_info_t));
 
+	// root dir
+	if(strlen(path)<2){
+		strcpy(finfo->full_name, "/");
+		finfo->is_dir = true;
+		return true;
+	}
+
 	if (sd_fileinfo(path, &info) == FR_OK)
 	{
 		strcpy(finfo->full_name, path);
@@ -198,7 +205,6 @@ bool sd_fs_finfo(const char *path, fs_file_info_t *finfo)
 		finfo->timestamp = ((uint32_t)info.fdate << 16) | info.ftime;
 		return true;
 	}
-
 	return false;
 }
 

@@ -172,21 +172,21 @@ static fs_file_t *fs_path_parse(fs_file_info_t *current_path, const char *new_pa
 	}
 
 	fs_file_t *fp = NULL;
+	char *fp_path = &full_path[2];
 	// on the drive root
-	// if (!strlen(&full_path[2]))
-	// {
-	// 	fp = fs->opendir("");
-	// 	if (current_path)
-	// 	{
-	// 		current_path->is_dir = true;
-	// 	}
-	// }
-	// else
-	// {
-	// 	fp = (strcmp(mode, "d") == 0) ? fs->opendir(&full_path[2]) : fs->open(&full_path[2], mode);
-	// }
-	fp = (strcmp(mode, "d") == 0) ? fs->opendir(&full_path[2]) : fs->open(&full_path[2], mode);
-
+	if (!strlen(fp_path))
+	{
+		fp = fs->opendir("/");
+		if (current_path)
+		{
+			current_path->is_dir = true;
+		}
+	}
+	else
+	{
+		fp = (strcmp(mode, "d") == 0) ? fs->opendir(fp_path) : fs->open(fp_path, mode);
+	}
+	
 	if (fp)
 	{
 		fp->fs_ptr = fs;
@@ -228,9 +228,6 @@ static void fs_dir_list(void)
 		return;
 	}
 
-	fs_file_info_t info;
-	fs_finfo(fs_cwd.full_name, &info);
-
 	// current dir
 	protocol_send_string(__romstr__("Index of /"));
 	serial_print_str(fs_filename(&fs_cwd));
@@ -238,27 +235,26 @@ static void fs_dir_list(void)
 
 	fs_file_t *dir = fs_opendir(fs_cwd.full_name);
 
-	while (true)
+	if (dir)
 	{
 		fs_file_info_t finfo;
-		if (!fs_next_file(dir, &finfo))
+		while (fs_next_file(dir, &finfo))
 		{
-			break;
-		}
-		if (finfo.is_dir)
-		{ /* It is a directory */
-			protocol_send_string(__romstr__("<dir>\t"));
-		}
-		else
-		{ /* It is a file. */
-			protocol_send_string(__romstr__("     \t"));
+			if (finfo.is_dir)
+			{ /* It is a directory */
+				protocol_send_string(__romstr__("<dir>\t"));
+			}
+			else
+			{ /* It is a file. */
+				protocol_send_string(__romstr__("     \t"));
+			}
+
+			serial_print_str(fs_filename(&finfo));
+			protocol_send_string(MSG_EOL);
 		}
 
-		serial_print_str(fs_filename(&finfo));
-		protocol_send_string(MSG_EOL);
+		fs_close(dir);
 	}
-
-	fs_close(dir);
 }
 
 void fs_cd(char *params)
@@ -477,8 +473,6 @@ CREATE_EVENT_LISTENER(grbl_cmd, fs_cmd_parser);
 
 void fs_json_api(void)
 {
-	DEBUG_STR("FS JSON root endpoint request\n\r");
-
 	fs_t *ptr = fs_default_drive;
 
 	if (ptr)
@@ -512,8 +506,6 @@ void fs_file_json_api()
 {
 	bool update = false;
 
-	DEBUG_STR("FS JSON endpoint request\n\r");
-
 	if (endpoint_request_hasargs())
 	{
 		char arg = 0;
@@ -521,7 +513,6 @@ void fs_file_json_api()
 		if (arg && arg != '0')
 		{
 			update = true;
-			DEBUG_STR("update request\n\r");
 		}
 	}
 
@@ -909,7 +900,6 @@ void fs_mount(fs_t *drive)
 		drive->drive -= 32;
 	}
 
-	DEBUG_STR("mounting drive\n\r");
 	if (!fs_default_drive)
 	{
 		fs_default_drive = drive;
@@ -934,7 +924,6 @@ void fs_mount(fs_t *drive)
 
 	RUNONCE
 	{
-		DEBUG_STR("adding json endpoints\n\r");
 #ifdef MCU_HAS_ENDPOINTS
 		endpoint_add(FS_JSON_ENDPOINT, ENDPOINT_ANY, fs_file_json_api, fs_json_uploader);
 		endpoint_add(FS_JSON_ENDPOINT "/*", ENDPOINT_ANY, fs_file_json_api, fs_json_uploader);
@@ -1107,7 +1096,7 @@ bool fs_finfo(const char *path, fs_file_info_t *finfo)
 
 	if (!strlen(&path[2]))
 	{
-		finfo->is_dir = true;
+		return fs->finfo("/", finfo);
 	}
 
 	return fs->finfo(&path[2], finfo);
