@@ -124,6 +124,13 @@ void web_pendant_clear(void)
 
 void web_pendant_flush(void)
 {
+	static uint32_t flush_timeout = 0;
+
+	if (!BUFFER_FULL(web_pendant_tx) && flush_timeout > mcu_millis())
+	{
+		return;
+	}
+
 	while (!BUFFER_EMPTY(web_pendant_tx))
 	{
 		uint8_t tmp[128 + 1];
@@ -132,6 +139,7 @@ void web_pendant_flush(void)
 
 		BUFFER_READ(web_pendant_tx, tmp, 128, r);
 		websocket_send(ws_web_pendant_client.id, (uint8_t *)tmp, r, WS_SEND_TXT);
+		flush_timeout = mcu_millis() + WEB_PENDANT_REFRESH_MS;
 	}
 }
 
@@ -156,8 +164,6 @@ DECL_MODULE(web_pendant)
 	ADD_EVENT_LISTENER(websocket_client_receive, web_pendant_ws_receive);
 
 	serial_stream_register(&web_pendant_stream);
-
-	// ADD_EVENT_LISTENER(cnc_dotasks, web_pendant_status_update);
 }
 
 #endif
