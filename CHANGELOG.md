@@ -8,6 +8,12 @@
 
 # Changelog
 
+## [1.8.10] - 29-03-2024
+
+### Fixed
+
+- prevent floating point round errors in speed calculations when time slices a too small (#673)
+
 ## [1.8.9] - 26-03-2024
 
 ## Contributors
@@ -1561,6 +1567,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.8.10]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.10
 [1.8.9]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.9
 [1.8.8]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.8
 [1.8.7]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.7
