@@ -363,7 +363,7 @@ float planner_get_block_top_speed(float exit_speed_sqr)
 	// calculates the difference between the entry speed and the exit speed
 	uint8_t index = planner_data_read;
 	float speed_delta = exit_speed_sqr - planner_data[index].entry_feed_sqr;
-	// caclculates the speed increase/decrease for the given distance
+	// calculates the speed increase/decrease for the given distance
 	float junction_speed_sqr = planner_data[index].acceleration * (float)(planner_data[index].steps[planner_data[index].main_stepper]);
 	junction_speed_sqr = fast_flt_mul2(junction_speed_sqr);
 	// if there is enough space to accelerate computes the junction speed

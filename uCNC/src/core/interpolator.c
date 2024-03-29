@@ -459,10 +459,11 @@ void itp_run(void)
 				acc_init_speed = current_speed;
 #endif
 				t *= accel_inv;
-				// slice up time in an integral number of periods (half with positive jerk and half with negative)
-				float slices_inv = fast_flt_inv(floorf(INTERPOLATOR_FREQ * t));
-				if (slices_inv)
+
+				if (t > INTERPOLATOR_DELTA_T)
 				{
+					// slice up time in an integral number of periods (half with positive jerk and half with negative)
+					float slices_inv = fast_flt_inv(floorf(INTERPOLATOR_FREQ * t));
 					t_acc_integrator = t * slices_inv;
 #if S_CURVE_ACCELERATION_LEVEL != 0
 					acc_step = slices_inv;
@@ -497,10 +498,11 @@ void itp_run(void)
 				deac_step_acum = 0;
 #endif
 				t *= accel_inv;
-				// slice up time in an integral number of periods (half with positive jerk and half with negative)
-				float slices_inv = fast_flt_inv(floorf(INTERPOLATOR_FREQ * t));
-				if (slices_inv)
+
+				if (t > INTERPOLATOR_DELTA_T)
 				{
+					// slice up time in an integral number of periods (half with positive jerk and half with negative)
+					float slices_inv = fast_flt_inv(floorf(INTERPOLATOR_FREQ * t));
 					t_deac_integrator = t * slices_inv;
 					if (t_deac_integrator < 0.00001f)
 					{
@@ -1127,7 +1129,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 		else
 		{
 			cnc_clear_exec_state(EXEC_RUN); // this naturally clears the RUN flag. Any other ISR stop does not clear the flag.
-			itp_stop();						// the buffer is empty. The ISR can stop
+			itp_stop();											// the buffer is empty. The ISR can stop
 			return;
 		}
 	}
