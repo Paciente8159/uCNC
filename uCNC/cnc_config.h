@@ -531,7 +531,7 @@ extern "C"
 	 * 2 - full emulation of the grbl startup and info messages (this also makes command $IE available to print the firmware information in extended format)
 	 * */
 
-#define EMULATE_GRBL_STARTUP 2
+#define EMULATE_GRBL_STARTUP 1
 
 	/**
 	 *
