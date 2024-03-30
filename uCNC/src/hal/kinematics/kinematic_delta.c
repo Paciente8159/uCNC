@@ -362,9 +362,7 @@ uint8_t kinematics_home(void)
 	}
 #endif
 
-	// unlocks the machine to go to offset
 	cnc_unlock(true);
-	cnc_set_exec_state(EXEC_HOMING);
 	float target[AXIS_COUNT];
 	motion_data_t block_data = {0};
 
@@ -396,8 +394,6 @@ uint8_t kinematics_home(void)
 	memset(target, 0, sizeof(target));
 	itp_reset_rt_position(target);
 	mc_sync_position();
-
-	cnc_clear_exec_state(EXEC_HOMING);
 
 	return STATUS_OK;
 }

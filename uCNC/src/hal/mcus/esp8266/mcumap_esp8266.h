@@ -990,7 +990,12 @@ extern "C"
 #endif
 #ifdef ENABLE_WIFI
 #define MCU_HAS_WIFI
+#ifndef DISABLE_ENDPOINTS
 #define MCU_HAS_ENDPOINTS
+#endif
+#ifndef DISABLE_WEBSOCKETS
+#define MCU_HAS_WEBSOCKETS
+#endif
 #define BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 #endif
 
@@ -1039,7 +1044,7 @@ extern "C"
 
 #define mcu_config_output(X) pinMode(__indirect__(X, BIT), OUTPUT)
 #define mcu_config_pwm(X, freq) \
-	g_soft_pwm_res = 1;         \
+	g_soft_pwm_res = 1;           \
 	pinMode(__indirect__(X, BIT), OUTPUT)
 #define mcu_config_input(X) pinMode(__indirect__(X, BIT), INPUT)
 #define mcu_config_analog(X) mcu_config_input(X)
@@ -1054,27 +1059,27 @@ extern "C"
 
 #define mcu_get_analog(X) analogRead(__indirect__(X, BIT))
 
-#define mcu_spi_xmit(X)           \
-	{                             \
+#define mcu_spi_xmit(X)       \
+	{                           \
 		while (SPI1CMD & SPIBUSY) \
-			;                     \
+			;                       \
 		SPI1W0 = x;               \
 		SPI1CMD |= SPIBUSY;       \
 		while (SPI1CMD & SPIBUSY) \
-			;                     \
+			;                       \
 		(uint8_t)(SPI1W0 & 0xff); \
 	}
 
-#define cpucount()                                \
-	({                                             \
+#define cpucount()                            \
+	({                                          \
 		uint32_t r;                               \
 		asm volatile("rsr %0, ccount" : "=r"(r)); \
 		r;                                        \
 	})
 
-#define mcu_delay_cycles(X)          \
-	{                                \
-		uint32_t start = cpucount();   \
+#define mcu_delay_cycles(X)      \
+	{                              \
+		uint32_t start = cpucount(); \
 		uint32_t end;                \
 		do                           \
 		{                            \

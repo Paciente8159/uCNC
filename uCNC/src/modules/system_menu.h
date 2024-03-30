@@ -134,7 +134,7 @@ extern "C"
 	} system_menu_t;
 
 #define MENU_ENTRY(name) ((system_menu_item_t *)&name)
-#define DECL_MENU_ENTRY(menu_id, name, strvalue, arg_ptr, display_cb, display_cb_arg, action_cb, action_cb_arg)                                                                                                   \
+#define DECL_MENU_ENTRY(menu_id, name, strvalue, arg_ptr, display_cb, display_cb_arg, action_cb, action_cb_arg)                                                                                                 \
 	static const system_menu_item_t name##_item __rom__ = {.label = strvalue, .argptr = arg_ptr, .item_render = display_cb, .render_arg = display_cb_arg, .item_action = action_cb, .action_arg = action_cb_arg}; \
 	static system_menu_index_t name = {.menu_item = &name##_item, .next = NULL};                                                                                                                                  \
 	system_menu_append_item(menu_id, &name)
@@ -149,11 +149,11 @@ extern "C"
 #define DECL_MENU_VAR_CUSTOM_EDIT(menu_id, name, strvalue, varptr, vartype, actioncb, actioncb_arg) DECL_MENU_ENTRY(menu_id, name, strvalue, varptr, system_menu_item_render_var_arg, CONST_VARG(vartype), actioncb, actioncb_arg)
 #define DECL_MENU_ACTION(menu_id, name, strvalue, action_cb, action_cb_arg) DECL_MENU_ENTRY(menu_id, name, strvalue, NULL, NULL, NULL, action_cb, action_cb_arg)
 
-#define DECL_MENU(id, parentid, label)                                                                                                                                                      \
+#define DECL_MENU(id, parentid, label)                                                                                                                                                    \
 	static const char m##id##_label[] __rom__ = label;                                                                                                                                      \
 	static system_menu_page_t m##id = {.menu_id = id, .parent_id = parentid, .page_label = m##id##_label, .page_render = NULL, .page_action = NULL, .items_index = NULL, .extended = NULL}; \
 	system_menu_append(&m##id)
-#define DECL_DYNAMIC_MENU(id, parentid, render_cb, action_cb)                                                                                                                                                      \
+#define DECL_DYNAMIC_MENU(id, parentid, render_cb, action_cb)                                                                                                                              \
 	static system_menu_page_t m##id = {.menu_id = id, .parent_id = parentid, .page_label = NULL, .page_render = render_cb, .page_action = action_cb, .items_index = NULL, .extended = NULL}; \
 	system_menu_append(&m##id)
 #define MENU(id) (&m##id)
@@ -217,10 +217,10 @@ extern "C"
 	void system_menu_var_to_str_set_buffer(char *ptr);
 	void system_menu_var_to_str(char c);
 
-#define system_menu_int_to_str(buf_ptr, var)    \
+#define system_menu_int_to_str(buf_ptr, var)  \
 	system_menu_var_to_str_set_buffer(buf_ptr); \
 	print_int(system_menu_var_to_str, (uint32_t)var)
-#define system_menu_flt_to_str(buf_ptr, var)    \
+#define system_menu_flt_to_str(buf_ptr, var)  \
 	system_menu_var_to_str_set_buffer(buf_ptr); \
 	print_flt(system_menu_var_to_str, (float)var)
 

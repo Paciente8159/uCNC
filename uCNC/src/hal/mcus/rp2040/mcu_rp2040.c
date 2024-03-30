@@ -308,6 +308,10 @@ void mcu_init(void)
 #ifdef IC74HC595_CUSTOM_SHIFT_IO
 	ic74hc595_pio_init();
 #endif
+#ifndef RAM_ONLY_SETTINGS
+	rp2040_eeprom_init(NVM_STORAGE_SIZE); // 2K Emulated EEPROM
+#endif
+
 	mcu_usart_init();
 
 	pinMode(LED_BUILTIN, OUTPUT);
@@ -320,9 +324,6 @@ void mcu_init(void)
 	servo_alarm.alarm_cb = &mcu_clear_servos;
 #endif
 
-#ifndef RAM_ONLY_SETTINGS
-	rp2040_eeprom_init(1024); // 1K Emulated EEPROM
-#endif
 #ifdef MCU_HAS_SPI
 	mcu_spi_config(SPI_FREQ, SPI_MODE);
 #endif
@@ -528,24 +529,6 @@ void mcu_stop_itp_isr(void)
 }
 
 /**
- * gets the MCU running time in milliseconds.
- * the time counting is controled by the internal RTC
- * */
-uint32_t mcu_millis()
-{
-	return millis();
-}
-
-/**
- * provides a delay in us (micro seconds)
- * the maximum allowed delay is 255 us
- * */
-uint32_t mcu_micros()
-{
-	return micros();
-}
-
-/**
  * runs all internal tasks of the MCU.
  * for the moment these are:
  *   - if USB is enabled and MCU uses tinyUSB framework run tinyUSB tud_task
@@ -561,6 +544,13 @@ void mcu_dotasks(void)
  * */
 uint8_t mcu_eeprom_getc(uint16_t address)
 {
+	if (NVM_STORAGE_SIZE <= address)
+	{
+		DEBUG_STR("EEPROM invalid address @ ");
+		DEBUG_INT(address);
+		DEBUG_PUTC('\n');
+		return 0;
+	}
 #ifndef RAM_ONLY_SETTINGS
 	return rp2040_eeprom_read(address);
 #else
@@ -573,6 +563,12 @@ uint8_t mcu_eeprom_getc(uint16_t address)
  * */
 void mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
+	if (NVM_STORAGE_SIZE <= address)
+	{
+		DEBUG_STR("EEPROM invalid address @ ");
+		DEBUG_INT(address);
+		DEBUG_PUTC('\n');
+	}
 #ifndef RAM_ONLY_SETTINGS
 	rp2040_eeprom_write(address, value);
 #endif

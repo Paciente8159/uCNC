@@ -53,9 +53,9 @@ extern "C"
 // machine tools configurations
 #include "hal/tools/tool.h" //configures the kinematics for the cnc machine
 // final HAL configurations
-#include "../cnc_hal_config.h" //inicializes the HAL hardcoded connections
+#include "../cnc_hal_config.h"		//inicializes the HAL hardcoded connections
 #include "../cnc_hal_overrides.h" //config override file
-#include "modules/ic74hc595.h" // io extender
+#include "modules/ic74hc595.h"		// io extender
 
 	/**
 	 *
@@ -193,6 +193,22 @@ extern "C"
 
 #ifdef PROBE_PULLUP_ENABLE
 #define PROBE_PULLUP
+#endif
+
+#ifdef ENABLE_RT_PROBE_CHECKING
+#undef PROBE_ISR
+#endif
+
+#ifdef ENABLE_RT_LIMITS_CHECKING
+#undef LIMIT_X_ISR
+#undef LIMIT_X2_ISR
+#undef LIMIT_Y_ISR
+#undef LIMIT_Y2_ISR
+#undef LIMIT_Z_ISR
+#undef LIMIT_Z2_ISR
+#undef LIMIT_A_ISR
+#undef LIMIT_B_ISR
+#undef LIMIT_C_ISR
 #endif
 
 #ifdef ESTOP_PULLUP_ENABLE
@@ -334,126 +350,6 @@ extern "C"
 #define STEPPERS_ENCODERS_MASK 0
 #endif
 
-#ifdef STEPPER0_HAS_TMC
-#if (STEPPER0_TMC_INTERFACE == TMC_UART)
-// if driver uses uart set pins
-#if (!ASSERT_PIN(STEPPER0_UART_TX) || !ASSERT_PIN(STEPPER0_UART_RX))
-#undef STEPPER0_HAS_TMC
-#error "Stepper 0 undefined UART pins"
-#endif
-#elif (STEPPER0_TMC_INTERFACE == TMC_SPI)
-#if (!ASSERT_PIN(STEPPER0_UART_DO) || !ASSERT_PIN(STEPPER0_UART_DI) || !ASSERT_PIN(STEPPER0_UART_CLK) || !ASSERT_PIN(STEPPER0_UART_CS))
-#undef STEPPER0_HAS_TMC
-#error "Stepper 0 undefined SPI pins"
-#endif
-#endif
-#endif
-#ifdef STEPPER1_HAS_TMC
-#if (STEPPER1_TMC_INTERFACE == TMC_UART)
-// if driver uses uart set pins
-#if (!ASSERT_PIN(STEPPER1_UART_TX) || !ASSERT_PIN(STEPPER1_UART_RX))
-#undef STEPPER1_HAS_TMC
-#error "Stepper 1 undefined UART pins"
-#endif
-#elif (STEPPER1_TMC_INTERFACE == TMC_SPI)
-#if (!ASSERT_PIN(STEPPER1_UART_DO) || !ASSERT_PIN(STEPPER1_UART_DI) || !ASSERT_PIN(STEPPER1_UART_CLK) || !ASSERT_PIN(STEPPER1_UART_CS))
-#undef STEPPER1_HAS_TMC
-#error "Stepper 1 undefined SPI pins"
-#endif
-#endif
-#endif
-#ifdef STEPPER2_HAS_TMC
-#if (STEPPER2_TMC_INTERFACE == TMC_UART)
-// if driver uses uart set pins
-#if (!ASSERT_PIN(STEPPER2_UART_TX) || !ASSERT_PIN(STEPPER2_UART_RX))
-#undef STEPPER2_HAS_TMC
-#error "Stepper 2 undefined UART pins"
-#endif
-#elif (STEPPER2_TMC_INTERFACE == TMC_SPI)
-#if (!ASSERT_PIN(STEPPER2_UART_DO) || !ASSERT_PIN(STEPPER2_UART_DI) || !ASSERT_PIN(STEPPER2_UART_CLK) || !ASSERT_PIN(STEPPER2_UART_CS))
-#undef STEPPER2_HAS_TMC
-#error "Stepper 2 undefined SPI pins"
-#endif
-#endif
-#endif
-#ifdef STEPPER3_HAS_TMC
-#if (STEPPER3_TMC_INTERFACE == TMC_UART)
-// if driver uses uart set pins
-#if (!ASSERT_PIN(STEPPER3_UART_TX) || !ASSERT_PIN(STEPPER3_UART_RX))
-#undef STEPPER3_HAS_TMC
-#error "Stepper 3 undefined UART pins"
-#endif
-#elif (STEPPER3_TMC_INTERFACE == TMC_SPI)
-#if (!ASSERT_PIN(STEPPER3_UART_DO) || !ASSERT_PIN(STEPPER3_UART_DI) || !ASSERT_PIN(STEPPER3_UART_CLK) || !ASSERT_PIN(STEPPER3_UART_CS))
-#undef STEPPER3_HAS_TMC
-#error "Stepper 3 undefined SPI pins"
-#endif
-#endif
-#endif
-#ifdef STEPPER4_HAS_TMC
-#if (STEPPER4_TMC_INTERFACE == TMC_UART)
-// if driver uses uart set pins
-#if (!ASSERT_PIN(STEPPER4_UART_TX) || !ASSERT_PIN(STEPPER4_UART_RX))
-#undef STEPPER4_HAS_TMC
-#error "Stepper 4 undefined UART pins"
-#endif
-#elif (STEPPER4_TMC_INTERFACE == TMC_SPI)
-#if (!ASSERT_PIN(STEPPER4_UART_DO) || !ASSERT_PIN(STEPPER4_UART_DI) || !ASSERT_PIN(STEPPER4_UART_CLK) || !ASSERT_PIN(STEPPER4_UART_CS))
-#undef STEPPER4_HAS_TMC
-#error "Stepper 4 undefined SPI pins"
-#endif
-#endif
-#endif
-#ifdef STEPPER5_HAS_TMC
-#if (STEPPER5_TMC_INTERFACE == TMC_UART)
-// if driver uses uart set pins
-#if (!ASSERT_PIN(STEPPER5_UART_TX) || !ASSERT_PIN(STEPPER5_UART_RX))
-#undef STEPPER5_HAS_TMC
-#error "Stepper 5 undefined UART pins"
-#endif
-#elif (STEPPER5_TMC_INTERFACE == TMC_SPI)
-#if (!ASSERT_PIN(STEPPER5_UART_DO) || !ASSERT_PIN(STEPPER5_UART_DI) || !ASSERT_PIN(STEPPER5_UART_CLK) || !ASSERT_PIN(STEPPER5_UART_CS))
-#undef STEPPER5_HAS_TMC
-#error "Stepper 5 undefined SPI pins"
-#endif
-#endif
-#endif
-#ifdef STEPPER6_HAS_TMC
-#if (STEPPER6_TMC_INTERFACE == TMC_UART)
-// if driver uses uart set pins
-#if (!ASSERT_PIN(STEPPER6_UART_TX) || !ASSERT_PIN(STEPPER6_UART_RX))
-#undef STEPPER6_HAS_TMC
-#error "Stepper 6 undefined UART pins"
-#endif
-#elif (STEPPER6_TMC_INTERFACE == TMC_SPI)
-#if (!ASSERT_PIN(STEPPER6_UART_DO) || !ASSERT_PIN(STEPPER6_UART_DI) || !ASSERT_PIN(STEPPER6_UART_CLK) || !ASSERT_PIN(STEPPER6_UART_CS))
-#undef STEPPER6_HAS_TMC
-#error "Stepper 6 undefined SPI pins"
-#endif
-#endif
-#endif
-#ifdef STEPPER7_HAS_TMC
-#if (STEPPER7_TMC_INTERFACE == TMC_UART)
-// if driver uses uart set pins
-#if (!ASSERT_PIN(STEPPER7_UART_TX) || !ASSERT_PIN(STEPPER7_UART_RX))
-#undef STEPPER7_HAS_TMC
-#error "Stepper 7 undefined UART pins"
-#endif
-#elif (STEPPER7_TMC_INTERFACE == TMC_SPI)
-#if (!ASSERT_PIN(STEPPER7_UART_DO) || !ASSERT_PIN(STEPPER7_UART_DI) || !ASSERT_PIN(STEPPER7_UART_CLK) || !ASSERT_PIN(STEPPER7_UART_CS))
-#undef STEPPER7_HAS_TMC
-#error "Stepper 7 undefined SPI pins"
-#endif
-#endif
-#endif
-
-#if defined(STEPPER0_HAS_TMC) || defined(STEPPER1_HAS_TMC) || defined(STEPPER2_HAS_TMC) || defined(STEPPER3_HAS_TMC) || defined(STEPPER4_HAS_TMC) || defined(STEPPER5_HAS_TMC) || defined(STEPPER6_HAS_TMC) || defined(STEPPER7_HAS_TMC)
-#define ENABLE_TMC_DRIVERS
-#ifndef ENABLE_MAIN_LOOP_MODULES
-#define ENABLE_MAIN_LOOP_MODULES
-#endif
-#endif
-
 #if defined(STEPPER0_HAS_MSTEP) || defined(STEPPER1_HAS_MSTEP) || defined(STEPPER2_HAS_MSTEP) || defined(STEPPER3_HAS_MSTEP) || defined(STEPPER4_HAS_MSTEP) || defined(STEPPER5_HAS_MSTEP) || defined(STEPPER6_HAS_MSTEP) || defined(STEPPER7_HAS_MSTEP)
 #define ENABLE_DIGITAL_MSTEP
 #endif
@@ -485,27 +381,21 @@ extern "C"
 #if (STEPPER_COUNT == 1)
 #undef STEPPER_COUNT
 #define STEPPER_COUNT 2
-#define LASER_PPI_MASK STEP1_IO_MASK
 #elif (STEPPER_COUNT == 2)
 #undef STEPPER_COUNT
 #define STEPPER_COUNT 3
-#define LASER_PPI_MASK STEP2_IO_MASK
 #elif (STEPPER_COUNT == 3)
 #undef STEPPER_COUNT
 #define STEPPER_COUNT 4
-#define LASER_PPI_MASK STEP3_IO_MASK
 #elif (STEPPER_COUNT == 4)
 #undef STEPPER_COUNT
 #define STEPPER_COUNT 5
-#define LASER_PPI_MASK STEP4_IO_MASK
 #elif (STEPPER_COUNT == 5)
 #undef STEPPER_COUNT
 #define STEPPER_COUNT 6
-#define LASER_PPI_MASK STEP5_IO_MASK
 #elif (STEPPER_COUNT == 6)
 #undef STEPPER_COUNT
 #define STEPPER_COUNT 7
-#define LASER_PPI_MASK STEP6_IO_MASK
 #endif
 #ifndef LASER_PPI
 #define LASER_PPI UNDEF_PIN
@@ -1655,6 +1545,11 @@ extern "C"
 #ifndef LINACT5_IO_MASK
 #define LINACT5_IO_MASK STEP5_IO_MASK
 #endif
+#ifdef ENABLE_LASER_PPI
+#ifndef LASERPPI_IO_MASK
+#define LASERPPI_IO_MASK STEP7_IO_MASK
+#endif
+#endif
 
 // linear actuator limits and limits association
 #ifndef LINACT0_LIMIT_MASK
@@ -1685,31 +1580,51 @@ extern "C"
 #ifndef AXIS_Y
 #undef LINACT1_IO_MASK
 #undef LINACT1_LIMIT_MASK
+#if (defined(ENABLE_LASER_PPI) && STEPPER_COUNT == 2)
+#define LINACT1_IO_MASK LASERPPI_IO_MASK
+#else
 #define LINACT1_IO_MASK 0
+#endif
 #define LINACT1_LIMIT_MASK 0
 #endif
 #ifndef AXIS_Z
 #undef LINACT2_IO_MASK
 #undef LINACT2_LIMIT_MASK
+#if (defined(ENABLE_LASER_PPI) && STEPPER_COUNT == 3)
+#define LINACT2_IO_MASK LASERPPI_IO_MASK
+#else
 #define LINACT2_IO_MASK 0
+#endif
 #define LINACT2_LIMIT_MASK 0
 #endif
 #ifndef AXIS_A
 #undef LINACT3_IO_MASK
 #undef LINACT3_LIMIT_MASK
+#if (defined(ENABLE_LASER_PPI) && STEPPER_COUNT == 4)
+#define LINACT3_IO_MASK LASERPPI_IO_MASK
+#else
 #define LINACT3_IO_MASK 0
+#endif
 #define LINACT3_LIMIT_MASK 0
 #endif
 #ifndef AXIS_B
 #undef LINACT4_IO_MASK
 #undef LINACT4_LIMIT_MASK
+#if (defined(ENABLE_LASER_PPI) && STEPPER_COUNT == 5)
+#define LINACT4_IO_MASK LASERPPI_IO_MASK
+#else
 #define LINACT4_IO_MASK 0
+#endif
 #define LINACT4_LIMIT_MASK 0
 #endif
 #ifndef AXIS_C
 #undef LINACT5_IO_MASK
 #undef LINACT5_LIMIT_MASK
+#if (defined(ENABLE_LASER_PPI) && STEPPER_COUNT == 6)
+#define LINACT5_IO_MASK LASERPPI_IO_MASK
+#else
 #define LINACT5_IO_MASK 0
+#endif
 #define LINACT5_LIMIT_MASK 0
 #endif
 
@@ -1797,7 +1712,7 @@ extern "C"
 #define LIMIT_Z2_INV_MASK 4
 #endif
 
-#define LIMITS_INV_MASK (LIMIT_X_INV_MASK | LIMIT_Y_INV_MASK | LIMIT_Z_INV_MASK | LIMIT_A_INV_MASK | LIMIT_B_INV_MASK | LIMIT_B_INV_MASK)
+#define LIMITS_INV_MASK (LIMIT_X_INV_MASK | LIMIT_Y_INV_MASK | LIMIT_Z_INV_MASK | LIMIT_A_INV_MASK | LIMIT_B_INV_MASK | LIMIT_C_INV_MASK)
 #define LIMITS_DUAL_INV_MASK (LIMIT_X2_INV_MASK | LIMIT_Y2_INV_MASK | LIMIT_Z2_INV_MASK)
 
 #if (ASSERT_PIN(DIN0) && defined(DIN0_ISR))
@@ -1916,7 +1831,9 @@ typedef uint16_t step_t;
 #define MAX_STEPS_PER_LINE (1UL << MAX_STEPS_PER_LINE_BITS)
 
 #if DSS_CUTOFF_FREQ > (F_STEP_MAX >> 3)
-#error "DSS_CUTOFF_FREQ should not be set above 1/8th of the max step rate"
+#undef DSS_CUTOFF_FREQ
+#define DSS_CUTOFF_FREQ (F_STEP_MAX >> 3)
+#warning "DSS_CUTOFF_FREQ was limited to 1/8th of the max step rate"
 #endif
 
 #if ((S_CURVE_ACCELERATION_LEVEL < -1) || (S_CURVE_ACCELERATION_LEVEL > 5))
@@ -2153,7 +2070,6 @@ typedef uint16_t step_t;
 #error "Y axis can only be used as a Z alias in 2 axis machines."
 #endif
 
-
 #ifdef MCU_HAS_I2C
 
 // defaults to master I2C
@@ -2188,6 +2104,9 @@ typedef uint16_t step_t;
 // forces modes
 #ifndef ENABLE_RT_SYNC_MOTIONS
 #define ENABLE_RT_SYNC_MOTIONS
+#endif
+#ifndef ENABLE_PARSER_MODULES
+#define ENABLE_PARSER_MODULES
 #endif
 #endif
 

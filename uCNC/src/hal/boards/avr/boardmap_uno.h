@@ -28,11 +28,6 @@ extern "C"
 #define BOARD_NAME "Arduino UNO"
 #endif
 
-// reduces RAM usage a bit to prevent hardware resets
-#ifndef PLANNER_BUFFER_SIZE
-#define PLANNER_BUFFER_SIZE 14
-#endif
-
 #define PCINT0_PORT B
 #define PCINT1_PORT C
 #define PCINT2_PORT D
@@ -57,20 +52,20 @@ extern "C"
 #define DIR0_PORT D // assigns DIR0 port
 
 // Setup limit pins
-#define LIMIT_Z_BIT 4  // assigns LIMIT_Z pin
+#define LIMIT_Z_BIT 4	 // assigns LIMIT_Z pin
 #define LIMIT_Z_PORT B // assigns LIMIT_Z port
-#define LIMIT_Z_ISR 0  // assigns LIMIT_Z ISR
-	// #define LIMIT_Y2_BIT 4 //Z and second Y limit share the pin
-	// #define LIMIT_Y2_PORT B //Z and second Y limit share the pin
-	// #define LIMIT_Y2_ISR 0 //Z and second Y limit share the pin
+#define LIMIT_Z_ISR 0	 // assigns LIMIT_Z ISR
+											 // #define LIMIT_Y2_BIT 4 //Z and second Y limit share the pin
+											 // #define LIMIT_Y2_PORT B //Z and second Y limit share the pin
+											 // #define LIMIT_Y2_ISR 0 //Z and second Y limit share the pin
 
-#define LIMIT_Y_BIT 2  // assigns LIMIT_Y pin
+#define LIMIT_Y_BIT 2	 // assigns LIMIT_Y pin
 #define LIMIT_Y_PORT B // assigns LIMIT_Y port
-#define LIMIT_Y_ISR 0  // assigns LIMIT_Y ISR
+#define LIMIT_Y_ISR 0	 // assigns LIMIT_Y ISR
 
-#define LIMIT_X_BIT 1  // assigns LIMIT_X pin
+#define LIMIT_X_BIT 1	 // assigns LIMIT_X pin
 #define LIMIT_X_PORT B // assigns LIMIT_X port
-#define LIMIT_X_ISR 0  // assigns LIMIT_X ISR
+#define LIMIT_X_ISR 0	 // assigns LIMIT_X ISR
 
 // Setup probe pin
 #define PROBE_BIT 5
@@ -143,6 +138,23 @@ extern "C"
 	// #define RTC_TIMER 0
 
 #define ONESHOT_TIMER 2
+
+/**
+ *
+ * These are some paramaters needed to reduce code size for the UNO board
+ *
+ * **/
+// reduces RAM usage a bit to prevent hardware resets
+#ifndef PLANNER_BUFFER_SIZE
+#define PLANNER_BUFFER_SIZE 14
+#endif
+// reduces ITP code size by avoiding some optimizations
+#ifdef STEP_ISR_SKIP_MAIN
+#undef STEP_ISR_SKIP_MAIN
+#endif
+#ifdef STEP_ISR_SKIP_IDLE
+#undef STEP_ISR_SKIP_IDLE
+#endif
 
 #ifdef __cplusplus
 }

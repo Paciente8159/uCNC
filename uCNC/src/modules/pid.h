@@ -13,7 +13,7 @@
 
 	µCNC is distributed WITHOUT ANY WARRANTY;
 	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+	See the GNU General Public License for more details.
 */
 
 #ifndef PID_H
@@ -30,7 +30,7 @@ extern "C"
 #include <float.h>
 #include <stdio.h>
 
-#define HZ_TO_MS(hz) ((uint32_t)(0.001f*hz))
+#define HZ_TO_MS(hz) (1000 / (hz))
 
 	typedef struct pid_data_
 	{

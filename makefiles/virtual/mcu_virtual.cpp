@@ -302,16 +302,16 @@ extern "C"
 			BOOL fConnected = FALSE;
 
 			hPipe = CreateNamedPipe(
-				lpszPipename,				// pipe name
-				PIPE_ACCESS_DUPLEX,			// read/write access
-				PIPE_TYPE_MESSAGE |			// message type pipe
-					PIPE_READMODE_MESSAGE | // message-read mode
-					PIPE_WAIT,				// blocking mode
-				PIPE_UNLIMITED_INSTANCES,	// max. instances
-				sizeof(VIRTUAL_MAP),		// output buffer size
-				sizeof(VIRTUAL_MAP),		// input buffer size
-				0,							// client time-out
-				NULL);						// no template file
+					lpszPipename,								// pipe name
+					PIPE_ACCESS_DUPLEX,					// read/write access
+					PIPE_TYPE_MESSAGE |					// message type pipe
+							PIPE_READMODE_MESSAGE | // message-read mode
+							PIPE_WAIT,							// blocking mode
+					PIPE_UNLIMITED_INSTANCES,		// max. instances
+					sizeof(VIRTUAL_MAP),				// output buffer size
+					sizeof(VIRTUAL_MAP),				// input buffer size
+					0,													// client time-out
+					NULL);											// no template file
 
 			if (hPipe == INVALID_HANDLE_VALUE)
 			{
@@ -336,11 +336,11 @@ extern "C"
 					memcpy(lpvMessage, (void *)&virtualmap, sizeof(VIRTUAL_MAP));
 
 					fSuccess = WriteFile(
-						hPipe,		// pipe handle
-						lpvMessage, // message
-						cbToWrite,	// message length
-						&cbWritten, // bytes written
-						NULL);		// not overlapped
+							hPipe,			// pipe handle
+							lpvMessage, // message
+							cbToWrite,	// message length
+							&cbWritten, // bytes written
+							NULL);			// not overlapped
 
 					if (!fSuccess)
 					{
@@ -351,11 +351,11 @@ extern "C"
 					// Read from the pipe.
 
 					fSuccess = ReadFile(
-						hPipe,		// pipe handle
-						lpvMessage, // buffer to receive reply
-						cbToWrite,	// size of buffer
-						&cbRead,	// number of bytes read
-						NULL);		// not overlapped
+							hPipe,			// pipe handle
+							lpvMessage, // buffer to receive reply
+							cbToWrite,	// size of buffer
+							&cbRead,		// number of bytes read
+							NULL);			// not overlapped
 
 					if (!fSuccess && GetLastError() != ERROR_MORE_DATA)
 						break;
@@ -582,34 +582,129 @@ extern "C"
 	 *
 	 *
 	 * **/
-	// RealTime
-	void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *tick_reps)
+
+#ifndef ITP_SAMPLE_RATE
+#define ITP_SAMPLE_RATE (F_STEP_MAX * 2)
+#endif
+
+#if defined(MCU_HAS_ONESHOT_TIMER)
+	static uint32_t virtual_oneshot_counter;
+	static uint32_t virtual_oneshot_reload;
+	static FORCEINLINE void mcu_gen_oneshot(void)
+	{
+		if (virtual_oneshot_counter)
+		{
+			virtual_oneshot_counter--;
+			if (!virtual_oneshot_counter)
+			{
+				if (mcu_timeout_cb)
+				{
+					mcu_timeout_cb();
+				}
+			}
+		}
+	}
+#endif
+
+	static volatile uint32_t mcu_itp_timer_reload;
+	static volatile bool mcu_itp_timer_running;
+	static FORCEINLINE void mcu_gen_step(void)
+	{
+		static bool step_reset = true;
+		static int32_t mcu_itp_timer_counter;
+
+		// generate steps
+		if (mcu_itp_timer_running)
+		{
+			// stream mode tick
+			int32_t t = mcu_itp_timer_counter;
+			bool reset = step_reset;
+			t -= (int32_t)roundf(1000000.0f / (float)ITP_SAMPLE_RATE);
+			if (t <= 0)
+			{
+				if (!reset)
+				{
+					mcu_step_cb();
+				}
+				else
+				{
+					mcu_step_reset_cb();
+				}
+				step_reset = !reset;
+				mcu_itp_timer_counter = mcu_itp_timer_reload + t;
+			}
+			else
+			{
+				mcu_itp_timer_counter = t;
+			}
+		}
+	}
+
+	/**
+	 * convert step rate to clock cycles
+	 * */
+	void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 	{
 		frequency = CLAMP((float)F_STEP_MIN, frequency, (float)F_STEP_MAX);
+		// up and down counter (generates half the step rate at each event)
+		uint32_t totalticks = (uint32_t)((500000.0f) / frequency);
+		*prescaller = 1;
+		while (totalticks > 0xFFFF)
+		{
+			(*prescaller) <<= 1;
+			totalticks >>= 1;
+		}
 
-		*ticks = (uint16_t)floorf((F_CPU / frequency));
-		*tick_reps = 1;
+		*ticks = (uint16_t)totalticks;
 	}
 
-	uint16_t itp_interval;
-	static uint32_t itp_alarm = 0;
-
-	// starts a constant rate pulse at a given frequency. This triggers to ISR handles with an offset of MIN_PULSE_WIDTH useconds
-	void mcu_start_itp_isr(uint16_t clocks_speed, uint16_t prescaller)
+	float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller)
 	{
-		itp_alarm = mcu_micros() + clocks_speed;
-		itp_interval = clocks_speed;
+		uint32_t totalticks = (uint32_t)ticks * prescaller;
+		return 500000.0f / ((float)totalticks);
 	}
 
-	void mcu_change_itp_isr(uint16_t clocks_speed, uint16_t prescaller)
+	/**
+	 * starts the timer interrupt that generates the step pulses for the interpolator
+	 * */
+
+	void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 	{
-		itp_alarm = mcu_micros() + clocks_speed;
-		itp_interval = clocks_speed;
+		if (!mcu_itp_timer_running)
+		{
+			mcu_itp_timer_reload = ticks * prescaller;
+			mcu_itp_timer_running = true;
+		}
+		else
+		{
+			mcu_change_itp_isr(ticks, prescaller);
+		}
 	}
-	// stops the pulse
+
+	/**
+	 * changes the step rate of the timer interrupt that generates the step pulses for the interpolator
+	 * */
+	void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller)
+	{
+		if (mcu_itp_timer_running)
+		{
+			mcu_itp_timer_reload = ticks * prescaller;
+		}
+		else
+		{
+			mcu_start_itp_isr(ticks, prescaller);
+		}
+	}
+
+	/**
+	 * stops the timer interrupt that generates the step pulses for the interpolator
+	 * */
 	void mcu_stop_itp_isr(void)
 	{
-		itp_interval = 0;
+		if (mcu_itp_timer_running)
+		{
+			mcu_itp_timer_running = false;
+		}
 	}
 
 	/**
@@ -717,23 +812,36 @@ extern "C"
 		return (uint32_t)(perf_counter.QuadPart / cyclesPerMillisecond);
 	}
 
+	/**
+	 * configures a single shot timeout in us
+	 * */
+	static uint32_t oneshot_timeout;
+	static uint32_t oneshot_alarm;
+	void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
+	{
+		oneshot_timeout = timeout;
+		mcu_timeout_cb = fp;
+	}
+
+	/**
+	 * starts the timeout. Once hit the the respective callback is called
+	 * */
+	void mcu_start_timeout()
+	{
+		oneshot_alarm = mcu_micros() + oneshot_timeout;
+	}
+
 	void ticksimul(void)
 	{
-		if (itp_interval)
+		//		long t = stopCycleCounter();
+		//		printf("Elapsed %dus\n\r", (int)((double)t / cyclesPerMicrosecond));
+		for (int i = 0; i < (int)ceil(20 * ITP_SAMPLE_RATE / 1000); i++)
 		{
-			uint32_t ticks = itp_alarm;
-			uint32_t inc = itp_interval;
-			while (ticks < mcu_micros())
-			{
-				mcu_step_cb();
-				mcu_step_reset_cb();
-				ticks += itp_interval;
-			}
-
-			itp_alarm = ticks;
+			mcu_gen_step();
 		}
 
 		mcu_rtc_cb(mcu_millis());
+		//		startCycleCounter();
 	}
 
 	/**
@@ -748,9 +856,13 @@ extern "C"
 		virtualmap.inputs = 0;
 		virtualmap.outputs = 0;
 		g_cpu_freq = getCPUFreq();
-		start_timer(1, &ticksimul);
+		start_timer(20, &ticksimul);
 		pthread_create(&thread_io, NULL, &ioserver, NULL);
 		mcu_enable_global_isr();
+	}
+
+	void mcu_io_reset(void)
+	{
 	}
 
 	int main(int argc, char **argv)
@@ -761,6 +873,13 @@ extern "C"
 			cnc_run();
 		}
 		return 0;
+	}
+
+	uint8_t itp_set_step_mode(uint8_t mode) { return 0; }
+
+	uint32_t mcu_free_micros(void)
+	{
+		return (uint32_t)(mcu_free_micros() % 1000);
 	}
 #ifdef __cplusplus
 }

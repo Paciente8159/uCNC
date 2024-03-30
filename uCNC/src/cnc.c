@@ -112,6 +112,7 @@ void cnc_init(void)
 	cnc_state.loop_state = LOOP_STARTUP_RESET;
 	// initializes all systems
 	mcu_init();											// mcu
+	mcu_io_reset();									// add custom logic to set pins initial state
 	io_enable_steppers(~g_settings.step_enable_invert); // disables steppers at start
 	io_disable_probe();									// forces probe isr disabling
 	serial_init();										// serial
@@ -217,8 +218,10 @@ uint8_t cnc_parse_cmd(void)
 		}
 		else
 		{
-			parser_sync_position();
 			protocol_send_error(error);
+			itp_sync();
+			mc_sync_position();
+			parser_sync_position();
 #ifdef ENABLE_MAIN_LOOP_MODULES
 			EVENT_INVOKE(cnc_parse_cmd_error, &error);
 #endif
@@ -341,9 +344,9 @@ void cnc_restore_motion(void)
 }
 
 // this function is executed every millisecond
+#ifndef DISABLE_RTC_CODE
 MCU_CALLBACK void mcu_rtc_cb(uint32_t millis)
 {
-#ifndef DISABLE_RTC_CODE
 	static bool running = false;
 
 	if (!running)
@@ -377,8 +380,8 @@ MCU_CALLBACK void mcu_rtc_cb(uint32_t millis)
 		mcu_disable_global_isr();
 		running = false;
 	}
-#endif
 }
+#endif
 
 void cnc_home(void)
 {
@@ -389,17 +392,19 @@ void cnc_home(void)
 	io_lock_limits(0);
 #endif
 	io_invert_limits(0);
-	if (error)
-	{
-		// disables homing and reenables alarm messages
-		cnc_clear_exec_state(EXEC_HOMING);
-		// cnc_alarm(error);
-		return;
-	}
-
 	// sync's the motion control with the real time position
+	// this flushes the homing motion before returning from error or home success
+	itp_clear();
+	planner_clear();
 	mc_sync_position();
-	cnc_run_startup_blocks();
+
+	// disables homing and reenables limits alarm messages
+	cnc_clear_exec_state(EXEC_HOMING);
+
+	if (error == STATUS_OK)
+	{
+		cnc_run_startup_blocks();
+	}
 }
 
 void cnc_alarm(int8_t code)
@@ -447,7 +452,6 @@ void cnc_stop(void)
 #ifdef ENABLE_MAIN_LOOP_MODULES
 	EVENT_INVOKE(cnc_stop, NULL);
 #endif
-	cnc_clear_exec_state(EXEC_RUN);
 }
 
 uint8_t cnc_unlock(bool force)
@@ -557,37 +561,42 @@ void cnc_clear_exec_state(uint8_t statemask)
 	// if releasing from a HOLD state with and active delay in exec
 	if (CHECKFLAG(statemask, EXEC_HOLD) && cnc_get_exec_state(EXEC_HOLD))
 	{
-		CLEARFLAG(cnc_state.exec_state, EXEC_HOLD);
+		// skip this if the hold release is for a jog cancel
+		if (!cnc_get_exec_state(EXEC_JOG))
+		{
 #if TOOL_COUNT > 0
-		// updated the coolant pins
-		tool_set_coolant(planner_get_coolant());
+			planner_spindle_ovr_reset();
+			// updated the coolant pins
+			tool_set_coolant(planner_get_coolant());
 #if (DELAY_ON_RESUME_COOLANT > 0)
-		if (!g_settings.laser_mode)
-		{
-			if (!planner_buffer_is_empty())
+			if (!g_settings.laser_mode)
 			{
-				cnc_delay_ms(DELAY_ON_RESUME_COOLANT * 1000);
+				if (!planner_buffer_is_empty())
+				{
+					cnc_dwell_ms(DELAY_ON_RESUME_COOLANT * 1000);
+				}
 			}
-		}
 #endif
-		// tries to sync the tool
-		// if something goes wrong the tool can reinstate the HOLD state
-		itp_sync_spindle();
+			// tries to sync the tool
+			// if something goes wrong the tool can reinstate the HOLD state
+			itp_sync_spindle();
 #if (DELAY_ON_RESUME_SPINDLE > 0)
-		if (!g_settings.laser_mode)
-		{
-			if (!planner_buffer_is_empty())
+			if (!g_settings.laser_mode && cnc_state.loop_state == LOOP_RUNNING)
 			{
-				cnc_delay_ms(DELAY_ON_RESUME_SPINDLE * 1000);
+				if (!planner_buffer_is_empty())
+				{
+					cnc_dwell_ms(DELAY_ON_RESUME_SPINDLE * 1000);
+				}
 			}
+#endif
+#endif
 		}
-#endif
-#endif
 	}
 
 	CLEARFLAG(cnc_state.exec_state, statemask);
 }
 
+// executes delay
 void cnc_delay_ms(uint32_t milliseconds)
 {
 	milliseconds += mcu_millis();
@@ -595,6 +604,15 @@ void cnc_delay_ms(uint32_t milliseconds)
 	{
 		cnc_dotasks();
 	} while (mcu_millis() < milliseconds);
+}
+
+//executes delay (resumes earlier on error)
+void cnc_dwell_ms(uint32_t milliseconds)
+{
+	milliseconds += mcu_millis();
+	do
+	{
+	} while ((mcu_millis() < milliseconds) && cnc_dotasks());
 }
 
 void cnc_reset(void)
@@ -639,6 +657,13 @@ void cnc_call_rt_command(uint8_t command)
 		break;
 	case CMD_CODE_FEED_HOLD:
 		SETFLAG(cnc_state.exec_state, EXEC_HOLD);
+		__FALL_THROUGH__
+case CMD_CODE_JOG_CANCEL:
+		if (cnc_get_exec_state(EXEC_JOG))
+		{
+			SETFLAG(cnc_state.exec_state, EXEC_HOLD);
+			SETFLAG(cnc_state.rt_cmd, RT_CMD_JOG_CANCEL);
+		}
 		break;
 	case CMD_CODE_REPORT:
 		SETFLAG(cnc_state.rt_cmd, RT_CMD_REPORT);
@@ -654,12 +679,6 @@ void cnc_call_rt_command(uint8_t command)
 		SETFLAG(cnc_state.exec_state, (EXEC_HOLD | EXEC_DOOR));
 		break;
 #endif
-	case CMD_CODE_JOG_CANCEL:
-		if (cnc_get_exec_state(EXEC_JOG))
-		{
-			SETFLAG(cnc_state.exec_state, EXEC_HOLD);
-		}
-		break;
 	default:
 		if (command >= CMD_CODE_FEED_100 && command <= CMD_CODE_RAPIDFEED_OVR2)
 		{
@@ -675,12 +694,13 @@ void cnc_call_rt_command(uint8_t command)
 			tools_cmd |= (1 << (command - CMD_CODE_SPINDLE_100));
 		}
 
+#ifdef ENABLE_COOLANT
 		if (command >= CMD_CODE_COOL_FLD_TOGGLE && command <= CMD_CODE_COOL_MST_TOGGLE)
 		{
 			tools_cmd &= RTCMD_SPINDLE_MASK;
 			tools_cmd |= (RT_CMD_COOL_FLD_TOGGLE << (command - CMD_CODE_COOL_FLD_TOGGLE));
 		}
-
+#endif
 		cnc_state.tool_ovr_cmd = tools_cmd;
 	}
 }
@@ -712,7 +732,9 @@ void cnc_exec_rt_commands(void)
 	if (command)
 	{
 		// clear all but report. report is handled in cnc_io_dotasks
-		cnc_state.rt_cmd = RT_CMD_CLEAR;
+		__ATOMIC__{
+			cnc_state.rt_cmd = RT_CMD_CLEAR;
+		}
 		if (CHECKFLAG(command, RT_CMD_RESET))
 		{
 			if (cnc_get_exec_state(EXEC_HOMING))
@@ -729,6 +751,17 @@ void cnc_exec_rt_commands(void)
 
 			cnc_alarm(EXEC_ALARM_SOFTRESET);
 			cnc_state.loop_state = LOOP_STARTUP_RESET;
+			return;
+		}
+
+		if (CHECKFLAG(command, RT_CMD_JOG_CANCEL))
+		{
+			while(serial_available()){
+				char c = serial_getc();
+				if(c == EOL){
+					protocol_send_error(STATUS_JOG_CANCELED);
+				}
+			}
 			return;
 		}
 
@@ -793,11 +826,11 @@ void cnc_exec_rt_commands(void)
 	if (command)
 	{
 		cnc_state.tool_ovr_cmd = RT_CMD_CLEAR; // clears command flags
+#if TOOL_COUNT > 0
 		uint8_t ovr = g_planner_state.spindle_speed_override;
 		update_tools = true;
 		switch (command & RTCMD_SPINDLE_MASK)
 		{
-#if TOOL_COUNT > 0
 		case RT_CMD_SPINDLE_100:
 			planner_spindle_ovr(100);
 			break;
@@ -814,24 +847,17 @@ void cnc_exec_rt_commands(void)
 			planner_spindle_ovr(ovr - SPINDLE_OVR_FINE);
 			break;
 		case RT_CMD_SPINDLE_TOGGLE:
-			if (cnc_get_exec_state(EXEC_HOLD | EXEC_DOOR | EXEC_RUN) == EXEC_HOLD) // only available if a TRUE hold is active
-			{
-				// toogle state
-				if (tool_get_speed())
-				{
-					update_tools = false;
-					tool_set_speed(0);
-				}
-			}
+			planner_spindle_ovr_toggle();
 			break;
-#endif
 		}
+#endif
 
+#ifdef ENABLE_COOLANT
 		switch (command & RTCMD_COOLANT_MASK)
 		{
 #if TOOL_COUNT > 0
 		case RT_CMD_COOL_FLD_TOGGLE:
-#ifdef COOLANT_MIST
+#ifndef M7_SAME_AS_M8
 		case RT_CMD_COOL_MST_TOGGLE:
 #endif
 			if (!cnc_get_exec_state(EXEC_ALARM)) // if no alarm is active
@@ -840,7 +866,7 @@ void cnc_exec_rt_commands(void)
 				{
 					planner_coolant_ovr_toggle(COOLANT_MASK);
 				}
-#ifdef COOLANT_MIST
+#ifndef M7_SAME_AS_M8
 				if (command == RT_CMD_COOL_MST_TOGGLE)
 				{
 					planner_coolant_ovr_toggle(MIST_MASK);
@@ -850,18 +876,14 @@ void cnc_exec_rt_commands(void)
 			break;
 #endif
 		}
+#endif
 
 		if (update_tools)
 		{
 			itp_update();
 			if (planner_buffer_is_empty())
 			{
-				motion_data_t block = {0};
-#if TOOL_COUNT > 0
-				block.motion_flags.bit.coolant = planner_get_previous_coolant();
-				block.spindle = planner_get_previous_spindle_speed();
-#endif
-				mc_update_tools(&block);
+				mc_update_tools(NULL);
 			}
 		}
 	}
@@ -955,22 +977,6 @@ bool cnc_check_interlocking(void)
 		return false;
 	}
 
-	// an hold condition is active and motion as stopped
-	if (cnc_get_exec_state(EXEC_HOLD) && !cnc_get_exec_state(EXEC_RUN))
-	{
-		itp_stop(); // stop motion
-
-		if (cnc_get_exec_state(EXEC_HOMING | EXEC_JOG)) // flushes the buffers if motions was homing or jog
-		{
-			itp_clear();
-			planner_clear();
-			mc_sync_position();
-			cnc_clear_exec_state(EXEC_HOMING | EXEC_JOG | EXEC_HOLD);
-		}
-
-		return false;
-	}
-
 #if ASSERT_PIN(SAFETY_DOOR)
 	// the safety door condition is active
 	if (cnc_get_exec_state(EXEC_DOOR))
@@ -979,6 +985,7 @@ bool cnc_check_interlocking(void)
 		if (cnc_get_exec_state(EXEC_HOMING))
 		{
 			cnc_alarm(EXEC_ALARM_HOMING_FAIL_DOOR);
+			return false;
 		}
 		else if (cnc_get_exec_state(EXEC_RUN)) // if the machined is running
 		{
@@ -989,10 +996,30 @@ bool cnc_check_interlocking(void)
 		{
 			cnc_stop();
 		}
-
-		return false;
 	}
 #endif
+
+	// an hold condition is active and motion as stopped
+	if (cnc_get_exec_state(EXEC_HOLD) && !cnc_get_exec_state(EXEC_RUN))
+	{
+		itp_stop(); // stop motion
+
+		if (cnc_get_exec_state(EXEC_HOMING | EXEC_JOG)) // flushes the buffers if motions was homing or jog
+		{
+			itp_clear();
+			// clears the buffer but conserves the tool data
+			while (!planner_buffer_is_empty())
+			{
+				planner_discard_block();
+			}
+			mc_sync_position();
+			parser_sync_position();
+			// flush all pending commands and motions 
+			mc_flush_pending_motion();
+			// homing will be cleared inside homing cycle
+			cnc_clear_exec_state(EXEC_HOLD | EXEC_JOG);
+		}
+	}
 
 	// end of JOG
 	if (cnc_get_exec_state(EXEC_JOG | EXEC_HOLD) == EXEC_JOG)
@@ -1003,11 +1030,6 @@ bool cnc_check_interlocking(void)
 		}
 	}
 
-	if (itp_is_empty() && planner_buffer_is_empty())
-	{
-		cnc_clear_exec_state(EXEC_RUN);
-	}
-
 	return true;
 }
 
@@ -1015,12 +1037,9 @@ static void cnc_io_dotasks(void)
 {
 	// run internal mcu tasks (USB and communications)
 	mcu_dotasks();
-
-	// checks inputs and triggers ISR checks if enforced soft polling
-#if defined(FORCE_SOFT_POLLING)
 	mcu_limits_changed_cb();
 	mcu_controls_changed_cb();
-#endif
+	
 #if (DIN_ONCHANGE_MASK != 0 && ENCODERS < 1)
 	// extra call in case generic inputs are running with ISR disabled. Encoders need propper ISR to work.
 	mcu_inputs_changed_cb();

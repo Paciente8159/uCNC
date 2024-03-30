@@ -168,7 +168,7 @@ uint8_t parser_read_command(void)
 	return parser_gcode_command(is_jogging);
 }
 
-void parser_get_modes(uint8_t *modalgroups, uint16_t *feed, uint16_t *spindle, uint8_t *coolant)
+void parser_get_modes(uint8_t *modalgroups, uint16_t *feed, uint16_t *spindle)
 {
 	modalgroups[0] = parser_state.groups.motion;
 	modalgroups[12] = parser_state.groups.motion_mantissa;
@@ -182,8 +182,11 @@ void parser_get_modes(uint8_t *modalgroups, uint16_t *feed, uint16_t *spindle, u
 #if TOOL_COUNT > 0
 	modalgroups[8] = ((parser_state.groups.spindle_turning == M5) ? 5 : (2 + parser_state.groups.spindle_turning));
 	*spindle = (uint16_t)ABS(parser_state.spindle);
-	*coolant = parser_state.groups.coolant;
-	modalgroups[9] = (parser_state.groups.coolant == M9) ? 9 : MIN(parser_state.groups.coolant + 6, 8);
+#ifdef ENABLE_COOLANT
+	modalgroups[9] = parser_state.groups.coolant;
+#else
+	modalgroups[9] = 0;
+#endif
 #if TOOL_COUNT > 1
 	modalgroups[11] = parser_state.tool_index;
 #else
@@ -289,6 +292,11 @@ bool parser_get_wco(float *axis)
 void parser_sync_probe(void)
 {
 	itp_get_rt_position(rt_probe_step_pos);
+}
+
+void parser_get_probe(int32_t *position)
+{
+	memcpy(position, rt_probe_step_pos, sizeof(rt_probe_step_pos));
 }
 
 void parser_update_probe_pos(void)
@@ -403,6 +411,9 @@ static uint8_t parser_grbl_command(void)
 				val = 0;
 				if (!parser_get_float(&val))
 				{
+#ifdef ENABLE_SETTINGS_MODULES
+					return settings_change(setting_num, val);
+#endif
 					return STATUS_BAD_NUMBER_FORMAT;
 				}
 
@@ -485,6 +496,7 @@ static uint8_t parser_grbl_command(void)
 			}
 			if (cnc_get_exec_state(EXEC_ALLACTIVE) && !cnc_get_exec_state(EXEC_JOG)) // Jog only allowed in IDLE or JOG mode
 			{
+				parser_discard_command();
 				return STATUS_IDLE_ERROR;
 			}
 			return GRBL_JOG_CMD;
@@ -493,25 +505,39 @@ static uint8_t parser_grbl_command(void)
 	default:
 		switch (grbl_cmd_str[0])
 		{
+#if EMULATE_GRBL_STARTUP == 2
+		case 'I':
+			if (grbl_cmd_str[1] == 'E' && grbl_cmd_len == 2 && c == EOL)
+			{
+				return GRBL_SEND_SYSTEM_INFO_EXTENDED;
+			}
+			break;
+#endif
 		case 'R':
 			if (grbl_cmd_str[1] == 'S' && grbl_cmd_str[2] == 'T' && c == '=' && grbl_cmd_len == 3)
 			{
-				switch (serial_getc())
+				grbl_cmd_str[3] = '=';
+				grbl_cmd_len++;
+				c = serial_getc();
+				if (serial_getc() == EOL)
 				{
-				case '$':
-					settings_reset(false);
-					settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
-					return GRBL_SEND_SETTINGS_RESET;
-				case '#':
-					parser_parameters_reset();
-					return GRBL_SEND_SETTINGS_RESET;
-				case '*':
-					settings_reset(true);
-					settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
-					parser_parameters_reset();
-					return GRBL_SEND_SETTINGS_RESET;
-				default:
-					return STATUS_INVALID_STATEMENT;
+					switch (c)
+					{
+					case '$':
+						settings_reset(false);
+						settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
+						return GRBL_SEND_SETTINGS_RESET;
+					case '#':
+						parser_parameters_reset();
+						return GRBL_SEND_SETTINGS_RESET;
+					case '*':
+						settings_reset(true);
+						settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
+						parser_parameters_reset();
+						return GRBL_SEND_SETTINGS_RESET;
+					default:
+						return STATUS_INVALID_STATEMENT;
+					}
 				}
 			}
 			break;
@@ -629,8 +655,13 @@ static uint8_t parse_grbl_exec_code(uint8_t code)
 #endif
 #ifdef ENABLE_SYSTEM_INFO
 	case GRBL_SEND_SYSTEM_INFO:
-		protocol_send_cnc_info();
+		protocol_send_cnc_info(false);
 		break;
+#if EMULATE_GRBL_STARTUP == 2
+	case GRBL_SEND_SYSTEM_INFO_EXTENDED:
+		protocol_send_cnc_info(true);
+		break;
+#endif
 #endif
 #ifdef ENABLE_PARSER_MODULES
 	case GRBL_SYSTEM_CMD_EXTENDED:
@@ -690,14 +721,19 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 		{
 		case 50:
 			mantissa++;
+			__FALL_THROUGH__
 		case 40:
 			mantissa++;
+			__FALL_THROUGH__
 		case 30:
 			mantissa++;
+			__FALL_THROUGH__
 		case 20:
 			mantissa++;
+			__FALL_THROUGH__
 		case 10:
 			mantissa++;
+			__FALL_THROUGH__
 		case 0:
 			break;
 		default:
@@ -1389,19 +1425,31 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 #ifdef AXIS_A
 	if (CHECKFLAG(cmd->words, GCODE_WORD_A))
 	{
+#ifndef AXIS_A_FORCE_RELATIVE_MODE
 		target[AXIS_A] = (abspos) ? words->xyzabc[AXIS_A] : (words->xyzabc[AXIS_A] + target[AXIS_A]);
+#else
+		target[AXIS_A] = (words->xyzabc[AXIS_A] + target[AXIS_A]);
+#endif
 	}
 #endif
 #ifdef AXIS_B
 	if (CHECKFLAG(cmd->words, GCODE_WORD_B))
 	{
+#ifndef AXIS_B_FORCE_RELATIVE_MODE
 		target[AXIS_B] = (abspos) ? words->xyzabc[AXIS_B] : (words->xyzabc[AXIS_B] + target[AXIS_B]);
+#else
+		target[AXIS_B] = (words->xyzabc[AXIS_B] + target[AXIS_B]);
+#endif
 	}
 #endif
 #ifdef AXIS_C
 	if (CHECKFLAG(cmd->words, GCODE_WORD_C))
 	{
+#ifndef AXIS_C_FORCE_RELATIVE_MODE
 		target[AXIS_C] = (abspos) ? words->xyzabc[AXIS_C] : (words->xyzabc[AXIS_C] + target[AXIS_C]);
+#else
+		target[AXIS_C] = (words->xyzabc[AXIS_C] + target[AXIS_C]);
+#endif
 	}
 #endif
 
@@ -1435,7 +1483,6 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 			index = G28HOME;
 			break;
 		case 30:
-
 			index = G30HOME;
 			break;
 #endif
@@ -1447,6 +1494,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		break;
 	case G92_1: // G92.1
 		memset(g92permanentoffset, 0, sizeof(g92permanentoffset));
+		__FALL_THROUGH__
 		// continue
 	case G92_2: // G92.2
 		memset(parser_parameters.g92_offset, 0, sizeof(parser_parameters.g92_offset));
@@ -1618,6 +1666,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 			{
 				block_data.spindle = 0;
 			}
+			__FALL_THROUGH__
 		case G1:
 			if (block_data.feed == 0)
 			{
@@ -1711,8 +1760,12 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 			}
 			else
 			{
+				// failed at this position
+				parser_sync_probe();
 				parser_parameters.last_probe_ok = 0;
 			}
+			// sync probe position
+			parser_update_probe_pos();
 
 			if (error == STATUS_OK)
 			{
@@ -2102,6 +2155,11 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 // motion codes
 #ifndef DISABLE_PROBING_SUPPORT
 	case 38: // check if 38.x
+		if (mantissa < 2 || mantissa > 5)
+		{
+			return STATUS_GCODE_UNSUPPORTED_COMMAND;
+		}
+		__FALL_THROUGH__
 #ifdef ENABLE_G39_H_MAPPING
 	case 39:
 #endif
@@ -2185,6 +2243,7 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 		{
 			return STATUS_GCODE_UNSUPPORTED_COMMAND;
 		}
+		__FALL_THROUGH__
 	case 49:
 		new_state->groups.tlo_mode = ((code == 49) ? G49 : G43);
 		new_group |= GCODE_GROUP_TOOLLENGTH;
@@ -2234,6 +2293,7 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 		{
 			return STATUS_GCODE_UNSUPPORTED_COMMAND;
 		}
+		__FALL_THROUGH__
 #ifndef DISABLE_G10_SUPPORT
 	case 10:
 #endif
@@ -2246,6 +2306,7 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 			return STATUS_GCODE_MODAL_GROUP_VIOLATION;
 		}
 		cmd->group_0_1_useaxis = 1;
+		__FALL_THROUGH__
 	case 4:
 	case 53:
 		// convert code within 4 bits without
@@ -2289,8 +2350,10 @@ static uint8_t parser_mcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 	{
 	case 60:
 		code = 5;
+		__FALL_THROUGH__
 	case 30:
 		code = (code & 1) ? 5 : 3;
+		__FALL_THROUGH__
 	case 0:
 	case 1:
 	case 2:

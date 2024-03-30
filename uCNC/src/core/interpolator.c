@@ -459,15 +459,23 @@ void itp_run(void)
 				acc_init_speed = current_speed;
 #endif
 				t *= accel_inv;
-				// slice up time in an integral number of periods (half with positive jerk and half with negative)
-				float slices_inv = fast_flt_inv(ceilf(INTERPOLATOR_FREQ * t));
-				t_acc_integrator = t * slices_inv;
-#if S_CURVE_ACCELERATION_LEVEL != 0
-				acc_step = slices_inv;
-#endif
-				if ((junction_speed_sqr < itp_cur_plan_block->entry_feed_sqr))
+
+				if (t > INTERPOLATOR_DELTA_T)
 				{
-					t_acc_integrator = -t_acc_integrator;
+					// slice up time in an integral number of periods (half with positive jerk and half with negative)
+					float slices_inv = fast_flt_inv(floorf(INTERPOLATOR_FREQ * t));
+					t_acc_integrator = t * slices_inv;
+#if S_CURVE_ACCELERATION_LEVEL != 0
+					acc_step = slices_inv;
+#endif
+					if ((junction_speed_sqr < itp_cur_plan_block->entry_feed_sqr))
+					{
+						t_acc_integrator = -t_acc_integrator;
+					}
+				}
+				else
+				{
+					accel_until = remaining_steps;
 				}
 			}
 
@@ -490,13 +498,25 @@ void itp_run(void)
 				deac_step_acum = 0;
 #endif
 				t *= accel_inv;
-				// slice up time in an integral number of periods (half with positive jerk and half with negative)
-				float slices_inv = fast_flt_inv(ceilf(INTERPOLATOR_FREQ * t));
-				t_deac_integrator = t * slices_inv;
+
+				if (t > INTERPOLATOR_DELTA_T)
+				{
+					// slice up time in an integral number of periods (half with positive jerk and half with negative)
+					float slices_inv = fast_flt_inv(floorf(INTERPOLATOR_FREQ * t));
+					t_deac_integrator = t * slices_inv;
+					if (t_deac_integrator < 0.00001f)
+					{
+						t_deac_integrator = 0.0001f;
+					}
 
 #if S_CURVE_ACCELERATION_LEVEL != 0
-				deac_step = slices_inv;
+					deac_step = slices_inv;
 #endif
+				}
+				else
+				{
+					deaccel_from = remaining_steps;
+				}
 			}
 		}
 
@@ -746,6 +766,7 @@ void itp_stop(void)
 #endif
 
 	mcu_stop_itp_isr();
+	cnc_clear_exec_state(EXEC_RUN);
 }
 
 void itp_stop_tools(void)
@@ -896,6 +917,13 @@ MCU_CALLBACK void mcu_step_cb(void)
 	{
 		return;
 	}
+
+#ifdef ENABLE_RT_PROBE_CHECKING
+	mcu_probe_changed_cb();
+#endif
+#ifdef ENABLE_RT_LIMITS_CHECKING
+	mcu_limits_changed_cb();
+#endif
 
 	uint8_t new_stepbits = stepbits;
 	uint8_t dirs = 0;
@@ -1101,7 +1129,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 		else
 		{
 			cnc_clear_exec_state(EXEC_RUN); // this naturally clears the RUN flag. Any other ISR stop does not clear the flag.
-			itp_stop();						// the buffer is empty. The ISR can stop
+			itp_stop();											// the buffer is empty. The ISR can stop
 			return;
 		}
 	}
@@ -1363,3 +1391,10 @@ void itp_start(bool is_synched)
 		}
 	}
 }
+
+itp_segment_t *itp_get_rt_segment()
+{
+	return (itp_sgm_is_empty()) ? NULL : &itp_sgm_data[itp_sgm_data_read];
+}
+
+uint8_t __attribute__((weak)) itp_set_step_mode(uint8_t mode) { return 0; }

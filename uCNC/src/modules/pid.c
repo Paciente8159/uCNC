@@ -13,7 +13,7 @@
 
 	µCNC is distributed WITHOUT ANY WARRANTY;
 	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+	See the GNU General Public License for more details.
 */
 
 #include "../cnc.h"
@@ -23,14 +23,14 @@
 
 bool pid_compute(pid_data_t *pid, float *output, float setpoint, float input, uint32_t sample_rate_ms)
 {
-	if (mcu_millis() < pid->next_sample)                                             
+	if (mcu_millis() < pid->next_sample)
 	{
 		return false;
 	}
 
 	uint32_t next_sample = mcu_millis() + sample_rate_ms;
-	float delta_t = ((next_sample - pid->next_sample) * 0.001f); // convert to seconds     
-	pid->next_sample = next_sample;                                              
+	float delta_t = ((next_sample - pid->next_sample) * 0.001f); // convert to seconds
+	pid->next_sample = next_sample;
 	float pidkp = pid->k[0];
 	float pidki = pid->k[1] * delta_t;
 	float pidkd = pid->k[2] / delta_t;

@@ -8,6 +8,151 @@
 
 # Changelog
 
+## [1.8.10] - 29-03-2024
+
+### Fixed
+
+- prevent floating point round errors in speed calculations when time slices a too small (#673)
+
+## [1.8.9] - 26-03-2024
+
+## Contributors
+[@lonelycorn](https://github.com/lonelycorn) - fixed DEBUG_STREAM when only one stream available (#664)
+[@kunikonno](https://github.com/kunikonno) - fixed WiFi settings loading at initialization (#659)(#660)
+
+### Added
+
+- new flash files JSON API (RP2040, ESP32 and ESP8266) (#663)
+
+### Changed
+
+- clamp DSS_CUTOFF_FREQ in the sanity check (#670)
+- added custom function to allow predefining IO state at startup (#669)
+- added spindle relay tool speed range function (#658)
+
+### Fixed
+
+- prevent DEBUG_STREAM printing before initialization (#666)
+- fixed DEBUG_STREAM when only one stream available (#664)
+- fixed ESP8266 EEPROM WiFi saved settings not loaded at initialization (#660)
+- fixed RP2040 EEPROM WiFi saved settings not loaded at initialization (#659)
+
+## [1.8.8] - 03-03-2024
+
+## Contributors
+[@lonelycorn](https://github.com/lonelycorn) - modified mcumap macros of ESP32 to improve support for ESP32 family (#649) and removed duplicated servo variables for ESP32 (#648)
+[@ademenev](https://github.com/ademenev) - added kinematics option for MP Scara (#645)
+
+### Added
+
+- Fs page update endpoint (#612)
+- added option for rotational axis work always in relative distances (#624)
+- STM32 NucleoF411RE boardmap with CNC Shield V3 (#628)
+- added option to enable translated pins names status print (#634)
+- added kinematics option for MP Scara (#645)
+- added aditional Grbl emulation level to prevent miss detection of senders (#650)
+- added option to do limit detection at the step ISR (#652)
+
+### Changed
+
+- allow execution of main loop events with HOLD condition active (#633)
+- modified extended settings event hooks to be separated from other overriding events and propagations methods (#635) (#637) (#641)
+- allow detached ports to keep or not an internal buffer (#639)
+- cross architecture definition of NVM_STORAGE_SIZE and setting (#643)
+- moved spindle restore logic to planner override (#647)
+- modified mcumap macros of ESP32 to improve support for ESP32 family (#649) (#654)
+- modified endpoints to support handling of wildcard terminators (#655)
+- on command error now also the parser is forced to sync with other sub-systems (#657)
+- modified behavior of Cycle Start/Resume button to execute only once per press (#657)
+
+### Fixed
+
+- fixed extensions settings event handling that prevented extended settings to be saved (#615)
+- fixed STM32F4 compilation error when I2C HW was defined (#615)
+- fixed program stall while waiting for timeout condition inside an ISR (#619)
+- fixed STM32F4 SPI configuration AFIO fixed (#622)
+- fixed range function for Plasma THC (#627)
+- fixed STM32F4 APB registers of timers in the mcumap (#629)
+- fixed compilation error when tool count was set to 0 (#632)
+- fixed realtime command spindle toggle control over the tool (#631)
+- fixed spindle restart message spawning (#636)
+- fixed uart2 detach from main protocol typo in multiple boards (#638)
+- fixed reset command parsing and early execution (#642)
+- fixed spindle stop/restore after cancel a jog (#644)
+- fixed dwell/delay execute even after a reset occured (#646)
+- removed duplicated servo variables for ESP32 (#648)
+- fixed low speed clock options for STM32F1 (#653)
+- fixed STM32 I2C stop bit logic to prevent trail of pulses at the end of a read operation (#656)
+- fixed pending jog motions after jog cancel (#657)
+- fixed interpolator acceleration calculations to prevent ultra thin time sampling windows (#657)
+
+## [1.8.7] - 03-02-2024
+
+## Contributors
+[@patryk3211](https://github.com/patryk3211) - fixed PID calculations (#604)
+[@jarney](https://github.com/jarney) - fixed LIMIT_C mask inverting (#603)
+
+### Added
+
+- added boardmap for ESP32 Wemos D1 R32 with Shield V3 (#610)
+- added initial implementation of websocket support (for ESP32, ESP8266 and RP2040) (#608)
+- added software emulated serial one-wire (#600)
+- added option to enable multistream guard (prevents serial stream to switch until line complete) (#596)
+- added direct motion control incremental jog function (#594)
+- added ESP32 DMA support via I2S to 74HC595 extender (#584)
+- added ESP8266 servo pin support (#584)
+- ESP8266 and ESP32 now use step aliasing in step generation to produce smoother speed increments at higher step rates (#584)
+
+### Changed
+
+- ESP32 web server and web socket server running on CPU0 (#608)
+- modified module default handler macro to improve event calling rotation (#606) 
+- removed all TMC driver support to external module (#599)
+- minor changes to reduce code compilation size for UNO board (#593)
+- cleaned code for CNC internal states (homing, jog and hold) (#590)
+
+### Fixed
+
+- fixed PID sample period calculation and prevent divide by zero operations (#604)
+- fixed LIMIT_C mask inverting option typo (#603)
+- fixed ESP8266 wifi listening to the wrong buffer (#601)
+- fixed softuart reading failure and potential lock (#600)
+- fixed AVR UART ISR macro (for multi and single UART MCUs) (#598)
+- fixed tool speed report message (#592)
+
+## [1.8.6] - 17-01-2024
+
+## Contributors
+[@patryk3211](https://github.com/patryk3211) - fix STM32F4x PWM configuration macro (#585)
+
+### Changed
+
+- modified emulator stepping timings (more stable and linear) (#587)
+- modified probe command. Now with option to do realtime (in step ISR) checking. Also modified probe to do a controlled stop on contact (HOLD) to avoid step loss if probing too fast (#586)
+
+### Fixed
+
+- fix home motion flush after soft reset (#583)
+- fix STM32F4x PWM configuration macro (#585)
+- fixed G38.x command to allow only defined mantissas (#589)
+
+## [1.8.5] - 12-12-2023
+
+### Added
+
+- added option to allow software homing (#572)
+
+### Changed
+
+- prevent module and main loop reentrancy to allow cnc main loop recall (inside waits and delays) (#576)
+- better ESP software delays (#575)
+- improved software generated PWM over 74HC595 for ESP32 (#574)
+
+### Fixed
+
+- fix jog flag being incorrectly cleared (#573)
+- fix Laser PPI tool and incorrect speed calculations in motion control with Laser PPI option enabled (#578)
+
 ## [1.8.4] - 17-11-2023
 
 ### Added
@@ -1422,6 +1567,12 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.8.10]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.10
+[1.8.9]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.9
+[1.8.8]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.8
+[1.8.7]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.7
+[1.8.6]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.6
+[1.8.5]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.5
 [1.8.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.4
 [1.8.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.3
 [1.8.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.2

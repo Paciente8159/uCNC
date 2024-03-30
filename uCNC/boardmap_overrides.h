@@ -1,4 +1,4 @@
-//boardmap override dummy file
+// boardmap override dummy file
 
 #ifndef BOARDMAP_OVERRIDES_H
 #define BOARDMAP_OVERRIDES_H

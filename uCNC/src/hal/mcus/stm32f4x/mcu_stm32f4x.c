@@ -40,9 +40,7 @@
 #error "The set FLASH_SIZE is beyond the chip capability"
 #endif
 
-// set the FLASH EEPROM SIZE
-#define FLASH_EEPROM_SIZE 0x400
-#define FLASH_EEPROM_SIZE_WORD (FLASH_EEPROM_SIZE >> 2)
+#define FLASH_EEPROM_SIZE_WORD (NVM_STORAGE_SIZE >> 2)
 #define FLASH_EEPROM_SIZE_WORD_ALIGNED (FLASH_EEPROM_SIZE_WORD << 2)
 
 #define FLASH_SECTOR_SIZE 0x20000UL
@@ -146,6 +144,15 @@ void MCU_SERIAL2_ISR(void)
 			}
 #else
 			mcu_uart2_rx_cb(c);
+#ifndef UART2_DISABLE_BUFFER
+			if (BUFFER_FULL(uart2_rx))
+			{
+				c = OVF;
+			}
+
+			*(BUFFER_NEXT_FREE(uart2_rx)) = c;
+			BUFFER_STORE(uart2_rx);
+#endif
 #endif
 		}
 
@@ -637,9 +644,12 @@ void mcu_init(void)
 #endif
 #ifdef MCU_HAS_SPI
 	SPI_ENREG |= SPI_ENVAL;
-	mcu_config_af(SPI_SDI, SPI_AFIO);
-	mcu_config_af(SPI_CLK, SPI_AFIO);
-	mcu_config_af(SPI_SDO, SPI_AFIO);
+	mcu_config_af(SPI_SDI, SPI_SDI_AFIO);
+	mcu_config_af(SPI_CLK, SPI_CLK_AFIO);
+	mcu_config_af(SPI_SDO, SPI_SDO_AFIO);
+#if ASSERT_PIN_IO(SPI_CS)
+	mcu_config_af(SPI_CS, SPI_CS_AFIO);
+#endif
 	// initialize the SPI configuration register
 	SPI_REG->CR1 = SPI_CR1_SSM	   // software slave management enabled
 				   | SPI_CR1_SSI   // internal slave select
@@ -781,7 +791,7 @@ uint32_t mcu_millis()
 
 uint32_t mcu_micros()
 {
-	return ((mcu_runtime_ms * 1000) + ((SysTick->LOAD - SysTick->VAL) / (F_CPU / 1000000)));
+	return ((mcu_runtime_ms * 1000) + mcu_free_micros());
 }
 
 void mcu_rtc_init()
@@ -859,6 +869,13 @@ static void mcu_eeprom_init(void)
 // Non volatile memory
 uint8_t mcu_eeprom_getc(uint16_t address)
 {
+	if (NVM_STORAGE_SIZE <= address)
+	{
+		DEBUG_STR("EEPROM invalid address @ ");
+		DEBUG_INT(address);
+		DEBUG_PUTC('\n');
+		return 0;
+	}
 	return stm32_eeprom_buffer[address];
 }
 
@@ -882,6 +899,12 @@ static void mcu_eeprom_erase(void)
 
 void mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
+	if (NVM_STORAGE_SIZE <= address)
+	{
+		DEBUG_STR("EEPROM invalid address @ ");
+		DEBUG_INT(address);
+		DEBUG_PUTC('\n');
+	}
 	// if the value of the eeprom is modified then it will be marked as dirty
 	// flash default value is 0xFF. If programming can change value from 1 to 0 but not the other way around
 	// if a bit is changed from 0 back to 1 then it will need to rewrite values in a new page
@@ -1005,18 +1028,23 @@ void mcu_i2c_write_stop(bool *stop)
 {
 	if (*stop)
 	{
-		uint32_t ms_timeout = mcu_millis() + 25;
+		int32_t ms_timeout = 25;
 
 		I2C_REG->CR1 |= I2C_CR1_STOP;
-		while ((I2C_REG->CR1 & I2C_CR1_STOP) && (ms_timeout > mcu_millis()))
-			;
+		__TIMEOUT_MS__(ms_timeout)
+		{
+			if (I2C_REG->CR1 & I2C_CR1_STOP)
+			{
+				return;
+			}
+		}
 	}
 }
 
-static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
+static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop, uint32_t ms_timeout)
 {
 	bool stop __attribute__((__cleanup__(mcu_i2c_write_stop))) = send_stop;
-	uint32_t ms_timeout = mcu_millis() + 25;
+	int32_t timeout = ms_timeout;
 
 	uint32_t status = send_start ? I2C_SR1_ADDR : I2C_SR1_BTF;
 	I2C_REG->SR1 &= ~I2C_SR1_AF;
@@ -1044,19 +1072,26 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 
 		// init
 		I2C_REG->CR1 |= I2C_CR1_START;
-		while (!((I2C_REG->SR1 & I2C_SR1_SB) && (I2C_REG->SR2 & I2C_SR2_MSL) && (I2C_REG->SR2 & I2C_SR2_BUSY)))
+
+		__TIMEOUT_MS__(timeout)
 		{
+			if ((I2C_REG->SR1 & I2C_SR1_SB) && (I2C_REG->SR2 & I2C_SR2_MSL) && (I2C_REG->SR2 & I2C_SR2_BUSY))
+			{
+				break;
+			}
 			if (I2C_REG->SR1 & I2C_SR1_ARLO)
 			{
 				stop = false;
 				return I2C_NOTOK;
 			}
-			if (ms_timeout < mcu_millis())
-			{
-				stop = true;
-				return I2C_NOTOK;
-			}
 		}
+
+		__TIMEOUT_ASSERT__(timeout)
+		{
+			stop = true;
+			return I2C_NOTOK;
+		}
+
 		if (I2C_REG->SR1 & I2C_SR1_AF)
 		{
 			stop = true;
@@ -1065,8 +1100,13 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 	}
 
 	I2C_REG->DR = data;
-	while (!(I2C_REG->SR1 & status))
+	timeout = ms_timeout;
+	__TIMEOUT_MS__(timeout)
 	{
+		if (I2C_REG->SR1 & status)
+		{
+			break;
+		}
 		if (I2C_REG->SR1 & I2C_SR1_AF)
 		{
 			break;
@@ -1076,11 +1116,12 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 			stop = false;
 			return I2C_NOTOK;
 		}
-		if (ms_timeout < mcu_millis())
-		{
-			stop = true;
-			return I2C_NOTOK;
-		}
+	}
+
+	__TIMEOUT_ASSERT__(timeout)
+	{
+		stop = true;
+		return I2C_NOTOK;
 	}
 	// read SR2 to clear ADDR
 	if (send_start)
@@ -1100,44 +1141,46 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 static uint8_t mcu_i2c_read(uint8_t *data, bool with_ack, bool send_stop, uint32_t ms_timeout)
 {
 	*data = 0xFF;
-	ms_timeout += mcu_millis();
 	bool stop __attribute__((__cleanup__(mcu_i2c_write_stop))) = send_stop;
 
 	if (!with_ack)
 	{
 		I2C_REG->CR1 &= ~I2C_CR1_ACK;
+		stop = false;
+		mcu_i2c_write_stop(&send_stop);
 	}
 	else
 	{
 		I2C_REG->CR1 |= I2C_CR1_ACK;
 	}
 
-	while (!(I2C_REG->SR1 & I2C_SR1_RXNE))
+	__TIMEOUT_MS__(ms_timeout)
 	{
-		if (ms_timeout < mcu_millis())
+		if (I2C_REG->SR1 & I2C_SR1_RXNE)
 		{
-			return I2C_NOTOK;
+			*data = I2C_REG->DR;
+			return I2C_OK;
 		}
 	}
 
-	*data = I2C_REG->DR;
-	return I2C_OK;
+	stop = true;
+	return I2C_NOTOK;
 }
 
 #ifndef mcu_i2c_send
 // master sends command to slave
-uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool release)
+uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool release, uint32_t ms_timeout)
 {
 	if (data && datalen)
 	{
-		if (mcu_i2c_write(address << 1, true, false) == I2C_OK) // start, send address, write
+		if (mcu_i2c_write(address << 1, true, false, ms_timeout) == I2C_OK) // start, send address, write
 		{
 			// send data, stop
 			do
 			{
 				datalen--;
 				bool last = (datalen == 0);
-				if (mcu_i2c_write(*data, false, (release & last)) != I2C_OK)
+				if (mcu_i2c_write(*data, false, (release & last), ms_timeout) != I2C_OK)
 				{
 					return I2C_NOTOK;
 				}
@@ -1159,7 +1202,7 @@ uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_
 {
 	if (data && datalen)
 	{
-		if (mcu_i2c_write((address << 1) | 0x01, true, false) == I2C_OK) // start, send address, write
+		if (mcu_i2c_write((address << 1) | 0x01, true, false, ms_timeout) == I2C_OK) // start, send address, write
 		{
 			do
 			{
@@ -1184,8 +1227,10 @@ uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_
 void mcu_i2c_config(uint32_t frequency)
 {
 	RCC->APB1ENR |= I2C_APBEN;
-	mcu_config_output_af(I2C_CLK, GPIO_OUTALT_OD_50MHZ);
-	mcu_config_output_af(I2C_DATA, GPIO_OUTALT_OD_50MHZ);
+	mcu_config_opendrain(I2C_CLK);
+	mcu_config_opendrain(I2C_DATA);
+	mcu_config_af(I2C_CLK, GPIO_AF);
+	mcu_config_af(I2C_DATA, GPIO_AF);
 #ifdef SPI_REMAP
 	AFIO->MAPR |= I2C_REMAP;
 #endif

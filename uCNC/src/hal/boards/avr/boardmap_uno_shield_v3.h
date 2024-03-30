@@ -30,7 +30,7 @@ extern "C"
 
 #include "boardmap_uno.h"
 
-//swap limit z and replace pwm by spin enable pin
+// swap limit z and replace pwm by spin enable pin
 #ifdef LIMIT_Z_BIT
 #undef LIMIT_Z_BIT
 #endif
@@ -51,9 +51,9 @@ extern "C"
 #endif
 
 // Grbl 0.8 limit z
-#define LIMIT_Z_BIT 3  // assigns LIMIT_Z pin
+#define LIMIT_Z_BIT 3	 // assigns LIMIT_Z pin
 #define LIMIT_Z_PORT B // assigns LIMIT_Z port
-#define LIMIT_Z_ISR 0  // assigns LIMIT_Z ISR
+#define LIMIT_Z_ISR 0	 // assigns LIMIT_Z ISR
 
 // spindle en
 #define DOUT1_BIT 4

@@ -52,6 +52,36 @@ In addition to the standard configurations you need to set 5 extra settings:
 
 For more information please head to the [µCNC wiki page](https://github.com/Paciente8159/uCNC/wiki)
 
+### SCARA
+
+SCARA kinematic is supported. µCNC supports 2 implementations of SCARA kinematic:
+* standard serial SCARA. The shoulder motor is fixed to the base and rotates
+  the arm. The elbow motor is fixed to the arm and rotates the forearm. When the
+	shoulder motor rotates and the elbow motor is stopped, the angle between the
+	arm and the forearm is fixed, and the angle of the arm changes in relation
+	to the base.
+* serial SCARA implementation with fixed motors, known as MP SCARA (mostly
+  printed SCARA). Both shoulder and  elbow motors are fixed to the base. A
+	system of pulleys and closed belts is used to transfer motion from the elbow
+	motor to elbow joint. When the shoulder motor rotates and the elbow motor is
+	stopped, the angle of the arm changes in relation	to the base, and the angle
+	between the forearm and the base is fixed.
+
+To use MP SCARA kinematic, define MP_SCARA.
+
+In addition to the standard configurations you need to set the following extra settings:
+
+| Setting | Description |
+| --- | --- |
+| $28        | SCARA arm homing angle, degrees
+| $29        | SCARA forearm homing angle, degrees
+| $106       | SCARA arm length, mm
+| $107       | SCARA forearm length, mm
+
+Settings $100 and $101 have a different meaning, they
+use revolution instead of mm.
+
+
 ## The kinematics HAL
 This HAL is manages the way the linear actuators and the 3D Cartesian space axis relate to each other. 
    * Converts linear actuators (steppers) in to X,Y,Z,A,B,C coordinates and back.

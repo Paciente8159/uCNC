@@ -45,13 +45,13 @@ extern "C"
 #define STEP4_PORT 2 // assigns STEP4 port
 
 // Setup dir pins
-#define DIR0_BIT 5 // assigns DIR0 pin
+#define DIR0_BIT 5	// assigns DIR0 pin
 #define DIR0_PORT 0 // assigns DIR0 port
 #define DIR1_BIT 11 // assigns DIR1 pin
 #define DIR1_PORT 0 // assigns DIR1 port
 #define DIR2_BIT 20 // assigns DIR2 pin
 #define DIR2_PORT 0 // assigns DIR2 port
-#define DIR3_BIT 22	// assigns DIR2 pin
+#define DIR3_BIT 22 // assigns DIR2 pin
 #define DIR3_PORT 0 // assigns DIR2 port
 #define DIR4_BIT 13 // assigns DIR2 pin
 #define DIR4_PORT 2 // assigns DIR2 port
@@ -123,10 +123,10 @@ extern "C"
 
 	// Setup the Step Timer used has the heartbeat for µCNC
 	// Timer 0 is used by default
-	//#define ITP_TIMER 0
+	// #define ITP_TIMER 0
 	// Setup the SERVO Timer used by µCNC
 	// Timer 1 is set by default
-	//#define SERVO_TIMER 1
+	// #define SERVO_TIMER 1
 
 #define SERVO3_BIT 18
 #define SERVO3_PORT 1
@@ -187,29 +187,29 @@ extern "C"
 #define DIN19_PORT 0
 #define DIN19_PULLUP
 
-//pins for smart adapter
-//clk
+// pins for smart adapter
+// clk
 #define DOUT4_BIT 15
 #define DOUT4_PORT 0
-//data
+// data
 #define DOUT5_BIT 18
 #define DOUT5_PORT 0
-//cs
+// cs
 #define DOUT6_BIT 16
 #define DOUT6_PORT 0
 
-//beep
+// beep
 #define DOUT7_BIT 31
 #define DOUT7_PORT 1
-//enc btn
+// enc btn
 #define DIN16_BIT 30
 #define DIN16_PORT 1
 #define DIN16_PULLUP
-//enc 1
+// enc 1
 #define DIN17_BIT 26
 #define DIN17_PORT 3
 #define DIN17_PULLUP
-//enc 2
+// enc 2
 #define DIN18_BIT 25
 #define DIN18_PORT 3
 #define DIN18_PULLUP

@@ -30,7 +30,9 @@ extern "C"
 
 #ifndef STEP0_IO_OFFSET
 #define STEP0_IO_OFFSET -1
+#define DIO1_IO_OFFSET -1
 #else
+#define DIO1_IO_OFFSET STEP0_IO_OFFSET
 #ifdef STEP0
 #undef STEP0
 #endif
@@ -49,7 +51,9 @@ extern "C"
 #endif
 #ifndef STEP1_IO_OFFSET
 #define STEP1_IO_OFFSET -1
+#define DIO2_IO_OFFSET -1
 #else
+#define DIO2_IO_OFFSET STEP1_IO_OFFSET
 #ifdef STEP1
 #undef STEP1
 #endif
@@ -68,7 +72,9 @@ extern "C"
 #endif
 #ifndef STEP2_IO_OFFSET
 #define STEP2_IO_OFFSET -1
+#define DIO3_IO_OFFSET -1
 #else
+#define DIO3_IO_OFFSET STEP2_IO_OFFSET
 #ifdef STEP2
 #undef STEP2
 #endif
@@ -87,7 +93,9 @@ extern "C"
 #endif
 #ifndef STEP3_IO_OFFSET
 #define STEP3_IO_OFFSET -1
+#define DIO4_IO_OFFSET -1
 #else
+#define DIO4_IO_OFFSET STEP3_IO_OFFSET
 #ifdef STEP3
 #undef STEP3
 #endif
@@ -106,7 +114,9 @@ extern "C"
 #endif
 #ifndef STEP4_IO_OFFSET
 #define STEP4_IO_OFFSET -1
+#define DIO5_IO_OFFSET -1
 #else
+#define DIO5_IO_OFFSET STEP4_IO_OFFSET
 #ifdef STEP4
 #undef STEP4
 #endif
@@ -125,7 +135,9 @@ extern "C"
 #endif
 #ifndef STEP5_IO_OFFSET
 #define STEP5_IO_OFFSET -1
+#define DIO6_IO_OFFSET -1
 #else
+#define DIO6_IO_OFFSET STEP5_IO_OFFSET
 #ifdef STEP5
 #undef STEP5
 #endif
@@ -144,7 +156,9 @@ extern "C"
 #endif
 #ifndef STEP6_IO_OFFSET
 #define STEP6_IO_OFFSET -1
+#define DIO7_IO_OFFSET -1
 #else
+#define DIO7_IO_OFFSET STEP6_IO_OFFSET
 #ifdef STEP6
 #undef STEP6
 #endif
@@ -163,7 +177,9 @@ extern "C"
 #endif
 #ifndef STEP7_IO_OFFSET
 #define STEP7_IO_OFFSET -1
+#define DIO8_IO_OFFSET -1
 #else
+#define DIO8_IO_OFFSET STEP7_IO_OFFSET
 #ifdef STEP7
 #undef STEP7
 #endif
@@ -182,7 +198,9 @@ extern "C"
 #endif
 #ifndef DIR0_IO_OFFSET
 #define DIR0_IO_OFFSET -1
+#define DIO9_IO_OFFSET -1
 #else
+#define DIO9_IO_OFFSET DIR0_IO_OFFSET
 #ifdef DIR0
 #undef DIR0
 #endif
@@ -201,7 +219,9 @@ extern "C"
 #endif
 #ifndef DIR1_IO_OFFSET
 #define DIR1_IO_OFFSET -1
+#define DIO10_IO_OFFSET -1
 #else
+#define DIO10_IO_OFFSET DIR1_IO_OFFSET
 #ifdef DIR1
 #undef DIR1
 #endif
@@ -220,7 +240,9 @@ extern "C"
 #endif
 #ifndef DIR2_IO_OFFSET
 #define DIR2_IO_OFFSET -1
+#define DIO11_IO_OFFSET -1
 #else
+#define DIO11_IO_OFFSET DIR2_IO_OFFSET
 #ifdef DIR2
 #undef DIR2
 #endif
@@ -239,7 +261,9 @@ extern "C"
 #endif
 #ifndef DIR3_IO_OFFSET
 #define DIR3_IO_OFFSET -1
+#define DIO12_IO_OFFSET -1
 #else
+#define DIO12_IO_OFFSET DIR3_IO_OFFSET
 #ifdef DIR3
 #undef DIR3
 #endif
@@ -258,7 +282,9 @@ extern "C"
 #endif
 #ifndef DIR4_IO_OFFSET
 #define DIR4_IO_OFFSET -1
+#define DIO13_IO_OFFSET -1
 #else
+#define DIO13_IO_OFFSET DIR4_IO_OFFSET
 #ifdef DIR4
 #undef DIR4
 #endif
@@ -277,7 +303,9 @@ extern "C"
 #endif
 #ifndef DIR5_IO_OFFSET
 #define DIR5_IO_OFFSET -1
+#define DIO14_IO_OFFSET -1
 #else
+#define DIO14_IO_OFFSET DIR5_IO_OFFSET
 #ifdef DIR5
 #undef DIR5
 #endif
@@ -296,7 +324,9 @@ extern "C"
 #endif
 #ifndef DIR6_IO_OFFSET
 #define DIR6_IO_OFFSET -1
+#define DIO15_IO_OFFSET -1
 #else
+#define DIO15_IO_OFFSET DIR6_IO_OFFSET
 #ifdef DIR6
 #undef DIR6
 #endif
@@ -315,7 +345,9 @@ extern "C"
 #endif
 #ifndef DIR7_IO_OFFSET
 #define DIR7_IO_OFFSET -1
+#define DIO16_IO_OFFSET -1
 #else
+#define DIO16_IO_OFFSET DIR7_IO_OFFSET
 #ifdef DIR7
 #undef DIR7
 #endif
@@ -334,7 +366,9 @@ extern "C"
 #endif
 #ifndef STEP0_EN_IO_OFFSET
 #define STEP0_EN_IO_OFFSET -1
+#define DIO17_IO_OFFSET -1
 #else
+#define DIO17_IO_OFFSET STEP0_EN_IO_OFFSET
 #ifdef STEP0_EN
 #undef STEP0_EN
 #endif
@@ -353,7 +387,9 @@ extern "C"
 #endif
 #ifndef STEP1_EN_IO_OFFSET
 #define STEP1_EN_IO_OFFSET -1
+#define DIO18_IO_OFFSET -1
 #else
+#define DIO18_IO_OFFSET STEP1_EN_IO_OFFSET
 #ifdef STEP1_EN
 #undef STEP1_EN
 #endif
@@ -372,7 +408,9 @@ extern "C"
 #endif
 #ifndef STEP2_EN_IO_OFFSET
 #define STEP2_EN_IO_OFFSET -1
+#define DIO19_IO_OFFSET -1
 #else
+#define DIO19_IO_OFFSET STEP2_EN_IO_OFFSET
 #ifdef STEP2_EN
 #undef STEP2_EN
 #endif
@@ -391,7 +429,9 @@ extern "C"
 #endif
 #ifndef STEP3_EN_IO_OFFSET
 #define STEP3_EN_IO_OFFSET -1
+#define DIO20_IO_OFFSET -1
 #else
+#define DIO20_IO_OFFSET STEP3_EN_IO_OFFSET
 #ifdef STEP3_EN
 #undef STEP3_EN
 #endif
@@ -410,7 +450,9 @@ extern "C"
 #endif
 #ifndef STEP4_EN_IO_OFFSET
 #define STEP4_EN_IO_OFFSET -1
+#define DIO21_IO_OFFSET -1
 #else
+#define DIO21_IO_OFFSET STEP4_EN_IO_OFFSET
 #ifdef STEP4_EN
 #undef STEP4_EN
 #endif
@@ -429,7 +471,9 @@ extern "C"
 #endif
 #ifndef STEP5_EN_IO_OFFSET
 #define STEP5_EN_IO_OFFSET -1
+#define DIO22_IO_OFFSET -1
 #else
+#define DIO22_IO_OFFSET STEP5_EN_IO_OFFSET
 #ifdef STEP5_EN
 #undef STEP5_EN
 #endif
@@ -448,7 +492,9 @@ extern "C"
 #endif
 #ifndef STEP6_EN_IO_OFFSET
 #define STEP6_EN_IO_OFFSET -1
+#define DIO23_IO_OFFSET -1
 #else
+#define DIO23_IO_OFFSET STEP6_EN_IO_OFFSET
 #ifdef STEP6_EN
 #undef STEP6_EN
 #endif
@@ -467,7 +513,9 @@ extern "C"
 #endif
 #ifndef STEP7_EN_IO_OFFSET
 #define STEP7_EN_IO_OFFSET -1
+#define DIO24_IO_OFFSET -1
 #else
+#define DIO24_IO_OFFSET STEP7_EN_IO_OFFSET
 #ifdef STEP7_EN
 #undef STEP7_EN
 #endif
@@ -486,7 +534,9 @@ extern "C"
 #endif
 #ifndef PWM0_IO_OFFSET
 #define PWM0_IO_OFFSET -1
+#define DIO25_IO_OFFSET -1
 #else
+#define DIO25_IO_OFFSET PWM0_IO_OFFSET
 #ifdef PWM0
 #undef PWM0
 #endif
@@ -505,7 +555,9 @@ extern "C"
 #endif
 #ifndef PWM1_IO_OFFSET
 #define PWM1_IO_OFFSET -1
+#define DIO26_IO_OFFSET -1
 #else
+#define DIO26_IO_OFFSET PWM1_IO_OFFSET
 #ifdef PWM1
 #undef PWM1
 #endif
@@ -524,7 +576,9 @@ extern "C"
 #endif
 #ifndef PWM2_IO_OFFSET
 #define PWM2_IO_OFFSET -1
+#define DIO27_IO_OFFSET -1
 #else
+#define DIO27_IO_OFFSET PWM2_IO_OFFSET
 #ifdef PWM2
 #undef PWM2
 #endif
@@ -543,7 +597,9 @@ extern "C"
 #endif
 #ifndef PWM3_IO_OFFSET
 #define PWM3_IO_OFFSET -1
+#define DIO28_IO_OFFSET -1
 #else
+#define DIO28_IO_OFFSET PWM3_IO_OFFSET
 #ifdef PWM3
 #undef PWM3
 #endif
@@ -562,7 +618,9 @@ extern "C"
 #endif
 #ifndef PWM4_IO_OFFSET
 #define PWM4_IO_OFFSET -1
+#define DIO29_IO_OFFSET -1
 #else
+#define DIO29_IO_OFFSET PWM4_IO_OFFSET
 #ifdef PWM4
 #undef PWM4
 #endif
@@ -581,7 +639,9 @@ extern "C"
 #endif
 #ifndef PWM5_IO_OFFSET
 #define PWM5_IO_OFFSET -1
+#define DIO30_IO_OFFSET -1
 #else
+#define DIO30_IO_OFFSET PWM5_IO_OFFSET
 #ifdef PWM5
 #undef PWM5
 #endif
@@ -600,7 +660,9 @@ extern "C"
 #endif
 #ifndef PWM6_IO_OFFSET
 #define PWM6_IO_OFFSET -1
+#define DIO31_IO_OFFSET -1
 #else
+#define DIO31_IO_OFFSET PWM6_IO_OFFSET
 #ifdef PWM6
 #undef PWM6
 #endif
@@ -619,7 +681,9 @@ extern "C"
 #endif
 #ifndef PWM7_IO_OFFSET
 #define PWM7_IO_OFFSET -1
+#define DIO32_IO_OFFSET -1
 #else
+#define DIO32_IO_OFFSET PWM7_IO_OFFSET
 #ifdef PWM7
 #undef PWM7
 #endif
@@ -638,7 +702,9 @@ extern "C"
 #endif
 #ifndef PWM8_IO_OFFSET
 #define PWM8_IO_OFFSET -1
+#define DIO33_IO_OFFSET -1
 #else
+#define DIO33_IO_OFFSET PWM8_IO_OFFSET
 #ifdef PWM8
 #undef PWM8
 #endif
@@ -657,7 +723,9 @@ extern "C"
 #endif
 #ifndef PWM9_IO_OFFSET
 #define PWM9_IO_OFFSET -1
+#define DIO34_IO_OFFSET -1
 #else
+#define DIO34_IO_OFFSET PWM9_IO_OFFSET
 #ifdef PWM9
 #undef PWM9
 #endif
@@ -676,7 +744,9 @@ extern "C"
 #endif
 #ifndef PWM10_IO_OFFSET
 #define PWM10_IO_OFFSET -1
+#define DIO35_IO_OFFSET -1
 #else
+#define DIO35_IO_OFFSET PWM10_IO_OFFSET
 #ifdef PWM10
 #undef PWM10
 #endif
@@ -695,7 +765,9 @@ extern "C"
 #endif
 #ifndef PWM11_IO_OFFSET
 #define PWM11_IO_OFFSET -1
+#define DIO36_IO_OFFSET -1
 #else
+#define DIO36_IO_OFFSET PWM11_IO_OFFSET
 #ifdef PWM11
 #undef PWM11
 #endif
@@ -714,7 +786,9 @@ extern "C"
 #endif
 #ifndef PWM12_IO_OFFSET
 #define PWM12_IO_OFFSET -1
+#define DIO37_IO_OFFSET -1
 #else
+#define DIO37_IO_OFFSET PWM12_IO_OFFSET
 #ifdef PWM12
 #undef PWM12
 #endif
@@ -733,7 +807,9 @@ extern "C"
 #endif
 #ifndef PWM13_IO_OFFSET
 #define PWM13_IO_OFFSET -1
+#define DIO38_IO_OFFSET -1
 #else
+#define DIO38_IO_OFFSET PWM13_IO_OFFSET
 #ifdef PWM13
 #undef PWM13
 #endif
@@ -752,7 +828,9 @@ extern "C"
 #endif
 #ifndef PWM14_IO_OFFSET
 #define PWM14_IO_OFFSET -1
+#define DIO39_IO_OFFSET -1
 #else
+#define DIO39_IO_OFFSET PWM14_IO_OFFSET
 #ifdef PWM14
 #undef PWM14
 #endif
@@ -771,7 +849,9 @@ extern "C"
 #endif
 #ifndef PWM15_IO_OFFSET
 #define PWM15_IO_OFFSET -1
+#define DIO40_IO_OFFSET -1
 #else
+#define DIO40_IO_OFFSET PWM15_IO_OFFSET
 #ifdef PWM15
 #undef PWM15
 #endif
@@ -790,7 +870,9 @@ extern "C"
 #endif
 #ifndef SERVO0_IO_OFFSET
 #define SERVO0_IO_OFFSET -1
+#define DIO41_IO_OFFSET -1
 #else
+#define DIO41_IO_OFFSET SERVO0_IO_OFFSET
 #ifdef SERVO0
 #undef SERVO0
 #endif
@@ -809,7 +891,9 @@ extern "C"
 #endif
 #ifndef SERVO1_IO_OFFSET
 #define SERVO1_IO_OFFSET -1
+#define DIO42_IO_OFFSET -1
 #else
+#define DIO42_IO_OFFSET SERVO1_IO_OFFSET
 #ifdef SERVO1
 #undef SERVO1
 #endif
@@ -828,7 +912,9 @@ extern "C"
 #endif
 #ifndef SERVO2_IO_OFFSET
 #define SERVO2_IO_OFFSET -1
+#define DIO43_IO_OFFSET -1
 #else
+#define DIO43_IO_OFFSET SERVO2_IO_OFFSET
 #ifdef SERVO2
 #undef SERVO2
 #endif
@@ -847,7 +933,9 @@ extern "C"
 #endif
 #ifndef SERVO3_IO_OFFSET
 #define SERVO3_IO_OFFSET -1
+#define DIO44_IO_OFFSET -1
 #else
+#define DIO44_IO_OFFSET SERVO3_IO_OFFSET
 #ifdef SERVO3
 #undef SERVO3
 #endif
@@ -866,7 +954,9 @@ extern "C"
 #endif
 #ifndef SERVO4_IO_OFFSET
 #define SERVO4_IO_OFFSET -1
+#define DIO45_IO_OFFSET -1
 #else
+#define DIO45_IO_OFFSET SERVO4_IO_OFFSET
 #ifdef SERVO4
 #undef SERVO4
 #endif
@@ -885,7 +975,9 @@ extern "C"
 #endif
 #ifndef SERVO5_IO_OFFSET
 #define SERVO5_IO_OFFSET -1
+#define DIO46_IO_OFFSET -1
 #else
+#define DIO46_IO_OFFSET SERVO5_IO_OFFSET
 #ifdef SERVO5
 #undef SERVO5
 #endif
@@ -904,7 +996,9 @@ extern "C"
 #endif
 #ifndef DOUT0_IO_OFFSET
 #define DOUT0_IO_OFFSET -1
+#define DIO47_IO_OFFSET -1
 #else
+#define DIO47_IO_OFFSET DOUT0_IO_OFFSET
 #ifdef DOUT0
 #undef DOUT0
 #endif
@@ -923,7 +1017,9 @@ extern "C"
 #endif
 #ifndef DOUT1_IO_OFFSET
 #define DOUT1_IO_OFFSET -1
+#define DIO48_IO_OFFSET -1
 #else
+#define DIO48_IO_OFFSET DOUT1_IO_OFFSET
 #ifdef DOUT1
 #undef DOUT1
 #endif
@@ -942,7 +1038,9 @@ extern "C"
 #endif
 #ifndef DOUT2_IO_OFFSET
 #define DOUT2_IO_OFFSET -1
+#define DIO49_IO_OFFSET -1
 #else
+#define DIO49_IO_OFFSET DOUT2_IO_OFFSET
 #ifdef DOUT2
 #undef DOUT2
 #endif
@@ -961,7 +1059,9 @@ extern "C"
 #endif
 #ifndef DOUT3_IO_OFFSET
 #define DOUT3_IO_OFFSET -1
+#define DIO50_IO_OFFSET -1
 #else
+#define DIO50_IO_OFFSET DOUT3_IO_OFFSET
 #ifdef DOUT3
 #undef DOUT3
 #endif
@@ -980,7 +1080,9 @@ extern "C"
 #endif
 #ifndef DOUT4_IO_OFFSET
 #define DOUT4_IO_OFFSET -1
+#define DIO51_IO_OFFSET -1
 #else
+#define DIO51_IO_OFFSET DOUT4_IO_OFFSET
 #ifdef DOUT4
 #undef DOUT4
 #endif
@@ -999,7 +1101,9 @@ extern "C"
 #endif
 #ifndef DOUT5_IO_OFFSET
 #define DOUT5_IO_OFFSET -1
+#define DIO52_IO_OFFSET -1
 #else
+#define DIO52_IO_OFFSET DOUT5_IO_OFFSET
 #ifdef DOUT5
 #undef DOUT5
 #endif
@@ -1018,7 +1122,9 @@ extern "C"
 #endif
 #ifndef DOUT6_IO_OFFSET
 #define DOUT6_IO_OFFSET -1
+#define DIO53_IO_OFFSET -1
 #else
+#define DIO53_IO_OFFSET DOUT6_IO_OFFSET
 #ifdef DOUT6
 #undef DOUT6
 #endif
@@ -1037,7 +1143,9 @@ extern "C"
 #endif
 #ifndef DOUT7_IO_OFFSET
 #define DOUT7_IO_OFFSET -1
+#define DIO54_IO_OFFSET -1
 #else
+#define DIO54_IO_OFFSET DOUT7_IO_OFFSET
 #ifdef DOUT7
 #undef DOUT7
 #endif
@@ -1056,7 +1164,9 @@ extern "C"
 #endif
 #ifndef DOUT8_IO_OFFSET
 #define DOUT8_IO_OFFSET -1
+#define DIO55_IO_OFFSET -1
 #else
+#define DIO55_IO_OFFSET DOUT8_IO_OFFSET
 #ifdef DOUT8
 #undef DOUT8
 #endif
@@ -1075,7 +1185,9 @@ extern "C"
 #endif
 #ifndef DOUT9_IO_OFFSET
 #define DOUT9_IO_OFFSET -1
+#define DIO56_IO_OFFSET -1
 #else
+#define DIO56_IO_OFFSET DOUT9_IO_OFFSET
 #ifdef DOUT9
 #undef DOUT9
 #endif
@@ -1094,7 +1206,9 @@ extern "C"
 #endif
 #ifndef DOUT10_IO_OFFSET
 #define DOUT10_IO_OFFSET -1
+#define DIO57_IO_OFFSET -1
 #else
+#define DIO57_IO_OFFSET DOUT10_IO_OFFSET
 #ifdef DOUT10
 #undef DOUT10
 #endif
@@ -1113,7 +1227,9 @@ extern "C"
 #endif
 #ifndef DOUT11_IO_OFFSET
 #define DOUT11_IO_OFFSET -1
+#define DIO58_IO_OFFSET -1
 #else
+#define DIO58_IO_OFFSET DOUT11_IO_OFFSET
 #ifdef DOUT11
 #undef DOUT11
 #endif
@@ -1132,7 +1248,9 @@ extern "C"
 #endif
 #ifndef DOUT12_IO_OFFSET
 #define DOUT12_IO_OFFSET -1
+#define DIO59_IO_OFFSET -1
 #else
+#define DIO59_IO_OFFSET DOUT12_IO_OFFSET
 #ifdef DOUT12
 #undef DOUT12
 #endif
@@ -1151,7 +1269,9 @@ extern "C"
 #endif
 #ifndef DOUT13_IO_OFFSET
 #define DOUT13_IO_OFFSET -1
+#define DIO60_IO_OFFSET -1
 #else
+#define DIO60_IO_OFFSET DOUT13_IO_OFFSET
 #ifdef DOUT13
 #undef DOUT13
 #endif
@@ -1170,7 +1290,9 @@ extern "C"
 #endif
 #ifndef DOUT14_IO_OFFSET
 #define DOUT14_IO_OFFSET -1
+#define DIO61_IO_OFFSET -1
 #else
+#define DIO61_IO_OFFSET DOUT14_IO_OFFSET
 #ifdef DOUT14
 #undef DOUT14
 #endif
@@ -1189,7 +1311,9 @@ extern "C"
 #endif
 #ifndef DOUT15_IO_OFFSET
 #define DOUT15_IO_OFFSET -1
+#define DIO62_IO_OFFSET -1
 #else
+#define DIO62_IO_OFFSET DOUT15_IO_OFFSET
 #ifdef DOUT15
 #undef DOUT15
 #endif
@@ -1208,7 +1332,9 @@ extern "C"
 #endif
 #ifndef DOUT16_IO_OFFSET
 #define DOUT16_IO_OFFSET -1
+#define DIO63_IO_OFFSET -1
 #else
+#define DIO63_IO_OFFSET DOUT16_IO_OFFSET
 #ifdef DOUT16
 #undef DOUT16
 #endif
@@ -1227,7 +1353,9 @@ extern "C"
 #endif
 #ifndef DOUT17_IO_OFFSET
 #define DOUT17_IO_OFFSET -1
+#define DIO64_IO_OFFSET -1
 #else
+#define DIO64_IO_OFFSET DOUT17_IO_OFFSET
 #ifdef DOUT17
 #undef DOUT17
 #endif
@@ -1246,7 +1374,9 @@ extern "C"
 #endif
 #ifndef DOUT18_IO_OFFSET
 #define DOUT18_IO_OFFSET -1
+#define DIO65_IO_OFFSET -1
 #else
+#define DIO65_IO_OFFSET DOUT18_IO_OFFSET
 #ifdef DOUT18
 #undef DOUT18
 #endif
@@ -1265,7 +1395,9 @@ extern "C"
 #endif
 #ifndef DOUT19_IO_OFFSET
 #define DOUT19_IO_OFFSET -1
+#define DIO66_IO_OFFSET -1
 #else
+#define DIO66_IO_OFFSET DOUT19_IO_OFFSET
 #ifdef DOUT19
 #undef DOUT19
 #endif
@@ -1284,7 +1416,9 @@ extern "C"
 #endif
 #ifndef DOUT20_IO_OFFSET
 #define DOUT20_IO_OFFSET -1
+#define DIO67_IO_OFFSET -1
 #else
+#define DIO67_IO_OFFSET DOUT20_IO_OFFSET
 #ifdef DOUT20
 #undef DOUT20
 #endif
@@ -1303,7 +1437,9 @@ extern "C"
 #endif
 #ifndef DOUT21_IO_OFFSET
 #define DOUT21_IO_OFFSET -1
+#define DIO68_IO_OFFSET -1
 #else
+#define DIO68_IO_OFFSET DOUT21_IO_OFFSET
 #ifdef DOUT21
 #undef DOUT21
 #endif
@@ -1322,7 +1458,9 @@ extern "C"
 #endif
 #ifndef DOUT22_IO_OFFSET
 #define DOUT22_IO_OFFSET -1
+#define DIO69_IO_OFFSET -1
 #else
+#define DIO69_IO_OFFSET DOUT22_IO_OFFSET
 #ifdef DOUT22
 #undef DOUT22
 #endif
@@ -1341,7 +1479,9 @@ extern "C"
 #endif
 #ifndef DOUT23_IO_OFFSET
 #define DOUT23_IO_OFFSET -1
+#define DIO70_IO_OFFSET -1
 #else
+#define DIO70_IO_OFFSET DOUT23_IO_OFFSET
 #ifdef DOUT23
 #undef DOUT23
 #endif
@@ -1360,7 +1500,9 @@ extern "C"
 #endif
 #ifndef DOUT24_IO_OFFSET
 #define DOUT24_IO_OFFSET -1
+#define DIO71_IO_OFFSET -1
 #else
+#define DIO71_IO_OFFSET DOUT24_IO_OFFSET
 #ifdef DOUT24
 #undef DOUT24
 #endif
@@ -1379,7 +1521,9 @@ extern "C"
 #endif
 #ifndef DOUT25_IO_OFFSET
 #define DOUT25_IO_OFFSET -1
+#define DIO72_IO_OFFSET -1
 #else
+#define DIO72_IO_OFFSET DOUT25_IO_OFFSET
 #ifdef DOUT25
 #undef DOUT25
 #endif
@@ -1398,7 +1542,9 @@ extern "C"
 #endif
 #ifndef DOUT26_IO_OFFSET
 #define DOUT26_IO_OFFSET -1
+#define DIO73_IO_OFFSET -1
 #else
+#define DIO73_IO_OFFSET DOUT26_IO_OFFSET
 #ifdef DOUT26
 #undef DOUT26
 #endif
@@ -1417,7 +1563,9 @@ extern "C"
 #endif
 #ifndef DOUT27_IO_OFFSET
 #define DOUT27_IO_OFFSET -1
+#define DIO74_IO_OFFSET -1
 #else
+#define DIO74_IO_OFFSET DOUT27_IO_OFFSET
 #ifdef DOUT27
 #undef DOUT27
 #endif
@@ -1436,7 +1584,9 @@ extern "C"
 #endif
 #ifndef DOUT28_IO_OFFSET
 #define DOUT28_IO_OFFSET -1
+#define DIO75_IO_OFFSET -1
 #else
+#define DIO75_IO_OFFSET DOUT28_IO_OFFSET
 #ifdef DOUT28
 #undef DOUT28
 #endif
@@ -1455,7 +1605,9 @@ extern "C"
 #endif
 #ifndef DOUT29_IO_OFFSET
 #define DOUT29_IO_OFFSET -1
+#define DIO76_IO_OFFSET -1
 #else
+#define DIO76_IO_OFFSET DOUT29_IO_OFFSET
 #ifdef DOUT29
 #undef DOUT29
 #endif
@@ -1474,7 +1626,9 @@ extern "C"
 #endif
 #ifndef DOUT30_IO_OFFSET
 #define DOUT30_IO_OFFSET -1
+#define DIO77_IO_OFFSET -1
 #else
+#define DIO77_IO_OFFSET DOUT30_IO_OFFSET
 #ifdef DOUT30
 #undef DOUT30
 #endif
@@ -1493,7 +1647,9 @@ extern "C"
 #endif
 #ifndef DOUT31_IO_OFFSET
 #define DOUT31_IO_OFFSET -1
+#define DIO78_IO_OFFSET -1
 #else
+#define DIO78_IO_OFFSET DOUT31_IO_OFFSET
 #ifdef DOUT31
 #undef DOUT31
 #endif
@@ -1524,10 +1680,18 @@ extern "C"
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
 #endif
 	extern volatile uint8_t ic74hc595_io_pins[IC74HC595_COUNT];
+#ifndef ic74hc595_set_pin
 #define ic74hc595_set_pin(pin) ic74hc595_io_pins[(__indirect__(pin, IO_BYTEOFFSET))] |= (__indirect__(pin, IO_BITMASK))
+#endif
+#ifndef ic74hc595_clear_pin
 #define ic74hc595_clear_pin(pin) ic74hc595_io_pins[__indirect__(pin, IO_BYTEOFFSET)] &= ~(__indirect__(pin, IO_BITMASK))
+#endif
+#ifndef ic74hc595_toggle_pin
 #define ic74hc595_toggle_pin(pin) ic74hc595_io_pins[(__indirect__(pin, IO_BYTEOFFSET))] ^= (__indirect__(pin, IO_BITMASK))
-#define ic74hc595_get_pin(pin) (ic74hc595_io_pins[(__indirect__(pin, IO_BYTEOFFSET))] & (__indirect__(pin, IO_BITMASK)))
+#endif
+#ifndef ic74hc595_get_pin
+#define ic74hc595_get_pin(pin) (ic74hc595_io_pins[(__indirect__(pin, IO_BYTEOFFSET))] & (1 << __indirect__(pin, IO_BITMASK)))
+#endif
 #else
 #define ic74hc595_set_pin(pin)
 #define ic74hc595_clear_pin(pin)
