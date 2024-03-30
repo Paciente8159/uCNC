@@ -233,6 +233,9 @@ static uint8_t running_file_getc(void)
 	return c;
 }
 
+#ifdef ENABLE_MAIN_LOOP_MODULES
+DECL_BUFFER(uint8_t, fs_file_buffer, RX_BUFFER_SIZE);
+#endif
 static uint8_t running_file_available()
 {
 	uint8_t avail = 0;
@@ -260,8 +263,7 @@ static void running_file_clear()
 
 #ifdef ENABLE_PARSER_MODULES
 
-#ifdef ENABLE_MAIN_LOOP_MODULES
-DECL_BUFFER(uint8_t, fs_file_buffer, RX_BUFFER_SIZE);
+#ifdef ENABLE_MAIN_LOOP_MODULE
 bool running_file_loop(void *args)
 {
 	if (fs_running_file)
