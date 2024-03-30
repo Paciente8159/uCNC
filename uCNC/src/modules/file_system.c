@@ -208,6 +208,10 @@ static fs_file_t *fs_path_parse(fs_file_info_t *current_path, const char *new_pa
 	return NULL;
 }
 
+#ifdef ENABLE_MAIN_LOOP_MODULES
+DECL_BUFFER(uint8_t, fs_file_buffer, RX_BUFFER_SIZE);
+#endif
+
 static uint8_t running_file_getc(void)
 {
 	uint8_t c = 0;
@@ -233,9 +237,6 @@ static uint8_t running_file_getc(void)
 	return c;
 }
 
-#ifdef ENABLE_MAIN_LOOP_MODULES
-DECL_BUFFER(uint8_t, fs_file_buffer, RX_BUFFER_SIZE);
-#endif
 static uint8_t running_file_available()
 {
 	uint8_t avail = 0;
