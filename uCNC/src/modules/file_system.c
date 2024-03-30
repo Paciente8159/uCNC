@@ -208,6 +208,56 @@ static fs_file_t *fs_path_parse(fs_file_info_t *current_path, const char *new_pa
 	return NULL;
 }
 
+static uint8_t running_file_getc(void)
+{
+	uint8_t c = 0;
+#ifdef ENABLE_MAIN_LOOP_MODULES
+	BUFFER_DEQUEUE(fs_file_buffer, &c);
+#else
+	if (fs_running_file)
+	{
+		int avail = fs_available(fs_running_file);
+		if (avail)
+		{
+			fs_read(fs_running_file, &c, 1);
+			avail--;
+		}
+		// auto close file
+		if (!avail)
+		{
+			fs_close(fs_running_file);
+			fs_running_file = NULL;
+		}
+	}
+#endif
+	return c;
+}
+
+static uint8_t running_file_available()
+{
+	uint8_t avail = 0;
+#ifdef ENABLE_MAIN_LOOP_MODULES
+	avail = BUFFER_READ_AVAILABLE(fs_file_buffer);
+#else
+	if (fs_running_file)
+	{
+		avail = (uint8_t)MIN(255, fs_available(fs_running_file));
+	}
+#endif
+	return avail;
+}
+
+static void running_file_clear()
+{
+#ifdef ENABLE_MAIN_LOOP_MODULES
+	BUFFER_CLEAR(fs_file_buffer);
+#endif
+	if (fs_running_file)
+	{
+		fs_close(fs_running_file);
+	}
+}
+
 #ifdef ENABLE_PARSER_MODULES
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
@@ -335,56 +385,6 @@ void fs_file_print(char *params)
 	}
 
 	protocol_send_string(MSG_EOL);
-}
-
-static uint8_t running_file_getc(void)
-{
-	uint8_t c = 0;
-#ifdef ENABLE_MAIN_LOOP_MODULES
-	BUFFER_DEQUEUE(fs_file_buffer, &c);
-#else
-	if (fs_running_file)
-	{
-		int avail = fs_available(fs_running_file);
-		if (avail)
-		{
-			fs_read(fs_running_file, &c, 1);
-			avail--;
-		}
-		// auto close file
-		if (!avail)
-		{
-			fs_close(fs_running_file);
-			fs_running_file = NULL;
-		}
-	}
-#endif
-	return c;
-}
-
-static uint8_t running_file_available()
-{
-	uint8_t avail = 0;
-#ifdef ENABLE_MAIN_LOOP_MODULES
-	avail = BUFFER_READ_AVAILABLE(fs_file_buffer);
-#else
-	if (fs_running_file)
-	{
-		avail = (uint8_t)MIN(255, fs_available(fs_running_file));
-	}
-#endif
-	return avail;
-}
-
-static void running_file_clear()
-{
-#ifdef ENABLE_MAIN_LOOP_MODULES
-	BUFFER_CLEAR(fs_file_buffer);
-#endif
-	if (fs_running_file)
-	{
-		fs_close(fs_running_file);
-	}
 }
 
 void fs_file_run(char *params)
