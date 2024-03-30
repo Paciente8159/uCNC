@@ -238,10 +238,10 @@ extern "C"
 		const uint8_t elem_size;
 	} ring_buffer_t;
 
-#define DECL_BUFFER(T, N, S)         \
-	static T N##_bufferdata[S];        \
-	static const uint8_t N##_size = S; \
-	static ring_buffer_t N
+#ifndef USE_MACRO_BUFFER
+#define DECL_BUFFER(T, N, S)    \
+	static T N##_bufferdata[S]; \
+	static ring_buffer_t N = {0, 0, 0, N##_bufferdata, S, sizeof(T)}
 
 	uint8_t buffer_write_available(ring_buffer_t *buffer);
 	uint8_t buffer_read_available(ring_buffer_t *buffer);
@@ -272,6 +272,11 @@ extern "C"
 #define BUFFER_READ(buffer, ptr, len, read) buffer_read(&buffer, ptr, len, &read)
 #define BUFFER_CLEAR(buffer) buffer_clear(&buffer)
 #endif
+#else
+#define DECL_BUFFER(T, N, S)         \
+	static T N##_bufferdata[S];        \
+	static const uint8_t N##_size = S; \
+	static ring_buffer_t N
 
 #define BUFFER_WRITE_AVAILABLE(buffer) (buffer##_size - buffer.count)
 #define BUFFER_READ_AVAILABLE(buffer) (buffer.count)
@@ -464,6 +469,7 @@ extern "C"
 			buffer.count = 0;           \
 		}                             \
 	}
+#endif
 
 #define __TIMEOUT_US__(timeout) for (int32_t elap_us_##timeout, curr_us_##timeout = mcu_free_micros(); ((int32_t)timeout) >= 0; elap_us_##timeout = mcu_free_micros() - curr_us_##timeout, timeout -= ABS(elap_us_##timeout), curr_us_##timeout = mcu_free_micros())
 #define __TIMEOUT_MS__(timeout) \
