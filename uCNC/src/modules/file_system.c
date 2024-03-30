@@ -753,8 +753,7 @@ bool system_menu_action_fs_item(uint8_t action, system_menu_item_t *item)
 		else
 		{
 			// go back to root dir
-			fs_file_t *fp = fs_path_parse(&fs_sm_cwd, "/", "d");
-			fs_close(fp);
+			memset(&fs_sm_cwd, 0, sizeof(fs_sm_cwd));
 			dir_level = 0;
 			// goto sd card menu
 			g_system_menu.current_menu = 10;
@@ -782,50 +781,71 @@ void system_menu_fs_render(uint8_t render_flags)
 		memset(buffer, 0, SYSTEM_MENU_MAX_STR_LEN);
 		rom_strcpy(buffer, __romstr__(FS_STR_FILE_PREFIX FS_STR_SD_CONFIRM));
 		system_menu_item_render_label(render_flags, buffer);
-		system_menu_item_render_arg(render_flags, fs_filename(&fs_sm_cwd));
+		system_menu_item_render_arg(render_flags, fs_filename(&fs_pointed_file));
 	}
 	else
 	{
+		uint8_t index = 0;
 		// current dir
 		if (!strlen(fs_sm_cwd.full_name))
 		{
-			system_menu_render_header("/");
+			system_menu_render_header("<Drives>");
+			fs_t *drive = fs_default_drive;
+			while (drive)
+			{
+				if (system_menu_render_menu_item_filter(index))
+				{
+					char buffer[3];
+					memset(buffer, 0, 3);
+					buffer[0] = '/';
+					buffer[1] = drive->drive;
+					system_menu_item_render_label(render_flags | ((cur_index == index) ? SYSTEM_MENU_MODE_SELECT : 0), buffer);
+					if ((cur_index == index))
+					{
+						memset(&fs_pointed_file, 0, sizeof(fs_pointed_file));
+						strcpy(fs_pointed_file.full_name, buffer);
+						fs_pointed_file.is_dir = true;
+					}
+				}
+				index++;
+				drive = drive->next;
+			}
 		}
 		else
 		{
 			system_menu_render_header(fs_filename(&fs_sm_cwd));
-		}
-		uint8_t index = 0;
-		fs_file_t *dir = fs_path_parse(&fs_sm_cwd, ".", "d");
-		if (dir)
-		{
-			if (dir->file_info.is_dir)
+			fs_file_t *dir = fs_path_parse(&fs_sm_cwd, ".", "d");
+			if (dir)
 			{
-				fs_file_info_t finfo = {0};
-
-				while (fs_next_file(dir, &finfo))
+				if (dir->file_info.is_dir)
 				{
-					if (system_menu_render_menu_item_filter(index))
+					fs_file_info_t finfo = {0};
+
+					while (fs_next_file(dir, &finfo))
 					{
-						char buffer[SYSTEM_MENU_MAX_STR_LEN];
-						memset(buffer, 0, SYSTEM_MENU_MAX_STR_LEN);
-						buffer[0] = (finfo.is_dir) ? '/' : ' ';
-						memcpy(&buffer[1], fs_filename(&finfo), MIN(SYSTEM_MENU_MAX_STR_LEN - 1, strlen(fs_filename(&finfo))));
-						system_menu_item_render_label(render_flags | ((cur_index == index) ? SYSTEM_MENU_MODE_SELECT : 0), buffer);
-						// stores the current file info
-						if ((cur_index == index))
+						if (system_menu_render_menu_item_filter(index))
 						{
-							fs_pointed_file = finfo;
-							// memcpy(&current_file, &fno, sizeof(FILINFO));
+							char buffer[SYSTEM_MENU_MAX_STR_LEN];
+							memset(buffer, 0, SYSTEM_MENU_MAX_STR_LEN);
+							buffer[0] = (finfo.is_dir) ? '/' : ' ';
+							memcpy(&buffer[1], fs_filename(&finfo), MIN(SYSTEM_MENU_MAX_STR_LEN - 1, strlen(fs_filename(&finfo))));
+							system_menu_item_render_label(render_flags | ((cur_index == index) ? SYSTEM_MENU_MODE_SELECT : 0), buffer);
+							// stores the current file info
+							if ((cur_index == index))
+							{
+								fs_pointed_file = finfo;
+								// memcpy(&current_file, &fno, sizeof(FILINFO));
+							}
 						}
+						index++;
 					}
-					index++;
 				}
 			}
 
-			g_system_menu.total_items = index;
 			fs_close(dir);
 		}
+
+		g_system_menu.total_items = index;
 	}
 
 	system_menu_render_nav_back((g_system_menu.current_index < 0 || g_system_menu.current_multiplier < 0));
@@ -854,13 +874,14 @@ bool system_menu_fs_action(uint8_t action)
 			else
 			{
 				// run file
-				fs_running_file = fs_open(fs_pointed_file.full_name, "r");
+				fs_running_file = fs_path_parse(&fs_sm_cwd, fs_filename(&fs_pointed_file), "r");
 				if (fs_running_file)
 				{
 					protocol_send_feedback(FS_STR_FILE_RUNNING);
 					system_menu_go_idle();
 					rom_strcpy(buffer, __romstr__(FS_STR_FILE_RUNNING));
 					system_menu_show_modal_popup(SYSTEM_MENU_MODAL_POPUP_MS, buffer);
+					serial_stream_readonly(&running_file_getc, &running_file_available, &running_file_clear);
 				}
 				else
 				{
@@ -876,7 +897,12 @@ bool system_menu_fs_action(uint8_t action)
 				if (dir_level)
 				{
 					// up one dirs
-					fs_path_parse(&fs_sm_cwd, "..", "d");
+					fs_file_t *fp = fs_path_parse(&fs_sm_cwd, "..", "d");
+					if (fp)
+					{
+						fs_close(fp);
+					}
+					fs_pointed_file = fs_sm_cwd;
 					g_system_menu.current_index = 0;
 					g_system_menu.current_multiplier = 0;
 					g_system_menu.total_items = 0;
@@ -894,10 +920,11 @@ bool system_menu_fs_action(uint8_t action)
 			{
 				if (fs_pointed_file.is_dir)
 				{
-					fs_file_t *fp = fs_path_parse(&fs_sm_cwd, fs_pointed_file.full_name, "d");
+					fs_file_t *fp = fs_path_parse(&fs_sm_cwd, fs_filename(&fs_pointed_file), "d");
 					if (fp)
 					{
 						fs_close(fp);
+						fs_pointed_file = fs_sm_cwd;
 						g_system_menu.current_index = 0;
 						g_system_menu.current_multiplier = 0;
 						g_system_menu.total_items = 0;
