@@ -249,11 +249,8 @@ extern "C"
 	bool buffer_empty(ring_buffer_t *buffer);
 	bool buffer_full(ring_buffer_t *buffer);
 	void buffer_peek(ring_buffer_t *buffer, void *ptr);
-	void buffer_remove(ring_buffer_t *buffer);
 	void buffer_dequeue(ring_buffer_t *buffer, void *ptr);
-	void buffer_store(ring_buffer_t *buffer);
 	void buffer_enqueue(ring_buffer_t *buffer, void *ptr);
-	void *buffer_next_free(ring_buffer_t *buffer);
 	void buffer_write(ring_buffer_t *buffer, void *ptr, uint8_t len, uint8_t *written);
 	void buffer_read(ring_buffer_t *buffer, void *ptr, uint8_t len, uint8_t *read);
 	void buffer_clear(ring_buffer_t *buffer);

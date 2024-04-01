@@ -40,7 +40,12 @@ bool buffer_full(ring_buffer_t *buffer)
 
 void buffer_peek(ring_buffer_t *buffer, void *ptr)
 {
-	memcpy(ptr, &buffer->data[buffer->tail * buffer->elem_size], buffer->elem_size);
+	if(!buffer_empty(buffer)){
+		memcpy(ptr, &buffer->data[buffer->tail * buffer->elem_size], buffer->elem_size);
+	}
+	else{
+		memset(ptr, 0, buffer->elem_size);
+	}
 }
 
 void buffer_remove(ring_buffer_t *buffer)
