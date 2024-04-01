@@ -988,8 +988,7 @@ void mcu_dotasks(void)
 			c = OVF;
 		}
 
-		*(BUFFER_NEXT_FREE(uart2_rx)) = c;
-		BUFFER_STORE(uart2_rx);
+		BUFFER_ENQUEUE(uart2_rx, &c);
 #endif
 #endif
 	}

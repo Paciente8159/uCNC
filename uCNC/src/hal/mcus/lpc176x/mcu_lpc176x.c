@@ -342,8 +342,7 @@ void MCU_COM2_ISR(void)
 				c = OVF;
 			}
 
-			*(BUFFER_NEXT_FREE(uart2_rx)) = c;
-			BUFFER_STORE(uart2_rx);
+			BUFFER_ENQUEUEE(uart2_rx, &c);
 #endif
 #endif
 		}
@@ -893,8 +892,7 @@ void mcu_usb_putc(uint8_t c)
 
 uint8_t mcu_usb_getc(void)
 {
-	char c = BUFFER_PEEK(usb_rx);
-	BUFFER_REMOVE(usb_rx);
+	BUFFER_DEQUEUE(usb_rx, &c);
 	return (uint8_t)c;
 }
 

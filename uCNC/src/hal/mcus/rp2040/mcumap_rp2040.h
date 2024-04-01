@@ -1167,13 +1167,40 @@ extern "C"
 
 #define mcu_millis() millis()
 #define mcu_micros() micros()
-#define mcu_free_micros() ({         (1000UL - (SysTick->VAL * 1000UL / SysTick->LOAD)); })
+#define mcu_free_micros() ({ (1000UL - (SysTick->VAL * 1000UL / SysTick->LOAD)); })
 
 #if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
 #ifndef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 #define BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 #endif
 #endif
+
+#define USE_CUSTOM_BUFFER_IMPLEMENTATION
+#include <pico/util/queue.h>
+#define DECL_BUFFER(type, name, size)  \
+	static queue_t name##_bufferdata; \
+	ring_buffer_t name = {0, 0, 0, (uint8_t*)&name##_bufferdata, size, sizeof(type)}
+#define BUFFER_INIT(type, name, size) \
+	extern ring_buffer_t name;          \
+	queue_init((queue_t *)name.data, sizeof(type), size)
+#define BUFFER_WRITE_AVAILABLE(buffer) (buffer.size - queue_get_level((queue_t *)buffer.data))
+#define BUFFER_READ_AVAILABLE(buffer) (queue_get_level((queue_t *)buffer.data))
+#define BUFFER_EMPTY(buffer) queue_is_empty((queue_t *)buffer.data)
+#define BUFFER_FULL(buffer) queue_is_full((queue_t *)buffer.data)
+#define BUFFER_PEEK(buffer, ptr)                     \
+	if (!queue_try_peek((queue_t *)buffer.data, ptr)) \
+	{                                                  \
+		memset(ptr, 0, buffer.elem_size);                \
+	}
+#define BUFFER_DEQUEUE(buffer, ptr)                    \
+	if (!queue_try_remove((queue_t *)buffer.data, ptr)) \
+	{                                                    \
+		memset(ptr, 0, buffer.elem_size);                  \
+	}
+#define BUFFER_ENQUEUE(buffer, ptr) queue_try_add((queue_t *)buffer.data, ptr)
+#define BUFFER_WRITE(buffer, ptr, len, written) ({for(uint8_t i = 0; i<len; i++){if(!queue_try_add((queue_t*)buffer.data, &ptr[i])){break;}written++;} })
+#define BUFFER_READ(buffer, ptr, len, read) ({for(uint8_t i = 0; i<len; i++){if(!queue_try_remove((queue_t*)buffer.data, &ptr[i])){break;}read++;} })
+#define BUFFER_CLEAR(buffer) while(!queue_is_empty((queue_t *)buffer.data)){queue_try_remove((queue_t*)buffer.data, NULL);}
 
 #ifdef __cplusplus
 }

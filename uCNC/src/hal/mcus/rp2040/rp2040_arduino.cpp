@@ -375,7 +375,7 @@ bool rp2040_wifi_clientok(void)
 				server_client.stop();
 			}
 		}
-		server_client = telnet_server.available();
+		server_client = telnet_server.accept();
 		server_client.println("[MSG:New client connected]");
 		return false;
 	}
@@ -1246,8 +1246,7 @@ extern "C"
 				c = OVF;
 			}
 
-			*(BUFFER_NEXT_FREE(uart2_rx)) = c;
-			BUFFER_STORE(uart2_rx);
+			BUFFER_ENQUEUE(uart2_rx, &c);
 #endif
 #endif
 		}

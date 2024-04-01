@@ -85,27 +85,6 @@ void buffer_dequeue(ring_buffer_t *buffer, void *ptr)
 	}
 }
 
-void buffer_store(ring_buffer_t *buffer)
-{
-	if (!buffer_full(buffer))
-	{
-		uint8_t head;
-		__ATOMIC__
-		{
-			head = buffer->head;
-
-			head++;
-			if (head >= buffer->size)
-			{
-				head = 0;
-			}
-
-			buffer->head = head;
-			buffer->count++;
-		}
-	}
-}
-
 void buffer_enqueue(ring_buffer_t *buffer, void *ptr)
 {
 	if (!buffer_full(buffer))
@@ -124,16 +103,6 @@ void buffer_enqueue(ring_buffer_t *buffer, void *ptr)
 			buffer->count++;
 		}
 	}
-}
-
-void *buffer_next_free(ring_buffer_t *buffer)
-{
-	__ATOMIC__
-	{
-		return &buffer->data[buffer->head * buffer->elem_size];
-	}
-
-	return NULL;
 }
 
 void buffer_write(ring_buffer_t *buffer, void *ptr, uint8_t len, uint8_t *written)

@@ -239,9 +239,10 @@ extern "C"
 	} ring_buffer_t;
 
 #ifndef USE_MACRO_BUFFER
-#define DECL_BUFFER(T, N, S)    \
-	static T N##_bufferdata[S]; \
-	static ring_buffer_t N = {0, 0, 0, N##_bufferdata, S, sizeof(T)}
+#ifndef USE_CUSTOM_BUFFER_IMPLEMENTATION
+#define DECL_BUFFER(type, name, size) \
+	static type name##_bufferdata[size];         \
+	ring_buffer_t name = {0, 0, 0, name##_bufferdata, size, sizeof(type)}
 
 	uint8_t buffer_write_available(ring_buffer_t *buffer);
 	uint8_t buffer_read_available(ring_buffer_t *buffer);
@@ -257,53 +258,30 @@ extern "C"
 	void buffer_read(ring_buffer_t *buffer, void *ptr, uint8_t len, uint8_t *read);
 	void buffer_clear(ring_buffer_t *buffer);
 
-#ifndef USE_CUSTOM_BUFFER_IMPLEMENTATION
+#define BUFFER_INIT(type, buffer, size)
 #define BUFFER_WRITE_AVAILABLE(buffer) buffer_write_available(&buffer)
 #define BUFFER_READ_AVAILABLE(buffer) buffer_read_available(&buffer)
 #define BUFFER_EMPTY(buffer) buffer_empty(&buffer)
 #define BUFFER_FULL(buffer) buffer_full(&buffer)
 #define BUFFER_PEEK(buffer, ptr) buffer_peek(&buffer, ptr)
-#define BUFFER_REMOVE(buffer) buffer_remove(&buffer)
 #define BUFFER_DEQUEUE(buffer, ptr) buffer_dequeue(&buffer, ptr)
-#define BUFFER_STORE(buffer) buffer_store(&buffer)
 #define BUFFER_ENQUEUE(buffer, ptr) buffer_enqueue(&buffer, ptr)
-#define BUFFER_NEXT_FREE(buffer) buffer_next_free(&buffer)
 #define BUFFER_WRITE(buffer, ptr, len, written) buffer_write(&buffer, ptr, len, &written)
 #define BUFFER_READ(buffer, ptr, len, read) buffer_read(&buffer, ptr, len, &read)
 #define BUFFER_CLEAR(buffer) buffer_clear(&buffer)
 #endif
 #else
-#define DECL_BUFFER(T, N, S)         \
-	static T N##_bufferdata[S];        \
-	static const uint8_t N##_size = S; \
-	static ring_buffer_t N
+#define DECL_BUFFER(type, name, size)      \
+	static type name##_bufferdata[size];     \
+	static const uint8_t name##_size = size; \
+	ring_buffer_t name
 
+#define BUFFER_INIT(type, buffer, size)
 #define BUFFER_WRITE_AVAILABLE(buffer) (buffer##_size - buffer.count)
 #define BUFFER_READ_AVAILABLE(buffer) (buffer.count)
 #define BUFFER_EMPTY(buffer) (!buffer.count)
 #define BUFFER_FULL(buffer) (buffer.count == buffer##_size)
 #define BUFFER_PEEK(buffer) (buffer##_bufferdata[buffer.tail])
-#define BUFFER_REMOVE(buffer)    \
-	{                              \
-		uint8_t tail;                \
-		__ATOMIC__                   \
-		{                            \
-			tail = buffer.tail;        \
-		}                            \
-		if (!BUFFER_EMPTY(buffer))   \
-		{                            \
-			tail++;                    \
-			if (tail >= buffer##_size) \
-			{                          \
-				tail = 0;                \
-			}                          \
-			__ATOMIC__                 \
-			{                          \
-				buffer.tail = tail;      \
-				buffer.count--;          \
-			}                          \
-		}                            \
-	}
 
 #define BUFFER_DEQUEUE(buffer, ptr)                                            \
 	{                                                                            \
@@ -328,28 +306,6 @@ extern "C"
 		}                                                                          \
 	}
 
-#define BUFFER_STORE(buffer)     \
-	{                              \
-		if (!BUFFER_FULL(buffer))    \
-		{                            \
-			uint8_t head;              \
-			__ATOMIC__                 \
-			{                          \
-				head = buffer.head;      \
-			}                          \
-			head++;                    \
-			if (head >= buffer##_size) \
-			{                          \
-				head = 0;                \
-			}                          \
-			__ATOMIC__                 \
-			{                          \
-				buffer.head = head;      \
-				buffer.count++;          \
-			}                          \
-		}                            \
-	}
-
 #define BUFFER_ENQUEUE(buffer, ptr)                                            \
 	{                                                                            \
 		if (!BUFFER_FULL(buffer))                                                  \
@@ -372,7 +328,6 @@ extern "C"
 			}                                                                        \
 		}                                                                          \
 	}
-#define BUFFER_NEXT_FREE(buffer) (&buffer##_bufferdata[buffer.head])
 
 #define BUFFER_WRITE(buffer, ptr, len, written) ({                                             \
 	uint8_t count, head;                                                                         \

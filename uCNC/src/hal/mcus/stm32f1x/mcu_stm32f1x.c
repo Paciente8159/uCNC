@@ -108,7 +108,7 @@ void MCU_SERIAL_ISR(void)
 				COM_UART->CR1 &= ~(USART_CR1_TXEIE);
 				return;
 			}
-			uint8_t c;
+			uint8_t c = 0;
 			BUFFER_DEQUEUE(uart_tx, &c);
 			COM_OUTREG = c;
 		}
@@ -148,8 +148,7 @@ void MCU_SERIAL2_ISR(void)
 				c = OVF;
 			}
 
-			*(BUFFER_NEXT_FREE(uart2_rx)) = c;
-			BUFFER_STORE(uart2_rx);
+			BUFFER_ENQUEUE(uart2_rx, &c);
 #endif
 #endif
 		}

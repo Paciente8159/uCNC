@@ -714,6 +714,42 @@ void __attribute__((weak)) mcu_io_init(void)
 	mcu_config_pullup(RX2);
 #endif
 #endif
+
+#ifdef MCU_HAS_UART
+#ifndef UART_TX_BUFFER_SIZE
+#define UART_TX_BUFFER_SIZE 64
+#endif
+BUFFER_INIT(uint8_t, uart_tx, UART_TX_BUFFER_SIZE);
+BUFFER_INIT(uint8_t, uart_rx, RX_BUFFER_SIZE);
+#endif
+#ifdef MCU_HAS_UART2
+#ifndef UART2_TX_BUFFER_SIZE
+#define UART2_TX_BUFFER_SIZE 64
+#endif
+BUFFER_INIT(uint8_t, uart2_tx, UART2_TX_BUFFER_SIZE);
+BUFFER_INIT(uint8_t, uart2_rx, RX_BUFFER_SIZE);
+#endif
+#ifdef MCU_HAS_USB
+#ifndef USB_TX_BUFFER_SIZE
+#define USB_TX_BUFFER_SIZE 64
+#endif
+BUFFER_INIT(uint8_t, usb_tx, USB_TX_BUFFER_SIZE);
+BUFFER_INIT(uint8_t, usb_rx, RX_BUFFER_SIZE);
+#endif
+#ifdef MCU_HAS_WIFI
+#ifndef WIFI_TX_BUFFER_SIZE
+#define WIFI_TX_BUFFER_SIZE 64
+#endif
+BUFFER_INIT(uint8_t, wifi_tx, WIFI_TX_BUFFER_SIZE);
+BUFFER_INIT(uint8_t, wifi_rx, RX_BUFFER_SIZE);
+#endif
+#ifdef MCU_HAS_BLUETOOTH
+#ifndef BLUETOOTH_TX_BUFFER_SIZE
+#define BLUETOOTH_TX_BUFFER_SIZE 64
+#endif
+BUFFER_INIT(uint8_t, bt_tx, BLUETOOTH_TX_BUFFER_SIZE);
+BUFFER_INIT(uint8_t, bt_rx, RX_BUFFER_SIZE);
+#endif
 }
 
 #ifndef mcu_io_reset
