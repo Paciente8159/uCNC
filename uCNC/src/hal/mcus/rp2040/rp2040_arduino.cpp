@@ -988,8 +988,6 @@ void rp2040_wifi_bt_process(void)
 #endif
 
 #ifdef ENABLE_BLUETOOTH
-	DECL_BUFFER(uint8_t, bt_rx, RX_BUFFER_SIZE);
-
 	while (SerialBT.available() > 0)
 	{
 #ifndef DETACH_BLUETOOTH_FROM_MAIN_PROTOCOL
