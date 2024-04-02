@@ -355,7 +355,7 @@ void MCU_COM2_ISR(void)
 				COM2_UART->IER &= ~UART_IER_THREINT_EN;
 				return;
 			}
-			uint8_t c;
+			uint8_t c = 0;
 			BUFFER_DEQUEUE(uart2_tx, &c);
 			COM2_OUTREG = c;
 		}
@@ -892,6 +892,7 @@ void mcu_usb_putc(uint8_t c)
 
 uint8_t mcu_usb_getc(void)
 {
+	uint8_t c = 0;
 	BUFFER_DEQUEUE(usb_rx, &c);
 	return (uint8_t)c;
 }

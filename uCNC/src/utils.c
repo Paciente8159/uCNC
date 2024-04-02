@@ -48,27 +48,6 @@ void buffer_peek(ring_buffer_t *buffer, void *ptr)
 	}
 }
 
-void buffer_remove(ring_buffer_t *buffer)
-{
-	uint8_t tail;
-	__ATOMIC__
-	{
-		tail = buffer->tail;
-
-		if (!buffer_empty(buffer))
-		{
-			tail++;
-			if (tail >= buffer->size)
-			{
-				tail = 0;
-			}
-
-			buffer->tail = tail;
-			buffer->count--;
-		}
-	}
-}
-
 void buffer_dequeue(ring_buffer_t *buffer, void *ptr)
 {
 	if (!buffer_empty(buffer))
