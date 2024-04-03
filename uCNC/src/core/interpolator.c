@@ -515,7 +515,7 @@ void itp_run(void)
 				}
 				else
 				{
-					deaccel_from = remaining_steps;
+					deaccel_from = 0;
 				}
 			}
 		}
