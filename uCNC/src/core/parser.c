@@ -2619,7 +2619,10 @@ static void parser_discard_command(void)
 	{
 		c = serial_getc();
 #ifdef ECHO_CMD
-		serial_putc(c);
+		if (c)
+		{
+			serial_putc(c);
+		}
 #endif
 	} while (c != EOL);
 }
