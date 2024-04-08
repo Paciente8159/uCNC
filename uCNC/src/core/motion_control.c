@@ -1162,7 +1162,8 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 		{
 			block_data->feed = FLT_MAX;
 			// retract (higher if needed)
-			position[AXIS_TOOL] = MAX(minretract_h, position[AXIS_TOOL] + retract_h);
+			retract_h = MAX(minretract_h, position[AXIS_TOOL] + retract_h);
+			position[AXIS_TOOL] = retract_h;
 			error = mc_line(position, block_data);
 			if (error != STATUS_OK)
 			{
@@ -1251,6 +1252,11 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 	// print map
 	mc_print_hmap();
 
+	if (itp_sync() != STATUS_OK)
+	{
+		return STATUS_CRITICAL_FAIL;
+	}
+	
 	// sync position of all systems
 	mc_sync_position();
 
