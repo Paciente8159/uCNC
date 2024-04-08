@@ -1154,6 +1154,7 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 	mc_get_position(position);
 	
 	float minretract_h = position[AXIS_TOOL] + retract_h;
+	float maxretract_h = minretract_h;
 
 	for (uint8_t j = 0; j < H_MAPING_GRID_FACTOR; j++)
 	{
@@ -1162,8 +1163,8 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 		{
 			block_data->feed = FLT_MAX;
 			// retract (higher if needed)
-			retract_h = MAX(minretract_h, position[AXIS_TOOL] + retract_h);
-			position[AXIS_TOOL] = retract_h;
+			maxretract_h = MAX(maxretract_h, position[AXIS_TOOL] + retract_h);
+			position[AXIS_TOOL] = MAX(minretract_h, position[AXIS_TOOL] + retract_h);
 			error = mc_line(position, block_data);
 			if (error != STATUS_OK)
 			{
@@ -1205,7 +1206,7 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 	// fast retract if needed
 	// retract (higher if needed)
 	block_data->feed = FLT_MAX;
-	position[AXIS_TOOL] = MAX((target[AXIS_TOOL] + retract_h), minretract_h);
+	position[AXIS_TOOL] = maxretract_h;
 	error = mc_line(position, block_data);
 	if (error != STATUS_OK)
 	{
@@ -1256,7 +1257,7 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 	{
 		return STATUS_CRITICAL_FAIL;
 	}
-	
+
 	// sync position of all systems
 	mc_sync_position();
 
