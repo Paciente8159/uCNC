@@ -1150,6 +1150,9 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 	float offset_y = offset[1] / (H_MAPING_GRID_FACTOR - 1);
 	float position[AXIS_COUNT];
 	float feed = block_data->feed;
+
+	// clear the previous map
+	memset(hmap_offsets, 0, sizeof(hmap_offsets));
 	
 	mc_get_position(position);
 	
