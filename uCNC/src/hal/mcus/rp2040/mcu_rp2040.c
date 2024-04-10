@@ -296,7 +296,11 @@ void rp2040_core0_loop()
 	rp2040_uart_process();
 }
 
-void rp2040_core1_loop()
+void setup1()
+{
+}
+
+void loop1()
 {
 	for (;;)
 	{
