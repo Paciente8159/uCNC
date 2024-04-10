@@ -88,6 +88,11 @@ extern "C"
 #include "stm32/boardmap_blackpill.h"
 #endif
 
+#if (BOARD == BOARD_NUCLEO_F411RE_SHIELD_V3)
+#define MCU MCU_STM32F4X
+#include "stm32/boardmap_nucleo_f411re_shield_v3.h"
+#endif
+
 #if (BOARD == BOARD_MKS_ROBIN_NANO_V1_2)
 #define MCU MCU_STM32F1X
 #include "stm32/boardmap_mks_robin_nano_v1_2.h"
@@ -141,6 +146,11 @@ extern "C"
 #if (BOARD == BOARD_MKS_DLC32)
 #define MCU MCU_ESP32
 #include "esp32/boardmap_mks_dlc32.h"
+#endif
+
+#if (BOARD == BOARD_ESP32_SHIELD_V3)
+#define MCU MCU_ESP32
+#include "esp32/boardmap_esp32_shield_v3.h"
 #endif
 
 #if (BOARD == BOARD_RPI_PICO)

@@ -74,6 +74,7 @@ Version 1.8 added the following new major features.
 - complete redesign of multi-stepper axis and self-squaring axis.
 - initial support for Scara kinematics
 - endpoint interface module to allow development of web services and REST modules for WiFi (available on v1.8.1)
+- websocket interface module to allow development of web sockets modules for WiFi (available on v1.8.7)
 
 Version 1.7 added a new major feature.
 
@@ -144,7 +145,6 @@ List of Supported G-Codes since µCNC 1.3.0:
   - Outside the RS274NGC scope
     - Bilinear surface mapping: G39,G39.1,G39.2*
     - Servo Control: M10*
-    - Trinamic settings: M350* (set/get microsteps), M906* (set/get current), 913* (stealthchop threshold), 914* (stall sensitivity-stallGuard capable chips only), 920* (set/get register)
     - Digital pins/trimpot settings: M351* (set/get microsteps), M907* (set/get current via digipot)
     - Laser PPI M126*(mode) M127*(PPI) and M128*(Pulse width)
     - Valid Non-Command Words: E (used by 3D printing firmware like [Marlin](https://github.com/MarlinFirmware/Marlin)) (currently not used)
@@ -182,6 +182,7 @@ Other G/M codes available via [external modules](https://github.com/Paciente8159
   - Wait for digital/analog input: M66
   - Set home position from current position: G28.1/G30.1
   - Play tone via PWM pin: M300
+  - Trinamic driver support and config commands: M350* (set/get microsteps), M906* (set/get current), 913* (stealthchop threshold), 914* (stall sensitivity-stallGuard capable chips only), 920* (set/get register)
 
 **ALL custom G/M codes require at least ENABLE_PARSER_MODULES option enabled**
 

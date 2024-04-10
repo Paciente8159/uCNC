@@ -112,15 +112,26 @@ void stream_stdin(uint8_t *p)
 }
 #endif
 
-void serial_stream_change(serial_stream_t *stream)
+#ifdef ENABLE_MULTISTREAM_GUARD
+static bool serial_rx_busy;
+#endif
+
+bool serial_stream_change(serial_stream_t *stream)
 {
 #ifndef DISABLE_MULTISTREAM_SERIAL
 	uint8_t cleanup __attribute__((__cleanup__(stream_stdin))) = 0;
+
+#ifdef ENABLE_MULTISTREAM_GUARD
+	if (serial_rx_busy)
+	{
+		return false;
+	}
+#endif
 	serial_peek_buffer = 0;
 	if (stream != NULL)
 	{
 		current_stream = stream;
-		return;
+		return true;
 	}
 
 	// starts by the prioritary and test one by one until one that as characters available is found
@@ -130,13 +141,22 @@ void serial_stream_change(serial_stream_t *stream)
 	stream_available = mcu_available;
 	stream_clear = mcu_clear;
 #endif
+	return true;
 }
 
-void serial_stream_readonly(stream_getc_cb getc_cb, stream_available_cb available_cb, stream_clear_cb clear_cb)
+bool serial_stream_readonly(stream_getc_cb getc_cb, stream_available_cb available_cb, stream_clear_cb clear_cb)
 {
+#ifdef ENABLE_MULTISTREAM_GUARD
+	if (serial_rx_busy)
+	{
+		return false;
+	}
+#endif
+
 	stream_getc = getc_cb;
 	stream_available = available_cb;
 	stream_clear = clear_cb;
+	return true;
 }
 
 static uint16_t stream_eeprom_address;
@@ -156,6 +176,9 @@ void serial_stream_eeprom(uint16_t address)
 char serial_getc(void)
 {
 	uint8_t peek = serial_peek();
+#ifdef ENABLE_MULTISTREAM_GUARD
+	serial_rx_busy = (peek != EOL);
+#endif
 	serial_peek_buffer = 0;
 	return peek;
 }
@@ -217,12 +240,20 @@ uint8_t serial_available(void)
 	uint8_t count = stream_available();
 	if (!count)
 	{
+#ifdef ENABLE_MULTISTREAM_GUARD
+		if (serial_rx_busy)
+		{
+			return count;
+		}
+#endif
 		serial_stream_t *p = default_stream;
 		while (p != NULL)
 		{
 #ifdef ENABLE_DEBUG_STREAM
-			// skip the debug stream
+#if DEBUG_STREAM != default_stream
+			// skip the debug stream, if it differs from default_stream
 			if (p != DEBUG_STREAM)
+#endif
 			{
 #endif
 				count = (!(p->stream_available)) ? 0 : p->stream_available();
@@ -237,7 +268,6 @@ uint8_t serial_available(void)
 			p = p->next;
 		}
 	}
-
 	return count;
 #else
 	return stream_available();
@@ -312,11 +342,14 @@ void serial_putc(char c)
 #ifdef ENABLE_DEBUG_STREAM
 void debug_putc(char c)
 {
-	DEBUG_STREAM->stream_putc(c);
-
-	if (c == '\n')
+	if (DEBUG_STREAM)
 	{
-		DEBUG_STREAM->stream_flush();
+		DEBUG_STREAM->stream_putc(c);
+
+		if (c == '\n')
+		{
+			DEBUG_STREAM->stream_flush();
+		}
 	}
 }
 #endif

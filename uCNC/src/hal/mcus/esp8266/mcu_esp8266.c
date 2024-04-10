@@ -54,10 +54,14 @@ extern void esp8266_eeprom_init(int size);
 
 ETSTimer esp8266_rtc_timer;
 
+#ifndef ITP_SAMPLE_RATE
+#define ITP_SAMPLE_RATE (F_STEP_MAX * 2)
+#endif
+
 #ifdef MCU_HAS_ONESHOT_TIMER
 static uint32_t esp8266_oneshot_counter;
 static uint32_t esp8266_oneshot_reload;
-static IRAM_ATTR void mcu_gen_oneshot(void)
+static FORCEINLINE void mcu_gen_oneshot(void)
 {
 	if (esp8266_oneshot_counter)
 	{
@@ -73,26 +77,156 @@ static IRAM_ATTR void mcu_gen_oneshot(void)
 }
 #endif
 
-static IRAM_ATTR void mcu_gen_pwm(void)
+#if SERVOS_MASK > 0
+static uint32_t servo_tick_counter = 0;
+static uint32_t servo_tick_alarm = 0;
+static uint8_t mcu_servos[6];
+static FORCEINLINE void servo_reset(void)
 {
-	io_soft_pwm_update();
+#if ASSERT_PIN(SERVO0)
+	io_clear_output(SERVO0);
+#endif
+#if ASSERT_PIN(SERVO1)
+	io_clear_output(SERVO1);
+#endif
+#if ASSERT_PIN(SERVO2)
+	io_clear_output(SERVO2);
+#endif
+#if ASSERT_PIN(SERVO3)
+	io_clear_output(SERVO3);
+#endif
+#if ASSERT_PIN(SERVO4)
+	io_clear_output(SERVO4);
+#endif
+#if ASSERT_PIN(SERVO5)
+	io_clear_output(SERVO5);
+#endif
 }
 
-static uint32_t mcu_step_counter;
-static uint32_t mcu_step_reload;
-static IRAM_ATTR void mcu_gen_step(void)
+#define start_servo_timeout(timeout)                      \
+	{                                                       \
+		servo_tick_alarm = servo_tick_counter + timeout + 64; \
+	}
+
+static FORCEINLINE void servo_update(void)
 {
-	if (mcu_step_reload)
+	static uint8_t servo_counter = 0;
+
+	switch (servo_counter)
 	{
-		if (!--mcu_step_counter)
+#if ASSERT_PIN(SERVO0)
+	case SERVO0_FRAME:
+		io_set_output(SERVO0);
+		start_servo_timeout(mcu_servos[0]);
+		break;
+#endif
+#if ASSERT_PIN(SERVO1)
+	case SERVO1_FRAME:
+		io_set_output(SERVO1);
+		start_servo_timeout(mcu_servos[1]);
+		break;
+#endif
+#if ASSERT_PIN(SERVO2)
+	case SERVO2_FRAME:
+		io_set_output(SERVO2);
+		start_servo_timeout(mcu_servos[2]);
+		break;
+#endif
+#if ASSERT_PIN(SERVO3)
+	case SERVO3_FRAME:
+		io_set_output(SERVO3);
+		start_servo_timeout(mcu_servos[3]);
+		break;
+#endif
+#if ASSERT_PIN(SERVO4)
+	case SERVO4_FRAME:
+		io_set_output(SERVO4);
+		start_servo_timeout(mcu_servos[4]);
+		break;
+#endif
+#if ASSERT_PIN(SERVO5)
+	case SERVO5_FRAME:
+		io_set_output(SERVO5);
+		start_servo_timeout(mcu_servos[5]);
+		break;
+#endif
+	}
+
+	servo_counter++;
+	servo_counter = (servo_counter != 20) ? servo_counter : 0;
+}
+#endif
+
+static FORCEINLINE void mcu_gen_pwm_and_servo(void)
+{
+	static int16_t mcu_soft_io_counter;
+	int16_t t = mcu_soft_io_counter;
+	t--;
+	if (t <= 0)
+	{
+// updated software PWM pins
+#if defined(IC74HC595_HAS_PWMS) || defined(MCU_HAS_SOFT_PWM_TIMER)
+		io_soft_pwm_update();
+#endif
+
+		// update servo pins
+#if SERVOS_MASK > 0
+		// also run servo pin signals
+		uint32_t counter = servo_tick_counter;
+
+		// updated next servo output
+		if (!(counter & 0x7F))
 		{
-			static bool resetstep = false;
-			if (!resetstep)
+			servo_update();
+		}
+
+		// reached set tick alarm and resets all servo outputs
+		if (counter == servo_tick_alarm)
+		{
+			servo_reset();
+		}
+
+		// resets every 3ms
+		servo_tick_counter = ++counter;
+#endif
+		mcu_soft_io_counter = (int16_t)roundf((float)ITP_SAMPLE_RATE / 128000.0f);
+	}
+	else
+	{
+		mcu_soft_io_counter = t;
+	}
+}
+
+static volatile uint32_t mcu_itp_timer_reload;
+static volatile bool mcu_itp_timer_running;
+static FORCEINLINE void mcu_gen_step(void)
+{
+	static bool step_reset = true;
+	static int32_t mcu_itp_timer_counter;
+
+	// generate steps
+	if (mcu_itp_timer_running)
+	{
+		// stream mode tick
+		int32_t t = mcu_itp_timer_counter;
+		bool reset = step_reset;
+		t -= (int32_t)roundf(1000000.0f / (float)ITP_SAMPLE_RATE);
+		if (t <= 0)
+		{
+			if (!reset)
+			{
 				mcu_step_cb();
+			}
 			else
+			{
 				mcu_step_reset_cb();
-			resetstep = !resetstep;
-			mcu_step_counter = mcu_step_reload;
+			}
+			step_reset = !reset;
+			mcu_itp_timer_counter = mcu_itp_timer_reload + t;
+		}
+		else
+		{
+			mcu_itp_timer_counter = t;
 		}
 	}
 }
@@ -125,17 +259,12 @@ IRAM_ATTR void mcu_rtc_isr(void *arg)
 
 IRAM_ATTR void mcu_itp_isr(void)
 {
-	// mcu_disable_global_isr();
-	// static bool resetstep = false;
-	// if (!resetstep)
-	// 	mcu_step_cb();
-	// else
-	// 	mcu_step_reset_cb();
-	// resetstep = !resetstep;
-	// mcu_enable_global_isr();
 	mcu_gen_step();
-	mcu_gen_pwm();
+	mcu_gen_pwm_and_servo();
 	mcu_gen_oneshot();
+#if defined(IC74HC595_HAS_STEPS) || defined(IC74HC595_HAS_DIRS) || defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS)
+	ic74hc595_shift_io_pins();
+#endif
 }
 
 // static void mcu_uart_isr(void *arg)
@@ -199,6 +328,10 @@ static void mcu_usart_init(void)
 void mcu_init(void)
 {
 	mcu_io_init();
+#ifndef RAM_ONLY_SETTINGS
+	esp8266_eeprom_init(NVM_STORAGE_SIZE); // 2K Emulated EEPROM
+#endif
+
 	mcu_usart_init();
 
 	// init rtc
@@ -209,11 +342,8 @@ void mcu_init(void)
 	timer1_isr_init();
 	timer1_attachInterrupt(mcu_itp_isr);
 	timer1_enable(TIM_DIV1, TIM_EDGE, TIM_LOOP);
-	timer1_write(625);
+	timer1_write((APB_CLK_FREQ / ITP_SAMPLE_RATE));
 
-#ifndef RAM_ONLY_SETTINGS
-	esp8266_eeprom_init(1024); // 1K Emulated EEPROM
-#endif
 #ifdef MCU_HAS_SPI
 	esp8266_spi_init(SPI_FREQ, SPI_MODE);
 #endif
@@ -276,6 +406,30 @@ uint8_t mcu_get_pwm(uint8_t pwm)
 }
 #endif
 
+void mcu_set_servo(uint8_t servo, uint8_t value)
+{
+#if SERVOS_MASK > 0
+	mcu_servos[servo - SERVO_PINS_OFFSET] = value;
+#endif
+}
+
+/**
+ * gets the pwm for a servo (50Hz with tON between 1~2ms)
+ * can be defined either as a function or a macro call
+ * */
+uint8_t mcu_get_servo(uint8_t servo)
+{
+#if SERVOS_MASK > 0
+	uint8_t offset = servo - SERVO_PINS_OFFSET;
+
+	if ((1U << offset) & SERVOS_MASK)
+	{
+		return mcu_servos[offset];
+	}
+#endif
+	return 0;
+}
+
 // ISR
 /**
  * enables global interrupts on the MCU
@@ -321,13 +475,12 @@ bool mcu_get_global_isr(void)
 void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 {
 	frequency = CLAMP((float)F_STEP_MIN, frequency, (float)F_STEP_MAX);
-	
 	// up and down counter (generates half the step rate at each event)
-	uint32_t totalticks = (uint32_t)((float)(128000UL >> 1) / frequency);
-	*prescaller = 0;
+	uint32_t totalticks = (uint32_t)((500000.0f) / frequency);
+	*prescaller = 1;
 	while (totalticks > 0xFFFF)
 	{
-		(*prescaller) += 1;
+		(*prescaller) <<= 1;
 		totalticks >>= 1;
 	}
 
@@ -336,16 +489,25 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 
 float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller)
 {
-	return ((float)(128000UL >> 1) / (float)(((uint32_t)ticks) << prescaller));
+	uint32_t totalticks = (uint32_t)ticks * prescaller;
+	return 500000.0f / ((float)totalticks);
 }
 
 /**
  * starts the timer interrupt that generates the step pulses for the interpolator
  * */
+
 void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 {
-	mcu_step_reload = (((uint32_t)ticks) << prescaller);
-	mcu_step_counter = mcu_step_reload;
+	if (!mcu_itp_timer_running)
+	{
+		mcu_itp_timer_reload = ticks * prescaller;
+		mcu_itp_timer_running = true;
+	}
+	else
+	{
+		mcu_change_itp_isr(ticks, prescaller);
+	}
 }
 
 /**
@@ -353,8 +515,14 @@ void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
  * */
 void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller)
 {
-	mcu_step_reload = (((uint32_t)ticks) << prescaller);
-	mcu_step_counter = mcu_step_reload;
+	if (mcu_itp_timer_running)
+	{
+		mcu_itp_timer_reload = ticks * prescaller;
+	}
+	else
+	{
+		mcu_start_itp_isr(ticks, prescaller);
+	}
 }
 
 /**
@@ -362,7 +530,10 @@ void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller)
  * */
 void mcu_stop_itp_isr(void)
 {
-	mcu_step_reload = 0;
+	if (mcu_itp_timer_running)
+	{
+		mcu_itp_timer_running = false;
+	}
 }
 
 /**
@@ -384,6 +555,11 @@ void esp8266_delay_us(uint16_t delay)
 	uint32_t time = system_get_time() + delay - 1;
 	while (time > system_get_time())
 		;
+}
+
+uint32_t mcu_free_micros()
+{
+	return (uint32_t)(esp_system_get_time() % 1000);
 }
 
 /**

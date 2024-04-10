@@ -62,12 +62,12 @@ extern "C"
 #define MCU_CLOCKS_PER_CYCLE 1
 #endif
 
-#define mcu_delay_cycles(X)     \
-	{                           \
+#define mcu_delay_cycles(X) \
+	{                         \
 		DWT->CYCCNT = 0;        \
 		uint32_t t = X;         \
 		while (t > DWT->CYCCNT) \
-			;                   \
+			;                     \
 	}
 
 // Helper macros
@@ -2953,7 +2953,7 @@ extern "C"
 #define TX2_CROFF TX2_BIT
 #define TX2_CR CRL
 #else
-#define TX2_CROFF (TX2_BIT&0x07)
+#define TX2_CROFF (TX2_BIT & 0x07)
 #define TX2_CR CRH
 #endif
 #define DIO210 210
@@ -2972,7 +2972,7 @@ extern "C"
 #define RX2_CROFF RX2_BIT
 #define RX2_CR CRL
 #else
-#define RX2_CROFF (RX2_BIT&0x07)
+#define RX2_CROFF (RX2_BIT & 0x07)
 #define RX2_CR CRH
 #endif
 #define DIO211 211
@@ -2984,7 +2984,6 @@ extern "C"
 #define DIO211_CROFF RX2_CROFF
 #endif
 
-
 #if (defined(TX) && defined(RX))
 #define MCU_HAS_UART
 #endif
@@ -2993,9 +2992,9 @@ extern "C"
 #endif
 #if (defined(USB_DP) && defined(USB_DM))
 #define MCU_HAS_USB
-extern uint32_t tud_cdc_n_write_available(uint8_t itf);
-extern uint32_t tud_cdc_n_available(uint8_t itf);
-extern bool tud_cdc_n_connected (uint8_t itf);
+	extern uint32_t tud_cdc_n_write_available(uint8_t itf);
+	extern uint32_t tud_cdc_n_available(uint8_t itf);
+	extern bool tud_cdc_n_connected(uint8_t itf);
 #define usb_tx_available() (tud_cdc_n_write_available(0) || !tud_cdc_n_connected(0))
 #define usb_rx_available() tud_cdc_n_available(0)
 #endif
@@ -3347,18 +3346,18 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #define PWM0_CCMREG CCMR1
 #endif
 #if (PWM0_TIMER == 1)
-#define PWM0_ENOUTPUT            \
-	{                            \
+#define PWM0_ENOUTPUT        \
+	{                          \
 		TIM1->BDTR |= (1 << 15); \
 	}
 #elif (PWM0_TIMER == 8)
-#define PWM0_ENOUTPUT            \
-	{                            \
+#define PWM0_ENOUTPUT        \
+	{                          \
 		TIM8->BDTR |= (1 << 15); \
 	}
 #else
 #define PWM0_ENOUTPUT \
-	{                 \
+	{                   \
 	}
 #endif
 #define PWM0_CCR __ccr__(PWM0_CHANNEL)
@@ -3400,18 +3399,18 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #define PWM1_CCMREG CCMR1
 #endif
 #if (PWM1_TIMER == 1)
-#define PWM1_ENOUTPUT            \
-	{                            \
+#define PWM1_ENOUTPUT        \
+	{                          \
 		TIM1->BDTR |= (1 << 15); \
 	}
 #elif (PWM1_TIMER == 8)
-#define PWM1_ENOUTPUT            \
-	{                            \
+#define PWM1_ENOUTPUT        \
+	{                          \
 		TIM8->BDTR |= (1 << 15); \
 	}
 #else
 #define PWM1_ENOUTPUT \
-	{                 \
+	{                   \
 	}
 #endif
 #define PWM1_CCR __ccr__(PWM1_CHANNEL)
@@ -3453,18 +3452,18 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #define PWM2_CCMREG CCMR1
 #endif
 #if (PWM2_TIMER == 1)
-#define PWM2_ENOUTPUT            \
-	{                            \
+#define PWM2_ENOUTPUT        \
+	{                          \
 		TIM1->BDTR |= (1 << 15); \
 	}
 #elif (PWM2_TIMER == 8)
-#define PWM2_ENOUTPUT            \
-	{                            \
+#define PWM2_ENOUTPUT        \
+	{                          \
 		TIM8->BDTR |= (1 << 15); \
 	}
 #else
 #define PWM2_ENOUTPUT \
-	{                 \
+	{                   \
 	}
 #endif
 #define PWM2_CCR __ccr__(PWM2_CHANNEL)
@@ -3506,18 +3505,18 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #define PWM3_CCMREG CCMR1
 #endif
 #if (PWM3_TIMER == 1)
-#define PWM3_ENOUTPUT            \
-	{                            \
+#define PWM3_ENOUTPUT        \
+	{                          \
 		TIM1->BDTR |= (1 << 15); \
 	}
 #elif (PWM3_TIMER == 8)
-#define PWM3_ENOUTPUT            \
-	{                            \
+#define PWM3_ENOUTPUT        \
+	{                          \
 		TIM8->BDTR |= (1 << 15); \
 	}
 #else
 #define PWM3_ENOUTPUT \
-	{                 \
+	{                   \
 	}
 #endif
 #define PWM3_CCR __ccr__(PWM3_CHANNEL)
@@ -3559,18 +3558,18 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #define PWM4_CCMREG CCMR1
 #endif
 #if (PWM4_TIMER == 1)
-#define PWM4_ENOUTPUT            \
-	{                            \
+#define PWM4_ENOUTPUT        \
+	{                          \
 		TIM1->BDTR |= (1 << 15); \
 	}
 #elif (PWM4_TIMER == 8)
-#define PWM4_ENOUTPUT            \
-	{                            \
+#define PWM4_ENOUTPUT        \
+	{                          \
 		TIM8->BDTR |= (1 << 15); \
 	}
 #else
 #define PWM4_ENOUTPUT \
-	{                 \
+	{                   \
 	}
 #endif
 #define PWM4_CCR __ccr__(PWM4_CHANNEL)
@@ -3612,18 +3611,18 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #define PWM5_CCMREG CCMR1
 #endif
 #if (PWM5_TIMER == 1)
-#define PWM5_ENOUTPUT            \
-	{                            \
+#define PWM5_ENOUTPUT        \
+	{                          \
 		TIM1->BDTR |= (1 << 15); \
 	}
 #elif (PWM5_TIMER == 8)
-#define PWM5_ENOUTPUT            \
-	{                            \
+#define PWM5_ENOUTPUT        \
+	{                          \
 		TIM8->BDTR |= (1 << 15); \
 	}
 #else
 #define PWM5_ENOUTPUT \
-	{                 \
+	{                   \
 	}
 #endif
 #define PWM5_CCR __ccr__(PWM5_CHANNEL)
@@ -3665,18 +3664,18 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #define PWM6_CCMREG CCMR1
 #endif
 #if (PWM6_TIMER == 1)
-#define PWM6_ENOUTPUT            \
-	{                            \
+#define PWM6_ENOUTPUT        \
+	{                          \
 		TIM1->BDTR |= (1 << 15); \
 	}
 #elif (PWM6_TIMER == 8)
-#define PWM6_ENOUTPUT            \
-	{                            \
+#define PWM6_ENOUTPUT        \
+	{                          \
 		TIM8->BDTR |= (1 << 15); \
 	}
 #else
 #define PWM6_ENOUTPUT \
-	{                 \
+	{                   \
 	}
 #endif
 #define PWM6_CCR __ccr__(PWM6_CHANNEL)
@@ -3718,18 +3717,18 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #define PWM7_CCMREG CCMR1
 #endif
 #if (PWM7_TIMER == 1)
-#define PWM7_ENOUTPUT            \
-	{                            \
+#define PWM7_ENOUTPUT        \
+	{                          \
 		TIM1->BDTR |= (1 << 15); \
 	}
 #elif (PWM7_TIMER == 8)
-#define PWM7_ENOUTPUT            \
-	{                            \
+#define PWM7_ENOUTPUT        \
+	{                          \
 		TIM8->BDTR |= (1 << 15); \
 	}
 #else
 #define PWM7_ENOUTPUT \
-	{                 \
+	{                   \
 	}
 #endif
 #define PWM7_CCR __ccr__(PWM7_CHANNEL)
@@ -3771,18 +3770,18 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #define PWM8_CCMREG CCMR1
 #endif
 #if (PWM8_TIMER == 1)
-#define PWM8_ENOUTPUT            \
-	{                            \
+#define PWM8_ENOUTPUT        \
+	{                          \
 		TIM1->BDTR |= (1 << 15); \
 	}
 #elif (PWM8_TIMER == 8)
-#define PWM8_ENOUTPUT            \
-	{                            \
+#define PWM8_ENOUTPUT        \
+	{                          \
 		TIM8->BDTR |= (1 << 15); \
 	}
 #else
 #define PWM8_ENOUTPUT \
-	{                 \
+	{                   \
 	}
 #endif
 #define PWM8_CCR __ccr__(PWM8_CHANNEL)
@@ -3824,18 +3823,18 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #define PWM9_CCMREG CCMR1
 #endif
 #if (PWM9_TIMER == 1)
-#define PWM9_ENOUTPUT            \
-	{                            \
+#define PWM9_ENOUTPUT        \
+	{                          \
 		TIM1->BDTR |= (1 << 15); \
 	}
 #elif (PWM9_TIMER == 8)
-#define PWM9_ENOUTPUT            \
-	{                            \
+#define PWM9_ENOUTPUT        \
+	{                          \
 		TIM8->BDTR |= (1 << 15); \
 	}
 #else
 #define PWM9_ENOUTPUT \
-	{                 \
+	{                   \
 	}
 #endif
 #define PWM9_CCR __ccr__(PWM9_CHANNEL)
@@ -3877,18 +3876,18 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #define PWM10_CCMREG CCMR1
 #endif
 #if (PWM10_TIMER == 1)
-#define PWM10_ENOUTPUT           \
-	{                            \
+#define PWM10_ENOUTPUT       \
+	{                          \
 		TIM1->BDTR |= (1 << 15); \
 	}
 #elif (PWM10_TIMER == 8)
-#define PWM10_ENOUTPUT           \
-	{                            \
+#define PWM10_ENOUTPUT       \
+	{                          \
 		TIM8->BDTR |= (1 << 15); \
 	}
 #else
 #define PWM10_ENOUTPUT \
-	{                  \
+	{                    \
 	}
 #endif
 #define PWM10_CCR __ccr__(PWM10_CHANNEL)
@@ -3930,18 +3929,18 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #define PWM11_CCMREG CCMR1
 #endif
 #if (PWM11_TIMER == 1)
-#define PWM11_ENOUTPUT           \
-	{                            \
+#define PWM11_ENOUTPUT       \
+	{                          \
 		TIM1->BDTR |= (1 << 15); \
 	}
 #elif (PWM11_TIMER == 8)
-#define PWM11_ENOUTPUT           \
-	{                            \
+#define PWM11_ENOUTPUT       \
+	{                          \
 		TIM8->BDTR |= (1 << 15); \
 	}
 #else
 #define PWM11_ENOUTPUT \
-	{                  \
+	{                    \
 	}
 #endif
 #define PWM11_CCR __ccr__(PWM11_CHANNEL)
@@ -3983,18 +3982,18 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #define PWM12_CCMREG CCMR1
 #endif
 #if (PWM12_TIMER == 1)
-#define PWM12_ENOUTPUT           \
-	{                            \
+#define PWM12_ENOUTPUT       \
+	{                          \
 		TIM1->BDTR |= (1 << 15); \
 	}
 #elif (PWM12_TIMER == 8)
-#define PWM12_ENOUTPUT           \
-	{                            \
+#define PWM12_ENOUTPUT       \
+	{                          \
 		TIM8->BDTR |= (1 << 15); \
 	}
 #else
 #define PWM12_ENOUTPUT \
-	{                  \
+	{                    \
 	}
 #endif
 #define PWM12_CCR __ccr__(PWM12_CHANNEL)
@@ -4036,18 +4035,18 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #define PWM13_CCMREG CCMR1
 #endif
 #if (PWM13_TIMER == 1)
-#define PWM13_ENOUTPUT           \
-	{                            \
+#define PWM13_ENOUTPUT       \
+	{                          \
 		TIM1->BDTR |= (1 << 15); \
 	}
 #elif (PWM13_TIMER == 8)
-#define PWM13_ENOUTPUT           \
-	{                            \
+#define PWM13_ENOUTPUT       \
+	{                          \
 		TIM8->BDTR |= (1 << 15); \
 	}
 #else
 #define PWM13_ENOUTPUT \
-	{                  \
+	{                    \
 	}
 #endif
 #define PWM13_CCR __ccr__(PWM13_CHANNEL)
@@ -4089,18 +4088,18 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #define PWM14_CCMREG CCMR1
 #endif
 #if (PWM14_TIMER == 1)
-#define PWM14_ENOUTPUT           \
-	{                            \
+#define PWM14_ENOUTPUT       \
+	{                          \
 		TIM1->BDTR |= (1 << 15); \
 	}
 #elif (PWM14_TIMER == 8)
-#define PWM14_ENOUTPUT           \
-	{                            \
+#define PWM14_ENOUTPUT       \
+	{                          \
 		TIM8->BDTR |= (1 << 15); \
 	}
 #else
 #define PWM14_ENOUTPUT \
-	{                  \
+	{                    \
 	}
 #endif
 #define PWM14_CCR __ccr__(PWM14_CHANNEL)
@@ -4142,18 +4141,18 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #define PWM15_CCMREG CCMR1
 #endif
 #if (PWM15_TIMER == 1)
-#define PWM15_ENOUTPUT           \
-	{                            \
+#define PWM15_ENOUTPUT       \
+	{                          \
 		TIM1->BDTR |= (1 << 15); \
 	}
 #elif (PWM15_TIMER == 8)
-#define PWM15_ENOUTPUT           \
-	{                            \
+#define PWM15_ENOUTPUT       \
+	{                          \
 		TIM8->BDTR |= (1 << 15); \
 	}
 #else
 #define PWM15_ENOUTPUT \
-	{                  \
+	{                    \
 	}
 #endif
 #define PWM15_CCR __ccr__(PWM15_CHANNEL)
@@ -4465,8 +4464,8 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #ifndef I2C_PORT
 #define I2C_PORT 1
 #endif
-#define I2C_IRQ __helper__(I2C,I2C_PORT,_EV_IRQn)
-#define I2C_ISR __helper__(I2C,I2C_PORT,_EV_IRQHandler)
+#define I2C_IRQ __helper__(I2C, I2C_PORT, _EV_IRQn)
+#define I2C_ISR __helper__(I2C, I2C_PORT, _EV_IRQHandler)
 
 #define I2C_APBEN __helper__(RCC_APB1ENR_I2C, I2C_PORT, EN)
 #define I2C_REG __helper__(I2C, I2C_PORT, )
@@ -4484,20 +4483,6 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #define I2C_FREQ 400000UL
 #endif
 
-// I2C freq
-#if (I2C_FREQ < 5000UL)
-#define I2C_PRESC 3
-#define I2C_DIV (HAL_RCC_GetPCLK1Freq() / (I2C_FREQ << 6))
-#elif (I2C_FREQ < 20000UL)
-#define I2C_PRESC 2
-#define I2C_DIV (HAL_RCC_GetPCLK1Freq() / (I2C_FREQ << 4))
-#elif (I2C_FREQ < 80000UL)
-#define I2C_PRESC 1
-#define I2C_DIV (HAL_RCC_GetPCLK1Freq() / (I2C_FREQ << 2))
-#else
-#define I2C_PRESC 0
-#define I2C_DIV (HAL_RCC_GetPCLK1Freq() / I2C_FREQ)
-#endif
 #endif
 
 // Timer registers
@@ -4649,45 +4634,45 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #define TOGGLEFLAG(x, y) ((x) ^= (y))
 #endif
 
-#define mcu_config_input(diopin)                                                                                        \
-	{                                                                                                                   \
+#define mcu_config_input(diopin)                                                                                    \
+	{                                                                                                                 \
 		RCC->APB2ENR |= __indirect__(diopin, APB2EN);                                                                   \
 		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << (__indirect__(diopin, CROFF) << 2U));   \
 		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_IN_FLOAT << (__indirect__(diopin, CROFF) << 2U)); \
 	}
 
-#define mcu_config_output(diopin)                                                                                           \
-	{                                                                                                                       \
+#define mcu_config_output(diopin)                                                                                       \
+	{                                                                                                                     \
 		RCC->APB2ENR |= __indirect__(diopin, APB2EN);                                                                       \
 		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << (__indirect__(diopin, CROFF) << 2U));       \
 		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_OUT_PP_50MHZ << (__indirect__(diopin, CROFF) << 2U)); \
 	}
 
-#define mcu_config_output_af(diopin, mode)                                                                            \
-	{                                                                                                                 \
+#define mcu_config_output_af(diopin, mode)                                                                        \
+	{                                                                                                               \
 		RCC->APB2ENR |= RCC_APB2ENR_AFIOEN;                                                                           \
 		RCC->APB2ENR |= __indirect__(diopin, APB2EN);                                                                 \
 		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << (__indirect__(diopin, CROFF) << 2U)); \
 		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (mode << (__indirect__(diopin, CROFF) << 2U));        \
 	}
 
-#define mcu_config_input_af(diopin)                                                                                     \
-	{                                                                                                                   \
+#define mcu_config_input_af(diopin)                                                                                 \
+	{                                                                                                                 \
 		RCC->APB2ENR |= RCC_APB2ENR_AFIOEN;                                                                             \
 		RCC->APB2ENR |= __indirect__(diopin, APB2EN);                                                                   \
 		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << (__indirect__(diopin, CROFF) << 2U));   \
 		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_IN_FLOAT << (__indirect__(diopin, CROFF) << 2U)); \
 	}
 
-#define mcu_config_pullup(diopin)                                                                                     \
-	{                                                                                                                 \
+#define mcu_config_pullup(diopin)                                                                                 \
+	{                                                                                                               \
 		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << (__indirect__(diopin, CROFF) << 2U)); \
 		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_IN_PUP << (__indirect__(diopin, CROFF) << 2U)); \
 		__indirect__(diopin, GPIO)->BSRR = (1U << __indirect__(diopin, BIT));                                         \
 	}
 
-#define mcu_config_pwm(diopin, freq)                                                                                             \
-	{                                                                                                                            \
+#define mcu_config_pwm(diopin, freq)                                                                                         \
+	{                                                                                                                          \
 		RCC->APB2ENR |= 0x1U;                                                                                                    \
 		__indirect__(diopin, ENREG) |= __indirect__(diopin, APBEN);                                                              \
 		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << ((__indirect__(diopin, CROFF)) << 2U));          \
@@ -4703,8 +4688,8 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 		__indirect__(diopin, ENOUTPUT);                                                                                          \
 	}
 
-#define mcu_config_input_isr(diopin)                                                                            \
-	{                                                                                                           \
+#define mcu_config_input_isr(diopin)                                                                        \
+	{                                                                                                         \
 		RCC->APB2ENR |= 0x1U;                                                                                   \
 		AFIO->EXTICR[(__indirect__(diopin, EXTIREG))] &= ~(0xF << (((__indirect__(diopin, BIT)) & 0x03) << 2)); \
 		AFIO->EXTICR[(__indirect__(diopin, EXTIREG))] |= (__indirect__(diopin, EXTIVAL));                       \
@@ -4716,8 +4701,8 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 		NVIC_EnableIRQ(__indirect__(diopin, IRQ));                                                              \
 	}
 
-#define mcu_config_analog(diopin)                                                                                       \
-	{                                                                                                                   \
+#define mcu_config_analog(diopin)                                                                                   \
+	{                                                                                                                 \
 		RCC->CFGR &= ~(RCC_CFGR_ADCPRE);                                                                                \
 		RCC->CFGR |= RCC_CFGR_ADCPRE_DIV8;                                                                              \
 		RCC->APB2ENR |= (RCC_APB2ENR_ADC1EN | __indirect__(diopin, APB2EN) | 0x1U);                                     \
@@ -4729,10 +4714,10 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 		ADC1->CR2 |= ADC_CR2_ADON;	 /*enable adc*/                                                                     \
 		ADC1->CR2 |= ADC_CR2_RSTCAL; /*reset calibration*/                                                              \
 		while (ADC1->CR2 & ADC_CR2_RSTCAL)                                                                              \
-			;                                                                                                           \
+			;                                                                                                             \
 		ADC1->CR2 |= ADC_CR2_CAL; /*start calibration*/                                                                 \
 		while (ADC1->CR2 & ADC_CR2_CAL)                                                                                 \
-			;                                                                                                           \
+			;                                                                                                             \
 		ADC1->CR2 |= (ADC_CR2_EXTSEL | ADC_CR2_EXTTRIG); /*external start trigger software*/                            \
 	}
 
@@ -4741,31 +4726,31 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #define mcu_set_output(diopin) (__indirect__(diopin, GPIO)->BSRR = (1U << __indirect__(diopin, BIT)))
 #define mcu_clear_output(diopin) (__indirect__(diopin, GPIO)->BRR = (1U << __indirect__(diopin, BIT)))
 #define mcu_toggle_output(diopin) (TOGGLEBIT(__indirect__(diopin, GPIO)->ODR, __indirect__(diopin, BIT)))
-#define mcu_set_pwm(diopin, pwmvalue)                                                                                                           \
-	{                                                                                                                                           \
+#define mcu_set_pwm(diopin, pwmvalue)                                                                                                       \
+	{                                                                                                                                         \
 		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR) = (uint16_t)((((uint32_t)__indirect__(diopin, TIMREG)->ARR) * pwmvalue) / 255); \
 	}
 #define mcu_get_pwm(diopin) ((uint8_t)((((uint32_t)__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR)) * 255) / ((uint32_t)__indirect__(diopin, TIMREG)->ARR)))
 
-#define mcu_get_analog(diopin)                      \
-	({                                              \
+#define mcu_get_analog(diopin)                  \
+	({                                            \
 		ADC1->SQR3 = __indirect__(diopin, CHANNEL); \
 		ADC1->CR2 |= ADC_CR2_SWSTART;               \
 		ADC1->CR2 &= ~ADC_CR2_SWSTART;              \
 		while (!(ADC1->SR & ADC_SR_EOS))            \
-			;                                       \
+			;                                         \
 		ADC1->SR &= ~ADC_SR_EOS;                    \
-		(0x3FF & (ADC1->DR >> 2));                   \
+		(0x3FF & (ADC1->DR >> 2));                  \
 	})
 
-#define mcu_spi_xmit(X)                                               \
-	({                                                                \
+#define mcu_spi_xmit(X)                                           \
+	({                                                              \
 		SPI_REG->DR = X;                                              \
 		while (!(SPI1->SR & SPI_SR_TXE) && !(SPI1->SR & SPI_SR_RXNE)) \
-			;                                                         \
+			;                                                           \
 		uint8_t data = SPI_REG->DR;                                   \
 		while (SPI1->SR & SPI_SR_BSY)                                 \
-			;                                                         \
+			;                                                           \
 		data;                                                         \
 	})
 
@@ -4780,17 +4765,18 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #endif
 
 	extern volatile bool stm32_global_isr_enabled;
-#define mcu_enable_global_isr()          \
-	{                                    \
+#define mcu_enable_global_isr()      \
+	{                                  \
 		stm32_global_isr_enabled = true; \
 		__enable_irq();                  \
 	}
-#define mcu_disable_global_isr()          \
-	{                                     \
+#define mcu_disable_global_isr()      \
+	{                                   \
 		stm32_global_isr_enabled = false; \
 		__disable_irq();                  \
 	}
 #define mcu_get_global_isr() stm32_global_isr_enabled
+#define mcu_free_micros() ({                                                                                                                                                                (1000UL - (SysTick->VAL * 1000UL / SysTick->LOAD)); })
 
 #define GPIO_RESET 0xfU
 #define GPIO_OUT_PP_50MHZ 0x3U
@@ -4805,8 +4791,8 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 /**
  * starts the timeout. Once hit the the respective callback is called
  * */
-#define mcu_start_timeout()           \
-	({                                \
+#define mcu_start_timeout()       \
+	({                              \
 		ONESHOT_TIMER_REG->SR = 0;    \
 		ONESHOT_TIMER_REG->CNT = 0;   \
 		ONESHOT_TIMER_REG->DIER |= 1; \

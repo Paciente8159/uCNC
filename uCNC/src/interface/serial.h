@@ -56,8 +56,8 @@ extern "C"
 	void serial_init();
 
 	void serial_stream_register(serial_stream_t *stream);
-	void serial_stream_change(serial_stream_t *stream);
-	void serial_stream_readonly(stream_getc_cb getc_cb, stream_available_cb available_cb, stream_clear_cb clear_cb);
+	bool serial_stream_change(serial_stream_t *stream);
+	bool serial_stream_readonly(stream_getc_cb getc_cb, stream_available_cb available_cb, stream_clear_cb clear_cb);
 	void serial_stream_eeprom(uint16_t address);
 
 	void serial_broadcast(bool enable);
@@ -91,11 +91,11 @@ extern "C"
 
 #ifdef ENABLE_DEBUG_STREAM
 #ifndef DEBUG_STREAM
-extern serial_stream_t *default_stream;
+	extern serial_stream_t *default_stream;
 #define DEBUG_STREAM default_stream
 #endif
 
-extern void debug_putc(char c);
+	extern void debug_putc(char c);
 #define DEBUG_PUTC(c) debug_putc(c)
 #define DEBUG_STR(__s) print_str(debug_putc, __s)
 #define DEBUG_BYTES(data, count) print_bytes(debug_putc, data, count)

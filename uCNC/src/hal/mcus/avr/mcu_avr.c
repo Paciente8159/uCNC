@@ -418,8 +418,8 @@ ISR(COM_TX_vect, ISR_BLOCK)
 DECL_BUFFER(uint8_t, uart2_rx, RX_BUFFER_SIZE);
 ISR(COM2_RX_vect, ISR_BLOCK)
 {
-#if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
 	uint8_t c = COM2_INREG;
+#if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
 	if (mcu_com_rx_cb(c))
 	{
 		if (BUFFER_FULL(uart2_rx))
@@ -431,7 +431,16 @@ ISR(COM2_RX_vect, ISR_BLOCK)
 		BUFFER_STORE(uart2_rx);
 	}
 #else
-	mcu_uart_rx_cb(COM2_INREG);
+	mcu_uart2_rx_cb(c);
+#ifndef UART2_DISABLE_BUFFER
+	if (BUFFER_FULL(uart2_rx))
+	{
+		c = OVF;
+	}
+
+	*(BUFFER_NEXT_FREE(uart2_rx)) = c;
+	BUFFER_STORE(uart2_rx);
+#endif
 #endif
 }
 
@@ -859,10 +868,9 @@ uint32_t mcu_millis()
 
 uint32_t mcu_micros()
 {
-	uint32_t rtc_elapsed = RTC_TCNT;
 	uint32_t ms = mcu_runtime_ms;
 
-	return ((rtc_elapsed * 1000) / RTC_OCRA) + (ms * 1000);
+	return ((ms * 1000) + mcu_free_micros());
 }
 
 void mcu_start_rtc()
@@ -1064,18 +1072,23 @@ static void mcu_i2c_write_stop(bool *stop)
 {
 	if (*stop)
 	{
-		uint32_t ms_timeout = mcu_millis() + 25;
+		int32_t ms_timeout = 25;
 
 		TWCR = (1 << TWINT) | (1 << TWSTO) | (1 << TWEN);
-		while ((TWCR & (1 << TWSTO)) && (ms_timeout > mcu_millis()))
-			;
+		__TIMEOUT_MS__(ms_timeout)
+		{
+			if (!(TWCR & (1 << TWSTO)))
+			{
+				return;
+			}
+		}
 	}
 }
 
-static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
+static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop, uint32_t ms_timeout)
 {
 	bool stop __attribute__((__cleanup__(mcu_i2c_write_stop))) = send_stop;
-	uint32_t ms_timeout = mcu_millis() + 25;
+	int32_t timeout = ms_timeout;
 	if (send_start)
 	{
 		// init
@@ -1092,15 +1105,20 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 		}
 
 		TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN);
-		while (!(TWCR & (1 << TWINT)))
+		__TIMEOUT_MS__(timeout)
 		{
-			if (ms_timeout < mcu_millis())
+			if (TWCR & (1 << TWINT))
 			{
-				stop = true;
-				return I2C_NOTOK;
+				if (TW_STATUS != TW_START && TW_STATUS != TW_REP_START)
+				{
+					stop = true;
+					return I2C_NOTOK;
+				}
+				break;
 			}
 		}
-		if (TW_STATUS != TW_START && TW_STATUS != TW_REP_START)
+
+		__TIMEOUT_ASSERT__(timeout)
 		{
 			stop = true;
 			return I2C_NOTOK;
@@ -1109,64 +1127,64 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 
 	TWDR = data;
 	TWCR = (1 << TWINT) | (1 << TWEN);
-	while (!(TWCR & (1 << TWINT)))
+	timeout = ms_timeout;
+	__TIMEOUT_MS__(timeout)
 	{
-		if (ms_timeout < mcu_millis())
+		if (TWCR & (1 << TWINT))
 		{
-			stop = true;
-			return I2C_NOTOK;
+			switch (TW_STATUS)
+			{
+			case TW_MT_SLA_ACK:
+			case TW_MT_DATA_ACK:
+			case TW_MR_SLA_ACK:
+			case TW_MR_DATA_ACK:
+				break;
+			default:
+				stop = true;
+				return I2C_NOTOK;
+			}
+
+			return I2C_OK;
 		}
 	}
 
-	switch (TW_STATUS)
-	{
-	case TW_MT_SLA_ACK:
-	case TW_MT_DATA_ACK:
-	case TW_MR_SLA_ACK:
-	case TW_MR_DATA_ACK:
-		break;
-	default:
-		stop = true;
-		return I2C_NOTOK;
-	}
-
-	return I2C_OK;
+	stop = true;
+	return I2C_NOTOK;
 }
 
 static uint8_t mcu_i2c_read(uint8_t *data, bool with_ack, bool send_stop, uint32_t ms_timeout)
 {
 	*data = 0xFF;
-	ms_timeout += mcu_millis();
 	bool stop __attribute__((__cleanup__(mcu_i2c_write_stop))) = send_stop;
 
 	TWCR = (1 << TWINT) | (1 << TWEN) | ((!with_ack) ? 0 : (1 << TWEA));
-	while (!(TWCR & (1 << TWINT)))
+	__TIMEOUT_MS__(ms_timeout)
 	{
-		if (ms_timeout < mcu_millis())
+		if (TWCR & (1 << TWINT))
 		{
-			stop = true;
-			return I2C_NOTOK;
+			*data = TWDR;
+			return I2C_OK;
 		}
 	}
 
-	*data = TWDR;
-	return I2C_OK;
+	stop = true;
+	return I2C_NOTOK;
 }
 
 #ifndef mcu_i2c_send
 // master sends command to slave
-uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool release)
+uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool release, uint32_t ms_timeout)
 {
 	if (data && datalen)
 	{
-		if (mcu_i2c_write(address << 1, true, false) == I2C_OK) // start, send address, write
+		if (mcu_i2c_write(address << 1, true, false, ms_timeout) == I2C_OK) // start, send address, write
 		{
 			// send data, stop
 			do
 			{
 				datalen--;
 				bool last = (datalen == 0);
-				if (mcu_i2c_write(*data, false, (release & last)) != I2C_OK)
+				if (mcu_i2c_write(*data, false, (release & last), ms_timeout) != I2C_OK)
 				{
 					return I2C_NOTOK;
 				}
@@ -1188,7 +1206,7 @@ uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_
 {
 	if (data && datalen)
 	{
-		if (mcu_i2c_write((address << 1) | 0x01, true, false) == I2C_OK) // start, send address, write
+		if (mcu_i2c_write((address << 1) | 0x01, true, false, ms_timeout) == I2C_OK) // start, send address, write
 		{
 			do
 			{
@@ -1264,7 +1282,7 @@ ISR(TWI_vect, ISR_BLOCK)
 	case TW_SR_ARB_LOST_SLA_ACK:
 	case TW_SR_ARB_LOST_GCALL_ACK:
 		index++;
-		__attribute__((fallthrough));
+		__FALL_THROUGH__
 	case TW_SR_STOP: // stop or repeated start condition received
 		// sends the data
 		if (i < I2C_SLAVE_BUFFER_SIZE)
@@ -1285,7 +1303,7 @@ ISR(TWI_vect, ISR_BLOCK)
 	case TW_ST_SLA_ACK:
 	case TW_ST_ARB_LOST_SLA_ACK:
 		i = 0;
-		__attribute__((fallthrough));
+		__FALL_THROUGH__
 	case TW_ST_DATA_ACK: // byte sent, ack returned
 		// copy data to output register
 		TWDR = mcu_i2c_buffer[i++];

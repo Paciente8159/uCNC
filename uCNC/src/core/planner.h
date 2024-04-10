@@ -87,9 +87,7 @@ extern "C"
 	float planner_get_block_top_speed(float exit_speed_sqr);
 #if TOOL_COUNT > 0
 	int16_t planner_get_spindle_speed(float scale);
-	float planner_get_previous_spindle_speed(void);
 	uint8_t planner_get_coolant(void);
-	uint8_t planner_get_previous_coolant(void);
 #endif
 	void planner_discard_block(void);
 	void planner_add_line(motion_data_t *block_data);
@@ -102,6 +100,8 @@ extern "C"
 	void planner_rapid_feed_ovr(uint8_t value);
 #if TOOL_COUNT > 0
 	void planner_spindle_ovr(uint8_t value);
+	void planner_spindle_ovr_toggle(void);
+	void planner_spindle_ovr_reset(void);
 	uint8_t planner_coolant_ovr_toggle(uint8_t value);
 	void planner_coolant_ovr_reset(void);
 #endif

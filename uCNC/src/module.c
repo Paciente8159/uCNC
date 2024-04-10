@@ -18,7 +18,6 @@
 */
 
 #include "cnc.h"
-#include "modules/tmcdriver.h"
 #include "modules/digimstep.h"
 #include "modules/digipot.h"
 #include "modules/encoder.h"
@@ -60,10 +59,6 @@ void mod_init(void)
 	LOAD_MODULE(encoder);
 #endif
 
-#ifdef ENABLE_TMC_DRIVERS
-	LOAD_MODULE(tmcdriver);
-#endif
-
 #ifdef ENABLE_LASER_PPI
 	LOAD_MODULE(laser_ppi);
 #endif
@@ -73,10 +68,4 @@ void mod_init(void)
 #endif
 
 	load_modules();
-
-// load modules after all other modules
-// web server is started here after all endpoints are added
-#if defined(ENABLE_WIFI) && defined(MCU_HAS_ENDPOINTS)
-	LOAD_MODULE(endpoint);
-#endif
 }

@@ -91,7 +91,7 @@ extern "C"
 	 */
 	void kinematics_apply_reverse_transform(float *axis);
 
-		/**
+	/**
 	 * @brief Converts from machine absolute coordinates to step position.
 	 * This calls kinematics_apply_inverse after applying any custom geometry transformation (like skew compensation)
 	 *

@@ -28,8 +28,9 @@ extern "C"
 #define RT_CMD_CLEAR 0
 
 #define RT_CMD_RESET 1
-#define RT_CMD_CYCLE_START 2
-#define RT_CMD_REPORT 4
+#define RT_CMD_JOG_CANCEL 2
+#define RT_CMD_CYCLE_START 4
+#define RT_CMD_REPORT 8
 
 // feed_ovr_cmd
 #define RT_CMD_FEED_100 1
@@ -71,21 +72,21 @@ extern "C"
  *
  */
 // current cnc states (multiple can be active/overlapped at the same time)
-#define EXEC_IDLE 0															// All flags cleared
-#define EXEC_RUN 1															// Motions are being executed
-#define EXEC_HOLD 2															// Feed hold is active
-#define EXEC_JOG 4															// Jogging in execution
-#define EXEC_HOMING 8														// Homing in execution
-#define EXEC_DOOR 16														// Safety door open
-#define EXEC_UNHOMED 32														// Machine is not homed or lost position due to abrupt stop
-#define EXEC_LIMITS 64														// Limits hit
-#define EXEC_KILL 128														// Emergency stop
-#define EXEC_HOMING_HIT (EXEC_HOMING | EXEC_LIMITS)							// Limit switch is active during a homing motion
-#define EXEC_INTERLOCKING_FAIL (EXEC_LIMITS | EXEC_KILL)					// Interlocking check failed
-#define EXEC_ALARM (EXEC_UNHOMED | EXEC_INTERLOCKING_FAIL)					// System alarms
-#define EXEC_RESET_LOCKED (EXEC_ALARM | EXEC_DOOR | EXEC_HOLD)				// System reset locked
-#define EXEC_GCODE_LOCKED (EXEC_ALARM | EXEC_DOOR | EXEC_JOG) 				// Gcode is locked by an alarm or any special motion state
-#define EXEC_ALLACTIVE 255													// All states
+#define EXEC_IDLE 0																						 // All flags cleared
+#define EXEC_RUN 1																						 // Motions are being executed
+#define EXEC_HOLD 2																						 // Feed hold is active
+#define EXEC_JOG 4																						 // Jogging in execution
+#define EXEC_HOMING 8																					 // Homing in execution
+#define EXEC_DOOR 16																					 // Safety door open
+#define EXEC_UNHOMED 32																				 // Machine is not homed or lost position due to abrupt stop
+#define EXEC_LIMITS 64																				 // Limits hit
+#define EXEC_KILL 128																					 // Emergency stop
+#define EXEC_HOMING_HIT (EXEC_HOMING | EXEC_LIMITS)						 // Limit switch is active during a homing motion
+#define EXEC_INTERLOCKING_FAIL (EXEC_LIMITS | EXEC_KILL)			 // Interlocking check failed
+#define EXEC_ALARM (EXEC_UNHOMED | EXEC_INTERLOCKING_FAIL)		 // System alarms
+#define EXEC_RESET_LOCKED (EXEC_ALARM | EXEC_DOOR | EXEC_HOLD) // System reset locked
+#define EXEC_GCODE_LOCKED (EXEC_ALARM | EXEC_DOOR | EXEC_JOG)	 // Gcode is locked by an alarm or any special motion state
+#define EXEC_ALLACTIVE 255																		 // All states
 
 // this is a new list of states that can be used more easilly to get the current "Grbl" state
 #define GRBL_STATE_CODE(C, M) ((C << 3) | M)
@@ -183,6 +184,7 @@ extern "C"
 	void cnc_stop(void);
 	uint8_t cnc_unlock(bool force);
 	void cnc_delay_ms(uint32_t miliseconds);
+	void cnc_dwell_ms(uint32_t miliseconds);
 	void cnc_store_motion(void);
 	void cnc_restore_motion(void);
 	uint8_t cnc_parse_cmd(void);
