@@ -4,17 +4,17 @@ This wiring can be completely modified by the user.
 
 | **Generic**    | **Recommended assignment (not mandatory)**    |
 | ------   | ------    |
-| DOUT0   | SPINDLE_DIR or SPINDLE_FWD or SPINDLE_POWER_RELAY    |
-| DOUT1   | SPINDLE_REV   |
-| DOUT2   | COOLANT_FLOOD    |
-| DOUT3   | COOLANT_MIST    |
-| DOUT4   |     |
-| DOUT5   |     |
-| DOUT6   |     |
-| DOUT7   |     |
-| DOUT8   |     |
-| DOUT9   |     |
-| DOUT10   |     |
+| DOUT0   | SPINDLE_DIR or SPINDLE_FWD or SPINDLE_POWER_RELAY or LASER_PPI |
+| DOUT1   | SPINDLE_REV |
+| DOUT2   | COOLANT_FLOOD |
+| DOUT3   | COOLANT_MIST |
+| DOUT4   | DISPLAY CLK |
+| DOUT5   | DISPLAY DAT    |
+| DOUT6   | DISPLAY CS    |
+| DOUT7   | DISPLAY BEEP    |
+| DOUT8   | IC74HC595_DATA    |
+| DOUT9   | IC74HC595_CLK    |
+| DOUT10   | IC74HC595_LATCH    |
 | DOUT11   | STEPPER_DIGIPOT_CS    |
 | DOUT12   | STEPPER0_MSTEP1    |
 | DOUT13   | STEPPER1_MSTEP1    |
@@ -49,12 +49,12 @@ This wiring can be completely modified by the user.
 | DIN10   | ENC2_DIR    |
 | DIN11   | ENC3_DIR    |
 | DIN12   | ENC4_DIR    |
-| DIN13   | ENC5_DIR    |
-| DIN14   | ENC6_DIR    |
-| DIN15   | ENC7_DIR    |
-| DIN16   |     |
-| DIN17   |     |
-| DIN18   |     |
+| DIN13   | ENC5_DIR or PLASMA_ARC_OK    |
+| DIN14   | ENC6_DIR  or PLASMA_DOWN    |
+| DIN15   | ENC7_DIR  or PLASMA_UP   |
+| DIN16   | DISPLAY ENC BTN    |
+| DIN17   | DISPLAY ENC1    |
+| DIN18   | DISPLAY ENC2    |
 | DIN19   |     |
 | DIN20   | STEPPER0_UART_RX    |
 | DIN21   | STEPPER1_UART_RX    |
@@ -66,5 +66,5 @@ This wiring can be completely modified by the user.
 | DIN27   | STEPPER7_UART_RX    |
 | DIN28   | SOFT_UART_RX    |
 | DIN29   | SOFT_SPI_SDI or TMC_SPI_SDI or STEPPER_DIGIPOT_SDI    |
-| DIN30   | SOFT_I2C_SCL    |
-| DIN31   | SOFT_I2C_SDA    |
+| DIN30   | SOFT_I2C_CLK    |
+| DIN31   | SOFT_I2C_DATA    |

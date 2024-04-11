@@ -53,32 +53,42 @@ extern "C"
 
 // Uncomment to enable weak pull up resistors for limit switch
 // If the pin is not defined in the board this will be ignored
-#define LIMIT_X_PULLUP
-#define LIMIT_Y_PULLUP
-#define LIMIT_Z_PULLUP
-#define LIMIT_X2_PULLUP
-#define LIMIT_Y2_PULLUP
-#define LIMIT_Z2_PULLUP
-#define LIMIT_A_PULLUP
-#define LIMIT_B_PULLUP
-#define LIMIT_C_PULLUP
+#define LIMIT_X_PULLUP_ENABLE
+#define LIMIT_Y_PULLUP_ENABLE
+#define LIMIT_Z_PULLUP_ENABLE
+#define LIMIT_X2_PULLUP_ENABLE
+#define LIMIT_Y2_PULLUP_ENABLE
+#define LIMIT_Z2_PULLUP_ENABLE
+#define LIMIT_A_PULLUP_ENABLE
+#define LIMIT_B_PULLUP_ENABLE
+#define LIMIT_C_PULLUP_ENABLE
 
 // Uncomment to enable weak pull up resistor for probe
 // If the pin is not defined in the board this will be ignored
-// #define PROBE_PULLUP
+// #define PROBE_PULLUP_ENABLE
 
 // Uncomment to enable weak pull up resistors for control pins
 // If the pin is not defined in the board this will be ignored
-#define ESTOP_PULLUP
-#define SAFETY_DOOR_PULLUP
-#define FHOLD_PULLUP
-#define CS_RES_PULLUP
+#define ESTOP_PULLUP_ENABLE
+#define SAFETY_DOOR_PULLUP_ENABLE
+#define FHOLD_PULLUP_ENABLE
+#define CS_RES_PULLUP_ENABLE
+
+/**
+ * Uncomment this to use Y axis as a Z axis alias on 2 axis machines
+ * This allows the Gcode to expect X and Z coordinates in the parser
+ * **/
+// #define USE_Y_AS_Z_ALIAS
 
 /**
  * Uncomment this feature to enable tool length compensation
  */
-#if (!defined(AXIS_TOOL) && defined(AXIS_Z))
+#ifndef AXIS_TOOL
+#ifdef AXIS_Z
 #define AXIS_TOOL AXIS_Z
+#elif ((AXIS_COUNT == 2) && defined(USE_Y_AS_Z_ALIAS))
+#define AXIS_TOOL AXIS_Y
+#endif
 #endif
 
 /**
@@ -93,35 +103,264 @@ extern "C"
 // #define DISABLE_C_HOMING
 
 /**
- * Uncomment this feature to enable up to 2 dual drive axis
+ * Uncomment this feature to enable X and Y homing simultaneously
  */
-//#define ENABLE_DUAL_DRIVE_AXIS
-#ifdef ENABLE_DUAL_DRIVE_AXIS
-// defines the first dual drive capable axis
-// #define DUAL_DRIVE0_AXIS X
-// by default this will be rewired to STEPPER6 (if available on the board)
-// this can be uncommented to re-wire to an available (unused stepper other then 6)
-// #define DUAL_DRIVE0_STEPPER 6
-//  #define DUAL_DRIVE0_ENABLE_SELFSQUARING
+// #define ENABLE_XY_SIMULTANEOUS_HOMING
 
-// defines the first second drive capable axis
-//#define DUAL_DRIVE1_AXIS Y
-// by default this will be rewired to STEPPER7 (if available on the board)
-// this can be uncommented to re-wire to an available (unused stepper other then 7)
-// #define DUAL_DRIVE1_STEPPER 7
-// #define DUAL_DRIVE1_ENABLE_SELFSQUARING
+/**
+ * Rotational axis - force relative distances
+ * Enable this option if you want the rotation axis to work in relative distance mode only
+ * This will mean that no matter if the machine is working in absolute (G90) or relative (G91) coordinates
+ * the rotational axis will always calculate the motion in relative distance mode
+ *
+ */
+// #define AXIS_A_FORCE_RELATIVE_MODE
+// #define AXIS_B_FORCE_RELATIVE_MODE
+// #define AXIS_C_FORCE_RELATIVE_MODE
+
+/**
+ * Uncomment this feature to enable multi motor axis
+ * NOTE: If Laser PPI is enabled one of the stepper drivers position will be used by the laser controller
+ * Usually that is STEPPER<AXIS_COUNT> so if AXIS_COUNT=3, STEPPER3 will be used by laser PPI
+ */
+// #define ENABLE_MULTI_STEPPER_AXIS
+#ifdef ENABLE_MULTI_STEPPER_AXIS
+
+	/**
+	 * Configure each multi motor linear actuator.
+	 *
+	 * AXIS are the motion degrees of freedom of the machine in 3D space
+	 * STEP are the stepper controller drivers that are controlled by the the board
+	 * LINACT are the linear actuators that drive the machine motion. You can think of linear actuator as a combination of linear guide + motor
+	 *
+	 * Each AXIS is logically attached to a LINACT.
+	 * AXIS_X <-> LINACT0
+	 * AXIS_Y <-> LINACT1
+	 * etc..
+	 *
+	 * In some machines the coorelation between AXIS and LINACT is direct. For example cartesian machines the AXIS X motion is the result of motions of the LINACT0, AXIS Y of LINACT1, AXIS Z of LINACT2, etc.
+	 * On Core XY kinematics the same logic as the cartesian is applied (regarding AXIS and LINACT logic) although, AXIS X and Y motions are a combination of motions of both LINACT0 and LINAXCT1.
+	 * On Delta type machines the same logic as the cartesian is applied (regarding AXIS and LINACT logic) although, AXIS X, Y and Z are all a combination of motions of LINACT0, 1 and 2.
+	 *
+	 * As stated earlier LINACT is a combination of linear guide + motor. Usually a LINACT is defined as a single stepper motor.
+	 * But it can also be composed of multiple stepper motors (2, 3, 4, etc...)
+	 *
+	 * To enable this just define the LINACTx_IO_MASK as a combination of STEPx_IO_MASK's
+	 * **/
+
+	// defines a multi stepper linear actuator LINACT0
+	//  #define LINACT0_IO_MASK (STEP0_IO_MASK | STEP5_IO_MASK)
+
+	// defines a second multi stepper linear actuator LINACT1
+	//  #define LINACT1_IO_MASK (STEP1_IO_MASK | STEP6_IO_MASK)
+
+	// defines a second multi stepper linear actuator LINACT2
+	//  #define LINACT2_IO_MASK (STEP2_IO_MASK | STEP7_IO_MASK)
+
+	// there is no limit to the ammount of STEP IO that can be combined into a LINACT. For example it's possible to assign 4 independent STEP IO to a single LINACT
+	// #define LINACT2_IO_MASK (STEP2_IO_MASK | STEP5_IO_MASK | STEP6_IO_MASK | STEP7_IO_MASK)
+
+	/**
+	 * SELF SQUARING/AUTOLEVEL AXIS
+	 * Limits switches have a mask value that is equivalent to the STEPx that it controls.
+	 *
+	 * By default these mask values match the corresponding AXIS, LINACT, STEP, etc...
+	 *
+	 * STEPx			7		6		5		4		3		2		1		0
+	 * STEPx_IO_MASK	128		64		32		16		8		4		2		1
+	 * AXISx			-		-		C		B		C		Z		Y		X
+	 * LINACTx			-		-		5		4		3		2		1		0
+	 * LIMITx			-		-		C		B		A		Z&Z2	Y&Y2	X&X2
+	 *
+	 * LINACT with multiple STEP IO pulse all those IO in sync, but when homing it can stop independently as it hits the correspondent limit until all motors reach the desired home position.
+	 * To achieve that each each LIMITx_IO_MASK should be set to the corresponding STEP IO MASK that it controls
+	 *
+	 * For example to use STEP0 and STEP6 to drive the AXIS_X/LINACT0 you need to configure the correct LINACT0_IO_MASK and then to make LIMIT_X stop STEP0 and LIMIT_X2 stop STEP6 you need
+	 * to reassign LIMIT_X2 to STEP6 IO MASK do it like this
+	 *
+	 * #define LIMIT_X2_IO_MASK STEP6_IO_MASK
+	 *
+	 * **/
+
+	// #define ENABLE_AXIS_AUTOLEVEL
+
+#ifdef ENABLE_AXIS_AUTOLEVEL
+
+	// Uncomment to modify X2 limit mask value to match the X2 motor
+	// #define LIMIT_X2_IO_MASK STEP5_IO_MASK
+
+	// Uncomment to modify Y2 limit mask value to match the Y2 motor
+	// #define LIMIT_Y2_IO_MASK STEP6_IO_MASK
+
+	// Uncomment to modify Y2 limit mask value to match the Y2 motor
+	// #define LIMIT_Z2_IO_MASK STEP7_IO_MASK
+
 #endif
 
-/*
-	Tool definition
-	For any given tool the respective macro TOOLx (x from 1 to 16) must be created
-*/
+	/**
+	 * Advanced Multi-axis
+	 * The advantage of using this mask scheme is that it's possible to defined advanced custom self squaring/planning rigs
+	 * and complete reassing of unused axis limits to perform the task
+	 *
+	 * Let's assume a custom cartesian machine that has 3 axis with 5 motors and 5 limit switches with the following configuration
+	 *
+	 * Axis X - 1 motor/limit
+	 * Axis Y - 2 motors/limits (self squaring)
+	 * Axis Z - 3 motors/limits (self leveling - 3 point plane)
+	 *
+	 * By default, with the machine configured for a 3 axis machine 3 linear actuators are configured with one motor each. By default AXIS_X -> LINACT0 -> STEP0, AXIS_Y-> LINACT1 -> STEP1, etc...
+	 * One possibility would be to map the connections (from STEP0 to STEP5) as X,Y,Z,Y2,Z2,Z3.
+	 *
+	 * Let's assume the user also wants the connections to be made in the order X,Y,Y2,Z,Z2,Z3
+	 *
+	 *
+	 * Axis X does not require any special configuration. Uses the default settings for a single linear actuator with one motor and a limit switch
+	 * Axis Y requires a second STEPx output. Because we also want to reorder the connection we must define our custom LINACTx for the remaining axis like this
+	 *
+	 * // defines a custom LINACT1_IO_MASK to use STP1 and STEP2
+	 * #define LINACT1_IO_MASK (STEP1_IO_MASK | STEP2_IO_MASK)
+	 * // defines a custom LINACT1_IO_MASK to use STP3, STEP4 and STEP5
+	 * #define LINACT2_IO_MASK (STEP3_IO_MASK | STEP4_IO_MASK | STEP5_IO_MASK)
+	 *
+	 * Then let's configure the limits:
+	 *
+	 * Limits for AXIS X does not require any special configuration. Uses the default settings for a single linear actuator with one motor and a limit switch (uses LIMIT_X)
+	 * Limits for AXIS Y only require Limit Y2 to be reasigned to match STEP2 so in this case
+	 *
+	 * #define LIMIT_Y2_IO_MASK STEP2_IO_MASK
+	 *
+	 * And finally limits for AXIS Z will new to be reassigned to the matching STEPx. We will also need a 3rd limit. We will use LIMIT_A since AXIS_A is not used.
+	 *
+	 * // enable Z selfsquare/selfplane
+	 * #define LIMIT_Y_IO_MASK STEP3_IO_MASK
+	 * #define LIMIT_Y2_IO_MASK STEP4_IO_MASK
+	 * #define LIMIT_A_IO_MASK STEP5_IO_MASK
+	 *
+	 * There is still a final step that involve reassign LINACT2 limits to include the extra limit (LIMIT A) like this
+	 *
+	 * #define LINACT2_LIMIT_MASK (LIMIT_Y_IO_MASK | LIMIT_Y2_IO_MASK | LIMIT_A_IO_MASK)
+	 *
+	 * Also remember that ENABLE_AXIS_AUTOLEVEL should be enabled for this to work
+	 *
+	 * That is it.
+	 *
+	 * **/
 
+#endif
+
+	/*
+		Tool definition
+		For any given tool the respective macro TOOLx (x from 1 to 16) must be created
+		Tools must be assigned in sequential order
+		That is TOOL1, TOOL2 etc...
+		You can't skip tool numbers (for example define TOOL1 and TOOL3 without having a TOOL2)
+	*/
+
+/**
+ *
+ * Enables Laser PPI capabilities
+ *
+ * **/
+#ifdef ENABLE_LASER_PPI
+#define LASER_PPI PWM0
+// Uncomment to invert the output login on the LASER_PPI pin
+// #define INVERT_LASER_PPI_LOGIC
+#endif
+
+/**
+ *
+ * Tool pallete
+ * You can assign your tool pallete indexes here
+ * Up to 16 tools can be defined
+ * M6 command is available if TOOL_COUNT >= 2
+ *
+ * to set a tool you just need to define which tool will be in which index.
+ * For example: Set TOOL1 as laser_pwm
+ *
+ * #define TOOL1 laser_pwm
+ *
+ * Tools can be any of the built in tools available in /src/hal/tools/tools/ or you can use your own custom tool.
+ *
+ * **/
 // assign the tools from 1 to 16
+#if (TOOL_COUNT >= 1)
+// to allow build on virtual emulator
 #define TOOL1 spindle_pwm
-	// #define TOOL2 laser
-	//#define TOOL3 spindle_besc
-	//#define TOOL4 spindle_relay
+#endif
+#if (TOOL_COUNT >= 2)
+#define TOOL2 spindle_pwm
+#endif
+#if (TOOL_COUNT >= 3)
+#define TOOL3 spindle_pwm
+#endif
+#if (TOOL_COUNT >= 4)
+#define TOOL4 spindle_pwm
+#endif
+#if (TOOL_COUNT >= 5)
+#define TOOL5 spindle_pwm
+#endif
+#if (TOOL_COUNT >= 6)
+#define TOOL6 spindle_pwm
+#endif
+#if (TOOL_COUNT >= 7)
+#define TOOL7 spindle_pwm
+#endif
+#if (TOOL_COUNT >= 8)
+#define TOOL8 spindle_pwm
+#endif
+#if (TOOL_COUNT >= 9)
+#define TOOL9 spindle_pwm
+#endif
+#if (TOOL_COUNT >= 10)
+#define TOOL10 spindle_pwm
+#endif
+#if (TOOL_COUNT >= 11)
+#define TOOL11 spindle_pwm
+#endif
+#if (TOOL_COUNT >= 12)
+#define TOOL12 spindle_pwm
+#endif
+#if (TOOL_COUNT >= 13)
+#define TOOL13 spindle_pwm
+#endif
+#if (TOOL_COUNT >= 14)
+#define TOOL14 spindle_pwm
+#endif
+#if (TOOL_COUNT >= 15)
+#define TOOL15 spindle_pwm
+#endif
+#if (TOOL_COUNT >= 16)
+#define TOOL16 spindle_pwm
+#endif
+
+// enable RPM encoder for spindle_pwm
+// depends on encoders (below)
+// #define SPINDLE_PWM_HAS_RPM_ENCODER
+
+// enable RPM encoder for spindle_besc
+// depends on encoders (below)
+// #define SPINDLE_BESC_HAS_RPM_ENCODER
+
+/**
+ * Uncomment to enable PID controller for tools
+ * Each tool has it's own PID controller and EEPROM settings
+ * Chech the tool file to find the settings for each tool
+ *
+ * **/
+#ifndef ENABLE_TOOL_PID_CONTROLLER
+// #define ENABLE_TOOL_PID_CONTROLLER
+#endif
+
+/**
+ * Set a custom filter that prevents step motions in realtime
+ * This can be any expression that can be evaluated as true or false
+ * If defined and the expression evaluates to true the ISR will be unable to generate steps until condition cleared
+ *
+ * In the example bellow if input pin DIN19 is active step ISR will stop generating steps
+ * Can be uses for example in sewing machines to prevent motion on needle down detection and avoid damadge to the needle
+ *
+ * **/
+// #define RT_STEP_PREVENT_CONDITION io_get_input(DIN19)
 
 // Assigns an output to an blinking led (1Hz rate)
 #define ACTIVITY_LED DOUT31
@@ -135,9 +374,9 @@ extern "C"
  * ENCx_PULSE -> must be set to an input PIN with interrupt on change enabled capabilities
  * ENCx_DIR -> a regular input PIN that detects the direction of the encoding step
  * Defined encoders must match the number of encoders and numeral defined above.
- * For example if ENCODERS is set to 2 it expects to find the definitions for ENC0 and ENC1. Number skipping is not allowed (exemple Set ENC0 and ENC2 but not ENC1)
+ * For example if ENCODERS is set to 2 it expects to find the definitions for ENC0 and ENC1. Number skipping is not allowed (example Set ENC0 and ENC2 but not ENC1)
  *
- * It's also possible to assing an encoder to a stepper motor by defining the STEPx_ENCODER and the encoder index like this
+ * It's also possible to assign an encoder to a stepper motor by defining the STEPx_ENCODER and the encoder index like this
  * #define STEP0_ENCODER ENC0 //assigns encoder 0 to stepper 0
  *
  * The encoder can work as a simple counter (used in speed encoders) by setting the same HAL pin for both PULSE and DIR functions - Counter mode
@@ -149,82 +388,49 @@ extern "C"
 #if ENCODERS > 0
 #include "src/modules/encoder.h"
 
-	// Counter mode
-	// #define ENC0_PULSE DIN0
-	// #define ENC0_DIR DIN0
+// Counter mode
+// #define ENC0_PULSE DIN7
+// #define ENC0_DIR DIN7
 
-	// Encoder mode
-	// #define ENC0_PULSE DIN0
-	// #define ENC0_DIR DIN8
+// // Encoder mode
+// #define ENC0_PULSE DIN0
+// #define ENC0_DIR DIN8
 
-	// #define ENC1_PULSE DIN1
-	// #define ENC1_DIR DIN9
+// #define ENC1_PULSE DIN1
+// #define ENC1_DIR DIN9
 
-	// #define ENC2_PULSE DIN2
-	// #define ENC2_DIR DIN10
+// #define ENC2_PULSE DIN2
+// #define ENC2_DIR DIN10
 
-	// Assign encoders to steppers
-	// #define STEP0_ENCODER ENC0
-	// #define STEP1_ENCODER ENC1
-	// #define STEP2_ENCODER ENC2
+// Assign encoders to steppers
+// #define STEP0_ENCODER ENC0
+// #define STEP1_ENCODER ENC1
+// #define STEP2_ENCODER ENC2
 
+// Assign an encoder has an RPM encoder
+// #define ENABLE_ENCODER_RPM
+#ifdef ENABLE_ENCODER_RPM
+
+// Assign an encoder to work as the RPM encoder
+#define RPM_ENCODER ENC0
+
+// Optional set a second encoder pin has an encoder index
+// This assumes the index pulse occurs when pulse pin is also triggered
+// #define RPM_INDEX_INPUT DIN8
+
+// Resolution of the RPM encoder or Pulses Per Revolution
+#define RPM_PPR 24
+
+// uncomment to update tool sync on index pulse only
+// instead of updating in every PPR
+// #define RPM_SYNC_UPDATE_ON_INDEX_ONLY
 #endif
-
-/*
-	Sets the number of PID controllers to be used
-*/
-#define PID_CONTROLLERS 0
-
-#if PID_CONTROLLERS > 0
-#include "src/modules/pid.h"
-
-	/**
-	 * To use PID you need to set the number o PID controllers.
-	 * PID0 is hardwired to run the tool PID (defined or not). That being said if you need a PID for any other purpose other than the tool the number of PID controllers
-	 * to be enabled must be greater then 1.
-	 *
-	 * µCNC will run each PID in a timed slot inside the rtc timer scheduler like this.
-	 * Let's say you have enabled 3 PID controllers. At each RTC call of the scheduller it will run the current PID controller in a ring loop
-	 *
-	 * |--RTC+0--|--RTC+1--|--RTC+2--|--RTC+3--|--RTC+4--|--RTC+5--|--RTC+6--|..etc..
-	 * |--PID 0--|--PID 1--|--PID 2--|--PID 0--|--PID 1--|--PID 2--|--PID 0--|..etc..
-	 *
-	 * REMEMBER PID0 is hardwired to the tool PID. If the tool PID is not defined for the current tool it will simply do nothing.
-	 *
-	 *
-	 * To use the PID controller 3 definitions are needed
-	 * PIDx_DELTA() -> sets the function that gets the error between the setpoint and the current value for x PID controller
-	 * PIDx_OUTPUT(X) -> sets the output after calculating the pid corrected value for x PID controller
-	 * PIDx_STOP() -> runs this function on any halt or emergency stop of the machine
-	 *
-	 * For example
-	 *
-	 * #define PID1_DELTA() (my_setpoint - mcu_get_analog(ANA0))
-	 * #define PID1_OUTPUT(X) (mcu_set_pwm(PWM0, X))
-	 * #define PID1_STOP() (mcu_set_pwm(PWM0, 0))
-	 *
-	 * An optional configuration is the sampling rate of the PID update. By default the sampling rate is 125Hz.
-	 * To reduce the sampling rate a 125/PIDx_FREQ_DIV can be defined between 1 (125Hz) and 250 (0.5Hz)
-	 *
-	 * You can but you should not define PID for tools. Tools have a dedicated PID that can be customized for each tool. Check the tool HAL for this.
-	 *
-	 * */
-	// here is an example on how to add an PID controller to the spindle
-	// this exemple assumes that the spindle speed is feedback via an analog pin
-	// reference to io_get_spindle defined in io_control
-	//  	extern uint8_t io_get_spindle(void);
-	//  #define SPINDLE_SPEED ANALOG0
-	//  #define PID1_DELTA() (io_get_spindle() - mcu_get_analog(SPINDLE_SPEED))
-	//  #define PID1_OUTPUT(X) (mcu_set_pwm(SPINDLE_PWM, X))
-	//  #define PID1_STOP() (mcu_set_pwm(PWM0, 0))
-	//  //optional
-	//  #define PID1_FREQ_DIV 50
 #endif
 
 /**
- * 
+ *
  * Software emulated communication interfaces
- * 
+ *
  * */
 #ifdef SOFT_SPI_ENABLED
 #ifndef SOFT_SPI_CLK
@@ -236,232 +442,6 @@ extern "C"
 #ifndef SOFT_SPI_SDI
 #define SOFT_SPI_SDI DIN29
 #endif
-#endif
-
-/**
- *
- * Trinamic drivers
- *
- * */
-// interface types
-#define TMC_UART 1
-#define TMC_SPI 2
-
-// uncomment to enable trinamic driver
-// #define STEPPER0_HAS_TMC
-#ifdef STEPPER0_HAS_TMC
-#define STEPPER0_DRIVER_TYPE 2208
-// choose the interface type
-#define STEPPER0_TMC_INTERFACE TMC_UART
-#if (STEPPER0_TMC_INTERFACE == TMC_UART)
-// if driver uses uart set pins
-#define STEPPER0_UART_TX DOUT20
-#define STEPPER0_UART_RX DIN20
-#elif (STEPPER0_TMC_INTERFACE == TMC_SPI)
-#define STEPPER0_SPI_SDO DOUT29
-#define STEPPER0_SPI_SDI DIN29
-#define STEPPER0_SPI_CLK DOUT30
-#define STEPPER0_SPI_CS DOUT20
-#endif
-// basic parameters
-#define STEPPER0_CURRENT_MA 800
-#define STEPPER0_MICROSTEP 16
-#define STEPPER0_RSENSE 0.11
-#define STEPPER0_HOLD_MULT 0.7
-#define STEPPER0_STEALTHCHOP_THERSHOLD 0
-#define STEPPER0_ENABLE_INTERPLATION true
-// this value must be set between 0 and 255 for TMC2209
-// if driver does not support stallGuard this will be ignored
-#define STEPPER0_STALL_SENSITIVITY 10
-#endif
-// uncomment to enable trinamic driver
-//#define STEPPER1_HAS_TMC
-#ifdef STEPPER1_HAS_TMC
-#define STEPPER1_DRIVER_TYPE 2208
-// choose the interface type
-#define STEPPER1_TMC_INTERFACE TMC_UART
-#if (STEPPER1_TMC_INTERFACE == TMC_UART)
-// if driver uses uart set pins
-#define STEPPER1_UART_TX DOUT21
-#define STEPPER1_UART_RX DIN21
-#elif (STEPPER1_TMC_INTERFACE == TMC_SPI)
-#define STEPPER1_SPI_SDO DOUT29
-#define STEPPER1_SPI_SDI DIN29
-#define STEPPER1_SPI_CLK DOUT30
-#define STEPPER1_SPI_CS DOUT21
-#endif
-// basic parameters
-#define STEPPER1_CURRENT_MA 800
-#define STEPPER1_MICROSTEP 16
-#define STEPPER1_RSENSE 0.11
-#define STEPPER1_HOLD_MULT 0.7
-#define STEPPER1_STEALTHCHOP_THERSHOLD 0
-#define STEPPER1_ENABLE_INTERPLATION true
-// this value must be set between 0 and 255 for TMC2209
-// if driver does not support stallGuard this will be ignored
-#define STEPPER1_STALL_SENSITIVITY 10
-#endif
-// uncomment to enable trinamic driver
-//#define STEPPER2_HAS_TMC
-#ifdef STEPPER2_HAS_TMC
-#define STEPPER2_DRIVER_TYPE 2208
-// choose the interface type
-#define STEPPER2_TMC_INTERFACE TMC_UART
-#if (STEPPER2_TMC_INTERFACE == TMC_UART)
-// if driver uses uart set pins
-#define STEPPER2_UART_TX DOUT22
-#define STEPPER2_UART_RX DIN22
-#elif (STEPPER2_TMC_INTERFACE == TMC_SPI)
-#define STEPPER2_SPI_SDO DOUT29
-#define STEPPER2_SPI_SDI DIN29
-#define STEPPER2_SPI_CLK DOUT30
-#define STEPPER2_SPI_CS DOUT22
-#endif
-// basic parameters
-#define STEPPER2_CURRENT_MA 800
-#define STEPPER2_MICROSTEP 16
-#define STEPPER2_RSENSE 0.11
-#define STEPPER2_HOLD_MULT 0.7
-#define STEPPER2_STEALTHCHOP_THERSHOLD 0
-#define STEPPER2_ENABLE_INTERPLATION true
-// this value must be set between 0 and 255 for TMC2209
-// if driver does not support stallGuard this will be ignored
-#define STEPPER2_STALL_SENSITIVITY 10
-#endif
-// uncomment to enable trinamic driver
-//#define STEPPER3_HAS_TMC
-#ifdef STEPPER3_HAS_TMC
-#define STEPPER3_DRIVER_TYPE 2208
-// choose the interface type
-#define STEPPER3_TMC_INTERFACE TMC_UART
-#if (STEPPER3_TMC_INTERFACE == TMC_UART)
-// if driver uses uart set pins
-#define STEPPER3_UART_TX DOUT23
-#define STEPPER3_UART_RX DIN23
-#elif (STEPPER3_TMC_INTERFACE == TMC_SPI)
-#define STEPPER3_SPI_SDO DOUT29
-#define STEPPER3_SPI_SDI DIN29
-#define STEPPER3_SPI_CLK DOUT30
-#define STEPPER3_SPI_CS DOUT23
-#endif
-// basic parameters
-#define STEPPER3_CURRENT_MA 800
-#define STEPPER3_MICROSTEP 16
-#define STEPPER3_RSENSE 0.11
-#define STEPPER3_HOLD_MULT 0.7
-#define STEPPER3_STEALTHCHOP_THERSHOLD 0
-#define STEPPER3_ENABLE_INTERPLATION true
-// this value must be set between 0 and 255 for TMC2209
-// if driver does not support stallGuard this will be ignored
-#define STEPPER3_STALL_SENSITIVITY 10
-#endif
-// uncomment to enable trinamic driver
-//#define STEPPER4_HAS_TMC
-#ifdef STEPPER4_HAS_TMC
-#define STEPPER4_DRIVER_TYPE 2208
-// choose the interface type
-#define STEPPER4_TMC_INTERFACE TMC_UART
-#if (STEPPER4_TMC_INTERFACE == TMC_UART)
-// if driver uses uart set pins
-#define STEPPER4_UART_TX DOUT24
-#define STEPPER4_UART_RX DIN24
-#elif (STEPPER4_TMC_INTERFACE == TMC_SPI)
-#define STEPPER4_SPI_SDO DOUT29
-#define STEPPER4_SPI_SDI DIN29
-#define STEPPER4_SPI_CLK DOUT30
-#define STEPPER4_SPI_CS DOUT24
-#endif
-// basic parameters
-#define STEPPER4_CURRENT_MA 800
-#define STEPPER4_MICROSTEP 16
-#define STEPPER4_RSENSE 0.11
-#define STEPPER4_HOLD_MULT 0.7
-#define STEPPER4_STEALTHCHOP_THERSHOLD 0
-#define STEPPER4_ENABLE_INTERPLATION true
-// this value must be set between 0 and 255 for TMC2209
-// if driver does not support stallGuard this will be ignored
-#define STEPPER4_STALL_SENSITIVITY 10
-#endif
-// uncomment to enable trinamic driver
-//#define STEPPER5_HAS_TMC
-#ifdef STEPPER5_HAS_TMC
-#define STEPPER5_DRIVER_TYPE 2208
-// choose the interface type
-#define STEPPER5_TMC_INTERFACE TMC_UART
-#if (STEPPER5_TMC_INTERFACE == TMC_UART)
-// if driver uses uart set pins
-#define STEPPER5_UART_TX DOUT25
-#define STEPPER5_UART_RX DIN25
-#elif (STEPPER5_TMC_INTERFACE == TMC_SPI)
-#define STEPPER5_SPI_SDO DOUT29
-#define STEPPER5_SPI_SDI DIN29
-#define STEPPER5_SPI_CLK DOUT30
-#define STEPPER5_SPI_CS DOUT25
-#endif
-// basic parameters
-#define STEPPER5_CURRENT_MA 800
-#define STEPPER5_MICROSTEP 16
-#define STEPPER5_RSENSE 0.11
-#define STEPPER5_HOLD_MULT 0.7
-#define STEPPER5_STEALTHCHOP_THERSHOLD 0
-#define STEPPER5_ENABLE_INTERPLATION true
-// this value must be set between 0 and 255 for TMC2209
-// if driver does not support stallGuard this will be ignored
-#define STEPPER5_STALL_SENSITIVITY 10
-#endif
-// uncomment to enable trinamic driver
-//#define STEPPER6_HAS_TMC
-#ifdef STEPPER6_HAS_TMC
-#define STEPPER6_DRIVER_TYPE 2208
-// choose the interface type
-#define STEPPER6_TMC_INTERFACE TMC_UART
-#if (STEPPER6_TMC_INTERFACE == TMC_UART)
-// if driver uses uart set pins
-#define STEPPER6_UART_TX DOUT26
-#define STEPPER6_UART_RX DIN26
-#elif (STEPPER6_TMC_INTERFACE == TMC_SPI)
-#define STEPPER6_SPI_SDO DOUT29
-#define STEPPER6_SPI_SDI DIN29
-#define STEPPER6_SPI_CLK DOUT30
-#define STEPPER6_SPI_CS DOUT26
-#endif
-// basic parameters
-#define STEPPER6_CURRENT_MA 800
-#define STEPPER6_MICROSTEP 16
-#define STEPPER6_RSENSE 0.11
-#define STEPPER6_HOLD_MULT 0.7
-#define STEPPER6_STEALTHCHOP_THERSHOLD 0
-#define STEPPER6_ENABLE_INTERPLATION true
-// this value must be set between 0 and 255 for TMC2209
-// if driver does not support stallGuard this will be ignored
-#define STEPPER6_STALL_SENSITIVITY 10
-#endif
-// uncomment to enable trinamic driver
-//#define STEPPER7_HAS_TMC
-#ifdef STEPPER7_HAS_TMC
-#define STEPPER7_DRIVER_TYPE 2208
-// choose the interface type
-#define STEPPER7_TMC_INTERFACE TMC_UART
-#if (STEPPER7_TMC_INTERFACE == TMC_UART)
-// if driver uses uart set pins
-#define STEPPER7_UART_TX DOUT27
-#define STEPPER7_UART_RX DIN27
-#elif (STEPPER7_TMC_INTERFACE == TMC_SPI)
-#define STEPPER7_SPI_SDO DOUT29
-#define STEPPER7_SPI_SDI DIN29
-#define STEPPER7_SPI_CLK DOUT30
-#define STEPPER7_SPI_CS DOUT27
-#endif
-// basic parameters
-#define STEPPER7_CURRENT_MA 800
-#define STEPPER7_MICROSTEP 16
-#define STEPPER7_RSENSE 0.11
-#define STEPPER7_HOLD_MULT 0.7
-#define STEPPER7_STEALTHCHOP_THERSHOLD 0
-#define STEPPER7_ENABLE_INTERPLATION true
-// this value must be set between 0 and 255 for TMC2209
-// if driver does not support stallGuard this will be ignored
-#define STEPPER7_STALL_SENSITIVITY 10
 #endif
 
 	/**
@@ -558,6 +538,15 @@ extern "C"
 #define STEPPER6_DIGIPOT_VALUE 0
 #define STEPPER7_DIGIPOT_CHANNEL -1
 #define STEPPER7_DIGIPOT_VALUE 0
+#endif
+
+/**
+ * System Menu for displays
+ * System Menu manages interfaces and control actions for displays in µCNC
+ * **/
+// override the default max string buffer length
+#ifndef SYSTEM_MENU_MAX_STR_LEN
+// #define SYSTEM_MENU_MAX_STR_LEN 32
 #endif
 
 #ifdef __cplusplus

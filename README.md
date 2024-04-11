@@ -6,6 +6,21 @@
 
 µCNC - Universal CNC firmware for microcontrollers
 
+# Building µCNC
+
+To configure µCNC to fit your hardware you can use [µCNC config builder web tool](https://paciente8159.github.io/uCNC-config-builder/) to generate the config override files.
+Although most of the options are configurable via the web tool, some options might be missing and you might need to add them manually (regarding tools or addon modules mostly).
+
+# VERSION 1.8+ NOTES
+
+Version 1.8 introduced several breaking changes from the previous version. These are:
+  - Tools functions declarations. This version also introduces a new IO HAL that makes io abstraction easier and more performant.
+  - New serial/multi-stream interface. All communications ports and extension modules (displays, SD cards, etc..) that communicate to the parser now do it via a custom serial stream implementation. Serial streams are segregated and responses are sent back to the source only instead of all ports. Some types of messages are still broadcast (like status reports, alarms and feedback messages).
+  - Modules now also defines HOOKs that can be used as hookable points for a single consumer function.
+  - There are several README documents that contain relevant information about parts of the system/HAL/modules etc. This makes it easier to keep the information up to date with each change.
+
+With version 1.8 µCNC is becomming too large for Atmega328P (still supports it, but barelly fits). For that reason and to keep giving support for this MCU a branch of version 1.7 will be maintained with all the latest bugfixes and patches.
+
 # IMPORTANT NOTE
 
 By default and as a safety measure µCNC control inputs (Emergency stop, Safety door, Hold, Cycle start-resume), as well as limit switches and probe, are held high by the microcontroller input weak-pull up resistors. If left unconnected or connected to normally opened switches these inputs will be in an active/triggered state and the controller may lock all motions.
@@ -28,7 +43,14 @@ Heavily inspired by [Grbl](https://github.com/gnea/grbl) and [LinuxCNC](http://l
 3. Compatible with already existing tools and software for Grbl. There is no point in trying to reinvent the wheel (the whole wheel at least :-P). For that reason µCNC uses protocol compatible with Grbl. This allows it to easily integrate with Grbl ecosystem.
 
 You can navigate the [project wiki](https://github.com/Paciente8159/uCNC/wiki) to find out more on how to use it.
-You can expand µCNC using via modules. The available modules are at the [µCNC-modules repository](https://github.com/Paciente8159/uCNC-modules)
+
+You can expand µCNC using via modules. The available modules are at the [µCNC-modules repository](https://github.com/Paciente8159/uCNC-modules).
+
+You can now also use [µCNC config builder web tool](https://paciente8159.github.io/uCNC-config-builder/) to generate the files needed to adapt µCNC to your board.
+
+You can also reach me at µCNC discord channel
+
+[![µCNC discord channel](https://github.com/Paciente8159/uCNC/blob/master/docs/discord-logo-blue.png)](https://discord.gg/KdtKq9THN9)
 
 ## Supporting the project
 
@@ -38,7 +60,31 @@ You can expand µCNC using via modules. The available modules are at the [µCNC-
 
 ## Current µCNC status
 
-µCNC current major version is v1.5. You can check all the new features, changes and bug fixes in the [CHANGELOG](https://github.com/Paciente8159/uCNC/blob/master/CHANGELOG.md).
+µCNC current major version is v1.8. You can check all the new features, changes and bug fixes in the [CHANGELOG](https://github.com/Paciente8159/uCNC/blob/master/CHANGELOG.md).
+
+Version 1.8 added the following new major features.
+
+- new IO HAL that simplifies io control and calls.
+- added support for motion control/planner hijack. This allows to stash and restore all current buffered motions to allow execution of a completly new set of intermediate motions.
+- added realtime modification of step and dir bits to be executed in the fly.
+- added new tool for plasma THC.
+- all analog inputs were modified from 8bit resolution to 10bit.
+- complete redesign of PID module and modified tools functions to make use of PID update loop.
+- complete redesign of serial communications to support and deal with multi-stream/origins.
+- complete redesign of multi-stepper axis and self-squaring axis.
+- initial support for Scara kinematics
+- endpoint interface module to allow development of web services and REST modules for WiFi (available on v1.8.1)
+- websocket interface module to allow development of web sockets modules for WiFi (available on v1.8.7)
+
+Version 1.7 added a new major feature.
+
+- added system menus module that allows to manage and render user menus in any type of display.
+
+Version 1.6 added a couple of new features.
+
+- added support for RP2040 MCU.
+- moved tinyUSB to an external project allowing easier update and integration with both PIO and Arduino IDE.
+
 Version 1.5 added a couple of new features.
 
 - added support for ESP8266 MCU and the WeMos D1 boards.
@@ -95,11 +141,12 @@ List of Supported G-Codes since µCNC 1.3.0:
   - Spindle Control: M3, M4, M5
   - Tool Change: M6
   - Valid Non-Command Words: A, B, C, F, H, I, J, K, L, N, P, Q, R, S, T, X, Y, Z
+
   - Outside the RS274NGC scope
+    - Bilinear surface mapping: G39,G39.1,G39.2*
     - Servo Control: M10*
-    - General Pin Control: M42*
-    - Trinamic settings: M350* (set/get microsteps), M906* (set/get current), 913* (stealthchop threshold), 914* (stall sensitivity-stallGuard capable chips only), 920* (set/get register)
     - Digital pins/trimpot settings: M351* (set/get microsteps), M907* (set/get current via digipot)
+    - Laser PPI M126*(mode) M127*(PPI) and M128*(Pulse width)
     - Valid Non-Command Words: E (used by 3D printing firmware like [Marlin](https://github.com/MarlinFirmware/Marlin)) (currently not used)
 
 * see notes
@@ -115,7 +162,27 @@ NOTES:
 - _M1 stop condition can be set in HAL file_
 - _M6 additional tools can be defined in HAL file_
 - _M10 only active if servo motors are configured_
-- _M42 configurable via additional module. Provides a way to set any kind of digital output, PWM or Servo PIN_
+- _G39,G39.1,G39.2 only active if Height Map enabled_
+
+Other G/M codes available via [external modules](https://github.com/Paciente8159/uCNC-modules)
+  - Cubic and quadratic splines: G5/G5.1
+  - Lathe radius mode: G7/G8
+  - Spindle synchronized motion: G33
+  - Stepper enable/disable: M17/M18
+  - General Pin Control: M42
+  - Enable/disable digital output pin synched/immediately: M62/M63/M64/M65
+  - Enable/disable analog output pin synched/immediately: M67/M68
+  - Enable/disable a digital output that controls the PSU: M80/M81
+  - Smoothieware laser clustering mode modified gcode
+  - Support for small LCD crystal displays with I2C interface
+  - Support for monochromatic 128x64 displays (like Reprap fullgraphic discount)
+  - Mobile web pendant via Wifi
+  - BL touch module
+  - SD card support using SPI
+  - Wait for digital/analog input: M66
+  - Set home position from current position: G28.1/G30.1
+  - Play tone via PWM pin: M300
+  - Trinamic driver support and config commands: M350* (set/get microsteps), M906* (set/get current), 913* (stealthchop threshold), 914* (stall sensitivity-stallGuard capable chips only), 920* (set/get register)
 
 **ALL custom G/M codes require at least ENABLE_PARSER_MODULES option enabled**
 
@@ -153,7 +220,7 @@ NOTES:
 
 µCNC with a configuration similar to Grbl is be able to keep up to 30KHz step rate for a 3 axis machine on an Arduino Uno at 16Mhz. (the stated rate depends on the length of the segments too, since many short length segments don't allow full speed to be achieved). For this specific type of use (like in laser engraving) a 16-bit version of stepping algorithm is possible pushing the theoretical step rate limit to 40KHz on a single UNO board.
 
-### Current µCNC supported hardware
+### µCNC current supported hardware
 
 µCNC initial development was done both around Arduino UNO board just like GRBL. But µCNC can also be installed in other AVR boards like Arduino Mega (for Ramps), or similar boards (like Rambo). Other MCU's have and will be integrated in µCNC:
 
@@ -161,13 +228,25 @@ I used several UNO emulators but debugging was not easy. So a kind of virtual bo
 It can run on:
 
 - AVR (Arduino UNO/MEGA)
-- STM32F1 (Bluepill) - v1.1.x
+- STM32F1 (like the Bluepill) - v1.1.x
 - SAMD21 (Arduino Zero/M0) - v1.3.x
-- STM32F4 (Blackpill) - v1.4.x (Does not emulate EEPROM)
+- STM32F4 (like the Blackpill) - v1.4.x (Does not emulate EEPROM)
 - ESP8266 - v1.5.x (supports wifi connection via telnet, lacks analog and input isr)
-- ESP32 - v1.5.x (supports wifi connection via telnet and bluetooth, lacks analog and input isr)
-- NXP LPC1768 - v1.5.x (eeprom emulation and analog still being developed) 
+- ESP32 - v1.5.x (supports wifi connection via telnet and bluetooth)
+- NXP LPC1768/9 - v1.5.x (eeprom emulation and analog still being developed)
+- RP2040 - v1.6.x (supports wifi connection via telnet and bluetooth)
 - Windows PC (used for simulation/debugging only - ISR on Windows doesn't allow to use it as a real alternative)
+
+### µCNC current supported kinematics
+
+µCNC is designed to be support both linear and non-linear kinematics and can be extended to support other types of kinematics.
+Currently µCNC supports the following kinematics:
+
+- Cartesian
+- CoreXY
+- Linear delta robot
+- Rotary delta robot
+- Scara
 
 ### µCNC roadmap
 
@@ -180,10 +259,10 @@ These changes are:
 
 Future versions are in plan for:
 
-- Add more MCU HAL (RP2040 may be implemented in a near future)
-- Add support for graphical LCD
+- Add support for Web interface
 - Add more GCode features and hardware modules
 - Add additional kinematics
+- Add HAL for new MCU
 
 ### Building µCNC
 

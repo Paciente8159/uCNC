@@ -32,6 +32,7 @@ extern "C"
 	void protocol_send_error(uint8_t error);
 	void protocol_send_alarm(int8_t alarm);
 	void protocol_send_status(void);
+	DECL_EVENT_HANDLER(protocol_send_status);
 	void protocol_send_string(const char *__s);
 	void protocol_send_feedback(const char *__s);
 	void protocol_send_probe_result(uint8_t val);
@@ -39,16 +40,32 @@ extern "C"
 	void protocol_send_gcode_modes(void);
 	void protocol_send_cnc_settings(void);
 	void protocol_send_start_blocks(void);
+	void protocol_send_gcode_setting_line_int(setting_offset_t setting, uint16_t value);
+	void protocol_send_gcode_setting_line_flt(setting_offset_t setting, float value);
+#ifdef ENABLE_WIFI
+	void protocol_send_ip(uint32_t ip);
+#endif
 #ifdef ENABLE_EXTRA_SYSTEM_CMDS
 	void protocol_send_pins_states(void);
 #endif
 #ifdef ENABLE_SYSTEM_INFO
-	void protocol_send_cnc_info(void);
+	void protocol_send_cnc_info(bool extended);
+	DECL_EVENT_HANDLER(protocol_send_cnc_info);
 #endif
 
-#ifdef ENABLE_PROTOCOL_MODULES
-	// event_send_pins_states_handler
-	DECL_EVENT_HANDLER(send_pins_states);
+#ifdef ENABLE_IO_MODULES
+	// event_protocol_send_pins_states_handler
+	DECL_EVENT_HANDLER(protocol_send_pins_states);
+#endif
+
+#ifdef ENABLE_SETTINGS_MODULES
+	// event_protocol_send_cnc_settings_handler
+	DECL_EVENT_HANDLER(protocol_send_cnc_settings);
+#endif
+
+#ifdef ENABLE_PARSER_MODULES
+	// event_protocol_send_gcode_modes_handler
+	DECL_EVENT_HANDLER(protocol_send_gcode_modes);
 #endif
 
 #ifdef __cplusplus

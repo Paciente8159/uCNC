@@ -45,71 +45,75 @@ void kinematics_apply_forward(int32_t *steps, float *axis)
 
 uint8_t kinematics_home(void)
 {
-	uint8_t result = 0;
-#ifndef DISABLE_Z_HOMING
-#if (defined(AXIS_Z) && (!(LIMIT_Z < 0) || !(LIMIT_Z2 < 0)))
-	result = mc_home_axis(AXIS_Z, LIMIT_Z_MASK);
-	if (result != 0)
+	float target[AXIS_COUNT];
+
+#ifndef DISABLE_ALL_LIMITS
+#if AXIS_Z_HOMING_MASK != 0
+	if (mc_home_axis(AXIS_Z_HOMING_MASK, LINACT2_LIMIT_MASK))
 	{
-		return result;
+		return KINEMATIC_HOMING_ERROR_Z;
 	}
-#endif
 #endif
 
-#ifndef DISABLE_X_HOMING
-#if (defined(AXIS_X) && (!(LIMIT_X < 0) || !(LIMIT_X2 < 0)))
-	result = mc_home_axis(AXIS_X, LIMIT_X_MASK);
-	if (result != 0)
+#ifndef ENABLE_XY_SIMULTANEOUS_HOMING
+
+#if AXIS_X_HOMING_MASK != 0
+	if (mc_home_axis(AXIS_X_HOMING_MASK, LINACT0_LIMIT_MASK))
 	{
-		return result;
+		return KINEMATIC_HOMING_ERROR_X;
 	}
-#endif
 #endif
 
-#ifndef DISABLE_Y_HOMING
-#if (defined(AXIS_Y) && (!(LIMIT_Y < 0) || !(LIMIT_Y2 < 0)))
-	result = mc_home_axis(AXIS_Y, LIMIT_Y_MASK);
-	if (result != 0)
+#if AXIS_Y_HOMING_MASK != 0
+	if (mc_home_axis(AXIS_Y_HOMING_MASK, LINACT1_LIMIT_MASK))
 	{
-		return result;
+		return KINEMATIC_HOMING_ERROR_Y;
 	}
-#endif
 #endif
 
-#ifndef DISABLE_A_HOMING
-#if (defined(AXIS_A) && !(LIMIT_A < 0))
-	result = mc_home_axis(AXIS_A, LIMIT_A_MASK);
-	if (result != 0)
+#else
+
+#if AXIS_X_HOMING_MASK != 0 && AXIS_Y_HOMING_MASK != 0
+	if (mc_home_axis(AXIS_X_HOMING_MASK | AXIS_Y_HOMING_MASK, LINACT0_LIMIT_MASK | LINACT1_LIMIT_MASK))
 	{
-		return result;
+		return KINEMATIC_HOMING_ERROR_XY;
 	}
-#endif
+#elif AXIS_X_HOMING_MASK != 0
+	if (mc_home_axis(AXIS_X_HOMING_MASK, LINACT0_LIMIT_MASK))
+	{
+		return KINEMATIC_HOMING_ERROR_X;
+	}
+#elif AXIS_Y_HOMING_MASK != 0
+	if (mc_home_axis(AXIS_Y_HOMING_MASK, LINACT1_LIMIT_MASK))
+	{
+		return KINEMATIC_HOMING_ERROR_Y;
+	}
 #endif
 
-#ifndef DISABLE_B_HOMING
-#if (defined(AXIS_B) && !(LIMIT_B < 0))
-	result = mc_home_axis(AXIS_B, LIMIT_B_MASK);
-	if (result != 0)
-	{
-		return result;
-	}
-#endif
 #endif
 
-#ifndef DISABLE_C_HOMING
-#if (defined(AXIS_C) && !(LIMIT_C < 0))
-	result = mc_home_axis(AXIS_C, LIMIT_C_MASK);
-	if (result != 0)
+#if AXIS_A_HOMING_MASK != 0
+	if (mc_home_axis(AXIS_A_HOMING_MASK, LINACT3_LIMIT_MASK))
 	{
-		return result;
+		return KINEMATIC_HOMING_ERROR_A;
 	}
 #endif
+
+#if AXIS_B_HOMING_MASK != 0
+	if (mc_home_axis(AXIS_B_HOMING_MASK, LINACT4_LIMIT_MASK))
+	{
+		return KINEMATIC_HOMING_ERROR_B;
+	}
+#endif
+
+#if AXIS_C_HOMING_MASK != 0
+	if (mc_home_axis(AXIS_C_HOMING_MASK, LINACT5_LIMIT_MASK))
+	{
+		return KINEMATIC_HOMING_ERROR_C;
+	}
 #endif
 
 	cnc_unlock(true);
-	// flags homing clear by the unlock
-	cnc_set_exec_state(EXEC_HOMING);
-	float target[AXIS_COUNT];
 	motion_data_t block_data = {0};
 	mc_get_position(target);
 
@@ -124,55 +128,22 @@ uint8_t kinematics_home(void)
 	// starts offset and waits to finnish
 	mc_line(target, &block_data);
 	itp_sync();
-
-	// unlocks the machine to go to offset
-	cnc_clear_exec_state(EXEC_HOMING);
+#endif
 
 #ifdef SET_ORIGIN_AT_HOME_POS
 	memset(target, 0, sizeof(target));
 #else
-	for (uint8_t i = AXIS_COUNT; i != 0;)
-	{
-		i--;
-		target[i] = (!(g_settings.homing_dir_invert_mask & (1 << i)) ? 0 : g_settings.max_distance[i]);
-	}
+for (uint8_t i = AXIS_COUNT; i != 0;)
+{
+	i--;
+	target[i] = (!(g_settings.homing_dir_invert_mask & (1 << i)) ? 0 : g_settings.max_distance[i]);
+}
 #endif
 
 	// reset position
 	itp_reset_rt_position(target);
 
 	return STATUS_OK;
-}
-
-void kinematics_apply_transform(float *axis)
-{
-	/*
-	Define your custom transform
-*/
-#ifdef ENABLE_SKEW_COMPENSATION
-	// apply correction skew factors that compensate for machine axis alignemnt
-	axis[AXIS_X] -= axis[AXIS_Y] * g_settings.skew_xy_factor;
-#ifndef SKEW_COMPENSATION_XY_ONLY
-	axis[AXIS_X] -= axis[AXIS_Z] * (g_settings.skew_xy_factor - g_settings.skew_xz_factor * g_settings.skew_yz_factor);
-	axis[AXIS_Y] -= axis[AXIS_Z] * g_settings.skew_yz_factor;
-#endif
-#endif
-}
-
-void kinematics_apply_reverse_transform(float *axis)
-{
-	/*
-	Define your custom transform inverse operation
-*/
-
-	// perform unskew of the coordinates
-#ifdef ENABLE_SKEW_COMPENSATION
-	axis[AXIS_X] += axis[AXIS_Y] * g_settings.skew_xy_factor;
-#ifndef SKEW_COMPENSATION_XY_ONLY
-	axis[AXIS_X] += axis[AXIS_Z] * g_settings.skew_xz_factor;
-	axis[AXIS_Y] += axis[AXIS_Z] * g_settings.skew_yz_factor;
-#endif
-#endif
 }
 
 bool kinematics_check_boundaries(float *axis)
@@ -186,7 +157,7 @@ bool kinematics_check_boundaries(float *axis)
 	{
 		i--;
 #ifdef SET_ORIGIN_AT_HOME_POS
-		float value = !(g_settings.homing_dir_invert_mask & (1 << i)) ? -axis[i] : axis[i];
+		float value = !(g_settings.homing_dir_invert_mask & (1 << i)) ? axis[i] : -axis[i];
 #else
 		float value = axis[i];
 #endif

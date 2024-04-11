@@ -24,13 +24,13 @@
 #include "mcumap_samd21.h"
 
 #include "sam.h"
-//#include "instance/nvmctrl.h"
+// #include "instance/nvmctrl.h"
 #include <string.h>
 #include <math.h>
 
 // Non volatile memory
 // SAMD devices page size never exceeds 1024 bytes
-#define NVM_EEPROM_SIZE 0x400 // 1Kb of emulated EEPROM is enough
+#define NVM_EEPROM_SIZE NVM_STORAGE_SIZE // 1Kb of emulated EEPROM is enough
 #define NVM_PAGE_SIZE NVMCTRL_PAGE_SIZE
 #define NVM_ROW_PAGES NVMCTRL_ROW_PAGES
 #define NVM_ROW_SIZE NVMCTRL_ROW_SIZE
@@ -38,9 +38,8 @@
 #define NVM_EEPROM_BASE (FLASH_ADDR + NVMCTRL_FLASH_SIZE - (NVM_EEPROM_ROWS * NVMCTRL_ROW_SIZE))
 #define NVM_MEMORY ((volatile uint16_t *)FLASH_ADDR)
 
-#if (INTERFACE == INTERFACE_USB)
-#include "../../../tinyusb/tusb_config.h"
-#include "../../../tinyusb/src/tusb.h"
+#ifdef MCU_HAS_USB
+#include <tusb_ucnc.h>
 #endif
 
 volatile bool samd21_global_isr_enabled;
@@ -115,7 +114,7 @@ static void mcu_setup_clocks(void)
 	while (ADC->STATUS.bit.SYNCBUSY)
 		;
 	// set resolution
-	ADC->CTRLB.bit.RESSEL = ADC_CTRLB_RESSEL_8BIT_Val;
+	ADC->CTRLB.bit.RESSEL = ADC_CTRLB_RESSEL_10BIT_Val;
 	ADC->CTRLB.bit.PRESCALER = ADC_CTRLB_PRESCALER_DIV32_Val;
 	while (ADC->STATUS.bit.SYNCBUSY)
 		;
@@ -207,32 +206,112 @@ void MCU_ITP_ISR(void)
 	mcu_enable_global_isr();
 }
 
-#if (INTERFACE == INTERFACE_UART)
+#ifdef MCU_HAS_UART
+#ifndef UART_TX_BUFFER_SIZE
+#define UART_TX_BUFFER_SIZE 64
+#endif
+DECL_BUFFER(uint8_t, uart_tx, UART_TX_BUFFER_SIZE);
+DECL_BUFFER(uint8_t, uart_rx, RX_BUFFER_SIZE);
+
 void mcu_com_isr()
 {
-	mcu_disable_global_isr();
-#ifndef ENABLE_SYNC_RX
-	if (COM->USART.INTFLAG.bit.RXC && COM->USART.INTENSET.bit.RXC)
+	__ATOMIC_FORCEON__
 	{
-		COM->USART.INTFLAG.bit.RXC = 1;
-		unsigned char c = (0xff & COM_INREG);
-		mcu_com_rx_cb(c);
-	}
+		if (COM_UART->USART.INTFLAG.bit.RXC && COM_UART->USART.INTENSET.bit.RXC)
+		{
+			COM_UART->USART.INTFLAG.bit.RXC = 1;
+			uint8_t c = (0xff & COM_INREG);
+#if !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
+			if (mcu_com_rx_cb(c))
+			{
+				if (BUFFER_FULL(uart_rx))
+				{
+					c = OVF;
+				}
+
+				*(BUFFER_NEXT_FREE(uart_rx)) = c;
+				BUFFER_STORE(uart_rx);
+			}
+#else
+			mcu_uart_rx_cb(c);
 #endif
-#ifndef ENABLE_SYNC_TX
-	if (COM->USART.INTFLAG.bit.DRE && COM->USART.INTENSET.bit.DRE)
+		}
+		if (COM_UART->USART.INTFLAG.bit.DRE && COM_UART->USART.INTENSET.bit.DRE)
+		{
+			mcu_enable_global_isr();
+			if (BUFFER_EMPTY(uart_tx))
+			{
+				COM_UART->USART.INTENCLR.reg = SERCOM_USART_INTENCLR_DRE;
+				return;
+			}
+
+			uint8_t c;
+			BUFFER_DEQUEUE(uart_tx, &c);
+			COM_OUTREG = c;
+		}
+	}
+}
+#endif
+
+#if (defined(MCU_HAS_UART2))
+#ifndef UART2_TX_BUFFER_SIZE
+#define UART2_TX_BUFFER_SIZE 64
+#endif
+DECL_BUFFER(uint8_t, uart2_tx, UART2_TX_BUFFER_SIZE);
+DECL_BUFFER(uint8_t, uart2_rx, RX_BUFFER_SIZE);
+
+void mcu_com2_isr()
+{
+	__ATOMIC_FORCEON__
 	{
-		COM->USART.INTENCLR.reg = SERCOM_USART_INTENCLR_DRE;
-		mcu_com_tx_cb();
-	}
+		if (COM2_UART->USART.INTFLAG.bit.RXC && COM2_UART->USART.INTENSET.bit.RXC)
+		{
+			COM2_UART->USART.INTFLAG.bit.RXC = 1;
+			uint8_t c = (0xff & COM2_INREG);
+#if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
+			if (mcu_com_rx_cb(c))
+			{
+				if (BUFFER_FULL(uart2_rx))
+				{
+					c = OVF;
+				}
+
+				*(BUFFER_NEXT_FREE(uart2_rx)) = c;
+				BUFFER_STORE(uart2_rx);
+			}
+#else
+			mcu_uart2_rx_cb(c);
+#ifndef UART2_DISABLE_BUFFER
+			if (BUFFER_FULL(uart2_rx))
+			{
+				c = OVF;
+			}
+
+			*(BUFFER_NEXT_FREE(uart2_rx)) = c;
+			BUFFER_STORE(uart2_rx);
 #endif
-	mcu_enable_global_isr();
+#endif
+		}
+		if (COM2_UART->USART.INTFLAG.bit.DRE && COM2_UART->USART.INTENSET.bit.DRE)
+		{
+			// keeps sending chars until null is found
+			mcu_enable_global_isr();
+			if (BUFFER_EMPTY(uart2_tx))
+			{
+				COM2_UART->USART.INTENCLR.reg = SERCOM_USART_INTENCLR_DRE;
+				return;
+			}
+			uint8_t c;
+			BUFFER_DEQUEUE(uart2_tx, &c);
+			COM2_OUTREG = c;
+		}
+	}
 }
 #endif
 
 void mcu_usart_init(void)
 {
-#if (INTERFACE == INTERFACE_UART)
+#ifdef MCU_HAS_UART
 	PM->APBCMASK.reg |= PM_APBCMASK_COM;
 
 	/* Setup GCLK SERCOMx to use GENCLK0 */
@@ -241,49 +320,90 @@ void mcu_usart_init(void)
 		;
 
 	// Start the Software Reset
-	COM->USART.CTRLA.bit.SWRST = 1;
+	COM_UART->USART.CTRLA.bit.SWRST = 1;
 
-	while (COM->USART.SYNCBUSY.bit.SWRST)
+	while (COM_UART->USART.SYNCBUSY.bit.SWRST)
 		;
 
-	COM->USART.CTRLA.bit.MODE = 1;
-	COM->USART.CTRLA.bit.SAMPR = 0;			// 16x sample rate
-	COM->USART.CTRLA.bit.FORM = 0;			// no parity
-	COM->USART.CTRLA.bit.DORD = 1;			// LSB first
-	COM->USART.CTRLA.bit.RXPO = COM_RX_PAD; // RX on PAD3
-	COM->USART.CTRLA.bit.TXPO = COM_TX_PAD; // TX on PAD2
-	COM->USART.CTRLB.bit.SBMODE = 0;		// one stop bit
-	COM->USART.CTRLB.bit.CHSIZE = 0;		// 8 bits
-	COM->USART.CTRLB.bit.RXEN = 1;			// enable receiver
-	COM->USART.CTRLB.bit.TXEN = 1;			// enable transmitter
+	COM_UART->USART.CTRLA.bit.MODE = 1;
+	COM_UART->USART.CTRLA.bit.SAMPR = 0;		 // 16x sample rate
+	COM_UART->USART.CTRLA.bit.FORM = 0;			 // no parity
+	COM_UART->USART.CTRLA.bit.DORD = 1;			 // LSB first
+	COM_UART->USART.CTRLA.bit.RXPO = COM_RX_PAD; // RX on PAD3
+	COM_UART->USART.CTRLA.bit.TXPO = COM_TX_PAD; // TX on PAD2
+	COM_UART->USART.CTRLB.bit.SBMODE = 0;		 // one stop bit
+	COM_UART->USART.CTRLB.bit.CHSIZE = 0;		 // 8 bits
+	COM_UART->USART.CTRLB.bit.RXEN = 1;			 // enable receiver
+	COM_UART->USART.CTRLB.bit.TXEN = 1;			 // enable transmitter
 
-	while (COM->USART.SYNCBUSY.bit.CTRLB)
+	while (COM_UART->USART.SYNCBUSY.bit.CTRLB)
 		;
 
 	uint16_t baud = (uint16_t)(65536.0f * (1.0f - (((float)BAUDRATE) / (F_CPU >> 4))));
 
-	COM->USART.BAUD.reg = baud;
+	COM_UART->USART.BAUD.reg = baud;
 	mcu_config_altfunc(TX);
 	mcu_config_altfunc(RX);
+	COM_UART->USART.INTENSET.bit.RXC = 1; // enable recieved interrupt
+	COM_UART->USART.INTENSET.bit.ERROR = 1;
 
-#ifndef ENABLE_SYNC_RX
-	COM->USART.INTENSET.bit.RXC = 1; // enable recieved interrupt
-	COM->USART.INTENSET.bit.ERROR = 1;
-#endif
-#ifndef ENABLE_SYNC_TX
-	COM->USART.INTENCLR.reg = SERCOM_USART_INTENCLR_DRE;
-#endif
 	NVIC_ClearPendingIRQ(COM_IRQ);
 	NVIC_EnableIRQ(COM_IRQ);
 	NVIC_SetPriority(COM_IRQ, 0);
 
-	// enable COM
-	COM->USART.CTRLA.bit.ENABLE = 1;
-	while (COM->USART.SYNCBUSY.bit.ENABLE)
+	// enable COM_UART
+	COM_UART->USART.CTRLA.bit.ENABLE = 1;
+	while (COM_UART->USART.SYNCBUSY.bit.ENABLE)
 		;
 
 #endif
-#if (INTERFACE == INTERFACE_USB)
+#ifdef MCU_HAS_UART2
+	PM->APBCMASK.reg |= PM_APBCMASK_COM2;
+
+	/* Setup GCLK SERCOMx to use GENCLK0 */
+	GCLK->CLKCTRL.reg = GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN_GCLK0 | GCLK_CLKCTRL_ID_COM2;
+	while (GCLK->STATUS.bit.SYNCBUSY)
+		;
+
+	// Start the Software Reset
+	COM2_UART->USART.CTRLA.bit.SWRST = 1;
+
+	while (COM2_UART->USART.SYNCBUSY.bit.SWRST)
+		;
+
+	COM2_UART->USART.CTRLA.bit.MODE = 1;
+	COM2_UART->USART.CTRLA.bit.SAMPR = 0;		   // 16x sample rate
+	COM2_UART->USART.CTRLA.bit.FORM = 0;		   // no parity
+	COM2_UART->USART.CTRLA.bit.DORD = 1;		   // LSB first
+	COM2_UART->USART.CTRLA.bit.RXPO = COM2_RX_PAD; // RX on PAD3
+	COM2_UART->USART.CTRLA.bit.TXPO = COM2_TX_PAD; // TX on PAD2
+	COM2_UART->USART.CTRLB.bit.SBMODE = 0;		   // one stop bit
+	COM2_UART->USART.CTRLB.bit.CHSIZE = 0;		   // 8 bits
+	COM2_UART->USART.CTRLB.bit.RXEN = 1;		   // enable receiver
+	COM2_UART->USART.CTRLB.bit.TXEN = 1;		   // enable transmitter
+
+	while (COM2_UART->USART.SYNCBUSY.bit.CTRLB)
+		;
+
+	uint16_t baud2 = (uint16_t)(65536.0f * (1.0f - (((float)BAUDRATE2) / (F_CPU >> 4))));
+
+	COM2_UART->USART.BAUD.reg = baud2;
+	mcu_config_altfunc(TX2);
+	mcu_config_altfunc(RX2);
+	COM2_UART->USART.INTENSET.bit.RXC = 1; // enable recieved interrupt
+	COM2_UART->USART.INTENSET.bit.ERROR = 1;
+
+	NVIC_ClearPendingIRQ(COM2_IRQ);
+	NVIC_EnableIRQ(COM2_IRQ);
+	NVIC_SetPriority(COM2_IRQ, 0);
+
+	// enable COM_UART
+	COM2_UART->USART.CTRLA.bit.ENABLE = 1;
+	while (COM2_UART->USART.SYNCBUSY.bit.ENABLE)
+		;
+
+#endif
+#ifdef MCU_HAS_USB
 	PM->AHBMASK.reg |= PM_AHBMASK_USB;
 
 	mcu_config_input(USB_DM);
@@ -306,15 +426,15 @@ void mcu_usart_init(void)
 	// USB->DEVICE.CTRLB.reg |= USB_DEVICE_CTRLB_SPDCONF_FS;
 	while (USB->DEVICE.SYNCBUSY.bit.SWRST)
 		;
-	tusb_init();
+	tusb_cdc_init();
 #endif
 }
 
-#if (INTERFACE == INTERFACE_USB)
+#ifdef MCU_HAS_USB
 void USB_Handler(void)
 {
 	mcu_disable_global_isr();
-	tud_int_handler(0);
+	tusb_cdc_isr_handler();
 	mcu_enable_global_isr();
 }
 #endif
@@ -325,23 +445,23 @@ static uint16_t mcu_servos[6];
 
 static FORCEINLINE void mcu_clear_servos()
 {
-#if SERVO0 >= 0
-	mcu_clear_output(SERVO0);
+#if ASSERT_PIN(SERVO0)
+	io_clear_output(SERVO0);
 #endif
-#if SERVO1 >= 0
-	mcu_clear_output(SERVO1);
+#if ASSERT_PIN(SERVO1)
+	io_clear_output(SERVO1);
 #endif
-#if SERVO2 >= 0
-	mcu_clear_output(SERVO2);
+#if ASSERT_PIN(SERVO2)
+	io_clear_output(SERVO2);
 #endif
-#if SERVO3 >= 0
-	mcu_clear_output(SERVO3);
+#if ASSERT_PIN(SERVO3)
+	io_clear_output(SERVO3);
 #endif
-#if SERVO4 >= 0
-	mcu_clear_output(SERVO4);
+#if ASSERT_PIN(SERVO4)
+	io_clear_output(SERVO4);
 #endif
-#if SERVO5 >= 0
-	mcu_clear_output(SERVO5);
+#if ASSERT_PIN(SERVO5)
+	io_clear_output(SERVO5);
 #endif
 }
 
@@ -444,39 +564,39 @@ void sysTickHook(void)
 
 	switch (servo_counter)
 	{
-#if SERVO0 >= 0
+#if ASSERT_PIN(SERVO0)
 	case SERVO0_FRAME:
 		servo_start_timeout(mcu_servos[0]);
-		mcu_set_output(SERVO0);
+		io_set_output(SERVO0);
 		break;
 #endif
-#if SERVO1 >= 0
+#if ASSERT_PIN(SERVO1)
 	case SERVO1_FRAME:
-		mcu_set_output(SERVO1);
+		io_set_output(SERVO1);
 		servo_start_timeout(mcu_servos[1]);
 		break;
 #endif
-#if SERVO2 >= 0
+#if ASSERT_PIN(SERVO2)
 	case SERVO2_FRAME:
-		mcu_set_output(SERVO2);
+		io_set_output(SERVO2);
 		servo_start_timeout(mcu_servos[2]);
 		break;
 #endif
-#if SERVO3 >= 0
+#if ASSERT_PIN(SERVO3)
 	case SERVO3_FRAME:
-		mcu_set_output(SERVO3);
+		io_set_output(SERVO3);
 		servo_start_timeout(mcu_servos[3]);
 		break;
 #endif
-#if SERVO4 >= 0
+#if ASSERT_PIN(SERVO4)
 	case SERVO4_FRAME:
-		mcu_set_output(SERVO4);
+		io_set_output(SERVO4);
 		servo_start_timeout(mcu_servos[4]);
 		break;
 #endif
-#if SERVO5 >= 0
+#if ASSERT_PIN(SERVO5)
 	case SERVO5_FRAME:
-		mcu_set_output(SERVO5);
+		io_set_output(SERVO5);
 		servo_start_timeout(mcu_servos[5]);
 		break;
 #endif
@@ -557,42 +677,7 @@ void mcu_init(void)
 
 #endif
 #ifdef MCU_HAS_I2C
-	PM->APBCMASK.reg |= PM_APBCMASK_I2CCOM;
-
-	/* Setup GCLK SERCOM */
-	GCLK->CLKCTRL.reg = GCLK_CLKCTRL_ID(0) | GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_ID_I2CCOM;
-	while (GCLK->STATUS.bit.SYNCBUSY)
-		;
-
-	// Start the Software Reset
-	I2CCOM->I2CM.CTRLA.bit.SWRST = 1;
-
-	while (I2CCOM->I2CM.SYNCBUSY.bit.SWRST)
-		;
-
-	I2CCOM->I2CM.CTRLB.reg = SERCOM_I2CM_CTRLB_SMEN;
-	while (I2CCOM->I2CM.SYNCBUSY.reg)
-		;
-
-	I2CCOM->I2CM.BAUD.reg = SERCOM_I2CM_BAUD_BAUD(F_CPU / I2C_FREQ);
-	while (I2CCOM->I2CM.SYNCBUSY.reg)
-		;
-
-	I2CCOM->I2CM.CTRLA.reg = SERCOM_I2CM_CTRLA_ENABLE | SERCOM_I2CM_CTRLA_MODE_I2C_MASTER | SERCOM_I2CM_CTRLA_SDAHOLD(3);
-	while (I2CCOM->I2CM.SYNCBUSY.reg)
-		;
-
-	I2CCOM->I2CM.STATUS.reg |= SERCOM_I2CM_STATUS_BUSSTATE(1);
-	while (I2CCOM->I2CM.SYNCBUSY.reg)
-		;
-
-	mcu_config_altfunc(I2C_SCL);
-	mcu_config_altfunc(I2C_SDA);
-
-	I2CCOM->I2CM.CTRLA.bit.ENABLE = 1;
-	while (I2CCOM->I2CM.SYNCBUSY.reg)
-		;
-
+	mcu_i2c_config(I2C_FREQ);
 #endif
 	mcu_enable_global_isr();
 }
@@ -602,7 +687,7 @@ void mcu_init(void)
 void mcu_set_servo(uint8_t servo, uint8_t value)
 {
 #if SERVOS_MASK > 0
-	mcu_servos[servo - SERVO0_UCNC_INTERNAL_PIN] = (((uint16_t)value)<<1);
+	mcu_servos[servo - SERVO_PINS_OFFSET] = (((uint16_t)value) << 1);
 #endif
 }
 
@@ -613,8 +698,8 @@ void mcu_set_servo(uint8_t servo, uint8_t value)
 uint8_t mcu_get_servo(uint8_t servo)
 {
 #if SERVOS_MASK > 0
-	uint8_t offset = servo - SERVO0_UCNC_INTERNAL_PIN;
-	uint8_t unscaled = (uint8_t)(mcu_servos[offset] >>1);
+	uint8_t offset = servo - SERVO_PINS_OFFSET;
+	uint8_t unscaled = (uint8_t)(mcu_servos[offset] >> 1);
 
 	if ((1U << offset) & SERVOS_MASK)
 	{
@@ -655,7 +740,7 @@ void mcu_disable_probe_isr(void)
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_get_analog
-uint8_t mcu_get_analog(uint8_t channel)
+uint16_t mcu_get_analog(uint8_t channel)
 {
 	return 0;
 }
@@ -683,7 +768,7 @@ uint8_t mcu_get_pwm(uint8_t pwm)
 #endif
 
 /**
- * checks if the serial hardware of the MCU is ready do send the next char
+ * checks if the serial hardware of the MCU is ready do send the next uint8_t
  * */
 #ifndef mcu_tx_ready
 bool mcu_tx_ready(void)
@@ -693,69 +778,127 @@ bool mcu_tx_ready(void)
 #endif
 
 /**
- * checks if the serial hardware of the MCU has a new char ready to be read
- * */
-#ifndef mcu_rx_ready
-bool mcu_rx_ready(void)
-{
-	return false;
-} // Stop async send
-#endif
-
-/**
- * sends a char either via uart (hardware, software or USB virtual COM port)
+ * sends a uint8_t either via uart (hardware, software or USB virtual COM_UART port)
  * can be defined either as a function or a macro call
  * */
-#ifndef mcu_putc
-void mcu_putc(char c)
+#ifdef MCU_HAS_USB
+DECL_BUFFER(uint8_t, usb_rx, RX_BUFFER_SIZE);
+
+uint8_t mcu_usb_getc(void)
 {
-#if (INTERFACE == INTERFACE_USB)
-	if (c != 0)
+	uint8_t c = 0;
+	BUFFER_DEQUEUE(usb_rx, &c);
+	return c;
+}
+
+uint8_t mcu_usb_available(void)
+{
+	return BUFFER_READ_AVAILABLE(usb_rx);
+}
+
+void mcu_usb_clear(void)
+{
+	BUFFER_CLEAR(usb_rx);
+}
+
+void mcu_usb_putc(uint8_t c)
+{
+	if (!tusb_cdc_write_available())
 	{
-		tud_cdc_write_char(c);
+		mcu_usb_flush();
+		if (!tusb_cdc_connected)
+		{
+			return;
+		}
 	}
-	if (c == '\r' || c == 0)
+	tusb_cdc_write(c);
+}
+
+void mcu_usb_flush(void)
+{
+	tusb_cdc_flush();
+	while (!tusb_cdc_write_available())
 	{
-		tud_cdc_write_flush();
+		mcu_dotasks(); // tinyusb device task
 	}
-#else
-#if (INTERFACE == INTERFACE_UART)
-#ifdef ENABLE_SYNC_TX
-	while (!mcu_tx_ready())
-		;
-#endif
-	COM_OUTREG = c;
-#ifndef ENABLE_SYNC_TX
-	COM->USART.INTENSET.bit.DRE = 1; // enable recieved interrupt
-#endif
-#endif
-#endif
 }
 #endif
 
-/**
- * gets a char either via uart (hardware, software or USB virtual COM port)
- * can be defined either as a function or a macro call
- * */
-#ifndef mcu_getc
-char mcu_getc(void)
+#ifdef MCU_HAS_UART
+uint8_t mcu_uart_getc(void)
 {
-#if (INTERFACE == INTERFACE_USB)
-	while (!tud_cdc_available())
-	{
-		tud_task();
-	}
+	uint8_t c = 0;
+	BUFFER_DEQUEUE(uart_rx, &c);
+	return c;
+}
 
-	return (unsigned char)tud_cdc_read_char();
-#else
-#if (INTERFACE == INTERFACE_UART)
-#ifdef ENABLE_SYNC_RX
-	while (!mcu_rx_ready())
-		;
+uint8_t mcu_uart_available(void)
+{
+	return BUFFER_READ_AVAILABLE(uart_rx);
+}
+
+void mcu_uart_clear(void)
+{
+	BUFFER_CLEAR(uart_rx);
+}
+
+void mcu_uart_putc(uint8_t c)
+{
+	while (BUFFER_FULL(uart_tx))
+	{
+		mcu_uart_flush();
+	}
+	BUFFER_ENQUEUE(uart_tx, &c);
+}
+
+void mcu_uart_flush(void)
+{
+	if (!(COM_UART->USART.INTENSET.reg & SERCOM_USART_INTENSET_DRE)) // not ready start flushing
+	{
+		COM_UART->USART.INTENSET.bit.DRE = 1; // enable recieved interrupt
+#if ASSERT_PIN(ACTIVITY_LED)
+		io_toggle_output(ACTIVITY_LED);
 #endif
-	return (char)(0xff & COM_INREG);
+	}
+}
 #endif
+
+#ifdef MCU_HAS_UART2
+uint8_t mcu_uart2_getc(void)
+{
+	uint8_t c = 0;
+	BUFFER_DEQUEUE(uart2_rx, &c);
+	return c;
+}
+
+uint8_t mcu_uart2_available(void)
+{
+	return BUFFER_READ_AVAILABLE(uart2_rx);
+}
+
+void mcu_uart2_clear(void)
+{
+	BUFFER_CLEAR(uart2_rx);
+}
+
+void mcu_uart2_putc(uint8_t c)
+{
+	while (BUFFER_FULL(uart2_tx))
+	{
+		mcu_uart2_flush();
+	}
+	BUFFER_ENQUEUE(uart2_tx, &c);
+}
+
+void mcu_uart_flush(void)
+{
+	if (!(COM2_UART->USART.INTENSET.reg & SERCOM_USART_INTENSET_DRE)) // not ready start flushing
+	{
+		COM2_UART->USART.INTENSET.bit.DRE = 1; // enable tx interrupt
+#if ASSERT_PIN(ACTIVITY_LED)
+		io_toggle_output(ACTIVITY_LED);
 #endif
+	}
 }
 #endif
 
@@ -786,12 +929,10 @@ void mcu_disable_global_isr(void)
  * */
 void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 {
-	if (frequency < F_STEP_MIN)
-		frequency = F_STEP_MIN;
-	if (frequency > F_STEP_MAX)
-		frequency = F_STEP_MAX;
+	frequency = CLAMP((float)F_STEP_MIN, frequency, (float)F_STEP_MAX);
 
 	uint32_t clocks = (uint32_t)((F_TIMERS >> 1) / frequency);
+	*prescaller = 0;
 
 	while (clocks > 0xFFFF)
 	{
@@ -808,6 +949,11 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 	}
 
 	*ticks = ((uint16_t)clocks) - 1;
+}
+
+float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller)
+{
+	return ((float)(F_TIMERS >> 1) / (float)(((uint32_t)ticks + 1) << prescaller));
 }
 
 /**
@@ -919,22 +1065,11 @@ uint32_t mcu_millis()
 	return c;
 }
 
-// void mcu_delay_us(uint16_t delay)
-// {
-// 	uint32_t loops;
-// 	if (!delay)
-// 	{
-// 		return;
-// 	}
-// 	else
-// 	{
-// 		loops = (delay * (F_CPU / 1000000UL) / 6) - 2;
-// 	}
-// 	while (loops--)
-// 		asm("nop");
-// }
+uint32_t mcu_micros()
+{
+	return ((mcu_runtime_ms * 1000) + mcu_free_micros());
+}
 
-#define mcu_micros ((mcu_runtime_ms * 1000) + ((SysTick->LOAD - SysTick->VAL) / (F_CPU / 1000000)))
 #ifndef mcu_delay_us
 void mcu_delay_us(uint16_t delay)
 {
@@ -949,20 +1084,29 @@ void mcu_delay_us(uint16_t delay)
  * runs all internal tasks of the MCU.
  * for the moment these are:
  *   - if USB is enabled and MCU uses tinyUSB framework run tinyUSB tud_task
- *   - if ENABLE_SYNC_RX is enabled check if there are any chars in the rx transmitter (or the tinyUSB buffer) and read them to the mcu_com_rx_cb
- *   - if ENABLE_SYNC_TX is enabled check if serial_tx_empty is false and run mcu_com_tx_cb
  * */
 void mcu_dotasks(void)
 {
-#if (INTERFACE == INTERFACE_USB)
-	tud_cdc_write_flush();
-	tud_task(); // tinyusb device task
-#endif
-#ifdef ENABLE_SYNC_RX
-	while (mcu_rx_ready())
+#ifdef MCU_HAS_USB
+	tusb_cdc_task(); // tinyusb device task
+
+	while (tusb_cdc_available())
 	{
-		unsigned char c = mcu_getc();
-		mcu_com_rx_cb(c);
+		uint8_t c = (uint8_t)tusb_cdc_read();
+#ifndef DETACH_USB_FROM_MAIN_PROTOCOL
+		if (mcu_com_rx_cb(c))
+		{
+			if (BUFFER_FULL(usb_rx))
+			{
+				c = OVF;
+			}
+
+			*(BUFFER_NEXT_FREE(usb_rx)) = c;
+			BUFFER_STORE(usb_rx);
+		}
+#else
+		mcu_usb_rx_cb(c);
+#endif
 	}
 #endif
 }
@@ -1047,6 +1191,13 @@ static void mcu_write_flash_page(const uint32_t destination_address, const uint8
  * */
 uint8_t mcu_eeprom_getc(uint16_t address)
 {
+	if (NVM_STORAGE_SIZE <= address)
+	{
+		DEBUG_STR("EEPROM invalid address @ ");
+		DEBUG_INT(address);
+		DEBUG_PUTC('\n');
+		return 0;
+	}
 	address &= (NVM_EEPROM_SIZE - 1); // keep within 1Kb address range
 
 	if (!samd21_eeprom_loaded)
@@ -1062,7 +1213,12 @@ uint8_t mcu_eeprom_getc(uint16_t address)
  * */
 void mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
-
+	if (NVM_STORAGE_SIZE <= address)
+	{
+		DEBUG_STR("EEPROM invalid address @ ");
+		DEBUG_INT(address);
+		DEBUG_PUTC('\n');
+	}
 	address &= (NVM_EEPROM_SIZE - 1);
 
 	if (!samd21_eeprom_loaded)
@@ -1169,9 +1325,19 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 /**
  * https://www.eevblog.com/forum/microcontrollers/i2c-atmel/
  * */
-#ifndef mcu_i2c_write
-uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
+#if I2C_ADDRESS == 0
+void mcu_i2c_write_stop(bool *stop)
 {
+	if (*stop)
+	{
+		I2CCOM->I2CM.CTRLB.reg |= SERCOM_I2CM_CTRLB_CMD(3);
+	}
+}
+
+static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop, uint32_t ms_timeout)
+{
+	bool stop __attribute__((__cleanup__(mcu_i2c_write_stop))) = send_stop;
+
 	if (send_start)
 	{
 		I2CCOM->I2CM.ADDR.reg = data;
@@ -1181,47 +1347,348 @@ uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 		I2CCOM->I2CM.DATA.reg = data;
 	}
 
-	while (0 == (I2CCOM->I2CM.INTFLAG.reg & SERCOM_I2CM_INTFLAG_MB))
-		;
-
-	if (I2CCOM->I2CM.STATUS.reg & SERCOM_I2CM_STATUS_RXNACK)
+	__TIMEOUT_MS__(ms_timeout)
 	{
-		I2CCOM->I2CM.CTRLB.reg |= SERCOM_I2CM_CTRLB_CMD(3);
-		return 0;
+		if ((I2CCOM->I2CM.INTFLAG.reg & SERCOM_I2CM_INTFLAG_MB))
+		{
+			if (I2CCOM->I2CM.STATUS.reg & SERCOM_I2CM_STATUS_RXNACK)
+			{
+				I2CCOM->I2CM.CTRLB.reg |= SERCOM_I2CM_CTRLB_CMD(3);
+				return I2C_NOTOK;
+			}
+
+			return I2C_OK;
+		}
 	}
 
-	if (send_stop)
-	{
-		I2CCOM->I2CM.CTRLB.reg |= SERCOM_I2CM_CTRLB_CMD(3);
-	}
-
-	return 1;
+	stop = true;
+	return I2C_NOTOK;
 }
-#endif
 
-#ifndef mcu_i2c_read
-uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
+static uint8_t mcu_i2c_read(uint8_t *data, bool with_ack, bool send_stop, uint32_t ms_timeout)
 {
+	*data = 0xFF;
+	bool stop __attribute__((__cleanup__(mcu_i2c_write_stop))) = send_stop;
+
 	if (with_ack)
-	{
-		I2CCOM->I2CM.CTRLB.reg |= SERCOM_I2CM_CTRLB_ACKACT;
-	}
-	else
 	{
 		I2CCOM->I2CM.CTRLB.reg &= ~SERCOM_I2CM_CTRLB_ACKACT;
 	}
-
-	while (0 == (I2CCOM->I2CM.INTFLAG.reg & SERCOM_I2CM_INTFLAG_SB))
-		;
-
-	uint8_t data = I2CCOM->I2CM.DATA.reg;
-
-	if (send_stop)
+	else
 	{
-		I2CCOM->I2CM.CTRLB.reg |= SERCOM_I2CM_CTRLB_CMD(3);
+		I2CCOM->I2CM.CTRLB.reg |= SERCOM_I2CM_CTRLB_ACKACT;
 	}
 
-	return data;
+	__TIMEOUT_MS__(ms_timeout)
+	{
+		if (I2CCOM->I2CM.INTFLAG.reg & SERCOM_I2CM_INTFLAG_SB)
+		{
+			*data = I2CCOM->I2CM.DATA.reg;
+			return I2C_OK;
+		}
+	}
+
+	stop = true;
+	return I2C_NOTOK;
+}
+
+#ifndef mcu_i2c_send
+// master sends command to slave
+uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool release, uint32_t ms_timeout)
+{
+	if (data && datalen)
+	{
+		if (mcu_i2c_write(address << 1, true, false, ms_timeout) == I2C_OK) // start, send address, write
+		{
+			// send data, stop
+			do
+			{
+				datalen--;
+				bool last = (datalen == 0);
+				if (mcu_i2c_write(*data, false, (release & last), ms_timeout) != I2C_OK)
+				{
+					return I2C_NOTOK;
+				}
+				data++;
+
+			} while (datalen);
+
+			return I2C_OK;
+		}
+	}
+
+	return I2C_NOTOK;
+}
+#endif
+
+#ifndef mcu_i2c_receive
+// master receive response from slave
+uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_t ms_timeout)
+{
+	if (data && datalen)
+	{
+		if (mcu_i2c_write((address << 1) | 0x01, true, false, ms_timeout) == I2C_OK) // start, send address, write
+		{
+			do
+			{
+				datalen--;
+				bool last = (datalen == 0);
+				if (mcu_i2c_read(data, !last, last, ms_timeout) != I2C_OK)
+				{
+					return I2C_NOTOK;
+				}
+				data++;
+			} while (datalen);
+			return I2C_OK;
+		}
+	}
+
+	return I2C_NOTOK;
+}
+#endif
+#endif
+
+#ifndef mcu_i2c_config
+void mcu_i2c_config(uint32_t frequency)
+{
+	PM->APBCMASK.reg |= PM_APBCMASK_I2CCOM;
+
+	/* Setup GCLK SERCOM */
+	GCLK->CLKCTRL.reg = GCLK_CLKCTRL_ID(0) | GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_ID_I2CCOM;
+	while (GCLK->STATUS.bit.SYNCBUSY)
+		;
+
+#if I2C_ADDRESS != 0
+	// Start the Software Reset
+	I2CCOM->I2CS.CTRLA.bit.SWRST = 1;
+
+	while (I2CCOM->I2CS.SYNCBUSY.bit.SWRST)
+		;
+
+	I2CCOM->I2CS.CTRLB.reg = SERCOM_I2CS_CTRLB_AACKEN | SERCOM_I2CS_CTRLB_SMEN | SERCOM_I2CS_CTRLB_AMODE(0);
+	while (I2CCOM->I2CS.SYNCBUSY.reg)
+		;
+
+	I2CCOM->I2CS.ADDR.reg = SERCOM_I2CS_ADDR_ADDR(I2C_ADDRESS) | SERCOM_I2CS_ADDR_GENCEN;
+	while (I2CCOM->I2CS.SYNCBUSY.reg)
+		;
+
+	I2CCOM->I2CS.INTENSET.reg = SERCOM_I2CS_INTENSET_AMATCH | SERCOM_I2CS_INTENSET_DRDY | SERCOM_I2CS_INTENSET_PREC | SERCOM_I2CS_INTENSET_ERROR;
+	NVIC_SetPriority(I2C_IRQ, 10);
+	NVIC_ClearPendingIRQ(I2C_IRQ);
+	NVIC_EnableIRQ(I2C_IRQ);
+
+	I2CCOM->I2CS.CTRLA.reg = SERCOM_I2CS_CTRLA_ENABLE | SERCOM_I2CS_CTRLA_MODE_I2C_SLAVE | SERCOM_I2CS_CTRLA_SDAHOLD(3);
+	while (I2CCOM->I2CS.SYNCBUSY.reg)
+		;
+#else
+	// Start the Software Reset
+	I2CCOM->I2CM.CTRLA.bit.SWRST = 1;
+
+	while (I2CCOM->I2CM.SYNCBUSY.bit.SWRST)
+		;
+
+	I2CCOM->I2CM.CTRLB.reg = SERCOM_I2CM_CTRLB_SMEN;
+	while (I2CCOM->I2CM.SYNCBUSY.reg)
+		;
+
+	I2CCOM->I2CM.BAUD.reg = F_CPU / (2 * frequency) - 5 - (((F_CPU / 1000000) * 125) / (2 * 1000));
+	while (I2CCOM->I2CM.SYNCBUSY.reg)
+		;
+
+	I2CCOM->I2CM.CTRLA.reg = SERCOM_I2CM_CTRLA_ENABLE | SERCOM_I2CM_CTRLA_MODE_I2C_MASTER | SERCOM_I2CM_CTRLA_SDAHOLD(3);
+	while (I2CCOM->I2CM.SYNCBUSY.reg)
+		;
+
+	I2CCOM->I2CM.STATUS.reg |= SERCOM_I2CM_STATUS_BUSSTATE(1);
+	while (I2CCOM->I2CM.SYNCBUSY.reg)
+		;
+
+	mcu_config_altfunc(I2C_CLK);
+	mcu_config_altfunc(I2C_DATA);
+
+	I2CCOM->I2CM.CTRLA.bit.ENABLE = 1;
+	while (I2CCOM->I2CM.SYNCBUSY.reg)
+		;
+#endif
+}
+#endif
+
+#if I2C_ADDRESS != 0
+
+uint8_t mcu_i2c_buffer[I2C_SLAVE_BUFFER_SIZE];
+
+void I2C_ISR(void)
+{
+	static uint8_t index = 0;
+	static uint8_t datalen = 0;
+
+	uint8_t i = index;
+
+	switch (I2CCOM->I2CS.INTFLAG.reg)
+	{
+	case SERCOM_I2CS_INTFLAG_AMATCH:
+		i = 0;
+		if (I2CCOM->I2CS.STATUS.bit.DIR)
+		{
+			// write first byte
+			I2CCOM->I2CS.DATA.reg = mcu_i2c_buffer[i++];
+			I2CCOM->I2CS.CTRLB.bit.ACKACT = 0;
+			if (i >= datalen)
+			{
+				I2CCOM->I2CS.CTRLB.bit.ACKACT = 1;
+				I2CCOM->I2CM.CTRLB.reg |= SERCOM_I2CM_CTRLB_CMD(2);
+				return;
+			}
+			index = i;
+		}
+		index = i;
+		break;
+	case SERCOM_I2CS_INTFLAG_DRDY:
+		if (I2CCOM->I2CS.STATUS.bit.DIR)
+		{
+			I2CCOM->I2CS.DATA.reg = mcu_i2c_buffer[i++];
+			if (i >= datalen)
+			{
+				I2CCOM->I2CS.CTRLB.bit.ACKACT = 1;
+				I2CCOM->I2CM.CTRLB.reg |= SERCOM_I2CM_CTRLB_CMD(2);
+				return;
+			}
+		}
+		else
+		{
+			if (i < I2C_SLAVE_BUFFER_SIZE)
+			{
+				mcu_i2c_buffer[i++] = I2CCOM->I2CS.DATA.reg;
+				if (i >= I2C_SLAVE_BUFFER_SIZE)
+				{
+					I2CCOM->I2CS.CTRLB.bit.ACKACT = 1;
+					I2CCOM->I2CM.CTRLB.reg |= SERCOM_I2CM_CTRLB_CMD(2);
+					return;
+				}
+			}
+		}
+
+		index = i;
+		break;
+	case SERCOM_I2CS_INTFLAG_PREC:
+		// stop transmission
+		index = 0;
+		mcu_i2c_buffer[i] = 0;
+		// unlock ISR and process the info request
+		if (!(I2CCOM->I2CS.STATUS.bit.DIR) && i)
+		{
+			mcu_enable_global_isr();
+			mcu_i2c_slave_cb(mcu_i2c_buffer, &i);
+			datalen = MIN(i, I2C_SLAVE_BUFFER_SIZE);
+		}
+		break;
+	case SERCOM_I2CS_INTFLAG_ERROR:
+		// stop transmission
+		index = 0;
+		break;
+	}
+
+	I2CCOM->I2CS.CTRLB.bit.ACKACT = 0;
+	I2CCOM->I2CM.CTRLB.reg |= SERCOM_I2CM_CTRLB_CMD(3);
+
+	NVIC_ClearPendingIRQ(I2C_IRQ);
+}
+#endif
+
+#endif
+
+#ifdef MCU_HAS_ONESHOT_TIMER
+
+void MCU_ONESHOT_ISR(void)
+{
+#if (ONESHOT_TIMER < 3)
+	ONESHOT_REG->INTENSET.bit.MC0 = 0;
+	ONESHOT_REG->CTRLA.bit.ENABLE = 0; // disable timer and also write protection
+	while (ONESHOT_REG->SYNCBUSY.bit.ENABLE)
+		;
+	if (ONESHOT_REG->INTFLAG.bit.MC0)
+	{
+		ONESHOT_REG->INTFLAG.bit.MC0 = 1;
+#else
+	ONESHOT_REG->COUNT16.INTENSET.bit.MC0 = 0;
+	ONESHOT_REG->COUNT16.CTRLA.bit.ENABLE = 0;
+	while (ONESHOT_REG->COUNT16.STATUS.bit.SYNCBUSY)
+		;
+	if (ONESHOT_REG->COUNT16.INTFLAG.bit.MC0)
+	{
+		ONESHOT_REG->COUNT16.INTFLAG.bit.MC0 = 1;
+#endif
+	}
+
+	if (mcu_timeout_cb)
+	{
+		mcu_timeout_cb();
+	}
+
+	NVIC_ClearPendingIRQ(ONESHOT_IRQ);
+}
+
+/**
+ * configures a single shot timeout in us
+ * */
+#ifndef mcu_config_timeout
+void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
+{
+	mcu_timeout_cb = fp;
+	uint16_t ticks = (uint16_t)(timeout - 1);
+	uint16_t prescaller = 3; // div by 8 giving one tick per us
+
+#if (ONESHOT_TIMER < 3)
+	// reset timer
+	ONESHOT_REG->CTRLA.bit.SWRST = 1;
+	while (ONESHOT_REG->SYNCBUSY.bit.SWRST)
+		;
+	// enable the timer in the APB
+	ONESHOT_REG->CTRLA.bit.PRESCALER = (uint8_t)prescaller; // normal counter
+	ONESHOT_REG->WAVE.bit.WAVEGEN = 1;						// match compare
+	while (ONESHOT_REG->SYNCBUSY.bit.WAVE)
+		;
+	ONESHOT_REG->CC[0].reg = ticks;
+	while (ONESHOT_REG->SYNCBUSY.bit.CC0)
+		;
+
+	NVIC_SetPriority(ONESHOT_IRQ, 3);
+	NVIC_ClearPendingIRQ(ONESHOT_IRQ);
+	NVIC_EnableIRQ(ONESHOT_IRQ);
+#else
+	// reset timer
+	ONESHOT_REG->COUNT16.CTRLA.bit.SWRST = 1;
+	while (ONESHOT_REG->COUNT16.STATUS.bit.SYNCBUSY)
+		;
+	// enable the timer in the APB
+	ONESHOT_REG->COUNT16.CTRLA.bit.PRESCALER = (uint8_t)prescaller; // normal counter
+	ONESHOT_REG->COUNT16.CTRLA.bit.WAVEGEN = 1;						// match compare
+	while (ONESHOT_REG->COUNT16.STATUS.bit.SYNCBUSY)
+		;
+	ONESHOT_REG->COUNT16.CC[0].reg = ticks;
+	while (ONESHOT_REG->COUNT16.STATUS.bit.SYNCBUSY)
+		;
+	NVIC_SetPriority(ONESHOT_IRQ, 1);
+	NVIC_ClearPendingIRQ(ONESHOT_IRQ);
+	NVIC_EnableIRQ(ONESHOT_IRQ);
+#endif
+}
+#endif
+
+/**
+ * starts the timeout. Once hit the the respective callback is called
+ * */
+#ifndef mcu_start_timeout
+void mcu_start_timeout()
+{
+#if (ONESHOT_TIMER < 3)
+	ONESHOT_REG->INTENSET.bit.MC0 = 1;
+	ONESHOT_REG->CTRLA.bit.ENABLE = 1; // enable timer and also write protection
+#else
+	ONESHOT_REG->COUNT16.INTENSET.bit.MC0 = 1;
+	ONESHOT_REG->COUNT16.CTRLA.bit.ENABLE = 1; // enable timer and also write protection
+#endif
 }
 #endif
 #endif

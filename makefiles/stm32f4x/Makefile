@@ -94,8 +94,6 @@ BOARD ?= BLACKPILL
 
 #interface 0-USART 1-USB
 
-INTERFACE ?= 1
-
 # mcu
 MCU = $(CPU) -mthumb $(FPU) $(FLOAT-ABI)
 
@@ -108,8 +106,8 @@ BUILD_OPTIONS ?=
 
 C_DEFS =  $(BUILD_OPTIONS)\
 -DSTM32F401xC \
--DBOARD=BOARD_$(BOARD) \
--DINTERFACE=$(INTERFACE)
+-DCFG_TUSB_MCU=OPT_MCU_STM32F4 \
+-DBOARD=BOARD_$(BOARD)
 
 # AS includes
 AS_INCLUDES = 
@@ -128,7 +126,8 @@ C_INCLUDES =  \
 -I"./" \
 -Idrivers/ \
 -I"../../uCNC/" \
--I"../../uCNC/src/"
+-I"../../uCNC/src/"\
+-I"../../uCNC-tinyusb/src"
 
 C_INCLUDES += $(foreach d,$(C_HEADERS),$(addsuffix $(dir $(d)),"-I"))
 

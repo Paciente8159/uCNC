@@ -33,10 +33,6 @@ extern "C"
 #define MCU_CALLBACK
 #endif
 
-#ifndef MCU_TX_CALLBACK
-#define MCU_TX_CALLBACK MCU_CALLBACK
-#endif
-
 #ifndef MCU_RX_CALLBACK
 #define MCU_RX_CALLBACK MCU_CALLBACK
 #endif
@@ -45,14 +41,50 @@ extern "C"
 #define MCU_IO_CALLBACK MCU_CALLBACK
 #endif
 
+#ifndef F_STEP_MAX
+#define F_STEP_MAX 30000
+#endif
+
+#define STREAM_UART 1
+#define STREAM_UART2 2
+#define STREAM_USB 4
+#define STREAM_WIFI 8
+#define STREAM_BTH 16
+#define STREAM_BOARDCAST 255
+
+// defines special mcu to access flash strings and arrays
+#ifndef __rom__
+#define __rom__
+#endif
+#ifndef __romstr__
+#define __romstr__
+#endif
+#ifndef __romarr__
+#define __romarr__ const uint8_t
+#endif
+#ifndef rom_strptr
+#define rom_strptr *
+#endif
+#ifndef rom_strcpy
+#define rom_strcpy strcpy
+#endif
+#ifndef rom_strncpy
+#define rom_strncpy strncpy
+#endif
+#ifndef rom_memcpy
+#define rom_memcpy memcpy
+#endif
+#ifndef rom_read_byte
+#define rom_read_byte *
+#endif
+
 	// the extern is not necessary
 	// this explicit declaration just serves to reeinforce the idea that these callbacks are implemented on other µCNC core code translation units
 	// these callbacks provide a transparent way for the mcu to call them when the ISR/IRQ is triggered
 
 	MCU_CALLBACK void mcu_step_cb(void);
 	MCU_CALLBACK void mcu_step_reset_cb(void);
-	MCU_RX_CALLBACK void mcu_com_rx_cb(unsigned char c);
-	MCU_TX_CALLBACK void mcu_com_tx_cb();
+	MCU_RX_CALLBACK bool mcu_com_rx_cb(uint8_t c);
 	MCU_CALLBACK void mcu_rtc_cb(uint32_t millis);
 	MCU_IO_CALLBACK void mcu_controls_changed_cb(void);
 	MCU_IO_CALLBACK void mcu_limits_changed_cb(void);
@@ -67,6 +99,14 @@ extern "C"
  * */
 #ifndef mcu_config_input
 	void mcu_config_input(uint8_t pin);
+#endif
+
+/**
+ * config pullup
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_config_pullup
+	void mcu_config_pullup(uint8_t pin);
 #endif
 
 /**
@@ -125,6 +165,13 @@ extern "C"
 	void mcu_io_init(void);
 
 	/**
+	 * This can be used to set the defaults state of IO pins on reset. (overridable)
+	 * */
+#ifndef mcu_io_reset
+	void mcu_io_reset(void);
+#endif
+
+	/**
 	 * initializes the mcu
 	 * this function needs to:
 	 *   - configure all IO pins (digital IO, PWM, Analog, etc...)
@@ -155,7 +202,7 @@ extern "C"
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_get_analog
-	uint8_t mcu_get_analog(uint8_t channel);
+	uint16_t mcu_get_analog(uint8_t channel);
 #endif
 
 /**
@@ -186,7 +233,6 @@ extern "C"
  * sets the pwm for a servo (50Hz with tON between 1~2ms)
  * can be defined either as a function or a macro call
  * */
-#define SERVO0_UCNC_INTERNAL_PIN 40
 #ifndef mcu_set_servo
 	void mcu_set_servo(uint8_t servo, uint8_t value);
 #endif
@@ -197,36 +243,6 @@ extern "C"
  * */
 #ifndef mcu_get_servo
 	uint8_t mcu_get_servo(uint8_t servo);
-#endif
-
-/**
- * checks if the serial hardware of the MCU is ready do send the next char
- * */
-#ifndef mcu_tx_ready
-	bool mcu_tx_ready(void); // Start async send
-#endif
-
-/**
- * checks if the serial hardware of the MCU has a new char ready to be read
- * */
-#ifndef mcu_rx_ready
-	bool mcu_rx_ready(void); // Stop async send
-#endif
-
-/**
- * sends a char either via uart (hardware, software or USB virtual COM port)
- * can be defined either as a function or a macro call
- * */
-#ifndef mcu_putc
-	void mcu_putc(char c);
-#endif
-
-/**
- * gets a char either via uart (hardware, software or USB virtual COM port)
- * can be defined either as a function or a macro call
- * */
-#ifndef mcu_getc
-	char mcu_getc(void);
 #endif
 
 // ISR
@@ -256,9 +272,14 @@ extern "C"
 
 	// Step interpolator
 	/**
-	 * convert step rate to clock cycles
+	 * convert step rate/frequency to timer ticks and prescaller
 	 * */
 	void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller);
+
+	/**
+	 * convert timer ticks and prescaller to step rate/frequency
+	 * */
+	float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller);
 
 	/**
 	 * starts the timer interrupt that generates the step pulses for the interpolator
@@ -275,240 +296,185 @@ extern "C"
 	 * */
 	void mcu_stop_itp_isr(void);
 
-	/**
-	 * gets the MCU running time in milliseconds.
-	 * the time counting is controled by the internal RTC
-	 * */
-	uint32_t mcu_millis();
-
-	/**
-	 * provides a delay in us (micro seconds)
-	 * the maximum allowed delay is 255 us
-	 * */
-#ifndef mcu_delay_us
-	void mcu_delay_us(uint16_t delay);
+/**
+ * gets the MCU running time in milliseconds.
+ * the time counting is controled by the internal RTC
+ * */
+#ifndef mcu_millis
+	uint32_t mcu_millis(void);
 #endif
 
-	/**
-	 * provides a delay in us (micro seconds)
-	 * the maximum allowed delay is 255 us
-	 * */
-#ifndef mcu_delay_100ns
-	void mcu_delay_100ns();
+/**
+ * gets the MCU running time in microseconds.
+ * the time counting is controled by the internal RTC
+ * */
+#ifndef mcu_micros
+	uint32_t mcu_micros(void);
+#endif
+
+/**
+ * gets the microsecond portion of the free RTC clock counter (from 0 to 1000).
+ * this free runner is always running even during an ISR or atomic operation
+ * */
+#ifndef mcu_free_micros
+	uint32_t mcu_free_micros(void);
 #endif
 
 #ifndef mcu_nop
 #define mcu_nop() asm volatile("nop\n\t")
 #endif
 
-#if (F_CPU<20000000UL)
-#define MCU_100NS_LOOPS 1
+	void mcu_delay_loop(uint16_t loops);
+
+#ifndef mcu_delay_cycles
+// set per MCU
+#ifndef MCU_CLOCKS_PER_CYCLE
+#error "MCU_CLOCKS_PER_CYCLE not defined for this MCU"
 #endif
-#if (F_CPU>=20000000UL && F_CPU<30000000UL)
-#define MCU_100NS_LOOPS 2
+#ifndef MCU_CYCLES_PER_LOOP_OVERHEAD
+#error "MCU_CYCLES_PER_LOOP_OVERHEAD not defined for this MCU"
 #endif
-#if (F_CPU>=30000000UL && F_CPU<40000000UL)
-#define MCU_100NS_LOOPS 3
+#ifndef MCU_CYCLES_PER_LOOP
+#error "MCU_CYCLES_PER_LOOP not defined for this MCU"
 #endif
-#if (F_CPU>=40000000UL && F_CPU<50000000UL)
-#define MCU_100NS_LOOPS 4
-#endif
-#if (F_CPU>=50000000UL && F_CPU<60000000UL)
-#define MCU_100NS_LOOPS 5
-#endif
-#if (F_CPU>=60000000UL && F_CPU<70000000UL)
-#define MCU_100NS_LOOPS 6
-#endif
-#if (F_CPU>=70000000UL && F_CPU<80000000UL)
-#define MCU_100NS_LOOPS 7
-#endif
-#if (F_CPU>=80000000UL && F_CPU<90000000UL)
-#define MCU_100NS_LOOPS 8
-#endif
-#if (F_CPU>=90000000UL && F_CPU<100000000UL)
-#define MCU_100NS_LOOPS 9
-#endif
-#if (F_CPU>=100000000UL && F_CPU<110000000UL)
-#define MCU_100NS_LOOPS 10
-#endif
-#if (F_CPU>=110000000UL && F_CPU<120000000UL)
-#define MCU_100NS_LOOPS 11
-#endif
-#if (F_CPU>=120000000UL && F_CPU<130000000UL)
-#define MCU_100NS_LOOPS 12
-#endif
-#if (F_CPU>=130000000UL && F_CPU<140000000UL)
-#define MCU_100NS_LOOPS 13
-#endif
-#if (F_CPU>=140000000UL && F_CPU<150000000UL)
-#define MCU_100NS_LOOPS 14
-#endif
-#if (F_CPU>=150000000UL && F_CPU<160000000UL)
-#define MCU_100NS_LOOPS 15
-#endif
-#if (F_CPU>=160000000UL && F_CPU<170000000UL)
-#define MCU_100NS_LOOPS 16
-#endif
-#if (F_CPU>=170000000UL && F_CPU<180000000UL)
-#define MCU_100NS_LOOPS 17
-#endif
-#if (F_CPU>=180000000UL && F_CPU<190000000UL)
-#define MCU_100NS_LOOPS 18
-#endif
-#if (F_CPU>=190000000UL && F_CPU<200000000UL)
-#define MCU_100NS_LOOPS 19
-#endif
-#if (F_CPU>=200000000UL && F_CPU<210000000UL)
-#define MCU_100NS_LOOPS 20
-#endif
-#if (F_CPU>=210000000UL && F_CPU<220000000UL)
-#define MCU_100NS_LOOPS 21
-#endif
-#if (F_CPU>=220000000UL && F_CPU<230000000UL)
-#define MCU_100NS_LOOPS 22
-#endif
-#if (F_CPU>=230000000UL && F_CPU<240000000UL)
-#define MCU_100NS_LOOPS 23
-#endif
-#if (F_CPU>=240000000UL && F_CPU<250000000UL)
-#define MCU_100NS_LOOPS 24
-#endif
-#if (F_CPU>=250000000UL && F_CPU<260000000UL)
-#define MCU_100NS_LOOPS 25
-#endif
-#if (F_CPU>=260000000UL && F_CPU<270000000UL)
-#define MCU_100NS_LOOPS 26
-#endif
-#if (F_CPU>=270000000UL && F_CPU<280000000UL)
-#define MCU_100NS_LOOPS 27
-#endif
-#if (F_CPU>=280000000UL && F_CPU<290000000UL)
-#define MCU_100NS_LOOPS 28
-#endif
-#if (F_CPU>=290000000UL && F_CPU<300000000UL)
-#define MCU_100NS_LOOPS 29
-#endif
-#if (F_CPU>=300000000UL && F_CPU<310000000UL)
-#define MCU_100NS_LOOPS 30
-#endif
-#if (F_CPU>=310000000UL && F_CPU<320000000UL)
-#define MCU_100NS_LOOPS 31
-#endif
-#if (F_CPU>=320000000UL && F_CPU<330000000UL)
-#define MCU_100NS_LOOPS 32
-#endif
-#if (F_CPU>=330000000UL && F_CPU<340000000UL)
-#define MCU_100NS_LOOPS 33
-#endif
-#if (F_CPU>=340000000UL && F_CPU<350000000UL)
-#define MCU_100NS_LOOPS 34
-#endif
-#if (F_CPU>=350000000UL && F_CPU<360000000UL)
-#define MCU_100NS_LOOPS 35
-#endif
-#if (F_CPU>=360000000UL && F_CPU<370000000UL)
-#define MCU_100NS_LOOPS 36
-#endif
-#if (F_CPU>=370000000UL && F_CPU<380000000UL)
-#define MCU_100NS_LOOPS 37
-#endif
-#if (F_CPU>=380000000UL && F_CPU<390000000UL)
-#define MCU_100NS_LOOPS 38
-#endif
-#if (F_CPU>=390000000UL && F_CPU<400000000UL)
-#define MCU_100NS_LOOPS 39
-#endif
-#if (F_CPU>=400000000UL && F_CPU<410000000UL)
-#define MCU_100NS_LOOPS 40
-#endif
-#if (F_CPU>=410000000UL && F_CPU<420000000UL)
-#define MCU_100NS_LOOPS 41
-#endif
-#if (F_CPU>=420000000UL && F_CPU<430000000UL)
-#define MCU_100NS_LOOPS 42
-#endif
-#if (F_CPU>=430000000UL && F_CPU<440000000UL)
-#define MCU_100NS_LOOPS 43
-#endif
-#if (F_CPU>=440000000UL && F_CPU<450000000UL)
-#define MCU_100NS_LOOPS 44
-#endif
-#if (F_CPU>=450000000UL && F_CPU<460000000UL)
-#define MCU_100NS_LOOPS 45
-#endif
-#if (F_CPU>=460000000UL && F_CPU<470000000UL)
-#define MCU_100NS_LOOPS 46
-#endif
-#if (F_CPU>=470000000UL && F_CPU<480000000UL)
-#define MCU_100NS_LOOPS 47
-#endif
-#if (F_CPU>=480000000UL && F_CPU<490000000UL)
-#define MCU_100NS_LOOPS 48
-#endif
-#if (F_CPU>=490000000UL && F_CPU<500000000UL)
-#define MCU_100NS_LOOPS 49
+#ifndef MCU_CYCLES_PER_LOOP_OVERHEAD
+#error "MCU_CYCLES_PER_LOOP_OVERHEAD not defined for this MCU"
 #endif
 
-#define _MCU_DELAY_CYCLE_X1 mcu_nop()
-#define _MCU_DELAY_CYCLE_X2 _MCU_DELAY_CYCLE_X1;mcu_nop()
-#define _MCU_DELAY_CYCLE_X3 _MCU_DELAY_CYCLE_X2;mcu_nop()
-#define _MCU_DELAY_CYCLE_X4 _MCU_DELAY_CYCLE_X3;mcu_nop()
-#define _MCU_DELAY_CYCLE_X5 _MCU_DELAY_CYCLE_X4;mcu_nop()
-#define _MCU_DELAY_CYCLE_X6 _MCU_DELAY_CYCLE_X5;mcu_nop()
-#define _MCU_DELAY_CYCLE_X7 _MCU_DELAY_CYCLE_X6;mcu_nop()
-#define _MCU_DELAY_CYCLE_X8 _MCU_DELAY_CYCLE_X7;mcu_nop()
-#define _MCU_DELAY_CYCLE_X9 _MCU_DELAY_CYCLE_X8;mcu_nop()
-#define _MCU_DELAY_CYCLE_X10 _MCU_DELAY_CYCLE_X9;mcu_nop()
-#define _MCU_DELAY_CYCLE_X11 _MCU_DELAY_CYCLE_X10;mcu_nop()
-#define _MCU_DELAY_CYCLE_X12 _MCU_DELAY_CYCLE_X11;mcu_nop()
-#define _MCU_DELAY_CYCLE_X13 _MCU_DELAY_CYCLE_X12;mcu_nop()
-#define _MCU_DELAY_CYCLE_X14 _MCU_DELAY_CYCLE_X13;mcu_nop()
-#define _MCU_DELAY_CYCLE_X15 _MCU_DELAY_CYCLE_X14;mcu_nop()
-#define _MCU_DELAY_CYCLE_X16 _MCU_DELAY_CYCLE_X15;mcu_nop()
-#define _MCU_DELAY_CYCLE_X17 _MCU_DELAY_CYCLE_X16;mcu_nop()
-#define _MCU_DELAY_CYCLE_X18 _MCU_DELAY_CYCLE_X17;mcu_nop()
-#define _MCU_DELAY_CYCLE_X19 _MCU_DELAY_CYCLE_X18;mcu_nop()
-#define _MCU_DELAY_CYCLE_X20 _MCU_DELAY_CYCLE_X19;mcu_nop()
-#define _MCU_DELAY_CYCLE_X21 _MCU_DELAY_CYCLE_X20;mcu_nop()
-#define _MCU_DELAY_CYCLE_X22 _MCU_DELAY_CYCLE_X21;mcu_nop()
-#define _MCU_DELAY_CYCLE_X23 _MCU_DELAY_CYCLE_X22;mcu_nop()
-#define _MCU_DELAY_CYCLE_X24 _MCU_DELAY_CYCLE_X23;mcu_nop()
-#define _MCU_DELAY_CYCLE_X25 _MCU_DELAY_CYCLE_X24;mcu_nop()
-#define _MCU_DELAY_CYCLE_X26 _MCU_DELAY_CYCLE_X25;mcu_nop()
-#define _MCU_DELAY_CYCLE_X27 _MCU_DELAY_CYCLE_X26;mcu_nop()
-#define _MCU_DELAY_CYCLE_X28 _MCU_DELAY_CYCLE_X27;mcu_nop()
-#define _MCU_DELAY_CYCLE_X29 _MCU_DELAY_CYCLE_X28;mcu_nop()
-#define _MCU_DELAY_CYCLE_X30 _MCU_DELAY_CYCLE_X29;mcu_nop()
-#define _MCU_DELAY_CYCLE_X31 _MCU_DELAY_CYCLE_X30;mcu_nop()
-#define _MCU_DELAY_CYCLE_X32 _MCU_DELAY_CYCLE_X31;mcu_nop()
-#define _MCU_DELAY_CYCLE_X33 _MCU_DELAY_CYCLE_X32;mcu_nop()
-#define _MCU_DELAY_CYCLE_X34 _MCU_DELAY_CYCLE_X33;mcu_nop()
-#define _MCU_DELAY_CYCLE_X35 _MCU_DELAY_CYCLE_X34;mcu_nop()
-#define _MCU_DELAY_CYCLE_X36 _MCU_DELAY_CYCLE_X35;mcu_nop()
-#define _MCU_DELAY_CYCLE_X37 _MCU_DELAY_CYCLE_X36;mcu_nop()
-#define _MCU_DELAY_CYCLE_X38 _MCU_DELAY_CYCLE_X37;mcu_nop()
-#define _MCU_DELAY_CYCLE_X39 _MCU_DELAY_CYCLE_X38;mcu_nop()
-#define _MCU_DELAY_CYCLE_X40 _MCU_DELAY_CYCLE_X39;mcu_nop()
-#define _MCU_DELAY_CYCLE_X41 _MCU_DELAY_CYCLE_X40;mcu_nop()
-#define _MCU_DELAY_CYCLE_X42 _MCU_DELAY_CYCLE_X41;mcu_nop()
-#define _MCU_DELAY_CYCLE_X43 _MCU_DELAY_CYCLE_X42;mcu_nop()
-#define _MCU_DELAY_CYCLE_X44 _MCU_DELAY_CYCLE_X43;mcu_nop()
-#define _MCU_DELAY_CYCLE_X45 _MCU_DELAY_CYCLE_X44;mcu_nop()
-#define _MCU_DELAY_CYCLE_X46 _MCU_DELAY_CYCLE_X45;mcu_nop()
-#define _MCU_DELAY_CYCLE_X47 _MCU_DELAY_CYCLE_X46;mcu_nop()
-#define _MCU_DELAY_CYCLE_X48 _MCU_DELAY_CYCLE_X47;mcu_nop()
-#define _MCU_DELAY_CYCLE_X49 _MCU_DELAY_CYCLE_X48;mcu_nop()
-#define _MCU_DELAY_CYCLE_X(LOOPS) _MCU_DELAY_CYCLE_X##LOOPS
-#define MCU_DELAY_CYCLE_X(LOOPS) _MCU_DELAY_CYCLE_X(LOOPS)
+#define mcu_delay_cycles(X)                                                                                                               \
+	{                                                                                                                                       \
+		if (X > (MCU_CYCLES_PER_LOOP + MCU_CYCLES_PER_LOOP_OVERHEAD))                                                                         \
+		{                                                                                                                                     \
+			mcu_delay_loop((uint16_t)((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP));                                               \
+			if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) - (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 0)  \
+			{                                                                                                                                   \
+				mcu_nop();                                                                                                                        \
+			}                                                                                                                                   \
+			if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) - (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 1)  \
+			{                                                                                                                                   \
+				mcu_nop();                                                                                                                        \
+			}                                                                                                                                   \
+			if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) - (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 2)  \
+			{                                                                                                                                   \
+				mcu_nop();                                                                                                                        \
+			}                                                                                                                                   \
+			if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) - (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 3)  \
+			{                                                                                                                                   \
+				mcu_nop();                                                                                                                        \
+			}                                                                                                                                   \
+			if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) - (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 4)  \
+			{                                                                                                                                   \
+				mcu_nop();                                                                                                                        \
+			}                                                                                                                                   \
+			if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) - (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 5)  \
+			{                                                                                                                                   \
+				mcu_nop();                                                                                                                        \
+			}                                                                                                                                   \
+			if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) - (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 6)  \
+			{                                                                                                                                   \
+				mcu_nop();                                                                                                                        \
+			}                                                                                                                                   \
+			if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) - (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 7)  \
+			{                                                                                                                                   \
+				mcu_nop();                                                                                                                        \
+			}                                                                                                                                   \
+			if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) - (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 8)  \
+			{                                                                                                                                   \
+				mcu_nop();                                                                                                                        \
+			}                                                                                                                                   \
+			if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) - (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 9)  \
+			{                                                                                                                                   \
+				mcu_nop();                                                                                                                        \
+			}                                                                                                                                   \
+			if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) - (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 10) \
+			{                                                                                                                                   \
+				mcu_nop();                                                                                                                        \
+			}                                                                                                                                   \
+		}                                                                                                                                     \
+		else                                                                                                                                  \
+		{                                                                                                                                     \
+			if ((X - ((X / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 0)                                                                    \
+			{                                                                                                                                   \
+				mcu_nop();                                                                                                                        \
+			}                                                                                                                                   \
+			if ((X - ((X / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 1)                                                                    \
+			{                                                                                                                                   \
+				mcu_nop();                                                                                                                        \
+			}                                                                                                                                   \
+			if ((X - ((X / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 2)                                                                    \
+			{                                                                                                                                   \
+				mcu_nop();                                                                                                                        \
+			}                                                                                                                                   \
+			if ((X - ((X / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 3)                                                                    \
+			{                                                                                                                                   \
+				mcu_nop();                                                                                                                        \
+			}                                                                                                                                   \
+			if ((X - ((X / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 4)                                                                    \
+			{                                                                                                                                   \
+				mcu_nop();                                                                                                                        \
+			}                                                                                                                                   \
+			if ((X - ((X / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 5)                                                                    \
+			{                                                                                                                                   \
+				mcu_nop();                                                                                                                        \
+			}                                                                                                                                   \
+			if ((X - ((X / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 6)                                                                    \
+			{                                                                                                                                   \
+				mcu_nop();                                                                                                                        \
+			}                                                                                                                                   \
+			if ((X - ((X / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 7)                                                                    \
+			{                                                                                                                                   \
+				mcu_nop();                                                                                                                        \
+			}                                                                                                                                   \
+			if ((X - ((X / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 8)                                                                    \
+			{                                                                                                                                   \
+				mcu_nop();                                                                                                                        \
+			}                                                                                                                                   \
+			if ((X - ((X / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 9)                                                                    \
+			{                                                                                                                                   \
+				mcu_nop();                                                                                                                        \
+			}                                                                                                                                   \
+			if ((X - ((X / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 10)                                                                   \
+			{                                                                                                                                   \
+				mcu_nop();                                                                                                                        \
+			}                                                                                                                                   \
+		}                                                                                                                                     \
+	}
+#endif
 
-#define mcu_delay_100ns() MCU_DELAY_CYCLE_X(MCU_100NS_LOOPS)
+#ifndef mcu_delay_100ns
+#define mcu_delay_100ns() mcu_delay_cycles((F_CPU / MCU_CLOCKS_PER_CYCLE / 10000000UL))
+#endif
+
+/**
+ * provides a delay in us (micro seconds)
+ * the maximum allowed delay is 255 us
+ * */
+#ifndef mcu_delay_us
+#define mcu_delay_us(X) mcu_delay_cycles(F_CPU / MCU_CLOCKS_PER_CYCLE / 1000000UL * X)
+#endif
+
+#ifdef MCU_HAS_ONESHOT_TIMER
+	typedef void (*mcu_timeout_delgate)(void);
+	extern MCU_CALLBACK mcu_timeout_delgate mcu_timeout_cb;
+/**
+ * configures a single shot timeout in us
+ * */
+#ifndef mcu_config_timeout
+	void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout);
+#endif
+
+/**
+ * starts the timeout. Once hit the the respective callback is called
+ * */
+#ifndef mcu_start_timeout
+	void mcu_start_timeout();
+#endif
+#endif
 
 	/**
 	 * runs all internal tasks of the MCU.
 	 * for the moment these are:
 	 *   - if USB is enabled and MCU uses tinyUSB framework run tinyUSB tud_task
-	 *   - if ENABLE_SYNC_RX is enabled check if there are any chars in the rx transmitter (or the tinyUSB buffer) and read them to the mcu_com_rx_cb
-	 *   - if ENABLE_SYNC_TX is enabled check if serial_tx_empty is false and run mcu_com_tx_cb
 	 * */
 	void mcu_dotasks(void);
 
@@ -539,13 +505,115 @@ extern "C"
 #endif
 
 #ifdef MCU_HAS_I2C
-#ifndef mcu_i2c_write
-		uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop);
+#ifndef I2C_OK
+#define I2C_OK 0
+#endif
+#ifndef I2C_NOTOK
+#define I2C_NOTOK 1
 #endif
 
-#ifndef mcu_i2c_read
-	uint8_t mcu_i2c_read(bool with_ack, bool send_stop);
+#ifndef mcu_i2c_send
+	// master sends command to slave
+	uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool release, uint32_t ms_timeout);
 #endif
+#ifndef mcu_i2c_receive
+	// master receive response from slave
+	uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_t ms_timeout);
+#endif
+
+#if defined(MCU_SUPPORTS_I2C_SLAVE) && (I2C_ADDRESS != 0)
+#ifndef I2C_SLAVE_BUFFER_SIZE
+#define I2C_SLAVE_BUFFER_SIZE 48
+#endif
+#ifndef mcu_i2c_slave_cb
+	MCU_IO_CALLBACK void mcu_i2c_slave_cb(uint8_t *data, uint8_t *datalen);
+#endif
+#endif
+
+#ifndef mcu_i2c_config
+	void mcu_i2c_config(uint32_t frequency);
+#endif
+
+#endif
+
+#ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
+	uint8_t mcu_custom_grbl_cmd(uint8_t *grbl_cmd_str, uint8_t grbl_cmd_len, uint8_t next_char);
+#endif
+
+	/**
+	 * sends a uint8_t either via uart (hardware, software USB CDC, Wifi or BT)
+	 * can be defined either as a function or a macro call
+	 * */
+
+#ifdef MCU_HAS_USB
+	uint8_t mcu_usb_getc(void);
+	uint8_t mcu_usb_available(void);
+	void mcu_usb_clear(void);
+	void mcu_usb_putc(uint8_t c);
+	void mcu_usb_flush(void);
+#ifdef DETACH_USB_FROM_MAIN_PROTOCOL
+	MCU_RX_CALLBACK void mcu_usb_rx_cb(uint8_t c);
+#endif
+#endif
+
+#ifdef MCU_HAS_UART
+	uint8_t mcu_uart_getc(void);
+	uint8_t mcu_uart_available(void);
+	void mcu_uart_clear(void);
+	void mcu_uart_putc(uint8_t c);
+	void mcu_uart_flush(void);
+#ifdef DETACH_UART_FROM_MAIN_PROTOCOL
+	MCU_RX_CALLBACK void mcu_uart_rx_cb(uint8_t c);
+#endif
+#endif
+
+#ifdef MCU_HAS_UART2
+	uint8_t mcu_uart2_getc(void);
+	uint8_t mcu_uart2_available(void);
+	void mcu_uart2_clear(void);
+	void mcu_uart2_putc(uint8_t c);
+	void mcu_uart2_flush(void);
+#ifdef DETACH_UART2_FROM_MAIN_PROTOCOL
+	MCU_RX_CALLBACK void mcu_uart2_rx_cb(uint8_t c);
+#endif
+#endif
+
+#ifdef MCU_HAS_WIFI
+	uint8_t mcu_wifi_getc(void);
+	uint8_t mcu_wifi_available(void);
+	void mcu_wifi_clear(void);
+	void mcu_wifi_putc(uint8_t c);
+	void mcu_wifi_flush(void);
+#ifdef DETACH_WIFI_FROM_MAIN_PROTOCOL
+	MCU_RX_CALLBACK void mcu_wifi_rx_cb(uint8_t c);
+#endif
+#endif
+
+#ifdef MCU_HAS_BLUETOOTH
+	uint8_t mcu_bt_getc(void);
+	uint8_t mcu_bt_available(void);
+	void mcu_bt_clear(void);
+	void mcu_bt_putc(uint8_t c);
+	void mcu_bt_flush(void);
+#ifdef DETACH_BLUETOOTH_FROM_MAIN_PROTOCOL
+	MCU_RX_CALLBACK void mcu_bt_rx_cb(uint8_t c);
+#endif
+#endif
+
+#ifndef mcu_getc
+#define mcu_getc (&mcu_uart_getc)
+#endif
+#ifndef mcu_available
+#define mcu_available (&mcu_uart_available)
+#endif
+#ifndef mcu_clear
+#define mcu_clear (&mcu_uart_clear)
+#endif
+#ifndef mcu_putc
+#define mcu_putc (&mcu_uart_putc)
+#endif
+#ifndef mcu_flush
+#define mcu_flush (&mcu_uart_flush)
 #endif
 
 #ifdef __cplusplus

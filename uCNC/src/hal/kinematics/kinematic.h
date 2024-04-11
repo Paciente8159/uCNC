@@ -25,6 +25,24 @@ extern "C"
 {
 #endif
 
+// this should match the number of linear actuators on the machines (do not change unless you know what you are doing)
+// laser PPI requires an additional stepper
+#ifndef AXIS_TO_STEPPERS
+#define AXIS_TO_STEPPERS AXIS_COUNT
+#endif
+
+#ifndef STEPPER_COUNT
+#define STEPPER_COUNT AXIS_TO_STEPPERS
+#endif
+
+#define KINEMATIC_HOMING_ERROR_X 1
+#define KINEMATIC_HOMING_ERROR_Y 2
+#define KINEMATIC_HOMING_ERROR_XY (KINEMATIC_HOMING_ERROR_X | KINEMATIC_HOMING_ERROR_Y)
+#define KINEMATIC_HOMING_ERROR_Z 4
+#define KINEMATIC_HOMING_ERROR_A 8
+#define KINEMATIC_HOMING_ERROR_B 16
+#define KINEMATIC_HOMING_ERROR_C 32
+
 #include <stdint.h>
 
 	void kinematics_init(void);
@@ -74,6 +92,25 @@ extern "C"
 	void kinematics_apply_reverse_transform(float *axis);
 
 	/**
+	 * @brief Converts from machine absolute coordinates to step position.
+	 * This calls kinematics_apply_inverse after applying any custom geometry transformation (like skew compensation)
+	 *
+	 * @param axis Position in world coordinates
+	 * @param steps Position in steps
+	 */
+
+	void kinematics_coordinates_to_steps(float *axis, int32_t *steps);
+
+	/**
+	 * @brief Converts from step position to machine absolute coordinates.
+	 * This calls kinematics_apply_forward and then recomputes any custom geometry transformation inversion (like skew compensation)
+	 *
+	 * @param steps Position in steps
+	 * @param axis Position in world coordinates
+	 */
+	void kinematics_steps_to_coordinates(int32_t *steps, float *axis);
+
+	/**
 	 * @brief Checks if the desired target is inside sofware boundries
 	 *
 	 * @param axis Target in absolute coordinates
@@ -81,6 +118,17 @@ extern "C"
 	 * @return false If outside boundries
 	 */
 	bool kinematics_check_boundaries(float *axis);
+
+	// /**
+	//  * @brief Checks the motion software limits
+	//  * This internally calls kinematics_check_boundaries after applying machine transformations
+	//  * This ensure that in a transformation makes an axis travell past it's limits
+	//  *
+	//  * @param axis Target in absolute coordinates
+	//  * @return true If inside boundries
+	//  * @return false If outside boundries
+	//  */
+	// bool kinematics_check_softlimits(float *axis);
 
 #ifdef __cplusplus
 }

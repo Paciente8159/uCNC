@@ -28,18 +28,6 @@ extern "C"
 #define BOARD_NAME "STM32 Blackpill"
 #endif
 
-#ifndef STM32F401xC
-#define STM32F401xC
-#endif
-
-#ifndef FLASH_SIZE
-#define FLASH_SIZE 0x60000
-#endif
-
-#ifndef F_CPU
-#define F_CPU 84000000UL
-#endif
-
 // Setup step pins
 #define STEP0_BIT 0	 // assigns STEP0 pin
 #define STEP0_PORT A // assigns STEP0 port
@@ -71,10 +59,10 @@ extern "C"
 #define LIMIT_A_PORT B // assigns LIMIT_A port
 
 // Enable limits switch interrupt
-// #define LIMIT_X_ISR
-// #define LIMIT_Y_ISR
-// #define LIMIT_Z_ISR
-// #define LIMIT_A_ISR
+#define LIMIT_X_ISR
+#define LIMIT_Y_ISR
+#define LIMIT_Z_ISR
+#define LIMIT_A_ISR
 
 // Setup control input pins
 #define ESTOP_BIT 5
@@ -83,8 +71,8 @@ extern "C"
 #define FHOLD_PORT B
 #define CS_RES_BIT 7
 #define CS_RES_PORT B
-// #define SAFETY_DOOR_BIT 8
-// #define SAFETY_DOOR_PORT B
+#define SAFETY_DOOR_BIT 8
+#define SAFETY_DOOR_PORT B
 // Setup probe pin
 #define PROBE_BIT 9
 #define PROBE_PORT B
@@ -95,26 +83,18 @@ extern "C"
 #define CS_RES_ISR
 #define SAFETY_DOOR_ISR
 
-#if (INTERFACE == INTERFACE_USART)
 #define UART_PORT 1
 #define TX_BIT 9
 #define TX_PORT A
 #define RX_BIT 10
 #define RX_PORT A
-#elif (INTERFACE == INTERFACE_USB)
+#define RX_PULLUP
+
 // PIN A10 is also used because of the USB ID (USB OTG)
 #define USB_DM_BIT 11
 #define USB_DM_PORT A
 #define USB_DP_BIT 12
 #define USB_DP_PORT A
-#define STEP4_BIT 3	   // assigns STEP4 pin
-#define STEP4_PORT A   // assigns STEP4 port
-#define DIR4_BIT 7	   // assigns DIR4 pin
-#define DIR4_PORT A	   // assigns DIR4 port
-#define LIMIT_B_BIT 11 // assigns LIMIT_A pin
-#define LIMIT_B_PORT B // assigns LIMIT_A port
-#define LIMIT_B_ISR
-#endif
 
 // Setup PWM
 #define PWM0_BIT 8	// assigns PWM0 pin
@@ -153,12 +133,24 @@ extern "C"
 	// #define SERVO0_PORT B
 
 	// Setup the Step Timer used has the heartbeat for µCNC
-	//#define ITP_TIMER 2
+	// #define ITP_TIMER 2
 
 	// Setup the Timer to be used exclusively by servos in µCNC.
 	// If no servos are configured then the timer is free for other functions (like PWM) (even if defined in the board)
 	// On STM32F1x cores this will default to Timer 3
-	//#define SERVO_TIMER 3
+	// #define SERVO_TIMER 3
+
+	// #define I2C_CLK_BIT 6
+	// #define I2C_CLK_PORT B
+	// #define I2C_DATA_BIT 7
+	// #define I2C_DATA_PORT B
+	// #define I2C_PORT 1
+	// #define DIN7_BIT 5
+	// #define DIN7_PORT A
+	// #define DIN7_ISR
+	// #define DIN7_PULLUP
+
+#define ONESHOT_TIMER 1
 
 #ifdef __cplusplus
 }

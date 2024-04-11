@@ -30,17 +30,29 @@ extern "C"
 #define BOARD_MKS_DLC 4
 #define BOARD_X_CONTROLLER 5
 #define BOARD_MKS_GEN_L_V1 6
+#define BOARD_UNO_SHIELD_V3 7
 #define BOARD_BLUEPILL 10
 #define BOARD_BLACKPILL 11
+#define BOARD_MKS_ROBIN_NANO_V1_2 12
+#define BOARD_SKR_PRO_V1_2 13
+#define BOARD_NUCLEO_F411RE_SHIELD_V3 14
 #define BOARD_MZERO 20
 #define BOARD_ZERO 21
 #define BOARD_RE_ARM 30
+#define BOARD_MKS_BASE13 31
+#define BOARD_SKR_V14_TURBO 32
 #define BOARD_WEMOS_D1 40
 #define BOARD_WEMOS_D1_R32 50
+#define BOARD_MKS_TINYBEE 51
+#define BOARD_MKS_DLC32 52
+#define BOARD_ESP32_SHIELD_V3 53
+#define BOARD_RPI_PICO 60
+#define BOARD_RPI_PICO_W 61
 #define BOARD_VIRTUAL 99
 
 // special purpose board
 #define BOARD_RAMPS14_MIRROR 200
+#define BOARD_CUSTOM -1
 
 #ifdef __cplusplus
 }

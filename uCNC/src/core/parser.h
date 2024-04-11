@@ -30,14 +30,111 @@ extern "C"
 #endif
 
 #include "../module.h"
+#include "motion_control.h"
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
 
+#define G0 0
+#define G1 1
+#define G2 2
+#define G3 3
+#ifdef ENABLE_G39_H_MAPPING
+#define G39 39
+#endif
+// G38.2, G38.3, G38.4, G38.5
+// mantissa must also be checked
+#define G38 38
+#define G80 80
+#define G81 81
+#define G82 82
+#define G83 83
+#define G84 84
+#define G85 85
+#define G86 86
+#define G87 87
+#define G88 88
+#define G89 89
+#define G17 0
+#define G18 1
+#define G19 2
+#define G90 0
+#define G91 1
+#define G93 0
+#define G94 1
+#define G20 0
+#define G21 1
+#define G40 0
+#define G41 1
+#define G42 2
+#define G43 0
+#define G49 1
+#define G98 0
+#define G99 1
+#define G54 0
+#define G55 1
+#define G56 2
+#define G57 3
+#define G58 4
+#define G59 5
+#define G59_1 6
+#define G59_2 7
+#define G59_3 8
+#define G61 0
+#define G61_1 1
+#define G64 3
+#define G4 1
+#define G10 2
+#define G28 3
+#define G30 4
+#define G53 6
+#define G92 10
+#define G92_1 11
+#define G92_2 12
+#define G92_3 13
+
+#define M0 1
+#define M1 2
+#define M2 3
+#define M30 4
+#define M60 5
+#define M3 1
+#define M4 2
+#define M5 0
+#define M6 0
+#define M7 MIST_MASK
+#define M8 COOLANT_MASK
+#define M9 0
+#define M48 1
+#define M49 0
+
 #define EXTENDED_GCODE_BASE 0
-#define EXTENDED_MCODE_BASE 1000
-#define EXTENDED_MCODE(X) (EXTENDED_MCODE_BASE + X)
-#define EXTENDED_GCODE(X) (EXTENDED_GCODE_BASE + X)
+#define EXTENDED_MCODE_BASE 10000
+#define EXTENDED_MCODE(X) (EXTENDED_MCODE_BASE + (int16_t)(X * 10))
+#define EXTENDED_GCODE(X) (EXTENDED_GCODE_BASE + (int16_t)(X * 10))
+#define EXTENDED_MOTION_GCODE(X) (-X)
+
+#define PARSER_PARAM_SIZE (sizeof(float) * AXIS_COUNT)	 // parser parameters array size
+#define PARSER_PARAM_ADDR_OFFSET (PARSER_PARAM_SIZE + 1) // parser parameters array size + 1 crc byte
+#define G28HOME COORD_SYS_COUNT													 // G28 index
+#define G30HOME COORD_SYS_COUNT + 1											 // G30 index
+#define G92OFFSET COORD_SYS_COUNT + 2										 // G92 index
+
+#define PARSER_CORDSYS_ADDRESS SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET															// 1st coordinate system offset eeprom address (G54)
+#define G28ADDRESS (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (PARSER_PARAM_ADDR_OFFSET * G28HOME)) // G28 coordinate offset eeprom address
+#define G30ADDRESS (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (PARSER_PARAM_ADDR_OFFSET * G30HOME)) // G28 coordinate offset eeprom address
+#ifdef G92_STORE_NONVOLATILE
+#define G92ADDRESS (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (PARSER_PARAM_ADDR_OFFSET * G92OFFSET)) // G92 coordinate offset eeprom address
+#endif
+
+#define NUMBER_UNDEF 0
+#define NUMBER_OK 0x20
+#define NUMBER_ISFLOAT 0x40
+#define NUMBER_ISNEGATIVE 0x80
+
+#ifndef GRBL_CMD_MAX_LEN
+#define GRBL_CMD_MAX_LEN 32
+#endif
 
 // group masks
 #define GCODE_GROUP_MOTION 0x0001
@@ -75,10 +172,12 @@ extern "C"
 #define GCODE_WORD_S 0x4000
 #define GCODE_WORD_T 0x8000
 
-#ifdef ENABLE_CANNED_CYCLES
-// only used in G83 can overlap D word
+// only used in canned cycles and splines for now
+// can overlap same memory position
 #define GCODE_WORD_Q GCODE_WORD_D
-#endif
+#define GCODE_WORD_E GCODE_WORD_A
+
+#define GCODE_WORD_TOOL (1 << AXIS_TOOL)
 
 	// H and Q are related to unsupported commands
 
@@ -94,14 +193,27 @@ extern "C"
 #define GCODE_IJPLANE_AXIS (GCODE_XYPLANE_AXIS << 8)
 #define GCODE_IKPLANE_AXIS (GCODE_XZPLANE_AXIS << 8)
 #define GCODE_JKPLANE_AXIS (GCODE_YZPLANE_AXIS << 8)
+#define GCODE_XYZ_AXIS (GCODE_WORD_X | GCODE_WORD_Y | GCODE_WORD_Z)
 #define GCODE_IJK_AXIS (GCODE_WORD_I | GCODE_WORD_J | GCODE_WORD_K)
 
-	// 33bytes in total
+#define LASER_PWM_MODE 1
+#define LASER_PPI_MODE 2
+#define LASER_PPI_VARPOWER_MODE 4
+
+	// 34bytes in total
 	typedef struct
 	{
 		// 1byte
-		uint8_t motion : 5;
+		uint8_t motion;
+		// 1byte
+		uint8_t motion_mantissa : 3;
 		uint8_t coord_system : 3;
+#ifdef ENABLE_G39_H_MAPPING
+		uint8_t height_map_active : 1; // unused
+#else
+	uint8_t : 1; // unused
+#endif
+		uint8_t : 1; // unused
 		// 1byte
 		uint8_t nonmodal : 4; // reset to 0 in every line (non persistent)
 		uint8_t plane : 2;
@@ -142,13 +254,17 @@ extern "C"
 
 	typedef struct
 	{
+#ifndef ENABLE_PARSER_MODULES
 		float xyzabc[AXIS_COUNT];
+#else
+	float xyzabc[6];
+#endif
 		float ijk[3];
 		float d;
 		float f;
 		float p;
 		float r;
-		int16_t s;
+		float s;
 		int8_t t;
 		uint8_t l;
 #ifdef GCODE_PROCESS_LINE_NUMBERS
@@ -160,8 +276,8 @@ extern "C"
 	{
 		uint16_t groups;
 		uint16_t words;
-		uint8_t group_0_1_useaxis : 1;
-		uint16_t group_extended : 15;
+		int16_t group_extended;
+		uint8_t group_0_1_useaxis;
 	} parser_cmd_explicit_t;
 
 	typedef struct
@@ -169,7 +285,9 @@ extern "C"
 		parser_groups_t groups;
 		float feedrate;
 #if TOOL_COUNT > 0
+#if TOOL_COUNT > 1
 		uint8_t tool_index;
+#endif
 		uint16_t spindle;
 #endif
 #ifdef GCODE_PROCESS_LINE_NUMBERS
@@ -179,27 +297,29 @@ extern "C"
 
 	void parser_init(void);
 	uint8_t parser_read_command(void);
-	void parser_get_modes(uint8_t *modalgroups, uint16_t *feed, uint16_t *spindle, uint8_t *coolant);
+	void parser_get_modes(uint8_t *modalgroups, uint16_t *feed, uint16_t *spindle);
 	void parser_get_coordsys(uint8_t system_num, float *axis);
 	bool parser_get_wco(float *axis);
 	void parser_sync_probe(void);
+	void parser_get_probe(int32_t *position);
 	void parser_update_probe_pos(void);
 	uint8_t parser_get_probe_result(void);
 	void parser_parameters_load(void);
 	void parser_parameters_reset(void);
 	void parser_parameters_save(void);
 	void parser_sync_position(void);
-	void parser_reset(void);
+	void parser_reset(bool stopgroup_only);
 	void parser_machine_to_work(float *axis);
+	uint8_t parser_get_float(float *value);
 	uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
 
 #ifdef ENABLE_PARSER_MODULES
 	// generates a default delegate, event and handler hook
 	typedef struct gcode_parse_args_
 	{
-		unsigned char word;
+		uint8_t word;
 		uint8_t code;
-		uint8_t error;
+		uint8_t *error;
 		float value;
 		parser_state_t *new_state;
 		parser_words_t *words;
@@ -210,20 +330,43 @@ extern "C"
 
 	typedef struct gcode_exec_args_
 	{
+		uint8_t *error;
 		parser_state_t *new_state;
 		parser_words_t *words;
 		parser_cmd_explicit_t *cmd;
+		float *target;
+		motion_data_t *block_data;
 	} gcode_exec_args_t;
 	// event_gcode_exec_handler
 	DECL_EVENT_HANDLER(gcode_exec);
 
+	// event_gcode_exec_modifier_handler
+	DECL_EVENT_HANDLER(gcode_exec_modifier);
+
+	// event_gcode_before_motion_handler
+	DECL_EVENT_HANDLER(gcode_before_motion);
+
+	// event_gcode_after_motion_handler
+	DECL_EVENT_HANDLER(gcode_after_motion);
+
 	// event_grbl_cmd_handler
 	typedef struct grbl_cmd_args_
 	{
-		unsigned char *cmd;
+		uint8_t *error;
+		uint8_t *cmd;
 		uint8_t len;
+		uint8_t next_char;
 	} grbl_cmd_args_t;
 	DECL_EVENT_HANDLER(grbl_cmd);
+
+	// event_parse_token_handler
+	DECL_EVENT_HANDLER(parse_token);
+
+	// event_parser_get_modes_handler
+	DECL_EVENT_HANDLER(parser_get_modes);
+
+	// event_parser_reset_handler
+	DECL_EVENT_HANDLER(parser_reset);
 #endif
 
 #ifdef __cplusplus

@@ -26,76 +26,73 @@
  * */
 
 // Spindle enable pins.  You can set these to the same pin if required.
-#ifndef SPINDLE_FWD
-#define SPINDLE_FWD DOUT0
+#ifndef SPINDLE_RELAY_FWD
+#define SPINDLE_RELAY_FWD DOUT0
 #endif
-#ifndef SPINDLE_REV
-#define SPINDLE_REV DOUT1
+#ifndef SPINDLE_RELAY_REV
+#define SPINDLE_RELAY_REV DOUT1
 #endif
 
 #ifdef ENABLE_COOLANT
-#ifndef COOLANT_FLOOD
-#define COOLANT_FLOOD DOUT2
+#ifndef SPINDLE_RELAY_COOLANT_FLOOD
+#define SPINDLE_RELAY_COOLANT_FLOOD DOUT2
 #endif
-#ifndef COOLANT_MIST
-#define COOLANT_MIST DOUT3
+#ifndef SPINDLE_RELAY_COOLANT_MIST
+#define SPINDLE_RELAY_COOLANT_MIST DOUT3
 #endif
 #endif
 
-static int16_t spindle_speed;
-
-void spindle_relay_set_speed(int16_t value)
+void set_speed(int16_t value)
 {
 
 	if (value == 0)
 	{
-#if !(SPINDLE_FWD < 0)
-		mcu_clear_output(SPINDLE_FWD);
+#if ASSERT_PIN(SPINDLE_RELAY_FWD)
+		io_clear_output(SPINDLE_RELAY_FWD);
 #endif
-#if !(SPINDLE_REV < 0)
-		mcu_clear_output(SPINDLE_REV);
+#if ASSERT_PIN(SPINDLE_RELAY_REV)
+		io_clear_output(SPINDLE_RELAY_REV);
 #endif
 	}
 	else if (value < 0)
 	{
-#if !(SPINDLE_FWD < 0)
-		mcu_clear_output(SPINDLE_FWD);
+#if ASSERT_PIN(SPINDLE_RELAY_FWD)
+		io_clear_output(SPINDLE_RELAY_FWD);
 #endif
-#if !(SPINDLE_REV < 0)
-		mcu_set_output(SPINDLE_REV);
+#if ASSERT_PIN(SPINDLE_RELAY_REV)
+		io_set_output(SPINDLE_RELAY_REV);
 #endif
 	}
 	else
 	{
-#if !(SPINDLE_REV < 0)
-		mcu_clear_output(SPINDLE_REV);
+#if ASSERT_PIN(SPINDLE_RELAY_REV)
+		io_clear_output(SPINDLE_RELAY_REV);
 #endif
-#if !(SPINDLE_FWD < 0)
-		mcu_set_output(SPINDLE_FWD);
+#if ASSERT_PIN(SPINDLE_RELAY_FWD)
+		io_set_output(SPINDLE_RELAY_FWD);
 #endif
 	}
 }
 
-void spindle_relay_set_coolant(uint8_t value)
+void set_coolant(uint8_t value)
 {
 #ifdef ENABLE_COOLANT
-	SET_COOLANT(COOLANT_FLOOD, COOLANT_MIST, value);
+	SET_COOLANT(SPINDLE_RELAY_COOLANT_FLOOD, SPINDLE_RELAY_COOLANT_MIST, value);
 #endif
 }
 
-uint16_t spindle_relay_get_speed(void)
+static int16_t range_speed(int16_t value, uint8_t conv)
 {
-	return ABS(spindle_speed);
+	// binary output
+	value = (value) ? 1 : 0;
+	return value;
 }
 
-const tool_t __rom__ spindle_relay = {
+const tool_t spindle_relay = {
 	.startup_code = NULL,
 	.shutdown_code = NULL,
-#if PID_CONTROLLERS > 0
 	.pid_update = NULL,
-	.pid_error = NULL,
-#endif
-	.range_speed = NULL,
-	.get_speed = &spindle_relay_get_speed,
-	.set_speed = &spindle_relay_set_speed,
-	.set_coolant = &spindle_relay_set_coolant};
+	.range_speed = &range_speed,
+	.get_speed = NULL,
+	.set_speed = &set_speed,
+	.set_coolant = &set_coolant};

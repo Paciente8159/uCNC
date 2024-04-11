@@ -28,25 +28,10 @@ extern "C"
 #define BOARD_NAME "MKS Robin Nano 1.2"
 #endif
 
-#ifndef STM32F103xE
-#define STM32F103xE
-#endif
-
-#ifndef STM32F10X_HD
-#define STM32F10X_HD
-#endif
-
-#ifndef F_CPU
-#define F_CPU 72000000UL
-#endif
-
 #define NO_USB_VCP
 #ifdef USB_VCP
 #undef USB_VCP
 #endif
-
-// Setup COM pins
-#define UART_PORT 3
 
 // Setup step pins
 #define STEP0_BIT 3	 // assigns STEP0 pin
@@ -89,7 +74,7 @@ extern "C"
 #define LIMIT_X_PORT A	// assigns LIMIT_X port
 #define LIMIT_Y_BIT 12	// assigns LIMIT_Y pin
 #define LIMIT_Y_PORT A	// assigns LIMIT_Y port
-#define LIMIT_Z_BIT 4	// assigns LIMIT_Z+ pin
+#define LIMIT_Z_BIT 4		// assigns LIMIT_Z+ pin
 #define LIMIT_Z_PORT C	// assigns LIMIT_Z+ port
 #define LIMIT_Z2_BIT 11 // assigns LIMIT_Z- pin
 #define LIMIT_Z2_PORT A // assigns LIMIT_Z- port
@@ -105,15 +90,13 @@ extern "C"
 #define PROBE_PORT A
 #define PROBE_ISR
 
-#if (INTERFACE == INTERFACE_USART)
+// Setup COM pins
 #define UART_PORT 3
 #define TX_BIT 10
 #define TX_PORT B
 #define RX_BIT 11
 #define RX_PORT B
-#else
-#error "This board uses an external USB<->Serial converter"
-#endif
+#define RX_PULLUP
 
 // Setup PWM
 #define PWM0_BIT 0	// assigns PWM0 pin
@@ -143,6 +126,21 @@ extern "C"
 
 // Setup the Step Timer used has the heartbeat for µCNC
 #define ITP_TIMER 5
+
+// software SPI for card access
+#define DOUT29_BIT 2
+#define DOUT29_PORT D
+#define DIN29_BIT 8
+#define DIN29_PORT C
+#define DOUT30_BIT 12
+#define DOUT30_PORT C
+#define SPI_CS_BIT 11
+#define SPI_CS_PORT C
+// SD detect pin
+#define DIN19_BIT 12
+#define DIN19_PORT D
+
+#define ONESHOT_TIMER 2
 
 #ifdef __cplusplus
 }

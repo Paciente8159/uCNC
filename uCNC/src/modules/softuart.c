@@ -17,9 +17,16 @@
 */
 #include "softuart.h"
 
-void softuart_putc(softuart_port_t *port, uint8_t c)
+void softuart_putc(softuart_port_t *port, char c)
 {
-	__ATOMIC_FORCEON__
+	if (!port)
+	{
+#if (defined(MCU_HAS_UART2) && defined(DETACH_UART2_FROM_MAIN_PROTOCOL))
+		mcu_uart2_putc(c);
+		mcu_uart2_flush();
+#endif
+	}
+	else
 	{
 		port->tx(false);
 		port->wait();
@@ -44,23 +51,47 @@ void softuart_putc(softuart_port_t *port, uint8_t c)
 
 int16_t softuart_getc(softuart_port_t *port, uint32_t ms_timeout)
 {
-	unsigned char val = 0;
+	char val = 0;
 
-	__ATOMIC_FORCEON__
+	if (!port)
 	{
-		ms_timeout *= 1000;
-		while (port->rx())
+#if (defined(MCU_HAS_UART2) && defined(DETACH_UART2_FROM_MAIN_PROTOCOL) && !defined(UART2_DISABLE_BUFFER))
+		__TIMEOUT_MS__(ms_timeout)
 		{
-			mcu_delay_us(1);
-			if (!ms_timeout--)
+			if (mcu_uart2_available())
 			{
-				return -1;
+				break;
 			}
 		}
+
+		__TIMEOUT_ASSERT__(ms_timeout)
+		{
+			return 0;
+		}
+
+		val = mcu_uart2_getc();
+#endif
+	}
+	else
+	{
+		__TIMEOUT_MS__(ms_timeout)
+		{
+			if (!port->rx())
+			{
+				break;
+			}
+		}
+
+		__TIMEOUT_ASSERT__(ms_timeout)
+		{
+			return 0;
+		}
+
 		port->waithalf();
 
 		uint8_t bits = 8;
 		uint8_t mask = 0x01;
+
 		do
 		{
 			port->wait();

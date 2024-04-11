@@ -80,20 +80,18 @@ extern "C"
 // #define PROBE_ISR -3
 
 // Setup com pins
-#if (INTERFACE == INTERFACE_UART)
 #define RX_BIT 3
 #define TX_BIT 2
 #define RX_PORT 0
 #define TX_PORT 0
-// only uncomment this if other port other then 0 is used
-//#define UART_PORT 0
-#elif (INTERFACE == INTERFACE_USB)
-// PIN A10 is also used because of the USB ID (USB OTG)
+#define RX_PULLUP
+	// only uncomment this if other port other then 0 is used
+	// #define UART_PORT 0
+
 #define USB_DM_BIT 30
 #define USB_DM_PORT 0
 #define USB_DP_BIT 29
 #define USB_DP_PORT 0
-#endif
 
 // // Setup PWM
 #define PWM0_BIT 5	// assigns PWM0 pin
@@ -125,10 +123,10 @@ extern "C"
 
 	// Setup the Step Timer used has the heartbeat for µCNC
 	// Timer 0 is used by default
-	//#define ITP_TIMER 0
+	// #define ITP_TIMER 0
 	// Setup the SERVO Timer used by µCNC
 	// Timer 1 is set by default
-	//#define SERVO_TIMER 1
+	// #define SERVO_TIMER 1
 
 #define SERVO3_BIT 18
 #define SERVO3_PORT 1
@@ -150,10 +148,10 @@ extern "C"
 #define ANALOG2_CHANNEL 2
 
 // hardware I2C
-#define I2C_SCL_BIT 1
-#define I2C_SCL_PORT 0
-#define I2C_SDA_BIT 0
-#define I2C_SDA_PORT 0
+#define I2C_CLK_BIT 1
+#define I2C_CLK_PORT 0
+#define I2C_DATA_BIT 0
+#define I2C_DATA_PORT 0
 #define I2C_PORT 1
 // software I2C
 // #define DIN30_BIT 1
@@ -161,7 +159,7 @@ extern "C"
 // #define DIN31_BIT 0
 // #define DIN31_PORT 0
 
-// hardware SPI
+// hardware SPI (onboard)
 #define SPI_SDO_BIT 9
 #define SPI_SDO_PORT 0
 #define SPI_SDI_BIT 8
@@ -171,6 +169,23 @@ extern "C"
 #define SPI_CS_BIT 6
 #define SPI_CS_PORT 0
 #define SPI_PORT 1
+
+// hardware SPI (display adapter)
+// #define SPI_SDO_BIT 18
+// #define SPI_SDO_PORT 0
+// #define SPI_SDI_BIT 17
+// #define SPI_SDI_PORT 0
+// #define SPI_CLK_BIT 15
+// #define SPI_CLK_PORT 0
+// #define SPI_CS_BIT 23
+// #define SPI_CS_PORT 0
+// #define SPI_PORT 0
+// sd card detect
+// #define DIN19_BIT 31
+// #define DIN19_PORT 1
+// #define DIN19_PULLUP
+
+// #define SPI_PORT 1
 // #define SPI_FREQ 100000UL
 // software SPI
 // #define DOUT29_BIT 9
@@ -179,18 +194,35 @@ extern "C"
 // #define DIN29_PORT 0
 // #define DOUT30_BIT 7
 // #define DOUT30_PORT 0
-// sd card detect
-// #define DIN19_BIT 0
-// #define DIN19_PORT L
-// #define DIN19_PULLUP
 
-// mapping for reprap full discount display
-#define DOUT8_BIT 15
-#define DOUT8_PORT 0
-#define DOUT9_BIT 18
-#define DOUT9_PORT 0
-#define DOUT10_BIT 16
-#define DOUT10_PORT 0
+// pins for smart adapter
+// clk
+#define DOUT4_BIT 15
+#define DOUT4_PORT 0
+// data
+#define DOUT5_BIT 18
+#define DOUT5_PORT 0
+// cs
+#define DOUT6_BIT 16
+#define DOUT6_PORT 0
+
+// beep
+#define DOUT7_BIT 30
+#define DOUT7_PORT 1
+// enc btn
+#define DIN16_BIT 11
+#define DIN16_PORT 2
+#define DIN16_PULLUP
+// enc 1
+#define DIN17_BIT 25
+#define DIN17_PORT 3
+#define DIN17_PULLUP
+// enc 2
+#define DIN18_BIT 26
+#define DIN18_PORT 3
+#define DIN18_PULLUP
+
+#define ONESHOT_TIMER 2
 
 #ifdef __cplusplus
 }

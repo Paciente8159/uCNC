@@ -61,19 +61,19 @@ extern "C"
 
 	// Setup limit pins
 
-#define LIMIT_X_BIT 6	// assigns LIMIT_X pin
+#define LIMIT_X_BIT 6		// assigns LIMIT_X pin
 #define LIMIT_X_PORT B	// assigns LIMIT_X port
-#define LIMIT_X_ISR 0	// assigns LIMIT_X ISR
+#define LIMIT_X_ISR 0		// assigns LIMIT_X ISR
 #define LIMIT_X2_BIT 2	// assigns LIMIT_X pin
 #define LIMIT_X2_PORT A // assigns LIMIT_X port
-#define LIMIT_Y_BIT 5	// assigns LIMIT_Y pin
+#define LIMIT_Y_BIT 5		// assigns LIMIT_Y pin
 #define LIMIT_Y_PORT B	// assigns LIMIT_Y port
-#define LIMIT_Y_ISR 0	// assigns LIMIT_Y ISR
+#define LIMIT_Y_ISR 0		// assigns LIMIT_Y ISR
 #define LIMIT_Y2_BIT 1	// assigns LIMIT_Y pin
 #define LIMIT_Y2_PORT A // assigns LIMIT_Y port
-#define LIMIT_Z_BIT 4	// assigns LIMIT_Z pin
+#define LIMIT_Z_BIT 4		// assigns LIMIT_Z pin
 #define LIMIT_Z_PORT B	// assigns LIMIT_Z port
-#define LIMIT_Z_ISR 0	// assigns LIMIT_Z ISR
+#define LIMIT_Z_ISR 0		// assigns LIMIT_Z ISR
 
 // Setup probe pin
 #define PROBE_BIT 7
@@ -84,6 +84,7 @@ extern "C"
 #define TX_BIT 1
 #define RX_PORT E
 #define TX_PORT E
+#define RX_PULLUP
 // only uncomment this if other port other then 0 is used
 #define UART_PORT 0
 
@@ -95,12 +96,12 @@ extern "C"
 
 // Setup generic IO Pins
 // Functionalities are set in config.h file
-//#define DOUT0_BIT 5
-//#define DOUT0_PORT B
-//#define DOUT1_BIT 0
+// #define DOUT0_BIT 5
+// #define DOUT0_PORT B
+// #define DOUT1_BIT 0
 // define DOUT1_PORT B
-//#define DOUT2_BIT 3
-//#define DOUT2_PORT C
+// #define DOUT2_BIT 3
+// #define DOUT2_PORT C
 
 // Stepper enable pin. For Grbl on Uno board a single pin is used
 #define STEP0_EN_BIT 7
@@ -116,10 +117,10 @@ extern "C"
 
 	// Setup the Step Timer used has the heartbeat for µCNC
 	// Timer 1 is used by default
-	//#define ITP_TIMER 1
+	// #define ITP_TIMER 1
 	// Setup the RTC Timer used by µCNC to provide an (mostly) accurate time base for all time dependent functions
 	// Timer 0 is set by default
-	//#define RTC_TIMER 0
+	// #define RTC_TIMER 0
 
 // blink led
 #define DOUT31_BIT 7
@@ -129,8 +130,8 @@ extern "C"
 #ifndef STEPPER0_HAS_MSTEP
 #define STEPPER0_HAS_MSTEP
 #endif
-#define DOUT23_BIT 1
-#define DOUT23_PORT G
+#define DOUT20_BIT 1
+#define DOUT20_PORT G
 #define DOUT12_BIT 0
 #define DOUT12_PORT G
 
@@ -138,8 +139,8 @@ extern "C"
 #ifndef STEPPER1_HAS_MSTEP
 #define STEPPER1_HAS_MSTEP
 #endif
-#define DOUT24_BIT 7
-#define DOUT24_PORT K
+#define DOUT21_BIT 7
+#define DOUT21_PORT K
 #define DOUT13_BIT 2
 #define DOUT13_PORT G
 
@@ -147,8 +148,8 @@ extern "C"
 #ifndef STEPPER2_HAS_MSTEP
 #define STEPPER2_HAS_MSTEP
 #endif
-#define DOUT25_BIT 6
-#define DOUT25_PORT K
+#define DOUT22_BIT 6
+#define DOUT22_PORT K
 #define DOUT14_BIT 5
 #define DOUT14_PORT K
 
@@ -156,8 +157,8 @@ extern "C"
 #ifndef STEPPER3_HAS_MSTEP
 #define STEPPER3_HAS_MSTEP
 #endif
-#define DOUT26_BIT 3
-#define DOUT26_PORT K
+#define DOUT23_BIT 3
+#define DOUT23_PORT K
 #define DOUT15_BIT 4
 #define DOUT15_PORT K
 
@@ -165,8 +166,8 @@ extern "C"
 #ifndef STEPPER4_HAS_MSTEP
 #define STEPPER4_HAS_MSTEP
 #endif
-#define DOUT27_BIT 1
-#define DOUT27_PORT K
+#define DOUT24_BIT 1
+#define DOUT24_PORT K
 #define DOUT16_BIT 2
 #define DOUT16_PORT K
 
@@ -182,6 +183,10 @@ extern "C"
 #define DOUT30_PORT B
 #define DIN29_BIT 3
 #define DIN29_PORT B
+
+#define ONESHOT_TIMER 2
+
+#define ENABLE_PARSER_MODULES
 
 #ifdef __cplusplus
 }

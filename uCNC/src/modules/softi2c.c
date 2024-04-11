@@ -15,70 +15,105 @@
 	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
+#include "../cnc.h"
 #include "softi2c.h"
 
-static uint8_t softi2c_clock_stretch(softi2c_port_t *port)
+void softi2c_delay(uint8_t loops_100ns)
 {
-	uint8_t timeout = 3;
-	while (!port->get_scl() && timeout--)
+	while (loops_100ns--)
 	{
-		port->wait();
+		mcu_delay_100ns();
 	}
-
-	return timeout;
 }
+
 static void softi2c_stop(softi2c_port_t *port)
 {
 	port->sda(false);
-	port->wait();
+	softi2c_delay(port->i2cdelay);
 	port->scl(true);
-	softi2c_clock_stretch(port);
+	softi2c_delay(port->i2cdelay);
 	port->sda(true);
-	port->wait();
 }
 
-static uint8_t softi2c_write(softi2c_port_t *port, uint8_t c, bool send_start, bool send_stop)
+static uint8_t softi2c_clock_stretch(softi2c_port_t *port, uint32_t ms_timeout)
 {
-	if (!port)
+	// releases the clock then monitors the clock line to see if it's available or not
+	// if not released under 50ms issues a timeout error
+	port->scl(true);
+	__TIMEOUT_MS__(ms_timeout)
 	{
-#ifdef MCU_HAS_I2C
-		return mcu_i2c_write(c, send_start, send_stop);
-#else
-		return 0;
-#endif
+		if (port->get_scl())
+		{
+			return I2C_OK;
+		}
+		// if not in ISR run main loop
+		if (mcu_get_global_isr())
+		{
+			cnc_dotasks();
+		}
 	}
 
-	uint8_t ack = 0;
+	softi2c_stop(port);
+	return I2C_NOTOK;
+}
 
+static uint8_t softi2c_write(softi2c_port_t *port, uint8_t c, bool send_start, bool send_stop, uint32_t ms_timeout)
+{
+	uint8_t ack = 0;
+	cnc_dotasks();
 	if (send_start)
 	{
 		// init
 		port->sda(true);
-		port->scl(true);
-		if(!softi2c_clock_stretch(port)){
-			return 0;
+		uint32_t timeout = ms_timeout;
+		__TIMEOUT_MS__(timeout)
+		{
+			if (port->get_sda())
+			{
+				break;
+			}
+			// if not in ISR run main loop
+			if (mcu_get_global_isr())
+			{
+				cnc_dotasks();
+			}
 		}
+		__TIMEOUT_ASSERT__(timeout)
+		{
+			return I2C_NOTOK;
+		}
+
+		if (softi2c_clock_stretch(port, ms_timeout) != I2C_OK)
+		{
+			return I2C_NOTOK;
+		}
+
 		port->sda(false);
-		port->wait();
+		softi2c_delay(port->i2cdelay);
 		port->scl(false);
-		port->wait();
+		softi2c_delay(port->i2cdelay);
 	}
 
 	for (uint8_t i = 0; i < 8; i++)
 	{
 		port->sda((c & 0x80));
-		port->wait();
-		port->scl(true);
-		port->wait();
+		softi2c_delay(port->i2cdelay);
+		if (softi2c_clock_stretch(port, ms_timeout) != I2C_OK)
+		{
+			return I2C_NOTOK;
+		}
+		softi2c_delay(port->i2cdelay);
 		port->scl(false); // write the most-significant bit
 		c <<= 1;
 	}
 
 	// read ack
 	port->sda(true);
-	port->wait();
-	port->scl(true);
-	softi2c_clock_stretch(port);
+	softi2c_delay(port->i2cdelay);
+	if (softi2c_clock_stretch(port, ms_timeout) != I2C_OK)
+	{
+		return I2C_NOTOK;
+	}
 	ack = !port->get_sda();
 	port->scl(false);
 
@@ -87,32 +122,34 @@ static uint8_t softi2c_write(softi2c_port_t *port, uint8_t c, bool send_start, b
 		softi2c_stop(port);
 	}
 
-	return ack;
+	return ((ack) ? I2C_OK : I2C_NOTOK);
 }
 
-static uint8_t softi2c_read(softi2c_port_t *port, bool with_ack, bool send_stop)
+static uint8_t softi2c_read(softi2c_port_t *port, bool with_ack, bool send_stop, uint32_t ms_timeout)
 {
-	if (!port)
-	{
-#ifdef MCU_HAS_I2C
-		return mcu_i2c_read(with_ack, send_stop);
-#else
-		return 0;
-#endif
-	}
-
-	uint8_t c = 0;
+	uint8_t c = 0xFF;
 	uint8_t i = 8;
+	cnc_dotasks();
 	do
 	{
+		softi2c_delay(port->i2cdelay);
+		if (softi2c_clock_stretch(port, ms_timeout) != I2C_OK)
+		{
+			return I2C_NOTOK;
+		}
 		c <<= 1;
 		c |= (uint8_t)port->get_sda();
+		port->scl(false);
+
 	} while (!--i);
 
 	port->sda(!with_ack);
-	port->wait();
-	port->scl(true);
-	port->wait();
+	softi2c_delay(port->i2cdelay);
+	if (softi2c_clock_stretch(port, ms_timeout) != I2C_OK)
+	{
+		return I2C_NOTOK;
+	}
+	softi2c_delay(port->i2cdelay);
 	port->scl(false);
 
 	if (send_stop)
@@ -123,43 +160,75 @@ static uint8_t softi2c_read(softi2c_port_t *port, bool with_ack, bool send_stop)
 	return c;
 }
 
-uint8_t softi2c_send(softi2c_port_t *port, uint8_t address, uint8_t *data, uint8_t len)
+uint8_t softi2c_send(softi2c_port_t *port, uint8_t address, uint8_t *data, uint8_t len, bool release, uint32_t ms_timeout)
 {
+	if (!port)
+	{
+#ifdef MCU_HAS_I2C
+		return mcu_i2c_send(address, data, len, release, ms_timeout);
+#else
+		return I2C_NOTOK;
+#endif
+	}
+
 	if (len)
 	{
 		len--;
-		if (softi2c_write(port, address << 1, true, false)) // start, send address, write
+		if (softi2c_write(port, address << 1, true, false, ms_timeout) == I2C_OK) // start, send address, write
 		{
 			// send data, stop
 			for (uint8_t i = 0; i < len; i++)
 			{
-				if (!softi2c_write(port, data[i], false, false))
+				if (softi2c_write(port, data[i], false, false, ms_timeout) != I2C_OK)
 				{
-					return 0;
+					return I2C_NOTOK;
 				}
 			}
 
-			return softi2c_write(port, data[len], false, true);
+			return softi2c_write(port, data[len], false, release, ms_timeout);
 		}
 	}
-	return 0;
+	return I2C_NOTOK;
 }
 
-uint8_t softi2c_receive(softi2c_port_t *port, uint8_t address, uint8_t *data, uint8_t len)
+uint8_t softi2c_receive(softi2c_port_t *port, uint8_t address, uint8_t *data, uint8_t len, uint32_t ms_timeout)
 {
+	if (!port)
+	{
+#ifdef MCU_HAS_I2C
+		return mcu_i2c_receive(address, data, len, ms_timeout);
+#else
+		return I2C_NOTOK;
+#endif
+	}
+
 	if (len)
 	{
 		len--;
-		if (softi2c_write(port, (address << 1) | 0x01, true, false)) // start, send address, write
+		if (softi2c_write(port, (address << 1) | 0x01, true, false, ms_timeout) == I2C_OK) // start, send address, write
 		{
 			for (uint8_t i = 0; i < len; i++)
 			{
-				data[i] = softi2c_read(port, true, false);
+				data[i] = softi2c_read(port, true, false, ms_timeout);
 			}
 
-			data[len] = softi2c_read(port, false, true);
+			data[len] = softi2c_read(port, false, true, ms_timeout);
+			return I2C_OK;
 		}
 	}
 
-	return 0;
+	return I2C_NOTOK;
+}
+
+void softi2c_config(softi2c_port_t *port, uint32_t frequency)
+{
+	if (!port)
+	{
+#ifdef MCU_HAS_I2C
+		mcu_i2c_config(frequency);
+#endif
+		return;
+	}
+
+	port->i2cdelay = I2C_DELAY(frequency);
 }

@@ -24,6 +24,7 @@ extern "C"
 {
 #endif
 
+#include "../module.h"
 #include <stdint.h>
 
 #define ENC0 0
@@ -35,12 +36,16 @@ extern "C"
 #define ENC6 6
 #define ENC7 7
 
-	void encoder_init(void);
+	DECL_MODULE(encoder);
+	DECL_HOOK(encoder_index, void);
 	int32_t encoder_get_position(uint8_t i);
 	void encoder_print_values(void);
 	void encoder_reset_position(uint8_t i, int32_t position);
 	void encoders_reset_position(void);
 	void encoders_itp_reset_rt_position(float *origin);
+	void encoders_update(uint8_t pulse, uint8_t diff);
+	uint16_t encoder_get_rpm(void);
+	extern bool encoder_rpm_updated;
 
 #ifdef __cplusplus
 }

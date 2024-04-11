@@ -62,19 +62,19 @@ extern "C"
 
 	// Setup limit pins
 
-#define LIMIT_X_BIT 5	// assigns LIMIT_X pin
+#define LIMIT_X_BIT 5		// assigns LIMIT_X pin
 #define LIMIT_X_PORT E	// assigns LIMIT_X port
 #define LIMIT_X_ISR -6	// assigns LIMIT_X ISR
 #define LIMIT_X2_BIT 4	// assigns LIMIT_X2 pin
 #define LIMIT_X2_PORT E // assigns LIMIT_X2 port
 #define LIMIT_X2_ISR -5 // assigns LIMIT_X2 ISR
-#define LIMIT_Y_BIT 1	// assigns LIMIT_Y pin
+#define LIMIT_Y_BIT 1		// assigns LIMIT_Y pin
 #define LIMIT_Y_PORT J	// assigns LIMIT_Y port
-#define LIMIT_Y_ISR 1	// assigns LIMIT_Y ISR
+#define LIMIT_Y_ISR 1		// assigns LIMIT_Y ISR
 #define LIMIT_Y2_BIT 0	// assigns LIMIT_Y2 pin
 #define LIMIT_Y2_PORT J // assigns LIMIT_Y2 port
 #define LIMIT_Y2_ISR 1	// assigns LIMIT_Y2 ISR
-#define LIMIT_Z_BIT 3	// assigns LIMIT_Z pin
+#define LIMIT_Z_BIT 3		// assigns LIMIT_Z pin
 #define LIMIT_Z_PORT D	// assigns LIMIT_Z port
 #define LIMIT_Z_ISR -4	// assigns LIMIT_Z ISR
 
@@ -88,6 +88,7 @@ extern "C"
 #define TX_BIT 1
 #define RX_PORT E
 #define TX_PORT E
+#define RX_PULLUP
 // only uncomment this if other port other then 0 is used
 #define UART_PORT 0
 
@@ -96,6 +97,16 @@ extern "C"
 #define PWM0_PORT H // assigns PWM0 pin
 #define PWM0_CHANNEL C
 #define PWM0_TIMER 4
+
+#define PWM1_BIT 6	// assigns PWM0 pin
+#define PWM1_PORT H // assigns PWM0 pin
+#define PWM1_CHANNEL B
+#define PWM1_TIMER 2
+
+#define PWM2_BIT 4	// assigns PWM0 pin
+#define PWM2_PORT B // assigns PWM0 pin
+#define PWM2_CHANNEL A
+#define PWM2_TIMER 2
 
 // Setup generic IO Pins
 // Functionalities are set in config.h file
@@ -118,10 +129,10 @@ extern "C"
 
 	// Setup the Step Timer used has the heartbeat for µCNC
 	// Timer 1 is used by default
-	//#define ITP_TIMER 1
+	// #define ITP_TIMER 1
 	// Setup the RTC Timer used by µCNC to provide an (mostly) accurate time base for all time dependent functions
 	// Timer 0 is set by default
-	//#define RTC_TIMER 0
+	// #define RTC_TIMER 0
 
 // TMC0 UART
 #define DOUT20_BIT 1
@@ -173,10 +184,10 @@ extern "C"
 	//  #define DIN0_ISR 0
 
 // hardware I2C
-#define I2C_SCL_BIT 0
-#define I2C_SCL_PORT D
-#define I2C_SDA_BIT 1
-#define I2C_SDA_PORT D
+#define I2C_CLK_BIT 0
+#define I2C_CLK_PORT D
+#define I2C_DATA_BIT 1
+#define I2C_DATA_PORT D
 // software I2C
 // #define DIN30_BIT 0
 // #define DIN30_PORT D
@@ -195,17 +206,53 @@ extern "C"
 #define SPI_CS_BIT 0
 #define SPI_CS_PORT B
 #define SPI_FREQ 100000UL
-//software SPI
-// #define DOUT29_BIT 2
-// #define DOUT29_PORT B
-// #define DIN29_BIT 3
-// #define DIN29_PORT B
-// #define DOUT30_BIT 1
-// #define DOUT30_PORT B
-//sd card detect
+// software SPI
+//  #define DOUT29_BIT 2
+//  #define DOUT29_PORT B
+//  #define DIN29_BIT 3
+//  #define DIN29_PORT B
+//  #define DOUT30_BIT 1
+//  #define DOUT30_PORT B
+// sd card detect
 #define DIN19_BIT 0
 #define DIN19_PORT L
 #define DIN19_PULLUP
+
+// pins for smart adapter
+// clk
+#define DOUT4_BIT 1
+#define DOUT4_PORT A
+// data
+#define DOUT5_BIT 0
+#define DOUT5_PORT H
+// cs
+#define DOUT6_BIT 1
+#define DOUT6_PORT H
+// beep
+#define DOUT7_BIT 0
+#define DOUT7_PORT C
+// enc btn
+#define DIN16_BIT 2
+#define DIN16_PORT C
+#define DIN16_PULLUP
+// enc 1
+#define DIN17_BIT 4
+#define DIN17_PORT C
+#define DIN17_PULLUP
+// enc 2
+#define DIN18_BIT 6
+#define DIN18_PORT C
+#define DIN18_PULLUP
+
+#define ONESHOT_TIMER 4
+
+	// #define RX2_BIT 0
+	// #define TX2_BIT 1
+	// #define RX2_PORT H
+	// #define TX2_PORT H
+	// #define RX2_PULLUP
+	// // only uncomment this if other port other then 0 is used
+	// #define UART2_PORT 2
 
 #ifdef __cplusplus
 }

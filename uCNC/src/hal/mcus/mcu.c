@@ -18,243 +18,260 @@
 
 #include "../../cnc.h"
 
+#ifdef MCU_HAS_ONESHOT_TIMER
+MCU_CALLBACK mcu_timeout_delgate mcu_timeout_cb;
+#endif
+
+// most MCU can perform some sort of loop within 4 to 6 CPU cycles + a small function call overhead
+// the amount of cycles per loop and overhead can be tuned with a scope or by inspecting the produced asm
+// and adjusted in each MCU
+// by adding the noinline and the empty asm instruction prevents optimization from removing the code executing the loop
+// if used inside atomic operations can execute delays with good precision in any MCU
+__attribute__((noinline, optimize("O3"))) void mcu_delay_loop(uint16_t loops)
+{
+	do
+	{
+		asm volatile("");
+	} while (--loops);
+}
+
 void __attribute__((weak)) mcu_io_init(void)
 {
-#if !(STEP0 < 0)
+#if ASSERT_PIN_IO(STEP0)
 	mcu_config_output(STEP0);
 #endif
-#if !(STEP1 < 0)
+#if ASSERT_PIN_IO(STEP1)
 	mcu_config_output(STEP1);
 #endif
-#if !(STEP2 < 0)
+#if ASSERT_PIN_IO(STEP2)
 	mcu_config_output(STEP2);
 #endif
-#if !(STEP3 < 0)
+#if ASSERT_PIN_IO(STEP3)
 	mcu_config_output(STEP3);
 #endif
-#if !(STEP4 < 0)
+#if ASSERT_PIN_IO(STEP4)
 	mcu_config_output(STEP4);
 #endif
-#if !(STEP5 < 0)
+#if ASSERT_PIN_IO(STEP5)
 	mcu_config_output(STEP5);
 #endif
-#if !(STEP6 < 0)
+#if ASSERT_PIN_IO(STEP6)
 	mcu_config_output(STEP6);
 #endif
-#if !(STEP7 < 0)
+#if ASSERT_PIN_IO(STEP7)
 	mcu_config_output(STEP7);
 #endif
-#if !(DIR0 < 0)
+#if ASSERT_PIN_IO(DIR0)
 	mcu_config_output(DIR0);
 #endif
-#if !(DIR1 < 0)
+#if ASSERT_PIN_IO(DIR1)
 	mcu_config_output(DIR1);
 #endif
-#if !(DIR2 < 0)
+#if ASSERT_PIN_IO(DIR2)
 	mcu_config_output(DIR2);
 #endif
-#if !(DIR3 < 0)
+#if ASSERT_PIN_IO(DIR3)
 	mcu_config_output(DIR3);
 #endif
-#if !(DIR4 < 0)
+#if ASSERT_PIN_IO(DIR4)
 	mcu_config_output(DIR4);
 #endif
-#if !(DIR5 < 0)
+#if ASSERT_PIN_IO(DIR5)
 	mcu_config_output(DIR5);
 #endif
-#if !(DIR6 < 0)
+#if ASSERT_PIN_IO(DIR6)
 	mcu_config_output(DIR6);
 #endif
-#if !(DIR7 < 0)
+#if ASSERT_PIN_IO(DIR7)
 	mcu_config_output(DIR7);
 #endif
-#if !(STEP0_EN < 0)
+#if ASSERT_PIN_IO(STEP0_EN)
 	mcu_config_output(STEP0_EN);
 #endif
-#if !(STEP1_EN < 0)
+#if ASSERT_PIN_IO(STEP1_EN)
 	mcu_config_output(STEP1_EN);
 #endif
-#if !(STEP2_EN < 0)
+#if ASSERT_PIN_IO(STEP2_EN)
 	mcu_config_output(STEP2_EN);
 #endif
-#if !(STEP3_EN < 0)
+#if ASSERT_PIN_IO(STEP3_EN)
 	mcu_config_output(STEP3_EN);
 #endif
-#if !(STEP4_EN < 0)
+#if ASSERT_PIN_IO(STEP4_EN)
 	mcu_config_output(STEP4_EN);
 #endif
-#if !(STEP5_EN < 0)
+#if ASSERT_PIN_IO(STEP5_EN)
 	mcu_config_output(STEP5_EN);
 #endif
-#if !(STEP6_EN < 0)
+#if ASSERT_PIN_IO(STEP6_EN)
 	mcu_config_output(STEP6_EN);
 #endif
-#if !(STEP7_EN < 0)
+#if ASSERT_PIN_IO(STEP7_EN)
 	mcu_config_output(STEP7_EN);
 #endif
-#if !(PWM0 < 0)
+#if ASSERT_PIN_IO(PWM0)
 	mcu_config_pwm(PWM0, 1000);
 #endif
-#if !(PWM1 < 0)
+#if ASSERT_PIN_IO(PWM1)
 	mcu_config_pwm(PWM1, 1000);
 #endif
-#if !(PWM2 < 0)
+#if ASSERT_PIN_IO(PWM2)
 	mcu_config_pwm(PWM2, 1000);
 #endif
-#if !(PWM3 < 0)
+#if ASSERT_PIN_IO(PWM3)
 	mcu_config_pwm(PWM3, 1000);
 #endif
-#if !(PWM4 < 0)
+#if ASSERT_PIN_IO(PWM4)
 	mcu_config_pwm(PWM4, 1000);
 #endif
-#if !(PWM5 < 0)
+#if ASSERT_PIN_IO(PWM5)
 	mcu_config_pwm(PWM5, 1000);
 #endif
-#if !(PWM6 < 0)
+#if ASSERT_PIN_IO(PWM6)
 	mcu_config_pwm(PWM6, 1000);
 #endif
-#if !(PWM7 < 0)
+#if ASSERT_PIN_IO(PWM7)
 	mcu_config_pwm(PWM7, 1000);
 #endif
-#if !(PWM8 < 0)
+#if ASSERT_PIN_IO(PWM8)
 	mcu_config_pwm(PWM8, 1000);
 #endif
-#if !(PWM9 < 0)
+#if ASSERT_PIN_IO(PWM9)
 	mcu_config_pwm(PWM9, 1000);
 #endif
-#if !(PWM10 < 0)
+#if ASSERT_PIN_IO(PWM10)
 	mcu_config_pwm(PWM10, 1000);
 #endif
-#if !(PWM11 < 0)
+#if ASSERT_PIN_IO(PWM11)
 	mcu_config_pwm(PWM11, 1000);
 #endif
-#if !(PWM12 < 0)
+#if ASSERT_PIN_IO(PWM12)
 	mcu_config_pwm(PWM12, 1000);
 #endif
-#if !(PWM13 < 0)
+#if ASSERT_PIN_IO(PWM13)
 	mcu_config_pwm(PWM13, 1000);
 #endif
-#if !(PWM14 < 0)
+#if ASSERT_PIN_IO(PWM14)
 	mcu_config_pwm(PWM14, 1000);
 #endif
-#if !(PWM15 < 0)
+#if ASSERT_PIN_IO(PWM15)
 	mcu_config_pwm(PWM15, 1000);
 #endif
-#if !(SERVO0 < 0)
+#if ASSERT_PIN_IO(SERVO0)
 	mcu_config_output(SERVO0);
 #endif
-#if !(SERVO1 < 0)
+#if ASSERT_PIN_IO(SERVO1)
 	mcu_config_output(SERVO1);
 #endif
-#if !(SERVO2 < 0)
+#if ASSERT_PIN_IO(SERVO2)
 	mcu_config_output(SERVO2);
 #endif
-#if !(SERVO3 < 0)
+#if ASSERT_PIN_IO(SERVO3)
 	mcu_config_output(SERVO3);
 #endif
-#if !(SERVO4 < 0)
+#if ASSERT_PIN_IO(SERVO4)
 	mcu_config_output(SERVO4);
 #endif
-#if !(SERVO5 < 0)
+#if ASSERT_PIN_IO(SERVO5)
 	mcu_config_output(SERVO5);
 #endif
-#if !(DOUT0 < 0)
+#if ASSERT_PIN_IO(DOUT0)
 	mcu_config_output(DOUT0);
 #endif
-#if !(DOUT1 < 0)
+#if ASSERT_PIN_IO(DOUT1)
 	mcu_config_output(DOUT1);
 #endif
-#if !(DOUT2 < 0)
+#if ASSERT_PIN_IO(DOUT2)
 	mcu_config_output(DOUT2);
 #endif
-#if !(DOUT3 < 0)
+#if ASSERT_PIN_IO(DOUT3)
 	mcu_config_output(DOUT3);
 #endif
-#if !(DOUT4 < 0)
+#if ASSERT_PIN_IO(DOUT4)
 	mcu_config_output(DOUT4);
 #endif
-#if !(DOUT5 < 0)
+#if ASSERT_PIN_IO(DOUT5)
 	mcu_config_output(DOUT5);
 #endif
-#if !(DOUT6 < 0)
+#if ASSERT_PIN_IO(DOUT6)
 	mcu_config_output(DOUT6);
 #endif
-#if !(DOUT7 < 0)
+#if ASSERT_PIN_IO(DOUT7)
 	mcu_config_output(DOUT7);
 #endif
-#if !(DOUT8 < 0)
+#if ASSERT_PIN_IO(DOUT8)
 	mcu_config_output(DOUT8);
 #endif
-#if !(DOUT9 < 0)
+#if ASSERT_PIN_IO(DOUT9)
 	mcu_config_output(DOUT9);
 #endif
-#if !(DOUT10 < 0)
+#if ASSERT_PIN_IO(DOUT10)
 	mcu_config_output(DOUT10);
 #endif
-#if !(DOUT11 < 0)
+#if ASSERT_PIN_IO(DOUT11)
 	mcu_config_output(DOUT11);
 #endif
-#if !(DOUT12 < 0)
+#if ASSERT_PIN_IO(DOUT12)
 	mcu_config_output(DOUT12);
 #endif
-#if !(DOUT13 < 0)
+#if ASSERT_PIN_IO(DOUT13)
 	mcu_config_output(DOUT13);
 #endif
-#if !(DOUT14 < 0)
+#if ASSERT_PIN_IO(DOUT14)
 	mcu_config_output(DOUT14);
 #endif
-#if !(DOUT15 < 0)
+#if ASSERT_PIN_IO(DOUT15)
 	mcu_config_output(DOUT15);
 #endif
-#if !(DOUT16 < 0)
+#if ASSERT_PIN_IO(DOUT16)
 	mcu_config_output(DOUT16);
 #endif
-#if !(DOUT17 < 0)
+#if ASSERT_PIN_IO(DOUT17)
 	mcu_config_output(DOUT17);
 #endif
-#if !(DOUT18 < 0)
+#if ASSERT_PIN_IO(DOUT18)
 	mcu_config_output(DOUT18);
 #endif
-#if !(DOUT19 < 0)
+#if ASSERT_PIN_IO(DOUT19)
 	mcu_config_output(DOUT19);
 #endif
-#if !(DOUT20 < 0)
+#if ASSERT_PIN_IO(DOUT20)
 	mcu_config_output(DOUT20);
 #endif
-#if !(DOUT21 < 0)
+#if ASSERT_PIN_IO(DOUT21)
 	mcu_config_output(DOUT21);
 #endif
-#if !(DOUT22 < 0)
+#if ASSERT_PIN_IO(DOUT22)
 	mcu_config_output(DOUT22);
 #endif
-#if !(DOUT23 < 0)
+#if ASSERT_PIN_IO(DOUT23)
 	mcu_config_output(DOUT23);
 #endif
-#if !(DOUT24 < 0)
+#if ASSERT_PIN_IO(DOUT24)
 	mcu_config_output(DOUT24);
 #endif
-#if !(DOUT25 < 0)
+#if ASSERT_PIN_IO(DOUT25)
 	mcu_config_output(DOUT25);
 #endif
-#if !(DOUT26 < 0)
+#if ASSERT_PIN_IO(DOUT26)
 	mcu_config_output(DOUT26);
 #endif
-#if !(DOUT27 < 0)
+#if ASSERT_PIN_IO(DOUT27)
 	mcu_config_output(DOUT27);
 #endif
-#if !(DOUT28 < 0)
+#if ASSERT_PIN_IO(DOUT28)
 	mcu_config_output(DOUT28);
 #endif
-#if !(DOUT29 < 0)
+#if ASSERT_PIN_IO(DOUT29)
 	mcu_config_output(DOUT29);
 #endif
-#if !(DOUT30 < 0)
+#if ASSERT_PIN_IO(DOUT30)
 	mcu_config_output(DOUT30);
 #endif
-#if !(DOUT31 < 0)
+#if ASSERT_PIN_IO(DOUT31)
 	mcu_config_output(DOUT31);
 #endif
-#if !(LIMIT_X < 0)
+#if ASSERT_PIN_IO(LIMIT_X)
 	mcu_config_input(LIMIT_X);
 #ifdef LIMIT_X_PULLUP
 	mcu_config_pullup(LIMIT_X);
@@ -263,7 +280,7 @@ void __attribute__((weak)) mcu_io_init(void)
 	mcu_config_input_isr(LIMIT_X);
 #endif
 #endif
-#if !(LIMIT_Y < 0)
+#if ASSERT_PIN_IO(LIMIT_Y)
 	mcu_config_input(LIMIT_Y);
 #ifdef LIMIT_Y_PULLUP
 	mcu_config_pullup(LIMIT_Y);
@@ -272,7 +289,7 @@ void __attribute__((weak)) mcu_io_init(void)
 	mcu_config_input_isr(LIMIT_Y);
 #endif
 #endif
-#if !(LIMIT_Z < 0)
+#if ASSERT_PIN_IO(LIMIT_Z)
 	mcu_config_input(LIMIT_Z);
 #ifdef LIMIT_Z_PULLUP
 	mcu_config_pullup(LIMIT_Z);
@@ -281,7 +298,7 @@ void __attribute__((weak)) mcu_io_init(void)
 	mcu_config_input_isr(LIMIT_Z);
 #endif
 #endif
-#if !(LIMIT_X2 < 0)
+#if ASSERT_PIN_IO(LIMIT_X2)
 	mcu_config_input(LIMIT_X2);
 #ifdef LIMIT_X2_PULLUP
 	mcu_config_pullup(LIMIT_X2);
@@ -290,7 +307,7 @@ void __attribute__((weak)) mcu_io_init(void)
 	mcu_config_input_isr(LIMIT_X2);
 #endif
 #endif
-#if !(LIMIT_Y2 < 0)
+#if ASSERT_PIN_IO(LIMIT_Y2)
 	mcu_config_input(LIMIT_Y2);
 #ifdef LIMIT_Y2_PULLUP
 	mcu_config_pullup(LIMIT_Y2);
@@ -299,7 +316,7 @@ void __attribute__((weak)) mcu_io_init(void)
 	mcu_config_input_isr(LIMIT_Y2);
 #endif
 #endif
-#if !(LIMIT_Z2 < 0)
+#if ASSERT_PIN_IO(LIMIT_Z2)
 	mcu_config_input(LIMIT_Z2);
 #ifdef LIMIT_Z2_PULLUP
 	mcu_config_pullup(LIMIT_Z2);
@@ -308,7 +325,7 @@ void __attribute__((weak)) mcu_io_init(void)
 	mcu_config_input_isr(LIMIT_Z2);
 #endif
 #endif
-#if !(LIMIT_A < 0)
+#if ASSERT_PIN_IO(LIMIT_A)
 	mcu_config_input(LIMIT_A);
 #ifdef LIMIT_A_PULLUP
 	mcu_config_pullup(LIMIT_A);
@@ -317,7 +334,7 @@ void __attribute__((weak)) mcu_io_init(void)
 	mcu_config_input_isr(LIMIT_A);
 #endif
 #endif
-#if !(LIMIT_B < 0)
+#if ASSERT_PIN_IO(LIMIT_B)
 	mcu_config_input(LIMIT_B);
 #ifdef LIMIT_B_PULLUP
 	mcu_config_pullup(LIMIT_B);
@@ -326,7 +343,7 @@ void __attribute__((weak)) mcu_io_init(void)
 	mcu_config_input_isr(LIMIT_B);
 #endif
 #endif
-#if !(LIMIT_C < 0)
+#if ASSERT_PIN_IO(LIMIT_C)
 	mcu_config_input(LIMIT_C);
 #ifdef LIMIT_C_PULLUP
 	mcu_config_pullup(LIMIT_C);
@@ -335,7 +352,7 @@ void __attribute__((weak)) mcu_io_init(void)
 	mcu_config_input_isr(LIMIT_C);
 #endif
 #endif
-#if !(PROBE < 0)
+#if ASSERT_PIN_IO(PROBE)
 	mcu_config_input(PROBE);
 #ifdef PROBE_PULLUP
 	mcu_config_pullup(PROBE);
@@ -344,7 +361,7 @@ void __attribute__((weak)) mcu_io_init(void)
 	mcu_config_input_isr(PROBE);
 #endif
 #endif
-#if !(ESTOP < 0)
+#if ASSERT_PIN_IO(ESTOP)
 	mcu_config_input(ESTOP);
 #ifdef ESTOP_PULLUP
 	mcu_config_pullup(ESTOP);
@@ -353,7 +370,7 @@ void __attribute__((weak)) mcu_io_init(void)
 	mcu_config_input_isr(ESTOP);
 #endif
 #endif
-#if !(SAFETY_DOOR < 0)
+#if ASSERT_PIN_IO(SAFETY_DOOR)
 	mcu_config_input(SAFETY_DOOR);
 #ifdef SAFETY_DOOR_PULLUP
 	mcu_config_pullup(SAFETY_DOOR);
@@ -362,7 +379,7 @@ void __attribute__((weak)) mcu_io_init(void)
 	mcu_config_input_isr(SAFETY_DOOR);
 #endif
 #endif
-#if !(FHOLD < 0)
+#if ASSERT_PIN_IO(FHOLD)
 	mcu_config_input(FHOLD);
 #ifdef FHOLD_PULLUP
 	mcu_config_pullup(FHOLD);
@@ -371,7 +388,7 @@ void __attribute__((weak)) mcu_io_init(void)
 	mcu_config_input_isr(FHOLD);
 #endif
 #endif
-#if !(CS_RES < 0)
+#if ASSERT_PIN_IO(CS_RES)
 	mcu_config_input(CS_RES);
 #ifdef CS_RES_PULLUP
 	mcu_config_pullup(CS_RES);
@@ -380,55 +397,55 @@ void __attribute__((weak)) mcu_io_init(void)
 	mcu_config_input_isr(CS_RES);
 #endif
 #endif
-#if !(ANALOG0 < 0)
+#if ASSERT_PIN_IO(ANALOG0)
 	mcu_config_analog(ANALOG0);
 #endif
-#if !(ANALOG1 < 0)
+#if ASSERT_PIN_IO(ANALOG1)
 	mcu_config_analog(ANALOG1);
 #endif
-#if !(ANALOG2 < 0)
+#if ASSERT_PIN_IO(ANALOG2)
 	mcu_config_analog(ANALOG2);
 #endif
-#if !(ANALOG3 < 0)
+#if ASSERT_PIN_IO(ANALOG3)
 	mcu_config_analog(ANALOG3);
 #endif
-#if !(ANALOG4 < 0)
+#if ASSERT_PIN_IO(ANALOG4)
 	mcu_config_analog(ANALOG4);
 #endif
-#if !(ANALOG5 < 0)
+#if ASSERT_PIN_IO(ANALOG5)
 	mcu_config_analog(ANALOG5);
 #endif
-#if !(ANALOG6 < 0)
+#if ASSERT_PIN_IO(ANALOG6)
 	mcu_config_analog(ANALOG6);
 #endif
-#if !(ANALOG7 < 0)
+#if ASSERT_PIN_IO(ANALOG7)
 	mcu_config_analog(ANALOG7);
 #endif
-#if !(ANALOG8 < 0)
+#if ASSERT_PIN_IO(ANALOG8)
 	mcu_config_analog(ANALOG8);
 #endif
-#if !(ANALOG9 < 0)
+#if ASSERT_PIN_IO(ANALOG9)
 	mcu_config_analog(ANALOG9);
 #endif
-#if !(ANALOG10 < 0)
+#if ASSERT_PIN_IO(ANALOG10)
 	mcu_config_analog(ANALOG10);
 #endif
-#if !(ANALOG11 < 0)
+#if ASSERT_PIN_IO(ANALOG11)
 	mcu_config_analog(ANALOG11);
 #endif
-#if !(ANALOG12 < 0)
+#if ASSERT_PIN_IO(ANALOG12)
 	mcu_config_analog(ANALOG12);
 #endif
-#if !(ANALOG13 < 0)
+#if ASSERT_PIN_IO(ANALOG13)
 	mcu_config_analog(ANALOG13);
 #endif
-#if !(ANALOG14 < 0)
+#if ASSERT_PIN_IO(ANALOG14)
 	mcu_config_analog(ANALOG14);
 #endif
-#if !(ANALOG15 < 0)
+#if ASSERT_PIN_IO(ANALOG15)
 	mcu_config_analog(ANALOG15);
 #endif
-#if !(DIN0 < 0)
+#if ASSERT_PIN_IO(DIN0)
 	mcu_config_input(DIN0);
 #ifdef DIN0_PULLUP
 	mcu_config_pullup(DIN0);
@@ -437,7 +454,7 @@ void __attribute__((weak)) mcu_io_init(void)
 	mcu_config_input_isr(DIN0);
 #endif
 #endif
-#if !(DIN1 < 0)
+#if ASSERT_PIN_IO(DIN1)
 	mcu_config_input(DIN1);
 #ifdef DIN1_PULLUP
 	mcu_config_pullup(DIN1);
@@ -446,7 +463,7 @@ void __attribute__((weak)) mcu_io_init(void)
 	mcu_config_input_isr(DIN1);
 #endif
 #endif
-#if !(DIN2 < 0)
+#if ASSERT_PIN_IO(DIN2)
 	mcu_config_input(DIN2);
 #ifdef DIN2_PULLUP
 	mcu_config_pullup(DIN2);
@@ -455,7 +472,7 @@ void __attribute__((weak)) mcu_io_init(void)
 	mcu_config_input_isr(DIN2);
 #endif
 #endif
-#if !(DIN3 < 0)
+#if ASSERT_PIN_IO(DIN3)
 	mcu_config_input(DIN3);
 #ifdef DIN3_PULLUP
 	mcu_config_pullup(DIN3);
@@ -464,7 +481,7 @@ void __attribute__((weak)) mcu_io_init(void)
 	mcu_config_input_isr(DIN3);
 #endif
 #endif
-#if !(DIN4 < 0)
+#if ASSERT_PIN_IO(DIN4)
 	mcu_config_input(DIN4);
 #ifdef DIN4_PULLUP
 	mcu_config_pullup(DIN4);
@@ -473,7 +490,7 @@ void __attribute__((weak)) mcu_io_init(void)
 	mcu_config_input_isr(DIN4);
 #endif
 #endif
-#if !(DIN5 < 0)
+#if ASSERT_PIN_IO(DIN5)
 	mcu_config_input(DIN5);
 #ifdef DIN5_PULLUP
 	mcu_config_pullup(DIN5);
@@ -482,7 +499,7 @@ void __attribute__((weak)) mcu_io_init(void)
 	mcu_config_input_isr(DIN5);
 #endif
 #endif
-#if !(DIN6 < 0)
+#if ASSERT_PIN_IO(DIN6)
 	mcu_config_input(DIN6);
 #ifdef DIN6_PULLUP
 	mcu_config_pullup(DIN6);
@@ -491,7 +508,7 @@ void __attribute__((weak)) mcu_io_init(void)
 	mcu_config_input_isr(DIN6);
 #endif
 #endif
-#if !(DIN7 < 0)
+#if ASSERT_PIN_IO(DIN7)
 	mcu_config_input(DIN7);
 #ifdef DIN7_PULLUP
 	mcu_config_pullup(DIN7);
@@ -500,192 +517,298 @@ void __attribute__((weak)) mcu_io_init(void)
 	mcu_config_input_isr(DIN7);
 #endif
 #endif
-#if !(DIN8 < 0)
+#if ASSERT_PIN_IO(DIN8)
 	mcu_config_input(DIN8);
 #ifdef DIN8_PULLUP
 	mcu_config_pullup(DIN8);
 #endif
 #endif
-#if !(DIN9 < 0)
+#if ASSERT_PIN_IO(DIN9)
 	mcu_config_input(DIN9);
 #ifdef DIN9_PULLUP
 	mcu_config_pullup(DIN9);
 #endif
 #endif
-#if !(DIN10 < 0)
+#if ASSERT_PIN_IO(DIN10)
 	mcu_config_input(DIN10);
 #ifdef DIN10_PULLUP
 	mcu_config_pullup(DIN10);
 #endif
 #endif
-#if !(DIN11 < 0)
+#if ASSERT_PIN_IO(DIN11)
 	mcu_config_input(DIN11);
 #ifdef DIN11_PULLUP
 	mcu_config_pullup(DIN11);
 #endif
 #endif
-#if !(DIN12 < 0)
+#if ASSERT_PIN_IO(DIN12)
 	mcu_config_input(DIN12);
 #ifdef DIN12_PULLUP
 	mcu_config_pullup(DIN12);
 #endif
 #endif
-#if !(DIN13 < 0)
+#if ASSERT_PIN_IO(DIN13)
 	mcu_config_input(DIN13);
 #ifdef DIN13_PULLUP
 	mcu_config_pullup(DIN13);
 #endif
 #endif
-#if !(DIN14 < 0)
+#if ASSERT_PIN_IO(DIN14)
 	mcu_config_input(DIN14);
 #ifdef DIN14_PULLUP
 	mcu_config_pullup(DIN14);
 #endif
 #endif
-#if !(DIN15 < 0)
+#if ASSERT_PIN_IO(DIN15)
 	mcu_config_input(DIN15);
 #ifdef DIN15_PULLUP
 	mcu_config_pullup(DIN15);
 #endif
 #endif
-#if !(DIN16 < 0)
+#if ASSERT_PIN_IO(DIN16)
 	mcu_config_input(DIN16);
 #ifdef DIN16_PULLUP
 	mcu_config_pullup(DIN16);
 #endif
 #endif
-#if !(DIN17 < 0)
+#if ASSERT_PIN_IO(DIN17)
 	mcu_config_input(DIN17);
 #ifdef DIN17_PULLUP
 	mcu_config_pullup(DIN17);
 #endif
 #endif
-#if !(DIN18 < 0)
+#if ASSERT_PIN_IO(DIN18)
 	mcu_config_input(DIN18);
 #ifdef DIN18_PULLUP
 	mcu_config_pullup(DIN18);
 #endif
 #endif
-#if !(DIN19 < 0)
+#if ASSERT_PIN_IO(DIN19)
 	mcu_config_input(DIN19);
 #ifdef DIN19_PULLUP
 	mcu_config_pullup(DIN19);
 #endif
 #endif
-#if !(DIN20 < 0)
+#if ASSERT_PIN_IO(DIN20)
 	mcu_config_input(DIN20);
 #ifdef DIN20_PULLUP
 	mcu_config_pullup(DIN20);
 #endif
 #endif
-#if !(DIN21 < 0)
+#if ASSERT_PIN_IO(DIN21)
 	mcu_config_input(DIN21);
 #ifdef DIN21_PULLUP
 	mcu_config_pullup(DIN21);
 #endif
 #endif
-#if !(DIN22 < 0)
+#if ASSERT_PIN_IO(DIN22)
 	mcu_config_input(DIN22);
 #ifdef DIN22_PULLUP
 	mcu_config_pullup(DIN22);
 #endif
 #endif
-#if !(DIN23 < 0)
+#if ASSERT_PIN_IO(DIN23)
 	mcu_config_input(DIN23);
 #ifdef DIN23_PULLUP
 	mcu_config_pullup(DIN23);
 #endif
 #endif
-#if !(DIN24 < 0)
+#if ASSERT_PIN_IO(DIN24)
 	mcu_config_input(DIN24);
 #ifdef DIN24_PULLUP
 	mcu_config_pullup(DIN24);
 #endif
 #endif
-#if !(DIN25 < 0)
+#if ASSERT_PIN_IO(DIN25)
 	mcu_config_input(DIN25);
 #ifdef DIN25_PULLUP
 	mcu_config_pullup(DIN25);
 #endif
 #endif
-#if !(DIN26 < 0)
+#if ASSERT_PIN_IO(DIN26)
 	mcu_config_input(DIN26);
 #ifdef DIN26_PULLUP
 	mcu_config_pullup(DIN26);
 #endif
 #endif
-#if !(DIN27 < 0)
+#if ASSERT_PIN_IO(DIN27)
 	mcu_config_input(DIN27);
 #ifdef DIN27_PULLUP
 	mcu_config_pullup(DIN27);
 #endif
 #endif
-#if !(DIN28 < 0)
+#if ASSERT_PIN_IO(DIN28)
 	mcu_config_input(DIN28);
 #ifdef DIN28_PULLUP
 	mcu_config_pullup(DIN28);
 #endif
 #endif
-#if !(DIN29 < 0)
+#if ASSERT_PIN_IO(DIN29)
 	mcu_config_input(DIN29);
 #ifdef DIN29_PULLUP
 	mcu_config_pullup(DIN29);
 #endif
 #endif
-#if !(DIN30 < 0)
+#if ASSERT_PIN_IO(DIN30)
 	mcu_config_input(DIN30);
 #ifdef DIN30_PULLUP
 	mcu_config_pullup(DIN30);
 #endif
 #endif
-#if !(DIN31 < 0)
+#if ASSERT_PIN_IO(DIN31)
 	mcu_config_input(DIN31);
 #ifdef DIN31_PULLUP
 	mcu_config_pullup(DIN31);
 #endif
 #endif
-#if !(TX < 0)
+#if ASSERT_PIN_IO(TX)
 	mcu_config_output(TX);
 #endif
-#if !(RX < 0)
+#if ASSERT_PIN_IO(RX)
 	mcu_config_input(RX);
 #ifdef RX_PULLUP
 	mcu_config_pullup(RX);
 #endif
 #endif
-#if !(USB_DM < 0)
+#if ASSERT_PIN_IO(USB_DM)
 	mcu_config_input(USB_DM);
 #ifdef USB_DM_PULLUP
 	mcu_config_pullup(USB_DM);
 #endif
 #endif
-#if !(USB_DP < 0)
+#if ASSERT_PIN_IO(USB_DP)
 	mcu_config_input(USB_DP);
 #ifdef USB_DP_PULLUP
 	mcu_config_pullup(USB_DP);
 #endif
 #endif
-#if !(SPI_CLK < 0)
+#if ASSERT_PIN_IO(SPI_CLK)
 	mcu_config_output(SPI_CLK);
 #endif
-#if !(SPI_SDI < 0)
+#if ASSERT_PIN_IO(SPI_SDI)
 	mcu_config_input(SPI_SDI);
 #ifdef SPI_SDI_PULLUP
 	mcu_config_pullup(SPI_SDI);
 #endif
 #endif
-#if !(SPI_SDO < 0)
+#if ASSERT_PIN_IO(SPI_SDO)
 	mcu_config_output(SPI_SDO);
 #endif
-#if !(SPI_CS < 0)
+#if ASSERT_PIN_IO(SPI_CS)
 	mcu_config_output(SPI_CS);
 #endif
-#if !(I2C_SCL < 0)
-	mcu_config_input(I2C_SCL);
-	mcu_config_pullup(I2C_SCL);
+#if ASSERT_PIN_IO(I2C_CLK)
+	mcu_config_input(I2C_CLK);
+	mcu_config_pullup(I2C_CLK);
 #endif
-#if !(I2C_SDA < 0)
-	mcu_config_input(I2C_SDA);
-	mcu_config_pullup(I2C_SDA);
+#if ASSERT_PIN_IO(I2C_DATA)
+	mcu_config_input(I2C_DATA);
+	mcu_config_pullup(I2C_DATA);
+#endif
+#if ASSERT_PIN_IO(TX2)
+	mcu_config_output(TX2);
+#endif
+#if ASSERT_PIN_IO(RX2)
+	mcu_config_input(RX2);
+#ifdef RX2_PULLUP
+	mcu_config_pullup(RX2);
+#endif
 #endif
 }
+
+#ifndef mcu_io_reset
+void __attribute__((weak)) mcu_io_reset(void)
+{
+}
+#endif
+
+#ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
+uint8_t __attribute__((weak)) mcu_custom_grbl_cmd(uint8_t *grbl_cmd_str, uint8_t grbl_cmd_len, uint8_t next_char)
+{
+	return STATUS_INVALID_STATEMENT;
+}
+#endif
+
+// ISR
+// New uint8_t handle strategy
+// All ascii will be sent to buffer and processed later (including comments)
+MCU_RX_CALLBACK bool mcu_com_rx_cb(uint8_t c)
+{
+	static bool is_grbl_cmd = false;
+	if (c < ((uint8_t)0x7F)) // ascii (all bellow DEL)
+	{
+		switch (c)
+		{
+		case CMD_CODE_REPORT:
+#if STATUS_AUTOMATIC_REPORT_INTERVAL >= 100
+			return false;
+#endif
+		case CMD_CODE_RESET:
+		case CMD_CODE_FEED_HOLD:
+			cnc_call_rt_command((uint8_t)c);
+			return false;
+		case '\n':
+		case '\r':
+		case 0:
+			// EOL marker
+			is_grbl_cmd = false;
+			break;
+		case '$':
+			is_grbl_cmd = true;
+			break;
+		case CMD_CODE_CYCLE_START:
+			if (!is_grbl_cmd)
+			{
+				cnc_call_rt_command(CMD_CODE_CYCLE_START);
+				return false;
+			}
+			break;
+		}
+	}
+	else // extended ascii (plus CMD_CODE_CYCLE_START and DEL)
+	{
+		cnc_call_rt_command((uint8_t)c);
+		return false;
+	}
+
+	return true;
+}
+
+#ifdef MCU_HAS_UART
+#ifdef DETACH_UART_FROM_MAIN_PROTOCOL
+MCU_RX_CALLBACK void __attribute__((weak)) mcu_uart_rx_cb(uint8_t c) {}
+#endif
+#endif
+
+#ifdef MCU_HAS_UART2
+#ifdef DETACH_UART2_FROM_MAIN_PROTOCOL
+MCU_RX_CALLBACK void __attribute__((weak)) mcu_uart2_rx_cb(uint8_t c) {}
+#endif
+#endif
+
+#ifdef MCU_HAS_USB
+#ifdef DETACH_USB_FROM_MAIN_PROTOCOL
+MCU_RX_CALLBACK void __attribute__((weak)) mcu_usb_rx_cb(uint8_t c) {}
+#endif
+#endif
+
+#ifdef MCU_HAS_WIFI
+#ifdef DETACH_WIFI_FROM_MAIN_PROTOCOL
+MCU_RX_CALLBACK void __attribute__((weak)) mcu_wifi_rx_cb(uint8_t c) {}
+#endif
+#endif
+
+#ifdef MCU_HAS_BLUETOOTH
+#ifdef DETACH_BLUETOOTH_FROM_MAIN_PROTOCOL
+MCU_RX_CALLBACK void __attribute__((weak)) mcu_bt_rx_cb(uint8_t c) {}
+#endif
+#endif
+
+#if (defined(MCU_HAS_I2C))
+#if defined(MCU_SUPPORTS_I2C_SLAVE) && (I2C_ADDRESS != 0)
+void __attribute__((weak)) mcu_i2c_slave_cb(uint8_t *data, uint8_t *datalen)
+{
+}
+#endif
+
+#endif

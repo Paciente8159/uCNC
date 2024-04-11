@@ -31,7 +31,7 @@ extern "C"
 
 	typedef struct
 	{
-		char version[3];
+		uint8_t version[3];
 		float max_step_rate;
 		// step delay not used
 		uint8_t step_invert_mask;
@@ -46,6 +46,9 @@ extern "C"
 		// juntion deviation is automatic and always on
 		float arc_tolerance;
 		bool report_inches;
+#if S_CURVE_ACCELERATION_LEVEL == -1
+		uint8_t s_curve_profile;
+#endif
 		bool soft_limits_enabled;
 		bool hard_limits_enabled;
 		bool homing_enabled;
@@ -58,21 +61,40 @@ extern "C"
 		int16_t spindle_max_rpm;
 		int16_t spindle_min_rpm;
 		uint8_t laser_mode;
+#ifdef ENABLE_LASER_PPI
+		uint16_t laser_ppi;
+		uint16_t laser_ppi_uswidth;
+		float laser_ppi_mixmode_ppi;
+		float laser_ppi_mixmode_uswidth;
+#endif
 		float step_per_mm[STEPPER_COUNT];
 		float max_feed_rate[STEPPER_COUNT];
 		float acceleration[STEPPER_COUNT];
 		float max_distance[AXIS_COUNT];
 #if TOOL_COUNT > 0
+#if TOOL_COUNT > 1
 		uint8_t default_tool;
+#endif
 		float tool_length_offset[TOOL_COUNT];
 #endif
-#if (KINEMATIC == KINEMATIC_DELTA)
+#if (KINEMATIC == KINEMATIC_LINEAR_DELTA)
 		float delta_arm_length;
 		float delta_armbase_radius;
 		// float delta_efector_height;
+#elif (KINEMATIC == KINEMATIC_DELTA)
+	float delta_base_radius;
+	float delta_effector_radius;
+	float delta_bicep_length;
+	float delta_forearm_length;
+	float delta_bicep_homing_angle;
+#elif (KINEMATIC == KINEMATIC_SCARA)
+	float scara_arm_length;
+	float scara_forearm_length;
+	float scara_arm_homing_angle;
+	float scara_forearm_homing_angle;
 #endif
 #ifdef ENABLE_BACKLASH_COMPENSATION
-		uint16_t backlash_steps[STEPPER_COUNT];
+		uint16_t backlash_steps[AXIS_TO_STEPPERS];
 #endif
 #ifdef ENABLE_SKEW_COMPENSATION
 		float skew_xy_factor;
@@ -84,9 +106,6 @@ extern "C"
 #if ENCODERS > 0
 		uint8_t encoders_pulse_invert_mask;
 		uint8_t encoders_dir_invert_mask;
-#endif
-#if PID_CONTROLLERS > 0
-		float pid_gain[PID_CONTROLLERS][3];
 #endif
 	} settings_t;
 
@@ -102,21 +121,35 @@ extern "C"
 #ifndef STARTUP_BLOCK1_ADDRESS_OFFSET
 #define STARTUP_BLOCK1_ADDRESS_OFFSET (STARTUP_BLOCK0_ADDRESS_OFFSET + RX_BUFFER_SIZE)
 #endif
+#ifndef MODULES_SETTINGS_ADDRESS_OFFSET
+#define MODULES_SETTINGS_ADDRESS_OFFSET (STARTUP_BLOCK1_ADDRESS_OFFSET + RX_BUFFER_SIZE)
+#endif
+
+#ifndef ENABLE_SETTINGS_MODULES
+	typedef uint8_t setting_offset_t;
+#else
+typedef uint16_t setting_offset_t;
+#endif
 
 	extern settings_t g_settings;
 
 	void settings_init(void);
 	// Assumes that no structure being saved is bigger than 255 bytes
-	uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint8_t size);
-	void settings_save(uint16_t address, uint8_t *__ptr, uint8_t size);
+	uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint16_t size);
+	void settings_save(uint16_t address, uint8_t *__ptr, uint16_t size);
 	void settings_reset(bool erase_startup_blocks);
-	uint8_t settings_change(uint8_t setting, float value);
-	void settings_erase(uint16_t address, uint8_t size);
+	uint8_t settings_change(setting_offset_t id, float value);
+	void settings_erase(uint16_t address, uint8_t *__ptr, uint16_t size);
 	bool settings_check_startup_gcode(uint16_t address);
-	void settings_save_startup_gcode(uint16_t address);
+	uint16_t settings_register_external_setting(uint16_t size);
 
-#ifdef ENABLE_SETTINGS_MODULES
+#if (defined(ENABLE_SETTINGS_MODULES) || defined(BOARD_HAS_CUSTOM_SYSTEM_COMMANDS))
 	// event_settings_change_handler
+	typedef struct setting_args_
+	{
+		uint16_t id;
+		float value;
+	} setting_args_t;
 	DECL_EVENT_HANDLER(settings_change);
 	typedef struct settings_args_
 	{
@@ -130,7 +163,147 @@ extern "C"
 	DECL_EVENT_HANDLER(settings_save);
 	// event_settings_erase_handler
 	DECL_EVENT_HANDLER(settings_erase);
+
+	// event_settings_extended_load_handler
+	DECL_EVENT_HANDLER(settings_extended_load);
+	// event_settings_extended_save_handler
+	DECL_EVENT_HANDLER(settings_extended_save);
+	// event_settings_extended_erase_handler
+	DECL_EVENT_HANDLER(settings_extended_erase);
 #endif
+
+/**
+ *
+ * Settings quick/help macros
+ * These allow custom settings setup of simple settings
+ *
+ * **/
+#define __DECL_EXTENDED_SETTING__(ID, var, type, count, print_cb)                    \
+	static uint32_t set##ID##_settings_address;                                        \
+	bool set##ID##_settings_load(void *args)                                           \
+	{                                                                                  \
+		settings_load(set##ID##_settings_address, (uint8_t *)var, sizeof(type) * count); \
+		return EVENT_CONTINUE;                                                           \
+	}                                                                                  \
+	bool set##ID##_settings_save(void *args)                                           \
+	{                                                                                  \
+		settings_save(set##ID##_settings_address, (uint8_t *)var, sizeof(type) * count); \
+		return EVENT_CONTINUE;                                                           \
+	}                                                                                  \
+	bool set##ID##_settings_change(void *args)                                         \
+	{                                                                                  \
+		setting_args_t *set = (setting_args_t *)args;                                    \
+		type *ptr = var;                                                                 \
+		if (set->id >= ID && set->id < (ID + count))                                     \
+		{                                                                                \
+			ptr[set->id - ID] = (type)set->value;                                          \
+			return EVENT_HANDLED;                                                          \
+		}                                                                                \
+		return EVENT_CONTINUE;                                                           \
+	}                                                                                  \
+	bool set##ID##_settings_erase(void *args)                                          \
+	{                                                                                  \
+		memset(var, 0, sizeof(type) * count);                                            \
+		return EVENT_CONTINUE;                                                           \
+	}                                                                                  \
+	bool set##ID##_protocol_send_cnc_settings(void *args)                              \
+	{                                                                                  \
+		type *ptr = var;                                                                 \
+		for (uint8_t i = 0; i < count; i++)                                              \
+		{                                                                                \
+			print_cb(ID + i, ptr[i]);                                                      \
+		}                                                                                \
+		return EVENT_CONTINUE;                                                           \
+	}                                                                                  \
+	CREATE_EVENT_LISTENER(settings_extended_load, set##ID##_settings_load);            \
+	CREATE_EVENT_LISTENER(settings_extended_save, set##ID##_settings_save);            \
+	CREATE_EVENT_LISTENER(settings_change, set##ID##_settings_change);                 \
+	CREATE_EVENT_LISTENER(settings_extended_erase, set##ID##_settings_erase);          \
+	CREATE_EVENT_LISTENER(protocol_send_cnc_settings, set##ID##_protocol_send_cnc_settings)
+#define DECL_EXTENDED_SETTING(ID, var, type, count, print_cb) __DECL_EXTENDED_SETTING__(ID, var, type, count, print_cb)
+
+#define __DECL_EXTENDED_STRING_SETTING__(ID, var, count)                               \
+	static uint32_t set##ID##_settings_address;                                          \
+	bool set##ID##_settings_load(void *args)                                             \
+	{                                                                                    \
+		settings_load(set##ID##_settings_address, (uint8_t *)var, sizeof(char) * count);   \
+		return EVENT_CONTINUE;                                                             \
+	}                                                                                    \
+	bool set##ID##_settings_save(void *args)                                             \
+	{                                                                                    \
+		return EVENT_CONTINUE;                                                             \
+	}                                                                                    \
+	bool set##ID##_settings_change(void *args)                                           \
+	{                                                                                    \
+		setting_args_t *set = (setting_args_t *)args;                                      \
+		if (set->id == ID)                                                                 \
+		{                                                                                  \
+			settings_load(set##ID##_settings_address, (uint8_t *)var, sizeof(char) * count); \
+			for (uint8_t i = 0; i < count; i++)                                              \
+			{                                                                                \
+				char c = serial_getc();                                                        \
+				if (c == EOL || c == '\n')                                                     \
+				{                                                                              \
+					var[i] = EOL;                                                                \
+					break;                                                                       \
+				}                                                                              \
+				var[i] = c;                                                                    \
+			}                                                                                \
+			settings_save(set##ID##_settings_address, (uint8_t *)var, sizeof(char) * count); \
+			return EVENT_HANDLED;                                                            \
+		}                                                                                  \
+		return EVENT_CONTINUE;                                                             \
+	}                                                                                    \
+	bool set##ID##_settings_erase(void *args)                                            \
+	{                                                                                    \
+		memset(var, 0, sizeof(char) * count);                                              \
+		settings_save(set##ID##_settings_address, (uint8_t *)var, sizeof(char) * count);   \
+		return EVENT_CONTINUE;                                                             \
+	}                                                                                    \
+	bool set##ID##_protocol_send_cnc_settings(void *args)                                \
+	{                                                                                    \
+		memset(var, 0, sizeof(char) * count);                                              \
+		settings_load(set##ID##_settings_address, (uint8_t *)var, sizeof(char) * count);   \
+		serial_putc('$');                                                                  \
+		serial_print_int(ID);                                                              \
+		serial_putc('=');                                                                  \
+		for (uint8_t i = 0; i < count; i++)                                                \
+		{                                                                                  \
+			char c = var[i];                                                                 \
+			if (c < 20 || c > 127)                                                           \
+			{                                                                                \
+				protocol_send_string(MSG_EOL);                                                 \
+				return EVENT_CONTINUE;                                                         \
+			}                                                                                \
+			serial_putc(c);                                                                  \
+		}                                                                                  \
+		return EVENT_CONTINUE;                                                             \
+	}                                                                                    \
+	CREATE_EVENT_LISTENER(settings_extended_load, set##ID##_settings_load);              \
+	CREATE_EVENT_LISTENER(settings_extended_save, set##ID##_settings_save);              \
+	CREATE_EVENT_LISTENER(settings_change, set##ID##_settings_change);                   \
+	CREATE_EVENT_LISTENER(settings_extended_erase, set##ID##_settings_erase);            \
+	CREATE_EVENT_LISTENER(protocol_send_cnc_settings, set##ID##_protocol_send_cnc_settings)
+
+#define DECL_EXTENDED_STRING_SETTING(ID, var, count) __DECL_EXTENDED_STRING_SETTING__(ID, var, count)
+
+#define __EXTENDED_SETTING_ADDRESS__(ID) set##ID##_settings_address
+#define EXTENDED_SETTING_ADDRESS(ID) __EXTENDED_SETTING_ADDRESS__(ID)
+
+#define __EXTENDED_SETTING_INIT__(ID, var)                                                \
+	static bool set##ID##_init = false;                                                     \
+	if (!set##ID##_init)                                                                    \
+	{                                                                                       \
+		set##ID##_settings_address = settings_register_external_setting(sizeof(var));         \
+		ADD_EVENT_LISTENER(settings_extended_load, set##ID##_settings_load);                  \
+		ADD_EVENT_LISTENER(settings_extended_save, set##ID##_settings_save);                  \
+		ADD_EVENT_LISTENER(settings_change, set##ID##_settings_change);                       \
+		ADD_EVENT_LISTENER(settings_extended_erase, set##ID##_settings_erase);                \
+		ADD_EVENT_LISTENER(protocol_send_cnc_settings, set##ID##_protocol_send_cnc_settings); \
+		set##ID##_init = true;                                                                \
+	}
+
+#define EXTENDED_SETTING_INIT(ID, var) __EXTENDED_SETTING_INIT__(ID, var)
 
 #ifdef __cplusplus
 }

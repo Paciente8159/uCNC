@@ -54,7 +54,7 @@ void SystemInit(void)
         /* Set the correct number of wait states for 48 MHz @ 3.3v */
         NVMCTRL->CTRLB.bit.RWS = 1;
 
-#if (INTERFACE != INTERFACE_USB)
+#ifndef MCU_HAS_USB
         /* Crystal oscillators can take a long time to startup. This
                waits the maximum amount of time (4 seconds). This can be
                reduced depending on your crystal oscillator. */
@@ -188,7 +188,7 @@ void SystemInit(void)
         {
         };
 
-#if (INTERFACE == INTERFACE_USB)
+#ifdef MCU_HAS_USB
         USB->DEVICE.QOSCTRL.bit.CQOS = 2;
         USB->DEVICE.QOSCTRL.bit.DQOS = 2;
 #endif

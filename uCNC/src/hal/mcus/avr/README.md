@@ -1,38 +1,28 @@
-# µCNC
-µCNC - A universal CNC firmware for microcontrollers
+_µCNC for AVR can be built in a several ways_
 
-## µCNC for AVR
-µCNC for AVR can be built in a couple of ways
+## Method one - PlatformIO (preferred)
 
-## Method one - Arduino IDE
-Copy the boardmap_YOUR_BOARD.h , mcumap_avr.h, mcu_avr.c and uCNC.ino file to the parent µCNC folder is (where all µCNC core code is) and open the ino file with Arduino IDE.
+1. Get [Visual Studio Code](https://code.visualstudio.com/download) and install it.
+2. Install the PlatformIO extension.
+3. Open uCNC folder in VSCode.
+4. Edit ```cnc_config.h file``` and ```cnc_hal_config.h file``` to fit your needs and board.
+5. f needed edit the platformio.ini file environment for your board. Compile the sketch and upload it to your board.
 
-The file [mcudefs.h](https://github.com/Paciente8159/uCNC/blob/master/uCNC/mcudefs.h) should be updated to reflect the changes in the path of the files
-Example:
-```
-#include "mcus\avr\mcumap_avr.h"
-```
-should be changed to
-```
-#include "mcumap_avr.h"
-```
+## Method two - Arduino IDE (easiest)
+**WARNING:** _Arduino IDE will produce a larger output file. The makefile method has better compilation optimizations that produce a smaller binary file. With that in mind remember that some options can be activated using the makefile and others won't fit the device flash in Arduino IDE (UNO is already near max capabilities)._
 
-Choose your target board and just compile and load. You're done.
+1. Get [Arduino IDE](https://www.arduino.cc/en/software) and install it.
+2. Go to uCNC folder and open uCNC.ino sketch.
+3. Edit ```cnc_config.h file``` and ```cnc_hal_config.h file``` to fit your needs and board.
+4. Compile the sketch and upload it to your board.
 
-## Method two - Using the makefile
-First you must have AVR GCC tools installed on your computer.
-You can download the latest version from [here](https://www.microchip.com/mplab/avr-support/avr-and-arm-toolchains-c-compilers)
-Then edit the [config.h](https://github.com/Paciente8159/uCNC/blob/master/uCNC/config.h) to match your board
-```
-#define BOARD BOARD_<YOUR_BOARD>
-```
-and the makefile to the correspondent MCU on your board
-```
-#define MCU = (choose the avr mcu name that matches the mcu on your board)
-```
-Run the makefile
-```
-make -f makefile clean all
-```
+## Method three - Using the makefile (optimized alternative)
 
-In the build folder you will have your hex file to upload to your board.
+1. Download and install GCC tools for AVR inside your PC. You can download the latest version of GCC tool for AVR from Microchip from [here](https://www.microchip.com/mplab/avr-support/avr-and-arm-toolchains-c-compilers).
+   * If your are compiling with this method on a Windows machine you will also need to install Make. You can download Make for Windows from [here](http://gnuwin32.sourceforge.net/packages/make.htm) and CoreUtils [here](http://gnuwin32.sourceforge.net/packages/coreutils.htm).
+2. Go to the ```uCNC folder``` and edit the board ```cnc_config.h file``` and ```cnc_hal_config.h file``` to fit your needs and board. µCNC is configured by default to mimic ```Grbl``` pin configuration in the Arduino UNO board.
+3. Go to the ```makefiles/avr folder```.
+   * The makefile is configured by default to compile the code for the MCU (atmega328p) and working frequency (16Mhz) in Arduino UNO board. If the chosen board has a different MCU/working frequency the makefile must be adjusted by modifying ```CPU = atmega328p``` and ```FREQ = 16000000UL```
+4. Open a command console inside ```makefiles/avr``` folder and run ```make clean all```
+5. If everything went well you should have a hex file inside ```makefiles/avr/build``` folder
+6. Now just upload µCNC to your board using an appropriate tool. [xLoader](http://www.hobbytronics.co.uk/download/XLoader.zip) for AVR is an easy tool to use.

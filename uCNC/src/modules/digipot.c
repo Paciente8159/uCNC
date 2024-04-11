@@ -29,14 +29,14 @@ SOFTSPI(digipotspi, 1000000UL, 0, STEPPER_DIGIPOT_SDO, STEPPER_DIGIPOT_SDI, STEP
 // this ID must be unique for each code
 #define M907 EXTENDED_MCODE(907)
 
-uint8_t m907_parse(void *args, bool *handled);
-uint8_t m907_exec(void *args, bool *handled);
+bool m907_parse(void *args);
+bool m907_exec(void *args);
 
 CREATE_EVENT_LISTENER(gcode_parse, m907_parse);
 CREATE_EVENT_LISTENER(gcode_exec, m907_exec);
 
 // this just parses and acceps the code
-uint8_t m907_parse(void *args, bool *handled)
+bool m907_parse(void *args)
 {
 	gcode_parse_args_t *ptr = (gcode_parse_args_t *)args;
 
@@ -45,33 +45,33 @@ uint8_t m907_parse(void *args, bool *handled)
 		if (ptr->cmd->group_extended != 0)
 		{
 			// there is a collision of custom gcode commands (only one per line can be processed)
-			return STATUS_GCODE_MODAL_GROUP_VIOLATION;
+			*(ptr->error) = STATUS_GCODE_MODAL_GROUP_VIOLATION;
+			return EVENT_HANDLED;
 		}
 		// tells the gcode validation and execution functions this is custom code M42 (ID must be unique)
 		ptr->cmd->group_extended = M907;
-		return STATUS_OK;
+		*(ptr->error) = STATUS_OK;
+		return EVENT_HANDLED;
 	}
 
 	// if this is not catched by this parser, just send back the error so other extenders can process it
-	return ptr->error;
+	return EVENT_CONTINUE;
 }
 
 // this actually performs 2 steps in 1 (validation and execution)
-uint8_t m907_exec(void* args, bool* handled)
+bool m907_exec(void *args)
 {
 	gcode_exec_args_t *ptr = (gcode_exec_args_t *)args;
 
 	if (ptr->cmd->group_extended == M907)
 	{
-		*handled = true;
-		
 		itp_sync();
 		if (!ptr->cmd->words)
 		{
 			return STATUS_GCODE_NO_AXIS_WORDS;
 		}
 
-		mcu_clear_output(STEPPER_DIGIPOT_CS);
+		io_clear_output(STEPPER_DIGIPOT_CS);
 
 		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_X))
 		{
@@ -130,21 +130,22 @@ uint8_t m907_exec(void* args, bool* handled)
 #endif
 		}
 
-		mcu_set_output(STEPPER_DIGIPOT_CS);
+		io_set_output(STEPPER_DIGIPOT_CS);
 
-		return STATUS_OK;
+		*(ptr->error) = STATUS_OK;
+		return EVENT_HANDLED;
 	}
 
-	return STATUS_GCODE_EXTENDED_UNSUPPORTED;
+	return EVENT_CONTINUE;
 }
 
 #endif
 
-uint8_t digipot_config(void *args, bool *handled)
+bool digipot_config(void *args)
 {
 	// Digipot for stepper motors
 #ifdef STEPPER_CURR_DIGIPOT
-	mcu_clear_output(STEPPER_DIGIPOT_CS);
+	io_clear_output(STEPPER_DIGIPOT_CS);
 #if STEPPER0_DIGIPOT_CHANNEL > 0
 	softspi_xmit(&digipotspi, STEPPER0_DIGIPOT_CHANNEL);
 	softspi_xmit(&digipotspi, STEPPER0_DIGIPOT_VALUE);
@@ -177,10 +178,10 @@ uint8_t digipot_config(void *args, bool *handled)
 	softspi_xmit(&digipotspi, STEPPER7_DIGIPOT_CHANNEL);
 	softspi_xmit(&digipotspi, STEPPER7_DIGIPOT_VALUE);
 #endif
-	mcu_set_output(STEPPER_DIGIPOT_CS);
+	io_set_output(STEPPER_DIGIPOT_CS);
 #endif
 
-	return 0;
+	return EVENT_CONTINUE;
 }
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
@@ -191,15 +192,19 @@ DECL_MODULE(digipot)
 {
 	// initialize slave select pins
 #ifdef STEPPER_CURR_DIGIPOT
-	mcu_set_output(STEPPER_DIGIPOT_CS);
+	io_set_output(STEPPER_DIGIPOT_CS);
 #endif
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
 	ADD_EVENT_LISTENER(cnc_reset, digipot_config);
+#else
+#error "Main loop extensions are not enabled. Stepper digipot will not be configured."
 #endif
 #ifdef ENABLE_PARSER_MODULES
 	ADD_EVENT_LISTENER(gcode_parse, m907_parse);
 	ADD_EVENT_LISTENER(gcode_exec, m907_exec);
+#else
+#warning "Parser extensions are not enabled. M907 code extension will not work."
 #endif
 }
 

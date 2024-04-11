@@ -42,6 +42,7 @@ void softspi_config(softspi_port_t *port, uint8_t mode, uint32_t frequency)
 
 uint8_t softspi_xmit(softspi_port_t *port, uint8_t c)
 {
+	cnc_dotasks();
 	if (!port)
 	{
 #ifdef MCU_HAS_SPI
@@ -51,37 +52,34 @@ uint8_t softspi_xmit(softspi_port_t *port, uint8_t c)
 #endif
 	}
 
-	__ATOMIC_FORCEON__
+	bool clk = (bool)(port->spimode & 0x2);
+	bool on_down = (bool)(port->spimode & 0x1);
+
+	port->clk(clk);
+
+	uint8_t counter = 8;
+	do
 	{
-		bool clk = (bool)(port->spimode & 0x2);
-		bool on_down = (bool)(port->spimode & 0x1);
-
-		port->clk(clk);
-
-		uint8_t counter = 8;
-		do
+		if (on_down)
 		{
-			if (on_down)
-			{
-				clk = !clk;
-				port->clk(clk);
-			}
-			port->mosi((bool)(c & 0x80));
-			c <<= 1;
-			// sample
-			softspi_delay(port->spidelay);
 			clk = !clk;
 			port->clk(clk);
-			c |= port->miso();
+		}
+		port->mosi((bool)(c & 0x80));
+		c <<= 1;
+		// sample
+		softspi_delay(port->spidelay);
+		clk = !clk;
+		port->clk(clk);
+		c |= port->miso();
 
-			softspi_delay(port->spidelay);
-			if (!on_down)
-			{
-				clk = !clk;
-				port->clk(clk);
-			}
-		} while (--counter);
-	}
+		softspi_delay(port->spidelay);
+		if (!on_down)
+		{
+			clk = !clk;
+			port->clk(clk);
+		}
+	} while (--counter);
 
 	return c;
 }

@@ -20,77 +20,81 @@
 
 #if ENCODERS > 0
 
-static uint8_t encoder_last_pulse = 0;
 static int32_t encoders_pos[ENCODERS];
 
-static FORCEINLINE uint8_t encoder_read_pulses(void)
+#ifdef ENABLE_ENCODER_RPM
+
+#ifndef ENCODER_RPM_MIN
+#define ENCODER_RPM_MIN 4
+#endif
+#ifndef RPM_PPR
+#define RPM_PPR 4
+#endif
+
+#define MAX_RPM_PULSE_INTERVAL (1000000UL / (ENCODER_RPM_MIN * RPM_PPR))
+#define RPM_CONV_CONSTANT (60000000.f / (float)RPM_PPR)
+
+static volatile uint32_t prev_time;
+static volatile uint32_t current_time;
+bool encoder_rpm_updated;
+CREATE_HOOK(encoder_index);
+
+uint16_t encoder_get_rpm(void)
 {
-	uint8_t value = 0;
-#if ENCODERS > 0
-	value |= ((mcu_get_input(ENC0_PULSE)) ? ENC0_MASK : 0);
-#endif
-#if ENCODERS > 1
-	value |= ((mcu_get_input(ENC1_PULSE)) ? ENC1_MASK : 0);
-#endif
-#if ENCODERS > 2
-	value |= ((mcu_get_input(ENC2_PULSE)) ? ENC2_MASK : 0);
-#endif
-#if ENCODERS > 3
-	value |= ((mcu_get_input(ENC3_PULSE)) ? ENC3_MASK : 0);
-#endif
-#if ENCODERS > 4
-	value |= ((mcu_get_input(ENC4_PULSE)) ? ENC4_MASK : 0);
-#endif
-#if ENCODERS > 5
-	value |= ((mcu_get_input(ENC5_PULSE)) ? ENC5_MASK : 0);
-#endif
-#if ENCODERS > 6
-	value |= ((mcu_get_input(ENC6_PULSE)) ? ENC6_MASK : 0);
-#endif
-#if ENCODERS > 7
-	value |= ((mcu_get_input(ENC7_PULSE)) ? ENC7_MASK : 0);
-#endif
-	return value ^ g_settings.encoders_pulse_invert_mask;
+	uint32_t elapsed, prev;
+
+	__ATOMIC__
+	{
+		elapsed = current_time;
+		prev = prev_time;
+		encoder_rpm_updated = false;
+	}
+
+	if (ABS(mcu_micros() - elapsed) > MAX_RPM_PULSE_INTERVAL)
+	{
+		return 0;
+	}
+
+	elapsed -= prev;
+	float spindle = RPM_CONV_CONSTANT / (float)ABS(elapsed);
+	return (uint16_t)lroundf(spindle);
 }
+
+#endif
 
 static FORCEINLINE uint8_t encoder_read_dirs(void)
 {
 	uint8_t value = 0;
 #if ENCODERS > 0
-	value |= ((mcu_get_input(ENC0_DIR)) ? ENC0_MASK : 0);
+	value |= ((io_get_input(ENC0_DIR)) ? ENC0_MASK : 0);
 #endif
 #if ENCODERS > 1
-	value |= ((mcu_get_input(ENC1_DIR)) ? ENC1_MASK : 0);
+	value |= ((io_get_input(ENC1_DIR)) ? ENC1_MASK : 0);
 #endif
 #if ENCODERS > 2
-	value |= ((mcu_get_input(ENC2_DIR)) ? ENC2_MASK : 0);
+	value |= ((io_get_input(ENC2_DIR)) ? ENC2_MASK : 0);
 #endif
 #if ENCODERS > 3
-	value |= ((mcu_get_input(ENC3_DIR)) ? ENC3_MASK : 0);
+	value |= ((io_get_input(ENC3_DIR)) ? ENC3_MASK : 0);
 #endif
 #if ENCODERS > 4
-	value |= ((mcu_get_input(ENC4_DIR)) ? ENC4_MASK : 0);
+	value |= ((io_get_input(ENC4_DIR)) ? ENC4_MASK : 0);
 #endif
 #if ENCODERS > 5
-	value |= ((mcu_get_input(ENC5_DIR)) ? ENC5_MASK : 0);
+	value |= ((io_get_input(ENC5_DIR)) ? ENC5_MASK : 0);
 #endif
 #if ENCODERS > 6
-	value |= ((mcu_get_input(ENC6_DIR)) ? ENC6_MASK : 0);
+	value |= ((io_get_input(ENC6_DIR)) ? ENC6_MASK : 0);
 #endif
 #if ENCODERS > 7
-	value |= ((mcu_get_input(ENC7_DIR)) ? ENC7_MASK : 0);
+	value |= ((io_get_input(ENC7_DIR)) ? ENC7_MASK : 0);
 #endif
 	return value ^ g_settings.encoders_dir_invert_mask;
 }
 
-// overrides the mcu_input_change_cb
-// this make a direct path from the interrupt to this call without passing through the µCNC module or the io_control units
-void mcu_inputs_changed_cb(void)
+void encoders_update(uint8_t pulse, uint8_t diff)
 {
 	uint8_t dir = encoder_read_dirs();
-	uint8_t pulse = encoder_read_pulses();
-	uint8_t diff = encoder_last_pulse ^ pulse;
-	encoder_last_pulse = pulse;
 
 	// leave only those active
 	diff &= pulse;
@@ -144,6 +148,25 @@ void mcu_inputs_changed_cb(void)
 		encoders_pos[7] += (dir & ENC7_MASK) ? 1 : -1;
 	}
 #endif
+
+#ifdef ENABLE_ENCODER_RPM
+	if ((diff & RPM_ENCODER_MASK))
+	{
+		encoder_rpm_updated = true;
+		uint32_t time = mcu_micros();
+		prev_time = current_time;
+		current_time = time;
+#ifdef RPM_INDEX_INPUT
+		if (io_get_input(RPM_INDEX_INPUT))
+#else
+		if (encoders_pos[RPM_ENCODER] >= RPM_PPR)
+#endif
+		{
+			encoders_pos[RPM_ENCODER] = 0;
+			HOOK_INVOKE(encoder_index);
+		}
+	}
+#endif
 }
 
 int32_t encoder_get_position(uint8_t i)
@@ -176,8 +199,6 @@ void encoder_reset_position(uint8_t i, int32_t position)
 
 void encoders_reset_position(void)
 {
-	encoder_last_pulse = encoder_read_pulses();
-
 	__ATOMIC__
 	{
 		for (uint8_t i = 0; i < ENCODERS; i++)
