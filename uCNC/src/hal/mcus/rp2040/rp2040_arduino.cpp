@@ -375,7 +375,7 @@ bool rp2040_wifi_clientok(void)
 				server_client.stop();
 			}
 		}
-		server_client = telnet_server.available();
+		server_client = telnet_server.accept();
 		server_client.println("[MSG:New client connected]");
 		return false;
 	}
@@ -392,7 +392,6 @@ bool rp2040_wifi_clientok(void)
 
 #if defined(MCU_HAS_WIFI) && defined(MCU_HAS_ENDPOINTS)
 
-#include "../../../modules/endpoint.h"
 #define MCU_FLASH_FS_LITTLE_FS 1
 #define MCU_FLASH_FS_SPIFFS 2
 
@@ -409,153 +408,131 @@ bool rp2040_wifi_clientok(void)
 #include <SPIFFS.h>
 #define FLASH_FS SPIFFS
 #endif
-static File upload_file;
 
-void fs_file_updater()
+/**
+ * Implements the function calls for the file system C wrapper
+ */
+#include "../../../modules/file_system.h"
+#define fileptr_t(ptr) static_cast<File>(*(reinterpret_cast<File *>(ptr)))
+fs_t flash_fs;
+
+int flash_fs_available(fs_file_t *fp)
 {
-	static File upload_file;
-	if (!web_server.uri().startsWith(FS_URI) || (web_server.method() != HTTP_POST && web_server.method() != HTTP_PUT))
-	{
-		return;
-	}
-
-	String urlpath = String((web_server.uri().substring(FS_URI_LEN).length() != 0) ? web_server.uri().substring(FS_URI_LEN) : "/");
-
-	if (!FLASH_FS.exists(urlpath))
-	{
-		return;
-	}
-
-	HTTPUpload &upload = web_server.upload();
-	if (upload.status == UPLOAD_FILE_START)
-	{
-		if (web_server.method() == HTTP_POST)
-		{
-			if (!urlpath.endsWith("/"))
-			{
-				urlpath.concat("/");
-			}
-
-			urlpath.concat(upload.filename);
-		}
-		upload_file = FLASH_FS.open(urlpath, "w");
-	}
-	else if (upload.status == UPLOAD_FILE_WRITE)
-	{
-		if (upload_file)
-		{
-			upload_file.write(upload.buf, upload.currentSize);
-		}
-	}
-	else if (upload.status == UPLOAD_FILE_END)
-	{
-		if (upload_file)
-		{
-			upload_file.close();
-		}
-	}
+	return fileptr_t(fp->file_ptr).available();
 }
 
-void fs_file_browser()
+void flash_fs_close(fs_file_t *fp)
 {
-	File fp;
-	char path[256];
-
-	// updated page
-	if (web_server.hasArg("update") && web_server.method() == HTTP_GET)
-	{
-		web_server.sendHeader("Content-Encoding", "gzip");
-		web_server.send_P(200, __romstr__("text/html"), fs_write_page, FS_WRITE_GZ_SIZE);
-		return;
-	}
-
-	String urlpath = String((web_server.uri().substring(FS_URI_LEN).length() != 0) ? web_server.uri().substring(FS_URI_LEN) : "/");
-
-	if (!FLASH_FS.exists(urlpath))
-	{
-		endpoint_send(404, "application/json", "{\"result\":\"notfound\"}");
-		return;
-	}
-
-	fp = FLASH_FS.open(urlpath, "r");
-
-	switch (web_server.method())
-	{
-	case HTTP_DELETE:
-		if (fp.isDirectory())
-		{
-			FLASH_FS.rmdir(urlpath);
-		}
-		else
-		{
-			FLASH_FS.remove(urlpath);
-		}
-		__FALL_THROUGH__
-	case HTTP_PUT:
-	case HTTP_POST:
-		if (web_server.hasArg("redirect"))
-		{
-			memset(path, 0, 256);
-			web_server.sendHeader("Location", web_server.arg("redirect"));
-			sprintf(path, "{\"redirect\":\"%s\"}", web_server.arg("redirect").c_str());
-			web_server.send(303, "application/json", path);
-		}
-		else
-		{
-			endpoint_send(200, "application/json", "{\"result\":\"ok\"}");
-		}
-
-		break;
-	default: // handle as get
-		if (fp.isDirectory())
-		{
-			// start chunck transmition;
-			endpoint_request_uri(path, 256);
-			endpoint_send(200, "application/json", NULL);
-			endpoint_send(200, "application/json", "{\"result\":\"ok\",\"path\":\"");
-			endpoint_send(200, "application/json", path);
-			endpoint_send(200, "application/json", "\",\"data\":[");
-			File file = fp.openNextFile();
-
-			while (file)
-			{
-				memset(path, 0, 256);
-				if (file.isDirectory())
-				{
-					sprintf(path, "{\"type\":\"dir\",\"name\":\"%s\",\"attr\":%d},", file.name(), 0);
-				}
-				else
-				{
-					sprintf(path, "{\"type\":\"file\",\"name\":\"%s\",\"attr\":0,\"size\":%lu,\"date\":0}", file.name(), (unsigned long int)file.size());
-				}
-
-				file = fp.openNextFile();
-				if (file)
-				{
-					// trailling comma
-					path[strlen(path)] = ',';
-				}
-				endpoint_send(200, "application/json", path);
-			}
-			endpoint_send(200, "application/json", "]}\n");
-			// close the stream
-			endpoint_send(200, "application/json", "");
-		}
-		else
-		{
-			web_server.streamFile(fp, "application/octet-stream");
-		}
-		break;
-	}
-
-	fp.close();
+	fileptr_t(fp->file_ptr).flush();
+	fileptr_t(fp->file_ptr).close();
 }
 
+bool flash_fs_remove(const char *path)
+{
+	return FLASH_FS.remove(path);
+}
+
+bool flash_fs_next_file(fs_file_t *fp, fs_file_info_t *finfo)
+{
+	File f = ((File *)fp->file_ptr)->openNextFile();
+	if (!f || !finfo)
+	{
+		return false;
+	}
+	memset(finfo->full_name, 0, sizeof(finfo->full_name));
+	strncpy(finfo->full_name, f.name(), (FS_PATH_NAME_MAX_LEN - strlen(f.name())));
+	finfo->is_dir = f.isDirectory();
+	finfo->size = f.size();
+	finfo->timestamp = f.getLastWrite();
+	f.close();
+	return true;
+}
+
+size_t flash_fs_read(fs_file_t *fp, uint8_t *buffer, size_t len)
+{
+	return fileptr_t(fp->file_ptr).read(buffer, len);
+}
+
+size_t flash_fs_write(fs_file_t *fp, const uint8_t *buffer, size_t len)
+{
+	return fileptr_t(fp->file_ptr).write(buffer, len);
+}
+
+bool flash_fs_info(const char *path, fs_file_info_t *finfo)
+{
+	File f = FLASH_FS.open(path, "r");
+	if (f && finfo)
+	{
+		memset(finfo->full_name, 0, sizeof(finfo->full_name));
+		strncpy(finfo->full_name, f.name(), (FS_PATH_NAME_MAX_LEN - strlen(f.name())));
+		finfo->is_dir = f.isDirectory();
+		finfo->size = f.size();
+		finfo->timestamp = (uint32_t)f.getLastWrite();
+		f.close();
+		return true;
+	}
+
+	return false;
+}
+
+fs_file_t *flash_fs_open(const char *path, const char *mode)
+{
+	fs_file_t *fp = (fs_file_t *)calloc(1, sizeof(fs_file_t));
+	if (fp)
+	{
+		fp->file_ptr = calloc(1, sizeof(File));
+		if (fp->file_ptr)
+		{
+			*(static_cast<File *>(fp->file_ptr)) = FLASH_FS.open(path, mode);
+			if (*(static_cast<File *>(fp->file_ptr)))
+			{
+				memset(fp->file_info.full_name, 0, sizeof(fp->file_info.full_name));
+				fp->file_info.full_name[0] = '/';
+				fp->file_info.full_name[1] = flash_fs.drive;
+				fp->file_info.full_name[2] = '/';
+				strncat(fp->file_info.full_name, ((File *)fp->file_ptr)->name(), FS_PATH_NAME_MAX_LEN - 3);
+				fp->file_info.is_dir = ((File *)fp->file_ptr)->isDirectory();
+				fp->file_info.size = ((File *)fp->file_ptr)->size();
+				fp->file_info.timestamp = (uint32_t)((File *)fp->file_ptr)->getLastWrite();
+				fp->fs_ptr = &flash_fs;
+				return fp;
+			}
+			free(fp->file_ptr);
+		}
+		free(fp);
+	}
+	return NULL;
+}
+
+fs_file_t *flash_fs_opendir(const char *path)
+{
+	return flash_fs_open(path, "r");
+}
+
+bool flash_fs_seek(fs_file_t *fp, uint32_t position)
+{
+	return fp->fs_ptr->seek(fp, position);
+}
+
+bool flash_fs_mkdir(const char *path)
+{
+	return FLASH_FS.mkdir(path);
+}
+
+bool flash_fs_rmdir(const char *path)
+{
+	return FLASH_FS.rmdir(path);
+}
+
+/**
+ * Implements the function calls for the enpoints C wrapper
+ */
+#include "../../../modules/endpoint.h"
 void endpoint_add(const char *uri, uint8_t method, endpoint_delegate request_handler, endpoint_delegate file_handler)
 {
 	if (!method)
 	{
-		method = 255;
+		method = HTTP_ANY;
 	}
 
 	String s = String(uri);
@@ -591,10 +568,10 @@ bool endpoint_request_arg(const char *argname, char *argvalue, size_t maxlen)
 	return true;
 }
 
-void endpoint_send(int code, const char *content_type, const char *data)
+void endpoint_send(int code, const char *content_type, const uint8_t *data, size_t data_len)
 {
 	static uint8_t in_chuncks = 0;
-	if (!data)
+	if (!content_type)
 	{
 		in_chuncks = 1;
 		web_server.setContentLength(CONTENT_LENGTH_UNKNOWN);
@@ -607,11 +584,19 @@ void endpoint_send(int code, const char *content_type, const char *data)
 			in_chuncks = 2;
 			__FALL_THROUGH__
 		case 0:
-			web_server.send(code, content_type, data);
+			web_server.send(code, content_type, data, data_len);
 			break;
 		default:
-			web_server.sendContent(data);
-			in_chuncks = strlen(data) ? 2 : 0;
+			if (data)
+			{
+				web_server.sendContent((char *)data, data_len);
+				in_chuncks = 2;
+			}
+			else
+			{
+				web_server.sendContent("");
+				in_chuncks = 0;
+			}
 			break;
 		}
 	}
@@ -661,7 +646,7 @@ uint8_t endpoint_request_method(void)
 void endpoint_file_upload_name(char *filename, size_t maxlen)
 {
 	HTTPUpload &upload = web_server.upload();
-	strncpy(filename, upload.filename.c_str(), maxlen);
+	strncat(filename, upload.filename.c_str(), maxlen - strlen(filename));
 }
 
 #endif
@@ -804,12 +789,26 @@ void rp2040_wifi_bt_init(void)
 	telnet_server.setNoDelay(true);
 #ifdef MCU_HAS_ENDPOINTS
 	FLASH_FS.begin();
+	flash_fs = {
+				.drive = 'C',
+				.open = flash_fs_open,
+				.read = flash_fs_read,
+				.write = flash_fs_write,
+				.seek = flash_fs_seek,
+				.available = flash_fs_available,
+				.close = flash_fs_close,
+				.remove = flash_fs_remove,
+				.opendir = flash_fs_opendir,
+				.mkdir = flash_fs_mkdir,
+				.rmdir = flash_fs_rmdir,
+				.next_file = flash_fs_next_file,
+				.finfo = flash_fs_info,
+				.next = NULL};
+		fs_mount(&flash_fs);
 #endif
 #ifndef CUSTOM_OTA_ENDPOINT
 	httpUpdater.setup(&web_server, OTA_URI, update_username, update_password);
 #endif
-	endpoint_add(FS_URI, HTTP_ANY, fs_file_browser, fs_file_updater);
-	endpoint_add(FS_URI "/*", HTTP_ANY, fs_file_browser, fs_file_updater);
 	web_server.begin();
 
 #ifdef MCU_HAS_WEBSOCKETS
