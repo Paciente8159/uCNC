@@ -22,7 +22,6 @@
 #include "modules/digipot.h"
 #include "modules/encoder.h"
 #include "modules/pid.h"
-#include "modules/endpoint.h"
 #include "modules/ic74hc595.h"
 #include "modules/modbus.h"
 #include "modules/softi2c.h"
@@ -30,6 +29,7 @@
 #include "modules/softuart.h"
 #include "modules/system_languages.h"
 #include "modules/system_menu.h"
+#include "modules/file_system.h"
 
 /**
  *
@@ -65,6 +65,11 @@ void mod_init(void)
 
 #ifdef ENABLE_PLASMA_THC
 	LOAD_MODULE(plasma_thc);
+#endif
+
+#ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
+	// file system commands
+	LOAD_MODULE(file_system);
 #endif
 
 	load_modules();

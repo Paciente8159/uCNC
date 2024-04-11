@@ -1151,7 +1151,13 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 	float position[AXIS_COUNT];
 	float feed = block_data->feed;
 
+	// clear the previous map
+	memset(hmap_offsets, 0, sizeof(hmap_offsets));
+	
 	mc_get_position(position);
+	
+	float minretract_h = position[AXIS_TOOL] + retract_h;
+	float maxretract_h = minretract_h;
 
 	for (uint8_t j = 0; j < H_MAPING_GRID_FACTOR; j++)
 	{
@@ -1159,16 +1165,15 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 		for (uint8_t i = 0; i < H_MAPING_GRID_FACTOR; i++)
 		{
 			block_data->feed = FLT_MAX;
-			// retract if needed
-			if (position[AXIS_TOOL] < (target[AXIS_TOOL] + retract_h))
+			// retract (higher if needed)
+			maxretract_h = MAX(maxretract_h, position[AXIS_TOOL] + retract_h);
+			position[AXIS_TOOL] = MAX(minretract_h, position[AXIS_TOOL] + retract_h);
+			error = mc_line(position, block_data);
+			if (error != STATUS_OK)
 			{
-				position[AXIS_TOOL] = (target[AXIS_TOOL] + retract_h);
-				error = mc_line(position, block_data);
-				if (error != STATUS_OK)
-				{
-					return error;
-				}
+				return error;
 			}
+			
 			// transverse motion to position
 			position[AXIS_X] = target[AXIS_X];
 			position[AXIS_Y] = target[AXIS_Y];
@@ -1202,14 +1207,13 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 
 	block_data->feed = FLT_MAX;
 	// fast retract if needed
-	if (position[AXIS_TOOL] < (target[AXIS_TOOL] + retract_h))
+	// retract (higher if needed)
+	block_data->feed = FLT_MAX;
+	position[AXIS_TOOL] = maxretract_h;
+	error = mc_line(position, block_data);
+	if (error != STATUS_OK)
 	{
-		position[AXIS_TOOL] = (target[AXIS_TOOL] + retract_h);
-		error = mc_line(position, block_data);
-		if (error != STATUS_OK)
-		{
-			return error;
-		}
+		return error;
 	}
 
 	// transverse to 1st point
@@ -1251,6 +1255,14 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 
 	// print map
 	mc_print_hmap();
+
+	if (itp_sync() != STATUS_OK)
+	{
+		return STATUS_CRITICAL_FAIL;
+	}
+
+	// sync position of all systems
+	mc_sync_position();
 
 	return STATUS_OK;
 }

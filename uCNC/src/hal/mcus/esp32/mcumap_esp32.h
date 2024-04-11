@@ -2710,9 +2710,15 @@ extern "C"
 #ifndef DISABLE_WEBSOCKETS
 #define MCU_HAS_WEBSOCKETS
 #endif
+#ifndef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
+#define BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
+#endif
 #endif
 #ifdef ENABLE_BLUETOOTH
 #define MCU_HAS_BLUETOOTH
+#ifndef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
+#define BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
+#endif
 #endif
 
 // servo timer is also used by emulated PWM if used
@@ -2874,10 +2880,6 @@ extern "C"
 
 	extern void esp32_delay_us(uint16_t delay);
 #define mcu_delay_us(X) esp32_delay_us(X)
-
-#if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
-#define BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
-#endif
 
 #include "xtensa/core-macros.h"
 #define mcu_delay_cycles(X)                          \
