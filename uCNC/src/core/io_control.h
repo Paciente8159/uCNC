@@ -71,6 +71,7 @@ extern "C"
 	void io_set_steps(uint8_t mask);
 	void io_toggle_steps(uint8_t mask);
 	void io_set_dirs(uint8_t mask);
+	void io_get_steps_pos(int32_t *position);
 
 	void io_enable_steppers(uint8_t mask);
 
