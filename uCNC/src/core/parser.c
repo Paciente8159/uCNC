@@ -1782,8 +1782,13 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 				{
 					new_state->groups.height_map_active = 1;
 				}
+				else{
+					// clear the map
+					memset(hmap_offsets, 0, sizeof(hmap_offsets));
+					new_state->groups.height_map_active = 0;
+				}
 			}
-			break;
+			return error;
 #endif
 #endif
 #ifdef ENABLE_PARSER_MODULES
@@ -2619,7 +2624,10 @@ void parser_discard_command(void)
 	{
 		c = serial_getc();
 #ifdef ECHO_CMD
-		serial_putc(c);
+		if (c)
+		{
+			serial_putc(c);
+		}
 #endif
 	} while (c != EOL);
 }
