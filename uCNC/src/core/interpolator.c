@@ -631,7 +631,8 @@ void itp_run(void)
 		{
 			dss_speed = fast_flt_mul2(dss_speed);
 			// clamp top speed
-			current_speed = MIN((current_speed * 2.0f), g_settings.max_step_rate);
+			current_speed = fast_flt_mul2(current_speed);
+			current_speed = MIN(current_speed, g_settings.max_step_rate);
 			dss = 1;
 		}
 #endif
