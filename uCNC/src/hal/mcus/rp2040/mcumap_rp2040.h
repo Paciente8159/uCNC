@@ -27,8 +27,9 @@ extern "C"
 #include <stdbool.h>
 #include <stdint.h>
 #include <Arduino.h>
-#include "hardware/timer.h"
-#include "hardware/irq.h"
+#include <hardware/timer.h>
+#include <hardware/irq.h>
+#include <pico/multicore.h>
 
 /*
 	Generates all the interface definitions.
@@ -1181,6 +1182,15 @@ extern "C"
 #endif
 #endif
 
+
+/**
+ * Run code on multicore mode
+ * Launches code on core 0
+ * Runs communications on core 0
+ * Runs CNC loop on core 1
+ * **/
+#ifdef RP2040_RUN_MULTICORE
+
 #define USE_CUSTOM_BUFFER_IMPLEMENTATION
 #include <pico/util/queue.h>
 #define DECL_BUFFER(type, name, size) \
@@ -1211,6 +1221,16 @@ extern "C"
 	{                                                 \
 		queue_try_remove((queue_t *)buffer.data, NULL); \
 	}
+
+	/**
+	 * Launch multicore
+	 * **/
+// 	extern void rp2040_core1_loop();
+// #define ucnc_init() cnc_init();	multicore_launch_core1(rp2040_core1_loop)
+	extern void rp2040_core0_loop();
+#define ucnc_run() rp2040_core0_loop()
+
+#endif
 
 #ifdef __cplusplus
 }

@@ -288,9 +288,24 @@ void mcu_rtc_isr(void)
 	mcu_rtc_cb(millis());
 }
 
-static void mcu_usart_init(void)
+/**
+ * Multicore code
+ * **/
+void rp2040_core0_loop()
 {
-	rp2040_uart_init(BAUDRATE);
+	rp2040_uart_process();
+}
+
+void setup1()
+{
+}
+
+void loop1()
+{
+	for (;;)
+	{
+		cnc_run();
+	}
 }
 
 /**
@@ -312,7 +327,7 @@ void mcu_init(void)
 	rp2040_eeprom_init(NVM_STORAGE_SIZE); // 2K Emulated EEPROM
 #endif
 
-	mcu_usart_init();
+	rp2040_uart_init(BAUDRATE);
 
 	pinMode(LED_BUILTIN, OUTPUT);
 	// init rtc, oneshot and servo alarms
@@ -535,7 +550,9 @@ void mcu_stop_itp_isr(void)
  * */
 void mcu_dotasks(void)
 {
+#ifndef RP2040_RUN_MULTICORE
 	rp2040_uart_process();
+#endif
 }
 
 // Non volatile memory

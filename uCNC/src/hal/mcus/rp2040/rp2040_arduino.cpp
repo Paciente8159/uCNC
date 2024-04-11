@@ -987,8 +987,6 @@ void rp2040_wifi_bt_process(void)
 #endif
 
 #ifdef ENABLE_BLUETOOTH
-	DECL_BUFFER(uint8_t, bt_rx, RX_BUFFER_SIZE);
-
 	while (SerialBT.available() > 0)
 	{
 #ifndef DETACH_BLUETOOTH_FROM_MAIN_PROTOCOL
@@ -1010,6 +1008,48 @@ void rp2040_wifi_bt_process(void)
 #endif
 }
 
+#endif
+
+/**
+ *
+ * This handles EEPROM simulation on flash memory
+ *
+ * **/
+
+#ifndef RAM_ONLY_SETTINGS
+#include <EEPROM.h>
+extern "C"
+{
+	void rp2040_eeprom_init(int size)
+	{
+		EEPROM.begin(size);
+	}
+
+	uint8_t rp2040_eeprom_read(uint16_t address)
+	{
+		return EEPROM.read(address);
+	}
+
+	void rp2040_eeprom_write(uint16_t address, uint8_t value)
+	{
+		EEPROM.write(address, value);
+	}
+
+	void rp2040_eeprom_flush(void)
+	{
+		#ifndef RP2040_RUN_MULTICORE
+		if (!EEPROM.commit())
+		{
+			protocol_send_feedback((const char *)" EEPROM write error");
+		}
+		#else
+		// signal other core to store EEPROM
+		rp2040.fifo.push(0);
+		// wait for signal back
+		rp2040.fifo.pop();
+		#endif
+	}
+}
 #endif
 
 extern "C"
@@ -1254,43 +1294,21 @@ extern "C"
 #if (defined(MCU_HAS_WIFI) || defined(ENABLE_BLUETOOTH))
 		rp2040_wifi_bt_process();
 #endif
-	}
-}
 
-/**
- *
- * This handles EEPROM simulation on flash memory
- *
- * **/
-
-#ifndef RAM_ONLY_SETTINGS
-#include <EEPROM.h>
-extern "C"
-{
-	void rp2040_eeprom_init(int size)
-	{
-		EEPROM.begin(size);
-	}
-
-	uint8_t rp2040_eeprom_read(uint16_t address)
-	{
-		return EEPROM.read(address);
-	}
-
-	void rp2040_eeprom_write(uint16_t address, uint8_t value)
-	{
-		EEPROM.write(address, value);
-	}
-
-	void rp2040_eeprom_flush(void)
-	{
-		if (!EEPROM.commit())
+#if defined(RP2040_RUN_MULTICORE) && !defined(RAM_ONLY_SETTINGS)
+		// flush pending eeprom request
+		if (rp2040.fifo.available())
 		{
-			protocol_send_feedback((const char *)" EEPROM write error");
+			rp2040.fifo.pop();
+			if (!EEPROM.commit())
+			{
+				protocol_send_feedback((const char *)" EEPROM write error");
+			}
+			rp2040.fifo.push(0);
 		}
+#endif
 	}
 }
-#endif
 
 /**
  *
