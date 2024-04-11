@@ -49,7 +49,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
 static uint8_t parser_grbl_command(void);
 FORCEINLINE static uint8_t parser_gcode_command(bool is_jogging);
-static void parser_discard_command(void);
+
 #ifdef ENABLE_CANNED_CYCLES
 uint8_t parser_exec_command_block(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
 #endif
@@ -2614,7 +2614,7 @@ static uint8_t parser_get_next_preprocessed(bool peek)
 	return c;
 }
 
-static void parser_discard_command(void)
+void parser_discard_command(void)
 {
 	uint8_t c = '@';
 #ifdef ECHO_CMD
