@@ -900,8 +900,7 @@ extern "C"
 					c = OVF;
 				}
 
-				*(BUFFER_NEXT_FREE(uart_rx)) = c;
-				BUFFER_STORE(uart_rx);
+				BUFFER_ENQUEUE(uart_rx, &c);
 			}
 #else
 			mcu_uart_rx_cb((uint8_t)Serial.read());
@@ -923,8 +922,7 @@ extern "C"
 						c = OVF;
 					}
 
-					*(BUFFER_NEXT_FREE(wifi_rx)) = c;
-					BUFFER_STORE(wifi_rx);
+					BUFFER_ENQUEUE(wifi_rx, &c);
 				}
 #else
 				mcu_wifi_rx_cb((uint8_t)telnet_client.read());

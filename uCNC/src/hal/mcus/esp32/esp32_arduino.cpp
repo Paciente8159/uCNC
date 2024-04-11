@@ -1007,8 +1007,7 @@ extern "C"
 						c = OVF;
 					}
 
-					*(BUFFER_NEXT_FREE(bt_rx)) = c;
-					BUFFER_STORE(bt_rx);
+					BUFFER_ENQUEUE(bt_rx, &c);
 				}
 #else
 				mcu_bt_rx_cb((uint8_t)SerialBT.read());
@@ -1032,8 +1031,7 @@ extern "C"
 						c = OVF;
 					}
 
-					*(BUFFER_NEXT_FREE(wifi_rx)) = c;
-					BUFFER_STORE(wifi_rx);
+					BUFFER_ENQUEUE(wifi_rx, &c);
 				}
 #else
 				mcu_wifi_rx_cb((uint8_t)server_client.read());

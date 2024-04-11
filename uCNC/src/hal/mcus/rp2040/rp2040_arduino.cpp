@@ -968,8 +968,7 @@ void rp2040_wifi_bt_process(void)
 					c = OVF;
 				}
 
-				*(BUFFER_NEXT_FREE(wifi_rx)) = c;
-				BUFFER_STORE(wifi_rx);
+				BUFFER_ENQUEUE(wifi_rx, &c);
 			}
 
 #else
@@ -1001,8 +1000,7 @@ void rp2040_wifi_bt_process(void)
 				c = OVF;
 			}
 
-			*(BUFFER_NEXT_FREE(bt_rx)) = c;
-			BUFFER_STORE(bt_rx);
+			BUFFER_ENQUEUE(bt_rx, &c);
 		}
 
 #else
@@ -1194,8 +1192,7 @@ extern "C"
 					c = OVF;
 				}
 
-				*(BUFFER_NEXT_FREE(usb_rx)) = c;
-				BUFFER_STORE(usb_rx);
+				BUFFER_ENQUEUE(usb_rx, &c);
 			}
 
 #else
@@ -1216,8 +1213,7 @@ extern "C"
 					c = OVF;
 				}
 
-				*(BUFFER_NEXT_FREE(uart_rx)) = c;
-				BUFFER_STORE(uart_rx);
+				BUFFER_ENQUEUE(uart_rx, &c);
 			}
 #else
 			mcu_uart_rx_cb((uint8_t)COM_UART.read());
@@ -1238,8 +1234,7 @@ extern "C"
 					c = OVF;
 				}
 
-				*(BUFFER_NEXT_FREE(uart2_rx)) = c;
-				BUFFER_STORE(uart2_rx);
+				BUFFER_ENQUEUE(uart2_rx, &c);
 			}
 
 #else
@@ -1250,8 +1245,7 @@ extern "C"
 				c = OVF;
 			}
 
-			*(BUFFER_NEXT_FREE(uart2_rx)) = c;
-			BUFFER_STORE(uart2_rx);
+			BUFFER_ENQUEUE(uart2_rx, &c);
 #endif
 #endif
 		}

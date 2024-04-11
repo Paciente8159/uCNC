@@ -176,47 +176,7 @@ extern "C"
 			memset(tmp, 0, sizeof(tmp));
 			uint8_t r = 0;
 
-			uint8_t count, tail;
-			__ATOMIC__
-			{
-				tail = uart2_tx.tail;
-				count = uart2_tx.count;
-			}
-			if (count > UART2_TX_BUFFER_SIZE)
-			{
-				count = UART2_TX_BUFFER_SIZE;
-			}
-			r = 0;
-			if (count)
-			{
-				uint8_t avail = uart2_tx_size - tail;
-				if (avail < count && avail)
-				{
-					memcpy(tmp, &uart2_tx_bufferdata[tail], avail * sizeof(uart2_tx_bufferdata[0]));
-					r = avail;
-					count -= avail;
-					tail = 0;
-				}
-				else
-				{
-					avail = 0;
-				}
-				if (count)
-				{
-					memcpy(&tmp[avail], &uart2_tx_bufferdata[tail], count * sizeof(uart2_tx_bufferdata[0]));
-					r += count;
-					__ATOMIC__
-					{
-						tail += count;
-						if (tail == uart2_tx_size)
-						{
-							tail = 0;
-						}
-						uart2_tx.tail = tail;
-						uart2_tx.count -= r;
-					}
-				}
-			}
+			BUFFER_READ(uart2_tx, tmp, UART_TX_BUFFER_SIZE, r);
 			printf("%s", tmp);
 		}
 	}
