@@ -124,10 +124,11 @@ uint8_t __attribute__((weak)) plasma_thc_vad_active(void)
 	float feed = fast_flt_sqrt(p->feed_sqr) * p->feed_conversion;
 	float current_feed = itp_get_rt_feed();
 	float ratio = current_feed / feed;
-	if (ratio < plasma_start_params.vad){
+	if (ratio < plasma_start_params.vad)
+	{
 		return PLASMA_THC_VAD_ACTIVE;
 	}
-	
+
 	return 0;
 }
 
@@ -430,16 +431,17 @@ static void pid_update(void)
 bool plasma_protocol_send_status(void *args)
 {
 	uint8_t state = plasma_thc_state;
-	
+
 	protocol_send_string(__romstr__("THC:"));
 
 	plasma_thc_extension_send_status();
-	
+
 	if (CHECKFLAG(state, PLASMA_THC_ENABLED))
 	{
 		serial_putc('E');
 	}
-	else{
+	else
+	{
 		serial_putc('*');
 	}
 	if (CHECKFLAG(state, PLASMA_THC_ACTIVE))
@@ -486,12 +488,16 @@ DECL_MODULE(plasma_thc)
 #endif
 }
 
+static bool previous_mode;
+
 static void startup_code(void)
 {
 // force plasma off
 #if ASSERT_PIN(PLASMA_ON_OUTPUT)
 	io_clear_output(PLASMA_ON_OUTPUT);
 #endif
+	previous_mode = g_settings.laser_mode;
+	g_settings.laser_mode = PLASMA_THC_MODE;
 }
 
 static void shutdown_code(void)
@@ -500,6 +506,7 @@ static void shutdown_code(void)
 #if ASSERT_PIN(PLASMA_ON_OUTPUT)
 	io_clear_output(PLASMA_ON_OUTPUT);
 #endif
+	g_settings.laser_mode = previous_mode;
 }
 
 static void set_speed(int16_t value)

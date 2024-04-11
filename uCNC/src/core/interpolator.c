@@ -625,6 +625,17 @@ void itp_run(void)
 #if (DSS_MAX_OVERSAMPLING != 0)
 		float dss_speed = MAX(INTERPOLATOR_FREQ, current_speed);
 		uint8_t dss = 0;
+#ifdef ENABLE_PLASMA_THC
+		// plasma THC forces DSS to always be enabled at level 1 at least
+		if (g_settings.laser_mode == PLASMA_THC_MODE)
+		{
+			dss_speed = fast_flt_mul2(dss_speed);
+			// clamp top speed
+			current_speed = fast_flt_mul2(current_speed);
+			current_speed = MIN(current_speed, g_settings.max_step_rate);
+			dss = 1;
+		}
+#endif
 		while (dss_speed < DSS_CUTOFF_FREQ && dss < DSS_MAX_OVERSAMPLING && segm_steps)
 		{
 			dss_speed = fast_flt_mul2(dss_speed);
