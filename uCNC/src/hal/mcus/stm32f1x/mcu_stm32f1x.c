@@ -39,16 +39,15 @@
 #error "The set FLASH_SIZE is beyond the chip capability"
 #endif
 
-// set the FLASH EEPROM SIZE
-#define FLASH_EEPROM_SIZE 0x400
-
 #if (FLASH_BANK1_END <= 0x0801FFFFUL)
-#define FLASH_EEPROM_PAGES (((FLASH_EEPROM_SIZE - 1) >> 10) + 1)
+#define FLASH_PAGE_SIZE (1 << 10)
+#define FLASH_EEPROM_PAGES (((NVM_STORAGE_SIZE - 1) >> 10) + 1)
 #define FLASH_EEPROM (FLASH_LIMIT - ((FLASH_EEPROM_PAGES << 10) - 1))
 #define FLASH_PAGE_MASK (0xFFFF - (1 << 10) + 1)
 #define FLASH_PAGE_OFFSET_MASK (0xFFFF & ~FLASH_PAGE_MASK)
 #else
-#define FLASH_EEPROM_PAGES (((FLASH_EEPROM_SIZE - 1) >> 11) + 1)
+#define FLASH_PAGE_SIZE 0x800
+#define FLASH_EEPROM_PAGES (((NVM_STORAGE_SIZE - 1) >> 11) + 1)
 #define FLASH_EEPROM (FLASH_LIMIT - ((FLASH_EEPROM_PAGES << 11) - 1))
 #define FLASH_PAGE_MASK (0xFFFF - (1 << 11) + 1)
 #define FLASH_PAGE_OFFSET_MASK (0xFFFF & ~FLASH_PAGE_MASK)
@@ -56,7 +55,7 @@
 
 #define READ_FLASH(ram_ptr, flash_ptr) (*ram_ptr = ~(*flash_ptr))
 #define WRITE_FLASH(flash_ptr, ram_ptr) (*flash_ptr = ~(*ram_ptr))
-static uint8_t stm32_flash_page[FLASH_EEPROM_SIZE];
+static uint8_t stm32_flash_page[FLASH_PAGE_SIZE];
 static uint16_t stm32_flash_current_page;
 static bool stm32_flash_modified;
 
@@ -110,7 +109,7 @@ void MCU_SERIAL_ISR(void)
 				COM_UART->CR1 &= ~(USART_CR1_TXEIE);
 				return;
 			}
-			uint8_t c;
+			uint8_t c = 0;
 			BUFFER_DEQUEUE(uart_tx, &c);
 			COM_OUTREG = c;
 		}
@@ -145,6 +144,15 @@ void MCU_SERIAL2_ISR(void)
 			}
 #else
 			mcu_uart2_rx_cb(c);
+#ifndef UART2_DISABLE_BUFFER
+			if (BUFFER_FULL(uart2_rx))
+			{
+				c = OVF;
+			}
+
+			*(BUFFER_NEXT_FREE(uart2_rx)) = c;
+			BUFFER_STORE(uart2_rx);
+#endif
 #endif
 		}
 
@@ -836,9 +844,10 @@ static uint16_t mcu_access_flash_page(uint16_t address)
 	uint16_t address_offset = address & FLASH_PAGE_OFFSET_MASK;
 	if (stm32_flash_current_page != address_page)
 	{
+		mcu_eeprom_flush();
 		stm32_flash_modified = false;
 		stm32_flash_current_page = address_page;
-		uint16_t counter = (uint16_t)(FLASH_EEPROM_SIZE >> 2);
+		uint16_t counter = (uint16_t)(FLASH_PAGE_SIZE >> 2);
 		uint32_t *ptr = ((uint32_t *)&stm32_flash_page[0]);
 		volatile uint32_t *eeprom = ((volatile uint32_t *)(FLASH_EEPROM + address_page));
 		while (counter--)
@@ -855,6 +864,13 @@ static uint16_t mcu_access_flash_page(uint16_t address)
 // Non volatile memory
 uint8_t mcu_eeprom_getc(uint16_t address)
 {
+	if (NVM_STORAGE_SIZE <= address)
+	{
+		DEBUG_STR("EEPROM invalid address @ ");
+		DEBUG_INT(address);
+		DEBUG_PUTC('\n');
+		return 0;
+	}
 	uint16_t offset = mcu_access_flash_page(address);
 	return stm32_flash_page[offset];
 }
@@ -880,6 +896,13 @@ static void mcu_eeprom_erase(uint16_t address)
 
 void mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
+	if (NVM_STORAGE_SIZE <= address)
+	{
+		DEBUG_STR("EEPROM invalid address @ ");
+		DEBUG_INT(address);
+		DEBUG_PUTC('\n');
+	}
+
 	uint16_t offset = mcu_access_flash_page(address);
 
 	if (stm32_flash_page[offset] != value)
@@ -897,7 +920,7 @@ void mcu_eeprom_flush()
 		mcu_eeprom_erase(stm32_flash_current_page);
 		volatile uint16_t *eeprom = ((volatile uint16_t *)(FLASH_EEPROM + stm32_flash_current_page));
 		uint16_t *ptr = ((uint16_t *)&stm32_flash_page[0]);
-		uint16_t counter = (uint16_t)(FLASH_EEPROM_SIZE >> 1);
+		uint16_t counter = (uint16_t)(FLASH_PAGE_SIZE >> 1);
 		while (counter--)
 		{
 			while (FLASH->SR & FLASH_SR_BSY)
@@ -1043,7 +1066,7 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop, uint
 				return I2C_NOTOK;
 			}
 		}
-		
+
 		__TIMEOUT_ASSERT__(timeout)
 		{
 			stop = true;
@@ -1104,6 +1127,8 @@ static uint8_t mcu_i2c_read(uint8_t *data, bool with_ack, bool send_stop, uint32
 	if (!with_ack)
 	{
 		I2C_REG->CR1 &= ~I2C_CR1_ACK;
+		stop = false;
+		mcu_i2c_write_stop(&send_stop);
 	}
 	else
 	{
@@ -1193,9 +1218,23 @@ void mcu_i2c_config(uint32_t frequency)
 	I2C_REG->CR1 &= ~I2C_CR1_SWRST;
 #if I2C_ADDRESS == 0
 	// set max freq
+	I2C_REG->CR2 &= ~0x3FUL;
 	I2C_REG->CR2 |= I2C_SPEEDRANGE;
-	I2C_REG->TRISE = (I2C_SPEEDRANGE + 1);
-	I2C_REG->CCR |= (frequency <= 100000UL) ? ((I2C_SPEEDRANGE * 5) & 0x0FFF) : (((I2C_SPEEDRANGE * 5 / 6) & 0x0FFF) | I2C_CCR_FS);
+	I2C_REG->TRISE &= ~0x3FUL;
+	I2C_REG->TRISE |= (frequency <= 100000UL) ? (I2C_SPEEDRANGE + 1) : (((I2C_SPEEDRANGE * 300UL) / 1000UL) + 1);
+	I2C_REG->CCR &= ~(I2C_CCR_FS | I2C_CCR_DUTY | I2C_CCR_CCR);
+	uint32_t ccr = 0;
+	if ((frequency <= 100000UL))
+	{
+		// standart speed
+		ccr = MAX(4, ((((HAL_RCC_GetPCLK1Freq() - 1U) / (frequency * 2)) + 1UL) & I2C_CCR_CCR));
+	}
+	else
+	{
+		// fast speed
+		ccr = MAX(1, ((((HAL_RCC_GetPCLK1Freq() - 1U) / (frequency * 3)) + 1UL) & I2C_CCR_CCR)) | I2C_CCR_FS;
+	}
+	I2C_REG->CCR |= ccr;
 #else
 	// set address
 	I2C_REG->OAR1 &= ~(I2C_OAR1_ADDMODE | 0x0F);
@@ -1208,8 +1247,8 @@ void mcu_i2c_config(uint32_t frequency)
 	NVIC_ClearPendingIRQ(I2C_IRQ);
 	NVIC_EnableIRQ(I2C_IRQ);
 #endif
-	// initialize the SPI configuration register
-	I2C_REG->CR1 |= (I2C_CR1_PE | I2C_CR1_ENGC);
+		// initialize the SPI configuration register
+		I2C_REG->CR1 |= (I2C_CR1_PE | I2C_CR1_ENGC);
 #if I2C_ADDRESS != 0
 	// prepare ACK in slave mode
 	I2C_REG->CR1 |= I2C_CR1_ACK;

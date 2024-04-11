@@ -52,6 +52,7 @@ extern "C"
 
 // special purpose board
 #define BOARD_RAMPS14_MIRROR 200
+#define BOARD_CUSTOM -1
 
 #ifdef __cplusplus
 }
