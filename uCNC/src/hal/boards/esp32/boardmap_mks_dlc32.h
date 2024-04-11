@@ -29,19 +29,19 @@ extern "C"
 #endif
 
 // Setup limit pins
-#define LIMIT_Z_BIT 34	// assigns LIMIT_Z pin
+#define LIMIT_Z_BIT 34 // assigns LIMIT_Z pin
 // #define LIMIT_Z_ISR		// assigns LIMIT_Z ISR
-#define LIMIT_Y_BIT 35	// assigns LIMIT_Y pin
+#define LIMIT_Y_BIT 35 // assigns LIMIT_Y pin
 // #define LIMIT_Y_ISR		// assigns LIMIT_Y ISR
-#define LIMIT_X_BIT 36	// assigns LIMIT_X pin
+#define LIMIT_X_BIT 36 // assigns LIMIT_X pin
 // #define LIMIT_X_ISR  	// assigns LIMIT_X ISR
 
 // Setup com pins
 #define RX_BIT 3
 #define TX_BIT 1
 #define RX_PULLUP
-// only uncomment this if other port other then 0 is used
-// #define UART_PORT 0
+	// only uncomment this if other port other then 0 is used
+	// #define UART_PORT 0
 
 #define PWM0_BIT 32
 #define PWM0_CHANNEL 0
@@ -52,12 +52,12 @@ extern "C"
 #define DOUT9_BIT 16
 #define DOUT10_BIT 17
 
-// bitbanging 74hc595 (not used)
-// uses 3 x 74HS595
-// #define IC74HC595_COUNT 1
-// #define IC74HC595_DELAY_CYCLES 0
+	// bitbanging 74hc595 (not used)
+	// uses 3 x 74HS595
+	// #define IC74HC595_COUNT 1
+	// #define IC74HC595_DELAY_CYCLES 0
 
-#define IC74HC595_CUSTOM_SHIFT_IO //Enables custom MCU data shift transmission. In ESP32 that is via I2S
+#define IC74HC595_CUSTOM_SHIFT_IO // Enables custom MCU data shift transmission. In ESP32 that is via I2S
 #define IC74HC595_I2S_WS 17
 #define IC74HC595_I2S_CLK 16
 #define IC74HC595_I2S_DATA 21
@@ -75,7 +75,7 @@ extern "C"
 
 	// Setup the Step Timer used has the heartbeat for µCNC
 	// Timer 1 is used by default
-	//#define ITP_TIMER 1
+	// #define ITP_TIMER 1
 
 	// RTC Timer on ESP32 is granteed by a FreeRTOS
 
@@ -86,16 +86,16 @@ extern "C"
 #define SPI_SDI_BIT 12
 #define SPI_CS_BIT 15
 
-//software I2C
+// software I2C
 #define DIN30_BIT 4
 #define DIN31_BIT 0
 
-//pins for smart adapter
-//clk
+// pins for smart adapter
+// clk
 #define DOUT4_BIT 26
-//data
+// data
 #define DOUT5_BIT 05
-//cs
+// cs
 #define DOUT6_BIT 27
 
 #ifdef __cplusplus

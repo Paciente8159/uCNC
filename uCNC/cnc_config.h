@@ -10,11 +10,11 @@
 		it under the terms of the GNU General Public License as published by
 		the Free Software Foundation, either version 3 of the License, or
 		(at your option) any later version. Please see
-   <http://www.gnu.org/licenses/>
+	 <http://www.gnu.org/licenses/>
 
 		µCNC is distributed WITHOUT ANY WARRANTY;
 		Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A
-   PARTICULAR PURPOSE. See the	GNU General Public License for more details.
+	 PARTICULAR PURPOSE. See the	GNU General Public License for more details.
 */
 
 #ifndef CNC_CONFIG_H
@@ -526,9 +526,12 @@ extern "C"
 	/**
 	 * Modifies the startup message to emulate Grbl (required by some programs so
 	 * that uCNC is recognized a Grbl protocol controller device)
+	 * 0 - disables
+	 * 1 - partially emulates the startup message and prints unused settings to improve compatibility
+	 * 2 - full emulation of the grbl startup and info messages (this also makes command $IE available to print the firmware information in extended format)
 	 * */
 
-#define EMULATE_GRBL_STARTUP
+#define EMULATE_GRBL_STARTUP 1
 
 	/**
 	 *
@@ -552,6 +555,8 @@ extern "C"
 	 * */
 
 	// #define ENABLE_EXTRA_SYSTEM_CMDS
+	// uncomment o translate pins names when printing pins states with $P command
+	// #define ENABLE_PIN_TRANSLATIONS
 
 	/**
 	 * Compilation specific options

@@ -553,10 +553,10 @@ static void set_speed(int16_t value)
 #endif
 }
 
-static int16_t range_speed(int16_t value)
+static int16_t range_speed(int16_t value, uint8_t conv)
 {
 	// binary output
-	value = value ? 1 : 0;
+	value = (value) ? 1 : 0;
 	return value;
 }
 

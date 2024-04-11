@@ -81,12 +81,6 @@ uint16_t bt_settings_offset;
 #define OTA_URI "/firmware"
 #endif
 
-#ifndef FS_WRITE_URI
-#define FS_WRITE_URI "/fs"
-#endif
-#define FS_WRITE_GZ_SIZE 305
-const char fs_write_page[305] PROGMEM = {0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x0a, 0x55, 0x51, 0x3d, 0x4f, 0xc3, 0x30, 0x10, 0xdd, 0x91, 0xf8, 0x0f, 0x87, 0x67, 0x52, 0x43, 0x27, 0x84, 0xec, 0x2c, 0x85, 0x4a, 0x4c, 0x74, 0x68, 0x85, 0x18, 0x2f, 0xf6, 0xb5, 0xb1, 0xe4, 0xd8, 0x56, 0x72, 0x69, 0x55, 0x7e, 0x3d, 0x97, 0xa4, 0x03, 0x0c, 0xfe, 0x7a, 0xf7, 0xee, 0xdd, 0xd3, 0xb3, 0x79, 0x78, 0xfb, 0xdc, 0xec, 0xbf, 0x77, 0xef, 0xd0, 0x72, 0x17, 0x6b, 0x33, 0xed, 0x10, 0x31, 0x9d, 0xac, 0xa2, 0xa4, 0xe4, 0x4d, 0xe8, 0x6b, 0xd3, 0x11, 0x23, 0xb8, 0x16, 0xfb, 0x81, 0xd8, 0xaa, 0xc3, 0x7e, 0x5b, 0xbd, 0xa8, 0x1b, 0x9a, 0xb0, 0x23, 0xab, 0xce, 0x81, 0x2e, 0x25, 0xf7, 0xac, 0xc0, 0xe5, 0xc4, 0x94, 0x84, 0x75, 0x09, 0x9e, 0x5b, 0xeb, 0xe9, 0x1c, 0x1c, 0x55, 0xf3, 0xe3, 0x11, 0x42, 0x0a, 0x1c, 0x30, 0x56, 0x83, 0xc3, 0x48, 0xf6, 0x79, 0xf5, 0x24, 0x2a, 0x1c, 0x38, 0x52, 0xfd, 0x45, 0x0d, 0xec, 0x28, 0x79, 0x4c, 0x0c, 0x63, 0xf1, 0xc8, 0x64, 0xf4, 0x52, 0x31, 0x7a, 0xf1, 0xd0, 0x64, 0x7f, 0x15, 0x3f, 0xeb, 0x7f, 0xd4, 0xc3, 0x4c, 0x85, 0x6d, 0xee, 0x3b, 0xe1, 0xad, 0x6b, 0x73, 0x94, 0x1b, 0xa0, 0xe3, 0x90, 0x93, 0x55, 0xfa, 0x38, 0x28, 0x10, 0x97, 0x6d, 0xf6, 0x56, 0x95, 0x3c, 0x88, 0x3d, 0x4a, 0x8e, 0xaf, 0x45, 0x1c, 0x77, 0x63, 0xe4, 0x50, 0xb0, 0x67, 0x3d, 0xb5, 0x54, 0x22, 0x83, 0x62, 0x26, 0x62, 0x43, 0x11, 0x04, 0xb1, 0xea, 0x18, 0x22, 0x7d, 0xa4, 0x32, 0xb2, 0xaa, 0x37, 0x6d, 0xce, 0x03, 0x01, 0xc2, 0xea, 0xf4, 0x03, 0x13, 0xfe, 0x6a, 0xf4, 0xcc, 0xac, 0x4d, 0x98, 0x18, 0xb0, 0x48, 0x4e, 0x15, 0x05, 0xc1, 0xff, 0xed, 0xbd, 0xe5, 0xf3, 0x07, 0x40, 0xe7, 0xa8, 0x48, 0x3e, 0xa2, 0x25, 0x03, 0x9b, 0x5e, 0xd6, 0xc8, 0x9c, 0xd3, 0x4d, 0x64, 0x18, 0x9b, 0x2e, 0xc8, 0xcc, 0x43, 0x89, 0x19, 0xbd, 0xd1, 0x4b, 0x51, 0x52, 0x98, 0x6c, 0xca, 0xb1, 0xc4, 0xa0, 0xe7, 0xdf, 0xba, 0xbf, 0xfb, 0x05, 0x44, 0x67, 0x16, 0x56, 0xbf, 0x01, 0x00, 0x00};
-
 WebServer web_server(WEBSERVER_PORT);
 HTTPUpdateServer httpUpdater;
 const char *update_username = WIFI_USER;
@@ -419,7 +413,15 @@ static File upload_file;
 
 void fs_file_updater()
 {
-	if (web_server.uri() != FS_WRITE_URI || web_server.method() != HTTP_POST || !web_server.hasArg("update"))
+	static File upload_file;
+	if (!web_server.uri().startsWith(FS_URI) || (web_server.method() != HTTP_POST && web_server.method() != HTTP_PUT))
+	{
+		return;
+	}
+
+	String urlpath = String((web_server.uri().substring(FS_URI_LEN).length() != 0) ? web_server.uri().substring(FS_URI_LEN) : "/");
+
+	if (!FLASH_FS.exists(urlpath))
 	{
 		return;
 	}
@@ -427,18 +429,16 @@ void fs_file_updater()
 	HTTPUpload &upload = web_server.upload();
 	if (upload.status == UPLOAD_FILE_START)
 	{
-		String filename = upload.filename;
-		if (web_server.hasArg("path"))
+		if (web_server.method() == HTTP_POST)
 		{
-			String path = web_server.arg("path");
-			filename = path + ((!filename.startsWith("/") && !path.startsWith("/")) ? "/" : "") + filename;
+			if (!urlpath.endsWith("/"))
+			{
+				urlpath.concat("/");
+			}
+
+			urlpath.concat(upload.filename);
 		}
-		if (!filename.startsWith("/"))
-		{
-			filename = "/" + filename;
-		}
-		upload_file = FLASH_FS.open(filename, "w");
-		filename = String();
+		upload_file = FLASH_FS.open(urlpath, "w");
 	}
 	else if (upload.status == UPLOAD_FILE_WRITE)
 	{
@@ -456,6 +456,101 @@ void fs_file_updater()
 	}
 }
 
+void fs_file_browser()
+{
+	File fp;
+	char path[256];
+
+	// updated page
+	if (web_server.hasArg("update") && web_server.method() == HTTP_GET)
+	{
+		web_server.sendHeader("Content-Encoding", "gzip");
+		web_server.send_P(200, __romstr__("text/html"), fs_write_page, FS_WRITE_GZ_SIZE);
+		return;
+	}
+
+	String urlpath = String((web_server.uri().substring(FS_URI_LEN).length() != 0) ? web_server.uri().substring(FS_URI_LEN) : "/");
+
+	if (!FLASH_FS.exists(urlpath))
+	{
+		endpoint_send(404, "application/json", "{\"result\":\"notfound\"}");
+		return;
+	}
+
+	fp = FLASH_FS.open(urlpath, "r");
+
+	switch (web_server.method())
+	{
+	case HTTP_DELETE:
+		if (fp.isDirectory())
+		{
+			FLASH_FS.rmdir(urlpath);
+		}
+		else
+		{
+			FLASH_FS.remove(urlpath);
+		}
+		__FALL_THROUGH__
+	case HTTP_PUT:
+	case HTTP_POST:
+		if (web_server.hasArg("redirect"))
+		{
+			memset(path, 0, 256);
+			web_server.sendHeader("Location", web_server.arg("redirect"));
+			sprintf(path, "{\"redirect\":\"%s\"}", web_server.arg("redirect").c_str());
+			web_server.send(303, "application/json", path);
+		}
+		else
+		{
+			endpoint_send(200, "application/json", "{\"result\":\"ok\"}");
+		}
+
+		break;
+	default: // handle as get
+		if (fp.isDirectory())
+		{
+			// start chunck transmition;
+			endpoint_request_uri(path, 256);
+			endpoint_send(200, "application/json", NULL);
+			endpoint_send(200, "application/json", "{\"result\":\"ok\",\"path\":\"");
+			endpoint_send(200, "application/json", path);
+			endpoint_send(200, "application/json", "\",\"data\":[");
+			File file = fp.openNextFile();
+
+			while (file)
+			{
+				memset(path, 0, 256);
+				if (file.isDirectory())
+				{
+					sprintf(path, "{\"type\":\"dir\",\"name\":\"%s\",\"attr\":%d},", file.name(), 0);
+				}
+				else
+				{
+					sprintf(path, "{\"type\":\"file\",\"name\":\"%s\",\"attr\":0,\"size\":%lu,\"date\":0}", file.name(), (unsigned long int)file.size());
+				}
+
+				file = fp.openNextFile();
+				if (file)
+				{
+					// trailling comma
+					path[strlen(path)] = ',';
+				}
+				endpoint_send(200, "application/json", path);
+			}
+			endpoint_send(200, "application/json", "]}\n");
+			// close the stream
+			endpoint_send(200, "application/json", "");
+		}
+		else
+		{
+			web_server.streamFile(fp, "application/octet-stream");
+		}
+		break;
+	}
+
+	fp.close();
+}
+
 void endpoint_add(const char *uri, uint8_t method, endpoint_delegate request_handler, endpoint_delegate file_handler)
 {
 	if (!method)
@@ -463,7 +558,21 @@ void endpoint_add(const char *uri, uint8_t method, endpoint_delegate request_han
 		method = 255;
 	}
 
-	web_server.on(uri, (HTTPMethod)method, request_handler, file_handler);
+	String s = String(uri);
+
+	if (s.endsWith("*"))
+	{
+		web_server.on(UriWildcard(s.substring(0, s.length() - 1)), (HTTPMethod)method, request_handler, file_handler);
+	}
+	else
+	{
+		web_server.on(Uri(uri), (HTTPMethod)method, request_handler, file_handler);
+	}
+}
+
+void endpoint_request_uri(char *uri, size_t maxlen)
+{
+	strncpy(uri, web_server.uri().c_str(), maxlen);
 }
 
 int endpoint_request_hasargs(void)
@@ -484,7 +593,28 @@ bool endpoint_request_arg(const char *argname, char *argvalue, size_t maxlen)
 
 void endpoint_send(int code, const char *content_type, const char *data)
 {
-	web_server.send(code, content_type, data);
+	static uint8_t in_chuncks = 0;
+	if (!data)
+	{
+		in_chuncks = 1;
+		web_server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+	}
+	else
+	{
+		switch (in_chuncks)
+		{
+		case 1:
+			in_chuncks = 2;
+			__FALL_THROUGH__
+		case 0:
+			web_server.send(code, content_type, data);
+			break;
+		default:
+			web_server.sendContent(data);
+			in_chuncks = strlen(data) ? 2 : 0;
+			break;
+		}
+	}
 }
 
 void endpoint_send_header(const char *name, const char *data, bool first)
@@ -502,6 +632,36 @@ bool endpoint_send_file(const char *file_path, const char *content_type)
 		return true;
 	}
 	return false;
+}
+
+endpoint_upload_t endpoint_file_upload_status(void)
+{
+	HTTPUpload &upload = web_server.upload();
+	endpoint_upload_t status = {.status = (uint8_t)upload.status, .data = upload.buf, .datalen = upload.currentSize};
+	return status;
+}
+
+uint8_t endpoint_request_method(void)
+{
+	switch (web_server.method())
+	{
+	case HTTP_GET:
+		return ENDPOINT_GET;
+	case HTTP_POST:
+		return ENDPOINT_POST;
+	case HTTP_PUT:
+		return ENDPOINT_PUT;
+	case HTTP_DELETE:
+		return ENDPOINT_DELETE;
+	default:
+		return (ENDPOINT_OTHER | (uint8_t)web_server.method());
+	}
+}
+
+void endpoint_file_upload_name(char *filename, size_t maxlen)
+{
+	HTTPUpload &upload = web_server.upload();
+	strncpy(filename, upload.filename.c_str(), maxlen);
 }
 
 #endif
@@ -648,22 +808,8 @@ void rp2040_wifi_bt_init(void)
 #ifndef CUSTOM_OTA_ENDPOINT
 	httpUpdater.setup(&web_server, OTA_URI, update_username, update_password);
 #endif
-	web_server.on(
-		FS_WRITE_URI, HTTP_GET, []()
-		{ web_server.sendHeader("Content-Encoding", "gzip");
-		web_server.send_P(200, __romstr__("text/html"), fs_write_page, FS_WRITE_GZ_SIZE); },
-		NULL);
-	web_server.on(
-		FS_WRITE_URI, HTTP_POST, []()
-		{ 
-			if(web_server.hasArg("redirect")){
-			web_server.sendHeader("Location", web_server.arg("redirect"));
-			web_server.send(303);
-		}
-		else{
-			web_server.send(200, "text/plain", "");
-		} },
-		fs_file_updater);
+	endpoint_add(FS_URI, HTTP_ANY, fs_file_browser, fs_file_updater);
+	endpoint_add(FS_URI "/*", HTTP_ANY, fs_file_browser, fs_file_updater);
 	web_server.begin();
 
 #ifdef MCU_HAS_WEBSOCKETS
@@ -810,8 +956,6 @@ uint8_t rp2040_wifi_bt_read(void)
 void rp2040_wifi_bt_process(void)
 {
 #ifdef MCU_HAS_WIFI
-	DECL_BUFFER(uint8_t, wifi_rx, RX_BUFFER_SIZE);
-
 	if (rp2040_wifi_clientok())
 	{
 		while (server_client.available() > 0)
@@ -1085,8 +1229,9 @@ extern "C"
 #ifdef MCU_HAS_UART2
 		while (COM2_UART.available() > 0)
 		{
-#ifndef DETACH_UART2_FROM_MAIN_PROTOCOL
 			uint8_t c = (uint8_t)COM2_UART.read();
+#ifndef DETACH_UART2_FROM_MAIN_PROTOCOL
+
 			if (mcu_com_rx_cb(c))
 			{
 				if (BUFFER_FULL(uart2_rx))
@@ -1099,7 +1244,16 @@ extern "C"
 			}
 
 #else
-			mcu_uart2_rx_cb((uint8_t)COM2_UART.read());
+			mcu_uart2_rx_cb(c);
+#ifndef UART2_DISABLE_BUFFER
+			if (BUFFER_FULL(uart2_rx))
+			{
+				c = OVF;
+			}
+
+			*(BUFFER_NEXT_FREE(uart2_rx)) = c;
+			BUFFER_STORE(uart2_rx);
+#endif
 #endif
 		}
 #endif

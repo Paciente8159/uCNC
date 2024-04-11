@@ -271,9 +271,7 @@ static void planner_buffer_clear(void)
 	planner_data_write = 0;
 	planner_data_read = 0;
 	planner_data_blocks = 0;
-#ifdef FORCE_GLOBALS_TO_0
 	memset(planner_data, 0, sizeof(planner_data));
-#endif
 }
 
 void planner_init(void)
@@ -289,6 +287,7 @@ void planner_init(void)
 	planner_rapid_feed_ovr(100);
 #if TOOL_COUNT > 0
 	planner_spindle_ovr(100);
+	planner_spindle_ovr_reset();
 	planner_coolant_ovr_reset();
 #endif
 }
@@ -364,7 +363,7 @@ float planner_get_block_top_speed(float exit_speed_sqr)
 	// calculates the difference between the entry speed and the exit speed
 	uint8_t index = planner_data_read;
 	float speed_delta = exit_speed_sqr - planner_data[index].entry_feed_sqr;
-	// caclculates the speed increase/decrease for the given distance
+	// calculates the speed increase/decrease for the given distance
 	float junction_speed_sqr = planner_data[index].acceleration * (float)(planner_data[index].steps[planner_data[index].main_stepper]);
 	junction_speed_sqr = fast_flt_mul2(junction_speed_sqr);
 	// if there is enough space to accelerate computes the junction speed
@@ -408,9 +407,10 @@ float planner_get_block_top_speed(float exit_speed_sqr)
 }
 
 #if TOOL_COUNT > 0
+static uint8_t spindle_override;
 int16_t planner_get_spindle_speed(float scale)
 {
-	if (g_planner_state.state_flags.bit.spindle_running)
+	if (g_planner_state.state_flags.bit.spindle_running ^ spindle_override)
 	{
 		float scaled_spindle = (float)g_planner_state.spindle_speed;
 		bool neg = (g_planner_state.state_flags.bit.spindle_running == 2);
@@ -431,16 +431,6 @@ int16_t planner_get_spindle_speed(float scale)
 	}
 
 	return 0;
-}
-
-float planner_get_previous_spindle_speed(void)
-{
-	return (float)g_planner_state.spindle_speed;
-}
-
-uint8_t planner_get_previous_coolant(void)
-{
-	return g_planner_state.state_flags.bit.coolant;
 }
 #endif
 
@@ -518,7 +508,7 @@ void planner_sync_tools(motion_data_t *block_data)
 void planner_feed_ovr(uint8_t value)
 {
 	value = CLAMP(FEED_OVR_MIN, value, FEED_OVR_MAX);
-	
+
 	if (value != g_planner_state.feed_override)
 	{
 		g_planner_state.feed_override = value;
@@ -551,6 +541,32 @@ void planner_spindle_ovr(uint8_t value)
 	}
 }
 
+void planner_spindle_ovr_toggle(void)
+{
+	if (cnc_get_exec_state(EXEC_HOLD | EXEC_DOOR | EXEC_RUN) == EXEC_HOLD) // only available if a TRUE hold is active
+	{
+		uint8_t newstate = spindle_override ^ g_planner_state.state_flags.bit.spindle_running;
+		if (newstate)
+		{
+			protocol_send_feedback(MSG_FEEDBACK_10);
+		}
+		spindle_override = newstate;
+	}
+}
+
+void planner_spindle_ovr_reset(void)
+{
+	if (cnc_get_exec_state(EXEC_HOLD | EXEC_DOOR | EXEC_RUN) == EXEC_HOLD) // only available if a TRUE hold is active
+	{
+		if (g_planner_state.state_flags.bit.spindle_running && spindle_override)
+		{
+			protocol_send_feedback(MSG_FEEDBACK_10);
+		}
+	}
+
+	spindle_override = 0;
+}
+
 static uint8_t coolant_override;
 
 uint8_t planner_get_coolant(void)
@@ -566,7 +582,7 @@ uint8_t planner_coolant_ovr_toggle(uint8_t value)
 
 void planner_coolant_ovr_reset(void)
 {
-	g_planner_state.state_flags.bit.coolant = 0;
+	// g_planner_state.state_flags.bit.coolant = 0;
 	coolant_override = 0;
 }
 #endif

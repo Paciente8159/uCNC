@@ -36,18 +36,18 @@ extern "C"
 	 * */
 
 #define SET_SPINDLE(X, Y, W, Z) \
-	{                           \
-		io_set_pinvalue(Y, Z);    \
-		io_set_pwm(X, W);       \
+	{                             \
+		io_set_pinvalue(Y, Z);      \
+		io_set_pwm(X, W);           \
 	}
 
 /**
  * X - PWM pin
  * Y - pwm value
  * */
-#define SET_LASER(X, Y)   \
+#define SET_LASER(X, Y) \
 	{                     \
-		io_set_pwm(X, Y); \
+		io_set_pwm(X, Y);   \
 	}
 
 /**
@@ -55,8 +55,8 @@ extern "C"
  * Y - mist pin
  * z - mask value
  * */
-#define SET_COOLANT(X, Y, Z)                   \
-	{                                          \
+#define SET_COOLANT(X, Y, Z)                \
+	{                                         \
 		io_set_pinvalue(X, (Z & COOLANT_MASK)); \
 		io_set_pinvalue(Y, (Z & MIST_MASK));    \
 	}

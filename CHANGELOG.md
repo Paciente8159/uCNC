@@ -8,6 +8,90 @@
 
 # Changelog
 
+## [1.8.11] - 03-04-2024
+
+### Fixed
+
+- fixed interpolator deacceleation steps calculations if time slices less then 1 (#678)
+
+## [1.8.10] - 29-03-2024
+
+### Fixed
+
+- prevent floating point round errors in speed calculations when time slices are too small (#673)
+
+## [1.8.9] - 26-03-2024
+
+## Contributors
+[@lonelycorn](https://github.com/lonelycorn) - fixed DEBUG_STREAM when only one stream available (#664)
+[@kunikonno](https://github.com/kunikonno) - fixed WiFi settings loading at initialization (#659)(#660)
+
+### Added
+
+- new flash files JSON API (RP2040, ESP32 and ESP8266) (#663)
+
+### Changed
+
+- clamp DSS_CUTOFF_FREQ in the sanity check (#670)
+- added custom function to allow predefining IO state at startup (#669)
+- added spindle relay tool speed range function (#658)
+
+### Fixed
+
+- prevent DEBUG_STREAM printing before initialization (#666)
+- fixed DEBUG_STREAM when only one stream available (#664)
+- fixed ESP8266 EEPROM WiFi saved settings not loaded at initialization (#660)
+- fixed RP2040 EEPROM WiFi saved settings not loaded at initialization (#659)
+
+## [1.8.8] - 03-03-2024
+
+## Contributors
+[@lonelycorn](https://github.com/lonelycorn) - modified mcumap macros of ESP32 to improve support for ESP32 family (#649) and removed duplicated servo variables for ESP32 (#648)
+[@ademenev](https://github.com/ademenev) - added kinematics option for MP Scara (#645)
+
+### Added
+
+- Fs page update endpoint (#612)
+- added option for rotational axis work always in relative distances (#624)
+- STM32 NucleoF411RE boardmap with CNC Shield V3 (#628)
+- added option to enable translated pins names status print (#634)
+- added kinematics option for MP Scara (#645)
+- added aditional Grbl emulation level to prevent miss detection of senders (#650)
+- added option to do limit detection at the step ISR (#652)
+
+### Changed
+
+- allow execution of main loop events with HOLD condition active (#633)
+- modified extended settings event hooks to be separated from other overriding events and propagations methods (#635) (#637) (#641)
+- allow detached ports to keep or not an internal buffer (#639)
+- cross architecture definition of NVM_STORAGE_SIZE and setting (#643)
+- moved spindle restore logic to planner override (#647)
+- modified mcumap macros of ESP32 to improve support for ESP32 family (#649) (#654)
+- modified endpoints to support handling of wildcard terminators (#655)
+- on command error now also the parser is forced to sync with other sub-systems (#657)
+- modified behavior of Cycle Start/Resume button to execute only once per press (#657)
+
+### Fixed
+
+- fixed extensions settings event handling that prevented extended settings to be saved (#615)
+- fixed STM32F4 compilation error when I2C HW was defined (#615)
+- fixed program stall while waiting for timeout condition inside an ISR (#619)
+- fixed STM32F4 SPI configuration AFIO fixed (#622)
+- fixed range function for Plasma THC (#627)
+- fixed STM32F4 APB registers of timers in the mcumap (#629)
+- fixed compilation error when tool count was set to 0 (#632)
+- fixed realtime command spindle toggle control over the tool (#631)
+- fixed spindle restart message spawning (#636)
+- fixed uart2 detach from main protocol typo in multiple boards (#638)
+- fixed reset command parsing and early execution (#642)
+- fixed spindle stop/restore after cancel a jog (#644)
+- fixed dwell/delay execute even after a reset occured (#646)
+- removed duplicated servo variables for ESP32 (#648)
+- fixed low speed clock options for STM32F1 (#653)
+- fixed STM32 I2C stop bit logic to prevent trail of pulses at the end of a read operation (#656)
+- fixed pending jog motions after jog cancel (#657)
+- fixed interpolator acceleration calculations to prevent ultra thin time sampling windows (#657)
+
 ## [1.8.7] - 03-02-2024
 
 ## Contributors
@@ -1489,7 +1573,12 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
-[1.8.6]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.5
+[1.8.11]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.11
+[1.8.10]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.10
+[1.8.9]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.9
+[1.8.8]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.8
+[1.8.7]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.7
+[1.8.6]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.6
 [1.8.5]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.5
 [1.8.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.4
 [1.8.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.3

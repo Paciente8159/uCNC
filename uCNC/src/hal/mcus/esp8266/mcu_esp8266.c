@@ -103,7 +103,10 @@ static FORCEINLINE void servo_reset(void)
 #endif
 }
 
-#define start_servo_timeout(timeout) {servo_tick_alarm = servo_tick_counter + timeout + 64;}
+#define start_servo_timeout(timeout)                      \
+	{                                                       \
+		servo_tick_alarm = servo_tick_counter + timeout + 64; \
+	}
 
 static FORCEINLINE void servo_update(void)
 {
@@ -325,6 +328,10 @@ static void mcu_usart_init(void)
 void mcu_init(void)
 {
 	mcu_io_init();
+#ifndef RAM_ONLY_SETTINGS
+	esp8266_eeprom_init(NVM_STORAGE_SIZE); // 2K Emulated EEPROM
+#endif
+
 	mcu_usart_init();
 
 	// init rtc
@@ -337,9 +344,6 @@ void mcu_init(void)
 	timer1_enable(TIM_DIV1, TIM_EDGE, TIM_LOOP);
 	timer1_write((APB_CLK_FREQ / ITP_SAMPLE_RATE));
 
-#ifndef RAM_ONLY_SETTINGS
-	esp8266_eeprom_init(2048); // 2K Emulated EEPROM
-#endif
 #ifdef MCU_HAS_SPI
 	esp8266_spi_init(SPI_FREQ, SPI_MODE);
 #endif
