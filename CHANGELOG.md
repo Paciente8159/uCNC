@@ -8,7 +8,7 @@
 
 # Changelog
 
-## [1.9.0] - unreleased
+## [1.9.0-beta] - 11-04-2024
 
 ### Added
 
