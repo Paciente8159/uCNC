@@ -90,12 +90,13 @@ extern "C"
 	void itp_stop_tools(void);
 	void itp_clear(void);
 	void itp_get_rt_position(int32_t *position);
+	void itp_sync_rt_position(int32_t *position);
 	int32_t itp_get_rt_position_index(int8_t index);
 	void itp_reset_rt_position(float *origin);
 	float itp_get_rt_feed(void);
 	bool itp_is_empty(void);
 	uint8_t itp_sync(void);
-	itp_segment_t* itp_get_rt_segment();
+	itp_segment_t *itp_get_rt_segment();
 	uint8_t itp_set_step_mode(uint8_t mode);
 
 	void itp_sync_spindle(void);

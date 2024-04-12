@@ -35,23 +35,23 @@ extern "C"
 // Setup step pins
 #define STEP0_BIT 2	 // assigns STEP0 pin
 #define STEP0_PORT 2 // assigns STEP0 port
-#define STEP1_BIT 19	 // assigns STEP1 pin
+#define STEP1_BIT 19 // assigns STEP1 pin
 #define STEP1_PORT 0 // assigns STEP1 port
-#define STEP2_BIT 22	 // assigns STEP2 pin
+#define STEP2_BIT 22 // assigns STEP2 pin
 #define STEP2_PORT 0 // assigns STEP2 port
-#define STEP3_BIT 13	 // assigns STEP3 pin
+#define STEP3_BIT 13 // assigns STEP3 pin
 #define STEP3_PORT 2 // assigns STEP3 port
-#define STEP4_BIT 15	 // assigns STEP4 pin
+#define STEP4_BIT 15 // assigns STEP4 pin
 #define STEP4_PORT 1 // assigns STEP4 port
 
 // Setup dir pins
-#define DIR0_BIT 6 // assigns DIR0 pin
+#define DIR0_BIT 6	// assigns DIR0 pin
 #define DIR0_PORT 2 // assigns DIR0 port
 #define DIR1_BIT 20 // assigns DIR1 pin
 #define DIR1_PORT 0 // assigns DIR1 port
 #define DIR2_BIT 11 // assigns DIR2 pin
 #define DIR2_PORT 2 // assigns DIR2 port
-#define DIR3_BIT 11	// assigns DIR2 pin
+#define DIR3_BIT 11 // assigns DIR2 pin
 #define DIR3_PORT 0 // assigns DIR2 port
 #define DIR4_BIT 14 // assigns DIR2 pin
 #define DIR4_PORT 1 // assigns DIR2 port
@@ -126,10 +126,10 @@ extern "C"
 
 	// Setup the Step Timer used has the heartbeat for µCNC
 	// Timer 0 is used by default
-	//#define ITP_TIMER 0
+	// #define ITP_TIMER 0
 	// Setup the SERVO Timer used by µCNC
 	// Timer 1 is set by default
-	//#define SERVO_TIMER 1
+	// #define SERVO_TIMER 1
 
 #define SERVO3_BIT 18
 #define SERVO3_PORT 1
@@ -201,29 +201,29 @@ extern "C"
 #define DIN19_PORT 1
 #define DIN19_PULLUP
 
-//pins for smart adapter
-//clk
+// pins for smart adapter
+// clk
 #define DOUT4_BIT 20
 #define DOUT4_PORT 1
-//data
+// data
 #define DOUT5_BIT 18
 #define DOUT5_PORT 1
-//cs
+// cs
 #define DOUT6_BIT 19
 #define DOUT6_PORT 1
 
-//beep
+// beep
 #define DOUT7_BIT 30
 #define DOUT7_PORT 1
-//enc btn
+// enc btn
 #define DIN16_BIT 28
 #define DIN16_PORT 0
 #define DIN16_PULLUP
-//enc 1
+// enc 1
 #define DIN17_BIT 25
 #define DIN17_PORT 3
 #define DIN17_PULLUP
-//enc 2
+// enc 2
 #define DIN18_BIT 26
 #define DIN18_PORT 3
 #define DIN18_PULLUP

@@ -459,15 +459,23 @@ void itp_run(void)
 				acc_init_speed = current_speed;
 #endif
 				t *= accel_inv;
-				// slice up time in an integral number of periods (half with positive jerk and half with negative)
-				float slices_inv = fast_flt_inv(ceilf(INTERPOLATOR_FREQ * t));
-				t_acc_integrator = t * slices_inv;
-#if S_CURVE_ACCELERATION_LEVEL != 0
-				acc_step = slices_inv;
-#endif
-				if ((junction_speed_sqr < itp_cur_plan_block->entry_feed_sqr))
+
+				if (t > INTERPOLATOR_DELTA_T)
 				{
-					t_acc_integrator = -t_acc_integrator;
+					// slice up time in an integral number of periods (half with positive jerk and half with negative)
+					float slices_inv = fast_flt_inv(floorf(INTERPOLATOR_FREQ * t));
+					t_acc_integrator = t * slices_inv;
+#if S_CURVE_ACCELERATION_LEVEL != 0
+					acc_step = slices_inv;
+#endif
+					if ((junction_speed_sqr < itp_cur_plan_block->entry_feed_sqr))
+					{
+						t_acc_integrator = -t_acc_integrator;
+					}
+				}
+				else
+				{
+					accel_until = remaining_steps;
 				}
 			}
 
@@ -490,13 +498,25 @@ void itp_run(void)
 				deac_step_acum = 0;
 #endif
 				t *= accel_inv;
-				// slice up time in an integral number of periods (half with positive jerk and half with negative)
-				float slices_inv = fast_flt_inv(ceilf(INTERPOLATOR_FREQ * t));
-				t_deac_integrator = t * slices_inv;
+
+				if (t > INTERPOLATOR_DELTA_T)
+				{
+					// slice up time in an integral number of periods (half with positive jerk and half with negative)
+					float slices_inv = fast_flt_inv(floorf(INTERPOLATOR_FREQ * t));
+					t_deac_integrator = t * slices_inv;
+					if (t_deac_integrator < 0.00001f)
+					{
+						t_deac_integrator = 0.0001f;
+					}
 
 #if S_CURVE_ACCELERATION_LEVEL != 0
-				deac_step = slices_inv;
+					deac_step = slices_inv;
 #endif
+				}
+				else
+				{
+					deaccel_from = 0;
+				}
 			}
 		}
 
@@ -605,6 +625,17 @@ void itp_run(void)
 #if (DSS_MAX_OVERSAMPLING != 0)
 		float dss_speed = MAX(INTERPOLATOR_FREQ, current_speed);
 		uint8_t dss = 0;
+#ifdef ENABLE_PLASMA_THC
+		// plasma THC forces DSS to always be enabled at level 1 at least
+		if (g_settings.laser_mode == PLASMA_THC_MODE)
+		{
+			dss_speed = fast_flt_mul2(dss_speed);
+			// clamp top speed
+			current_speed = fast_flt_mul2(current_speed);
+			current_speed = MIN(current_speed, g_settings.max_step_rate);
+			dss = 1;
+		}
+#endif
 		while (dss_speed < DSS_CUTOFF_FREQ && dss < DSS_MAX_OVERSAMPLING && segm_steps)
 		{
 			dss_speed = fast_flt_mul2(dss_speed);
@@ -764,27 +795,11 @@ void itp_clear(void)
 void itp_get_rt_position(int32_t *position)
 {
 	memcpy(position, itp_rt_step_pos, sizeof(itp_rt_step_pos));
+}
 
-#if STEPPERS_ENCODERS_MASK != 0
-#if (defined(STEP0_ENCODER) && AXIS_TO_STEPPERS > 0)
-	itp_rt_step_pos[0] = encoder_get_position(STEP0_ENCODER);
-#endif
-#if (defined(STEP1_ENCODER) && AXIS_TO_STEPPERS > 1)
-	itp_rt_step_pos[1] = encoder_get_position(STEP1_ENCODER);
-#endif
-#if (defined(STEP2_ENCODER) && AXIS_TO_STEPPERS > 2)
-	itp_rt_step_pos[2] = encoder_get_position(STEP2_ENCODER);
-#endif
-#if (defined(STEP3_ENCODER) && AXIS_TO_STEPPERS > 3)
-	itp_rt_step_pos[3] = encoder_get_position(STEP3_ENCODER);
-#endif
-#if (defined(STEP4_ENCODER) && AXIS_TO_STEPPERS > 4)
-	itp_rt_step_pos[4] = encoder_get_position(STEP4_ENCODER);
-#endif
-#if (defined(STEP5_ENCODER) && AXIS_TO_STEPPERS > 5)
-	itp_rt_step_pos[5] = encoder_get_position(STEP5_ENCODER);
-#endif
-#endif
+void itp_sync_rt_position(int32_t *position)
+{
+	memcpy(itp_rt_step_pos, position, sizeof(itp_rt_step_pos));
 }
 
 int32_t itp_get_rt_position_index(int8_t index)
@@ -900,6 +915,9 @@ MCU_CALLBACK void mcu_step_cb(void)
 
 #ifdef ENABLE_RT_PROBE_CHECKING
 	mcu_probe_changed_cb();
+#endif
+#ifdef ENABLE_RT_LIMITS_CHECKING
+	mcu_limits_changed_cb();
 #endif
 
 	uint8_t new_stepbits = stepbits;
@@ -1106,7 +1124,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 		else
 		{
 			cnc_clear_exec_state(EXEC_RUN); // this naturally clears the RUN flag. Any other ISR stop does not clear the flag.
-			itp_stop();						// the buffer is empty. The ISR can stop
+			itp_stop();											// the buffer is empty. The ISR can stop
 			return;
 		}
 	}
@@ -1374,4 +1392,4 @@ itp_segment_t *itp_get_rt_segment()
 	return (itp_sgm_is_empty()) ? NULL : &itp_sgm_data[itp_sgm_data_read];
 }
 
-uint8_t __attribute__((weak)) itp_set_step_mode(uint8_t mode) {return 0;}
+uint8_t __attribute__((weak)) itp_set_step_mode(uint8_t mode) { return 0; }

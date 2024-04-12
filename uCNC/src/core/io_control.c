@@ -93,7 +93,7 @@ MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 #ifdef DISABLE_ALL_LIMITS
 	return;
 #else
-	static uint8_t prev_limits = 0;
+	static volatile uint8_t prev_limits = 0;
 	uint8_t limits = io_get_limits();
 	uint8_t limits_diff = prev_limits;
 	prev_limits = limits;
@@ -143,10 +143,11 @@ MCU_IO_CALLBACK void mcu_controls_changed_cb(void)
 #ifdef DISABLE_ALL_CONTROLS
 	return;
 #else
-	static uint8_t prev_controls = 0;
+	static volatile uint8_t prev_controls = 0;
 	uint8_t controls = io_get_controls();
+	uint8_t changed = prev_controls ^ controls;
 
-	if (!(prev_controls ^ controls))
+	if (!changed)
 	{
 		return;
 	}
@@ -176,11 +177,11 @@ MCU_IO_CALLBACK void mcu_controls_changed_cb(void)
 #if ASSERT_PIN(FHOLD)
 	if (CHECKFLAG(controls, FHOLD_MASK))
 	{
-		cnc_set_exec_state(EXEC_HOLD);
+		cnc_call_rt_command(CMD_CODE_FEED_HOLD);
 	}
 #endif
 #if ASSERT_PIN(CS_RES)
-	if (CHECKFLAG(controls, CS_RES_MASK))
+	if (CHECKFLAG(controls & changed, CS_RES_MASK))
 	{
 		cnc_call_rt_command(CMD_CODE_CYCLE_START);
 	}
@@ -222,7 +223,7 @@ MCU_IO_CALLBACK void mcu_probe_changed_cb(void)
 
 MCU_IO_CALLBACK void mcu_inputs_changed_cb(void)
 {
-	static uint8_t prev_inputs = 0;
+	static volatile uint8_t prev_inputs = 0;
 	uint8_t inputs = 0;
 	uint8_t diff;
 
@@ -575,6 +576,31 @@ void io_toggle_steps(uint8_t mask)
 
 #ifdef IC74HC595_HAS_STEPS
 	ic74hc595_shift_io_pins();
+#endif
+}
+
+void io_get_steps_pos(int32_t *position)
+{
+	itp_get_rt_position(position);
+	#if STEPPERS_ENCODERS_MASK != 0
+#if (defined(STEP0_ENCODER) && AXIS_TO_STEPPERS > 0)
+	position[0] = encoder_get_position(STEP0_ENCODER);
+#endif
+#if (defined(STEP1_ENCODER) && AXIS_TO_STEPPERS > 1)
+	position[1] = encoder_get_position(STEP1_ENCODER);
+#endif
+#if (defined(STEP2_ENCODER) && AXIS_TO_STEPPERS > 2)
+	position[2] = encoder_get_position(STEP2_ENCODER);
+#endif
+#if (defined(STEP3_ENCODER) && AXIS_TO_STEPPERS > 3)
+	position[3] = encoder_get_position(STEP3_ENCODER);
+#endif
+#if (defined(STEP4_ENCODER) && AXIS_TO_STEPPERS > 4)
+	position[4] = encoder_get_position(STEP4_ENCODER);
+#endif
+#if (defined(STEP5_ENCODER) && AXIS_TO_STEPPERS > 5)
+	position[5] = encoder_get_position(STEP5_ENCODER);
+#endif
 #endif
 }
 

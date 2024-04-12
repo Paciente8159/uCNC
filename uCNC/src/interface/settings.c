@@ -187,6 +187,37 @@ WEAK_EVENT_HANDLER(settings_erase)
 {
 	DEFAULT_EVENT_HANDLER(settings_erase);
 }
+
+// event_settings_extended_load_handler
+WEAK_EVENT_HANDLER(settings_extended_load)
+{
+	if (!*((bool *)args))
+	{
+		return EVENT_CONTINUE;
+	}
+
+	DEFAULT_EVENT_HANDLER(settings_extended_load);
+}
+
+// event_settings_extended_save_handler
+WEAK_EVENT_HANDLER(settings_extended_save)
+{
+	if (!*((bool *)args))
+	{
+		return EVENT_CONTINUE;
+	}
+	DEFAULT_EVENT_HANDLER(settings_extended_save);
+}
+
+// event_settings_extended_erase_handler
+WEAK_EVENT_HANDLER(settings_extended_erase)
+{
+	if (!*((bool *)args))
+	{
+		return EVENT_CONTINUE;
+	}
+	DEFAULT_EVENT_HANDLER(settings_extended_erase);
+}
 #endif
 
 static uint8_t settings_size_crc(uint16_t size, uint8_t crc)
@@ -232,6 +263,7 @@ uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint16_t size)
 		return STATUS_SETTING_DISABLED;
 	}
 #ifdef ENABLE_SETTINGS_MODULES
+	bool extended_load __attribute__((__cleanup__(EVENT_HANDLER_NAME(settings_extended_load)))) = (address == SETTINGS_ADDRESS_OFFSET);
 	settings_args_t args = {.address = address, .data = __ptr, .size = size};
 	// if handled exit
 	if (EVENT_INVOKE(settings_load, &args))
@@ -280,6 +312,7 @@ uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint16_t size)
 
 void settings_reset(bool erase_startup_blocks)
 {
+	settings_erase(SETTINGS_ADDRESS_OFFSET, (uint8_t *)&g_settings, sizeof(settings_t));
 	rom_memcpy(&g_settings, &default_settings, sizeof(settings_t));
 
 #if !defined(ENABLE_EXTRA_SYSTEM_CMDS) && !defined(RAM_ONLY_SETTINGS)
@@ -304,6 +337,7 @@ void settings_save(uint16_t address, uint8_t *__ptr, uint16_t size)
 	}
 
 #ifdef ENABLE_SETTINGS_MODULES
+	bool extended_save __attribute__((__cleanup__(EVENT_HANDLER_NAME(settings_extended_save)))) = (address == SETTINGS_ADDRESS_OFFSET);
 	settings_args_t args = {.address = address, .data = __ptr, .size = size};
 	if (EVENT_INVOKE(settings_save, &args))
 	{
@@ -385,7 +419,7 @@ uint8_t settings_change(setting_offset_t id, float value)
 			}
 			g_settings.max_step_rate = value;
 			break;
-#ifdef EMULATE_GRBL_STARTUP
+#if EMULATE_GRBL_STARTUP > 0
 		// just adds this for compatibility
 		// this setting is not used
 		case 1:
@@ -614,12 +648,8 @@ void settings_erase(uint16_t address, uint8_t *__ptr, uint16_t size)
 		return;
 	}
 
-	if (__ptr)
-	{
-		memset(__ptr, 0, size);
-	}
-
 #ifdef ENABLE_SETTINGS_MODULES
+	bool extended_erase __attribute__((__cleanup__(EVENT_HANDLER_NAME(settings_extended_erase)))) = (address == SETTINGS_ADDRESS_OFFSET);
 	settings_args_t args = {.address = address, .data = __ptr, .size = size};
 	if (EVENT_INVOKE(settings_erase, &args))
 	{
@@ -627,23 +657,32 @@ void settings_erase(uint16_t address, uint8_t *__ptr, uint16_t size)
 		return;
 	}
 #endif
-#ifndef RAM_ONLY_SETTINGS
-	for (uint16_t i = size; i != 0; i--)
+
+	if (__ptr)
 	{
-		if (cnc_get_exec_state(EXEC_RUN))
-		{
-			cnc_dotasks(); // updates buffer before cycling
-		}
-		mcu_eeprom_putc(address++, 0);
+		memset(__ptr, 0, size);
 	}
 
-	uint8_t crc = settings_size_crc(size, 0);
+#ifndef RAM_ONLY_SETTINGS
+	if (address != SETTINGS_ADDRESS_OFFSET)
+	{
+		for (uint16_t i = size; i != 0; i--)
+		{
+			if (cnc_get_exec_state(EXEC_RUN))
+			{
+				cnc_dotasks(); // updates buffer before cycling
+			}
+			mcu_eeprom_putc(address++, 0);
+		}
 
-	// erase crc byte that is next to data
-	mcu_eeprom_putc(address, crc);
+		uint8_t crc = settings_size_crc(size, 0);
+
+		// erase crc byte that is next to data
+		mcu_eeprom_putc(address, crc);
 #if !defined(ENABLE_EXTRA_SYSTEM_CMDS)
-	mcu_eeprom_flush();
+		mcu_eeprom_flush();
 #endif
+	}
 #endif
 }
 

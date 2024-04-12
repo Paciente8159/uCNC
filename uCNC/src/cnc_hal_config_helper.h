@@ -53,9 +53,9 @@ extern "C"
 // machine tools configurations
 #include "hal/tools/tool.h" //configures the kinematics for the cnc machine
 // final HAL configurations
-#include "../cnc_hal_config.h"	  //inicializes the HAL hardcoded connections
+#include "../cnc_hal_config.h"		//inicializes the HAL hardcoded connections
 #include "../cnc_hal_overrides.h" //config override file
-#include "modules/ic74hc595.h"	  // io extender
+#include "modules/ic74hc595.h"		// io extender
 
 	/**
 	 *
@@ -196,9 +196,19 @@ extern "C"
 #endif
 
 #ifdef ENABLE_RT_PROBE_CHECKING
-#ifdef PROBE_ISR
 #undef PROBE_ISR
 #endif
+
+#ifdef ENABLE_RT_LIMITS_CHECKING
+#undef LIMIT_X_ISR
+#undef LIMIT_X2_ISR
+#undef LIMIT_Y_ISR
+#undef LIMIT_Y2_ISR
+#undef LIMIT_Z_ISR
+#undef LIMIT_Z2_ISR
+#undef LIMIT_A_ISR
+#undef LIMIT_B_ISR
+#undef LIMIT_C_ISR
 #endif
 
 #ifdef ESTOP_PULLUP_ENABLE
@@ -1821,7 +1831,9 @@ typedef uint16_t step_t;
 #define MAX_STEPS_PER_LINE (1UL << MAX_STEPS_PER_LINE_BITS)
 
 #if DSS_CUTOFF_FREQ > (F_STEP_MAX >> 3)
-#error "DSS_CUTOFF_FREQ should not be set above 1/8th of the max step rate"
+#undef DSS_CUTOFF_FREQ
+#define DSS_CUTOFF_FREQ (F_STEP_MAX >> 3)
+#warning "DSS_CUTOFF_FREQ was limited to 1/8th of the max step rate"
 #endif
 
 #if ((S_CURVE_ACCELERATION_LEVEL < -1) || (S_CURVE_ACCELERATION_LEVEL > 5))
@@ -2111,6 +2123,9 @@ typedef uint16_t step_t;
 #endif
 #ifndef ENABLE_RT_SYNC_MOTIONS
 #define ENABLE_RT_SYNC_MOTIONS
+#endif
+#if (DSS_MAX_OVERSAMPLING < 1)
+#error "Plasma THC requires DSS to be enabled"
 #endif
 #endif
 

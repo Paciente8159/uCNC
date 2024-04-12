@@ -267,8 +267,7 @@ void MCU_COM_ISR(void)
 					c = OVF;
 				}
 
-				*(BUFFER_NEXT_FREE(uart_rx)) = c;
-				BUFFER_STORE(uart_rx);
+				BUFFER_ENQUEUE(uart_rx, &c);
 			}
 
 #else
@@ -333,11 +332,18 @@ void MCU_COM2_ISR(void)
 					c = OVF;
 				}
 
-				*(BUFFER_NEXT_FREE(uart2_rx)) = c;
-				BUFFER_STORE(uart2_rx);
+				BUFFER_ENQUEUE(uart2_rx, &c);
 			}
 #else
 			mcu_uart2_rx_cb(c);
+#ifndef UART2_DISABLE_BUFFER
+			if (BUFFER_FULL(uart2_rx))
+			{
+				c = OVF;
+			}
+
+			BUFFER_ENQUEUEE(uart2_rx, &c);
+#endif
 #endif
 		}
 
@@ -349,7 +355,7 @@ void MCU_COM2_ISR(void)
 				COM2_UART->IER &= ~UART_IER_THREINT_EN;
 				return;
 			}
-			uint8_t c;
+			uint8_t c = 0;
 			BUFFER_DEQUEUE(uart2_tx, &c);
 			COM2_OUTREG = c;
 		}
@@ -886,8 +892,8 @@ void mcu_usb_putc(uint8_t c)
 
 uint8_t mcu_usb_getc(void)
 {
-	char c = BUFFER_PEEK(usb_rx);
-	BUFFER_REMOVE(usb_rx);
+	uint8_t c = 0;
+	BUFFER_DEQUEUE(usb_rx, &c);
 	return (uint8_t)c;
 }
 
@@ -924,8 +930,7 @@ void mcu_dotasks()
 				c = OVF;
 			}
 
-			*(BUFFER_NEXT_FREE(usb_rx)) = c;
-			BUFFER_STORE(usb_rx);
+			BUFFER_ENQUEUE(usb_rx, &c);
 		}
 	}
 #else
@@ -945,8 +950,7 @@ void mcu_dotasks()
 				c = OVF;
 			}
 
-			*(BUFFER_NEXT_FREE(usb_rx)) = c;
-			BUFFER_STORE(usb_rx);
+			BUFFER_ENQUEUE(usb_rx, &c);
 		}
 #else
 		mcu_usb_rx_cb(c);
@@ -962,6 +966,9 @@ void mcu_dotasks()
  * */
 uint8_t mcu_eeprom_getc(uint16_t address)
 {
+	DEBUG_STR("EEPROM invalid address @ ");
+	DEBUG_INT(address);
+	DEBUG_PUTC('\n');
 	return 0;
 }
 
@@ -970,6 +977,9 @@ uint8_t mcu_eeprom_getc(uint16_t address)
  * */
 void mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
+	DEBUG_STR("EEPROM invalid address @ ");
+	DEBUG_INT(address);
+	DEBUG_PUTC('\n');
 }
 
 /**
@@ -1237,7 +1247,7 @@ void I2C_ISR(void)
 	case 0x68:
 	case 0x78:
 		index++;
-		__attribute__((fallthrough));
+		__FALL_THROUGH__
 	case 0xA0: // stop or repeated start condition received
 		// sends the data
 		if (i < I2C_SLAVE_BUFFER_SIZE)
@@ -1258,7 +1268,7 @@ void I2C_ISR(void)
 	case 0xA8: // addressed, returned ack
 	case 0xB0: // arbitration lost, returned ack
 		i = 0;
-		__attribute__((fallthrough));
+		__FALL_THROUGH__
 	case 0xB8: // byte sent, ack returned
 		// copy data to output register
 		I2C_REG->I2DAT = mcu_i2c_buffer[i++];

@@ -49,7 +49,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
 static uint8_t parser_grbl_command(void);
 FORCEINLINE static uint8_t parser_gcode_command(bool is_jogging);
-static void parser_discard_command(void);
+
 #ifdef ENABLE_CANNED_CYCLES
 uint8_t parser_exec_command_block(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
 #endif
@@ -411,6 +411,9 @@ static uint8_t parser_grbl_command(void)
 				val = 0;
 				if (!parser_get_float(&val))
 				{
+#ifdef ENABLE_SETTINGS_MODULES
+					return settings_change(setting_num, val);
+#endif
 					return STATUS_BAD_NUMBER_FORMAT;
 				}
 
@@ -493,6 +496,7 @@ static uint8_t parser_grbl_command(void)
 			}
 			if (cnc_get_exec_state(EXEC_ALLACTIVE) && !cnc_get_exec_state(EXEC_JOG)) // Jog only allowed in IDLE or JOG mode
 			{
+				parser_discard_command();
 				return STATUS_IDLE_ERROR;
 			}
 			return GRBL_JOG_CMD;
@@ -501,25 +505,39 @@ static uint8_t parser_grbl_command(void)
 	default:
 		switch (grbl_cmd_str[0])
 		{
+#if EMULATE_GRBL_STARTUP == 2
+		case 'I':
+			if (grbl_cmd_str[1] == 'E' && grbl_cmd_len == 2 && c == EOL)
+			{
+				return GRBL_SEND_SYSTEM_INFO_EXTENDED;
+			}
+			break;
+#endif
 		case 'R':
 			if (grbl_cmd_str[1] == 'S' && grbl_cmd_str[2] == 'T' && c == '=' && grbl_cmd_len == 3)
 			{
-				switch (serial_getc())
+				grbl_cmd_str[3] = '=';
+				grbl_cmd_len++;
+				c = serial_getc();
+				if (serial_getc() == EOL)
 				{
-				case '$':
-					settings_reset(false);
-					settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
-					return GRBL_SEND_SETTINGS_RESET;
-				case '#':
-					parser_parameters_reset();
-					return GRBL_SEND_SETTINGS_RESET;
-				case '*':
-					settings_reset(true);
-					settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
-					parser_parameters_reset();
-					return GRBL_SEND_SETTINGS_RESET;
-				default:
-					return STATUS_INVALID_STATEMENT;
+					switch (c)
+					{
+					case '$':
+						settings_reset(false);
+						settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
+						return GRBL_SEND_SETTINGS_RESET;
+					case '#':
+						parser_parameters_reset();
+						return GRBL_SEND_SETTINGS_RESET;
+					case '*':
+						settings_reset(true);
+						settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
+						parser_parameters_reset();
+						return GRBL_SEND_SETTINGS_RESET;
+					default:
+						return STATUS_INVALID_STATEMENT;
+					}
 				}
 			}
 			break;
@@ -637,8 +655,13 @@ static uint8_t parse_grbl_exec_code(uint8_t code)
 #endif
 #ifdef ENABLE_SYSTEM_INFO
 	case GRBL_SEND_SYSTEM_INFO:
-		protocol_send_cnc_info();
+		protocol_send_cnc_info(false);
 		break;
+#if EMULATE_GRBL_STARTUP == 2
+	case GRBL_SEND_SYSTEM_INFO_EXTENDED:
+		protocol_send_cnc_info(true);
+		break;
+#endif
 #endif
 #ifdef ENABLE_PARSER_MODULES
 	case GRBL_SYSTEM_CMD_EXTENDED:
@@ -698,19 +721,19 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 		{
 		case 50:
 			mantissa++;
-			__attribute__((fallthrough));
+			__FALL_THROUGH__
 		case 40:
 			mantissa++;
-			__attribute__((fallthrough));
+			__FALL_THROUGH__
 		case 30:
 			mantissa++;
-			__attribute__((fallthrough));
+			__FALL_THROUGH__
 		case 20:
 			mantissa++;
-			__attribute__((fallthrough));
+			__FALL_THROUGH__
 		case 10:
 			mantissa++;
-			__attribute__((fallthrough));
+			__FALL_THROUGH__
 		case 0:
 			break;
 		default:
@@ -1471,7 +1494,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		break;
 	case G92_1: // G92.1
 		memset(g92permanentoffset, 0, sizeof(g92permanentoffset));
-		__attribute__((fallthrough));
+		__FALL_THROUGH__
 		// continue
 	case G92_2: // G92.2
 		memset(parser_parameters.g92_offset, 0, sizeof(parser_parameters.g92_offset));
@@ -1643,7 +1666,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 			{
 				block_data.spindle = 0;
 			}
-			__attribute__((fallthrough));
+			__FALL_THROUGH__
 		case G1:
 			if (block_data.feed == 0)
 			{
@@ -1759,8 +1782,13 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 				{
 					new_state->groups.height_map_active = 1;
 				}
+				else{
+					// clear the map
+					memset(hmap_offsets, 0, sizeof(hmap_offsets));
+					new_state->groups.height_map_active = 0;
+				}
 			}
-			break;
+			return error;
 #endif
 #endif
 #ifdef ENABLE_PARSER_MODULES
@@ -2136,7 +2164,7 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 		{
 			return STATUS_GCODE_UNSUPPORTED_COMMAND;
 		}
-		__attribute__((fallthrough));
+		__FALL_THROUGH__
 #ifdef ENABLE_G39_H_MAPPING
 	case 39:
 #endif
@@ -2220,7 +2248,7 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 		{
 			return STATUS_GCODE_UNSUPPORTED_COMMAND;
 		}
-		__attribute__((fallthrough));
+		__FALL_THROUGH__
 	case 49:
 		new_state->groups.tlo_mode = ((code == 49) ? G49 : G43);
 		new_group |= GCODE_GROUP_TOOLLENGTH;
@@ -2270,7 +2298,7 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 		{
 			return STATUS_GCODE_UNSUPPORTED_COMMAND;
 		}
-		__attribute__((fallthrough));
+		__FALL_THROUGH__
 #ifndef DISABLE_G10_SUPPORT
 	case 10:
 #endif
@@ -2283,7 +2311,7 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 			return STATUS_GCODE_MODAL_GROUP_VIOLATION;
 		}
 		cmd->group_0_1_useaxis = 1;
-		__attribute__((fallthrough));
+		__FALL_THROUGH__
 	case 4:
 	case 53:
 		// convert code within 4 bits without
@@ -2327,10 +2355,10 @@ static uint8_t parser_mcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 	{
 	case 60:
 		code = 5;
-		__attribute__((fallthrough));
+		__FALL_THROUGH__
 	case 30:
 		code = (code & 1) ? 5 : 3;
-		__attribute__((fallthrough));
+		__FALL_THROUGH__
 	case 0:
 	case 1:
 	case 2:
@@ -2586,7 +2614,7 @@ static uint8_t parser_get_next_preprocessed(bool peek)
 	return c;
 }
 
-static void parser_discard_command(void)
+void parser_discard_command(void)
 {
 	uint8_t c = '@';
 #ifdef ECHO_CMD
@@ -2596,7 +2624,10 @@ static void parser_discard_command(void)
 	{
 		c = serial_getc();
 #ifdef ECHO_CMD
-		serial_putc(c);
+		if (c)
+		{
+			serial_putc(c);
+		}
 #endif
 	} while (c != EOL);
 }

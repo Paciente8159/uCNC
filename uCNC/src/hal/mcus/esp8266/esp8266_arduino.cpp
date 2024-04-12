@@ -62,13 +62,6 @@
 #define OTA_URI "/firmware"
 #endif
 
-#ifndef FS_WRITE_URI
-#define FS_WRITE_URI "/fs"
-#endif
-#define FS_WRITE_GZ_SIZE 305
-const char fs_write_page[305] PROGMEM = {0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x0a, 0x55, 0x51, 0x3d, 0x4f, 0xc3, 0x30, 0x10, 0xdd, 0x91, 0xf8, 0x0f, 0x87, 0x67, 0x52, 0x43, 0x27, 0x84, 0xec, 0x2c, 0x85, 0x4a, 0x4c, 0x74, 0x68, 0x85, 0x18, 0x2f, 0xf6, 0xb5, 0xb1, 0xe4, 0xd8, 0x56, 0x72, 0x69, 0x55, 0x7e, 0x3d, 0x97, 0xa4, 0x03, 0x0c, 0xfe, 0x7a, 0xf7, 0xee, 0xdd, 0xd3, 0xb3, 0x79, 0x78, 0xfb, 0xdc, 0xec, 0xbf, 0x77, 0xef, 0xd0, 0x72, 0x17, 0x6b, 0x33, 0xed, 0x10, 0x31, 0x9d, 0xac, 0xa2, 0xa4, 0xe4, 0x4d, 0xe8, 0x6b, 0xd3, 0x11, 0x23, 0xb8, 0x16, 0xfb, 0x81, 0xd8, 0xaa, 0xc3, 0x7e, 0x5b, 0xbd, 0xa8, 0x1b, 0x9a, 0xb0, 0x23, 0xab, 0xce, 0x81, 0x2e, 0x25, 0xf7, 0xac, 0xc0, 0xe5, 0xc4, 0x94, 0x84, 0x75, 0x09, 0x9e, 0x5b, 0xeb, 0xe9, 0x1c, 0x1c, 0x55, 0xf3, 0xe3, 0x11, 0x42, 0x0a, 0x1c, 0x30, 0x56, 0x83, 0xc3, 0x48, 0xf6, 0x79, 0xf5, 0x24, 0x2a, 0x1c, 0x38, 0x52, 0xfd, 0x45, 0x0d, 0xec, 0x28, 0x79, 0x4c, 0x0c, 0x63, 0xf1, 0xc8, 0x64, 0xf4, 0x52, 0x31, 0x7a, 0xf1, 0xd0, 0x64, 0x7f, 0x15, 0x3f, 0xeb, 0x7f, 0xd4, 0xc3, 0x4c, 0x85, 0x6d, 0xee, 0x3b, 0xe1, 0xad, 0x6b, 0x73, 0x94, 0x1b, 0xa0, 0xe3, 0x90, 0x93, 0x55, 0xfa, 0x38, 0x28, 0x10, 0x97, 0x6d, 0xf6, 0x56, 0x95, 0x3c, 0x88, 0x3d, 0x4a, 0x8e, 0xaf, 0x45, 0x1c, 0x77, 0x63, 0xe4, 0x50, 0xb0, 0x67, 0x3d, 0xb5, 0x54, 0x22, 0x83, 0x62, 0x26, 0x62, 0x43, 0x11, 0x04, 0xb1, 0xea, 0x18, 0x22, 0x7d, 0xa4, 0x32, 0xb2, 0xaa, 0x37, 0x6d, 0xce, 0x03, 0x01, 0xc2, 0xea, 0xf4, 0x03, 0x13, 0xfe, 0x6a, 0xf4, 0xcc, 0xac, 0x4d, 0x98, 0x18, 0xb0, 0x48, 0x4e, 0x15, 0x05, 0xc1, 0xff, 0xed, 0xbd, 0xe5, 0xf3, 0x07, 0x40, 0xe7, 0xa8, 0x48, 0x3e, 0xa2, 0x25, 0x03, 0x9b, 0x5e, 0xd6, 0xc8, 0x9c, 0xd3, 0x4d, 0x64, 0x18, 0x9b, 0x2e, 0xc8, 0xcc, 0x43, 0x89, 0x19, 0xbd, 0xd1, 0x4b, 0x51, 0x52, 0x98, 0x6c, 0xca, 0xb1, 0xc4, 0xa0, 0xe7, 0xdf, 0xba, 0xbf, 0xfb, 0x05, 0x44, 0x67, 0x16, 0x56, 0xbf, 0x01, 0x00, 0x00};
-
-
 ESP8266WebServer web_server(WEBSERVER_PORT);
 ESP8266HTTPUpdateServer httpUpdater;
 const char *update_path = OTA_URI;
@@ -359,9 +352,8 @@ extern "C"
 		return false;
 	}
 
-#if defined(ENABLE_WIFI) && defined(MCU_HAS_ENDPOINTS)
+#if defined(MCU_HAS_WIFI) && defined(MCU_HAS_ENDPOINTS)
 
-#include "../../../modules/endpoint.h"
 #define MCU_FLASH_FS_LITTLE_FS 1
 #define MCU_FLASH_FS_SPIFFS 2
 
@@ -378,50 +370,147 @@ extern "C"
 #include <SPIFFS.h>
 #define FLASH_FS SPIFFS
 #endif
-static File upload_file;
-	void fs_file_updater()
+
+/**
+ * Implements the function calls for the file system C wrapper
+ */
+#include "../../../modules/file_system.h"
+#define fileptr_t(ptr) static_cast<File>(*(reinterpret_cast<File *>(ptr)))
+	fs_t flash_fs;
+
+	int flash_fs_available(fs_file_t *fp)
 	{
-		if (web_server.uri() != FS_WRITE_URI || web_server.method() != HTTP_POST || !web_server.hasArg("update"))
+		return fileptr_t(fp->file_ptr).available();
+	}
+
+	void flash_fs_close(fs_file_t *fp)
+	{
+		fileptr_t(fp->file_ptr).close();
+	}
+
+	bool flash_fs_remove(const char *path)
+	{
+		return FLASH_FS.remove(path);
+	}
+
+	bool flash_fs_next_file(fs_file_t *fp, fs_file_info_t *finfo)
+	{
+		File f = ((File *)fp->file_ptr)->openNextFile();
+		if (!f || !finfo)
 		{
-			return;
+			return false;
+		}
+		memset(finfo->full_name, 0, sizeof(finfo->full_name));
+		strncpy(finfo->full_name, f.name(), (FS_PATH_NAME_MAX_LEN - strlen(f.name())));
+		finfo->is_dir = f.isDirectory();
+		finfo->size = f.size();
+		finfo->timestamp = f.getLastWrite();
+		f.close();
+		return true;
+	}
+
+	size_t flash_fs_read(fs_file_t *fp, uint8_t *buffer, size_t len)
+	{
+		return fileptr_t(fp->file_ptr).read(buffer, len);
+	}
+
+	size_t flash_fs_write(fs_file_t *fp, const uint8_t *buffer, size_t len)
+	{
+		return fileptr_t(fp->file_ptr).write(buffer, len);
+	}
+
+	bool flash_fs_info(const char *path, fs_file_info_t *finfo)
+	{
+		File f = FLASH_FS.open(path, "r");
+		if (f && finfo)
+		{
+			memset(finfo->full_name, 0, sizeof(finfo->full_name));
+			strncpy(finfo->full_name, f.name(), (FS_PATH_NAME_MAX_LEN - strlen(f.name())));
+			finfo->is_dir = f.isDirectory();
+			finfo->size = f.size();
+			finfo->timestamp = (uint32_t)f.getLastWrite();
+			f.close();
+			return true;
 		}
 
-		HTTPUpload &upload = web_server.upload();
-		if (upload.status == UPLOAD_FILE_START)
+		return false;
+	}
+
+	fs_file_t *flash_fs_open(const char *path, const char *mode)
+	{
+		fs_file_t *fp = (fs_file_t *)calloc(1, sizeof(fs_file_t));
+		if (fp)
 		{
-			String filename = upload.filename;
-			if (web_server.hasArg("path"))
+			fp->file_ptr = calloc(1, sizeof(File));
+			if (fp->file_ptr)
 			{
-				String path = web_server.arg("path");
-				filename = path + ((!filename.startsWith("/") && !path.startsWith("/")) ? "/" : "") + filename;
+				*(static_cast<File *>(fp->file_ptr)) = FLASH_FS.open(path, mode);
+				if (*(static_cast<File *>(fp->file_ptr)))
+				{
+					memset(fp->file_info.full_name, 0, sizeof(fp->file_info.full_name));
+					fp->file_info.full_name[0] = '/';
+					fp->file_info.full_name[1] = flash_fs.drive;
+					fp->file_info.full_name[2] = '/';
+					strncat(fp->file_info.full_name, ((File *)fp->file_ptr)->name(), FS_PATH_NAME_MAX_LEN - 3);
+					fp->file_info.is_dir = ((File *)fp->file_ptr)->isDirectory();
+					fp->file_info.size = ((File *)fp->file_ptr)->size();
+					fp->file_info.timestamp = (uint32_t)((File *)fp->file_ptr)->getLastWrite();
+					fp->fs_ptr = &flash_fs;
+					return fp;
+				}
+				free(fp->file_ptr);
 			}
-			if (!filename.startsWith("/"))
-			{
-				filename = "/" + filename;
-			}
-			upload_file = FLASH_FS.open(filename, "w");
-			filename = String();
+			free(fp);
 		}
-		else if (upload.status == UPLOAD_FILE_WRITE)
+		return NULL;
+	}
+
+	fs_file_t *flash_fs_opendir(const char *path)
+	{
+		return flash_fs_open(path, "r");
+	}
+
+	bool flash_fs_seek(fs_file_t *fp, uint32_t position)
+	{
+		return fp->fs_ptr->seek(fp, position);
+	}
+
+	bool flash_fs_mkdir(const char *path)
+	{
+		return FLASH_FS.mkdir(path);
+	}
+
+	bool flash_fs_rmdir(const char *path)
+	{
+		return FLASH_FS.rmdir(path);
+	}
+
+/**
+ * Implements the function calls for the enpoints C wrapper
+ */
+#include "../../../modules/endpoint.h"
+	void endpoint_add(const char *uri, uint8_t method, endpoint_delegate request_handler, endpoint_delegate file_handler)
+	{
+		if (!method)
 		{
-			if (upload_file)
-			{
-				upload_file.write(upload.buf, upload.currentSize);
-			}
+			method = HTTP_ANY;
 		}
-		else if (upload.status == UPLOAD_FILE_END)
+
+		String s = String(uri);
+
+		if (s.endsWith("*"))
 		{
-			if (upload_file)
-			{
-				upload_file.close();
-			}
+			web_server.on(UriWildcard(s.substring(0, s.length() - 1)), (HTTPMethod)method, request_handler, file_handler);
+		}
+		else
+		{
+			web_server.on(Uri(uri), (HTTPMethod)method, request_handler, file_handler);
 		}
 	}
 
-	// call to the webserver initializer
-	void endpoint_add(const char *uri, uint8_t method, endpoint_delegate request_handler, endpoint_delegate file_handler)
+	void endpoint_request_uri(char *uri, size_t maxlen)
 	{
-		web_server.on(uri, (HTTPMethod)method, request_handler, file_handler);
+		strncpy(uri, web_server.uri().c_str(), maxlen);
 	}
 
 	int endpoint_request_hasargs(void)
@@ -440,9 +529,38 @@ static File upload_file;
 		return true;
 	}
 
-	void endpoint_send(int code, const char *content_type, const char *data)
+	void endpoint_send(int code, const char *content_type, const uint8_t *data, size_t data_len)
 	{
-		web_server.send(code, content_type, data);
+		static uint8_t in_chuncks = 0;
+		if (!content_type)
+		{
+			in_chuncks = 1;
+			web_server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+		}
+		else
+		{
+			switch (in_chuncks)
+			{
+			case 1:
+				in_chuncks = 2;
+				__FALL_THROUGH__
+			case 0:
+				web_server.send(code, content_type, data, data_len);
+				break;
+			default:
+				if (data)
+				{
+					web_server.sendContent((char *)data, data_len);
+					in_chuncks = 2;
+				}
+				else
+				{
+					web_server.sendContent("");
+					in_chuncks = 0;
+				}
+				break;
+			}
+		}
 	}
 
 	void endpoint_send_header(const char *name, const char *data, bool first)
@@ -460,6 +578,36 @@ static File upload_file;
 			return true;
 		}
 		return false;
+	}
+
+	endpoint_upload_t endpoint_file_upload_status(void)
+	{
+		HTTPUpload &upload = web_server.upload();
+		endpoint_upload_t status = {.status = (uint8_t)upload.status, .data = upload.buf, .datalen = upload.currentSize};
+		return status;
+	}
+
+	uint8_t endpoint_request_method(void)
+	{
+		switch (web_server.method())
+		{
+		case HTTP_GET:
+			return ENDPOINT_GET;
+		case HTTP_POST:
+			return ENDPOINT_POST;
+		case HTTP_PUT:
+			return ENDPOINT_PUT;
+		case HTTP_DELETE:
+			return ENDPOINT_DELETE;
+		default:
+			return (ENDPOINT_OTHER | (uint8_t)web_server.method());
+		}
+	}
+
+	void endpoint_file_upload_name(char *filename, size_t maxlen)
+	{
+		HTTPUpload &upload = web_server.upload();
+		strncat(filename, upload.filename.c_str(), maxlen - strlen(filename));
 	}
 
 #endif
@@ -557,7 +705,9 @@ static File upload_file;
 	void esp8266_uart_init(int baud)
 	{
 		Serial.begin(baud);
+		DEBUG_STR("Wifi assert \n\r");
 #ifdef ENABLE_WIFI
+		DEBUG_STR("Wifi startup  \n\r");
 		WiFi.setSleepMode(WIFI_NONE_SLEEP);
 
 		wifi_settings_offset = settings_register_external_setting(sizeof(wifi_settings_t));
@@ -602,29 +752,28 @@ static File upload_file;
 		}
 		telnet_server.begin();
 		telnet_server.setNoDelay(true);
-
 #ifdef MCU_HAS_ENDPOINTS
 		FLASH_FS.begin();
+		flash_fs = {
+				.drive = 'C',
+				.open = flash_fs_open,
+				.read = flash_fs_read,
+				.write = flash_fs_write,
+				.seek = flash_fs_seek,
+				.available = flash_fs_available,
+				.close = flash_fs_close,
+				.remove = flash_fs_remove,
+				.opendir = flash_fs_opendir,
+				.mkdir = flash_fs_mkdir,
+				.rmdir = flash_fs_rmdir,
+				.next_file = flash_fs_next_file,
+				.finfo = flash_fs_info,
+				.next = NULL};
+		fs_mount(&flash_fs);
 #endif
 #ifndef CUSTOM_OTA_ENDPOINT
-		httpUpdater.setup(&web_server, update_path, update_username, update_password);
+		httpUpdater.setup(&web_server, OTA_URI, update_username, update_password);
 #endif
-		web_server.on(
-			FS_WRITE_URI, HTTP_GET, []()
-			{ web_server.sendHeader("Content-Encoding", "gzip");
-		web_server.send_P(200, __romstr__("text/html"), fs_write_page, FS_WRITE_GZ_SIZE); },
-			NULL);
-		web_server.on(
-			FS_WRITE_URI, HTTP_POST, []()
-			{ 
-			if(web_server.hasArg("redirect")){
-			web_server.sendHeader("Location", web_server.arg("redirect"));
-			web_server.send(303);
-		}
-		else{
-			web_server.send(200, "text/plain", "");
-		} },
-			fs_file_updater);
 		web_server.begin();
 
 #ifdef MCU_HAS_WEBSOCKETS
@@ -751,8 +900,7 @@ static File upload_file;
 					c = OVF;
 				}
 
-				*(BUFFER_NEXT_FREE(uart_rx)) = c;
-				BUFFER_STORE(uart_rx);
+				BUFFER_ENQUEUE(uart_rx, &c);
 			}
 #else
 			mcu_uart_rx_cb((uint8_t)Serial.read());
@@ -774,8 +922,7 @@ static File upload_file;
 						c = OVF;
 					}
 
-					*(BUFFER_NEXT_FREE(wifi_rx)) = c;
-					BUFFER_STORE(wifi_rx);
+					BUFFER_ENQUEUE(wifi_rx, &c);
 				}
 #else
 				mcu_wifi_rx_cb((uint8_t)telnet_client.read());
@@ -830,11 +977,24 @@ extern "C"
 
 	uint8_t mcu_eeprom_getc(uint16_t address)
 	{
+		if (NVM_STORAGE_SIZE <= address)
+		{
+			DEBUG_STR("EEPROM invalid address @ ");
+			DEBUG_INT(address);
+			DEBUG_PUTC('\n');
+			return 0;
+		}
 		return EEPROM.read(address);
 	}
 
 	void mcu_eeprom_putc(uint16_t address, uint8_t value)
 	{
+		if (NVM_STORAGE_SIZE <= address)
+		{
+			DEBUG_STR("EEPROM invalid address @ ");
+			DEBUG_INT(address);
+			DEBUG_PUTC('\n');
+		}
 		EEPROM.write(address, value);
 	}
 

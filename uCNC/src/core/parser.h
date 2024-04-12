@@ -116,11 +116,11 @@ extern "C"
 
 #define PARSER_PARAM_SIZE (sizeof(float) * AXIS_COUNT)	 // parser parameters array size
 #define PARSER_PARAM_ADDR_OFFSET (PARSER_PARAM_SIZE + 1) // parser parameters array size + 1 crc byte
-#define G28HOME COORD_SYS_COUNT							 // G28 index
-#define G30HOME COORD_SYS_COUNT + 1						 // G30 index
-#define G92OFFSET COORD_SYS_COUNT + 2					 // G92 index
+#define G28HOME COORD_SYS_COUNT													 // G28 index
+#define G30HOME COORD_SYS_COUNT + 1											 // G30 index
+#define G92OFFSET COORD_SYS_COUNT + 2										 // G92 index
 
-#define PARSER_CORDSYS_ADDRESS SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET							  // 1st coordinate system offset eeprom address (G54)
+#define PARSER_CORDSYS_ADDRESS SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET															// 1st coordinate system offset eeprom address (G54)
 #define G28ADDRESS (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (PARSER_PARAM_ADDR_OFFSET * G28HOME)) // G28 coordinate offset eeprom address
 #define G30ADDRESS (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (PARSER_PARAM_ADDR_OFFSET * G30HOME)) // G28 coordinate offset eeprom address
 #ifdef G92_STORE_NONVOLATILE
@@ -199,6 +199,7 @@ extern "C"
 #define LASER_PWM_MODE 1
 #define LASER_PPI_MODE 2
 #define LASER_PPI_VARPOWER_MODE 4
+#define PLASMA_THC_MODE 8
 
 	// 34bytes in total
 	typedef struct
@@ -312,6 +313,7 @@ extern "C"
 	void parser_machine_to_work(float *axis);
 	uint8_t parser_get_float(float *value);
 	uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
+	void parser_discard_command(void);
 
 #ifdef ENABLE_PARSER_MODULES
 	// generates a default delegate, event and handler hook

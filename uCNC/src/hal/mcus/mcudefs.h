@@ -81,6 +81,10 @@ extern "C"
 #error Undefined mcu
 #endif
 
+#ifndef NVM_STORAGE_SIZE
+#define NVM_STORAGE_SIZE 0x400
+#endif
+
 #include "mcu.h" //exposes the MCU HAL interface
 
 #ifdef __cplusplus

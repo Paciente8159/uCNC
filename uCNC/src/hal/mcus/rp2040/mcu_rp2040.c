@@ -288,9 +288,24 @@ void mcu_rtc_isr(void)
 	mcu_rtc_cb(millis());
 }
 
-static void mcu_usart_init(void)
+/**
+ * Multicore code
+ * **/
+void rp2040_core0_loop()
 {
-	rp2040_uart_init(BAUDRATE);
+	rp2040_uart_process();
+}
+
+void setup1()
+{
+}
+
+void loop1()
+{
+	for (;;)
+	{
+		cnc_run();
+	}
 }
 
 /**
@@ -308,7 +323,11 @@ void mcu_init(void)
 #ifdef IC74HC595_CUSTOM_SHIFT_IO
 	ic74hc595_pio_init();
 #endif
-	mcu_usart_init();
+#ifndef RAM_ONLY_SETTINGS
+	rp2040_eeprom_init(NVM_STORAGE_SIZE); // 2K Emulated EEPROM
+#endif
+
+	rp2040_uart_init(BAUDRATE);
 
 	pinMode(LED_BUILTIN, OUTPUT);
 	// init rtc, oneshot and servo alarms
@@ -320,9 +339,6 @@ void mcu_init(void)
 	servo_alarm.alarm_cb = &mcu_clear_servos;
 #endif
 
-#ifndef RAM_ONLY_SETTINGS
-	rp2040_eeprom_init(2048); // 2K Emulated EEPROM
-#endif
 #ifdef MCU_HAS_SPI
 	mcu_spi_config(SPI_FREQ, SPI_MODE);
 #endif
@@ -534,7 +550,9 @@ void mcu_stop_itp_isr(void)
  * */
 void mcu_dotasks(void)
 {
+#ifndef RP2040_RUN_MULTICORE
 	rp2040_uart_process();
+#endif
 }
 
 // Non volatile memory
@@ -543,6 +561,13 @@ void mcu_dotasks(void)
  * */
 uint8_t mcu_eeprom_getc(uint16_t address)
 {
+	if (NVM_STORAGE_SIZE <= address)
+	{
+		DEBUG_STR("EEPROM invalid address @ ");
+		DEBUG_INT(address);
+		DEBUG_PUTC('\n');
+		return 0;
+	}
 #ifndef RAM_ONLY_SETTINGS
 	return rp2040_eeprom_read(address);
 #else
@@ -555,6 +580,12 @@ uint8_t mcu_eeprom_getc(uint16_t address)
  * */
 void mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
+	if (NVM_STORAGE_SIZE <= address)
+	{
+		DEBUG_STR("EEPROM invalid address @ ");
+		DEBUG_INT(address);
+		DEBUG_PUTC('\n');
+	}
 #ifndef RAM_ONLY_SETTINGS
 	rp2040_eeprom_write(address, value);
 #endif

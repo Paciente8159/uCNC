@@ -714,7 +714,49 @@ void __attribute__((weak)) mcu_io_init(void)
 	mcu_config_pullup(RX2);
 #endif
 #endif
+
+#ifdef MCU_HAS_UART
+#ifndef UART_TX_BUFFER_SIZE
+#define UART_TX_BUFFER_SIZE 64
+#endif
+BUFFER_INIT(uint8_t, uart_tx, UART_TX_BUFFER_SIZE);
+BUFFER_INIT(uint8_t, uart_rx, RX_BUFFER_SIZE);
+#endif
+#ifdef MCU_HAS_UART2
+#ifndef UART2_TX_BUFFER_SIZE
+#define UART2_TX_BUFFER_SIZE 64
+#endif
+BUFFER_INIT(uint8_t, uart2_tx, UART2_TX_BUFFER_SIZE);
+BUFFER_INIT(uint8_t, uart2_rx, RX_BUFFER_SIZE);
+#endif
+#ifdef MCU_HAS_USB
+#ifndef USB_TX_BUFFER_SIZE
+#define USB_TX_BUFFER_SIZE 64
+#endif
+BUFFER_INIT(uint8_t, usb_tx, USB_TX_BUFFER_SIZE);
+BUFFER_INIT(uint8_t, usb_rx, RX_BUFFER_SIZE);
+#endif
+#ifdef MCU_HAS_WIFI
+#ifndef WIFI_TX_BUFFER_SIZE
+#define WIFI_TX_BUFFER_SIZE 64
+#endif
+BUFFER_INIT(uint8_t, wifi_tx, WIFI_TX_BUFFER_SIZE);
+BUFFER_INIT(uint8_t, wifi_rx, RX_BUFFER_SIZE);
+#endif
+#ifdef MCU_HAS_BLUETOOTH
+#ifndef BLUETOOTH_TX_BUFFER_SIZE
+#define BLUETOOTH_TX_BUFFER_SIZE 64
+#endif
+BUFFER_INIT(uint8_t, bt_tx, BLUETOOTH_TX_BUFFER_SIZE);
+BUFFER_INIT(uint8_t, bt_rx, RX_BUFFER_SIZE);
+#endif
 }
+
+#ifndef mcu_io_reset
+void __attribute__((weak)) mcu_io_reset(void)
+{
+}
+#endif
 
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 uint8_t __attribute__((weak)) mcu_custom_grbl_cmd(uint8_t *grbl_cmd_str, uint8_t grbl_cmd_len, uint8_t next_char)
@@ -758,7 +800,6 @@ MCU_RX_CALLBACK bool mcu_com_rx_cb(uint8_t c)
 			}
 			break;
 		}
-
 	}
 	else // extended ascii (plus CMD_CODE_CYCLE_START and DEL)
 	{
@@ -769,10 +810,41 @@ MCU_RX_CALLBACK bool mcu_com_rx_cb(uint8_t c)
 	return true;
 }
 
+#ifdef MCU_HAS_UART
+#ifdef DETACH_UART_FROM_MAIN_PROTOCOL
+MCU_RX_CALLBACK void __attribute__((weak)) mcu_uart_rx_cb(uint8_t c) {}
+#endif
+#endif
+
+#ifdef MCU_HAS_UART2
+#ifdef DETACH_UART2_FROM_MAIN_PROTOCOL
+MCU_RX_CALLBACK void __attribute__((weak)) mcu_uart2_rx_cb(uint8_t c) {}
+#endif
+#endif
+
+#ifdef MCU_HAS_USB
+#ifdef DETACH_USB_FROM_MAIN_PROTOCOL
+MCU_RX_CALLBACK void __attribute__((weak)) mcu_usb_rx_cb(uint8_t c) {}
+#endif
+#endif
+
+#ifdef MCU_HAS_WIFI
+#ifdef DETACH_WIFI_FROM_MAIN_PROTOCOL
+MCU_RX_CALLBACK void __attribute__((weak)) mcu_wifi_rx_cb(uint8_t c) {}
+#endif
+#endif
+
+#ifdef MCU_HAS_BLUETOOTH
+#ifdef DETACH_BLUETOOTH_FROM_MAIN_PROTOCOL
+MCU_RX_CALLBACK void __attribute__((weak)) mcu_bt_rx_cb(uint8_t c) {}
+#endif
+#endif
+
 #if (defined(MCU_HAS_I2C))
 #if defined(MCU_SUPPORTS_I2C_SLAVE) && (I2C_ADDRESS != 0)
 void __attribute__((weak)) mcu_i2c_slave_cb(uint8_t *data, uint8_t *datalen)
 {
 }
 #endif
+
 #endif

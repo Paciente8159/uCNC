@@ -30,7 +30,7 @@
 
 // Non volatile memory
 // SAMD devices page size never exceeds 1024 bytes
-#define NVM_EEPROM_SIZE 0x400 // 1Kb of emulated EEPROM is enough
+#define NVM_EEPROM_SIZE NVM_STORAGE_SIZE // 1Kb of emulated EEPROM is enough
 #define NVM_PAGE_SIZE NVMCTRL_PAGE_SIZE
 #define NVM_ROW_PAGES NVMCTRL_ROW_PAGES
 #define NVM_ROW_SIZE NVMCTRL_ROW_SIZE
@@ -229,8 +229,7 @@ void mcu_com_isr()
 					c = OVF;
 				}
 
-				*(BUFFER_NEXT_FREE(uart_rx)) = c;
-				BUFFER_STORE(uart_rx);
+				BUFFER_ENQUEUE(uart_rx, &c);
 			}
 #else
 			mcu_uart_rx_cb(c);
@@ -276,11 +275,18 @@ void mcu_com2_isr()
 					c = OVF;
 				}
 
-				*(BUFFER_NEXT_FREE(uart2_rx)) = c;
-				BUFFER_STORE(uart2_rx);
+				BUFFER_ENQUEUE(uart2_rx, &c);
 			}
 #else
 			mcu_uart2_rx_cb(c);
+#ifndef UART2_DISABLE_BUFFER
+			if (BUFFER_FULL(uart2_rx))
+			{
+				c = OVF;
+			}
+
+			BUFFER_ENQUEUE(uart2_rx, &c);
+#endif
 #endif
 		}
 		if (COM2_UART->USART.INTFLAG.bit.DRE && COM2_UART->USART.INTENSET.bit.DRE)
@@ -1092,8 +1098,7 @@ void mcu_dotasks(void)
 				c = OVF;
 			}
 
-			*(BUFFER_NEXT_FREE(usb_rx)) = c;
-			BUFFER_STORE(usb_rx);
+			BUFFER_ENQUEUE(usb_rx, &c);
 		}
 #else
 		mcu_usb_rx_cb(c);
@@ -1182,6 +1187,13 @@ static void mcu_write_flash_page(const uint32_t destination_address, const uint8
  * */
 uint8_t mcu_eeprom_getc(uint16_t address)
 {
+	if (NVM_STORAGE_SIZE <= address)
+	{
+		DEBUG_STR("EEPROM invalid address @ ");
+		DEBUG_INT(address);
+		DEBUG_PUTC('\n');
+		return 0;
+	}
 	address &= (NVM_EEPROM_SIZE - 1); // keep within 1Kb address range
 
 	if (!samd21_eeprom_loaded)
@@ -1197,7 +1209,12 @@ uint8_t mcu_eeprom_getc(uint16_t address)
  * */
 void mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
-
+	if (NVM_STORAGE_SIZE <= address)
+	{
+		DEBUG_STR("EEPROM invalid address @ ");
+		DEBUG_INT(address);
+		DEBUG_PUTC('\n');
+	}
 	address &= (NVM_EEPROM_SIZE - 1);
 
 	if (!samd21_eeprom_loaded)

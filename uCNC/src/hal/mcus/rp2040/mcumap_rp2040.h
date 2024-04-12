@@ -27,8 +27,9 @@ extern "C"
 #include <stdbool.h>
 #include <stdint.h>
 #include <Arduino.h>
-#include "hardware/timer.h"
-#include "hardware/irq.h"
+#include <hardware/timer.h>
+#include <hardware/irq.h>
+#include <pico/multicore.h>
 
 /*
 	Generates all the interface definitions.
@@ -994,9 +995,15 @@ extern "C"
 #ifndef DISABLE_WEBSOCKETS
 #define MCU_HAS_WEBSOCKETS
 #endif
+#ifndef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
+#define BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
+#endif
 #endif
 #ifdef ENABLE_BLUETOOTH
 #define MCU_HAS_BLUETOOTH
+#ifndef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
+#define BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
+#endif
 #endif
 
 #ifdef MCU_HAS_UART
@@ -1126,20 +1133,20 @@ extern "C"
 
 #ifndef BYTE_OPS
 #define BYTE_OPS
-#define SETBIT(x, y) ((x) |= (1UL << (y)))	 /* Set bit y in byte x*/
+#define SETBIT(x, y) ((x) |= (1UL << (y)))		/* Set bit y in byte x*/
 #define CLEARBIT(x, y) ((x) &= ~(1UL << (y))) /* Clear bit y in byte x*/
-#define CHECKBIT(x, y) ((x) & (1UL << (y)))	 /* Check bit y in byte x*/
+#define CHECKBIT(x, y) ((x) & (1UL << (y)))		/* Check bit y in byte x*/
 #define TOGGLEBIT(x, y) ((x) ^= (1UL << (y))) /* Toggle bit y in byte x*/
 
-#define SETFLAG(x, y) ((x) |= (y))	  /* Set byte y in byte x*/
+#define SETFLAG(x, y) ((x) |= (y))		/* Set byte y in byte x*/
 #define CLEARFLAG(x, y) ((x) &= ~(y)) /* Clear byte y in byte x*/
-#define CHECKFLAG(x, y) ((x) & (y))	  /* Check byte y in byte x*/
+#define CHECKFLAG(x, y) ((x) & (y))		/* Check byte y in byte x*/
 #define TOGGLEFLAG(x, y) ((x) ^= (y)) /* Toggle byte y in byte x*/
 #endif
 
 #define mcu_config_output(X) pinMode(__indirect__(X, BIT), OUTPUT)
-#define mcu_config_pwm(X, freq)                \
-	{                                          \
+#define mcu_config_pwm(X, freq)            \
+	{                                        \
 		pinMode(__indirect__(X, BIT), OUTPUT); \
 		analogWriteRange(255);                 \
 		analogWriteFreq(freq);                 \
@@ -1157,8 +1164,8 @@ extern "C"
 #define mcu_toggle_output(X) ({ sio_hw->gpio_togl = (1UL << __indirect__(X, BIT)); })
 
 	extern uint8_t rp2040_pwm[16];
-#define mcu_set_pwm(X, Y)                     \
-	{                                         \
+#define mcu_set_pwm(X, Y)                 \
+	{                                       \
 		rp2040_pwm[X - PWM_PINS_OFFSET] = Y;  \
 		analogWrite(__indirect__(X, BIT), Y); \
 	}
@@ -1167,12 +1174,62 @@ extern "C"
 
 #define mcu_millis() millis()
 #define mcu_micros() micros()
-#define mcu_free_micros() ({(1000UL - (SysTick->VAL * 1000UL / SysTick->LOAD));})
+#define mcu_free_micros() ({ (1000UL - (SysTick->VAL * 1000UL / SysTick->LOAD)); })
 
 #if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
 #ifndef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 #define BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 #endif
+#endif
+
+
+/**
+ * Run code on multicore mode
+ * Launches code on core 0
+ * Runs communications on core 0
+ * Runs CNC loop on core 1
+ * **/
+#ifdef RP2040_RUN_MULTICORE
+
+#define USE_CUSTOM_BUFFER_IMPLEMENTATION
+#include <pico/util/queue.h>
+#define DECL_BUFFER(type, name, size) \
+	static queue_t name##_bufferdata;   \
+	ring_buffer_t name = {0, 0, 0, (uint8_t *)&name##_bufferdata, size, sizeof(type)}
+#define BUFFER_INIT(type, name, size) \
+	extern ring_buffer_t name;          \
+	queue_init((queue_t *)name.data, sizeof(type), size)
+#define BUFFER_WRITE_AVAILABLE(buffer) (buffer.size - queue_get_level((queue_t *)buffer.data))
+#define BUFFER_READ_AVAILABLE(buffer) (queue_get_level((queue_t *)buffer.data))
+#define BUFFER_EMPTY(buffer) queue_is_empty((queue_t *)buffer.data)
+#define BUFFER_FULL(buffer) queue_is_full((queue_t *)buffer.data)
+#define BUFFER_PEEK(buffer, ptr)                    \
+	if (!queue_try_peek((queue_t *)buffer.data, ptr)) \
+	{                                                 \
+		memset(ptr, 0, buffer.elem_size);               \
+	}
+#define BUFFER_DEQUEUE(buffer, ptr)                   \
+	if (!queue_try_remove((queue_t *)buffer.data, ptr)) \
+	{                                                   \
+		memset(ptr, 0, buffer.elem_size);                 \
+	}
+#define BUFFER_ENQUEUE(buffer, ptr) queue_try_add((queue_t *)buffer.data, ptr)
+#define BUFFER_WRITE(buffer, ptr, len, written) ({for(uint8_t i = 0; i<len; i++){if(!queue_try_add((queue_t*)buffer.data, &ptr[i])){break;}written++;} })
+#define BUFFER_READ(buffer, ptr, len, read) ({for(uint8_t i = 0; i<len; i++){if(!queue_try_remove((queue_t*)buffer.data, &ptr[i])){break;}read++;} })
+#define BUFFER_CLEAR(buffer)                        \
+	while (!queue_is_empty((queue_t *)buffer.data))   \
+	{                                                 \
+		queue_try_remove((queue_t *)buffer.data, NULL); \
+	}
+
+	/**
+	 * Launch multicore
+	 * **/
+// 	extern void rp2040_core1_loop();
+// #define ucnc_init() cnc_init();	multicore_launch_core1(rp2040_core1_loop)
+	extern void rp2040_core0_loop();
+#define ucnc_run() rp2040_core0_loop()
+
 #endif
 
 #ifdef __cplusplus

@@ -48,10 +48,6 @@ void esp32_wifi_bt_init(void);
 void esp32_wifi_bt_flush(uint8_t *buffer);
 void esp32_wifi_bt_process(void);
 
-#ifndef FLASH_EEPROM_SIZE
-#define FLASH_EEPROM_SIZE 1024
-#endif
-
 #if !defined(RAM_ONLY_SETTINGS) && !defined(USE_ARDUINO_EEPROM_LIBRARY)
 #include <nvs.h>
 #include <esp_partition.h>
@@ -61,7 +57,7 @@ typedef struct
 	nvs_handle_t nvs_handle;
 	size_t size;
 	bool dirty;
-	uint8_t data[FLASH_EEPROM_SIZE];
+	uint8_t data[NVM_STORAGE_SIZE];
 } flash_eeprom_t;
 
 static flash_eeprom_t mcu_eeprom;
@@ -282,15 +278,6 @@ static FORCEINLINE void esp32_i2s_extender_init(void)
 #define ITP_SAMPLE_RATE (F_STEP_MAX * 2)
 #endif
 
-#if SERVOS_MASK > 0
-// also run servo pin signals
-static uint32_t servo_tick_counter = 0;
-static uint32_t servo_tick_alarm = 0;
-#endif
-
-void servo_update(void);
-void servo_reset(void);
-
 // this function updates IO updated will run @128KHz
 /**
  *
@@ -306,6 +293,7 @@ void servo_reset(void);
  * **/
 
 #if SERVOS_MASK > 0
+// also run servo pin signals
 static uint32_t servo_tick_counter = 0;
 static uint32_t servo_tick_alarm = 0;
 static uint8_t mcu_servos[6];
@@ -573,16 +561,16 @@ void mcu_init(void)
 
 	// starts EEPROM before UART to enable WiFi and BT settings
 #if !defined(RAM_ONLY_SETTINGS) && !defined(USE_ARDUINO_EEPROM_LIBRARY)
-	// esp32_eeprom_init(FLASH_EEPROM_SIZE); // 1K Emulated EEPROM
+	// esp32_eeprom_init(NVM_STORAGE_SIZE); // 1K Emulated EEPROM
 
 	// starts nvs
 	mcu_eeprom.size = 0;
-	memset(mcu_eeprom.data, 0, FLASH_EEPROM_SIZE);
+	memset(mcu_eeprom.data, 0, NVM_STORAGE_SIZE);
 	if (nvs_open("eeprom", NVS_READWRITE, &mcu_eeprom.nvs_handle) == ESP_OK)
 	{
 		// determines the maximum sector size of NVS that can be read/write
 		nvs_get_blob(mcu_eeprom.nvs_handle, "eeprom", NULL, &mcu_eeprom.size);
-		if (FLASH_EEPROM_SIZE > mcu_eeprom.size)
+		if (NVM_STORAGE_SIZE > mcu_eeprom.size)
 		{
 			log_e("eeprom does not have enough space");
 			mcu_eeprom.size = 0;
@@ -596,7 +584,7 @@ void mcu_init(void)
 	}
 #else
 	extern void esp32_eeprom_init(int size);
-	esp32_eeprom_init(FLASH_EEPROM_SIZE);
+	esp32_eeprom_init(NVM_STORAGE_SIZE);
 #endif
 
 #ifdef MCU_HAS_UART
@@ -973,17 +961,16 @@ void mcu_dotasks(void)
 				c = OVF;
 			}
 
-			*(BUFFER_NEXT_FREE(uart_rx)) = c;
-			BUFFER_STORE(uart_rx);
+			BUFFER_ENQUEUE(uart_rx, &c);
 		}
 	}
 #endif
 #if defined(MCU_HAS_UART2)
 	rxlen = uart_read_bytes(UART2_PORT, rxdata, RX_BUFFER_CAPACITY, 0);
-#if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
 	for (i = 0; i < rxlen; i++)
 	{
 		uint8_t c = (uint8_t)rxdata[i];
+#if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
 		if (mcu_com_rx_cb(c))
 		{
 			if (BUFFER_FULL(uart2_rx))
@@ -991,16 +978,20 @@ void mcu_dotasks(void)
 				c = OVF;
 			}
 
-			*(BUFFER_NEXT_FREE(uart2_rx)) = c;
-			BUFFER_STORE(uart2_rx);
+			BUFFER_ENQUEUE(uart2_rx, &c);
 		}
-	}
 #else
-	for (i = 0; i < rxlen; i++)
-	{
-		mcu_uart_rx_cb((uint8_t)rxdata[i]);
-	}
+		mcu_uart2_rx_cb(c);
+#ifndef UART2_DISABLE_BUFFER
+		if (BUFFER_FULL(uart2_rx))
+		{
+			c = OVF;
+		}
+
+		BUFFER_ENQUEUE(uart2_rx, &c);
 #endif
+#endif
+	}
 #endif
 
 	esp32_wifi_bt_process();
@@ -1013,6 +1004,13 @@ void mcu_dotasks(void)
 #if !defined(RAM_ONLY_SETTINGS) && !defined(USE_ARDUINO_EEPROM_LIBRARY)
 uint8_t mcu_eeprom_getc(uint16_t address)
 {
+	if (NVM_STORAGE_SIZE <= address)
+	{
+		DEBUG_STR("EEPROM invalid address @ ");
+		DEBUG_INT(address);
+		DEBUG_PUTC('\n');
+		return 0;
+	}
 #ifndef RAM_ONLY_SETTINGS
 	// return esp32_eeprom_read(address);
 	size_t size = mcu_eeprom.size;
@@ -1029,6 +1027,12 @@ uint8_t mcu_eeprom_getc(uint16_t address)
  * */
 void mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
+	if (NVM_STORAGE_SIZE <= address)
+	{
+		DEBUG_STR("EEPROM invalid address @ ");
+		DEBUG_INT(address);
+		DEBUG_PUTC('\n');
+	}
 #ifndef RAM_ONLY_SETTINGS
 	// esp32_eeprom_write(address, value);
 	size_t size = mcu_eeprom.size;

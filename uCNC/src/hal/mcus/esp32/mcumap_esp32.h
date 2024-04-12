@@ -2493,7 +2493,7 @@ extern "C"
 
 #ifdef PWM0_CHANNEL
 #define PWM0_LEDCCHANNEL (PWM0_CHANNEL & 0x07)
-#if (PWM0_CHANNEL < 8)
+#if (PWM0_CHANNEL < 8) && SOC_LEDC_SUPPORT_HS_MODE
 #define PWM0_SPEEDMODE LEDC_HIGH_SPEED_MODE
 #else
 #define PWM0_SPEEDMODE LEDC_LOW_SPEED_MODE
@@ -2505,7 +2505,7 @@ extern "C"
 #endif
 #ifdef PWM1_CHANNEL
 #define PWM1_LEDCCHANNEL (PWM1_CHANNEL & 0x07)
-#if (PWM1_CHANNEL < 8)
+#if (PWM1_CHANNEL < 8) && SOC_LEDC_SUPPORT_HS_MODE
 #define PWM1_SPEEDMODE LEDC_HIGH_SPEED_MODE
 #else
 #define PWM1_SPEEDMODE LEDC_LOW_SPEED_MODE
@@ -2517,7 +2517,7 @@ extern "C"
 #endif
 #ifdef PWM2_CHANNEL
 #define PWM2_LEDCCHANNEL (PWM2_CHANNEL & 0x07)
-#if (PWM2_CHANNEL < 8)
+#if (PWM2_CHANNEL < 8) && SOC_LEDC_SUPPORT_HS_MODE
 #define PWM2_SPEEDMODE LEDC_HIGH_SPEED_MODE
 #else
 #define PWM2_SPEEDMODE LEDC_LOW_SPEED_MODE
@@ -2529,7 +2529,7 @@ extern "C"
 #endif
 #ifdef PWM3_CHANNEL
 #define PWM3_LEDCCHANNEL (PWM3_CHANNEL & 0x07)
-#if (PWM3_CHANNEL < 8)
+#if (PWM3_CHANNEL < 8) && SOC_LEDC_SUPPORT_HS_MODE
 #define PWM3_SPEEDMODE LEDC_HIGH_SPEED_MODE
 #else
 #define PWM3_SPEEDMODE LEDC_LOW_SPEED_MODE
@@ -2541,7 +2541,7 @@ extern "C"
 #endif
 #ifdef PWM4_CHANNEL
 #define PWM4_LEDCCHANNEL (PWM4_CHANNEL & 0x07)
-#if (PWM4_CHANNEL < 8)
+#if (PWM4_CHANNEL < 8) && SOC_LEDC_SUPPORT_HS_MODE
 #define PWM4_SPEEDMODE LEDC_HIGH_SPEED_MODE
 #else
 #define PWM4_SPEEDMODE LEDC_LOW_SPEED_MODE
@@ -2553,7 +2553,7 @@ extern "C"
 #endif
 #ifdef PWM5_CHANNEL
 #define PWM5_LEDCCHANNEL (PWM5_CHANNEL & 0x07)
-#if (PWM5_CHANNEL < 8)
+#if (PWM5_CHANNEL < 8) && SOC_LEDC_SUPPORT_HS_MODE
 #define PWM5_SPEEDMODE LEDC_HIGH_SPEED_MODE
 #else
 #define PWM5_SPEEDMODE LEDC_LOW_SPEED_MODE
@@ -2565,7 +2565,7 @@ extern "C"
 #endif
 #ifdef PWM6_CHANNEL
 #define PWM6_LEDCCHANNEL (PWM6_CHANNEL & 0x07)
-#if (PWM6_CHANNEL < 8)
+#if (PWM6_CHANNEL < 8) && SOC_LEDC_SUPPORT_HS_MODE
 #define PWM6_SPEEDMODE LEDC_HIGH_SPEED_MODE
 #else
 #define PWM6_SPEEDMODE LEDC_LOW_SPEED_MODE
@@ -2577,7 +2577,7 @@ extern "C"
 #endif
 #ifdef PWM7_CHANNEL
 #define PWM7_LEDCCHANNEL (PWM7_CHANNEL & 0x07)
-#if (PWM7_CHANNEL < 8)
+#if (PWM7_CHANNEL < 8) && SOC_LEDC_SUPPORT_HS_MODE
 #define PWM7_SPEEDMODE LEDC_HIGH_SPEED_MODE
 #else
 #define PWM7_SPEEDMODE LEDC_LOW_SPEED_MODE
@@ -2589,7 +2589,7 @@ extern "C"
 #endif
 #ifdef PWM8_CHANNEL
 #define PWM8_LEDCCHANNEL (PWM8_CHANNEL & 0x07)
-#if (PWM8_CHANNEL < 8)
+#if (PWM8_CHANNEL < 8) && SOC_LEDC_SUPPORT_HS_MODE
 #define PWM8_SPEEDMODE LEDC_HIGH_SPEED_MODE
 #else
 #define PWM8_SPEEDMODE LEDC_LOW_SPEED_MODE
@@ -2601,7 +2601,7 @@ extern "C"
 #endif
 #ifdef PWM9_CHANNEL
 #define PWM9_LEDCCHANNEL (PWM9_CHANNEL & 0x07)
-#if (PWM9_CHANNEL < 8)
+#if (PWM9_CHANNEL < 8) && SOC_LEDC_SUPPORT_HS_MODE
 #define PWM9_SPEEDMODE LEDC_HIGH_SPEED_MODE
 #else
 #define PWM9_SPEEDMODE LEDC_LOW_SPEED_MODE
@@ -2613,7 +2613,7 @@ extern "C"
 #endif
 #ifdef PWM10_CHANNEL
 #define PWM10_LEDCCHANNEL (PWM10_CHANNEL & 0x07)
-#if (PWM10_CHANNEL < 8)
+#if (PWM10_CHANNEL < 8) && SOC_LEDC_SUPPORT_HS_MODE
 #define PWM10_SPEEDMODE LEDC_HIGH_SPEED_MODE
 #else
 #define PWM10_SPEEDMODE LEDC_LOW_SPEED_MODE
@@ -2625,7 +2625,7 @@ extern "C"
 #endif
 #ifdef PWM11_CHANNEL
 #define PWM11_LEDCCHANNEL (PWM11_CHANNEL & 0x07)
-#if (PWM11_CHANNEL < 8)
+#if (PWM11_CHANNEL < 8) && SOC_LEDC_SUPPORT_HS_MODE
 #define PWM11_SPEEDMODE LEDC_HIGH_SPEED_MODE
 #else
 #define PWM11_SPEEDMODE LEDC_LOW_SPEED_MODE
@@ -2637,7 +2637,7 @@ extern "C"
 #endif
 #ifdef PWM12_CHANNEL
 #define PWM12_LEDCCHANNEL (PWM12_CHANNEL & 0x07)
-#if (PWM12_CHANNEL < 8)
+#if (PWM12_CHANNEL < 8) && SOC_LEDC_SUPPORT_HS_MODE
 #define PWM12_SPEEDMODE LEDC_HIGH_SPEED_MODE
 #else
 #define PWM12_SPEEDMODE LEDC_LOW_SPEED_MODE
@@ -2649,7 +2649,7 @@ extern "C"
 #endif
 #ifdef PWM13_CHANNEL
 #define PWM13_LEDCCHANNEL (PWM13_CHANNEL & 0x07)
-#if (PWM13_CHANNEL < 8)
+#if (PWM13_CHANNEL < 8) && SOC_LEDC_SUPPORT_HS_MODE
 #define PWM13_SPEEDMODE LEDC_HIGH_SPEED_MODE
 #else
 #define PWM13_SPEEDMODE LEDC_LOW_SPEED_MODE
@@ -2661,7 +2661,7 @@ extern "C"
 #endif
 #ifdef PWM14_CHANNEL
 #define PWM14_LEDCCHANNEL (PWM14_CHANNEL & 0x07)
-#if (PWM14_CHANNEL < 8)
+#if (PWM14_CHANNEL < 8) && SOC_LEDC_SUPPORT_HS_MODE
 #define PWM14_SPEEDMODE LEDC_HIGH_SPEED_MODE
 #else
 #define PWM14_SPEEDMODE LEDC_LOW_SPEED_MODE
@@ -2673,7 +2673,7 @@ extern "C"
 #endif
 #ifdef PWM15_CHANNEL
 #define PWM15_LEDCCHANNEL (PWM15_CHANNEL & 0x07)
-#if (PWM15_CHANNEL < 8)
+#if (PWM15_CHANNEL < 8) && SOC_LEDC_SUPPORT_HS_MODE
 #define PWM15_SPEEDMODE LEDC_HIGH_SPEED_MODE
 #else
 #define PWM15_SPEEDMODE LEDC_LOW_SPEED_MODE
@@ -2710,9 +2710,15 @@ extern "C"
 #ifndef DISABLE_WEBSOCKETS
 #define MCU_HAS_WEBSOCKETS
 #endif
+#ifndef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
+#define BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
+#endif
 #endif
 #ifdef ENABLE_BLUETOOTH
 #define MCU_HAS_BLUETOOTH
+#ifndef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
+#define BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
+#endif
 #endif
 
 // servo timer is also used by emulated PWM if used
@@ -2797,34 +2803,34 @@ extern "C"
 #define ic74hc595_get_pin(pin) (__atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED) & ic74hc595_pin_mask(pin))
 #endif
 
-#define mcu_config_output(X)                                              \
-	{                                                                     \
+#define mcu_config_output(X)                                          \
+	{                                                                   \
 		gpio_pad_select_gpio(__indirect__(X, BIT));                       \
 		gpio_set_direction(__indirect__(X, BIT), GPIO_MODE_INPUT_OUTPUT); \
 	}
-#define mcu_config_input(X)                                        \
-	{                                                              \
+#define mcu_config_input(X)                                    \
+	{                                                            \
 		gpio_pad_select_gpio(__indirect__(X, BIT));                \
 		gpio_set_direction(__indirect__(X, BIT), GPIO_MODE_INPUT); \
 		gpio_pulldown_dis(__indirect__(X, BIT));                   \
 		gpio_pullup_dis(__indirect__(X, BIT));                     \
 	}
 #define mcu_config_analog(X)                                                      \
-	{                                                                             \
-		mcu_config_input(X);                                                      \
-		adc1_config_width(ADC_WIDTH_BIT_10);                                      \
-		adc1_config_channel_atten(__indirect__(X, ADC_CHANNEL), ADC_ATTEN_DB_11); \
+	{                                                                               \
+		mcu_config_input(X);                                                          \
+		adc1_config_width(ADC_WIDTH_MAX - 1);                                         \
+		adc1_config_channel_atten(__indirect__(X, ADC_CHANNEL), (ADC_ATTEN_MAX - 1)); \
 	}
-#define mcu_config_pullup(X)                                       \
-	{                                                              \
+#define mcu_config_pullup(X)                                   \
+	{                                                            \
 		gpio_pad_select_gpio(__indirect__(X, BIT));                \
 		gpio_set_direction(__indirect__(X, BIT), GPIO_MODE_INPUT); \
 		gpio_pulldown_dis(__indirect__(X, BIT));                   \
 		gpio_pullup_en(__indirect__(X, BIT));                      \
 	}
 	extern void mcu_gpio_isr(void *);
-#define mcu_config_input_isr(X)                                                                      \
-	{                                                                                                \
+#define mcu_config_input_isr(X)                                                                  \
+	{                                                                                              \
 		gpio_set_intr_type((__indirect__(X, BIT)), GPIO_INTR_ANYEDGE);                               \
 		gpio_isr_handler_add((__indirect__(X, BIT)), mcu_gpio_isr, (void *)__indirect__(X, ISRVAR)); \
 	}
@@ -2832,21 +2838,21 @@ extern "C"
 #define mcu_get_input(X) gpio_get_level(__indirect__(X, BIT))
 // #define mcu_get_input(X) ((__indirect__(X,INREG)->IN) & (1UL<<(0x1F & __indirect__(X, BIT))))
 #define mcu_get_output(X) ((__indirect__(X, OUTREG)->OUT) & (1UL << (0x1F & __indirect__(X, BIT))))
-#define mcu_set_output(X)                                                         \
-	{                                                                             \
+#define mcu_set_output(X)                                                     \
+	{                                                                           \
 		__indirect__(X, OUTREG)->OUTSET = (1UL << (0x1F & __indirect__(X, BIT))); \
 	}
-#define mcu_clear_output(X)                                                       \
-	{                                                                             \
+#define mcu_clear_output(X)                                                   \
+	{                                                                           \
 		__indirect__(X, OUTREG)->OUTCLR = (1UL << (0x1F & __indirect__(X, BIT))); \
 	}
-#define mcu_toggle_output(X)                                                    \
-	{                                                                           \
+#define mcu_toggle_output(X)                                                \
+	{                                                                         \
 		__indirect__(X, OUTREG)->OUT ^= (1UL << (0x1F & __indirect__(X, BIT))); \
 	}
 
-#define mcu_config_pwm(X, Y)                              \
-	{                                                     \
+#define mcu_config_pwm(X, Y)                          \
+	{                                                   \
 		ledc_timer_config_t pwmtimer = {0};               \
 		pwmtimer.speed_mode = __indirect__(X, SPEEDMODE); \
 		pwmtimer.timer_num = __indirect__(X, TIMER);      \
@@ -2864,27 +2870,23 @@ extern "C"
 		ledc_channel_config(&pwm);                        \
 	}
 
-#define mcu_set_pwm(X, Y)                                                           \
-	{                                                                               \
+#define mcu_set_pwm(X, Y)                                                       \
+	{                                                                             \
 		ledc_set_duty(__indirect__(X, SPEEDMODE), __indirect__(X, LEDCCHANNEL), Y); \
 		ledc_update_duty(__indirect__(X, SPEEDMODE), __indirect__(X, LEDCCHANNEL)); \
 	}
 #define mcu_get_pwm(X) ledc_get_duty(__indirect__(X, SPEEDMODE), __indirect__(X, LEDCCHANNEL))
-#define mcu_get_analog(X) adc1_get_raw(__indirect__(X, ADC_CHANNEL))
+#define mcu_get_analog(X) (adc1_get_raw(__indirect__(X, ADC_CHANNEL)) >> (ADC_WIDTH_MAX - 2))
 
 	extern void esp32_delay_us(uint16_t delay);
 #define mcu_delay_us(X) esp32_delay_us(X)
 
-#if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
-#define BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
-#endif
-
 #include "xtensa/core-macros.h"
-#define mcu_delay_cycles(X)                              \
-	{                                                    \
+#define mcu_delay_cycles(X)                          \
+	{                                                  \
 		uint32_t x = XTHAL_GET_CCOUNT();                 \
 		while (X > (((uint32_t)XTHAL_GET_CCOUNT()) - x)) \
-			;                                            \
+			;                                              \
 	}
 
 #ifdef __cplusplus

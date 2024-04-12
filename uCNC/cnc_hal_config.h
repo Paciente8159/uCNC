@@ -112,8 +112,8 @@ extern "C"
  * Enable this option if you want the rotation axis to work in relative distance mode only
  * This will mean that no matter if the machine is working in absolute (G90) or relative (G91) coordinates
  * the rotational axis will always calculate the motion in relative distance mode
- * 
-*/
+ *
+ */
 // #define AXIS_A_FORCE_RELATIVE_MODE
 // #define AXIS_B_FORCE_RELATIVE_MODE
 // #define AXIS_C_FORCE_RELATIVE_MODE

@@ -51,12 +51,12 @@ extern "C"
 #define CS_RES_PULLUP
 
 // Setup limit pins
-#define LIMIT_Z_BIT 19	// assigns LIMIT_Z pin
-#define LIMIT_Z_ISR		// assigns LIMIT_Z ISR
-#define LIMIT_Y_BIT 5	// assigns LIMIT_Y pin
-#define LIMIT_Y_ISR		// assigns LIMIT_Y ISR
-#define LIMIT_X_BIT 13	// assigns LIMIT_X pin
-#define LIMIT_X_ISR  	// assigns LIMIT_X ISR
+#define LIMIT_Z_BIT 19 // assigns LIMIT_Z pin
+#define LIMIT_Z_ISR		 // assigns LIMIT_Z ISR
+#define LIMIT_Y_BIT 5	 // assigns LIMIT_Y pin
+#define LIMIT_Y_ISR		 // assigns LIMIT_Y ISR
+#define LIMIT_X_BIT 13 // assigns LIMIT_X pin
+#define LIMIT_X_ISR		 // assigns LIMIT_X ISR
 
 // Setup probe pin
 #define PROBE_BIT 39
@@ -66,8 +66,8 @@ extern "C"
 #define RX_BIT 3
 #define TX_BIT 1
 #define RX_PULLUP
-// only uncomment this if other port other then 0 is used
-// #define UART_PORT 0
+	// only uncomment this if other port other then 0 is used
+	// #define UART_PORT 0
 
 	// Setup PWM
 #define PWM0_BIT 23 // assigns PWM0 pin
@@ -86,7 +86,7 @@ extern "C"
 
 	// Setup the Step Timer used has the heartbeat for µCNC
 	// Timer 1 is used by default
-	//#define ITP_TIMER 1
+	// #define ITP_TIMER 1
 
 	// RTC Timer on ESP32 is granteed by a FreeRTOS
 
