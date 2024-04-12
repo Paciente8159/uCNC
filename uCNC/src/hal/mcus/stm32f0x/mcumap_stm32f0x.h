@@ -3293,102 +3293,342 @@ extern "C"
 #ifdef MCU_HAS_UART
 // this MCU does not work well with both TX and RX interrupt
 // this forces the sync TX method to fix communication
-#if (UART_PORT < 4 || UART_PORT == 6)
 #define COM_UART __usart__(UART_PORT)
+
+#if (UART_PORT < 3)
 #define COM_IRQ __helper__(USART, UART_PORT, _IRQn)
 #define MCU_SERIAL_ISR __helper__(USART, UART_PORT, _IRQHandler)
+#else
+#define COM_IRQ USART3_8_IRQn
+#define MCU_SERIAL_ISR USART3_8_IRQHandler
+#endif
+
 #define COM_OUTREG (COM_UART)->TDR
 #define COM_INREG (COM_UART)->RDR
-#if (UART_PORT == 1 || UART_PORT == 6)
+
+#if (UART_PORT == 1 || UART_PORT >= 6)
 #define COM_APB APB2ENR
 #define COM_APBEN __helper__(RCC_APB2ENR_USART, UART_PORT, EN)
 #else
 #define COM_APB APB1ENR
 #define COM_APBEN __helper__(RCC_APB1ENR_USART, UART_PORT, EN)
 #endif
-#else
-#define COM_UART __uart__(UART_PORT)
-#define COM_IRQ __helper__(UART, UART_PORT, _IRQn)
-#define MCU_SERIAL_ISR __helper__(UART, UART_PORT, _IRQHandler)
-#define COM_APB APB1ENR
-#define COM_APBEN __helper__(RCC_APB1ENR_, COM_UART, EN)
-#define COM_OUTREG (COM_UART)->DR
-#define COM_INREG (COM_UART)->DR
+
+#define UART_CLOCK HAL_RCC_GetPCLK1Freq()
+
+#define TX_PIN __iopin__(TX_PORT, TX_BIT)
+#define RX_PIN __iopin__(RX_PORT,RX_BIT)
+
+#if (UART_PORT == 2) && (TX_PIN == STM32IO_A2)
+#define UART_TX_AFIO 1
+#endif
+#if (UART_PORT == 2) && (RX_PIN == STM32IO_A3)
+#define UART_RX_AFIO 1
+#endif
+#if (UART_PORT == 1) && (TX_PIN == STM32IO_A9)
+#define UART_TX_AFIO 1
+#endif
+#if (UART_PORT == 1) && (RX_PIN == STM32IO_A10)
+#define UART_RX_AFIO 1
+#endif
+#if (UART_PORT == 2) && (TX_PIN == STM32IO_A14)
+#define UART_TX_AFIO 1
+#endif
+#if (UART_PORT == 2) && (RX_PIN == STM32IO_A15)
+#define UART_RX_AFIO 1
+#endif
+#if (UART_PORT == 4) && (TX_PIN == STM32IO_A0)
+#define UART_TX_AFIO 4
+#endif
+#if (UART_PORT == 4) && (RX_PIN == STM32IO_A1)
+#define UART_RX_AFIO 4
+#endif
+#if (UART_PORT == 5) && (TX_PIN == STM32IO_A4)
+#define UART_TX_AFIO 5
+#endif
+#if (UART_PORT == 5) && (RX_PIN == STM32IO_A5)
+#define UART_RX_AFIO 5
+#endif
+#if (UART_PORT == 1) && (TX_PIN == STM32IO_B6)
+#define UART_TX_AFIO 0
+#endif
+#if (UART_PORT == 1) && (RX_PIN == STM32IO_B7)
+#define UART_RX_AFIO 0
+#endif
+#if (UART_PORT == 5) && (TX_PIN == STM32IO_B3)
+#define UART_TX_AFIO 4
+#endif
+#if (UART_PORT == 5) && (RX_PIN == STM32IO_B4)
+#define UART_RX_AFIO 4
+#endif
+#if (UART_PORT == 3) && (TX_PIN == STM32IO_B10)
+#define UART_TX_AFIO 4
+#endif
+#if (UART_PORT == 3) && (RX_PIN == STM32IO_B11)
+#define UART_RX_AFIO 4
+#endif
+#if (UART_PORT == 4) && (TX_PIN == STM32IO_C10)
+#define UART_TX_AFIO 0
+#endif
+#if (UART_PORT == 4) && (RX_PIN == STM32IO_C11)
+#define UART_RX_AFIO 0
+#endif
+#if (UART_PORT == 7) && (TX_PIN == STM32IO_C0)
+#define UART_TX_AFIO 1
+#endif
+#if (UART_PORT == 7) && (RX_PIN == STM32IO_C1)
+#define UART_RX_AFIO 1
+#endif
+#if (UART_PORT == 7) && (TX_PIN == STM32IO_C6)
+#define UART_TX_AFIO 1
+#endif
+#if (UART_PORT == 7) && (RX_PIN == STM32IO_C7)
+#define UART_RX_AFIO 1
+#endif
+#if (UART_PORT == 3) && (TX_PIN == STM32IO_C4)
+#define UART_TX_AFIO 1
+#endif
+#if (UART_PORT == 3) && (RX_PIN == STM32IO_C5)
+#define UART_RX_AFIO 1
+#endif
+#if (UART_PORT == 3) && (TX_PIN == STM32IO_C10)
+#define UART_TX_AFIO 1
+#endif
+#if (UART_PORT == 3) && (RX_PIN == STM32IO_C11)
+#define UART_RX_AFIO 1
+#endif
+#if (UART_PORT == 8) && (TX_PIN == STM32IO_C8)
+#define UART_TX_AFIO 1
+#endif
+#if (UART_PORT == 8) && (RX_PIN == STM32IO_C9)
+#define UART_RX_AFIO 1
+#endif
+#if (UART_PORT == 6) && (TX_PIN == STM32IO_C0)
+#define UART_TX_AFIO 2
+#endif
+#if (UART_PORT == 6) && (RX_PIN == STM32IO_C1)
+#define UART_RX_AFIO 2
+#endif
+#if (UART_PORT == 8) && (TX_PIN == STM32IO_C2)
+#define UART_TX_AFIO 2
+#endif
+#if (UART_PORT == 8) && (RX_PIN == STM32IO_C3)
+#define UART_RX_AFIO 2
+#endif
+#if (UART_PORT == 5) && (TX_PIN == STM32IO_C12)
+#define UART_TX_AFIO 2
+#endif
+#if (UART_PORT == 5) && (RX_PIN == STM32IO_D2)
+#define UART_RX_AFIO 2
+#endif
+#if (UART_PORT == 2) && (TX_PIN == STM32IO_D5)
+#define UART_TX_AFIO 0
+#endif
+#if (UART_PORT == 2) && (TX_PIN == STM32IO_D6)
+#define UART_TX_AFIO 0
+#endif
+#if (UART_PORT == 3) && (TX_PIN == STM32IO_D8)
+#define UART_TX_AFIO 0
+#endif
+#if (UART_PORT == 3) && (RX_PIN == STM32IO_D9)
+#define UART_RX_AFIO 0
+#endif
+#if (UART_PORT == 8) && (TX_PIN == STM32IO_D13)
+#define UART_TX_AFIO 0
+#endif
+#if (UART_PORT == 8) && (RX_PIN == STM32IO_D14)
+#define UART_RX_AFIO 0
+#endif
+#if (UART_PORT == 4) && (TX_PIN == STM32IO_E8)
+#define UART_TX_AFIO 2
+#endif
+#if (UART_PORT == 4) && (RX_PIN == STM32IO_E9)
+#define UART_RX_AFIO 2
+#endif
+#if (UART_PORT == 5) && (TX_PIN == STM32IO_E10)
+#define UART_TX_AFIO 2
+#endif
+#if (UART_PORT == 5) && (RX_PIN == STM32IO_E11)
+#define UART_RX_AFIO 2
+#endif
+#if (UART_PORT == 7) && (TX_PIN == STM32IO_F2)
+#define UART_TX_AFIO 1
+#endif
+#if (UART_PORT == 7) && (RX_PIN == STM32IO_F3)
+#define UART_RX_AFIO 1
 #endif
 
-// remmaping and pin checking
-//  USART	TX	RX	APB	APB2ENR	REMAP
-//  1	A9	A10	APB2ENR	RCC_APB2ENR_USART1EN	0
-//  1	B6	B7	APB2ENR	RCC_APB2ENR_USART1EN	1
-//  2	A2	A3	APB1ENR	RCC_APB1ENR_USART2EN	0
-//  2	D5	D6	APB1ENR	RCC_APB1ENR_USART2EN	1
-//  3	B10	B11	APB1ENR	RCC_APB1ENR_USART3EN	0
-//  3	C10	C11	APB1ENR	RCC_APB1ENR_USART3EN	1
-//  3	D8	D9	APB1ENR	RCC_APB1ENR_USART3EN	3
-//  4	C10	C11	APB1ENR	RCC_APB1ENR_UART4EN	x
-//  5	C12	D2	APB1ENR	RCC_APB1ENR_UART5EN	x
-#if ((UART_PORT == 1) || (UART_PORT == 6))
-#define UART_CLOCK HAL_RCC_GetPCLK1Freq()
-#else
-#define UART_CLOCK HAL_RCC_GetPCLK1Freq()
 #endif
-#if ((UART_PORT >= 1) && (UART_PORT <= 3))
-#define GPIO_AF_USART 0x07
-#else
-#define GPIO_AF_USART 0x08
-#endif
-#endif
+
 
 #ifdef MCU_HAS_UART2
-#ifndef BAUDRATE2
-#define BAUDRATE2 BAUDRATE
-#endif
 // this MCU does not work well with both TX and RX interrupt
 // this forces the sync TX method to fix communication
-#if (UART2_PORT < 4 || UART2_PORT == 6)
-#define COM2_UART __usart__(UART2_PORT)
+#define COM2_UART2 __usart__(UART2_PORT)
+
+#if (UART2_PORT < 3)
 #define COM2_IRQ __helper__(USART, UART2_PORT, _IRQn)
-#define MCU_SERIAL2_ISR __helper__(USART, UART2_PORT, _IRQHandler)
-#define COM2_OUTREG (COM2_UART)->DR
-#define COM2_INREG (COM2_UART)->DR
-#if (UART2_PORT == 1 || UART2_PORT == 6)
+#define MCU_SERIAL_ISR __helper__(USART, UART2_PORT, _IRQHandler)
+#else
+#define COM2_IRQ USART3_8_IRQn
+#define MCU_SERIAL_ISR USART3_8_IRQHandler
+#endif
+
+#define COM2_OUTREG (COM2_UART2)->TDR
+#define COM2_INREG (COM2_UART2)->RDR
+
+#if (UART2_PORT == 1 || UART2_PORT >= 6)
 #define COM2_APB APB2ENR
 #define COM2_APBEN __helper__(RCC_APB2ENR_USART, UART2_PORT, EN)
 #else
 #define COM2_APB APB1ENR
 #define COM2_APBEN __helper__(RCC_APB1ENR_USART, UART2_PORT, EN)
 #endif
-#else
-#define COM2_UART __uart__(UART2_PORT)
-#define COM2_IRQ __helper__(UART, UART2_PORT, _IRQn)
-#define MCU_SERIAL2_ISR __helper__(UART, UART2_PORT, _IRQHandler)
-#define COM2_APB APB1ENR
-#define COM2_APBEN __helper__(RCC_APB1ENR_, COM2_UART, EN)
-#define COM2_OUTREG (COM2_UART)->DR
-#define COM2_INREG (COM2_UART)->DR
+
+#define UART2_CLOCK HAL_RCC_GetPCLK1Freq()
+
+#define TX2_PIN __iopin__(TX2_PORT, TX2_BIT)
+#define RX2_PIN __iopin__(RX_PORT,RX_BIT)
+
+#if (UART2_PORT == 2) && (TX2_PIN == STM32IO_A2)
+#define UART2_TX_AFIO 1
+#endif
+#if (UART2_PORT == 2) && (RX2_PIN == STM32IO_A3)
+#define UART2_RX_AFIO 1
+#endif
+#if (UART2_PORT == 1) && (TX2_PIN == STM32IO_A9)
+#define UART2_TX_AFIO 1
+#endif
+#if (UART2_PORT == 1) && (RX2_PIN == STM32IO_A10)
+#define UART2_RX_AFIO 1
+#endif
+#if (UART2_PORT == 2) && (TX2_PIN == STM32IO_A14)
+#define UART2_TX_AFIO 1
+#endif
+#if (UART2_PORT == 2) && (RX2_PIN == STM32IO_A15)
+#define UART2_RX_AFIO 1
+#endif
+#if (UART2_PORT == 4) && (TX2_PIN == STM32IO_A0)
+#define UART2_TX_AFIO 4
+#endif
+#if (UART2_PORT == 4) && (RX2_PIN == STM32IO_A1)
+#define UART2_RX_AFIO 4
+#endif
+#if (UART2_PORT == 5) && (TX2_PIN == STM32IO_A4)
+#define UART2_TX_AFIO 5
+#endif
+#if (UART2_PORT == 5) && (RX2_PIN == STM32IO_A5)
+#define UART2_RX_AFIO 5
+#endif
+#if (UART2_PORT == 1) && (TX2_PIN == STM32IO_B6)
+#define UART2_TX_AFIO 0
+#endif
+#if (UART2_PORT == 1) && (RX2_PIN == STM32IO_B7)
+#define UART2_RX_AFIO 0
+#endif
+#if (UART2_PORT == 5) && (TX2_PIN == STM32IO_B3)
+#define UART2_TX_AFIO 4
+#endif
+#if (UART2_PORT == 5) && (RX2_PIN == STM32IO_B4)
+#define UART2_RX_AFIO 4
+#endif
+#if (UART2_PORT == 3) && (TX2_PIN == STM32IO_B10)
+#define UART2_TX_AFIO 4
+#endif
+#if (UART2_PORT == 3) && (RX2_PIN == STM32IO_B11)
+#define UART2_RX_AFIO 4
+#endif
+#if (UART2_PORT == 4) && (TX2_PIN == STM32IO_C10)
+#define UART2_TX_AFIO 0
+#endif
+#if (UART2_PORT == 4) && (RX2_PIN == STM32IO_C11)
+#define UART2_RX_AFIO 0
+#endif
+#if (UART2_PORT == 7) && (TX2_PIN == STM32IO_C0)
+#define UART2_TX_AFIO 1
+#endif
+#if (UART2_PORT == 7) && (RX2_PIN == STM32IO_C1)
+#define UART2_RX_AFIO 1
+#endif
+#if (UART2_PORT == 7) && (TX2_PIN == STM32IO_C6)
+#define UART2_TX_AFIO 1
+#endif
+#if (UART2_PORT == 7) && (RX2_PIN == STM32IO_C7)
+#define UART2_RX_AFIO 1
+#endif
+#if (UART2_PORT == 3) && (TX2_PIN == STM32IO_C4)
+#define UART2_TX_AFIO 1
+#endif
+#if (UART2_PORT == 3) && (RX2_PIN == STM32IO_C5)
+#define UART2_RX_AFIO 1
+#endif
+#if (UART2_PORT == 3) && (TX2_PIN == STM32IO_C10)
+#define UART2_TX_AFIO 1
+#endif
+#if (UART2_PORT == 3) && (RX2_PIN == STM32IO_C11)
+#define UART2_RX_AFIO 1
+#endif
+#if (UART2_PORT == 8) && (TX2_PIN == STM32IO_C8)
+#define UART2_TX_AFIO 1
+#endif
+#if (UART2_PORT == 8) && (RX2_PIN == STM32IO_C9)
+#define UART2_RX_AFIO 1
+#endif
+#if (UART2_PORT == 6) && (TX2_PIN == STM32IO_C0)
+#define UART2_TX_AFIO 2
+#endif
+#if (UART2_PORT == 6) && (RX2_PIN == STM32IO_C1)
+#define UART2_RX_AFIO 2
+#endif
+#if (UART2_PORT == 8) && (TX2_PIN == STM32IO_C2)
+#define UART2_TX_AFIO 2
+#endif
+#if (UART2_PORT == 8) && (RX2_PIN == STM32IO_C3)
+#define UART2_RX_AFIO 2
+#endif
+#if (UART2_PORT == 5) && (TX2_PIN == STM32IO_C12)
+#define UART2_TX_AFIO 2
+#endif
+#if (UART2_PORT == 5) && (RX2_PIN == STM32IO_D2)
+#define UART2_RX_AFIO 2
+#endif
+#if (UART2_PORT == 2) && (TX2_PIN == STM32IO_D5)
+#define UART2_TX_AFIO 0
+#endif
+#if (UART2_PORT == 2) && (TX2_PIN == STM32IO_D6)
+#define UART2_TX_AFIO 0
+#endif
+#if (UART2_PORT == 3) && (TX2_PIN == STM32IO_D8)
+#define UART2_TX_AFIO 0
+#endif
+#if (UART2_PORT == 3) && (RX2_PIN == STM32IO_D9)
+#define UART2_RX_AFIO 0
+#endif
+#if (UART2_PORT == 8) && (TX2_PIN == STM32IO_D13)
+#define UART2_TX_AFIO 0
+#endif
+#if (UART2_PORT == 8) && (RX2_PIN == STM32IO_D14)
+#define UART2_RX_AFIO 0
+#endif
+#if (UART2_PORT == 4) && (TX2_PIN == STM32IO_E8)
+#define UART2_TX_AFIO 2
+#endif
+#if (UART2_PORT == 4) && (RX2_PIN == STM32IO_E9)
+#define UART2_RX_AFIO 2
+#endif
+#if (UART2_PORT == 5) && (TX2_PIN == STM32IO_E10)
+#define UART2_TX_AFIO 2
+#endif
+#if (UART2_PORT == 5) && (RX2_PIN == STM32IO_E11)
+#define UART2_RX_AFIO 2
+#endif
+#if (UART2_PORT == 7) && (TX2_PIN == STM32IO_F2)
+#define UART2_TX_AFIO 1
+#endif
+#if (UART2_PORT == 7) && (RX2_PIN == STM32IO_F3)
+#define UART2_RX_AFIO 1
 #endif
 
-// remmaping and pin checking
-//  USART	TX	RX	APB	APB2ENR	REMAP
-//  1	A9	A10	APB2ENR	RCC_APB2ENR_USART1EN	0
-//  1	B6	B7	APB2ENR	RCC_APB2ENR_USART1EN	1
-//  2	A2	A3	APB1ENR	RCC_APB1ENR_USART2EN	0
-//  2	D5	D6	APB1ENR	RCC_APB1ENR_USART2EN	1
-//  3	B10	B11	APB1ENR	RCC_APB1ENR_USART3EN	0
-//  3	C10	C11	APB1ENR	RCC_APB1ENR_USART3EN	1
-//  3	D8	D9	APB1ENR	RCC_APB1ENR_USART3EN	3
-//  4	C10	C11	APB1ENR	RCC_APB1ENR_UART4EN	x
-//  5	C12	D2	APB1ENR	RCC_APB1ENR_UART5EN	x
-#if ((UART2_PORT == 1) || (UART2_PORT == 6))
-#define UART2_CLOCK HAL_RCC_GetPCLK1Freq()
-#else
-#define UART2_CLOCK HAL_RCC_GetPCLK1Freq()
-#endif
-#if ((UART2_PORT >= 1) && (UART2_PORT <= 3))
-#define GPIO_AF_USART2 0x07
-#else
-#define GPIO_AF_USART2 0x08
-#endif
 #endif
 
 #if (defined(SPI_CLK) && defined(SPI_SDO) && defined(SPI_SDI))
@@ -3737,7 +3977,7 @@ extern "C"
 		RCC->AHBENR |= __indirect__(diopin, AHBEN);                                                             \
 		__indirect__(diopin, GPIO)->MODER &= ~(GPIO_RESET << ((__indirect__(diopin, BIT)) << 1)); /*reset dir*/   \
 		__indirect__(diopin, GPIO)->MODER |= (GPIO_OUTPUT << ((__indirect__(diopin, BIT)) << 1)); /*output mode*/ \
-		__indirect__(diopin, GPIO)->OSPEEDR |= (0x02 << ((__indirect__(diopin, BIT)) << 1));	  /*output mode*/ \
+		__indirect__(diopin, GPIO)->OSPEEDR |= (0x03 << ((__indirect__(diopin, BIT)) << 1));	  /*fast speed mode*/ \
 	}
 
 #define mcu_config_af(diopin, afrval)                                                                                                               \
@@ -3747,7 +3987,7 @@ extern "C"
 		__indirect__(diopin, GPIO)->MODER |= (GPIO_AF << ((__indirect__(diopin, BIT)) << 1));	  /*af mode*/                                       \
 		__indirect__(diopin, GPIO)->AFR[(__indirect__(diopin, BIT) >> 3)] &= ~(0xf << ((__indirect__(diopin, BIT) & 0x07) << 2));                   \
 		__indirect__(diopin, GPIO)->AFR[(__indirect__(diopin, BIT) >> 3)] |= (afrval << ((__indirect__(diopin, BIT) & 0x07) << 2)); /*af mode*/     \
-		__indirect__(diopin, GPIO)->OSPEEDR |= (0x03 << ((__indirect__(diopin, BIT)) << 1));										/*output mode*/ \
+		__indirect__(diopin, GPIO)->OSPEEDR |= (0x03 << ((__indirect__(diopin, BIT)) << 1));										/*fast speed mode*/ \
 	}
 
 #define mcu_config_pullup(diopin)                                                                    \

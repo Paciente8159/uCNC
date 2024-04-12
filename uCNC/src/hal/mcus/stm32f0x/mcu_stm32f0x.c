@@ -97,8 +97,7 @@ void MCU_SERIAL_ISR(void)
 					c = OVF;
 				}
 
-				*(BUFFER_NEXT_FREE(uart_rx)) = c;
-				BUFFER_STORE(uart_rx);
+				BUFFER_ENQUEUE(uart_rx, &c);
 			}
 #else
 			mcu_uart_rx_cb(c);
@@ -143,8 +142,7 @@ void MCU_SERIAL2_ISR(void)
 					c = OVF;
 				}
 
-				*(BUFFER_NEXT_FREE(uart2_rx)) = c;
-				BUFFER_STORE(uart2_rx);
+				BUFFER_ENQUEUE(uart2_rx, &c);
 			}
 #else
 			mcu_uart2_rx_cb(c);
@@ -444,8 +442,8 @@ void mcu_usart_init(void)
 #ifdef MCU_HAS_UART
 	/*enables RCC clocks and GPIO*/
 	RCC->COM_APB |= (COM_APBEN);
-	mcu_config_af(TX, GPIO_AF_USART);
-	mcu_config_af(RX, GPIO_AF_USART);
+	mcu_config_af(TX, UART_TX_AFIO);
+	mcu_config_af(RX, UART_RX_AFIO);
 	/*setup UART*/
 	COM_UART->CR1 = 0; // 8 bits No parity M=0 PCE=0
 	COM_UART->CR2 = 0; // 1 stop bit STOP=00
@@ -468,8 +466,8 @@ void mcu_usart_init(void)
 #ifdef MCU_HAS_UART2
 	/*enables RCC clocks and GPIO*/
 	RCC->COM2_APB |= (COM2_APBEN);
-	mcu_config_af(TX2, GPIO_AF_USART2);
-	mcu_config_af(RX2, GPIO_AF_USART2);
+	mcu_config_af(TX2, UART2_TX_AFIO);
+	mcu_config_af(RX2, UART2_RX_AFIO);
 	/*setup UART*/
 	COM2_UART->CR1 = 0; // 8 bits No parity M=0 PCE=0
 	COM2_UART->CR2 = 0; // 1 stop bit STOP=00
