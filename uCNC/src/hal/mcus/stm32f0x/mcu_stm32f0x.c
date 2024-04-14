@@ -812,39 +812,39 @@ void mcu_dotasks()
 // gets were the first copy of the eeprom is
 static void mcu_eeprom_init(void)
 {
-	uint32_t eeprom_offset = 0;
-	for (eeprom_offset = 0; eeprom_offset < FLASH_SECTOR_SIZE; eeprom_offset += FLASH_EEPROM_SIZE_WORD_ALIGNED)
-	{
-		if (*((volatile uint32_t *)(FLASH_EEPROM_START + eeprom_offset)) == 0xFFFFFFFF)
-		{
-			break;
-		}
-	}
+	// uint32_t eeprom_offset = 0;
+	// for (eeprom_offset = 0; eeprom_offset < FLASH_SECTOR_SIZE; eeprom_offset += FLASH_EEPROM_SIZE_WORD_ALIGNED)
+	// {
+	// 	if (*((volatile uint32_t *)(FLASH_EEPROM_START + eeprom_offset)) == 0xFFFFFFFF)
+	// 	{
+	// 		break;
+	// 	}
+	// }
 
-	// if not found at start then it's not initialized
-	if (eeprom_offset)
-	{
-		// one step back
-		eeprom_offset -= FLASH_EEPROM_SIZE_WORD_ALIGNED;
-		stm32_flash_current_offset = eeprom_offset;
-	}
-	else
-	{
-		stm32_flash_current_offset = 0;
-		stm32_flash_modified = EEPROM_CLEAN;
-		memset(stm32_eeprom_buffer, 0, FLASH_EEPROM_SIZE_WORD_ALIGNED);
-		return;
-	}
+	// // if not found at start then it's not initialized
+	// if (eeprom_offset)
+	// {
+	// 	// one step back
+	// 	eeprom_offset -= FLASH_EEPROM_SIZE_WORD_ALIGNED;
+	// 	stm32_flash_current_offset = eeprom_offset;
+	// }
+	// else
+	// {
+	// 	stm32_flash_current_offset = 0;
+	// 	stm32_flash_modified = EEPROM_CLEAN;
+	// 	memset(stm32_eeprom_buffer, 0, FLASH_EEPROM_SIZE_WORD_ALIGNED);
+	// 	return;
+	// }
 
-	uint32_t counter = (uint32_t)FLASH_EEPROM_SIZE_WORD;
-	uint32_t *ptr = ((uint32_t *)&stm32_eeprom_buffer[0]);
-	volatile uint32_t *eeprom = ((volatile uint32_t *)(FLASH_EEPROM_START + eeprom_offset));
-	while (counter--)
-	{
-		READ_FLASH(ptr, eeprom);
-		eeprom++;
-		ptr++;
-	}
+	// uint32_t counter = (uint32_t)FLASH_EEPROM_SIZE_WORD;
+	// uint32_t *ptr = ((uint32_t *)&stm32_eeprom_buffer[0]);
+	// volatile uint32_t *eeprom = ((volatile uint32_t *)(FLASH_EEPROM_START + eeprom_offset));
+	// while (counter--)
+	// {
+	// 	READ_FLASH(ptr, eeprom);
+	// 	eeprom++;
+	// 	ptr++;
+	// }
 }
 
 // Non volatile memory
