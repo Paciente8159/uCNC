@@ -1,0 +1,37 @@
+{
+  "build": {
+    "cpu": "cortex-m0",
+    "extra_flags": "-DSTM32F030x8",
+    "f_cpu": "48000000L",
+    "mcu": "stm32f030c8t6",
+    "product_line": "STM32F030x8",
+    "variant": "STM32F0xx/F030C8T"
+  },
+  "debug": {
+    "jlink_device": "stm32f030c8",
+    "openocd_target": "stm32f0x",
+    "svd_path": "STM32F0x0.svd"
+  },
+  "frameworks": [
+    "arduino",
+    "cmsis",
+    "stm32cube",
+    "libopencm3"
+  ],
+  "name": "STM32F030C8T6",
+  "upload": {
+    "maximum_ram_size": 8192,
+    "maximum_size": 65536,
+    "protocol": "stlink",
+    "protocols": [
+      "dfu",
+      "jlink",
+      "stlink",
+      "blackmagic",
+      "serial",
+      "cmsis-dap"
+    ]
+  },
+  "url": "https://doc.riot-os.org/group__boards__bluepill-stm32f030c8.html",
+  "vendor": "Bduino"
+}
