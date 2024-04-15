@@ -638,8 +638,8 @@ void mcu_init(void)
 #endif
 #ifdef MCU_HAS_I2C
 	RCC->APB1ENR |= I2C_APBEN;
-	mcu_config_af(I2C_CLK, I2C_AFIO);
-	mcu_config_af(I2C_DATA, I2C_AFIO);
+	mcu_config_af(I2C_CLK, I2C_CLK_AFIO);
+	mcu_config_af(I2C_DATA, I2C_DATA_AFIO);
 	mcu_config_pullup(I2C_CLK);
 	mcu_config_pullup(I2C_DATA);
 	// set opendrain

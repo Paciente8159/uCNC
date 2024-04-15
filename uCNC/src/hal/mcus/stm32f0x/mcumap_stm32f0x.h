@@ -3839,6 +3839,10 @@ extern "C"
 
 // I2C
 #if (defined(I2C_CLK) && defined(I2C_DATA))
+
+#define I2C_CLK_PIN __iopin__(I2C_CLK_PORT, I2C_CLK_BIT)
+#define I2C_DATA_PIN __iopin__(I2C_DATA_PORT, I2C_DATA_BIT)
+
 #define MCU_HAS_I2C
 #define MCU_SUPPORTS_I2C_SLAVE
 #ifndef I2C_ADDRESS
@@ -3852,7 +3856,32 @@ extern "C"
 #define I2C_APBEN __helper__(RCC_APB1ENR_I2C, I2C_PORT, EN)
 #define I2C_REG __helper__(I2C, I2C_PORT, )
 #define I2C_SPEEDRANGE (HAL_RCC_GetPCLK1Freq() / 1000000UL)
-#define I2C_AFIO 4
+
+#if (I2C_PORT == 1) && (I2C_CLK_PIN == STM32IO_B6)
+#define I2C_CLK_AFIO 1
+#endif
+#if (I2C_PORT == 1) && (I2C_DATA_PIN == STM32IO_B7)
+#define I2C_DATA_AFIO 1
+#endif
+#if (I2C_PORT == 1) && (I2C_CLK_PIN == STM32IO_B8)
+#define I2C_CLK_AFIO 1
+#endif
+#if (I2C_PORT == 1) && (I2C_DATA_PIN == STM32IO_B9)
+#define I2C_DATA_AFIO 1
+#endif
+#if (I2C_PORT == 2) && (I2C_CLK_PIN == STM32IO_B10)
+#define I2C_CLK_AFIO 1
+#endif
+#if (I2C_PORT == 2) && (I2C_DATA_PIN == STM32IO_B11)
+#define I2C_DATA_AFIO 1
+#endif
+#if (I2C_PORT == 2) && (I2C_CLK_PIN == STM32IO_B13)
+#define I2C_CLK_AFIO 5
+#endif
+#if (I2C_PORT == 2) && (I2C_DATA_PIN == STM32IO_B14)
+#define I2C_DATA_AFIO 5
+#endif
+
 
 #define I2C_IRQ __helper__(I2C, I2C_PORT, _EV_IRQn)
 #define I2C_ISR __helper__(I2C, I2C_PORT, _EV_IRQHandler)
