@@ -8,6 +8,24 @@
 
 # Changelog
 
+## [1.9.0] - unreleased
+
+### Added
+
+- added support for STM32F0 core (#681)
+- new file system module. A C wrapper to work with files (in Flash or external memories) (#674)
+- new generic, customizable ring buffer for communications (#676)
+- new option to run RP2040 in multicore mode (experimental) (#677)
+
+### Changed
+
+- force DSS mode in THC tool mode (#625)
+- decouple step encoder position from the interpolator step position (#630)
+
+### Fixed
+
+- fix systems sync after HMap generation and retration motions between probes (#680)
+
 ## [1.9.0-beta] - 11-04-2024
 
 ### Added
@@ -1590,6 +1608,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.9.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.9.0
 [1.9.0-beta]: https://github.com/Paciente8159/uCNC/releases/tag/v1.9.0-beta
 [1.8.11]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.11
 [1.8.10]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.10

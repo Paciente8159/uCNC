@@ -63,6 +63,7 @@ You can also reach me at µCNC discord channel
 
 Version 1.9 added the following new major features.
 
+- added support for STM32F0 MCU and an initial Bluepill example board.
 - new File System module. This new file system module acts like a C wrapper for accessing both Flash memory files and external memories (like SD cards), and abstracts the underlaying file systems used (LittleFS, SPIFFS, FatFs, etc...). It also integrates the File System with other modules such as System Menu and Endpoints to allow quicker and transversal development of features accross different MCU
 - new generic ring buffer in utils.h. This adds flexibility to make use of generic ring buffer implementations (via macros or pure C implementation with functions, or using custom SDK implementations for a particular architecture/use case). One example is to adapt generic ring buffer access to a multicore MCU.
 - new multicore mode for RP2040, using generic ring buffer implementation supported no multicore queue. This allows running all µCNC communications tasks (USB, UART, WIFI, etc...) in one core, while the other core is dedicated to parsing and executing GCode commands.
@@ -240,6 +241,8 @@ It can run on:
 - ESP32 - v1.5.x (supports wifi connection via telnet and bluetooth)
 - NXP LPC1768/9 - v1.5.x (eeprom emulation and analog still being developed)
 - RP2040 - v1.6.x (supports wifi connection via telnet and bluetooth)
+- RP2040 - v1.9.x (added multicore mode)
+- STM32F0 (like the Bluepill) - v1.9.x
 - Windows PC (used for simulation/debugging only - ISR on Windows doesn't allow to use it as a real alternative)
 
 ### µCNC current supported kinematics
