@@ -28,7 +28,8 @@
       "jlink",
       "stlink",
       "blackmagic",
-      "serial"
+      "serial",
+      "cmsis-dap"
     ]
   },
   "url": "https://doc.riot-os.org/group__boards__bluepill-stm32f030c8.html",
