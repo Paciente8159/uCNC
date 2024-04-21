@@ -264,7 +264,7 @@ static void running_file_clear()
 
 #ifdef ENABLE_PARSER_MODULES
 
-#ifdef ENABLE_MAIN_LOOP_MODULE
+#ifdef ENABLE_MAIN_LOOP_MODULES
 bool running_file_loop(void *args)
 {
 	if (fs_running_file)
@@ -1015,12 +1015,6 @@ DECL_MODULE(file_system)
 #endif
 #else
 #warning "Parser extensions are not enabled. File commands will not work."
-#endif
-
-#ifdef ENABLE_MAIN_LOOP_MODULES
-	ADD_EVENT_LISTENER(cnc_dotasks, running_file_loop);
-#else
-#warning "Main loop extensions are not enabled. File running might be slower."
 #endif
 }
 
