@@ -1266,6 +1266,10 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 
 	return STATUS_OK;
 }
+
+void mc_clear_hmap(void){
+	memset(hmap_offsets, 0, sizeof(hmap_offsets));
+}
 #endif
 
 #ifdef ENABLE_MOTION_CONTROL_PLANNER_HIJACKING
