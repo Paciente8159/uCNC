@@ -1784,7 +1784,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 				}
 				else{
 					// clear the map
-					memset(hmap_offsets, 0, sizeof(hmap_offsets));
+					mc_clear_hmap();
 					new_state->groups.height_map_active = 0;
 				}
 			}
