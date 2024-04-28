@@ -1821,6 +1821,10 @@ extern "C"
 #define CTRL_SCHED_CHECK_VAL (1 << (CTRL_SCHED_CHECK))
 #endif
 
+#ifdef DISABLE_RTC_CODE
+#undef ENABLE_ITP_FEED_TASK
+#endif
+
 #ifndef BRESENHAM_16BIT
 	typedef uint32_t step_t;
 #define MAX_STEPS_PER_LINE_BITS (32 - (2 + DSS_MAX_OVERSAMPLING))

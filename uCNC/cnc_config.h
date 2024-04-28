@@ -593,6 +593,12 @@ extern "C"
 
 	// #define ENABLE_FAST_MATH
 
+	/**
+	 * EXPERIMENTAL! Uncomment to enable itp buffer feeding to be run as a task
+	 * that runs inside the RTC ISR. This ensures ITP starving prevention
+	 * */
+	// #define ENABLE_ITP_FEED_TASK
+
 /**
  *
  * HAL offsets
