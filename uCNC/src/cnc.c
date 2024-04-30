@@ -245,13 +245,8 @@ bool cnc_dotasks(void)
 		return false;
 	}
 
-	if (cnc_has_alarm())
-	{
-		return !cnc_get_exec_state(EXEC_KILL);
-	}
-
 	// µCNC already in error loop. No point in sending the alarms
-	if (cnc_state.loop_state >= LOOP_FAULT)
+	if (cnc_has_alarm() || (cnc_state.loop_state >= LOOP_FAULT))
 	{
 		return !cnc_get_exec_state(EXEC_KILL);
 	}
@@ -354,30 +349,35 @@ MCU_CALLBACK void mcu_rtc_cb(uint32_t millis)
 	uint8_t mls = (uint8_t)(0xff & millis);
 	if ((mls & CTRL_SCHED_CHECK_MASK) == CTRL_SCHED_CHECK_VAL)
 	{
-		if (!cnc_lock_itp)
-		{
-			cnc_lock_itp = 1;
 #ifndef ENABLE_RT_PROBE_CHECKING
-			mcu_probe_changed_cb();
+		mcu_probe_changed_cb();
 #endif
 #ifndef ENABLE_RT_LIMITS_CHECKING
-			mcu_limits_changed_cb();
+		mcu_limits_changed_cb();
 #endif
-			mcu_controls_changed_cb();
+		mcu_controls_changed_cb();
 #if (DIN_ONCHANGE_MASK != 0 && ENCODERS < 1)
-			// extra call in case generic inputs are running with ISR disabled. Encoders need propper ISR to work.
-			mcu_inputs_changed_cb();
+		// extra call in case generic inputs are running with ISR disabled. Encoders need propper ISR to work.
+		mcu_inputs_changed_cb();
 #endif
-#ifdef ENABLE_ITP_FEED_TASK
-			if ((cnc_state.loop_state == LOOP_RUNNING) && (cnc_state.alarm == EXEC_ALARM_NOALARM) && !cnc_get_exec_state(EXEC_INTERLOCKING_FAIL))
-			{
-				itp_run();
-			}
-#endif
-
-			cnc_lock_itp = 0;
-		}
 	}
+
+#ifdef ENABLE_ITP_FEED_TASK
+	static uint8_t itp_feed_counter = (uint8_t)CLAMP(1, (1000 / INTERPOLATOR_FREQ), 255);
+	mls = itp_feed_counter;
+	if (!cnc_lock_itp && !mls--)
+	{
+		cnc_lock_itp = 1;
+		if ((cnc_state.loop_state == LOOP_RUNNING) && (cnc_state.alarm == EXEC_ALARM_NOALARM) && !cnc_get_exec_state(EXEC_INTERLOCKING_FAIL))
+		{
+			itp_run();
+		}
+		mls = (uint8_t)CLAMP(1, (1000 / INTERPOLATOR_FREQ), 255);
+		cnc_lock_itp = 0;
+	}
+
+	itp_feed_counter = mls;
+#endif
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
 	if (!cnc_get_exec_state(EXEC_ALARM))

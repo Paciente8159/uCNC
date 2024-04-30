@@ -28,11 +28,6 @@
 #define INTERPOLATOR_BUFFER_SIZE 5 // number of windows in the buffer
 #endif
 
-// sets the sample frequency for the Riemann sum integral
-#ifndef INTERPOLATOR_FREQ
-#define INTERPOLATOR_FREQ 100
-#endif
-
 #define INTERPOLATOR_DELTA_T (1.0f / INTERPOLATOR_FREQ)
 // determines the size of the maximum riemann sample that can be performed taking in acount the maximum allowable step rate
 #define INTERPOLATOR_DELTA_CONST_T (MIN((1.0f / INTERPOLATOR_BUFFER_SIZE), ((float)(0xFFFF >> DSS_MAX_OVERSAMPLING) / (float)F_STEP_MAX)))
