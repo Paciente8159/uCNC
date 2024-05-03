@@ -6,7 +6,20 @@
 
 # Changelog
 
-# Changelog
+## [1.9.1] - 03-05-2024
+
+### Added
+
+- added new option to run the step generator interpolator in an ISR task and outside of the main loop. This should ensures the interpolator and the step ISR never gets starved and might aid to future code simplification (#685)
+
+### Changed
+
+- modified platformIO configuration files to include common libraries via the main platform.ini file (like u8g2)
+
+### Fixed
+
+- fixed G39/Height map clearing calls (#683)
+- fixed file system typo that caused to build errors (#682)
 
 ## [1.9.0] - 18-04-2024
 
@@ -1608,6 +1621,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.9.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.9.1
 [1.9.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.9.0
 [1.9.0-beta]: https://github.com/Paciente8159/uCNC/releases/tag/v1.9.0-beta
 [1.8.11]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.11
