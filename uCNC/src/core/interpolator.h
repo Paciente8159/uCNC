@@ -45,6 +45,11 @@ extern "C"
 #define ITP_STEP_MODE_REALTIME 2
 #define ITP_STEP_MODE_SYNC 4
 
+// sets the sample frequency for the Riemann sum integral
+#ifndef INTERPOLATOR_FREQ
+#define INTERPOLATOR_FREQ 100
+#endif
+
 	// contains data of the block being executed by the pulse routine
 	// this block has the necessary data to execute the Bresenham line algorithm
 	typedef struct itp_blk_

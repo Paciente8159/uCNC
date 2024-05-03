@@ -486,13 +486,20 @@ extern "C"
 	// #define FORCE_SOFT_POLLING
 
 	/**
-	 * Runs a check for state change inside the scheduler. This is a failsafe
-	 * check to pin ISR checking The value sets the frequency of this safety
+	 * Runs a check for state change inside the RTC ISR/task. This is a failsafe
+	 * check monitor the pins in a regular interval. The value sets the frequency of this safety
 	 * check that is executed every 2^(CTRL_SCHED_CHECK) milliseconds. A
 	 * negative value will disable this feature. The maximum is 7
 	 * */
 
 #define CTRL_SCHED_CHECK 4
+
+	/**
+	 * EXPERIMENTAL! Uncomment to enable itp step generation to run inside the RTC ISR/task.
+	 * This ensures ITP starving prevention. Usually this will be executed at the same sample
+	 * rate as the interpolator with an upper bound of 1Khz and a lower bound of 3Hz
+	 * */
+// #define ENABLE_ITP_FEED_TASK
 
 /**
  * Uncomment to invert Emergency stop button
