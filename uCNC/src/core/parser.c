@@ -1746,9 +1746,9 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 #endif
 #ifndef DISABLE_PROBING_SUPPORT
 		case G38: // G38.2
-				  // G38.3
-				  // G38.4
-				  // G38.5
+							// G38.3
+							// G38.4
+							// G38.5
 			probe_flags = (new_state->groups.motion_mantissa > 3) ? 1 : 0;
 			probe_flags |= (new_state->groups.motion_mantissa & 0x01) ? 2 : 0;
 
@@ -1782,7 +1782,8 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 				{
 					new_state->groups.height_map_active = 1;
 				}
-				else{
+				else
+				{
 					// clear the map
 					mc_clear_hmap();
 					new_state->groups.height_map_active = 0;
@@ -1857,12 +1858,28 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 	return STATUS_OK;
 }
 
+#ifdef ENABLE_PARSER_MODULES
+CREATE_HOOK(parser_custom_interpreter);
+#endif
+
 /*
 	Parse the next gcode line available in the buffer and send it to the motion controller
 */
 static uint8_t parser_gcode_command(bool is_jogging)
 {
 	uint8_t result = 0;
+
+#ifdef ENABLE_PARSER_MODULES
+	if (!is_jogging)
+	{
+		if (ASSERT_HOOK(parser_custom_interpreter))
+		{
+			HOOK_INVOKE(parser_custom_interpreter, &result);
+			return result;
+		}
+	}
+#endif
+
 	// initializes new state
 	parser_state_t next_state = {0};
 	parser_words_t words = {0};
@@ -2639,15 +2656,15 @@ void parser_reset(bool stopgroup_only)
 	{
 		return;
 	}
-	parser_state.groups.coord_system = G54;				  // G54
-	parser_state.groups.plane = G17;					  // G17
-	parser_state.groups.feed_speed_override = M48;		  // M48
+	parser_state.groups.coord_system = G54;								// G54
+	parser_state.groups.plane = G17;											// G17
+	parser_state.groups.feed_speed_override = M48;				// M48
 	parser_state.groups.cutter_radius_compensation = G40; // G40
-	parser_state.groups.distance_mode = G90;			  // G90
-	parser_state.groups.feedrate_mode = G94;			  // G94
-	parser_state.groups.tlo_mode = G49;					  // G49
+	parser_state.groups.distance_mode = G90;							// G90
+	parser_state.groups.feedrate_mode = G94;							// G94
+	parser_state.groups.tlo_mode = G49;										// G49
 #if TOOL_COUNT > 0
-	parser_state.groups.coolant = M9;		  // M9
+	parser_state.groups.coolant = M9;					// M9
 	parser_state.groups.spindle_turning = M5; // M5
 	parser_state.groups.tool_change = 1;
 #if TOOL_COUNT > 1
@@ -2655,8 +2672,8 @@ void parser_reset(bool stopgroup_only)
 #endif
 	parser_state.groups.path_mode = G61;
 #endif
-	parser_state.groups.motion = G1;											   // G1
-	parser_state.groups.units = G21;											   // G21
+	parser_state.groups.motion = G1;																							 // G1
+	parser_state.groups.units = G21;																							 // G21
 	memset(parser_parameters.g92_offset, 0, sizeof(parser_parameters.g92_offset)); // G92.2
 	parser_parameters.tool_length_offset = 0;
 	parser_wco_counter = 0;

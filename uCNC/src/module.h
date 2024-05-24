@@ -119,6 +119,7 @@ extern "C"
 #define CREATE_HOOK(name) name##_delegate_t name##_cb
 #define HOOK_ATTACH_CALLBACK(name, cb) name##_cb = &cb
 #define HOOK_RELEASE(name) name##_cb = NULL
+#define ASSERT_HOOK(name) (name##_cb != NULL)
 
 #define HOOK_INVOKE(name, ...) \
 	if (name##_cb)               \

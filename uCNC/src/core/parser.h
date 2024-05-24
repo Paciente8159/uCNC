@@ -369,6 +369,12 @@ extern "C"
 
 	// event_parser_reset_handler
 	DECL_EVENT_HANDLER(parser_reset);
+
+	// custom parser hook to bypass gcode parser/interpreter
+	// this allows to run a completly custom interpreter for other types of codes
+	// all commands will be modeless (unless custom state machine is implemented with the interpreter)
+	// Grbl commands will continue to be executed as usual
+	DECL_HOOK(parser_custom_interpreter, uint8_t*);
 #endif
 
 #ifdef __cplusplus
