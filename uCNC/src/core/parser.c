@@ -1858,7 +1858,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 	return STATUS_OK;
 }
 
-#ifdef ENABLE_PARSER_MODULES
+#ifdef ENABLE_CUSTOM_PARSER
 CREATE_HOOK(parser_custom_interpreter);
 #endif
 
@@ -1869,7 +1869,7 @@ static uint8_t parser_gcode_command(bool is_jogging)
 {
 	uint8_t result = 0;
 
-#ifdef ENABLE_PARSER_MODULES
+#ifdef ENABLE_CUSTOM_PARSER
 	if (!is_jogging)
 	{
 		if (ASSERT_HOOK(parser_custom_interpreter))

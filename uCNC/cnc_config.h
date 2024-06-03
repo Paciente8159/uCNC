@@ -285,6 +285,16 @@ extern "C"
 	// #define GCODE_ACCEPT_WORD_E
 
 	/**
+	 * 
+	 * Uncomment to allow a custom parser
+	 * Custom parser allows implementation of a complete parser with some limitations
+	 * - real-time commands and Grbl ($) commands will continue to be processed
+	 * - custom parsing should be restricted to text format (no binary)
+	 * 
+	 * **/
+	// #define ENABLE_CUSTOM_PARSER
+
+	/**
 	 * Shrink µCNC
 	 * It's possible to shrink µCNC by disable some core features:
 	 *   - arc support (G2,G3,G17,G18,G19)
