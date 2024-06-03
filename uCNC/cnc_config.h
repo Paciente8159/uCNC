@@ -286,13 +286,24 @@ extern "C"
 
 	/**
 	 * 
-	 * Uncomment to allow a custom parser
-	 * Custom parser allows implementation of a complete parser with some limitations
-	 * - real-time commands and Grbl ($) commands will continue to be processed
+	 * Uncomment to allow a custom language parser
+	 * Custom parser allows implementation text based custom code processor (not NGC)
+	 * - realtime commands and Grbl ($) commands will continue to be processed
 	 * - custom parsing should be restricted to text format (no binary)
 	 * 
 	 * **/
 	// #define ENABLE_CUSTOM_PARSER
+
+	/**
+	 * 
+	 * Uncomment to implement a custom NGC next state tokenizer/parser
+	 * This allows replacing the µCNC GCode command fetch that converts
+	 * GCode to the next machine state to use a custom tokenizer/parser
+	 * Can be used to implement a more advanced parser for 32-bit MCUs
+	 * that would allow expressions, sub routines, etc...
+	 *  
+	 * **/
+	// #define ENABLE_CUSTOM_NGC_PARSER
 
 	/**
 	 * Shrink µCNC

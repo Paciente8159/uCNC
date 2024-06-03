@@ -1888,8 +1888,13 @@ static uint8_t parser_gcode_command(bool is_jogging)
 	memcpy(&next_state, &parser_state, sizeof(parser_state_t));
 	next_state.groups.nonmodal = 0; // reset nonmodal
 
-	// fetch command
+// fetch command
+#ifdef ENABLE_CUSTOM_TOKENIZER
+	result = parser_get_next_state(&next_state, &words, &cmd);
+#else
 	result = parser_fetch_command(&next_state, &words, &cmd);
+#endif
+
 	if (result != STATUS_OK)
 	{
 		return result;
