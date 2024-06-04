@@ -1746,9 +1746,9 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 #endif
 #ifndef DISABLE_PROBING_SUPPORT
 		case G38: // G38.2
-				  // G38.3
-				  // G38.4
-				  // G38.5
+							// G38.3
+							// G38.4
+							// G38.5
 			probe_flags = (new_state->groups.motion_mantissa > 3) ? 1 : 0;
 			probe_flags |= (new_state->groups.motion_mantissa & 0x01) ? 2 : 0;
 
@@ -1782,7 +1782,8 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 				{
 					new_state->groups.height_map_active = 1;
 				}
-				else{
+				else
+				{
 					// clear the map
 					mc_clear_hmap();
 					new_state->groups.height_map_active = 0;
@@ -1916,6 +1917,14 @@ static uint8_t parser_gcode_command(bool is_jogging)
 	If the number is an integer the isinteger flag is set
 	The string pointer is also advanced to the next position
 */
+#ifdef ENABLE_RS274NGC_EXPRESSIONS
+typedef struct exp_eval_
+{
+	uint8_t stack_depth;
+	uint8_t binary_op;
+}
+#endif
+
 uint8_t parser_get_float(float *value)
 {
 	uint32_t intval = 0;
@@ -1926,6 +1935,7 @@ uint8_t parser_get_float(float *value)
 
 	*value = 0;
 
+#ifndef ENABLE_RS274NGC_EXPRESSIONS
 	if (c == '-' || c == '+')
 	{
 		if (c == '-')
@@ -1936,10 +1946,17 @@ uint8_t parser_get_float(float *value)
 		serial_putc(serial_getc());
 #else
 		serial_getc();
-
 #endif
 		c = parser_get_next_preprocessed(true);
 	}
+#else
+	switch(c){
+		case '[':
+		break;
+		case 'acos':
+		break;
+	}
+#endif
 
 	for (;;)
 	{
@@ -2102,6 +2119,23 @@ static uint8_t parser_get_token(uint8_t *word, float *value)
 		return STATUS_OK;
 	case OVF:
 		return STATUS_OVERFLOW;
+#ifdef ENABLE_RS274NGC_EXPRESSIONS
+	case '#':
+		if (parser_get_float(value) != NUMBER_OK)
+		{
+			return STATUS_INVALID_STATEMENT;
+		}
+		c = parser_get_next_preprocessed(false);
+		if (c != '=')
+		{
+			return STATUS_INVALID_STATEMENT;
+		}
+		if (!parser_get_float(value))
+		{
+			return STATUS_BAD_NUMBER_FORMAT;
+		}
+		break;
+#endif
 	default:
 #ifdef ECHO_CMD
 		serial_putc(c);
@@ -2639,15 +2673,15 @@ void parser_reset(bool stopgroup_only)
 	{
 		return;
 	}
-	parser_state.groups.coord_system = G54;				  // G54
-	parser_state.groups.plane = G17;					  // G17
-	parser_state.groups.feed_speed_override = M48;		  // M48
+	parser_state.groups.coord_system = G54;								// G54
+	parser_state.groups.plane = G17;											// G17
+	parser_state.groups.feed_speed_override = M48;				// M48
 	parser_state.groups.cutter_radius_compensation = G40; // G40
-	parser_state.groups.distance_mode = G90;			  // G90
-	parser_state.groups.feedrate_mode = G94;			  // G94
-	parser_state.groups.tlo_mode = G49;					  // G49
+	parser_state.groups.distance_mode = G90;							// G90
+	parser_state.groups.feedrate_mode = G94;							// G94
+	parser_state.groups.tlo_mode = G49;										// G49
 #if TOOL_COUNT > 0
-	parser_state.groups.coolant = M9;		  // M9
+	parser_state.groups.coolant = M9;					// M9
 	parser_state.groups.spindle_turning = M5; // M5
 	parser_state.groups.tool_change = 1;
 #if TOOL_COUNT > 1
@@ -2655,8 +2689,8 @@ void parser_reset(bool stopgroup_only)
 #endif
 	parser_state.groups.path_mode = G61;
 #endif
-	parser_state.groups.motion = G1;											   // G1
-	parser_state.groups.units = G21;											   // G21
+	parser_state.groups.motion = G1;																							 // G1
+	parser_state.groups.units = G21;																							 // G21
 	memset(parser_parameters.g92_offset, 0, sizeof(parser_parameters.g92_offset)); // G92.2
 	parser_parameters.tool_length_offset = 0;
 	parser_wco_counter = 0;
