@@ -435,6 +435,8 @@ extern "C"
 #define __FALL_THROUGH__
 #endif /* __GNUC__ >= 7 */
 
+#define TOUPPER(c) ((c >= 'a' && c <= 'z') ? (c - 32) : c)
+
 #ifdef __cplusplus
 }
 #endif

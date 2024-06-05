@@ -38,17 +38,27 @@ static float g92permanentoffset[AXIS_COUNT];
 static int32_t rt_probe_step_pos[STEPPER_COUNT];
 static float parser_last_pos[AXIS_COUNT];
 
+#ifdef ENABLE_RS274NGC_EXPRESSIONS
+#ifndef RS274NGC_MAX_USER_VARS
+#define RS274NGC_MAX_USER_VARS 16
+#endif
+static float parser_user_vars[RS274NGC_MAX_USER_VARS];
+#endif
+
 static uint8_t parser_get_next_preprocessed(bool peek);
 FORCEINLINE static void parser_get_comment(uint8_t start_char);
 FORCEINLINE static uint8_t parser_get_token(uint8_t *word, float *value);
 FORCEINLINE static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t *new_state, parser_cmd_explicit_t *cmd);
 FORCEINLINE static uint8_t parser_mcode_word(uint8_t code, uint8_t mantissa, parser_state_t *new_state, parser_cmd_explicit_t *cmd);
 FORCEINLINE static uint8_t parser_letter_word(uint8_t c, float value, uint8_t mantissa, parser_words_t *words, parser_cmd_explicit_t *cmd);
-static uint8_t parse_grbl_exec_code(uint8_t code);
+static uint8_t parser_grbl_exec_code(uint8_t code);
 static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
 static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
 static uint8_t parser_grbl_command(void);
 FORCEINLINE static uint8_t parser_gcode_command(bool is_jogging);
+#ifdef ENABLE_RS274NGC_EXPRESSIONS
+static uint8_t parser_eval_expression(float *value);
+#endif
 
 #ifdef ENABLE_CANNED_CYCLES
 uint8_t parser_exec_command_block(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
@@ -332,10 +342,7 @@ static uint8_t parser_grbl_command(void)
 	{
 		c = serial_peek();
 		// toupper
-		if (c >= 'a' && c <= 'z')
-		{
-			c -= 32;
-		}
+		c = TOUPPER(c);
 
 		if (!(c >= 'A' && c <= 'Z'))
 		{
@@ -580,7 +587,7 @@ static uint8_t parser_grbl_command(void)
 	return error;
 }
 
-static uint8_t parse_grbl_exec_code(uint8_t code)
+static uint8_t parser_grbl_exec_code(uint8_t code)
 {
 
 	switch (code)
@@ -1917,115 +1924,49 @@ static uint8_t parser_gcode_command(bool is_jogging)
 	If the number is an integer the isinteger flag is set
 	The string pointer is also advanced to the next position
 */
-#ifdef ENABLE_RS274NGC_EXPRESSIONS
+// #ifdef ENABLE_RS274NGC_EXPRESSIONS
+#define MAX_PARSER_STACK_DEPTH 15
 typedef struct exp_eval_
 {
 	uint8_t stack_depth;
 	uint8_t binary_op;
-}
-#endif
+} exp_eval_t;
+exp_eval_t stack_op[MAX_PARSER_STACK_DEPTH];
+uint8_t stack_depth;
+// #endif
 
-uint8_t parser_get_float(float *value)
+static uint8_t parser_eval_expression(float *value)
 {
-	uint32_t intval = 0;
-	uint8_t fpcount = 0;
-	uint8_t result = NUMBER_UNDEF;
-
 	uint8_t c = parser_get_next_preprocessed(true);
-
-	*value = 0;
-
-#ifndef ENABLE_RS274NGC_EXPRESSIONS
-	if (c == '-' || c == '+')
+	float rhs = 0;
+	switch (c)
 	{
-		if (c == '-')
-		{
-			result |= NUMBER_ISNEGATIVE;
-		}
-#ifdef ECHO_CMD
-		serial_putc(serial_getc());
-#else
-		serial_getc();
-#endif
-		c = parser_get_next_preprocessed(true);
-	}
-#else
-	switch(c){
-		case '[':
+	case '[':
+		// new context
+		stack_depth++;
+		return parser_eval_expression(value);
+		// acos, asin, atan, and
+	case 'A':
+	// cos, ceil
+	case 'C':
+	// exp
+	case 'E':
+	// floor, fix, fup
+	case 'F':
+	// MOD
+	case 'M':
+	// log
+	case 'L':
+	// round
+	case 'R':
+	// sin, sqrt
+	case 'S':
+	// tan
+	case 'T':
 		break;
-		case 'acos':
+	default:
 		break;
 	}
-#endif
-
-	for (;;)
-	{
-		uint8_t digit = (uint8_t)c - 48;
-		if (digit <= 9)
-		{
-			intval = fast_int_mul10(intval) + digit;
-			if (fpcount)
-			{
-				fpcount++;
-			}
-
-			result |= NUMBER_OK;
-		}
-		else if (c == '.' && !fpcount)
-		{
-			fpcount++;
-			result |= NUMBER_ISFLOAT;
-		}
-		else if (c == ' ')
-		{
-			// ignore white chars in the middle of numbers
-		}
-		else
-		{
-			if (!(result & NUMBER_OK))
-			{
-				return NUMBER_UNDEF;
-			}
-			break;
-		}
-
-#ifdef ECHO_CMD
-		serial_putc(serial_getc());
-#else
-		serial_getc();
-
-#endif
-		c = parser_get_next_preprocessed(true);
-	}
-
-	*value = (float)intval;
-	if (fpcount)
-	{
-		fpcount--;
-	}
-
-	do
-	{
-		if (fpcount >= 2)
-		{
-			*value *= 0.01f;
-			fpcount -= 2;
-		}
-
-		if (fpcount >= 1)
-		{
-			*value *= 0.1f;
-			fpcount -= 1;
-		}
-
-	} while (fpcount != 0);
-
-	if (result & NUMBER_ISNEGATIVE)
-	{
-		*value = -*value;
-	}
-
-	return result;
 }
 
 /*
@@ -2101,16 +2042,192 @@ static void parser_get_comment(uint8_t start_char)
 	}
 }
 
+static uint8_t parser_get_next_preprocessed(bool peek)
+{
+	uint8_t c = serial_peek();
+
+	while (c == ' ' || c == '(' || c == ';')
+	{
+		serial_getc();
+		if (c != ' ')
+		{
+			parser_get_comment(c);
+		}
+		c = serial_peek();
+	}
+
+	if (!peek)
+	{
+		serial_getc();
+#ifdef ECHO_CMD
+		serial_putc(c);
+#endif
+	}
+
+	return c;
+}
+
+#define OP_ADD 1
+#define OP_SUB 2
+#define OP_MUL 3
+#define OP_DIV 4
+#define OP_POW 5
+
+uint8_t parser_get_float(float *value)
+{
+	uint32_t intval = 0;
+	uint8_t fpcount = 0;
+	uint8_t result = NUMBER_UNDEF;
+
+	uint8_t c = parser_get_next_preprocessed(true);
+
+#ifndef ENABLE_RS274NGC_EXPRESSIONS
+	if (c == '-' || c == '+')
+	{
+		if (c == '-')
+		{
+			result |= NUMBER_ISNEGATIVE;
+		}
+		parser_get_next_preprocessed(false);
+		c = parser_get_next_preprocessed(true);
+	}
+#else
+	float lhs = *value;
+	uint8_t operation = 0;
+	switch (c)
+	{
+	case '[':
+		parser_get_next_preprocessed(false);
+		return parser_get_float(value);
+	case ']':
+		parser_get_next_preprocessed(false);
+		return NUMBER_OK;
+	case '#':
+		if(parser_get_float(value)!=NUMBER_OK){
+			return STATUS_INVALID_STATEMENT;
+		}
+		*value = parser_user_vars[((uint8_t)*value)-1];
+
+	parser_get_next_preprocessed(false);
+	break;
+	case '+':
+		operation = OP_ADD;
+		parser_get_next_preprocessed(false);
+		break;
+	case '-':
+		operation = OP_SUB;
+		parser_get_next_preprocessed(false);
+		break;
+	case '*':
+		operation = OP_MUL;
+		parser_get_next_preprocessed(false);
+		if (parser_get_next_preprocessed(true) == '*')
+		{
+			operation = OP_POW;
+			parser_get_next_preprocessed(false);
+		}
+		break;
+	case '/':
+		operation = OP_DIV;
+		parser_get_next_preprocessed(false);
+		break;
+	default:
+
+		break;
+	}
+#endif
+
+	*value = 0;
+	for (;;)
+	{
+		uint8_t digit = (uint8_t)c - 48;
+		if (digit <= 9)
+		{
+			intval = fast_int_mul10(intval) + digit;
+			if (fpcount)
+			{
+				fpcount++;
+			}
+
+			result |= NUMBER_OK;
+		}
+		else if (c == '.' && !fpcount)
+		{
+			fpcount++;
+			result |= NUMBER_ISFLOAT;
+		}
+		else if (c == ' ')
+		{
+			// ignore white chars in the middle of numbers
+		}
+		else
+		{
+			if (!(result & NUMBER_OK))
+			{
+				return NUMBER_UNDEF;
+			}
+			break;
+		}
+
+		parser_get_next_preprocessed(false);
+		c = parser_get_next_preprocessed(true);
+	}
+
+	*value = (float)intval;
+	if (fpcount)
+	{
+		fpcount--;
+	}
+
+	do
+	{
+		if (fpcount >= 2)
+		{
+			*value *= 0.01f;
+			fpcount -= 2;
+		}
+
+		if (fpcount >= 1)
+		{
+			*value *= 0.1f;
+			fpcount -= 1;
+		}
+
+	} while (fpcount != 0);
+
+	if (result & NUMBER_ISNEGATIVE)
+	{
+		*value = -*value;
+	}
+
+#ifdef ENABLE_RS274NGC_EXPRESSIONS
+	switch (operation)
+	{
+	case OP_ADD:
+		parser_get_float(value);
+		*value += lhs;
+		break;
+	case OP_SUB:
+		parser_get_float(value);
+		*value = lhs - *value;
+		break;
+	}
+#endif
+
+	return result;
+}
+
 static uint8_t parser_get_token(uint8_t *word, float *value)
 {
+#ifndef ENABLE_RS274NGC_EXPRESSIONS
 	// this flushes leading white chars and also takes care of processing comments
 	uint8_t c = parser_get_next_preprocessed(false);
+#else
+
+#endif
 
 	// if other uint8_t starts tokenization
-	if (c >= 'a' && c <= 'z')
-	{
-		c -= 32; // uppercase
-	}
+	c = TOUPPER(c);
 
 	*word = c;
 	switch (c)
@@ -2137,9 +2254,6 @@ static uint8_t parser_get_token(uint8_t *word, float *value)
 		break;
 #endif
 	default:
-#ifdef ECHO_CMD
-		serial_putc(c);
-#endif
 		if (c >= 'A' && c <= 'Z') // invalid recognized uint8_t
 		{
 			if (!parser_get_float(value))
@@ -2624,28 +2738,6 @@ static uint8_t parser_letter_word(uint8_t c, float value, uint8_t mantissa, pars
 	cmd->words = new_words;
 
 	return STATUS_OK;
-}
-
-static uint8_t parser_get_next_preprocessed(bool peek)
-{
-	uint8_t c = serial_peek();
-
-	while (c == ' ' || c == '(' || c == ';')
-	{
-		serial_getc();
-		if (c != ' ')
-		{
-			parser_get_comment(c);
-		}
-		c = serial_peek();
-	}
-
-	if (!peek)
-	{
-		serial_getc();
-	}
-
-	return c;
 }
 
 void parser_discard_command(void)
