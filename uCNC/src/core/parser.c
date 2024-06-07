@@ -50,6 +50,8 @@ typedef struct parser_stack_
 	float lhs;
 	uint8_t op;
 } parser_stack_t;
+char parser_backtrack;
+float parser_user_vars[RS274NGC_MAX_USER_VARS];
 #endif
 
 static uint8_t parser_get_next_preprocessed(bool peek);
@@ -2041,28 +2043,32 @@ static uint8_t parser_get_next_preprocessed(bool peek)
 #define OP_SUB (OP_LEVEL0 | 2)
 #define OP_MUL (OP_LEVEL1 | 1)
 #define OP_DIV (OP_LEVEL2 | 2)
+#define OP_MOD (OP_LEVEL2 | 3)
 #define OP_POW (OP_LEVEL3 | 1)
 #define OP_SQRT (OP_LEVEL3 | 2)
-#define OP_MOD (OP_LEVEL2 | 3)
 #define OP_AND (OP_LEVEL0 | 3)
 #define OP_OR (OP_LEVEL0 | 4)
 #define OP_XOR (OP_LEVEL0 | 5)
-#define OP_COS (OP_LEVEL4 | 1)
-#define OP_SIN (OP_LEVEL4 | 2)
-#define OP_TAN (OP_LEVEL4 | 3)
-#define OP_ACOS (OP_LEVEL4 | 4)
-#define OP_ASIN (OP_LEVEL4 | 5)
-#define OP_ATAN (OP_LEVEL4 | 6)
-#define OP_EXP (OP_LEVEL4 | 7)
-#define OP_LN (OP_LEVEL4 | 8)
-#define OP_ABS (OP_LEVEL4 | 9)
-#define OP_FIX (OP_LEVEL4 | 10)
-#define OP_FUP (OP_LEVEL4 | 11)
-#define OP_ROUND (OP_LEVEL4 | 12)
-#define OP_GROUP_START (OP_LEVEL6 | 1)
-#define OP_GROUP_END (OP_LEVEL6 | 2)
+#define OP_GROUP_END (OP_LEVEL4 | 0)
+#define OP_GROUP_START (OP_LEVEL4 | 1)
+#define OP_NEG (OP_LEVEL4 | 10)
+#define OP_COS (OP_LEVEL4 | 20)
+#define OP_SIN (OP_LEVEL4 | 21)
+#define OP_TAN (OP_LEVEL4 | 22)
+#define OP_ACOS (OP_LEVEL4 | 23)
+#define OP_ASIN (OP_LEVEL4 | 24)
+#define OP_ATAN (OP_LEVEL4 | 25)
+#define OP_EXP (OP_LEVEL4 | 26)
+#define OP_LN (OP_LEVEL4 | 27)
+#define OP_ABS (OP_LEVEL4 | 28)
+#define OP_FIX (OP_LEVEL4 | 29)
+#define OP_FUP (OP_LEVEL4 | 30)
+#define OP_ROUND (OP_LEVEL4 | 31)
+
+#define OP_WORD 201
 #define OP_PARSER_VAR 202
 #define OP_REAL 203
+#define OP_ENDLINE 255
 
 float parser_get_var(float var)
 {
@@ -2094,17 +2100,17 @@ float parser_exec_op(parser_stack_t stack, float rhs)
 	case OP_XOR:
 		return (float)((int64_t)stack.lhs ^ (int64_t)rhs);
 	case OP_COS:
-		return cosf(rhs);
+		return cosf(rhs * DEG_RAD_MULT);
 	case OP_SIN:
-		return sinf(rhs);
+		return sinf(rhs * DEG_RAD_MULT);
 	case OP_TAN:
-		return tanf(rhs);
+		return tanf(rhs * DEG_RAD_MULT);
 	case OP_ACOS:
-		return acosf(rhs);
+		return RAD_DEG_MULT * acosf(rhs);
 	case OP_ASIN:
-		return asinf(rhs);
+		return RAD_DEG_MULT * asinf(rhs);
 	case OP_ATAN:
-		return atanf(rhs);
+		return RAD_DEG_MULT * atanf(rhs);
 	case OP_EXP:
 		return expf(rhs);
 	case OP_LN:
@@ -2117,7 +2123,13 @@ float parser_exec_op(parser_stack_t stack, float rhs)
 		return ceilf(rhs);
 	case OP_ROUND:
 		return roundf(rhs);
+	case OP_NEG:
+		return -rhs;
+	case OP_PARSER_VAR:
+		if(()rhs)
+		return parser_user_vars
 	case OP_GROUP_END:
+	default:
 		return rhs;
 	}
 }
@@ -2130,6 +2142,8 @@ uint8_t parser_get_operation(void)
 
 	switch (c)
 	{
+	case EOL:
+		return OP_ENDLINE;
 	case '[':
 		result = OP_GROUP_START;
 		break;
@@ -2153,7 +2167,25 @@ uint8_t parser_get_operation(void)
 		result = OP_DIV;
 		break;
 	case '-':
-		result = OP_SUB;
+		switch (parser_backtrack)
+		{
+		case '[':
+		case '*':
+		case '/':
+		case '+':
+			result = OP_NEG;
+			break;
+		default:
+			if (parser_backtrack < 'A' || parser_backtrack > 'Z')
+			{
+				result = OP_NEG;
+				break;
+			}
+			else
+			{
+				result = OP_SUB;
+			}
+		}
 		break;
 	case '+':
 		result = OP_ADD;
@@ -2168,6 +2200,8 @@ uint8_t parser_get_operation(void)
 			return result;
 		}
 	}
+
+	parser_backtrack = c;
 
 	if (result != OP_INVALID)
 	{
@@ -2184,14 +2218,25 @@ uint8_t parser_get_operation(void)
 
 	for (uint8_t i = 0; i < 6; i++)
 	{
-		char c = (char)parser_get_next_preprocessed(true);
+		c = parser_get_next_preprocessed(true);
 		c = TOUPPER(c);
 		if (c < 'A' || c > 'Z')
 		{
 			break;
 		}
 		parser_get_next_preprocessed(false);
-		str[i] = c;
+		str[i] = (char)c;
+	}
+
+	if (strlen(str) == 1)
+	{
+		return OP_WORD;
+	}
+
+	c = parser_get_next_preprocessed(false);
+	if (c != '[')
+	{
+		return OP_INVALID;
 	}
 
 	if (!strcmp(str, "SQRT"))
@@ -2226,7 +2271,7 @@ uint8_t parser_get_operation(void)
 	{
 		return OP_TAN;
 	}
-	if (strcmp(str, "ACOS"))
+	if (!strcmp(str, "ACOS"))
 	{
 		return OP_ACOS;
 	}
@@ -2298,44 +2343,71 @@ uint8_t parser_get_float(float *value)
 
 		switch (op)
 		{
-			case OP_INVALID:
-				*value = rhs;
-				return result;
+		case OP_INVALID:
+			return NUMBER_UNDEF;
+		case OP_ENDLINE:
+		case OP_WORD:
+			while (stack_depth)
+			{
+				stack_depth--;
+				rhs = parser_exec_op(stack[stack_depth], rhs);
+			}
+			*value = rhs;
+			return result;
 		case OP_GROUP_START:
 			stack[stack_depth].op = op;
 			stack_depth++;
 			break;
 		case OP_GROUP_END:
-			while (stack_depth && (stack[stack_depth].op != OP_GROUP_START))
+			while (stack_depth)
 			{
+				stack_depth--;
+				op = stack[stack_depth].op;
 				rhs = parser_exec_op(stack[stack_depth], rhs);
 				stack[stack_depth].op = 0;
-				stack_depth--;
+				if (op > OP_GROUP_END)
+				{
+					break;
+				}
+				if (!stack_depth && op != OP_GROUP_START)
+				{
+					return NUMBER_UNDEF;
+				}
 			}
 			break;
-		case OP_PARSER_VAR:
+		/*case OP_PARSER_VAR:
 			rhs = parser_get_var(rhs);
 			stack[stack_depth].op = 0;
 			stack_depth--;
-			break;
+			break;*/
 		case OP_REAL:
 			break;
 		default:
-			while (stack_depth && OP_LEVEL(stack[stack_depth].op) > OP_LEVEL(op))
+			while (stack_depth)
 			{
+				if (OP_LEVEL(stack[stack_depth - 1].op) <= OP_LEVEL(op) || stack[stack_depth - 1].op == OP_GROUP_START)
+				{
+					break;
+				}
+				stack_depth--;
 				rhs = parser_exec_op(stack[stack_depth], rhs);
 				stack[stack_depth].op = 0;
-				stack_depth--;
 			}
+			stack[stack_depth].op = op;
+			stack[stack_depth].lhs = rhs;
+			rhs = 0;
+			stack_depth++;
 			break;
 		}
 
-		if (OP_REAL)
+		if (op == OP_REAL)
 		{
 			uint8_t c = parser_get_next_preprocessed(true);
+			rhs = 0;
+			intval = 0;
+			fpcount = 0;
 #endif
 
-	rhs = 0;
 	for (;;)
 	{
 		uint8_t digit = (uint8_t)c - 48;
@@ -2401,8 +2473,17 @@ uint8_t parser_get_float(float *value)
 
 static uint8_t parser_get_token(uint8_t *word, float *value)
 {
-	// this flushes leading white chars and also takes care of processing comments
+// this flushes leading white chars and also takes care of processing comments
+#ifndef ENABLE_RS274NGC_EXPRESSIONS
 	uint8_t c = parser_get_next_preprocessed(false);
+#else
+	uint8_t c = parser_backtrack;
+	parser_backtrack = 0;
+	if (!c)
+	{
+		c = parser_get_next_preprocessed(false);
+	}
+#endif
 
 	// if other uint8_t starts tokenization
 	c = TOUPPER(c);
