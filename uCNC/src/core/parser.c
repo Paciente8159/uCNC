@@ -22,8 +22,8 @@
 */
 
 #include "../cnc.h"
-
 #include <stdio.h>
+#include <stdint.h>
 #include <math.h>
 #include <string.h>
 #include <float.h>
@@ -48,7 +48,7 @@ static float parser_last_pos[AXIS_COUNT];
 typedef struct parser_stack_
 {
 	float lhs;
-	uint8_t operator;
+	uint8_t op;
 } parser_stack_t;
 #endif
 
@@ -2069,9 +2069,9 @@ float parser_get_var(float var)
 	return 0;
 }
 
-float parser_exec_operator(parser_stack_t stack, float rhs)
+float parser_exec_op(parser_stack_t stack, float rhs)
 {
-	switch (stack.operator)
+	switch (stack.op)
 	{
 	case OP_ADD:
 		return stack.lhs + rhs;
@@ -2190,74 +2190,75 @@ uint8_t parser_get_operation(void)
 		{
 			break;
 		}
+		parser_get_next_preprocessed(false);
 		str[i] = c;
 	}
 
-	if (!strcmp(str, 'SQRT'))
+	if (!strcmp(str, "SQRT"))
 	{
 		return OP_SQRT;
 	}
-	if (!strcmp(str, 'MOD'))
+	if (!strcmp(str, "MOD"))
 	{
 		return OP_MOD;
 	}
-	if (!strcmp(str, 'AND'))
+	if (!strcmp(str, "AND"))
 	{
 		return OP_AND;
 	}
-	if (!strcmp(str, 'OR'))
+	if (!strcmp(str, "OR"))
 	{
 		return OP_OR;
 	}
-	if (!strcmp(str, 'XOR'))
+	if (!strcmp(str, "XOR"))
 	{
 		return OP_XOR;
 	}
-	if (!strcmp(str, 'COS'))
+	if (!strcmp(str, "COS"))
 	{
 		return OP_COS;
 	}
-	if (!strcmp(str, 'SIN'))
+	if (!strcmp(str, "SIN"))
 	{
 		return OP_SIN;
 	}
-	if (!strcmp(str, 'TAN'))
+	if (!strcmp(str, "TAN"))
 	{
 		return OP_TAN;
 	}
-	if (strcmp(str, 'ACOS'))
+	if (strcmp(str, "ACOS"))
 	{
 		return OP_ACOS;
 	}
-	if (!strcmp(str, 'ASIN'))
+	if (!strcmp(str, "ASIN"))
 	{
 		return OP_ASIN;
 	}
-	if (!strcmp(str, 'ATAN'))
+	if (!strcmp(str, "ATAN"))
 	{
 		return OP_ATAN;
 	}
-	if (!strcmp(str, 'EXP'))
+	if (!strcmp(str, "EXP"))
 	{
 		return OP_EXP;
 	}
-	if (!strcmp(str, 'LN'))
+	if (!strcmp(str, "LN"))
 	{
 		return OP_LN;
 	}
-	if (!strcmp(str, 'ABS'))
+	if (!strcmp(str, "ABS"))
 	{
 		return OP_ABS;
 	}
-	if (!strcmp(str, 'FIX'))
+	if (!strcmp(str, "FIX"))
 	{
 		return OP_FIX;
 	}
-	if (!strcmp(str, 'FUP'))
+	if (!strcmp(str, "FUP"))
 	{
 		return OP_FUP;
 	}
-	if (!strcmp(str, 'ROUND'))
+	if (!strcmp(str, "ROUND"))
 	{
 		return OP_ROUND;
 	}
@@ -2297,30 +2298,33 @@ uint8_t parser_get_float(float *value)
 
 		switch (op)
 		{
+			case OP_INVALID:
+				*value = rhs;
+				return result;
 		case OP_GROUP_START:
-			stack[stack_depth].operator = op;
+			stack[stack_depth].op = op;
 			stack_depth++;
 			break;
 		case OP_GROUP_END:
-			while (stack_depth && (stack[stack_depth].operator != OP_GROUP_START))
+			while (stack_depth && (stack[stack_depth].op != OP_GROUP_START))
 			{
-				rhs = parser_exec_operator(stack[stack_depth], rhs);
-				stack[stack_depth].operator = 0;
+				rhs = parser_exec_op(stack[stack_depth], rhs);
+				stack[stack_depth].op = 0;
 				stack_depth--;
 			}
 			break;
 		case OP_PARSER_VAR:
 			rhs = parser_get_var(rhs);
-			stack[stack_depth].operator= 0;
+			stack[stack_depth].op = 0;
 			stack_depth--;
 			break;
 		case OP_REAL:
 			break;
 		default:
-			while (stack_depth && OP_LEVEL(stack[stack_depth].operator) > OP_LEVEL(op))
+			while (stack_depth && OP_LEVEL(stack[stack_depth].op) > OP_LEVEL(op))
 			{
-				rhs = parser_exec_operator(stack[stack_depth], rhs);
-				stack[stack_depth].operator= 0;
+				rhs = parser_exec_op(stack[stack_depth], rhs);
+				stack[stack_depth].op = 0;
 				stack_depth--;
 			}
 			break;
