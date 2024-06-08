@@ -2039,19 +2039,18 @@ static uint8_t parser_get_next_preprocessed(bool peek)
 #define OP_LEVEL(X) (X & (7 << 5))
 
 #define OP_INVALID 0
-#define OP_ADD (OP_LEVEL0 | 1)
-#define OP_SUB (OP_LEVEL0 | 2)
-#define OP_MUL (OP_LEVEL1 | 1)
+#define OP_AND (OP_LEVEL0 | 1)
+#define OP_OR (OP_LEVEL0 | 2)
+#define OP_XOR (OP_LEVEL0 | 3)
+#define OP_ADD (OP_LEVEL1 | 1)
+#define OP_SUB (OP_LEVEL1 | 2)
+#define OP_MUL (OP_LEVEL2 | 1)
 #define OP_DIV (OP_LEVEL2 | 2)
 #define OP_MOD (OP_LEVEL2 | 3)
 #define OP_POW (OP_LEVEL3 | 1)
-#define OP_SQRT (OP_LEVEL3 | 2)
-#define OP_AND (OP_LEVEL0 | 3)
-#define OP_OR (OP_LEVEL0 | 4)
-#define OP_XOR (OP_LEVEL0 | 5)
-#define OP_GROUP_END (OP_LEVEL4 | 0)
-#define OP_GROUP_START (OP_LEVEL4 | 1)
-#define OP_NEG (OP_LEVEL4 | 10)
+
+#define OP_NEG (OP_LEVEL4 | 1)
+#define OP_SQRT (OP_LEVEL4 | 10)
 #define OP_COS (OP_LEVEL4 | 20)
 #define OP_SIN (OP_LEVEL4 | 21)
 #define OP_TAN (OP_LEVEL4 | 22)
@@ -2064,14 +2063,105 @@ static uint8_t parser_get_next_preprocessed(bool peek)
 #define OP_FIX (OP_LEVEL4 | 29)
 #define OP_FUP (OP_LEVEL4 | 30)
 #define OP_ROUND (OP_LEVEL4 | 31)
+#define OP_EXISTS (OP_LEVEL4 | 32)
+
+#define OP_EXPR_END (OP_LEVEL5 | 1)
+#define OP_EXPR_START (OP_LEVEL5 | 2)
 
 #define OP_WORD 201
 #define OP_PARSER_VAR 202
 #define OP_REAL 203
-#define OP_ENDLINE 255
+#define OP_ASSIGN 252
+#define OP_ENDLINE 253
 
-float parser_get_var(float var)
+bool parser_assert_op(parser_stack_t stack, float rhs)
 {
+	int val = 0;
+	switch (stack.op)
+	{
+	case OP_PARSER_VAR:
+		if (rhs < 1 || floorf(rhs) > rhs)
+		{
+			return false;
+		}
+
+		val = (int)rhs;
+
+		if (val > RS274NGC_MAX_USER_VARS && val < 5000)
+		{
+			return false;
+		}
+
+		switch (val)
+		{
+		case 5061:
+		case 5062:
+		case 5063:
+		case 5064:
+		case 5065:
+		case 5066:
+			if (val - 5061 >= AXIS_COUNT)
+			{
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
+float parser_get_parameter(int param)
+{
+	float result[AXIS_COUNT];
+	int offset = param / 10;
+	uint8_t pos = (uint8_t)(param - offset);
+
+	switch (offset)
+	{
+	case 506:
+		parser_get_probe(result);
+		if (pos < AXIS_COUNT)
+		{
+			return result[pos];
+		}
+		break;
+	case 522:
+		if (!pos)
+		{
+			return (parser_state.groups.coord_system + 1);
+		}
+		__FALL_THROUGH__
+	case 524:
+	case 526:
+	case 528:
+	case 530:
+	case 532:
+	case 534:
+	case 536:
+	case 538:
+		if (pos >= AXIS_COUNT || ((offset - 522) >> 1) >= COORD_SYS_COUNT)
+		{
+			return 0;
+		}
+		if (pos != parser_parameters.coord_system_index)
+		{
+			settings_load(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (pos * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)result, PARSER_PARAM_SIZE);
+		}
+		return result[pos];
+	case 540:
+		if (!pos)
+		{
+			return parser_state.groups.tool_change;
+		}
+		return g_settings.tool_length_offset[parser_state.groups.tool_change];
+	case 542:
+		if (pos < AXIS_COUNT)
+		{
+			return parser_last_pos[pos];
+		}
+		break;
+	}
+
 	return 0;
 }
 
@@ -2125,16 +2215,24 @@ float parser_exec_op(parser_stack_t stack, float rhs)
 		return roundf(rhs);
 	case OP_NEG:
 		return -rhs;
+	case OP_EXISTS:
+		if (rhs < 1 || rhs > RS274NGC_MAX_USER_VARS || floorf(rhs) > rhs)
+		{
+			return 0;
+		}
+		return 1;
 	case OP_PARSER_VAR:
-		if(()rhs)
-		return parser_user_vars
-	case OP_GROUP_END:
+		if ((int)rhs > 5000)
+		{
+			return parser_get_parameter((int)rhs > 5000);
+		}
+		return parser_user_vars[(int)rhs - 1];
 	default:
 		return rhs;
 	}
 }
 
-uint8_t parser_get_operation(void)
+uint8_t parser_get_operation(bool can_call_unary_func)
 {
 	char c = (char)parser_get_next_preprocessed(true);
 	c = TOUPPER(c);
@@ -2143,26 +2241,26 @@ uint8_t parser_get_operation(void)
 	switch (c)
 	{
 	case EOL:
+	case '=':
 		return OP_ENDLINE;
 	case '[':
-		result = OP_GROUP_START;
+		result = OP_EXPR_START;
 		break;
 	case ']':
-		result = OP_GROUP_END;
+		result = OP_EXPR_END;
 		break;
 	case '#':
 		result = OP_PARSER_VAR;
 		break;
 	case '*':
-		parser_get_next_preprocessed(false);
+		parser_backtrack = parser_get_next_preprocessed(false);
 		c = (char)parser_get_next_preprocessed(true);
 		if (c == '*')
 		{
 			result = OP_POW;
 			break;
 		}
-		result = OP_MUL;
-		break;
+		return OP_MUL;
 	case '/':
 		result = OP_DIV;
 		break;
@@ -2178,12 +2276,11 @@ uint8_t parser_get_operation(void)
 		default:
 			if (parser_backtrack < 'A' || parser_backtrack > 'Z')
 			{
-				result = OP_NEG;
-				break;
+				result = OP_SUB;
 			}
 			else
 			{
-				result = OP_SUB;
+				result = OP_NEG;
 			}
 		}
 		break;
@@ -2194,6 +2291,10 @@ uint8_t parser_get_operation(void)
 		if ((c >= '0' && c <= '9') || c == '.')
 		{
 			result = OP_REAL;
+		}
+		else if (c >= 'A' && c <= 'Z' && !can_call_unary_func)
+		{
+			result = OP_WORD;
 		}
 		else if (c < 'A' || c > 'Z')
 		{
@@ -2213,10 +2314,10 @@ uint8_t parser_get_operation(void)
 		return result;
 	}
 
-	char str[6];
+	char str[7];
 	memset(str, 0, sizeof(str));
 
-	for (uint8_t i = 0; i < 6; i++)
+	for (uint8_t i = 0; i < 7; i++)
 	{
 		c = parser_get_next_preprocessed(true);
 		c = TOUPPER(c);
@@ -2233,7 +2334,7 @@ uint8_t parser_get_operation(void)
 		return OP_WORD;
 	}
 
-	c = parser_get_next_preprocessed(false);
+	c = parser_get_next_preprocessed(true);
 	if (c != '[')
 	{
 		return OP_INVALID;
@@ -2307,6 +2408,10 @@ uint8_t parser_get_operation(void)
 	{
 		return OP_ROUND;
 	}
+	if (!strcmp(str, "EXISTS"))
+	{
+		return OP_EXISTS;
+	}
 
 	return OP_INVALID;
 }
@@ -2333,13 +2438,16 @@ uint8_t parser_get_float(float *value)
 #else
 
 	// initializes the stack
-	uint8_t stack_depth = 0;
+	uint8_t stack_depth = 1;
 	parser_stack_t stack[MAX_PARSER_STACK_DEPTH];
 	memset(stack, 0, sizeof(stack));
+	bool can_call_unary_func = true;
+	stack[0].op = OP_ASSIGN;
 
 	for (;;)
 	{
-		uint8_t op = parser_get_operation();
+		uint8_t op = parser_get_operation(can_call_unary_func);
+		can_call_unary_func = (!stack_depth) ? true : (op <= OP_NEG || op == OP_EXPR_START);
 
 		switch (op)
 		{
@@ -2350,46 +2458,59 @@ uint8_t parser_get_float(float *value)
 			while (stack_depth)
 			{
 				stack_depth--;
+				if (!parser_assert_op(stack[stack_depth], rhs))
+				{
+					return NUMBER_UNDEF;
+				}
 				rhs = parser_exec_op(stack[stack_depth], rhs);
 			}
 			*value = rhs;
 			return result;
-		case OP_GROUP_START:
+		case OP_EXPR_START:
 			stack[stack_depth].op = op;
 			stack_depth++;
 			break;
-		case OP_GROUP_END:
+		case OP_EXPR_END:
+			parser_backtrack = 0;
 			while (stack_depth)
 			{
 				stack_depth--;
 				op = stack[stack_depth].op;
+				if (!parser_assert_op(stack[stack_depth], rhs))
+				{
+					return NUMBER_UNDEF;
+				}
 				rhs = parser_exec_op(stack[stack_depth], rhs);
 				stack[stack_depth].op = 0;
-				if (op > OP_GROUP_END)
+				if (op == OP_EXPR_START)
 				{
 					break;
 				}
-				if (!stack_depth && op != OP_GROUP_START)
+				if (!stack_depth && op != OP_EXPR_START)
 				{
 					return NUMBER_UNDEF;
 				}
 			}
 			break;
-		/*case OP_PARSER_VAR:
-			rhs = parser_get_var(rhs);
-			stack[stack_depth].op = 0;
-			stack_depth--;
-			break;*/
 		case OP_REAL:
 			break;
 		default:
 			while (stack_depth)
 			{
-				if (OP_LEVEL(stack[stack_depth - 1].op) <= OP_LEVEL(op) || stack[stack_depth - 1].op == OP_GROUP_START)
+				if (OP_LEVEL(stack[stack_depth - 1].op) <= OP_LEVEL(op) || stack[stack_depth - 1].op >= OP_EXPR_START)
 				{
 					break;
 				}
+				// atan must be preceded by a div
+				if (stack[stack_depth - 1].op == OP_ATAN && op != OP_DIV)
+				{
+					return NUMBER_UNDEF;
+				}
 				stack_depth--;
+				if (!parser_assert_op(stack[stack_depth], rhs))
+				{
+					return NUMBER_UNDEF;
+				}
 				rhs = parser_exec_op(stack[stack_depth], rhs);
 				stack[stack_depth].op = 0;
 			}
