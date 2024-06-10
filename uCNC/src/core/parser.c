@@ -38,22 +38,6 @@ static float g92permanentoffset[AXIS_COUNT];
 static int32_t rt_probe_step_pos[STEPPER_COUNT];
 static float parser_last_pos[AXIS_COUNT];
 
-#ifdef ENABLE_RS274NGC_EXPRESSIONS
-#ifndef RS274NGC_MAX_USER_VARS
-#define RS274NGC_MAX_USER_VARS 16
-#endif
-#ifndef MAX_PARSER_STACK_DEPTH
-#define MAX_PARSER_STACK_DEPTH 16
-#endif
-typedef struct parser_stack_
-{
-	float lhs;
-	uint8_t op;
-} parser_stack_t;
-char parser_backtrack;
-float parser_user_vars[RS274NGC_MAX_USER_VARS];
-#endif
-
 static uint8_t parser_get_next_preprocessed(bool peek);
 FORCEINLINE static void parser_get_comment(uint8_t start_char);
 FORCEINLINE static uint8_t parser_get_token(uint8_t *word, float *value);
@@ -65,8 +49,9 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
 static uint8_t parser_grbl_command(void);
 FORCEINLINE static uint8_t parser_gcode_command(bool is_jogging);
+
 #ifdef ENABLE_RS274NGC_EXPRESSIONS
-static uint8_t parser_eval_expression(float *value);
+char parser_backtrack;
 #endif
 
 #ifdef ENABLE_CANNED_CYCLES
@@ -711,6 +696,9 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 	{
 		uint8_t word = 0;
 		float value = 0;
+#ifdef ENABLE_RS274NGC_EXPRESSIONS
+		float assign_val = 0;
+#endif
 
 #ifdef ECHO_CMD
 		if (!wordcount)
@@ -759,6 +747,19 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 
 		switch (word)
 		{
+#ifdef ENABLE_RS274NGC_EXPRESSIONS
+		case '#':
+			if ((value < 1) || (value > RS274NGC_MAX_USER_VARS) || ((int)floorf(value) != value))
+			{
+				return STATUS_GCODE_COMMAND_VALUE_NOT_INTEGER;
+			}
+			if (!parser_get_float(&assign_val))
+			{
+				return STATUS_BAD_NUMBER_FORMAT;
+			}
+			new_state->user_vars[(int)value - 1] = assign_val;
+			break;
+#endif
 		case EOL:
 #ifdef GCODE_COUNT_TEXT_LINES
 			// if enabled store line number
@@ -2113,13 +2114,16 @@ bool parser_assert_op(parser_stack_t stack, float rhs)
 float parser_get_parameter(int param)
 {
 	float result[AXIS_COUNT];
-	int offset = param / 10;
-	uint8_t pos = (uint8_t)(param - offset);
+	int32_t probe_position[STEPPER_COUNT];
+	int offset = param * 0.1f;
+	uint8_t pos = (uint8_t)(param - (offset * 10));
 
 	switch (offset)
 	{
 	case 506:
-		parser_get_probe(result);
+		parser_get_probe(probe_position);
+		kinematics_steps_to_coordinates(probe_position, result);
+		pos--;
 		if (pos < AXIS_COUNT)
 		{
 			return result[pos];
@@ -2130,6 +2134,7 @@ float parser_get_parameter(int param)
 		{
 			return (parser_state.groups.coord_system + 1);
 		}
+		pos--;
 		__FALL_THROUGH__
 	case 524:
 	case 526:
@@ -2146,6 +2151,10 @@ float parser_get_parameter(int param)
 		if (pos != parser_parameters.coord_system_index)
 		{
 			settings_load(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (pos * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)result, PARSER_PARAM_SIZE);
+		}
+		else
+		{
+			return parser_parameters.coord_system_offset[pos];
 		}
 		return result[pos];
 	case 540:
@@ -2224,9 +2233,9 @@ float parser_exec_op(parser_stack_t stack, float rhs)
 	case OP_PARSER_VAR:
 		if ((int)rhs > 5000)
 		{
-			return parser_get_parameter((int)rhs > 5000);
+			return parser_get_parameter((int)rhs);
 		}
-		return parser_user_vars[(int)rhs - 1];
+		return parser_state.user_vars[(int)rhs - 1];
 	default:
 		return rhs;
 	}
@@ -2290,11 +2299,11 @@ uint8_t parser_get_operation(bool can_call_unary_func)
 	default:
 		if ((c >= '0' && c <= '9') || c == '.')
 		{
-			result = OP_REAL;
+			return OP_REAL;
 		}
 		else if (c >= 'A' && c <= 'Z' && !can_call_unary_func)
 		{
-			result = OP_WORD;
+			return OP_WORD;
 		}
 		else if (c < 'A' || c > 'Z')
 		{
@@ -2302,20 +2311,15 @@ uint8_t parser_get_operation(bool can_call_unary_func)
 		}
 	}
 
-	parser_backtrack = c;
-
 	if (result != OP_INVALID)
 	{
-		if (result != OP_REAL)
-		{
-			parser_get_next_preprocessed(false);
-		}
-
+		parser_backtrack = parser_get_next_preprocessed(false);
 		return result;
 	}
 
 	char str[7];
 	memset(str, 0, sizeof(str));
+	parser_backtrack = 0;
 
 	for (uint8_t i = 0; i < 7; i++)
 	{
@@ -2465,13 +2469,16 @@ uint8_t parser_get_float(float *value)
 				rhs = parser_exec_op(stack[stack_depth], rhs);
 			}
 			*value = rhs;
+			result = NUMBER_OK;
+			result |= (rhs < 0) ? NUMBER_ISNEGATIVE : 0;
+			result |= (floorf(rhs) != rhs) ? NUMBER_ISFLOAT : 0;
 			return result;
 		case OP_EXPR_START:
 			stack[stack_depth].op = op;
 			stack_depth++;
 			break;
 		case OP_EXPR_END:
-			parser_backtrack = 0;
+			// parser_backtrack = 0;
 			while (stack_depth)
 			{
 				stack_depth--;
@@ -2594,17 +2601,17 @@ uint8_t parser_get_float(float *value)
 
 static uint8_t parser_get_token(uint8_t *word, float *value)
 {
-// this flushes leading white chars and also takes care of processing comments
-#ifndef ENABLE_RS274NGC_EXPRESSIONS
+	// this flushes leading white chars and also takes care of processing comments
+	// #ifndef ENABLE_RS274NGC_EXPRESSIONS
 	uint8_t c = parser_get_next_preprocessed(false);
-#else
-	uint8_t c = parser_backtrack;
-	parser_backtrack = 0;
-	if (!c)
-	{
-		c = parser_get_next_preprocessed(false);
-	}
-#endif
+	// #else
+	// 	uint8_t c = parser_backtrack;
+	// 	parser_backtrack = 0;
+	// 	if (!c)
+	// 	{
+	// 		c = parser_get_next_preprocessed(false);
+	// 	}
+	// #endif
 
 	// if other uint8_t starts tokenization
 	c = TOUPPER(c);
@@ -2626,10 +2633,6 @@ static uint8_t parser_get_token(uint8_t *word, float *value)
 		if (c != '=')
 		{
 			return STATUS_INVALID_STATEMENT;
-		}
-		if (!parser_get_float(value))
-		{
-			return STATUS_BAD_NUMBER_FORMAT;
 		}
 		break;
 #endif

@@ -287,7 +287,7 @@ extern "C"
 	/**
 	 * Enables RS274NGC expression parsing
 	 * **/
-	#define ENABLE_RS274NGC_EXPRESSIONS
+	// #define ENABLE_RS274NGC_EXPRESSIONS
 
 	/**
 	 * Shrink µCNC
