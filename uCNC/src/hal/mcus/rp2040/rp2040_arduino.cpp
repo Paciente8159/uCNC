@@ -375,7 +375,7 @@ bool rp2040_wifi_clientok(void)
 				server_client.stop();
 			}
 		}
-		server_client = telnet_server.available();
+		server_client = telnet_server.accept();
 		server_client.println("[MSG:New client connected]");
 		return false;
 	}
@@ -411,42 +411,29 @@ bool rp2040_wifi_clientok(void)
 
 /**
  * Implements the function calls for the file system C wrapper
-*/
+ */
 #include "../../../modules/file_system.h"
 #define fileptr_t(ptr) static_cast<File>(*(reinterpret_cast<File *>(ptr)))
 fs_t flash_fs;
 
 int flash_fs_available(fs_file_t *fp)
 {
-	if (fp->file_ptr)
-	{
-		return fileptr_t(fp->file_ptr).available();
-	}
-	return 0;
+	return fileptr_t(fp->file_ptr).available();
 }
 
 void flash_fs_close(fs_file_t *fp)
 {
-	if (fp->file_ptr)
-	{
-		fileptr_t(fp->file_ptr).close();
-		free(fp->file_ptr);
-	}
-	free(fp);
+	fileptr_t(fp->file_ptr).flush();
+	fileptr_t(fp->file_ptr).close();
 }
 
-bool flash_fs_remove(char *path)
+bool flash_fs_remove(const char *path)
 {
 	return FLASH_FS.remove(path);
 }
 
 bool flash_fs_next_file(fs_file_t *fp, fs_file_info_t *finfo)
 {
-	if (!fp->file_ptr)
-	{
-		return false;
-	}
-
 	File f = ((File *)fp->file_ptr)->openNextFile();
 	if (!f || !finfo)
 	{
@@ -463,23 +450,15 @@ bool flash_fs_next_file(fs_file_t *fp, fs_file_info_t *finfo)
 
 size_t flash_fs_read(fs_file_t *fp, uint8_t *buffer, size_t len)
 {
-	if (!fp->file_ptr)
-	{
-		return 0;
-	}
 	return fileptr_t(fp->file_ptr).read(buffer, len);
 }
 
 size_t flash_fs_write(fs_file_t *fp, const uint8_t *buffer, size_t len)
 {
-	if (!fp->file_ptr)
-	{
-		return 0;
-	}
 	return fileptr_t(fp->file_ptr).write(buffer, len);
 }
 
-bool flash_fs_info(char *path, fs_file_info_t *finfo)
+bool flash_fs_info(const char *path, fs_file_info_t *finfo)
 {
 	File f = FLASH_FS.open(path, "r");
 	if (f && finfo)
@@ -496,7 +475,7 @@ bool flash_fs_info(char *path, fs_file_info_t *finfo)
 	return false;
 }
 
-fs_file_t *flash_fs_open(char *path, const char *mode)
+fs_file_t *flash_fs_open(const char *path, const char *mode)
 {
 	fs_file_t *fp = (fs_file_t *)calloc(1, sizeof(fs_file_t));
 	if (fp)
@@ -504,13 +483,14 @@ fs_file_t *flash_fs_open(char *path, const char *mode)
 		fp->file_ptr = calloc(1, sizeof(File));
 		if (fp->file_ptr)
 		{
-			*(static_cast<File*>(fp->file_ptr)) = FLASH_FS.open(path, mode);
-			if (*(static_cast<File*>(fp->file_ptr)))
+			*(static_cast<File *>(fp->file_ptr)) = FLASH_FS.open(path, mode);
+			if (*(static_cast<File *>(fp->file_ptr)))
 			{
 				memset(fp->file_info.full_name, 0, sizeof(fp->file_info.full_name));
 				fp->file_info.full_name[0] = '/';
 				fp->file_info.full_name[1] = flash_fs.drive;
-				strncpy(&(fp->file_info.full_name[2]), ((File *)fp->file_ptr)->name(), FS_PATH_NAME_MAX_LEN - 2);
+				fp->file_info.full_name[2] = '/';
+				strncat(fp->file_info.full_name, ((File *)fp->file_ptr)->name(), FS_PATH_NAME_MAX_LEN - 3);
 				fp->file_info.is_dir = ((File *)fp->file_ptr)->isDirectory();
 				fp->file_info.size = ((File *)fp->file_ptr)->size();
 				fp->file_info.timestamp = (uint32_t)((File *)fp->file_ptr)->getLastWrite();
@@ -524,9 +504,29 @@ fs_file_t *flash_fs_open(char *path, const char *mode)
 	return NULL;
 }
 
+fs_file_t *flash_fs_opendir(const char *path)
+{
+	return flash_fs_open(path, "r");
+}
+
+bool flash_fs_seek(fs_file_t *fp, uint32_t position)
+{
+	return fp->fs_ptr->seek(fp, position);
+}
+
+bool flash_fs_mkdir(const char *path)
+{
+	return FLASH_FS.mkdir(path);
+}
+
+bool flash_fs_rmdir(const char *path)
+{
+	return FLASH_FS.rmdir(path);
+}
+
 /**
  * Implements the function calls for the enpoints C wrapper
-*/
+ */
 #include "../../../modules/endpoint.h"
 void endpoint_add(const char *uri, uint8_t method, endpoint_delegate request_handler, endpoint_delegate file_handler)
 {
@@ -589,7 +589,7 @@ void endpoint_send(int code, const char *content_type, const uint8_t *data, size
 		default:
 			if (data)
 			{
-				web_server.sendContent((char*)data, data_len);
+				web_server.sendContent((char *)data, data_len);
 				in_chuncks = 2;
 			}
 			else
@@ -646,7 +646,7 @@ uint8_t endpoint_request_method(void)
 void endpoint_file_upload_name(char *filename, size_t maxlen)
 {
 	HTTPUpload &upload = web_server.upload();
-	strncpy(filename, upload.filename.c_str(), maxlen);
+	strncat(filename, upload.filename.c_str(), maxlen - strlen(filename));
 }
 
 #endif
@@ -790,17 +790,21 @@ void rp2040_wifi_bt_init(void)
 #ifdef MCU_HAS_ENDPOINTS
 	FLASH_FS.begin();
 	flash_fs = {
-			.drive = 'C',
-			.open = flash_fs_open,
-			.read = flash_fs_read,
-			.write = flash_fs_write,
-			.available = flash_fs_available,
-			.close = flash_fs_close,
-			.remove = flash_fs_remove,
-			.next_file = flash_fs_next_file,
-			.finfo = flash_fs_info,
-			.next = NULL};
-	fs_mount(&flash_fs);
+				.drive = 'C',
+				.open = flash_fs_open,
+				.read = flash_fs_read,
+				.write = flash_fs_write,
+				.seek = flash_fs_seek,
+				.available = flash_fs_available,
+				.close = flash_fs_close,
+				.remove = flash_fs_remove,
+				.opendir = flash_fs_opendir,
+				.mkdir = flash_fs_mkdir,
+				.rmdir = flash_fs_rmdir,
+				.next_file = flash_fs_next_file,
+				.finfo = flash_fs_info,
+				.next = NULL};
+		fs_mount(&flash_fs);
 #endif
 #ifndef CUSTOM_OTA_ENDPOINT
 	httpUpdater.setup(&web_server, OTA_URI, update_username, update_password);
@@ -964,8 +968,7 @@ void rp2040_wifi_bt_process(void)
 					c = OVF;
 				}
 
-				*(BUFFER_NEXT_FREE(wifi_rx)) = c;
-				BUFFER_STORE(wifi_rx);
+				BUFFER_ENQUEUE(wifi_rx, &c);
 			}
 
 #else
@@ -984,8 +987,6 @@ void rp2040_wifi_bt_process(void)
 #endif
 
 #ifdef ENABLE_BLUETOOTH
-	DECL_BUFFER(uint8_t, bt_rx, RX_BUFFER_SIZE);
-
 	while (SerialBT.available() > 0)
 	{
 #ifndef DETACH_BLUETOOTH_FROM_MAIN_PROTOCOL
@@ -997,8 +998,7 @@ void rp2040_wifi_bt_process(void)
 				c = OVF;
 			}
 
-			*(BUFFER_NEXT_FREE(bt_rx)) = c;
-			BUFFER_STORE(bt_rx);
+			BUFFER_ENQUEUE(bt_rx, &c);
 		}
 
 #else
@@ -1008,6 +1008,48 @@ void rp2040_wifi_bt_process(void)
 #endif
 }
 
+#endif
+
+/**
+ *
+ * This handles EEPROM simulation on flash memory
+ *
+ * **/
+
+#ifndef RAM_ONLY_SETTINGS
+#include <EEPROM.h>
+extern "C"
+{
+	void rp2040_eeprom_init(int size)
+	{
+		EEPROM.begin(size);
+	}
+
+	uint8_t rp2040_eeprom_read(uint16_t address)
+	{
+		return EEPROM.read(address);
+	}
+
+	void rp2040_eeprom_write(uint16_t address, uint8_t value)
+	{
+		EEPROM.write(address, value);
+	}
+
+	void rp2040_eeprom_flush(void)
+	{
+		#ifndef RP2040_RUN_MULTICORE
+		if (!EEPROM.commit())
+		{
+			protocol_send_feedback((const char *)" EEPROM write error");
+		}
+		#else
+		// signal other core to store EEPROM
+		rp2040.fifo.push(0);
+		// wait for signal back
+		rp2040.fifo.pop();
+		#endif
+	}
+}
 #endif
 
 extern "C"
@@ -1190,8 +1232,7 @@ extern "C"
 					c = OVF;
 				}
 
-				*(BUFFER_NEXT_FREE(usb_rx)) = c;
-				BUFFER_STORE(usb_rx);
+				BUFFER_ENQUEUE(usb_rx, &c);
 			}
 
 #else
@@ -1212,8 +1253,7 @@ extern "C"
 					c = OVF;
 				}
 
-				*(BUFFER_NEXT_FREE(uart_rx)) = c;
-				BUFFER_STORE(uart_rx);
+				BUFFER_ENQUEUE(uart_rx, &c);
 			}
 #else
 			mcu_uart_rx_cb((uint8_t)COM_UART.read());
@@ -1234,8 +1274,7 @@ extern "C"
 					c = OVF;
 				}
 
-				*(BUFFER_NEXT_FREE(uart2_rx)) = c;
-				BUFFER_STORE(uart2_rx);
+				BUFFER_ENQUEUE(uart2_rx, &c);
 			}
 
 #else
@@ -1246,8 +1285,7 @@ extern "C"
 				c = OVF;
 			}
 
-			*(BUFFER_NEXT_FREE(uart2_rx)) = c;
-			BUFFER_STORE(uart2_rx);
+			BUFFER_ENQUEUE(uart2_rx, &c);
 #endif
 #endif
 		}
@@ -1256,43 +1294,21 @@ extern "C"
 #if (defined(MCU_HAS_WIFI) || defined(ENABLE_BLUETOOTH))
 		rp2040_wifi_bt_process();
 #endif
-	}
-}
 
-/**
- *
- * This handles EEPROM simulation on flash memory
- *
- * **/
-
-#ifndef RAM_ONLY_SETTINGS
-#include <EEPROM.h>
-extern "C"
-{
-	void rp2040_eeprom_init(int size)
-	{
-		EEPROM.begin(size);
-	}
-
-	uint8_t rp2040_eeprom_read(uint16_t address)
-	{
-		return EEPROM.read(address);
-	}
-
-	void rp2040_eeprom_write(uint16_t address, uint8_t value)
-	{
-		EEPROM.write(address, value);
-	}
-
-	void rp2040_eeprom_flush(void)
-	{
-		if (!EEPROM.commit())
+#if defined(RP2040_RUN_MULTICORE) && !defined(RAM_ONLY_SETTINGS)
+		// flush pending eeprom request
+		if (rp2040.fifo.available())
 		{
-			protocol_send_feedback((const char *)" EEPROM write error");
+			rp2040.fifo.pop();
+			if (!EEPROM.commit())
+			{
+				protocol_send_feedback((const char *)" EEPROM write error");
+			}
+			rp2040.fifo.push(0);
 		}
+#endif
 	}
 }
-#endif
 
 /**
  *

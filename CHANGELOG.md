@@ -6,7 +6,90 @@
 
 # Changelog
 
-# Changelog
+## [1.9.1] - 03-05-2024
+
+### Added
+
+- added new option to run the step generator interpolator in an ISR task and outside of the main loop. This should ensures the interpolator and the step ISR never gets starved and might aid to future code simplification (#685)
+
+### Changed
+
+- modified platformIO configuration files to include common libraries via the main platform.ini file (like u8g2)
+
+### Fixed
+
+- fixed G39/Height map clearing calls (#683)
+- fixed file system typo that caused to build errors (#682)
+
+## [1.9.0] - 18-04-2024
+
+### Added
+
+- added support for STM32F0 core (#681)
+- new file system module. A C wrapper to work with files (in Flash or external memories) (#674)
+- new generic, customizable ring buffer for communications (#676)
+- new option to run RP2040 in multicore mode (experimental) (#677)
+
+### Changed
+
+- force DSS mode in THC tool mode (#625)
+- decouple step encoder position from the interpolator step position (#630)
+
+### Fixed
+
+- fix systems sync after HMap generation and retration motions between probes (#680)
+
+## [1.9.0-beta] - 11-04-2024
+
+### Added
+
+- new file system module. A C wrapper to work with files (in Flash or external memories) (#674)
+- new generic, customizable ring buffer for communications (#676)
+- new option to run RP2040 in multicore mode (experimental) (#677)
+
+### Changed
+
+- force DSS mode in THC tool mode (#625)
+- decouple step encoder position from the interpolator step position (#630)
+
+### Fixed
+
+- fix systems sync after HMap generation and retration motions between probes (#680)
+
+## [1.8.11] - 03-04-2024
+
+### Fixed
+
+- fixed interpolator deacceleation steps calculations if time slices less then 1 (#678)
+
+## [1.8.10] - 29-03-2024
+
+### Fixed
+
+- prevent floating point round errors in speed calculations when time slices are too small (#673)
+
+## [1.8.9] - 26-03-2024
+
+## Contributors
+[@lonelycorn](https://github.com/lonelycorn) - fixed DEBUG_STREAM when only one stream available (#664)
+[@kunikonno](https://github.com/kunikonno) - fixed WiFi settings loading at initialization (#659)(#660)
+
+### Added
+
+- new flash files JSON API (RP2040, ESP32 and ESP8266) (#663)
+
+### Changed
+
+- clamp DSS_CUTOFF_FREQ in the sanity check (#670)
+- added custom function to allow predefining IO state at startup (#669)
+- added spindle relay tool speed range function (#658)
+
+### Fixed
+
+- prevent DEBUG_STREAM printing before initialization (#666)
+- fixed DEBUG_STREAM when only one stream available (#664)
+- fixed ESP8266 EEPROM WiFi saved settings not loaded at initialization (#660)
+- fixed RP2040 EEPROM WiFi saved settings not loaded at initialization (#659)
 
 ## [1.8.8] - 03-03-2024
 
@@ -1538,6 +1621,12 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.9.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.9.1
+[1.9.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.9.0
+[1.9.0-beta]: https://github.com/Paciente8159/uCNC/releases/tag/v1.9.0-beta
+[1.8.11]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.11
+[1.8.10]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.10
+[1.8.9]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.9
 [1.8.8]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.8
 [1.8.7]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.7
 [1.8.6]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.6

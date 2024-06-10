@@ -194,6 +194,13 @@ extern "C"
 	DECL_EVENT_HANDLER(cnc_alarm);
 #endif
 
+#ifndef ucnc_init
+#define ucnc_init cnc_init
+#endif
+#ifndef ucnc_run
+#define ucnc_run cnc_run
+#endif
+
 #ifdef __cplusplus
 }
 #endif

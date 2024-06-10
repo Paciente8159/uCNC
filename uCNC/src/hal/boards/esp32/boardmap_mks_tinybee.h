@@ -102,7 +102,7 @@ extern "C"
 
 // pins for smart adapter
 // clk
-#define DOUT4_BIT 15
+#define DOUT4_BIT 0
 // data
 #define DOUT5_BIT 21
 // cs

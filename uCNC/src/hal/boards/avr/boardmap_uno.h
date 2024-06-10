@@ -156,6 +156,10 @@ extern "C"
 #undef STEP_ISR_SKIP_IDLE
 #endif
 
+#ifndef USE_MACRO_BUFFER
+#define USE_MACRO_BUFFER
+#endif
+
 #ifdef __cplusplus
 }
 #endif

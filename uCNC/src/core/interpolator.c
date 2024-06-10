@@ -28,11 +28,6 @@
 #define INTERPOLATOR_BUFFER_SIZE 5 // number of windows in the buffer
 #endif
 
-// sets the sample frequency for the Riemann sum integral
-#ifndef INTERPOLATOR_FREQ
-#define INTERPOLATOR_FREQ 100
-#endif
-
 #define INTERPOLATOR_DELTA_T (1.0f / INTERPOLATOR_FREQ)
 // determines the size of the maximum riemann sample that can be performed taking in acount the maximum allowable step rate
 #define INTERPOLATOR_DELTA_CONST_T (MIN((1.0f / INTERPOLATOR_BUFFER_SIZE), ((float)(0xFFFF >> DSS_MAX_OVERSAMPLING) / (float)F_STEP_MAX)))
@@ -459,10 +454,11 @@ void itp_run(void)
 				acc_init_speed = current_speed;
 #endif
 				t *= accel_inv;
-				// slice up time in an integral number of periods (half with positive jerk and half with negative)
-				float slices_inv = fast_flt_inv(floorf(INTERPOLATOR_FREQ * t));
-				if (slices_inv)
+
+				if (t > INTERPOLATOR_DELTA_T)
 				{
+					// slice up time in an integral number of periods (half with positive jerk and half with negative)
+					float slices_inv = fast_flt_inv(floorf(INTERPOLATOR_FREQ * t));
 					t_acc_integrator = t * slices_inv;
 #if S_CURVE_ACCELERATION_LEVEL != 0
 					acc_step = slices_inv;
@@ -497,10 +493,11 @@ void itp_run(void)
 				deac_step_acum = 0;
 #endif
 				t *= accel_inv;
-				// slice up time in an integral number of periods (half with positive jerk and half with negative)
-				float slices_inv = fast_flt_inv(floorf(INTERPOLATOR_FREQ * t));
-				if (slices_inv)
+
+				if (t > INTERPOLATOR_DELTA_T)
 				{
+					// slice up time in an integral number of periods (half with positive jerk and half with negative)
+					float slices_inv = fast_flt_inv(floorf(INTERPOLATOR_FREQ * t));
 					t_deac_integrator = t * slices_inv;
 					if (t_deac_integrator < 0.00001f)
 					{
@@ -513,7 +510,7 @@ void itp_run(void)
 				}
 				else
 				{
-					deaccel_from = remaining_steps;
+					deaccel_from = 0;
 				}
 			}
 		}
@@ -623,6 +620,17 @@ void itp_run(void)
 #if (DSS_MAX_OVERSAMPLING != 0)
 		float dss_speed = MAX(INTERPOLATOR_FREQ, current_speed);
 		uint8_t dss = 0;
+#ifdef ENABLE_PLASMA_THC
+		// plasma THC forces DSS to always be enabled at level 1 at least
+		if (g_settings.laser_mode == PLASMA_THC_MODE)
+		{
+			dss_speed = fast_flt_mul2(dss_speed);
+			// clamp top speed
+			current_speed = fast_flt_mul2(current_speed);
+			current_speed = MIN(current_speed, g_settings.max_step_rate);
+			dss = 1;
+		}
+#endif
 		while (dss_speed < DSS_CUTOFF_FREQ && dss < DSS_MAX_OVERSAMPLING && segm_steps)
 		{
 			dss_speed = fast_flt_mul2(dss_speed);
@@ -782,27 +790,11 @@ void itp_clear(void)
 void itp_get_rt_position(int32_t *position)
 {
 	memcpy(position, itp_rt_step_pos, sizeof(itp_rt_step_pos));
+}
 
-#if STEPPERS_ENCODERS_MASK != 0
-#if (defined(STEP0_ENCODER) && AXIS_TO_STEPPERS > 0)
-	itp_rt_step_pos[0] = encoder_get_position(STEP0_ENCODER);
-#endif
-#if (defined(STEP1_ENCODER) && AXIS_TO_STEPPERS > 1)
-	itp_rt_step_pos[1] = encoder_get_position(STEP1_ENCODER);
-#endif
-#if (defined(STEP2_ENCODER) && AXIS_TO_STEPPERS > 2)
-	itp_rt_step_pos[2] = encoder_get_position(STEP2_ENCODER);
-#endif
-#if (defined(STEP3_ENCODER) && AXIS_TO_STEPPERS > 3)
-	itp_rt_step_pos[3] = encoder_get_position(STEP3_ENCODER);
-#endif
-#if (defined(STEP4_ENCODER) && AXIS_TO_STEPPERS > 4)
-	itp_rt_step_pos[4] = encoder_get_position(STEP4_ENCODER);
-#endif
-#if (defined(STEP5_ENCODER) && AXIS_TO_STEPPERS > 5)
-	itp_rt_step_pos[5] = encoder_get_position(STEP5_ENCODER);
-#endif
-#endif
+void itp_sync_rt_position(int32_t *position)
+{
+	memcpy(itp_rt_step_pos, position, sizeof(itp_rt_step_pos));
 }
 
 int32_t itp_get_rt_position_index(int8_t index)
@@ -1127,7 +1119,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 		else
 		{
 			cnc_clear_exec_state(EXEC_RUN); // this naturally clears the RUN flag. Any other ISR stop does not clear the flag.
-			itp_stop();						// the buffer is empty. The ISR can stop
+			itp_stop();											// the buffer is empty. The ISR can stop
 			return;
 		}
 	}

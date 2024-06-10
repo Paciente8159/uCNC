@@ -124,6 +124,11 @@ extern "C"
 	// #define DIR4_IO_OFFSET 14
 	// #define DOUT0_IO_OFFSET 15
 
+	/**
+	 * New multicore mode - Experimental
+	 * */
+	// #define RP2040_RUN_MULTICORE
+
 #ifdef __cplusplus
 }
 #endif

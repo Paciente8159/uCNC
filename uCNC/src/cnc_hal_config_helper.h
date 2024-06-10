@@ -1821,6 +1821,10 @@ extern "C"
 #define CTRL_SCHED_CHECK_VAL (1 << (CTRL_SCHED_CHECK))
 #endif
 
+#ifdef DISABLE_RTC_CODE
+#undef ENABLE_ITP_FEED_TASK
+#endif
+
 #ifndef BRESENHAM_16BIT
 	typedef uint32_t step_t;
 #define MAX_STEPS_PER_LINE_BITS (32 - (2 + DSS_MAX_OVERSAMPLING))
@@ -1831,7 +1835,9 @@ typedef uint16_t step_t;
 #define MAX_STEPS_PER_LINE (1UL << MAX_STEPS_PER_LINE_BITS)
 
 #if DSS_CUTOFF_FREQ > (F_STEP_MAX >> 3)
-#error "DSS_CUTOFF_FREQ should not be set above 1/8th of the max step rate"
+#undef DSS_CUTOFF_FREQ
+#define DSS_CUTOFF_FREQ (F_STEP_MAX >> 3)
+#warning "DSS_CUTOFF_FREQ was limited to 1/8th of the max step rate"
 #endif
 
 #if ((S_CURVE_ACCELERATION_LEVEL < -1) || (S_CURVE_ACCELERATION_LEVEL > 5))
@@ -2121,6 +2127,9 @@ typedef uint16_t step_t;
 #endif
 #ifndef ENABLE_RT_SYNC_MOTIONS
 #define ENABLE_RT_SYNC_MOTIONS
+#endif
+#if (DSS_MAX_OVERSAMPLING < 1)
+#error "Plasma THC requires DSS to be enabled"
 #endif
 #endif
 

@@ -28,6 +28,7 @@ extern "C"
 #define MCU_AVR 1
 #define MCU_STM32F1X 10
 #define MCU_STM32F4X 11
+#define MCU_STM32F0X 12
 #define MCU_SAMD21 20
 #define MCU_LPC176X 30
 #define MCU_ESP8266 40
