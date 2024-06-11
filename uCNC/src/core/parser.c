@@ -708,6 +708,8 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 		}
 #endif
 		error = parser_get_token(&word, &value);
+		DEBUG_PUTC(word);
+
 		if (error)
 		{
 			parser_discard_command();
@@ -757,6 +759,8 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 			{
 				return STATUS_BAD_NUMBER_FORMAT;
 			}
+			DEBUG_FLT(assign_val);
+			DEBUG_PUTC('=');
 			new_state->user_vars[(int)value - 1] = assign_val;
 			break;
 #endif
@@ -766,6 +770,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 			linecounter++;
 			words->n = linecounter;
 #endif
+			DEBUG_PUTC('\n');
 #ifdef ECHO_CMD
 			protocol_send_string(MSG_END);
 			serial_broadcast(false);
@@ -786,6 +791,8 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 			error = parser_letter_word(word, value, mantissa, words, cmd);
 			break;
 		}
+
+		DEBUG_FLT(value);
 
 #ifdef ENABLE_PARSER_MODULES
 		if ((error == STATUS_GCODE_UNSUPPORTED_COMMAND || error == STATUS_GCODE_UNUSED_WORDS))
@@ -2299,6 +2306,7 @@ uint8_t parser_get_operation(bool can_call_unary_func)
 	default:
 		if ((c >= '0' && c <= '9') || c == '.')
 		{
+			parser_backtrack = c;
 			return OP_REAL;
 		}
 		else if (c >= 'A' && c <= 'Z' && !can_call_unary_func)
@@ -2447,6 +2455,7 @@ uint8_t parser_get_float(float *value)
 	memset(stack, 0, sizeof(stack));
 	bool can_call_unary_func = true;
 	stack[0].op = OP_ASSIGN;
+	uint8_t prev_op = OP_INVALID;
 
 	for (;;)
 	{
@@ -2478,7 +2487,6 @@ uint8_t parser_get_float(float *value)
 			stack_depth++;
 			break;
 		case OP_EXPR_END:
-			// parser_backtrack = 0;
 			while (stack_depth)
 			{
 				stack_depth--;
@@ -2504,7 +2512,7 @@ uint8_t parser_get_float(float *value)
 		default:
 			while (stack_depth)
 			{
-				if (OP_LEVEL(stack[stack_depth - 1].op) <= OP_LEVEL(op) || stack[stack_depth - 1].op >= OP_EXPR_START)
+				if (OP_LEVEL(stack[stack_depth - 1].op) < OP_LEVEL(op) || stack[stack_depth - 1].op >= OP_EXPR_START)
 				{
 					break;
 				}
@@ -2588,6 +2596,8 @@ uint8_t parser_get_float(float *value)
 		}
 
 	} while (fpcount != 0);
+
+	prev_op = op;
 
 #ifndef ENABLE_RS274NGC_EXPRESSIONS
 	*value = (result & NUMBER_ISNEGATIVE) ? -rhs : rhs;
