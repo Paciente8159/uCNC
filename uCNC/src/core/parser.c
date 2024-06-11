@@ -2253,83 +2253,111 @@ uint8_t parser_get_operation(bool can_call_unary_func)
 	char c = (char)parser_get_next_preprocessed(true);
 	c = TOUPPER(c);
 	uint8_t result = OP_INVALID;
+	uint8_t i = 0;
 
-	switch (c)
+	if ((c >= '0' && c <= '9') || c == '.')
 	{
-	case EOL:
-	case '=':
-		return OP_ENDLINE;
-	case '[':
-		result = OP_EXPR_START;
-		break;
-	case ']':
-		result = OP_EXPR_END;
-		break;
-	case '#':
-		result = OP_PARSER_VAR;
-		break;
-	case '*':
-		parser_backtrack = parser_get_next_preprocessed(false);
-		c = (char)parser_get_next_preprocessed(true);
-		if (c == '*')
+		return OP_REAL;
+	}
+	else if (c < 'A' || c > 'Z')
+	{
+		if (!c)
 		{
-			result = OP_POW;
-			break;
+			return OP_ENDLINE;
 		}
-		return OP_MUL;
-	case '/':
-		result = OP_DIV;
-		break;
-	case '-':
-		switch (parser_backtrack)
+		parser_get_next_preprocessed(false);
+		char peek = (char)parser_get_next_preprocessed(true);
+		switch (c)
 		{
+		case '=':
+			parser_backtrack = c;
+			return OP_ENDLINE;
 		case '[':
-		case '*':
-		case '/':
-		case '+':
-			result = OP_NEG;
-			break;
-		default:
-			if (parser_backtrack < 'A' || parser_backtrack > 'Z')
+			if (peek == '-')
 			{
-				result = OP_SUB;
+				parser_backtrack = c;
 			}
-			else
+			return OP_EXPR_START;
+		case ']':
+			return OP_EXPR_END;
+		case '#':
+			return OP_PARSER_VAR;
+		case '*':
+			result = OP_MUL;
+			if (peek == '*')
+			{
+				parser_get_next_preprocessed(false);
+				result = OP_POW;
+			}
+
+			if (parser_get_next_preprocessed(true) == '-')
+			{
+				parser_backtrack = c;
+			}
+			return result;
+		case '/':
+			if (peek == '-')
+			{
+				parser_backtrack = c;
+			}
+			return OP_DIV;
+		case '-':
+			result = OP_SUB;
+			if (parser_backtrack)
 			{
 				result = OP_NEG;
+				parser_backtrack = 0;
 			}
+
+			if (peek == '-')
+			{
+				parser_backtrack = c;
+			}
+			return result;
+		case '+':
+			if (peek == '-')
+			{
+				parser_backtrack = c;
+			}
+			return OP_ADD;
 		}
-		break;
-	case '+':
-		result = OP_ADD;
-		break;
-	default:
-		if ((c >= '0' && c <= '9') || c == '.')
+	}
+	else if (!can_call_unary_func) // if can't do unary checks for possible binary op
+	{
+		char peek = 0;
+		switch (c)
 		{
-			parser_backtrack = c;
-			return OP_REAL;
+		case 'A':
+			peek = 'N';
+			break;
+		case 'M':
+			peek = 'O';
+			break;
+		case 'O':
+			peek = 'R';
+			break;
+		case 'X':
+			peek = 'O';
+			break;
+		default:
+			return OP_WORD;
 		}
-		else if (c >= 'A' && c <= 'Z' && !can_call_unary_func)
+		parser_backtrack = c;
+		parser_get_next_preprocessed(false);
+		if (peek != TOUPPER(parser_get_next_preprocessed(true)))
 		{
 			return OP_WORD;
 		}
-		else if (c < 'A' || c > 'Z')
-		{
-			return result;
-		}
-	}
-
-	if (result != OP_INVALID)
-	{
-		parser_backtrack = parser_get_next_preprocessed(false);
-		return result;
+		
+		i = 1;
 	}
 
 	char str[7];
 	memset(str, 0, sizeof(str));
-	parser_backtrack = 0;
+	parser_backtrack = c;
+	str[0] = c;
 
-	for (uint8_t i = 0; i < 7; i++)
+	for (; i < 7; i++)
 	{
 		c = parser_get_next_preprocessed(true);
 		c = TOUPPER(c);
@@ -2345,17 +2373,9 @@ uint8_t parser_get_operation(bool can_call_unary_func)
 	{
 		return OP_WORD;
 	}
+	
+	parser_backtrack = 0;
 
-	c = parser_get_next_preprocessed(true);
-	if (c != '[')
-	{
-		return OP_INVALID;
-	}
-
-	if (!strcmp(str, "SQRT"))
-	{
-		return OP_SQRT;
-	}
 	if (!strcmp(str, "MOD"))
 	{
 		return OP_MOD;
@@ -2371,6 +2391,16 @@ uint8_t parser_get_operation(bool can_call_unary_func)
 	if (!strcmp(str, "XOR"))
 	{
 		return OP_XOR;
+	}
+
+	if (c != '[')
+	{
+		return OP_INVALID;
+	}
+
+	if (!strcmp(str, "SQRT"))
+	{
+		return OP_SQRT;
 	}
 	if (!strcmp(str, "COS"))
 	{
@@ -2611,17 +2641,17 @@ uint8_t parser_get_float(float *value)
 
 static uint8_t parser_get_token(uint8_t *word, float *value)
 {
-	// this flushes leading white chars and also takes care of processing comments
-	// #ifndef ENABLE_RS274NGC_EXPRESSIONS
+// this flushes leading white chars and also takes care of processing comments
+#ifndef ENABLE_RS274NGC_EXPRESSIONS
 	uint8_t c = parser_get_next_preprocessed(false);
-	// #else
-	// 	uint8_t c = parser_backtrack;
-	// 	parser_backtrack = 0;
-	// 	if (!c)
-	// 	{
-	// 		c = parser_get_next_preprocessed(false);
-	// 	}
-	// #endif
+#else
+	uint8_t c = parser_backtrack;
+	parser_backtrack = 0;
+	if (!c)
+	{
+		c = parser_get_next_preprocessed(false);
+	}
+#endif
 
 	// if other uint8_t starts tokenization
 	c = TOUPPER(c);
