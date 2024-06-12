@@ -2065,13 +2065,14 @@ static uint8_t parser_get_next_preprocessed(bool peek)
 #define OP_ACOS (OP_LEVEL4 | 23)
 #define OP_ASIN (OP_LEVEL4 | 24)
 #define OP_ATAN (OP_LEVEL4 | 25)
-#define OP_EXP (OP_LEVEL4 | 26)
-#define OP_LN (OP_LEVEL4 | 27)
-#define OP_ABS (OP_LEVEL4 | 28)
-#define OP_FIX (OP_LEVEL4 | 29)
-#define OP_FUP (OP_LEVEL4 | 30)
-#define OP_ROUND (OP_LEVEL4 | 31)
-#define OP_EXISTS (OP_LEVEL4 | 32)
+#define OP_ATAN_DIV (OP_LEVEL4 | 26)
+#define OP_EXP (OP_LEVEL4 | 27)
+#define OP_LN (OP_LEVEL4 | 28)
+#define OP_ABS (OP_LEVEL4 | 29)
+#define OP_FIX (OP_LEVEL4 | 30)
+#define OP_FUP (OP_LEVEL4 | 31)
+#define OP_ROUND (OP_LEVEL4 | 32)
+#define OP_EXISTS (OP_LEVEL4 | 33)
 
 #define OP_EXPR_END (OP_LEVEL5 | 1)
 #define OP_EXPR_START (OP_LEVEL5 | 2)
@@ -2215,8 +2216,11 @@ float parser_exec_op(parser_stack_t stack, float rhs)
 		return RAD_DEG_MULT * acosf(rhs);
 	case OP_ASIN:
 		return RAD_DEG_MULT * asinf(rhs);
-	case OP_ATAN:
-		return RAD_DEG_MULT * atanf(rhs);
+	// case OP_ATAN:
+	// 	return rhs;
+	case OP_ATAN_DIV:
+		// special atan case
+		return RAD_DEG_MULT * atan2(stack.lhs, rhs);
 	case OP_EXP:
 		return expf(rhs);
 	case OP_LN:
@@ -2348,7 +2352,7 @@ uint8_t parser_get_operation(bool can_call_unary_func)
 		{
 			return OP_WORD;
 		}
-		
+
 		i = 1;
 	}
 
@@ -2373,7 +2377,7 @@ uint8_t parser_get_operation(bool can_call_unary_func)
 	{
 		return OP_WORD;
 	}
-	
+
 	parser_backtrack = 0;
 
 	if (!strcmp(str, "MOD"))
@@ -2457,33 +2461,17 @@ uint8_t parser_get_operation(bool can_call_unary_func)
 
 	return OP_INVALID;
 }
-#endif
 
-uint8_t parser_get_float(float *value)
+uint8_t parser_get_expression(float *value)
 {
-	uint32_t intval = 0;
-	uint8_t fpcount = 0;
 	uint8_t result = NUMBER_UNDEF;
 	float rhs = 0;
-
-#ifndef ENABLE_RS274NGC_EXPRESSIONS
-	uint8_t c = parser_get_next_preprocessed(true);
-	if (c == '-' || c == '+')
-	{
-		if (c == '-')
-		{
-			result |= NUMBER_ISNEGATIVE;
-		}
-		parser_get_next_preprocessed(false);
-		c = parser_get_next_preprocessed(true);
-	}
-#else
-
 	// initializes the stack
 	uint8_t stack_depth = 1;
 	parser_stack_t stack[MAX_PARSER_STACK_DEPTH];
 	memset(stack, 0, sizeof(stack));
 	bool can_call_unary_func = true;
+	bool is_atan = false;
 	stack[0].op = OP_ASSIGN;
 	uint8_t prev_op = OP_INVALID;
 
@@ -2491,23 +2479,29 @@ uint8_t parser_get_float(float *value)
 	{
 		uint8_t op = parser_get_operation(can_call_unary_func);
 		can_call_unary_func = (!stack_depth) ? true : (op <= OP_NEG || op == OP_EXPR_START);
+		if (is_atan)
+		{
+			if (op != OP_DIV)
+			{
+				return NUMBER_UNDEF;
+			}
+
+				op = OP_ATAN_DIV;
+				is_atan = false;
+		}
+		
+		
 
 		switch (op)
 		{
 		case OP_INVALID:
-			return NUMBER_UNDEF;
 		case OP_ENDLINE:
 		case OP_WORD:
-			while (stack_depth)
+			if (stack_depth != 1)
 			{
-				stack_depth--;
-				if (!parser_assert_op(stack[stack_depth], rhs))
-				{
-					return NUMBER_UNDEF;
-				}
-				rhs = parser_exec_op(stack[stack_depth], rhs);
+				return NUMBER_UNDEF;
 			}
-			*value = rhs;
+			*value = parser_exec_op(stack[stack_depth], rhs);
 			result = NUMBER_OK;
 			result |= (rhs < 0) ? NUMBER_ISNEGATIVE : 0;
 			result |= (floorf(rhs) != rhs) ? NUMBER_ISFLOAT : 0;
@@ -2529,6 +2523,13 @@ uint8_t parser_get_float(float *value)
 				stack[stack_depth].op = 0;
 				if (op == OP_EXPR_START)
 				{
+					if (OP_LEVEL(stack[stack_depth - 1].op) == OP_LEVEL4)
+					{
+						is_atan = (stack[stack_depth - 1].op == OP_ATAN);
+						stack_depth--;
+						rhs = parser_exec_op(stack[stack_depth], rhs);
+						stack[stack_depth].op = 0;
+					}
 					break;
 				}
 				if (!stack_depth && op != OP_EXPR_START)
@@ -2538,6 +2539,7 @@ uint8_t parser_get_float(float *value)
 			}
 			break;
 		case OP_REAL:
+			parser_get_float(&rhs);
 			break;
 		default:
 			while (stack_depth)
@@ -2565,14 +2567,38 @@ uint8_t parser_get_float(float *value)
 			stack_depth++;
 			break;
 		}
+	}
 
-		if (op == OP_REAL)
-		{
-			uint8_t c = parser_get_next_preprocessed(true);
-			rhs = 0;
-			intval = 0;
-			fpcount = 0;
+	return result;
+}
+
 #endif
+
+uint8_t parser_get_float(float *value)
+{
+	uint32_t intval = 0;
+	uint8_t fpcount = 0;
+	uint8_t result = NUMBER_UNDEF;
+	float rhs = 0;
+
+	uint8_t c = parser_get_next_preprocessed(true);
+#ifdef ENABLE_RS274NGC_EXPRESSIONS
+	c = TOUPPER(c);
+	if (c == '[' || c == '#' || (c >= 'A' && c <= 'Z'))
+	{
+		return parser_get_expression(value);
+	}
+#endif
+
+	if (c == '-' || c == '+')
+	{
+		if (c == '-')
+		{
+			result |= NUMBER_ISNEGATIVE;
+		}
+		parser_get_next_preprocessed(false);
+		c = parser_get_next_preprocessed(true);
+	}
 
 	for (;;)
 	{
@@ -2627,14 +2653,7 @@ uint8_t parser_get_float(float *value)
 
 	} while (fpcount != 0);
 
-	prev_op = op;
-
-#ifndef ENABLE_RS274NGC_EXPRESSIONS
 	*value = (result & NUMBER_ISNEGATIVE) ? -rhs : rhs;
-#else
-		}
-	}
-#endif
 
 	return result;
 }
