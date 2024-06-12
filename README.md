@@ -67,6 +67,7 @@ Version 1.9 added the following new major features.
 - new File System module. This new file system module acts like a C wrapper for accessing both Flash memory files and external memories (like SD cards), and abstracts the underlaying file systems used (LittleFS, SPIFFS, FatFs, etc...). It also integrates the File System with other modules such as System Menu and Endpoints to allow quicker and transversal development of features accross different MCU
 - new generic ring buffer in utils.h. This adds flexibility to make use of generic ring buffer implementations (via macros or pure C implementation with functions, or using custom SDK implementations for a particular architecture/use case). One example is to adapt generic ring buffer access to a multicore MCU.
 - new multicore mode for RP2040, using generic ring buffer implementation supported no multicore queue. This allows running all µCNC communications tasks (USB, UART, WIFI, etc...) in one core, while the other core is dedicated to parsing and executing GCode commands.
+- Suport for RS274NGC [expressions](https://linuxcnc.org/docs/html/gcode/overview.html#gcode:expressions) and [numbered parameters](https://linuxcnc.org/docs/html/gcode/overview.html#sub:numbered-parameters).
 
 Version 1.8 added the following new major features.
 
@@ -131,7 +132,7 @@ These include:
 µCNC for now supports most of the RS274NGC v3:
 
 ```
-List of Supported G-Codes since µCNC 1.3.0:
+List of Supported G-Codes since µCNC 1.9.2:
   - Non-Modal Commands: G4, G10*, G28, G30, G53, G92, G92.1, G92.2, G92.3
   - Motion Modes: G0, G1, G2, G3, G38.2, G38.3, G38.4, G38.5, G80, G81*, G82*, G83*, G85*, G86*, G89*
   - Feed Rate Modes: G93, G94
@@ -147,6 +148,8 @@ List of Supported G-Codes since µCNC 1.3.0:
   - Spindle Control: M3, M4, M5
   - Tool Change: M6
   - Valid Non-Command Words: A, B, C, F, H, I, J, K, L, N, P, Q, R, S, T, X, Y, Z
+	- User(read/write) and parser(read only) parameters like #5221 (#5221 returns the G38 result for X axis)
+	- Expressions like [1 + acos[0] - [#3 ** [4.0/2]]]
 
   - Outside the RS274NGC scope
     - Bilinear surface mapping: G39,G39.1,G39.2*

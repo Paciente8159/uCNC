@@ -285,6 +285,11 @@ extern "C"
 	// #define GCODE_ACCEPT_WORD_E
 
 	/**
+	 * Enables RS274NGC expression parsing
+	 * **/
+	//  #define ENABLE_RS274NGC_EXPRESSIONS
+
+	/**
 	 * Shrink µCNC
 	 * It's possible to shrink µCNC by disable some core features:
 	 *   - arc support (G2,G3,G17,G18,G19)

@@ -174,6 +174,7 @@ extern "C"
 #endif
 
 #define DEG_RAD_MULT 0.0174532925199432958f
+#define RAD_DEG_MULT 57.295779513082320877f
 #define MM_INCH_MULT 0.0393700787401574803f
 #define INCH_MM_MULT 25.4f
 #define MIN_SEC_MULT 0.0166666666666666667f
@@ -434,6 +435,8 @@ extern "C"
 #else
 #define __FALL_THROUGH__
 #endif /* __GNUC__ >= 7 */
+
+#define TOUPPER(c) ((c >= 'a' && c <= 'z') ? (c - 32) : c)
 
 #ifdef __cplusplus
 }

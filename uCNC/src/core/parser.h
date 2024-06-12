@@ -201,6 +201,20 @@ extern "C"
 #define LASER_PPI_VARPOWER_MODE 4
 #define PLASMA_THC_MODE 8
 
+#ifdef ENABLE_RS274NGC_EXPRESSIONS
+#ifndef RS274NGC_MAX_USER_VARS
+#define RS274NGC_MAX_USER_VARS 16
+#endif
+#ifndef MAX_PARSER_STACK_DEPTH
+#define MAX_PARSER_STACK_DEPTH 16
+#endif
+typedef struct parser_stack_
+{
+	float lhs;
+	uint8_t op;
+} parser_stack_t;
+#endif
+
 	// 34bytes in total
 	typedef struct
 	{
@@ -293,6 +307,9 @@ extern "C"
 #endif
 #ifdef GCODE_PROCESS_LINE_NUMBERS
 		uint32_t line;
+#endif
+#ifdef ENABLE_RS274NGC_EXPRESSIONS
+float user_vars[RS274NGC_MAX_USER_VARS];
 #endif
 	} parser_state_t;
 
