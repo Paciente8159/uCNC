@@ -2220,7 +2220,7 @@ float parser_exec_op(parser_stack_t stack, float rhs)
 	// 	return rhs;
 	case OP_ATAN_DIV:
 		// special atan case
-		return RAD_DEG_MULT * atan2(stack.lhs, rhs);
+		return RAD_DEG_MULT * atan2f(stack.lhs, rhs);
 	case OP_EXP:
 		return expf(rhs);
 	case OP_LN:
