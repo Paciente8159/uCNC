@@ -6,6 +6,12 @@
 
 # Changelog
 
+## [1.9.2] - 13-06-2024
+
+### Added
+
+- option to allow RS274NGC expression and numbered parameters parsing (#688)
+
 ## [1.9.1] - 03-05-2024
 
 ### Added
@@ -1621,6 +1627,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.9.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.9.2
 [1.9.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.9.1
 [1.9.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.9.0
 [1.9.0-beta]: https://github.com/Paciente8159/uCNC/releases/tag/v1.9.0-beta

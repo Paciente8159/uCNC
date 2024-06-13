@@ -22,8 +22,8 @@
 */
 
 #include "../cnc.h"
-
 #include <stdio.h>
+#include <stdint.h>
 #include <math.h>
 #include <string.h>
 #include <float.h>
@@ -44,11 +44,15 @@ FORCEINLINE static uint8_t parser_get_token(uint8_t *word, float *value);
 FORCEINLINE static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t *new_state, parser_cmd_explicit_t *cmd);
 FORCEINLINE static uint8_t parser_mcode_word(uint8_t code, uint8_t mantissa, parser_state_t *new_state, parser_cmd_explicit_t *cmd);
 FORCEINLINE static uint8_t parser_letter_word(uint8_t c, float value, uint8_t mantissa, parser_words_t *words, parser_cmd_explicit_t *cmd);
-static uint8_t parse_grbl_exec_code(uint8_t code);
+static uint8_t parser_grbl_exec_code(uint8_t code);
 static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
 static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
 static uint8_t parser_grbl_command(void);
 FORCEINLINE static uint8_t parser_gcode_command(bool is_jogging);
+
+#ifdef ENABLE_RS274NGC_EXPRESSIONS
+char parser_backtrack;
+#endif
 
 #ifdef ENABLE_CANNED_CYCLES
 uint8_t parser_exec_command_block(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
@@ -140,7 +144,7 @@ uint8_t parser_read_command(void)
 		{
 			if (error != GRBL_JOG_CMD)
 			{
-				return parse_grbl_exec_code(error);
+				return parser_grbl_exec_code(error);
 			}
 		}
 		else
@@ -332,10 +336,7 @@ static uint8_t parser_grbl_command(void)
 	{
 		c = serial_peek();
 		// toupper
-		if (c >= 'a' && c <= 'z')
-		{
-			c -= 32;
-		}
+		c = TOUPPER(c);
 
 		if (!(c >= 'A' && c <= 'Z'))
 		{
@@ -580,7 +581,7 @@ static uint8_t parser_grbl_command(void)
 	return error;
 }
 
-static uint8_t parse_grbl_exec_code(uint8_t code)
+static uint8_t parser_grbl_exec_code(uint8_t code)
 {
 
 	switch (code)
@@ -695,6 +696,9 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 	{
 		uint8_t word = 0;
 		float value = 0;
+#ifdef ENABLE_RS274NGC_EXPRESSIONS
+		float assign_val = 0;
+#endif
 
 #ifdef ECHO_CMD
 		if (!wordcount)
@@ -704,6 +708,8 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 		}
 #endif
 		error = parser_get_token(&word, &value);
+		DEBUG_PUTC(word);
+
 		if (error)
 		{
 			parser_discard_command();
@@ -743,12 +749,28 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 
 		switch (word)
 		{
+#ifdef ENABLE_RS274NGC_EXPRESSIONS
+		case '#':
+			if ((value < 1) || (value > RS274NGC_MAX_USER_VARS) || ((int)floorf(value) != value))
+			{
+				return STATUS_GCODE_COMMAND_VALUE_NOT_INTEGER;
+			}
+			if (!parser_get_float(&assign_val))
+			{
+				return STATUS_BAD_NUMBER_FORMAT;
+			}
+			DEBUG_FLT(assign_val);
+			DEBUG_PUTC('=');
+			new_state->user_vars[(int)value - 1] = assign_val;
+			break;
+#endif
 		case EOL:
 #ifdef GCODE_COUNT_TEXT_LINES
 			// if enabled store line number
 			linecounter++;
 			words->n = linecounter;
 #endif
+			DEBUG_PUTC('\n');
 #ifdef ECHO_CMD
 			protocol_send_string(MSG_END);
 			serial_broadcast(false);
@@ -769,6 +791,8 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 			error = parser_letter_word(word, value, mantissa, words, cmd);
 			break;
 		}
+
+		DEBUG_FLT(value);
 
 #ifdef ENABLE_PARSER_MODULES
 		if ((error == STATUS_GCODE_UNSUPPORTED_COMMAND || error == STATUS_GCODE_UNUSED_WORDS))
@@ -1746,9 +1770,9 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 #endif
 #ifndef DISABLE_PROBING_SUPPORT
 		case G38: // G38.2
-				  // G38.3
-				  // G38.4
-				  // G38.5
+							// G38.3
+							// G38.4
+							// G38.5
 			probe_flags = (new_state->groups.motion_mantissa > 3) ? 1 : 0;
 			probe_flags |= (new_state->groups.motion_mantissa & 0x01) ? 2 : 0;
 
@@ -1782,7 +1806,8 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 				{
 					new_state->groups.height_map_active = 1;
 				}
-				else{
+				else
+				{
 					// clear the map
 					mc_clear_hmap();
 					new_state->groups.height_map_active = 0;
@@ -1912,106 +1937,6 @@ static uint8_t parser_gcode_command(bool is_jogging)
 }
 
 /*
-	Parses a string to number (real)
-	If the number is an integer the isinteger flag is set
-	The string pointer is also advanced to the next position
-*/
-uint8_t parser_get_float(float *value)
-{
-	uint32_t intval = 0;
-	uint8_t fpcount = 0;
-	uint8_t result = NUMBER_UNDEF;
-
-	uint8_t c = parser_get_next_preprocessed(true);
-
-	*value = 0;
-
-	if (c == '-' || c == '+')
-	{
-		if (c == '-')
-		{
-			result |= NUMBER_ISNEGATIVE;
-		}
-#ifdef ECHO_CMD
-		serial_putc(serial_getc());
-#else
-		serial_getc();
-
-#endif
-		c = parser_get_next_preprocessed(true);
-	}
-
-	for (;;)
-	{
-		uint8_t digit = (uint8_t)c - 48;
-		if (digit <= 9)
-		{
-			intval = fast_int_mul10(intval) + digit;
-			if (fpcount)
-			{
-				fpcount++;
-			}
-
-			result |= NUMBER_OK;
-		}
-		else if (c == '.' && !fpcount)
-		{
-			fpcount++;
-			result |= NUMBER_ISFLOAT;
-		}
-		else if (c == ' ')
-		{
-			// ignore white chars in the middle of numbers
-		}
-		else
-		{
-			if (!(result & NUMBER_OK))
-			{
-				return NUMBER_UNDEF;
-			}
-			break;
-		}
-
-#ifdef ECHO_CMD
-		serial_putc(serial_getc());
-#else
-		serial_getc();
-
-#endif
-		c = parser_get_next_preprocessed(true);
-	}
-
-	*value = (float)intval;
-	if (fpcount)
-	{
-		fpcount--;
-	}
-
-	do
-	{
-		if (fpcount >= 2)
-		{
-			*value *= 0.01f;
-			fpcount -= 2;
-		}
-
-		if (fpcount >= 1)
-		{
-			*value *= 0.1f;
-			fpcount -= 1;
-		}
-
-	} while (fpcount != 0);
-
-	if (result & NUMBER_ISNEGATIVE)
-	{
-		*value = -*value;
-	}
-
-	return result;
-}
-
-/*
 	Parses comments almost as defined in the RS274NGC
 	To be compatible with Grbl it accepts bad format comments
 	On error returns false otherwise returns true
@@ -2084,16 +2009,671 @@ static void parser_get_comment(uint8_t start_char)
 	}
 }
 
+static uint8_t parser_get_next_preprocessed(bool peek)
+{
+	uint8_t c = serial_peek();
+
+	while (c == ' ' || c == '(' || c == ';')
+	{
+		serial_getc();
+		if (c != ' ')
+		{
+			parser_get_comment(c);
+		}
+		c = serial_peek();
+	}
+
+	if (!peek)
+	{
+		serial_getc();
+#ifdef ECHO_CMD
+		serial_putc(c);
+#endif
+	}
+
+	return c;
+}
+
+#ifdef ENABLE_RS274NGC_EXPRESSIONS
+
+#define OP_LEVEL0 (0 << 5)
+#define OP_LEVEL1 (1 << 5)
+#define OP_LEVEL2 (2 << 5)
+#define OP_LEVEL3 (3 << 5)
+#define OP_LEVEL4 (4 << 5)
+#define OP_LEVEL5 (5 << 5)
+#define OP_LEVEL6 (6 << 5)
+#define OP_LEVEL7 (7 << 5)
+#define OP_LEVEL(X) (X & (7 << 5))
+
+#define OP_INVALID 0
+#define OP_AND (OP_LEVEL0 | 1)
+#define OP_OR (OP_LEVEL0 | 2)
+#define OP_XOR (OP_LEVEL0 | 3)
+#define OP_ADD (OP_LEVEL1 | 1)
+#define OP_SUB (OP_LEVEL1 | 2)
+#define OP_MUL (OP_LEVEL2 | 1)
+#define OP_DIV (OP_LEVEL2 | 2)
+#define OP_MOD (OP_LEVEL2 | 3)
+#define OP_POW (OP_LEVEL3 | 1)
+
+#define OP_NEG (OP_LEVEL4 | 1)
+#define OP_SQRT (OP_LEVEL4 | 10)
+#define OP_COS (OP_LEVEL4 | 20)
+#define OP_SIN (OP_LEVEL4 | 21)
+#define OP_TAN (OP_LEVEL4 | 22)
+#define OP_ACOS (OP_LEVEL4 | 23)
+#define OP_ASIN (OP_LEVEL4 | 24)
+#define OP_ATAN (OP_LEVEL4 | 25)
+#define OP_ATAN_DIV (OP_LEVEL4 | 26)
+#define OP_EXP (OP_LEVEL4 | 27)
+#define OP_LN (OP_LEVEL4 | 28)
+#define OP_ABS (OP_LEVEL4 | 29)
+#define OP_FIX (OP_LEVEL4 | 30)
+#define OP_FUP (OP_LEVEL4 | 31)
+#define OP_ROUND (OP_LEVEL4 | 32)
+#define OP_EXISTS (OP_LEVEL4 | 33)
+
+#define OP_EXPR_END (OP_LEVEL5 | 1)
+#define OP_EXPR_START (OP_LEVEL5 | 2)
+
+#define OP_WORD 201
+#define OP_PARSER_VAR 202
+#define OP_REAL 203
+#define OP_ASSIGN 252
+#define OP_ENDLINE 253
+
+bool parser_assert_op(parser_stack_t stack, float rhs)
+{
+	int val = 0;
+	switch (stack.op)
+	{
+	case OP_PARSER_VAR:
+		if (rhs < 1 || floorf(rhs) > rhs)
+		{
+			return false;
+		}
+
+		val = (int)rhs;
+
+		if (val > RS274NGC_MAX_USER_VARS && val < 5000)
+		{
+			return false;
+		}
+
+		switch (val)
+		{
+		case 5061:
+		case 5062:
+		case 5063:
+		case 5064:
+		case 5065:
+		case 5066:
+			if (val - 5061 >= AXIS_COUNT)
+			{
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
+float parser_get_parameter(int param)
+{
+	float result[AXIS_COUNT];
+	int32_t probe_position[STEPPER_COUNT];
+	int offset = param * 0.1f;
+	uint8_t pos = (uint8_t)(param - (offset * 10));
+
+	switch (offset)
+	{
+	case 506:
+		parser_get_probe(probe_position);
+		kinematics_steps_to_coordinates(probe_position, result);
+		pos--;
+		if (pos < AXIS_COUNT)
+		{
+			return result[pos];
+		}
+		break;
+	case 522:
+		if (!pos)
+		{
+			return (parser_state.groups.coord_system + 1);
+		}
+		pos--;
+		__FALL_THROUGH__
+	case 524:
+	case 526:
+	case 528:
+	case 530:
+	case 532:
+	case 534:
+	case 536:
+	case 538:
+		if (pos >= AXIS_COUNT || ((offset - 522) >> 1) >= COORD_SYS_COUNT)
+		{
+			return 0;
+		}
+		if (pos != parser_parameters.coord_system_index)
+		{
+			settings_load(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (pos * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)result, PARSER_PARAM_SIZE);
+		}
+		else
+		{
+			return parser_parameters.coord_system_offset[pos];
+		}
+		return result[pos];
+	case 540:
+		if (!pos)
+		{
+			return parser_state.groups.tool_change;
+		}
+		return g_settings.tool_length_offset[parser_state.groups.tool_change];
+	case 542:
+		if (pos < AXIS_COUNT)
+		{
+			return parser_last_pos[pos];
+		}
+		break;
+	}
+
+	return 0;
+}
+
+float parser_exec_op(parser_stack_t stack, float rhs)
+{
+	switch (stack.op)
+	{
+	case OP_ADD:
+		return stack.lhs + rhs;
+	case OP_SUB:
+		return stack.lhs - rhs;
+	case OP_MUL:
+		return stack.lhs * rhs;
+	case OP_DIV:
+		return stack.lhs / rhs;
+	case OP_POW:
+		return powf(stack.lhs, rhs);
+	case OP_SQRT:
+		return sqrtf(rhs);
+	case OP_MOD:
+		return (float)((int64_t)stack.lhs % (int64_t)rhs);
+	case OP_AND:
+		return (float)((int64_t)stack.lhs & (int64_t)rhs);
+	case OP_OR:
+		return (float)((int64_t)stack.lhs | (int64_t)rhs);
+	case OP_XOR:
+		return (float)((int64_t)stack.lhs ^ (int64_t)rhs);
+	case OP_COS:
+		return cosf(rhs * DEG_RAD_MULT);
+	case OP_SIN:
+		return sinf(rhs * DEG_RAD_MULT);
+	case OP_TAN:
+		return tanf(rhs * DEG_RAD_MULT);
+	case OP_ACOS:
+		return RAD_DEG_MULT * acosf(rhs);
+	case OP_ASIN:
+		return RAD_DEG_MULT * asinf(rhs);
+	// case OP_ATAN:
+	// 	return rhs;
+	case OP_ATAN_DIV:
+		// special atan case
+		return RAD_DEG_MULT * atan2f(stack.lhs, rhs);
+	case OP_EXP:
+		return expf(rhs);
+	case OP_LN:
+		return logf(rhs);
+	case OP_ABS:
+		return fabs(rhs);
+	case OP_FIX:
+		return floorf(rhs);
+	case OP_FUP:
+		return ceilf(rhs);
+	case OP_ROUND:
+		return roundf(rhs);
+	case OP_NEG:
+		return -rhs;
+	case OP_EXISTS:
+		if (rhs < 1 || rhs > RS274NGC_MAX_USER_VARS || floorf(rhs) > rhs)
+		{
+			return 0;
+		}
+		return 1;
+	case OP_PARSER_VAR:
+		if ((int)rhs > 5000)
+		{
+			return parser_get_parameter((int)rhs);
+		}
+		return parser_state.user_vars[(int)rhs - 1];
+	default:
+		return rhs;
+	}
+}
+
+uint8_t parser_get_operation(bool can_call_unary_func)
+{
+	char c = (char)parser_get_next_preprocessed(true);
+	c = TOUPPER(c);
+	uint8_t result = OP_INVALID;
+	uint8_t i = 0;
+
+	if ((c >= '0' && c <= '9') || c == '.')
+	{
+		return OP_REAL;
+	}
+	else if (c < 'A' || c > 'Z')
+	{
+		if (!c)
+		{
+			return OP_ENDLINE;
+		}
+		parser_get_next_preprocessed(false);
+		char peek = (char)parser_get_next_preprocessed(true);
+		switch (c)
+		{
+		case '=':
+			parser_backtrack = c;
+			return OP_ENDLINE;
+		case '[':
+			if (peek == '-')
+			{
+				parser_backtrack = c;
+			}
+			return OP_EXPR_START;
+		case ']':
+			return OP_EXPR_END;
+		case '#':
+			return OP_PARSER_VAR;
+		case '*':
+			result = OP_MUL;
+			if (peek == '*')
+			{
+				parser_get_next_preprocessed(false);
+				result = OP_POW;
+			}
+
+			if (parser_get_next_preprocessed(true) == '-')
+			{
+				parser_backtrack = c;
+			}
+			return result;
+		case '/':
+			if (peek == '-')
+			{
+				parser_backtrack = c;
+			}
+			return OP_DIV;
+		case '-':
+			result = OP_SUB;
+			if (parser_backtrack)
+			{
+				result = OP_NEG;
+				parser_backtrack = 0;
+			}
+
+			if (peek == '-')
+			{
+				parser_backtrack = c;
+			}
+			return result;
+		case '+':
+			if (peek == '-')
+			{
+				parser_backtrack = c;
+			}
+			return OP_ADD;
+		}
+	}
+	else if (!can_call_unary_func) // if can't do unary checks for possible binary op
+	{
+		char peek = 0;
+		switch (c)
+		{
+		case 'A':
+			peek = 'N';
+			break;
+		case 'M':
+			peek = 'O';
+			break;
+		case 'O':
+			peek = 'R';
+			break;
+		case 'X':
+			peek = 'O';
+			break;
+		default:
+			return OP_WORD;
+		}
+		parser_backtrack = c;
+		parser_get_next_preprocessed(false);
+		if (peek != TOUPPER(parser_get_next_preprocessed(true)))
+		{
+			return OP_WORD;
+		}
+
+		i = 1;
+	}
+
+	char str[7];
+	memset(str, 0, sizeof(str));
+	parser_backtrack = c;
+	str[0] = c;
+
+	for (; i < 7; i++)
+	{
+		c = parser_get_next_preprocessed(true);
+		c = TOUPPER(c);
+		if (c < 'A' || c > 'Z')
+		{
+			break;
+		}
+		parser_get_next_preprocessed(false);
+		str[i] = (char)c;
+	}
+
+	if (strlen(str) == 1)
+	{
+		return OP_WORD;
+	}
+
+	parser_backtrack = 0;
+
+	if (!strcmp(str, "MOD"))
+	{
+		return OP_MOD;
+	}
+	if (!strcmp(str, "AND"))
+	{
+		return OP_AND;
+	}
+	if (!strcmp(str, "OR"))
+	{
+		return OP_OR;
+	}
+	if (!strcmp(str, "XOR"))
+	{
+		return OP_XOR;
+	}
+
+	if (c != '[')
+	{
+		return OP_INVALID;
+	}
+
+	if (!strcmp(str, "SQRT"))
+	{
+		return OP_SQRT;
+	}
+	if (!strcmp(str, "COS"))
+	{
+		return OP_COS;
+	}
+	if (!strcmp(str, "SIN"))
+	{
+		return OP_SIN;
+	}
+	if (!strcmp(str, "TAN"))
+	{
+		return OP_TAN;
+	}
+	if (!strcmp(str, "ACOS"))
+	{
+		return OP_ACOS;
+	}
+	if (!strcmp(str, "ASIN"))
+	{
+		return OP_ASIN;
+	}
+	if (!strcmp(str, "ATAN"))
+	{
+		return OP_ATAN;
+	}
+	if (!strcmp(str, "EXP"))
+	{
+		return OP_EXP;
+	}
+	if (!strcmp(str, "LN"))
+	{
+		return OP_LN;
+	}
+	if (!strcmp(str, "ABS"))
+	{
+		return OP_ABS;
+	}
+	if (!strcmp(str, "FIX"))
+	{
+		return OP_FIX;
+	}
+	if (!strcmp(str, "FUP"))
+	{
+		return OP_FUP;
+	}
+	if (!strcmp(str, "ROUND"))
+	{
+		return OP_ROUND;
+	}
+	if (!strcmp(str, "EXISTS"))
+	{
+		return OP_EXISTS;
+	}
+
+	return OP_INVALID;
+}
+
+uint8_t parser_get_expression(float *value)
+{
+	uint8_t result = NUMBER_UNDEF;
+	float rhs = 0;
+	// initializes the stack
+	uint8_t stack_depth = 1;
+	parser_stack_t stack[MAX_PARSER_STACK_DEPTH];
+	memset(stack, 0, sizeof(stack));
+	bool can_call_unary_func = true;
+	bool is_atan = false;
+	stack[0].op = OP_ASSIGN;
+	uint8_t prev_op = OP_INVALID;
+
+	for (;;)
+	{
+		uint8_t op = parser_get_operation(can_call_unary_func);
+		can_call_unary_func = (!stack_depth) ? true : (op <= OP_NEG || op == OP_EXPR_START);
+		if (is_atan)
+		{
+			if (op != OP_DIV)
+			{
+				return NUMBER_UNDEF;
+			}
+
+				op = OP_ATAN_DIV;
+				is_atan = false;
+		}
+		
+		
+
+		switch (op)
+		{
+		case OP_INVALID:
+		case OP_ENDLINE:
+		case OP_WORD:
+			if (stack_depth != 1)
+			{
+				return NUMBER_UNDEF;
+			}
+			*value = parser_exec_op(stack[stack_depth], rhs);
+			result = NUMBER_OK;
+			result |= (rhs < 0) ? NUMBER_ISNEGATIVE : 0;
+			result |= (floorf(rhs) != rhs) ? NUMBER_ISFLOAT : 0;
+			return result;
+		case OP_EXPR_START:
+			stack[stack_depth].op = op;
+			stack_depth++;
+			break;
+		case OP_EXPR_END:
+			while (stack_depth)
+			{
+				stack_depth--;
+				op = stack[stack_depth].op;
+				if (!parser_assert_op(stack[stack_depth], rhs))
+				{
+					return NUMBER_UNDEF;
+				}
+				rhs = parser_exec_op(stack[stack_depth], rhs);
+				stack[stack_depth].op = 0;
+				if (op == OP_EXPR_START)
+				{
+					if (OP_LEVEL(stack[stack_depth - 1].op) == OP_LEVEL4)
+					{
+						is_atan = (stack[stack_depth - 1].op == OP_ATAN);
+						stack_depth--;
+						rhs = parser_exec_op(stack[stack_depth], rhs);
+						stack[stack_depth].op = 0;
+					}
+					break;
+				}
+				if (!stack_depth && op != OP_EXPR_START)
+				{
+					return NUMBER_UNDEF;
+				}
+			}
+			break;
+		case OP_REAL:
+			parser_get_float(&rhs);
+			break;
+		default:
+			while (stack_depth)
+			{
+				if (OP_LEVEL(stack[stack_depth - 1].op) < OP_LEVEL(op) || stack[stack_depth - 1].op >= OP_EXPR_START)
+				{
+					break;
+				}
+				// atan must be preceded by a div
+				if (stack[stack_depth - 1].op == OP_ATAN && op != OP_DIV)
+				{
+					return NUMBER_UNDEF;
+				}
+				stack_depth--;
+				if (!parser_assert_op(stack[stack_depth], rhs))
+				{
+					return NUMBER_UNDEF;
+				}
+				rhs = parser_exec_op(stack[stack_depth], rhs);
+				stack[stack_depth].op = 0;
+			}
+			stack[stack_depth].op = op;
+			stack[stack_depth].lhs = rhs;
+			rhs = 0;
+			stack_depth++;
+			break;
+		}
+	}
+
+	return result;
+}
+
+#endif
+
+uint8_t parser_get_float(float *value)
+{
+	uint32_t intval = 0;
+	uint8_t fpcount = 0;
+	uint8_t result = NUMBER_UNDEF;
+	float rhs = 0;
+
+	uint8_t c = parser_get_next_preprocessed(true);
+#ifdef ENABLE_RS274NGC_EXPRESSIONS
+	c = TOUPPER(c);
+	if (c == '[' || c == '#' || (c >= 'A' && c <= 'Z'))
+	{
+		return parser_get_expression(value);
+	}
+#endif
+
+	if (c == '-' || c == '+')
+	{
+		if (c == '-')
+		{
+			result |= NUMBER_ISNEGATIVE;
+		}
+		parser_get_next_preprocessed(false);
+		c = parser_get_next_preprocessed(true);
+	}
+
+	for (;;)
+	{
+		uint8_t digit = (uint8_t)c - 48;
+		if (digit <= 9)
+		{
+			intval = fast_int_mul10(intval) + digit;
+			if (fpcount)
+			{
+				fpcount++;
+			}
+
+			result |= NUMBER_OK;
+		}
+		else if (c == '.' && !fpcount)
+		{
+			fpcount++;
+			result |= NUMBER_ISFLOAT;
+		}
+		else
+		{
+			if (!(result & NUMBER_OK))
+			{
+				return NUMBER_UNDEF;
+			}
+			break;
+		}
+
+		parser_get_next_preprocessed(false);
+		c = parser_get_next_preprocessed(true);
+	}
+
+	rhs = (float)intval;
+	if (fpcount)
+	{
+		fpcount--;
+	}
+
+	do
+	{
+		if (fpcount >= 2)
+		{
+			rhs *= 0.01f;
+			fpcount -= 2;
+		}
+
+		if (fpcount >= 1)
+		{
+			rhs *= 0.1f;
+			fpcount -= 1;
+		}
+
+	} while (fpcount != 0);
+
+	*value = (result & NUMBER_ISNEGATIVE) ? -rhs : rhs;
+
+	return result;
+}
+
 static uint8_t parser_get_token(uint8_t *word, float *value)
 {
-	// this flushes leading white chars and also takes care of processing comments
+// this flushes leading white chars and also takes care of processing comments
+#ifndef ENABLE_RS274NGC_EXPRESSIONS
 	uint8_t c = parser_get_next_preprocessed(false);
+#else
+	uint8_t c = parser_backtrack;
+	parser_backtrack = 0;
+	if (!c)
+	{
+		c = parser_get_next_preprocessed(false);
+	}
+#endif
 
 	// if other uint8_t starts tokenization
-	if (c >= 'a' && c <= 'z')
-	{
-		c -= 32; // uppercase
-	}
+	c = TOUPPER(c);
 
 	*word = c;
 	switch (c)
@@ -2102,10 +2682,20 @@ static uint8_t parser_get_token(uint8_t *word, float *value)
 		return STATUS_OK;
 	case OVF:
 		return STATUS_OVERFLOW;
-	default:
-#ifdef ECHO_CMD
-		serial_putc(c);
+#ifdef ENABLE_RS274NGC_EXPRESSIONS
+	case '#':
+		if (parser_get_float(value) != NUMBER_OK)
+		{
+			return STATUS_INVALID_STATEMENT;
+		}
+		c = parser_get_next_preprocessed(false);
+		if (c != '=')
+		{
+			return STATUS_INVALID_STATEMENT;
+		}
+		break;
 #endif
+	default:
 		if (c >= 'A' && c <= 'Z') // invalid recognized uint8_t
 		{
 			if (!parser_get_float(value))
@@ -2592,28 +3182,6 @@ static uint8_t parser_letter_word(uint8_t c, float value, uint8_t mantissa, pars
 	return STATUS_OK;
 }
 
-static uint8_t parser_get_next_preprocessed(bool peek)
-{
-	uint8_t c = serial_peek();
-
-	while (c == ' ' || c == '(' || c == ';')
-	{
-		serial_getc();
-		if (c != ' ')
-		{
-			parser_get_comment(c);
-		}
-		c = serial_peek();
-	}
-
-	if (!peek)
-	{
-		serial_getc();
-	}
-
-	return c;
-}
-
 void parser_discard_command(void)
 {
 	uint8_t c = '@';
@@ -2639,15 +3207,15 @@ void parser_reset(bool stopgroup_only)
 	{
 		return;
 	}
-	parser_state.groups.coord_system = G54;				  // G54
-	parser_state.groups.plane = G17;					  // G17
-	parser_state.groups.feed_speed_override = M48;		  // M48
+	parser_state.groups.coord_system = G54;								// G54
+	parser_state.groups.plane = G17;											// G17
+	parser_state.groups.feed_speed_override = M48;				// M48
 	parser_state.groups.cutter_radius_compensation = G40; // G40
-	parser_state.groups.distance_mode = G90;			  // G90
-	parser_state.groups.feedrate_mode = G94;			  // G94
-	parser_state.groups.tlo_mode = G49;					  // G49
+	parser_state.groups.distance_mode = G90;							// G90
+	parser_state.groups.feedrate_mode = G94;							// G94
+	parser_state.groups.tlo_mode = G49;										// G49
 #if TOOL_COUNT > 0
-	parser_state.groups.coolant = M9;		  // M9
+	parser_state.groups.coolant = M9;					// M9
 	parser_state.groups.spindle_turning = M5; // M5
 	parser_state.groups.tool_change = 1;
 #if TOOL_COUNT > 1
@@ -2655,8 +3223,8 @@ void parser_reset(bool stopgroup_only)
 #endif
 	parser_state.groups.path_mode = G61;
 #endif
-	parser_state.groups.motion = G1;											   // G1
-	parser_state.groups.units = G21;											   // G21
+	parser_state.groups.motion = G1;																							 // G1
+	parser_state.groups.units = G21;																							 // G21
 	memset(parser_parameters.g92_offset, 0, sizeof(parser_parameters.g92_offset)); // G92.2
 	parser_parameters.tool_length_offset = 0;
 	parser_wco_counter = 0;
