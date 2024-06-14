@@ -17,8 +17,19 @@
 */
 
 #include "../../cnc.h"
+
+// for tests
+#define USE_GRAPHIC_TFT_ESPI_LIB
+
+#ifndef USE_GRAPHIC_TFT_ESPI_LIB
 #include <clib/u8g2.h>
 #include <clib/u8x8.h>
+#else
+#include "u8g2_tft_espi.h"
+#ifndef U8G2
+#define U8G2 NULL
+#endif
+#endif
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
@@ -58,8 +69,10 @@
 #define GRAPHIC_DISPLAY_DOWN 16
 #define GRAPHIC_DISPLAY_HOME 32
 
+#ifndef U8G2
 static u8g2_t graphiclcd_u8g2;
 #define U8G2 ((u8g2_t *)&graphiclcd_u8g2)
+#endif
 
 #define LCDWIDTH u8g2_GetDisplayWidth(U8G2)
 #define LCDHEIGHT u8g2_GetDisplayHeight(U8G2)
@@ -81,6 +94,7 @@ static uint8_t graphic_display_str_line_len(const char *__s);
  * but is not needed
  *
  * */
+#ifndef USE_GRAPHIC_TFT_ESPI_LIB
 #if (GRAPHIC_DISPLAY_INTERFACE & (GRAPHIC_DISPLAY_SW_SPI | GRAPHIC_DISPLAY_HW_SPI))
 
 #include "../softspi.h"
@@ -93,7 +107,7 @@ static softspi_port_t *graphic_port;
 #ifndef GRAPHIC_DISPLAY_SPI_DATA
 #define GRAPHIC_DISPLAY_SPI_DATA DOUT5
 #endif
-SOFTSPI(graphic_spi, 100000UL, 0, GRAPHIC_DISPLAY_SPI_DATA, GRAPHIC_DISPLAY_SPI_DATA, GRAPHIC_DISPLAY_SPI_CLOCK)
+SOFTSPI(graphic_spi, 1000000UL, 0, GRAPHIC_DISPLAY_SPI_DATA, GRAPHIC_DISPLAY_SPI_DATA, GRAPHIC_DISPLAY_SPI_CLOCK)
 #endif
 
 #ifndef GRAPHIC_DISPLAY_SPI_CS
@@ -198,8 +212,8 @@ uint8_t u8x8_gpio_and_delay_ucnc(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, voi
 	switch (msg)
 	{
 	case U8X8_MSG_GPIO_AND_DELAY_INIT: // called once during init phase of u8g2/u8x8
-		break;						   // can be used to setup pins
-	case U8X8_MSG_DELAY_NANO:		   // delay arg_int * 1 nano second
+		break;													 // can be used to setup pins
+	case U8X8_MSG_DELAY_NANO:					 // delay arg_int * 1 nano second
 		while (arg_int--)
 			;
 		break;
@@ -223,15 +237,15 @@ uint8_t u8x8_gpio_and_delay_ucnc(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, voi
 		{
 			mcu_delay_us(1);
 		}
-		break;			   // arg_int=1: delay by 5us, arg_int = 4: delay by 1.25us
+		break;							 // arg_int=1: delay by 5us, arg_int = 4: delay by 1.25us
 	case U8X8_MSG_GPIO_D0: // D0 or SPI clock pin: Output level in arg_int
 #if GRAPHIC_DISPLAY_SPI_CLOCK != UNDEF_PIN
 		io_set_pinvalue(GRAPHIC_DISPLAY_SPI_CLOCK, (bool)arg_int);
 #endif
 		break;
 	case U8X8_MSG_GPIO_D1: // D1 or SPI data pin: Output level in arg_int
-#if GRAPHIC_DISPLAY_SPI_CLOCK != UNDEF_PIN
-		io_set_pinvalue(GRAPHIC_DISPLAY_SPI_CLOCK, (bool)arg_int);
+#if GRAPHIC_DISPLAY_SPI_DATA != UNDEF_PIN
+		io_set_pinvalue(GRAPHIC_DISPLAY_SPI_DATA, (bool)arg_int);
 #endif
 		break;
 	case U8X8_MSG_GPIO_D2: // D2 pin: Output level in arg_int
@@ -309,7 +323,7 @@ uint8_t u8x8_gpio_and_delay_ucnc(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, voi
 			u8x8_SetGPIOResult(u8x8, 0);
 		}
 #endif
-		break;					 // arg_int=1: Input dir with pullup high for I2C clock pin
+		break;										 // arg_int=1: Input dir with pullup high for I2C clock pin
 	case U8X8_MSG_GPIO_I2C_DATA: // arg_int=0: Output low at I2C data pin
 #if GRAPHIC_DISPLAY_I2C_DATA != UNDEF_PIN
 		if (arg_int)
@@ -360,6 +374,8 @@ uint8_t u8x8_gpio_and_delay_ucnc(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, voi
 	}
 	return 1;
 }
+
+#endif
 
 #ifndef GRAPHIC_DISPLAY_ENCODER_BTN
 #define GRAPHIC_DISPLAY_ENCODER_BTN DIN16
@@ -488,7 +504,7 @@ bool graphic_display_rotary_encoder_control_sample(void *args)
 	}
 
 	pin_state = !io_get_pinvalue(GRAPHIC_DISPLAY_ENCODER_BTN) ? 1 : 0;
-
+	io_set_pinvalue(GRAPHIC_DISPLAY_BEEP, pin_state);
 	// if btn is pressed
 	if ((pin_state & 1))
 	{
@@ -618,6 +634,8 @@ uint8_t system_menu_send_cmd(const char *__s)
 
 DECL_MODULE(graphic_display)
 {
+
+#ifndef USE_GRAPHIC_TFT_ESPI_LIB
 // initializes the display port
 #if (GRAPHIC_DISPLAY_INTERFACE == GRAPHIC_DISPLAY_SW_SPI)
 	graphic_port = &graphic_spi;
@@ -638,6 +656,9 @@ DECL_MODULE(graphic_display)
 	u8g2_ClearDisplay(U8G2);
 	u8g2_SetPowerSave(U8G2, 0); // wake up display
 	u8g2_FirstPage(U8G2);
+#else
+	u8g2_Init();
+#endif
 
 #ifdef DECL_SERIAL_STREAM
 	serial_stream_register(&graphic_stream);
@@ -725,6 +746,7 @@ static void io_states_str(char *buff)
 
 void system_menu_render_startup(void)
 {
+#ifndef USE_GRAPHIC_TFT_ESPI_LIB
 	u8g2_ClearBuffer(U8G2);
 	char buff[SYSTEM_MENU_MAX_STR_LEN];
 	rom_strcpy(buff, __romstr__("µCNC"));
@@ -735,6 +757,9 @@ void system_menu_render_startup(void)
 	u8g2_SetFont(U8G2, u8g2_font_6x12_tr);
 	u8g2_DrawStr(U8G2, ALIGN_CENTER(buff), JUSTIFY_CENTER + FONTHEIGHT, buff);
 	u8g2_SendBuffer(U8G2);
+#else
+	u8g2_RenderStartup();
+#endif
 
 	// reset menu on actual alarm reset or soft reset
 	if (cnc_get_exec_state(EXEC_INTERLOCKING_FAIL) || cnc_has_alarm())
@@ -840,7 +865,6 @@ void system_menu_render_idle(void)
 	uint8_t modalgroups[14];
 	uint16_t feed;
 	uint16_t spindle;
-	uint8_t coolant;
 	parser_get_modes(modalgroups, &feed, &spindle);
 	rom_strcpy(tool, __romstr__(" T"));
 	system_menu_int_to_str(&tool[2], modalgroups[11]);

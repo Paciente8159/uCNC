@@ -4,6 +4,19 @@ This module adds graphic display support for µCNC.
 
 ## Changelog
 
+### 2024-04-27
+
+- added display beep on press
+
+### 2024-04-25
+
+- increased SPI speed
+- fixed SPI data pin calls using u8g2 lib functions
+
+### 2024-03-30
+
+- fixed get parser modes call
+
 ### 2024-02-13
 
 - updated for v010808
