@@ -1,8 +1,8 @@
-#ifndef UCNC_U8G2_TFT_ESPI_H
-#define UCNC_U8G2_TFT_ESPI_H
+#ifndef UCNC_U8G2_TFT_GFX_H
+#define UCNC_U8G2_TFT_GFX_H
 
 #include "../../cnc.h"
-#ifdef USE_GRAPHIC_TFT_ESPI_LIB
+#ifdef USE_GRAPHIC_ARDUINO_GFX_LIB
 
 #include <stdint.h>
 

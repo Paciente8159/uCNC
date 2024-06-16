@@ -1074,7 +1074,7 @@ void __attribute__((weak)) system_menu_render_menu_item(uint8_t render_flags, co
 	else
 	{
 		// defaults to render the arg as a string
-		system_menu_item_render_arg(render_flags, menuitem.render_arg);
+		system_menu_item_render_arg(render_flags, (const char*)menuitem.render_arg);
 	}
 }
 
@@ -1145,7 +1145,7 @@ void system_menu_item_render_var_arg(uint8_t render_flags, system_menu_item_t *i
 		system_menu_flt_to_str(buffer, *((float *)item->argptr));
 		break;
 	default:
-		buff_ptr = item->argptr;
+		buff_ptr = (char*)item->argptr;
 		break;
 	}
 

@@ -84,7 +84,7 @@ extern "C"
 #elif (__SIZEOF_POINTER__ == 4)
 #define VARG_CONST(X) ((uint32_t)X)
 #else
-#define VARG_CONST(X) (X)
+#define VARG_CONST(X) ((uint64_t)X)
 #endif
 
 	// anonymous struct that is defined later

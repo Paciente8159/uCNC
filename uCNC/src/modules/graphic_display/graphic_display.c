@@ -18,18 +18,8 @@
 
 #include "../../cnc.h"
 
-// for tests
-#define USE_GRAPHIC_TFT_ESPI_LIB
+#include "graphic_display.h"
 
-#ifndef USE_GRAPHIC_TFT_ESPI_LIB
-#include <clib/u8g2.h>
-#include <clib/u8x8.h>
-#else
-#include "u8g2_tft_espi.h"
-#ifndef U8G2
-#define U8G2 NULL
-#endif
-#endif
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
@@ -38,15 +28,6 @@
 
 #if (UCNC_MODULE_VERSION < 10801 || UCNC_MODULE_VERSION > 99999)
 #error "This module is not compatible with the current version of µCNC"
-#endif
-
-#define GRAPHIC_DISPLAY_SW_SPI 1
-#define GRAPHIC_DISPLAY_HW_SPI 2
-#define GRAPHIC_DISPLAY_SW_I2C 4
-#define GRAPHIC_DISPLAY_HW_I2C 8
-
-#ifndef GRAPHIC_DISPLAY_INTERFACE
-#define GRAPHIC_DISPLAY_INTERFACE GRAPHIC_DISPLAY_SW_SPI
 #endif
 
 // used with graphic_display module
@@ -69,23 +50,10 @@
 #define GRAPHIC_DISPLAY_DOWN 16
 #define GRAPHIC_DISPLAY_HOME 32
 
-#ifndef U8G2
-static u8g2_t graphiclcd_u8g2;
-#define U8G2 ((u8g2_t *)&graphiclcd_u8g2)
-#endif
+static int16_t display_width;
+static int16_t display_height;
 
-#define LCDWIDTH u8g2_GetDisplayWidth(U8G2)
-#define LCDHEIGHT u8g2_GetDisplayHeight(U8G2)
-#define FONTHEIGHT (u8g2_GetAscent(U8G2) - u8g2_GetDescent(U8G2))
-#define ALIGN_CENTER(t) ((LCDWIDTH - u8g2_GetUTF8Width(U8G2, t)) / 2)
-#define ALIGN_RIGHT(t) (LCDWIDTH - u8g2_GetUTF8Width(U8G2, t))
-#define ALIGN_LEFT 0
-#define JUSTIFY_CENTER ((LCDHEIGHT + FONTHEIGHT) / 2)
-#define JUSTIFY_BOTTOM (LCDHEIGHT + u8g2_GetDescent(U8G2))
-#define JUSTIFY_TOP u8g2_GetAscent(U8G2)
-#define TEXT_WIDTH(t) u8g2_GetUTF8Width(U8G2, t)
-
-static uint8_t graphic_display_str_lines(const char *__s, uint8_t *max_len);
+static uint8_t graphic_display_str_lines(const char *__s, int16_t *max_len);
 static uint8_t graphic_display_str_line_len(const char *__s);
 
 /**
@@ -94,287 +62,18 @@ static uint8_t graphic_display_str_line_len(const char *__s);
  * but is not needed
  *
  * */
-#ifndef USE_GRAPHIC_TFT_ESPI_LIB
 #if (GRAPHIC_DISPLAY_INTERFACE & (GRAPHIC_DISPLAY_SW_SPI | GRAPHIC_DISPLAY_HW_SPI))
-
 #include "../softspi.h"
-static softspi_port_t *graphic_port;
-
 #if (GRAPHIC_DISPLAY_INTERFACE == GRAPHIC_DISPLAY_SW_SPI)
-#ifndef GRAPHIC_DISPLAY_SPI_CLOCK
-#define GRAPHIC_DISPLAY_SPI_CLOCK DOUT4
+SOFTSPI(graphic_spi, 10000000UL, 0, GRAPHIC_DISPLAY_SPI_DATA, GRAPHIC_DISPLAY_SPI_DATA, GRAPHIC_DISPLAY_SPI_CLOCK)
 #endif
-#ifndef GRAPHIC_DISPLAY_SPI_DATA
-#define GRAPHIC_DISPLAY_SPI_DATA DOUT5
-#endif
-SOFTSPI(graphic_spi, 1000000UL, 0, GRAPHIC_DISPLAY_SPI_DATA, GRAPHIC_DISPLAY_SPI_DATA, GRAPHIC_DISPLAY_SPI_CLOCK)
-#endif
-
-#ifndef GRAPHIC_DISPLAY_SPI_CS
-#define GRAPHIC_DISPLAY_SPI_CS DOUT6
-#endif
-
-uint8_t u8x8_byte_ucnc_hw_spi(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr)
-{
-	cnc_dotasks();
-
-	uint8_t *data;
-	switch (msg)
-	{
-	case U8X8_MSG_BYTE_SEND:
-		data = (uint8_t *)arg_ptr;
-		while (arg_int > 0)
-		{
-			softspi_xmit(graphic_port, (uint8_t)*data);
-			data++;
-			arg_int--;
-			cnc_dotasks();
-		}
-		break;
-	case U8X8_MSG_BYTE_INIT:
-		mcu_set_output(GRAPHIC_DISPLAY_SPI_CS);
-		break;
-	case U8X8_MSG_BYTE_SET_DC:
-		u8x8_gpio_SetDC(u8x8, arg_int);
-		break;
-	case U8X8_MSG_BYTE_START_TRANSFER:
-		softspi_config(graphic_port, u8x8->display_info->spi_mode, u8x8->display_info->sck_clock_hz);
-		/* SPI mode has to be mapped to the mode of the current controller, at least Uno, Due, 101 have different SPI_MODEx values */
-		u8x8_gpio_SetCS(u8x8, u8x8->display_info->chip_enable_level);
-		u8x8->gpio_and_delay_cb(u8x8, U8X8_MSG_DELAY_NANO, u8x8->display_info->post_chip_enable_wait_ns, NULL);
-		break;
-	case U8X8_MSG_BYTE_END_TRANSFER:
-		u8x8->gpio_and_delay_cb(u8x8, U8X8_MSG_DELAY_NANO, u8x8->display_info->pre_chip_disable_wait_ns, NULL);
-		u8x8_gpio_SetCS(u8x8, u8x8->display_info->chip_disable_level);
-		break;
-	default:
-		return 0;
-	}
-	return 1;
-}
 #endif
 
 #if (GRAPHIC_DISPLAY_INTERFACE & (GRAPHIC_DISPLAY_SW_I2C | GRAPHIC_DISPLAY_HW_I2C))
-
 #include "../softi2c.h"
-static softi2c_port_t *graphic_port;
-
 #if (GRAPHIC_DISPLAY_INTERFACE == GRAPHIC_DISPLAY_SW_I2C)
-#ifndef GRAPHIC_DISPLAY_I2C_CLOCK
-#define GRAPHIC_DISPLAY_I2C_CLOCK DIN30
-#endif
-#ifndef GRAPHIC_DISPLAY_I2C_DATA
-#define GRAPHIC_DISPLAY_I2C_DATA DIN31
-#endif
 SOFTI2C(graphic_i2c, 100000UL, GRAPHIC_DISPLAY_I2C_CLOCK, GRAPHIC_DISPLAY_I2C_DATA)
 #endif
-
-uint8_t u8x8_byte_ucnc_hw_i2c(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr)
-{
-	static uint8_t i2c_buffer[32]; /* u8g2/u8x8 will never send more than 32 bytes between START_TRANSFER and END_TRANSFER */
-	static uint8_t i2c_buffer_offset = 0;
-
-	switch (msg)
-	{
-	case U8X8_MSG_BYTE_SEND:
-		memcpy(&i2c_buffer[i2c_buffer_offset], arg_ptr, arg_int);
-		i2c_buffer_offset += arg_int;
-		break;
-	case U8X8_MSG_BYTE_INIT:
-		/* add your custom code to init i2c subsystem */
-		break;
-	case U8X8_MSG_BYTE_SET_DC:
-		/* ignored for i2c */
-		break;
-	case U8X8_MSG_BYTE_START_TRANSFER:
-		i2c_buffer_offset = 0;
-		break;
-	case U8X8_MSG_BYTE_END_TRANSFER:
-#if (UCNC_MODULE_VERSION < 10808)
-		softi2c_send(graphic_port, u8x8_GetI2CAddress(u8x8) >> 1, i2c_buffer, i2c_buffer_offset, true);
-#else
-		softi2c_send(graphic_port, u8x8_GetI2CAddress(u8x8) >> 1, i2c_buffer, i2c_buffer_offset, true, 20);
-#endif
-		i2c_buffer_offset = 0;
-		break;
-	default:
-		return 0;
-	}
-
-	return 1;
-}
-#endif
-
-uint8_t u8x8_gpio_and_delay_ucnc(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr)
-{
-	cnc_dotasks();
-
-	switch (msg)
-	{
-	case U8X8_MSG_GPIO_AND_DELAY_INIT: // called once during init phase of u8g2/u8x8
-		break;													 // can be used to setup pins
-	case U8X8_MSG_DELAY_NANO:					 // delay arg_int * 1 nano second
-		while (arg_int--)
-			;
-		break;
-	case U8X8_MSG_DELAY_100NANO: // delay arg_int * 100 nano seconds
-		while (arg_int--)
-			mcu_delay_100ns();
-		break;
-	case U8X8_MSG_DELAY_10MICRO: // delay arg_int * 10 micro seconds
-		while (arg_int--)
-			mcu_delay_us(10);
-		break;
-	case U8X8_MSG_DELAY_MILLI: // delay arg_int * 1 milli second
-		cnc_delay_ms(arg_int);
-		break;
-	case U8X8_MSG_DELAY_I2C: // arg_int is the I2C speed in 100KHz, e.g. 4 = 400 KHz
-		if (arg_int == 1)
-		{
-			mcu_delay_us(5);
-		}
-		else
-		{
-			mcu_delay_us(1);
-		}
-		break;							 // arg_int=1: delay by 5us, arg_int = 4: delay by 1.25us
-	case U8X8_MSG_GPIO_D0: // D0 or SPI clock pin: Output level in arg_int
-#if GRAPHIC_DISPLAY_SPI_CLOCK != UNDEF_PIN
-		io_set_pinvalue(GRAPHIC_DISPLAY_SPI_CLOCK, (bool)arg_int);
-#endif
-		break;
-	case U8X8_MSG_GPIO_D1: // D1 or SPI data pin: Output level in arg_int
-#if GRAPHIC_DISPLAY_SPI_DATA != UNDEF_PIN
-		io_set_pinvalue(GRAPHIC_DISPLAY_SPI_DATA, (bool)arg_int);
-#endif
-		break;
-	case U8X8_MSG_GPIO_D2: // D2 pin: Output level in arg_int
-#ifdef U8X8_MSG_GPIO_D2_PIN
-		io_set_pinvalue(U8X8_MSG_GPIO_D2_PIN, (bool)arg_int);
-#endif
-		break;
-	case U8X8_MSG_GPIO_D3: // D3 pin: Output level in arg_int
-#ifdef U8X8_MSG_GPIO_D3_PIN
-		io_set_pinvalue(U8X8_MSG_GPIO_D3_PIN, (bool)arg_int);
-#endif
-		break;
-	case U8X8_MSG_GPIO_D4: // D4 pin: Output level in arg_int
-#ifdef U8X8_MSG_GPIO_D4_PIN
-		io_set_pinvalue(U8X8_MSG_GPIO_D4_PIN, (bool)arg_int);
-#endif
-		break;
-	case U8X8_MSG_GPIO_D5: // D5 pin: Output level in arg_int
-#ifdef U8X8_MSG_GPIO_D5_PIN
-		io_set_pinvalue(U8X8_MSG_GPIO_D5_PIN, (bool)arg_int);
-#endif
-		break;
-	case U8X8_MSG_GPIO_D6: // D6 pin: Output level in arg_int
-#ifdef U8X8_MSG_GPIO_D6_PIN
-		io_set_pinvalue(U8X8_MSG_GPIO_D6_PIN, (bool)arg_int);
-#endif
-		break;
-	case U8X8_MSG_GPIO_D7: // D7 pin: Output level in arg_int
-#ifdef U8X8_MSG_GPIO_D7_PIN
-		io_set_pinvalue(U8X8_MSG_GPIO_D7_PIN, (bool)arg_int);
-#endif
-		break;
-	case U8X8_MSG_GPIO_E: // E/WR pin: Output level in arg_int
-#ifdef U8X8_MSG_GPIO_E_PIN
-		io_set_pinvalue(U8X8_MSG_GPIO_E_PIN, (bool)arg_int);
-#endif
-		break;
-	case U8X8_MSG_GPIO_CS: // CS (chip select) pin: Output level in arg_int
-#if GRAPHIC_DISPLAY_SPI_CS != UNDEF_PIN
-		io_set_pinvalue(GRAPHIC_DISPLAY_SPI_CS, (bool)arg_int);
-#endif
-		break;
-	case U8X8_MSG_GPIO_DC: // DC (data/cmd, A0, register select) pin: Output level in arg_int
-#ifdef U8X8_MSG_GPIO_DC_PIN
-		io_set_pinvalue(U8X8_MSG_GPIO_DC_PIN, (bool)arg_int);
-#endif
-		break;
-	case U8X8_MSG_GPIO_RESET: // Reset pin: Output level in arg_int
-#ifdef U8X8_MSG_GPIO_RESET_PIN
-		io_set_pinvalue(U8X8_MSG_GPIO_RESET_PIN, (bool)arg_int);
-#endif
-		break;
-	case U8X8_MSG_GPIO_CS1: // CS1 (chip select) pin: Output level in arg_int
-#ifdef U8X8_MSG_GPIO_CS1_PIN
-		io_set_pinvalue(U8X8_MSG_GPIO_CS1_PIN, (bool)arg_int);
-#endif
-		break;
-	case U8X8_MSG_GPIO_CS2: // CS2 (chip select) pin: Output level in arg_int
-#ifdef U8X8_MSG_GPIO_CS2_PIN
-		io_set_pinvalue(U8X8_MSG_GPIO_CS2_PIN, (bool)arg_int);
-#endif
-		break;
-	case U8X8_MSG_GPIO_I2C_CLOCK: // arg_int=0: Output low at I2C clock pin
-#if GRAPHIC_DISPLAY_I2C_CLOCK != UNDEF_PIN
-		if (arg_int)
-		{
-			mcu_config_input(GRAPHIC_DISPLAY_I2C_CLOCK);
-			mcu_config_pullup(GRAPHIC_DISPLAY_I2C_CLOCK);
-			u8x8_SetGPIOResult(u8x8, mcu_get_input(GRAPHIC_DISPLAY_I2C_CLOCK));
-		}
-		else
-		{
-			mcu_config_output(GRAPHIC_DISPLAY_I2C_CLOCK);
-			mcu_clear_output(GRAPHIC_DISPLAY_I2C_CLOCK);
-			u8x8_SetGPIOResult(u8x8, 0);
-		}
-#endif
-		break;										 // arg_int=1: Input dir with pullup high for I2C clock pin
-	case U8X8_MSG_GPIO_I2C_DATA: // arg_int=0: Output low at I2C data pin
-#if GRAPHIC_DISPLAY_I2C_DATA != UNDEF_PIN
-		if (arg_int)
-		{
-			mcu_config_input(GRAPHIC_DISPLAY_I2C_DATA);
-			mcu_config_pullup(GRAPHIC_DISPLAY_I2C_DATA);
-			u8x8_SetGPIOResult(u8x8, mcu_get_input(GRAPHIC_DISPLAY_I2C_DATA));
-		}
-		else
-		{
-			mcu_config_output(GRAPHIC_DISPLAY_I2C_DATA);
-			mcu_clear_output(GRAPHIC_DISPLAY_I2C_DATA);
-			u8x8_SetGPIOResult(u8x8, 0);
-		}
-#endif
-		break; // arg_int=1: Input dir with pullup high for I2C data pin
-	case U8X8_MSG_GPIO_MENU_SELECT:
-#ifdef U8X8_MSG_GPIO_MENU_SELECT_PIN
-		u8x8_SetGPIOResult(u8x8, io_get_pinvalue(U8X8_MSG_GPIO_MENU_SELECT_PIN));
-#else
-		u8x8_SetGPIOResult(u8x8, /* get menu next pin state */ 0);
-#endif
-		break;
-	case U8X8_MSG_GPIO_MENU_NEXT:
-#ifdef U8X8_MSG_GPIO_MENU_NEXT_PIN
-		u8x8_SetGPIOResult(u8x8, io_get_pinvalue(U8X8_MSG_GPIO_MENU_NEXT_PIN));
-#else
-		u8x8_SetGPIOResult(u8x8, /* get menu next pin state */ 0);
-#endif
-		break;
-	case U8X8_MSG_GPIO_MENU_PREV:
-#ifdef U8X8_MSG_GPIO_MENU_PREV_PIN
-		u8x8_SetGPIOResult(u8x8, io_get_pinvalue(U8X8_MSG_GPIO_MENU_PREV_PIN));
-#else
-		u8x8_SetGPIOResult(u8x8, /* get menu next pin state */ 0);
-#endif
-		break;
-	case U8X8_MSG_GPIO_MENU_HOME:
-#ifdef U8X8_MSG_GPIO_MENU_HOME_PIN
-		u8x8_SetGPIOResult(u8x8, io_get_pinvalue(U8X8_MSG_GPIO_MENU_HOME_PIN));
-#else
-		u8x8_SetGPIOResult(u8x8, /* get menu next pin state */ 0);
-#endif
-		break;
-	default:
-		u8x8_SetGPIOResult(u8x8, 1); // default return value
-		break;
-	}
-	return 1;
-}
-
 #endif
 
 #ifndef GRAPHIC_DISPLAY_ENCODER_BTN
@@ -625,7 +324,7 @@ uint8_t system_menu_send_cmd(const char *__s)
 		return STATUS_STREAM_FAILED;
 	}
 
-	BUFFER_WRITE(graphic_stream_buffer, __s, len, w);
+	BUFFER_WRITE(graphic_stream_buffer, (void*)__s, len, w);
 
 	return STATUS_OK;
 }
@@ -634,31 +333,10 @@ uint8_t system_menu_send_cmd(const char *__s)
 
 DECL_MODULE(graphic_display)
 {
-
-#ifndef USE_GRAPHIC_TFT_ESPI_LIB
-// initializes the display port
-#if (GRAPHIC_DISPLAY_INTERFACE == GRAPHIC_DISPLAY_SW_SPI)
-	graphic_port = &graphic_spi;
-#elif (GRAPHIC_DISPLAY_INTERFACE == GRAPHIC_DISPLAY_SW_I2C)
-	graphic_port = &graphic_i2c;
-#else
-	// uses hardware version of SPI or I2C
-	graphic_port = NULL;
-#endif
-
-#if (BOARD == BOARD_VIRTUAL)
-	u8g2_SetupBuffer_SDL_128x64(U8G2, &u8g2_cb_r0);
-#else
-	u8g2_Setup_st7920_s_128x64_f(U8G2, U8G2_R0, /*u8x8_byte_4wire_sw_spi */ u8x8_byte_ucnc_hw_spi, u8x8_gpio_and_delay_ucnc);
-	// u8g2_Setup_ssd1306_i2c_128x64_noname_f(U8G2, U8G2_R0, /*u8x8_byte_sw_i2c*/ u8x8_byte_ucnc_hw_i2c, u8x8_gpio_and_delay_ucnc);
-#endif
-	u8g2_InitDisplay(U8G2); // send init sequence to the display, display is in sleep mode after this,
-	u8g2_ClearDisplay(U8G2);
-	u8g2_SetPowerSave(U8G2, 0); // wake up display
-	u8g2_FirstPage(U8G2);
-#else
-	u8g2_Init();
-#endif
+	display_driver_t* display_driver = (display_driver_t*)&gd_st7920_128x64_spi;
+	gd_init(display_driver, (void*)&graphic_spi);
+	display_width = display_driver->width;
+	display_height = display_driver->height;
 
 #ifdef DECL_SERIAL_STREAM
 	serial_stream_register(&graphic_stream);
@@ -746,21 +424,7 @@ static void io_states_str(char *buff)
 
 void system_menu_render_startup(void)
 {
-#ifndef USE_GRAPHIC_TFT_ESPI_LIB
-	u8g2_ClearBuffer(U8G2);
-	char buff[SYSTEM_MENU_MAX_STR_LEN];
-	rom_strcpy(buff, __romstr__("µCNC"));
-	u8g2_ClearBuffer(U8G2);
-	u8g2_SetFont(U8G2, u8g2_font_9x15_t_symbols);
-	u8g2_DrawUTF8X2(U8G2, (LCDWIDTH / 2 - u8g2_GetUTF8Width(U8G2, buff)), JUSTIFY_CENTER - FONTHEIGHT / 2, buff);
-	rom_strcpy(buff, __romstr__(("v" CNC_VERSION)));
-	u8g2_SetFont(U8G2, u8g2_font_6x12_tr);
-	u8g2_DrawStr(U8G2, ALIGN_CENTER(buff), JUSTIFY_CENTER + FONTHEIGHT, buff);
-	u8g2_SendBuffer(U8G2);
-#else
-	u8g2_RenderStartup();
-#endif
-
+	gd_draw_startup();
 	// reset menu on actual alarm reset or soft reset
 	if (cnc_get_exec_state(EXEC_INTERLOCKING_FAIL) || cnc_has_alarm())
 	{
@@ -770,16 +434,17 @@ void system_menu_render_startup(void)
 
 void system_menu_render_idle(void)
 {
-	u8g2_ClearBuffer(U8G2);
+	gd_clear();
 	// starts from the bottom up
 
 	// coordinates
 	char buff[SYSTEM_MENU_MAX_STR_LEN];
-	uint8_t y = JUSTIFY_BOTTOM;
+	int16_t y = gd_str_justify_end();
+	int16_t fh = gd_font_height();
 
 	// u8g2_SetFont(U8G2, u8g2_font_6x12_t_symbols);
 	// rom_strcpy(buff, __romstr__("µCNC v" CNC_VERSION));
-	// u8g2_DrawButtonUTF8(U8G2, (LCDWIDTH>>1), JUSTIFY_TOP + 1,U8G2_BTN_INV|U8G2_BTN_HCENTER, LCDWIDTH, 1, 1, buff);
+	// u8g2_DrawButtonUTF8(U8G2, (display_width>>1), JUSTIFY_TOP + 1,U8G2_BTN_INV|U8G2_BTN_HCENTER, display_width, 1, 1, buff);
 	// u8g2_SetFont(U8G2, u8g2_font_6x12_tr);
 
 	memset(buff, 0, 32);
@@ -793,16 +458,16 @@ void system_menu_render_idle(void)
 #if (AXIS_COUNT >= 5)
 	buff[0] = 'B';
 	system_menu_flt_to_str(&buff[1], axis[4]);
-	u8g2_DrawStr(U8G2, ALIGN_LEFT, y, buff);
+	gd_draw_string(0, y, buff);
 
 #if (AXIS_COUNT >= 6)
 	buff[0] = 'C';
 	system_menu_flt_to_str(&buff[1], axis[5]);
-	u8g2_DrawStr(U8G2, (LCDWIDTH >> 1), y, buff);
+	gd_draw_string(display_width >> 1, y, buff);
 #endif
 	memset(buff, 0, 32);
-	u8g2_DrawLine(U8G2, 0, y - FONTHEIGHT - 1, LCDWIDTH, y - FONTHEIGHT - 1);
-	y -= (FONTHEIGHT + 3);
+	gd_draw_line(0, y - fh - 1, display_width, y - fh - 1);
+	y -= (fh + 3);
 #endif
 
 	cnc_dotasks();
@@ -810,17 +475,17 @@ void system_menu_render_idle(void)
 #if (AXIS_COUNT >= 3)
 	buff[0] = 'Z';
 	system_menu_flt_to_str(&buff[1], axis[2]);
-	u8g2_DrawStr(U8G2, ALIGN_LEFT, y, buff);
+	gd_draw_string(0, y, buff);
 
 #if (AXIS_COUNT >= 4)
 	memset(buff, 0, 32);
 	buff[0] = 'A';
 	system_menu_flt_to_str(&buff[1], axis[3]);
-	u8g2_DrawStr(U8G2, (LCDWIDTH >> 1), y, buff);
+	gd_draw_string(display_width >> 1, y, buff);
 #endif
 	memset(buff, 0, 32);
-	u8g2_DrawLine(U8G2, 0, y - FONTHEIGHT - 1, LCDWIDTH, y - FONTHEIGHT - 1);
-	y -= (FONTHEIGHT + 3);
+	gd_draw_line(0, y - fh - 1, display_width, y - fh - 1);
+	y -= (fh + 3);
 #endif
 
 	cnc_dotasks();
@@ -832,15 +497,15 @@ void system_menu_render_idle(void)
 #if (AXIS_COUNT >= 1)
 	buff[0] = 'X';
 	system_menu_flt_to_str(&buff[1], axis[0]);
-	u8g2_DrawStr(U8G2, ALIGN_LEFT, y, buff);
+	gd_draw_string(0, y, buff);
 #if (AXIS_COUNT >= 2)
 	buff[0] = 'Y';
 	system_menu_flt_to_str(&buff[1], axis[1]);
-	u8g2_DrawStr(U8G2, (LCDWIDTH >> 1), y, buff);
+	gd_draw_string(display_width >> 1, y, buff);
 #endif
 	memset(buff, 0, 32);
-	u8g2_DrawLine(U8G2, 0, y - FONTHEIGHT - 1, LCDWIDTH, y - FONTHEIGHT - 1);
-	y -= (FONTHEIGHT + 3);
+	gd_draw_line(0, y - fh - 1, display_width, y - fh - 1);
+	y -= (fh + 3);
 #endif
 
 	cnc_dotasks();
@@ -857,7 +522,7 @@ void system_menu_render_idle(void)
 
 	// Realtime feed
 	system_menu_flt_to_str(&buff[4], itp_get_rt_feed());
-	u8g2_DrawStr(U8G2, ALIGN_LEFT, y, buff);
+	gd_draw_string(0, y, buff);
 	memset(buff, 0, 32);
 
 	// Tool
@@ -872,11 +537,11 @@ void system_menu_render_idle(void)
 	rom_strcpy(buff, __romstr__("S"));
 	system_menu_int_to_str(&buff[1], tool_get_speed());
 	strcat(buff, tool);
-	u8g2_DrawStr(U8G2, ALIGN_RIGHT(buff), y, buff);
+	gd_draw_string(gd_str_align_end(buff), y, buff);
 	memset(buff, 0, 32);
-	u8g2_DrawLine(U8G2, 0, y - FONTHEIGHT - 1, LCDWIDTH, y - FONTHEIGHT - 1);
+	gd_draw_line(0, y - fh - 1, display_width, y - fh - 1);
 
-	y -= (FONTHEIGHT + 3);
+	y -= (fh + 3);
 
 	cnc_dotasks();
 
@@ -927,62 +592,50 @@ void system_menu_render_idle(void)
 		}
 	}
 
-	u8g2_DrawStr(U8G2, ALIGN_LEFT, y, buff);
+	gd_draw_string(0, y, buff);
 	memset(buff, 0, 32);
 	io_states_str(buff);
-	u8g2_DrawStr(U8G2, (LCDWIDTH >> 1), y, buff);
+	gd_draw_string((display_width >> 1), y, buff);
 
 	cnc_dotasks();
 
-	u8g2_SendBuffer(U8G2);
+	gd_flush();
 }
 
-static uint8_t y_coord;
+static int16_t y_coord;
 
 void system_menu_render_header(const char *__s)
 {
-	u8g2_ClearBuffer(U8G2);
-	u8g2_DrawStr(U8G2, ALIGN_CENTER(__s), JUSTIFY_TOP + 1, __s);
-	u8g2_DrawLine(U8G2, 0, FONTHEIGHT + 2, LCDWIDTH, FONTHEIGHT + 2);
+	int16_t fh = gd_font_height() + 2;
+	gd_clear();
+	gd_draw_string(gd_str_align_center(__s), gd_str_justify_start() + 1, __s);
+	gd_draw_line(0, fh, display_width, fh);
 	y_coord = 2;
 }
 
 void system_menu_render_nav_back(bool is_hover)
 {
-	u8g2_SetDrawColor(U8G2, 1);
-	uint8_t mode = U8G2_BTN_BW1;
-	if (is_hover)
-	{
-		mode |= U8G2_BTN_INV;
-	}
-
-	u8g2_DrawButtonUTF8(U8G2, ALIGN_RIGHT("X") - 2, FONTHEIGHT - 1, mode, TEXT_WIDTH("X") + 2, 2, 1, "X");
+	gd_draw_button(gd_str_align_end("X") - 2, gd_str_justify_start() + 1, "X", 0, 2, 1, is_hover, false);
 }
 
 void system_menu_item_render_label(uint8_t render_flags, const char *label)
 {
-	y_coord += FONTHEIGHT + 1;
-	uint8_t y = y_coord;
+	int16_t fh = gd_font_height();
+	y_coord += fh + 1;
+	int16_t y = y_coord;
 	if (label)
 	{
 		cnc_dotasks();
 
 		if (render_flags & SYSTEM_MENU_MODE_EDIT)
 		{
-			y_coord += FONTHEIGHT + 1;
+			y_coord += fh + 1;
 			y = y_coord;
-			u8g2_SetDrawColor(U8G2, 1);
-			u8g2_DrawStr(U8G2, ALIGN_CENTER(label), y + JUSTIFY_TOP + 1, label);
+			gd_draw_string(gd_str_align_center(label), y + gd_str_justify_start() + 1, label);
 			return;
 		}
 
-		u8g2_SetDrawColor(U8G2, 1);
-		if (render_flags & SYSTEM_MENU_MODE_SELECT)
-		{
-			u8g2_DrawBox(U8G2, ALIGN_LEFT, y, LCDWIDTH, FONTHEIGHT + 1);
-			u8g2_SetDrawColor(U8G2, 0);
-		}
-		u8g2_DrawStr(U8G2, ALIGN_LEFT, y + JUSTIFY_TOP + 1, label);
+		gd_draw_button(0, y + fh - 2, label, display_width, 1, 0, (render_flags & SYSTEM_MENU_MODE_SELECT), true);
 	}
 }
 
@@ -992,17 +645,18 @@ void system_menu_item_render_arg(uint8_t render_flags, const char *value)
 	{
 		cnc_dotasks();
 
-		uint8_t y = y_coord;
+		int16_t y = y_coord;
+		int16_t fh = gd_font_height();
 
 		if (render_flags & SYSTEM_MENU_MODE_EDIT)
 		{
-			y_coord += 2 * (FONTHEIGHT + 1);
-			uint8_t start_pos = ALIGN_CENTER(value);
-			u8g2_DrawStr(U8G2, start_pos, y_coord + JUSTIFY_TOP + 1, value);
-			y_coord += FONTHEIGHT;
+			y_coord += 2 * (fh + 1);
+			int16_t start_pos = gd_str_align_center(value);
+			gd_draw_string(start_pos, y_coord + gd_str_justify_start() + 1, value);
+			y_coord += fh;
 			y = y_coord;
 			char *dot = strchr(value, '.');
-			uint8_t base_pos = start_pos + TEXT_WIDTH(value);
+			uint8_t base_pos = start_pos + gd_str_width(value);
 			int8_t mult = g_system_menu.current_multiplier + 1;
 			if (dot && mult > 3)
 			{
@@ -1015,34 +669,33 @@ void system_menu_item_render_arg(uint8_t render_flags, const char *value)
 				base_pos -= 6 * mult;
 				if (render_flags & SYSTEM_MENU_MODE_MODIFY)
 				{
-					u8g2_DrawTriangle(U8G2, base_pos, y - FONTHEIGHT, base_pos + 6, y - FONTHEIGHT, base_pos + 3, y - FONTHEIGHT - 4);
-					u8g2_DrawTriangle(U8G2, base_pos + 1, y, base_pos + 6, y, base_pos + 3, y + 3);
+					gd_draw_triangle(base_pos, y - fh, base_pos + 6, y - fh, base_pos + 3, y - fh - 4);
+					gd_draw_triangle(base_pos + 1, y, base_pos + 6, y, base_pos + 3, y + 3);
 				}
 				else
 				{
-					u8g2_DrawBox(U8G2, base_pos + 1, y, 5, 2);
+					gd_draw_rectangle_fill(base_pos + 1, y, 5, 2, false);
 				}
 			}
 
 			return;
 		}
 
-		uint8_t base_y = y + JUSTIFY_TOP + 1;
-		uint8_t base_x = ALIGN_RIGHT(value);
+		uint8_t base_y = y + gd_str_justify_start() + 1;
+		uint8_t base_x = gd_str_align_end(value);
 
 		if (CHECKFLAG(render_flags, (SYSTEM_MENU_MODE_SELECT | SYSTEM_MENU_MODE_SIMPLE_EDIT)) == (SYSTEM_MENU_MODE_SELECT | SYSTEM_MENU_MODE_SIMPLE_EDIT))
 		{
-			u8g2_DrawTriangle(U8G2, base_x, base_y - ((FONTHEIGHT) >> 1), base_x - 3, base_y - FONTHEIGHT, base_x - 3, base_y + 1);
+			gd_draw_triangle(base_x, base_y - ((fh) >> 1), base_x - 3, base_y - fh, base_x - 3, base_y + 1);
 		}
 
-		u8g2_DrawStr(U8G2, base_x, base_y, value);
+		gd_draw_string_inv(base_x, base_y, value, (render_flags & SYSTEM_MENU_MODE_SELECT));
 	}
 }
 
 void system_menu_render_footer(void)
 {
-	u8g2_SetDrawColor(U8G2, 1);
-	u8g2_SendBuffer(U8G2);
+	gd_flush();
 }
 
 bool system_menu_render_menu_item_filter(uint8_t item_index)
@@ -1068,16 +721,15 @@ bool system_menu_render_menu_item_filter(uint8_t item_index)
 
 void system_menu_render_modal_popup(const char *__s)
 {
-	uint8_t w = 0;
+	int16_t fh = gd_font_height();
+	int16_t w = 0;
 	uint8_t lines = graphic_display_str_lines(__s, &w);
-	w = (lines != 1) ? (w * TEXT_WIDTH("Z")) : (TEXT_WIDTH(__s));
+	w = (lines != 1) ? (w * gd_str_width("Z")) : (gd_str_width(__s));
 	w += 6;
-	uint8_t bh = (FONTHEIGHT + 1) * (lines + 1);
-	u8g2_SetDrawColor(U8G2, 0);
-	u8g2_DrawBox(U8G2, 5, (LCDHEIGHT - bh) >> 1, (LCDWIDTH - 10), bh);
-	u8g2_SetDrawColor(U8G2, 1);
-	u8g2_DrawFrame(U8G2, 5, (LCDHEIGHT - bh) >> 1, (LCDWIDTH - 10), bh);
-	uint8_t y_start = (LCDHEIGHT >> 1) - (((FONTHEIGHT + 1) * (lines - 1)) >> 1) + ((FONTHEIGHT + 1) >> 2);
+	int16_t bh = (fh + 1) * (lines + 1);
+	gd_draw_rectangle_fill(5, (display_height - bh) >> 1, (display_width - 10), bh, true);
+	gd_draw_rectangle(5, (display_height - bh) >> 1, (display_width - 10), bh);
+	uint8_t y_start = (display_height >> 1) - (((display_height + 1) * (lines - 1)) >> 1) + ((display_height + 1) >> 2);
 	do
 	{
 		char buffer[SYSTEM_MENU_MAX_STR_LEN];
@@ -1085,17 +737,17 @@ void system_menu_render_modal_popup(const char *__s)
 		memcpy(buffer, __s, len);
 		buffer[len] = 0;
 		__s += len;
-		u8g2_DrawStr(U8G2, ALIGN_CENTER(buffer), y_start, buffer);
-		y_start += FONTHEIGHT + 1;
+		gd_draw_string(gd_str_align_center(buffer), y_start, buffer);
+		y_start += display_height + 1;
 	} while (--lines);
 
-	u8g2_SendBuffer(U8G2);
+	gd_flush();
 }
 
-static uint8_t graphic_display_str_lines(const char *__s, uint8_t *max_len)
+static uint8_t graphic_display_str_lines(const char *__s, int16_t *max_len)
 {
 	uint8_t lines = 1;
-	uint8_t chars_per_line = LCDWIDTH / TEXT_WIDTH("Z");
+	uint8_t chars_per_line = display_width / gd_str_width("Z");
 
 	uint8_t chars = 0;
 	while (*__s)
@@ -1116,7 +768,7 @@ static uint8_t graphic_display_str_lines(const char *__s, uint8_t *max_len)
 static uint8_t graphic_display_str_line_len(const char *__s)
 {
 	uint8_t chars = 0;
-	uint8_t chars_per_line = LCDWIDTH / TEXT_WIDTH("Z");
+	uint8_t chars_per_line = display_width / gd_str_width("Z");
 	while (*__s)
 	{
 		chars++;
@@ -1142,20 +794,16 @@ static uint8_t graphic_display_str_line_len(const char *__s)
 
 void system_menu_render_alarm(void)
 {
-	u8g2_ClearBuffer(U8G2);
+	gd_clear();
 	// coordinates
-	uint8_t y = JUSTIFY_TOP + 1;
+	int16_t fh = gd_font_height();
+	int16_t y = gd_str_justify_start() + 1;
 	char buff[SYSTEM_MENU_MAX_STR_LEN];
-	u8g2_SetFontMode(U8G2, 1);
-	u8g2_SetDrawColor(U8G2, 1); /* color 1 for the box */
-	u8g2_DrawBox(U8G2, 0, 0, LCDWIDTH, FONTHEIGHT);
-	u8g2_SetDrawColor(U8G2, 0); /* color 1 for the font */
 	rom_strcpy(buff, __romstr__("ALARM "));
 	uint8_t alarm = cnc_get_alarm();
 	system_menu_int_to_str(&buff[6], alarm);
-	u8g2_DrawStr(U8G2, ALIGN_CENTER(buff), y, buff);
-	u8g2_SetDrawColor(U8G2, 1); /* color 1 for the font */
-	y += JUSTIFY_TOP + 2;
+	gd_draw_button(0, 0, buff, display_width, 1, 1, true, false);
+	y += fh;
 
 	memset(buff, 0, SYSTEM_MENU_MAX_STR_LEN);
 
@@ -1205,16 +853,16 @@ void system_menu_render_alarm(void)
 		break;
 	}
 
-	u8g2_DrawStr(U8G2, ALIGN_CENTER(buff), y, buff);
-	y += JUSTIFY_TOP + 2;
+	gd_draw_string(gd_str_align_center(buff), y, buff);
+	y += fh;
 	memset(buff, 0, SYSTEM_MENU_MAX_STR_LEN);
 	io_states_str(buff);
-	u8g2_DrawStr(U8G2, ALIGN_CENTER(buff), y, buff);
-	y += JUSTIFY_TOP + 2;
+	gd_draw_string(gd_str_align_center(buff), y, buff);
+	y += fh;
 	rom_strcpy(buff, __romstr__(STR_USER_NEEDS_SYSTEM_RESET_1));
-	u8g2_DrawStr(U8G2, ALIGN_CENTER(buff), y, buff);
-	y += JUSTIFY_TOP + 2;
+	gd_draw_string( gd_str_align_center(buff), y, buff);
+	y += fh;
 	rom_strcpy(buff, __romstr__(STR_USER_NEEDS_SYSTEM_RESET_2));
-	u8g2_DrawStr(U8G2, ALIGN_CENTER(buff), y, buff);
-	u8g2_SendBuffer(U8G2);
+	gd_draw_string(gd_str_align_center(buff), y, buff);
+	gd_flush();
 }

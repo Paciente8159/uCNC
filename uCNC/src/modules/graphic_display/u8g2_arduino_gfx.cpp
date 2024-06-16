@@ -1,13 +1,9 @@
-#ifdef USE_GRAPHIC_TFT_ESPI_LIB
-
+#ifdef USE_GRAPHIC_ARDUINO_GFX_LIB
 #include <Arduino.h>
-#include <TFT_eSPI.h>
-#include <U8g2_for_TFT_eSPI.h>
+#include <Arduino_GFX_Library.h>
 
-TFT_eSPI tft = TFT_eSPI();
-U8g2_for_TFT_eSPI u8f;
-void *u8f_ptr;
-uint8_t forecolor = 0;
+Arduino_DataBus *bus = new Arduino_HWSPI()
+Arduino_GFX *gfx = new Arduino_ST7796()
 
 #ifdef __cplusplus
 extern "C"

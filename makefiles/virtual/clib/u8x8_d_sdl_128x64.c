@@ -230,7 +230,8 @@ static uint8_t u8x8_d_sdl_gpio(u8x8_t *u8x8, uint8_t msg, U8X8_UNUSED uint8_t ar
 	}
 	else
 	{
-	  event = u8g_sdl_get_key();
+	  event = -1;
+//	  event = u8g_sdl_get_key();
 	  
 	  switch(event)
 	  {

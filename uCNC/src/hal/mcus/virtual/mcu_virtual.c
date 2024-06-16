@@ -176,7 +176,7 @@ void mcu_uart2_flush(void)
         memset(tmp, 0, sizeof(tmp));
         uint8_t r = 0;
 
-        BUFFER_READ(uart2_tx, tmp, UART_TX_BUFFER_SIZE, r);
+        BUFFER_READ(uart2_tx, tmp, UART2_TX_BUFFER_SIZE, r);
         port_write(&uart2, tmp, r);
     }
 }
