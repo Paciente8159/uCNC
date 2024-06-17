@@ -278,16 +278,16 @@ int16_t gd_font_height(void)
 	return u8g2_GetAscent(U8G2) - u8g2_GetDescent(U8G2);
 }
 
-void gd_init(display_driver_t *gdriver, void *port_interface)
+void gd_init(display_driver_t *driver, void *port_interface)
 {
 	graphic_port = port_interface;
-	gdriver->init();
+	driver->init();
 	u8g2_InitDisplay(U8G2); // send init sequence to the display, display is in sleep mode after this,
 	u8g2_ClearDisplay(U8G2);
 	u8g2_SetPowerSave(U8G2, 0); // wake up display
 	u8g2_FirstPage(U8G2);
-	gdriver->width = u8g2_GetDisplayWidth(U8G2);
-	gdriver->height = u8g2_GetDisplayHeight(U8G2);
+	driver->width = u8g2_GetDisplayWidth(U8G2);
+	driver->height = u8g2_GetDisplayHeight(U8G2);
 }
 
 void gd_clear()

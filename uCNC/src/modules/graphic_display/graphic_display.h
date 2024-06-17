@@ -33,7 +33,7 @@ extern "C"
 #define GRAPHIC_DISPLAY_HW_I2C 8
 
 #ifndef GRAPHIC_DISPLAY_INTERFACE
-#define GRAPHIC_DISPLAY_INTERFACE GRAPHIC_DISPLAY_HW_SPI
+#define GRAPHIC_DISPLAY_INTERFACE GRAPHIC_DISPLAY_SW_SPI
 #endif
 
 #if (GRAPHIC_DISPLAY_INTERFACE & (GRAPHIC_DISPLAY_SW_SPI | GRAPHIC_DISPLAY_HW_SPI))
@@ -71,7 +71,7 @@ extern "C"
 
 	void gd_clear();
 	void gd_flush();
-	void gd_init(display_driver_t *gdriver, void *port_interface);
+	void gd_init(display_driver_t *driver, void *port_interface);
 	void gd_draw_startup(void);
 	void gd_draw_line(int16_t x0, int16_t y0, int16_t x1, int16_t y1);
 	void gd_draw_rectangle(int16_t x0, int16_t y0, int16_t w, int16_t h);
@@ -96,7 +96,7 @@ extern "C"
 	extern const display_driver_t gd_ssd1306_128x64_i2c;
 	extern const display_driver_t gd_st7920_128x64_spi;
 	extern const display_driver_t gd_virtual_sdl;
-	extern const display_driver_t gd_st7796_320x240_spi;
+	extern const display_driver_t gd_st7796_480x320_spi;
 
 #ifdef __cplusplus
 }

@@ -66,6 +66,9 @@ static uint8_t graphic_display_str_line_len(const char *__s);
 #include "../softspi.h"
 #if (GRAPHIC_DISPLAY_INTERFACE == GRAPHIC_DISPLAY_SW_SPI)
 SOFTSPI(graphic_spi, 10000000UL, 0, GRAPHIC_DISPLAY_SPI_DATA, GRAPHIC_DISPLAY_SPI_DATA, GRAPHIC_DISPLAY_SPI_CLOCK)
+#define graphic_display_port ((void*)&graphic_spi)
+#else
+#define graphic_display_port NULL
 #endif
 #endif
 
@@ -73,6 +76,9 @@ SOFTSPI(graphic_spi, 10000000UL, 0, GRAPHIC_DISPLAY_SPI_DATA, GRAPHIC_DISPLAY_SP
 #include "../softi2c.h"
 #if (GRAPHIC_DISPLAY_INTERFACE == GRAPHIC_DISPLAY_SW_I2C)
 SOFTI2C(graphic_i2c, 100000UL, GRAPHIC_DISPLAY_I2C_CLOCK, GRAPHIC_DISPLAY_I2C_DATA)
+#define graphic_display_port ((void*)&graphic_i2c)
+#else
+#define graphic_display_port NULL
 #endif
 #endif
 
@@ -333,8 +339,8 @@ uint8_t system_menu_send_cmd(const char *__s)
 
 DECL_MODULE(graphic_display)
 {
-	display_driver_t* display_driver = (display_driver_t*)&gd_st7796_320x240_spi;
-	gd_init(display_driver, NULL);
+	display_driver_t* display_driver = (display_driver_t*)&gd_st7796_480x320_spi;
+	gd_init(display_driver, graphic_display_port);
 	display_width = display_driver->width;
 	display_height = display_driver->height;
 

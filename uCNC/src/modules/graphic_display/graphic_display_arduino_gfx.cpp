@@ -9,6 +9,8 @@
 static Arduino_DataBus *bus;
 static Arduino_GFX *gfx;
 static void *graphic_port;
+static int16_t display_w;
+static int16_t display_h;
 
 #ifdef __cplusplus
 extern "C"
@@ -19,6 +21,14 @@ extern "C"
 #include "graphic_display.h"
 #include "../softspi.h"
 #include "../softi2c.h"
+#include "uCNC_logo.h"
+
+#ifndef GRAPHIC_DISPLAY_SPI_DC
+#define GRAPHIC_DISPLAY_SPI_DC DOUT7
+#endif
+#ifndef GRAPHIC_DISPLAY_BKL
+#define GRAPHIC_DISPLAY_BKL DOUT11
+#endif
 
 	int16_t gd_font_height(void)
 	{
@@ -26,31 +36,37 @@ extern "C"
 		return 0;
 	}
 
-	void gd_init(display_driver_t *gdriver, void *port_interface)
+	void gd_init(display_driver_t *driver, void *port_interface)
 	{
 		graphic_port = port_interface;
-		//bus = new Arduino_uCNC_SPI((softspi_port_t *)graphic_port, DOUT7, GRAPHIC_DISPLAY_SPI_CS, true);
-		bus = new Arduino_HWSPI(33,25,18,23,39);
-		gdriver->init();
-		mcu_set_output(DOUT11);
+		bus = new Arduino_uCNC_SPI((softspi_port_t *)graphic_port, GRAPHIC_DISPLAY_SPI_DC, GRAPHIC_DISPLAY_SPI_CS, true);
+		// bus = new Arduino_HWSPI(33,25,18,23,39);
+		driver->init();
 		gfx->begin();
+		gfx->displayOn();
+		io_set_pinvalue(GRAPHIC_DISPLAY_BKL, 1);
 		gfx->fillScreen(RED);
-		gdriver->width = 320;
-		gdriver->height = 240;
+		gfx->setFont();
+		gfx->flush();
+		display_w = driver->width;
+		display_h = driver->height;
 	}
 
 	void gd_clear()
 	{
-		// u8g2_ClearBuffer(U8G2);
+		gfx->fillScreen(RED);
 	}
 
 	void gd_flush()
 	{
-		// u8g2_SendBuffer(U8G2);
+		gfx->flush();
 	}
 
 	void gd_draw_startup(void)
 	{
+		int16_t x = (display_w - uCNClogo.width) >> 1;
+		int16_t y = (display_h - uCNClogo.height) >> 1;
+		gfx->draw16bitRGBBitmap(x, y, uCNClogo.data, uCNClogo.width, uCNClogo.height);
 		// u8g2_ClearBuffer(U8G2);
 		// char buff[SYSTEM_MENU_MAX_STR_LEN];
 		// rom_strcpy(buff, __romstr__("µCNC"));
@@ -65,35 +81,44 @@ extern "C"
 
 	void gd_draw_line(int16_t x0, int16_t y0, int16_t x1, int16_t y1)
 	{
-		// u8g2_DrawLine(U8G2, x0, y0, x1, y1);
+		if (y0 == y1)
+		{
+			gfx->writeFastHLine(MIN(x0, x1), y0, ABS(x1 - x0), 0x4bea);
+		}
+		else if (x0 == x1)
+		{
+			gfx->writeFastVLine(x0, MIN(y0, y1), ABS(y1 - y0), 0x4bea);
+		}
+		else
+		{
+			gfx->writeLine(x0, y0, x1, y1, 0x4bea);
+		}
 	}
 
 	void gd_draw_rectangle(int16_t x0, int16_t y0, int16_t w, int16_t h)
 	{
+		gfx->drawRect(x0, y0, w, h, 0x4bea);
 		// u8g2_DrawFrame(U8G2, x0, y0, w, h);
 	}
 
 	void gd_draw_rectangle_fill(int16_t x0, int16_t y0, int16_t w, int16_t h, bool invert)
 	{
-		// if (invert)
-		// {
-		// 	u8g2_SetDrawColor(U8G2, 0);
-		// }
-		// u8g2_DrawBox(U8G2, x0, y0, w, h);
-		// if (invert)
-		// {
-		// 	u8g2_SetDrawColor(U8G2, 1);
-		// }
+		int16_t color = BLACK;
+		if (invert)
+		{
+			color = RED;
+		}
+		gfx->fillRect(x0, y0, w, h, color);
 	}
 
 	void gd_draw_triangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2)
 	{
-		// u8g2_DrawTriangle(U8G2, x0, y0, x1, y1, x2, y2);
 	}
 
 	void gd_draw_string(int16_t x0, int16_t y0, const char *s)
 	{
-		// u8g2_DrawStr(U8G2, x0, y0, s);
+		gfx->setCursor(x0, y0);
+		gfx->print(s);
 	}
 
 	void gd_draw_string_inv(int16_t x0, int16_t y0, const char *s, bool invert)
@@ -161,15 +186,15 @@ extern "C"
 	 * Create some U8G2 display drivers
 	 */
 
-	void st7796_320x240_spi_init()
+	void st7796_480x320_spi_init()
 	{
-		gfx = new Arduino_ST7796(bus,27,0,false,480, 320);
+		gfx = new Arduino_ST7796(bus, 27, 0, false, 480, 320);
 	}
 
-	const display_driver_t gd_st7796_320x240_spi = {
-			.width = 320,
-			.height = 240,
-			.init = &st7796_320x240_spi_init};
+	const display_driver_t gd_st7796_480x320_spi = {
+			.width = 480,
+			.height = 320,
+			.init = &st7796_480x320_spi_init};
 
 #ifdef __cplusplus
 }
