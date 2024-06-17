@@ -23,11 +23,16 @@ extern "C"
 #include "../softi2c.h"
 #include "uCNC_logo.h"
 
+// #define GRAPHIC_DISPLAY_RST 27
+
 #ifndef GRAPHIC_DISPLAY_SPI_DC
-#define GRAPHIC_DISPLAY_SPI_DC DOUT7
+#define GRAPHIC_DISPLAY_SPI_DC DOUT11
 #endif
 #ifndef GRAPHIC_DISPLAY_BKL
-#define GRAPHIC_DISPLAY_BKL DOUT11
+#define GRAPHIC_DISPLAY_BKL DOUT12
+#endif
+#ifndef GRAPHIC_DISPLAY_RST
+#define GRAPHIC_DISPLAY_RST -1
 #endif
 
 	int16_t gd_font_height(void)
@@ -39,15 +44,18 @@ extern "C"
 	void gd_init(display_driver_t *driver, void *port_interface)
 	{
 		graphic_port = port_interface;
-		bus = new Arduino_uCNC_SPI((softspi_port_t *)graphic_port, GRAPHIC_DISPLAY_SPI_DC, GRAPHIC_DISPLAY_SPI_CS, true);
-		// bus = new Arduino_HWSPI(33,25,18,23,39);
+		bus = new Arduino_uCNC_SPI((softspi_port_t *)graphic_port, GRAPHIC_DISPLAY_SPI_DC, GRAPHIC_DISPLAY_SPI_CS, false);
+		// bus = new Arduino_ESP32SPI(33, 25, 18, 23, 19, VSPI,false);
 		driver->init();
-		gfx->begin();
-		gfx->displayOn();
+		io_set_pinvalue(GRAPHIC_DISPLAY_BKL, 0);
+		cnc_delay_ms(50);
 		io_set_pinvalue(GRAPHIC_DISPLAY_BKL, 1);
-		gfx->fillScreen(RED);
+		gfx->begin(1000000);
+		cnc_delay_ms(100);
+		gfx->setRotation(1);
+    gfx->fillScreen(BLACK);
 		gfx->setFont();
-		gfx->flush();
+    gfx->println("Hello World!");
 		display_w = driver->width;
 		display_h = driver->height;
 	}
@@ -59,14 +67,17 @@ extern "C"
 
 	void gd_flush()
 	{
-		gfx->flush();
+		// gfx->flush();
 	}
 
 	void gd_draw_startup(void)
 	{
-		int16_t x = (display_w - uCNClogo.width) >> 1;
-		int16_t y = (display_h - uCNClogo.height) >> 1;
-		gfx->draw16bitRGBBitmap(x, y, uCNClogo.data, uCNClogo.width, uCNClogo.height);
+		// gfx->fillScreen(RED);
+		// gfx->flush();
+		// int16_t x = (display_w - uCNClogo.width) >> 1;
+		// int16_t y = (display_h - uCNClogo.height) >> 1;
+		// gfx->draw16bitRGBBitmap(x, y, uCNClogo.data, uCNClogo.width, uCNClogo.height);
+		// gfx->flush();
 		// u8g2_ClearBuffer(U8G2);
 		// char buff[SYSTEM_MENU_MAX_STR_LEN];
 		// rom_strcpy(buff, __romstr__("µCNC"));
@@ -188,7 +199,7 @@ extern "C"
 
 	void st7796_480x320_spi_init()
 	{
-		gfx = new Arduino_ST7796(bus, 27, 0, false, 480, 320);
+		gfx = new Arduino_ST7796(bus, GRAPHIC_DISPLAY_RST, 0, false, 480, 320);
 	}
 
 	const display_driver_t gd_st7796_480x320_spi = {

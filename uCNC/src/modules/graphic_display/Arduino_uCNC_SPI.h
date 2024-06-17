@@ -25,13 +25,7 @@
 class Arduino_uCNC_SPI : public Arduino_DataBus
 {
 public:
-	Arduino_uCNC_SPI(softspi_port_t *spi = nullptr, uint8_t dc = 0, int8_t cs = 0, bool is_shared_interface = true)
-	{
-		this->_dc = dc;
-		this->_cs = cs;
-		this->_spi = spi;
-		this->_is_shared_interface = is_shared_interface;
-	}
+	Arduino_uCNC_SPI(softspi_port_t *spi, uint8_t dc, uint8_t cs, bool is_shared_interface);
 	bool begin(int32_t speed, int8_t dataMode) override;
 	void beginWrite() override;
 	void endWrite() override;
@@ -46,7 +40,7 @@ public:
 
 private:
 	softspi_port_t *_spi;
-	int8_t _cs;
+	uint8_t _cs;
 	bool _is_shared_interface;
 	uint8_t _dc;
 	uint32_t _speed;

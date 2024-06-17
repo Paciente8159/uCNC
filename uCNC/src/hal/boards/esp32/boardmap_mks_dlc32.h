@@ -93,14 +93,18 @@ extern "C"
 // pins for TS35
 // clk
 #define DOUT4_BIT 18
-// data
+// mosi
 #define DOUT5_BIT 23
 // cs
 #define DOUT6_BIT 25
+// miso
+#define DOUT7_BIT 19
 // dc
-#define DOUT7_BIT 33
+#define DOUT11_BIT 33
 // bkl
-#define DOUT11_BIT 5
+#define DOUT12_BIT 5
+// rst
+#define DOUT13_BIT 27
 
 #ifdef __cplusplus
 }

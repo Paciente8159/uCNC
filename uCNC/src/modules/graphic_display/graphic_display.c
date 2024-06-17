@@ -65,7 +65,11 @@ static uint8_t graphic_display_str_line_len(const char *__s);
 #if (GRAPHIC_DISPLAY_INTERFACE & (GRAPHIC_DISPLAY_SW_SPI | GRAPHIC_DISPLAY_HW_SPI))
 #include "../softspi.h"
 #if (GRAPHIC_DISPLAY_INTERFACE == GRAPHIC_DISPLAY_SW_SPI)
-SOFTSPI(graphic_spi, 10000000UL, 0, GRAPHIC_DISPLAY_SPI_DATA, GRAPHIC_DISPLAY_SPI_DATA, GRAPHIC_DISPLAY_SPI_CLOCK)
+// temporary result of reading non existing read pin
+#define io0_get_input 0
+SOFTSPI(graphic_spi, 1000000UL, 0, GRAPHIC_DISPLAY_SPI_MOSI, GRAPHIC_DISPLAY_SPI_MISO, GRAPHIC_DISPLAY_SPI_CLOCK)
+// delete temporary definition
+#undef io0_get_input
 #define graphic_display_port ((void*)&graphic_spi)
 #else
 #define graphic_display_port NULL
