@@ -33,7 +33,7 @@ extern "C"
 #define GRAPHIC_DISPLAY_HW_I2C 8
 
 #ifndef GRAPHIC_DISPLAY_INTERFACE
-#define GRAPHIC_DISPLAY_INTERFACE GRAPHIC_DISPLAY_SW_SPI
+#define GRAPHIC_DISPLAY_INTERFACE GRAPHIC_DISPLAY_HW_SPI
 #endif
 
 #if (GRAPHIC_DISPLAY_INTERFACE & (GRAPHIC_DISPLAY_SW_SPI | GRAPHIC_DISPLAY_HW_SPI))
@@ -96,6 +96,7 @@ extern "C"
 	extern const display_driver_t gd_ssd1306_128x64_i2c;
 	extern const display_driver_t gd_st7920_128x64_spi;
 	extern const display_driver_t gd_virtual_sdl;
+	extern const display_driver_t gd_st7796_320x240_spi;
 
 #ifdef __cplusplus
 }

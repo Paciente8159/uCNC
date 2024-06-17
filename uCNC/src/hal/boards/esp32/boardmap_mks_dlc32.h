@@ -90,13 +90,15 @@ extern "C"
 #define DIN30_BIT 4
 #define DIN31_BIT 0
 
-// pins for smart adapter
-// clk
-#define DOUT4_BIT 26
-// data
-#define DOUT5_BIT 05
-// cs
-#define DOUT6_BIT 27
+// // pins for smart adapter
+// // clk
+// #define DOUT4_BIT 18
+// // data
+// #define DOUT5_BIT 23
+// // cs
+// #define DOUT6_BIT 25
+// #define DOUT7_BIT 33
+#define DOUT11_BIT 5
 
 #ifdef __cplusplus
 }

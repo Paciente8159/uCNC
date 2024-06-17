@@ -17,8 +17,6 @@
 */
 
 #include "../../cnc.h"
-#define GRAPHIC_DISPLAY_USE_U8G2_LIB
-
 #ifdef GRAPHIC_DISPLAY_USE_U8G2_LIB
 
 #include <clib/u8g2.h>

@@ -333,8 +333,8 @@ uint8_t system_menu_send_cmd(const char *__s)
 
 DECL_MODULE(graphic_display)
 {
-	display_driver_t* display_driver = (display_driver_t*)&gd_st7920_128x64_spi;
-	gd_init(display_driver, (void*)&graphic_spi);
+	display_driver_t* display_driver = (display_driver_t*)&gd_st7796_320x240_spi;
+	gd_init(display_driver, NULL);
 	display_width = display_driver->width;
 	display_height = display_driver->height;
 
