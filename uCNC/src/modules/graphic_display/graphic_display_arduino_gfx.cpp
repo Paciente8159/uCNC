@@ -2,14 +2,15 @@
 
 #ifdef GRAPHIC_DISPLAY_USE_ARDUINO_GFX_LIB
 #include <Arduino.h>
+#include <U8g2lib.h>
 #include <Arduino_GFX_Library.h>
 #include "Arduino_uCNC_SPI.h"
+#include "freesansbold.h"
 
 static Arduino_DataBus *bus;
 static Arduino_GFX *gfx;
 static void *graphic_port;
-static int16_t display_w;
-static int16_t display_h;
+static int16_t font_height;
 
 #ifdef __cplusplus
 extern "C"
@@ -20,8 +21,7 @@ extern "C"
 #include "graphic_display.h"
 #include "../softspi.h"
 #include "../softi2c.h"
-// #include "uCNC_logo.h"
-#include "u8g2_font_6x12_tr.h"
+	// #include "uCNC_logo.h"
 
 #define GRAPHIC_DISPLAY_RST 48
 
@@ -37,15 +37,22 @@ extern "C"
 
 	int16_t gd_font_height(void)
 	{
-		return 9;
+		uint16_t w, h = font_height;
+		if (!h)
+		{
+			int x, y;
+			gfx->getTextBounds("Ag", 1, 1, &x, &y, &w, &h);
+			font_height = h;
+		}
+		return h;
 	}
 
 	void gd_init(display_driver_t *driver, void *port_interface)
 	{
 		graphic_port = port_interface;
-		bus = new Arduino_uCNC_SPI((softspi_port_t *)graphic_port, GRAPHIC_DISPLAY_SPI_DC, GRAPHIC_DISPLAY_SPI_CS, false);
+		// bus = new Arduino_uCNC_SPI((softspi_port_t *)graphic_port, GRAPHIC_DISPLAY_SPI_DC, GRAPHIC_DISPLAY_SPI_CS, false);
 		// bus = new Arduino_ESP32SPI(33, 25, 18, 23, 19, VSPI,false);
-		// bus = new Arduino_HWSPI(50, 53);
+		bus = new Arduino_HWSPI(50, 53);
 
 		driver->init();
 		io_set_pinvalue(GRAPHIC_DISPLAY_BKL, 0);
@@ -54,10 +61,6 @@ extern "C"
 		gfx->begin(20000000);
 		cnc_delay_ms(100);
 		gfx->fillScreen(BLACK);
-		// gfx->setRotation(1);
-		
-		display_w = driver->width;
-		display_h = driver->height;
 	}
 
 	void gd_clear()
@@ -87,18 +90,18 @@ extern "C"
 		// u8g2_SetFont(U8G2, u8g2_font_6x12_tr);
 		// u8g2_DrawStr(U8G2, gd_str_align_center(buff), gd_str_justify_end(), buff);
 		// u8g2_SendBuffer(U8G2);
-		gfx->setFont(u8g2_font_6x12_tr);
+		gfx->setFont(u8g2_font_9x15_tf);
 		gfx->println("Hello World!");
 	}
 
 	void gd_draw_h_line(int16_t y0)
 	{
-		gfx->writeFastHLine(0, y0, display_w, 0x4bea);
+		gfx->drawFastHLine(0, y0 - (gd_font_height() + 3), gfx->width(), WHITE);
 	}
 
 	void gd_draw_rectangle(int16_t x0, int16_t y0, int16_t w, int16_t h)
 	{
-		gfx->drawRect(x0, y0, w, h, 0x4bea);
+		// gfx->drawRect(x0, y0, w, h, 0x4bea);
 	}
 
 	void gd_draw_rectangle_fill(int16_t x0, int16_t y0, int16_t w, int16_t h, bool invert)
@@ -108,7 +111,7 @@ extern "C"
 		{
 			color = RED;
 		}
-		gfx->fillRect(x0, y0, w, h, color);
+		// gfx->fillRect(x0, y0, w, h, color);
 	}
 
 	void gd_draw_triangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, bool invert)
@@ -118,12 +121,12 @@ extern "C"
 		{
 			color = RED;
 		}
-		gfx->fillTriangle(x0,y0,x1,y1,x2,y2, color);
+		// gfx->fillTriangle(x0,y0,x1,y1,x2,y2, color);
 	}
 
 	void gd_draw_string(int16_t x0, int16_t y0, const char *s)
 	{
-		gfx->setCursor(x0, y0 + 7);
+		gfx->setCursor(x0, y0 + 2);
 		gfx->print(s);
 	}
 
@@ -162,27 +165,27 @@ extern "C"
 
 	int16_t gd_str_align_center(const char *s)
 	{
-		return ((display_w - gd_str_width(s)) >> 1);
+		return ((gfx->width() - gd_str_width(s)) >> 1);
 	}
 
 	int16_t gd_str_align_end(const char *s)
 	{
-		return (display_w - gd_str_width(s));
+		return (gfx->width() - gd_str_width(s));
 	}
 
 	int16_t gd_str_justify_start(void)
 	{
-		return 7;
+		return 0;
 	}
 
 	int16_t gd_str_justify_center(void)
 	{
-		return (display_h + gd_font_height()) / 2;
+		return (gfx->height() + gd_font_height()) / 2;
 	}
 
 	int16_t gd_str_justify_end(void)
 	{
-		return display_h - 2;
+		return gfx->height() - (gd_font_height() + 3);
 	}
 
 	static int8_t graphic_last_line_offset;
@@ -192,10 +195,10 @@ extern "C"
 		int8_t offset = graphic_last_line_offset;
 		if (offset < 0)
 		{
-			offset = display_h - (gd_font_height() + 3) * floor(display_h / (gd_font_height() + 3));
+			offset = gfx->height() - (gd_font_height() + 5) * floor(gfx->height() / (gd_font_height() + 5));
 			graphic_last_line_offset = offset;
 		}
-		return line * (gd_font_height() + 3) + offset;
+		return line * (gd_font_height() + 5) + offset;
 	}
 
 	/**
