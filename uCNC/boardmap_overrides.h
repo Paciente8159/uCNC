@@ -8,7 +8,7 @@ extern "C"
 {
 #endif
 
-#define GRAPHIC_DISPLAY_USE_U8G2_LIB
+#define GRAPHIC_DISPLAY_USE_ARDUINO_GFX_LIB
 
 #ifdef __cplusplus
 }

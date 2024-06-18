@@ -4654,6 +4654,7 @@ extern "C"
 #define mcu_spi_xmit(X)           \
 	({                              \
 		SPDR = X;                     \
+		asm volatile("nop");          \
 		while (!(SPSR & (1 << SPIF))) \
 			;                           \
 		SPDR;                         \
