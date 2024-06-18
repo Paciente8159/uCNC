@@ -97,16 +97,26 @@ extern "C"
 #define SPI_SDO_BIT 23
 #define SPI_SDI_BIT 19
 #define SPI_CS_BIT 5
+#define SPI_FREQ 20000000UL
 // sd card detect
 #define DIN19_BIT 34
 
 // pins for smart adapter
-// clk
-#define DOUT4_BIT 0
-// data
-#define DOUT5_BIT 21
+// // clk
+// #define DOUT4_BIT 0
+// // data
+// #define DOUT5_BIT 21
+// // cs
+// #define DOUT6_BIT 4
+
 // cs
-#define DOUT6_BIT 4
+#define DOUT6_BIT 15
+// dc
+#define DOUT11_BIT 17
+// bkl
+#define DOUT12_BIT 21
+// rst
+// #define DOUT13_BIT 4
 
 // beep
 #define DOUT7_IO_OFFSET 21

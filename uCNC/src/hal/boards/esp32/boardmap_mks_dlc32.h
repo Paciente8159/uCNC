@@ -81,30 +81,30 @@ extern "C"
 
 #define ONESHOT_TIMER 2
 
-#define SPI_CLK_BIT 14
-#define SPI_SDO_BIT 13
-#define SPI_SDI_BIT 12
-#define SPI_CS_BIT 15
+// #define SPI_CLK_BIT 14
+// #define SPI_SDO_BIT 13
+// #define SPI_SDI_BIT 12
+// #define SPI_CS_BIT 15
 
 // software I2C
 #define DIN30_BIT 4
 #define DIN31_BIT 0
 
-// pins for TS35
-// clk
-#define DOUT4_BIT 18
-// mosi
-#define DOUT5_BIT 23
+// // pins for TS35
+// // clk
+// #define DOUT4_BIT 18
+// // mosi
+// #define DOUT5_BIT 23
 // cs
 #define DOUT6_BIT 25
-// miso
-#define DOUT7_BIT 19
+// // miso
+// #define DOUT7_BIT 19
 // dc
 #define DOUT11_BIT 33
 // bkl
 #define DOUT12_BIT 5
 // rst
-#define DOUT13_BIT 27
+// #define DOUT13_BIT 27
 
 #ifdef __cplusplus
 }
