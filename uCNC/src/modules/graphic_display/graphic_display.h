@@ -33,7 +33,7 @@ extern "C"
 #define GRAPHIC_DISPLAY_HW_I2C 8
 
 #ifndef GRAPHIC_DISPLAY_INTERFACE
-#define GRAPHIC_DISPLAY_INTERFACE GRAPHIC_DISPLAY_HW_SPI
+#define GRAPHIC_DISPLAY_INTERFACE GRAPHIC_DISPLAY_HW_I2C
 #endif
 
 #if (GRAPHIC_DISPLAY_INTERFACE & (GRAPHIC_DISPLAY_SW_SPI | GRAPHIC_DISPLAY_HW_SPI))
@@ -77,21 +77,20 @@ extern "C"
 	void gd_flush();
 	void gd_init(display_driver_t *driver, void *port_interface);
 	void gd_draw_startup(void);
-	void gd_draw_line(int16_t x0, int16_t y0, int16_t x1, int16_t y1);
+	void gd_draw_h_line(int16_t y0);
 	void gd_draw_rectangle(int16_t x0, int16_t y0, int16_t w, int16_t h);
 	void gd_draw_rectangle_fill(int16_t x0, int16_t y0, int16_t w, int16_t h, bool invert);
-	void gd_draw_triangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2);
+	void gd_draw_triangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, bool invert);
 	void gd_draw_string(int16_t x0, int16_t y0, const char *s);
 	void gd_draw_string_inv(int16_t x0, int16_t y0, const char *s, bool invert);
-	void gd_draw_button(int16_t x0, int16_t y0, const char *s, int16_t minw, int16_t p_h, int16_t p_v, bool invert, bool frameless);
+	void gd_draw_button(int16_t x0, int16_t y0, const char *s, int16_t minw, bool invert, bool frameless);
 	int16_t gd_str_width(const char *s);
 	int16_t gd_str_align_start(const char *s);
 	int16_t gd_str_align_center(const char *s);
 	int16_t gd_str_align_end(const char *s);
-	int16_t gd_str_justify_start(void);
 	int16_t gd_str_justify_center(void);
-	int16_t gd_str_justify_end(void);
 	int16_t gd_font_height(void);
+	int16_t gd_get_line_top(int8_t line);
 
 	/**
 	 * Expose existing display drivers

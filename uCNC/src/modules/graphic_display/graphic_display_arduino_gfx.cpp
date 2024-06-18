@@ -1,5 +1,4 @@
 #include "../../../cnc_config.h"
-#define GRAPHIC_DISPLAY_USE_ARDUINO_GFX_LIB
 
 #ifdef GRAPHIC_DISPLAY_USE_ARDUINO_GFX_LIB
 #include <Arduino.h>

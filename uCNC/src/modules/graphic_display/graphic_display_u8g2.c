@@ -28,6 +28,7 @@
 static u8g2_t graphiclcd_u8g2;
 #define U8G2 ((u8g2_t *)&graphiclcd_u8g2)
 static void *graphic_port;
+static int8_t graphic_last_line_offset;
 
 uint8_t u8x8_byte_ucnc_hw_spi(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr)
 {
@@ -275,7 +276,7 @@ uint8_t u8x8_gpio_and_delay_ucnc(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, voi
 
 int16_t gd_font_height(void)
 {
-	return u8g2_GetAscent(U8G2) - u8g2_GetDescent(U8G2);
+	return 9; // u8g2_GetAscent(U8G2) - u8g2_GetDescent(U8G2);
 }
 
 void gd_init(display_driver_t *driver, void *port_interface)
@@ -286,8 +287,9 @@ void gd_init(display_driver_t *driver, void *port_interface)
 	u8g2_ClearDisplay(U8G2);
 	u8g2_SetPowerSave(U8G2, 0); // wake up display
 	u8g2_FirstPage(U8G2);
-	driver->width = u8g2_GetDisplayWidth(U8G2);
-	driver->height = u8g2_GetDisplayHeight(U8G2);
+	graphic_last_line_offset = -1;
+	//	driver->width = u8g2_GetDisplayWidth(U8G2);
+	//	driver->height = u8g2_GetDisplayHeight(U8G2);
 }
 
 void gd_clear()
@@ -310,13 +312,13 @@ void gd_draw_startup(void)
 	u8g2_DrawUTF8X2(U8G2, (u8g2_GetDisplayWidth(U8G2) / 2 - u8g2_GetUTF8Width(U8G2, buff)), gd_str_justify_center(), buff);
 	rom_strcpy(buff, __romstr__(("v" CNC_VERSION)));
 	u8g2_SetFont(U8G2, u8g2_font_6x12_tr);
-	u8g2_DrawStr(U8G2, gd_str_align_center(buff), gd_str_justify_end(), buff);
+	u8g2_DrawStr(U8G2, gd_str_align_center(buff), (u8g2_GetDisplayHeight(U8G2) + u8g2_GetDescent(U8G2)), buff);
 	u8g2_SendBuffer(U8G2);
 }
 
-void gd_draw_line(int16_t x0, int16_t y0, int16_t x1, int16_t y1)
+void gd_draw_h_line(int16_t y0)
 {
-	u8g2_DrawLine(U8G2, x0, y0, x1, y1);
+	u8g2_DrawHLine(U8G2, 0, y0, u8g2_GetDisplayWidth(U8G2));
 }
 
 void gd_draw_rectangle(int16_t x0, int16_t y0, int16_t w, int16_t h)
@@ -337,14 +339,22 @@ void gd_draw_rectangle_fill(int16_t x0, int16_t y0, int16_t w, int16_t h, bool i
 	}
 }
 
-void gd_draw_triangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2)
+void gd_draw_triangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, bool invert)
 {
+	if (invert)
+	{
+		u8g2_SetDrawColor(U8G2, 0);
+	}
 	u8g2_DrawTriangle(U8G2, x0, y0, x1, y1, x2, y2);
+	if (invert)
+	{
+		u8g2_SetDrawColor(U8G2, 1);
+	}
 }
 
 void gd_draw_string(int16_t x0, int16_t y0, const char *s)
 {
-	u8g2_DrawStr(U8G2, x0, y0, s);
+	u8g2_DrawStr(U8G2, x0, y0 + u8g2_GetAscent(U8G2) + 2, s);
 }
 
 void gd_draw_string_inv(int16_t x0, int16_t y0, const char *s, bool invert)
@@ -353,18 +363,19 @@ void gd_draw_string_inv(int16_t x0, int16_t y0, const char *s, bool invert)
 	{
 		u8g2_SetDrawColor(U8G2, 0);
 	}
-	u8g2_DrawStr(U8G2, x0, y0, s);
+	u8g2_DrawStr(U8G2, x0, y0 + u8g2_GetAscent(U8G2) + 2, s);
 	if (invert)
 	{
 		u8g2_SetDrawColor(U8G2, 1);
 	}
 }
 
-void gd_draw_button(int16_t x0, int16_t y0, const char *s, int16_t minw, int16_t p_h, int16_t p_v, bool invert, bool frameless)
+void gd_draw_button(int16_t x0, int16_t y0, const char *s, int16_t minw, bool invert, bool frameless)
 {
+	y0 += u8g2_GetAscent(U8G2) + 2;
 	uint8_t mode = (!frameless) ? U8G2_BTN_BW1 : U8G2_BTN_BW0;
 	mode |= (!invert) ? 0 : U8G2_BTN_INV;
-	u8g2_DrawButtonUTF8(U8G2, x0, y0, mode, minw, p_h, p_v, s);
+	u8g2_DrawButtonUTF8(U8G2, x0, y0, mode, minw, 1, 1, s);
 }
 
 int16_t gd_str_width(const char *s)
@@ -400,6 +411,18 @@ int16_t gd_str_justify_center(void)
 int16_t gd_str_justify_end(void)
 {
 	return u8g2_GetDisplayHeight(U8G2) + u8g2_GetDescent(U8G2);
+}
+
+int16_t gd_get_line_top(int8_t line)
+{
+	// line height plus padding
+	int8_t offset = graphic_last_line_offset;
+	if (offset < 0)
+	{
+		offset = u8g2_GetDisplayHeight(U8G2) - (gd_font_height() + 3) * floor(u8g2_GetDisplayHeight(U8G2) / (gd_font_height() + 3));
+		graphic_last_line_offset = offset;
+	}
+	return line * (gd_font_height() + 3) + offset;
 }
 
 /**

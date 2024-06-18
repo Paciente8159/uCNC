@@ -52,6 +52,7 @@
 
 static int16_t display_width;
 static int16_t display_height;
+static uint8_t display_max_lines;
 
 static uint8_t graphic_display_str_lines(const char *__s, int16_t *max_len);
 static uint8_t graphic_display_str_line_len(const char *__s);
@@ -70,7 +71,7 @@ static uint8_t graphic_display_str_line_len(const char *__s);
 SOFTSPI(graphic_spi, 1000000UL, 0, GRAPHIC_DISPLAY_SPI_MOSI, GRAPHIC_DISPLAY_SPI_MISO, GRAPHIC_DISPLAY_SPI_CLOCK)
 // delete temporary definition
 #undef io0_get_input
-#define graphic_display_port ((void*)&graphic_spi)
+#define graphic_display_port ((void *)&graphic_spi)
 #else
 #define graphic_display_port NULL
 #endif
@@ -80,7 +81,7 @@ SOFTSPI(graphic_spi, 1000000UL, 0, GRAPHIC_DISPLAY_SPI_MOSI, GRAPHIC_DISPLAY_SPI
 #include "../softi2c.h"
 #if (GRAPHIC_DISPLAY_INTERFACE == GRAPHIC_DISPLAY_SW_I2C)
 SOFTI2C(graphic_i2c, 100000UL, GRAPHIC_DISPLAY_I2C_CLOCK, GRAPHIC_DISPLAY_I2C_DATA)
-#define graphic_display_port ((void*)&graphic_i2c)
+#define graphic_display_port ((void *)&graphic_i2c)
 #else
 #define graphic_display_port NULL
 #endif
@@ -334,7 +335,7 @@ uint8_t system_menu_send_cmd(const char *__s)
 		return STATUS_STREAM_FAILED;
 	}
 
-	BUFFER_WRITE(graphic_stream_buffer, (void*)__s, len, w);
+	BUFFER_WRITE(graphic_stream_buffer, (void *)__s, len, w);
 
 	return STATUS_OK;
 }
@@ -343,11 +344,11 @@ uint8_t system_menu_send_cmd(const char *__s)
 
 DECL_MODULE(graphic_display)
 {
-	display_driver_t* display_driver = (display_driver_t*)&gd_st7796_480x320_spi;
+	display_driver_t *display_driver = (display_driver_t *)&gd_ssd1306_128x64_i2c;
 	gd_init(display_driver, graphic_display_port);
 	display_width = display_driver->width;
 	display_height = display_driver->height;
-
+	display_max_lines = (uint8_t)floor(display_driver->height / (gd_font_height() + 3));
 #ifdef DECL_SERIAL_STREAM
 	serial_stream_register(&graphic_stream);
 #endif
@@ -449,8 +450,8 @@ void system_menu_render_idle(void)
 
 	// coordinates
 	char buff[SYSTEM_MENU_MAX_STR_LEN];
-	int16_t y = gd_str_justify_end();
-	int16_t fh = gd_font_height();
+	int8_t line = display_max_lines - 1;
+	int16_t y = gd_get_line_top(line);
 
 	// u8g2_SetFont(U8G2, u8g2_font_6x12_t_symbols);
 	// rom_strcpy(buff, __romstr__("µCNC v" CNC_VERSION));
@@ -476,8 +477,9 @@ void system_menu_render_idle(void)
 	gd_draw_string(display_width >> 1, y, buff);
 #endif
 	memset(buff, 0, 32);
-	gd_draw_line(0, y - fh - 1, display_width, y - fh - 1);
-	y -= (fh + 3);
+	gd_draw_h_line(y);
+
+	y = gd_get_line_top(--line);
 #endif
 
 	cnc_dotasks();
@@ -494,8 +496,9 @@ void system_menu_render_idle(void)
 	gd_draw_string(display_width >> 1, y, buff);
 #endif
 	memset(buff, 0, 32);
-	gd_draw_line(0, y - fh - 1, display_width, y - fh - 1);
-	y -= (fh + 3);
+	gd_draw_h_line(y);
+
+	y = gd_get_line_top(--line);
 #endif
 
 	cnc_dotasks();
@@ -514,8 +517,8 @@ void system_menu_render_idle(void)
 	gd_draw_string(display_width >> 1, y, buff);
 #endif
 	memset(buff, 0, 32);
-	gd_draw_line(0, y - fh - 1, display_width, y - fh - 1);
-	y -= (fh + 3);
+	gd_draw_h_line(y);
+	y = gd_get_line_top(--line);
 #endif
 
 	cnc_dotasks();
@@ -549,9 +552,8 @@ void system_menu_render_idle(void)
 	strcat(buff, tool);
 	gd_draw_string(gd_str_align_end(buff), y, buff);
 	memset(buff, 0, 32);
-	gd_draw_line(0, y - fh - 1, display_width, y - fh - 1);
-
-	y -= (fh + 3);
+	gd_draw_h_line(y);
+	y = gd_get_line_top(--line);
 
 	cnc_dotasks();
 
@@ -612,40 +614,35 @@ void system_menu_render_idle(void)
 	gd_flush();
 }
 
-static int16_t y_coord;
+static int8_t item_line;
 
 void system_menu_render_header(const char *__s)
 {
-	int16_t fh = gd_font_height() + 2;
 	gd_clear();
-	gd_draw_string(gd_str_align_center(__s), gd_str_justify_start() + 1, __s);
-	gd_draw_line(0, fh, display_width, fh);
-	y_coord = 2;
+	gd_draw_string(gd_str_align_center(__s), 0, __s);
+	gd_draw_h_line(gd_get_line_top(1));
+	item_line = 0;
 }
 
 void system_menu_render_nav_back(bool is_hover)
 {
-	gd_draw_button(gd_str_align_end("X") - 2, gd_str_justify_start() + 1, "X", 0, 2, 1, is_hover, false);
+	gd_draw_button(gd_str_align_end("X") - 2, 0, "X", 0, is_hover, false);
 }
 
 void system_menu_item_render_label(uint8_t render_flags, const char *label)
 {
-	int16_t fh = gd_font_height();
-	y_coord += fh + 1;
-	int16_t y = y_coord;
+	int8_t line = item_line + 1;
+	int16_t y = gd_get_line_top(line);
+	item_line = line;
 	if (label)
 	{
 		cnc_dotasks();
-
 		if (render_flags & SYSTEM_MENU_MODE_EDIT)
 		{
-			y_coord += fh + 1;
-			y = y_coord;
-			gd_draw_string(gd_str_align_center(label), y + gd_str_justify_start() + 1, label);
+			gd_draw_string(gd_str_align_center(label), gd_get_line_top((display_max_lines >> 1) - 1), label);
 			return;
 		}
-
-		gd_draw_button(0, y + fh - 2, label, display_width, 1, 0, (render_flags & SYSTEM_MENU_MODE_SELECT), true);
+		gd_draw_button(0, y, label, display_width, (render_flags & SYSTEM_MENU_MODE_SELECT), true);
 	}
 }
 
@@ -655,16 +652,14 @@ void system_menu_item_render_arg(uint8_t render_flags, const char *value)
 	{
 		cnc_dotasks();
 
-		int16_t y = y_coord;
+		int16_t y = 0;
 		int16_t fh = gd_font_height();
 
 		if (render_flags & SYSTEM_MENU_MODE_EDIT)
 		{
-			y_coord += 2 * (fh + 1);
 			int16_t start_pos = gd_str_align_center(value);
-			gd_draw_string(start_pos, y_coord + gd_str_justify_start() + 1, value);
-			y_coord += fh;
-			y = y_coord;
+			y = gd_get_line_top((display_max_lines >> 1)) + (fh >> 1);
+			gd_draw_string(start_pos, y, value);
 			char *dot = strchr(value, '.');
 			uint8_t base_pos = start_pos + gd_str_width(value);
 			int8_t mult = g_system_menu.current_multiplier + 1;
@@ -679,27 +674,26 @@ void system_menu_item_render_arg(uint8_t render_flags, const char *value)
 				base_pos -= 6 * mult;
 				if (render_flags & SYSTEM_MENU_MODE_MODIFY)
 				{
-					gd_draw_triangle(base_pos, y - fh, base_pos + 6, y - fh, base_pos + 3, y - fh - 4);
-					gd_draw_triangle(base_pos + 1, y, base_pos + 6, y, base_pos + 3, y + 3);
+					gd_draw_triangle(base_pos - 1, y, base_pos + 6, y, base_pos + 2, y - 4, false);
+					gd_draw_triangle(base_pos, y + fh + 2, base_pos + 6, y + fh + 2, base_pos + 2, y + fh + 5, false);
 				}
 				else
 				{
-					gd_draw_rectangle_fill(base_pos + 1, y, 5, 2, false);
+					gd_draw_rectangle_fill(base_pos, y + fh + 1, 6, 2, false);
 				}
 			}
 
 			return;
 		}
-
-		uint8_t base_y = y + gd_str_justify_start() + 1;
+		y = gd_get_line_top(item_line);
 		uint8_t base_x = gd_str_align_end(value);
 
 		if (CHECKFLAG(render_flags, (SYSTEM_MENU_MODE_SELECT | SYSTEM_MENU_MODE_SIMPLE_EDIT)) == (SYSTEM_MENU_MODE_SELECT | SYSTEM_MENU_MODE_SIMPLE_EDIT))
 		{
-			gd_draw_triangle(base_x, base_y - ((fh) >> 1), base_x - 3, base_y - fh, base_x - 3, base_y + 1);
+			gd_draw_triangle(base_x - 1, y + ((fh) >> 1) + 2, base_x - 4, y + fh + 1, base_x - 4, y + 2, true);
 		}
 
-		gd_draw_string_inv(base_x, base_y, value, (render_flags & SYSTEM_MENU_MODE_SELECT));
+		gd_draw_string_inv(base_x, y, value, (render_flags & SYSTEM_MENU_MODE_SELECT));
 	}
 }
 
@@ -712,12 +706,13 @@ bool system_menu_render_menu_item_filter(uint8_t item_index)
 {
 	static uint8_t menu_top = 0;
 	uint8_t current_index = MAX(0, g_system_menu.current_index);
+	uint8_t max_lines = display_max_lines - 1;
 
 	uint8_t top = menu_top;
-	if ((top + GRAPHIC_DISPLAY_MAX_LINES) <= current_index)
+	if ((top + max_lines) <= current_index)
 	{
 		// advance menu top
-		menu_top = top = (current_index - GRAPHIC_DISPLAY_MAX_LINES + 1);
+		menu_top = top = (current_index - max_lines + 1);
 	}
 
 	if (top > current_index)
@@ -726,20 +721,20 @@ bool system_menu_render_menu_item_filter(uint8_t item_index)
 		menu_top = top = current_index;
 	}
 
-	return ((top <= item_index) && (item_index < (top + GRAPHIC_DISPLAY_MAX_LINES)));
+	return ((top <= item_index) && (item_index < (top + max_lines)));
 }
 
 void system_menu_render_modal_popup(const char *__s)
 {
-	int16_t fh = gd_font_height();
 	int16_t w = 0;
 	uint8_t lines = graphic_display_str_lines(__s, &w);
 	w = (lines != 1) ? (w * gd_str_width("Z")) : (gd_str_width(__s));
 	w += 6;
-	int16_t bh = (fh + 1) * (lines + 1);
-	gd_draw_rectangle_fill(5, (display_height - bh) >> 1, (display_width - 10), bh, true);
-	gd_draw_rectangle(5, (display_height - bh) >> 1, (display_width - 10), bh);
-	uint8_t y_start = (display_height >> 1) - (((display_height + 1) * (lines - 1)) >> 1) + ((display_height + 1) >> 2);
+
+	gd_draw_rectangle_fill(5, 5, (display_width - 10), (display_height - 5), true);
+	gd_draw_rectangle(5, 5, (display_width - 10), (display_height - 5));
+
+	uint8_t line = ((display_max_lines - lines) >> 1);
 	do
 	{
 		char buffer[SYSTEM_MENU_MAX_STR_LEN];
@@ -747,8 +742,7 @@ void system_menu_render_modal_popup(const char *__s)
 		memcpy(buffer, __s, len);
 		buffer[len] = 0;
 		__s += len;
-		gd_draw_string(gd_str_align_center(buffer), y_start, buffer);
-		y_start += display_height + 1;
+		gd_draw_string(gd_str_align_center(buffer), gd_get_line_top(line++), buffer);
 	} while (--lines);
 
 	gd_flush();
@@ -806,14 +800,12 @@ void system_menu_render_alarm(void)
 {
 	gd_clear();
 	// coordinates
-	int16_t fh = gd_font_height();
-	int16_t y = gd_str_justify_start() + 1;
 	char buff[SYSTEM_MENU_MAX_STR_LEN];
 	rom_strcpy(buff, __romstr__("ALARM "));
 	uint8_t alarm = cnc_get_alarm();
 	system_menu_int_to_str(&buff[6], alarm);
-	gd_draw_button(0, 0, buff, display_width, 1, 1, true, false);
-	y += fh;
+	gd_draw_rectangle_fill(0, 0, display_width, gd_font_height() + 3, false);
+	gd_draw_string_inv(gd_str_align_center(buff), 0, buff, true);
 
 	memset(buff, 0, SYSTEM_MENU_MAX_STR_LEN);
 
@@ -863,16 +855,13 @@ void system_menu_render_alarm(void)
 		break;
 	}
 
-	gd_draw_string(gd_str_align_center(buff), y, buff);
-	y += fh;
+	gd_draw_string(gd_str_align_center(buff), gd_get_line_top(1), buff);
 	memset(buff, 0, SYSTEM_MENU_MAX_STR_LEN);
 	io_states_str(buff);
-	gd_draw_string(gd_str_align_center(buff), y, buff);
-	y += fh;
+	gd_draw_string(gd_str_align_center(buff), gd_get_line_top(2), buff);
 	rom_strcpy(buff, __romstr__(STR_USER_NEEDS_SYSTEM_RESET_1));
-	gd_draw_string( gd_str_align_center(buff), y, buff);
-	y += fh;
+	gd_draw_string(gd_str_align_center(buff), gd_get_line_top(3), buff);
 	rom_strcpy(buff, __romstr__(STR_USER_NEEDS_SYSTEM_RESET_2));
-	gd_draw_string(gd_str_align_center(buff), y, buff);
+	gd_draw_string(gd_str_align_center(buff), gd_get_line_top(4), buff);
 	gd_flush();
 }
