@@ -345,8 +345,8 @@ uint8_t system_menu_send_cmd(const char *__s)
 
 DECL_MODULE(graphic_display)
 {
-	display_driver_t *display_driver = (display_driver_t *)&gd_ssd1306_128x64_i2c;
-	// display_driver_t *display_driver = (display_driver_t *)&gd_ili9341_240x320_spi;
+	// display_driver_t *display_driver = (display_driver_t *)&gd_ssd1306_128x64_i2c;
+	display_driver_t *display_driver = (display_driver_t *)&gd_ili9341_240x320_spi;
 	gd_init(display_driver, graphic_display_port);
 	display_width = display_driver->width;
 	display_height = display_driver->height;
@@ -658,27 +658,42 @@ void system_menu_item_render_arg(uint8_t render_flags, const char *value)
 			y = gd_get_line_top((display_max_lines >> 1)) + (fh >> 1);
 			bt_y += y;
 			gd_draw_string(start_pos, y, value);
-			char *dot = strchr(value, '.');
-			uint8_t base_pos = start_pos + gd_str_width(value);
-			int8_t mult = g_system_menu.current_multiplier + 1;
-			uint8_t cw = display_char_width;
-			if(!cw){
-				cw = gd_str_width("0") + 2;
-				display_char_width = cw;
-			}
-			if (dot && mult > 3)
-			{
-				// jump the comma position
-				mult++;
-			}
 
-			if (mult > 0)
+			if (g_system_menu.current_multiplier >= 0)
 			{
-				base_pos -= cw * mult;
-				
+				int8_t mult = (g_system_menu.current_multiplier + 1);
+				char *c = (char *)&value[strlen(value) - 1];
+				while (mult--)
+				{
+					if (*c == '.')
+					{
+						*c = 0;
+						c--;
+					}
+					*c = 0;
+					if (c == value)
+					{
+						mult--;
+						break;
+					}
+					c--;
+					
+				}
+
+				mult = strlen(value) - mult;
+
+				uint8_t cw = display_char_width;
+				if (!cw)
+				{
+					cw = gd_str_width("0");
+					display_char_width = cw;
+				}
+				int16_t base_pos = start_pos;
+				base_pos += (mult > 0) ? gd_str_width(value) + 1 : (mult - 1) * cw;
+
 				if (render_flags & SYSTEM_MENU_MODE_MODIFY)
 				{
-					gd_draw_triangle(base_pos, y, base_pos + cw, y, base_pos + 2, y - 4, false);
+					gd_draw_triangle(base_pos, y, base_pos + cw, y, base_pos + 2, y - tri_off, false);
 					gd_draw_triangle(base_pos, bt_y, base_pos + cw, bt_y, base_pos + 2, bt_y + tri_off - 2, false);
 				}
 				else
@@ -691,7 +706,7 @@ void system_menu_item_render_arg(uint8_t render_flags, const char *value)
 		}
 		y = gd_get_line_top(item_line);
 		bt_y += y;
-		uint8_t base_x = gd_str_align_end(value);
+		int16_t base_x = gd_str_align_end(value);
 
 		if (CHECKFLAG(render_flags, (SYSTEM_MENU_MODE_SELECT | SYSTEM_MENU_MODE_SIMPLE_EDIT)) == (SYSTEM_MENU_MODE_SELECT | SYSTEM_MENU_MODE_SIMPLE_EDIT))
 		{
