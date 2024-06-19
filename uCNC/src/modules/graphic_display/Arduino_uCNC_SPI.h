@@ -21,7 +21,6 @@
 
 #include "../../cnc_hal_config_helper.h"
 
-#ifdef GRAPHIC_DISPLAY_USE_ARDUINO_GFX_LIB
 #include "Arduino_DataBus.h"
 #include "../softspi.h"
 
@@ -49,5 +48,4 @@ private:
 	uint32_t _speed;
 	uint8_t _dataMode;
 };
-#endif
 #endif

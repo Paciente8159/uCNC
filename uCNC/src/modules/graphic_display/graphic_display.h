@@ -24,7 +24,7 @@ extern "C"
 {
 #endif
 
-#include "../system_menu.h"
+// #include "../system_menu.h"
 #include <stdint.h>
 
 #define GRAPHIC_DISPLAY_SW_SPI 1
@@ -33,10 +33,9 @@ extern "C"
 #define GRAPHIC_DISPLAY_HW_I2C 8
 
 #ifndef GRAPHIC_DISPLAY_INTERFACE
-#define GRAPHIC_DISPLAY_INTERFACE GRAPHIC_DISPLAY_HW_SPI
+#define GRAPHIC_DISPLAY_INTERFACE GRAPHIC_DISPLAY_HW_I2C
 #endif
 
-#if (GRAPHIC_DISPLAY_INTERFACE & (GRAPHIC_DISPLAY_SW_SPI | GRAPHIC_DISPLAY_HW_SPI))
 #if (GRAPHIC_DISPLAY_INTERFACE == GRAPHIC_DISPLAY_SW_SPI)
 #ifndef GRAPHIC_DISPLAY_SPI_CLOCK
 #define GRAPHIC_DISPLAY_SPI_CLOCK DOUT4
@@ -52,9 +51,7 @@ extern "C"
 #ifndef GRAPHIC_DISPLAY_SPI_CS
 #define GRAPHIC_DISPLAY_SPI_CS DOUT6
 #endif
-#endif
 
-#if (GRAPHIC_DISPLAY_INTERFACE & (GRAPHIC_DISPLAY_SW_I2C | GRAPHIC_DISPLAY_HW_I2C))
 #if (GRAPHIC_DISPLAY_INTERFACE == GRAPHIC_DISPLAY_SW_I2C)
 #ifndef GRAPHIC_DISPLAY_I2C_CLOCK
 #define GRAPHIC_DISPLAY_I2C_CLOCK DIN30
@@ -63,8 +60,6 @@ extern "C"
 #define GRAPHIC_DISPLAY_I2C_DATA DIN31
 #endif
 #endif
-#endif
-
 
 	typedef struct display_driver_
 	{
@@ -90,6 +85,8 @@ extern "C"
 	int16_t gd_str_align_end(const char *s);
 	int16_t gd_str_justify_center(void);
 	int16_t gd_font_height(void);
+	int16_t gd_line_height(void);
+	int16_t gd_half_padding(void);
 	int16_t gd_get_line_top(int8_t line);
 
 	/**

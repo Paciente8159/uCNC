@@ -20,7 +20,6 @@
 #include "../../cnc.h"
 #include "../softspi.h"
 
-#ifdef GRAPHIC_DISPLAY_USE_ARDUINO_GFX_LIB
 Arduino_uCNC_SPI::Arduino_uCNC_SPI(softspi_port_t *spi = nullptr, uint8_t dc = 0, uint8_t cs = 0, bool is_shared_interface = true)
 	{
 		this->_dc = dc;
@@ -172,4 +171,3 @@ void Arduino_uCNC_SPI::writePixels(uint16_t *data, uint32_t len)
 		softspi_xmit(this->_spi, (uint8_t)(p & 0xff));
 	}
 }
-#endif

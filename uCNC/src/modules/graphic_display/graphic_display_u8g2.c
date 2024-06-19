@@ -17,13 +17,14 @@
 */
 
 #include "../../cnc.h"
-#ifdef GRAPHIC_DISPLAY_USE_U8G2_LIB
+#ifndef GRAPHIC_DISPLAY_LIB
 
 #include <clib/u8g2.h>
 #include <clib/u8x8.h>
 #include "graphic_display.h"
 #include "../softspi.h"
 #include "../softi2c.h"
+#include "../system_menu.h"
 
 static u8g2_t graphiclcd_u8g2;
 #define U8G2 ((u8g2_t *)&graphiclcd_u8g2)
@@ -274,12 +275,12 @@ uint8_t u8x8_gpio_and_delay_ucnc(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, voi
 	return 1;
 }
 
-int16_t gd_font_height(void)
+int16_t __attribute__((weak)) gd_font_height(void)
 {
 	return 9; // u8g2_GetAscent(U8G2) - u8g2_GetDescent(U8G2);
 }
 
-void gd_init(display_driver_t *driver, void *port_interface)
+void __attribute__((weak)) gd_init(display_driver_t *driver, void *port_interface)
 {
 	graphic_port = port_interface;
 	driver->init();
@@ -292,17 +293,17 @@ void gd_init(display_driver_t *driver, void *port_interface)
 	//	driver->height = u8g2_GetDisplayHeight(U8G2);
 }
 
-void gd_clear()
+void __attribute__((weak)) gd_clear()
 {
 	u8g2_ClearBuffer(U8G2);
 }
 
-void gd_flush()
+void __attribute__((weak)) gd_flush()
 {
 	u8g2_SendBuffer(U8G2);
 }
 
-void gd_draw_startup(void)
+void __attribute__((weak)) gd_draw_startup(void)
 {
 	u8g2_ClearBuffer(U8G2);
 	char buff[SYSTEM_MENU_MAX_STR_LEN];
@@ -316,17 +317,17 @@ void gd_draw_startup(void)
 	u8g2_SendBuffer(U8G2);
 }
 
-void gd_draw_h_line(int16_t y0)
+void __attribute__((weak)) gd_draw_h_line(int16_t y0)
 {
 	u8g2_DrawHLine(U8G2, 0, y0, u8g2_GetDisplayWidth(U8G2));
 }
 
-void gd_draw_rectangle(int16_t x0, int16_t y0, int16_t w, int16_t h)
+void __attribute__((weak)) gd_draw_rectangle(int16_t x0, int16_t y0, int16_t w, int16_t h)
 {
 	u8g2_DrawFrame(U8G2, x0, y0, w, h);
 }
 
-void gd_draw_rectangle_fill(int16_t x0, int16_t y0, int16_t w, int16_t h, bool invert)
+void __attribute__((weak)) gd_draw_rectangle_fill(int16_t x0, int16_t y0, int16_t w, int16_t h, bool invert)
 {
 	if (invert)
 	{
@@ -339,7 +340,11 @@ void gd_draw_rectangle_fill(int16_t x0, int16_t y0, int16_t w, int16_t h, bool i
 	}
 }
 
-void gd_draw_triangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, bool invert)
+	int16_t __attribute__((weak)) gd_half_padding(void){
+		return 1;
+	}
+
+void __attribute__((weak)) gd_draw_triangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, bool invert)
 {
 	if (invert)
 	{
@@ -352,12 +357,12 @@ void gd_draw_triangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2
 	}
 }
 
-void gd_draw_string(int16_t x0, int16_t y0, const char *s)
+void __attribute__((weak)) gd_draw_string(int16_t x0, int16_t y0, const char *s)
 {
 	u8g2_DrawStr(U8G2, x0, y0 + u8g2_GetAscent(U8G2) + 2, s);
 }
 
-void gd_draw_string_inv(int16_t x0, int16_t y0, const char *s, bool invert)
+void __attribute__((weak)) gd_draw_string_inv(int16_t x0, int16_t y0, const char *s, bool invert)
 {
 	if (invert)
 	{
@@ -370,50 +375,61 @@ void gd_draw_string_inv(int16_t x0, int16_t y0, const char *s, bool invert)
 	}
 }
 
-void gd_draw_button(int16_t x0, int16_t y0, const char *s, int16_t minw, bool invert, bool frameless)
+void __attribute__((weak)) gd_draw_button(int16_t x0, int16_t y0, const char *s, int16_t minw, bool invert, bool frameless)
 {
 	y0 += u8g2_GetAscent(U8G2) + 2;
 	uint8_t mode = (!frameless) ? U8G2_BTN_BW1 : U8G2_BTN_BW0;
 	mode |= (!invert) ? 0 : U8G2_BTN_INV;
+	if (minw < 0)
+	{
+		minw = ABS(minw);
+		x0 -= MAX(gd_str_width(s) + 5, minw);
+	}
+
 	u8g2_DrawButtonUTF8(U8G2, x0, y0, mode, minw, 1, 1, s);
 }
 
-int16_t gd_str_width(const char *s)
+int16_t __attribute__((weak)) gd_str_width(const char *s)
 {
 	return u8g2_GetUTF8Width(U8G2, s);
 }
 
-int16_t gd_str_align_start(const char *s)
+int16_t __attribute__((weak)) gd_line_height(void)
+{
+	return (gd_font_height() + 3);
+}
+
+int16_t __attribute__((weak)) gd_str_align_start(const char *s)
 {
 	return 0;
 }
 
-int16_t gd_str_align_center(const char *s)
+int16_t __attribute__((weak)) gd_str_align_center(const char *s)
 {
 	return ((u8g2_GetDisplayWidth(U8G2) - gd_str_width(s)) >> 1);
 }
 
-int16_t gd_str_align_end(const char *s)
+int16_t __attribute__((weak)) gd_str_align_end(const char *s)
 {
 	return (u8g2_GetDisplayWidth(U8G2) - gd_str_width(s));
 }
 
-int16_t gd_str_justify_start(void)
+int16_t __attribute__((weak)) gd_str_justify_start(void)
 {
 	return u8g2_GetAscent(U8G2);
 }
 
-int16_t gd_str_justify_center(void)
+int16_t __attribute__((weak)) gd_str_justify_center(void)
 {
 	return (u8g2_GetDisplayHeight(U8G2) + gd_font_height()) / 2;
 }
 
-int16_t gd_str_justify_end(void)
+int16_t __attribute__((weak)) gd_str_justify_end(void)
 {
 	return u8g2_GetDisplayHeight(U8G2) + u8g2_GetDescent(U8G2);
 }
 
-int16_t gd_get_line_top(int8_t line)
+int16_t __attribute__((weak)) gd_get_line_top(int8_t line)
 {
 	// line height plus padding
 	int8_t offset = graphic_last_line_offset;

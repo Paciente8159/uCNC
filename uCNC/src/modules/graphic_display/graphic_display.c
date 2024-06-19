@@ -53,6 +53,7 @@
 static int16_t display_width;
 static int16_t display_height;
 static uint8_t display_max_lines;
+static uint8_t display_char_width;
 
 static uint8_t graphic_display_str_lines(const char *__s, int16_t *max_len);
 static uint8_t graphic_display_str_line_len(const char *__s);
@@ -344,12 +345,12 @@ uint8_t system_menu_send_cmd(const char *__s)
 
 DECL_MODULE(graphic_display)
 {
-	// display_driver_t *display_driver = (display_driver_t *)&gd_ssd1306_128x64_i2c;
-	display_driver_t *display_driver = (display_driver_t *)&gd_ili9341_240x320_spi;
+	display_driver_t *display_driver = (display_driver_t *)&gd_ssd1306_128x64_i2c;
+	// display_driver_t *display_driver = (display_driver_t *)&gd_ili9341_240x320_spi;
 	gd_init(display_driver, graphic_display_port);
 	display_width = display_driver->width;
 	display_height = display_driver->height;
-	display_max_lines = (uint8_t)floor(display_driver->height / (gd_font_height() + 3));
+	display_max_lines = (uint8_t)floor(display_driver->height / gd_line_height());
 #ifdef DECL_SERIAL_STREAM
 	serial_stream_register(&graphic_stream);
 #endif
@@ -453,12 +454,6 @@ void system_menu_render_idle(void)
 	char buff[SYSTEM_MENU_MAX_STR_LEN];
 	int8_t line = display_max_lines - 1;
 	int16_t y = gd_get_line_top(line);
-
-	// u8g2_SetFont(U8G2, u8g2_font_6x12_t_symbols);
-	// rom_strcpy(buff, __romstr__("µCNC v" CNC_VERSION));
-	// u8g2_DrawButtonUTF8(U8G2, (display_width>>1), JUSTIFY_TOP + 1,U8G2_BTN_INV|U8G2_BTN_HCENTER, display_width, 1, 1, buff);
-	// u8g2_SetFont(U8G2, u8g2_font_6x12_tr);
-
 	memset(buff, 0, 32);
 
 	float axis[MAX(AXIS_COUNT, 3)];
@@ -627,7 +622,7 @@ void system_menu_render_header(const char *__s)
 
 void system_menu_render_nav_back(bool is_hover)
 {
-	gd_draw_button(gd_str_align_end("X") - 2, 0, "X", 0, is_hover, false);
+	gd_draw_button(display_width, 0, "X", -1, is_hover, false);
 }
 
 void system_menu_item_render_label(uint8_t render_flags, const char *label)
@@ -655,15 +650,22 @@ void system_menu_item_render_arg(uint8_t render_flags, const char *value)
 
 		int16_t y = 0;
 		int16_t fh = gd_font_height();
-
+		int16_t bt_y = fh + gd_half_padding() + 1;
+		int16_t tri_off = (fh >> 1) + 1;
 		if (render_flags & SYSTEM_MENU_MODE_EDIT)
 		{
 			int16_t start_pos = gd_str_align_center(value);
 			y = gd_get_line_top((display_max_lines >> 1)) + (fh >> 1);
+			bt_y += y;
 			gd_draw_string(start_pos, y, value);
 			char *dot = strchr(value, '.');
 			uint8_t base_pos = start_pos + gd_str_width(value);
 			int8_t mult = g_system_menu.current_multiplier + 1;
+			uint8_t cw = display_char_width;
+			if(!cw){
+				cw = gd_str_width("0") + 2;
+				display_char_width = cw;
+			}
 			if (dot && mult > 3)
 			{
 				// jump the comma position
@@ -672,26 +674,28 @@ void system_menu_item_render_arg(uint8_t render_flags, const char *value)
 
 			if (mult > 0)
 			{
-				base_pos -= 6 * mult;
+				base_pos -= cw * mult;
+				
 				if (render_flags & SYSTEM_MENU_MODE_MODIFY)
 				{
-					gd_draw_triangle(base_pos - 1, y, base_pos + 6, y, base_pos + 2, y - 4, false);
-					gd_draw_triangle(base_pos, y + fh + 2, base_pos + 6, y + fh + 2, base_pos + 2, y + fh + 5, false);
+					gd_draw_triangle(base_pos, y, base_pos + cw, y, base_pos + 2, y - 4, false);
+					gd_draw_triangle(base_pos, bt_y, base_pos + cw, bt_y, base_pos + 2, bt_y + tri_off - 2, false);
 				}
 				else
 				{
-					gd_draw_rectangle_fill(base_pos, y + fh + 1, 6, 2, false);
+					gd_draw_rectangle_fill(base_pos, bt_y, cw, 2, false);
 				}
 			}
 
 			return;
 		}
 		y = gd_get_line_top(item_line);
+		bt_y += y;
 		uint8_t base_x = gd_str_align_end(value);
 
 		if (CHECKFLAG(render_flags, (SYSTEM_MENU_MODE_SELECT | SYSTEM_MENU_MODE_SIMPLE_EDIT)) == (SYSTEM_MENU_MODE_SELECT | SYSTEM_MENU_MODE_SIMPLE_EDIT))
 		{
-			gd_draw_triangle(base_x - 1, y + ((fh) >> 1) + 2, base_x - 4, y + fh + 1, base_x - 4, y + 2, true);
+			gd_draw_triangle(base_x - 1, bt_y - tri_off, base_x - tri_off, bt_y, base_x - tri_off, y + gd_half_padding(), true);
 		}
 
 		gd_draw_string_inv(base_x, y, value, (render_flags & SYSTEM_MENU_MODE_SELECT));
@@ -805,7 +809,7 @@ void system_menu_render_alarm(void)
 	rom_strcpy(buff, __romstr__("ALARM "));
 	uint8_t alarm = cnc_get_alarm();
 	system_menu_int_to_str(&buff[6], alarm);
-	gd_draw_rectangle_fill(0, 0, display_width, gd_font_height() + 3, false);
+	gd_draw_rectangle_fill(0, 0, display_width, gd_line_height(), false);
 	gd_draw_string_inv(gd_str_align_center(buff), 0, buff, true);
 
 	memset(buff, 0, SYSTEM_MENU_MAX_STR_LEN);
