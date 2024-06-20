@@ -28,7 +28,7 @@ Arduino_uCNC_SPI::Arduino_uCNC_SPI(softspi_port_t *spi = nullptr, uint8_t dc = 0
 		this->_is_shared_interface = is_shared_interface;
 	}
 
-bool Arduino_uCNC_SPI::begin(int32_t speed = 1000000UL, int8_t dataMode = 0)
+bool Arduino_uCNC_SPI::begin(int32_t speed = 20000000UL, int8_t dataMode = 0)
 {
 	this->_speed = (uint32_t)speed;
 	this->_dataMode = (uint8_t)dataMode;

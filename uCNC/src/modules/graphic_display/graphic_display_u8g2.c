@@ -340,9 +340,10 @@ void __attribute__((weak)) gd_draw_rectangle_fill(int16_t x0, int16_t y0, int16_
 	}
 }
 
-	int16_t __attribute__((weak)) gd_half_padding(void){
-		return 1;
-	}
+int16_t __attribute__((weak)) gd_half_padding(void)
+{
+	return 1;
+}
 
 void __attribute__((weak)) gd_draw_triangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, bool invert)
 {
@@ -435,10 +436,15 @@ int16_t __attribute__((weak)) gd_get_line_top(int8_t line)
 	int8_t offset = graphic_last_line_offset;
 	if (offset < 0)
 	{
-		offset = u8g2_GetDisplayHeight(U8G2) - (gd_font_height() + 3) * floor(u8g2_GetDisplayHeight(U8G2) / (gd_font_height() + 3));
+		offset = u8g2_GetDisplayHeight(U8G2) - (gd_line_height() * gd_display_max_lines());
 		graphic_last_line_offset = offset;
 	}
-	return line * (gd_font_height() + 3) + offset;
+	return line * gd_line_height() + offset;
+}
+
+uint8_t __attribute__((weak)) gd_display_max_lines(void)
+{
+	return (uint8_t)floor(u8g2_GetDisplayHeight(U8G2) / gd_line_height());
 }
 
 /**

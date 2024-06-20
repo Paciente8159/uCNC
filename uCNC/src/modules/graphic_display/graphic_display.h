@@ -33,7 +33,7 @@ extern "C"
 #define GRAPHIC_DISPLAY_HW_I2C 8
 
 #ifndef GRAPHIC_DISPLAY_INTERFACE
-#define GRAPHIC_DISPLAY_INTERFACE GRAPHIC_DISPLAY_HW_SPI
+#define GRAPHIC_DISPLAY_INTERFACE GRAPHIC_DISPLAY_HW_I2C
 #endif
 
 #if (GRAPHIC_DISPLAY_INTERFACE == GRAPHIC_DISPLAY_SW_SPI)
@@ -88,6 +88,7 @@ extern "C"
 	int16_t gd_line_height(void);
 	int16_t gd_half_padding(void);
 	int16_t gd_get_line_top(int8_t line);
+	uint8_t gd_display_max_lines(void);
 
 	/**
 	 * Expose existing display drivers

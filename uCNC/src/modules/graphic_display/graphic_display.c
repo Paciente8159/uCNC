@@ -345,12 +345,12 @@ uint8_t system_menu_send_cmd(const char *__s)
 
 DECL_MODULE(graphic_display)
 {
-	// display_driver_t *display_driver = (display_driver_t *)&gd_ssd1306_128x64_i2c;
-	display_driver_t *display_driver = (display_driver_t *)&gd_ili9341_240x320_spi;
+	display_driver_t *display_driver = (display_driver_t *)&gd_ssd1306_128x64_i2c;
+	// display_driver_t *display_driver = (display_driver_t *)&gd_ili9341_240x320_spi;
 	gd_init(display_driver, graphic_display_port);
 	display_width = display_driver->width;
 	display_height = display_driver->height;
-	display_max_lines = (uint8_t)floor(display_driver->height / gd_line_height());
+	display_max_lines = gd_display_max_lines();
 #ifdef DECL_SERIAL_STREAM
 	serial_stream_register(&graphic_stream);
 #endif
