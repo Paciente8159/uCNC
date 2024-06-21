@@ -155,7 +155,7 @@
 // 		}
 // 	}
 
-// 	void gd_draw_button(int16_t x0, int16_t y0, const char *s, int16_t minw, bool invert, bool frameless)
+// 	void gd_draw_button(int16_t x0, int16_t y0, const char *s, int16_t minw, int16_t minh, bool invert, bool frameless)
 // 	{
 // 		int16_t txt_color = WHITE;
 // 		int16_t bg_color = BLACK;
@@ -171,14 +171,20 @@
 // 			x0 -= MAX(gd_str_width(s) + 7, minw);
 // 		}
 
+// 		if (minh < 0)
+// 		{
+// 			minh = ABS(minh);
+// 			y0 -= MAX(minh, gd_line_height());
+// 		}
+
 // 		int16_t w = MAX(minw, gd_str_width(s) + 7);
-// 		gfx->fillRect(x0, y0, w, gd_line_height(), bg_color);
+// 		int16_t h = MAX(minh, gd_line_height());
+// 		gfx->fillRect(x0, y0, w, h, bg_color);
 // 		if (!frameless)
 // 		{
-// 			gfx->drawRect(x0, y0, w, gd_line_height(), txt_color);
+// 			gfx->drawRect(x0, y0, w, h, txt_color);
 // 		}
-// 		gfx->setCursor(x0 + 3, y0 + 3 + gd_font_height());
-// 		gd_draw_string_inv(x0 + 3, y0, s, invert);
+// 		gd_draw_string_inv(x0 + 3, y0 + 2, s, invert);
 // 	}
 
 // 	int16_t gd_str_width(const char *s)
@@ -233,33 +239,23 @@
 // 	}
 
 // 	uint8_t gd_display_max_lines(void)
-// {
-// 	return (uint8_t)floor((gfx->height() *0.8f) / gd_line_height());
-// }
+// 	{
+// 		return (uint8_t)floor((gfx->height() * 0.8f) / gd_line_height());
+// 	}
 
 // 	/**
 // 	 * Create some U8G2 display drivers
 // 	 */
 
-// 	void st7796_480x320_spi_init()
+// 	DECL_DISPLAY(st7796_320x480_spi, 320, 480)
 // 	{
-// 		gfx = new Arduino_ST7796(bus, GRAPHIC_DISPLAY_RST, 1, false, 320, 480);
+// 		gfx = new Arduino_ST7796(bus, GRAPHIC_DISPLAY_RST, 0, false, 320, 480);
 // 	}
 
-// 	const display_driver_t gd_st7796_480x320_spi = {
-// 			.width = 480,
-// 			.height = 320,
-// 			.init = &st7796_480x320_spi_init};
-
-// 	void ili9341_240x320_spi_init()
+// 	DECL_DISPLAY(ili9341_240x320_spi, 240, 320)
 // 	{
 // 		gfx = new Arduino_ILI9341(bus, GRAPHIC_DISPLAY_RST, 0, true);
 // 	}
-
-// 	const display_driver_t gd_ili9341_240x320_spi = {
-// 			.width = 240,
-// 			.height = 320,
-// 			.init = &ili9341_240x320_spi_init};
 
 // #ifdef __cplusplus
 // }

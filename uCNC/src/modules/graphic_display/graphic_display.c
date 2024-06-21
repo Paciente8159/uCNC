@@ -343,9 +343,11 @@ uint8_t system_menu_send_cmd(const char *__s)
 
 #endif
 
+DISPLAY(ssd1306_128x64_i2c);
+
 DECL_MODULE(graphic_display)
 {
-	display_driver_t *display_driver = (display_driver_t *)&gd_ssd1306_128x64_i2c;
+	display_driver_t *display_driver = DISPLAY_PTR(ssd1306_128x64_i2c);
 	// display_driver_t *display_driver = (display_driver_t *)&gd_ili9341_240x320_spi;
 	gd_init(display_driver, graphic_display_port);
 	display_width = display_driver->width;
@@ -622,7 +624,7 @@ void system_menu_render_header(const char *__s)
 
 void system_menu_render_nav_back(bool is_hover)
 {
-	gd_draw_button(display_width, 0, "X", -1, is_hover, false);
+	gd_draw_button(display_width, 0, "X", -1, 0,is_hover, false);
 }
 
 void system_menu_item_render_label(uint8_t render_flags, const char *label)
@@ -638,7 +640,7 @@ void system_menu_item_render_label(uint8_t render_flags, const char *label)
 			gd_draw_string(gd_str_align_center(label), gd_get_line_top((display_max_lines >> 1) - 1), label);
 			return;
 		}
-		gd_draw_button(0, y, label, display_width, (render_flags & SYSTEM_MENU_MODE_SELECT), true);
+		gd_draw_button(0, y, label, display_width, 0, (render_flags & SYSTEM_MENU_MODE_SELECT), true);
 	}
 }
 

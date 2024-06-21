@@ -376,18 +376,38 @@ void __attribute__((weak)) gd_draw_string_inv(int16_t x0, int16_t y0, const char
 	}
 }
 
-void __attribute__((weak)) gd_draw_button(int16_t x0, int16_t y0, const char *s, int16_t minw, bool invert, bool frameless)
+void __attribute__((weak)) gd_draw_button(int16_t x0, int16_t y0, const char *s, int16_t minw, int16_t minh, bool invert, bool frameless)
 {
-	y0 += u8g2_GetAscent(U8G2) + 2;
 	uint8_t mode = (!frameless) ? U8G2_BTN_BW1 : U8G2_BTN_BW0;
 	mode |= (!invert) ? 0 : U8G2_BTN_INV;
+	int16_t len = gd_str_width(s);
+
 	if (minw < 0)
 	{
 		minw = ABS(minw);
-		x0 -= MAX(gd_str_width(s) + 5, minw);
+		x0 -= MAX(len + 5, minw);
+		serial_print_int(y0);
+		serial_flush();
 	}
 
-	u8g2_DrawButtonUTF8(U8G2, x0, y0, mode, minw, 1, 1, s);
+	if (minh < 0)
+	{
+		minh = ABS(minh);
+		y0 -= MAX(minh, gd_line_height());
+	}
+
+	int16_t w = MAX(minw, len + 5);
+	int16_t h = MAX(minh, gd_line_height());
+
+	if (invert)
+	{
+		gd_draw_rectangle_fill(x0, y0, w, h, !invert);
+	}
+	if (!frameless)
+	{
+		gd_draw_rectangle(x0, y0, w, h);
+	}
+	gd_draw_string_inv(x0 + 2, y0 + 1, s, invert);
 }
 
 int16_t __attribute__((weak)) gd_str_width(const char *s)
@@ -451,34 +471,19 @@ uint8_t __attribute__((weak)) gd_display_max_lines(void)
  * Create some U8G2 display drivers
  */
 
-void ssd1306_128x64_i2c_init()
+DECL_DISPLAY(ssd1306_128x64_i2c, 128, 64)
 {
 	u8g2_Setup_ssd1306_i2c_128x64_noname_f(U8G2, U8G2_R0, u8x8_byte_ucnc_hw_i2c, u8x8_gpio_and_delay_ucnc);
 }
 
-const display_driver_t gd_ssd1306_128x64_i2c = {
-		.width = 128,
-		.height = 60,
-		.init = &ssd1306_128x64_i2c_init};
-
-void st7920_128x64_spi_init()
+DECL_DISPLAY(st7920_128x64_spi, 128, 64)
 {
 	u8g2_Setup_st7920_s_128x64_f(U8G2, U8G2_R0, u8x8_byte_ucnc_hw_spi, u8x8_gpio_and_delay_ucnc);
 }
 
-const display_driver_t gd_st7920_128x64_spi = {
-		.width = 128,
-		.height = 64,
-		.init = &st7920_128x64_spi_init};
-
-void virtual_sdl_init()
+DECL_DISPLAY(virtual_sdl, 128, 64)
 {
 	u8g2_SetupBuffer_SDL_128x64(U8G2, U8G2_R0);
 }
-
-const display_driver_t gd_virtual_sdl = {
-		.width = 128,
-		.height = 64,
-		.init = &virtual_sdl_init};
 
 #endif

@@ -78,7 +78,7 @@ extern "C"
 	void gd_draw_triangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, bool invert);
 	void gd_draw_string(int16_t x0, int16_t y0, const char *s);
 	void gd_draw_string_inv(int16_t x0, int16_t y0, const char *s, bool invert);
-	void gd_draw_button(int16_t x0, int16_t y0, const char *s, int16_t minw, bool invert, bool frameless);
+	void gd_draw_button(int16_t x0, int16_t y0, const char *s, int16_t minw, int16_t minh, bool invert, bool frameless);
 	int16_t gd_str_width(const char *s);
 	int16_t gd_str_align_start(const char *s);
 	int16_t gd_str_align_center(const char *s);
@@ -90,15 +90,16 @@ extern "C"
 	int16_t gd_get_line_top(int8_t line);
 	uint8_t gd_display_max_lines(void);
 
-	/**
-	 * Expose existing display drivers
-	 */
+/**
+ * Helper macros for declaring a new display driver
+ */
+#define DECL_DISPLAY(name, w, h)                                                      \
+	static void name##_init();                                                          \
+	const display_driver_t gd_##name = {.width = w, .height = h, .init = &name##_init}; \
+	void name##_init()
 
-	extern const display_driver_t gd_ssd1306_128x64_i2c;
-	extern const display_driver_t gd_st7920_128x64_spi;
-	extern const display_driver_t gd_virtual_sdl;
-	extern const display_driver_t gd_st7796_480x320_spi;
-	extern const display_driver_t gd_ili9341_240x320_spi;
+#define DISPLAY(name) extern const display_driver_t gd_##name
+#define DISPLAY_PTR(name) (display_driver_t *)&gd_##name
 
 #ifdef __cplusplus
 }
