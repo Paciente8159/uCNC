@@ -92,7 +92,7 @@ extern "C"
 
 #define ONESHOT_TIMER 2
 
-// hardware SPI
+// // hardware SPI
 #define SPI_CLK_BIT 18
 #define SPI_SDO_BIT 23
 #define SPI_SDI_BIT 19
@@ -101,11 +101,12 @@ extern "C"
 // sd card detect
 #define DIN19_BIT 34
 
-// pins for smart adapter
+// // pins for smart adapter
 // // clk
-// #define DOUT4_BIT 0
-// // data
-// #define DOUT5_BIT 21
+// #define DOUT4_BIT 18
+// // data out and in
+// #define DOUT5_BIT 23
+// #define DIN5_BIT 19
 // // cs
 // #define DOUT6_BIT 4
 
@@ -118,17 +119,11 @@ extern "C"
 // rst
 // #define DOUT13_BIT 4
 
+#define DOUT13_BIT 0
+
 // beep
 #define DOUT7_IO_OFFSET 21
-// enc btn
-#define DIN16_BIT 13
-#define DIN16_PULLUP
-// enc 1
-#define DIN17_BIT 12
-#define DIN17_PULLUP
-// enc 2
-#define DIN18_BIT 14
-#define DIN18_PULLUP
+
 
 #ifdef __cplusplus
 }

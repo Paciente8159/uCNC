@@ -82,3 +82,49 @@ uint8_t softspi_xmit(softspi_port_t *port, uint8_t c)
 
 	return c;
 }
+
+uint16_t softspi_xmit16(softspi_port_t *port, uint16_t c)
+{
+	if (!port)
+	{
+#ifdef MCU_HAS_SPI
+		uint16_t res = mcu_spi_xmit(0xFF & (c >> 8));
+		res <<= 8;
+		res = mcu_spi_xmit(0xFF & c);
+		return res;
+#else
+		return 0;
+#endif
+	}
+
+	bool clk = (bool)(port->spimode & 0x2);
+	bool on_down = (bool)(port->spimode & 0x1);
+
+	port->clk(clk);
+
+	uint8_t counter = 16;
+	do
+	{
+		if (on_down)
+		{
+			clk = !clk;
+			port->clk(clk);
+		}
+		port->mosi((bool)(c & 0x8000));
+		c <<= 1;
+		// sample
+		softspi_delay(port->spidelay);
+		clk = !clk;
+		port->clk(clk);
+		c |= port->miso();
+
+		softspi_delay(port->spidelay);
+		if (!on_down)
+		{
+			clk = !clk;
+			port->clk(clk);
+		}
+	} while (--counter);
+
+	return c;
+}

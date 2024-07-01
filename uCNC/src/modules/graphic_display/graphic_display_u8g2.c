@@ -468,20 +468,20 @@ uint8_t __attribute__((weak)) gd_display_max_lines(void)
 }
 
 /**
- * Create some U8G2 display drivers
+ * Create some U8G2 display drivers initializers
  */
 
-DECL_DISPLAY(ssd1306_128x64_i2c, 128, 64)
+DISPLAY(ssd1306_128x64_i2c)
 {
 	u8g2_Setup_ssd1306_i2c_128x64_noname_f(U8G2, U8G2_R0, u8x8_byte_ucnc_hw_i2c, u8x8_gpio_and_delay_ucnc);
 }
 
-DECL_DISPLAY(st7920_128x64_spi, 128, 64)
+DISPLAY(st7920_128x64_spi)
 {
 	u8g2_Setup_st7920_s_128x64_f(U8G2, U8G2_R0, u8x8_byte_ucnc_hw_spi, u8x8_gpio_and_delay_ucnc);
 }
 
-DECL_DISPLAY(virtual_sdl, 128, 64)
+DISPLAY(virtual_sdl)
 {
 	u8g2_SetupBuffer_SDL_128x64(U8G2, U8G2_R0);
 }

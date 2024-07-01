@@ -26,6 +26,7 @@ extern "C"
 
 // #include "../system_menu.h"
 #include <stdint.h>
+#include <stdbool.h>
 
 #define GRAPHIC_DISPLAY_SW_SPI 1
 #define GRAPHIC_DISPLAY_HW_SPI 2
@@ -33,7 +34,7 @@ extern "C"
 #define GRAPHIC_DISPLAY_HW_I2C 8
 
 #ifndef GRAPHIC_DISPLAY_INTERFACE
-#define GRAPHIC_DISPLAY_INTERFACE GRAPHIC_DISPLAY_HW_I2C
+#define GRAPHIC_DISPLAY_INTERFACE GRAPHIC_DISPLAY_HW_SPI
 #endif
 
 #if (GRAPHIC_DISPLAY_INTERFACE == GRAPHIC_DISPLAY_SW_SPI)
@@ -94,11 +95,10 @@ extern "C"
  * Helper macros for declaring a new display driver
  */
 #define DECL_DISPLAY(name, w, h)                                                      \
-	static void name##_init();                                                          \
+	extern void name##_init();                                                          \
 	const display_driver_t gd_##name = {.width = w, .height = h, .init = &name##_init}; \
-	void name##_init()
 
-#define DISPLAY(name) extern const display_driver_t gd_##name
+#define DISPLAY(name) void name##_init()
 #define DISPLAY_PTR(name) (display_driver_t *)&gd_##name
 
 #ifdef __cplusplus

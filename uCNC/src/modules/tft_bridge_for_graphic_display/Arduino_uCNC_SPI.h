@@ -1,6 +1,6 @@
 /*
-	Name: graphic_display.h
-	Description: Defines the graphic_display interface.
+	Name: Arduino_uCNC_SPI.cpp
+	Description: Defines a DataBus for Arduino GFX that is supported on µCNC internal SPI port.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
@@ -15,19 +15,15 @@
 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
-
 #ifndef ARDUINO_UCNC_SPI_H
 #define ARDUINO_UCNC_SPI_H
 
-#include "../../cnc_hal_config_helper.h"
-
 #include "Arduino_DataBus.h"
-#include "../softspi.h"
 
 class Arduino_uCNC_SPI : public Arduino_DataBus
 {
 public:
-	Arduino_uCNC_SPI(softspi_port_t *spi, uint8_t dc, uint8_t cs, bool is_shared_interface);
+	Arduino_uCNC_SPI(void *spi, uint8_t dc, uint8_t cs, bool is_shared_interface);
 	bool begin(int32_t speed, int8_t dataMode) override;
 	void beginWrite() override;
 	void endWrite() override;
@@ -41,7 +37,7 @@ public:
 	void writePixels(uint16_t *data, uint32_t len) override;
 
 private:
-	softspi_port_t *_spi;
+	void *_spi;
 	uint8_t _cs;
 	bool _is_shared_interface;
 	uint8_t _dc;

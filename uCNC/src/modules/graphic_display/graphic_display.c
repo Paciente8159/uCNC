@@ -101,8 +101,8 @@ SOFTI2C(graphic_i2c, 100000UL, GRAPHIC_DISPLAY_I2C_CLOCK, GRAPHIC_DISPLAY_I2C_DA
 #define GRAPHIC_DISPLAY_ENCODER_DEBOUNCE_MS 200
 #endif
 
-static int8_t graphic_display_rotary_encoder_counter;
-static int8_t graphic_display_rotary_encoder_pressed;
+int8_t graphic_display_rotary_encoder_counter;
+int8_t graphic_display_rotary_encoder_pressed;
 
 // reads inputs and returns a mask with a pin state transition
 uint8_t graphic_display_rotary_encoder_control(void)
@@ -147,7 +147,7 @@ bool graphic_display_alarm(void *args)
 	return EVENT_CONTINUE;
 }
 
-bool graphic_display_rotary_encoder_control_sample(void *args)
+bool __attribute__((weak)) graphic_display_rotary_encoder_control_sample(void *args)
 {
 	static uint8_t last_pin_state = 0;
 	static uint8_t last_rot_transition = 0;
@@ -343,12 +343,13 @@ uint8_t system_menu_send_cmd(const char *__s)
 
 #endif
 
-DISPLAY(ssd1306_128x64_i2c);
+// DISPLAY(ssd1306_128x64_i2c);
+DECL_DISPLAY(st7796_240x320_spi, 240, 320);
 
 DECL_MODULE(graphic_display)
 {
-	display_driver_t *display_driver = DISPLAY_PTR(ssd1306_128x64_i2c);
-	// display_driver_t *display_driver = (display_driver_t *)&gd_ili9341_240x320_spi;
+	// display_driver_t *display_driver = DISPLAY_PTR(ssd1306_128x64_i2c);
+	display_driver_t *display_driver = DISPLAY_PTR(st7796_240x320_spi);
 	gd_init(display_driver, graphic_display_port);
 	display_width = display_driver->width;
 	display_height = display_driver->height;
@@ -456,7 +457,7 @@ void system_menu_render_idle(void)
 	char buff[SYSTEM_MENU_MAX_STR_LEN];
 	int8_t line = display_max_lines - 1;
 	int16_t y = gd_get_line_top(line);
-	memset(buff, 0, 32);
+	memset(buff, 0, sizeof(buff));
 
 	float axis[MAX(AXIS_COUNT, 3)];
 	int32_t steppos[STEPPER_COUNT];
@@ -474,7 +475,7 @@ void system_menu_render_idle(void)
 	system_menu_flt_to_str(&buff[1], axis[5]);
 	gd_draw_string(display_width >> 1, y, buff);
 #endif
-	memset(buff, 0, 32);
+	memset(buff, 0, sizeof(buff));
 	gd_draw_h_line(y);
 
 	y = gd_get_line_top(--line);
@@ -488,12 +489,12 @@ void system_menu_render_idle(void)
 	gd_draw_string(0, y, buff);
 
 #if (AXIS_COUNT >= 4)
-	memset(buff, 0, 32);
+	memset(buff, 0, sizeof(buff));
 	buff[0] = 'A';
 	system_menu_flt_to_str(&buff[1], axis[3]);
 	gd_draw_string(display_width >> 1, y, buff);
 #endif
-	memset(buff, 0, 32);
+	memset(buff, 0, sizeof(buff));
 	gd_draw_h_line(y);
 
 	y = gd_get_line_top(--line);
@@ -514,7 +515,7 @@ void system_menu_render_idle(void)
 	system_menu_flt_to_str(&buff[1], axis[1]);
 	gd_draw_string(display_width >> 1, y, buff);
 #endif
-	memset(buff, 0, 32);
+	memset(buff, 0, sizeof(buff));
 	gd_draw_h_line(y);
 	y = gd_get_line_top(--line);
 #endif
@@ -534,7 +535,7 @@ void system_menu_render_idle(void)
 	// Realtime feed
 	system_menu_flt_to_str(&buff[4], itp_get_rt_feed());
 	gd_draw_string(0, y, buff);
-	memset(buff, 0, 32);
+	memset(buff, 0, sizeof(buff));
 
 	// Tool
 	char tool[5];
@@ -549,7 +550,7 @@ void system_menu_render_idle(void)
 	system_menu_int_to_str(&buff[1], tool_get_speed());
 	strcat(buff, tool);
 	gd_draw_string(gd_str_align_end(buff), y, buff);
-	memset(buff, 0, 32);
+	memset(buff, 0, sizeof(buff));
 	gd_draw_h_line(y);
 	y = gd_get_line_top(--line);
 
@@ -603,7 +604,7 @@ void system_menu_render_idle(void)
 	}
 
 	gd_draw_string(0, y, buff);
-	memset(buff, 0, 32);
+	memset(buff, 0, sizeof(buff));
 	io_states_str(buff);
 	gd_draw_string((display_width >> 1), y, buff);
 
@@ -829,7 +830,7 @@ void system_menu_render_alarm(void)
 	gd_draw_rectangle_fill(0, 0, display_width, gd_line_height(), false);
 	gd_draw_string_inv(gd_str_align_center(buff), 0, buff, true);
 
-	memset(buff, 0, SYSTEM_MENU_MAX_STR_LEN);
+	memset(buff, 0, sizeof(buff));
 
 	switch (alarm)
 	{
@@ -878,7 +879,7 @@ void system_menu_render_alarm(void)
 	}
 
 	gd_draw_string(gd_str_align_center(buff), gd_get_line_top(1), buff);
-	memset(buff, 0, SYSTEM_MENU_MAX_STR_LEN);
+	memset(buff, 0, sizeof(buff));
 	io_states_str(buff);
 	gd_draw_string(gd_str_align_center(buff), gd_get_line_top(2), buff);
 	rom_strcpy(buff, __romstr__(STR_USER_NEEDS_SYSTEM_RESET_1));

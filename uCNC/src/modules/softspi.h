@@ -67,6 +67,7 @@ extern "C"
 
 	void softspi_config(softspi_port_t *port, uint8_t mode, uint32_t frequency);
 	uint8_t softspi_xmit(softspi_port_t *port, uint8_t c);
+	uint16_t softspi_xmit16(softspi_port_t *port, uint16_t c);
 
 #ifdef __cplusplus
 }
