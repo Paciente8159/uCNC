@@ -741,6 +741,52 @@ void mc_home_axis_finalize(homing_status_t *status)
 }
 #endif
 
+#ifndef ENABLE_SHORT_HOMING_CYCLE
+bool mc_home_motion(uint8_t axis_mask, float distance, motion_data_t* block_data)
+{
+	float target[AXIS_COUNT];
+
+	// Sync motion control with real time positon
+	mc_sync_position();
+	mc_get_position(target);
+	
+	// Set movement distance for each axis
+	for (uint8_t i = 0; i < AXIS_COUNT; i++)
+	{
+		uint8_t imask = (1 << i);
+		if (imask & axis_mask)
+		{
+			// Invert the distance if configuration says so
+			if (g_settings.homing_dir_invert_mask & axis_mask)
+			{
+				target[i] -= distance;
+			}
+			else
+			{
+				target[i] += distance;
+			}
+		}
+	}
+
+	cnc_unlock(true);
+	mc_line(target, block_data);
+
+	if (itp_sync() != STATUS_OK)
+	{
+		// Motion failed
+		return false;
+	}
+
+	// Flush buffers and stop motion
+	itp_stop();
+	itp_clear();
+	planner_clear();
+
+	// Motion completed successfully
+	return true;
+}
+#endif
+
 uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 {
 	float target[AXIS_COUNT];
@@ -838,11 +884,11 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 		return STATUS_CRITICAL_FAIL;
 	}
 
+#ifdef ENABLE_SHORT_HOMING_CYCLE
 	// sync's the motion control with the real time position
 	mc_sync_position();
 	mc_get_position(target);
 
-#ifdef ENABLE_SHORT_HOMING_CYCLE
 	// set's the homing distance for each axis
 	for (uint8_t i = 0; i < AXIS_COUNT; i++)
 	{
@@ -895,40 +941,13 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 		return STATUS_CRITICAL_FAIL;
 	}
 #else
-	// Set pull off distance for each axis
-	for (uint8_t i = 0; i < AXIS_COUNT; i++)
-	{
-		uint8_t imask = (1 << i);
-		if (imask & axis_mask)
-		{
-			// Back off to deactivate the switch
-			float pull_off_dist = g_settings.homing_offset;
-
-			// Invert direction
-			if (g_settings.homing_dir_invert_mask & axis_mask)
-			{
-				pull_off_dist = -pull_off_dist;
-			}
-			target[i] += pull_off_dist;
-		}
-	}
-
-	block_data.feed = g_settings.homing_fast_feed_rate;
-
-	// Unlock and pull axis back by specified amount
-	cnc_unlock(true);
-	mc_line(target, &block_data);
-
-	if (itp_sync() != STATUS_OK)
+	// Pull off each axis by the specified distance (still using the fast feed rate)
+	if(!mc_home_motion(axis_mask, g_settings.homing_offset, &block_data))
 	{
 		return STATUS_CRITICAL_FAIL;
 	}
 
-	// Stop movement (might not be required since a pull off shouldn't trigger anything, so the movement finishes by itself)
-	itp_stop();
-	itp_clear();
-	planner_clear();
-
+	// Check limits
 	cnc_delay_ms(g_settings.debounce_ms); // Wait for switch to settle
 	limits_flags = io_get_limits();
 
@@ -941,39 +960,10 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 	}
 
 	// Now perform a slow and precise approach onto the limit switches
-	mc_sync_position();
-	mc_get_position(target);
-
-	for (uint8_t i = 0; i < AXIS_COUNT; i++)
-	{
-		uint8_t imask = (1 << i);
-		if (imask & axis_mask)
-		{
-			// Search for switches with a smaller maximum
-			float max_home_dist = -g_settings.homing_offset * 5.0f;
-
-			// Invert direction
-			if (g_settings.homing_dir_invert_mask & axis_mask)
-			{
-				max_home_dist = -max_home_dist;
-			}
-			target[i] += max_home_dist;
-		}
-	}
-
-	// Approach the switches
-	block_data.feed = g_settings.homing_slow_feed_rate;
-	mc_line(target, &block_data);
-
-	if (itp_sync() != STATUS_OK)
+	if(!mc_home_motion(axis_mask, -g_settings.homing_offset * 5.0f, &block_data))
 	{
 		return STATUS_CRITICAL_FAIL;
 	}
-
-	// Stop movement
-	itp_stop();
-	itp_clear();
-	planner_clear();
 
 	// Check limits
 	cnc_delay_ms(g_settings.debounce_ms); // Wait for switch to settle
@@ -986,31 +976,8 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 		return STATUS_CRITICAL_FAIL;
 	}
 
-	// Sync position and set final pull off target
-	mc_sync_position();
-	mc_get_position(target);
-
-	for (uint8_t i = 0; i < AXIS_COUNT; i++)
-	{
-		uint8_t imask = (1 << i);
-		if (imask & axis_mask)
-		{
-			// Set pull off distance for final homed position
-			float pull_off_dist = g_settings.homing_offset;
-
-			// Invert direction
-			if (g_settings.homing_dir_invert_mask & axis_mask)
-			{
-				pull_off_dist = -pull_off_dist;
-			}
-			target[i] += pull_off_dist;
-		}
-	}
-
-	cnc_unlock(true);
-	mc_line(target, &block_data);
-
-	if (itp_sync() != STATUS_OK)
+	// Perform the final pull off
+	if(!mc_home_motion(axis_mask, g_settings.homing_offset, &block_data))
 	{
 		return STATUS_CRITICAL_FAIL;
 	}
