@@ -890,7 +890,7 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 	if (CHECKFLAG(limits_flags, axis_limit))
 	{
 		cnc_set_exec_state(EXEC_UNHOMED);
-		cnc_alarm(EXEC_ALARM_HOMING_FAIL_APPROACH);
+		cnc_alarm(EXEC_ALARM_HOMING_FAIL_PULLOFF);
 		return STATUS_CRITICAL_FAIL;
 	}
 
