@@ -901,10 +901,10 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 		uint8_t imask = (1 << i);
 		if (imask & axis_mask)
 		{
-      // Back off to deactivate the switch
+			// Back off to deactivate the switch
 			float pull_off_dist = g_settings.homing_offset;
 
-      // Invert direction
+			// Invert direction
 			if (g_settings.homing_dir_invert_mask & axis_mask)
 			{
 				pull_off_dist = -pull_off_dist;
@@ -915,7 +915,7 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 
 	block_data.feed = g_settings.homing_fast_feed_rate;
 
-  // Unlock and pull axis back by specified amount
+	// Unlock and pull axis back by specified amount
 	cnc_unlock(true);
 	mc_line(target, &block_data);
 
@@ -923,36 +923,36 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 	{
 		return STATUS_CRITICAL_FAIL;
 	}
-	
-  // Stop movement (might not be required since a pull off shouldn't trigger anything, so the movement finishes by itself)
+
+	// Stop movement (might not be required since a pull off shouldn't trigger anything, so the movement finishes by itself)
 	itp_stop();
 	itp_clear();
 	planner_clear();
 
-  cnc_delay_ms(g_settings.debounce_ms); // Wait for switch to settle
-  limits_flags = io_get_limits();
+	cnc_delay_ms(g_settings.debounce_ms); // Wait for switch to settle
+	limits_flags = io_get_limits();
 
-  if(CHECKFLAG(limits_flags, axis_limit))
-  {
-    // Limits still active after pull off
-    cnc_set_exec_state(EXEC_UNHOMED);
-    cnc_alarm(EXEC_ALARM_HOMING_FAIL_PULLOFF);
-    return STATUS_CRITICAL_FAIL;
-  }
+	if(CHECKFLAG(limits_flags, axis_limit))
+	{
+		// Limits still active after pull off
+		cnc_set_exec_state(EXEC_UNHOMED);
+		cnc_alarm(EXEC_ALARM_HOMING_FAIL_PULLOFF);
+		return STATUS_CRITICAL_FAIL;
+	}
 
-  // Now perform a slow and precise approach onto the limit switches
-  mc_sync_position();
-  mc_get_position(target);
-  
+	// Now perform a slow and precise approach onto the limit switches
+	mc_sync_position();
+	mc_get_position(target);
+
 	for (uint8_t i = 0; i < AXIS_COUNT; i++)
 	{
 		uint8_t imask = (1 << i);
 		if (imask & axis_mask)
 		{
-      // Search for switches with a smaller maximum
+			// Search for switches with a smaller maximum
 			float max_home_dist = -g_settings.homing_offset * 5.0f;
 
-      // Invert direction
+			// Invert direction
 			if (g_settings.homing_dir_invert_mask & axis_mask)
 			{
 				max_home_dist = -max_home_dist;
@@ -961,44 +961,44 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 		}
 	}
 
-  // Approach the switches
+	// Approach the switches
 	block_data.feed = g_settings.homing_slow_feed_rate;
-  mc_line(target, &block_data);
+	mc_line(target, &block_data);
 
-  if (itp_sync() != STATUS_OK)
-  {
-    return STATUS_CRITICAL_FAIL;
-  }
+	if (itp_sync() != STATUS_OK)
+	{
+		return STATUS_CRITICAL_FAIL;
+	}
 
-  // Stop movement
-  itp_stop();
-  itp_clear();
-  planner_clear();
+	// Stop movement
+	itp_stop();
+	itp_clear();
+	planner_clear();
 
-  // Check limits
-  cnc_delay_ms(g_settings.debounce_ms); // Wait for switch to settle
+	// Check limits
+	cnc_delay_ms(g_settings.debounce_ms); // Wait for switch to settle
 	limits_flags = io_get_limits();
 	if (!CHECKFLAG(limits_flags, axis_limit))
 	{
-    // Wrong switch activated
+		// Wrong switch activated
 		cnc_set_exec_state(EXEC_UNHOMED);
 		cnc_alarm(EXEC_ALARM_HOMING_FAIL_APPROACH);
 		return STATUS_CRITICAL_FAIL;
 	}
 
-  // Sync position and set final pull off target
-  mc_sync_position();
-  mc_get_position(target);
+	// Sync position and set final pull off target
+	mc_sync_position();
+	mc_get_position(target);
 
 	for (uint8_t i = 0; i < AXIS_COUNT; i++)
 	{
 		uint8_t imask = (1 << i);
 		if (imask & axis_mask)
 		{
-      // Set pull off distance for final homed position
+			// Set pull off distance for final homed position
 			float pull_off_dist = g_settings.homing_offset;
 
-      // Invert direction
+			// Invert direction
 			if (g_settings.homing_dir_invert_mask & axis_mask)
 			{
 				pull_off_dist = -pull_off_dist;
@@ -1007,25 +1007,25 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 		}
 	}
 
-  cnc_unlock(true);
-  mc_line(target, &block_data);
+	cnc_unlock(true);
+	mc_line(target, &block_data);
 
-  if (itp_sync() != STATUS_OK)
-  {
-    return STATUS_CRITICAL_FAIL;
-  }
+	if (itp_sync() != STATUS_OK)
+	{
+		return STATUS_CRITICAL_FAIL;
+	}
 
-  // Final check for switch deactivation
-  cnc_delay_ms(g_settings.debounce_ms); // Wait for switch to settle
-  limits_flags = io_get_limits();
+	// Final check for switch deactivation
+	cnc_delay_ms(g_settings.debounce_ms); // Wait for switch to settle
+	limits_flags = io_get_limits();
 
-  if(CHECKFLAG(limits_flags, axis_limit))
-  {
-    // Limits still active after pull off
-    cnc_set_exec_state(EXEC_UNHOMED);
-    cnc_alarm(EXEC_ALARM_HOMING_FAIL_PULLOFF);
-    return STATUS_CRITICAL_FAIL;
-  }
+	if(CHECKFLAG(limits_flags, axis_limit))
+	{
+		// Limits still active after pull off
+		cnc_set_exec_state(EXEC_UNHOMED);
+		cnc_alarm(EXEC_ALARM_HOMING_FAIL_PULLOFF);
+		return STATUS_CRITICAL_FAIL;
+	}
 #endif
 
 #ifdef ENABLE_MOTION_CONTROL_MODULES
