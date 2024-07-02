@@ -790,21 +790,21 @@ void rp2040_wifi_bt_init(void)
 #ifdef MCU_HAS_ENDPOINTS
 	FLASH_FS.begin();
 	flash_fs = {
-				.drive = 'C',
-				.open = flash_fs_open,
-				.read = flash_fs_read,
-				.write = flash_fs_write,
-				.seek = flash_fs_seek,
-				.available = flash_fs_available,
-				.close = flash_fs_close,
-				.remove = flash_fs_remove,
-				.opendir = flash_fs_opendir,
-				.mkdir = flash_fs_mkdir,
-				.rmdir = flash_fs_rmdir,
-				.next_file = flash_fs_next_file,
-				.finfo = flash_fs_info,
-				.next = NULL};
-		fs_mount(&flash_fs);
+			.drive = 'C',
+			.open = flash_fs_open,
+			.read = flash_fs_read,
+			.write = flash_fs_write,
+			.seek = flash_fs_seek,
+			.available = flash_fs_available,
+			.close = flash_fs_close,
+			.remove = flash_fs_remove,
+			.opendir = flash_fs_opendir,
+			.mkdir = flash_fs_mkdir,
+			.rmdir = flash_fs_rmdir,
+			.next_file = flash_fs_next_file,
+			.finfo = flash_fs_info,
+			.next = NULL};
+	fs_mount(&flash_fs);
 #endif
 #ifndef CUSTOM_OTA_ENDPOINT
 	httpUpdater.setup(&web_server, OTA_URI, update_username, update_password);
@@ -1037,17 +1037,17 @@ extern "C"
 
 	void rp2040_eeprom_flush(void)
 	{
-		#ifndef RP2040_RUN_MULTICORE
+#ifndef RP2040_RUN_MULTICORE
 		if (!EEPROM.commit())
 		{
 			protocol_send_feedback((const char *)" EEPROM write error");
 		}
-		#else
+#else
 		// signal other core to store EEPROM
 		rp2040.fifo.push(0);
 		// wait for signal back
 		rp2040.fifo.pop();
-		#endif
+#endif
 	}
 }
 #endif
@@ -1320,20 +1320,29 @@ extern "C"
 #include <SPI.h>
 extern "C"
 {
-	void mcu_spi_config(uint8_t mode, uint32_t freq)
+	void mcu_spi_config(uint8_t mode, uint32_t frequency)
 	{
+		COM_SPI.end();
 		COM_SPI.setRX(SPI_SDI_BIT);
 		COM_SPI.setTX(SPI_SDO_BIT);
 		COM_SPI.setSCK(SPI_CLK_BIT);
 		COM_SPI.setCS(SPI_CS_BIT);
-		COM_SPI.end();
 		COM_SPI.begin();
-		COM_SPI.beginTransaction(SPISettings(freq, 1 /*MSBFIRST*/, mode));
 	}
 
 	uint8_t mcu_spi_xmit(uint8_t data)
 	{
 		return COM_SPI.transfer(data);
+	}
+
+	void mcu_spi_start(uint8_t mode, uint32_t frequency)
+	{
+		COM_SPI.beginTransaction(SPISettings(frequency, 1 /*MSBFIRST*/, mode));
+	}
+
+	void mcu_spi_stop(void)
+	{
+		COM_SPI.endTransation();
 	}
 }
 

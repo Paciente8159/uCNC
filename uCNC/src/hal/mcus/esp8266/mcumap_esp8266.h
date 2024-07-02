@@ -1061,17 +1061,6 @@ extern "C"
 
 #define mcu_get_analog(X) analogRead(__indirect__(X, BIT))
 
-#define mcu_spi_xmit(X)       \
-	{                           \
-		while (SPI1CMD & SPIBUSY) \
-			;                       \
-		SPI1W0 = x;               \
-		SPI1CMD |= SPIBUSY;       \
-		while (SPI1CMD & SPIBUSY) \
-			;                       \
-		(uint8_t)(SPI1W0 & 0xff); \
-	}
-
 #define cpucount()                            \
 	({                                          \
 		uint32_t r;                               \

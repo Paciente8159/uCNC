@@ -4650,17 +4650,6 @@ extern "C"
 
 #define mcu_free_micros() ((1000UL * RTC_TCNT) / RTC_OCRA)
 
-#ifdef MCU_HAS_SPI
-#define mcu_spi_xmit(X)           \
-	({                              \
-		SPDR = X;                     \
-		asm volatile("nop");          \
-		while (!(SPSR & (1 << SPIF))) \
-			;                           \
-		SPDR;                         \
-	})
-#endif
-
 #ifdef MCU_HAS_ONESHOT_TIMER
 #define mcu_start_timeout() \
 	({ONESHOT_TCNT = 0;       \
