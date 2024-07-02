@@ -499,6 +499,14 @@ extern "C"
 	uint8_t mcu_spi_xmit(uint8_t data);
 #endif
 
+#ifndef mcu_spi_start
+	void mcu_spi_start(uint8_t mode, uint32_t frequency);
+#endif
+
+#ifndef mcu_spi_stop
+	void mcu_spi_stop(void);
+#endif
+
 #ifndef mcu_spi_config
 	void mcu_spi_config(uint8_t mode, uint32_t frequency);
 #endif

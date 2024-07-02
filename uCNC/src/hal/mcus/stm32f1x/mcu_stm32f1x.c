@@ -647,10 +647,10 @@ void mcu_init(void)
 	AFIO->MAPR |= SPI_REMAP;
 #endif
 	// initialize the SPI configuration register
-	SPI_REG->CR1 = SPI_CR1_SSM	   // software slave management enabled
-				   | SPI_CR1_SSI   // internal slave select
-				   | SPI_CR1_MSTR; // SPI master mode
-								   //    | (SPI_SPEED << 3) | SPI_MODE;
+	SPI_REG->CR1 = SPI_CR1_SSM		 // software slave management enabled
+								 | SPI_CR1_SSI	 // internal slave select
+								 | SPI_CR1_MSTR; // SPI master mode
+																 //    | (SPI_SPEED << 3) | SPI_MODE;
 	mcu_spi_config(SPI_MODE, SPI_FREQ);
 	SPI_REG->CR1 |= SPI_CR1_SPE;
 #endif
@@ -881,7 +881,7 @@ static void mcu_eeprom_erase(uint16_t address)
 		FLASH->KEYR = 0x45670123;
 		FLASH->KEYR = 0xCDEF89AB;
 	}
-	FLASH->CR = 0;			   // Ensure PG bit is low
+	FLASH->CR = 0;						 // Ensure PG bit is low
 	FLASH->CR |= FLASH_CR_PER; // set the PER bit
 	FLASH->AR = (FLASH_EEPROM + address);
 	FLASH->CR |= FLASH_CR_STRT; // set the start bit
@@ -938,7 +938,7 @@ void mcu_eeprom_flush()
 				protocol_send_error(42); // STATUS_SETTING_WRITE_FAIL
 			if (FLASH->SR & FLASH_SR_WRPRTERR)
 				protocol_send_error(43); // STATUS_SETTING_PROTECTED_FAIL
-			FLASH->CR = 0;				 // Ensure PG bit is low
+			FLASH->CR = 0;						 // Ensure PG bit is low
 			FLASH->SR = 0;
 			eeprom++;
 			ptr++;
@@ -995,6 +995,17 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 	SPI_REG->CR1 |= (speed << 3) | mode;
 	// enable SPI
 	SPI_REG->CR1 |= SPI_CR1_SPE;
+}
+
+uint8_t mcu_spi_xmit(uint8_t c)
+{
+	SPI_REG->DR = c;
+	while (!(SPI1->SR & SPI_SR_TXE) && !(SPI1->SR & SPI_SR_RXNE))
+		;
+	uint8_t data = SPI_REG->DR;
+	while (SPI1->SR & SPI_SR_BSY)
+		;
+	return data;
 }
 #endif
 
@@ -1243,8 +1254,8 @@ void mcu_i2c_config(uint32_t frequency)
 	NVIC_ClearPendingIRQ(I2C_IRQ);
 	NVIC_EnableIRQ(I2C_IRQ);
 #endif
-		// initialize the SPI configuration register
-		I2C_REG->CR1 |= (I2C_CR1_PE | I2C_CR1_ENGC);
+	// initialize the SPI configuration register
+	I2C_REG->CR1 |= (I2C_CR1_PE | I2C_CR1_ENGC);
 #if I2C_ADDRESS != 0
 	// prepare ACK in slave mode
 	I2C_REG->CR1 |= I2C_CR1_ACK;

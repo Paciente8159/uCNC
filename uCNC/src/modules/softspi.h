@@ -28,16 +28,53 @@ extern "C"
 #include <stdint.h>
 #include <stdbool.h>
 
+	/**
+	 * The new softspi port structure allow to create software SPI ports with different configurations.
+	 * It also allows to take advantage of the Arduino library to allow creation of new HW SPI ports.
+	 *
+	 * For example to create a new SPI port using Arduino for ESP32 you can do something like this
+	 * #ifdef ARDUINO
+	 * #include <SPI.h>
+	 * #include <softspi.h>
+	 * SPIClass* myspiport;
+	 * 
+	 * extern "C" void myspiport_config(uint8_t mode, uint32_t frequency){
+	 *  if(!myspiport){myspiport->end();	myspiport = NULL;}
+	 *  myspiport = new SPIClass(VSPI);
+	 * 	myspiport->begin(sckpin, misopin, mosipin, sspin);
+	 * }
+	 * 
+	 * extern "C" void myspiport_start(uint8_t mode, uint32_t frequency){
+	 * 	myspiport->beginTransaction(SPISettings(uint32_t frequency, SPI_MSBFIRST, uint8_t mode));
+	 * }
+	 * 
+	 * extern "C" uint8_t myspiport_xmit(uint8_t c){
+	 * 	return myspiport->transfer(c);
+	 * }
+	 * 
+	 * extern "C" void myspiport_stop(void){
+	 * 	myspiport.myspiport->endTransaction();
+	 * }
+	 * 
+	 * extern "C" softspi_port_t __attribute__((used)) ARDUINO_SPI = {.spimode = 0, .spifreq = 20000000UL, .clk = NULL, .mosi = NULL, .miso = NULL, .config = myspiport_config, .start = myspiport_start, .xmit = myspiport_xmit, .stop = myspiport_stop};
+	 * #endif
+	 *
+	 */
+	
 	typedef struct softspi_port_
 	{
 		uint8_t spimode;
-		uint8_t spidelay;
+		uint32_t spifreq;
 		void (*clk)(bool);
 		void (*mosi)(bool);
 		bool (*miso)(void);
+		void (*config)(uint8_t, uint32_t);
+		void (*start)(uint8_t, uint32_t);
+		uint8_t (*xmit)(uint8_t);
+		void (*stop)(void);
 	} softspi_port_t;
 
-#define SPI_DELAY(FREQ) CLAMP(0, ((2500000UL / FREQ) - 1), 255)
+#define SPI_DELAY(FREQ) CLAMP(0, ((2500000UL / FREQ) - 1), 0xFFFF)
 
 #define SOFTSPI(NAME, FREQ, MODE, MOSIPIN, MISOPIN, CLKPIN) \
 	void NAME##_clk(bool state)                               \
@@ -63,10 +100,17 @@ extern "C"
 		}                                                       \
 	}                                                         \
 	bool NAME##_miso(void) { return io_get_input(MISOPIN); }  \
-	__attribute__((used)) softspi_port_t NAME = {.spimode = MODE, .spidelay = SPI_DELAY(FREQ), .clk = &NAME##_clk, .mosi = &NAME##_mosi, .miso = &NAME##_miso};
+	__attribute__((used)) softspi_port_t NAME = {.spimode = MODE, .spifreq = FREQ, .clk = &NAME##_clk, .mosi = &NAME##_mosi, .miso = &NAME##_miso, .config = NULL, .start = NULL, .xmit = NULL, .stop = NULL};
 
 	void softspi_config(softspi_port_t *port, uint8_t mode, uint32_t frequency);
+	void softspi_start(softspi_port_t *port);
 	uint8_t softspi_xmit(softspi_port_t *port, uint8_t c);
+	uint16_t softspi_xmit16(softspi_port_t *port, uint16_t c);
+	void softspi_stop(softspi_port_t *port);
+
+#ifdef MCU_HAS_SPI
+	extern softspi_port_t MCU_SPI;
+#endif
 
 #ifdef __cplusplus
 }

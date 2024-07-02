@@ -854,7 +854,7 @@ static void mcu_eeprom_erase(uint16_t address)
 		FLASH->KEYR = 0x45670123;
 		FLASH->KEYR = 0xCDEF89AB;
 	}
-	FLASH->CR = 0;			   // Ensure PG bit is low
+	FLASH->CR = 0;						 // Ensure PG bit is low
 	FLASH->CR |= FLASH_CR_PER; // set the PER bit
 	FLASH->AR = (FLASH_EEPROM + address);
 	FLASH->CR |= FLASH_CR_STRT; // set the start bit
@@ -911,7 +911,7 @@ void mcu_eeprom_flush()
 				protocol_send_error(42); // STATUS_SETTING_WRITE_FAIL
 			if (FLASH->SR & FLASH_SR_WRPRTERR)
 				protocol_send_error(43); // STATUS_SETTING_PROTECTED_FAIL
-			FLASH->CR = 0;				 // Ensure PG bit is low
+			FLASH->CR = 0;						 // Ensure PG bit is low
 			FLASH->SR = 0;
 			eeprom++;
 			ptr++;
@@ -968,6 +968,18 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 	// enable SPI
 	SPI_REG->CR1 |= SPI_CR1_SPE;
 }
+
+uint8_t mcu_spi_xmit(uint8_t c)
+{
+	SPI_REG->DR = c;
+	while (!(SPI1->SR & SPI_SR_TXE) && !(SPI1->SR & SPI_SR_RXNE))
+		;
+	uint8_t data = SPI_REG->DR;
+	while (SPI1->SR & SPI_SR_BSY)
+		;
+	return data;
+}
+
 #endif
 
 #ifdef MCU_HAS_I2C
