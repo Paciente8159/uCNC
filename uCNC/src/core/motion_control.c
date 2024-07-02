@@ -978,6 +978,7 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 	}
 
 	// Perform the final pull off
+	block_data.feed = g_settings.homing_fast_feed_rate;
 	if(!mc_home_motion(axis_mask, g_settings.homing_offset, &block_data))
 	{
 		return STATUS_CRITICAL_FAIL;
