@@ -977,8 +977,8 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 		return STATUS_CRITICAL_FAIL;
 	}
 
-	// Perform the final pull off
-	block_data.feed = g_settings.homing_fast_feed_rate;
+	// Pull off until switches get deactivated (slowly)
+	io_invert_limits(axis_limit);
 	if(!mc_home_motion(axis_mask, g_settings.homing_offset, &block_data))
 	{
 		return STATUS_CRITICAL_FAIL;
@@ -986,6 +986,7 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 
 	// Final check for switch deactivation
 	cnc_delay_ms(g_settings.debounce_ms); // Wait for switch to settle
+	io_invert_limits(0);
 	limits_flags = io_get_limits();
 
 	if(CHECKFLAG(limits_flags, axis_limit))
