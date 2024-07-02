@@ -17,32 +17,33 @@
 */
 #include "softspi.h"
 
-FORCEINLINE static void softspi_delay(uint8_t loops_100ns)
-{
-	while (loops_100ns--)
-	{
-		mcu_delay_100ns();
-	}
-}
+#ifdef MCU_HAS_SPI
+softspi_port_t __attribute__((used)) MCU_SPI = {.spimode = 0, .spifreq = SPI_FREQ, .clk = NULL, .mosi = NULL, .miso = NULL, .config = mcu_spi_config, .start = mcu_spi_start, .xmit = mcu_spi_xmit, .stop = mcu_spi_stop};
+#endif
 
 void softspi_config(softspi_port_t *port, uint8_t mode, uint32_t frequency)
 {
+	port->spimode = mode;
+		port->spifreq = frequency;
+
 	if (!port)
 	{
 #ifdef MCU_HAS_SPI
 		mcu_spi_config(mode, frequency);
 #endif
 	}
-	else
+	
+	if (port->config)
 	{
-		port->spimode = mode;
-		port->spidelay = (uint8_t)SPI_DELAY(frequency);
+		// if port with custom method execute it
+		port->config(mode, frequency);
+		return;
 	}
 }
 
 uint8_t softspi_xmit(softspi_port_t *port, uint8_t c)
 {
-	cnc_dotasks();
+	// if no port is defined defaults to SPI hardware if available
 	if (!port)
 	{
 #ifdef MCU_HAS_SPI
@@ -52,8 +53,15 @@ uint8_t softspi_xmit(softspi_port_t *port, uint8_t c)
 #endif
 	}
 
+	// if port with custom method execute it
+	if (port->xmit)
+	{
+		return port->xmit(c);
+	}
+
 	bool clk = (bool)(port->spimode & 0x2);
 	bool on_down = (bool)(port->spimode & 0x1);
+	uint16_t delay = (uint16_t)SPI_DELAY(port->spifreq);
 
 	port->clk(clk);
 
@@ -68,12 +76,12 @@ uint8_t softspi_xmit(softspi_port_t *port, uint8_t c)
 		port->mosi((bool)(c & 0x80));
 		c <<= 1;
 		// sample
-		softspi_delay(port->spidelay);
+		mcu_delay_us(delay);
 		clk = !clk;
 		port->clk(clk);
 		c |= port->miso();
 
-		softspi_delay(port->spidelay);
+		mcu_delay_us(delay);
 		if (!on_down)
 		{
 			clk = !clk;
@@ -82,4 +90,77 @@ uint8_t softspi_xmit(softspi_port_t *port, uint8_t c)
 	} while (--counter);
 
 	return c;
+}
+
+uint16_t softspi_xmit16(softspi_port_t *port, uint16_t c)
+{
+	// if no port is defined defaults to SPI hardware if available
+	if (!port)
+	{
+#ifdef MCU_HAS_SPI
+		uint16_t res = mcu_spi_xmit((uint8_t)(c >> 8));
+		res <<= 8;
+		return (res | mcu_spi_xmit((uint8_t)(0xFF & c)));
+#else
+		return 0;
+#endif
+	}
+
+	// if port with custom method execute it
+	if (port->xmit)
+	{
+		uint16_t res = port->xmit((uint8_t)(c >> 8));
+		res <<= 8;
+		return (res | port->xmit((uint8_t)(0xFF & c)));
+	}
+
+	bool clk = (bool)(port->spimode & 0x2);
+	bool on_down = (bool)(port->spimode & 0x1);
+	uint16_t delay = (uint16_t)SPI_DELAY(port->spifreq);
+
+	port->clk(clk);
+
+	uint8_t counter = 16;
+	do
+	{
+		if (on_down)
+		{
+			clk = !clk;
+			port->clk(clk);
+		}
+		port->mosi((bool)(c & 0x8000));
+		c <<= 1;
+		// sample
+		mcu_delay_us(delay);
+		clk = !clk;
+		port->clk(clk);
+		c |= port->miso();
+
+		mcu_delay_us(delay);
+		if (!on_down)
+		{
+			clk = !clk;
+			port->clk(clk);
+		}
+	} while (--counter);
+
+	return c;
+}
+
+void softspi_start(softspi_port_t *port)
+{
+	// if port with custom method execute it
+	if (port->start)
+	{
+		port->start(port->spimode, port->spifreq);
+	}
+}
+
+void softspi_stop(softspi_port_t *port)
+{
+	// if port with custom method execute it
+	if (port->start)
+	{
+		port->stop();
+	}
 }

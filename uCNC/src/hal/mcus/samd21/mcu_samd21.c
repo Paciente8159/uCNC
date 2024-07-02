@@ -323,15 +323,15 @@ void mcu_usart_init(void)
 		;
 
 	COM_UART->USART.CTRLA.bit.MODE = 1;
-	COM_UART->USART.CTRLA.bit.SAMPR = 0;		 // 16x sample rate
-	COM_UART->USART.CTRLA.bit.FORM = 0;			 // no parity
-	COM_UART->USART.CTRLA.bit.DORD = 1;			 // LSB first
+	COM_UART->USART.CTRLA.bit.SAMPR = 0;				 // 16x sample rate
+	COM_UART->USART.CTRLA.bit.FORM = 0;					 // no parity
+	COM_UART->USART.CTRLA.bit.DORD = 1;					 // LSB first
 	COM_UART->USART.CTRLA.bit.RXPO = COM_RX_PAD; // RX on PAD3
 	COM_UART->USART.CTRLA.bit.TXPO = COM_TX_PAD; // TX on PAD2
-	COM_UART->USART.CTRLB.bit.SBMODE = 0;		 // one stop bit
-	COM_UART->USART.CTRLB.bit.CHSIZE = 0;		 // 8 bits
-	COM_UART->USART.CTRLB.bit.RXEN = 1;			 // enable receiver
-	COM_UART->USART.CTRLB.bit.TXEN = 1;			 // enable transmitter
+	COM_UART->USART.CTRLB.bit.SBMODE = 0;				 // one stop bit
+	COM_UART->USART.CTRLB.bit.CHSIZE = 0;				 // 8 bits
+	COM_UART->USART.CTRLB.bit.RXEN = 1;					 // enable receiver
+	COM_UART->USART.CTRLB.bit.TXEN = 1;					 // enable transmitter
 
 	while (COM_UART->USART.SYNCBUSY.bit.CTRLB)
 		;
@@ -369,15 +369,15 @@ void mcu_usart_init(void)
 		;
 
 	COM2_UART->USART.CTRLA.bit.MODE = 1;
-	COM2_UART->USART.CTRLA.bit.SAMPR = 0;		   // 16x sample rate
-	COM2_UART->USART.CTRLA.bit.FORM = 0;		   // no parity
-	COM2_UART->USART.CTRLA.bit.DORD = 1;		   // LSB first
+	COM2_UART->USART.CTRLA.bit.SAMPR = 0;					 // 16x sample rate
+	COM2_UART->USART.CTRLA.bit.FORM = 0;					 // no parity
+	COM2_UART->USART.CTRLA.bit.DORD = 1;					 // LSB first
 	COM2_UART->USART.CTRLA.bit.RXPO = COM2_RX_PAD; // RX on PAD3
 	COM2_UART->USART.CTRLA.bit.TXPO = COM2_TX_PAD; // TX on PAD2
-	COM2_UART->USART.CTRLB.bit.SBMODE = 0;		   // one stop bit
-	COM2_UART->USART.CTRLB.bit.CHSIZE = 0;		   // 8 bits
-	COM2_UART->USART.CTRLB.bit.RXEN = 1;		   // enable receiver
-	COM2_UART->USART.CTRLB.bit.TXEN = 1;		   // enable transmitter
+	COM2_UART->USART.CTRLB.bit.SBMODE = 0;				 // one stop bit
+	COM2_UART->USART.CTRLB.bit.CHSIZE = 0;				 // 8 bits
+	COM2_UART->USART.CTRLB.bit.RXEN = 1;					 // enable receiver
+	COM2_UART->USART.CTRLB.bit.TXEN = 1;					 // enable transmitter
 
 	while (COM2_UART->USART.SYNCBUSY.bit.CTRLB)
 		;
@@ -477,7 +477,7 @@ void servo_timer_init()
 		;
 	// enable the timer in the APB
 	SERVO_REG->CTRLA.bit.PRESCALER = (uint8_t)0x4; // prescaller /16
-	SERVO_REG->WAVE.bit.WAVEGEN = 1;			   // match compare
+	SERVO_REG->WAVE.bit.WAVEGEN = 1;							 // match compare
 	while (SERVO_REG->SYNCBUSY.bit.WAVE)
 		;
 #else
@@ -487,7 +487,7 @@ void servo_timer_init()
 		;
 	// enable the timer in the APB
 	SERVO_REG->COUNT16.CTRLA.bit.PRESCALER = (uint8_t)0x4; // prescaller /16
-	SERVO_REG->COUNT16.CTRLA.bit.WAVEGEN = 1;			   // match compare
+	SERVO_REG->COUNT16.CTRLA.bit.WAVEGEN = 1;							 // match compare
 	while (SERVO_REG->COUNT16.STATUS.bit.SYNCBUSY)
 		;
 #endif
@@ -652,8 +652,8 @@ void mcu_init(void)
 		;
 
 	SPICOM->SPI.CTRLA.bit.MODE = 3;
-	SPICOM->SPI.CTRLA.bit.DORD = 0;						 // MSB
-	SPICOM->SPI.CTRLA.bit.CPHA = SPI_MODE & 0x01;		 // MODE
+	SPICOM->SPI.CTRLA.bit.DORD = 0;											 // MSB
+	SPICOM->SPI.CTRLA.bit.CPHA = SPI_MODE & 0x01;				 // MODE
 	SPICOM->SPI.CTRLA.bit.CPOL = (SPI_MODE >> 1) & 0x01; // MODE
 	SPICOM->SPI.CTRLA.bit.FORM = 0;
 	SPICOM->SPI.CTRLA.bit.DIPO = INPAD;
@@ -965,7 +965,7 @@ void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 		;
 	// enable the timer in the APB
 	ITP_REG->CTRLA.bit.PRESCALER = (uint8_t)prescaller; // normal counter
-	ITP_REG->WAVE.bit.WAVEGEN = 1;						// match compare
+	ITP_REG->WAVE.bit.WAVEGEN = 1;											// match compare
 	while (ITP_REG->SYNCBUSY.bit.WAVE)
 		;
 	ITP_REG->CC[0].reg = ticks;
@@ -987,7 +987,7 @@ void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 		;
 	// enable the timer in the APB
 	ITP_REG->COUNT16.CTRLA.bit.PRESCALER = (uint8_t)prescaller; // normal counter
-	ITP_REG->COUNT16.CTRLA.bit.WAVEGEN = 1;						// match compare
+	ITP_REG->COUNT16.CTRLA.bit.WAVEGEN = 1;											// match compare
 	while (ITP_REG->COUNT16.STATUS.bit.SYNCBUSY)
 		;
 	ITP_REG->COUNT16.CC[0].reg = ticks;
@@ -1307,7 +1307,7 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 	SPICOM->SPI.CTRLA.bit.ENABLE = 0;
 	while (SPICOM->SPI.SYNCBUSY.bit.ENABLE)
 		;
-	SPICOM->SPI.CTRLA.bit.CPHA = mode & 0x01;		 // MODE
+	SPICOM->SPI.CTRLA.bit.CPHA = mode & 0x01;				 // MODE
 	SPICOM->SPI.CTRLA.bit.CPOL = (mode >> 1) & 0x01; // MODE
 	SPICOM->SPI.BAUD.reg = frequency;
 
@@ -1315,6 +1315,17 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 	while (SPICOM->SPI.SYNCBUSY.bit.ENABLE)
 		;
 }
+
+uint8_t mcu_spi_xmit(uint8_t c)
+{
+	while (SPICOM->SPI.INTFLAG.bit.DRE == 0)
+		;
+	SPICOM->SPI.DATA.reg = c;
+	while (SPICOM->SPI.INTFLAG.bit.RXC == 0)
+		;
+	return (uint8_t)SPICOM->SPI.DATA.reg;
+}
+
 #endif
 
 #ifdef MCU_HAS_I2C
@@ -1642,7 +1653,7 @@ void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 		;
 	// enable the timer in the APB
 	ONESHOT_REG->CTRLA.bit.PRESCALER = (uint8_t)prescaller; // normal counter
-	ONESHOT_REG->WAVE.bit.WAVEGEN = 1;						// match compare
+	ONESHOT_REG->WAVE.bit.WAVEGEN = 1;											// match compare
 	while (ONESHOT_REG->SYNCBUSY.bit.WAVE)
 		;
 	ONESHOT_REG->CC[0].reg = ticks;
@@ -1659,7 +1670,7 @@ void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 		;
 	// enable the timer in the APB
 	ONESHOT_REG->COUNT16.CTRLA.bit.PRESCALER = (uint8_t)prescaller; // normal counter
-	ONESHOT_REG->COUNT16.CTRLA.bit.WAVEGEN = 1;						// match compare
+	ONESHOT_REG->COUNT16.CTRLA.bit.WAVEGEN = 1;											// match compare
 	while (ONESHOT_REG->COUNT16.STATUS.bit.SYNCBUSY)
 		;
 	ONESHOT_REG->COUNT16.CC[0].reg = ticks;

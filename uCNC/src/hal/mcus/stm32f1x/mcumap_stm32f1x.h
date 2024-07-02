@@ -4743,17 +4743,6 @@ extern "C"
 		(0x3FF & (ADC1->DR >> 2));                  \
 	})
 
-#define mcu_spi_xmit(X)                                           \
-	({                                                              \
-		SPI_REG->DR = X;                                              \
-		while (!(SPI1->SR & SPI_SR_TXE) && !(SPI1->SR & SPI_SR_RXNE)) \
-			;                                                           \
-		uint8_t data = SPI_REG->DR;                                   \
-		while (SPI1->SR & SPI_SR_BSY)                                 \
-			;                                                           \
-		data;                                                         \
-	})
-
 #ifdef PROBE
 #ifdef PROBE_ISR
 #define mcu_enable_probe_isr() SETBIT(EXTI->IMR, PROBE_BIT)

@@ -1172,11 +1172,18 @@ extern "C"
 
 	uint8_t mcu_spi_xmit(uint8_t data)
 	{
-
-		esp32spi->beginTransaction(SPISettings(esp32spifreq, MSBFIRST, esp32spimode));
 		data = esp32spi->transfer(data);
-		esp32spi->endTransaction();
 		return data;
+	}
+
+	void mcu_spi_start(uint8_t mode, uint32_t frequency)
+	{
+		esp32spi->beginTransaction(SPISettings(esp32spifreq, MSBFIRST, esp32spimode));
+	}
+
+	void mcu_spi_stop(void)
+	{
+		esp32spi->endTransaction();
 	}
 }
 
