@@ -37,7 +37,6 @@ void softspi_config(softspi_port_t *port, uint8_t mode, uint32_t frequency)
 	{
 		// if port with custom method execute it
 		port->config(mode, frequency);
-		return;
 	}
 }
 

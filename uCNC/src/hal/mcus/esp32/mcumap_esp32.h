@@ -2806,14 +2806,14 @@ extern "C"
 #define mcu_config_output(X)                                          \
 	{                                                                   \
 		gpio_pad_select_gpio(__indirect__(X, BIT));                       \
-		gpio_set_direction(__indirect__(X, BIT), GPIO_MODE_INPUT_OUTPUT); \
+		gpio_set_direction((gpio_num_t)__indirect__(X, BIT), GPIO_MODE_INPUT_OUTPUT); \
 	}
 #define mcu_config_input(X)                                    \
 	{                                                            \
 		gpio_pad_select_gpio(__indirect__(X, BIT));                \
-		gpio_set_direction(__indirect__(X, BIT), GPIO_MODE_INPUT); \
-		gpio_pulldown_dis(__indirect__(X, BIT));                   \
-		gpio_pullup_dis(__indirect__(X, BIT));                     \
+		gpio_set_direction((gpio_num_t)__indirect__(X, BIT), GPIO_MODE_INPUT); \
+		gpio_pulldown_dis((gpio_num_t)__indirect__(X, BIT));                   \
+		gpio_pullup_dis((gpio_num_t)__indirect__(X, BIT));                     \
 	}
 #define mcu_config_analog(X)                                                      \
 	{                                                                               \
@@ -2824,18 +2824,18 @@ extern "C"
 #define mcu_config_pullup(X)                                   \
 	{                                                            \
 		gpio_pad_select_gpio(__indirect__(X, BIT));                \
-		gpio_set_direction(__indirect__(X, BIT), GPIO_MODE_INPUT); \
-		gpio_pulldown_dis(__indirect__(X, BIT));                   \
-		gpio_pullup_en(__indirect__(X, BIT));                      \
+		gpio_set_direction((gpio_num_t)__indirect__(X, BIT), GPIO_MODE_INPUT); \
+		gpio_pulldown_dis((gpio_num_t)__indirect__(X, BIT));                   \
+		gpio_pullup_en((gpio_num_t)__indirect__(X, BIT));                      \
 	}
 	extern void mcu_gpio_isr(void *);
 #define mcu_config_input_isr(X)                                                                  \
 	{                                                                                              \
-		gpio_set_intr_type((__indirect__(X, BIT)), GPIO_INTR_ANYEDGE);                               \
-		gpio_isr_handler_add((__indirect__(X, BIT)), mcu_gpio_isr, (void *)__indirect__(X, ISRVAR)); \
+		gpio_set_intr_type((gpio_num_t)(__indirect__(X, BIT)), GPIO_INTR_ANYEDGE);                               \
+		gpio_isr_handler_add((gpio_num_t)(__indirect__(X, BIT)), mcu_gpio_isr, (void *)__indirect__(X, ISRVAR)); \
 	}
 
-#define mcu_get_input(X) gpio_get_level(__indirect__(X, BIT))
+#define mcu_get_input(X) gpio_get_level((gpio_num_t)__indirect__(X, BIT))
 // #define mcu_get_input(X) ((__indirect__(X,INREG)->IN) & (1UL<<(0x1F & __indirect__(X, BIT))))
 #define mcu_get_output(X) ((__indirect__(X, OUTREG)->OUT) & (1UL << (0x1F & __indirect__(X, BIT))))
 #define mcu_set_output(X)                                                     \
