@@ -74,7 +74,7 @@ extern "C"
 		void (*stop)(void);
 	} softspi_port_t;
 
-#define SPI_DELAY(FREQ) CLAMP(0, ((2500000UL / FREQ) - 1), 0xFFFF)
+#define SPI_DELAY(FREQ) (CLAMP(1, (2500000UL / FREQ), 0xFFFF) - 1)
 
 #define SOFTSPI(NAME, FREQ, MODE, MOSIPIN, MISOPIN, CLKPIN) \
 	void NAME##_config(uint8_t mode, uint32_t frequency)      \
