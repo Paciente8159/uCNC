@@ -115,7 +115,10 @@ extern "C"
 	void softspi_stop(softspi_port_t *port);
 
 #ifdef MCU_HAS_SPI
-	extern softspi_port_t MCU_SPI;
+	extern softspi_port_t MCU_SPI_PORT;
+#define MCU_SPI (&MCU_SPI_PORT)
+#else
+#define MCU_SPI NULL
 #endif
 
 #ifdef __cplusplus
