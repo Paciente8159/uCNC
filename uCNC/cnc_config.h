@@ -356,14 +356,14 @@ extern "C"
 // #define SET_ORIGIN_AT_HOME_POS
 
 /**
- * Enabling this option shortens the default homing cycle from:
- *   Rapid approach -> Rapid pull off -> Slow approach -> Slow pull off
- * to:
+ * Enabling this option changes the default, short homing cycle:
  *   Rapid approach -> Slow pull off
- * this will make the code size a litte smaller but might make the homing cycle
- * yield less accurate results.
+ * into a longer and potentially more precise:
+ *   Rapid approach -> Rapid pull off -> Slow approach -> Slow pull off
+ * This change makes the code size a bit bigger but might make your
+ * homing cycle yield more accurate results.
  * */
-// #define ENABLE_SHORT_HOMING_CYCLE
+// #define ENABLE_LONG_HOMING_CYCLE
 
 /**
  *

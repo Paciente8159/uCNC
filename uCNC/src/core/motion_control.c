@@ -884,7 +884,7 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 		return STATUS_CRITICAL_FAIL;
 	}
 
-#ifdef ENABLE_SHORT_HOMING_CYCLE
+#ifndef ENABLE_LONG_HOMING_CYCLE
 	// sync's the motion control with the real time position
 	mc_sync_position();
 	mc_get_position(target);
