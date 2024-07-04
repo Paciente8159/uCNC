@@ -741,6 +741,52 @@ void mc_home_axis_finalize(homing_status_t *status)
 }
 #endif
 
+#ifndef ENABLE_SHORT_HOMING_CYCLE
+bool mc_home_motion(uint8_t axis_mask, float distance, motion_data_t* block_data)
+{
+	float target[AXIS_COUNT];
+
+	// Sync motion control with real time positon
+	mc_sync_position();
+	mc_get_position(target);
+	
+	// Set movement distance for each axis
+	for (uint8_t i = 0; i < AXIS_COUNT; i++)
+	{
+		uint8_t imask = (1 << i);
+		if (imask & axis_mask)
+		{
+			// Invert the distance if configuration says so
+			if (g_settings.homing_dir_invert_mask & axis_mask)
+			{
+				target[i] -= distance;
+			}
+			else
+			{
+				target[i] += distance;
+			}
+		}
+	}
+
+	cnc_unlock(true);
+	mc_line(target, block_data);
+
+	if (itp_sync() != STATUS_OK)
+	{
+		// Motion failed
+		return false;
+	}
+
+	// Flush buffers and stop motion
+	itp_stop();
+	itp_clear();
+	planner_clear();
+
+	// Motion completed successfully
+	return true;
+}
+#endif
+
 uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 {
 	float target[AXIS_COUNT];
@@ -838,6 +884,7 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 		return STATUS_CRITICAL_FAIL;
 	}
 
+#ifndef ENABLE_LONG_HOMING_CYCLE
 	// sync's the motion control with the real time position
 	mc_sync_position();
 	mc_get_position(target);
@@ -893,6 +940,63 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 		cnc_alarm(EXEC_ALARM_HOMING_FAIL_PULLOFF);
 		return STATUS_CRITICAL_FAIL;
 	}
+#else
+	// Pull off each axis by the specified distance (still using the fast feed rate)
+	if(!mc_home_motion(axis_mask, g_settings.homing_offset, &block_data))
+	{
+		return STATUS_CRITICAL_FAIL;
+	}
+
+	// Check limits
+	cnc_delay_ms(g_settings.debounce_ms); // Wait for switch to settle
+	limits_flags = io_get_limits();
+
+	if(CHECKFLAG(limits_flags, axis_limit))
+	{
+		// Limits still active after pull off
+		cnc_set_exec_state(EXEC_UNHOMED);
+		cnc_alarm(EXEC_ALARM_HOMING_FAIL_PULLOFF);
+		return STATUS_CRITICAL_FAIL;
+	}
+
+	// Now perform a slow and precise approach onto the limit switches
+	block_data.feed = g_settings.homing_slow_feed_rate;
+	if(!mc_home_motion(axis_mask, -g_settings.homing_offset * 5.0f, &block_data))
+	{
+		return STATUS_CRITICAL_FAIL;
+	}
+
+	// Check limits
+	cnc_delay_ms(g_settings.debounce_ms); // Wait for switch to settle
+	limits_flags = io_get_limits();
+	if (!CHECKFLAG(limits_flags, axis_limit))
+	{
+		// Wrong switch activated
+		cnc_set_exec_state(EXEC_UNHOMED);
+		cnc_alarm(EXEC_ALARM_HOMING_FAIL_APPROACH);
+		return STATUS_CRITICAL_FAIL;
+	}
+
+	// Pull off until switches get deactivated (slowly)
+	io_invert_limits(axis_limit);
+	if(!mc_home_motion(axis_mask, g_settings.homing_offset, &block_data))
+	{
+		return STATUS_CRITICAL_FAIL;
+	}
+
+	// Final check for switch deactivation
+	cnc_delay_ms(g_settings.debounce_ms); // Wait for switch to settle
+	io_invert_limits(0);
+	limits_flags = io_get_limits();
+
+	if(CHECKFLAG(limits_flags, axis_limit))
+	{
+		// Limits still active after pull off
+		cnc_set_exec_state(EXEC_UNHOMED);
+		cnc_alarm(EXEC_ALARM_HOMING_FAIL_PULLOFF);
+		return STATUS_CRITICAL_FAIL;
+	}
+#endif
 
 #ifdef ENABLE_MOTION_CONTROL_MODULES
 	// if cleanup is called at any other exit point then homing has failed
