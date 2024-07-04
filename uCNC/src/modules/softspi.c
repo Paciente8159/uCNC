@@ -158,7 +158,7 @@ void softspi_start(softspi_port_t *port)
 void softspi_stop(softspi_port_t *port)
 {
 	// if port with custom method execute it
-	if (port->start)
+	if (port->stop)
 	{
 		port->stop();
 	}
