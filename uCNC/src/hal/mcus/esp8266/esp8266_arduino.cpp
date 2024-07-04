@@ -944,7 +944,7 @@ extern "C"
 #ifdef MCU_HAS_SPI
 #include <Arduino.h>
 #include <SPI.h>
-#include "esp_peri.h"
+// #include "esp_peri.h"
 extern "C"
 {
 #include "../../../cnc.h"
@@ -953,12 +953,34 @@ extern "C"
 		SPI.begin();
 		SPI.setFrequency(freq);
 		SPI.setDataMode(mode);
+		SPI.setBitOrder(MSBFIRST);
 	}
 
 	void mcu_spi_config(uint8_t mode, uint32_t freq)
 	{
-		SPI.setFrequency(freq);
-		SPI.setDataMode(mode);
+		esp8266_spi_init(freq, mode);
+	}
+
+	void mcu_spi_start(uint8_t mode, uint32_t freq)
+	{
+		SPI.beginTransaction(SPISettings(frequency, MSBFIRST, mode));
+	}
+
+	void mcu_spi_end(void)
+	{
+		SPI.endTransaction();
+	}
+
+	uint8_t mcu_spi_xmit(uint8_t c)
+	{
+		SPI.transfer(c);
+		// while (SPI1CMD & SPIBUSY)
+		// 	;
+		// SPI1W0 = c;
+		// SPI1CMD |= SPIBUSY;
+		// while (SPI1CMD & SPIBUSY)
+		// 	;
+		// return (uint8_t)(SPI1W0 & 0xff);
 	}
 }
 

@@ -3113,18 +3113,6 @@ extern "C"
 #define mcu_get_global_isr() samd21_global_isr_enabled
 #define mcu_free_micros() ({    (1000UL - (SysTick->VAL * 1000UL / SysTick->LOAD)); })
 
-#ifdef MCU_HAS_SPI
-#define mcu_spi_xmit(X)                      \
-	({                                         \
-		while (SPICOM->SPI.INTFLAG.bit.DRE == 0) \
-			;                                      \
-		SPICOM->SPI.DATA.reg = X;                \
-		while (SPICOM->SPI.INTFLAG.bit.RXC == 0) \
-			;                                      \
-		SPICOM->SPI.DATA.reg;                    \
-	})
-#endif
-
 #ifdef __cplusplus
 }
 #endif

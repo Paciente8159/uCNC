@@ -141,8 +141,8 @@ void servo_timer_init(void)
 	SERVO_TIMER_REG->IR = 0xFFFFFFFF;
 
 	SERVO_TIMER_REG->MR1 = SERVO_MIN; // minimum value for servo setup
-	SERVO_TIMER_REG->MR0 = 425;		  // reset @ every 3.333ms * 6 servos = 20ms->50Hz
-	SERVO_TIMER_REG->MCR = 0x0B;	  // Interrupt on MC0 and MC1 and reset on MC0
+	SERVO_TIMER_REG->MR0 = 425;				// reset @ every 3.333ms * 6 servos = 20ms->50Hz
+	SERVO_TIMER_REG->MCR = 0x0B;			// Interrupt on MC0 and MC1 and reset on MC0
 
 	NVIC_SetPriority(SERVO_TIMER_IRQ, 10);
 	NVIC_ClearPendingIRQ(SERVO_TIMER_IRQ);
@@ -497,10 +497,10 @@ void mcu_init(void)
 	LPC_SC->SPI_PCLKSEL_REG &= ~SPI_PCLKSEL_MASK; // div clock by 4
 	uint8_t div = SPI_COUNTER_DIV(SPI_FREQ);
 	div += (div & 0x01) ? 1 : 0;
-	SPI_REG->CPSR = div;		   // internal divider
+	SPI_REG->CPSR = div;					 // internal divider
 	SPI_REG->CR0 |= SPI_MODE << 6; // clock phase
-	SPI_REG->CR0 |= 7 << 0;		   // 8 bits
-	SPI_REG->CR1 |= 1 << 1;		   // enable SSP*/
+	SPI_REG->CR0 |= 7 << 0;				 // 8 bits
+	SPI_REG->CR1 |= 1 << 1;				 // enable SSP*/
 
 #endif
 #ifdef MCU_HAS_I2C
@@ -750,7 +750,7 @@ void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 	ITP_TIMER_REG->TC = 0;
 	ITP_TIMER_REG->PC = 0;
 	ITP_TIMER_REG->PR = 0;
-	ITP_TIMER_REG->TCR |= TIM_RESET;  // Reset Counter
+	ITP_TIMER_REG->TCR |= TIM_RESET;	// Reset Counter
 	ITP_TIMER_REG->TCR &= ~TIM_RESET; // release reset
 	ITP_TIMER_REG->EMR = 0;
 
@@ -996,9 +996,17 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 	div += (div & 0x01) ? 1 : 0;
 	mode = CLAMP(0, mode, 3);
 	SPI_REG->CR1 &= ~(1 << 1); // disable SSP
-	SPI_REG->CPSR = div;	   // internal divider
+	SPI_REG->CPSR = div;			 // internal divider
 	SPI_REG->CR0 |= mode << 6; // clock phase
-	SPI_REG->CR1 |= 1 << 1;	   // enable SSP
+	SPI_REG->CR1 |= 1 << 1;		 // enable SSP
+}
+
+uint8_t mcu_spi_xmit(uint8_t c)
+{
+	SPI_REG->DR = c;
+	while (!(SPI_REG->SR & SSP_SR_RNE))
+		;
+	return SPI_REG->DR;
 }
 
 #endif
@@ -1332,7 +1340,7 @@ void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 	ONESHOT_TIMER_REG->TC = 0;
 	ONESHOT_TIMER_REG->PC = 0;
 	ONESHOT_TIMER_REG->PR = 0;
-	ONESHOT_TIMER_REG->TCR |= TIM_RESET;  // Reset Counter
+	ONESHOT_TIMER_REG->TCR |= TIM_RESET;	// Reset Counter
 	ONESHOT_TIMER_REG->TCR &= ~TIM_RESET; // release reset
 	ONESHOT_TIMER_REG->EMR = 0;
 
