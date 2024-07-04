@@ -6,6 +6,23 @@
 
 # Changelog
 
+## [1.9.3] - 07-04-2024
+
+[@patryk3211](https://github.com/patryk3211) - fixed homing pulloff fail alarm code (#689) and 2 phase homing cycle (#690)
+
+### Added
+
+- added new option to do a 2 phase homing cycle. Instead of the default fast-seek/slow-pulloff the new option modifies the behavior to fast-seek/fast-pulloff/slow-seek/slow-pulloff. This might increase homing repeatability (#690)
+
+### Changed
+
+- modified homing cycle to make code smaller (#693)
+- improved softspi module and exposed HW SPI struct if available via softspi. This as several advantages and allows to share the same HW SPI in different speeds and modes. Also soft SPI now initializes pins on config. This fixed issues were the RTOS or Arduino modified the initial pin setting that was initialized by µCNC. (#691)
+
+### Fixed
+
+- fixed homing pulloff fail alarm code (#689)
+
 ## [1.9.2] - 13-06-2024
 
 ### Added
@@ -1627,6 +1644,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.9.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.9.3
 [1.9.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.9.2
 [1.9.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.9.1
 [1.9.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.9.0

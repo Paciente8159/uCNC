@@ -115,6 +115,15 @@ MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 				// changed limit is from the current mask
 				if ((limits_diff & limits_ref))
 				{
+					/**
+					 * Disabled for now. For re-evaluation
+					 */
+					// Changed limit is not active, don't trip the alarm
+					// if(!(limits_diff & limits)) 
+					// {
+					// 	return;
+					// }
+
 					// lock steps on the current limits
 					itp_lock_stepper(limits);
 

@@ -356,6 +356,16 @@ extern "C"
 // #define SET_ORIGIN_AT_HOME_POS
 
 /**
+ * Enabling this option changes the default, short homing cycle:
+ *   Rapid approach -> Slow pull off
+ * into a longer and potentially more precise:
+ *   Rapid approach -> Rapid pull off -> Slow approach -> Slow pull off
+ * This change makes the code size a bit bigger but might make your
+ * homing cycle yield more accurate results.
+ * */
+// #define ENABLE_LONG_HOMING_CYCLE
+
+/**
  *
  * Enable this option to allow the $H to be used to perform a software homing.
  * Software homing will only work if hardware limits are disabled.
