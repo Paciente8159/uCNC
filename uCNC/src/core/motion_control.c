@@ -741,15 +741,14 @@ void mc_home_axis_finalize(homing_status_t *status)
 }
 #endif
 
-#ifndef ENABLE_SHORT_HOMING_CYCLE
-bool mc_home_motion(uint8_t axis_mask, float distance, motion_data_t* block_data)
+bool mc_home_motion(uint8_t axis_mask, bool is_origin_search, motion_data_t *block_data)
 {
 	float target[AXIS_COUNT];
 
 	// Sync motion control with real time positon
 	mc_sync_position();
 	mc_get_position(target);
-	
+
 	// Set movement distance for each axis
 	for (uint8_t i = 0; i < AXIS_COUNT; i++)
 	{
@@ -759,11 +758,11 @@ bool mc_home_motion(uint8_t axis_mask, float distance, motion_data_t* block_data
 			// Invert the distance if configuration says so
 			if (g_settings.homing_dir_invert_mask & axis_mask)
 			{
-				target[i] -= distance;
+				target[i] -= (is_origin_search) ? (g_settings.max_distance[i] * -1.5f) : g_settings.homing_offset * 5.0f;
 			}
 			else
 			{
-				target[i] += distance;
+				target[i] += (is_origin_search) ? (g_settings.max_distance[i] * -1.5f) : g_settings.homing_offset * 5.0f;
 			}
 		}
 	}
@@ -785,7 +784,6 @@ bool mc_home_motion(uint8_t axis_mask, float distance, motion_data_t* block_data
 	// Motion completed successfully
 	return true;
 }
-#endif
 
 uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 {
@@ -830,171 +828,58 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 		return STATUS_CRITICAL_FAIL;
 	}
 
-	// sync's the motion control with the real time position
-	mc_sync_position();
-	mc_get_position(target);
-
-	// set's the homing distance for each axis
-	for (uint8_t i = 0; i < AXIS_COUNT; i++)
-	{
-		uint8_t imask = (1 << i);
-		if (imask & axis_mask)
-		{
-			float max_home_dist;
-			max_home_dist = -g_settings.max_distance[i] * 1.5f;
-
-			// checks homing dir
-			if (g_settings.homing_dir_invert_mask & axis_mask)
-			{
-				max_home_dist = -max_home_dist;
-			}
-			target[i] += max_home_dist;
-		}
-	}
-
 	// initializes planner block data
-	// memset(block_data.steps, 0, sizeof(block_data.steps));
-	// block_data.steps[axis] = max_home_dist;
 	block_data.feed = g_settings.homing_fast_feed_rate;
-	block_data.spindle = 0;
-	block_data.dwell = 0;
 	block_data.motion_mode = MOTIONCONTROL_MODE_FEED;
 
-	cnc_unlock(true);
-	mc_line(target, &block_data);
-
-	if (itp_sync() != STATUS_OK)
+#ifdef ENABLE_LONG_HOMING_CYCLE
+	uint8_t homing_passes = 2;
+	while (homing_passes--)
 	{
-		return STATUS_CRITICAL_FAIL;
-	}
+#endif
+		if (!mc_home_motion(axis_mask, true, &block_data))
+		{
+			return STATUS_CRITICAL_FAIL;
+		}
 
-	// flushes buffers
-	itp_stop();
-	itp_clear();
-	planner_clear();
+		cnc_delay_ms(g_settings.debounce_ms); // adds a delay before reading io pin (debounce)
+		limits_flags = io_get_limits();
 
-	cnc_delay_ms(g_settings.debounce_ms); // adds a delay before reading io pin (debounce)
-	limits_flags = io_get_limits();
+		// the wrong switch was activated bails
+		if (!CHECKFLAG(limits_flags, axis_limit))
+		{
+			cnc_set_exec_state(EXEC_UNHOMED);
+			cnc_alarm(EXEC_ALARM_HOMING_FAIL_APPROACH);
+			return STATUS_CRITICAL_FAIL;
+		}
 
-	// the wrong switch was activated bails
-	if (!CHECKFLAG(limits_flags, axis_limit))
-	{
-		cnc_set_exec_state(EXEC_UNHOMED);
-		cnc_alarm(EXEC_ALARM_HOMING_FAIL_APPROACH);
-		return STATUS_CRITICAL_FAIL;
-	}
+		// temporary inverts the limit mask to trigger ISR on switch release
+		io_invert_limits(axis_limit);
 
 #ifndef ENABLE_LONG_HOMING_CYCLE
-	// sync's the motion control with the real time position
-	mc_sync_position();
-	mc_get_position(target);
+		// modify the speed to slow search speed
+		block_data.feed = g_settings.homing_slow_feed_rate;
+#endif
 
-	// set's the homing distance for each axis
-	for (uint8_t i = 0; i < AXIS_COUNT; i++)
-	{
-		uint8_t imask = (1 << i);
-		if (imask & axis_mask)
+		if (!mc_home_motion(axis_mask, false, &block_data))
 		{
-			// back off from switch at lower speed
-			float max_home_dist = g_settings.homing_offset * 5.0f;
-
-			// checks homing dir
-			if (g_settings.homing_dir_invert_mask & axis_mask)
-			{
-				max_home_dist = -max_home_dist;
-			}
-			target[i] += max_home_dist;
+			return STATUS_CRITICAL_FAIL;
 		}
-	}
 
-	block_data.feed = g_settings.homing_slow_feed_rate;
-	// block_data.steps[axis] = max_home_dist;
-	// unlocks the machine for next motion (this will clear the EXEC_UNHOMED flag
-	// temporary inverts the limit mask to trigger ISR on switch release
-	io_invert_limits(axis_limit);
+		cnc_delay_ms(g_settings.debounce_ms); // adds a delay before reading io pin (debounce)
+		// resets limit mask
+		io_invert_limits(0);
+		limits_flags = io_get_limits();
+		if (CHECKFLAG(limits_flags, axis_limit))
+		{
+			cnc_set_exec_state(EXEC_UNHOMED);
+			cnc_alarm(EXEC_ALARM_HOMING_FAIL_PULLOFF);
+			return STATUS_CRITICAL_FAIL;
+		}
 
-	cnc_unlock(true);
-	mc_line(target, &block_data);
-
-	if (itp_sync() != STATUS_OK)
-	{
-		// restores limits mask
-		return STATUS_CRITICAL_FAIL;
-	}
-
-	cnc_delay_ms(g_settings.debounce_ms); // adds a delay before reading io pin (debounce)
-	// resets limit mask
-	io_invert_limits(0);
-	// stops, flushes buffers and clears the hold if active
-	cnc_stop();
-	// clearing the interpolator unlockes any locked stepper
-	itp_clear();
-	planner_clear();
-
-	cnc_delay_ms(g_settings.debounce_ms); // adds a delay before reading io pin (debounce)
-	limits_flags = io_get_limits();
-
-	if (CHECKFLAG(limits_flags, axis_limit))
-	{
-		cnc_set_exec_state(EXEC_UNHOMED);
-		cnc_alarm(EXEC_ALARM_HOMING_FAIL_PULLOFF);
-		return STATUS_CRITICAL_FAIL;
-	}
-#else
-	// Pull off each axis by the specified distance (still using the fast feed rate)
-	if(!mc_home_motion(axis_mask, g_settings.homing_offset, &block_data))
-	{
-		return STATUS_CRITICAL_FAIL;
-	}
-
-	// Check limits
-	cnc_delay_ms(g_settings.debounce_ms); // Wait for switch to settle
-	limits_flags = io_get_limits();
-
-	if(CHECKFLAG(limits_flags, axis_limit))
-	{
-		// Limits still active after pull off
-		cnc_set_exec_state(EXEC_UNHOMED);
-		cnc_alarm(EXEC_ALARM_HOMING_FAIL_PULLOFF);
-		return STATUS_CRITICAL_FAIL;
-	}
-
-	// Now perform a slow and precise approach onto the limit switches
-	block_data.feed = g_settings.homing_slow_feed_rate;
-	if(!mc_home_motion(axis_mask, -g_settings.homing_offset * 5.0f, &block_data))
-	{
-		return STATUS_CRITICAL_FAIL;
-	}
-
-	// Check limits
-	cnc_delay_ms(g_settings.debounce_ms); // Wait for switch to settle
-	limits_flags = io_get_limits();
-	if (!CHECKFLAG(limits_flags, axis_limit))
-	{
-		// Wrong switch activated
-		cnc_set_exec_state(EXEC_UNHOMED);
-		cnc_alarm(EXEC_ALARM_HOMING_FAIL_APPROACH);
-		return STATUS_CRITICAL_FAIL;
-	}
-
-	// Pull off until switches get deactivated (slowly)
-	io_invert_limits(axis_limit);
-	if(!mc_home_motion(axis_mask, g_settings.homing_offset, &block_data))
-	{
-		return STATUS_CRITICAL_FAIL;
-	}
-
-	// Final check for switch deactivation
-	cnc_delay_ms(g_settings.debounce_ms); // Wait for switch to settle
-	io_invert_limits(0);
-	limits_flags = io_get_limits();
-
-	if(CHECKFLAG(limits_flags, axis_limit))
-	{
-		// Limits still active after pull off
-		cnc_set_exec_state(EXEC_UNHOMED);
-		cnc_alarm(EXEC_ALARM_HOMING_FAIL_PULLOFF);
-		return STATUS_CRITICAL_FAIL;
+#ifdef ENABLE_LONG_HOMING_CYCLE
+		// do the second pass at slow speed
+		block_data.feed = g_settings.homing_slow_feed_rate;
 	}
 #endif
 
@@ -1257,9 +1142,9 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 
 	// clear the previous map
 	memset(hmap_offsets, 0, sizeof(hmap_offsets));
-	
+
 	mc_get_position(position);
-	
+
 	float minretract_h = position[AXIS_TOOL] + retract_h;
 	float maxretract_h = minretract_h;
 
@@ -1277,7 +1162,7 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 			{
 				return error;
 			}
-			
+
 			// transverse motion to position
 			position[AXIS_X] = target[AXIS_X];
 			position[AXIS_Y] = target[AXIS_Y];
@@ -1371,7 +1256,8 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 	return STATUS_OK;
 }
 
-void mc_clear_hmap(void){
+void mc_clear_hmap(void)
+{
 	memset(hmap_offsets, 0, sizeof(hmap_offsets));
 }
 #endif
