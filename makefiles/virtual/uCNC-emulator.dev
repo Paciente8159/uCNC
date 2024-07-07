@@ -4,10 +4,10 @@ Name=uCNC-emulator
 Type=1
 Ver=2
 ObjFiles=
-Includes=C:\Users\jcmartins\Downloads\GitHub\uCNC\uCNC;C:\Users\jcmartins\.platformio\packages\toolchain-gccmingw32\i686-w64-mingw32\include\;C:\Users\jcmartins\Downloads\GitHub\uCNC\makefiles\virtual
-Libs=C:\Users\jcmartins\Downloads\GitHub\uCNC\uCNC;C:\Users\JCEM\Downloads\GitHub\uCNC\uCNC
+Includes=C:\Users\JCEM\Documents\GitHub\uCNC\uCNC;C:\Users\JCEM\.platformio\packages\toolchain-gccmingw32\i686-w64-mingw32\include\;C:\Users\JCEM\Documents\GitHub\uCNC\makefiles\virtual
+Libs=C:\Users\jcmartins\Downloads\GitHub\uCNC\uCNC;C:\Users\JCEM\Documents\GitHub\uCNC\uCNC
 PrivateResource=
-ResourceIncludes=C:\Users\jcmartins\Downloads\GitHub\uCNC\uCNC
+ResourceIncludes=C:\Users\JCEM\Documents\GitHub\uCNC\uCNC
 MakeIncludes=
 Compiler=-DBOARD=BOARD_VIRTUAL -DNO_SDL_@@_
 CppCompiler=-DBOARD=BOARD_VIRTUAL -DNO_SDL_@@_

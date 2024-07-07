@@ -25,6 +25,7 @@ extern "C"
 #endif
 
 // #include "../system_menu.h"
+#include "../../cnc_hal_config_helper.h"
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -34,19 +35,26 @@ extern "C"
 #define GRAPHIC_DISPLAY_HW_I2C 8
 
 #ifndef GRAPHIC_DISPLAY_INTERFACE
-#define GRAPHIC_DISPLAY_INTERFACE GRAPHIC_DISPLAY_HW_SPI
+#define GRAPHIC_DISPLAY_INTERFACE GRAPHIC_DISPLAY_HW_I2C
+#endif
+
+#ifndef GRAPHIC_DISPLAY_DRIVER
+#define GRAPHIC_DISPLAY_DRIVER ssd1306_128x64_i2c
 #endif
 
 #if (GRAPHIC_DISPLAY_INTERFACE == GRAPHIC_DISPLAY_SW_SPI)
 #ifndef GRAPHIC_DISPLAY_SPI_CLOCK
 #define GRAPHIC_DISPLAY_SPI_CLOCK DOUT4
 #endif
+// kept for backward compatibility
 #ifndef GRAPHIC_DISPLAY_SPI_DATA
 #define GRAPHIC_DISPLAY_SPI_DATA DOUT5
 #endif
+#ifndef GRAPHIC_DISPLAY_SPI_MOSI
 #define GRAPHIC_DISPLAY_SPI_MOSI GRAPHIC_DISPLAY_SPI_DATA
+#endif
 #ifndef GRAPHIC_DISPLAY_SPI_MISO
-#define GRAPHIC_DISPLAY_SPI_MISO DOUT7
+#define GRAPHIC_DISPLAY_SPI_MISO DIN7
 #endif
 #endif
 #ifndef GRAPHIC_DISPLAY_SPI_CS
@@ -94,12 +102,15 @@ extern "C"
 /**
  * Helper macros for declaring a new display driver
  */
-#define DECL_DISPLAY(name, w, h)                                                      \
-	extern void name##_init();                                                          \
-	const display_driver_t gd_##name = {.width = w, .height = h, .init = &name##_init}; \
+#define _DECL_DISPLAY(name, w, h) const display_driver_t gd_##name = {.width = w, .height = h, .init = &name##_init}
 
-#define DISPLAY(name) void name##_init()
-#define DISPLAY_PTR(name) (display_driver_t *)&gd_##name
+#define DECL_DISPLAY(name, w, h) _DECL_DISPLAY(name, w, h)
+
+#define _DISPLAY_PTR(name) gd_##name
+#define DISPLAY_PTR_INIT(ptr_name, driver_name) extern const display_driver_t _DISPLAY_PTR(driver_name);display_driver_t *ptr_name = (display_driver_t *)&_DISPLAY_PTR(driver_name)
+
+#define DISPLAY_INIT(name) void name##_init()
+
 
 #ifdef __cplusplus
 }

@@ -218,16 +218,16 @@ extern "C"
 #define DIN19_PORT L
 #define DIN19_PULLUP
 
-// // pins for smart adapter
-// // clk
-// #define DOUT4_BIT 1
-// #define DOUT4_PORT A
-// // data
-// #define DOUT5_BIT 0
-// #define DOUT5_PORT H
-// // cs
-// #define DOUT6_BIT 1
-// #define DOUT6_PORT H
+// pins for smart adapter
+// clk
+#define DOUT4_BIT 1
+#define DOUT4_PORT A
+// data
+#define DOUT5_BIT 0
+#define DOUT5_PORT H
+// cs
+#define DOUT6_BIT 1
+#define DOUT6_PORT H
 // beep
 #define DOUT7_BIT 0
 #define DOUT7_PORT C
@@ -253,16 +253,6 @@ extern "C"
 	// #define RX2_PULLUP
 	// // only uncomment this if other port other then 0 is used
 	// #define UART2_PORT 2
-
-// cs
-#define DOUT6_BIT 0
-#define DOUT6_PORT B
-	// dc
-#define DOUT11_BIT 3
-#define DOUT11_PORT B
-// rst
-#define DOUT13_BIT 1
-#define DOUT13_PORT L
 
 #ifdef __cplusplus
 }

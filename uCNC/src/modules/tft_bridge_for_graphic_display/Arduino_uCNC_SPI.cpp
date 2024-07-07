@@ -42,7 +42,7 @@ void Arduino_uCNC_SPI::beginWrite()
 {
 	if (this->_is_shared_interface)
 	{
-		softspi_config((softspi_port_t*)this->_spi, this->_dataMode, this->_speed);
+		softspi_start((softspi_port_t*)this->_spi);
 	}
 
 	io_set_pinvalue(this->_dc, 1);
@@ -50,6 +50,10 @@ void Arduino_uCNC_SPI::beginWrite()
 }
 void Arduino_uCNC_SPI::endWrite()
 {
+	if (this->_is_shared_interface)
+	{
+		softspi_stop((softspi_port_t*)this->_spi);
+	}
 	io_set_pinvalue(this->_cs, 1);
 }
 void Arduino_uCNC_SPI::writeCommand(uint8_t c)

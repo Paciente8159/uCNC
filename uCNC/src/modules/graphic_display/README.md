@@ -17,18 +17,23 @@ To use the graphic_display parser module follow these steps:
 LOAD_MODULE(graphic_display);
 ```
 
-3. You must configure the necessary pins that operate the display and the rotary encoder `cnc_hal_config.h`
+3. You must choose the communication bus used by the display (SPI/I2C) and type of bus (Hardware or Software emulated) and configure the necessary pins that operate the display and the rotary encoder `cnc_hal_config.h`
 These are the default values
 
 ```
-#ifndef U8X8_MSG_GPIO_SPI_CLOCK_PIN
-#define U8X8_MSG_GPIO_SPI_CLOCK_PIN DOUT8
+// choose the communication interface
+#define GRAPHIC_DISPLAY_INTERFACE GRAPHIC_DISPLAY_HW_SPI /* or GRAPHIC_DISPLAY_HW_I2C or GRAPHIC_DISPLAY_SW_SPI or GRAPHIC_DISPLAY_SW_I2C */
+// choose one of the available display drivers
+#define GRAPHIC_DISPLAY_DRIVER st7920_128x64_spi
+
+#ifndef GRAPHIC_DISPLAY_SPI_CLOCK
+#define GRAPHIC_DISPLAY_SPI_CLOCK DOUT4
 #endif
-#ifndef U8X8_MSG_GPIO_SPI_DATA_PIN
-#define U8X8_MSG_GPIO_SPI_DATA_PIN DOUT9
+#ifndef GRAPHIC_DISPLAY_SPI_MOSI
+#define GRAPHIC_DISPLAY_SPI_MOSI DOUT5
 #endif
-#ifndef U8X8_MSG_GPIO_CS_PIN
-#define U8X8_MSG_GPIO_CS_PIN DOUT10
+#ifndef GRAPHIC_DISPLAY_SPI_CS
+#define GRAPHIC_DISPLAY_SPI_CS DOUT6
 #endif
 #ifndef GRAPHIC_DISPLAY_ENCODER_BTN
 #define GRAPHIC_DISPLAY_ENCODER_BTN DIN11
@@ -41,15 +46,4 @@ These are the default values
 #endif
 ```
 
-4. You must also enable RPM counter on the tool `cnc_hal_config.h`
-
-```
-// assign the tools from 1 to 16
-#define TOOL1 spindle_pwm
-
-// enable RPM encoder for spindle_pwm
-// depends on encoders (below)
-  #define SPINDLE_PWM_HAS_RPM_ENCODER
-```
-
-5. The last step is to enable `ENABLE_MAIN_LOOP_MODULES` inside `cnc_config.h`
+4. The last step is to enable `ENABLE_MAIN_LOOP_MODULES` inside `cnc_config.h`

@@ -33,8 +33,6 @@ static int8_t graphic_last_line_offset;
 
 uint8_t u8x8_byte_ucnc_hw_spi(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr)
 {
-	cnc_dotasks();
-
 	uint8_t *data;
 	switch (msg)
 	{
@@ -45,22 +43,32 @@ uint8_t u8x8_byte_ucnc_hw_spi(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *
 			softspi_xmit((softspi_port_t *)graphic_port, (uint8_t)*data);
 			data++;
 			arg_int--;
-			cnc_dotasks();
 		}
 		break;
 	case U8X8_MSG_BYTE_INIT:
 		u8x8_gpio_SetCS(u8x8, u8x8->display_info->chip_disable_level);
+#if (UCNC_MODULE_VERSION < 10801) && (GRAPHIC_DISPLAY_INTERFACE == GRAPHIC_DISPLAY_SW_SPI)
+		io_config_output(GRAPHIC_DISPLAY_SPI_CLOCK);
+		io_config_output(GRAPHIC_DISPLAY_SPI_MOSI);
+		io_config_output(GRAPHIC_DISPLAY_SPI_CS);
+#endif
+		softspi_config((softspi_port_t *)graphic_port, u8x8->display_info->spi_mode, u8x8->display_info->sck_clock_hz);
 		break;
 	case U8X8_MSG_BYTE_SET_DC:
 		u8x8_gpio_SetDC(u8x8, arg_int);
 		break;
 	case U8X8_MSG_BYTE_START_TRANSFER:
-		softspi_config((softspi_port_t *)graphic_port, u8x8->display_info->spi_mode, u8x8->display_info->sck_clock_hz);
+#if (UCNC_MODULE_VERSION >= 10903)
+		softspi_start((softspi_port_t *)graphic_port);
+#endif
 		/* SPI mode has to be mapped to the mode of the current controller, at least Uno, Due, 101 have different SPI_MODEx values */
 		u8x8_gpio_SetCS(u8x8, u8x8->display_info->chip_enable_level);
 		u8x8->gpio_and_delay_cb(u8x8, U8X8_MSG_DELAY_NANO, u8x8->display_info->post_chip_enable_wait_ns, NULL);
 		break;
 	case U8X8_MSG_BYTE_END_TRANSFER:
+#if (UCNC_MODULE_VERSION >= 10903)
+		softspi_stop((softspi_port_t *)graphic_port);
+#endif
 		u8x8->gpio_and_delay_cb(u8x8, U8X8_MSG_DELAY_NANO, u8x8->display_info->pre_chip_disable_wait_ns, NULL);
 		u8x8_gpio_SetCS(u8x8, u8x8->display_info->chip_disable_level);
 		break;
@@ -305,10 +313,9 @@ void __attribute__((weak)) gd_flush()
 
 void __attribute__((weak)) gd_draw_startup(void)
 {
-	u8g2_ClearBuffer(U8G2);
 	char buff[SYSTEM_MENU_MAX_STR_LEN];
 	rom_strcpy(buff, __romstr__("µCNC"));
-	u8g2_ClearBuffer(U8G2);
+	// u8g2_ClearBuffer(U8G2);
 	u8g2_SetFont(U8G2, u8g2_font_9x15_t_symbols);
 	u8g2_DrawUTF8X2(U8G2, (u8g2_GetDisplayWidth(U8G2) / 2 - u8g2_GetUTF8Width(U8G2, buff)), gd_str_justify_center(), buff);
 	rom_strcpy(buff, __romstr__(("v" CNC_VERSION)));
@@ -386,8 +393,6 @@ void __attribute__((weak)) gd_draw_button(int16_t x0, int16_t y0, const char *s,
 	{
 		minw = ABS(minw);
 		x0 -= MAX(len + 5, minw);
-		serial_print_int(y0);
-		serial_flush();
 	}
 
 	if (minh < 0)
@@ -471,19 +476,25 @@ uint8_t __attribute__((weak)) gd_display_max_lines(void)
  * Create some U8G2 display drivers initializers
  */
 
-DISPLAY(ssd1306_128x64_i2c)
+DISPLAY_INIT(ssd1306_128x64_i2c)
 {
 	u8g2_Setup_ssd1306_i2c_128x64_noname_f(U8G2, U8G2_R0, u8x8_byte_ucnc_hw_i2c, u8x8_gpio_and_delay_ucnc);
 }
 
-DISPLAY(st7920_128x64_spi)
+DECL_DISPLAY(ssd1306_128x64_i2c, 128, 64);
+
+DISPLAY_INIT(st7920_128x64_spi)
 {
 	u8g2_Setup_st7920_s_128x64_f(U8G2, U8G2_R0, u8x8_byte_ucnc_hw_spi, u8x8_gpio_and_delay_ucnc);
 }
 
-DISPLAY(virtual_sdl)
+DECL_DISPLAY(st7920_128x64_spi, 128, 64);
+
+DISPLAY_INIT(virtual_sdl)
 {
 	u8g2_SetupBuffer_SDL_128x64(U8G2, U8G2_R0);
 }
+
+DECL_DISPLAY(virtual_sdl, 128, 64);
 
 #endif

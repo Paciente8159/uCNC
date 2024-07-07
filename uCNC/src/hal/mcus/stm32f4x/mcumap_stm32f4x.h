@@ -3765,14 +3765,12 @@ extern "C"
 		(0x3FF & (ADC1->DR >> 2));                  \
 	})
 
-#ifdef PROBE
-#ifdef PROBE_ISR
+#if (defined(PROBE) && defined(PROBE_ISR))
 #define mcu_enable_probe_isr() SETBIT(EXTI->IMR, PROBE_BIT)
 #define mcu_disable_probe_isr() CLEARBIT(EXTI->IMR, PROBE_BIT)
 #else
 #define mcu_enable_probe_isr()
 #define mcu_disable_probe_isr()
-#endif
 #endif
 
 	extern volatile bool stm32_global_isr_enabled;

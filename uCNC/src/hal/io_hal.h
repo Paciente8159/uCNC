@@ -4497,6 +4497,20 @@ extern "C"
 #define _io_hal_get_analog_(pin) io##pin##_get_analog
 #define io_hal_get_analog(pin) _io_hal_get_analog_(pin)
 
+/**
+ * 
+ * Add this to a compilation unit to allow undefined digital IO pins
+ * 
+ */
+// #define io0_config_output
+// #define io0_set_output
+// #define io0_clear_output
+// #define io0_toggle_output
+// #define io0_get_output
+// #define io0_config_input
+// #define io0_config_pullup
+// #define io0_get_input
+
 #ifdef __cplusplus
 }
 #endif

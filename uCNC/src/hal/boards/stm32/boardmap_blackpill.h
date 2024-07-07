@@ -65,17 +65,17 @@ extern "C"
 #define LIMIT_A_ISR
 
 // Setup control input pins
-#define ESTOP_BIT 5
-#define ESTOP_PORT B
-#define FHOLD_BIT 6
-#define FHOLD_PORT B
-#define CS_RES_BIT 7
-#define CS_RES_PORT B
-#define SAFETY_DOOR_BIT 8
-#define SAFETY_DOOR_PORT B
-// Setup probe pin
-#define PROBE_BIT 9
-#define PROBE_PORT B
+// #define ESTOP_BIT 5
+// #define ESTOP_PORT B
+// #define FHOLD_BIT 6
+// #define FHOLD_PORT B
+// #define CS_RES_BIT 7
+// #define CS_RES_PORT B
+// #define SAFETY_DOOR_BIT 8
+// #define SAFETY_DOOR_PORT B
+// // Setup probe pin
+// #define PROBE_BIT 9
+// #define PROBE_PORT B
 
 // Enable controls switch interrupt
 #define ESTOP_ISR
@@ -149,6 +149,18 @@ extern "C"
 	// #define DIN7_PORT A
 	// #define DIN7_ISR
 	// #define DIN7_PULLUP
+
+#define DOUT4_BIT 5
+#define DOUT4_PORT B
+#define DOUT5_BIT 6
+#define DOUT5_PORT B
+#define DOUT6_BIT 7
+#define DOUT6_PORT B
+#define DOUT11_BIT 8
+#define DOUT11_PORT B
+// Setup probe pin
+#define DOUT12_BIT 9
+#define DOUT12_PORT B
 
 #define ONESHOT_TIMER 1
 

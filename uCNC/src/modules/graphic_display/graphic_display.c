@@ -69,12 +69,18 @@ static uint8_t graphic_display_str_line_len(const char *__s);
 #if (GRAPHIC_DISPLAY_INTERFACE == GRAPHIC_DISPLAY_SW_SPI)
 // temporary result of reading non existing read pin
 #define io0_get_input 0
+#define io0_config_input
 SOFTSPI(graphic_spi, 1000000UL, 0, GRAPHIC_DISPLAY_SPI_MOSI, GRAPHIC_DISPLAY_SPI_MISO, GRAPHIC_DISPLAY_SPI_CLOCK)
 // delete temporary definition
 #undef io0_get_input
+#undef io0_config_input
 #define graphic_display_port ((void *)&graphic_spi)
 #else
-#define graphic_display_port NULL
+#if (UCNC_MODULE_VERSION < 10903)
+//for backward compatibility
+#define MCU_SPI NULL
+#endif
+#define graphic_display_port ((void *)MCU_SPI)
 #endif
 #endif
 
@@ -100,6 +106,12 @@ SOFTI2C(graphic_i2c, 100000UL, GRAPHIC_DISPLAY_I2C_CLOCK, GRAPHIC_DISPLAY_I2C_DA
 #ifndef GRAPHIC_DISPLAY_ENCODER_DEBOUNCE_MS
 #define GRAPHIC_DISPLAY_ENCODER_DEBOUNCE_MS 200
 #endif
+
+/**
+ * 
+ * Rotary encoder to control the menu options
+ * 
+ */
 
 int8_t graphic_display_rotary_encoder_counter;
 int8_t graphic_display_rotary_encoder_pressed;
@@ -343,13 +355,9 @@ uint8_t system_menu_send_cmd(const char *__s)
 
 #endif
 
-// DISPLAY(ssd1306_128x64_i2c);
-DECL_DISPLAY(st7796_240x320_spi, 240, 320);
-
 DECL_MODULE(graphic_display)
 {
-	// display_driver_t *display_driver = DISPLAY_PTR(ssd1306_128x64_i2c);
-	display_driver_t *display_driver = DISPLAY_PTR(st7796_240x320_spi);
+	DISPLAY_PTR_INIT(display_driver, GRAPHIC_DISPLAY_DRIVER);
 	gd_init(display_driver, graphic_display_port);
 	display_width = display_driver->width;
 	display_height = display_driver->height;
@@ -617,10 +625,14 @@ static int8_t item_line;
 
 void system_menu_render_header(const char *__s)
 {
-	gd_clear();
+	// gd_clear();
 	gd_draw_string(gd_str_align_center(__s), 0, __s);
 	gd_draw_h_line(gd_get_line_top(1));
 	item_line = 0;
+}
+
+void system_menu_goto_render(uint8_t id){
+	gd_clear();
 }
 
 void system_menu_render_nav_back(bool is_hover)

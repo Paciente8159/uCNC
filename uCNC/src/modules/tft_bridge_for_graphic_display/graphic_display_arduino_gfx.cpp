@@ -5,7 +5,6 @@
 
 static Arduino_DataBus *bus;
 static Arduino_GFX *gfx;
-static void *graphic_port;
 static int16_t font_height;
 static int8_t graphic_last_line_offset;
 
@@ -19,8 +18,9 @@ extern "C"
 #include "../softspi.h"
 #include "../softi2c.h"
 #include "../system_menu.h"
+#include "FreeMono12pt7b.h"
 
-// #define GRAPHIC_DISPLAY_RST 48
+	// #define GRAPHIC_DISPLAY_RST 48
 
 #ifndef GRAPHIC_DISPLAY_SPI_DC
 #define GRAPHIC_DISPLAY_SPI_DC DOUT11
@@ -29,17 +29,22 @@ extern "C"
 #define GRAPHIC_DISPLAY_BKL DOUT12
 #endif
 #ifndef GRAPHIC_DISPLAY_RST
-#define GRAPHIC_DISPLAY_RST -1
+#define GRAPHIC_DISPLAY_RST DOUT13
+#endif
+
+#ifndef GRAPHIC_DISPLAY_SPI_FREQ
+#define GRAPHIC_DISPLAY_SPI_FREQ 20000000UL
 #endif
 
 	int16_t gd_font_height(void)
 	{
+		return 20;
 		uint16_t w, h = font_height;
 		if (!h)
 		{
 			int16_t x, y;
-			gfx->setFont(u8g2_font_9x15_tf);
-			gfx->getTextBounds(__romstr__("Íg"), 1, 1, &x, &y, &w, &h, false);
+			gfx->setFont(&FreeMono12pt7b /*u8g2_font_9x15_tf*/);
+			gfx->getTextBounds(__romstr__("Ig"), 1, 1, &x, &y, &w, &h, false);
 			font_height = h;
 		}
 		return (int16_t)h;
@@ -52,51 +57,60 @@ extern "C"
 
 	void gd_init(display_driver_t *driver, void *port_interface)
 	{
-		graphic_port = port_interface;
-		// bus = new Arduino_uCNC_SPI((softspi_port_t *)graphic_port, GRAPHIC_DISPLAY_SPI_DC, GRAPHIC_DISPLAY_SPI_CS, false);
-		bus = new Arduino_ESP32SPI(17, 15, 18, 23, 19, VSPI, true);
+		io_config_output(GRAPHIC_DISPLAY_SPI_DC);
+		io_config_output(GRAPHIC_DISPLAY_SPI_CS);
+		io_config_output(GRAPHIC_DISPLAY_BKL);
+		// bus = new Arduino_uCNC_SPI(port_interface, GRAPHIC_DISPLAY_SPI_DC, GRAPHIC_DISPLAY_SPI_CS, false);
+		bus = new Arduino_ESP32SPIDMA(17, 15, 18, 23, 19, VSPI, false);
 		// bus = new Arduino_HWSPI(50, 53);
 
 		driver->init();
 		io_set_pinvalue(GRAPHIC_DISPLAY_BKL, 0);
 		cnc_delay_ms(50);
 		io_set_pinvalue(GRAPHIC_DISPLAY_BKL, 1);
-		gfx->begin(40000000);
+		io_set_output(GRAPHIC_DISPLAY_RST);
+		cnc_delay_ms(200);
+		io_clear_output(GRAPHIC_DISPLAY_RST);
+		cnc_delay_ms(200);
+		io_set_output(GRAPHIC_DISPLAY_RST);
+		gfx->begin(GRAPHIC_DISPLAY_SPI_FREQ);
 		cnc_delay_ms(100);
 		graphic_last_line_offset = -1;
 	}
 
 	void gd_clear()
 	{
-		gfx->fillScreen(BLACK);
+		gfx->startWrite();
+		gfx->writeFillRect(0, 0, gfx->width(), gfx->height(), BLACK);
+		// gfx->fillScreen(BLACK);
 	}
 
 	void gd_flush()
 	{
-#ifdef GRAPHIC_DISPLAY_IS_TOUCH
+		// #ifdef GRAPHIC_DISPLAY_IS_TOUCH
 		// draws menu for touch
 		gd_draw_button(0, gfx->height() - (gd_line_height() * 3), "Down", gfx->width() / 3, gd_line_height() * 3, false, false);
 		gd_draw_button(gfx->width() / 3, gfx->height() - (gd_line_height() * 3), "Up", gfx->width() / 3, gd_line_height() * 3, false, false);
 		gd_draw_button(2 * gfx->width() / 3, gfx->height() - (gd_line_height() * 3), "Enter", gfx->width() / 3, gd_line_height() * 3, false, false);
-#endif
+		// #endif
 		gfx->flush();
+		// g->drawBitmap(0,0,gfx->getFramebuffer(), gfx->width(), gfx->height(), WHITE, BLACK);
 	}
 
 	void gd_draw_startup(void)
 	{
-		gfx->flush();
 		char buff[SYSTEM_MENU_MAX_STR_LEN];
 		memset(buff, 0, sizeof(buff));
 		gfx->setTextColor(WHITE);
-		gfx->setFont(u8g2_font_9x15_tr);
+		gfx->setFont(&FreeMono12pt7b /*u8g2_font_9x15_tr*/);
 		gfx->setTextSize(2);
 		rom_strcpy(buff, __romstr__("uCNC"));
+		gfx->fillScreen(BLACK);
 		gd_draw_string(gd_str_align_center(buff), ((gfx->height() >> 1) - gd_font_height()), buff);
 		memset(buff, 0, sizeof(buff));
 		gfx->setTextSize(1);
 		rom_strcpy(buff, __romstr__(("v" CNC_VERSION)));
 		gd_draw_string(gd_str_align_center(buff), (gfx->height() - 2 * gd_font_height()), buff);
-		gfx->flush();
 	}
 
 	void gd_draw_h_line(int16_t y0)
@@ -208,7 +222,7 @@ extern "C"
 
 	int16_t gd_str_align_end(const char *s)
 	{
-		return (gfx->width() - gd_str_width(s));
+		return (gfx->width() - gd_str_width(s) - 8);
 	}
 
 	int16_t gd_str_justify_start(void)
@@ -221,11 +235,6 @@ extern "C"
 		return (gfx->height() + gd_font_height()) / 2;
 	}
 
-	int16_t gd_str_justify_end(void)
-	{
-		return gfx->height() - gd_line_height();
-	}
-
 	int16_t gd_get_line_top(int8_t line)
 	{
 		int16_t lh = gd_line_height();
@@ -236,7 +245,7 @@ extern "C"
 			offset = gfx->height() - lh * floor(gfx->height() / lh);
 			graphic_last_line_offset = offset;
 		}
-		return line * lh + offset;
+		return (line - 1) * lh + offset;
 	}
 
 	uint8_t gd_display_max_lines(void)
@@ -248,21 +257,25 @@ extern "C"
 	 * Create some U8G2 display drivers
 	 */
 
-	DISPLAY(st7796_240x320_spi)
+	DISPLAY_INIT(st7796_480x320_spi)
 	{
-		gfx = new Arduino_ST7796(bus, GRAPHIC_DISPLAY_RST, 0, false, 240, 320);
+		gfx = new Arduino_ST7796(bus, -1, 1, false);
+		// gfx = new Arduino_Canvas(g->width(), g->height(), g);
+#ifdef GRAPHIC_DISPLAY_IS_TOUCH
+		xpt2046_init(420, 380, XPT2046_ROT0, 1000000UL, 0);
+#endif
+	}
+
+	DISPLAY_INIT(ili9341_240x320_spi)
+	{
+		gfx = new Arduino_ILI9341(bus, -1, 0, false);
+		// gfx = new Arduino_Canvas(g->width(), g->height(), g);
 #ifdef GRAPHIC_DISPLAY_IS_TOUCH
 		xpt2046_init(240, 320, XPT2046_ROT0, 1000000UL, 0);
 #endif
 	}
 
-	DISPLAY(ili9341_240x320_spi)
-	{
-		gfx = new Arduino_ILI9341(bus, GRAPHIC_DISPLAY_RST, 0, true);
-#ifdef GRAPHIC_DISPLAY_IS_TOUCH
-		xpt2046_init(240, 320, XPT2046_ROT0, 1000000UL, 0);
-#endif
-	}
+	DECL_DISPLAY(ili9341_240x320_spi, 240, 320);
 
 #ifdef GRAPHIC_DISPLAY_IS_TOUCH
 	// overrides the controller o read the touch
@@ -291,3 +304,5 @@ extern "C"
 #ifdef __cplusplus
 }
 #endif
+
+extern "C" DECL_DISPLAY(st7796_480x320_spi, 420, 380);
