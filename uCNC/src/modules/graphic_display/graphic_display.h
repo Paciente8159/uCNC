@@ -77,6 +77,16 @@ extern "C"
 		void (*init)(void); // initializes the display.
 	} display_driver_t;
 
+	#define TEXT_TOP_LEFT 0x00
+	#define TEXT_TOP_CENTER 0x01
+	#define TEXT_TOP_RIGHT 0x02
+	#define TEXT_CENTER_LEFT 0x03
+	#define TEXT_CENTER_CENTER 0x04
+	#define TEXT_CENTER_RIGHT 0x05
+	#define TEXT_BOTTOM_LEFT 0x06
+	#define TEXT_BOTTOM_CENTER 0x07
+	#define TEXT_BOTTOM_RIGHT 0x08
+
 	void gd_clear();
 	void gd_flush();
 	void gd_init(display_driver_t *driver, void *port_interface);
@@ -87,7 +97,7 @@ extern "C"
 	void gd_draw_triangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, bool invert);
 	void gd_draw_string(int16_t x0, int16_t y0, const char *s);
 	void gd_draw_string_inv(int16_t x0, int16_t y0, const char *s, bool invert);
-	void gd_draw_button(int16_t x0, int16_t y0, const char *s, int16_t minw, int16_t minh, bool invert, bool frameless);
+	void gd_draw_button(int16_t x0, int16_t y0, const char *s, int16_t minw, int16_t minh, bool invert, bool frameless, uint8_t text_pos);
 	int16_t gd_str_width(const char *s);
 	int16_t gd_str_align_start(const char *s);
 	int16_t gd_str_align_center(const char *s);

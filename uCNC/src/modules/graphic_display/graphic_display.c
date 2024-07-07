@@ -77,7 +77,7 @@ SOFTSPI(graphic_spi, 1000000UL, 0, GRAPHIC_DISPLAY_SPI_MOSI, GRAPHIC_DISPLAY_SPI
 #define graphic_display_port ((void *)&graphic_spi)
 #else
 #if (UCNC_MODULE_VERSION < 10903)
-//for backward compatibility
+// for backward compatibility
 #define MCU_SPI NULL
 #endif
 #define graphic_display_port ((void *)MCU_SPI)
@@ -108,9 +108,9 @@ SOFTI2C(graphic_i2c, 100000UL, GRAPHIC_DISPLAY_I2C_CLOCK, GRAPHIC_DISPLAY_I2C_DA
 #endif
 
 /**
- * 
+ *
  * Rotary encoder to control the menu options
- * 
+ *
  */
 
 int8_t graphic_display_rotary_encoder_counter;
@@ -625,19 +625,16 @@ static int8_t item_line;
 
 void system_menu_render_header(const char *__s)
 {
-	// gd_clear();
-	gd_draw_string(gd_str_align_center(__s), 0, __s);
-	gd_draw_h_line(gd_get_line_top(1));
-	item_line = 0;
-}
-
-void system_menu_goto_render(uint8_t id){
 	gd_clear();
+	gd_draw_button(0, 0, __s, display_width, 0, false, false, TEXT_CENTER_CENTER);
+	// gd_draw_string(gd_str_align_center(__s), 0, __s);
+	gd_draw_h_line(gd_get_line_top(1) - 1);
+	item_line = 0;
 }
 
 void system_menu_render_nav_back(bool is_hover)
 {
-	gd_draw_button(display_width, 0, "X", -1, 0,is_hover, false);
+	gd_draw_button(display_width, 0, "X", -1, 0, is_hover, false, TEXT_CENTER_CENTER);
 }
 
 void system_menu_item_render_label(uint8_t render_flags, const char *label)
@@ -653,7 +650,7 @@ void system_menu_item_render_label(uint8_t render_flags, const char *label)
 			gd_draw_string(gd_str_align_center(label), gd_get_line_top((display_max_lines >> 1) - 1), label);
 			return;
 		}
-		gd_draw_button(0, y, label, display_width, 0, (render_flags & SYSTEM_MENU_MODE_SELECT), true);
+		gd_draw_button(0, y, label, display_width, 0, (render_flags & SYSTEM_MENU_MODE_SELECT), true, TEXT_CENTER_LEFT);
 	}
 }
 
@@ -692,7 +689,6 @@ void system_menu_item_render_arg(uint8_t render_flags, const char *value)
 						break;
 					}
 					c--;
-					
 				}
 
 				mult = strlen(value) - mult;
