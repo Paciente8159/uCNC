@@ -87,6 +87,11 @@ extern "C"
 	#define TEXT_BOTTOM_CENTER 0x07
 	#define TEXT_BOTTOM_RIGHT 0x08
 
+	#define BUTTON_FRAMELESS 0x00
+	#define BUTTON_HOR_BARS 0x01
+	#define BUTTON_VER_BARS 0x02
+	#define BUTTON_BOX (BUTTON_HOR_BARS|BUTTON_VER_BARS)
+
 	void gd_clear();
 	void gd_flush();
 	void gd_init(display_driver_t *driver, void *port_interface);
@@ -97,7 +102,7 @@ extern "C"
 	void gd_draw_triangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, bool invert);
 	void gd_draw_string(int16_t x0, int16_t y0, const char *s);
 	void gd_draw_string_inv(int16_t x0, int16_t y0, const char *s, bool invert);
-	void gd_draw_button(int16_t x0, int16_t y0, const char *s, int16_t minw, int16_t minh, bool invert, bool frameless, uint8_t text_pos);
+	void gd_draw_button(int16_t x0, int16_t y0, const char *s, int16_t minw, int16_t minh, bool invert, uint8_t frametype, uint8_t text_pos);
 	int16_t gd_str_width(const char *s);
 	int16_t gd_str_align_start(const char *s);
 	int16_t gd_str_align_center(const char *s);

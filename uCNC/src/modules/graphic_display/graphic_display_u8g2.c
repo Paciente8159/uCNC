@@ -377,18 +377,16 @@ void __attribute__((weak)) gd_draw_string_inv(int16_t x0, int16_t y0, const char
 	{
 		u8g2_SetDrawColor(U8G2, 0);
 	}
-	u8g2_DrawStr(U8G2, x0, y0 + u8g2_GetAscent(U8G2) + 2, s);
+	u8g2_DrawStr(U8G2, x0, y0 + u8g2_GetAscent(U8G2) + 1, s);
 	if (invert)
 	{
 		u8g2_SetDrawColor(U8G2, 1);
 	}
 }
 
-void __attribute__((weak)) gd_draw_button(int16_t x0, int16_t y0, const char *s, int16_t minw, int16_t minh, bool invert, bool frameless, uint8_t text_pos)
+void __attribute__((weak)) gd_draw_button(int16_t x0, int16_t y0, const char *s, int16_t minw, int16_t minh, bool invert, uint8_t frametype, uint8_t text_pos)
 {
-	uint8_t mode = (!frameless) ? U8G2_BTN_BW1 : U8G2_BTN_BW0;
-	mode |= (!invert) ? 0 : U8G2_BTN_INV;
-	int16_t len = gd_str_width(s) + 5;
+	int16_t len = gd_str_width(s) + 4;
 	int16_t lh = gd_line_height();
 
 	if (minw < 0)
@@ -407,9 +405,16 @@ void __attribute__((weak)) gd_draw_button(int16_t x0, int16_t y0, const char *s,
 	int16_t h = MAX(minh, lh);
 
 	gd_draw_rectangle_fill(x0, y0, w, h, !invert);
-	if (!frameless)
+	if (frametype & BUTTON_HOR_BARS)
 	{
-		gd_draw_rectangle(x0, y0, w, h);
+		u8g2_DrawHLine(U8G2, x0, y0, w);
+		u8g2_DrawHLine(U8G2, x0, y0 + h, w);
+	}
+
+	if (frametype & BUTTON_VER_BARS)
+	{
+		u8g2_DrawVLine(U8G2, x0, y0, h);
+		u8g2_DrawVLine(U8G2, x0 + w, y0, h);
 	}
 
 	switch (text_pos)
