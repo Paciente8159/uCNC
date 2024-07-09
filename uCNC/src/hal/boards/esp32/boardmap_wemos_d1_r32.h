@@ -50,13 +50,13 @@ extern "C"
 #define CS_RES_ISR
 #define CS_RES_PULLUP
 
-// Setup limit pins
-#define LIMIT_Z_BIT 19 // assigns LIMIT_Z pin
-#define LIMIT_Z_ISR		 // assigns LIMIT_Z ISR
-#define LIMIT_Y_BIT 5	 // assigns LIMIT_Y pin
-#define LIMIT_Y_ISR		 // assigns LIMIT_Y ISR
-#define LIMIT_X_BIT 13 // assigns LIMIT_X pin
-#define LIMIT_X_ISR		 // assigns LIMIT_X ISR
+// // Setup limit pins
+// #define LIMIT_Z_BIT 19 // assigns LIMIT_Z pin
+// #define LIMIT_Z_ISR		 // assigns LIMIT_Z ISR
+// #define LIMIT_Y_BIT 5	 // assigns LIMIT_Y pin
+// #define LIMIT_Y_ISR		 // assigns LIMIT_Y ISR
+// #define LIMIT_X_BIT 13 // assigns LIMIT_X pin
+// #define LIMIT_X_ISR		 // assigns LIMIT_X ISR
 
 // Setup probe pin
 #define PROBE_BIT 39
@@ -70,13 +70,13 @@ extern "C"
 	// #define UART_PORT 0
 
 	// Setup PWM
-#define PWM0_BIT 23 // assigns PWM0 pin
-#define PWM0_TIMER 0
-#define PWM0_CHANNEL 0
+// #define PWM0_BIT 23 // assigns PWM0 pin
+// #define PWM0_TIMER 0
+// #define PWM0_CHANNEL 0
 
 // Setup generic IO Pins
 // spindle dir
-#define DOUT0_BIT 18
+// #define DOUT0_BIT 18
 
 // coolant
 #define DOUT2_BIT 34
@@ -99,6 +99,12 @@ extern "C"
 // #define SERVO0_BIT 33
 #define I2C_CLK_BIT 22
 #define I2C_DATA_BIT 21
+
+// hardware SPI
+#define SPI_CLK_BIT 18
+#define SPI_SDO_BIT 23
+#define SPI_SDI_BIT 19
+#define DOUT28_BIT 5
 
 #ifdef __cplusplus
 }
