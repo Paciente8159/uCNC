@@ -218,16 +218,16 @@ extern "C"
 #define DIN19_PORT L
 #define DIN19_PULLUP
 
-// pins for smart adapter
-// clk
-#define DOUT4_BIT 1
-#define DOUT4_PORT A
-// data
-#define DOUT5_BIT 0
-#define DOUT5_PORT H
-// cs
-#define DOUT6_BIT 1
-#define DOUT6_PORT H
+// // pins for smart adapter
+// // clk
+// #define DOUT4_BIT 1
+// #define DOUT4_PORT A
+// // data
+// #define DOUT5_BIT 0
+// #define DOUT5_PORT H
+// // cs
+// #define DOUT6_BIT 1
+// #define DOUT6_PORT H
 // beep
 #define DOUT7_BIT 0
 #define DOUT7_PORT C
@@ -243,6 +243,18 @@ extern "C"
 #define DIN18_BIT 6
 #define DIN18_PORT C
 #define DIN18_PULLUP
+
+/**
+ * TFT pins
+ */
+#define DOUT11_BIT 3
+#define DOUT11_PORT B
+
+#define DOUT6_BIT 0
+#define DOUT6_PORT B
+
+#define DOUT13_BIT 1
+#define DOUT13_PORT L
 
 #define ONESHOT_TIMER 4
 

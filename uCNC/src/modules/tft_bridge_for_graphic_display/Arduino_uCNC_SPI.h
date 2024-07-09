@@ -18,6 +18,7 @@
 #ifndef ARDUINO_UCNC_SPI_H
 #define ARDUINO_UCNC_SPI_H
 
+#include <stdint.h>
 #include "Arduino_DataBus.h"
 
 class Arduino_uCNC_SPI : public Arduino_DataBus

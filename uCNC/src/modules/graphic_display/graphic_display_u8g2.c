@@ -313,9 +313,10 @@ void __attribute__((weak)) gd_flush()
 
 void __attribute__((weak)) gd_draw_startup(void)
 {
+	u8g2_ClearBuffer(U8G2);
 	char buff[SYSTEM_MENU_MAX_STR_LEN];
 	rom_strcpy(buff, __romstr__("µCNC"));
-	// u8g2_ClearBuffer(U8G2);
+	u8g2_ClearBuffer(U8G2);
 	u8g2_SetFont(U8G2, u8g2_font_9x15_t_symbols);
 	u8g2_DrawUTF8X2(U8G2, (u8g2_GetDisplayWidth(U8G2) / 2 - u8g2_GetUTF8Width(U8G2, buff)), gd_str_justify_center(), buff);
 	rom_strcpy(buff, __romstr__(("v" CNC_VERSION)));
@@ -376,43 +377,87 @@ void __attribute__((weak)) gd_draw_string_inv(int16_t x0, int16_t y0, const char
 	{
 		u8g2_SetDrawColor(U8G2, 0);
 	}
-	u8g2_DrawStr(U8G2, x0, y0 + u8g2_GetAscent(U8G2) + 2, s);
+	u8g2_DrawStr(U8G2, x0, y0 + u8g2_GetAscent(U8G2) + 1, s);
 	if (invert)
 	{
 		u8g2_SetDrawColor(U8G2, 1);
 	}
 }
 
-void __attribute__((weak)) gd_draw_button(int16_t x0, int16_t y0, const char *s, int16_t minw, int16_t minh, bool invert, bool frameless)
+void __attribute__((weak)) gd_draw_button(int16_t x0, int16_t y0, const char *s, int16_t minw, int16_t minh, bool invert, uint8_t frametype, uint8_t text_pos)
 {
-	uint8_t mode = (!frameless) ? U8G2_BTN_BW1 : U8G2_BTN_BW0;
-	mode |= (!invert) ? 0 : U8G2_BTN_INV;
-	int16_t len = gd_str_width(s);
+	int16_t len = gd_str_width(s) + 4;
+	int16_t lh = gd_line_height();
 
 	if (minw < 0)
 	{
 		minw = ABS(minw);
-		x0 -= MAX(len + 5, minw);
+		x0 -= MAX(len, minw);
 	}
 
 	if (minh < 0)
 	{
 		minh = ABS(minh);
-		y0 -= MAX(minh, gd_line_height());
+		y0 -= MAX(minh, lh);
 	}
 
-	int16_t w = MAX(minw, len + 5);
-	int16_t h = MAX(minh, gd_line_height());
+	int16_t w = MAX(minw, len);
+	int16_t h = MAX(minh, lh);
 
-	if (invert)
+	gd_draw_rectangle_fill(x0, y0, w, h, !invert);
+	if (frametype & BUTTON_HOR_BARS)
 	{
-		gd_draw_rectangle_fill(x0, y0, w, h, !invert);
+		u8g2_DrawHLine(U8G2, x0, y0, w);
+		u8g2_DrawHLine(U8G2, x0, y0 + h, w);
 	}
-	if (!frameless)
+
+	if (frametype & BUTTON_VER_BARS)
 	{
-		gd_draw_rectangle(x0, y0, w, h);
+		u8g2_DrawVLine(U8G2, x0, y0, h);
+		u8g2_DrawVLine(U8G2, x0 + w, y0, h);
 	}
-	gd_draw_string_inv(x0 + 2, y0 + 1, s, invert);
+
+	switch (text_pos)
+	{
+	case TEXT_TOP_LEFT:
+		x0 += 2;
+		y0 += 1;
+		break;
+	case TEXT_TOP_CENTER:
+		x0 += ((w - len) >> 1) + 2;
+		y0 += 1;
+		break;
+	case TEXT_TOP_RIGHT:
+		x0 += w - len + 2;
+		y0 += 1;
+		break;
+	case TEXT_CENTER_LEFT:
+		x0 += 2;
+		y0 += 1;
+		break;
+	case TEXT_CENTER_CENTER:
+		x0 += ((w - len) >> 1) + 2;
+		y0 += ((h - lh) >> 1) + 1;
+		break;
+	case TEXT_CENTER_RIGHT:
+		x0 += w - len + 2;
+		y0 += ((h - lh) >> 1) + 1;
+		break;
+	case TEXT_BOTTOM_LEFT:
+		x0 += 2;
+		y0 += h - lh + 1;
+		break;
+	case TEXT_BOTTOM_CENTER:
+		x0 += ((w - len) >> 1) + 2;
+		y0 += h - lh + 1;
+		break;
+	case TEXT_BOTTOM_RIGHT:
+		x0 += w - len + 2;
+		y0 += h - lh + 1;
+		break;
+	}
+
+	gd_draw_string_inv(x0, y0, s, invert);
 }
 
 int16_t __attribute__((weak)) gd_str_width(const char *s)

@@ -54,6 +54,11 @@ static int16_t display_width;
 static int16_t display_height;
 static uint8_t display_max_lines;
 static uint8_t display_char_width;
+static uint8_t needs_full_redraw;
+
+#define REDRAW_NONE 0x00
+#define REDRAW_IDLE 0x01
+#define REDRAW_MENU 0x02
 
 static uint8_t graphic_display_str_lines(const char *__s, int16_t *max_len);
 static uint8_t graphic_display_str_line_len(const char *__s);
@@ -77,7 +82,7 @@ SOFTSPI(graphic_spi, 1000000UL, 0, GRAPHIC_DISPLAY_SPI_MOSI, GRAPHIC_DISPLAY_SPI
 #define graphic_display_port ((void *)&graphic_spi)
 #else
 #if (UCNC_MODULE_VERSION < 10903)
-//for backward compatibility
+// for backward compatibility
 #define MCU_SPI NULL
 #endif
 #define graphic_display_port ((void *)MCU_SPI)
@@ -108,9 +113,9 @@ SOFTI2C(graphic_i2c, 100000UL, GRAPHIC_DISPLAY_I2C_CLOCK, GRAPHIC_DISPLAY_I2C_DA
 #endif
 
 /**
- * 
+ *
  * Rotary encoder to control the menu options
- * 
+ *
  */
 
 int8_t graphic_display_rotary_encoder_counter;
@@ -454,81 +459,71 @@ void system_menu_render_startup(void)
 	{
 		system_menu_reset();
 	}
+
+	needs_full_redraw = true;
 }
 
-void system_menu_render_idle(void)
+static void render_XY_axis(int16_t y, float *axis)
 {
-	gd_clear();
-	// starts from the bottom up
-
-	// coordinates
 	char buff[SYSTEM_MENU_MAX_STR_LEN];
-	int8_t line = display_max_lines - 1;
-	int16_t y = gd_get_line_top(line);
 	memset(buff, 0, sizeof(buff));
-
-	float axis[MAX(AXIS_COUNT, 3)];
-	int32_t steppos[STEPPER_COUNT];
-	itp_get_rt_position(steppos);
-	kinematics_apply_forward(steppos, axis);
-	kinematics_apply_reverse_transform(axis);
-
-#if (AXIS_COUNT >= 5)
-	buff[0] = 'B';
-	system_menu_flt_to_str(&buff[1], axis[4]);
-	gd_draw_string(0, y, buff);
-
-#if (AXIS_COUNT >= 6)
-	buff[0] = 'C';
-	system_menu_flt_to_str(&buff[1], axis[5]);
-	gd_draw_string(display_width >> 1, y, buff);
-#endif
-	memset(buff, 0, sizeof(buff));
-	gd_draw_h_line(y);
-
-	y = gd_get_line_top(--line);
-#endif
-
-	cnc_dotasks();
-
-#if (AXIS_COUNT >= 3)
-	buff[0] = 'Z';
-	system_menu_flt_to_str(&buff[1], axis[2]);
-	gd_draw_string(0, y, buff);
-
-#if (AXIS_COUNT >= 4)
-	memset(buff, 0, sizeof(buff));
-	buff[0] = 'A';
-	system_menu_flt_to_str(&buff[1], axis[3]);
-	gd_draw_string(display_width >> 1, y, buff);
-#endif
-	memset(buff, 0, sizeof(buff));
-	gd_draw_h_line(y);
-
-	y = gd_get_line_top(--line);
-#endif
-
-	cnc_dotasks();
-
-	{
-		cnc_dotasks();
-	}
 
 #if (AXIS_COUNT >= 1)
 	buff[0] = 'X';
 	system_menu_flt_to_str(&buff[1], axis[0]);
-	gd_draw_string(0, y, buff);
+	gd_draw_button(0, y, buff, display_width, 0, false, BUTTON_HOR_BARS, TEXT_CENTER_LEFT);
+#endif
 #if (AXIS_COUNT >= 2)
+	memset(buff, 0, sizeof(buff));
 	buff[0] = 'Y';
 	system_menu_flt_to_str(&buff[1], axis[1]);
-	gd_draw_string(display_width >> 1, y, buff);
+	gd_draw_button(display_width >> 1, y, buff, display_width >> 1, 0, false, BUTTON_HOR_BARS, TEXT_CENTER_LEFT);
 #endif
+}
+
+#if (AXIS_COUNT >= 3)
+static void render_ZA_axis(int16_t y, float *axis)
+{
+	char buff[SYSTEM_MENU_MAX_STR_LEN];
 	memset(buff, 0, sizeof(buff));
-	gd_draw_h_line(y);
-	y = gd_get_line_top(--line);
+
+#if (AXIS_COUNT >= 3)
+	buff[0] = 'Z';
+	system_menu_flt_to_str(&buff[1], axis[2]);
+	gd_draw_button(0, y, buff, display_width, 0, false, BUTTON_HOR_BARS, TEXT_CENTER_LEFT);
+#endif
+#if (AXIS_COUNT >= 4)
+	memset(buff, 0, sizeof(buff));
+	buff[0] = 'A';
+	system_menu_flt_to_str(&buff[1], axis[3]);
+	gd_draw_button(display_width >> 1, y, buff, display_width >> 1, 0, false, BUTTON_HOR_BARS, TEXT_CENTER_LEFT);
+#endif
+}
+#endif
+#if (AXIS_COUNT >= 5)
+static void render_BC_axis(int16_t y, float *axis)
+{
+	char buff[SYSTEM_MENU_MAX_STR_LEN];
+	memset(buff, 0, sizeof(buff));
+
+#if (AXIS_COUNT >= 5)
+	buff[0] = 'B';
+	system_menu_flt_to_str(&buff[1], axis[4]);
+	gd_draw_button(0, y, buff, display_width, 0, false, BUTTON_HOR_BARS, TEXT_CENTER_LEFT);
+#endif
+#if (AXIS_COUNT >= 6)
+	memset(buff, 0, sizeof(buff));
+	buff[0] = 'C';
+	system_menu_flt_to_str(&buff[1], axis[5]);
+	gd_draw_button(display_width >> 1, y, buff, display_width >> 1, 0, false, BUTTON_HOR_BARS, TEXT_CENTER_LEFT);
+#endif
+}
 #endif
 
-	cnc_dotasks();
+static void render_feed_and_tool(int16_t y)
+{
+	char buff[SYSTEM_MENU_MAX_STR_LEN];
+	memset(buff, 0, sizeof(buff));
 
 	// units, feed and tool
 	if (g_settings.report_inches)
@@ -541,28 +536,26 @@ void system_menu_render_idle(void)
 	}
 
 	// Realtime feed
-	system_menu_flt_to_str(&buff[4], itp_get_rt_feed());
-	gd_draw_string(0, y, buff);
-	memset(buff, 0, sizeof(buff));
+	system_menu_int_to_str(&buff[4], (int32_t)itp_get_rt_feed());
+	gd_draw_button(0, y, buff, display_width, 0, false, BUTTON_HOR_BARS, TEXT_CENTER_LEFT);
 
 	// Tool
-	char tool[5];
 	uint8_t modalgroups[14];
 	uint16_t feed;
 	uint16_t spindle;
 	parser_get_modes(modalgroups, &feed, &spindle);
-	rom_strcpy(tool, __romstr__(" T"));
-	system_menu_int_to_str(&tool[2], modalgroups[11]);
-	// Realtime tool speed
-	rom_strcpy(buff, __romstr__("S"));
-	system_menu_int_to_str(&buff[1], tool_get_speed());
-	strcat(buff, tool);
-	gd_draw_string(gd_str_align_end(buff), y, buff);
 	memset(buff, 0, sizeof(buff));
-	gd_draw_h_line(y);
-	y = gd_get_line_top(--line);
+	rom_strcpy(buff, __romstr__("T"));
+	system_menu_int_to_str(&buff[1], modalgroups[11]);
+	// Realtime tool speed
+	rom_strcpy(&buff[strlen(buff)], __romstr__(" S"));
+	system_menu_int_to_str(&buff[strlen(buff)], tool_get_speed());
+}
 
-	cnc_dotasks();
+static void render_status(int16_t y)
+{
+	char buff[SYSTEM_MENU_MAX_STR_LEN];
+	memset(buff, 0, sizeof(buff));
 
 	// system status
 	rom_strcpy(buff, __romstr__("St:"));
@@ -611,33 +604,65 @@ void system_menu_render_idle(void)
 		}
 	}
 
-	gd_draw_string(0, y, buff);
+	gd_draw_button(0, y, buff, display_width, 0, false, BUTTON_HOR_BARS, TEXT_CENTER_LEFT);
 	memset(buff, 0, sizeof(buff));
 	io_states_str(buff);
-	gd_draw_string((display_width >> 1), y, buff);
+	gd_draw_button(display_width >> 1, y, buff, display_width >> 1, 0, false, BUTTON_HOR_BARS, TEXT_CENTER_LEFT);
+}
 
+void system_menu_render_idle(void)
+{
+	if (needs_full_redraw & REDRAW_IDLE)
+	{
+		gd_clear();
+		needs_full_redraw = REDRAW_MENU;
+	}
+	//  starts from the bottom up
+	float axis[MAX(AXIS_COUNT, 3)];
+	int32_t steppos[STEPPER_COUNT];
+	itp_get_rt_position(steppos);
+	kinematics_apply_forward(steppos, axis);
+	kinematics_apply_reverse_transform(axis);
+	uint8_t line = display_max_lines;
+
+#if (AXIS_COUNT >= 5)
+	line--;
+	render_BC_axis(gd_get_line_top(line), axis);
 	cnc_dotasks();
-
+#endif
+#if (AXIS_COUNT >= 3)
+	line--;
+	render_ZA_axis(gd_get_line_top(line), axis);
+	cnc_dotasks();
+#endif
+#if (AXIS_COUNT >= 1)
+	line--;
+	render_XY_axis(gd_get_line_top(line), axis);
+	cnc_dotasks();
+#endif
+	line--;
+	render_feed_and_tool(gd_get_line_top(line));
+	cnc_dotasks();
+	render_status(gd_get_line_top(line));
 	gd_flush();
 }
 
 static int8_t item_line;
+static int8_t max_item_line;
 
 void system_menu_render_header(const char *__s)
 {
-	// gd_clear();
-	gd_draw_string(gd_str_align_center(__s), 0, __s);
-	gd_draw_h_line(gd_get_line_top(1));
+	if(needs_full_redraw & REDRAW_MENU){
+		gd_clear();
+		needs_full_redraw = REDRAW_IDLE; 
+	}
+	gd_draw_button(0, 0, __s, display_width, 0, false, BUTTON_HOR_BARS, TEXT_CENTER_CENTER);
 	item_line = 0;
-}
-
-void system_menu_goto_render(uint8_t id){
-	gd_clear();
 }
 
 void system_menu_render_nav_back(bool is_hover)
 {
-	gd_draw_button(display_width, 0, "X", -1, 0,is_hover, false);
+	gd_draw_button(display_width, 0, "X", -1, 0, is_hover, BUTTON_BOX, TEXT_CENTER_CENTER);
 }
 
 void system_menu_item_render_label(uint8_t render_flags, const char *label)
@@ -653,7 +678,7 @@ void system_menu_item_render_label(uint8_t render_flags, const char *label)
 			gd_draw_string(gd_str_align_center(label), gd_get_line_top((display_max_lines >> 1) - 1), label);
 			return;
 		}
-		gd_draw_button(0, y, label, display_width, 0, (render_flags & SYSTEM_MENU_MODE_SELECT), true);
+		gd_draw_button(0, y, label, display_width, 0, (render_flags & SYSTEM_MENU_MODE_SELECT), BUTTON_FRAMELESS, TEXT_CENTER_LEFT);
 	}
 }
 
@@ -692,7 +717,6 @@ void system_menu_item_render_arg(uint8_t render_flags, const char *value)
 						break;
 					}
 					c--;
-					
 				}
 
 				mult = strlen(value) - mult;
@@ -734,6 +758,21 @@ void system_menu_item_render_arg(uint8_t render_flags, const char *value)
 
 void system_menu_render_footer(void)
 {
+	// one of the dynamic list menus
+	// cleans the remaining menu
+	uint8_t curr_menu = g_system_menu.current_menu;
+	if (curr_menu > 0 && curr_menu < 128)
+	{
+		int8_t line = item_line + 1;
+		if (line < max_item_line)
+		{
+			int16_t y = gd_get_line_top(line);
+			int16_t y2 = gd_get_line_top(max_item_line);
+			gd_draw_rectangle_fill(0, y, display_width, y2 - y + 1, true);
+		}
+
+		max_item_line = line;
+	}
 	gd_flush();
 }
 
@@ -766,8 +805,8 @@ void system_menu_render_modal_popup(const char *__s)
 	w = (lines != 1) ? (w * gd_str_width("Z")) : (gd_str_width(__s));
 	w += 6;
 
-	gd_draw_rectangle_fill(5, 5, (display_width - 10), (display_height - 5), true);
-	gd_draw_rectangle(5, 5, (display_width - 10), (display_height - 5));
+	gd_draw_rectangle_fill(5, 5, (display_width - 10), (display_height - 10), true);
+	gd_draw_rectangle(5, 5, (display_width - 10), (display_height - 10));
 
 	uint8_t line = ((display_max_lines - lines) >> 1);
 	do
@@ -781,6 +820,7 @@ void system_menu_render_modal_popup(const char *__s)
 	} while (--lines);
 
 	gd_flush();
+	needs_full_redraw = (REDRAW_MENU | REDRAW_IDLE);
 }
 
 static uint8_t graphic_display_str_lines(const char *__s, int16_t *max_len)

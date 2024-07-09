@@ -20,7 +20,8 @@
 #include "../../cnc.h"
 #include "../softspi.h"
 
-Arduino_uCNC_SPI::Arduino_uCNC_SPI(void *spi = nullptr, uint8_t dc = 0, uint8_t cs = 0, bool is_shared_interface = true)
+
+Arduino_uCNC_SPI::Arduino_uCNC_SPI(void *spi = (void*)0, uint8_t dc = 0, uint8_t cs = 0, bool is_shared_interface = true)
 	{
 		this->_dc = dc;
 		this->_cs = cs;
