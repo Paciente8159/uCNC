@@ -89,12 +89,6 @@ WEAK_EVENT_HANDLER(gcode_after_motion)
 	DEFAULT_EVENT_HANDLER(gcode_after_motion);
 }
 
-// event_grbl_cmd_handler
-WEAK_EVENT_HANDLER(grbl_cmd)
-{
-	DEFAULT_EVENT_HANDLER(grbl_cmd);
-}
-
 // event_parse_token_handler
 WEAK_EVENT_HANDLER(parse_token)
 {
@@ -111,6 +105,35 @@ WEAK_EVENT_HANDLER(parser_get_modes)
 WEAK_EVENT_HANDLER(parser_reset)
 {
 	DEFAULT_EVENT_HANDLER(parser_reset);
+}
+#endif
+
+#if (defined(ENABLE_PARSER_MODULES) || defined(BOARD_HAS_CUSTOM_SYSTEM_COMMANDS))
+// event_grbl_cmd_handler
+WEAK_EVENT_HANDLER(grbl_cmd)
+{
+	DEFAULT_EVENT_HANDLER(grbl_cmd);
+}
+
+int8_t parser_get_grbl_cmd_arg(char *arg, int8_t max_len)
+{
+	int8_t len = 0;
+	for (;;)
+	{
+		uint8_t c = serial_getc();
+		if (!c)
+		{
+			return len;
+		}
+		if (!max_len)
+		{
+			return -1;
+		}
+
+		*arg++ = c;
+		len++;
+		max_len--;
+	}
 }
 #endif
 
@@ -566,14 +589,7 @@ static uint8_t parser_grbl_command(void)
 		break;
 	}
 
-#ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
-	if (mcu_custom_grbl_cmd((uint8_t *)grbl_cmd_str, grbl_cmd_len, c) == STATUS_OK)
-	{
-		return STATUS_OK;
-	}
-#endif
-
-#ifdef ENABLE_PARSER_MODULES
+#if (defined(ENABLE_PARSER_MODULES) || defined(BOARD_HAS_CUSTOM_SYSTEM_COMMANDS))
 	grbl_cmd_args_t args = {&error, grbl_cmd_str, grbl_cmd_len, c};
 	EVENT_INVOKE(grbl_cmd, &args);
 #endif
@@ -2486,11 +2502,9 @@ uint8_t parser_get_expression(float *value)
 				return NUMBER_UNDEF;
 			}
 
-				op = OP_ATAN_DIV;
-				is_atan = false;
+			op = OP_ATAN_DIV;
+			is_atan = false;
 		}
-		
-		
 
 		switch (op)
 		{
