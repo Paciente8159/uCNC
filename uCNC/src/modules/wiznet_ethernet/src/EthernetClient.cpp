@@ -55,14 +55,14 @@ int EthernetClient::connect(IPAddress ip, uint16_t port)
 	_sockindex = Ethernet.socketBegin(SnMR::TCP, 0);
 	if (_sockindex >= MAX_SOCK_NUM) return 0;
 	Ethernet.socketConnect(_sockindex, rawIPAddress(ip), port);
-	uint32_t start = millis();
+	uint32_t start = mcu_millis();
 	while (1) {
 		uint8_t stat = Ethernet.socketStatus(_sockindex);
 		if (stat == SnSR::ESTABLISHED) return 1;
 		if (stat == SnSR::CLOSE_WAIT) return 1;
 		if (stat == SnSR::CLOSED) return 0;
-		if (millis() - start > _timeout) break;
-		delay(1);
+		if (mcu_millis() - start > _timeout) break;
+		cnc_delay_ms(1);
 	}
 	Ethernet.socketClose(_sockindex);
 	_sockindex = MAX_SOCK_NUM;
@@ -135,7 +135,7 @@ void EthernetClient::stop()
 
 	// attempt to close the connection gracefully (send a FIN to other side)
 	Ethernet.socketDisconnect(_sockindex);
-	unsigned long start = millis();
+	unsigned long start = mcu_millis();
 
 	// wait up to a second for the connection to close
 	do {
@@ -143,8 +143,8 @@ void EthernetClient::stop()
 			_sockindex = MAX_SOCK_NUM;
 			return; // exit the loop
 		}
-		delay(1);
-	} while (millis() - start < _timeout);
+		cnc_delay_ms(1);
+	} while (mcu_millis() - start < _timeout);
 
 	// if it hasn't closed, close it forcefully
 	Ethernet.socketClose(_sockindex);

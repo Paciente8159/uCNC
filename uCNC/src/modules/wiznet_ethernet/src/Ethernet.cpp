@@ -30,14 +30,15 @@ int EthernetClass::begin(uint8_t *mac, unsigned long timeout, unsigned long resp
 {
 	static DhcpClass s_dhcp;
 	_dhcp = &s_dhcp;
-
+	
 	// Initialise the basic info
 	if (W5100.init() == 0) return 0;
+	
 	wiznet_spi_start();
 	W5100.setMACAddress(mac);
 	W5100.setIPAddress(IPAddress(0,0,0,0).raw_address());
 	wiznet_spi_stop();
-
+		
 	// Now try to get our config info from a DHCP server
 	int ret = _dhcp->beginWithDHCP(mac, timeout, responseTimeout);
 	if (ret == 1) {
@@ -49,7 +50,7 @@ int EthernetClass::begin(uint8_t *mac, unsigned long timeout, unsigned long resp
 		W5100.setSubnetMask(_dhcp->getSubnetMask().raw_address());
 		wiznet_spi_stop();
 		_dnsServerAddress = _dhcp->getDnsServerIp();
-		socketPortRand(micros());
+		socketPortRand(mcu_micros());
 	}
 	return ret;
 }

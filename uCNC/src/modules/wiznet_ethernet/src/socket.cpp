@@ -103,7 +103,7 @@ closemakesocket:
 makesocket:
 	//Serial.printf("W5000socket %d\n", s);
 	EthernetServer::server_port[s] = 0;
-	delayMicroseconds(250); // TODO: is this needed??
+	mcu_delay_us(250); // TODO: is this needed??
 	W5100.writeSnMR(s, protocol);
 	W5100.writeSnIR(s, 0xFF);
 	if (port > 0) {
@@ -167,7 +167,7 @@ closemakesocket:
 makesocket:
 	//Serial.printf("W5000socket %d\n", s);
 	EthernetServer::server_port[s] = 0;
-	delayMicroseconds(250); // TODO: is this needed??
+	mcu_delay_us(250); // TODO: is this needed??
 	W5100.writeSnMR(s, protocol);
 	W5100.writeSnIR(s, 0xFF);
 	if (port > 0) {

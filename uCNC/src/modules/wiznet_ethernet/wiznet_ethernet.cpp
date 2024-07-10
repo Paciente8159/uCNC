@@ -39,7 +39,8 @@
 uint8_t eth_mac[] = {
 		0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED};
 IPAddress eth_ip(192, 168, 1, 200);
-EthernetServer eth_telnet_server = EthernetServer(TELNET_PORT);
+IPAddress eth_dns(192, 168, 1, 254);
+EthernetServer eth_telnet_server(TELNET_PORT);
 EthernetClient eth_telnet_client;
 
 #ifdef __cplusplus
@@ -54,6 +55,20 @@ extern "C"
 		static uint32_t next_info = 30000;
 		static bool connected = false;
 		uint8_t str[64];
+
+		static bool eth_started = false;
+
+		if (!eth_started)
+		{
+			protocol_send_feedback("Ethernet start DHCP");
+			Ethernet.begin(eth_mac /*eth_ip, eth_dns, eth_dns*/);
+			if (Ethernet.hardwareStatus() == EthernetNoHardware)
+			{
+				protocol_send_feedback("Ethernet shield was not found. :(");
+				return false;
+			}
+			eth_started = true;
+		}
 
 		if (Ethernet.linkStatus() != LinkON)
 		{
@@ -73,9 +88,11 @@ extern "C"
 			protocol_send_feedback("Connected to ETH");
 			sprintf((char *)str, "IP>%s", Ethernet.localIP().toString().c_str());
 			protocol_send_feedback((const char *)str);
+			eth_telnet_server.begin();
 		}
 
-		if (eth_telnet_server.available())
+		EthernetClient client = eth_telnet_server.available();
+		if (client)
 		{
 			if (eth_telnet_client)
 			{
@@ -84,7 +101,7 @@ extern "C"
 					eth_telnet_client.stop();
 				}
 			}
-			eth_telnet_client = eth_telnet_server.available();
+			eth_telnet_client = eth_telnet_server.accept();
 			eth_telnet_client.println("[MSG:New client connected]");
 			return false;
 		}
@@ -153,7 +170,7 @@ extern "C"
 
 	bool eth_loop(void *arg)
 	{
-		eth_telnet_server.statusreport();
+		// eth_telnet_server.statusreport();
 		if (eth_clientok())
 		{
 			while (eth_telnet_client.available() > 0)
@@ -173,12 +190,11 @@ extern "C"
 
 		return EVENT_CONTINUE;
 	}
-
+	CREATE_EVENT_LISTENER(cnc_alarm, eth_loop);
 	CREATE_EVENT_LISTENER(cnc_dotasks, eth_loop);
 
 	DECL_MODULE(wiznet_ethernet)
 	{
-		Ethernet.begin(eth_mac,eth_ip/*, 60000, 60000*/);
 
 		// 		// serial_stream_register(&web_pendant_stream);
 		// 		endpoint_add("/", 0, &web_pendant_request, NULL);
@@ -188,7 +204,7 @@ extern "C"
 		// ADD_EVENT_LISTENER(websocket_client_receive, web_pendant_ws_receive);
 
 		// serial_stream_register(&web_pendant_stream);
-
+		ADD_EVENT_LISTENER(cnc_alarm, eth_loop);
 		ADD_EVENT_LISTENER(cnc_dotasks, eth_loop);
 	}
 
