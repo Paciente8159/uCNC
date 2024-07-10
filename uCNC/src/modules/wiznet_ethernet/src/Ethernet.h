@@ -251,7 +251,7 @@ private:
 };
 
 
-class EthernetServer : public Server {
+class EthernetServer : public Print {
 private:
 	uint16_t _port;
 public:
@@ -263,7 +263,7 @@ public:
 	virtual size_t write(const uint8_t *buf, size_t size);
 	virtual operator bool();
 	using Print::write;
-	//void statusreport();
+	void statusreport();
 
 	// TODO: make private when socket allocation moves to EthernetClass
 	static uint16_t server_port[MAX_SOCK_NUM];

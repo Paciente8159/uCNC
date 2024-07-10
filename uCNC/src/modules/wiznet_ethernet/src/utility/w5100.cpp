@@ -9,18 +9,18 @@
  */
 
 #include <Arduino.h>
-#include "Ethernet.h"
+#include "../Ethernet.h"
 #include "w5100.h"
 
 /******************************
  * µCNC calls to SPI
  *******************************/
-extern "C" void wiznet_spi_config(void);
-extern "C" uint8_t wiznet_spi_transmit(uint8_t* c);
-extern "C" void wiznet_spi_start(void);
-extern "C" void wiznet_spi_stop(void);
-extern "C" void wiznet_cs_select(void);
-extern "C" void wiznet_cs_deselect(void);
+// extern void wiznet_spi_config(void);
+// extern uint8_t wiznet_spi_transmit((uint8_t)uint8_t* c);
+// extern void wiznet_spi_start(void);
+// extern void wiznet_spi_stop(void);
+// extern void wiznet_cs_select(void);
+// extern void wiznet_cs_deselect(void);
 
 /***************************************************/
 /**            Default SS pin setting             **/
@@ -111,7 +111,6 @@ uint8_t W5100Class::init(void)
 	//Serial.println("w5100 init");
 
 	wiznet_spi_config();
-	wiznet_cs_config();
 	wiznet_cs_deselect();
 	wiznet_spi_start();
 
@@ -308,11 +307,11 @@ uint16_t W5100Class::write(uint16_t addr, const uint8_t *buf, uint16_t len)
 	if (chip == 51) {
 		for (uint16_t i=0; i<len; i++) {
 			wiznet_cs_select();
-			wiznet_spi_transmit(0xF0);
-			wiznet_spi_transmit(addr >> 8);
-			wiznet_spi_transmit(addr & 0xFF);
+			wiznet_spi_transmit((uint8_t)0xF0);
+			wiznet_spi_transmit((uint8_t)(addr >> 8));
+			wiznet_spi_transmit((uint8_t)(addr & 0xFF));
 			addr++;
-			wiznet_spi_transmit(buf[i]);
+			wiznet_spi_transmit((uint8_t)buf[i]);
 			wiznet_cs_deselect();
 		}
 	} else if (chip == 52) {
@@ -321,13 +320,13 @@ uint16_t W5100Class::write(uint16_t addr, const uint8_t *buf, uint16_t len)
 		cmd[1] = addr & 0xFF;
 		cmd[2] = ((len >> 8) & 0x7F) | 0x80;
 		cmd[3] = len & 0xFF;
-		wiznet_spi_transmit(cmd, 4);
+		wiznet_spi_transmit_data(cmd, 4);
 #ifdef SPI_HAS_TRANSFER_BUF
-		wiznet_spi_transmit(buf, NULL, len);
+		wiznet_spi_transmit((uint8_t)buf, NULL, len);
 #else
 		// TODO: copy 8 bytes at a time to cmd[] and block transfer
 		for (uint16_t i=0; i < len; i++) {
-			wiznet_spi_transmit(buf[i]);
+			wiznet_spi_transmit((uint8_t)buf[i]);
 		}
 #endif
 		wiznet_cs_deselect();
@@ -375,15 +374,15 @@ uint16_t W5100Class::write(uint16_t addr, const uint8_t *buf, uint16_t len)
 			for (uint8_t i=0; i < len; i++) {
 				cmd[i + 3] = buf[i];
 			}
-			wiznet_spi_transmit(cmd, len + 3);
+			wiznet_spi_transmit_data(cmd, len + 3);
 		} else {
-			wiznet_spi_transmit(cmd, 3);
+			wiznet_spi_transmit_data(cmd, 3);
 #ifdef SPI_HAS_TRANSFER_BUF
-			wiznet_spi_transmit(buf, NULL, len);
+			wiznet_spi_transmit((uint8_t)buf, NULL, len);
 #else
 			// TODO: copy 8 bytes at a time to cmd[] and block transfer
 			for (uint16_t i=0; i < len; i++) {
-				wiznet_spi_transmit(buf[i]);
+				wiznet_spi_transmit((uint8_t)buf[i]);
 			}
 #endif
 		}
@@ -400,9 +399,9 @@ uint16_t W5100Class::read(uint16_t addr, uint8_t *buf, uint16_t len)
 		for (uint16_t i=0; i < len; i++) {
 			wiznet_cs_select();
 			#if 1
-			wiznet_spi_transmit(0x0F);
-			wiznet_spi_transmit(addr >> 8);
-			wiznet_spi_transmit(addr & 0xFF);
+			wiznet_spi_transmit((uint8_t)0x0F);
+			wiznet_spi_transmit((uint8_t)(addr >> 8));
+			wiznet_spi_transmit((uint8_t)(addr & 0xFF));
 			addr++;
 			buf[i] = wiznet_spi_transmit(0);
 			#else
@@ -410,7 +409,7 @@ uint16_t W5100Class::read(uint16_t addr, uint8_t *buf, uint16_t len)
 			cmd[1] = addr >> 8;
 			cmd[2] = addr & 0xFF;
 			cmd[3] = 0;
-			wiznet_spi_transmit(cmd, 4); // TODO: why doesn't this work?
+			wiznet_spi_transmit_data(cmd, 4); // TODO: why doesn't this work?
 			buf[i] = cmd[3];
 			addr++;
 			#endif
@@ -422,9 +421,9 @@ uint16_t W5100Class::read(uint16_t addr, uint8_t *buf, uint16_t len)
 		cmd[1] = addr & 0xFF;
 		cmd[2] = (len >> 8) & 0x7F;
 		cmd[3] = len & 0xFF;
-		wiznet_spi_transmit(cmd, 4);
+		wiznet_spi_transmit_data(cmd, 4);
 		memset(buf, 0, len);
-		wiznet_spi_transmit(buf, len);
+		wiznet_spi_transmit_data(buf, len);
 		wiznet_cs_deselect();
 	} else { // chip == 55
 		wiznet_cs_select();
@@ -466,9 +465,9 @@ uint16_t W5100Class::read(uint16_t addr, uint8_t *buf, uint16_t len)
 			cmd[2] = ((addr >> 6) & 0xE0) | 0x18; // 2K buffers
 			#endif
 		}
-		wiznet_spi_transmit(cmd, 3);
+		wiznet_spi_transmit_data(cmd, 3);
 		memset(buf, 0, len);
-		wiznet_spi_transmit(buf, len);
+		wiznet_spi_transmit_data(buf, len);
 		wiznet_cs_deselect();
 	}
 	return len;

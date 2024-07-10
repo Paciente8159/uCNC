@@ -15,6 +15,8 @@
 #define	W5100_H_INCLUDED
 
 #include <Arduino.h>
+#include "../../wiznet_ethernet.h"
+/*
 #include <SPI.h>
 
 // Safe for all chips
@@ -47,7 +49,7 @@
 #undef SPI_ETHERNET_SETTINGS
 #define SPI_ETHERNET_SETTINGS SPISettings(8000000, MSBFIRST, SPI_MODE0)
 #endif
-
+*/
 
 typedef uint8_t SOCKET;
 

@@ -26,8 +26,6 @@ extern "C"
 
 #include "../../cnc.h"
 #include "../softspi.h"
-#include "../../modules/endpoint.h"
-#include "../../modules/websocket.h"
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -52,6 +50,14 @@ extern "C"
 #if (WIZNET_BUS == WIZNET_HW_SPI)
 #define WIZNET_SPI MCU_SPI
 #endif
+
+void wiznet_spi_config(void);
+uint8_t wiznet_spi_transmit(uint8_t c);
+void wiznet_spi_transmit_data(uint8_t *c, uint16_t len);
+void wiznet_spi_start(void);
+void wiznet_spi_stop(void);
+void wiznet_cs_select(void);
+void wiznet_cs_deselect(void);
 
 #ifdef __cplusplus
 }

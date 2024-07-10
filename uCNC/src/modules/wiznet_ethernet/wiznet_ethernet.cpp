@@ -17,7 +17,6 @@
 */
 
 #include "src/Ethernet.h"
-#include "../../cnc_hal_config_helper.h"
 
 #ifndef TELNET_PORT
 #define TELNET_PORT 23
@@ -37,89 +36,149 @@
 
 // Enter a MAC address and IP address for your controller below.
 // The IP address will be dependent on your local network:
-byte mac[] = {
-  0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED
-};
-IPAddress eth_ip(192, 168, 0, 200);
+uint8_t eth_mac[] = {
+		0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED};
+IPAddress eth_ip(192, 168, 1, 200);
+EthernetServer eth_telnet_server = EthernetServer(TELNET_PORT);
+EthernetClient eth_telnet_client;
 
-// Enter the IP address of the server you're connecting to:
-IPAddress eth_server(1, 1, 1, 1);
-
-// Initialize the Ethernet client library
-// with the IP address and port of the server
-// that you want to connect to (port 23 is default for telnet;
-// if you're using Processing's ChatServer, use port 10002):
-EthernetClient client;
-
+#ifdef __cplusplus
 extern "C"
 {
-#include "../../cnc.h"
-#include "../softspi.h"
-#include "../../modules/endpoint.h"
-#include "../../modules/websocket.h"
-#include <stdint.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <string.h>
-
-#ifndef WIZNET_DRIVER
-#define WIZNET_DRIVER W5500
-#define _WIZCHIP_ WIZNET_DRIVER
 #endif
 
-#define WIZNET_HW_SPI 1
-#define WIZNET_SW_SPI 2
+#include "wiznet_ethernet.h"
 
-#ifndef WIZNET_BUS
-#define WIZNET_BUS WIZNET_HW_SPI
+	bool eth_clientok(void)
+	{
+		static uint32_t next_info = 30000;
+		static bool connected = false;
+		uint8_t str[64];
+
+		if (Ethernet.linkStatus() != LinkON)
+		{
+			connected = false;
+			if (next_info > mcu_millis())
+			{
+				return false;
+			}
+			next_info = mcu_millis() + 30000;
+			protocol_send_feedback("Disconnected from ETH");
+			return false;
+		}
+
+		if (!connected)
+		{
+			connected = true;
+			protocol_send_feedback("Connected to ETH");
+			sprintf((char *)str, "IP>%s", Ethernet.localIP().toString().c_str());
+			protocol_send_feedback((const char *)str);
+		}
+
+		if (eth_telnet_server.available())
+		{
+			if (eth_telnet_client)
+			{
+				if (eth_telnet_client.connected())
+				{
+					eth_telnet_client.stop();
+				}
+			}
+			eth_telnet_client = eth_telnet_server.available();
+			eth_telnet_client.println("[MSG:New client connected]");
+			return false;
+		}
+		else if (eth_telnet_client)
+		{
+			if (eth_telnet_client.connected())
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+#ifndef ETH_TX_BUFFER_SIZE
+#define ETH_TX_BUFFER_SIZE 64
 #endif
+	DECL_BUFFER(uint8_t, eth_rx, RX_BUFFER_SIZE);
+	DECL_BUFFER(uint8_t, eth_tx, ETH_TX_BUFFER_SIZE);
 
-#ifndef WIZNET_CS
-#define WIZNET_CS DOUT28
-#endif
-
-#if (WIZNET_BUS == WIZNET_HW_SPI)
-#define WIZNET_SPI MCU_SPI
-#endif
-
-#if (UCNC_MODULE_VERSION < 10903 || UCNC_MODULE_VERSION > 99999)
-#error "This module is not compatible with the current version of µCNC"
-#endif
-
-	void wiznet_spi_config(void)
+	void eth_flush(void)
 	{
-		softspi_config(WIZNET_SPI, 0, 14000000UL);
+		if (eth_clientok())
+		{
+			while (!BUFFER_EMPTY(eth_tx))
+			{
+				uint8_t tmp[ETH_TX_BUFFER_SIZE + 1];
+				memset(tmp, 0, sizeof(tmp));
+				uint8_t r;
+
+				BUFFER_READ(eth_tx, tmp, ETH_TX_BUFFER_SIZE, r);
+				eth_telnet_client.write(tmp, r);
+			}
+		}
+		else
+		{
+			// no client (discard)
+			BUFFER_CLEAR(eth_tx);
+		}
 	}
 
-	void wiznet_cs_select(void)
+	uint8_t eth_getc(void)
 	{
-		io_clear_output(WIZNET_CS);
+		uint8_t c = 0;
+		BUFFER_DEQUEUE(eth_rx, &c);
+		return c;
 	}
 
-	void wiznet_cs_deselect(void)
+	uint8_t eth_available(void)
 	{
-		io_set_output(WIZNET_CS);
+		return BUFFER_READ_AVAILABLE(eth_rx);
 	}
 
-	uint8_t wiznet_spi_transmit(uint8_t c)
+	void eth_clear(void)
 	{
-		return softspi_xmit(WIZNET_SPI, c);
+		BUFFER_CLEAR(eth_rx);
 	}
 
-	void wiznet_spi_start(void)
+	void eth_putc(uint8_t c)
 	{
-		softspi_start(WIZNET_SPI);
+		while (BUFFER_FULL(eth_tx))
+		{
+			eth_flush();
+		}
+		BUFFER_ENQUEUE(eth_tx, &c);
 	}
 
-	void wiznet_spi_stop(void)
+	bool eth_loop(void *arg)
 	{
-		softspi_stop(WIZNET_SPI);
+		eth_telnet_server.statusreport();
+		if (eth_clientok())
+		{
+			while (eth_telnet_client.available() > 0)
+			{
+				uint8_t c = eth_telnet_client.read();
+				if (mcu_com_rx_cb(c))
+				{
+					if (BUFFER_FULL(eth_rx))
+					{
+						c = OVF;
+					}
+
+					BUFFER_ENQUEUE(eth_rx, &c);
+				}
+			}
+		}
+
+		return EVENT_CONTINUE;
 	}
+
+	CREATE_EVENT_LISTENER(cnc_dotasks, eth_loop);
 
 	DECL_MODULE(wiznet_ethernet)
 	{
-		io_config_output(WIZNET_CS);
-		Ethernet
+		Ethernet.begin(eth_mac,eth_ip/*, 60000, 60000*/);
 
 		// 		// serial_stream_register(&web_pendant_stream);
 		// 		endpoint_add("/", 0, &web_pendant_request, NULL);
@@ -130,6 +189,9 @@ extern "C"
 
 		// serial_stream_register(&web_pendant_stream);
 
-		// ADD_EVENT_LISTENER(cnc_dotasks, web_pendant_status_update);
+		ADD_EVENT_LISTENER(cnc_dotasks, eth_loop);
 	}
+
+#ifdef __cplusplus
 }
+#endif

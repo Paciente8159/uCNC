@@ -104,6 +104,7 @@ extern "C"
 #define SPI_CLK_BIT 18
 #define SPI_SDO_BIT 23
 #define SPI_SDI_BIT 19
+#define SPI_CS_BIT 5
 #define DOUT28_BIT 5
 
 #ifdef __cplusplus
