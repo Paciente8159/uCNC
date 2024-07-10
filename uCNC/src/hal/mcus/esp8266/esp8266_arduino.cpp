@@ -88,31 +88,18 @@ extern "C"
 #include "../../../cnc.h"
 
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
-	uint8_t mcu_custom_grbl_cmd(uint8_t *grbl_cmd_str, uint8_t grbl_cmd_len, uint8_t next_char)
+	bool mcu_custom_grbl_cmd(void *args)
 	{
+		grbl_cmd_args_t *cmd_params = (grbl_cmd_args_t *)args;
 		uint8_t str[64];
-		uint8_t arg[ARG_MAX_LEN];
-		uint8_t has_arg = (next_char == '=');
+		char arg[ARG_MAX_LEN];
+		uint8_t has_arg = (cmd_params->next_char == '=');
 		memset(arg, 0, sizeof(arg));
-		if (has_arg)
-		{
-			uint8_t c = serial_getc();
-			uint8_t i = 0;
-			while (c)
-			{
-				arg[i++] = c;
-				if (i >= ARG_MAX_LEN)
-				{
-					return STATUS_INVALID_STATEMENT;
-				}
-				c = serial_getc();
-			}
-		}
 
 #ifdef ENABLE_WIFI
-		if (!strncmp((const char *)grbl_cmd_str, "WIFI", 4))
+		if (!strncmp((const char *)(cmd_params->cmd), "WIFI", 4))
 		{
-			if (!strcmp((const char *)&grbl_cmd_str[4], "ON"))
+			if (!strcmp((const char *)&(cmd_params->cmd)[4], "ON"))
 			{
 				WiFi.disconnect();
 				switch (wifi_settings.wifi_mode)
@@ -144,22 +131,31 @@ extern "C"
 
 				wifi_settings.wifi_on = 1;
 				settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
-				return STATUS_OK;
+				*(cmd_params->error) = STATUS_OK;
+				return EVENT_HANDLED;
 			}
 
-			if (!strcmp((const char *)&grbl_cmd_str[4], "OFF"))
+			if (!strcmp((const char *)&(cmd_params->cmd)[4], "OFF"))
 			{
 				WiFi.disconnect();
 				wifi_settings.wifi_on = 0;
 				settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
-				return STATUS_OK;
+				*(cmd_params->error) = STATUS_OK;
+				return EVENT_HANDLED;
 			}
 
-			if (!strcmp((const char *)&grbl_cmd_str[4], "SSID"))
+			if (!strcmp((const char *)&(cmd_params->cmd)[4], "SSID"))
 			{
 				if (has_arg)
 				{
-					uint8_t len = strlen((const char *)arg);
+					int8_t len = parser_get_grbl_cmd_arg(arg, ARG_MAX_LEN);
+
+					if (len < 0)
+					{
+						*(cmd_params->error) = STATUS_INVALID_STATEMENT;
+						return EVENT_HANDLED;
+					}
+
 					if (len > WIFI_SSID_MAX_LEN)
 					{
 						protocol_send_feedback((const char *)"WiFi SSID is too long");
@@ -174,10 +170,11 @@ extern "C"
 					sprintf((char *)str, "SSID>%s", wifi_settings.ssid);
 					protocol_send_feedback((const char *)str);
 				}
-				return STATUS_OK;
+				*(cmd_params->error) = STATUS_OK;
+				return EVENT_HANDLED;
 			}
 
-			if (!strcmp((const char *)&grbl_cmd_str[4], "SCAN"))
+			if (!strcmp((const char *)&(cmd_params->cmd)[4], "SCAN"))
 			{
 				// Serial.println("[MSG:Scanning Networks]");
 				protocol_send_feedback((const char *)"Scanning Networks");
@@ -185,8 +182,7 @@ extern "C"
 				if (numSsid == -1)
 				{
 					protocol_send_feedback((const char *)"Failed to scan!");
-					while (true)
-						;
+					return EVENT_HANDLED;
 				}
 
 				// print the list of networks seen:
@@ -199,27 +195,38 @@ extern "C"
 					sprintf((char *)str, "%d) %s\tSignal:  %ddBm", netid, WiFi.SSID(netid).c_str(), WiFi.RSSI(netid));
 					protocol_send_feedback((const char *)str);
 				}
-				return STATUS_OK;
+				*(cmd_params->error) = STATUS_OK;
+				return EVENT_HANDLED;
 			}
 
-			if (!strcmp((const char *)&grbl_cmd_str[4], "SAVE"))
+			if (!strcmp((const char *)&(cmd_params->cmd)[4], "SAVE"))
 			{
 				settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
 				protocol_send_feedback((const char *)"WiFi settings saved");
-				return STATUS_OK;
+				*(cmd_params->error) = STATUS_OK;
+				return EVENT_HANDLED;
 			}
 
-			if (!strcmp((const char *)&grbl_cmd_str[4], "RESET"))
+			if (!strcmp((const char *)&(cmd_params->cmd)[4], "RESET"))
 			{
 				settings_erase(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
 				protocol_send_feedback((const char *)"WiFi settings deleted");
-				return STATUS_OK;
+				*(cmd_params->error) = STATUS_OK;
+				return EVENT_HANDLED;
 			}
 
-			if (!strcmp((const char *)&grbl_cmd_str[4], "MODE"))
+			if (!strcmp((const char *)&(cmd_params->cmd)[4], "MODE"))
 			{
 				if (has_arg)
 				{
+					int8_t len = parser_get_grbl_cmd_arg(arg, ARG_MAX_LEN);
+
+					if (len < 0)
+					{
+						*(cmd_params->error) = STATUS_INVALID_STATEMENT;
+						return EVENT_HANDLED;
+					}
+
 					int mode = atoi((const char *)arg) - 1;
 					if (mode >= 0)
 					{
@@ -243,23 +250,33 @@ extern "C"
 					protocol_send_feedback((const char *)"WiFi mode>AP");
 					break;
 				}
-				return STATUS_OK;
+				*(cmd_params->error) = STATUS_OK;
+				return EVENT_HANDLED;
 			}
 
-			if (!strcmp((const char *)&grbl_cmd_str[4], "PASS") && has_arg)
+			if (!strcmp((const char *)&(cmd_params->cmd)[4], "PASS") && has_arg)
 			{
-				uint8_t len = strlen((const char *)arg);
+				int8_t len = parser_get_grbl_cmd_arg(arg, ARG_MAX_LEN);
+
+				if (len < 0)
+				{
+					*(cmd_params->error) = STATUS_INVALID_STATEMENT;
+					return EVENT_HANDLED;
+				}
+
 				if (len > WIFI_SSID_MAX_LEN)
 				{
 					protocol_send_feedback((const char *)"WiFi pass is too long");
+					return EVENT_HANDLED;
 				}
 				memset(wifi_settings.pass, 0, sizeof(wifi_settings.pass));
 				strcpy((char *)wifi_settings.pass, (const char *)arg);
 				protocol_send_feedback((const char *)"WiFi password modified");
-				return STATUS_OK;
+				*(cmd_params->error) = STATUS_OK;
+				return EVENT_HANDLED;
 			}
 
-			if (!strcmp((const char *)&grbl_cmd_str[4], "IP"))
+			if (!strcmp((const char *)&(cmd_params->cmd)[4], "IP"))
 			{
 				if (wifi_settings.wifi_on)
 				{
@@ -286,12 +303,15 @@ extern "C"
 					protocol_send_feedback((const char *)"WiFi is off");
 				}
 
-				return STATUS_OK;
+				*(cmd_params->error) = STATUS_OK;
+				return EVENT_HANDLED;
 			}
 		}
 #endif
-		return STATUS_INVALID_STATEMENT;
+		return EVENT_CONTINUE;
 	}
+
+	CREATE_EVENT_LISTENER(grbl_cmd, mcu_custom_grbl_cmd);
 #endif
 
 	bool esp8266_wifi_clientok(void)
@@ -780,6 +800,10 @@ extern "C"
 		socket_server.begin();
 		socket_server.onEvent(webSocketEvent);
 #endif
+#endif
+
+#ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
+		ADD_EVENT_LISTENER(grbl_cmd, mcu_custom_grbl_cmd);
 #endif
 	}
 
