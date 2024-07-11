@@ -103,7 +103,7 @@ extern "C"
 			}
 			eth_telnet_client = eth_telnet_server.accept();
 			eth_telnet_client.println("[MSG:New client connected]");
-			return false;
+			return true;
 		}
 		else if (eth_telnet_client)
 		{
@@ -117,15 +117,17 @@ extern "C"
 
 	bool eth_print_info(void *args)
 	{
-		grbl_cmd_args_t *cmd_params = (grbl_cmd_args_t *)args;
-		uint8_t str[64];
-		char arg[ARG_MAX_LEN];
-		uint8_t has_arg = (cmd_params->next_char == '=');
-		memset(arg, 0, sizeof(arg));
+		// grbl_cmd_args_t *cmd_params = (grbl_cmd_args_t *)args;
+		// uint8_t str[64];
+		// char arg[ARG_MAX_LEN];
+		// uint8_t has_arg = (cmd_params->next_char == '=');
+		// memset(arg, 0, sizeof(arg));
 
-		if (!strncmp((const char *)(cmd_params->cmd), "ETH", 4))
-		{
-		}
+		// if (!strncmp((const char *)(cmd_params->cmd), "ETH", 4))
+		// {
+		// }
+
+		return EVENT_CONTINUE;
 	}
 
 #ifndef ETH_TX_BUFFER_SIZE
@@ -217,18 +219,18 @@ extern "C"
 // ADD_EVENT_LISTENER(websocket_client_receive, web_pendant_ws_receive);
 
 // serial_stream_register(&web_pendant_stream);
-#ifdef ENABLE_PARSER_MODULES
+#ifdef ENABLE_MAIN_LOOP_MODULES
 		ADD_EVENT_LISTENER(cnc_alarm, eth_loop);
 		ADD_EVENT_LISTENER(cnc_dotasks, eth_loop);
 #else
 #warning "Main loop extensions are not enabled. Ethernet will not work."
 #endif
 
-#if (defined(ENABLE_PARSER_MODULES) || defined(BOARD_HAS_CUSTOM_SYSTEM_COMMANDS))
-		ADD_EVENT_LISTENER(grbl_cmd, eth_print_info);
-#else
-#warning "Parser extensions are not enabled. Ethernet Grbl commands will not work."
-#endif
+// #if (defined(ENABLE_PARSER_MODULES) || defined(BOARD_HAS_CUSTOM_SYSTEM_COMMANDS))
+// 		ADD_EVENT_LISTENER(grbl_cmd, eth_print_info);
+// #else
+// #warning "Parser extensions are not enabled. Ethernet Grbl commands will not work."
+// #endif
 	}
 
 #ifdef __cplusplus
