@@ -74,8 +74,8 @@ extern "C"
 #define SAFETY_DOOR_BIT 8
 #define SAFETY_DOOR_PORT B
 // Setup probe pin
-#define PROBE_BIT 9
-#define PROBE_PORT B
+// #define PROBE_BIT 9
+// #define PROBE_PORT B
 
 // Enable controls switch interrupt
 #define ESTOP_ISR
