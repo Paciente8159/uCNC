@@ -544,10 +544,6 @@ extern "C"
 
 #endif
 
-#ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
-	uint8_t mcu_custom_grbl_cmd(uint8_t *grbl_cmd_str, uint8_t grbl_cmd_len, uint8_t next_char);
-#endif
-
 	/**
 	 * sends a uint8_t either via uart (hardware, software USB CDC, Wifi or BT)
 	 * can be defined either as a function or a macro call

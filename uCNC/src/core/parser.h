@@ -368,6 +368,18 @@ float user_vars[RS274NGC_MAX_USER_VARS];
 	// event_gcode_after_motion_handler
 	DECL_EVENT_HANDLER(gcode_after_motion);
 
+	// event_parse_token_handler
+	DECL_EVENT_HANDLER(parse_token);
+
+	// event_parser_get_modes_handler
+	DECL_EVENT_HANDLER(parser_get_modes);
+
+	// event_parser_reset_handler
+	DECL_EVENT_HANDLER(parser_reset);
+#endif
+
+#if (defined(ENABLE_PARSER_MODULES)||defined(BOARD_HAS_CUSTOM_SYSTEM_COMMANDS))
+
 	// event_grbl_cmd_handler
 	typedef struct grbl_cmd_args_
 	{
@@ -378,14 +390,7 @@ float user_vars[RS274NGC_MAX_USER_VARS];
 	} grbl_cmd_args_t;
 	DECL_EVENT_HANDLER(grbl_cmd);
 
-	// event_parse_token_handler
-	DECL_EVENT_HANDLER(parse_token);
-
-	// event_parser_get_modes_handler
-	DECL_EVENT_HANDLER(parser_get_modes);
-
-	// event_parser_reset_handler
-	DECL_EVENT_HANDLER(parser_reset);
+	int8_t parser_get_grbl_cmd_arg(char *arg, int8_t max_len);
 #endif
 
 #ifdef __cplusplus
