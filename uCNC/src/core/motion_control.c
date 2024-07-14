@@ -787,7 +787,6 @@ bool mc_home_motion(uint8_t axis_mask, bool is_origin_search, motion_data_t *blo
 
 uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 {
-	float target[AXIS_COUNT];
 	motion_data_t block_data = {0};
 	uint8_t limits_flags;
 	uint8_t restore_step_mode __attribute__((__cleanup__(mc_restore_step_mode))) = itp_set_step_mode(ITP_STEP_MODE_REALTIME);
