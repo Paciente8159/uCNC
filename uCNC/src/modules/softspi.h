@@ -112,7 +112,7 @@ extern "C"
 		}                                                       \
 	}                                                         \
 	bool NAME##_miso(void) { return io_get_input(MISOPIN); }  \
-	__attribute__((used)) softspi_port_t NAME = {.spiconfig = MODE, .spifreq = FREQ, .clk = &NAME##_clk, .mosi = &NAME##_mosi, .miso = &NAME##_miso, .config = &NAME##_config, .start = NULL, .xmit = NULL, , .bulk_xmit = NULL, .stop = NULL};
+	__attribute__((used)) softspi_port_t NAME = {.spiconfig = {.mode = MODE}, .spifreq = FREQ, .clk = &NAME##_clk, .mosi = &NAME##_mosi, .miso = &NAME##_miso, .config = &NAME##_config, .start = NULL, .xmit = NULL, .bulk_xmit = NULL, .stop = NULL};
 
 	void softspi_config(softspi_port_t *port, spi_config_t config, uint32_t frequency);
 	void softspi_start(softspi_port_t *port);
