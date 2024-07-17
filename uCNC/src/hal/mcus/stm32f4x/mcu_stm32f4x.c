@@ -656,6 +656,8 @@ void mcu_init(void)
 																 //    | (SPI_SPEED << 3) | SPI_MODE;
 	mcu_spi_config(SPI_MODE, SPI_FREQ);
 
+	RCC->AHB1ENR |= SPI_DMA_EN;
+
 	SPI_REG->CR1 |= SPI_CR1_SPE;
 #endif
 #ifdef MCU_HAS_I2C
@@ -1030,6 +1032,90 @@ uint8_t mcu_spi_xmit(uint8_t c)
 		;
 	return data;
 }
+
+void mcu_spi_bulk_transfer(void *data, uint16_t datalen, spi_bulk_flags_t flags)
+{
+	// Wait for idle
+	while (!(SPI_REG->SR & SPI_SR_TXE) && !(SPI_REG->SR & SPI_SR_RXNE))
+		;
+	while (SPI_REG->SR & SPI_SR_BSY)
+		;
+
+	while(SPI_DMA_TX_STREAM->CR & DMA_SxCR_EN)
+		; // Wait until stream is available
+
+	// Clear flags
+	SPI_DMA_TX_IFCR |= SPI_DMA_TX_IFCR_MASK;
+
+	SPI_DMA_TX_STREAM->CR =
+		(SPI_DMA_TX_CHANNEL << DMA_SxCR_CHSEL_Pos) | // Select correct channel
+		(0b01 << DMA_SxCR_PL_Pos) |	// Set priority to medium
+		DMA_SxCR_MINC | // Increment memory
+		(0b01 << DMA_SxCR_DIR_Pos); // Memory to peripheral transfer direction
+
+	SPI_DMA_TX_STREAM->PAR = (uint32_t)&SPI_REG->DR;
+	SPI_DMA_TX_STREAM->M0AR = (uint32_t)data;
+
+	SPI_DMA_TX_STREAM->NDTR = datalen;
+
+	SPI_DMA_TX_STREAM->FCR &= ~DMA_SxFCR_DMDIS; // Enable direct mode
+
+	// Enable DMA use for transmition
+	SPI_REG->CR2 |= SPI_CR2_TXDMAEN;
+
+	if(!(flags & SPI_BULK_FLAG_TXONLY)) {
+		while(SPI_DMA_RX_STREAM->CR & DMA_SxCR_EN)
+			; // Wait until stream is available
+
+		// Clear flags
+		SPI_DMA_RX_IFCR |= SPI_DMA_RX_IFCR_MASK;
+
+		SPI_DMA_RX_STREAM->CR =
+			(SPI_DMA_RX_CHANNEL << DMA_SxCR_CHSEL_Pos) | // Select correct channel
+			(0b01 << DMA_SxCR_PL_Pos) | // Set priority to medium
+			DMA_SxCR_MINC | // Increment memory
+			(0b00 << DMA_SxCR_DIR_Pos); // Peripheral to memory transfer direction
+
+		SPI_DMA_RX_STREAM->PAR = (uint32_t)&SPI_REG->DR;
+		SPI_DMA_RX_STREAM->M0AR = (uint32_t)data;
+
+		SPI_DMA_RX_STREAM->NDTR = datalen;
+
+		SPI_DMA_RX_STREAM->FCR &= ~DMA_SxFCR_DMDIS; // Enable direct mode
+
+		// Enable DMA use for reception
+		SPI_REG->CR2 |= SPI_CR2_RXDMAEN;
+	}
+
+	// Start streams
+	SPI_DMA_TX_STREAM->CR |= DMA_SxCR_EN;
+	if(!(flags & SPI_BULK_FLAG_TXONLY))
+		SPI_DMA_RX_STREAM->CR |= DMA_SxCR_EN;
+
+	if(!(flags & SPI_BULK_FLAG_ASYNC)) {
+		// Wait for transfer to complete
+		while(!(SPI_DMA_TX_ISR >> (SPI_DMA_TX_IFR_POS + 5)))
+			;
+		if(!(flags & SPI_BULK_FLAG_TXONLY)) {
+			// Wait for transfer to complete
+			while(!(SPI_DMA_RX_ISR >> (SPI_DMA_RX_IFR_POS + 5)))
+				;
+		}
+
+		// Wait for SPI to be idle
+		while (SPI_REG->SR & SPI_SR_BSY)
+			;
+
+		// Disable DMA use for transmition
+		SPI_REG->CR2 &= ~SPI_CR2_TXDMAEN;
+
+		if(!(flags & SPI_BULK_FLAG_TXONLY)) {
+			// Disable DMA use for reception
+			SPI_REG->CR2 &= ~SPI_CR2_RXDMAEN;
+		}
+	}
+}
+
 #endif
 
 #ifdef MCU_HAS_I2C
