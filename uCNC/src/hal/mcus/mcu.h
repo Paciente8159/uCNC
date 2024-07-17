@@ -499,6 +499,8 @@ extern "C"
 #define SPI_BULK_FLAG_ASYNC (1 << 1) // Transfer data in the background
 typedef uint8_t spi_bulk_flags_t;
 
+typedef void spi_cb_t(void*);
+
 #ifndef mcu_spi_xmit
 	uint8_t mcu_spi_xmit(uint8_t data);
 #endif
@@ -516,7 +518,7 @@ typedef uint8_t spi_bulk_flags_t;
 #endif
 
 #ifndef mcu_spi_bulk_transfer
-	void mcu_spi_bulk_transfer(void *data, uint16_t datalen, spi_bulk_flags_t flags);
+	void mcu_spi_bulk_transfer(void *data, uint16_t datalen, spi_bulk_flags_t flags, spi_cb_t* callback, void* cb_arg);
 #endif
 #endif
 

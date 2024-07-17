@@ -182,6 +182,58 @@ void OTG_FS_IRQHandler(void)
 }
 #endif
 
+#ifdef MCU_HAS_SPI
+static spi_cb_t* spi_bulk_transfer_complete_cb;
+static void* spi_bulk_transfer_complete_cb_arg;
+static bool spi_bulk_transfer_rx_enabled;
+static uint8_t spi_bulk_transfer_parts;
+
+void spi_dma_tc_handler() {
+	++spi_bulk_transfer_parts;
+
+	// Transfer is completed once TX and RX DMA streams signal completion in full-duplex mode
+	// or once the TX stream is complete in TX Only mode
+	if((spi_bulk_transfer_rx_enabled && spi_bulk_transfer_parts >= 2) ||
+		(!spi_bulk_transfer_rx_enabled && spi_bulk_transfer_parts >= 1)) {
+		// Disable DMA use for transmition
+		SPI_REG->CR2 &= ~SPI_CR2_TXDMAEN;
+
+		if(spi_bulk_transfer_rx_enabled) {
+			// Disable DMA use for reception
+			SPI_REG->CR2 &= ~SPI_CR2_RXDMAEN;
+		}
+
+		// Fire the completion callback
+		if(spi_bulk_transfer_complete_cb != 0)
+			spi_bulk_transfer_complete_cb(spi_bulk_transfer_complete_cb_arg);
+	}
+}
+
+void SPI_DMA_TX_IRQHandler(void) {
+	mcu_disable_global_isr();
+	if((SPI_DMA_TX_ISR >> SPI_DMA_TX_IFR_POS) & (1 << 5)) {
+		// Transfer complete flag is set
+		spi_dma_tc_handler();
+		// Clear flag
+		SPI_DMA_TX_IFCR |= (1 << (SPI_DMA_TX_IFR_POS + 5));
+	}
+	NVIC_ClearPendingIRQ(SPI_DMA_TX_IRQn);
+	mcu_enable_global_isr();
+}
+
+void SPI_DMA_RX_IRQHandler(void) {
+	mcu_disable_global_isr();
+	if((SPI_DMA_RX_ISR >> SPI_DMA_RX_IFR_POS) & (1 << 5)) {
+		// Transfer complete flag is set
+		spi_dma_tc_handler();
+		// Clear flag
+		SPI_DMA_RX_IFCR |= (1 << (SPI_DMA_RX_IFR_POS + 5));
+	}
+	NVIC_ClearPendingIRQ(SPI_DMA_RX_IRQn);
+	mcu_enable_global_isr();
+}
+#endif
+
 // define the mcu internal servo variables
 #if SERVOS_MASK > 0
 
@@ -653,12 +705,20 @@ void mcu_init(void)
 	SPI_REG->CR1 = SPI_CR1_SSM		 // software slave management enabled
 								 | SPI_CR1_SSI	 // internal slave select
 								 | SPI_CR1_MSTR; // SPI master mode
-																 //    | (SPI_SPEED << 3) | SPI_MODE;
+
 	mcu_spi_config(SPI_MODE, SPI_FREQ);
 
 	RCC->AHB1ENR |= SPI_DMA_EN;
 
 	SPI_REG->CR1 |= SPI_CR1_SPE;
+
+	NVIC_SetPriority(SPI_DMA_TX_IRQn, 1);
+	NVIC_ClearPendingIRQ(SPI_DMA_TX_IRQn);
+	NVIC_EnableIRQ(SPI_DMA_TX_IRQn);
+
+	NVIC_SetPriority(SPI_DMA_RX_IRQn, 1);
+	NVIC_ClearPendingIRQ(SPI_DMA_RX_IRQn);
+	NVIC_EnableIRQ(SPI_DMA_RX_IRQn);
 #endif
 #ifdef MCU_HAS_I2C
 	RCC->APB1ENR |= I2C_APBEN;
@@ -1033,11 +1093,9 @@ uint8_t mcu_spi_xmit(uint8_t c)
 	return data;
 }
 
-void mcu_spi_bulk_transfer(void *data, uint16_t datalen, spi_bulk_flags_t flags)
+void mcu_spi_bulk_transfer(void *data, uint16_t datalen, spi_bulk_flags_t flags, spi_cb_t* callback, void* cb_arg)
 {
 	// Wait for idle
-	while (!(SPI_REG->SR & SPI_SR_TXE) && !(SPI_REG->SR & SPI_SR_RXNE))
-		;
 	while (SPI_REG->SR & SPI_SR_BSY)
 		;
 
@@ -1052,6 +1110,17 @@ void mcu_spi_bulk_transfer(void *data, uint16_t datalen, spi_bulk_flags_t flags)
 		(0b01 << DMA_SxCR_PL_Pos) |	// Set priority to medium
 		DMA_SxCR_MINC | // Increment memory
 		(0b01 << DMA_SxCR_DIR_Pos); // Memory to peripheral transfer direction
+
+	if(flags & SPI_BULK_FLAG_ASYNC) {
+		// Enable transfer complete interrupt
+		SPI_DMA_TX_STREAM->CR |= DMA_SxCR_TCIE;
+
+		// Setup arguments for interrupt handlers
+		spi_bulk_transfer_complete_cb = callback;
+		spi_bulk_transfer_complete_cb_arg = cb_arg;
+		spi_bulk_transfer_rx_enabled = !(flags & SPI_BULK_FLAG_TXONLY);
+		spi_bulk_transfer_parts = 0;
+	}
 
 	SPI_DMA_TX_STREAM->PAR = (uint32_t)&SPI_REG->DR;
 	SPI_DMA_TX_STREAM->M0AR = (uint32_t)data;
@@ -1075,6 +1144,11 @@ void mcu_spi_bulk_transfer(void *data, uint16_t datalen, spi_bulk_flags_t flags)
 			(0b01 << DMA_SxCR_PL_Pos) | // Set priority to medium
 			DMA_SxCR_MINC | // Increment memory
 			(0b00 << DMA_SxCR_DIR_Pos); // Peripheral to memory transfer direction
+
+		if(flags & SPI_BULK_FLAG_ASYNC) {
+			// Enable transfer complete interrupt
+			SPI_DMA_RX_STREAM->CR |= DMA_SxCR_TCIE;
+		}
 
 		SPI_DMA_RX_STREAM->PAR = (uint32_t)&SPI_REG->DR;
 		SPI_DMA_RX_STREAM->M0AR = (uint32_t)data;
