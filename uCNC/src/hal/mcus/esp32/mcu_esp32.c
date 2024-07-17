@@ -643,7 +643,9 @@ void mcu_init(void)
 		.intr_flags = 0};
 	// Initialize the SPI bus
 	spi_bus_initialize(SPI_PORT, &spiconf, SPI_DMA_DISABLED);
-	mcu_spi_config((spi_config_t)SPI_MODE, SPI_FREQ);
+	spi_config_t spi_conf = {0};
+	spi_conf.mode = SPI_MODE;
+	mcu_spi_config(spi_conf, SPI_FREQ);
 #endif
 
 #ifdef MCU_HAS_I2C

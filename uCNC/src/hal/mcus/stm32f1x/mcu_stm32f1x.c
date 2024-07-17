@@ -651,7 +651,9 @@ void mcu_init(void)
 								 | SPI_CR1_SSI	 // internal slave select
 								 | SPI_CR1_MSTR; // SPI master mode
 																 //    | (SPI_SPEED << 3) | SPI_MODE;
-	mcu_spi_config(SPI_MODE, SPI_FREQ);
+	spi_config_t spi_conf = {0};
+	spi_conf.mode = SPI_MODE;
+	mcu_spi_config(spi_conf, SPI_FREQ);
 	SPI_REG->CR1 |= SPI_CR1_SPE;
 #endif
 
