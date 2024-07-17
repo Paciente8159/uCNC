@@ -18,7 +18,7 @@
 #include "softspi.h"
 
 #ifdef MCU_HAS_SPI
-softspi_port_t __attribute__((used)) MCU_SPI_PORT = {.spiconfig = 0, .spifreq = SPI_FREQ, .clk = NULL, .mosi = NULL, .miso = NULL, .config = mcu_spi_config, .start = mcu_spi_start, .xmit = mcu_spi_xmit, .stop = mcu_spi_stop};
+softspi_port_t __attribute__((used)) MCU_SPI_PORT = {.spiconfig = {0}, .spifreq = SPI_FREQ, .clk = NULL, .mosi = NULL, .miso = NULL, .config = mcu_spi_config, .start = mcu_spi_start, .xmit = mcu_spi_xmit, .stop = mcu_spi_stop};
 #endif
 
 void softspi_config(softspi_port_t *port, spi_config_t config, uint32_t frequency)
@@ -29,7 +29,7 @@ void softspi_config(softspi_port_t *port, spi_config_t config, uint32_t frequenc
 	if (!port)
 	{
 #ifdef MCU_HAS_SPI
-		mcu_spi_config(mode, frequency);
+		mcu_spi_config(config, frequency);
 #endif
 	}
 

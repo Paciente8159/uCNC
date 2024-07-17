@@ -69,7 +69,7 @@ extern "C"
 		void (*mosi)(bool);
 		bool (*miso)(void);
 		void (*config)(spi_config_t, uint32_t);
-		void (*start)(uint8_t, uint32_t, uint8_t);
+		void (*start)(spi_config_t, uint32_t);
 		uint8_t (*xmit)(uint8_t);
 		bool (*bulk_xmit)(uint8_t*, uint16_t);
 		void (*stop)(void);

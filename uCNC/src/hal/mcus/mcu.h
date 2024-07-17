@@ -508,7 +508,7 @@ typedef union{
 #endif
 
 #ifndef mcu_spi_bulk_transfer
-	void mcu_spi_bulk_transfer(uint8_t *data, uint16_t datalen);
+	bool mcu_spi_bulk_transfer(uint8_t *data, uint16_t datalen);
 #endif
 
 #ifndef mcu_spi_start

@@ -848,6 +848,10 @@ void __attribute__((weak)) mcu_spi_start(spi_config_t config, uint32_t frequency
 	mcu_spi_config(config, frequency);
 }
 
+bool __attribute__((weak)) mcu_spi_bulk_transfer(uint8_t *data, uint16_t datalen){
+	return false;
+}
+
 void __attribute__((weak)) mcu_spi_stop(void)
 {
 }
