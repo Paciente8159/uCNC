@@ -146,7 +146,7 @@ uint16_t softspi_xmit16(softspi_port_t *port, uint16_t c)
 	return c;
 }
 
-bool softspi_bulk_xmit(softspi_port_t *port, uint8_t *data, uint16_t len)
+void softspi_bulk_xmit(softspi_port_t *port, uint8_t *data, uint16_t len)
 {
 	// if no port is defined defaults to SPI hardware if available
 	if (!port)

@@ -119,9 +119,8 @@ extern "C"
 	uint8_t softspi_xmit(softspi_port_t *port, uint8_t c);
 	uint16_t softspi_xmit16(softspi_port_t *port, uint16_t c);
 	// sends bulk transmition
-	// returns true if busy
 	// software emulated SPI sends data for a maximum BULK_SPI_TIMEOUT before recalling the main loop
-	bool softspi_bulk_xmit(softspi_port_t *port, uint8_t* data, uint16_t len);
+	void softspi_bulk_xmit(softspi_port_t *port, uint8_t* data, uint16_t len);
 	void softspi_stop(softspi_port_t *port);
 
 #ifdef MCU_HAS_SPI
