@@ -340,7 +340,7 @@ void mcu_init(void)
 #endif
 
 #ifdef MCU_HAS_SPI
-	mcu_spi_config(SPI_FREQ, SPI_MODE);
+	mcu_spi_config(SPI_MODE, SPI_FREQ);
 #endif
 
 #ifdef MCU_HAS_I2C

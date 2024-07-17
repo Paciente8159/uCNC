@@ -842,10 +842,10 @@ void __attribute__((weak)) mcu_i2c_slave_cb(uint8_t *data, uint8_t *datalen)
 #endif
 
 #if (defined(MCU_HAS_SPI))
-void __attribute__((weak)) mcu_spi_start(uint8_t mode, uint32_t frequency)
+void __attribute__((weak)) mcu_spi_start(spi_config_t config, uint32_t frequency)
 {
 	// reapply port settings if port is shared
-	mcu_spi_config(mode, frequency);
+	mcu_spi_config(config, frequency);
 }
 
 void __attribute__((weak)) mcu_spi_stop(void)

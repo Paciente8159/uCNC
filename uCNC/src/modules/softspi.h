@@ -56,25 +56,31 @@ extern "C"
 	 * 	myspiport.myspiport->endTransaction();
 	 * }
 	 *
-	 * extern "C" softspi_port_t __attribute__((used)) ARDUINO_SPI = {.spimode = 0, .spifreq = 20000000UL, .clk = NULL, .mosi = NULL, .miso = NULL, .config = myspiport_config, .start = myspiport_start, .xmit = myspiport_xmit, .stop = myspiport_stop};
+	 * extern "C" softspi_port_t __attribute__((used)) ARDUINO_SPI = {.spiconfig = 0, .spifreq = 20000000UL, .clk = NULL, .mosi = NULL, .miso = NULL, .config = myspiport_config, .start = myspiport_start, .xmit = myspiport_xmit, .stop = myspiport_stop};
 	 * #endif
 	 *
 	 */
 
 	typedef struct softspi_port_
 	{
-		uint8_t spimode;
+		spi_config_t spiconfig;
 		uint32_t spifreq;
 		void (*clk)(bool);
 		void (*mosi)(bool);
 		bool (*miso)(void);
-		void (*config)(uint8_t, uint32_t);
-		void (*start)(uint8_t, uint32_t);
+		void (*config)(spi_config_t, uint32_t);
+		void (*start)(uint8_t, uint32_t, uint8_t);
 		uint8_t (*xmit)(uint8_t);
+		bool (*bulk_xmit)(uint8_t*, uint16_t);
 		void (*stop)(void);
 	} softspi_port_t;
 
 #define SPI_DELAY(FREQ) (CLAMP(1, (2500000UL / FREQ), 0xFFFF) - 1)
+
+// the maximum amount of time in milliseconds it will transmit data without running the main loop
+#ifndef BULK_SPI_TIMEOUT
+#define BULK_SPI_TIMEOUT 5
+#endif
 
 #define SOFTSPI(NAME, FREQ, MODE, MOSIPIN, MISOPIN, CLKPIN) \
 	void NAME##_config(uint8_t mode, uint32_t frequency)      \
@@ -106,12 +112,16 @@ extern "C"
 		}                                                       \
 	}                                                         \
 	bool NAME##_miso(void) { return io_get_input(MISOPIN); }  \
-	__attribute__((used)) softspi_port_t NAME = {.spimode = MODE, .spifreq = FREQ, .clk = &NAME##_clk, .mosi = &NAME##_mosi, .miso = &NAME##_miso, .config = &NAME##_config, .start = NULL, .xmit = NULL, .stop = NULL};
+	__attribute__((used)) softspi_port_t NAME = {.spiconfig = MODE, .spifreq = FREQ, .clk = &NAME##_clk, .mosi = &NAME##_mosi, .miso = &NAME##_miso, .config = &NAME##_config, .start = NULL, .xmit = NULL, , .bulk_xmit = NULL, .stop = NULL};
 
-	void softspi_config(softspi_port_t *port, uint8_t mode, uint32_t frequency);
+	void softspi_config(softspi_port_t *port, spi_config_t config, uint32_t frequency);
 	void softspi_start(softspi_port_t *port);
 	uint8_t softspi_xmit(softspi_port_t *port, uint8_t c);
 	uint16_t softspi_xmit16(softspi_port_t *port, uint16_t c);
+	// sends bulk transmition
+	// returns true if busy
+	// software emulated SPI sends data for a maximum BULK_SPI_TIMEOUT before recalling the main loop
+	bool softspi_bulk_xmit(softspi_port_t *port, uint8_t* data, uint16_t len);
 	void softspi_stop(softspi_port_t *port);
 
 #ifdef MCU_HAS_SPI

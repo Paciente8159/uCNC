@@ -990,14 +990,13 @@ void mcu_eeprom_flush(void)
 }
 
 #ifdef MCU_HAS_SPI
-void mcu_spi_config(uint8_t mode, uint32_t frequency)
+void mcu_spi_config(spi_config_t config, uint32_t frequency)
 {
 	uint8_t div = SPI_COUNTER_DIV(frequency);
 	div += (div & 0x01) ? 1 : 0;
-	mode = CLAMP(0, mode, 3);
 	SPI_REG->CR1 &= ~(1 << 1); // disable SSP
 	SPI_REG->CPSR = div;			 // internal divider
-	SPI_REG->CR0 |= mode << 6; // clock phase
+	SPI_REG->CR0 |= config.mode << 6; // clock phase
 	SPI_REG->CR1 |= 1 << 1;		 // enable SSP
 }
 

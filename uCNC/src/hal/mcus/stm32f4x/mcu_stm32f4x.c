@@ -972,9 +972,8 @@ void mcu_eeprom_flush()
 }
 
 #ifdef MCU_HAS_SPI
-void mcu_spi_config(uint8_t mode, uint32_t frequency)
+void mcu_spi_config(spi_config_t config, uint32_t frequency)
 {
-	mode = CLAMP(0, mode, 4);
 	uint8_t div = (uint8_t)(SPI_CLOCK / frequency);
 
 	uint8_t speed;
@@ -1015,7 +1014,7 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 	SPI_REG->CR1 &= SPI_CR1_SPE;
 	// clear speed and mode
 	SPI_REG->CR1 &= 0x3B;
-	SPI_REG->CR1 |= (speed << 3) | mode;
+	SPI_REG->CR1 |= (speed << 3) | config.mode;
 	// enable SPI
 	SPI_REG->CR1 |= SPI_CR1_SPE;
 }

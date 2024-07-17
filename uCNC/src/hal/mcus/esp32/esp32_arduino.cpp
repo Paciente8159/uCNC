@@ -1174,7 +1174,7 @@ uint32_t esp32spifreq = SPI_FREQ;
 uint8_t esp32spimode = SPI_MODE0;
 extern "C"
 {
-	void mcu_spi_config(uint8_t mode, uint32_t freq)
+	void mcu_spi_config(spi_config_t config, uint32_t freq)
 	{
 		if (esp32spi != NULL)
 		{
@@ -1189,7 +1189,7 @@ extern "C"
 #endif
 		esp32spi->begin(SPI_CLK_BIT, SPI_SDI_BIT, SPI_SDO_BIT, SPI_CS_BIT);
 		esp32spifreq = freq;
-		esp32spimode = mode;
+		esp32spimode = config.mode;
 	}
 
 	uint8_t mcu_spi_xmit(uint8_t data)
@@ -1198,9 +1198,9 @@ extern "C"
 		return data;
 	}
 
-	void mcu_spi_start(uint8_t mode, uint32_t frequency)
+	void mcu_spi_start(spi_config_t config, uint32_t frequency)
 	{
-		esp32spi->beginTransaction(SPISettings(esp32spifreq, MSBFIRST, esp32spimode));
+		esp32spi->beginTransaction(SPISettings(esp32spifreq, MSBFIRST, config.mode));
 	}
 
 	void mcu_spi_stop(void)
