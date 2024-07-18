@@ -3543,10 +3543,6 @@ extern "C"
 #define SPI_DMA_TX_IFCR_MASK (0b111101 << SPI_DMA_TX_IFR_POS)
 #define SPI_DMA_RX_IFCR_MASK (0b111101 << SPI_DMA_RX_IFR_POS)
 
-#define SPI_DMA_TX_IRQHandler __helper__(__helper__(DMA, SPI_DMA_CONTROLLER_NUM, _Stream), SPI_DMA_TX_STREAM_NUM, _IRQHandler)
-#define SPI_DMA_RX_IRQHandler __helper__(__helper__(DMA, SPI_DMA_CONTROLLER_NUM, _Stream), SPI_DMA_RX_STREAM_NUM, _IRQHandler)
-#define SPI_DMA_TX_IRQn __helper__(__helper__(DMA, SPI_DMA_CONTROLLER_NUM, _Stream), SPI_DMA_TX_STREAM_NUM, _IRQn)
-#define SPI_DMA_RX_IRQn __helper__(__helper__(DMA, SPI_DMA_CONTROLLER_NUM, _Stream), SPI_DMA_RX_STREAM_NUM, _IRQn)
 #endif
 
 // I2C
