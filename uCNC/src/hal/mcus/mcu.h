@@ -494,14 +494,18 @@ extern "C"
 	 * */
 	void mcu_eeprom_flush(void);
 
-typedef union{
-	uint8_t flags;
-	struct {
-		uint8_t mode:3;
-		uint8_t reserved:2;
-		uint8_t enable_dma:1;
-	};
-} spi_config_t;
+	typedef union
+	{
+		uint8_t flags;
+		struct
+		{
+			uint8_t mode : 3;
+			uint8_t : 1; // reserved for bit order
+			uint8_t enable_dma : 1;
+			uint8_t : 3; // reserved
+		};
+	} spi_config_t;
+
 #ifdef MCU_HAS_SPI
 #ifndef mcu_spi_xmit
 	uint8_t mcu_spi_xmit(uint8_t data);

@@ -61,17 +61,27 @@ extern "C"
 	 *
 	 */
 
+	typedef union
+	{
+		spi_config_t spi;
+		struct
+		{
+			uint8_t : 7;
+			uint8_t locked : 1;
+		};
+	} softspi_config_t;
+
 	typedef struct softspi_port_
 	{
-		spi_config_t spiconfig;
+		softspi_config_t spiconfig;
 		uint32_t spifreq;
 		void (*clk)(bool);
 		void (*mosi)(bool);
 		bool (*miso)(void);
-		void (*config)(spi_config_t, uint32_t);
-		void (*start)(spi_config_t, uint32_t);
+		void (*config)(softspi_config_t, uint32_t);
+		void (*start)(softspi_config_t, uint32_t);
 		uint8_t (*xmit)(uint8_t);
-		bool (*bulk_xmit)(uint8_t*, uint16_t);
+		bool (*bulk_xmit)(uint8_t *, uint16_t);
 		void (*stop)(void);
 	} softspi_port_t;
 
@@ -114,13 +124,13 @@ extern "C"
 	bool NAME##_miso(void) { return io_get_input(MISOPIN); }  \
 	__attribute__((used)) softspi_port_t NAME = {.spiconfig = {.mode = MODE}, .spifreq = FREQ, .clk = &NAME##_clk, .mosi = &NAME##_mosi, .miso = &NAME##_miso, .config = &NAME##_config, .start = NULL, .xmit = NULL, .bulk_xmit = NULL, .stop = NULL};
 
-	void softspi_config(softspi_port_t *port, spi_config_t config, uint32_t frequency);
+	void softspi_config(softspi_port_t *port, softspi_config_t config, uint32_t frequency);
 	void softspi_start(softspi_port_t *port);
 	uint8_t softspi_xmit(softspi_port_t *port, uint8_t c);
 	uint16_t softspi_xmit16(softspi_port_t *port, uint16_t c);
 	// sends bulk transmition
 	// software emulated SPI sends data for a maximum BULK_SPI_TIMEOUT before recalling the main loop
-	void softspi_bulk_xmit(softspi_port_t *port, uint8_t* data, uint16_t len);
+	void softspi_bulk_xmit(softspi_port_t *port, uint8_t *data, uint16_t len);
 	void softspi_stop(softspi_port_t *port);
 
 #ifdef MCU_HAS_SPI

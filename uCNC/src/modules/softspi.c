@@ -21,7 +21,7 @@
 softspi_port_t __attribute__((used)) MCU_SPI_PORT = {.spiconfig = {0}, .spifreq = SPI_FREQ, .clk = NULL, .mosi = NULL, .miso = NULL, .config = mcu_spi_config, .start = mcu_spi_start, .xmit = mcu_spi_xmit, .stop = mcu_spi_stop};
 #endif
 
-void softspi_config(softspi_port_t *port, spi_config_t config, uint32_t frequency)
+void softspi_config(softspi_port_t *port, softspi_config_t config, uint32_t frequency)
 {
 	port->spiconfig = config;
 	port->spifreq = frequency;
@@ -29,7 +29,7 @@ void softspi_config(softspi_port_t *port, spi_config_t config, uint32_t frequenc
 	if (!port)
 	{
 #ifdef MCU_HAS_SPI
-		mcu_spi_config(config, frequency);
+		mcu_spi_config(config.spi, frequency);
 #endif
 	}
 
@@ -58,8 +58,8 @@ uint8_t softspi_xmit(softspi_port_t *port, uint8_t c)
 		return port->xmit(c);
 	}
 
-	bool clk = (bool)(port->spiconfig.mode & 0x2);
-	bool on_down = (bool)(port->spiconfig.mode & 0x1);
+	bool clk = (bool)(port->spiconfig.spi.mode & 0x2);
+	bool on_down = (bool)(port->spiconfig.spi.mode & 0x1);
 	uint16_t delay = (uint16_t)SPI_DELAY(port->spifreq);
 
 	port->clk(clk);
@@ -113,8 +113,8 @@ uint16_t softspi_xmit16(softspi_port_t *port, uint16_t c)
 		return (res | port->xmit((uint8_t)(0xFF & c)));
 	}
 
-	bool clk = (bool)(port->spiconfig.mode & 0x2);
-	bool on_down = (bool)(port->spiconfig.mode & 0x1);
+	bool clk = (bool)(port->spiconfig.spi.mode & 0x2);
+	bool on_down = (bool)(port->spiconfig.spi.mode & 0x1);
 	uint16_t delay = (uint16_t)SPI_DELAY(port->spifreq);
 
 	port->clk(clk);
@@ -186,8 +186,16 @@ void softspi_bulk_xmit(softspi_port_t *port, uint8_t *data, uint16_t len)
 void softspi_start(softspi_port_t *port)
 {
 	// if port with custom method execute it
+	// usually HW ports
 	if (port->start)
 	{
+		// mutual exclusive access
+		while (port->spiconfig.locked)
+		{
+			cnc_dotasks();
+		}
+		port->spiconfig.locked = 1;
+
 		port->start(port->spiconfig, port->spifreq);
 	}
 }
@@ -199,4 +207,6 @@ void softspi_stop(softspi_port_t *port)
 	{
 		port->stop();
 	}
+	// unlocks resource
+	port->spiconfig.locked = 0;
 }
