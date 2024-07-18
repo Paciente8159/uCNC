@@ -980,6 +980,7 @@ typedef enum spi_port_state_enum {
 	SPI_TRANSMITTING = 2,
 } spi_port_state_t;
 static spi_port_state_t spi_port_state = SPI_UNKNOWN;
+static bool spi_enable_dma = false;
 
 void mcu_spi_config(uint8_t mode, uint32_t frequency)
 {
@@ -1029,6 +1030,8 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 	SPI_REG->CR1 |= SPI_CR1_SPE;
 
 	spi_port_state = SPI_UNKNOWN;
+	// TODO: Assign this to the configured value in mcu_spi_config
+	spi_enable_dma = false;
 }
 
 uint8_t mcu_spi_xmit(uint8_t c)
@@ -1043,6 +1046,13 @@ uint8_t mcu_spi_xmit(uint8_t c)
 	return data;
 }
 
+#ifndef BULK_SPI_TIMEOUT
+#define BULK_SPI_TIMEOUT 5
+#endif
+
+static uint8_t* spi_partial_transfer_ptr = 0;
+static uint16_t spi_partial_transfer_len = 0;
+
 /*
  * Performs a bulk SPI transfer
  * Returns:
@@ -1051,6 +1061,29 @@ uint8_t mcu_spi_xmit(uint8_t c)
  */
 bool mcu_spi_bulk_transfer(uint8_t *data, uint16_t datalen)
 {
+	if(!spi_enable_dma)
+	{
+		// Bulk transfer without DMA
+		if(!spi_partial_transfer_ptr)
+		{
+			spi_partial_transfer_ptr = data;
+			spi_partial_transfer_len = datalen;
+		}
+		uint32_t timeout = BULK_SPI_TIMEOUT + mcu_millis();
+		while(timeout < mcu_millis())
+		{
+			*spi_partial_transfer_ptr = mcu_spi_xmit(*spi_partial_transfer_ptr);
+			++spi_partial_transfer_ptr;
+			--spi_partial_transfer_len;
+			if(spi_partial_transfer_len == 0)
+			{
+				spi_partial_transfer_ptr = 0;
+				return false;
+			}
+		}
+		return true;
+	}
+
 	if(spi_port_state == SPI_TRANSMITTING)
 	{
 		// Wait for transfers to complete
