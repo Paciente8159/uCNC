@@ -168,6 +168,7 @@ void softspi_bulk_xmit(softspi_port_t *port, uint8_t *data, uint16_t len)
 		{
 			cnc_dotasks();
 		}
+		return;
 	}
 
 	uint32_t timeout = BULK_SPI_TIMEOUT + mcu_millis();

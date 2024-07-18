@@ -849,6 +849,18 @@ void __attribute__((weak)) mcu_spi_start(spi_config_t config, uint32_t frequency
 }
 
 bool __attribute__((weak)) mcu_spi_bulk_transfer(uint8_t *data, uint16_t datalen){
+	uint32_t timeout = mcu_millis() + (1000/INTERPOLATOR_FREQ);
+	while (datalen--)
+	{
+		*data = mcu_spi_xmit(*data);
+		data++;
+		if (timeout < mcu_millis())
+		{
+			timeout = mcu_millis() + (1000/INTERPOLATOR_FREQ);
+			cnc_dotasks();
+		}
+	}
+
 	return false;
 }
 
