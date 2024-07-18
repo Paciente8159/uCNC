@@ -495,12 +495,6 @@ extern "C"
 	void mcu_eeprom_flush(void);
 
 #ifdef MCU_HAS_SPI
-#define SPI_BULK_FLAG_TXONLY (1 << 0) // Do not receive data from the peripheral
-#define SPI_BULK_FLAG_ASYNC (1 << 1) // Transfer data in the background
-typedef uint8_t spi_bulk_flags_t;
-
-typedef void spi_cb_t(void*);
-
 #ifndef mcu_spi_xmit
 	uint8_t mcu_spi_xmit(uint8_t data);
 #endif
@@ -515,10 +509,6 @@ typedef void spi_cb_t(void*);
 
 #ifndef mcu_spi_config
 	void mcu_spi_config(uint8_t mode, uint32_t frequency);
-#endif
-
-#ifndef mcu_spi_bulk_transfer
-	void mcu_spi_bulk_transfer(void *data, uint16_t datalen, spi_bulk_flags_t flags, spi_cb_t* callback, void* cb_arg);
 #endif
 #endif
 
