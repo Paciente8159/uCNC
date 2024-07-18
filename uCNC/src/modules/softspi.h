@@ -92,37 +92,37 @@ extern "C"
 #define BULK_SPI_TIMEOUT 5
 #endif
 
-#define SOFTSPI(NAME, FREQ, MODE, MOSIPIN, MISOPIN, CLKPIN) \
-	void NAME##_config(uint8_t mode, uint32_t frequency)      \
-	{                                                         \
-		io_config_output(CLKPIN);                               \
-		io_config_output(MOSIPIN);                              \
-		io_config_input(MISOPIN);                               \
-	}                                                         \
-	void NAME##_clk(bool state)                               \
-	{                                                         \
-		if (state)                                              \
-		{                                                       \
-			io_set_output(CLKPIN);                                \
-		}                                                       \
-		else                                                    \
-		{                                                       \
-			io_clear_output(CLKPIN);                              \
-		}                                                       \
-	}                                                         \
-	void NAME##_mosi(bool state)                              \
-	{                                                         \
-		if (state)                                              \
-		{                                                       \
-			io_set_output(MOSIPIN);                               \
-		}                                                       \
-		else                                                    \
-		{                                                       \
-			io_clear_output(MOSIPIN);                             \
-		}                                                       \
-	}                                                         \
-	bool NAME##_miso(void) { return io_get_input(MISOPIN); }  \
-	__attribute__((used)) softspi_port_t NAME = {.spiconfig = {.mode = MODE}, .spifreq = FREQ, .clk = &NAME##_clk, .mosi = &NAME##_mosi, .miso = &NAME##_miso, .config = &NAME##_config, .start = NULL, .xmit = NULL, .bulk_xmit = NULL, .stop = NULL};
+#define SOFTSPI(NAME, FREQ, MODE, MOSIPIN, MISOPIN, CLKPIN)     \
+	void NAME##_config(softspi_config_t mode, uint32_t frequency) \
+	{                                                             \
+		io_config_output(CLKPIN);                                   \
+		io_config_output(MOSIPIN);                                  \
+		io_config_input(MISOPIN);                                   \
+	}                                                             \
+	void NAME##_clk(bool state)                                   \
+	{                                                             \
+		if (state)                                                  \
+		{                                                           \
+			io_set_output(CLKPIN);                                    \
+		}                                                           \
+		else                                                        \
+		{                                                           \
+			io_clear_output(CLKPIN);                                  \
+		}                                                           \
+	}                                                             \
+	void NAME##_mosi(bool state)                                  \
+	{                                                             \
+		if (state)                                                  \
+		{                                                           \
+			io_set_output(MOSIPIN);                                   \
+		}                                                           \
+		else                                                        \
+		{                                                           \
+			io_clear_output(MOSIPIN);                                 \
+		}                                                           \
+	}                                                             \
+	bool NAME##_miso(void) { return io_get_input(MISOPIN); }      \
+	__attribute__((used)) softspi_port_t NAME = {.spiconfig = {.spi.mode = MODE}, .spifreq = FREQ, .clk = &NAME##_clk, .mosi = &NAME##_mosi, .miso = &NAME##_miso, .config = &NAME##_config, .start = NULL, .xmit = NULL, .bulk_xmit = NULL, .stop = NULL};
 
 	void softspi_config(softspi_port_t *port, softspi_config_t config, uint32_t frequency);
 	void softspi_start(softspi_port_t *port);
