@@ -89,7 +89,7 @@ extern "C"
 
 // the maximum amount of time in milliseconds it will transmit data without running the main loop
 #ifndef BULK_SPI_TIMEOUT
-#define BULK_SPI_TIMEOUT 5
+#define BULK_SPI_TIMEOUT (1000/INTERPOLATOR_FREQ)
 #endif
 
 #define SOFTSPI(NAME, FREQ, MODE, MOSIPIN, MISOPIN, CLKPIN)     \
