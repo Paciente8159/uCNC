@@ -652,6 +652,9 @@ void mcu_init(void)
 								 | SPI_CR1_MSTR; // SPI master mode
 																 //    | (SPI_SPEED << 3) | SPI_MODE;
 	mcu_spi_config(SPI_MODE, SPI_FREQ);
+
+	RCC->AHBENR |= SPI_DMA_EN;
+
 	SPI_REG->CR1 |= SPI_CR1_SPE;
 #endif
 
@@ -949,6 +952,13 @@ void mcu_eeprom_flush()
 }
 
 #ifdef MCU_HAS_SPI
+typedef enum spi_port_state_enum {
+	SPI_UNKNOWN = 0,
+	SPI_IDLE = 1,
+	SPI_TRANSMITTING = 2,
+} spi_port_state_t;
+static spi_port_state_t spi_port_state = SPI_UNKNOWN;
+
 void mcu_spi_config(uint8_t mode, uint32_t frequency)
 {
 	mode = CLAMP(0, mode, 4);
@@ -995,6 +1005,8 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 	SPI_REG->CR1 |= (speed << 3) | mode;
 	// enable SPI
 	SPI_REG->CR1 |= SPI_CR1_SPE;
+
+	spi_port_state = SPI_UNKNOWN;
 }
 
 uint8_t mcu_spi_xmit(uint8_t c)
@@ -1005,7 +1017,90 @@ uint8_t mcu_spi_xmit(uint8_t c)
 	uint8_t data = SPI_REG->DR;
 	while (SPI1->SR & SPI_SR_BSY)
 		;
+	spi_port_state = SPI_IDLE;
 	return data;
+}
+
+bool mcu_spi_bulk_transfer(uint8_t *data, uint16_t datalen)
+{
+	if(spi_port_state == SPI_TRANSMITTING)
+	{
+		// Wait for transfers to complete
+		if(!(SPI_DMA_CONTROLLER->ISR >> (SPI_DMA_TX_IFR_POS + 5)) ||
+		   !(SPI_DMA_CONTROLLER->ISR >> (SPI_DMA_RX_IFR_POS + 5)))
+			return true;
+
+		// SPI hardware still transmitting the last byte
+		if(SPI_REG->SR & SPI_SR_BSY)
+			return true;
+
+		// Disable DMA use
+		SPI_REG->CR2 &= ~(SPI_CR2_TXDMAEN | SPI_CR2_RXDMAEN);
+		// Disable channels
+		SPI_DMA_TX_CHANNEL->CCR &= ~DMA_CCR_EN;
+		SPI_DMA_RX_CHANNEL->CCR &= ~DMA_CCR_EN;
+
+		// Transfer finished
+		spi_port_state = SPI_IDLE;
+		return false;
+	}
+
+	if(spi_port_state != SPI_IDLE)
+	{
+		// Wait for idle
+		if(SPI_REG->SR & SPI_SR_BSY)
+			return true;
+		spi_port_state = SPI_IDLE;
+	}
+
+	// Wait until streams are available
+	if((SPI_DMA_TX_CHANNEL->CCR & DMA_CCR_EN) || (SPI_DMA_RX_CHANNEL->CCR & DMA_CCR_EN))
+		return true;
+
+	/***     Setup Transmit DMA     ***/
+
+	// Clear flags
+	SPI_DMA_CONTROLLER->IFCR |= SPI_DMA_TX_IFCR_MASK;
+
+	SPI_DMA_TX_CHANNEL->CCR =
+		(0b01 << DMA_CCR_PL_Pos) | // Priority medium
+		DMA_CCR_MINC | // Increment memory
+		DMA_CCR_DIR; // Memory to peripheral
+
+	SPI_DMA_TX_CHANNEL->CPAR = (uint32_t)&SPI_REG->DR;
+	SPI_DMA_TX_CHANNEL->CMAR = (uint32_t)data;
+
+	SPI_DMA_TX_CHANNEL->CNDTR = datalen;
+
+	// Enable DMA use for transmission
+	SPI_REG->CR2 |= SPI_CR2_TXDMAEN;
+
+	/***     Setup Receive DMA     ***/
+
+	// Clear flags
+	SPI_DMA_CONTROLLER->IFCR |= SPI_DMA_RX_IFCR_MASK;
+
+	SPI_DMA_RX_CHANNEL->CCR =
+		(0b01 << DMA_CCR_PL_Pos) | // Priority medium
+		DMA_CCR_MINC; // Increment memory
+
+	SPI_DMA_RX_CHANNEL->CPAR = (uint32_t)&SPI_REG->DR;
+	SPI_DMA_RX_CHANNEL->CMAR = (uint32_t)data;
+
+	SPI_DMA_RX_CHANNEL->CNDTR = datalen;
+
+	// Enable DMA use for reception
+	SPI_REG->CR2 |= SPI_CR2_RXDMAEN;
+
+	/***     DMA Setup Complete     ***/
+
+	// Start streams
+	SPI_DMA_TX_CHANNEL->CCR |= DMA_CCR_EN;
+	SPI_DMA_RX_CHANNEL->CCR |= DMA_CCR_EN;
+
+	// Transmission started
+	spi_port_state = SPI_TRANSMITTING;
+	return true;
 }
 #endif
 
