@@ -1146,6 +1146,7 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 	mcu_spi_conf.clock_speed_hz = frequency;
 	mcu_spi_conf.spics_io_num = -1;
 	mcu_spi_conf.queue_size = 1;
+	mcu_spi_conf.mode = mode;
 
 	spi_bus_add_device(SPI_PORT, &mcu_spi_conf, &mcu_spi_handle);
 }
