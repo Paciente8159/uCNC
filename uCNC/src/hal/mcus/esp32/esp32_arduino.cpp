@@ -1201,9 +1201,9 @@ extern "C"
 		esp32spi->beginTransaction(SPISettings(frequency, MSBFIRST, config.mode));
 	}
 
-	bool mcu_spi_bulk_transfer(uint8_t *data, uint16_t datalen)
+	bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 	{
-		esp32spi->transferBytes(data, data, datalen);
+		esp32spi->transferBytes(out, in, len);
 		return false;
 	}
 

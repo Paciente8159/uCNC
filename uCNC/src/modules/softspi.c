@@ -146,13 +146,13 @@ uint16_t softspi_xmit16(softspi_port_t *port, uint16_t c)
 	return c;
 }
 
-void softspi_bulk_xmit(softspi_port_t *port, uint8_t *data, uint16_t len)
+void softspi_bulk_xmit(softspi_port_t *port, const uint8_t *out, uint8_t *in, uint16_t len)
 {
 	// if no port is defined defaults to SPI hardware if available
 	if (!port)
 	{
 #ifdef MCU_HAS_SPI
-		while (mcu_spi_bulk_transfer(data, len))
+		while (mcu_spi_bulk_transfer(out, in, len))
 		{
 			cnc_dotasks();
 		}
@@ -164,7 +164,7 @@ void softspi_bulk_xmit(softspi_port_t *port, uint8_t *data, uint16_t len)
 	// if port with custom method execute it
 	if (port->bulk_xmit)
 	{
-		while (port->bulk_xmit(data, len))
+		while (port->bulk_xmit(out, in, len))
 		{
 			cnc_dotasks();
 		}
@@ -174,8 +174,12 @@ void softspi_bulk_xmit(softspi_port_t *port, uint8_t *data, uint16_t len)
 	uint32_t timeout = BULK_SPI_TIMEOUT + mcu_millis();
 	while (len--)
 	{
-		softspi_xmit(port, *data);
-		data++;
+		uint8_t c = softspi_xmit(port, *out++);
+		if (in)
+		{
+			*in++ = c;
+		}
+
 		if (timeout < mcu_millis())
 		{
 			timeout = BULK_SPI_TIMEOUT + mcu_millis();

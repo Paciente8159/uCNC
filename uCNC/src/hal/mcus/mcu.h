@@ -512,7 +512,7 @@ extern "C"
 #endif
 
 #ifndef mcu_spi_bulk_transfer
-	bool mcu_spi_bulk_transfer(uint8_t *data, uint16_t datalen);
+	bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len);
 #endif
 
 #ifndef mcu_spi_start

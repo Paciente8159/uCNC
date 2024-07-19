@@ -850,35 +850,42 @@ void __attribute__((weak)) mcu_spi_start(spi_config_t config, uint32_t frequency
 
 // the maximum amount of time in milliseconds it will transmit data without running the main loop
 #ifndef BULK_SPI_TIMEOUT
-#define BULK_SPI_TIMEOUT (1000/INTERPOLATOR_FREQ)
+#define BULK_SPI_TIMEOUT (1000 / INTERPOLATOR_FREQ)
 #endif
 
-bool __attribute__((weak)) mcu_spi_bulk_transfer(uint8_t *data, uint16_t datalen)
+bool __attribute__((weak)) mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 {
-	static uint8_t *mcu_spi_bulk_data_ptr = 0;
-	static uint16_t mcu_spi_bulk_data_len = 0;
+	static uint16_t data_offset = 0;
+	uint16_t offset = data_offset;
+	uint8_t *o = out;
+	uint8_t *i = in;
 
-	if (mcu_spi_bulk_data_ptr)
+	if (offset)
 	{
-		data = mcu_spi_bulk_data_ptr;
-		datalen = mcu_spi_bulk_data_len;
+		o = &out[offset];
+		if (in)
+		{
+			i = &in[offset];
+		}
 	}
 
 	uint32_t timeout = BULK_SPI_TIMEOUT + mcu_millis();
 	while (timeout < mcu_millis())
 	{
-		*data = mcu_spi_xmit(*data);
-		data++;
-		datalen--;
-		if (!datalen)
+		uint8_t c = mcu_spi_xmit(*o++);
+		if(in)
 		{
-			mcu_spi_bulk_data_ptr = 0;
+			*i++ = c;
+		}
+		offset++;
+		if (offset == len)
+		{
+			data_offset = 0;
 			return false;
 		}
 	}
 
-	mcu_spi_bulk_data_ptr = data;
-	mcu_spi_bulk_data_len = datalen;
+	data_offset = offset;
 	return true;
 }
 

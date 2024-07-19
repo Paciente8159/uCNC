@@ -990,8 +990,8 @@ extern "C"
 		SPI.beginTransaction(SPISettings(freq, MSBFIRST, config.mode));
 	}
 
-	bool mcu_spi_bulk_transfer(uint8_t *data, uint16_t datalen){
-		SPI.transferBytes(data, data, datalen);
+	bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len){
+		SPI.transferBytes(out, int, len);
 	}
 
 	void mcu_spi_end(void)

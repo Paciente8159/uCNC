@@ -1066,11 +1066,13 @@ void DMA_IRQHandler(void)
 	}
 }
 
-bool mcu_spi_bulk_transfer(uint8_t *data, uint16_t len)
+bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 {
 	static bool is_running = false;
 	static uint16_t tx_offset = 0;
 	static uint16_t rx_offset = 0;
+	uint8_t is_done = (in) ? SPI_DONE : SPI_TX_DONE;
+
 	if (is_running)
 	{
 		// refill the buffers
@@ -1078,31 +1080,36 @@ bool mcu_spi_bulk_transfer(uint8_t *data, uint16_t len)
 		{
 			// Read from RX buffer
 			uint16_t offset = rx_offset;
-			uint8_t *ptr = &data[offset];
-			while ((SPI_REG->SR & SSP_SR_RNE) && (offset != len))
-			{
-				*data = SPI_REG->DR;
-				data++;
-				offset++;
-			}
+			uint8_t *ptr;
 
-			rx_offset = offset;
-			spi_transfer_done |= (offset != len) ? 0 : SPI_RX_DONE;
+			if (in)
+			{
+				ptr = &in[offset];
+				while ((SPI_REG->SR & SSP_SR_RNE) && (offset != len))
+				{
+					*ptr = SPI_REG->DR;
+					ptr++;
+					offset++;
+				}
+
+				rx_offset = offset;
+				spi_transfer_done |= (offset != len) ? 0 : SPI_RX_DONE;
+			}
 
 			// Fill TX buffer
 			offset = tx_offset;
-			ptr = &data[offset];
+			ptr = &out[offset];
 			while ((SPI_REG->SR & SSP_SR_TNF) && (offset != len))
 			{
-				SPI_REG->DR = *data;
-				data++;
+				SPI_REG->DR = *ptr;
+				ptr++;
 				offset++;
 			}
 			tx_offset = offset;
 			spi_transfer_done |= (offset != len) ? 0 : SPI_TX_DONE;
 		}
 
-		if (spi_transfer_done == SPI_DONE)
+		if ((spi_transfer_done & SPI_DONE) == is_done)
 		{
 			tx_offset = 0;
 			rx_offset = 0;
@@ -1117,7 +1124,7 @@ bool mcu_spi_bulk_transfer(uint8_t *data, uint16_t len)
 		{
 			GPDMA_Channel_CFG_Type GPDMACfg;
 			GPDMACfg.ChannelNum = SPI_DMA_CHANNEL;
-			GPDMACfg.SrcMemAddr = (uint32_t)data;
+			GPDMACfg.SrcMemAddr = (uint32_t)out;
 			GPDMACfg.DstMemAddr = 0;
 			GPDMACfg.TransferSize = len;
 			GPDMACfg.TransferWidth = GPDMA_WIDTH_BYTE;
@@ -1126,24 +1133,26 @@ bool mcu_spi_bulk_transfer(uint8_t *data, uint16_t len)
 			GPDMACfg.DMALLI = 0;
 			GPDMACfg.TransferType = GPDMA_TRANSFERTYPE_M2P;
 			GPDMA_Setup(&GPDMACfg);
-
-			// Configure the DMA channel for SSP RX
-			GPDMACfg.ChannelNum = SPI_DMA_CHANNEL + 1;
-			GPDMACfg.SrcMemAddr = 0;
-			GPDMACfg.DstMemAddr = (uint32_t)data;
-			GPDMACfg.TransferSize = len;
-			GPDMACfg.TransferWidth = GPDMA_WIDTH_BYTE;
-			GPDMACfg.SrcConn = SPI_DMA_RX_DEST;
-			GPDMACfg.DstConn = 0;
-			GPDMACfg.DMALLI = 0;
-			GPDMACfg.TransferType = GPDMA_TRANSFERTYPE_P2M;
-			GPDMA_Setup(&GPDMACfg);
-
 			// Enable DMA channels
 			GPDMA_ChannelCmd(SPI_DMA_CHANNEL, ENABLE);
-			GPDMA_ChannelCmd(SPI_DMA_CHANNEL + 1, ENABLE);
+
+			if (in)
+			{ // Configure the DMA channel for SSP RX
+				GPDMACfg.ChannelNum = SPI_DMA_CHANNEL + 1;
+				GPDMACfg.SrcMemAddr = 0;
+				GPDMACfg.DstMemAddr = (uint32_t)in;
+				GPDMACfg.TransferSize = len;
+				GPDMACfg.TransferWidth = GPDMA_WIDTH_BYTE;
+				GPDMACfg.SrcConn = SPI_DMA_RX_DEST;
+				GPDMACfg.DstConn = 0;
+				GPDMACfg.DMALLI = 0;
+				GPDMACfg.TransferType = GPDMA_TRANSFERTYPE_P2M;
+				GPDMA_Setup(&GPDMACfg);
+				GPDMA_ChannelCmd(SPI_DMA_CHANNEL + 1, ENABLE);
+				SSP_DMACmd(SPI_REG, SSP_DMA_RX, ENABLE);
+			}
+
 			SSP_DMACmd(SPI_REG, SSP_DMA_TX, ENABLE);
-			SSP_DMACmd(SPI_REG, SSP_DMA_RX, ENABLE);
 			return true;
 		}
 		else
@@ -1153,25 +1162,31 @@ bool mcu_spi_bulk_transfer(uint8_t *data, uint16_t len)
 			uint16_t offset = 0;
 			while ((SPI_REG->SR & SSP_SR_TNF) && (offset != len))
 			{
-				SPI_REG->DR = *data;
-				data++;
+				SPI_REG->DR = *out;
+				out++;
 				offset++;
 			}
 			tx_offset = offset;
 			spi_transfer_done |= (offset != len) ? 0 : SPI_TX_DONE;
 
 			// then check the RX buffer
-			offset = 0;
-			while ((SPI_REG->SR & SSP_SR_RNE) && (offset != len))
+			if (in)
 			{
-				*data = SPI_REG->DR;
-				data++;
-				offset++;
+				offset = 0;
+				while ((SPI_REG->SR & SSP_SR_RNE) && (offset != len))
+				{
+					*in = SPI_REG->DR;
+					in++;
+					offset++;
+				}
+
+				rx_offset = offset;
+				spi_transfer_done |= (offset != len) ? 0 : SPI_RX_DONE;
 			}
 
-			rx_offset = offset;
-			spi_transfer_done |= (offset != len) ? 0 : SPI_RX_DONE;
-			if (spi_transfer_done == SPI_DONE)
+
+
+			if ((spi_transfer_done & SPI_DONE) == is_done)
 			{
 				tx_offset = 0;
 				rx_offset = 0;
@@ -1180,7 +1195,7 @@ bool mcu_spi_bulk_transfer(uint8_t *data, uint16_t len)
 			}
 		}
 	}
-	
+
 	return true;
 }
 

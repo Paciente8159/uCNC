@@ -81,7 +81,7 @@ extern "C"
 		void (*config)(spi_config_t, uint32_t);
 		void (*start)(spi_config_t, uint32_t);
 		uint8_t (*xmit)(uint8_t);
-		bool (*bulk_xmit)(uint8_t *, uint16_t);
+		bool (*bulk_xmit)(const uint8_t *, uint8_t *, uint16_t);
 		void (*stop)(void);
 	} softspi_port_t;
 
@@ -130,7 +130,7 @@ extern "C"
 	uint16_t softspi_xmit16(softspi_port_t *port, uint16_t c);
 	// sends bulk transmition
 	// software emulated SPI sends data for a maximum BULK_SPI_TIMEOUT before recalling the main loop
-	void softspi_bulk_xmit(softspi_port_t *port, uint8_t *data, uint16_t len);
+	void softspi_bulk_xmit(softspi_port_t *port, const uint8_t *out, uint8_t *in, uint16_t len);
 	void softspi_stop(softspi_port_t *port);
 
 #ifdef MCU_HAS_SPI

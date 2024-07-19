@@ -1187,9 +1187,10 @@ void mcu_spi_start(spi_config_t config, uint32_t frequency)
 
 #ifndef mcu_spi_bulk_transfer
 // data buffer for normal or DMA
-bool mcu_spi_bulk_transfer(uint8_t *data, uint16_t datalen)
+bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 {
-	static void *spi_data_buffer = NULL;
+	static void *o = NULL;
+	static void *i = NULL;
 	static bool is_running = false;
 	spi_transaction_t *ret_trans;
 	// check transfer state
@@ -1201,8 +1202,12 @@ bool mcu_spi_bulk_transfer(uint8_t *data, uint16_t datalen)
 			if (spi_dma_enabled)
 			{
 				// copy back memory from DMA
-				memcpy(data, spi_data_buffer, datalen);
-				heap_caps_free(spi_data_buffer);
+				if (in)
+				{
+					memcpy(in, i, len);
+					heap_caps_free(i);
+				}
+				heap_caps_free(o);
 			}
 
 			is_running = false;
@@ -1216,19 +1221,34 @@ bool mcu_spi_bulk_transfer(uint8_t *data, uint16_t datalen)
 		if (spi_dma_enabled)
 		{
 			// DMA requires 4byte aligned transfers
-			uint16_t len = (((datalen >> 2) + ((datalen & 0x03) ? 1 : 0)) << 2);
-			spi_data_buffer = heap_caps_malloc(len, MALLOC_CAP_DMA);
-			memcpy(spi_data_buffer, data, datalen);
+			uint16_t l = (((len >> 2) + ((len & 0x03) ? 1 : 0)) << 2);
+			o = heap_caps_malloc(l, MALLOC_CAP_DMA);
+			memcpy(o, out, len);
+			if (in)
+			{
+				i = heap_caps_malloc(l, MALLOC_CAP_DMA);
+				memset(i, 0x00, l);
+			}
 		}
 		else
 		{
-			spi_data_buffer = data;
+			o = out;
+			if (in)
+			{
+				i = in;
+			}
 		}
 
 		spi_transaction_t t = {
-				.length = datalen * 8, // Length in bits
-				.tx_buffer = spi_data_buffer,
-				.rx_buffer = spi_data_buffer};
+				.length = len * 8, // Length in bits
+				.tx_buffer = o,
+				.rxlength = 0 // this deafults to length
+		};
+		
+		if (in)
+		{
+			t.rx_buffer = i;
+		}
 
 		spi_device_queue_trans(mcu_spi_handle, &t, portMAX_DELAY);
 		return true;
