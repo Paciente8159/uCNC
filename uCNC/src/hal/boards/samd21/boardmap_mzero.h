@@ -145,6 +145,13 @@ extern "C"
 	// #define DIN31_BIT 22
 	// #define DIN31_PORT A
 
+// #define SPI_CLK_PORT A
+// #define SPI_CLK_BIT 17
+// #define SPI_SDI_PORT A
+// #define SPI_SDI_BIT 19
+// #define SPI_SDO_PORT A
+// #define SPI_SDO_BIT 18
+
 #define ONESHOT_TIMER 2
 
 #ifdef __cplusplus

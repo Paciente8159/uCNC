@@ -642,7 +642,9 @@ void mcu_init(void)
 	mcu_config_input_af(SPI_SDI);
 	mcu_config_output_af(SPI_CLK, GPIO_OUTALT_PP_50MHZ);
 	mcu_config_output_af(SPI_SDO, GPIO_OUTALT_PP_50MHZ);
+#if ASSERT_PIN_IO(SPI_CS)
 	mcu_config_output_af(SPI_CS, GPIO_OUTALT_PP_50MHZ);
+#endif
 #ifdef SPI_REMAP
 	AFIO->MAPR |= SPI_REMAP;
 #endif
