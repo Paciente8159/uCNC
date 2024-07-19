@@ -1181,7 +1181,6 @@ void mcu_spi_start(spi_config_t config, uint32_t frequency)
 	}
 
 	spi_dma_enabled = config.enable_dma;
-
 	spi_bus_add_device(SPI_PORT, &mcu_spi_conf, &mcu_spi_handle);
 }
 #endif

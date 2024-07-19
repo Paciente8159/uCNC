@@ -6,6 +6,25 @@
 
 # Changelog
 
+## [1.9.4] - 19-04-2024
+
+[@patryk3211](https://github.com/patryk3211) - fixed STM32Fx boards SPI implementation (#699)
+
+### Added
+
+- added HAL control access to the SPI CS pin to avoid having to waste a DOUT pin to control it. (#704)
+
+### Changed
+
+- modified flags for ESP32 to force Arduino SPI version (some boards seem to have problems with the SDK version) (#695)
+- modified/merged entry point of user and architecture/board custom Grbl/System commands. This also fixed an issue that made impossible to pass arguments to user commands when the board had custom commands, since the buffer was parsed before command was evaluated for execution. (#696)
+
+### Fixed
+
+- fixed STM32Fx boards compilation errors is probe pin was undefined (#698)
+- fixed STM32Fx boards SPI implementation (#699)
+- fixed ESP32 boards SPI frequency/mode configuration (#703)
+
 ## [1.9.3] - 07-04-2024
 
 [@patryk3211](https://github.com/patryk3211) - fixed homing pulloff fail alarm code (#689) and 2 phase homing cycle (#690)

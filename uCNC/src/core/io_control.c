@@ -1263,6 +1263,11 @@ void io_set_pinvalue(uint8_t pin, uint8_t value)
 			io_set_output(DOUT31);
 			break;
 #endif
+#if ASSERT_PIN(SPI_CS)
+		case SPI_CS:
+			io_set_output(SPI_CS);
+			break;
+#endif
 		}
 	}
 	else
@@ -1538,6 +1543,11 @@ void io_set_pinvalue(uint8_t pin, uint8_t value)
 #if ASSERT_PIN(DOUT31)
 		case DOUT31:
 			io_clear_output(DOUT31);
+			break;
+#endif
+#if ASSERT_PIN(SPI_CS)
+		case SPI_CS:
+			io_clear_output(SPI_CS);
 			break;
 #endif
 		}
