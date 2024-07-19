@@ -982,12 +982,16 @@ extern "C"
 
 	void mcu_spi_config(spi_config_t config, uint32_t freq)
 	{
-		esp8266_spi_init(freq, config.mode);
+		esp8266_spi_init(freq, config);
 	}
 
 	void mcu_spi_start(spi_config_t config, uint32_t freq)
 	{
-		SPI.beginTransaction(SPISettings(frequency, MSBFIRST, config.mode));
+		SPI.beginTransaction(SPISettings(freq, MSBFIRST, config.mode));
+	}
+
+	bool mcu_spi_bulk_transfer(uint8_t *data, uint16_t datalen){
+		SPI.transferBytes(data, data, datalen);
 	}
 
 	void mcu_spi_end(void)

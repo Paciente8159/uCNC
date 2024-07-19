@@ -875,7 +875,7 @@ extern "C"
 #endif
 
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
-ADD_EVENT_LISTENER(grbl_cmd, mcu_custom_grbl_cmd);
+		ADD_EVENT_LISTENER(grbl_cmd, mcu_custom_grbl_cmd);
 #endif
 	}
 
@@ -1201,6 +1201,12 @@ extern "C"
 	void mcu_spi_start(spi_config_t config, uint32_t frequency)
 	{
 		esp32spi->beginTransaction(SPISettings(esp32spifreq, MSBFIRST, config.mode));
+	}
+
+	bool mcu_spi_bulk_transfer(uint8_t *data, uint16_t datalen)
+	{
+		esp32spi->transferBytes(data, data, datalen);
+		return false;
 	}
 
 	void mcu_spi_stop(void)
