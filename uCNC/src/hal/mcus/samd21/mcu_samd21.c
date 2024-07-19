@@ -18,6 +18,7 @@
 */
 
 #include "../../../cnc.h"
+#include "samd21/include/component/dmac.h"
 
 #if (MCU == MCU_SAMD21)
 #include "core_cm0plus.h"
@@ -619,6 +620,77 @@ void mcu_rtc_init()
 	SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk | SysTick_CTRL_ENABLE_Msk;
 }
 
+#ifdef MCU_HAS_DMA
+static uint16_t mcu_dma_channel_availability = (1 << DMA_CHANNEL_COUNT) - 1;
+static DmacDescriptor mcu_dma_descriptor_sram[DMA_CHANNEL_COUNT];
+static DmacDescriptor mcu_dma_write_back_sram[DMA_CHANNEL_COUNT];
+
+void mcu_dma_config()
+{
+	PM->AHBMASK.reg |= PM_AHBMASK_DMAC;
+	DMAC->CTRL.bit.SWRST = 1;
+	while(DMAC->CTRL.bit.SWRST)
+		;
+
+	// Enable all levels of priority to be processed
+	DMAC->CTRL.reg |= DMAC_CTRL_LVLEN(0b1111);
+	// Make all memory access low priority
+	DMAC->QOSCTRL.reg =
+		DMAC_QOSCTRL_DQOS(1) |
+		DMAC_QOSCTRL_FQOS(1) |
+		DMAC_QOSCTRL_WRBQOS(1);
+	// Enable round-robin arbitration for all levels of priority
+	DMAC->PRICTRL0.reg =
+		DMAC_PRICTRL0_RRLVLEN0 |
+		DMAC_PRICTRL0_RRLVLEN1 |
+		DMAC_PRICTRL0_RRLVLEN2 |
+		DMAC_PRICTRL0_RRLVLEN3;
+
+  // Set descriptor SRAM areas
+  DMAC->BASEADDR.reg = (uint32_t)mcu_dma_descriptor_sram;
+  DMAC->WRBADDR.reg = (uint32_t)mcu_dma_write_back_sram;
+
+	// Enable DMA
+	DMAC->CTRL.bit.DMAENABLE = 1;
+}
+
+/**
+ * Allocates DMA channels,
+ * returns false if requested channel count is not available
+ * */
+bool mcu_dma_allocate_channels(uint8_t channel_count, uint8_t* channels)
+{
+	uint8_t last_channel = 0;
+	for(uint8_t i = 0; i < channel_count; ++i) {
+		channels[i] = 0xFF;
+		while(last_channel < DMA_CHANNEL_COUNT) {
+			if(mcu_dma_channel_availability & (1 << last_channel))
+			{
+				// Channel available
+				channels[i] = last_channel;
+				break;
+			}
+			++last_channel;
+		}
+		if(channels[i] == 0xFF)
+			return false;
+	}
+
+	// Mark channels as used
+	for(uint8_t i = 0; i < channel_count; ++i)
+		mcu_dma_channel_availability &= ~(1 << channels[i]);
+	return true;
+}
+
+/**
+ * Frees a previously allocated DMA channel
+ */
+void mcu_dma_free_channel(uint8_t channel_id)
+{
+  mcu_dma_channel_availability |= (1 << channel_id);
+}
+#endif
+
 /**
  * initializes the mcu
  * this function needs to:
@@ -667,6 +739,10 @@ void mcu_init(void)
 	mcu_config_altfunc(SPI_CLK);
 	mcu_config_altfunc(SPI_SDO);
 	mcu_config_altfunc(SPI_SDI);
+	
+	NVIC_SetPriority(SPI_IRQ, 10);
+	NVIC_ClearPendingIRQ(SPI_IRQ);
+	NVIC_EnableIRQ(SPI_IRQ);
 
 	SPICOM->SPI.CTRLA.bit.ENABLE = 1;
 	while (SPICOM->SPI.SYNCBUSY.bit.ENABLE)
@@ -675,6 +751,9 @@ void mcu_init(void)
 #endif
 #ifdef MCU_HAS_I2C
 	mcu_i2c_config(I2C_FREQ);
+#endif
+#ifdef MCU_HAS_DMA
+	mcu_dma_config();
 #endif
 	mcu_enable_global_isr();
 }
@@ -1300,6 +1379,20 @@ void mcu_eeprom_flush(void)
 }
 
 #ifdef MCU_HAS_SPI
+typedef enum spi_port_state_enum {
+	SPI_UNKNOWN = 0,
+	SPI_IDLE = 1,
+	SPI_TRANSMITTING = 2,
+	SPI_TRANSMIT_FINISHED = 3,
+} spi_port_state_t;
+
+static spi_port_state_t spi_port_state = SPI_UNKNOWN;
+static bool spi_enable_dma = false;
+static uint8_t spi_dma_channels[2];
+static uint8_t *spi_tx_buffer;
+static uint8_t *spi_rx_buffer;
+static uint16_t spi_tx_length;
+
 void mcu_spi_config(uint8_t mode, uint32_t frequency)
 {
 	mode = CLAMP(0, mode, 4);
@@ -1314,6 +1407,70 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 	SPICOM->SPI.CTRLA.bit.ENABLE = 1;
 	while (SPICOM->SPI.SYNCBUSY.bit.ENABLE)
 		;
+
+	spi_port_state = SPI_UNKNOWN;
+	// TODO: Set to correct value from config struct
+	spi_enable_dma = false;
+}
+
+void mcu_spi_start(uint8_t mode, uint32_t frequency)
+{
+	mcu_spi_config(mode, frequency);
+
+	if(spi_enable_dma)
+	{
+		// Block until channels are allocated
+		while(mcu_dma_allocate_channels(2, spi_dma_channels))
+			cnc_dotasks();
+
+		// Prepare transmission channel
+		uint8_t ch_tx = spi_dma_channels[0];
+		// Select channel
+		DMAC->CHID.reg = ch_tx;
+		DMAC->CHCTRLB.reg =
+			DMAC_CHCTRLB_TRIGACT_BEAT |
+			DMAC_CHCTRLB_TRIGSRC(SPI_DMA_TRIGSRC_TX);
+
+		// Disable interrupts
+		DMAC->CHINTENCLR.reg = 0b111;
+		// Clear interrupt flags
+		DMAC->CHINTFLAG.reg = 0b111;
+
+		// Setup first descriptor
+		DmacDescriptor* tx_desc = mcu_dma_descriptor_sram + ch_tx;
+		tx_desc->BTCTRL.reg = 0;
+		tx_desc->BTCTRL.bit.SRCINC = 1;
+		tx_desc->BTCTRL.bit.VALID = 1;
+		tx_desc->DSTADDR.reg = (uint32_t)&SPICOM->SPI.DATA;
+		tx_desc->DESCADDR.reg = 0;
+
+		// Prepare reception channel
+		uint8_t ch_rx = spi_dma_channels[1];
+		// Select channel
+		DMAC->CHID.reg = ch_rx;
+		DMAC->CHCTRLB.reg =
+			DMAC_CHCTRLB_TRIGACT_BEAT |
+			DMAC_CHCTRLB_TRIGSRC(SPI_DMA_TRIGSRC_RX);
+
+		// Disable interrupts
+		DMAC->CHINTENCLR.reg = 0b111;
+		// Clear interrupt flags
+		DMAC->CHINTFLAG.reg = 0b111;
+		
+		DmacDescriptor* rx_desc = mcu_dma_descriptor_sram + ch_rx;
+		rx_desc->BTCTRL.reg = 0;
+		rx_desc->BTCTRL.bit.DSTINC = 1;
+		rx_desc->BTCTRL.bit.VALID = 1;
+		rx_desc->SRCADDR.reg = (uint32_t)&SPICOM->SPI.DATA;
+		rx_desc->DESCADDR.reg = 0;
+	}
+
+	spi_port_state = SPI_IDLE;
+}
+
+void mcu_spi_stop() {
+	mcu_dma_free_channel(spi_dma_channels[0]);
+	mcu_dma_free_channel(spi_dma_channels[1]);
 }
 
 uint8_t mcu_spi_xmit(uint8_t c)
@@ -1324,6 +1481,88 @@ uint8_t mcu_spi_xmit(uint8_t c)
 	while (SPICOM->SPI.INTFLAG.bit.RXC == 0)
 		;
 	return (uint8_t)SPICOM->SPI.DATA.reg;
+}
+
+void SPI_ISR()
+{
+	if(SPICOM->SPI.INTFLAG.bit.DRE && spi_tx_length-- > 0)
+	{
+		// Send next byte
+		SPICOM->SPI.DATA.reg = *spi_tx_buffer++;
+	}
+	if(SPICOM->SPI.INTFLAG.bit.RXC)
+	{
+		// Store received byte
+		*spi_rx_buffer++ = SPICOM->SPI.DATA.reg;
+	}
+	if(spi_tx_length == 0 && spi_rx_buffer == spi_tx_buffer)
+	{
+		// Transfer complete
+		spi_port_state = SPI_TRANSMIT_FINISHED;
+		// Disable interrupts
+		SPICOM->SPI.INTENCLR.bit.TXC = 1;
+		SPICOM->SPI.INTENCLR.bit.DRE = 1;
+	}
+	NVIC_ClearPendingIRQ(SPI_IRQ);
+}
+
+bool mcu_spi_bulk_transfer(uint8_t *data, uint16_t datalen)
+{
+	if(!spi_enable_dma)
+	{
+		// Bulk transfer without DMA
+		if(spi_port_state == SPI_IDLE)
+		{
+			spi_tx_buffer = data;
+			spi_rx_buffer = data;
+			spi_tx_length = datalen;
+
+			// Enable interrupts
+			SPICOM->SPI.INTENSET.bit.TXC = 1;
+			SPICOM->SPI.INTENSET.bit.DRE = 1;
+			spi_port_state = SPI_TRANSMITTING;
+		}
+		else if(spi_port_state == SPI_TRANSMIT_FINISHED)
+		{
+			spi_port_state = SPI_IDLE;
+			return false;
+		}
+		return true;
+	}
+
+	if(spi_port_state == SPI_TRANSMITTING)
+	{
+		// Check if transmission finished
+		DMAC->CHID.reg = spi_dma_channels[0];
+		if(DMAC->CHCTRLA.bit.ENABLE)
+			return true;
+		// Check if reception finished
+		DMAC->CHID.reg = spi_dma_channels[1];
+		if(DMAC->CHCTRLA.bit.ENABLE)
+			return true;
+		// All transfers finished
+		spi_port_state = SPI_IDLE;
+		return false;
+	}
+	else if(spi_port_state == SPI_IDLE)
+	{
+		// Transmit channel
+		mcu_dma_descriptor_sram[spi_dma_channels[0]].SRCADDR.reg = (uint32_t)data;
+		mcu_dma_descriptor_sram[spi_dma_channels[0]].BTCNT.reg = datalen;
+		// Receive channel
+		mcu_dma_descriptor_sram[spi_dma_channels[1]].DSTADDR.reg = (uint32_t)data;
+		mcu_dma_descriptor_sram[spi_dma_channels[1]].BTCNT.reg = datalen;
+
+		// Enable channels
+		DMAC->CHID.reg = spi_dma_channels[0];
+		DMAC->CHCTRLA.bit.ENABLE = 1;
+		DMAC->CHID.reg = spi_dma_channels[1];
+		DMAC->CHCTRLA.bit.ENABLE = 1;
+
+		spi_port_state = SPI_TRANSMITTING;
+	}
+
+	return true;
 }
 
 #endif
