@@ -1170,8 +1170,6 @@ extern "C"
 #if defined(MCU_HAS_SPI) && defined(USE_ARDUINO_SPI_LIBRARY)
 #include <SPI.h>
 SPIClass *esp32spi = NULL;
-uint32_t esp32spifreq = SPI_FREQ;
-uint8_t esp32spimode = SPI_MODE0;
 extern "C"
 {
 	void mcu_spi_config(uint8_t mode, uint32_t freq)
@@ -1188,8 +1186,8 @@ extern "C"
 		esp32spi = new SPIClass(VSPI);
 #endif
 		esp32spi->begin(SPI_CLK_BIT, SPI_SDI_BIT, SPI_SDO_BIT, SPI_CS_BIT);
-		esp32spifreq = freq;
-		esp32spimode = mode;
+		esp32spi->setFrequency(freq);
+		esp32spi->setDataMode(mode);
 	}
 
 	uint8_t mcu_spi_xmit(uint8_t data)
@@ -1200,7 +1198,7 @@ extern "C"
 
 	void mcu_spi_start(uint8_t mode, uint32_t frequency)
 	{
-		esp32spi->beginTransaction(SPISettings(esp32spifreq, MSBFIRST, esp32spimode));
+		esp32spi->beginTransaction(SPISettings(frequency, MSBFIRST, mode));
 	}
 
 	void mcu_spi_stop(void)
