@@ -3738,6 +3738,7 @@ extern "C"
 #endif
 
 #include "lpc17xx_ssp.h"
+#include "lpc17xx_gpdma.h"
 
 #if ((SPI_PORT == 0) && (SPI_SDO_MBED_PIN == P0_18) && (SPI_SDI_MBED_PIN == P0_17) && (SPI_CLK_MBED_PIN == P0_15))
 #define SPI_ALT_FUNC 2
@@ -3748,6 +3749,12 @@ extern "C"
 #else
 #error "SPI pin configuration not supported"
 #endif
+
+#ifndef SPI_DMA_CHANNEL
+#define SPI_DMA_CHANNEL 0
+#endif
+#define SPI_DMA_TX_DEST __helper__(GPDMA_CONN_SSP,SPI_PORT,_Tx)
+#define SPI_DMA_RX_DEST __helper__(GPDMA_CONN_SSP,SPI_PORT,_Rx)
 
 #endif
 

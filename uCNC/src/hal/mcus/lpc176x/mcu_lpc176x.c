@@ -489,6 +489,8 @@ void mcu_init(void)
 	servo_timer_init();
 #endif
 #ifdef MCU_HAS_SPI
+	GPDMA_Init();
+	NVIC_EnableIRQ(DMA_IRQn);
 	mcu_config_af(SPI_CLK, SPI_ALT_FUNC);
 	mcu_config_af(SPI_SDO, SPI_ALT_FUNC);
 	mcu_config_af(SPI_SDI, SPI_ALT_FUNC);
@@ -990,14 +992,34 @@ void mcu_eeprom_flush(void)
 }
 
 #ifdef MCU_HAS_SPI
+static bool spi_dma_enabled = false;
+#define SPI_TX_DONE 1
+#define SPI_RX_DONE 2
+#define SPI_DONE (SPI_TX_DONE | SPI_RX_DONE)
+#define SPI_ERROR 7
+static volatile uint8_t spi_transfer_done = 0;
 void mcu_spi_config(spi_config_t config, uint32_t frequency)
 {
-	uint8_t div = SPI_COUNTER_DIV(frequency);
-	div += (div & 0x01) ? 1 : 0;
-	SPI_REG->CR1 &= ~(1 << 1); // disable SSP
-	SPI_REG->CPSR = div;			 // internal divider
-	SPI_REG->CR0 |= config.mode << 6; // clock phase
-	SPI_REG->CR1 |= 1 << 1;		 // enable SSP
+	// uint8_t div = SPI_COUNTER_DIV(frequency);
+	// div += (div & 0x01) ? 1 : 0;
+	// SPI_REG->CR1 &= ~(1 << 1);				// disable SSP
+	// SPI_REG->CPSR = div;							// internal divider
+	// SPI_REG->CR0 |= config.mode << 6; // clock phase
+	// SPI_REG->CR1 |= 1 << 1;						// enable SSP
+	SSP_DeInit(SPI_REG);
+
+	SSP_CFG_Type ssp_cfg = {
+			.ClockRate = frequency,
+			.Databit = 8,
+			.FrameFormat = SSP_FRAME_SPI,
+			.Mode = SSP_MASTER_MODE,
+			.CPHA = (config.mode & 0x01),
+			.CPOL = ((config.mode >> 1) & 0x01),
+	};
+
+	SSP_Init(SPI_REG, &ssp_cfg);
+
+	spi_dma_enabled = config.enable_dma;
 }
 
 uint8_t mcu_spi_xmit(uint8_t c)
@@ -1006,6 +1028,160 @@ uint8_t mcu_spi_xmit(uint8_t c)
 	while (!(SPI_REG->SR & SSP_SR_RNE))
 		;
 	return SPI_REG->DR;
+}
+
+// DMA interrupt handler
+void DMA_IRQHandler(void)
+{
+	// Clear DMA interrupt
+	if (GPDMA_IntGetStatus(GPDMA_STAT_INT, SPI_DMA_CHANNEL))
+	{
+		if (GPDMA_IntGetStatus(GPDMA_STAT_INTTC, SPI_DMA_CHANNEL))
+		{
+			GPDMA_ClearIntPending(GPDMA_STATCLR_INTTC, SPI_DMA_CHANNEL);
+			spi_transfer_done |= SPI_TX_DONE;
+			SSP_DMACmd(SPI_REG, SSP_DMA_TX, DISABLE);
+		}
+		if (GPDMA_IntGetStatus(GPDMA_STAT_INTERR, SPI_DMA_CHANNEL))
+		{
+			GPDMA_ClearIntPending(GPDMA_STATCLR_INTERR, SPI_DMA_CHANNEL);
+			spi_transfer_done = SPI_ERROR;
+			SSP_DMACmd(SPI_REG, SSP_DMA_TX, DISABLE);
+		}
+	}
+	if (GPDMA_IntGetStatus(GPDMA_STAT_INT, SPI_DMA_CHANNEL + 1))
+	{
+		if (GPDMA_IntGetStatus(GPDMA_STAT_INTTC, SPI_DMA_CHANNEL + 1))
+		{
+			GPDMA_ClearIntPending(GPDMA_STATCLR_INTTC, SPI_DMA_CHANNEL + 1);
+			spi_transfer_done |= SPI_RX_DONE;
+			SSP_DMACmd(SPI_REG, SSP_DMA_RX, DISABLE);
+		}
+		if (GPDMA_IntGetStatus(GPDMA_STAT_INTERR, SPI_DMA_CHANNEL + 1))
+		{
+			GPDMA_ClearIntPending(GPDMA_STATCLR_INTERR, SPI_DMA_CHANNEL + 1);
+			spi_transfer_done = SPI_ERROR;
+			SSP_DMACmd(SPI_REG, SSP_DMA_RX, DISABLE);
+		}
+	}
+}
+
+bool mcu_spi_bulk_transfer(uint8_t *data, uint16_t len)
+{
+	static bool is_running = false;
+	static uint16_t tx_offset = 0;
+	static uint16_t rx_offset = 0;
+	if (is_running)
+	{
+		// refill the buffers
+		if (!spi_dma_enabled)
+		{
+			// Read from RX buffer
+			uint16_t offset = rx_offset;
+			uint8_t *ptr = &data[offset];
+			while ((SPI_REG->SR & SSP_SR_RNE) && (offset != len))
+			{
+				*data = SPI_REG->DR;
+				data++;
+				offset++;
+			}
+
+			rx_offset = offset;
+			spi_transfer_done |= (offset != len) ? 0 : SPI_RX_DONE;
+
+			// Fill TX buffer
+			offset = tx_offset;
+			ptr = &data[offset];
+			while ((SPI_REG->SR & SSP_SR_TNF) && (offset != len))
+			{
+				SPI_REG->DR = *data;
+				data++;
+				offset++;
+			}
+			tx_offset = offset;
+			spi_transfer_done |= (offset != len) ? 0 : SPI_TX_DONE;
+		}
+
+		if (spi_transfer_done == SPI_DONE)
+		{
+			tx_offset = 0;
+			rx_offset = 0;
+			is_running = false;
+			return false;
+		}
+		return true;
+	}
+	else
+	{
+		if (spi_dma_enabled)
+		{
+			GPDMA_Channel_CFG_Type GPDMACfg;
+			GPDMACfg.ChannelNum = SPI_DMA_CHANNEL;
+			GPDMACfg.SrcMemAddr = (uint32_t)data;
+			GPDMACfg.DstMemAddr = 0;
+			GPDMACfg.TransferSize = len;
+			GPDMACfg.TransferWidth = GPDMA_WIDTH_BYTE;
+			GPDMACfg.SrcConn = 0;
+			GPDMACfg.DstConn = SPI_DMA_TX_DEST;
+			GPDMACfg.DMALLI = 0;
+			GPDMACfg.TransferType = GPDMA_TRANSFERTYPE_M2P;
+			GPDMA_Setup(&GPDMACfg);
+
+			// Configure the DMA channel for SSP RX
+			GPDMACfg.ChannelNum = SPI_DMA_CHANNEL + 1;
+			GPDMACfg.SrcMemAddr = 0;
+			GPDMACfg.DstMemAddr = (uint32_t)data;
+			GPDMACfg.TransferSize = len;
+			GPDMACfg.TransferWidth = GPDMA_WIDTH_BYTE;
+			GPDMACfg.SrcConn = SPI_DMA_RX_DEST;
+			GPDMACfg.DstConn = 0;
+			GPDMACfg.DMALLI = 0;
+			GPDMACfg.TransferType = GPDMA_TRANSFERTYPE_P2M;
+			GPDMA_Setup(&GPDMACfg);
+
+			// Enable DMA channels
+			GPDMA_ChannelCmd(SPI_DMA_CHANNEL, ENABLE);
+			GPDMA_ChannelCmd(SPI_DMA_CHANNEL + 1, ENABLE);
+			SSP_DMACmd(SPI_REG, SSP_DMA_TX, ENABLE);
+			SSP_DMACmd(SPI_REG, SSP_DMA_RX, ENABLE);
+			return true;
+		}
+		else
+		{
+			// initial transmition goes the other way around.
+			// first fill TX data
+			uint16_t offset = 0;
+			while ((SPI_REG->SR & SSP_SR_TNF) && (offset != len))
+			{
+				SPI_REG->DR = *data;
+				data++;
+				offset++;
+			}
+			tx_offset = offset;
+			spi_transfer_done |= (offset != len) ? 0 : SPI_TX_DONE;
+
+			// then check the RX buffer
+			offset = 0;
+			while ((SPI_REG->SR & SSP_SR_RNE) && (offset != len))
+			{
+				*data = SPI_REG->DR;
+				data++;
+				offset++;
+			}
+
+			rx_offset = offset;
+			spi_transfer_done |= (offset != len) ? 0 : SPI_RX_DONE;
+			if (spi_transfer_done == SPI_DONE)
+			{
+				tx_offset = 0;
+				rx_offset = 0;
+				is_running = false;
+				return false;
+			}
+		}
+	}
+	
+	return true;
 }
 
 #endif
