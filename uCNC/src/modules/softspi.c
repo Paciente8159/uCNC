@@ -36,7 +36,7 @@ void softspi_config(softspi_port_t *port, softspi_config_t config, uint32_t freq
 	if (port->config)
 	{
 		// if port with custom method execute it
-		port->config(config, frequency);
+		port->config(config.spi, frequency);
 	}
 }
 
@@ -197,7 +197,7 @@ void softspi_start(softspi_port_t *port)
 		}
 		port->spiconfig.locked = 1;
 
-		port->start(port->spiconfig, port->spifreq);
+		port->start(port->spiconfig.spi, port->spifreq);
 	}
 }
 
