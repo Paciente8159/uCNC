@@ -18,7 +18,6 @@
 */
 
 #include "../../../cnc.h"
-#include "samd21/include/component/dmac.h"
 
 #if (MCU == MCU_SAMD21)
 #include "core_cm0plus.h"
