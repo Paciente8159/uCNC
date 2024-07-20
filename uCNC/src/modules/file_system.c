@@ -446,7 +446,6 @@ void fs_file_run(char *params)
 bool fs_cmd_parser(void *args)
 {
 	grbl_cmd_args_t *cmd = args;
-	size_t i = 0;
 	char params[RX_BUFFER_CAPACITY]; /* get remaining command parammeters */
 	uint8_t has_arg = (cmd->next_char == '=');
 	memset(params, 0, sizeof(params));
