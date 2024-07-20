@@ -447,7 +447,6 @@ bool fs_cmd_parser(void *args)
 {
 	grbl_cmd_args_t *cmd = args;
 	char params[RX_BUFFER_CAPACITY]; /* get remaining command parammeters */
-	uint8_t has_arg = (cmd->next_char == '=');
 	memset(params, 0, sizeof(params));
 
 	if (!strcmp("LS", (char *)(cmd->cmd)))
@@ -459,54 +458,45 @@ bool fs_cmd_parser(void *args)
 
 	if (!strcmp("CD", (char *)(cmd->cmd)))
 	{
-		if (has_arg)
+		int8_t len = parser_get_grbl_cmd_arg(params, RX_BUFFER_CAPACITY);
+
+		if (len < 0)
 		{
-			int8_t len = parser_get_grbl_cmd_arg(params, RX_BUFFER_CAPACITY);
-
-			if (len < 0)
-			{
-				*(cmd->error) = STATUS_INVALID_STATEMENT;
-				return EVENT_HANDLED;
-			}
-
-			fs_cd(params);
-			*(cmd->error) = STATUS_OK;
+			*(cmd->error) = STATUS_INVALID_STATEMENT;
 			return EVENT_HANDLED;
 		}
+
+		fs_cd(params);
+		*(cmd->error) = STATUS_OK;
+		return EVENT_HANDLED;
 	}
 
 	if (!strcmp("LPR", (char *)(cmd->cmd)))
 	{
-		if (has_arg)
-		{
-			int8_t len = parser_get_grbl_cmd_arg(params, RX_BUFFER_CAPACITY);
+		int8_t len = parser_get_grbl_cmd_arg(params, RX_BUFFER_CAPACITY);
 
-			if (len < 0)
-			{
-				*(cmd->error) = STATUS_INVALID_STATEMENT;
-				return EVENT_HANDLED;
-			}
-			fs_file_print(params);
-			*(cmd->error) = STATUS_OK;
+		if (len < 0)
+		{
+			*(cmd->error) = STATUS_INVALID_STATEMENT;
 			return EVENT_HANDLED;
 		}
+		fs_file_print(params);
+		*(cmd->error) = STATUS_OK;
+		return EVENT_HANDLED;
 	}
 
 	if (!strcmp("RUN", (char *)(cmd->cmd)))
 	{
-		if (has_arg)
-		{
-			int8_t len = parser_get_grbl_cmd_arg(params, RX_BUFFER_CAPACITY);
+		int8_t len = parser_get_grbl_cmd_arg(params, RX_BUFFER_CAPACITY);
 
-			if (len < 0)
-			{
-				*(cmd->error) = STATUS_INVALID_STATEMENT;
-				return EVENT_HANDLED;
-			}
-			fs_file_run(params);
-			*(cmd->error) = STATUS_OK;
+		if (len < 0)
+		{
+			*(cmd->error) = STATUS_INVALID_STATEMENT;
 			return EVENT_HANDLED;
 		}
+		fs_file_run(params);
+		*(cmd->error) = STATUS_OK;
+		return EVENT_HANDLED;
 	}
 
 	return EVENT_CONTINUE;

@@ -152,7 +152,10 @@ void softspi_start(softspi_port_t *port)
 	if (port->start)
 	{
 		port->start(port->spimode, port->spifreq);
+		return;
 	}
+
+	softspi_config(port, port->spimode, port->spifreq);
 }
 
 void softspi_stop(softspi_port_t *port)

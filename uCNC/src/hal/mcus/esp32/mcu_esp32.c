@@ -48,6 +48,10 @@ void esp32_wifi_bt_init(void);
 void esp32_wifi_bt_flush(uint8_t *buffer);
 void esp32_wifi_bt_process(void);
 
+#ifdef USE_ARDUINO_SPI_LIBRARY
+void mcu_spi_init(void);
+#endif
+
 #if !defined(RAM_ONLY_SETTINGS) && !defined(USE_ARDUINO_EEPROM_LIBRARY)
 #include <nvs.h>
 #include <esp_partition.h>
@@ -82,8 +86,8 @@ MCU_CALLBACK void mcu_gpio_isr(void *type);
 #define I2S_SAMPLE_RATE (F_STEP_MAX * 2)
 #endif
 #define I2S_SAMPLES_PER_BUFFER (I2S_SAMPLE_RATE / 500) // number of samples per 2ms (0.002/1 = 1/500)
-#define I2S_BUFFER_COUNT 5							   // DMA buffer size 5 * 2ms = 10ms stored motions (can be adjusted but may cause to much or too little latency)
-#define I2S_SAMPLE_US (1000000UL / I2S_SAMPLE_RATE)	   // (1s/250KHz = 0.000004s = 4us)
+#define I2S_BUFFER_COUNT 5														 // DMA buffer size 5 * 2ms = 10ms stored motions (can be adjusted but may cause to much or too little latency)
+#define I2S_SAMPLE_US (1000000UL / I2S_SAMPLE_RATE)		 // (1s/250KHz = 0.000004s = 4us)
 
 #ifdef ITP_SAMPLE_RATE
 #undef ITP_SAMPLE_RATE
@@ -130,23 +134,23 @@ static void IRAM_ATTR esp32_i2s_stream_task(void *param)
 	i2s_event_t evt;
 	portTickType xLastWakeTimeUpload = xTaskGetTickCount();
 	i2s_config_t i2s_config = {
-		.mode = I2S_MODE_MASTER | I2S_MODE_TX, // Only TX
-		.sample_rate = I2S_SAMPLE_RATE,
-		.bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT,
-		.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT, // 1-channels
-		.communication_format = I2S_COMM_FORMAT_STAND_I2S | I2S_COMM_FORMAT_STAND_MSB,
-		.dma_buf_count = I2S_BUFFER_COUNT,
-		.dma_buf_len = I2S_SAMPLES_PER_BUFFER,
-		.use_apll = false,
-		.intr_alloc_flags = ESP_INTR_FLAG_LEVEL1, // Interrupt level 1
-		.tx_desc_auto_clear = false,
-		.fixed_mclk = 0};
+			.mode = I2S_MODE_MASTER | I2S_MODE_TX, // Only TX
+			.sample_rate = I2S_SAMPLE_RATE,
+			.bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT,
+			.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT, // 1-channels
+			.communication_format = I2S_COMM_FORMAT_STAND_I2S | I2S_COMM_FORMAT_STAND_MSB,
+			.dma_buf_count = I2S_BUFFER_COUNT,
+			.dma_buf_len = I2S_SAMPLES_PER_BUFFER,
+			.use_apll = false,
+			.intr_alloc_flags = ESP_INTR_FLAG_LEVEL1, // Interrupt level 1
+			.tx_desc_auto_clear = false,
+			.fixed_mclk = 0};
 
 	i2s_pin_config_t pin_config = {
-		.bck_io_num = IC74HC595_I2S_CLK,
-		.ws_io_num = IC74HC595_I2S_WS,
-		.data_out_num = IC74HC595_I2S_DATA,
-		.data_in_num = -1 // Not used
+			.bck_io_num = IC74HC595_I2S_CLK,
+			.ws_io_num = IC74HC595_I2S_WS,
+			.data_out_num = IC74HC595_I2S_DATA,
+			.data_in_num = -1 // Not used
 	};
 	QueueHandle_t i2s_dma_queue;
 
@@ -201,12 +205,12 @@ static void IRAM_ATTR esp32_i2s_stream_task(void *param)
 				I2SREG.fifo_conf.dscr_en = 0;
 				I2SREG.conf.tx_start = 0;
 				I2SREG.int_clr.val = 0xFFFFFFFF;
-				I2SREG.clkm_conf.clka_en = 0;	   // Use PLL/2 as reference
+				I2SREG.clkm_conf.clka_en = 0;			 // Use PLL/2 as reference
 				I2SREG.clkm_conf.clkm_div_num = 2; // reset value of 4
-				I2SREG.clkm_conf.clkm_div_a = 1;   // 0 at reset, what about divide by 0?
-				I2SREG.clkm_conf.clkm_div_b = 0;   // 0 at reset
-				I2SREG.fifo_conf.tx_fifo_mod = 3;  // 32 bits single channel data
-				I2SREG.conf_chan.tx_chan_mod = 3;  //
+				I2SREG.clkm_conf.clkm_div_a = 1;	 // 0 at reset, what about divide by 0?
+				I2SREG.clkm_conf.clkm_div_b = 0;	 // 0 at reset
+				I2SREG.fifo_conf.tx_fifo_mod = 3;	 // 32 bits single channel data
+				I2SREG.conf_chan.tx_chan_mod = 3;	 //
 				I2SREG.sample_rate_conf.tx_bits_mod = 32;
 				I2SREG.conf.tx_msb_shift = 0;
 				I2SREG.conf.rx_msb_shift = 0;
@@ -319,8 +323,8 @@ static FORCEINLINE void servo_reset(void)
 #endif
 }
 
-#define start_servo_timeout(timeout)                          \
-	{                                                         \
+#define start_servo_timeout(timeout)                      \
+	{                                                       \
 		servo_tick_alarm = servo_tick_counter + timeout + 64; \
 	}
 
@@ -519,7 +523,7 @@ MCU_CALLBACK void mcu_itp_isr(void *arg)
 
 	timer_group_clr_intr_status_in_isr(ITP_TIMER_TG, ITP_TIMER_IDX);
 	/* After the alarm has been triggered
-	  we need enable it again, so it is triggered the next time */
+		we need enable it again, so it is triggered the next time */
 	timer_group_enable_alarm_in_isr(ITP_TIMER_TG, ITP_TIMER_IDX);
 }
 
@@ -542,12 +546,12 @@ void mcu_init(void)
 #ifdef MCU_HAS_UART2
 	// initialize UART
 	const uart_config_t uart2config = {
-		.baud_rate = BAUDRATE2,
-		.data_bits = UART_DATA_8_BITS,
-		.parity = UART_PARITY_DISABLE,
-		.stop_bits = UART_STOP_BITS_1,
-		.flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-		.source_clk = UART_SCLK_APB};
+			.baud_rate = BAUDRATE2,
+			.data_bits = UART_DATA_8_BITS,
+			.parity = UART_PARITY_DISABLE,
+			.stop_bits = UART_STOP_BITS_1,
+			.flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+			.source_clk = UART_SCLK_APB};
 	// We won't use a buffer for sending data.
 	uart_param_config(UART2_PORT, &uart2config);
 	uart_set_pin(UART2_PORT, TX2_BIT, RX2_BIT, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
@@ -590,12 +594,12 @@ void mcu_init(void)
 #ifdef MCU_HAS_UART
 	// initialize UART
 	const uart_config_t uartconfig = {
-		.baud_rate = BAUDRATE,
-		.data_bits = UART_DATA_8_BITS,
-		.parity = UART_PARITY_DISABLE,
-		.stop_bits = UART_STOP_BITS_1,
-		.flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-		.source_clk = UART_SCLK_APB};
+			.baud_rate = BAUDRATE,
+			.data_bits = UART_DATA_8_BITS,
+			.parity = UART_PARITY_DISABLE,
+			.stop_bits = UART_STOP_BITS_1,
+			.flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+			.source_clk = UART_SCLK_APB};
 	// We won't use a buffer for sending data.
 	uart_param_config(UART_PORT, &uartconfig);
 	uart_set_pin(UART_PORT, TX_BIT, RX_BIT, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
@@ -611,7 +615,7 @@ void mcu_init(void)
 	itpconfig.auto_reload = true;
 	timer_init(ITP_TIMER_TG, ITP_TIMER_IDX, &itpconfig);
 	/* Timer's counter will initially start from value below.
-	   Also, if auto_reload is set, this value will be automatically reload on alarm */
+		 Also, if auto_reload is set, this value will be automatically reload on alarm */
 	timer_set_counter_value(ITP_TIMER_TG, ITP_TIMER_IDX, 0x00000000ULL);
 	/* Configure the alarm value and the interrupt on alarm. */
 	timer_set_alarm_value(ITP_TIMER_TG, ITP_TIMER_IDX, (uint64_t)(getApbFrequency() / (ITP_SAMPLE_RATE * 2)));
@@ -628,21 +632,25 @@ void mcu_init(void)
 	xTaskCreatePinnedToCore(mcu_rtc_task, "rtcTask", 2048, NULL, 7, NULL, CONFIG_ARDUINO_RUNNING_CORE);
 
 #ifdef MCU_HAS_SPI
+#ifndef USE_ARDUINO_SPI_LIBRARY
 	spi_bus_config_t spiconf = {
-		.miso_io_num = SPI_SDI_BIT,
-		.mosi_io_num = SPI_SDO_BIT,
-		.sclk_io_num = SPI_CLK_BIT,
-		.quadwp_io_num = -1,
-		.quadhd_io_num = -1,
-		.data4_io_num = -1,
-		.data5_io_num = -1,
-		.data6_io_num = -1,
-		.data7_io_num = -1,
-		.max_transfer_sz = SOC_SPI_MAXIMUM_BUFFER_SIZE,
-		.flags = 0,
-		.intr_flags = 0};
+			.miso_io_num = SPI_SDI_BIT,
+			.mosi_io_num = SPI_SDO_BIT,
+			.sclk_io_num = SPI_CLK_BIT,
+			.quadwp_io_num = -1,
+			.quadhd_io_num = -1,
+			.data4_io_num = -1,
+			.data5_io_num = -1,
+			.data6_io_num = -1,
+			.data7_io_num = -1,
+			.max_transfer_sz = SOC_SPI_MAXIMUM_BUFFER_SIZE,
+			.flags = 0,
+			.intr_flags = 0};
 	// Initialize the SPI bus
 	spi_bus_initialize(SPI_PORT, &spiconf, SPI_DMA_DISABLED);
+#else
+	mcu_spi_init();
+#endif
 	mcu_spi_config(SPI_MODE, SPI_FREQ);
 #endif
 
@@ -1093,7 +1101,7 @@ void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 	timer_init(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX, &config);
 
 	/* Timer's counter will initially start from value below.
-	   Also, if auto_reload is set, this value will be automatically reload on alarm */
+		 Also, if auto_reload is set, this value will be automatically reload on alarm */
 	timer_set_counter_value(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX, 0x00000000ULL);
 
 	/* Configure the alarm value and the interrupt on alarm. */
