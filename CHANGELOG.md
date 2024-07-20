@@ -6,6 +6,12 @@
 
 # Changelog
 
+## [1.9.5] - 20-04-2024
+
+### Fixed
+
+- fixed incomplete code propagation of #696. This prevented Grbl/System commands to propagate correctly and directly affected mount and unmount command of the SD card module (#705)
+
 ## [1.9.4] - 19-04-2024
 
 [@patryk3211](https://github.com/patryk3211) - fixed STM32Fx boards SPI implementation (#699)
@@ -1663,6 +1669,8 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.9.5]: https://github.com/Paciente8159/uCNC/releases/tag/v1.9.5
+[1.9.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.9.4
 [1.9.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.9.3
 [1.9.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.9.2
 [1.9.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.9.1
