@@ -53,6 +53,10 @@ void esp32_wifi_bt_init(void);
 void esp32_wifi_bt_flush(uint8_t *buffer);
 void esp32_wifi_bt_process(void);
 
+#ifdef USE_ARDUINO_SPI_LIBRARY
+void mcu_spi_init(void);
+#endif
+
 #if !defined(RAM_ONLY_SETTINGS) && !defined(USE_ARDUINO_EEPROM_LIBRARY)
 #include <nvs.h>
 #include <esp_partition.h>
@@ -633,9 +637,14 @@ void mcu_init(void)
 	xTaskCreatePinnedToCore(mcu_rtc_task, "rtcTask", 2048, NULL, 7, NULL, CONFIG_ARDUINO_RUNNING_CORE);
 
 #ifdef MCU_HAS_SPI
+
+#ifndef USE_ARDUINO_SPI_LIBRARY
 	spi_access_mutex = xSemaphoreCreateMutex();
 	spi_config_t spi_conf = {0};
 	spi_conf.mode = SPI_MODE;
+#else
+	mcu_spi_init();
+#endif
 	mcu_spi_config(spi_conf, SPI_FREQ);
 #endif
 
@@ -1244,7 +1253,7 @@ bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 				.tx_buffer = o,
 				.rxlength = 0 // this deafults to length
 		};
-		
+
 		if (in)
 		{
 			t.rx_buffer = i;
