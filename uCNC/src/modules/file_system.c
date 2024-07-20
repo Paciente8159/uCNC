@@ -448,7 +448,7 @@ bool fs_cmd_parser(void *args)
 	grbl_cmd_args_t *cmd = args;
 	size_t i = 0;
 	char params[RX_BUFFER_CAPACITY]; /* get remaining command parammeters */
-	uint8_t has_arg = (cmd_params->next_char == '=');
+	uint8_t has_arg = (cmd->next_char == '=');
 	memset(params, 0, sizeof(params));
 
 	if (!strcmp("LS", (char *)(cmd->cmd)))
@@ -466,7 +466,7 @@ bool fs_cmd_parser(void *args)
 
 			if (len < 0)
 			{
-				*(cmd_params->error) = STATUS_INVALID_STATEMENT;
+				*(cmd->error) = STATUS_INVALID_STATEMENT;
 				return EVENT_HANDLED;
 			}
 
@@ -484,7 +484,7 @@ bool fs_cmd_parser(void *args)
 
 			if (len < 0)
 			{
-				*(cmd_params->error) = STATUS_INVALID_STATEMENT;
+				*(cmd->error) = STATUS_INVALID_STATEMENT;
 				return EVENT_HANDLED;
 			}
 			fs_file_print(params);
@@ -501,7 +501,7 @@ bool fs_cmd_parser(void *args)
 
 			if (len < 0)
 			{
-				*(cmd_params->error) = STATUS_INVALID_STATEMENT;
+				*(cmd->error) = STATUS_INVALID_STATEMENT;
 				return EVENT_HANDLED;
 			}
 			fs_file_run(params);
