@@ -3475,6 +3475,9 @@ extern "C"
 #define SPI_CLOCK HAL_RCC_GetPCLK2Freq()
 #endif
 
+#define SPI_IRQ __helper__(SPI, SPI_PORT, _IRQn)
+#define SPI_ISR __helper__(SPI, SPI_PORT, _IRQHandler)
+
 #if (SPI_PORT == 1)
 #define SPI_DMA_CONTROLLER_NUM 2
 #define SPI_DMA_TX_STREAM_NUM 3

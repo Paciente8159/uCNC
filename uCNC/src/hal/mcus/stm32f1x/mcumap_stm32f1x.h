@@ -4478,6 +4478,9 @@ extern "C"
 #define SPI_DMA_TX_IFCR_MASK (0b1111 << SPI_DMA_TX_IFR_POS)
 #define SPI_DMA_RX_IFCR_MASK (0b1111 << SPI_DMA_RX_IFR_POS)
 
+#define SPI_IRQ __helper__(SPI, SPI_PORT, _IRQn)
+#define SPI_ISR __helper__(SPI, SPI_PORT, _IRQHandler)
+
 #endif
 
 // I2C

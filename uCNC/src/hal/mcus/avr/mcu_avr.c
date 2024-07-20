@@ -1059,35 +1059,39 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 	SPCR = (1 << SPE) | (1 << MSTR) | (mode << 2) | spcr;
 }
 
-static volatile uint8_t *spi_bulk_data_ptr = 0;
+static volatile const uint8_t *spi_bulk_data_ptr_tx = 0;
+static volatile uint8_t *spi_bulk_data_ptr_rx = 0;
 static volatile uint16_t spi_bulk_data_len = 0;
 
 ISR(SPI_STC_vect) {
 	if(spi_bulk_data_len)
 	{
 		// Read received byte
-		*spi_bulk_data_ptr++ = SPDR;
+		if(spi_bulk_data_ptr_rx != 0)
+			*spi_bulk_data_ptr_rx++ = SPDR;
 		if(--spi_bulk_data_len)
 		{
 			// Transmit the next byte
-			SPDR = *spi_bulk_data_ptr;
+			SPDR = *spi_bulk_data_ptr_tx++;
 		}
 	}
 }
 
-bool mcu_spi_bulk_transfer(uint8_t *data, uint16_t datalen) {
-	if(spi_bulk_data_ptr == 0)
+bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t datalen) {
+	if(spi_bulk_data_ptr_tx == 0)
 	{
-		spi_bulk_data_ptr = data;
+		spi_bulk_data_ptr_tx = tx_data;
+		spi_bulk_data_ptr_rx = rx_data;
 		spi_bulk_data_len = datalen;
 		SPCR |= (1 << SPIE);
 		// Transmit the first byte
-		SPDR = *spi_bulk_data_ptr;
+		SPDR = *spi_bulk_data_ptr_tx++;
 	}
 
 	if(spi_bulk_data_len == 0)
 	{
-		spi_bulk_data_ptr = 0;
+		spi_bulk_data_ptr_tx = 0;
+		spi_bulk_data_ptr_rx = 0;
 		SPCR &= ~(1 << SPIE);
 		return false;
 	}

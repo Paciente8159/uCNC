@@ -1388,9 +1388,10 @@ typedef enum spi_port_state_enum {
 static spi_port_state_t spi_port_state = SPI_UNKNOWN;
 static bool spi_enable_dma = false;
 static uint8_t spi_dma_channels[2];
-static uint8_t *spi_tx_buffer;
+static const uint8_t *spi_tx_buffer;
 static uint8_t *spi_rx_buffer;
 static uint16_t spi_tx_length;
+static uint16_t spi_rx_length;
 
 void mcu_spi_config(uint8_t mode, uint32_t frequency)
 {
@@ -1484,41 +1485,53 @@ uint8_t mcu_spi_xmit(uint8_t c)
 
 void SPI_ISR()
 {
-	if(SPICOM->SPI.INTFLAG.bit.DRE && spi_tx_length-- > 0)
+	if(SPICOM->SPI.INTFLAG.bit.DRE && spi_tx_length > 0)
 	{
 		// Send next byte
 		SPICOM->SPI.DATA.reg = *spi_tx_buffer++;
+		--spi_tx_length;
 	}
-	if(SPICOM->SPI.INTFLAG.bit.RXC)
+	if(SPICOM->SPI.INTFLAG.bit.RXC && spi_rx_length > 0)
 	{
 		// Store received byte
 		*spi_rx_buffer++ = SPICOM->SPI.DATA.reg;
+		--spi_rx_length;
 	}
-	if(spi_tx_length == 0 && spi_rx_buffer == spi_tx_buffer)
+	if(spi_tx_length == 0 && spi_rx_length == 0)
 	{
 		// Transfer complete
 		spi_port_state = SPI_TRANSMIT_FINISHED;
 		// Disable interrupts
-		SPICOM->SPI.INTENCLR.bit.TXC = 1;
 		SPICOM->SPI.INTENCLR.bit.DRE = 1;
+		SPICOM->SPI.INTENCLR.bit.RXC = 1;
 	}
 	NVIC_ClearPendingIRQ(SPI_IRQ);
 }
 
-bool mcu_spi_bulk_transfer(uint8_t *data, uint16_t datalen)
+bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t datalen)
 {
 	if(!spi_enable_dma)
 	{
 		// Bulk transfer without DMA
 		if(spi_port_state == SPI_IDLE)
 		{
-			spi_tx_buffer = data;
-			spi_rx_buffer = data;
+			spi_tx_buffer = tx_data;
 			spi_tx_length = datalen;
+			if(rx_data)
+			{
+				spi_rx_buffer = rx_data;
+				spi_rx_length = datalen;
+			}
+			else
+			{
+				spi_rx_data = 0;
+				spi_rx_length = 0;
+			}
 
 			// Enable interrupts
-			SPICOM->SPI.INTENSET.bit.TXC = 1;
 			SPICOM->SPI.INTENSET.bit.DRE = 1;
+			if(rx_data)
+				SPICOM->SPI.INTENSET.bit.RXC = 1;
 			spi_port_state = SPI_TRANSMITTING;
 		}
 		else if(spi_port_state == SPI_TRANSMIT_FINISHED)
@@ -1546,17 +1559,22 @@ bool mcu_spi_bulk_transfer(uint8_t *data, uint16_t datalen)
 	else if(spi_port_state == SPI_IDLE)
 	{
 		// Transmit channel
-		mcu_dma_descriptor_sram[spi_dma_channels[0]].SRCADDR.reg = (uint32_t)data;
+		mcu_dma_descriptor_sram[spi_dma_channels[0]].SRCADDR.reg = (uint32_t)tx_data;
 		mcu_dma_descriptor_sram[spi_dma_channels[0]].BTCNT.reg = datalen;
 		// Receive channel
-		mcu_dma_descriptor_sram[spi_dma_channels[1]].DSTADDR.reg = (uint32_t)data;
-		mcu_dma_descriptor_sram[spi_dma_channels[1]].BTCNT.reg = datalen;
+		if(rx_data)
+		{
+			mcu_dma_descriptor_sram[spi_dma_channels[1]].DSTADDR.reg = (uint32_t)rx_data;
+			mcu_dma_descriptor_sram[spi_dma_channels[1]].BTCNT.reg = datalen;
+		}
 
 		// Enable channels
 		DMAC->CHID.reg = spi_dma_channels[0];
 		DMAC->CHCTRLA.bit.ENABLE = 1;
-		DMAC->CHID.reg = spi_dma_channels[1];
-		DMAC->CHCTRLA.bit.ENABLE = 1;
+		if(rx_data) {
+			DMAC->CHID.reg = spi_dma_channels[1];
+			DMAC->CHCTRLA.bit.ENABLE = 1;
+		}
 
 		spi_port_state = SPI_TRANSMITTING;
 	}
