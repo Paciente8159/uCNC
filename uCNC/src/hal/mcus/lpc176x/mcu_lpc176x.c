@@ -1000,24 +1000,24 @@ static bool spi_dma_enabled = false;
 static volatile uint8_t spi_transfer_done = 0;
 void mcu_spi_config(spi_config_t config, uint32_t frequency)
 {
-	// uint8_t div = SPI_COUNTER_DIV(frequency);
-	// div += (div & 0x01) ? 1 : 0;
-	// SPI_REG->CR1 &= ~(1 << 1);				// disable SSP
-	// SPI_REG->CPSR = div;							// internal divider
-	// SPI_REG->CR0 |= config.mode << 6; // clock phase
-	// SPI_REG->CR1 |= 1 << 1;						// enable SSP
-	SSP_DeInit(SPI_REG);
+	uint8_t div = SPI_COUNTER_DIV(frequency);
+	div += (div & 0x01) ? 1 : 0;
+	SPI_REG->CR1 &= ~(1 << 1);				// disable SSP
+	SPI_REG->CPSR = div;							// internal divider
+	SPI_REG->CR0 |= config.mode << 6; // clock phase
+	SPI_REG->CR1 |= 1 << 1;						// enable SSP
+	// SSP_DeInit(SPI_REG);
 
-	SSP_CFG_Type ssp_cfg = {
-			.ClockRate = frequency,
-			.Databit = 8,
-			.FrameFormat = SSP_FRAME_SPI,
-			.Mode = SSP_MASTER_MODE,
-			.CPHA = (config.mode & 0x01),
-			.CPOL = ((config.mode >> 1) & 0x01),
-	};
+	// SSP_CFG_Type ssp_cfg = {
+	// 		.ClockRate = frequency,
+	// 		.Databit = SSP_DATABIT_8,
+	// 		.FrameFormat = SSP_FRAME_SPI,
+	// 		.Mode = SSP_MASTER_MODE,
+	// 		.CPHA = (config.mode & 0x01),
+	// 		.CPOL = ((config.mode >> 1) & 0x01),
+	// };
 
-	SSP_Init(SPI_REG, &ssp_cfg);
+	// SSP_Init(SPI_REG, &ssp_cfg);
 
 	spi_dma_enabled = config.enable_dma;
 }
@@ -1031,173 +1031,189 @@ uint8_t mcu_spi_xmit(uint8_t c)
 }
 
 // DMA interrupt handler
-void DMA_IRQHandler(void)
-{
-	// Clear DMA interrupt
-	if (GPDMA_IntGetStatus(GPDMA_STAT_INT, SPI_DMA_CHANNEL))
-	{
-		if (GPDMA_IntGetStatus(GPDMA_STAT_INTTC, SPI_DMA_CHANNEL))
-		{
-			GPDMA_ClearIntPending(GPDMA_STATCLR_INTTC, SPI_DMA_CHANNEL);
-			spi_transfer_done |= SPI_TX_DONE;
-			SSP_DMACmd(SPI_REG, SSP_DMA_TX, DISABLE);
-		}
-		if (GPDMA_IntGetStatus(GPDMA_STAT_INTERR, SPI_DMA_CHANNEL))
-		{
-			GPDMA_ClearIntPending(GPDMA_STATCLR_INTERR, SPI_DMA_CHANNEL);
-			spi_transfer_done = SPI_ERROR;
-			SSP_DMACmd(SPI_REG, SSP_DMA_TX, DISABLE);
-		}
-	}
-	if (GPDMA_IntGetStatus(GPDMA_STAT_INT, SPI_DMA_CHANNEL + 1))
-	{
-		if (GPDMA_IntGetStatus(GPDMA_STAT_INTTC, SPI_DMA_CHANNEL + 1))
-		{
-			GPDMA_ClearIntPending(GPDMA_STATCLR_INTTC, SPI_DMA_CHANNEL + 1);
-			spi_transfer_done |= SPI_RX_DONE;
-			SSP_DMACmd(SPI_REG, SSP_DMA_RX, DISABLE);
-		}
-		if (GPDMA_IntGetStatus(GPDMA_STAT_INTERR, SPI_DMA_CHANNEL + 1))
-		{
-			GPDMA_ClearIntPending(GPDMA_STATCLR_INTERR, SPI_DMA_CHANNEL + 1);
-			spi_transfer_done = SPI_ERROR;
-			SSP_DMACmd(SPI_REG, SSP_DMA_RX, DISABLE);
-		}
-	}
-}
+// void DMA_IRQHandler(void)
+// {
+// 	// Clear DMA interrupt
+// 	if (GPDMA_IntGetStatus(GPDMA_STAT_INT, SPI_DMA_CHANNEL))
+// 	{
+// 		if (GPDMA_IntGetStatus(GPDMA_STAT_INTTC, SPI_DMA_CHANNEL))
+// 		{
+// 			GPDMA_ClearIntPending(GPDMA_STATCLR_INTTC, SPI_DMA_CHANNEL);
+// 			spi_transfer_done |= SPI_TX_DONE;
+// 			SSP_DMACmd(SPI_REG, SSP_DMA_TX, DISABLE);
+// 		}
+// 		if (GPDMA_IntGetStatus(GPDMA_STAT_INTERR, SPI_DMA_CHANNEL))
+// 		{
+// 			GPDMA_ClearIntPending(GPDMA_STATCLR_INTERR, SPI_DMA_CHANNEL);
+// 			spi_transfer_done = SPI_ERROR;
+// 			SSP_DMACmd(SPI_REG, SSP_DMA_TX, DISABLE);
+// 		}
+// 	}
+// 	if (GPDMA_IntGetStatus(GPDMA_STAT_INT, SPI_DMA_CHANNEL + 1))
+// 	{
+// 		if (GPDMA_IntGetStatus(GPDMA_STAT_INTTC, SPI_DMA_CHANNEL + 1))
+// 		{
+// 			GPDMA_ClearIntPending(GPDMA_STATCLR_INTTC, SPI_DMA_CHANNEL + 1);
+// 			spi_transfer_done |= SPI_RX_DONE;
+// 			SSP_DMACmd(SPI_REG, SSP_DMA_RX, DISABLE);
+// 		}
+// 		if (GPDMA_IntGetStatus(GPDMA_STAT_INTERR, SPI_DMA_CHANNEL + 1))
+// 		{
+// 			GPDMA_ClearIntPending(GPDMA_STATCLR_INTERR, SPI_DMA_CHANNEL + 1);
+// 			spi_transfer_done = SPI_ERROR;
+// 			SSP_DMACmd(SPI_REG, SSP_DMA_RX, DISABLE);
+// 		}
+// 	}
+// }
 
-bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
-{
-	static bool is_running = false;
-	static uint16_t tx_offset = 0;
-	static uint16_t rx_offset = 0;
-	uint8_t is_done = (in) ? SPI_DONE : SPI_TX_DONE;
+// bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
+// {
+// 	static bool is_running = false;
+// 	static uint16_t buffer_offset = 0;
+// 	static uint8_t *o = NULL, i = NULL;
+// 	uint16_t offset = buffer_offset;
+// 	uint8_t is_done = (in) ? SPI_DONE : SPI_TX_DONE;
 
-	if (is_running)
-	{
-		// refill the buffers
-		if (!spi_dma_enabled)
-		{
-			// Read from RX buffer
-			uint16_t offset = rx_offset;
-			uint8_t *ptr;
+// 	if (!is_running)
+// 	{
+// 		is_running = true;
+// 		if (spi_dma_enabled)
+// 		{
+// 			GPDMA_Channel_CFG_Type GPDMACfg;
+// 			GPDMACfg.ChannelNum = SPI_DMA_CHANNEL;
+// 			GPDMACfg.SrcMemAddr = (uint32_t)out;
+// 			GPDMACfg.DstMemAddr = 0;
+// 			GPDMACfg.TransferSize = len;
+// 			GPDMACfg.TransferWidth = GPDMA_WIDTH_BYTE;
+// 			GPDMACfg.SrcConn = 0;
+// 			GPDMACfg.DstConn = SPI_DMA_TX_DEST;
+// 			GPDMACfg.DMALLI = 0;
+// 			GPDMACfg.TransferType = GPDMA_TRANSFERTYPE_M2P;
+// 			GPDMA_Setup(&GPDMACfg);
+// 			// Enable DMA channels
+// 			GPDMA_ChannelCmd(SPI_DMA_CHANNEL, ENABLE);
 
-			if (in)
-			{
-				ptr = &in[offset];
-				while ((SPI_REG->SR & SSP_SR_RNE) && (offset != len))
-				{
-					*ptr = SPI_REG->DR;
-					ptr++;
-					offset++;
-				}
+// 			if (in)
+// 			{ // Configure the DMA channel for SSP RX
+// 				GPDMACfg.ChannelNum = SPI_DMA_CHANNEL + 1;
+// 				GPDMACfg.SrcMemAddr = 0;
+// 				GPDMACfg.DstMemAddr = (uint32_t)in;
+// 				GPDMACfg.TransferSize = len;
+// 				GPDMACfg.TransferWidth = GPDMA_WIDTH_BYTE;
+// 				GPDMACfg.SrcConn = SPI_DMA_RX_DEST;
+// 				GPDMACfg.DstConn = 0;
+// 				GPDMACfg.DMALLI = 0;
+// 				GPDMACfg.TransferType = GPDMA_TRANSFERTYPE_P2M;
+// 				GPDMA_Setup(&GPDMACfg);
+// 				GPDMA_ChannelCmd(SPI_DMA_CHANNEL + 1, ENABLE);
+// 				SSP_DMACmd(SPI_REG, SSP_DMA_RX, ENABLE);
+// 			}
 
-				rx_offset = offset;
-				spi_transfer_done |= (offset != len) ? 0 : SPI_RX_DONE;
-			}
+// 			SSP_DMACmd(SPI_REG, SSP_DMA_TX, ENABLE);
+// 		}
+// 		else
+// 		{
+// 			// initial transmition goes the other way around.
+// 			// first fill TX data
 
-			// Fill TX buffer
-			offset = tx_offset;
-			ptr = &out[offset];
-			while ((SPI_REG->SR & SSP_SR_TNF) && (offset != len))
-			{
-				SPI_REG->DR = *ptr;
-				ptr++;
-				offset++;
-			}
-			tx_offset = offset;
-			spi_transfer_done |= (offset != len) ? 0 : SPI_TX_DONE;
-		}
+// 			while ((SPI_REG->SR & SSP_SR_TNF) && (offset != len))
+// 			{
+// 				SPI_REG->DR = *out++;
+// 				offset++;
+// 				if (in)
+// 				{
+// 					while ((SPI_REG->SR & SSP_SR_RNE))
+// 					{
+// 						*in++ = SPI_REG->DR;
+// 					}
+// 				}
+// 			}
+// 			// tx_offset = offset;
+// 			// spi_transfer_done |= (offset != len) ? 0 : SPI_TX_DONE;
 
-		if ((spi_transfer_done & SPI_DONE) == is_done)
-		{
-			tx_offset = 0;
-			rx_offset = 0;
-			is_running = false;
-			return false;
-		}
-		return true;
-	}
-	else
-	{
-		if (spi_dma_enabled)
-		{
-			GPDMA_Channel_CFG_Type GPDMACfg;
-			GPDMACfg.ChannelNum = SPI_DMA_CHANNEL;
-			GPDMACfg.SrcMemAddr = (uint32_t)out;
-			GPDMACfg.DstMemAddr = 0;
-			GPDMACfg.TransferSize = len;
-			GPDMACfg.TransferWidth = GPDMA_WIDTH_BYTE;
-			GPDMACfg.SrcConn = 0;
-			GPDMACfg.DstConn = SPI_DMA_TX_DEST;
-			GPDMACfg.DMALLI = 0;
-			GPDMACfg.TransferType = GPDMA_TRANSFERTYPE_M2P;
-			GPDMA_Setup(&GPDMACfg);
-			// Enable DMA channels
-			GPDMA_ChannelCmd(SPI_DMA_CHANNEL, ENABLE);
+// 			// went all in one go
+// 			// get remaining data
+// 			if ((offset == len))
+// 			{
+// 				if (in)
+// 				{
+// 					while ((SPI_REG->SR & SSP_SR_RNE))
+// 					{
+// 						*in++ = SPI_REG->DR;
+// 					}
+// 				}
+// 				is_running = false;
+// 				return false;
+// 			}
 
-			if (in)
-			{ // Configure the DMA channel for SSP RX
-				GPDMACfg.ChannelNum = SPI_DMA_CHANNEL + 1;
-				GPDMACfg.SrcMemAddr = 0;
-				GPDMACfg.DstMemAddr = (uint32_t)in;
-				GPDMACfg.TransferSize = len;
-				GPDMACfg.TransferWidth = GPDMA_WIDTH_BYTE;
-				GPDMACfg.SrcConn = SPI_DMA_RX_DEST;
-				GPDMACfg.DstConn = 0;
-				GPDMACfg.DMALLI = 0;
-				GPDMACfg.TransferType = GPDMA_TRANSFERTYPE_P2M;
-				GPDMA_Setup(&GPDMACfg);
-				GPDMA_ChannelCmd(SPI_DMA_CHANNEL + 1, ENABLE);
-				SSP_DMACmd(SPI_REG, SSP_DMA_RX, ENABLE);
-			}
+// 			buffer_offset = offset;
+// 			i = in;
+// 			o = out;
+// 			is_running = true;
+// 			return true;
+// 		}
+// 	}
+// 	else
+// 	{
+// 		// refill the buffers
+// 		if (!spi_dma_enabled)
+// 		{
+// 			// Read from RX buffer
+// 			in = i;
+// 			out = o;
 
-			SSP_DMACmd(SPI_REG, SSP_DMA_TX, ENABLE);
-			return true;
-		}
-		else
-		{
-			// initial transmition goes the other way around.
-			// first fill TX data
-			uint16_t offset = 0;
-			while ((SPI_REG->SR & SSP_SR_TNF) && (offset != len))
-			{
-				SPI_REG->DR = *out;
-				out++;
-				offset++;
-			}
-			tx_offset = offset;
-			spi_transfer_done |= (offset != len) ? 0 : SPI_TX_DONE;
+// 			if (in)
+// 			{
+// 				while ((SPI_REG->SR & SSP_SR_RNE))
+// 				{
+// 					*in++ = SPI_REG->DR;
+// 				}
+// 			}
 
-			// then check the RX buffer
-			if (in)
-			{
-				offset = 0;
-				while ((SPI_REG->SR & SSP_SR_RNE) && (offset != len))
-				{
-					*in = SPI_REG->DR;
-					in++;
-					offset++;
-				}
+// 			// Fill TX buffer
+// 			while ((SPI_REG->SR & SSP_SR_TNF) && (offset != len))
+// 			{
+// 				SPI_REG->DR = *o++;
+// 				offset++;
+// 				if (in)
+// 				{
+// 					while ((SPI_REG->SR & SSP_SR_RNE))
+// 					{
+// 						*in++ = SPI_REG->DR;
+// 					}
+// 				}
+// 			}
 
-				rx_offset = offset;
-				spi_transfer_done |= (offset != len) ? 0 : SPI_RX_DONE;
-			}
+// 			// get remaining data
+// 			if ((offset == len))
+// 			{
+// 				if (in)
+// 				{
+// 					while ((SPI_REG->SR & SSP_SR_RNE))
+// 					{
+// 						*in++ = SPI_REG->DR;
+// 					}
+// 				}
+// 				is_running = false;
+// 				return false;
+// 			}
 
+// 			buffer_offset = offset;
+// 			i = in;
+// 			o = out;
+// 			return true;
+// 		}
+// 	}
 
+// 	if ((spi_transfer_done & SPI_DONE) == is_done)
+// 	{
+// 		is_running = false;
+// 		spi_transfer_done = 0;
+// 		return false;
+// 	}
 
-			if ((spi_transfer_done & SPI_DONE) == is_done)
-			{
-				tx_offset = 0;
-				rx_offset = 0;
-				is_running = false;
-				return false;
-			}
-		}
-	}
-
-	return true;
-}
+// 	return true;
+// }
 
 #endif
 
