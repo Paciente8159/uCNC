@@ -855,38 +855,23 @@ void __attribute__((weak)) mcu_spi_start(spi_config_t config, uint32_t frequency
 
 bool __attribute__((weak)) mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 {
-	static uint16_t data_offset = 0;
-	uint16_t offset = data_offset;
-	uint8_t *o = out;
-	uint8_t *i = in;
-
-	if (offset)
+	uint32_t timeout = BULK_SPI_TIMEOUT + mcu_millis();
+	while (len--)
 	{
-		o = &out[offset];
+		uint8_t c = mcu_spi_xmit(*out++);
 		if (in)
 		{
-			i = &in[offset];
+			*in++ = c;
+		}
+
+		if (timeout < mcu_millis())
+		{
+			timeout = BULK_SPI_TIMEOUT + mcu_millis();
+			cnc_dotasks();
 		}
 	}
 
-	uint32_t timeout = BULK_SPI_TIMEOUT + mcu_millis();
-	while (timeout < mcu_millis())
-	{
-		uint8_t c = mcu_spi_xmit(*o++);
-		if(in)
-		{
-			*i++ = c;
-		}
-		offset++;
-		if (offset == len)
-		{
-			data_offset = 0;
-			return false;
-		}
-	}
-
-	data_offset = offset;
-	return true;
+	return false;
 }
 
 void __attribute__((weak)) mcu_spi_stop(void)

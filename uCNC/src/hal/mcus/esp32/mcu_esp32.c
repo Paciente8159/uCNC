@@ -1196,11 +1196,12 @@ void mcu_spi_start(spi_config_t config, uint32_t frequency)
 
 #ifndef mcu_spi_bulk_transfer
 // data buffer for normal or DMA
-bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
+static FORCEINLINE bool mcu_spi_transaction(const uint8_t *out, uint8_t *in, uint16_t len)
 {
 	static void *o = NULL;
 	static void *i = NULL;
 	static bool is_running = false;
+	static spi_transaction_t t = {0};
 
 	// start a new transmition
 	if (!is_running)
@@ -1226,11 +1227,9 @@ bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 			}
 		}
 
-		spi_transaction_t t = {
-				.length = len * 8, // Length in bits
-				.tx_buffer = o,
-				.rxlength = 0 // this deafults to length
-		};
+		t.length = len * 8; // Length in bits
+		t.tx_buffer = o;
+		t.rxlength = 0; // this deafults to length
 
 		if (in)
 		{
@@ -1239,7 +1238,52 @@ bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 
 		spi_device_polling_start(mcu_spi_handle, &t, portMAX_DELAY);
 		is_running = true;
-		return true;
+	}
+	else
+	{
+		// check transfer state
+		if (spi_device_polling_end(mcu_spi_handle, 0) == ESP_OK)
+		{
+			if (spi_dma_enabled)
+			{
+				// copy back memory from DMA
+				if (in)
+				{
+					memcpy(in, i, len);
+					heap_caps_free(i);
+				}
+				heap_caps_free(o);
+			}
+
+			is_running = false;
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
+{
+	static uint16_t data_offset = 0;
+	uint32_t offset = data_offset;
+	uint16_t max_transfer_size = (spi_dma_enabled) ? SPI_DMA_BUFFER_SIZE : SOC_SPI_MAXIMUM_BUFFER_SIZE;
+
+	uint8_t *i = NULL;
+	if(in){
+		i = &in[offset];
+	}
+
+	if (!mcu_spi_transaction(&out[offset], i, MIN(max_transfer_size, (len - offset))))
+	{
+		offset += max_transfer_size;
+		if (offset >= len)
+		{
+			data_offset = 0;
+			return false;
+		}
+
+		data_offset = (uint16_t)offset;
 	}
 	else
 	{
