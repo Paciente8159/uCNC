@@ -190,19 +190,22 @@ void softspi_bulk_xmit(softspi_port_t *port, const uint8_t *out, uint8_t *in, ui
 
 void softspi_start(softspi_port_t *port)
 {
+	// mutual exclusive access
+	while (port->spiconfig.locked)
+	{
+		cnc_dotasks();
+	}
+	port->spiconfig.locked = 1;
+
 	// if port with custom method execute it
 	// usually HW ports
 	if (port->start)
 	{
-		// mutual exclusive access
-		while (port->spiconfig.locked)
-		{
-			cnc_dotasks();
-		}
-		port->spiconfig.locked = 1;
-
 		port->start(port->spiconfig.spi, port->spifreq);
+		return;
 	}
+
+	softspi_config(port, port->spiconfig, port->spifreq);
 }
 
 void softspi_stop(softspi_port_t *port)

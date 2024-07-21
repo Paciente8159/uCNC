@@ -53,6 +53,10 @@ void esp32_wifi_bt_init(void);
 void esp32_wifi_bt_flush(uint8_t *buffer);
 void esp32_wifi_bt_process(void);
 
+#ifdef USE_ARDUINO_SPI_LIBRARY
+void mcu_spi_init(void);
+#endif
+
 #if !defined(RAM_ONLY_SETTINGS) && !defined(USE_ARDUINO_EEPROM_LIBRARY)
 #include <nvs.h>
 #include <esp_partition.h>
@@ -633,9 +637,14 @@ void mcu_init(void)
 	xTaskCreatePinnedToCore(mcu_rtc_task, "rtcTask", 2048, NULL, 7, NULL, CONFIG_ARDUINO_RUNNING_CORE);
 
 #ifdef MCU_HAS_SPI
-	spi_access_mutex = xSemaphoreCreateMutex();
+
 	spi_config_t spi_conf = {0};
+#ifndef USE_ARDUINO_SPI_LIBRARY
+	spi_access_mutex = xSemaphoreCreateMutex();
 	spi_conf.mode = SPI_MODE;
+#else
+	mcu_spi_init();
+#endif
 	mcu_spi_config(spi_conf, SPI_FREQ);
 #endif
 
@@ -1192,28 +1201,6 @@ bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 	static void *o = NULL;
 	static void *i = NULL;
 	static bool is_running = false;
-	spi_transaction_t *ret_trans;
-	// check transfer state
-	esp_err_t ret = spi_device_get_trans_result(mcu_spi_handle, &ret_trans, 0); // 0 means non-blocking
-	if (ret == ESP_OK)
-	{
-		if (is_running)
-		{
-			if (spi_dma_enabled)
-			{
-				// copy back memory from DMA
-				if (in)
-				{
-					memcpy(in, i, len);
-					heap_caps_free(i);
-				}
-				heap_caps_free(o);
-			}
-
-			is_running = false;
-			return false;
-		}
-	}
 
 	// start a new transmition
 	if (!is_running)
@@ -1244,14 +1231,35 @@ bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 				.tx_buffer = o,
 				.rxlength = 0 // this deafults to length
 		};
-		
+
 		if (in)
 		{
 			t.rx_buffer = i;
 		}
 
-		spi_device_queue_trans(mcu_spi_handle, &t, portMAX_DELAY);
+		spi_device_polling_start(mcu_spi_handle, &t, portMAX_DELAY);
+		is_running = true;
 		return true;
+	}
+	else
+	{
+		// check transfer state
+		if (spi_device_polling_end(mcu_spi_handle, 0) == ESP_OK)
+		{
+			if (spi_dma_enabled)
+			{
+				// copy back memory from DMA
+				if (in)
+				{
+					memcpy(in, i, len);
+					heap_caps_free(i);
+				}
+				heap_caps_free(o);
+			}
+
+			is_running = false;
+			return false;
+		}
 	}
 
 	return true;

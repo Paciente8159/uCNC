@@ -1170,30 +1170,32 @@ extern "C"
 #if defined(MCU_HAS_SPI) && defined(USE_ARDUINO_SPI_LIBRARY)
 #include <SPI.h>
 SPIClass *esp32spi = NULL;
+static uint8_t spi_mode = 0;
+static uint32_t spi_freq = 1000000UL;
 extern "C"
 {
-	void mcu_spi_config(spi_config_t config, uint32_t freq)
+	
+	void mcu_spi_init(void)
 	{
-		if (esp32spi != NULL)
-		{
-			esp32spi->end();
-			esp32spi = NULL;
-		}
-
 #if (SPI_CLK_BIT == 14 || SPI_CLK_BIT == 25)
 		esp32spi = new SPIClass(HSPI);
 #else
 		esp32spi = new SPIClass(VSPI);
 #endif
-		esp32spi->begin(SPI_CLK_BIT, SPI_SDI_BIT, SPI_SDO_BIT, SPI_CS_BIT);
+		esp32spi->begin(SPI_CLK_BIT, SPI_SDI_BIT, SPI_SDO_BIT, -1);
+	}
+
+	void mcu_spi_config(spi_config_t config, uint32_t freq)
+	{
+		spi_freq = freq;
+		spi_mode = config.mode;
 		esp32spi->setFrequency(freq);
 		esp32spi->setDataMode(config.mode);
 	}
 
 	uint8_t mcu_spi_xmit(uint8_t data)
 	{
-		data = esp32spi->transfer(data);
-		return data;
+		return esp32spi->transfer(data);
 	}
 
 	void mcu_spi_start(spi_config_t config, uint32_t frequency)
