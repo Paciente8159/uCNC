@@ -1285,26 +1285,6 @@ bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 
 		data_offset = (uint16_t)offset;
 	}
-	else
-	{
-		// check transfer state
-		if (spi_device_polling_end(mcu_spi_handle, 0) == ESP_OK)
-		{
-			if (spi_dma_enabled)
-			{
-				// copy back memory from DMA
-				if (in)
-				{
-					memcpy(in, i, len);
-					heap_caps_free(i);
-				}
-				heap_caps_free(o);
-			}
-
-			is_running = false;
-			return false;
-		}
-	}
 
 	return true;
 }
