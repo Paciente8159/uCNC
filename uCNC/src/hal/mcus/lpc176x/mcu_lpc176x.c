@@ -1045,20 +1045,35 @@ static void mcu_prep_dma_transfer(void *buf, uint16_t length, bool is_rx)
 	/* Configure GPDMA channel 0 -------------------------------------------------------------*/
 	/* DMA Channel 0 */
 	GPDMACfg.ChannelNum = 0;
-	// Source memory
-	GPDMACfg.SrcMemAddr = (uint32_t)buf;
-	// Destination memory - Not used
-	GPDMACfg.DstMemAddr = 0;
+
+	if (!is_rx)
+	{
+		// Source memory
+		GPDMACfg.SrcMemAddr = (uint32_t)buf;
+		// Destination memory - Not used
+		GPDMACfg.DstMemAddr = 0;
+		// Source connection - unused
+		GPDMACfg.SrcConn = 0;
+		// Destination connection
+		GPDMACfg.DstConn = SPI_DMA_TX_DEST;
+	}
+	else
+	{
+		// Source memory
+		GPDMACfg.SrcMemAddr = 0;
+		// Destination memory - Not used
+		GPDMACfg.DstMemAddr = (uint32_t)buf;
+		// Source connection - unused
+		GPDMACfg.SrcConn = SPI_DMA_RX_DEST;
+		// Destination connection
+		GPDMACfg.DstConn = 0;
+	}
 	// Transfer size
 	GPDMACfg.TransferSize = length;
 	// Transfer width
 	GPDMACfg.TransferWidth = GPDMA_WIDTH_BYTE;
 	// Transfer type
 	GPDMACfg.TransferType = (is_rx) ? GPDMA_TRANSFERTYPE_P2M : GPDMA_TRANSFERTYPE_M2P;
-	// Source connection - unused
-	GPDMACfg.SrcConn = 0;
-	// Destination connection
-	GPDMACfg.DstConn = (is_rx) ? SPI_DMA_RX_DEST : SPI_DMA_TX_DEST;
 
 	GPDMACfg.DMALLI = 0;
 
