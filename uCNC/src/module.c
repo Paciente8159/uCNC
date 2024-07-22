@@ -43,6 +43,7 @@ static FORCEINLINE void load_modules(void)
 #ifdef LOAD_MODULES_OVERRIDE
 	LOAD_MODULES_OVERRIDE();
 #endif
+LOAD_MODULE(sd_card_v2);
 }
 
 void mod_init(void)

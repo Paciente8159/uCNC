@@ -3750,11 +3750,19 @@ extern "C"
 #error "SPI pin configuration not supported"
 #endif
 
-#ifndef SPI_DMA_CHANNEL
-#define SPI_DMA_CHANNEL 0
+#if (SPI_PORT == 0)
+#define SPI_DMA_TX_CH 0
+#define SPI_DMA_RX_CH 1
+#else
+#define SPI_DMA_TX_CH 2
+#define SPI_DMA_RX_CH 3
 #endif
 #define SPI_DMA_TX_DEST __helper__(GPDMA_CONN_SSP,SPI_PORT,_Tx)
 #define SPI_DMA_RX_DEST __helper__(GPDMA_CONN_SSP,SPI_PORT,_Rx)
+#define SPI_DMA_TX_CHANNEL __helper__(LPC_GPDMACH,SPI_DMA_TX_CH,)
+#define SPI_DMA_RX_CHANNEL __helper__(LPC_GPDMACH,SPI_DMA_RX_CH,)
+#define MCU_SPI_ISR __helper__(SSP, SPI_PORT, _IRQHandler)
+#define MCU_SPI_IRQ __helper__(SSP, SPI_PORT, _IRQn)
 
 #endif
 
