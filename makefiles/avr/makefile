@@ -138,6 +138,7 @@ $(BUILD_DIR)/%.o: %.c | $(BUILD_DIR)
 $(BUILD_DIR)/$(TARGET).elf: $(OBJECTS)
 	$(CC) $(OBJECTS) $(ASFLAGS) -o $@
 	$(SZ) -C --mcu=$(CPU) $@
+	$(CP) 
 
 #  $(BUILD_DIR)/$(TARGET).elf: $(C_SOURCES)
 # 	$(CC) -fwhole-program $(CFLAGS) $(ASFLAGS) $^ -o $@
