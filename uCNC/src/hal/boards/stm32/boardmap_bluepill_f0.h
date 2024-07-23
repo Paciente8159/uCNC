@@ -129,6 +129,13 @@ extern "C"
 	#define I2C_PORT 2
 	// #define I2C_ADDRESS 1
 
+// #define SPI_CLK_PORT A
+// #define SPI_CLK_BIT 5
+// #define SPI_SDI_PORT A
+// #define SPI_SDI_BIT 6
+// #define SPI_SDO_PORT A
+// #define SPI_SDO_BIT 7
+
 #ifdef __cplusplus
 }
 #endif

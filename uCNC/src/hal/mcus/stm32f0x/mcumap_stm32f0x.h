@@ -3835,6 +3835,27 @@ extern "C"
 #define SPI_CLOCK HAL_RCC_GetPCLK1Freq()
 #endif
 
+#if (SPI_PORT == 1)
+#define SPI_DMA_TX_CHANNEL_NUM 3
+#define SPI_DMA_RX_CHANNEL_NUM 2
+#define SPI_DMA_TX_IFR_POS 8
+#define SPI_DMA_RX_IFR_POS 4
+#elif (SPI_PORT == 2)
+#define SPI_DMA_TX_CHANNEL_NUM 5
+#define SPI_DMA_RX_CHANNEL_NUM 4
+#define SPI_DMA_TX_IFR_POS 16
+#define SPI_DMA_RX_IFR_POS 12
+#endif
+
+#define SPI_DMA_TX_CHANNEL __helper__(DMA1_Channel, SPI_DMA_TX_CHANNEL_NUM, )
+#define SPI_DMA_RX_CHANNEL __helper__(DMA1_Channel, SPI_DMA_RX_CHANNEL_NUM, )
+
+#define SPI_DMA_TX_IFCR_MASK (0b1111 << SPI_DMA_TX_IFR_POS)
+#define SPI_DMA_RX_IFCR_MASK (0b1111 << SPI_DMA_RX_IFR_POS)
+
+#define SPI_IRQ __helper__(SPI, SPI_PORT, _IRQn)
+#define SPI_ISR __helper__(SPI, SPI_PORT, _IRQHandler)
+
 #endif
 
 // I2C
