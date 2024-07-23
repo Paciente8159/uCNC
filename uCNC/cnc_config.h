@@ -320,10 +320,10 @@ extern "C"
 	/**
 	 * Uncomment to enable module extensions
 	 * */
-	// #define ENABLE_MAIN_LOOP_MODULES
-	// #define ENABLE_IO_MODULES
-	// #define ENABLE_PARSER_MODULES
-	// #define ENABLE_MOTION_CONTROL_MODULES
+	#define ENABLE_MAIN_LOOP_MODULES
+	#define ENABLE_IO_MODULES
+	#define ENABLE_PARSER_MODULES
+	#define ENABLE_MOTION_CONTROL_MODULES
 
 	/**
 	 * Settings extensions are enabled by default
@@ -576,9 +576,9 @@ extern "C"
 	 * For pin diagnostics enables command $P
 	 * */
 
-	// #define ENABLE_EXTRA_SYSTEM_CMDS
+	#define ENABLE_EXTRA_SYSTEM_CMDS
 	// uncomment o translate pins names when printing pins states with $P command
-	// #define ENABLE_PIN_TRANSLATIONS
+	#define ENABLE_PIN_TRANSLATIONS
 
 	/**
 	 * Compilation specific options
