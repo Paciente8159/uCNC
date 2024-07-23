@@ -652,8 +652,9 @@ void mcu_init(void)
 	SPI_REG->CR1 = SPI_CR1_SSM		 // software slave management enabled
 								 | SPI_CR1_SSI	 // internal slave select
 								 | SPI_CR1_MSTR; // SPI master mode
-																 //    | (SPI_SPEED << 3) | SPI_MODE;
-	mcu_spi_config(SPI_MODE, SPI_FREQ);
+	//    | (SPI_SPEED << 3) | SPI_MODE;
+	spi_config_t config = {.mode = SPI_MODE};
+	mcu_spi_config(config, SPI_FREQ);
 
 	RCC->AHBENR |= SPI_DMA_EN;
 
@@ -958,7 +959,8 @@ void mcu_eeprom_flush()
 }
 
 #ifdef MCU_HAS_SPI
-typedef enum spi_port_state_enum {
+typedef enum spi_port_state_enum
+{
 	SPI_UNKNOWN = 0,
 	SPI_IDLE = 1,
 	SPI_TRANSMITTING = 2,
@@ -967,9 +969,8 @@ typedef enum spi_port_state_enum {
 static spi_port_state_t spi_port_state = SPI_UNKNOWN;
 static bool spi_enable_dma = false;
 
-void mcu_spi_config(uint8_t mode, uint32_t frequency)
+void mcu_spi_config(spi_config_t config, uint32_t frequency)
 {
-	mode = CLAMP(0, mode, 4);
 	uint8_t div = (uint8_t)(SPI_CLOCK / frequency);
 
 	uint8_t speed;
@@ -1010,13 +1011,13 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 	SPI_REG->CR1 &= SPI_CR1_SPE;
 	// clear speed and mode
 	SPI_REG->CR1 &= 0x3B;
-	SPI_REG->CR1 |= (speed << 3) | mode;
+	SPI_REG->CR1 |= (speed << 3) | config.mode;
 	// enable SPI
 	SPI_REG->CR1 |= SPI_CR1_SPE;
 
 	spi_port_state = SPI_IDLE;
 	// TODO: Assign this to the configured value in mcu_spi_config
-	spi_enable_dma = false;
+	spi_enable_dma = config.enable_dma;
 }
 
 uint8_t mcu_spi_xmit(uint8_t c)
@@ -1038,17 +1039,17 @@ static uint16_t spi_transfer_rx_len = 0;
 
 void SPI_ISR()
 {
-	if((SPI_REG->SR & SPI_SR_TXE) && spi_transfer_tx_len)
+	if ((SPI_REG->SR & SPI_SR_TXE) && spi_transfer_tx_len)
 	{
 		SPI_REG->DR = *spi_transfer_tx_ptr++;
 		--spi_transfer_tx_len;
 	}
-	if((SPI_REG->SR & SPI_SR_RXNE) && spi_transfer_rx_len)
+	if ((SPI_REG->SR & SPI_SR_RXNE) && spi_transfer_rx_len)
 	{
 		*spi_transfer_rx_ptr++ = SPI_REG->DR;
 		--spi_transfer_rx_len;
 	}
-	if(spi_transfer_tx_len == 0 && spi_transfer_rx_len == 0)
+	if (spi_transfer_tx_len == 0 && spi_transfer_rx_len == 0)
 	{
 		SPI_REG->CR2 &= ~(SPI_CR2_TXEIE | SPI_CR2_RXNEIE);
 		spi_port_state = SPI_TRANSMIT_COMPLETE;
@@ -1058,29 +1059,30 @@ void SPI_ISR()
 
 bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t datalen)
 {
-	if(!spi_enable_dma)
+	if (!spi_enable_dma)
 	{
 		// Bulk transfer without DMA
-		if(spi_port_state == SPI_IDLE)
+		if (spi_port_state == SPI_IDLE)
 		{
 			spi_transfer_tx_ptr = tx_data;
 			spi_transfer_tx_len = datalen;
 			SPI_REG->CR2 |= SPI_CR2_TXEIE;
 
-			if(rx_data)
+			if (rx_data)
 			{
 				spi_transfer_rx_ptr = rx_data;
 				spi_transfer_rx_len = datalen;
 				SPI_REG->CR2 |= SPI_CR2_RXNEIE;
 			}
-			else {
+			else
+			{
 				spi_transfer_rx_ptr = 0;
 				spi_transfer_rx_len = 0;
 			}
 
 			spi_port_state = SPI_TRANSMITTING;
 		}
-		else if(spi_port_state == SPI_TRANSMIT_COMPLETE)
+		else if (spi_port_state == SPI_TRANSMIT_COMPLETE)
 		{
 			spi_port_state = SPI_IDLE;
 			return false;
@@ -1089,24 +1091,24 @@ bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t da
 		return true;
 	}
 
-	if(spi_port_state == SPI_TRANSMITTING)
+	if (spi_port_state == SPI_TRANSMITTING)
 	{
 		// Wait for transfers to complete
-		if(!(SPI_DMA_CONTROLLER->ISR >> (SPI_DMA_TX_IFR_POS + 5)) ||
-			(!(SPI_DMA_CONTROLLER->ISR >> (SPI_DMA_RX_IFR_POS + 5)) && rx_data))
+		if (!(SPI_DMA_CONTROLLER->ISR >> (SPI_DMA_TX_IFR_POS + 5)) ||
+				(!(SPI_DMA_CONTROLLER->ISR >> (SPI_DMA_RX_IFR_POS + 5)) && rx_data))
 			return true;
 
 		// SPI hardware still transmitting the last byte
-		if(SPI_REG->SR & SPI_SR_BSY)
+		if (SPI_REG->SR & SPI_SR_BSY)
 			return true;
 
 		// Disable DMA use
 		SPI_REG->CR2 &= ~SPI_CR2_TXDMAEN;
-		if(rx_data)
+		if (rx_data)
 			SPI_REG->CR2 &= ~SPI_CR2_RXDMAEN;
 		// Disable channels
 		SPI_DMA_TX_CHANNEL->CCR &= ~DMA_CCR_EN;
-		if(rx_data)
+		if (rx_data)
 			SPI_DMA_RX_CHANNEL->CCR &= ~DMA_CCR_EN;
 
 		// Transfer finished
@@ -1114,16 +1116,16 @@ bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t da
 		return false;
 	}
 
-	if(spi_port_state != SPI_IDLE)
+	if (spi_port_state != SPI_IDLE)
 	{
 		// Wait for idle
-		if(SPI_REG->SR & SPI_SR_BSY)
+		if (SPI_REG->SR & SPI_SR_BSY)
 			return true;
 		spi_port_state = SPI_IDLE;
 	}
 
 	// Wait until streams are available
-	if((SPI_DMA_TX_CHANNEL->CCR & DMA_CCR_EN) || ((SPI_DMA_RX_CHANNEL->CCR & DMA_CCR_EN) && rx_data))
+	if ((SPI_DMA_TX_CHANNEL->CCR & DMA_CCR_EN) || ((SPI_DMA_RX_CHANNEL->CCR & DMA_CCR_EN) && rx_data))
 		return true;
 
 	/***     Setup Transmit DMA     ***/
@@ -1132,9 +1134,9 @@ bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t da
 	SPI_DMA_CONTROLLER->IFCR |= SPI_DMA_TX_IFCR_MASK;
 
 	SPI_DMA_TX_CHANNEL->CCR =
-		(0b01 << DMA_CCR_PL_Pos) | // Priority medium
-		DMA_CCR_MINC | // Increment memory
-		DMA_CCR_DIR; // Memory to peripheral
+			(0b01 << DMA_CCR_PL_Pos) | // Priority medium
+			DMA_CCR_MINC |						 // Increment memory
+			DMA_CCR_DIR;							 // Memory to peripheral
 
 	SPI_DMA_TX_CHANNEL->CPAR = (uint32_t)&SPI_REG->DR;
 	SPI_DMA_TX_CHANNEL->CMAR = (uint32_t)tx_data;
@@ -1144,7 +1146,7 @@ bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t da
 	// Enable DMA use for transmission
 	SPI_REG->CR2 |= SPI_CR2_TXDMAEN;
 
-	if(rx_data)
+	if (rx_data)
 	{
 		/***     Setup Receive DMA     ***/
 
@@ -1152,8 +1154,8 @@ bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t da
 		SPI_DMA_CONTROLLER->IFCR |= SPI_DMA_RX_IFCR_MASK;
 
 		SPI_DMA_RX_CHANNEL->CCR =
-			(0b01 << DMA_CCR_PL_Pos) | // Priority medium
-			DMA_CCR_MINC; // Increment memory
+				(0b01 << DMA_CCR_PL_Pos) | // Priority medium
+				DMA_CCR_MINC;							 // Increment memory
 
 		SPI_DMA_RX_CHANNEL->CPAR = (uint32_t)&SPI_REG->DR;
 		SPI_DMA_RX_CHANNEL->CMAR = (uint32_t)rx_data;
@@ -1168,7 +1170,7 @@ bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t da
 
 	// Start streams
 	SPI_DMA_TX_CHANNEL->CCR |= DMA_CCR_EN;
-	if(rx_data)
+	if (rx_data)
 		SPI_DMA_RX_CHANNEL->CCR |= DMA_CCR_EN;
 
 	// Transmission started

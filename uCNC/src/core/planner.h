@@ -71,8 +71,8 @@ extern "C"
 #if TOOL_COUNT > 0
 		int16_t spindle_speed;
 		uint8_t spindle_speed_override;
-		planner_flags_t state_flags;
 #endif
+		planner_flags_t state_flags;
 	} planner_state_t;
 
 	extern planner_state_t g_planner_state;

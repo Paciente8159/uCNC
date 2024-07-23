@@ -67,7 +67,7 @@ extern "C"
 	 * */
 
 #ifndef AXIS_COUNT
-#define AXIS_COUNT 3
+#define AXIS_COUNT 1
 #endif
 
 #ifndef KINEMATIC
@@ -152,7 +152,7 @@ extern "C"
 	 * */
 
 #ifndef TOOL_COUNT
-#define TOOL_COUNT 1
+#define TOOL_COUNT 0
 #endif
 
 #if TOOL_COUNT > 0
@@ -298,12 +298,12 @@ extern "C"
 	 *   - home commands (G28 and G30)
 	 *   - disable G10. This affects coordinate systems and home as it's not possible to define them.
 	 */
-	// #define DISABLE_ARC_SUPPORT
-	// #define DISABLE_PROBING_SUPPORT
-	// #define DISABLE_COORD_SYS_SUPPORT
-	// #define DISABLE_HOME_SUPPORT
-	// #define DISABLE_G10_SUPPORT
-	// #define DISABLE_PATH_MODES
+	#define DISABLE_ARC_SUPPORT
+	#define DISABLE_PROBING_SUPPORT
+	#define DISABLE_COORD_SYS_SUPPORT
+	#define DISABLE_HOME_SUPPORT
+	#define DISABLE_G10_SUPPORT
+	#define DISABLE_PATH_MODES
 
 	/**
 	 * enable step counting on sync motion command (needed for some Gcode extensions like G33)
@@ -321,9 +321,9 @@ extern "C"
 	 * Uncomment to enable module extensions
 	 * */
 	#define ENABLE_MAIN_LOOP_MODULES
-	#define ENABLE_IO_MODULES
+	// #define ENABLE_IO_MODULES
 	#define ENABLE_PARSER_MODULES
-	#define ENABLE_MOTION_CONTROL_MODULES
+	// #define ENABLE_MOTION_CONTROL_MODULES
 
 	/**
 	 * Settings extensions are enabled by default
@@ -528,13 +528,13 @@ extern "C"
 	 * helps to reduce code size if features are not needed
 	 * */
 #ifndef DISABLE_ALL_CONTROLS
-// #define DISABLE_ALL_CONTROLS
+#define DISABLE_ALL_CONTROLS
 #endif
 #ifndef DISABLE_ALL_LIMITS
-// #define DISABLE_ALL_LIMITS
+#define DISABLE_ALL_LIMITS
 #endif
 #ifndef DISABLE_PROBE
-// #define DISABLE_PROBE
+#define DISABLE_PROBE
 #endif
 
 	/**
@@ -578,7 +578,7 @@ extern "C"
 
 	#define ENABLE_EXTRA_SYSTEM_CMDS
 	// uncomment o translate pins names when printing pins states with $P command
-	#define ENABLE_PIN_TRANSLATIONS
+	// #define ENABLE_PIN_TRANSLATIONS
 
 	/**
 	 * Compilation specific options
