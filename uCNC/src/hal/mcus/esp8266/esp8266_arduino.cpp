@@ -997,7 +997,7 @@ extern "C"
 
 	uint8_t mcu_spi_xmit(uint8_t c)
 	{
-		SPI.transfer(c);
+		return SPI.transfer(c);
 		// while (SPI1CMD & SPIBUSY)
 		// 	;
 		// SPI1W0 = c;
