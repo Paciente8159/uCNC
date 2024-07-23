@@ -150,7 +150,7 @@ extern "C"
 // #define SPI_SDI_PORT A
 // #define SPI_SDI_BIT 19
 // #define SPI_SDO_PORT A
-// #define SPI_SDO_BIT 18
+// #define SPI_SDO_BIT 16
 
 #define ONESHOT_TIMER 2
 

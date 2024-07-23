@@ -1524,7 +1524,7 @@ bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t da
 			}
 			else
 			{
-				spi_rx_data = 0;
+				spi_rx_buffer = 0;
 				spi_rx_length = 0;
 			}
 
