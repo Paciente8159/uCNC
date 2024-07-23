@@ -63,6 +63,7 @@ extern "C"
 
 	typedef union
 	{
+		uint8_t flags;
 		spi_config_t spi;
 		struct
 		{
