@@ -654,7 +654,8 @@ void mcu_init(void)
 								 | SPI_CR1_SSI	 // internal slave select
 								 | SPI_CR1_MSTR; // SPI master mode
 
-	mcu_spi_config(SPI_MODE, SPI_FREQ);
+	spi_config_t config = {.mode = SPI_MODE};
+	mcu_spi_config(config, SPI_FREQ);
 
 	RCC->AHB1ENR |= SPI_DMA_EN;
 
@@ -987,9 +988,8 @@ typedef enum spi_port_state_enum {
 static spi_port_state_t spi_port_state = SPI_UNKNOWN;
 static bool spi_enable_dma = false;
 
-void mcu_spi_config(uint8_t mode, uint32_t frequency)
+void mcu_spi_config(spi_config_t config, uint32_t frequency)
 {
-	mode = CLAMP(0, mode, 4);
 	uint8_t div = (uint8_t)(SPI_CLOCK / frequency);
 
 	uint8_t speed;
@@ -1030,13 +1030,13 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 	SPI_REG->CR1 &= SPI_CR1_SPE;
 	// clear speed and mode
 	SPI_REG->CR1 &= 0x3B;
-	SPI_REG->CR1 |= (speed << 3) | mode;
+	SPI_REG->CR1 |= (speed << 3) | config.mode;
 	// enable SPI
 	SPI_REG->CR1 |= SPI_CR1_SPE;
 
 	spi_port_state = SPI_IDLE;
 	// TODO: Assign this to the configured value in mcu_spi_config
-	spi_enable_dma = false;
+	spi_enable_dma = config.enable_dma;
 }
 
 uint8_t mcu_spi_xmit(uint8_t c)
