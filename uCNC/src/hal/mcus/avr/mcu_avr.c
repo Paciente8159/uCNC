@@ -1060,20 +1060,23 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 }
 
 static volatile const uint8_t *spi_bulk_data_ptr_tx = 0;
-static volatile uint8_t *spi_bulk_data_ptr_rx = 0;
+static uint8_t *spi_bulk_data_ptr_rx = 0;
 static volatile uint16_t spi_bulk_data_len = 0;
 
-ISR(SPI_STC_vect) {
-	if(spi_bulk_data_len)
+ISR(SPI_STC_vect, ISR_NOBLOCK) {
+	// Read received byte
+	if(spi_bulk_data_ptr_rx != 0)
+		*spi_bulk_data_ptr_rx++ = SPDR;
+
+	if(--spi_bulk_data_len)
 	{
-		// Read received byte
-		if(spi_bulk_data_ptr_rx != 0)
-			*spi_bulk_data_ptr_rx++ = SPDR;
-		if(--spi_bulk_data_len)
-		{
-			// Transmit the next byte
-			SPDR = *spi_bulk_data_ptr_tx++;
-		}
+		// Transmit the next byte
+		SPDR = *spi_bulk_data_ptr_tx++;
+	}
+	else
+	{
+		// Transmission finished, disable the interrupt
+		SPCR &= ~(1 << SPIE);
 	}
 }
 
@@ -1092,7 +1095,6 @@ bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t da
 	{
 		spi_bulk_data_ptr_tx = 0;
 		spi_bulk_data_ptr_rx = 0;
-		SPCR &= ~(1 << SPIE);
 		return false;
 	}
 
