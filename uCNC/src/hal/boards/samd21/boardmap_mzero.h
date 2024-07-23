@@ -110,8 +110,8 @@ extern "C"
 // Functionalities are set in cnc_hal_config.h file
 
 // spindle dir
-#define DOUT0_BIT 17
-#define DOUT0_PORT A
+// #define DOUT0_BIT 17
+// #define DOUT0_PORT A
 
 // analog input
 //  #define ANALOG0_BIT 5
@@ -152,7 +152,10 @@ extern "C"
 #define SPI_SDO_PORT A
 #define SPI_SDO_BIT 16
 #define SPI_CS_PORT A
-#define SPI_CS_BIT 14
+#define SPI_CS_BIT 18
+
+#define DOUT20_PORT A
+#define DOUT20_BIT 14
 
 #define ONESHOT_TIMER 2
 

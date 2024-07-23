@@ -30,20 +30,33 @@ extern "C"
 
 // SAME AS GRBL for test purposes
 // Setup step pins
-#define STEP2_BIT 4	 // assigns STEP2 pin
-#define STEP2_PORT D // assigns STEP2 port
+// #define STEP2_BIT 4	 // assigns STEP2 pin
+// #define STEP2_PORT D // assigns STEP2 port
 #define STEP1_BIT 5	 // assigns STEP1 pin
 #define STEP1_PORT D // assigns STEP1 port
 #define STEP0_BIT 16 // assigns STEP0 pin
 #define STEP0_PORT D // assigns STEP0 port
 
 // Setup dir pins
-#define DIR2_BIT 13 // assigns DIR2 pin
-#define DIR2_PORT D // assigns DIR2 port
-#define DIR1_BIT 12 // assigns DIR1 pin
-#define DIR1_PORT D // assigns DIR1 port
-#define DIR0_BIT 14 // assigns DIR0 pin
-#define DIR0_PORT D // assigns DIR0 port
+// #define DIR2_BIT 13 // assigns DIR2 pin
+// #define DIR2_PORT D // assigns DIR2 port
+// #define DIR1_BIT 12 // assigns DIR1 pin
+// #define DIR1_PORT D // assigns DIR1 port
+// #define DIR0_BIT 14 // assigns DIR0 pin
+// #define DIR0_PORT D // assigns DIR0 port
+
+// Setup dir pins
+#define SPI_CLK_BIT 14 // assigns DIR2 pin
+#define SPI_CLK_PORT D // assigns DIR2 port
+#define SPI_SDO_BIT 13 // assigns DIR1 pin
+#define SPI_SDO_PORT D // assigns DIR1 port
+#define SPI_SDI_BIT 12 // assigns DIR0 pin
+#define SPI_SDI_PORT D // assigns DIR0 port
+#define SPI_CS_BIT 15 // assigns DIR0 pin
+#define SPI_CS_PORT D // assigns DIR0 port
+
+#define DOUT20_BIT 4 // assigns DIR0 pin
+#define DOUT20_PORT D // assigns DIR0 port
 
 // Setup control input pins
 // #define ESTOP_BIT 0
@@ -65,8 +78,8 @@ extern "C"
 
 // Setup generic IO Pins
 // spindle dir
-#define DOUT0_BIT 15
-#define DOUT0_PORT D
+// #define DOUT0_BIT 15
+// #define DOUT0_PORT D
 
 // Stepper enable pin. For Grbl on Uno board a single pin is used
 #define STEP0_EN_BIT 0

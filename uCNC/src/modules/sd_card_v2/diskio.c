@@ -79,7 +79,7 @@ SOFTSPI(mmcsd_spi, 100000UL, 0, SD_SPI_SDO, SD_SPI_SDI, SD_SPI_CLK);
 #define SD_SPI_SDI SPI_SDI
 #endif
 #ifndef SD_SPI_CS
-#define SD_SPI_CS SPI_CS
+#define SD_SPI_CS DOUT20
 #endif
 #define SD_SPI_PORT MCU_SPI
 #endif
@@ -103,9 +103,10 @@ static mmcsd_card_t mmcsd_card;
 
 FORCEINLINE static void mmcsd_spi_speed(bool highspeed)
 {
+	SD_SPI_PORT->spiconfig.spi.enable_dma = 1;
 	if (highspeed)
 	{
-		SD_SPI_PORT->spifreq = 18000000UL;
+		SD_SPI_PORT->spifreq = 10000000UL;
 	}
 	else
 	{

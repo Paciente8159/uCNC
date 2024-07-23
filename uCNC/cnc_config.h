@@ -531,10 +531,10 @@ extern "C"
 #define DISABLE_ALL_CONTROLS
 #endif
 #ifndef DISABLE_ALL_LIMITS
-#define DISABLE_ALL_LIMITS
+// #define DISABLE_ALL_LIMITS
 #endif
 #ifndef DISABLE_PROBE
-#define DISABLE_PROBE
+// #define DISABLE_PROBE
 #endif
 
 	/**

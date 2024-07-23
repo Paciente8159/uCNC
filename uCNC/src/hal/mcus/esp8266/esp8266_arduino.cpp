@@ -991,7 +991,8 @@ extern "C"
 	}
 
 	bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len){
-		SPI.transferBytes(out, int, len);
+		SPI.transferBytes(out, in, len);
+		return false;
 	}
 
 	void mcu_spi_end(void)
@@ -1001,7 +1002,7 @@ extern "C"
 
 	uint8_t mcu_spi_xmit(uint8_t c)
 	{
-		SPI.transfer(c);
+		return SPI.transfer(c);
 		// while (SPI1CMD & SPIBUSY)
 		// 	;
 		// SPI1W0 = c;

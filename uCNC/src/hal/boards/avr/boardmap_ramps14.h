@@ -135,7 +135,7 @@ extern "C"
 	// #define RTC_TIMER 0
 
 // TMC0 UART
-#define DOUT20_BIT 1
+#define DOUT20_BIT 5
 #define DOUT20_PORT G
 #define DIN20_BIT 1
 #define DIN20_PORT K
@@ -169,8 +169,8 @@ extern "C"
 	// #define DIN24_PORT F
 	// #define DIN24_PULLUP
 
-#define SERVO3_BIT 5
-#define SERVO3_PORT G
+// #define SERVO3_BIT 5
+// #define SERVO3_PORT G
 #define SERVO2_BIT 3
 #define SERVO2_PORT E
 #define SERVO1_BIT 3
@@ -214,9 +214,11 @@ extern "C"
 //  #define DOUT30_BIT 1
 //  #define DOUT30_PORT B
 // sd card detect
-#define DIN19_BIT 0
-#define DIN19_PORT L
-#define DIN19_PULLUP
+// #define DIN19_BIT 0
+// #define DIN19_PORT L
+// #define DIN19_PULLUP
+// #define DOUT20_BIT 0
+// #define DIN19_PORT L
 
 // pins for smart adapter
 // clk

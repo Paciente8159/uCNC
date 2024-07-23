@@ -1082,27 +1082,27 @@ ISR(SPI_STC_vect, ISR_NOBLOCK)
 	}
 }
 
-bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t datalen)
-{
-	if (spi_bulk_data_ptr_tx == 0)
-	{
-		spi_bulk_data_ptr_tx = tx_data;
-		spi_bulk_data_ptr_rx = rx_data;
-		spi_bulk_data_len = datalen;
-		SETBIT(SPCR, SPIE);
-		// Transmit the first byte
-		SPDR = *spi_bulk_data_ptr_tx++;
-	}
+// bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t datalen)
+// {
+// 	if (spi_bulk_data_ptr_tx == 0)
+// 	{
+// 		spi_bulk_data_ptr_tx = tx_data;
+// 		spi_bulk_data_ptr_rx = rx_data;
+// 		spi_bulk_data_len = datalen;
+// 		SETBIT(SPCR, SPIE);
+// 		// Transmit the first byte
+// 		SPDR = *spi_bulk_data_ptr_tx++;
+// 	}
 
-	if (!CHECKBIT(SPCR, SPIE)) // check if the ISR is active
-	{
-		spi_bulk_data_ptr_tx = 0;
-		spi_bulk_data_ptr_rx = 0;
-		return false;
-	}
+// 	if (!CHECKBIT(SPCR, SPIE)) // check if the ISR is active
+// 	{
+// 		spi_bulk_data_ptr_tx = 0;
+// 		spi_bulk_data_ptr_rx = 0;
+// 		return false;
+// 	}
 
-	return true;
-}
+// 	return true;
+// }
 
 #endif
 

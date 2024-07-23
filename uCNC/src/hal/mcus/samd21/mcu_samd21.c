@@ -1412,65 +1412,65 @@ void mcu_spi_config(spi_config_t config, uint32_t frequency)
 	spi_enable_dma = config.enable_dma;
 }
 
-void mcu_spi_start(spi_config_t config, uint32_t frequency)
-{
-	mcu_spi_config(config, frequency);
+// void mcu_spi_start(spi_config_t config, uint32_t frequency)
+// {
+// 	mcu_spi_config(config, frequency);
 
-	if(config.enable_dma)
-	{
-		// Block until channels are allocated
-		while(mcu_dma_allocate_channels(2, spi_dma_channels))
-			cnc_dotasks();
+// 	if(config.enable_dma)
+// 	{
+// 		// Block until channels are allocated
+// 		while(mcu_dma_allocate_channels(2, spi_dma_channels))
+// 			cnc_dotasks();
 
-		// Prepare transmission channel
-		uint8_t ch_tx = spi_dma_channels[0];
-		// Select channel
-		DMAC->CHID.reg = ch_tx;
-		DMAC->CHCTRLB.reg =
-			DMAC_CHCTRLB_TRIGACT_BEAT |
-			DMAC_CHCTRLB_TRIGSRC(SPI_DMA_TRIGSRC_TX);
+// 		// Prepare transmission channel
+// 		uint8_t ch_tx = spi_dma_channels[0];
+// 		// Select channel
+// 		DMAC->CHID.reg = ch_tx;
+// 		DMAC->CHCTRLB.reg =
+// 			DMAC_CHCTRLB_TRIGACT_BEAT |
+// 			DMAC_CHCTRLB_TRIGSRC(SPI_DMA_TRIGSRC_TX);
 
-		// Disable interrupts
-		DMAC->CHINTENCLR.reg = 0b111;
-		// Clear interrupt flags
-		DMAC->CHINTFLAG.reg = 0b111;
+// 		// Disable interrupts
+// 		DMAC->CHINTENCLR.reg = 0b111;
+// 		// Clear interrupt flags
+// 		DMAC->CHINTFLAG.reg = 0b111;
 
-		// Setup first descriptor
-		DmacDescriptor* tx_desc = mcu_dma_descriptor_sram + ch_tx;
-		tx_desc->BTCTRL.reg = 0;
-		tx_desc->BTCTRL.bit.SRCINC = 1;
-		tx_desc->BTCTRL.bit.VALID = 1;
-		tx_desc->DSTADDR.reg = (uint32_t)&SPICOM->SPI.DATA;
-		tx_desc->DESCADDR.reg = 0;
+// 		// Setup first descriptor
+// 		DmacDescriptor* tx_desc = mcu_dma_descriptor_sram + ch_tx;
+// 		tx_desc->BTCTRL.reg = 0;
+// 		tx_desc->BTCTRL.bit.SRCINC = 1;
+// 		tx_desc->BTCTRL.bit.VALID = 1;
+// 		tx_desc->DSTADDR.reg = (uint32_t)&SPICOM->SPI.DATA;
+// 		tx_desc->DESCADDR.reg = 0;
 
-		// Prepare reception channel
-		uint8_t ch_rx = spi_dma_channels[1];
-		// Select channel
-		DMAC->CHID.reg = ch_rx;
-		DMAC->CHCTRLB.reg =
-			DMAC_CHCTRLB_TRIGACT_BEAT |
-			DMAC_CHCTRLB_TRIGSRC(SPI_DMA_TRIGSRC_RX);
+// 		// Prepare reception channel
+// 		uint8_t ch_rx = spi_dma_channels[1];
+// 		// Select channel
+// 		DMAC->CHID.reg = ch_rx;
+// 		DMAC->CHCTRLB.reg =
+// 			DMAC_CHCTRLB_TRIGACT_BEAT |
+// 			DMAC_CHCTRLB_TRIGSRC(SPI_DMA_TRIGSRC_RX);
 
-		// Disable interrupts
-		DMAC->CHINTENCLR.reg = 0b111;
-		// Clear interrupt flags
-		DMAC->CHINTFLAG.reg = 0b111;
+// 		// Disable interrupts
+// 		DMAC->CHINTENCLR.reg = 0b111;
+// 		// Clear interrupt flags
+// 		DMAC->CHINTFLAG.reg = 0b111;
 		
-		DmacDescriptor* rx_desc = mcu_dma_descriptor_sram + ch_rx;
-		rx_desc->BTCTRL.reg = 0;
-		rx_desc->BTCTRL.bit.DSTINC = 1;
-		rx_desc->BTCTRL.bit.VALID = 1;
-		rx_desc->SRCADDR.reg = (uint32_t)&SPICOM->SPI.DATA;
-		rx_desc->DESCADDR.reg = 0;
-	}
+// 		DmacDescriptor* rx_desc = mcu_dma_descriptor_sram + ch_rx;
+// 		rx_desc->BTCTRL.reg = 0;
+// 		rx_desc->BTCTRL.bit.DSTINC = 1;
+// 		rx_desc->BTCTRL.bit.VALID = 1;
+// 		rx_desc->SRCADDR.reg = (uint32_t)&SPICOM->SPI.DATA;
+// 		rx_desc->DESCADDR.reg = 0;
+// 	}
 
-	spi_port_state = SPI_IDLE;
-}
+// 	spi_port_state = SPI_IDLE;
+// }
 
-void mcu_spi_stop() {
-	mcu_dma_free_channel(spi_dma_channels[0]);
-	mcu_dma_free_channel(spi_dma_channels[1]);
-}
+// void mcu_spi_stop() {
+// 	mcu_dma_free_channel(spi_dma_channels[0]);
+// 	mcu_dma_free_channel(spi_dma_channels[1]);
+// }
 
 uint8_t mcu_spi_xmit(uint8_t c)
 {
@@ -1482,104 +1482,104 @@ uint8_t mcu_spi_xmit(uint8_t c)
 	return (uint8_t)SPICOM->SPI.DATA.reg;
 }
 
-void SPI_ISR()
-{
-	if(SPICOM->SPI.INTFLAG.bit.DRE && spi_tx_length > 0)
-	{
-		// Send next byte
-		SPICOM->SPI.DATA.reg = *spi_tx_buffer++;
-		--spi_tx_length;
-	}
-	if(SPICOM->SPI.INTFLAG.bit.RXC && spi_rx_length > 0)
-	{
-		// Store received byte
-		*spi_rx_buffer++ = SPICOM->SPI.DATA.reg;
-		--spi_rx_length;
-	}
-	if(spi_tx_length == 0 && spi_rx_length == 0)
-	{
-		// Transfer complete
-		spi_port_state = SPI_TRANSMIT_FINISHED;
-		// Disable interrupts
-		SPICOM->SPI.INTENCLR.bit.DRE = 1;
-		SPICOM->SPI.INTENCLR.bit.RXC = 1;
-	}
-	NVIC_ClearPendingIRQ(SPI_IRQ);
-}
+// void SPI_ISR()
+// {
+// 	if(SPICOM->SPI.INTFLAG.bit.DRE && spi_tx_length > 0)
+// 	{
+// 		// Send next byte
+// 		SPICOM->SPI.DATA.reg = *spi_tx_buffer++;
+// 		--spi_tx_length;
+// 	}
+// 	if(SPICOM->SPI.INTFLAG.bit.RXC && spi_rx_length > 0)
+// 	{
+// 		// Store received byte
+// 		*spi_rx_buffer++ = SPICOM->SPI.DATA.reg;
+// 		--spi_rx_length;
+// 	}
+// 	if(spi_tx_length == 0 && spi_rx_length == 0)
+// 	{
+// 		// Transfer complete
+// 		spi_port_state = SPI_TRANSMIT_FINISHED;
+// 		// Disable interrupts
+// 		SPICOM->SPI.INTENCLR.bit.DRE = 1;
+// 		SPICOM->SPI.INTENCLR.bit.RXC = 1;
+// 	}
+// 	NVIC_ClearPendingIRQ(SPI_IRQ);
+// }
 
-bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t datalen)
-{
-	if(!spi_enable_dma)
-	{
-		// Bulk transfer without DMA
-		if(spi_port_state == SPI_IDLE)
-		{
-			spi_tx_buffer = tx_data;
-			spi_tx_length = datalen;
-			if(rx_data)
-			{
-				spi_rx_buffer = rx_data;
-				spi_rx_length = datalen;
-			}
-			else
-			{
-				spi_rx_buffer = 0;
-				spi_rx_length = 0;
-			}
+// bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t datalen)
+// {
+// 	if(!spi_enable_dma)
+// 	{
+// 		// Bulk transfer without DMA
+// 		if(spi_port_state == SPI_IDLE)
+// 		{
+// 			spi_tx_buffer = tx_data;
+// 			spi_tx_length = datalen;
+// 			if(rx_data)
+// 			{
+// 				spi_rx_buffer = rx_data;
+// 				spi_rx_length = datalen;
+// 			}
+// 			else
+// 			{
+// 				spi_rx_buffer = 0;
+// 				spi_rx_length = 0;
+// 			}
 
-			// Enable interrupts
-			SPICOM->SPI.INTENSET.bit.DRE = 1;
-			if(rx_data)
-				SPICOM->SPI.INTENSET.bit.RXC = 1;
-			spi_port_state = SPI_TRANSMITTING;
-		}
-		else if(spi_port_state == SPI_TRANSMIT_FINISHED)
-		{
-			spi_port_state = SPI_IDLE;
-			return false;
-		}
-		return true;
-	}
+// 			// Enable interrupts
+// 			SPICOM->SPI.INTENSET.bit.DRE = 1;
+// 			if(rx_data)
+// 				SPICOM->SPI.INTENSET.bit.RXC = 1;
+// 			spi_port_state = SPI_TRANSMITTING;
+// 		}
+// 		else if(spi_port_state == SPI_TRANSMIT_FINISHED)
+// 		{
+// 			spi_port_state = SPI_IDLE;
+// 			return false;
+// 		}
+// 		return true;
+// 	}
 
-	if(spi_port_state == SPI_TRANSMITTING)
-	{
-		// Check if transmission finished
-		DMAC->CHID.reg = spi_dma_channels[0];
-		if(DMAC->CHCTRLA.bit.ENABLE)
-			return true;
-		// Check if reception finished
-		DMAC->CHID.reg = spi_dma_channels[1];
-		if(DMAC->CHCTRLA.bit.ENABLE)
-			return true;
-		// All transfers finished
-		spi_port_state = SPI_IDLE;
-		return false;
-	}
-	else if(spi_port_state == SPI_IDLE)
-	{
-		// Transmit channel
-		mcu_dma_descriptor_sram[spi_dma_channels[0]].SRCADDR.reg = (uint32_t)tx_data;
-		mcu_dma_descriptor_sram[spi_dma_channels[0]].BTCNT.reg = datalen;
-		// Receive channel
-		if(rx_data)
-		{
-			mcu_dma_descriptor_sram[spi_dma_channels[1]].DSTADDR.reg = (uint32_t)rx_data;
-			mcu_dma_descriptor_sram[spi_dma_channels[1]].BTCNT.reg = datalen;
-		}
+// 	if(spi_port_state == SPI_TRANSMITTING)
+// 	{
+// 		// Check if transmission finished
+// 		DMAC->CHID.reg = spi_dma_channels[0];
+// 		if(DMAC->CHCTRLA.bit.ENABLE)
+// 			return true;
+// 		// Check if reception finished
+// 		DMAC->CHID.reg = spi_dma_channels[1];
+// 		if(DMAC->CHCTRLA.bit.ENABLE)
+// 			return true;
+// 		// All transfers finished
+// 		spi_port_state = SPI_IDLE;
+// 		return false;
+// 	}
+// 	else if(spi_port_state == SPI_IDLE)
+// 	{
+// 		// Transmit channel
+// 		mcu_dma_descriptor_sram[spi_dma_channels[0]].SRCADDR.reg = (uint32_t)tx_data;
+// 		mcu_dma_descriptor_sram[spi_dma_channels[0]].BTCNT.reg = datalen;
+// 		// Receive channel
+// 		if(rx_data)
+// 		{
+// 			mcu_dma_descriptor_sram[spi_dma_channels[1]].DSTADDR.reg = (uint32_t)rx_data;
+// 			mcu_dma_descriptor_sram[spi_dma_channels[1]].BTCNT.reg = datalen;
+// 		}
 
-		// Enable channels
-		DMAC->CHID.reg = spi_dma_channels[0];
-		DMAC->CHCTRLA.bit.ENABLE = 1;
-		if(rx_data) {
-			DMAC->CHID.reg = spi_dma_channels[1];
-			DMAC->CHCTRLA.bit.ENABLE = 1;
-		}
+// 		// Enable channels
+// 		DMAC->CHID.reg = spi_dma_channels[0];
+// 		DMAC->CHCTRLA.bit.ENABLE = 1;
+// 		if(rx_data) {
+// 			DMAC->CHID.reg = spi_dma_channels[1];
+// 			DMAC->CHCTRLA.bit.ENABLE = 1;
+// 		}
 
-		spi_port_state = SPI_TRANSMITTING;
-	}
+// 		spi_port_state = SPI_TRANSMITTING;
+// 	}
 
-	return true;
-}
+// 	return true;
+// }
 
 #endif
 
