@@ -1393,15 +1393,14 @@ static uint8_t *spi_rx_buffer;
 static uint16_t spi_tx_length;
 static uint16_t spi_rx_length;
 
-void mcu_spi_config(uint8_t mode, uint32_t frequency)
+void mcu_spi_config(spi_config_t config, uint32_t frequency)
 {
-	mode = CLAMP(0, mode, 4);
 	frequency = ((F_CPU >> 1) / frequency) - 1;
 	SPICOM->SPI.CTRLA.bit.ENABLE = 0;
 	while (SPICOM->SPI.SYNCBUSY.bit.ENABLE)
 		;
-	SPICOM->SPI.CTRLA.bit.CPHA = mode & 0x01;				 // MODE
-	SPICOM->SPI.CTRLA.bit.CPOL = (mode >> 1) & 0x01; // MODE
+	SPICOM->SPI.CTRLA.bit.CPHA = config.mode & 0x01;				 // MODE
+	SPICOM->SPI.CTRLA.bit.CPOL = (config.mode >> 1) & 0x01; // MODE
 	SPICOM->SPI.BAUD.reg = frequency;
 
 	SPICOM->SPI.CTRLA.bit.ENABLE = 1;
@@ -1410,14 +1409,14 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 
 	spi_port_state = SPI_UNKNOWN;
 	// TODO: Set to correct value from config struct
-	spi_enable_dma = false;
+	spi_enable_dma = config.enable_dma;
 }
 
-void mcu_spi_start(uint8_t mode, uint32_t frequency)
+void mcu_spi_start(spi_config_t config, uint32_t frequency)
 {
-	mcu_spi_config(mode, frequency);
+	mcu_spi_config(config, frequency);
 
-	if(spi_enable_dma)
+	if(config.enable_dma)
 	{
 		// Block until channels are allocated
 		while(mcu_dma_allocate_channels(2, spi_dma_channels))
@@ -1524,7 +1523,7 @@ bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t da
 			}
 			else
 			{
-				spi_rx_data = 0;
+				spi_rx_buffer = 0;
 				spi_rx_length = 0;
 			}
 
