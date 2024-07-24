@@ -1397,9 +1397,9 @@ void mcu_spi_start(spi_config_t config, uint32_t frequency)
 		DMAC->CHCTRLB.reg = 0;
 
 		// Disable interrupts
-		DMAC->CHINTENCLR.reg = 0b111;
+		DMAC->CHINTENCLR.reg = DMAC_CHINTENCLR_MASK;
 		// Clear interrupt flags
-		DMAC->CHINTFLAG.reg = 0b111;
+		DMAC->CHINTFLAG.reg = DMAC_CHINTFLAG_MASK;
 
 		// Setup first descriptor
 		DmacDescriptor *tx_desc = &mcu_dma_descriptor_sram[SPI_DMA_TX_CHANNEL];
@@ -1424,9 +1424,9 @@ void mcu_spi_start(spi_config_t config, uint32_t frequency)
 		DMAC->CHCTRLB.reg = DMAC_CHCTRLB_TRIGSRC(SPI_DMA_TRIGSRC_RX);
 
 		// Disable interrupts
-		DMAC->CHINTENCLR.reg = 0b111;
+		DMAC->CHINTENCLR.reg = DMAC_CHINTENCLR_MASK;
 		// Clear interrupt flags
-		DMAC->CHINTFLAG.reg = 0b111;
+		DMAC->CHINTFLAG.reg = DMAC_CHINTFLAG_MASK;
 
 		DmacDescriptor *rx_desc = &mcu_dma_descriptor_sram[SPI_DMA_RX_CHANNEL];
 		rx_desc->BTCTRL.reg = 0;
