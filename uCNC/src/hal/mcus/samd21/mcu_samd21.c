@@ -1394,9 +1394,7 @@ void mcu_spi_start(spi_config_t config, uint32_t frequency)
 		DMAC->CHCTRLA.bit.SWRST = 1;
 		while (DMAC->CHCTRLA.bit.SWRST)
 			;
-		DMAC->CHCTRLB.reg =
-				DMAC_CHCTRLB_TRIGACT_BEAT |
-				DMAC_CHCTRLB_TRIGSRC(SPI_DMA_TRIGSRC_TX);
+		DMAC->CHCTRLB.reg = 0;
 
 		// Disable interrupts
 		DMAC->CHINTENCLR.reg = 0b111;
