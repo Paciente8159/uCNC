@@ -1008,10 +1008,10 @@ void mcu_spi_config(spi_config_t config, uint32_t frequency)
 	}
 
 	// disable SPI
-	SPI_REG->CR1 &= SPI_CR1_SPE;
+	SPI_REG->CR1 &= ~SPI_CR1_SPE;
 	// clear speed and mode
-	SPI_REG->CR1 &= 0x3B;
-	SPI_REG->CR1 |= (speed << 3) | config.mode;
+	SPI_REG->CR1 &= ~SPI_CR1_BR_Msk;
+	SPI_REG->CR1 |= ((speed << SPI_CR1_BR_Pos) & SPI_CR1_BR_Msk) | (config.mode & (SPI_CR1_CPOL_Msk | SPI_CR1_CPHA_Msk));
 	// enable SPI
 	SPI_REG->CR1 |= SPI_CR1_SPE;
 
