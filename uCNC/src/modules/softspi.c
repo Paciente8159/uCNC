@@ -18,25 +18,25 @@
 #include "softspi.h"
 
 #ifdef MCU_HAS_SPI
-softspi_port_t __attribute__((used)) MCU_SPI_PORT = {.spimode = 0, .spifreq = SPI_FREQ, .clk = NULL, .mosi = NULL, .miso = NULL, .config = mcu_spi_config, .start = mcu_spi_start, .xmit = mcu_spi_xmit, .stop = mcu_spi_stop};
+softspi_port_t __attribute__((used)) MCU_SPI_PORT = {.spiconfig = {.flags = 0}, .spifreq = SPI_FREQ, .clk = NULL, .mosi = NULL, .miso = NULL, .config = mcu_spi_config, .start = mcu_spi_start, .xmit = mcu_spi_xmit, .bulk_xmit = mcu_spi_bulk_transfer, .stop = mcu_spi_stop};
 #endif
 
-void softspi_config(softspi_port_t *port, uint8_t mode, uint32_t frequency)
+void softspi_config(softspi_port_t *port, softspi_config_t config, uint32_t frequency)
 {
-	port->spimode = mode;
-		port->spifreq = frequency;
+	port->spiconfig = config;
+	port->spifreq = frequency;
 
 	if (!port)
 	{
 #ifdef MCU_HAS_SPI
-		mcu_spi_config(mode, frequency);
+		mcu_spi_config(config.spi, frequency);
 #endif
 	}
-	
+
 	if (port->config)
 	{
 		// if port with custom method execute it
-		port->config(mode, frequency);
+		port->config(config.spi, frequency);
 	}
 }
 
@@ -58,8 +58,8 @@ uint8_t softspi_xmit(softspi_port_t *port, uint8_t c)
 		return port->xmit(c);
 	}
 
-	bool clk = (bool)(port->spimode & 0x2);
-	bool on_down = (bool)(port->spimode & 0x1);
+	bool clk = (bool)(port->spiconfig.spi.mode & 0x2);
+	bool on_down = (bool)(port->spiconfig.spi.mode & 0x1);
 	uint16_t delay = (uint16_t)SPI_DELAY(port->spifreq);
 
 	port->clk(clk);
@@ -113,8 +113,8 @@ uint16_t softspi_xmit16(softspi_port_t *port, uint16_t c)
 		return (res | port->xmit((uint8_t)(0xFF & c)));
 	}
 
-	bool clk = (bool)(port->spimode & 0x2);
-	bool on_down = (bool)(port->spimode & 0x1);
+	bool clk = (bool)(port->spiconfig.spi.mode & 0x2);
+	bool on_down = (bool)(port->spiconfig.spi.mode & 0x1);
 	uint16_t delay = (uint16_t)SPI_DELAY(port->spifreq);
 
 	port->clk(clk);
@@ -146,23 +146,84 @@ uint16_t softspi_xmit16(softspi_port_t *port, uint16_t c)
 	return c;
 }
 
-void softspi_start(softspi_port_t *port)
+void softspi_bulk_xmit(softspi_port_t *port, const uint8_t *out, uint8_t *in, uint16_t len)
 {
-	// if port with custom method execute it
-	if (port->start)
+	// if no port is defined defaults to SPI hardware if available
+	if (!port)
 	{
-		port->start(port->spimode, port->spifreq);
+#ifdef MCU_HAS_SPI
+		while (mcu_spi_bulk_transfer(out, in, len))
+		{
+			cnc_dotasks();
+		}
+#endif
 		return;
 	}
 
-	softspi_config(port, port->spimode, port->spifreq);
+	// if port with custom method execute it
+	if (port->bulk_xmit)
+	{
+		while (port->bulk_xmit(out, in, len))
+		{
+			cnc_dotasks();
+		}
+		return;
+	}
+
+	uint32_t timeout = BULK_SPI_TIMEOUT + mcu_millis();
+	while (len--)
+	{
+		uint8_t c = softspi_xmit(port, *out++);
+		if (in)
+		{
+			*in++ = c;
+		}
+
+		if (timeout < mcu_millis())
+		{
+			timeout = BULK_SPI_TIMEOUT + mcu_millis();
+			cnc_dotasks();
+		}
+	}
+}
+
+void softspi_start(softspi_port_t *port)
+{
+	if (!port)
+	{
+		return;
+	}
+
+	// mutual exclusive access
+	while (port->spiconfig.locked)
+	{
+		cnc_dotasks();
+	}
+	port->spiconfig.locked = 1;
+
+	// if port with custom method execute it
+	// usually HW ports
+	if (port->start)
+	{
+		port->start(port->spiconfig.spi, port->spifreq);
+		return;
+	}
+
+	softspi_config(port, port->spiconfig, port->spifreq);
 }
 
 void softspi_stop(softspi_port_t *port)
 {
+	if (!port)
+	{
+		return;
+	}
+	
 	// if port with custom method execute it
 	if (port->stop)
 	{
 		port->stop();
 	}
+	// unlocks resource
+	port->spiconfig.locked = 0;
 }

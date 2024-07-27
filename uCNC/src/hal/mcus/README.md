@@ -734,7 +734,7 @@ Before creating a custom HAL for a custom board/microcontroller the microcontrol
 #endif
 
 #ifndef mcu_spi_config
-	void mcu_spi_config(uint8_t mode, uint32_t frequency);
+	void mcu_spi_config(spi_config_t config, uint32_t frequency);
 #endif
 #endif
 

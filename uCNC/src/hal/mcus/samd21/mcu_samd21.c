@@ -1337,6 +1337,7 @@ void mcu_eeprom_flush(void)
 }
 
 #ifdef MCU_HAS_SPI
+
 #ifndef SPI_DMA_TX_CHANNEL
 #define SPI_DMA_TX_CHANNEL (DMA_CHANNEL_COUNT - 1)
 #endif
@@ -1365,6 +1366,7 @@ void mcu_spi_config(spi_config_t config, uint32_t frequency)
 	while (SPICOM->SPI.SYNCBUSY.bit.ENABLE)
 		;
 	SPICOM->SPI.CTRLA.bit.CPHA = config.mode & 0x01;				// MODE
+
 	SPICOM->SPI.CTRLA.bit.CPOL = (config.mode >> 1) & 0x01; // MODE
 	SPICOM->SPI.BAUD.reg = frequency;
 

@@ -1011,9 +1011,8 @@ uint8_t mcu_spi_xmit(uint8_t data)
 	return SPDR;
 }
 
-void mcu_spi_config(uint8_t mode, uint32_t frequency)
+void mcu_spi_config(spi_config_t config, uint32_t frequency)
 {
-	mode = CLAMP(0, mode, 4);
 	// disable SPI
 	uint8_t div = (uint8_t)(F_CPU / frequency);
 	uint8_t spsr, spcr;
@@ -1056,7 +1055,7 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 	// clear speed and mode
 	SPCR = 0;
 	SPSR |= spsr;
-	SPCR = (1 << SPE) | (1 << MSTR) | (mode << 2) | spcr;
+	SPCR = (1 << SPE) | (1 << MSTR) | (config.mode << 2) | spcr;
 }
 
 static volatile const uint8_t *spi_bulk_data_ptr_tx = 0;

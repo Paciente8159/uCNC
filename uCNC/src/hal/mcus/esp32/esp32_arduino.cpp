@@ -1174,6 +1174,7 @@ static uint8_t spi_mode = 0;
 static uint32_t spi_freq = 1000000UL;
 extern "C"
 {
+	
 	void mcu_spi_init(void)
 	{
 #if (SPI_CLK_BIT == 14 || SPI_CLK_BIT == 25)
@@ -1184,17 +1185,33 @@ extern "C"
 		esp32spi->begin(SPI_CLK_BIT, SPI_SDI_BIT, SPI_SDO_BIT, -1);
 	}
 
-	void mcu_spi_config(uint8_t mode, uint32_t freq)
+	void mcu_spi_config(spi_config_t config, uint32_t freq)
 	{
 		spi_freq = freq;
-		spi_mode = mode;
+		spi_mode = config.mode;
 		esp32spi->setFrequency(freq);
-		esp32spi->setDataMode(mode);
+		esp32spi->setDataMode(config.mode);
 	}
 
 	uint8_t mcu_spi_xmit(uint8_t data)
 	{
 		return esp32spi->transfer(data);
+	}
+
+	void mcu_spi_start(spi_config_t config, uint32_t frequency)
+	{
+		esp32spi->beginTransaction(SPISettings(frequency, MSBFIRST, config.mode));
+	}
+
+	bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
+	{
+		esp32spi->transferBytes(out, in, len);
+		return false;
+	}
+
+	void mcu_spi_stop(void)
+	{
+		esp32spi->endTransaction();
 	}
 }
 
