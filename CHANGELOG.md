@@ -6,6 +6,28 @@
 
 # Changelog
 
+## [1.9.4] - 20-04-2024 (republished)
+
+[@patryk3211](https://github.com/patryk3211) - fixed STM32Fx boards SPI implementation (#699)
+
+### Added
+
+- added HAL control access to the SPI CS pin to avoid having to waste a DOUT pin to control it. (#704)
+
+### Changed
+
+- modified flags for ESP32 to force Arduino SPI version (some boards seem to have problems with the SDK version) (#695)
+- modified/merged entry point of user and architecture/board custom Grbl/System commands. This also fixed an issue that made impossible to pass arguments to user commands when the board had custom commands, since the buffer was parsed before command was evaluated for execution. (#696)
+- reverted #695 and #691 for ESP32 Arduino SPI code
+
+### Fixed
+
+- fixed STM32Fx boards compilation errors is probe pin was undefined (#698)
+- fixed STM32Fx boards SPI implementation (#699)
+- fixed ESP32 boards SPI frequency/mode configuration (#703)
+- fixed incomplete code propagation of #696. This prevented Grbl/System commands to propagate correctly and directly affected mount and unmount command of the SD card module (#705)
+- fixed file system commands parsing
+
 ## [1.9.3] - 07-04-2024
 
 [@patryk3211](https://github.com/patryk3211) - fixed homing pulloff fail alarm code (#689) and 2 phase homing cycle (#690)
@@ -1644,6 +1666,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.9.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.9.4
 [1.9.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.9.3
 [1.9.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.9.2
 [1.9.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.9.1

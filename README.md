@@ -17,6 +17,7 @@ Version 1.9 introduced several breaking changes from the previous version. These
   - new File System C wrapper module with System Menu and Enpoint integration.
   - new generic and customizable ring buffer used in communications
 	- new RP2040 multicore mode (still experimental)
+	- new NGC expressions evaluation and parsing
 
 As with version 1.8 µCNC is becomming too large for Atmega328P (still supports it, but barelly fits). For that reason and to keep giving support for this MCU a branch of version 1.7 will be maintained with all the latest bugfixes and patches.
 

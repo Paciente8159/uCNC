@@ -1027,9 +1027,9 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 	}
 
 	// disable SPI
-	SPI_REG->CR1 &= SPI_CR1_SPE;
+	SPI_REG->CR1 &= ~SPI_CR1_SPE;
 	// clear speed and mode
-	SPI_REG->CR1 &= 0x3B;
+	SPI_REG->CR1 &= ~0x3B;
 	SPI_REG->CR1 |= (speed << 3) | mode;
 	// enable SPI
 	SPI_REG->CR1 |= SPI_CR1_SPE;
@@ -1042,10 +1042,10 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 uint8_t mcu_spi_xmit(uint8_t c)
 {
 	SPI_REG->DR = c;
-	while (!(SPI1->SR & SPI_SR_TXE) && !(SPI1->SR & SPI_SR_RXNE))
+	while (!(SPI_REG->SR & SPI_SR_TXE) && !(SPI_REG->SR & SPI_SR_RXNE))
 		;
 	uint8_t data = SPI_REG->DR;
-	while (SPI1->SR & SPI_SR_BSY)
+	while (SPI_REG->SR & SPI_SR_BSY)
 		;
 	spi_port_state = SPI_IDLE;
 	return data;
