@@ -494,13 +494,29 @@ extern "C"
 	 * */
 	void mcu_eeprom_flush(void);
 
+	typedef union
+	{
+		uint8_t flags;
+		struct
+		{
+			uint8_t mode : 3;
+			uint8_t : 1; // reserved for bit order
+			uint8_t enable_dma : 1;
+			uint8_t : 3; // reserved
+		};
+	} spi_config_t;
+
 #ifdef MCU_HAS_SPI
 #ifndef mcu_spi_xmit
 	uint8_t mcu_spi_xmit(uint8_t data);
 #endif
 
+#ifndef mcu_spi_bulk_transfer
+	bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len);
+#endif
+
 #ifndef mcu_spi_start
-	void mcu_spi_start(uint8_t mode, uint32_t frequency);
+	void mcu_spi_start(spi_config_t config, uint32_t frequency);
 #endif
 
 #ifndef mcu_spi_stop
@@ -508,7 +524,7 @@ extern "C"
 #endif
 
 #ifndef mcu_spi_config
-	void mcu_spi_config(uint8_t mode, uint32_t frequency);
+	void mcu_spi_config(spi_config_t config, uint32_t frequency);
 #endif
 #endif
 

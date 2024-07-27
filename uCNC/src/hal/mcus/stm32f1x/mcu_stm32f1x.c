@@ -651,7 +651,9 @@ void mcu_init(void)
 								 | SPI_CR1_SSI	 // internal slave select
 								 | SPI_CR1_MSTR; // SPI master mode
 																 //    | (SPI_SPEED << 3) | SPI_MODE;
-	mcu_spi_config(SPI_MODE, SPI_FREQ);
+	spi_config_t spi_conf = {0};
+	spi_conf.mode = SPI_MODE;
+	mcu_spi_config(spi_conf, SPI_FREQ);
 	SPI_REG->CR1 |= SPI_CR1_SPE;
 #endif
 
@@ -951,7 +953,7 @@ void mcu_eeprom_flush()
 #ifdef MCU_HAS_SPI
 void mcu_spi_config(uint8_t mode, uint32_t frequency)
 {
-	mode = CLAMP(0, mode, 4);
+
 	uint8_t div = (uint8_t)(SPI_CLOCK / frequency);
 
 	uint8_t speed;
@@ -992,7 +994,7 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 	SPI_REG->CR1 &= ~SPI_CR1_SPE;
 	// clear speed and mode
 	SPI_REG->CR1 &= ~0x3B;
-	SPI_REG->CR1 |= (speed << 3) | mode;
+	SPI_REG->CR1 |= (speed << 3) | config.mode;
 	// enable SPI
 	SPI_REG->CR1 |= SPI_CR1_SPE;
 }
