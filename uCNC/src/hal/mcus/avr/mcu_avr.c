@@ -1057,6 +1057,49 @@ void mcu_spi_config(spi_config_t config, uint32_t frequency)
 	SPSR |= spsr;
 	SPCR = (1 << SPE) | (1 << MSTR) | (config.mode << 2) | spcr;
 }
+
+static volatile const uint8_t *spi_bulk_data_ptr_tx = 0;
+static uint8_t *spi_bulk_data_ptr_rx = 0;
+static uint16_t spi_bulk_data_len = 0;
+
+ISR(SPI_STC_vect, ISR_NOBLOCK) {
+	// Read received byte
+	if(spi_bulk_data_ptr_rx != 0)
+		*spi_bulk_data_ptr_rx++ = SPDR;
+
+	if(--spi_bulk_data_len)
+	{
+		// Transmit the next byte
+		SPDR = *spi_bulk_data_ptr_tx++;
+	}
+	else
+	{
+		// Transmission finished, disable the interrupt
+		SPCR &= ~(1 << SPIE);
+	}
+}
+
+bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t datalen) {
+	if(spi_bulk_data_ptr_tx == 0)
+	{
+		spi_bulk_data_ptr_tx = tx_data;
+		spi_bulk_data_ptr_rx = rx_data;
+		spi_bulk_data_len = datalen;
+		SPCR |= (1 << SPIE);
+		// Transmit the first byte
+		SPDR = *spi_bulk_data_ptr_tx++;
+	}
+
+	if(!(SPCR & (1 << SPIE)))
+	{
+		spi_bulk_data_ptr_tx = 0;
+		spi_bulk_data_ptr_rx = 0;
+		return false;
+	}
+
+	return true;
+}
+
 #endif
 
 #ifdef MCU_HAS_I2C

@@ -1589,6 +1589,7 @@ extern "C"
 
 #if (defined(SPI_CLK) && defined(SPI_SDO) && defined(SPI_SDI))
 #define MCU_HAS_SPI
+#define MCU_HAS_DMA
 #ifndef SPI_PORT
 #define SPI_PORT 1
 #endif
@@ -1619,6 +1620,12 @@ extern "C"
 #define DIO205_PMUXVAL SPI_SDI_PMUXVAL
 #define DIO206_PMUX SPI_SDO_PMUX
 #define DIO206_PMUXVAL SPI_SDO_PMUXVAL
+
+#define SPI_DMA_TRIGSRC_RX ((SPI_PORT<<1) + 1)
+#define SPI_DMA_TRIGSRC_TX ((SPI_PORT<<1) + 2)
+
+#define SPI_IRQ __helper__(SERCOM, SPI_PORT, _IRQn)
+#define SPI_ISR __helper__(SERCOM, SPI_PORT, _Handler)
 
 #if (SPI_PORT != 1 && SPI_PORT != 3)
 #error "SPI PORT is not valid (SERCOM 1 or 3 only)"
@@ -1660,6 +1667,10 @@ extern "C"
 // #if (I2C_PORT != 1 && I2C_PORT != 3)
 // #error "SPI PORT is not valid (SERCOM 1 or 3 only)"
 // #endif
+#endif
+
+#ifdef MCU_HAS_DMA
+#define DMA_CHANNEL_COUNT 12
 #endif
 
 /*ISR inputs*/
