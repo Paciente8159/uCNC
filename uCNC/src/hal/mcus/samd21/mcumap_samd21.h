@@ -1621,13 +1621,8 @@ extern "C"
 #define DIO206_PMUX SPI_SDO_PMUX
 #define DIO206_PMUXVAL SPI_SDO_PMUXVAL
 
-#if (SPI_PORT == 1)
-#define SPI_DMA_TRIGSRC_RX 0x03
-#define SPI_DMA_TRIGSRC_TX 0x04
-#elif (SPI_PORT == 3)
-#define SPI_DMA_TRIGSRC_RX 0x07
-#define SPI_DMA_TRIGSRC_TX 0x08
-#endif
+#define SPI_DMA_TRIGSRC_RX ((SPI_PORT<<1) + 1)
+#define SPI_DMA_TRIGSRC_TX ((SPI_PORT<<1) + 2)
 
 #define SPI_IRQ __helper__(SERCOM, SPI_PORT, _IRQn)
 #define SPI_ISR __helper__(SERCOM, SPI_PORT, _Handler)
