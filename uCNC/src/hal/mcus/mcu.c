@@ -719,36 +719,36 @@ void __attribute__((weak)) mcu_io_init(void)
 #ifndef UART_TX_BUFFER_SIZE
 #define UART_TX_BUFFER_SIZE 64
 #endif
-BUFFER_INIT(uint8_t, uart_tx, UART_TX_BUFFER_SIZE);
-BUFFER_INIT(uint8_t, uart_rx, RX_BUFFER_SIZE);
+	BUFFER_INIT(uint8_t, uart_tx, UART_TX_BUFFER_SIZE);
+	BUFFER_INIT(uint8_t, uart_rx, RX_BUFFER_SIZE);
 #endif
 #ifdef MCU_HAS_UART2
 #ifndef UART2_TX_BUFFER_SIZE
 #define UART2_TX_BUFFER_SIZE 64
 #endif
-BUFFER_INIT(uint8_t, uart2_tx, UART2_TX_BUFFER_SIZE);
-BUFFER_INIT(uint8_t, uart2_rx, RX_BUFFER_SIZE);
+	BUFFER_INIT(uint8_t, uart2_tx, UART2_TX_BUFFER_SIZE);
+	BUFFER_INIT(uint8_t, uart2_rx, RX_BUFFER_SIZE);
 #endif
 #ifdef MCU_HAS_USB
 #ifndef USB_TX_BUFFER_SIZE
 #define USB_TX_BUFFER_SIZE 64
 #endif
-BUFFER_INIT(uint8_t, usb_tx, USB_TX_BUFFER_SIZE);
-BUFFER_INIT(uint8_t, usb_rx, RX_BUFFER_SIZE);
+	BUFFER_INIT(uint8_t, usb_tx, USB_TX_BUFFER_SIZE);
+	BUFFER_INIT(uint8_t, usb_rx, RX_BUFFER_SIZE);
 #endif
 #ifdef MCU_HAS_WIFI
 #ifndef WIFI_TX_BUFFER_SIZE
 #define WIFI_TX_BUFFER_SIZE 64
 #endif
-BUFFER_INIT(uint8_t, wifi_tx, WIFI_TX_BUFFER_SIZE);
-BUFFER_INIT(uint8_t, wifi_rx, RX_BUFFER_SIZE);
+	BUFFER_INIT(uint8_t, wifi_tx, WIFI_TX_BUFFER_SIZE);
+	BUFFER_INIT(uint8_t, wifi_rx, RX_BUFFER_SIZE);
 #endif
 #ifdef MCU_HAS_BLUETOOTH
 #ifndef BLUETOOTH_TX_BUFFER_SIZE
 #define BLUETOOTH_TX_BUFFER_SIZE 64
 #endif
-BUFFER_INIT(uint8_t, bt_tx, BLUETOOTH_TX_BUFFER_SIZE);
-BUFFER_INIT(uint8_t, bt_rx, RX_BUFFER_SIZE);
+	BUFFER_INIT(uint8_t, bt_tx, BLUETOOTH_TX_BUFFER_SIZE);
+	BUFFER_INIT(uint8_t, bt_rx, RX_BUFFER_SIZE);
 #endif
 }
 
@@ -842,10 +842,36 @@ void __attribute__((weak)) mcu_i2c_slave_cb(uint8_t *data, uint8_t *datalen)
 #endif
 
 #if (defined(MCU_HAS_SPI))
-void __attribute__((weak)) mcu_spi_start(uint8_t mode, uint32_t frequency)
+void __attribute__((weak)) mcu_spi_start(spi_config_t config, uint32_t frequency)
 {
 	// reapply port settings if port is shared
-	mcu_spi_config(mode, frequency);
+	mcu_spi_config(config, frequency);
+}
+
+// the maximum amount of time in milliseconds it will transmit data without running the main loop
+#ifndef BULK_SPI_TIMEOUT
+#define BULK_SPI_TIMEOUT (1000 / INTERPOLATOR_FREQ)
+#endif
+
+bool __attribute__((weak)) mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
+{
+	uint32_t timeout = BULK_SPI_TIMEOUT + mcu_millis();
+	while (len--)
+	{
+		uint8_t c = mcu_spi_xmit(*out++);
+		if (in)
+		{
+			*in++ = c;
+		}
+
+		if (timeout < mcu_millis())
+		{
+			timeout = BULK_SPI_TIMEOUT + mcu_millis();
+			cnc_dotasks();
+		}
+	}
+
+	return false;
 }
 
 void __attribute__((weak)) mcu_spi_stop(void)

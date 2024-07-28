@@ -543,7 +543,7 @@ uint32_t mcu_millis()
 
 uint32_t mcu_micros()
 {
-	return (uint32_t)esp_system_get_time();
+	return (uint32_t)system_get_time();
 }
 
 void esp8266_delay_us(uint16_t delay)
@@ -555,7 +555,7 @@ void esp8266_delay_us(uint16_t delay)
 
 uint32_t mcu_free_micros()
 {
-	return (uint32_t)(esp_system_get_time() % 1000);
+	return (uint32_t)(system_get_time() % 1000);
 }
 
 /**

@@ -972,22 +972,26 @@ extern "C"
 extern "C"
 {
 #include "../../../cnc.h"
-	void esp8266_spi_init(uint32_t freq, uint8_t mode)
+	void esp8266_spi_init(uint32_t freq, spi_config_t config)
 	{
 		SPI.begin();
 		SPI.setFrequency(freq);
-		SPI.setDataMode(mode);
+		SPI.setDataMode(config.mode);
 		SPI.setBitOrder(MSBFIRST);
 	}
 
-	void mcu_spi_config(uint8_t mode, uint32_t freq)
+	void mcu_spi_config(spi_config_t config, uint32_t freq)
 	{
-		esp8266_spi_init(freq, mode);
+		esp8266_spi_init(freq, config);
 	}
 
-	void mcu_spi_start(uint8_t mode, uint32_t freq)
+	void mcu_spi_start(spi_config_t config, uint32_t freq)
 	{
-		SPI.beginTransaction(SPISettings(frequency, MSBFIRST, mode));
+		SPI.beginTransaction(SPISettings(freq, MSBFIRST, config.mode));
+	}
+
+	bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len){
+		SPI.transferBytes(out, int, len);
 	}
 
 	void mcu_spi_end(void)
@@ -997,7 +1001,7 @@ extern "C"
 
 	uint8_t mcu_spi_xmit(uint8_t c)
 	{
-		SPI.transfer(c);
+		return SPI.transfer(c);
 		// while (SPI1CMD & SPIBUSY)
 		// 	;
 		// SPI1W0 = c;

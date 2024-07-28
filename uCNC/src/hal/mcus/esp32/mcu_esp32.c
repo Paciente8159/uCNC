@@ -31,6 +31,11 @@
 #ifdef MCU_HAS_SPI
 #include "hal/spi_types.h"
 #include "driver/spi_master.h"
+SemaphoreHandle_t spi_access_mutex = NULL;
+bool spi_dma_enabled = false;
+#ifndef SPI_DMA_BUFFER_SIZE
+#define SPI_DMA_BUFFER_SIZE 1024
+#endif
 #endif
 #include <string.h>
 #include <stdbool.h>
@@ -47,6 +52,10 @@ hw_timer_t *esp32_step_timer;
 void esp32_wifi_bt_init(void);
 void esp32_wifi_bt_flush(uint8_t *buffer);
 void esp32_wifi_bt_process(void);
+
+#ifdef USE_ARDUINO_SPI_LIBRARY
+void mcu_spi_init(void);
+#endif
 
 #if !defined(RAM_ONLY_SETTINGS) && !defined(USE_ARDUINO_EEPROM_LIBRARY)
 #include <nvs.h>
@@ -628,22 +637,15 @@ void mcu_init(void)
 	xTaskCreatePinnedToCore(mcu_rtc_task, "rtcTask", 2048, NULL, 7, NULL, CONFIG_ARDUINO_RUNNING_CORE);
 
 #ifdef MCU_HAS_SPI
-	spi_bus_config_t spiconf = {
-			.miso_io_num = SPI_SDI_BIT,
-			.mosi_io_num = SPI_SDO_BIT,
-			.sclk_io_num = SPI_CLK_BIT,
-			.quadwp_io_num = -1,
-			.quadhd_io_num = -1,
-			.data4_io_num = -1,
-			.data5_io_num = -1,
-			.data6_io_num = -1,
-			.data7_io_num = -1,
-			.max_transfer_sz = SOC_SPI_MAXIMUM_BUFFER_SIZE,
-			.flags = 0,
-			.intr_flags = 0};
-	// Initialize the SPI bus
-	spi_bus_initialize(SPI_PORT, &spiconf, SPI_DMA_DISABLED);
-	mcu_spi_config(SPI_MODE, SPI_FREQ);
+
+	spi_config_t spi_conf = {0};
+#ifndef USE_ARDUINO_SPI_LIBRARY
+	spi_access_mutex = xSemaphoreCreateMutex();
+	spi_conf.mode = SPI_MODE;
+#else
+	mcu_spi_init();
+#endif
+	mcu_spi_config(spi_conf, SPI_FREQ);
 #endif
 
 #ifdef MCU_HAS_I2C
@@ -1119,7 +1121,7 @@ MCU_CALLBACK void mcu_start_timeout()
 #endif
 #endif
 
-#if defined(MCU_HAS_SPI) && !defined(USE_ARDUINO_SPI_LIBRARY)
+#if (defined(MCU_HAS_SPI) && !defined(USE_ARDUINO_SPI_LIBRARY))
 
 static spi_device_handle_t mcu_spi_handle;
 
@@ -1139,19 +1141,159 @@ uint8_t mcu_spi_xmit(uint8_t data)
 #endif
 
 #ifndef mcu_spi_config
-void mcu_spi_config(uint8_t mode, uint32_t frequency)
+void mcu_spi_config(spi_config_t config, uint32_t frequency)
 {
+	mcu_spi_start(config, frequency);
+	mcu_spi_stop();
+}
+#endif
+
+#ifndef mcu_spi_start
+void mcu_spi_start(spi_config_t config, uint32_t frequency)
+{
+	while (xSemaphoreTake(spi_access_mutex, portMAX_DELAY) != pdTRUE)
+	{
+		taskYIELD();
+	}
+
 	if (mcu_spi_handle)
 	{
 		spi_bus_remove_device(mcu_spi_handle);
 	}
+	spi_bus_free(SPI_PORT);
+	spi_bus_config_t spiconf = {
+			.miso_io_num = SPI_SDI_BIT,
+			.mosi_io_num = SPI_SDO_BIT,
+			.sclk_io_num = SPI_CLK_BIT,
+			.quadwp_io_num = -1,
+			.quadhd_io_num = -1,
+			.data4_io_num = -1,
+			.data5_io_num = -1,
+			.data6_io_num = -1,
+			.data7_io_num = -1,
+			.max_transfer_sz = (config.enable_dma) ? SPI_DMA_BUFFER_SIZE : SOC_SPI_MAXIMUM_BUFFER_SIZE,
+			.flags = 0,
+			.intr_flags = 0};
+	// Initialize the SPI bus
+	spi_bus_initialize(SPI_PORT, &spiconf, (config.enable_dma) ? SPI_DMA_CH_AUTO : SPI_DMA_DISABLED);
+
 	spi_device_interface_config_t mcu_spi_conf = {0};
+	mcu_spi_conf.mode = config.mode;
 	mcu_spi_conf.clock_speed_hz = frequency;
 	mcu_spi_conf.spics_io_num = -1;
 	mcu_spi_conf.queue_size = 1;
-	mcu_spi_conf.mode = mode;
+	if (config.enable_dma)
+	{
+		mcu_spi_conf.queue_size = 1;
+		mcu_spi_conf.pre_cb = NULL;
+		mcu_spi_conf.pre_cb = NULL;
+	}
 
+	spi_dma_enabled = config.enable_dma;
 	spi_bus_add_device(SPI_PORT, &mcu_spi_conf, &mcu_spi_handle);
+}
+#endif
+
+#ifndef mcu_spi_bulk_transfer
+// data buffer for normal or DMA
+static FORCEINLINE bool mcu_spi_transaction(const uint8_t *out, uint8_t *in, uint16_t len)
+{
+	static void *o = NULL;
+	static void *i = NULL;
+	static bool is_running = false;
+	static spi_transaction_t t = {0};
+
+	// start a new transmition
+	if (!is_running)
+	{
+		if (spi_dma_enabled)
+		{
+			// DMA requires 4byte aligned transfers
+			uint16_t l = (((len >> 2) + ((len & 0x03) ? 1 : 0)) << 2);
+			o = heap_caps_malloc(l, MALLOC_CAP_DMA);
+			memcpy(o, out, len);
+			if (in)
+			{
+				i = heap_caps_malloc(l, MALLOC_CAP_DMA);
+				memset(i, 0x00, l);
+			}
+		}
+		else
+		{
+			o = out;
+			if (in)
+			{
+				i = in;
+			}
+		}
+
+		t.length = len * 8; // Length in bits
+		t.tx_buffer = o;
+		t.rxlength = 0; // this deafults to length
+
+		if (in)
+		{
+			t.rx_buffer = i;
+		}
+
+		spi_device_polling_start(mcu_spi_handle, &t, portMAX_DELAY);
+		is_running = true;
+	}
+	else
+	{
+		// check transfer state
+		if (spi_device_polling_end(mcu_spi_handle, 0) == ESP_OK)
+		{
+			if (spi_dma_enabled)
+			{
+				// copy back memory from DMA
+				if (in)
+				{
+					memcpy(in, i, len);
+					heap_caps_free(i);
+				}
+				heap_caps_free(o);
+			}
+
+			is_running = false;
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
+{
+	static uint16_t data_offset = 0;
+	uint32_t offset = data_offset;
+	uint16_t max_transfer_size = (spi_dma_enabled) ? SPI_DMA_BUFFER_SIZE : SOC_SPI_MAXIMUM_BUFFER_SIZE;
+
+	uint8_t *i = NULL;
+	if(in){
+		i = &in[offset];
+	}
+
+	if (!mcu_spi_transaction(&out[offset], i, MIN(max_transfer_size, (len - offset))))
+	{
+		offset += max_transfer_size;
+		if (offset >= len)
+		{
+			data_offset = 0;
+			return false;
+		}
+
+		data_offset = (uint16_t)offset;
+	}
+
+	return true;
+}
+#endif
+
+#ifndef mcu_spi_stop
+void mcu_spi_stop(void)
+{
+	xSemaphoreGive(spi_access_mutex);
 }
 #endif
 #endif

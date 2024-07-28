@@ -875,7 +875,7 @@ extern "C"
 #endif
 
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
-ADD_EVENT_LISTENER(grbl_cmd, mcu_custom_grbl_cmd);
+		ADD_EVENT_LISTENER(grbl_cmd, mcu_custom_grbl_cmd);
 #endif
 	}
 
@@ -1170,30 +1170,27 @@ extern "C"
 #if defined(MCU_HAS_SPI) && defined(USE_ARDUINO_SPI_LIBRARY)
 #include <SPI.h>
 SPIClass *esp32spi = NULL;
-uint32_t esp32spifreq = SPI_FREQ;
-uint8_t esp32spimode = SPI_MODE0;
-
+static uint8_t spi_mode = 0;
+static uint32_t spi_freq = 1000000UL;
 extern "C"
 {
-#ifndef SPI_CS_BIT
-#define SPI_CS_BIT -1
-#endif
-	void mcu_spi_config(uint8_t mode, uint32_t freq)
+	
+	void mcu_spi_init(void)
 	{
-		if (esp32spi != NULL)
-		{
-			esp32spi->end();
-			esp32spi = NULL;
-		}
-
 #if (SPI_CLK_BIT == 14 || SPI_CLK_BIT == 25)
 		esp32spi = new SPIClass(HSPI);
 #else
 		esp32spi = new SPIClass(VSPI);
 #endif
-		esp32spi->begin(SPI_CLK_BIT, SPI_SDI_BIT, SPI_SDO_BIT, SPI_CS_BIT);
-		esp32spifreq = freq;
-		esp32spimode = mode;
+		esp32spi->begin(SPI_CLK_BIT, SPI_SDI_BIT, SPI_SDO_BIT, -1);
+	}
+
+	void mcu_spi_config(spi_config_t config, uint32_t freq)
+	{
+		spi_freq = freq;
+		spi_mode = config.mode;
+		esp32spi->setFrequency(freq);
+		esp32spi->setDataMode(config.mode);
 	}
 
 	uint8_t mcu_spi_xmit(uint8_t data)
@@ -1201,9 +1198,15 @@ extern "C"
 		return esp32spi->transfer(data);
 	}
 
-	void mcu_spi_start(uint8_t mode, uint32_t frequency)
+	void mcu_spi_start(spi_config_t config, uint32_t frequency)
 	{
-		esp32spi->beginTransaction(SPISettings(frequency, MSBFIRST, mode));
+		esp32spi->beginTransaction(SPISettings(frequency, MSBFIRST, config.mode));
+	}
+
+	bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
+	{
+		esp32spi->transferBytes(out, in, len);
+		return false;
 	}
 
 	void mcu_spi_stop(void)

@@ -1342,7 +1342,7 @@ extern "C"
 #include <SPI.h>
 extern "C"
 {
-	void mcu_spi_config(uint8_t mode, uint32_t frequency)
+	void mcu_spi_config(spi_config_t config, uint32_t frequency)
 	{
 		COM_SPI.end();
 		COM_SPI.setRX(SPI_SDI_BIT);
@@ -1357,9 +1357,9 @@ extern "C"
 		return COM_SPI.transfer(data);
 	}
 
-	void mcu_spi_start(uint8_t mode, uint32_t frequency)
+	void mcu_spi_start(spi_config_t config, uint32_t frequency)
 	{
-		COM_SPI.beginTransaction(SPISettings(frequency, 1 /*MSBFIRST*/, mode));
+		COM_SPI.beginTransaction(SPISettings(frequency, 1 /*MSBFIRST*/, config.mode));
 	}
 
 	void mcu_spi_stop(void)
