@@ -148,6 +148,8 @@ uint16_t softspi_xmit16(softspi_port_t *port, uint16_t c)
 
 void softspi_bulk_xmit(softspi_port_t *port, const uint8_t *out, uint8_t *in, uint16_t len)
 {
+
+#ifndef SPI_BULK_LEGACY_MODE_ENABLED
 	// if no port is defined defaults to SPI hardware if available
 	if (!port)
 	{
@@ -169,6 +171,7 @@ void softspi_bulk_xmit(softspi_port_t *port, const uint8_t *out, uint8_t *in, ui
 		}
 		return;
 	}
+#endif
 
 	uint32_t timeout = BULK_SPI_TIMEOUT + mcu_millis();
 	while (len--)
@@ -218,7 +221,7 @@ void softspi_stop(softspi_port_t *port)
 	{
 		return;
 	}
-	
+
 	// if port with custom method execute it
 	if (port->stop)
 	{

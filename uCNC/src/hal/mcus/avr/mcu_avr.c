@@ -912,7 +912,7 @@ void mcu_dotasks()
 
 // This was copied from grbl
 #ifndef EEPE
-#define EEPE EEWE		//!< EEPROM program/write enable.
+#define EEPE EEWE	//!< EEPROM program/write enable.
 #define EEMPE EEMWE //!< EEPROM master program/write enable.
 #endif
 
@@ -930,9 +930,9 @@ uint8_t mcu_eeprom_getc(uint16_t address)
 	{
 
 	} while (EECR & (1 << EEPE)); // Wait for completion of previous write.
-	EEAR = address;			// Set EEPROM address register.
-	EECR = (1 << EERE); // Start EEPROM read operation.
-	return EEDR;				// Return the byte read from EEPROM.
+	EEAR = address;				  // Set EEPROM address register.
+	EECR = (1 << EERE);			  // Start EEPROM read operation.
+	return EEDR;				  // Return the byte read from EEPROM.
 }
 
 void mcu_eeprom_putc(uint16_t address, uint8_t value)
@@ -950,9 +950,9 @@ void mcu_eeprom_putc(uint16_t address, uint8_t value)
 	{
 	} while (SPMCSR & (1 << SELFPRGEN)); // Wait for completion of SPM.
 
-	EEAR = address;								 // Set EEPROM address register.
-	EECR = (1 << EERE);						 // Start EEPROM read operation.
-	old_value = EEDR;							 // Get old EEPROM value.
+	EEAR = address;				   // Set EEPROM address register.
+	EECR = (1 << EERE);			   // Start EEPROM read operation.
+	old_value = EEDR;			   // Get old EEPROM value.
 	diff_mask = old_value ^ value; // Get bit differences.
 	// Check if any bits are changed to '1' in the new value.
 	if (diff_mask & value)
@@ -962,15 +962,15 @@ void mcu_eeprom_putc(uint16_t address, uint8_t value)
 		if (value != 0xff)
 		{
 			// Now we know that some bits need to be programmed to '0' also.
-			EEDR = value;																				 // Set EEPROM data register.
+			EEDR = value;										 // Set EEPROM data register.
 			EECR = ((1 << EEMPE) | (0 << EEPM1) | (0 << EEPM0)); // Erase+Write mode.
-			EECR |= (1 << EEPE);																 // Start Erase+Write operation.
+			EECR |= (1 << EEPE);								 // Start Erase+Write operation.
 		}
 		else
 		{
 			// Now we know that all bits should be erased.
 			EECR = ((1 << EEMPE) | (1 << EEPM0)); // Erase-only mode.
-			EECR |= (1 << EEPE);									// Start Erase-only operation.
+			EECR |= (1 << EEPE);				  // Start Erase-only operation.
 		}
 	}
 	else
@@ -980,9 +980,9 @@ void mcu_eeprom_putc(uint16_t address, uint8_t value)
 		if (diff_mask)
 		{
 			// Now we know that _some_ bits need to the programmed to '0'.
-			EEDR = value;													// Set EEPROM data register.
+			EEDR = value;						  // Set EEPROM data register.
 			EECR = ((1 << EEMPE) | (1 << EEPM1)); // Write-only mode.
-			EECR |= (1 << EEPE);									// Start Write-only operation.
+			EECR |= (1 << EEPE);				  // Start Write-only operation.
 		}
 	}
 
@@ -1062,47 +1062,43 @@ static volatile const uint8_t *spi_bulk_data_ptr_tx = 0;
 static uint8_t *spi_bulk_data_ptr_rx = 0;
 static uint16_t spi_bulk_data_len = 0;
 
-ISR(SPI_STC_vect, ISR_NOBLOCK)
-{
+ISR(SPI_STC_vect, ISR_NOBLOCK) {
 	// Read received byte
-	if (spi_bulk_data_ptr_rx)
-	{
+	if(spi_bulk_data_ptr_rx != 0)
 		*spi_bulk_data_ptr_rx++ = SPDR;
-	}
 
-	spi_bulk_data_len--;
-
-	if (spi_bulk_data_len)
+	if(--spi_bulk_data_len)
 	{
+		// Transmit the next byte
 		SPDR = *spi_bulk_data_ptr_tx++;
 	}
 	else
 	{
-		CLEARBIT(SPCR, SPIE); // disable the ISR
+		// Transmission finished, disable the interrupt
+		SPCR &= ~(1 << SPIE);
 	}
 }
 
-// bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t datalen)
-// {
-// 	if (spi_bulk_data_ptr_tx == 0)
-// 	{
-// 		spi_bulk_data_ptr_tx = tx_data;
-// 		spi_bulk_data_ptr_rx = rx_data;
-// 		spi_bulk_data_len = datalen;
-// 		SETBIT(SPCR, SPIE);
-// 		// Transmit the first byte
-// 		SPDR = *spi_bulk_data_ptr_tx++;
-// 	}
+bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t datalen) {
+	if(spi_bulk_data_ptr_tx == 0)
+	{
+		spi_bulk_data_ptr_tx = tx_data;
+		spi_bulk_data_ptr_rx = rx_data;
+		spi_bulk_data_len = datalen;
+		SPCR |= (1 << SPIE);
+		// Transmit the first byte
+		SPDR = *spi_bulk_data_ptr_tx++;
+	}
 
-// 	if (!CHECKBIT(SPCR, SPIE)) // check if the ISR is active
-// 	{
-// 		spi_bulk_data_ptr_tx = 0;
-// 		spi_bulk_data_ptr_rx = 0;
-// 		return false;
-// 	}
+	if(!(SPCR & (1 << SPIE)))
+	{
+		spi_bulk_data_ptr_tx = 0;
+		spi_bulk_data_ptr_rx = 0;
+		return false;
+	}
 
-// 	return true;
-// }
+	return true;
+}
 
 #endif
 

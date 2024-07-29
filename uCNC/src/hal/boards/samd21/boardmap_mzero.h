@@ -41,8 +41,8 @@ extern "C"
 #define STEP0_PORT A // assigns STEP0 port
 #define STEP1_BIT 9	 // assigns STEP1 pin
 #define STEP1_PORT A // assigns STEP1 port
-// #define STEP2_BIT 14 // assigns STEP2 pin
-// #define STEP2_PORT A // assigns STEP2 port
+#define STEP2_BIT 14 // assigns STEP2 pin
+#define STEP2_PORT A // assigns STEP2 port
 
 // Setup dir pins
 #define DIR0_BIT 15 // assigns DIR0 pin
@@ -110,8 +110,8 @@ extern "C"
 // Functionalities are set in cnc_hal_config.h file
 
 // spindle dir
-// #define DOUT0_BIT 17
-// #define DOUT0_PORT A
+#define DOUT0_BIT 17
+#define DOUT0_PORT A
 
 // analog input
 //  #define ANALOG0_BIT 5
@@ -145,17 +145,12 @@ extern "C"
 	// #define DIN31_BIT 22
 	// #define DIN31_PORT A
 
-#define SPI_CLK_PORT A
-#define SPI_CLK_BIT 17
-#define SPI_SDI_PORT A
-#define SPI_SDI_BIT 19
-#define SPI_SDO_PORT A
-#define SPI_SDO_BIT 16
-#define SPI_CS_PORT A
-#define SPI_CS_BIT 18
-
-#define DOUT20_PORT A
-#define DOUT20_BIT 14
+// #define SPI_CLK_PORT A
+// #define SPI_CLK_BIT 17
+// #define SPI_SDI_PORT A
+// #define SPI_SDI_BIT 19
+// #define SPI_SDO_PORT A
+// #define SPI_SDO_BIT 16
 
 #define ONESHOT_TIMER 2
 

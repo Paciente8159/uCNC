@@ -86,7 +86,7 @@ extern "C"
 		void (*stop)(void);
 	} softspi_port_t;
 
-#define SPI_DELAY(FREQ) (CLAMP(1, (2500000UL / FREQ), 0xFFFF) - 1)
+#define SPI_DELAY(FREQ) (CLAMP(1, (500000UL / FREQ), 0xFFFF) - 1)
 
 // the maximum amount of time in milliseconds it will transmit data without running the main loop
 #ifndef BULK_SPI_TIMEOUT
