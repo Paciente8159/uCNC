@@ -1032,6 +1032,8 @@ bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t da
 		// Bulk transfer without DMA
 		if(spi_port_state == SPI_IDLE)
 		{
+			spi_port_state = SPI_TRANSMITTING;
+
 			spi_transfer_tx_ptr = tx_data;
 			spi_transfer_tx_len = datalen;
 			SPI_REG->CR2 |= SPI_CR2_TXEIE;
@@ -1046,8 +1048,6 @@ bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t da
 				spi_transfer_rx_ptr = 0;
 				spi_transfer_rx_len = 0;
 			}
-
-			spi_port_state = SPI_TRANSMITTING;
 		}
 		else if(spi_port_state == SPI_TRANSMIT_COMPLETE)
 		{
