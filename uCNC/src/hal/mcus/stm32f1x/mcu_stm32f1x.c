@@ -965,10 +965,10 @@ typedef enum spi_port_state_enum {
 	SPI_TRANSMITTING = 2,
 	SPI_TRANSMIT_COMPLETE = 3,
 } spi_port_state_t;
-static spi_port_state_t spi_port_state = SPI_UNKNOWN;
+static volatile  spi_port_state_t spi_port_state = SPI_UNKNOWN;
 static bool spi_enable_dma = false;
 
-void mcu_spi_config(uint8_t mode, uint32_t frequency)
+void mcu_spi_config(spi_config_t config, uint32_t frequency)
 {
 
 	uint8_t div = (uint8_t)(SPI_CLOCK / frequency);
@@ -1016,8 +1016,7 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 	SPI_REG->CR1 |= SPI_CR1_SPE;
 
 	spi_port_state = SPI_IDLE;
-	// TODO: Assign this to the configured value in mcu_spi_config
-	spi_enable_dma = false;
+	spi_enable_dma = config.enable_dma;
 }
 
 uint8_t mcu_spi_xmit(uint8_t c)
