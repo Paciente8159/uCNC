@@ -652,4 +652,119 @@ void mcu_start_timeout()
 #endif
 #endif
 
+/**
+ *
+ * This handles SPI communications
+ *
+ * **/
+
+#if defined(MCU_HAS_SPI) && !defined(USE_ARDUINO_SPI_LIBRARY)
+#include <hardware/spi.h>
+#include <hardware/dma.h>
+#include "pico/stdlib.h"
+#include "pico/binary_info.h"
+
+void mcu_spi_init(void)
+{
+	spi_init(SPI_HW, SPI_FREQ);
+	gpio_set_function(PICO_DEFAULT_SPI_RX_PIN, GPIO_FUNC_SPI);
+	gpio_init(PICO_DEFAULT_SPI_CSN_PIN);
+	gpio_set_function(PICO_DEFAULT_SPI_SCK_PIN, GPIO_FUNC_SPI);
+	gpio_set_function(PICO_DEFAULT_SPI_TX_PIN, GPIO_FUNC_SPI);
+
+	// Enable SPI 0 at 1 MHz and connect to GPIOs
+	spi_init(SPI_HW, SPI_FREQ);
+	gpio_set_function(SPI_CLK_BIT, GPIO_FUNC_SPI);
+	gpio_set_function(SPI_SDO_BIT, GPIO_FUNC_SPI);
+	gpio_set_function(SPI_SDI_BIT, GPIO_FUNC_SPI);
+#ifdef SPI_CS_BIT
+	gpio_set_function(SPI_CS_BIT, GPIO_FUNC_SPI);
+#endif
+	// Make the SPI pins available to picotool
+	bi_decl(bi_4pins_with_func(SPI_SDI_BIT, SPI_SDO_BIT, SPI_CLK_BIT, SPI_CS_BIT, GPIO_FUNC_SPI));
+}
+
+void mcu_spi_config(spi_config_t config, uint32_t frequency)
+{
+	spi_set_baudrate(SPI_HW, frequency);
+	spi_set_format(SPI_HW, 8, ((config.mode >> 1) & 0x01), (config.mode & 0x01), SPI_MSB_FIRST);
+}
+
+uint8_t mcu_spi_xmit(uint8_t data)
+{
+	spi_get_hw(SPI_HW)->dr = data;
+	while (!(spi_get_hw(SPI_HW)->sr & SPI_SSPSR_RNE_BITS))
+		;
+	return (spi_get_hw(SPI_HW)->dr & 0xFF);
+}
+
+void mcu_spi_start(spi_config_t config, uint32_t frequency)
+{
+	mcu_spi_config(config, frequency);
+}
+
+void mcu_spi_stop(void)
+{
+}
+
+bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
+{
+	static bool transmitting = false;
+	// Grab some unused dma channels
+	static uint dma_tx = 0;
+	static uint dma_rx = 0;
+
+	if (!transmitting)
+	{
+		uint32_t startmask = (1u << dma_tx);
+		// We set the outbound DMA to transfer from a memory buffer to the SPI transmit FIFO paced by the SPI TX FIFO DREQ
+		// The default is for the read address to increment every element (in this case 1 byte = DMA_SIZE_8)
+		// and for the write address to remain unchanged.
+		dma_tx = dma_claim_unused_channel(true);
+
+		dma_channel_config c = dma_channel_get_default_config(dma_tx);
+		channel_config_set_transfer_data_size(&c, DMA_SIZE_8);
+		channel_config_set_dreq(&c, spi_get_dreq(spi_default, true));
+		dma_channel_configure(dma_tx, &c,
+													&spi_get_hw(SPI_HW)->dr, // write address
+													out,										 // read address
+													len,										 // element count (each element is of size transfer_data_size)
+													false);									 // don't start yet
+
+		if (in)
+		{
+			// We set the inbound DMA to transfer from the SPI receive FIFO to a memory buffer paced by the SPI RX FIFO DREQ
+			// We configure the read address to remain unchanged for each element, but the write
+			// address to increment (so data is written throughout the buffer)
+			dma_rx = dma_claim_unused_channel(true);
+			c = dma_channel_get_default_config(dma_rx);
+			channel_config_set_transfer_data_size(&c, DMA_SIZE_8);
+			channel_config_set_dreq(&c, spi_get_dreq(spi_default, false));
+			channel_config_set_read_increment(&c, false);
+			channel_config_set_write_increment(&c, true);
+			dma_channel_configure(dma_rx, &c,
+														in,											 // write address
+														&spi_get_hw(SPI_HW)->dr, // read address
+														len,										 // element count (each element is of size transfer_data_size)
+														false);									 // don't start yet
+
+			startmask |= (1u << dma_rx);
+		}
+
+		// start the DMA transmission
+		dma_start_channel_mask(startmask);
+	}
+	else
+	{
+		if (!dma_channel_is_busy(dma_tx) && !dma_channel_is_busy(dma_rx))
+		{
+			dma_channel_unclaim(dma_tx);
+			dma_channel_unclaim(dma_rx);
+			return false;
+		}
+	}
+	return true;
+}
+#endif
+
 #endif
