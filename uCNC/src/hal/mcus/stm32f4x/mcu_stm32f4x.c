@@ -1035,6 +1035,13 @@ void mcu_spi_config(spi_config_t config, uint32_t frequency)
 	// enable SPI
 	SPI_REG->CR1 |= SPI_CR1_SPE;
 
+	if(config.mode & SPI_CR1_CPOL_Msk){
+		mcu_config_pullup(SPI_CLK);
+	}
+	else{
+		mcu_config_pulldown(SPI_CLK);
+	}
+
 	spi_port_state = SPI_IDLE;
 	spi_enable_dma = config.enable_dma;
 }

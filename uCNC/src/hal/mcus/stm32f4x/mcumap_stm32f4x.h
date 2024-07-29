@@ -3752,6 +3752,12 @@ extern "C"
 		__indirect__(diopin, GPIO)->PUPDR |= (GPIO_IN_PULLUP << ((__indirect__(diopin, BIT)) << 1)); \
 	}
 
+	#define mcu_config_pulldown(diopin)                                                                \
+	{                                                                                              \
+		__indirect__(diopin, GPIO)->PUPDR &= ~(GPIO_RESET << ((__indirect__(diopin, BIT)) << 1));    \
+		__indirect__(diopin, GPIO)->PUPDR |= (GPIO_IN_PULLDOWN << ((__indirect__(diopin, BIT)) << 1)); \
+	}
+
 #define mcu_config_opendrain(diopin)                                            \
 	{                                                                             \
 		__indirect__(diopin, GPIO)->OTYPER |= (1 << ((__indirect__(diopin, BIT)))); \
@@ -3869,6 +3875,7 @@ extern "C"
 #define GPIO_IN_ANALOG 0 // not needed after reseting bits
 
 #define GPIO_IN_PULLUP 0x1U
+#define GPIO_IN_PULLDOWN 0x2U
 
 #ifdef MCU_HAS_ONESHOT_TIMER
 

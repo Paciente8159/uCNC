@@ -64,7 +64,7 @@
 #define SD_SPI_SDI DIN29
 #endif
 #ifndef SD_SPI_CS
-#define SD_SPI_CS SPI_CS
+#define SD_SPI_CS DOUT20
 #endif
 SOFTSPI(mmcsd_spi, 100000UL, 0, SD_SPI_SDO, SD_SPI_SDI, SD_SPI_CLK);
 #define SD_SPI_PORT (&mmcsd_spi)

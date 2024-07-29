@@ -218,7 +218,7 @@ extern "C"
 // #define DIN19_PORT L
 // #define DIN19_PULLUP
 // #define DOUT20_BIT 0
-// #define DIN19_PORT L
+// #define DOUT20_PORT L
 
 // pins for smart adapter
 // clk
