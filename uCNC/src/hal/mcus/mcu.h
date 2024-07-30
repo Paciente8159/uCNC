@@ -506,6 +506,16 @@ extern "C"
 		};
 	} spi_config_t;
 
+	// hardware port function calls
+	typedef struct spi_port_
+	{
+		bool isbusy;
+		void (*start)(spi_config_t, uint32_t);
+		uint8_t (*xmit)(uint8_t);
+		bool (*bulk_xmit)(const uint8_t *, uint8_t *, uint16_t);
+		void (*stop)(void);
+	} spi_port_t;
+
 #ifdef MCU_HAS_SPI
 #ifndef mcu_spi_xmit
 	uint8_t mcu_spi_xmit(uint8_t data);
@@ -526,6 +536,8 @@ extern "C"
 #ifndef mcu_spi_config
 	void mcu_spi_config(spi_config_t config, uint32_t frequency);
 #endif
+
+extern spi_port_t mcu_spi_port;
 #endif
 
 #ifdef MCU_HAS_I2C
