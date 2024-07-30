@@ -34,7 +34,7 @@
 SemaphoreHandle_t spi_access_mutex = NULL;
 bool spi_dma_enabled = false;
 #ifndef SPI_DMA_BUFFER_SIZE
-#define SPI_DMA_BUFFER_SIZE 1024
+#define SPI_DMA_BUFFER_SIZE 4096
 #endif
 #endif
 #include <string.h>

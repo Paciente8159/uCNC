@@ -20,6 +20,12 @@
 #include "../../cnc.h"
 #include "../softspi.h"
 
+#ifndef GFX_BULK_TRANSFER_MAX_SIZE
+#define GFX_BULK_TRANSFER_MAX_SIZE (1 << 10)
+#endif
+
+#define GFX_BULK_TRANSFER_MAX_CHUNCK_SIZE (GFX_BULK_TRANSFER_MAX_SIZE * 8 / 9)
+
 void Arduino_uCNC_SPI::clearDC(bool dc_val = false)
 {
 	if (!this->_dc) // 9-bit SPI
@@ -42,13 +48,16 @@ void Arduino_uCNC_SPI::setDC(void)
 	}
 }
 
-void Arduino_uCNC_SPI::convertTo9bit(const uint8_t *data, uint8_t *buffer, uint16_t len, bool bit9val)
+void Arduino_uCNC_SPI::convertTo9bit(const uint8_t *data, uint32_t offset, uint8_t *buffer, uint16_t len, bool bit9val)
 {
 	uint16_t mask = bit9val ? 0x100 : 0x000;
-	*buffer = 0;
-	for (uint32_t i = 0; i < len; i++)
+	uint16_t d = mask | ((offset) ? data[(offset - 1)] : 0);
+	uint8_t shift = (offset) ? (((offset - 1) & 0x07) + 1) : 0;
+	*buffer = (uint8_t)((d << (8 - shift)) & 0xFF);
+
+	for (uint32_t i = offset; i < len; i++)
 	{
-		uint16_t d = mask | *data++;
+		d = mask | *data++;
 		uint8_t shift = (i & 0x07) + 1;
 
 		*buffer++ |= (uint8_t)((d >> shift) & 0xFF);
@@ -119,19 +128,7 @@ void Arduino_uCNC_SPI::writeCommand16(uint16_t c)
 
 void Arduino_uCNC_SPI::writeCommandBytes(uint8_t *data, uint32_t len)
 {
-	if (this->_dc)
-	{
-		clearDC();
-		softspi_bulk_xmit((softspi_port_t *)this->_spi, data, NULL, len);
-	}
-	else
-	{
-		uint32_t len9bit = (uint32_t)ceilf(len * 1.125f);
-		uint8_t newdata[len9bit];
-		convertTo9bit(data, newdata, len, false);
-		softspi_bulk_xmit((softspi_port_t *)this->_spi, newdata, NULL, len9bit);
-	}
-	setDC();
+	writeBulk(data, len, false);
 }
 
 void Arduino_uCNC_SPI::write(uint8_t c)
@@ -153,27 +150,37 @@ void Arduino_uCNC_SPI::write16(uint16_t c)
 void Arduino_uCNC_SPI::writeRepeat(uint16_t p, uint32_t len)
 {
 	// converts the data to repeat to an array in memory for faster operations
-	uint16_t chunck = (uint16_t)((len << 1) & 0x7FFF); // breaks this in operations with a max size of 32Kb
-	uint8_t data[chunck];															 // buffer
-	uint16_t *ptr = (uint16_t *)data;									 // fill the buffer
-	uint16_t l = len;
+	uint16_t chunck = (uint16_t)(((this->_dc) ? GFX_BULK_TRANSFER_MAX_SIZE : GFX_BULK_TRANSFER_MAX_CHUNCK_SIZE) & 0xFFFF); // chooses the chunck size for 8bit or 9bit operations
+	chunck = (uint16_t)MIN((len << 1), chunck);																																						 // breaks this in chuncks
+	chunck = 72 * MAX(1, ((uint16_t)(chunck / 72)));																																			 // must be an MMC of 8 and 9. This will make 8bit and 9bit width data align
+	uint8_t data[chunck];																																																	 // buffer
+	uint16_t *ptr = (uint16_t *)data;																																											 // fill the buffer
+	uint16_t l = (chunck >> 1);
 
+	// prefill the buffer chunck
 	while (l--)
 	{
 		*ptr++ = p; // prefill repeated data
 	}
 
-	writeBytes((uint8_t *)data, (len << 1));
+	len <<= 1;
+	while (len)
+	{
+		chunck = (uint16_t)MIN(chunck, len);
+		writeBytes(data, chunck);
+		len -= chunck;
+	}
 }
 
-void Arduino_uCNC_SPI::writeBytes(uint8_t *data, uint32_t len)
+void Arduino_uCNC_SPI::writeBulk(uint8_t *data, uint32_t len, bool dc_val)
 {
-	uint16_t chunck = (uint16_t)(len & 0x7FFF); // breaks this in operations with a max size of 32Kb
+	uint16_t chunck = (uint16_t)(((this->_dc) ? GFX_BULK_TRANSFER_MAX_SIZE : GFX_BULK_TRANSFER_MAX_CHUNCK_SIZE) & 0xFFFF); // chooses the chunck size for 8bit or 9bit operations
+	chunck = (uint16_t)MIN((len << 1), chunck);																																						 // breaks this in chuncks
 	uint32_t offset = 0;
 
 	if (this->_dc)
 	{
-		clearDC(true);
+		clearDC(dc_val);
 		while (len)
 		{
 			chunck = (uint16_t)MIN(chunck, len);																					// size of chunck to send
@@ -190,7 +197,7 @@ void Arduino_uCNC_SPI::writeBytes(uint8_t *data, uint32_t len)
 		while (len)
 		{
 			chunck = (uint16_t)MIN(chunck, len);
-			convertTo9bit(&data[offset], newdata, chunck, true);										 // convert a chunck of data to 9bit-width
+			convertTo9bit(data, offset, newdata, chunck, dc_val);										 // convert a chunck of data to 9bit-width
 			len9bit = (uint16_t)ceilf(1.125f * chunck);															 // size of 9bit-chunck to send
 			softspi_bulk_xmit((softspi_port_t *)this->_spi, newdata, NULL, len9bit); // send chunck
 			offset += chunck;																												 // update the pointer index
@@ -198,6 +205,11 @@ void Arduino_uCNC_SPI::writeBytes(uint8_t *data, uint32_t len)
 		}
 	}
 	setDC();
+}
+
+void Arduino_uCNC_SPI::writeBytes(uint8_t *data, uint32_t len)
+{
+	writeBulk(data, len, true);
 }
 
 void Arduino_uCNC_SPI::writePixels(uint16_t *data, uint32_t len)

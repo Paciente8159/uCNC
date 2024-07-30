@@ -40,7 +40,8 @@ public:
 private:
 	void clearDC(bool dc_val);
 	void setDC(void);
-	void convertTo9bit(const uint8_t* data, uint8_t* buffer, uint16_t len, bool bit9val);
+	void convertTo9bit(const uint8_t* data, uint32_t offset, uint8_t* buffer, uint16_t len, bool bit9val);
+	void writeBulk(uint8_t *data, uint32_t len, bool dc_val);
 	void *_spi;
 	uint8_t _cs;
 	bool _is_shared_interface;
