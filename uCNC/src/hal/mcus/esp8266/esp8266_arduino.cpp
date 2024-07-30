@@ -972,17 +972,19 @@ extern "C"
 extern "C"
 {
 #include "../../../cnc.h"
-	void esp8266_spi_init(uint32_t freq, spi_config_t config)
+	void esp8266_spi_init(uint32_t freq, uint8_t mode)
 	{
 		SPI.begin();
-		SPI.setFrequency(freq);
-		SPI.setDataMode(config.mode);
-		SPI.setBitOrder(MSBFIRST);
+		spi_config_t conf = {0};
+		conf.mode = SPI_MODE;
+		mcu_spi_config(conf, freq);
 	}
 
 	void mcu_spi_config(spi_config_t config, uint32_t freq)
 	{
-		esp8266_spi_init(freq, config);
+		SPI.setFrequency(freq);
+		SPI.setDataMode(config.mode);
+		SPI.setBitOrder(MSBFIRST);
 	}
 
 	void mcu_spi_start(spi_config_t config, uint32_t freq)

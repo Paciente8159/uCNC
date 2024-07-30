@@ -844,9 +844,9 @@ void __attribute__((weak)) mcu_i2c_slave_cb(uint8_t *data, uint8_t *datalen)
 #if (defined(MCU_HAS_SPI))
 void __attribute__((weak)) mcu_spi_start(spi_config_t config, uint32_t frequency)
 {
-	mcu_spi_port.isbusy = true;
 	// reapply port settings if port is shared
 	mcu_spi_config(config, frequency);
+	mcu_spi_port.isbusy = true;
 }
 
 // the maximum amount of time in milliseconds it will transmit data without running the main loop

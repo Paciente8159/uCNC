@@ -191,8 +191,9 @@ bool softspi_isbusy(softspi_port_t *port)
 	if (!port)
 	{
 #ifdef MCU_HAS_SPI
-		port->spiconfig.locked = mcu_spi_port.isbusy;
+		return mcu_spi_port.isbusy;
 #endif
+		return false;
 	}
 
 	if (port->spiport)
