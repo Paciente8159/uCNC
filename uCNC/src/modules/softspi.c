@@ -17,10 +17,6 @@
 */
 #include "softspi.h"
 
-#ifdef MCU_HAS_SPI
-softspi_port_t __attribute__((used)) MCU_SPI_PORT = {.spiconfig = {.flags = 0}, .spifreq = SPI_FREQ, .clk = NULL, .mosi = NULL, .miso = NULL, .config = mcu_spi_config, .start = mcu_spi_start, .xmit = mcu_spi_xmit, .bulk_xmit = mcu_spi_bulk_transfer, .stop = mcu_spi_stop};
-#endif
-
 void softspi_config(softspi_port_t *port, softspi_config_t config, uint32_t frequency)
 {
 	port->spiconfig = config;
@@ -53,9 +49,9 @@ uint8_t softspi_xmit(softspi_port_t *port, uint8_t c)
 	}
 
 	// if port with custom method execute it
-	if (port->xmit)
+	if (port->spiport)
 	{
-		return port->xmit(c);
+		return port->spiport->xmit(c);
 	}
 
 	bool clk = (bool)(port->spiconfig.spi.mode & 0x2);
@@ -106,11 +102,11 @@ uint16_t softspi_xmit16(softspi_port_t *port, uint16_t c)
 	}
 
 	// if port with custom method execute it
-	if (port->xmit)
+	if (port->spiport)
 	{
-		uint16_t res = port->xmit((uint8_t)(c >> 8));
+		uint16_t res = port->spiport->xmit((uint8_t)(c >> 8));
 		res <<= 8;
-		return (res | port->xmit((uint8_t)(0xFF & c)));
+		return (res | port->spiport->xmit((uint8_t)(0xFF & c)));
 	}
 
 	bool clk = (bool)(port->spiconfig.spi.mode & 0x2);
@@ -163,9 +159,9 @@ void softspi_bulk_xmit(softspi_port_t *port, const uint8_t *out, uint8_t *in, ui
 	}
 
 	// if port with custom method execute it
-	if (port->bulk_xmit)
+	if (port->spiport)
 	{
-		while (port->bulk_xmit(out, in, len))
+		while (port->spiport->bulk_xmit(out, in, len))
 		{
 			cnc_dotasks();
 		}
@@ -190,6 +186,23 @@ void softspi_bulk_xmit(softspi_port_t *port, const uint8_t *out, uint8_t *in, ui
 	}
 }
 
+bool softspi_isbusy(softspi_port_t *port)
+{
+	if (!port)
+	{
+#ifdef MCU_HAS_SPI
+		port->spiconfig.locked = mcu_spi_port.isbusy;
+#endif
+	}
+
+	if (port->spiport)
+	{
+		port->spiconfig.locked = port->spiport->isbusy;
+	}
+
+	return port->spiconfig.locked;
+}
+
 void softspi_start(softspi_port_t *port)
 {
 	if (!port)
@@ -198,7 +211,7 @@ void softspi_start(softspi_port_t *port)
 	}
 
 	// mutual exclusive access
-	while (port->spiconfig.locked)
+	while (softspi_isbusy(port))
 	{
 		cnc_dotasks();
 	}
@@ -206,9 +219,9 @@ void softspi_start(softspi_port_t *port)
 
 	// if port with custom method execute it
 	// usually HW ports
-	if (port->start)
+	if (port->spiport)
 	{
-		port->start(port->spiconfig.spi, port->spifreq);
+		port->spiport->start(port->spiconfig.spi, port->spifreq);
 		return;
 	}
 
@@ -223,9 +236,9 @@ void softspi_stop(softspi_port_t *port)
 	}
 
 	// if port with custom method execute it
-	if (port->stop)
+	if (port->spiport)
 	{
-		port->stop();
+		port->spiport->stop();
 	}
 	// unlocks resource
 	port->spiconfig.locked = 0;

@@ -1440,12 +1440,7 @@ void mcu_spi_start(spi_config_t config, uint32_t frequency)
 	}
 
 	spi_port_state = SPI_IDLE;
-}
-
-void mcu_spi_stop()
-{
-	// mcu_dma_free_channel(spi_dma_channels[0]);
-	// mcu_dma_free_channel(spi_dma_channels[1]);
+	mcu_spi_port.isbusy = true;
 }
 
 uint8_t mcu_spi_xmit(uint8_t c)

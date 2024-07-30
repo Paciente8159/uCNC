@@ -844,6 +844,7 @@ void __attribute__((weak)) mcu_i2c_slave_cb(uint8_t *data, uint8_t *datalen)
 #if (defined(MCU_HAS_SPI))
 void __attribute__((weak)) mcu_spi_start(spi_config_t config, uint32_t frequency)
 {
+	mcu_spi_port.isbusy = true;
 	// reapply port settings if port is shared
 	mcu_spi_config(config, frequency);
 }
@@ -876,5 +877,8 @@ bool __attribute__((weak)) mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in
 
 void __attribute__((weak)) mcu_spi_stop(void)
 {
+	mcu_spi_port.isbusy = false;
 }
+
+spi_port_t __attribute__((used)) mcu_spi_port = {.isbusy = false, .start = mcu_spi_start, .xmit = mcu_spi_xmit, .bulk_xmit = mcu_spi_bulk_transfer, .stop = mcu_spi_stop};
 #endif

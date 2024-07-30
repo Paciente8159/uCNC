@@ -1201,6 +1201,7 @@ extern "C"
 	void mcu_spi_start(spi_config_t config, uint32_t frequency)
 	{
 		esp32spi->beginTransaction(SPISettings(frequency, MSBFIRST, config.mode));
+		mcu_spi_port.isbusy = true;
 	}
 
 	bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
@@ -1212,6 +1213,7 @@ extern "C"
 	void mcu_spi_stop(void)
 	{
 		esp32spi->endTransaction();
+		mcu_spi_port.isbusy = false;
 	}
 }
 
