@@ -93,11 +93,11 @@ extern "C"
 #define ONESHOT_TIMER 2
 
 // // hardware SPI
-// #define SPI_CLK_BIT 18
-// #define SPI_SDO_BIT 23
-// #define SPI_SDI_BIT 19
-// #define SPI_CS_BIT 5
-// #define SPI_FREQ 40000000UL
+#define SPI_CLK_BIT 18
+#define SPI_SDO_BIT 23
+#define SPI_SDI_BIT 19
+#define SPI_CS_BIT 5
+#define SPI_FREQ 40000000UL
 // sd card detect
 #define DIN19_BIT 34
 

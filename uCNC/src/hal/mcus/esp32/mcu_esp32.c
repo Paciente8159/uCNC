@@ -263,7 +263,6 @@ static void IRAM_ATTR esp32_i2s_stream_task(void *param)
 			}
 
 			uint32_t w = 0;
-
 			i2s_write(IC74HC595_I2S_PORT, &i2s_dma_buffer[0], I2S_SAMPLES_PER_BUFFER * 4, &w, portMAX_DELAY);
 			available_buffers--;
 		}

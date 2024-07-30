@@ -38,6 +38,9 @@ public:
 	void writePixels(uint16_t *data, uint32_t len) override;
 
 private:
+	void clearDC(bool dc_val);
+	void setDC(void);
+	void convertTo9bit(const uint8_t* data, uint8_t* buffer, uint16_t len, bool bit9val);
 	void *_spi;
 	uint8_t _cs;
 	bool _is_shared_interface;
