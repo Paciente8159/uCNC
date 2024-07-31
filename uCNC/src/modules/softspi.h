@@ -38,13 +38,13 @@ extern "C"
 	 * #include <softspi.h>
 	 * SPIClass* myspiport;
 	 *
-	 * extern "C" void myspiport_config(uint8_t mode, uint32_t frequency){
-	 *  if(!myspiport){myspiport->end();	myspiport = NULL;}
+	 * extern "C" void myspiport_config(spi_config_t mode, uint32_t frequency){
+	 *  if(myspiport){myspiport->end();	myspiport = NULL;}
 	 *  myspiport = new SPIClass(VSPI);
 	 * 	myspiport->begin(sckpin, misopin, mosipin, sspin);
 	 * }
 	 *
-	 * extern "C" void myspiport_start(uint8_t mode, uint32_t frequency){
+	 * extern "C" void myspiport_start(spi_config_t mode, uint32_t frequency){
 	 * 	myspiport->beginTransaction(SPISettings(uint32_t frequency, SPI_MSBFIRST, uint8_t mode));
 	 * }
 	 *
@@ -52,11 +52,16 @@ extern "C"
 	 * 	return myspiport->transfer(c);
 	 * }
 	 *
+	 * extern "C" uint8_t myspiport_bulk(uint8_t* data, uint16_t len){
+	 * 	return myspiport->transfer(data, len);
+	 * }
+	 *
 	 * extern "C" void myspiport_stop(void){
 	 * 	myspiport.myspiport->endTransaction();
 	 * }
 	 *
-	 * extern "C" softspi_port_t __attribute__((used)) ARDUINO_SPI = {.spiconfig = 0, .spifreq = 20000000UL, .clk = NULL, .mosi = NULL, .miso = NULL, .config = myspiport_config, .start = myspiport_start, .xmit = myspiport_xmit, .stop = myspiport_stop};
+	 * extern "C" spi_port_t __attribute__((used)) ARDUINO_SPI_PORT {.isbusy = false, .start = myspiport_start, .xmit = myspiport_xmit, .bulk_xmit=myspiport_bulk .stop = myspiport_stop}
+	 * extern "C" softspi_port_t __attribute__((used)) ARDUINO_SPI = {.spiconfig = 0, .spifreq = 20000000UL, .spiport = &ARDUINO_SPI_PORT, .clk = NULL, .mosi = NULL, .miso = NULL, .config = myspiport_config};
 	 * #endif
 	 *
 	 */
@@ -76,14 +81,12 @@ extern "C"
 	{
 		softspi_config_t spiconfig;
 		uint32_t spifreq;
+		spi_port_t *spiport;
+		// software port function calls
 		void (*clk)(bool);
 		void (*mosi)(bool);
 		bool (*miso)(void);
 		void (*config)(spi_config_t, uint32_t);
-		void (*start)(spi_config_t, uint32_t);
-		uint8_t (*xmit)(uint8_t);
-		bool (*bulk_xmit)(const uint8_t *, uint8_t *, uint16_t);
-		void (*stop)(void);
 	} softspi_port_t;
 
 #define SPI_DELAY(FREQ) (CLAMP(1, (500000UL / FREQ), 0xFFFF) - 1)
@@ -123,9 +126,12 @@ extern "C"
 		}                                                       \
 	}                                                         \
 	bool NAME##_miso(void) { return io_get_input(MISOPIN); }  \
-	__attribute__((used)) softspi_port_t NAME = {.spiconfig = {.spi.mode = MODE}, .spifreq = FREQ, .clk = &NAME##_clk, .mosi = &NAME##_mosi, .miso = &NAME##_miso, .config = &NAME##_config, .start = NULL, .xmit = NULL, .bulk_xmit = NULL, .stop = NULL};
+	__attribute__((used)) softspi_port_t NAME = {.spiconfig = {.spi.mode = MODE}, .spifreq = FREQ, .spiport = NULL, .clk = &NAME##_clk, .mosi = &NAME##_mosi, .miso = &NAME##_miso, .config = &NAME##_config};
+
+#define HARDSPI(NAME, FREQ, MODE) __attribute__((used)) softspi_port_t NAME = {.spiconfig = {.spi.mode = MODE}, .spifreq = FREQ, .spiport = &mcu_spi_port, .clk = NULL, .mosi = NULL, .miso = NULL, .config = &mcu_spi_config};
 
 	void softspi_config(softspi_port_t *port, softspi_config_t config, uint32_t frequency);
+	bool softspi_isbusy(softspi_port_t *port);
 	void softspi_start(softspi_port_t *port);
 	uint8_t softspi_xmit(softspi_port_t *port, uint8_t c);
 	uint16_t softspi_xmit16(softspi_port_t *port, uint16_t c);
@@ -134,12 +140,9 @@ extern "C"
 	void softspi_bulk_xmit(softspi_port_t *port, const uint8_t *out, uint8_t *in, uint16_t len);
 	void softspi_stop(softspi_port_t *port);
 
-#ifdef MCU_HAS_SPI
-	extern softspi_port_t MCU_SPI_PORT;
-#define MCU_SPI (&MCU_SPI_PORT)
-#else
-#define MCU_SPI NULL
-#endif
+	// helper functions
+	static FORCEINLINE void softspi_set_mode(softspi_port_t *port, uint8_t spi_mode) { port->spiconfig.spi.mode = spi_mode; }
+	static FORCEINLINE void softspi_set_frequency(softspi_port_t *port, uint32_t spi_freq) { port->spifreq = spi_freq; }
 
 #ifdef __cplusplus
 }
