@@ -33,6 +33,21 @@ extern "C"
 #define EVENT_CONTINUE false
 #define EVENT_HANDLED true
 
+// for now 8bits are enough. Might be expanded
+#define LISTENER_NO_LOCK 0x00
+#define LISTENER_RUNNING_LOCK 0x01
+#define LISTENER_HWSPI_LOCK 0x02 // prevent multiple accesses to HWSPI by different modules
+#define LISTENER_HWI2C_LOCK 0x04 // for future use
+#define LISTENER_SWSPI_LOCK 0x20 // prevent multiple accesses to any software emulated SPI by different modules
+#define LISTENER_SWI2C_LOCK 0x40 // prevent multiple accesses to any software emulated I2C by different modules
+	// other locks might be added latter
+
+	/// @brief this global variable keeps the global lock guards to shared resources
+	extern uint8_t g_module_lockguard;
+
+#define MODULE_LOCK_ENABLE(X) SETFLAG(g_module_lockguard, (X & ~LISTENER_RUNNING_LOCK))
+#define MODULE_LOCK_DISABLE(X) CLEARFLAG(g_module_lockguard, (X & ~LISTENER_RUNNING_LOCK))
+
 #define DECL_MODULE(name) void name##_init(void)
 #define LOAD_MODULE(name)        \
 	extern void name##_init(void); \
@@ -43,13 +58,14 @@ extern "C"
 	typedef struct name##_delegate_event_  \
 	{                                      \
 		name##_delegate fptr;                \
-		bool fplock;                         \
+		uint8_t fplock;                      \
 		struct name##_delegate_event_ *next; \
 	} name##_delegate_event_t;             \
 	extern name##_delegate_event_t *
 #define EVENT_HANDLER_NAME(name) event_##name##_handler
 #define EVENT_INVOKE(name, args) EVENT_HANDLER_NAME(name)(args)
-#define CREATE_EVENT_LISTENER(name, handler) __attribute__((used)) name##_delegate_event_t name##_delegate_##handler = {&handler, false, NULL}
+#define CREATE_EVENT_LISTENER(name, handler) __attribute__((used)) name##_delegate_event_t name##_delegate_##handler = {&handler, LISTENER_NO_LOCK, NULL}
+#define CREATE_EVENT_LISTENER_WITHLOCK(name, handler, lock_flags) __attribute__((used)) name##_delegate_event_t name##_delegate_##handler = {&handler, lock_flags, NULL}
 #define ADD_EVENT_LISTENER(name, handler)                     \
 	{                                                           \
 		extern name##_delegate_event_t name##_delegate_##handler; \
@@ -83,31 +99,31 @@ extern "C"
 	name##_delegate_event_t *name##_event; \
 	bool __attribute__((weak)) EVENT_HANDLER_NAME(name)(void *args)
 #define OVERRIDE_EVENT_HANDLER(name) bool EVENT_HANDLER_NAME(name)(void *args)
-#define DEFAULT_EVENT_HANDLER(name)                   \
-	{                                                   \
-		static name##_delegate_event_t *start = NULL;     \
-		name##_delegate_event_t *ptr = start;             \
-		if (!ptr)                                         \
-		{                                                 \
-			ptr = name##_event;                             \
-		}                                                 \
-		while (ptr != NULL)                               \
-		{                                                 \
-			start = ptr->next;                              \
-			if (ptr->fptr != NULL && !ptr->fplock)          \
-			{                                               \
-				ptr->fplock = true;                           \
-				if (ptr->fptr(args))                          \
-				{                                             \
-					ptr->fplock = false;                        \
-					start = name##_event; /*handled. restart.*/ \
-					return true;                                \
-				}                                             \
-				ptr->fplock = false;                          \
-			}                                               \
-			ptr = start;                                    \
-		}                                                 \
-		return false;                                     \
+#define DEFAULT_EVENT_HANDLER(name)                                                                   \
+	{                                                                                                   \
+		static name##_delegate_event_t *start = NULL;                                                     \
+		name##_delegate_event_t *ptr = start;                                                             \
+		if (!ptr)                                                                                         \
+		{                                                                                                 \
+			ptr = name##_event;                                                                             \
+		}                                                                                                 \
+		while (ptr != NULL)                                                                               \
+		{                                                                                                 \
+			start = ptr->next;                                                                              \
+			if (ptr->fptr != NULL && !CHECKFLAG(ptr->fplock, (g_module_lockguard | LISTENER_RUNNING_LOCK))) \
+			{                                                                                               \
+				SETFLAG(ptr->fplock, LISTENER_RUNNING_LOCK);                                                  \
+				if (ptr->fptr(args))                                                                          \
+				{                                                                                             \
+					CLEARFLAG(ptr->fplock, LISTENER_RUNNING_LOCK);                                              \
+					start = name##_event; /*handled. restart.*/                                                 \
+					return true;                                                                                \
+				}                                                                                             \
+				CLEARFLAG(ptr->fplock, LISTENER_RUNNING_LOCK);                                                \
+			}                                                                                               \
+			ptr = start;                                                                                    \
+		}                                                                                                 \
+		return false;                                                                                     \
 	}
 
 	void mod_init(void);

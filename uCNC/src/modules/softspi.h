@@ -60,26 +60,15 @@ extern "C"
 	 * 	myspiport.myspiport->endTransaction();
 	 * }
 	 *
-	 * extern "C" spi_port_t __attribute__((used)) ARDUINO_SPI_PORT {.isbusy = false, .start = myspiport_start, .xmit = myspiport_xmit, .bulk_xmit=myspiport_bulk .stop = myspiport_stop}
-	 * extern "C" softspi_port_t __attribute__((used)) ARDUINO_SPI = {.spiconfig = 0, .spifreq = 20000000UL, .spiport = &ARDUINO_SPI_PORT, .clk = NULL, .mosi = NULL, .miso = NULL, .config = myspiport_config};
+	 * extern "C" spi_port_t __attribute__((used)) arduino_spi_port {.start = myspiport_start, .xmit = myspiport_xmit, .bulk_xmit=myspiport_bulk .stop = myspiport_stop}
+	 * extern "C" softspi_port_t __attribute__((used)) ARDUINO_SPI = {.spiconfig = {0}, .spifreq = 20000000UL, .spiport = &arduino_spi_port, .clk = NULL, .mosi = NULL, .miso = NULL, .config = myspiport_config};
 	 * #endif
 	 *
 	 */
 
-	typedef union
-	{
-		uint8_t flags;
-		spi_config_t spi;
-		struct
-		{
-			uint8_t : 7;
-			uint8_t locked : 1;
-		};
-	} softspi_config_t;
-
 	typedef struct softspi_port_
 	{
-		softspi_config_t spiconfig;
+		spi_config_t spiconfig;
 		uint32_t spifreq;
 		spi_port_t *spiport;
 		// software port function calls
@@ -126,11 +115,11 @@ extern "C"
 		}                                                       \
 	}                                                         \
 	bool NAME##_miso(void) { return io_get_input(MISOPIN); }  \
-	__attribute__((used)) softspi_port_t NAME = {.spiconfig = {.spi.mode = MODE}, .spifreq = FREQ, .spiport = NULL, .clk = &NAME##_clk, .mosi = &NAME##_mosi, .miso = &NAME##_miso, .config = &NAME##_config};
+	__attribute__((used)) softspi_port_t NAME = {.spiconfig = {.mode = MODE}, .spifreq = FREQ, .spiport = NULL, .clk = &NAME##_clk, .mosi = &NAME##_mosi, .miso = &NAME##_miso, .config = &NAME##_config};
 
-#define HARDSPI(NAME, FREQ, MODE) __attribute__((used)) softspi_port_t NAME = {.spiconfig = {.spi.mode = MODE}, .spifreq = FREQ, .spiport = &mcu_spi_port, .clk = NULL, .mosi = NULL, .miso = NULL, .config = &mcu_spi_config};
+#define HARDSPI(NAME, FREQ, MODE) __attribute__((used)) softspi_port_t NAME = {.spiconfig = {.mode = MODE}, .spifreq = FREQ, .spiport = &mcu_spi_port, .clk = NULL, .mosi = NULL, .miso = NULL, .config = NULL};
 
-	void softspi_config(softspi_port_t *port, softspi_config_t config, uint32_t frequency);
+	void softspi_config(softspi_port_t *port, spi_config_t config, uint32_t frequency);
 	bool softspi_isbusy(softspi_port_t *port);
 	void softspi_start(softspi_port_t *port);
 	uint8_t softspi_xmit(softspi_port_t *port, uint8_t c);
@@ -141,7 +130,7 @@ extern "C"
 	void softspi_stop(softspi_port_t *port);
 
 	// helper functions
-	static FORCEINLINE void softspi_set_mode(softspi_port_t *port, uint8_t spi_mode) { port->spiconfig.spi.mode = spi_mode; }
+	static FORCEINLINE void softspi_set_mode(softspi_port_t *port, uint8_t spi_mode) { port->spiconfig.mode = spi_mode; }
 	static FORCEINLINE void softspi_set_frequency(softspi_port_t *port, uint32_t spi_freq) { port->spifreq = spi_freq; }
 
 #ifdef __cplusplus

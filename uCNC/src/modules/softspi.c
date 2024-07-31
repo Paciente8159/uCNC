@@ -17,7 +17,7 @@
 */
 #include "softspi.h"
 
-void softspi_config(softspi_port_t *port, softspi_config_t config, uint32_t frequency)
+void softspi_config(softspi_port_t *port, spi_config_t config, uint32_t frequency)
 {
 	port->spiconfig = config;
 	port->spifreq = frequency;
@@ -32,7 +32,7 @@ void softspi_config(softspi_port_t *port, softspi_config_t config, uint32_t freq
 	if (port->config)
 	{
 		// if port with custom method execute it
-		port->config(config.spi, frequency);
+		port->config(config, frequency);
 	}
 }
 
@@ -54,8 +54,8 @@ uint8_t softspi_xmit(softspi_port_t *port, uint8_t c)
 		return port->spiport->xmit(c);
 	}
 
-	bool clk = (bool)(port->spiconfig.spi.mode & 0x2);
-	bool on_down = (bool)(port->spiconfig.spi.mode & 0x1);
+	bool clk = (bool)(port->spiconfig.mode & 0x2);
+	bool on_down = (bool)(port->spiconfig.mode & 0x1);
 	uint16_t delay = (uint16_t)SPI_DELAY(port->spifreq);
 
 	port->clk(clk);
@@ -109,8 +109,8 @@ uint16_t softspi_xmit16(softspi_port_t *port, uint16_t c)
 		return (res | port->spiport->xmit((uint8_t)(0xFF & c)));
 	}
 
-	bool clk = (bool)(port->spiconfig.spi.mode & 0x2);
-	bool on_down = (bool)(port->spiconfig.spi.mode & 0x1);
+	bool clk = (bool)(port->spiconfig.mode & 0x2);
+	bool on_down = (bool)(port->spiconfig.mode & 0x1);
 	uint16_t delay = (uint16_t)SPI_DELAY(port->spifreq);
 
 	port->clk(clk);
@@ -186,46 +186,26 @@ void softspi_bulk_xmit(softspi_port_t *port, const uint8_t *out, uint8_t *in, ui
 	}
 }
 
-bool softspi_isbusy(softspi_port_t *port)
-{
-	if (!port)
-	{
-#ifdef MCU_HAS_SPI
-		return mcu_spi_port.isbusy;
-#endif
-		return false;
-	}
-
-	if (port->spiport)
-	{
-		port->spiconfig.locked = port->spiport->isbusy;
-	}
-
-	return port->spiconfig.locked;
-}
-
 void softspi_start(softspi_port_t *port)
 {
 	if (!port)
 	{
+		MODULE_LOCK_ENABLE(LISTENER_HWSPI_LOCK);
 		return;
 	}
-
-	// mutual exclusive access
-	while (softspi_isbusy(port))
-	{
-		cnc_dotasks();
-	}
-	port->spiconfig.locked = 1;
 
 	// if port with custom method execute it
 	// usually HW ports
 	if (port->spiport)
 	{
-		port->spiport->start(port->spiconfig.spi, port->spifreq);
+		MODULE_LOCK_ENABLE(LISTENER_HWSPI_LOCK);
+		port->spiport->start(port->spiconfig, port->spifreq);
 		return;
 	}
 
+#ifdef SOFTSPI_LOCKGUARD_ENABLED
+	MODULE_LOCK_ENABLE(LISTENER_SWSPI_LOCK);
+#endif
 	softspi_config(port, port->spiconfig, port->spifreq);
 }
 
@@ -233,6 +213,7 @@ void softspi_stop(softspi_port_t *port)
 {
 	if (!port)
 	{
+		MODULE_LOCK_DISABLE(LISTENER_HWSPI_LOCK);
 		return;
 	}
 
@@ -240,7 +221,10 @@ void softspi_stop(softspi_port_t *port)
 	if (port->spiport)
 	{
 		port->spiport->stop();
+		MODULE_LOCK_DISABLE(LISTENER_HWSPI_LOCK);
 	}
 	// unlocks resource
-	port->spiconfig.locked = 0;
+#ifdef SOFTSPI_LOCKGUARD_ENABLED
+	MODULE_LOCK_DISABLE(LISTENER_SWSPI_LOCK);
+#endif
 }
