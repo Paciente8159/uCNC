@@ -120,7 +120,6 @@ extern "C"
 #define HARDSPI(NAME, FREQ, MODE) __attribute__((used)) softspi_port_t NAME = {.spiconfig = {.mode = MODE}, .spifreq = FREQ, .spiport = &mcu_spi_port, .clk = NULL, .mosi = NULL, .miso = NULL, .config = NULL};
 
 	void softspi_config(softspi_port_t *port, spi_config_t config, uint32_t frequency);
-	bool softspi_isbusy(softspi_port_t *port);
 	void softspi_start(softspi_port_t *port);
 	uint8_t softspi_xmit(softspi_port_t *port, uint8_t c);
 	uint16_t softspi_xmit16(softspi_port_t *port, uint16_t c);
