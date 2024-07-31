@@ -31,6 +31,7 @@
 #include "modules/system_menu.h"
 #include "modules/file_system.h"
 
+uint8_t g_module_lockguard;
 /**
  *
  * this is the place to declare all parser extension registration calls
@@ -48,6 +49,7 @@ static FORCEINLINE void load_modules(void)
 
 void mod_init(void)
 {
+	g_module_lockguard = 0;
 #ifdef ENABLE_DIGITAL_MSTEP
 	LOAD_MODULE(digimstep);
 #endif

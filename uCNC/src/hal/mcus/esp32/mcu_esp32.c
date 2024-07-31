@@ -1190,8 +1190,6 @@ void mcu_spi_start(spi_config_t config, uint32_t frequency)
 
 	spi_dma_enabled = config.enable_dma;
 	spi_bus_add_device(SPI_PORT, &mcu_spi_conf, &mcu_spi_handle);
-
-	mcu_spi_port.isbusy = true;
 }
 #endif
 
@@ -1295,7 +1293,6 @@ bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 void mcu_spi_stop(void)
 {
 	xSemaphoreGive(spi_access_mutex);
-	mcu_spi_port.isbusy = false;
 }
 #endif
 #endif

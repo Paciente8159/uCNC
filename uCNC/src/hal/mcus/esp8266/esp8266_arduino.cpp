@@ -990,11 +990,11 @@ extern "C"
 	void mcu_spi_start(spi_config_t config, uint32_t freq)
 	{
 		SPI.beginTransaction(SPISettings(freq, MSBFIRST, config.mode));
-		mcu_spi_port.isbusy = true;
 	}
 
 	bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len){
 		SPI.transferBytes(out, int, len);
+		return false;
 	}
 
 	void mcu_spi_end(void)
