@@ -117,13 +117,13 @@ extern "C"
 				{                                                                                             \
 					CLEARFLAG(ptr->fplock, LISTENER_RUNNING_LOCK);                                              \
 					start = name##_event; /*handled. restart.*/                                                 \
-					return true;                                                                                \
+					return EVENT_HANDLED;                                                                       \
 				}                                                                                             \
 				CLEARFLAG(ptr->fplock, LISTENER_RUNNING_LOCK);                                                \
 			}                                                                                               \
 			ptr = start;                                                                                    \
 		}                                                                                                 \
-		return false;                                                                                     \
+		return EVENT_CONTINUE;                                                                            \
 	}
 
 	void mod_init(void);

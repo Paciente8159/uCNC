@@ -3,8 +3,16 @@
 #include <Arduino_GFX_Library.h>
 #include "Arduino_uCNC_SPI.h"
 
+// #define GRAPHIC_DISPLAY_USE_CANVAS
+
 static Arduino_DataBus *bus;
+#ifdef GRAPHIC_DISPLAY_USE_CANVAS
+#include "canvas/Arduino_Canvas_Mono.h"
 static Arduino_GFX *gfx;
+static Arduino_G *g;
+#else
+static Arduino_GFX *gfx;
+#endif
 static int16_t font_height;
 static int8_t graphic_last_line_offset;
 
@@ -313,7 +321,12 @@ extern "C"
 
 	DISPLAY_INIT(st7796_480x320_spi)
 	{
-		gfx = new Arduino_ST7796(bus, -1, 1, false);
+#ifdef GRAPHIC_DISPLAY_USE_CANVAS
+		g = new Arduino_ST7796(bus, -1, 1, false);
+		gfx = new Arduino_Canvas_Mono(420, 380, g);
+#else
+	gfx = new Arduino_ST7796(bus, -1, 1, false);
+#endif
 #ifdef GRAPHIC_DISPLAY_IS_TOUCH
 		xpt2046_init(420, 380, XPT2046_ROT0, 1000000UL, 0);
 #endif
@@ -321,7 +334,12 @@ extern "C"
 
 	DISPLAY_INIT(ili9341_240x320_spi)
 	{
-		gfx = new Arduino_ILI9341(bus, -1, 0, false);
+#ifdef GRAPHIC_DISPLAY_USE_CANVAS
+		g = new Arduino_ILI9341(bus, -1, 0, false);
+		gfx = new Arduino_Canvas_Mono(240, 320, g);
+#else
+	gfx = new Arduino_ILI9341(bus, -1, 0, false);
+#endif
 #ifdef GRAPHIC_DISPLAY_IS_TOUCH
 		xpt2046_init(240, 320, XPT2046_ROT0, 1000000UL, 0);
 #endif
