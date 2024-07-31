@@ -51,7 +51,7 @@ extern "C"
 	 * extern "C" uint8_t myspiport_xmit(uint8_t c){
 	 * 	return myspiport->transfer(c);
 	 * }
-	 * 
+	 *
 	 * extern "C" uint8_t myspiport_bulk(uint8_t* data, uint16_t len){
 	 * 	return myspiport->transfer(data, len);
 	 * }
@@ -59,7 +59,7 @@ extern "C"
 	 * extern "C" void myspiport_stop(void){
 	 * 	myspiport.myspiport->endTransaction();
 	 * }
-	 * 
+	 *
 	 * extern "C" spi_port_t __attribute__((used)) ARDUINO_SPI_PORT {.isbusy = false, .start = myspiport_start, .xmit = myspiport_xmit, .bulk_xmit=myspiport_bulk .stop = myspiport_stop}
 	 * extern "C" softspi_port_t __attribute__((used)) ARDUINO_SPI = {.spiconfig = 0, .spifreq = 20000000UL, .spiport = &ARDUINO_SPI_PORT, .clk = NULL, .mosi = NULL, .miso = NULL, .config = myspiport_config};
 	 * #endif
@@ -81,7 +81,7 @@ extern "C"
 	{
 		softspi_config_t spiconfig;
 		uint32_t spifreq;
-		spi_port_t* spiport;
+		spi_port_t *spiport;
 		// software port function calls
 		void (*clk)(bool);
 		void (*mosi)(bool);
@@ -128,7 +128,7 @@ extern "C"
 	bool NAME##_miso(void) { return io_get_input(MISOPIN); }  \
 	__attribute__((used)) softspi_port_t NAME = {.spiconfig = {.spi.mode = MODE}, .spifreq = FREQ, .spiport = NULL, .clk = &NAME##_clk, .mosi = &NAME##_mosi, .miso = &NAME##_miso, .config = &NAME##_config};
 
-	#define HARDSPI(NAME) __attribute__((used)) softspi_port_t NAME = {.spiconfig = {.flags = 0}, .spifreq = SPI_FREQ, .clk = NULL, .mosi = NULL, .miso = NULL, .config = mcu_spi_config, .spiport = &mcu_spi_port};
+#define HARDSPI(NAME, FREQ, MODE) __attribute__((used)) softspi_port_t NAME = {.spiconfig = {.spi.mode = MODE}, .spifreq = FREQ, .spiport = &mcu_spi_port, .clk = NULL, .mosi = NULL, .miso = NULL, .config = &mcu_spi_config};
 
 	void softspi_config(softspi_port_t *port, softspi_config_t config, uint32_t frequency);
 	bool softspi_isbusy(softspi_port_t *port);
@@ -139,6 +139,10 @@ extern "C"
 	// software emulated SPI sends data for a maximum BULK_SPI_TIMEOUT before recalling the main loop
 	void softspi_bulk_xmit(softspi_port_t *port, const uint8_t *out, uint8_t *in, uint16_t len);
 	void softspi_stop(softspi_port_t *port);
+
+	// helper functions
+	static FORCEINLINE void softspi_set_mode(softspi_port_t *port, uint8_t spi_mode) { port->spiconfig.spi.mode = spi_mode; }
+	static FORCEINLINE void softspi_set_frequency(softspi_port_t *port, uint32_t spi_freq) { port->spifreq = spi_freq; }
 
 #ifdef __cplusplus
 }
