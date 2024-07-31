@@ -79,14 +79,12 @@ SOFTSPI(graphic_spi, 1000000UL, 0, GRAPHIC_DISPLAY_SPI_MOSI, GRAPHIC_DISPLAY_SPI
 // delete temporary definition
 #undef io0_get_input
 #undef io0_config_input
-#define graphic_display_port ((void *)&graphic_spi)
+#define GRAPHIC_BUS_LOCK LISTENER_SWSPI_LOCK
 #else
-#if (UCNC_MODULE_VERSION < 10903)
-// for backward compatibility
-#define MCU_SPI NULL
+HARDSPI(graphic_spi, 1000000UL, 0);
 #endif
-#define graphic_display_port ((void *)MCU_SPI)
-#endif
+#define graphic_display_port ((void *)&graphic_spi)
+#define GRAPHIC_BUS_LOCK LISTENER_HWSPI_LOCK
 #endif
 
 #if (GRAPHIC_DISPLAY_INTERFACE & (GRAPHIC_DISPLAY_SW_I2C | GRAPHIC_DISPLAY_HW_I2C))
@@ -94,8 +92,10 @@ SOFTSPI(graphic_spi, 1000000UL, 0, GRAPHIC_DISPLAY_SPI_MOSI, GRAPHIC_DISPLAY_SPI
 #if (GRAPHIC_DISPLAY_INTERFACE == GRAPHIC_DISPLAY_SW_I2C)
 SOFTI2C(graphic_i2c, 100000UL, GRAPHIC_DISPLAY_I2C_CLOCK, GRAPHIC_DISPLAY_I2C_DATA)
 #define graphic_display_port ((void *)&graphic_i2c)
+#define GRAPHIC_BUS_LOCK LISTENER_SWI2C_LOCK
 #else
 #define graphic_display_port NULL
+#define GRAPHIC_BUS_LOCK LISTENER_HWI2C_LOCK
 #endif
 #endif
 
@@ -154,7 +154,8 @@ bool graphic_display_start(void *args)
 
 	return false;
 }
-CREATE_EVENT_LISTENER(cnc_reset, graphic_display_start);
+// create an event listner with and Bus protection lock
+CREATE_EVENT_LISTENER_WITHLOCK(cnc_reset, graphic_display_start, GRAPHIC_BUS_LOCK);
 
 bool graphic_display_alarm(void *args)
 {
@@ -300,20 +301,16 @@ bool graphic_display_update(void *args)
 		}
 
 		system_menu_action(action);
-
-		cnc_dotasks();
 		// render menu
 		system_menu_render();
-		cnc_dotasks();
-
 		running = false;
 	}
 
 	return EVENT_CONTINUE;
 }
 
-CREATE_EVENT_LISTENER(cnc_dotasks, graphic_display_update);
-CREATE_EVENT_LISTENER(cnc_alarm, graphic_display_update);
+CREATE_EVENT_LISTENER_WITHLOCK(cnc_dotasks, graphic_display_update, GRAPHIC_BUS_LOCK);
+CREATE_EVENT_LISTENER_WITHLOCK(cnc_alarm, graphic_display_update, GRAPHIC_BUS_LOCK);
 #endif
 
 #ifdef DECL_SERIAL_STREAM
