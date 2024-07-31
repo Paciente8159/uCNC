@@ -25,7 +25,7 @@ void softspi_config(softspi_port_t *port, spi_config_t config, uint32_t frequenc
 	if (!port)
 	{
 #ifdef MCU_HAS_SPI
-		mcu_spi_config(config.spi, frequency);
+		mcu_spi_config(config, frequency);
 #endif
 	}
 
