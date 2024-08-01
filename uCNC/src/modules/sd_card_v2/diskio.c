@@ -49,10 +49,6 @@
 #define MMCSD_MAX_BUFFER_SIZE 512
 #endif
 
-#ifndef SD_CARD_USE_SW_SPI
-#define SD_CARD_USE_HW_SPI
-#endif
-
 #if (!defined(SD_CARD_USE_HW_SPI) || !defined(MCU_HAS_SPI))
 #ifndef SD_SPI_CLK
 #define SD_SPI_CLK DOUT30

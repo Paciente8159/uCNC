@@ -70,7 +70,7 @@ extern "C"
 #if ASSERT_PIN(GRAPHIC_DISPLAY_BKL)
 		io_config_output(GRAPHIC_DISPLAY_BKL);
 #endif
-		bus = new Arduino_uCNC_SPI(port_interface, GRAPHIC_DISPLAY_SPI_DC, GRAPHIC_DISPLAY_SPI_CS, false);
+		bus = new Arduino_uCNC_SPI(port_interface, GRAPHIC_DISPLAY_SPI_DC, GRAPHIC_DISPLAY_SPI_CS, true);
 		// bus = new Arduino_ESP32SPIDMA(17, 15, 18, 23, 19, VSPI, false);
 		// bus = new Arduino_HWSPI(50, 53);
 

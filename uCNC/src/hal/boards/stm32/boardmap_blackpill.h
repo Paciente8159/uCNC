@@ -65,14 +65,14 @@ extern "C"
 #define LIMIT_A_ISR
 
 // Setup control input pins
-#define ESTOP_BIT 5
-#define ESTOP_PORT B
-#define FHOLD_BIT 6
-#define FHOLD_PORT B
-#define CS_RES_BIT 7
-#define CS_RES_PORT B
-#define SAFETY_DOOR_BIT 8
-#define SAFETY_DOOR_PORT B
+// #define ESTOP_BIT 5
+// #define ESTOP_PORT B
+// #define FHOLD_BIT 6
+// #define FHOLD_PORT B
+// #define CS_RES_BIT 7
+// #define CS_RES_PORT B
+// #define SAFETY_DOOR_BIT 8
+// #define SAFETY_DOOR_PORT B
 // Setup probe pin
 // #define PROBE_BIT 9
 // #define PROBE_PORT B
@@ -150,12 +150,23 @@ extern "C"
 	// #define DIN7_ISR
 	// #define DIN7_PULLUP
 
-// #define SPI_CLK_PORT A
-// #define SPI_CLK_BIT 5
-// #define SPI_SDI_PORT A
-// #define SPI_SDI_BIT 6
-// #define SPI_SDO_PORT A
-// #define SPI_SDO_BIT 7
+#define SPI_CS_PORT A
+#define SPI_CS_BIT 4
+#define SPI_CLK_PORT A
+#define SPI_CLK_BIT 5
+#define SPI_SDI_PORT A
+#define SPI_SDI_BIT 6
+#define SPI_SDO_PORT A
+#define SPI_SDO_BIT 7
+
+#define DOUT6_PORT B
+#define DOUT6_BIT 5
+#define DOUT11_PORT B
+#define DOUT11_BIT 6
+#define DOUT12_PORT B
+#define DOUT12_BIT 7
+#define DOUT13_PORT B
+#define DOUT13_BIT 8
 
 #define ONESHOT_TIMER 1
 

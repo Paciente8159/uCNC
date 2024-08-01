@@ -302,6 +302,7 @@ bool graphic_display_update(void *args)
 
 		system_menu_action(action);
 		// render menu
+		cnc_dotasks();
 		system_menu_render();
 		running = false;
 	}
@@ -359,6 +360,10 @@ uint8_t system_menu_send_cmd(const char *__s)
 
 DECL_MODULE(graphic_display)
 {
+#if (GRAPHIC_DISPLAY_INTERFACE == GRAPHIC_DISPLAY_HW_SPI)
+	// if available enable DMA
+	graphic_spi.spiconfig.enable_dma = 1;
+#endif
 	DISPLAY_PTR_INIT(display_driver, GRAPHIC_DISPLAY_DRIVER);
 	gd_init(display_driver, graphic_display_port);
 	display_width = display_driver->width;
@@ -649,9 +654,10 @@ static int8_t max_item_line;
 
 void system_menu_render_header(const char *__s)
 {
-	if(needs_full_redraw & REDRAW_MENU){
+	if (needs_full_redraw & REDRAW_MENU)
+	{
 		gd_clear();
-		needs_full_redraw = REDRAW_IDLE; 
+		needs_full_redraw = REDRAW_IDLE;
 	}
 	gd_draw_button(0, 0, __s, display_width, 0, false, BUTTON_HOR_BARS, TEXT_CENTER_CENTER);
 	item_line = 0;

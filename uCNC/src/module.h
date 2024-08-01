@@ -99,7 +99,7 @@ extern "C"
 	name##_delegate_event_t *name##_event; \
 	bool __attribute__((weak)) EVENT_HANDLER_NAME(name)(void *args)
 #define OVERRIDE_EVENT_HANDLER(name) bool EVENT_HANDLER_NAME(name)(void *args)
-
+#define MODULE_DEBUG_ENABLED
 #ifndef MODULE_DEBUG_ENABLED
 #define DEFAULT_EVENT_HANDLER(name)                                                                   \
 	{                                                                                                   \
