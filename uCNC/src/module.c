@@ -76,3 +76,31 @@ void mod_init(void)
 
 	load_modules();
 }
+
+#ifdef MODULE_DEBUG_ENABLED
+bool mod_event_default_handler(mod_delegate_event_t **event, mod_delegate_event_t **last, void **args)
+{
+	mod_delegate_event_t *ptr = *last;
+	if (!ptr)
+	{
+		ptr = *event;
+	}
+	while (ptr != NULL)
+	{
+		*last = ptr->next;
+		if (ptr->fptr != NULL && !CHECKFLAG(ptr->fplock, (g_module_lockguard | LISTENER_RUNNING_LOCK)))
+		{
+			SETFLAG(ptr->fplock, LISTENER_RUNNING_LOCK);
+			if (ptr->fptr(args))
+			{
+				CLEARFLAG(ptr->fplock, LISTENER_RUNNING_LOCK);
+				*last = *event; /*handled. restart.*/
+				return EVENT_HANDLED;
+			}
+			CLEARFLAG(ptr->fplock, LISTENER_RUNNING_LOCK);
+		}
+		ptr = ptr->next;
+	}
+	return EVENT_CONTINUE;
+}
+#endif
