@@ -979,6 +979,7 @@ bool system_menu_action_edit(uint8_t action, system_menu_item_t *item)
 	case SYSTEM_MENU_ACTION_CHAR_INPUT('9'):
 		{
 			int digit = action - SYSTEM_MENU_ACTION_CHAR_INPUT('0');
+			int current_digit;
 			flags |= SYSTEM_MENU_MODE_MODIFY;
 			switch(vartype)
 			{
@@ -986,22 +987,22 @@ bool system_menu_action_edit(uint8_t action, system_menu_item_t *item)
 				modifier = digit;
 				break;
 			case VAR_TYPE_FLOAT:
-				int current_digit = (int)((*(float *)item->argptr) / powf(10.0f, (currentmult - 3))) % 10;
+				current_digit = (int)((*(float *)item->argptr) / powf(10.0f, (currentmult - 3))) % 10;
 				modifier = (digit - current_digit) * powf(10.0f, (currentmult - 3));
 				break;
 			case VAR_TYPE_INT8:
 			case VAR_TYPE_UINT8:
-				int current_digit = ((*(uint8_t *)item->argptr) / powf(10.0f, currentmult)) % 10;
+				current_digit = ((*(uint8_t *)item->argptr) / (int)powf(10.0f, currentmult)) % 10;
 				modifier = (digit - current_digit) * powf(10.0f, currentmult);
 				break;
 			case VAR_TYPE_INT16:
 			case VAR_TYPE_UINT16:
-				int current_digit = ((*(uint16_t *)item->argptr) / powf(10.0f, currentmult)) % 10;
+				current_digit = ((*(uint16_t *)item->argptr) / (int)powf(10.0f, currentmult)) % 10;
 				modifier = (digit - current_digit) * powf(10.0f, currentmult);
 				break;
 			case VAR_TYPE_INT32:
 			case VAR_TYPE_UINT32:
-				int current_digit = ((*(uint32_t *)item->argptr) / powf(10.0f, currentmult)) % 10;
+				current_digit = ((*(uint32_t *)item->argptr) / (int)powf(10.0f, currentmult)) % 10;
 				modifier = (digit - current_digit) * powf(10.0f, currentmult);
 				break;
 			default:
