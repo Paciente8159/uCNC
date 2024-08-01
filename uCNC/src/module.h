@@ -99,6 +99,8 @@ extern "C"
 	name##_delegate_event_t *name##_event; \
 	bool __attribute__((weak)) EVENT_HANDLER_NAME(name)(void *args)
 #define OVERRIDE_EVENT_HANDLER(name) bool EVENT_HANDLER_NAME(name)(void *args)
+
+#ifndef MODULE_DEBUG_ENABLED
 #define DEFAULT_EVENT_HANDLER(name)                                                                   \
 	{                                                                                                   \
 		static name##_delegate_event_t *start = NULL;                                                     \
@@ -125,7 +127,23 @@ extern "C"
 		}                                                                                                 \
 		return EVENT_CONTINUE;                                                                            \
 	}
+#else
+typedef bool (*mod_delegate)(void *args);
+typedef struct mod_delegate_event_
+{
+	mod_delegate fptr;
+	uint8_t fplock;
+	struct mod_delegate_event_ *next;
+} mod_delegate_event_t;
 
+bool mod_event_default_handler(mod_delegate_event_t **event, mod_delegate_event_t **last, void **args);
+
+#define DEFAULT_EVENT_HANDLER(name)                                                                                               \
+	{                                                                                                                               \
+		static name##_delegate_event_t *last = NULL;                                                                                  \
+		return mod_event_default_handler((mod_delegate_event_t **)(&name##_event), (mod_delegate_event_t **)(&last), (void **)&args); \
+	}
+#endif
 	void mod_init(void);
 
 // uses VARADIC MACRO available since C99
