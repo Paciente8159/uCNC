@@ -1440,7 +1440,6 @@ void mcu_spi_start(spi_config_t config, uint32_t frequency)
 	}
 
 	spi_port_state = SPI_IDLE;
-	mcu_spi_port.isbusy = true;
 }
 
 uint8_t mcu_spi_xmit(uint8_t c)

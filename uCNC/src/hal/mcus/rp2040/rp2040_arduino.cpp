@@ -1360,19 +1360,17 @@ extern "C"
 	void mcu_spi_start(spi_config_t config, uint32_t frequency)
 	{
 		COM_SPI.beginTransaction(SPISettings(frequency, MSBFIRST, config.mode));
-		mcu_spi_port.isbusy = true;
 	}
 
 	void mcu_spi_stop(void)
 	{
 		COM_SPI.endTransaction();
-		mcu_spi_port.isbusy = false;
 	}
 
 	bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 	{
 		COM_SPI.transfer((const void*)out, (void*)in, len);
-		return true;
+		return false;
 	}
 }
 
