@@ -69,6 +69,13 @@ extern "C"
 #define SYSTEM_MENU_ACTION_NEXT 2
 #define SYSTEM_MENU_ACTION_PREV 3
 
+// Characters given to this macro should be in range of printable ASCII characters (32-127)
+#define SYSTEM_MENU_ACTION_CHAR_INPUT(c) (c)
+// Action ID range from 128 - 137
+#define SYSTEM_MENU_ACTION_SIDE_BUTTON(b) ((b) + 128)
+// Action ID range from 138 - 147
+#define SYSTEM_MENU_ACTION_SPECIAL_BUTTON(b) ((b) + 138)
+
 #define VAR_TYPE_BOOLEAN 1
 #define VAR_TYPE_UINT8 2
 #define VAR_TYPE_INT8 3
