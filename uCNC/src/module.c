@@ -91,7 +91,7 @@ bool mod_event_default_handler(mod_delegate_event_t **event, mod_delegate_event_
 		if (ptr->fptr != NULL && !CHECKFLAG(ptr->fplock, (g_module_lockguard | LISTENER_RUNNING_LOCK)))
 		{
 			SETFLAG(ptr->fplock, LISTENER_RUNNING_LOCK);
-			if (ptr->fptr(args))
+			if (ptr->fptr(*args))
 			{
 				CLEARFLAG(ptr->fplock, LISTENER_RUNNING_LOCK);
 				*last = *event; /*handled. restart.*/
