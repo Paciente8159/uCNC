@@ -681,9 +681,9 @@ void mcu_init(void)
 													 //    | (SPI2_SPEED << 3) | SPI2_MODE;
 	spi_config_t spi2_conf = {0};
 	spi2_conf.mode = SPI2_MODE;
-	mcu_spi_config(spi2_conf, SPI2_FREQ);
+	mcu_spi2_config(spi2_conf, SPI2_FREQ);
 
-	RCC->AHB1ENR |= SPI_DMA_EN;
+	RCC->AHB1ENR |= SPI2_DMA_EN;
 
 	NVIC_SetPriority(SPI2_IRQ, 2);
 	NVIC_ClearPendingIRQ(SPI2_IRQ);
@@ -1234,10 +1234,10 @@ bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t da
 #endif
 
 #ifdef MCU_HAS_SPI2
-static volatile spi_port_state_t spi2_port_state = SPI2_UNKNOWN;
+static volatile spi_port_state_t spi2_port_state = SPI_UNKNOWN;
 static bool spi2_enable_dma = false;
 
-void mcu_spi2_config(spi2_config_t config, uint32_t frequency)
+void mcu_spi2_config(spi_config_t config, uint32_t frequency)
 {
 	uint8_t div = (uint8_t)(SPI2_CLOCK / frequency);
 
