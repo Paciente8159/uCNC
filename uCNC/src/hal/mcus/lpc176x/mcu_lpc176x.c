@@ -488,7 +488,7 @@ void mcu_init(void)
 #if SERVOS_MASK > 0
 	servo_timer_init();
 #endif
-GPDMA_Init();
+	GPDMA_Init();
 #ifdef MCU_HAS_SPI
 	// powerup DMA
 	// LPC_SC->PCONP |= CLKPWR_PCONP_PCGPDMA;
@@ -520,10 +520,10 @@ GPDMA_Init();
 	mcu_config_af(SPI2_SDI, SPI2_ALT_FUNC);
 	mcu_config_af(SPI2_CS, SPI2_ALT_FUNC);
 	LPC_SC->PCONP |= SPI2_PCONP;
-	LPC_SC->SPI2_PCLKSEL_REG &= ~SPI_PCLKSEL_MASK; // div clock by 4
-	uint8_t div = SPI2_COUNTER_DIV(SPI2_FREQ);
-	div += (div & 0x01) ? 1 : 0;
-	SPI2_REG->CPSR = div;					 // internal divider
+	LPC_SC->SPI2_PCLKSEL_REG &= ~SPI2_PCLKSEL_MASK; // div clock by 4
+	uint8_t div2 = SPI2_COUNTER_DIV(SPI2_FREQ);
+	div2 += (div2 & 0x01) ? 1 : 0;
+	SPI2_REG->CPSR = div2;					 // internal divider
 	SPI2_REG->CR0 |= SPI2_MODE << 6; // clock phase
 	SPI2_REG->CR0 |= 7 << 0;				 // 8 bits
 	SPI2_REG->CR1 |= 1 << 1;				 // enable SSP*/
@@ -1157,7 +1157,7 @@ bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 			// {
 			// 	mcu_prep_dma_transfer(in, len, true);
 			// }
-			mcu_prep_spidma_transfer(out, len, false);
+			mcu_prep_spidma_transfer((void *)out, len, false);
 			return true;
 		}
 		else
@@ -1209,14 +1209,14 @@ static bool spi2_dma_enabled = false;
 #define SPI2_DONE (SPI2_TX_DONE | SPI2_RX_DONE)
 #define SPI2_ERROR 7
 static volatile uint8_t spi2_transfer_done = 0;
-void mcu_spi2_config(spi2_config_t config, uint32_t frequency)
+void mcu_spi2_config(spi_config_t config, uint32_t frequency)
 {
 	uint8_t div = SPI2_COUNTER_DIV(frequency);
 	div += (div & 0x01) ? 1 : 0;
-	SPI2_REG->CR1 &= ~(1 << 1);				// disable SSP
-	SPI2_REG->CPSR = div;							// internal divider
+	SPI2_REG->CR1 &= ~(1 << 1);				 // disable SSP
+	SPI2_REG->CPSR = div;							 // internal divider
 	SPI2_REG->CR0 |= config.mode << 6; // clock phase
-	SPI2_REG->CR1 |= 1 << 1;						// enable SSP
+	SPI2_REG->CR1 |= 1 << 1;					 // enable SSP
 	// SSP_DeInit(SPI2_REG);
 
 	// SSP_CFG_Type ssp_cfg = {
@@ -1344,7 +1344,7 @@ bool mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 			// {
 			// 	mcu_prep_dma_transfer(in, len, true);
 			// }
-			mcu_prep_spi2dma_transfer(out, len, false);
+			mcu_prep_spi2dma_transfer((void *)out, len, false);
 			return true;
 		}
 		else
