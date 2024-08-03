@@ -686,8 +686,8 @@ void mcu_init(void)
 	SPICOM->SPI.CTRLA.bit.CPHA = SPI_MODE & 0x01;				 // MODE
 	SPICOM->SPI.CTRLA.bit.CPOL = (SPI_MODE >> 1) & 0x01; // MODE
 	SPICOM->SPI.CTRLA.bit.FORM = 0;
-	SPICOM->SPI.CTRLA.bit.DIPO = INPAD;
-	SPICOM->SPI.CTRLA.bit.DOPO = OUTPAD;
+	SPICOM->SPI.CTRLA.bit.DIPO = SPI_INPAD;
+	SPICOM->SPI.CTRLA.bit.DOPO = SPI_OUTPAD;
 
 	SPICOM->SPI.CTRLB.bit.RXEN = 1;
 	SPICOM->SPI.CTRLB.bit.CHSIZE = 0;
@@ -726,8 +726,8 @@ void mcu_init(void)
 	SPI2COM->SPI.CTRLA.bit.CPHA = SPI2_MODE & 0x01;				 // MODE
 	SPI2COM->SPI.CTRLA.bit.CPOL = (SPI2_MODE >> 1) & 0x01; // MODE
 	SPI2COM->SPI.CTRLA.bit.FORM = 0;
-	SPI2COM->SPI.CTRLA.bit.DIPO = INPAD;
-	SPI2COM->SPI.CTRLA.bit.DOPO = OUTPAD;
+	SPI2COM->SPI.CTRLA.bit.DIPO = SPI2_INPAD;
+	SPI2COM->SPI.CTRLA.bit.DOPO = SPI2_OUTPAD;
 
 	SPI2COM->SPI.CTRLB.bit.RXEN = 1;
 	SPI2COM->SPI.CTRLB.bit.CHSIZE = 0;
@@ -1711,7 +1711,7 @@ void mcu_spi2_start(spi_config_t config, uint32_t frequency)
 		rx_desc->BTCTRL.bit.DSTINC = 1;
 		rx_desc->BTCTRL.bit.VALID = 1;
 		rx_desc->BTCTRL.bit.STEPSEL = 1;
-		rx_desc->SRCADDR.reg = (uint32_t)&SPICOM->SPI.DATA.reg;
+		rx_desc->SRCADDR.reg = (uint32_t)&SPI2COM->SPI.DATA.reg;
 		rx_desc->DESCADDR.reg = 0;
 	}
 
@@ -1745,7 +1745,7 @@ void SPI2_ISR()
 	if ((status & SERCOM_SPI_INTFLAG_DRE) && (SPI2COM->SPI.INTENSET.bit.DRE) && spi2_tx_length)
 	{
 		// Send next byte
-		SPI2COM->SPI.DATA.reg = *spi_tx_buffer++;
+		SPI2COM->SPI.DATA.reg = *spi2_tx_buffer++;
 		--spi2_tx_length;
 	}
 
