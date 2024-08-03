@@ -661,7 +661,7 @@ void mcu_init(void)
 																 //    | (SPI2_SPEED << 3) | SPI2_MODE;
 	spi_config_t spi2_conf = {0};
 	spi2_conf.mode = SPI2_MODE;
-	mcu_spi_config(spi2_conf, SPI2_FREQ);
+	mcu_spi2_config(spi2_conf, SPI2_FREQ);
 
 	NVIC_SetPriority(SPI2_IRQ, 2);
 	NVIC_ClearPendingIRQ(SPI2_IRQ);
@@ -1174,7 +1174,7 @@ bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t da
 #endif
 
 #ifdef MCU_HAS_SPI2
-static volatile spi_port_state_t spi2_port_state = SPI2_UNKNOWN;
+static volatile spi_port_state_t spi2_port_state = SPI_UNKNOWN;
 static bool spi2_enable_dma = false;
 
 void mcu_spi2_config(spi_config_t config, uint32_t frequency)
@@ -1223,7 +1223,7 @@ void mcu_spi2_config(spi_config_t config, uint32_t frequency)
 	// enable SPI2
 	SPI2_REG->CR1 |= SPI_CR1_SPE;
 
-	spi2_port_state = SPI2_IDLE;
+	spi2_port_state = SPI_IDLE;
 	spi2_enable_dma = config.enable_dma;
 }
 
@@ -1235,7 +1235,7 @@ uint8_t mcu_spi2_xmit(uint8_t c)
 	uint8_t data = SPI2_REG->DR;
 	while (SPI2_REG->SR & SPI_SR_BSY)
 		;
-	spi2_port_state = SPI2_IDLE;
+	spi2_port_state = SPI_IDLE;
 	return data;
 }
 
@@ -1269,13 +1269,13 @@ bool mcu_spi2_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t d
 	if(!spi2_enable_dma)
 	{
 		// Bulk transfer without DMA
-		if(spi2_port_state == SPI2_IDLE)
+		if(spi2_port_state == SPI_IDLE)
 		{
-			spi2_port_state = SPI2_TRANSMITTING;
+			spi2_port_state = SPI_TRANSMITTING;
 
 			spi2_transfer_tx_ptr = tx_data;
 			spi2_transfer_tx_len = datalen;
-			SPI2_REG->CR2 |= SPI2_CR2_TXEIE;
+			SPI2_REG->CR2 |= SPI_CR2_TXEIE;
 
 			if(rx_data)
 			{
@@ -1337,7 +1337,7 @@ bool mcu_spi2_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t d
 	/***     Setup Transmit DMA     ***/
 
 	// Clear flags
-	DMA1->IFCR |= SPI_DMA_TX_IFCR_MASK;
+	DMA1->IFCR |= SPI2_DMA_TX_IFCR_MASK;
 
 	SPI2_DMA_TX_CHANNEL->CCR =
 		(0b01 << DMA_CCR_PL_Pos) | // Priority medium
@@ -1357,7 +1357,7 @@ bool mcu_spi2_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t d
 		/***     Setup Receive DMA     ***/
 
 		// Clear flags
-		DMA1->IFCR |= SPI_DMA_RX_IFCR_MASK;
+		DMA1->IFCR |= SPI2_DMA_RX_IFCR_MASK;
 
 		SPI2_DMA_RX_CHANNEL->CCR =
 			(0b01 << DMA_CCR_PL_Pos) | // Priority medium
