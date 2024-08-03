@@ -694,7 +694,7 @@ void __attribute__((weak)) mcu_io_init(void)
 #if ASSERT_PIN_IO(SPI_SDO)
 	mcu_config_output(SPI_SDO);
 #endif
-#if ASSERT_PIN_IO(SPI_CS)
+#if ASSERT_PIN(SPI_CS)
 	mcu_config_output(SPI_CS);
 #endif
 #if ASSERT_PIN_IO(I2C_CLK)
@@ -713,6 +713,18 @@ void __attribute__((weak)) mcu_io_init(void)
 #ifdef RX2_PULLUP
 	mcu_config_pullup(RX2);
 #endif
+#endif
+#if ASSERT_PIN_IO(SPI2_CLK)
+mcu_config_output(SPI2_CLK);
+#endif
+#if ASSERT_PIN_IO(SPI2_SDI)
+mcu_config_output(SPI2_SDI);
+#endif
+#if ASSERT_PIN_IO(SPI2_SDO)
+mcu_config_output(SPI2_SDO);
+#endif
+#if ASSERT_PIN(SPI2_CS)
+mcu_config_output(SPI2_CS);
 #endif
 
 #ifdef MCU_HAS_UART
@@ -879,4 +891,44 @@ void __attribute__((weak)) mcu_spi_stop(void)
 }
 
 spi_port_t __attribute__((used)) mcu_spi_port = {.isbusy = false, .start = mcu_spi_start, .xmit = mcu_spi_xmit, .bulk_xmit = mcu_spi_bulk_transfer, .stop = mcu_spi_stop};
+#endif
+
+#if (defined(MCU_HAS_SPI2))
+void __attribute__((weak)) mcu_spi2_start(spi_config_t config, uint32_t frequency)
+{
+	// reapply port settings if port is shared
+	mcu_spi2_config(config, frequency);
+}
+
+// the maximum amount of time in milliseconds it will transmit data without running the main loop
+#ifndef BULK_SPI2_TIMEOUT
+#define BULK_SPI2_TIMEOUT (1000 / INTERPOLATOR_FREQ)
+#endif
+
+bool __attribute__((weak)) mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
+{
+	uint32_t timeout = BULK_SPI2_TIMEOUT + mcu_millis();
+	while (len--)
+	{
+		uint8_t c = mcu_spi2_xmit(*out++);
+		if (in)
+		{
+			*in++ = c;
+		}
+
+		if (timeout < mcu_millis())
+		{
+			timeout = BULK_SPI2_TIMEOUT + mcu_millis();
+			cnc_dotasks();
+		}
+	}
+
+	return false;
+}
+
+void __attribute__((weak)) mcu_spi2_stop(void)
+{
+}
+
+spi_port_t __attribute__((used)) mcu_spi2_port = {.isbusy = false, .start = mcu_spi2_start, .xmit = mcu_spi2_xmit, .bulk_xmit = mcu_spi2_bulk_transfer, .stop = mcu_spi2_stop};
 #endif

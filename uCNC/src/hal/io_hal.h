@@ -4491,6 +4491,34 @@ extern "C"
 #define io207_config_pullup
 #define io207_get_input 0
 #endif
+#if ASSERT_PIN_IO(SPI2_CS)
+#define io215_config_output mcu_config_output(SPI2_CS)
+#define io215_set_output mcu_set_output(SPI2_CS)
+#define io215_clear_output mcu_clear_output(SPI2_CS)
+#define io215_toggle_output mcu_toggle_output(SPI2_CS)
+#define io215_get_output mcu_get_output(SPI2_CS)
+#define io215_config_input mcu_config_input(SPI2_CS)
+#define io215_config_pullup mcu_config_pullup(SPI2_CS)
+#define io215_get_input mcu_get_input(SPI2_CS)
+#elif ASSERT_PIN_EXTENDED(SPI2_CS)
+#define io215_config_output
+#define io215_set_output ic74hc595_set_pin(SPI2_CS);ic74hc595_shift_io_pins()
+#define io215_clear_output ic74hc595_clear_pin(SPI2_CS);ic74hc595_shift_io_pins()
+#define io215_toggle_output ic74hc595_toggle_pin(SPI2_CS);ic74hc595_shift_io_pins()
+#define io215_get_output ic74hc595_get_pin(SPI2_CS)
+#define io215_config_input
+#define io215_config_pullup
+#define io215_get_input 0
+#else
+#define io215_config_output
+#define io215_set_output
+#define io215_clear_output
+#define io215_toggle_output
+#define io215_get_output 0
+#define io215_config_input
+#define io215_config_pullup
+#define io215_get_input 0
+#endif
 
 
 /*output HAL*/

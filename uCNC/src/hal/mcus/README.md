@@ -65,8 +65,10 @@ These are the fixed names used internally:
 + ```SPI_CS``` pin defines the SPI chip select port pin.
 + ```I2C_CLK``` pin defines the I2S clock port pin.
 + ```I2C_DATA``` pin defines the I2C data port pin.
-
-SPI_CLK
++ ```SPI2_CLK``` pin defines the SPI2 clock port pin.
++ ```SPI2_SDI``` pin defines the SPI2 data input (MISO) port pin.
++ ```SPI2_SDO``` pin defines the SPI2 data output (MOSI) port pin.
++ ```SPI2_CS``` pin defines the SPI2 chip select port pin.
 
 #### Output pins - generic
 + ```PWM#``` pin defines a pwm output pin.
@@ -238,6 +240,10 @@ These pins also obey a numbering system to make them transversal between boards 
 | 209 | DIO209 | I2C_SDA |
 | 210 | DIO210 | TX2 |
 | 211 | DIO211 | RX2 |
+| 212 | DIO212 | SPI2_CLK |
+| 213 | DIO213 | SPI2_SDI |
+| 214 | DIO214 | SPI2_SDO |
+| 215 | DIO215 | SPI2_CS |
 
 With the introduction of the new IO HAL `src/hal/io_hal.h` all these definitions/values must be interchangable and match the above table.
 `src/hal/io_hal.h` and `src/core/io_control.h` will then provide a series of preprocessor macros that translate between a µCNC IO call and the actual MCU IO call, based on all the available information (the IO HAL, the boardmap and the MCU HAL).
