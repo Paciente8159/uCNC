@@ -142,8 +142,8 @@ extern "C"
 #define SERVO_TIMER 5
 
 // activity led
-#define DOUT32_BIT 7
-#define DOUT32_PORT A
+#define DOUT31_BIT 7
+#define DOUT31_PORT A
 
 // TMC0 UART
 #define DOUT20_BIT 4
