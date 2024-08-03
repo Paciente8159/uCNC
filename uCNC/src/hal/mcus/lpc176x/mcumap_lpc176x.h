@@ -2870,6 +2870,78 @@ extern "C"
 #define DIO211_PINHALF RX2_PINHALF
 #define DIO211_PINCON RX2_PINCON
 #endif
+#if (defined(SPI2_CLK_PORT) && defined(SPI2_CLK_BIT))
+#define SPI2_CLK 212
+#define SPI2_CLK_MBED_PIN __mbedpin__(SPI2_CLK_PORT, SPI2_CLK_BIT)
+#define SPI2_CLK_GPIOREG __gpioreg__(SPI2_CLK_PORT)
+#if (SPI2_CLK_BIT < 16)
+#define SPI2_CLK_PINHALF L
+#else
+#define SPI2_CLK_PINHALF H
+#endif
+#define SPI2_CLK_PINCON __pincon__(SPI2_CLK_PORT, SPI2_CLK_PINHALF)
+#define DIO212 212
+#define DIO212_MBED_PIN SPI2_CLK_MBED_PIN
+#define DIO212_PORT SPI2_CLK_PORT
+#define DIO212_BIT SPI2_CLK_BIT
+#define DIO212_GPIOREG SPI2_CLK_GPIOREG
+#define DIO212_PINHALF SPI2_CLK_PINHALF
+#define DIO212_PINCON SPI2_CLK_PINCON
+#endif
+#if (defined(SPI2_SDI_PORT) && defined(SPI2_SDI_BIT))
+#define SPI2_SDI 213
+#define SPI2_SDI_MBED_PIN __mbedpin__(SPI2_SDI_PORT, SPI2_SDI_BIT)
+#define SPI2_SDI_GPIOREG __gpioreg__(SPI2_SDI_PORT)
+#if (SPI2_SDI_BIT < 16)
+#define SPI2_SDI_PINHALF L
+#else
+#define SPI2_SDI_PINHALF H
+#endif
+#define SPI2_SDI_PINCON __pincon__(SPI2_SDI_PORT, SPI2_SDI_PINHALF)
+#define DIO213 213
+#define DIO213_MBED_PIN SPI2_SDI_MBED_PIN
+#define DIO213_PORT SPI2_SDI_PORT
+#define DIO213_BIT SPI2_SDI_BIT
+#define DIO213_GPIOREG SPI2_SDI_GPIOREG
+#define DIO213_PINHALF SPI2_SDI_PINHALF
+#define DIO213_PINCON SPI2_SDI_PINCON
+#endif
+#if (defined(SPI2_SDO_PORT) && defined(SPI2_SDO_BIT))
+#define SPI2_SDO 214
+#define SPI2_SDO_MBED_PIN __mbedpin__(SPI2_SDO_PORT, SPI2_SDO_BIT)
+#define SPI2_SDO_GPIOREG __gpioreg__(SPI2_SDO_PORT)
+#if (SPI2_SDO_BIT < 16)
+#define SPI2_SDO_PINHALF L
+#else
+#define SPI2_SDO_PINHALF H
+#endif
+#define SPI2_SDO_PINCON __pincon__(SPI2_SDO_PORT, SPI2_SDO_PINHALF)
+#define DIO214 214
+#define DIO214_MBED_PIN SPI2_SDO_MBED_PIN
+#define DIO214_PORT SPI2_SDO_PORT
+#define DIO214_BIT SPI2_SDO_BIT
+#define DIO214_GPIOREG SPI2_SDO_GPIOREG
+#define DIO214_PINHALF SPI2_SDO_PINHALF
+#define DIO214_PINCON SPI2_SDO_PINCON
+#endif
+#if (defined(SPI2_CS_PORT) && defined(SPI2_CS_BIT))
+#define SPI2_CS 215
+#define SPI2_CS_MBED_PIN __mbedpin__(SPI2_CS_PORT, SPI2_CS_BIT)
+#define SPI2_CS_GPIOREG __gpioreg__(SPI2_CS_PORT)
+#if (SPI2_CS_BIT < 16)
+#define SPI2_CS_PINHALF L
+#else
+#define SPI2_CS_PINHALF H
+#endif
+#define SPI2_CS_PINCON __pincon__(SPI2_CS_PORT, SPI2_CS_PINHALF)
+#define DIO215 215
+#define DIO215_MBED_PIN SPI2_CS_MBED_PIN
+#define DIO215_PORT SPI2_CS_PORT
+#define DIO215_BIT SPI2_CS_BIT
+#define DIO215_GPIOREG SPI2_CS_GPIOREG
+#define DIO215_PINHALF SPI2_CS_PINHALF
+#define DIO215_PINCON SPI2_CS_PINCON
+#endif
 
 #if (defined(TX) && defined(RX))
 #define MCU_HAS_UART
@@ -3763,6 +3835,60 @@ extern "C"
 #define SPI_DMA_RX_CHANNEL __helper__(LPC_GPDMACH,SPI_DMA_RX_CH,)
 #define MCU_SPI_ISR __helper__(SSP, SPI_PORT, _IRQHandler)
 #define MCU_SPI_IRQ __helper__(SSP, SPI_PORT, _IRQn)
+
+#endif
+
+// SPI2
+#if (defined(SPI2_CLK) && defined(SPI2_SDI) && defined(SPI2_SDO))
+#define MCU_HAS_SPI2
+#ifndef SPI2_MODE
+#define SPI2_MODE 0
+#endif
+#ifndef SPI2_FREQ
+#define SPI2_FREQ 1000000UL
+#endif
+#ifndef SPI2_PORT
+#define SPI2_PORT 1
+#endif
+
+#define SPI2_COUNTER_DIV(X) CLAMP(2, ((F_CPU >> 3) / X), 254)
+
+#define SPI2_REG __helper__(LPC_SSP, SPI2_PORT, )
+#define SPI2_PCONP __helper__(CLKPWR_PCONP_PCSSP, SPI2_PORT, )
+#if (SPI2_PORT == 0)
+#define SPI2_PCLKSEL_REG PCLKSEL1
+#define SPI2_PCLKSEL_MASK (3 << 20)
+#else
+#define SPI2_PCLKSEL_REG PCLKSEL0
+#define SPI2_PCLKSEL_MASK (3 << 10)
+#endif
+
+#include "lpc17xx_ssp.h"
+#include "lpc17xx_gpdma.h"
+
+#if ((SPI2_PORT == 0) && (SPI2_SDO_MBED_PIN == P0_18) && (SPI2_SDI_MBED_PIN == P0_17) && (SPI2_CLK_MBED_PIN == P0_15))
+#define SPI2_ALT_FUNC 2
+#elif ((SPI2_PORT == 0) && (SPI2_SDO_MBED_PIN == P0_24) && (SPI2_SDI_MBED_PIN == P0_23) && (SPI2_CLK_MBED_PIN == P0_20))
+#define SPI2_ALT_FUNC 3
+#elif ((SPI2_PORT == 1) && (SPI2_SDO_MBED_PIN == P0_9) && (SPI2_SDI_MBED_PIN == P0_8) && (SPI2_CLK_MBED_PIN == P0_7))
+#define SPI2_ALT_FUNC 2
+#else
+#error "SPI2 pin configuration not supported"
+#endif
+
+#if (SPI2_PORT == 0)
+#define SPI2_DMA_TX_CH 0
+#define SPI2_DMA_RX_CH 1
+#else
+#define SPI2_DMA_TX_CH 2
+#define SPI2_DMA_RX_CH 3
+#endif
+#define SPI2_DMA_TX_DEST __helper__(GPDMA_CONN_SSP,SPI2_PORT,_Tx)
+#define SPI2_DMA_RX_DEST __helper__(GPDMA_CONN_SSP,SPI2_PORT,_Rx)
+#define SPI2_DMA_TX_CHANNEL __helper__(LPC_GPDMACH,SPI2_DMA_TX_CH,)
+#define SPI2_DMA_RX_CHANNEL __helper__(LPC_GPDMACH,SPI2_DMA_RX_CH,)
+#define MCU_SPI2_ISR __helper__(SSP, SPI2_PORT, _IRQHandler)
+#define MCU_SPI2_IRQ __helper__(SSP, SPI2_PORT, _IRQn)
 
 #endif
 
