@@ -1217,7 +1217,7 @@ extern "C"
 
 #endif
 
-#if defined(MCU_HAS_SPI) && defined(USE_ARDUINO_SPI_LIBRARY)
+#if defined(MCU_HAS_SPI2) && defined(USE_ARDUINO_SPI_LIBRARY)
 #include <SPI.h>
 SPIClass *esp32spi2 = NULL;
 static uint8_t spi2_mode = 0;
@@ -1237,8 +1237,8 @@ extern "C"
 
 	void mcu_spi2_config(spi_config_t config, uint32_t freq)
 	{
-		spi_freq = freq;
-		spi_mode = config.mode;
+		spi2_freq = freq;
+		spi2_mode = config.mode;
 		esp32spi2->setFrequency(freq);
 		esp32spi2->setDataMode(config.mode);
 	}

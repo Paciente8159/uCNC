@@ -37,6 +37,14 @@ bool spi_dma_enabled = false;
 #define SPI_DMA_BUFFER_SIZE 1024
 #endif
 #endif
+#ifdef MCU_HAS_SPI2
+#include "hal/spi_types.h"
+#include "driver/spi_master.h"
+bool spi2_dma_enabled = false;
+#ifndef SPI2_DMA_BUFFER_SIZE
+#define SPI2_DMA_BUFFER_SIZE 1024
+#endif
+#endif
 #include <string.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -1309,7 +1317,7 @@ uint8_t mcu_spi2_xmit(uint8_t data)
 	spi_trans.tx_buffer = &data;
 	spi_trans.rx_buffer = &rxdata;
 
-	spi_device_transmit(mcu_spi_handle, &spi_trans);
+	spi_device_transmit(mcu_spi2_handle, &spi_trans);
 
 	return rxdata;
 }
