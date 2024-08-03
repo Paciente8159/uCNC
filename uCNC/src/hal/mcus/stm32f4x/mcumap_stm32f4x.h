@@ -3781,19 +3781,19 @@ extern "C"
 #endif
 #endif
 
-#define SPI2_REG __helper__(SPI2, SPI2_PORT, )
+#define SPI2_REG __helper__(SPI, SPI2_PORT, )
 #if (SPI2_PORT == 2 || SPI2_PORT == 3)
 #define SPI2_ENREG RCC->APB1ENR
-#define SPI2_ENVAL __helper__(RCC_APB1ENR_SPI2, SPI2_PORT, EN)
+#define SPI2_ENVAL __helper__(RCC_APB1ENR_SPI, SPI2_PORT, EN)
 #define SPI2_CLOCK HAL_RCC_GetPCLK1Freq()
 #else
 #define SPI2_ENREG RCC->APB2ENR
-#define SPI2_ENVAL __helper__(RCC_APB2ENR_SPI2, SPI2_PORT, EN)
+#define SPI2_ENVAL __helper__(RCC_APB2ENR_SPI, SPI2_PORT, EN)
 #define SPI2_CLOCK HAL_RCC_GetPCLK2Freq()
 #endif
 
-#define SPI2_IRQ __helper__(SPI2, SPI2_PORT, _IRQn)
-#define SPI2_ISR __helper__(SPI2, SPI2_PORT, _IRQHandler)
+#define SPI2_IRQ __helper__(SPI, SPI2_PORT, _IRQn)
+#define SPI2_ISR __helper__(SPI, SPI2_PORT, _IRQHandler)
 
 #if (SPI2_PORT == 1)
 #define SPI2_DMA_CONTROLLER_NUM 2

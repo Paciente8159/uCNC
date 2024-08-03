@@ -4582,23 +4582,23 @@ extern "C"
 //  3	C10	C11	C12	1
 #if ((SPI2_PORT == 1) && (SPI2_CLK_PIN == A5) && (SPI2_SDI_PIN == A6) && (SPI2_SDO_PIN == A7))
 #elif ((SPI2_PORT == 1) && (SPI2_CLK_PIN == B3) && (SPI2_SDI_PIN == B4) && (SPI2_SDO_PIN == B5))
-#define SPI2_REMAP AFIO_MAPR_SPI21_REMAP
+#define SPI2_REMAP AFIO_MAPR_SPI1_REMAP
 #elif ((SPI2_PORT == 2) && (SPI2_CLK_PIN == B13) && (SPI2_SDI_PIN == B14) && (SPI2_SDO_PIN == B15))
 #elif ((SPI2_PORT == 3) && (SPI2_CLK_PIN == B3) && (SPI2_SDI_PIN == B4) && (SPI2_SDO_PIN == B5))
 #elif ((SPI2_PORT == 3) && (SPI2_CLK_PIN == C10) && (SPI2_SDI_PIN == C11) && (SPI2_SDO_PIN == C12))
-#define SPI2_REMAP AFIO_MAPR_SPI23_REMAP
+#define SPI2_REMAP AFIO_MAPR_SPI3_REMAP
 #else
 #error "SPI2 pin configuration not supported"
 #endif
 
-#define SPI2_REG __helper__(SPI2, SPI2_PORT, )
+#define SPI2_REG __helper__(SPI, SPI2_PORT, )
 #if (SPI2_PORT == 1)
 #define SPI2_ENREG RCC->APB2ENR
-#define SPI2_ENVAL RCC_APB2ENR_SPI21EN
+#define SPI2_ENVAL RCC_APB2ENR_SPI1EN
 #define SPI2_CLOCK HAL_RCC_GetPCLK2Freq()
 #else
 #define SPI2_ENREG RCC->APB1ENR
-#define SPI2_ENVAL __helper__(RCC_APB1ENR_SPI2, SPI2_PORT, EN)
+#define SPI2_ENVAL __helper__(RCC_APB1ENR_SPI, SPI2_PORT, EN)
 #define SPI2_CLOCK HAL_RCC_GetPCLK1Freq()
 #endif
 
@@ -4631,8 +4631,8 @@ extern "C"
 #define SPI2_DMA_TX_IFCR_MASK (0b1111 << SPI2_DMA_TX_IFR_POS)
 #define SPI2_DMA_RX_IFCR_MASK (0b1111 << SPI2_DMA_RX_IFR_POS)
 
-#define SPI2_IRQ __helper__(SPI2, SPI2_PORT, _IRQn)
-#define SPI2_ISR __helper__(SPI2, SPI2_PORT, _IRQHandler)
+#define SPI2_IRQ __helper__(SPI, SPI2_PORT, _IRQn)
+#define SPI2_ISR __helper__(SPI, SPI2_PORT, _IRQHandler)
 
 #endif
 

@@ -644,6 +644,31 @@ void mcu_init(void)
 
 	SPI_REG->CR1 |= SPI_CR1_SPE;
 #endif
+#ifdef MCU_HAS_SPI2
+	SPI2_ENREG |= SPI2_ENVAL;
+	mcu_config_af(SPI2_SDI, SPI2_SDI_AFIO);
+	mcu_config_af(SPI2_CLK, SPI2_CLK_AFIO);
+	mcu_config_af(SPI2_SDO, SPI2_SDO_AFIO);
+
+  RCC->AHBENR |= RCC_AHBENR_DMAEN;
+#if ASSERT_PIN_IO(SPI2_CS)
+	mcu_config_af(SPI2_CS, SPI2_CS_AFIO);
+#endif
+	// initialize the SPI2 configuration register
+	SPI2_REG->CR1 = SPI_CR1_SSM		 // software slave management enabled
+								 | SPI_CR1_SSI	 // internal slave select
+								 | SPI_CR1_MSTR; // SPI2 master mode
+																 //    | (SPI2_SPEED << 3) | SPI2_MODE;
+	spi_config_t spi2_conf = {0};
+	spi2_conf.mode = SPI2_MODE;
+	mcu_spi_config(spi2_conf, SPI2_FREQ);
+
+	NVIC_SetPriority(SPI2_IRQ, 2);
+	NVIC_ClearPendingIRQ(SPI2_IRQ);
+	NVIC_EnableIRQ(SPI2_IRQ);
+
+	SPI2_REG->CR1 |= SPI_CR1_SPE;
+#endif
 #ifdef MCU_HAS_I2C
 	RCC->APB1ENR |= I2C_APBEN;
 	mcu_config_af(I2C_CLK, I2C_CLK_AFIO);
@@ -928,13 +953,15 @@ void mcu_eeprom_flush()
 		// Restore interrupt flag state.*/
 	}
 }
-#ifdef MCU_HAS_SPI
+
 typedef enum spi_port_state_enum {
 	SPI_UNKNOWN = 0,
 	SPI_IDLE = 1,
 	SPI_TRANSMITTING = 2,
 	SPI_TRANSMIT_COMPLETE = 3,
 } spi_port_state_t;
+
+#ifdef MCU_HAS_SPI
 static volatile spi_port_state_t spi_port_state = SPI_UNKNOWN;
 static bool spi_enable_dma = false;
 
