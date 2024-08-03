@@ -683,7 +683,7 @@ void mcu_init(void)
 																 //    | (SPI2_SPEED << 3) | SPI2_MODE;
 	spi_config_t spi2_conf = {0};
 	spi2_conf.mode = SPI2_MODE;
-	mcu_spi_config(spi2_conf, SPI2_FREQ);
+	mcu_spi2_config(spi2_conf, SPI2_FREQ);
 
 	RCC->AHBENR |= SPI2_DMA_EN;
 
@@ -1334,8 +1334,8 @@ bool mcu_spi2_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t d
 	if(spi2_port_state == SPI_TRANSMITTING)
 	{
 		// Wait for transfers to complete
-		if(!(SPI_DMA_CONTROLLER->ISR >> (SPI2_DMA_TX_IFR_POS + 5)) ||
-			(!(SPI_DMA_CONTROLLER->ISR >> (SPI2_DMA_RX_IFR_POS + 5)) && rx_data))
+		if(!(SPI2_DMA_CONTROLLER->ISR >> (SPI2_DMA_TX_IFR_POS + 5)) ||
+			(!(SPI2_DMA_CONTROLLER->ISR >> (SPI2_DMA_RX_IFR_POS + 5)) && rx_data))
 			return true;
 
 		// SPI hardware still transmitting the last byte
@@ -1371,7 +1371,7 @@ bool mcu_spi2_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t d
 	/***     Setup Transmit DMA     ***/
 
 	// Clear flags
-	SPI_DMA_CONTROLLER->IFCR |= SPI_DMA_TX_IFCR_MASK;
+	SPI2_DMA_CONTROLLER->IFCR |= SPI2_DMA_TX_IFCR_MASK;
 
 	SPI2_DMA_TX_CHANNEL->CCR =
 		(0b01 << DMA_CCR_PL_Pos) | // Priority medium
@@ -1391,7 +1391,7 @@ bool mcu_spi2_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t d
 		/***     Setup Receive DMA     ***/
 
 		// Clear flags
-		SPI_DMA_CONTROLLER->IFCR |= SPI_DMA_RX_IFCR_MASK;
+		SPI2_DMA_CONTROLLER->IFCR |= SPI2_DMA_RX_IFCR_MASK;
 
 		SPI2_DMA_RX_CHANNEL->CCR =
 			(0b01 << DMA_CCR_PL_Pos) | // Priority medium
@@ -1627,7 +1627,7 @@ void mcu_i2c_config(uint32_t frequency)
 	RCC->APB1ENR |= I2C_APBEN;
 	mcu_config_output_af(I2C_CLK, GPIO_OUTALT_OD_50MHZ);
 	mcu_config_output_af(I2C_DATA, GPIO_OUTALT_OD_50MHZ);
-#ifdef SPI_REMAP
+#ifdef I2C_REMAP
 	AFIO->MAPR |= I2C_REMAP;
 #endif
 	// reset I2C
