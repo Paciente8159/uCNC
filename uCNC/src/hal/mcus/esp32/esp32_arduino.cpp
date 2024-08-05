@@ -1217,4 +1217,54 @@ extern "C"
 
 #endif
 
+#if defined(MCU_HAS_SPI2) && defined(USE_ARDUINO_SPI_LIBRARY)
+#include <SPI.h>
+SPIClass *esp32spi2 = NULL;
+static uint8_t spi2_mode = 0;
+static uint32_t spi2_freq = 1000000UL;
+extern "C"
+{
+	
+	void mcu_spi2_init(void)
+	{
+#if (SPI2_CLK_BIT == 14 || SPI2_CLK_BIT == 25)
+		esp32spi2 = new SPIClass(HSPI);
+#else
+		esp32spi2 = new SPIClass(VSPI);
+#endif
+		esp32spi2->begin(SPI2_CLK_BIT, SPI2_SDI_BIT, SPI2_SDO_BIT, -1);
+	}
+
+	void mcu_spi2_config(spi_config_t config, uint32_t freq)
+	{
+		spi2_freq = freq;
+		spi2_mode = config.mode;
+		esp32spi2->setFrequency(freq);
+		esp32spi2->setDataMode(config.mode);
+	}
+
+	uint8_t mcu_spi2_xmit(uint8_t data)
+	{
+		return esp32spi2->transfer(data);
+	}
+
+	void mcu_spi2_start(spi_config_t config, uint32_t frequency)
+	{
+		esp32spi2->beginTransaction(SPISettings(frequency, MSBFIRST, config.mode));
+	}
+
+	bool mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
+	{
+		esp32spi2->transferBytes(out, in, len);
+		return false;
+	}
+
+	void mcu_spi2_stop(void)
+	{
+		esp32spi2->endTransaction();
+	}
+}
+
+#endif
+
 #endif

@@ -1593,6 +1593,38 @@ extern "C"
 #define DIO211_BIT RX2_BIT
 #define DIO211_GPIO RX2_GPIO
 #endif
+#if (defined(SPI2_CLK_PORT) && defined(SPI2_CLK_BIT))
+#define SPI2_CLK 212
+#define SPI2_CLK_GPIO (PORTREG(SPI2_CLK_PORT))
+#define DIO212 212
+#define DIO212_PORT SPI2_CLK_PORT
+#define DIO212_BIT SPI2_CLK_BIT
+#define DIO212_GPIO SPI2_CLK_GPIO
+#endif
+#if (defined(SPI2_SDI_PORT) && defined(SPI2_SDI_BIT))
+#define SPI2_SDI 213
+#define SPI2_SDI_GPIO (PORTREG(SPI2_SDI_PORT))
+#define DIO213 213
+#define DIO213_PORT SPI2_SDI_PORT
+#define DIO213_BIT SPI2_SDI_BIT
+#define DIO213_GPIO SPI2_SDI_GPIO
+#endif
+#if (defined(SPI2_SDO_PORT) && defined(SPI2_SDO_BIT))
+#define SPI2_SDO 214
+#define SPI2_SDO_GPIO (PORTREG(SPI2_SDO_PORT))
+#define DIO214 214
+#define DIO214_PORT SPI2_SDO_PORT
+#define DIO214_BIT SPI2_SDO_BIT
+#define DIO214_GPIO SPI2_SDO_GPIO
+#endif
+#if (defined(SPI2_CS_PORT) && defined(SPI2_CS_BIT))
+#define SPI2_CS 215
+#define SPI2_CS_GPIO (PORTREG(SPI2_CS_PORT))
+#define DIO215 215
+#define DIO215_PORT SPI2_CS_PORT
+#define DIO215_BIT SPI2_CS_BIT
+#define DIO215_GPIO SPI2_CS_GPIO
+#endif
 
 #if (defined(TX) && defined(RX))
 #define MCU_HAS_UART
@@ -1892,8 +1924,8 @@ extern "C"
 #define PM_APBCMASK_SPICOM __helper__(PM_APBCMASK_SERCOM, SPI_PORT, )
 #define GCLK_CLKCTRL_ID_SPICOM __helper__(GCLK_CLKCTRL_ID_SERCOM, SPI_PORT, _CORE)
 #define SPI_DATA (SPICOM->SPI.DATA.reg)
-#define OUTPAD 0
-#define INPAD 3
+#define SPI_OUTPAD 0
+#define SPI_INPAD 3
 
 #define SPI_CLK_PMUX (pinmux(SPI_CLK_PORT, SPI_CLK_BIT))
 #define SPI_CLK_PMUXVAL (sercommux_pin(SPI_PORT, SPI_CLK_PORT, SPI_CLK_BIT))
@@ -1917,6 +1949,51 @@ extern "C"
 
 #if (SPI_PORT != 1 && SPI_PORT != 3)
 #error "SPI PORT is not valid (SERCOM 1 or 3 only)"
+#endif
+#endif
+
+#if (defined(SPI2_CLK) && defined(SPI2_SDO) && defined(SPI2_SDI))
+#define MCU_HAS_SPI2
+#define MCU_HAS_DMA
+#ifndef SPI2_PORT
+#define SPI2_PORT 1
+#endif
+#ifndef SPI2_MODE
+#define SPI2_MODE 0
+#endif
+#ifndef SPI2_FREQ
+#define SPI2_FREQ 1000000UL
+#endif
+
+#define SPI2COM __helper__(SERCOM, SPI2_PORT, )
+#define PM_APBCMASK_SPI2COM __helper__(PM_APBCMASK_SERCOM, SPI2_PORT, )
+#define GCLK_CLKCTRL_ID_SPI2COM __helper__(GCLK_CLKCTRL_ID_SERCOM, SPI2_PORT, _CORE)
+#define SPI2_DATA (SPI2COM->SPI.DATA.reg)
+#define SPI2_OUTPAD 0
+#define SPI2_INPAD 3
+
+#define SPI2_CLK_PMUX (pinmux(SPI2_CLK_PORT, SPI2_CLK_BIT))
+#define SPI2_CLK_PMUXVAL (sercommux_pin(SPI2_PORT, SPI2_CLK_PORT, SPI2_CLK_BIT))
+#define SPI2_SDO_PMUX (pinmux(SPI2_SDO_PORT, SPI2_SDO_BIT))
+#define SPI2_SDO_PMUXVAL (sercommux_pin(SPI2_PORT, SPI2_SDO_PORT, SPI2_SDO_BIT))
+#define SPI2_SDI_PMUX (pinmux(SPI2_SDI_PORT, SPI2_SDI_BIT))
+#define SPI2_SDI_PMUXVAL (sercommux_pin(SPI2_PORT, SPI2_SDI_PORT, SPI2_SDI_BIT))
+
+#define DIO212_PMUX SPI2_CLK_PMUX
+#define DIO212_PMUXVAL SPI2_CLK_PMUXVAL
+#define DIO213_PMUX SPI2_SDI_PMUX
+#define DIO213_PMUXVAL SPI2_SDI_PMUXVAL
+#define DIO214_PMUX SPI2_SDO_PMUX
+#define DIO214_PMUXVAL SPI2_SDO_PMUXVAL
+
+#define SPI2_DMA_TRIGSRC_RX ((SPI2_PORT<<1) + 1)
+#define SPI2_DMA_TRIGSRC_TX ((SPI2_PORT<<1) + 2)
+
+#define SPI2_IRQ __helper__(SERCOM, SPI2_PORT, _IRQn)
+#define SPI2_ISR __helper__(SERCOM, SPI2_PORT, _Handler)
+
+#if (SPI2_PORT != 1 && SPI2_PORT != 3)
+#error "SPI2 PORT is not valid (SERCOM 1 or 3 only)"
 #endif
 #endif
 

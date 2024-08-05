@@ -540,6 +540,30 @@ extern "C"
 extern spi_port_t mcu_spi_port;
 #endif
 
+#ifdef MCU_HAS_SPI2
+#ifndef mcu_spi2_xmit
+	uint8_t mcu_spi2_xmit(uint8_t data);
+#endif
+
+#ifndef mcu_spi2_bulk_transfer
+	bool mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len);
+#endif
+
+#ifndef mcu_spi2_start
+	void mcu_spi2_start(spi_config_t config, uint32_t frequency);
+#endif
+
+#ifndef mcu_spi2_stop
+	void mcu_spi2_stop(void);
+#endif
+
+#ifndef mcu_spi2_config
+	void mcu_spi2_config(spi_config_t config, uint32_t frequency);
+#endif
+
+extern spi_port_t mcu_spi2_port;
+#endif
+
 #ifdef MCU_HAS_I2C
 #ifndef I2C_OK
 #define I2C_OK 0
