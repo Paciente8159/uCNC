@@ -119,7 +119,7 @@ MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 					 * Disabled for now. For re-evaluation
 					 */
 					// Changed limit is not active, don't trip the alarm
-					// if(!(limits_diff & limits)) 
+					// if(!(limits_diff & limits))
 					// {
 					// 	return;
 					// }
@@ -591,7 +591,7 @@ void io_toggle_steps(uint8_t mask)
 void io_get_steps_pos(int32_t *position)
 {
 	itp_get_rt_position(position);
-	#if STEPPERS_ENCODERS_MASK != 0
+#if STEPPERS_ENCODERS_MASK != 0
 #if (defined(STEP0_ENCODER) && AXIS_TO_STEPPERS > 0)
 	position[0] = encoder_get_position(STEP0_ENCODER);
 #endif
@@ -2031,76 +2031,76 @@ int16_t io_get_pinvalue(uint8_t pin)
 		return (io_get_output(DOUT31) != 0);
 #endif
 #if ASSERT_PIN(DOUT32)
-    case DOUT32:
-        return (io_get_output(DOUT32) != 0);
+	case DOUT32:
+		return (io_get_output(DOUT32) != 0);
 #endif
 #if ASSERT_PIN(DOUT33)
-    case DOUT33:
-        return (io_get_output(DOUT33) != 0);
+	case DOUT33:
+		return (io_get_output(DOUT33) != 0);
 #endif
 #if ASSERT_PIN(DOUT34)
-    case DOUT34:
-        return (io_get_output(DOUT34) != 0);
+	case DOUT34:
+		return (io_get_output(DOUT34) != 0);
 #endif
 #if ASSERT_PIN(DOUT35)
-    case DOUT35:
-        return (io_get_output(DOUT35) != 0);
+	case DOUT35:
+		return (io_get_output(DOUT35) != 0);
 #endif
 #if ASSERT_PIN(DOUT36)
-    case DOUT36:
-        return (io_get_output(DOUT36) != 0);
+	case DOUT36:
+		return (io_get_output(DOUT36) != 0);
 #endif
 #if ASSERT_PIN(DOUT37)
-    case DOUT37:
-        return (io_get_output(DOUT37) != 0);
+	case DOUT37:
+		return (io_get_output(DOUT37) != 0);
 #endif
 #if ASSERT_PIN(DOUT38)
-    case DOUT38:
-        return (io_get_output(DOUT38) != 0);
+	case DOUT38:
+		return (io_get_output(DOUT38) != 0);
 #endif
 #if ASSERT_PIN(DOUT39)
-    case DOUT39:
-        return (io_get_output(DOUT39) != 0);
+	case DOUT39:
+		return (io_get_output(DOUT39) != 0);
 #endif
 #if ASSERT_PIN(DOUT40)
-    case DOUT40:
-        return (io_get_output(DOUT40) != 0);
+	case DOUT40:
+		return (io_get_output(DOUT40) != 0);
 #endif
 #if ASSERT_PIN(DOUT41)
-    case DOUT41:
-        return (io_get_output(DOUT41) != 0);
+	case DOUT41:
+		return (io_get_output(DOUT41) != 0);
 #endif
 #if ASSERT_PIN(DOUT42)
-    case DOUT42:
-        return (io_get_output(DOUT42) != 0);
+	case DOUT42:
+		return (io_get_output(DOUT42) != 0);
 #endif
 #if ASSERT_PIN(DOUT43)
-    case DOUT43:
-        return (io_get_output(DOUT43) != 0);
+	case DOUT43:
+		return (io_get_output(DOUT43) != 0);
 #endif
 #if ASSERT_PIN(DOUT44)
-    case DOUT44:
-        return (io_get_output(DOUT44) != 0);
+	case DOUT44:
+		return (io_get_output(DOUT44) != 0);
 #endif
 #if ASSERT_PIN(DOUT45)
-    case DOUT45:
-        return (io_get_output(DOUT45) != 0);
+	case DOUT45:
+		return (io_get_output(DOUT45) != 0);
 #endif
 #if ASSERT_PIN(DOUT46)
-    case DOUT46:
-        return (io_get_output(DOUT46) != 0);
+	case DOUT46:
+		return (io_get_output(DOUT46) != 0);
 #endif
 #if ASSERT_PIN(DOUT47)
-    case DOUT47:
-        return (io_get_output(DOUT47) != 0);
+	case DOUT47:
+		return (io_get_output(DOUT47) != 0);
 #endif
 #if ASSERT_PIN(DOUT48)
-    case DOUT48:
-        return (io_get_output(DOUT48) != 0);
+	case DOUT48:
+		return (io_get_output(DOUT48) != 0);
 #endif
 #if ASSERT_PIN(DOUT49)
-    case DOUT49:
-        return (io_get_output(DOUT49) != 0);
+	case DOUT49:
+		return (io_get_output(DOUT49) != 0);
 #endif
 
 #if ASSERT_PIN(LIMIT_X)

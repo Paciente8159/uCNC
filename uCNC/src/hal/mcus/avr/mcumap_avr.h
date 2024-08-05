@@ -1065,7 +1065,7 @@ extern "C"
 #define DIO78_INREG (__inreg__(DOUT31_PORT))
 #define DIO78_DIRREG (__dirreg__(DOUT31_PORT))
 #endif
-#if(defined(DOUT32_PORT) && defined(DOUT32_BIT))
+#if (defined(DOUT32_PORT) && defined(DOUT32_BIT))
 #define DIO79 79
 #define DOUT32 79
 #define DIO79_PORT (DOUT32_PORT)
@@ -1077,7 +1077,7 @@ extern "C"
 #define DIO79_INREG (__inreg__(DOUT32_PORT))
 #define DIO79_DIRREG (__dirreg__(DOUT32_PORT))
 #endif
-#if(defined(DOUT33_PORT) && defined(DOUT33_BIT))
+#if (defined(DOUT33_PORT) && defined(DOUT33_BIT))
 #define DIO80 80
 #define DOUT33 80
 #define DIO80_PORT (DOUT33_PORT)
@@ -1089,7 +1089,7 @@ extern "C"
 #define DIO80_INREG (__inreg__(DOUT33_PORT))
 #define DIO80_DIRREG (__dirreg__(DOUT33_PORT))
 #endif
-#if(defined(DOUT34_PORT) && defined(DOUT34_BIT))
+#if (defined(DOUT34_PORT) && defined(DOUT34_BIT))
 #define DIO81 81
 #define DOUT34 81
 #define DIO81_PORT (DOUT34_PORT)
@@ -1101,7 +1101,7 @@ extern "C"
 #define DIO81_INREG (__inreg__(DOUT34_PORT))
 #define DIO81_DIRREG (__dirreg__(DOUT34_PORT))
 #endif
-#if(defined(DOUT35_PORT) && defined(DOUT35_BIT))
+#if (defined(DOUT35_PORT) && defined(DOUT35_BIT))
 #define DIO82 82
 #define DOUT35 82
 #define DIO82_PORT (DOUT35_PORT)
@@ -1113,7 +1113,7 @@ extern "C"
 #define DIO82_INREG (__inreg__(DOUT35_PORT))
 #define DIO82_DIRREG (__dirreg__(DOUT35_PORT))
 #endif
-#if(defined(DOUT36_PORT) && defined(DOUT36_BIT))
+#if (defined(DOUT36_PORT) && defined(DOUT36_BIT))
 #define DIO83 83
 #define DOUT36 83
 #define DIO83_PORT (DOUT36_PORT)
@@ -1125,7 +1125,7 @@ extern "C"
 #define DIO83_INREG (__inreg__(DOUT36_PORT))
 #define DIO83_DIRREG (__dirreg__(DOUT36_PORT))
 #endif
-#if(defined(DOUT37_PORT) && defined(DOUT37_BIT))
+#if (defined(DOUT37_PORT) && defined(DOUT37_BIT))
 #define DIO84 84
 #define DOUT37 84
 #define DIO84_PORT (DOUT37_PORT)
@@ -1137,7 +1137,7 @@ extern "C"
 #define DIO84_INREG (__inreg__(DOUT37_PORT))
 #define DIO84_DIRREG (__dirreg__(DOUT37_PORT))
 #endif
-#if(defined(DOUT38_PORT) && defined(DOUT38_BIT))
+#if (defined(DOUT38_PORT) && defined(DOUT38_BIT))
 #define DIO85 85
 #define DOUT38 85
 #define DIO85_PORT (DOUT38_PORT)
@@ -1149,7 +1149,7 @@ extern "C"
 #define DIO85_INREG (__inreg__(DOUT38_PORT))
 #define DIO85_DIRREG (__dirreg__(DOUT38_PORT))
 #endif
-#if(defined(DOUT39_PORT) && defined(DOUT39_BIT))
+#if (defined(DOUT39_PORT) && defined(DOUT39_BIT))
 #define DIO86 86
 #define DOUT39 86
 #define DIO86_PORT (DOUT39_PORT)
@@ -1161,7 +1161,7 @@ extern "C"
 #define DIO86_INREG (__inreg__(DOUT39_PORT))
 #define DIO86_DIRREG (__dirreg__(DOUT39_PORT))
 #endif
-#if(defined(DOUT40_PORT) && defined(DOUT40_BIT))
+#if (defined(DOUT40_PORT) && defined(DOUT40_BIT))
 #define DIO87 87
 #define DOUT40 87
 #define DIO87_PORT (DOUT40_PORT)
@@ -1173,7 +1173,7 @@ extern "C"
 #define DIO87_INREG (__inreg__(DOUT40_PORT))
 #define DIO87_DIRREG (__dirreg__(DOUT40_PORT))
 #endif
-#if(defined(DOUT41_PORT) && defined(DOUT41_BIT))
+#if (defined(DOUT41_PORT) && defined(DOUT41_BIT))
 #define DIO88 88
 #define DOUT41 88
 #define DIO88_PORT (DOUT41_PORT)
@@ -1185,7 +1185,7 @@ extern "C"
 #define DIO88_INREG (__inreg__(DOUT41_PORT))
 #define DIO88_DIRREG (__dirreg__(DOUT41_PORT))
 #endif
-#if(defined(DOUT42_PORT) && defined(DOUT42_BIT))
+#if (defined(DOUT42_PORT) && defined(DOUT42_BIT))
 #define DIO89 89
 #define DOUT42 89
 #define DIO89_PORT (DOUT42_PORT)
@@ -1197,7 +1197,7 @@ extern "C"
 #define DIO89_INREG (__inreg__(DOUT42_PORT))
 #define DIO89_DIRREG (__dirreg__(DOUT42_PORT))
 #endif
-#if(defined(DOUT43_PORT) && defined(DOUT43_BIT))
+#if (defined(DOUT43_PORT) && defined(DOUT43_BIT))
 #define DIO90 90
 #define DOUT43 90
 #define DIO90_PORT (DOUT43_PORT)
@@ -1209,7 +1209,7 @@ extern "C"
 #define DIO90_INREG (__inreg__(DOUT43_PORT))
 #define DIO90_DIRREG (__dirreg__(DOUT43_PORT))
 #endif
-#if(defined(DOUT44_PORT) && defined(DOUT44_BIT))
+#if (defined(DOUT44_PORT) && defined(DOUT44_BIT))
 #define DIO91 91
 #define DOUT44 91
 #define DIO91_PORT (DOUT44_PORT)
@@ -1221,7 +1221,7 @@ extern "C"
 #define DIO91_INREG (__inreg__(DOUT44_PORT))
 #define DIO91_DIRREG (__dirreg__(DOUT44_PORT))
 #endif
-#if(defined(DOUT45_PORT) && defined(DOUT45_BIT))
+#if (defined(DOUT45_PORT) && defined(DOUT45_BIT))
 #define DIO92 92
 #define DOUT45 92
 #define DIO92_PORT (DOUT45_PORT)
@@ -1233,7 +1233,7 @@ extern "C"
 #define DIO92_INREG (__inreg__(DOUT45_PORT))
 #define DIO92_DIRREG (__dirreg__(DOUT45_PORT))
 #endif
-#if(defined(DOUT46_PORT) && defined(DOUT46_BIT))
+#if (defined(DOUT46_PORT) && defined(DOUT46_BIT))
 #define DIO93 93
 #define DOUT46 93
 #define DIO93_PORT (DOUT46_PORT)
@@ -1245,7 +1245,7 @@ extern "C"
 #define DIO93_INREG (__inreg__(DOUT46_PORT))
 #define DIO93_DIRREG (__dirreg__(DOUT46_PORT))
 #endif
-#if(defined(DOUT47_PORT) && defined(DOUT47_BIT))
+#if (defined(DOUT47_PORT) && defined(DOUT47_BIT))
 #define DIO94 94
 #define DOUT47 94
 #define DIO94_PORT (DOUT47_PORT)
@@ -1257,7 +1257,7 @@ extern "C"
 #define DIO94_INREG (__inreg__(DOUT47_PORT))
 #define DIO94_DIRREG (__dirreg__(DOUT47_PORT))
 #endif
-#if(defined(DOUT48_PORT) && defined(DOUT48_BIT))
+#if (defined(DOUT48_PORT) && defined(DOUT48_BIT))
 #define DIO95 95
 #define DOUT48 95
 #define DIO95_PORT (DOUT48_PORT)
@@ -1269,7 +1269,7 @@ extern "C"
 #define DIO95_INREG (__inreg__(DOUT48_PORT))
 #define DIO95_DIRREG (__dirreg__(DOUT48_PORT))
 #endif
-#if(defined(DOUT49_PORT) && defined(DOUT49_BIT))
+#if (defined(DOUT49_PORT) && defined(DOUT49_BIT))
 #define DIO96 96
 #define DOUT49 96
 #define DIO96_PORT (DOUT49_PORT)
@@ -2025,7 +2025,7 @@ extern "C"
 #define DIO161_INREG (__inreg__(DIN31_PORT))
 #define DIO161_DIRREG (__dirreg__(DIN31_PORT))
 #endif
-#if(defined(DIN32_PORT) && defined(DIN32_BIT))
+#if (defined(DIN32_PORT) && defined(DIN32_BIT))
 #define DIO162 162
 #define DIN32 162
 #define DIO162_PORT (DIN32_PORT)
@@ -2037,7 +2037,7 @@ extern "C"
 #define DIO162_INREG (__inreg__(DIN32_PORT))
 #define DIO162_DIRREG (__dirreg__(DIN32_PORT))
 #endif
-#if(defined(DIN33_PORT) && defined(DIN33_BIT))
+#if (defined(DIN33_PORT) && defined(DIN33_BIT))
 #define DIO163 163
 #define DIN33 163
 #define DIO163_PORT (DIN33_PORT)
@@ -2049,7 +2049,7 @@ extern "C"
 #define DIO163_INREG (__inreg__(DIN33_PORT))
 #define DIO163_DIRREG (__dirreg__(DIN33_PORT))
 #endif
-#if(defined(DIN34_PORT) && defined(DIN34_BIT))
+#if (defined(DIN34_PORT) && defined(DIN34_BIT))
 #define DIO164 164
 #define DIN34 164
 #define DIO164_PORT (DIN34_PORT)
@@ -2061,7 +2061,7 @@ extern "C"
 #define DIO164_INREG (__inreg__(DIN34_PORT))
 #define DIO164_DIRREG (__dirreg__(DIN34_PORT))
 #endif
-#if(defined(DIN35_PORT) && defined(DIN35_BIT))
+#if (defined(DIN35_PORT) && defined(DIN35_BIT))
 #define DIO165 165
 #define DIN35 165
 #define DIO165_PORT (DIN35_PORT)
@@ -2073,7 +2073,7 @@ extern "C"
 #define DIO165_INREG (__inreg__(DIN35_PORT))
 #define DIO165_DIRREG (__dirreg__(DIN35_PORT))
 #endif
-#if(defined(DIN36_PORT) && defined(DIN36_BIT))
+#if (defined(DIN36_PORT) && defined(DIN36_BIT))
 #define DIO166 166
 #define DIN36 166
 #define DIO166_PORT (DIN36_PORT)
@@ -2085,7 +2085,7 @@ extern "C"
 #define DIO166_INREG (__inreg__(DIN36_PORT))
 #define DIO166_DIRREG (__dirreg__(DIN36_PORT))
 #endif
-#if(defined(DIN37_PORT) && defined(DIN37_BIT))
+#if (defined(DIN37_PORT) && defined(DIN37_BIT))
 #define DIO167 167
 #define DIN37 167
 #define DIO167_PORT (DIN37_PORT)
@@ -2097,7 +2097,7 @@ extern "C"
 #define DIO167_INREG (__inreg__(DIN37_PORT))
 #define DIO167_DIRREG (__dirreg__(DIN37_PORT))
 #endif
-#if(defined(DIN38_PORT) && defined(DIN38_BIT))
+#if (defined(DIN38_PORT) && defined(DIN38_BIT))
 #define DIO168 168
 #define DIN38 168
 #define DIO168_PORT (DIN38_PORT)
@@ -2109,7 +2109,7 @@ extern "C"
 #define DIO168_INREG (__inreg__(DIN38_PORT))
 #define DIO168_DIRREG (__dirreg__(DIN38_PORT))
 #endif
-#if(defined(DIN39_PORT) && defined(DIN39_BIT))
+#if (defined(DIN39_PORT) && defined(DIN39_BIT))
 #define DIO169 169
 #define DIN39 169
 #define DIO169_PORT (DIN39_PORT)
@@ -2121,7 +2121,7 @@ extern "C"
 #define DIO169_INREG (__inreg__(DIN39_PORT))
 #define DIO169_DIRREG (__dirreg__(DIN39_PORT))
 #endif
-#if(defined(DIN40_PORT) && defined(DIN40_BIT))
+#if (defined(DIN40_PORT) && defined(DIN40_BIT))
 #define DIO170 170
 #define DIN40 170
 #define DIO170_PORT (DIN40_PORT)
@@ -2133,7 +2133,7 @@ extern "C"
 #define DIO170_INREG (__inreg__(DIN40_PORT))
 #define DIO170_DIRREG (__dirreg__(DIN40_PORT))
 #endif
-#if(defined(DIN41_PORT) && defined(DIN41_BIT))
+#if (defined(DIN41_PORT) && defined(DIN41_BIT))
 #define DIO171 171
 #define DIN41 171
 #define DIO171_PORT (DIN41_PORT)
@@ -2145,7 +2145,7 @@ extern "C"
 #define DIO171_INREG (__inreg__(DIN41_PORT))
 #define DIO171_DIRREG (__dirreg__(DIN41_PORT))
 #endif
-#if(defined(DIN42_PORT) && defined(DIN42_BIT))
+#if (defined(DIN42_PORT) && defined(DIN42_BIT))
 #define DIO172 172
 #define DIN42 172
 #define DIO172_PORT (DIN42_PORT)
@@ -2157,7 +2157,7 @@ extern "C"
 #define DIO172_INREG (__inreg__(DIN42_PORT))
 #define DIO172_DIRREG (__dirreg__(DIN42_PORT))
 #endif
-#if(defined(DIN43_PORT) && defined(DIN43_BIT))
+#if (defined(DIN43_PORT) && defined(DIN43_BIT))
 #define DIO173 173
 #define DIN43 173
 #define DIO173_PORT (DIN43_PORT)
@@ -2169,7 +2169,7 @@ extern "C"
 #define DIO173_INREG (__inreg__(DIN43_PORT))
 #define DIO173_DIRREG (__dirreg__(DIN43_PORT))
 #endif
-#if(defined(DIN44_PORT) && defined(DIN44_BIT))
+#if (defined(DIN44_PORT) && defined(DIN44_BIT))
 #define DIO174 174
 #define DIN44 174
 #define DIO174_PORT (DIN44_PORT)
@@ -2181,7 +2181,7 @@ extern "C"
 #define DIO174_INREG (__inreg__(DIN44_PORT))
 #define DIO174_DIRREG (__dirreg__(DIN44_PORT))
 #endif
-#if(defined(DIN45_PORT) && defined(DIN45_BIT))
+#if (defined(DIN45_PORT) && defined(DIN45_BIT))
 #define DIO175 175
 #define DIN45 175
 #define DIO175_PORT (DIN45_PORT)
@@ -2193,7 +2193,7 @@ extern "C"
 #define DIO175_INREG (__inreg__(DIN45_PORT))
 #define DIO175_DIRREG (__dirreg__(DIN45_PORT))
 #endif
-#if(defined(DIN46_PORT) && defined(DIN46_BIT))
+#if (defined(DIN46_PORT) && defined(DIN46_BIT))
 #define DIO176 176
 #define DIN46 176
 #define DIO176_PORT (DIN46_PORT)
@@ -2205,7 +2205,7 @@ extern "C"
 #define DIO176_INREG (__inreg__(DIN46_PORT))
 #define DIO176_DIRREG (__dirreg__(DIN46_PORT))
 #endif
-#if(defined(DIN47_PORT) && defined(DIN47_BIT))
+#if (defined(DIN47_PORT) && defined(DIN47_BIT))
 #define DIO177 177
 #define DIN47 177
 #define DIO177_PORT (DIN47_PORT)
@@ -2217,7 +2217,7 @@ extern "C"
 #define DIO177_INREG (__inreg__(DIN47_PORT))
 #define DIO177_DIRREG (__dirreg__(DIN47_PORT))
 #endif
-#if(defined(DIN48_PORT) && defined(DIN48_BIT))
+#if (defined(DIN48_PORT) && defined(DIN48_BIT))
 #define DIO178 178
 #define DIN48 178
 #define DIO178_PORT (DIN48_PORT)
@@ -2229,7 +2229,7 @@ extern "C"
 #define DIO178_INREG (__inreg__(DIN48_PORT))
 #define DIO178_DIRREG (__dirreg__(DIN48_PORT))
 #endif
-#if(defined(DIN49_PORT) && defined(DIN49_BIT))
+#if (defined(DIN49_PORT) && defined(DIN49_BIT))
 #define DIO179 179
 #define DIN49 179
 #define DIO179_PORT (DIN49_PORT)
@@ -5057,7 +5057,7 @@ extern "C"
 #endif
 #define ADC_PRESC (_min(7, (0xff & ((uint8_t)((float)(F_CPU / 100000) / LOG2)))))
 #define mcu_get_analog(diopin)                      \
-	({                                                 \
+	({                                                \
 		ADMUX = (0x00 | __indirect__(diopin, CHANNEL)); \
 		ADCSRA = (0xC0 | ADC_PRESC);                    \
 		while (ADCSRA & 0x40)                           \

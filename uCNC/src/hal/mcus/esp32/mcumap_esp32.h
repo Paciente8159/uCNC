@@ -1235,9 +1235,9 @@ extern "C"
 #define DOUT31_OUTREG OUT1
 #define DOUT31_INREG IN1
 #endif
-#if(defined(DOUT32_BIT))
+#if (defined(DOUT32_BIT))
 #define DOUT32 79
-#if (DOUT32_BIT<32)
+#if (DOUT32_BIT < 32)
 #define DOUT32_OUTREG OUT0
 #define DOUT32_INREG IN0
 #else
@@ -1249,9 +1249,9 @@ extern "C"
 #define DIO79_OUTREG DOUT32_OUTREG
 #define DIO79_INREG DOUT32_INREG
 #endif
-#if(defined(DOUT33_BIT))
+#if (defined(DOUT33_BIT))
 #define DOUT33 80
-#if (DOUT33_BIT<32)
+#if (DOUT33_BIT < 32)
 #define DOUT33_OUTREG OUT0
 #define DOUT33_INREG IN0
 #else
@@ -1263,9 +1263,9 @@ extern "C"
 #define DIO80_OUTREG DOUT33_OUTREG
 #define DIO80_INREG DOUT33_INREG
 #endif
-#if(defined(DOUT34_BIT))
+#if (defined(DOUT34_BIT))
 #define DOUT34 81
-#if (DOUT34_BIT<32)
+#if (DOUT34_BIT < 32)
 #define DOUT34_OUTREG OUT0
 #define DOUT34_INREG IN0
 #else
@@ -1277,9 +1277,9 @@ extern "C"
 #define DIO81_OUTREG DOUT34_OUTREG
 #define DIO81_INREG DOUT34_INREG
 #endif
-#if(defined(DOUT35_BIT))
+#if (defined(DOUT35_BIT))
 #define DOUT35 82
-#if (DOUT35_BIT<32)
+#if (DOUT35_BIT < 32)
 #define DOUT35_OUTREG OUT0
 #define DOUT35_INREG IN0
 #else
@@ -1291,9 +1291,9 @@ extern "C"
 #define DIO82_OUTREG DOUT35_OUTREG
 #define DIO82_INREG DOUT35_INREG
 #endif
-#if(defined(DOUT36_BIT))
+#if (defined(DOUT36_BIT))
 #define DOUT36 83
-#if (DOUT36_BIT<32)
+#if (DOUT36_BIT < 32)
 #define DOUT36_OUTREG OUT0
 #define DOUT36_INREG IN0
 #else
@@ -1305,9 +1305,9 @@ extern "C"
 #define DIO83_OUTREG DOUT36_OUTREG
 #define DIO83_INREG DOUT36_INREG
 #endif
-#if(defined(DOUT37_BIT))
+#if (defined(DOUT37_BIT))
 #define DOUT37 84
-#if (DOUT37_BIT<32)
+#if (DOUT37_BIT < 32)
 #define DOUT37_OUTREG OUT0
 #define DOUT37_INREG IN0
 #else
@@ -1319,9 +1319,9 @@ extern "C"
 #define DIO84_OUTREG DOUT37_OUTREG
 #define DIO84_INREG DOUT37_INREG
 #endif
-#if(defined(DOUT38_BIT))
+#if (defined(DOUT38_BIT))
 #define DOUT38 85
-#if (DOUT38_BIT<32)
+#if (DOUT38_BIT < 32)
 #define DOUT38_OUTREG OUT0
 #define DOUT38_INREG IN0
 #else
@@ -1333,9 +1333,9 @@ extern "C"
 #define DIO85_OUTREG DOUT38_OUTREG
 #define DIO85_INREG DOUT38_INREG
 #endif
-#if(defined(DOUT39_BIT))
+#if (defined(DOUT39_BIT))
 #define DOUT39 86
-#if (DOUT39_BIT<32)
+#if (DOUT39_BIT < 32)
 #define DOUT39_OUTREG OUT0
 #define DOUT39_INREG IN0
 #else
@@ -1347,9 +1347,9 @@ extern "C"
 #define DIO86_OUTREG DOUT39_OUTREG
 #define DIO86_INREG DOUT39_INREG
 #endif
-#if(defined(DOUT40_BIT))
+#if (defined(DOUT40_BIT))
 #define DOUT40 87
-#if (DOUT40_BIT<32)
+#if (DOUT40_BIT < 32)
 #define DOUT40_OUTREG OUT0
 #define DOUT40_INREG IN0
 #else
@@ -1361,9 +1361,9 @@ extern "C"
 #define DIO87_OUTREG DOUT40_OUTREG
 #define DIO87_INREG DOUT40_INREG
 #endif
-#if(defined(DOUT41_BIT))
+#if (defined(DOUT41_BIT))
 #define DOUT41 88
-#if (DOUT41_BIT<32)
+#if (DOUT41_BIT < 32)
 #define DOUT41_OUTREG OUT0
 #define DOUT41_INREG IN0
 #else
@@ -1375,9 +1375,9 @@ extern "C"
 #define DIO88_OUTREG DOUT41_OUTREG
 #define DIO88_INREG DOUT41_INREG
 #endif
-#if(defined(DOUT42_BIT))
+#if (defined(DOUT42_BIT))
 #define DOUT42 89
-#if (DOUT42_BIT<32)
+#if (DOUT42_BIT < 32)
 #define DOUT42_OUTREG OUT0
 #define DOUT42_INREG IN0
 #else
@@ -1389,9 +1389,9 @@ extern "C"
 #define DIO89_OUTREG DOUT42_OUTREG
 #define DIO89_INREG DOUT42_INREG
 #endif
-#if(defined(DOUT43_BIT))
+#if (defined(DOUT43_BIT))
 #define DOUT43 90
-#if (DOUT43_BIT<32)
+#if (DOUT43_BIT < 32)
 #define DOUT43_OUTREG OUT0
 #define DOUT43_INREG IN0
 #else
@@ -1403,9 +1403,9 @@ extern "C"
 #define DIO90_OUTREG DOUT43_OUTREG
 #define DIO90_INREG DOUT43_INREG
 #endif
-#if(defined(DOUT44_BIT))
+#if (defined(DOUT44_BIT))
 #define DOUT44 91
-#if (DOUT44_BIT<32)
+#if (DOUT44_BIT < 32)
 #define DOUT44_OUTREG OUT0
 #define DOUT44_INREG IN0
 #else
@@ -1417,9 +1417,9 @@ extern "C"
 #define DIO91_OUTREG DOUT44_OUTREG
 #define DIO91_INREG DOUT44_INREG
 #endif
-#if(defined(DOUT45_BIT))
+#if (defined(DOUT45_BIT))
 #define DOUT45 92
-#if (DOUT45_BIT<32)
+#if (DOUT45_BIT < 32)
 #define DOUT45_OUTREG OUT0
 #define DOUT45_INREG IN0
 #else
@@ -1431,9 +1431,9 @@ extern "C"
 #define DIO92_OUTREG DOUT45_OUTREG
 #define DIO92_INREG DOUT45_INREG
 #endif
-#if(defined(DOUT46_BIT))
+#if (defined(DOUT46_BIT))
 #define DOUT46 93
-#if (DOUT46_BIT<32)
+#if (DOUT46_BIT < 32)
 #define DOUT46_OUTREG OUT0
 #define DOUT46_INREG IN0
 #else
@@ -1445,9 +1445,9 @@ extern "C"
 #define DIO93_OUTREG DOUT46_OUTREG
 #define DIO93_INREG DOUT46_INREG
 #endif
-#if(defined(DOUT47_BIT))
+#if (defined(DOUT47_BIT))
 #define DOUT47 94
-#if (DOUT47_BIT<32)
+#if (DOUT47_BIT < 32)
 #define DOUT47_OUTREG OUT0
 #define DOUT47_INREG IN0
 #else
@@ -1459,9 +1459,9 @@ extern "C"
 #define DIO94_OUTREG DOUT47_OUTREG
 #define DIO94_INREG DOUT47_INREG
 #endif
-#if(defined(DOUT48_BIT))
+#if (defined(DOUT48_BIT))
 #define DOUT48 95
-#if (DOUT48_BIT<32)
+#if (DOUT48_BIT < 32)
 #define DOUT48_OUTREG OUT0
 #define DOUT48_INREG IN0
 #else
@@ -1473,9 +1473,9 @@ extern "C"
 #define DIO95_OUTREG DOUT48_OUTREG
 #define DIO95_INREG DOUT48_INREG
 #endif
-#if(defined(DOUT49_BIT))
+#if (defined(DOUT49_BIT))
 #define DOUT49 96
-#if (DOUT49_BIT<32)
+#if (DOUT49_BIT < 32)
 #define DOUT49_OUTREG OUT0
 #define DOUT49_INREG IN0
 #else
@@ -2360,9 +2360,9 @@ extern "C"
 #define DIO161_OUTREG DIN31_OUTREG
 #define DIO161_INREG DIN31_INREG
 #endif
-#if(defined(DIN32_BIT))
+#if (defined(DIN32_BIT))
 #define DIN32 162
-#if (DIN32_BIT<32)
+#if (DIN32_BIT < 32)
 #define DIN32_OUTREG OUT0
 #define DIN32_INREG IN0
 #else
@@ -2374,9 +2374,9 @@ extern "C"
 #define DIO162_OUTREG DIN32_OUTREG
 #define DIO162_INREG DIN32_INREG
 #endif
-#if(defined(DIN33_BIT))
+#if (defined(DIN33_BIT))
 #define DIN33 163
-#if (DIN33_BIT<32)
+#if (DIN33_BIT < 32)
 #define DIN33_OUTREG OUT0
 #define DIN33_INREG IN0
 #else
@@ -2388,9 +2388,9 @@ extern "C"
 #define DIO163_OUTREG DIN33_OUTREG
 #define DIO163_INREG DIN33_INREG
 #endif
-#if(defined(DIN34_BIT))
+#if (defined(DIN34_BIT))
 #define DIN34 164
-#if (DIN34_BIT<32)
+#if (DIN34_BIT < 32)
 #define DIN34_OUTREG OUT0
 #define DIN34_INREG IN0
 #else
@@ -2402,9 +2402,9 @@ extern "C"
 #define DIO164_OUTREG DIN34_OUTREG
 #define DIO164_INREG DIN34_INREG
 #endif
-#if(defined(DIN35_BIT))
+#if (defined(DIN35_BIT))
 #define DIN35 165
-#if (DIN35_BIT<32)
+#if (DIN35_BIT < 32)
 #define DIN35_OUTREG OUT0
 #define DIN35_INREG IN0
 #else
@@ -2416,9 +2416,9 @@ extern "C"
 #define DIO165_OUTREG DIN35_OUTREG
 #define DIO165_INREG DIN35_INREG
 #endif
-#if(defined(DIN36_BIT))
+#if (defined(DIN36_BIT))
 #define DIN36 166
-#if (DIN36_BIT<32)
+#if (DIN36_BIT < 32)
 #define DIN36_OUTREG OUT0
 #define DIN36_INREG IN0
 #else
@@ -2430,9 +2430,9 @@ extern "C"
 #define DIO166_OUTREG DIN36_OUTREG
 #define DIO166_INREG DIN36_INREG
 #endif
-#if(defined(DIN37_BIT))
+#if (defined(DIN37_BIT))
 #define DIN37 167
-#if (DIN37_BIT<32)
+#if (DIN37_BIT < 32)
 #define DIN37_OUTREG OUT0
 #define DIN37_INREG IN0
 #else
@@ -2444,9 +2444,9 @@ extern "C"
 #define DIO167_OUTREG DIN37_OUTREG
 #define DIO167_INREG DIN37_INREG
 #endif
-#if(defined(DIN38_BIT))
+#if (defined(DIN38_BIT))
 #define DIN38 168
-#if (DIN38_BIT<32)
+#if (DIN38_BIT < 32)
 #define DIN38_OUTREG OUT0
 #define DIN38_INREG IN0
 #else
@@ -2458,9 +2458,9 @@ extern "C"
 #define DIO168_OUTREG DIN38_OUTREG
 #define DIO168_INREG DIN38_INREG
 #endif
-#if(defined(DIN39_BIT))
+#if (defined(DIN39_BIT))
 #define DIN39 169
-#if (DIN39_BIT<32)
+#if (DIN39_BIT < 32)
 #define DIN39_OUTREG OUT0
 #define DIN39_INREG IN0
 #else
@@ -2472,9 +2472,9 @@ extern "C"
 #define DIO169_OUTREG DIN39_OUTREG
 #define DIO169_INREG DIN39_INREG
 #endif
-#if(defined(DIN40_BIT))
+#if (defined(DIN40_BIT))
 #define DIN40 170
-#if (DIN40_BIT<32)
+#if (DIN40_BIT < 32)
 #define DIN40_OUTREG OUT0
 #define DIN40_INREG IN0
 #else
@@ -2486,9 +2486,9 @@ extern "C"
 #define DIO170_OUTREG DIN40_OUTREG
 #define DIO170_INREG DIN40_INREG
 #endif
-#if(defined(DIN41_BIT))
+#if (defined(DIN41_BIT))
 #define DIN41 171
-#if (DIN41_BIT<32)
+#if (DIN41_BIT < 32)
 #define DIN41_OUTREG OUT0
 #define DIN41_INREG IN0
 #else
@@ -2500,9 +2500,9 @@ extern "C"
 #define DIO171_OUTREG DIN41_OUTREG
 #define DIO171_INREG DIN41_INREG
 #endif
-#if(defined(DIN42_BIT))
+#if (defined(DIN42_BIT))
 #define DIN42 172
-#if (DIN42_BIT<32)
+#if (DIN42_BIT < 32)
 #define DIN42_OUTREG OUT0
 #define DIN42_INREG IN0
 #else
@@ -2514,9 +2514,9 @@ extern "C"
 #define DIO172_OUTREG DIN42_OUTREG
 #define DIO172_INREG DIN42_INREG
 #endif
-#if(defined(DIN43_BIT))
+#if (defined(DIN43_BIT))
 #define DIN43 173
-#if (DIN43_BIT<32)
+#if (DIN43_BIT < 32)
 #define DIN43_OUTREG OUT0
 #define DIN43_INREG IN0
 #else
@@ -2528,9 +2528,9 @@ extern "C"
 #define DIO173_OUTREG DIN43_OUTREG
 #define DIO173_INREG DIN43_INREG
 #endif
-#if(defined(DIN44_BIT))
+#if (defined(DIN44_BIT))
 #define DIN44 174
-#if (DIN44_BIT<32)
+#if (DIN44_BIT < 32)
 #define DIN44_OUTREG OUT0
 #define DIN44_INREG IN0
 #else
@@ -2542,9 +2542,9 @@ extern "C"
 #define DIO174_OUTREG DIN44_OUTREG
 #define DIO174_INREG DIN44_INREG
 #endif
-#if(defined(DIN45_BIT))
+#if (defined(DIN45_BIT))
 #define DIN45 175
-#if (DIN45_BIT<32)
+#if (DIN45_BIT < 32)
 #define DIN45_OUTREG OUT0
 #define DIN45_INREG IN0
 #else
@@ -2556,9 +2556,9 @@ extern "C"
 #define DIO175_OUTREG DIN45_OUTREG
 #define DIO175_INREG DIN45_INREG
 #endif
-#if(defined(DIN46_BIT))
+#if (defined(DIN46_BIT))
 #define DIN46 176
-#if (DIN46_BIT<32)
+#if (DIN46_BIT < 32)
 #define DIN46_OUTREG OUT0
 #define DIN46_INREG IN0
 #else
@@ -2570,9 +2570,9 @@ extern "C"
 #define DIO176_OUTREG DIN46_OUTREG
 #define DIO176_INREG DIN46_INREG
 #endif
-#if(defined(DIN47_BIT))
+#if (defined(DIN47_BIT))
 #define DIN47 177
-#if (DIN47_BIT<32)
+#if (DIN47_BIT < 32)
 #define DIN47_OUTREG OUT0
 #define DIN47_INREG IN0
 #else
@@ -2584,9 +2584,9 @@ extern "C"
 #define DIO177_OUTREG DIN47_OUTREG
 #define DIO177_INREG DIN47_INREG
 #endif
-#if(defined(DIN48_BIT))
+#if (defined(DIN48_BIT))
 #define DIN48 178
-#if (DIN48_BIT<32)
+#if (DIN48_BIT < 32)
 #define DIN48_OUTREG OUT0
 #define DIN48_INREG IN0
 #else
@@ -2598,9 +2598,9 @@ extern "C"
 #define DIO178_OUTREG DIN48_OUTREG
 #define DIO178_INREG DIN48_INREG
 #endif
-#if(defined(DIN49_BIT))
+#if (defined(DIN49_BIT))
 #define DIN49 179
-#if (DIN49_BIT<32)
+#if (DIN49_BIT < 32)
 #define DIN49_OUTREG OUT0
 #define DIN49_INREG IN0
 #else
@@ -3307,14 +3307,14 @@ extern "C"
 #define ic74hc595_get_pin(pin) (__atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED) & ic74hc595_pin_mask(pin))
 #endif
 
-#define mcu_config_output(X)                                          \
-	{                                                                   \
-		gpio_pad_select_gpio(__indirect__(X, BIT));                       \
+#define mcu_config_output(X)                                                      \
+	{                                                                               \
+		gpio_pad_select_gpio(__indirect__(X, BIT));                                   \
 		gpio_set_direction((gpio_num_t)__indirect__(X, BIT), GPIO_MODE_INPUT_OUTPUT); \
 	}
-#define mcu_config_input(X)                                    \
-	{                                                            \
-		gpio_pad_select_gpio(__indirect__(X, BIT));                \
+#define mcu_config_input(X)                                                \
+	{                                                                        \
+		gpio_pad_select_gpio(__indirect__(X, BIT));                            \
 		gpio_set_direction((gpio_num_t)__indirect__(X, BIT), GPIO_MODE_INPUT); \
 		gpio_pulldown_dis((gpio_num_t)__indirect__(X, BIT));                   \
 		gpio_pullup_dis((gpio_num_t)__indirect__(X, BIT));                     \
@@ -3325,16 +3325,16 @@ extern "C"
 		adc1_config_width(ADC_WIDTH_MAX - 1);                                         \
 		adc1_config_channel_atten(__indirect__(X, ADC_CHANNEL), (ADC_ATTEN_MAX - 1)); \
 	}
-#define mcu_config_pullup(X)                                   \
-	{                                                            \
-		gpio_pad_select_gpio(__indirect__(X, BIT));                \
+#define mcu_config_pullup(X)                                               \
+	{                                                                        \
+		gpio_pad_select_gpio(__indirect__(X, BIT));                            \
 		gpio_set_direction((gpio_num_t)__indirect__(X, BIT), GPIO_MODE_INPUT); \
 		gpio_pulldown_dis((gpio_num_t)__indirect__(X, BIT));                   \
 		gpio_pullup_en((gpio_num_t)__indirect__(X, BIT));                      \
 	}
 	extern void mcu_gpio_isr(void *);
-#define mcu_config_input_isr(X)                                                                  \
-	{                                                                                              \
+#define mcu_config_input_isr(X)                                                                              \
+	{                                                                                                          \
 		gpio_set_intr_type((gpio_num_t)(__indirect__(X, BIT)), GPIO_INTR_ANYEDGE);                               \
 		gpio_isr_handler_add((gpio_num_t)(__indirect__(X, BIT)), mcu_gpio_isr, (void *)__indirect__(X, ISRVAR)); \
 	}
