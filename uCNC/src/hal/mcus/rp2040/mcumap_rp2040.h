@@ -1224,7 +1224,6 @@ extern "C"
 #endif
 #endif
 
-
 /**
  * Run code on multicore mode
  * Launches code on core 0
@@ -1267,8 +1266,8 @@ extern "C"
 	/**
 	 * Launch multicore
 	 * **/
-// 	extern void rp2040_core1_loop();
-// #define ucnc_init() cnc_init();	multicore_launch_core1(rp2040_core1_loop)
+	// 	extern void rp2040_core1_loop();
+	// #define ucnc_init() cnc_init();	multicore_launch_core1(rp2040_core1_loop)
 	extern void rp2040_core0_loop();
 #define ucnc_run() rp2040_core0_loop()
 

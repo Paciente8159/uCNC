@@ -400,7 +400,8 @@ void system_menu_action(uint8_t action)
 			}
 			break;
 		default:
-			// no new action
+			// pass the code to a custom action implementation
+			system_menu_action_custom_code(action);
 			return;
 		}
 	}
@@ -1192,4 +1193,37 @@ void system_menu_var_to_str(char c)
 {
 	*system_menu_var_to_str_set_buffer_ptr = c;
 	*(++system_menu_var_to_str_set_buffer_ptr) = 0;
+}
+
+/**
+ * Overridable system menu actions to be implemented for the user input system
+ * **/
+
+void __attribute__((weak)) system_menu_action_custom_code(uint8_t action)
+{
+	// used to implement custom action codes for different user interface systems (keypads, keyboards, screens, etc..)
+}
+
+// allow modification of a page render after the page is initialized
+void system_menu_set_render_callback(uint8_t menu_id, system_menu_page_render_cb callback)
+{
+	MENU_LOOP(g_system_menu.menu_entry, menu_page)
+	{
+		if (menu_page->menu_id == menu_id)
+		{
+			menu_page->page_render = callback;
+		}
+	}
+}
+
+// allow modification of a page action after the page is initialized
+void system_menu_set_action_callback(uint8_t menu_id, system_menu_page_action_cb callback)
+{
+	MENU_LOOP(g_system_menu.menu_entry, menu_page)
+	{
+		if (menu_page->menu_id == menu_id)
+		{
+			menu_page->page_action = callback;
+		}
+	}
 }

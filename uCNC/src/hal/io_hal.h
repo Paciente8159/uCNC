@@ -2192,861 +2192,715 @@ extern "C"
 #define io78_config_pullup
 #define io78_get_input 0
 #endif
+#if ASSERT_PIN_IO(DOUT32)
+#define io79_config_output mcu_config_output(DOUT32)
+#define io79_set_output mcu_set_output(DOUT32)
+#define io79_clear_output mcu_clear_output(DOUT32)
+#define io79_toggle_output mcu_toggle_output(DOUT32)
+#define io79_get_output mcu_get_output(DOUT32)
+#define io79_config_input mcu_config_input(DOUT32)
+#define io79_config_pullup mcu_config_pullup(DOUT32)
+#define io79_get_input mcu_get_input(DOUT32)
+#elif ASSERT_PIN_EXTENDED(DOUT32)
+#define io79_config_output
+#define io79_set_output ic74hc595_set_pin(DOUT32)
+#define io79_clear_output ic74hc595_clear_pin(DOUT32)
+#define io79_toggle_output ic74hc595_toggle_pin(DOUT32)
+#define io79_get_output ic74hc595_get_pin(DOUT32)
+#define io79_config_input
+#define io79_config_pullup
+#define io79_get_input 0
+#else
+#define io79_config_output
+#define io79_set_output
+#define io79_clear_output
+#define io79_toggle_output
+#define io79_get_output 0
+#define io79_config_input
+#define io79_config_pullup
+#define io79_get_input 0
+#endif
+#if ASSERT_PIN_IO(DOUT33)
+#define io80_config_output mcu_config_output(DOUT33)
+#define io80_set_output mcu_set_output(DOUT33)
+#define io80_clear_output mcu_clear_output(DOUT33)
+#define io80_toggle_output mcu_toggle_output(DOUT33)
+#define io80_get_output mcu_get_output(DOUT33)
+#define io80_config_input mcu_config_input(DOUT33)
+#define io80_config_pullup mcu_config_pullup(DOUT33)
+#define io80_get_input mcu_get_input(DOUT33)
+#elif ASSERT_PIN_EXTENDED(DOUT33)
+#define io80_config_output
+#define io80_set_output ic74hc595_set_pin(DOUT33)
+#define io80_clear_output ic74hc595_clear_pin(DOUT33)
+#define io80_toggle_output ic74hc595_toggle_pin(DOUT33)
+#define io80_get_output ic74hc595_get_pin(DOUT33)
+#define io80_config_input
+#define io80_config_pullup
+#define io80_get_input 0
+#else
+#define io80_config_output
+#define io80_set_output
+#define io80_clear_output
+#define io80_toggle_output
+#define io80_get_output 0
+#define io80_config_input
+#define io80_config_pullup
+#define io80_get_input 0
+#endif
+#if ASSERT_PIN_IO(DOUT34)
+#define io81_config_output mcu_config_output(DOUT34)
+#define io81_set_output mcu_set_output(DOUT34)
+#define io81_clear_output mcu_clear_output(DOUT34)
+#define io81_toggle_output mcu_toggle_output(DOUT34)
+#define io81_get_output mcu_get_output(DOUT34)
+#define io81_config_input mcu_config_input(DOUT34)
+#define io81_config_pullup mcu_config_pullup(DOUT34)
+#define io81_get_input mcu_get_input(DOUT34)
+#elif ASSERT_PIN_EXTENDED(DOUT34)
+#define io81_config_output
+#define io81_set_output ic74hc595_set_pin(DOUT34)
+#define io81_clear_output ic74hc595_clear_pin(DOUT34)
+#define io81_toggle_output ic74hc595_toggle_pin(DOUT34)
+#define io81_get_output ic74hc595_get_pin(DOUT34)
+#define io81_config_input
+#define io81_config_pullup
+#define io81_get_input 0
+#else
+#define io81_config_output
+#define io81_set_output
+#define io81_clear_output
+#define io81_toggle_output
+#define io81_get_output 0
+#define io81_config_input
+#define io81_config_pullup
+#define io81_get_input 0
+#endif
+#if ASSERT_PIN_IO(DOUT35)
+#define io82_config_output mcu_config_output(DOUT35)
+#define io82_set_output mcu_set_output(DOUT35)
+#define io82_clear_output mcu_clear_output(DOUT35)
+#define io82_toggle_output mcu_toggle_output(DOUT35)
+#define io82_get_output mcu_get_output(DOUT35)
+#define io82_config_input mcu_config_input(DOUT35)
+#define io82_config_pullup mcu_config_pullup(DOUT35)
+#define io82_get_input mcu_get_input(DOUT35)
+#elif ASSERT_PIN_EXTENDED(DOUT35)
+#define io82_config_output
+#define io82_set_output ic74hc595_set_pin(DOUT35)
+#define io82_clear_output ic74hc595_clear_pin(DOUT35)
+#define io82_toggle_output ic74hc595_toggle_pin(DOUT35)
+#define io82_get_output ic74hc595_get_pin(DOUT35)
+#define io82_config_input
+#define io82_config_pullup
+#define io82_get_input 0
+#else
+#define io82_config_output
+#define io82_set_output
+#define io82_clear_output
+#define io82_toggle_output
+#define io82_get_output 0
+#define io82_config_input
+#define io82_config_pullup
+#define io82_get_input 0
+#endif
+#if ASSERT_PIN_IO(DOUT36)
+#define io83_config_output mcu_config_output(DOUT36)
+#define io83_set_output mcu_set_output(DOUT36)
+#define io83_clear_output mcu_clear_output(DOUT36)
+#define io83_toggle_output mcu_toggle_output(DOUT36)
+#define io83_get_output mcu_get_output(DOUT36)
+#define io83_config_input mcu_config_input(DOUT36)
+#define io83_config_pullup mcu_config_pullup(DOUT36)
+#define io83_get_input mcu_get_input(DOUT36)
+#elif ASSERT_PIN_EXTENDED(DOUT36)
+#define io83_config_output
+#define io83_set_output ic74hc595_set_pin(DOUT36)
+#define io83_clear_output ic74hc595_clear_pin(DOUT36)
+#define io83_toggle_output ic74hc595_toggle_pin(DOUT36)
+#define io83_get_output ic74hc595_get_pin(DOUT36)
+#define io83_config_input
+#define io83_config_pullup
+#define io83_get_input 0
+#else
+#define io83_config_output
+#define io83_set_output
+#define io83_clear_output
+#define io83_toggle_output
+#define io83_get_output 0
+#define io83_config_input
+#define io83_config_pullup
+#define io83_get_input 0
+#endif
+#if ASSERT_PIN_IO(DOUT37)
+#define io84_config_output mcu_config_output(DOUT37)
+#define io84_set_output mcu_set_output(DOUT37)
+#define io84_clear_output mcu_clear_output(DOUT37)
+#define io84_toggle_output mcu_toggle_output(DOUT37)
+#define io84_get_output mcu_get_output(DOUT37)
+#define io84_config_input mcu_config_input(DOUT37)
+#define io84_config_pullup mcu_config_pullup(DOUT37)
+#define io84_get_input mcu_get_input(DOUT37)
+#elif ASSERT_PIN_EXTENDED(DOUT37)
+#define io84_config_output
+#define io84_set_output ic74hc595_set_pin(DOUT37)
+#define io84_clear_output ic74hc595_clear_pin(DOUT37)
+#define io84_toggle_output ic74hc595_toggle_pin(DOUT37)
+#define io84_get_output ic74hc595_get_pin(DOUT37)
+#define io84_config_input
+#define io84_config_pullup
+#define io84_get_input 0
+#else
+#define io84_config_output
+#define io84_set_output
+#define io84_clear_output
+#define io84_toggle_output
+#define io84_get_output 0
+#define io84_config_input
+#define io84_config_pullup
+#define io84_get_input 0
+#endif
+#if ASSERT_PIN_IO(DOUT38)
+#define io85_config_output mcu_config_output(DOUT38)
+#define io85_set_output mcu_set_output(DOUT38)
+#define io85_clear_output mcu_clear_output(DOUT38)
+#define io85_toggle_output mcu_toggle_output(DOUT38)
+#define io85_get_output mcu_get_output(DOUT38)
+#define io85_config_input mcu_config_input(DOUT38)
+#define io85_config_pullup mcu_config_pullup(DOUT38)
+#define io85_get_input mcu_get_input(DOUT38)
+#elif ASSERT_PIN_EXTENDED(DOUT38)
+#define io85_config_output
+#define io85_set_output ic74hc595_set_pin(DOUT38)
+#define io85_clear_output ic74hc595_clear_pin(DOUT38)
+#define io85_toggle_output ic74hc595_toggle_pin(DOUT38)
+#define io85_get_output ic74hc595_get_pin(DOUT38)
+#define io85_config_input
+#define io85_config_pullup
+#define io85_get_input 0
+#else
+#define io85_config_output
+#define io85_set_output
+#define io85_clear_output
+#define io85_toggle_output
+#define io85_get_output 0
+#define io85_config_input
+#define io85_config_pullup
+#define io85_get_input 0
+#endif
+#if ASSERT_PIN_IO(DOUT39)
+#define io86_config_output mcu_config_output(DOUT39)
+#define io86_set_output mcu_set_output(DOUT39)
+#define io86_clear_output mcu_clear_output(DOUT39)
+#define io86_toggle_output mcu_toggle_output(DOUT39)
+#define io86_get_output mcu_get_output(DOUT39)
+#define io86_config_input mcu_config_input(DOUT39)
+#define io86_config_pullup mcu_config_pullup(DOUT39)
+#define io86_get_input mcu_get_input(DOUT39)
+#elif ASSERT_PIN_EXTENDED(DOUT39)
+#define io86_config_output
+#define io86_set_output ic74hc595_set_pin(DOUT39)
+#define io86_clear_output ic74hc595_clear_pin(DOUT39)
+#define io86_toggle_output ic74hc595_toggle_pin(DOUT39)
+#define io86_get_output ic74hc595_get_pin(DOUT39)
+#define io86_config_input
+#define io86_config_pullup
+#define io86_get_input 0
+#else
+#define io86_config_output
+#define io86_set_output
+#define io86_clear_output
+#define io86_toggle_output
+#define io86_get_output 0
+#define io86_config_input
+#define io86_config_pullup
+#define io86_get_input 0
+#endif
+#if ASSERT_PIN_IO(DOUT40)
+#define io87_config_output mcu_config_output(DOUT40)
+#define io87_set_output mcu_set_output(DOUT40)
+#define io87_clear_output mcu_clear_output(DOUT40)
+#define io87_toggle_output mcu_toggle_output(DOUT40)
+#define io87_get_output mcu_get_output(DOUT40)
+#define io87_config_input mcu_config_input(DOUT40)
+#define io87_config_pullup mcu_config_pullup(DOUT40)
+#define io87_get_input mcu_get_input(DOUT40)
+#elif ASSERT_PIN_EXTENDED(DOUT40)
+#define io87_config_output
+#define io87_set_output ic74hc595_set_pin(DOUT40)
+#define io87_clear_output ic74hc595_clear_pin(DOUT40)
+#define io87_toggle_output ic74hc595_toggle_pin(DOUT40)
+#define io87_get_output ic74hc595_get_pin(DOUT40)
+#define io87_config_input
+#define io87_config_pullup
+#define io87_get_input 0
+#else
+#define io87_config_output
+#define io87_set_output
+#define io87_clear_output
+#define io87_toggle_output
+#define io87_get_output 0
+#define io87_config_input
+#define io87_config_pullup
+#define io87_get_input 0
+#endif
+#if ASSERT_PIN_IO(DOUT41)
+#define io88_config_output mcu_config_output(DOUT41)
+#define io88_set_output mcu_set_output(DOUT41)
+#define io88_clear_output mcu_clear_output(DOUT41)
+#define io88_toggle_output mcu_toggle_output(DOUT41)
+#define io88_get_output mcu_get_output(DOUT41)
+#define io88_config_input mcu_config_input(DOUT41)
+#define io88_config_pullup mcu_config_pullup(DOUT41)
+#define io88_get_input mcu_get_input(DOUT41)
+#elif ASSERT_PIN_EXTENDED(DOUT41)
+#define io88_config_output
+#define io88_set_output ic74hc595_set_pin(DOUT41)
+#define io88_clear_output ic74hc595_clear_pin(DOUT41)
+#define io88_toggle_output ic74hc595_toggle_pin(DOUT41)
+#define io88_get_output ic74hc595_get_pin(DOUT41)
+#define io88_config_input
+#define io88_config_pullup
+#define io88_get_input 0
+#else
+#define io88_config_output
+#define io88_set_output
+#define io88_clear_output
+#define io88_toggle_output
+#define io88_get_output 0
+#define io88_config_input
+#define io88_config_pullup
+#define io88_get_input 0
+#endif
+#if ASSERT_PIN_IO(DOUT42)
+#define io89_config_output mcu_config_output(DOUT42)
+#define io89_set_output mcu_set_output(DOUT42)
+#define io89_clear_output mcu_clear_output(DOUT42)
+#define io89_toggle_output mcu_toggle_output(DOUT42)
+#define io89_get_output mcu_get_output(DOUT42)
+#define io89_config_input mcu_config_input(DOUT42)
+#define io89_config_pullup mcu_config_pullup(DOUT42)
+#define io89_get_input mcu_get_input(DOUT42)
+#elif ASSERT_PIN_EXTENDED(DOUT42)
+#define io89_config_output
+#define io89_set_output ic74hc595_set_pin(DOUT42)
+#define io89_clear_output ic74hc595_clear_pin(DOUT42)
+#define io89_toggle_output ic74hc595_toggle_pin(DOUT42)
+#define io89_get_output ic74hc595_get_pin(DOUT42)
+#define io89_config_input
+#define io89_config_pullup
+#define io89_get_input 0
+#else
+#define io89_config_output
+#define io89_set_output
+#define io89_clear_output
+#define io89_toggle_output
+#define io89_get_output 0
+#define io89_config_input
+#define io89_config_pullup
+#define io89_get_input 0
+#endif
+#if ASSERT_PIN_IO(DOUT43)
+#define io90_config_output mcu_config_output(DOUT43)
+#define io90_set_output mcu_set_output(DOUT43)
+#define io90_clear_output mcu_clear_output(DOUT43)
+#define io90_toggle_output mcu_toggle_output(DOUT43)
+#define io90_get_output mcu_get_output(DOUT43)
+#define io90_config_input mcu_config_input(DOUT43)
+#define io90_config_pullup mcu_config_pullup(DOUT43)
+#define io90_get_input mcu_get_input(DOUT43)
+#elif ASSERT_PIN_EXTENDED(DOUT43)
+#define io90_config_output
+#define io90_set_output ic74hc595_set_pin(DOUT43)
+#define io90_clear_output ic74hc595_clear_pin(DOUT43)
+#define io90_toggle_output ic74hc595_toggle_pin(DOUT43)
+#define io90_get_output ic74hc595_get_pin(DOUT43)
+#define io90_config_input
+#define io90_config_pullup
+#define io90_get_input 0
+#else
+#define io90_config_output
+#define io90_set_output
+#define io90_clear_output
+#define io90_toggle_output
+#define io90_get_output 0
+#define io90_config_input
+#define io90_config_pullup
+#define io90_get_input 0
+#endif
+#if ASSERT_PIN_IO(DOUT44)
+#define io91_config_output mcu_config_output(DOUT44)
+#define io91_set_output mcu_set_output(DOUT44)
+#define io91_clear_output mcu_clear_output(DOUT44)
+#define io91_toggle_output mcu_toggle_output(DOUT44)
+#define io91_get_output mcu_get_output(DOUT44)
+#define io91_config_input mcu_config_input(DOUT44)
+#define io91_config_pullup mcu_config_pullup(DOUT44)
+#define io91_get_input mcu_get_input(DOUT44)
+#elif ASSERT_PIN_EXTENDED(DOUT44)
+#define io91_config_output
+#define io91_set_output ic74hc595_set_pin(DOUT44)
+#define io91_clear_output ic74hc595_clear_pin(DOUT44)
+#define io91_toggle_output ic74hc595_toggle_pin(DOUT44)
+#define io91_get_output ic74hc595_get_pin(DOUT44)
+#define io91_config_input
+#define io91_config_pullup
+#define io91_get_input 0
+#else
+#define io91_config_output
+#define io91_set_output
+#define io91_clear_output
+#define io91_toggle_output
+#define io91_get_output 0
+#define io91_config_input
+#define io91_config_pullup
+#define io91_get_input 0
+#endif
+#if ASSERT_PIN_IO(DOUT45)
+#define io92_config_output mcu_config_output(DOUT45)
+#define io92_set_output mcu_set_output(DOUT45)
+#define io92_clear_output mcu_clear_output(DOUT45)
+#define io92_toggle_output mcu_toggle_output(DOUT45)
+#define io92_get_output mcu_get_output(DOUT45)
+#define io92_config_input mcu_config_input(DOUT45)
+#define io92_config_pullup mcu_config_pullup(DOUT45)
+#define io92_get_input mcu_get_input(DOUT45)
+#elif ASSERT_PIN_EXTENDED(DOUT45)
+#define io92_config_output
+#define io92_set_output ic74hc595_set_pin(DOUT45)
+#define io92_clear_output ic74hc595_clear_pin(DOUT45)
+#define io92_toggle_output ic74hc595_toggle_pin(DOUT45)
+#define io92_get_output ic74hc595_get_pin(DOUT45)
+#define io92_config_input
+#define io92_config_pullup
+#define io92_get_input 0
+#else
+#define io92_config_output
+#define io92_set_output
+#define io92_clear_output
+#define io92_toggle_output
+#define io92_get_output 0
+#define io92_config_input
+#define io92_config_pullup
+#define io92_get_input 0
+#endif
+#if ASSERT_PIN_IO(DOUT46)
+#define io93_config_output mcu_config_output(DOUT46)
+#define io93_set_output mcu_set_output(DOUT46)
+#define io93_clear_output mcu_clear_output(DOUT46)
+#define io93_toggle_output mcu_toggle_output(DOUT46)
+#define io93_get_output mcu_get_output(DOUT46)
+#define io93_config_input mcu_config_input(DOUT46)
+#define io93_config_pullup mcu_config_pullup(DOUT46)
+#define io93_get_input mcu_get_input(DOUT46)
+#elif ASSERT_PIN_EXTENDED(DOUT46)
+#define io93_config_output
+#define io93_set_output ic74hc595_set_pin(DOUT46)
+#define io93_clear_output ic74hc595_clear_pin(DOUT46)
+#define io93_toggle_output ic74hc595_toggle_pin(DOUT46)
+#define io93_get_output ic74hc595_get_pin(DOUT46)
+#define io93_config_input
+#define io93_config_pullup
+#define io93_get_input 0
+#else
+#define io93_config_output
+#define io93_set_output
+#define io93_clear_output
+#define io93_toggle_output
+#define io93_get_output 0
+#define io93_config_input
+#define io93_config_pullup
+#define io93_get_input 0
+#endif
+#if ASSERT_PIN_IO(DOUT47)
+#define io94_config_output mcu_config_output(DOUT47)
+#define io94_set_output mcu_set_output(DOUT47)
+#define io94_clear_output mcu_clear_output(DOUT47)
+#define io94_toggle_output mcu_toggle_output(DOUT47)
+#define io94_get_output mcu_get_output(DOUT47)
+#define io94_config_input mcu_config_input(DOUT47)
+#define io94_config_pullup mcu_config_pullup(DOUT47)
+#define io94_get_input mcu_get_input(DOUT47)
+#elif ASSERT_PIN_EXTENDED(DOUT47)
+#define io94_config_output
+#define io94_set_output ic74hc595_set_pin(DOUT47)
+#define io94_clear_output ic74hc595_clear_pin(DOUT47)
+#define io94_toggle_output ic74hc595_toggle_pin(DOUT47)
+#define io94_get_output ic74hc595_get_pin(DOUT47)
+#define io94_config_input
+#define io94_config_pullup
+#define io94_get_input 0
+#else
+#define io94_config_output
+#define io94_set_output
+#define io94_clear_output
+#define io94_toggle_output
+#define io94_get_output 0
+#define io94_config_input
+#define io94_config_pullup
+#define io94_get_input 0
+#endif
+#if ASSERT_PIN_IO(DOUT48)
+#define io95_config_output mcu_config_output(DOUT48)
+#define io95_set_output mcu_set_output(DOUT48)
+#define io95_clear_output mcu_clear_output(DOUT48)
+#define io95_toggle_output mcu_toggle_output(DOUT48)
+#define io95_get_output mcu_get_output(DOUT48)
+#define io95_config_input mcu_config_input(DOUT48)
+#define io95_config_pullup mcu_config_pullup(DOUT48)
+#define io95_get_input mcu_get_input(DOUT48)
+#elif ASSERT_PIN_EXTENDED(DOUT48)
+#define io95_config_output
+#define io95_set_output ic74hc595_set_pin(DOUT48)
+#define io95_clear_output ic74hc595_clear_pin(DOUT48)
+#define io95_toggle_output ic74hc595_toggle_pin(DOUT48)
+#define io95_get_output ic74hc595_get_pin(DOUT48)
+#define io95_config_input
+#define io95_config_pullup
+#define io95_get_input 0
+#else
+#define io95_config_output
+#define io95_set_output
+#define io95_clear_output
+#define io95_toggle_output
+#define io95_get_output 0
+#define io95_config_input
+#define io95_config_pullup
+#define io95_get_input 0
+#endif
+#if ASSERT_PIN_IO(DOUT49)
+#define io96_config_output mcu_config_output(DOUT49)
+#define io96_set_output mcu_set_output(DOUT49)
+#define io96_clear_output mcu_clear_output(DOUT49)
+#define io96_toggle_output mcu_toggle_output(DOUT49)
+#define io96_get_output mcu_get_output(DOUT49)
+#define io96_config_input mcu_config_input(DOUT49)
+#define io96_config_pullup mcu_config_pullup(DOUT49)
+#define io96_get_input mcu_get_input(DOUT49)
+#elif ASSERT_PIN_EXTENDED(DOUT49)
+#define io96_config_output
+#define io96_set_output ic74hc595_set_pin(DOUT49)
+#define io96_clear_output ic74hc595_clear_pin(DOUT49)
+#define io96_toggle_output ic74hc595_toggle_pin(DOUT49)
+#define io96_get_output ic74hc595_get_pin(DOUT49)
+#define io96_config_input
+#define io96_config_pullup
+#define io96_get_input 0
+#else
+#define io96_config_output
+#define io96_set_output
+#define io96_clear_output
+#define io96_toggle_output
+#define io96_get_output 0
+#define io96_config_input
+#define io96_config_pullup
+#define io96_get_input 0
+#endif
+
+/**
+ * Inputs
+ * * */
 #if ASSERT_PIN_IO(LIMIT_X)
-#define io100_config_output mcu_config_output(LIMIT_X)
-#define io100_set_output mcu_set_output(LIMIT_X)
-#define io100_clear_output mcu_clear_output(LIMIT_X)
-#define io100_toggle_output mcu_toggle_output(LIMIT_X)
-#define io100_get_output mcu_get_output(LIMIT_X)
 #define io100_config_input mcu_config_input(LIMIT_X)
 #define io100_config_pullup mcu_config_pullup(LIMIT_X)
 #define io100_get_input mcu_get_input(LIMIT_X)
 #elif ASSERT_PIN_EXTENDED(LIMIT_X)
-#define io100_config_output
-#define io100_set_output ic74hc595_set_pin(LIMIT_X)
-#define io100_clear_output ic74hc595_clear_pin(LIMIT_X)
-#define io100_toggle_output ic74hc595_toggle_pin(LIMIT_X)
-#define io100_get_output ic74hc595_get_pin(LIMIT_X)
 #define io100_config_input
 #define io100_config_pullup
 #define io100_get_input 0
 #else
-#define io100_config_output
-#define io100_set_output
-#define io100_clear_output
-#define io100_toggle_output
-#define io100_get_output 0
 #define io100_config_input
 #define io100_config_pullup
 #define io100_get_input 0
 #endif
 #if ASSERT_PIN_IO(LIMIT_Y)
-#define io101_config_output mcu_config_output(LIMIT_Y)
-#define io101_set_output mcu_set_output(LIMIT_Y)
-#define io101_clear_output mcu_clear_output(LIMIT_Y)
-#define io101_toggle_output mcu_toggle_output(LIMIT_Y)
-#define io101_get_output mcu_get_output(LIMIT_Y)
 #define io101_config_input mcu_config_input(LIMIT_Y)
 #define io101_config_pullup mcu_config_pullup(LIMIT_Y)
 #define io101_get_input mcu_get_input(LIMIT_Y)
 #elif ASSERT_PIN_EXTENDED(LIMIT_Y)
-#define io101_config_output
-#define io101_set_output ic74hc595_set_pin(LIMIT_Y)
-#define io101_clear_output ic74hc595_clear_pin(LIMIT_Y)
-#define io101_toggle_output ic74hc595_toggle_pin(LIMIT_Y)
-#define io101_get_output ic74hc595_get_pin(LIMIT_Y)
 #define io101_config_input
 #define io101_config_pullup
 #define io101_get_input 0
 #else
-#define io101_config_output
-#define io101_set_output
-#define io101_clear_output
-#define io101_toggle_output
-#define io101_get_output 0
 #define io101_config_input
 #define io101_config_pullup
 #define io101_get_input 0
 #endif
 #if ASSERT_PIN_IO(LIMIT_Z)
-#define io102_config_output mcu_config_output(LIMIT_Z)
-#define io102_set_output mcu_set_output(LIMIT_Z)
-#define io102_clear_output mcu_clear_output(LIMIT_Z)
-#define io102_toggle_output mcu_toggle_output(LIMIT_Z)
-#define io102_get_output mcu_get_output(LIMIT_Z)
 #define io102_config_input mcu_config_input(LIMIT_Z)
 #define io102_config_pullup mcu_config_pullup(LIMIT_Z)
 #define io102_get_input mcu_get_input(LIMIT_Z)
 #elif ASSERT_PIN_EXTENDED(LIMIT_Z)
-#define io102_config_output
-#define io102_set_output ic74hc595_set_pin(LIMIT_Z)
-#define io102_clear_output ic74hc595_clear_pin(LIMIT_Z)
-#define io102_toggle_output ic74hc595_toggle_pin(LIMIT_Z)
-#define io102_get_output ic74hc595_get_pin(LIMIT_Z)
 #define io102_config_input
 #define io102_config_pullup
 #define io102_get_input 0
 #else
-#define io102_config_output
-#define io102_set_output
-#define io102_clear_output
-#define io102_toggle_output
-#define io102_get_output 0
 #define io102_config_input
 #define io102_config_pullup
 #define io102_get_input 0
 #endif
 #if ASSERT_PIN_IO(LIMIT_X2)
-#define io103_config_output mcu_config_output(LIMIT_X2)
-#define io103_set_output mcu_set_output(LIMIT_X2)
-#define io103_clear_output mcu_clear_output(LIMIT_X2)
-#define io103_toggle_output mcu_toggle_output(LIMIT_X2)
-#define io103_get_output mcu_get_output(LIMIT_X2)
 #define io103_config_input mcu_config_input(LIMIT_X2)
 #define io103_config_pullup mcu_config_pullup(LIMIT_X2)
 #define io103_get_input mcu_get_input(LIMIT_X2)
 #elif ASSERT_PIN_EXTENDED(LIMIT_X2)
-#define io103_config_output
-#define io103_set_output ic74hc595_set_pin(LIMIT_X2)
-#define io103_clear_output ic74hc595_clear_pin(LIMIT_X2)
-#define io103_toggle_output ic74hc595_toggle_pin(LIMIT_X2)
-#define io103_get_output ic74hc595_get_pin(LIMIT_X2)
 #define io103_config_input
 #define io103_config_pullup
 #define io103_get_input 0
 #else
-#define io103_config_output
-#define io103_set_output
-#define io103_clear_output
-#define io103_toggle_output
-#define io103_get_output 0
 #define io103_config_input
 #define io103_config_pullup
 #define io103_get_input 0
 #endif
 #if ASSERT_PIN_IO(LIMIT_Y2)
-#define io104_config_output mcu_config_output(LIMIT_Y2)
-#define io104_set_output mcu_set_output(LIMIT_Y2)
-#define io104_clear_output mcu_clear_output(LIMIT_Y2)
-#define io104_toggle_output mcu_toggle_output(LIMIT_Y2)
-#define io104_get_output mcu_get_output(LIMIT_Y2)
 #define io104_config_input mcu_config_input(LIMIT_Y2)
 #define io104_config_pullup mcu_config_pullup(LIMIT_Y2)
 #define io104_get_input mcu_get_input(LIMIT_Y2)
 #elif ASSERT_PIN_EXTENDED(LIMIT_Y2)
-#define io104_config_output
-#define io104_set_output ic74hc595_set_pin(LIMIT_Y2)
-#define io104_clear_output ic74hc595_clear_pin(LIMIT_Y2)
-#define io104_toggle_output ic74hc595_toggle_pin(LIMIT_Y2)
-#define io104_get_output ic74hc595_get_pin(LIMIT_Y2)
 #define io104_config_input
 #define io104_config_pullup
 #define io104_get_input 0
 #else
-#define io104_config_output
-#define io104_set_output
-#define io104_clear_output
-#define io104_toggle_output
-#define io104_get_output 0
 #define io104_config_input
 #define io104_config_pullup
 #define io104_get_input 0
 #endif
 #if ASSERT_PIN_IO(LIMIT_Z2)
-#define io105_config_output mcu_config_output(LIMIT_Z2)
-#define io105_set_output mcu_set_output(LIMIT_Z2)
-#define io105_clear_output mcu_clear_output(LIMIT_Z2)
-#define io105_toggle_output mcu_toggle_output(LIMIT_Z2)
-#define io105_get_output mcu_get_output(LIMIT_Z2)
 #define io105_config_input mcu_config_input(LIMIT_Z2)
 #define io105_config_pullup mcu_config_pullup(LIMIT_Z2)
 #define io105_get_input mcu_get_input(LIMIT_Z2)
 #elif ASSERT_PIN_EXTENDED(LIMIT_Z2)
-#define io105_config_output
-#define io105_set_output ic74hc595_set_pin(LIMIT_Z2)
-#define io105_clear_output ic74hc595_clear_pin(LIMIT_Z2)
-#define io105_toggle_output ic74hc595_toggle_pin(LIMIT_Z2)
-#define io105_get_output ic74hc595_get_pin(LIMIT_Z2)
 #define io105_config_input
 #define io105_config_pullup
 #define io105_get_input 0
 #else
-#define io105_config_output
-#define io105_set_output
-#define io105_clear_output
-#define io105_toggle_output
-#define io105_get_output 0
 #define io105_config_input
 #define io105_config_pullup
 #define io105_get_input 0
 #endif
 #if ASSERT_PIN_IO(LIMIT_A)
-#define io106_config_output mcu_config_output(LIMIT_A)
-#define io106_set_output mcu_set_output(LIMIT_A)
-#define io106_clear_output mcu_clear_output(LIMIT_A)
-#define io106_toggle_output mcu_toggle_output(LIMIT_A)
-#define io106_get_output mcu_get_output(LIMIT_A)
 #define io106_config_input mcu_config_input(LIMIT_A)
 #define io106_config_pullup mcu_config_pullup(LIMIT_A)
 #define io106_get_input mcu_get_input(LIMIT_A)
 #elif ASSERT_PIN_EXTENDED(LIMIT_A)
-#define io106_config_output
-#define io106_set_output ic74hc595_set_pin(LIMIT_A)
-#define io106_clear_output ic74hc595_clear_pin(LIMIT_A)
-#define io106_toggle_output ic74hc595_toggle_pin(LIMIT_A)
-#define io106_get_output ic74hc595_get_pin(LIMIT_A)
 #define io106_config_input
 #define io106_config_pullup
 #define io106_get_input 0
 #else
-#define io106_config_output
-#define io106_set_output
-#define io106_clear_output
-#define io106_toggle_output
-#define io106_get_output 0
 #define io106_config_input
 #define io106_config_pullup
 #define io106_get_input 0
 #endif
 #if ASSERT_PIN_IO(LIMIT_B)
-#define io107_config_output mcu_config_output(LIMIT_B)
-#define io107_set_output mcu_set_output(LIMIT_B)
-#define io107_clear_output mcu_clear_output(LIMIT_B)
-#define io107_toggle_output mcu_toggle_output(LIMIT_B)
-#define io107_get_output mcu_get_output(LIMIT_B)
 #define io107_config_input mcu_config_input(LIMIT_B)
 #define io107_config_pullup mcu_config_pullup(LIMIT_B)
 #define io107_get_input mcu_get_input(LIMIT_B)
 #elif ASSERT_PIN_EXTENDED(LIMIT_B)
-#define io107_config_output
-#define io107_set_output ic74hc595_set_pin(LIMIT_B)
-#define io107_clear_output ic74hc595_clear_pin(LIMIT_B)
-#define io107_toggle_output ic74hc595_toggle_pin(LIMIT_B)
-#define io107_get_output ic74hc595_get_pin(LIMIT_B)
 #define io107_config_input
 #define io107_config_pullup
 #define io107_get_input 0
 #else
-#define io107_config_output
-#define io107_set_output
-#define io107_clear_output
-#define io107_toggle_output
-#define io107_get_output 0
 #define io107_config_input
 #define io107_config_pullup
 #define io107_get_input 0
 #endif
 #if ASSERT_PIN_IO(LIMIT_C)
-#define io108_config_output mcu_config_output(LIMIT_C)
-#define io108_set_output mcu_set_output(LIMIT_C)
-#define io108_clear_output mcu_clear_output(LIMIT_C)
-#define io108_toggle_output mcu_toggle_output(LIMIT_C)
-#define io108_get_output mcu_get_output(LIMIT_C)
 #define io108_config_input mcu_config_input(LIMIT_C)
 #define io108_config_pullup mcu_config_pullup(LIMIT_C)
 #define io108_get_input mcu_get_input(LIMIT_C)
 #elif ASSERT_PIN_EXTENDED(LIMIT_C)
-#define io108_config_output
-#define io108_set_output ic74hc595_set_pin(LIMIT_C)
-#define io108_clear_output ic74hc595_clear_pin(LIMIT_C)
-#define io108_toggle_output ic74hc595_toggle_pin(LIMIT_C)
-#define io108_get_output ic74hc595_get_pin(LIMIT_C)
 #define io108_config_input
 #define io108_config_pullup
 #define io108_get_input 0
 #else
-#define io108_config_output
-#define io108_set_output
-#define io108_clear_output
-#define io108_toggle_output
-#define io108_get_output 0
 #define io108_config_input
 #define io108_config_pullup
 #define io108_get_input 0
 #endif
 #if ASSERT_PIN_IO(PROBE)
-#define io109_config_output mcu_config_output(PROBE)
-#define io109_set_output mcu_set_output(PROBE)
-#define io109_clear_output mcu_clear_output(PROBE)
-#define io109_toggle_output mcu_toggle_output(PROBE)
-#define io109_get_output mcu_get_output(PROBE)
 #define io109_config_input mcu_config_input(PROBE)
 #define io109_config_pullup mcu_config_pullup(PROBE)
 #define io109_get_input mcu_get_input(PROBE)
 #elif ASSERT_PIN_EXTENDED(PROBE)
-#define io109_config_output
-#define io109_set_output ic74hc595_set_pin(PROBE)
-#define io109_clear_output ic74hc595_clear_pin(PROBE)
-#define io109_toggle_output ic74hc595_toggle_pin(PROBE)
-#define io109_get_output ic74hc595_get_pin(PROBE)
 #define io109_config_input
 #define io109_config_pullup
 #define io109_get_input 0
 #else
-#define io109_config_output
-#define io109_set_output
-#define io109_clear_output
-#define io109_toggle_output
-#define io109_get_output 0
 #define io109_config_input
 #define io109_config_pullup
 #define io109_get_input 0
 #endif
 #if ASSERT_PIN_IO(ESTOP)
-#define io110_config_output mcu_config_output(ESTOP)
-#define io110_set_output mcu_set_output(ESTOP)
-#define io110_clear_output mcu_clear_output(ESTOP)
-#define io110_toggle_output mcu_toggle_output(ESTOP)
-#define io110_get_output mcu_get_output(ESTOP)
 #define io110_config_input mcu_config_input(ESTOP)
 #define io110_config_pullup mcu_config_pullup(ESTOP)
 #define io110_get_input mcu_get_input(ESTOP)
 #elif ASSERT_PIN_EXTENDED(ESTOP)
-#define io110_config_output
-#define io110_set_output ic74hc595_set_pin(ESTOP)
-#define io110_clear_output ic74hc595_clear_pin(ESTOP)
-#define io110_toggle_output ic74hc595_toggle_pin(ESTOP)
-#define io110_get_output ic74hc595_get_pin(ESTOP)
 #define io110_config_input
 #define io110_config_pullup
 #define io110_get_input 0
 #else
-#define io110_config_output
-#define io110_set_output
-#define io110_clear_output
-#define io110_toggle_output
-#define io110_get_output 0
 #define io110_config_input
 #define io110_config_pullup
 #define io110_get_input 0
 #endif
 #if ASSERT_PIN_IO(SAFETY_DOOR)
-#define io111_config_output mcu_config_output(SAFETY_DOOR)
-#define io111_set_output mcu_set_output(SAFETY_DOOR)
-#define io111_clear_output mcu_clear_output(SAFETY_DOOR)
-#define io111_toggle_output mcu_toggle_output(SAFETY_DOOR)
-#define io111_get_output mcu_get_output(SAFETY_DOOR)
 #define io111_config_input mcu_config_input(SAFETY_DOOR)
 #define io111_config_pullup mcu_config_pullup(SAFETY_DOOR)
 #define io111_get_input mcu_get_input(SAFETY_DOOR)
 #elif ASSERT_PIN_EXTENDED(SAFETY_DOOR)
-#define io111_config_output
-#define io111_set_output ic74hc595_set_pin(SAFETY_DOOR)
-#define io111_clear_output ic74hc595_clear_pin(SAFETY_DOOR)
-#define io111_toggle_output ic74hc595_toggle_pin(SAFETY_DOOR)
-#define io111_get_output ic74hc595_get_pin(SAFETY_DOOR)
 #define io111_config_input
 #define io111_config_pullup
 #define io111_get_input 0
 #else
-#define io111_config_output
-#define io111_set_output
-#define io111_clear_output
-#define io111_toggle_output
-#define io111_get_output 0
 #define io111_config_input
 #define io111_config_pullup
 #define io111_get_input 0
 #endif
 #if ASSERT_PIN_IO(FHOLD)
-#define io112_config_output mcu_config_output(FHOLD)
-#define io112_set_output mcu_set_output(FHOLD)
-#define io112_clear_output mcu_clear_output(FHOLD)
-#define io112_toggle_output mcu_toggle_output(FHOLD)
-#define io112_get_output mcu_get_output(FHOLD)
 #define io112_config_input mcu_config_input(FHOLD)
 #define io112_config_pullup mcu_config_pullup(FHOLD)
 #define io112_get_input mcu_get_input(FHOLD)
 #elif ASSERT_PIN_EXTENDED(FHOLD)
-#define io112_config_output
-#define io112_set_output ic74hc595_set_pin(FHOLD)
-#define io112_clear_output ic74hc595_clear_pin(FHOLD)
-#define io112_toggle_output ic74hc595_toggle_pin(FHOLD)
-#define io112_get_output ic74hc595_get_pin(FHOLD)
 #define io112_config_input
 #define io112_config_pullup
 #define io112_get_input 0
 #else
-#define io112_config_output
-#define io112_set_output
-#define io112_clear_output
-#define io112_toggle_output
-#define io112_get_output 0
 #define io112_config_input
 #define io112_config_pullup
 #define io112_get_input 0
 #endif
 #if ASSERT_PIN_IO(CS_RES)
-#define io113_config_output mcu_config_output(CS_RES)
-#define io113_set_output mcu_set_output(CS_RES)
-#define io113_clear_output mcu_clear_output(CS_RES)
-#define io113_toggle_output mcu_toggle_output(CS_RES)
-#define io113_get_output mcu_get_output(CS_RES)
 #define io113_config_input mcu_config_input(CS_RES)
 #define io113_config_pullup mcu_config_pullup(CS_RES)
 #define io113_get_input mcu_get_input(CS_RES)
 #elif ASSERT_PIN_EXTENDED(CS_RES)
-#define io113_config_output
-#define io113_set_output ic74hc595_set_pin(CS_RES)
-#define io113_clear_output ic74hc595_clear_pin(CS_RES)
-#define io113_toggle_output ic74hc595_toggle_pin(CS_RES)
-#define io113_get_output ic74hc595_get_pin(CS_RES)
 #define io113_config_input
 #define io113_config_pullup
 #define io113_get_input 0
 #else
-#define io113_config_output
-#define io113_set_output
-#define io113_clear_output
-#define io113_toggle_output
-#define io113_get_output 0
 #define io113_config_input
 #define io113_config_pullup
 #define io113_get_input 0
-#endif
-#if ASSERT_PIN_IO(ANALOG0)
-#define io114_config_output mcu_config_output(ANALOG0)
-#define io114_set_output mcu_set_output(ANALOG0)
-#define io114_clear_output mcu_clear_output(ANALOG0)
-#define io114_toggle_output mcu_toggle_output(ANALOG0)
-#define io114_get_output mcu_get_output(ANALOG0)
-#define io114_config_input mcu_config_input(ANALOG0)
-#define io114_config_pullup mcu_config_pullup(ANALOG0)
-#define io114_get_input mcu_get_input(ANALOG0)
-#elif ASSERT_PIN_EXTENDED(ANALOG0)
-#define io114_config_output
-#define io114_set_output ic74hc595_set_pin(ANALOG0)
-#define io114_clear_output ic74hc595_clear_pin(ANALOG0)
-#define io114_toggle_output ic74hc595_toggle_pin(ANALOG0)
-#define io114_get_output ic74hc595_get_pin(ANALOG0)
-#define io114_config_input
-#define io114_config_pullup
-#define io114_get_input 0
-#else
-#define io114_config_output
-#define io114_set_output
-#define io114_clear_output
-#define io114_toggle_output
-#define io114_get_output 0
-#define io114_config_input
-#define io114_config_pullup
-#define io114_get_input 0
-#endif
-#if ASSERT_PIN_IO(ANALOG1)
-#define io115_config_output mcu_config_output(ANALOG1)
-#define io115_set_output mcu_set_output(ANALOG1)
-#define io115_clear_output mcu_clear_output(ANALOG1)
-#define io115_toggle_output mcu_toggle_output(ANALOG1)
-#define io115_get_output mcu_get_output(ANALOG1)
-#define io115_config_input mcu_config_input(ANALOG1)
-#define io115_config_pullup mcu_config_pullup(ANALOG1)
-#define io115_get_input mcu_get_input(ANALOG1)
-#elif ASSERT_PIN_EXTENDED(ANALOG1)
-#define io115_config_output
-#define io115_set_output ic74hc595_set_pin(ANALOG1)
-#define io115_clear_output ic74hc595_clear_pin(ANALOG1)
-#define io115_toggle_output ic74hc595_toggle_pin(ANALOG1)
-#define io115_get_output ic74hc595_get_pin(ANALOG1)
-#define io115_config_input
-#define io115_config_pullup
-#define io115_get_input 0
-#else
-#define io115_config_output
-#define io115_set_output
-#define io115_clear_output
-#define io115_toggle_output
-#define io115_get_output 0
-#define io115_config_input
-#define io115_config_pullup
-#define io115_get_input 0
-#endif
-#if ASSERT_PIN_IO(ANALOG2)
-#define io116_config_output mcu_config_output(ANALOG2)
-#define io116_set_output mcu_set_output(ANALOG2)
-#define io116_clear_output mcu_clear_output(ANALOG2)
-#define io116_toggle_output mcu_toggle_output(ANALOG2)
-#define io116_get_output mcu_get_output(ANALOG2)
-#define io116_config_input mcu_config_input(ANALOG2)
-#define io116_config_pullup mcu_config_pullup(ANALOG2)
-#define io116_get_input mcu_get_input(ANALOG2)
-#elif ASSERT_PIN_EXTENDED(ANALOG2)
-#define io116_config_output
-#define io116_set_output ic74hc595_set_pin(ANALOG2)
-#define io116_clear_output ic74hc595_clear_pin(ANALOG2)
-#define io116_toggle_output ic74hc595_toggle_pin(ANALOG2)
-#define io116_get_output ic74hc595_get_pin(ANALOG2)
-#define io116_config_input
-#define io116_config_pullup
-#define io116_get_input 0
-#else
-#define io116_config_output
-#define io116_set_output
-#define io116_clear_output
-#define io116_toggle_output
-#define io116_get_output 0
-#define io116_config_input
-#define io116_config_pullup
-#define io116_get_input 0
-#endif
-#if ASSERT_PIN_IO(ANALOG3)
-#define io117_config_output mcu_config_output(ANALOG3)
-#define io117_set_output mcu_set_output(ANALOG3)
-#define io117_clear_output mcu_clear_output(ANALOG3)
-#define io117_toggle_output mcu_toggle_output(ANALOG3)
-#define io117_get_output mcu_get_output(ANALOG3)
-#define io117_config_input mcu_config_input(ANALOG3)
-#define io117_config_pullup mcu_config_pullup(ANALOG3)
-#define io117_get_input mcu_get_input(ANALOG3)
-#elif ASSERT_PIN_EXTENDED(ANALOG3)
-#define io117_config_output
-#define io117_set_output ic74hc595_set_pin(ANALOG3)
-#define io117_clear_output ic74hc595_clear_pin(ANALOG3)
-#define io117_toggle_output ic74hc595_toggle_pin(ANALOG3)
-#define io117_get_output ic74hc595_get_pin(ANALOG3)
-#define io117_config_input
-#define io117_config_pullup
-#define io117_get_input 0
-#else
-#define io117_config_output
-#define io117_set_output
-#define io117_clear_output
-#define io117_toggle_output
-#define io117_get_output 0
-#define io117_config_input
-#define io117_config_pullup
-#define io117_get_input 0
-#endif
-#if ASSERT_PIN_IO(ANALOG4)
-#define io118_config_output mcu_config_output(ANALOG4)
-#define io118_set_output mcu_set_output(ANALOG4)
-#define io118_clear_output mcu_clear_output(ANALOG4)
-#define io118_toggle_output mcu_toggle_output(ANALOG4)
-#define io118_get_output mcu_get_output(ANALOG4)
-#define io118_config_input mcu_config_input(ANALOG4)
-#define io118_config_pullup mcu_config_pullup(ANALOG4)
-#define io118_get_input mcu_get_input(ANALOG4)
-#elif ASSERT_PIN_EXTENDED(ANALOG4)
-#define io118_config_output
-#define io118_set_output ic74hc595_set_pin(ANALOG4)
-#define io118_clear_output ic74hc595_clear_pin(ANALOG4)
-#define io118_toggle_output ic74hc595_toggle_pin(ANALOG4)
-#define io118_get_output ic74hc595_get_pin(ANALOG4)
-#define io118_config_input
-#define io118_config_pullup
-#define io118_get_input 0
-#else
-#define io118_config_output
-#define io118_set_output
-#define io118_clear_output
-#define io118_toggle_output
-#define io118_get_output 0
-#define io118_config_input
-#define io118_config_pullup
-#define io118_get_input 0
-#endif
-#if ASSERT_PIN_IO(ANALOG5)
-#define io119_config_output mcu_config_output(ANALOG5)
-#define io119_set_output mcu_set_output(ANALOG5)
-#define io119_clear_output mcu_clear_output(ANALOG5)
-#define io119_toggle_output mcu_toggle_output(ANALOG5)
-#define io119_get_output mcu_get_output(ANALOG5)
-#define io119_config_input mcu_config_input(ANALOG5)
-#define io119_config_pullup mcu_config_pullup(ANALOG5)
-#define io119_get_input mcu_get_input(ANALOG5)
-#elif ASSERT_PIN_EXTENDED(ANALOG5)
-#define io119_config_output
-#define io119_set_output ic74hc595_set_pin(ANALOG5)
-#define io119_clear_output ic74hc595_clear_pin(ANALOG5)
-#define io119_toggle_output ic74hc595_toggle_pin(ANALOG5)
-#define io119_get_output ic74hc595_get_pin(ANALOG5)
-#define io119_config_input
-#define io119_config_pullup
-#define io119_get_input 0
-#else
-#define io119_config_output
-#define io119_set_output
-#define io119_clear_output
-#define io119_toggle_output
-#define io119_get_output 0
-#define io119_config_input
-#define io119_config_pullup
-#define io119_get_input 0
-#endif
-#if ASSERT_PIN_IO(ANALOG6)
-#define io120_config_output mcu_config_output(ANALOG6)
-#define io120_set_output mcu_set_output(ANALOG6)
-#define io120_clear_output mcu_clear_output(ANALOG6)
-#define io120_toggle_output mcu_toggle_output(ANALOG6)
-#define io120_get_output mcu_get_output(ANALOG6)
-#define io120_config_input mcu_config_input(ANALOG6)
-#define io120_config_pullup mcu_config_pullup(ANALOG6)
-#define io120_get_input mcu_get_input(ANALOG6)
-#elif ASSERT_PIN_EXTENDED(ANALOG6)
-#define io120_config_output
-#define io120_set_output ic74hc595_set_pin(ANALOG6)
-#define io120_clear_output ic74hc595_clear_pin(ANALOG6)
-#define io120_toggle_output ic74hc595_toggle_pin(ANALOG6)
-#define io120_get_output ic74hc595_get_pin(ANALOG6)
-#define io120_config_input
-#define io120_config_pullup
-#define io120_get_input 0
-#else
-#define io120_config_output
-#define io120_set_output
-#define io120_clear_output
-#define io120_toggle_output
-#define io120_get_output 0
-#define io120_config_input
-#define io120_config_pullup
-#define io120_get_input 0
-#endif
-#if ASSERT_PIN_IO(ANALOG7)
-#define io121_config_output mcu_config_output(ANALOG7)
-#define io121_set_output mcu_set_output(ANALOG7)
-#define io121_clear_output mcu_clear_output(ANALOG7)
-#define io121_toggle_output mcu_toggle_output(ANALOG7)
-#define io121_get_output mcu_get_output(ANALOG7)
-#define io121_config_input mcu_config_input(ANALOG7)
-#define io121_config_pullup mcu_config_pullup(ANALOG7)
-#define io121_get_input mcu_get_input(ANALOG7)
-#elif ASSERT_PIN_EXTENDED(ANALOG7)
-#define io121_config_output
-#define io121_set_output ic74hc595_set_pin(ANALOG7)
-#define io121_clear_output ic74hc595_clear_pin(ANALOG7)
-#define io121_toggle_output ic74hc595_toggle_pin(ANALOG7)
-#define io121_get_output ic74hc595_get_pin(ANALOG7)
-#define io121_config_input
-#define io121_config_pullup
-#define io121_get_input 0
-#else
-#define io121_config_output
-#define io121_set_output
-#define io121_clear_output
-#define io121_toggle_output
-#define io121_get_output 0
-#define io121_config_input
-#define io121_config_pullup
-#define io121_get_input 0
-#endif
-#if ASSERT_PIN_IO(ANALOG8)
-#define io122_config_output mcu_config_output(ANALOG8)
-#define io122_set_output mcu_set_output(ANALOG8)
-#define io122_clear_output mcu_clear_output(ANALOG8)
-#define io122_toggle_output mcu_toggle_output(ANALOG8)
-#define io122_get_output mcu_get_output(ANALOG8)
-#define io122_config_input mcu_config_input(ANALOG8)
-#define io122_config_pullup mcu_config_pullup(ANALOG8)
-#define io122_get_input mcu_get_input(ANALOG8)
-#elif ASSERT_PIN_EXTENDED(ANALOG8)
-#define io122_config_output
-#define io122_set_output ic74hc595_set_pin(ANALOG8)
-#define io122_clear_output ic74hc595_clear_pin(ANALOG8)
-#define io122_toggle_output ic74hc595_toggle_pin(ANALOG8)
-#define io122_get_output ic74hc595_get_pin(ANALOG8)
-#define io122_config_input
-#define io122_config_pullup
-#define io122_get_input 0
-#else
-#define io122_config_output
-#define io122_set_output
-#define io122_clear_output
-#define io122_toggle_output
-#define io122_get_output 0
-#define io122_config_input
-#define io122_config_pullup
-#define io122_get_input 0
-#endif
-#if ASSERT_PIN_IO(ANALOG9)
-#define io123_config_output mcu_config_output(ANALOG9)
-#define io123_set_output mcu_set_output(ANALOG9)
-#define io123_clear_output mcu_clear_output(ANALOG9)
-#define io123_toggle_output mcu_toggle_output(ANALOG9)
-#define io123_get_output mcu_get_output(ANALOG9)
-#define io123_config_input mcu_config_input(ANALOG9)
-#define io123_config_pullup mcu_config_pullup(ANALOG9)
-#define io123_get_input mcu_get_input(ANALOG9)
-#elif ASSERT_PIN_EXTENDED(ANALOG9)
-#define io123_config_output
-#define io123_set_output ic74hc595_set_pin(ANALOG9)
-#define io123_clear_output ic74hc595_clear_pin(ANALOG9)
-#define io123_toggle_output ic74hc595_toggle_pin(ANALOG9)
-#define io123_get_output ic74hc595_get_pin(ANALOG9)
-#define io123_config_input
-#define io123_config_pullup
-#define io123_get_input 0
-#else
-#define io123_config_output
-#define io123_set_output
-#define io123_clear_output
-#define io123_toggle_output
-#define io123_get_output 0
-#define io123_config_input
-#define io123_config_pullup
-#define io123_get_input 0
-#endif
-#if ASSERT_PIN_IO(ANALOG10)
-#define io124_config_output mcu_config_output(ANALOG10)
-#define io124_set_output mcu_set_output(ANALOG10)
-#define io124_clear_output mcu_clear_output(ANALOG10)
-#define io124_toggle_output mcu_toggle_output(ANALOG10)
-#define io124_get_output mcu_get_output(ANALOG10)
-#define io124_config_input mcu_config_input(ANALOG10)
-#define io124_config_pullup mcu_config_pullup(ANALOG10)
-#define io124_get_input mcu_get_input(ANALOG10)
-#elif ASSERT_PIN_EXTENDED(ANALOG10)
-#define io124_config_output
-#define io124_set_output ic74hc595_set_pin(ANALOG10)
-#define io124_clear_output ic74hc595_clear_pin(ANALOG10)
-#define io124_toggle_output ic74hc595_toggle_pin(ANALOG10)
-#define io124_get_output ic74hc595_get_pin(ANALOG10)
-#define io124_config_input
-#define io124_config_pullup
-#define io124_get_input 0
-#else
-#define io124_config_output
-#define io124_set_output
-#define io124_clear_output
-#define io124_toggle_output
-#define io124_get_output 0
-#define io124_config_input
-#define io124_config_pullup
-#define io124_get_input 0
-#endif
-#if ASSERT_PIN_IO(ANALOG11)
-#define io125_config_output mcu_config_output(ANALOG11)
-#define io125_set_output mcu_set_output(ANALOG11)
-#define io125_clear_output mcu_clear_output(ANALOG11)
-#define io125_toggle_output mcu_toggle_output(ANALOG11)
-#define io125_get_output mcu_get_output(ANALOG11)
-#define io125_config_input mcu_config_input(ANALOG11)
-#define io125_config_pullup mcu_config_pullup(ANALOG11)
-#define io125_get_input mcu_get_input(ANALOG11)
-#elif ASSERT_PIN_EXTENDED(ANALOG11)
-#define io125_config_output
-#define io125_set_output ic74hc595_set_pin(ANALOG11)
-#define io125_clear_output ic74hc595_clear_pin(ANALOG11)
-#define io125_toggle_output ic74hc595_toggle_pin(ANALOG11)
-#define io125_get_output ic74hc595_get_pin(ANALOG11)
-#define io125_config_input
-#define io125_config_pullup
-#define io125_get_input 0
-#else
-#define io125_config_output
-#define io125_set_output
-#define io125_clear_output
-#define io125_toggle_output
-#define io125_get_output 0
-#define io125_config_input
-#define io125_config_pullup
-#define io125_get_input 0
-#endif
-#if ASSERT_PIN_IO(ANALOG12)
-#define io126_config_output mcu_config_output(ANALOG12)
-#define io126_set_output mcu_set_output(ANALOG12)
-#define io126_clear_output mcu_clear_output(ANALOG12)
-#define io126_toggle_output mcu_toggle_output(ANALOG12)
-#define io126_get_output mcu_get_output(ANALOG12)
-#define io126_config_input mcu_config_input(ANALOG12)
-#define io126_config_pullup mcu_config_pullup(ANALOG12)
-#define io126_get_input mcu_get_input(ANALOG12)
-#elif ASSERT_PIN_EXTENDED(ANALOG12)
-#define io126_config_output
-#define io126_set_output ic74hc595_set_pin(ANALOG12)
-#define io126_clear_output ic74hc595_clear_pin(ANALOG12)
-#define io126_toggle_output ic74hc595_toggle_pin(ANALOG12)
-#define io126_get_output ic74hc595_get_pin(ANALOG12)
-#define io126_config_input
-#define io126_config_pullup
-#define io126_get_input 0
-#else
-#define io126_config_output
-#define io126_set_output
-#define io126_clear_output
-#define io126_toggle_output
-#define io126_get_output 0
-#define io126_config_input
-#define io126_config_pullup
-#define io126_get_input 0
-#endif
-#if ASSERT_PIN_IO(ANALOG13)
-#define io127_config_output mcu_config_output(ANALOG13)
-#define io127_set_output mcu_set_output(ANALOG13)
-#define io127_clear_output mcu_clear_output(ANALOG13)
-#define io127_toggle_output mcu_toggle_output(ANALOG13)
-#define io127_get_output mcu_get_output(ANALOG13)
-#define io127_config_input mcu_config_input(ANALOG13)
-#define io127_config_pullup mcu_config_pullup(ANALOG13)
-#define io127_get_input mcu_get_input(ANALOG13)
-#elif ASSERT_PIN_EXTENDED(ANALOG13)
-#define io127_config_output
-#define io127_set_output ic74hc595_set_pin(ANALOG13)
-#define io127_clear_output ic74hc595_clear_pin(ANALOG13)
-#define io127_toggle_output ic74hc595_toggle_pin(ANALOG13)
-#define io127_get_output ic74hc595_get_pin(ANALOG13)
-#define io127_config_input
-#define io127_config_pullup
-#define io127_get_input 0
-#else
-#define io127_config_output
-#define io127_set_output
-#define io127_clear_output
-#define io127_toggle_output
-#define io127_get_output 0
-#define io127_config_input
-#define io127_config_pullup
-#define io127_get_input 0
-#endif
-#if ASSERT_PIN_IO(ANALOG14)
-#define io128_config_output mcu_config_output(ANALOG14)
-#define io128_set_output mcu_set_output(ANALOG14)
-#define io128_clear_output mcu_clear_output(ANALOG14)
-#define io128_toggle_output mcu_toggle_output(ANALOG14)
-#define io128_get_output mcu_get_output(ANALOG14)
-#define io128_config_input mcu_config_input(ANALOG14)
-#define io128_config_pullup mcu_config_pullup(ANALOG14)
-#define io128_get_input mcu_get_input(ANALOG14)
-#elif ASSERT_PIN_EXTENDED(ANALOG14)
-#define io128_config_output
-#define io128_set_output ic74hc595_set_pin(ANALOG14)
-#define io128_clear_output ic74hc595_clear_pin(ANALOG14)
-#define io128_toggle_output ic74hc595_toggle_pin(ANALOG14)
-#define io128_get_output ic74hc595_get_pin(ANALOG14)
-#define io128_config_input
-#define io128_config_pullup
-#define io128_get_input 0
-#else
-#define io128_config_output
-#define io128_set_output
-#define io128_clear_output
-#define io128_toggle_output
-#define io128_get_output 0
-#define io128_config_input
-#define io128_config_pullup
-#define io128_get_input 0
-#endif
-#if ASSERT_PIN_IO(ANALOG15)
-#define io129_config_output mcu_config_output(ANALOG15)
-#define io129_set_output mcu_set_output(ANALOG15)
-#define io129_clear_output mcu_clear_output(ANALOG15)
-#define io129_toggle_output mcu_toggle_output(ANALOG15)
-#define io129_get_output mcu_get_output(ANALOG15)
-#define io129_config_input mcu_config_input(ANALOG15)
-#define io129_config_pullup mcu_config_pullup(ANALOG15)
-#define io129_get_input mcu_get_input(ANALOG15)
-#elif ASSERT_PIN_EXTENDED(ANALOG15)
-#define io129_config_output
-#define io129_set_output ic74hc595_set_pin(ANALOG15)
-#define io129_clear_output ic74hc595_clear_pin(ANALOG15)
-#define io129_toggle_output ic74hc595_toggle_pin(ANALOG15)
-#define io129_get_output ic74hc595_get_pin(ANALOG15)
-#define io129_config_input
-#define io129_config_pullup
-#define io129_get_input 0
-#else
-#define io129_config_output
-#define io129_set_output
-#define io129_clear_output
-#define io129_toggle_output
-#define io129_get_output 0
-#define io129_config_input
-#define io129_config_pullup
-#define io129_get_input 0
 #endif
 #if ASSERT_PIN_IO(DIN0)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io130_config_output mcu_config_output(DIN0)
 #define io130_set_output mcu_set_output(DIN0)
 #define io130_clear_output mcu_clear_output(DIN0)
 #define io130_toggle_output mcu_toggle_output(DIN0)
 #define io130_get_output mcu_get_output(DIN0)
+#endif
 #define io130_config_input mcu_config_input(DIN0)
 #define io130_config_pullup mcu_config_pullup(DIN0)
 #define io130_get_input mcu_get_input(DIN0)
 #elif ASSERT_PIN_EXTENDED(DIN0)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io130_config_output
 #define io130_set_output ic74hc595_set_pin(DIN0)
 #define io130_clear_output ic74hc595_clear_pin(DIN0)
 #define io130_toggle_output ic74hc595_toggle_pin(DIN0)
 #define io130_get_output ic74hc595_get_pin(DIN0)
+#endif
 #define io130_config_input
 #define io130_config_pullup
 #define io130_get_input 0
@@ -3061,20 +2915,24 @@ extern "C"
 #define io130_get_input 0
 #endif
 #if ASSERT_PIN_IO(DIN1)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io131_config_output mcu_config_output(DIN1)
 #define io131_set_output mcu_set_output(DIN1)
 #define io131_clear_output mcu_clear_output(DIN1)
 #define io131_toggle_output mcu_toggle_output(DIN1)
 #define io131_get_output mcu_get_output(DIN1)
+#endif
 #define io131_config_input mcu_config_input(DIN1)
 #define io131_config_pullup mcu_config_pullup(DIN1)
 #define io131_get_input mcu_get_input(DIN1)
 #elif ASSERT_PIN_EXTENDED(DIN1)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io131_config_output
 #define io131_set_output ic74hc595_set_pin(DIN1)
 #define io131_clear_output ic74hc595_clear_pin(DIN1)
 #define io131_toggle_output ic74hc595_toggle_pin(DIN1)
 #define io131_get_output ic74hc595_get_pin(DIN1)
+#endif
 #define io131_config_input
 #define io131_config_pullup
 #define io131_get_input 0
@@ -3089,20 +2947,24 @@ extern "C"
 #define io131_get_input 0
 #endif
 #if ASSERT_PIN_IO(DIN2)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io132_config_output mcu_config_output(DIN2)
 #define io132_set_output mcu_set_output(DIN2)
 #define io132_clear_output mcu_clear_output(DIN2)
 #define io132_toggle_output mcu_toggle_output(DIN2)
 #define io132_get_output mcu_get_output(DIN2)
+#endif
 #define io132_config_input mcu_config_input(DIN2)
 #define io132_config_pullup mcu_config_pullup(DIN2)
 #define io132_get_input mcu_get_input(DIN2)
 #elif ASSERT_PIN_EXTENDED(DIN2)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io132_config_output
 #define io132_set_output ic74hc595_set_pin(DIN2)
 #define io132_clear_output ic74hc595_clear_pin(DIN2)
 #define io132_toggle_output ic74hc595_toggle_pin(DIN2)
 #define io132_get_output ic74hc595_get_pin(DIN2)
+#endif
 #define io132_config_input
 #define io132_config_pullup
 #define io132_get_input 0
@@ -3117,20 +2979,24 @@ extern "C"
 #define io132_get_input 0
 #endif
 #if ASSERT_PIN_IO(DIN3)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io133_config_output mcu_config_output(DIN3)
 #define io133_set_output mcu_set_output(DIN3)
 #define io133_clear_output mcu_clear_output(DIN3)
 #define io133_toggle_output mcu_toggle_output(DIN3)
 #define io133_get_output mcu_get_output(DIN3)
+#endif
 #define io133_config_input mcu_config_input(DIN3)
 #define io133_config_pullup mcu_config_pullup(DIN3)
 #define io133_get_input mcu_get_input(DIN3)
 #elif ASSERT_PIN_EXTENDED(DIN3)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io133_config_output
 #define io133_set_output ic74hc595_set_pin(DIN3)
 #define io133_clear_output ic74hc595_clear_pin(DIN3)
 #define io133_toggle_output ic74hc595_toggle_pin(DIN3)
 #define io133_get_output ic74hc595_get_pin(DIN3)
+#endif
 #define io133_config_input
 #define io133_config_pullup
 #define io133_get_input 0
@@ -3145,20 +3011,24 @@ extern "C"
 #define io133_get_input 0
 #endif
 #if ASSERT_PIN_IO(DIN4)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io134_config_output mcu_config_output(DIN4)
 #define io134_set_output mcu_set_output(DIN4)
 #define io134_clear_output mcu_clear_output(DIN4)
 #define io134_toggle_output mcu_toggle_output(DIN4)
 #define io134_get_output mcu_get_output(DIN4)
+#endif
 #define io134_config_input mcu_config_input(DIN4)
 #define io134_config_pullup mcu_config_pullup(DIN4)
 #define io134_get_input mcu_get_input(DIN4)
 #elif ASSERT_PIN_EXTENDED(DIN4)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io134_config_output
 #define io134_set_output ic74hc595_set_pin(DIN4)
 #define io134_clear_output ic74hc595_clear_pin(DIN4)
 #define io134_toggle_output ic74hc595_toggle_pin(DIN4)
 #define io134_get_output ic74hc595_get_pin(DIN4)
+#endif
 #define io134_config_input
 #define io134_config_pullup
 #define io134_get_input 0
@@ -3173,20 +3043,24 @@ extern "C"
 #define io134_get_input 0
 #endif
 #if ASSERT_PIN_IO(DIN5)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io135_config_output mcu_config_output(DIN5)
 #define io135_set_output mcu_set_output(DIN5)
 #define io135_clear_output mcu_clear_output(DIN5)
 #define io135_toggle_output mcu_toggle_output(DIN5)
 #define io135_get_output mcu_get_output(DIN5)
+#endif
 #define io135_config_input mcu_config_input(DIN5)
 #define io135_config_pullup mcu_config_pullup(DIN5)
 #define io135_get_input mcu_get_input(DIN5)
 #elif ASSERT_PIN_EXTENDED(DIN5)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io135_config_output
 #define io135_set_output ic74hc595_set_pin(DIN5)
 #define io135_clear_output ic74hc595_clear_pin(DIN5)
 #define io135_toggle_output ic74hc595_toggle_pin(DIN5)
 #define io135_get_output ic74hc595_get_pin(DIN5)
+#endif
 #define io135_config_input
 #define io135_config_pullup
 #define io135_get_input 0
@@ -3201,20 +3075,24 @@ extern "C"
 #define io135_get_input 0
 #endif
 #if ASSERT_PIN_IO(DIN6)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io136_config_output mcu_config_output(DIN6)
 #define io136_set_output mcu_set_output(DIN6)
 #define io136_clear_output mcu_clear_output(DIN6)
 #define io136_toggle_output mcu_toggle_output(DIN6)
 #define io136_get_output mcu_get_output(DIN6)
+#endif
 #define io136_config_input mcu_config_input(DIN6)
 #define io136_config_pullup mcu_config_pullup(DIN6)
 #define io136_get_input mcu_get_input(DIN6)
 #elif ASSERT_PIN_EXTENDED(DIN6)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io136_config_output
 #define io136_set_output ic74hc595_set_pin(DIN6)
 #define io136_clear_output ic74hc595_clear_pin(DIN6)
 #define io136_toggle_output ic74hc595_toggle_pin(DIN6)
 #define io136_get_output ic74hc595_get_pin(DIN6)
+#endif
 #define io136_config_input
 #define io136_config_pullup
 #define io136_get_input 0
@@ -3229,20 +3107,24 @@ extern "C"
 #define io136_get_input 0
 #endif
 #if ASSERT_PIN_IO(DIN7)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io137_config_output mcu_config_output(DIN7)
 #define io137_set_output mcu_set_output(DIN7)
 #define io137_clear_output mcu_clear_output(DIN7)
 #define io137_toggle_output mcu_toggle_output(DIN7)
 #define io137_get_output mcu_get_output(DIN7)
+#endif
 #define io137_config_input mcu_config_input(DIN7)
 #define io137_config_pullup mcu_config_pullup(DIN7)
 #define io137_get_input mcu_get_input(DIN7)
 #elif ASSERT_PIN_EXTENDED(DIN7)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io137_config_output
 #define io137_set_output ic74hc595_set_pin(DIN7)
 #define io137_clear_output ic74hc595_clear_pin(DIN7)
 #define io137_toggle_output ic74hc595_toggle_pin(DIN7)
 #define io137_get_output ic74hc595_get_pin(DIN7)
+#endif
 #define io137_config_input
 #define io137_config_pullup
 #define io137_get_input 0
@@ -3257,20 +3139,24 @@ extern "C"
 #define io137_get_input 0
 #endif
 #if ASSERT_PIN_IO(DIN8)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io138_config_output mcu_config_output(DIN8)
 #define io138_set_output mcu_set_output(DIN8)
 #define io138_clear_output mcu_clear_output(DIN8)
 #define io138_toggle_output mcu_toggle_output(DIN8)
 #define io138_get_output mcu_get_output(DIN8)
+#endif
 #define io138_config_input mcu_config_input(DIN8)
 #define io138_config_pullup mcu_config_pullup(DIN8)
 #define io138_get_input mcu_get_input(DIN8)
 #elif ASSERT_PIN_EXTENDED(DIN8)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io138_config_output
 #define io138_set_output ic74hc595_set_pin(DIN8)
 #define io138_clear_output ic74hc595_clear_pin(DIN8)
 #define io138_toggle_output ic74hc595_toggle_pin(DIN8)
 #define io138_get_output ic74hc595_get_pin(DIN8)
+#endif
 #define io138_config_input
 #define io138_config_pullup
 #define io138_get_input 0
@@ -3285,20 +3171,24 @@ extern "C"
 #define io138_get_input 0
 #endif
 #if ASSERT_PIN_IO(DIN9)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io139_config_output mcu_config_output(DIN9)
 #define io139_set_output mcu_set_output(DIN9)
 #define io139_clear_output mcu_clear_output(DIN9)
 #define io139_toggle_output mcu_toggle_output(DIN9)
 #define io139_get_output mcu_get_output(DIN9)
+#endif
 #define io139_config_input mcu_config_input(DIN9)
 #define io139_config_pullup mcu_config_pullup(DIN9)
 #define io139_get_input mcu_get_input(DIN9)
 #elif ASSERT_PIN_EXTENDED(DIN9)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io139_config_output
 #define io139_set_output ic74hc595_set_pin(DIN9)
 #define io139_clear_output ic74hc595_clear_pin(DIN9)
 #define io139_toggle_output ic74hc595_toggle_pin(DIN9)
 #define io139_get_output ic74hc595_get_pin(DIN9)
+#endif
 #define io139_config_input
 #define io139_config_pullup
 #define io139_get_input 0
@@ -3313,20 +3203,24 @@ extern "C"
 #define io139_get_input 0
 #endif
 #if ASSERT_PIN_IO(DIN10)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io140_config_output mcu_config_output(DIN10)
 #define io140_set_output mcu_set_output(DIN10)
 #define io140_clear_output mcu_clear_output(DIN10)
 #define io140_toggle_output mcu_toggle_output(DIN10)
 #define io140_get_output mcu_get_output(DIN10)
+#endif
 #define io140_config_input mcu_config_input(DIN10)
 #define io140_config_pullup mcu_config_pullup(DIN10)
 #define io140_get_input mcu_get_input(DIN10)
 #elif ASSERT_PIN_EXTENDED(DIN10)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io140_config_output
 #define io140_set_output ic74hc595_set_pin(DIN10)
 #define io140_clear_output ic74hc595_clear_pin(DIN10)
 #define io140_toggle_output ic74hc595_toggle_pin(DIN10)
 #define io140_get_output ic74hc595_get_pin(DIN10)
+#endif
 #define io140_config_input
 #define io140_config_pullup
 #define io140_get_input 0
@@ -3341,20 +3235,24 @@ extern "C"
 #define io140_get_input 0
 #endif
 #if ASSERT_PIN_IO(DIN11)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io141_config_output mcu_config_output(DIN11)
 #define io141_set_output mcu_set_output(DIN11)
 #define io141_clear_output mcu_clear_output(DIN11)
 #define io141_toggle_output mcu_toggle_output(DIN11)
 #define io141_get_output mcu_get_output(DIN11)
+#endif
 #define io141_config_input mcu_config_input(DIN11)
 #define io141_config_pullup mcu_config_pullup(DIN11)
 #define io141_get_input mcu_get_input(DIN11)
 #elif ASSERT_PIN_EXTENDED(DIN11)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io141_config_output
 #define io141_set_output ic74hc595_set_pin(DIN11)
 #define io141_clear_output ic74hc595_clear_pin(DIN11)
 #define io141_toggle_output ic74hc595_toggle_pin(DIN11)
 #define io141_get_output ic74hc595_get_pin(DIN11)
+#endif
 #define io141_config_input
 #define io141_config_pullup
 #define io141_get_input 0
@@ -3369,20 +3267,24 @@ extern "C"
 #define io141_get_input 0
 #endif
 #if ASSERT_PIN_IO(DIN12)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io142_config_output mcu_config_output(DIN12)
 #define io142_set_output mcu_set_output(DIN12)
 #define io142_clear_output mcu_clear_output(DIN12)
 #define io142_toggle_output mcu_toggle_output(DIN12)
 #define io142_get_output mcu_get_output(DIN12)
+#endif
 #define io142_config_input mcu_config_input(DIN12)
 #define io142_config_pullup mcu_config_pullup(DIN12)
 #define io142_get_input mcu_get_input(DIN12)
 #elif ASSERT_PIN_EXTENDED(DIN12)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io142_config_output
 #define io142_set_output ic74hc595_set_pin(DIN12)
 #define io142_clear_output ic74hc595_clear_pin(DIN12)
 #define io142_toggle_output ic74hc595_toggle_pin(DIN12)
 #define io142_get_output ic74hc595_get_pin(DIN12)
+#endif
 #define io142_config_input
 #define io142_config_pullup
 #define io142_get_input 0
@@ -3397,20 +3299,24 @@ extern "C"
 #define io142_get_input 0
 #endif
 #if ASSERT_PIN_IO(DIN13)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io143_config_output mcu_config_output(DIN13)
 #define io143_set_output mcu_set_output(DIN13)
 #define io143_clear_output mcu_clear_output(DIN13)
 #define io143_toggle_output mcu_toggle_output(DIN13)
 #define io143_get_output mcu_get_output(DIN13)
+#endif
 #define io143_config_input mcu_config_input(DIN13)
 #define io143_config_pullup mcu_config_pullup(DIN13)
 #define io143_get_input mcu_get_input(DIN13)
 #elif ASSERT_PIN_EXTENDED(DIN13)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io143_config_output
 #define io143_set_output ic74hc595_set_pin(DIN13)
 #define io143_clear_output ic74hc595_clear_pin(DIN13)
 #define io143_toggle_output ic74hc595_toggle_pin(DIN13)
 #define io143_get_output ic74hc595_get_pin(DIN13)
+#endif
 #define io143_config_input
 #define io143_config_pullup
 #define io143_get_input 0
@@ -3425,20 +3331,24 @@ extern "C"
 #define io143_get_input 0
 #endif
 #if ASSERT_PIN_IO(DIN14)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io144_config_output mcu_config_output(DIN14)
 #define io144_set_output mcu_set_output(DIN14)
 #define io144_clear_output mcu_clear_output(DIN14)
 #define io144_toggle_output mcu_toggle_output(DIN14)
 #define io144_get_output mcu_get_output(DIN14)
+#endif
 #define io144_config_input mcu_config_input(DIN14)
 #define io144_config_pullup mcu_config_pullup(DIN14)
 #define io144_get_input mcu_get_input(DIN14)
 #elif ASSERT_PIN_EXTENDED(DIN14)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io144_config_output
 #define io144_set_output ic74hc595_set_pin(DIN14)
 #define io144_clear_output ic74hc595_clear_pin(DIN14)
 #define io144_toggle_output ic74hc595_toggle_pin(DIN14)
 #define io144_get_output ic74hc595_get_pin(DIN14)
+#endif
 #define io144_config_input
 #define io144_config_pullup
 #define io144_get_input 0
@@ -3453,20 +3363,24 @@ extern "C"
 #define io144_get_input 0
 #endif
 #if ASSERT_PIN_IO(DIN15)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io145_config_output mcu_config_output(DIN15)
 #define io145_set_output mcu_set_output(DIN15)
 #define io145_clear_output mcu_clear_output(DIN15)
 #define io145_toggle_output mcu_toggle_output(DIN15)
 #define io145_get_output mcu_get_output(DIN15)
+#endif
 #define io145_config_input mcu_config_input(DIN15)
 #define io145_config_pullup mcu_config_pullup(DIN15)
 #define io145_get_input mcu_get_input(DIN15)
 #elif ASSERT_PIN_EXTENDED(DIN15)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io145_config_output
 #define io145_set_output ic74hc595_set_pin(DIN15)
 #define io145_clear_output ic74hc595_clear_pin(DIN15)
 #define io145_toggle_output ic74hc595_toggle_pin(DIN15)
 #define io145_get_output ic74hc595_get_pin(DIN15)
+#endif
 #define io145_config_input
 #define io145_config_pullup
 #define io145_get_input 0
@@ -3481,20 +3395,24 @@ extern "C"
 #define io145_get_input 0
 #endif
 #if ASSERT_PIN_IO(DIN16)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io146_config_output mcu_config_output(DIN16)
 #define io146_set_output mcu_set_output(DIN16)
 #define io146_clear_output mcu_clear_output(DIN16)
 #define io146_toggle_output mcu_toggle_output(DIN16)
 #define io146_get_output mcu_get_output(DIN16)
+#endif
 #define io146_config_input mcu_config_input(DIN16)
 #define io146_config_pullup mcu_config_pullup(DIN16)
 #define io146_get_input mcu_get_input(DIN16)
 #elif ASSERT_PIN_EXTENDED(DIN16)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io146_config_output
 #define io146_set_output ic74hc595_set_pin(DIN16)
 #define io146_clear_output ic74hc595_clear_pin(DIN16)
 #define io146_toggle_output ic74hc595_toggle_pin(DIN16)
 #define io146_get_output ic74hc595_get_pin(DIN16)
+#endif
 #define io146_config_input
 #define io146_config_pullup
 #define io146_get_input 0
@@ -3509,20 +3427,24 @@ extern "C"
 #define io146_get_input 0
 #endif
 #if ASSERT_PIN_IO(DIN17)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io147_config_output mcu_config_output(DIN17)
 #define io147_set_output mcu_set_output(DIN17)
 #define io147_clear_output mcu_clear_output(DIN17)
 #define io147_toggle_output mcu_toggle_output(DIN17)
 #define io147_get_output mcu_get_output(DIN17)
+#endif
 #define io147_config_input mcu_config_input(DIN17)
 #define io147_config_pullup mcu_config_pullup(DIN17)
 #define io147_get_input mcu_get_input(DIN17)
 #elif ASSERT_PIN_EXTENDED(DIN17)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io147_config_output
 #define io147_set_output ic74hc595_set_pin(DIN17)
 #define io147_clear_output ic74hc595_clear_pin(DIN17)
 #define io147_toggle_output ic74hc595_toggle_pin(DIN17)
 #define io147_get_output ic74hc595_get_pin(DIN17)
+#endif
 #define io147_config_input
 #define io147_config_pullup
 #define io147_get_input 0
@@ -3537,20 +3459,24 @@ extern "C"
 #define io147_get_input 0
 #endif
 #if ASSERT_PIN_IO(DIN18)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io148_config_output mcu_config_output(DIN18)
 #define io148_set_output mcu_set_output(DIN18)
 #define io148_clear_output mcu_clear_output(DIN18)
 #define io148_toggle_output mcu_toggle_output(DIN18)
 #define io148_get_output mcu_get_output(DIN18)
+#endif
 #define io148_config_input mcu_config_input(DIN18)
 #define io148_config_pullup mcu_config_pullup(DIN18)
 #define io148_get_input mcu_get_input(DIN18)
 #elif ASSERT_PIN_EXTENDED(DIN18)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io148_config_output
 #define io148_set_output ic74hc595_set_pin(DIN18)
 #define io148_clear_output ic74hc595_clear_pin(DIN18)
 #define io148_toggle_output ic74hc595_toggle_pin(DIN18)
 #define io148_get_output ic74hc595_get_pin(DIN18)
+#endif
 #define io148_config_input
 #define io148_config_pullup
 #define io148_get_input 0
@@ -3565,20 +3491,24 @@ extern "C"
 #define io148_get_input 0
 #endif
 #if ASSERT_PIN_IO(DIN19)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io149_config_output mcu_config_output(DIN19)
 #define io149_set_output mcu_set_output(DIN19)
 #define io149_clear_output mcu_clear_output(DIN19)
 #define io149_toggle_output mcu_toggle_output(DIN19)
 #define io149_get_output mcu_get_output(DIN19)
+#endif
 #define io149_config_input mcu_config_input(DIN19)
 #define io149_config_pullup mcu_config_pullup(DIN19)
 #define io149_get_input mcu_get_input(DIN19)
 #elif ASSERT_PIN_EXTENDED(DIN19)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io149_config_output
 #define io149_set_output ic74hc595_set_pin(DIN19)
 #define io149_clear_output ic74hc595_clear_pin(DIN19)
 #define io149_toggle_output ic74hc595_toggle_pin(DIN19)
 #define io149_get_output ic74hc595_get_pin(DIN19)
+#endif
 #define io149_config_input
 #define io149_config_pullup
 #define io149_get_input 0
@@ -3593,20 +3523,24 @@ extern "C"
 #define io149_get_input 0
 #endif
 #if ASSERT_PIN_IO(DIN20)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io150_config_output mcu_config_output(DIN20)
 #define io150_set_output mcu_set_output(DIN20)
 #define io150_clear_output mcu_clear_output(DIN20)
 #define io150_toggle_output mcu_toggle_output(DIN20)
 #define io150_get_output mcu_get_output(DIN20)
+#endif
 #define io150_config_input mcu_config_input(DIN20)
 #define io150_config_pullup mcu_config_pullup(DIN20)
 #define io150_get_input mcu_get_input(DIN20)
 #elif ASSERT_PIN_EXTENDED(DIN20)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io150_config_output
 #define io150_set_output ic74hc595_set_pin(DIN20)
 #define io150_clear_output ic74hc595_clear_pin(DIN20)
 #define io150_toggle_output ic74hc595_toggle_pin(DIN20)
 #define io150_get_output ic74hc595_get_pin(DIN20)
+#endif
 #define io150_config_input
 #define io150_config_pullup
 #define io150_get_input 0
@@ -3621,20 +3555,24 @@ extern "C"
 #define io150_get_input 0
 #endif
 #if ASSERT_PIN_IO(DIN21)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io151_config_output mcu_config_output(DIN21)
 #define io151_set_output mcu_set_output(DIN21)
 #define io151_clear_output mcu_clear_output(DIN21)
 #define io151_toggle_output mcu_toggle_output(DIN21)
 #define io151_get_output mcu_get_output(DIN21)
+#endif
 #define io151_config_input mcu_config_input(DIN21)
 #define io151_config_pullup mcu_config_pullup(DIN21)
 #define io151_get_input mcu_get_input(DIN21)
 #elif ASSERT_PIN_EXTENDED(DIN21)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io151_config_output
 #define io151_set_output ic74hc595_set_pin(DIN21)
 #define io151_clear_output ic74hc595_clear_pin(DIN21)
 #define io151_toggle_output ic74hc595_toggle_pin(DIN21)
 #define io151_get_output ic74hc595_get_pin(DIN21)
+#endif
 #define io151_config_input
 #define io151_config_pullup
 #define io151_get_input 0
@@ -3649,20 +3587,24 @@ extern "C"
 #define io151_get_input 0
 #endif
 #if ASSERT_PIN_IO(DIN22)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io152_config_output mcu_config_output(DIN22)
 #define io152_set_output mcu_set_output(DIN22)
 #define io152_clear_output mcu_clear_output(DIN22)
 #define io152_toggle_output mcu_toggle_output(DIN22)
 #define io152_get_output mcu_get_output(DIN22)
+#endif
 #define io152_config_input mcu_config_input(DIN22)
 #define io152_config_pullup mcu_config_pullup(DIN22)
 #define io152_get_input mcu_get_input(DIN22)
 #elif ASSERT_PIN_EXTENDED(DIN22)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io152_config_output
 #define io152_set_output ic74hc595_set_pin(DIN22)
 #define io152_clear_output ic74hc595_clear_pin(DIN22)
 #define io152_toggle_output ic74hc595_toggle_pin(DIN22)
 #define io152_get_output ic74hc595_get_pin(DIN22)
+#endif
 #define io152_config_input
 #define io152_config_pullup
 #define io152_get_input 0
@@ -3677,20 +3619,24 @@ extern "C"
 #define io152_get_input 0
 #endif
 #if ASSERT_PIN_IO(DIN23)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io153_config_output mcu_config_output(DIN23)
 #define io153_set_output mcu_set_output(DIN23)
 #define io153_clear_output mcu_clear_output(DIN23)
 #define io153_toggle_output mcu_toggle_output(DIN23)
 #define io153_get_output mcu_get_output(DIN23)
+#endif
 #define io153_config_input mcu_config_input(DIN23)
 #define io153_config_pullup mcu_config_pullup(DIN23)
 #define io153_get_input mcu_get_input(DIN23)
 #elif ASSERT_PIN_EXTENDED(DIN23)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io153_config_output
 #define io153_set_output ic74hc595_set_pin(DIN23)
 #define io153_clear_output ic74hc595_clear_pin(DIN23)
 #define io153_toggle_output ic74hc595_toggle_pin(DIN23)
 #define io153_get_output ic74hc595_get_pin(DIN23)
+#endif
 #define io153_config_input
 #define io153_config_pullup
 #define io153_get_input 0
@@ -3705,20 +3651,24 @@ extern "C"
 #define io153_get_input 0
 #endif
 #if ASSERT_PIN_IO(DIN24)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io154_config_output mcu_config_output(DIN24)
 #define io154_set_output mcu_set_output(DIN24)
 #define io154_clear_output mcu_clear_output(DIN24)
 #define io154_toggle_output mcu_toggle_output(DIN24)
 #define io154_get_output mcu_get_output(DIN24)
+#endif
 #define io154_config_input mcu_config_input(DIN24)
 #define io154_config_pullup mcu_config_pullup(DIN24)
 #define io154_get_input mcu_get_input(DIN24)
 #elif ASSERT_PIN_EXTENDED(DIN24)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io154_config_output
 #define io154_set_output ic74hc595_set_pin(DIN24)
 #define io154_clear_output ic74hc595_clear_pin(DIN24)
 #define io154_toggle_output ic74hc595_toggle_pin(DIN24)
 #define io154_get_output ic74hc595_get_pin(DIN24)
+#endif
 #define io154_config_input
 #define io154_config_pullup
 #define io154_get_input 0
@@ -3733,20 +3683,24 @@ extern "C"
 #define io154_get_input 0
 #endif
 #if ASSERT_PIN_IO(DIN25)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io155_config_output mcu_config_output(DIN25)
 #define io155_set_output mcu_set_output(DIN25)
 #define io155_clear_output mcu_clear_output(DIN25)
 #define io155_toggle_output mcu_toggle_output(DIN25)
 #define io155_get_output mcu_get_output(DIN25)
+#endif
 #define io155_config_input mcu_config_input(DIN25)
 #define io155_config_pullup mcu_config_pullup(DIN25)
 #define io155_get_input mcu_get_input(DIN25)
 #elif ASSERT_PIN_EXTENDED(DIN25)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io155_config_output
 #define io155_set_output ic74hc595_set_pin(DIN25)
 #define io155_clear_output ic74hc595_clear_pin(DIN25)
 #define io155_toggle_output ic74hc595_toggle_pin(DIN25)
 #define io155_get_output ic74hc595_get_pin(DIN25)
+#endif
 #define io155_config_input
 #define io155_config_pullup
 #define io155_get_input 0
@@ -3761,20 +3715,24 @@ extern "C"
 #define io155_get_input 0
 #endif
 #if ASSERT_PIN_IO(DIN26)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io156_config_output mcu_config_output(DIN26)
 #define io156_set_output mcu_set_output(DIN26)
 #define io156_clear_output mcu_clear_output(DIN26)
 #define io156_toggle_output mcu_toggle_output(DIN26)
 #define io156_get_output mcu_get_output(DIN26)
+#endif
 #define io156_config_input mcu_config_input(DIN26)
 #define io156_config_pullup mcu_config_pullup(DIN26)
 #define io156_get_input mcu_get_input(DIN26)
 #elif ASSERT_PIN_EXTENDED(DIN26)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io156_config_output
 #define io156_set_output ic74hc595_set_pin(DIN26)
 #define io156_clear_output ic74hc595_clear_pin(DIN26)
 #define io156_toggle_output ic74hc595_toggle_pin(DIN26)
 #define io156_get_output ic74hc595_get_pin(DIN26)
+#endif
 #define io156_config_input
 #define io156_config_pullup
 #define io156_get_input 0
@@ -3789,20 +3747,24 @@ extern "C"
 #define io156_get_input 0
 #endif
 #if ASSERT_PIN_IO(DIN27)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io157_config_output mcu_config_output(DIN27)
 #define io157_set_output mcu_set_output(DIN27)
 #define io157_clear_output mcu_clear_output(DIN27)
 #define io157_toggle_output mcu_toggle_output(DIN27)
 #define io157_get_output mcu_get_output(DIN27)
+#endif
 #define io157_config_input mcu_config_input(DIN27)
 #define io157_config_pullup mcu_config_pullup(DIN27)
 #define io157_get_input mcu_get_input(DIN27)
 #elif ASSERT_PIN_EXTENDED(DIN27)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io157_config_output
 #define io157_set_output ic74hc595_set_pin(DIN27)
 #define io157_clear_output ic74hc595_clear_pin(DIN27)
 #define io157_toggle_output ic74hc595_toggle_pin(DIN27)
 #define io157_get_output ic74hc595_get_pin(DIN27)
+#endif
 #define io157_config_input
 #define io157_config_pullup
 #define io157_get_input 0
@@ -3817,20 +3779,24 @@ extern "C"
 #define io157_get_input 0
 #endif
 #if ASSERT_PIN_IO(DIN28)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io158_config_output mcu_config_output(DIN28)
 #define io158_set_output mcu_set_output(DIN28)
 #define io158_clear_output mcu_clear_output(DIN28)
 #define io158_toggle_output mcu_toggle_output(DIN28)
 #define io158_get_output mcu_get_output(DIN28)
+#endif
 #define io158_config_input mcu_config_input(DIN28)
 #define io158_config_pullup mcu_config_pullup(DIN28)
 #define io158_get_input mcu_get_input(DIN28)
 #elif ASSERT_PIN_EXTENDED(DIN28)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io158_config_output
 #define io158_set_output ic74hc595_set_pin(DIN28)
 #define io158_clear_output ic74hc595_clear_pin(DIN28)
 #define io158_toggle_output ic74hc595_toggle_pin(DIN28)
 #define io158_get_output ic74hc595_get_pin(DIN28)
+#endif
 #define io158_config_input
 #define io158_config_pullup
 #define io158_get_input 0
@@ -3845,20 +3811,24 @@ extern "C"
 #define io158_get_input 0
 #endif
 #if ASSERT_PIN_IO(DIN29)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io159_config_output mcu_config_output(DIN29)
 #define io159_set_output mcu_set_output(DIN29)
 #define io159_clear_output mcu_clear_output(DIN29)
 #define io159_toggle_output mcu_toggle_output(DIN29)
 #define io159_get_output mcu_get_output(DIN29)
+#endif
 #define io159_config_input mcu_config_input(DIN29)
 #define io159_config_pullup mcu_config_pullup(DIN29)
 #define io159_get_input mcu_get_input(DIN29)
 #elif ASSERT_PIN_EXTENDED(DIN29)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io159_config_output
 #define io159_set_output ic74hc595_set_pin(DIN29)
 #define io159_clear_output ic74hc595_clear_pin(DIN29)
 #define io159_toggle_output ic74hc595_toggle_pin(DIN29)
 #define io159_get_output ic74hc595_get_pin(DIN29)
+#endif
 #define io159_config_input
 #define io159_config_pullup
 #define io159_get_input 0
@@ -3873,20 +3843,24 @@ extern "C"
 #define io159_get_input 0
 #endif
 #if ASSERT_PIN_IO(DIN30)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io160_config_output mcu_config_output(DIN30)
 #define io160_set_output mcu_set_output(DIN30)
 #define io160_clear_output mcu_clear_output(DIN30)
 #define io160_toggle_output mcu_toggle_output(DIN30)
 #define io160_get_output mcu_get_output(DIN30)
+#endif
 #define io160_config_input mcu_config_input(DIN30)
 #define io160_config_pullup mcu_config_pullup(DIN30)
 #define io160_get_input mcu_get_input(DIN30)
 #elif ASSERT_PIN_EXTENDED(DIN30)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io160_config_output
 #define io160_set_output ic74hc595_set_pin(DIN30)
 #define io160_clear_output ic74hc595_clear_pin(DIN30)
 #define io160_toggle_output ic74hc595_toggle_pin(DIN30)
 #define io160_get_output ic74hc595_get_pin(DIN30)
+#endif
 #define io160_config_input
 #define io160_config_pullup
 #define io160_get_input 0
@@ -3901,20 +3875,24 @@ extern "C"
 #define io160_get_input 0
 #endif
 #if ASSERT_PIN_IO(DIN31)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io161_config_output mcu_config_output(DIN31)
 #define io161_set_output mcu_set_output(DIN31)
 #define io161_clear_output mcu_clear_output(DIN31)
 #define io161_toggle_output mcu_toggle_output(DIN31)
 #define io161_get_output mcu_get_output(DIN31)
+#endif
 #define io161_config_input mcu_config_input(DIN31)
 #define io161_config_pullup mcu_config_pullup(DIN31)
 #define io161_get_input mcu_get_input(DIN31)
 #elif ASSERT_PIN_EXTENDED(DIN31)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
 #define io161_config_output
 #define io161_set_output ic74hc595_set_pin(DIN31)
 #define io161_clear_output ic74hc595_clear_pin(DIN31)
 #define io161_toggle_output ic74hc595_toggle_pin(DIN31)
 #define io161_get_output ic74hc595_get_pin(DIN31)
+#endif
 #define io161_config_input
 #define io161_config_pullup
 #define io161_get_input 0
@@ -3927,6 +3905,582 @@ extern "C"
 #define io161_config_input
 #define io161_config_pullup
 #define io161_get_input 0
+#endif
+#if ASSERT_PIN_IO(DIN32)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
+#define io162_config_output mcu_config_output(DIN32)
+#define io162_set_output mcu_set_output(DIN32)
+#define io162_clear_output mcu_clear_output(DIN32)
+#define io162_toggle_output mcu_toggle_output(DIN32)
+#define io162_get_output mcu_get_output(DIN32)
+#endif
+#define io162_config_input mcu_config_input(DIN32)
+#define io162_config_pullup mcu_config_pullup(DIN32)
+#define io162_get_input mcu_get_input(DIN32)
+#elif ASSERT_PIN_EXTENDED(DIN32)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
+#define io162_config_output
+#define io162_set_output ic74hc595_set_pin(DIN32)
+#define io162_clear_output ic74hc595_clear_pin(DIN32)
+#define io162_toggle_output ic74hc595_toggle_pin(DIN32)
+#define io162_get_output ic74hc595_get_pin(DIN32)
+#endif
+#define io162_config_input
+#define io162_config_pullup
+#define io162_get_input 0
+#else
+#define io162_config_output
+#define io162_set_output
+#define io162_clear_output
+#define io162_toggle_output
+#define io162_get_output 0
+#define io162_config_input
+#define io162_config_pullup
+#define io162_get_input 0
+#endif
+#if ASSERT_PIN_IO(DIN33)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
+#define io163_config_output mcu_config_output(DIN33)
+#define io163_set_output mcu_set_output(DIN33)
+#define io163_clear_output mcu_clear_output(DIN33)
+#define io163_toggle_output mcu_toggle_output(DIN33)
+#define io163_get_output mcu_get_output(DIN33)
+#endif
+#define io163_config_input mcu_config_input(DIN33)
+#define io163_config_pullup mcu_config_pullup(DIN33)
+#define io163_get_input mcu_get_input(DIN33)
+#elif ASSERT_PIN_EXTENDED(DIN33)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
+#define io163_config_output
+#define io163_set_output ic74hc595_set_pin(DIN33)
+#define io163_clear_output ic74hc595_clear_pin(DIN33)
+#define io163_toggle_output ic74hc595_toggle_pin(DIN33)
+#define io163_get_output ic74hc595_get_pin(DIN33)
+#endif
+#define io163_config_input
+#define io163_config_pullup
+#define io163_get_input 0
+#else
+#define io163_config_output
+#define io163_set_output
+#define io163_clear_output
+#define io163_toggle_output
+#define io163_get_output 0
+#define io163_config_input
+#define io163_config_pullup
+#define io163_get_input 0
+#endif
+#if ASSERT_PIN_IO(DIN34)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
+#define io164_config_output mcu_config_output(DIN34)
+#define io164_set_output mcu_set_output(DIN34)
+#define io164_clear_output mcu_clear_output(DIN34)
+#define io164_toggle_output mcu_toggle_output(DIN34)
+#define io164_get_output mcu_get_output(DIN34)
+#endif
+#define io164_config_input mcu_config_input(DIN34)
+#define io164_config_pullup mcu_config_pullup(DIN34)
+#define io164_get_input mcu_get_input(DIN34)
+#elif ASSERT_PIN_EXTENDED(DIN34)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
+#define io164_config_output
+#define io164_set_output ic74hc595_set_pin(DIN34)
+#define io164_clear_output ic74hc595_clear_pin(DIN34)
+#define io164_toggle_output ic74hc595_toggle_pin(DIN34)
+#define io164_get_output ic74hc595_get_pin(DIN34)
+#endif
+#define io164_config_input
+#define io164_config_pullup
+#define io164_get_input 0
+#else
+#define io164_config_output
+#define io164_set_output
+#define io164_clear_output
+#define io164_toggle_output
+#define io164_get_output 0
+#define io164_config_input
+#define io164_config_pullup
+#define io164_get_input 0
+#endif
+#if ASSERT_PIN_IO(DIN35)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
+#define io165_config_output mcu_config_output(DIN35)
+#define io165_set_output mcu_set_output(DIN35)
+#define io165_clear_output mcu_clear_output(DIN35)
+#define io165_toggle_output mcu_toggle_output(DIN35)
+#define io165_get_output mcu_get_output(DIN35)
+#endif
+#define io165_config_input mcu_config_input(DIN35)
+#define io165_config_pullup mcu_config_pullup(DIN35)
+#define io165_get_input mcu_get_input(DIN35)
+#elif ASSERT_PIN_EXTENDED(DIN35)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
+#define io165_config_output
+#define io165_set_output ic74hc595_set_pin(DIN35)
+#define io165_clear_output ic74hc595_clear_pin(DIN35)
+#define io165_toggle_output ic74hc595_toggle_pin(DIN35)
+#define io165_get_output ic74hc595_get_pin(DIN35)
+#endif
+#define io165_config_input
+#define io165_config_pullup
+#define io165_get_input 0
+#else
+#define io165_config_output
+#define io165_set_output
+#define io165_clear_output
+#define io165_toggle_output
+#define io165_get_output 0
+#define io165_config_input
+#define io165_config_pullup
+#define io165_get_input 0
+#endif
+#if ASSERT_PIN_IO(DIN36)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
+#define io166_config_output mcu_config_output(DIN36)
+#define io166_set_output mcu_set_output(DIN36)
+#define io166_clear_output mcu_clear_output(DIN36)
+#define io166_toggle_output mcu_toggle_output(DIN36)
+#define io166_get_output mcu_get_output(DIN36)
+#endif
+#define io166_config_input mcu_config_input(DIN36)
+#define io166_config_pullup mcu_config_pullup(DIN36)
+#define io166_get_input mcu_get_input(DIN36)
+#elif ASSERT_PIN_EXTENDED(DIN36)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
+#define io166_config_output
+#define io166_set_output ic74hc595_set_pin(DIN36)
+#define io166_clear_output ic74hc595_clear_pin(DIN36)
+#define io166_toggle_output ic74hc595_toggle_pin(DIN36)
+#define io166_get_output ic74hc595_get_pin(DIN36)
+#endif
+#define io166_config_input
+#define io166_config_pullup
+#define io166_get_input 0
+#else
+#define io166_config_output
+#define io166_set_output
+#define io166_clear_output
+#define io166_toggle_output
+#define io166_get_output 0
+#define io166_config_input
+#define io166_config_pullup
+#define io166_get_input 0
+#endif
+#if ASSERT_PIN_IO(DIN37)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
+#define io167_config_output mcu_config_output(DIN37)
+#define io167_set_output mcu_set_output(DIN37)
+#define io167_clear_output mcu_clear_output(DIN37)
+#define io167_toggle_output mcu_toggle_output(DIN37)
+#define io167_get_output mcu_get_output(DIN37)
+#endif
+#define io167_config_input mcu_config_input(DIN37)
+#define io167_config_pullup mcu_config_pullup(DIN37)
+#define io167_get_input mcu_get_input(DIN37)
+#elif ASSERT_PIN_EXTENDED(DIN37)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
+#define io167_config_output
+#define io167_set_output ic74hc595_set_pin(DIN37)
+#define io167_clear_output ic74hc595_clear_pin(DIN37)
+#define io167_toggle_output ic74hc595_toggle_pin(DIN37)
+#define io167_get_output ic74hc595_get_pin(DIN37)
+#endif
+#define io167_config_input
+#define io167_config_pullup
+#define io167_get_input 0
+#else
+#define io167_config_output
+#define io167_set_output
+#define io167_clear_output
+#define io167_toggle_output
+#define io167_get_output 0
+#define io167_config_input
+#define io167_config_pullup
+#define io167_get_input 0
+#endif
+#if ASSERT_PIN_IO(DIN38)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
+#define io168_config_output mcu_config_output(DIN38)
+#define io168_set_output mcu_set_output(DIN38)
+#define io168_clear_output mcu_clear_output(DIN38)
+#define io168_toggle_output mcu_toggle_output(DIN38)
+#define io168_get_output mcu_get_output(DIN38)
+#endif
+#define io168_config_input mcu_config_input(DIN38)
+#define io168_config_pullup mcu_config_pullup(DIN38)
+#define io168_get_input mcu_get_input(DIN38)
+#elif ASSERT_PIN_EXTENDED(DIN38)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
+#define io168_config_output
+#define io168_set_output ic74hc595_set_pin(DIN38)
+#define io168_clear_output ic74hc595_clear_pin(DIN38)
+#define io168_toggle_output ic74hc595_toggle_pin(DIN38)
+#define io168_get_output ic74hc595_get_pin(DIN38)
+#endif
+#define io168_config_input
+#define io168_config_pullup
+#define io168_get_input 0
+#else
+#define io168_config_output
+#define io168_set_output
+#define io168_clear_output
+#define io168_toggle_output
+#define io168_get_output 0
+#define io168_config_input
+#define io168_config_pullup
+#define io168_get_input 0
+#endif
+#if ASSERT_PIN_IO(DIN39)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
+#define io169_config_output mcu_config_output(DIN39)
+#define io169_set_output mcu_set_output(DIN39)
+#define io169_clear_output mcu_clear_output(DIN39)
+#define io169_toggle_output mcu_toggle_output(DIN39)
+#define io169_get_output mcu_get_output(DIN39)
+#endif
+#define io169_config_input mcu_config_input(DIN39)
+#define io169_config_pullup mcu_config_pullup(DIN39)
+#define io169_get_input mcu_get_input(DIN39)
+#elif ASSERT_PIN_EXTENDED(DIN39)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
+#define io169_config_output
+#define io169_set_output ic74hc595_set_pin(DIN39)
+#define io169_clear_output ic74hc595_clear_pin(DIN39)
+#define io169_toggle_output ic74hc595_toggle_pin(DIN39)
+#define io169_get_output ic74hc595_get_pin(DIN39)
+#endif
+#define io169_config_input
+#define io169_config_pullup
+#define io169_get_input 0
+#else
+#define io169_config_output
+#define io169_set_output
+#define io169_clear_output
+#define io169_toggle_output
+#define io169_get_output 0
+#define io169_config_input
+#define io169_config_pullup
+#define io169_get_input 0
+#endif
+#if ASSERT_PIN_IO(DIN40)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
+#define io170_config_output mcu_config_output(DIN40)
+#define io170_set_output mcu_set_output(DIN40)
+#define io170_clear_output mcu_clear_output(DIN40)
+#define io170_toggle_output mcu_toggle_output(DIN40)
+#define io170_get_output mcu_get_output(DIN40)
+#endif
+#define io170_config_input mcu_config_input(DIN40)
+#define io170_config_pullup mcu_config_pullup(DIN40)
+#define io170_get_input mcu_get_input(DIN40)
+#elif ASSERT_PIN_EXTENDED(DIN40)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
+#define io170_config_output
+#define io170_set_output ic74hc595_set_pin(DIN40)
+#define io170_clear_output ic74hc595_clear_pin(DIN40)
+#define io170_toggle_output ic74hc595_toggle_pin(DIN40)
+#define io170_get_output ic74hc595_get_pin(DIN40)
+#endif
+#define io170_config_input
+#define io170_config_pullup
+#define io170_get_input 0
+#else
+#define io170_config_output
+#define io170_set_output
+#define io170_clear_output
+#define io170_toggle_output
+#define io170_get_output 0
+#define io170_config_input
+#define io170_config_pullup
+#define io170_get_input 0
+#endif
+#if ASSERT_PIN_IO(DIN41)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
+#define io171_config_output mcu_config_output(DIN41)
+#define io171_set_output mcu_set_output(DIN41)
+#define io171_clear_output mcu_clear_output(DIN41)
+#define io171_toggle_output mcu_toggle_output(DIN41)
+#define io171_get_output mcu_get_output(DIN41)
+#endif
+#define io171_config_input mcu_config_input(DIN41)
+#define io171_config_pullup mcu_config_pullup(DIN41)
+#define io171_get_input mcu_get_input(DIN41)
+#elif ASSERT_PIN_EXTENDED(DIN41)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
+#define io171_config_output
+#define io171_set_output ic74hc595_set_pin(DIN41)
+#define io171_clear_output ic74hc595_clear_pin(DIN41)
+#define io171_toggle_output ic74hc595_toggle_pin(DIN41)
+#define io171_get_output ic74hc595_get_pin(DIN41)
+#endif
+#define io171_config_input
+#define io171_config_pullup
+#define io171_get_input 0
+#else
+#define io171_config_output
+#define io171_set_output
+#define io171_clear_output
+#define io171_toggle_output
+#define io171_get_output 0
+#define io171_config_input
+#define io171_config_pullup
+#define io171_get_input 0
+#endif
+#if ASSERT_PIN_IO(DIN42)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
+#define io172_config_output mcu_config_output(DIN42)
+#define io172_set_output mcu_set_output(DIN42)
+#define io172_clear_output mcu_clear_output(DIN42)
+#define io172_toggle_output mcu_toggle_output(DIN42)
+#define io172_get_output mcu_get_output(DIN42)
+#endif
+#define io172_config_input mcu_config_input(DIN42)
+#define io172_config_pullup mcu_config_pullup(DIN42)
+#define io172_get_input mcu_get_input(DIN42)
+#elif ASSERT_PIN_EXTENDED(DIN42)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
+#define io172_config_output
+#define io172_set_output ic74hc595_set_pin(DIN42)
+#define io172_clear_output ic74hc595_clear_pin(DIN42)
+#define io172_toggle_output ic74hc595_toggle_pin(DIN42)
+#define io172_get_output ic74hc595_get_pin(DIN42)
+#endif
+#define io172_config_input
+#define io172_config_pullup
+#define io172_get_input 0
+#else
+#define io172_config_output
+#define io172_set_output
+#define io172_clear_output
+#define io172_toggle_output
+#define io172_get_output 0
+#define io172_config_input
+#define io172_config_pullup
+#define io172_get_input 0
+#endif
+#if ASSERT_PIN_IO(DIN43)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
+#define io173_config_output mcu_config_output(DIN43)
+#define io173_set_output mcu_set_output(DIN43)
+#define io173_clear_output mcu_clear_output(DIN43)
+#define io173_toggle_output mcu_toggle_output(DIN43)
+#define io173_get_output mcu_get_output(DIN43)
+#endif
+#define io173_config_input mcu_config_input(DIN43)
+#define io173_config_pullup mcu_config_pullup(DIN43)
+#define io173_get_input mcu_get_input(DIN43)
+#elif ASSERT_PIN_EXTENDED(DIN43)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
+#define io173_config_output
+#define io173_set_output ic74hc595_set_pin(DIN43)
+#define io173_clear_output ic74hc595_clear_pin(DIN43)
+#define io173_toggle_output ic74hc595_toggle_pin(DIN43)
+#define io173_get_output ic74hc595_get_pin(DIN43)
+#endif
+#define io173_config_input
+#define io173_config_pullup
+#define io173_get_input 0
+#else
+#define io173_config_output
+#define io173_set_output
+#define io173_clear_output
+#define io173_toggle_output
+#define io173_get_output 0
+#define io173_config_input
+#define io173_config_pullup
+#define io173_get_input 0
+#endif
+#if ASSERT_PIN_IO(DIN44)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
+#define io174_config_output mcu_config_output(DIN44)
+#define io174_set_output mcu_set_output(DIN44)
+#define io174_clear_output mcu_clear_output(DIN44)
+#define io174_toggle_output mcu_toggle_output(DIN44)
+#define io174_get_output mcu_get_output(DIN44)
+#endif
+#define io174_config_input mcu_config_input(DIN44)
+#define io174_config_pullup mcu_config_pullup(DIN44)
+#define io174_get_input mcu_get_input(DIN44)
+#elif ASSERT_PIN_EXTENDED(DIN44)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
+#define io174_config_output
+#define io174_set_output ic74hc595_set_pin(DIN44)
+#define io174_clear_output ic74hc595_clear_pin(DIN44)
+#define io174_toggle_output ic74hc595_toggle_pin(DIN44)
+#define io174_get_output ic74hc595_get_pin(DIN44)
+#endif
+#define io174_config_input
+#define io174_config_pullup
+#define io174_get_input 0
+#else
+#define io174_config_output
+#define io174_set_output
+#define io174_clear_output
+#define io174_toggle_output
+#define io174_get_output 0
+#define io174_config_input
+#define io174_config_pullup
+#define io174_get_input 0
+#endif
+#if ASSERT_PIN_IO(DIN45)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
+#define io175_config_output mcu_config_output(DIN45)
+#define io175_set_output mcu_set_output(DIN45)
+#define io175_clear_output mcu_clear_output(DIN45)
+#define io175_toggle_output mcu_toggle_output(DIN45)
+#define io175_get_output mcu_get_output(DIN45)
+#endif
+#define io175_config_input mcu_config_input(DIN45)
+#define io175_config_pullup mcu_config_pullup(DIN45)
+#define io175_get_input mcu_get_input(DIN45)
+#elif ASSERT_PIN_EXTENDED(DIN45)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
+#define io175_config_output
+#define io175_set_output ic74hc595_set_pin(DIN45)
+#define io175_clear_output ic74hc595_clear_pin(DIN45)
+#define io175_toggle_output ic74hc595_toggle_pin(DIN45)
+#define io175_get_output ic74hc595_get_pin(DIN45)
+#endif
+#define io175_config_input
+#define io175_config_pullup
+#define io175_get_input 0
+#else
+#define io175_config_output
+#define io175_set_output
+#define io175_clear_output
+#define io175_toggle_output
+#define io175_get_output 0
+#define io175_config_input
+#define io175_config_pullup
+#define io175_get_input 0
+#endif
+#if ASSERT_PIN_IO(DIN46)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
+#define io176_config_output mcu_config_output(DIN46)
+#define io176_set_output mcu_set_output(DIN46)
+#define io176_clear_output mcu_clear_output(DIN46)
+#define io176_toggle_output mcu_toggle_output(DIN46)
+#define io176_get_output mcu_get_output(DIN46)
+#endif
+#define io176_config_input mcu_config_input(DIN46)
+#define io176_config_pullup mcu_config_pullup(DIN46)
+#define io176_get_input mcu_get_input(DIN46)
+#elif ASSERT_PIN_EXTENDED(DIN46)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
+#define io176_config_output
+#define io176_set_output ic74hc595_set_pin(DIN46)
+#define io176_clear_output ic74hc595_clear_pin(DIN46)
+#define io176_toggle_output ic74hc595_toggle_pin(DIN46)
+#define io176_get_output ic74hc595_get_pin(DIN46)
+#endif
+#define io176_config_input
+#define io176_config_pullup
+#define io176_get_input 0
+#else
+#define io176_config_output
+#define io176_set_output
+#define io176_clear_output
+#define io176_toggle_output
+#define io176_get_output 0
+#define io176_config_input
+#define io176_config_pullup
+#define io176_get_input 0
+#endif
+#if ASSERT_PIN_IO(DIN47)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
+#define io177_config_output mcu_config_output(DIN47)
+#define io177_set_output mcu_set_output(DIN47)
+#define io177_clear_output mcu_clear_output(DIN47)
+#define io177_toggle_output mcu_toggle_output(DIN47)
+#define io177_get_output mcu_get_output(DIN47)
+#endif
+#define io177_config_input mcu_config_input(DIN47)
+#define io177_config_pullup mcu_config_pullup(DIN47)
+#define io177_get_input mcu_get_input(DIN47)
+#elif ASSERT_PIN_EXTENDED(DIN47)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
+#define io177_config_output
+#define io177_set_output ic74hc595_set_pin(DIN47)
+#define io177_clear_output ic74hc595_clear_pin(DIN47)
+#define io177_toggle_output ic74hc595_toggle_pin(DIN47)
+#define io177_get_output ic74hc595_get_pin(DIN47)
+#endif
+#define io177_config_input
+#define io177_config_pullup
+#define io177_get_input 0
+#else
+#define io177_config_output
+#define io177_set_output
+#define io177_clear_output
+#define io177_toggle_output
+#define io177_get_output 0
+#define io177_config_input
+#define io177_config_pullup
+#define io177_get_input 0
+#endif
+#if ASSERT_PIN_IO(DIN48)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
+#define io178_config_output mcu_config_output(DIN48)
+#define io178_set_output mcu_set_output(DIN48)
+#define io178_clear_output mcu_clear_output(DIN48)
+#define io178_toggle_output mcu_toggle_output(DIN48)
+#define io178_get_output mcu_get_output(DIN48)
+#endif
+#define io178_config_input mcu_config_input(DIN48)
+#define io178_config_pullup mcu_config_pullup(DIN48)
+#define io178_get_input mcu_get_input(DIN48)
+#elif ASSERT_PIN_EXTENDED(DIN48)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
+#define io178_config_output
+#define io178_set_output ic74hc595_set_pin(DIN48)
+#define io178_clear_output ic74hc595_clear_pin(DIN48)
+#define io178_toggle_output ic74hc595_toggle_pin(DIN48)
+#define io178_get_output ic74hc595_get_pin(DIN48)
+#endif
+#define io178_config_input
+#define io178_config_pullup
+#define io178_get_input 0
+#else
+#define io178_config_output
+#define io178_set_output
+#define io178_clear_output
+#define io178_toggle_output
+#define io178_get_output 0
+#define io178_config_input
+#define io178_config_pullup
+#define io178_get_input 0
+#endif
+#if ASSERT_PIN_IO(DIN49)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
+#define io179_config_output mcu_config_output(DIN49)
+#define io179_set_output mcu_set_output(DIN49)
+#define io179_clear_output mcu_clear_output(DIN49)
+#define io179_toggle_output mcu_toggle_output(DIN49)
+#define io179_get_output mcu_get_output(DIN49)
+#endif
+#define io179_config_input mcu_config_input(DIN49)
+#define io179_config_pullup mcu_config_pullup(DIN49)
+#define io179_get_input mcu_get_input(DIN49)
+#elif ASSERT_PIN_EXTENDED(DIN49)
+#ifdef DISABLE_HAL_CONFIG_PROTECTION
+#define io179_config_output
+#define io179_set_output ic74hc595_set_pin(DIN49)
+#define io179_clear_output ic74hc595_clear_pin(DIN49)
+#define io179_toggle_output ic74hc595_toggle_pin(DIN49)
+#define io179_get_output ic74hc595_get_pin(DIN49)
+#endif
+#define io179_config_input
+#define io179_config_pullup
+#define io179_get_input 0
+#else
+#define io179_config_output
+#define io179_set_output
+#define io179_clear_output
+#define io179_toggle_output
+#define io179_get_output 0
+#define io179_config_input
+#define io179_config_pullup
+#define io179_get_input 0
 #endif
 
 	/*PWM*/
@@ -4462,7 +5016,6 @@ extern "C"
 #define io129_config_analog
 #define io129_get_analog 0
 #endif
-//SPI CS pin
 #if ASSERT_PIN_IO(SPI_CS)
 #define io207_config_output mcu_config_output(SPI_CS)
 #define io207_set_output mcu_set_output(SPI_CS)
@@ -4474,9 +5027,9 @@ extern "C"
 #define io207_get_input mcu_get_input(SPI_CS)
 #elif ASSERT_PIN_EXTENDED(SPI_CS)
 #define io207_config_output
-#define io207_set_output ic74hc595_set_pin(SPI_CS);ic74hc595_shift_io_pins()
-#define io207_clear_output ic74hc595_clear_pin(SPI_CS);ic74hc595_shift_io_pins()
-#define io207_toggle_output ic74hc595_toggle_pin(SPI_CS);ic74hc595_shift_io_pins()
+#define io207_set_output ic74hc595_set_pin(SPI_CS)
+#define io207_clear_output ic74hc595_clear_pin(SPI_CS)
+#define io207_toggle_output ic74hc595_toggle_pin(SPI_CS)
 #define io207_get_output ic74hc595_get_pin(SPI_CS)
 #define io207_config_input
 #define io207_config_pullup
@@ -4502,9 +5055,9 @@ extern "C"
 #define io215_get_input mcu_get_input(SPI2_CS)
 #elif ASSERT_PIN_EXTENDED(SPI2_CS)
 #define io215_config_output
-#define io215_set_output ic74hc595_set_pin(SPI2_CS);ic74hc595_shift_io_pins()
-#define io215_clear_output ic74hc595_clear_pin(SPI2_CS);ic74hc595_shift_io_pins()
-#define io215_toggle_output ic74hc595_toggle_pin(SPI2_CS);ic74hc595_shift_io_pins()
+#define io215_set_output ic74hc595_set_pin(SPI2_CS)
+#define io215_clear_output ic74hc595_clear_pin(SPI2_CS)
+#define io215_toggle_output ic74hc595_toggle_pin(SPI2_CS)
 #define io215_get_output ic74hc595_get_pin(SPI2_CS)
 #define io215_config_input
 #define io215_config_pullup
@@ -4519,7 +5072,6 @@ extern "C"
 #define io215_config_pullup
 #define io215_get_input 0
 #endif
-
 
 /*output HAL*/
 #define _io_hal_config_output_(pin) io##pin##_config_output
