@@ -119,7 +119,7 @@ MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 					 * Disabled for now. For re-evaluation
 					 */
 					// Changed limit is not active, don't trip the alarm
-					// if(!(limits_diff & limits)) 
+					// if(!(limits_diff & limits))
 					// {
 					// 	return;
 					// }
@@ -591,7 +591,7 @@ void io_toggle_steps(uint8_t mask)
 void io_get_steps_pos(int32_t *position)
 {
 	itp_get_rt_position(position);
-	#if STEPPERS_ENCODERS_MASK != 0
+#if STEPPERS_ENCODERS_MASK != 0
 #if (defined(STEP0_ENCODER) && AXIS_TO_STEPPERS > 0)
 	position[0] = encoder_get_position(STEP0_ENCODER);
 #endif
@@ -2125,6 +2125,14 @@ int16_t io_get_pinvalue(uint8_t pin)
 #if ASSERT_PIN(SERVO5)
 	case SERVO5:
 		return (uint8_t)mcu_get_servo(SERVO5);
+#endif
+#if ASSERT_PIN(SPI_CS)
+	case SPI_CS:
+		return (mcu_get_output(SPI_CS) != 0);
+#endif
+#if ASSERT_PIN(SPI2_CS)
+	case SPI2_CS:
+		return (mcu_get_output(SPI2_CS) != 0);
 #endif
 	}
 	return -1;

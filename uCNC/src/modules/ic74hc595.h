@@ -1666,6 +1666,49 @@ extern "C"
 #define IC74HC595_HAS_DOUTS
 #endif
 #endif
+#ifndef SPI_CS_IO_OFFSET
+#define SPI_CS_IO_OFFSET -1
+#define DIO207_IO_OFFSET -1
+#else
+#define DIO207_IO_OFFSET SPI_CS_IO_OFFSET
+#ifdef SPI_CS
+#undef SPI_CS
+#endif
+#ifdef DIO207
+#undef DIO207
+#endif
+#define SPI_CS 207
+#define SPI_CS -207
+#define SPI_CS_IO_BYTEOFFSET (SPI_CS_IO_OFFSET >> 3)
+#define SPI_CS_IO_BITMASK (1 << (SPI_CS_IO_OFFSET & 0x7))
+#define DIO207_IO_BYTEOFFSET SPI_CS_IO_BYTEOFFSET
+#define DIO207_IO_BITMASK SPI_CS_IO_BITMASK
+#ifndef IC74HC595_HAS_DOUTS
+#define IC74HC595_HAS_DOUTS
+#endif
+#endif
+#ifndef SPI2_CS_IO_OFFSET
+#define SPI2_CS_IO_OFFSET -1
+#define DIO215_IO_OFFSET -1
+#else
+#define DIO215_IO_OFFSET SPI2_CS_IO_OFFSET
+#ifdef SPI2_CS
+#undef SPI2_CS
+#endif
+#ifdef DIO215
+#undef DIO215
+#endif
+#define SPI2_CS 215
+#define SPI2_CS -215
+#define SPI2_CS_IO_BYTEOFFSET (SPI2_CS_IO_OFFSET >> 3)
+#define SPI2_CS_IO_BITMASK (1 << (SPI2_CS_IO_OFFSET & 0x7))
+#define DIO215_IO_BYTEOFFSET SPI2_CS_IO_BYTEOFFSET
+#define DIO215_IO_BITMASK SPI2_CS_IO_BITMASK
+#ifndef IC74HC595_HAS_DOUTS
+#define IC74HC595_HAS_DOUTS
+#endif
+#endif
+
 
 #if (IC74HC595_COUNT < 0)
 #undef IC74HC595_COUNT
