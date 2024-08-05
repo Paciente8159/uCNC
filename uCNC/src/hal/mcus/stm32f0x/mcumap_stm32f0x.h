@@ -998,6 +998,186 @@ extern "C"
 #define DIO78_AHBEN DOUT31_AHBEN
 #define DIO78_GPIO DOUT31_GPIO
 #endif
+#if (defined(DOUT32_PORT) && defined(DOUT32_BIT))
+#define DOUT32 79
+#define DOUT32_AHBEN (__rccgpioen__(DOUT32_PORT))
+#define DOUT32_GPIO (__gpio__(DOUT32_PORT))
+#define DIO79 79
+#define DIO79_PORT DOUT32_PORT
+#define DIO79_BIT DOUT32_BIT
+#define DIO79_AHBEN DOUT32_AHBEN
+#define DIO79_GPIO DOUT32_GPIO
+#endif
+#if (defined(DOUT33_PORT) && defined(DOUT33_BIT))
+#define DOUT33 80
+#define DOUT33_AHBEN (__rccgpioen__(DOUT33_PORT))
+#define DOUT33_GPIO (__gpio__(DOUT33_PORT))
+#define DIO80 80
+#define DIO80_PORT DOUT33_PORT
+#define DIO80_BIT DOUT33_BIT
+#define DIO80_AHBEN DOUT33_AHBEN
+#define DIO80_GPIO DOUT33_GPIO
+#endif
+#if (defined(DOUT34_PORT) && defined(DOUT34_BIT))
+#define DOUT34 81
+#define DOUT34_AHBEN (__rccgpioen__(DOUT34_PORT))
+#define DOUT34_GPIO (__gpio__(DOUT34_PORT))
+#define DIO81 81
+#define DIO81_PORT DOUT34_PORT
+#define DIO81_BIT DOUT34_BIT
+#define DIO81_AHBEN DOUT34_AHBEN
+#define DIO81_GPIO DOUT34_GPIO
+#endif
+#if (defined(DOUT35_PORT) && defined(DOUT35_BIT))
+#define DOUT35 82
+#define DOUT35_AHBEN (__rccgpioen__(DOUT35_PORT))
+#define DOUT35_GPIO (__gpio__(DOUT35_PORT))
+#define DIO82 82
+#define DIO82_PORT DOUT35_PORT
+#define DIO82_BIT DOUT35_BIT
+#define DIO82_AHBEN DOUT35_AHBEN
+#define DIO82_GPIO DOUT35_GPIO
+#endif
+#if (defined(DOUT36_PORT) && defined(DOUT36_BIT))
+#define DOUT36 83
+#define DOUT36_AHBEN (__rccgpioen__(DOUT36_PORT))
+#define DOUT36_GPIO (__gpio__(DOUT36_PORT))
+#define DIO83 83
+#define DIO83_PORT DOUT36_PORT
+#define DIO83_BIT DOUT36_BIT
+#define DIO83_AHBEN DOUT36_AHBEN
+#define DIO83_GPIO DOUT36_GPIO
+#endif
+#if (defined(DOUT37_PORT) && defined(DOUT37_BIT))
+#define DOUT37 84
+#define DOUT37_AHBEN (__rccgpioen__(DOUT37_PORT))
+#define DOUT37_GPIO (__gpio__(DOUT37_PORT))
+#define DIO84 84
+#define DIO84_PORT DOUT37_PORT
+#define DIO84_BIT DOUT37_BIT
+#define DIO84_AHBEN DOUT37_AHBEN
+#define DIO84_GPIO DOUT37_GPIO
+#endif
+#if (defined(DOUT38_PORT) && defined(DOUT38_BIT))
+#define DOUT38 85
+#define DOUT38_AHBEN (__rccgpioen__(DOUT38_PORT))
+#define DOUT38_GPIO (__gpio__(DOUT38_PORT))
+#define DIO85 85
+#define DIO85_PORT DOUT38_PORT
+#define DIO85_BIT DOUT38_BIT
+#define DIO85_AHBEN DOUT38_AHBEN
+#define DIO85_GPIO DOUT38_GPIO
+#endif
+#if (defined(DOUT39_PORT) && defined(DOUT39_BIT))
+#define DOUT39 86
+#define DOUT39_AHBEN (__rccgpioen__(DOUT39_PORT))
+#define DOUT39_GPIO (__gpio__(DOUT39_PORT))
+#define DIO86 86
+#define DIO86_PORT DOUT39_PORT
+#define DIO86_BIT DOUT39_BIT
+#define DIO86_AHBEN DOUT39_AHBEN
+#define DIO86_GPIO DOUT39_GPIO
+#endif
+#if (defined(DOUT40_PORT) && defined(DOUT40_BIT))
+#define DOUT40 87
+#define DOUT40_AHBEN (__rccgpioen__(DOUT40_PORT))
+#define DOUT40_GPIO (__gpio__(DOUT40_PORT))
+#define DIO87 87
+#define DIO87_PORT DOUT40_PORT
+#define DIO87_BIT DOUT40_BIT
+#define DIO87_AHBEN DOUT40_AHBEN
+#define DIO87_GPIO DOUT40_GPIO
+#endif
+#if (defined(DOUT41_PORT) && defined(DOUT41_BIT))
+#define DOUT41 88
+#define DOUT41_AHBEN (__rccgpioen__(DOUT41_PORT))
+#define DOUT41_GPIO (__gpio__(DOUT41_PORT))
+#define DIO88 88
+#define DIO88_PORT DOUT41_PORT
+#define DIO88_BIT DOUT41_BIT
+#define DIO88_AHBEN DOUT41_AHBEN
+#define DIO88_GPIO DOUT41_GPIO
+#endif
+#if (defined(DOUT42_PORT) && defined(DOUT42_BIT))
+#define DOUT42 89
+#define DOUT42_AHBEN (__rccgpioen__(DOUT42_PORT))
+#define DOUT42_GPIO (__gpio__(DOUT42_PORT))
+#define DIO89 89
+#define DIO89_PORT DOUT42_PORT
+#define DIO89_BIT DOUT42_BIT
+#define DIO89_AHBEN DOUT42_AHBEN
+#define DIO89_GPIO DOUT42_GPIO
+#endif
+#if (defined(DOUT43_PORT) && defined(DOUT43_BIT))
+#define DOUT43 90
+#define DOUT43_AHBEN (__rccgpioen__(DOUT43_PORT))
+#define DOUT43_GPIO (__gpio__(DOUT43_PORT))
+#define DIO90 90
+#define DIO90_PORT DOUT43_PORT
+#define DIO90_BIT DOUT43_BIT
+#define DIO90_AHBEN DOUT43_AHBEN
+#define DIO90_GPIO DOUT43_GPIO
+#endif
+#if (defined(DOUT44_PORT) && defined(DOUT44_BIT))
+#define DOUT44 91
+#define DOUT44_AHBEN (__rccgpioen__(DOUT44_PORT))
+#define DOUT44_GPIO (__gpio__(DOUT44_PORT))
+#define DIO91 91
+#define DIO91_PORT DOUT44_PORT
+#define DIO91_BIT DOUT44_BIT
+#define DIO91_AHBEN DOUT44_AHBEN
+#define DIO91_GPIO DOUT44_GPIO
+#endif
+#if (defined(DOUT45_PORT) && defined(DOUT45_BIT))
+#define DOUT45 92
+#define DOUT45_AHBEN (__rccgpioen__(DOUT45_PORT))
+#define DOUT45_GPIO (__gpio__(DOUT45_PORT))
+#define DIO92 92
+#define DIO92_PORT DOUT45_PORT
+#define DIO92_BIT DOUT45_BIT
+#define DIO92_AHBEN DOUT45_AHBEN
+#define DIO92_GPIO DOUT45_GPIO
+#endif
+#if (defined(DOUT46_PORT) && defined(DOUT46_BIT))
+#define DOUT46 93
+#define DOUT46_AHBEN (__rccgpioen__(DOUT46_PORT))
+#define DOUT46_GPIO (__gpio__(DOUT46_PORT))
+#define DIO93 93
+#define DIO93_PORT DOUT46_PORT
+#define DIO93_BIT DOUT46_BIT
+#define DIO93_AHBEN DOUT46_AHBEN
+#define DIO93_GPIO DOUT46_GPIO
+#endif
+#if (defined(DOUT47_PORT) && defined(DOUT47_BIT))
+#define DOUT47 94
+#define DOUT47_AHBEN (__rccgpioen__(DOUT47_PORT))
+#define DOUT47_GPIO (__gpio__(DOUT47_PORT))
+#define DIO94 94
+#define DIO94_PORT DOUT47_PORT
+#define DIO94_BIT DOUT47_BIT
+#define DIO94_AHBEN DOUT47_AHBEN
+#define DIO94_GPIO DOUT47_GPIO
+#endif
+#if (defined(DOUT48_PORT) && defined(DOUT48_BIT))
+#define DOUT48 95
+#define DOUT48_AHBEN (__rccgpioen__(DOUT48_PORT))
+#define DOUT48_GPIO (__gpio__(DOUT48_PORT))
+#define DIO95 95
+#define DIO95_PORT DOUT48_PORT
+#define DIO95_BIT DOUT48_BIT
+#define DIO95_AHBEN DOUT48_AHBEN
+#define DIO95_GPIO DOUT48_GPIO
+#endif
+#if (defined(DOUT49_PORT) && defined(DOUT49_BIT))
+#define DOUT49 96
+#define DOUT49_AHBEN (__rccgpioen__(DOUT49_PORT))
+#define DOUT49_GPIO (__gpio__(DOUT49_PORT))
+#define DIO96 96
+#define DIO96_PORT DOUT49_PORT
+#define DIO96_BIT DOUT49_BIT
+#define DIO96_AHBEN DOUT49_AHBEN
+#define DIO96_GPIO DOUT49_GPIO
+#endif
 #if (defined(LIMIT_X_PORT) && defined(LIMIT_X_BIT))
 #define LIMIT_X 100
 #define LIMIT_X_AHBEN (__rccgpioen__(LIMIT_X_PORT))
@@ -1617,6 +1797,186 @@ extern "C"
 #define DIO161_BIT DIN31_BIT
 #define DIO161_AHBEN DIN31_AHBEN
 #define DIO161_GPIO DIN31_GPIO
+#endif
+#if (defined(DIN32_PORT) && defined(DIN32_BIT))
+#define DIN32 162
+#define DIN32_AHBEN (__rccgpioen__(DIN32_PORT))
+#define DIN32_GPIO (__gpio__(DIN32_PORT))
+#define DIO162 162
+#define DIO162_PORT DIN32_PORT
+#define DIO162_BIT DIN32_BIT
+#define DIO162_AHBEN DIN32_AHBEN
+#define DIO162_GPIO DIN32_GPIO
+#endif
+#if (defined(DIN33_PORT) && defined(DIN33_BIT))
+#define DIN33 163
+#define DIN33_AHBEN (__rccgpioen__(DIN33_PORT))
+#define DIN33_GPIO (__gpio__(DIN33_PORT))
+#define DIO163 163
+#define DIO163_PORT DIN33_PORT
+#define DIO163_BIT DIN33_BIT
+#define DIO163_AHBEN DIN33_AHBEN
+#define DIO163_GPIO DIN33_GPIO
+#endif
+#if (defined(DIN34_PORT) && defined(DIN34_BIT))
+#define DIN34 164
+#define DIN34_AHBEN (__rccgpioen__(DIN34_PORT))
+#define DIN34_GPIO (__gpio__(DIN34_PORT))
+#define DIO164 164
+#define DIO164_PORT DIN34_PORT
+#define DIO164_BIT DIN34_BIT
+#define DIO164_AHBEN DIN34_AHBEN
+#define DIO164_GPIO DIN34_GPIO
+#endif
+#if (defined(DIN35_PORT) && defined(DIN35_BIT))
+#define DIN35 165
+#define DIN35_AHBEN (__rccgpioen__(DIN35_PORT))
+#define DIN35_GPIO (__gpio__(DIN35_PORT))
+#define DIO165 165
+#define DIO165_PORT DIN35_PORT
+#define DIO165_BIT DIN35_BIT
+#define DIO165_AHBEN DIN35_AHBEN
+#define DIO165_GPIO DIN35_GPIO
+#endif
+#if (defined(DIN36_PORT) && defined(DIN36_BIT))
+#define DIN36 166
+#define DIN36_AHBEN (__rccgpioen__(DIN36_PORT))
+#define DIN36_GPIO (__gpio__(DIN36_PORT))
+#define DIO166 166
+#define DIO166_PORT DIN36_PORT
+#define DIO166_BIT DIN36_BIT
+#define DIO166_AHBEN DIN36_AHBEN
+#define DIO166_GPIO DIN36_GPIO
+#endif
+#if (defined(DIN37_PORT) && defined(DIN37_BIT))
+#define DIN37 167
+#define DIN37_AHBEN (__rccgpioen__(DIN37_PORT))
+#define DIN37_GPIO (__gpio__(DIN37_PORT))
+#define DIO167 167
+#define DIO167_PORT DIN37_PORT
+#define DIO167_BIT DIN37_BIT
+#define DIO167_AHBEN DIN37_AHBEN
+#define DIO167_GPIO DIN37_GPIO
+#endif
+#if (defined(DIN38_PORT) && defined(DIN38_BIT))
+#define DIN38 168
+#define DIN38_AHBEN (__rccgpioen__(DIN38_PORT))
+#define DIN38_GPIO (__gpio__(DIN38_PORT))
+#define DIO168 168
+#define DIO168_PORT DIN38_PORT
+#define DIO168_BIT DIN38_BIT
+#define DIO168_AHBEN DIN38_AHBEN
+#define DIO168_GPIO DIN38_GPIO
+#endif
+#if (defined(DIN39_PORT) && defined(DIN39_BIT))
+#define DIN39 169
+#define DIN39_AHBEN (__rccgpioen__(DIN39_PORT))
+#define DIN39_GPIO (__gpio__(DIN39_PORT))
+#define DIO169 169
+#define DIO169_PORT DIN39_PORT
+#define DIO169_BIT DIN39_BIT
+#define DIO169_AHBEN DIN39_AHBEN
+#define DIO169_GPIO DIN39_GPIO
+#endif
+#if (defined(DIN40_PORT) && defined(DIN40_BIT))
+#define DIN40 170
+#define DIN40_AHBEN (__rccgpioen__(DIN40_PORT))
+#define DIN40_GPIO (__gpio__(DIN40_PORT))
+#define DIO170 170
+#define DIO170_PORT DIN40_PORT
+#define DIO170_BIT DIN40_BIT
+#define DIO170_AHBEN DIN40_AHBEN
+#define DIO170_GPIO DIN40_GPIO
+#endif
+#if (defined(DIN41_PORT) && defined(DIN41_BIT))
+#define DIN41 171
+#define DIN41_AHBEN (__rccgpioen__(DIN41_PORT))
+#define DIN41_GPIO (__gpio__(DIN41_PORT))
+#define DIO171 171
+#define DIO171_PORT DIN41_PORT
+#define DIO171_BIT DIN41_BIT
+#define DIO171_AHBEN DIN41_AHBEN
+#define DIO171_GPIO DIN41_GPIO
+#endif
+#if (defined(DIN42_PORT) && defined(DIN42_BIT))
+#define DIN42 172
+#define DIN42_AHBEN (__rccgpioen__(DIN42_PORT))
+#define DIN42_GPIO (__gpio__(DIN42_PORT))
+#define DIO172 172
+#define DIO172_PORT DIN42_PORT
+#define DIO172_BIT DIN42_BIT
+#define DIO172_AHBEN DIN42_AHBEN
+#define DIO172_GPIO DIN42_GPIO
+#endif
+#if (defined(DIN43_PORT) && defined(DIN43_BIT))
+#define DIN43 173
+#define DIN43_AHBEN (__rccgpioen__(DIN43_PORT))
+#define DIN43_GPIO (__gpio__(DIN43_PORT))
+#define DIO173 173
+#define DIO173_PORT DIN43_PORT
+#define DIO173_BIT DIN43_BIT
+#define DIO173_AHBEN DIN43_AHBEN
+#define DIO173_GPIO DIN43_GPIO
+#endif
+#if (defined(DIN44_PORT) && defined(DIN44_BIT))
+#define DIN44 174
+#define DIN44_AHBEN (__rccgpioen__(DIN44_PORT))
+#define DIN44_GPIO (__gpio__(DIN44_PORT))
+#define DIO174 174
+#define DIO174_PORT DIN44_PORT
+#define DIO174_BIT DIN44_BIT
+#define DIO174_AHBEN DIN44_AHBEN
+#define DIO174_GPIO DIN44_GPIO
+#endif
+#if (defined(DIN45_PORT) && defined(DIN45_BIT))
+#define DIN45 175
+#define DIN45_AHBEN (__rccgpioen__(DIN45_PORT))
+#define DIN45_GPIO (__gpio__(DIN45_PORT))
+#define DIO175 175
+#define DIO175_PORT DIN45_PORT
+#define DIO175_BIT DIN45_BIT
+#define DIO175_AHBEN DIN45_AHBEN
+#define DIO175_GPIO DIN45_GPIO
+#endif
+#if (defined(DIN46_PORT) && defined(DIN46_BIT))
+#define DIN46 176
+#define DIN46_AHBEN (__rccgpioen__(DIN46_PORT))
+#define DIN46_GPIO (__gpio__(DIN46_PORT))
+#define DIO176 176
+#define DIO176_PORT DIN46_PORT
+#define DIO176_BIT DIN46_BIT
+#define DIO176_AHBEN DIN46_AHBEN
+#define DIO176_GPIO DIN46_GPIO
+#endif
+#if (defined(DIN47_PORT) && defined(DIN47_BIT))
+#define DIN47 177
+#define DIN47_AHBEN (__rccgpioen__(DIN47_PORT))
+#define DIN47_GPIO (__gpio__(DIN47_PORT))
+#define DIO177 177
+#define DIO177_PORT DIN47_PORT
+#define DIO177_BIT DIN47_BIT
+#define DIO177_AHBEN DIN47_AHBEN
+#define DIO177_GPIO DIN47_GPIO
+#endif
+#if (defined(DIN48_PORT) && defined(DIN48_BIT))
+#define DIN48 178
+#define DIN48_AHBEN (__rccgpioen__(DIN48_PORT))
+#define DIN48_GPIO (__gpio__(DIN48_PORT))
+#define DIO178 178
+#define DIO178_PORT DIN48_PORT
+#define DIO178_BIT DIN48_BIT
+#define DIO178_AHBEN DIN48_AHBEN
+#define DIO178_GPIO DIN48_GPIO
+#endif
+#if (defined(DIN49_PORT) && defined(DIN49_BIT))
+#define DIN49 179
+#define DIN49_AHBEN (__rccgpioen__(DIN49_PORT))
+#define DIN49_GPIO (__gpio__(DIN49_PORT))
+#define DIO179 179
+#define DIO179_PORT DIN49_PORT
+#define DIO179_BIT DIN49_BIT
+#define DIO179_AHBEN DIN49_AHBEN
+#define DIO179_GPIO DIN49_GPIO
 #endif
 #if (defined(TX_PORT) && defined(TX_BIT))
 #define TX 200

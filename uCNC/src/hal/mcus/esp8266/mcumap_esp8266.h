@@ -505,6 +505,96 @@ extern "C"
 #define DOUT31 78
 #define DIO78_BIT (DOUT31_BIT)
 #endif
+#if(defined(DOUT32_BIT))
+#define DIO79 79
+#define DOUT32 79
+#define DIO79_BIT (DOUT32_BIT)
+#endif
+#if(defined(DOUT33_BIT))
+#define DIO80 80
+#define DOUT33 80
+#define DIO80_BIT (DOUT33_BIT)
+#endif
+#if(defined(DOUT34_BIT))
+#define DIO81 81
+#define DOUT34 81
+#define DIO81_BIT (DOUT34_BIT)
+#endif
+#if(defined(DOUT35_BIT))
+#define DIO82 82
+#define DOUT35 82
+#define DIO82_BIT (DOUT35_BIT)
+#endif
+#if(defined(DOUT36_BIT))
+#define DIO83 83
+#define DOUT36 83
+#define DIO83_BIT (DOUT36_BIT)
+#endif
+#if(defined(DOUT37_BIT))
+#define DIO84 84
+#define DOUT37 84
+#define DIO84_BIT (DOUT37_BIT)
+#endif
+#if(defined(DOUT38_BIT))
+#define DIO85 85
+#define DOUT38 85
+#define DIO85_BIT (DOUT38_BIT)
+#endif
+#if(defined(DOUT39_BIT))
+#define DIO86 86
+#define DOUT39 86
+#define DIO86_BIT (DOUT39_BIT)
+#endif
+#if(defined(DOUT40_BIT))
+#define DIO87 87
+#define DOUT40 87
+#define DIO87_BIT (DOUT40_BIT)
+#endif
+#if(defined(DOUT41_BIT))
+#define DIO88 88
+#define DOUT41 88
+#define DIO88_BIT (DOUT41_BIT)
+#endif
+#if(defined(DOUT42_BIT))
+#define DIO89 89
+#define DOUT42 89
+#define DIO89_BIT (DOUT42_BIT)
+#endif
+#if(defined(DOUT43_BIT))
+#define DIO90 90
+#define DOUT43 90
+#define DIO90_BIT (DOUT43_BIT)
+#endif
+#if(defined(DOUT44_BIT))
+#define DIO91 91
+#define DOUT44 91
+#define DIO91_BIT (DOUT44_BIT)
+#endif
+#if(defined(DOUT45_BIT))
+#define DIO92 92
+#define DOUT45 92
+#define DIO92_BIT (DOUT45_BIT)
+#endif
+#if(defined(DOUT46_BIT))
+#define DIO93 93
+#define DOUT46 93
+#define DIO93_BIT (DOUT46_BIT)
+#endif
+#if(defined(DOUT47_BIT))
+#define DIO94 94
+#define DOUT47 94
+#define DIO94_BIT (DOUT47_BIT)
+#endif
+#if(defined(DOUT48_BIT))
+#define DIO95 95
+#define DOUT48 95
+#define DIO95_BIT (DOUT48_BIT)
+#endif
+#if(defined(DOUT49_BIT))
+#define DIO96 96
+#define DOUT49 96
+#define DIO96_BIT (DOUT49_BIT)
+#endif
 #if (defined(LIMIT_X_BIT))
 #define DIO100 100
 #define LIMIT_X 100
@@ -814,6 +904,96 @@ extern "C"
 #define DIO161 161
 #define DIN31 161
 #define DIO161_BIT (DIN31_BIT)
+#endif
+#if(defined(DIN32_BIT))
+#define DIO162 162
+#define DIN32 162
+#define DIO162_BIT (DIN32_BIT)
+#endif
+#if(defined(DIN33_BIT))
+#define DIO163 163
+#define DIN33 163
+#define DIO163_BIT (DIN33_BIT)
+#endif
+#if(defined(DIN34_BIT))
+#define DIO164 164
+#define DIN34 164
+#define DIO164_BIT (DIN34_BIT)
+#endif
+#if(defined(DIN35_BIT))
+#define DIO165 165
+#define DIN35 165
+#define DIO165_BIT (DIN35_BIT)
+#endif
+#if(defined(DIN36_BIT))
+#define DIO166 166
+#define DIN36 166
+#define DIO166_BIT (DIN36_BIT)
+#endif
+#if(defined(DIN37_BIT))
+#define DIO167 167
+#define DIN37 167
+#define DIO167_BIT (DIN37_BIT)
+#endif
+#if(defined(DIN38_BIT))
+#define DIO168 168
+#define DIN38 168
+#define DIO168_BIT (DIN38_BIT)
+#endif
+#if(defined(DIN39_BIT))
+#define DIO169 169
+#define DIN39 169
+#define DIO169_BIT (DIN39_BIT)
+#endif
+#if(defined(DIN40_BIT))
+#define DIO170 170
+#define DIN40 170
+#define DIO170_BIT (DIN40_BIT)
+#endif
+#if(defined(DIN41_BIT))
+#define DIO171 171
+#define DIN41 171
+#define DIO171_BIT (DIN41_BIT)
+#endif
+#if(defined(DIN42_BIT))
+#define DIO172 172
+#define DIN42 172
+#define DIO172_BIT (DIN42_BIT)
+#endif
+#if(defined(DIN43_BIT))
+#define DIO173 173
+#define DIN43 173
+#define DIO173_BIT (DIN43_BIT)
+#endif
+#if(defined(DIN44_BIT))
+#define DIO174 174
+#define DIN44 174
+#define DIO174_BIT (DIN44_BIT)
+#endif
+#if(defined(DIN45_BIT))
+#define DIO175 175
+#define DIN45 175
+#define DIO175_BIT (DIN45_BIT)
+#endif
+#if(defined(DIN46_BIT))
+#define DIO176 176
+#define DIN46 176
+#define DIO176_BIT (DIN46_BIT)
+#endif
+#if(defined(DIN47_BIT))
+#define DIO177 177
+#define DIN47 177
+#define DIO177_BIT (DIN47_BIT)
+#endif
+#if(defined(DIN48_BIT))
+#define DIO178 178
+#define DIN48 178
+#define DIO178_BIT (DIN48_BIT)
+#endif
+#if(defined(DIN49_BIT))
+#define DIO179 179
+#define DIN49 179
+#define DIO179_BIT (DIN49_BIT)
 #endif
 #if (defined(TX_BIT))
 #define DIO200 200

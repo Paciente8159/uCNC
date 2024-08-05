@@ -1263,6 +1263,96 @@ void io_set_pinvalue(uint8_t pin, uint8_t value)
 			io_set_output(DOUT31);
 			break;
 #endif
+#if ASSERT_PIN(DOUT32)
+		case DOUT32:
+			io_set_output(DOUT32);
+			break;
+#endif
+#if ASSERT_PIN(DOUT33)
+		case DOUT33:
+			io_set_output(DOUT33);
+			break;
+#endif
+#if ASSERT_PIN(DOUT34)
+		case DOUT34:
+			io_set_output(DOUT34);
+			break;
+#endif
+#if ASSERT_PIN(DOUT35)
+		case DOUT35:
+			io_set_output(DOUT35);
+			break;
+#endif
+#if ASSERT_PIN(DOUT36)
+		case DOUT36:
+			io_set_output(DOUT36);
+			break;
+#endif
+#if ASSERT_PIN(DOUT37)
+		case DOUT37:
+			io_set_output(DOUT37);
+			break;
+#endif
+#if ASSERT_PIN(DOUT38)
+		case DOUT38:
+			io_set_output(DOUT38);
+			break;
+#endif
+#if ASSERT_PIN(DOUT39)
+		case DOUT39:
+			io_set_output(DOUT39);
+			break;
+#endif
+#if ASSERT_PIN(DOUT40)
+		case DOUT40:
+			io_set_output(DOUT40);
+			break;
+#endif
+#if ASSERT_PIN(DOUT41)
+		case DOUT41:
+			io_set_output(DOUT41);
+			break;
+#endif
+#if ASSERT_PIN(DOUT42)
+		case DOUT42:
+			io_set_output(DOUT42);
+			break;
+#endif
+#if ASSERT_PIN(DOUT43)
+		case DOUT43:
+			io_set_output(DOUT43);
+			break;
+#endif
+#if ASSERT_PIN(DOUT44)
+		case DOUT44:
+			io_set_output(DOUT44);
+			break;
+#endif
+#if ASSERT_PIN(DOUT45)
+		case DOUT45:
+			io_set_output(DOUT45);
+			break;
+#endif
+#if ASSERT_PIN(DOUT46)
+		case DOUT46:
+			io_set_output(DOUT46);
+			break;
+#endif
+#if ASSERT_PIN(DOUT47)
+		case DOUT47:
+			io_set_output(DOUT47);
+			break;
+#endif
+#if ASSERT_PIN(DOUT48)
+		case DOUT48:
+			io_set_output(DOUT48);
+			break;
+#endif
+#if ASSERT_PIN(DOUT49)
+		case DOUT49:
+			io_set_output(DOUT49);
+			break;
+#endif
 #if ASSERT_PIN(SPI_CS)
 		case SPI_CS:
 			io_set_output(SPI_CS);
@@ -1543,6 +1633,96 @@ void io_set_pinvalue(uint8_t pin, uint8_t value)
 #if ASSERT_PIN(DOUT31)
 		case DOUT31:
 			io_clear_output(DOUT31);
+			break;
+#endif
+#if ASSERT_PIN(DOUT32)
+		case DOUT32:
+			io_clear_output(DOUT32);
+			break;
+#endif
+#if ASSERT_PIN(DOUT33)
+		case DOUT33:
+			io_clear_output(DOUT33);
+			break;
+#endif
+#if ASSERT_PIN(DOUT34)
+		case DOUT34:
+			io_clear_output(DOUT34);
+			break;
+#endif
+#if ASSERT_PIN(DOUT35)
+		case DOUT35:
+			io_clear_output(DOUT35);
+			break;
+#endif
+#if ASSERT_PIN(DOUT36)
+		case DOUT36:
+			io_clear_output(DOUT36);
+			break;
+#endif
+#if ASSERT_PIN(DOUT37)
+		case DOUT37:
+			io_clear_output(DOUT37);
+			break;
+#endif
+#if ASSERT_PIN(DOUT38)
+		case DOUT38:
+			io_clear_output(DOUT38);
+			break;
+#endif
+#if ASSERT_PIN(DOUT39)
+		case DOUT39:
+			io_clear_output(DOUT39);
+			break;
+#endif
+#if ASSERT_PIN(DOUT40)
+		case DOUT40:
+			io_clear_output(DOUT40);
+			break;
+#endif
+#if ASSERT_PIN(DOUT41)
+		case DOUT41:
+			io_clear_output(DOUT41);
+			break;
+#endif
+#if ASSERT_PIN(DOUT42)
+		case DOUT42:
+			io_clear_output(DOUT42);
+			break;
+#endif
+#if ASSERT_PIN(DOUT43)
+		case DOUT43:
+			io_clear_output(DOUT43);
+			break;
+#endif
+#if ASSERT_PIN(DOUT44)
+		case DOUT44:
+			io_clear_output(DOUT44);
+			break;
+#endif
+#if ASSERT_PIN(DOUT45)
+		case DOUT45:
+			io_clear_output(DOUT45);
+			break;
+#endif
+#if ASSERT_PIN(DOUT46)
+		case DOUT46:
+			io_clear_output(DOUT46);
+			break;
+#endif
+#if ASSERT_PIN(DOUT47)
+		case DOUT47:
+			io_clear_output(DOUT47);
+			break;
+#endif
+#if ASSERT_PIN(DOUT48)
+		case DOUT48:
+			io_clear_output(DOUT48);
+			break;
+#endif
+#if ASSERT_PIN(DOUT49)
+		case DOUT49:
+			io_clear_output(DOUT49);
 			break;
 #endif
 #if ASSERT_PIN(SPI_CS)
@@ -1850,6 +2030,79 @@ int16_t io_get_pinvalue(uint8_t pin)
 	case DOUT31:
 		return (io_get_output(DOUT31) != 0);
 #endif
+#if ASSERT_PIN(DOUT32)
+    case DOUT32:
+        return (io_get_output(DOUT32) != 0);
+#endif
+#if ASSERT_PIN(DOUT33)
+    case DOUT33:
+        return (io_get_output(DOUT33) != 0);
+#endif
+#if ASSERT_PIN(DOUT34)
+    case DOUT34:
+        return (io_get_output(DOUT34) != 0);
+#endif
+#if ASSERT_PIN(DOUT35)
+    case DOUT35:
+        return (io_get_output(DOUT35) != 0);
+#endif
+#if ASSERT_PIN(DOUT36)
+    case DOUT36:
+        return (io_get_output(DOUT36) != 0);
+#endif
+#if ASSERT_PIN(DOUT37)
+    case DOUT37:
+        return (io_get_output(DOUT37) != 0);
+#endif
+#if ASSERT_PIN(DOUT38)
+    case DOUT38:
+        return (io_get_output(DOUT38) != 0);
+#endif
+#if ASSERT_PIN(DOUT39)
+    case DOUT39:
+        return (io_get_output(DOUT39) != 0);
+#endif
+#if ASSERT_PIN(DOUT40)
+    case DOUT40:
+        return (io_get_output(DOUT40) != 0);
+#endif
+#if ASSERT_PIN(DOUT41)
+    case DOUT41:
+        return (io_get_output(DOUT41) != 0);
+#endif
+#if ASSERT_PIN(DOUT42)
+    case DOUT42:
+        return (io_get_output(DOUT42) != 0);
+#endif
+#if ASSERT_PIN(DOUT43)
+    case DOUT43:
+        return (io_get_output(DOUT43) != 0);
+#endif
+#if ASSERT_PIN(DOUT44)
+    case DOUT44:
+        return (io_get_output(DOUT44) != 0);
+#endif
+#if ASSERT_PIN(DOUT45)
+    case DOUT45:
+        return (io_get_output(DOUT45) != 0);
+#endif
+#if ASSERT_PIN(DOUT46)
+    case DOUT46:
+        return (io_get_output(DOUT46) != 0);
+#endif
+#if ASSERT_PIN(DOUT47)
+    case DOUT47:
+        return (io_get_output(DOUT47) != 0);
+#endif
+#if ASSERT_PIN(DOUT48)
+    case DOUT48:
+        return (io_get_output(DOUT48) != 0);
+#endif
+#if ASSERT_PIN(DOUT49)
+    case DOUT49:
+        return (io_get_output(DOUT49) != 0);
+#endif
+
 #if ASSERT_PIN(LIMIT_X)
 	case LIMIT_X:
 		return (io_get_input(LIMIT_X) != 0);
@@ -1912,67 +2165,67 @@ int16_t io_get_pinvalue(uint8_t pin)
 #endif
 #if ASSERT_PIN(ANALOG0)
 	case ANALOG0:
-		return mcu_get_analog(ANALOG0);
+		return io_get_analog(ANALOG0);
 #endif
 #if ASSERT_PIN(ANALOG1)
 	case ANALOG1:
-		return mcu_get_analog(ANALOG1);
+		return io_get_analog(ANALOG1);
 #endif
 #if ASSERT_PIN(ANALOG2)
 	case ANALOG2:
-		return mcu_get_analog(ANALOG2);
+		return io_get_analog(ANALOG2);
 #endif
 #if ASSERT_PIN(ANALOG3)
 	case ANALOG3:
-		return mcu_get_analog(ANALOG3);
+		return io_get_analog(ANALOG3);
 #endif
 #if ASSERT_PIN(ANALOG4)
 	case ANALOG4:
-		return mcu_get_analog(ANALOG4);
+		return io_get_analog(ANALOG4);
 #endif
 #if ASSERT_PIN(ANALOG5)
 	case ANALOG5:
-		return mcu_get_analog(ANALOG5);
+		return io_get_analog(ANALOG5);
 #endif
 #if ASSERT_PIN(ANALOG6)
 	case ANALOG6:
-		return mcu_get_analog(ANALOG6);
+		return io_get_analog(ANALOG6);
 #endif
 #if ASSERT_PIN(ANALOG7)
 	case ANALOG7:
-		return mcu_get_analog(ANALOG7);
+		return io_get_analog(ANALOG7);
 #endif
 #if ASSERT_PIN(ANALOG8)
 	case ANALOG8:
-		return mcu_get_analog(ANALOG8);
+		return io_get_analog(ANALOG8);
 #endif
 #if ASSERT_PIN(ANALOG9)
 	case ANALOG9:
-		return mcu_get_analog(ANALOG9);
+		return io_get_analog(ANALOG9);
 #endif
 #if ASSERT_PIN(ANALOG10)
 	case ANALOG10:
-		return mcu_get_analog(ANALOG10);
+		return io_get_analog(ANALOG10);
 #endif
 #if ASSERT_PIN(ANALOG11)
 	case ANALOG11:
-		return mcu_get_analog(ANALOG11);
+		return io_get_analog(ANALOG11);
 #endif
 #if ASSERT_PIN(ANALOG12)
 	case ANALOG12:
-		return mcu_get_analog(ANALOG12);
+		return io_get_analog(ANALOG12);
 #endif
 #if ASSERT_PIN(ANALOG13)
 	case ANALOG13:
-		return mcu_get_analog(ANALOG13);
+		return io_get_analog(ANALOG13);
 #endif
 #if ASSERT_PIN(ANALOG14)
 	case ANALOG14:
-		return mcu_get_analog(ANALOG14);
+		return io_get_analog(ANALOG14);
 #endif
 #if ASSERT_PIN(ANALOG15)
 	case ANALOG15:
-		return mcu_get_analog(ANALOG15);
+		return io_get_analog(ANALOG15);
 #endif
 #if ASSERT_PIN(DIN0)
 	case DIN0:
