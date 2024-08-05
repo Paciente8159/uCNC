@@ -968,6 +968,51 @@ bool system_menu_action_edit(uint8_t action, system_menu_item_t *item)
 			return false;
 		}
 		break;
+	case SYSTEM_MENU_ACTION_CHAR_INPUT('0'):
+	case SYSTEM_MENU_ACTION_CHAR_INPUT('1'):
+	case SYSTEM_MENU_ACTION_CHAR_INPUT('2'):
+	case SYSTEM_MENU_ACTION_CHAR_INPUT('3'):
+	case SYSTEM_MENU_ACTION_CHAR_INPUT('4'):
+	case SYSTEM_MENU_ACTION_CHAR_INPUT('5'):
+	case SYSTEM_MENU_ACTION_CHAR_INPUT('6'):
+	case SYSTEM_MENU_ACTION_CHAR_INPUT('7'):
+	case SYSTEM_MENU_ACTION_CHAR_INPUT('8'):
+	case SYSTEM_MENU_ACTION_CHAR_INPUT('9'):
+		{
+			int digit = action - SYSTEM_MENU_ACTION_CHAR_INPUT('0');
+			int current_digit;
+			flags |= SYSTEM_MENU_MODE_MODIFY;
+			switch(vartype)
+			{
+			case VAR_TYPE_BOOLEAN:
+				modifier = digit;
+				break;
+			case VAR_TYPE_FLOAT:
+				current_digit = (int)((*(float *)item->argptr) / powf(10.0f, (currentmult - 3))) % 10;
+				modifier = (digit - current_digit) * powf(10.0f, (currentmult - 3));
+				break;
+			case VAR_TYPE_INT8:
+			case VAR_TYPE_UINT8:
+				current_digit = ((*(uint8_t *)item->argptr) / (int)powf(10.0f, currentmult)) % 10;
+				modifier = (digit - current_digit) * powf(10.0f, currentmult);
+				break;
+			case VAR_TYPE_INT16:
+			case VAR_TYPE_UINT16:
+				current_digit = ((*(uint16_t *)item->argptr) / (int)powf(10.0f, currentmult)) % 10;
+				modifier = (digit - current_digit) * powf(10.0f, currentmult);
+				break;
+			case VAR_TYPE_INT32:
+			case VAR_TYPE_UINT32:
+				current_digit = ((*(uint32_t *)item->argptr) / (int)powf(10.0f, currentmult)) % 10;
+				modifier = (digit - current_digit) * powf(10.0f, currentmult);
+				break;
+			default:
+				modifier = digit * powf(10.0f, currentmult);
+				break;
+			}
+			currentmult -= 1;
+		}
+		break;
 	default:
 		// allow to propagate
 		return false;
