@@ -978,6 +978,14 @@ extern "C"
 #define DIO89_ISRCALLBACK mcu_din_isr
 #endif
 
+// Helper macros
+#define __helper_ex__(left, mid, right) (left##mid##right)
+#define __helper__(left, mid, right) (__helper_ex__(left, mid, right))
+#ifndef __indirect__
+#define __indirect__ex__(X, Y) DIO##X##_##Y
+#define __indirect__(X, Y) __indirect__ex__(X, Y)
+#endif
+
 #if (defined(TX) && defined(RX))
 #define MCU_HAS_UART
 #endif
@@ -1059,6 +1067,9 @@ extern "C"
 #error "SPI port number must be 0 or 1"
 #endif
 
+// for SDK SPI
+#define SPI_HW __helper__(spi, SPI_PORT,)
+
 #if (defined(I2C_CLK) && defined(I2C_DATA))
 #define MCU_HAS_I2C
 #define MCU_SUPPORTS_I2C_SLAVE
@@ -1122,14 +1133,6 @@ extern "C"
 #define ITP_TIMER_IRQ _timer_irq_(ITP_TIMER)
 #define RTC_TIMER_IRQ _timer_irq_(RTC_TIMER)
 #define ALARM_TIMER_IRQ _timer_irq_(ALARM_TIMER)
-
-// Helper macros
-#define __helper_ex__(left, mid, right) (left##mid##right)
-#define __helper__(left, mid, right) (__helper_ex__(left, mid, right))
-#ifndef __indirect__
-#define __indirect__ex__(X, Y) DIO##X##_##Y
-#define __indirect__(X, Y) __indirect__ex__(X, Y)
-#endif
 
 #ifndef BYTE_OPS
 #define BYTE_OPS
