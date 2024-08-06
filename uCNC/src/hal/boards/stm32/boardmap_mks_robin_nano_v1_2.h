@@ -28,11 +28,6 @@ extern "C"
 #define BOARD_NAME "MKS Robin Nano 1.2"
 #endif
 
-#define NO_USB_VCP
-#ifdef USB_VCP
-#undef USB_VCP
-#endif
-
 // Setup step pins
 #define STEP0_BIT 3	 // assigns STEP0 pin
 #define STEP0_PORT E // assigns STEP0 port
@@ -86,7 +81,7 @@ extern "C"
 #define LIMIT_Z2_ISR
 
 // Setup probe pin
-#define PROBE_BIT 8
+#define PROBE_BIT 4
 #define PROBE_PORT A
 #define PROBE_ISR
 
@@ -124,8 +119,12 @@ extern "C"
 #define ANALOG2_PORT C
 #define ANALOG2_CHANNEL 12
 
+#define SERVO0_BIT 8
+#define SERVO0_PORT A
+
 // Setup the Step Timer used has the heartbeat for µCNC
 #define ITP_TIMER 5
+#define SERVO_TIMER 4
 
 // software SPI for card access
 #define DOUT29_BIT 2
@@ -140,7 +139,7 @@ extern "C"
 #define DIN19_BIT 12
 #define DIN19_PORT D
 
-#define ONESHOT_TIMER 2
+#define ONESHOT_TIMER 8
 
 #ifdef __cplusplus
 }
