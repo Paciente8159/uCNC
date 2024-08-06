@@ -537,7 +537,7 @@ extern "C"
 	void mcu_spi_config(spi_config_t config, uint32_t frequency);
 #endif
 
-extern spi_port_t mcu_spi_port;
+	extern spi_port_t mcu_spi_port;
 #endif
 
 #ifdef MCU_HAS_I2C
@@ -647,6 +647,154 @@ extern spi_port_t mcu_spi_port;
 #ifndef mcu_flush
 #define mcu_flush (&mcu_uart_flush)
 #endif
+
+#define save_context(context_ptr)               \
+	__asm__ __volatile__(                         \
+			"cli\n"			 /*disables ISR*/             \
+			"push r31\n" /*push r31*/                 \
+			"push r30\n" /*push r30*/                 \
+			"push r0\n"	 /*push r0*/                  \
+			"in r30, __SREG__\n"                      \
+			"push r30\n" /*push SREG*/                \
+			"lds r30, " #context_ptr "\n"             \
+			"lds r31, " #context_ptr "+1\n"           \
+			"pop r0\n" /*pops and saves SREG*/        \
+			"st z+, r0\n"                             \
+			"pop r0\n" /*pops and saves r0*/          \
+			"st z+, r0\n"                             \
+			"st z+, r1\n"                             \
+			"st z+, r2\n"                             \
+			"st z+, r3\n"                             \
+			"st z+, r4\n"                             \
+			"st z+, r5\n"                             \
+			"st z+, r6\n"                             \
+			"st z+, r6\n"                             \
+			"st z+, r7\n"                             \
+			"st z+, r8\n"                             \
+			"st z+, r9\n"                             \
+			"st z+, r10\n"                            \
+			"st z+, r11\n"                            \
+			"st z+, r12\n"                            \
+			"st z+, r13\n"                            \
+			"st z+, r14\n"                            \
+			"st z+, r15\n"                            \
+			"st z+, r16\n"                            \
+			"st z+, r17\n"                            \
+			"st z+, r18\n"                            \
+			"st z+, r19\n"                            \
+			"st z+, r20\n"                            \
+			"st z+, r21\n"                            \
+			"st z+, r22\n"                            \
+			"st z+, r23\n"                            \
+			"st z+, r24\n"                            \
+			"st z+, r25\n"                            \
+			"st z+, r26\n"                            \
+			"st z+, r27\n"                            \
+			"st z+, r28\n"                            \
+			"st z+, r29\n"                            \
+			"mov r28, r30\n" /*switch from z to y*/   \
+			"mov r29, r31\n"                          \
+			"pop r30\n" /*pops r30*/                  \
+			"pop r31\n" /*pops r31*/                  \
+			"st y+, r30\n"                            \
+			"st y+, r31\n"                            \
+			"push r31\n"				/*push r31*/          \
+			"push r30\n"				/*push r30*/          \
+			"in r0, __SP_L__\n" /*stores SP*/         \
+			"st z+, r0\n"                             \
+			"in r0, __SP_H__\n"                       \
+			"st z+, r0\n"                             \
+			"push r1\n"                               \
+			"rcall getavrpc\n" /*stores PC*/          \
+			"rjump continue\n" /*continues*/          \
+			"getavrpc:\n"                             \
+			"pop r1\n"                                \
+			"pop r0\n"                                \
+			"st z+, r0\n"                             \
+			"st z+, r1\n"                             \
+			"push r0\n" /*push PC back to the stack*/ \
+			"push r1\n" /*push PC back to the stack*/ \
+			"ret\n"                                   \
+			"continue:\n"                             \
+			"pop r1\n" /*pops r1*/                    \
+			"pop r0\n" /*pops r0*/                    \
+			"sei\n" /*enables ISR*/)
+
+#define load_context(context_ptr)                  \
+	__asm__ __volatile__(                            \
+			"cli\n" /*disables ISR*/                     \
+			"lds r30, " #context_ptr "\n"                \
+			"lds r31, " #context_ptr "+1\n"              \
+			"ld r0, z+\n"                                \
+			"ld r1, z+\n"                                \
+			"ld r2, z+\n"                                \
+			"ld r3, z+\n"                                \
+			"ld r4, z+\n"                                \
+			"ld r5, z+\n"                                \
+			"ld r6, z+\n"                                \
+			"ld r7, z+\n"                                \
+			"ld r8, z+\n"                                \
+			"ld r9, z+\n"                                \
+			"ld r10, z+\n"                               \
+			"ld r11, z+\n"                               \
+			"ld r12, z+\n"                               \
+			"ld r13, z+\n"                               \
+			"ld r14, z+\n"                               \
+			"ld r15, z+\n"                               \
+			"ld r16, z+\n"                               \
+			"ld r17, z+\n"                               \
+			"ld r18, z+\n"                               \
+			"ld r19, z+\n"                               \
+			"ld r20, z+\n"                               \
+			"ld r21, z+\n"                               \
+			"ld r22, z+\n"                               \
+			"ld r23, z+\n"                               \
+			"ld r24, z+\n"                               \
+			"ld r25, z+\n"                               \
+			"ld r26, z+\n"                               \
+			"ld r27, z+\n"                               \
+			"ld r28, z+\n"                               \
+			"ld r29, z+\n"                               \
+			"push r0\n"		 /*push r6 to load PC */       \
+			"push r1\n"		 /*push r7 to load PC+1*/      \
+			"push r5\n"		 /*push r5 to load __SP_H__*/  \
+			"push r4\n"		 /*push r4 to load __SP_L__ */ \
+			"push r3\n"		 /*push r3 to load r31*/       \
+			"push r2\n"		 /*push r2 to load r30 */      \
+			"ld r2, z+\n"	 /*loads r30 to r2*/           \
+			"ld r3, z+\n"	 /*loads r31 to r3*/           \
+			"ld r4, z+\n"	 /*loads __SP_L__ to r4*/      \
+			"ld r5, z+\n"	 /*loads __SP_H__ to r5*/      \
+			"ld r6, z+\n"	 /*loads PC to r6*/            \
+			"ld r7, z+\n"	 /*loads PC+1 to r7*/          \
+			"mov r30,r2\n" /*moves r2 to r30*/           \
+			"pop r2\n"		 /*pops r2*/                   \
+			"mov r31,r3\n" /*moves r3 to r31*/           \
+			"pop r3\n"		 /*pops r3*/                   \
+			"out __SP_H__, r6\n"                         \
+			"pop r6\n" /*pops r3*/                       \
+			"ld r0, z+\n"                                \
+			"pop r0\n" /*pops r31*/                      \
+			"ld r0, z+\n"                                \
+			"in r0, __SP_L__\n"                          \
+			"ld r0, z+\n"                                \
+			"in r0, __SP_H__\n"                          \
+			"ld r0, z+\n"                                \
+			"push r1\n"                                  \
+			"rcall getavrpc\n" /*stores PC*/             \
+			"rjump continue\n" /*continues*/             \
+			"getavrpc:\n"                                \
+			"pop r1\n"                                   \
+			"pop r0\n"                                   \
+			"ld r0, z+\n"                                \
+			"st z+, r1\n"                                \
+			"push r0\n" /*push PC back to the stack*/    \
+			"push r1\n" /*push PC back to the stack*/    \
+			"ret\n"                                      \
+			"continue:\n"                                \
+			"pop r1\n" /*pops r1*/                       \
+			"pop r0\n" /*pops r0*/                       \
+			"sei\n" /*enables ISR*/)
 
 #ifdef __cplusplus
 }
