@@ -190,6 +190,7 @@ extern "C"
 #endif
 
 #include "../../../boardmap_overrides.h"
+#include "pin_mapping_helper.h"
 #include "../mcus/mcudefs.h" //configures the MCU for the selected board
 
 #ifdef __cplusplus

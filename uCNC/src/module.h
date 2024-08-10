@@ -65,7 +65,7 @@ extern "C"
 #define EVENT_HANDLER_NAME(name) event_##name##_handler
 #define EVENT_INVOKE(name, args) EVENT_HANDLER_NAME(name)(args)
 #define CREATE_EVENT_LISTENER(name, handler) __attribute__((used)) name##_delegate_event_t name##_delegate_##handler = {&handler, LISTENER_NO_LOCK, NULL}
-#define CREATE_EVENT_LISTENER_WITHLOCK(name, handler, lock_flags) __attribute__((used)) name##_delegate_event_t name##_delegate_##handler = {&handler, CLEARFLAG(lock_flags, LISTENER_RUNNING_LOCK), NULL}
+#define CREATE_EVENT_LISTENER_WITHLOCK(name, handler, lock_flags) __attribute__((used)) name##_delegate_event_t name##_delegate_##handler = {&handler, (lock_flags & (~LISTENER_RUNNING_LOCK)), NULL}
 #define ADD_EVENT_LISTENER(name, handler)                     \
 	{                                                           \
 		extern name##_delegate_event_t name##_delegate_##handler; \
