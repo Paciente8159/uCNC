@@ -4135,7 +4135,7 @@ extern "C"
 #ifndef SPI2_SDI_AFIO
 #error "SPI2 pin configuration not supported"
 #endif
-#ifdef SPI2_CS
+// #ifdef SPI2_CS
 // #ifndef SPI2_CS_AFIO
 // #error "SPI2 pin configuration not supported"
 // #endif
