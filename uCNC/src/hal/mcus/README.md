@@ -65,8 +65,10 @@ These are the fixed names used internally:
 + ```SPI_CS``` pin defines the SPI chip select port pin.
 + ```I2C_CLK``` pin defines the I2S clock port pin.
 + ```I2C_DATA``` pin defines the I2C data port pin.
-
-SPI_CLK
++ ```SPI2_CLK``` pin defines the SPI2 clock port pin.
++ ```SPI2_SDI``` pin defines the SPI2 data input (MISO) port pin.
++ ```SPI2_SDO``` pin defines the SPI2 data output (MOSI) port pin.
++ ```SPI2_CS``` pin defines the SPI2 chip select port pin.
 
 #### Output pins - generic
 + ```PWM#``` pin defines a pwm output pin.
@@ -74,13 +76,13 @@ SPI_CLK
 + ```SERVO#``` pin defines a pwm output pin.
    + ```SERVO0 to SERVO5``` are the servo output pins.
 + ```DOUT#``` pin defines a generic output pin.
-   + ```DOUT0 to DOUT31``` are the generic output pins.
+   + ```DOUT0 to DOUT49``` are the generic output pins.
 
 #### Input pins - generic
 + ```ANALOG#``` pin defines an analog input pin.
    + ```ANALOG0 to ANALOG15``` are the analog input pins.
 + ```DIN#``` pin defines a generic input pin.
-   + ```DIN0 to DIN31``` are the generic input pins. Pins ```DIN0 to DIN7``` can also be have ISR on change option enabled. In conjunction with ```DIN8 to DIN31``` they can form a pair for the encoder module.
+   + ```DIN0 to DIN49``` are the generic input pins. Pins ```DIN0 to DIN7``` can also be have ISR on change option enabled. In conjunction with ```DIN8 to DIN49``` they can form a pair for the encoder module.
 
 These pins also obey a numbering system to make them transversal between boards and MCU as mapped in the table bellow:
 
@@ -164,6 +166,24 @@ These pins also obey a numbering system to make them transversal between boards 
 | 76 | DIO76 | DOUT29 |
 | 77 | DIO77 | DOUT30 |
 | 78 | DIO78 | DOUT31 |
+| 79 | DIO79 | DOUT32 |
+| 80 | DIO80 | DOUT33 |
+| 81 | DIO81 | DOUT34 |
+| 82 | DIO82 | DOUT35 |
+| 83 | DIO83 | DOUT36 |
+| 84 | DIO84 | DOUT37 |
+| 85 | DIO85 | DOUT38 |
+| 86 | DIO86 | DOUT39 |
+| 87 | DIO87 | DOUT40 |
+| 88 | DIO88 | DOUT41 |
+| 89 | DIO89 | DOUT42 |
+| 90 | DIO90 | DOUT43 |
+| 91 | DIO91 | DOUT44 |
+| 92 | DIO92 | DOUT45 |
+| 93 | DIO93 | DOUT46 |
+| 94 | DIO94 | DOUT47 |
+| 95 | DIO95 | DOUT48 |
+| 96 | DIO96 | DOUT49 |
 | 100 | DIO100 | LIMIT_X |
 | 101 | DIO101 | LIMIT_Y |
 | 102 | DIO102 | LIMIT_Z |
@@ -226,6 +246,24 @@ These pins also obey a numbering system to make them transversal between boards 
 | 159 | DIO159 | DIN29 |
 | 160 | DIO160 | DIN30 |
 | 161 | DIO161 | DIN31 |
+| 162 | DIO162 | DIN32 |
+| 163 | DIO163 | DIN33 |
+| 164 | DIO164 | DIN34 |
+| 165 | DIO165 | DIN35 |
+| 166 | DIO166 | DIN36 |
+| 167 | DIO167 | DIN37 |
+| 168 | DIO168 | DIN38 |
+| 169 | DIO169 | DIN39 |
+| 170 | DIO170 | DIN40 |
+| 171 | DIO171 | DIN41 |
+| 172 | DIO172 | DIN42 |
+| 173 | DIO173 | DIN43 |
+| 174 | DIO174 | DIN44 |
+| 175 | DIO175 | DIN45 |
+| 176 | DIO176 | DIN46 |
+| 177 | DIO177 | DIN47 |
+| 178 | DIO178 | DIN48 |
+| 179 | DIO179 | DIN49 |
 | 200 | DIO200 | TX |
 | 201 | DIO201 | RX |
 | 202 | DIO202 | USB_DM |
@@ -238,6 +276,10 @@ These pins also obey a numbering system to make them transversal between boards 
 | 209 | DIO209 | I2C_SDA |
 | 210 | DIO210 | TX2 |
 | 211 | DIO211 | RX2 |
+| 212 | DIO212 | SPI2_CLK |
+| 213 | DIO213 | SPI2_SDI |
+| 214 | DIO214 | SPI2_SDO |
+| 215 | DIO215 | SPI2_CS |
 
 With the introduction of the new IO HAL `src/hal/io_hal.h` all these definitions/values must be interchangable and match the above table.
 `src/hal/io_hal.h` and `src/core/io_control.h` will then provide a series of preprocessor macros that translate between a µCNC IO call and the actual MCU IO call, based on all the available information (the IO HAL, the boardmap and the MCU HAL).
@@ -305,6 +347,13 @@ Before creating a custom HAL for a custom board/microcontroller the microcontrol
 #define F_STEP_MAX 30000
 #endif
 
+#define STREAM_UART 1
+#define STREAM_UART2 2
+#define STREAM_USB 4
+#define STREAM_WIFI 8
+#define STREAM_BTH 16
+#define STREAM_BOARDCAST 255
+
 // defines special mcu to access flash strings and arrays
 #ifndef __rom__
 #define __rom__
@@ -337,7 +386,7 @@ Before creating a custom HAL for a custom board/microcontroller the microcontrol
 
 	MCU_CALLBACK void mcu_step_cb(void);
 	MCU_CALLBACK void mcu_step_reset_cb(void);
-	MCU_RX_CALLBACK void mcu_com_rx_cb(uint8_t c);
+	MCU_RX_CALLBACK bool mcu_com_rx_cb(uint8_t c);
 	MCU_CALLBACK void mcu_rtc_cb(uint32_t millis);
 	MCU_IO_CALLBACK void mcu_controls_changed_cb(void);
 	MCU_IO_CALLBACK void mcu_limits_changed_cb(void);
@@ -416,6 +465,13 @@ Before creating a custom HAL for a custom board/microcontroller the microcontrol
 	 *
 	 * */
 	void mcu_io_init(void);
+
+	/**
+	 * This can be used to set the defaults state of IO pins on reset. (overridable)
+	 * */
+#ifndef mcu_io_reset
+	void mcu_io_reset(void);
+#endif
 
 	/**
 	 * initializes the mcu
@@ -542,17 +598,29 @@ Before creating a custom HAL for a custom board/microcontroller the microcontrol
 	 * */
 	void mcu_stop_itp_isr(void);
 
-	/**
-	 * gets the MCU running time in milliseconds.
-	 * the time counting is controled by the internal RTC
-	 * */
+/**
+ * gets the MCU running time in milliseconds.
+ * the time counting is controled by the internal RTC
+ * */
+#ifndef mcu_millis
 	uint32_t mcu_millis(void);
+#endif
 
-	/**
-	 * gets the MCU running time in microseconds.
-	 * the time counting is controled by the internal RTC
-	 * */
+/**
+ * gets the MCU running time in microseconds.
+ * the time counting is controled by the internal RTC
+ * */
+#ifndef mcu_micros
 	uint32_t mcu_micros(void);
+#endif
+
+/**
+ * gets the microsecond portion of the free RTC clock counter (from 0 to 1000).
+ * this free runner is always running even during an ISR or atomic operation
+ * */
+#ifndef mcu_free_micros
+	uint32_t mcu_free_micros(void);
+#endif
 
 #ifndef mcu_nop
 #define mcu_nop() asm volatile("nop\n\t")
@@ -575,103 +643,103 @@ Before creating a custom HAL for a custom board/microcontroller the microcontrol
 #error "MCU_CYCLES_PER_LOOP_OVERHEAD not defined for this MCU"
 #endif
 
-#define mcu_delay_cycles(X)                                                                                                                     \
-	{                                                                                                                                           \
-		if (X > (MCU_CYCLES_PER_LOOP + MCU_CYCLES_PER_LOOP_OVERHEAD))                                                                           \
-		{                                                                                                                                       \
+#define mcu_delay_cycles(X)                                                                                                               \
+	{                                                                                                                                       \
+		if (X > (MCU_CYCLES_PER_LOOP + MCU_CYCLES_PER_LOOP_OVERHEAD))                                                                         \
+		{                                                                                                                                     \
 			mcu_delay_loop((uint16_t)((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP));                                               \
 			if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) - (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 0)  \
 			{                                                                                                                                   \
-				mcu_nop();                                                                                                                      \
+				mcu_nop();                                                                                                                        \
 			}                                                                                                                                   \
 			if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) - (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 1)  \
 			{                                                                                                                                   \
-				mcu_nop();                                                                                                                      \
+				mcu_nop();                                                                                                                        \
 			}                                                                                                                                   \
 			if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) - (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 2)  \
 			{                                                                                                                                   \
-				mcu_nop();                                                                                                                      \
+				mcu_nop();                                                                                                                        \
 			}                                                                                                                                   \
 			if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) - (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 3)  \
 			{                                                                                                                                   \
-				mcu_nop();                                                                                                                      \
+				mcu_nop();                                                                                                                        \
 			}                                                                                                                                   \
 			if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) - (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 4)  \
 			{                                                                                                                                   \
-				mcu_nop();                                                                                                                      \
+				mcu_nop();                                                                                                                        \
 			}                                                                                                                                   \
 			if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) - (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 5)  \
 			{                                                                                                                                   \
-				mcu_nop();                                                                                                                      \
+				mcu_nop();                                                                                                                        \
 			}                                                                                                                                   \
 			if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) - (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 6)  \
 			{                                                                                                                                   \
-				mcu_nop();                                                                                                                      \
+				mcu_nop();                                                                                                                        \
 			}                                                                                                                                   \
 			if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) - (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 7)  \
 			{                                                                                                                                   \
-				mcu_nop();                                                                                                                      \
+				mcu_nop();                                                                                                                        \
 			}                                                                                                                                   \
 			if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) - (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 8)  \
 			{                                                                                                                                   \
-				mcu_nop();                                                                                                                      \
+				mcu_nop();                                                                                                                        \
 			}                                                                                                                                   \
 			if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) - (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 9)  \
 			{                                                                                                                                   \
-				mcu_nop();                                                                                                                      \
+				mcu_nop();                                                                                                                        \
 			}                                                                                                                                   \
 			if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) - (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 10) \
 			{                                                                                                                                   \
-				mcu_nop();                                                                                                                      \
+				mcu_nop();                                                                                                                        \
 			}                                                                                                                                   \
-		}                                                                                                                                       \
-		else                                                                                                                                    \
-		{                                                                                                                                       \
+		}                                                                                                                                     \
+		else                                                                                                                                  \
+		{                                                                                                                                     \
 			if ((X - ((X / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 0)                                                                    \
 			{                                                                                                                                   \
-				mcu_nop();                                                                                                                      \
+				mcu_nop();                                                                                                                        \
 			}                                                                                                                                   \
 			if ((X - ((X / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 1)                                                                    \
 			{                                                                                                                                   \
-				mcu_nop();                                                                                                                      \
+				mcu_nop();                                                                                                                        \
 			}                                                                                                                                   \
 			if ((X - ((X / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 2)                                                                    \
 			{                                                                                                                                   \
-				mcu_nop();                                                                                                                      \
+				mcu_nop();                                                                                                                        \
 			}                                                                                                                                   \
 			if ((X - ((X / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 3)                                                                    \
 			{                                                                                                                                   \
-				mcu_nop();                                                                                                                      \
+				mcu_nop();                                                                                                                        \
 			}                                                                                                                                   \
 			if ((X - ((X / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 4)                                                                    \
 			{                                                                                                                                   \
-				mcu_nop();                                                                                                                      \
+				mcu_nop();                                                                                                                        \
 			}                                                                                                                                   \
 			if ((X - ((X / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 5)                                                                    \
 			{                                                                                                                                   \
-				mcu_nop();                                                                                                                      \
+				mcu_nop();                                                                                                                        \
 			}                                                                                                                                   \
 			if ((X - ((X / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 6)                                                                    \
 			{                                                                                                                                   \
-				mcu_nop();                                                                                                                      \
+				mcu_nop();                                                                                                                        \
 			}                                                                                                                                   \
 			if ((X - ((X / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 7)                                                                    \
 			{                                                                                                                                   \
-				mcu_nop();                                                                                                                      \
+				mcu_nop();                                                                                                                        \
 			}                                                                                                                                   \
 			if ((X - ((X / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 8)                                                                    \
 			{                                                                                                                                   \
-				mcu_nop();                                                                                                                      \
+				mcu_nop();                                                                                                                        \
 			}                                                                                                                                   \
 			if ((X - ((X / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 9)                                                                    \
 			{                                                                                                                                   \
-				mcu_nop();                                                                                                                      \
+				mcu_nop();                                                                                                                        \
 			}                                                                                                                                   \
 			if ((X - ((X / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 10)                                                                   \
 			{                                                                                                                                   \
-				mcu_nop();                                                                                                                      \
+				mcu_nop();                                                                                                                        \
 			}                                                                                                                                   \
-		}                                                                                                                                       \
+		}                                                                                                                                     \
 	}
 #endif
 
@@ -728,14 +796,50 @@ Before creating a custom HAL for a custom board/microcontroller the microcontrol
 	 * */
 	void mcu_eeprom_flush(void);
 
+	typedef union
+	{
+		uint8_t flags;
+		struct
+		{
+			uint8_t mode : 3;
+			uint8_t : 1; // reserved for bit order
+			uint8_t enable_dma : 1;
+			uint8_t : 3; // reserved
+		};
+	} spi_config_t;
+
+	// hardware port function calls
+	typedef struct spi_port_
+	{
+		bool isbusy;
+		void (*start)(spi_config_t, uint32_t);
+		uint8_t (*xmit)(uint8_t);
+		bool (*bulk_xmit)(const uint8_t *, uint8_t *, uint16_t);
+		void (*stop)(void);
+	} spi_port_t;
+
 #ifdef MCU_HAS_SPI
 #ifndef mcu_spi_xmit
 	uint8_t mcu_spi_xmit(uint8_t data);
 #endif
 
+#ifndef mcu_spi_bulk_transfer
+	bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len);
+#endif
+
+#ifndef mcu_spi_start
+	void mcu_spi_start(spi_config_t config, uint32_t frequency);
+#endif
+
+#ifndef mcu_spi_stop
+	void mcu_spi_stop(void);
+#endif
+
 #ifndef mcu_spi_config
 	void mcu_spi_config(spi_config_t config, uint32_t frequency);
 #endif
+
+extern spi_port_t mcu_spi_port;
 #endif
 
 #ifdef MCU_HAS_I2C
@@ -748,7 +852,7 @@ Before creating a custom HAL for a custom board/microcontroller the microcontrol
 
 #ifndef mcu_i2c_send
 	// master sends command to slave
-	uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool release);
+	uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool release, uint32_t ms_timeout);
 #endif
 #ifndef mcu_i2c_receive
 	// master receive response from slave
@@ -770,23 +874,15 @@ Before creating a custom HAL for a custom board/microcontroller the microcontrol
 
 #endif
 
-#ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
-	uint8_t mcu_custom_grbl_cmd(uint8_t *grbl_cmd_str, uint8_t grbl_cmd_len, uint8_t next_char);
-#endif
-
-/**
- * sends a uint8_t either via uart (hardware, software USB CDC, Wifi or BT)
- * can be defined either as a function or a macro call
- * */
-#ifndef mcu_putc
-	void mcu_putc(uint8_t c);
-#endif
-
-#ifndef mcu_flush
-	void mcu_flush(void);
-#endif
+	/**
+	 * sends a uint8_t either via uart (hardware, software USB CDC, Wifi or BT)
+	 * can be defined either as a function or a macro call
+	 * */
 
 #ifdef MCU_HAS_USB
+	uint8_t mcu_usb_getc(void);
+	uint8_t mcu_usb_available(void);
+	void mcu_usb_clear(void);
 	void mcu_usb_putc(uint8_t c);
 	void mcu_usb_flush(void);
 #ifdef DETACH_USB_FROM_MAIN_PROTOCOL
@@ -795,6 +891,9 @@ Before creating a custom HAL for a custom board/microcontroller the microcontrol
 #endif
 
 #ifdef MCU_HAS_UART
+	uint8_t mcu_uart_getc(void);
+	uint8_t mcu_uart_available(void);
+	void mcu_uart_clear(void);
 	void mcu_uart_putc(uint8_t c);
 	void mcu_uart_flush(void);
 #ifdef DETACH_UART_FROM_MAIN_PROTOCOL
@@ -803,6 +902,9 @@ Before creating a custom HAL for a custom board/microcontroller the microcontrol
 #endif
 
 #ifdef MCU_HAS_UART2
+	uint8_t mcu_uart2_getc(void);
+	uint8_t mcu_uart2_available(void);
+	void mcu_uart2_clear(void);
 	void mcu_uart2_putc(uint8_t c);
 	void mcu_uart2_flush(void);
 #ifdef DETACH_UART2_FROM_MAIN_PROTOCOL
@@ -811,6 +913,9 @@ Before creating a custom HAL for a custom board/microcontroller the microcontrol
 #endif
 
 #ifdef MCU_HAS_WIFI
+	uint8_t mcu_wifi_getc(void);
+	uint8_t mcu_wifi_available(void);
+	void mcu_wifi_clear(void);
 	void mcu_wifi_putc(uint8_t c);
 	void mcu_wifi_flush(void);
 #ifdef DETACH_WIFI_FROM_MAIN_PROTOCOL
@@ -819,11 +924,30 @@ Before creating a custom HAL for a custom board/microcontroller the microcontrol
 #endif
 
 #ifdef MCU_HAS_BLUETOOTH
+	uint8_t mcu_bt_getc(void);
+	uint8_t mcu_bt_available(void);
+	void mcu_bt_clear(void);
 	void mcu_bt_putc(uint8_t c);
 	void mcu_bt_flush(void);
 #ifdef DETACH_BLUETOOTH_FROM_MAIN_PROTOCOL
 	MCU_RX_CALLBACK void mcu_bt_rx_cb(uint8_t c);
 #endif
+#endif
+
+#ifndef mcu_getc
+#define mcu_getc (&mcu_uart_getc)
+#endif
+#ifndef mcu_available
+#define mcu_available (&mcu_uart_available)
+#endif
+#ifndef mcu_clear
+#define mcu_clear (&mcu_uart_clear)
+#endif
+#ifndef mcu_putc
+#define mcu_putc (&mcu_uart_putc)
+#endif
+#ifndef mcu_flush
+#define mcu_flush (&mcu_uart_flush)
 #endif
    ```
 

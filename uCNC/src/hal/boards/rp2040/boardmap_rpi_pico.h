@@ -130,6 +130,12 @@ extern "C"
 // #define SPI_CS_BIT 17
 // #define SPI_PORT 0
 
+// #define SPI2_CLK_BIT 10
+// #define SPI2_SDO_BIT 11
+// #define SPI2_SDI_BIT 12
+// #define SPI2_CS_BIT 13
+// #define SPI2_PORT 1
+
 	/**
 	 * New multicore mode - Experimental
 	 * */

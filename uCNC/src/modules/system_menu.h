@@ -170,6 +170,9 @@ extern "C"
 	void system_menu_show_modal_popup(uint32_t timeout, const char *__s);
 	void system_menu_action_timeout(uint32_t delay);
 
+	void system_menu_set_render_callback(uint8_t menu_id, system_menu_page_render_cb callback);
+	void system_menu_set_action_callback(uint8_t menu_id, system_menu_page_action_cb callback);
+
 	void system_menu_append(system_menu_page_t *newpage);
 	void system_menu_append_item(uint8_t menu_id, system_menu_index_t *newitem);
 
@@ -190,6 +193,12 @@ extern "C"
 	void system_menu_render_modal_popup(const char *__s);
 	// this needs to be implemented using a serial stream
 	uint8_t system_menu_send_cmd(const char *__s);
+
+	/**
+	 * Overridable system menu actions to be implemented for the user input system
+	 * **/
+
+	void system_menu_action_custom_code(uint8_t action);
 
 	/**
 	 * Helper µCNC action callbacks

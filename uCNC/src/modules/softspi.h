@@ -117,7 +117,7 @@ extern "C"
 	bool NAME##_miso(void) { return io_get_input(MISOPIN); }  \
 	__attribute__((used)) softspi_port_t NAME = {.spiconfig = {.flags = MODE}, .spifreq = FREQ, .spiport = NULL, .clk = &NAME##_clk, .mosi = &NAME##_mosi, .miso = &NAME##_miso, .config = &NAME##_config};
 
-#define HARDSPI(NAME, FREQ, MODE) __attribute__((used)) softspi_port_t NAME = {.spiconfig = {.flags = MODE}, .spifreq = FREQ, .spiport = &mcu_spi_port, .clk = NULL, .mosi = NULL, .miso = NULL, .config = NULL};
+#define HARDSPI(NAME, FREQ, MODE, PORT) __attribute__((used)) softspi_port_t NAME = {.spiconfig = {.mode = MODE}, .spifreq = FREQ, .spiport = &PORT, .clk = NULL, .mosi = NULL, .miso = NULL, .config = NULL};
 
 	void softspi_config(softspi_port_t *port, spi_config_t config, uint32_t frequency);
 	void softspi_start(softspi_port_t *port);

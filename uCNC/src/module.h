@@ -37,7 +37,8 @@ extern "C"
 #define LISTENER_NO_LOCK 0x00
 #define LISTENER_RUNNING_LOCK 0x01
 #define LISTENER_HWSPI_LOCK 0x02 // prevent multiple accesses to HWSPI by different modules
-#define LISTENER_HWI2C_LOCK 0x04 // for future use
+#define LISTENER_HWSPI2_LOCK 0x04 // prevent multiple accesses to HWSPI2 by different modules
+#define LISTENER_HWI2C_LOCK 0x08 // for future use
 #define LISTENER_SWSPI_LOCK 0x20 // prevent multiple accesses to any software emulated SPI by different modules
 #define LISTENER_SWI2C_LOCK 0x40 // prevent multiple accesses to any software emulated I2C by different modules
 	// other locks might be added latter
@@ -65,7 +66,7 @@ extern "C"
 #define EVENT_HANDLER_NAME(name) event_##name##_handler
 #define EVENT_INVOKE(name, args) EVENT_HANDLER_NAME(name)(args)
 #define CREATE_EVENT_LISTENER(name, handler) __attribute__((used)) name##_delegate_event_t name##_delegate_##handler = {&handler, LISTENER_NO_LOCK, NULL}
-#define CREATE_EVENT_LISTENER_WITHLOCK(name, handler, lock_flags) __attribute__((used)) name##_delegate_event_t name##_delegate_##handler = {&handler, lock_flags, NULL}
+#define CREATE_EVENT_LISTENER_WITHLOCK(name, handler, lock_flags) __attribute__((used)) name##_delegate_event_t name##_delegate_##handler = {&handler, (lock_flags & (~LISTENER_RUNNING_LOCK)), NULL}
 #define ADD_EVENT_LISTENER(name, handler)                     \
 	{                                                           \
 		extern name##_delegate_event_t name##_delegate_##handler; \
@@ -99,7 +100,9 @@ extern "C"
 	name##_delegate_event_t *name##_event; \
 	bool __attribute__((weak)) EVENT_HANDLER_NAME(name)(void *args)
 #define OVERRIDE_EVENT_HANDLER(name) bool EVENT_HANDLER_NAME(name)(void *args)
-#define MODULE_DEBUG_ENABLED
+
+// MODULE_DEBUG_ENABLED can be added to allow debuggin the default handler code
+// this comes with a small performance penalty but also makes code about 1k~2k smaller by using a generic function
 #ifndef MODULE_DEBUG_ENABLED
 #define DEFAULT_EVENT_HANDLER(name)                                                                   \
 	{                                                                                                   \
@@ -123,7 +126,7 @@ extern "C"
 				}                                                                                             \
 				CLEARFLAG(ptr->fplock, LISTENER_RUNNING_LOCK);                                                \
 			}                                                                                               \
-			ptr = start;                                                                                    \
+			ptr = ptr->next;                                                                                \
 		}                                                                                                 \
 		return EVENT_CONTINUE;                                                                            \
 	}
