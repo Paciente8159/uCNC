@@ -16,8 +16,8 @@
 	See the	GNU General Public License for more details.
 */
 
-#ifndef BOARDMAP_MKS_ROBIN_NANO_V12_H
-#define BOARDMAP_MKS_ROBIN_NANO_V12_H
+#ifndef BOARDMAP_MKS_ROBIN_NANO_V31_H
+#define BOARDMAP_MKS_ROBIN_NANO_V31_H
 
 #ifdef __cplusplus
 extern "C"
@@ -25,8 +25,9 @@ extern "C"
 #endif
 
 #ifndef BOARD_NAME
-#define BOARD_NAME "MKS Robin Nano 1.2"
+#define BOARD_NAME "MKS Robin Nano 3.1"
 #endif
+
 
 // Setup step pins
 #define STEP0_BIT 3	 // assigns STEP0 pin
@@ -37,8 +38,8 @@ extern "C"
 #define STEP2_PORT B // assigns STEP2 port
 #define STEP3_BIT 6	 // assigns STEP3 pin
 #define STEP3_PORT D // assigns STEP3 port
-#define STEP4_BIT 6	 // assigns STEP3 pin
-#define STEP4_PORT A // assigns STEP3 port
+#define STEP4_BIT 15	 // assigns STEP3 pin
+#define STEP4_PORT D // assigns STEP3 port
 
 // Setup dir pins
 #define DIR0_BIT 2	// assigns DIR0 pin
@@ -67,12 +68,12 @@ extern "C"
 // Setup limit pins
 #define LIMIT_X_BIT 15	// assigns LIMIT_X pin
 #define LIMIT_X_PORT A	// assigns LIMIT_X port
-#define LIMIT_Y_BIT 12	// assigns LIMIT_Y pin
-#define LIMIT_Y_PORT A	// assigns LIMIT_Y port
+#define LIMIT_Y_BIT 2	// assigns LIMIT_Y pin
+#define LIMIT_Y_PORT D	// assigns LIMIT_Y port
 #define LIMIT_Z_BIT 4		// assigns LIMIT_Z+ pin
 #define LIMIT_Z_PORT C	// assigns LIMIT_Z+ port
-#define LIMIT_Z2_BIT 11 // assigns LIMIT_Z- pin
-#define LIMIT_Z2_PORT A // assigns LIMIT_Z- port
+#define LIMIT_Z2_BIT 8 // assigns LIMIT_Z- pin
+#define LIMIT_Z2_PORT C // assigns LIMIT_Z- port
 
 // Enable limits switch interrupt
 #define LIMIT_X_ISR
@@ -86,25 +87,30 @@ extern "C"
 #define PROBE_ISR
 
 // Setup COM pins
-#define UART_PORT 3
-#define TX_BIT 10
-#define TX_PORT B
-#define RX_BIT 11
-#define RX_PORT B
+#define UART_PORT 1
+#define TX_BIT 9
+#define TX_PORT A
+#define RX_BIT 10
+#define RX_PORT A
 #define RX_PULLUP
+
+#define USB_DM_BIT 11
+#define USB_DM_PORT A
+#define USB_DP_BIT 12
+#define USB_DP_PORT A
 
 // Setup PWM
 #define PWM0_BIT 0	// assigns PWM0 pin
 #define PWM0_PORT A // assigns PWM0 pin
 #define PWM0_CHANNEL 1
 #define PWM0_TIMER 2
-#define PWM1_BIT 0	// assigns PWM2 pin
-#define PWM1_PORT B // assigns PWM2 pin
-#define PWM1_CHANNEL 3
-#define PWM1_TIMER 3
-#define PWM2_BIT 1	// assigns PWM3 pin
+#define PWM1_BIT 5	// assigns PWM2 pin
+#define PWM1_PORT E // assigns PWM2 pin
+#define PWM1_CHANNEL 1
+#define PWM1_TIMER 9
+#define PWM2_BIT 0	// assigns PWM3 pin
 #define PWM2_PORT B // assigns PWM3 pin
-#define PWM2_CHANNEL 4
+#define PWM2_CHANNEL 3
 #define PWM2_TIMER 3
 
 // spindle dir
@@ -126,15 +132,16 @@ extern "C"
 #define ITP_TIMER 5
 #define SERVO_TIMER 4
 
-// software SPI for card access
-#define DOUT29_BIT 2
-#define DOUT29_PORT D
-#define DIN29_BIT 8
-#define DIN29_PORT C
-#define DOUT30_BIT 12
-#define DOUT30_PORT C
-#define SPI_CS_BIT 11
+// SPI for card access
+#define SPI_CS_BIT 9
 #define SPI_CS_PORT C
+#define SPI_CLK_BIT 10
+#define SPI_CLK_PORT C
+#define SPI_SDO_BIT 12
+#define SPI_SDO_PORT C
+#define SPI_SDI_BIT 11
+#define SPI_SDI_PORT C
+#define SPI_PORT 3
 // SD detect pin
 #define DIN19_BIT 12
 #define DIN19_PORT D

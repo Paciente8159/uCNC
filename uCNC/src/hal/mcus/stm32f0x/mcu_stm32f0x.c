@@ -409,6 +409,8 @@ static void mcu_usart_init(void);
 
 void mcu_clocks_init()
 {
+	SystemCoreClockUpdate();
+
 	// initialize debugger clock (used by us delay)
 	// if (!(CoreDebug->DEMCR & CoreDebug_DEMCR_TRCENA_Msk))
 	// {
