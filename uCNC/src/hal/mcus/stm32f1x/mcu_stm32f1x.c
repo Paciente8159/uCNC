@@ -40,13 +40,17 @@
 #endif
 
 #if (FLASH_BANK1_END <= 0x0801FFFFUL)
+#ifndef FLASH_PAGE_SIZE
 #define FLASH_PAGE_SIZE (1 << 10)
+#endif
 #define FLASH_EEPROM_PAGES (((NVM_STORAGE_SIZE - 1) >> 10) + 1)
 #define FLASH_EEPROM (FLASH_LIMIT - ((FLASH_EEPROM_PAGES << 10) - 1))
 #define FLASH_PAGE_MASK (0xFFFF - (1 << 10) + 1)
 #define FLASH_PAGE_OFFSET_MASK (0xFFFF & ~FLASH_PAGE_MASK)
 #else
-#define FLASH_PAGE_SIZE 0x800
+#ifndef FLASH_PAGE_SIZE
+#define FLASH_PAGE_SIZE (1 << 11)
+#endif
 #define FLASH_EEPROM_PAGES (((NVM_STORAGE_SIZE - 1) >> 11) + 1)
 #define FLASH_EEPROM (FLASH_LIMIT - ((FLASH_EEPROM_PAGES << 11) - 1))
 #define FLASH_PAGE_MASK (0xFFFF - (1 << 11) + 1)

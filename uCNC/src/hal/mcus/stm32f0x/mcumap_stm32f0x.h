@@ -4526,7 +4526,7 @@ extern "C"
 // #ifndef SPI2_CS_AFIO
 // #error "SPI2 pin configuration not supported"
 // #endif
-#endif
+// #endif
 
 #define SPI2_REG __helper__(SPI, SPI2_PORT, )
 #if (SPI2_PORT == 2 || SPI2_PORT == 3)
