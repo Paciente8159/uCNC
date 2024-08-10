@@ -146,6 +146,18 @@ extern "C"
 #define DIN19_BIT 12
 #define DIN19_PORT D
 
+// SPI for displays
+#define SPI2_CS_BIT 11
+#define SPI2_CS_PORT D
+#define SPI2_CLK_BIT 5
+#define SPI2_CLK_PORT A
+#define SPI2_SDO_BIT 7
+#define SPI2_SDO_PORT A
+#define SPI2_SDI_BIT 6
+#define SPI2_SDI_PORT A
+#define SPI2_PORT 1
+
+
 #define ONESHOT_TIMER 8
 
 #ifdef __cplusplus

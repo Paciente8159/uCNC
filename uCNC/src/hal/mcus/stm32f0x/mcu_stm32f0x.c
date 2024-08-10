@@ -653,9 +653,9 @@ void mcu_init(void)
 	mcu_config_af(SPI2_SDO, SPI2_SDO_AFIO);
 
   RCC->AHBENR |= RCC_AHBENR_DMAEN;
-#if ASSERT_PIN_IO(SPI2_CS)
-	mcu_config_af(SPI2_CS, SPI2_CS_AFIO);
-#endif
+// #if ASSERT_PIN_IO(SPI2_CS)
+// 	mcu_config_af(SPI2_CS, SPI2_CS_AFIO);
+// #endif
 	// initialize the SPI2 configuration register
 	SPI2_REG->CR1 = SPI_CR1_SSM		 // software slave management enabled
 								 | SPI_CR1_SSI	 // internal slave select
