@@ -419,6 +419,7 @@ static void mcu_usart_init(void);
 
 void mcu_clocks_init()
 {
+	SystemCoreClockUpdate();
 	// initialize debugger clock (used by us delay)
 	if (!(CoreDebug->DEMCR & CoreDebug_DEMCR_TRCENA_Msk))
 	{
@@ -646,9 +647,9 @@ void mcu_init(void)
 	mcu_config_af(SPI_SDI, SPI_SDI_AFIO);
 	mcu_config_af(SPI_CLK, SPI_CLK_AFIO);
 	mcu_config_af(SPI_SDO, SPI_SDO_AFIO);
-#if ASSERT_PIN_IO(SPI_CS)
-	mcu_config_af(SPI_CS, SPI_CS_AFIO);
-#endif
+// #if ASSERT_PIN_IO(SPI_CS)
+// 	mcu_config_af(SPI_CS, SPI_CS_AFIO);
+// #endif
 	// initialize the SPI configuration register
 	SPI_REG->CR1 = SPI_CR1_SSM		 // software slave management enabled
 								 | SPI_CR1_SSI	 // internal slave select

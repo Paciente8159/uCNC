@@ -16,8 +16,8 @@
 	See the	GNU General Public License for more details.
 */
 
-#ifndef BOARDMAP_MKS_ROBIN_NANO_V12_H
-#define BOARDMAP_MKS_ROBIN_NANO_V12_H
+#ifndef BOARDMAP_SKR_PRO_V12_H
+#define BOARDMAP_SKR_PRO_V12_H
 
 #ifdef __cplusplus
 extern "C"
