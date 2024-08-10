@@ -157,6 +157,24 @@ extern "C"
 #define SPI2_SDI_PORT A
 #define SPI2_PORT 1
 
+// pins for TS35 display
+// cs
+#define DOUT6_BIT 11
+#define DOUT6_PORT D
+// dc
+#define DOUT11_BIT 10
+#define DOUT11_PORT D
+
+// bkl
+#define DOUT12_BIT 13
+#define DOUT12_PORT D
+
+// rst
+#define DOUT13_BIT 6
+#define DOUT13_PORT C
+//touch cs
+#define DOUT14_BIT 14
+#define DOUT14_PORT E
 
 #define ONESHOT_TIMER 8
 

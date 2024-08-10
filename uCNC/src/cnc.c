@@ -230,7 +230,7 @@ uint8_t cnc_parse_cmd(void)
 
 	return error;
 }
-
+extern void touch_screen_get_adc(uint16_t *adc_x, uint16_t *adc_y, uint8_t max_samples);
 bool cnc_dotasks(void)
 {
 
@@ -345,54 +345,62 @@ void cnc_restore_motion(void)
 #ifndef DISABLE_RTC_CODE
 MCU_CALLBACK void mcu_rtc_cb(uint32_t millis)
 {
-	mcu_enable_global_isr();
-	uint8_t mls = (uint8_t)(0xff & millis);
-	if ((mls & CTRL_SCHED_CHECK_MASK) == CTRL_SCHED_CHECK_VAL)
+	static bool running = false;
+	if (!running)
 	{
+		running = true;
+		mcu_enable_global_isr();
+		mcu_dotasks();
+		uint8_t mls = (uint8_t)(0xff & millis);
+		if ((mls & CTRL_SCHED_CHECK_MASK) == CTRL_SCHED_CHECK_VAL)
+		{
 #ifndef ENABLE_RT_PROBE_CHECKING
-		mcu_probe_changed_cb();
+			mcu_probe_changed_cb();
 #endif
 #ifndef ENABLE_RT_LIMITS_CHECKING
-		mcu_limits_changed_cb();
+			mcu_limits_changed_cb();
 #endif
-		mcu_controls_changed_cb();
+			mcu_controls_changed_cb();
 #if (DIN_ONCHANGE_MASK != 0 && ENCODERS < 1)
-		// extra call in case generic inputs are running with ISR disabled. Encoders need propper ISR to work.
-		mcu_inputs_changed_cb();
+			// extra call in case generic inputs are running with ISR disabled. Encoders need propper ISR to work.
+			mcu_inputs_changed_cb();
 #endif
-	}
+		}
 
 #ifdef ENABLE_ITP_FEED_TASK
-	static uint8_t itp_feed_counter = (uint8_t)CLAMP(1, (1000 / INTERPOLATOR_FREQ), 255);
-	mls = itp_feed_counter;
-	if (!cnc_lock_itp && !mls--)
-	{
-		cnc_lock_itp = 1;
-		if ((cnc_state.loop_state == LOOP_RUNNING) && (cnc_state.alarm == EXEC_ALARM_NOALARM) && !cnc_get_exec_state(EXEC_INTERLOCKING_FAIL))
+		static uint8_t itp_feed_counter = (uint8_t)CLAMP(1, (1000 / INTERPOLATOR_FREQ), 255);
+		mls = itp_feed_counter;
+		if (!cnc_lock_itp && !mls--)
 		{
-			itp_run();
+			cnc_lock_itp = 1;
+			if ((cnc_state.loop_state == LOOP_RUNNING) && (cnc_state.alarm == EXEC_ALARM_NOALARM) && !cnc_get_exec_state(EXEC_INTERLOCKING_FAIL))
+			{
+				itp_run();
+			}
+			mls = (uint8_t)CLAMP(1, (1000 / INTERPOLATOR_FREQ), 255);
+			cnc_lock_itp = 0;
 		}
-		mls = (uint8_t)CLAMP(1, (1000 / INTERPOLATOR_FREQ), 255);
-		cnc_lock_itp = 0;
-	}
 
-	itp_feed_counter = mls;
+		itp_feed_counter = mls;
 #endif
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
-	if (!cnc_get_exec_state(EXEC_ALARM))
-	{
-		EVENT_INVOKE(rtc_tick, NULL);
-	}
+		if (!cnc_get_exec_state(EXEC_ALARM))
+		{
+			EVENT_INVOKE(rtc_tick, NULL);
+		}
 #endif
 
 #if ASSERT_PIN(ACTIVITY_LED)
-	// this blinks aprox. once every 1024ms
-	if (!(millis & (0x200 - 1)))
-	{
-		io_toggle_output(ACTIVITY_LED);
-	}
+		// this blinks aprox. once every 1024ms
+		if (!(millis & (0x200 - 1)))
+		{
+			io_toggle_output(ACTIVITY_LED);
+		}
 #endif
+		mcu_disable_global_isr();
+		running = false;
+	}
 }
 #endif
 
@@ -1051,8 +1059,10 @@ bool cnc_check_interlocking(void)
 
 static void cnc_io_dotasks(void)
 {
+#ifdef DISABLE_RTC_CODE
 	// run internal mcu tasks (USB and communications)
 	mcu_dotasks();
+#endif
 	mcu_limits_changed_cb();
 	mcu_controls_changed_cb();
 

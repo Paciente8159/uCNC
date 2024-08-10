@@ -17,7 +17,6 @@
 */
 
 #include "../../cnc.h"
-#ifndef GRAPHIC_DISPLAY_LIB
 
 #include <clib/u8g2.h>
 #include <clib/u8x8.h>
@@ -534,4 +533,3 @@ DISPLAY_INIT(virtual_sdl)
 
 DECL_DISPLAY(virtual_sdl, 128, 64);
 
-#endif

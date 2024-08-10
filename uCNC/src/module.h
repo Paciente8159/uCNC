@@ -103,6 +103,7 @@ extern "C"
 
 // MODULE_DEBUG_ENABLED can be added to allow debuggin the default handler code
 // this comes with a small performance penalty but also makes code about 1k~2k smaller by using a generic function
+#define MODULE_DEBUG_ENABLED
 #ifndef MODULE_DEBUG_ENABLED
 #define DEFAULT_EVENT_HANDLER(name)                                                                   \
 	{                                                                                                   \

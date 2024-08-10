@@ -44,8 +44,8 @@ static FORCEINLINE void load_modules(void)
 #ifdef LOAD_MODULES_OVERRIDE
 	LOAD_MODULES_OVERRIDE();
 #endif
-	LOAD_MODULE(graphic_display);
-	LOAD_MODULE(sd_card_v2);
+	// LOAD_MODULE(graphic_display);
+	// LOAD_MODULE(sd_card_v2);
 }
 
 void mod_init(void)
@@ -80,9 +80,11 @@ void mod_init(void)
 }
 
 #ifdef MODULE_DEBUG_ENABLED
+uint32_t loop_depth;
 bool mod_event_default_handler(mod_delegate_event_t **event, mod_delegate_event_t **last, void **args)
 {
 	mod_delegate_event_t *ptr = *last;
+	loop_depth++;
 	if (!ptr)
 	{
 		ptr = *event;
@@ -97,12 +99,14 @@ bool mod_event_default_handler(mod_delegate_event_t **event, mod_delegate_event_
 			{
 				CLEARFLAG(ptr->fplock, LISTENER_RUNNING_LOCK);
 				*last = *event; /*handled. restart.*/
+				loop_depth--;
 				return EVENT_HANDLED;
 			}
 			CLEARFLAG(ptr->fplock, LISTENER_RUNNING_LOCK);
 		}
 		ptr = ptr->next;
 	}
+	loop_depth--;
 	return EVENT_CONTINUE;
 }
 #endif

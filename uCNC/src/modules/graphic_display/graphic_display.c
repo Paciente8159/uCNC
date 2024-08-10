@@ -81,10 +81,13 @@ SOFTSPI(graphic_spi, 1000000UL, 0, GRAPHIC_DISPLAY_SPI_MOSI, GRAPHIC_DISPLAY_SPI
 #undef io0_config_input
 #define GRAPHIC_BUS_LOCK LISTENER_SWSPI_LOCK
 #else
-HARDSPI(graphic_spi, 1000000UL, 0);
+#ifndef GRAPHIC_HWSPI_PORT
+#define GRAPHIC_HWSPI_PORT mcu_spi2_port
+#endif
+HARDSPI(graphic_spi, 1000000UL, 0, GRAPHIC_HWSPI_PORT);
 #endif
 #define graphic_display_port ((void *)&graphic_spi)
-#define GRAPHIC_BUS_LOCK LISTENER_HWSPI_LOCK
+#define GRAPHIC_BUS_LOCK LISTENER_HWSPI2_LOCK
 #endif
 
 #if (GRAPHIC_DISPLAY_INTERFACE & (GRAPHIC_DISPLAY_SW_I2C | GRAPHIC_DISPLAY_HW_I2C))
@@ -302,7 +305,7 @@ bool graphic_display_update(void *args)
 
 		system_menu_action(action);
 		// render menu
-		cnc_dotasks();
+		// cnc_dotasks();
 		system_menu_render();
 		running = false;
 	}
@@ -362,7 +365,7 @@ DECL_MODULE(graphic_display)
 {
 #if (GRAPHIC_DISPLAY_INTERFACE == GRAPHIC_DISPLAY_HW_SPI)
 	// if available enable DMA
-	graphic_spi.spiconfig.enable_dma = 1;
+	graphic_spi.spiconfig.enable_dma = 0;
 #endif
 	DISPLAY_PTR_INIT(display_driver, GRAPHIC_DISPLAY_DRIVER);
 	gd_init(display_driver, graphic_display_port);
@@ -630,21 +633,17 @@ void system_menu_render_idle(void)
 #if (AXIS_COUNT >= 5)
 	line--;
 	render_BC_axis(gd_get_line_top(line), axis);
-	cnc_dotasks();
 #endif
 #if (AXIS_COUNT >= 3)
 	line--;
 	render_ZA_axis(gd_get_line_top(line), axis);
-	cnc_dotasks();
 #endif
 #if (AXIS_COUNT >= 1)
 	line--;
 	render_XY_axis(gd_get_line_top(line), axis);
-	cnc_dotasks();
 #endif
 	line--;
 	render_feed_and_tool(gd_get_line_top(line));
-	cnc_dotasks();
 	render_status(gd_get_line_top(line));
 	gd_flush();
 }
@@ -675,7 +674,6 @@ void system_menu_item_render_label(uint8_t render_flags, const char *label)
 	item_line = line;
 	if (label)
 	{
-		cnc_dotasks();
 		if (render_flags & SYSTEM_MENU_MODE_EDIT)
 		{
 			gd_draw_string(gd_str_align_center(label), gd_get_line_top((display_max_lines >> 1) - 1), label);
@@ -689,8 +687,6 @@ void system_menu_item_render_arg(uint8_t render_flags, const char *value)
 {
 	if (value)
 	{
-		cnc_dotasks();
-
 		int16_t y = 0;
 		int16_t fh = gd_font_height();
 		int16_t bt_y = fh + gd_half_padding() + 1;

@@ -86,7 +86,7 @@ bool Arduino_uCNC_SPI::begin(int32_t speed = 20000000UL, int8_t dataMode = 0)
 	io_set_pinvalue(this->_cs, 1);
 	spi_config_t conf = {0};
 	conf.mode = this->_dataMode;
-	conf.enable_dma = 1;
+	conf.enable_dma = 0;
 	softspi_config((softspi_port_t *)this->_spi, conf, this->_speed);
 	return true;
 }

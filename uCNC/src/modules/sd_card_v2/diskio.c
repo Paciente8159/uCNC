@@ -76,7 +76,7 @@ SOFTSPI(mmcsd_spi, 100000UL, 0, SD_SPI_SDO, SD_SPI_SDI, SD_SPI_CLK);
 #ifndef SD_SPI_CS
 #define SD_SPI_CS SPI_CS
 #endif
-HARDSPI(mmcsd_spi, 100000UL, 0);
+HARDSPI(mmcsd_spi, 100000UL, 0, mcu_spi_port);
 #endif
 
 #define SD_SPI_PORT (&mmcsd_spi)
@@ -102,7 +102,7 @@ FORCEINLINE static void mmcsd_spi_speed(bool highspeed)
 {
 	if (highspeed)
 	{
-		softspi_set_frequency(SD_SPI_PORT, 18000000UL);
+		softspi_set_frequency(SD_SPI_PORT, 10000000UL);
 	}
 	else
 	{

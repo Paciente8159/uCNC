@@ -174,11 +174,11 @@ void MCU_SERIAL2_ISR(void)
 #ifdef MCU_HAS_USB
 void OTG_FS_IRQHandler(void)
 {
-	mcu_disable_global_isr();
+	// mcu_disable_global_isr();
 	tusb_cdc_isr_handler();
-	USB_OTG_FS->GINTSTS = 0xBFFFFFFFU;
-	NVIC_ClearPendingIRQ(OTG_FS_IRQn);
-	mcu_enable_global_isr();
+	// USB_OTG_FS->GINTSTS = 0xBFFFFFFFU;
+	// NVIC_ClearPendingIRQ(OTG_FS_IRQn);
+	// mcu_enable_global_isr();
 }
 #endif
 
@@ -448,13 +448,12 @@ void mcu_usart_init(void)
 	USB_OTG_FS->GINTSTS = 0xBFFFFFFFU;
 	USB_OTG_FS->GINTMSK |= USB_OTG_GINTMSK_OTGINT;
 
-	NVIC_SetPriority(OTG_FS_IRQn, 10);
+	NVIC_SetPriority(OTG_FS_IRQn, 8);
 	NVIC_ClearPendingIRQ(OTG_FS_IRQn);
 	NVIC_EnableIRQ(OTG_FS_IRQn);
 
+	USB_OTG_FS->GCCFG &= ~(USB_OTG_GCCFG_VBUSBSEN|USB_OTG_GCCFG_VBUSASEN);
 	USB_OTG_FS->GCCFG |= USB_OTG_GCCFG_NOVBUSSENS;
-	USB_OTG_FS->GCCFG &= ~USB_OTG_GCCFG_VBUSBSEN;
-	USB_OTG_FS->GCCFG &= ~USB_OTG_GCCFG_VBUSASEN;
 
 	tusb_cdc_init();
 #endif
@@ -661,7 +660,7 @@ void mcu_init(void)
 
 	RCC->AHB1ENR |= SPI_DMA_EN;
 
-	NVIC_SetPriority(SPI_IRQ, 2);
+	NVIC_SetPriority(SPI_IRQ, 10);
 	NVIC_ClearPendingIRQ(SPI_IRQ);
 	NVIC_EnableIRQ(SPI_IRQ);
 
@@ -686,7 +685,7 @@ void mcu_init(void)
 
 	RCC->AHB1ENR |= SPI2_DMA_EN;
 
-	NVIC_SetPriority(SPI2_IRQ, 2);
+	NVIC_SetPriority(SPI2_IRQ, 10);
 	NVIC_ClearPendingIRQ(SPI2_IRQ);
 	NVIC_EnableIRQ(SPI2_IRQ);
 

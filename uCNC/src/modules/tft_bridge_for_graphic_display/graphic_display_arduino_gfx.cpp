@@ -31,13 +31,13 @@ extern "C"
 	// #define GRAPHIC_DISPLAY_RST 48
 
 #ifndef GRAPHIC_DISPLAY_SPI_DC
-#define GRAPHIC_DISPLAY_SPI_DC DOUT11
+#define GRAPHIC_DISPLAY_SPI_DC DOUT32
 #endif
 #ifndef GRAPHIC_DISPLAY_BKL
-#define GRAPHIC_DISPLAY_BKL DOUT12
+#define GRAPHIC_DISPLAY_BKL DOUT33
 #endif
 #ifndef GRAPHIC_DISPLAY_RST
-#define GRAPHIC_DISPLAY_RST DOUT13
+#define GRAPHIC_DISPLAY_RST DOUT34
 #endif
 
 #ifndef GRAPHIC_DISPLAY_SPI_FREQ
@@ -323,12 +323,12 @@ extern "C"
 	{
 #ifdef GRAPHIC_DISPLAY_USE_CANVAS
 		g = new Arduino_ST7796(bus, -1, 1, false);
-		gfx = new Arduino_Canvas_Mono(420, 380, g);
+		gfx = new Arduino_Canvas_Mono(480, 320, g);
 #else
 	gfx = new Arduino_ST7796(bus, -1, 1, false);
 #endif
 #ifdef GRAPHIC_DISPLAY_IS_TOUCH
-		xpt2046_init(420, 380, XPT2046_ROT0, 1000000UL, 0);
+		xpt2046_init(480, 320, XPT2046_ROT0, 1000000UL, 0);
 #endif
 	}
 
@@ -424,5 +424,5 @@ extern "C"
 }
 #endif
 
-extern "C" DECL_DISPLAY(st7796_480x320_spi, 420, 380);
+extern "C" DECL_DISPLAY(st7796_480x320_spi, 480, 320);
 extern "C" DECL_DISPLAY(ili9341_240x320_spi, 240, 320);
