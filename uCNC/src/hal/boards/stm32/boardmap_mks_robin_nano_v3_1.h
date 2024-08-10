@@ -94,6 +94,11 @@ extern "C"
 #define RX_PORT A
 #define RX_PULLUP
 
+#define USB_DM_BIT 11
+#define USB_DM_PORT A
+#define USB_DP_BIT 12
+#define USB_DP_PORT A
+
 // Setup PWM
 #define PWM0_BIT 0	// assigns PWM0 pin
 #define PWM0_PORT A // assigns PWM0 pin
@@ -136,6 +141,7 @@ extern "C"
 #define SPI_SDO_PORT C
 #define SPI_SDI_BIT 11
 #define SPI_SDI_PORT C
+#define SPI_PORT 3
 // SD detect pin
 #define DIN19_BIT 12
 #define DIN19_PORT D
