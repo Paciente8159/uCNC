@@ -1730,6 +1730,34 @@ extern "C"
 #endif
 #define DIO211 UNDEF_PIN
 #endif
+#ifndef SPI2_CLK
+#define SPI2_CLK UNDEF_PIN
+#ifdef DIO212
+#undef DIO212
+#endif
+#define DIO212 UNDEF_PIN
+#endif
+#ifndef SPI2_SDI
+#define SPI2_SDI UNDEF_PIN
+#ifdef DIO213
+#undef DIO213
+#endif
+#define DIO213 UNDEF_PIN
+#endif
+#ifndef SPI2_SDO
+#define SPI2_SDO UNDEF_PIN
+#ifdef DIO214
+#undef DIO214
+#endif
+#define DIO214 UNDEF_PIN
+#endif
+#ifndef SPI2_CS
+#define SPI2_CS UNDEF_PIN
+#ifdef DIO215
+#undef DIO215
+#endif
+#define DIO215 UNDEF_PIN
+#endif
 
 // set default limits and step associations
 #if ASSERT_PIN(LIMIT_X) && !defined(LIMIT_X_IO_MASK)

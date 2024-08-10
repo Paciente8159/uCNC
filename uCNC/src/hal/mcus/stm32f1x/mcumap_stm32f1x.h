@@ -3667,6 +3667,82 @@ extern "C"
 #define DIO211_CR RX2_CR
 #define DIO211_CROFF RX2_CROFF
 #endif
+#if (defined(SPI2_CLK_PORT) && defined(SPI2_CLK_BIT))
+#define SPI2_CLK 212
+#define SPI2_CLK_APB2EN (__rccapb2gpioen__(SPI2_CLK_PORT))
+#define SPI2_CLK_GPIO (__gpio__(SPI2_CLK_PORT))
+#if (SPI2_CLK_BIT < 8)
+#define SPI2_CLK_CROFF SPI2_CLK_BIT
+#define SPI2_CLK_CR CRL
+#else
+#define SPI2_CLK_CROFF (SPI2_CLK_BIT&0x07)
+#define SPI2_CLK_CR CRH
+#endif
+#define DIO212 212
+#define DIO212_PORT SPI2_CLK_PORT
+#define DIO212_BIT SPI2_CLK_BIT
+#define DIO212_APB2EN SPI2_CLK_APB2EN
+#define DIO212_GPIO SPI2_CLK_GPIO
+#define DIO212_CR SPI2_CLK_CR
+#define DIO212_CROFF SPI2_CLK_CROFF
+#endif
+#if (defined(SPI2_SDI_PORT) && defined(SPI2_SDI_BIT))
+#define SPI2_SDI 213
+#define SPI2_SDI_APB2EN (__rccapb2gpioen__(SPI2_SDI_PORT))
+#define SPI2_SDI_GPIO (__gpio__(SPI2_SDI_PORT))
+#if (SPI2_SDI_BIT < 8)
+#define SPI2_SDI_CROFF SPI2_SDI_BIT
+#define SPI2_SDI_CR CRL
+#else
+#define SPI2_SDI_CROFF (SPI2_SDI_BIT&0x07)
+#define SPI2_SDI_CR CRH
+#endif
+#define DIO213 213
+#define DIO213_PORT SPI2_SDI_PORT
+#define DIO213_BIT SPI2_SDI_BIT
+#define DIO213_APB2EN SPI2_SDI_APB2EN
+#define DIO213_GPIO SPI2_SDI_GPIO
+#define DIO213_CR SPI2_SDI_CR
+#define DIO213_CROFF SPI2_SDI_CROFF
+#endif
+#if (defined(SPI2_SDO_PORT) && defined(SPI2_SDO_BIT))
+#define SPI2_SDO 214
+#define SPI2_SDO_APB2EN (__rccapb2gpioen__(SPI2_SDO_PORT))
+#define SPI2_SDO_GPIO (__gpio__(SPI2_SDO_PORT))
+#if (SPI2_SDO_BIT < 8)
+#define SPI2_SDO_CROFF SPI2_SDO_BIT
+#define SPI2_SDO_CR CRL
+#else
+#define SPI2_SDO_CROFF (SPI2_SDO_BIT&0x07)
+#define SPI2_SDO_CR CRH
+#endif
+#define DIO214 214
+#define DIO214_PORT SPI2_SDO_PORT
+#define DIO214_BIT SPI2_SDO_BIT
+#define DIO214_APB2EN SPI2_SDO_APB2EN
+#define DIO214_GPIO SPI2_SDO_GPIO
+#define DIO214_CR SPI2_SDO_CR
+#define DIO214_CROFF SPI2_SDO_CROFF
+#endif
+#if (defined(SPI2_CS_PORT) && defined(SPI2_CS_BIT))
+#define SPI2_CS 215
+#define SPI2_CS_APB2EN (__rccapb2gpioen__(SPI2_CS_PORT))
+#define SPI2_CS_GPIO (__gpio__(SPI2_CS_PORT))
+#if (SPI2_CS_BIT < 8)
+#define SPI2_CS_CROFF SPI2_CS_BIT
+#define SPI2_CS_CR CRL
+#else
+#define SPI2_CS_CROFF (SPI2_CS_BIT&0x07)
+#define SPI2_CS_CR CRH
+#endif
+#define DIO215 215
+#define DIO215_PORT SPI2_CS_PORT
+#define DIO215_BIT SPI2_CS_BIT
+#define DIO215_APB2EN SPI2_CS_APB2EN
+#define DIO215_GPIO SPI2_CS_GPIO
+#define DIO215_CR SPI2_CS_CR
+#define DIO215_CROFF SPI2_CS_CROFF
+#endif
 
 #if (defined(TX) && defined(RX))
 #define MCU_HAS_UART
@@ -5117,7 +5193,7 @@ extern "C"
 #elif ((SPI_PORT == 2) && (SPI_CLK_PIN == B13) && (SPI_SDI_PIN == B14) && (SPI_SDO_PIN == B15))
 #elif ((SPI_PORT == 3) && (SPI_CLK_PIN == B3) && (SPI_SDI_PIN == B4) && (SPI_SDO_PIN == B5))
 #elif ((SPI_PORT == 3) && (SPI_CLK_PIN == C10) && (SPI_SDI_PIN == C11) && (SPI_SDO_PIN == C12))
-#define COM_REMAP AFIO_MAPR_SPI3_REMAP
+#define SPI_REMAP AFIO_MAPR_SPI3_REMAP
 #else
 #error "SPI pin configuration not supported"
 #endif
@@ -5164,6 +5240,83 @@ extern "C"
 
 #define SPI_IRQ __helper__(SPI, SPI_PORT, _IRQn)
 #define SPI_ISR __helper__(SPI, SPI_PORT, _IRQHandler)
+
+#endif
+
+#if (defined(SPI2_CLK) && defined(SPI2_SDO) && defined(SPI2_SDI))
+#define MCU_HAS_SPI2
+#define SPI2_CLK_PIN __iopin__(SPI2_CLK_PORT, SPI2_CLK_BIT)
+#define SPI2_SDO_PIN __iopin__(SPI2_SDO_PORT, SPI2_SDO_BIT)
+#define SPI2_SDI_PIN __iopin__(SPI2_SDI_PORT, SPI2_SDI_BIT)
+#ifndef SPI2_PORT
+#define SPI2_PORT 1
+#endif
+#ifndef SPI2_MODE
+#define SPI2_MODE 0
+#endif
+#ifndef SPI2_FREQ
+#define SPI2_FREQ 1000000UL
+#endif
+// remmaping and pin checking
+//  SPI2	CLK	SDI	SDO	REMAP
+//  1	A5	A6	A7	0
+//  1	B3	B4	B5	1
+//  2	B13	B14	B15	NOREMAP
+//  3	B3	B4	B5	0
+//  3	C10	C11	C12	1
+#if ((SPI2_PORT == 1) && (SPI2_CLK_PIN == A5) && (SPI2_SDI_PIN == A6) && (SPI2_SDO_PIN == A7))
+#elif ((SPI2_PORT == 1) && (SPI2_CLK_PIN == B3) && (SPI2_SDI_PIN == B4) && (SPI2_SDO_PIN == B5))
+#define SPI2_REMAP AFIO_MAPR_SPI1_REMAP
+#elif ((SPI2_PORT == 2) && (SPI2_CLK_PIN == B13) && (SPI2_SDI_PIN == B14) && (SPI2_SDO_PIN == B15))
+#elif ((SPI2_PORT == 3) && (SPI2_CLK_PIN == B3) && (SPI2_SDI_PIN == B4) && (SPI2_SDO_PIN == B5))
+#elif ((SPI2_PORT == 3) && (SPI2_CLK_PIN == C10) && (SPI2_SDI_PIN == C11) && (SPI2_SDO_PIN == C12))
+#define SPI2_REMAP AFIO_MAPR_SPI3_REMAP
+#else
+#error "SPI2 pin configuration not supported"
+#endif
+
+#define SPI2_REG __helper__(SPI, SPI2_PORT, )
+#if (SPI2_PORT == 1)
+#define SPI2_ENREG RCC->APB2ENR
+#define SPI2_ENVAL RCC_APB2ENR_SPI1EN
+#define SPI2_CLOCK HAL_RCC_GetPCLK2Freq()
+#else
+#define SPI2_ENREG RCC->APB1ENR
+#define SPI2_ENVAL __helper__(RCC_APB1ENR_SPI, SPI2_PORT, EN)
+#define SPI2_CLOCK HAL_RCC_GetPCLK1Freq()
+#endif
+
+#if (SPI2_PORT == 1)
+#define SPI2_DMA_CONTROLLER_NUM 1
+#define SPI2_DMA_TX_CHANNEL_NUM 3
+#define SPI2_DMA_RX_CHANNEL_NUM 2
+#define SPI2_DMA_TX_IFR_POS 8
+#define SPI2_DMA_RX_IFR_POS 4
+#elif (SPI2_PORT == 2)
+#define SPI2_DMA_CONTROLLER_NUM 1
+#define SPI2_DMA_TX_CHANNEL_NUM 5
+#define SPI2_DMA_RX_CHANNEL_NUM 4
+#define SPI2_DMA_TX_IFR_POS 16
+#define SPI2_DMA_RX_IFR_POS 12
+#elif (SPI2_PORT == 3)
+#define SPI2_DMA_CONTROLLER_NUM 2
+#define SPI2_DMA_TX_CHANNEL_NUM 2
+#define SPI2_DMA_RX_CHANNEL_NUM 1
+#define SPI2_DMA_TX_IFR_POS 4
+#define SPI2_DMA_RX_IFR_POS 0
+#endif
+
+#define SPI2_DMA_CONTROLLER __helper__(DMA, SPI2_DMA_CONTROLLER_NUM, )
+#define SPI2_DMA_EN __helper__(RCC_AHBENR_DMA, SPI2_DMA_CONTROLLER_NUM, EN)
+
+#define SPI2_DMA_TX_CHANNEL __helper__(__helper__(DMA, SPI2_DMA_CONTROLLER_NUM, _Channel), SPI2_DMA_TX_CHANNEL_NUM, )
+#define SPI2_DMA_RX_CHANNEL __helper__(__helper__(DMA, SPI2_DMA_CONTROLLER_NUM, _Channel), SPI2_DMA_RX_CHANNEL_NUM, )
+
+#define SPI2_DMA_TX_IFCR_MASK (0b1111 << SPI2_DMA_TX_IFR_POS)
+#define SPI2_DMA_RX_IFCR_MASK (0b1111 << SPI2_DMA_RX_IFR_POS)
+
+#define SPI2_IRQ __helper__(SPI, SPI2_PORT, _IRQn)
+#define SPI2_ISR __helper__(SPI, SPI2_PORT, _IRQHandler)
 
 #endif
 

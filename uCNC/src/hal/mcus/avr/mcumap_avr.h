@@ -2385,6 +2385,54 @@ extern "C"
 #define DIO211_INREG (__inreg__(RX2_PORT))
 #define DIO211_DIRREG (__dirreg__(RX2_PORT))
 #endif
+#if(defined(SPI2_CLK_PORT) && defined(SPI2_CLK_BIT))
+#define DIO212 212
+#define SPI2_CLK 212
+#define DIO212_PORT (SPI2_CLK_PORT)
+#define DIO212_BIT (SPI2_CLK_BIT)
+#define SPI2_CLK_OUTREG (__outreg__(SPI2_CLK_PORT))
+#define SPI2_CLK_INREG (__inreg__(SPI2_CLK_PORT))
+#define SPI2_CLK_DIRREG (__dirreg__(SPI2_CLK_PORT))
+#define DIO212_OUTREG (__outreg__(SPI2_CLK_PORT))
+#define DIO212_INREG (__inreg__(SPI2_CLK_PORT))
+#define DIO212_DIRREG (__dirreg__(SPI2_CLK_PORT))
+#endif
+#if(defined(SPI2_SDI_PORT) && defined(SPI2_SDI_BIT))
+#define DIO213 213
+#define SPI2_SDI 213
+#define DIO213_PORT (SPI2_SDI_PORT)
+#define DIO213_BIT (SPI2_SDI_BIT)
+#define SPI2_SDI_OUTREG (__outreg__(SPI2_SDI_PORT))
+#define SPI2_SDI_INREG (__inreg__(SPI2_SDI_PORT))
+#define SPI2_SDI_DIRREG (__dirreg__(SPI2_SDI_PORT))
+#define DIO213_OUTREG (__outreg__(SPI2_SDI_PORT))
+#define DIO213_INREG (__inreg__(SPI2_SDI_PORT))
+#define DIO213_DIRREG (__dirreg__(SPI2_SDI_PORT))
+#endif
+#if(defined(SPI2_SDO_PORT) && defined(SPI2_SDO_BIT))
+#define DIO214 214
+#define SPI2_SDO 214
+#define DIO214_PORT (SPI2_SDO_PORT)
+#define DIO214_BIT (SPI2_SDO_BIT)
+#define SPI2_SDO_OUTREG (__outreg__(SPI2_SDO_PORT))
+#define SPI2_SDO_INREG (__inreg__(SPI2_SDO_PORT))
+#define SPI2_SDO_DIRREG (__dirreg__(SPI2_SDO_PORT))
+#define DIO214_OUTREG (__outreg__(SPI2_SDO_PORT))
+#define DIO214_INREG (__inreg__(SPI2_SDO_PORT))
+#define DIO214_DIRREG (__dirreg__(SPI2_SDO_PORT))
+#endif
+#if(defined(SPI2_CS_PORT) && defined(SPI2_CS_BIT))
+#define DIO215 215
+#define SPI2_CS 215
+#define DIO215_PORT (SPI2_CS_PORT)
+#define DIO215_BIT (SPI2_CS_BIT)
+#define SPI2_CS_OUTREG (__outreg__(SPI2_CS_PORT))
+#define SPI2_CS_INREG (__inreg__(SPI2_CS_PORT))
+#define SPI2_CS_DIRREG (__dirreg__(SPI2_CS_PORT))
+#define DIO215_OUTREG (__outreg__(SPI2_CS_PORT))
+#define DIO215_INREG (__inreg__(SPI2_CS_PORT))
+#define DIO215_DIRREG (__dirreg__(SPI2_CS_PORT))
+#endif
 
 // ISR on change inputs
 #if (defined(LIMIT_X_ISR) && defined(LIMIT_X))
@@ -4856,6 +4904,41 @@ extern "C"
 #define SPCR_VAL 3
 #define SPSR_VAL 0
 #endif
+#endif
+
+#if (defined(SPI2_CLK) && defined(SPI2_SDI) && defined(SPI2_SDO))
+#error "Atmega only has one SPI port available"
+// #define MCU_HAS_SPI2
+// #ifndef SPI2_MODE
+// #define SPI2_MODE 0
+// #endif
+// #ifndef SPI2_FREQ
+// #define SPI2_FREQ 1000000UL
+// #endif
+// // sets the prescaler that is closer to the desired frequency
+// #define SPI2_DIV (F_CPU / SPI2_FREQ)
+// #if (SPI2_DIV < 2)
+// #define SPCR2_VAL 0
+// #define SPSR2_VAL 1
+// #elif (SPI2_DIV < 4)
+// #define SPCR2_VAL 0
+// #define SPSR2_VAL 0
+// #elif (SPI2_DIV < 8)
+// #define SPCR2_VAL 1
+// #define SPSR2_VAL 1
+// #elif (SPI2_DIV < 16)
+// #define SPCR2_VAL 1
+// #define SPSR2_VAL 0
+// #elif (SPI2_DIV < 32)
+// #define SPCR2_VAL 2
+// #define SPSR2_VAL 1
+// #elif (SPI2_DIV < 64)
+// #define SPCR2_VAL 2
+// #define SPSR2_VAL 0
+// #else
+// #define SPCR2_VAL 3
+// #define SPSR2_VAL 0
+// #endif
 #endif
 
 // I2C

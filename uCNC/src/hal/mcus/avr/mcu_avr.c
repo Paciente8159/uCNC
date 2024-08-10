@@ -544,7 +544,7 @@ void mcu_init(void)
 	SPSR |= SPSR_VAL;
 	SPCR = (1 << SPE) | (1 << MSTR) | (SPI_MODE << 2) | SPCR_VAL;
 #endif
-
+ 
 #ifdef MCU_HAS_I2C
 	// configure as I2C master
 	mcu_i2c_config(I2C_FREQ);

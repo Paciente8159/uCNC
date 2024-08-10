@@ -1358,6 +1358,11 @@ void io_set_pinvalue(uint8_t pin, uint8_t value)
 			io_set_output(SPI_CS);
 			break;
 #endif
+#if ASSERT_PIN(SPI2_CS)
+		case SPI2_CS:
+			io_set_output(SPI2_CS);
+			break;
+#endif
 		}
 	}
 	else
@@ -1728,6 +1733,11 @@ void io_set_pinvalue(uint8_t pin, uint8_t value)
 #if ASSERT_PIN(SPI_CS)
 		case SPI_CS:
 			io_clear_output(SPI_CS);
+			break;
+#endif
+#if ASSERT_PIN(SPI2_CS)
+		case SPI2_CS:
+			io_clear_output(SPI2_CS);
 			break;
 #endif
 		}
@@ -2378,6 +2388,14 @@ int16_t io_get_pinvalue(uint8_t pin)
 #if ASSERT_PIN(SERVO5)
 	case SERVO5:
 		return (uint8_t)mcu_get_servo(SERVO5);
+#endif
+#if ASSERT_PIN(SPI_CS)
+	case SPI_CS:
+		return (mcu_get_output(SPI_CS) != 0);
+#endif
+#if ASSERT_PIN(SPI2_CS)
+	case SPI2_CS:
+		return (mcu_get_output(SPI2_CS) != 0);
 #endif
 	}
 	return -1;

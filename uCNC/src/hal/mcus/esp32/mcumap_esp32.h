@@ -2780,6 +2780,62 @@ extern "C"
 #define DIO211_OUTREG RX2_OUTREG
 #define DIO211_INREG RX2_INREG
 #endif
+#if(defined(SPI2_CLK_BIT))
+#define SPI2_CLK 212
+#if (SPI2_CLK_BIT<32)
+#define SPI2_CLK_OUTREG OUT0
+#define SPI2_CLK_INREG IN0
+#else
+#define SPI2_CLK_OUTREG OUT1
+#define SPI2_CLK_INREG IN1
+#endif
+#define DIO212 212
+#define DIO212_BIT SPI2_CLK_BIT
+#define DIO212_OUTREG SPI2_CLK_OUTREG
+#define DIO212_INREG SPI2_CLK_INREG
+#endif
+#if(defined(SPI2_SDI_BIT))
+#define SPI2_SDI 213
+#if (SPI2_SDI_BIT<32)
+#define SPI2_SDI_OUTREG OUT0
+#define SPI2_SDI_INREG IN0
+#else
+#define SPI2_SDI_OUTREG OUT1
+#define SPI2_SDI_INREG IN1
+#endif
+#define DIO213 213
+#define DIO213_BIT SPI2_SDI_BIT
+#define DIO213_OUTREG SPI2_SDI_OUTREG
+#define DIO213_INREG SPI2_SDI_INREG
+#endif
+#if(defined(SPI2_SDO_BIT))
+#define SPI2_SDO 214
+#if (SPI2_SDO_BIT<32)
+#define SPI2_SDO_OUTREG OUT0
+#define SPI2_SDO_INREG IN0
+#else
+#define SPI2_SDO_OUTREG OUT1
+#define SPI2_SDO_INREG IN1
+#endif
+#define DIO214 214
+#define DIO214_BIT SPI2_SDO_BIT
+#define DIO214_OUTREG SPI2_SDO_OUTREG
+#define DIO214_INREG SPI2_SDO_INREG
+#endif
+#if(defined(SPI2_CS_BIT))
+#define SPI2_CS 215
+#if (SPI2_CS_BIT<32)
+#define SPI2_CS_OUTREG OUT0
+#define SPI2_CS_INREG IN0
+#else
+#define SPI2_CS_OUTREG OUT1
+#define SPI2_CS_INREG IN1
+#endif
+#define DIO215 215
+#define DIO215_BIT SPI2_CS_BIT
+#define DIO215_OUTREG SPI2_CS_OUTREG
+#define DIO215_INREG SPI2_CS_INREG
+#endif
 
 // ISR on change inputs
 #if (defined(LIMIT_X_ISR) && defined(LIMIT_X))
@@ -3255,6 +3311,20 @@ extern "C"
 #endif
 #ifndef SPI_FREQ
 #define SPI_FREQ 1000000UL
+#endif
+#endif
+
+// SPI2
+#if (defined(SPI2_CLK) && defined(SPI2_SDI) && defined(SPI2_SDO))
+#define MCU_HAS_SPI2
+#ifndef SPI2_PORT
+#define SPI2_PORT 2
+#endif
+#ifndef SPI2_MODE
+#define SPI2_MODE 0
+#endif
+#ifndef SPI2_FREQ
+#define SPI2_FREQ 1000000UL
 #endif
 #endif
 

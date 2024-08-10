@@ -81,10 +81,17 @@ extern "C"
 
 #define ONESHOT_TIMER 2
 
+//SPI - SD card
 #define SPI_CLK_BIT 14
 #define SPI_SDO_BIT 13
 #define SPI_SDI_BIT 12
 #define SPI_CS_BIT 15
+
+// SPI2 - displays
+#define SPI2_CLK_BIT 18
+#define SPI2_SDO_BIT 23
+#define SPI2_SDI_BIT 19
+#define SPI2_CS_BIT 5
 
 // software I2C
 #define DIN30_BIT 4
