@@ -4295,11 +4295,11 @@ extern "C"
 #ifndef SPI_SDI_AFIO
 #error "SPI pin configuration not supported"
 #endif
-#ifdef SPI_CS
-#ifndef SPI_CS_AFIO
-#error "SPI pin configuration not supported"
-#endif
-#endif
+// #ifdef SPI_CS
+// #ifndef SPI_CS_AFIO
+// #error "SPI pin configuration not supported"
+// #endif
+// #endif
 
 #define SPI_REG __helper__(SPI, SPI_PORT, )
 #if (SPI_PORT == 2 || SPI_PORT == 3)
@@ -4526,7 +4526,7 @@ extern "C"
 // #ifndef SPI2_CS_AFIO
 // #error "SPI2 pin configuration not supported"
 // #endif
-#endif
+// #endif
 
 #define SPI2_REG __helper__(SPI, SPI2_PORT, )
 #if (SPI2_PORT == 2 || SPI2_PORT == 3)

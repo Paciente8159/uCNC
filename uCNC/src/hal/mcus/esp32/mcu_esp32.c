@@ -45,6 +45,14 @@ bool spi2_dma_enabled = false;
 #define SPI2_DMA_BUFFER_SIZE 1024
 #endif
 #endif
+#ifdef MCU_HAS_SPI2
+#include "hal/spi_types.h"
+#include "driver/spi_master.h"
+bool spi2_dma_enabled = false;
+#ifndef SPI2_DMA_BUFFER_SIZE
+#define SPI2_DMA_BUFFER_SIZE 1024
+#endif
+#endif
 #include <string.h>
 #include <stdbool.h>
 #include <stdint.h>

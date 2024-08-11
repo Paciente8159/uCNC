@@ -150,14 +150,20 @@ extern "C"
 	// #define DIN7_ISR
 	// #define DIN7_PULLUP
 
-// #define SPI_CS_PORT A
-// #define SPI_CS_BIT 4
-// #define SPI_CLK_PORT A
-// #define SPI_CLK_BIT 5
-// #define SPI_SDI_PORT A
-// #define SPI_SDI_BIT 6
-// #define SPI_SDO_PORT A
-// #define SPI_SDO_BIT 7
+	// #define SPI_CLK_PORT A
+	// #define SPI_CLK_BIT 5
+	// #define SPI_SDI_PORT A
+	// #define SPI_SDI_BIT 6
+	// #define SPI_SDO_PORT A
+	// #define SPI_SDO_BIT 7
+
+	// #define SPI2_CLK_PORT B
+	// #define SPI2_CLK_BIT 13
+	// #define SPI2_SDI_PORT B
+	// #define SPI2_SDI_BIT 14
+	// #define SPI2_SDO_PORT B
+	// #define SPI2_SDO_BIT 15
+	// #define SPI2_PORT 2
 
 // #define DOUT6_PORT B
 // #define DOUT6_BIT 5
