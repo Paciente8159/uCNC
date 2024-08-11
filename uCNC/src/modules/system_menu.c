@@ -31,7 +31,7 @@ static bool system_menu_action_overrides(uint8_t action, system_menu_item_t *ite
 static void system_menu_render_axis_position(uint8_t render_flags, system_menu_item_t *item);
 static bool system_menu_action_nav_back(uint8_t action, const system_menu_page_t *item);
 
-static void system_menu_goto(uint8_t id)
+void system_menu_goto(uint8_t id)
 {
 	g_system_menu.current_menu = id;
 	g_system_menu.current_index = 0;
@@ -42,6 +42,10 @@ static void system_menu_goto(uint8_t id)
 	{
 		g_system_menu.total_items = system_menu_get_item_count(id);
 	}
+
+	// Set correct flags in case go to is called from outside of this module
+	g_system_menu.flags |= SYSTEM_MENU_MODE_REDRAW;
+	system_menu_action_timeout(SYSTEM_MENU_GO_IDLE_MS);
 }
 
 // declarate startup screen
