@@ -76,7 +76,10 @@ SOFTSPI(mmcsd_spi, 100000UL, 0, SD_SPI_SDO, SD_SPI_SDI, SD_SPI_CLK);
 #ifndef SD_SPI_CS
 #define SD_SPI_CS SPI_CS
 #endif
-HARDSPI(mmcsd_spi, 100000UL, 0, mcu_spi_port);
+#ifndef SD_HWSPI_PORT
+#define SD_HWSPI_PORT mcu_spi_port
+#endif
+HARDSPI(mmcsd_spi, 100000UL, 0, SD_HWSPI_PORT);
 #endif
 
 #define SD_SPI_PORT (&mmcsd_spi)

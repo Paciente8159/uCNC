@@ -162,19 +162,20 @@ extern "C"
 #define DOUT6_BIT 11
 #define DOUT6_PORT D
 // dc
-#define DOUT11_BIT 10
-#define DOUT11_PORT D
+#define DOUT32_BIT 10
+#define DOUT32_PORT D
 
 // bkl
-#define DOUT12_BIT 13
-#define DOUT12_PORT D
+#define DOUT33_BIT 13
+#define DOUT3_PORT D
 
 // rst
-#define DOUT13_BIT 6
-#define DOUT13_PORT C
+#define DOUT34_BIT 6
+#define DOUT34_PORT C
+
 //touch cs
-#define DOUT14_BIT 14
-#define DOUT14_PORT E
+#define DOUT35_BIT 14
+#define DOUT35_PORT E
 
 #define ONESHOT_TIMER 8
 
