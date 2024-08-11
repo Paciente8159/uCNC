@@ -10,17 +10,27 @@ extern "C"
 {
 #endif
 
-#ifdef TOUCH_SCREEN_SPI_PORT
-	HARDSPI(touch_spi, TOUCH_SCREEN_SPI_FREQ, 0, TOUCH_SCREEN_SPI_PORT);
-#endif
-
-// allow undefined pins to allow compilation without errors
-// this is just in case the module is present but not being used
-#if !ASSERT_PIN(TOUCH_SCREEN_TOUCHED) || !ASSERT_PIN(TOUCH_SCREEN_CS)
-#define io0_config_output
-#define io0_set_output
-#define io0_clear_output
-#warning "Some touch screen pins are not defined"
+/**
+ *
+ * can also be done via hardware SPI and I2C ports of µCNC
+ * but is not needed
+ *
+ * */
+#if (TOUCH_SCREEN_INTERFACE == TOUCH_SCREEN_SW_SPI)
+// temporary result of reading non existing read pin
+#define io0_get_input 0
+#define io0_config_input
+SOFTSPI(touch_spi, 1000000UL, 0, TOUCH_SCREEN_SPI_MOSI, TOUCH_SCREEN_SPI_MISO, TOUCH_SCREEN_SPI_CLOCK)
+// delete temporary definition
+#undef io0_get_input
+#undef io0_config_input
+#define TOUCH_SCREEN_BUS_LOCK LISTENER_SWSPI_LOCK
+#elif (TOUCH_SCREEN_INTERFACE == TOUCH_SCREEN_HW_SPI)
+HARDSPI(touch_spi, TOUCH_SCREEN_SPI_FREQ, 0, mcu_spi_port);
+#define TOUCH_SCREEN_BUS_LOCK LISTENER_HWSPI_LOCK
+#elif (TOUCH_SCREEN_INTERFACE == TOUCH_SCREEN_HW_SPI2)
+HARDSPI(touch_spi, TOUCH_SCREEN_SPI_FREQ, 0, mcu_spi2_port);
+#define TOUCH_SCREEN_BUS_LOCK LISTENER_HWSPI2_LOCK
 #endif
 
 	// Global variables
@@ -50,12 +60,12 @@ extern "C"
 	touch_screen_set_calibration(0, 0, TOUCH_SCREEN_ADC_MAX, TOUCH_SCREEN_ADC_MAX);
 #endif
 
-		io_config_output(TOUCH_SCREEN_CS);
+		io_config_output(TOUCH_SCREEN_SPI_CS);
 		softspi_start(&touch_spi);
-		io_clear_output(TOUCH_SCREEN_CS);
+		io_clear_output(TOUCH_SCREEN_SPI_CS);
 		softspi_xmit(&touch_spi, (TOUCH_SCREEN_READ_Y | TOUCH_SCREEN_SER_MODE));
 		softspi_xmit16(&touch_spi, 0);
-		io_set_output(TOUCH_SCREEN_CS);
+		io_set_output(TOUCH_SCREEN_SPI_CS);
 		softspi_stop(&touch_spi);
 	}
 
@@ -108,12 +118,12 @@ extern "C"
 		// Implementation based on TI Technical Note http://www.ti.com/lit/an/sbaa036/sbaa036.pdf
 
 		softspi_start(&touch_spi);
-		io_clear_output(TOUCH_SCREEN_CS);
+		io_clear_output(TOUCH_SCREEN_SPI_CS);
 		*adc_x = touch_screen_read_loop((TOUCH_SCREEN_READ_X | TOUCH_SCREEN_DFR_MODE), max_samples);
 		*adc_y = touch_screen_read_loop((TOUCH_SCREEN_READ_Y | TOUCH_SCREEN_DFR_MODE), max_samples);
 		// flush
 		touch_screen_read_loop(TOUCH_SCREEN_READ_Y, 1);
-		io_set_output(TOUCH_SCREEN_CS);
+		io_set_output(TOUCH_SCREEN_SPI_CS);
 		softspi_stop(&touch_spi);
 	}
 

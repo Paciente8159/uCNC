@@ -69,7 +69,7 @@ static uint8_t graphic_display_str_line_len(const char *__s);
  * but is not needed
  *
  * */
-#if (GRAPHIC_DISPLAY_INTERFACE & (GRAPHIC_DISPLAY_SW_SPI | GRAPHIC_DISPLAY_HW_SPI))
+#if (GRAPHIC_DISPLAY_INTERFACE & (GRAPHIC_DISPLAY_SW_SPI | GRAPHIC_DISPLAY_HW_SPI | GRAPHIC_DISPLAY_HW_SP2))
 #include "../softspi.h"
 #if (GRAPHIC_DISPLAY_INTERFACE == GRAPHIC_DISPLAY_SW_SPI)
 // temporary result of reading non existing read pin
@@ -80,14 +80,14 @@ SOFTSPI(graphic_spi, 1000000UL, 0, GRAPHIC_DISPLAY_SPI_MOSI, GRAPHIC_DISPLAY_SPI
 #undef io0_get_input
 #undef io0_config_input
 #define GRAPHIC_BUS_LOCK LISTENER_SWSPI_LOCK
-#else
-#ifndef GRAPHIC_HWSPI_PORT
-#define GRAPHIC_HWSPI_PORT mcu_spi2_port
-#endif
-HARDSPI(graphic_spi, 1000000UL, 0, GRAPHIC_HWSPI_PORT);
+#elif (GRAPHIC_DISPLAY_INTERFACE == GRAPHIC_DISPLAY_HW_SPI)
+HARDSPI(graphic_spi, 1000000UL, 0, mcu_spi_port);
+#define GRAPHIC_BUS_LOCK LISTENER_HWSPI_LOCK
+#elif (GRAPHIC_DISPLAY_INTERFACE == GRAPHIC_DISPLAY_HW_SPI2)
+HARDSPI(graphic_spi, 1000000UL, 0, mcu_spi2_port);
+#define GRAPHIC_BUS_LOCK LISTENER_HWSPI2_LOCK
 #endif
 #define graphic_display_port ((void *)&graphic_spi)
-#define GRAPHIC_BUS_LOCK LISTENER_HWSPI2_LOCK
 #endif
 
 #if (GRAPHIC_DISPLAY_INTERFACE & (GRAPHIC_DISPLAY_SW_I2C | GRAPHIC_DISPLAY_HW_I2C))

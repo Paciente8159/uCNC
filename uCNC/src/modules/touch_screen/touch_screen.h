@@ -13,8 +13,9 @@ extern "C"
 /**
  * PINS
  */
+// not used
 #ifndef TOUCH_SCREEN_TOUCHED
-#define TOUCH_SCREEN_TOUCHED DIN17
+#define TOUCH_SCREEN_TOUCHED UNDEF_PIN
 #endif
 
 /**
@@ -23,19 +24,31 @@ extern "C"
 #ifndef TOUCH_SCREEN_SPI_FREQ
 #define TOUCH_SCREEN_SPI_FREQ 1000000UL
 #endif
-#ifndef TOUCH_SCREEN_SPI_PORT
-#ifdef MCU_HAS_SPI2
-#define TOUCH_SCREEN_SPI_PORT mcu_spi2_port
-#elif MCU_HAS_SPI
-#define TOUCH_SCREEN_SPI_PORT mcu_spi_port
-#else
-#error "Touch screen requires an SPI HW port"
+
+#define TOUCH_SCREEN_SW_SPI 1
+#define TOUCH_SCREEN_HW_SPI 2
+#define TOUCH_SCREEN_HW_SPI2 4
+
+#ifndef TOUCH_SCREEN_INTERFACE
+#define TOUCH_SCREEN_INTERFACE TOUCH_SCREEN_HW_SPI
 #endif
 
+#if (TOUCH_SCREEN_INTERFACE == TOUCH_SCREEN_SW_SPI)
+#ifndef TOUCH_SCREEN_SPI_CLOCK
+#define TOUCH_SCREEN_SPI_CLOCK DOUT4
 #endif
-#ifndef TOUCH_SCREEN_CS
-#define TOUCH_SCREEN_CS DOUT35
+
+#ifndef TOUCH_SCREEN_SPI_MOSI
+#define TOUCH_SCREEN_SPI_MOSI DOUT5
 #endif
+#ifndef TOUCH_SCREEN_SPI_MISO
+#define TOUCH_SCREEN_SPI_MISO DIN7
+#endif
+#endif
+#ifndef TOUCH_SCREEN_SPI_CS
+#define TOUCH_SCREEN_SPI_CS DOUT35
+#endif
+
 
 /**
  * Parameters for calibration.
