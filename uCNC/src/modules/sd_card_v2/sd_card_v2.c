@@ -171,10 +171,12 @@ static FORCEINLINE FRESULT sd_mkdir(const char *path) { return f_mkdir(path); }
 
 #include "diskio.h"
 
-#if (!defined(SD_CARD_USE_HW_SPI) || !defined(MCU_HAS_SPI))
+#if (SD_CARD_INTERFACE == SD_CARD_SW_SPI)
 #define SD_CARD_BUS_LOCK LISTENER_SWSPI_LOCK
-#else
+#elif (SD_CARD_INTERFACE == SD_CARD_HW_SPI)
 #define SD_CARD_BUS_LOCK LISTENER_HWSPI_LOCK
+#elif (SD_CARD_INTERFACE == SD_CARD_HW_SPI2)
+#define SD_CARD_BUS_LOCK LISTENER_HWSPI2_LOCK
 #endif
 
 enum SD_CARD_STATUS

@@ -49,7 +49,7 @@
 #define MMCSD_MAX_BUFFER_SIZE 512
 #endif
 
-#if (!defined(SD_CARD_USE_HW_SPI) || !defined(MCU_HAS_SPI))
+#if (SD_CARD_INTERFACE == SD_CARD_SW_SPI)
 #ifndef SD_SPI_CLK
 #define SD_SPI_CLK DOUT30
 #endif
@@ -63,23 +63,16 @@
 #define SD_SPI_CS SPI_CS
 #endif
 SOFTSPI(mmcsd_spi, 100000UL, 0, SD_SPI_SDO, SD_SPI_SDI, SD_SPI_CLK);
-#else
-#ifndef SD_SPI_CLK
-#define SD_SPI_CLK SPI_CLK
-#endif
-#ifndef SD_SPI_SDO
-#define SD_SPI_SDO SPI_SDO
-#endif
-#ifndef SD_SPI_SDI
-#define SD_SPI_SDI SPI_SDI
-#endif
+#elif (SD_CARD_INTERFACE == SD_CARD_HW_SPI)
 #ifndef SD_SPI_CS
 #define SD_SPI_CS SPI_CS
 #endif
-#ifndef SD_HWSPI_PORT
-#define SD_HWSPI_PORT mcu_spi_port
+HARDSPI(mmcsd_spi, 100000UL, 0, mcu_spi_port);
+#elif (SD_CARD_INTERFACE == SD_CARD_HW_SPI2)
+#ifndef SD_SPI_CS
+#define SD_SPI_CS SPI2_CS
 #endif
-HARDSPI(mmcsd_spi, 100000UL, 0, SD_HWSPI_PORT);
+HARDSPI(mmcsd_spi, 100000UL, 0, mcu_spi2_port);
 #endif
 
 #define SD_SPI_PORT (&mmcsd_spi)

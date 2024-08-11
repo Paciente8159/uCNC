@@ -71,8 +71,12 @@ extern "C"
 #define ATA_GET_MODEL 21 /* Get model name */
 #define ATA_GET_SN 22		 /* Get serial number */
 
-#ifndef SD_CARD_USE_SW_SPI
-#define SD_CARD_USE_HW_SPI
+#define SD_CARD_SW_SPI 1
+#define SD_CARD_HW_SPI 2
+#define SD_CARD_HW_SPI2 4
+
+#ifndef SD_CARD_INTERFACE
+#define SD_CARD_INTERFACE SD_CARD_HW_SPI
 #endif
 
 #ifdef __cplusplus
