@@ -418,24 +418,17 @@ static void mcu_rtc_init(void);
 static void mcu_usart_init(void);
 
 #ifdef CUSTOM_CLOCKS_INIT
-#if (F_CPU == 84000000)
-#define PLLN 336
-#define PLLP 4
-#define PLLQ 7
-#elif (F_CPU == 100000000)
-#define PLLN 400
-#define PLLP 4
-#define PLLQ 8
-#elif (F_CPU == 168000000)
-#define PLLN 336
-#define PLLP 2
-#define PLLQ 7
-#elif (F_CPU == 180000000)
-#define PLLN 360
-#define PLLP 2
-#define PLLQ 8
-#else
-#error "Running the CPU at this frequency might lead to unexpected behaviour"
+#ifndef PLL_N
+#error You need to setup PLL_N
+#endif
+#ifndef PLL_Q
+#error You need to setup PLL_Q
+#endif
+#ifndef PLL_M
+#error You need to setup PLL_M
+#endif
+#ifndef PLL_P
+#error You need to setup PLL_P
 #endif
 #define APB1_PRESC ((F_CPU > 90000000UL) ? RCC_CFGR_PPRE1_DIV4 : ((F_CPU > 45000000UL) ? RCC_CFGR_PPRE1_DIV2 : RCC_CFGR_PPRE1_DIV1))
 #define APB2_PRESC ((F_CPU > 180000000UL) ? RCC_CFGR_PPRE2_DIV2 : RCC_CFGR_PPRE2_DIV1)
@@ -472,7 +465,7 @@ void mcu_clocks_init()
 	// Main PLL = fVCO / P = 336/4 = 84MHz
 	// PLL48CLK = fVCO / Q = 336/7 = 48MHz
 	// to run at other speeds different configuration must be applied but the limit for fast AHB is 180Mhz, APB is 90Mhz and slow APB is 45Mhz
-	SETFLAG(RCC->PLLCFGR, (RCC_PLLCFGR_PLLSRC_HSE | ((HSE_VALUE / 1000000) << RCC_PLLCFGR_PLLM_Pos) | (PLLN << RCC_PLLCFGR_PLLN_Pos) | (PLLP << RCC_PLLCFGR_PLLP_Pos) /*main clock /4*/ | (PLLQ << RCC_PLLCFGR_PLLQ_Pos)));
+	SETFLAG(RCC->PLLCFGR, (RCC_PLLCFGR_PLLSRC_HSE | (PLL_M << RCC_PLLCFGR_PLLM_Pos) | (PLL_N << RCC_PLLCFGR_PLLN_Pos) | (PLL_P << RCC_PLLCFGR_PLLP_Pos) /*main clock /4*/ | (PLL_Q << RCC_PLLCFGR_PLLQ_Pos)));
 	/* Enable PLL */
 	SETFLAG(RCC->CR, RCC_CR_PLLON);
 	/* Wait till PLL is ready */
@@ -491,7 +484,6 @@ void mcu_clocks_init()
 	/* Wait till PLL is used as system clock source */
 	while ((RCC->CFGR & RCC_CFGR_SW) != (0x02UL << RCC_CFGR_SW_Pos))
 		;
-	SystemCoreClock = F_CPU;
 #endif
 	SystemCoreClockUpdate();
 	// initialize debugger clock (used by us delay)

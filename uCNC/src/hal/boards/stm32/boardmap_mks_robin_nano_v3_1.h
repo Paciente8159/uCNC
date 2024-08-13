@@ -28,6 +28,15 @@ extern "C"
 #define BOARD_NAME "MKS Robin Nano 3.1"
 #endif
 
+// custom clocks setup
+#define CUSTOM_CLOCKS_INIT
+#ifndef HSE_VALUE
+#define HSE_VALUE 8000000UL
+#endif
+#define PLL_M (HSE_VALUE / 1000000)
+#define PLL_N 336
+#define PLL_P 2
+#define PLL_Q 7
 
 // Setup step pins
 #define STEP0_BIT 3	 // assigns STEP0 pin
@@ -38,7 +47,7 @@ extern "C"
 #define STEP2_PORT B // assigns STEP2 port
 #define STEP3_BIT 6	 // assigns STEP3 pin
 #define STEP3_PORT D // assigns STEP3 port
-#define STEP4_BIT 15	 // assigns STEP3 pin
+#define STEP4_BIT 15 // assigns STEP3 pin
 #define STEP4_PORT D // assigns STEP3 port
 
 // Setup dir pins
@@ -68,11 +77,11 @@ extern "C"
 // Setup limit pins
 #define LIMIT_X_BIT 15	// assigns LIMIT_X pin
 #define LIMIT_X_PORT A	// assigns LIMIT_X port
-#define LIMIT_Y_BIT 2	// assigns LIMIT_Y pin
+#define LIMIT_Y_BIT 2		// assigns LIMIT_Y pin
 #define LIMIT_Y_PORT D	// assigns LIMIT_Y port
 #define LIMIT_Z_BIT 4		// assigns LIMIT_Z+ pin
 #define LIMIT_Z_PORT C	// assigns LIMIT_Z+ port
-#define LIMIT_Z2_BIT 8 // assigns LIMIT_Z- pin
+#define LIMIT_Z2_BIT 8	// assigns LIMIT_Z- pin
 #define LIMIT_Z2_PORT C // assigns LIMIT_Z- port
 
 // Enable limits switch interrupt
@@ -156,7 +165,6 @@ extern "C"
 #define SPI2_SDI_BIT 6
 #define SPI2_SDI_PORT A
 #define SPI2_PORT 1
-
 
 #define ONESHOT_TIMER 8
 
