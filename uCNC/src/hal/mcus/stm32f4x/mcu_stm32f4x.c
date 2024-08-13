@@ -422,16 +422,23 @@ static void mcu_usart_init(void);
 #define PLLN 336
 #define PLLP 4
 #define PLLQ 7
+#elif (F_CPU == 100000000)
+#define PLLN 400
+#define PLLP 4
+#define PLLQ 8
 #elif (F_CPU == 168000000)
 #define PLLN 336
 #define PLLP 2
 #define PLLQ 7
+#elif (F_CPU == 180000000)
+#define PLLN 360
+#define PLLP 2
+#define PLLQ 8
 #else
 #error "Running the CPU at this frequency might lead to unexpected behaviour"
 #endif
 #define APB1_PRESC ((F_CPU > 90000000UL) ? RCC_CFGR_PPRE1_DIV4 : ((F_CPU > 45000000UL) ? RCC_CFGR_PPRE1_DIV2 : RCC_CFGR_PPRE1_DIV1))
-#define APB2_PRESC ((F_CPU > 90000000UL) ? RCC_CFGR_PPRE2_DIV4 : ((F_CPU > 45000000UL) ? RCC_CFGR_PPRE2_DIV2 : RCC_CFGR_PPRE2_DIV1))
-#define PERIPH_CLOCK ((F_CPU > 90000000UL) ? (F_CPU >> 2) : ((F_CPU > 45000000UL) ? (F_CPU >> 1) : F_CPU))
+#define APB2_PRESC ((F_CPU > 180000000UL) ? RCC_CFGR_PPRE2_DIV2 : RCC_CFGR_PPRE2_DIV1)
 #endif
 
 void mcu_clocks_init()
