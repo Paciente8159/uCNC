@@ -37,7 +37,8 @@ extern "C"
 #define LISTENER_NO_LOCK 0x00
 #define LISTENER_RUNNING_LOCK 0x01
 #define LISTENER_HWSPI_LOCK 0x02 // prevent multiple accesses to HWSPI by different modules
-#define LISTENER_HWI2C_LOCK 0x04 // for future use
+#define LISTENER_HWSPI2_LOCK 0x04 // prevent multiple accesses to HWSPI by different modules
+#define LISTENER_HWI2C_LOCK 0x08 // for future use
 #define LISTENER_SWSPI_LOCK 0x20 // prevent multiple accesses to any software emulated SPI by different modules
 #define LISTENER_SWI2C_LOCK 0x40 // prevent multiple accesses to any software emulated I2C by different modules
 	// other locks might be added latter
