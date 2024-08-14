@@ -58,7 +58,7 @@ static void system_menu_idle(uint8_t render_flags)
 }
 static bool system_menu_main_open(uint8_t action)
 {
-	system_menu_goto(1);
+	system_menu_goto(SYSTEM_MENU_ID_MAIN_MENU);
 	return true;
 }
 
@@ -83,18 +83,18 @@ DECL_MODULE(system_menu)
 	DECL_DYNAMIC_MENU(SYSTEM_MENU_ID_IDLE, 0, system_menu_idle, system_menu_main_open);
 
 	// append main
-	DECL_MENU(SYSTEM_MENU_ID_MAIN_MENU, 0, STR_MAIN_MENU);
+	DECL_MENU(SYSTEM_MENU_ID_MAIN_MENU, SYSTEM_MENU_ID_IDLE, STR_MAIN_MENU);
 
 	// main menu entries
 	DECL_MENU_ACTION(SYSTEM_MENU_ID_MAIN_MENU, hold, STR_HOLD, system_menu_action_rt_cmd, CONST_VARG(CMD_CODE_FEED_HOLD));
 	DECL_MENU_ACTION(SYSTEM_MENU_ID_MAIN_MENU, resume, STR_RESUME, system_menu_action_rt_cmd, CONST_VARG(CMD_CODE_CYCLE_START));
 	DECL_MENU_ACTION(SYSTEM_MENU_ID_MAIN_MENU, unlock, STR_UNLOCK, system_menu_action_serial_cmd, "$X\r");
 	DECL_MENU_ACTION(SYSTEM_MENU_ID_MAIN_MENU, home, STR_HOME, system_menu_action_serial_cmd, "$H\r");
-	DECL_MENU_GOTO(SYSTEM_MENU_ID_MAIN_MENU, jog, STR_JOG, CONST_VARG(7));
-	DECL_MENU_GOTO(SYSTEM_MENU_ID_MAIN_MENU, overrides, STR_OVERRIDES, CONST_VARG(8));
-	DECL_MENU_GOTO(SYSTEM_MENU_ID_MAIN_MENU, settings, STR_SETTINGS, CONST_VARG(2));
+	DECL_MENU_GOTO(SYSTEM_MENU_ID_MAIN_MENU, jog, STR_JOG, CONST_VARG(SYSTEM_MENU_ID_JOG));
+	DECL_MENU_GOTO(SYSTEM_MENU_ID_MAIN_MENU, overrides, STR_OVERRIDES, CONST_VARG(SYSTEM_MENU_ID_OVERRIDES));
+	DECL_MENU_GOTO(SYSTEM_MENU_ID_MAIN_MENU, settings, STR_SETTINGS, CONST_VARG(SYSTEM_MENU_ID_SETTINGS));
 
-	DECL_MENU(SYSTEM_MENU_ID_OVERRIDES, 1, STR_OVERRIDES);
+	DECL_MENU(SYSTEM_MENU_ID_OVERRIDES, SYSTEM_MENU_ID_MAIN_MENU, STR_OVERRIDES);
 	DECL_MENU_VAR_CUSTOM_EDIT(SYSTEM_MENU_ID_OVERRIDES, ovf, STR_FEED_OVR, &g_planner_state.feed_override, VAR_TYPE_UINT8, system_menu_action_overrides, CONST_VARG('f'));
 	DECL_MENU_ACTION(SYSTEM_MENU_ID_OVERRIDES, ovf_100, STR_FEED_100, system_menu_action_rt_cmd, CONST_VARG(CMD_CODE_FEED_100));
 #if (TOOL_COUNT > 0)
@@ -104,7 +104,7 @@ DECL_MODULE(system_menu)
 
 	// append Jog menu
 	// default initial distance
-	DECL_MENU(SYSTEM_MENU_ID_JOG, 1, STR_JOG);
+	DECL_MENU(SYSTEM_MENU_ID_JOG, SYSTEM_MENU_ID_MAIN_MENU, STR_JOG);
 	DECL_MENU_ENTRY(SYSTEM_MENU_ID_JOG, jogx, STR_JOG_AXIS("X"), NULL, system_menu_render_axis_position, NULL, system_menu_action_jog, "X");
 #if (AXIS_COUNT > 1)
 	DECL_MENU_ENTRY(SYSTEM_MENU_ID_JOG, jogy, STR_JOG_AXIS("Y"), NULL, system_menu_render_axis_position, NULL, system_menu_action_jog, "Y");
@@ -125,7 +125,7 @@ DECL_MODULE(system_menu)
 	DECL_MENU_VAR(SYSTEM_MENU_ID_JOG, jogfeed, STR_JOG_FEED, &jog_feed, VAR_TYPE_FLOAT);
 
 	// append settings menu
-	DECL_MENU(SYSTEM_MENU_ID_SETTINGS, 1, STR_SETTINGS);
+	DECL_MENU(SYSTEM_MENU_ID_SETTINGS, SYSTEM_MENU_ID_MAIN_MENU, STR_SETTINGS);
 
 	// settings menu
 	DECL_MENU_GOTO(SYSTEM_MENU_ID_SETTINGS, ioconfig, STR_IO_CONFIG, CONST_VARG(6));
@@ -141,11 +141,11 @@ DECL_MODULE(system_menu)
 	DECL_MENU_ACTION(SYSTEM_MENU_ID_SETTINGS, set_save, STR_SAVE_SETTINGS, system_menu_action_settings_cmd, CONST_VARG(1));
 	DECL_MENU_ACTION(SYSTEM_MENU_ID_SETTINGS, set_reset, STR_RESET_SETTINGS, system_menu_action_settings_cmd, CONST_VARG(2));
 
-	DECL_MENU(9, 2, STR_OTHER);
+	DECL_MENU(9, SYSTEM_MENU_ID_SETTINGS, STR_OTHER);
 	DECL_MENU_VAR(9, s11, STR_G64_FACT, &g_settings.g64_angle_factor, VAR_TYPE_FLOAT);
 	DECL_MENU_VAR(9, s12, STR_ARC_TOL, &g_settings.arc_tolerance, VAR_TYPE_FLOAT);
 
-	DECL_MENU(6, 2, STR_IO_CONFIG);
+	DECL_MENU(6, SYSTEM_MENU_ID_SETTINGS, STR_IO_CONFIG);
 	DECL_MENU_VAR(6, s2, STR_STEP_INV, &g_settings.dir_invert_mask, VAR_TYPE_UINT8);
 	DECL_MENU_VAR(6, s3, STR_DIR_INV, &g_settings.dir_invert_mask, VAR_TYPE_UINT8);
 	DECL_MENU_VAR(6, s4, STR_ENABLE_INV, &g_settings.step_enable_invert, VAR_TYPE_UINT8);
@@ -158,7 +158,7 @@ DECL_MODULE(system_menu)
 #endif
 
 	// append homing settings menu
-	DECL_MENU(3, 2, STR_HOMING);
+	DECL_MENU(3, SYSTEM_MENU_ID_SETTINGS, STR_HOMING);
 
 	DECL_MENU_VAR(3, s20, STR_SOFTLIMITS, &g_settings.soft_limits_enabled, VAR_TYPE_BOOLEAN);
 	DECL_MENU_VAR(3, s21, STR_HARDLIMITS, &g_settings.hard_limits_enabled, VAR_TYPE_BOOLEAN);
@@ -176,7 +176,7 @@ DECL_MODULE(system_menu)
 #endif
 
 	// append steppers settings menu
-	DECL_MENU(4, 2, STR_AXIS);
+	DECL_MENU(4, SYSTEM_MENU_ID_SETTINGS, STR_AXIS);
 	DECL_MENU_VAR(4, s100, STR_STEPMM("X"), &g_settings.step_per_mm[0], VAR_TYPE_FLOAT);
 	DECL_MENU_VAR(4, s110, STR_VMAX("X"), &g_settings.max_feed_rate[0], VAR_TYPE_FLOAT);
 	DECL_MENU_VAR(4, s120, STR_ACCEL("X"), &g_settings.acceleration[0], VAR_TYPE_FLOAT);
@@ -232,7 +232,7 @@ DECL_MODULE(system_menu)
 #endif
 
 #if (defined(ENABLE_SKEW_COMPENSATION) || (KINEMATIC == KINEMATIC_LINEAR_DELTA) || (KINEMATIC == KINEMATIC_DELTA))
-	DECL_MENU(5, 2, STR_KINEMATICS);
+	DECL_MENU(5, SYSTEM_MENU_ID_SETTINGS, STR_KINEMATICS);
 #ifdef ENABLE_SKEW_COMPENSATION
 	DECL_MENU_VAR(5, s37, STR_SKEW_FACTOR("XY"), &g_settings.skew_xy_factor, VAR_TYPE_FLOAT);
 #ifndef SKEW_COMPENSATION_XY_ONLY
@@ -316,7 +316,7 @@ void system_menu_action(uint8_t action)
 		if (g_system_menu.action_timeout < timestamp)
 		{
 			// system_menu_go_idle();
-			currentmenu = g_system_menu.current_menu = 0;
+			currentmenu = g_system_menu.current_menu = SYSTEM_MENU_ID_IDLE;
 			currentindex = g_system_menu.current_index = 0;
 			g_system_menu.flags = SYSTEM_MENU_MODE_REDRAW;
 			system_menu_action_timeout(SYSTEM_MENU_REDRAW_IDLE_MS);
@@ -605,7 +605,7 @@ void system_menu_append(system_menu_page_t *newpage)
 void system_menu_reset(void)
 {
 	// startup menu
-	g_system_menu.current_menu = 255;
+	g_system_menu.current_menu = SYSTEM_MENU_ID_STARTUP;
 	g_system_menu.current_index = 0;
 	g_system_menu.total_items = 0;
 
@@ -618,7 +618,7 @@ void system_menu_reset(void)
 void system_menu_go_idle(void)
 {
 	// idle menu
-	g_system_menu.current_menu = 0;
+	g_system_menu.current_menu = SYSTEM_MENU_ID_IDLE;
 	g_system_menu.current_index = 0;
 	g_system_menu.total_items = 0;
 	g_system_menu.current_multiplier = 0;
@@ -845,7 +845,7 @@ static bool system_menu_action_nav_back(uint8_t action, const system_menu_page_t
 		}
 
 		system_menu_go_idle();
-		system_menu_goto(0);
+		system_menu_goto(SYSTEM_MENU_ID_IDLE);
 		return true;
 	}
 	return false;
