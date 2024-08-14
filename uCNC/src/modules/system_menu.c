@@ -77,69 +77,69 @@ DECL_MODULE(system_menu)
 	jog_feed = 100.0f;
 
 	// entry menu to startup screen
-	DECL_DYNAMIC_MENU(255, 0, system_menu_startup, NULL);
+	DECL_DYNAMIC_MENU(SYSTEM_MENU_ID_STARTUP, 0, system_menu_startup, NULL);
 
 	// append idle menu
-	DECL_DYNAMIC_MENU(0, 0, system_menu_idle, system_menu_main_open);
+	DECL_DYNAMIC_MENU(SYSTEM_MENU_ID_IDLE, 0, system_menu_idle, system_menu_main_open);
 
 	// append main
-	DECL_MENU(1, 0, STR_MAIN_MENU);
+	DECL_MENU(SYSTEM_MENU_ID_MAIN_MENU, 0, STR_MAIN_MENU);
 
 	// main menu entries
-	DECL_MENU_ACTION(1, hold, STR_HOLD, system_menu_action_rt_cmd, CONST_VARG(CMD_CODE_FEED_HOLD));
-	DECL_MENU_ACTION(1, resume, STR_RESUME, system_menu_action_rt_cmd, CONST_VARG(CMD_CODE_CYCLE_START));
-	DECL_MENU_ACTION(1, unlock, STR_UNLOCK, system_menu_action_serial_cmd, "$X\r");
-	DECL_MENU_ACTION(1, home, STR_HOME, system_menu_action_serial_cmd, "$H\r");
-	DECL_MENU_GOTO(1, jog, STR_JOG, CONST_VARG(7));
-	DECL_MENU_GOTO(1, overrides, STR_OVERRIDES, CONST_VARG(8));
-	DECL_MENU_GOTO(1, settings, STR_SETTINGS, CONST_VARG(2));
+	DECL_MENU_ACTION(SYSTEM_MENU_ID_MAIN_MENU, hold, STR_HOLD, system_menu_action_rt_cmd, CONST_VARG(CMD_CODE_FEED_HOLD));
+	DECL_MENU_ACTION(SYSTEM_MENU_ID_MAIN_MENU, resume, STR_RESUME, system_menu_action_rt_cmd, CONST_VARG(CMD_CODE_CYCLE_START));
+	DECL_MENU_ACTION(SYSTEM_MENU_ID_MAIN_MENU, unlock, STR_UNLOCK, system_menu_action_serial_cmd, "$X\r");
+	DECL_MENU_ACTION(SYSTEM_MENU_ID_MAIN_MENU, home, STR_HOME, system_menu_action_serial_cmd, "$H\r");
+	DECL_MENU_GOTO(SYSTEM_MENU_ID_MAIN_MENU, jog, STR_JOG, CONST_VARG(7));
+	DECL_MENU_GOTO(SYSTEM_MENU_ID_MAIN_MENU, overrides, STR_OVERRIDES, CONST_VARG(8));
+	DECL_MENU_GOTO(SYSTEM_MENU_ID_MAIN_MENU, settings, STR_SETTINGS, CONST_VARG(2));
 
-	DECL_MENU(8, 1, STR_OVERRIDES);
-	DECL_MENU_VAR_CUSTOM_EDIT(8, ovf, STR_FEED_OVR, &g_planner_state.feed_override, VAR_TYPE_UINT8, system_menu_action_overrides, CONST_VARG('f'));
-	DECL_MENU_ACTION(8, ovf_100, STR_FEED_100, system_menu_action_rt_cmd, CONST_VARG(CMD_CODE_FEED_100));
+	DECL_MENU(SYSTEM_MENU_ID_OVERRIDES, 1, STR_OVERRIDES);
+	DECL_MENU_VAR_CUSTOM_EDIT(SYSTEM_MENU_ID_OVERRIDES, ovf, STR_FEED_OVR, &g_planner_state.feed_override, VAR_TYPE_UINT8, system_menu_action_overrides, CONST_VARG('f'));
+	DECL_MENU_ACTION(SYSTEM_MENU_ID_OVERRIDES, ovf_100, STR_FEED_100, system_menu_action_rt_cmd, CONST_VARG(CMD_CODE_FEED_100));
 #if (TOOL_COUNT > 0)
-	DECL_MENU_VAR_CUSTOM_EDIT(8, ovt, STR_TOOL_OVR, &g_planner_state.spindle_speed_override, VAR_TYPE_UINT8, system_menu_action_overrides, CONST_VARG('s'));
+	DECL_MENU_VAR_CUSTOM_EDIT(SYSTEM_MENU_ID_OVERRIDES, ovt, STR_TOOL_OVR, &g_planner_state.spindle_speed_override, VAR_TYPE_UINT8, system_menu_action_overrides, CONST_VARG('s'));
 #endif
-	DECL_MENU_ACTION(8, ovt_100, STR_TOOL_100, system_menu_action_rt_cmd, CONST_VARG(CMD_CODE_SPINDLE_100));
+	DECL_MENU_ACTION(SYSTEM_MENU_ID_OVERRIDES, ovt_100, STR_TOOL_100, system_menu_action_rt_cmd, CONST_VARG(CMD_CODE_SPINDLE_100));
 
 	// append Jog menu
 	// default initial distance
-	DECL_MENU(7, 1, STR_JOG);
-	DECL_MENU_ENTRY(7, jogx, STR_JOG_AXIS("X"), NULL, system_menu_render_axis_position, NULL, system_menu_action_jog, "X");
+	DECL_MENU(SYSTEM_MENU_ID_JOG, 1, STR_JOG);
+	DECL_MENU_ENTRY(SYSTEM_MENU_ID_JOG, jogx, STR_JOG_AXIS("X"), NULL, system_menu_render_axis_position, NULL, system_menu_action_jog, "X");
 #if (AXIS_COUNT > 1)
-	DECL_MENU_ENTRY(7, jogy, STR_JOG_AXIS("Y"), NULL, system_menu_render_axis_position, NULL, system_menu_action_jog, "Y");
+	DECL_MENU_ENTRY(SYSTEM_MENU_ID_JOG, jogy, STR_JOG_AXIS("Y"), NULL, system_menu_render_axis_position, NULL, system_menu_action_jog, "Y");
 #endif
 #if (AXIS_COUNT > 2)
-	DECL_MENU_ENTRY(7, jogz, STR_JOG_AXIS("Z"), NULL, system_menu_render_axis_position, NULL, system_menu_action_jog, "Z");
+	DECL_MENU_ENTRY(SYSTEM_MENU_ID_JOG, jogz, STR_JOG_AXIS("Z"), NULL, system_menu_render_axis_position, NULL, system_menu_action_jog, "Z");
 #endif
 #if (AXIS_COUNT > 3)
-	DECL_MENU_ENTRY(7, joga, STR_JOG_AXIS("A"), NULL, system_menu_render_axis_position, NULL, system_menu_action_jog, "A");
+	DECL_MENU_ENTRY(SYSTEM_MENU_ID_JOG, joga, STR_JOG_AXIS("A"), NULL, system_menu_render_axis_position, NULL, system_menu_action_jog, "A");
 #endif
 #if (AXIS_COUNT > 4)
-	DECL_MENU_ENTRY(7, jogb, STR_JOG_AXIS("B"), NULL, system_menu_render_axis_position, NULL, system_menu_action_jog, "B");
+	DECL_MENU_ENTRY(SYSTEM_MENU_ID_JOG, jogb, STR_JOG_AXIS("B"), NULL, system_menu_render_axis_position, NULL, system_menu_action_jog, "B");
 #endif
 #if (AXIS_COUNT > 5)
-	DECL_MENU_ENTRY(7, jogc, STR_JOG_AXIS("C"), NULL, system_menu_render_axis_position, NULL, system_menu_action_jog, "C");
+	DECL_MENU_ENTRY(SYSTEM_MENU_ID_JOG, jogc, STR_JOG_AXIS("C"), NULL, system_menu_render_axis_position, NULL, system_menu_action_jog, "C");
 #endif
-	DECL_MENU_VAR(7, jogdist, STR_JOG_DIST, &jog_distance, VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(7, jogfeed, STR_JOG_FEED, &jog_feed, VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(SYSTEM_MENU_ID_JOG, jogdist, STR_JOG_DIST, &jog_distance, VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(SYSTEM_MENU_ID_JOG, jogfeed, STR_JOG_FEED, &jog_feed, VAR_TYPE_FLOAT);
 
 	// append settings menu
-	DECL_MENU(2, 1, STR_SETTINGS);
+	DECL_MENU(SYSTEM_MENU_ID_SETTINGS, 1, STR_SETTINGS);
 
 	// settings menu
-	DECL_MENU_GOTO(2, ioconfig, STR_IO_CONFIG, CONST_VARG(6));
-	DECL_MENU_GOTO(2, gohome, STR_HOMING, CONST_VARG(3));
+	DECL_MENU_GOTO(SYSTEM_MENU_ID_SETTINGS, ioconfig, STR_IO_CONFIG, CONST_VARG(6));
+	DECL_MENU_GOTO(SYSTEM_MENU_ID_SETTINGS, gohome, STR_HOMING, CONST_VARG(3));
 #if (AXIS_COUNT > 0)
-	DECL_MENU_GOTO(2, goaxis, STR_AXIS, CONST_VARG(4));
+	DECL_MENU_GOTO(SYSTEM_MENU_ID_SETTINGS, goaxis, STR_AXIS, CONST_VARG(4));
 #endif
 #if (defined(ENABLE_SKEW_COMPENSATION) || (KINEMATIC == KINEMATIC_LINEAR_DELTA) || (KINEMATIC == KINEMATIC_DELTA))
-	DECL_MENU_GOTO(2, kinemats, STR_KINEMATICS, CONST_VARG(5));
+	DECL_MENU_GOTO(SYSTEM_MENU_ID_SETTINGS, kinemats, STR_KINEMATICS, CONST_VARG(5));
 #endif
-	DECL_MENU_GOTO(2, other_config, STR_OTHER, CONST_VARG(9));
-	DECL_MENU_ACTION(2, set_load, STR_LOAD_SETTINGS, system_menu_action_settings_cmd, CONST_VARG(0));
-	DECL_MENU_ACTION(2, set_save, STR_SAVE_SETTINGS, system_menu_action_settings_cmd, CONST_VARG(1));
-	DECL_MENU_ACTION(2, set_reset, STR_RESET_SETTINGS, system_menu_action_settings_cmd, CONST_VARG(2));
+	DECL_MENU_GOTO(SYSTEM_MENU_ID_SETTINGS, other_config, STR_OTHER, CONST_VARG(9));
+	DECL_MENU_ACTION(SYSTEM_MENU_ID_SETTINGS, set_load, STR_LOAD_SETTINGS, system_menu_action_settings_cmd, CONST_VARG(0));
+	DECL_MENU_ACTION(SYSTEM_MENU_ID_SETTINGS, set_save, STR_SAVE_SETTINGS, system_menu_action_settings_cmd, CONST_VARG(1));
+	DECL_MENU_ACTION(SYSTEM_MENU_ID_SETTINGS, set_reset, STR_RESET_SETTINGS, system_menu_action_settings_cmd, CONST_VARG(2));
 
 	DECL_MENU(9, 2, STR_OTHER);
 	DECL_MENU_VAR(9, s11, STR_G64_FACT, &g_settings.g64_angle_factor, VAR_TYPE_FLOAT);
