@@ -31,9 +31,6 @@
 #ifndef PEN_SERVO_LOW
 #define PEN_SERVO_LOW 50
 #endif
-#ifndef PEN_SERVO_MID
-#define PEN_SERVO_MID 127
-#endif
 #ifndef PEN_SERVO_HIGH
 #define PEN_SERVO_HIGH 255
 #endif
