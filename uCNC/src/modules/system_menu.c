@@ -980,38 +980,53 @@ bool system_menu_action_edit(uint8_t action, system_menu_item_t *item)
 		{
 			int digit = action - SYSTEM_MENU_ACTION_CHAR_INPUT('0');
 			int current_digit;
-			flags |= SYSTEM_MENU_MODE_MODIFY;
 			switch(vartype)
 			{
 			case VAR_TYPE_BOOLEAN:
-				modifier = digit;
+				// Set boolean
+				(*(bool *)item->argptr) = digit != 0;
+				// Boolean has only one digit
+				g_system_menu.current_multiplier = 0;
 				break;
 			case VAR_TYPE_FLOAT:
+				// Modify digit
 				current_digit = (int)((*(float *)item->argptr) / powf(10.0f, (currentmult - 3))) % 10;
-				modifier = (digit - current_digit) * powf(10.0f, (currentmult - 3));
+				(*(float *)item->argptr) += (digit - current_digit) * powf(10.0f, (currentmult - 3));
+				// Clamp
+				(*(float *)item->argptr) = CLAMP(__FLT_MIN__, (*(float *)item->argptr), __FLT_MAX__);
+				g_system_menu.current_multiplier = CLAMP(-1, currentmult + 1, 9);
 				break;
 			case VAR_TYPE_INT8:
 			case VAR_TYPE_UINT8:
+				// Modify digit
 				current_digit = ((*(uint8_t *)item->argptr) / (int)powf(10.0f, currentmult)) % 10;
-				modifier = (digit - current_digit) * powf(10.0f, currentmult);
+				(*(uint8_t *)item->argptr) += (digit - current_digit) * powf(10.0f, currentmult);
+				// Clamp
+				(*(uint8_t *)item->argptr) = CLAMP(0, (*(uint8_t *)item->argptr), 0xFF);
+				g_system_menu.current_multiplier = CLAMP(-1, currentmult + 1, 2);
 				break;
 			case VAR_TYPE_INT16:
 			case VAR_TYPE_UINT16:
 				current_digit = ((*(uint16_t *)item->argptr) / (int)powf(10.0f, currentmult)) % 10;
-				modifier = (digit - current_digit) * powf(10.0f, currentmult);
+				(*(uint16_t *)item->argptr) += (digit - current_digit) * powf(10.0f, currentmult);
+				// Clamp
+				(*(uint16_t *)item->argptr) = CLAMP(0, (*(uint16_t *)item->argptr), 0xFFFF);
+				g_system_menu.current_multiplier = CLAMP(-1, currentmult + 1, 4);
 				break;
 			case VAR_TYPE_INT32:
 			case VAR_TYPE_UINT32:
+				// Modify digit
 				current_digit = ((*(uint32_t *)item->argptr) / (int)powf(10.0f, currentmult)) % 10;
-				modifier = (digit - current_digit) * powf(10.0f, currentmult);
+				(*(uint32_t *)item->argptr) += (digit - current_digit) * powf(10.0f, currentmult);
+				// Clamp
+				(*(uint32_t *)item->argptr) = CLAMP(0, (*(uint32_t *)item->argptr), 0xFFFFFFFF);
+				g_system_menu.current_multiplier = CLAMP(-1, currentmult + 1, 9);
 				break;
 			default:
-				modifier = digit * powf(10.0f, currentmult);
 				break;
 			}
-			currentmult -= 1;
 		}
-		break;
+		return true;
 	default:
 		// allow to propagate
 		return false;
