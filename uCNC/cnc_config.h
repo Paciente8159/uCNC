@@ -498,7 +498,7 @@ extern "C"
  * Enables steppers to go idle after some amount of time not moving.
  * This implements Grbl setting $1
  * Unlike Grbl this accepts a 16bit value so a timeout up 30 seconds can be defined. A value of 0 will disable it.
- * Warning: This can and while cause steppers to loose position.
+ * Warning: This can and will cause steppers to loose position.
  * 
  * */
 
