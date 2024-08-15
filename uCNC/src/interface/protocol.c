@@ -770,10 +770,14 @@ void protocol_send_cnc_settings(void)
 {
 	protocol_busy = true;
 	protocol_send_gcode_setting_line_flt(0, (1000000.0f / g_settings.max_step_rate));
-#if EMULATE_GRBL_STARTUP > 0
-	// just adds this for compatibility
-	// this setting is not used
+#if EMULATE_GRBL_STARTUP > 0 || defined(NABLE_STEPPERS_DISABLE_TIMEOUT)
+// just adds this for compatibility
+// this setting is not used
+#ifdef ENABLE_STEPPERS_DISABLE_TIMEOUT
+	protocol_send_gcode_setting_line_int(1, g_settings.step_disable_timeout);
+#else
 	protocol_send_gcode_setting_line_int(1, 0);
+#endif
 #endif
 	protocol_send_gcode_setting_line_int(2, g_settings.step_invert_mask);
 	protocol_send_gcode_setting_line_int(3, g_settings.dir_invert_mask);
@@ -1070,7 +1074,7 @@ void protocol_send_pins_states(void)
 #endif
 
 #define DSS_INFO "DSS" STRGIFY(DSS_MAX_OVERSAMPLING) "_" STRGIFY(DSS_CUTOFF_FREQ) ","
-#define PLANNER_INFO             \
+#define PLANNER_INFO           \
 	STRGIFY(PLANNER_BUFFER_SIZE) \
 	","
 

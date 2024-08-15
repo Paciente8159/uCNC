@@ -244,6 +244,10 @@ static uint8_t mc_line_segment(int32_t *step_new_pos, motion_data_t *block_data)
 		EVENT_INVOKE(mc_line_segment, block_data);
 #endif
 
+#ifdef ENABLE_STEPPERS_DISABLE_TIMEOUT
+		io_enable_steppers(g_settings.step_enable_invert); // re-enable steppers for motion
+#endif
+
 		planner_add_line(block_data);
 		// dwell should only execute on the first request
 		block_data->dwell = 0;

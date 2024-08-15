@@ -1064,6 +1064,26 @@ static void cnc_io_dotasks(void)
 #ifdef ENABLE_MAIN_LOOP_MODULES
 	EVENT_INVOKE(cnc_io_dotasks, NULL);
 #endif
+
+#ifdef ENABLE_STEPPERS_DISABLE_TIMEOUT
+	static uint32_t stepper_timeout = 0;
+
+	if (g_settings.step_disable_timeout)
+	{
+		// is idle check the timeout
+		if (cnc_get_exec_state(EXEC_RUN | EXEC_HOLD) == EXEC_IDLE)
+		{
+			if (stepper_timeout < mcu_millis())
+			{
+				io_enable_steppers(~g_settings.step_enable_invert); // disables steppers after idle timeout
+				stepper_timeout = mcu_millis() + g_settings.step_disable_timeout;
+			}
+		}
+		else{
+			stepper_timeout = mcu_millis() + g_settings.step_disable_timeout;
+		}
+	}
+#endif
 }
 
 void cnc_run_startup_blocks(void)
