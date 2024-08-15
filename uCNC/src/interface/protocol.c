@@ -94,6 +94,24 @@ const char pin_name_75[] __rom__ = "DOUT28";
 const char pin_name_76[] __rom__ = "DOUT29";
 const char pin_name_77[] __rom__ = "DOUT30";
 const char pin_name_78[] __rom__ = "DOUT31";
+const char pin_name_79[] __rom__ = "DOUT32";
+const char pin_name_80[] __rom__ = "DOUT33";
+const char pin_name_81[] __rom__ = "DOUT34";
+const char pin_name_82[] __rom__ = "DOUT35";
+const char pin_name_83[] __rom__ = "DOUT36";
+const char pin_name_84[] __rom__ = "DOUT37";
+const char pin_name_85[] __rom__ = "DOUT38";
+const char pin_name_86[] __rom__ = "DOUT39";
+const char pin_name_87[] __rom__ = "DOUT40";
+const char pin_name_88[] __rom__ = "DOUT41";
+const char pin_name_89[] __rom__ = "DOUT42";
+const char pin_name_90[] __rom__ = "DOUT43";
+const char pin_name_91[] __rom__ = "DOUT44";
+const char pin_name_92[] __rom__ = "DOUT45";
+const char pin_name_93[] __rom__ = "DOUT46";
+const char pin_name_94[] __rom__ = "DOUT47";
+const char pin_name_95[] __rom__ = "DOUT48";
+const char pin_name_96[] __rom__ = "DOUT49";
 const char pin_name_100[] __rom__ = "LIMIT_X";
 const char pin_name_101[] __rom__ = "LIMIT_Y";
 const char pin_name_102[] __rom__ = "LIMIT_Z";
@@ -156,6 +174,24 @@ const char pin_name_158[] __rom__ = "DIN28";
 const char pin_name_159[] __rom__ = "DIN29";
 const char pin_name_160[] __rom__ = "DIN30";
 const char pin_name_161[] __rom__ = "DIN31";
+const char pin_name_162[] __rom__ = "DIN32";
+const char pin_name_163[] __rom__ = "DIN33";
+const char pin_name_164[] __rom__ = "DIN34";
+const char pin_name_165[] __rom__ = "DIN35";
+const char pin_name_166[] __rom__ = "DIN36";
+const char pin_name_167[] __rom__ = "DIN37";
+const char pin_name_168[] __rom__ = "DIN38";
+const char pin_name_169[] __rom__ = "DIN39";
+const char pin_name_170[] __rom__ = "DIN40";
+const char pin_name_171[] __rom__ = "DIN41";
+const char pin_name_172[] __rom__ = "DIN42";
+const char pin_name_173[] __rom__ = "DIN43";
+const char pin_name_174[] __rom__ = "DIN44";
+const char pin_name_175[] __rom__ = "DIN45";
+const char pin_name_176[] __rom__ = "DIN46";
+const char pin_name_177[] __rom__ = "DIN47";
+const char pin_name_178[] __rom__ = "DIN48";
+const char pin_name_179[] __rom__ = "DIN49";
 const char pin_name_200[] __rom__ = "TX";
 const char pin_name_201[] __rom__ = "RX";
 const char pin_name_202[] __rom__ = "USB_DM";
@@ -168,9 +204,12 @@ const char pin_name_208[] __rom__ = "I2C_SCL";
 const char pin_name_209[] __rom__ = "I2C_SDA";
 const char pin_name_210[] __rom__ = "TX2";
 const char pin_name_211[] __rom__ = "RX2";
-
-const char *const outputpins_names[] __rom__ = {pin_name_1, pin_name_2, pin_name_3, pin_name_4, pin_name_5, pin_name_6, pin_name_7, pin_name_8, pin_name_9, pin_name_10, pin_name_11, pin_name_12, pin_name_13, pin_name_14, pin_name_15, pin_name_16, pin_name_17, pin_name_18, pin_name_19, pin_name_20, pin_name_21, pin_name_22, pin_name_23, pin_name_24, pin_name_25, pin_name_26, pin_name_27, pin_name_28, pin_name_29, pin_name_30, pin_name_31, pin_name_32, pin_name_33, pin_name_34, pin_name_35, pin_name_36, pin_name_37, pin_name_38, pin_name_39, pin_name_40, pin_name_41, pin_name_42, pin_name_43, pin_name_44, pin_name_45, pin_name_46, pin_name_47, pin_name_48, pin_name_49, pin_name_50, pin_name_51, pin_name_52, pin_name_53, pin_name_54, pin_name_55, pin_name_56, pin_name_57, pin_name_58, pin_name_59, pin_name_60, pin_name_61, pin_name_62, pin_name_63, pin_name_64, pin_name_65, pin_name_66, pin_name_67, pin_name_68, pin_name_69, pin_name_70, pin_name_71, pin_name_72, pin_name_73, pin_name_74, pin_name_75, pin_name_76, pin_name_77, pin_name_78};
-const char *const inputpins_names[] __rom__ = {pin_name_100, pin_name_101, pin_name_102, pin_name_103, pin_name_104, pin_name_105, pin_name_106, pin_name_107, pin_name_108, pin_name_109, pin_name_110, pin_name_111, pin_name_112, pin_name_113, pin_name_114, pin_name_115, pin_name_116, pin_name_117, pin_name_118, pin_name_119, pin_name_120, pin_name_121, pin_name_122, pin_name_123, pin_name_124, pin_name_125, pin_name_126, pin_name_127, pin_name_128, pin_name_129, pin_name_130, pin_name_131, pin_name_132, pin_name_133, pin_name_134, pin_name_135, pin_name_136, pin_name_137, pin_name_138, pin_name_139, pin_name_140, pin_name_141, pin_name_142, pin_name_143, pin_name_144, pin_name_145, pin_name_146, pin_name_147, pin_name_148, pin_name_149, pin_name_150, pin_name_151, pin_name_152, pin_name_153, pin_name_154, pin_name_155, pin_name_156, pin_name_157, pin_name_158, pin_name_159, pin_name_160, pin_name_161, pin_name_200, pin_name_201, pin_name_202, pin_name_203, pin_name_204, pin_name_205, pin_name_206, pin_name_207, pin_name_208, pin_name_209, pin_name_210, pin_name_211};
+const char pin_name_212[] __rom__ = "SPI2_CLK";
+const char pin_name_213[] __rom__ = "SPI2_SDI";
+const char pin_name_214[] __rom__ = "SPI2_SDO";
+const char pin_name_215[] __rom__ = "SPI2_CS";
+const char *const outputpins_names[] __rom__ = {pin_name_1, pin_name_2, pin_name_3, pin_name_4, pin_name_5, pin_name_6, pin_name_7, pin_name_8, pin_name_9, pin_name_10, pin_name_11, pin_name_12, pin_name_13, pin_name_14, pin_name_15, pin_name_16, pin_name_17, pin_name_18, pin_name_19, pin_name_20, pin_name_21, pin_name_22, pin_name_23, pin_name_24, pin_name_25, pin_name_26, pin_name_27, pin_name_28, pin_name_29, pin_name_30, pin_name_31, pin_name_32, pin_name_33, pin_name_34, pin_name_35, pin_name_36, pin_name_37, pin_name_38, pin_name_39, pin_name_40, pin_name_41, pin_name_42, pin_name_43, pin_name_44, pin_name_45, pin_name_46, pin_name_47, pin_name_48, pin_name_49, pin_name_50, pin_name_51, pin_name_52, pin_name_53, pin_name_54, pin_name_55, pin_name_56, pin_name_57, pin_name_58, pin_name_59, pin_name_60, pin_name_61, pin_name_62, pin_name_63, pin_name_64, pin_name_65, pin_name_66, pin_name_67, pin_name_68, pin_name_69, pin_name_70, pin_name_71, pin_name_72, pin_name_73, pin_name_74, pin_name_75, pin_name_76, pin_name_77, pin_name_78, pin_name_79, pin_name_80, pin_name_81, pin_name_82, pin_name_83, pin_name_84, pin_name_85, pin_name_86, pin_name_87, pin_name_88, pin_name_89, pin_name_90, pin_name_91, pin_name_92, pin_name_93, pin_name_94, pin_name_95, pin_name_96};
+const char *const inputpins_names[] __rom__ = {pin_name_100, pin_name_101, pin_name_102, pin_name_103, pin_name_104, pin_name_105, pin_name_106, pin_name_107, pin_name_108, pin_name_109, pin_name_110, pin_name_111, pin_name_112, pin_name_113, pin_name_114, pin_name_115, pin_name_116, pin_name_117, pin_name_118, pin_name_119, pin_name_120, pin_name_121, pin_name_122, pin_name_123, pin_name_124, pin_name_125, pin_name_126, pin_name_127, pin_name_128, pin_name_129, pin_name_130, pin_name_131, pin_name_132, pin_name_133, pin_name_134, pin_name_135, pin_name_136, pin_name_137, pin_name_138, pin_name_139, pin_name_140, pin_name_141, pin_name_142, pin_name_143, pin_name_144, pin_name_145, pin_name_146, pin_name_147, pin_name_148, pin_name_149, pin_name_150, pin_name_151, pin_name_152, pin_name_153, pin_name_154, pin_name_155, pin_name_156, pin_name_157, pin_name_158, pin_name_159, pin_name_160, pin_name_161, pin_name_162, pin_name_163, pin_name_164, pin_name_165, pin_name_166, pin_name_167, pin_name_168, pin_name_169, pin_name_170, pin_name_171, pin_name_172, pin_name_173, pin_name_174, pin_name_175, pin_name_176, pin_name_177, pin_name_178, pin_name_179, pin_name_200, pin_name_201, pin_name_202, pin_name_203, pin_name_204, pin_name_205, pin_name_206, pin_name_207, pin_name_208, pin_name_209, pin_name_210, pin_name_211, pin_name_212, pin_name_213, pin_name_214, pin_name_215};
 
 #endif
 
@@ -885,9 +924,9 @@ void protocol_send_cnc_settings(void)
 void protocol_send_pins_states(void)
 {
 	protocol_busy = true;
-	for (uint8_t i = 0; i < (DIN_PINS_OFFSET + 32); i++)
+	for (uint8_t i = 0; i < (DIN_PINS_OFFSET + 50); i++)
 	{
-		i = (i != (DOUT_PINS_OFFSET + 32)) ? i : 100;
+		i = (i != (DOUT_PINS_OFFSET + 50)) ? i : 100;
 		int16_t val = io_get_pinvalue(i);
 		if (val >= 0)
 		{
@@ -905,7 +944,7 @@ void protocol_send_pins_states(void)
 				{
 					protocol_send_string(__romstr__("[SV:"));
 				}
-				else if (i < (DOUT_PINS_OFFSET + 32))
+				else if (i < (DOUT_PINS_OFFSET + 50))
 				{
 					protocol_send_string(__romstr__("[O:"));
 				}
@@ -1070,7 +1109,7 @@ void protocol_send_pins_states(void)
 #endif
 
 #define DSS_INFO "DSS" STRGIFY(DSS_MAX_OVERSAMPLING) "_" STRGIFY(DSS_CUTOFF_FREQ) ","
-#define PLANNER_INFO             \
+#define PLANNER_INFO           \
 	STRGIFY(PLANNER_BUFFER_SIZE) \
 	","
 
