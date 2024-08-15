@@ -2365,6 +2365,78 @@ int16_t io_get_pinvalue(uint8_t pin)
 	case DIN31:
 		return (io_get_input(DIN31) != 0);
 #endif
+#if ASSERT_PIN(DIN32)
+    case DIN32:
+        return (io_get_input(DIN32) != 0);
+#endif
+#if ASSERT_PIN(DIN33)
+    case DIN33:
+        return (io_get_input(DIN33) != 0);
+#endif
+#if ASSERT_PIN(DIN34)
+    case DIN34:
+        return (io_get_input(DIN34) != 0);
+#endif
+#if ASSERT_PIN(DIN35)
+    case DIN35:
+        return (io_get_input(DIN35) != 0);
+#endif
+#if ASSERT_PIN(DIN36)
+    case DIN36:
+        return (io_get_input(DIN36) != 0);
+#endif
+#if ASSERT_PIN(DIN37)
+    case DIN37:
+        return (io_get_input(DIN37) != 0);
+#endif
+#if ASSERT_PIN(DIN38)
+    case DIN38:
+        return (io_get_input(DIN38) != 0);
+#endif
+#if ASSERT_PIN(DIN39)
+    case DIN39:
+        return (io_get_input(DIN39) != 0);
+#endif
+#if ASSERT_PIN(DIN40)
+    case DIN40:
+        return (io_get_input(DIN40) != 0);
+#endif
+#if ASSERT_PIN(DIN41)
+    case DIN41:
+        return (io_get_input(DIN41) != 0);
+#endif
+#if ASSERT_PIN(DIN42)
+    case DIN42:
+        return (io_get_input(DIN42) != 0);
+#endif
+#if ASSERT_PIN(DIN43)
+    case DIN43:
+        return (io_get_input(DIN43) != 0);
+#endif
+#if ASSERT_PIN(DIN44)
+    case DIN44:
+        return (io_get_input(DIN44) != 0);
+#endif
+#if ASSERT_PIN(DIN45)
+    case DIN45:
+        return (io_get_input(DIN45) != 0);
+#endif
+#if ASSERT_PIN(DIN46)
+    case DIN46:
+        return (io_get_input(DIN46) != 0);
+#endif
+#if ASSERT_PIN(DIN47)
+    case DIN47:
+        return (io_get_input(DIN47) != 0);
+#endif
+#if ASSERT_PIN(DIN48)
+    case DIN48:
+        return (io_get_input(DIN48) != 0);
+#endif
+#if ASSERT_PIN(DIN49)
+    case DIN49:
+        return (io_get_input(DIN49) != 0);
+#endif
 #if ASSERT_PIN(SERVO0)
 	case SERVO0:
 		return (uint8_t)mcu_get_servo(SERVO0);
