@@ -64,10 +64,25 @@ extern "C"
 #define SYSTEM_MENU_MODE_REDRAW 1
 #define SYSTEM_MENU_MODE_NONE 0
 
+// System menu IDs
+#define SYSTEM_MENU_ID_STARTUP 255
+#define SYSTEM_MENU_ID_IDLE 0
+#define SYSTEM_MENU_ID_MAIN_MENU 1
+#define SYSTEM_MENU_ID_SETTINGS 2
+#define SYSTEM_MENU_ID_JOG 7
+#define SYSTEM_MENU_ID_OVERRIDES 8
+
 #define SYSTEM_MENU_ACTION_NONE 0
 #define SYSTEM_MENU_ACTION_SELECT 1
 #define SYSTEM_MENU_ACTION_NEXT 2
 #define SYSTEM_MENU_ACTION_PREV 3
+
+// Characters given to this macro should be in range of printable ASCII characters (32-127)
+#define SYSTEM_MENU_ACTION_CHAR_INPUT(c) (c)
+// Action ID range from 128 - 137
+#define SYSTEM_MENU_ACTION_SIDE_BUTTON(b) ((b) + 128)
+// Action ID range from 138 - 147
+#define SYSTEM_MENU_ACTION_SPECIAL_BUTTON(b) ((b) + 138)
 
 #define VAR_TYPE_BOOLEAN 1
 #define VAR_TYPE_UINT8 2

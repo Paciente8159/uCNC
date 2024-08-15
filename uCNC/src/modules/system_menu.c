@@ -62,7 +62,7 @@ static void system_menu_idle(uint8_t render_flags)
 }
 static bool system_menu_main_open(uint8_t action)
 {
-	system_menu_goto(1);
+	system_menu_goto(SYSTEM_MENU_ID_MAIN_MENU);
 	return true;
 }
 
@@ -81,75 +81,75 @@ DECL_MODULE(system_menu)
 	jog_feed = 100.0f;
 
 	// entry menu to startup screen
-	DECL_DYNAMIC_MENU(255, 0, system_menu_startup, NULL);
+	DECL_DYNAMIC_MENU(SYSTEM_MENU_ID_STARTUP, 0, system_menu_startup, NULL);
 
 	// append idle menu
-	DECL_DYNAMIC_MENU(0, 0, system_menu_idle, system_menu_main_open);
+	DECL_DYNAMIC_MENU(SYSTEM_MENU_ID_IDLE, 0, system_menu_idle, system_menu_main_open);
 
 	// append main
-	DECL_MENU(1, 0, STR_MAIN_MENU);
+	DECL_MENU(SYSTEM_MENU_ID_MAIN_MENU, SYSTEM_MENU_ID_IDLE, STR_MAIN_MENU);
 
 	// main menu entries
-	DECL_MENU_ACTION(1, hold, STR_HOLD, system_menu_action_rt_cmd, CONST_VARG(CMD_CODE_FEED_HOLD));
-	DECL_MENU_ACTION(1, resume, STR_RESUME, system_menu_action_rt_cmd, CONST_VARG(CMD_CODE_CYCLE_START));
-	DECL_MENU_ACTION(1, unlock, STR_UNLOCK, system_menu_action_serial_cmd, "$X\r");
-	DECL_MENU_ACTION(1, home, STR_HOME, system_menu_action_serial_cmd, "$H\r");
-	DECL_MENU_GOTO(1, jog, STR_JOG, CONST_VARG(7));
-	DECL_MENU_GOTO(1, overrides, STR_OVERRIDES, CONST_VARG(8));
-	DECL_MENU_GOTO(1, settings, STR_SETTINGS, CONST_VARG(2));
+	DECL_MENU_ACTION(SYSTEM_MENU_ID_MAIN_MENU, hold, STR_HOLD, system_menu_action_rt_cmd, CONST_VARG(CMD_CODE_FEED_HOLD));
+	DECL_MENU_ACTION(SYSTEM_MENU_ID_MAIN_MENU, resume, STR_RESUME, system_menu_action_rt_cmd, CONST_VARG(CMD_CODE_CYCLE_START));
+	DECL_MENU_ACTION(SYSTEM_MENU_ID_MAIN_MENU, unlock, STR_UNLOCK, system_menu_action_serial_cmd, "$X\r");
+	DECL_MENU_ACTION(SYSTEM_MENU_ID_MAIN_MENU, home, STR_HOME, system_menu_action_serial_cmd, "$H\r");
+	DECL_MENU_GOTO(SYSTEM_MENU_ID_MAIN_MENU, jog, STR_JOG, CONST_VARG(SYSTEM_MENU_ID_JOG));
+	DECL_MENU_GOTO(SYSTEM_MENU_ID_MAIN_MENU, overrides, STR_OVERRIDES, CONST_VARG(SYSTEM_MENU_ID_OVERRIDES));
+	DECL_MENU_GOTO(SYSTEM_MENU_ID_MAIN_MENU, settings, STR_SETTINGS, CONST_VARG(SYSTEM_MENU_ID_SETTINGS));
 
-	DECL_MENU(8, 1, STR_OVERRIDES);
-	DECL_MENU_VAR_CUSTOM_EDIT(8, ovf, STR_FEED_OVR, &g_planner_state.feed_override, VAR_TYPE_UINT8, system_menu_action_overrides, CONST_VARG('f'));
-	DECL_MENU_ACTION(8, ovf_100, STR_FEED_100, system_menu_action_rt_cmd, CONST_VARG(CMD_CODE_FEED_100));
+	DECL_MENU(SYSTEM_MENU_ID_OVERRIDES, SYSTEM_MENU_ID_MAIN_MENU, STR_OVERRIDES);
+	DECL_MENU_VAR_CUSTOM_EDIT(SYSTEM_MENU_ID_OVERRIDES, ovf, STR_FEED_OVR, &g_planner_state.feed_override, VAR_TYPE_UINT8, system_menu_action_overrides, CONST_VARG('f'));
+	DECL_MENU_ACTION(SYSTEM_MENU_ID_OVERRIDES, ovf_100, STR_FEED_100, system_menu_action_rt_cmd, CONST_VARG(CMD_CODE_FEED_100));
 #if (TOOL_COUNT > 0)
-	DECL_MENU_VAR_CUSTOM_EDIT(8, ovt, STR_TOOL_OVR, &g_planner_state.spindle_speed_override, VAR_TYPE_UINT8, system_menu_action_overrides, CONST_VARG('s'));
+	DECL_MENU_VAR_CUSTOM_EDIT(SYSTEM_MENU_ID_OVERRIDES, ovt, STR_TOOL_OVR, &g_planner_state.spindle_speed_override, VAR_TYPE_UINT8, system_menu_action_overrides, CONST_VARG('s'));
 #endif
-	DECL_MENU_ACTION(8, ovt_100, STR_TOOL_100, system_menu_action_rt_cmd, CONST_VARG(CMD_CODE_SPINDLE_100));
+	DECL_MENU_ACTION(SYSTEM_MENU_ID_OVERRIDES, ovt_100, STR_TOOL_100, system_menu_action_rt_cmd, CONST_VARG(CMD_CODE_SPINDLE_100));
 
 	// append Jog menu
 	// default initial distance
-	DECL_MENU(7, 1, STR_JOG);
-	DECL_MENU_ENTRY(7, jogx, STR_JOG_AXIS("X"), NULL, system_menu_render_axis_position, NULL, system_menu_action_jog, "X");
+	DECL_MENU(SYSTEM_MENU_ID_JOG, SYSTEM_MENU_ID_MAIN_MENU, STR_JOG);
+	DECL_MENU_ENTRY(SYSTEM_MENU_ID_JOG, jogx, STR_JOG_AXIS("X"), NULL, system_menu_render_axis_position, NULL, system_menu_action_jog, "X");
 #if (AXIS_COUNT > 1)
-	DECL_MENU_ENTRY(7, jogy, STR_JOG_AXIS("Y"), NULL, system_menu_render_axis_position, NULL, system_menu_action_jog, "Y");
+	DECL_MENU_ENTRY(SYSTEM_MENU_ID_JOG, jogy, STR_JOG_AXIS("Y"), NULL, system_menu_render_axis_position, NULL, system_menu_action_jog, "Y");
 #endif
 #if (AXIS_COUNT > 2)
-	DECL_MENU_ENTRY(7, jogz, STR_JOG_AXIS("Z"), NULL, system_menu_render_axis_position, NULL, system_menu_action_jog, "Z");
+	DECL_MENU_ENTRY(SYSTEM_MENU_ID_JOG, jogz, STR_JOG_AXIS("Z"), NULL, system_menu_render_axis_position, NULL, system_menu_action_jog, "Z");
 #endif
 #if (AXIS_COUNT > 3)
-	DECL_MENU_ENTRY(7, joga, STR_JOG_AXIS("A"), NULL, system_menu_render_axis_position, NULL, system_menu_action_jog, "A");
+	DECL_MENU_ENTRY(SYSTEM_MENU_ID_JOG, joga, STR_JOG_AXIS("A"), NULL, system_menu_render_axis_position, NULL, system_menu_action_jog, "A");
 #endif
 #if (AXIS_COUNT > 4)
-	DECL_MENU_ENTRY(7, jogb, STR_JOG_AXIS("B"), NULL, system_menu_render_axis_position, NULL, system_menu_action_jog, "B");
+	DECL_MENU_ENTRY(SYSTEM_MENU_ID_JOG, jogb, STR_JOG_AXIS("B"), NULL, system_menu_render_axis_position, NULL, system_menu_action_jog, "B");
 #endif
 #if (AXIS_COUNT > 5)
-	DECL_MENU_ENTRY(7, jogc, STR_JOG_AXIS("C"), NULL, system_menu_render_axis_position, NULL, system_menu_action_jog, "C");
+	DECL_MENU_ENTRY(SYSTEM_MENU_ID_JOG, jogc, STR_JOG_AXIS("C"), NULL, system_menu_render_axis_position, NULL, system_menu_action_jog, "C");
 #endif
-	DECL_MENU_VAR(7, jogdist, STR_JOG_DIST, &jog_distance, VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(7, jogfeed, STR_JOG_FEED, &jog_feed, VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(SYSTEM_MENU_ID_JOG, jogdist, STR_JOG_DIST, &jog_distance, VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(SYSTEM_MENU_ID_JOG, jogfeed, STR_JOG_FEED, &jog_feed, VAR_TYPE_FLOAT);
 
 	// append settings menu
-	DECL_MENU(2, 1, STR_SETTINGS);
+	DECL_MENU(SYSTEM_MENU_ID_SETTINGS, SYSTEM_MENU_ID_MAIN_MENU, STR_SETTINGS);
 
 	// settings menu
-	DECL_MENU_GOTO(2, ioconfig, STR_IO_CONFIG, CONST_VARG(6));
-	DECL_MENU_GOTO(2, gohome, STR_HOMING, CONST_VARG(3));
+	DECL_MENU_GOTO(SYSTEM_MENU_ID_SETTINGS, ioconfig, STR_IO_CONFIG, CONST_VARG(6));
+	DECL_MENU_GOTO(SYSTEM_MENU_ID_SETTINGS, gohome, STR_HOMING, CONST_VARG(3));
 #if (AXIS_COUNT > 0)
-	DECL_MENU_GOTO(2, goaxis, STR_AXIS, CONST_VARG(4));
+	DECL_MENU_GOTO(SYSTEM_MENU_ID_SETTINGS, goaxis, STR_AXIS, CONST_VARG(4));
 #endif
 #if (defined(ENABLE_SKEW_COMPENSATION) || (KINEMATIC == KINEMATIC_LINEAR_DELTA) || (KINEMATIC == KINEMATIC_DELTA))
-	DECL_MENU_GOTO(2, kinemats, STR_KINEMATICS, CONST_VARG(5));
+	DECL_MENU_GOTO(SYSTEM_MENU_ID_SETTINGS, kinemats, STR_KINEMATICS, CONST_VARG(5));
 #endif
-	DECL_MENU_GOTO(2, other_config, STR_OTHER, CONST_VARG(9));
-	DECL_MENU_ACTION(2, set_load, STR_LOAD_SETTINGS, system_menu_action_settings_cmd, CONST_VARG(0));
-	DECL_MENU_ACTION(2, set_save, STR_SAVE_SETTINGS, system_menu_action_settings_cmd, CONST_VARG(1));
-	DECL_MENU_ACTION(2, set_reset, STR_RESET_SETTINGS, system_menu_action_settings_cmd, CONST_VARG(2));
+	DECL_MENU_GOTO(SYSTEM_MENU_ID_SETTINGS, other_config, STR_OTHER, CONST_VARG(9));
+	DECL_MENU_ACTION(SYSTEM_MENU_ID_SETTINGS, set_load, STR_LOAD_SETTINGS, system_menu_action_settings_cmd, CONST_VARG(0));
+	DECL_MENU_ACTION(SYSTEM_MENU_ID_SETTINGS, set_save, STR_SAVE_SETTINGS, system_menu_action_settings_cmd, CONST_VARG(1));
+	DECL_MENU_ACTION(SYSTEM_MENU_ID_SETTINGS, set_reset, STR_RESET_SETTINGS, system_menu_action_settings_cmd, CONST_VARG(2));
 
-	DECL_MENU(9, 2, STR_OTHER);
+	DECL_MENU(9, SYSTEM_MENU_ID_SETTINGS, STR_OTHER);
 	DECL_MENU_VAR(9, s11, STR_G64_FACT, &g_settings.g64_angle_factor, VAR_TYPE_FLOAT);
 	DECL_MENU_VAR(9, s12, STR_ARC_TOL, &g_settings.arc_tolerance, VAR_TYPE_FLOAT);
 
-	DECL_MENU(6, 2, STR_IO_CONFIG);
+	DECL_MENU(6, SYSTEM_MENU_ID_SETTINGS, STR_IO_CONFIG);
 	DECL_MENU_VAR(6, s2, STR_STEP_INV, &g_settings.dir_invert_mask, VAR_TYPE_UINT8);
 	DECL_MENU_VAR(6, s3, STR_DIR_INV, &g_settings.dir_invert_mask, VAR_TYPE_UINT8);
 	DECL_MENU_VAR(6, s4, STR_ENABLE_INV, &g_settings.step_enable_invert, VAR_TYPE_UINT8);
@@ -162,7 +162,7 @@ DECL_MODULE(system_menu)
 #endif
 
 	// append homing settings menu
-	DECL_MENU(3, 2, STR_HOMING);
+	DECL_MENU(3, SYSTEM_MENU_ID_SETTINGS, STR_HOMING);
 
 	DECL_MENU_VAR(3, s20, STR_SOFTLIMITS, &g_settings.soft_limits_enabled, VAR_TYPE_BOOLEAN);
 	DECL_MENU_VAR(3, s21, STR_HARDLIMITS, &g_settings.hard_limits_enabled, VAR_TYPE_BOOLEAN);
@@ -180,7 +180,7 @@ DECL_MODULE(system_menu)
 #endif
 
 	// append steppers settings menu
-	DECL_MENU(4, 2, STR_AXIS);
+	DECL_MENU(4, SYSTEM_MENU_ID_SETTINGS, STR_AXIS);
 	DECL_MENU_VAR(4, s100, STR_STEPMM("X"), &g_settings.step_per_mm[0], VAR_TYPE_FLOAT);
 	DECL_MENU_VAR(4, s110, STR_VMAX("X"), &g_settings.max_feed_rate[0], VAR_TYPE_FLOAT);
 	DECL_MENU_VAR(4, s120, STR_ACCEL("X"), &g_settings.acceleration[0], VAR_TYPE_FLOAT);
@@ -236,7 +236,7 @@ DECL_MODULE(system_menu)
 #endif
 
 #if (defined(ENABLE_SKEW_COMPENSATION) || (KINEMATIC == KINEMATIC_LINEAR_DELTA) || (KINEMATIC == KINEMATIC_DELTA))
-	DECL_MENU(5, 2, STR_KINEMATICS);
+	DECL_MENU(5, SYSTEM_MENU_ID_SETTINGS, STR_KINEMATICS);
 #ifdef ENABLE_SKEW_COMPENSATION
 	DECL_MENU_VAR(5, s37, STR_SKEW_FACTOR("XY"), &g_settings.skew_xy_factor, VAR_TYPE_FLOAT);
 #ifndef SKEW_COMPENSATION_XY_ONLY
@@ -320,7 +320,7 @@ void system_menu_action(uint8_t action)
 		if (g_system_menu.action_timeout < timestamp)
 		{
 			// system_menu_go_idle();
-			currentmenu = g_system_menu.current_menu = 0;
+			currentmenu = g_system_menu.current_menu = SYSTEM_MENU_ID_IDLE;
 			currentindex = g_system_menu.current_index = 0;
 			g_system_menu.flags = SYSTEM_MENU_MODE_REDRAW;
 			system_menu_action_timeout(SYSTEM_MENU_REDRAW_IDLE_MS);
@@ -610,7 +610,7 @@ void system_menu_append(system_menu_page_t *newpage)
 void system_menu_reset(void)
 {
 	// startup menu
-	g_system_menu.current_menu = 255;
+	g_system_menu.current_menu = SYSTEM_MENU_ID_STARTUP;
 	g_system_menu.current_index = 0;
 	g_system_menu.total_items = 0;
 
@@ -623,7 +623,7 @@ void system_menu_reset(void)
 void system_menu_go_idle(void)
 {
 	// idle menu
-	g_system_menu.current_menu = 0;
+	g_system_menu.current_menu = SYSTEM_MENU_ID_IDLE;
 	g_system_menu.current_index = 0;
 	g_system_menu.total_items = 0;
 	g_system_menu.current_multiplier = 0;
@@ -850,7 +850,7 @@ static bool system_menu_action_nav_back(uint8_t action, const system_menu_page_t
 		}
 
 		system_menu_go_idle();
-		system_menu_goto(0);
+		system_menu_goto(SYSTEM_MENU_ID_IDLE);
 		return true;
 	}
 	return false;
@@ -972,6 +972,66 @@ bool system_menu_action_edit(uint8_t action, system_menu_item_t *item)
 			return false;
 		}
 		break;
+	case SYSTEM_MENU_ACTION_CHAR_INPUT('0'):
+	case SYSTEM_MENU_ACTION_CHAR_INPUT('1'):
+	case SYSTEM_MENU_ACTION_CHAR_INPUT('2'):
+	case SYSTEM_MENU_ACTION_CHAR_INPUT('3'):
+	case SYSTEM_MENU_ACTION_CHAR_INPUT('4'):
+	case SYSTEM_MENU_ACTION_CHAR_INPUT('5'):
+	case SYSTEM_MENU_ACTION_CHAR_INPUT('6'):
+	case SYSTEM_MENU_ACTION_CHAR_INPUT('7'):
+	case SYSTEM_MENU_ACTION_CHAR_INPUT('8'):
+	case SYSTEM_MENU_ACTION_CHAR_INPUT('9'):
+		{
+			int digit = action - SYSTEM_MENU_ACTION_CHAR_INPUT('0');
+			int current_digit;
+			switch(vartype)
+			{
+			case VAR_TYPE_BOOLEAN:
+				// Set boolean
+				(*(bool *)item->argptr) = digit != 0;
+				// Boolean has only one digit
+				g_system_menu.current_multiplier = 0;
+				break;
+			case VAR_TYPE_FLOAT:
+				// Modify digit
+				current_digit = (int)((*(float *)item->argptr) / powf(10.0f, (currentmult - 3))) % 10;
+				(*(float *)item->argptr) += (digit - current_digit) * powf(10.0f, (currentmult - 3));
+				// Clamp
+				(*(float *)item->argptr) = CLAMP(__FLT_MIN__, (*(float *)item->argptr), __FLT_MAX__);
+				g_system_menu.current_multiplier = CLAMP(-1, currentmult + 1, 9);
+				break;
+			case VAR_TYPE_INT8:
+			case VAR_TYPE_UINT8:
+				// Modify digit
+				current_digit = ((*(uint8_t *)item->argptr) / (int)powf(10.0f, currentmult)) % 10;
+				(*(uint8_t *)item->argptr) += (digit - current_digit) * powf(10.0f, currentmult);
+				// Clamp
+				(*(uint8_t *)item->argptr) = CLAMP(0, (*(uint8_t *)item->argptr), 0xFF);
+				g_system_menu.current_multiplier = CLAMP(-1, currentmult + 1, 2);
+				break;
+			case VAR_TYPE_INT16:
+			case VAR_TYPE_UINT16:
+				current_digit = ((*(uint16_t *)item->argptr) / (int)powf(10.0f, currentmult)) % 10;
+				(*(uint16_t *)item->argptr) += (digit - current_digit) * powf(10.0f, currentmult);
+				// Clamp
+				(*(uint16_t *)item->argptr) = CLAMP(0, (*(uint16_t *)item->argptr), 0xFFFF);
+				g_system_menu.current_multiplier = CLAMP(-1, currentmult + 1, 4);
+				break;
+			case VAR_TYPE_INT32:
+			case VAR_TYPE_UINT32:
+				// Modify digit
+				current_digit = ((*(uint32_t *)item->argptr) / (int)powf(10.0f, currentmult)) % 10;
+				(*(uint32_t *)item->argptr) += (digit - current_digit) * powf(10.0f, currentmult);
+				// Clamp
+				(*(uint32_t *)item->argptr) = CLAMP(0, (*(uint32_t *)item->argptr), 0xFFFFFFFF);
+				g_system_menu.current_multiplier = CLAMP(-1, currentmult + 1, 9);
+				break;
+			default:
+				break;
+			}
+		}
+		return true;
 	default:
 		// allow to propagate
 		return false;
