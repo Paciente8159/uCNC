@@ -28,6 +28,16 @@ extern "C"
 #define BOARD_NAME "SKR Pro 1.2"
 #endif
 
+// custom clocks setup
+#define CUSTOM_CLOCKS_INIT
+#ifndef HSE_VALUE
+#define HSE_VALUE 8000000UL
+#endif
+#define PLL_M (HSE_VALUE / 1000000)
+#define PLL_N 336
+#define PLL_P 2
+#define PLL_Q 7
+
 // Setup COM pins
 // #define UART_PORT 3
 
@@ -227,7 +237,7 @@ extern "C"
 #define DIN18_PORT G
 #define DIN18_PULLUP
 
-#define ONESHOT_TIMER 3
+#define ONESHOT_TIMER 4
 
 #ifdef __cplusplus
 }
