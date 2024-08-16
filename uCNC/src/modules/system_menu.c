@@ -160,6 +160,9 @@ DECL_MODULE(system_menu)
 	DECL_MENU_VAR(6, s8, STR_ENC_P_INV, &g_settings.encoders_pulse_invert_mask, VAR_TYPE_UINT8);
 	DECL_MENU_VAR(6, s9, STR_ENC_D_INV, &g_settings.encoders_dir_invert_mask, VAR_TYPE_UINT8);
 #endif
+#ifdef ENABLE_STEPPERS_DISABLE_TIMEOUT
+	DECL_MENU_VAR(6, s10, STR_STEPPER_TIMEOUT, &g_settings.step_disable_timeout, VAR_TYPE_UINT16);
+#endif
 
 	// append homing settings menu
 	DECL_MENU(3, SYSTEM_MENU_ID_SETTINGS, STR_HOMING);
