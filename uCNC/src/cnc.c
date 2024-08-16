@@ -1076,7 +1076,7 @@ static void cnc_io_dotasks(void)
 			if (stepper_timeout < mcu_millis())
 			{
 				io_enable_steppers(~g_settings.step_enable_invert); // disables steppers after idle timeout
-				stepper_timeout = mcu_millis() + g_settings.step_disable_timeout;
+				stepper_timeout = UINT32_MAX;
 			}
 		}
 		else{
