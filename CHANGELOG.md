@@ -6,7 +6,46 @@
 
 # Changelog
 
-## [1.9.4] - 20-04-2024 (republished)
+## [1.10.0] - 16-08-2024
+
+[@patryk3211](https://github.com/patryk3211)	- added DMA supported SPI bulk transfers for all STM32 architectures and SAMD21 (#700) (#714)
+																							- system_menu_goto is now a global function (#730)
+																							- added extra pre-built actions to system menu and added friendly macros to menu pages number system (#718)
+																							- additional system menu language strings (#735)
+[@fooker](https://github.com/fooker)					- fixed servo pen tool speed range calculation callback (#733)
+
+### Added
+
+- added general support for SPI bulk transfers and modified SPI and SoftSPI HAL. (#701)(#712)
+- added DMA supported SPI bulk transfers for all STM32 architectures and SAMD21. (#700) (#714)
+- new module resource guard to allow access locks to shared hardware and software resources. simplified/removed soft/hard SPI config struck and lock flags(#716)
+- new pin mapping helper that allow an easier pin mapping definition/setup for boardmaps (#722)
+- extended generic IO pin range from 32 to 50 (#725)
+- new module event listeners with resource sharing lock guard (#728)
+- new MKS Robin Nano v3.1 boardmap (#729)
+- added support for the SPI2 port on all architectures that support it (#724)
+- added extra pre-built actions to system menu and added friendly macros to menu pages number system (#718)
+- additional system menu language strings (#735)
+- added stepper idle timeout functionality via $1 parameter (#734)
+
+### Changed
+
+- better SPI sharing by separation of hardware and software configurations and settings, and better busy state keeping (#715)
+- added function to be able to modify a renderer/action callback for any system menu page and added extensible action code handler (#717)
+- locked STM32 framework locking to prevent incorrect PIO configuration errors (#726)
+-  system_menu_goto is now a global function. It also makes the function set action timeout and redraw flags to make sure the new screen gets shown even if it's not called from system_menu_action (#730)
+- modified configurable STM32F4 and STM32F1 system clocks configuration (#732)
+
+### Fixed
+
+- fixed file system system commands to match #696. This was preventing commands from propagating (#705)
+- fixed ESP8266 calls to get mcu time in microseconds and SPI transfer start (#707)
+- fixed activity pin declaration on SKR Pro V1.2 board (#723)
+- fixed typos (#731)
+- fixed missing generic IO pins value reading and status print (#736) (#737)
+- fixed servo pen tool speed range calculation callback (#733)
+
+## [1.9.4] - 20-07-2024 (republished)
 
 [@patryk3211](https://github.com/patryk3211) - fixed STM32Fx boards SPI implementation (#699)
 
@@ -28,7 +67,7 @@
 - fixed incomplete code propagation of #696. This prevented Grbl/System commands to propagate correctly and directly affected mount and unmount command of the SD card module (#705)
 - fixed file system commands parsing
 
-## [1.9.3] - 07-04-2024
+## [1.9.3] - 07-07-2024
 
 [@patryk3211](https://github.com/patryk3211) - fixed homing pulloff fail alarm code (#689) and 2 phase homing cycle (#690)
 
@@ -1666,6 +1705,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.10.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.10.0
 [1.9.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.9.4
 [1.9.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.9.3
 [1.9.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.9.2
