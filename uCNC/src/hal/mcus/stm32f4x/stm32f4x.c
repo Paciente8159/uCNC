@@ -1,7 +1,7 @@
 
 #include "src/cnc.h"
 
-#if (MCU == MCU_STM32F4X)
+#if (MCU == MCU_STM32F4X) && defined(CUSTOM_PRE_MAIN)
 #include "stm32f4xx.h"
 typedef void (*const intfunc)(void);
 
