@@ -17,7 +17,7 @@
 	See the	GNU General Public License for more details.
 */
 
-#include "../../../cnc.h"
+#include "src/cnc.h"
 
 #if (MCU == MCU_STM32F4X)
 #include "core_cm4.h"
@@ -345,7 +345,7 @@ void EXTI15_10_IRQHandler(void)
 #endif
 #endif
 
-#ifndef ARDUINO_ARCH_STM32
+#if !defined(ARDUINO_ARCH_STM32) || defined(CUSTOM_PRE_MAIN)
 void SysTick_IRQHandler(void)
 #else
 void osSystickHandler(void)
