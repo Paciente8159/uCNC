@@ -39,16 +39,22 @@ BUILD_DIR = build
 # helper
 ######################################
 rwildcard=$(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
+swildcard=$(wildcard $1$2)
 
 ######################################
 # source
 ######################################
 # C sources
-C_SOURCES =  \
-stm32f4x.c \
-main.c \
-drivers/system_stm32f4xx.c \
-$(call rwildcard,../../uCNC,*.c)
+C_SOURCES += $(call swildcard,./,*.c)
+C_SOURCES += $(call swildcard,./drivers/,*.c)
+C_SOURCES += $(call rwildcard,../../uCNC/src/,*.c)
+C_SOURCES += $(call rwildcard,../../../uCNC-tinyusb/src/,*.c)
+# C_SOURCES += $(call swildcard,C:/Users/jcmartins/.platformio/packages/framework-arduinoststm32/system/STM32F4xx/,*.c)
+# C_SOURCES += $(call swildcard,C:/Users/jcmartins/.platformio/packages/framework-arduinoststm32/system/Drivers/STM32F4xx_HAL_Driver/Src/,*.c)
+C_SOURCES += ./drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc.c
+# C_SOURCES += ./drivers/system_stm32f4xx.c
+# C_SOURCES += ./stm32f4x.c
+# C_SOURCES += ./main.c
 
 # ifdef USE_USB
 # C_SOURCES += ../../tinyusb/tusb_descriptors.c
@@ -85,7 +91,7 @@ BIN = $(CP) -O binary -S
 #######################################
 # cpu
 CPU = -mcpu=cortex-m4
-BOARD ?= BLACKPILL
+BOARD ?= SKR_PRO_V1_2
 
 # fpu
 # NONE for Cortex-M0/M0+/M3
@@ -105,19 +111,20 @@ AS_DEFS =
 BUILD_OPTIONS ?=
 
 C_DEFS =  $(BUILD_OPTIONS)\
--DSTM32F401xC \
+-DSTM32F407xx \
 -DCFG_TUSB_MCU=OPT_MCU_STM32F4 \
 -DBOARD=BOARD_$(BOARD)
+# -DHAL_RCC_MODULE_ENABLED
 
 # AS includes
 AS_INCLUDES = 
 
 # C includes
 C_HEADERS = $(call rwildcard,./,*.h)
+C_HEADERS += $(call rwildcard,../../uCNC/src/,*.h)
 # ifdef USE_USB
-# C_HEADERS += ../../tinyusb/tusb_config.h
-# C_HEADERS += $(call rwildcard,../../tinyusb/src/,*.h)
-# C_HEADERS += $(call rwildcard,../../tinyusb/hw/mcu/st/cmsis_device_f1/Include/,*.h)
+# C_HEADERS += ../../../uCNC-tinyusb/src/tusb_config.h
+C_HEADERS += $(call rwildcard,../../../uCNC-tinyusb/src/,*.h)
 # endif
 
 
@@ -125,11 +132,12 @@ C_HEADERS = $(call rwildcard,./,*.h)
 C_INCLUDES =  \
 -I"./" \
 -Idrivers/ \
+-Idrivers/STM32F4xx_HAL_Driver/Inc/ \
 -I"../../uCNC/" \
--I"../../uCNC/src/"\
--I"../../uCNC-tinyusb/src"
+-I"../../uCNC/src/" \
+-I"../../../uCNC-tinyusb/src/"
 
-C_INCLUDES += $(foreach d,$(C_HEADERS),$(addsuffix $(dir $(d)),"-I"))
+# C_INCLUDES += $(foreach d,$(C_HEADERS),$(addsuffix $(dir $(d)),"-I"))
 
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
