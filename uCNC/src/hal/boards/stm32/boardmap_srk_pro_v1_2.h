@@ -37,6 +37,7 @@ extern "C"
 #define PLL_N 336
 #define PLL_P 2
 #define PLL_Q 7
+#define FLASH_LATENCY 5
 
 // Setup COM pins
 // #define UART_PORT 3

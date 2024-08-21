@@ -113,7 +113,9 @@ BUILD_OPTIONS ?=
 C_DEFS =  $(BUILD_OPTIONS)\
 -DSTM32F407xx \
 -DCFG_TUSB_MCU=OPT_MCU_STM32F4 \
--DBOARD=BOARD_$(BOARD)
+-DBOARD=BOARD_$(BOARD) \
+-DCUSTOM_CLOCKS_INIT \
+-DHSE_VALUE=8000000
 # -DHAL_RCC_MODULE_ENABLED
 
 # AS includes
@@ -164,9 +166,20 @@ LIBS = -lc -lm -lnosys
 LIBDIR = 
 LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
 
+#######################
+# OS options
+#######################
+ifdef OS
+   RM = rmdir /s /q
+else
+   ifeq ($(shell uname), Linux)
+      RM = rm -fR
+   endif
+endif
+
+
 # default action: build all
 all: $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).hex $(BUILD_DIR)/$(TARGET).bin
-
 
 #######################################
 # build the application
@@ -201,7 +214,7 @@ $(BUILD_DIR):
 # clean up
 #######################################
 clean:
-	-rm -fR $(BUILD_DIR)
+	$(RM) $(BUILD_DIR)
   
 #######################################
 # dependencies

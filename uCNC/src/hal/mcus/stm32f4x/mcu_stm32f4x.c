@@ -431,7 +431,10 @@ static void mcu_usart_init(void);
 #error You need to setup PLL_P
 #endif
 #define APB1_PRESC ((F_CPU > 90000000UL) ? RCC_CFGR_PPRE1_DIV4 : ((F_CPU > 45000000UL) ? RCC_CFGR_PPRE1_DIV2 : RCC_CFGR_PPRE1_DIV1))
-#define APB2_PRESC ((F_CPU > 180000000UL) ? RCC_CFGR_PPRE2_DIV2 : RCC_CFGR_PPRE2_DIV1)
+#define APB2_PRESC ((F_CPU > 90000000UL) ? RCC_CFGR_PPRE2_DIV2 : RCC_CFGR_PPRE2_DIV1)
+#endif
+#ifndef FLASH_LATENCY
+#define FLASH_LATENCY FLASH_ACR_LATENCY_2WS
 #endif
 
 void mcu_clocks_init()
@@ -443,7 +446,7 @@ void mcu_clocks_init()
 	// set voltage regulator scale 2
 	SETFLAG(PWR->CR, (0x02UL << PWR_CR_VOS_Pos));
 
-	FLASH->ACR = (FLASH_ACR_DCEN | FLASH_ACR_ICEN | FLASH_ACR_LATENCY_2WS);
+	FLASH->ACR = (FLASH_ACR_DCEN | FLASH_ACR_ICEN | FLASH_LATENCY);
 
 	/* Enable HSE */
 	SETFLAG(RCC->CR, RCC_CR_HSEON);
@@ -466,6 +469,7 @@ void mcu_clocks_init()
 	// PLL48CLK = fVCO / Q = 336/7 = 48MHz
 	// to run at other speeds different configuration must be applied but the limit for fast AHB is 180Mhz, APB is 90Mhz and slow APB is 45Mhz
 	SETFLAG(RCC->PLLCFGR, (RCC_PLLCFGR_PLLSRC_HSE | (PLL_M << RCC_PLLCFGR_PLLM_Pos) | (PLL_N << RCC_PLLCFGR_PLLN_Pos) | (PLL_P << RCC_PLLCFGR_PLLP_Pos) /*main clock /4*/ | (PLL_Q << RCC_PLLCFGR_PLLQ_Pos)));
+	// SETFLAG(RCC->PLLI2SCFGR, (RCC_PLLCFGR_PLLSRC_HSE | (PLL_M << RCC_PLLCFGR_PLLM_Pos) | (PLL_N << RCC_PLLCFGR_PLLN_Pos) | (PLL_P << RCC_PLLCFGR_PLLP_Pos) 
 	/* Enable PLL */
 	SETFLAG(RCC->CR, RCC_CR_PLLON);
 	/* Wait till PLL is ready */
