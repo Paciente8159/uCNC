@@ -115,7 +115,7 @@ void WEAK TIM8_UP_TIM13_IRQHandler(void);			 /*!< TIM8 Update Interrupt and TIM1
 void WEAK TIM8_TRG_COM_TIM14_IRQHandler(void); /*!< TIM8 Trigger and Commutation Interrupt and TIM14 global interrupt */
 void WEAK TIM8_CC_IRQHandler(void);						 /*!< TIM8 Capture Compare global interrupt                             */
 void WEAK DMA1_Stream7_IRQHandler(void);			 /*!< DMA1 Stream7 Interrupt                                            */
-void WEAK FSMC_IRQHandler(void);							 /*!< FSMC global Interrupt                                              */
+void WEAK FMC_IRQHandler(void);								 /*!< FMC global Interrupt                                              */
 void WEAK SDIO_IRQHandler(void);							 /*!< SDIO global Interrupt                                             */
 void WEAK TIM5_IRQHandler(void);							 /*!< TIM5 global Interrupt                                             */
 void WEAK SPI3_IRQHandler(void);							 /*!< SPI3 global Interrupt                                             */
@@ -228,7 +228,7 @@ __attribute__((used, section(".isr_vector"))) void (*const g_irqVectors[])(void)
 		TIM8_TRG_COM_TIM14_IRQHandler, /*!< TIM8 Trigger and Commutation Interrupt and TIM14 global interrupt */
 		TIM8_CC_IRQHandler,						 /*!< TIM8 Capture Compare global interrupt                             */
 		DMA1_Stream7_IRQHandler,			 /*!< DMA1 Stream7 Interrupt                                            */
-		FSMC_IRQHandler,							 /*!< FSMC global Interrupt                                              */
+		FMC_IRQHandler,								 /*!< FMC global Interrupt                                              */
 		SDIO_IRQHandler,							 /*!< SDIO global Interrupt                                             */
 		TIM5_IRQHandler,							 /*!< TIM5 global Interrupt                                             */
 		SPI3_IRQHandler,							 /*!< SPI3 global Interrupt                                             */
@@ -331,7 +331,7 @@ __attribute__((used, section(".isr_vector"))) void (*const g_irqVectors[])(void)
 #pragma weak TIM8_TRG_COM_TIM14_IRQHandler = Default_IRQHandler /*!< TIM8 Trigger and Commutation Interrupt and TIM14 global interrupt */
 #pragma weak TIM8_CC_IRQHandler = Default_IRQHandler						/*!< TIM8 Capture Compare global interrupt                             */
 #pragma weak DMA1_Stream7_IRQHandler = Default_IRQHandler				/*!< DMA1 Stream7 Interrupt                                            */
-#pragma weak FSMC_IRQHandler = Default_IRQHandler								/*!< FSMC global Interrupt                                              */
+#pragma weak FMC_IRQHandler = Default_IRQHandler								/*!< FMC global Interrupt                                              */
 #pragma weak SDIO_IRQHandler = Default_IRQHandler								/*!< SDIO global Interrupt                                             */
 #pragma weak TIM5_IRQHandler = Default_IRQHandler								/*!< TIM5 global Interrupt                                             */
 #pragma weak SPI3_IRQHandler = Default_IRQHandler								/*!< SPI3 global Interrupt                                             */
