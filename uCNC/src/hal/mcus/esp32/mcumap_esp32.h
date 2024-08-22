@@ -1235,6 +1235,7 @@ extern "C"
 #define DOUT31_OUTREG OUT1
 #define DOUT31_INREG IN1
 #endif
+#endif
 #if (defined(DOUT32_BIT))
 #define DOUT32 79
 #if (DOUT32_BIT < 32)
@@ -1491,7 +1492,6 @@ extern "C"
 #define DIO78_BIT DOUT31_BIT
 #define DIO78_OUTREG DOUT31_OUTREG
 #define DIO78_INREG DOUT31_INREG
-#endif
 #if (defined(LIMIT_X_BIT))
 #define LIMIT_X 100
 #if (LIMIT_X_BIT < 32)
