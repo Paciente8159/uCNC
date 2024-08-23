@@ -538,6 +538,9 @@ extern "C"
 #endif
 
 extern spi_port_t mcu_spi_port;
+#define MCU_SPI (&mcu_spi_port)
+#else
+#define MCU_SPI NULL
 #endif
 
 #ifdef MCU_HAS_SPI2
@@ -562,6 +565,9 @@ extern spi_port_t mcu_spi_port;
 #endif
 
 extern spi_port_t mcu_spi2_port;
+#define MCU_SPI2 (&mcu_spi2_port)
+#else
+#define MCU_SPI2 NULL
 #endif
 
 #ifdef MCU_HAS_I2C

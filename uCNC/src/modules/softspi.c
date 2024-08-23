@@ -190,7 +190,9 @@ void softspi_start(softspi_port_t *port)
 {
 	if (!port)
 	{
+#ifdef MCU_HAS_SPI
 		MODULE_LOCK_ENABLE(LISTENER_HWSPI_LOCK);
+#endif
 		return;
 	}
 
@@ -198,7 +200,14 @@ void softspi_start(softspi_port_t *port)
 	// usually HW ports
 	if (port->spiport)
 	{
-		MODULE_LOCK_ENABLE(LISTENER_HWSPI_LOCK);
+		if (port->spiport == MCU_SPI)
+		{
+			MODULE_LOCK_ENABLE(LISTENER_HWSPI_LOCK);
+		}
+		else
+		{
+			MODULE_LOCK_ENABLE(LISTENER_HWSPI2_LOCK);
+		}
 		port->spiport->start(port->spiconfig, port->spifreq);
 		return;
 	}
@@ -213,7 +222,9 @@ void softspi_stop(softspi_port_t *port)
 {
 	if (!port)
 	{
+#ifdef MCU_HAS_SPI
 		MODULE_LOCK_DISABLE(LISTENER_HWSPI_LOCK);
+#endif
 		return;
 	}
 
@@ -221,7 +232,14 @@ void softspi_stop(softspi_port_t *port)
 	if (port->spiport)
 	{
 		port->spiport->stop();
-		MODULE_LOCK_DISABLE(LISTENER_HWSPI_LOCK);
+		if (port->spiport == MCU_SPI)
+		{
+			MODULE_LOCK_ENABLE(LISTENER_HWSPI_LOCK);
+		}
+		else
+		{
+			MODULE_LOCK_ENABLE(LISTENER_HWSPI2_LOCK);
+		}
 	}
 	// unlocks resource
 #ifdef SOFTSPI_LOCKGUARD_ENABLED
