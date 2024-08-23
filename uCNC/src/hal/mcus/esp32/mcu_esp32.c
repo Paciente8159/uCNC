@@ -1171,6 +1171,8 @@ void mcu_spi_start(spi_config_t config, uint32_t frequency)
 {
 	if (mcu_spi_handle)
 	{
+		spi_device_acquire_bus(mcu_spi_handle, portMAX_DELAY);
+		spi_device_release_bus(mcu_spi_handle);
 		spi_bus_remove_device(mcu_spi_handle);
 	}
 	spi_bus_free(SPI_PORT);
@@ -1204,6 +1206,14 @@ void mcu_spi_start(spi_config_t config, uint32_t frequency)
 
 	spi_dma_enabled = config.enable_dma;
 	spi_bus_add_device(SPI_PORT, &mcu_spi_conf, &mcu_spi_handle);
+	spi_device_acquire_bus(mcu_spi_handle, portMAX_DELAY);
+}
+#endif
+
+#ifndef mcu_spi_stop
+void mcu_spi_stop(void)
+{
+	spi_device_release_bus(mcu_spi_handle);
 }
 #endif
 
@@ -1283,7 +1293,8 @@ bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 	uint16_t max_transfer_size = (spi_dma_enabled) ? SPI_DMA_BUFFER_SIZE : SOC_SPI_MAXIMUM_BUFFER_SIZE;
 
 	uint8_t *i = NULL;
-	if(in){
+	if (in)
+	{
 		i = &in[offset];
 	}
 
@@ -1336,6 +1347,8 @@ void mcu_spi2_start(spi_config_t config, uint32_t frequency)
 {
 	if (mcu_spi2_handle)
 	{
+		spi_device_acquire_bus(mcu_spi2_handle, portMAX_DELAY);
+		spi_device_release_bus(mcu_spi2_handle);
 		spi_bus_remove_device(mcu_spi2_handle);
 	}
 	spi_bus_free(SPI2_PORT);
@@ -1369,6 +1382,14 @@ void mcu_spi2_start(spi_config_t config, uint32_t frequency)
 
 	spi2_dma_enabled = config.enable_dma;
 	spi_bus_add_device(SPI2_PORT, &mcu_spi_conf, &mcu_spi2_handle);
+	spi_device_acquire_bus(mcu_spi2_handle, portMAX_DELAY);
+}
+#endif
+
+#ifndef mcu_spi2_stop
+void mcu_spi2_stop(void)
+{
+	spi_device_release_bus(mcu_spi2_handle);
 }
 #endif
 
@@ -1448,7 +1469,8 @@ bool mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 	uint16_t max_transfer_size = (spi2_dma_enabled) ? SPI2_DMA_BUFFER_SIZE : SOC_SPI_MAXIMUM_BUFFER_SIZE;
 
 	uint8_t *i = NULL;
-	if(in){
+	if (in)
+	{
 		i = &in[offset];
 	}
 
