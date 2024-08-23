@@ -177,6 +177,9 @@ extern "C"
 
 	extern system_menu_t g_system_menu;
 
+	extern float g_system_menu_jog_distance;
+	extern float g_system_menu_jog_feed;
+
 	DECL_MODULE(system_menu);
 	void system_menu_reset(void);
 	void system_menu_go_idle(void);
