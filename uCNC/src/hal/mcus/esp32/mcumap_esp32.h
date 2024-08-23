@@ -27,6 +27,7 @@ extern "C"
 #include <Arduino.h>
 #include "driver/timer.h"
 #include "driver/gpio.h"
+#include "hal/gpio_ll.h"
 #include "driver/adc.h"
 #include "driver/ledc.h"
 
@@ -2780,9 +2781,9 @@ extern "C"
 #define DIO211_OUTREG RX2_OUTREG
 #define DIO211_INREG RX2_INREG
 #endif
-#if(defined(SPI2_CLK_BIT))
+#if (defined(SPI2_CLK_BIT))
 #define SPI2_CLK 212
-#if (SPI2_CLK_BIT<32)
+#if (SPI2_CLK_BIT < 32)
 #define SPI2_CLK_OUTREG OUT0
 #define SPI2_CLK_INREG IN0
 #else
@@ -2794,9 +2795,9 @@ extern "C"
 #define DIO212_OUTREG SPI2_CLK_OUTREG
 #define DIO212_INREG SPI2_CLK_INREG
 #endif
-#if(defined(SPI2_SDI_BIT))
+#if (defined(SPI2_SDI_BIT))
 #define SPI2_SDI 213
-#if (SPI2_SDI_BIT<32)
+#if (SPI2_SDI_BIT < 32)
 #define SPI2_SDI_OUTREG OUT0
 #define SPI2_SDI_INREG IN0
 #else
@@ -2808,9 +2809,9 @@ extern "C"
 #define DIO213_OUTREG SPI2_SDI_OUTREG
 #define DIO213_INREG SPI2_SDI_INREG
 #endif
-#if(defined(SPI2_SDO_BIT))
+#if (defined(SPI2_SDO_BIT))
 #define SPI2_SDO 214
-#if (SPI2_SDO_BIT<32)
+#if (SPI2_SDO_BIT < 32)
 #define SPI2_SDO_OUTREG OUT0
 #define SPI2_SDO_INREG IN0
 #else
@@ -2822,9 +2823,9 @@ extern "C"
 #define DIO214_OUTREG SPI2_SDO_OUTREG
 #define DIO214_INREG SPI2_SDO_INREG
 #endif
-#if(defined(SPI2_CS_BIT))
+#if (defined(SPI2_CS_BIT))
 #define SPI2_CS 215
-#if (SPI2_CS_BIT<32)
+#if (SPI2_CS_BIT < 32)
 #define SPI2_CS_OUTREG OUT0
 #define SPI2_CS_INREG IN0
 #else
@@ -3409,8 +3410,12 @@ extern "C"
 		gpio_isr_handler_add((gpio_num_t)(__indirect__(X, BIT)), mcu_gpio_isr, (void *)__indirect__(X, ISRVAR)); \
 	}
 
-#define mcu_get_input(X) gpio_get_level((gpio_num_t)__indirect__(X, BIT))
-// #define mcu_get_input(X) ((__indirect__(X,INREG)->IN) & (1UL<<(0x1F & __indirect__(X, BIT))))
+// #define mcu_get_input(X) gpio_get_level((gpio_num_t)__indirect__(X, BIT))
+#define mcu_get_input(X)                                \
+	({                                                    \
+		uint32_t inputs = (__indirect__(X, INREG)->IN);     \
+		((inputs >> (0x1F & __indirect__(X, BIT))) & 0x01); \
+	})
 #define mcu_get_output(X) ((__indirect__(X, OUTREG)->OUT) & (1UL << (0x1F & __indirect__(X, BIT))))
 #define mcu_set_output(X)                                                     \
 	{                                                                           \
