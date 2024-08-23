@@ -234,11 +234,11 @@ void softspi_stop(softspi_port_t *port)
 		port->spiport->stop();
 		if (port->spiport == MCU_SPI)
 		{
-			MODULE_LOCK_ENABLE(LISTENER_HWSPI_LOCK);
+			MODULE_LOCK_DISABLE(LISTENER_HWSPI_LOCK);
 		}
 		else
 		{
-			MODULE_LOCK_ENABLE(LISTENER_HWSPI2_LOCK);
+			MODULE_LOCK_DISABLE(LISTENER_HWSPI2_LOCK);
 		}
 	}
 	// unlocks resource
