@@ -676,11 +676,101 @@ void mcu_init(void)
 
 /**
  * Custom IO reset init
- * ESP32 changes pins configuration after initial setup. This ensures that GPIO is set correctly 
+ * ESP32 changes pins configuration after initial setup. This ensures that GPIO is set correctly
  */
 void mcu_io_reset(void)
 {
-	#if ASSERT_PIN_IO(DOUT0)
+#if ASSERT_PIN_IO(STEP0)
+	mcu_config_output(STEP0);
+#endif
+#if ASSERT_PIN_IO(STEP1)
+	mcu_config_output(STEP1);
+#endif
+#if ASSERT_PIN_IO(STEP2)
+	mcu_config_output(STEP2);
+#endif
+#if ASSERT_PIN_IO(STEP3)
+	mcu_config_output(STEP3);
+#endif
+#if ASSERT_PIN_IO(STEP4)
+	mcu_config_output(STEP4);
+#endif
+#if ASSERT_PIN_IO(STEP5)
+	mcu_config_output(STEP5);
+#endif
+#if ASSERT_PIN_IO(STEP6)
+	mcu_config_output(STEP6);
+#endif
+#if ASSERT_PIN_IO(STEP7)
+	mcu_config_output(STEP7);
+#endif
+#if ASSERT_PIN_IO(DIR0)
+	mcu_config_output(DIR0);
+#endif
+#if ASSERT_PIN_IO(DIR1)
+	mcu_config_output(DIR1);
+#endif
+#if ASSERT_PIN_IO(DIR2)
+	mcu_config_output(DIR2);
+#endif
+#if ASSERT_PIN_IO(DIR3)
+	mcu_config_output(DIR3);
+#endif
+#if ASSERT_PIN_IO(DIR4)
+	mcu_config_output(DIR4);
+#endif
+#if ASSERT_PIN_IO(DIR5)
+	mcu_config_output(DIR5);
+#endif
+#if ASSERT_PIN_IO(DIR6)
+	mcu_config_output(DIR6);
+#endif
+#if ASSERT_PIN_IO(DIR7)
+	mcu_config_output(DIR7);
+#endif
+#if ASSERT_PIN_IO(STEP0_EN)
+	mcu_config_output(STEP0_EN);
+#endif
+#if ASSERT_PIN_IO(STEP1_EN)
+	mcu_config_output(STEP1_EN);
+#endif
+#if ASSERT_PIN_IO(STEP2_EN)
+	mcu_config_output(STEP2_EN);
+#endif
+#if ASSERT_PIN_IO(STEP3_EN)
+	mcu_config_output(STEP3_EN);
+#endif
+#if ASSERT_PIN_IO(STEP4_EN)
+	mcu_config_output(STEP4_EN);
+#endif
+#if ASSERT_PIN_IO(STEP5_EN)
+	mcu_config_output(STEP5_EN);
+#endif
+#if ASSERT_PIN_IO(STEP6_EN)
+	mcu_config_output(STEP6_EN);
+#endif
+#if ASSERT_PIN_IO(STEP7_EN)
+	mcu_config_output(STEP7_EN);
+#endif
+#if ASSERT_PIN_IO(SERVO0)
+	mcu_config_output(SERVO0);
+#endif
+#if ASSERT_PIN_IO(SERVO1)
+	mcu_config_output(SERVO1);
+#endif
+#if ASSERT_PIN_IO(SERVO2)
+	mcu_config_output(SERVO2);
+#endif
+#if ASSERT_PIN_IO(SERVO3)
+	mcu_config_output(SERVO3);
+#endif
+#if ASSERT_PIN_IO(SERVO4)
+	mcu_config_output(SERVO4);
+#endif
+#if ASSERT_PIN_IO(SERVO5)
+	mcu_config_output(SERVO5);
+#endif
+#if ASSERT_PIN_IO(DOUT0)
 	mcu_config_output(DOUT0);
 #endif
 #if ASSERT_PIN_IO(DOUT1)
