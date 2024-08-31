@@ -809,7 +809,7 @@ void protocol_send_cnc_settings(void)
 {
 	protocol_busy = true;
 	protocol_send_gcode_setting_line_flt(0, (1000000.0f / g_settings.max_step_rate));
-#if EMULATE_GRBL_STARTUP > 0 || defined(NABLE_STEPPERS_DISABLE_TIMEOUT)
+#if EMULATE_GRBL_STARTUP > 0 || defined(ENABLE_STEPPERS_DISABLE_TIMEOUT)
 // just adds this for compatibility
 // this setting is not used
 #ifdef ENABLE_STEPPERS_DISABLE_TIMEOUT
