@@ -532,16 +532,19 @@ void mcu_rtc_task(void *arg)
 
 MCU_CALLBACK void mcu_itp_isr(void *arg)
 {
+#ifdef IC74HC595_CUSTOM_SHIFT_IO
 	uint32_t mode = I2S_MODE;
-
 #if defined(IC74HC595_HAS_STEPS) || defined(IC74HC595_HAS_DIRS)
 	if (mode == ITP_STEP_MODE_REALTIME)
+#endif
 #endif
 	{
 		mcu_gen_step();
 	}
+#ifdef IC74HC595_CUSTOM_SHIFT_IO
 #if defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS)
 	if (mode == ITP_STEP_MODE_REALTIME)
+#endif
 #endif
 	{
 		mcu_gen_pwm_and_servo();
@@ -549,10 +552,15 @@ MCU_CALLBACK void mcu_itp_isr(void *arg)
 #if defined(MCU_HAS_ONESHOT_TIMER) && defined(ENABLE_RT_SYNC_MOTIONS)
 	mcu_gen_oneshot();
 #endif
+#ifdef IC74HC595_CUSTOM_SHIFT_IO
 #if defined(IC74HC595_HAS_STEPS) || defined(IC74HC595_HAS_DIRS) || defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS)
 	// this is where the IO update happens in RT mode
 	// this prevents multiple
-	I2SREG.conf_single_data = __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
+	if (mode == ITP_STEP_MODE_REALTIME)
+	{
+		I2SREG.conf_single_data = __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
+	}
+#endif
 #endif
 
 	timer_group_clr_intr_status_in_isr(ITP_TIMER_TG, ITP_TIMER_IDX);
