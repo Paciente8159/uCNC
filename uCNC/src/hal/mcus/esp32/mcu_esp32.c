@@ -111,7 +111,7 @@ static volatile uint32_t i2s_mode;
 #define I2S_MODE __atomic_load_n((uint32_t *)&i2s_mode, __ATOMIC_RELAXED)
 
 // software generated oneshot for RT steps like laser PPI
-#if defined(MCU_HAS_ONESHOT_TIMER) && !defined(USE_I2S_REALTIME_MODE_ONLY) && defined(ENABLE_RT_SYNC_MOTIONS)
+#if defined(MCU_HAS_ONESHOT_TIMER) && defined(ENABLE_RT_SYNC_MOTIONS)
 static uint32_t esp32_oneshot_counter;
 static uint32_t esp32_oneshot_reload;
 static FORCEINLINE void mcu_gen_oneshot(void)
@@ -135,7 +135,11 @@ uint8_t itp_set_step_mode(uint8_t mode)
 {
 	uint8_t last_mode = I2S_MODE;
 	itp_sync();
+#ifdef USE_I2S_REALTIME_MODE_ONLY
+	__atomic_store_n((uint32_t *)&i2s_mode, (ITP_STEP_MODE_SYNC | ITP_STEP_MODE_REALTIME), __ATOMIC_RELAXED);
+#else
 	__atomic_store_n((uint32_t *)&i2s_mode, (ITP_STEP_MODE_SYNC | mode), __ATOMIC_RELAXED);
+#endif
 	cnc_delay_ms(20);
 	return last_mode;
 }
@@ -177,21 +181,14 @@ static void IRAM_ATTR esp32_i2s_stream_task(void *param)
 			switch (mode & ~ITP_STEP_MODE_SYNC)
 			{
 			case ITP_STEP_MODE_DEFAULT:
-				timer_pause(ITP_TIMER_TG, ITP_TIMER_IDX);
-				timer_disable_intr(ITP_TIMER_TG, ITP_TIMER_IDX);
-				if (!first_run)
-				{
-					i2s_driver_uninstall(IC74HC595_I2S_PORT);
-				}
-				first_run = false;
+				// timer_pause(ITP_TIMER_TG, ITP_TIMER_IDX);
+				// timer_disable_intr(ITP_TIMER_TG, ITP_TIMER_IDX);
 				I2SREG.conf.tx_start = 0;
 				I2SREG.conf.tx_reset = 1;
 				I2SREG.conf.tx_reset = 0;
 				I2SREG.conf.rx_fifo_reset = 1;
 				I2SREG.conf.rx_fifo_reset = 0;
 				available_buffers = I2S_BUFFER_COUNT;
-				i2s_driver_install(IC74HC595_I2S_PORT, &i2s_config, I2S_BUFFER_COUNT, &i2s_dma_queue);
-				i2s_set_pin(IC74HC595_I2S_PORT, &pin_config);
 				break;
 			case ITP_STEP_MODE_REALTIME:
 				// wait for DMA to output content
@@ -237,10 +234,18 @@ static void IRAM_ATTR esp32_i2s_stream_task(void *param)
 				I2SREG.out_link.start = 1;
 				I2SREG.conf.tx_start = 1;
 				ets_delay_us(20);
-				timer_enable_intr(ITP_TIMER_TG, ITP_TIMER_IDX);
-				timer_start(ITP_TIMER_TG, ITP_TIMER_IDX);
+				// timer_enable_intr(ITP_TIMER_TG, ITP_TIMER_IDX);
+				// timer_start(ITP_TIMER_TG, ITP_TIMER_IDX);
 				break;
 			}
+
+			if (!first_run)
+			{
+				i2s_driver_uninstall(IC74HC595_I2S_PORT);
+			}
+			first_run = false;
+			i2s_driver_install(IC74HC595_I2S_PORT, &i2s_config, I2S_BUFFER_COUNT, &i2s_dma_queue);
+			i2s_set_pin(IC74HC595_I2S_PORT, &pin_config);
 
 			// clear sync flag
 			__atomic_fetch_and((uint32_t *)&i2s_mode, ~ITP_STEP_MODE_SYNC, __ATOMIC_RELAXED);
@@ -261,9 +266,13 @@ static void IRAM_ATTR esp32_i2s_stream_task(void *param)
 
 			for (uint32_t t = 0; t < I2S_SAMPLES_PER_BUFFER; t++)
 			{
+#if defined(IC74HC595_HAS_STEPS) || defined(IC74HC595_HAS_DIRS)
 				mcu_gen_step();
+#endif
+#if defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS)
 				mcu_gen_pwm_and_servo();
-#if defined(MCU_HAS_ONESHOT_TIMER) && !defined(USE_I2S_REALTIME_MODE_ONLY) && defined(ENABLE_RT_SYNC_MOTIONS)
+#endif
+#if defined(MCU_HAS_ONESHOT_TIMER) && defined(ENABLE_RT_SYNC_MOTIONS)
 				mcu_gen_oneshot();
 #endif
 				// write to buffer
@@ -523,15 +532,35 @@ void mcu_rtc_task(void *arg)
 
 MCU_CALLBACK void mcu_itp_isr(void *arg)
 {
-	mcu_gen_step();
-	mcu_gen_pwm_and_servo();
-#if defined(MCU_HAS_ONESHOT_TIMER) && !defined(USE_I2S_REALTIME_MODE_ONLY) && defined(ENABLE_RT_SYNC_MOTIONS)
+#ifdef IC74HC595_CUSTOM_SHIFT_IO
+	uint32_t mode = I2S_MODE;
+#if defined(IC74HC595_HAS_STEPS) || defined(IC74HC595_HAS_DIRS)
+	if (mode == ITP_STEP_MODE_REALTIME)
+#endif
+#endif
+	{
+		mcu_gen_step();
+	}
+#ifdef IC74HC595_CUSTOM_SHIFT_IO
+#if defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS)
+	if (mode == ITP_STEP_MODE_REALTIME)
+#endif
+#endif
+	{
+		mcu_gen_pwm_and_servo();
+	}
+#if defined(MCU_HAS_ONESHOT_TIMER) && defined(ENABLE_RT_SYNC_MOTIONS)
 	mcu_gen_oneshot();
 #endif
+#ifdef IC74HC595_CUSTOM_SHIFT_IO
 #if defined(IC74HC595_HAS_STEPS) || defined(IC74HC595_HAS_DIRS) || defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS)
 	// this is where the IO update happens in RT mode
 	// this prevents multiple
-	I2SREG.conf_single_data = __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
+	if (mode == ITP_STEP_MODE_REALTIME)
+	{
+		I2SREG.conf_single_data = __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
+	}
+#endif
 #endif
 
 	timer_group_clr_intr_status_in_isr(ITP_TIMER_TG, ITP_TIMER_IDX);
@@ -1799,9 +1828,9 @@ MCU_CALLBACK void mcu_oneshot_isr(void *arg)
 void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 {
 	mcu_timeout_cb = fp;
-#if defined(MCU_HAS_ONESHOT_TIMER) && !defined(USE_I2S_REALTIME_MODE_ONLY) && defined(ENABLE_RT_SYNC_MOTIONS)
+#if defined(MCU_HAS_ONESHOT_TIMER) && defined(ENABLE_RT_SYNC_MOTIONS)
 	esp32_oneshot_reload = ((ITP_SAMPLE_RATE >> 1) / timeout);
-#else
+#elif defined(MCU_HAS_ONESHOT_TIMER)
 	timer_config_t config = {0};
 	config.divider = getApbFrequency() / 1000000UL; // 1us per count
 	config.counter_dir = TIMER_COUNT_UP;
@@ -1828,9 +1857,9 @@ void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 #ifndef mcu_start_timeout
 MCU_CALLBACK void mcu_start_timeout()
 {
-#if defined(MCU_HAS_ONESHOT_TIMER) && !defined(USE_I2S_REALTIME_MODE_ONLY) && defined(ENABLE_RT_SYNC_MOTIONS)
+#if defined(MCU_HAS_ONESHOT_TIMER) && defined(ENABLE_RT_SYNC_MOTIONS)
 	esp32_oneshot_counter = esp32_oneshot_reload;
-#else
+#elif defined(MCU_HAS_ONESHOT_TIMER)
 	timer_start(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX);
 #endif
 }
@@ -1839,7 +1868,7 @@ MCU_CALLBACK void mcu_start_timeout()
 
 #if (defined(MCU_HAS_SPI) && !defined(USE_ARDUINO_SPI_LIBRARY))
 
-static spi_device_handle_t mcu_spi_handle;
+static spi_device_handle_t mcu_spi_handle = NULL;
 
 #ifndef mcu_spi_xmit
 uint8_t mcu_spi_xmit(uint8_t data)
@@ -1872,8 +1901,10 @@ void mcu_spi_start(spi_config_t config, uint32_t frequency)
 		spi_device_acquire_bus(mcu_spi_handle, portMAX_DELAY);
 		spi_device_release_bus(mcu_spi_handle);
 		spi_bus_remove_device(mcu_spi_handle);
+		mcu_spi_handle = NULL;
+		spi_bus_free(SPI_PORT);
 	}
-	spi_bus_free(SPI_PORT);
+
 	spi_bus_config_t spiconf = {
 			.miso_io_num = SPI_SDI_BIT,
 			.mosi_io_num = SPI_SDO_BIT,
@@ -1912,6 +1943,7 @@ void mcu_spi_start(spi_config_t config, uint32_t frequency)
 void mcu_spi_stop(void)
 {
 	spi_device_release_bus(mcu_spi_handle);
+	mcu_spi_handle = NULL;
 }
 #endif
 
@@ -2015,7 +2047,7 @@ bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 
 #if (defined(MCU_HAS_SPI2) && !defined(USE_ARDUINO_SPI_LIBRARY))
 
-static spi_device_handle_t mcu_spi2_handle;
+static spi_device_handle_t mcu_spi2_handle = NULL;
 
 #ifndef mcu_spi2_xmit
 uint8_t mcu_spi2_xmit(uint8_t data)
@@ -2048,8 +2080,10 @@ void mcu_spi2_start(spi_config_t config, uint32_t frequency)
 		spi_device_acquire_bus(mcu_spi2_handle, portMAX_DELAY);
 		spi_device_release_bus(mcu_spi2_handle);
 		spi_bus_remove_device(mcu_spi2_handle);
+		mcu_spi2_handle = NULL;
+		spi_bus_free(SPI2_PORT);
 	}
-	spi_bus_free(SPI2_PORT);
+
 	spi_bus_config_t spiconf = {
 			.miso_io_num = SPI2_SDI_BIT,
 			.mosi_io_num = SPI2_SDO_BIT,
@@ -2088,6 +2122,7 @@ void mcu_spi2_start(spi_config_t config, uint32_t frequency)
 void mcu_spi2_stop(void)
 {
 	spi_device_release_bus(mcu_spi2_handle);
+	mcu_spi2_handle = NULL;
 }
 #endif
 
