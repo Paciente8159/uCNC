@@ -43,15 +43,14 @@ extern "C"
 // only uncomment this if other port other then 0 is used
 // #define UART_PORT 0
 
-// configure the 74HC595 modules
-#define DOUT8_BIT 27
-#define DOUT9_BIT 25
-#define DOUT10_BIT 26
-
 // bitbanging 74hc595 (not used)
 // uses 3 x 74HS595
 // #define IC74HC595_COUNT 3
 // #define IC74HC595_DELAY_CYCLES 0
+// configure the 74HC595 modules
+// #define DOUT8_BIT 27
+// #define DOUT9_BIT 25
+// #define DOUT10_BIT 26
 
 // Use I2S to shift data in ESP32
 #define IC74HC595_CUSTOM_SHIFT_IO // Enables custom MCU data shift transmission. In ESP32 that is via I2S
