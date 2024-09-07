@@ -78,6 +78,11 @@ extern "C"
 #include "avr/boardmap_mks_gen_l_v1.h"
 #endif
 
+#if (BOARD == BOARD_MELZI_V114)
+#define MCU MCU_AVR
+#include "avr/boardmap_melzi_v114.h"
+#endif
+
 #if (BOARD == BOARD_BLUEPILL)
 #ifndef MCU
 #define MCU MCU_STM32F1X
