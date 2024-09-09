@@ -212,6 +212,9 @@ uint8_t cnc_parse_cmd(void)
 #endif
 			break;
 		}
+		// runs any rt command in queue
+		// this catches for example a ?\n situation sent by some GUI like UGS
+		cnc_exec_rt_commands();
 		if (!error)
 		{
 			protocol_send_ok();
