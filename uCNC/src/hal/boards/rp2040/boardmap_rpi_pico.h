@@ -24,6 +24,10 @@ extern "C"
 {
 #endif
 
+#ifndef MCU
+#define MCU MCU_RP2040
+#endif
+
 #ifndef BOARD_NAME
 #define BOARD_NAME "RPi Pico"
 #endif

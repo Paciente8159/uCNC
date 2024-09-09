@@ -24,6 +24,10 @@ extern "C"
 {
 #endif
 
+#ifndef MCU
+#define MCU MCU_STM32F4X
+#endif
+
 #ifndef BOARD_NAME
 #define BOARD_NAME "STM32 Nucleo F411RE"
 #endif

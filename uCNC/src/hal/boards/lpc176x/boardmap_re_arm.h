@@ -24,6 +24,10 @@ extern "C"
 {
 #endif
 
+#ifndef MCU
+#define MCU MCU_LPC176X
+#endif
+
 #ifndef BOARD_NAME
 #define BOARD_NAME "RAMPS 1.4 RE-ARM"
 #endif

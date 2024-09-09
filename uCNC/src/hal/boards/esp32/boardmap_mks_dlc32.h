@@ -24,6 +24,10 @@ extern "C"
 {
 #endif
 
+#ifndef MCU
+#define MCU MCU_ESP32
+#endif
+
 #ifndef BOARD_NAME
 #define BOARD_NAME "MKS DLC32"
 #endif
