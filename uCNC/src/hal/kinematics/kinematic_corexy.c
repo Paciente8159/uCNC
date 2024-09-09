@@ -19,9 +19,16 @@
 
 #include "../../cnc.h"
 
-#if (KINEMATIC == KINEMATIC_COREXY)
+#if (KINEMATIC == KINEMATIC_COREXY || KINEMATIC == KINEMATIC_COREXZ)
 #include <stdio.h>
 #include <math.h>
+
+#if (KINEMATIC == KINEMATIC_COREXZ)
+#define COREXY_EXTRA_AXIS_START 3
+#else
+#define COREXY_EXTRA_AXIS_START 2
+#endif
+
 
 void kinematics_init(void)
 {
@@ -29,11 +36,17 @@ void kinematics_init(void)
 
 void kinematics_apply_inverse(float *axis, int32_t *steps)
 {
+#if (KINEMATIC == KINEMATIC_COREXZ)
+	steps[0] = (int32_t)lroundf(g_settings.step_per_mm[0] * (axis[AXIS_X] + axis[AXIS_Z]));
+	steps[2] = (int32_t)lroundf(g_settings.step_per_mm[2] * (axis[AXIS_X] - axis[AXIS_Z]));
+	steps[1] = (int32_t)lroundf(g_settings.step_per_mm[1] * axis[1]);
+#else
 	steps[0] = (int32_t)lroundf(g_settings.step_per_mm[0] * (axis[AXIS_X] + axis[AXIS_Y]));
 	steps[1] = (int32_t)lroundf(g_settings.step_per_mm[1] * (axis[AXIS_X] - axis[AXIS_Y]));
+#endif
 
-#if AXIS_COUNT > 2
-	for (uint8_t i = 2; i < AXIS_COUNT; i++)
+#if AXIS_COUNT > COREXY_EXTRA_AXIS_START
+	for (uint8_t i = COREXY_EXTRA_AXIS_START; i < AXIS_COUNT; i++)
 	{
 		steps[i] = (int32_t)lroundf(g_settings.step_per_mm[i] * axis[i]);
 	}
@@ -42,11 +55,17 @@ void kinematics_apply_inverse(float *axis, int32_t *steps)
 
 void kinematics_apply_forward(int32_t *steps, float *axis)
 {
+#if (KINEMATIC == KINEMATIC_COREXZ)
+	axis[AXIS_X] = (float)(0.5f * (float)(steps[0] + steps[2]) / g_settings.step_per_mm[0]);
+	axis[AXIS_Z] = (float)(0.5f * (float)(steps[0] - steps[2]) / g_settings.step_per_mm[2]);
+  axis[1] = (((float)steps[1]) / g_settings.step_per_mm[1]);
+#else
 	axis[AXIS_X] = (float)(0.5f * (float)(steps[0] + steps[1]) / g_settings.step_per_mm[0]);
 	axis[AXIS_Y] = (float)(0.5f * (float)(steps[0] - steps[1]) / g_settings.step_per_mm[1]);
+#endif
 
-#if AXIS_COUNT > 2
-	for (uint8_t i = 2; i < AXIS_COUNT; i++)
+#if AXIS_COUNT > COREXY_EXTRA_AXIS_START
+	for (uint8_t i = COREXY_EXTRA_AXIS_START; i < AXIS_COUNT; i++)
 	{
 		axis[i] = (((float)steps[i]) / g_settings.step_per_mm[i]);
 	}

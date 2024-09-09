@@ -24,7 +24,14 @@ extern "C"
 {
 #endif
 
+#if (KINEMATIC == KINEMATIC_COREXY)
 #define KINEMATIC_TYPE_STR "XY"
+#elif (KINEMATIC == KINEMATIC_COREXZ)
+#if AXIS_COUNT < 3
+#error "CoreXZ kinematics expects at least 3 axis"
+#endif
+#define KINEMATIC_TYPE_STR "XZ"
+#endif
 
 #ifdef __cplusplus
 }
