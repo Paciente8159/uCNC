@@ -34,8 +34,6 @@ extern "C"
 
 #define AVR6
 
-#include "mega_ide_pins.h"
-
 #define PCINT0_PORT B
 #define PCINT1_PORT J
 #define PCINT2_PORT K
