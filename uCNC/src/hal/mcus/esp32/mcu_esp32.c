@@ -62,7 +62,12 @@ void esp32_wifi_bt_flush(uint8_t *buffer);
 void esp32_wifi_bt_process(void);
 
 #ifdef USE_ARDUINO_SPI_LIBRARY
+#ifdef MCU_HAS_SPI
 void mcu_spi_init(void);
+#endif
+#ifdef MCU_HAS_SPI2
+void mcu_spi2_init(void);
+#endif
 #endif
 
 #if !defined(RAM_ONLY_SETTINGS) && !defined(USE_ARDUINO_EEPROM_LIBRARY)
@@ -81,8 +86,8 @@ static flash_eeprom_t mcu_eeprom;
 #endif
 
 MCU_CALLBACK void mcu_itp_isr(void *arg);
-static FORCEINLINE void mcu_gen_pwm_and_servo(void);
-static FORCEINLINE void mcu_gen_step(void);
+static MCU_CALLBACK void mcu_gen_pwm_and_servo(void);
+static MCU_CALLBACK void mcu_gen_step(void);
 MCU_CALLBACK void mcu_gpio_isr(void *type);
 
 /**
@@ -146,7 +151,6 @@ uint8_t itp_set_step_mode(uint8_t mode)
 
 static void IRAM_ATTR esp32_i2s_stream_task(void *param)
 {
-	bool first_run = true;
 	int8_t available_buffers = I2S_BUFFER_COUNT;
 	i2s_event_t evt;
 	portTickType xLastWakeTimeUpload = xTaskGetTickCount();
@@ -171,6 +175,9 @@ static void IRAM_ATTR esp32_i2s_stream_task(void *param)
 	};
 	QueueHandle_t i2s_dma_queue;
 
+	i2s_driver_install(IC74HC595_I2S_PORT, &i2s_config, I2S_BUFFER_COUNT, &i2s_dma_queue);
+	i2s_set_pin(IC74HC595_I2S_PORT, &pin_config);
+
 	for (;;)
 	{
 		uint32_t mode = I2S_MODE;
@@ -189,6 +196,9 @@ static void IRAM_ATTR esp32_i2s_stream_task(void *param)
 				I2SREG.conf.rx_fifo_reset = 1;
 				I2SREG.conf.rx_fifo_reset = 0;
 				available_buffers = I2S_BUFFER_COUNT;
+				i2s_driver_uninstall(IC74HC595_I2S_PORT);
+				i2s_driver_install(IC74HC595_I2S_PORT, &i2s_config, I2S_BUFFER_COUNT, &i2s_dma_queue);
+				i2s_set_pin(IC74HC595_I2S_PORT, &pin_config);
 				break;
 			case ITP_STEP_MODE_REALTIME:
 				// wait for DMA to output content
@@ -234,18 +244,8 @@ static void IRAM_ATTR esp32_i2s_stream_task(void *param)
 				I2SREG.out_link.start = 1;
 				I2SREG.conf.tx_start = 1;
 				ets_delay_us(20);
-				// timer_enable_intr(ITP_TIMER_TG, ITP_TIMER_IDX);
-				// timer_start(ITP_TIMER_TG, ITP_TIMER_IDX);
 				break;
 			}
-
-			if (!first_run)
-			{
-				i2s_driver_uninstall(IC74HC595_I2S_PORT);
-			}
-			first_run = false;
-			i2s_driver_install(IC74HC595_I2S_PORT, &i2s_config, I2S_BUFFER_COUNT, &i2s_dma_queue);
-			i2s_set_pin(IC74HC595_I2S_PORT, &pin_config);
 
 			// clear sync flag
 			__atomic_fetch_and((uint32_t *)&i2s_mode, ~ITP_STEP_MODE_SYNC, __ATOMIC_RELAXED);
@@ -399,7 +399,7 @@ static FORCEINLINE void servo_update(void)
 }
 #endif
 
-static FORCEINLINE void mcu_gen_pwm_and_servo(void)
+static MCU_CALLBACK void mcu_gen_pwm_and_servo(void)
 {
 	static int16_t mcu_soft_io_counter;
 	int16_t t = mcu_soft_io_counter;
@@ -441,7 +441,7 @@ static FORCEINLINE void mcu_gen_pwm_and_servo(void)
 
 static volatile uint32_t mcu_itp_timer_reload;
 static volatile bool mcu_itp_timer_running;
-static FORCEINLINE void mcu_gen_step(void)
+static MCU_CALLBACK void mcu_gen_step(void)
 {
 	static bool step_reset = true;
 	static int32_t mcu_itp_timer_counter;
