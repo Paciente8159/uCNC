@@ -24,13 +24,15 @@ extern "C"
 {
 #endif
 
+#ifndef MCU
+#define MCU MCU_AVR
+#endif
+
 #ifndef BOARD_NAME
 #define BOARD_NAME "RAMPS 1.4"
 #endif
 
 #define AVR6
-
-#include "mega_ide_pins.h"
 
 #define PCINT0_PORT B
 #define PCINT1_PORT J

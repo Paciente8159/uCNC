@@ -996,8 +996,7 @@ Also internally **AT LEAST** these macros need to be defined
 
    **3. Add the new board and mcu libraries to µCNC**
 
-   * The mcu to the `mcus.h` file and give it an ID. Add the needed libraries to load if the MCU is chosen in the `mcudefs.f` file. 
-   * Execute the same steps above for files `boards.h` and `boarddefs.h`
+   * The mcu to the `mcus.h` file and give it an ID. Add the needed libraries to load if the MCU is chosen in the `mcudefs.f` file.
    
    **4. Create the project and build**
    From this point on you just need to create a project to run the program. This can be either a `main` file and a `makefile` and build, or using Arduino IDE to compile the project (the appropriate core/board manager must also be installed).

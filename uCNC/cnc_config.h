@@ -45,11 +45,14 @@ extern "C"
 
 	/**
 	 * Choose the board
-	 * Check boards.h for list of available/supported boards
+	 * Select the boardmap for your board.
+	 * Boardmaps are available at src/hal/boards/
+	 * Or you can create your custom boardmap
+	 * 
 	 * */
 
 #ifndef BOARD
-#define BOARD BOARD_UNO
+#define BOARD "src/hal/boards/avr/boardmap_uno.h"
 #endif
 
 // optional name to override default board name build info (if option enabled)

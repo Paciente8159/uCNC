@@ -24,6 +24,10 @@ extern "C"
 {
 #endif
 
+#ifndef MCU
+#define MCU MCU_STM32F1X
+#endif
+
 #ifndef BOARD_NAME
 #define BOARD_NAME "MKS Robin Nano 1.2"
 #endif

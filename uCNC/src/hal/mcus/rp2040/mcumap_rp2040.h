@@ -84,12 +84,14 @@ extern "C"
 	// #define US_TO_CYCLES(X) (X * F_CPU_MHZ)
 
 	// 	extern unsigned long ulMainGetRunTimeCounterValue();
-	// #define mcu_delay_cycles(X)                                     \
-// 	{                                                           \
-// 		uint32_t target = ulMainGetRunTimeCounterValue() + (X); \
-// 		while (target > ulMainGetRunTimeCounterValue())         \
-// 			;                                                   \
-// 	}
+	/*
+	#define mcu_delay_cycles(X)                                 \
+	{                                                           \
+		uint32_t target = ulMainGetRunTimeCounterValue() + (X); 	\
+		while (target > ulMainGetRunTimeCounterValue())         	\
+			;                                                   		\
+	}
+	*/
 	// #define mcu_delay_100ns() mcu_delay_cycles(F_CPU_MHZ / 10UL)
 	// #define mcu_delay_us(X) (mcu_delay_cycles(US_TO_CYCLES(X)))
 
@@ -865,22 +867,22 @@ extern "C"
 #define RX2 211
 #define DIO211_BIT (RX2_BIT)
 #endif
-#if(defined(SPI2_CLK_BIT))
+#if (defined(SPI2_CLK_BIT))
 #define DIO212 212
 #define SPI2_CLK 212
 #define DIO212_BIT (SPI2_CLK_BIT)
 #endif
-#if(defined(SPI2_SDI_BIT))
+#if (defined(SPI2_SDI_BIT))
 #define DIO213 213
 #define SPI2_SDI 213
 #define DIO213_BIT (SPI2_SDI_BIT)
 #endif
-#if(defined(SPI2_SDO_BIT))
+#if (defined(SPI2_SDO_BIT))
 #define DIO214 214
 #define SPI2_SDO 214
 #define DIO214_BIT (SPI2_SDO_BIT)
 #endif
-#if(defined(SPI2_CS_BIT))
+#if (defined(SPI2_CS_BIT))
 #define DIO215 215
 #define SPI2_CS 215
 #define DIO215_BIT (SPI2_CS_BIT)

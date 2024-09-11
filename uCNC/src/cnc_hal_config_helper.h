@@ -41,7 +41,6 @@ extern "C"
 #include "cnc_build.h"
 // make the needed includes (do not change the order)
 // include lists of available option
-#include "hal/boards/boards.h"
 #include "hal/mcus/mcus.h"
 #include "hal/kinematics/kinematics.h"
 // user configurations
