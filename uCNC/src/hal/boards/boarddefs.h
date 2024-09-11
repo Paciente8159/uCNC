@@ -35,7 +35,7 @@ extern "C"
 
 #define __BOARDMAP_FILE__(B) #B
 #define BOARDMAP_FILE(B) __BOARDMAP_FILE__(B)
-#include BOARDMAP_FILE(BOARD)
+#include BOARD
 
 #include "../../../boardmap_overrides.h"
 #include "pin_mapping_helper.h"
