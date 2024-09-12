@@ -6,6 +6,35 @@
 
 # Changelog
 
+## [1.10.1] - 12-09-2024
+
+[@patryk3211](https://github.com/patryk3211)	- modified system menu jog parameters to be globally accessible (#740)
+[@etet100](https://github.com/etet100)	- fixed typo on steppers timeout sleep build flag
+
+### Added
+
+- new overridable PIO configuration ini file to integrate with the Web Builder and allow configuration customizations (#746)
+- added boardmap for AVR Melzi v1.1.4 board (#749)
+- added several PIO environment, one for each architecture to allow compilation for custom boards generated via Web Builder (#752)
+- added new option to force HAL to set the IO pin direction every time there is a request to change the pin value. This is now the default for ESP32 to fix GPIO configuration lost mid execution (on resets, drivers reconfigurations, etc..) (#753)
+
+### Changed
+
+- modified system menu jog parameters to be globally accessible (#740)
+- several modifications to PIO ini files, boardmaps and configurations to improve board customization via Web Builder (#752)
+
+### Fixed
+
+- locked RP2040 build platform version to prevent compilation issues to breaking changes (#739)
+- fixed STM32F4 APB2 configuration macros that could try to use invalid values (#738)
+- fixed ESP32 mcumap typos and bugs (#741) (#744)
+- fixed software SPI resource locking bug (#743)
+- fixed ESP32 SPI initialization functions that cause system crashes (#745)
+- fixed issue with ESP32 were GPIO would loose the initial configuration and returned to the state at boot time (#747) (#753)
+- fixed typo on steppers timeout sleep build flag
+- fixed ESP32 software generated signals for IO extenders (#748)(#753)
+- fixed query status response when sender uses a carriage return/linefeed char after the question mark making the firmware respond with an OK before the status (UGS for example) and make the sender fail to recogize the response (#751)
+
 ## [1.10.0] - 16-08-2024
 
 [@patryk3211](https://github.com/patryk3211)	- added DMA supported SPI bulk transfers for all STM32 architectures and SAMD21 (#700) (#714)

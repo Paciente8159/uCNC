@@ -96,18 +96,6 @@ extern "C"
 #define SPI2_SDI_BIT 19
 #define SPI2_CS_BIT 5
 
-// software I2C
-#define DIN30_BIT 4
-#define DIN31_BIT 0
-
-// pins for smart adapter
-// clk
-#define DOUT4_BIT 26
-// data
-#define DOUT5_BIT 05
-// cs
-#define DOUT6_BIT 27
-
 #ifdef __cplusplus
 }
 #endif
