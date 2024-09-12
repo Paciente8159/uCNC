@@ -549,6 +549,13 @@ extern "C"
 // #define SYSTEM_MENU_MAX_STR_LEN 32
 #endif
 
+/**
+ * Force the IO direction to be configure before each request
+ * This sets the pin direction before trying to control it
+ * Some MCU like ESP32 require this option to be enabled because the IO by some SDK function calls without realizing
+ */
+// #define FORCE_HAL_IO_DIRECTION_ONREQUEST
+
 #ifdef __cplusplus
 }
 #endif
