@@ -2,12 +2,13 @@ import os
 import requests
 import zipfile
 import io
+import shutil
 
 from pathlib import Path
 Import("env")  # Import the PlatformIO build environment
 
 # Local path where the zip file will be temporarily saved
-TEMP_ZIP_PATH = "tmp/modules.zip"
+TEMP_ZIP_PATH = "uCNC/src/modules/modules.zip"
 SRC_DIR = env.subst("$PROJECT_SRC_DIR")
 UCNC_MODULES_PATH = os.path.join(SRC_DIR, "src", "modules")
 
@@ -35,21 +36,43 @@ def extract_folders_from_zip(zip_path, extract_path, folders):
 
     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
         # Iterate through all the files in the zip file
+        rootdir = zip_ref.infolist()[0]
         for file_info in zip_ref.infolist():
             # Extract only the files that are in the specified folders
             for folder in folders:
-                if file_info.filename.startswith(f"{folder}/"):
-                    print(f"Extracting {file_info.filename}")
-                    zip_ref.extract(file_info, extract_path)
+                if file_info.filename.upper().startswith(f"{rootdir.filename.upper()}{folder.upper()}/"):
+                    file_name = file_info.filename.split('/')[-1]
+                    dest_path = os.path.join(extract_path, folder)
+                    if file_info.is_dir():
+                      continue
+                    file_info.filename = os.path.basename(file_info.filename)
+                    print(f"Extracting {file_info.filename} to {dest_path}")
+                    zip_ref.extract(file_info, dest_path)
     
     print(f"Folders extracted to {extract_path}")
 
-def pre_action():
-    # Fetch the custom URL and folders from platformio.ini environment
-    ucnc_modules_url = env.GetProjectOption("ucnc_modules_url")
-    extract_modules = env.GetProjectOption("extract_modules")
+def pre_getmodules_action():
+    extract_path = Path(UCNC_MODULES_PATH)
     
-    if not ucnc_modules_url:
+    if extract_path.exists() and extract_path.is_dir():
+        print(f"Removing modules folders in {UCNC_MODULES_PATH}")
+        
+        for folder in extract_path.iterdir():
+            # Skip the "languages" folder
+            if folder.name != 'language' and folder.is_dir():
+              # Remove the entire extracted_data directory
+              print(f"Delete {folder}")
+              shutil.rmtree(str(folder))
+
+        print(f"Extracted folders removed.")
+    else:
+        print(f"No extracted folders found to remove in {UCNC_MODULES_PATH}")
+        
+    # Fetch the custom URL and folders from platformio.ini environment
+    modules_url = env.GetProjectOption("custom_ucnc_modules_url")
+    extract_modules = env.GetProjectOption("custom_ucnc_modules")
+    
+    if not modules_url:
         sys.exit(0)
     
     if not extract_modules:
@@ -57,10 +80,10 @@ def pre_action():
         sys.exit(0)
     
     # Split the extract_modules by comma and remove any extra spaces
-    modules_to_extract = [folder.strip() for folder in extract_modules.splitlines().split(",")]
+    modules_to_extract = [folder.strip() for folder in ','.join(extract_modules.splitlines()).split(',')]
 
     # Download the zip file
-    download_file(ucnc_modules_url, TEMP_ZIP_PATH)
+    download_file(modules_url, TEMP_ZIP_PATH)
     
     # Extract specified folders from the zip file
     extract_folders_from_zip(TEMP_ZIP_PATH, UCNC_MODULES_PATH, modules_to_extract)
@@ -70,5 +93,4 @@ def pre_action():
         os.remove(TEMP_ZIP_PATH)
         print(f"Temporary zip file {TEMP_ZIP_PATH} removed.")
 
-if __name__ == "__main__":
-    pre_action()
+pre_getmodules_action()
