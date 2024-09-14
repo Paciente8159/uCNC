@@ -73,11 +73,11 @@ def pre_getmodules_action():
     extract_modules = env.GetProjectOption("custom_ucnc_modules")
     
     if not modules_url:
-        exit(0)
+        return
     
     if not extract_modules:
         print("No µCNC modules are defined in the platformio.ini file and will not be added")
-        exit(0)
+        return
     
     # Split the extract_modules by comma and remove any extra spaces
     modules_to_extract = [folder.strip() for folder in ','.join(extract_modules.splitlines()).split(',')]
