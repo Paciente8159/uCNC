@@ -53,6 +53,16 @@ def extract_folders_from_zip(zip_path, extract_path, folders):
 
 def pre_getmodules_action():
     extract_path = Path(UCNC_MODULES_PATH)
+    # Fetch the custom URL and folders from platformio.ini environment
+    modules_url = env.GetProjectOption("custom_ucnc_modules_url")
+    extract_modules = env.GetProjectOption("custom_ucnc_modules")
+    
+    if not modules_url:
+        return
+    
+    if not extract_modules:
+        print("No µCNC modules are defined in the platformio.ini file and will not be added")
+        return
     
     if extract_path.exists() and extract_path.is_dir():
         print(f"Removing modules from {UCNC_MODULES_PATH}")
@@ -68,17 +78,6 @@ def pre_getmodules_action():
     else:
         print(f"No modules removed from {UCNC_MODULES_PATH}")
         
-    # Fetch the custom URL and folders from platformio.ini environment
-    modules_url = env.GetProjectOption("custom_ucnc_modules_url")
-    extract_modules = env.GetProjectOption("custom_ucnc_modules")
-    
-    if not modules_url:
-        return
-    
-    if not extract_modules:
-        print("No µCNC modules are defined in the platformio.ini file and will not be added")
-        return
-    
     # Split the extract_modules by comma and remove any extra spaces
     modules_to_extract = [folder.strip() for folder in ','.join(extract_modules.splitlines()).split(',')]
 
