@@ -29,7 +29,7 @@ def download_file(url, local_path):
     print(f"File saved to {local_path}")
 
 def extract_folders_from_zip(zip_path, extract_path, folders):
-    print(f"Extracting folders: {folders} from {zip_path}")
+    print(f"Extracting modules: {folders} from {zip_path}")
 
     # Ensure the extraction directory exists
     os.makedirs(extract_path, exist_ok=True)
@@ -45,17 +45,17 @@ def extract_folders_from_zip(zip_path, extract_path, folders):
                     dest_path = os.path.join(extract_path, folder)
                     if file_info.is_dir():
                       continue
-                    file_info.filename = os.path.basename(file_info.filename)
+                    file_info.filename = os.path.relpath(file_info.filename, rootdir.filename)
                     print(f"Extracting {file_info.filename} to {dest_path}")
                     zip_ref.extract(file_info, dest_path)
     
-    print(f"Folders extracted to {extract_path}")
+    print(f"Modules extracted to {extract_path}")
 
 def pre_getmodules_action():
     extract_path = Path(UCNC_MODULES_PATH)
     
     if extract_path.exists() and extract_path.is_dir():
-        print(f"Removing modules folders in {UCNC_MODULES_PATH}")
+        print(f"Removing modules from {UCNC_MODULES_PATH}")
         
         for folder in extract_path.iterdir():
             # Skip the "languages" folder
@@ -64,20 +64,20 @@ def pre_getmodules_action():
               print(f"Delete {folder}")
               shutil.rmtree(str(folder))
 
-        print(f"Extracted folders removed.")
+        print(f"Modules removed.")
     else:
-        print(f"No extracted folders found to remove in {UCNC_MODULES_PATH}")
+        print(f"No modules removed from {UCNC_MODULES_PATH}")
         
     # Fetch the custom URL and folders from platformio.ini environment
     modules_url = env.GetProjectOption("custom_ucnc_modules_url")
     extract_modules = env.GetProjectOption("custom_ucnc_modules")
     
     if not modules_url:
-        sys.exit(0)
+        exit(0)
     
     if not extract_modules:
         print("No µCNC modules are defined in the platformio.ini file and will not be added")
-        sys.exit(0)
+        exit(0)
     
     # Split the extract_modules by comma and remove any extra spaces
     modules_to_extract = [folder.strip() for folder in ','.join(extract_modules.splitlines()).split(',')]
