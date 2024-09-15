@@ -1745,8 +1745,8 @@ void mcu_i2c_config(uint32_t frequency)
 	RCC->APB1ENR |= I2C_APBEN;
 	mcu_config_opendrain(I2C_CLK);
 	mcu_config_opendrain(I2C_DATA);
-	mcu_config_af(I2C_CLK, GPIO_AF);
-	mcu_config_af(I2C_DATA, GPIO_AF);
+	mcu_config_af(I2C_CLK, I2C_AFIO);
+	mcu_config_af(I2C_DATA, I2C_AFIO);
 #ifdef SPI_REMAP
 	AFIO->MAPR |= I2C_REMAP;
 #endif
