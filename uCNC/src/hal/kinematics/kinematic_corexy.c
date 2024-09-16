@@ -19,11 +19,11 @@
 
 #include "../../cnc.h"
 
-#if (KINEMATIC == KINEMATIC_COREXY || KINEMATIC == KINEMATIC_COREXZ)
+#if (KINEMATIC == KINEMATIC_COREXY)
 #include <stdio.h>
 #include <math.h>
 
-#if (KINEMATIC == KINEMATIC_COREXZ)
+#if (COREXY_AXIS == COREXY_AXIS_XZ || COREXY_AXIS == COREXY_AXIS_YZ)
 #define COREXY_EXTRA_AXIS_START 3
 #else
 #define COREXY_EXTRA_AXIS_START 2
@@ -36,10 +36,14 @@ void kinematics_init(void)
 
 void kinematics_apply_inverse(float *axis, int32_t *steps)
 {
-#if (KINEMATIC == KINEMATIC_COREXZ)
+#if (COREXY_AXIS == COREXY_AXIS_XZ)
 	steps[0] = (int32_t)lroundf(g_settings.step_per_mm[0] * (axis[AXIS_X] + axis[AXIS_Z]));
+	steps[1] = (int32_t)lroundf(g_settings.step_per_mm[1] * axis[AXIS_Y]);
 	steps[2] = (int32_t)lroundf(g_settings.step_per_mm[2] * (axis[AXIS_X] - axis[AXIS_Z]));
-	steps[1] = (int32_t)lroundf(g_settings.step_per_mm[1] * axis[1]);
+#elif (COREXY_AXIS == COREXY_AXIS_YZ)
+	steps[0] = (int32_t)lroundf(g_settings.step_per_mm[0] * axis[0]);
+	steps[1] = (int32_t)lroundf(g_settings.step_per_mm[1] * (axis[AXIS_Y] + axis[AXIS_Z]));
+	steps[2] = (int32_t)lroundf(g_settings.step_per_mm[2] * (axis[AXIS_Y] - axis[AXIS_Z]));
 #else
 	steps[0] = (int32_t)lroundf(g_settings.step_per_mm[0] * (axis[AXIS_X] + axis[AXIS_Y]));
 	steps[1] = (int32_t)lroundf(g_settings.step_per_mm[1] * (axis[AXIS_X] - axis[AXIS_Y]));
@@ -55,10 +59,14 @@ void kinematics_apply_inverse(float *axis, int32_t *steps)
 
 void kinematics_apply_forward(int32_t *steps, float *axis)
 {
-#if (KINEMATIC == KINEMATIC_COREXZ)
+#if (COREXY_AXIS == COREXY_AXIS_XZ)
 	axis[AXIS_X] = (float)(0.5f * (float)(steps[0] + steps[2]) / g_settings.step_per_mm[0]);
 	axis[AXIS_Z] = (float)(0.5f * (float)(steps[0] - steps[2]) / g_settings.step_per_mm[2]);
-  axis[1] = (((float)steps[1]) / g_settings.step_per_mm[1]);
+  axis[AXIS_Y] = (((float)steps[1]) / g_settings.step_per_mm[1]);
+#elif (COREXY_AXIS == COREXY_AXIS_YZ)
+  axis[AXIS_X] = (((float)steps[0]) / g_settings.step_per_mm[0]);
+	axis[AXIS_Y] = (float)(0.5f * (float)(steps[1] + steps[2]) / g_settings.step_per_mm[1]);
+	axis[AXIS_Z] = (float)(0.5f * (float)(steps[1] - steps[2]) / g_settings.step_per_mm[2]);
 #else
 	axis[AXIS_X] = (float)(0.5f * (float)(steps[0] + steps[1]) / g_settings.step_per_mm[0]);
 	axis[AXIS_Y] = (float)(0.5f * (float)(steps[0] - steps[1]) / g_settings.step_per_mm[1]);

@@ -25,12 +25,24 @@ extern "C"
 #endif
 
 #if (KINEMATIC == KINEMATIC_COREXY)
+#ifndef COREXY_AXIS
+#define COREXY_AXIS  COREXY_AXIS_XY
+#endif
+#if COREXY_AXIS == COREXY_AXIS_XY
 #define KINEMATIC_TYPE_STR "XY"
-#elif (KINEMATIC == KINEMATIC_COREXZ)
+#elif (COREXY_AXIS == COREXY_AXIS_XZ)
 #if AXIS_COUNT < 3
 #error "CoreXZ kinematics expects at least 3 axis"
 #endif
 #define KINEMATIC_TYPE_STR "XZ"
+#elif (COREXY_AXIS == COREXY_AXIS_YZ)
+#if AXIS_COUNT < 3
+#error "CoreYZ kinematics expects at least 3 axis"
+#endif
+#define KINEMATIC_TYPE_STR "YZ"
+#else
+#error "Invalid value for COREXY_AXIS. Use one of COREXY_AXIS_XY, COREXY_AXIS_XZ or COREXY_AXIS_YZ"
+#endif
 #endif
 
 #ifdef __cplusplus
