@@ -1012,7 +1012,7 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 	while (clocks > 0xFFFF)
 	{
 		clocks >>= 1;
-		*prescaller++;
+		(*prescaller) += 1;
 		if (*prescaller >= 4)
 		{
 			clocks >>= 1;
