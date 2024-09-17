@@ -90,6 +90,10 @@ extern "C"
 #define serial_print_fltarr(arr, count) print_fltarr(serial_putc, arr, count)
 
 #ifdef ENABLE_DEBUG_STREAM
+// to customize the debug stream you can reference it to an existing stream
+// for example to set it to the USB stream you can define DEBUG_STREAM like this
+// #define DEBUG_STREAM (&usb_serial_stream)
+
 #ifndef DEBUG_STREAM
 	extern serial_stream_t *default_stream;
 #define DEBUG_STREAM default_stream
