@@ -250,10 +250,8 @@ uint8_t serial_available(void)
 		while (p != NULL)
 		{
 #ifdef ENABLE_DEBUG_STREAM
-#if DEBUG_STREAM != default_stream
 			// skip the debug stream, if it differs from default_stream
-			if (p != DEBUG_STREAM)
-#endif
+			if (p != DEBUG_STREAM || p == default_stream)
 			{
 #endif
 				count = (!(p->stream_available)) ? 0 : p->stream_available();
