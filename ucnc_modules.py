@@ -53,7 +53,7 @@ def extract_folders_from_zip(zip_path, extract_path, folders):
                     file_info.filename = os.path.relpath(
                         file_info.filename, os.path.join(rootdir.filename, folder)
                     )
-                    if Path(dest_path).exists():
+                    if os.path.exists(os.path.join(dest_path, file_info.filename)):
                         continue
                     print(f"Extracting {file_info.filename} to {dest_path}")
                     zip_ref.extract(file_info, dest_path)
