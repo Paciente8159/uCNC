@@ -749,7 +749,7 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 	*prescaller = 0;
 	while (totalticks > 0x0000FFFFUL)
 	{
-		*prescaller++;
+		(*prescaller) += 1;
 		totalticks >>= 1;
 	}
 

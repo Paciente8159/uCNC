@@ -752,7 +752,7 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 		totalticks >>= 1;
 	}
 
-	*prescaller--;
+	(*prescaller) -= 1;
 	*ticks = (uint16_t)totalticks;
 }
 
