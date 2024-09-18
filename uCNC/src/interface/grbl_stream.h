@@ -1,10 +1,10 @@
 /*
-	Name: serial.h
-	Description: Serial communication basic read/write functions µCNC.
+	Name: stream.h
+	Description: Grbl communication stream for µCNC.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
-	Date: 30/12/2019
+	Date: 18/09/2024
 
 	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
 	See the	GNU General Public License for more details.
 */
 
-#ifndef SERIAL_H
-#define SERIAL_H
+#ifndef GRBL_STREAM_H
+#define GRBL_STREAM_H
 
 #ifdef __cplusplus
 extern "C"
@@ -37,50 +37,41 @@ extern "C"
 #endif
 #define RX_BUFFER_SIZE (RX_BUFFER_CAPACITY + SAFEMARGIN) // buffer sizes
 
-	typedef uint8_t (*stream_getc_cb)(void);
-	typedef uint8_t (*stream_available_cb)(void);
-	typedef void (*stream_clear_cb)(void);
+	typedef uint8_t (*grbl_stream_getc_cb)(void);
+	typedef uint8_t (*grbl_stream_available_cb)(void);
+	typedef void (*grbl_stream_clear_cb)(void);
 
-	typedef struct serial_stream_
+	typedef struct grbl_stream_
 	{
-		stream_getc_cb stream_getc;
-		stream_available_cb stream_available;
-		stream_clear_cb stream_clear;
-		void (*stream_putc)(uint8_t);
-		void (*stream_flush)(void);
-		struct serial_stream_ *next;
-	} serial_stream_t;
+		grbl_stream_getc_cb getc;
+		grbl_stream_available_cb available;
+		grbl_stream_clear_cb clear;
+		void (*putc)(uint8_t);
+		void (*flush)(void);
+		struct serial_grbl_stream_ *next;
+	} grbl_stream_t;
 
-#define DECL_SERIAL_STREAM(name, getc_cb, available_cb, clear_cb, putc_cb, flush_cb) serial_stream_t name = {getc_cb, available_cb, clear_cb, putc_cb, flush_cb, NULL}
+#define DECL_SERIAL_STREAM(name, getc_cb, available_cb, clear_cb, putc_cb, flush_cb) grbl_stream_t name = {getc_cb, available_cb, clear_cb, putc_cb, flush_cb, NULL}
 
-	void serial_init();
+	void grbl_stream_init();
 
-	void serial_stream_register(serial_stream_t *stream);
-	bool serial_stream_change(serial_stream_t *stream);
-	bool serial_stream_readonly(stream_getc_cb getc_cb, stream_available_cb available_cb, stream_clear_cb clear_cb);
-	void serial_stream_eeprom(uint16_t address);
+	void grbl_stream_register(grbl_stream_t *stream);
+	bool grbl_stream_change(grbl_stream_t *stream);
+	bool grbl_stream_readonly(grbl_stream_t getc_cb, grbl_stream_available_cb available_cb, grbl_stream_clear_cb clear_cb);
+	void grbl_stream_eeprom(uint16_t address);
 
-	void serial_broadcast(bool enable);
-	void serial_putc(char c);
-	void serial_flush(void);
-	uint8_t serial_tx_busy(void);
+	void grbl_stream_broadcast(bool enable);
+	void grbl_stream_putc(char c);
+	void grbl_stream_flush(void);
 
-	char serial_getc(void);
-	char serial_peek(void);
-	uint8_t serial_available(void);
-	void serial_clear(void);
-	uint8_t serial_freebytes(void);
+	char grbl_stream_getc(void);
+	char grbl_stream_peek(void);
+	uint8_t grbl_stream_available(void);
+	void grbl_stream_clear(void);
+	uint8_t grbl_stream_write_available(void);
 
 	// printing utils
 	#include "print.h"
-
-#define serial_print_str(__s) print_str(serial_putc, __s)
-#define serial_print_bytes(data, count) print_bytes(serial_putc, data, count)
-#define serial_print_int(num) print_int(serial_putc, num)
-#define serial_print_flt(num) print_flt(serial_putc, num)
-#define serial_print_fltunits(num) print_fltunits(serial_putc, num)
-#define serial_print_intarr(arr, count) print_intarr(serial_putc, arr, count)
-#define serial_print_fltarr(arr, count) print_fltarr(serial_putc, arr, count)
 
 #ifdef ENABLE_DEBUG_STREAM
 // to customize the debug stream you can reference it to an existing stream
@@ -88,7 +79,7 @@ extern "C"
 // #define DEBUG_STREAM (&usb_serial_stream)
 
 #ifndef DEBUG_STREAM
-	extern serial_stream_t *default_stream;
+	extern grbl_stream_t *default_stream;
 #define DEBUG_STREAM default_stream
 #endif
 
