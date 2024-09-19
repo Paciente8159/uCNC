@@ -428,11 +428,11 @@ static void pid_update(void)
 }
 
 // uses similar status to grblhal
-bool plasma_protocol_send_status(void *args)
+bool plasma_grbl_protocol_status(void *args)
 {
 	uint8_t state = plasma_thc_state;
 
-	protocol_send_string(__romstr__("THC:"));
+	grbl_protocol_string("THC:");
 
 	plasma_thc_extension_send_status();
 
@@ -474,11 +474,11 @@ bool plasma_protocol_send_status(void *args)
 	return EVENT_CONTINUE;
 }
 
-CREATE_EVENT_LISTENER(protocol_send_status, plasma_protocol_send_status);
+CREATE_EVENT_LISTENER(grbl_protocol_status, plasma_grbl_protocol_status);
 
 DECL_MODULE(plasma_thc)
 {
-	ADD_EVENT_LISTENER(protocol_send_status, plasma_protocol_send_status);
+	ADD_EVENT_LISTENER(grbl_protocol_status, plasma_grbl_protocol_status);
 #ifdef ENABLE_PARSER_MODULES
 	ADD_EVENT_LISTENER(gcode_parse, m103_parse);
 	ADD_EVENT_LISTENER(gcode_exec, m103_exec);

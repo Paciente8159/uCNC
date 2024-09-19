@@ -479,7 +479,7 @@ static uint8_t parser_grbl_command(void)
 
 				settings_save(block_address, NULL, UINT16_MAX);
 				// run startup block
-				serial_broadcast(true);
+				grbl_stream_broadcast(true);
 				serial_stream_eeprom(block_address);
 				// checks the command validity
 				error = parser_fetch_command(&next_state, &words, &cmd);
@@ -490,7 +490,7 @@ static uint8_t parser_grbl_command(void)
 				// 	error = parser_validate_command(&next_state, &words, &cmd);
 				// }
 
-				serial_broadcast(false);
+				grbl_stream_broadcast(false);
 				// reset streams
 				serial_stream_change(NULL);
 
@@ -603,30 +603,30 @@ static uint8_t parser_grbl_exec_code(uint8_t code)
 	switch (code)
 	{
 	case GRBL_SEND_SYSTEM_SETTINGS:
-		protocol_send_cnc_settings();
+		grbl_protocol_cnc_settings();
 		break;
 	case GRBL_SEND_COORD_SYSTEM:
-		protocol_send_gcode_coordsys();
+		grbl_protocol_gcode_coordsys();
 		break;
 	case GRBL_SEND_PARSER_MODES:
-		protocol_send_gcode_modes();
+		grbl_protocol_gcode_modes();
 		break;
 	case GRBL_SEND_STARTUP_BLOCKS:
-		protocol_send_start_blocks();
+		grbl_protocol_start_blocks();
 		break;
 	case GRBL_TOGGLE_CHECKMODE:
 		if (mc_toogle_checkmode())
 		{
-			protocol_send_feedback(MSG_FEEDBACK_4);
+			grbl_protocol_feedback(MSG_FEEDBACK_4);
 		}
 		else
 		{
-			protocol_send_feedback(MSG_FEEDBACK_5);
+			grbl_protocol_feedback(MSG_FEEDBACK_5);
 			cnc_alarm(EXEC_ALARM_SOFTRESET);
 		}
 		break;
 	case GRBL_SEND_SETTINGS_RESET:
-		protocol_send_feedback(MSG_FEEDBACK_9);
+		grbl_protocol_feedback(MSG_FEEDBACK_9);
 		break;
 	case GRBL_UNLOCK:
 		cnc_unlock(true);
@@ -636,7 +636,7 @@ static uint8_t parser_grbl_exec_code(uint8_t code)
 			return STATUS_CHECK_DOOR;
 		}
 #endif
-		protocol_send_feedback(MSG_FEEDBACK_3);
+		grbl_protocol_feedback(MSG_FEEDBACK_3);
 		break;
 	case GRBL_HOME:
 		if (!g_settings.homing_enabled)
@@ -654,29 +654,29 @@ static uint8_t parser_grbl_exec_code(uint8_t code)
 		cnc_home();
 		break;
 	case GRBL_HELP:
-		protocol_send_string(MSG_HELP);
+		grbl_protocol_string(MSG_HELP);
 		break;
 #ifdef ENABLE_EXTRA_SYSTEM_CMDS
 	case GRBL_SETTINGS_SAVED:
-		protocol_send_feedback(MSG_FEEDBACK_13);
+		grbl_protocol_feedback(MSG_FEEDBACK_13);
 		break;
 	case GRBL_SETTINGS_LOADED:
-		protocol_send_feedback(MSG_FEEDBACK_14);
+		grbl_protocol_feedback(MSG_FEEDBACK_14);
 		break;
 	case GRBL_SETTINGS_DEFAULT:
-		protocol_send_feedback(MSG_FEEDBACK_15);
+		grbl_protocol_feedback(MSG_FEEDBACK_15);
 		break;
 	case GRBL_PINS_STATES:
-		protocol_send_pins_states();
+		grbl_protocol_pins_states();
 		break;
 #endif
 #ifdef ENABLE_SYSTEM_INFO
 	case GRBL_SEND_SYSTEM_INFO:
-		protocol_send_cnc_info(false);
+		grbl_protocol_cnc_info(false);
 		break;
 #if EMULATE_GRBL_STARTUP == 2
 	case GRBL_SEND_SYSTEM_INFO_EXTENDED:
-		protocol_send_cnc_info(true);
+		grbl_protocol_cnc_info(true);
 		break;
 #endif
 #endif
@@ -719,8 +719,8 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 #ifdef ECHO_CMD
 		if (!wordcount)
 		{
-			serial_broadcast(true);
-			protocol_send_string(MSG_ECHO);
+			grbl_stream_broadcast(true);
+			grbl_protocol_string(MSG_ECHO);
 		}
 #endif
 		error = parser_get_token(&word, &value);
@@ -730,8 +730,8 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 		{
 			parser_discard_command();
 #ifdef ECHO_CMD
-			protocol_send_string(MSG_END);
-			serial_broadcast(false);
+			grbl_protocol_string(MSG_END);
+			grbl_stream_broadcast(false);
 #endif
 			return error;
 		}
@@ -788,8 +788,8 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 #endif
 			DEBUG_PUTC('\n');
 #ifdef ECHO_CMD
-			protocol_send_string(MSG_END);
-			serial_broadcast(false);
+			grbl_protocol_string(MSG_END);
+			grbl_stream_broadcast(false);
 #endif
 			return STATUS_OK;
 		case 'G':
@@ -832,8 +832,8 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 		{
 			parser_discard_command();
 #ifdef ECHO_CMD
-			protocol_send_string(MSG_END);
-			serial_broadcast(false);
+			grbl_protocol_string(MSG_END);
+			grbl_stream_broadcast(false);
 #endif
 			return error;
 		}
@@ -1809,7 +1809,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 
 			if (error == STATUS_OK)
 			{
-				protocol_send_probe_result(parser_parameters.last_probe_ok);
+				grbl_protocol_probe_result(parser_parameters.last_probe_ok);
 			}
 
 			return error;
@@ -1884,7 +1884,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		if (resetparser)
 		{
 			cnc_stop();
-			protocol_send_feedback(MSG_FEEDBACK_8);
+			grbl_protocol_feedback(MSG_FEEDBACK_8);
 		}
 	}
 
@@ -1999,7 +1999,7 @@ static void parser_get_comment(uint8_t start_char)
 			break;
 		case 3:
 			msg_parser = (c == ',') ? 4 : 0xFF;
-			protocol_send_string(MSG_START);
+			grbl_protocol_string(MSG_START);
 			break;
 		case 4:
 			serial_putc(c);
@@ -2017,7 +2017,7 @@ static void parser_get_comment(uint8_t start_char)
 #ifdef PROCESS_COMMENTS
 			if (msg_parser == 4)
 			{
-				protocol_send_string(MSG_END);
+				grbl_protocol_string(MSG_END);
 			}
 #endif
 			return;

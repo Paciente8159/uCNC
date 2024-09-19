@@ -30,13 +30,9 @@ extern "C"
 #include <stdarg.h>
 
 	// printing utils
-	typedef void* (*print_cb)(void*, char);
-	void print_str(print_cb cb, void* arg, const char *__s);
-	void print_bytes(print_cb cb, void* arg, const uint8_t *data, uint8_t count);
-	void print_int(print_cb cb, void* arg, int32_t num);
-	void print_flt(print_cb cb, void* arg, float num);
-	void print_ip(print_cb cb, void* arg, uint32_t ip);
-	void print_fmt(print_cb cb, void *arg, const char *fmt, ...);
+	typedef void (*print_putc_cb)(char);
+	void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args);
+	void print_fmt(print_putc_cb cb, char *buffer, const char *fmt, ...);
 
 #ifdef __cplusplus
 }

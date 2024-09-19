@@ -291,24 +291,24 @@ static void fs_dir_list(void)
 	// if current working directory not initialized
 	if (!strlen(fs_cwd.full_name))
 	{
-		protocol_send_string(__romstr__("Available drives"));
-		protocol_send_string(MSG_EOL);
+		grbl_protocol_string("Available drives");
+		grbl_protocol_string(MSG_EOL);
 		fs_t *drive = fs_default_drive;
 		while (drive)
 		{
-			protocol_send_string(__romstr__("<drive>\t"));
+			grbl_protocol_string("<drive>\t");
 			serial_putc('/');
 			serial_putc(drive->drive);
-			protocol_send_string(MSG_EOL);
+			grbl_protocol_string(MSG_EOL);
 			drive = drive->next;
 		}
 		return;
 	}
 
 	// current dir
-	protocol_send_string(__romstr__("Index of /"));
+	grbl_protocol_string("Index of /");
 	serial_print_str(fs_filename(&fs_cwd));
-	protocol_send_string(MSG_EOL);
+	grbl_protocol_string(MSG_EOL);
 
 	fs_file_t *dir = fs_opendir(fs_cwd.full_name);
 
@@ -319,15 +319,15 @@ static void fs_dir_list(void)
 		{
 			if (finfo.is_dir)
 			{ /* It is a directory */
-				protocol_send_string(__romstr__("<dir>\t"));
+				grbl_protocol_string("<dir>\t");
 			}
 			else
 			{ /* It is a file. */
-				protocol_send_string(__romstr__("     \t"));
+				grbl_protocol_string("     \t");
 			}
 
 			serial_print_str(fs_filename(&finfo));
-			protocol_send_string(MSG_EOL);
+			grbl_protocol_string(MSG_EOL);
 		}
 
 		fs_close(dir);
@@ -348,17 +348,17 @@ void fs_cd(char *params)
 		else
 		{
 			serial_print_str(params);
-			protocol_send_feedback(__romstr__(" is not a dir!"));
+			grbl_protocol_feedback(" is not a dir!");
 		}
 		fs_close(dir);
 	}
 	else if (strlen(fs_cwd.full_name))
 	{
 		serial_print_str(params);
-		protocol_send_feedback(__romstr__("Dir not found!"));
+		grbl_protocol_feedback("Dir not found!");
 	}
 
-	protocol_send_string(MSG_EOL);
+	grbl_protocol_string(MSG_EOL);
 }
 
 void fs_file_print(char *params)
@@ -372,22 +372,22 @@ void fs_file_print(char *params)
 			/* Read the data */
 			if (!fs_read(fp, (uint8_t *)&c, sizeof(char)))
 			{
-				protocol_send_feedback(__romstr__("File read error!"));
+				grbl_protocol_feedback("File read error!");
 				break;
 			}
 			serial_putc(c);
 		}
 
 		fs_close(fp);
-		protocol_send_feedback(__romstr__("File ended"));
+		grbl_protocol_feedback("File ended");
 		return;
 	}
 	else
 	{
-		protocol_send_feedback(__romstr__("File not found!"));
+		grbl_protocol_feedback("File not found!");
 	}
 
-	protocol_send_string(MSG_EOL);
+	grbl_protocol_string(MSG_EOL);
 }
 
 void fs_file_run(char *params)
@@ -411,10 +411,10 @@ void fs_file_run(char *params)
 	if (fp)
 	{
 		startline = MAX(1, startline);
-		protocol_send_string(MSG_START);
-		protocol_send_string(__romstr__("Running file from line - "));
+		grbl_protocol_string(MSG_START);
+		grbl_protocol_string("Running file from line - ");
 		serial_print_int(startline);
-		protocol_send_string(MSG_END);
+		grbl_protocol_string(MSG_END);
 #ifdef DECL_SERIAL_STREAM
 #ifdef ENABLE_MAIN_LOOP_MODULES
 		// prefill buffer
@@ -437,7 +437,7 @@ void fs_file_run(char *params)
 		return;
 	}
 
-	protocol_send_feedback(__romstr__("File read error!"));
+	grbl_protocol_feedback("File read error!");
 }
 
 /**
@@ -876,7 +876,7 @@ bool system_menu_fs_action(uint8_t action)
 				fs_running_file = fs_path_parse(&fs_sm_cwd, fs_filename(&fs_pointed_file), "r");
 				if (fs_running_file)
 				{
-					protocol_send_feedback(FS_STR_FILE_RUNNING);
+					grbl_protocol_feedback(FS_STR_FILE_RUNNING);
 					system_menu_go_idle();
 					rom_strcpy(buffer, __romstr__(FS_STR_FILE_RUNNING));
 					system_menu_show_modal_popup(SYSTEM_MENU_MODAL_POPUP_MS, buffer);

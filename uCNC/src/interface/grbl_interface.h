@@ -157,11 +157,11 @@ extern "C"
 
 // formated messages
 #define STR_EOL "\r\n"
-#define MSG_EOL __romstr__(STR_EOL)
-#define MSG_OK __romstr__("ok")
-#define MSG_ERROR __romstr__("error:")
-#define MSG_ALARM __romstr__("ALARM:")
-#define MSG_ECHO __romstr__("[echo:")
+#define MSG_EOL STR_EOL
+#define MSG_OK "ok" STR_EOL
+#define MSG_ERROR "error:%d" STR_EOL
+#define MSG_ALARM "ALARM:%d" STR_EOL
+#define MSG_ECHO "[echo:"
 #if EMULATE_GRBL_STARTUP == 0
 #define MSG_STARTUP_START "uCNC "
 #define MSG_STARTUP_END " ['$' for help]"
@@ -169,52 +169,73 @@ extern "C"
 #define MSG_STARTUP_START "Grbl "
 #define MSG_STARTUP_END " [uCNC v" CNC_VERSION " '$' for help]"
 #elif EMULATE_GRBL_STARTUP == 2
-#define MSG_STARTUP __romstr__("Grbl 1.1f ['$' for help]" STR_EOL)
+#define MSG_STARTUP "Grbl 1.1f ['$' for help]" STR_EOL
 #endif
 #ifndef MSG_STARTUP
-#define MSG_STARTUP __romstr__(MSG_STARTUP_START CNC_MAJOR_MINOR_VERSION MSG_STARTUP_END STR_EOL)
+#define MSG_STARTUP MSG_STARTUP_START CNC_MAJOR_MINOR_VERSION MSG_STARTUP_END STR_EOL
 #endif
-#define MSG_HELP __romstr__("[HLP:$$ $# $G $I $N $x=val $Nx=line $J=line $C $X $H ~ ! ? ctrl-x]" STR_EOL)
+#define MSG_HELP "[HLP:$$ $# $G $I $N $x=val $Nx=line $J=line $C $X $H ~ ! ? ctrl-x]" STR_EOL
 
 // Non query feedback messages
-#define MSG_START __romstr__("[MSG:")
-#define MSG_END __romstr__("]" STR_EOL)
-#define MSG_FEEDBACK_1 __romstr__("Reset to continue")
-#define MSG_FEEDBACK_2 __romstr__("'$H'|'$X' to unlock")
-#define MSG_FEEDBACK_3 __romstr__("Caution: Unlocked")
-#define MSG_FEEDBACK_4 __romstr__("Enabled")
-#define MSG_FEEDBACK_5 __romstr__("Disabled")
-#define MSG_FEEDBACK_6 __romstr__("Check Door")
-#define MSG_FEEDBACK_7 __romstr__("Check Limits")
-#define MSG_FEEDBACK_8 __romstr__("Pgm End")
-#define MSG_FEEDBACK_9 __romstr__("Restoring defaults")
-#define MSG_FEEDBACK_10 __romstr__("Restoring spindle")
+#define MSG_START "[MSG:"
+#define MSG_END "]" STR_EOL
+#define MSG_FEEDBACK MSG_START "%S" MSG_END
+#define MSG_FEEDBACK_PRINTF MSG_START "%s" MSG_END
+#define MSG_FEEDBACK_IP MSG_START "%M" MSG_END
+
+#define MSG_FEEDBACK_1 "Reset to continue"
+#define MSG_FEEDBACK_2 "'$H'|'$X' to unlock"
+#define MSG_FEEDBACK_3 "Caution: Unlocked"
+#define MSG_FEEDBACK_4 "Enabled"
+#define MSG_FEEDBACK_5 "Disabled"
+#define MSG_FEEDBACK_6 "Check Door"
+#define MSG_FEEDBACK_7 "Check Limits"
+#define MSG_FEEDBACK_8 "Pgm End"
+#define MSG_FEEDBACK_9 "Restoring defaults"
+#define MSG_FEEDBACK_10 "Restoring spindle"
 // #define MSG_FEEDBACK_11 __romstr__("Sleeping") not implemented
 /*NEW*/
-#define MSG_FEEDBACK_12 __romstr__("Check Emergency stop")
-#define MSG_FEEDBACK_13 __romstr__("Settings saved")
-#define MSG_FEEDBACK_14 __romstr__("Settings loaded")
-#define MSG_FEEDBACK_15 __romstr__("Settings defaults")
+#define MSG_FEEDBACK_12 "Check Emergency stop"
+#define MSG_FEEDBACK_13 "Settings saved"
+#define MSG_FEEDBACK_14 "Settings loaded"
+#define MSG_FEEDBACK_15 "Settings defaults"
 
-#define MSG_STATUS_ALARM __romstr__("Alarm")
-#define MSG_STATUS_DOOR __romstr__("Door")
-#define MSG_STATUS_HOLD __romstr__("Hold")
-#define MSG_STATUS_HOME __romstr__("Home")
-#define MSG_STATUS_JOG __romstr__("Jog")
-#define MSG_STATUS_RUN __romstr__("Run")
-#define MSG_STATUS_IDLE __romstr__("Idle")
-#define MSG_STATUS_CHECK __romstr__("Check")
+#define MSG_STATUS_ALARM "Alarm"
+#define MSG_STATUS_DOOR "Door"
+#define MSG_STATUS_HOLD "Hold"
+#define MSG_STATUS_HOME "Home"
+#define MSG_STATUS_JOG "Jog"
+#define MSG_STATUS_RUN "Run"
+#define MSG_STATUS_IDLE "Idle"
+#define MSG_STATUS_CHECK "Check"
 
-#define MSG_STATUS_MPOS __romstr__("|MPos:")
-#define MSG_STATUS_WPOS __romstr__("|WPos:")
-#define MSG_STATUS_FS __romstr__("|FS:")
-#define MSG_STATUS_F __romstr__("|F:")
-#define MSG_STATUS_WCO __romstr__("|WCO:")
-#define MSG_STATUS_OVR __romstr__("|Ov:")
-#define MSG_STATUS_TOOL __romstr__("|A:")
-#define MSG_STATUS_LINE __romstr__("|Ln:")
-#define MSG_STATUS_PIN __romstr__("|Pn:")
-#define MSG_STATUS_BUF __romstr__("|Buf:")
+#if AXIS_COUNT == 1
+#define MSG_AXIS "%f,0,0"
+#elif AXIS_COUNT == 2
+#define MSG_AXIS "%f,%f,0"
+#elif AXIS_COUNT == 3
+#define MSG_AXIS "%f,%f,%f"
+#elif AXIS_COUNT == 4
+#define MSG_AXIS "%f,%f,%f,%f"
+#elif AXIS_COUNT == 5
+#define MSG_AXIS "%f,%f,%f,%f,%f"
+#else
+#define MSG_AXIS "%f,%f,%f,%f,%f,%f"
+#endif
+
+#define MSG_STATUS_MPOS "|MPos:"MSG_AXIS
+#define MSG_STATUS_WPOS "|WPos:"MSG_AXIS
+#if TOOL_COUNT > 0
+#define MSG_STATUS_FS "|FS:%f,%lu"
+#else
+#define MSG_STATUS_FS "|F:%f"
+#endif
+#define MSG_STATUS_WCO "|WCO:"
+#define MSG_STATUS_OVR "|Ov:%d,%d,%d"
+#define MSG_STATUS_TOOL "|A:"
+#define MSG_STATUS_LINE "|Ln:%llu"
+#define MSG_STATUS_PIN "|Pn:"
+#define MSG_STATUS_BUF "|Buf:%d,%d"
 
 	// #define MSG_INT "%d"
 	// #define MSG_FLT "%0.3f"

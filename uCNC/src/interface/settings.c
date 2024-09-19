@@ -248,8 +248,8 @@ void settings_init(void)
 	if (error)
 	{
 		settings_reset(true);
-		protocol_send_error(STATUS_SETTING_READ_FAIL);
-		protocol_send_cnc_settings();
+		grbl_protocol_error(STATUS_SETTING_READ_FAIL);
+		grbl_protocol_cnc_settings();
 	}
 }
 
@@ -693,21 +693,21 @@ void settings_erase(uint16_t address, uint8_t *__ptr, uint16_t size)
 
 bool settings_check_startup_gcode(uint16_t address)
 {
-	serial_broadcast(true);
-	serial_putc('>');
+	grbl_stream_broadcast(true);
+	grbl_stream_putc('>');
 #ifndef RAM_ONLY_SETTINGS
 	if (settings_load(address, NULL, UINT16_MAX))
 	{
-		serial_putc(':');
-		protocol_send_error(STATUS_SETTING_READ_FAIL);
+		grbl_stream_putc(':');
+		grbl_protocol_error(STATUS_SETTING_READ_FAIL);
 		settings_erase(address, NULL, 1);
 		return false;
 	}
 
 	return true;
 #else
-	serial_putc(':');
-	protocol_send_ok();
+	grbl_stream_putc(':');
+	grbl_protocol_ok();
 	return false;
 #endif
 }

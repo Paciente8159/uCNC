@@ -25,24 +25,10 @@ extern "C"
 #endif
 
 #include <stdio.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdarg.h>
 #include "print.h"
 
-#define sh_printf(buffer, fmt, ...)                  \
-	{                                                 \
-		char *ptr = buffer;                             \
-		char **ptr_ref = &ptr;                          \
-		print_fmt(str_putc, ptr_ref, fmt, __VA_ARGS__); \
-	}
-
-#define sh_flprintf(buffer, fmt, ...)                  \
-	{                                                 \
-		const char *ptr = buffer;                             \
-		const char **ptr_ref = &ptr;                          \
-		print_fmt(str_putc, ptr_ref, fmt, __VA_ARGS__); \
-	}
+#define str_sprintf(buffer, fmt, ...) print_fmt(NULL, buffer, fmt, __VA_ARGS__)
+#define str_fsprintf(buffer, fmt, ...) print_fmt(NULL, buffer, fmt, __VA_ARGS__)
 
 #ifdef __cplusplus
 }

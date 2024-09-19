@@ -115,7 +115,7 @@ void cnc_init(void)
 	mcu_io_reset();																			// add custom logic to set pins initial state
 	io_enable_steppers(~g_settings.step_enable_invert); // disables steppers at start
 	io_disable_probe();																	// forces probe isr disabling
-	serial_init();																			// serial
+	grbl_stream_init();																			// serial
 	mod_init();																					// modules
 	settings_init();																		// settings
 	itp_init();																					// interpolator
@@ -145,7 +145,7 @@ void cnc_run(void)
 		int8_t alarm = cnc_state.alarm;
 		if (alarm > EXEC_ALARM_NOALARM)
 		{
-			protocol_send_alarm(cnc_state.alarm);
+			grbl_protocol_alarm(cnc_state.alarm);
 		}
 		if (alarm < EXEC_ALARM_PROBE_FAIL_INITIAL && alarm != EXEC_ALARM_NOALARM)
 		{
@@ -162,8 +162,8 @@ void cnc_run(void)
 		{
 			if (serial_getc() == EOL)
 			{
-				protocol_send_feedback(MSG_FEEDBACK_1);
-				protocol_send_ok();
+				grbl_protocol_feedback(MSG_FEEDBACK_1);
+				grbl_protocol_ok();
 			}
 		}
 		cnc_dotasks();
@@ -205,10 +205,10 @@ uint8_t cnc_parse_cmd(void)
 			error = parser_read_command();
 #ifdef ENABLE_PARSING_TIME_DEBUG
 			exec_time = mcu_millis() - exec_time;
-			protocol_send_string(MSG_START);
-			protocol_send_string(__romstr__("exec time "));
+			grbl_protocol_string(MSG_START);
+			grbl_protocol_string("exec time ");
 			serial_print_int(exec_time);
-			protocol_send_string(MSG_END);
+			grbl_protocol_string(MSG_END);
 #endif
 			break;
 		}
@@ -217,11 +217,11 @@ uint8_t cnc_parse_cmd(void)
 		cnc_exec_rt_commands();
 		if (!error)
 		{
-			protocol_send_ok();
+			grbl_protocol_ok();
 		}
 		else
 		{
-			protocol_send_error(error);
+			grbl_protocol_error(error);
 			itp_sync();
 			mc_sync_position();
 			parser_sync_position();
@@ -437,12 +437,12 @@ void cnc_alarm(int8_t code)
 		}
 #endif
 #ifdef ENABLE_IO_ALARM_DEBUG
-		protocol_send_string(MSG_START);
-		protocol_send_string(__romstr__("LIMITS:"));
+		grbl_protocol_string(MSG_START);
+		grbl_protocol_string("LIMITS:");
 		serial_print_int(io_alarm_limits);
-		protocol_send_string(__romstr__("|CONTROLS:"));
+		grbl_protocol_string("|CONTROLS:");
 		serial_print_int(io_alarm_controls);
-		protocol_send_string(MSG_END);
+		grbl_protocol_string(MSG_END);
 #endif
 	}
 }
@@ -489,7 +489,7 @@ uint8_t cnc_unlock(bool force)
 	{
 		if (!cnc_get_exec_state(EXEC_KILL))
 		{
-			protocol_send_feedback(MSG_FEEDBACK_2);
+			grbl_protocol_feedback(MSG_FEEDBACK_2);
 			return UNLOCK_LOCKED;
 		}
 		else
@@ -654,8 +654,8 @@ void cnc_reset(void)
 #ifdef ENABLE_MAIN_LOOP_MODULES
 	EVENT_INVOKE(cnc_reset, NULL);
 #endif
-	serial_broadcast(true);
-	protocol_send_string(MSG_STARTUP);
+	grbl_stream_broadcast(true);
+	grbl_protocol_string(MSG_STARTUP);
 }
 
 void cnc_call_rt_command(uint8_t command)
@@ -778,7 +778,7 @@ void cnc_exec_rt_commands(void)
 				char c = serial_getc();
 				if (c == EOL)
 				{
-					protocol_send_error(STATUS_JOG_CANCELED);
+					grbl_protocol_error(STATUS_JOG_CANCELED);
 				}
 			}
 			return;
@@ -791,7 +791,7 @@ void cnc_exec_rt_commands(void)
 
 		if (CHECKFLAG(command, RT_CMD_REPORT))
 		{
-			protocol_send_status();
+			grbl_protocol_status();
 		}
 	}
 
@@ -917,13 +917,13 @@ void cnc_check_fault_systems(void)
 #if ASSERT_PIN(ESTOP)
 	if (CHECKFLAG(inputs, ESTOP_MASK)) // fault on emergency stop
 	{
-		protocol_send_feedback(MSG_FEEDBACK_12);
+		grbl_protocol_feedback(MSG_FEEDBACK_12);
 	}
 #endif
 #if ASSERT_PIN(SAFETY_DOOR)
 	if (CHECKFLAG(inputs, SAFETY_DOOR_MASK)) // fault on safety door
 	{
-		protocol_send_feedback(MSG_FEEDBACK_6);
+		grbl_protocol_feedback(MSG_FEEDBACK_6);
 	}
 #endif
 #if (LIMITS_MASK != 0)
@@ -932,7 +932,7 @@ void cnc_check_fault_systems(void)
 		inputs = io_get_limits();
 		if (CHECKFLAG(inputs, LIMITS_MASK))
 		{
-			protocol_send_feedback(MSG_FEEDBACK_7);
+			grbl_protocol_feedback(MSG_FEEDBACK_7);
 		}
 	}
 #endif
@@ -945,7 +945,7 @@ void cnc_check_fault_systems(void)
 		case EXEC_ALARM_NOALARM:
 			break;
 		default:
-			protocol_send_feedback(MSG_FEEDBACK_1);
+			grbl_protocol_feedback(MSG_FEEDBACK_1);
 			break;
 		}
 	}

@@ -66,7 +66,7 @@ bool m351_exec(void *args)
 		{
 			int32_t val = -1;
 			// if no additional args then print the
-			protocol_send_string(__romstr__("[MSTEPS:"));
+			grbl_protocol_string("[MSTEPS:");
 			val = -1;
 			serial_putc('X');
 #if ASSERT_PIN(STEPPER0_MSTEP0)
@@ -155,7 +155,7 @@ bool m351_exec(void *args)
 #endif
 			serial_print_int(val);
 			serial_putc(']');
-			protocol_send_string(MSG_EOL);
+			grbl_protocol_string(MSG_EOL);
 		}
 
 		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_X))

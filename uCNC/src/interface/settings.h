@@ -209,7 +209,7 @@ typedef uint16_t setting_offset_t;
 		memset(var, 0, sizeof(type) * count);                                            \
 		return EVENT_CONTINUE;                                                           \
 	}                                                                                  \
-	bool set##ID##_protocol_send_cnc_settings(void *args)                              \
+	bool set##ID##_grbl_protocol_cnc_settings(void *args)                              \
 	{                                                                                  \
 		type *ptr = var;                                                                 \
 		for (uint8_t i = 0; i < count; i++)                                              \
@@ -222,7 +222,7 @@ typedef uint16_t setting_offset_t;
 	CREATE_EVENT_LISTENER(settings_extended_save, set##ID##_settings_save);            \
 	CREATE_EVENT_LISTENER(settings_change, set##ID##_settings_change);                 \
 	CREATE_EVENT_LISTENER(settings_extended_erase, set##ID##_settings_erase);          \
-	CREATE_EVENT_LISTENER(protocol_send_cnc_settings, set##ID##_protocol_send_cnc_settings)
+	CREATE_EVENT_LISTENER(grbl_protocol_cnc_settings, set##ID##_grbl_protocol_cnc_settings)
 #define DECL_EXTENDED_SETTING(ID, var, type, count, print_cb) __DECL_EXTENDED_SETTING__(ID, var, type, count, print_cb)
 
 #define __DECL_EXTENDED_STRING_SETTING__(ID, var, count)                               \
@@ -263,7 +263,7 @@ typedef uint16_t setting_offset_t;
 		settings_save(set##ID##_settings_address, (uint8_t *)var, sizeof(char) * count);   \
 		return EVENT_CONTINUE;                                                             \
 	}                                                                                    \
-	bool set##ID##_protocol_send_cnc_settings(void *args)                                \
+	bool set##ID##_grbl_protocol_cnc_settings(void *args)                                \
 	{                                                                                    \
 		memset(var, 0, sizeof(char) * count);                                              \
 		settings_load(set##ID##_settings_address, (uint8_t *)var, sizeof(char) * count);   \
@@ -275,7 +275,7 @@ typedef uint16_t setting_offset_t;
 			char c = var[i];                                                                 \
 			if (c < 20 || c > 127)                                                           \
 			{                                                                                \
-				protocol_send_string(MSG_EOL);                                                 \
+				grbl_protocol_string(MSG_EOL);                                                 \
 				return EVENT_CONTINUE;                                                         \
 			}                                                                                \
 			serial_putc(c);                                                                  \
@@ -286,7 +286,7 @@ typedef uint16_t setting_offset_t;
 	CREATE_EVENT_LISTENER(settings_extended_save, set##ID##_settings_save);              \
 	CREATE_EVENT_LISTENER(settings_change, set##ID##_settings_change);                   \
 	CREATE_EVENT_LISTENER(settings_extended_erase, set##ID##_settings_erase);            \
-	CREATE_EVENT_LISTENER(protocol_send_cnc_settings, set##ID##_protocol_send_cnc_settings)
+	CREATE_EVENT_LISTENER(grbl_protocol_cnc_settings, set##ID##_grbl_protocol_cnc_settings)
 
 #define DECL_EXTENDED_STRING_SETTING(ID, var, count) __DECL_EXTENDED_STRING_SETTING__(ID, var, count)
 
@@ -302,7 +302,7 @@ typedef uint16_t setting_offset_t;
 		ADD_EVENT_LISTENER(settings_extended_save, set##ID##_settings_save);                  \
 		ADD_EVENT_LISTENER(settings_change, set##ID##_settings_change);                       \
 		ADD_EVENT_LISTENER(settings_extended_erase, set##ID##_settings_erase);                \
-		ADD_EVENT_LISTENER(protocol_send_cnc_settings, set##ID##_protocol_send_cnc_settings); \
+		ADD_EVENT_LISTENER(grbl_protocol_cnc_settings, set##ID##_grbl_protocol_cnc_settings); \
 		set##ID##_init = true;                                                                \
 	}
 

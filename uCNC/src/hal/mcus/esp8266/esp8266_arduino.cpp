@@ -107,25 +107,25 @@ extern "C"
 				case 1:
 					WiFi.mode(WIFI_STA);
 					WiFi.begin(wifi_settings.ssid, wifi_settings.pass);
-					protocol_send_feedback((const char *)"Trying to connect to WiFi");
+					grbl_protocol_feedback("Trying to connect to WiFi");
 					break;
 				case 2:
 					WiFi.mode(WIFI_AP);
 					WiFi.softAP(BOARD_NAME, wifi_settings.pass);
-					protocol_send_feedback((const char *)"AP started");
-					protocol_send_feedback((const char *)"SSID>" BOARD_NAME);
+					grbl_protocol_feedback("AP started");
+					grbl_protocol_feedback("SSID>" BOARD_NAME);
 					sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
-					protocol_send_feedback((const char *)str);
+					grbl_protocol_sprintf(str);
 					break;
 				default:
 					WiFi.mode(WIFI_AP_STA);
 					WiFi.begin(wifi_settings.ssid, wifi_settings.pass);
-					protocol_send_feedback((const char *)"Trying to connect to WiFi");
+					grbl_protocol_feedback("Trying to connect to WiFi");
 					WiFi.softAP(BOARD_NAME, wifi_settings.pass);
-					protocol_send_feedback((const char *)"AP started");
-					protocol_send_feedback((const char *)"SSID>" BOARD_NAME);
+					grbl_protocol_feedback("AP started");
+					grbl_protocol_feedback("SSID>" BOARD_NAME);
 					sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
-					protocol_send_feedback((const char *)str);
+					grbl_protocol_sprintf(str);
 					break;
 				}
 
@@ -158,17 +158,17 @@ extern "C"
 
 					if (len > WIFI_SSID_MAX_LEN)
 					{
-						protocol_send_feedback((const char *)"WiFi SSID is too long");
+						grbl_protocol_feedback("WiFi SSID is too long");
 					}
 					memset(wifi_settings.ssid, 0, sizeof(wifi_settings.ssid));
 					strcpy((char *)wifi_settings.ssid, (const char *)arg);
 					settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
-					protocol_send_feedback((const char *)"WiFi SSID modified");
+					grbl_protocol_feedback("WiFi SSID modified");
 				}
 				else
 				{
 					sprintf((char *)str, "SSID>%s", wifi_settings.ssid);
-					protocol_send_feedback((const char *)str);
+					grbl_protocol_sprintf(str);
 				}
 				*(cmd_params->error) = STATUS_OK;
 				return EVENT_HANDLED;
@@ -177,23 +177,23 @@ extern "C"
 			if (!strcmp((const char *)&(cmd_params->cmd)[4], "SCAN"))
 			{
 				// Serial.println("[MSG:Scanning Networks]");
-				protocol_send_feedback((const char *)"Scanning Networks");
+				grbl_protocol_feedback("Scanning Networks");
 				int numSsid = WiFi.scanNetworks();
 				if (numSsid == -1)
 				{
-					protocol_send_feedback((const char *)"Failed to scan!");
+					grbl_protocol_feedback("Failed to scan!");
 					return EVENT_HANDLED;
 				}
 
 				// print the list of networks seen:
 				sprintf((char *)str, "%d available networks", numSsid);
-				protocol_send_feedback((const char *)str);
+				grbl_protocol_sprintf(str);
 
 				// print the network number and name for each network found:
 				for (int netid = 0; netid < numSsid; netid++)
 				{
 					sprintf((char *)str, "%d) %s\tSignal:  %ddBm", netid, WiFi.SSID(netid).c_str(), WiFi.RSSI(netid));
-					protocol_send_feedback((const char *)str);
+					grbl_protocol_sprintf(str);
 				}
 				*(cmd_params->error) = STATUS_OK;
 				return EVENT_HANDLED;
@@ -202,7 +202,7 @@ extern "C"
 			if (!strcmp((const char *)&(cmd_params->cmd)[4], "SAVE"))
 			{
 				settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
-				protocol_send_feedback((const char *)"WiFi settings saved");
+				grbl_protocol_feedback("WiFi settings saved");
 				*(cmd_params->error) = STATUS_OK;
 				return EVENT_HANDLED;
 			}
@@ -210,7 +210,7 @@ extern "C"
 			if (!strcmp((const char *)&(cmd_params->cmd)[4], "RESET"))
 			{
 				settings_erase(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
-				protocol_send_feedback((const char *)"WiFi settings deleted");
+				grbl_protocol_feedback("WiFi settings deleted");
 				*(cmd_params->error) = STATUS_OK;
 				return EVENT_HANDLED;
 			}
@@ -234,20 +234,20 @@ extern "C"
 					}
 					else
 					{
-						protocol_send_feedback((const char *)"Invalid value. STA+AP(1), STA(2), AP(3)");
+						grbl_protocol_feedback("Invalid value. STA+AP(1), STA(2), AP(3)");
 					}
 				}
 
 				switch (wifi_settings.wifi_mode)
 				{
 				case 0:
-					protocol_send_feedback((const char *)"WiFi mode>STA+AP");
+					grbl_protocol_feedback("WiFi mode>STA+AP");
 					break;
 				case 1:
-					protocol_send_feedback((const char *)"WiFi mode>STA");
+					grbl_protocol_feedback("WiFi mode>STA");
 					break;
 				case 2:
-					protocol_send_feedback((const char *)"WiFi mode>AP");
+					grbl_protocol_feedback("WiFi mode>AP");
 					break;
 				}
 				*(cmd_params->error) = STATUS_OK;
@@ -266,12 +266,12 @@ extern "C"
 
 				if (len > WIFI_SSID_MAX_LEN)
 				{
-					protocol_send_feedback((const char *)"WiFi pass is too long");
+					grbl_protocol_feedback("WiFi pass is too long");
 					return EVENT_HANDLED;
 				}
 				memset(wifi_settings.pass, 0, sizeof(wifi_settings.pass));
 				strcpy((char *)wifi_settings.pass, (const char *)arg);
-				protocol_send_feedback((const char *)"WiFi password modified");
+				grbl_protocol_feedback("WiFi password modified");
 				*(cmd_params->error) = STATUS_OK;
 				return EVENT_HANDLED;
 			}
@@ -284,23 +284,23 @@ extern "C"
 					{
 					case 1:
 						sprintf((char *)str, "STA IP>%s", WiFi.localIP().toString().c_str());
-						protocol_send_feedback((const char *)str);
+						grbl_protocol_sprintf(str);
 						sprintf((char *)str, "AP IP>%s", WiFi.softAPIP().toString().c_str());
-						protocol_send_feedback((const char *)str);
+						grbl_protocol_sprintf(str);
 						break;
 					case 2:
 						sprintf((char *)str, "IP>%s", WiFi.localIP().toString().c_str());
-						protocol_send_feedback((const char *)str);
+						grbl_protocol_sprintf(str);
 						break;
 					default:
 						sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
-						protocol_send_feedback((const char *)str);
+						grbl_protocol_sprintf(str);
 						break;
 					}
 				}
 				else
 				{
-					protocol_send_feedback((const char *)"WiFi is off");
+					grbl_protocol_feedback("WiFi is off");
 				}
 
 				*(cmd_params->error) = STATUS_OK;
@@ -334,18 +334,18 @@ extern "C"
 				return false;
 			}
 			next_info = mcu_millis() + 30000;
-			protocol_send_feedback((const char *)"Disconnected from WiFi");
+			grbl_protocol_feedback("Disconnected from WiFi");
 			return false;
 		}
 
 		if (!connected)
 		{
 			connected = true;
-			protocol_send_feedback((const char *)"Connected to WiFi");
+			grbl_protocol_feedback("Connected to WiFi");
 			sprintf((char *)str, "SSID>%s", wifi_settings.ssid);
-			protocol_send_feedback((const char *)str);
+			grbl_protocol_sprintf(str);
 			sprintf((char *)str, "IP>%s", WiFi.localIP().toString().c_str());
-			protocol_send_feedback((const char *)str);
+			grbl_protocol_sprintf(str);
 		}
 
 		if (telnet_server.hasClient())
@@ -748,25 +748,25 @@ extern "C"
 			case 1:
 				WiFi.mode(WIFI_STA);
 				WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
-				protocol_send_feedback("Trying to connect to WiFi");
+				grbl_protocol_feedback("Trying to connect to WiFi");
 				break;
 			case 2:
 				WiFi.mode(WIFI_AP);
 				WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
-				protocol_send_feedback("AP started");
-				protocol_send_feedback("SSID>" BOARD_NAME);
+				grbl_protocol_feedback("AP started");
+				grbl_protocol_feedback("SSID>" BOARD_NAME);
 				sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
-				protocol_send_feedback((const char *)str);
+				grbl_protocol_sprintf(str);
 				break;
 			default:
 				WiFi.mode(WIFI_AP_STA);
 				WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
-				protocol_send_feedback("Trying to connect to WiFi");
+				grbl_protocol_feedback("Trying to connect to WiFi");
 				WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
-				protocol_send_feedback("AP started");
-				protocol_send_feedback("SSID>" BOARD_NAME);
+				grbl_protocol_feedback("AP started");
+				grbl_protocol_feedback("SSID>" BOARD_NAME);
 				sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
-				protocol_send_feedback((const char *)str);
+				grbl_protocol_sprintf(str);
 				break;
 			}
 		}
