@@ -133,7 +133,7 @@ bool grbl_stream_change(grbl_stream_t *stream)
 	return true;
 }
 
-bool grbl_stream_readonly(stream_getc_cb getc_cb, stream_available_cb available_cb, stream_clear_cb clear_cb)
+bool grbl_stream_readonly(grbl_stream_getc_cb getc_cb, grbl_stream_available_cb available_cb, grbl_stream_clear_cb clear_cb)
 {
 #ifdef ENABLE_MULTISTREAM_GUARD
 	if (grbl_stream_rx_busy)

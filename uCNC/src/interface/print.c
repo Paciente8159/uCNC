@@ -398,7 +398,7 @@ void print_fmt(print_putc_cb cb, char *buffer, const char *fmt, ...)
 #define itof_peek(cb, buffer) ((!buffer) ? cb(true) : ((cb) ? rom_read_byte(*buffer) : **buffer))
 #define itof_get(cb, buffer) ((!buffer) ? cb(false) : ({ *buffer += 1; }))
 
-uint8_t print_itof(print_read_input_cb cb, char **buffer, float *value)
+uint8_t print_itof(print_read_input_cb cb, const char **buffer, float *value)
 {
 	uint32_t intval = 0;
 	uint8_t fpcount = 0;

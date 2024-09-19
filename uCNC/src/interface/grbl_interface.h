@@ -210,17 +210,17 @@ extern "C"
 #define MSG_STATUS_CHECK "Check"
 
 #if AXIS_COUNT == 1
-#define MSG_AXIS "%f,0,0"
+#define MSG_AXIS "%1f,0,0"
 #elif AXIS_COUNT == 2
-#define MSG_AXIS "%f,%f,0"
+#define MSG_AXIS "%2f,0"
 #elif AXIS_COUNT == 3
-#define MSG_AXIS "%f,%f,%f"
+#define MSG_AXIS "%3f"
 #elif AXIS_COUNT == 4
-#define MSG_AXIS "%f,%f,%f,%f"
+#define MSG_AXIS "%4f"
 #elif AXIS_COUNT == 5
-#define MSG_AXIS "%f,%f,%f,%f,%f"
+#define MSG_AXIS "%5f"
 #else
-#define MSG_AXIS "%f,%f,%f,%f,%f,%f"
+#define MSG_AXIS "%6f"
 #endif
 
 #define MSG_STATUS_MPOS "|MPos:"MSG_AXIS

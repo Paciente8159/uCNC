@@ -306,19 +306,7 @@ static FORCEINLINE void grbl_protocol_status_tail(void)
 	float axis[MAX(AXIS_COUNT, 3)];
 	if (parser_get_wco(axis))
 	{
-#if AXIS_COUNT == 1
-		grbl_protocol_printf(MSG_STATUS_WPOS, axis[0]);
-#elif AXIS_COUNT == 2
-		grbl_protocol_printf(MSG_STATUS_WPOS, axis[0], axis[1]);
-#elif AXIS_COUNT == 3
-		grbl_protocol_printf(MSG_STATUS_WPOS, axis[0], axis[1], axis[2]);
-#elif AXIS_COUNT == 4
-		grbl_protocol_printf(MSG_STATUS_WPOS, axis[0], axis[1], axis[2], axis[3]);
-#elif AXIS_COUNT == 5
-		grbl_protocol_printf(MSG_STATUS_WPOS, axis[0], axis[1], axis[2], axis[2], axis[4]);
-#else
-		grbl_protocol_printf(MSG_STATUS_WPOS, axis[0], axis[1], axis[2], axis[2], axis[2], axis[5]);
-#endif
+		grbl_protocol_printf(MSG_STATUS_WPOS, axis);
 		return;
 	}
 
@@ -329,7 +317,7 @@ static FORCEINLINE void grbl_protocol_status_tail(void)
 #if TOOL_COUNT > 0
 		tovr = g_planner_state.spindle_speed_override;
 #endif
-		grbl_protocol_printf(MSG_STATUS_WPOS, g_planner_state.feed_override, g_planner_state.rapid_feed_override, tovr);
+		grbl_protocol_printf(MSG_STATUS_OVR, g_planner_state.feed_override, g_planner_state.rapid_feed_override, tovr);
 
 		uint8_t modalgroups[MAX_MODAL_GROUPS];
 		uint16_t feed;
@@ -478,36 +466,12 @@ void grbl_protocol_status(void)
 
 	if ((g_settings.status_report_mask & 1))
 	{
-#if AXIS_COUNT == 1
-		grbl_protocol_printf(MSG_STATUS_MPOS, axis[0]);
-#elif AXIS_COUNT == 2
-		grbl_protocol_printf(MSG_STATUS_MPOS, axis[0], axis[1]);
-#elif AXIS_COUNT == 3
-		grbl_protocol_printf(MSG_STATUS_MPOS, axis[0], axis[1], axis[2]);
-#elif AXIS_COUNT == 4
-		grbl_protocol_printf(MSG_STATUS_MPOS, axis[0], axis[1], axis[2], axis[3]);
-#elif AXIS_COUNT == 5
-		grbl_protocol_printf(MSG_STATUS_MPOS, axis[0], axis[1], axis[2], axis[2], axis[4]);
-#else
-		grbl_protocol_printf(MSG_STATUS_MPOS, axis[0], axis[1], axis[2], axis[2], axis[2], axis[5]);
-#endif
+		grbl_protocol_printf(MSG_STATUS_MPOS, axis);
 	}
 	else
 	{
 		parser_machine_to_work(axis);
-#if AXIS_COUNT == 1
-		grbl_protocol_printf(MSG_STATUS_WPOS, axis[0]);
-#elif AXIS_COUNT == 2
-		grbl_protocol_printf(MSG_STATUS_WPOS, axis[0], axis[1]);
-#elif AXIS_COUNT == 3
-		grbl_protocol_printf(MSG_STATUS_WPOS, axis[0], axis[1], axis[2]);
-#elif AXIS_COUNT == 4
-		grbl_protocol_printf(MSG_STATUS_WPOS, axis[0], axis[1], axis[2], axis[3]);
-#elif AXIS_COUNT == 5
-		grbl_protocol_printf(MSG_STATUS_WPOS, axis[0], axis[1], axis[2], axis[2], axis[4]);
-#else
-		grbl_protocol_printf(MSG_STATUS_WPOS, axis[0], axis[1], axis[2], axis[2], axis[2], axis[5]);
-#endif
+		grbl_protocol_printf(MSG_STATUS_WPOS, axis);
 	}
 
 	feed = (!g_settings.report_inches) ? feed : (feed * MM_INCH_MULT);
@@ -593,66 +557,37 @@ void grbl_protocol_gcode_coordsys(void)
 {
 	protocol_busy = true;
 	float axis[MAX(AXIS_COUNT, 3)];
-	char coord[6];
+
 	for (uint8_t i = 0; i < COORD_SYS_COUNT; i++)
 	{
 		parser_get_coordsys(i, axis);
-		memset(coord, 0, sizeof(coord));
-		if (i < 6)
-		{
-			str_sprintf(coord, "[G%d", (i + 54));
-		}
-		else
-		{
-			str_sprintf(coord, "[G59.%d", (i - 5));
-		}
-
-		grbl_protocol_printf("%s:" MSG_AXIS "]", coord)
-		grbl_stream_putc(':');
-		grbl_stream_print_fltarr(axis, AXIS_COUNT);
-		grbl_stream_putc(']');
-		grbl_protocol_newline();
+		grbl_protocol_printf("G%d:" MSG_AXIS "]\r\n", (i + 54), axis);
 	}
+#if COORD_SYS_COUNT >= 6
+	for (uint8_t i = 6; i < COORD_SYS_COUNT; i++)
+	{
+		parser_get_coordsys(i, axis);
+		grbl_protocol_printf("G59.%d:" MSG_AXIS "]\r\n", (i - 5), axis);
+	}
+#endif
 
-	grbl_protocol_print("[G28:");
 	parser_get_coordsys(28, axis);
-	grbl_stream_print_fltarr(axis, AXIS_COUNT);
-	grbl_stream_putc(']');
-	grbl_protocol_newline();
+	grbl_protocol_printf("G28:" MSG_AXIS "]\r\n", axis);
 
-	grbl_protocol_print("[G30:");
 	parser_get_coordsys(30, axis);
-	grbl_stream_print_fltarr(axis, AXIS_COUNT);
-	grbl_stream_putc(']');
-	grbl_protocol_newline();
+	grbl_protocol_printf("G30:" MSG_AXIS "]\r\n", axis);
 
-	grbl_protocol_print("[G92:");
 	parser_get_coordsys(92, axis);
-	grbl_stream_print_fltarr(axis, AXIS_COUNT);
-	grbl_stream_putc(']');
-	grbl_protocol_newline();
+	grbl_protocol_printf("G92:" MSG_AXIS "]\r\n", axis);
 
 #ifdef AXIS_TOOL
-	grbl_protocol_print("[TLO:");
 	parser_get_coordsys(254, axis);
-	grbl_stream_print_flt(axis[0]);
-	grbl_stream_putc(']');
-	grbl_protocol_newline();
+	grbl_protocol_printf("[TLO:%1f]\r\n", axis);
 #endif
-	grbl_protocol_probe_result(parser_get_probe_result());
-	protocol_busy = false;
-}
-
-void grbl_protocol_probe_result(uint8_t val)
-{
-	float axis[MAX(AXIS_COUNT, 3)];
-	grbl_protocol_print("[PRB:");
 	parser_get_coordsys(255, axis);
-	grbl_stream_print_fltarr(axis, AXIS_COUNT);
-	grbl_stream_putc(':');
-	grbl_stream_putc('0' + val);
-	grbl_stream_putc(']');
-	grbl_protocol_newline();
+	grbl_protocol_printf("PRB:" MSG_AXIS ":%d]\r\n", axis, parser_get_probe_result());
+
+	protocol_busy = false;
 }
 
 static void grbl_protocol_parser_modalstate(uint8_t word, uint8_t val, uint8_t mantissa)

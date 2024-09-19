@@ -39,7 +39,7 @@ extern "C"
 	void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args);
 	void print_fmt(print_putc_cb cb, char *buffer, const char *fmt, ...);
 	// scaning utilities
-	typedef char(print_read_input_cb *)(bool);
+	typedef char(*print_read_input_cb)(bool);
 	uint8_t print_itof(print_read_input_cb cb, char **buffer, float *value);
 
 // string helper functions
