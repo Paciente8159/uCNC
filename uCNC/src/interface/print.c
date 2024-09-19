@@ -28,10 +28,10 @@
 #define HEX_SIZE(X) ((X & HEX_SIZE_MASK) >> 1)
 
 #ifndef printf_getc
-#define printf_getc(fmt) pgm_read_byte(fmt)
+#define printf_getc(fmt) rom_read_byte(fmt)
 #endif
 
-void print_putc(print_putc_cb cb, char **buffer_ref, char c)
+static void print_putc(print_putc_cb cb, char **buffer_ref, char c)
 {
 	if (cb)
 	{
@@ -44,7 +44,7 @@ void print_putc(print_putc_cb cb, char **buffer_ref, char c)
 	}
 }
 
-void print_str(print_putc_cb cb, char **buffer_ref, const char *__s)
+static void print_str(print_putc_cb cb, char **buffer_ref, const char *__s)
 {
 	while (*__s)
 	{
@@ -52,18 +52,18 @@ void print_str(print_putc_cb cb, char **buffer_ref, const char *__s)
 	}
 }
 
-void print_romstr(print_putc_cb cb, char **buffer_ref, const char *__s)
+static void print_romstr(print_putc_cb cb, char **buffer_ref, const char *__s)
 {
-	char c = pgm_read_byte(__s);
+	char c = rom_read_byte(__s);
 	while (c)
 	{
 		print_putc(cb, buffer_ref, c);
 		__s++;
-		c = pgm_read_byte(__s);
+		c = rom_read_byte(__s);
 	}
 }
 
-void print_byte(print_putc_cb cb, char **buffer_ref, const uint8_t *data, uint8_t flags)
+static void print_byte(print_putc_cb cb, char **buffer_ref, const uint8_t *data, uint8_t flags)
 {
 	bool prefix = (flags && HEX_PREFIX);
 	char hexchar = (flags & HEX_UPPER) ? 'A' : 'a';
@@ -86,7 +86,7 @@ void print_byte(print_putc_cb cb, char **buffer_ref, const uint8_t *data, uint8_
 	} while (--size);
 }
 
-void print_bytes(print_putc_cb cb, char **buffer_ref, const uint8_t *data, uint8_t count, uint8_t flags)
+static void print_bytes(print_putc_cb cb, char **buffer_ref, const uint8_t *data, uint8_t count, uint8_t flags)
 {
 	print_byte(cb, buffer_ref, data, flags);
 	while (--count)
@@ -98,7 +98,7 @@ void print_bytes(print_putc_cb cb, char **buffer_ref, const uint8_t *data, uint8
 		;
 }
 
-void print_int(print_putc_cb cb, char **buffer_ref, int32_t num)
+static void print_int(print_putc_cb cb, char **buffer_ref, int32_t num)
 {
 	if (num == 0)
 	{
@@ -127,6 +127,20 @@ void print_int(print_putc_cb cb, char **buffer_ref, int32_t num)
 		i--;
 		print_putc(cb, buffer_ref, '0' + buffer[i]);
 	} while (i);
+}
+
+static void print_intarr(print_putc_cb cb, char **buffer_ref, int32_t *arr, uint8_t element_count)
+{
+	do
+	{
+		print_int(cb, buffer_ref, *arr++);
+		element_count--;
+		if (element_count)
+		{
+			print_putc(cb, buffer_ref, ',');
+		}
+
+	} while (element_count);
 }
 
 void print_flt(print_putc_cb cb, char **buffer_ref, float num)
@@ -183,15 +197,23 @@ void print_ip(print_putc_cb cb, char **buffer_ref, uint32_t ip)
 	print_int(cb, buffer_ref, (int32_t)ptr[0]);
 }
 
+static char itof_getc_dummy(bool peek)
+{
+	return 0;
+}
+
 void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 {
 	char c = 0, cval = 0, *s;
 	uint8_t lcount = 0;
 	bool hexflags = HEX_NONE;
-	int32_t val = 0;
-	float fval = 0;
+	uint8_t *pt = NULL;
+	int32_t i = 0;
+	float tmp, *fval = NULL;
 	char **buffer_ref = NULL;
 	char *ptr = buffer;
+	uint8_t elems = 1;
+
 	if (ptr)
 	{
 		buffer_ref = &ptr;
@@ -204,7 +226,6 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 		if (c == '%')
 		{
 			c = printf_getc(fmt);
-			fmt++;
 			switch (c)
 			{
 			case '#':
@@ -212,6 +233,8 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 				__FALL_THROUGH__
 			case '-':
 			case '+':
+				fmt++;
+				__FALL_THROUGH__
 			case '0':
 				while (c >= '0' && c <= '9' && c)
 				{
@@ -219,14 +242,18 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 					fmt++;
 				}
 				__FALL_THROUGH__
-			case '.':
+			default:
 				if (c == '.')
 				{
-					do
+					fmt++;
+				}
+				if (c == '.' || (c >= '1' && c <= '9'))
+				{
+					if (print_itof(itof_getc_dummy, &fmt, &tmp))
 					{
-						c = printf_getc(fmt);
-						fmt++;
-					} while (c >= '0' && c <= '9' && c);
+						elems = (uint8_t)tmp;
+					}
+					c = printf_getc(fmt);
 				}
 				break;
 			}
@@ -266,58 +293,56 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 				s = (const char *)va_arg(*args, const char *);
 				print_romstr(cb, buffer_ref, s);
 				break;
-			case 'd':
-			case 'i':
-				switch (lcount)
-				{
-				case 0:
-					val = (uint32_t)va_arg(*args, int8_t);
-					break;
-				case 1:
-					val = (uint32_t)va_arg(*args, int16_t);
-					break;
-				default:
-					val = (uint32_t)va_arg(*args, int32_t);
-					break;
-				}
-				print_int(cb, buffer_ref, val);
-				/* code */
-				break;
 			case 'M':
 				lcount = 4;
 				__FALL_THROUGH__
 			case 'X':
 				hexflags |= HEX_UPPER;
 				__FALL_THROUGH__
+			case 'd':
+			case 'i':
 			case 'u':
 			case 'x':
-				switch (lcount)
+				pt = va_arg(*args, uint8_t *);
+				do
 				{
-				case 0:
-					val = (uint32_t)va_arg(*args, uint8_t);
-					lcount = VAR_BYTE;
-					break;
-				case 1:
-					val = (uint32_t)va_arg(*args, uint16_t);
-					lcount = VAR_WORD;
-					break;
-				default:
-					val = (uint32_t)va_arg(*args, uint32_t);
-					lcount = VAR_DWORD;
-					break;
-				}
-				if (c == 'u')
-				{
-					print_int(cb, buffer_ref, val);
-				}
-				else if (c == 'M')
-				{
-					print_ip(cb, buffer_ref, val);
-				}
-				else
-				{
-					print_byte(cb, buffer_ref, (const uint8_t *)&val, (hexflags | lcount));
-				}
+					switch (lcount)
+					{
+					case 0:
+						i = (int32_t)(elems) ? (*(int8_t *)pt) : ((int8_t)pt);
+						pt += 1;
+						break;
+					case 1:
+						i = (int32_t)(elems) ? (*(int16_t *)pt) : ((int16_t)pt);
+						pt += 2;
+						break;
+					default:
+						i = (int32_t)(elems) ? (*(int32_t *)pt) : ((int32_t)pt);
+						pt += 4;
+						break;
+					}
+					switch (c)
+					{
+					case 'd':
+					case 'i':
+						print_int(cb, buffer_ref, i);
+						break;
+					case 'u':
+						print_int(cb, buffer_ref, ABS(i));
+						break;
+					case 'x':
+					case 'X':
+						print_byte(cb, buffer_ref, (const uint8_t *)&i, (hexflags | lcount));
+						break;
+					case 'M':
+						print_ip(cb, buffer_ref, i);
+						break;
+					}
+					if (elems && --elems)
+					{
+						print_putc(cb, buffer_ref, ',');
+					}
+				} while (elems);
 				/* code */
 				break;
 			case 'A':
@@ -330,15 +355,24 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 			case 'a':
 			case 'g':
 			case 'G':
-				fval = (float)va_arg(*args, float);
-				if (c != 'a' && c != 'A')
+				fval = (float *)va_arg(*args, float *);
+				do
 				{
-					print_flt(cb, buffer_ref, fval);
-				}
-				else
-				{
-					print_byte(cb, buffer_ref, (const uint8_t *)&fval, (hexflags | VAR_DWORD));
-				}
+					switch (c)
+					{
+					case 'a':
+					case 'A':
+						print_byte(cb, buffer_ref, (const uint8_t *)((elems) ? (*fval++) : ((float)fval)), (hexflags | VAR_DWORD));
+						break;
+					default:
+						print_flt(cb, buffer_ref, ((elems) ? (*fval++) : ((float)fval)));
+						break;
+					}
+					if (elems && --elems)
+					{
+						print_putc(cb, buffer_ref, ',');
+					}
+				} while (elems);
 				/* code */
 				break;
 			case '%':
@@ -359,4 +393,84 @@ void print_fmt(print_putc_cb cb, char *buffer, const char *fmt, ...)
 	va_start(args, fmt);
 	print_fmtva(cb, buffer, fmt, &args);
 	va_end(args);
+}
+
+#define itof_peek(cb, buffer) ((!buffer) ? cb(true) : ((cb) ? rom_read_byte(*buffer) : **buffer))
+#define itof_get(cb, buffer) ((!buffer) ? cb(false) : ({ *buffer += 1; }))
+
+uint8_t print_itof(print_read_input_cb cb, char **buffer, float *value)
+{
+	uint32_t intval = 0;
+	uint8_t fpcount = 0;
+	uint8_t result = ITOF_NUMBER_UNDEF;
+	float rhs = 0;
+
+	uint8_t c = (uint8_t)itof_peek(cb, buffer);
+
+	if (c == '-' || c == '+')
+	{
+		if (c == '-')
+		{
+			result |= ITOF_NUMBER_ISNEGATIVE;
+		}
+		itof_get(cb, buffer);
+		c = (uint8_t)itof_peek(cb, buffer);
+	}
+
+	for (;;)
+	{
+		uint8_t digit = (uint8_t)c - 48;
+		if (digit <= 9)
+		{
+			intval = fast_int_mul10(intval) + digit;
+			if (fpcount)
+			{
+				fpcount++;
+			}
+
+			result |= ITOF_NUMBER_OK;
+		}
+		else if (c == '.' && !fpcount)
+		{
+			fpcount++;
+			result |= ITOF_NUMBER_ISFLOAT;
+		}
+		else
+		{
+			if (!(result & ITOF_NUMBER_OK))
+			{
+				return ITOF_NUMBER_UNDEF;
+			}
+			break;
+		}
+
+		itof_get(cb, buffer);
+		c = (uint8_t)itof_peek(cb, buffer);
+	}
+
+	rhs = (float)intval;
+	if (fpcount)
+	{
+		fpcount--;
+	}
+
+	do
+	{
+		if (fpcount >= 2)
+		{
+			rhs *= 0.01f;
+			fpcount -= 2;
+		}
+
+		if (fpcount >= 1)
+		{
+			rhs *= 0.1f;
+			fpcount -= 1;
+		}
+
+	} while (fpcount != 0);
+
+	*value = (result & ITOF_NUMBER_ISNEGATIVE) ? -rhs : rhs;
+
+	return result;
 }
