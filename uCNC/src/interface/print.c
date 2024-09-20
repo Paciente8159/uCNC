@@ -86,18 +86,6 @@ static void print_byte(print_putc_cb cb, char **buffer_ref, const uint8_t *data,
 	} while (--size);
 }
 
-static void print_bytes(print_putc_cb cb, char **buffer_ref, const uint8_t *data, uint8_t count, uint8_t flags)
-{
-	print_byte(cb, buffer_ref, data, flags);
-	while (--count)
-	{
-		print_putc(cb, buffer_ref, ' ');
-		print_byte(cb, buffer_ref, data, flags);
-	}
-	while (--count)
-		;
-}
-
 static void print_int(print_putc_cb cb, char **buffer_ref, int32_t num)
 {
 	if (num == 0)
@@ -127,20 +115,6 @@ static void print_int(print_putc_cb cb, char **buffer_ref, int32_t num)
 		i--;
 		print_putc(cb, buffer_ref, '0' + buffer[i]);
 	} while (i);
-}
-
-static void print_intarr(print_putc_cb cb, char **buffer_ref, int32_t *arr, uint8_t element_count)
-{
-	do
-	{
-		print_int(cb, buffer_ref, *arr++);
-		element_count--;
-		if (element_count)
-		{
-			print_putc(cb, buffer_ref, ',');
-		}
-
-	} while (element_count);
 }
 
 void print_flt(print_putc_cb cb, char **buffer_ref, float num)
@@ -282,7 +256,7 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 			switch (c)
 			{
 			case 'c':
-				cval = (float)va_arg(*args, char);
+				cval = (char)va_arg(*args, char);
 				print_putc(cb, buffer_ref, cval);
 				/* code */
 				break;
@@ -304,24 +278,27 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 			case 'i':
 			case 'u':
 			case 'x':
-				pt = va_arg(*args, void *);
-				do
+				if (elems)
+				{
+					pt = va_arg(*args, void *);
+				}
+				else
 				{
 					switch (lcount)
 					{
 					case 0:
-						i = (int32_t)(elems) ? (*(int8_t *)pt) : ((int8_t)pt);
-						pt += 1;
+						i = (int32_t)va_arg(*args, uint8_t);
 						break;
 					case 1:
-						i = (int32_t)(elems) ? (*(int16_t *)pt) : ((int16_t)pt);
-						pt += 2;
+						i = (int32_t)va_arg(*args, uint16_t);
 						break;
 					default:
-						i = (int32_t)(elems) ? (*(int32_t *)pt) : ((int32_t)pt);
-						pt += 4;
+						i = (int32_t)va_arg(*args, uint32_t);
 						break;
 					}
+				}
+				do
+				{
 					switch (c)
 					{
 					case 'd':
@@ -343,6 +320,7 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 					{
 						print_putc(cb, buffer_ref, ',');
 					}
+					pt += (1 << lcount);
 				} while (elems);
 				/* code */
 				break;
@@ -405,7 +383,7 @@ void print_fmt(print_putc_cb cb, char *buffer, const char *fmt, ...)
 }
 
 #define itof_peek(cb, buffer) ((!buffer) ? cb(true) : ((cb) ? rom_read_byte(*buffer) : **buffer))
-#define itof_get(cb, buffer) ((!buffer) ? cb(false) : ({ *buffer += 1; }))
+#define itof_get(cb, buffer) ((!buffer) ? cb(false) : ({ *buffer += 1; 0; }))
 
 uint8_t print_itof(print_read_input_cb cb, const char **buffer, float *value)
 {
@@ -465,12 +443,6 @@ uint8_t print_itof(print_read_input_cb cb, const char **buffer, float *value)
 
 	do
 	{
-		if (fpcount >= 2)
-		{
-			rhs *= 0.01f;
-			fpcount -= 2;
-		}
-
 		if (fpcount >= 1)
 		{
 			rhs *= 0.1f;
