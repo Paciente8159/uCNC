@@ -158,12 +158,12 @@ void cnc_run(void)
 
 	do
 	{
-		if (serial_available())
+		if (grbl_stream_available())
 		{
-			if (serial_getc() == EOL)
+			if (grbl_stream_getc() == EOL)
 			{
 				grbl_protocol_feedback(MSG_FEEDBACK_1);
-				grbl_protocol_ok();
+				grbl_protocol_print(MSG_OK);
 			}
 		}
 		cnc_dotasks();
@@ -182,18 +182,18 @@ uint8_t cnc_parse_cmd(void)
 #endif
 	uint8_t error = 0;
 	// process gcode commands
-	if (serial_available())
+	if (grbl_stream_available())
 	{
 		// protocol_echo();
-		uint8_t c = serial_peek();
+		uint8_t c = grbl_stream_peek();
 		switch (c)
 		{
 		case OVF:
-			serial_clear();
+			grbl_stream_clear();
 			error = STATUS_OVERFLOW;
 			break;
 		case EOL: // not necessary but faster to catch empty lines and windows newline (CR+LF)
-			serial_getc();
+			grbl_stream_getc();
 			break;
 		default:
 #ifdef ENABLE_PARSING_TIME_DEBUG
@@ -205,10 +205,10 @@ uint8_t cnc_parse_cmd(void)
 			error = parser_read_command();
 #ifdef ENABLE_PARSING_TIME_DEBUG
 			exec_time = mcu_millis() - exec_time;
-			grbl_protocol_string(MSG_START);
-			grbl_protocol_string("exec time ");
-			serial_print_int(exec_time);
-			grbl_protocol_string(MSG_END);
+			grbl_protocol_print(MSG_START);
+			grbl_protocol_print("exec time ");
+			grbl_stream_print_int(exec_time);
+			grbl_protocol_print(MSG_END);
 #endif
 			break;
 		}
@@ -217,7 +217,7 @@ uint8_t cnc_parse_cmd(void)
 		cnc_exec_rt_commands();
 		if (!error)
 		{
-			grbl_protocol_ok();
+			grbl_protocol_print(MSG_OK);
 		}
 		else
 		{
@@ -437,12 +437,12 @@ void cnc_alarm(int8_t code)
 		}
 #endif
 #ifdef ENABLE_IO_ALARM_DEBUG
-		grbl_protocol_string(MSG_START);
-		grbl_protocol_string("LIMITS:");
-		serial_print_int(io_alarm_limits);
-		grbl_protocol_string("|CONTROLS:");
-		serial_print_int(io_alarm_controls);
-		grbl_protocol_string(MSG_END);
+		grbl_protocol_print(MSG_START);
+		grbl_protocol_print("LIMITS:");
+		grbl_stream_print_int(io_alarm_limits);
+		grbl_protocol_print("|CONTROLS:");
+		grbl_stream_print_int(io_alarm_controls);
+		grbl_protocol_print(MSG_END);
 #endif
 	}
 }
@@ -641,7 +641,7 @@ void cnc_reset(void)
 	cnc_state.alarm = EXEC_ALARM_NOALARM;
 
 	// clear all systems
-	serial_clear();
+	grbl_stream_clear();
 	itp_clear();
 	planner_clear();
 	kinematics_init();
@@ -655,7 +655,7 @@ void cnc_reset(void)
 	EVENT_INVOKE(cnc_reset, NULL);
 #endif
 	grbl_stream_broadcast(true);
-	grbl_protocol_string(MSG_STARTUP);
+	grbl_protocol_print(MSG_STARTUP);
 }
 
 void cnc_call_rt_command(uint8_t command)
@@ -773,9 +773,9 @@ void cnc_exec_rt_commands(void)
 
 		if (CHECKFLAG(command, RT_CMD_JOG_CANCEL))
 		{
-			while (serial_available())
+			while (grbl_stream_available())
 			{
-				char c = serial_getc();
+				char c = grbl_stream_getc();
 				if (c == EOL)
 				{
 					grbl_protocol_error(STATUS_JOG_CANCELED);
@@ -1093,16 +1093,16 @@ void cnc_run_startup_blocks(void)
 {
 	if (settings_check_startup_gcode(STARTUP_BLOCK0_ADDRESS_OFFSET))
 	{
-		serial_stream_eeprom(STARTUP_BLOCK0_ADDRESS_OFFSET);
+		grbl_stream_eeprom(STARTUP_BLOCK0_ADDRESS_OFFSET);
 		cnc_parse_cmd();
 	}
 
 	if (settings_check_startup_gcode(STARTUP_BLOCK1_ADDRESS_OFFSET))
 	{
-		serial_stream_eeprom(STARTUP_BLOCK1_ADDRESS_OFFSET);
+		grbl_stream_eeprom(STARTUP_BLOCK1_ADDRESS_OFFSET);
 		cnc_parse_cmd();
 	}
 
 	// reset streams
-	serial_stream_change(NULL);
+	grbl_stream_change(NULL);
 }

@@ -204,12 +204,13 @@ static char itof_getc_dummy(bool peek)
 
 void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 {
-	char c = 0, cval = 0, *s;
+	char c = 0, cval = 0;
+	const char *s;
 	uint8_t lcount = 0;
 	bool hexflags = HEX_NONE;
-	uint8_t *pt = NULL;
+	void *pt = NULL;
 	int32_t i = 0;
-	float tmp, *fval = NULL;
+	float f, *f_ptr = NULL;
 	char **buffer_ref = NULL;
 	char *ptr = buffer;
 	uint8_t elems = 1;
@@ -249,9 +250,9 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 				}
 				if (c == '.' || (c >= '1' && c <= '9'))
 				{
-					if (print_itof(itof_getc_dummy, &fmt, &tmp))
+					if (print_itof(itof_getc_dummy, (const char **)&fmt, &f))
 					{
-						elems = (uint8_t)tmp;
+						elems = (uint8_t)f;
 					}
 					c = printf_getc(fmt);
 				}
@@ -303,7 +304,7 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 			case 'i':
 			case 'u':
 			case 'x':
-				pt = va_arg(*args, uint8_t *);
+				pt = va_arg(*args, void *);
 				do
 				{
 					switch (lcount)
@@ -355,17 +356,25 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 			case 'a':
 			case 'g':
 			case 'G':
-				fval = (float *)va_arg(*args, float *);
+				if (elems)
+				{
+					f_ptr = va_arg(*args, float *);
+				}
+				else
+				{
+					f = (float)va_arg(*args, float);
+					f_ptr = &f;
+				}
 				do
 				{
 					switch (c)
 					{
 					case 'a':
 					case 'A':
-						print_byte(cb, buffer_ref, (const uint8_t *)((elems) ? (*fval++) : ((float)fval)), (hexflags | VAR_DWORD));
+						print_byte(cb, buffer_ref, (const uint8_t *)f_ptr, (hexflags | VAR_DWORD));
 						break;
 					default:
-						print_flt(cb, buffer_ref, ((elems) ? (*fval++) : ((float)fval)));
+						print_flt(cb, buffer_ref, *f_ptr++);
 						break;
 					}
 					if (elems && --elems)

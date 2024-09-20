@@ -40,7 +40,7 @@ extern "C"
 	void print_fmt(print_putc_cb cb, char *buffer, const char *fmt, ...);
 	// scaning utilities
 	typedef char(*print_read_input_cb)(bool);
-	uint8_t print_itof(print_read_input_cb cb, char **buffer, float *value);
+	uint8_t print_itof(print_read_input_cb cb, const char **buffer, float *value);
 
 // string helper functions
 #define str_sprintf(buffer, fmt, ...) print_fmt(NULL, buffer, fmt, __VA_ARGS__)

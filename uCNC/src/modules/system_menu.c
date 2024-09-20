@@ -667,7 +667,7 @@ bool system_menu_action_serial_cmd(uint8_t action, system_menu_item_t *item)
 {
 	if (action == SYSTEM_MENU_ACTION_SELECT && item)
 	{
-		if (serial_freebytes() > 20)
+		if (grbl_stream_write_available() > 20)
 		{
 			char buffer[SYSTEM_MENU_MAX_STR_LEN];
 			if (system_menu_send_cmd((const char *)item->action_arg) == STATUS_OK)
@@ -754,7 +754,7 @@ static bool system_menu_action_jog(uint8_t action, system_menu_item_t *item)
 	else if (g_system_menu.flags & SYSTEM_MENU_MODE_SIMPLE_EDIT)
 	{
 		// one jog command at time
-		if (serial_freebytes() > 32)
+		if (grbl_stream_write_available() > 32)
 		{
 			char buffer[SYSTEM_MENU_MAX_STR_LEN];
 			memset(buffer, 0, SYSTEM_MENU_MAX_STR_LEN);

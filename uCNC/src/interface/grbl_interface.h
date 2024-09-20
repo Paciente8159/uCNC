@@ -223,8 +223,8 @@ extern "C"
 #define MSG_AXIS "%6f"
 #endif
 
-#define MSG_STATUS_MPOS "|MPos:"MSG_AXIS
-#define MSG_STATUS_WPOS "|WPos:"MSG_AXIS
+#define MSG_STATUS_MPOS "|MPos:" MSG_AXIS
+#define MSG_STATUS_WPOS "|WPos:" MSG_AXIS
 #if TOOL_COUNT > 0
 #define MSG_STATUS_FS "|FS:%f,%lu"
 #else

@@ -120,7 +120,7 @@ int8_t parser_get_grbl_cmd_arg(char *arg, int8_t max_len)
 	int8_t len = 0;
 	for (;;)
 	{
-		uint8_t c = serial_getc();
+		uint8_t c = grbl_stream_getc();
 		if (!c)
 		{
 			return len;
@@ -157,7 +157,7 @@ void parser_init(void)
 uint8_t parser_read_command(void)
 {
 	uint8_t error = STATUS_OK;
-	uint8_t c = serial_peek();
+	uint8_t c = grbl_stream_peek();
 
 	if (c == '$')
 	{
@@ -333,8 +333,8 @@ void parser_update_probe_pos(void)
 
 static uint8_t parser_grbl_command(void)
 {
-	serial_getc(); // eat $
-	uint8_t c = serial_peek();
+	grbl_stream_getc(); // eat $
+	uint8_t c = grbl_stream_peek();
 	uint8_t grbl_cmd_str[GRBL_CMD_MAX_LEN + 1];
 	uint8_t grbl_cmd_len = 0;
 
@@ -357,7 +357,7 @@ static uint8_t parser_grbl_command(void)
 
 	do
 	{
-		c = serial_peek();
+		c = grbl_stream_peek();
 		// toupper
 		c = TOUPPER(c);
 
@@ -365,12 +365,12 @@ static uint8_t parser_grbl_command(void)
 		{
 			if (c < '0' || c > '9' || grbl_cmd_len) // replaces old ungetc
 			{
-				serial_getc();
+				grbl_stream_getc();
 			}
 			break;
 		}
 
-		serial_getc();
+		grbl_stream_getc();
 		grbl_cmd_str[grbl_cmd_len++] = c;
 	} while ((grbl_cmd_len < GRBL_CMD_MAX_LEN));
 
@@ -389,13 +389,13 @@ static uint8_t parser_grbl_command(void)
 		switch (c)
 		{
 		case '$':
-			if (serial_getc() != EOL)
+			if (grbl_stream_getc() != EOL)
 			{
 				return STATUS_INVALID_STATEMENT;
 			}
 			return GRBL_SEND_SYSTEM_SETTINGS;
 		case '#':
-			if (serial_getc() != EOL)
+			if (grbl_stream_getc() != EOL)
 			{
 				return STATUS_INVALID_STATEMENT;
 			}
@@ -407,7 +407,7 @@ static uint8_t parser_grbl_command(void)
 			{
 				float val = 0;
 				setting_offset_t setting_num = 0;
-				// serial_ungetc();
+				// grbl_stream_ungetc();
 				error = parser_get_float(&val);
 				if (!error)
 				{
@@ -427,7 +427,7 @@ static uint8_t parser_grbl_command(void)
 
 				setting_num = (setting_offset_t)val;
 				// eat '='
-				if (serial_getc() != '=')
+				if (grbl_stream_getc() != '=')
 				{
 					return STATUS_INVALID_STATEMENT;
 				}
@@ -441,7 +441,7 @@ static uint8_t parser_grbl_command(void)
 					return STATUS_BAD_NUMBER_FORMAT;
 				}
 
-				if (serial_getc() != EOL)
+				if (grbl_stream_getc() != EOL)
 				{
 					return STATUS_INVALID_STATEMENT;
 				}
@@ -472,7 +472,7 @@ static uint8_t parser_grbl_command(void)
 			case '0':
 			case '1':
 				block_address = (!(c - '0') ? STARTUP_BLOCK0_ADDRESS_OFFSET : STARTUP_BLOCK1_ADDRESS_OFFSET);
-				if (serial_getc() != '=')
+				if (grbl_stream_getc() != '=')
 				{
 					return STATUS_INVALID_STATEMENT;
 				}
@@ -480,7 +480,7 @@ static uint8_t parser_grbl_command(void)
 				settings_save(block_address, NULL, UINT16_MAX);
 				// run startup block
 				grbl_stream_broadcast(true);
-				serial_stream_eeprom(block_address);
+				grbl_stream_eeprom(block_address);
 				// checks the command validity
 				error = parser_fetch_command(&next_state, &words, &cmd);
 				// if uncomment will also check if any gcode rules are violated
@@ -492,7 +492,7 @@ static uint8_t parser_grbl_command(void)
 
 				grbl_stream_broadcast(false);
 				// reset streams
-				serial_stream_change(NULL);
+				grbl_stream_change(NULL);
 
 				if (error != STATUS_OK)
 				{
@@ -542,8 +542,8 @@ static uint8_t parser_grbl_command(void)
 			{
 				grbl_cmd_str[3] = '=';
 				grbl_cmd_len++;
-				c = serial_getc();
-				if (serial_getc() == EOL)
+				c = grbl_stream_getc();
+				if (grbl_stream_getc() == EOL)
 				{
 					switch (c)
 					{
@@ -654,7 +654,7 @@ static uint8_t parser_grbl_exec_code(uint8_t code)
 		cnc_home();
 		break;
 	case GRBL_HELP:
-		grbl_protocol_string(MSG_HELP);
+		grbl_protocol_print(MSG_HELP);
 		break;
 #ifdef ENABLE_EXTRA_SYSTEM_CMDS
 	case GRBL_SETTINGS_SAVED:
@@ -720,7 +720,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 		if (!wordcount)
 		{
 			grbl_stream_broadcast(true);
-			grbl_protocol_string(MSG_ECHO);
+			grbl_protocol_print(MSG_ECHO);
 		}
 #endif
 		error = parser_get_token(&word, &value);
@@ -730,7 +730,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 		{
 			parser_discard_command();
 #ifdef ECHO_CMD
-			grbl_protocol_string(MSG_END);
+			grbl_protocol_print(MSG_END);
 			grbl_stream_broadcast(false);
 #endif
 			return error;
@@ -788,7 +788,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 #endif
 			DEBUG_PUTC('\n');
 #ifdef ECHO_CMD
-			grbl_protocol_string(MSG_END);
+			grbl_protocol_print(MSG_END);
 			grbl_stream_broadcast(false);
 #endif
 			return STATUS_OK;
@@ -832,7 +832,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 		{
 			parser_discard_command();
 #ifdef ECHO_CMD
-			grbl_protocol_string(MSG_END);
+			grbl_protocol_print(MSG_END);
 			grbl_stream_broadcast(false);
 #endif
 			return error;
@@ -1967,7 +1967,7 @@ static void parser_get_comment(uint8_t start_char)
 #endif
 	for (;;)
 	{
-		uint8_t c = serial_peek();
+		uint8_t c = grbl_stream_peek();
 		switch (c)
 		{
 			// case '(':	//error under RS274NGC (commented for Grbl compatibility)
@@ -1999,17 +1999,17 @@ static void parser_get_comment(uint8_t start_char)
 			break;
 		case 3:
 			msg_parser = (c == ',') ? 4 : 0xFF;
-			grbl_protocol_string(MSG_START);
+			grbl_protocol_print(MSG_START);
 			break;
 		case 4:
-			serial_putc(c);
+			grbl_protocol_putc(c);
 			break;
 		}
 #endif
 
 		if (c != EOL)
 		{
-			serial_getc();
+			grbl_stream_getc();
 		}
 
 		if (comment_end)
@@ -2017,7 +2017,7 @@ static void parser_get_comment(uint8_t start_char)
 #ifdef PROCESS_COMMENTS
 			if (msg_parser == 4)
 			{
-				grbl_protocol_string(MSG_END);
+				grbl_protocol_print(MSG_END);
 			}
 #endif
 			return;
@@ -2027,23 +2027,23 @@ static void parser_get_comment(uint8_t start_char)
 
 static uint8_t parser_get_next_preprocessed(bool peek)
 {
-	uint8_t c = serial_peek();
+	uint8_t c = grbl_stream_peek();
 
 	while (c == ' ' || c == '(' || c == ';')
 	{
-		serial_getc();
+		grbl_stream_getc();
 		if (c != ' ')
 		{
 			parser_get_comment(c);
 		}
-		c = serial_peek();
+		c = grbl_stream_peek();
 	}
 
 	if (!peek)
 	{
-		serial_getc();
+		grbl_stream_getc();
 #ifdef ECHO_CMD
-		serial_putc(c);
+		grbl_protocol_putc(c);
 #endif
 	}
 
@@ -2590,11 +2590,6 @@ uint8_t parser_get_expression(float *value)
 
 uint8_t parser_get_float(float *value)
 {
-	uint32_t intval = 0;
-	uint8_t fpcount = 0;
-	uint8_t result = NUMBER_UNDEF;
-	float rhs = 0;
-
 	uint8_t c = parser_get_next_preprocessed(true);
 #ifdef ENABLE_RS274NGC_EXPRESSIONS
 	c = TOUPPER(c);
@@ -2603,73 +2598,7 @@ uint8_t parser_get_float(float *value)
 		return parser_get_expression(value);
 	}
 #endif
-
-	if (c == '-' || c == '+')
-	{
-		if (c == '-')
-		{
-			result |= NUMBER_ISNEGATIVE;
-		}
-		parser_get_next_preprocessed(false);
-		c = parser_get_next_preprocessed(true);
-	}
-
-	for (;;)
-	{
-		uint8_t digit = (uint8_t)c - 48;
-		if (digit <= 9)
-		{
-			intval = fast_int_mul10(intval) + digit;
-			if (fpcount)
-			{
-				fpcount++;
-			}
-
-			result |= NUMBER_OK;
-		}
-		else if (c == '.' && !fpcount)
-		{
-			fpcount++;
-			result |= NUMBER_ISFLOAT;
-		}
-		else
-		{
-			if (!(result & NUMBER_OK))
-			{
-				return NUMBER_UNDEF;
-			}
-			break;
-		}
-
-		parser_get_next_preprocessed(false);
-		c = parser_get_next_preprocessed(true);
-	}
-
-	rhs = (float)intval;
-	if (fpcount)
-	{
-		fpcount--;
-	}
-
-	do
-	{
-		if (fpcount >= 2)
-		{
-			rhs *= 0.01f;
-			fpcount -= 2;
-		}
-
-		if (fpcount >= 1)
-		{
-			rhs *= 0.1f;
-			fpcount -= 1;
-		}
-
-	} while (fpcount != 0);
-
-	*value = (result & NUMBER_ISNEGATIVE) ? -rhs : rhs;
-
-	return result;
+	return print_itof(parser_get_next_preprocessed, NULL, value);
 }
 
 static uint8_t parser_get_token(uint8_t *word, float *value)
@@ -3200,15 +3129,15 @@ void parser_discard_command(void)
 {
 	uint8_t c = '@';
 #ifdef ECHO_CMD
-	serial_putc(c);
+	grbl_protocol_putc(c);
 #endif
 	do
 	{
-		c = serial_getc();
+		c = grbl_stream_getc();
 #ifdef ECHO_CMD
 		if (c)
 		{
-			serial_putc(c);
+			grbl_protocol_putc(c);
 		}
 #endif
 	} while (c != EOL);

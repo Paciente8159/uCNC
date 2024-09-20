@@ -243,17 +243,6 @@ WEAK_EVENT_HANDLER(grbl_protocol_gcode_modes)
 }
 #endif
 
-static void grbl_protocol_newline(void)
-{
-	grbl_protocol_print(MSG_EOL);
-	grbl_stream_broadcast(false);
-}
-
-void grbl_protocol_ok(void)
-{
-	grbl_protocol_print(MSG_OK);
-}
-
 void grbl_protocol_error(uint8_t error)
 {
 	grbl_protocol_printf(MSG_ERROR, error);
@@ -292,7 +281,7 @@ WEAK_EVENT_HANDLER(grbl_protocol_status)
 	{
 		if (ptr->fptr != NULL)
 		{
-			grbl_stream_putc('|');
+			grbl_protocol_putc('|');
 			ptr->fptr(args);
 		}
 		ptr = ptr->next;
@@ -329,21 +318,21 @@ static FORCEINLINE void grbl_protocol_status_tail(void)
 			grbl_protocol_print(MSG_STATUS_TOOL);
 			if (modalgroups[8] == 3)
 			{
-				grbl_stream_putc('S');
+				grbl_protocol_putc('S');
 			}
 			if (modalgroups[8] == 4)
 			{
-				grbl_stream_putc('C');
+				grbl_protocol_putc('C');
 			}
 #ifdef ENABLE_COOLANT
 			if (CHECKFLAG(modalgroups[9], COOLANT_MASK))
 			{
-				grbl_stream_putc('F');
+				grbl_protocol_putc('F');
 			}
 #ifndef M7_SAME_AS_M8
 			if (CHECKFLAG(modalgroups[9], MIST_MASK))
 			{
-				grbl_stream_putc('M');
+				grbl_protocol_putc('M');
 			}
 #endif
 #endif
@@ -385,7 +374,7 @@ void grbl_protocol_status(void)
 
 	state &= filter;
 
-	grbl_stream_putc('<');
+	grbl_protocol_putc('<');
 	if (cnc_has_alarm())
 	{
 		grbl_protocol_print(MSG_STATUS_ALARM);
@@ -401,27 +390,27 @@ void grbl_protocol_status(void)
 #if ASSERT_PIN(SAFETY_DOOR)
 		case EXEC_DOOR:
 			grbl_protocol_print(MSG_STATUS_DOOR);
-			grbl_stream_putc(':');
+			grbl_protocol_putc(':');
 			if (CHECKFLAG(controls, SAFETY_DOOR_MASK))
 			{
 				if (cnc_get_exec_state(EXEC_RUN))
 				{
-					grbl_stream_putc('2');
+					grbl_protocol_putc('2');
 				}
 				else
 				{
-					grbl_stream_putc('1');
+					grbl_protocol_putc('1');
 				}
 			}
 			else
 			{
 				if (cnc_get_exec_state(EXEC_RUN))
 				{
-					grbl_stream_putc('3');
+					grbl_protocol_putc('3');
 				}
 				else
 				{
-					grbl_stream_putc('0');
+					grbl_protocol_putc('0');
 				}
 			}
 			break;
@@ -439,14 +428,14 @@ void grbl_protocol_status(void)
 			break;
 		case EXEC_HOLD:
 			grbl_protocol_print(MSG_STATUS_HOLD);
-			grbl_stream_putc(':');
+			grbl_protocol_putc(':');
 			if (cnc_get_exec_state(EXEC_RUN))
 			{
-				grbl_stream_putc('1');
+				grbl_protocol_putc('1');
 			}
 			else
 			{
-				grbl_stream_putc('0');
+				grbl_protocol_putc('0');
 			}
 			break;
 		case EXEC_HOMING:
@@ -487,56 +476,56 @@ void grbl_protocol_status(void)
 
 		if (CHECKFLAG(controls, ESTOP_MASK))
 		{
-			grbl_stream_putc('R');
+			grbl_protocol_putc('R');
 		}
 
 		if (CHECKFLAG(controls, SAFETY_DOOR_MASK))
 		{
-			grbl_stream_putc('D');
+			grbl_protocol_putc('D');
 		}
 
 		if (CHECKFLAG(controls, FHOLD_MASK))
 		{
-			grbl_stream_putc('H');
+			grbl_protocol_putc('H');
 		}
 
 		if (probe)
 		{
-			grbl_stream_putc('P');
+			grbl_protocol_putc('P');
 		}
 
 		if (CHECKFLAG(limits, LINACT0_LIMIT_MASK))
 		{
-			grbl_stream_putc('X');
+			grbl_protocol_putc('X');
 		}
 
 		if (CHECKFLAG(limits, LINACT1_LIMIT_MASK))
 		{
 #if ((AXIS_COUNT == 2) && defined(USE_Y_AS_Z_ALIAS))
-			grbl_stream_putc('Z');
+			grbl_protocol_putc('Z');
 #else
-			grbl_stream_putc('Y');
+			grbl_protocol_putc('Y');
 #endif
 		}
 
 		if (CHECKFLAG(limits, LINACT2_LIMIT_MASK))
 		{
-			grbl_stream_putc('Z');
+			grbl_protocol_putc('Z');
 		}
 
 		if (CHECKFLAG(limits, LINACT3_LIMIT_MASK))
 		{
-			grbl_stream_putc('A');
+			grbl_protocol_putc('A');
 		}
 
 		if (CHECKFLAG(limits, LINACT4_LIMIT_MASK))
 		{
-			grbl_stream_putc('B');
+			grbl_protocol_putc('B');
 		}
 
 		if (CHECKFLAG(limits, LINACT5_LIMIT_MASK))
 		{
-			grbl_stream_putc('C');
+			grbl_protocol_putc('C');
 		}
 	}
 
@@ -549,8 +538,7 @@ void grbl_protocol_status(void)
 		grbl_protocol_printf(MSG_STATUS_BUF, planner_get_buffer_freeblocks(), grbl_stream_write_available());
 	}
 
-	grbl_stream_putc('>');
-	grbl_protocol_newline();
+	grbl_protocol_print(">" MSG_EOL);
 }
 
 void grbl_protocol_gcode_coordsys(void)
@@ -561,45 +549,51 @@ void grbl_protocol_gcode_coordsys(void)
 	for (uint8_t i = 0; i < COORD_SYS_COUNT; i++)
 	{
 		parser_get_coordsys(i, axis);
-		grbl_protocol_printf("G%d:" MSG_AXIS "]\r\n", (i + 54), axis);
+		grbl_protocol_printf("G%d:" MSG_AXIS "]" MSG_EOL, (i + 54), axis);
 	}
 #if COORD_SYS_COUNT >= 6
 	for (uint8_t i = 6; i < COORD_SYS_COUNT; i++)
 	{
 		parser_get_coordsys(i, axis);
-		grbl_protocol_printf("G59.%d:" MSG_AXIS "]\r\n", (i - 5), axis);
+		grbl_protocol_printf("G59.%d:" MSG_AXIS "]" MSG_EOL, (i - 5), axis);
 	}
 #endif
 
 	parser_get_coordsys(28, axis);
-	grbl_protocol_printf("G28:" MSG_AXIS "]\r\n", axis);
+	grbl_protocol_printf("G28:" MSG_AXIS "]" MSG_EOL, axis);
 
 	parser_get_coordsys(30, axis);
-	grbl_protocol_printf("G30:" MSG_AXIS "]\r\n", axis);
+	grbl_protocol_printf("G30:" MSG_AXIS "]" MSG_EOL, axis);
 
 	parser_get_coordsys(92, axis);
-	grbl_protocol_printf("G92:" MSG_AXIS "]\r\n", axis);
+	grbl_protocol_printf("G92:" MSG_AXIS "]" MSG_EOL, axis);
 
 #ifdef AXIS_TOOL
 	parser_get_coordsys(254, axis);
-	grbl_protocol_printf("[TLO:%1f]\r\n", axis);
+	grbl_protocol_printf("[TLO:%1f]" MSG_EOL, axis);
 #endif
-	parser_get_coordsys(255, axis);
-	grbl_protocol_printf("PRB:" MSG_AXIS ":%d]\r\n", axis, parser_get_probe_result());
+	grbl_protocol_probe_result(parser_get_probe_result());
 
 	protocol_busy = false;
 }
 
+void grbl_protocol_probe_result(uint8_t val)
+{
+	float axis[MAX(AXIS_COUNT, 3)];
+	parser_get_coordsys(255, axis);
+	grbl_protocol_printf("PRB:" MSG_AXIS ":%d]" MSG_EOL, axis, val);
+}
+
 static void grbl_protocol_parser_modalstate(uint8_t word, uint8_t val, uint8_t mantissa)
 {
-	grbl_stream_putc(word);
-	grbl_stream_print_int(val);
 	if (mantissa)
 	{
-		grbl_stream_putc('.');
-		grbl_stream_print_int(mantissa);
+		grbl_protocol_printf("%d%d.%d ", word, val, mantissa);
 	}
-	grbl_stream_putc(' ');
+	else
+	{
+		grbl_protocol_printf("%d%d ", word, val);
+	}
 }
 
 void grbl_protocol_gcode_modes(void)
@@ -665,35 +659,17 @@ void grbl_protocol_gcode_modes(void)
 	// permanent M9
 	grbl_protocol_print("M9 ");
 #endif
-	grbl_protocol_parser_modalstate('M', modalgroups[10], 0);
-
-	grbl_stream_putc('T');
-	grbl_stream_print_int(modalgroups[11]);
-	grbl_protocol_print(" F");
-	grbl_stream_print_fltunits(feed);
-	grbl_protocol_print(" S");
-	grbl_stream_print_int(spindle);
-
-	grbl_stream_putc(']');
-	grbl_protocol_newline();
+	grbl_protocol_printf("M%d T%d F%f S%lu]" MSG_EOL, modalgroups[10], modalgroups[11], feed, spindle);
 }
 
 void grbl_protocol_gcode_setting_line_int(setting_offset_t setting, uint16_t value)
 {
-	grbl_stream_putc('$');
-	grbl_stream_print_int(setting);
-	grbl_stream_putc('=');
-	grbl_stream_print_int(value);
-	grbl_protocol_newline();
+	grbl_protocol_printf("$%lu=%lu" MSG_EOL, setting, value);
 }
 
 void grbl_protocol_gcode_setting_line_flt(setting_offset_t setting, float value)
 {
-	grbl_stream_putc('$');
-	grbl_stream_print_int(setting);
-	grbl_stream_putc('=');
-	grbl_stream_print_flt(value);
-	grbl_protocol_newline();
+	grbl_protocol_printf("$%lu=%f" MSG_EOL, setting, value);
 }
 
 void grbl_protocol_start_blocks(void)
@@ -707,11 +683,11 @@ void grbl_protocol_start_blocks(void)
 		settings_load(address++, &c, 1);
 		if (c > 0 && c < 128)
 		{
-			grbl_stream_putc(c);
+			grbl_protocol_putc(c);
 		}
 		else
 		{
-			grbl_protocol_newline();
+			grbl_protocol_print(MSG_EOL);
 			break;
 		}
 	}
@@ -723,11 +699,11 @@ void grbl_protocol_start_blocks(void)
 		settings_load(address++, &c, 1);
 		if (c > 0 && c < 128)
 		{
-			grbl_stream_putc(c);
+			grbl_protocol_putc(c);
 		}
 		else
 		{
-			grbl_protocol_newline();
+			grbl_protocol_print(MSG_EOL);
 			break;
 		}
 	}
@@ -908,7 +884,7 @@ void grbl_protocol_pins_states(void)
 #ifndef ENABLE_PIN_TRANSLATIONS
 			grbl_stream_print_int(i);
 #endif
-			grbl_stream_putc(':');
+			grbl_protocol_putc(':');
 			grbl_stream_print_int(val);
 			grbl_protocol_print(MSG_END);
 		}
@@ -1060,8 +1036,8 @@ void grbl_protocol_pins_states(void)
 #define EXTENDED_OPT "[OPT+:"
 #define EXTENDED_VER "[VER+:"
 #endif
-#define OPT_INFO __romstr__(EXTENDED_OPT KINEMATIC_INFO LINES_INFO BRESENHAM_INFO DSS_INFO DYNACCEL_INFO SKEW_INFO LINPLAN_INFO HMAP_INFO PPI_INFO INVESTOP_INFO SPOLL_INFO CONTROLS_INFO LIMITS_INFO PROBE_INFO IODBG_INFO SETTINGS_INFO EXTRACMD_INFO FASTMATH_INFO)
-#define VER_INFO __romstr__(EXTENDED_VER " uCNC " CNC_VERSION " - " BOARD_NAME "]" STR_EOL)
+#define OPT_INFO EXTENDED_OPT KINEMATIC_INFO LINES_INFO BRESENHAM_INFO DSS_INFO DYNACCEL_INFO SKEW_INFO LINPLAN_INFO HMAP_INFO PPI_INFO INVESTOP_INFO SPOLL_INFO CONTROLS_INFO LIMITS_INFO PROBE_INFO IODBG_INFO SETTINGS_INFO EXTRACMD_INFO FASTMATH_INFO
+#define VER_INFO EXTENDED_VER " uCNC " CNC_VERSION " - " BOARD_NAME "]" STR_EOL
 
 WEAK_EVENT_HANDLER(grbl_protocol_cnc_info)
 {
@@ -1072,7 +1048,7 @@ WEAK_EVENT_HANDLER(grbl_protocol_cnc_info)
 		if (ptr->fptr != NULL)
 		{
 			ptr->fptr(args);
-			grbl_stream_putc(',');
+			grbl_protocol_putc(',');
 		}
 		ptr = ptr->next;
 	}

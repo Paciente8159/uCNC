@@ -358,7 +358,7 @@ void settings_save(uint16_t address, uint8_t *__ptr, uint16_t size)
 			cnc_dotasks(); // updates buffer before cycling
 		}
 
-		uint8_t c = (__ptr != NULL) ? (*(__ptr++)) : ((uint8_t)serial_getc());
+		uint8_t c = (__ptr != NULL) ? (*(__ptr++)) : ((uint8_t)grbl_stream_getc());
 		crc = crc7(c, crc);
 		mcu_eeprom_putc(address++, c);
 		i++;
@@ -694,11 +694,11 @@ void settings_erase(uint16_t address, uint8_t *__ptr, uint16_t size)
 bool settings_check_startup_gcode(uint16_t address)
 {
 	grbl_stream_broadcast(true);
-	grbl_stream_putc('>');
+	grbl_protocol_putc('>');
 #ifndef RAM_ONLY_SETTINGS
 	if (settings_load(address, NULL, UINT16_MAX))
 	{
-		grbl_stream_putc(':');
+		grbl_protocol_putc(':');
 		grbl_protocol_error(STATUS_SETTING_READ_FAIL);
 		settings_erase(address, NULL, 1);
 		return false;
@@ -706,8 +706,8 @@ bool settings_check_startup_gcode(uint16_t address)
 
 	return true;
 #else
-	grbl_stream_putc(':');
-	grbl_protocol_ok();
+	grbl_protocol_putc(':');
+	grbl_protocol_print(MSG_OK);
 	return false;
 #endif
 }

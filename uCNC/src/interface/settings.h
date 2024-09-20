@@ -244,7 +244,7 @@ typedef uint16_t setting_offset_t;
 			settings_load(set##ID##_settings_address, (uint8_t *)var, sizeof(char) * count); \
 			for (uint8_t i = 0; i < count; i++)                                              \
 			{                                                                                \
-				char c = serial_getc();                                                        \
+				char c = grbl_stream_getc();                                                        \
 				if (c == EOL || c == '\n')                                                     \
 				{                                                                              \
 					var[i] = EOL;                                                                \
