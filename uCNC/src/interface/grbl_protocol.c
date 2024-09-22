@@ -700,6 +700,41 @@ void grbl_protocol_start_blocks(void)
 void grbl_protocol_cnc_settings(void)
 {
 	protocol_busy = true;
+	uint8_t count = settings_count();
+	for (uint8_t i = 0; i < count; i++)
+	{
+		setting_id_t s = {0};
+		uint8_t max = 1;
+		rom_memcpy(&s, &g_settings_id_table[i], sizeof(setting_id_t));
+		if (s.type & SETTING_ARRAY)
+		{
+			max = SETTING_ARRCNT(s.type);
+		}
+
+		for (uint8_t j = 0; j < max; j++)
+		{
+			uint32_t val = 0;
+			switch (SETTING_TYPE_MASK(s.type))
+			{
+			case 1:
+				val = (uint32_t) * ((bool *)s.memptr);
+				grbl_protocol_gcode_setting_line_int(s.id, val);
+				break;
+			case 2:
+				val = (uint32_t) * ((uint8_t *)s.memptr);
+				grbl_protocol_gcode_setting_line_int(s.id, val);
+				break;
+			case 3:
+				val = (uint32_t) * ((uint16_t *)s.memptr);
+				grbl_protocol_gcode_setting_line_int(s.id, val);
+				break;
+			default:
+				grbl_protocol_gcode_setting_line_flt(s.id, *((float *)s.memptr));
+				break;
+			}
+		}
+	}
+	/*
 	grbl_protocol_gcode_setting_line_flt(0, (1000000.0f / g_settings.max_step_rate));
 #if EMULATE_GRBL_STARTUP > 0 || defined(ENABLE_STEPPERS_DISABLE_TIMEOUT)
 // just adds this for compatibility
@@ -808,6 +843,7 @@ void grbl_protocol_cnc_settings(void)
 		grbl_protocol_gcode_setting_line_int(140 + i, g_settings.backlash_steps[i]);
 	}
 #endif
+*/
 
 #ifdef ENABLE_SETTINGS_MODULES
 	EVENT_INVOKE(grbl_protocol_cnc_settings, NULL);
