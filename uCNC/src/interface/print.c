@@ -18,6 +18,14 @@
 #include "print.h"
 #include "../cnc.h"
 
+#define PRINT_ENABLE_MINIMAL
+#ifdef PRINT_ENABLE_MINIMAL
+#define PRINT_DISABLE_FMT_PADDING
+#define PRINT_DISABLE_FMT_HEX
+#define PRINT_DISABLE_FMT_IP
+#define PRINT_ENABLE_FMT_FLOAT_FONLY
+#endif
+
 #define HEX_NONE 0
 #define HEX_PREFIX 128
 #define HEX_UPPER 64
@@ -63,6 +71,7 @@ static void print_romstr(print_putc_cb cb, char **buffer_ref, const char *__s)
 	}
 }
 
+#ifndef PRINT_DISABLE_FMT_HEX
 static void print_byte(print_putc_cb cb, char **buffer_ref, const uint8_t *data, uint8_t flags)
 {
 	bool prefix = (flags && HEX_PREFIX);
@@ -85,6 +94,7 @@ static void print_byte(print_putc_cb cb, char **buffer_ref, const uint8_t *data,
 		data++;
 	} while (--size);
 }
+#endif
 
 static void print_int(print_putc_cb cb, char **buffer_ref, int32_t num)
 {
@@ -159,6 +169,7 @@ void print_flt(print_putc_cb cb, char **buffer_ref, float num)
 	print_int(cb, buffer_ref, digits);
 }
 
+#ifndef PRINT_DISABLE_FMT_IP
 void print_ip(print_putc_cb cb, char **buffer_ref, uint32_t ip)
 {
 	uint8_t *ptr = (uint8_t *)&ip;
@@ -170,6 +181,7 @@ void print_ip(print_putc_cb cb, char **buffer_ref, uint32_t ip)
 	print_putc(cb, buffer_ref, '.');
 	print_int(cb, buffer_ref, (int32_t)ptr[0]);
 }
+#endif
 
 static char itof_getc_dummy(bool peek)
 {
@@ -203,6 +215,7 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 			c = printf_getc(fmt);
 			switch (c)
 			{
+#ifndef PRINT_DISABLE_FMT_PADDING
 			case '#':
 				hexflags = HEX_PREFIX;
 				__FALL_THROUGH__
@@ -217,11 +230,11 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 					fmt++;
 				}
 				__FALL_THROUGH__
+			case '.':
+				fmt++;
+				__FALL_THROUGH__
+#endif
 			default:
-				if (c == '.')
-				{
-					fmt++;
-				}
 				if (c == '.' || (c >= '1' && c <= '9'))
 				{
 					if (print_itof(itof_getc_dummy, (const char **)&fmt, &f))
@@ -231,16 +244,6 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 					c = printf_getc(fmt);
 				}
 				break;
-			}
-
-			while (c == 'l' || c == 'h')
-			{
-				if (c == 'l')
-				{
-					lcount++;
-				}
-				c = printf_getc(fmt);
-				fmt++;
 			}
 
 			while (c == 'l' || c == 'h')
@@ -268,16 +271,20 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 				s = (const char *)va_arg(*args, const char *);
 				print_romstr(cb, buffer_ref, s);
 				break;
+#ifndef PRINT_DISABLE_FMT_IP
 			case 'M':
 				lcount = 4;
 				__FALL_THROUGH__
+#endif
+#ifndef PRINT_DISABLE_FMT_HEX
 			case 'X':
 				hexflags |= HEX_UPPER;
 				__FALL_THROUGH__
+			case 'x':
+#endif
 			case 'd':
 			case 'i':
 			case 'u':
-			case 'x':
 				if (elems)
 				{
 					pt = va_arg(*args, void *);
@@ -308,13 +315,17 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 					case 'u':
 						print_int(cb, buffer_ref, ABS(i));
 						break;
+#ifndef PRINT_DISABLE_FMT_HEX
 					case 'x':
 					case 'X':
 						print_byte(cb, buffer_ref, (const uint8_t *)&i, (hexflags | lcount));
 						break;
+#endif
+#ifndef PRINT_DISABLE_FMT_IP
 					case 'M':
 						print_ip(cb, buffer_ref, i);
 						break;
+#endif
 					}
 					if (elems && --elems)
 					{
@@ -324,16 +335,20 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 				} while (elems);
 				/* code */
 				break;
+#ifndef PRINT_DISABLE_FMT_HEX
 			case 'A':
 				hexflags |= HEX_UPPER;
 				__FALL_THROUGH__
+			case 'a':
+#endif
 			case 'f':
 			case 'F':
+#ifndef PRINT_ENABLE_FMT_FLOAT_FONLY
 			case 'e':
 			case 'E':
-			case 'a':
 			case 'g':
 			case 'G':
+#endif
 				if (elems)
 				{
 					f_ptr = va_arg(*args, float *);
@@ -347,10 +362,12 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 				{
 					switch (c)
 					{
+#ifndef PRINT_DISABLE_FMT_HEX
 					case 'a':
 					case 'A':
 						print_byte(cb, buffer_ref, (const uint8_t *)f_ptr, (hexflags | VAR_DWORD));
 						break;
+#endif
 					default:
 						print_flt(cb, buffer_ref, *f_ptr++);
 						break;
