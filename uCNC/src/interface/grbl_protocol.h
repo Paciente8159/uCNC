@@ -48,7 +48,6 @@ extern "C"
 	void grbl_protocol_start_blocks(void);
 	void grbl_protocol_gcode_setting_line_int(setting_offset_t setting, uint16_t value);
 	void grbl_protocol_gcode_setting_line_flt(setting_offset_t setting, float value);
-#define grbl_protocol_ip(ip) grbl_protocol_feedback_base((&ip), 2)
 
 #ifdef ENABLE_EXTRA_SYSTEM_CMDS
 	void grbl_protocol_pins_states(void);

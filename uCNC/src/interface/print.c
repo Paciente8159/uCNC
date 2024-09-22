@@ -193,7 +193,9 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 	char c = 0, cval = 0;
 	const char *s;
 	uint8_t lcount = 0;
+#ifndef PRINT_DISABLE_FMT_HEX
 	bool hexflags = HEX_NONE;
+#endif
 	void *pt = NULL;
 	int32_t i = 0;
 	float f, *f_ptr = NULL;
@@ -259,7 +261,7 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 			switch (c)
 			{
 			case 'c':
-				cval = (char)va_arg(*args, char);
+				cval = (char)va_arg(*args, int);
 				print_putc(cb, buffer_ref, cval);
 				/* code */
 				break;
@@ -294,7 +296,7 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 					switch (lcount)
 					{
 					case 0:
-						i = (int32_t)va_arg(*args, uint8_t);
+						i = (int32_t)va_arg(*args, int);
 						break;
 					case 1:
 						i = (int32_t)va_arg(*args, uint16_t);
@@ -355,7 +357,7 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 				}
 				else
 				{
-					f = (float)va_arg(*args, float);
+					f = (float)va_arg(*args, double);
 					f_ptr = &f;
 				}
 				do

@@ -258,17 +258,13 @@ void grbl_protocol_alarm(int8_t alarm)
 void grbl_protocol_feedback_base(void *arg, uint8_t type)
 {
 	grbl_stream_broadcast(true);
-	switch (type)
+	if (type)
 	{
-	case 0:
-		grbl_protocol_printf(MSG_FEEDBACK, arg);
-		break;
-	case 1:
 		grbl_protocol_printf(MSG_FEEDBACK_PRINTF, arg);
-		break;
-	case 2:
-		grbl_protocol_printf(MSG_FEEDBACK_IP, *((uint32_t *)arg));
-		break;
+	}
+	else
+	{
+		grbl_protocol_printf(MSG_FEEDBACK, arg);
 	}
 	grbl_stream_broadcast(false);
 }
@@ -453,7 +449,7 @@ void grbl_protocol_status(void)
 		}
 	}
 
-	if ((g_settings.status_report_mask & 1))
+	if (!(g_settings.status_report_mask & 1))
 	{
 		grbl_protocol_printf(MSG_STATUS_MPOS, axis);
 	}
@@ -538,7 +534,9 @@ void grbl_protocol_status(void)
 		grbl_protocol_printf(MSG_STATUS_BUF, planner_get_buffer_freeblocks(), grbl_stream_write_available());
 	}
 
-	grbl_protocol_print(">" MSG_EOL);
+	grbl_protocol_putc('>');
+	grbl_protocol_putc('\r');
+	grbl_protocol_putc('\n');
 }
 
 void grbl_protocol_gcode_coordsys(void)
@@ -676,35 +674,23 @@ void grbl_protocol_start_blocks(void)
 {
 	protocol_busy = true;
 	uint8_t c = 0;
-	uint16_t address = STARTUP_BLOCK0_ADDRESS_OFFSET;
-	grbl_protocol_print("$N0=");
-	for (;;)
-	{
-		settings_load(address++, &c, 1);
-		if (c > 0 && c < 128)
-		{
-			grbl_protocol_putc(c);
-		}
-		else
-		{
-			grbl_protocol_print(MSG_EOL);
-			break;
-		}
-	}
 
-	address = STARTUP_BLOCK1_ADDRESS_OFFSET;
-	grbl_protocol_print("$N1=");
-	for (;;)
+	for (uint8_t i = 0; i < STARTUP_BLOCKS_COUNT; i++)
 	{
-		settings_load(address++, &c, 1);
-		if (c > 0 && c < 128)
+		uint16_t address = STARTUP_BLOCK0_ADDRESS_OFFSET + i * STARTUP_BLOCK_SIZE;
+		grbl_protocol_printf("$N%d=", i);
+		for (;;)
 		{
-			grbl_protocol_putc(c);
-		}
-		else
-		{
-			grbl_protocol_print(MSG_EOL);
-			break;
+			settings_load(address++, &c, 1);
+			if (c > 0 && c < 128)
+			{
+				grbl_protocol_putc(c);
+			}
+			else
+			{
+				grbl_protocol_print(MSG_EOL);
+				break;
+			}
 		}
 	}
 

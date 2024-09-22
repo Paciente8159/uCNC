@@ -880,7 +880,7 @@ bool system_menu_fs_action(uint8_t action)
 					system_menu_go_idle();
 					rom_strcpy(buffer, __romstr__(FS_STR_FILE_RUNNING));
 					system_menu_show_modal_popup(SYSTEM_MENU_MODAL_POPUP_MS, buffer);
-					serial_stream_readonly(&running_file_getc, &running_file_available, &running_file_clear);
+					grbl_stream_readonly(&running_file_getc, &running_file_available, &running_file_clear);
 				}
 				else
 				{

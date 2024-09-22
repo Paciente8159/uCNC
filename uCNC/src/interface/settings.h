@@ -33,10 +33,10 @@ extern "C"
 	{
 		uint8_t version[3];
 		float max_step_rate;
-		// step delay not used
-		#ifdef ENABLE_STEPPERS_DISABLE_TIMEOUT
+// step delay not used
+#ifdef ENABLE_STEPPERS_DISABLE_TIMEOUT
 		uint16_t step_disable_timeout;
-		#endif
+#endif
 		uint8_t step_invert_mask;
 		uint8_t dir_invert_mask;
 		uint8_t step_enable_invert;
@@ -118,14 +118,19 @@ extern "C"
 #ifndef SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET
 #define SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET (SETTINGS_ADDRESS_OFFSET + sizeof(settings_t) + 1)
 #endif
+#ifndef STARTUP_BLOCKS_COUNT
+#define STARTUP_BLOCKS_COUNT 2
+#endif
+#ifndef STARTUP_BLOCK_SIZE
+#define STARTUP_BLOCK_SIZE RX_BUFFER_SIZE
+#endif
 #ifndef STARTUP_BLOCK0_ADDRESS_OFFSET
 #define STARTUP_BLOCK0_ADDRESS_OFFSET (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (((AXIS_COUNT * sizeof(float)) + 1) * (COORD_SYS_COUNT + 3)))
 #endif
-#ifndef STARTUP_BLOCK1_ADDRESS_OFFSET
-#define STARTUP_BLOCK1_ADDRESS_OFFSET (STARTUP_BLOCK0_ADDRESS_OFFSET + RX_BUFFER_SIZE)
-#endif
+#define STARTUP_BLOCK_ADDRESS_OFFSET(NBLOCK) (STARTUP_BLOCK0_ADDRESS_OFFSET + NBLOCK * RX_BUFFER_SIZE)
+
 #ifndef MODULES_SETTINGS_ADDRESS_OFFSET
-#define MODULES_SETTINGS_ADDRESS_OFFSET (STARTUP_BLOCK1_ADDRESS_OFFSET + RX_BUFFER_SIZE)
+#define MODULES_SETTINGS_ADDRESS_OFFSET (STARTUP_BLOCK_ADDRESS_OFFSET(STARTUP_BLOCKS_COUNT - 1))
 #endif
 
 #ifndef ENABLE_SETTINGS_MODULES
@@ -244,7 +249,7 @@ typedef uint16_t setting_offset_t;
 			settings_load(set##ID##_settings_address, (uint8_t *)var, sizeof(char) * count); \
 			for (uint8_t i = 0; i < count; i++)                                              \
 			{                                                                                \
-				char c = grbl_stream_getc();                                                        \
+				char c = grbl_stream_getc();                                                   \
 				if (c == EOL || c == '\n')                                                     \
 				{                                                                              \
 					var[i] = EOL;                                                                \

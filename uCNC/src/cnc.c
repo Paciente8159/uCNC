@@ -115,7 +115,7 @@ void cnc_init(void)
 	mcu_io_reset();																			// add custom logic to set pins initial state
 	io_enable_steppers(~g_settings.step_enable_invert); // disables steppers at start
 	io_disable_probe();																	// forces probe isr disabling
-	grbl_stream_init();																			// serial
+	grbl_stream_init();																	// serial
 	mod_init();																					// modules
 	settings_init();																		// settings
 	itp_init();																					// interpolator
@@ -1082,7 +1082,8 @@ static void cnc_io_dotasks(void)
 				stepper_timeout = UINT32_MAX;
 			}
 		}
-		else{
+		else
+		{
 			stepper_timeout = mcu_millis() + g_settings.step_disable_timeout;
 		}
 	}
@@ -1091,18 +1092,16 @@ static void cnc_io_dotasks(void)
 
 void cnc_run_startup_blocks(void)
 {
-	if (settings_check_startup_gcode(STARTUP_BLOCK0_ADDRESS_OFFSET))
+	for (uint8_t i = 0; i < STARTUP_BLOCKS_COUNT; i++)
 	{
-		grbl_stream_eeprom(STARTUP_BLOCK0_ADDRESS_OFFSET);
-		cnc_parse_cmd();
+		uint16_t address = STARTUP_BLOCK_ADDRESS_OFFSET(i);
+		if (settings_check_startup_gcode(address))
+		{
+			grbl_stream_eeprom(address);
+			cnc_parse_cmd();
+		}
 	}
-
-	if (settings_check_startup_gcode(STARTUP_BLOCK1_ADDRESS_OFFSET))
-	{
-		grbl_stream_eeprom(STARTUP_BLOCK1_ADDRESS_OFFSET);
-		cnc_parse_cmd();
-	}
-
+	
 	// reset streams
 	grbl_stream_change(NULL);
 }

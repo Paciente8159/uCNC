@@ -38,7 +38,7 @@ static float g92permanentoffset[AXIS_COUNT];
 static int32_t rt_probe_step_pos[STEPPER_COUNT];
 static float parser_last_pos[AXIS_COUNT];
 
-static uint8_t parser_get_next_preprocessed(bool peek);
+static unsigned char parser_get_next_preprocessed(bool peek);
 FORCEINLINE static void parser_get_comment(uint8_t start_char);
 FORCEINLINE static uint8_t parser_get_token(uint8_t *word, float *value);
 FORCEINLINE static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t *new_state, parser_cmd_explicit_t *cmd);
@@ -469,40 +469,42 @@ static uint8_t parser_grbl_command(void)
 		case 'N':
 			switch (c)
 			{
-			case '0':
-			case '1':
-				block_address = (!(c - '0') ? STARTUP_BLOCK0_ADDRESS_OFFSET : STARTUP_BLOCK1_ADDRESS_OFFSET);
-				if (grbl_stream_getc() != '=')
+			case EOL:
+				return GRBL_SEND_STARTUP_BLOCKS;
+			default:
+				if (c >= '0' && c <= '9')
 				{
-					return STATUS_INVALID_STATEMENT;
-				}
+					block_address = STARTUP_BLOCK_ADDRESS_OFFSET((uint8_t)(c - '0'));
+					if (grbl_stream_getc() != '=')
+					{
+						return STATUS_INVALID_STATEMENT;
+					}
 
-				settings_save(block_address, NULL, UINT16_MAX);
-				// run startup block
-				grbl_stream_broadcast(true);
-				grbl_stream_eeprom(block_address);
-				// checks the command validity
-				error = parser_fetch_command(&next_state, &words, &cmd);
-				// if uncomment will also check if any gcode rules are violated
-				// allow bad rules for now to fit UNO. Will be catched when trying to execute the line
-				// if (error == STATUS_OK)
-				// {
-				// 	error = parser_validate_command(&next_state, &words, &cmd);
-				// }
+					settings_save(block_address, NULL, UINT16_MAX);
+					// run startup block
+					grbl_stream_broadcast(true);
+					grbl_stream_eeprom(block_address);
+					// checks the command validity
+					error = parser_fetch_command(&next_state, &words, &cmd);
+					// if uncomment will also check if any gcode rules are violated
+					// allow bad rules for now to fit UNO. Will be catched when trying to execute the line
+					// if (error == STATUS_OK)
+					// {
+					// 	error = parser_validate_command(&next_state, &words, &cmd);
+					// }
 
-				grbl_stream_broadcast(false);
-				// reset streams
-				grbl_stream_change(NULL);
+					grbl_stream_broadcast(false);
+					// reset streams
+					grbl_stream_change(NULL);
 
-				if (error != STATUS_OK)
-				{
-					// the Gcode is not valid then erase the startup block
-					settings_erase(block_address, NULL, 1);
+					if (error != STATUS_OK)
+					{
+						// the Gcode is not valid then erase the startup block
+						settings_erase(block_address, NULL, 1);
+					}
 				}
 
 				return error;
-			case EOL:
-				return GRBL_SEND_STARTUP_BLOCKS;
 			}
 			return STATUS_INVALID_STATEMENT;
 #ifdef ENABLE_EXTRA_SYSTEM_CMDS
@@ -2025,7 +2027,7 @@ static void parser_get_comment(uint8_t start_char)
 	}
 }
 
-static uint8_t parser_get_next_preprocessed(bool peek)
+static unsigned char parser_get_next_preprocessed(bool peek)
 {
 	uint8_t c = grbl_stream_peek();
 
@@ -2590,8 +2592,8 @@ uint8_t parser_get_expression(float *value)
 
 uint8_t parser_get_float(float *value)
 {
-	uint8_t c = parser_get_next_preprocessed(true);
 #ifdef ENABLE_RS274NGC_EXPRESSIONS
+	unsigned char c = parser_get_next_preprocessed(true);
 	c = TOUPPER(c);
 	if (c == '[' || c == '#' || (c >= 'A' && c <= 'Z'))
 	{

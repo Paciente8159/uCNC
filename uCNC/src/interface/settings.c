@@ -89,9 +89,9 @@ const settings_t __rom__ default_settings =
 		{
 				.version = SETTINGS_VERSION,
 				.max_step_rate = F_STEP_MAX,
-				#ifdef ENABLE_STEPPERS_DISABLE_TIMEOUT
+#ifdef ENABLE_STEPPERS_DISABLE_TIMEOUT
 				.step_disable_timeout = 0,
-				#endif
+#endif
 				.step_invert_mask = DEFAULT_STEP_INV_MASK,
 				.dir_invert_mask = DEFAULT_DIR_INV_MASK,
 				.step_enable_invert = DEFAULT_STEP_ENA_INV,
@@ -321,8 +321,10 @@ void settings_reset(bool erase_startup_blocks)
 	settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
 	if (erase_startup_blocks)
 	{
-		settings_erase(STARTUP_BLOCK0_ADDRESS_OFFSET, NULL, 1);
-		settings_erase(STARTUP_BLOCK1_ADDRESS_OFFSET, NULL, 1);
+		for (uint8_t i = 0; i < STARTUP_BLOCKS_COUNT; i++)
+		{
+			settings_erase(STARTUP_BLOCK_ADDRESS_OFFSET(i), NULL, 1);
+		}
 	}
 #endif
 }
