@@ -32,7 +32,7 @@ extern "C"
 // protocol->stream callback
 // this is the base function call to output via stream
 #define grbl_protocol_putc grbl_stream_putc
-#define grbl_protocol_printf(fmt, ...) print_fmt(grbl_stream_putc, NULL, __romstr__(fmt), __VA_ARGS__)
+#define grbl_protocol_printf(fmt, ...) print_fmt(grbl_stream_putc, NULL, fmt, __VA_ARGS__)
 #define grbl_protocol_print(fmt) print_fmt(grbl_stream_putc, NULL, __romstr__(fmt))
 	void grbl_protocol_error(uint8_t error);
 	void grbl_protocol_alarm(int8_t alarm);

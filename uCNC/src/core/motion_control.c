@@ -1027,24 +1027,24 @@ void mc_flush_pending_motion(void)
 
 void mc_print_hmap(void)
 {
-	grbl_protocol_string(MSG_START);
-	grbl_protocol_string("HMAP start corner;");
+	grbl_protocol_print(MSG_START);
+	grbl_protocol_print("HMAP start corner;");
 	serial_print_flt(hmap_x);
-	serial_putc(';');
+	grbl_protocol_putc(';');
 	serial_print_flt(hmap_y);
-	grbl_protocol_string(MSG_END);
+	grbl_protocol_print(MSG_END);
 
-	grbl_protocol_string(MSG_START);
-	grbl_protocol_string("HMAP end corner;");
+	grbl_protocol_print(MSG_START);
+	grbl_protocol_print("HMAP end corner;");
 	serial_print_flt(hmap_x + hmap_x_offset);
-	serial_putc(';');
+	grbl_protocol_putc(';');
 	serial_print_flt(hmap_y + hmap_y_offset);
-	grbl_protocol_string(MSG_END);
+	grbl_protocol_print(MSG_END);
 
-	grbl_protocol_string(MSG_START);
-	grbl_protocol_string("HMAP control points;");
+	grbl_protocol_print(MSG_START);
+	grbl_protocol_print("HMAP control points;");
 	serial_print_int(H_MAPING_ARRAY_SIZE);
-	grbl_protocol_string(MSG_END);
+	grbl_protocol_print(MSG_END);
 
 	// print map
 	for (uint8_t j = 0; j < H_MAPING_GRID_FACTOR; j++)
@@ -1053,14 +1053,14 @@ void mc_print_hmap(void)
 		{
 			uint8_t map = i + (H_MAPING_GRID_FACTOR * j);
 			float new_h = hmap_offsets[map];
-			grbl_protocol_string(MSG_START);
-			grbl_protocol_string("HMAP;");
+			grbl_protocol_print(MSG_START);
+			grbl_protocol_print("HMAP;");
 			serial_print_int(i);
-			serial_putc(';');
+			grbl_protocol_putc(';');
 			serial_print_int(j);
-			serial_putc(';');
+			grbl_protocol_putc(';');
 			serial_print_flt(new_h);
-			grbl_protocol_string(MSG_END);
+			grbl_protocol_print(MSG_END);
 		}
 	}
 }

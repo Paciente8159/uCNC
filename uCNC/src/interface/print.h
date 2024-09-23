@@ -24,27 +24,27 @@ extern "C"
 {
 #endif
 
-#include <stdio.h>
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdarg.h>
 
-#define ITOF_NUMBER_UNDEF 0
-#define ITOF_NUMBER_OK 0x20
-#define ITOF_NUMBER_ISFLOAT 0x40
-#define ITOF_NUMBER_ISNEGATIVE 0x80
+#define ATOF_NUMBER_UNDEF 0
+#define ATOF_NUMBER_OK 0x20
+#define ATOF_NUMBER_ISFLOAT 0x40
+#define ATOF_NUMBER_ISNEGATIVE 0x80
 
 	// printing utils
 	typedef void (*print_putc_cb)(char);
-	void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args);
+	// void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args);
 	void print_fmt(print_putc_cb cb, char *buffer, const char *fmt, ...);
 	// scaning utilities
 	typedef unsigned char(*print_read_input_cb)(bool);
-	uint8_t print_itof(print_read_input_cb cb, const char **buffer, float *value);
+	uint8_t print_atof(print_read_input_cb cb, const char **buffer, float *value);
 
 // string helper functions
 #define str_sprintf(buffer, fmt, ...) print_fmt(NULL, buffer, fmt, __VA_ARGS__)
-#define str_itof(buffer, var) print_itof(NULL, buffer, var)
+#define str_itof(buffer, var) print_atof(NULL, buffer, var)
 
 #ifdef __cplusplus
 }

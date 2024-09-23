@@ -158,9 +158,9 @@ extern "C"
 // formated messages
 #define STR_EOL "\r\n"
 #define MSG_EOL STR_EOL
-#define MSG_OK "ok" STR_EOL
-#define MSG_ERROR "error:%d" STR_EOL
-#define MSG_ALARM "ALARM:%d" STR_EOL
+#define MSG_OK "ok"
+#define MSG_ERROR "error:%d"
+#define MSG_ALARM "ALARM:%d" MSG_EOL
 #define MSG_ECHO "[echo:"
 #if EMULATE_GRBL_STARTUP == 0
 #define MSG_STARTUP_START "uCNC "
@@ -169,16 +169,16 @@ extern "C"
 #define MSG_STARTUP_START "Grbl "
 #define MSG_STARTUP_END " [uCNC v" CNC_VERSION " '$' for help]"
 #elif EMULATE_GRBL_STARTUP == 2
-#define MSG_STARTUP "Grbl 1.1f ['$' for help]" STR_EOL
+#define MSG_STARTUP "Grbl 1.1f ['$' for help]" MSG_EOL
 #endif
 #ifndef MSG_STARTUP
-#define MSG_STARTUP MSG_STARTUP_START CNC_MAJOR_MINOR_VERSION MSG_STARTUP_END STR_EOL
+#define MSG_STARTUP MSG_STARTUP_START CNC_MAJOR_MINOR_VERSION MSG_STARTUP_END MSG_EOL
 #endif
-#define MSG_HELP "[HLP:$$ $# $G $I $N $x=val $Nx=line $J=line $C $X $H ~ ! ? ctrl-x]" STR_EOL
+#define MSG_HELP "[HLP:$$ $# $G $I $N $x=val $Nx=line $J=line $C $X $H ~ ! ? ctrl-x]" MSG_EOL
 
 // Non query feedback messages
 #define MSG_START "[MSG:"
-#define MSG_END "]" STR_EOL
+#define MSG_END "]" MSG_EOL
 #define MSG_FEEDBACK MSG_START "%S" MSG_END
 #define MSG_FEEDBACK_PRINTF MSG_START "%s" MSG_END
 #define MSG_FEEDBACK_IP MSG_START "%M" MSG_END

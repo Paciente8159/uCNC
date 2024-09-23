@@ -19,7 +19,7 @@
 #include <math.h>
 #include <float.h>
 #include <stdint.h>
-#include <stdio.h>
+
 
 #include "../../../cnc.h"
 
@@ -432,43 +432,43 @@ bool plasma_grbl_protocol_status(void *args)
 {
 	uint8_t state = plasma_thc_state;
 
-	grbl_protocol_string("THC:");
+	grbl_protocol_print("THC:");
 
 	plasma_thc_extension_send_status();
 
 	if (CHECKFLAG(state, PLASMA_THC_ENABLED))
 	{
-		serial_putc('E');
+		grbl_protocol_putc('E');
 	}
 	else
 	{
-		serial_putc('*');
+		grbl_protocol_putc('*');
 	}
 	if (CHECKFLAG(state, PLASMA_THC_ACTIVE))
 	{
-		serial_putc('R');
+		grbl_protocol_putc('R');
 	}
 #if ASSERT_PIN(PLASMA_ON_OUTPUT)
 	if (io_get_output(PLASMA_ON_OUTPUT))
 	{
-		serial_putc('T');
+		grbl_protocol_putc('T');
 	}
 #endif
 	if (plasma_thc_arc_ok())
 	{
-		serial_putc('A');
+		grbl_protocol_putc('A');
 	}
 	if (plasma_thc_vad_active())
 	{
-		serial_putc('V');
+		grbl_protocol_putc('V');
 	}
 	if (plasma_thc_up())
 	{
-		serial_putc('U');
+		grbl_protocol_putc('U');
 	}
 	if (plasma_thc_down())
 	{
-		serial_putc('D');
+		grbl_protocol_putc('D');
 	}
 
 	return EVENT_CONTINUE;

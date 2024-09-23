@@ -811,7 +811,7 @@ bool settings_check_startup_gcode(uint16_t address)
 	return true;
 #else
 	grbl_protocol_putc(':');
-	grbl_protocol_print(MSG_OK);
+	grbl_protocol_error(0);
 	return false;
 #endif
 }

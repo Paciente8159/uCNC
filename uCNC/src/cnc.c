@@ -16,7 +16,7 @@
 	See the	GNU General Public License for more details.
 */
 
-#include <stdio.h>
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
@@ -163,7 +163,7 @@ void cnc_run(void)
 			if (grbl_stream_getc() == EOL)
 			{
 				grbl_protocol_feedback(MSG_FEEDBACK_1);
-				grbl_protocol_print(MSG_OK);
+				grbl_protocol_error(0);
 			}
 		}
 		cnc_dotasks();
@@ -215,13 +215,9 @@ uint8_t cnc_parse_cmd(void)
 		// runs any rt command in queue
 		// this catches for example a ?\n situation sent by some GUI like UGS
 		cnc_exec_rt_commands();
-		if (!error)
+		grbl_protocol_error(error);
+		if(error)
 		{
-			grbl_protocol_print(MSG_OK);
-		}
-		else
-		{
-			grbl_protocol_error(error);
 			itp_sync();
 			mc_sync_position();
 			parser_sync_position();

@@ -286,18 +286,18 @@ typedef uint16_t setting_offset_t;
 	{                                                                                    \
 		memset(var, 0, sizeof(char) * count);                                              \
 		settings_load(set##ID##_settings_address, (uint8_t *)var, sizeof(char) * count);   \
-		serial_putc('$');                                                                  \
-		serial_print_int(ID);                                                              \
-		serial_putc('=');                                                                  \
+		grbl_protocol_putc('$');                                                           \
+		grbl_protocol_printf("%ld", ID);                                                   \
+		grbl_protocol_putc('=');                                                           \
 		for (uint8_t i = 0; i < count; i++)                                                \
 		{                                                                                  \
 			char c = var[i];                                                                 \
 			if (c < 20 || c > 127)                                                           \
 			{                                                                                \
-				grbl_protocol_string(MSG_EOL);                                                 \
+				grbl_protocol_print(MSG_EOL);                                                  \
 				return EVENT_CONTINUE;                                                         \
 			}                                                                                \
-			serial_putc(c);                                                                  \
+			grbl_protocol_putc(c);                                                           \
 		}                                                                                  \
 		return EVENT_CONTINUE;                                                             \
 	}                                                                                    \

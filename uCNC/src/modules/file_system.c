@@ -291,24 +291,24 @@ static void fs_dir_list(void)
 	// if current working directory not initialized
 	if (!strlen(fs_cwd.full_name))
 	{
-		grbl_protocol_string("Available drives");
-		grbl_protocol_string(MSG_EOL);
+		grbl_protocol_print("Available drives");
+		grbl_protocol_print(MSG_EOL);
 		fs_t *drive = fs_default_drive;
 		while (drive)
 		{
-			grbl_protocol_string("<drive>\t");
-			serial_putc('/');
-			serial_putc(drive->drive);
-			grbl_protocol_string(MSG_EOL);
+			grbl_protocol_print("<drive>\t");
+			grbl_protocol_putc('/');
+			grbl_protocol_putc(drive->drive);
+			grbl_protocol_print(MSG_EOL);
 			drive = drive->next;
 		}
 		return;
 	}
 
 	// current dir
-	grbl_protocol_string("Index of /");
-	serial_print_str(fs_filename(&fs_cwd));
-	grbl_protocol_string(MSG_EOL);
+	grbl_protocol_print("Index of /");
+	grbl_protocol_printf("%s", fs_filename(&fs_cwd));
+	grbl_protocol_print(MSG_EOL);
 
 	fs_file_t *dir = fs_opendir(fs_cwd.full_name);
 
@@ -319,15 +319,15 @@ static void fs_dir_list(void)
 		{
 			if (finfo.is_dir)
 			{ /* It is a directory */
-				grbl_protocol_string("<dir>\t");
+				grbl_protocol_print("<dir>\t");
 			}
 			else
 			{ /* It is a file. */
-				grbl_protocol_string("     \t");
+				grbl_protocol_print("     \t");
 			}
 
-			serial_print_str(fs_filename(&finfo));
-			grbl_protocol_string(MSG_EOL);
+			grbl_protocol_printf("%s", fs_filename(&finfo));
+			grbl_protocol_print(MSG_EOL);
 		}
 
 		fs_close(dir);
@@ -341,24 +341,24 @@ void fs_cd(char *params)
 	{
 		if (dir->file_info.is_dir)
 		{
-			serial_print_str(fs_cwd.full_name);
-			serial_putc(' ');
-			serial_putc('>');
+			grbl_protocol_printf("%s", fs_cwd.full_name);
+			grbl_protocol_putc(' ');
+			grbl_protocol_putc('>');
 		}
 		else
 		{
-			serial_print_str(params);
+			grbl_protocol_printf("%s", params);
 			grbl_protocol_feedback(" is not a dir!");
 		}
 		fs_close(dir);
 	}
 	else if (strlen(fs_cwd.full_name))
 	{
-		serial_print_str(params);
+		grbl_protocol_printf("%s", params);
 		grbl_protocol_feedback("Dir not found!");
 	}
 
-	grbl_protocol_string(MSG_EOL);
+	grbl_protocol_print(MSG_EOL);
 }
 
 void fs_file_print(char *params)
@@ -375,7 +375,7 @@ void fs_file_print(char *params)
 				grbl_protocol_feedback("File read error!");
 				break;
 			}
-			serial_putc(c);
+			grbl_protocol_putc(c);
 		}
 
 		fs_close(fp);
@@ -387,7 +387,7 @@ void fs_file_print(char *params)
 		grbl_protocol_feedback("File not found!");
 	}
 
-	grbl_protocol_string(MSG_EOL);
+	grbl_protocol_print(MSG_EOL);
 }
 
 void fs_file_run(char *params)
@@ -411,10 +411,7 @@ void fs_file_run(char *params)
 	if (fp)
 	{
 		startline = MAX(1, startline);
-		grbl_protocol_string(MSG_START);
-		grbl_protocol_string("Running file from line - ");
-		serial_print_int(startline);
-		grbl_protocol_string(MSG_END);
+		grbl_protocol_printf(MSG_START"Running file from line - %llu" MSG_END, startline);
 #ifdef DECL_SERIAL_STREAM
 #ifdef ENABLE_MAIN_LOOP_MODULES
 		// prefill buffer

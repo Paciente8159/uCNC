@@ -181,12 +181,7 @@ int32_t encoder_get_position(uint8_t i)
 
 void encoder_print_values(void)
 {
-	for (uint8_t i = 0; i < ENCODERS; i++)
-	{
-		grbl_protocol_string("[EC:");
-		serial_print_int(encoder_get_position(i));
-		grbl_protocol_string(MSG_END);
-	}
+	grbl_protocol_printf("[EC:%"#ENCODERS"lld"MSG_END, encoders_pos);
 }
 
 void encoder_reset_position(uint8_t i, int32_t position)

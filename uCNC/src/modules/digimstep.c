@@ -64,11 +64,11 @@ bool m351_exec(void *args)
 		itp_sync();
 		if (!ptr->cmd->words)
 		{
-			int32_t val = -1;
+			int8_t val = -1;
 			// if no additional args then print the
-			grbl_protocol_string("[MSTEPS:");
+			grbl_protocol_print("[MSTEPS:");
 			val = -1;
-			serial_putc('X');
+			grbl_protocol_putc('X');
 #if ASSERT_PIN(STEPPER0_MSTEP0)
 			val = io_get_output(STEPPER0_MSTEP0) ? 1 : 0;
 #endif
@@ -76,10 +76,10 @@ bool m351_exec(void *args)
 			val = MAX(0, val);
 			val |= io_get_output(STEPPER0_MSTEP1) ? 2 : 0;
 #endif
-			serial_print_int(val);
-			serial_putc(',');
+			grbl_protocol_printf("%d", val);
+			grbl_protocol_putc(',');
 			val = -1;
-			serial_putc('Y');
+			grbl_protocol_putc('Y');
 #if ASSERT_PIN(STEPPER1_MSTEP0)
 			val = io_get_output(STEPPER1_MSTEP0) ? 1 : 0;
 #endif
@@ -87,10 +87,10 @@ bool m351_exec(void *args)
 			val = MAX(0, val);
 			val |= io_get_output(STEPPER1_MSTEP1) ? 2 : 0;
 #endif
-			serial_print_int(val);
-			serial_putc(',');
+			grbl_protocol_printf("%d", val);
+			grbl_protocol_putc(',');
 			val = -1;
-			serial_putc('Z');
+			grbl_protocol_putc('Z');
 #if ASSERT_PIN(STEPPER2_MSTEP0)
 			val = io_get_output(STEPPER2_MSTEP0) ? 1 : 0;
 #endif
@@ -98,10 +98,10 @@ bool m351_exec(void *args)
 			val = MAX(0, val);
 			val |= io_get_output(STEPPER2_MSTEP1) ? 2 : 0;
 #endif
-			serial_print_int(val);
-			serial_putc(',');
+			grbl_protocol_printf("%d", val);
+			grbl_protocol_putc(',');
 			val = -1;
-			serial_putc('A');
+			grbl_protocol_putc('A');
 #if ASSERT_PIN(STEPPER3_MSTEP0)
 			val = io_get_output(STEPPER3_MSTEP0) ? 1 : 0;
 #endif
@@ -109,10 +109,10 @@ bool m351_exec(void *args)
 			val = MAX(0, val);
 			val |= io_get_output(STEPPER3_MSTEP1) ? 2 : 0;
 #endif
-			serial_print_int(val);
-			serial_putc(',');
+			grbl_protocol_printf("%d", val);
+			grbl_protocol_putc(',');
 			val = -1;
-			serial_putc('B');
+			grbl_protocol_putc('B');
 #if ASSERT_PIN(STEPPER4_MSTEP0)
 			val = io_get_output(STEPPER4_MSTEP0) ? 1 : 0;
 #endif
@@ -120,10 +120,10 @@ bool m351_exec(void *args)
 			val = MAX(0, val);
 			val |= io_get_output(STEPPER4_MSTEP1) ? 2 : 0;
 #endif
-			serial_print_int(val);
-			serial_putc(',');
+			grbl_protocol_printf("%d", val);
+			grbl_protocol_putc(',');
 			val = -1;
-			serial_putc('C');
+			grbl_protocol_putc('C');
 #if ASSERT_PIN(STEPPER5_MSTEP0)
 			val = io_get_output(STEPPER5_MSTEP0) ? 1 : 0;
 #endif
@@ -131,10 +131,10 @@ bool m351_exec(void *args)
 			val = MAX(0, val);
 			val |= io_get_output(STEPPER5_MSTEP1) ? 2 : 0;
 #endif
-			serial_print_int(val);
-			serial_putc(',');
+			grbl_protocol_printf("%d", val);
+			grbl_protocol_putc(',');
 			val = -1;
-			serial_putc('I');
+			grbl_protocol_putc('I');
 #if ASSERT_PIN(STEPPER6_MSTEP0)
 			val = io_get_output(STEPPER6_MSTEP0) ? 1 : 0;
 #endif
@@ -142,10 +142,10 @@ bool m351_exec(void *args)
 			val = MAX(0, val);
 			val |= io_get_output(STEPPER6_MSTEP1) ? 2 : 0;
 #endif
-			serial_print_int(val);
-			serial_putc(',');
+			grbl_protocol_printf("%d", val);
+			grbl_protocol_putc(',');
 			val = -1;
-			serial_putc('J');
+			grbl_protocol_putc('J');
 #if ASSERT_PIN(STEPPER7_MSTEP0)
 			val = io_get_output(STEPPER7_MSTEP0) ? 1 : 0;
 #endif
@@ -153,9 +153,9 @@ bool m351_exec(void *args)
 			val = MAX(0, val);
 			val |= io_get_output(STEPPER7_MSTEP1) ? 2 : 0;
 #endif
-			serial_print_int(val);
-			serial_putc(']');
-			grbl_protocol_string(MSG_EOL);
+			grbl_protocol_printf("%d", val);
+			grbl_protocol_putc(']');
+			grbl_protocol_print(MSG_EOL);
 		}
 
 		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_X))

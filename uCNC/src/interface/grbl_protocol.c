@@ -245,7 +245,9 @@ WEAK_EVENT_HANDLER(grbl_protocol_gcode_modes)
 
 void grbl_protocol_error(uint8_t error)
 {
-	grbl_protocol_printf(MSG_ERROR, error);
+	(error) ? grbl_protocol_printf(MSG_ERROR, error) : grbl_protocol_print(MSG_OK);
+	grbl_protocol_putc('\r');
+	grbl_protocol_putc('\n');
 }
 
 void grbl_protocol_alarm(int8_t alarm)

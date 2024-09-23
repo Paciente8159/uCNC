@@ -22,7 +22,7 @@
 */
 
 #include "../cnc.h"
-#include <stdio.h>
+
 #include <stdint.h>
 #include <math.h>
 #include <string.h>
@@ -2600,7 +2600,7 @@ uint8_t parser_get_float(float *value)
 		return parser_get_expression(value);
 	}
 #endif
-	return print_itof(parser_get_next_preprocessed, NULL, value);
+	return print_atof(parser_get_next_preprocessed, NULL, value);
 }
 
 static uint8_t parser_get_token(uint8_t *word, float *value)
