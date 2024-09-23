@@ -36,7 +36,7 @@ extern "C"
 
 	// printing utils
 	typedef void (*print_putc_cb)(char);
-	// void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args);
+	void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args);
 	void print_fmt(print_putc_cb cb, char *buffer, const char *fmt, ...);
 	// scaning utilities
 	typedef unsigned char(*print_read_input_cb)(bool);

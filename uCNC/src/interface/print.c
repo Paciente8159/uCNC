@@ -163,7 +163,7 @@ void print_ip(print_putc_cb cb, char **buffer_ref, uint32_t ip)
 // 	return 0;
 // }
 
-static void FORCEINLINE print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
+void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 {
 	char c = 0, cval = 0;
 	const char *s;
@@ -176,7 +176,7 @@ static void FORCEINLINE print_fmtva(print_putc_cb cb, char *buffer, const char *
 	float f, *f_ptr = NULL;
 	char **buffer_ref = NULL;
 	char *ptr = buffer;
-	uint8_t elems = 1;
+	uint8_t elems = 0;
 
 	if (ptr)
 	{
@@ -185,11 +185,10 @@ static void FORCEINLINE print_fmtva(print_putc_cb cb, char *buffer, const char *
 
 	do
 	{
-		c = printf_getc(fmt);
-		fmt++;
+		c = printf_getc(fmt++);
 		if (c == '%')
 		{
-			c = printf_getc(fmt);
+			c = printf_getc(fmt++);
 			switch (c)
 			{
 #ifndef PRINT_DISABLE_FMT_PADDING
@@ -203,8 +202,7 @@ static void FORCEINLINE print_fmtva(print_putc_cb cb, char *buffer, const char *
 			case '0':
 				while (c >= '0' && c <= '9' && c)
 				{
-					c = printf_getc(fmt);
-					fmt++;
+					c = printf_getc(fmt++);
 				}
 				__FALL_THROUGH__
 			case '.':
@@ -218,7 +216,7 @@ static void FORCEINLINE print_fmtva(print_putc_cb cb, char *buffer, const char *
 					{
 						elems = (uint8_t)f;
 					}
-					c = printf_getc(fmt);
+					c = printf_getc(fmt++);
 				}
 				break;
 			}
@@ -229,8 +227,7 @@ static void FORCEINLINE print_fmtva(print_putc_cb cb, char *buffer, const char *
 				{
 					lcount++;
 				}
-				c = printf_getc(fmt);
-				fmt++;
+				c = printf_getc(fmt++);
 			}
 
 			switch (c)
@@ -280,6 +277,7 @@ static void FORCEINLINE print_fmtva(print_putc_cb cb, char *buffer, const char *
 						i = (int32_t)va_arg(*args, uint32_t);
 						break;
 					}
+					elems=1;
 				}
 				do
 				{
@@ -334,6 +332,7 @@ static void FORCEINLINE print_fmtva(print_putc_cb cb, char *buffer, const char *
 				{
 					f = (float)va_arg(*args, double);
 					f_ptr = &f;
+					elems=1;
 				}
 				do
 				{
@@ -364,6 +363,9 @@ static void FORCEINLINE print_fmtva(print_putc_cb cb, char *buffer, const char *
 				print_putc(cb, buffer_ref, c);
 				break;
 			}
+		}
+		else if(c){
+			cb(c);
 		}
 	} while (c);
 }

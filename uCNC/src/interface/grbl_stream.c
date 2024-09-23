@@ -326,6 +326,14 @@ void grbl_stream_putc(char c)
 #endif
 }
 
+void grbl_stream_printf(const char *fmt, ...)
+{
+	va_list args;
+	va_start(args, fmt);
+	print_fmtva(grbl_stream_putc, NULL, fmt, &args);
+	va_end(args);
+}
+
 #ifdef ENABLE_DEBUG_STREAM
 void debug_putc(char c)
 {

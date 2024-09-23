@@ -293,7 +293,7 @@ static FORCEINLINE void grbl_protocol_status_tail(void)
 	float axis[MAX(AXIS_COUNT, 3)];
 	if (parser_get_wco(axis))
 	{
-		grbl_protocol_printf(MSG_STATUS_WPOS, axis);
+		grbl_protocol_printf(MSG_STATUS_WCO, axis);
 		return;
 	}
 
