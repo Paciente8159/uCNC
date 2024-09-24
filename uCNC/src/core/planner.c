@@ -217,6 +217,9 @@ void planner_discard_block(void)
 	}
 
 	uint8_t index = planner_data_read;
+#ifdef ENABLE_PLANNER_SPEED_OVERSHOOT
+	float last_speed = planner_data[index].entry_feed_sqr;
+#endif
 
 	if (++index == PLANNER_BUFFER_SIZE)
 	{
@@ -233,6 +236,9 @@ void planner_discard_block(void)
 #endif
 
 	planner_data_blocks = blocks;
+#ifdef ENABLE_PLANNER_SPEED_OVERSHOOT
+	planner_data[index].entry_feed_sqr = last_speed;
+#endif
 	planner_data_read = index;
 }
 
@@ -360,9 +366,40 @@ float planner_get_block_top_speed(float exit_speed_sqr)
 
 	v_max^2 = (v_exit^2 + 2 * acceleration * distance + v_entry)/2
 	*/
+
 	// calculates the difference between the entry speed and the exit speed
 	uint8_t index = planner_data_read;
+
+#ifdef ENABLE_PLANNER_ACCEL_NONOPTIMAL
+	// just computes half way accel
+	float junction_speed_sqr = planner_data[index].acceleration * (float)(planner_data[index].total_steps);
+	if (planner_data[index].entry_feed_sqr > exit_speed_sqr)
+	{
+		junction_speed_sqr += exit_speed_sqr;
+	}
+	else
+	{
+		junction_speed_sqr += planner_data[index].entry_feed_sqr;
+		junction_speed_sqr = MAX(junction_speed_sqr, exit_speed_sqr);
+	}
+#else
+
 	float speed_delta = exit_speed_sqr - planner_data[index].entry_feed_sqr;
+
+#ifdef ENABLE_PLANNER_NOACCEL_ON_SLOWER_EXIT
+	// exit speed is lower then entry speed
+	if (speed_delta < 0)
+	{
+		uint8_t i = planner_data[index].main_stepper;
+		// is short distance?
+		if (ENABLE_PLANNER_NOACCEL_MAX_STEP_DISTANCE > planner_data[index].steps[i])
+		{
+			// keep speed (avoid accel on short motion that will have to deaccel after)
+			return planner_data[index].entry_feed_sqr;
+		}
+	}
+#endif
+
 	// calculates the speed increase/decrease for the given distance
 	float junction_speed_sqr = planner_data[index].acceleration * (float)(planner_data[index].steps[planner_data[index].main_stepper]);
 	junction_speed_sqr = fast_flt_mul2(junction_speed_sqr);
@@ -382,6 +419,7 @@ float planner_get_block_top_speed(float exit_speed_sqr)
 		// will overshoot the desired exit speed even deaccelerating all the way
 		junction_speed_sqr = planner_data[index].entry_feed_sqr;
 	}
+#endif
 
 	float rapid_feed_sqr = planner_data[index].rapid_feed_sqr;
 	float target_speed_sqr = planner_data[index].feed_sqr;
@@ -453,9 +491,10 @@ static void planner_recalculate(void)
 
 	while (!planner_data[block].planner_flags.bit.optimal && block != first)
 	{
-		if ((planner_data[block].entry_feed_sqr >= planner_data[block].entry_max_feed_sqr) || planner_data[block].planner_flags.bit.optimal)
+		if ((planner_data[block].entry_feed_sqr >= planner_data[block].entry_max_feed_sqr))
 		{
 			// found optimal
+			planner_data[block].planner_flags.bit.optimal = true;
 			break;
 		}
 		speedchange = ((float)(planner_data[block].steps[planner_data[block].main_stepper] << 1)) * planner_data[block].acceleration;
@@ -466,6 +505,7 @@ static void planner_recalculate(void)
 		block = planner_buffer_prev(block);
 	}
 
+#ifndef ENABLE_PLANNER_SPEED_OVERSHOOT
 	// optimizes exit speeds (forward pass)
 	while (block != last)
 	{
@@ -493,6 +533,7 @@ static void planner_recalculate(void)
 		block = next;
 		next = planner_buffer_next(block);
 	}
+#endif
 }
 
 void planner_sync_tools(motion_data_t *block_data)
