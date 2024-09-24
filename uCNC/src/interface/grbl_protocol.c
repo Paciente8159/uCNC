@@ -465,18 +465,19 @@ void grbl_protocol_status(void)
 		}
 	}
 
+	grbl_protocol_putc('|');
 	if (!(g_settings.status_report_mask & 1))
 	{
-		grbl_protocol_printf(MSG_STATUS_MPOS, axis);
+		grbl_protocol_putc('M');
 	}
 	else
 	{
 		parser_machine_to_work(axis);
-		grbl_protocol_printf(MSG_STATUS_WPOS, axis);
+		grbl_protocol_putc('W');
 	}
 
 	feed = (!g_settings.report_inches) ? feed : (feed * MM_INCH_MULT);
-	grbl_protocol_printf(MSG_STATUS_FS, feed, spindle);
+	grbl_protocol_printf(MSG_STATUS_POS MSG_STATUS_FS, axis, feed, spindle);
 
 #ifdef GCODE_PROCESS_LINE_NUMBERS
 	grbl_protocol_printf(MSG_STATUS_LINE, itp_get_rt_line_number());
@@ -565,7 +566,7 @@ void grbl_protocol_gcode_coordsys(void)
 		parser_get_coordsys(i, axis);
 		grbl_protocol_info("G%d:" MSG_AXIS, (i + 54), axis);
 	}
-#if COORD_SYS_COUNT >= 6
+#if COORD_SYS_COUNT > 6
 	for (uint8_t i = 6; i < COORD_SYS_COUNT; i++)
 	{
 		parser_get_coordsys(i, axis);
@@ -993,20 +994,17 @@ void grbl_protocol_cnc_info(bool extended)
 {
 	protocol_busy = true;
 #if EMULATE_GRBL_STARTUP < 2
-	grbl_protocol_print(VER_INFO);
-	grbl_protocol_print(OPT_INFO);
+	grbl_protocol_print(VER_INFO OPT_INFO);
 	EVENT_INVOKE(grbl_protocol_cnc_info, NULL);
-	grbl_protocol_print(PLANNER_INFO SERIAL_INFO "]" MSG_EOL);
+	grbl_protocol_print(PLANNER_INFO SERIAL_INFO MSG_END);
 #else
 	if (!extended)
 	{
-		grbl_protocol_print("[VER:1.1h.20190825:]" MSG_EOL);
-		grbl_protocol_print("[OPT:V," PLANNER_INFO SERIAL_INFO "]" MSG_EOL);
+		grbl_protocol_print("[VER:1.1h.20190825:]" MSG_EOL "[OPT:V," PLANNER_INFO SERIAL_INFO "]" MSG_EOL);
 	}
 	else
 	{
-		grbl_protocol_print(VER_INFO);
-		grbl_protocol_print(OPT_INFO);
+		grbl_protocol_print(VER_INFO OPT_INFO);
 		EVENT_INVOKE(grbl_protocol_cnc_info, NULL);
 		grbl_protocol_print(PLANNER_INFO SERIAL_INFO "]" MSG_EOL);
 	}

@@ -168,6 +168,11 @@ extern "C"
 #define DISABLE_MULTISTREAM_SERIAL
 #endif
 
+#ifdef EMULATE_GRBL_STARTUP
+#undef EMULATE_GRBL_STARTUP
+#define EMULATE_GRBL_STARTUP 2
+#endif
+
 #ifdef __cplusplus
 }
 #endif

@@ -213,7 +213,7 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 				__FALL_THROUGH__
 #endif
 			default:
-				if (c == '.' || (c >= '1' && c <= '9'))
+				if (c >= '1' && c <= '9')
 				{
 					fmt--;
 					if (print_atof(NULL /*itof_getc_dummy*/, (const char **)&fmt, &f))
