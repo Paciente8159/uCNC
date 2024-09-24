@@ -166,7 +166,7 @@ const settings_t __rom__ default_settings =
 };
 
 const setting_id_t __rom__ g_settings_id_table[] = {
-		{.id = 0, .memptr = &g_settings.max_step_rate, .type = SETTING_TYPE(0)},
+// {.id = 0, .memptr = &g_settings.max_step_rate, .type = SETTING_TYPE(0)},
 #ifdef ENABLE_STEPPERS_DISABLE_TIMEOUT
 		{.id = 1, .memptr = &g_settings.step_disable_timeout, .type = SETTING_TYPE(3)},
 #endif
@@ -482,6 +482,16 @@ uint8_t settings_change(setting_offset_t id, float value)
 		if (value < 0 && !settings_allows_negative(id))
 		{
 			return STATUS_NEGATIVE_VALUE;
+		}
+
+		// id 0 conversion from us to frequency
+		if (id == 0)
+		{
+			value = 1000000.0f / value;
+			if (value > F_STEP_MAX)
+			{
+				return STATUS_MAX_STEP_RATE_EXCEEDED;
+			}
 		}
 
 		uint8_t count = settings_count();

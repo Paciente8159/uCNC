@@ -101,6 +101,11 @@ static void print_int(print_putc_cb cb, char **buffer_ref, int32_t num, uint8_t 
 	uint8_t buffer[11];
 	uint8_t i = 0;
 
+	if (num == 0)
+	{
+		padding = MAX(1, padding);
+	}
+
 	if (num < 0)
 	{
 		print_putc(cb, buffer_ref, '-');
@@ -119,11 +124,10 @@ static void print_int(print_putc_cb cb, char **buffer_ref, int32_t num, uint8_t 
 		print_putc(cb, buffer_ref, '0');
 	}
 
-	do
+	while (i--)
 	{
-		i--;
 		print_putc(cb, buffer_ref, '0' + buffer[i]);
-	} while (i);
+	}
 }
 
 static void FORCEINLINE print_flt(print_putc_cb cb, char **buffer_ref, float num)
@@ -172,7 +176,8 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 	bool hexflags = HEX_NONE;
 #endif
 	void *pt = NULL;
-	int32_t i = 0;
+	int i = 0;
+	int32_t li = 0;
 	float f, *f_ptr = NULL;
 	char **buffer_ref = NULL;
 	char *ptr = buffer;
@@ -197,7 +202,6 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 				__FALL_THROUGH__
 			case '-':
 			case '+':
-				fmt++;
 				__FALL_THROUGH__
 			case '0':
 				while (c >= '0' && c <= '9' && c)
@@ -206,15 +210,16 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 				}
 				__FALL_THROUGH__
 			case '.':
-				fmt++;
 				__FALL_THROUGH__
 #endif
 			default:
 				if (c == '.' || (c >= '1' && c <= '9'))
 				{
-					if (print_atof(NULL/*itof_getc_dummy*/, (const char **)&fmt, &f))
+					fmt--;
+					if (print_atof(NULL /*itof_getc_dummy*/, (const char **)&fmt, &f))
 					{
 						elems = (uint8_t)f;
+						fmt++;
 					}
 					c = printf_getc(fmt++);
 				}
@@ -256,9 +261,11 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 				__FALL_THROUGH__
 			case 'x':
 #endif
+			case 'u':
+				cval = 1;
+				__FALL_THROUGH__
 			case 'd':
 			case 'i':
-			case 'u':
 				if (elems)
 				{
 					pt = va_arg(*args, void *);
@@ -268,39 +275,34 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 					switch (lcount)
 					{
 					case 0:
-						i = (int32_t)va_arg(*args, int);
-						break;
 					case 1:
-						i = (int32_t)va_arg(*args, uint16_t);
+						i = (int32_t)va_arg(*args, int);
+						li = (c) ? (unsigned int)i : i;
 						break;
 					default:
-						i = (int32_t)va_arg(*args, uint32_t);
+						li = (int32_t)va_arg(*args, long int);
 						break;
 					}
-					elems=1;
+					elems = 1;
 				}
 				do
 				{
 					switch (c)
 					{
-					case 'u':
-						i = ABS(i);
-						__FALL_THROUGH__
-					case 'd':
-					case 'i':
-						print_int(cb, buffer_ref, i, 0);
-						break;
 #ifndef PRINT_DISABLE_FMT_HEX
 					case 'x':
 					case 'X':
-						print_byte(cb, buffer_ref, (const uint8_t *)&i, (hexflags | lcount));
+						print_byte(cb, buffer_ref, (const uint8_t *)&li, (hexflags | lcount));
 						break;
 #endif
 #ifndef PRINT_DISABLE_FMT_IP
 					case 'M':
-						print_ip(cb, buffer_ref, i);
+						print_ip(cb, buffer_ref, li);
 						break;
 #endif
+					default:
+						print_int(cb, buffer_ref, li, 0);
+						break;
 					}
 					if (elems && --elems)
 					{
@@ -332,7 +334,7 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 				{
 					f = (float)va_arg(*args, double);
 					f_ptr = &f;
-					elems=1;
+					elems = 1;
 				}
 				do
 				{
@@ -364,7 +366,8 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 				break;
 			}
 		}
-		else if(c){
+		else if (c)
+		{
 			cb(c);
 		}
 	} while (c);

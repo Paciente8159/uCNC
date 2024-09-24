@@ -230,7 +230,7 @@ extern "C"
 #else
 #define MSG_STATUS_FS "|F:%f"
 #endif
-#define MSG_STATUS_WCO "|WCO:"
+#define MSG_STATUS_WCO "|WCO:" MSG_AXIS
 #define MSG_STATUS_OVR "|Ov:%d,%d,%d"
 #define MSG_STATUS_TOOL "|A:"
 #define MSG_STATUS_LINE "|Ln:%llu"
