@@ -177,7 +177,7 @@ extern "C"
 #define MSG_HELP "[HLP:$$ $# $G $I $N $x=val $Nx=line $J=line $C $X $H ~ ! ? ctrl-x]" MSG_EOL
 
 // Non query feedback messages
-#define MSG_START "[MSG:"
+#define MSG_START "MSG:"
 #define MSG_END "]" MSG_EOL
 #define MSG_FEEDBACK MSG_START "%S" MSG_END
 #define MSG_FEEDBACK_PRINTF MSG_START "%s" MSG_END

@@ -482,7 +482,7 @@ static uint8_t parser_grbl_command(void)
 
 					settings_save(block_address, NULL, UINT16_MAX);
 					// run startup block
-					grbl_stream_broadcast(true);
+					grbl_stream_start_broadcast();
 					grbl_stream_eeprom(block_address);
 					// checks the command validity
 					error = parser_fetch_command(&next_state, &words, &cmd);
@@ -493,7 +493,7 @@ static uint8_t parser_grbl_command(void)
 					// 	error = parser_validate_command(&next_state, &words, &cmd);
 					// }
 
-					grbl_stream_broadcast(false);
+					
 					// reset streams
 					grbl_stream_change(NULL);
 
@@ -721,7 +721,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 #ifdef ECHO_CMD
 		if (!wordcount)
 		{
-			grbl_stream_broadcast(true);
+			grbl_stream_start_broadcast();
 			grbl_protocol_print(MSG_ECHO);
 		}
 #endif
@@ -733,7 +733,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 			parser_discard_command();
 #ifdef ECHO_CMD
 			grbl_protocol_print(MSG_END);
-			grbl_stream_broadcast(false);
+			
 #endif
 			return error;
 		}
@@ -791,7 +791,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 			DEBUG_PUTC('\n');
 #ifdef ECHO_CMD
 			grbl_protocol_print(MSG_END);
-			grbl_stream_broadcast(false);
+			
 #endif
 			return STATUS_OK;
 		case 'G':
@@ -835,7 +835,6 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 			parser_discard_command();
 #ifdef ECHO_CMD
 			grbl_protocol_print(MSG_END);
-			grbl_stream_broadcast(false);
 #endif
 			return error;
 		}

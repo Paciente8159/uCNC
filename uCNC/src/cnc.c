@@ -650,7 +650,7 @@ void cnc_reset(void)
 #ifdef ENABLE_MAIN_LOOP_MODULES
 	EVENT_INVOKE(cnc_reset, NULL);
 #endif
-	grbl_stream_broadcast(true);
+	grbl_stream_start_broadcast();
 	grbl_protocol_print(MSG_STARTUP);
 }
 

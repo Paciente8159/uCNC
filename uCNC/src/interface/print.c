@@ -219,7 +219,6 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 					if (print_atof(NULL /*itof_getc_dummy*/, (const char **)&fmt, &f))
 					{
 						elems = (uint8_t)f;
-						fmt++;
 					}
 					c = printf_getc(fmt++);
 				}
@@ -422,22 +421,25 @@ uint8_t print_atof(print_read_input_cb cb, const char **buffer, float *value)
 
 				result |= ATOF_NUMBER_OK;
 			}
+			else if ((result & ATOF_NUMBER_OK))
+			{
+				rhs = (float)intval;
+				while (fpcount--)
+				{
+					rhs *= 0.1f;
+				}
+
+				*value = (result & ATOF_NUMBER_ISNEGATIVE) ? -rhs : rhs;
+				return result;
+			}
 			else
 			{
-				if ((result & ATOF_NUMBER_OK))
-				{
-					rhs = (float)intval;
-					while (fpcount--)
-					{
-						rhs *= 0.1f;
-					}
-
-					*value = (result & ATOF_NUMBER_ISNEGATIVE) ? -rhs : rhs;
-					return result;
-				}
+				return ATOF_NUMBER_UNDEF;
 			}
 			break;
 		}
+		atof_get(cb, buffer);
+		c = (uint8_t)atof_peek(cb, buffer);
 	}
 
 	return ATOF_NUMBER_UNDEF;

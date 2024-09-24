@@ -115,7 +115,7 @@ extern "C"
 					grbl_protocol_feedback("AP started");
 					grbl_protocol_feedback("SSID>" BOARD_NAME);
 					sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
-					grbl_protocol_sprintf(str);
+					grbl_protocol_feedback("%s", str);
 					break;
 				default:
 					WiFi.mode(WIFI_AP_STA);
@@ -125,7 +125,7 @@ extern "C"
 					grbl_protocol_feedback("AP started");
 					grbl_protocol_feedback("SSID>" BOARD_NAME);
 					sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
-					grbl_protocol_sprintf(str);
+					grbl_protocol_feedback("%s", str);
 					break;
 				}
 
@@ -168,7 +168,7 @@ extern "C"
 				else
 				{
 					sprintf((char *)str, "SSID>%s", wifi_settings.ssid);
-					grbl_protocol_sprintf(str);
+					grbl_protocol_feedback("%s", str);
 				}
 				*(cmd_params->error) = STATUS_OK;
 				return EVENT_HANDLED;
@@ -187,13 +187,13 @@ extern "C"
 
 				// print the list of networks seen:
 				sprintf((char *)str, "%d available networks", numSsid);
-				grbl_protocol_sprintf(str);
+				grbl_protocol_feedback("%s", str);
 
 				// print the network number and name for each network found:
 				for (int netid = 0; netid < numSsid; netid++)
 				{
 					sprintf((char *)str, "%d) %s\tSignal:  %ddBm", netid, WiFi.SSID(netid).c_str(), WiFi.RSSI(netid));
-					grbl_protocol_sprintf(str);
+					grbl_protocol_feedback("%s", str);
 				}
 				*(cmd_params->error) = STATUS_OK;
 				return EVENT_HANDLED;
@@ -284,17 +284,17 @@ extern "C"
 					{
 					case 1:
 						sprintf((char *)str, "STA IP>%s", WiFi.localIP().toString().c_str());
-						grbl_protocol_sprintf(str);
+						grbl_protocol_feedback("%s", str);
 						sprintf((char *)str, "AP IP>%s", WiFi.softAPIP().toString().c_str());
-						grbl_protocol_sprintf(str);
+						grbl_protocol_feedback("%s", str);
 						break;
 					case 2:
 						sprintf((char *)str, "IP>%s", WiFi.localIP().toString().c_str());
-						grbl_protocol_sprintf(str);
+						grbl_protocol_feedback("%s", str);
 						break;
 					default:
 						sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
-						grbl_protocol_sprintf(str);
+						grbl_protocol_feedback("%s", str);
 						break;
 					}
 				}
@@ -343,9 +343,9 @@ extern "C"
 			connected = true;
 			grbl_protocol_feedback("Connected to WiFi");
 			sprintf((char *)str, "SSID>%s", wifi_settings.ssid);
-			grbl_protocol_sprintf(str);
+			grbl_protocol_feedback("%s", str);
 			sprintf((char *)str, "IP>%s", WiFi.localIP().toString().c_str());
-			grbl_protocol_sprintf(str);
+			grbl_protocol_feedback("%s", str);
 		}
 
 		if (telnet_server.hasClient())
@@ -756,7 +756,7 @@ extern "C"
 				grbl_protocol_feedback("AP started");
 				grbl_protocol_feedback("SSID>" BOARD_NAME);
 				sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
-				grbl_protocol_sprintf(str);
+				grbl_protocol_feedback("%s", str);
 				break;
 			default:
 				WiFi.mode(WIFI_AP_STA);
@@ -766,7 +766,7 @@ extern "C"
 				grbl_protocol_feedback("AP started");
 				grbl_protocol_feedback("SSID>" BOARD_NAME);
 				sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
-				grbl_protocol_sprintf(str);
+				grbl_protocol_feedback("%s", str);
 				break;
 			}
 		}

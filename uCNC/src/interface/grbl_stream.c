@@ -281,10 +281,10 @@ void grbl_stream_clear(void)
 #ifndef DISABLE_MULTISTREAM_SERIAL
 static bool grbl_stream_broadcast_enabled;
 #endif
-void grbl_stream_broadcast(bool enable)
+void grbl_stream_start_broadcast(void)
 {
 #ifndef DISABLE_MULTISTREAM_SERIAL
-	grbl_stream_broadcast_enabled = enable;
+	grbl_stream_broadcast_enabled = true;
 #endif
 }
 
@@ -320,6 +320,9 @@ void grbl_stream_putc(char c)
 	{
 		grbl_stream_tx_count = 0;
 		grbl_stream_flush();
+#ifndef DISABLE_MULTISTREAM_SERIAL
+		grbl_stream_broadcast_enabled = false;
+#endif
 	}
 #if ASSERT_PIN(ACTIVITY_LED)
 	io_toggle_output(ACTIVITY_LED);

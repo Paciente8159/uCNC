@@ -32,15 +32,15 @@ extern "C"
 // protocol->stream callback
 // this is the base function call to output via stream
 #define grbl_protocol_putc grbl_stream_putc
-#define grbl_protocol_printf(fmt, ...) grbl_stream_printf(__romstr__(fmt), ## __VA_ARGS__)
+#define grbl_protocol_printf(fmt, ...) grbl_stream_printf(__romstr__(fmt), ##__VA_ARGS__)
 #define grbl_protocol_print(fmt) grbl_protocol_printf(fmt)
 	void grbl_protocol_error(uint8_t error);
 	void grbl_protocol_alarm(int8_t alarm);
 	void grbl_protocol_status(void);
 	DECL_EVENT_HANDLER(grbl_protocol_status);
-	void grbl_protocol_feedback_base(void *__s, uint8_t type);
-#define grbl_protocol_feedback(__s) grbl_protocol_feedback_base((void*)__romstr__(__s), 0)
-#define grbl_protocol_sprintf(__s) grbl_protocol_feedback_base((void*)__s, 1)
+	void grbl_protocol_feedback_fmt(const char *fmt, bool is_feedback, ...);
+#define grbl_protocol_feedback(__s, ...) grbl_protocol_feedback_fmt(__romstr__(__s), true, ##__VA_ARGS__)
+#define grbl_protocol_info(__s, __pre, ...) grbl_protocol_feedback_fmt(__romstr__(__s), false, ##__VA_ARGS__)
 	void grbl_protocol_probe_result(uint8_t val);
 	void grbl_protocol_gcode_coordsys(void);
 	void grbl_protocol_gcode_modes(void);

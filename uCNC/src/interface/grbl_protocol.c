@@ -252,24 +252,38 @@ void grbl_protocol_error(uint8_t error)
 
 void grbl_protocol_alarm(int8_t alarm)
 {
-	grbl_stream_broadcast(true);
+	grbl_stream_start_broadcast();
 	grbl_protocol_printf(MSG_ALARM, alarm);
-	grbl_stream_broadcast(false);
 }
 
-void grbl_protocol_feedback_base(void *arg, uint8_t type)
+void grbl_protocol_feedback_fmt(const char *fmt, bool is_feedback, ...)
 {
-	grbl_stream_broadcast(true);
-	if (type)
+	va_list args;
+	va_start(args, is_feedback);
+	grbl_stream_start_broadcast();
+	grbl_protocol_putc('[');
+	if (is_feedback)
 	{
-		grbl_protocol_printf(MSG_FEEDBACK_PRINTF, arg);
+		grbl_protocol_print(MSG_START);
 	}
-	else
-	{
-		grbl_protocol_printf(MSG_FEEDBACK, arg);
-	}
-	grbl_stream_broadcast(false);
+	print_fmtva(grbl_stream_putc, NULL, fmt, &args);
+	grbl_protocol_print(MSG_END);
+	va_end(args);
 }
+
+// void grbl_protocol_feedback_base(void *arg, uint8_t type)
+// {
+// 	grbl_stream_start_broadcast();
+// 	if (type)
+// 	{
+// 		grbl_protocol_printf(MSG_FEEDBACK_PRINTF, arg);
+// 	}
+// 	else
+// 	{
+// 		grbl_protocol_printf(MSG_FEEDBACK, arg);
+// 	}
+
+// }
 
 WEAK_EVENT_HANDLER(grbl_protocol_status)
 {
@@ -347,7 +361,7 @@ void grbl_protocol_status(void)
 		return;
 	}
 
-	grbl_stream_broadcast(true);
+	grbl_stream_start_broadcast();
 
 	float axis[MAX(AXIS_COUNT, 3)];
 
@@ -549,28 +563,28 @@ void grbl_protocol_gcode_coordsys(void)
 	for (uint8_t i = 0; i < COORD_SYS_COUNT; i++)
 	{
 		parser_get_coordsys(i, axis);
-		grbl_protocol_printf("G%d:" MSG_AXIS "]" MSG_EOL, (i + 54), axis);
+		grbl_protocol_info("G%d:" MSG_AXIS, (i + 54), axis);
 	}
 #if COORD_SYS_COUNT >= 6
 	for (uint8_t i = 6; i < COORD_SYS_COUNT; i++)
 	{
 		parser_get_coordsys(i, axis);
-		grbl_protocol_printf("G59.%d:" MSG_AXIS "]" MSG_EOL, (i - 5), axis);
+		grbl_protocol_info("G59.%d:" MSG_AXIS, (i - 5), axis);
 	}
 #endif
 
 	parser_get_coordsys(28, axis);
-	grbl_protocol_printf("G28:" MSG_AXIS "]" MSG_EOL, axis);
+	grbl_protocol_info("G28:" MSG_AXIS, axis);
 
 	parser_get_coordsys(30, axis);
-	grbl_protocol_printf("G30:" MSG_AXIS "]" MSG_EOL, axis);
+	grbl_protocol_info("G30:" MSG_AXIS, axis);
 
 	parser_get_coordsys(92, axis);
-	grbl_protocol_printf("G92:" MSG_AXIS "]" MSG_EOL, axis);
+	grbl_protocol_info("G92:" MSG_AXIS, axis);
 
 #ifdef AXIS_TOOL
 	parser_get_coordsys(254, axis);
-	grbl_protocol_printf("[TLO:%1f]" MSG_EOL, axis);
+	grbl_protocol_info("TLO:%1f", axis);
 #endif
 	grbl_protocol_probe_result(parser_get_probe_result());
 
@@ -581,7 +595,7 @@ void grbl_protocol_probe_result(uint8_t val)
 {
 	float axis[MAX(AXIS_COUNT, 3)];
 	parser_get_coordsys(255, axis);
-	grbl_protocol_printf("PRB:" MSG_AXIS ":%d]" MSG_EOL, axis, val);
+	grbl_protocol_info("PRB:" MSG_AXIS ":%d", axis, val);
 }
 
 static void grbl_protocol_parser_modalstate(uint8_t word, uint8_t val, uint8_t mantissa)
@@ -605,7 +619,7 @@ void grbl_protocol_gcode_modes(void)
 
 	parser_get_modes(modalgroups, &feed, &spindle);
 
-	grbl_stream_broadcast(true);
+	grbl_stream_start_broadcast();
 
 	grbl_protocol_print("[GC:");
 
@@ -659,7 +673,7 @@ void grbl_protocol_gcode_modes(void)
 	// permanent M9
 	grbl_protocol_print("M9 ");
 #endif
-	grbl_protocol_printf("M%d T%d F%f S%lu]" MSG_EOL, modalgroups[10], modalgroups[11], feed, spindle);
+	grbl_protocol_printf("M%d T%d F%f S%lu" MSG_END, modalgroups[10], modalgroups[11], feed, spindle);
 }
 
 void grbl_protocol_gcode_setting_line_int(setting_offset_t setting, uint16_t value)
@@ -723,7 +737,7 @@ void grbl_protocol_cnc_settings(void)
 			switch (SETTING_TYPE_MASK(s.type))
 			{
 			case 1:
-				val = (uint32_t) * ((bool *)s.memptr);
+				val = (uint32_t)((bool *)s.memptr)[j];
 				grbl_protocol_gcode_setting_line_int(s.id, val);
 				break;
 			case 2:
@@ -735,125 +749,16 @@ void grbl_protocol_cnc_settings(void)
 				grbl_protocol_gcode_setting_line_int(s.id, val);
 				break;
 			default:
-				grbl_protocol_gcode_setting_line_flt(s.id, *((float *)s.memptr));
+				grbl_protocol_gcode_setting_line_flt(s.id, ((float *)s.memptr)[j]);
 				break;
 			}
+			s.id++;
 		}
 	}
-	/*
-	grbl_protocol_gcode_setting_line_flt(0, (1000000.0f / g_settings.max_step_rate));
-#if EMULATE_GRBL_STARTUP > 0 || defined(ENABLE_STEPPERS_DISABLE_TIMEOUT)
-// just adds this for compatibility
-// this setting is not used
-#ifdef ENABLE_STEPPERS_DISABLE_TIMEOUT
-	grbl_protocol_gcode_setting_line_int(1, g_settings.step_disable_timeout);
-#else
-	grbl_protocol_gcode_setting_line_int(1, 0);
-#endif
-#endif
-	grbl_protocol_gcode_setting_line_int(2, g_settings.step_invert_mask);
-	grbl_protocol_gcode_setting_line_int(3, g_settings.dir_invert_mask);
-	grbl_protocol_gcode_setting_line_int(4, g_settings.step_enable_invert);
-	grbl_protocol_gcode_setting_line_int(5, g_settings.limits_invert_mask);
-	grbl_protocol_gcode_setting_line_int(6, g_settings.probe_invert_mask);
-	grbl_protocol_gcode_setting_line_int(7, g_settings.control_invert_mask);
-#if ENCODERS > 0
-	grbl_protocol_gcode_setting_line_int(8, g_settings.encoders_pulse_invert_mask);
-	grbl_protocol_gcode_setting_line_int(9, g_settings.encoders_dir_invert_mask);
-#endif
-	grbl_protocol_gcode_setting_line_int(10, g_settings.status_report_mask);
-	grbl_protocol_gcode_setting_line_flt(11, g_settings.g64_angle_factor);
-	grbl_protocol_gcode_setting_line_flt(12, g_settings.arc_tolerance);
-	grbl_protocol_gcode_setting_line_int(13, g_settings.report_inches);
-#if S_CURVE_ACCELERATION_LEVEL == -1
-	grbl_protocol_gcode_setting_line_int(14, g_settings.s_curve_profile);
-#endif
-	grbl_protocol_gcode_setting_line_int(20, g_settings.soft_limits_enabled);
-	grbl_protocol_gcode_setting_line_int(21, g_settings.hard_limits_enabled);
-	grbl_protocol_gcode_setting_line_int(22, g_settings.homing_enabled);
-	grbl_protocol_gcode_setting_line_int(23, g_settings.homing_dir_invert_mask);
-	grbl_protocol_gcode_setting_line_flt(24, g_settings.homing_slow_feed_rate);
-	grbl_protocol_gcode_setting_line_flt(25, g_settings.homing_fast_feed_rate);
-	grbl_protocol_gcode_setting_line_int(26, g_settings.debounce_ms);
-	grbl_protocol_gcode_setting_line_flt(27, g_settings.homing_offset);
-#if (KINEMATIC == KINEMATIC_DELTA)
-	grbl_protocol_gcode_setting_line_flt(28, g_settings.delta_bicep_homing_angle);
-#elif (KINEMATIC == KINEMATIC_SCARA)
-	grbl_protocol_gcode_setting_line_flt(28, g_settings.scara_arm_homing_angle);
-	grbl_protocol_gcode_setting_line_flt(29, g_settings.scara_forearm_homing_angle);
-#endif
-	grbl_protocol_gcode_setting_line_int(30, g_settings.spindle_max_rpm);
-	grbl_protocol_gcode_setting_line_int(31, g_settings.spindle_min_rpm);
-	grbl_protocol_gcode_setting_line_int(32, g_settings.laser_mode);
-#ifdef ENABLE_LASER_PPI
-	grbl_protocol_gcode_setting_line_int(33, g_settings.laser_ppi);
-	grbl_protocol_gcode_setting_line_int(34, g_settings.laser_ppi_uswidth);
-	grbl_protocol_gcode_setting_line_flt(35, g_settings.laser_ppi_mixmode_ppi);
-	grbl_protocol_gcode_setting_line_flt(36, g_settings.laser_ppi_mixmode_uswidth);
-#endif
-#ifdef ENABLE_SKEW_COMPENSATION
-	grbl_protocol_gcode_setting_line_flt(37, g_settings.skew_xy_factor);
-#ifndef SKEW_COMPENSATION_XY_ONLY
-	grbl_protocol_gcode_setting_line_flt(38, g_settings.skew_xz_factor);
-	grbl_protocol_gcode_setting_line_flt(39, g_settings.skew_yz_factor);
-#endif
-#endif
-
-#if TOOL_COUNT > 0
-#if TOOL_COUNT > 1
-	grbl_protocol_gcode_setting_line_int(80, g_settings.default_tool);
-#endif
-	for (uint8_t i = 0; i < TOOL_COUNT; i++)
-	{
-		grbl_protocol_gcode_setting_line_flt(81 + i, g_settings.tool_length_offset[i]);
-	}
-#endif
-
-	for (uint8_t i = 0; i < AXIS_COUNT; i++)
-	{
-		grbl_protocol_gcode_setting_line_flt(100 + i, g_settings.step_per_mm[i]);
-	}
-
-#if (KINEMATIC == KINEMATIC_LINEAR_DELTA)
-	grbl_protocol_gcode_setting_line_flt(106, g_settings.delta_arm_length);
-	grbl_protocol_gcode_setting_line_flt(107, g_settings.delta_armbase_radius);
-	// grbl_protocol_gcode_setting_line_int(108, g_settings.delta_efector_height);
-#elif (KINEMATIC == KINEMATIC_DELTA)
-	grbl_protocol_gcode_setting_line_flt(106, g_settings.delta_base_radius);
-	grbl_protocol_gcode_setting_line_flt(107, g_settings.delta_effector_radius);
-	grbl_protocol_gcode_setting_line_flt(108, g_settings.delta_bicep_length);
-	grbl_protocol_gcode_setting_line_flt(109, g_settings.delta_forearm_length);
-#elif (KINEMATIC == KINEMATIC_SCARA)
-	grbl_protocol_gcode_setting_line_flt(106, g_settings.scara_arm_length);
-	grbl_protocol_gcode_setting_line_flt(107, g_settings.scara_forearm_length);
-#endif
-
-	for (uint8_t i = 0; i < AXIS_COUNT; i++)
-	{
-		grbl_protocol_gcode_setting_line_flt(110 + i, g_settings.max_feed_rate[i]);
-	}
-
-	for (uint8_t i = 0; i < AXIS_COUNT; i++)
-	{
-		grbl_protocol_gcode_setting_line_flt(120 + i, g_settings.acceleration[i]);
-	}
-
-	for (uint8_t i = 0; i < AXIS_COUNT; i++)
-	{
-		grbl_protocol_gcode_setting_line_flt(130 + i, g_settings.max_distance[i]);
-	}
-
-#ifdef ENABLE_BACKLASH_COMPENSATION
-	for (uint8_t i = 0; i < AXIS_TO_STEPPERS; i++)
-	{
-		grbl_protocol_gcode_setting_line_int(140 + i, g_settings.backlash_steps[i]);
-	}
-#endif
-*/
 
 #ifdef ENABLE_SETTINGS_MODULES
 	EVENT_INVOKE(grbl_protocol_cnc_settings, NULL);
-	grbl_stream_broadcast(false);
+
 #endif
 	protocol_busy = false;
 }
@@ -1065,7 +970,7 @@ void grbl_protocol_pins_states(void)
 #define EXTENDED_VER "[VER+:"
 #endif
 #define OPT_INFO EXTENDED_OPT KINEMATIC_INFO LINES_INFO BRESENHAM_INFO DSS_INFO DYNACCEL_INFO SKEW_INFO LINPLAN_INFO HMAP_INFO PPI_INFO INVESTOP_INFO SPOLL_INFO CONTROLS_INFO LIMITS_INFO PROBE_INFO IODBG_INFO SETTINGS_INFO EXTRACMD_INFO FASTMATH_INFO
-#define VER_INFO EXTENDED_VER " uCNC " CNC_VERSION " - " BOARD_NAME "]" STR_EOL
+#define VER_INFO EXTENDED_VER " uCNC " CNC_VERSION " - " BOARD_NAME "]" MSG_EOL
 
 WEAK_EVENT_HANDLER(grbl_protocol_cnc_info)
 {
@@ -1091,19 +996,19 @@ void grbl_protocol_cnc_info(bool extended)
 	grbl_protocol_print(VER_INFO);
 	grbl_protocol_print(OPT_INFO);
 	EVENT_INVOKE(grbl_protocol_cnc_info, NULL);
-	grbl_protocol_print(PLANNER_INFO SERIAL_INFO "]" STR_EOL);
+	grbl_protocol_print(PLANNER_INFO SERIAL_INFO "]" MSG_EOL);
 #else
 	if (!extended)
 	{
-		grbl_protocol_print("[VER:1.1h.20190825:]" STR_EOL);
-		grbl_protocol_print("[OPT:V," PLANNER_INFO SERIAL_INFO "]" STR_EOL);
+		grbl_protocol_print("[VER:1.1h.20190825:]" MSG_EOL);
+		grbl_protocol_print("[OPT:V," PLANNER_INFO SERIAL_INFO "]" MSG_EOL);
 	}
 	else
 	{
 		grbl_protocol_print(VER_INFO);
 		grbl_protocol_print(OPT_INFO);
 		EVENT_INVOKE(grbl_protocol_cnc_info, NULL);
-		grbl_protocol_print(PLANNER_INFO SERIAL_INFO "]" STR_EOL);
+		grbl_protocol_print(PLANNER_INFO SERIAL_INFO "]" MSG_EOL);
 	}
 #endif
 	protocol_busy = false;
