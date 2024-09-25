@@ -89,9 +89,9 @@ const settings_t __rom__ default_settings =
 		{
 				.version = SETTINGS_VERSION,
 				.max_step_rate = F_STEP_MAX,
-				#ifdef ENABLE_STEPPERS_DISABLE_TIMEOUT
+#ifdef ENABLE_STEPPERS_DISABLE_TIMEOUT
 				.step_disable_timeout = 0,
-				#endif
+#endif
 				.step_invert_mask = DEFAULT_STEP_INV_MASK,
 				.dir_invert_mask = DEFAULT_DIR_INV_MASK,
 				.step_enable_invert = DEFAULT_STEP_ENA_INV,
@@ -319,11 +319,15 @@ void settings_reset(bool erase_startup_blocks)
 
 #if !defined(ENABLE_EXTRA_SYSTEM_CMDS) && !defined(RAM_ONLY_SETTINGS)
 	settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
+#if STARTUP_BLOCKS_COUNT
 	if (erase_startup_blocks)
 	{
-		settings_erase(STARTUP_BLOCK0_ADDRESS_OFFSET, NULL, 1);
-		settings_erase(STARTUP_BLOCK1_ADDRESS_OFFSET, NULL, 1);
+		for (uint8_t i = 0; i < STARTUP_BLOCKS_COUNT; i++)
+		{
+			settings_erase(STARTUP_BLOCK_ADDRESS_OFFSET(i), NULL, 1);
+		}
 	}
+#endif
 #endif
 }
 
@@ -695,7 +699,7 @@ bool settings_check_startup_gcode(uint16_t address)
 {
 	serial_broadcast(true);
 	serial_putc('>');
-#ifndef RAM_ONLY_SETTINGS
+#if !defined(RAM_ONLY_SETTINGS) && (STARTUP_BLOCKS_COUNT > 0)
 	if (settings_load(address, NULL, UINT16_MAX))
 	{
 		serial_putc(':');
@@ -708,7 +712,7 @@ bool settings_check_startup_gcode(uint16_t address)
 #else
 	serial_putc(':');
 	protocol_send_ok();
-	return false;
+	return true;
 #endif
 }
 

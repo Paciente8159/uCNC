@@ -376,12 +376,13 @@ static uint8_t parser_grbl_command(void)
 
 	grbl_cmd_str[grbl_cmd_len] = 0;
 
-	uint16_t block_address = STARTUP_BLOCK0_ADDRESS_OFFSET;
 	uint8_t error = STATUS_INVALID_STATEMENT;
-
+#if STARTUP_BLOCKS_COUNT
+	uint16_t block_address = 0;
 	parser_state_t next_state = {0};
 	parser_words_t words = {0};
 	parser_cmd_explicit_t cmd = {0};
+#endif
 
 	switch (grbl_cmd_len)
 	{
@@ -466,45 +467,48 @@ static uint8_t parser_grbl_command(void)
 			return GRBL_SEND_PARSER_MODES;
 		case 'C':
 			return GRBL_TOGGLE_CHECKMODE;
+#if STARTUP_BLOCKS_COUNT
 		case 'N':
 			switch (c)
 			{
-			case '0':
-			case '1':
-				block_address = (!(c - '0') ? STARTUP_BLOCK0_ADDRESS_OFFSET : STARTUP_BLOCK1_ADDRESS_OFFSET);
-				if (serial_getc() != '=')
+			case EOL:
+				return GRBL_SEND_STARTUP_BLOCKS;
+			default:
+				if (c >= '0' && c <= '9')
 				{
-					return STATUS_INVALID_STATEMENT;
-				}
+					block_address = STARTUP_BLOCK_ADDRESS_OFFSET((uint8_t)(c - '0'));
+					if (serial_getc() != '=')
+					{
+						return STATUS_INVALID_STATEMENT;
+					}
 
-				settings_save(block_address, NULL, UINT16_MAX);
-				// run startup block
-				serial_broadcast(true);
-				serial_stream_eeprom(block_address);
-				// checks the command validity
-				error = parser_fetch_command(&next_state, &words, &cmd);
-				// if uncomment will also check if any gcode rules are violated
-				// allow bad rules for now to fit UNO. Will be catched when trying to execute the line
-				// if (error == STATUS_OK)
-				// {
-				// 	error = parser_validate_command(&next_state, &words, &cmd);
-				// }
+					settings_save(block_address, NULL, UINT16_MAX);
+					// run startup block
+					serial_broadcast(true);
+					serial_stream_eeprom(block_address);
+					// checks the command validity
+					error = parser_fetch_command(&next_state, &words, &cmd);
+					// if uncomment will also check if any gcode rules are violated
+					// allow bad rules for now to fit UNO. Will be catched when trying to execute the line
+					// if (error == STATUS_OK)
+					// {
+					// 	error = parser_validate_command(&next_state, &words, &cmd);
+					// }
 
-				serial_broadcast(false);
-				// reset streams
-				serial_stream_change(NULL);
+					// reset streams
+					serial_stream_change(NULL);
 
-				if (error != STATUS_OK)
-				{
-					// the Gcode is not valid then erase the startup block
-					settings_erase(block_address, NULL, 1);
+					if (error != STATUS_OK)
+					{
+						// the Gcode is not valid then erase the startup block
+						settings_erase(block_address, NULL, 1);
+					}
 				}
 
 				return error;
-			case EOL:
-				return GRBL_SEND_STARTUP_BLOCKS;
 			}
 			return STATUS_INVALID_STATEMENT;
+#endif
 #ifdef ENABLE_EXTRA_SYSTEM_CMDS
 		case 'P':
 			return GRBL_PINS_STATES;
@@ -611,9 +615,11 @@ static uint8_t parser_grbl_exec_code(uint8_t code)
 	case GRBL_SEND_PARSER_MODES:
 		protocol_send_gcode_modes();
 		break;
+#if STARTUP_BLOCKS_COUNT
 	case GRBL_SEND_STARTUP_BLOCKS:
 		protocol_send_start_blocks();
 		break;
+#endif
 	case GRBL_TOGGLE_CHECKMODE:
 		if (mc_toogle_checkmode())
 		{

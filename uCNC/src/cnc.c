@@ -1082,7 +1082,8 @@ static void cnc_io_dotasks(void)
 				stepper_timeout = UINT32_MAX;
 			}
 		}
-		else{
+		else
+		{
 			stepper_timeout = mcu_millis() + g_settings.step_disable_timeout;
 		}
 	}
@@ -1091,18 +1092,22 @@ static void cnc_io_dotasks(void)
 
 void cnc_run_startup_blocks(void)
 {
-	if (settings_check_startup_gcode(STARTUP_BLOCK0_ADDRESS_OFFSET))
+#if STARTUP_BLOCKS_COUNT
+	for (uint8_t i = 0; i < STARTUP_BLOCKS_COUNT; i++)
 	{
-		serial_stream_eeprom(STARTUP_BLOCK0_ADDRESS_OFFSET);
-		cnc_parse_cmd();
-	}
-
-	if (settings_check_startup_gcode(STARTUP_BLOCK1_ADDRESS_OFFSET))
-	{
-		serial_stream_eeprom(STARTUP_BLOCK1_ADDRESS_OFFSET);
-		cnc_parse_cmd();
+		uint16_t address = STARTUP_BLOCK_ADDRESS_OFFSET(i);
+		if (settings_check_startup_gcode(address))
+		{
+			serial_stream_eeprom(address);
+			cnc_parse_cmd();
+		}
 	}
 
 	// reset streams
 	serial_stream_change(NULL);
+#else
+	// emulate startup blocks message
+	settings_check_startup_gcode(0);
+	settings_check_startup_gcode(0);
+#endif
 }

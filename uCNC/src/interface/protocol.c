@@ -766,44 +766,37 @@ void protocol_send_gcode_setting_line_flt(setting_offset_t setting, float value)
 	protocol_send_newline();
 }
 
+#if STARTUP_BLOCKS_COUNT
 void protocol_send_start_blocks(void)
 {
 	protocol_busy = true;
 	uint8_t c = 0;
-	uint16_t address = STARTUP_BLOCK0_ADDRESS_OFFSET;
-	protocol_send_string(__romstr__("$N0="));
-	for (;;)
-	{
-		settings_load(address++, &c, 1);
-		if (c > 0 && c < 128)
-		{
-			serial_putc(c);
-		}
-		else
-		{
-			protocol_send_newline();
-			break;
-		}
-	}
 
-	address = STARTUP_BLOCK1_ADDRESS_OFFSET;
-	protocol_send_string(__romstr__("$N1="));
-	for (;;)
+	for (uint8_t i = 0; i < STARTUP_BLOCKS_COUNT; i++)
 	{
-		settings_load(address++, &c, 1);
-		if (c > 0 && c < 128)
+		uint16_t address = STARTUP_BLOCK0_ADDRESS_OFFSET + i * STARTUP_BLOCK_SIZE;
+		serial_putc('$');
+		serial_putc('N');
+		serial_print_int(i);
+		serial_putc('=');
+		for (;;)
 		{
-			serial_putc(c);
-		}
-		else
-		{
-			protocol_send_newline();
-			break;
+			settings_load(address++, &c, 1);
+			if (c > 0 && c < 128)
+			{
+				serial_putc(c);
+			}
+			else
+			{
+				protocol_send_ok();
+				break;
+			}
 		}
 	}
 
 	protocol_busy = false;
 }
+#endif
 
 void protocol_send_cnc_settings(void)
 {
