@@ -165,6 +165,78 @@ const settings_t __rom__ default_settings =
 #endif
 };
 
+const setting_id_t __rom__ g_settings_id_table[] = {
+// {.id = 0, .memptr = &g_settings.max_step_rate, .type = SETTING_TYPE(0)},
+#ifdef ENABLE_STEPPERS_DISABLE_TIMEOUT
+		{.id = 1, .memptr = &g_settings.step_disable_timeout, .type = SETTING_TYPE(3)},
+#endif
+		{.id = 2, .memptr = &g_settings.step_invert_mask, .type = SETTING_TYPE(2)},
+		{.id = 3, .memptr = &g_settings.dir_invert_mask, .type = SETTING_TYPE(2)},
+		{.id = 4, .memptr = &g_settings.step_enable_invert, .type = SETTING_TYPE(1)},
+		{.id = 5, .memptr = &g_settings.limits_invert_mask, .type = SETTING_TYPE(2)},
+		{.id = 6, .memptr = &g_settings.probe_invert_mask, .type = SETTING_TYPE(2)},
+		{.id = 7, .memptr = &g_settings.control_invert_mask, .type = SETTING_TYPE(2)},
+#if ENCODERS > 0
+		{.id = 8, .memptr = &g_settings.encoders_pulse_invert_mask, .type = SETTING_TYPE(2)},
+		{.id = 9, .memptr = &g_settings.encoders_dir_invert_mask, .type = SETTING_TYPE(2)},
+#endif
+		{.id = 10, .memptr = &g_settings.status_report_mask, .type = SETTING_TYPE(2)},
+		{.id = 11, .memptr = &g_settings.g64_angle_factor, .type = SETTING_TYPE(0)},
+		{.id = 12, .memptr = &g_settings.arc_tolerance, .type = SETTING_TYPE(0)},
+		{.id = 13, .memptr = &g_settings.report_inches, .type = SETTING_TYPE(1)},
+#if S_CURVE_ACCELERATION_LEVEL == -1
+		{.id = 14, .memptr = &g_settings.s_curve_profile, .type = SETTING_TYPE(2)},
+#endif
+		{.id = 20, .memptr = &g_settings.soft_limits_enabled, .type = SETTING_TYPE(1)},
+		{.id = 21, .memptr = &g_settings.hard_limits_enabled, .type = SETTING_TYPE(1)},
+		{.id = 22, .memptr = &g_settings.homing_enabled, .type = SETTING_TYPE(1)},
+		{.id = 23, .memptr = &g_settings.homing_dir_invert_mask, .type = SETTING_TYPE(3)},
+		{.id = 24, .memptr = &g_settings.homing_slow_feed_rate, .type = SETTING_TYPE(3)},
+		{.id = 25, .memptr = &g_settings.homing_fast_feed_rate, .type = SETTING_TYPE(3)},
+		{.id = 26, .memptr = &g_settings.debounce_ms, .type = SETTING_TYPE(3)},
+		{.id = 27, .memptr = &g_settings.homing_offset, .type = SETTING_TYPE(0)},
+		{.id = 30, .memptr = &g_settings.spindle_max_rpm, .type = SETTING_TYPE(3)},
+		{.id = 31, .memptr = &g_settings.spindle_min_rpm, .type = SETTING_TYPE(3)},
+		{.id = 32, .memptr = &g_settings.laser_mode, .type = SETTING_TYPE(2)},
+#ifdef ENABLE_LASER_PPI
+		{.id = 33, .memptr = &g_settings.step_per_mm[0], .type = SETTING_TYPE(0)},
+		{.id = 34, .memptr = &g_settings.laser_ppi_uswidth, .type = SETTING_TYPE(3)},
+		{.id = 35, .memptr = &g_settings.laser_ppi_mixmode_ppi, .type = SETTING_TYPE(0)},
+		{.id = 36, .memptr = &g_settings.laser_ppi_mixmode_uswidth, .type = SETTING_TYPE(0)},
+#endif
+#ifdef ENABLE_SKEW_COMPENSATION
+		{.id = 37, .memptr = &g_settings.skew_xy_factor, .type = SETTING_TYPE(0)},
+#ifndef SKEW_COMPENSATION_XY_ONLY
+		{.id = 38, .memptr = &g_settings.skew_xz_factor, .type = SETTING_TYPE(0)},
+		{.id = 39, .memptr = &g_settings.skew_yz_factor, .type = SETTING_TYPE(0)},
+#endif
+#endif
+#if TOOL_COUNT > 1
+		{.id = 80, .memptr = &g_settings.default_tool, .type = SETTING_TYPE(2)},
+#endif
+#if TOOL_COUNT > 0
+		{.id = 81, .memptr = &g_settings.tool_length_offset, .type = SETTING_TYPE(0) | SETTING_ARRAY | SETTING_ARRCNT(TOOL_COUNT)},
+#endif
+#if (KINEMATIC == KINEMATIC_LINEAR_DELTA)
+		{.id = 106, .memptr = &g_settings.delta_arm_length, .type = SETTING_TYPE(0)},
+		{.id = 107, .memptr = &g_settings.delta_armbase_radius, .type = SETTING_TYPE(0)},
+		{.id = 28, .memptr = &g_settings.delta_bicep_homing_angle, .type = SETTING_TYPE(0)},
+		{.id = 109, .memptr = &g_settings.delta_forearm_length, .type = SETTING_TYPE(0)},
+#elif (KINEMATIC == KINEMATIC_SCARA)
+		{.id = 106, .memptr = &g_settings.scara_arm_length, .type = SETTING_TYPE(0)},
+		{.id = 107, .memptr = &g_settings.scara_forearm_length, .type = SETTING_TYPE(0)},
+		{.id = 28, .memptr = &g_settings.scara_arm_homing_angle, .type = SETTING_TYPE(0)},
+		{.id = 29, .memptr = &g_settings.scara_forearm_homing_angle, .type = SETTING_TYPE(0)},
+#endif
+		{.id = 100, .memptr = &g_settings.step_per_mm, .type = SETTING_TYPE(0) | SETTING_ARRAY | SETTING_ARRCNT(STEPPER_COUNT)},
+		{.id = 110, .memptr = &g_settings.max_feed_rate, .type = SETTING_TYPE(0) | SETTING_ARRAY | SETTING_ARRCNT(STEPPER_COUNT)},
+		{.id = 120, .memptr = &g_settings.acceleration, .type = SETTING_TYPE(0) | SETTING_ARRAY | SETTING_ARRCNT(STEPPER_COUNT)},
+		{.id = 130, .memptr = &g_settings.max_distance, .type = SETTING_TYPE(0) | SETTING_ARRAY | SETTING_ARRCNT(AXIS_COUNT)},
+#ifdef ENABLE_BACKLASH_COMPENSATION
+		{.id = 140, .memptr = &g_settings.backlash_steps, .type = SETTING_TYPE(3) | SETTING_ARRAY | SETTING_ARRCNT(AXIS_TO_STEPPERS)},
+#endif
+};
+
 #ifdef ENABLE_SETTINGS_MODULES
 // event_settings_change_handler
 WEAK_EVENT_HANDLER(settings_change)
@@ -414,219 +486,49 @@ uint8_t settings_change(setting_offset_t id, float value)
 			return STATUS_NEGATIVE_VALUE;
 		}
 
-		uint8_t setting = (uint8_t)id;
-		switch (setting)
+		// id 0 conversion from us to frequency
+		if (id == 0)
 		{
-		case 0:
 			value = 1000000.0f / value;
 			if (value > F_STEP_MAX)
 			{
 				return STATUS_MAX_STEP_RATE_EXCEEDED;
 			}
 			g_settings.max_step_rate = value;
-			break;
-#if EMULATE_GRBL_STARTUP > 0 || defined(ENABLE_STEPPERS_DISABLE_TIMEOUT)
-		// just adds this for compatibility
-		// this setting is not used
-		case 1:
-#ifdef ENABLE_STEPPERS_DISABLE_TIMEOUT
-			g_settings.step_disable_timeout = value16;
-#endif
-			break;
-#endif
-		case 2:
-			g_settings.step_invert_mask = value8;
-			break;
-		case 3:
-			g_settings.dir_invert_mask = value8;
-			break;
-		case 4:
-			g_settings.step_enable_invert = value8;
-			break;
-		case 5:
-			g_settings.limits_invert_mask = value8;
-			break;
-		case 6:
-			g_settings.probe_invert_mask = value1;
-			break;
-		case 7:
-			g_settings.control_invert_mask = (value8 & CONTROLS_MASK);
-			break;
-#if ENCODERS > 0
-		case 8:
-			g_settings.encoders_pulse_invert_mask = value8;
-			break;
-		case 9:
-			g_settings.encoders_dir_invert_mask = value8;
-			break;
-#endif
-		case 10:
-			g_settings.status_report_mask = value8;
-			break;
-		case 11:
-			g_settings.g64_angle_factor = value;
-			break;
-		case 12:
-			g_settings.arc_tolerance = value;
-			break;
-		case 13:
-			g_settings.report_inches = value1;
-			break;
-#if S_CURVE_ACCELERATION_LEVEL == -1
-		case 14:
-			g_settings.s_curve_profile = CLAMP(0, value8, 5);
-			break;
-#endif
-		case 20:
-			if (!g_settings.homing_enabled && value1)
+		}
+		else
+		{
+			uint8_t count = settings_count();
+			for (uint8_t i = 0; i < count; i++)
 			{
-				return STATUS_SOFT_LIMIT_ERROR;
-			}
-			g_settings.soft_limits_enabled = value1;
-			break;
-		case 21:
-			g_settings.hard_limits_enabled = value1;
-			break;
-		case 22:
-			g_settings.homing_enabled = value1;
-			break;
-		case 23:
-			g_settings.homing_dir_invert_mask = value8;
-			break;
-		case 24:
-			g_settings.homing_slow_feed_rate = value;
-			break;
-		case 25:
-			g_settings.homing_fast_feed_rate = value;
-			break;
-		case 26:
-			g_settings.debounce_ms = value16;
-			break;
-		case 27:
-			g_settings.homing_offset = value;
-			break;
-		case 30:
-			g_settings.spindle_max_rpm = value16;
-			break;
-		case 31:
-			g_settings.spindle_min_rpm = value16;
-			break;
-		case 32:
-			g_settings.laser_mode = value8;
-			break;
-#ifdef ENABLE_LASER_PPI
-		case 33:
-			g_settings.step_per_mm[STEPPER_COUNT - 1] = value;
-			break;
-		case 34:
-			g_settings.laser_ppi_uswidth = value16;
-			break;
-		case 35:
-			g_settings.laser_ppi_mixmode_ppi = value;
-			break;
-		case 36:
-			g_settings.laser_ppi_mixmode_uswidth = value;
-			break;
-#endif
-#ifdef ENABLE_SKEW_COMPENSATION
-		case 37:
-			g_settings.skew_xy_factor = value;
-			break;
-#ifndef SKEW_COMPENSATION_XY_ONLY
-		case 38:
-			g_settings.skew_xz_factor = value;
-			break;
-		case 39:
-			g_settings.skew_yz_factor = value;
-			break;
-#endif
-#endif
-#if TOOL_COUNT > 1
-		case 80:
-			g_settings.default_tool = CLAMP(0, value8, (uint8_t)TOOL_COUNT);
-			break;
-#endif
-#if (KINEMATIC == KINEMATIC_LINEAR_DELTA)
-		case 106:
-			g_settings.delta_arm_length = value;
-			break;
-		case 107:
-			g_settings.delta_armbase_radius = value;
-			break;
-			// case 108:
-			//     g_settings.delta_efector_height = value;
-			//     break;
-#elif (KINEMATIC == KINEMATIC_DELTA)
-	case 106:
-		g_settings.delta_base_radius = value;
-		break;
-	case 107:
-		g_settings.delta_effector_radius = value;
-		break;
-	case 108:
-		g_settings.delta_bicep_length = value;
-		break;
-	case 109:
-		g_settings.delta_forearm_length = value;
-		break;
-	case 28:
-		g_settings.delta_bicep_homing_angle = value;
-		break;
-#elif (KINEMATIC == KINEMATIC_SCARA)
-	case 106:
-		g_settings.scara_arm_length = value;
-		break;
-	case 107:
-		g_settings.scara_forearm_length = value;
-		break;
-	case 28:
-		g_settings.scara_arm_homing_angle = value;
-		break;
-	case 29:
-		g_settings.scara_forearm_homing_angle = value;
-		break;
-#endif
-		default:
-			if (setting >= 100 && setting < (100 + AXIS_COUNT))
-			{
-				setting -= 100;
-				g_settings.step_per_mm[setting] = value;
-			}
-			else if (setting >= 110 && setting < (110 + AXIS_COUNT))
-			{
-				setting -= 110;
-				g_settings.max_feed_rate[setting] = value;
-			}
-			else if (setting >= 120 && setting < (120 + AXIS_COUNT))
-			{
-				setting -= 120;
-				g_settings.acceleration[setting] = value;
-			}
-			else if (setting >= 130 && setting < (130 + AXIS_COUNT))
-			{
-				setting -= 130;
-				g_settings.max_distance[setting] = value;
-			}
-#ifdef ENABLE_BACKLASH_COMPENSATION
-			else if (setting >= 140 && setting < (140 + AXIS_TO_STEPPERS))
-			{
-				setting -= 140;
-				g_settings.backlash_steps[setting] = value16;
-			}
-#endif
-
-#if TOOL_COUNT > 0
-			else if (setting > 80 && setting <= (80 + TOOL_COUNT))
-			{
-				setting -= 81;
-				g_settings.tool_length_offset[setting] = value;
-			}
-#endif
-			else
-			{
-				return STATUS_INVALID_STATEMENT;
+				setting_id_t s = {0};
+				uint8_t max = 1;
+				rom_memcpy(&s, &g_settings_id_table[i], sizeof(setting_id_t));
+				if (s.type & SETTING_ARRAY)
+				{
+					max = SETTING_ARRCNT(s.type);
+				}
+				if ((uint8_t)id >= s.id && (uint8_t)id < (s.id + max))
+				{
+					switch (SETTING_TYPE_MASK(s.type))
+					{
+					case 1:
+						((bool *)s.memptr)[s.id - (uint8_t)id] = value1;
+						break;
+					case 2:
+						((uint8_t *)s.memptr)[s.id - (uint8_t)id] = value8;
+						break;
+					case 3:
+						((uint16_t *)s.memptr)[s.id - (uint8_t)id] = value16;
+						break;
+					default:
+						((float *)s.memptr)[s.id - (uint8_t)id] = value;
+						break;
+					}
+				}
 			}
 		}
+
 #ifdef ENABLE_SETTINGS_MODULES
 	}
 	else
@@ -727,4 +629,9 @@ uint16_t settings_register_external_setting(uint16_t size)
 #warning "External/extension settings storing is disabled"
 	return UINT16_MAX;
 #endif
+}
+
+uint8_t settings_count(void)
+{
+	return sizeof(g_settings_id_table) / sizeof(setting_id_t);
 }

@@ -138,7 +138,20 @@ extern "C"
 typedef uint16_t setting_offset_t;
 #endif
 
+#define SETTING_TYPE(T) (T << 5)
+#define SETTING_TYPE_MASK(T) ((T >> 5) & 0x3)
+#define SETTING_ARRAY 0x80
+#define SETTING_ARRCNT(X) (X & 0x1F)
+
+	typedef struct setting_id_
+	{
+		setting_offset_t id;
+		void *memptr;
+		uint8_t type;
+	} setting_id_t;
+
 	extern settings_t g_settings;
+	extern const setting_id_t g_settings_id_table[];
 
 	void settings_init(void);
 	// Assumes that no structure being saved is bigger than 255 bytes
@@ -149,6 +162,7 @@ typedef uint16_t setting_offset_t;
 	void settings_erase(uint16_t address, uint8_t *__ptr, uint16_t size);
 	bool settings_check_startup_gcode(uint16_t address);
 	uint16_t settings_register_external_setting(uint16_t size);
+	uint8_t settings_count(void);
 
 #if (defined(ENABLE_SETTINGS_MODULES) || defined(BOARD_HAS_CUSTOM_SYSTEM_COMMANDS))
 	// event_settings_change_handler

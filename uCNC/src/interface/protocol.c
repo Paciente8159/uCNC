@@ -801,118 +801,49 @@ void protocol_send_start_blocks(void)
 void protocol_send_cnc_settings(void)
 {
 	protocol_busy = true;
-	protocol_send_gcode_setting_line_flt(0, (1000000.0f / g_settings.max_step_rate));
-#if EMULATE_GRBL_STARTUP > 0 || defined(ENABLE_STEPPERS_DISABLE_TIMEOUT)
-// just adds this for compatibility
-// this setting is not used
-#ifdef ENABLE_STEPPERS_DISABLE_TIMEOUT
-	protocol_send_gcode_setting_line_int(1, g_settings.step_disable_timeout);
-#else
-	protocol_send_gcode_setting_line_int(1, 0);
-#endif
-#endif
-	protocol_send_gcode_setting_line_int(2, g_settings.step_invert_mask);
-	protocol_send_gcode_setting_line_int(3, g_settings.dir_invert_mask);
-	protocol_send_gcode_setting_line_int(4, g_settings.step_enable_invert);
-	protocol_send_gcode_setting_line_int(5, g_settings.limits_invert_mask);
-	protocol_send_gcode_setting_line_int(6, g_settings.probe_invert_mask);
-	protocol_send_gcode_setting_line_int(7, g_settings.control_invert_mask);
-#if ENCODERS > 0
-	protocol_send_gcode_setting_line_int(8, g_settings.encoders_pulse_invert_mask);
-	protocol_send_gcode_setting_line_int(9, g_settings.encoders_dir_invert_mask);
-#endif
-	protocol_send_gcode_setting_line_int(10, g_settings.status_report_mask);
-	protocol_send_gcode_setting_line_flt(11, g_settings.g64_angle_factor);
-	protocol_send_gcode_setting_line_flt(12, g_settings.arc_tolerance);
-	protocol_send_gcode_setting_line_int(13, g_settings.report_inches);
-#if S_CURVE_ACCELERATION_LEVEL == -1
-	protocol_send_gcode_setting_line_int(14, g_settings.s_curve_profile);
-#endif
-	protocol_send_gcode_setting_line_int(20, g_settings.soft_limits_enabled);
-	protocol_send_gcode_setting_line_int(21, g_settings.hard_limits_enabled);
-	protocol_send_gcode_setting_line_int(22, g_settings.homing_enabled);
-	protocol_send_gcode_setting_line_int(23, g_settings.homing_dir_invert_mask);
-	protocol_send_gcode_setting_line_flt(24, g_settings.homing_slow_feed_rate);
-	protocol_send_gcode_setting_line_flt(25, g_settings.homing_fast_feed_rate);
-	protocol_send_gcode_setting_line_int(26, g_settings.debounce_ms);
-	protocol_send_gcode_setting_line_flt(27, g_settings.homing_offset);
-#if (KINEMATIC == KINEMATIC_DELTA)
-	protocol_send_gcode_setting_line_flt(28, g_settings.delta_bicep_homing_angle);
-#elif (KINEMATIC == KINEMATIC_SCARA)
-	protocol_send_gcode_setting_line_flt(28, g_settings.scara_arm_homing_angle);
-	protocol_send_gcode_setting_line_flt(29, g_settings.scara_forearm_homing_angle);
-#endif
-	protocol_send_gcode_setting_line_int(30, g_settings.spindle_max_rpm);
-	protocol_send_gcode_setting_line_int(31, g_settings.spindle_min_rpm);
-	protocol_send_gcode_setting_line_int(32, g_settings.laser_mode);
-#ifdef ENABLE_LASER_PPI
-	protocol_send_gcode_setting_line_int(33, g_settings.laser_ppi);
-	protocol_send_gcode_setting_line_int(34, g_settings.laser_ppi_uswidth);
-	protocol_send_gcode_setting_line_flt(35, g_settings.laser_ppi_mixmode_ppi);
-	protocol_send_gcode_setting_line_flt(36, g_settings.laser_ppi_mixmode_uswidth);
-#endif
-#ifdef ENABLE_SKEW_COMPENSATION
-	protocol_send_gcode_setting_line_flt(37, g_settings.skew_xy_factor);
-#ifndef SKEW_COMPENSATION_XY_ONLY
-	protocol_send_gcode_setting_line_flt(38, g_settings.skew_xz_factor);
-	protocol_send_gcode_setting_line_flt(39, g_settings.skew_yz_factor);
-#endif
-#endif
+	uint8_t count = settings_count();
 
-#if TOOL_COUNT > 0
-#if TOOL_COUNT > 1
-	protocol_send_gcode_setting_line_int(80, g_settings.default_tool);
-#endif
-	for (uint8_t i = 0; i < TOOL_COUNT; i++)
+	// id 0 conversion from frequency to us
+	protocol_send_gcode_setting_line_flt(0, 1000000.f / g_settings.max_step_rate);
+
+	for (uint8_t i = 0; i < count; i++)
 	{
-		protocol_send_gcode_setting_line_flt(81 + i, g_settings.tool_length_offset[i]);
-	}
-#endif
+		setting_id_t s = {0};
+		uint8_t max = 1;
+		rom_memcpy(&s, &g_settings_id_table[i], sizeof(setting_id_t));
+		if (s.type & SETTING_ARRAY)
+		{
+			max = SETTING_ARRCNT(s.type);
+		}
 
-	for (uint8_t i = 0; i < AXIS_COUNT; i++)
-	{
-		protocol_send_gcode_setting_line_flt(100 + i, g_settings.step_per_mm[i]);
+		for (uint8_t j = 0; j < max; j++)
+		{
+			uint32_t val = 0;
+			switch (SETTING_TYPE_MASK(s.type))
+			{
+			case 1:
+				val = (uint32_t)((bool *)s.memptr)[j];
+				protocol_send_gcode_setting_line_int(s.id, val);
+				break;
+			case 2:
+				val = (uint32_t) * ((uint8_t *)s.memptr);
+				protocol_send_gcode_setting_line_int(s.id, val);
+				break;
+			case 3:
+				val = (uint32_t) * ((uint16_t *)s.memptr);
+				protocol_send_gcode_setting_line_int(s.id, val);
+				break;
+			default:
+				protocol_send_gcode_setting_line_flt(s.id, ((float *)s.memptr)[j]);
+				break;
+			}
+			s.id++;
+		}
 	}
-
-#if (KINEMATIC == KINEMATIC_LINEAR_DELTA)
-	protocol_send_gcode_setting_line_flt(106, g_settings.delta_arm_length);
-	protocol_send_gcode_setting_line_flt(107, g_settings.delta_armbase_radius);
-	// protocol_send_gcode_setting_line_int(108, g_settings.delta_efector_height);
-#elif (KINEMATIC == KINEMATIC_DELTA)
-	protocol_send_gcode_setting_line_flt(106, g_settings.delta_base_radius);
-	protocol_send_gcode_setting_line_flt(107, g_settings.delta_effector_radius);
-	protocol_send_gcode_setting_line_flt(108, g_settings.delta_bicep_length);
-	protocol_send_gcode_setting_line_flt(109, g_settings.delta_forearm_length);
-#elif (KINEMATIC == KINEMATIC_SCARA)
-	protocol_send_gcode_setting_line_flt(106, g_settings.scara_arm_length);
-	protocol_send_gcode_setting_line_flt(107, g_settings.scara_forearm_length);
-#endif
-
-	for (uint8_t i = 0; i < AXIS_COUNT; i++)
-	{
-		protocol_send_gcode_setting_line_flt(110 + i, g_settings.max_feed_rate[i]);
-	}
-
-	for (uint8_t i = 0; i < AXIS_COUNT; i++)
-	{
-		protocol_send_gcode_setting_line_flt(120 + i, g_settings.acceleration[i]);
-	}
-
-	for (uint8_t i = 0; i < AXIS_COUNT; i++)
-	{
-		protocol_send_gcode_setting_line_flt(130 + i, g_settings.max_distance[i]);
-	}
-
-#ifdef ENABLE_BACKLASH_COMPENSATION
-	for (uint8_t i = 0; i < AXIS_TO_STEPPERS; i++)
-	{
-		protocol_send_gcode_setting_line_int(140 + i, g_settings.backlash_steps[i]);
-	}
-#endif
 
 #ifdef ENABLE_SETTINGS_MODULES
-	EVENT_INVOKE(protocol_send_cnc_settings, NULL);
-	serial_broadcast(false);
+	EVENT_INVOKE(protocol_cnc_settings, NULL);
+
 #endif
 	protocol_busy = false;
 }
