@@ -256,34 +256,16 @@ void grbl_protocol_alarm(int8_t alarm)
 	grbl_protocol_printf(MSG_ALARM, alarm);
 }
 
-void grbl_protocol_feedback_fmt(const char *fmt, bool is_feedback, ...)
+void grbl_protocol_feedback_fmt(const char *fmt, ...)
 {
 	va_list args;
-	va_start(args, is_feedback);
+	va_start(args, fmt);
 	grbl_stream_start_broadcast();
 	grbl_protocol_putc('[');
-	if (is_feedback)
-	{
-		grbl_protocol_print(MSG_START);
-	}
 	print_fmtva(grbl_stream_putc, NULL, fmt, &args);
 	grbl_protocol_print(MSG_END);
 	va_end(args);
 }
-
-// void grbl_protocol_feedback_base(void *arg, uint8_t type)
-// {
-// 	grbl_stream_start_broadcast();
-// 	if (type)
-// 	{
-// 		grbl_protocol_printf(MSG_FEEDBACK_PRINTF, arg);
-// 	}
-// 	else
-// 	{
-// 		grbl_protocol_printf(MSG_FEEDBACK, arg);
-// 	}
-
-// }
 
 WEAK_EVENT_HANDLER(grbl_protocol_status)
 {
@@ -585,7 +567,7 @@ void grbl_protocol_gcode_coordsys(void)
 
 #ifdef AXIS_TOOL
 	parser_get_coordsys(254, axis);
-	grbl_protocol_info("TLO:%1f", axis);
+	grbl_protocol_info("TLO:%f", axis[0]);
 #endif
 	grbl_protocol_probe_result(parser_get_probe_result());
 
@@ -599,15 +581,15 @@ void grbl_protocol_probe_result(uint8_t val)
 	grbl_protocol_info("PRB:" MSG_AXIS ":%d", axis, val);
 }
 
-static void grbl_protocol_parser_modalstate(uint8_t word, uint8_t val, uint8_t mantissa)
+static void grbl_protocol_parser_modalstate(char word, uint8_t val, uint8_t mantissa)
 {
 	if (mantissa)
 	{
-		grbl_protocol_printf("%d%d.%d ", word, val, mantissa);
+		grbl_protocol_printf("%c%d.%d ", word, val, mantissa);
 	}
 	else
 	{
-		grbl_protocol_printf("%d%d ", word, val);
+		grbl_protocol_printf("%c%d ", word, val);
 	}
 }
 
@@ -672,7 +654,7 @@ void grbl_protocol_gcode_modes(void)
 	}
 #else
 	// permanent M9
-	grbl_protocol_print("M9 ");
+	// grbl_protocol_print("M9 ");
 #endif
 	grbl_protocol_printf("M%d T%d F%f S%lu" MSG_END, modalgroups[10], modalgroups[11], feed, spindle);
 }

@@ -38,9 +38,9 @@ extern "C"
 	void grbl_protocol_alarm(int8_t alarm);
 	void grbl_protocol_status(void);
 	DECL_EVENT_HANDLER(grbl_protocol_status);
-	void grbl_protocol_feedback_fmt(const char *fmt, bool is_feedback, ...);
-#define grbl_protocol_feedback(__s, ...) grbl_protocol_feedback_fmt(__romstr__(__s), true, ##__VA_ARGS__)
-#define grbl_protocol_info(__s, __pre, ...) grbl_protocol_feedback_fmt(__romstr__(__s), false, ##__VA_ARGS__)
+	void grbl_protocol_feedback_fmt(const char *fmt, ...);
+#define grbl_protocol_feedback(__s, ...) grbl_protocol_feedback_fmt(__romstr__(MSG_START __s), ##__VA_ARGS__)
+#define grbl_protocol_info(__s, ...) grbl_protocol_feedback_fmt(__romstr__(__s), ##__VA_ARGS__)
 	void grbl_protocol_probe_result(uint8_t val);
 	void grbl_protocol_gcode_coordsys(void);
 	void grbl_protocol_gcode_modes(void);
