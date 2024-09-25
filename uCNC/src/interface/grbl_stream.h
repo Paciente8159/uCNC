@@ -63,7 +63,6 @@ extern "C"
 	void grbl_stream_start_broadcast(void);
 	void grbl_stream_putc(char c);
 	void grbl_stream_printf(const char* fmt, ...);
-	void grbl_stream_flush(void);
 
 	char grbl_stream_getc(void);
 	char grbl_stream_peek(void);

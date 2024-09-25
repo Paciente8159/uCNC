@@ -23,6 +23,8 @@ static grbl_stream_getc_cb stream_getc;
 static grbl_stream_available_cb stream_available;
 static grbl_stream_clear_cb stream_clear;
 
+static FORCEINLINE void grbl_stream_flush(void);
+
 #ifndef DISABLE_MULTISTREAM_SERIAL
 grbl_stream_t *default_stream;
 static grbl_stream_t *current_stream;
@@ -265,6 +267,8 @@ uint8_t grbl_stream_write_available(void)
 {
 	return (RX_BUFFER_SIZE - grbl_stream_available());
 }
+
+
 
 void grbl_stream_clear(void)
 {

@@ -88,7 +88,7 @@ static uint8_t crc7(uint8_t c, uint8_t crc)
 const settings_t __rom__ default_settings =
 		{
 				.version = SETTINGS_VERSION,
-				.max_step_rate = F_STEP_MAX,
+				.max_step_rate = (1000000.0f / F_STEP_MAX),
 #ifdef ENABLE_STEPPERS_DISABLE_TIMEOUT
 				.step_disable_timeout = 0,
 #endif
@@ -166,7 +166,7 @@ const settings_t __rom__ default_settings =
 };
 
 const setting_id_t __rom__ g_settings_id_table[] = {
-// {.id = 0, .memptr = &g_settings.max_step_rate, .type = SETTING_TYPE(0)},
+		{.id = 0, .memptr = &g_settings.max_step_rate, .type = SETTING_TYPE(0)},
 #ifdef ENABLE_STEPPERS_DISABLE_TIMEOUT
 		{.id = 1, .memptr = &g_settings.step_disable_timeout, .type = SETTING_TYPE(3)},
 #endif
@@ -487,8 +487,7 @@ uint8_t settings_change(setting_offset_t id, float value)
 		// id 0 conversion from us to frequency
 		if (id == 0)
 		{
-			value = 1000000.0f / value;
-			if (value > F_STEP_MAX)
+			if (value < (1000000.0f / F_STEP_MAX))
 			{
 				return STATUS_MAX_STEP_RATE_EXCEEDED;
 			}

@@ -52,25 +52,6 @@ static void print_putc(print_putc_cb cb, char **buffer_ref, char c)
 	}
 }
 
-static void print_str(print_putc_cb cb, char **buffer_ref, const char *__s)
-{
-	while (*__s)
-	{
-		print_putc(cb, buffer_ref, *__s++);
-	}
-}
-
-static void print_romstr(print_putc_cb cb, char **buffer_ref, const char *__s)
-{
-	char c = rom_read_byte(__s);
-	while (c)
-	{
-		print_putc(cb, buffer_ref, c);
-		__s++;
-		c = rom_read_byte(__s);
-	}
-}
-
 #ifndef PRINT_DISABLE_FMT_HEX
 static void print_byte(print_putc_cb cb, char **buffer_ref, const uint8_t *data, uint8_t flags)
 {
@@ -179,14 +160,10 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 	int i = 0;
 	int32_t li = 0;
 	float f, *f_ptr = NULL;
-	char **buffer_ref = NULL;
-	char *ptr = buffer;
-	uint8_t elems = 0;
 
-	if (ptr)
-	{
-		buffer_ref = &ptr;
-	}
+	char *ptr = buffer;
+	char **buffer_ref = (!ptr) ? NULL : &ptr;
+	uint8_t elems = 0;
 
 	do
 	{
@@ -242,12 +219,17 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 				/* code */
 				break;
 			case 's':
-				s = (char *)va_arg(*args, char *);
-				print_str(cb, buffer_ref, s);
-				break;
 			case 'S':
 				s = (const char *)va_arg(*args, const char *);
-				print_romstr(cb, buffer_ref, s);
+				for (;;)
+				{
+					cval = (c == 's') ? *s++ : rom_read_byte(s++);
+					if (!cval)
+					{
+						break;
+					}
+					print_putc(cb, buffer_ref, cval);
+				}
 				break;
 #ifndef PRINT_DISABLE_FMT_IP
 			case 'M':

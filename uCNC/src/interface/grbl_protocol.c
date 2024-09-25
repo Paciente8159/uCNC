@@ -701,9 +701,6 @@ void grbl_protocol_cnc_settings(void)
 	protocol_busy = true;
 	uint8_t count = settings_count();
 
-	// id 0 conversion from frequency to us
-	grbl_protocol_gcode_setting_line_flt(0, 1000000.f / g_settings.max_step_rate);
-
 	for (uint8_t i = 0; i < count; i++)
 	{
 		setting_id_t s = {0};

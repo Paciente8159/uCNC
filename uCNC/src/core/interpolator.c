@@ -612,11 +612,12 @@ void itp_run(void)
 			segm_steps = (uint16_t)(remaining_steps - profile_steps_limit);
 		}
 
-// The DSS (Dynamic Step Spread) algorithm reduces stepper vibration by spreading step distribution at lower speads.
-// This is done by oversampling the Bresenham line algorithm by multiple factors of 2.
-// This way stepping actions fire in different moments in order to reduce vibration caused by the stepper internal mechanics.
-// This works in a similar way to Grbl's AMASS but has a modified implementation to minimize the processing penalty on the ISR and also take less static memory.
-// DSS never loads the step generating ISR with a frequency above half of the absolute maximum frequency
+		// The DSS (Dynamic Step Spread) algorithm reduces stepper vibration by spreading step distribution at lower speads.
+		// This is done by oversampling the Bresenham line algorithm by multiple factors of 2.
+		// This way stepping actions fire in different moments in order to reduce vibration caused by the stepper internal mechanics.
+		// This works in a similar way to Grbl's AMASS but has a modified implementation to minimize the processing penalty on the ISR and also take less static memory.
+		// DSS never loads the step generating ISR with a frequency above half of the absolute maximum frequency
+		float max_step_rate = 1000000.f / g_settings.max_step_rate;
 #if (DSS_MAX_OVERSAMPLING != 0)
 		float dss_speed = MAX(INTERPOLATOR_FREQ, current_speed);
 		uint8_t dss = 0;
@@ -627,7 +628,7 @@ void itp_run(void)
 			dss_speed = fast_flt_mul2(dss_speed);
 			// clamp top speed
 			current_speed = fast_flt_mul2(current_speed);
-			current_speed = MIN(current_speed, g_settings.max_step_rate);
+			current_speed = MIN(current_speed, max_step_rate);
 			dss = 1;
 		}
 #endif
@@ -646,11 +647,11 @@ void itp_run(void)
 
 		// completes the segment information (step speed, steps) and updates the block
 		sgm->remaining_steps = segm_steps << dss;
-		dss_speed = MIN(dss_speed, g_settings.max_step_rate);
+		dss_speed = MIN(dss_speed, max_step_rate);
 		mcu_freq_to_clocks(dss_speed, &(sgm->timer_counter), &(sgm->timer_prescaller));
 #else
 		sgm->remaining_steps = segm_steps;
-		current_speed = MIN(current_speed, g_settings.max_step_rate);
+		current_speed = MIN(current_speed, max_step_rate);
 		mcu_freq_to_clocks(MAX(INTERPOLATOR_FREQ, current_speed), &(sgm->timer_counter), &(sgm->timer_prescaller));
 #endif
 
@@ -1327,43 +1328,6 @@ MCU_CALLBACK void mcu_step_cb(void)
 	stepbits = new_stepbits;
 #endif
 }
-
-//     void itp_nomotion(uint8_t type, uint16_t delay)
-//     {
-//         while (itp_sgm_is_full())
-//         {
-//             if (!cnc_dotasks())
-//             {
-//                 return;
-//             }
-//         }
-
-//         itp_sgm_data[itp_sgm_data_write].block = NULL;
-//         //clicks every 100ms (10Hz)
-//         if (delay)
-//         {
-//             mcu_freq_to_clocks(10, &(itp_sgm_data[itp_sgm_data_write].timer_counter), &(itp_sgm_data[itp_sgm_data_write].timer_prescaller));
-//         }
-//         else
-//         {
-//             mcu_freq_to_clocks(g_settings.max_step_rate, &(itp_sgm_data[itp_sgm_data_write].timer_counter), &(itp_sgm_data[itp_sgm_data_write].timer_prescaller));
-//         }
-//         itp_sgm_data[itp_sgm_data_write].remaining_steps = MAX(delay, 0);
-//         itp_sgm_data[itp_sgm_data_write].feed = 0;
-//         itp_sgm_data[itp_sgm_data_write].flags = type;
-// #if TOOL_COUNT > 0
-//         if (g_settings.laser_mode)
-//         {
-//             itp_sgm_data[itp_sgm_data_write].spindle = 0;
-//             itp_sgm_data[itp_sgm_data_write].spindle_inv = false;
-//         }
-//         else
-//         {
-//             planner_get_spindle_speed(1, &(itp_sgm_data[itp_sgm_data_write].spindle), &(itp_sgm_data[itp_sgm_data_write].spindle_inv));
-//         }
-// #endif
-//         itp_sgm_buffer_write();
-//     }
 
 void itp_start(bool is_synched)
 {
