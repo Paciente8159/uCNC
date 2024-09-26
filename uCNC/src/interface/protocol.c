@@ -841,7 +841,7 @@ void protocol_send_cnc_settings(void)
 	}
 
 #ifdef ENABLE_SETTINGS_MODULES
-	EVENT_INVOKE(protocol_cnc_settings, NULL);
+	EVENT_INVOKE(protocol_send_cnc_settings, NULL);
 
 #endif
 	protocol_busy = false;
