@@ -177,6 +177,10 @@ extern "C"
 #define EMULATE_GRBL_STARTUP 2
 #endif
 
+#ifndef PRINT_FTM_MINIMAL
+#define PRINT_FTM_MINIMAL
+#endif
+
 #ifdef __cplusplus
 }
 #endif

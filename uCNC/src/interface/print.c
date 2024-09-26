@@ -18,14 +18,6 @@
 #include "print.h"
 #include "../cnc.h"
 
-#define PRINT_ENABLE_MINIMAL
-#ifdef PRINT_ENABLE_MINIMAL
-#define PRINT_DISABLE_FMT_PADDING
-#define PRINT_DISABLE_FMT_HEX
-#define PRINT_DISABLE_FMT_IP
-#define PRINT_ENABLE_FMT_FLOAT_FONLY
-#endif
-
 #define HEX_NONE 0
 #define HEX_PREFIX 128
 #define HEX_UPPER 64
@@ -52,7 +44,7 @@ static void print_putc(print_putc_cb cb, char **buffer_ref, char c)
 	}
 }
 
-#ifndef PRINT_DISABLE_FMT_HEX
+#ifndef PRINT_FTM_MINIMAL
 static void print_byte(print_putc_cb cb, char **buffer_ref, const uint8_t *data, uint8_t flags)
 {
 	bool prefix = (flags && HEX_PREFIX);
@@ -129,7 +121,7 @@ static void FORCEINLINE print_flt(print_putc_cb cb, char **buffer_ref, float num
 	print_int(cb, buffer_ref, digits, (!g_settings.report_inches) ? 3 : 5);
 }
 
-#ifndef PRINT_DISABLE_FMT_IP
+#ifndef PRINT_FTM_MINIMAL
 void print_ip(print_putc_cb cb, char **buffer_ref, uint32_t ip)
 {
 	uint8_t *ptr = (uint8_t *)&ip;
@@ -143,20 +135,15 @@ void print_ip(print_putc_cb cb, char **buffer_ref, uint32_t ip)
 }
 #endif
 
-// static char itof_getc_dummy(bool peek)
-// {
-// 	return 0;
-// }
-
 void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 {
 	char c = 0, cval = 0;
-	const char *s;
 	uint8_t lcount = 0;
-#ifndef PRINT_DISABLE_FMT_HEX
+#ifndef PRINT_FTM_MINIMAL
+	const char *s;
 	bool hexflags = HEX_NONE;
-#endif
 	void *pt = NULL;
+#endif
 	int i = 0;
 	int32_t li = 0;
 	float f, *f_ptr = NULL;
@@ -173,7 +160,7 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 			c = printf_getc(fmt++);
 			switch (c)
 			{
-#ifndef PRINT_DISABLE_FMT_PADDING
+#ifndef PRINT_FTM_MINIMAL
 			case '#':
 				hexflags = HEX_PREFIX;
 				__FALL_THROUGH__
@@ -193,7 +180,7 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 				if (c >= '1' && c <= '9')
 				{
 					fmt--;
-					if (print_atof(NULL /*itof_getc_dummy*/, (const char **)&fmt, &f))
+					if (print_atof(NULL, (const char **)&fmt, &f))
 					{
 						elems = (uint8_t)f;
 					}
@@ -218,6 +205,7 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 				print_putc(cb, buffer_ref, cval);
 				/* code */
 				break;
+#ifndef PRINT_FTM_MINIMAL
 			case 's':
 			case 'S':
 				s = (const char *)va_arg(*args, const char *);
@@ -231,12 +219,9 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 					print_putc(cb, buffer_ref, cval);
 				}
 				break;
-#ifndef PRINT_DISABLE_FMT_IP
 			case 'M':
 				lcount = 4;
 				__FALL_THROUGH__
-#endif
-#ifndef PRINT_DISABLE_FMT_HEX
 			case 'X':
 				hexflags |= HEX_UPPER;
 				__FALL_THROUGH__
@@ -247,12 +232,14 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 				__FALL_THROUGH__
 			case 'd':
 			case 'i':
+#ifndef PRINT_FTM_MINIMAL
 				if (elems)
 				{
 					pt = va_arg(*args, void *);
 				}
 				else
 				{
+#endif
 					switch (lcount)
 					{
 					case 0:
@@ -264,6 +251,7 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 						li = (int32_t)va_arg(*args, long int);
 						break;
 					}
+#ifndef PRINT_FTM_MINIMAL
 					elems = 1;
 				}
 				do
@@ -291,22 +279,23 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 					}
 					pt += (1 << lcount);
 				} while (elems);
+#else
+				print_int(cb, buffer_ref, li, 0);
+#endif
 				/* code */
 				break;
-#ifndef PRINT_DISABLE_FMT_HEX
+#ifndef PRINT_FTM_MINIMAL
 			case 'A':
 				hexflags |= HEX_UPPER;
 				__FALL_THROUGH__
 			case 'a':
-#endif
-			case 'f':
-			case 'F':
-#ifndef PRINT_ENABLE_FMT_FLOAT_FONLY
 			case 'e':
 			case 'E':
 			case 'g':
 			case 'G':
 #endif
+			case 'f':
+			case 'F':
 				if (elems)
 				{
 					f_ptr = va_arg(*args, float *);
@@ -319,18 +308,21 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 				}
 				do
 				{
+#ifndef PRINT_FTM_MINIMAL
 					switch (c)
 					{
-#ifndef PRINT_DISABLE_FMT_HEX
+
 					case 'a':
 					case 'A':
 						print_byte(cb, buffer_ref, (const uint8_t *)f_ptr, (hexflags | VAR_DWORD));
 						break;
-#endif
 					default:
 						print_flt(cb, buffer_ref, *f_ptr++);
 						break;
 					}
+#else
+					print_flt(cb, buffer_ref, *f_ptr++);
+#endif
 					if (elems && --elems)
 					{
 						print_putc(cb, buffer_ref, ',');

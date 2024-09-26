@@ -179,9 +179,6 @@ extern "C"
 // Non query feedback messages
 #define MSG_START "MSG:"
 #define MSG_END "]" MSG_EOL
-#define MSG_FEEDBACK MSG_START "%S" MSG_END
-#define MSG_FEEDBACK_PRINTF MSG_START "%s" MSG_END
-#define MSG_FEEDBACK_IP MSG_START "%M" MSG_END
 
 #define MSG_FEEDBACK_1 "Reset to continue"
 #define MSG_FEEDBACK_2 "'$H'|'$X' to unlock"
