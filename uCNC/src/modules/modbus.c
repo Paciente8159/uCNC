@@ -66,8 +66,11 @@ void send_request(modbus_request_t request, uint8_t len, softuart_port_t *port)
 #ifdef ENABLE_MODBUS_VERBOSE
 	grbl_protocol_print(MSG_START);
 	grbl_protocol_print("MODBUS-OUT");
-	serial_print_bytes((uint8_t *)&request, len);
-	serial_print_bytes((uint8_t *)&(request.crc), 2);
+	for (uint8_t i = 0; i < len; i++)
+	{
+		serial_printf("%x", ((uint8_t *)&request)[i]);
+	}
+	serial_printf("%lx", request.crc);
 	grbl_protocol_print(MSG_END);
 #endif
 

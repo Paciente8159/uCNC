@@ -344,12 +344,7 @@ void cnc_alarm(int8_t code)
 	cnc_stop();
 	cnc_state.alarm = code;
 #ifdef ENABLE_IO_ALARM_DEBUG
-	grbl_protocol_print(MSG_START);
-	grbl_protocol_print("LIMITS:");
-	serial_print_int(io_alarm_limits);
-	grbl_protocol_print("|CONTROLS:");
-	serial_print_int(io_alarm_controls);
-	grbl_protocol_print(MSG_END);
+	grbl_protocol_feedback("LIMITS:%d|CONTROLS:%d", io_alarm_limits, io_alarm_controls);
 #endif
 
 	// we add our callback here

@@ -772,7 +772,7 @@ void grbl_protocol_pins_states(void)
 					grbl_protocol_print("[O:");
 				}
 #ifdef ENABLE_PIN_TRANSLATIONS
-				grbl_protocol_print((const char *)rom_strptr(&outputpins_names[i - 1]));
+				grbl_protocol_printf("%S", (const char *)rom_strptr(&outputpins_names[i - 1]));
 #endif
 			}
 
@@ -791,22 +791,21 @@ void grbl_protocol_pins_states(void)
 					grbl_protocol_print("[I:");
 				}
 #ifdef ENABLE_PIN_TRANSLATIONS
-				grbl_protocol_print((const char *)rom_strptr(&inputpins_names[i - 100]));
+				grbl_protocol_printf("%S", (const char *)rom_strptr(&inputpins_names[i - 100]));
 #endif
 			}
 #ifndef ENABLE_PIN_TRANSLATIONS
-			grbl_stream_print_int(i);
+			grbl_protocol_printf("%u", i);
 #endif
 			grbl_protocol_putc(':');
-			grbl_stream_print_int(val);
+			grbl_protocol_printf("%ld", val);
 			grbl_protocol_print(MSG_END);
 		}
 	}
 
 	int32_t steps[STEPPER_COUNT];
 	itp_get_rt_position(steps);
-	grbl_protocol_print("[STEPS:");
-	grbl_stream_print_intarr(steps, AXIS_TO_STEPPERS);
+	grbl_protocol_printf("[STEPS:" MSG_STEPPERS, steps);
 	grbl_protocol_print(MSG_END);
 
 #if ENCODERS > 0
@@ -817,9 +816,7 @@ void grbl_protocol_pins_states(void)
 	EVENT_INVOKE(grbl_protocol_pins_states, NULL);
 #endif
 
-	grbl_protocol_print("[RUNTIME:");
-	grbl_stream_print_int(mcu_millis());
-	grbl_protocol_print(MSG_END);
+	grbl_protocol_info("RUNTIME:%llu", mcu_millis());
 	protocol_busy = false;
 }
 #endif

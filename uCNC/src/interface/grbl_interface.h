@@ -220,6 +220,24 @@ extern "C"
 #define MSG_AXIS "%6f"
 #endif
 
+#if AXIS_TO_STEPPERS == 1
+#define MSG_STEPPERS "%1lld"
+#elif AXIS_TO_STEPPERS == 2
+#define MSG_STEPPERS "%2lld"
+#elif AXIS_TO_STEPPERS == 3
+#define MSG_STEPPERS "%3lld"
+#elif AXIS_TO_STEPPERS == 4
+#define MSG_STEPPERS "%4lld"
+#elif AXIS_TO_STEPPERS == 5
+#define MSG_STEPPERS "%5lld"
+#elif AXIS_TO_STEPPERS == 6
+#define MSG_STEPPERS "%6lld"
+#elif AXIS_TO_STEPPERS == 7
+#define MSG_STEPPERS "%7lld"
+#else
+#define MSG_STEPPERS "%8lld"
+#endif
+
 #define MSG_STATUS_POS "Pos:" MSG_AXIS
 #define MSG_STATUS_cPOS "|%cPos:" MSG_AXIS
 #define MSG_STATUS_MPOS "|M"

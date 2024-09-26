@@ -16,7 +16,6 @@
 	See the	GNU General Public License for more details.
 */
 
-
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
@@ -205,10 +204,7 @@ uint8_t cnc_parse_cmd(void)
 			error = parser_read_command();
 #ifdef ENABLE_PARSING_TIME_DEBUG
 			exec_time = mcu_millis() - exec_time;
-			grbl_protocol_print(MSG_START);
-			grbl_protocol_print("exec time ");
-			grbl_stream_print_int(exec_time);
-			grbl_protocol_print(MSG_END);
+			grbl_protocol_feedback("Exec time: %llu", exec_time);
 #endif
 			break;
 		}
@@ -216,7 +212,7 @@ uint8_t cnc_parse_cmd(void)
 		// this catches for example a ?\n situation sent by some GUI like UGS
 		cnc_exec_rt_commands();
 		grbl_protocol_error(error);
-		if(error)
+		if (error)
 		{
 			itp_sync();
 			mc_sync_position();
@@ -433,12 +429,7 @@ void cnc_alarm(int8_t code)
 		}
 #endif
 #ifdef ENABLE_IO_ALARM_DEBUG
-		grbl_protocol_print(MSG_START);
-		grbl_protocol_print("LIMITS:");
-		grbl_stream_print_int(io_alarm_limits);
-		grbl_protocol_print("|CONTROLS:");
-		grbl_stream_print_int(io_alarm_controls);
-		grbl_protocol_print(MSG_END);
+		grbl_protocol_feedback("LIMITS:%d|CONTROLS:%d", io_alarm_limits, io_alarm_controls);
 #endif
 	}
 }
@@ -1097,7 +1088,7 @@ void cnc_run_startup_blocks(void)
 			cnc_parse_cmd();
 		}
 	}
-	
+
 	// reset streams
 	grbl_stream_change(NULL);
 }
