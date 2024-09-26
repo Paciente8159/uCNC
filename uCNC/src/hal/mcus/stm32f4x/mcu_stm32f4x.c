@@ -17,7 +17,7 @@
 	See the	GNU General Public License for more details.
 */
 
-#include "src/cnc.h"
+#include "../../../cnc.h"
 
 #if (MCU == MCU_STM32F4X)
 #include "core_cm4.h"

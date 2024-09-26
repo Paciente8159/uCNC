@@ -386,40 +386,37 @@ uint8_t print_atof(print_read_input_cb cb, const char **buffer, float *value)
 
 	for (;;)
 	{
-		switch (c)
+		c -= 48;
+		if (c <= 9)
 		{
-		case '.':
-			result |= ATOF_NUMBER_ISFLOAT;
-			break;
-		default:
-			c -= 48;
-			if (c <= 9)
+			intval = fast_int_mul10(intval) + c;
+			if (result & ATOF_NUMBER_ISFLOAT)
 			{
-				intval = fast_int_mul10(intval) + c;
-				if (result & ATOF_NUMBER_ISFLOAT)
-				{
-					fpcount++;
-				}
+				fpcount++;
+			}
 
-				result |= ATOF_NUMBER_OK;
-			}
-			else if ((result & ATOF_NUMBER_OK))
-			{
-				rhs = (float)intval;
-				while (fpcount--)
-				{
-					rhs *= 0.1f;
-				}
-
-				*value = (result & ATOF_NUMBER_ISNEGATIVE) ? -rhs : rhs;
-				return result;
-			}
-			else
-			{
-				return ATOF_NUMBER_UNDEF;
-			}
-			break;
+			result |= ATOF_NUMBER_OK;
 		}
+		else if (c == (uint8_t)('.' - 48) && !(result & ATOF_NUMBER_ISFLOAT))
+		{
+			result |= ATOF_NUMBER_ISFLOAT;
+		}
+		else if (result & ATOF_NUMBER_OK)
+		{
+			rhs = (float)intval;
+			while (fpcount--)
+			{
+				rhs *= 0.1f;
+			}
+
+			*value = (result & ATOF_NUMBER_ISNEGATIVE) ? -rhs : rhs;
+			return result;
+		}
+		else
+		{
+			return ATOF_NUMBER_UNDEF;
+		}
+
 		atof_get(cb, buffer);
 		c = (uint8_t)atof_peek(cb, buffer);
 	}
