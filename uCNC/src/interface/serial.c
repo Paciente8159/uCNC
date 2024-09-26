@@ -292,12 +292,12 @@ void serial_clear(void)
 #ifndef DISABLE_MULTISTREAM_SERIAL
 static bool serial_broadcast_enabled;
 #endif
-// void serial_broadcast(void)
-// {
-// #ifndef DISABLE_MULTISTREAM_SERIAL
-// 	serial_broadcast_enabled = true;
-// #endif
-// }
+void serial_broadcast(void)
+{
+#ifndef DISABLE_MULTISTREAM_SERIAL
+	serial_broadcast_enabled = true;
+#endif
+}
 
 static uint8_t serial_tx_count;
 void serial_putc(char c)
