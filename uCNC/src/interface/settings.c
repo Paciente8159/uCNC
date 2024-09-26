@@ -599,7 +599,7 @@ void settings_erase(uint16_t address, uint8_t *__ptr, uint16_t size)
 
 bool settings_check_startup_gcode(uint16_t address)
 {
-	serial_broadcast(true);
+	serial_broadcast();
 	serial_putc('>');
 #if !defined(RAM_ONLY_SETTINGS) && (STARTUP_BLOCKS_COUNT > 0)
 	if (settings_load(address, NULL, UINT16_MAX))

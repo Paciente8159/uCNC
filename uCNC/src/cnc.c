@@ -654,7 +654,7 @@ void cnc_reset(void)
 #ifdef ENABLE_MAIN_LOOP_MODULES
 	EVENT_INVOKE(cnc_reset, NULL);
 #endif
-	serial_broadcast(true);
+	serial_broadcast();
 	protocol_send_string(MSG_STARTUP);
 }
 

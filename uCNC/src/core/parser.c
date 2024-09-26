@@ -484,7 +484,7 @@ static uint8_t parser_grbl_command(void)
 
 					settings_save(block_address, NULL, UINT16_MAX);
 					// run startup block
-					serial_broadcast(true);
+					serial_broadcast();
 					serial_stream_eeprom(block_address);
 					// checks the command validity
 					error = parser_fetch_command(&next_state, &words, &cmd);
@@ -725,7 +725,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 #ifdef ECHO_CMD
 		if (!wordcount)
 		{
-			serial_broadcast(true);
+			serial_broadcast();
 			protocol_send_string(MSG_ECHO);
 		}
 #endif
@@ -737,7 +737,6 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 			parser_discard_command();
 #ifdef ECHO_CMD
 			protocol_send_string(MSG_END);
-			serial_broadcast(false);
 #endif
 			return error;
 		}
@@ -795,7 +794,6 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 			DEBUG_PUTC('\n');
 #ifdef ECHO_CMD
 			protocol_send_string(MSG_END);
-			serial_broadcast(false);
 #endif
 			return STATUS_OK;
 		case 'G':
@@ -839,7 +837,6 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 			parser_discard_command();
 #ifdef ECHO_CMD
 			protocol_send_string(MSG_END);
-			serial_broadcast(false);
 #endif
 			return error;
 		}

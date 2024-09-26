@@ -60,7 +60,7 @@ extern "C"
 	bool serial_stream_readonly(stream_getc_cb getc_cb, stream_available_cb available_cb, stream_clear_cb clear_cb);
 	void serial_stream_eeprom(uint16_t address);
 
-	void serial_broadcast(bool enable);
+	void serial_broadcast(void);
 	void serial_putc(char c);
 	void serial_flush(void);
 	uint8_t serial_tx_busy(void);

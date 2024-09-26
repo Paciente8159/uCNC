@@ -292,12 +292,12 @@ void serial_clear(void)
 #ifndef DISABLE_MULTISTREAM_SERIAL
 static bool serial_broadcast_enabled;
 #endif
-void serial_broadcast(bool enable)
-{
-#ifndef DISABLE_MULTISTREAM_SERIAL
-	serial_broadcast_enabled = enable;
-#endif
-}
+// void serial_broadcast(void)
+// {
+// #ifndef DISABLE_MULTISTREAM_SERIAL
+// 	serial_broadcast_enabled = true;
+// #endif
+// }
 
 static uint8_t serial_tx_count;
 void serial_putc(char c)
@@ -331,6 +331,9 @@ void serial_putc(char c)
 	{
 		serial_tx_count = 0;
 		serial_flush();
+#ifndef DISABLE_MULTISTREAM_SERIAL
+		serial_broadcast_enabled = false;
+#endif
 	}
 #if ASSERT_PIN(ACTIVITY_LED)
 	io_toggle_output(ACTIVITY_LED);
