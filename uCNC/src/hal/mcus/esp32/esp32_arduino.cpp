@@ -1138,9 +1138,7 @@ extern "C"
 	{
 		if (NVM_STORAGE_SIZE <= address)
 		{
-			DEBUG_STR("EEPROM invalid address @ ");
-			DEBUG_INT(address);
-			DEBUG_PUTC('\n');
+			DEBUG("EEPROM invalid address @ %u",address);
 			return 0;
 		}
 		return EEPROM.read(address);
@@ -1150,9 +1148,7 @@ extern "C"
 	{
 		if (NVM_STORAGE_SIZE <= address)
 		{
-			DEBUG_STR("EEPROM invalid address @ ");
-			DEBUG_INT(address);
-			DEBUG_PUTC('\n');
+			DEBUG("EEPROM invalid address @ %u",address);
 		}
 		EEPROM.write(address, value);
 	}

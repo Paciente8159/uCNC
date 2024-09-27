@@ -369,6 +369,7 @@ void grbl_protocol_status(void)
 	state &= filter;
 
 	grbl_protocol_putc('<');
+	DEBUG("test");
 	if (cnc_has_alarm())
 	{
 		grbl_protocol_print(MSG_STATUS_ALARM);

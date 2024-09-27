@@ -726,7 +726,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 		}
 #endif
 		error = parser_get_token(&word, &value);
-		DEBUG_PUTC(word);
+		DEBUG("Parser word %c", word);
 
 		if (error)
 		{
@@ -777,8 +777,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 			{
 				return STATUS_BAD_NUMBER_FORMAT;
 			}
-			DEBUG_FLT(assign_val);
-			DEBUG_PUTC('=');
+			DEBUG("Assign #%lu=%f", (uint32_t)value, assign_val);
 			new_state->user_vars[(int)value - 1] = assign_val;
 			break;
 #endif
@@ -788,7 +787,6 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 			linecounter++;
 			words->n = linecounter;
 #endif
-			DEBUG_PUTC('\n');
 #ifdef ECHO_CMD
 			grbl_protocol_print(MSG_END);
 			
@@ -810,7 +808,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 			break;
 		}
 
-		DEBUG_FLT(value);
+		DEBUG("Parser var value %f", value);
 
 #ifdef ENABLE_PARSER_MODULES
 		if ((error == STATUS_GCODE_UNSUPPORTED_COMMAND || error == STATUS_GCODE_UNUSED_WORDS))

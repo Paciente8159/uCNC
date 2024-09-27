@@ -71,18 +71,6 @@ extern "C"
 	uint8_t grbl_stream_write_available(void);
 	uint8_t grbl_stream_busy(void);
 
-// // printing utils
-// #include "print.h"
-// 	void grbl_stream_print_cb(void *arg, char c);
-// 	// base defines
-// #define grbl_stream_printf_va(fmt, vargs) print_fmtva(grbl_stream_print_cb, NULL, fmt, false, vargs)
-// #define grbl_stream_romprintf_va(fmt, vargs) print_fmtva(grbl_stream_print_cb, NULL, fmt, true, vargs)
-// // derivatives
-// #define grbl_stream_printf(fmt, ...) print_fmt(grbl_stream_print_cb, NULL, fmt, false, __VA_ARGS__)
-// #define grbl_stream_print(fmt) print_fmt(grbl_stream_print_cb, NULL, fmt, false)
-// #define grbl_stream_romprintf(fmt, ...) print_fmt(grbl_stream_print_cb, NULL, fmt, true, __VA_ARGS__)
-// #define grbl_stream_romprint(fmt) print_fmt(grbl_stream_print_cb, NULL, fmt, true)
-
 #ifdef ENABLE_DEBUG_STREAM
 	// to customize the debug stream you can reference it to an existing stream
 	// for example to set it to the USB stream you can define DEBUG_STREAM like this
@@ -93,24 +81,15 @@ extern "C"
 #define DEBUG_STREAM default_stream
 #endif
 
-	extern void debug_putc(char c);
-#define DEBUG_PUTC(c) debug_putc(c)
-#define DEBUG_STR(__s) print_str(debug_putc, __s)
-#define DEBUG_BYTES(data, count) print_bytes(debug_putc, data, count)
-#define DEBUG_INT(num) print_int(debug_putc, num)
-#define DEBUG_FLT(num) print_flt(debug_putc, num)
-#define DEBUG_FLTUNITS(num) print_fltunits(debug_putc, num)
-#define DEBUG_INTARR(arr, count) print_intarr(debug_putc, arr, count)
-#define DEBUG_FLTARR(arr, count) print_fltarr(debug_putc, arr, count)
+#ifndef DEBUG_PRELUDE
+#define DEBUG_PRELUDE "[DBG:"
+#endif
+
+// not to be used directly
+void debug_printf(const char *fmt, ...);
+#define DEBUG(fmt, ...) debug_printf(__romstr__(DEBUG_PRELUDE fmt MSG_END), ##__VA_ARGS__)
 #else
-#define DEBUG_PUTC(c)
-#define DEBUG_STR(__s)
-#define DEBUG_BYTES(data, count)
-#define DEBUG_INT(num)
-#define DEBUG_FLT(num)
-#define DEBUG_FLTUNITS(num)
-#define DEBUG_INTARR(arr, count)
-#define DEBUG_FLTARR(arr, count)
+#define DEBUG(fmt, ...)
 #endif
 
 #ifdef __cplusplus
