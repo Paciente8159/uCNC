@@ -411,7 +411,7 @@ void fs_file_run(char *params)
 	if (fp)
 	{
 		startline = MAX(1, startline);
-		grbl_protocol_printf(MSG_START"Running file from line - %llu" MSG_END, startline);
+		grbl_protocol_printf(MSG_START"Running file from line - %lu" MSG_END, startline);
 #ifdef DECL_SERIAL_STREAM
 #ifdef ENABLE_MAIN_LOOP_MODULES
 		// prefill buffer
@@ -622,11 +622,11 @@ void fs_file_json_api()
 					memset(urlpath, 0, 256);
 					if (child.is_dir)
 					{
-						snprintf(urlpath, 256, "{\"type\":\"dir\",\"name\":\"%s\",\"attr\":%d}", fs_filename(&child), 0);
+						snprintf(urlpath, 256, "{\"type\":\"dir\",\"name\":\"%s\",\"attr\":%hd}", fs_filename(&child), 0);
 					}
 					else
 					{
-						snprintf(urlpath, 256, "{\"type\":\"file\",\"name\":\"%s\",\"attr\":0,\"size\":%d,\"date\":0}", fs_filename(&child), child.size);
+						snprintf(urlpath, 256, "{\"type\":\"file\",\"name\":\"%s\",\"attr\":0,\"size\":%hd,\"date\":0}", fs_filename(&child), child.size);
 					}
 
 					has_child = fs_next_file(file, &child);

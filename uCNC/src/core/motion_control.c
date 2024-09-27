@@ -1029,7 +1029,7 @@ void mc_print_hmap(void)
 {
 	grbl_protocol_feedback("HMAP start corner: %f;%f", hmap_x, hmap_y);
 	grbl_protocol_feedback("HMAP end corner: %f;%f", hmap_x + hmap_x_offset, hmap_y + hmap_y_offset);
-	grbl_protocol_feedback("HMAP control points: %d", H_MAPING_ARRAY_SIZE);
+	grbl_protocol_feedback("HMAP control points: %hd", H_MAPING_ARRAY_SIZE);
 
 	// print map
 	for (uint8_t j = 0; j < H_MAPING_GRID_FACTOR; j++)
@@ -1039,7 +1039,7 @@ void mc_print_hmap(void)
 			uint8_t map = i + (H_MAPING_GRID_FACTOR * j);
 			float new_h = hmap_offsets[map];
 			grbl_protocol_print(MSG_START);
-			grbl_protocol_feedback("HMAP: %d; %d; %f", i, j, new_h);
+			grbl_protocol_feedback("HMAP: %hd; %hd; %f", i, j, new_h);
 		}
 	}
 }

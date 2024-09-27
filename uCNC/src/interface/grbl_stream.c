@@ -268,8 +268,6 @@ uint8_t grbl_stream_write_available(void)
 	return (RX_BUFFER_SIZE - grbl_stream_available());
 }
 
-
-
 void grbl_stream_clear(void)
 {
 #ifndef DISABLE_MULTISTREAM_SERIAL
@@ -341,20 +339,20 @@ void grbl_stream_printf(const char *fmt, ...)
 	va_end(args);
 }
 
-#ifdef ENABLE_DEBUG_STREAM
-void debug_putc(char c)
-{
-	if (DEBUG_STREAM)
-	{
-		DEBUG_STREAM->stream_putc(c);
+// #ifdef ENABLE_DEBUG_STREAM
+// void debug_putc(char c)
+// {
+// 	if (DEBUG_STREAM)
+// 	{
+// 		DEBUG_STREAM->stream_putc(c);
 
-		if (c == '\n')
-		{
-			DEBUG_STREAM->stream_flush();
-		}
-	}
-}
-#endif
+// 		if (c == '\n')
+// 		{
+// 			DEBUG_STREAM->stream_flush();
+// 		}
+// 	}
+// }
+// #endif
 
 void grbl_stream_flush(void)
 {
@@ -392,3 +390,37 @@ void grbl_stream_print_cb(void *arg, char c)
 {
 	grbl_stream_putc(c);
 }
+
+#ifdef ENABLE_DEBUG_STREAM
+#ifndef DEBUG_TX_BUFFER_SIZE
+#define DEBUG_TX_BUFFER_SIZE 64
+#endif
+DECL_BUFFER(uint8_t, debug_tx, DEBUG_TX_BUFFER_SIZE);
+
+void debug_putc(char c)
+{
+	while (BUFFER_FULL(debug_tx))
+	{
+		debug_flush();
+	}
+	BUFFER_ENQUEUE(debug_tx, &c);
+}
+
+void debug_flush(void)
+{
+	while (grbl_stream_busy())
+	{
+		mcu_dotasks();
+	}
+	if (!BUFFER_EMPTY(debug_tx))
+	{
+		uint8_t c;
+		BUFFER_DEQUEUE(debug_tx, &c);
+		DEBUG_STREAM->stream_putc(c);
+		if (c == '\n')
+		{
+			DEBUG_STREAM->stream_flush();
+		}
+	}
+}
+#endif

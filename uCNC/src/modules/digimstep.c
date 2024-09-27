@@ -76,7 +76,7 @@ bool m351_exec(void *args)
 			val = MAX(0, val);
 			val |= io_get_output(STEPPER0_MSTEP1) ? 2 : 0;
 #endif
-			grbl_protocol_printf("%d", val);
+			grbl_protocol_printf("%hd", val);
 			grbl_protocol_putc(',');
 			val = -1;
 			grbl_protocol_putc('Y');
@@ -87,7 +87,7 @@ bool m351_exec(void *args)
 			val = MAX(0, val);
 			val |= io_get_output(STEPPER1_MSTEP1) ? 2 : 0;
 #endif
-			grbl_protocol_printf("%d", val);
+			grbl_protocol_printf("%hd", val);
 			grbl_protocol_putc(',');
 			val = -1;
 			grbl_protocol_putc('Z');
@@ -98,7 +98,7 @@ bool m351_exec(void *args)
 			val = MAX(0, val);
 			val |= io_get_output(STEPPER2_MSTEP1) ? 2 : 0;
 #endif
-			grbl_protocol_printf("%d", val);
+			grbl_protocol_printf("%hd", val);
 			grbl_protocol_putc(',');
 			val = -1;
 			grbl_protocol_putc('A');
@@ -109,7 +109,7 @@ bool m351_exec(void *args)
 			val = MAX(0, val);
 			val |= io_get_output(STEPPER3_MSTEP1) ? 2 : 0;
 #endif
-			grbl_protocol_printf("%d", val);
+			grbl_protocol_printf("%hd", val);
 			grbl_protocol_putc(',');
 			val = -1;
 			grbl_protocol_putc('B');
@@ -120,7 +120,7 @@ bool m351_exec(void *args)
 			val = MAX(0, val);
 			val |= io_get_output(STEPPER4_MSTEP1) ? 2 : 0;
 #endif
-			grbl_protocol_printf("%d", val);
+			grbl_protocol_printf("%hd", val);
 			grbl_protocol_putc(',');
 			val = -1;
 			grbl_protocol_putc('C');
@@ -131,7 +131,7 @@ bool m351_exec(void *args)
 			val = MAX(0, val);
 			val |= io_get_output(STEPPER5_MSTEP1) ? 2 : 0;
 #endif
-			grbl_protocol_printf("%d", val);
+			grbl_protocol_printf("%hd", val);
 			grbl_protocol_putc(',');
 			val = -1;
 			grbl_protocol_putc('I');
@@ -142,7 +142,7 @@ bool m351_exec(void *args)
 			val = MAX(0, val);
 			val |= io_get_output(STEPPER6_MSTEP1) ? 2 : 0;
 #endif
-			grbl_protocol_printf("%d", val);
+			grbl_protocol_printf("%hd", val);
 			grbl_protocol_putc(',');
 			val = -1;
 			grbl_protocol_putc('J');
@@ -153,7 +153,7 @@ bool m351_exec(void *args)
 			val = MAX(0, val);
 			val |= io_get_output(STEPPER7_MSTEP1) ? 2 : 0;
 #endif
-			grbl_protocol_printf("%d", val);
+			grbl_protocol_printf("%hd", val);
 			grbl_protocol_putc(']');
 			grbl_protocol_print(MSG_EOL);
 		}

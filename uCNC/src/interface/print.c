@@ -25,7 +25,13 @@
 #define VAR_WORD 2
 #define VAR_DWORD 4
 #define HEX_SIZE_MASK (VAR_DWORD | VAR_WORD | VAR_BYTE)
-#define HEX_SIZE(X) ((X & HEX_SIZE_MASK) >> 1)
+#define HEX_SIZE(X) (X & HEX_SIZE_MASK)
+
+#ifdef PRINTF_FTM_CUSTOM_PRECISION
+#if ((PRINTF_FTM_CUSTOM_PRECISION < 0) || (PRINTF_FTM_CUSTOM_PRECISION > 9))
+#error "Invalid custom precison value. Must be a value between 0 and 9"
+#endif
+#endif
 
 #ifndef printf_getc
 #define printf_getc(fmt) rom_read_byte(fmt)
@@ -50,26 +56,24 @@ static void print_byte(print_putc_cb cb, char **buffer_ref, const uint8_t *data,
 	bool prefix = (flags && HEX_PREFIX);
 	char hexchar = (flags & HEX_UPPER) ? 'A' : 'a';
 	uint8_t size = HEX_SIZE(flags);
-	do
+	if (prefix)
 	{
-		if (prefix)
-		{
-			print_putc(cb, buffer_ref, '0');
-			print_putc(cb, buffer_ref, 'x');
-		}
-		print_putc(cb, buffer_ref, ' ');
-		uint8_t up = *data >> 4;
+		print_putc(cb, buffer_ref, '0');
+		print_putc(cb, buffer_ref, 'x');
+	}
+	for (uint8_t i = 0; i < size; i++)
+	{
+		uint8_t up = data[i] >> 4;
 		uint8_t c = (up > 9) ? (hexchar + up - 10) : ('0' + up);
 		print_putc(cb, buffer_ref, c);
-		up = *data & 0x0F;
+		up = data[i] & 0x0F;
 		c = (up > 9) ? (hexchar + up - 10) : ('0' + up);
 		print_putc(cb, buffer_ref, c);
-		data++;
-	} while (--size);
+	}
 }
 #endif
 
-static void print_int(print_putc_cb cb, char **buffer_ref, int32_t num, uint8_t padding)
+static void print_int(print_putc_cb cb, char **buffer_ref, uint32_t num, uint8_t padding)
 {
 	uint8_t buffer[11];
 	uint8_t i = 0;
@@ -77,12 +81,6 @@ static void print_int(print_putc_cb cb, char **buffer_ref, int32_t num, uint8_t 
 	if (num == 0)
 	{
 		padding = MAX(1, padding);
-	}
-
-	if (num < 0)
-	{
-		print_putc(cb, buffer_ref, '-');
-		num = -num;
 	}
 
 	while (num > 0)
@@ -103,11 +101,37 @@ static void print_int(print_putc_cb cb, char **buffer_ref, int32_t num, uint8_t 
 	}
 }
 
-static void FORCEINLINE print_flt(print_putc_cb cb, char **buffer_ref, float num)
+static void FORCEINLINE print_flt(print_putc_cb cb, char **buffer_ref, float num, uint8_t precision)
 {
-	int32_t interger = (int32_t)floorf(num);
+	if (num < 0)
+	{
+		print_putc(cb, buffer_ref, '-');
+		num = -num;
+	}
+
+#ifndef PRINT_FTM_MINIMAL
+	if (num == INFINITY)
+	{
+		print_putc(cb, buffer_ref, 'I');
+		print_putc(cb, buffer_ref, 'n');
+		print_putc(cb, buffer_ref, 'f');
+	}
+
+	if (num == NAN)
+	{
+		print_putc(cb, buffer_ref, 'N');
+		print_putc(cb, buffer_ref, 'a');
+		print_putc(cb, buffer_ref, 'N');
+	}
+#endif
+
+	uint32_t interger = floorf(num);
 	num -= interger;
+#ifndef PRINT_FTM_MINIMAL
+	uint32_t mult = pow(10, precision);
+#else
 	uint32_t mult = (!g_settings.report_inches) ? 1000 : 10000;
+#endif
 	num *= mult;
 	uint32_t digits = (uint32_t)lroundf(num);
 	if (digits == mult)
@@ -118,7 +142,7 @@ static void FORCEINLINE print_flt(print_putc_cb cb, char **buffer_ref, float num
 
 	print_int(cb, buffer_ref, interger, 0);
 	print_putc(cb, buffer_ref, '.');
-	print_int(cb, buffer_ref, digits, (!g_settings.report_inches) ? 3 : 5);
+	print_int(cb, buffer_ref, digits, precision);
 }
 
 #ifndef PRINT_FTM_MINIMAL
@@ -138,19 +162,23 @@ void print_ip(print_putc_cb cb, char **buffer_ref, uint32_t ip)
 void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 {
 	char c = 0, cval = 0;
-	uint8_t lcount = 0;
+	uint8_t lcount = 2;
 #ifndef PRINT_FTM_MINIMAL
 	const char *s;
 	bool hexflags = HEX_NONE;
 	void *pt = NULL;
 #endif
-	int i = 0;
 	int32_t li = 0;
 	float f, *f_ptr = NULL;
 
 	char *ptr = buffer;
 	char **buffer_ref = (!ptr) ? NULL : &ptr;
 	uint8_t elems = 0;
+#ifndef PRINTF_FTM_CUSTOM_PRECISION
+	uint8_t precision = (!g_settings.report_inches) ? 3 : 5;
+#else
+	uint8_t precision = PRINTF_FTM_CUSTOM_PRECISION;
+#endif
 
 	do
 	{
@@ -164,37 +192,36 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 			case '#':
 				hexflags = HEX_PREFIX;
 				__FALL_THROUGH__
-			case '-':
-			case '+':
-				__FALL_THROUGH__
 			case '0':
-				while (c >= '0' && c <= '9' && c)
-				{
-					c = printf_getc(fmt++);
-				}
+				// ignores zero padding
 				__FALL_THROUGH__
 			case '.':
 				__FALL_THROUGH__
 #endif
 			default:
-				if (c >= '1' && c <= '9')
+				if (c == '.' || (c >= '1' && c <= '9'))
 				{
 					fmt--;
-					if (print_atof(NULL, (const char **)&fmt, &f))
+					cval = print_atof(NULL, (const char **)&fmt, &f);
+					if (cval != ATOF_NUMBER_UNDEF)
 					{
 						elems = (uint8_t)f;
+#ifndef PRINT_FTM_MINIMAL
+						if (cval & ATOF_NUMBER_ISFLOAT)
+						{
+							precision = (roundf((f - elems) * 10));
+						}
+#endif
 					}
 					c = printf_getc(fmt++);
 				}
 				break;
 			}
 
+			// ll is the same as l and hh is the same as h
 			while (c == 'l' || c == 'h')
 			{
-				if (c == 'l')
-				{
-					lcount++;
-				}
+				lcount = ((c == 'l') ? 4 : 1);
 				c = printf_getc(fmt++);
 			}
 
@@ -219,7 +246,7 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 					print_putc(cb, buffer_ref, cval);
 				}
 				break;
-			case 'M':
+			case 'I':
 				lcount = 4;
 				__FALL_THROUGH__
 			case 'X':
@@ -227,11 +254,11 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 				__FALL_THROUGH__
 			case 'x':
 #endif
-			case 'u':
-				cval = 1;
-				__FALL_THROUGH__
 			case 'd':
 			case 'i':
+				cval = 1;
+				__FALL_THROUGH__
+			case 'u':
 #ifndef PRINT_FTM_MINIMAL
 				if (elems)
 				{
@@ -242,13 +269,12 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 #endif
 					switch (lcount)
 					{
-					case 0:
-					case 1:
-						i = (int32_t)va_arg(*args, int);
-						li = (c) ? (unsigned int)i : i;
+					case 4:
+						// mask |= 0xffff0000;
+						li = va_arg(*args, int32_t);
 						break;
 					default:
-						li = (int32_t)va_arg(*args, long int);
+						li = va_arg(*args, int);
 						break;
 					}
 #ifndef PRINT_FTM_MINIMAL
@@ -258,19 +284,23 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 				{
 					switch (c)
 					{
-#ifndef PRINT_DISABLE_FMT_HEX
 					case 'x':
 					case 'X':
 						print_byte(cb, buffer_ref, (const uint8_t *)&li, (hexflags | lcount));
 						break;
-#endif
-#ifndef PRINT_DISABLE_FMT_IP
 					case 'M':
 						print_ip(cb, buffer_ref, li);
 						break;
-#endif
 					default:
-						print_int(cb, buffer_ref, li, 0);
+#endif
+						if (cval && (li < 0))
+						{
+							print_putc(cb, buffer_ref, '-');
+							li = -li;
+						}
+						li &= (0xffffffff >> ((4 - lcount) << 3));
+						print_int(cb, buffer_ref, (uint32_t)li, 0);
+#ifndef PRINT_FTM_MINIMAL
 						break;
 					}
 					if (elems && --elems)
@@ -279,8 +309,6 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 					}
 					pt += (1 << lcount);
 				} while (elems);
-#else
-				print_int(cb, buffer_ref, li, 0);
 #endif
 				/* code */
 				break;
@@ -317,11 +345,11 @@ void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args)
 						print_byte(cb, buffer_ref, (const uint8_t *)f_ptr, (hexflags | VAR_DWORD));
 						break;
 					default:
-						print_flt(cb, buffer_ref, *f_ptr++);
+						print_flt(cb, buffer_ref, *f_ptr++, precision);
 						break;
 					}
 #else
-					print_flt(cb, buffer_ref, *f_ptr++);
+					print_flt(cb, buffer_ref, *f_ptr++, precision);
 #endif
 					if (elems && --elems)
 					{

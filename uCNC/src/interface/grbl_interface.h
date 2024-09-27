@@ -159,8 +159,8 @@ extern "C"
 #define STR_EOL "\r\n"
 #define MSG_EOL STR_EOL
 #define MSG_OK "ok"
-#define MSG_ERROR "error:%d"
-#define MSG_ALARM "ALARM:%d" MSG_EOL
+#define MSG_ERROR "error:%hd"
+#define MSG_ALARM "ALARM:%hd" MSG_EOL
 #define MSG_ECHO "[echo:"
 #if EMULATE_GRBL_STARTUP == 0
 #define MSG_STARTUP_START "uCNC "
@@ -221,21 +221,21 @@ extern "C"
 #endif
 
 #if AXIS_TO_STEPPERS == 1
-#define MSG_STEPPERS "%1lld"
+#define MSG_STEPPERS "%1ld"
 #elif AXIS_TO_STEPPERS == 2
-#define MSG_STEPPERS "%2lld"
+#define MSG_STEPPERS "%2ld"
 #elif AXIS_TO_STEPPERS == 3
-#define MSG_STEPPERS "%3lld"
+#define MSG_STEPPERS "%3ld"
 #elif AXIS_TO_STEPPERS == 4
-#define MSG_STEPPERS "%4lld"
+#define MSG_STEPPERS "%4ld"
 #elif AXIS_TO_STEPPERS == 5
-#define MSG_STEPPERS "%5lld"
+#define MSG_STEPPERS "%5ld"
 #elif AXIS_TO_STEPPERS == 6
-#define MSG_STEPPERS "%6lld"
+#define MSG_STEPPERS "%6ld"
 #elif AXIS_TO_STEPPERS == 7
-#define MSG_STEPPERS "%7lld"
+#define MSG_STEPPERS "%7ld"
 #else
-#define MSG_STEPPERS "%8lld"
+#define MSG_STEPPERS "%8ld"
 #endif
 
 #define MSG_STATUS_POS "Pos:" MSG_AXIS
@@ -248,13 +248,13 @@ extern "C"
 #define MSG_STATUS_FS "|F:%f"
 #endif
 #define MSG_STATUS_WCO "|WCO:" MSG_AXIS
-#define MSG_STATUS_OVR "|Ov:%d,%d,%d"
+#define MSG_STATUS_OVR "|Ov:%hd,%hd,%hd"
 #define MSG_STATUS_TOOL "|A:"
-#define MSG_STATUS_LINE "|Ln:%llu"
+#define MSG_STATUS_LINE "|Ln:%lu"
 #define MSG_STATUS_PIN "|Pn:"
-#define MSG_STATUS_BUF "|Buf:%d,%d"
+#define MSG_STATUS_BUF "|Buf:%hd,%hd"
 
-	// #define MSG_INT "%d"
+	// #define MSG_INT "%hd"
 	// #define MSG_FLT "%0.3f"
 	// #define MSG_FLT_IMPERIAL "%0.5f"
 

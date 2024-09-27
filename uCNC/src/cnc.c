@@ -204,7 +204,7 @@ uint8_t cnc_parse_cmd(void)
 			error = parser_read_command();
 #ifdef ENABLE_PARSING_TIME_DEBUG
 			exec_time = mcu_millis() - exec_time;
-			grbl_protocol_feedback("Exec time: %llu", exec_time);
+			grbl_protocol_feedback("Exec time: %lu", exec_time);
 #endif
 			break;
 		}
@@ -429,7 +429,7 @@ void cnc_alarm(int8_t code)
 		}
 #endif
 #ifdef ENABLE_IO_ALARM_DEBUG
-		grbl_protocol_feedback("LIMITS:%d|CONTROLS:%d", io_alarm_limits, io_alarm_controls);
+		grbl_protocol_feedback("LIMITS:%hd|CONTROLS:%hd", io_alarm_limits, io_alarm_controls);
 #endif
 	}
 }

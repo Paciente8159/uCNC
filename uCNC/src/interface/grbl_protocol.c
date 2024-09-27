@@ -656,17 +656,17 @@ void grbl_protocol_gcode_modes(void)
 	// permanent M9
 	// grbl_protocol_print("M9 ");
 #endif
-	grbl_protocol_printf("M%d T%d F%f S%lu" MSG_END, modalgroups[10], modalgroups[11], feed, spindle);
+	grbl_protocol_printf("M%d T%d F%f S%u" MSG_END, modalgroups[10], modalgroups[11], feed, spindle);
 }
 
 void grbl_protocol_gcode_setting_line_int(setting_offset_t setting, uint16_t value)
 {
-	grbl_protocol_printf("$%lu=%lu" MSG_EOL, setting, value);
+	grbl_protocol_printf("$%u=%u" MSG_EOL, setting, value);
 }
 
 void grbl_protocol_gcode_setting_line_flt(setting_offset_t setting, float value)
 {
-	grbl_protocol_printf("$%lu=%f" MSG_EOL, setting, value);
+	grbl_protocol_printf("$%u=%f" MSG_EOL, setting, value);
 }
 
 void grbl_protocol_start_blocks(void)
@@ -677,7 +677,7 @@ void grbl_protocol_start_blocks(void)
 	for (uint8_t i = 0; i < STARTUP_BLOCKS_COUNT; i++)
 	{
 		uint16_t address = STARTUP_BLOCK0_ADDRESS_OFFSET + i * STARTUP_BLOCK_SIZE;
-		grbl_protocol_printf("$N%d=", i);
+		grbl_protocol_printf("$N%u=", i);
 		for (;;)
 		{
 			settings_load(address++, &c, 1);
@@ -816,7 +816,7 @@ void grbl_protocol_pins_states(void)
 	EVENT_INVOKE(grbl_protocol_pins_states, NULL);
 #endif
 
-	grbl_protocol_info("RUNTIME:%llu", mcu_millis());
+	grbl_protocol_info("RUNTIME:%lu", mcu_millis());
 	protocol_busy = false;
 }
 #endif
