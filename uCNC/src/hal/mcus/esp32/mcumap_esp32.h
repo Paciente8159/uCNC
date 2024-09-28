@@ -25,6 +25,7 @@ extern "C"
 #endif
 
 #include <Arduino.h>
+#include <stdio.h>
 #include "driver/timer.h"
 #include "driver/gpio.h"
 #include "hal/gpio_ll.h"

@@ -35,6 +35,7 @@ extern "C"
 #include <stm32f0xx.h>
 #include <stdbool.h>
 #include <stm32f0xx_hal_rcc.h>
+#include <stdio.h>
 
 // defines the frequency of the mcu
 #ifndef F_CPU

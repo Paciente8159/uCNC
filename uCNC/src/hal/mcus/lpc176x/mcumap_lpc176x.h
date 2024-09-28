@@ -37,6 +37,7 @@ extern "C"
 #include <stdint.h>
 #include <stdbool.h>
 #include <math.h>
+#include <stdio.h>
 #include "lpc_types.h"
 #include "lpc17xx_pinsel.h"
 #include "lpc17xx_uart.h"

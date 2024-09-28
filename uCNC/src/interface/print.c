@@ -103,18 +103,13 @@ void print_int(print_putc_cb cb, char **buffer_ref, uint32_t num, uint8_t paddin
 
 void print_flt(print_putc_cb cb, char **buffer_ref, float num, uint8_t precision)
 {
-	if (num < 0)
-	{
-		print_putc(cb, buffer_ref, '-');
-		num = -num;
-	}
-
 #ifndef PRINT_FTM_MINIMAL
 	if (num == INFINITY)
 	{
 		print_putc(cb, buffer_ref, 'I');
 		print_putc(cb, buffer_ref, 'n');
 		print_putc(cb, buffer_ref, 'f');
+		return;
 	}
 
 	if (num == NAN)
@@ -122,8 +117,15 @@ void print_flt(print_putc_cb cb, char **buffer_ref, float num, uint8_t precision
 		print_putc(cb, buffer_ref, 'N');
 		print_putc(cb, buffer_ref, 'a');
 		print_putc(cb, buffer_ref, 'N');
+		return;
 	}
 #endif
+
+	if (num < 0)
+	{
+		print_putc(cb, buffer_ref, '-');
+		num = -num;
+	}
 
 	uint32_t interger = floorf(num);
 	num -= interger;
