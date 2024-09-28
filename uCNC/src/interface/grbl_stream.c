@@ -27,9 +27,10 @@ static FORCEINLINE void grbl_stream_flush(void);
 
 #ifdef ENABLE_DEBUG_STREAM
 #ifndef DEBUG_TX_BUFFER_SIZE
-#define DEBUG_TX_BUFFER_SIZE 64
+#define DEBUG_TX_BUFFER_SIZE 250
 #endif
 DECL_BUFFER(uint8_t, debug_tx, DEBUG_TX_BUFFER_SIZE);
+static uint8_t debug_tx_lines;
 #endif
 
 #ifndef DISABLE_MULTISTREAM_SERIAL
@@ -92,7 +93,7 @@ static void debug_flush(void)
 	{
 		return;
 	}
-	while (!BUFFER_EMPTY(debug_tx))
+	while (debug_tx_lines)
 	{
 		uint8_t c;
 		BUFFER_DEQUEUE(debug_tx, &c);
@@ -100,6 +101,7 @@ static void debug_flush(void)
 		if (c == '\n')
 		{
 			DEBUG_STREAM->stream_flush();
+			debug_tx_lines--;
 		}
 	}
 }
@@ -111,11 +113,10 @@ static void FORCEINLINE debug_putc(char c)
 		debug_flush();
 	}
 
-	if(!grbl_stream_busy()){
-		DEBUG_STREAM->stream_putc(c);
-	}
-	else{
-		BUFFER_ENQUEUE(debug_tx, &c);
+	BUFFER_ENQUEUE(debug_tx, &c);
+	if(c == '\n'){
+		debug_tx_lines++;
+		debug_flush();
 	}
 }
 
@@ -395,21 +396,6 @@ void grbl_stream_printf(const char *fmt, ...)
 	print_fmtva(grbl_stream_putc, NULL, fmt, &args);
 	va_end(args);
 }
-
-// #ifdef ENABLE_DEBUG_STREAM
-// void debug_putc(char c)
-// {
-// 	if (DEBUG_STREAM)
-// 	{
-// 		DEBUG_STREAM->stream_putc(c);
-
-// 		if (c == '\n')
-// 		{
-// 			DEBUG_STREAM->stream_flush();
-// 		}
-// 	}
-// }
-// #endif
 
 void grbl_stream_flush(void)
 {
