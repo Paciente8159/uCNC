@@ -37,7 +37,7 @@ jobs:
     - name: Zip binaries
       run: zip ${{matrix.boards}}.zip .pio/build/${{matrix.boards}}/firmware.*
     - name: Upload binaries
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
           name: ${{matrix.boards}}
           path: ./${{matrix.boards}}.zip
