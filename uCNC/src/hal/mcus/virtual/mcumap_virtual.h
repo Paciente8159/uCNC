@@ -20,7 +20,6 @@
 #define MCUMAP_VIRTUAL_H
 
 #include <stdint.h>
-#include <stdio.h>
 #define F_CPU 1000000
 #ifndef F_STEP_MAX
 #define F_STEP_MAX 40000

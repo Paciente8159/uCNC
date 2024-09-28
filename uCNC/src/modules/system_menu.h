@@ -241,16 +241,8 @@ extern "C"
 	/**
 	 * Helper µCNC to display variables
 	 * **/
-	extern char *system_menu_var_to_str_set_buffer_ptr;
-	void system_menu_var_to_str_set_buffer(char *ptr);
-	void system_menu_var_to_str(char c);
-
-#define system_menu_int_to_str(buf_ptr, var)  \
-	system_menu_var_to_str_set_buffer(buf_ptr); \
-	print_int(NULL, (char**)&buf_ptr, (uint32_t)var, 0)
-#define system_menu_flt_to_str(buf_ptr, var)  \
-	system_menu_var_to_str_set_buffer(buf_ptr); \
-	print_flt(NULL, (char**)&buf_ptr, (float)var, 7)
+#define system_menu_int_to_str(buf_ptr, var) str_sprintf(buf_ptr, "%lu", (uint32_t)var, 0)
+#define system_menu_flt_to_str(buf_ptr, var) str_sprintf(buf_ptr, "%.5f", (float)var)
 
 #ifdef __cplusplus
 }

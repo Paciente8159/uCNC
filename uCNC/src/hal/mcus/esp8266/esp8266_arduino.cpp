@@ -114,8 +114,7 @@ extern "C"
 					WiFi.softAP(BOARD_NAME, wifi_settings.pass);
 					grbl_protocol_info("AP started");
 					grbl_protocol_info("SSID>" BOARD_NAME);
-					sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
-					grbl_protocol_info("%s", str);
+					grbl_protocol_info("IP>%s", WiFi.softAPIP().toString().c_str());
 					break;
 				default:
 					WiFi.mode(WIFI_AP_STA);
@@ -124,8 +123,7 @@ extern "C"
 					WiFi.softAP(BOARD_NAME, wifi_settings.pass);
 					grbl_protocol_info("AP started");
 					grbl_protocol_info("SSID>" BOARD_NAME);
-					sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
-					grbl_protocol_info("%s", str);
+					grbl_protocol_info("IP>%s", WiFi.softAPIP().toString().c_str());
 					break;
 				}
 
@@ -167,8 +165,7 @@ extern "C"
 				}
 				else
 				{
-					sprintf((char *)str, "SSID>%s", wifi_settings.ssid);
-					grbl_protocol_info("%s", str);
+					grbl_protocol_info("SSID>%s", wifi_settings.ssid);
 				}
 				*(cmd_params->error) = STATUS_OK;
 				return EVENT_HANDLED;
@@ -186,14 +183,12 @@ extern "C"
 				}
 
 				// print the list of networks seen:
-				sprintf((char *)str, "%d available networks", numSsid);
-				grbl_protocol_info("%s", str);
+				grbl_protocol_info("%d available networks", numSsid);
 
 				// print the network number and name for each network found:
 				for (int netid = 0; netid < numSsid; netid++)
 				{
-					sprintf((char *)str, "%d) %s\tSignal:  %ddBm", netid, WiFi.SSID(netid).c_str(), WiFi.RSSI(netid));
-					grbl_protocol_info("%s", str);
+					grbl_protocol_info("%d) %s\tSignal:  %ddBm", netid, WiFi.SSID(netid).c_str(), WiFi.RSSI(netid));
 				}
 				*(cmd_params->error) = STATUS_OK;
 				return EVENT_HANDLED;
@@ -283,18 +278,14 @@ extern "C"
 					switch (wifi_settings.wifi_mode)
 					{
 					case 1:
-						sprintf((char *)str, "STA IP>%s", WiFi.localIP().toString().c_str());
-						grbl_protocol_info("%s", str);
-						sprintf((char *)str, "AP IP>%s", WiFi.softAPIP().toString().c_str());
-						grbl_protocol_info("%s", str);
+						grbl_protocol_info("STA IP>%s", WiFi.localIP().toString().c_str());
+						grbl_protocol_info("AP IP>%s", WiFi.softAPIP().toString().c_str());
 						break;
 					case 2:
-						sprintf((char *)str, "IP>%s", WiFi.localIP().toString().c_str());
-						grbl_protocol_info("%s", str);
+						grbl_protocol_info("IP>%s", WiFi.localIP().toString().c_str());
 						break;
 					default:
-						sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
-						grbl_protocol_info("%s", str);
+						grbl_protocol_info("IP>%s", WiFi.softAPIP().toString().c_str());
 						break;
 					}
 				}
@@ -342,10 +333,8 @@ extern "C"
 		{
 			connected = true;
 			grbl_protocol_info("Connected to WiFi");
-			sprintf((char *)str, "SSID>%s", wifi_settings.ssid);
-			grbl_protocol_info("%s", str);
-			sprintf((char *)str, "IP>%s", WiFi.localIP().toString().c_str());
-			grbl_protocol_info("%s", str);
+			grbl_protocol_info("SSID>%s", wifi_settings.ssid);
+			grbl_protocol_info("IP>%s", WiFi.localIP().toString().c_str());
 		}
 
 		if (telnet_server.hasClient())
@@ -755,8 +744,7 @@ extern "C"
 				WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
 				grbl_protocol_info("AP started");
 				grbl_protocol_info("SSID>" BOARD_NAME);
-				sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
-				grbl_protocol_info("%s", str);
+				grbl_protocol_info("IP>%s", WiFi.softAPIP().toString().c_str());
 				break;
 			default:
 				WiFi.mode(WIFI_AP_STA);
@@ -765,8 +753,7 @@ extern "C"
 				WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
 				grbl_protocol_info("AP started");
 				grbl_protocol_info("SSID>" BOARD_NAME);
-				sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
-				grbl_protocol_info("%s", str);
+				grbl_protocol_info("IP>%s", WiFi.softAPIP().toString().c_str());
 				break;
 			}
 		}
@@ -992,7 +979,8 @@ extern "C"
 		SPI.beginTransaction(SPISettings(freq, MSBFIRST, config.mode));
 	}
 
-	bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len){
+	bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
+	{
 		SPI.transferBytes(out, int, len);
 		return false;
 	}
@@ -1032,7 +1020,7 @@ extern "C"
 	{
 		if (NVM_STORAGE_SIZE <= address)
 		{
-			DEBUG("EEPROM invalid address @ %u",address);
+			DEBUG("EEPROM invalid address @ %u", address);
 			return 0;
 		}
 		return EEPROM.read(address);
@@ -1042,7 +1030,7 @@ extern "C"
 	{
 		if (NVM_STORAGE_SIZE <= address)
 		{
-			DEBUG("EEPROM invalid address @ %u",address);
+			DEBUG("EEPROM invalid address @ %u", address);
 		}
 		EEPROM.write(address, value);
 	}

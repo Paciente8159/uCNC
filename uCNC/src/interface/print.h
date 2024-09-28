@@ -24,31 +24,35 @@ extern "C"
 {
 #endif
 
-
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdarg.h>
+#include <stddef.h>
 
 #define ATOF_NUMBER_UNDEF 0
 #define ATOF_NUMBER_OK 0x20
 #define ATOF_NUMBER_ISFLOAT 0x40
 #define ATOF_NUMBER_ISNEGATIVE 0x80
 
+#define PRINT_CALLBACK SIZE_MAX
+#define PRINT_MAX (SIZE_MAX - 1)
+
 	// printing utils
 	typedef void (*print_putc_cb)(char);
-	void print_byte(print_putc_cb cb, char **buffer_ref, const uint8_t *data, uint8_t flags);
-	void print_int(print_putc_cb cb, char **buffer_ref, uint32_t num, uint8_t padding);
-	void print_flt(print_putc_cb cb, char **buffer_ref, float num, uint8_t precision);
-	void print_ip(print_putc_cb cb, char **buffer_ref, uint32_t ip);
-	void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args);
-	void print_fmt(print_putc_cb cb, char *buffer, const char *fmt, ...);
+	size_t print_byte(void *out, size_t maxlen, const uint8_t *data, uint8_t flags);
+	size_t print_int(void *out, size_t maxlen, uint32_t num, uint8_t padding);
+	size_t print_flt(void *out, size_t maxlen, float num, uint8_t precision);
+	size_t print_ip(void *out, size_t maxlen, uint32_t ip);
+	size_t print_fmtva(void *out, size_t maxlen, const char *fmt, va_list *args);
+	size_t print_fmt(void *out, size_t maxlen, const char *fmt, ...);
 	// scaning utilities
-	typedef unsigned char(*print_read_input_cb)(bool);
+	typedef unsigned char (*print_read_input_cb)(bool);
 	uint8_t print_atof(print_read_input_cb cb, const char **buffer, float *value);
 
 // string helper functions
-#define str_sprintf(buffer, fmt, ...) print_fmt(NULL, buffer, fmt, __VA_ARGS__)
-#define str_itof(buffer, var) print_atof(NULL, buffer, var)
+#define str_sprintf(buffer, fmt, ...) print_fmt(buffer, PRINT_MAX, fmt, __VA_ARGS__)
+#define str_snprintf(buffer, n, fmt, ...) print_fmt(buffer, n, fmt, __VA_ARGS__)
+#define str_itof(buffer, var) print_atof(buffer, PRINT_MAX, var)
 
 #ifdef __cplusplus
 }

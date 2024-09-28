@@ -33,7 +33,6 @@ extern "C"
 */
 #include "sam.h"
 #include <stdbool.h>
-#include <stdio.h>
 
 // defines the frequency of the mcu
 #ifndef F_CPU

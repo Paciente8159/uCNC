@@ -20,6 +20,7 @@
 #include "file_system.h"
 #include "endpoint.h"
 #include "system_menu.h"
+#include <string.h>
 
 // file system entry point
 fs_t *fs_default_drive;
@@ -517,7 +518,7 @@ void fs_json_api(void)
 		while (ptr)
 		{
 			memset(path, 0, sizeof(path));
-			snprintf(path, 32, "{\"type\":\"drive\",\"name\":\"%c\"}", ptr->drive);
+			str_snprintf(path, 32, "{\"type\":\"drive\",\"name\":\"%c\"}", ptr->drive);
 			ptr = ptr->next;
 			if (ptr)
 			{
@@ -589,7 +590,7 @@ void fs_file_json_api()
 		{
 			endpoint_send_header("Location", args, true);
 			memset(urlpath, 0, sizeof(urlpath));
-			snprintf(urlpath, 256, "{\"redirect\":\"%s\"}", args);
+			str_snprintf(urlpath, 256, "{\"redirect\":\"%s\"}", args);
 			endpoint_send_str(303, "application/json", urlpath);
 		}
 		else
@@ -618,11 +619,11 @@ void fs_file_json_api()
 					memset(urlpath, 0, 256);
 					if (child.is_dir)
 					{
-						snprintf(urlpath, 256, "{\"type\":\"dir\",\"name\":\"%s\",\"attr\":%hd}", fs_filename(&child), 0);
+						str_snprintf(urlpath, 256, "{\"type\":\"dir\",\"name\":\"%s\",\"attr\":%d}", fs_filename(&child), 0);
 					}
 					else
 					{
-						snprintf(urlpath, 256, "{\"type\":\"file\",\"name\":\"%s\",\"attr\":0,\"size\":%hd,\"date\":0}", fs_filename(&child), child.size);
+						str_snprintf(urlpath, 256, "{\"type\":\"file\",\"name\":\"%s\",\"attr\":0,\"size\":%d,\"date\":0}", fs_filename(&child), child.size);
 					}
 
 					has_child = fs_next_file(file, &child);

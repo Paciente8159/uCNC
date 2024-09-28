@@ -154,8 +154,7 @@ bool mcu_custom_grbl_cmd(void *args)
 				WiFi.softAP(BOARD_NAME, wifi_settings.pass);
 				grbl_protocol_info("AP started");
 				grbl_protocol_info("SSID>" BOARD_NAME);
-				sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
-				grbl_protocol_info("%s", str);
+				grbl_protocol_info("IP>%s", WiFi.softAPIP().toString().c_str());
 				break;
 			default:
 				WiFi.mode(WIFI_AP_STA);
@@ -164,8 +163,7 @@ bool mcu_custom_grbl_cmd(void *args)
 				WiFi.softAP(BOARD_NAME, wifi_settings.pass);
 				grbl_protocol_info("AP started");
 				grbl_protocol_info("SSID>" BOARD_NAME);
-				sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
-				grbl_protocol_info("%s", str);
+				grbl_protocol_info("IP>%s", WiFi.softAPIP().toString().c_str());
 				break;
 			}
 
@@ -206,8 +204,7 @@ bool mcu_custom_grbl_cmd(void *args)
 			}
 			else
 			{
-				sprintf((char *)str, "SSID>%s", wifi_settings.ssid);
-				grbl_protocol_info("%s", str);
+				grbl_protocol_info("SSID>%s", wifi_settings.ssid);
 			}
 			*(cmd_params->error) = STATUS_OK;
 			return EVENT_HANDLED;
@@ -225,14 +222,12 @@ bool mcu_custom_grbl_cmd(void *args)
 			}
 
 			// print the list of networks seen:
-			sprintf((char *)str, "%d available networks", numSsid);
-			grbl_protocol_info("%s", str);
+			grbl_protocol_info("%d available networks", numSsid);
 
 			// print the network number and name for each network found:
 			for (int netid = 0; netid < numSsid; netid++)
 			{
-				sprintf((char *)str, "%d) %s\tSignal:  %ddBm", netid, WiFi.SSID(netid), WiFi.RSSI(netid));
-				grbl_protocol_info("%s", str);
+				grbl_protocol_info("%d) %s\tSignal:  %ddBm", netid, WiFi.SSID(netid), WiFi.RSSI(netid));
 			}
 			*(cmd_params->error) = STATUS_OK;
 			return EVENT_HANDLED;
@@ -319,18 +314,14 @@ bool mcu_custom_grbl_cmd(void *args)
 				switch (wifi_settings.wifi_mode)
 				{
 				case 1:
-					sprintf((char *)str, "STA IP>%s", WiFi.localIP().toString().c_str());
-					grbl_protocol_info("%s", str);
-					sprintf((char *)str, "AP IP>%s", WiFi.softAPIP().toString().c_str());
-					grbl_protocol_info("%s", str);
+					grbl_protocol_info("STA IP>%s", WiFi.localIP().toString().c_str());
+					grbl_protocol_info("AP IP>%s", WiFi.softAPIP().toString().c_str());
 					break;
 				case 2:
-					sprintf((char *)str, "IP>%s", WiFi.localIP().toString().c_str());
-					grbl_protocol_info("%s", str);
+					grbl_protocol_info("IP>%s", WiFi.localIP().toString().c_str());
 					break;
 				default:
-					sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
-					grbl_protocol_info("%s", str);
+					grbl_protocol_info("IP>%s", WiFi.softAPIP().toString().c_str());
 					break;
 				}
 			}
@@ -378,10 +369,8 @@ bool rp2040_wifi_clientok(void)
 	{
 		connected = true;
 		grbl_protocol_info("Connected to WiFi");
-		sprintf((char *)str, "SSID>%s", wifi_settings.ssid);
-		grbl_protocol_info("%s", str);
-		sprintf((char *)str, "IP>%s", WiFi.localIP().toString().c_str());
-		grbl_protocol_info("%s", str);
+		grbl_protocol_info("SSID>%s", wifi_settings.ssid);
+		grbl_protocol_info("IP>%s", WiFi.localIP().toString().c_str());
 	}
 
 	if (telnet_server.hasClient())
@@ -788,8 +777,7 @@ void rp2040_wifi_bt_init(void)
 			WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
 			grbl_protocol_info("AP started");
 			grbl_protocol_info("SSID>" BOARD_NAME);
-			sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
-			grbl_protocol_info("%s", str);
+			grbl_protocol_info("IP>%s", WiFi.softAPIP().toString().c_str());
 			break;
 		default:
 			WiFi.mode(WIFI_AP_STA);
@@ -798,8 +786,7 @@ void rp2040_wifi_bt_init(void)
 			WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
 			grbl_protocol_info("AP started");
 			grbl_protocol_info("SSID>" BOARD_NAME);
-			sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
-			grbl_protocol_info("%s", str);
+			grbl_protocol_info("IP>%s", WiFi.softAPIP().toString().c_str());
 			break;
 		}
 	}
@@ -1369,13 +1356,12 @@ extern "C"
 
 	bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 	{
-		COM_SPI.transfer((const void*)out, (void*)in, len);
+		COM_SPI.transfer((const void *)out, (void *)in, len);
 		return false;
 	}
 }
 
 #endif
-
 
 #ifdef MCU_HAS_SPI2
 #include <SPI.h>
@@ -1408,7 +1394,7 @@ extern "C"
 
 	bool mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 	{
-		COM_SPI2.transfer((const void*)out, (void*)in, len);
+		COM_SPI2.transfer((const void *)out, (void *)in, len);
 		return false;
 	}
 }

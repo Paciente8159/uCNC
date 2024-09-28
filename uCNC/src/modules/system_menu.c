@@ -1247,22 +1247,6 @@ static void system_menu_render_axis_position(uint8_t render_flags, system_menu_i
 }
 
 /**
- * Helper µCNC to display variables
- * **/
-
-char *system_menu_var_to_str_set_buffer_ptr;
-void system_menu_var_to_str_set_buffer(char *ptr)
-{
-	system_menu_var_to_str_set_buffer_ptr = ptr;
-}
-
-void system_menu_var_to_str(char c)
-{
-	*system_menu_var_to_str_set_buffer_ptr = c;
-	*(++system_menu_var_to_str_set_buffer_ptr) = 0;
-}
-
-/**
  * Overridable system menu actions to be implemented for the user input system
  * **/
 

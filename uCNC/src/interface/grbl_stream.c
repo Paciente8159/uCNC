@@ -393,7 +393,7 @@ void grbl_stream_printf(const char *fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
-	print_fmtva(grbl_stream_putc, NULL, fmt, &args);
+	print_fmtva(grbl_stream_putc, PRINT_CALLBACK, fmt, &args);
 	va_end(args);
 }
 

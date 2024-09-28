@@ -25,7 +25,6 @@ extern "C"
 #endif
 
 #include <Arduino.h>
-#include <stdio.h>
 
 /*
 	Generates all the interface definitions.

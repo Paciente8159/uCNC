@@ -39,7 +39,6 @@ extern "C"
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdarg.h>
-#include <stdio.h>
 #include <avr/io.h>
 #include <avr/wdt.h>
 #include <avr/eeprom.h>

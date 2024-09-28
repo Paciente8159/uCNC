@@ -249,8 +249,8 @@ WEAK_EVENT_HANDLER(grbl_protocol_gcode_modes)
  * all other implementations can use the formated print helper
  */
 
-#define grbl_protocol_itoa(value) print_int(grbl_protocol_putc, NULL, (uint32_t)(value), 0)
-#define grbl_protocol_ftoa(value) print_flt(grbl_protocol_putc, NULL, (float)(value), ((!g_settings.report_inches) ? 3 : 5))
+#define grbl_protocol_itoa(value) print_int(grbl_protocol_putc, PRINT_CALLBACK, (uint32_t)(value), 0)
+#define grbl_protocol_ftoa(value) print_flt(grbl_protocol_putc, PRINT_CALLBACK, (float)(value), ((!g_settings.report_inches) ? 3 : 5))
 
 void grbl_protocol_puts(const char *str)
 {
@@ -307,7 +307,7 @@ void grbl_protocol_feedback_fmt(const char *fmt, ...)
 	va_start(args, fmt);
 	grbl_stream_start_broadcast();
 	grbl_protocol_putc('[');
-	print_fmtva(grbl_stream_putc, NULL, fmt, &args);
+	print_fmtva(grbl_stream_putc, PRINT_CALLBACK, fmt, &args);
 	grbl_protocol_print(MSG_END);
 	va_end(args);
 }
