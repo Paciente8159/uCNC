@@ -34,3 +34,12 @@ jobs:
         pip install --upgrade platformio
     - name: Run PlatformIO
       run: pio run -e ${{matrix.boards}}
+    - name: Zip binaries
+      run: zip ${{matrix.boards}}.zip .pio/build/${{matrix.boards}}/firmware.*
+    - name: Upload binaries
+      uses: actions/upload-artifact@v3
+      with:
+          name: ${{matrix.boards}}
+          path: ./${{matrix.boards}}.zip
+    - name: Display structure of downloaded files
+      run: ls -R
