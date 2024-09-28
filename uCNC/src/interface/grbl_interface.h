@@ -159,8 +159,8 @@ extern "C"
 #define STR_EOL "\r\n"
 #define MSG_EOL STR_EOL
 #define MSG_OK "ok"
-#define MSG_ERROR "error:%hd"
-#define MSG_ALARM "ALARM:%hd" MSG_EOL
+#define MSG_ERROR "error:"
+#define MSG_ALARM "ALARM:"
 #define MSG_ECHO "[echo:"
 #if EMULATE_GRBL_STARTUP == 0
 #define MSG_STARTUP_START "uCNC "
@@ -177,7 +177,7 @@ extern "C"
 #define MSG_HELP "[HLP:$$ $# $G $I $N $x=val $Nx=line $J=line $C $X $H ~ ! ? ctrl-x]" MSG_EOL
 
 // Non query feedback messages
-#define MSG_START "MSG:"
+#define MSG_START "[MSG:"
 #define MSG_END "]" MSG_EOL
 
 #define MSG_FEEDBACK_1 "Reset to continue"
@@ -238,21 +238,21 @@ extern "C"
 #define MSG_STEPPERS "%8ld"
 #endif
 
-#define MSG_STATUS_POS "Pos:" MSG_AXIS
+#define MSG_STATUS_POS "Pos:"
 #define MSG_STATUS_cPOS "|%cPos:" MSG_AXIS
 #define MSG_STATUS_MPOS "|M"
 #define MSG_STATUS_WPOS "|W"
 #if TOOL_COUNT > 0
-#define MSG_STATUS_FS "|FS:%f,%lu"
+#define MSG_STATUS_FS "|FS:"
 #else
 #define MSG_STATUS_FS "|F:%f"
 #endif
-#define MSG_STATUS_WCO "|WCO:" MSG_AXIS
-#define MSG_STATUS_OVR "|Ov:%hd,%hd,%hd"
+#define MSG_STATUS_WCO "|WCO:"
+#define MSG_STATUS_OVR "|Ov:"
 #define MSG_STATUS_TOOL "|A:"
-#define MSG_STATUS_LINE "|Ln:%lu"
+#define MSG_STATUS_LINE "|Ln:"
 #define MSG_STATUS_PIN "|Pn:"
-#define MSG_STATUS_BUF "|Buf:%hd,%hd"
+#define MSG_STATUS_BUF "|Buf:"
 
 	// #define MSG_INT "%hd"
 	// #define MSG_FLT "%0.3f"

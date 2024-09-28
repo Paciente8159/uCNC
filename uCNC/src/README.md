@@ -59,7 +59,7 @@ __NOTE__: Not all event hooks might be listed here. To find all available event 
 | grbl_protocol_status | NULL | - | Fires when printing the status message |
 | grbl_protocol_cnc_settings | NULL | ENABLE_SETTINGS_MODULES | Fires when printing settings values |
 | grbl_protocol_cnc_info | NULL | ENABLE_SYSTEM_INFO | Fires when printing response to $I command |
-| grbl_protocol_pins_states | NULL | ENABLE_IO_MODULES | Fires when $P command is printing the pins states |
+| protocol_send_pins_states | NULL | ENABLE_IO_MODULES | Fires when $P command is printing the pins states |
 | grbl_protocol_gcode_modes | NULL | ENABLE_PARSER_MODULES | Fires when $G printing modals states message |
 | input_change | uint8_t* | ENABLE_IO_MODULES | Fires when a generic input (DIN0-7) pin changes state. Args is an uint8_t array with 2 values. The first is the inputs current values mask and the second a maks with the inputs that changed since the last time |
 | probe_enable | NULL | ENABLE_IO_MODULES | Fires when the probe is enabled |
@@ -344,7 +344,12 @@ void cnc_alarm(int8_t code)
 	cnc_stop();
 	cnc_state.alarm = code;
 #ifdef ENABLE_IO_ALARM_DEBUG
-	grbl_protocol_feedback("LIMITS:%hd|CONTROLS:%hd", io_alarm_limits, io_alarm_controls);
+	grbl_protocol_print(MSG_START);
+	grbl_protocol_print(__romstr__("LIMITS:"));
+	grbl_protocol_print_int(io_alarm_limits);
+	grbl_protocol_print(__romstr__("|CONTROLS:"));
+	grbl_protocol_print_int(io_alarm_controls);
+	grbl_protocol_print(MSG_END);
 #endif
 
 	// we add our callback here

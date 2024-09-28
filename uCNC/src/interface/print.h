@@ -36,6 +36,10 @@ extern "C"
 
 	// printing utils
 	typedef void (*print_putc_cb)(char);
+	void print_byte(print_putc_cb cb, char **buffer_ref, const uint8_t *data, uint8_t flags);
+	void print_int(print_putc_cb cb, char **buffer_ref, uint32_t num, uint8_t padding);
+	void print_flt(print_putc_cb cb, char **buffer_ref, float num, uint8_t precision);
+	void print_ip(print_putc_cb cb, char **buffer_ref, uint32_t ip);
 	void print_fmtva(print_putc_cb cb, char *buffer, const char *fmt, va_list *args);
 	void print_fmt(print_putc_cb cb, char *buffer, const char *fmt, ...);
 	// scaning utilities

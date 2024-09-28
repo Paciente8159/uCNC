@@ -51,7 +51,7 @@ static void print_putc(print_putc_cb cb, char **buffer_ref, char c)
 }
 
 #ifndef PRINT_FTM_MINIMAL
-static void print_byte(print_putc_cb cb, char **buffer_ref, const uint8_t *data, uint8_t flags)
+void print_byte(print_putc_cb cb, char **buffer_ref, const uint8_t *data, uint8_t flags)
 {
 	bool prefix = (flags && HEX_PREFIX);
 	char hexchar = (flags & HEX_UPPER) ? 'A' : 'a';
@@ -73,7 +73,7 @@ static void print_byte(print_putc_cb cb, char **buffer_ref, const uint8_t *data,
 }
 #endif
 
-static void print_int(print_putc_cb cb, char **buffer_ref, uint32_t num, uint8_t padding)
+void print_int(print_putc_cb cb, char **buffer_ref, uint32_t num, uint8_t padding)
 {
 	uint8_t buffer[11];
 	uint8_t i = 0;
@@ -101,7 +101,7 @@ static void print_int(print_putc_cb cb, char **buffer_ref, uint32_t num, uint8_t
 	}
 }
 
-static void FORCEINLINE print_flt(print_putc_cb cb, char **buffer_ref, float num, uint8_t precision)
+void print_flt(print_putc_cb cb, char **buffer_ref, float num, uint8_t precision)
 {
 	if (num < 0)
 	{

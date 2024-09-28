@@ -341,21 +341,17 @@ void fs_cd(char *params)
 	{
 		if (dir->file_info.is_dir)
 		{
-			grbl_protocol_printf("%s", fs_cwd.full_name);
-			grbl_protocol_putc(' ');
-			grbl_protocol_putc('>');
+			grbl_protocol_printf("%s >", fs_cwd.full_name);
 		}
 		else
 		{
-			grbl_protocol_printf("%s", params);
-			grbl_protocol_feedback(" is not a dir!");
+			grbl_protocol_printf("%s  is not a dir!", params);
 		}
 		fs_close(dir);
 	}
 	else if (strlen(fs_cwd.full_name))
 	{
-		grbl_protocol_printf("%s", params);
-		grbl_protocol_feedback("Dir not found!");
+		grbl_protocol_printf("%s dir not found!", params);
 	}
 
 	grbl_protocol_print(MSG_EOL);
@@ -372,19 +368,19 @@ void fs_file_print(char *params)
 			/* Read the data */
 			if (!fs_read(fp, (uint8_t *)&c, sizeof(char)))
 			{
-				grbl_protocol_feedback("File read error!");
+				grbl_protocol_info("File read error!");
 				break;
 			}
 			grbl_protocol_putc(c);
 		}
 
 		fs_close(fp);
-		grbl_protocol_feedback("File ended");
+		grbl_protocol_info("File ended");
 		return;
 	}
 	else
 	{
-		grbl_protocol_feedback("File not found!");
+		grbl_protocol_info("File not found!");
 	}
 
 	grbl_protocol_print(MSG_EOL);
@@ -411,7 +407,7 @@ void fs_file_run(char *params)
 	if (fp)
 	{
 		startline = MAX(1, startline);
-		grbl_protocol_printf(MSG_START"Running file from line - %lu" MSG_END, startline);
+		grbl_protocol_info("Running file from line - %lu", startline);
 #ifdef DECL_SERIAL_STREAM
 #ifdef ENABLE_MAIN_LOOP_MODULES
 		// prefill buffer
@@ -434,7 +430,7 @@ void fs_file_run(char *params)
 		return;
 	}
 
-	grbl_protocol_feedback("File read error!");
+	grbl_protocol_info("File read error!");
 }
 
 /**
