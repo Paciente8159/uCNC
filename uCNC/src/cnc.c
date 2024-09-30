@@ -179,7 +179,7 @@ uint8_t cnc_parse_cmd(void)
 #ifdef ENABLE_PARSING_TIME_DEBUG
 	uint32_t exec_time;
 #endif
-	uint8_t error = 0;
+	uint8_t error = STATUS_OK;
 	// process gcode commands
 	if (grbl_stream_available())
 	{

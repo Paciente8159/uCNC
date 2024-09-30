@@ -281,7 +281,7 @@ static void grbl_protocol_ftoa_array(float *array, uint8_t count)
 
 void grbl_protocol_error(uint8_t error)
 {
-	if (error)
+	if (error != STATUS_OK)
 	{
 		grbl_protocol_print(MSG_ERROR);
 		grbl_protocol_itoa(error);
@@ -652,6 +652,7 @@ void grbl_protocol_probe_result(uint8_t val)
 	parser_get_coordsys(255, axis);
 	grbl_protocol_print("[PRB:");
 	grbl_protocol_ftoa_array(axis, MAX(AXIS_COUNT, 3));
+	grbl_protocol_putc(':');
 	grbl_protocol_itoa(val);
 	grbl_protocol_print(MSG_END);
 }
@@ -742,6 +743,7 @@ void grbl_protocol_gcode_modes(void)
 	grbl_protocol_putc(' ');
 	grbl_protocol_putc('S');
 	grbl_protocol_itoa(spindle);
+	grbl_protocol_print(MSG_END);
 }
 
 void grbl_protocol_gcode_setting_line_int(setting_offset_t setting, uint16_t value)

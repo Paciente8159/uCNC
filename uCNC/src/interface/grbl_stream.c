@@ -30,7 +30,7 @@ static FORCEINLINE void grbl_stream_flush(void);
 #define DEBUG_TX_BUFFER_SIZE 250
 #endif
 DECL_BUFFER(uint8_t, debug_tx, DEBUG_TX_BUFFER_SIZE);
-static uint8_t debug_tx_lines;
+static volatile uint8_t debug_tx_lines;
 #endif
 
 #ifndef DISABLE_MULTISTREAM_SERIAL
@@ -108,9 +108,11 @@ static void debug_flush(void)
 
 static void FORCEINLINE debug_putc(char c)
 {
-	while (BUFFER_FULL(debug_tx))
+	if (BUFFER_FULL(debug_tx))
 	{
-		debug_flush();
+		BUFFER_CLEAR(debug_tx);
+		rom_strcpy(debug_tx_bufferdata, __romstr__("Debug buffer overflow!\0"));
+		debug_tx.count = strlen(debug_tx_bufferdata);
 	}
 
 	BUFFER_ENQUEUE(debug_tx, &c);
