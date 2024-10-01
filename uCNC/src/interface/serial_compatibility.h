@@ -33,7 +33,7 @@ extern "C"
 #define protocol_send_gcode_setting_line_int grbl_protocol_gcode_setting_line_int
 #define protocol_send_gcode_setting_line_flt grbl_protocol_gcode_setting_line_flt
 #define protocol_send_string grbl_protocol_puts
-#define protocol_send_feedback grbl_protocol_print(MSG_START);grbl_protocol_puts(__s);grbl_protocol_print(MSG_END)
+#define protocol_send_feedback(__s) grbl_protocol_print(MSG_START);grbl_protocol_puts(__s);grbl_protocol_print(MSG_END)
 
 // Debugging
 

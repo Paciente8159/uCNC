@@ -37,6 +37,11 @@
 #define printf_getc(fmt) rom_read_byte(fmt)
 #endif
 
+static inline unsigned char str_read_romchar(const char *buffer)
+{
+	return rom_read_byte(buffer);
+}
+
 #ifndef PRINT_FTM_MINIMAL
 static __attribute__((noinline)) void print_memc(void *out, char c)
 {
@@ -230,7 +235,7 @@ size_t print_fmtva(void *out, size_t maxlen, const char *fmt, va_list *args)
 				if (c == '.' || (c >= '1' && c <= '9'))
 				{
 					fmt--;
-					cval = print_atof(NULL, (const char **)&fmt, &f);
+					cval = print_atof(str_read_romchar, (const char **)&fmt, &f);
 					if (cval != ATOF_NUMBER_UNDEF)
 					{
 						elems = (uint8_t)f;
@@ -413,10 +418,10 @@ size_t print_fmt(void *out, size_t maxlen, const char *fmt, ...)
 	return maxlen;
 }
 
-#define atof_peek(cb, buffer) ((!buffer) ? cb(true) : rom_read_byte(*buffer)) /*((cb) ? rom_read_byte(*buffer) : **buffer))*/
-#define atof_get(cb, buffer) ((!buffer) ? cb(false) : ({ *buffer += 1; 0; }))
+#define atof_peek(cb, buffer) ((!buffer) ? ((print_getc_cb)cb)(true) : ((cb) ? ((print_read_rom_byte)cb)(*buffer) : **buffer))
+#define atof_get(cb, buffer) ((!buffer) ? ((print_getc_cb)cb)(false) : ({ *buffer += 1; 0; }))
 
-uint8_t print_atof(print_read_input_cb cb, const char **buffer, float *value)
+uint8_t print_atof(void *cb, const char **buffer, float *value)
 {
 	uint32_t intval = 0;
 	uint8_t fpcount = 0;

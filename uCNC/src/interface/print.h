@@ -46,13 +46,14 @@ extern "C"
 	size_t print_fmtva(void *out, size_t maxlen, const char *fmt, va_list *args);
 	size_t print_fmt(void *out, size_t maxlen, const char *fmt, ...);
 	// scaning utilities
-	typedef unsigned char (*print_read_input_cb)(bool);
-	uint8_t print_atof(print_read_input_cb cb, const char **buffer, float *value);
+	typedef unsigned char (*print_getc_cb)(bool);
+	typedef unsigned char (*print_read_rom_byte)(const char *);
+	uint8_t print_atof(void *cb, const char **buffer, float *value);
 
 // string helper functions
 #define str_sprintf(buffer, fmt, ...) print_fmt(buffer, PRINT_MAX, fmt, __VA_ARGS__)
 #define str_snprintf(buffer, n, fmt, ...) print_fmt(buffer, n, fmt, __VA_ARGS__)
-#define str_itof(buffer, var) print_atof(buffer, PRINT_MAX, var)
+#define str_atof(buffer, var) print_atof(NULL, buffer, PRINT_MAX, var)
 
 #ifdef __cplusplus
 }
