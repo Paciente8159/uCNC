@@ -1267,7 +1267,7 @@ uint8_t mcu_eeprom_getc(uint16_t address)
 {
 	if (NVM_STORAGE_SIZE <= address)
 	{
-		DEBUG("EEPROM invalid address @ %u",address);
+		DBGMSG("EEPROM invalid address @ %u",address);
 		return 0;
 	}
 	address &= (NVM_EEPROM_SIZE - 1); // keep within 1Kb address range
@@ -1287,7 +1287,7 @@ void mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
 	if (NVM_STORAGE_SIZE <= address)
 	{
-		DEBUG("EEPROM invalid address @ %u",address);
+		DBGMSG("EEPROM invalid address @ %u",address);
 	}
 	address &= (NVM_EEPROM_SIZE - 1);
 

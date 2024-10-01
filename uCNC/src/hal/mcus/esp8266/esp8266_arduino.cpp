@@ -714,9 +714,9 @@ extern "C"
 	void esp8266_uart_init(int baud)
 	{
 		Serial.begin(baud);
-		DEBUG("Wifi assert");
+		DBGMSG("Wifi assert");
 #ifdef ENABLE_WIFI
-		DEBUG("Wifi startup");
+		DBGMSG("Wifi startup");
 		WiFi.setSleepMode(WIFI_NONE_SLEEP);
 
 		wifi_settings_offset = settings_register_external_setting(sizeof(wifi_settings_t));
@@ -1020,7 +1020,7 @@ extern "C"
 	{
 		if (NVM_STORAGE_SIZE <= address)
 		{
-			DEBUG("EEPROM invalid address @ %u", address);
+			DBGMSG("EEPROM invalid address @ %u", address);
 			return 0;
 		}
 		return EEPROM.read(address);
@@ -1030,7 +1030,7 @@ extern "C"
 	{
 		if (NVM_STORAGE_SIZE <= address)
 		{
-			DEBUG("EEPROM invalid address @ %u", address);
+			DBGMSG("EEPROM invalid address @ %u", address);
 		}
 		EEPROM.write(address, value);
 	}

@@ -874,7 +874,7 @@ uint8_t mcu_eeprom_getc(uint16_t address)
 {
 	if (NVM_STORAGE_SIZE <= address)
 	{
-		DEBUG("EEPROM invalid address @ %u",address);
+		DBGMSG("EEPROM invalid address @ %u",address);
 		return 0;
 	}
 	uint16_t offset = mcu_access_flash_page(address);
@@ -904,7 +904,7 @@ void mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
 	if (NVM_STORAGE_SIZE <= address)
 	{
-		DEBUG("EEPROM invalid address @ %u",address);
+		DBGMSG("EEPROM invalid address @ %u",address);
 	}
 
 	uint16_t offset = mcu_access_flash_page(address);
