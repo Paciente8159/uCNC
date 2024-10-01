@@ -73,6 +73,9 @@ extern "C"
 	DECL_EVENT_HANDLER(grbl_protocol_gcode_modes);
 #endif
 
+// this ensures portability to version 1.10 and older
+#include "serial_compatibility.h"
+
 #ifdef __cplusplus
 }
 #endif
