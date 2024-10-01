@@ -28,7 +28,7 @@ extern "C"
 #include <stdint.h>
 #include <stdbool.h>
 
-#define UCNC_MODULE_VERSION 11000
+#define UCNC_MODULE_VERSION 11100
 
 #define EVENT_CONTINUE false
 #define EVENT_HANDLED true
