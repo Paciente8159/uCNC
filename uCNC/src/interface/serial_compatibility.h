@@ -24,6 +24,7 @@ extern "C"
 {
 #endif
 
+#define DECL_SERIAL_STREAM DECL_GRBL_STREAM
 #define serial_getc grbl_stream_getc
 #define serial_putc proto_putc
 #define serial_print_str(__s) proto_printf("%s", __s)

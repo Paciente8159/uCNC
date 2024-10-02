@@ -241,8 +241,8 @@ extern "C"
 	/**
 	 * Helper µCNC to display variables
 	 * **/
-#define system_menu_int_to_str(buf_ptr, var) ({ char** _ptr = (char**)&(buf_ptr); prt_int(_ptr, PRINT_MAX, (uint32_t)var, 0); })
-#define system_menu_flt_to_str(buf_ptr, var) ({ char** _ptr = (char**)&(buf_ptr); prt_flt(_ptr, PRINT_MAX, (float)var, ((!g_settings.report_inches) ? 3 : 5)); })
+#define system_menu_int_to_str(buf_ptr, var) ({ char* _ptr = (buf_ptr); char** ptr_ptr = &_ptr; prt_int(ptr_ptr, PRINT_MAX, (uint32_t)var, 0); })
+#define system_menu_flt_to_str(buf_ptr, var) ({ char* _ptr = (buf_ptr); char** ptr_ptr = &_ptr; prt_flt(ptr_ptr, PRINT_MAX, (float)var, ((!g_settings.report_inches) ? 3 : 5)); })
 
 #ifdef __cplusplus
 }

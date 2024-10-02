@@ -197,14 +197,14 @@ extern "C"
 #define MSG_FEEDBACK_14 "Settings loaded"
 #define MSG_FEEDBACK_15 "Settings defaults"
 
-#define MSG_STATUS_ALARM "Alarm"
-#define MSG_STATUS_DOOR "Door"
-#define MSG_STATUS_HOLD "Hold"
-#define MSG_STATUS_HOME "Home"
-#define MSG_STATUS_JOG "Jog"
-#define MSG_STATUS_RUN "Run"
-#define MSG_STATUS_IDLE "Idle"
-#define MSG_STATUS_CHECK "Check"
+#define MSG_STATUS_ALARM __romstr__("Alarm")
+#define MSG_STATUS_DOOR __romstr__("Door")
+#define MSG_STATUS_HOLD __romstr__("Hold")
+#define MSG_STATUS_HOME __romstr__("Home")
+#define MSG_STATUS_JOG __romstr__("Jog")
+#define MSG_STATUS_RUN __romstr__("Run")
+#define MSG_STATUS_IDLE __romstr__("Idle")
+#define MSG_STATUS_CHECK __romstr__("Check")
 
 #if AXIS_COUNT == 1
 #define MSG_AXIS "%1f,0,0"

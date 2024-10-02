@@ -422,11 +422,11 @@ void proto_status(void)
 	proto_putc('<');
 	if (cnc_has_alarm())
 	{
-		proto_print(MSG_STATUS_ALARM);
+		proto_puts(MSG_STATUS_ALARM);
 	}
 	else if (mc_get_checkmode())
 	{
-		proto_print(MSG_STATUS_CHECK);
+		proto_puts(MSG_STATUS_CHECK);
 	}
 	else
 	{
@@ -434,7 +434,8 @@ void proto_status(void)
 		{
 #if ASSERT_PIN(SAFETY_DOOR)
 		case EXEC_DOOR:
-			proto_print(MSG_STATUS_DOOR ":");
+			proto_puts(MSG_STATUS_DOOR);
+			proto_putc(':');
 			if (CHECKFLAG(controls, SAFETY_DOOR_MASK))
 			{
 				if (cnc_get_exec_state(EXEC_RUN))
@@ -463,15 +464,16 @@ void proto_status(void)
 		case EXEC_LIMITS:
 			if (!cnc_get_exec_state(EXEC_HOMING))
 			{
-				proto_print(MSG_STATUS_ALARM);
+				proto_puts(MSG_STATUS_ALARM);
 			}
 			else
 			{
-				proto_print(MSG_STATUS_HOME);
+				proto_puts(MSG_STATUS_HOME);
 			}
 			break;
 		case EXEC_HOLD:
-			proto_print(MSG_STATUS_HOLD ":");
+			proto_puts(MSG_STATUS_HOLD);
+			proto_putc(':');
 			if (cnc_get_exec_state(EXEC_RUN))
 			{
 				proto_putc('1');
@@ -482,16 +484,16 @@ void proto_status(void)
 			}
 			break;
 		case EXEC_HOMING:
-			proto_print(MSG_STATUS_HOME);
+			proto_puts(MSG_STATUS_HOME);
 			break;
 		case EXEC_JOG:
-			proto_print(MSG_STATUS_JOG);
+			proto_puts(MSG_STATUS_JOG);
 			break;
 		case EXEC_RUN:
-			proto_print(MSG_STATUS_RUN);
+			proto_puts(MSG_STATUS_RUN);
 			break;
 		default:
-			proto_print(MSG_STATUS_IDLE);
+			proto_puts(MSG_STATUS_IDLE);
 			break;
 		}
 	}

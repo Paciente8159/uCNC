@@ -785,6 +785,7 @@ static bool system_menu_action_jog(uint8_t action, system_menu_item_t *item)
 			while (*++ptr)
 				;
 			*ptr++ = '\r';
+			DBGMSG("%s", buffer);
 			if (system_menu_send_cmd(buffer) != STATUS_OK)
 			{
 				rom_strcpy((char *)buffer, __romstr__(STR_CMD_NOTSENT));
@@ -913,7 +914,7 @@ bool system_menu_action_edit_simple(uint8_t action, system_menu_item_t *item)
 			(*(float *)item->argptr) = CLAMP(__FLT_MIN__, (*(float *)item->argptr), __FLT_MAX__);
 			break;
 		}
-
+		
 		return true;
 	}
 	return false;
