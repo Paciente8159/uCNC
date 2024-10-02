@@ -344,12 +344,12 @@ void cnc_alarm(int8_t code)
 	cnc_stop();
 	cnc_state.alarm = code;
 #ifdef ENABLE_IO_ALARM_DEBUG
-	proto_print(MSG_START);
+	proto_print(MSG_FEEDBACK_START);
 	proto_print(__romstr__("LIMITS:"));
 	proto_print_int(io_alarm_limits);
 	proto_print(__romstr__("|CONTROLS:"));
 	proto_print_int(io_alarm_controls);
-	proto_print(MSG_END);
+	proto_print(MSG_FEEDBACK_END);
 #endif
 
 	// we add our callback here

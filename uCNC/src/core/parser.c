@@ -732,7 +732,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 		{
 			parser_discard_command();
 #ifdef ECHO_CMD
-			proto_print(MSG_END);
+			proto_print(MSG_FEEDBACK_END);
 			
 #endif
 			return error;
@@ -788,7 +788,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 			words->n = linecounter;
 #endif
 #ifdef ECHO_CMD
-			proto_print(MSG_END);
+			proto_print(MSG_FEEDBACK_END);
 			
 #endif
 			return STATUS_OK;
@@ -832,7 +832,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 		{
 			parser_discard_command();
 #ifdef ECHO_CMD
-			proto_print(MSG_END);
+			proto_print(MSG_FEEDBACK_END);
 #endif
 			return error;
 		}
@@ -1998,7 +1998,7 @@ static void parser_get_comment(uint8_t start_char)
 			break;
 		case 3:
 			msg_parser = (c == ',') ? 4 : 0xFF;
-			proto_print(MSG_START);
+			proto_print(MSG_FEEDBACK_START);
 			break;
 		case 4:
 			proto_putc(c);
@@ -2016,7 +2016,7 @@ static void parser_get_comment(uint8_t start_char)
 #ifdef PROCESS_COMMENTS
 			if (msg_parser == 4)
 			{
-				proto_print(MSG_END);
+				proto_print(MSG_FEEDBACK_END);
 			}
 #endif
 			return;

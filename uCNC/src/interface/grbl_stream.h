@@ -87,7 +87,7 @@ extern "C"
 
 // not to be used directly
 void debug_printf(const char *fmt, ...);
-#define DBGMSG(fmt, ...) debug_printf(__romstr__(DEBUG_PRELUDE fmt MSG_END), ##__VA_ARGS__)
+#define DBGMSG(fmt, ...) debug_printf(__romstr__(DEBUG_PRELUDE fmt MSG_FEEDBACK_END), ##__VA_ARGS__)
 #else
 #define DBGMSG(fmt, ...)
 #endif

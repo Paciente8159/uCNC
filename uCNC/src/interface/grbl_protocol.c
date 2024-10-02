@@ -308,7 +308,7 @@ void proto_feedback_fmt(const char *fmt, ...)
 	grbl_stream_start_broadcast();
 	proto_putc('[');
 	prt_fmtva(grbl_stream_putc, PRINT_CALLBACK, fmt, &args);
-	proto_print(MSG_END);
+	proto_print(MSG_FEEDBACK_END);
 	va_end(args);
 }
 
@@ -608,7 +608,7 @@ void proto_gcode_coordsys(void)
 		proto_itoa(i + 54);
 		proto_putc(':');
 		proto_ftoa_array(axis, MAX(AXIS_COUNT, 3));
-		proto_print(MSG_END);
+		proto_print(MSG_FEEDBACK_END);
 	}
 #if COORD_SYS_COUNT > 6
 	for (uint8_t i = 6; i < COORD_SYS_COUNT; i++)
@@ -618,30 +618,30 @@ void proto_gcode_coordsys(void)
 		proto_itoa(i - 5);
 		proto_putc(':');
 		proto_ftoa_array(axis, MAX(AXIS_COUNT, 3));
-		proto_print(MSG_END);
+		proto_print(MSG_FEEDBACK_END);
 	}
 #endif
 
 	parser_get_coordsys(28, axis);
 	proto_print("[G28:");
 	proto_ftoa_array(axis, MAX(AXIS_COUNT, 3));
-	proto_print(MSG_END);
+	proto_print(MSG_FEEDBACK_END);
 
 	parser_get_coordsys(30, axis);
 	proto_print("[G30:");
 	proto_ftoa_array(axis, MAX(AXIS_COUNT, 3));
-	proto_print(MSG_END);
+	proto_print(MSG_FEEDBACK_END);
 
 	parser_get_coordsys(92, axis);
 	proto_print("[G92:");
 	proto_ftoa_array(axis, MAX(AXIS_COUNT, 3));
-	proto_print(MSG_END);
+	proto_print(MSG_FEEDBACK_END);
 
 #ifdef AXIS_TOOL
 	parser_get_coordsys(254, axis);
 	proto_print("[TLO:");
 	proto_ftoa(axis[0]);
-	proto_print(MSG_END);
+	proto_print(MSG_FEEDBACK_END);
 #endif
 	proto_probe_result(parser_get_probe_result());
 
@@ -656,7 +656,7 @@ void proto_probe_result(uint8_t val)
 	proto_ftoa_array(axis, MAX(AXIS_COUNT, 3));
 	proto_putc(':');
 	proto_itoa(val);
-	proto_print(MSG_END);
+	proto_print(MSG_FEEDBACK_END);
 }
 
 static void proto_parser_modalstate(char word, uint8_t val, uint8_t mantissa)
@@ -745,7 +745,7 @@ void proto_gcode_modes(void)
 	proto_putc(' ');
 	proto_putc('S');
 	proto_itoa(spindle);
-	proto_print(MSG_END);
+	proto_print(MSG_FEEDBACK_END);
 }
 
 void proto_gcode_setting_line_int(setting_offset_t setting, uint16_t value)
@@ -902,13 +902,13 @@ void proto_pins_states(void)
 #endif
 			proto_putc(':');
 			proto_itoa(val);
-			proto_print(MSG_END);
+			proto_print(MSG_FEEDBACK_END);
 		}
 	}
 
 	int32_t steps[STEPPER_COUNT];
 	itp_get_rt_position(steps);
-	proto_printf("[STEPS:" MSG_STEPPERS MSG_END, steps);
+	proto_printf("[STEPS:" MSG_STEPPERS MSG_FEEDBACK_END, steps);
 
 #if ENCODERS > 0
 	encoder_print_values();
@@ -918,7 +918,7 @@ void proto_pins_states(void)
 	EVENT_INVOKE(proto_pins_states, NULL);
 #endif
 
-	proto_printf("[RUNTIME:%lu" MSG_END, mcu_millis());
+	proto_printf("[RUNTIME:%lu" MSG_FEEDBACK_END, mcu_millis());
 	protocol_busy = false;
 }
 #endif
@@ -1074,7 +1074,7 @@ void proto_cnc_info(bool extended)
 #if EMULATE_GRBL_STARTUP < 2
 	proto_print(VER_INFO OPT_INFO);
 	EVENT_INVOKE(proto_cnc_info, NULL);
-	proto_print(PLANNER_INFO SERIAL_INFO MSG_END);
+	proto_print(PLANNER_INFO SERIAL_INFO MSG_FEEDBACK_END);
 #else
 	if (!extended)
 	{

@@ -177,8 +177,10 @@ extern "C"
 #define MSG_HELP "[HLP:$$ $# $G $I $N $x=val $Nx=line $J=line $C $X $H ~ ! ? ctrl-x]" MSG_EOL
 
 // Non query feedback messages
-#define MSG_START "[MSG:"
-#define MSG_END "]" MSG_EOL
+#define MSG_FEEDBACK_START "[MSG:"
+#define MSG_FEEDBACK_END "]" MSG_EOL
+#define MSG_START __romstr__(MSG_FEEDBACK_START)
+#define MSG_END __romstr__(MSG_FEEDBACK_END)
 
 #define MSG_FEEDBACK_1 "Reset to continue"
 #define MSG_FEEDBACK_2 "'$H'|'$X' to unlock"

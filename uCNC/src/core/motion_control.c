@@ -1038,7 +1038,6 @@ void mc_print_hmap(void)
 		{
 			uint8_t map = i + (H_MAPING_GRID_FACTOR * j);
 			float new_h = hmap_offsets[map];
-			proto_print(MSG_START);
 			proto_info("HMAP: %hd; %hd; %f", i, j, new_h);
 		}
 	}

@@ -40,7 +40,7 @@ extern "C"
 	void proto_status(void);
 	DECL_EVENT_HANDLER(proto_status);
 	void proto_feedback_fmt(const char *fmt, ...);
-#define proto_feedback(__s) proto_print(MSG_START __s MSG_END)
+#define proto_feedback(__s) proto_print(MSG_FEEDBACK_START __s MSG_FEEDBACK_END)
 #define proto_info(__s, ...) proto_feedback_fmt(__romstr__(__s), ##__VA_ARGS__)
 	void proto_probe_result(uint8_t val);
 	void proto_gcode_coordsys(void);

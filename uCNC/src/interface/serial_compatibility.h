@@ -38,7 +38,7 @@ extern "C"
 #define protocol_send_gcode_setting_line_int proto_gcode_setting_line_int
 #define protocol_send_gcode_setting_line_flt proto_gcode_setting_line_flt
 #define protocol_send_string proto_puts
-#define protocol_send_feedback(__s) proto_print(MSG_START);proto_puts(__s);proto_print(MSG_END)
+#define protocol_send_feedback(__s) proto_print(MSG_FEEDBACK_START);proto_puts(__s);proto_print(MSG_FEEDBACK_END)
 
 // Debugging
 
