@@ -220,26 +220,26 @@ const char *const inputpins_names[] __rom__ = {pin_name_100, pin_name_101, pin_n
 static bool protocol_busy;
 
 #ifdef ENABLE_IO_MODULES
-// event_grbl_protocol_pins_states_handler
-WEAK_EVENT_HANDLER(grbl_protocol_pins_states)
+// event_proto_pins_states_handler
+WEAK_EVENT_HANDLER(proto_pins_states)
 {
-	DEFAULT_EVENT_HANDLER(grbl_protocol_pins_states);
+	DEFAULT_EVENT_HANDLER(proto_pins_states);
 }
 #endif
 
 #ifdef ENABLE_SETTINGS_MODULES
-// event_grbl_protocol_cnc_settings_handler
-WEAK_EVENT_HANDLER(grbl_protocol_cnc_settings)
+// event_proto_cnc_settings_handler
+WEAK_EVENT_HANDLER(proto_cnc_settings)
 {
-	DEFAULT_EVENT_HANDLER(grbl_protocol_cnc_settings);
+	DEFAULT_EVENT_HANDLER(proto_cnc_settings);
 }
 #endif
 
 #ifdef ENABLE_PARSER_MODULES
-// event_grbl_protocol_gcode_modes_handler
-WEAK_EVENT_HANDLER(grbl_protocol_gcode_modes)
+// event_proto_gcode_modes_handler
+WEAK_EVENT_HANDLER(proto_gcode_modes)
 {
-	DEFAULT_EVENT_HANDLER(grbl_protocol_gcode_modes);
+	DEFAULT_EVENT_HANDLER(proto_gcode_modes);
 }
 #endif
 
@@ -249,10 +249,10 @@ WEAK_EVENT_HANDLER(grbl_protocol_gcode_modes)
  * all other implementations can use the formated print helper
  */
 
-#define grbl_protocol_itoa(value) print_int(grbl_protocol_putc, PRINT_CALLBACK, (uint32_t)(value), 0)
-#define grbl_protocol_ftoa(value) print_flt(grbl_protocol_putc, PRINT_CALLBACK, (float)(value), ((!g_settings.report_inches) ? 3 : 5))
+#define proto_itoa(value) prt_int(proto_putc, PRINT_CALLBACK, (uint32_t)(value), 0)
+#define proto_ftoa(value) prt_flt(proto_putc, PRINT_CALLBACK, (float)(value), ((!g_settings.report_inches) ? 3 : 5))
 
-void grbl_protocol_puts(const char *str)
+void proto_puts(const char *str)
 {
 	for (;;)
 	{
@@ -261,66 +261,66 @@ void grbl_protocol_puts(const char *str)
 		{
 			break;
 		}
-		grbl_protocol_putc(c);
+		proto_putc(c);
 	}
 }
 
-static void grbl_protocol_ftoa_array(float *array, uint8_t count)
+static void proto_ftoa_array(float *array, uint8_t count)
 {
 	while (count--)
 	{
-		grbl_protocol_ftoa(*array);
+		proto_ftoa(*array);
 		if (!count)
 		{
 			break;
 		}
-		grbl_protocol_putc(',');
+		proto_putc(',');
 		array++;
 	}
 }
 
-void grbl_protocol_error(uint8_t error)
+void proto_error(uint8_t error)
 {
 	if (error != STATUS_OK)
 	{
-		grbl_protocol_print(MSG_ERROR);
-		grbl_protocol_itoa(error);
+		proto_print(MSG_ERROR);
+		proto_itoa(error);
 	}
 	else
 	{
-		grbl_protocol_print(MSG_OK);
+		proto_print(MSG_OK);
 	}
-	grbl_protocol_print(MSG_EOL);
+	proto_print(MSG_EOL);
 }
 
-void grbl_protocol_alarm(int8_t alarm)
+void proto_alarm(int8_t alarm)
 {
 	grbl_stream_start_broadcast();
-	grbl_protocol_print(MSG_ALARM);
-	grbl_protocol_itoa(alarm);
-	grbl_protocol_print(MSG_EOL);
+	proto_print(MSG_ALARM);
+	proto_itoa(alarm);
+	proto_print(MSG_EOL);
 }
 
-void grbl_protocol_feedback_fmt(const char *fmt, ...)
+void proto_feedback_fmt(const char *fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
 	grbl_stream_start_broadcast();
-	grbl_protocol_putc('[');
-	print_fmtva(grbl_stream_putc, PRINT_CALLBACK, fmt, &args);
-	grbl_protocol_print(MSG_END);
+	proto_putc('[');
+	prt_fmtva(grbl_stream_putc, PRINT_CALLBACK, fmt, &args);
+	proto_print(MSG_END);
 	va_end(args);
 }
 
-WEAK_EVENT_HANDLER(grbl_protocol_status)
+WEAK_EVENT_HANDLER(proto_status)
 {
 	// custom handler
-	grbl_protocol_status_delegate_event_t *ptr = grbl_protocol_status_event;
+	proto_status_delegate_event_t *ptr = proto_status_event;
 	while (ptr != NULL)
 	{
 		if (ptr->fptr != NULL)
 		{
-			grbl_protocol_putc('|');
+			proto_putc('|');
 			ptr->fptr(args);
 		}
 		ptr = ptr->next;
@@ -329,13 +329,13 @@ WEAK_EVENT_HANDLER(grbl_protocol_status)
 	return EVENT_CONTINUE;
 }
 
-static FORCEINLINE void grbl_protocol_status_tail(void)
+static FORCEINLINE void proto_status_tail(void)
 {
 	float axis[MAX(AXIS_COUNT, 3)];
 	if (parser_get_wco(axis))
 	{
-		grbl_protocol_print(MSG_STATUS_WCO);
-		grbl_protocol_ftoa_array(axis, MAX(AXIS_COUNT, 3));
+		proto_print(MSG_STATUS_WCO);
+		proto_ftoa_array(axis, MAX(AXIS_COUNT, 3));
 		return;
 	}
 
@@ -346,12 +346,12 @@ static FORCEINLINE void grbl_protocol_status_tail(void)
 #if TOOL_COUNT > 0
 		tovr = g_planner_state.spindle_speed_override;
 #endif
-		grbl_protocol_print(MSG_STATUS_OVR);
-		grbl_protocol_itoa(g_planner_state.feed_override);
-		grbl_protocol_putc(',');
-		grbl_protocol_itoa(g_planner_state.rapid_feed_override);
-		grbl_protocol_putc(',');
-		grbl_protocol_itoa(tovr);
+		proto_print(MSG_STATUS_OVR);
+		proto_itoa(g_planner_state.feed_override);
+		proto_putc(',');
+		proto_itoa(g_planner_state.rapid_feed_override);
+		proto_putc(',');
+		proto_itoa(tovr);
 
 		uint8_t modalgroups[MAX_MODAL_GROUPS];
 		uint16_t feed;
@@ -360,24 +360,24 @@ static FORCEINLINE void grbl_protocol_status_tail(void)
 		parser_get_modes(modalgroups, &feed, &spindle);
 		if (modalgroups[8] != 5 || modalgroups[9])
 		{
-			grbl_protocol_print(MSG_STATUS_TOOL);
+			proto_print(MSG_STATUS_TOOL);
 			if (modalgroups[8] == 3)
 			{
-				grbl_protocol_putc('S');
+				proto_putc('S');
 			}
 			if (modalgroups[8] == 4)
 			{
-				grbl_protocol_putc('C');
+				proto_putc('C');
 			}
 #ifdef ENABLE_COOLANT
 			if (CHECKFLAG(modalgroups[9], COOLANT_MASK))
 			{
-				grbl_protocol_putc('F');
+				proto_putc('F');
 			}
 #ifndef M7_SAME_AS_M8
 			if (CHECKFLAG(modalgroups[9], MIST_MASK))
 			{
-				grbl_protocol_putc('M');
+				proto_putc('M');
 			}
 #endif
 #endif
@@ -387,7 +387,7 @@ static FORCEINLINE void grbl_protocol_status_tail(void)
 	g_planner_state.ovr_counter--;
 }
 
-void grbl_protocol_status(void)
+void proto_status(void)
 {
 	if (protocol_busy || grbl_stream_busy())
 	{
@@ -419,14 +419,14 @@ void grbl_protocol_status(void)
 
 	state &= filter;
 
-	grbl_protocol_putc('<');
+	proto_putc('<');
 	if (cnc_has_alarm())
 	{
-		grbl_protocol_print(MSG_STATUS_ALARM);
+		proto_print(MSG_STATUS_ALARM);
 	}
 	else if (mc_get_checkmode())
 	{
-		grbl_protocol_print(MSG_STATUS_CHECK);
+		proto_print(MSG_STATUS_CHECK);
 	}
 	else
 	{
@@ -434,27 +434,27 @@ void grbl_protocol_status(void)
 		{
 #if ASSERT_PIN(SAFETY_DOOR)
 		case EXEC_DOOR:
-			grbl_protocol_print(MSG_STATUS_DOOR ":");
+			proto_print(MSG_STATUS_DOOR ":");
 			if (CHECKFLAG(controls, SAFETY_DOOR_MASK))
 			{
 				if (cnc_get_exec_state(EXEC_RUN))
 				{
-					grbl_protocol_putc('2');
+					proto_putc('2');
 				}
 				else
 				{
-					grbl_protocol_putc('1');
+					proto_putc('1');
 				}
 			}
 			else
 			{
 				if (cnc_get_exec_state(EXEC_RUN))
 				{
-					grbl_protocol_putc('3');
+					proto_putc('3');
 				}
 				else
 				{
-					grbl_protocol_putc('0');
+					proto_putc('0');
 				}
 			}
 			break;
@@ -463,138 +463,138 @@ void grbl_protocol_status(void)
 		case EXEC_LIMITS:
 			if (!cnc_get_exec_state(EXEC_HOMING))
 			{
-				grbl_protocol_print(MSG_STATUS_ALARM);
+				proto_print(MSG_STATUS_ALARM);
 			}
 			else
 			{
-				grbl_protocol_print(MSG_STATUS_HOME);
+				proto_print(MSG_STATUS_HOME);
 			}
 			break;
 		case EXEC_HOLD:
-			grbl_protocol_print(MSG_STATUS_HOLD ":");
+			proto_print(MSG_STATUS_HOLD ":");
 			if (cnc_get_exec_state(EXEC_RUN))
 			{
-				grbl_protocol_putc('1');
+				proto_putc('1');
 			}
 			else
 			{
-				grbl_protocol_putc('0');
+				proto_putc('0');
 			}
 			break;
 		case EXEC_HOMING:
-			grbl_protocol_print(MSG_STATUS_HOME);
+			proto_print(MSG_STATUS_HOME);
 			break;
 		case EXEC_JOG:
-			grbl_protocol_print(MSG_STATUS_JOG);
+			proto_print(MSG_STATUS_JOG);
 			break;
 		case EXEC_RUN:
-			grbl_protocol_print(MSG_STATUS_RUN);
+			proto_print(MSG_STATUS_RUN);
 			break;
 		default:
-			grbl_protocol_print(MSG_STATUS_IDLE);
+			proto_print(MSG_STATUS_IDLE);
 			break;
 		}
 	}
 
-	grbl_protocol_putc('|');
+	proto_putc('|');
 	if (!(g_settings.status_report_mask & 1))
 	{
-		grbl_protocol_putc('M');
+		proto_putc('M');
 	}
 	else
 	{
 		parser_machine_to_work(axis);
-		grbl_protocol_putc('W');
+		proto_putc('W');
 	}
 
 	feed = (!g_settings.report_inches) ? feed : (feed * MM_INCH_MULT);
-	grbl_protocol_print(MSG_STATUS_POS);
-	grbl_protocol_ftoa_array(axis, MAX(AXIS_COUNT, 3));
-	grbl_protocol_print(MSG_STATUS_FS);
-	grbl_protocol_ftoa(feed);
-	grbl_protocol_putc(',');
-	grbl_protocol_itoa(spindle);
+	proto_print(MSG_STATUS_POS);
+	proto_ftoa_array(axis, MAX(AXIS_COUNT, 3));
+	proto_print(MSG_STATUS_FS);
+	proto_ftoa(feed);
+	proto_putc(',');
+	proto_itoa(spindle);
 
 #ifdef GCODE_PROCESS_LINE_NUMBERS
-	grbl_protocol_print(MSG_STATUS_LINE);
-	grbl_protocol_itoa(itp_get_rt_line_number());
+	proto_print(MSG_STATUS_LINE);
+	proto_itoa(itp_get_rt_line_number());
 #endif
 
 	if (CHECKFLAG(controls, (ESTOP_MASK | SAFETY_DOOR_MASK | FHOLD_MASK)) || CHECKFLAG(limits, LIMITS_MASK) || probe)
 	{
-		grbl_protocol_print(MSG_STATUS_PIN);
+		proto_print(MSG_STATUS_PIN);
 
 		if (CHECKFLAG(controls, ESTOP_MASK))
 		{
-			grbl_protocol_putc('R');
+			proto_putc('R');
 		}
 
 		if (CHECKFLAG(controls, SAFETY_DOOR_MASK))
 		{
-			grbl_protocol_putc('D');
+			proto_putc('D');
 		}
 
 		if (CHECKFLAG(controls, FHOLD_MASK))
 		{
-			grbl_protocol_putc('H');
+			proto_putc('H');
 		}
 
 		if (probe)
 		{
-			grbl_protocol_putc('P');
+			proto_putc('P');
 		}
 
 		if (CHECKFLAG(limits, LINACT0_LIMIT_MASK))
 		{
-			grbl_protocol_putc('X');
+			proto_putc('X');
 		}
 
 		if (CHECKFLAG(limits, LINACT1_LIMIT_MASK))
 		{
 #if ((AXIS_COUNT == 2) && defined(USE_Y_AS_Z_ALIAS))
-			grbl_protocol_putc('Z');
+			proto_putc('Z');
 #else
-			grbl_protocol_putc('Y');
+			proto_putc('Y');
 #endif
 		}
 
 		if (CHECKFLAG(limits, LINACT2_LIMIT_MASK))
 		{
-			grbl_protocol_putc('Z');
+			proto_putc('Z');
 		}
 
 		if (CHECKFLAG(limits, LINACT3_LIMIT_MASK))
 		{
-			grbl_protocol_putc('A');
+			proto_putc('A');
 		}
 
 		if (CHECKFLAG(limits, LINACT4_LIMIT_MASK))
 		{
-			grbl_protocol_putc('B');
+			proto_putc('B');
 		}
 
 		if (CHECKFLAG(limits, LINACT5_LIMIT_MASK))
 		{
-			grbl_protocol_putc('C');
+			proto_putc('C');
 		}
 	}
 
-	grbl_protocol_status_tail();
+	proto_status_tail();
 
-	EVENT_INVOKE(grbl_protocol_status, NULL);
+	EVENT_INVOKE(proto_status, NULL);
 
 	if ((g_settings.status_report_mask & 2))
 	{
-		grbl_protocol_print(MSG_STATUS_BUF);
-		grbl_protocol_itoa(planner_get_buffer_freeblocks());
-		grbl_protocol_putc(',');
-		grbl_protocol_itoa(grbl_stream_write_available());
+		proto_print(MSG_STATUS_BUF);
+		proto_itoa(planner_get_buffer_freeblocks());
+		proto_putc(',');
+		proto_itoa(grbl_stream_write_available());
 	}
 
-	grbl_protocol_print(">" MSG_EOL);
+	proto_print(">" MSG_EOL);
 }
 
-void grbl_protocol_gcode_coordsys(void)
+void proto_gcode_coordsys(void)
 {
 	protocol_busy = true;
 	float axis[MAX(AXIS_COUNT, 3)];
@@ -602,74 +602,74 @@ void grbl_protocol_gcode_coordsys(void)
 	for (uint8_t i = 0; i < COORD_SYS_COUNT; i++)
 	{
 		parser_get_coordsys(i, axis);
-		grbl_protocol_print("[G");
-		grbl_protocol_itoa(i + 54);
-		grbl_protocol_putc(':');
-		grbl_protocol_ftoa_array(axis, MAX(AXIS_COUNT, 3));
-		grbl_protocol_print(MSG_END);
+		proto_print("[G");
+		proto_itoa(i + 54);
+		proto_putc(':');
+		proto_ftoa_array(axis, MAX(AXIS_COUNT, 3));
+		proto_print(MSG_END);
 	}
 #if COORD_SYS_COUNT > 6
 	for (uint8_t i = 6; i < COORD_SYS_COUNT; i++)
 	{
 		parser_get_coordsys(i, axis);
-		grbl_protocol_print("[G59.");
-		grbl_protocol_itoa(i - 5);
-		grbl_protocol_putc(':');
-		grbl_protocol_ftoa_array(axis, MAX(AXIS_COUNT, 3));
-		grbl_protocol_print(MSG_END);
+		proto_print("[G59.");
+		proto_itoa(i - 5);
+		proto_putc(':');
+		proto_ftoa_array(axis, MAX(AXIS_COUNT, 3));
+		proto_print(MSG_END);
 	}
 #endif
 
 	parser_get_coordsys(28, axis);
-	grbl_protocol_print("[G28:");
-	grbl_protocol_ftoa_array(axis, MAX(AXIS_COUNT, 3));
-	grbl_protocol_print(MSG_END);
+	proto_print("[G28:");
+	proto_ftoa_array(axis, MAX(AXIS_COUNT, 3));
+	proto_print(MSG_END);
 
 	parser_get_coordsys(30, axis);
-	grbl_protocol_print("[G30:");
-	grbl_protocol_ftoa_array(axis, MAX(AXIS_COUNT, 3));
-	grbl_protocol_print(MSG_END);
+	proto_print("[G30:");
+	proto_ftoa_array(axis, MAX(AXIS_COUNT, 3));
+	proto_print(MSG_END);
 
 	parser_get_coordsys(92, axis);
-	grbl_protocol_print("[G92:");
-	grbl_protocol_ftoa_array(axis, MAX(AXIS_COUNT, 3));
-	grbl_protocol_print(MSG_END);
+	proto_print("[G92:");
+	proto_ftoa_array(axis, MAX(AXIS_COUNT, 3));
+	proto_print(MSG_END);
 
 #ifdef AXIS_TOOL
 	parser_get_coordsys(254, axis);
-	grbl_protocol_print("[TLO:");
-	grbl_protocol_ftoa(axis[0]);
-	grbl_protocol_print(MSG_END);
+	proto_print("[TLO:");
+	proto_ftoa(axis[0]);
+	proto_print(MSG_END);
 #endif
-	grbl_protocol_probe_result(parser_get_probe_result());
+	proto_probe_result(parser_get_probe_result());
 
 	protocol_busy = false;
 }
 
-void grbl_protocol_probe_result(uint8_t val)
+void proto_probe_result(uint8_t val)
 {
 	float axis[MAX(AXIS_COUNT, 3)];
 	parser_get_coordsys(255, axis);
-	grbl_protocol_print("[PRB:");
-	grbl_protocol_ftoa_array(axis, MAX(AXIS_COUNT, 3));
-	grbl_protocol_putc(':');
-	grbl_protocol_itoa(val);
-	grbl_protocol_print(MSG_END);
+	proto_print("[PRB:");
+	proto_ftoa_array(axis, MAX(AXIS_COUNT, 3));
+	proto_putc(':');
+	proto_itoa(val);
+	proto_print(MSG_END);
 }
 
-static void grbl_protocol_parser_modalstate(char word, uint8_t val, uint8_t mantissa)
+static void proto_parser_modalstate(char word, uint8_t val, uint8_t mantissa)
 {
-	grbl_protocol_putc(word);
-	grbl_protocol_itoa(val);
+	proto_putc(word);
+	proto_itoa(val);
 	if (mantissa)
 	{
-		grbl_protocol_putc('.');
-		grbl_protocol_putc('0' + mantissa);
+		proto_putc('.');
+		proto_putc('0' + mantissa);
 	}
-	grbl_protocol_putc(' ');
+	proto_putc(' ');
 }
 
-void grbl_protocol_gcode_modes(void)
+void proto_gcode_modes(void)
 {
 	// leave extra room for future modal groups
 	uint8_t modalgroups[MAX_MODAL_GROUPS];
@@ -680,93 +680,93 @@ void grbl_protocol_gcode_modes(void)
 
 	grbl_stream_start_broadcast();
 
-	grbl_protocol_print("[GC:");
+	proto_print("[GC:");
 
-	grbl_protocol_parser_modalstate('G', modalgroups[0], modalgroups[12]);
+	proto_parser_modalstate('G', modalgroups[0], modalgroups[12]);
 	for (uint8_t i = 1; i < 7; i++)
 	{
-		grbl_protocol_parser_modalstate('G', modalgroups[i], 0);
+		proto_parser_modalstate('G', modalgroups[i], 0);
 	}
 
 	if (modalgroups[7] == 62)
 	{
-		grbl_protocol_parser_modalstate('G', 61, 1);
+		proto_parser_modalstate('G', 61, 1);
 	}
 	else
 	{
-		grbl_protocol_parser_modalstate('G', modalgroups[7], 0);
+		proto_parser_modalstate('G', modalgroups[7], 0);
 	}
 
 #ifdef ENABLE_G39_H_MAPPING
 	if (modalgroups[13])
 	{
-		grbl_protocol_parser_modalstate('G', 39, 2);
+		proto_parser_modalstate('G', 39, 2);
 	}
 	else
 	{
-		grbl_protocol_parser_modalstate('G', 39, 1);
+		proto_parser_modalstate('G', 39, 1);
 	}
 #endif
 
 #ifdef ENABLE_PARSER_MODULES
-	EVENT_INVOKE(grbl_protocol_gcode_modes, NULL);
+	EVENT_INVOKE(proto_gcode_modes, NULL);
 #endif
 
-	grbl_protocol_parser_modalstate('M', modalgroups[8], 0);
+	proto_parser_modalstate('M', modalgroups[8], 0);
 #ifdef ENABLE_COOLANT
 	if (modalgroups[9] == M9)
 	{
-		grbl_protocol_print("M9 ");
+		proto_print("M9 ");
 	}
 #ifndef M7_SAME_AS_M8
 	if (modalgroups[9] & M7)
 	{
-		grbl_protocol_print("M7 ");
+		proto_print("M7 ");
 	}
 #endif
 	if (modalgroups[9] & M8)
 	{
-		grbl_protocol_print("M8 ");
+		proto_print("M8 ");
 	}
 #else
 	// permanent M9
-	// grbl_protocol_print("M9 ");
+	// proto_print("M9 ");
 #endif
-	grbl_protocol_putc('M');
-	grbl_protocol_itoa(modalgroups[10]);
-	grbl_protocol_putc(' ');
-	grbl_protocol_putc('M');
-	grbl_protocol_itoa(modalgroups[11]);
-	grbl_protocol_putc(' ');
-	grbl_protocol_putc('F');
-	grbl_protocol_ftoa(feed);
-	grbl_protocol_putc(' ');
-	grbl_protocol_putc('S');
-	grbl_protocol_itoa(spindle);
-	grbl_protocol_print(MSG_END);
+	proto_putc('M');
+	proto_itoa(modalgroups[10]);
+	proto_putc(' ');
+	proto_putc('M');
+	proto_itoa(modalgroups[11]);
+	proto_putc(' ');
+	proto_putc('F');
+	proto_ftoa(feed);
+	proto_putc(' ');
+	proto_putc('S');
+	proto_itoa(spindle);
+	proto_print(MSG_END);
 }
 
-void grbl_protocol_gcode_setting_line_int(setting_offset_t setting, uint16_t value)
+void proto_gcode_setting_line_int(setting_offset_t setting, uint16_t value)
 {
-	grbl_protocol_putc('$');
-	grbl_protocol_itoa(setting);
-	grbl_protocol_putc('=');
-	grbl_protocol_itoa(value);
-	grbl_protocol_putc('\r');
-	grbl_protocol_putc('\n');
+	proto_putc('$');
+	proto_itoa(setting);
+	proto_putc('=');
+	proto_itoa(value);
+	proto_putc('\r');
+	proto_putc('\n');
 }
 
-void grbl_protocol_gcode_setting_line_flt(setting_offset_t setting, float value)
+void proto_gcode_setting_line_flt(setting_offset_t setting, float value)
 {
-	grbl_protocol_putc('$');
-	grbl_protocol_itoa(setting);
-	grbl_protocol_putc('=');
-	grbl_protocol_ftoa(value);
-	grbl_protocol_putc('\r');
-	grbl_protocol_putc('\n');
+	proto_putc('$');
+	proto_itoa(setting);
+	proto_putc('=');
+	proto_ftoa(value);
+	proto_putc('\r');
+	proto_putc('\n');
 }
 
-void grbl_protocol_start_blocks(void)
+void proto_start_blocks(void)
 {
 	protocol_busy = true;
 	uint8_t c = 0;
@@ -774,21 +774,21 @@ void grbl_protocol_start_blocks(void)
 	for (uint8_t i = 0; i < STARTUP_BLOCKS_COUNT; i++)
 	{
 		uint16_t address = STARTUP_BLOCK0_ADDRESS_OFFSET + i * STARTUP_BLOCK_SIZE;
-		grbl_protocol_putc('$');
-		grbl_protocol_putc('N');
-		grbl_protocol_itoa(i);
-		grbl_protocol_putc('=');
+		proto_putc('$');
+		proto_putc('N');
+		proto_itoa(i);
+		proto_putc('=');
 
 		for (;;)
 		{
 			settings_load(address++, &c, 1);
 			if (c > 0 && c < 128)
 			{
-				grbl_protocol_putc(c);
+				proto_putc(c);
 			}
 			else
 			{
-				grbl_protocol_print(MSG_EOL);
+				proto_print(MSG_EOL);
 				break;
 			}
 		}
@@ -797,7 +797,7 @@ void grbl_protocol_start_blocks(void)
 	protocol_busy = false;
 }
 
-void grbl_protocol_cnc_settings(void)
+void proto_cnc_settings(void)
 {
 	protocol_busy = true;
 	uint8_t count = settings_count();
@@ -819,18 +819,18 @@ void grbl_protocol_cnc_settings(void)
 			{
 			case 1:
 				val = (uint32_t)((bool *)s.memptr)[j];
-				grbl_protocol_gcode_setting_line_int(s.id, val);
+				proto_gcode_setting_line_int(s.id, val);
 				break;
 			case 2:
 				val = (uint32_t) * ((uint8_t *)s.memptr);
-				grbl_protocol_gcode_setting_line_int(s.id, val);
+				proto_gcode_setting_line_int(s.id, val);
 				break;
 			case 3:
 				val = (uint32_t) * ((uint16_t *)s.memptr);
-				grbl_protocol_gcode_setting_line_int(s.id, val);
+				proto_gcode_setting_line_int(s.id, val);
 				break;
 			default:
-				grbl_protocol_gcode_setting_line_flt(s.id, ((float *)s.memptr)[j]);
+				proto_gcode_setting_line_flt(s.id, ((float *)s.memptr)[j]);
 				break;
 			}
 			s.id++;
@@ -838,14 +838,14 @@ void grbl_protocol_cnc_settings(void)
 	}
 
 #ifdef ENABLE_SETTINGS_MODULES
-	EVENT_INVOKE(grbl_protocol_cnc_settings, NULL);
+	EVENT_INVOKE(proto_cnc_settings, NULL);
 
 #endif
 	protocol_busy = false;
 }
 
 #ifdef ENABLE_EXTRA_SYSTEM_CMDS
-void grbl_protocol_pins_states(void)
+void proto_pins_states(void)
 {
 	protocol_busy = true;
 	for (uint8_t i = 0; i < (DIN_PINS_OFFSET + 50); i++)
@@ -858,22 +858,22 @@ void grbl_protocol_pins_states(void)
 			{
 				if (i < PWM_PINS_OFFSET)
 				{
-					grbl_protocol_print("[SO:");
+					proto_print("[SO:");
 				}
 				else if (i < SERVO_PINS_OFFSET)
 				{
-					grbl_protocol_print("[P:");
+					proto_print("[P:");
 				}
 				else if (i < DOUT_PINS_OFFSET)
 				{
-					grbl_protocol_print("[SV:");
+					proto_print("[SV:");
 				}
 				else if (i < (DOUT_PINS_OFFSET + 50))
 				{
-					grbl_protocol_print("[O:");
+					proto_print("[O:");
 				}
 #ifdef ENABLE_PIN_TRANSLATIONS
-				grbl_protocol_puts((const char *)rom_strptr(&outputpins_names[i - 1]));
+				proto_puts((const char *)rom_strptr(&outputpins_names[i - 1]));
 #endif
 			}
 
@@ -881,42 +881,42 @@ void grbl_protocol_pins_states(void)
 			{
 				if (i < ANALOG_PINS_OFFSET)
 				{
-					grbl_protocol_print("[SI:");
+					proto_print("[SI:");
 				}
 				else if (i < DIN_PINS_OFFSET)
 				{
-					grbl_protocol_print("[A:");
+					proto_print("[A:");
 				}
 				else
 				{
-					grbl_protocol_print("[I:");
+					proto_print("[I:");
 				}
 #ifdef ENABLE_PIN_TRANSLATIONS
-				grbl_protocol_puts((const char *)rom_strptr(&inputpins_names[i - 100]));
+				proto_puts((const char *)rom_strptr(&inputpins_names[i - 100]));
 #endif
 			}
 #ifndef ENABLE_PIN_TRANSLATIONS
-			grbl_protocol_itoa(i);
+			proto_itoa(i);
 #endif
-			grbl_protocol_putc(':');
-			grbl_protocol_itoa(val);
-			grbl_protocol_print(MSG_END);
+			proto_putc(':');
+			proto_itoa(val);
+			proto_print(MSG_END);
 		}
 	}
 
 	int32_t steps[STEPPER_COUNT];
 	itp_get_rt_position(steps);
-	grbl_protocol_printf("[STEPS:" MSG_STEPPERS MSG_END, steps);
+	proto_printf("[STEPS:" MSG_STEPPERS MSG_END, steps);
 
 #if ENCODERS > 0
 	encoder_print_values();
 #endif
 
 #ifdef ENABLE_IO_MODULES
-	EVENT_INVOKE(grbl_protocol_pins_states, NULL);
+	EVENT_INVOKE(proto_pins_states, NULL);
 #endif
 
-	grbl_protocol_printf("[RUNTIME:%lu" MSG_END, mcu_millis());
+	proto_printf("[RUNTIME:%lu" MSG_END, mcu_millis());
 	protocol_busy = false;
 }
 #endif
@@ -1049,16 +1049,16 @@ void grbl_protocol_pins_states(void)
 #define OPT_INFO EXTENDED_OPT KINEMATIC_INFO LINES_INFO BRESENHAM_INFO DSS_INFO DYNACCEL_INFO SKEW_INFO LINPLAN_INFO HMAP_INFO PPI_INFO INVESTOP_INFO SPOLL_INFO CONTROLS_INFO LIMITS_INFO PROBE_INFO IODBG_INFO SETTINGS_INFO EXTRACMD_INFO FASTMATH_INFO
 #define VER_INFO EXTENDED_VER " uCNC " CNC_VERSION " - " BOARD_NAME "]" MSG_EOL
 
-WEAK_EVENT_HANDLER(grbl_protocol_cnc_info)
+WEAK_EVENT_HANDLER(proto_cnc_info)
 {
 	// custom handler
-	grbl_protocol_cnc_info_delegate_event_t *ptr = grbl_protocol_cnc_info_event;
+	proto_cnc_info_delegate_event_t *ptr = proto_cnc_info_event;
 	while (ptr != NULL)
 	{
 		if (ptr->fptr != NULL)
 		{
 			ptr->fptr(args);
-			grbl_protocol_putc(',');
+			proto_putc(',');
 		}
 		ptr = ptr->next;
 	}
@@ -1066,23 +1066,23 @@ WEAK_EVENT_HANDLER(grbl_protocol_cnc_info)
 	return false;
 }
 
-void grbl_protocol_cnc_info(bool extended)
+void proto_cnc_info(bool extended)
 {
 	protocol_busy = true;
 #if EMULATE_GRBL_STARTUP < 2
-	grbl_protocol_print(VER_INFO OPT_INFO);
-	EVENT_INVOKE(grbl_protocol_cnc_info, NULL);
-	grbl_protocol_print(PLANNER_INFO SERIAL_INFO MSG_END);
+	proto_print(VER_INFO OPT_INFO);
+	EVENT_INVOKE(proto_cnc_info, NULL);
+	proto_print(PLANNER_INFO SERIAL_INFO MSG_END);
 #else
 	if (!extended)
 	{
-		grbl_protocol_print("[VER:1.1h.20190825:]" MSG_EOL "[OPT:V," PLANNER_INFO SERIAL_INFO "]" MSG_EOL);
+		proto_print("[VER:1.1h.20190825:]" MSG_EOL "[OPT:V," PLANNER_INFO SERIAL_INFO "]" MSG_EOL);
 	}
 	else
 	{
-		grbl_protocol_print(VER_INFO OPT_INFO);
-		EVENT_INVOKE(grbl_protocol_cnc_info, NULL);
-		grbl_protocol_print(PLANNER_INFO SERIAL_INFO "]" MSG_EOL);
+		proto_print(VER_INFO OPT_INFO);
+		EVENT_INVOKE(proto_cnc_info, NULL);
+		proto_print(PLANNER_INFO SERIAL_INFO "]" MSG_EOL);
 	}
 #endif
 	protocol_busy = false;

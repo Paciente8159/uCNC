@@ -126,7 +126,7 @@ void debug_printf(const char *fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
-	print_fmtva(debug_putc, NULL, fmt, &args);
+	prt_fmtva(debug_putc, NULL, fmt, &args);
 	va_end(args);
 }
 #endif
@@ -395,7 +395,7 @@ void grbl_stream_printf(const char *fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
-	print_fmtva(grbl_stream_putc, PRINT_CALLBACK, fmt, &args);
+	prt_fmtva(grbl_stream_putc, PRINT_CALLBACK, fmt, &args);
 	va_end(args);
 }
 

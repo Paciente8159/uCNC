@@ -605,30 +605,30 @@ static uint8_t parser_grbl_exec_code(uint8_t code)
 	switch (code)
 	{
 	case GRBL_SEND_SYSTEM_SETTINGS:
-		grbl_protocol_cnc_settings();
+		proto_cnc_settings();
 		break;
 	case GRBL_SEND_COORD_SYSTEM:
-		grbl_protocol_gcode_coordsys();
+		proto_gcode_coordsys();
 		break;
 	case GRBL_SEND_PARSER_MODES:
-		grbl_protocol_gcode_modes();
+		proto_gcode_modes();
 		break;
 	case GRBL_SEND_STARTUP_BLOCKS:
-		grbl_protocol_start_blocks();
+		proto_start_blocks();
 		break;
 	case GRBL_TOGGLE_CHECKMODE:
 		if (mc_toogle_checkmode())
 		{
-			grbl_protocol_feedback(MSG_FEEDBACK_4);
+			proto_feedback(MSG_FEEDBACK_4);
 		}
 		else
 		{
-			grbl_protocol_feedback(MSG_FEEDBACK_5);
+			proto_feedback(MSG_FEEDBACK_5);
 			cnc_alarm(EXEC_ALARM_SOFTRESET);
 		}
 		break;
 	case GRBL_SEND_SETTINGS_RESET:
-		grbl_protocol_feedback(MSG_FEEDBACK_9);
+		proto_feedback(MSG_FEEDBACK_9);
 		break;
 	case GRBL_UNLOCK:
 		cnc_unlock(true);
@@ -638,7 +638,7 @@ static uint8_t parser_grbl_exec_code(uint8_t code)
 			return STATUS_CHECK_DOOR;
 		}
 #endif
-		grbl_protocol_feedback(MSG_FEEDBACK_3);
+		proto_feedback(MSG_FEEDBACK_3);
 		break;
 	case GRBL_HOME:
 		if (!g_settings.homing_enabled)
@@ -656,29 +656,29 @@ static uint8_t parser_grbl_exec_code(uint8_t code)
 		cnc_home();
 		break;
 	case GRBL_HELP:
-		grbl_protocol_print(MSG_HELP);
+		proto_print(MSG_HELP);
 		break;
 #ifdef ENABLE_EXTRA_SYSTEM_CMDS
 	case GRBL_SETTINGS_SAVED:
-		grbl_protocol_feedback(MSG_FEEDBACK_13);
+		proto_feedback(MSG_FEEDBACK_13);
 		break;
 	case GRBL_SETTINGS_LOADED:
-		grbl_protocol_feedback(MSG_FEEDBACK_14);
+		proto_feedback(MSG_FEEDBACK_14);
 		break;
 	case GRBL_SETTINGS_DEFAULT:
-		grbl_protocol_feedback(MSG_FEEDBACK_15);
+		proto_feedback(MSG_FEEDBACK_15);
 		break;
 	case GRBL_PINS_STATES:
-		grbl_protocol_pins_states();
+		proto_pins_states();
 		break;
 #endif
 #ifdef ENABLE_SYSTEM_INFO
 	case GRBL_SEND_SYSTEM_INFO:
-		grbl_protocol_cnc_info(false);
+		proto_cnc_info(false);
 		break;
 #if EMULATE_GRBL_STARTUP == 2
 	case GRBL_SEND_SYSTEM_INFO_EXTENDED:
-		grbl_protocol_cnc_info(true);
+		proto_cnc_info(true);
 		break;
 #endif
 #endif
@@ -722,7 +722,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 		if (!wordcount)
 		{
 			grbl_stream_start_broadcast();
-			grbl_protocol_print(MSG_ECHO);
+			proto_print(MSG_ECHO);
 		}
 #endif
 		error = parser_get_token(&word, &value);
@@ -732,7 +732,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 		{
 			parser_discard_command();
 #ifdef ECHO_CMD
-			grbl_protocol_print(MSG_END);
+			proto_print(MSG_END);
 			
 #endif
 			return error;
@@ -788,7 +788,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 			words->n = linecounter;
 #endif
 #ifdef ECHO_CMD
-			grbl_protocol_print(MSG_END);
+			proto_print(MSG_END);
 			
 #endif
 			return STATUS_OK;
@@ -832,7 +832,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 		{
 			parser_discard_command();
 #ifdef ECHO_CMD
-			grbl_protocol_print(MSG_END);
+			proto_print(MSG_END);
 #endif
 			return error;
 		}
@@ -1808,7 +1808,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 
 			if (error == STATUS_OK)
 			{
-				grbl_protocol_probe_result(parser_parameters.last_probe_ok);
+				proto_probe_result(parser_parameters.last_probe_ok);
 			}
 
 			return error;
@@ -1883,7 +1883,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		if (resetparser)
 		{
 			cnc_stop();
-			grbl_protocol_feedback(MSG_FEEDBACK_8);
+			proto_feedback(MSG_FEEDBACK_8);
 		}
 	}
 
@@ -1998,10 +1998,10 @@ static void parser_get_comment(uint8_t start_char)
 			break;
 		case 3:
 			msg_parser = (c == ',') ? 4 : 0xFF;
-			grbl_protocol_print(MSG_START);
+			proto_print(MSG_START);
 			break;
 		case 4:
-			grbl_protocol_putc(c);
+			proto_putc(c);
 			break;
 		}
 #endif
@@ -2016,7 +2016,7 @@ static void parser_get_comment(uint8_t start_char)
 #ifdef PROCESS_COMMENTS
 			if (msg_parser == 4)
 			{
-				grbl_protocol_print(MSG_END);
+				proto_print(MSG_END);
 			}
 #endif
 			return;
@@ -2042,7 +2042,7 @@ static unsigned char parser_get_next_preprocessed(bool peek)
 	{
 		grbl_stream_getc();
 #ifdef ECHO_CMD
-		grbl_protocol_putc(c);
+		proto_putc(c);
 #endif
 	}
 
@@ -2597,7 +2597,7 @@ uint8_t parser_get_float(float *value)
 		return parser_get_expression(value);
 	}
 #endif
-	return print_atof(parser_get_next_preprocessed, NULL, value);
+	return prt_atof(parser_get_next_preprocessed, NULL, value);
 }
 
 static uint8_t parser_get_token(uint8_t *word, float *value)
@@ -3128,7 +3128,7 @@ void parser_discard_command(void)
 {
 	uint8_t c = '@';
 #ifdef ECHO_CMD
-	grbl_protocol_putc(c);
+	proto_putc(c);
 #endif
 	do
 	{
@@ -3136,7 +3136,7 @@ void parser_discard_command(void)
 #ifdef ECHO_CMD
 		if (c)
 		{
-			grbl_protocol_putc(c);
+			proto_putc(c);
 		}
 #endif
 	} while (c != EOL);

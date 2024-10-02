@@ -144,7 +144,7 @@ void cnc_run(void)
 		int8_t alarm = cnc_state.alarm;
 		if (alarm > EXEC_ALARM_NOALARM)
 		{
-			grbl_protocol_alarm(cnc_state.alarm);
+			proto_alarm(cnc_state.alarm);
 		}
 		if (alarm < EXEC_ALARM_PROBE_FAIL_INITIAL && alarm != EXEC_ALARM_NOALARM)
 		{
@@ -161,8 +161,8 @@ void cnc_run(void)
 		{
 			if (grbl_stream_getc() == EOL)
 			{
-				grbl_protocol_feedback(MSG_FEEDBACK_1);
-				grbl_protocol_error(0);
+				proto_feedback(MSG_FEEDBACK_1);
+				proto_error(0);
 			}
 		}
 		cnc_dotasks();
@@ -204,14 +204,14 @@ uint8_t cnc_parse_cmd(void)
 			error = parser_read_command();
 #ifdef ENABLE_PARSING_TIME_DEBUG
 			exec_time = mcu_millis() - exec_time;
-			grbl_protocol_info("Exec time: %lu", exec_time);
+			proto_info("Exec time: %lu", exec_time);
 #endif
 			break;
 		}
 		// runs any rt command in queue
 		// this catches for example a ?\n situation sent by some GUI like UGS
 		cnc_exec_rt_commands();
-		grbl_protocol_error(error);
+		proto_error(error);
 		if (error)
 		{
 			itp_sync();
@@ -429,7 +429,7 @@ void cnc_alarm(int8_t code)
 		}
 #endif
 #ifdef ENABLE_IO_ALARM_DEBUG
-		grbl_protocol_info("LIMITS:%hd|CONTROLS:%hd", io_alarm_limits, io_alarm_controls);
+		proto_info("LIMITS:%hd|CONTROLS:%hd", io_alarm_limits, io_alarm_controls);
 #endif
 	}
 }
@@ -476,7 +476,7 @@ uint8_t cnc_unlock(bool force)
 	{
 		if (!cnc_get_exec_state(EXEC_KILL))
 		{
-			grbl_protocol_feedback(MSG_FEEDBACK_2);
+			proto_feedback(MSG_FEEDBACK_2);
 			return UNLOCK_LOCKED;
 		}
 		else
@@ -642,7 +642,7 @@ void cnc_reset(void)
 	EVENT_INVOKE(cnc_reset, NULL);
 #endif
 	grbl_stream_start_broadcast();
-	grbl_protocol_print(MSG_STARTUP);
+	proto_print(MSG_STARTUP);
 }
 
 void cnc_call_rt_command(uint8_t command)
@@ -765,7 +765,7 @@ void cnc_exec_rt_commands(void)
 				char c = grbl_stream_getc();
 				if (c == EOL)
 				{
-					grbl_protocol_error(STATUS_JOG_CANCELED);
+					proto_error(STATUS_JOG_CANCELED);
 				}
 			}
 			return;
@@ -778,7 +778,7 @@ void cnc_exec_rt_commands(void)
 
 		if (CHECKFLAG(command, RT_CMD_REPORT))
 		{
-			grbl_protocol_status();
+			proto_status();
 		}
 	}
 
@@ -904,13 +904,13 @@ void cnc_check_fault_systems(void)
 #if ASSERT_PIN(ESTOP)
 	if (CHECKFLAG(inputs, ESTOP_MASK)) // fault on emergency stop
 	{
-		grbl_protocol_feedback(MSG_FEEDBACK_12);
+		proto_feedback(MSG_FEEDBACK_12);
 	}
 #endif
 #if ASSERT_PIN(SAFETY_DOOR)
 	if (CHECKFLAG(inputs, SAFETY_DOOR_MASK)) // fault on safety door
 	{
-		grbl_protocol_feedback(MSG_FEEDBACK_6);
+		proto_feedback(MSG_FEEDBACK_6);
 	}
 #endif
 #if (LIMITS_MASK != 0)
@@ -919,7 +919,7 @@ void cnc_check_fault_systems(void)
 		inputs = io_get_limits();
 		if (CHECKFLAG(inputs, LIMITS_MASK))
 		{
-			grbl_protocol_feedback(MSG_FEEDBACK_7);
+			proto_feedback(MSG_FEEDBACK_7);
 		}
 	}
 #endif
@@ -932,7 +932,7 @@ void cnc_check_fault_systems(void)
 		case EXEC_ALARM_NOALARM:
 			break;
 		default:
-			grbl_protocol_feedback(MSG_FEEDBACK_1);
+			proto_feedback(MSG_FEEDBACK_1);
 			break;
 		}
 	}

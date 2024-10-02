@@ -133,7 +133,7 @@ extern "C"
 // extension modules
 #include "module.h"
 #include "interface/defaults.h"
-#include "interface/print.h"
+#include "interface/grbl_print.h"
 #include "interface/grbl_stream.h"
 #include "interface/settings.h"
 #include "interface/grbl_interface.h"

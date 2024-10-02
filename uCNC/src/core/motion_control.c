@@ -1027,9 +1027,9 @@ void mc_flush_pending_motion(void)
 
 void mc_print_hmap(void)
 {
-	grbl_protocol_info("HMAP start corner: %f;%f", hmap_x, hmap_y);
-	grbl_protocol_info("HMAP end corner: %f;%f", hmap_x + hmap_x_offset, hmap_y + hmap_y_offset);
-	grbl_protocol_info("HMAP control points: %hd", H_MAPING_ARRAY_SIZE);
+	proto_info("HMAP start corner: %f;%f", hmap_x, hmap_y);
+	proto_info("HMAP end corner: %f;%f", hmap_x + hmap_x_offset, hmap_y + hmap_y_offset);
+	proto_info("HMAP control points: %hd", H_MAPING_ARRAY_SIZE);
 
 	// print map
 	for (uint8_t j = 0; j < H_MAPING_GRID_FACTOR; j++)
@@ -1038,8 +1038,8 @@ void mc_print_hmap(void)
 		{
 			uint8_t map = i + (H_MAPING_GRID_FACTOR * j);
 			float new_h = hmap_offsets[map];
-			grbl_protocol_print(MSG_START);
-			grbl_protocol_info("HMAP: %hd; %hd; %f", i, j, new_h);
+			proto_print(MSG_START);
+			proto_info("HMAP: %hd; %hd; %f", i, j, new_h);
 		}
 	}
 }
@@ -1167,7 +1167,7 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 			parser_get_probe(probe_position);
 			kinematics_steps_to_coordinates(probe_position, position);
 			hmap_offsets[i + H_MAPING_GRID_FACTOR * j] = position[AXIS_TOOL];
-			grbl_protocol_probe_result(1);
+			proto_probe_result(1);
 
 			// update to new target
 			target[AXIS_X] += offset_x;

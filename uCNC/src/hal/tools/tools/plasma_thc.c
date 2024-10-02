@@ -428,57 +428,57 @@ static void pid_update(void)
 }
 
 // uses similar status to grblhal
-bool plasma_grbl_protocol_status(void *args)
+bool plasma_proto_status(void *args)
 {
 	uint8_t state = plasma_thc_state;
 
-	grbl_protocol_print("THC:");
+	proto_print("THC:");
 
 	plasma_thc_extension_send_status();
 
 	if (CHECKFLAG(state, PLASMA_THC_ENABLED))
 	{
-		grbl_protocol_putc('E');
+		proto_putc('E');
 	}
 	else
 	{
-		grbl_protocol_putc('*');
+		proto_putc('*');
 	}
 	if (CHECKFLAG(state, PLASMA_THC_ACTIVE))
 	{
-		grbl_protocol_putc('R');
+		proto_putc('R');
 	}
 #if ASSERT_PIN(PLASMA_ON_OUTPUT)
 	if (io_get_output(PLASMA_ON_OUTPUT))
 	{
-		grbl_protocol_putc('T');
+		proto_putc('T');
 	}
 #endif
 	if (plasma_thc_arc_ok())
 	{
-		grbl_protocol_putc('A');
+		proto_putc('A');
 	}
 	if (plasma_thc_vad_active())
 	{
-		grbl_protocol_putc('V');
+		proto_putc('V');
 	}
 	if (plasma_thc_up())
 	{
-		grbl_protocol_putc('U');
+		proto_putc('U');
 	}
 	if (plasma_thc_down())
 	{
-		grbl_protocol_putc('D');
+		proto_putc('D');
 	}
 
 	return EVENT_CONTINUE;
 }
 
-CREATE_EVENT_LISTENER(grbl_protocol_status, plasma_grbl_protocol_status);
+CREATE_EVENT_LISTENER(proto_status, plasma_proto_status);
 
 DECL_MODULE(plasma_thc)
 {
-	ADD_EVENT_LISTENER(grbl_protocol_status, plasma_grbl_protocol_status);
+	ADD_EVENT_LISTENER(proto_status, plasma_proto_status);
 #ifdef ENABLE_PARSER_MODULES
 	ADD_EVENT_LISTENER(gcode_parse, m103_parse);
 	ADD_EVENT_LISTENER(gcode_exec, m103_exec);

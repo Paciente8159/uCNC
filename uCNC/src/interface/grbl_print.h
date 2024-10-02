@@ -1,5 +1,5 @@
 /*
-	Name: print.h
+	Name: grbl_print.h
 	Description: Print utilities for µCNC.
 
 	Copyright: Copyright (c) João Martins
@@ -38,22 +38,22 @@ extern "C"
 #define PRINT_MAX (SIZE_MAX - 1)
 
 	// printing utils
-	typedef void (*print_putc_cb)(char);
-	size_t print_byte(void *out, size_t maxlen, const uint8_t *data, uint8_t flags);
-	size_t print_int(void *out, size_t maxlen, uint32_t num, uint8_t padding);
-	size_t print_flt(void *out, size_t maxlen, float num, uint8_t precision);
-	size_t print_ip(void *out, size_t maxlen, uint32_t ip);
-	size_t print_fmtva(void *out, size_t maxlen, const char *fmt, va_list *args);
-	size_t print_fmt(void *out, size_t maxlen, const char *fmt, ...);
+	typedef void (*prt_putc_cb)(char);
+	size_t prt_byte(void *out, size_t maxlen, const uint8_t *data, uint8_t flags);
+	size_t prt_int(void *out, size_t maxlen, uint32_t num, uint8_t padding);
+	size_t prt_flt(void *out, size_t maxlen, float num, uint8_t precision);
+	size_t prt_ip(void *out, size_t maxlen, uint32_t ip);
+	size_t prt_fmtva(void *out, size_t maxlen, const char *fmt, va_list *args);
+	size_t prt_fmt(void *out, size_t maxlen, const char *fmt, ...);
 	// scaning utilities
-	typedef unsigned char (*print_getc_cb)(bool);
-	typedef unsigned char (*print_read_rom_byte)(const char *);
-	uint8_t print_atof(void *cb, const char **buffer, float *value);
+	typedef unsigned char (*prt_getc_cb)(bool);
+	typedef unsigned char (*prt_read_rom_byte)(const char *);
+	uint8_t prt_atof(void *cb, const char **buffer, float *value);
 
 // string helper functions
-#define str_sprintf(buffer, fmt, ...) print_fmt(buffer, PRINT_MAX, fmt, __VA_ARGS__)
-#define str_snprintf(buffer, n, fmt, ...) print_fmt(buffer, n, fmt, __VA_ARGS__)
-#define str_atof(buffer, var) print_atof(NULL, buffer, PRINT_MAX, var)
+#define str_sprintf(buffer, fmt, ...) prt_fmt(buffer, PRINT_MAX, fmt, __VA_ARGS__)
+#define str_snprintf(buffer, n, fmt, ...) prt_fmt(buffer, n, fmt, __VA_ARGS__)
+#define str_atof(buffer, var) prt_atof(NULL, buffer, PRINT_MAX, var)
 
 #ifdef __cplusplus
 }

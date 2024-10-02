@@ -292,24 +292,24 @@ static void fs_dir_list(void)
 	// if current working directory not initialized
 	if (!strlen(fs_cwd.full_name))
 	{
-		grbl_protocol_print("Available drives");
-		grbl_protocol_print(MSG_EOL);
+		proto_print("Available drives");
+		proto_print(MSG_EOL);
 		fs_t *drive = fs_default_drive;
 		while (drive)
 		{
-			grbl_protocol_print("<drive>\t");
-			grbl_protocol_putc('/');
-			grbl_protocol_putc(drive->drive);
-			grbl_protocol_print(MSG_EOL);
+			proto_print("<drive>\t");
+			proto_putc('/');
+			proto_putc(drive->drive);
+			proto_print(MSG_EOL);
 			drive = drive->next;
 		}
 		return;
 	}
 
 	// current dir
-	grbl_protocol_print("Index of /");
-	grbl_protocol_printf("%s", fs_filename(&fs_cwd));
-	grbl_protocol_print(MSG_EOL);
+	proto_print("Index of /");
+	proto_printf("%s", fs_filename(&fs_cwd));
+	proto_print(MSG_EOL);
 
 	fs_file_t *dir = fs_opendir(fs_cwd.full_name);
 
@@ -320,15 +320,15 @@ static void fs_dir_list(void)
 		{
 			if (finfo.is_dir)
 			{ /* It is a directory */
-				grbl_protocol_print("<dir>\t");
+				proto_print("<dir>\t");
 			}
 			else
 			{ /* It is a file. */
-				grbl_protocol_print("     \t");
+				proto_print("     \t");
 			}
 
-			grbl_protocol_printf("%s", fs_filename(&finfo));
-			grbl_protocol_print(MSG_EOL);
+			proto_printf("%s", fs_filename(&finfo));
+			proto_print(MSG_EOL);
 		}
 
 		fs_close(dir);
@@ -342,20 +342,20 @@ void fs_cd(char *params)
 	{
 		if (dir->file_info.is_dir)
 		{
-			grbl_protocol_printf("%s >", fs_cwd.full_name);
+			proto_printf("%s >", fs_cwd.full_name);
 		}
 		else
 		{
-			grbl_protocol_printf("%s  is not a dir!", params);
+			proto_printf("%s  is not a dir!", params);
 		}
 		fs_close(dir);
 	}
 	else if (strlen(fs_cwd.full_name))
 	{
-		grbl_protocol_printf("%s dir not found!", params);
+		proto_printf("%s dir not found!", params);
 	}
 
-	grbl_protocol_print(MSG_EOL);
+	proto_print(MSG_EOL);
 }
 
 void fs_file_print(char *params)
@@ -369,22 +369,22 @@ void fs_file_print(char *params)
 			/* Read the data */
 			if (!fs_read(fp, (uint8_t *)&c, sizeof(char)))
 			{
-				grbl_protocol_info("File read error!");
+				proto_info("File read error!");
 				break;
 			}
-			grbl_protocol_putc(c);
+			proto_putc(c);
 		}
 
 		fs_close(fp);
-		grbl_protocol_info("File ended");
+		proto_info("File ended");
 		return;
 	}
 	else
 	{
-		grbl_protocol_info("File not found!");
+		proto_info("File not found!");
 	}
 
-	grbl_protocol_print(MSG_EOL);
+	proto_print(MSG_EOL);
 }
 
 void fs_file_run(char *params)
@@ -408,7 +408,7 @@ void fs_file_run(char *params)
 	if (fp)
 	{
 		startline = MAX(1, startline);
-		grbl_protocol_info("Running file from line - %lu", startline);
+		proto_info("Running file from line - %lu", startline);
 #ifdef DECL_SERIAL_STREAM
 #ifdef ENABLE_MAIN_LOOP_MODULES
 		// prefill buffer
@@ -431,7 +431,7 @@ void fs_file_run(char *params)
 		return;
 	}
 
-	grbl_protocol_info("File read error!");
+	proto_info("File read error!");
 }
 
 /**
@@ -870,7 +870,7 @@ bool system_menu_fs_action(uint8_t action)
 				fs_running_file = fs_path_parse(&fs_sm_cwd, fs_filename(&fs_pointed_file), "r");
 				if (fs_running_file)
 				{
-					grbl_protocol_feedback(FS_STR_FILE_RUNNING);
+					proto_feedback(FS_STR_FILE_RUNNING);
 					system_menu_go_idle();
 					rom_strcpy(buffer, __romstr__(FS_STR_FILE_RUNNING));
 					system_menu_show_modal_popup(SYSTEM_MENU_MODAL_POPUP_MS, buffer);

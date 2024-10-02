@@ -1023,9 +1023,9 @@ void mcu_eeprom_flush()
 				; // wait while busy
 			mcu_enable_global_isr();
 			if (FLASH->SR & FLASH_SR_PGERR)
-				grbl_protocol_error(42); // STATUS_SETTING_WRITE_FAIL
+				proto_error(42); // STATUS_SETTING_WRITE_FAIL
 			if (FLASH->SR & FLASH_SR_WRPRTERR)
-				grbl_protocol_error(43); // STATUS_SETTING_PROTECTED_FAIL
+				proto_error(43); // STATUS_SETTING_PROTECTED_FAIL
 			FLASH->CR = 0;						 // Ensure PG bit is low
 			FLASH->SR = 0;
 			eeprom++;

@@ -181,7 +181,7 @@ int32_t encoder_get_position(uint8_t i)
 
 void encoder_print_values(void)
 {
-	grbl_protocol_printf("[EC:%"STRGIFY(ENCODERS)"lld"MSG_END, encoders_pos);
+	proto_printf("[EC:%"STRGIFY(ENCODERS)"lld"MSG_END, encoders_pos);
 }
 
 void encoder_reset_position(uint8_t i, int32_t position)

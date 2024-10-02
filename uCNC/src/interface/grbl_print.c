@@ -15,7 +15,7 @@
 	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
-#include "print.h"
+#include "grbl_print.h"
 #include "../cnc.h"
 
 #define HEX_NONE 0
@@ -33,8 +33,8 @@
 #endif
 #endif
 
-#ifndef printf_getc
-#define printf_getc(fmt) rom_read_byte(fmt)
+#ifndef prtf_getc
+#define prtf_getc(fmt) rom_read_byte(fmt)
 #endif
 
 static inline unsigned char str_read_romchar(const char *buffer)
@@ -43,7 +43,7 @@ static inline unsigned char str_read_romchar(const char *buffer)
 }
 
 #ifndef PRINT_FTM_MINIMAL
-static __attribute__((noinline)) void print_memc(void *out, char c)
+static __attribute__((noinline)) void prt_memc(void *out, char c)
 {
 	char **mem = ((char **)out);
 	**mem = c;
@@ -51,17 +51,17 @@ static __attribute__((noinline)) void print_memc(void *out, char c)
 }
 #endif
 
-static size_t print_putc(void *out, size_t maxlen, char c)
+static size_t prt_putc(void *out, size_t maxlen, char c)
 {
 	if (maxlen == PRINT_CALLBACK)
 	{
-		((print_putc_cb)out)(c);
+		((prt_putc_cb)out)(c);
 		return PRINT_CALLBACK;
 	}
 #ifndef PRINT_FTM_MINIMAL
 	if (maxlen)
 	{
-		print_memc(out, c);
+		prt_memc(out, c);
 		return --maxlen;
 	}
 #endif
@@ -69,31 +69,31 @@ static size_t print_putc(void *out, size_t maxlen, char c)
 }
 
 #ifndef PRINT_FTM_MINIMAL
-size_t print_byte(void *out, size_t maxlen, const uint8_t *data, uint8_t flags)
+size_t prt_byte(void *out, size_t maxlen, const uint8_t *data, uint8_t flags)
 {
 	bool prefix = (flags && HEX_PREFIX);
 	char hexchar = (flags & HEX_UPPER) ? 'A' : 'a';
 	uint8_t size = HEX_SIZE(flags);
 	if (prefix)
 	{
-		maxlen = print_putc(out, maxlen, '0');
-		maxlen = print_putc(out, maxlen, 'x');
+		maxlen = prt_putc(out, maxlen, '0');
+		maxlen = prt_putc(out, maxlen, 'x');
 	}
 	for (uint8_t i = 0; i < size; i++)
 	{
 		uint8_t up = data[i] >> 4;
 		uint8_t c = (up > 9) ? (hexchar + up - 10) : ('0' + up);
-		maxlen = print_putc(out, maxlen, c);
+		maxlen = prt_putc(out, maxlen, c);
 		up = data[i] & 0x0F;
 		c = (up > 9) ? (hexchar + up - 10) : ('0' + up);
-		maxlen = print_putc(out, maxlen, c);
+		maxlen = prt_putc(out, maxlen, c);
 	}
 
 	return maxlen;
 }
 #endif
 
-size_t print_int(void *out, size_t maxlen, uint32_t num, uint8_t padding)
+size_t prt_int(void *out, size_t maxlen, uint32_t num, uint8_t padding)
 {
 	uint8_t buffer[11];
 	uint8_t i = 0;
@@ -112,40 +112,40 @@ size_t print_int(void *out, size_t maxlen, uint32_t num, uint8_t padding)
 
 	while (i < padding--)
 	{
-		maxlen = print_putc(out, maxlen, '0');
+		maxlen = prt_putc(out, maxlen, '0');
 	}
 
 	while (i--)
 	{
-		maxlen = print_putc(out, maxlen, '0' + buffer[i]);
+		maxlen = prt_putc(out, maxlen, '0' + buffer[i]);
 	}
 
 	return maxlen;
 }
 
-size_t print_flt(void *out, size_t maxlen, float num, uint8_t precision)
+size_t prt_flt(void *out, size_t maxlen, float num, uint8_t precision)
 {
 #ifndef PRINT_FTM_MINIMAL
 	if (num == INFINITY)
 	{
-		maxlen = print_putc(out, maxlen, 'I');
-		maxlen = print_putc(out, maxlen, 'n');
-		maxlen = print_putc(out, maxlen, 'f');
+		maxlen = prt_putc(out, maxlen, 'I');
+		maxlen = prt_putc(out, maxlen, 'n');
+		maxlen = prt_putc(out, maxlen, 'f');
 		return maxlen;
 	}
 
 	if (num == NAN)
 	{
-		maxlen = print_putc(out, maxlen, 'N');
-		maxlen = print_putc(out, maxlen, 'a');
-		maxlen = print_putc(out, maxlen, 'N');
+		maxlen = prt_putc(out, maxlen, 'N');
+		maxlen = prt_putc(out, maxlen, 'a');
+		maxlen = prt_putc(out, maxlen, 'N');
 		return maxlen;
 	}
 #endif
 
 	if (num < 0)
 	{
-		maxlen = print_putc(out, maxlen, '-');
+		maxlen = prt_putc(out, maxlen, '-');
 		num = -num;
 	}
 
@@ -164,30 +164,30 @@ size_t print_flt(void *out, size_t maxlen, float num, uint8_t precision)
 		digits = 0;
 	}
 
-	maxlen = print_int(out, maxlen, interger, 0);
-	maxlen = print_putc(out, maxlen, '.');
-	maxlen = print_int(out, maxlen, digits, precision);
+	maxlen = prt_int(out, maxlen, interger, 0);
+	maxlen = prt_putc(out, maxlen, '.');
+	maxlen = prt_int(out, maxlen, digits, precision);
 
 	return maxlen;
 }
 
 #ifndef PRINT_FTM_MINIMAL
-size_t print_ip(void *out, size_t maxlen, uint32_t ip)
+size_t prt_ip(void *out, size_t maxlen, uint32_t ip)
 {
 	uint8_t *ptr = (uint8_t *)&ip;
-	maxlen = print_int(out, maxlen, (int32_t)ptr[3], 0);
-	maxlen = print_putc(out, maxlen, '.');
-	maxlen = print_int(out, maxlen, (int32_t)ptr[2], 0);
-	maxlen = print_putc(out, maxlen, '.');
-	maxlen = print_int(out, maxlen, (int32_t)ptr[1], 0);
-	maxlen = print_putc(out, maxlen, '.');
-	maxlen = print_int(out, maxlen, (int32_t)ptr[0], 0);
+	maxlen = prt_int(out, maxlen, (int32_t)ptr[3], 0);
+	maxlen = prt_putc(out, maxlen, '.');
+	maxlen = prt_int(out, maxlen, (int32_t)ptr[2], 0);
+	maxlen = prt_putc(out, maxlen, '.');
+	maxlen = prt_int(out, maxlen, (int32_t)ptr[1], 0);
+	maxlen = prt_putc(out, maxlen, '.');
+	maxlen = prt_int(out, maxlen, (int32_t)ptr[0], 0);
 
 	return maxlen;
 }
 #endif
 
-size_t print_fmtva(void *out, size_t maxlen, const char *fmt, va_list *args)
+size_t prt_fmtva(void *out, size_t maxlen, const char *fmt, va_list *args)
 {
 	char c = 0, cval = 0;
 	uint8_t lcount = 2;
@@ -215,10 +215,10 @@ size_t print_fmtva(void *out, size_t maxlen, const char *fmt, va_list *args)
 
 	do
 	{
-		c = printf_getc(fmt++);
+		c = prtf_getc(fmt++);
 		if (c == '%')
 		{
-			c = printf_getc(fmt++);
+			c = prtf_getc(fmt++);
 			switch (c)
 			{
 #ifndef PRINT_FTM_MINIMAL
@@ -235,7 +235,7 @@ size_t print_fmtva(void *out, size_t maxlen, const char *fmt, va_list *args)
 				if (c == '.' || (c >= '1' && c <= '9'))
 				{
 					fmt--;
-					cval = print_atof(str_read_romchar, (const char **)&fmt, &f);
+					cval = prt_atof(str_read_romchar, (const char **)&fmt, &f);
 					if (cval != ATOF_NUMBER_UNDEF)
 					{
 						elems = (uint8_t)f;
@@ -246,7 +246,7 @@ size_t print_fmtva(void *out, size_t maxlen, const char *fmt, va_list *args)
 						}
 #endif
 					}
-					c = printf_getc(fmt++);
+					c = prtf_getc(fmt++);
 				}
 				break;
 			}
@@ -255,14 +255,14 @@ size_t print_fmtva(void *out, size_t maxlen, const char *fmt, va_list *args)
 			while (c == 'l' || c == 'h')
 			{
 				lcount = ((c == 'l') ? 4 : 1);
-				c = printf_getc(fmt++);
+				c = prtf_getc(fmt++);
 			}
 
 			switch (c)
 			{
 			case 'c':
 				cval = (char)va_arg(*args, int);
-				maxlen = print_putc(out, maxlen, cval);
+				maxlen = prt_putc(out, maxlen, cval);
 				/* code */
 				break;
 #ifndef PRINT_FTM_MINIMAL
@@ -276,7 +276,7 @@ size_t print_fmtva(void *out, size_t maxlen, const char *fmt, va_list *args)
 					{
 						break;
 					}
-					maxlen = print_putc(out, maxlen, cval);
+					maxlen = prt_putc(out, maxlen, cval);
 				}
 				break;
 			case 'I':
@@ -319,26 +319,26 @@ size_t print_fmtva(void *out, size_t maxlen, const char *fmt, va_list *args)
 					{
 					case 'x':
 					case 'X':
-						maxlen = print_byte(out, maxlen, (const uint8_t *)&li, (hexflags | lcount));
+						maxlen = prt_byte(out, maxlen, (const uint8_t *)&li, (hexflags | lcount));
 						break;
 					case 'M':
-						maxlen = print_ip(out, maxlen, li);
+						maxlen = prt_ip(out, maxlen, li);
 						break;
 					default:
 #endif
 						if (cval && (li < 0))
 						{
-							maxlen = print_putc(out, maxlen, '-');
+							maxlen = prt_putc(out, maxlen, '-');
 							li = -li;
 						}
 						li &= (0xffffffff >> ((4 - lcount) << 3));
-						maxlen = print_int(out, maxlen, (uint32_t)li, 0);
+						maxlen = prt_int(out, maxlen, (uint32_t)li, 0);
 #ifndef PRINT_FTM_MINIMAL
 						break;
 					}
 					if (elems && --elems)
 					{
-						maxlen = print_putc(out, maxlen, ',');
+						maxlen = prt_putc(out, maxlen, ',');
 					}
 					pt += (1 << lcount);
 				} while (elems);
@@ -375,53 +375,53 @@ size_t print_fmtva(void *out, size_t maxlen, const char *fmt, va_list *args)
 
 					case 'a':
 					case 'A':
-						maxlen = print_byte(out, maxlen, (const uint8_t *)f_ptr, (hexflags | VAR_DWORD));
+						maxlen = prt_byte(out, maxlen, (const uint8_t *)f_ptr, (hexflags | VAR_DWORD));
 						break;
 					default:
-						maxlen = print_flt(out, maxlen, *f_ptr++, precision);
+						maxlen = prt_flt(out, maxlen, *f_ptr++, precision);
 						break;
 					}
 #else
-					maxlen = print_flt(out, maxlen, *f_ptr++, precision);
+					maxlen = prt_flt(out, maxlen, *f_ptr++, precision);
 #endif
 					if (elems && --elems)
 					{
-						maxlen = print_putc(out, maxlen, ',');
+						maxlen = prt_putc(out, maxlen, ',');
 					}
 				} while (elems);
 				/* code */
 				break;
 			case '%':
-				maxlen = print_putc(out, maxlen, '%');
+				maxlen = prt_putc(out, maxlen, '%');
 				break;
 			default:
-				maxlen = print_putc(out, maxlen, '%');
-				maxlen = print_putc(out, maxlen, c);
+				maxlen = prt_putc(out, maxlen, '%');
+				maxlen = prt_putc(out, maxlen, c);
 				break;
 			}
 		}
 		else if (c)
 		{
-			maxlen = print_putc(out, maxlen, c);
+			maxlen = prt_putc(out, maxlen, c);
 		}
 	} while (c);
 
 	return maxlen;
 }
 
-size_t print_fmt(void *out, size_t maxlen, const char *fmt, ...)
+size_t prt_fmt(void *out, size_t maxlen, const char *fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
-	maxlen = print_fmtva(out, maxlen, fmt, &args);
+	maxlen = prt_fmtva(out, maxlen, fmt, &args);
 	va_end(args);
 	return maxlen;
 }
 
-#define atof_peek(cb, buffer) ((!buffer) ? ((print_getc_cb)cb)(true) : ((cb) ? ((print_read_rom_byte)cb)(*buffer) : **buffer))
-#define atof_get(cb, buffer) ((!buffer) ? ((print_getc_cb)cb)(false) : ({ *buffer += 1; 0; }))
+#define atof_peek(cb, buffer) ((!buffer) ? ((prt_getc_cb)cb)(true) : ((cb) ? ((prt_read_rom_byte)cb)(*buffer) : **buffer))
+#define atof_get(cb, buffer) ((!buffer) ? ((prt_getc_cb)cb)(false) : ({ *buffer += 1; 0; }))
 
-uint8_t print_atof(void *cb, const char **buffer, float *value)
+uint8_t prt_atof(void *cb, const char **buffer, float *value)
 {
 	uint32_t intval = 0;
 	uint8_t fpcount = 0;

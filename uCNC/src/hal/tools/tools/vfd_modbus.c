@@ -267,9 +267,9 @@ static bool modvfd_command(uint8_t *cmd, modbus_response_t *response)
 	}
 
 	vfd_state.connected = 0;
-	grbl_protocol_print(MSG_START);
-	grbl_protocol_print("VFD COMMUNICATION FAILED");
-	grbl_protocol_print(MSG_END);
+	proto_print(MSG_START);
+	proto_print("VFD COMMUNICATION FAILED");
+	proto_print(MSG_END);
 #ifdef VFD_HOLD_ON_ERROR
 	cnc_call_rt_command(CMD_CODE_FEED_HOLD);
 #endif
