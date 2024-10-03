@@ -1,5 +1,5 @@
 
-#include "src/cnc.h"
+#include "../../../cnc.h"
 
 #if (MCU == MCU_STM32F4X) && defined(CUSTOM_PRE_MAIN)
 #include "stm32f4xx.h"

@@ -52,7 +52,7 @@ extern "C"
 	 * */
 
 #ifndef BOARD
-#define BOARD "src/hal/boards/avr/boardmap_uno.h"
+#define BOARD "avr/boardmap_uno.h"
 #endif
 
 // optional name to override default board name build info (if option enabled)
