@@ -145,7 +145,7 @@ static void pid_update(void)
 	{
 		if (pid_compute(&spindle_pwm_pid, &output, output, get_speed(), HZ_TO_MS(SPINDLE_PWM_PID_SAMPLE_RATE_HZ)))
 		{
-			io_set_pwm(SPINDLE_PWM, range_speed((int16_t)output), 0);
+			io_set_pwm(SPINDLE_PWM, range_speed((int16_t)output, 0));
 		}
 	}
 }
