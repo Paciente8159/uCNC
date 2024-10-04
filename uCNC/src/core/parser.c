@@ -2597,7 +2597,7 @@ uint8_t parser_get_float(float *value)
 		return parser_get_expression(value);
 	}
 #endif
-	return prt_atof(parser_get_next_preprocessed, NULL, value);
+	return prt_atof((void*)parser_get_next_preprocessed, NULL, value);
 }
 
 static uint8_t parser_get_token(uint8_t *word, float *value)

@@ -249,8 +249,8 @@ WEAK_EVENT_HANDLER(proto_gcode_modes)
  * all other implementations can use the formated print helper
  */
 
-#define proto_itoa(value) prt_int(proto_putc, PRINT_CALLBACK, (uint32_t)(value), 0)
-#define proto_ftoa(value) prt_flt(proto_putc, PRINT_CALLBACK, (float)(value), ((!g_settings.report_inches) ? 3 : 5))
+#define proto_itoa(value) prt_int((void*)proto_putc, PRINT_CALLBACK, (uint32_t)(value), 0)
+#define proto_ftoa(value) prt_flt((void*)proto_putc, PRINT_CALLBACK, (float)(value), ((!g_settings.report_inches) ? 3 : 5))
 
 void proto_puts(const char *str)
 {
@@ -307,7 +307,7 @@ void proto_feedback_fmt(const char *fmt, ...)
 	va_start(args, fmt);
 	grbl_stream_start_broadcast();
 	proto_putc('[');
-	prt_fmtva(grbl_stream_putc, PRINT_CALLBACK, fmt, &args);
+	prt_fmtva((void*)grbl_stream_putc, PRINT_CALLBACK, fmt, &args);
 	proto_print(MSG_FEEDBACK_END);
 	va_end(args);
 }

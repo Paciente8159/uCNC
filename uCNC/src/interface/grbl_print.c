@@ -235,7 +235,7 @@ size_t prt_fmtva(void *out, size_t maxlen, const char *fmt, va_list *args)
 				if (c == '.' || (c >= '1' && c <= '9'))
 				{
 					fmt--;
-					cval = prt_atof(str_read_romchar, (const char **)&fmt, &f);
+					cval = prt_atof((void*)str_read_romchar, (const char **)&fmt, &f);
 					if (cval != ATOF_NUMBER_UNDEF)
 					{
 						elems = (uint8_t)f;
