@@ -67,9 +67,9 @@ void send_request(modbus_request_t request, uint8_t len, softuart_port_t *port)
 	proto_print(MSG_FEEDBACK_START "MODBUS-OUT");
 	for (uint8_t i = 0; i < len; i++)
 	{
-		serial_printf("%x", ((uint8_t *)&request)[i]);
+		proto_printf("%x", ((uint8_t *)&request)[i]);
 	}
-	serial_printf("%lx", request.crc);
+	proto_printf("%lx", request.crc);
 	proto_print(MSG_FEEDBACK_END);
 #endif
 

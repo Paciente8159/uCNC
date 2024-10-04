@@ -43,7 +43,7 @@ extern "C"
 // Debugging
 
 #define DEBUG_PUTC(c) DBGMSG("%c", c)
-#define DEBUG_STR(__s) DBGMSG(__s)
+#define DEBUG_STR(__s) DBGMSG("%s",__s)
 
 // Events
 
