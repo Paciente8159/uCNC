@@ -444,9 +444,10 @@ void system_menu_render(void)
 				// renders header
 				if (!item_index)
 				{
-					char buff[SYSTEM_MENU_MAX_STR_LEN];
-					rom_strcpy((char *)buff, (const char *)menu_page->page_label);
-					system_menu_render_header(buff);
+					char buffer[SYSTEM_MENU_MAX_STR_LEN];
+					memset(buffer, 0, sizeof(buffer));
+					rom_strcpy((char *)buffer, (const char *)menu_page->page_label);
+					system_menu_render_header(buffer);
 				}
 
 				if (g_system_menu.flags & SYSTEM_MENU_MODE_EDIT)
@@ -656,6 +657,7 @@ bool system_menu_action_rt_cmd(uint8_t action, system_menu_item_t *item)
 	{
 		cnc_call_rt_command((uint8_t)VARG_CONST(item->action_arg));
 		char buffer[SYSTEM_MENU_MAX_STR_LEN];
+		memset(buffer, 0, sizeof(buffer));
 		rom_strcpy((char *)buffer, __romstr__(STR_RT_CMD_SENT));
 		system_menu_show_modal_popup(SYSTEM_MENU_MODAL_POPUP_MS, buffer);
 		return true;
@@ -670,6 +672,7 @@ bool system_menu_action_serial_cmd(uint8_t action, system_menu_item_t *item)
 		if (grbl_stream_write_available() > 20)
 		{
 			char buffer[SYSTEM_MENU_MAX_STR_LEN];
+			memset(buffer, 0, sizeof(buffer));
 			if (system_menu_send_cmd((const char *)item->action_arg) == STATUS_OK)
 			{
 				rom_strcpy((char *)buffer, __romstr__(STR_CMD_SENT));
@@ -757,7 +760,7 @@ static bool system_menu_action_jog(uint8_t action, system_menu_item_t *item)
 		if (grbl_stream_write_available() > 32)
 		{
 			char buffer[SYSTEM_MENU_MAX_STR_LEN];
-			memset(buffer, 0, SYSTEM_MENU_MAX_STR_LEN);
+			memset(buffer, 0, sizeof(buffer));
 			rom_strcpy((char *)buffer, __romstr__("$J=G91"));
 			char *ptr = buffer;
 			// search for the end of string
@@ -800,7 +803,7 @@ static bool system_menu_action_jog(uint8_t action, system_menu_item_t *item)
 static bool system_menu_action_settings_cmd(uint8_t action, system_menu_item_t *item)
 {
 	char buffer[SYSTEM_MENU_MAX_STR_LEN];
-
+	memset(buffer, 0, sizeof(buffer));
 	if (action == SYSTEM_MENU_ACTION_SELECT)
 	{
 		uint8_t settings_action = (uint8_t)VARG_CONST(item->action_arg);
@@ -1191,6 +1194,7 @@ void system_menu_item_render_var_arg(uint8_t render_flags, system_menu_item_t *i
 {
 	uint8_t vartype = (uint8_t)VARG_CONST(item->render_arg);
 	char buffer[SYSTEM_MENU_MAX_STR_LEN];
+	memset(buffer, 0, sizeof(buffer));
 	char *buff_ptr = buffer;
 	switch (vartype)
 	{
@@ -1238,7 +1242,7 @@ static void system_menu_render_axis_position(uint8_t render_flags, system_menu_i
 		uint8_t axis_index = (axis_letter >= 'X') ? (axis_letter - 'X') : (3 + axis_letter - 'A');
 
 		char buffer[SYSTEM_MENU_MAX_STR_LEN];
-		memset(buffer, 0, SYSTEM_MENU_MAX_STR_LEN);
+		memset(buffer, 0, sizeof(buffer));
 		char *buff_ptr = buffer;
 		system_menu_flt_to_str(buff_ptr, axis[axis_index]);
 

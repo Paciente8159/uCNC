@@ -717,6 +717,7 @@ void fs_json_uploader()
 void system_menu_render_fs_item(uint8_t render_flags, system_menu_item_t *item)
 {
 	char buffer[SYSTEM_MENU_MAX_STR_LEN];
+	memset(buffer, 0, sizeof(buffer));
 
 	if (!fs_default_drive)
 	{
@@ -771,7 +772,7 @@ void system_menu_fs_render(uint8_t render_flags)
 	{
 		system_menu_render_header(fs_filename(&fs_sm_cwd));
 		char buffer[SYSTEM_MENU_MAX_STR_LEN];
-		memset(buffer, 0, SYSTEM_MENU_MAX_STR_LEN);
+		memset(buffer, 0, sizeof(buffer));
 		rom_strcpy(buffer, __romstr__(FS_STR_FILE_PREFIX FS_STR_SD_CONFIRM));
 		system_menu_item_render_label(render_flags, buffer);
 		system_menu_item_render_arg(render_flags, fs_filename(&fs_pointed_file));
@@ -789,7 +790,7 @@ void system_menu_fs_render(uint8_t render_flags)
 				if (system_menu_render_menu_item_filter(index))
 				{
 					char buffer[3];
-					memset(buffer, 0, 3);
+					memset(buffer, 0, sizeof(buffer));
 					buffer[0] = '/';
 					buffer[1] = drive->drive;
 					system_menu_item_render_label(render_flags | ((cur_index == index) ? SYSTEM_MENU_MODE_SELECT : 0), buffer);
@@ -819,7 +820,7 @@ void system_menu_fs_render(uint8_t render_flags)
 						if (system_menu_render_menu_item_filter(index))
 						{
 							char buffer[SYSTEM_MENU_MAX_STR_LEN];
-							memset(buffer, 0, SYSTEM_MENU_MAX_STR_LEN);
+							memset(buffer, 0, sizeof(buffer));
 							buffer[0] = (finfo.is_dir) ? '/' : ' ';
 							memcpy(&buffer[1], fs_filename(&finfo), MIN(SYSTEM_MENU_MAX_STR_LEN - 1, strlen(fs_filename(&finfo))));
 							system_menu_item_render_label(render_flags | ((cur_index == index) ? SYSTEM_MENU_MODE_SELECT : 0), buffer);
@@ -854,7 +855,7 @@ bool system_menu_fs_action(uint8_t action)
 	if (action == SYSTEM_MENU_ACTION_SELECT)
 	{
 		char buffer[SYSTEM_MENU_MAX_STR_LEN];
-
+		memset(buffer, 0, sizeof(buffer));
 		if (render_flags & SYSTEM_MENU_MODE_EDIT)
 		{
 			// file print or quit
