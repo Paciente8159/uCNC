@@ -321,7 +321,7 @@ size_t prt_fmtva(void *out, size_t maxlen, const char *fmt, va_list *args)
 					case 'X':
 						maxlen = prt_byte(out, maxlen, (const uint8_t *)&li, (hexflags | lcount));
 						break;
-					case 'M':
+					case 'I':
 						maxlen = prt_ip(out, maxlen, li);
 						break;
 					default:
