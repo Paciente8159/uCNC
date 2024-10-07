@@ -30,6 +30,8 @@ extern "C"
 #define KINEMATIC_DELTA 4
 #define KINEMATIC_SCARA 5
 
+#define KINEMATIC_6DOF_ARM 10
+
 #define COREXY_AXIS_XY 1
 #define COREXY_AXIS_XZ 2
 #define COREXY_AXIS_YZ 3

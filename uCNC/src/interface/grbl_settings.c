@@ -147,6 +147,13 @@ const settings_t __rom__ default_settings =
 				.scara_forearm_length = DEFAULT_SCARA_FOREARM_LENGTH,
 				.scara_arm_homing_angle = DEFAULT_SCARA_ARM_HOMING_ANGLE,
 				.scara_forearm_homing_angle = DEFAULT_SCARA_FOREARM_HOMING_ANGLE,
+#elif (KINEMATIC == KINEMATIC_6DOF_ARM)
+				.dof_a = {0.0f, 0.0f, 0.135f, 0.038f, 0.0f, 0.0f},
+				.dof_alpha = {0.0f, -M_PI / 2, 0.0f, -M_PI / 2, M_PI / 2, -M_PI / 2},
+				.dof_d = {0.135f, 0.0f, 0.0f, 0.120f, 0.0f, 0.070f},
+				.dof_theta_offset = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+				.dof_joint_min = {-170.0f, -120.0f, -170.0f, -120.0f, -170.0f, -120.0f},
+				.dof_joint_max = {170.0f, 120.0f, 170.0f, 120.0f, 170.0f, 120.0f},
 #endif
 
 #ifdef ENABLE_BACKLASH_COMPENSATION
@@ -227,6 +234,13 @@ const setting_id_t __rom__ g_settings_id_table[] = {
 		{.id = 107, .memptr = &g_settings.scara_forearm_length, .type = SETTING_TYPE(0)},
 		{.id = 28, .memptr = &g_settings.scara_arm_homing_angle, .type = SETTING_TYPE(0)},
 		{.id = 29, .memptr = &g_settings.scara_forearm_homing_angle, .type = SETTING_TYPE(0)},
+#elif (KINEMATIC == KINEMATIC_6DOF_ARM)
+		{.id = 150, .memptr = &g_settings.dof_a, .type = SETTING_TYPE(0) | SETTING_ARRAY | SETTING_ARRCNT(AXIS_TO_STEPPERS)},
+		{.id = 160, .memptr = &g_settings.dof_alpha, .type = SETTING_TYPE(0) | SETTING_ARRAY | SETTING_ARRCNT(AXIS_TO_STEPPERS)},
+		{.id = 170, .memptr = &g_settings.dof_d, .type = SETTING_TYPE(0) | SETTING_ARRAY | SETTING_ARRCNT(AXIS_TO_STEPPERS)},
+		{.id = 180, .memptr = &g_settings.dof_theta_offset, .type = SETTING_TYPE(0) | SETTING_ARRAY | SETTING_ARRCNT(AXIS_TO_STEPPERS)},
+		{.id = 190, .memptr = &g_settings.dof_joint_min, .type = SETTING_TYPE(0) | SETTING_ARRAY | SETTING_ARRCNT(AXIS_TO_STEPPERS)},
+		{.id = 200, .memptr = &g_settings.dof_joint_max, .type = SETTING_TYPE(0) | SETTING_ARRAY | SETTING_ARRCNT(AXIS_TO_STEPPERS)},
 #endif
 		{.id = 100, .memptr = &g_settings.step_per_mm, .type = SETTING_TYPE(0) | SETTING_ARRAY | SETTING_ARRCNT(STEPPER_COUNT)},
 		{.id = 110, .memptr = &g_settings.max_feed_rate, .type = SETTING_TYPE(0) | SETTING_ARRAY | SETTING_ARRCNT(STEPPER_COUNT)},
@@ -401,7 +415,7 @@ void settings_reset(bool erase_startup_blocks)
 
 void settings_save(uint16_t address, uint8_t *__ptr, uint16_t size)
 {
-	DBGMSG("EEPROM save @ %u",address);
+	DBGMSG("EEPROM save @ %u", address);
 
 	if (address == UINT16_MAX)
 	{
