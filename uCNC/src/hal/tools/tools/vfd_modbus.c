@@ -267,9 +267,7 @@ static bool modvfd_command(uint8_t *cmd, modbus_response_t *response)
 	}
 
 	vfd_state.connected = 0;
-	protocol_send_string(MSG_START);
-	protocol_send_string(__romstr__("VFD COMMUNICATION FAILED"));
-	protocol_send_string(MSG_END);
+	proto_feedback("VFD COMMUNICATION FAILED");
 #ifdef VFD_HOLD_ON_ERROR
 	cnc_call_rt_command(CMD_CODE_FEED_HOLD);
 #endif

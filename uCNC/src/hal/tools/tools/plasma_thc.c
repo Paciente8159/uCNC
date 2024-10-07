@@ -19,7 +19,7 @@
 #include <math.h>
 #include <float.h>
 #include <stdint.h>
-#include <stdio.h>
+
 
 #include "../../../cnc.h"
 
@@ -428,57 +428,57 @@ static void pid_update(void)
 }
 
 // uses similar status to grblhal
-bool plasma_protocol_send_status(void *args)
+bool plasma_proto_status(void *args)
 {
 	uint8_t state = plasma_thc_state;
 
-	protocol_send_string(__romstr__("THC:"));
+	proto_print("THC:");
 
 	plasma_thc_extension_send_status();
 
 	if (CHECKFLAG(state, PLASMA_THC_ENABLED))
 	{
-		serial_putc('E');
+		proto_putc('E');
 	}
 	else
 	{
-		serial_putc('*');
+		proto_putc('*');
 	}
 	if (CHECKFLAG(state, PLASMA_THC_ACTIVE))
 	{
-		serial_putc('R');
+		proto_putc('R');
 	}
 #if ASSERT_PIN(PLASMA_ON_OUTPUT)
 	if (io_get_output(PLASMA_ON_OUTPUT))
 	{
-		serial_putc('T');
+		proto_putc('T');
 	}
 #endif
 	if (plasma_thc_arc_ok())
 	{
-		serial_putc('A');
+		proto_putc('A');
 	}
 	if (plasma_thc_vad_active())
 	{
-		serial_putc('V');
+		proto_putc('V');
 	}
 	if (plasma_thc_up())
 	{
-		serial_putc('U');
+		proto_putc('U');
 	}
 	if (plasma_thc_down())
 	{
-		serial_putc('D');
+		proto_putc('D');
 	}
 
 	return EVENT_CONTINUE;
 }
 
-CREATE_EVENT_LISTENER(protocol_send_status, plasma_protocol_send_status);
+CREATE_EVENT_LISTENER(proto_status, plasma_proto_status);
 
 DECL_MODULE(plasma_thc)
 {
-	ADD_EVENT_LISTENER(protocol_send_status, plasma_protocol_send_status);
+	ADD_EVENT_LISTENER(proto_status, plasma_proto_status);
 #ifdef ENABLE_PARSER_MODULES
 	ADD_EVENT_LISTENER(gcode_parse, m103_parse);
 	ADD_EVENT_LISTENER(gcode_exec, m103_exec);

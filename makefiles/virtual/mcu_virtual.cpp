@@ -16,7 +16,7 @@
 	See the	GNU General Public License for more details.
 */
 #include "../../uCNC/src/cnc.h"
-#if (BOARD == BOARD_VIRTUAL)
+#if (MCU == MCU_VIRTUAL_WIN)
 
 #ifdef __cplusplus
 extern "C"

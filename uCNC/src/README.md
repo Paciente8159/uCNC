@@ -56,11 +56,11 @@ __NOTE__: Not all event hooks might be listed here. To find all available event 
 | settings_load | settings_args_t* | ENABLE_SETTINGS_MODULES | Fires when settings are loaded from memory. Arg is a pointer to a settings_args_t struct |
 | settings_save | settings_args_t* | ENABLE_SETTINGS_MODULES | Fires when settings are saved into memory. Arg is a pointer to a settings_args_t struct |
 | settings_erase | settings_args_t* | ENABLE_SETTINGS_MODULES | Fires when settings are erased/reset. Arg is a pointer to a settings_args_t struct |
-| protocol_send_status | NULL | - | Fires when printing the status message |
-| protocol_send_cnc_settings | NULL | ENABLE_SETTINGS_MODULES | Fires when printing settings values |
-| protocol_send_cnc_info | NULL | ENABLE_SYSTEM_INFO | Fires when printing response to $I command |
-| protocol_send_pins_states | NULL | ENABLE_IO_MODULES | Fires when $P command is printing the pins states |
-| protocol_send_gcode_modes | NULL | ENABLE_PARSER_MODULES | Fires when $G printing modals states message |
+| proto_status | NULL | - | Fires when printing the status message |
+| proto_cnc_settings | NULL | ENABLE_SETTINGS_MODULES | Fires when printing settings values |
+| proto_cnc_info | NULL | ENABLE_SYSTEM_INFO | Fires when printing response to $I command |
+| proto_pins_states | NULL | ENABLE_IO_MODULES | Fires when $P command is printing the pins states |
+| proto_gcode_modes | NULL | ENABLE_PARSER_MODULES | Fires when $G printing modals states message |
 | input_change | uint8_t* | ENABLE_IO_MODULES | Fires when a generic input (DIN0-7) pin changes state. Args is an uint8_t array with 2 values. The first is the inputs current values mask and the second a maks with the inputs that changed since the last time |
 | probe_enable | NULL | ENABLE_IO_MODULES | Fires when the probe is enabled |
 | probe_disable | NULL | ENABLE_IO_MODULES | Fires when the probe is disabled |
@@ -344,12 +344,12 @@ void cnc_alarm(int8_t code)
 	cnc_stop();
 	cnc_state.alarm = code;
 #ifdef ENABLE_IO_ALARM_DEBUG
-	protocol_send_string(MSG_START);
-	protocol_send_string(__romstr__("LIMITS:"));
-	serial_print_int(io_alarm_limits);
-	protocol_send_string(__romstr__("|CONTROLS:"));
-	serial_print_int(io_alarm_controls);
-	protocol_send_string(MSG_END);
+	proto_print(MSG_FEEDBACK_START);
+	proto_print(__romstr__("LIMITS:"));
+	proto_print_int(io_alarm_limits);
+	proto_print(__romstr__("|CONTROLS:"));
+	proto_print_int(io_alarm_controls);
+	proto_print(MSG_FEEDBACK_END);
 #endif
 
 	// we add our callback here

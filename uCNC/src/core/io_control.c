@@ -396,7 +396,7 @@ void io_enable_probe(void)
 #ifdef ENABLE_IO_MODULES
 	EVENT_INVOKE(probe_enable, NULL);
 #endif
-#ifndef FORCE_SOFT_POLLING
+#if !defined(FORCE_SOFT_POLLING) && defined(PROBE_ISR)
 	mcu_enable_probe_isr();
 #endif
 	io_probe_enabled = true;
@@ -407,7 +407,7 @@ void io_disable_probe(void)
 {
 #if ASSERT_PIN(PROBE)
 	io_probe_enabled = false;
-#ifndef FORCE_SOFT_POLLING
+#if !defined(FORCE_SOFT_POLLING) && defined(PROBE_ISR)
 	mcu_disable_probe_isr();
 #endif
 #ifdef ENABLE_IO_MODULES

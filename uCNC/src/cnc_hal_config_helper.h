@@ -196,6 +196,14 @@ extern "C"
 
 #ifdef ENABLE_RT_PROBE_CHECKING
 #undef PROBE_ISR
+#ifdef mcu_enable_probe_isr
+#undef mcu_enable_probe_isr
+#define mcu_enable_probe_isr()
+#endif
+#ifdef mcu_disable_probe_isr
+#undef mcu_disable_probe_isr
+#define mcu_disable_probe_isr()
+#endif
 #endif
 
 #ifdef ENABLE_RT_LIMITS_CHECKING

@@ -20,6 +20,7 @@
 #include "file_system.h"
 #include "endpoint.h"
 #include "system_menu.h"
+#include <string.h>
 
 // file system entry point
 fs_t *fs_default_drive;
@@ -291,24 +292,24 @@ static void fs_dir_list(void)
 	// if current working directory not initialized
 	if (!strlen(fs_cwd.full_name))
 	{
-		protocol_send_string(__romstr__("Available drives"));
-		protocol_send_string(MSG_EOL);
+		proto_print("Available drives");
+		proto_print(MSG_EOL);
 		fs_t *drive = fs_default_drive;
 		while (drive)
 		{
-			protocol_send_string(__romstr__("<drive>\t"));
-			serial_putc('/');
-			serial_putc(drive->drive);
-			protocol_send_string(MSG_EOL);
+			proto_print("<drive>\t");
+			proto_putc('/');
+			proto_putc(drive->drive);
+			proto_print(MSG_EOL);
 			drive = drive->next;
 		}
 		return;
 	}
 
 	// current dir
-	protocol_send_string(__romstr__("Index of /"));
-	serial_print_str(fs_filename(&fs_cwd));
-	protocol_send_string(MSG_EOL);
+	proto_print("Index of /");
+	proto_printf("%s", fs_filename(&fs_cwd));
+	proto_print(MSG_EOL);
 
 	fs_file_t *dir = fs_opendir(fs_cwd.full_name);
 
@@ -319,15 +320,15 @@ static void fs_dir_list(void)
 		{
 			if (finfo.is_dir)
 			{ /* It is a directory */
-				protocol_send_string(__romstr__("<dir>\t"));
+				proto_print("<dir>\t");
 			}
 			else
 			{ /* It is a file. */
-				protocol_send_string(__romstr__("     \t"));
+				proto_print("     \t");
 			}
 
-			serial_print_str(fs_filename(&finfo));
-			protocol_send_string(MSG_EOL);
+			proto_printf("%s", fs_filename(&finfo));
+			proto_print(MSG_EOL);
 		}
 
 		fs_close(dir);
@@ -341,24 +342,20 @@ void fs_cd(char *params)
 	{
 		if (dir->file_info.is_dir)
 		{
-			serial_print_str(fs_cwd.full_name);
-			serial_putc(' ');
-			serial_putc('>');
+			proto_printf("%s >", fs_cwd.full_name);
 		}
 		else
 		{
-			serial_print_str(params);
-			protocol_send_feedback(__romstr__(" is not a dir!"));
+			proto_printf("%s  is not a dir!", params);
 		}
 		fs_close(dir);
 	}
 	else if (strlen(fs_cwd.full_name))
 	{
-		serial_print_str(params);
-		protocol_send_feedback(__romstr__("Dir not found!"));
+		proto_printf("%s dir not found!", params);
 	}
 
-	protocol_send_string(MSG_EOL);
+	proto_print(MSG_EOL);
 }
 
 void fs_file_print(char *params)
@@ -372,22 +369,22 @@ void fs_file_print(char *params)
 			/* Read the data */
 			if (!fs_read(fp, (uint8_t *)&c, sizeof(char)))
 			{
-				protocol_send_feedback(__romstr__("File read error!"));
+				proto_info("File read error!");
 				break;
 			}
-			serial_putc(c);
+			proto_putc(c);
 		}
 
 		fs_close(fp);
-		protocol_send_feedback(__romstr__("File ended"));
+		proto_info("File ended");
 		return;
 	}
 	else
 	{
-		protocol_send_feedback(__romstr__("File not found!"));
+		proto_info("File not found!");
 	}
 
-	protocol_send_string(MSG_EOL);
+	proto_print(MSG_EOL);
 }
 
 void fs_file_run(char *params)
@@ -411,10 +408,7 @@ void fs_file_run(char *params)
 	if (fp)
 	{
 		startline = MAX(1, startline);
-		protocol_send_string(MSG_START);
-		protocol_send_string(__romstr__("Running file from line - "));
-		serial_print_int(startline);
-		protocol_send_string(MSG_END);
+		proto_info("Running file from line - %lu", startline);
 #ifdef DECL_SERIAL_STREAM
 #ifdef ENABLE_MAIN_LOOP_MODULES
 		// prefill buffer
@@ -437,7 +431,7 @@ void fs_file_run(char *params)
 		return;
 	}
 
-	protocol_send_feedback(__romstr__("File read error!"));
+	proto_info("File read error!");
 }
 
 /**
@@ -524,7 +518,7 @@ void fs_json_api(void)
 		while (ptr)
 		{
 			memset(path, 0, sizeof(path));
-			snprintf(path, 32, "{\"type\":\"drive\",\"name\":\"%c\"}", ptr->drive);
+			str_snprintf(path, 32, "{\"type\":\"drive\",\"name\":\"%c\"}", ptr->drive);
 			ptr = ptr->next;
 			if (ptr)
 			{
@@ -596,7 +590,7 @@ void fs_file_json_api()
 		{
 			endpoint_send_header("Location", args, true);
 			memset(urlpath, 0, sizeof(urlpath));
-			snprintf(urlpath, 256, "{\"redirect\":\"%s\"}", args);
+			str_snprintf(urlpath, 256, "{\"redirect\":\"%s\"}", args);
 			endpoint_send_str(303, "application/json", urlpath);
 		}
 		else
@@ -625,11 +619,11 @@ void fs_file_json_api()
 					memset(urlpath, 0, 256);
 					if (child.is_dir)
 					{
-						snprintf(urlpath, 256, "{\"type\":\"dir\",\"name\":\"%s\",\"attr\":%d}", fs_filename(&child), 0);
+						str_snprintf(urlpath, 256, "{\"type\":\"dir\",\"name\":\"%s\",\"attr\":%d}", fs_filename(&child), 0);
 					}
 					else
 					{
-						snprintf(urlpath, 256, "{\"type\":\"file\",\"name\":\"%s\",\"attr\":0,\"size\":%d,\"date\":0}", fs_filename(&child), child.size);
+						str_snprintf(urlpath, 256, "{\"type\":\"file\",\"name\":\"%s\",\"attr\":0,\"size\":%d,\"date\":0}", fs_filename(&child), child.size);
 					}
 
 					has_child = fs_next_file(file, &child);
@@ -723,6 +717,7 @@ void fs_json_uploader()
 void system_menu_render_fs_item(uint8_t render_flags, system_menu_item_t *item)
 {
 	char buffer[SYSTEM_MENU_MAX_STR_LEN];
+	memset(buffer, 0, sizeof(buffer));
 
 	if (!fs_default_drive)
 	{
@@ -777,7 +772,7 @@ void system_menu_fs_render(uint8_t render_flags)
 	{
 		system_menu_render_header(fs_filename(&fs_sm_cwd));
 		char buffer[SYSTEM_MENU_MAX_STR_LEN];
-		memset(buffer, 0, SYSTEM_MENU_MAX_STR_LEN);
+		memset(buffer, 0, sizeof(buffer));
 		rom_strcpy(buffer, __romstr__(FS_STR_FILE_PREFIX FS_STR_SD_CONFIRM));
 		system_menu_item_render_label(render_flags, buffer);
 		system_menu_item_render_arg(render_flags, fs_filename(&fs_pointed_file));
@@ -795,7 +790,7 @@ void system_menu_fs_render(uint8_t render_flags)
 				if (system_menu_render_menu_item_filter(index))
 				{
 					char buffer[3];
-					memset(buffer, 0, 3);
+					memset(buffer, 0, sizeof(buffer));
 					buffer[0] = '/';
 					buffer[1] = drive->drive;
 					system_menu_item_render_label(render_flags | ((cur_index == index) ? SYSTEM_MENU_MODE_SELECT : 0), buffer);
@@ -825,7 +820,7 @@ void system_menu_fs_render(uint8_t render_flags)
 						if (system_menu_render_menu_item_filter(index))
 						{
 							char buffer[SYSTEM_MENU_MAX_STR_LEN];
-							memset(buffer, 0, SYSTEM_MENU_MAX_STR_LEN);
+							memset(buffer, 0, sizeof(buffer));
 							buffer[0] = (finfo.is_dir) ? '/' : ' ';
 							memcpy(&buffer[1], fs_filename(&finfo), MIN(SYSTEM_MENU_MAX_STR_LEN - 1, strlen(fs_filename(&finfo))));
 							system_menu_item_render_label(render_flags | ((cur_index == index) ? SYSTEM_MENU_MODE_SELECT : 0), buffer);
@@ -860,7 +855,7 @@ bool system_menu_fs_action(uint8_t action)
 	if (action == SYSTEM_MENU_ACTION_SELECT)
 	{
 		char buffer[SYSTEM_MENU_MAX_STR_LEN];
-
+		memset(buffer, 0, sizeof(buffer));
 		if (render_flags & SYSTEM_MENU_MODE_EDIT)
 		{
 			// file print or quit
@@ -876,11 +871,11 @@ bool system_menu_fs_action(uint8_t action)
 				fs_running_file = fs_path_parse(&fs_sm_cwd, fs_filename(&fs_pointed_file), "r");
 				if (fs_running_file)
 				{
-					protocol_send_feedback(FS_STR_FILE_RUNNING);
+					proto_feedback(FS_STR_FILE_RUNNING);
 					system_menu_go_idle();
 					rom_strcpy(buffer, __romstr__(FS_STR_FILE_RUNNING));
 					system_menu_show_modal_popup(SYSTEM_MENU_MODAL_POPUP_MS, buffer);
-					serial_stream_readonly(&running_file_getc, &running_file_available, &running_file_clear);
+					grbl_stream_readonly(&running_file_getc, &running_file_available, &running_file_clear);
 				}
 				else
 				{

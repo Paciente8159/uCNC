@@ -1,21 +1,10 @@
 /*
-	Name: serial.c
-	Description: Serial communication basic read/write functions µCNC.
-	The serial has been completelly redesigned to allow multiple stream sources of code.
-	Streams are prority based.
-	Priority is as follows
-	UART
-	UART2
-	USB
-	WIFI
-	BT
-	Others
-
-
+	Name: grbl_stream.h
+	Description: Grbl communication stream for µCNC.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
-	Date: 07-10-2023
+	Date: 19/09/2024
 
 	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -30,61 +19,120 @@
 #include <math.h>
 #include "../cnc.h"
 
-static stream_getc_cb stream_getc;
-static stream_available_cb stream_available;
-static stream_clear_cb stream_clear;
+static grbl_stream_getc_cb stream_getc;
+static grbl_stream_available_cb stream_available;
+static grbl_stream_clear_cb stream_clear;
+
+static FORCEINLINE void grbl_stream_flush(void);
+
+#ifdef ENABLE_DEBUG_STREAM
+#ifndef DEBUG_TX_BUFFER_SIZE
+#define DEBUG_TX_BUFFER_SIZE 250
+#endif
+DECL_BUFFER(uint8_t, debug_tx, DEBUG_TX_BUFFER_SIZE);
+static volatile uint8_t debug_tx_lines;
+#endif
 
 #ifndef DISABLE_MULTISTREAM_SERIAL
-serial_stream_t *default_stream;
-static serial_stream_t *current_stream;
+grbl_stream_t *default_stream;
+static grbl_stream_t *current_stream;
 
 #if defined(MCU_HAS_UART) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
-DECL_SERIAL_STREAM(uart_serial_stream, mcu_uart_getc, mcu_uart_available, mcu_uart_clear, mcu_uart_putc, mcu_uart_flush);
+DECL_GRBL_STREAM(uart_grbl_stream, mcu_uart_getc, mcu_uart_available, mcu_uart_clear, mcu_uart_putc, mcu_uart_flush);
 #endif
 #if defined(MCU_HAS_UART2) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
-DECL_SERIAL_STREAM(uart2_serial_stream, mcu_uart2_getc, mcu_uart2_available, mcu_uart2_clear, mcu_uart2_putc, mcu_uart2_flush);
+DECL_GRBL_STREAM(uart2_grbl_stream, mcu_uart2_getc, mcu_uart2_available, mcu_uart2_clear, mcu_uart2_putc, mcu_uart2_flush);
 #endif
 #if defined(MCU_HAS_USB) && !defined(DETACH_USB_FROM_MAIN_PROTOCOL)
-DECL_SERIAL_STREAM(usb_serial_stream, mcu_usb_getc, mcu_usb_available, mcu_usb_clear, mcu_usb_putc, mcu_usb_flush);
+DECL_GRBL_STREAM(usb_grbl_stream, mcu_usb_getc, mcu_usb_available, mcu_usb_clear, mcu_usb_putc, mcu_usb_flush);
 #endif
 #if defined(MCU_HAS_WIFI) && !defined(DETACH_WIFI_FROM_MAIN_PROTOCOL)
-DECL_SERIAL_STREAM(wifi_serial_stream, mcu_wifi_getc, mcu_wifi_available, mcu_wifi_clear, mcu_wifi_putc, mcu_wifi_flush);
+DECL_GRBL_STREAM(wifi_grbl_stream, mcu_wifi_getc, mcu_wifi_available, mcu_wifi_clear, mcu_wifi_putc, mcu_wifi_flush);
 #endif
 #if defined(MCU_HAS_BLUETOOTH) && !defined(DETACH_BLUETOOTH_FROM_MAIN_PROTOCOL)
-DECL_SERIAL_STREAM(bt_serial_stream, mcu_bt_getc, mcu_bt_available, mcu_bt_clear, mcu_bt_putc, mcu_bt_flush);
+DECL_GRBL_STREAM(bt_grbl_stream, mcu_bt_getc, mcu_bt_available, mcu_bt_clear, mcu_bt_putc, mcu_bt_flush);
 #endif
 #endif
 
-static uint8_t serial_peek_buffer;
+static uint8_t grbl_stream_peek_buffer;
 
-void serial_init(void)
+void grbl_stream_init(void)
 {
 #ifdef FORCE_GLOBALS_TO_0
 	default_stream = NULL;
 #endif
 #ifndef DISABLE_MULTISTREAM_SERIAL
 #if defined(MCU_HAS_UART) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
-	serial_stream_register(&uart_serial_stream);
+	grbl_stream_register(&uart_grbl_stream);
 #endif
 #if defined(MCU_HAS_UART2) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
-	serial_stream_register(&uart2_serial_stream);
+	grbl_stream_register(&uart2_grbl_stream);
 #endif
 #if defined(MCU_HAS_USB) && !defined(DETACH_USB_FROM_MAIN_PROTOCOL)
-	serial_stream_register(&usb_serial_stream);
+	grbl_stream_register(&usb_grbl_stream);
 #endif
 #if defined(MCU_HAS_WIFI) && !defined(DETACH_WIFI_FROM_MAIN_PROTOCOL)
-	serial_stream_register(&wifi_serial_stream);
+	grbl_stream_register(&wifi_grbl_stream);
 #endif
 #if defined(MCU_HAS_BLUETOOTH) && !defined(DETACH_BLUETOOTH_FROM_MAIN_PROTOCOL)
-	serial_stream_register(&bt_serial_stream);
+	grbl_stream_register(&bt_grbl_stream);
 #endif
 #endif
 
-	serial_stream_change(NULL);
+	grbl_stream_change(NULL);
+
+#ifdef ENABLE_DEBUG_STREAM
+	BUFFER_INIT(uint8_t, debug_tx, DEBUG_TX_BUFFER_SIZE);
+#endif
 }
 
+#ifdef ENABLE_DEBUG_STREAM
+static void debug_flush(void)
+{
+	while (grbl_stream_busy())
+	{
+		return;
+	}
+	while (debug_tx_lines)
+	{
+		uint8_t c;
+		BUFFER_DEQUEUE(debug_tx, &c);
+		DEBUG_STREAM->stream_putc(c);
+		if (c == '\n')
+		{
+			DEBUG_STREAM->stream_flush();
+			debug_tx_lines--;
+		}
+	}
+}
+
+static void FORCEINLINE debug_putc(char c)
+{
+	if (BUFFER_FULL(debug_tx))
+	{
+		BUFFER_CLEAR(debug_tx);
+		rom_strcpy((char*)debug_tx_bufferdata, __romstr__("Debug buffer overflow!\0"));
+		debug_tx.count = strlen((char*)debug_tx_bufferdata);
+	}
+
+	BUFFER_ENQUEUE(debug_tx, &c);
+	if(c == '\n'){
+		debug_tx_lines++;
+		debug_flush();
+	}
+}
+
+void debug_printf(const char *fmt, ...)
+{
+	va_list args;
+	va_start(args, fmt);
+	prt_fmtva(debug_putc, PRINT_CALLBACK, fmt, &args);
+	va_end(args);
+}
+#endif
+
 #ifndef DISABLE_MULTISTREAM_SERIAL
-void serial_stream_register(serial_stream_t *stream)
+void grbl_stream_register(grbl_stream_t *stream)
 {
 	if (default_stream == NULL)
 	{
@@ -93,7 +141,7 @@ void serial_stream_register(serial_stream_t *stream)
 	}
 	else
 	{
-		serial_stream_t *p = default_stream;
+		grbl_stream_t *p = default_stream;
 		while (p->next != NULL)
 		{
 			p = p->next;
@@ -113,21 +161,21 @@ void stream_stdin(uint8_t *p)
 #endif
 
 #ifdef ENABLE_MULTISTREAM_GUARD
-static bool serial_rx_busy;
+static bool grbl_stream_rx_busy;
 #endif
 
-bool serial_stream_change(serial_stream_t *stream)
+bool grbl_stream_change(grbl_stream_t *stream)
 {
 #ifndef DISABLE_MULTISTREAM_SERIAL
 	uint8_t cleanup __attribute__((__cleanup__(stream_stdin))) = 0;
 
 #ifdef ENABLE_MULTISTREAM_GUARD
-	if (serial_rx_busy)
+	if (grbl_stream_rx_busy)
 	{
 		return false;
 	}
 #endif
-	serial_peek_buffer = 0;
+	grbl_stream_peek_buffer = 0;
 	if (stream != NULL)
 	{
 		current_stream = stream;
@@ -144,10 +192,10 @@ bool serial_stream_change(serial_stream_t *stream)
 	return true;
 }
 
-bool serial_stream_readonly(stream_getc_cb getc_cb, stream_available_cb available_cb, stream_clear_cb clear_cb)
+bool grbl_stream_readonly(grbl_stream_getc_cb getc_cb, grbl_stream_available_cb available_cb, grbl_stream_clear_cb clear_cb)
 {
 #ifdef ENABLE_MULTISTREAM_GUARD
-	if (serial_rx_busy)
+	if (grbl_stream_rx_busy)
 	{
 		return false;
 	}
@@ -163,35 +211,35 @@ static uint16_t stream_eeprom_address;
 static uint8_t stream_eeprom_getc(void)
 {
 	uint8_t c = mcu_eeprom_getc(stream_eeprom_address++);
-	serial_putc((c != EOL) ? c : ':');
+	grbl_stream_putc((c != EOL) ? c : ':');
 	return c;
 }
 
-void serial_stream_eeprom(uint16_t address)
+void grbl_stream_eeprom(uint16_t address)
 {
 	stream_eeprom_address = address;
-	serial_stream_readonly(&stream_eeprom_getc, NULL, NULL);
+	grbl_stream_readonly(&stream_eeprom_getc, NULL, NULL);
 }
 
-char serial_getc(void)
+char grbl_stream_getc(void)
 {
-	uint8_t peek = serial_peek();
+	uint8_t peek = grbl_stream_peek();
 #ifdef ENABLE_MULTISTREAM_GUARD
-	serial_rx_busy = (peek != EOL);
+	grbl_stream_rx_busy = (peek != EOL);
 #endif
-	serial_peek_buffer = 0;
+	grbl_stream_peek_buffer = 0;
 	return peek;
 }
 
-static FORCEINLINE char _serial_peek(void)
+static FORCEINLINE char _grbl_stream_peek(void)
 {
-	char peek = serial_peek_buffer;
+	char peek = grbl_stream_peek_buffer;
 	if (peek)
 	{
 		return peek;
 	}
 
-	while (!serial_available())
+	while (!grbl_stream_available())
 	{
 		cnc_dotasks();
 	}
@@ -209,13 +257,13 @@ static FORCEINLINE char _serial_peek(void)
 	{
 		peek = '\n';
 	}
-	serial_peek_buffer = peek;
+	grbl_stream_peek_buffer = peek;
 	return peek;
 }
 
-char serial_peek(void)
+char grbl_stream_peek(void)
 {
-	uint8_t peek = _serial_peek();
+	uint8_t peek = _grbl_stream_peek();
 	switch (peek)
 	{
 	case '\n':
@@ -228,7 +276,7 @@ char serial_peek(void)
 	return peek;
 }
 
-uint8_t serial_available(void)
+uint8_t grbl_stream_available(void)
 {
 	if (stream_available == NULL)
 	{
@@ -241,12 +289,12 @@ uint8_t serial_available(void)
 	if (!count)
 	{
 #ifdef ENABLE_MULTISTREAM_GUARD
-		if (serial_rx_busy)
+		if (grbl_stream_rx_busy)
 		{
 			return count;
 		}
 #endif
-		serial_stream_t *p = default_stream;
+		grbl_stream_t *p = default_stream;
 		while (p != NULL)
 		{
 #ifdef ENABLE_DEBUG_STREAM
@@ -257,7 +305,7 @@ uint8_t serial_available(void)
 				count = (!(p->stream_available)) ? 0 : p->stream_available();
 				if (count)
 				{
-					serial_stream_change(p);
+					grbl_stream_change(p);
 					return count;
 				}
 #ifdef ENABLE_DEBUG_STREAM
@@ -272,12 +320,12 @@ uint8_t serial_available(void)
 #endif
 }
 
-uint8_t serial_freebytes(void)
+uint8_t grbl_stream_write_available(void)
 {
-	return (RX_BUFFER_SIZE - serial_available());
+	return (RX_BUFFER_SIZE - grbl_stream_available());
 }
 
-void serial_clear(void)
+void grbl_stream_clear(void)
 {
 #ifndef DISABLE_MULTISTREAM_SERIAL
 	if (stream_clear)
@@ -290,21 +338,21 @@ void serial_clear(void)
 }
 
 #ifndef DISABLE_MULTISTREAM_SERIAL
-static bool serial_broadcast_enabled;
+static bool grbl_stream_broadcast_enabled;
 #endif
-void serial_broadcast(bool enable)
+void grbl_stream_start_broadcast(void)
 {
 #ifndef DISABLE_MULTISTREAM_SERIAL
-	serial_broadcast_enabled = enable;
+	grbl_stream_broadcast_enabled = true;
 #endif
 }
 
-static uint8_t serial_tx_count;
-void serial_putc(char c)
+static uint8_t grbl_stream_tx_count;
+void grbl_stream_putc(char c)
 {
-	serial_tx_count++;
+	grbl_stream_tx_count++;
 #ifndef DISABLE_MULTISTREAM_SERIAL
-	if (!serial_broadcast_enabled)
+	if (!grbl_stream_broadcast_enabled)
 	{
 		if (current_stream->stream_putc)
 		{
@@ -313,7 +361,7 @@ void serial_putc(char c)
 	}
 	else
 	{
-		serial_stream_t *p = default_stream;
+		grbl_stream_t *p = default_stream;
 		while (p)
 		{
 			if (p->stream_putc)
@@ -329,33 +377,32 @@ void serial_putc(char c)
 
 	if (c == '\n')
 	{
-		serial_tx_count = 0;
-		serial_flush();
+		grbl_stream_tx_count = 0;
+		grbl_stream_flush();
+#ifndef DISABLE_MULTISTREAM_SERIAL
+		grbl_stream_broadcast_enabled = false;
+#endif
+#ifdef ENABLE_DEBUG_STREAM
+		debug_flush();
+#endif
 	}
 #if ASSERT_PIN(ACTIVITY_LED)
 	io_toggle_output(ACTIVITY_LED);
 #endif
 }
 
-#ifdef ENABLE_DEBUG_STREAM
-void debug_putc(char c)
+void grbl_stream_printf(const char *fmt, ...)
 {
-	if (DEBUG_STREAM)
-	{
-		DEBUG_STREAM->stream_putc(c);
-
-		if (c == '\n')
-		{
-			DEBUG_STREAM->stream_flush();
-		}
-	}
+	va_list args;
+	va_start(args, fmt);
+	prt_fmtva((void*)grbl_stream_putc, PRINT_CALLBACK, fmt, &args);
+	va_end(args);
 }
-#endif
 
-void serial_flush(void)
+void grbl_stream_flush(void)
 {
 #ifndef DISABLE_MULTISTREAM_SERIAL
-	if (!serial_broadcast_enabled)
+	if (!grbl_stream_broadcast_enabled)
 	{
 		if (current_stream->stream_flush)
 		{
@@ -364,7 +411,7 @@ void serial_flush(void)
 	}
 	else
 	{
-		serial_stream_t *p = default_stream;
+		grbl_stream_t *p = default_stream;
 		while (p)
 		{
 			if (p->stream_flush)
@@ -379,148 +426,13 @@ void serial_flush(void)
 #endif
 }
 
-uint8_t serial_tx_busy(void)
+uint8_t grbl_stream_busy(void)
 {
-	return serial_tx_count;
+	return grbl_stream_tx_count;
 }
 
-void print_str(print_cb cb, const char *__s)
+void grbl_stream_print_cb(void *arg, char c)
 {
-	while (*__s)
-	{
-		cb(*__s++);
-	}
+	grbl_stream_putc(c);
 }
 
-void print_bytes(print_cb cb, const uint8_t *data, uint8_t count)
-{
-	do
-	{
-		cb(' ');
-		uint8_t up = *data >> 4;
-		uint8_t c = (up > 9) ? ('a' + up - 10) : ('0' + up);
-		cb(c);
-		up = *data & 0x0F;
-		c = (up > 9) ? ('a' + up - 10) : ('0' + up);
-		cb(c);
-		data++;
-	} while (--count);
-}
-
-void print_int(print_cb cb, int32_t num)
-{
-	if (num == 0)
-	{
-		cb('0');
-		return;
-	}
-
-	uint8_t buffer[11];
-	uint8_t i = 0;
-
-	if (num < 0)
-	{
-		cb('-');
-		num = -num;
-	}
-
-	while (num > 0)
-	{
-		uint8_t digit = num % 10;
-		num = (uint32_t)truncf((float)num * 0.1f);
-		buffer[i++] = digit;
-	}
-
-	do
-	{
-		i--;
-		cb('0' + buffer[i]);
-	} while (i);
-}
-
-void print_flt(print_cb cb, float num)
-{
-	if (num < 0)
-	{
-		cb('-');
-		num = -num;
-	}
-
-	uint32_t interger = (uint32_t)floorf(num);
-	num -= interger;
-	uint32_t mult = (!g_settings.report_inches) ? 1000 : 10000;
-	num *= mult;
-	uint32_t digits = (uint32_t)lroundf(num);
-	if (digits == mult)
-	{
-		interger++;
-		digits = 0;
-	}
-
-	print_int(cb, interger);
-	cb('.');
-	if (g_settings.report_inches)
-	{
-		if (digits < 1000)
-		{
-			cb('0');
-		}
-	}
-
-	if (digits < 100)
-	{
-		cb('0');
-	}
-
-	if (digits < 10)
-	{
-		cb('0');
-	}
-
-	print_int(cb, digits);
-}
-
-void print_fltunits(print_cb cb, float num)
-{
-	num = (!g_settings.report_inches) ? num : (num * MM_INCH_MULT);
-	print_flt(cb, num);
-}
-
-void print_intarr(print_cb cb, int32_t *arr, uint8_t count)
-{
-	do
-	{
-		print_int(cb, *arr++);
-		count--;
-		if (count)
-		{
-			cb(',');
-		}
-
-	} while (count);
-}
-
-void print_fltarr(print_cb cb, float *arr, uint8_t count)
-{
-	uint8_t i = count;
-	do
-	{
-		print_fltunits(cb, *arr++);
-		i--;
-		if (i)
-		{
-			cb(',');
-		}
-
-	} while (i);
-
-	if (count < 3)
-	{
-		i = 3 - count;
-		do
-		{
-			cb(',');
-			print_flt(cb, 0);
-		} while (--i);
-	}
-}

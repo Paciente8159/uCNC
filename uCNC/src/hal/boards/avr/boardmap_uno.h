@@ -168,6 +168,19 @@ extern "C"
 #define DISABLE_MULTISTREAM_SERIAL
 #endif
 
+#ifndef DISABLE_RTC_CODE
+#define DISABLE_RTC_CODE
+#endif
+
+#ifdef EMULATE_GRBL_STARTUP
+#undef EMULATE_GRBL_STARTUP
+#define EMULATE_GRBL_STARTUP 2
+#endif
+
+#ifndef PRINT_FTM_MINIMAL
+#define PRINT_FTM_MINIMAL
+#endif
+
 #ifdef __cplusplus
 }
 #endif

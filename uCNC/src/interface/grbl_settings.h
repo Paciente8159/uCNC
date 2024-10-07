@@ -33,10 +33,10 @@ extern "C"
 	{
 		uint8_t version[3];
 		float max_step_rate;
-		// step delay not used
-		#ifdef ENABLE_STEPPERS_DISABLE_TIMEOUT
+// step delay not used
+#ifdef ENABLE_STEPPERS_DISABLE_TIMEOUT
 		uint16_t step_disable_timeout;
-		#endif
+#endif
 		uint8_t step_invert_mask;
 		uint8_t dir_invert_mask;
 		uint8_t step_enable_invert;
@@ -118,14 +118,19 @@ extern "C"
 #ifndef SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET
 #define SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET (SETTINGS_ADDRESS_OFFSET + sizeof(settings_t) + 1)
 #endif
+#ifndef STARTUP_BLOCKS_COUNT
+#define STARTUP_BLOCKS_COUNT 2
+#endif
+#ifndef STARTUP_BLOCK_SIZE
+#define STARTUP_BLOCK_SIZE RX_BUFFER_SIZE
+#endif
 #ifndef STARTUP_BLOCK0_ADDRESS_OFFSET
 #define STARTUP_BLOCK0_ADDRESS_OFFSET (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (((AXIS_COUNT * sizeof(float)) + 1) * (COORD_SYS_COUNT + 3)))
 #endif
-#ifndef STARTUP_BLOCK1_ADDRESS_OFFSET
-#define STARTUP_BLOCK1_ADDRESS_OFFSET (STARTUP_BLOCK0_ADDRESS_OFFSET + RX_BUFFER_SIZE)
-#endif
+#define STARTUP_BLOCK_ADDRESS_OFFSET(NBLOCK) (STARTUP_BLOCK0_ADDRESS_OFFSET + NBLOCK * RX_BUFFER_SIZE)
+
 #ifndef MODULES_SETTINGS_ADDRESS_OFFSET
-#define MODULES_SETTINGS_ADDRESS_OFFSET (STARTUP_BLOCK1_ADDRESS_OFFSET + RX_BUFFER_SIZE)
+#define MODULES_SETTINGS_ADDRESS_OFFSET STARTUP_BLOCK_ADDRESS_OFFSET(STARTUP_BLOCKS_COUNT)
 #endif
 
 #ifndef ENABLE_SETTINGS_MODULES
@@ -134,7 +139,20 @@ extern "C"
 typedef uint16_t setting_offset_t;
 #endif
 
+#define SETTING_TYPE(T) (T << 5)
+#define SETTING_TYPE_MASK(T) ((T >> 5) & 0x3)
+#define SETTING_ARRAY 0x80
+#define SETTING_ARRCNT(X) (X & 0x1F)
+
+	typedef struct setting_id_
+	{
+		setting_offset_t id;
+		void *memptr;
+		uint8_t type;
+	} setting_id_t;
+
 	extern settings_t g_settings;
+	extern const setting_id_t g_settings_id_table[];
 
 	void settings_init(void);
 	// Assumes that no structure being saved is bigger than 255 bytes
@@ -145,6 +163,7 @@ typedef uint16_t setting_offset_t;
 	void settings_erase(uint16_t address, uint8_t *__ptr, uint16_t size);
 	bool settings_check_startup_gcode(uint16_t address);
 	uint16_t settings_register_external_setting(uint16_t size);
+	uint8_t settings_count(void);
 
 #if (defined(ENABLE_SETTINGS_MODULES) || defined(BOARD_HAS_CUSTOM_SYSTEM_COMMANDS))
 	// event_settings_change_handler
@@ -209,7 +228,7 @@ typedef uint16_t setting_offset_t;
 		memset(var, 0, sizeof(type) * count);                                            \
 		return EVENT_CONTINUE;                                                           \
 	}                                                                                  \
-	bool set##ID##_protocol_send_cnc_settings(void *args)                              \
+	bool set##ID##_proto_cnc_settings(void *args)                              \
 	{                                                                                  \
 		type *ptr = var;                                                                 \
 		for (uint8_t i = 0; i < count; i++)                                              \
@@ -222,7 +241,7 @@ typedef uint16_t setting_offset_t;
 	CREATE_EVENT_LISTENER(settings_extended_save, set##ID##_settings_save);            \
 	CREATE_EVENT_LISTENER(settings_change, set##ID##_settings_change);                 \
 	CREATE_EVENT_LISTENER(settings_extended_erase, set##ID##_settings_erase);          \
-	CREATE_EVENT_LISTENER(protocol_send_cnc_settings, set##ID##_protocol_send_cnc_settings)
+	CREATE_EVENT_LISTENER(proto_cnc_settings, set##ID##_proto_cnc_settings)
 #define DECL_EXTENDED_SETTING(ID, var, type, count, print_cb) __DECL_EXTENDED_SETTING__(ID, var, type, count, print_cb)
 
 #define __DECL_EXTENDED_STRING_SETTING__(ID, var, count)                               \
@@ -244,7 +263,7 @@ typedef uint16_t setting_offset_t;
 			settings_load(set##ID##_settings_address, (uint8_t *)var, sizeof(char) * count); \
 			for (uint8_t i = 0; i < count; i++)                                              \
 			{                                                                                \
-				char c = serial_getc();                                                        \
+				char c = grbl_stream_getc();                                                   \
 				if (c == EOL || c == '\n')                                                     \
 				{                                                                              \
 					var[i] = EOL;                                                                \
@@ -263,22 +282,22 @@ typedef uint16_t setting_offset_t;
 		settings_save(set##ID##_settings_address, (uint8_t *)var, sizeof(char) * count);   \
 		return EVENT_CONTINUE;                                                             \
 	}                                                                                    \
-	bool set##ID##_protocol_send_cnc_settings(void *args)                                \
+	bool set##ID##_proto_cnc_settings(void *args)                                \
 	{                                                                                    \
 		memset(var, 0, sizeof(char) * count);                                              \
 		settings_load(set##ID##_settings_address, (uint8_t *)var, sizeof(char) * count);   \
-		serial_putc('$');                                                                  \
-		serial_print_int(ID);                                                              \
-		serial_putc('=');                                                                  \
+		proto_putc('$');                                                           \
+		proto_printf("%ld", ID);                                                   \
+		proto_putc('=');                                                           \
 		for (uint8_t i = 0; i < count; i++)                                                \
 		{                                                                                  \
 			char c = var[i];                                                                 \
 			if (c < 20 || c > 127)                                                           \
 			{                                                                                \
-				protocol_send_string(MSG_EOL);                                                 \
+				proto_print(MSG_EOL);                                                  \
 				return EVENT_CONTINUE;                                                         \
 			}                                                                                \
-			serial_putc(c);                                                                  \
+			proto_putc(c);                                                           \
 		}                                                                                  \
 		return EVENT_CONTINUE;                                                             \
 	}                                                                                    \
@@ -286,7 +305,7 @@ typedef uint16_t setting_offset_t;
 	CREATE_EVENT_LISTENER(settings_extended_save, set##ID##_settings_save);              \
 	CREATE_EVENT_LISTENER(settings_change, set##ID##_settings_change);                   \
 	CREATE_EVENT_LISTENER(settings_extended_erase, set##ID##_settings_erase);            \
-	CREATE_EVENT_LISTENER(protocol_send_cnc_settings, set##ID##_protocol_send_cnc_settings)
+	CREATE_EVENT_LISTENER(proto_cnc_settings, set##ID##_proto_cnc_settings)
 
 #define DECL_EXTENDED_STRING_SETTING(ID, var, count) __DECL_EXTENDED_STRING_SETTING__(ID, var, count)
 
@@ -302,7 +321,7 @@ typedef uint16_t setting_offset_t;
 		ADD_EVENT_LISTENER(settings_extended_save, set##ID##_settings_save);                  \
 		ADD_EVENT_LISTENER(settings_change, set##ID##_settings_change);                       \
 		ADD_EVENT_LISTENER(settings_extended_erase, set##ID##_settings_erase);                \
-		ADD_EVENT_LISTENER(protocol_send_cnc_settings, set##ID##_protocol_send_cnc_settings); \
+		ADD_EVENT_LISTENER(proto_cnc_settings, set##ID##_proto_cnc_settings); \
 		set##ID##_init = true;                                                                \
 	}
 

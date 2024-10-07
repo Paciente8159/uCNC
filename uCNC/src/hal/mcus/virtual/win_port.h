@@ -6,7 +6,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include <stdio.h>
+
 
 typedef int(__attribute__((__stdcall__)) * available_delegate)(struct win_port_ *);
 typedef int(__attribute__((__stdcall__)) * read_delegate)(struct win_port_ *, uint8_t *buffer, size_t len);

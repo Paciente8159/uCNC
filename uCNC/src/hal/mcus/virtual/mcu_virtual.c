@@ -17,7 +17,7 @@
 */
 #include "../../../cnc.h"
 #if (MCU == MCU_VIRTUAL_WIN)
-#include <stdio.h>
+
 #include <conio.h>
 #include <string.h>
 #include <stdint.h>

@@ -26,7 +26,7 @@ extern "C"
 
 #include "../cnc.h"
 #include <stddef.h>
-#include <stdio.h>
+
 #include "system_menu.h"
 
 #ifndef FS_PATH_NAME_MAX_LEN

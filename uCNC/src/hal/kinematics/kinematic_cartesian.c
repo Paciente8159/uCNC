@@ -20,7 +20,7 @@
 #include "../../cnc.h"
 
 #if (KINEMATIC == KINEMATIC_CARTESIAN)
-#include <stdio.h>
+
 #include <math.h>
 
 void kinematics_init(void)
