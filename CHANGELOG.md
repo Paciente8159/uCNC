@@ -6,6 +6,25 @@
 
 # Changelog
 
+## [1.10.2] - 07-10-2024
+
+[@ademenev](https://github.com/ademenev)	- new alternative axis configurations for CoreXY kinematics (#750)
+[@ricochet1k](https://github.com/ricochet1k)	- fixed STM32 prescaller calculations (#757)
+
+### Added
+
+- new custom PIO scripts to allow automated module download and configuration (#754)
+- new alternative axis configurations for CoreXY kinematics (#750)
+
+### Fixed
+
+- fixed STM32 I2C IO alternate function configurations (#755)
+- fixed debug stream configuration (#756)
+- fixed STM32 prescaller calculations (#757)
+- fixed STM32 SPI transmit function (#758)
+- several platform/framework version errors and Arduino IDE build errors fixed
+
+
 ## [1.10.1] - 12-09-2024
 
 [@patryk3211](https://github.com/patryk3211)	- modified system menu jog parameters to be globally accessible (#740)
@@ -1734,6 +1753,8 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.10.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.10.0
+[1.10.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.10.0
 [1.10.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.10.0
 [1.9.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.9.4
 [1.9.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.9.3
