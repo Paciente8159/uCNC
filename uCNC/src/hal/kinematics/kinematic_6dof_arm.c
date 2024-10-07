@@ -128,7 +128,7 @@ static void computeForwardKinematics(float jointAngles[AXIS_TO_STEPPERS], float 
 	}
 }
 
-int computeInverseKinematics(float desiredPose[AXIS_COUNT], float jointAngles[AXIS_TO_STEPPERS], RobotParameters *params)
+static int computeInverseKinematics(float desiredPose[AXIS_COUNT], float jointAngles[AXIS_TO_STEPPERS], RobotParameters *params)
 {
 	float lambda = 0.01f; // Initial damping factor
 	float nu = 2.0f;			// Factor to adjust lambda
@@ -231,18 +231,12 @@ int computeInverseKinematics(float desiredPose[AXIS_COUNT], float jointAngles[AX
 		}
 
 		// Enforce joint limits
-		int withinLimits = 1;
 		for (int i = 0; i < AXIS_TO_STEPPERS; i++)
 		{
 			if (tempJointAngles[i] > params->joint_max[i] || tempJointAngles[i] < params->joint_min[i])
 			{
-				withinLimits = 0;
-				break;
+				return -1; // Pose unreachable within joint limits
 			}
-		}
-		if (!withinLimits)
-		{
-			return -1; // Pose unreachable within joint limits
 		}
 
 		// Compute new error norm with tentative joint angles
@@ -297,6 +291,21 @@ int computeInverseKinematics(float desiredPose[AXIS_COUNT], float jointAngles[AX
 
 void kinematics_apply_inverse(float *axis, int32_t *steps)
 {
+	float jointAngles[AXIS_TO_STEPPERS];
+
+	// convert motor steps to degrees
+	for (uint8_t i = 0; i < AXIS_TO_STEPPERS; i++)
+	{
+		jointAngles[i] = steps[i] * g_settings.step_per_mm[i];
+	}
+
+	if (computeInverseKinematics(axis, jointAngles, &robotParam) > 0)
+	{
+		for (uint8_t i = 0; i < AXIS_TO_STEPPERS; i++)
+		{
+			steps[i] = jointAngles[i] / g_settings.step_per_mm[i];
+		}
+	}
 }
 
 void kinematics_apply_forward(int32_t *steps, float *axis)
