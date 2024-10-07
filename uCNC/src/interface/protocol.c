@@ -405,92 +405,40 @@ void protocol_send_status(void)
 	uint8_t controls = io_get_controls();
 	uint8_t limits = io_get_limits();
 	bool probe = io_get_probe();
-	uint8_t state = cnc_get_exec_state(0xFF);
-	uint8_t filter = 0x80;
-	while (!(state & filter) && filter)
-	{
-		filter >>= 1;
-	}
-
-	state &= filter;
+	uint8_t state = cnc_get_state();
 
 	serial_putc('<');
-	if (cnc_has_alarm())
+
+	switch (GRBL_STATE_CODE_BASE(state))
 	{
+	case GRBL_STATE_ALARM:
 		protocol_send_string(MSG_STATUS_ALARM);
-	}
-	else if (mc_get_checkmode())
-	{
+		break;
+	case GRBL_STATE_CHECKMODE:
 		protocol_send_string(MSG_STATUS_CHECK);
-	}
-	else
-	{
-		switch (state)
-		{
-#if ASSERT_PIN(SAFETY_DOOR)
-		case EXEC_DOOR:
-			protocol_send_string(MSG_STATUS_DOOR);
-			serial_putc(':');
-			if (CHECKFLAG(controls, SAFETY_DOOR_MASK))
-			{
-				if (cnc_get_exec_state(EXEC_RUN))
-				{
-					serial_putc('2');
-				}
-				else
-				{
-					serial_putc('1');
-				}
-			}
-			else
-			{
-				if (cnc_get_exec_state(EXEC_RUN))
-				{
-					serial_putc('3');
-				}
-				else
-				{
-					serial_putc('0');
-				}
-			}
-			break;
-#endif
-		case EXEC_UNHOMED:
-		case EXEC_LIMITS:
-			if (!cnc_get_exec_state(EXEC_HOMING))
-			{
-				protocol_send_string(MSG_STATUS_ALARM);
-			}
-			else
-			{
-				protocol_send_string(MSG_STATUS_HOME);
-			}
-			break;
-		case EXEC_HOLD:
-			protocol_send_string(MSG_STATUS_HOLD);
-			serial_putc(':');
-			if (cnc_get_exec_state(EXEC_RUN))
-			{
-				serial_putc('1');
-			}
-			else
-			{
-				serial_putc('0');
-			}
-			break;
-		case EXEC_HOMING:
-			protocol_send_string(MSG_STATUS_HOME);
-			break;
-		case EXEC_JOG:
-			protocol_send_string(MSG_STATUS_JOG);
-			break;
-		case EXEC_RUN:
-			protocol_send_string(MSG_STATUS_RUN);
-			break;
-		default:
-			protocol_send_string(MSG_STATUS_IDLE);
-			break;
-		}
+		break;
+	case GRBL_STATE_DOOR_0:
+		protocol_send_string(MSG_STATUS_DOOR);
+		serial_putc(':');
+		serial_putc('0' + GRBL_STATE_CODE_MANTISSA(state));
+		break;
+	case GRBL_STATE_HOMING:
+		protocol_send_string(MSG_STATUS_HOME);
+		break;
+	case GRBL_STATE_HOLD_0:
+		protocol_send_string(MSG_STATUS_HOLD);
+		serial_putc(':');
+		serial_putc('0' + GRBL_STATE_CODE_MANTISSA(state));
+		break;
+	case GRBL_STATE_JOG:
+		protocol_send_string(MSG_STATUS_JOG);
+		break;
+	case GRBL_STATE_RUN:
+		protocol_send_string(MSG_STATUS_RUN);
+		break;
+	default:
+		protocol_send_string(MSG_STATUS_IDLE);
+		break;
 	}
 
 	if ((g_settings.status_report_mask & 1))

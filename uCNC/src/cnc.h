@@ -88,6 +88,23 @@ extern "C"
 #define EXEC_GCODE_LOCKED (EXEC_ALARM | EXEC_DOOR | EXEC_JOG)	 // Gcode is locked by an alarm or any special motion state
 #define EXEC_ALLACTIVE 255																		 // All states
 
+// this is a new list of states that can be used more easilly to get the current "Grbl" state
+#define GRBL_STATE_CODE(C, M) ((C << 3) | M)
+#define GRBL_STATE_CODE_BASE(C) (C & ~0x07)
+#define GRBL_STATE_CODE_MANTISSA(C) (C & 0x07)
+#define GRBL_STATE_ALARM GRBL_STATE_CODE(7, 0)
+#define GRBL_STATE_CHECKMODE GRBL_STATE_CODE(6, 0)
+#define GRBL_STATE_DOOR_0 GRBL_STATE_CODE(5, 0)
+#define GRBL_STATE_DOOR_1 GRBL_STATE_CODE(5, 1)
+#define GRBL_STATE_DOOR_2 GRBL_STATE_CODE(5, 2)
+#define GRBL_STATE_DOOR_3 GRBL_STATE_CODE(5, 3)
+#define GRBL_STATE_HOMING GRBL_STATE_CODE(4, 0)
+#define GRBL_STATE_HOLD_0 GRBL_STATE_CODE(3, 0)
+#define GRBL_STATE_HOLD_1 GRBL_STATE_CODE(3, 1)
+#define GRBL_STATE_JOG GRBL_STATE_CODE(2, 0)
+#define GRBL_STATE_RUN GRBL_STATE_CODE(1, 0)
+#define GRBL_STATE_IDLE GRBL_STATE_CODE(0, 0)
+
 // creates a set of helper masks used to configure the controller
 #define ESTOP_MASK 1
 #define SAFETY_DOOR_MASK 2
@@ -162,6 +179,7 @@ extern "C"
 	void cnc_home(void);
 	void cnc_alarm(int8_t code);
 	bool cnc_has_alarm(void);
+	uint8_t cnc_get_state(void);
 	uint8_t cnc_get_alarm(void);
 	void cnc_stop(void);
 	uint8_t cnc_unlock(bool force);
