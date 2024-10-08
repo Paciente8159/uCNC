@@ -85,12 +85,6 @@ extern "C"
 #define COORD_SYS_COUNT 6
 
 	/**
-	 * Uncomment to enable G92 storing on non volatile memory
-	 * If disabled G92 will be stored in RAM only. Soft-reset will not erase stored value.
-	 * */
-	// #define G92_STORE_NONVOLATILE
-
-	/**
 	 * Number of segments of an arc computed with aprox. of sin/cos math
 	 * operation before performing a full calculation
 	 * */
@@ -110,6 +104,21 @@ extern "C"
 	 * */
 
 	// #define ENABLE_PARSING_TIME_DEBUG
+
+	/**
+	 * Disable settings safety.
+	 * This is a feature introduced in version 1.11 to prevent user from using the machine in case of settings loading error and causing havoc
+	 * Disabling settings safety will make the settins run in legacy more where they are simply reset to default on error without forcing the user to re-check them
+	 */
+
+	// #define DISABLE_SAFE_SETTINGS
+
+
+	/**
+	 * Uncomment to enable G92 storing on non volatile memory
+	 * If disabled G92 will be stored in RAM only. Soft-reset will not erase stored value.
+	 * */
+	// #define G92_STORE_NONVOLATILE
 
 	/**
 	 * Override default configuration settings. Use _PER_AXIS parameters to

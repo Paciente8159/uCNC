@@ -27,10 +27,6 @@
 #define LOOP_FAULT 3
 #define LOOP_REQUIRE_RESET 4
 
-#define UNLOCK_OK 0
-#define UNLOCK_LOCKED 1
-#define UNLOCK_ERROR 2
-
 #define RTCMD_NORMAL_MASK (RT_CMD_FEED_100 | RT_CMD_FEED_INC_COARSE | RT_CMD_FEED_DEC_COARSE | RT_CMD_FEED_INC_FINE | RT_CMD_FEED_DEC_FINE)
 #define RTCMD_RAPID_MASK (RT_CMD_RAPIDFEED_100 | RT_CMD_RAPIDFEED_OVR1 | RT_CMD_RAPIDFEED_OVR2)
 #define RTCMD_SPINDLE_MASK (RT_CMD_SPINDLE_100 | RT_CMD_SPINDLE_INC_COARSE | RT_CMD_SPINDLE_DEC_COARSE | RT_CMD_SPINDLE_INC_FINE | RT_CMD_SPINDLE_DEC_FINE | RT_CMD_SPINDLE_TOGGLE)
@@ -467,8 +463,17 @@ uint8_t cnc_unlock(bool force)
 	// forces to clear EXEC_UNHOMED error to allow motion after limit switch trigger
 	if (force)
 	{
-		CLEARFLAG(cnc_state.exec_state, EXEC_UNHOMED);
-		cnc_state.alarm = EXEC_ALARM_NOALARM;
+
+#ifndef DISABLE_SAFE_SETTINGS
+		// on settins error prevent unlock until settings error is cleared
+		if (!(g_settings_error & SETTINGS_READ_ERROR))
+		{
+#endif
+			CLEARFLAG(cnc_state.exec_state, EXEC_UNHOMED);
+			cnc_state.alarm = EXEC_ALARM_NOALARM;
+#ifndef DISABLE_SAFE_SETTINGS
+		}
+#endif
 	}
 
 	// if any alarm state is still active checks system faults
@@ -476,6 +481,13 @@ uint8_t cnc_unlock(bool force)
 	{
 		if (!cnc_get_exec_state(EXEC_KILL))
 		{
+#ifndef DISABLE_SAFE_SETTINGS
+			// on settins error prevent unlock until settings error is cleared
+			if ((g_settings_error & SETTINGS_READ_ERROR))
+			{
+				proto_feedback(MSG_FEEDBACK_16);
+			}
+#endif
 			proto_feedback(MSG_FEEDBACK_2);
 			return UNLOCK_LOCKED;
 		}
@@ -551,6 +563,14 @@ void cnc_clear_exec_state(uint8_t statemask)
 	{
 		CLEARFLAG(statemask, EXEC_UNHOMED);
 	}
+
+#ifndef DISABLE_SAFE_SETTINGS
+	// on settins error prevent unlock
+	if (g_settings_error & SETTINGS_READ_ERROR)
+	{
+		CLEARFLAG(statemask, EXEC_UNHOMED);
+	}
+#endif
 
 	uint8_t limits = 0;
 #if (LIMITS_MASK != 0)

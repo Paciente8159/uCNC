@@ -119,6 +119,7 @@ extern "C"
 #define G28HOME COORD_SYS_COUNT													 // G28 index
 #define G30HOME COORD_SYS_COUNT + 1											 // G30 index
 #define G92OFFSET COORD_SYS_COUNT + 2										 // G92 index
+#define READ_COORDINATE_FROM_NVM 0x80
 
 #define PARSER_CORDSYS_ADDRESS SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET															// 1st coordinate system offset eeprom address (G54)
 #define G28ADDRESS (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (PARSER_PARAM_ADDR_OFFSET * G28HOME)) // G28 coordinate offset eeprom address

@@ -155,6 +155,10 @@ extern "C"
 #define EXEC_ALARM_HARD_LIMIT_NOMOTION 13					 // hard limits were triggered without any motion (position was not lost)
 #define EXEC_ALARM_PLASMA_THC_ARC_START_FAILURE 14 // failed to start arc with plasma THC
 
+#ifndef DISABLE_SAFE_SETTINGS
+#define EXEC_ALARM_SETTINGS_READ_ERROR -3
+#endif
+
 // formated messages
 #define STR_EOL "\r\n"
 #define MSG_EOL STR_EOL
@@ -198,6 +202,8 @@ extern "C"
 #define MSG_FEEDBACK_13 "Settings saved"
 #define MSG_FEEDBACK_14 "Settings loaded"
 #define MSG_FEEDBACK_15 "Settings defaults"
+
+#define MSG_FEEDBACK_16 "Settings error: $RST=* required"
 
 #define MSG_STATUS_ALARM __romstr__("Alarm")
 #define MSG_STATUS_DOOR __romstr__("Door")

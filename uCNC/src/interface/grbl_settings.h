@@ -29,6 +29,10 @@ extern "C"
 #include <stdint.h>
 #include <stdbool.h>
 
+#define SETTINGS_OK
+#define SETTINGS_READ_ERROR 1
+#define SETTINGS_WRITE_ERROR 2
+
 	typedef struct
 	{
 		uint8_t version[3];
@@ -151,6 +155,7 @@ typedef uint16_t setting_offset_t;
 		uint8_t type;
 	} setting_id_t;
 
+	extern uint8_t g_settings_error;
 	extern settings_t g_settings;
 	extern const setting_id_t g_settings_id_table[];
 
@@ -178,6 +183,7 @@ typedef uint16_t setting_offset_t;
 		uint16_t address;
 		uint8_t *data;
 		uint8_t size;
+		uint8_t error;
 	} settings_args_t;
 	// event_settings_load_handler
 	DECL_EVENT_HANDLER(settings_load);

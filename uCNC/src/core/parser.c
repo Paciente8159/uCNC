@@ -38,6 +38,21 @@ static float g92permanentoffset[AXIS_COUNT];
 static int32_t rt_probe_step_pos[STEPPER_COUNT];
 static float parser_last_pos[AXIS_COUNT];
 
+#ifndef DISABLE_HOME_SUPPORT
+#define ADDITIONAL_COORDINATES 2
+#else
+#define ADDITIONAL_COORDINATES 0
+#endif
+#ifdef G92_STORE_NONVOLATILE
+#define G92_COORDINATE 1
+#else
+#define G92_COORDINATE 0
+#endif
+
+#ifndef DISABLE_COORDINATES_SYSTEM_RAM
+static float coordinate_systems[COORD_SYS_COUNT + ADDITIONAL_COORDINATES + G92_COORDINATE][AXIS_COUNT];
+#endif
+
 static unsigned char parser_get_next_preprocessed(bool peek);
 FORCEINLINE static void parser_get_comment(uint8_t start_char);
 FORCEINLINE static uint8_t parser_get_token(uint8_t *word, float *value);
@@ -49,6 +64,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
 static uint8_t parser_grbl_command(void);
 FORCEINLINE static uint8_t parser_gcode_command(bool is_jogging);
+static void parser_coordinate_system_load(uint8_t param, float *target);
 
 #ifdef ENABLE_RS274NGC_EXPRESSIONS
 char parser_backtrack;
@@ -250,26 +266,17 @@ void parser_get_coordsys(uint8_t system_num, float *axis)
 		break;
 #ifndef DISABLE_HOME_SUPPORT
 	case 28:
-		if (settings_load(G28ADDRESS, (uint8_t *)axis, PARSER_PARAM_SIZE))
-		{
-			memset(axis, 0, PARSER_PARAM_SIZE);
-		}
+		parser_coordinate_system_load(G28HOME, axis);
 		break;
 	case 30:
-		if (settings_load(G30ADDRESS, (uint8_t *)axis, PARSER_PARAM_SIZE))
-		{
-			memset(axis, 0, PARSER_PARAM_SIZE);
-		}
+		parser_coordinate_system_load(G30HOME, axis);
 		break;
 #endif
 	case 92:
 		memcpy(axis, parser_parameters.g92_offset, sizeof(parser_parameters.g92_offset));
 		break;
 	default:
-		if (settings_load(PARSER_CORDSYS_ADDRESS + (system_num * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)axis, PARSER_PARAM_SIZE))
-		{
-			memset(axis, 0, PARSER_PARAM_SIZE);
-		}
+		parser_coordinate_system_load(system_num, axis);
 		break;
 	}
 }
@@ -286,12 +293,17 @@ void parser_parameters_reset(void)
 	for (uint8_t i = 0; i < COORD_SYS_COUNT; i++)
 	{
 		settings_erase(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (i * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)&parser_parameters.coord_system_offset, PARSER_PARAM_SIZE);
+#ifndef DISABLE_COORDINATES_SYSTEM_RAM
+		memset(coordinate_systems, 0, sizeof(coordinate_systems));
+#endif
 	}
 #endif
 
 // erase G92
 #ifdef G92_STORE_NONVOLATILE
 	settings_erase(G92ADDRESS, (uint8_t *)&g92permanentoffset, PARSER_PARAM_SIZE);
+#else
+	memset(g92permanentoffset, 0, sizeof(g92permanentoffset));
 #endif
 }
 
@@ -493,7 +505,6 @@ static uint8_t parser_grbl_command(void)
 					// 	error = parser_validate_command(&next_state, &words, &cmd);
 					// }
 
-					
 					// reset streams
 					grbl_stream_change(NULL);
 
@@ -551,14 +562,13 @@ static uint8_t parser_grbl_command(void)
 					{
 					case '$':
 						settings_reset(false);
-						settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
 						return GRBL_SEND_SETTINGS_RESET;
 					case '#':
 						parser_parameters_reset();
 						return GRBL_SEND_SETTINGS_RESET;
 					case '*':
+					g_settings_error = 0;
 						settings_reset(true);
-						settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
 						parser_parameters_reset();
 						return GRBL_SEND_SETTINGS_RESET;
 					default:
@@ -631,14 +641,16 @@ static uint8_t parser_grbl_exec_code(uint8_t code)
 		proto_feedback(MSG_FEEDBACK_9);
 		break;
 	case GRBL_UNLOCK:
-		cnc_unlock(true);
-#if ASSERT_PIN(SAFETY_DOOR)
-		if (cnc_get_exec_state(EXEC_DOOR))
+		if (cnc_unlock(true) == UNLOCK_OK)
 		{
-			return STATUS_CHECK_DOOR;
-		}
+#if ASSERT_PIN(SAFETY_DOOR)
+			if (cnc_get_exec_state(EXEC_DOOR))
+			{
+				return STATUS_CHECK_DOOR;
+			}
 #endif
-		proto_feedback(MSG_FEEDBACK_3);
+			proto_feedback(MSG_FEEDBACK_3);
+		}
 		break;
 	case GRBL_HOME:
 		if (!g_settings.homing_enabled)
@@ -646,14 +658,16 @@ static uint8_t parser_grbl_exec_code(uint8_t code)
 			return STATUS_SETTING_DISABLED;
 		}
 
-		cnc_unlock(true);
-#if ASSERT_PIN(SAFETY_DOOR)
-		if (cnc_get_exec_state(EXEC_DOOR))
+		if (cnc_unlock(true) == UNLOCK_OK)
 		{
-			return STATUS_CHECK_DOOR;
-		}
+#if ASSERT_PIN(SAFETY_DOOR)
+			if (cnc_get_exec_state(EXEC_DOOR))
+			{
+				return STATUS_CHECK_DOOR;
+			}
 #endif
-		cnc_home();
+			cnc_home();
+		}
 		break;
 	case GRBL_HELP:
 		proto_print(MSG_HELP);
@@ -733,7 +747,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 			parser_discard_command();
 #ifdef ECHO_CMD
 			proto_print(MSG_FEEDBACK_END);
-			
+
 #endif
 			return error;
 		}
@@ -789,7 +803,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 #endif
 #ifdef ECHO_CMD
 			proto_print(MSG_FEEDBACK_END);
-			
+
 #endif
 			return STATUS_OK;
 		case 'G':
@@ -1421,7 +1435,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 	if (CHECKFLAG(cmd->groups, GCODE_GROUP_COORDSYS))
 	{
 		parser_parameters.coord_system_index = new_state->groups.coord_system;
-		settings_load(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (parser_parameters.coord_system_index * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)&parser_parameters.coord_system_offset[0], PARSER_PARAM_SIZE);
+		parser_coordinate_system_load(parser_parameters.coord_system_index, parser_parameters.coord_system_offset);
 		parser_wco_counter = 0;
 	}
 #endif
@@ -1590,7 +1604,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		}
 		else
 		{
-			settings_load(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (index * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)&coords, PARSER_PARAM_SIZE);
+			parser_coordinate_system_load(index, coords);
 		}
 
 		for (uint8_t i = AXIS_COUNT; i != 0;)
@@ -1649,11 +1663,11 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 
 		if (new_state->groups.nonmodal == G28)
 		{
-			settings_load(G28ADDRESS, (uint8_t *)&target, PARSER_PARAM_SIZE);
+			parser_coordinate_system_load(G28HOME, target);
 		}
 		else
 		{
-			settings_load(G30ADDRESS, (uint8_t *)&target, PARSER_PARAM_SIZE);
+			parser_coordinate_system_load(G30HOME, target);
 		}
 		error = mc_line((float *)&target, &block_data);
 		// saves position
@@ -2173,7 +2187,7 @@ float parser_get_parameter(int param)
 		}
 		if (pos != parser_parameters.coord_system_index)
 		{
-			settings_load(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (pos * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)result, PARSER_PARAM_SIZE);
+			parser_coordinate_system_load(pos, result);
 		}
 		else
 		{
@@ -2597,7 +2611,7 @@ uint8_t parser_get_float(float *value)
 		return parser_get_expression(value);
 	}
 #endif
-	return prt_atof((void*)parser_get_next_preprocessed, NULL, value);
+	return prt_atof((void *)parser_get_next_preprocessed, NULL, value);
 }
 
 static uint8_t parser_get_token(uint8_t *word, float *value)
@@ -3187,7 +3201,7 @@ void parser_parameters_load(void)
 {
 // loads G92
 #ifdef G92_STORE_NONVOLATILE
-	if (settings_load(G92ADDRESS, (uint8_t *)&parser_parameters.g92_offset, PARSER_PARAM_SIZE))
+	if (settings_load(READ_COORDINATE_FROM_NVM | G92ADDRESS, (uint8_t *)&parser_parameters.g92_offset, PARSER_PARAM_SIZE))
 	{
 		settings_erase(G92ADDRESS, (uint8_t *)&parser_parameters.g92_offset, PARSER_PARAM_SIZE);
 	}
@@ -3199,18 +3213,18 @@ void parser_parameters_load(void)
 
 	for (uint8_t i = 1; i < G92OFFSET; i++)
 	{
-		if (settings_load(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (i * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)&parser_parameters.coord_system_offset, PARSER_PARAM_SIZE))
-		{
-			settings_erase(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (i * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)&parser_parameters.coord_system_offset, PARSER_PARAM_SIZE);
-		}
+
+#ifndef DISABLE_COORDINATES_SYSTEM_RAM
+		parser_coordinate_system_load(READ_COORDINATE_FROM_NVM | i, coordinate_systems[i]);
+#else
+		parser_coordinate_system_load(READ_COORDINATE_FROM_NVM | i, parser_parameters.coord_system_offset);
+#endif
 	}
 
-// load G54
-#ifndef DISABLE_COORD_SYS_SUPPORT
-	if (settings_load(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET, (uint8_t *)&parser_parameters.coord_system_offset, PARSER_PARAM_SIZE))
-	{
-		settings_erase(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET, (uint8_t *)&parser_parameters.coord_system_offset, PARSER_PARAM_SIZE);
-	}
+	// load G54
+	parser_coordinate_system_load(READ_COORDINATE_FROM_NVM | 0, parser_parameters.coord_system_offset);
+#ifndef DISABLE_COORDINATES_SYSTEM_RAM
+	memcpy(coordinate_systems[0], parser_parameters.coord_system_offset, PARSER_PARAM_SIZE);
 #endif
 }
 
@@ -3557,4 +3571,39 @@ void parser_machine_to_work(float *axis)
 		axis[AXIS_TOOL] -= parser_parameters.tool_length_offset;
 	}
 #endif
+}
+
+void parser_coordinate_system_load(uint8_t param, float *target)
+{
+#ifndef DISABLE_COORDINATES_SYSTEM_RAM
+	if (!(param & READ_COORDINATE_FROM_NVM))
+	{
+		memcpy(target, (uint8_t *)coordinate_systems[param], PARSER_PARAM_SIZE);
+		return;
+	}
+#endif
+	uint16_t address = 0;
+	switch (param)
+	{
+	// G28
+	case G28HOME:
+		address = G28ADDRESS;
+		break;
+	case G30HOME:
+		address = G30ADDRESS;
+		break;
+#ifdef G92_STORE_NONVOLATILE
+	case G92OFFSET:
+		address = G92ADDRESS;
+		break;
+#endif
+	default:
+		address = SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (param * PARSER_PARAM_ADDR_OFFSET);
+		break;
+	}
+
+	if (settings_load(address, (uint8_t *)target, PARSER_PARAM_SIZE))
+	{
+		settings_erase(address, (uint8_t *)target, PARSER_PARAM_SIZE);
+	}
 }

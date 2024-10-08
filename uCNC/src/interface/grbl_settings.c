@@ -20,6 +20,10 @@
 #include "../cnc.h"
 #include "defaults.h"
 
+#ifndef DISABLE_SAFE_SETTINGS
+uint8_t g_settings_error;
+#endif
+
 // if settings struct is changed this version should change too
 #define SETTINGS_VERSION \
 	{                      \
@@ -303,6 +307,12 @@ static uint8_t settings_size_crc(uint16_t size, uint8_t crc)
 void settings_init(void)
 {
 	const uint8_t version[3] = SETTINGS_VERSION;
+
+#ifdef FORCE_GLOBALS_TO_0
+#ifndef DISABLE_SAFE_SETTINGS
+	g_settings_error = SETTINGS_OK;
+#endif
+#endif
 	uint8_t error = settings_load(SETTINGS_ADDRESS_OFFSET, (uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
 
 	if (!error)
@@ -327,6 +337,20 @@ void settings_init(void)
 
 uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint16_t size)
 {
+#ifdef RAM_ONLY_SETTINGS
+	DBGMSG("Default settings @ %u", address);
+	if (address == SETTINGS_ADDRESS_OFFSET)
+	{
+		rom_memcpy(&g_settings, &default_settings, sizeof(settings_t));
+	}
+	else
+	{
+		size = MAX(size, 1);
+		memset(__ptr, 0, size);
+	}
+	return 0; // loads defaults
+#endif
+
 	DBGMSG("EEPROM load @ %u", address);
 
 	// settiing address invalid
@@ -336,16 +360,22 @@ uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint16_t size)
 	}
 #ifdef ENABLE_SETTINGS_MODULES
 	bool extended_load __attribute__((__cleanup__(EVENT_HANDLER_NAME(settings_extended_load)))) = (address == SETTINGS_ADDRESS_OFFSET);
-	settings_args_t args = {.address = address, .data = __ptr, .size = size};
+	// load settings event arg with error. It's the responsability of the handler to clear it if all is OK.
+	settings_args_t args = {.address = address, .data = __ptr, .size = size, .error = 1};
 	// if handled exit
 	if (EVENT_INVOKE(settings_load, &args))
 	{
+#ifndef DISABLE_SAFE_SETTINGS
+		if (args.error)
+		{
+			g_settings_error |= SETTINGS_READ_ERROR;
+		}
+#endif
 		return STATUS_OK;
 	}
 	// if unable to get settings from external memory tries to get from internal EEPROM
 #endif
 
-#ifndef RAM_ONLY_SETTINGS
 	uint8_t crc = 0;
 
 	for (uint16_t i = 0; i < size;)
@@ -366,29 +396,23 @@ uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint16_t size)
 	}
 
 	crc = settings_size_crc(size, crc);
+	crc ^= mcu_eeprom_getc(address);
 
-	return (crc ^ mcu_eeprom_getc(address));
-#else
-	if (address == SETTINGS_ADDRESS_OFFSET)
+#ifndef DISABLE_SAFE_SETTINGS
+	if (crc)
 	{
-		rom_memcpy(&g_settings, &default_settings, sizeof(settings_t));
+		g_settings_error |= SETTINGS_READ_ERROR;
 	}
-	else
-	{
-		size = MAX(size, 1);
-		memset(__ptr, 0, size);
-	}
-	return 0; // loads defaults
 #endif
+	return crc;
 }
 
 void settings_reset(bool erase_startup_blocks)
 {
 	settings_erase(SETTINGS_ADDRESS_OFFSET, (uint8_t *)&g_settings, sizeof(settings_t));
 	rom_memcpy(&g_settings, &default_settings, sizeof(settings_t));
+	settings_save(SETTINGS_ADDRESS_OFFSET, &g_settings, sizeof(settings_t));
 
-#if !defined(ENABLE_EXTRA_SYSTEM_CMDS) && !defined(RAM_ONLY_SETTINGS)
-	settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
 	if (erase_startup_blocks)
 	{
 		for (uint8_t i = 0; i < STARTUP_BLOCKS_COUNT; i++)
@@ -396,29 +420,41 @@ void settings_reset(bool erase_startup_blocks)
 			settings_erase(STARTUP_BLOCK_ADDRESS_OFFSET(i), NULL, 1);
 		}
 	}
-#endif
 }
 
 void settings_save(uint16_t address, uint8_t *__ptr, uint16_t size)
 {
-	DBGMSG("EEPROM save @ %u",address);
+#ifdef RAM_ONLY_SETTINGS
+	return;
+#endif
+
+	DBGMSG("EEPROM save @ %u", address);
 
 	if (address == UINT16_MAX)
 	{
+#ifndef DISABLE_SAFE_SETTINGS
+		g_settings_error |= SETTINGS_WRITE_ERROR;
+#endif
 		return;
 	}
 
 #ifdef ENABLE_SETTINGS_MODULES
 	bool extended_save __attribute__((__cleanup__(EVENT_HANDLER_NAME(settings_extended_save)))) = (address == SETTINGS_ADDRESS_OFFSET);
-	settings_args_t args = {.address = address, .data = __ptr, .size = size};
+	// handler must clear the error if all is ok
+	settings_args_t args = {.address = address, .data = __ptr, .size = size, .error = 1};
 	if (EVENT_INVOKE(settings_save, &args))
 	{
-		// if the event was handled
+// if the event was handled
+#ifndef DISABLE_SAFE_SETTINGS
+		if (args.error)
+		{
+			g_settings_error |= SETTINGS_READ_ERROR;
+		}
+#endif
 		return;
 	}
 #endif
 
-#ifndef RAM_ONLY_SETTINGS
 	uint8_t crc = 0;
 
 	for (uint16_t i = 0; i < size;)
@@ -443,7 +479,6 @@ void settings_save(uint16_t address, uint8_t *__ptr, uint16_t size)
 
 	mcu_eeprom_putc(address, crc);
 	mcu_eeprom_flush();
-#endif
 }
 
 bool settings_allows_negative(setting_offset_t id)
@@ -538,18 +573,45 @@ uint8_t settings_change(setting_offset_t id, float value)
 	return result;
 }
 
+/**
+ * Erases settings
+ * If the address points to the SETTINGS_ADDRESS_OFFSET reloads default values and invokes extended settings erase event
+ * Coordinate systems and ofsetts are set to 0
+ * Startup blocks are set to 0
+ */
 void settings_erase(uint16_t address, uint8_t *__ptr, uint16_t size)
 {
 	DBGMSG("EEPROM erase @ %u", address);
+	uint8_t empty_startup_block = 0;
 
 	if (address == UINT16_MAX)
 	{
 		return;
 	}
 
+	// checks if it's a valid pointer (startup blocks are a special case that uses a NULL pointer)
+	if (__ptr)
+	{
+		if (address == SETTINGS_ADDRESS_OFFSET) // loads the defaults for settings
+		{
+			rom_memcpy(&g_settings, &default_settings, sizeof(settings_t));
 #ifdef ENABLE_SETTINGS_MODULES
-	bool extended_erase __attribute__((__cleanup__(EVENT_HANDLER_NAME(settings_extended_erase)))) = (address == SETTINGS_ADDRESS_OFFSET);
-	settings_args_t args = {.address = address, .data = __ptr, .size = size};
+			EVENT_INVOKE(settings_extended_erase, NULL);
+#endif
+		}
+		else
+		{
+			memset(__ptr, 0, size);
+		}
+	}
+	else
+	{
+		__ptr = empty_startup_block;
+		size = 1;
+	}
+
+#ifdef ENABLE_SETTINGS_MODULES
+	settings_args_t args = {.address = address, .data = __ptr, .size = size, .error = 0};
 	if (EVENT_INVOKE(settings_erase, &args))
 	{
 		// if the event was handled
@@ -557,31 +619,9 @@ void settings_erase(uint16_t address, uint8_t *__ptr, uint16_t size)
 	}
 #endif
 
-	if (__ptr)
-	{
-		memset(__ptr, 0, size);
-	}
-
-#ifndef RAM_ONLY_SETTINGS
-	if (address != SETTINGS_ADDRESS_OFFSET)
-	{
-		for (uint16_t i = size; i != 0; i--)
-		{
-			if (cnc_get_exec_state(EXEC_RUN))
-			{
-				cnc_dotasks(); // updates buffer before cycling
-			}
-			mcu_eeprom_putc(address++, 0);
-		}
-
-		uint8_t crc = settings_size_crc(size, 0);
-
-		// erase crc byte that is next to data
-		mcu_eeprom_putc(address, crc);
-#if !defined(ENABLE_EXTRA_SYSTEM_CMDS)
-		mcu_eeprom_flush();
-#endif
-	}
+#ifndef ENABLE_EXTRA_SYSTEM_CMDS
+	// store the settings
+	settings_save(address, __ptr, size);
 #endif
 }
 
