@@ -518,7 +518,7 @@ static uint8_t parser_grbl_command(void)
 				return error;
 			}
 			return STATUS_INVALID_STATEMENT;
-#ifdef ENABLE_EXTRA_SYSTEM_CMDS
+#ifdef ENABLE_PIN_DEBUG_EXTRA_CMD
 		case 'P':
 			return GRBL_PINS_STATES;
 #endif
@@ -567,7 +567,9 @@ static uint8_t parser_grbl_command(void)
 						parser_parameters_reset();
 						return GRBL_SEND_SETTINGS_RESET;
 					case '*':
-					g_settings_error = 0;
+#ifndef DISABLE_SAFE_SETTINGS
+						g_settings_error = 0;
+#endif
 						settings_reset(true);
 						parser_parameters_reset();
 						return GRBL_SEND_SETTINGS_RESET;
@@ -577,7 +579,7 @@ static uint8_t parser_grbl_command(void)
 				}
 			}
 			break;
-#ifdef ENABLE_EXTRA_SYSTEM_CMDS
+#ifdef ENABLE_EXTRA_SETTINGS_CMDS
 		case 'S':
 			// new settings command
 			if (c == EOL && grbl_cmd_len == 2)
@@ -592,6 +594,7 @@ static uint8_t parser_grbl_command(void)
 					return GRBL_SETTINGS_LOADED;
 				case 'R':
 					settings_reset(false);
+					settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
 					return GRBL_SETTINGS_DEFAULT;
 				}
 			}
@@ -672,7 +675,7 @@ static uint8_t parser_grbl_exec_code(uint8_t code)
 	case GRBL_HELP:
 		proto_print(MSG_HELP);
 		break;
-#ifdef ENABLE_EXTRA_SYSTEM_CMDS
+#ifdef ENABLE_EXTRA_SETTINGS_CMDS
 	case GRBL_SETTINGS_SAVED:
 		proto_feedback(MSG_FEEDBACK_13);
 		break;
@@ -682,6 +685,8 @@ static uint8_t parser_grbl_exec_code(uint8_t code)
 	case GRBL_SETTINGS_DEFAULT:
 		proto_feedback(MSG_FEEDBACK_15);
 		break;
+#endif
+#ifdef ENABLE_PIN_DEBUG_EXTRA_CMD
 	case GRBL_PINS_STATES:
 		proto_pins_states();
 		break;

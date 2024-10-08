@@ -113,7 +113,6 @@ extern "C"
 
 	// #define DISABLE_SAFE_SETTINGS
 
-
 	/**
 	 * Uncomment to enable G92 storing on non volatile memory
 	 * If disabled G92 will be stored in RAM only. Soft-reset will not erase stored value.
@@ -569,6 +568,13 @@ extern "C"
 	// #define ENABLE_IO_ALARM_DEBUG
 
 	/**
+	 * Enabled extra pin diagnostic command $P
+	 */
+	// #define ENABLE_PIN_DEBUG_EXTRA_CMD
+	// uncomment o translate pins names when printing pins states with $P command
+	// #define ENABLE_PIN_TRANSLATIONS
+
+	/**
 	 * Modifies the startup message to emulate Grbl (required by some programs so
 	 * that uCNC is recognized a Grbl protocol controller device)
 	 * 0 - disables
@@ -585,23 +591,6 @@ extern "C"
 	 * */
 
 #define ENABLE_SYSTEM_INFO
-
-	/**
-	 * Enables additional core grbl system commands
-	 * For settings allows settings to only be stored in EEPROM/Flash explicitly
-	 * on special command This makes that all $<setting-id>=<setting-value>
-	 * commands are only performed in SRAM and not stored directly to
-	 * EEPROM/Flash A few commands are added: $SS - Settings store - records
-	 * settings from SRAM to EEPROM/Flash $SL - Settings load - Loads settings
-	 * from EEPROM/Flash to SRAM $SR - Settings reset - Reloads the default value
-	 * settings from ROM to SRAM
-	 *
-	 * For pin diagnostics enables command $P
-	 * */
-
-	// #define ENABLE_EXTRA_SYSTEM_CMDS
-	// uncomment o translate pins names when printing pins states with $P command
-	// #define ENABLE_PIN_TRANSLATIONS
 
 	/**
 	 * Compilation specific options
@@ -626,6 +615,18 @@ extern "C"
 	 * This is useful if you don't have EEPROM/FLASH storage or the divide read/write maximum cycle count is low to prevent damage
 	 * */
 	// #define RAM_ONLY_SETTINGS
+
+	/**
+	 * Enable extra settings commands.
+	 * For settings allows settings to only be stored in EEPROM/Flash explicitly
+	 * on special command This makes that all $<setting-id>=<setting-value>
+	 * commands are only performed in SRAM and not stored directly to
+	 * EEPROM/Flash A few commands are added: $SS - Settings store - records
+	 * settings from SRAM to EEPROM/Flash $SL - Settings load - Loads settings
+	 * from EEPROM/Flash to SRAM $SR - Settings reset - Reloads the default value
+	 * settings from ROM to SRAM
+	 * */
+	// #define ENABLE_EXTRA_SETTINGS_CMDS
 
 	/**
 	 * EXPERIMENTAL! Uncomment to enable fast math macros to reduce the number of

@@ -155,7 +155,9 @@ typedef uint16_t setting_offset_t;
 		uint8_t type;
 	} setting_id_t;
 
+#ifndef DISABLE_SAFE_SETTINGS
 	extern uint8_t g_settings_error;
+#endif
 	extern settings_t g_settings;
 	extern const setting_id_t g_settings_id_table[];
 
@@ -234,7 +236,7 @@ typedef uint16_t setting_offset_t;
 		memset(var, 0, sizeof(type) * count);                                            \
 		return EVENT_CONTINUE;                                                           \
 	}                                                                                  \
-	bool set##ID##_proto_cnc_settings(void *args)                              \
+	bool set##ID##_proto_cnc_settings(void *args)                                      \
 	{                                                                                  \
 		type *ptr = var;                                                                 \
 		for (uint8_t i = 0; i < count; i++)                                              \
@@ -288,22 +290,22 @@ typedef uint16_t setting_offset_t;
 		settings_save(set##ID##_settings_address, (uint8_t *)var, sizeof(char) * count);   \
 		return EVENT_CONTINUE;                                                             \
 	}                                                                                    \
-	bool set##ID##_proto_cnc_settings(void *args)                                \
+	bool set##ID##_proto_cnc_settings(void *args)                                        \
 	{                                                                                    \
 		memset(var, 0, sizeof(char) * count);                                              \
 		settings_load(set##ID##_settings_address, (uint8_t *)var, sizeof(char) * count);   \
-		proto_putc('$');                                                           \
-		proto_printf("%ld", ID);                                                   \
-		proto_putc('=');                                                           \
+		proto_putc('$');                                                                   \
+		proto_printf("%ld", ID);                                                           \
+		proto_putc('=');                                                                   \
 		for (uint8_t i = 0; i < count; i++)                                                \
 		{                                                                                  \
 			char c = var[i];                                                                 \
 			if (c < 20 || c > 127)                                                           \
 			{                                                                                \
-				proto_print(MSG_EOL);                                                  \
+				proto_print(MSG_EOL);                                                          \
 				return EVENT_CONTINUE;                                                         \
 			}                                                                                \
-			proto_putc(c);                                                           \
+			proto_putc(c);                                                                   \
 		}                                                                                  \
 		return EVENT_CONTINUE;                                                             \
 	}                                                                                    \
@@ -318,17 +320,17 @@ typedef uint16_t setting_offset_t;
 #define __EXTENDED_SETTING_ADDRESS__(ID) set##ID##_settings_address
 #define EXTENDED_SETTING_ADDRESS(ID) __EXTENDED_SETTING_ADDRESS__(ID)
 
-#define __EXTENDED_SETTING_INIT__(ID, var)                                                \
-	static bool set##ID##_init = false;                                                     \
-	if (!set##ID##_init)                                                                    \
-	{                                                                                       \
-		set##ID##_settings_address = settings_register_external_setting(sizeof(var));         \
-		ADD_EVENT_LISTENER(settings_extended_load, set##ID##_settings_load);                  \
-		ADD_EVENT_LISTENER(settings_extended_save, set##ID##_settings_save);                  \
-		ADD_EVENT_LISTENER(settings_change, set##ID##_settings_change);                       \
-		ADD_EVENT_LISTENER(settings_extended_erase, set##ID##_settings_erase);                \
-		ADD_EVENT_LISTENER(proto_cnc_settings, set##ID##_proto_cnc_settings); \
-		set##ID##_init = true;                                                                \
+#define __EXTENDED_SETTING_INIT__(ID, var)                                        \
+	static bool set##ID##_init = false;                                             \
+	if (!set##ID##_init)                                                            \
+	{                                                                               \
+		set##ID##_settings_address = settings_register_external_setting(sizeof(var)); \
+		ADD_EVENT_LISTENER(settings_extended_load, set##ID##_settings_load);          \
+		ADD_EVENT_LISTENER(settings_extended_save, set##ID##_settings_save);          \
+		ADD_EVENT_LISTENER(settings_change, set##ID##_settings_change);               \
+		ADD_EVENT_LISTENER(settings_extended_erase, set##ID##_settings_erase);        \
+		ADD_EVENT_LISTENER(proto_cnc_settings, set##ID##_proto_cnc_settings);         \
+		set##ID##_init = true;                                                        \
 	}
 
 #define EXTENDED_SETTING_INIT(ID, var) __EXTENDED_SETTING_INIT__(ID, var)
