@@ -445,7 +445,7 @@ void settings_save(uint16_t address, uint8_t *__ptr, uint16_t size)
 #ifndef DISABLE_SAFE_SETTINGS
 		if (args.error)
 		{
-			g_settings_error |= SETTINGS_READ_ERROR;
+			g_settings_error |= SETTINGS_WRITE_ERROR;
 		}
 #endif
 		return;
