@@ -173,13 +173,19 @@ typedef uint16_t setting_offset_t;
 	uint8_t settings_count(void);
 
 #if (defined(ENABLE_SETTINGS_MODULES) || defined(BOARD_HAS_CUSTOM_SYSTEM_COMMANDS))
-	// event_settings_change_handler
+	// event_settings_extended_load_handler
+	DECL_EVENT_HANDLER(settings_extended_load);
+	// event_settings_extended_save_handler
+	DECL_EVENT_HANDLER(settings_extended_save);
+	// event_settings_extended_erase_handler
+	DECL_EVENT_HANDLER(settings_extended_erase);
+	// event_settings_extended_change_handler
 	typedef struct setting_args_
 	{
 		uint16_t id;
 		float value;
 	} setting_args_t;
-	DECL_EVENT_HANDLER(settings_change);
+	DECL_EVENT_HANDLER(settings_extended_change);
 	typedef struct settings_args_
 	{
 		uint16_t address;
@@ -191,15 +197,6 @@ typedef uint16_t setting_offset_t;
 	DECL_EVENT_HANDLER(settings_load);
 	// event_settings_save_handler
 	DECL_EVENT_HANDLER(settings_save);
-	// event_settings_erase_handler
-	DECL_EVENT_HANDLER(settings_erase);
-
-	// event_settings_extended_load_handler
-	DECL_EVENT_HANDLER(settings_extended_load);
-	// event_settings_extended_save_handler
-	DECL_EVENT_HANDLER(settings_extended_save);
-	// event_settings_extended_erase_handler
-	DECL_EVENT_HANDLER(settings_extended_erase);
 #endif
 
 /**
@@ -247,7 +244,7 @@ typedef uint16_t setting_offset_t;
 	}                                                                                  \
 	CREATE_EVENT_LISTENER(settings_extended_load, set##ID##_settings_load);            \
 	CREATE_EVENT_LISTENER(settings_extended_save, set##ID##_settings_save);            \
-	CREATE_EVENT_LISTENER(settings_change, set##ID##_settings_change);                 \
+	CREATE_EVENT_LISTENER(settings_extended_change, set##ID##_settings_change);        \
 	CREATE_EVENT_LISTENER(settings_extended_erase, set##ID##_settings_erase);          \
 	CREATE_EVENT_LISTENER(proto_cnc_settings, set##ID##_proto_cnc_settings)
 #define DECL_EXTENDED_SETTING(ID, var, type, count, print_cb) __DECL_EXTENDED_SETTING__(ID, var, type, count, print_cb)
@@ -311,7 +308,7 @@ typedef uint16_t setting_offset_t;
 	}                                                                                    \
 	CREATE_EVENT_LISTENER(settings_extended_load, set##ID##_settings_load);              \
 	CREATE_EVENT_LISTENER(settings_extended_save, set##ID##_settings_save);              \
-	CREATE_EVENT_LISTENER(settings_change, set##ID##_settings_change);                   \
+	CREATE_EVENT_LISTENER(settings_extended_change, set##ID##_settings_change);          \
 	CREATE_EVENT_LISTENER(settings_extended_erase, set##ID##_settings_erase);            \
 	CREATE_EVENT_LISTENER(proto_cnc_settings, set##ID##_proto_cnc_settings)
 
@@ -327,7 +324,7 @@ typedef uint16_t setting_offset_t;
 		set##ID##_settings_address = settings_register_external_setting(sizeof(var)); \
 		ADD_EVENT_LISTENER(settings_extended_load, set##ID##_settings_load);          \
 		ADD_EVENT_LISTENER(settings_extended_save, set##ID##_settings_save);          \
-		ADD_EVENT_LISTENER(settings_change, set##ID##_settings_change);               \
+		ADD_EVENT_LISTENER(settings_extended_change, set##ID##_settings_change);      \
 		ADD_EVENT_LISTENER(settings_extended_erase, set##ID##_settings_erase);        \
 		ADD_EVENT_LISTENER(proto_cnc_settings, set##ID##_proto_cnc_settings);         \
 		set##ID##_init = true;                                                        \

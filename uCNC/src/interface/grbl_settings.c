@@ -242,30 +242,6 @@ const setting_id_t __rom__ g_settings_id_table[] = {
 };
 
 #ifdef ENABLE_SETTINGS_MODULES
-// event_settings_change_handler
-WEAK_EVENT_HANDLER(settings_change)
-{
-	DEFAULT_EVENT_HANDLER(settings_change);
-}
-
-// event_settings_load_handler
-WEAK_EVENT_HANDLER(settings_load)
-{
-	DEFAULT_EVENT_HANDLER(settings_load);
-}
-
-// event_settings_save_handler
-WEAK_EVENT_HANDLER(settings_save)
-{
-	DEFAULT_EVENT_HANDLER(settings_save);
-}
-
-// event_settings_erase_handler
-WEAK_EVENT_HANDLER(settings_erase)
-{
-	DEFAULT_EVENT_HANDLER(settings_erase);
-}
-
 // event_settings_extended_load_handler
 WEAK_EVENT_HANDLER(settings_extended_load)
 {
@@ -295,6 +271,24 @@ WEAK_EVENT_HANDLER(settings_extended_erase)
 		return EVENT_CONTINUE;
 	}
 	DEFAULT_EVENT_HANDLER(settings_extended_erase);
+}
+
+// event_settings_extended_change_handler
+WEAK_EVENT_HANDLER(settings_extended_change)
+{
+	DEFAULT_EVENT_HANDLER(settings_extended_change);
+}
+
+// event_settings_load_handler
+WEAK_EVENT_HANDLER(settings_load)
+{
+	DEFAULT_EVENT_HANDLER(settings_load);
+}
+
+// event_settings_save_handler
+WEAK_EVENT_HANDLER(settings_save)
+{
+	DEFAULT_EVENT_HANDLER(settings_save);
 }
 #endif
 
@@ -562,7 +556,7 @@ uint8_t settings_change(setting_offset_t id, float value)
 	else
 	{
 		setting_args_t extended_setting = {.id = id, .value = value};
-		if (!EVENT_INVOKE(settings_change, &extended_setting))
+		if (!EVENT_INVOKE(settings_extended_change, &extended_setting))
 		{
 			return STATUS_INVALID_STATEMENT;
 		}
@@ -612,13 +606,8 @@ void settings_erase(uint16_t address, uint8_t *__ptr, uint16_t size)
 	}
 
 #ifdef ENABLE_SETTINGS_MODULES
-	bool extended_erase __attribute__((__cleanup__(EVENT_HANDLER_NAME(settings_extended_erase)))) = is_machine_settings;
-	settings_args_t args = {.address = address, .data = __ptr, .size = size, .error = 0};
-	if (EVENT_INVOKE(settings_erase, &args))
-	{
-		// if the event was handled
-		return;
-	}
+	// propagates the erase event to all extended settings
+	EVENT_INVOKE(settings_extended_erase, &is_machine_settings);
 #endif
 
 #ifdef ENABLE_EXTRA_SETTINGS_CMDS
