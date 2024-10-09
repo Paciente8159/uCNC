@@ -44,8 +44,14 @@ static float parser_last_pos[AXIS_COUNT];
 #define ADDITIONAL_COORDINATES 0
 #endif
 
+#ifdef DISABLE_COORD_SYS_SUPPORT
+#define TOTAL_COORDINATE_SYSTEMS (1 + ADDITIONAL_COORDINATES)
+#else
+#define TOTAL_COORDINATE_SYSTEMS (COORD_SYS_COUNT + ADDITIONAL_COORDINATES)
+#endif
+
 #ifndef DISABLE_COORDINATES_SYSTEM_RAM
-static float coordinate_systems[COORD_SYS_COUNT + ADDITIONAL_COORDINATES][AXIS_COUNT];
+static float coordinate_systems[TOTAL_COORDINATE_SYSTEMS][AXIS_COUNT];
 #endif
 
 static unsigned char parser_get_next_preprocessed(bool peek);
@@ -287,19 +293,13 @@ void parser_parameters_reset(void)
 
 #ifndef DISABLE_COORDINATES_SYSTEM_RAM
 	memset(coordinate_systems, 0, sizeof(coordinate_systems));
-#else
-#ifndef DISABLE_HOME_SUPPORT
-	// erase homing positions
-	settings_erase(G28ADDRESS, (uint8_t *)&parser_parameters.coord_system_offset, PARSER_PARAM_SIZE);
-	settings_erase(G30ADDRESS, (uint8_t *)&parser_parameters.coord_system_offset, PARSER_PARAM_SIZE);
 #endif
-#ifndef DISABLE_COORD_SYS_SUPPORT
-	for (uint8_t i = 0; i < COORD_SYS_COUNT; i++)
+
+	// erase all G5x workoffsets and home G28 and G30
+	for (uint8_t i = 0; i < TOTAL_COORDINATE_SYSTEMS; i++)
 	{
 		settings_erase(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (i * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)&parser_parameters.coord_system_offset, PARSER_PARAM_SIZE);
 	}
-#endif
-#endif
 
 // erase G92
 #ifdef G92_STORE_NONVOLATILE
@@ -313,26 +313,18 @@ void parser_parameters_save(void)
 {
 	// saves all stored parameters (only possible if parameters also exist in RAM)
 #ifndef DISABLE_COORDINATES_SYSTEM_RAM
-#ifndef DISABLE_COORD_SYS_SUPPORT
-	for (uint8_t i = 0; i < COORD_SYS_COUNT; i++)
+	for (uint8_t i = 0; i < TOTAL_COORDINATE_SYSTEMS; i++)
 	{
 		settings_save(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (i * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)&coordinate_systems[i], PARSER_PARAM_SIZE);
 	}
-#endif
-
-#ifndef DISABLE_HOME_SUPPORT
-	// erase homing positions
-	settings_save(G28ADDRESS, (uint8_t *)&coordinate_systems[G28HOME], PARSER_PARAM_SIZE);
-	settings_save(G30ADDRESS, (uint8_t *)&coordinate_systems[G30HOME], PARSER_PARAM_SIZE);
-#endif
-#endif
-
-// erase G92
-#ifdef G92_STORE_NONVOLATILE
-	settings_save(G92ADDRESS + (i * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)&coordinate_systems[i], PARSER_PARAM_SIZE);
-	settings_erase(G92ADDRESS, (uint8_t *)&g92permanentoffset, PARSER_PARAM_SIZE);
 #else
-	memset(g92permanentoffset, 0, sizeof(g92permanentoffset));
+	// can only store the current loaded working system
+	settings_save(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (parser_parameters.coord_system_index * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)&parser_parameters.coord_system_offset, PARSER_PARAM_SIZE);
+#endif
+
+// save G92
+#ifdef G92_STORE_NONVOLATILE
+	settings_save(G92ADDRESS, (uint8_t *)&g92permanentoffset, PARSER_PARAM_SIZE);
 #endif
 }
 
@@ -3238,19 +3230,15 @@ void parser_parameters_load(void)
 {
 // loads G92
 #ifdef G92_STORE_NONVOLATILE
-	if (settings_load(READ_COORDINATE_FROM_NVM | G92ADDRESS, (uint8_t *)&parser_parameters.g92_offset, PARSER_PARAM_SIZE))
-	{
-		settings_erase(G92ADDRESS, (uint8_t *)&parser_parameters.g92_offset, PARSER_PARAM_SIZE);
-	}
-	memcpy(g92permanentoffset, parser_parameters.g92_offset, sizeof(g92permanentoffset));
+	settings_load(READ_COORDINATE_FROM_NVM | G92ADDRESS, (uint8_t *)&g92permanentoffset, PARSER_PARAM_SIZE);
+	memcpy(parser_parameters.g92_offset, g92permanentoffset, sizeof(g92permanentoffset));
 #else
-	memset(parser_parameters.g92_offset, 0, sizeof(parser_parameters.g92_offset));
-	memset(g92permanentoffset, 0, sizeof(g92permanentoffset));
+	memset(parser_parameters.g92_offset, 0, PARSER_PARAM_SIZE);
+	memset(g92permanentoffset, 0, PARSER_PARAM_SIZE);
 #endif
 
-	for (uint8_t i = 1; i < G92OFFSET; i++)
+	for (uint8_t i = 1; i < TOTAL_COORDINATE_SYSTEMS; i++)
 	{
-
 #ifndef DISABLE_COORDINATES_SYSTEM_RAM
 		parser_coordinate_system_load(READ_COORDINATE_FROM_NVM | i, coordinate_systems[i]);
 #else
@@ -3615,7 +3603,15 @@ void parser_coordinate_system_load(uint8_t param, float *target)
 #ifndef DISABLE_COORDINATES_SYSTEM_RAM
 	if (!(param & READ_COORDINATE_FROM_NVM))
 	{
-		memcpy(target, (uint8_t *)coordinate_systems[param], PARSER_PARAM_SIZE);
+		switch (param)
+		{
+		case G92OFFSET:
+			memcpy(target, (uint8_t *)g92permanentoffset, PARSER_PARAM_SIZE);
+			break;
+		default:
+			memcpy(target, (uint8_t *)coordinate_systems[param], PARSER_PARAM_SIZE);
+			break;
+		}
 		return;
 	}
 #endif
@@ -3623,15 +3619,6 @@ void parser_coordinate_system_load(uint8_t param, float *target)
 	uint16_t address = 0;
 	switch (param)
 	{
-#ifndef DISABLE_HOME_SUPPORT
-	// G28
-	case G28HOME:
-		address = G28ADDRESS;
-		break;
-	case G30HOME:
-		address = G30ADDRESS;
-		break;
-#endif
 #ifdef G92_STORE_NONVOLATILE
 	case G92OFFSET:
 		address = G92ADDRESS;
@@ -3642,8 +3629,5 @@ void parser_coordinate_system_load(uint8_t param, float *target)
 		break;
 	}
 
-	if (settings_load(address, (uint8_t *)target, PARSER_PARAM_SIZE))
-	{
-		settings_erase(address, (uint8_t *)target, PARSER_PARAM_SIZE);
-	}
+	settings_load(address, (uint8_t *)target, PARSER_PARAM_SIZE);
 }
