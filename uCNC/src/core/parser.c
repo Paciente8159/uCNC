@@ -2183,19 +2183,47 @@ float parser_get_parameter(int param)
 	int32_t probe_position[STEPPER_COUNT];
 	int offset = param * 0.1f;
 	uint8_t pos = (uint8_t)(param - (offset * 10));
+	uint8_t index = 0;
+
+	pos--;
 
 	switch (offset)
 	{
 	case 506:
 		parser_get_probe(probe_position);
 		kinematics_steps_to_coordinates(probe_position, result);
-		pos--;
 		if (pos < AXIS_COUNT)
 		{
 			return result[pos];
 		}
 		break;
+	case 507:
+		pos++;
+		if (!pos)
+		{
+			return parser_parameters.last_probe_ok;
+		}
+		break;
+#ifndef DISABLE_HOME_SUPPORT
+	case 516:
+		parser_coordinate_system_load(G28HOME, result);
+		if (pos < AXIS_COUNT)
+		{
+			return result[pos];
+		}
+		break;
+	case 518:
+		parser_coordinate_system_load(G30HOME, result);
+		if (pos < AXIS_COUNT)
+		{
+			return result[pos];
+		}
+		break;
+#endif
+	case 521:
+		return g92permanentoffset[pos];
 	case 522:
+		pos++;
 		if (!pos)
 		{
 			return (parser_state.groups.coord_system + 1);
@@ -2210,24 +2238,27 @@ float parser_get_parameter(int param)
 	case 534:
 	case 536:
 	case 538:
-		if (pos >= AXIS_COUNT || ((offset - 522) >> 1) >= COORD_SYS_COUNT)
+		index = ((offset - 522) >> 1);
+		if (pos < AXIS_COUNT && index < COORD_SYS_COUNT)
 		{
-			return 0;
+			if (index != parser_parameters.coord_system_index)
+			{
+				parser_coordinate_system_load(index, result);
+			}
+			else
+			{
+				return parser_parameters.coord_system_offset[pos];
+			}
+			return result[pos];
 		}
-		if (pos != parser_parameters.coord_system_index)
-		{
-			parser_coordinate_system_load(pos, result);
-		}
-		else
-		{
-			return parser_parameters.coord_system_offset[pos];
-		}
-		return result[pos];
+		break;
 	case 540:
+		pos++;
 		if (!pos)
 		{
 			return parser_state.groups.tool_change;
 		}
+		pos--;
 		return g_settings.tool_length_offset[parser_state.groups.tool_change];
 	case 542:
 		if (pos < AXIS_COUNT)
