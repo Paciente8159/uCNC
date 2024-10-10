@@ -3632,33 +3632,17 @@ void parser_machine_to_work(float *axis)
 
 void parser_coordinate_system_load(uint8_t param, float *target)
 {
+	switch (param)
+	{
+	case G92OFFSET:
+		memcpy(target, (uint8_t *)g92permanentoffset, PARSER_PARAM_SIZE);
+		break;
+	default:
 #ifndef DISABLE_COORDINATES_SYSTEM_RAM
-	switch (param)
-	{
-	case G92OFFSET:
-		memcpy(target, (uint8_t *)g92permanentoffset, PARSER_PARAM_SIZE);
-		break;
-	default:
 		memcpy(target, (uint8_t *)coordinate_systems[param], PARSER_PARAM_SIZE);
+#else
+		settings_load(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (param * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)target, PARSER_PARAM_SIZE);
+#endif
 		break;
 	}
-#else
-	uint16_t address = 0;
-	switch (param)
-	{
-#ifdef G92_STORE_NONVOLATILE
-	case G92OFFSET:
-		address = G92ADDRESS;
-		break;
-#else
-		memcpy(target, (uint8_t *)g92permanentoffset, PARSER_PARAM_SIZE);
-		break;
-#endif
-	default:
-		address = SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (param * PARSER_PARAM_ADDR_OFFSET);
-		break;
-	}
-
-	settings_load(address, (uint8_t *)target, PARSER_PARAM_SIZE);
-#endif
 }

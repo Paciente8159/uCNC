@@ -53,8 +53,6 @@ __NOTE__: Not all event hooks might be listed here. To find all available event 
 | cnc_parse_cmd_error | NULL | ENABLE_MAIN_LOOP_MODULES | Fires when an invalid command is received |
 | cnc_alarm | NULL | ENABLE_MAIN_LOOP_MODULES | Fires when an alarm is triggered |
 | settings_extended_change | setting_args_t* | ENABLE_SETTINGS_MODULES | Fires when a $ setting is changed. Arg is a pointer to a setting_args_t struct identifying the changed setting id and value |
-| settings_load | settings_args_t* | ENABLE_SETTINGS_MODULES | Fires when settings are loaded from memory. Arg is a pointer to a settings_args_t struct |
-| settings_save | settings_args_t* | ENABLE_SETTINGS_MODULES | Fires when settings are saved into memory. Arg is a pointer to a settings_args_t struct |
 | settings_extended_load | NULL | ENABLE_SETTINGS_MODULES | Fires when the base settings ($) are loaded from memory. Arg is a pointer to a settings_args_t struct |
 | settings_extended_save | NULL | ENABLE_SETTINGS_MODULES | Fires when the base settings ($) are saved into memory. Arg is a pointer to a settings_args_t struct |
 | settings_extended_erase | NULL | ENABLE_SETTINGS_MODULES | Fires when the base settings are erased/reset ($). This will only be triggered when the base address of the settings is targeted |

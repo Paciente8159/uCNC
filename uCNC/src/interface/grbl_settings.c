@@ -278,18 +278,6 @@ WEAK_EVENT_HANDLER(settings_extended_change)
 {
 	DEFAULT_EVENT_HANDLER(settings_extended_change);
 }
-
-// event_settings_load_handler
-WEAK_EVENT_HANDLER(settings_load)
-{
-	DEFAULT_EVENT_HANDLER(settings_load);
-}
-
-// event_settings_save_handler
-WEAK_EVENT_HANDLER(settings_save)
-{
-	DEFAULT_EVENT_HANDLER(settings_save);
-}
 #endif
 
 static uint8_t settings_size_crc(uint16_t size, uint8_t crc)
@@ -297,6 +285,22 @@ static uint8_t settings_size_crc(uint16_t size, uint8_t crc)
 	crc = crc7(((uint8_t *)&size)[0], crc);
 	return crc7(((uint8_t *)&size)[1], crc);
 }
+
+#ifdef ENABLE_SETTINGS_MODULES
+void __attribute__((weak)) nvm_start_read(uint16_t address) {}
+void __attribute__((weak)) nvm_start_write(uint16_t address) {}
+uint8_t __attribute__((weak)) nvm_getc(uint16_t address) {return mcu_eeprom_getc(address);}
+void __attribute__((weak)) nvm_putc(uint16_t address, uint8_t c) {mcu_eeprom_putc(address, c);}
+void __attribute__((weak)) nvm_end_read(void) {}
+void __attribute__((weak)) nvm_end_write(void) {mcu_eeprom_flush();}
+#else
+#define nvm_start_read(address)
+#define nvm_start_write(address)
+#define nvm_getc mcu_eeprom_getc
+#define nvm_putc mcu_eeprom_putc
+#define nvm_end_read()
+#define nvm_end_write mcu_eeprom_flush
+#endif
 
 void settings_init(void)
 {
@@ -347,50 +351,35 @@ uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint16_t size)
 
 #ifdef ENABLE_SETTINGS_MODULES
 	bool extended_load __attribute__((__cleanup__(EVENT_HANDLER_NAME(settings_extended_load)))) = is_machine_settings;
-	// load settings event arg with error. It's the responsability of the handler to clear it if all is OK.
-	settings_args_t args = {.address = address, .data = __ptr, .size = size, .error = 1};
-	// if handled exit
-	if (EVENT_INVOKE(settings_load, &args))
-	{
-#ifndef DISABLE_SAFE_SETTINGS
-		if (args.error)
-		{
-			g_settings_error |= SETTINGS_READ_ERROR;
-		}
 #endif
-		return STATUS_OK;
+
+	nvm_start_read(address);
+	for (uint16_t i = 0; i < size;)
+	{
+		uint8_t value = nvm_getc(address++);
+		crc = crc7(value, crc);
+		if (__ptr)
+		{
+			*(__ptr++) = value;
+		}
+
+		i++;
+		if (!__ptr && (value == EOL))
+		{
+			size = i;
+			break;
+		}
 	}
-	else
-	{
-#endif
 
-		for (uint16_t i = 0; i < size;)
-		{
-			uint8_t value = mcu_eeprom_getc(address++);
-			crc = crc7(value, crc);
-			if (__ptr)
-			{
-				*(__ptr++) = value;
-			}
+	crc = settings_size_crc(size, crc);
+	crc ^= nvm_getc(address);
 
-			i++;
-			if (!__ptr && (value == EOL))
-			{
-				size = i;
-				break;
-			}
-		}
-
-		crc = settings_size_crc(size, crc);
-		crc ^= mcu_eeprom_getc(address);
+	nvm_end_read();
 
 #ifndef DISABLE_SAFE_SETTINGS
-		if (crc)
-		{
-			g_settings_error |= SETTINGS_READ_ERROR;
-		}
-#endif
-#ifdef ENABLE_SETTINGS_MODULES
+	if (crc)
+	{
+		g_settings_error |= SETTINGS_READ_ERROR;
 	}
 #endif
 
@@ -437,23 +426,10 @@ void settings_save(uint16_t address, uint8_t *__ptr, uint16_t size)
 
 #ifdef ENABLE_SETTINGS_MODULES
 	bool extended_save __attribute__((__cleanup__(EVENT_HANDLER_NAME(settings_extended_save)))) = (address == SETTINGS_ADDRESS_OFFSET);
-	// handler must clear the error if all is ok
-	settings_args_t args = {.address = address, .data = __ptr, .size = size, .error = 1};
-	if (EVENT_INVOKE(settings_save, &args))
-	{
-// if the event was handled
-#ifndef DISABLE_SAFE_SETTINGS
-		if (args.error)
-		{
-			g_settings_error |= SETTINGS_WRITE_ERROR;
-		}
-#endif
-		return;
-	}
 #endif
 
 	uint8_t crc = 0;
-
+	nvm_start_write(address);
 	for (uint16_t i = 0; i < size;)
 	{
 		if (cnc_get_exec_state(EXEC_RUN))
@@ -463,7 +439,7 @@ void settings_save(uint16_t address, uint8_t *__ptr, uint16_t size)
 
 		uint8_t c = (__ptr != NULL) ? (*(__ptr++)) : ((uint8_t)grbl_stream_getc());
 		crc = crc7(c, crc);
-		mcu_eeprom_putc(address++, c);
+		nvm_putc(address++, c);
 		i++;
 		if (!__ptr && (c == EOL))
 		{
@@ -474,8 +450,8 @@ void settings_save(uint16_t address, uint8_t *__ptr, uint16_t size)
 
 	crc = settings_size_crc(size, crc);
 
-	mcu_eeprom_putc(address, crc);
-	mcu_eeprom_flush();
+	nvm_putc(address, crc);
+	nvm_end_write();
 }
 
 bool settings_allows_negative(setting_offset_t id)

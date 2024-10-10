@@ -189,6 +189,16 @@ typedef uint16_t setting_offset_t;
 	extern settings_t g_settings;
 	extern const setting_id_t g_settings_id_table[];
 
+	/**
+	 * Overridable callbacks to implement external NVM mechanisms
+	 */
+	void nvm_start_read(uint16_t address);
+	void nvm_start_write(uint16_t address);
+	uint8_t nvm_getc(uint16_t address);
+	void nvm_putc(uint16_t address, uint8_t c);
+	void nvm_end_read(void);
+	void nvm_end_write(void);
+
 	void settings_init(void);
 	// Assumes that no structure being saved is bigger than 255 bytes
 	uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint16_t size);
@@ -214,17 +224,6 @@ typedef uint16_t setting_offset_t;
 		float value;
 	} setting_args_t;
 	DECL_EVENT_HANDLER(settings_extended_change);
-	typedef struct settings_args_
-	{
-		uint16_t address;
-		uint8_t *data;
-		uint8_t size;
-		uint8_t error;
-	} settings_args_t;
-	// event_settings_load_handler
-	DECL_EVENT_HANDLER(settings_load);
-	// event_settings_save_handler
-	DECL_EVENT_HANDLER(settings_save);
 #endif
 
 /**
