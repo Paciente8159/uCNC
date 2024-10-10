@@ -286,21 +286,12 @@ static uint8_t settings_size_crc(uint16_t size, uint8_t crc)
 	return crc7(((uint8_t *)&size)[1], crc);
 }
 
-#ifdef ENABLE_SETTINGS_MODULES
 void __attribute__((weak)) nvm_start_read(uint16_t address) {}
 void __attribute__((weak)) nvm_start_write(uint16_t address) {}
-uint8_t __attribute__((weak)) nvm_getc(uint16_t address) {return mcu_eeprom_getc(address);}
-void __attribute__((weak)) nvm_putc(uint16_t address, uint8_t c) {mcu_eeprom_putc(address, c);}
+uint8_t __attribute__((weak)) nvm_getc(uint16_t address) { return mcu_eeprom_getc(address); }
+void __attribute__((weak)) nvm_putc(uint16_t address, uint8_t c) { mcu_eeprom_putc(address, c); }
 void __attribute__((weak)) nvm_end_read(void) {}
-void __attribute__((weak)) nvm_end_write(void) {mcu_eeprom_flush();}
-#else
-#define nvm_start_read(address)
-#define nvm_start_write(address)
-#define nvm_getc mcu_eeprom_getc
-#define nvm_putc mcu_eeprom_putc
-#define nvm_end_read()
-#define nvm_end_write mcu_eeprom_flush
-#endif
+void __attribute__((weak)) nvm_end_write(void) { mcu_eeprom_flush(); }
 
 void settings_init(void)
 {
@@ -512,16 +503,16 @@ uint8_t settings_change(setting_offset_t id, float value)
 				switch (SETTING_TYPE_MASK(s.type))
 				{
 				case 1:
-					((bool *)s.memptr)[s.id - (uint8_t)id] = value1;
+					((bool *)s.memptr)[(uint8_t)id - s.id] = value1;
 					break;
 				case 2:
-					((uint8_t *)s.memptr)[s.id - (uint8_t)id] = value8;
+					((uint8_t *)s.memptr)[(uint8_t)id - s.id] = value8;
 					break;
 				case 3:
-					((uint16_t *)s.memptr)[s.id - (uint8_t)id] = value16;
+					((uint16_t *)s.memptr)[(uint8_t)id - s.id] = value16;
 					break;
 				default:
-					((float *)s.memptr)[s.id - (uint8_t)id] = value;
+					((float *)s.memptr)[(uint8_t)id - s.id] = value;
 					break;
 				}
 			}

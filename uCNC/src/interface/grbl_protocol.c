@@ -781,9 +781,10 @@ void proto_start_blocks(void)
 		proto_itoa(i);
 		proto_putc('=');
 
+		nvm_start_read(address);
 		for (;;)
 		{
-			settings_load(address++, &c, 1);
+			c = nvm_getc(address++);
 			if (c > 0 && c < 128)
 			{
 				proto_putc(c);
@@ -794,6 +795,8 @@ void proto_start_blocks(void)
 				break;
 			}
 		}
+
+		nvm_end_read();
 	}
 
 	protocol_busy = false;

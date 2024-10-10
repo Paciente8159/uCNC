@@ -881,6 +881,17 @@ extern "C"
 	{
 		return (uint32_t)(mcu_free_micros() % 1000);
 	}
+	
+	/**
+	*Solve compiler issues
+	*/
+	
+	void nvm_start_read(uint16_t address) {}
+void nvm_start_write(uint16_t address) {}
+uint8_t nvm_getc(uint16_t address) { return mcu_eeprom_getc(address); }
+void nvm_putc(uint16_t address, uint8_t c) { mcu_eeprom_putc(address, c); }
+void nvm_end_read(void) {}
+void nvm_end_write(void) { mcu_eeprom_flush(); }
 #ifdef __cplusplus
 }
 #endif
