@@ -181,6 +181,8 @@ extern "C"
 #define PRINT_FTM_MINIMAL
 #endif
 
+#define DISABLE_COORDINATES_SYSTEM_RAM
+
 #ifdef __cplusplus
 }
 #endif

@@ -50,7 +50,7 @@ extern "C"
 	void proto_gcode_setting_line_int(setting_offset_t setting, uint16_t value);
 	void proto_gcode_setting_line_flt(setting_offset_t setting, float value);
 
-#ifdef ENABLE_EXTRA_SYSTEM_CMDS
+#ifdef ENABLE_PIN_DEBUG_EXTRA_CMD
 	void proto_pins_states(void);
 #endif
 #ifdef ENABLE_SYSTEM_INFO
