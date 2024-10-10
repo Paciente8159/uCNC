@@ -114,8 +114,6 @@ extern "C"
 #define EXTENDED_GCODE(X) (EXTENDED_GCODE_BASE + (int16_t)(X * 10))
 #define EXTENDED_MOTION_GCODE(X) (-X)
 
-#define READ_COORDINATE_FROM_NVM (0x80)
-
 #define NUMBER_UNDEF 0
 #define NUMBER_OK 0x20
 #define NUMBER_ISFLOAT 0x40

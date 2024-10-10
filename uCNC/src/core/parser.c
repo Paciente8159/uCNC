@@ -1711,7 +1711,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		}
 		memcpy(g92permanentoffset, parser_parameters.g92_offset, sizeof(g92permanentoffset));
 #ifdef G92_STORE_NONVOLATILE
-		settings_save(G92ADDRESS, (uint8_t *)&parser_parameters.g92_offset[0], PARSER_PARAM_SIZE);
+		settings_save(G92ADDRESS, (uint8_t *)&g92permanentoffset, PARSER_PARAM_SIZE);
 #endif
 		parser_wco_counter = 0;
 		break;
@@ -3253,7 +3253,7 @@ void parser_reset(bool stopgroup_only)
 #endif
 }
 
-// loads parameters
+// loads parameters from NVM
 // loads G92 offset
 // loads G54 coordinate system
 // also checks all other coordinate systems and homing positions
@@ -3261,24 +3261,25 @@ void parser_parameters_load(void)
 {
 // loads G92
 #ifdef G92_STORE_NONVOLATILE
-	settings_load(READ_COORDINATE_FROM_NVM | G92ADDRESS, (uint8_t *)&g92permanentoffset, PARSER_PARAM_SIZE);
+	settings_load(G92ADDRESS, (uint8_t *)&g92permanentoffset, PARSER_PARAM_SIZE);
 	memcpy(parser_parameters.g92_offset, g92permanentoffset, sizeof(g92permanentoffset));
 #else
 	memset(parser_parameters.g92_offset, 0, PARSER_PARAM_SIZE);
 	memset(g92permanentoffset, 0, PARSER_PARAM_SIZE);
 #endif
 
+	// loads all coordinate systems to check the storage integrity. This includes G28 and G30 if enabled
 	for (uint8_t i = 1; i < TOTAL_COORDINATE_SYSTEMS; i++)
 	{
 #ifndef DISABLE_COORDINATES_SYSTEM_RAM
-		parser_coordinate_system_load(READ_COORDINATE_FROM_NVM | i, coordinate_systems[i]);
+		settings_load(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (i * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)coordinate_systems[i], PARSER_PARAM_SIZE);
 #else
-		parser_coordinate_system_load(READ_COORDINATE_FROM_NVM | i, parser_parameters.coord_system_offset);
+		settings_load(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (i * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)parser_parameters.coord_system_offset, PARSER_PARAM_SIZE);
 #endif
 	}
 
 	// load G54
-	parser_coordinate_system_load(READ_COORDINATE_FROM_NVM | 0, parser_parameters.coord_system_offset);
+	settings_load(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET, (uint8_t *)parser_parameters.coord_system_offset, PARSER_PARAM_SIZE);
 #ifndef DISABLE_COORDINATES_SYSTEM_RAM
 	memcpy(coordinate_systems[0], parser_parameters.coord_system_offset, PARSER_PARAM_SIZE);
 #endif
@@ -3632,27 +3633,25 @@ void parser_machine_to_work(float *axis)
 void parser_coordinate_system_load(uint8_t param, float *target)
 {
 #ifndef DISABLE_COORDINATES_SYSTEM_RAM
-	if (!(param & READ_COORDINATE_FROM_NVM))
+	switch (param)
 	{
-		switch (param)
-		{
-		case G92OFFSET:
-			memcpy(target, (uint8_t *)g92permanentoffset, PARSER_PARAM_SIZE);
-			break;
-		default:
-			memcpy(target, (uint8_t *)coordinate_systems[param], PARSER_PARAM_SIZE);
-			break;
-		}
-		return;
+	case G92OFFSET:
+		memcpy(target, (uint8_t *)g92permanentoffset, PARSER_PARAM_SIZE);
+		break;
+	default:
+		memcpy(target, (uint8_t *)coordinate_systems[param], PARSER_PARAM_SIZE);
+		break;
 	}
-#endif
-	param &= ~READ_COORDINATE_FROM_NVM;
+#else
 	uint16_t address = 0;
 	switch (param)
 	{
 #ifdef G92_STORE_NONVOLATILE
 	case G92OFFSET:
 		address = G92ADDRESS;
+		break;
+#else
+		memcpy(target, (uint8_t *)g92permanentoffset, PARSER_PARAM_SIZE);
 		break;
 #endif
 	default:
@@ -3661,4 +3660,5 @@ void parser_coordinate_system_load(uint8_t param, float *target)
 	}
 
 	settings_load(address, (uint8_t *)target, PARSER_PARAM_SIZE);
+#endif
 }
