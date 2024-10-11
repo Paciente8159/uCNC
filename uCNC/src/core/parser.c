@@ -54,7 +54,6 @@ static float parser_last_pos[AXIS_COUNT];
 static float coordinate_systems[TOTAL_COORDINATE_SYSTEMS][AXIS_COUNT];
 #endif
 
-static unsigned char parser_get_next_preprocessed(bool peek);
 FORCEINLINE static void parser_get_comment(uint8_t start_char);
 FORCEINLINE static uint8_t parser_get_token(uint8_t *word, float *value);
 FORCEINLINE static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t *new_state, parser_cmd_explicit_t *cmd);
@@ -2067,7 +2066,7 @@ static void parser_get_comment(uint8_t start_char)
 	}
 }
 
-static unsigned char parser_get_next_preprocessed(bool peek)
+unsigned char parser_get_next_preprocessed(bool peek)
 {
 	uint8_t c = grbl_stream_peek();
 
@@ -3646,3 +3645,9 @@ void parser_coordinate_system_load(uint8_t param, float *target)
 		break;
 	}
 }
+
+	#ifdef ENABLE_RS274NGC_EXPRESSIONS
+	void parser_copy_user_vars(float* dest, uint16_t size){
+		memcpy(dest, parser_state.user_vars, size);
+	}
+	#endif

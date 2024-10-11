@@ -307,7 +307,7 @@ extern "C"
 	/**
 	 * Enables RS274NGC expression parsing
 	 * **/
-	//  #define ENABLE_RS274NGC_EXPRESSIONS
+	 #define ENABLE_RS274NGC_EXPRESSIONS
 
 	/**
 	 * Shrink µCNC
@@ -340,10 +340,10 @@ extern "C"
 	/**
 	 * Uncomment to enable module extensions
 	 * */
-	// #define ENABLE_MAIN_LOOP_MODULES
-	// #define ENABLE_IO_MODULES
-	// #define ENABLE_PARSER_MODULES
-	// #define ENABLE_MOTION_CONTROL_MODULES
+	#define ENABLE_MAIN_LOOP_MODULES
+	#define ENABLE_IO_MODULES
+	#define ENABLE_PARSER_MODULES
+	#define ENABLE_MOTION_CONTROL_MODULES
 
 	/**
 	 * Settings extensions are enabled by default

@@ -318,6 +318,10 @@ float user_vars[RS274NGC_MAX_USER_VARS];
 	uint8_t parser_get_float(float *value);
 	uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
 	void parser_discard_command(void);
+	unsigned char parser_get_next_preprocessed(bool peek);
+	#ifdef ENABLE_RS274NGC_EXPRESSIONS
+	void parser_copy_user_vars(float* dest, uint16_t size);
+	#endif
 
 #ifdef ENABLE_PARSER_MODULES
 	// generates a default delegate, event and handler hook
