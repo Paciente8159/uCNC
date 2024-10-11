@@ -464,7 +464,7 @@ bool settings_allows_negative(setting_offset_t id)
 
 uint8_t settings_change(setting_offset_t id, float value)
 {
-	uint8_t result = STATUS_OK;
+	uint8_t result = STATUS_INVALID_STATEMENT;
 	uint16_t value16 = (uint16_t)CLAMP(0, value, INT16_MAX);
 	uint8_t value8 = (uint8_t)MIN(value16, UINT8_MAX);
 
@@ -515,6 +515,8 @@ uint8_t settings_change(setting_offset_t id, float value)
 					((float *)s.memptr)[(uint8_t)id - s.id] = value;
 					break;
 				}
+
+				result = STATUS_OK;
 			}
 		}
 
@@ -527,6 +529,7 @@ uint8_t settings_change(setting_offset_t id, float value)
 		{
 			return STATUS_INVALID_STATEMENT;
 		}
+		result = STATUS_OK;
 	}
 #endif
 
