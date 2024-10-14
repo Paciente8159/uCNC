@@ -12,6 +12,8 @@
 #define OCODE_STACK_DEPTH 16
 #define OCODE_DRIVE 'C'
 
+#define FILE_EOF 3
+
 #define OP_CALL 0
 #define OP_IF 1
 #define OP_IF_FOUND 2
@@ -68,33 +70,13 @@ static uint8_t o_code_getc(void)
 				stack->pos++;
 				avail--;
 			}
+			else
+			{
+				return FILE_EOF; // end of file marker
+			}
 		}
 	}
 	return c;
-}
-
-static uint8_t o_code_available()
-{
-	uint8_t avail = 0;
-
-	if (o_codes_call_index)
-	{
-		o_code_sub_t *stack = &o_codes_calls[o_codes_call_index - 1];
-		if (stack->fp)
-		{
-			avail = (uint8_t)MIN(255, fs_available(stack->fp));
-		}
-
-		// auto close file
-		if (!avail)
-		{
-			fs_close(stack->fp);
-			o_codes_call_index--;
-			stack->fp = NULL;
-			o_code_file_finished |= O_CODE_FILE_CLOSE;
-		}
-	}
-	return avail;
 }
 
 static void o_code_clear()
@@ -116,8 +98,6 @@ static void o_code_clear()
 	o_codes_stack[0].code = 0;
 }
 
-DECL_GRBL_STREAM(o_code_stream, o_code_getc, o_code_available, o_code_clear, NULL, NULL);
-
 bool o_codes_parse(void *args)
 {
 	gcode_parse_args_t *ptr = (gcode_parse_args_t *)args;
@@ -138,6 +118,9 @@ bool o_codes_parse(void *args)
 			cmd[i] = c;
 			parser_get_next_preprocessed(false);
 		}
+
+		float op_arg = 0;
+		uint8_t op_arg_error = parser_get_float(&op_arg);
 
 		uint8_t index = o_codes_stack_index;
 
@@ -167,80 +150,33 @@ bool o_codes_parse(void *args)
 			o_codes_calls[o_codes_call_index].pos = 0;
 			o_codes_call_index++;
 
-			float callarg;
 			uint16_t arg_i = 0;
-			while (parser_get_float(&callarg) == NUMBER_OK)
+			while (op_arg_error == NUMBER_OK)
 			{
 				// load args
-				ptr->new_state->user_vars[arg_i++] = callarg;
+				ptr->new_state->user_vars[arg_i++] = op_arg;
+				op_arg_error = parser_get_float(&op_arg);
 			}
-			
+
 			if (parser_get_next_preprocessed(false) != EOL)
 			{
 				*(ptr->error) = STATUS_OCODE_ERROR_INVALID_EXPRESSION;
 				goto o_code_return_label;
 			}
-			grbl_stream_readonly(o_code_getc, o_code_available, o_code_clear);
-			
-			// now that the file is opened an matching ocode sub must be found
-			char c = parser_get_next_preprocessed(false);
-			c = TOUPPER(c);
-			if (c != 'O')
-			{
-				o_code_clear();
-				*ptr->error = STATUS_OCODE_ERROR_INVALID_OPERATION;
-				goto o_code_return_label;
-			}
-
-			float osubcode_id = 0;
-			if (parser_get_float(&osubcode_id) != NUMBER_OK || osubcode_id != ocode_id)
-			{
-				o_code_clear();
-				*ptr->error = STATUS_OCODE_ERROR_INVALID_NUMBER;
-				goto o_code_return_label;
-			}
-
-			memset(cmd, 0, sizeof(cmd));
-			for (uint8_t i = 0; i < 16; i++)
-			{
-				char c = parser_get_next_preprocessed(true);
-				c = TOUPPER(c);
-				if (c < 'A' || c > 'Z')
-				{
-					break;
-				}
-				cmd[i] = c;
-				parser_get_next_preprocessed(false);
-			}
-
-			if (strcmp(cmd, "SUB") || parser_get_next_preprocessed(false) != EOL)
-			{
-				*(ptr->error) = STATUS_OCODE_ERROR_INVALID_EXPRESSION;
-				goto o_code_return_label;
-			}
+			grbl_stream_readonly(o_code_getc, NULL, o_code_clear);
 
 			o_codes_stack_index++;
-			if (o_codes_stack_index >= OCODE_STACK_DEPTH)
-			{
-				*ptr->error = STATUS_OCODE_ERROR_STACK_OVERFLOW;
-				goto o_code_return_label;
-			}
 			*ptr->error = STATUS_OK;
 			goto o_code_return_label;
 		}
 
 		// after this an operation is expected and possibly an argument following it
 		// also it's expected an endline that must be consumed to prevent sending an ok after it
-
-		float op_arg = 0;
-		uint8_t arg_res = parser_get_float(&op_arg);
-
-		if (parser_get_next_preprocessed(true) != EOL)
+		if (parser_get_next_preprocessed(false) != EOL)
 		{
 			*(ptr->error) = STATUS_OCODE_ERROR_INVALID_EXPRESSION;
 			goto o_code_return_label;
 		}
-		parser_get_next_preprocessed(false);
 
 		if (!strcmp(cmd, "IF") || !strcmp(cmd, "ELSEIF") || !strcmp(cmd, "ELSE"))
 		{
@@ -250,7 +186,7 @@ bool o_codes_parse(void *args)
 			{
 			case 2:
 			case 6:
-				if (arg_res != NUMBER_OK)
+				if (op_arg_error != NUMBER_OK)
 				{
 					*(ptr->error) = STATUS_OCODE_ERROR_INVALID_OPERATION;
 					goto o_code_return_label;
@@ -333,7 +269,7 @@ bool o_codes_parse(void *args)
 		}
 		if (!strcmp(cmd, "RETURN"))
 		{
-			o_code_call_has_return = (arg_res == NUMBER_OK);
+			o_code_call_has_return = (op_arg_error == NUMBER_OK);
 			o_code_call_return_value = op_arg;
 			// close file
 			if (index)
@@ -394,7 +330,25 @@ bool o_codes_parse(void *args)
 		{
 		}
 	}
+	if (ptr->word == FILE_EOF)
+	{
+		if (o_codes_call_index)
+		{
+			o_code_sub_t *stack = &o_codes_calls[o_codes_call_index - 1];
+			if (stack->fp)
+			{
+				fs_close(stack->fp);
+				o_codes_call_index--;
+			}
+		}
 
+		if (!o_codes_call_index)
+		{
+			grbl_stream_change(NULL); // free the stream
+		}
+		*ptr->error = STATUS_OK;
+		goto o_code_return_label;
+	}
 	return EVENT_CONTINUE;
 
 o_code_return_label:
