@@ -409,6 +409,15 @@
 
 #define MCU_HAS_ONESHOT_TIMER
 
+#ifndef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
+#define BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
+#endif
+#ifndef ENABLE_PARSER_MODULES
+#define ENABLE_PARSER_MODULES
+#endif
+#define DISABLE_SYSTEM_MENU
+#define freefile_ptr(x)
+
 // just to compile
 #define mcu_nop()
 #define mcu_config_pullup(diopin)

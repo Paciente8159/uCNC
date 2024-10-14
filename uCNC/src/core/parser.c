@@ -1211,7 +1211,7 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 		Follows the RS274NGC v3 - 3.8 Order of Execution
 	All coordinates are converted to machine absolute coordinates before sent to the motion controller
 */
-uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
+static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
 {
 	float target[AXIS_COUNT];
 #ifndef DISABLE_ARC_SUPPORT
@@ -3248,7 +3248,7 @@ void parser_reset(bool stopgroup_only)
 #endif
 
 #ifdef ENABLE_PARSER_MODULES
-	EVENT_INVOKE(parser_reset, NULL);
+	EVENT_INVOKE(parser_reset, &parser_state);
 #endif
 }
 

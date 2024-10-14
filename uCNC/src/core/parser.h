@@ -195,11 +195,11 @@ extern "C"
 #ifndef MAX_PARSER_STACK_DEPTH
 #define MAX_PARSER_STACK_DEPTH 16
 #endif
-typedef struct parser_stack_
-{
-	float lhs;
-	uint8_t op;
-} parser_stack_t;
+	typedef struct parser_stack_
+	{
+		float lhs;
+		uint8_t op;
+	} parser_stack_t;
 #endif
 
 	// 34bytes in total
@@ -296,7 +296,7 @@ typedef struct parser_stack_
 		uint32_t line;
 #endif
 #ifdef ENABLE_RS274NGC_EXPRESSIONS
-float user_vars[RS274NGC_MAX_USER_VARS];
+		float user_vars[RS274NGC_MAX_USER_VARS];
 #endif
 	} parser_state_t;
 
@@ -316,12 +316,8 @@ float user_vars[RS274NGC_MAX_USER_VARS];
 	void parser_reset(bool stopgroup_only);
 	void parser_machine_to_work(float *axis);
 	uint8_t parser_get_float(float *value);
-	uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
 	void parser_discard_command(void);
 	unsigned char parser_get_next_preprocessed(bool peek);
-	#ifdef ENABLE_RS274NGC_EXPRESSIONS
-	void parser_copy_user_vars(float* dest, uint16_t size);
-	#endif
 
 #ifdef ENABLE_PARSER_MODULES
 	// generates a default delegate, event and handler hook
@@ -369,7 +365,7 @@ float user_vars[RS274NGC_MAX_USER_VARS];
 	DECL_EVENT_HANDLER(parser_reset);
 #endif
 
-#if (defined(ENABLE_PARSER_MODULES)||defined(BOARD_HAS_CUSTOM_SYSTEM_COMMANDS))
+#if (defined(ENABLE_PARSER_MODULES) || defined(BOARD_HAS_CUSTOM_SYSTEM_COMMANDS))
 
 	// event_grbl_cmd_handler
 	typedef struct grbl_cmd_args_

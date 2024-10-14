@@ -22,6 +22,10 @@
 #include "system_menu.h"
 #include <string.h>
 
+#ifndef freefile_ptr(x)
+#define freefile_ptr(x) free(x)
+#endif
+
 // file system entry point
 fs_t *fs_default_drive;
 // current working dir for internal file system (Grbl commands)
@@ -439,7 +443,7 @@ void fs_file_run(char *params)
  * */
 bool fs_cmd_parser(void *args)
 {
-	grbl_cmd_args_t *cmd = args;
+	grbl_cmd_args_t *cmd = (grbl_cmd_args_t *)args;
 	char params[RX_BUFFER_CAPACITY]; /* get remaining command parammeters */
 	memset(params, 0, sizeof(params));
 
@@ -714,6 +718,7 @@ void fs_json_uploader()
 
 #endif
 
+#ifndef DISABLE_SYSTEM_MENU
 void system_menu_render_fs_item(uint8_t render_flags, system_menu_item_t *item)
 {
 	char buffer[SYSTEM_MENU_MAX_STR_LEN];
@@ -949,6 +954,7 @@ bool system_menu_fs_action(uint8_t action)
 
 	return false;
 }
+#endif
 
 void fs_mount(fs_t *drive)
 {
@@ -1066,7 +1072,7 @@ void fs_close(fs_file_t *fp)
 		if (fp->file_ptr)
 		{
 			fp->fs_ptr->close(fp);
-			free(fp->file_ptr);
+			freefile_ptr(fp->file_ptr);
 		}
 		free(fp);
 	}
