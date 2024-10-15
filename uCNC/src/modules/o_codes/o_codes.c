@@ -158,12 +158,7 @@ bool o_codes_parse(void *args)
 				op_arg_error = parser_get_float(&op_arg);
 			}
 
-			if (parser_get_next_preprocessed(false) != EOL)
-			{
-				*(ptr->error) = STATUS_OCODE_ERROR_INVALID_EXPRESSION;
-				goto o_code_return_label;
-			}
-			grbl_stream_readonly(o_code_getc, NULL, o_code_clear);
+			grbl_stream_readonly(o_code_getc, NULL, NULL);
 
 			o_codes_stack_index++;
 			*ptr->error = STATUS_OK;
@@ -363,42 +358,23 @@ o_code_return_label:
 
 CREATE_EVENT_LISTENER(gcode_parse, o_codes_parse);
 
-bool o_codes_modifier(void *args)
+bool o_codes_eof_token(void *args)
 {
-	gcode_exec_args_t *ptr = (gcode_exec_args_t *)args;
+	uint8_t *word = (uint8_t *)args;
 
-	if (!o_code_available())
+	if (*word == FILE_EOF)
 	{
-		uint8_t index = o_codes_stack_index - 1;
-
-		if (o_code_file_finished & O_CODE_FILE_CLOSE)
-		{
-			for (uint16_t i = 0; i < RS274NGC_MAX_USER_VARS; i++)
-			{
-				ptr->new_state->user_vars[i] = o_codes_stack[index].user_vars[i];
-			}
-
-			o_codes_stack_index--;
-		}
-
-		if (o_code_file_finished & O_CODE_FILE_CLOSE_ALL)
-		{
-			for (uint16_t i = 0; i < RS274NGC_MAX_USER_VARS; i++)
-			{
-				ptr->new_state->user_vars[i] = o_codes_stack[0].user_vars[i];
-			}
-			o_codes_stack_index = 0;
-		}
+		return EVENT_HANDLED;
 	}
 	return EVENT_CONTINUE;
 }
-CREATE_EVENT_LISTENER(gcode_exec_modifier, o_codes_modifier);
+CREATE_EVENT_LISTENER(parse_token, o_codes_eof_token);
 
 DECL_MODULE(o_codes)
 {
 	o_codes_stack_index = 0;
 	ADD_EVENT_LISTENER(gcode_parse, o_codes_parse);
-	ADD_EVENT_LISTENER(gcode_exec_modifier, o_codes_modifier);
+	ADD_EVENT_LISTENER(parse_token, o_codes_eof_token);
 }
 
 #endif

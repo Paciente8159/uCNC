@@ -850,7 +850,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 		DBGMSG("Parser var value %f", value);
 
 #ifdef ENABLE_PARSER_MODULES
-		if ((error == STATUS_GCODE_UNSUPPORTED_COMMAND || error == STATUS_GCODE_UNUSED_WORDS))
+		if ((error == STATUS_GCODE_UNSUPPORTED_COMMAND || error == STATUS_GCODE_UNUSED_WORDS || error == STATUS_INVALID_STATEMENT))
 		{
 			gcode_parse_args_t args = {word, code, &error, value, new_state, words, cmd};
 			EVENT_INVOKE(gcode_parse, &args);
