@@ -96,7 +96,7 @@ extern "C"
 	 * Uncomment to enable. Only necessary to debug communication problems
 	 * */
 
-	// #define ECHO_CMD
+	 #define ECHO_CMD
 
 	/**
 	 * Debug command parsing time

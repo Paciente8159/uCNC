@@ -769,11 +769,13 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 
 		if (error)
 		{
-			parser_discard_command();
 #ifdef ECHO_CMD
-			proto_print(MSG_FEEDBACK_END);
-
+			if (wordcount)
+			{
+				proto_print(MSG_FEEDBACK_END);
+			}
 #endif
+			parser_discard_command();
 			return error;
 		}
 		uint8_t code = (uint8_t)floorf(value);
@@ -825,10 +827,6 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 			// if enabled store line number
 			linecounter++;
 			words->n = linecounter;
-#endif
-#ifdef ECHO_CMD
-			proto_print(MSG_FEEDBACK_END);
-
 #endif
 			return STATUS_OK;
 		case 'G':
@@ -2084,7 +2082,7 @@ unsigned char parser_get_next_preprocessed(bool peek)
 	{
 		grbl_stream_getc();
 #ifdef ECHO_CMD
-		proto_putc(c);
+		(c) ? proto_putc(c) : proto_print(MSG_FEEDBACK_END);
 #endif
 	}
 
@@ -2623,6 +2621,15 @@ uint8_t parser_get_expression(float *value)
 					return NUMBER_UNDEF;
 				}
 			}
+			if (stack_depth == 1)
+			{
+				*value = parser_exec_op(stack[stack_depth], rhs);
+				result = NUMBER_OK;
+				result |= (rhs < 0) ? NUMBER_ISNEGATIVE : 0;
+				result |= (floorf(rhs) != rhs) ? NUMBER_ISFLOAT : 0;
+				return result;
+			}
+
 			break;
 		case OP_REAL:
 			parser_get_float(&rhs);
@@ -3201,16 +3208,15 @@ void parser_discard_command(void)
 {
 	uint8_t c = '@';
 #ifdef ECHO_CMD
+	grbl_stream_start_broadcast();
+	proto_print(MSG_ECHO);
 	proto_putc(c);
 #endif
 	do
 	{
 		c = grbl_stream_getc();
 #ifdef ECHO_CMD
-		if (c)
-		{
-			proto_putc(c);
-		}
+		(c) ? proto_putc(c) : proto_print(MSG_FEEDBACK_END);
 #endif
 	} while (c != EOL);
 }
@@ -3646,8 +3652,9 @@ void parser_coordinate_system_load(uint8_t param, float *target)
 	}
 }
 
-	#ifdef ENABLE_RS274NGC_EXPRESSIONS
-	void parser_copy_user_vars(float* dest, uint16_t size){
-		memcpy(dest, parser_state.user_vars, size);
-	}
-	#endif
+#ifdef ENABLE_RS274NGC_EXPRESSIONS
+void parser_copy_user_vars(float *dest, uint16_t size)
+{
+	memcpy(dest, parser_state.user_vars, size);
+}
+#endif

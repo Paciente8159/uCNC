@@ -856,15 +856,21 @@ extern "C"
 	{
 		WIN32_FIND_DATA findFileData;
 		HANDLE hFind;
-
+		
 		// Ensure finfo structure is not NULL
 		if (!finfo || !path)
 		{
 			return false;
 		}
+		
+		char fpath[256] = ".";
+		if(strcmp("/", path))
+		{
+			strcat(fpath, path);
+		}
 
 		// Try to find the file or directory
-		hFind = FindFirstFile(path, &findFileData);
+		hFind = FindFirstFile(fpath, &findFileData);
 		if (hFind == INVALID_HANDLE_VALUE)
 		{
 			// File or directory not found
@@ -921,7 +927,7 @@ extern "C"
 		if (fp)
 		{
 			fs_file_info_t info = {0};
-			flash_fs_finfo(dir, &info);
+			flash_fs_finfo(path, &info);
 			fp->file_ptr = opendir(dir);
 			if (fp->file_ptr)
 			{
@@ -944,7 +950,7 @@ extern "C"
 			strcat(file, path);
 		}
 		
-		if (flash_fs_finfo(file, &finfo))
+		if (flash_fs_finfo(path, &finfo))
 		{
 			fs_file_t *fp = (fs_file_t *)calloc(1, sizeof(fs_file_t));
 			if (fp)
