@@ -61,8 +61,6 @@ static uint8_t o_code_getc(void)
 		if (avail)
 		{
 			fs_read(sub_file, &c, 1);
-			sub_pos++;
-			avail--;
 		}
 		else
 		{
@@ -187,15 +185,12 @@ bool o_codes_parse(void *args)
 
 		if (!strcmp(cmd, "CALL"))
 		{
-			o_codes_stack[index].code = ocode_id;
-			o_codes_stack[index].op = OP_CALL;
-			o_codes_stack[index].pos = sub_pos;
-
 			// store user vars
 			for (uint16_t i = 0; i < RS274NGC_MAX_USER_VARS; i++)
 			{
 				o_codes_stack[index].user_vars[i] = ptr->new_state->user_vars[i];
 			}
+			
 			// check if file exists
 			char o_subrotine[32];
 			memset(o_subrotine, 0, sizeof(o_subrotine));
@@ -208,6 +203,7 @@ bool o_codes_parse(void *args)
 				goto o_code_return_label;
 			}
 
+			// call parameters
 			uint16_t arg_i = 0;
 			while (op_arg_error == NUMBER_OK)
 			{
@@ -215,7 +211,13 @@ bool o_codes_parse(void *args)
 				ptr->new_state->user_vars[arg_i++] = op_arg;
 				op_arg_error = parser_get_float(&op_arg);
 			}
-
+		
+			// store operation in the stack
+			o_codes_stack[index].code = ocode_id;
+			o_codes_stack[index].op = OP_CALL;
+			// workaround to ftell
+			o_codes_stack[index].pos = (sub_file) ? (sub_file->file_info.size - fs_available(sub_file)) : 0;
+			
 			o_codes_stack_index++;
 			*ptr->error = STATUS_OK;
 			goto o_code_return_label;
@@ -281,13 +283,19 @@ bool o_codes_parse(void *args)
 					{
 						parser_discard_command();
 					}
-					goto o_code_return_label;
+					break;
 				}
 				__FALL_THROUGH__
 			case 4:
 				if (!(o_codes_stack[index].op & OP_IF_FOUND)) // condition not yet met
 				{
 					o_codes_stack[index].op |= OP_IF_FOUND; // signals that the condition was met
+				}
+				else{
+					while (parser_get_next_preprocessed(true) != 'O')
+					{
+						parser_discard_command();
+					}
 				}
 				break;
 			}
@@ -305,6 +313,8 @@ bool o_codes_parse(void *args)
 					goto o_code_return_label;
 				}
 
+				o_codes_stack[index].code = 0;
+				o_codes_stack[index].op = 0;
 				o_codes_stack_index--;
 				*ptr->error = STATUS_OK;
 			}
@@ -358,7 +368,7 @@ bool o_codes_parse(void *args)
 
 		if (index)
 		{
-		index = o_code_close(index);
+			index = o_code_close(index);
 			// restore user vars
 			for (uint16_t i = 0; i < RS274NGC_MAX_USER_VARS; i++)
 			{
@@ -397,8 +407,11 @@ bool o_codes_call(void *args)
 	if (index)
 	{
 		index--;
-		sub_pos = 0;
-		o_code_open(index);
+		if (o_codes_stack[index].op == OP_CALL)
+		{
+			sub_pos = 0;
+			o_code_open(index);
+		}
 		if (!sub_file)
 		{
 			*ptr->error = STATUS_OCODE_ERROR_INVALID_OPERATION;

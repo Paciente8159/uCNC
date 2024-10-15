@@ -757,24 +757,11 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 		float assign_val = 0;
 #endif
 
-#ifdef ECHO_CMD
-		if (!wordcount)
-		{
-			grbl_stream_start_broadcast();
-			proto_print(MSG_ECHO);
-		}
-#endif
 		error = parser_get_token(&word, &value);
 		DBGMSG("Parser word %c", word);
 
 		if (error)
 		{
-#ifdef ECHO_CMD
-			if (wordcount)
-			{
-				proto_print(MSG_FEEDBACK_END);
-			}
-#endif
 			parser_discard_command();
 			return error;
 		}
@@ -868,9 +855,6 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 		if (error)
 		{
 			parser_discard_command();
-#ifdef ECHO_CMD
-			proto_print(MSG_FEEDBACK_END);
-#endif
 			return error;
 		}
 
@@ -2064,6 +2048,10 @@ static void parser_get_comment(uint8_t start_char)
 	}
 }
 
+#ifdef ECHO_CMD
+uint8_t echo_counter;
+#endif
+
 unsigned char parser_get_next_preprocessed(bool peek)
 {
 	uint8_t c = grbl_stream_peek();
@@ -2080,9 +2068,22 @@ unsigned char parser_get_next_preprocessed(bool peek)
 
 	if (!peek)
 	{
+		if (!echo_counter++)
+		{
+			grbl_stream_start_broadcast();
+			proto_print(MSG_ECHO);
+		}
 		grbl_stream_getc();
 #ifdef ECHO_CMD
-		(c) ? proto_putc(c) : proto_print(MSG_FEEDBACK_END);
+		if (c)
+		{
+			proto_putc(c);
+		}
+		else
+		{
+			echo_counter = 0;
+			proto_print(MSG_FEEDBACK_END);
+		}
 #endif
 	}
 
@@ -3206,19 +3207,15 @@ static uint8_t parser_letter_word(uint8_t c, float value, uint8_t mantissa, pars
 
 void parser_discard_command(void)
 {
-	uint8_t c = '@';
-#ifdef ECHO_CMD
-	grbl_stream_start_broadcast();
-	proto_print(MSG_ECHO);
-	proto_putc(c);
-#endif
+	uint8_t c;
 	do
 	{
-		c = grbl_stream_getc();
-#ifdef ECHO_CMD
-		(c) ? proto_putc(c) : proto_print(MSG_FEEDBACK_END);
-#endif
+		c = parser_get_next_preprocessed(false);
 	} while (c != EOL);
+#ifdef ECHO_CMD
+grbl_stream_start_broadcast();
+	proto_printf(MSG_FEEDBACK_START "Cmd discarded" MSG_FEEDBACK_END);
+#endif
 }
 
 void parser_reset(bool stopgroup_only)
