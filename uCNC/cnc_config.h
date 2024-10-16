@@ -308,6 +308,10 @@ extern "C"
 	 * Enables RS274NGC expression parsing
 	 * **/
 	 #define ENABLE_RS274NGC_EXPRESSIONS
+	 #ifdef ENABLE_RS274NGC_EXPRESSIONS
+	 // Uncomment to enable O codes
+	 #define ENABLE_O_CODES
+	 #endif
 
 	/**
 	 * Shrink µCNC

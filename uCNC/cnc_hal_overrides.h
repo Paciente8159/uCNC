@@ -8,8 +8,6 @@ extern "C"
 {
 #endif
 
-#define LOAD_MODULES_OVERRIDE() ({LOAD_MODULE(o_codes);})
-
 #ifdef __cplusplus
 }
 #endif
