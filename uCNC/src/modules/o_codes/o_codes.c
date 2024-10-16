@@ -14,13 +14,15 @@
 
 #define FILE_EOF 3
 
-#define OP_CALL 0
-#define OP_SUB 1
-#define OP_IF 2
+#define OP_CALL 1
+#define OP_SUB 2
+#define OP_IF 3
 #define OP_IF_FOUND 4
-#define OP_DO_WHILE 8
-#define OP_WHILE 16
-#define OP_REPEAT 32
+#define OP_IF_DISCARD 5
+#define OP_DO_WHILE 6
+#define OP_WHILE 7
+#define OP_WHILE_DISCARD 8
+#define OP_REPEAT 9
 
 #define STATUS_OCODE_ERROR_FILE_NOT_FOUND 100
 #define STATUS_OCODE_ERROR_INVALID_NUMBER 101
@@ -71,25 +73,6 @@ static uint8_t o_code_getc(void)
 }
 
 DECL_GRBL_STREAM(o_code_stream, o_code_getc, NULL, NULL, NULL, NULL);
-
-// static void o_code_clear()
-// {
-// 	while (o_codes_call_index)
-// 	{
-// 		o_code_sub_t *stack = &o_codes_calls[o_codes_call_index - 1];
-// 		if (stack->fp)
-// 		{
-// 			fs_close(stack->fp);
-// 			o_codes_call_index--;
-// 		}
-// 	}
-
-// 	if (o_codes_stack_index)
-// 	{
-// 		o_code_file_finished |= O_CODE_FILE_CLOSE_ALL;
-// 	}
-// 	o_codes_stack[0].code = 0;
-// }
 
 static void o_code_open(uint8_t index)
 {
@@ -158,6 +141,7 @@ bool o_codes_parse(void *args)
 	uint8_t op_arg_error = NUMBER_UNDEF;
 	char cmd[16];
 	memset(cmd, 0, sizeof(cmd));
+	uint32_t loop_ret = 0;
 
 	uint8_t index = o_codes_stack_index;
 
@@ -165,8 +149,8 @@ bool o_codes_parse(void *args)
 	{
 		uint16_t ocode_id = truncf(ptr->value);
 
-		// in an if clause that failed to met the condition it must keep discarding code until a valid O code of the same ID is found
-		if (index && (o_codes_stack[index - 1].op == OP_IF) && o_codes_stack[index - 1].code != ocode_id)
+		// this checks if the code is to be discarded or not after come conditional
+		if (index && ((o_codes_stack[index - 1].op == OP_IF) || (o_codes_stack[index - 1].op == OP_IF_DISCARD) || (o_codes_stack[index - 1].op == OP_WHILE_DISCARD)) && o_codes_stack[index - 1].code != ocode_id)
 		{
 			// keep discarding
 			while (parser_get_next_preprocessed(true) != 'O')
@@ -189,6 +173,10 @@ bool o_codes_parse(void *args)
 			parser_get_next_preprocessed(false);
 		}
 
+		if (sub_file)
+		{
+			loop_ret = sub_file->file_info.size - fs_available(sub_file);
+		}
 		op_arg_error = parser_get_float(&op_arg);
 
 		if (!strcmp(cmd, "CALL"))
@@ -232,7 +220,10 @@ bool o_codes_parse(void *args)
 			goto o_code_return_label;
 		}
 
-		if (!strcmp(cmd, "IF") || !strcmp(cmd, "ELSEIF") || !strcmp(cmd, "ELSE"))
+		/**
+		 * IF clause
+		 */
+		if (!strcmp(cmd, "IF") || !strcmp(cmd, "ELSEIF") || !strcmp(cmd, "ELSE") || !strcmp(cmd, "ENDIF"))
 		{
 			uint8_t type = strlen(cmd); // If=2 ElseIf=6 Else=4
 			*ptr->error = STATUS_OK;
@@ -264,11 +255,10 @@ bool o_codes_parse(void *args)
 					}
 				}
 				break;
-			case 4:
-			case 6:
+			default:
 				if (index--)
 				{
-					if (o_codes_stack[index].code != ocode_id || !(o_codes_stack[index].op & OP_IF))
+					if (o_codes_stack[index].code != ocode_id || (o_codes_stack[index].op < OP_IF) || (o_codes_stack[index].op > OP_IF_DISCARD))
 					{
 						*(ptr->error) = STATUS_OCODE_ERROR_INVALID_OPERATION;
 						goto o_code_return_label;
@@ -289,13 +279,111 @@ bool o_codes_parse(void *args)
 				break;
 			}
 
-			// discard code if eval is false until a new O code is found
-			if (!(o_codes_stack[index].op & OP_IF_FOUND) && op_arg) // condition not yet met
+			switch (type)
 			{
-				o_codes_stack[index].op |= OP_IF_FOUND; // signals that the condition was met
+			case 5:
+				if (index)
+				{
+					o_codes_stack[index].code = 0;
+					o_codes_stack[index].op = 0;
+					o_codes_stack_index--;
+					*ptr->error = STATUS_OK;
+				}
+				else
+				{
+					*(ptr->error) = STATUS_OCODE_ERROR_STACK_UNDERFLOW;
+				}
+				break;
+			default:
+				if ((o_codes_stack[index].op == OP_IF) && op_arg) // condition met
+				{
+					o_codes_stack[index].op = OP_IF_FOUND; // signals that the condition was met
+				}
+				else
+				{
+					if (o_codes_stack[index].op == OP_IF_FOUND) // discard all remaining code
+					{
+						o_codes_stack[index].op = OP_IF_DISCARD;
+					}
+					while (parser_get_next_preprocessed(true) != 'O')
+					{
+						parser_discard_command();
+					}
+				}
+				break;
 			}
-			else
+
+			*(ptr->error) = STATUS_OK;
+			goto o_code_return_label;
+		}
+
+		if (!strcmp(cmd, "DO") || !strcmp(cmd, "WHILE") || !strcmp(cmd, "ENDWHILE"))
+		{
+			uint8_t type = strlen(cmd);
+			index--;
+			switch (type)
 			{
+			case 5:
+				if ((o_codes_stack[index].op == OP_DO_WHILE) && ocode_id == o_codes_stack[index].code)
+				{
+					break;
+				}
+				__FALL_THROUGH__
+			case 2:
+				for (uint8_t codes = index; codes != 0; codes--)
+				{
+					if (o_codes_stack[codes].code == ocode_id)
+					{
+						*(ptr->error) = STATUS_OCODE_ERROR_INVALID_NUMBER;
+						goto o_code_return_label;
+					}
+					if (o_codes_stack[codes].op == OP_SUB)
+					{
+						break;
+					}
+				}
+
+				index = o_codes_stack_index++;
+				o_codes_stack[index].code = ocode_id;
+				o_codes_stack[index].op = (type == 2) ? OP_DO_WHILE : OP_WHILE;
+				o_codes_stack[index].pos = loop_ret - 1; // point one char earlier because a discard to update the peek value is needed
+				break;
+			case 8:
+				if (((o_codes_stack[index].op != OP_DO_WHILE) && (o_codes_stack[index].op != OP_WHILE)) && ocode_id == o_codes_stack[index].code)
+				{
+					*(ptr->error) = STATUS_OCODE_ERROR_INVALID_NUMBER;
+					goto o_code_return_label;
+				}
+				if (sub_file && o_codes_stack[index].op != OP_WHILE_DISCARD)
+				{
+					// save position
+					if (sub_file)
+					{
+						loop_ret = sub_file->file_info.size - fs_available(sub_file) - 2; // backtrack 2 chars to catch the newline
+					}
+					// rewind
+					fs_seek(sub_file, o_codes_stack[index].pos);
+					parser_get_next_preprocessed(false); // discard one char to force peek refresh
+					// re-eval the arg
+					op_arg_error = parser_get_float(&op_arg);
+					if (!op_arg)
+					{
+						// restore position and continue
+						fs_seek(sub_file, loop_ret);
+						parser_get_next_preprocessed(false); // discard one char to force peek refresh
+						o_codes_stack[index].code = 0;
+						o_codes_stack[index].op = 0;
+						o_codes_stack[index].pos = 0;
+						o_codes_stack_index--;
+					}
+				}
+				break;
+			}
+
+			// while condition not met
+			if (type == 5 && !op_arg)
+			{
+				o_codes_stack[index].op = OP_WHILE_DISCARD;
 				while (parser_get_next_preprocessed(true) != 'O')
 				{
 					parser_discard_command();
@@ -304,53 +392,6 @@ bool o_codes_parse(void *args)
 
 			*(ptr->error) = STATUS_OK;
 			goto o_code_return_label;
-		}
-		if (!strcmp(cmd, "ENDIF"))
-		{
-			if (index--)
-			{
-				if (o_codes_stack[index].code != ocode_id || !(o_codes_stack[index].op & OP_IF))
-				{
-					*(ptr->error) = STATUS_OCODE_ERROR_INVALID_OPERATION;
-					goto o_code_return_label;
-				}
-
-				o_codes_stack[index].code = 0;
-				o_codes_stack[index].op = 0;
-				o_codes_stack_index--;
-				*ptr->error = STATUS_OK;
-			}
-			else
-			{
-				*(ptr->error) = STATUS_OCODE_ERROR_STACK_UNDERFLOW;
-			}
-
-			goto o_code_return_label;
-		}
-		if (!strcmp(cmd, "DO"))
-		{
-			o_codes_stack[index].code = ocode_id;
-			o_codes_stack[index].op = OP_DO_WHILE;
-			o_codes_stack_index++;
-		}
-		if (!strcmp(cmd, "WHILE"))
-		{
-			if (index)
-			{
-				if (o_codes_stack[index - 1].code == ocode_id || !(o_codes_stack[index].op & OP_IF))
-				{
-					*(ptr->error) = STATUS_OCODE_ERROR_INVALID_OPERATION;
-					goto o_code_return_label;
-				}
-
-				o_codes_stack_index--;
-				goto o_code_return_label;
-			}
-
-			goto o_code_return_label;
-		}
-		if (!strcmp(cmd, "ENDWHILE"))
-		{
 		}
 		if (!strcmp(cmd, "CONTINUE"))
 		{
@@ -372,12 +413,7 @@ bool o_codes_parse(void *args)
 		{
 			index = o_code_close(index);
 			// restore user vars
-
 			memcpy(ptr->new_state->user_vars, o_codes_stack[index].user_vars, sizeof(o_codes_stack[index].user_vars));
-			// for (uint16_t i = 0; i < RS274NGC_MAX_USER_VARS; i++)
-			// {
-			// 	ptr->new_state->user_vars[i] = o_codes_stack[index].user_vars[i];
-			// }
 		}
 
 		if (index)
@@ -385,14 +421,25 @@ bool o_codes_parse(void *args)
 			// top sub not exited yet
 			o_code_open(index);
 			index--;
-			
-			// continue command discarding in these conditions
-			// an if was already satisfied
+		}
+		else
+		{
+			// clear and close all
+			if (sub_file)
+			{
+				fs_close(sub_file);
+				sub_file = NULL;
+			}
+			memset(o_codes_stack, 0, sizeof(o_codes_stack));
+			o_codes_stack_index = 0;
+			grbl_stream_change(NULL);
 		}
 
 		*(ptr->error) = STATUS_OK;
 		goto o_code_return_label;
 	}
+
+	// propagate parse
 	return EVENT_CONTINUE;
 
 o_code_return_label:

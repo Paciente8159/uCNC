@@ -2103,38 +2103,50 @@ unsigned char parser_get_next_preprocessed(bool peek)
 #define OP_LEVEL(X) (X & (7 << 5))
 
 #define OP_INVALID 0
+
 #define OP_AND (OP_LEVEL0 | 1)
 #define OP_OR (OP_LEVEL0 | 2)
 #define OP_XOR (OP_LEVEL0 | 3)
-#define OP_ADD (OP_LEVEL1 | 1)
-#define OP_SUB (OP_LEVEL1 | 2)
-#define OP_MUL (OP_LEVEL2 | 1)
-#define OP_DIV (OP_LEVEL2 | 2)
-#define OP_MOD (OP_LEVEL2 | 3)
-#define OP_POW (OP_LEVEL3 | 1)
 
-#define OP_NEG (OP_LEVEL4 | 1)
-#define OP_SQRT (OP_LEVEL4 | 10)
-#define OP_COS (OP_LEVEL4 | 20)
-#define OP_SIN (OP_LEVEL4 | 21)
-#define OP_TAN (OP_LEVEL4 | 22)
-#define OP_ACOS (OP_LEVEL4 | 23)
-#define OP_ASIN (OP_LEVEL4 | 24)
-#define OP_ATAN (OP_LEVEL4 | 25)
-#define OP_ATAN_DIV (OP_LEVEL4 | 26)
-#define OP_EXP (OP_LEVEL4 | 27)
-#define OP_LN (OP_LEVEL4 | 28)
-#define OP_ABS (OP_LEVEL4 | 29)
-#define OP_FIX (OP_LEVEL4 | 30)
-#define OP_FUP (OP_LEVEL4 | 31)
-#define OP_ROUND (OP_LEVEL4 | 32)
-#define OP_EXISTS (OP_LEVEL4 | 33)
+#define OP_EQ (OP_LEVEL1 | 1)
+#define OP_NE (OP_LEVEL1 | 2)
+#define OP_GT (OP_LEVEL1 | 3)
+#define OP_GE (OP_LEVEL1 | 4)
+#define OP_LT (OP_LEVEL1 | 5)
+#define OP_LE (OP_LEVEL1 | 6)
 
-#define OP_EXPR_END (OP_LEVEL5 | 1)
-#define OP_EXPR_START (OP_LEVEL5 | 2)
+#define OP_ADD (OP_LEVEL2 | 1)
+#define OP_SUB (OP_LEVEL2 | 2)
+
+#define OP_MUL (OP_LEVEL3 | 1)
+#define OP_DIV (OP_LEVEL3 | 2)
+#define OP_MOD (OP_LEVEL3 | 3)
+
+#define OP_POW (OP_LEVEL4 | 1)
+
+#define OP_NEG (OP_LEVEL5 | 1)
+#define OP_SQRT (OP_LEVEL5 | 5)
+#define OP_COS (OP_LEVEL5 | 10)
+#define OP_SIN (OP_LEVEL5 | 11)
+#define OP_TAN (OP_LEVEL5 | 12)
+#define OP_ACOS (OP_LEVEL5 | 13)
+#define OP_ASIN (OP_LEVEL5 | 14)
+#define OP_ATAN (OP_LEVEL5 | 15)
+#define OP_ATAN_DIV (OP_LEVEL5 | 16)
+#define OP_EXP (OP_LEVEL5 | 17)
+#define OP_LN (OP_LEVEL5 | 18)
+#define OP_ABS (OP_LEVEL5 | 19)
+#define OP_FIX (OP_LEVEL5 | 20)
+#define OP_FUP (OP_LEVEL5 | 21)
+#define OP_ROUND (OP_LEVEL5 | 22)
+#define OP_EXISTS (OP_LEVEL5 | 23)
+
+#define OP_PARSER_VAR (OP_LEVEL6 | 1)
+#define OP_EXPR_END (OP_LEVEL6 | 2)
+#define OP_EXPR_START (OP_LEVEL6 | 3)
 
 #define OP_WORD 201
-#define OP_PARSER_VAR 202
+
 #define OP_REAL 203
 #define OP_ASSIGN 252
 #define OP_ENDLINE 253
@@ -2293,6 +2305,18 @@ float parser_exec_op(parser_stack_t stack, float rhs)
 		return (float)((int64_t)stack.lhs | (int64_t)rhs);
 	case OP_XOR:
 		return (float)((int64_t)stack.lhs ^ (int64_t)rhs);
+	case OP_EQ:
+		return (float)((int64_t)stack.lhs == (int64_t)rhs);
+	case OP_NE:
+		return (float)((int64_t)stack.lhs != (int64_t)rhs);
+	case OP_GT:
+		return (float)((int64_t)stack.lhs > (int64_t)rhs);
+	case OP_GE:
+		return (float)((int64_t)stack.lhs >= (int64_t)rhs);
+	case OP_LT:
+		return (float)((int64_t)stack.lhs < (int64_t)rhs);
+	case OP_LE:
+		return (float)((int64_t)stack.lhs <= (int64_t)rhs);
 	case OP_COS:
 		return cosf(rhs * DEG_RAD_MULT);
 	case OP_SIN:
@@ -2416,6 +2440,7 @@ uint8_t parser_get_operation(bool can_call_unary_func)
 	else if (!can_call_unary_func) // if can't do unary checks for possible binary op
 	{
 		char peek = 0;
+		char peek2 = 0;
 		switch (c)
 		{
 		case 'A':
@@ -2430,12 +2455,24 @@ uint8_t parser_get_operation(bool can_call_unary_func)
 		case 'X':
 			peek = 'O';
 			break;
+		case 'E':
+			peek = 'Q';
+		case 'N':
+			peek = 'E';
+		case 'G':
+			peek = 'T';
+			peek2 = 'E';
+		case 'L':
+			peek = 'T';
+			peek2 = 'E';
+			break;
 		default:
 			return OP_WORD;
 		}
 		parser_backtrack = c;
 		parser_get_next_preprocessed(false);
-		if (peek != TOUPPER(parser_get_next_preprocessed(true)))
+		char p = TOUPPER(parser_get_next_preprocessed(true));
+		if (peek != p && peek2 != p)
 		{
 			return OP_WORD;
 		}
@@ -2482,6 +2519,30 @@ uint8_t parser_get_operation(bool can_call_unary_func)
 	if (!strcmp(str, "XOR"))
 	{
 		return OP_XOR;
+	}
+	if (!strcmp(str, "EQ"))
+	{
+		return OP_EQ;
+	}
+	if (!strcmp(str, "NE"))
+	{
+		return OP_NE;
+	}
+	if (!strcmp(str, "GT"))
+	{
+		return OP_GT;
+	}
+	if (!strcmp(str, "GE"))
+	{
+		return OP_GE;
+	}
+	if (!strcmp(str, "LT"))
+	{
+		return OP_LT;
+	}
+	if (!strcmp(str, "LE"))
+	{
+		return OP_LE;
 	}
 
 	if (c != '[')
@@ -2582,6 +2643,10 @@ uint8_t parser_get_expression(float *value)
 		case OP_INVALID:
 		case OP_ENDLINE:
 		case OP_WORD:
+			if (stack_depth == 2 && stack[1].op == OP_PARSER_VAR)
+			{
+				rhs = parser_exec_op(stack[--stack_depth], rhs);
+			}
 			if (stack_depth != 1)
 			{
 				return NUMBER_UNDEF;
@@ -3213,7 +3278,7 @@ void parser_discard_command(void)
 		c = parser_get_next_preprocessed(false);
 	} while (c != EOL);
 #ifdef ECHO_CMD
-grbl_stream_start_broadcast();
+	grbl_stream_start_broadcast();
 	proto_printf(MSG_FEEDBACK_START "Cmd discarded" MSG_FEEDBACK_END);
 #endif
 }
