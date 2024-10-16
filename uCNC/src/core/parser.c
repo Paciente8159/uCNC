@@ -68,6 +68,12 @@ static void parser_coordinate_system_load(uint8_t param, float *target);
 
 #ifdef ENABLE_RS274NGC_EXPRESSIONS
 char parser_backtrack;
+#define STRLEN(s) (sizeof(s) / sizeof(s[0]))
+#if (MCU == MCU_AVR)
+#define STRCMP(sram, srom) ({char stmp[STRLEN(srom)]; rom_strcpy(stmp, __romstr__(srom)); strcmp(sram, stmp); })
+#else
+#define STRCMP(sram, srom) strcmp(sram, srom)
+#endif
 #ifdef ENABLE_O_CODES
 #include "../modules/file_system.h"
 #ifndef OCODE_STACK_DEPTH
@@ -2679,43 +2685,43 @@ uint8_t parser_get_operation(bool can_call_unary_func)
 
 	parser_backtrack = 0;
 
-	if (!strcmp(str, "MOD"))
+	if (!STRCMP(str, "MOD"))
 	{
 		return OP_MOD;
 	}
-	if (!strcmp(str, "AND"))
+	if (!STRCMP(str, "AND"))
 	{
 		return OP_AND;
 	}
-	if (!strcmp(str, "OR"))
+	if (!STRCMP(str, "OR"))
 	{
 		return OP_OR;
 	}
-	if (!strcmp(str, "XOR"))
+	if (!STRCMP(str, "XOR"))
 	{
 		return OP_XOR;
 	}
-	if (!strcmp(str, "EQ"))
+	if (!STRCMP(str, "EQ"))
 	{
 		return OP_EQ;
 	}
-	if (!strcmp(str, "NE"))
+	if (!STRCMP(str, "NE"))
 	{
 		return OP_NE;
 	}
-	if (!strcmp(str, "GT"))
+	if (!STRCMP(str, "GT"))
 	{
 		return OP_GT;
 	}
-	if (!strcmp(str, "GE"))
+	if (!STRCMP(str, "GE"))
 	{
 		return OP_GE;
 	}
-	if (!strcmp(str, "LT"))
+	if (!STRCMP(str, "LT"))
 	{
 		return OP_LT;
 	}
-	if (!strcmp(str, "LE"))
+	if (!STRCMP(str, "LE"))
 	{
 		return OP_LE;
 	}
@@ -2725,59 +2731,59 @@ uint8_t parser_get_operation(bool can_call_unary_func)
 		return OP_INVALID;
 	}
 
-	if (!strcmp(str, "SQRT"))
+	if (!STRCMP(str, "SQRT"))
 	{
 		return OP_SQRT;
 	}
-	if (!strcmp(str, "COS"))
+	if (!STRCMP(str, "COS"))
 	{
 		return OP_COS;
 	}
-	if (!strcmp(str, "SIN"))
+	if (!STRCMP(str, "SIN"))
 	{
 		return OP_SIN;
 	}
-	if (!strcmp(str, "TAN"))
+	if (!STRCMP(str, "TAN"))
 	{
 		return OP_TAN;
 	}
-	if (!strcmp(str, "ACOS"))
+	if (!STRCMP(str, "ACOS"))
 	{
 		return OP_ACOS;
 	}
-	if (!strcmp(str, "ASIN"))
+	if (!STRCMP(str, "ASIN"))
 	{
 		return OP_ASIN;
 	}
-	if (!strcmp(str, "ATAN"))
+	if (!STRCMP(str, "ATAN"))
 	{
 		return OP_ATAN;
 	}
-	if (!strcmp(str, "EXP"))
+	if (!STRCMP(str, "EXP"))
 	{
 		return OP_EXP;
 	}
-	if (!strcmp(str, "LN"))
+	if (!STRCMP(str, "LN"))
 	{
 		return OP_LN;
 	}
-	if (!strcmp(str, "ABS"))
+	if (!STRCMP(str, "ABS"))
 	{
 		return OP_ABS;
 	}
-	if (!strcmp(str, "FIX"))
+	if (!STRCMP(str, "FIX"))
 	{
 		return OP_FIX;
 	}
-	if (!strcmp(str, "FUP"))
+	if (!STRCMP(str, "FUP"))
 	{
 		return OP_FUP;
 	}
-	if (!strcmp(str, "ROUND"))
+	if (!STRCMP(str, "ROUND"))
 	{
 		return OP_ROUND;
 	}
-	if (!strcmp(str, "EXISTS"))
+	if (!STRCMP(str, "EXISTS"))
 	{
 		return OP_EXISTS;
 	}
@@ -3948,7 +3954,7 @@ static uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parse
 	}
 	op_arg_error = parser_get_float(&op_arg);
 
-	if (!strcmp(o_cmd, "CALL"))
+	if (!STRCMP(o_cmd, "CALL"))
 	{
 		// store user vars
 		memcpy(o_code_stack[index].user_vars, new_state->user_vars, sizeof(o_code_stack[index].user_vars));
@@ -3994,7 +4000,7 @@ static uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parse
 	/**
 	 * IF clause
 	 */
-	if (!strcmp(o_cmd, "IF") || !strcmp(o_cmd, "ELSEIF") || !strcmp(o_cmd, "ELSE") || !strcmp(o_cmd, "ENDIF"))
+	if (!STRCMP(o_cmd, "IF") || !STRCMP(o_cmd, "ELSEIF") || !STRCMP(o_cmd, "ELSE") || !STRCMP(o_cmd, "ENDIF"))
 	{
 		uint8_t type = strlen(o_cmd); // If=2 ElseIf=6 Else=4
 		error = STATUS_OK;
@@ -4088,7 +4094,7 @@ static uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parse
 		return error;
 	}
 
-	if (!strcmp(o_cmd, "DO") || !strcmp(o_cmd, "WHILE") || !strcmp(o_cmd, "ENDWHILE"))
+	if (!STRCMP(o_cmd, "DO") || !STRCMP(o_cmd, "WHILE") || !STRCMP(o_cmd, "ENDWHILE"))
 	{
 		uint8_t type = strlen(o_cmd);
 		index--;
@@ -4164,13 +4170,13 @@ static uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parse
 		error = STATUS_OK;
 		return error;
 	}
-	if (!strcmp(o_cmd, "CONTINUE"))
+	if (!STRCMP(o_cmd, "CONTINUE"))
 	{
 	}
-	if (!strcmp(o_cmd, "REPEAT"))
+	if (!STRCMP(o_cmd, "REPEAT"))
 	{
 	}
-	if (!strcmp(o_cmd, "ENDREPEAT"))
+	if (!STRCMP(o_cmd, "ENDREPEAT"))
 	{
 	}
 
