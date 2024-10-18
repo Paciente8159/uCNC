@@ -4,10 +4,10 @@ Name=uCNC-emulator
 Type=1
 Ver=2
 ObjFiles=
-Includes=C:\Users\jcmartins\Downloads\GitHub\uCNC\uCNC;C:\Users\jcmartins\.platformio\packages\toolchain-gccmingw32\i686-w64-mingw32\include\;C:\Users\jcmartins\Downloads\GitHub\uCNC\makefiles\virtual
-Libs=C:\Users\jcmartins\Downloads\GitHub\uCNC\uCNC
+Includes=C:\Users\jcmartins\Downloads\GitHub\uCNC\uCNC;C:\Users\jcmartins\.platformio\packages\toolchain-gccmingw32\i686-w64-mingw32\include\;C:\Users\jcmartins\Downloads\GitHub\uCNC\makefiles\virtual;C:\Users\JCEM\Documents\GitHub\uCNC\uCNC;C:\Users\JCEM\.platformio\packages\toolchain-gccmingw32\i686-w64-mingw32\include\;C:\Users\JCEM\Documents\GitHub\uCNC\makefiles\virtual
+Libs=C:\Users\jcmartins\Downloads\GitHub\uCNC\uCNC;C:\Users\JCEM\Documents\GitHub\uCNC\uCNC
 PrivateResource=
-ResourceIncludes=C:\Users\jcmartins\Downloads\GitHub\uCNC\uCNC
+ResourceIncludes=C:\Users\jcmartins\Downloads\GitHub\uCNC\uCNC;C:\Users\JCEM\Documents\GitHub\uCNC\uCNC
 MakeIncludes=
 Compiler=-DMCU=MCU_VIRTUAL_WIN_@@_
 CppCompiler=-DMCU=MCU_VIRTUAL_WIN_@@_
@@ -29,7 +29,7 @@ IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=1
 CompilerSettings=000000e0g0000000001000000
-UnitCount=91
+UnitCount=93
 
 [VersionInfo]
 Major=1
@@ -871,7 +871,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit93]
-FileName=..\..\uCNC\src\modules\m17_m18\parser_m17_m18.c
+FileName=..\..\uCNC\src\modules\file_system.h
 CompileCpp=1
 Folder=
 Compile=1
@@ -882,16 +882,6 @@ BuildCmd=
 
 [Unit96]
 FileName=..\..\uCNC\src\modules\m66\parser_m66.c
-CompileCpp=1
-Folder=
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
-[Unit94]
-FileName=..\..\uCNC\src\modules\m42\parser_m42.c
 CompileCpp=1
 Folder=
 Compile=1
@@ -981,7 +971,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit95]
-FileName=..\..\uCNC\src\modules\m62_m65\parser_m62_m65.c
+FileName=..\..\uCNC\src\modules\system_menu.h
 CompileCpp=1
 Folder=
 Compile=1
@@ -1022,6 +1012,26 @@ BuildCmd=
 
 [Unit83]
 FileName=..\..\uCNC\src\interface\grbl_print.c
+CompileCpp=1
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit92]
+FileName=..\..\uCNC\src\modules\file_system.c
+CompileCpp=1
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit94]
+FileName=..\..\uCNC\src\modules\o_codes\o_codes.c
 CompileCpp=1
 Folder=
 Compile=1
