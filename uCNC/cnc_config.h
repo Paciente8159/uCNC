@@ -96,7 +96,7 @@ extern "C"
 	 * Uncomment to enable. Only necessary to debug communication problems
 	 * */
 
-	 #define ECHO_CMD
+	//  #define ECHO_CMD
 
 	/**
 	 * Debug command parsing time
@@ -307,7 +307,7 @@ extern "C"
 	/**
 	 * Enables RS274NGC expression parsing
 	 * **/
-	 #define ENABLE_RS274NGC_EXPRESSIONS
+	//  #define ENABLE_RS274NGC_EXPRESSIONS
 	 #ifdef ENABLE_RS274NGC_EXPRESSIONS
 	 // Uncomment to enable O codes
 	 #define ENABLE_O_CODES
@@ -344,10 +344,10 @@ extern "C"
 	/**
 	 * Uncomment to enable module extensions
 	 * */
-	#define ENABLE_MAIN_LOOP_MODULES
-	#define ENABLE_IO_MODULES
-	#define ENABLE_PARSER_MODULES
-	#define ENABLE_MOTION_CONTROL_MODULES
+	// #define ENABLE_MAIN_LOOP_MODULES
+	// #define ENABLE_IO_MODULES
+	// #define ENABLE_PARSER_MODULES
+	// #define ENABLE_MOTION_CONTROL_MODULES
 
 	/**
 	 * Settings extensions are enabled by default

@@ -83,8 +83,6 @@ char parser_backtrack;
 #define OCODE_DRIVE 'C'
 #endif
 
-#define FILE_EOF 3
-
 #define O_CODE_OP_DISCARD 0x80
 #define O_CODE_OP_OPTIONS_MASK 0x03
 #define O_CODE_BASE_TYPE(x) (x & ~(O_CODE_OP_DISCARD | O_CODE_OP_OPTIONS_MASK))
@@ -95,8 +93,8 @@ char parser_backtrack;
 #define O_CODE_OP_IF_DISCARD (O_CODE_OP_IF | O_CODE_OP_DISCARD)
 #define O_CODE_OP_WHILE 8
 #define O_CODE_OP_DO_WHILE (O_CODE_OP_WHILE | 1)
-#define O_CODE_OP_WHILE_BREAK (O_CODE_OP_WHILE | O_CODE_OP_DISCARD | 2)
 #define O_CODE_OP_WHILE_DISCARD (O_CODE_OP_WHILE | O_CODE_OP_DISCARD)
+#define O_CODE_OP_WHILE_BREAK (O_CODE_OP_WHILE | O_CODE_OP_DISCARD | 3)
 #define O_CODE_OP_REPEAT 16
 #define O_CODE_OP_REPEAT_DISCARD (O_CODE_OP_REPEAT | O_CODE_OP_DISCARD)
 
@@ -113,6 +111,7 @@ char parser_backtrack;
 
 static fs_file_t *o_code_file;
 static uint32_t o_code_file_pos;
+static bool o_code_file_changed;
 
 typedef struct o_code_stack_
 {
@@ -136,6 +135,11 @@ static uint8_t o_code_getc(void)
 {
 	if (o_code_file)
 	{
+		if (o_code_file_changed)
+		{
+			o_code_file_changed = false;
+			return EOL;
+		}
 		if (fs_available(o_code_file))
 		{
 			uint8_t c = 0;
@@ -143,7 +147,7 @@ static uint8_t o_code_getc(void)
 			return c;
 		}
 	}
-	return FILE_EOF; // end of file marker
+	return EOF; // end of file marker
 }
 
 static uint8_t o_code_file_flush(void)
@@ -153,7 +157,7 @@ static uint8_t o_code_file_flush(void)
 		grbl_stream_change(NULL);
 	}
 
-	return FILE_EOF; // end of file marker
+	return EOF; // end of file marker
 }
 
 DECL_GRBL_STREAM(o_code_stream, o_code_getc, NULL, NULL, NULL, NULL);
@@ -188,6 +192,7 @@ static void o_code_open(uint8_t index)
 			o_code_stack[index].pos = 0;
 		}
 
+		o_code_file_changed = true;
 		grbl_stream_change(&o_code_stream);
 	}
 }
@@ -247,6 +252,7 @@ static void o_code_end_subrotine(parser_state_t *new_state)
 		memset(o_code_stack, 0, sizeof(o_code_stack));
 		o_code_stack_index = 0;
 		grbl_stream_change(NULL);
+		grbl_stream_readonly(o_code_file_flush, NULL, NULL);
 	}
 }
 #endif
@@ -1004,12 +1010,13 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 				return error;
 			}
 			break;
-		case FILE_EOF:
+		case EOF:
 			o_code_end_subrotine(new_state);
 			if (o_code_stack_index)
 			{
 				break;
 			}
+			grbl_stream_change(NULL);
 			__FALL_THROUGH__
 #endif
 #endif
@@ -2279,7 +2286,7 @@ unsigned char parser_get_next_preprocessed(bool peek)
 			grbl_stream_start_broadcast();
 			proto_print(MSG_ECHO);
 		}
-		if (c > FILE_EOF)
+		if (c > EOF)
 		{
 			proto_putc(c);
 		}
@@ -2986,8 +2993,8 @@ static uint8_t parser_get_token(uint8_t *word, float *value)
 		}
 		break;
 #ifdef ENABLE_O_CODES
-	case FILE_EOF:
-		// allow FILE_EOF to continue
+	case EOF:
+		// allow EOF to continue
 		break;
 #endif
 #endif
@@ -3484,7 +3491,7 @@ void parser_discard_command(void)
 	do
 	{
 		c = parser_get_next_preprocessed(false);
-	} while (c > FILE_EOF);
+	} while (c > EOF);
 #ifdef ECHO_CMD
 	grbl_stream_start_broadcast();
 	proto_printf(MSG_FEEDBACK_START "Cmd discarded" MSG_FEEDBACK_END);
@@ -3925,9 +3932,19 @@ void parser_coordinate_system_load(uint8_t param, float *target)
 #ifdef ENABLE_RS274NGC_EXPRESSIONS
 #ifdef ENABLE_O_CODES
 
+static bool o_code_seek(uint32_t pos)
+{
+	if (o_code_file)
+	{
+		fs_seek(o_code_file, pos - 2);
+		parser_get_next_preprocessed(false); // discard one char to force peek refresh
+		return true;
+	}
+	return false;
+}
+
 uint8_t o_code_validate(uint8_t op, uint16_t ocode_id, bool is_new)
 {
-	bool exists = false;
 	for (uint8_t index = o_code_stack_index; index != 0;)
 	{
 		index--;
@@ -4118,10 +4135,32 @@ static uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parse
 		return error;
 	}
 
+	if (!STRCMP(o_cmd, "RETURN") || !STRCMP(o_cmd, "ENDSUB"))
+	{
+		for (uint8_t index = o_code_stack_index; index != 0;)
+		{
+			index--;
+			if (o_code_stack[index].op == O_CODE_OP_SUB)
+			{
+				bool found = (o_code_stack[index].code == ocode_id);
+				o_code_stack_index = index;
+				o_code_end_subrotine(new_state);
+				if (found)
+				{
+					error = STATUS_OK;
+					return error;
+				}
+			}
+		}
+
+		error = STATUS_OCODE_ERROR_INVALID_OPERATION;
+		return error;
+	}
+
 	/**
 	 * continue and break
 	 */
-	if (!STRCMP(o_cmd, "CONTINUE") || !STRCMP(o_cmd, "BRAKE"))
+	if (!STRCMP(o_cmd, "CONTINUE") || !STRCMP(o_cmd, "BREAK"))
 	{
 		uint8_t type = strlen(o_cmd);
 		index = o_code_validate(O_CODE_OP_REPEAT, ocode_id, false);
@@ -4186,21 +4225,67 @@ static uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parse
 				return error;
 			}
 
-			if (((o_code_stack[index].op != O_CODE_OP_WHILE_DISCARD) && (o_code_stack[index].op != O_CODE_OP_WHILE)) && ocode_id == o_code_stack[index].code)
+			if (O_CODE_BASE_TYPE(o_code_stack[index].op) == O_CODE_OP_WHILE && ocode_id == o_code_stack[index].code)
+			{
+				switch (o_code_stack[index].op)
+				{
+				case O_CODE_OP_DO_WHILE:
+					error = STATUS_OCODE_ERROR_INVALID_NUMBER;
+					return error;
+				case O_CODE_OP_WHILE_DISCARD:
+					// clear the discard and continue
+					o_code_stack[index].op = O_CODE_OP_WHILE;
+					__FALL_THROUGH__
+				case O_CODE_OP_WHILE:
+					if (!o_code_seek(o_code_stack[index].loop))
+					{
+						error = STATUS_OCODE_ERROR_FILE_NOT_FOUND;
+						return error;
+					}
+					// re-eval the arg
+					op_arg_error = parser_get_float(&op_arg);
+					if (!op_arg)
+					{
+						// mark to exit loop
+						o_code_stack[index].op = O_CODE_OP_WHILE_BREAK;
+						while (parser_get_next_preprocessed(true) != 'O')
+						{
+							parser_discard_command();
+						}
+					}
+					error = STATUS_OK;
+					return error;
+				case O_CODE_OP_WHILE_BREAK:
+					o_code_stack[index].code = 0;
+					o_code_stack[index].op = 0;
+					o_code_stack[index].pos = 0;
+					o_code_stack[index].loop = 0;
+					o_code_stack_index--;
+					error = STATUS_OK;
+					return error;
+				default:
+					error = STATUS_OCODE_ERROR_INVALID_NUMBER;
+					return error;
+				}
+			}
 			{
 				error = STATUS_OCODE_ERROR_INVALID_NUMBER;
 				return error;
 			}
+
 			if (o_code_file && o_code_stack[index].op != O_CODE_OP_WHILE_DISCARD)
 			{
 				// save position
 				if (o_code_file)
 				{
-					loop_ret = o_code_file->file_info.size - fs_available(o_code_file) - 2; // backtrack 2 chars to catch the newline
+					loop_ret = o_code_file->file_info.size - fs_available(o_code_file); // backtrack 2 chars to catch the newline
 				}
 				// rewind
-				fs_seek(o_code_file, o_code_stack[index].loop);
-				parser_get_next_preprocessed(false); // discard one char to force peek refresh
+				if (!o_code_seek(o_code_stack[index].loop))
+				{
+					error = STATUS_OCODE_ERROR_FILE_NOT_FOUND;
+					return error;
+				}
 				// re-eval the arg
 				op_arg_error = parser_get_float(&op_arg);
 				if (op_arg)
@@ -4209,8 +4294,11 @@ static uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parse
 				}
 			}
 			// restore position and continue
-			fs_seek(o_code_file, loop_ret);
-			parser_get_next_preprocessed(false); // discard one char to force peek refresh
+			if (!o_code_seek(loop_ret))
+			{
+				error = STATUS_OCODE_ERROR_FILE_NOT_FOUND;
+				return error;
+			}
 			o_code_stack[index].code = 0;
 			o_code_stack[index].op = 0;
 			o_code_stack[index].pos = 0;
@@ -4229,13 +4317,54 @@ static uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parse
 				// is a while loop
 				index = o_code_stack_index++;
 				o_code_stack[index].code = ocode_id;
-				o_code_stack[index].op = O_CODE_OP_WHILE;
-				o_code_stack[index].pos = o_code_file->file_info.size - fs_available(o_code_file) - 2;
+				o_code_stack[index].pos = o_code_file->file_info.size - fs_available(o_code_file);
+				if (op_arg)
+				{
+					o_code_stack[index].op = O_CODE_OP_WHILE;
+				}
+				else
+				{
+					o_code_stack[index].op = O_CODE_OP_WHILE_BREAK;
+					while (parser_get_next_preprocessed(true) != 'O')
+					{
+						parser_discard_command();
+					}
+				}
 			}
-			else if (o_code_stack[index].op == O_CODE_OP_DO_WHILE)
+			else if (O_CODE_BASE_TYPE(o_code_stack[index].op) == O_CODE_OP_WHILE && ocode_id == o_code_stack[index].code)
 			{
 				// it's a do while
-				
+				switch (o_code_stack[index].op)
+				{
+				case O_CODE_OP_WHILE_DISCARD:
+					// clear the discard and continue
+					o_code_stack[index].op = O_CODE_OP_DO_WHILE;
+					__FALL_THROUGH__
+				case O_CODE_OP_DO_WHILE:
+					if (op_arg)
+					{
+						// rewind
+						if (!o_code_seek(o_code_stack[index].pos))
+						{
+							error = STATUS_OCODE_ERROR_FILE_NOT_FOUND;
+							return error;
+						}
+						error = STATUS_OK;
+						return error;
+					}
+					__FALL_THROUGH__
+				case O_CODE_OP_WHILE_BREAK:
+					o_code_stack[index].code = 0;
+					o_code_stack[index].op = 0;
+					o_code_stack[index].pos = 0;
+					o_code_stack[index].loop = 0;
+					o_code_stack_index--;
+					error = STATUS_OK;
+					return error;
+				default:
+					error = STATUS_OCODE_ERROR_INVALID_NUMBER;
+					return error;
+				}
 			}
 			else
 			{
@@ -4244,7 +4373,7 @@ static uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parse
 				return error;
 			}
 
-			o_code_stack[index].loop = loop_ret - 1; // point to the loop condition eval expression
+			o_code_stack[index].loop = loop_ret; // point to the loop condition eval expression
 			break;
 		case 2:
 			if (index)
@@ -4256,63 +4385,10 @@ static uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parse
 			index = o_code_stack_index++;
 			o_code_stack[index].code = ocode_id;
 			o_code_stack[index].op = O_CODE_OP_DO_WHILE;
-			o_code_stack[index].pos = loop_ret - 1; // point to the start of the loop
+			o_code_stack[index].pos = loop_ret; // point to the start of the loop
 			o_code_stack[index].loop = 0;
 			break;
-		// default:
-		// 	if (!index)
-		// 	{
-		// 		index = o_code_validate(O_CODE_OP_WHILE, ocode_id, true);
-		// 		if (!index)
-		// 		{
-		// 			error = STATUS_OCODE_ERROR_INVALID_NUMBER;
-		// 			return error;
-		// 		}
-		// 		index = o_code_stack_index++;
-		// 		o_code_stack[index].code = ocode_id;
-		// 		o_code_stack[index].op = (type == 2) ? O_CODE_OP_DO_WHILE : O_CODE_OP_WHILE;
-		// 		o_code_stack[index].loop = loop_ret - 1; // point one char earlier because a discard to update the peek value is needed
-		// 	}
-		// 	else
-		// 	{
-		// 		index--;
-		// 		o_code_stack[index].pos = loop_ret - 1; // point one char earlier because a discard to update the peek value is needed
-		// 		if (o_code_file)
-		// 		{
-		// 			// rewind
-		// 			fs_seek(o_code_file, o_code_stack[index].pos);
-		// 			parser_get_next_preprocessed(false); // discard one char to force peek refresh
-		// 			op_arg_error = parser_get_float(&op_arg);
-		// 			if (!op_arg && (o_code_stack[index].op == O_CODE_OP_WHILE))
-		// 			{
-		// 				o_code_stack[index].op |= O_CODE_OP_DISCARD;
-		// 				while (parser_get_next_preprocessed(true) != 'O')
-		// 				{
-		// 					parser_discard_command();
-		// 				}
-		// 				break;
-		// 			}
-		// 			if (op_arg)
-		// 			{
-		// 				fs_seek(o_code_file, o_code_stack[index].loop);
-		// 				parser_get_next_preprocessed(false); // discard one char to force peek refresh
-		// 			}
-		// 			else
-		// 			{
-		// 				o_code_stack[index].op = O_CODE_OP_WHILE_BREAK
-		// 																		 o_code_stack[index]
-		// 																				 .code = 0;
-		// 				o_code_stack[index].op = 0;
-		// 				o_code_stack[index].pos = 0;
-		// 				o_code_stack[index].loop = 0;
-		// 				o_code_stack_index--;
-		// 			}
-		// 		}
-		// 	}
-		// 	break;
 		}
-
-
 
 		error = STATUS_OK;
 		return error;
@@ -4336,7 +4412,7 @@ static uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parse
 		case 6:
 			index = o_code_stack_index++;
 			o_code_stack[index].code = ocode_id;
-			o_code_stack[index].pos = o_code_file->file_info.size - fs_available(o_code_file) - 2; // doesn't care about the re-eval de arg
+			o_code_stack[index].pos = o_code_file->file_info.size - fs_available(o_code_file); // doesn't care about the re-eval de arg
 			o_code_stack[index].loop = (int32_t)truncf(op_arg);
 			break;
 		}
@@ -4347,10 +4423,10 @@ static uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parse
 			o_code_stack[index].op = O_CODE_OP_REPEAT;
 			// always jump to the loop start before eval
 			// this makes the algorithm simpler
-			if (o_code_file)
+			if (!o_code_seek(o_code_stack[index].pos))
 			{
-				fs_seek(o_code_file, o_code_stack[index].pos);
-				parser_get_next_preprocessed(false); // discard one char to force peek refresh
+				error = STATUS_OCODE_ERROR_FILE_NOT_FOUND;
+				return error;
 			}
 		}
 		else

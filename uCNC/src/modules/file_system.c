@@ -22,7 +22,7 @@
 #include "system_menu.h"
 #include <string.h>
 
-#ifndef freefile_ptr(x)
+#ifndef freefile_ptr
 #define freefile_ptr(x) free(x)
 #endif
 
