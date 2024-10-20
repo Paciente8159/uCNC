@@ -111,22 +111,21 @@ extern "C"
 	 * Disabling settings safety will make the settins run in legacy more where they are simply reset to default on error without forcing the user to re-check them
 	 */
 
-//	 #define DISABLE_SAFE_SETTINGS
+	//	 #define DISABLE_SAFE_SETTINGS
 
 	/**
 	 * Uncomment to enable G92 storing on non volatile memory
 	 * If disabled G92 will be stored in RAM only. Soft-reset will not erase stored value.
 	 * */
 	// #define G92_STORE_NONVOLATILE
-	
+
 	/**
 	 * This uses RAM only settings
 	 * Storing is disabled and the defaults will be loaded at each power up
 	 * This is useful if you don't have EEPROM/FLASH storage or the divide read/write maximum cycle count is low to prevent damage
 	 * This is also usefull if the sender provides all settings at startup/connection
 	 * */
-//	 #define RAM_ONLY_SETTINGS
-
+	//	 #define RAM_ONLY_SETTINGS
 
 	/**
 	 * Override default configuration settings. Use _PER_AXIS parameters to
@@ -290,7 +289,7 @@ extern "C"
 	 * processes comment as defined in the RS274NGC
 	 * */
 
-	// #define PROCESS_COMMENTS
+	#define PROCESS_COMMENTS
 
 	/**
 	 * Enables RS274NGC canned cycles
@@ -307,11 +306,13 @@ extern "C"
 	/**
 	 * Enables RS274NGC expression parsing
 	 * **/
-	//  #define ENABLE_RS274NGC_EXPRESSIONS
-	 #ifdef ENABLE_RS274NGC_EXPRESSIONS
-	 // Uncomment to enable O codes
-	 #define ENABLE_O_CODES
-	 #endif
+#define ENABLE_RS274NGC_EXPRESSIONS
+#ifdef ENABLE_RS274NGC_EXPRESSIONS
+	// Uncomment to enable named parameters
+#define ENABLE_NAMED_PARAMETERS
+// Uncomment to enable O codes
+#define ENABLE_O_CODES
+#endif
 
 	/**
 	 * Shrink µCNC

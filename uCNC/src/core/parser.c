@@ -69,12 +69,134 @@ static void parser_coordinate_system_load(uint8_t param, float *target);
 #ifdef ENABLE_RS274NGC_EXPRESSIONS
 char parser_backtrack;
 #define STRLEN(s) (sizeof(s) / sizeof(s[0]))
-#if (MCU == MCU_AVR)
-#define STRCMP(sram, srom) ({char stmp[STRLEN(srom)]; rom_strcpy(stmp, __romstr__(srom)); strcmp(sram, stmp); })
-#else
-#define STRCMP(sram, srom) strcmp(sram, srom)
-#endif
+#define STRCMP(sram, srom) rom_strcmp(sram, __romstr__(srom))
 FORCEINLINE static uint8_t parser_get_expression(float *value);
+#ifdef ENABLE_NAMED_PARAMETERS
+// carefull this should be at least as big as the longer named parameter
+#define NAMED_PARAM_MAX_LEN 24
+typedef struct named_param_
+{
+	const char *const name;
+	uint16_t id;
+} named_param_t;
+#define DECL_NAMED_PARAM(name) static const char gp##name[] __rom__ = #name
+#define NAMED_PARAM(p_name, p_id) {.name = gp##p_name, .id = p_id}
+DECL_NAMED_PARAM(_vmajor);
+DECL_NAMED_PARAM(_vminor);
+DECL_NAMED_PARAM(_line);
+DECL_NAMED_PARAM(_motion_mode);
+DECL_NAMED_PARAM(_plane);
+DECL_NAMED_PARAM(_ccomp);
+DECL_NAMED_PARAM(_metric);
+DECL_NAMED_PARAM(_imperial);
+DECL_NAMED_PARAM(_absolute);
+DECL_NAMED_PARAM(_incremental);
+DECL_NAMED_PARAM(_inverse_time);
+DECL_NAMED_PARAM(_units_per_minute);
+DECL_NAMED_PARAM(_units_per_rev);
+DECL_NAMED_PARAM(_coord_system);
+DECL_NAMED_PARAM(_tool_offset);
+DECL_NAMED_PARAM(_retract_r_plane);
+DECL_NAMED_PARAM(_retract_old_z);
+DECL_NAMED_PARAM(_spindle_rpm_mode);
+DECL_NAMED_PARAM(_spindle_css_mode);
+DECL_NAMED_PARAM(_ijk_absolute_mode);
+DECL_NAMED_PARAM(_lathe_diameter_mode);
+DECL_NAMED_PARAM(_lathe_radius_mode);
+DECL_NAMED_PARAM(_spindle_on);
+DECL_NAMED_PARAM(_spindle_cw);
+DECL_NAMED_PARAM(_mist);
+DECL_NAMED_PARAM(_flood);
+DECL_NAMED_PARAM(_speed_override);
+DECL_NAMED_PARAM(_feed_override);
+DECL_NAMED_PARAM(_adaptive_feed);
+DECL_NAMED_PARAM(_feed_hold);
+DECL_NAMED_PARAM(_feed);
+DECL_NAMED_PARAM(_rpm);
+DECL_NAMED_PARAM(_x);
+DECL_NAMED_PARAM(_y);
+DECL_NAMED_PARAM(_z);
+DECL_NAMED_PARAM(_a);
+DECL_NAMED_PARAM(_b);
+DECL_NAMED_PARAM(_c);
+DECL_NAMED_PARAM(_u);
+DECL_NAMED_PARAM(_v);
+DECL_NAMED_PARAM(_w);
+DECL_NAMED_PARAM(_abs_x);
+DECL_NAMED_PARAM(_abs_y);
+DECL_NAMED_PARAM(_abs_z);
+DECL_NAMED_PARAM(_abs_a);
+DECL_NAMED_PARAM(_abs_b);
+DECL_NAMED_PARAM(_abs_c);
+DECL_NAMED_PARAM(_current_tool);
+DECL_NAMED_PARAM(_current_pocket);
+DECL_NAMED_PARAM(_selected_tool);
+DECL_NAMED_PARAM(_selected_pocket);
+DECL_NAMED_PARAM(_value);
+DECL_NAMED_PARAM(_value_returned);
+DECL_NAMED_PARAM(_task);
+DECL_NAMED_PARAM(_call_level);
+DECL_NAMED_PARAM(_remap_level);
+static const named_param_t named_params[] __rom__ = {
+		NAMED_PARAM(_vmajor, 6001),
+		NAMED_PARAM(_vminor, 6002),
+		NAMED_PARAM(_line, 6003),
+		NAMED_PARAM(_motion_mode, 6010),
+		NAMED_PARAM(_plane, 6011),
+		NAMED_PARAM(_ccomp, 6012),
+		NAMED_PARAM(_metric, 6013),
+		NAMED_PARAM(_imperial, 6014),
+		NAMED_PARAM(_absolute, 6015),
+		NAMED_PARAM(_incremental, 6016),
+		NAMED_PARAM(_inverse_time, 6017),
+		NAMED_PARAM(_units_per_minute, 6018),
+		NAMED_PARAM(_units_per_rev, 6019),
+		NAMED_PARAM(_coord_system, 6020),
+		NAMED_PARAM(_tool_offset, 6021),
+		NAMED_PARAM(_retract_r_plane, 6022),
+		NAMED_PARAM(_retract_old_z, 6023),
+		NAMED_PARAM(_spindle_rpm_mode, 6024),
+		NAMED_PARAM(_spindle_css_mode, 6025),
+		NAMED_PARAM(_ijk_absolute_mode, 6026),
+		NAMED_PARAM(_lathe_diameter_mode, 6027),
+		NAMED_PARAM(_lathe_radius_mode, 6028),
+		NAMED_PARAM(_spindle_on, 6029),
+		NAMED_PARAM(_spindle_cw, 6030),
+		NAMED_PARAM(_mist, 6031),
+		NAMED_PARAM(_flood, 6032),
+		NAMED_PARAM(_speed_override, 6040),
+		NAMED_PARAM(_feed_override, 6041),
+		NAMED_PARAM(_adaptive_feed, 6042),
+		NAMED_PARAM(_feed_hold, 6043),
+		NAMED_PARAM(_feed, 6044),
+		NAMED_PARAM(_rpm, 6045),
+		NAMED_PARAM(_x, 5420),
+		NAMED_PARAM(_y, 5421),
+		NAMED_PARAM(_z, 5422),
+		NAMED_PARAM(_a, 5423),
+		NAMED_PARAM(_b, 5424),
+		NAMED_PARAM(_c, 5425),
+		NAMED_PARAM(_u, 5426),
+		NAMED_PARAM(_v, 5427),
+		NAMED_PARAM(_w, 5428),
+		NAMED_PARAM(_abs_x, 6050),
+		NAMED_PARAM(_abs_y, 6051),
+		NAMED_PARAM(_abs_z, 6052),
+		NAMED_PARAM(_abs_a, 6053),
+		NAMED_PARAM(_abs_b, 6054),
+		NAMED_PARAM(_abs_c, 6055),
+		NAMED_PARAM(_current_tool, 5400),
+		NAMED_PARAM(_current_pocket, 6060),
+		NAMED_PARAM(_selected_tool, 6061),
+		NAMED_PARAM(_selected_pocket, 6062),
+		NAMED_PARAM(_value, 6100),
+		NAMED_PARAM(_value_returned, 6101),
+		NAMED_PARAM(_task, 6110),
+		NAMED_PARAM(_call_level, 6111),
+		NAMED_PARAM(_remap_level, 6112)};
+
+static float parser_get_named_parameter(int param, int offset, uint8_t pos);
+#endif
 #ifdef ENABLE_O_CODES
 #include "../modules/file_system.h"
 #ifndef OCODE_STACK_DEPTH
@@ -795,8 +917,8 @@ static uint8_t parser_grbl_exec_code(uint8_t code)
 }
 
 /**
- * 
- * 
+ *
+ *
  * STEP 1
  * Fetches the next line from the mcu communication buffer and preprocesses the string
  * In the preprocess these steps are executed
@@ -805,8 +927,8 @@ static uint8_t parser_grbl_exec_code(uint8_t code)
  * 	3. All letters are upper-cased
  * 	4. Checks number formats in all words
  * 	5. Checks for modal groups and words collisions
- * 
- * 
+ *
+ *
  */
 static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
 {
@@ -954,15 +1076,15 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 }
 
 /**
- * 
- * 
+ *
+ *
  * STEP 2
  * Validadates command by checking for errors on all G/M Codes
  * 	RS274NGC v3 - 3.5 G Codes
  * 	RS274NGC v3 - 3.6 Input M Codes
  * 	RS274NGC v3 - 3.7 Other Input Codes
- * 
- * 
+ *
+ *
  */
 
 static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
@@ -1281,14 +1403,14 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 }
 
 /**
- * 
- * 
+ *
+ *
  * STEP 3
  * Executes the command
  * 	Follows the RS274NGC v3 - 3.8 Order of Execution
  * All coordinates are converted to machine absolute coordinates before sent to the motion controller
- * 
- * 
+ *
+ *
  */
 static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
 {
@@ -2018,12 +2140,12 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 	return STATUS_OK;
 }
 
-/** 
- * 
- * 
+/**
+ *
+ *
  * Parse the next gcode line available in the buffer and send it to the motion controller
- * 
- * 
+ *
+ *
  */
 static uint8_t parser_gcode_command(bool is_jogging)
 {
@@ -2077,13 +2199,13 @@ static uint8_t parser_gcode_command(bool is_jogging)
 }
 
 /**
- * 
- * 
+ *
+ *
  * Parses comments almost as defined in the RS274NGC
  * To be compatible with Grbl it accepts bad format comments
  * On error returns false otherwise returns true
- * 
- * 
+ *
+ *
  */
 #define COMMENT_OK 1
 #define COMMENT_NOTOK 2
@@ -2114,6 +2236,9 @@ static void parser_get_comment(uint8_t start_char)
 		}
 
 #ifdef PROCESS_COMMENTS
+#ifdef ENABLE_RS274NGC_EXPRESSIONS
+		float exp_val;
+#endif
 		switch (msg_parser)
 		{
 		case 0:
@@ -2130,7 +2255,14 @@ static void parser_get_comment(uint8_t start_char)
 			proto_print(MSG_FEEDBACK_START);
 			break;
 		case 4:
-			proto_putc(c);
+			if (parser_get_float(&exp_val) & NUMBER_OK)
+			{
+				proto_printf("%f", exp_val);
+			}
+			else
+			{
+				proto_putc(c);
+			}
 			break;
 		}
 #endif
@@ -2204,6 +2336,46 @@ uint8_t parser_get_float(float *value)
 	{
 		return parser_get_expression(value);
 	}
+#ifdef ENABLE_NAMED_PARAMETERS
+	else if (c == '<')
+	{
+		char namedparam[NAMED_PARAM_MAX_LEN];
+		bool valid = false;
+		parser_get_next_preprocessed(false);
+		for (uint8_t i = 0; i < NAMED_PARAM_MAX_LEN; i++)
+		{
+			c = parser_get_next_preprocessed(true);
+			if (c == EOL)
+			{
+				break;
+			}
+			if (c == '>')
+			{
+				parser_get_next_preprocessed(false);
+				namedparam[i] = 0;
+				valid = true;
+				break;
+			}
+			namedparam[i] = parser_get_next_preprocessed(false);
+		}
+
+		if (valid)
+		{
+			for (uint8_t i = 0; i < sizeof(named_params) / sizeof(named_param_t); i++)
+			{
+				if (!rom_strcmp(namedparam, (const char *)rom_strptr(&(named_params[i].name))))
+				{
+					named_param_t p = {0};
+					rom_memcpy(&p, &named_params[i], sizeof(named_param_t));
+					*value = (float)p.id;
+					return NUMBER_OK;
+				}
+			}
+		}
+
+		return NUMBER_UNDEF;
+	}
+#endif
 #endif
 	return prt_atof((void *)parser_get_next_preprocessed, NULL, value);
 }
@@ -2859,11 +3031,11 @@ void parser_coordinate_system_load(uint8_t param, float *target)
 }
 
 /**
- * 
- * 
+ *
+ *
  * Canned cycles code extensions
- * 
- * 
+ *
+ *
  */
 #ifdef ENABLE_CANNED_CYCLES
 
@@ -3393,6 +3565,13 @@ float parser_get_parameter(int param)
 			return parser_last_pos[pos];
 		}
 		break;
+	default:
+#ifdef ENABLE_NAMED_PARAMETERS
+		if (offset >= 600 && offset <= 610)
+		{
+			return parser_get_named_parameter(param, offset, pos);
+		}
+#endif
 	}
 
 	return 0;
@@ -3491,6 +3670,12 @@ uint8_t parser_get_operation(bool can_call_unary_func)
 	{
 		return OP_REAL;
 	}
+#ifdef ENABLE_NAMED_PARAMETERS
+	if (c == '<')
+	{
+		return OP_REAL;
+	}
+#endif
 	else if (c < 'A' || c > 'Z')
 	{
 		if (!c)
@@ -4490,6 +4675,79 @@ uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parser_cmd_e
 	}
 
 	return error;
+}
+#endif
+
+#ifdef ENABLE_NAMED_PARAMETERS
+float parser_get_named_parameter(int param, int offset, uint8_t pos)
+{
+	float result = -1;
+	switch (offset)
+	{
+	case 600:
+		switch (pos)
+		{
+		case 0:
+			str_atof(CNC_MAJOR_MINOR_VERSION, &result);
+			break;
+		case 1:
+			str_atof(CNC_PATCH_VERSION, &result);
+			break;
+#ifdef GCODE_PROCESS_LINE_NUMBERS
+		case 2:
+			break;
+#endif
+		}
+		break;
+	case 601:
+		switch (pos)
+		{
+		case 0:
+			return parser_state.groups.motion;
+		case 1:
+			return parser_state.groups.plane;
+		case 2:
+			return 400;
+		case 3:
+			return (parser_state.groups.distance_mode == G21);
+		case 4:
+			return (parser_state.groups.distance_mode == G20);
+		case 5:
+			return (parser_state.groups.distance_mode == G90);
+		case 6:
+			return (parser_state.groups.distance_mode == G91);
+		case 7:
+			return (parser_state.groups.feedrate_mode == G93);
+		case 8:
+			return (parser_state.groups.feedrate_mode == G94);
+		case 9:
+			return 0;
+		}
+		break;
+	case 602:
+		switch (pos)
+		{
+		case 0:
+			offset = (54 + parser_state.groups.coord_system) * 10;
+			switch (offset)
+			{
+			case 600:
+				return 591;
+			case 610:
+				return 592;
+			case 620:
+				return 593;
+			default:
+				result = offset;
+			}
+			break;
+		case 1:
+			return (parser_state.groups.tlo_mode == G43);
+		}
+		break;
+	}
+
+	return result;
 }
 #endif
 #endif
