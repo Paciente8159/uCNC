@@ -2238,11 +2238,12 @@ static uint8_t parser_get_token(uint8_t *word, float *value)
 		{
 			return STATUS_INVALID_STATEMENT;
 		}
-		c = parser_get_next_preprocessed(false);
+		c = parser_backtrack ? parser_backtrack : parser_get_next_preprocessed(false);
 		if (c != '=')
 		{
 			return STATUS_INVALID_STATEMENT;
 		}
+		parser_backtrack = 0;
 		break;
 #ifdef ENABLE_O_CODES
 	case FILE_EOF:
@@ -3761,7 +3762,7 @@ uint8_t parser_get_expression(float *value)
 		case OP_WORD:
 			if (stack_depth == 2 && stack[1].op == OP_PARSER_VAR)
 			{
-				rhs = parser_exec_op(stack[--stack_depth], rhs);
+				stack_depth--;
 			}
 			if (stack_depth != 1)
 			{
