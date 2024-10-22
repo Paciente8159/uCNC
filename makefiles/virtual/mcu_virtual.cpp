@@ -184,7 +184,7 @@ extern "C"
 #include <conio.h>
 	void mcu_uart2_process()
 	{
-		while (kbhit())
+		if (kbhit())
 		{
 			char c = getch();
 			putchar(c);

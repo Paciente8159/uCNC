@@ -2140,14 +2140,19 @@ static void parser_get_comment(uint8_t start_char)
 				if (parser_get_expression(&f) != NUMBER_UNDEF)
 				{
 					proto_printf("%f", f);
-					mute_comment_output = false;
-					proto_putc(parser_backtrack);
-					parser_backtrack = 0;
 					c = grbl_stream_peek();
+					if (c == ')' || c == EOL)
+					{
+						comment_end = COMMENT_OK;
+					}
 				}
 			}
 #endif
-			proto_putc(c);
+			if (comment_end != COMMENT_OK)
+			{
+				proto_putc(c);
+			}
+
 			break;
 		}
 #endif
@@ -2255,7 +2260,7 @@ static uint8_t parser_get_token(uint8_t *word, float *value)
 		{
 			return STATUS_INVALID_STATEMENT;
 		}
-		c = parser_backtrack ? parser_backtrack : parser_get_next_preprocessed(false);
+		c = parser_get_next_preprocessed(false);
 		if (c != '=')
 		{
 			return STATUS_INVALID_STATEMENT;
@@ -3406,6 +3411,7 @@ float parser_get_parameter(int param)
 		pos--;
 		return g_settings.tool_length_offset[parser_state.groups.tool_change];
 	case 542:
+		pos++;
 		if (pos < AXIS_COUNT)
 		{
 			return parser_last_pos[pos];
@@ -3462,8 +3468,8 @@ float parser_exec_op(parser_stack_t stack, float rhs)
 		return RAD_DEG_MULT * acosf(rhs);
 	case OP_ASIN:
 		return RAD_DEG_MULT * asinf(rhs);
-	// case OP_ATAN:
-	// 	return rhs;
+	case OP_ATAN:
+		return rhs;
 	case OP_ATAN_DIV:
 		// special atan case
 		return RAD_DEG_MULT * atan2f(stack.lhs, rhs);
@@ -3498,6 +3504,13 @@ float parser_exec_op(parser_stack_t stack, float rhs)
 	}
 }
 
+/**
+ *
+ * This determines the operation that will be performed in an expression symbol
+ * 
+ *
+ */
+
 uint8_t parser_get_operation(bool can_call_unary_func)
 {
 	char c = (char)parser_get_next_preprocessed(true);
@@ -3515,62 +3528,56 @@ uint8_t parser_get_operation(bool can_call_unary_func)
 		{
 			return OP_ENDLINE;
 		}
-		parser_get_next_preprocessed(false);
-		char peek = (char)parser_get_next_preprocessed(true);
+
 		switch (c)
 		{
 		case '=':
-			parser_backtrack = c;
 			return OP_ENDLINE;
+			break;
 		case '[':
-			if (peek == '-')
-			{
-				parser_backtrack = c;
-			}
-			return OP_EXPR_START;
+			result = OP_EXPR_START;
+			break;
 		case ']':
+			parser_backtrack = 0;
+			parser_get_next_preprocessed(false);
 			return OP_EXPR_END;
 		case '#':
+			parser_backtrack = 0;
+			parser_get_next_preprocessed(false);
 			return OP_PARSER_VAR;
 		case '*':
-			result = OP_MUL;
-			if (peek == '*')
+			parser_get_next_preprocessed(false);
+			c = (char)parser_get_next_preprocessed(true);
+
+			if (c != '*')
 			{
-				parser_get_next_preprocessed(false);
-				result = OP_POW;
+				parser_backtrack = c;
+				return OP_MUL;
 			}
 
-			if (parser_get_next_preprocessed(true) == '-')
-			{
-				parser_backtrack = c;
-			}
-			return result;
+			result = OP_POW;
+			break;
 		case '/':
-			if (peek == '-')
-			{
-				parser_backtrack = c;
-			}
-			return OP_DIV;
+			result = OP_DIV;
+			break;
 		case '-':
 			result = OP_SUB;
-			if (parser_backtrack)
+
+			if (parser_backtrack == '-')
 			{
 				result = OP_NEG;
-				parser_backtrack = 0;
 			}
-
-			if (peek == '-')
-			{
-				parser_backtrack = c;
-			}
-			return result;
+			break;
 		case '+':
-			if (peek == '-')
-			{
-				parser_backtrack = c;
-			}
-			return OP_ADD;
+			result = OP_ADD;
+			break;
+		default:
+			return OP_INVALID;
 		}
+
+		parser_get_next_preprocessed(false);
+		parser_backtrack = (char)parser_get_next_preprocessed(true);
+		return result;
 	}
 	else if (!can_call_unary_func) // if can't do unary checks for possible binary op
 	{
@@ -3604,8 +3611,7 @@ uint8_t parser_get_operation(bool can_call_unary_func)
 		default:
 			return OP_WORD;
 		}
-		parser_backtrack = c;
-		parser_get_next_preprocessed(false);
+		parser_backtrack = parser_get_next_preprocessed(false);
 		char p = TOUPPER(parser_get_next_preprocessed(true));
 		if (peek != p && peek2 != p)
 		{
@@ -3761,32 +3767,17 @@ uint8_t parser_get_expression(float *value)
 	{
 		uint8_t op = parser_get_operation(can_call_unary_func);
 		can_call_unary_func = (!stack_depth) ? true : (op <= OP_NEG || op == OP_EXPR_START);
-		if (is_atan)
-		{
-			if (op != OP_DIV)
-			{
-				return NUMBER_UNDEF;
-			}
-
-			op = OP_ATAN_DIV;
-			is_atan = false;
-		}
 
 		switch (op)
 		{
-		case OP_INVALID:
-		case OP_ENDLINE:
-		case OP_WORD:
-			if (stack_depth != 1)
-			{
-				return NUMBER_UNDEF;
-			}
-			break;
 		case OP_EXPR_START:
 		case OP_PARSER_VAR:
 			stack[stack_depth].op = op;
 			stack_depth++;
 			break;
+		case OP_INVALID:
+		case OP_ENDLINE:
+		case OP_WORD:
 		case OP_EXPR_END:
 			while (stack_depth > 1)
 			{
@@ -3800,13 +3791,6 @@ uint8_t parser_get_expression(float *value)
 				stack[stack_depth].op = 0;
 				if (op == OP_EXPR_START)
 				{
-					if (OP_LEVEL(stack[stack_depth - 1].op) == OP_LEVEL5)
-					{
-						is_atan = (stack[stack_depth - 1].op == OP_ATAN);
-						stack_depth--;
-						rhs = parser_exec_op(stack[stack_depth], rhs);
-						stack[stack_depth].op = 0;
-					}
 					break;
 				}
 				if (!stack_depth && op != OP_EXPR_START)
@@ -3826,9 +3810,13 @@ uint8_t parser_get_expression(float *value)
 					break;
 				}
 				// atan must be preceded by a div
-				if (stack[stack_depth - 1].op == OP_ATAN && op != OP_DIV)
+				if (stack[stack_depth - 1].op == OP_ATAN)
 				{
-					return NUMBER_UNDEF;
+					if (op != OP_DIV)
+					{
+						return NUMBER_UNDEF;
+					}
+					op = OP_ATAN_DIV;
 				}
 				stack_depth--;
 				if (!parser_assert_op(stack[stack_depth], rhs))
@@ -3845,6 +3833,12 @@ uint8_t parser_get_expression(float *value)
 			break;
 		}
 
+		// the index of a user var was reduced. Can replace value
+		while (OP_PARSER_VAR == stack[stack_depth - 1].op && op != OP_PARSER_VAR)
+		{
+			rhs = parser_exec_op(stack[--stack_depth], rhs);
+		}
+
 		// stack processed
 		// can return value
 		if (stack_depth <= 1)
@@ -3853,12 +3847,6 @@ uint8_t parser_get_expression(float *value)
 			result |= (rhs < 0) ? NUMBER_ISNEGATIVE : 0;
 			result |= (floorf(rhs) != rhs) ? NUMBER_ISFLOAT : 0;
 			return result;
-		}
-
-		// the index of a user var was reduced. Can replace value
-		while (OP_PARSER_VAR == stack[stack_depth - 1].op && op != OP_PARSER_VAR)
-		{
-			rhs = parser_exec_op(stack[--stack_depth], rhs);
 		}
 
 		result = NUMBER_OK;
