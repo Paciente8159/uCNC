@@ -795,8 +795,8 @@ static uint8_t parser_grbl_exec_code(uint8_t code)
 }
 
 /**
- * 
- * 
+ *
+ *
  * STEP 1
  * Fetches the next line from the mcu communication buffer and preprocesses the string
  * In the preprocess these steps are executed
@@ -805,8 +805,8 @@ static uint8_t parser_grbl_exec_code(uint8_t code)
  * 	3. All letters are upper-cased
  * 	4. Checks number formats in all words
  * 	5. Checks for modal groups and words collisions
- * 
- * 
+ *
+ *
  */
 static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
 {
@@ -954,15 +954,15 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 }
 
 /**
- * 
- * 
+ *
+ *
  * STEP 2
  * Validadates command by checking for errors on all G/M Codes
  * 	RS274NGC v3 - 3.5 G Codes
  * 	RS274NGC v3 - 3.6 Input M Codes
  * 	RS274NGC v3 - 3.7 Other Input Codes
- * 
- * 
+ *
+ *
  */
 
 static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
@@ -1281,14 +1281,14 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 }
 
 /**
- * 
- * 
+ *
+ *
  * STEP 3
  * Executes the command
  * 	Follows the RS274NGC v3 - 3.8 Order of Execution
  * All coordinates are converted to machine absolute coordinates before sent to the motion controller
- * 
- * 
+ *
+ *
  */
 static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
 {
@@ -2018,12 +2018,12 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 	return STATUS_OK;
 }
 
-/** 
- * 
- * 
+/**
+ *
+ *
  * Parse the next gcode line available in the buffer and send it to the motion controller
- * 
- * 
+ *
+ *
  */
 static uint8_t parser_gcode_command(bool is_jogging)
 {
@@ -2077,13 +2077,13 @@ static uint8_t parser_gcode_command(bool is_jogging)
 }
 
 /**
- * 
- * 
+ *
+ *
  * Parses comments almost as defined in the RS274NGC
  * To be compatible with Grbl it accepts bad format comments
  * On error returns false otherwise returns true
- * 
- * 
+ *
+ *
  */
 #define COMMENT_OK 1
 #define COMMENT_NOTOK 2
@@ -2092,6 +2092,9 @@ static void parser_get_comment(uint8_t start_char)
 	uint8_t comment_end = 0;
 #ifdef PROCESS_COMMENTS
 	uint8_t msg_parser = 0;
+#ifdef ENABLE_RS274NGC_EXPRESSIONS
+	bool mute_comment_output = false;
+#endif
 #endif
 	for (;;)
 	{
@@ -2130,6 +2133,20 @@ static void parser_get_comment(uint8_t start_char)
 			proto_print(MSG_FEEDBACK_START);
 			break;
 		case 4:
+#ifdef ENABLE_RS274NGC_EXPRESSIONS
+			if (c == '#')
+			{
+				float f = 0;
+				if (parser_get_expression(&f) != NUMBER_UNDEF)
+				{
+					proto_printf("%f", f);
+					mute_comment_output = false;
+					proto_putc(parser_backtrack);
+					parser_backtrack = 0;
+					c = grbl_stream_peek();
+				}
+			}
+#endif
 			proto_putc(c);
 			break;
 		}
@@ -2582,7 +2599,7 @@ static uint8_t parser_letter_word(uint8_t c, float value, uint8_t mantissa, pars
 		words->n = value;
 #endif
 #endif
-		break;
+		return STATUS_OK;
 #ifdef AXIS_X
 	case 'X':
 		new_words |= GCODE_WORD_X;
@@ -2860,11 +2877,11 @@ void parser_coordinate_system_load(uint8_t param, float *target)
 }
 
 /**
- * 
- * 
+ *
+ *
  * Canned cycles code extensions
- * 
- * 
+ *
+ *
  */
 #ifdef ENABLE_CANNED_CYCLES
 
@@ -3760,25 +3777,18 @@ uint8_t parser_get_expression(float *value)
 		case OP_INVALID:
 		case OP_ENDLINE:
 		case OP_WORD:
-			if (stack_depth == 2 && stack[1].op == OP_PARSER_VAR)
-			{
-				stack_depth--;
-			}
 			if (stack_depth != 1)
 			{
 				return NUMBER_UNDEF;
 			}
-			*value = parser_exec_op(stack[stack_depth], rhs);
-			result = NUMBER_OK;
-			result |= (rhs < 0) ? NUMBER_ISNEGATIVE : 0;
-			result |= (floorf(rhs) != rhs) ? NUMBER_ISFLOAT : 0;
-			return result;
+			break;
 		case OP_EXPR_START:
+		case OP_PARSER_VAR:
 			stack[stack_depth].op = op;
 			stack_depth++;
 			break;
 		case OP_EXPR_END:
-			while (stack_depth)
+			while (stack_depth > 1)
 			{
 				stack_depth--;
 				op = stack[stack_depth].op;
@@ -3790,7 +3800,7 @@ uint8_t parser_get_expression(float *value)
 				stack[stack_depth].op = 0;
 				if (op == OP_EXPR_START)
 				{
-					if (OP_LEVEL(stack[stack_depth - 1].op) == OP_LEVEL4)
+					if (OP_LEVEL(stack[stack_depth - 1].op) == OP_LEVEL5)
 					{
 						is_atan = (stack[stack_depth - 1].op == OP_ATAN);
 						stack_depth--;
@@ -3804,15 +3814,6 @@ uint8_t parser_get_expression(float *value)
 					return NUMBER_UNDEF;
 				}
 			}
-			if (stack_depth == 1)
-			{
-				*value = parser_exec_op(stack[stack_depth], rhs);
-				result = NUMBER_OK;
-				result |= (rhs < 0) ? NUMBER_ISNEGATIVE : 0;
-				result |= (floorf(rhs) != rhs) ? NUMBER_ISFLOAT : 0;
-				return result;
-			}
-
 			break;
 		case OP_REAL:
 			parser_get_float(&rhs);
@@ -3843,6 +3844,24 @@ uint8_t parser_get_expression(float *value)
 			stack_depth++;
 			break;
 		}
+
+		// stack processed
+		// can return value
+		if (stack_depth <= 1)
+		{
+			*value = parser_exec_op(stack[0], rhs);
+			result |= (rhs < 0) ? NUMBER_ISNEGATIVE : 0;
+			result |= (floorf(rhs) != rhs) ? NUMBER_ISFLOAT : 0;
+			return result;
+		}
+
+		// the index of a user var was reduced. Can replace value
+		while (OP_PARSER_VAR == stack[stack_depth - 1].op && op != OP_PARSER_VAR)
+		{
+			rhs = parser_exec_op(stack[--stack_depth], rhs);
+		}
+
+		result = NUMBER_OK;
 	}
 
 	return result;

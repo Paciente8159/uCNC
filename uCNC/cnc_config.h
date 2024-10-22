@@ -96,7 +96,7 @@ extern "C"
 	 * Uncomment to enable. Only necessary to debug communication problems
 	 * */
 
-	//  #define ECHO_CMD
+//	  #define ECHO_CMD
 
 	/**
 	 * Debug command parsing time
@@ -290,13 +290,13 @@ extern "C"
 	 * processes comment as defined in the RS274NGC
 	 * */
 
-	// #define PROCESS_COMMENTS
+	#define PROCESS_COMMENTS
 
 	/**
 	 * Enables RS274NGC canned cycles
 	 * */
 
-	// #define ENABLE_CANNED_CYCLES
+	 #define ENABLE_CANNED_CYCLES
 
 	/**
 	 * accepts the E word (currently is processed has A)
@@ -307,7 +307,7 @@ extern "C"
 	/**
 	 * Enables RS274NGC expression parsing
 	 * **/
-	//  #define ENABLE_RS274NGC_EXPRESSIONS
+	  #define ENABLE_RS274NGC_EXPRESSIONS
 	 #ifdef ENABLE_RS274NGC_EXPRESSIONS
 	 // Uncomment to enable O codes
 	 #define ENABLE_O_CODES
