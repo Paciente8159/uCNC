@@ -2092,8 +2092,8 @@ static void parser_get_comment(uint8_t start_char)
 	uint8_t comment_end = 0;
 #ifdef PROCESS_COMMENTS
 	uint8_t msg_parser = 0;
-#ifdef ENABLE_RS274NGC_EXPRESSIONS
-	bool mute_comment_output = false;
+#if defined(ENABLE_RS274NGC_EXPRESSIONS) && defined(ENABLE_O_CODES)
+	bool mute_comment_output = (o_code_stack[o_code_stack_index - 1].op & O_CODE_OP_DISCARD);
 #endif
 #endif
 	for (;;)
@@ -2130,7 +2130,10 @@ static void parser_get_comment(uint8_t start_char)
 			break;
 		case 3:
 			msg_parser = (c == ',') ? 4 : 0xFF;
-			proto_print(MSG_FEEDBACK_START);
+#if defined(ENABLE_RS274NGC_EXPRESSIONS) && defined(ENABLE_O_CODES)
+			if (!mute_comment_output)
+#endif
+				proto_print(MSG_FEEDBACK_START);
 			break;
 		case 4:
 #ifdef ENABLE_RS274NGC_EXPRESSIONS
@@ -2139,7 +2142,10 @@ static void parser_get_comment(uint8_t start_char)
 				float f = 0;
 				if (parser_get_expression(&f) != NUMBER_UNDEF)
 				{
-					proto_printf("%f", f);
+#if defined(ENABLE_RS274NGC_EXPRESSIONS) && defined(ENABLE_O_CODES)
+					if (!mute_comment_output)
+#endif
+						proto_printf("%f", f);
 					c = grbl_stream_peek();
 					if (c == ')' || c == EOL)
 					{
@@ -2150,7 +2156,10 @@ static void parser_get_comment(uint8_t start_char)
 #endif
 			if (comment_end != COMMENT_OK)
 			{
-				proto_putc(c);
+#if defined(ENABLE_RS274NGC_EXPRESSIONS) && defined(ENABLE_O_CODES)
+				if (!mute_comment_output)
+#endif
+					proto_putc(c);
 			}
 
 			break;
@@ -2167,7 +2176,10 @@ static void parser_get_comment(uint8_t start_char)
 #ifdef PROCESS_COMMENTS
 			if (msg_parser == 4)
 			{
-				proto_print(MSG_FEEDBACK_END);
+#if defined(ENABLE_RS274NGC_EXPRESSIONS) && defined(ENABLE_O_CODES)
+				if (!mute_comment_output)
+#endif
+					proto_print(MSG_FEEDBACK_END);
 			}
 #endif
 			return;
@@ -3507,7 +3519,7 @@ float parser_exec_op(parser_stack_t stack, float rhs)
 /**
  *
  * This determines the operation that will be performed in an expression symbol
- * 
+ *
  *
  */
 
@@ -3599,11 +3611,14 @@ uint8_t parser_get_operation(bool can_call_unary_func)
 			break;
 		case 'E':
 			peek = 'Q';
+			break;
 		case 'N':
 			peek = 'E';
+			break;
 		case 'G':
 			peek = 'T';
 			peek2 = 'E';
+			break;
 		case 'L':
 			peek = 'T';
 			peek2 = 'E';
@@ -3907,7 +3922,7 @@ static void o_code_open(uint8_t index)
 
 		char o_subrotine[32];
 		memset(o_subrotine, 0, sizeof(o_subrotine));
-		str_sprintf(o_subrotine, "/%c/o%d.gcode", OCODE_DRIVE, o_code_stack[index].code);
+		str_sprintf(o_subrotine, "/%c/o%d.nc", OCODE_DRIVE, o_code_stack[index].code);
 		o_code_file = fs_open(o_subrotine, "r");
 		if (!o_code_file)
 		{
@@ -3924,7 +3939,8 @@ static void o_code_open(uint8_t index)
 		}
 
 		o_code_file_changed = true;
-		grbl_stream_change(&o_code_stream);
+		grbl_stream_readonly(o_code_getc, NULL, NULL);
+		// grbl_stream_change(&o_code_stream);
 	}
 }
 
@@ -4083,7 +4099,7 @@ uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parser_cmd_e
 		// check if file exists
 		char o_subrotine[32];
 		memset(o_subrotine, 0, sizeof(o_subrotine));
-		str_sprintf(o_subrotine, "/%c/o%d.gcode", OCODE_DRIVE, ocode_id);
+		str_sprintf(o_subrotine, "/%c/o%d.nc", OCODE_DRIVE, ocode_id);
 		fs_file_info_t finfo;
 		fs_finfo(o_subrotine, &finfo);
 		if (!finfo.size)
