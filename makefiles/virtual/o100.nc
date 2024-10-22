@@ -8,6 +8,6 @@ O101 ENDIF
 (msg, repeat loop)
 O102 REPEAT [2]
 #1=[#1 + 1]
-(msg, #1)
+(msg, loop #1)
 O102 ENDREPEAT
 O110 CALL [#1]

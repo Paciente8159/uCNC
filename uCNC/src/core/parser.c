@@ -3912,7 +3912,7 @@ DECL_GRBL_STREAM(o_code_stream, o_code_getc, NULL, NULL, NULL, NULL);
 
 static void o_code_open(uint8_t index)
 {
-	if (o_code_stack[index].op == O_CODE_OP_CALL)
+	if (o_code_stack[index].op == O_CODE_OP_CALL || o_code_stack[index].op == O_CODE_OP_SUB)
 	{
 		if (o_code_file)
 		{
@@ -3929,18 +3929,15 @@ static void o_code_open(uint8_t index)
 			return;
 		}
 		o_code_stack[index].op = O_CODE_OP_SUB;
-		if (o_code_file_pos)
-		{
-			// reload file and rewind stack
-			fs_seek(o_code_file, o_code_file_pos);
-			o_code_stack[index].op = 0;
-			o_code_stack[index].code = 0;
-			o_code_stack[index].pos = 0;
-		}
+		// reload file and rewind stack
+		fs_seek(o_code_file, o_code_file_pos);
 
 		o_code_file_changed = true;
+#ifdef ENABLE_O_CODES_VERBOSE
 		grbl_stream_readonly(o_code_getc, NULL, NULL);
-		// grbl_stream_change(&o_code_stream);
+#else
+		grbl_stream_change(&o_code_stream);
+#endif
 	}
 }
 
@@ -3984,9 +3981,14 @@ void o_code_end_subrotine(parser_state_t *new_state)
 
 	if (index)
 	{
+		index--;
+		// find previous sub entry point
+		while (o_code_stack[index].op != O_CODE_OP_SUB && index)
+		{
+			index--;
+		}
 		// top sub not exited yet
 		o_code_open(index);
-		index--;
 	}
 	else
 	{
@@ -3998,7 +4000,7 @@ void o_code_end_subrotine(parser_state_t *new_state)
 		}
 		memset(o_code_stack, 0, sizeof(o_code_stack));
 		o_code_stack_index = 0;
-		grbl_stream_change(NULL);
+		// grbl_stream_change(NULL);
 		grbl_stream_readonly(o_code_file_flush, NULL, NULL);
 	}
 }
@@ -4007,8 +4009,8 @@ static bool o_code_seek(uint32_t pos)
 {
 	if (o_code_file)
 	{
-		fs_seek(o_code_file, pos - 2);
-		parser_get_next_preprocessed(false); // discard one char to force peek refresh
+		fs_seek(o_code_file, pos - 1);
+		grbl_stream_readonly(o_code_getc, NULL, NULL);
 		return true;
 	}
 	return false;
@@ -4039,8 +4041,19 @@ static void FORCEINLINE o_code_word_error(uint8_t *error)
 	if (*error >= STATUS_OCODE_ERROR_MIN && *error <= STATUS_OCODE_ERROR_MAX)
 	{
 		// Error in o-code, do not continue execution and empty the stack.
-		//		o_code_clear();
-		grbl_stream_change(NULL);
+		if (o_code_file)
+		{
+			fs_close(o_code_file);
+			o_code_file = NULL;
+		}
+		if (o_code_stack_index)
+		{
+			memcpy(parser_state.user_vars, o_code_stack[0].user_vars, sizeof(o_code_stack[0].user_vars));
+		}
+		memset(o_code_stack, 0, sizeof(o_code_stack));
+		o_code_stack_index = 0;
+		o_code_file_pos = 0;
+		//		grbl_stream_change(NULL);
 		grbl_stream_readonly(o_code_file_flush, NULL, NULL);
 	}
 }
@@ -4117,14 +4130,16 @@ uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parser_cmd_e
 			op_arg_error = parser_get_float(&op_arg);
 		}
 
-		parser_get_next_preprocessed(false);
+		//		parser_get_next_preprocessed(false);
 
 		// store operation in the stack
 		o_code_stack[index].code = ocode_id;
 		o_code_stack[index].op = O_CODE_OP_CALL;
+
 		// workaround to ftell
 		o_code_stack[index].pos = (o_code_file) ? (o_code_file->file_info.size - fs_available(o_code_file)) : 0;
 		o_code_open(index);
+
 		o_code_stack_index++;
 		error = STATUS_OK;
 		return error;
@@ -4221,6 +4236,7 @@ uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parser_cmd_e
 					error = STATUS_OK;
 					return error;
 				}
+				break;
 			}
 		}
 
@@ -4286,11 +4302,15 @@ uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parser_cmd_e
 		uint8_t type = strlen(o_cmd);
 
 		index = o_code_validate(O_CODE_OP_WHILE, ocode_id, false);
+		if (index)
+		{
+			index--;
+		}
 
 		switch (type)
 		{
 		case 8:
-			if (!index--)
+			if (!index)
 			{
 				error = STATUS_OCODE_ERROR_INVALID_OPERATION;
 				return error;
@@ -4377,7 +4397,7 @@ uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parser_cmd_e
 			o_code_stack_index--;
 			break;
 		case 5:
-			if (!index--)
+			if (!index)
 			{
 				index = o_code_validate(O_CODE_OP_WHILE, ocode_id, true);
 				if (!index)
@@ -4388,7 +4408,7 @@ uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parser_cmd_e
 				// is a while loop
 				index = o_code_stack_index++;
 				o_code_stack[index].code = ocode_id;
-				o_code_stack[index].pos = o_code_file->file_info.size - fs_available(o_code_file);
+				o_code_stack[index].pos = loop_ret; // o_code_file->file_info.size - fs_available(o_code_file);
 				if (op_arg)
 				{
 					o_code_stack[index].op = O_CODE_OP_WHILE;
@@ -4488,8 +4508,9 @@ uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parser_cmd_e
 			break;
 		}
 
-		if (o_code_stack[index].loop--)
+		if (o_code_stack[index].loop)
 		{
+			o_code_stack[index].loop--;
 			// clear possible discard
 			o_code_stack[index].op = O_CODE_OP_REPEAT;
 			// always jump to the loop start before eval

@@ -1,1 +1,1 @@
-O100 RETURN
+(msg, returning to top)
