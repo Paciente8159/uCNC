@@ -96,7 +96,7 @@ extern "C"
 	 * Uncomment to enable. Only necessary to debug communication problems
 	 * */
 
-	//  #define ECHO_CMD
+	//	  #define ECHO_CMD
 
 	/**
 	 * Debug command parsing time
@@ -289,13 +289,13 @@ extern "C"
 	 * processes comment as defined in the RS274NGC
 	 * */
 
-	#define PROCESS_COMMENTS
+// #define PROCESS_COMMENTS
 
 	/**
 	 * Enables RS274NGC canned cycles
 	 * */
 
-	// #define ENABLE_CANNED_CYCLES
+	//  #define ENABLE_CANNED_CYCLES
 
 	/**
 	 * accepts the E word (currently is processed has A)
@@ -306,12 +306,19 @@ extern "C"
 	/**
 	 * Enables RS274NGC expression parsing
 	 * **/
-#define ENABLE_RS274NGC_EXPRESSIONS
+// #define ENABLE_RS274NGC_EXPRESSIONS
 #ifdef ENABLE_RS274NGC_EXPRESSIONS
 	// Uncomment to enable named parameters
 #define ENABLE_NAMED_PARAMETERS
 // Uncomment to enable O codes
 #define ENABLE_O_CODES
+/**
+ * uncomment this to allow commands results to be printed to the stream that called the O code
+ * usually senders expect to receive and ok or error as response to a single code line
+ * enabling this will also print the ok/error responses of the codes in the subroutines to the stream that
+ * invoked the command
+ */
+#define ENABLE_O_CODES_VERBOSE
 #endif
 
 	/**

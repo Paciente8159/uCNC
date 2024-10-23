@@ -2209,6 +2209,9 @@ static uint8_t parser_gcode_command(bool is_jogging)
  */
 #define COMMENT_OK 1
 #define COMMENT_NOTOK 2
+#ifdef PROCESS_COMMENTS
+static bool mute_comment_output;
+#endif
 static void parser_get_comment(uint8_t start_char)
 {
 	uint8_t comment_end = 0;
@@ -2252,17 +2255,38 @@ static void parser_get_comment(uint8_t start_char)
 			break;
 		case 3:
 			msg_parser = (c == ',') ? 4 : 0xFF;
-			proto_print(MSG_FEEDBACK_START);
+			if (!mute_comment_output)
+			{
+				proto_print(MSG_FEEDBACK_START);
+			}
 			break;
 		case 4:
-			if (parser_get_float(&exp_val) & NUMBER_OK)
+#ifdef ENABLE_RS274NGC_EXPRESSIONS
+			if (c == '#')
 			{
-				proto_printf("%f", exp_val);
+				float f = 0;
+				if (parser_get_expression(&f) != NUMBER_UNDEF)
+				{
+					if (!mute_comment_output)
+					{
+						proto_printf("%f", f);
+					}
+					c = grbl_stream_peek();
+					if (c == ')' || c == EOL)
+					{
+						comment_end = COMMENT_OK;
+					}
+				}
 			}
-			else
+#endif
+			if (comment_end != COMMENT_OK)
 			{
-				proto_putc(c);
+				if (!mute_comment_output)
+				{
+					proto_putc(c);
+				}
 			}
+
 			break;
 		}
 #endif
@@ -2277,7 +2301,10 @@ static void parser_get_comment(uint8_t start_char)
 #ifdef PROCESS_COMMENTS
 			if (msg_parser == 4)
 			{
-				proto_print(MSG_FEEDBACK_END);
+				if (!mute_comment_output)
+				{
+					proto_print(MSG_FEEDBACK_END);
+				}
 			}
 #endif
 			return;
@@ -2415,6 +2442,7 @@ static uint8_t parser_get_token(uint8_t *word, float *value)
 		{
 			return STATUS_INVALID_STATEMENT;
 		}
+		parser_backtrack = 0;
 		break;
 #ifdef ENABLE_O_CODES
 	case FILE_EOF:
@@ -2753,7 +2781,7 @@ static uint8_t parser_letter_word(uint8_t c, float value, uint8_t mantissa, pars
 		words->n = value;
 #endif
 #endif
-		break;
+		return STATUS_OK;
 #ifdef AXIS_X
 	case 'X':
 		new_words |= GCODE_WORD_X;
@@ -3560,6 +3588,7 @@ float parser_get_parameter(int param)
 		pos--;
 		return g_settings.tool_length_offset[parser_state.groups.tool_change];
 	case 542:
+		pos++;
 		if (pos < AXIS_COUNT)
 		{
 			return parser_last_pos[pos];
@@ -3623,8 +3652,8 @@ float parser_exec_op(parser_stack_t stack, float rhs)
 		return RAD_DEG_MULT * acosf(rhs);
 	case OP_ASIN:
 		return RAD_DEG_MULT * asinf(rhs);
-	// case OP_ATAN:
-	// 	return rhs;
+	case OP_ATAN:
+		return rhs;
 	case OP_ATAN_DIV:
 		// special atan case
 		return RAD_DEG_MULT * atan2f(stack.lhs, rhs);
@@ -3659,6 +3688,13 @@ float parser_exec_op(parser_stack_t stack, float rhs)
 	}
 }
 
+/**
+ *
+ * This determines the operation that will be performed in an expression symbol
+ *
+ *
+ */
+
 uint8_t parser_get_operation(bool can_call_unary_func)
 {
 	char c = (char)parser_get_next_preprocessed(true);
@@ -3682,62 +3718,56 @@ uint8_t parser_get_operation(bool can_call_unary_func)
 		{
 			return OP_ENDLINE;
 		}
-		parser_get_next_preprocessed(false);
-		char peek = (char)parser_get_next_preprocessed(true);
+
 		switch (c)
 		{
 		case '=':
-			parser_backtrack = c;
 			return OP_ENDLINE;
+			break;
 		case '[':
-			if (peek == '-')
-			{
-				parser_backtrack = c;
-			}
-			return OP_EXPR_START;
+			result = OP_EXPR_START;
+			break;
 		case ']':
+			parser_backtrack = 0;
+			parser_get_next_preprocessed(false);
 			return OP_EXPR_END;
 		case '#':
+			parser_backtrack = 0;
+			parser_get_next_preprocessed(false);
 			return OP_PARSER_VAR;
 		case '*':
-			result = OP_MUL;
-			if (peek == '*')
+			parser_get_next_preprocessed(false);
+			c = (char)parser_get_next_preprocessed(true);
+
+			if (c != '*')
 			{
-				parser_get_next_preprocessed(false);
-				result = OP_POW;
+				parser_backtrack = c;
+				return OP_MUL;
 			}
 
-			if (parser_get_next_preprocessed(true) == '-')
-			{
-				parser_backtrack = c;
-			}
-			return result;
+			result = OP_POW;
+			break;
 		case '/':
-			if (peek == '-')
-			{
-				parser_backtrack = c;
-			}
-			return OP_DIV;
+			result = OP_DIV;
+			break;
 		case '-':
 			result = OP_SUB;
-			if (parser_backtrack)
+
+			if (parser_backtrack == '-')
 			{
 				result = OP_NEG;
-				parser_backtrack = 0;
 			}
-
-			if (peek == '-')
-			{
-				parser_backtrack = c;
-			}
-			return result;
+			break;
 		case '+':
-			if (peek == '-')
-			{
-				parser_backtrack = c;
-			}
-			return OP_ADD;
+			result = OP_ADD;
+			break;
+		default:
+			return OP_INVALID;
 		}
+
+		parser_get_next_preprocessed(false);
+		parser_backtrack = (char)parser_get_next_preprocessed(true);
+		return result;
 	}
 	else if (!can_call_unary_func) // if can't do unary checks for possible binary op
 	{
@@ -3759,11 +3789,14 @@ uint8_t parser_get_operation(bool can_call_unary_func)
 			break;
 		case 'E':
 			peek = 'Q';
+			break;
 		case 'N':
 			peek = 'E';
+			break;
 		case 'G':
 			peek = 'T';
 			peek2 = 'E';
+			break;
 		case 'L':
 			peek = 'T';
 			peek2 = 'E';
@@ -3771,8 +3804,7 @@ uint8_t parser_get_operation(bool can_call_unary_func)
 		default:
 			return OP_WORD;
 		}
-		parser_backtrack = c;
-		parser_get_next_preprocessed(false);
+		parser_backtrack = parser_get_next_preprocessed(false);
 		char p = TOUPPER(parser_get_next_preprocessed(true));
 		if (peek != p && peek2 != p)
 		{
@@ -3928,41 +3960,19 @@ uint8_t parser_get_expression(float *value)
 	{
 		uint8_t op = parser_get_operation(can_call_unary_func);
 		can_call_unary_func = (!stack_depth) ? true : (op <= OP_NEG || op == OP_EXPR_START);
-		if (is_atan)
-		{
-			if (op != OP_DIV)
-			{
-				return NUMBER_UNDEF;
-			}
-
-			op = OP_ATAN_DIV;
-			is_atan = false;
-		}
 
 		switch (op)
 		{
-		case OP_INVALID:
-		case OP_ENDLINE:
-		case OP_WORD:
-			if (stack_depth == 2 && stack[1].op == OP_PARSER_VAR)
-			{
-				rhs = parser_exec_op(stack[--stack_depth], rhs);
-			}
-			if (stack_depth != 1)
-			{
-				return NUMBER_UNDEF;
-			}
-			*value = parser_exec_op(stack[stack_depth], rhs);
-			result = NUMBER_OK;
-			result |= (rhs < 0) ? NUMBER_ISNEGATIVE : 0;
-			result |= (floorf(rhs) != rhs) ? NUMBER_ISFLOAT : 0;
-			return result;
 		case OP_EXPR_START:
+		case OP_PARSER_VAR:
 			stack[stack_depth].op = op;
 			stack_depth++;
 			break;
+		case OP_INVALID:
+		case OP_ENDLINE:
+		case OP_WORD:
 		case OP_EXPR_END:
-			while (stack_depth)
+			while (stack_depth > 1)
 			{
 				stack_depth--;
 				op = stack[stack_depth].op;
@@ -3974,13 +3984,6 @@ uint8_t parser_get_expression(float *value)
 				stack[stack_depth].op = 0;
 				if (op == OP_EXPR_START)
 				{
-					if (OP_LEVEL(stack[stack_depth - 1].op) == OP_LEVEL4)
-					{
-						is_atan = (stack[stack_depth - 1].op == OP_ATAN);
-						stack_depth--;
-						rhs = parser_exec_op(stack[stack_depth], rhs);
-						stack[stack_depth].op = 0;
-					}
 					break;
 				}
 				if (!stack_depth && op != OP_EXPR_START)
@@ -3988,15 +3991,6 @@ uint8_t parser_get_expression(float *value)
 					return NUMBER_UNDEF;
 				}
 			}
-			if (stack_depth == 1)
-			{
-				*value = parser_exec_op(stack[stack_depth], rhs);
-				result = NUMBER_OK;
-				result |= (rhs < 0) ? NUMBER_ISNEGATIVE : 0;
-				result |= (floorf(rhs) != rhs) ? NUMBER_ISFLOAT : 0;
-				return result;
-			}
-
 			break;
 		case OP_REAL:
 			parser_get_float(&rhs);
@@ -4009,9 +4003,13 @@ uint8_t parser_get_expression(float *value)
 					break;
 				}
 				// atan must be preceded by a div
-				if (stack[stack_depth - 1].op == OP_ATAN && op != OP_DIV)
+				if (stack[stack_depth - 1].op == OP_ATAN)
 				{
-					return NUMBER_UNDEF;
+					if (op != OP_DIV)
+					{
+						return NUMBER_UNDEF;
+					}
+					op = OP_ATAN_DIV;
 				}
 				stack_depth--;
 				if (!parser_assert_op(stack[stack_depth], rhs))
@@ -4027,6 +4025,24 @@ uint8_t parser_get_expression(float *value)
 			stack_depth++;
 			break;
 		}
+
+		// the index of a user var was reduced. Can replace value
+		while (OP_PARSER_VAR == stack[stack_depth - 1].op && op != OP_PARSER_VAR)
+		{
+			rhs = parser_exec_op(stack[--stack_depth], rhs);
+		}
+
+		// stack processed
+		// can return value
+		if (stack_depth <= 1)
+		{
+			*value = parser_exec_op(stack[0], rhs);
+			result |= (rhs < 0) ? NUMBER_ISNEGATIVE : 0;
+			result |= (floorf(rhs) != rhs) ? NUMBER_ISFLOAT : 0;
+			return result;
+		}
+
+		result = NUMBER_OK;
 	}
 
 	return result;
@@ -4074,7 +4090,7 @@ DECL_GRBL_STREAM(o_code_stream, o_code_getc, NULL, NULL, NULL, NULL);
 
 static void o_code_open(uint8_t index)
 {
-	if (o_code_stack[index].op == O_CODE_OP_CALL)
+	if (o_code_stack[index].op == O_CODE_OP_CALL || o_code_stack[index].op == O_CODE_OP_SUB)
 	{
 		if (o_code_file)
 		{
@@ -4084,24 +4100,22 @@ static void o_code_open(uint8_t index)
 
 		char o_subrotine[32];
 		memset(o_subrotine, 0, sizeof(o_subrotine));
-		str_sprintf(o_subrotine, "/%c/o%d.gcode", OCODE_DRIVE, o_code_stack[index].code);
+		str_sprintf(o_subrotine, "/%c/o%d.nc", OCODE_DRIVE, o_code_stack[index].code);
 		o_code_file = fs_open(o_subrotine, "r");
 		if (!o_code_file)
 		{
 			return;
 		}
 		o_code_stack[index].op = O_CODE_OP_SUB;
-		if (o_code_file_pos)
-		{
-			// reload file and rewind stack
-			fs_seek(o_code_file, o_code_file_pos);
-			o_code_stack[index].op = 0;
-			o_code_stack[index].code = 0;
-			o_code_stack[index].pos = 0;
-		}
+		// reload file and rewind stack
+		fs_seek(o_code_file, o_code_file_pos);
 
 		o_code_file_changed = true;
+#ifdef ENABLE_O_CODES_VERBOSE
+		grbl_stream_readonly(o_code_getc, NULL, NULL);
+#else
 		grbl_stream_change(&o_code_stream);
+#endif
 	}
 }
 
@@ -4145,9 +4159,14 @@ void o_code_end_subrotine(parser_state_t *new_state)
 
 	if (index)
 	{
+		index--;
+		// find previous sub entry point
+		while (o_code_stack[index].op != O_CODE_OP_SUB && index)
+		{
+			index--;
+		}
 		// top sub not exited yet
 		o_code_open(index);
-		index--;
 	}
 	else
 	{
@@ -4159,7 +4178,7 @@ void o_code_end_subrotine(parser_state_t *new_state)
 		}
 		memset(o_code_stack, 0, sizeof(o_code_stack));
 		o_code_stack_index = 0;
-		grbl_stream_change(NULL);
+		// grbl_stream_change(NULL);
 		grbl_stream_readonly(o_code_file_flush, NULL, NULL);
 	}
 }
@@ -4168,8 +4187,8 @@ static bool o_code_seek(uint32_t pos)
 {
 	if (o_code_file)
 	{
-		fs_seek(o_code_file, pos - 2);
-		parser_get_next_preprocessed(false); // discard one char to force peek refresh
+		fs_seek(o_code_file, pos - 1);
+		grbl_stream_readonly(o_code_getc, NULL, NULL);
 		return true;
 	}
 	return false;
@@ -4195,13 +4214,38 @@ uint8_t o_code_validate(uint8_t op, uint16_t ocode_id, bool is_new)
 	return 0;
 }
 
+static void o_code_discard(void)
+{
+#ifdef PROCESS_COMMENTS
+	mute_comment_output = true;
+#endif
+	while (parser_get_next_preprocessed(true) != 'O')
+	{
+		parser_discard_command();
+	}
+#ifdef PROCESS_COMMENTS
+	mute_comment_output = false;
+#endif
+}
+
 static void FORCEINLINE o_code_word_error(uint8_t *error)
 {
 	if (*error >= STATUS_OCODE_ERROR_MIN && *error <= STATUS_OCODE_ERROR_MAX)
 	{
 		// Error in o-code, do not continue execution and empty the stack.
-		//		o_code_clear();
-		grbl_stream_change(NULL);
+		if (o_code_file)
+		{
+			fs_close(o_code_file);
+			o_code_file = NULL;
+		}
+		if (o_code_stack_index)
+		{
+			memcpy(parser_state.user_vars, o_code_stack[0].user_vars, sizeof(o_code_stack[0].user_vars));
+		}
+		memset(o_code_stack, 0, sizeof(o_code_stack));
+		o_code_stack_index = 0;
+		o_code_file_pos = 0;
+		//		grbl_stream_change(NULL);
 		grbl_stream_readonly(o_code_file_flush, NULL, NULL);
 	}
 }
@@ -4223,10 +4267,7 @@ uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parser_cmd_e
 	if (index && ((o_code_stack[index - 1].op == O_CODE_OP_IF) || (o_code_stack[index - 1].op & O_CODE_OP_DISCARD)) && o_code_stack[index - 1].code != ocode_id)
 	{
 		// keep discarding
-		while (parser_get_next_preprocessed(true) != 'O')
-		{
-			parser_discard_command();
-		}
+		o_code_discard();
 		error = STATUS_OK;
 		return error;
 	}
@@ -4260,7 +4301,7 @@ uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parser_cmd_e
 		// check if file exists
 		char o_subrotine[32];
 		memset(o_subrotine, 0, sizeof(o_subrotine));
-		str_sprintf(o_subrotine, "/%c/o%d.gcode", OCODE_DRIVE, ocode_id);
+		str_sprintf(o_subrotine, "/%c/o%d.nc", OCODE_DRIVE, ocode_id);
 		fs_file_info_t finfo;
 		fs_finfo(o_subrotine, &finfo);
 		if (!finfo.size)
@@ -4278,14 +4319,16 @@ uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parser_cmd_e
 			op_arg_error = parser_get_float(&op_arg);
 		}
 
-		parser_get_next_preprocessed(false);
+		//		parser_get_next_preprocessed(false);
 
 		// store operation in the stack
 		o_code_stack[index].code = ocode_id;
 		o_code_stack[index].op = O_CODE_OP_CALL;
+
 		// workaround to ftell
 		o_code_stack[index].pos = (o_code_file) ? (o_code_file->file_info.size - fs_available(o_code_file)) : 0;
 		o_code_open(index);
+
 		o_code_stack_index++;
 		error = STATUS_OK;
 		return error;
@@ -4355,10 +4398,7 @@ uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parser_cmd_e
 				{
 					o_code_stack[index].op = O_CODE_OP_IF_DISCARD;
 				}
-				while (parser_get_next_preprocessed(true) != 'O')
-				{
-					parser_discard_command();
-				}
+				o_code_discard();
 			}
 			break;
 		}
@@ -4382,6 +4422,7 @@ uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parser_cmd_e
 					error = STATUS_OK;
 					return error;
 				}
+				break;
 			}
 		}
 
@@ -4431,10 +4472,7 @@ uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parser_cmd_e
 			o_code_stack[index].op = (type == 5) ? O_CODE_OP_WHILE_BREAK : O_CODE_OP_WHILE_DISCARD;
 		}
 		// start command discard
-		while (parser_get_next_preprocessed(true) != 'O')
-		{
-			parser_discard_command();
-		}
+		o_code_discard();
 		error = STATUS_OK;
 		return error;
 	}
@@ -4447,11 +4485,15 @@ uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parser_cmd_e
 		uint8_t type = strlen(o_cmd);
 
 		index = o_code_validate(O_CODE_OP_WHILE, ocode_id, false);
+		if (index)
+		{
+			index--;
+		}
 
 		switch (type)
 		{
 		case 8:
-			if (!index--)
+			if (!index)
 			{
 				error = STATUS_OCODE_ERROR_INVALID_OPERATION;
 				return error;
@@ -4480,10 +4522,7 @@ uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parser_cmd_e
 					{
 						// mark to exit loop
 						o_code_stack[index].op = O_CODE_OP_WHILE_BREAK;
-						while (parser_get_next_preprocessed(true) != 'O')
-						{
-							parser_discard_command();
-						}
+						o_code_discard();
 					}
 					error = STATUS_OK;
 					return error;
@@ -4538,7 +4577,7 @@ uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parser_cmd_e
 			o_code_stack_index--;
 			break;
 		case 5:
-			if (!index--)
+			if (!index)
 			{
 				index = o_code_validate(O_CODE_OP_WHILE, ocode_id, true);
 				if (!index)
@@ -4549,7 +4588,7 @@ uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parser_cmd_e
 				// is a while loop
 				index = o_code_stack_index++;
 				o_code_stack[index].code = ocode_id;
-				o_code_stack[index].pos = o_code_file->file_info.size - fs_available(o_code_file);
+				o_code_stack[index].pos = loop_ret; // o_code_file->file_info.size - fs_available(o_code_file);
 				if (op_arg)
 				{
 					o_code_stack[index].op = O_CODE_OP_WHILE;
@@ -4557,10 +4596,7 @@ uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parser_cmd_e
 				else
 				{
 					o_code_stack[index].op = O_CODE_OP_WHILE_BREAK;
-					while (parser_get_next_preprocessed(true) != 'O')
-					{
-						parser_discard_command();
-					}
+					o_code_discard();
 				}
 			}
 			else if (O_CODE_BASE_TYPE(o_code_stack[index].op) == O_CODE_OP_WHILE && ocode_id == o_code_stack[index].code)
@@ -4644,13 +4680,14 @@ uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parser_cmd_e
 		case 6:
 			index = o_code_stack_index++;
 			o_code_stack[index].code = ocode_id;
-			o_code_stack[index].pos = o_code_file->file_info.size - fs_available(o_code_file); // doesn't care about the re-eval de arg
+			o_code_stack[index].pos = o_code_file->file_info.size - fs_available(o_code_file) + 1; // doesn't care about the re-eval de arg
 			o_code_stack[index].loop = (int32_t)truncf(op_arg);
 			break;
 		}
 
-		if (o_code_stack[index].loop--)
+		if (o_code_stack[index].loop)
 		{
+			o_code_stack[index].loop--;
 			// clear possible discard
 			o_code_stack[index].op = O_CODE_OP_REPEAT;
 			// always jump to the loop start before eval

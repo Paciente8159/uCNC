@@ -200,7 +200,7 @@ bool grbl_stream_readonly(grbl_stream_getc_cb getc_cb, grbl_stream_available_cb 
 		return false;
 	}
 #endif
-
+	grbl_stream_peek_buffer = 0;
 	stream_getc = getc_cb;
 	stream_available = available_cb;
 	stream_clear = clear_cb;
