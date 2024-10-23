@@ -4503,7 +4503,7 @@ uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parser_cmd_e
 		case 6:
 			index = o_code_stack_index++;
 			o_code_stack[index].code = ocode_id;
-			o_code_stack[index].pos = o_code_file->file_info.size - fs_available(o_code_file); // doesn't care about the re-eval de arg
+			o_code_stack[index].pos = o_code_file->file_info.size - fs_available(o_code_file) + 1; // doesn't care about the re-eval de arg
 			o_code_stack[index].loop = (int32_t)truncf(op_arg);
 			break;
 		}
