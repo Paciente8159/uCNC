@@ -2087,14 +2087,14 @@ static uint8_t parser_gcode_command(bool is_jogging)
  */
 #define COMMENT_OK 1
 #define COMMENT_NOTOK 2
+#ifdef PROCESS_COMMENTS
+static bool mute_comment_output;
+#endif
 static void parser_get_comment(uint8_t start_char)
 {
 	uint8_t comment_end = 0;
 #ifdef PROCESS_COMMENTS
 	uint8_t msg_parser = 0;
-#if defined(ENABLE_RS274NGC_EXPRESSIONS) && defined(ENABLE_O_CODES)
-	bool mute_comment_output = (o_code_stack[o_code_stack_index - 1].op & O_CODE_OP_DISCARD);
-#endif
 #endif
 	for (;;)
 	{
@@ -2130,10 +2130,10 @@ static void parser_get_comment(uint8_t start_char)
 			break;
 		case 3:
 			msg_parser = (c == ',') ? 4 : 0xFF;
-#if defined(ENABLE_RS274NGC_EXPRESSIONS) && defined(ENABLE_O_CODES)
 			if (!mute_comment_output)
-#endif
+			{
 				proto_print(MSG_FEEDBACK_START);
+			}
 			break;
 		case 4:
 #ifdef ENABLE_RS274NGC_EXPRESSIONS
@@ -2142,10 +2142,10 @@ static void parser_get_comment(uint8_t start_char)
 				float f = 0;
 				if (parser_get_expression(&f) != NUMBER_UNDEF)
 				{
-#if defined(ENABLE_RS274NGC_EXPRESSIONS) && defined(ENABLE_O_CODES)
 					if (!mute_comment_output)
-#endif
+					{
 						proto_printf("%f", f);
+					}
 					c = grbl_stream_peek();
 					if (c == ')' || c == EOL)
 					{
@@ -2156,10 +2156,10 @@ static void parser_get_comment(uint8_t start_char)
 #endif
 			if (comment_end != COMMENT_OK)
 			{
-#if defined(ENABLE_RS274NGC_EXPRESSIONS) && defined(ENABLE_O_CODES)
 				if (!mute_comment_output)
-#endif
+				{
 					proto_putc(c);
+				}
 			}
 
 			break;
@@ -2176,10 +2176,10 @@ static void parser_get_comment(uint8_t start_char)
 #ifdef PROCESS_COMMENTS
 			if (msg_parser == 4)
 			{
-#if defined(ENABLE_RS274NGC_EXPRESSIONS) && defined(ENABLE_O_CODES)
 				if (!mute_comment_output)
-#endif
+				{
 					proto_print(MSG_FEEDBACK_END);
+				}
 			}
 #endif
 			return;
@@ -4036,6 +4036,20 @@ uint8_t o_code_validate(uint8_t op, uint16_t ocode_id, bool is_new)
 	return 0;
 }
 
+static void o_code_discard(void)
+{
+#ifdef PROCESS_COMMENTS
+	mute_comment_output = true;
+#endif
+	while (parser_get_next_preprocessed(true) != 'O')
+	{
+		parser_discard_command();
+	}
+#ifdef PROCESS_COMMENTS
+	mute_comment_output = false;
+#endif
+}
+
 static void FORCEINLINE o_code_word_error(uint8_t *error)
 {
 	if (*error >= STATUS_OCODE_ERROR_MIN && *error <= STATUS_OCODE_ERROR_MAX)
@@ -4075,10 +4089,7 @@ uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parser_cmd_e
 	if (index && ((o_code_stack[index - 1].op == O_CODE_OP_IF) || (o_code_stack[index - 1].op & O_CODE_OP_DISCARD)) && o_code_stack[index - 1].code != ocode_id)
 	{
 		// keep discarding
-		while (parser_get_next_preprocessed(true) != 'O')
-		{
-			parser_discard_command();
-		}
+		o_code_discard();
 		error = STATUS_OK;
 		return error;
 	}
@@ -4209,10 +4220,7 @@ uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parser_cmd_e
 				{
 					o_code_stack[index].op = O_CODE_OP_IF_DISCARD;
 				}
-				while (parser_get_next_preprocessed(true) != 'O')
-				{
-					parser_discard_command();
-				}
+				o_code_discard();
 			}
 			break;
 		}
@@ -4286,10 +4294,7 @@ uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parser_cmd_e
 			o_code_stack[index].op = (type == 5) ? O_CODE_OP_WHILE_BREAK : O_CODE_OP_WHILE_DISCARD;
 		}
 		// start command discard
-		while (parser_get_next_preprocessed(true) != 'O')
-		{
-			parser_discard_command();
-		}
+		o_code_discard();
 		error = STATUS_OK;
 		return error;
 	}
@@ -4339,10 +4344,7 @@ uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parser_cmd_e
 					{
 						// mark to exit loop
 						o_code_stack[index].op = O_CODE_OP_WHILE_BREAK;
-						while (parser_get_next_preprocessed(true) != 'O')
-						{
-							parser_discard_command();
-						}
+						o_code_discard();
 					}
 					error = STATUS_OK;
 					return error;
@@ -4416,10 +4418,7 @@ uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parser_cmd_e
 				else
 				{
 					o_code_stack[index].op = O_CODE_OP_WHILE_BREAK;
-					while (parser_get_next_preprocessed(true) != 'O')
-					{
-						parser_discard_command();
-					}
+					o_code_discard();
 				}
 			}
 			else if (O_CODE_BASE_TYPE(o_code_stack[index].op) == O_CODE_OP_WHILE && ocode_id == o_code_stack[index].code)
