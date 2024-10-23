@@ -18,6 +18,7 @@ Version 1.11 come with a full refactoring of the compilation units of µCNC inte
 	- self implemented subset/custom of stdio printf helpers. It's now possible to print formated messages via protocol. No need to do specific calls to print variables like numbers, strings, char, ip addresse, bytes, etc...
 	- improvements to the debug message system. Now a single call to DBGMSG macro is used. The same principle of formated messages is applied.
 	- Debug messages now have an intermediate buffer that stores the output before printing it to prevent outputing debug messages in the middle of onging protocol messages
+	- Added parsing support for O-Codes (subrotines)
 
 # IMPORTANT NOTE
 
@@ -64,6 +65,7 @@ Version 1.11 added the following new major features.
 - self implemented subset/custom of stdio printf helpers. It's now possible to print formated messages via protocol. No need to do specific calls to print variables like numbers, strings, char, ip addresse, bytes, etc...
 - improvements to the debug message system. Now a single call to DBGMSG macro is used. The same principle of formated messages is applied.
 - Debug messages now have an intermediate buffer that stores the output before printing it to prevent outputing debug messages in the middle of onging protocol messages
+- Parsing support for O-Codes (subrotines). These O-Codes can be executed from .nc files in the root dir of a pre-configured file system (either C for MCU flash or D for SD cards)
 
 Version 1.10 added the following new major features.
 - added support SPI bulk transfers. This improves SPI transmission speeds while keeping the whole firmware responsive, opening the door for new modules and upgrades to µCNC using SPI driven hardware like TFT displays.
@@ -159,6 +161,7 @@ List of Supported G-Codes since µCNC 1.9.2:
   - Valid Non-Command Words: A, B, C, F, H, I, J, K, L, N, P, Q, R, S, T, X, Y, Z
 	- User(read/write) and parser(read only) parameters like #5221 (#5221 returns the G38 result for X axis)
 	- Expressions like [1 + acos[0] - [#3 ** [4.0/2]]]
+	- O-Codes (must run from files)
 
   - Outside the RS274NGC scope
     - Bilinear surface mapping: G39,G39.1,G39.2*
