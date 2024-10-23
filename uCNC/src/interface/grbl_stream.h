@@ -30,6 +30,7 @@ extern "C"
 #include <stdarg.h>
 
 #define EOL 0x00 // end of line uint8_t
+#define FILE_EOF 0x03
 #define OVF 0x15 // overflow uint8_t
 #define SAFEMARGIN 2
 #ifndef RX_BUFFER_CAPACITY
