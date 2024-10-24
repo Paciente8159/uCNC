@@ -467,9 +467,9 @@ extern "C"
 					fp->fs_ptr = &flash_fs;
 					return fp;
 				}
-				free(fp->file_ptr);
+				fs_safe_free(fp->file_ptr);
 			}
-			free(fp);
+			fs_safe_free(fp);
 		}
 		return NULL;
 	}

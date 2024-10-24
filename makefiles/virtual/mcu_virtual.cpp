@@ -856,17 +856,21 @@ extern "C"
 	{
 		WIN32_FIND_DATA findFileData;
 		HANDLE hFind;
-		
+
 		// Ensure finfo structure is not NULL
 		if (!finfo || !path)
 		{
 			return false;
 		}
-		
-		char fpath[256] = ".";
-		if(strcmp("/", path))
+
+		char fpath[256] = "./";
+		if (strcmp("/", path))
 		{
 			strcat(fpath, path);
+		}
+		else
+		{
+			fpath[1] = 0;
 		}
 
 		// Try to find the file or directory
@@ -919,7 +923,7 @@ extern "C"
 	{
 		fs_file_t *fp = (fs_file_t *)calloc(1, sizeof(fs_file_t));
 		char dir[256] = ".";
-		if(strcmp("/", path))
+		if (strcmp("/", path))
 		{
 			strcat(dir, path);
 		}
@@ -934,7 +938,7 @@ extern "C"
 				memcpy(&fp->file_info, &info, sizeof(fs_file_info_t));
 				return fp;
 			}
-			free(fp);
+			fs_safe_free(fp);
 		}
 
 		return NULL;
@@ -945,11 +949,11 @@ extern "C"
 
 		fs_file_info_t finfo;
 		char file[256] = ".";
-		if(strcmp("/", path))
+		if (strcmp("/", path))
 		{
 			strcat(file, path);
 		}
-		
+
 		if (flash_fs_finfo(path, &finfo))
 		{
 			fs_file_t *fp = (fs_file_t *)calloc(1, sizeof(fs_file_t));
@@ -971,7 +975,7 @@ extern "C"
 						fp->fs_ptr = &flash_fs;
 						return fp;
 					}
-					free(fp);
+					fs_safe_free(fp);
 				}
 				else
 				{
@@ -1072,8 +1076,11 @@ extern "C"
 			if (entry != NULL)
 			{
 				flash_fs_finfo(entry->d_name, finfo);
+				return true;
 			}
 		}
+
+		return false;
 	}
 
 	/**

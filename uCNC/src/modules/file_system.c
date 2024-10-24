@@ -23,7 +23,7 @@
 #include <string.h>
 
 #ifndef freefile_ptr
-#define freefile_ptr(x) free(x)
+#define freefile_ptr(x) fs_safe_free(x)
 #endif
 
 // file system entry point
@@ -1074,7 +1074,7 @@ void fs_close(fs_file_t *fp)
 			fp->fs_ptr->close(fp);
 			freefile_ptr(fp->file_ptr);
 		}
-		free(fp);
+		fs_safe_free(fp);
 	}
 }
 

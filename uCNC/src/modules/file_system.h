@@ -81,6 +81,13 @@ extern "C"
 	bool fs_next_file(fs_file_t *fp, fs_file_info_t *finfo);
 	bool fs_finfo(const char *path, fs_file_info_t *finfo);
 
+	static void fs_safe_free(void* fp){
+		if(fp){
+			free(fp);
+			fp = NULL;
+		}
+	}
+
 	//exposes functions for system menu
 	void system_menu_render_fs_item(uint8_t render_flags, system_menu_item_t *item);
 	bool system_menu_action_fs_item(uint8_t action, system_menu_item_t *item);
