@@ -29,9 +29,6 @@
 #include "modules/softuart.h"
 #include "modules/system_languages.h"
 #include "modules/system_menu.h"
-#ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
-#include "modules/file_system.h"
-#endif
 
 uint8_t g_module_lockguard;
 /**
