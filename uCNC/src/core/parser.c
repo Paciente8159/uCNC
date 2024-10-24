@@ -67,191 +67,11 @@ FORCEINLINE static uint8_t parser_gcode_command(bool is_jogging);
 static void parser_coordinate_system_load(uint8_t param, float *target);
 
 #ifdef ENABLE_RS274NGC_EXPRESSIONS
-char parser_backtrack;
-#define STRLEN(s) (sizeof(s) / sizeof(s[0]))
-#define STRCMP(sram, srom) rom_strcmp(sram, __romstr__(srom))
-FORCEINLINE static uint8_t parser_get_expression(float *value);
-#ifdef ENABLE_NAMED_PARAMETERS
-// carefull this should be at least as big as the longer named parameter
-#define NAMED_PARAM_MAX_LEN 24
-typedef struct named_param_
-{
-	const char *const name;
-	uint16_t id;
-} named_param_t;
-#define DECL_NAMED_PARAM(name) static const char gp##name[] __rom__ = #name
-#define NAMED_PARAM(p_name, p_id) {.name = gp##p_name, .id = p_id}
-DECL_NAMED_PARAM(_vmajor);
-DECL_NAMED_PARAM(_vminor);
-DECL_NAMED_PARAM(_line);
-DECL_NAMED_PARAM(_motion_mode);
-DECL_NAMED_PARAM(_plane);
-DECL_NAMED_PARAM(_ccomp);
-DECL_NAMED_PARAM(_metric);
-DECL_NAMED_PARAM(_imperial);
-DECL_NAMED_PARAM(_absolute);
-DECL_NAMED_PARAM(_incremental);
-DECL_NAMED_PARAM(_inverse_time);
-DECL_NAMED_PARAM(_units_per_minute);
-DECL_NAMED_PARAM(_units_per_rev);
-DECL_NAMED_PARAM(_coord_system);
-DECL_NAMED_PARAM(_tool_offset);
-DECL_NAMED_PARAM(_retract_r_plane);
-DECL_NAMED_PARAM(_retract_old_z);
-DECL_NAMED_PARAM(_spindle_rpm_mode);
-DECL_NAMED_PARAM(_spindle_css_mode);
-DECL_NAMED_PARAM(_ijk_absolute_mode);
-DECL_NAMED_PARAM(_lathe_diameter_mode);
-DECL_NAMED_PARAM(_lathe_radius_mode);
-DECL_NAMED_PARAM(_spindle_on);
-DECL_NAMED_PARAM(_spindle_cw);
-DECL_NAMED_PARAM(_mist);
-DECL_NAMED_PARAM(_flood);
-DECL_NAMED_PARAM(_speed_override);
-DECL_NAMED_PARAM(_feed_override);
-DECL_NAMED_PARAM(_adaptive_feed);
-DECL_NAMED_PARAM(_feed_hold);
-DECL_NAMED_PARAM(_feed);
-DECL_NAMED_PARAM(_rpm);
-DECL_NAMED_PARAM(_x);
-DECL_NAMED_PARAM(_y);
-DECL_NAMED_PARAM(_z);
-DECL_NAMED_PARAM(_a);
-DECL_NAMED_PARAM(_b);
-DECL_NAMED_PARAM(_c);
-DECL_NAMED_PARAM(_u);
-DECL_NAMED_PARAM(_v);
-DECL_NAMED_PARAM(_w);
-DECL_NAMED_PARAM(_abs_x);
-DECL_NAMED_PARAM(_abs_y);
-DECL_NAMED_PARAM(_abs_z);
-DECL_NAMED_PARAM(_abs_a);
-DECL_NAMED_PARAM(_abs_b);
-DECL_NAMED_PARAM(_abs_c);
-DECL_NAMED_PARAM(_current_tool);
-DECL_NAMED_PARAM(_current_pocket);
-DECL_NAMED_PARAM(_selected_tool);
-DECL_NAMED_PARAM(_selected_pocket);
-DECL_NAMED_PARAM(_value);
-DECL_NAMED_PARAM(_value_returned);
-DECL_NAMED_PARAM(_task);
-DECL_NAMED_PARAM(_call_level);
-DECL_NAMED_PARAM(_remap_level);
-static const named_param_t named_params[] __rom__ = {
-		NAMED_PARAM(_vmajor, 6001),
-		NAMED_PARAM(_vminor, 6002),
-		NAMED_PARAM(_line, 6003),
-		NAMED_PARAM(_motion_mode, 6010),
-		NAMED_PARAM(_plane, 6011),
-		NAMED_PARAM(_ccomp, 6012),
-		NAMED_PARAM(_metric, 6013),
-		NAMED_PARAM(_imperial, 6014),
-		NAMED_PARAM(_absolute, 6015),
-		NAMED_PARAM(_incremental, 6016),
-		NAMED_PARAM(_inverse_time, 6017),
-		NAMED_PARAM(_units_per_minute, 6018),
-		NAMED_PARAM(_units_per_rev, 6019),
-		NAMED_PARAM(_coord_system, 6020),
-		NAMED_PARAM(_tool_offset, 6021),
-		NAMED_PARAM(_retract_r_plane, 6022),
-		NAMED_PARAM(_retract_old_z, 6023),
-		NAMED_PARAM(_spindle_rpm_mode, 6024),
-		NAMED_PARAM(_spindle_css_mode, 6025),
-		NAMED_PARAM(_ijk_absolute_mode, 6026),
-		NAMED_PARAM(_lathe_diameter_mode, 6027),
-		NAMED_PARAM(_lathe_radius_mode, 6028),
-		NAMED_PARAM(_spindle_on, 6029),
-		NAMED_PARAM(_spindle_cw, 6030),
-		NAMED_PARAM(_mist, 6031),
-		NAMED_PARAM(_flood, 6032),
-		NAMED_PARAM(_speed_override, 6040),
-		NAMED_PARAM(_feed_override, 6041),
-		NAMED_PARAM(_adaptive_feed, 6042),
-		NAMED_PARAM(_feed_hold, 6043),
-		NAMED_PARAM(_feed, 6044),
-		NAMED_PARAM(_rpm, 6045),
-		NAMED_PARAM(_x, 5420),
-		NAMED_PARAM(_y, 5421),
-		NAMED_PARAM(_z, 5422),
-		NAMED_PARAM(_a, 5423),
-		NAMED_PARAM(_b, 5424),
-		NAMED_PARAM(_c, 5425),
-		NAMED_PARAM(_u, 5426),
-		NAMED_PARAM(_v, 5427),
-		NAMED_PARAM(_w, 5428),
-		NAMED_PARAM(_abs_x, 6050),
-		NAMED_PARAM(_abs_y, 6051),
-		NAMED_PARAM(_abs_z, 6052),
-		NAMED_PARAM(_abs_a, 6053),
-		NAMED_PARAM(_abs_b, 6054),
-		NAMED_PARAM(_abs_c, 6055),
-		NAMED_PARAM(_current_tool, 5400),
-		NAMED_PARAM(_current_pocket, 6060),
-		NAMED_PARAM(_selected_tool, 6061),
-		NAMED_PARAM(_selected_pocket, 6062),
-		NAMED_PARAM(_value, 6100),
-		NAMED_PARAM(_value_returned, 6101),
-		NAMED_PARAM(_task, 6110),
-		NAMED_PARAM(_call_level, 6111),
-		NAMED_PARAM(_remap_level, 6112)};
-
-static float parser_get_named_parameter(int param, int offset, uint8_t pos);
-#endif
-#ifdef ENABLE_O_CODES
-#include "../modules/file_system.h"
-#ifndef OCODE_STACK_DEPTH
-#define OCODE_STACK_DEPTH MAX_PARSER_STACK_DEPTH
-#endif
-#ifndef OCODE_DRIVE
-#define OCODE_DRIVE 'C'
-#endif
-
-#define O_CODE_OP_DISCARD 0x80
-#define O_CODE_OP_OPTIONS_MASK 0x03
-#define O_CODE_BASE_TYPE(x) (x & ~(O_CODE_OP_DISCARD | O_CODE_OP_OPTIONS_MASK))
-#define O_CODE_OP_CALL 1
-#define O_CODE_OP_SUB 2
-#define O_CODE_OP_IF 4
-#define O_CODE_OP_IF_FOUND (O_CODE_OP_IF | 1)
-#define O_CODE_OP_IF_DISCARD (O_CODE_OP_IF | O_CODE_OP_DISCARD)
-#define O_CODE_OP_WHILE 8
-#define O_CODE_OP_DO_WHILE (O_CODE_OP_WHILE | 1)
-#define O_CODE_OP_WHILE_DISCARD (O_CODE_OP_WHILE | O_CODE_OP_DISCARD)
-#define O_CODE_OP_WHILE_BREAK (O_CODE_OP_WHILE | O_CODE_OP_DISCARD | 3)
-#define O_CODE_OP_REPEAT 16
-#define O_CODE_OP_REPEAT_DISCARD (O_CODE_OP_REPEAT | O_CODE_OP_DISCARD)
-
-#define STATUS_O_CODE_SUBROTINE 100
-#define STATUS_OCODE_ERROR_FILE_NOT_FOUND 101
-#define STATUS_OCODE_ERROR_INVALID_NUMBER 102
-#define STATUS_OCODE_ERROR_INVALID_OPERATION 103
-#define STATUS_OCODE_ERROR_INVALID_EXPRESSION 104
-#define STATUS_OCODE_ERROR_STACK_UNDERFLOW 105
-#define STATUS_OCODE_ERROR_STACK_OVERFLOW 106
-
-#define STATUS_OCODE_ERROR_MIN STATUS_OCODE_ERROR_FILE_NOT_FOUND
-#define STATUS_OCODE_ERROR_MAX STATUS_OCODE_ERROR_STACK_OVERFLOW
-
-static fs_file_t *o_code_file;
-static uint32_t o_code_file_pos;
-static bool o_code_file_changed;
-
-typedef struct o_code_stack_
-{
-	uint16_t code;
-	uint8_t op;
-	uint32_t pos;
-	int32_t loop;
-	float user_vars[RS274NGC_MAX_USER_VARS];
-} o_code_stack_t;
-
-static o_code_stack_t o_code_stack[OCODE_STACK_DEPTH];
-static uint8_t o_code_stack_index;
-#define O_CODE_FILE_CLOSE 1
-#define O_CODE_FILE_CLOSE_ALL 2
-FORCEINLINE static uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parser_cmd_explicit_t *cmd);
-static void o_code_end_subrotine(parser_state_t *new_state);
-#endif
+extern char parser_backtrack;
+extern bool o_code_end_subrotine(parser_state_t *new_state);
+extern bool o_code_returned;
+extern float o_code_return_value;
+extern uint8_t o_code_stack_index;
 #endif
 
 #ifdef ENABLE_CANNED_CYCLES
@@ -611,6 +431,13 @@ static uint8_t parser_grbl_command(void)
 			}
 			return GRBL_SEND_SYSTEM_SETTINGS;
 		case '#':
+#ifdef ENABLE_RS274NGC_EXPRESSIONS
+			if (grbl_stream_peek() == '=')
+			{
+				grbl_stream_getc();
+				return GRBL_PRINT_PARAM;
+			}
+#endif
 			if (grbl_stream_getc() != EOL)
 			{
 				return STATUS_INVALID_STATEMENT;
@@ -818,7 +645,8 @@ static uint8_t parser_grbl_command(void)
 
 static uint8_t parser_grbl_exec_code(uint8_t code)
 {
-
+	uint16_t param;
+	float value;
 	switch (code)
 	{
 	case GRBL_SEND_SYSTEM_SETTINGS:
@@ -890,6 +718,25 @@ static uint8_t parser_grbl_exec_code(uint8_t code)
 		proto_feedback(MSG_FEEDBACK_15);
 		break;
 #endif
+#ifdef ENABLE_RS274NGC_EXPRESSIONS
+	case GRBL_PRINT_PARAM:
+		if (parser_get_float(&value) == NUMBER_OK || parser_get_namedparam_id(&value) == NUMBER_OK)
+		{
+			param = value;
+			value = parser_get_parameter(param);
+		}
+		else{
+			return STATUS_INVALID_STATEMENT;
+		}
+
+		if (grbl_stream_getc() != EOL)
+		{
+			return STATUS_INVALID_STATEMENT;
+		}
+		proto_info("#%d=%f", param, value);
+		break;
+#endif
+
 #ifdef ENABLE_PIN_DEBUG_EXTRA_CMD
 	case GRBL_PINS_STATES:
 		proto_pins_states();
@@ -1003,16 +850,13 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 			{
 				parser_discard_command();
 				// an error on a subrotine will cause the top subrotine to close and the stack to collapse
-				while (o_code_stack_index)
-				{
-					o_code_end_subrotine(new_state);
-				}
+				while (o_code_end_subrotine(new_state))
+					;
 				return error;
 			}
 			break;
 		case FILE_EOF:
-			o_code_end_subrotine(new_state);
-			if (o_code_stack_index)
+			if (o_code_end_subrotine(new_state))
 			{
 				break;
 			}
@@ -2158,6 +2002,11 @@ static uint8_t parser_gcode_command(bool is_jogging)
 	memcpy(&next_state, &parser_state, sizeof(parser_state_t));
 	next_state.groups.nonmodal = 0; // reset nonmodal
 
+#ifdef ENABLE_RS274NGC_EXPRESSIONS
+	next_state.modified_params_count = 0;
+	memset(next_state.modified_params, 0, sizeof(next_state.modified_params));
+#endif
+
 	// fetch command
 	result = parser_fetch_command(&next_state, &words, &cmd);
 	if (result != STATUS_OK)
@@ -2210,7 +2059,7 @@ static uint8_t parser_gcode_command(bool is_jogging)
 #define COMMENT_OK 1
 #define COMMENT_NOTOK 2
 #ifdef PROCESS_COMMENTS
-static bool mute_comment_output;
+bool g_mute_comment_output;
 #endif
 static void parser_get_comment(uint8_t start_char)
 {
@@ -2239,23 +2088,20 @@ static void parser_get_comment(uint8_t start_char)
 		}
 
 #ifdef PROCESS_COMMENTS
-#ifdef ENABLE_RS274NGC_EXPRESSIONS
-		float exp_val;
-#endif
 		switch (msg_parser)
 		{
 		case 0:
-			msg_parser = (c == 'M' | c == 'm') ? 1 : 0xFF;
+			msg_parser = (c == 'M' || c == 'm') ? 1 : 0xFF;
 			break;
 		case 1:
-			msg_parser = (c == 'S' | c == 's') ? 2 : 0xFF;
+			msg_parser = (c == 'S' || c == 's') ? 2 : 0xFF;
 			break;
 		case 2:
-			msg_parser = (c == 'G' | c == 'g') ? 3 : 0xFF;
+			msg_parser = (c == 'G' || c == 'g') ? 3 : 0xFF;
 			break;
 		case 3:
 			msg_parser = (c == ',') ? 4 : 0xFF;
-			if (!mute_comment_output)
+			if (!g_mute_comment_output)
 			{
 				proto_print(MSG_FEEDBACK_START);
 			}
@@ -2265,9 +2111,9 @@ static void parser_get_comment(uint8_t start_char)
 			if (c == '#')
 			{
 				float f = 0;
-				if (parser_get_expression(&f) != NUMBER_UNDEF)
+				if (parser_get_float(&f) != NUMBER_UNDEF)
 				{
-					if (!mute_comment_output)
+					if (!g_mute_comment_output)
 					{
 						proto_printf("%f", f);
 					}
@@ -2281,7 +2127,7 @@ static void parser_get_comment(uint8_t start_char)
 #endif
 			if (comment_end != COMMENT_OK)
 			{
-				if (!mute_comment_output)
+				if (!g_mute_comment_output)
 				{
 					proto_putc(c);
 				}
@@ -2301,7 +2147,7 @@ static void parser_get_comment(uint8_t start_char)
 #ifdef PROCESS_COMMENTS
 			if (msg_parser == 4)
 			{
-				if (!mute_comment_output)
+				if (!g_mute_comment_output)
 				{
 					proto_print(MSG_FEEDBACK_END);
 				}
@@ -2354,58 +2200,12 @@ unsigned char parser_get_next_preprocessed(bool peek)
 	return c;
 }
 
+#ifndef ENABLE_RS274NGC_EXPRESSIONS
 uint8_t parser_get_float(float *value)
 {
-#ifdef ENABLE_RS274NGC_EXPRESSIONS
-	unsigned char c = parser_get_next_preprocessed(true);
-	c = TOUPPER(c);
-	if (c == '[' || c == '#' || (c >= 'A' && c <= 'Z'))
-	{
-		return parser_get_expression(value);
-	}
-#ifdef ENABLE_NAMED_PARAMETERS
-	else if (c == '<')
-	{
-		char namedparam[NAMED_PARAM_MAX_LEN];
-		bool valid = false;
-		parser_get_next_preprocessed(false);
-		for (uint8_t i = 0; i < NAMED_PARAM_MAX_LEN; i++)
-		{
-			c = parser_get_next_preprocessed(true);
-			if (c == EOL)
-			{
-				break;
-			}
-			if (c == '>')
-			{
-				parser_get_next_preprocessed(false);
-				namedparam[i] = 0;
-				valid = true;
-				break;
-			}
-			namedparam[i] = parser_get_next_preprocessed(false);
-		}
-
-		if (valid)
-		{
-			for (uint8_t i = 0; i < sizeof(named_params) / sizeof(named_param_t); i++)
-			{
-				if (!rom_strcmp(namedparam, (const char *)rom_strptr(&(named_params[i].name))))
-				{
-					named_param_t p = {0};
-					rom_memcpy(&p, &named_params[i], sizeof(named_param_t));
-					*value = (float)p.id;
-					return NUMBER_OK;
-				}
-			}
-		}
-
-		return NUMBER_UNDEF;
-	}
-#endif
-#endif
 	return prt_atof((void *)parser_get_next_preprocessed, NULL, value);
 }
+#endif
 
 static uint8_t parser_get_token(uint8_t *word, float *value)
 {
@@ -3402,6 +3202,146 @@ uint8_t parser_exec_command_block(parser_state_t *new_state, parser_words_t *wor
  */
 #ifdef ENABLE_RS274NGC_EXPRESSIONS
 
+#ifdef ENABLE_NAMED_PARAMETERS
+float parser_get_named_parameter(int param, int offset, uint8_t pos)
+{
+	float result = -1;
+	switch (offset)
+	{
+	case 600:
+		switch (pos)
+		{
+		case 1: // vmajor
+			str_atof(CNC_MAJOR_MINOR_VERSION, &result);
+			break;
+		case 2: // vminor
+			str_atof(CNC_PATCH_VERSION, &result);
+			break;
+#ifdef GCODE_PROCESS_LINE_NUMBERS
+		case 3: // line
+			break;
+#endif
+		}
+		break;
+	case 601:
+		switch (pos)
+		{
+		case 0: // motion mode
+			return parser_state.groups.motion * 10 + parser_state.groups.motion_mantissa;
+		case 1: // plane
+			return (17 + parser_state.groups.plane) * 10;
+		case 2: // compensation mode (not implemented) always G40
+			return 400;
+		case 3: // metric
+			return (parser_state.groups.distance_mode == G21);
+		case 4: // imperial
+			return (parser_state.groups.distance_mode == G20);
+		case 5: // absolute
+			return (parser_state.groups.distance_mode == G90);
+		case 6: // incremental
+			return (parser_state.groups.distance_mode == G91);
+		case 7: // inverse time mode
+			return (parser_state.groups.feedrate_mode == G93);
+		case 8: // units per minute
+			return (parser_state.groups.feedrate_mode == G94);
+		case 9: // units per rev (not implemented) always 0
+			return 0;
+		}
+		break;
+	case 602:
+		switch (pos)
+		{
+		case 0: // coordinate system
+			offset = (54 + parser_state.groups.coord_system) * 10;
+			switch (offset)
+			{
+			case 600:
+				return 591;
+			case 610:
+				return 592;
+			case 620:
+				return 593;
+			default:
+				result = offset;
+			}
+			break;
+		case 1: // tool offset
+			return (parser_state.groups.tlo_mode == G43);
+		case 2: // retract plane
+			return (parser_state.groups.return_mode == G98);
+		case 3: // retract old z
+			return (parser_state.groups.return_mode == G99);
+		case 4: // spindle rpm mode (always true)
+			return 1;
+		case 5: // spindle constant surface mode (not implemented)
+		case 6: // lathe diam mode (not implemented)
+		case 7: // lathe radius mode (not implemented)
+			return 0;
+		}
+		break;
+	case 603:
+		switch (pos)
+		{
+		case 0: // spindle on
+			return (parser_state.groups.spindle_turning != M5);
+		case 1: // spindle cw
+			return (parser_state.groups.spindle_turning == M3);
+		case 2: // flood
+			return (parser_state.groups.coolant & M7);
+		case 3: // mist
+			return (parser_state.groups.coolant & M8);
+		}
+		break;
+	case 604:
+		switch (pos)
+		{
+		case 0: // feed override
+		case 1: // speed override
+			return (parser_state.groups.feed_speed_override == M48);
+		case 2: // adaptive feed (not implemented)
+			return 0;
+		case 3: // feed hold
+			return cnc_get_exec_state(EXEC_HOLD);
+		case 4: // flood
+			return parser_state.feedrate;
+		case 5: // rpm
+			return parser_state.spindle;
+		}
+		break;
+	case 605:
+		if (pos < AXIS_COUNT)
+		{
+			return parser_last_pos[pos];
+		}
+		break;
+	case 606:
+		switch (pos)
+		{
+		case 1: // selected tool
+			return parser_state.groups.tool_change;
+		default: // current pocket and selected pocket (not implemented)
+			return 0;
+		}
+		break;
+	case 610:
+		switch (pos)
+		{
+		case 0:
+			return o_code_returned;
+		case 1:
+			return o_code_return_value;
+		}
+	case 611:
+		switch (pos)
+		{
+		case 1:
+			return o_code_stack_index;
+		}
+		break;
+	}
+	return result;
+}
+#endif
 /**
  *
  *
@@ -3409,110 +3349,21 @@ uint8_t parser_exec_command_block(parser_state_t *new_state, parser_words_t *wor
  *
  *
  */
-#define OP_LEVEL0 (0 << 5)
-#define OP_LEVEL1 (1 << 5)
-#define OP_LEVEL2 (2 << 5)
-#define OP_LEVEL3 (3 << 5)
-#define OP_LEVEL4 (4 << 5)
-#define OP_LEVEL5 (5 << 5)
-#define OP_LEVEL6 (6 << 5)
-#define OP_LEVEL7 (7 << 5)
-#define OP_LEVEL(X) (X & (7 << 5))
-
-#define OP_INVALID 0
-
-#define OP_AND (OP_LEVEL0 | 1)
-#define OP_OR (OP_LEVEL0 | 2)
-#define OP_XOR (OP_LEVEL0 | 3)
-
-#define OP_EQ (OP_LEVEL1 | 1)
-#define OP_NE (OP_LEVEL1 | 2)
-#define OP_GT (OP_LEVEL1 | 3)
-#define OP_GE (OP_LEVEL1 | 4)
-#define OP_LT (OP_LEVEL1 | 5)
-#define OP_LE (OP_LEVEL1 | 6)
-
-#define OP_ADD (OP_LEVEL2 | 1)
-#define OP_SUB (OP_LEVEL2 | 2)
-
-#define OP_MUL (OP_LEVEL3 | 1)
-#define OP_DIV (OP_LEVEL3 | 2)
-#define OP_MOD (OP_LEVEL3 | 3)
-
-#define OP_POW (OP_LEVEL4 | 1)
-
-#define OP_NEG (OP_LEVEL5 | 1)
-#define OP_SQRT (OP_LEVEL5 | 5)
-#define OP_COS (OP_LEVEL5 | 10)
-#define OP_SIN (OP_LEVEL5 | 11)
-#define OP_TAN (OP_LEVEL5 | 12)
-#define OP_ACOS (OP_LEVEL5 | 13)
-#define OP_ASIN (OP_LEVEL5 | 14)
-#define OP_ATAN (OP_LEVEL5 | 15)
-#define OP_ATAN_DIV (OP_LEVEL5 | 16)
-#define OP_EXP (OP_LEVEL5 | 17)
-#define OP_LN (OP_LEVEL5 | 18)
-#define OP_ABS (OP_LEVEL5 | 19)
-#define OP_FIX (OP_LEVEL5 | 20)
-#define OP_FUP (OP_LEVEL5 | 21)
-#define OP_ROUND (OP_LEVEL5 | 22)
-#define OP_EXISTS (OP_LEVEL5 | 23)
-
-#define OP_PARSER_VAR (OP_LEVEL6 | 1)
-#define OP_EXPR_END (OP_LEVEL6 | 2)
-#define OP_EXPR_START (OP_LEVEL6 | 3)
-
-#define OP_WORD 201
-
-#define OP_REAL 203
-#define OP_ASSIGN 252
-#define OP_ENDLINE 253
-
-bool parser_assert_op(parser_stack_t stack, float rhs)
-{
-	int val = 0;
-	switch (stack.op)
-	{
-	case OP_PARSER_VAR:
-		if (rhs < 1 || floorf(rhs) > rhs)
-		{
-			return false;
-		}
-
-		val = (int)rhs;
-
-		if (val > RS274NGC_MAX_USER_VARS && val < 5000)
-		{
-			return false;
-		}
-
-		switch (val)
-		{
-		case 5061:
-		case 5062:
-		case 5063:
-		case 5064:
-		case 5065:
-		case 5066:
-			if (val - 5061 >= AXIS_COUNT)
-			{
-				return false;
-			}
-		}
-	}
-
-	return true;
-}
-
-float parser_get_parameter(int param)
+float parser_get_parameter(uint16_t param)
 {
 	float result[AXIS_COUNT];
 	int32_t probe_position[STEPPER_COUNT];
-	int offset = param * 0.1f;
+	float axis[AXIS_COUNT];
+	uint16_t offset = param * 0.1f;
 	uint8_t pos = (uint8_t)(param - (offset * 10));
 	uint8_t index = 0;
 
 	pos--;
+
+	if (param > 0 && param <= RS274NGC_MAX_USER_VARS)
+	{
+		return parser_state.user_vars[param - 1];
+	}
 
 	switch (offset)
 	{
@@ -3591,14 +3442,15 @@ float parser_get_parameter(int param)
 		pos++;
 		if (pos < AXIS_COUNT)
 		{
-			return parser_last_pos[pos];
+			parser_get_wco(axis);
+			return (parser_last_pos[pos] - axis[pos]);
 		}
 		break;
 	default:
 #ifdef ENABLE_NAMED_PARAMETERS
 		if (offset >= 600 && offset <= 610)
 		{
-			return parser_get_named_parameter(param, offset, pos);
+			return parser_get_named_parameter(param, offset, pos + 1);
 		}
 #endif
 	}
@@ -3606,1185 +3458,12 @@ float parser_get_parameter(int param)
 	return 0;
 }
 
-float parser_exec_op(parser_stack_t stack, float rhs)
+float parser_set_parameter(uint16_t param, float value)
 {
-	switch (stack.op)
+	if (param > 0 && param <= RS274NGC_MAX_USER_VARS)
 	{
-	case OP_ADD:
-		return stack.lhs + rhs;
-	case OP_SUB:
-		return stack.lhs - rhs;
-	case OP_MUL:
-		return stack.lhs * rhs;
-	case OP_DIV:
-		return stack.lhs / rhs;
-	case OP_POW:
-		return powf(stack.lhs, rhs);
-	case OP_SQRT:
-		return sqrtf(rhs);
-	case OP_MOD:
-		return (float)((int64_t)stack.lhs % (int64_t)rhs);
-	case OP_AND:
-		return (float)((int64_t)stack.lhs & (int64_t)rhs);
-	case OP_OR:
-		return (float)((int64_t)stack.lhs | (int64_t)rhs);
-	case OP_XOR:
-		return (float)((int64_t)stack.lhs ^ (int64_t)rhs);
-	case OP_EQ:
-		return (float)((int64_t)stack.lhs == (int64_t)rhs);
-	case OP_NE:
-		return (float)((int64_t)stack.lhs != (int64_t)rhs);
-	case OP_GT:
-		return (float)((int64_t)stack.lhs > (int64_t)rhs);
-	case OP_GE:
-		return (float)((int64_t)stack.lhs >= (int64_t)rhs);
-	case OP_LT:
-		return (float)((int64_t)stack.lhs < (int64_t)rhs);
-	case OP_LE:
-		return (float)((int64_t)stack.lhs <= (int64_t)rhs);
-	case OP_COS:
-		return cosf(rhs * DEG_RAD_MULT);
-	case OP_SIN:
-		return sinf(rhs * DEG_RAD_MULT);
-	case OP_TAN:
-		return tanf(rhs * DEG_RAD_MULT);
-	case OP_ACOS:
-		return RAD_DEG_MULT * acosf(rhs);
-	case OP_ASIN:
-		return RAD_DEG_MULT * asinf(rhs);
-	case OP_ATAN:
-		return rhs;
-	case OP_ATAN_DIV:
-		// special atan case
-		return RAD_DEG_MULT * atan2f(stack.lhs, rhs);
-	case OP_EXP:
-		return expf(rhs);
-	case OP_LN:
-		return logf(rhs);
-	case OP_ABS:
-		return fabs(rhs);
-	case OP_FIX:
-		return floorf(rhs);
-	case OP_FUP:
-		return ceilf(rhs);
-	case OP_ROUND:
-		return roundf(rhs);
-	case OP_NEG:
-		return -rhs;
-	case OP_EXISTS:
-		if (rhs < 1 || rhs > RS274NGC_MAX_USER_VARS || floorf(rhs) > rhs)
-		{
-			return 0;
-		}
-		return 1;
-	case OP_PARSER_VAR:
-		if ((int)rhs > 5000)
-		{
-			return parser_get_parameter((int)rhs);
-		}
-		return parser_state.user_vars[(int)rhs - 1];
-	default:
-		return rhs;
+		return parser_state.user_vars[param - 1] = value;
 	}
 }
 
-/**
- *
- * This determines the operation that will be performed in an expression symbol
- *
- *
- */
-
-uint8_t parser_get_operation(bool can_call_unary_func)
-{
-	char c = (char)parser_get_next_preprocessed(true);
-	c = TOUPPER(c);
-	uint8_t result = OP_INVALID;
-	uint8_t i = 0;
-
-	if ((c >= '0' && c <= '9') || c == '.')
-	{
-		return OP_REAL;
-	}
-#ifdef ENABLE_NAMED_PARAMETERS
-	if (c == '<')
-	{
-		return OP_REAL;
-	}
-#endif
-	else if (c < 'A' || c > 'Z')
-	{
-		if (!c)
-		{
-			return OP_ENDLINE;
-		}
-
-		switch (c)
-		{
-		case '=':
-			return OP_ENDLINE;
-			break;
-		case '[':
-			result = OP_EXPR_START;
-			break;
-		case ']':
-			parser_backtrack = 0;
-			parser_get_next_preprocessed(false);
-			return OP_EXPR_END;
-		case '#':
-			parser_backtrack = 0;
-			parser_get_next_preprocessed(false);
-			return OP_PARSER_VAR;
-		case '*':
-			parser_get_next_preprocessed(false);
-			c = (char)parser_get_next_preprocessed(true);
-
-			if (c != '*')
-			{
-				parser_backtrack = c;
-				return OP_MUL;
-			}
-
-			result = OP_POW;
-			break;
-		case '/':
-			result = OP_DIV;
-			break;
-		case '-':
-			result = OP_SUB;
-
-			if (parser_backtrack == '-')
-			{
-				result = OP_NEG;
-			}
-			break;
-		case '+':
-			result = OP_ADD;
-			break;
-		default:
-			return OP_INVALID;
-		}
-
-		parser_get_next_preprocessed(false);
-		parser_backtrack = (char)parser_get_next_preprocessed(true);
-		return result;
-	}
-	else if (!can_call_unary_func) // if can't do unary checks for possible binary op
-	{
-		char peek = 0;
-		char peek2 = 0;
-		switch (c)
-		{
-		case 'A':
-			peek = 'N';
-			break;
-		case 'M':
-			peek = 'O';
-			break;
-		case 'O':
-			peek = 'R';
-			break;
-		case 'X':
-			peek = 'O';
-			break;
-		case 'E':
-			peek = 'Q';
-			break;
-		case 'N':
-			peek = 'E';
-			break;
-		case 'G':
-			peek = 'T';
-			peek2 = 'E';
-			break;
-		case 'L':
-			peek = 'T';
-			peek2 = 'E';
-			break;
-		default:
-			return OP_WORD;
-		}
-		parser_backtrack = parser_get_next_preprocessed(false);
-		char p = TOUPPER(parser_get_next_preprocessed(true));
-		if (peek != p && peek2 != p)
-		{
-			return OP_WORD;
-		}
-
-		i = 1;
-	}
-
-	char str[7];
-	memset(str, 0, sizeof(str));
-	parser_backtrack = c;
-	str[0] = c;
-
-	for (; i < 7; i++)
-	{
-		c = parser_get_next_preprocessed(true);
-		c = TOUPPER(c);
-		if (c < 'A' || c > 'Z')
-		{
-			break;
-		}
-		parser_get_next_preprocessed(false);
-		str[i] = (char)c;
-	}
-
-	if (strlen(str) == 1)
-	{
-		return OP_WORD;
-	}
-
-	parser_backtrack = 0;
-
-	if (!STRCMP(str, "MOD"))
-	{
-		return OP_MOD;
-	}
-	if (!STRCMP(str, "AND"))
-	{
-		return OP_AND;
-	}
-	if (!STRCMP(str, "OR"))
-	{
-		return OP_OR;
-	}
-	if (!STRCMP(str, "XOR"))
-	{
-		return OP_XOR;
-	}
-	if (!STRCMP(str, "EQ"))
-	{
-		return OP_EQ;
-	}
-	if (!STRCMP(str, "NE"))
-	{
-		return OP_NE;
-	}
-	if (!STRCMP(str, "GT"))
-	{
-		return OP_GT;
-	}
-	if (!STRCMP(str, "GE"))
-	{
-		return OP_GE;
-	}
-	if (!STRCMP(str, "LT"))
-	{
-		return OP_LT;
-	}
-	if (!STRCMP(str, "LE"))
-	{
-		return OP_LE;
-	}
-
-	if (c != '[')
-	{
-		return OP_INVALID;
-	}
-
-	if (!STRCMP(str, "SQRT"))
-	{
-		return OP_SQRT;
-	}
-	if (!STRCMP(str, "COS"))
-	{
-		return OP_COS;
-	}
-	if (!STRCMP(str, "SIN"))
-	{
-		return OP_SIN;
-	}
-	if (!STRCMP(str, "TAN"))
-	{
-		return OP_TAN;
-	}
-	if (!STRCMP(str, "ACOS"))
-	{
-		return OP_ACOS;
-	}
-	if (!STRCMP(str, "ASIN"))
-	{
-		return OP_ASIN;
-	}
-	if (!STRCMP(str, "ATAN"))
-	{
-		return OP_ATAN;
-	}
-	if (!STRCMP(str, "EXP"))
-	{
-		return OP_EXP;
-	}
-	if (!STRCMP(str, "LN"))
-	{
-		return OP_LN;
-	}
-	if (!STRCMP(str, "ABS"))
-	{
-		return OP_ABS;
-	}
-	if (!STRCMP(str, "FIX"))
-	{
-		return OP_FIX;
-	}
-	if (!STRCMP(str, "FUP"))
-	{
-		return OP_FUP;
-	}
-	if (!STRCMP(str, "ROUND"))
-	{
-		return OP_ROUND;
-	}
-	if (!STRCMP(str, "EXISTS"))
-	{
-		return OP_EXISTS;
-	}
-
-	return OP_INVALID;
-}
-
-uint8_t parser_get_expression(float *value)
-{
-	uint8_t result = NUMBER_UNDEF;
-	float rhs = 0;
-	// initializes the stack
-	uint8_t stack_depth = 1;
-	parser_stack_t stack[MAX_PARSER_STACK_DEPTH];
-	memset(stack, 0, sizeof(stack));
-	bool can_call_unary_func = true;
-	bool is_atan = false;
-	stack[0].op = OP_ASSIGN;
-
-	for (;;)
-	{
-		uint8_t op = parser_get_operation(can_call_unary_func);
-		can_call_unary_func = (!stack_depth) ? true : (op <= OP_NEG || op == OP_EXPR_START);
-
-		switch (op)
-		{
-		case OP_EXPR_START:
-		case OP_PARSER_VAR:
-			stack[stack_depth].op = op;
-			stack_depth++;
-			break;
-		case OP_INVALID:
-		case OP_ENDLINE:
-		case OP_WORD:
-		case OP_EXPR_END:
-			while (stack_depth > 1)
-			{
-				stack_depth--;
-				op = stack[stack_depth].op;
-				if (!parser_assert_op(stack[stack_depth], rhs))
-				{
-					return NUMBER_UNDEF;
-				}
-				rhs = parser_exec_op(stack[stack_depth], rhs);
-				stack[stack_depth].op = 0;
-				if (op == OP_EXPR_START)
-				{
-					break;
-				}
-				if (!stack_depth && op != OP_EXPR_START)
-				{
-					return NUMBER_UNDEF;
-				}
-			}
-			break;
-		case OP_REAL:
-			parser_get_float(&rhs);
-			break;
-		default:
-			while (stack_depth)
-			{
-				if (OP_LEVEL(stack[stack_depth - 1].op) < OP_LEVEL(op) || stack[stack_depth - 1].op >= OP_EXPR_START)
-				{
-					break;
-				}
-				// atan must be preceded by a div
-				if (stack[stack_depth - 1].op == OP_ATAN)
-				{
-					if (op != OP_DIV)
-					{
-						return NUMBER_UNDEF;
-					}
-					op = OP_ATAN_DIV;
-				}
-				stack_depth--;
-				if (!parser_assert_op(stack[stack_depth], rhs))
-				{
-					return NUMBER_UNDEF;
-				}
-				rhs = parser_exec_op(stack[stack_depth], rhs);
-				stack[stack_depth].op = 0;
-			}
-			stack[stack_depth].op = op;
-			stack[stack_depth].lhs = rhs;
-			rhs = 0;
-			stack_depth++;
-			break;
-		}
-
-		// the index of a user var was reduced. Can replace value
-		while (OP_PARSER_VAR == stack[stack_depth - 1].op && op != OP_PARSER_VAR)
-		{
-			rhs = parser_exec_op(stack[--stack_depth], rhs);
-		}
-
-		// stack processed
-		// can return value
-		if (stack_depth <= 1)
-		{
-			*value = parser_exec_op(stack[0], rhs);
-			result |= (rhs < 0) ? NUMBER_ISNEGATIVE : 0;
-			result |= (floorf(rhs) != rhs) ? NUMBER_ISFLOAT : 0;
-			return result;
-		}
-
-		result = NUMBER_OK;
-	}
-
-	return result;
-}
-
-/**
- *
- *
- * O Codes parsing extension
- *
- *
- */
-#ifdef ENABLE_O_CODES
-
-static uint8_t o_code_getc(void)
-{
-	if (o_code_file)
-	{
-		if (o_code_file_changed)
-		{
-			o_code_file_changed = false;
-			return EOL;
-		}
-		if (fs_available(o_code_file))
-		{
-			uint8_t c = 0;
-			fs_read(o_code_file, &c, 1);
-			return c;
-		}
-	}
-	return FILE_EOF; // end of file marker
-}
-
-static uint8_t o_code_file_flush(void)
-{
-	if (!o_code_stack_index)
-	{
-		grbl_stream_change(NULL);
-	}
-
-	return FILE_EOF; // end of file marker
-}
-
-DECL_GRBL_STREAM(o_code_stream, o_code_getc, NULL, NULL, NULL, NULL);
-
-static void o_code_open(uint8_t index)
-{
-	if (o_code_stack[index].op == O_CODE_OP_CALL || o_code_stack[index].op == O_CODE_OP_SUB)
-	{
-		if (o_code_file)
-		{
-			fs_close(o_code_file);
-			o_code_file = NULL;
-		}
-
-		char o_subrotine[32];
-		memset(o_subrotine, 0, sizeof(o_subrotine));
-		str_sprintf(o_subrotine, "/%c/o%d.nc", OCODE_DRIVE, o_code_stack[index].code);
-		o_code_file = fs_open(o_subrotine, "r");
-		if (!o_code_file)
-		{
-			return;
-		}
-		o_code_stack[index].op = O_CODE_OP_SUB;
-		// reload file and rewind stack
-		fs_seek(o_code_file, o_code_file_pos);
-
-		o_code_file_changed = true;
-#ifdef ENABLE_O_CODES_VERBOSE
-		grbl_stream_readonly(o_code_getc, NULL, NULL);
-#else
-		grbl_stream_change(&o_code_stream);
-#endif
-	}
-}
-
-static uint8_t o_code_close(uint8_t index)
-{
-	// close file
-	if (index)
-	{
-		if (o_code_file)
-		{
-			fs_close(o_code_file);
-			o_code_file = NULL;
-		}
-
-		// find previous sub entry point
-		while (o_code_stack[index].op != O_CODE_OP_SUB && index)
-		{
-			o_code_stack[index].code = 0;
-			o_code_stack[index].op = 0;
-			index--;
-		}
-
-		// restore file pointer and mark entry for (re)call
-		o_code_file_pos = o_code_stack[index].pos;
-		o_code_stack[index].op = O_CODE_OP_CALL;
-		o_code_stack_index = index;
-	}
-
-	return index;
-}
-
-void o_code_end_subrotine(parser_state_t *new_state)
-{
-	uint8_t index = o_code_stack_index;
-	if (index)
-	{
-		index = o_code_close(index);
-		// restore user vars
-		memcpy(new_state->user_vars, o_code_stack[index].user_vars, sizeof(o_code_stack[index].user_vars));
-	}
-
-	if (index)
-	{
-		index--;
-		// find previous sub entry point
-		while (o_code_stack[index].op != O_CODE_OP_SUB && index)
-		{
-			index--;
-		}
-		// top sub not exited yet
-		o_code_open(index);
-	}
-	else
-	{
-		// clear and close all
-		if (o_code_file)
-		{
-			fs_close(o_code_file);
-			o_code_file = NULL;
-		}
-		memset(o_code_stack, 0, sizeof(o_code_stack));
-		o_code_stack_index = 0;
-		// grbl_stream_change(NULL);
-		grbl_stream_readonly(o_code_file_flush, NULL, NULL);
-	}
-}
-
-static bool o_code_seek(uint32_t pos)
-{
-	if (o_code_file)
-	{
-		fs_seek(o_code_file, pos - 1);
-		grbl_stream_readonly(o_code_getc, NULL, NULL);
-		return true;
-	}
-	return false;
-}
-
-uint8_t o_code_validate(uint8_t op, uint16_t ocode_id, bool is_new)
-{
-	for (uint8_t index = o_code_stack_index; index != 0;)
-	{
-		index--;
-		if (o_code_stack[index].code == ocode_id)
-		{
-			// checks if the ocode and the operation type match
-			// it's an error if the ocode id is related to another operation
-			return ((O_CODE_BASE_TYPE(o_code_stack[index].op) & op) && is_new) ? 0 : (index + 1);
-		}
-		if (o_code_stack[index].op == O_CODE_OP_SUB)
-		{
-			return (is_new) ? (index + 1) : 0;
-		}
-	}
-
-	return 0;
-}
-
-static void o_code_discard(void)
-{
-#ifdef PROCESS_COMMENTS
-	mute_comment_output = true;
-#endif
-	while (parser_get_next_preprocessed(true) != 'O')
-	{
-		parser_discard_command();
-	}
-#ifdef PROCESS_COMMENTS
-	mute_comment_output = false;
-#endif
-}
-
-static void FORCEINLINE o_code_word_error(uint8_t *error)
-{
-	if (*error >= STATUS_OCODE_ERROR_MIN && *error <= STATUS_OCODE_ERROR_MAX)
-	{
-		// Error in o-code, do not continue execution and empty the stack.
-		if (o_code_file)
-		{
-			fs_close(o_code_file);
-			o_code_file = NULL;
-		}
-		if (o_code_stack_index)
-		{
-			memcpy(parser_state.user_vars, o_code_stack[0].user_vars, sizeof(o_code_stack[0].user_vars));
-		}
-		memset(o_code_stack, 0, sizeof(o_code_stack));
-		o_code_stack_index = 0;
-		o_code_file_pos = 0;
-		//		grbl_stream_change(NULL);
-		grbl_stream_readonly(o_code_file_flush, NULL, NULL);
-	}
-}
-
-uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parser_cmd_explicit_t *cmd)
-{
-	uint8_t error __attribute__((__cleanup__(o_code_word_error))) = STATUS_GCODE_UNSUPPORTED_COMMAND;
-	float op_arg = 0;
-	uint8_t op_arg_error = NUMBER_UNDEF;
-	char o_cmd[16];
-	memset(o_cmd, 0, sizeof(o_cmd));
-	uint32_t loop_ret = 0;
-
-	uint8_t index = o_code_stack_index;
-
-	uint16_t ocode_id = code;
-
-	// this checks if the code is to be discarded or not after come conditional
-	if (index && ((o_code_stack[index - 1].op == O_CODE_OP_IF) || (o_code_stack[index - 1].op & O_CODE_OP_DISCARD)) && o_code_stack[index - 1].code != ocode_id)
-	{
-		// keep discarding
-		o_code_discard();
-		error = STATUS_OK;
-		return error;
-	}
-
-	for (uint8_t i = 0; i < 16; i++)
-	{
-		char c = parser_get_next_preprocessed(true);
-		c = TOUPPER(c);
-		if (c < 'A' || c > 'Z')
-		{
-			break;
-		}
-		o_cmd[i] = c;
-		parser_get_next_preprocessed(false);
-	}
-
-	if (o_code_file)
-	{
-		loop_ret = o_code_file->file_info.size - fs_available(o_code_file);
-	}
-	op_arg_error = parser_get_float(&op_arg);
-
-	/**
-	 * Sub rotine call
-	 */
-	if (!STRCMP(o_cmd, "CALL"))
-	{
-		// store user vars
-		memcpy(o_code_stack[index].user_vars, new_state->user_vars, sizeof(o_code_stack[index].user_vars));
-
-		// check if file exists
-		char o_subrotine[32];
-		memset(o_subrotine, 0, sizeof(o_subrotine));
-		str_sprintf(o_subrotine, "/%c/o%d.nc", OCODE_DRIVE, ocode_id);
-		fs_file_info_t finfo;
-		fs_finfo(o_subrotine, &finfo);
-		if (!finfo.size)
-		{
-			error = STATUS_OCODE_ERROR_INVALID_OPERATION;
-			return error;
-		}
-
-		// call parameters
-		uint16_t arg_i = 0;
-		while (op_arg_error == NUMBER_OK)
-		{
-			// load args
-			new_state->user_vars[arg_i++] = op_arg;
-			op_arg_error = parser_get_float(&op_arg);
-		}
-
-		//		parser_get_next_preprocessed(false);
-
-		// store operation in the stack
-		o_code_stack[index].code = ocode_id;
-		o_code_stack[index].op = O_CODE_OP_CALL;
-
-		// workaround to ftell
-		o_code_stack[index].pos = (o_code_file) ? (o_code_file->file_info.size - fs_available(o_code_file)) : 0;
-		o_code_open(index);
-
-		o_code_stack_index++;
-		error = STATUS_OK;
-		return error;
-	}
-
-	/**
-	 * If, elseif and else
-	 */
-	if (!STRCMP(o_cmd, "IF") || !STRCMP(o_cmd, "ELSEIF") || !STRCMP(o_cmd, "ELSE") || !STRCMP(o_cmd, "ENDIF"))
-	{
-		uint8_t type = strlen(o_cmd); // If=2 ElseIf=6 Else=4
-		error = STATUS_OK;
-		switch (type)
-		{
-		case 2:
-		case 6:
-			if (op_arg_error != NUMBER_OK)
-			{
-				error = STATUS_OCODE_ERROR_INVALID_OPERATION;
-				return error;
-			}
-			break;
-		}
-
-		if (!o_code_validate(O_CODE_OP_IF, ocode_id, (type == 2) ? true : false))
-		{
-			error = STATUS_OCODE_ERROR_INVALID_OPERATION;
-			return error;
-		}
-
-		index--;
-		switch (type)
-		{
-		case 2:
-			index = o_code_stack_index++;
-			o_code_stack[index].code = ocode_id;
-			o_code_stack[index].op = O_CODE_OP_IF;
-			break;
-		case 4:
-			op_arg = 1; // else is always 1
-			break;
-		}
-
-		switch (type)
-		{
-		case 5:
-			if (index)
-			{
-				o_code_stack[index].code = 0;
-				o_code_stack[index].op = 0;
-				o_code_stack_index--;
-				error = STATUS_OK;
-			}
-			else
-			{
-				error = STATUS_OCODE_ERROR_STACK_UNDERFLOW;
-			}
-			break;
-		default:
-			if ((o_code_stack[index].op == O_CODE_OP_IF) && op_arg) // condition met
-			{
-				o_code_stack[index].op = O_CODE_OP_IF_FOUND; // signals that the condition was met
-			}
-			else
-			{
-				if (o_code_stack[index].op == O_CODE_OP_IF_FOUND) // discard all remaining code
-				{
-					o_code_stack[index].op = O_CODE_OP_IF_DISCARD;
-				}
-				o_code_discard();
-			}
-			break;
-		}
-
-		error = STATUS_OK;
-		return error;
-	}
-
-	if (!STRCMP(o_cmd, "RETURN") || !STRCMP(o_cmd, "ENDSUB"))
-	{
-		for (uint8_t index = o_code_stack_index; index != 0;)
-		{
-			index--;
-			if (o_code_stack[index].op == O_CODE_OP_SUB)
-			{
-				bool found = (o_code_stack[index].code == ocode_id);
-				o_code_stack_index = index;
-				o_code_end_subrotine(new_state);
-				if (found)
-				{
-					error = STATUS_OK;
-					return error;
-				}
-				break;
-			}
-		}
-
-		error = STATUS_OCODE_ERROR_INVALID_OPERATION;
-		return error;
-	}
-
-	/**
-	 * continue and break
-	 */
-	if (!STRCMP(o_cmd, "CONTINUE") || !STRCMP(o_cmd, "BREAK"))
-	{
-		uint8_t type = strlen(o_cmd);
-		index = o_code_validate(O_CODE_OP_REPEAT, ocode_id, false);
-		// tries repeat
-		if (!index)
-		{
-			// if not repeat try while
-			index = o_code_validate(O_CODE_OP_WHILE, ocode_id, false);
-		}
-
-		// none of the above were found. send error
-		if (!index)
-		{
-			error = STATUS_OCODE_ERROR_INVALID_OPERATION;
-			return error;
-		}
-
-		// revert and clean stack
-		for (uint8_t i = o_code_stack_index; i != index;)
-		{
-			i--;
-			memset(&o_code_stack[i], 0, sizeof(o_code_stack_t));
-		}
-		o_code_stack_index = index--;
-		// if repeat
-		if (O_CODE_BASE_TYPE(o_code_stack[index].op) == O_CODE_OP_REPEAT)
-		{
-			o_code_stack[index].op = O_CODE_OP_REPEAT_DISCARD;
-			if (type == 5)
-			{
-				o_code_stack[index].loop = 0; // forces brake
-			}
-		}
-		else
-		{ // else is while
-			o_code_stack[index].op = (type == 5) ? O_CODE_OP_WHILE_BREAK : O_CODE_OP_WHILE_DISCARD;
-		}
-		// start command discard
-		o_code_discard();
-		error = STATUS_OK;
-		return error;
-	}
-
-	/**
-	 * do while and while
-	 */
-	if (!STRCMP(o_cmd, "DO") || !STRCMP(o_cmd, "WHILE") || !STRCMP(o_cmd, "ENDWHILE"))
-	{
-		uint8_t type = strlen(o_cmd);
-
-		index = o_code_validate(O_CODE_OP_WHILE, ocode_id, false);
-		if (index)
-		{
-			index--;
-		}
-
-		switch (type)
-		{
-		case 8:
-			if (!index)
-			{
-				error = STATUS_OCODE_ERROR_INVALID_OPERATION;
-				return error;
-			}
-
-			if (O_CODE_BASE_TYPE(o_code_stack[index].op) == O_CODE_OP_WHILE && ocode_id == o_code_stack[index].code)
-			{
-				switch (o_code_stack[index].op)
-				{
-				case O_CODE_OP_DO_WHILE:
-					error = STATUS_OCODE_ERROR_INVALID_NUMBER;
-					return error;
-				case O_CODE_OP_WHILE_DISCARD:
-					// clear the discard and continue
-					o_code_stack[index].op = O_CODE_OP_WHILE;
-					__FALL_THROUGH__
-				case O_CODE_OP_WHILE:
-					if (!o_code_seek(o_code_stack[index].loop))
-					{
-						error = STATUS_OCODE_ERROR_FILE_NOT_FOUND;
-						return error;
-					}
-					// re-eval the arg
-					op_arg_error = parser_get_float(&op_arg);
-					if (!op_arg)
-					{
-						// mark to exit loop
-						o_code_stack[index].op = O_CODE_OP_WHILE_BREAK;
-						o_code_discard();
-					}
-					error = STATUS_OK;
-					return error;
-				case O_CODE_OP_WHILE_BREAK:
-					o_code_stack[index].code = 0;
-					o_code_stack[index].op = 0;
-					o_code_stack[index].pos = 0;
-					o_code_stack[index].loop = 0;
-					o_code_stack_index--;
-					error = STATUS_OK;
-					return error;
-				default:
-					error = STATUS_OCODE_ERROR_INVALID_NUMBER;
-					return error;
-				}
-			}
-			{
-				error = STATUS_OCODE_ERROR_INVALID_NUMBER;
-				return error;
-			}
-
-			if (o_code_file && o_code_stack[index].op != O_CODE_OP_WHILE_DISCARD)
-			{
-				// save position
-				if (o_code_file)
-				{
-					loop_ret = o_code_file->file_info.size - fs_available(o_code_file); // backtrack 2 chars to catch the newline
-				}
-				// rewind
-				if (!o_code_seek(o_code_stack[index].loop))
-				{
-					error = STATUS_OCODE_ERROR_FILE_NOT_FOUND;
-					return error;
-				}
-				// re-eval the arg
-				op_arg_error = parser_get_float(&op_arg);
-				if (op_arg)
-				{
-					break;
-				}
-			}
-			// restore position and continue
-			if (!o_code_seek(loop_ret))
-			{
-				error = STATUS_OCODE_ERROR_FILE_NOT_FOUND;
-				return error;
-			}
-			o_code_stack[index].code = 0;
-			o_code_stack[index].op = 0;
-			o_code_stack[index].pos = 0;
-			o_code_stack[index].loop = 0;
-			o_code_stack_index--;
-			break;
-		case 5:
-			if (!index)
-			{
-				index = o_code_validate(O_CODE_OP_WHILE, ocode_id, true);
-				if (!index)
-				{
-					error = STATUS_OCODE_ERROR_INVALID_NUMBER;
-					return error;
-				}
-				// is a while loop
-				index = o_code_stack_index++;
-				o_code_stack[index].code = ocode_id;
-				o_code_stack[index].pos = loop_ret; // o_code_file->file_info.size - fs_available(o_code_file);
-				if (op_arg)
-				{
-					o_code_stack[index].op = O_CODE_OP_WHILE;
-				}
-				else
-				{
-					o_code_stack[index].op = O_CODE_OP_WHILE_BREAK;
-					o_code_discard();
-				}
-			}
-			else if (O_CODE_BASE_TYPE(o_code_stack[index].op) == O_CODE_OP_WHILE && ocode_id == o_code_stack[index].code)
-			{
-				// it's a do while
-				switch (o_code_stack[index].op)
-				{
-				case O_CODE_OP_WHILE_DISCARD:
-					// clear the discard and continue
-					o_code_stack[index].op = O_CODE_OP_DO_WHILE;
-					__FALL_THROUGH__
-				case O_CODE_OP_DO_WHILE:
-					if (op_arg)
-					{
-						// rewind
-						if (!o_code_seek(o_code_stack[index].pos))
-						{
-							error = STATUS_OCODE_ERROR_FILE_NOT_FOUND;
-							return error;
-						}
-						error = STATUS_OK;
-						return error;
-					}
-					__FALL_THROUGH__
-				case O_CODE_OP_WHILE_BREAK:
-					o_code_stack[index].code = 0;
-					o_code_stack[index].op = 0;
-					o_code_stack[index].pos = 0;
-					o_code_stack[index].loop = 0;
-					o_code_stack_index--;
-					error = STATUS_OK;
-					return error;
-				default:
-					error = STATUS_OCODE_ERROR_INVALID_NUMBER;
-					return error;
-				}
-			}
-			else
-			{
-				// it's an invalid condition
-				error = STATUS_OCODE_ERROR_INVALID_NUMBER;
-				return error;
-			}
-
-			o_code_stack[index].loop = loop_ret; // point to the loop condition eval expression
-			break;
-		case 2:
-			if (index)
-			{
-				error = STATUS_OCODE_ERROR_INVALID_NUMBER;
-				return error;
-			}
-			// is a do while loop
-			index = o_code_stack_index++;
-			o_code_stack[index].code = ocode_id;
-			o_code_stack[index].op = O_CODE_OP_DO_WHILE;
-			o_code_stack[index].pos = loop_ret; // point to the start of the loop
-			o_code_stack[index].loop = 0;
-			break;
-		}
-
-		error = STATUS_OK;
-		return error;
-	}
-	/**
-	 * repeat
-	 */
-	if (!STRCMP(o_cmd, "REPEAT") || !STRCMP(o_cmd, "ENDREPEAT"))
-	{
-		uint8_t type = strlen(o_cmd);
-
-		if (!o_code_validate(O_CODE_OP_REPEAT, ocode_id, (type == 9) ? false : true))
-		{
-			error = STATUS_OCODE_ERROR_INVALID_OPERATION;
-			return error;
-		}
-
-		index--;
-		switch (type)
-		{
-		case 6:
-			index = o_code_stack_index++;
-			o_code_stack[index].code = ocode_id;
-			o_code_stack[index].pos = o_code_file->file_info.size - fs_available(o_code_file) + 1; // doesn't care about the re-eval de arg
-			o_code_stack[index].loop = (int32_t)truncf(op_arg);
-			break;
-		}
-
-		if (o_code_stack[index].loop)
-		{
-			o_code_stack[index].loop--;
-			// clear possible discard
-			o_code_stack[index].op = O_CODE_OP_REPEAT;
-			// always jump to the loop start before eval
-			// this makes the algorithm simpler
-			if (!o_code_seek(o_code_stack[index].pos))
-			{
-				error = STATUS_OCODE_ERROR_FILE_NOT_FOUND;
-				return error;
-			}
-		}
-		else
-		{
-			o_code_stack[index].code = 0;
-			o_code_stack[index].op = 0;
-			o_code_stack[index].pos = 0;
-			o_code_stack[index].loop = 0;
-			o_code_stack_index--;
-		}
-
-		error = STATUS_OK;
-		return error;
-	}
-
-	return error;
-}
-#endif
-
-#ifdef ENABLE_NAMED_PARAMETERS
-float parser_get_named_parameter(int param, int offset, uint8_t pos)
-{
-	float result = -1;
-	switch (offset)
-	{
-	case 600:
-		switch (pos)
-		{
-		case 0:
-			str_atof(CNC_MAJOR_MINOR_VERSION, &result);
-			break;
-		case 1:
-			str_atof(CNC_PATCH_VERSION, &result);
-			break;
-#ifdef GCODE_PROCESS_LINE_NUMBERS
-		case 2:
-			break;
-#endif
-		}
-		break;
-	case 601:
-		switch (pos)
-		{
-		case 0:
-			return parser_state.groups.motion;
-		case 1:
-			return parser_state.groups.plane;
-		case 2:
-			return 400;
-		case 3:
-			return (parser_state.groups.distance_mode == G21);
-		case 4:
-			return (parser_state.groups.distance_mode == G20);
-		case 5:
-			return (parser_state.groups.distance_mode == G90);
-		case 6:
-			return (parser_state.groups.distance_mode == G91);
-		case 7:
-			return (parser_state.groups.feedrate_mode == G93);
-		case 8:
-			return (parser_state.groups.feedrate_mode == G94);
-		case 9:
-			return 0;
-		}
-		break;
-	case 602:
-		switch (pos)
-		{
-		case 0:
-			offset = (54 + parser_state.groups.coord_system) * 10;
-			switch (offset)
-			{
-			case 600:
-				return 591;
-			case 610:
-				return 592;
-			case 620:
-				return 593;
-			default:
-				result = offset;
-			}
-			break;
-		case 1:
-			return (parser_state.groups.tlo_mode == G43);
-		}
-		break;
-	}
-
-	return result;
-}
-#endif
 #endif
