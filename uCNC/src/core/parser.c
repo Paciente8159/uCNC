@@ -431,18 +431,21 @@ static uint8_t parser_grbl_command(void)
 			}
 			return GRBL_SEND_SYSTEM_SETTINGS;
 		case '#':
-#ifdef ENABLE_RS274NGC_EXPRESSIONS
-			if (grbl_stream_peek() == '=')
+			c = grbl_stream_peek();
+			switch (c)
 			{
+			case EOL:
 				grbl_stream_getc();
-				return GRBL_PRINT_PARAM;
-			}
+				return GRBL_SEND_COORD_SYSTEM;
+#ifdef ENABLE_RS274NGC_EXPRESSIONS
+			default:
+				if (c == '<' || (c >= '0' && c <= '9'))
+				{
+					return GRBL_PRINT_PARAM;
+				}
 #endif
-			if (grbl_stream_getc() != EOL)
-			{
-				return STATUS_INVALID_STATEMENT;
 			}
-			return GRBL_SEND_COORD_SYSTEM;
+			return STATUS_INVALID_STATEMENT;
 		case EOL:
 			return GRBL_HELP;
 		default:
@@ -541,6 +544,7 @@ static uint8_t parser_grbl_command(void)
 
 					if (error != STATUS_OK)
 					{
+						parser_discard_command();
 						// the Gcode is not valid then erase the startup block
 						settings_erase(block_address, NULL, 1);
 					}
@@ -645,8 +649,10 @@ static uint8_t parser_grbl_command(void)
 
 static uint8_t parser_grbl_exec_code(uint8_t code)
 {
+#ifdef ENABLE_RS274NGC_EXPRESSIONS
 	uint16_t param;
 	float value;
+#endif
 	switch (code)
 	{
 	case GRBL_SEND_SYSTEM_SETTINGS:
@@ -725,7 +731,8 @@ static uint8_t parser_grbl_exec_code(uint8_t code)
 			param = value;
 			value = parser_get_parameter(param);
 		}
-		else{
+		else
+		{
 			return STATUS_INVALID_STATEMENT;
 		}
 
@@ -797,7 +804,6 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 
 		if (error)
 		{
-			parser_discard_command();
 			return error;
 		}
 		uint8_t code = (uint8_t)truncf(value);
@@ -834,7 +840,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 		case '#':
 			if ((value < 1) || (value > RS274NGC_MAX_USER_VARS) || ((int)floorf(value) != value))
 			{
-				return STATUS_GCODE_COMMAND_VALUE_NOT_INTEGER;
+				return STATUS_GCODE_MAX_VALUE_EXCEEDED;
 			}
 			if (!parser_get_float(&assign_val))
 			{
@@ -848,7 +854,6 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 			error = parser_ocode_word((uint16_t)truncf(value), new_state, cmd);
 			if (error != STATUS_OK)
 			{
-				parser_discard_command();
 				// an error on a subrotine will cause the top subrotine to close and the stack to collapse
 				while (o_code_end_subrotine(new_state))
 					;
@@ -909,7 +914,6 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 #endif
 		if (error)
 		{
-			parser_discard_command();
 			return error;
 		}
 
@@ -2011,6 +2015,7 @@ static uint8_t parser_gcode_command(bool is_jogging)
 	result = parser_fetch_command(&next_state, &words, &cmd);
 	if (result != STATUS_OK)
 	{
+		parser_discard_command();
 		return result;
 	}
 

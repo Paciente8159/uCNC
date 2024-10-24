@@ -289,7 +289,7 @@ extern "C"
 	 * processes comment as defined in the RS274NGC
 	 * */
 
-#define PROCESS_COMMENTS
+// #define PROCESS_COMMENTS
 
 	/**
 	 * Enables RS274NGC canned cycles
@@ -306,7 +306,7 @@ extern "C"
 	/**
 	 * Enables RS274NGC expression parsing
 	 * **/
-#define ENABLE_RS274NGC_EXPRESSIONS
+// #define ENABLE_RS274NGC_EXPRESSIONS
 #ifdef ENABLE_RS274NGC_EXPRESSIONS
 	// Uncomment to enable named parameters
 #define ENABLE_NAMED_PARAMETERS

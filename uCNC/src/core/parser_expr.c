@@ -409,7 +409,7 @@ float parser_exec_op(parser_stack_t stack, float rhs)
 
 static FORCEINLINE uint8_t parser_get_operation(uint8_t stack_depth, parser_stack_t *stack)
 {
-	bool can_call_unary_func = (stack_depth<=1) ? true : (stack[stack_depth - 1].op <= OP_NEG || stack[stack_depth - 1].op == OP_EXPR_START);
+	bool can_call_unary_func = (stack_depth <= 1) ? true : (stack[stack_depth - 1].op <= OP_NEG || stack[stack_depth - 1].op == OP_EXPR_START);
 	char c = (char)parser_get_next_preprocessed(true);
 	c = TOUPPER(c);
 	uint8_t result = OP_INVALID;
@@ -679,6 +679,11 @@ uint8_t parser_get_float(float *value)
 			stack_depth++;
 			break;
 		case OP_INVALID:
+			if (stack_depth <= 1)
+			{
+				return NUMBER_UNDEF;
+			}
+			__FALL_THROUGH__
 		case OP_ENDLINE:
 		case OP_WORD:
 		case OP_EXPR_END:
