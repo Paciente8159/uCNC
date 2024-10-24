@@ -308,6 +308,8 @@ extern "C"
 	 * **/
 // #define ENABLE_RS274NGC_EXPRESSIONS
 #ifdef ENABLE_RS274NGC_EXPRESSIONS
+	// Uncomment to enable named parameters
+#define ENABLE_NAMED_PARAMETERS
 // Uncomment to enable O codes
 #define ENABLE_O_CODES
 /**

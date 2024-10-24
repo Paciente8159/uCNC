@@ -77,6 +77,9 @@ extern "C"
 #ifndef rom_read_byte
 #define rom_read_byte *
 #endif
+#ifndef rom_strcmp
+#define rom_strcmp strcmp
+#endif
 
 	// the extern is not necessary
 	// this explicit declaration just serves to reeinforce the idea that these callbacks are implemented on other µCNC core code translation units

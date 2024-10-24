@@ -29,7 +29,6 @@
 #include "modules/softuart.h"
 #include "modules/system_languages.h"
 #include "modules/system_menu.h"
-#include "modules/file_system.h"
 
 uint8_t g_module_lockguard;
 /**

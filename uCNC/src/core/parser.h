@@ -190,16 +190,25 @@ extern "C"
 
 #ifdef ENABLE_RS274NGC_EXPRESSIONS
 #ifndef RS274NGC_MAX_USER_VARS
-#define RS274NGC_MAX_USER_VARS 16
+#define RS274NGC_MAX_USER_VARS 30
 #endif
 #ifndef MAX_PARSER_STACK_DEPTH
 #define MAX_PARSER_STACK_DEPTH 16
+#endif
+#ifndef RS274NGC_MAX_PARAMS_SET_PER_LINE
+#define RS274NGC_MAX_PARAMS_SET_PER_LINE 10
 #endif
 	typedef struct parser_stack_
 	{
 		float lhs;
 		uint8_t op;
 	} parser_stack_t;
+
+	typedef struct parser_param_modif_
+	{
+		uint16_t id;
+		float value;
+	} parser_param_modif_t;
 #endif
 
 	// 34bytes in total
@@ -296,7 +305,9 @@ extern "C"
 		uint32_t line;
 #endif
 #ifdef ENABLE_RS274NGC_EXPRESSIONS
-		float user_vars[RS274NGC_MAX_USER_VARS];
+		float user_vars[MIN(RS274NGC_MAX_USER_VARS, 30)];
+		uint8_t modified_params_count;
+		parser_param_modif_t modified_params[RS274NGC_MAX_PARAMS_SET_PER_LINE];
 #endif
 	} parser_state_t;
 
@@ -318,6 +329,17 @@ extern "C"
 	uint8_t parser_get_float(float *value);
 	void parser_discard_command(void);
 	unsigned char parser_get_next_preprocessed(bool peek);
+#ifdef ENABLE_RS274NGC_EXPRESSIONS
+	float parser_get_parameter(uint16_t param);
+	float parser_set_parameter(uint16_t param, float value);
+#ifdef ENABLE_O_CODES
+	uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parser_cmd_explicit_t *cmd);
+	bool o_code_end_subrotine(parser_state_t *new_state);
+#endif
+#ifdef ENABLE_NAMED_PARAMETERS
+	uint8_t parser_get_namedparam_id(float *value);
+#endif
+#endif
 
 #ifdef ENABLE_PARSER_MODULES
 	// generates a default delegate, event and handler hook

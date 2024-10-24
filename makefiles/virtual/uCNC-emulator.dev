@@ -29,7 +29,7 @@ IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=1
 CompilerSettings=000000e0g0000000001000000
-UnitCount=93
+UnitCount=94
 
 [VersionInfo]
 Major=1
@@ -1031,7 +1031,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit94]
-FileName=..\..\uCNC\src\modules\o_codes\o_codes.c
+FileName=..\..\uCNC\src\core\parser_expr.c
 CompileCpp=1
 Folder=
 Compile=1
