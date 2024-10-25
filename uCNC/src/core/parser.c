@@ -68,7 +68,7 @@ static void parser_coordinate_system_load(uint8_t param, float *target);
 
 #ifdef ENABLE_RS274NGC_EXPRESSIONS
 extern char parser_backtrack;
-extern bool o_code_end_subrotine(parser_state_t *new_state);
+extern bool o_code_end_subrotine(void);
 extern bool o_code_returned;
 extern float o_code_return_value;
 extern uint8_t o_code_stack_index;
@@ -847,7 +847,13 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 				return STATUS_BAD_NUMBER_FORMAT;
 			}
 			DBGMSG("Assign #%lu=%f", (uint32_t)value, assign_val);
-			new_state->user_vars[(int)value - 1] = assign_val;
+			if (new_state->modified_params_count >= RS274NGC_MAX_PARAMS_SET_PER_LINE)
+			{
+				return STATUS_MAXIMUM_PARAMS_PER_BLOCK_EXCEEDED;
+			}
+			new_state->modified_params[new_state->modified_params_count].id = (uint16_t)value;
+			new_state->modified_params[new_state->modified_params_count].value = assign_val;
+			new_state->modified_params_count++;
 			break;
 #ifdef ENABLE_O_CODES
 		case 'O':
@@ -855,13 +861,13 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 			if (error != STATUS_OK)
 			{
 				// an error on a subrotine will cause the top subrotine to close and the stack to collapse
-				while (o_code_end_subrotine(new_state))
+				while (o_code_end_subrotine())
 					;
 				return error;
 			}
 			break;
 		case FILE_EOF:
-			if (o_code_end_subrotine(new_state))
+			if (o_code_end_subrotine())
 			{
 				break;
 			}
@@ -2007,6 +2013,7 @@ static uint8_t parser_gcode_command(bool is_jogging)
 	next_state.groups.nonmodal = 0; // reset nonmodal
 
 #ifdef ENABLE_RS274NGC_EXPRESSIONS
+	// reset modified params
 	next_state.modified_params_count = 0;
 	memset(next_state.modified_params, 0, sizeof(next_state.modified_params));
 #endif
@@ -2045,6 +2052,13 @@ static uint8_t parser_gcode_command(bool is_jogging)
 	// if is jog motion state is not preserved
 	if (!is_jogging)
 	{
+#ifdef ENABLE_RS274NGC_EXPRESSIONS
+		// stores the new parameters
+		for (uint8_t i = 0; i < next_state.modified_params_count; i++)
+		{
+			parser_set_parameter(next_state.modified_params[i].id, next_state.modified_params[i].value);
+		}
+#endif
 		// if everything went ok updates the parser modal groups and position
 		memcpy(&parser_state, &next_state, sizeof(parser_state_t));
 	}
@@ -3207,8 +3221,10 @@ uint8_t parser_exec_command_block(parser_state_t *new_state, parser_words_t *wor
  */
 #ifdef ENABLE_RS274NGC_EXPRESSIONS
 
+float g_parser_num_params[RS274NGC_MAX_USER_VARS];
+
 #ifdef ENABLE_NAMED_PARAMETERS
-float parser_get_named_parameter(int param, int offset, uint8_t pos)
+static float parser_get_named_parameter(int param, int offset, uint8_t pos)
 {
 	float result = -1;
 	switch (offset)
@@ -3367,7 +3383,7 @@ float parser_get_parameter(uint16_t param)
 
 	if (param > 0 && param <= RS274NGC_MAX_USER_VARS)
 	{
-		return parser_state.user_vars[param - 1];
+		return g_parser_num_params[param - 1];
 	}
 
 	switch (offset)
@@ -3463,11 +3479,11 @@ float parser_get_parameter(uint16_t param)
 	return 0;
 }
 
-float parser_set_parameter(uint16_t param, float value)
+void parser_set_parameter(uint16_t param, float value)
 {
 	if (param > 0 && param <= RS274NGC_MAX_USER_VARS)
 	{
-		return parser_state.user_vars[param - 1] = value;
+		g_parser_num_params[param - 1] = value;
 	}
 }
 

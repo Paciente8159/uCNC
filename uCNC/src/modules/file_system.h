@@ -81,7 +81,7 @@ extern "C"
 	bool fs_next_file(fs_file_t *fp, fs_file_info_t *finfo);
 	bool fs_finfo(const char *path, fs_file_info_t *finfo);
 
-	static void fs_safe_free(void* fp){
+	static __attribute__((unused)) void fs_safe_free(void* fp){
 		if(fp){
 			free(fp);
 			fp = NULL;

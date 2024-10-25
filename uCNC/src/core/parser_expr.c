@@ -35,6 +35,7 @@
  */
 #ifdef ENABLE_RS274NGC_EXPRESSIONS
 char parser_backtrack;
+extern float g_parser_num_params[RS274NGC_MAX_USER_VARS];
 #define STRLEN(s) (sizeof(s) / sizeof(s[0]))
 #define STRCMP(sram, srom) rom_strcmp(sram, __romstr__(srom))
 #ifdef ENABLE_NAMED_PARAMETERS
@@ -160,14 +161,16 @@ static const named_param_t named_params[] __rom__ = {
 		NAMED_PARAM(_task, 6110),
 		NAMED_PARAM(_call_level, 6111),
 		NAMED_PARAM(_remap_level, 6112)};
-
-static float parser_get_named_parameter(int param, int offset, uint8_t pos);
 #endif
 #ifdef ENABLE_O_CODES
 #include "../modules/file_system.h"
-#ifndef OCODE_STACK_DEPTH
-#define OCODE_STACK_DEPTH MAX_PARSER_STACK_DEPTH
+#ifndef OCODE_PARSER_STACK_DEPTH
+#define OCODE_PARSER_STACK_DEPTH MAX_PARSER_STACK_DEPTH
 #endif
+#ifndef OCODE_CONTEXT_STACK_DEPTH
+#define OCODE_CONTEXT_STACK_DEPTH 10
+#endif
+#define OCODE_CONTEXT_SIZE (sizeof(float) * MIN(RS274NGC_MAX_USER_VARS, 30))
 #ifndef OCODE_DRIVE
 #define OCODE_DRIVE 'C'
 #endif
@@ -210,11 +213,13 @@ typedef struct o_code_stack_
 	uint8_t op;
 	uint32_t pos;
 	int32_t loop;
-	float user_vars[MIN(RS274NGC_MAX_USER_VARS, 30)];
+	uint8_t context_index;
 } o_code_stack_t;
 
-static o_code_stack_t o_code_stack[OCODE_STACK_DEPTH];
+static o_code_stack_t o_code_stack[OCODE_PARSER_STACK_DEPTH];
 uint8_t o_code_stack_index;
+uint8_t o_code_stack_context_index;
+float o_code_stack_context_vars[OCODE_CONTEXT_STACK_DEPTH][MIN(RS274NGC_MAX_USER_VARS, 30)];
 #define O_CODE_FILE_CLOSE 1
 #define O_CODE_FILE_CLOSE_ALL 2
 #endif
@@ -837,6 +842,19 @@ static void o_code_open(uint8_t index)
 	}
 }
 
+static uint8_t o_code_entry_point(uint8_t index)
+{
+	// find previous sub entry point
+	while (o_code_stack[index].op != O_CODE_OP_SUB && index)
+	{
+		o_code_stack[index].code = 0;
+		o_code_stack[index].op = 0;
+		index--;
+	}
+
+	return index;
+}
+
 static uint8_t o_code_close(uint8_t index)
 {
 	// close file
@@ -848,41 +866,31 @@ static uint8_t o_code_close(uint8_t index)
 			o_code_file = NULL;
 		}
 
-		// find previous sub entry point
-		while (o_code_stack[index].op != O_CODE_OP_SUB && index)
-		{
-			o_code_stack[index].code = 0;
-			o_code_stack[index].op = 0;
-			index--;
-		}
-
-		// restore file pointer and mark entry for (re)call
-		o_code_file_pos = o_code_stack[index].pos;
-		o_code_stack[index].op = O_CODE_OP_CALL;
-		o_code_stack_index = index;
+		index = o_code_entry_point(index);
 	}
 
 	return index;
 }
 
-bool o_code_end_subrotine(parser_state_t *new_state)
+bool o_code_end_subrotine(void)
 {
 	uint8_t index = o_code_stack_index;
 	if (index)
 	{
 		index = o_code_close(index);
 		// restore user vars
-		memcpy(new_state->user_vars, o_code_stack[index].user_vars, sizeof(o_code_stack[index].user_vars));
+		memcpy(g_parser_num_params, o_code_stack_context_vars[o_code_stack[index].context_index], OCODE_CONTEXT_SIZE);
+		o_code_stack_context_index = o_code_stack[index].context_index;
+
+		// restore file pointer and mark entry for (re)call
+		o_code_file_pos = o_code_stack[index].pos;
+		memset(&o_code_stack[index], 0, sizeof(o_code_stack_t));
 	}
 
 	if (index)
 	{
-		index--;
 		// find previous sub entry point
-		while (o_code_stack[index].op != O_CODE_OP_SUB && index)
-		{
-			index--;
-		}
+		index = o_code_entry_point(index);
 		// top sub not exited yet
 		o_code_open(index);
 
@@ -897,6 +905,7 @@ bool o_code_end_subrotine(parser_state_t *new_state)
 	}
 	memset(o_code_stack, 0, sizeof(o_code_stack));
 	o_code_stack_index = 0;
+	o_code_stack_context_index = 0;
 	// grbl_stream_change(NULL);
 	grbl_stream_readonly(o_code_file_flush, NULL, NULL);
 	return false;
@@ -964,7 +973,7 @@ static void FORCEINLINE o_code_word_error(uint8_t *error)
 		{
 			for (uint16_t i = 0; i < RS274NGC_MAX_USER_VARS; i++)
 			{
-				parser_set_parameter(i + 1, o_code_stack[0].user_vars[i]);
+				parser_set_parameter(i + 1, o_code_stack_context_vars[0][i]);
 			}
 		}
 		memset(o_code_stack, 0, sizeof(o_code_stack));
@@ -1021,7 +1030,8 @@ uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parser_cmd_e
 	if (!STRCMP(o_cmd, "CALL"))
 	{
 		// store user vars
-		memcpy(o_code_stack[index].user_vars, new_state->user_vars, sizeof(o_code_stack[index].user_vars));
+		uint8_t i_context = o_code_stack_context_index++;
+		memcpy(&o_code_stack_context_vars[i_context], g_parser_num_params, OCODE_CONTEXT_SIZE);
 
 		// check if file exists
 		char o_subrotine[32];
@@ -1040,7 +1050,7 @@ uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parser_cmd_e
 		while (op_arg_error == NUMBER_OK)
 		{
 			// load args
-			new_state->user_vars[arg_i++] = op_arg;
+			g_parser_num_params[arg_i++] = op_arg;
 			op_arg_error = parser_get_float(&op_arg);
 		}
 
@@ -1049,6 +1059,7 @@ uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parser_cmd_e
 		// store operation in the stack
 		o_code_stack[index].code = ocode_id;
 		o_code_stack[index].op = O_CODE_OP_CALL;
+		o_code_stack[index].context_index = i_context;
 
 		// workaround to ftell
 		o_code_stack[index].pos = (o_code_file) ? (o_code_file->file_info.size - fs_available(o_code_file)) : 0;
@@ -1141,7 +1152,7 @@ uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parser_cmd_e
 			{
 				bool found = (o_code_stack[index].code == ocode_id);
 				o_code_stack_index = index;
-				o_code_end_subrotine(new_state);
+				o_code_end_subrotine();
 				if (found)
 				{
 					error = STATUS_OK;
