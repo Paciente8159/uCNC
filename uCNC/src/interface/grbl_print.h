@@ -53,7 +53,11 @@ extern "C"
 // string helper functions
 #define str_sprintf(buffer, fmt, ...) prt_fmt(buffer, PRINT_MAX, fmt, __VA_ARGS__)
 #define str_snprintf(buffer, n, fmt, ...) prt_fmt(buffer, n, fmt, __VA_ARGS__)
-#define str_atof(buffer, var) prt_atof(NULL, buffer, PRINT_MAX, var)
+#define str_atof(buffer, var)     \
+	{                               \
+		char *buf_ptr = buffer; \
+		prt_atof(NULL, (const char **)&buf_ptr, var); \
+	}
 
 #ifdef __cplusplus
 }
