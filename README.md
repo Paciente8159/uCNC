@@ -65,7 +65,7 @@ Version 1.11 added the following new major features.
 - self implemented subset/custom of stdio printf helpers. It's now possible to print formated messages via protocol. No need to do specific calls to print variables like numbers, strings, char, ip addresse, bytes, etc...
 - improvements to the debug message system. Now a single call to DBGMSG macro is used. The same principle of formated messages is applied.
 - Debug messages now have an intermediate buffer that stores the output before printing it to prevent outputing debug messages in the middle of onging protocol messages
-- Parsing support for O-Codes (subrotines). These O-Codes can be executed from .nc files in the root dir of a pre-configured file system (either C for MCU flash or D for SD cards)
+- Parsing support for [O-Codes](https://linuxcnc.org/docs/html/gcode/o-code.html) (subrotines). These O-Codes can be executed from .nc files in the root dir of a pre-configured file system (either C for MCU flash or D for SD cards)
 
 Version 1.10 added the following new major features.
 - added support SPI bulk transfers. This improves SPI transmission speeds while keeping the whole firmware responsive, opening the door for new modules and upgrades to µCNC using SPI driven hardware like TFT displays.
