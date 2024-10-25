@@ -60,6 +60,10 @@ G0X10
 O100 RETURN
 G0X10
 
+O101 ELSEIF [#1 EQ 11]
+#3=100 (local volatible)
+#31=100 (global volatile)
+
 O101 ELSE
 (msg, do O call)
 O110 CALL [#1]
