@@ -1325,7 +1325,7 @@ extern "C"
  *
  * **/
 
-#ifdef MCU_HAS_SPI
+#if defined(MCU_HAS_SPI) && defined(USE_ARDUINO_SPI_LIBRARY)
 #include <SPI.h>
 extern "C"
 {
@@ -1363,7 +1363,7 @@ extern "C"
 
 #endif
 
-#ifdef MCU_HAS_SPI2
+#if defined(MCU_HAS_SPI2) && defined(USE_ARDUINO_SPI_LIBRARY)
 #include <SPI.h>
 extern "C"
 {
