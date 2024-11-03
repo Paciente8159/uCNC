@@ -16,7 +16,6 @@
 	See the	GNU General Public License for more details.
 */
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
@@ -27,10 +26,6 @@
 #define LOOP_RUNNING 2
 #define LOOP_FAULT 3
 #define LOOP_REQUIRE_RESET 4
-
-#define UNLOCK_OK 0
-#define UNLOCK_LOCKED 1
-#define UNLOCK_ERROR 2
 
 #define RTCMD_NORMAL_MASK (RT_CMD_FEED_100 | RT_CMD_FEED_INC_COARSE | RT_CMD_FEED_DEC_COARSE | RT_CMD_FEED_INC_FINE | RT_CMD_FEED_DEC_FINE)
 #define RTCMD_RAPID_MASK (RT_CMD_RAPIDFEED_100 | RT_CMD_RAPIDFEED_OVR1 | RT_CMD_RAPIDFEED_OVR2)
@@ -115,7 +110,7 @@ void cnc_init(void)
 	mcu_io_reset();																			// add custom logic to set pins initial state
 	io_enable_steppers(~g_settings.step_enable_invert); // disables steppers at start
 	io_disable_probe();																	// forces probe isr disabling
-	serial_init();																			// serial
+	grbl_stream_init();																	// serial
 	mod_init();																					// modules
 	settings_init();																		// settings
 	itp_init();																					// interpolator
@@ -145,7 +140,7 @@ void cnc_run(void)
 		int8_t alarm = cnc_state.alarm;
 		if (alarm > EXEC_ALARM_NOALARM)
 		{
-			protocol_send_alarm(cnc_state.alarm);
+			proto_alarm(cnc_state.alarm);
 		}
 		if (alarm < EXEC_ALARM_PROBE_FAIL_INITIAL && alarm != EXEC_ALARM_NOALARM)
 		{
@@ -158,12 +153,12 @@ void cnc_run(void)
 
 	do
 	{
-		if (serial_available())
+		if (grbl_stream_available())
 		{
-			if (serial_getc() == EOL)
+			if (grbl_stream_getc() == EOL)
 			{
-				protocol_send_feedback(MSG_FEEDBACK_1);
-				protocol_send_ok();
+				proto_feedback(MSG_FEEDBACK_1);
+				proto_error(0);
 			}
 		}
 		cnc_dotasks();
@@ -180,20 +175,20 @@ uint8_t cnc_parse_cmd(void)
 #ifdef ENABLE_PARSING_TIME_DEBUG
 	uint32_t exec_time;
 #endif
-	uint8_t error = 0;
+	uint8_t error = STATUS_OK;
 	// process gcode commands
-	if (serial_available())
+	if (grbl_stream_available())
 	{
 		// protocol_echo();
-		uint8_t c = serial_peek();
+		uint8_t c = grbl_stream_peek();
 		switch (c)
 		{
 		case OVF:
-			serial_clear();
+			grbl_stream_clear();
 			error = STATUS_OVERFLOW;
 			break;
 		case EOL: // not necessary but faster to catch empty lines and windows newline (CR+LF)
-			serial_getc();
+			grbl_stream_getc();
 			break;
 		default:
 #ifdef ENABLE_PARSING_TIME_DEBUG
@@ -205,20 +200,16 @@ uint8_t cnc_parse_cmd(void)
 			error = parser_read_command();
 #ifdef ENABLE_PARSING_TIME_DEBUG
 			exec_time = mcu_millis() - exec_time;
-			protocol_send_string(MSG_START);
-			protocol_send_string(__romstr__("exec time "));
-			serial_print_int(exec_time);
-			protocol_send_string(MSG_END);
+			proto_info("Exec time: %lu", exec_time);
 #endif
 			break;
 		}
-		if (!error)
+		// runs any rt command in queue
+		// this catches for example a ?\n situation sent by some GUI like UGS
+		cnc_exec_rt_commands();
+		proto_error(error);
+		if (error)
 		{
-			protocol_send_ok();
-		}
-		else
-		{
-			protocol_send_error(error);
 			itp_sync();
 			mc_sync_position();
 			parser_sync_position();
@@ -434,12 +425,7 @@ void cnc_alarm(int8_t code)
 		}
 #endif
 #ifdef ENABLE_IO_ALARM_DEBUG
-		protocol_send_string(MSG_START);
-		protocol_send_string(__romstr__("LIMITS:"));
-		serial_print_int(io_alarm_limits);
-		protocol_send_string(__romstr__("|CONTROLS:"));
-		serial_print_int(io_alarm_controls);
-		protocol_send_string(MSG_END);
+		proto_info("LIMITS:%hd|CONTROLS:%hd", io_alarm_limits, io_alarm_controls);
 #endif
 	}
 }
@@ -477,8 +463,17 @@ uint8_t cnc_unlock(bool force)
 	// forces to clear EXEC_UNHOMED error to allow motion after limit switch trigger
 	if (force)
 	{
-		CLEARFLAG(cnc_state.exec_state, EXEC_UNHOMED);
-		cnc_state.alarm = EXEC_ALARM_NOALARM;
+
+#ifndef DISABLE_SAFE_SETTINGS
+		// on settins error prevent unlock until settings error is cleared
+		if (!(g_settings_error & SETTINGS_READ_ERROR))
+		{
+#endif
+			CLEARFLAG(cnc_state.exec_state, EXEC_UNHOMED);
+			cnc_state.alarm = EXEC_ALARM_NOALARM;
+#ifndef DISABLE_SAFE_SETTINGS
+		}
+#endif
 	}
 
 	// if any alarm state is still active checks system faults
@@ -486,7 +481,14 @@ uint8_t cnc_unlock(bool force)
 	{
 		if (!cnc_get_exec_state(EXEC_KILL))
 		{
-			protocol_send_feedback(MSG_FEEDBACK_2);
+#ifndef DISABLE_SAFE_SETTINGS
+			// on settins error prevent unlock until settings error is cleared
+			if ((g_settings_error & SETTINGS_READ_ERROR))
+			{
+				proto_feedback(MSG_FEEDBACK_16);
+			}
+#endif
+			proto_feedback(MSG_FEEDBACK_2);
 			return UNLOCK_LOCKED;
 		}
 		else
@@ -561,6 +563,14 @@ void cnc_clear_exec_state(uint8_t statemask)
 	{
 		CLEARFLAG(statemask, EXEC_UNHOMED);
 	}
+
+#ifndef DISABLE_SAFE_SETTINGS
+	// on settins error prevent unlock
+	if (g_settings_error & SETTINGS_READ_ERROR)
+	{
+		CLEARFLAG(statemask, EXEC_UNHOMED);
+	}
+#endif
 
 	uint8_t limits = 0;
 #if (LIMITS_MASK != 0)
@@ -638,7 +648,7 @@ void cnc_reset(void)
 	cnc_state.alarm = EXEC_ALARM_NOALARM;
 
 	// clear all systems
-	serial_clear();
+	grbl_stream_clear();
 	itp_clear();
 	planner_clear();
 	kinematics_init();
@@ -651,8 +661,8 @@ void cnc_reset(void)
 #ifdef ENABLE_MAIN_LOOP_MODULES
 	EVENT_INVOKE(cnc_reset, NULL);
 #endif
-	serial_broadcast(true);
-	protocol_send_string(MSG_STARTUP);
+	grbl_stream_start_broadcast();
+	proto_print(MSG_STARTUP);
 }
 
 void cnc_call_rt_command(uint8_t command)
@@ -770,12 +780,12 @@ void cnc_exec_rt_commands(void)
 
 		if (CHECKFLAG(command, RT_CMD_JOG_CANCEL))
 		{
-			while (serial_available())
+			while (grbl_stream_available())
 			{
-				char c = serial_getc();
+				char c = grbl_stream_getc();
 				if (c == EOL)
 				{
-					protocol_send_error(STATUS_JOG_CANCELED);
+					proto_error(STATUS_JOG_CANCELED);
 				}
 			}
 			return;
@@ -788,7 +798,7 @@ void cnc_exec_rt_commands(void)
 
 		if (CHECKFLAG(command, RT_CMD_REPORT))
 		{
-			protocol_send_status();
+			proto_status();
 		}
 	}
 
@@ -914,13 +924,13 @@ void cnc_check_fault_systems(void)
 #if ASSERT_PIN(ESTOP)
 	if (CHECKFLAG(inputs, ESTOP_MASK)) // fault on emergency stop
 	{
-		protocol_send_feedback(MSG_FEEDBACK_12);
+		proto_feedback(MSG_FEEDBACK_12);
 	}
 #endif
 #if ASSERT_PIN(SAFETY_DOOR)
 	if (CHECKFLAG(inputs, SAFETY_DOOR_MASK)) // fault on safety door
 	{
-		protocol_send_feedback(MSG_FEEDBACK_6);
+		proto_feedback(MSG_FEEDBACK_6);
 	}
 #endif
 #if (LIMITS_MASK != 0)
@@ -929,7 +939,7 @@ void cnc_check_fault_systems(void)
 		inputs = io_get_limits();
 		if (CHECKFLAG(inputs, LIMITS_MASK))
 		{
-			protocol_send_feedback(MSG_FEEDBACK_7);
+			proto_feedback(MSG_FEEDBACK_7);
 		}
 	}
 #endif
@@ -942,7 +952,7 @@ void cnc_check_fault_systems(void)
 		case EXEC_ALARM_NOALARM:
 			break;
 		default:
-			protocol_send_feedback(MSG_FEEDBACK_1);
+			proto_feedback(MSG_FEEDBACK_1);
 			break;
 		}
 	}
@@ -1064,22 +1074,41 @@ static void cnc_io_dotasks(void)
 #ifdef ENABLE_MAIN_LOOP_MODULES
 	EVENT_INVOKE(cnc_io_dotasks, NULL);
 #endif
+
+#ifdef ENABLE_STEPPERS_DISABLE_TIMEOUT
+	static uint32_t stepper_timeout = 0;
+
+	if (g_settings.step_disable_timeout)
+	{
+		// is idle check the timeout
+		if (cnc_get_exec_state(EXEC_RUN | EXEC_HOLD) == EXEC_IDLE)
+		{
+			if (stepper_timeout < mcu_millis())
+			{
+				io_enable_steppers(~g_settings.step_enable_invert); // disables steppers after idle timeout
+				stepper_timeout = UINT32_MAX;
+			}
+		}
+		else
+		{
+			stepper_timeout = mcu_millis() + g_settings.step_disable_timeout;
+		}
+	}
+#endif
 }
 
 void cnc_run_startup_blocks(void)
 {
-	if (settings_check_startup_gcode(STARTUP_BLOCK0_ADDRESS_OFFSET))
+	for (uint8_t i = 0; i < STARTUP_BLOCKS_COUNT; i++)
 	{
-		serial_stream_eeprom(STARTUP_BLOCK0_ADDRESS_OFFSET);
-		cnc_parse_cmd();
-	}
-
-	if (settings_check_startup_gcode(STARTUP_BLOCK1_ADDRESS_OFFSET))
-	{
-		serial_stream_eeprom(STARTUP_BLOCK1_ADDRESS_OFFSET);
-		cnc_parse_cmd();
+		uint16_t address = STARTUP_BLOCK_ADDRESS_OFFSET(i);
+		if (settings_check_startup_gcode(address))
+		{
+			grbl_stream_eeprom(address);
+			cnc_parse_cmd();
+		}
 	}
 
 	// reset streams
-	serial_stream_change(NULL);
+	grbl_stream_change(NULL);
 }

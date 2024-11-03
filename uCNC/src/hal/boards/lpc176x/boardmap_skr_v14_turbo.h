@@ -24,6 +24,10 @@ extern "C"
 {
 #endif
 
+#ifndef MCU
+#define MCU MCU_LPC176X
+#endif
+
 #ifndef BOARD_NAME
 #define BOARD_NAME "SKR v1.4 Turbo"
 #endif

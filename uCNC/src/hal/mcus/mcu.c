@@ -271,6 +271,60 @@ void __attribute__((weak)) mcu_io_init(void)
 #if ASSERT_PIN_IO(DOUT31)
 	mcu_config_output(DOUT31);
 #endif
+#if ASSERT_PIN_IO(DOUT32)
+	mcu_config_output(DOUT32);
+#endif
+#if ASSERT_PIN_IO(DOUT33)
+	mcu_config_output(DOUT33);
+#endif
+#if ASSERT_PIN_IO(DOUT34)
+	mcu_config_output(DOUT34);
+#endif
+#if ASSERT_PIN_IO(DOUT35)
+	mcu_config_output(DOUT35);
+#endif
+#if ASSERT_PIN_IO(DOUT36)
+	mcu_config_output(DOUT36);
+#endif
+#if ASSERT_PIN_IO(DOUT37)
+	mcu_config_output(DOUT37);
+#endif
+#if ASSERT_PIN_IO(DOUT38)
+	mcu_config_output(DOUT38);
+#endif
+#if ASSERT_PIN_IO(DOUT39)
+	mcu_config_output(DOUT39);
+#endif
+#if ASSERT_PIN_IO(DOUT40)
+	mcu_config_output(DOUT40);
+#endif
+#if ASSERT_PIN_IO(DOUT41)
+	mcu_config_output(DOUT41);
+#endif
+#if ASSERT_PIN_IO(DOUT42)
+	mcu_config_output(DOUT42);
+#endif
+#if ASSERT_PIN_IO(DOUT43)
+	mcu_config_output(DOUT43);
+#endif
+#if ASSERT_PIN_IO(DOUT44)
+	mcu_config_output(DOUT44);
+#endif
+#if ASSERT_PIN_IO(DOUT45)
+	mcu_config_output(DOUT45);
+#endif
+#if ASSERT_PIN_IO(DOUT46)
+	mcu_config_output(DOUT46);
+#endif
+#if ASSERT_PIN_IO(DOUT47)
+	mcu_config_output(DOUT47);
+#endif
+#if ASSERT_PIN_IO(DOUT48)
+	mcu_config_output(DOUT48);
+#endif
+#if ASSERT_PIN_IO(DOUT49)
+	mcu_config_output(DOUT49);
+#endif
 #if ASSERT_PIN_IO(LIMIT_X)
 	mcu_config_input(LIMIT_X);
 #ifdef LIMIT_X_PULLUP
@@ -661,6 +715,114 @@ void __attribute__((weak)) mcu_io_init(void)
 	mcu_config_pullup(DIN31);
 #endif
 #endif
+#if ASSERT_PIN_IO(DIN32)
+	mcu_config_input(DIN32);
+#ifdef DIN32_PULLUP
+	mcu_config_pullup(DIN32);
+#endif
+#endif
+#if ASSERT_PIN_IO(DIN33)
+	mcu_config_input(DIN33);
+#ifdef DIN33_PULLUP
+	mcu_config_pullup(DIN33);
+#endif
+#endif
+#if ASSERT_PIN_IO(DIN34)
+	mcu_config_input(DIN34);
+#ifdef DIN34_PULLUP
+	mcu_config_pullup(DIN34);
+#endif
+#endif
+#if ASSERT_PIN_IO(DIN35)
+	mcu_config_input(DIN35);
+#ifdef DIN35_PULLUP
+	mcu_config_pullup(DIN35);
+#endif
+#endif
+#if ASSERT_PIN_IO(DIN36)
+	mcu_config_input(DIN36);
+#ifdef DIN36_PULLUP
+	mcu_config_pullup(DIN36);
+#endif
+#endif
+#if ASSERT_PIN_IO(DIN37)
+	mcu_config_input(DIN37);
+#ifdef DIN37_PULLUP
+	mcu_config_pullup(DIN37);
+#endif
+#endif
+#if ASSERT_PIN_IO(DIN38)
+	mcu_config_input(DIN38);
+#ifdef DIN38_PULLUP
+	mcu_config_pullup(DIN38);
+#endif
+#endif
+#if ASSERT_PIN_IO(DIN39)
+	mcu_config_input(DIN39);
+#ifdef DIN39_PULLUP
+	mcu_config_pullup(DIN39);
+#endif
+#endif
+#if ASSERT_PIN_IO(DIN40)
+	mcu_config_input(DIN40);
+#ifdef DIN40_PULLUP
+	mcu_config_pullup(DIN40);
+#endif
+#endif
+#if ASSERT_PIN_IO(DIN41)
+	mcu_config_input(DIN41);
+#ifdef DIN41_PULLUP
+	mcu_config_pullup(DIN41);
+#endif
+#endif
+#if ASSERT_PIN_IO(DIN42)
+	mcu_config_input(DIN42);
+#ifdef DIN42_PULLUP
+	mcu_config_pullup(DIN42);
+#endif
+#endif
+#if ASSERT_PIN_IO(DIN43)
+	mcu_config_input(DIN43);
+#ifdef DIN43_PULLUP
+	mcu_config_pullup(DIN43);
+#endif
+#endif
+#if ASSERT_PIN_IO(DIN44)
+	mcu_config_input(DIN44);
+#ifdef DIN44_PULLUP
+	mcu_config_pullup(DIN44);
+#endif
+#endif
+#if ASSERT_PIN_IO(DIN45)
+	mcu_config_input(DIN45);
+#ifdef DIN45_PULLUP
+	mcu_config_pullup(DIN45);
+#endif
+#endif
+#if ASSERT_PIN_IO(DIN46)
+	mcu_config_input(DIN46);
+#ifdef DIN46_PULLUP
+	mcu_config_pullup(DIN46);
+#endif
+#endif
+#if ASSERT_PIN_IO(DIN47)
+	mcu_config_input(DIN47);
+#ifdef DIN47_PULLUP
+	mcu_config_pullup(DIN47);
+#endif
+#endif
+#if ASSERT_PIN_IO(DIN48)
+	mcu_config_input(DIN48);
+#ifdef DIN48_PULLUP
+	mcu_config_pullup(DIN48);
+#endif
+#endif
+#if ASSERT_PIN_IO(DIN49)
+	mcu_config_input(DIN49);
+#ifdef DIN49_PULLUP
+	mcu_config_pullup(DIN49);
+#endif
+#endif
 #if ASSERT_PIN_IO(TX)
 	mcu_config_output(TX);
 #endif
@@ -694,7 +856,7 @@ void __attribute__((weak)) mcu_io_init(void)
 #if ASSERT_PIN_IO(SPI_SDO)
 	mcu_config_output(SPI_SDO);
 #endif
-#if ASSERT_PIN_IO(SPI_CS)
+#if ASSERT_PIN(SPI_CS)
 	mcu_config_output(SPI_CS);
 #endif
 #if ASSERT_PIN_IO(I2C_CLK)
@@ -713,6 +875,18 @@ void __attribute__((weak)) mcu_io_init(void)
 #ifdef RX2_PULLUP
 	mcu_config_pullup(RX2);
 #endif
+#endif
+#if ASSERT_PIN_IO(SPI2_CLK)
+mcu_config_output(SPI2_CLK);
+#endif
+#if ASSERT_PIN_IO(SPI2_SDI)
+mcu_config_output(SPI2_SDI);
+#endif
+#if ASSERT_PIN_IO(SPI2_SDO)
+mcu_config_output(SPI2_SDO);
+#endif
+#if ASSERT_PIN(SPI2_CS)
+mcu_config_output(SPI2_CS);
 #endif
 
 #ifdef MCU_HAS_UART
@@ -877,4 +1051,46 @@ bool __attribute__((weak)) mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in
 void __attribute__((weak)) mcu_spi_stop(void)
 {
 }
+
+spi_port_t __attribute__((used)) mcu_spi_port = {.isbusy = false, .start = mcu_spi_start, .xmit = mcu_spi_xmit, .bulk_xmit = mcu_spi_bulk_transfer, .stop = mcu_spi_stop};
+#endif
+
+#if (defined(MCU_HAS_SPI2))
+void __attribute__((weak)) mcu_spi2_start(spi_config_t config, uint32_t frequency)
+{
+	// reapply port settings if port is shared
+	mcu_spi2_config(config, frequency);
+}
+
+// the maximum amount of time in milliseconds it will transmit data without running the main loop
+#ifndef BULK_SPI2_TIMEOUT
+#define BULK_SPI2_TIMEOUT (1000 / INTERPOLATOR_FREQ)
+#endif
+
+bool __attribute__((weak)) mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
+{
+	uint32_t timeout = BULK_SPI2_TIMEOUT + mcu_millis();
+	while (len--)
+	{
+		uint8_t c = mcu_spi2_xmit(*out++);
+		if (in)
+		{
+			*in++ = c;
+		}
+
+		if (timeout < mcu_millis())
+		{
+			timeout = BULK_SPI2_TIMEOUT + mcu_millis();
+			cnc_dotasks();
+		}
+	}
+
+	return false;
+}
+
+void __attribute__((weak)) mcu_spi2_stop(void)
+{
+}
+
+spi_port_t __attribute__((used)) mcu_spi2_port = {.isbusy = false, .start = mcu_spi2_start, .xmit = mcu_spi2_xmit, .bulk_xmit = mcu_spi2_bulk_transfer, .stop = mcu_spi2_stop};
 #endif

@@ -181,12 +181,7 @@ int32_t encoder_get_position(uint8_t i)
 
 void encoder_print_values(void)
 {
-	for (uint8_t i = 0; i < ENCODERS; i++)
-	{
-		protocol_send_string(__romstr__("[EC:"));
-		serial_print_int(encoder_get_position(i));
-		protocol_send_string(MSG_END);
-	}
+	proto_printf("[EC:%"STRGIFY(ENCODERS)"lld"MSG_FEEDBACK_END, encoders_pos);
 }
 
 void encoder_reset_position(uint8_t i, int32_t position)

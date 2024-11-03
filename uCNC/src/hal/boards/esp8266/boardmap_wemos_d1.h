@@ -24,6 +24,10 @@ extern "C"
 {
 #endif
 
+#ifndef MCU
+#define MCU MCU_ESP8266
+#endif
+
 #ifndef BOARD_NAME
 #define BOARD_NAME "WEMOS D1"
 #endif

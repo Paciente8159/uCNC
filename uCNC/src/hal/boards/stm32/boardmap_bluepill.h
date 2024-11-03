@@ -24,6 +24,10 @@ extern "C"
 {
 #endif
 
+#ifndef MCU
+#define MCU MCU_STM32F1X
+#endif
+
 #ifndef BOARD_NAME
 #define BOARD_NAME "STM32 Bluepill"
 #endif
@@ -158,6 +162,14 @@ extern "C"
 // #define SPI_SDI_BIT 6
 // #define SPI_SDO_PORT A
 // #define SPI_SDO_BIT 7
+
+// #define SPI2_CLK_PORT B
+// #define SPI2_CLK_BIT 13
+// #define SPI2_SDI_PORT B
+// #define SPI2_SDI_BIT 14
+// #define SPI2_SDO_PORT B
+// #define SPI2_SDO_BIT 15
+// #define SPI2_PORT 2
 
 #define ONESHOT_TIMER 1
 

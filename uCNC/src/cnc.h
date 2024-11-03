@@ -88,6 +88,11 @@ extern "C"
 #define EXEC_GCODE_LOCKED (EXEC_ALARM | EXEC_DOOR | EXEC_JOG)	 // Gcode is locked by an alarm or any special motion state
 #define EXEC_ALLACTIVE 255																		 // All states
 
+// unlock result codes
+#define UNLOCK_OK 0
+#define UNLOCK_LOCKED 1
+#define UNLOCK_ERROR 2
+
 // creates a set of helper masks used to configure the controller
 #define ESTOP_MASK 1
 #define SAFETY_DOOR_MASK 2
@@ -133,10 +138,11 @@ extern "C"
 // extension modules
 #include "module.h"
 #include "interface/defaults.h"
+#include "interface/grbl_print.h"
+#include "interface/grbl_stream.h"
+#include "interface/grbl_settings.h"
 #include "interface/grbl_interface.h"
-#include "interface/settings.h"
-#include "interface/serial.h"
-#include "interface/protocol.h"
+#include "interface/grbl_protocol.h"
 #include "core/io_control.h"
 #include "core/parser.h"
 #include "core/motion_control.h"

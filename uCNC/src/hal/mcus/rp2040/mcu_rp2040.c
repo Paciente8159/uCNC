@@ -345,6 +345,12 @@ void mcu_init(void)
 	mcu_spi_config(spi_conf, SPI_FREQ);
 #endif
 
+#ifdef MCU_HAS_SPI2
+	spi_config_t spi2_conf = {0};
+	spi2_conf.mode = SPI2_MODE;
+	mcu_spi2_config(spi2_conf, SPI2_FREQ);
+#endif
+
 #ifdef MCU_HAS_I2C
 	mcu_i2c_config(I2C_FREQ);
 #endif
@@ -565,9 +571,7 @@ uint8_t mcu_eeprom_getc(uint16_t address)
 {
 	if (NVM_STORAGE_SIZE <= address)
 	{
-		DEBUG_STR("EEPROM invalid address @ ");
-		DEBUG_INT(address);
-		DEBUG_PUTC('\n');
+		DBGMSG("EEPROM invalid address @ %u",address);
 		return 0;
 	}
 #ifndef RAM_ONLY_SETTINGS
@@ -584,9 +588,7 @@ void mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
 	if (NVM_STORAGE_SIZE <= address)
 	{
-		DEBUG_STR("EEPROM invalid address @ ");
-		DEBUG_INT(address);
-		DEBUG_PUTC('\n');
+		DBGMSG("EEPROM invalid address @ %u",address);
 	}
 #ifndef RAM_ONLY_SETTINGS
 	rp2040_eeprom_write(address, value);

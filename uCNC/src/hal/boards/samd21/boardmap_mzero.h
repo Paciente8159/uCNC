@@ -24,6 +24,10 @@ extern "C"
 {
 #endif
 
+#ifndef MCU
+#define MCU MCU_SAMD21
+#endif
+
 #ifndef BOARD_NAME
 #define BOARD_NAME "Arduino M0"
 #endif

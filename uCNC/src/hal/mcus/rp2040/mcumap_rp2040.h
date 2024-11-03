@@ -84,12 +84,14 @@ extern "C"
 	// #define US_TO_CYCLES(X) (X * F_CPU_MHZ)
 
 	// 	extern unsigned long ulMainGetRunTimeCounterValue();
-	// #define mcu_delay_cycles(X)                                     \
-// 	{                                                           \
-// 		uint32_t target = ulMainGetRunTimeCounterValue() + (X); \
-// 		while (target > ulMainGetRunTimeCounterValue())         \
-// 			;                                                   \
-// 	}
+	/*
+	#define mcu_delay_cycles(X)                                 \
+	{                                                           \
+		uint32_t target = ulMainGetRunTimeCounterValue() + (X); 	\
+		while (target > ulMainGetRunTimeCounterValue())         	\
+			;                                                   		\
+	}
+	*/
 	// #define mcu_delay_100ns() mcu_delay_cycles(F_CPU_MHZ / 10UL)
 	// #define mcu_delay_us(X) (mcu_delay_cycles(US_TO_CYCLES(X)))
 
@@ -865,6 +867,26 @@ extern "C"
 #define RX2 211
 #define DIO211_BIT (RX2_BIT)
 #endif
+#if (defined(SPI2_CLK_BIT))
+#define DIO212 212
+#define SPI2_CLK 212
+#define DIO212_BIT (SPI2_CLK_BIT)
+#endif
+#if (defined(SPI2_SDI_BIT))
+#define DIO213 213
+#define SPI2_SDI 213
+#define DIO213_BIT (SPI2_SDI_BIT)
+#endif
+#if (defined(SPI2_SDO_BIT))
+#define DIO214 214
+#define SPI2_SDO 214
+#define DIO214_BIT (SPI2_SDO_BIT)
+#endif
+#if (defined(SPI2_CS_BIT))
+#define DIO215 215
+#define SPI2_CS 215
+#define DIO215_BIT (SPI2_CS_BIT)
+#endif
 
 // ISR on change inputs
 #if (defined(LIMIT_X_ISR) && defined(LIMIT_X))
@@ -1058,7 +1080,6 @@ extern "C"
 #define SPI_PORT 0
 #endif
 #endif
-
 #if (SPI_PORT == 0)
 #define COM_SPI SPI
 #elif (SPI_PORT == 1)
@@ -1067,8 +1088,30 @@ extern "C"
 #error "SPI port number must be 0 or 1"
 #endif
 
+// SPI2
+#if (defined(SPI2_CLK) && defined(SPI2_SDI) && defined(SPI2_SDO))
+#define MCU_HAS_SPI2
+#ifndef SPI2_MODE
+#define SPI2_MODE 0
+#endif
+#ifndef SPI2_FREQ
+#define SPI2_FREQ 1000000UL
+#endif
+#ifndef SPI2_PORT
+#define SPI2_PORT 0
+#endif
+#endif
+#if (SPI2_PORT == 0)
+#define COM_SPI2 SPI
+#elif (SPI2_PORT == 1)
+#define COM_SPI2 SPI1
+#else
+#error "SPI2 port number must be 0 or 1"
+#endif
+
 // for SDK SPI
 #define SPI_HW __helper__(spi, SPI_PORT,)
+
 
 #if (defined(I2C_CLK) && defined(I2C_DATA))
 #define MCU_HAS_I2C
@@ -1185,7 +1228,6 @@ extern "C"
 #endif
 #endif
 
-
 /**
  * Run code on multicore mode
  * Launches code on core 0
@@ -1228,8 +1270,8 @@ extern "C"
 	/**
 	 * Launch multicore
 	 * **/
-// 	extern void rp2040_core1_loop();
-// #define ucnc_init() cnc_init();	multicore_launch_core1(rp2040_core1_loop)
+	// 	extern void rp2040_core1_loop();
+	// #define ucnc_init() cnc_init();	multicore_launch_core1(rp2040_core1_loop)
 	extern void rp2040_core0_loop();
 #define ucnc_run() rp2040_core0_loop()
 

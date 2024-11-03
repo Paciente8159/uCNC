@@ -58,7 +58,7 @@
 #include <stdbool.h>
 #include "../../../modules/pid.h"
 static pid_data_t spindle_pwm_pid;
-DECL_EXTENDED_SETTING(SPINDLE_PWM_PID_SETTING_ID, spindle_pwm_pid.k, float, 3, protocol_send_gcode_setting_line_flt);
+DECL_EXTENDED_SETTING(SPINDLE_PWM_PID_SETTING_ID, spindle_pwm_pid.k, float, 3, proto_gcode_setting_line_flt);
 #if (HZ_TO_MS(SPINDLE_PWM_PID_SAMPLE_RATE_HZ) == 0)
 #error "Period of SPINDLE_PWM_PID_SAMPLE_RATE_HZ is zero (not enough integer precision)"
 #endif
@@ -145,7 +145,7 @@ static void pid_update(void)
 	{
 		if (pid_compute(&spindle_pwm_pid, &output, output, get_speed(), HZ_TO_MS(SPINDLE_PWM_PID_SAMPLE_RATE_HZ)))
 		{
-			io_set_pwm(SPINDLE_PWM, range_speed((int16_t)output), 0);
+			io_set_pwm(SPINDLE_PWM, range_speed((int16_t)output, 0));
 		}
 	}
 }

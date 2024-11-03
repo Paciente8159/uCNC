@@ -24,6 +24,10 @@ extern "C"
 {
 #endif
 
+#ifndef MCU
+#define MCU MCU_STM32F0X
+#endif
+
 #ifndef BOARD_NAME
 #define BOARD_NAME "STM32 Bluepill F0"
 #endif
@@ -122,19 +126,27 @@ extern "C"
 #undef ONESHOT_TIMER
 #define ONESHOT_TIMER 17
 
-	#define I2C_CLK_BIT 10
-	#define I2C_CLK_PORT B
-	#define I2C_DATA_BIT 11
-	#define I2C_DATA_PORT B
-	#define I2C_PORT 2
+#define I2C_CLK_BIT 10
+#define I2C_CLK_PORT B
+#define I2C_DATA_BIT 11
+#define I2C_DATA_PORT B
+#define I2C_PORT 2
 	// #define I2C_ADDRESS 1
 
-// #define SPI_CLK_PORT A
-// #define SPI_CLK_BIT 5
-// #define SPI_SDI_PORT A
-// #define SPI_SDI_BIT 6
-// #define SPI_SDO_PORT A
-// #define SPI_SDO_BIT 7
+	// #define SPI_CLK_PORT A
+	// #define SPI_CLK_BIT 5
+	// #define SPI_SDI_PORT A
+	// #define SPI_SDI_BIT 6
+	// #define SPI_SDO_PORT A
+	// #define SPI_SDO_BIT 7
+
+	// #define SPI2_CLK_PORT B
+	// #define SPI2_CLK_BIT 13
+	// #define SPI2_SDI_PORT B
+	// #define SPI2_SDI_BIT 14
+	// #define SPI2_SDO_PORT B
+	// #define SPI2_SDO_BIT 15
+	// #define SPI2_PORT 2
 
 #ifdef __cplusplus
 }
