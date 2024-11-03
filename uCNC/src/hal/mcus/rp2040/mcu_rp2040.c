@@ -691,14 +691,10 @@ void mcu_spi_config(spi_config_t config, uint32_t frequency)
 
 uint8_t mcu_spi_xmit(uint8_t data)
 {
-	spi_write_read_blocking(SPI_HW, &data, &data, 1);
-	return data;
-	// while (spi_is_readable(SPI_HW))
-	// 	(void)spi_get_hw(SPI_HW)->dr;
-	// spi_get_hw(SPI_HW)->dr = data;
-	// while ((spi_get_hw(SPI_HW)->sr & SPI_SSPSR_BSY_BITS))
-	// 	;
-	// return (spi_get_hw(SPI_HW)->dr & 0xFF);
+	spi_get_hw(SPI_HW)->dr = data;
+	while ((spi_get_hw(SPI_HW)->sr & SPI_SSPSR_BSY_BITS))
+		;
+	return (spi_get_hw(SPI_HW)->dr & 0xFF);
 }
 
 void mcu_spi_start(spi_config_t config, uint32_t frequency)
@@ -831,14 +827,10 @@ void mcu_spi2_config(spi_config_t config, uint32_t frequency)
 
 uint8_t mcu_spi2_xmit(uint8_t data)
 {
-	spi_write_read_blocking(SPI2_HW, &data, &data, 1);
-	return data;
-	// while (spi_is_readable(SPI_HW))
-	// 	(void)spi_get_hw(SPI_HW)->dr;
-	// spi_get_hw(SPI_HW)->dr = data;
-	// while ((spi_get_hw(SPI_HW)->sr & SPI_SSPSR_BSY_BITS))
-	// 	;
-	// return (spi_get_hw(SPI_HW)->dr & 0xFF);
+	spi_get_hw(SPI2_HW)->dr = data;
+	while ((spi_get_hw(SPI2_HW)->sr & SPI_SSPSR_BSY_BITS))
+		;
+	return (spi_get_hw(SPI2_HW)->dr & 0xFF);
 }
 
 void mcu_spi2_start(spi_config_t config, uint32_t frequency)
