@@ -34,7 +34,8 @@ extern "C"
 #define MCU_ESP8266 40
 #define MCU_ESP32 50
 #define MCU_RP2040 60
-#define MCU_VIRTUAL_WIN 99
+#define MCU_VIRTUAL_WIN 100
+#define MCU_VIRTUAL_LINUX 101
 
 #ifdef __cplusplus
 }

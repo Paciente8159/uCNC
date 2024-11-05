@@ -77,6 +77,10 @@ extern "C"
 #include "virtual/mcumap_virtual.h"
 #endif
 
+#if (MCU == MCU_VIRTUAL_LINUX)
+#include "virtual/mcumap_virtual.h"
+#endif
+
 #ifndef MCU
 #error Undefined mcu
 #endif
