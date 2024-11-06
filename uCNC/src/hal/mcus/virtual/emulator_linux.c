@@ -12,29 +12,29 @@ int main(void)
 }
 
 /**
-	 *
-	 *
-	 * ISR emulation
-	 *
-	 * **/
-	volatile bool global_isr_enabled = false;
-	// enables all interrupts on the mcu. Must be called to enable all IRS functions
-	void mcu_enable_global_isr(void)
-	{
-		global_isr_enabled = true;
-	}
-	// disables all ISR functions
-	void mcu_disable_global_isr(void)
-	{
-		global_isr_enabled = false;
-	}
+ *
+ *
+ * ISR emulation
+ *
+ * **/
+volatile bool global_isr_enabled = false;
+// enables all interrupts on the mcu. Must be called to enable all IRS functions
+void mcu_enable_global_isr(void)
+{
+	global_isr_enabled = true;
+}
+// disables all ISR functions
+void mcu_disable_global_isr(void)
+{
+	global_isr_enabled = false;
+}
 
-	bool mcu_get_global_isr(void)
-	{
-		return global_isr_enabled;
-	}
+bool mcu_get_global_isr(void)
+{
+	return global_isr_enabled;
+}
 
-    /**
+/**
  *
  *
  * Communications emulation
@@ -43,70 +43,70 @@ int main(void)
  *
  * **/
 #ifdef MCU_HAS_UART
-	WindowsSerial Serial = WindowsSerial(UART_PORT_NAME);
+WindowsSerial Serial = WindowsSerial(UART_PORT_NAME);
 #ifndef UART_TX_BUFFER_SIZE
 #define UART_TX_BUFFER_SIZE 64
 #endif
-	DECL_BUFFER(uint8_t, uart_tx, UART_TX_BUFFER_SIZE);
-	DECL_BUFFER(uint8_t, uart_rx, RX_BUFFER_SIZE);
+DECL_BUFFER(uint8_t, uart_tx, UART_TX_BUFFER_SIZE);
+DECL_BUFFER(uint8_t, uart_rx, RX_BUFFER_SIZE);
 
-	uint8_t mcu_uart_getc(void)
+uint8_t mcu_uart_getc(void)
+{
+	uint8_t c = 0;
+	BUFFER_DEQUEUE(uart_rx, &c);
+	return c;
+}
+
+uint8_t mcu_uart_available(void)
+{
+	return BUFFER_READ_AVAILABLE(uart_rx);
+}
+
+void mcu_uart_clear(void)
+{
+	BUFFER_CLEAR(uart_rx);
+}
+
+void mcu_uart_putc(uint8_t c)
+{
+	while (BUFFER_FULL(uart_tx))
 	{
-		uint8_t c = 0;
-		BUFFER_DEQUEUE(uart_rx, &c);
-		return c;
+		mcu_uart_flush();
 	}
+	BUFFER_ENQUEUE(uart_tx, &c);
+}
 
-	uint8_t mcu_uart_available(void)
+void mcu_uart_flush(void)
+{
+	while (!BUFFER_EMPTY(uart_tx))
 	{
-		return BUFFER_READ_AVAILABLE(uart_rx);
+		uint8_t tmp[UART_TX_BUFFER_SIZE + 1];
+		memset(tmp, 0, sizeof(tmp));
+		uint8_t r = 0;
+
+		BUFFER_READ(uart_tx, tmp, UART_TX_BUFFER_SIZE, r);
+		Serial.WriteData(tmp, r);
 	}
+}
 
-	void mcu_uart_clear(void)
-	{
-		BUFFER_CLEAR(uart_rx);
-	}
+void mcu_uart_process()
+{
+	char buff[RX_BUFFER_SIZE];
 
-	void mcu_uart_putc(uint8_t c)
+	int count = Serial.ReadData(buff, RX_BUFFER_SIZE);
+	for (int i = 0; i < count; i++)
 	{
-		while (BUFFER_FULL(uart_tx))
+		uint8_t c = buff[i];
+		if (mcu_com_rx_cb(c))
 		{
-			mcu_uart_flush();
-		}
-		BUFFER_ENQUEUE(uart_tx, &c);
-	}
-
-	void mcu_uart_flush(void)
-	{
-		while (!BUFFER_EMPTY(uart_tx))
-		{
-			uint8_t tmp[UART_TX_BUFFER_SIZE + 1];
-			memset(tmp, 0, sizeof(tmp));
-			uint8_t r = 0;
-
-			BUFFER_READ(uart_tx, tmp, UART_TX_BUFFER_SIZE, r);
-			Serial.WriteData(tmp, r);
-		}
-	}
-
-	void mcu_uart_process()
-	{
-		char buff[RX_BUFFER_SIZE];
-
-		int count = Serial.ReadData(buff, RX_BUFFER_SIZE);
-		for (int i = 0; i < count; i++)
-		{
-			uint8_t c = buff[i];
-			if (mcu_com_rx_cb(c))
+			if (BUFFER_FULL(uart_rx))
 			{
-				if (BUFFER_FULL(uart_rx))
-				{
-					c = OVF;
-				}
-				BUFFER_ENQUEUE(uart_rx, &c);
+				c = OVF;
 			}
+			BUFFER_ENQUEUE(uart_rx, &c);
 		}
 	}
+}
 #endif
 
 #ifdef MCU_HAS_UART2
@@ -122,192 +122,195 @@ int main(void)
 #include <errno.h>
 #include <sys/ioctl.h>
 #ifndef STDIN_FILENO
-  #define STDIN_FILENO 0
+#define STDIN_FILENO 0
 #endif
 #ifndef FIONREAD
-  #define FIONREAD	0x541B
+#define FIONREAD 0x541B
 #endif
 
 static struct termios old, current;
 
 /* Initialize new terminal i/o settings */
-void initTermios(int echo) 
+void initTermios(int echo)
 {
-  tcgetattr(0, &old); /* grab old terminal i/o settings */
-  current = old; /* make new settings same as old settings */
-  current.c_lflag &= ~ICANON; /* disable buffered i/o */
-  current.c_iflag          = 0;       /* input mode                */
-  current.c_oflag          = 0;       /* output mode               */
-  current.c_cc[VMIN]       = CMIN;    /* minimum time to wait      */
-  current.c_cc[VTIME]      = CTIME;   /* minimum characters to wait for */
-  if (echo) {
-      current.c_lflag |= ECHO; /* set echo mode */
-  } else {
-      current.c_lflag &= ~ECHO; /* set no echo mode */
-  }
-  tcsetattr(0, TCSANOW, &current); /* use these new terminal i/o settings now */
+	tcgetattr(0, &old);					 /* grab old terminal i/o settings */
+	current = old;							 /* make new settings same as old settings */
+	current.c_lflag &= ~ICANON;	 /* disable buffered i/o */
+	current.c_iflag = 0;				 /* input mode                */
+	current.c_oflag = 0;				 /* output mode               */
+	current.c_cc[VMIN] = CMIN;	 /* minimum time to wait      */
+	current.c_cc[VTIME] = CTIME; /* minimum characters to wait for */
+	if (echo)
+	{
+		current.c_lflag |= ECHO; /* set echo mode */
+	}
+	else
+	{
+		current.c_lflag &= ~ECHO; /* set no echo mode */
+	}
+	tcsetattr(0, TCSANOW, &current); /* use these new terminal i/o settings now */
 }
 
 /* Restore old terminal i/o settings */
-void resetTermios(void) 
+void resetTermios(void)
 {
-  tcsetattr(0, TCSANOW, &old);
+	tcsetattr(0, TCSANOW, &old);
 }
 
 /* Read 1 character - echo defines echo mode */
-char getch_(int echo) 
+char getch_(int echo)
 {
-  char ch;
-  initTermios(echo);
-  ch = getchar();
-  resetTermios();
-  return ch;
+	char ch;
+	initTermios(echo);
+	ch = getchar();
+	resetTermios();
+	return ch;
 }
 
 /* Read 1 character without echo */
-char getch(void) 
+char getch(void)
 {
-  return getch_(0);
+	return getch_(0);
 }
 
 int kbhit(void)
 {
-  int cnt = 0;
-  int error = -1;
+	int cnt = 0;
+	int error = 0;
 
-  initTermios(0);
-    error += ioctl(0, FIONREAD, &cnt);
-    resetTermios();
- 
-  return ( error == 0 ? cnt : -1 );
+	initTermios(0);
+	error += ioctl(0, FIONREAD, &cnt);
+	resetTermios();
+
+	return (error == 0 ? cnt : -1);
 }
 
-	DECL_BUFFER(uint8_t, uart2_tx, UART2_TX_BUFFER_SIZE);
-	DECL_BUFFER(uint8_t, uart2_rx, RX_BUFFER_SIZE);
+DECL_BUFFER(uint8_t, uart2_tx, UART2_TX_BUFFER_SIZE);
+DECL_BUFFER(uint8_t, uart2_rx, RX_BUFFER_SIZE);
 
-	uint8_t mcu_uart2_getc(void)
+uint8_t mcu_uart2_getc(void)
+{
+	uint8_t c = 0;
+	BUFFER_DEQUEUE(uart2_rx, &c);
+	return c;
+}
+
+uint8_t mcu_uart2_available(void)
+{
+	return BUFFER_READ_AVAILABLE(uart2_rx);
+}
+
+void mcu_uart2_clear(void)
+{
+	BUFFER_CLEAR(uart2_rx);
+}
+
+void mcu_uart2_putc(uint8_t c)
+{
+	while (BUFFER_FULL(uart2_tx))
 	{
-		uint8_t c = 0;
-		BUFFER_DEQUEUE(uart2_rx, &c);
-		return c;
+		mcu_uart2_flush();
 	}
+	BUFFER_ENQUEUE(uart2_tx, &c);
+}
 
-	uint8_t mcu_uart2_available(void)
+void mcu_uart2_flush(void)
+{
+	while (!BUFFER_EMPTY(uart2_tx))
 	{
-		return BUFFER_READ_AVAILABLE(uart2_rx);
+		uint8_t tmp[UART2_TX_BUFFER_SIZE + 1];
+		memset(tmp, 0, sizeof(tmp));
+		uint8_t r = 0;
+
+		BUFFER_READ(uart2_tx, tmp, UART2_TX_BUFFER_SIZE, r);
+		printf("%s", tmp);
 	}
+}
 
-	void mcu_uart2_clear(void)
+void mcu_uart2_process()
+{
+	if (kbhit())
 	{
-		BUFFER_CLEAR(uart2_rx);
-	}
-
-	void mcu_uart2_putc(uint8_t c)
-	{
-		while (BUFFER_FULL(uart2_tx))
+		char c = getch();
+		putchar(c);
+		if (c == '\r')
 		{
-			mcu_uart2_flush();
+			putchar('\n');
 		}
-		BUFFER_ENQUEUE(uart2_tx, &c);
-	}
-
-	void mcu_uart2_flush(void)
-	{
-		while (!BUFFER_EMPTY(uart2_tx))
+		if (mcu_com_rx_cb(c))
 		{
-			uint8_t tmp[UART2_TX_BUFFER_SIZE + 1];
-			memset(tmp, 0, sizeof(tmp));
-			uint8_t r = 0;
-
-			BUFFER_READ(uart2_tx, tmp, UART2_TX_BUFFER_SIZE, r);
-			printf("%s", tmp);
-		}
-	}
-
-	void mcu_uart2_process()
-	{
-		if (kbhit())
-		{
-			char c = getch();
-			putchar(c);
-			if (c == '\r')
+			if (BUFFER_FULL(uart2_rx))
 			{
-				putchar('\n');
+				c = OVF;
 			}
-			if (mcu_com_rx_cb(c))
-			{
-				if (BUFFER_FULL(uart2_rx))
-				{
-					c = OVF;
-				}
-				BUFFER_ENQUEUE(uart2_rx, &c);
-			}
+			BUFFER_ENQUEUE(uart2_rx, &c);
 		}
 	}
+}
 #endif
 
-	void mcu_dotasks()
-	{
+void mcu_dotasks()
+{
 #ifdef MCU_HAS_UART
-		mcu_uart_process();
+	mcu_uart_process();
 #endif
 #ifdef MCU_HAS_UART2
-		mcu_uart2_process();
+	mcu_uart2_process();
 #endif
-	}
+}
 
-	/**
-	 *
-	 *
-	 * EEPROM emulation
-	 * Uses a local file to store values
-	 *
-	 *
-	 * **/
-	uint8_t mcu_eeprom_getc(uint16_t address)
+/**
+ *
+ *
+ * EEPROM emulation
+ * Uses a local file to store values
+ *
+ *
+ * **/
+uint8_t mcu_eeprom_getc(uint16_t address)
+{
+	FILE *fp = fopen("virtualeeprom", "rb");
+	uint8_t c = 0;
+
+	if (fp != NULL)
 	{
-		FILE *fp = fopen("virtualeeprom", "rb");
-		uint8_t c = 0;
-
-		if (fp != NULL)
+		if (!fseek(fp, address, SEEK_SET))
 		{
-			if (!fseek(fp, address, SEEK_SET))
-			{
-				c = getc(fp);
-			}
-
-			fclose(fp);
+			c = getc(fp);
 		}
 
-		return c;
+		fclose(fp);
 	}
 
-	void mcu_eeprom_putc(uint16_t address, uint8_t value)
+	return c;
+}
+
+void mcu_eeprom_putc(uint16_t address, uint8_t value)
+{
+	FILE *src = fopen("virtualeeprom", "rb+");
+
+	if (!src)
 	{
-		FILE *src = fopen("virtualeeprom", "rb+");
-
-		if (!src)
-		{
-			FILE *dest = fopen("virtualeeprom", "wb");
-			fclose(dest);
-			src = fopen("virtualeeprom", "rb+");
-		}
-
-		/*for(int i = 0; i < address; i++)
-		{
-			getc(src);
-		}*/
-
-		fseek(src, address, SEEK_SET);
-		putc((int)value, src);
-
-		fflush(src);
-		fclose(src);
+		FILE *dest = fopen("virtualeeprom", "wb");
+		fclose(dest);
+		src = fopen("virtualeeprom", "rb+");
 	}
 
-	void mcu_eeprom_flush()
+	/*for(int i = 0; i < address; i++)
 	{
-	}
+		getc(src);
+	}*/
+
+	fseek(src, address, SEEK_SET);
+	putc((int)value, src);
+
+	fflush(src);
+	fclose(src);
+}
+
+void mcu_eeprom_flush()
+{
+}
 
 /**
  *
@@ -510,16 +513,18 @@ void mcu_disable_probe_isr(void)
 {
 }
 
-uint32_t mcu_micros(void){
-    struct timeval tv;
-    gettimeofday(&tv,NULL);
-    return (uint32_t)(tv.tv_sec*(uint64_t)1000000+tv.tv_usec);
+uint32_t mcu_micros(void)
+{
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	return (uint32_t)(tv.tv_sec * (uint64_t)1000000 + tv.tv_usec);
 }
 
-uint32_t mcu_millis(void){
-    struct timeval tv;
-    gettimeofday(&tv,NULL);
-    return (uint32_t)(tv.tv_sec*(uint64_t)1000+(uint64_t)(0.001f*tv.tv_usec));
+uint32_t mcu_millis(void)
+{
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	return (uint32_t)(tv.tv_sec * (uint64_t)1000 + (uint64_t)(0.001f * tv.tv_usec));
 }
 
 /**
@@ -659,17 +664,17 @@ void mcu_stop_itp_isr(void)
 #include <unistd.h>
 
 void ticksimul(int signum)
+{
+	//		long t = stopCycleCounter();
+	//		printf("Elapsed %dus\n\r", (int)((double)t / cyclesPerMicrosecond));
+	for (int i = 0; i < (int)ceil(20 * ITP_SAMPLE_RATE / 1000); i++)
 	{
-		//		long t = stopCycleCounter();
-		//		printf("Elapsed %dus\n\r", (int)((double)t / cyclesPerMicrosecond));
-		for (int i = 0; i < (int)ceil(20 * ITP_SAMPLE_RATE / 1000); i++)
-		{
-			mcu_gen_step();
-		}
-
-		mcu_rtc_cb(mcu_millis());
-		//		startCycleCounter();
+		mcu_gen_step();
 	}
+
+	mcu_rtc_cb(mcu_millis());
+	//		startCycleCounter();
+}
 
 void mcu_init(void)
 {
