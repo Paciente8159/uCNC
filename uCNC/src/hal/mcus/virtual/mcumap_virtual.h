@@ -37,7 +37,7 @@
 #define rom_read_byte *
 
 /* 7.18.2.1  Limits of exact-width integer types */
-#ifdef MCU_VIRTUAL_WIN
+#if (MCU == MCU_VIRTUAL_WIN)
 #define INT8_MIN (-128)
 #define INT16_MIN (-32768)
 #define INT32_MIN (-2147483647 - 1)
