@@ -1,6 +1,6 @@
 /*
-	Name: rp2040_arduino.cpp
-	Description: Contains all Arduino RP2040 C++ to C functions ports needed by µCNC.
+	Name: rp2350_arduino.cpp
+	Description: Contains all Arduino RP2350 C++ to C functions ports needed by µCNC.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
@@ -16,7 +16,7 @@
 	See the	GNU General Public License for more details.
 */
 
-#if defined(ARDUINO_ARCH_RP2040) && !defined(TARGET_RP2350)
+#if defined(ARDUINO_ARCH_RP2040) && defined(TARGET_RP2350)
 #include <stdint.h>
 #include <stdbool.h>
 #include <Arduino.h>
@@ -341,7 +341,7 @@ bool mcu_custom_grbl_cmd(void *args)
 CREATE_EVENT_LISTENER(grbl_cmd, mcu_custom_grbl_cmd);
 #endif
 
-bool rp2040_wifi_clientok(void)
+bool rp2350_wifi_clientok(void)
 {
 #ifdef MCU_HAS_WIFI
 	static uint32_t next_info = 30000;
@@ -748,7 +748,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
 }
 #endif
 
-void rp2040_wifi_bt_init(void)
+void rp2350_wifi_bt_init(void)
 {
 #ifdef MCU_HAS_WIFI
 
@@ -874,7 +874,7 @@ void mcu_wifi_putc(uint8_t c)
 
 void mcu_wifi_flush(void)
 {
-	if (rp2040_wifi_clientok())
+	if (rp2350_wifi_clientok())
 	{
 		while (!BUFFER_EMPTY(wifi_tx))
 		{
@@ -942,10 +942,10 @@ void mcu_bt_flush(void)
 }
 #endif
 
-uint8_t rp2040_wifi_bt_read(void)
+uint8_t rp2350_wifi_bt_read(void)
 {
 #ifdef MCU_HAS_WIFI
-	if (rp2040_wifi_clientok())
+	if (rp2350_wifi_clientok())
 	{
 		if (server_client.available() > 0)
 		{
@@ -961,10 +961,10 @@ uint8_t rp2040_wifi_bt_read(void)
 	return (uint8_t)0;
 }
 
-void rp2040_wifi_bt_process(void)
+void rp2350_wifi_bt_process(void)
 {
 #ifdef MCU_HAS_WIFI
-	if (rp2040_wifi_clientok())
+	if (rp2350_wifi_clientok())
 	{
 		while (server_client.available() > 0)
 		{
@@ -1029,33 +1029,33 @@ void rp2040_wifi_bt_process(void)
 #include <EEPROM.h>
 extern "C"
 {
-	void rp2040_eeprom_init(int size)
+	void rp2350_eeprom_init(int size)
 	{
 		EEPROM.begin(size);
 	}
 
-	uint8_t rp2040_eeprom_read(uint16_t address)
+	uint8_t rp2350_eeprom_read(uint16_t address)
 	{
 		return EEPROM.read(address);
 	}
 
-	void rp2040_eeprom_write(uint16_t address, uint8_t value)
+	void rp2350_eeprom_write(uint16_t address, uint8_t value)
 	{
 		EEPROM.write(address, value);
 	}
 
-	void rp2040_eeprom_flush(void)
+	void rp2350_eeprom_flush(void)
 	{
-#ifndef RP2040_RUN_MULTICORE
+#ifndef RP2350_RUN_MULTICORE
 		if (!EEPROM.commit())
 		{
 			proto_info(" EEPROM write error");
 		}
 #else
 		// signal other core to store EEPROM
-		rp2040.fifo.push(0);
+		rp2350.fifo.push(0);
 		// wait for signal back
-		rp2040.fifo.pop();
+		rp2350.fifo.pop();
 #endif
 	}
 }
@@ -1063,7 +1063,7 @@ extern "C"
 
 extern "C"
 {
-	void rp2040_uart_init(int baud)
+	void rp2350_uart_init(int baud)
 	{
 #ifdef MCU_HAS_USB
 		Serial.begin(baud);
@@ -1079,7 +1079,7 @@ extern "C"
 		COM2_UART.begin(BAUDRATE2);
 #endif
 #if (defined(MCU_HAS_WIFI) || defined(ENABLE_BLUETOOTH))
-		rp2040_wifi_bt_init();
+		rp2350_wifi_bt_init();
 #endif
 	}
 
@@ -1227,7 +1227,7 @@ extern "C"
 	}
 #endif
 
-	void rp2040_uart_process(void)
+	void rp2350_uart_process(void)
 	{
 #ifdef MCU_HAS_USB
 		while (Serial.available() > 0)
@@ -1301,19 +1301,19 @@ extern "C"
 #endif
 
 #if (defined(MCU_HAS_WIFI) || defined(ENABLE_BLUETOOTH))
-		rp2040_wifi_bt_process();
+		rp2350_wifi_bt_process();
 #endif
 
-#if defined(RP2040_RUN_MULTICORE) && !defined(RAM_ONLY_SETTINGS)
+#if defined(RP2350_RUN_MULTICORE) && !defined(RAM_ONLY_SETTINGS)
 		// flush pending eeprom request
-		if (rp2040.fifo.available())
+		if (rp2350.fifo.available())
 		{
-			rp2040.fifo.pop();
+			rp2350.fifo.pop();
 			if (!EEPROM.commit())
 			{
 				proto_info(" EEPROM write error");
 			}
-			rp2040.fifo.push(0);
+			rp2350.fifo.push(0);
 		}
 #endif
 	}
@@ -1414,14 +1414,14 @@ extern "C"
 #if (I2C_ADDRESS != 0)
 	static uint8_t mcu_i2c_buffer_len;
 	static uint8_t mcu_i2c_buffer[I2C_SLAVE_BUFFER_SIZE];
-	void rp2040_i2c_onreceive(int len)
+	void rp2350_i2c_onreceive(int len)
 	{
 		uint8_t l = I2C_REG.readBytes(mcu_i2c_buffer, len);
 		mcu_i2c_slave_cb(mcu_i2c_buffer, &l);
 		mcu_i2c_buffer_len = l;
 	}
 
-	void rp2040_i2c_onrequest(void)
+	void rp2350_i2c_onrequest(void)
 	{
 		I2C_REG.write(mcu_i2c_buffer, mcu_i2c_buffer_len);
 	}
@@ -1436,8 +1436,8 @@ extern "C"
 		I2C_REG.setClock(frequency);
 		I2C_REG.begin();
 #else
-		I2C_REG.onReceive(rp2040_i2c_onreceive);
-		I2C_REG.onRequest(rp2040_i2c_onrequest);
+		I2C_REG.onReceive(rp2350_i2c_onreceive);
+		I2C_REG.onRequest(rp2350_i2c_onrequest);
 		I2C_REG.begin(I2C_ADDRESS);
 #endif
 	}

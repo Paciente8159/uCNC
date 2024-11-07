@@ -125,7 +125,7 @@ extern "C"
 	 * This is useful if you don't have EEPROM/FLASH storage or the divide read/write maximum cycle count is low to prevent damage
 	 * This is also usefull if the sender provides all settings at startup/connection
 	 * */
-	//	 #define RAM_ONLY_SETTINGS
+		//  #define RAM_ONLY_SETTINGS
 
 	/**
 	 * Override default configuration settings. Use _PER_AXIS parameters to
