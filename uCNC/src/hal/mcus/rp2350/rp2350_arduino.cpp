@@ -1068,11 +1068,6 @@ extern "C"
 #ifdef MCU_HAS_USB
 		Serial.begin(baud);
 #endif
-#ifdef MCU_HAS_UART
-		COM_UART.setTX(TX_BIT);
-		COM_UART.setRX(RX_BIT);
-		COM_UART.begin(BAUDRATE);
-#endif
 #ifdef MCU_HAS_UART2
 		COM2_UART.setTX(TX2_BIT);
 		COM2_UART.setRX(RX2_BIT);
@@ -1127,54 +1122,6 @@ extern "C"
 			BUFFER_READ(usb_tx, tmp, USB_TX_BUFFER_SIZE, r);
 			Serial.write(tmp, r);
 			Serial.flush();
-		}
-	}
-#endif
-
-#ifdef MCU_HAS_UART
-#ifndef UART_TX_BUFFER_SIZE
-#define UART_TX_BUFFER_SIZE 64
-#endif
-	DECL_BUFFER(uint8_t, uart_tx, UART_TX_BUFFER_SIZE);
-	DECL_BUFFER(uint8_t, uart_rx, RX_BUFFER_SIZE);
-
-	uint8_t mcu_uart_getc(void)
-	{
-		uint8_t c = 0;
-		BUFFER_DEQUEUE(uart_rx, &c);
-		return c;
-	}
-
-	uint8_t mcu_uart_available(void)
-	{
-		return BUFFER_READ_AVAILABLE(uart_rx);
-	}
-
-	void mcu_uart_clear(void)
-	{
-		BUFFER_CLEAR(uart_rx);
-	}
-
-	void mcu_uart_putc(uint8_t c)
-	{
-		while (BUFFER_FULL(uart_tx))
-		{
-			mcu_uart_flush();
-		}
-		BUFFER_ENQUEUE(uart_tx, &c);
-	}
-
-	void mcu_uart_flush(void)
-	{
-		while (!BUFFER_EMPTY(uart_tx))
-		{
-			uint8_t tmp[UART_TX_BUFFER_SIZE + 1];
-			memset(tmp, 0, sizeof(tmp));
-			uint8_t r = 0;
-
-			BUFFER_READ(uart_tx, tmp, UART_TX_BUFFER_SIZE, r);
-			COM_UART.write(tmp, r);
-			COM_UART.flush();
 		}
 	}
 #endif
@@ -1246,26 +1193,6 @@ extern "C"
 
 #else
 			mcu_usb_rx_cb((uint8_t)Serial.read());
-#endif
-		}
-#endif
-
-#ifdef MCU_HAS_UART
-		while (COM_UART.available() > 0)
-		{
-#ifndef DETACH_UART_FROM_MAIN_PROTOCOL
-			uint8_t c = (uint8_t)COM_UART.read();
-			if (mcu_com_rx_cb(c))
-			{
-				if (BUFFER_FULL(uart_rx))
-				{
-					c = OVF;
-				}
-
-				BUFFER_ENQUEUE(uart_rx, &c);
-			}
-#else
-			mcu_uart_rx_cb((uint8_t)COM_UART.read());
 #endif
 		}
 #endif

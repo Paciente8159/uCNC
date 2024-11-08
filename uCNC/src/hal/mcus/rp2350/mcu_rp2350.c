@@ -289,6 +289,116 @@ void mcu_rtc_isr(void)
 }
 
 /**
+ * UART initialization
+ */
+
+#ifdef MCU_HAS_UART
+#include <hardware/uart.h>
+#ifndef UART_TX_BUFFER_SIZE
+#define UART_TX_BUFFER_SIZE 64
+#endif
+DECL_BUFFER(uint8_t, uart_tx, UART_TX_BUFFER_SIZE);
+DECL_BUFFER(uint8_t, uart_rx, RX_BUFFER_SIZE);
+
+uint8_t mcu_uart_getc(void)
+{
+	uint8_t c = 0;
+	BUFFER_DEQUEUE(uart_rx, &c);
+	return c;
+}
+
+uint8_t mcu_uart_available(void)
+{
+	return BUFFER_READ_AVAILABLE(uart_rx);
+}
+
+void mcu_uart_clear(void)
+{
+	BUFFER_CLEAR(uart_rx);
+}
+
+void mcu_uart_putc(uint8_t c)
+{
+	while (BUFFER_FULL(uart_tx))
+	{
+		mcu_uart_flush();
+	}
+	BUFFER_ENQUEUE(uart_tx, &c);
+}
+
+void mcu_uart_flush(void)
+{
+	while (!BUFFER_EMPTY(uart_tx))
+	{
+		// uint8_t tmp[UART_TX_BUFFER_SIZE + 1];
+		// memset(tmp, 0, sizeof(tmp));
+		// uint8_t r = 0;
+
+		while (uart_is_writable(COM_UART))
+		{
+			uint8_t c = 0;
+			BUFFER_DEQUEUE(uart_tx, &c);
+			uart_putc(COM_UART, c);
+		}
+	}
+}
+
+void mcu_uart_isr_handler(void)
+{
+	while (uart_is_readable(COM_UART))
+	{
+#ifndef DETACH_USB_FROM_MAIN_PROTOCOL
+		uint8_t c = (uint8_t)uart_getc(COM_UART);
+		if (mcu_com_rx_cb(c))
+		{
+			if (BUFFER_FULL(uart_rx))
+			{
+				c = OVF;
+			}
+
+			BUFFER_ENQUEUE(uart_rx, &c);
+		}
+
+#else
+		mcu_usb_rx_cb((uint8_t)uart_getc(COM_UART));
+#endif
+	}
+}
+#endif
+
+void rp2350_uart_config(uart_inst_t *uart, int irq, uint tx, uint rx, uint baud, irq_handler_t isrcallback)
+{
+	// Set up our UART with a basic baud rate.
+	uart_init(uart, baud);
+
+	// Set the TX and RX pins by using the function select on the GPIO
+	// Set datasheet for more information on function select
+	gpio_set_function(tx, UART_FUNCSEL_NUM(uart, tx));
+	gpio_set_function(rx, UART_FUNCSEL_NUM(uart, rx));
+
+	// Actually, we want a different speed
+	// The call will return the actual baud rate selected, which will be as close as
+	// possible to that requested
+	int __unused actual = uart_set_baudrate(uart, baud);
+
+	// Set UART flow control CTS/RTS, we don't want these, so turn them off
+	uart_set_hw_flow(uart, false, false);
+
+	// Set our data format
+	uart_set_format(uart, 8, 1, UART_PARITY_NONE);
+
+	// Turn off FIFO's - we want to do this character by character
+	uart_set_fifo_enabled(uart, false);
+
+	// And set up and enable the interrupt handlers
+	irq_set_exclusive_handler(irq, isrcallback);
+	irq_set_enabled(irq, true);
+
+	// Now enable the UART to send interrupts - TX/RX
+	uart_set_irq_enables(uart, true, false);
+}
+
+/**
  * Multicore code
  * **/
 void rp2350_core0_loop()
@@ -328,6 +438,7 @@ void mcu_init(void)
 #endif
 
 	rp2350_uart_init(BAUDRATE);
+	rp2350_uart_config(COM_UART, COM_IRQ, TX_BIT, RX_BIT, BAUDRATE, mcu_uart_isr_handler);
 
 	pinMode(LED_BUILTIN, OUTPUT);
 	// init rtc, oneshot and servo alarms
@@ -868,9 +979,9 @@ bool mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 			channel_config_set_dreq(&c, spi_get_dreq(spi_default, true));
 			dma_channel_configure(dma_tx, &c,
 														&spi_get_hw(SPI2_HW)->dr, // write address
-														out,										 // read address
-														len,										 // element count (each element is of size transfer_data_size)
-														false);									 // don't start yet
+														out,											// read address
+														len,											// element count (each element is of size transfer_data_size)
+														false);										// don't start yet
 
 			if (in)
 			{
@@ -884,10 +995,10 @@ bool mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 				channel_config_set_read_increment(&c, false);
 				channel_config_set_write_increment(&c, true);
 				dma_channel_configure(dma_rx, &c,
-															in,											 // write address
+															in,												// write address
 															&spi_get_hw(SPI2_HW)->dr, // read address
-															len,										 // element count (each element is of size transfer_data_size)
-															false);									 // don't start yet
+															len,											// element count (each element is of size transfer_data_size)
+															false);										// don't start yet
 
 				startmask |= (1u << dma_rx);
 			}
