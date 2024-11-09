@@ -712,9 +712,11 @@ uint8_t parser_get_float(float *value)
 				}
 			}
 			break;
+#ifdef ENABLE_NAMED_PARAMETERS
 		case OP_NAMED_PARAM:
 			result = parser_get_namedparam_id(&rhs);
 			break;
+#endif
 		case OP_REAL:
 			result = prt_atof((void *)parser_get_next_preprocessed, NULL, &rhs);
 			break;
@@ -1451,6 +1453,7 @@ uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parser_cmd_e
 }
 #endif
 
+#ifdef ENABLE_NAMED_PARAMETERS
 uint8_t parser_get_namedparam_id(float *value)
 {
 	char namedparam[NAMED_PARAM_MAX_LEN];
@@ -1494,5 +1497,6 @@ uint8_t parser_get_namedparam_id(float *value)
 
 	return NUMBER_UNDEF;
 }
+#endif
 
 #endif

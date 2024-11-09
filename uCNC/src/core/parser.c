@@ -726,7 +726,11 @@ static uint8_t parser_grbl_exec_code(uint8_t code)
 #endif
 #ifdef ENABLE_RS274NGC_EXPRESSIONS
 	case GRBL_PRINT_PARAM:
-		if (parser_get_float(&value) == NUMBER_OK || parser_get_namedparam_id(&value) == NUMBER_OK)
+		if (parser_get_float(&value) == NUMBER_OK 
+#ifdef ENABLE_NAMED_PARAMETERS
+		|| parser_get_namedparam_id(&value) == NUMBER_OK
+#endif
+		)
 		{
 			param = value;
 			value = parser_get_parameter(param);
