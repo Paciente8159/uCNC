@@ -422,6 +422,7 @@ static FORCEINLINE uint8_t parser_get_operation(uint8_t stack_depth, parser_stac
 
 	if ((c >= '0' && c <= '9') || c == '.')
 	{
+		parser_backtrack = 0;
 		return OP_REAL;
 	}
 #ifdef ENABLE_NAMED_PARAMETERS
