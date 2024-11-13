@@ -79,8 +79,9 @@ size_t prt_byte(void *out, size_t maxlen, const uint8_t *data, uint8_t flags)
 		maxlen = prt_putc(out, maxlen, '0');
 		maxlen = prt_putc(out, maxlen, 'x');
 	}
-	for (uint8_t i = 0; i < size; i++)
+	for (uint8_t i = size; i !=0;)
 	{
+		i--;
 		uint8_t up = data[i] >> 4;
 		uint8_t c = (up > 9) ? (hexchar + up - 10) : ('0' + up);
 		maxlen = prt_putc(out, maxlen, c);
@@ -189,16 +190,6 @@ size_t prt_ip(void *out, size_t maxlen, uint32_t ip)
 
 size_t prt_fmtva(void *out, size_t maxlen, const char *fmt, va_list *args)
 {
-	char c = 0, cval = 0;
-	uint8_t lcount = 2;
-#ifndef PRINT_FTM_MINIMAL
-	const char *s;
-	bool hexflags = HEX_NONE;
-	void *pt = NULL;
-#endif
-	int32_t li = 0;
-	float f, *f_ptr = NULL;
-
 	char *ptr = (char *)out;
 	char **memref;
 	if (maxlen != PRINT_CALLBACK)
@@ -206,15 +197,27 @@ size_t prt_fmtva(void *out, size_t maxlen, const char *fmt, va_list *args)
 		memref = &ptr;
 		out = memref;
 	}
-	uint8_t elems = 0;
-#ifndef PRINTF_FTM_CUSTOM_PRECISION
-	uint8_t precision = (!g_settings.report_inches) ? 3 : 5;
-#else
-	uint8_t precision = PRINTF_FTM_CUSTOM_PRECISION;
-#endif
+
+	char c = 0;
 
 	do
 	{
+		char cval = 0;
+		uint8_t lcount = 2;
+#ifndef PRINT_FTM_MINIMAL
+		const char *s;
+		uint8_t hexflags = HEX_NONE;
+		void *pt = NULL;
+#endif
+		int32_t li = 0;
+		float f, *f_ptr = NULL;
+		uint8_t elems = 0;
+#ifndef PRINTF_FTM_CUSTOM_PRECISION
+		uint8_t precision = (!g_settings.report_inches) ? 3 : 5;
+#else
+		uint8_t precision = PRINTF_FTM_CUSTOM_PRECISION;
+#endif
+
 		c = prtf_getc(fmt++);
 		if (c == '%')
 		{
@@ -223,7 +226,8 @@ size_t prt_fmtva(void *out, size_t maxlen, const char *fmt, va_list *args)
 			{
 #ifndef PRINT_FTM_MINIMAL
 			case '#':
-				hexflags = HEX_PREFIX;
+				hexflags |= HEX_PREFIX;
+				c = prtf_getc(fmt++);
 				__FALL_THROUGH__
 			case '0':
 				// ignores zero padding
@@ -235,7 +239,7 @@ size_t prt_fmtva(void *out, size_t maxlen, const char *fmt, va_list *args)
 				if (c == '.' || (c >= '1' && c <= '9'))
 				{
 					fmt--;
-					cval = prt_atof((void*)str_read_romchar, (const char **)&fmt, &f);
+					cval = prt_atof((void *)str_read_romchar, (const char **)&fmt, &f);
 					if (cval != ATOF_NUMBER_UNDEF)
 					{
 						elems = (uint8_t)f;
@@ -311,6 +315,7 @@ size_t prt_fmtva(void *out, size_t maxlen, const char *fmt, va_list *args)
 						break;
 					}
 #ifndef PRINT_FTM_MINIMAL
+					pt = &li;
 					elems = 1;
 				}
 				do
@@ -319,7 +324,11 @@ size_t prt_fmtva(void *out, size_t maxlen, const char *fmt, va_list *args)
 					{
 					case 'x':
 					case 'X':
+#ifndef PRINT_FTM_MINIMAL
+						maxlen = prt_byte(out, maxlen, (const uint8_t *)pt, (hexflags | lcount));
+#else
 						maxlen = prt_byte(out, maxlen, (const uint8_t *)&li, (hexflags | lcount));
+#endif
 						break;
 					case 'I':
 						maxlen = prt_ip(out, maxlen, li);
@@ -340,7 +349,7 @@ size_t prt_fmtva(void *out, size_t maxlen, const char *fmt, va_list *args)
 					{
 						maxlen = prt_putc(out, maxlen, ',');
 					}
-					pt += (1 << lcount);
+					pt += (1 << (lcount - 1));
 				} while (elems);
 #endif
 				/* code */
