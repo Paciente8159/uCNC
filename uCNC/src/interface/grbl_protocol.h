@@ -42,6 +42,8 @@ extern "C"
 	void proto_feedback_fmt(const char *fmt, ...);
 #define proto_feedback(__s) proto_print(MSG_FEEDBACK_START __s MSG_FEEDBACK_END)
 #define proto_info(__s, ...) proto_feedback_fmt(__romstr__(__s), ##__VA_ARGS__)
+#define proto_itoa(value) prt_int((void*)proto_putc, PRINT_CALLBACK, (uint32_t)(value), 0)
+#define proto_ftoa(value) prt_flt((void*)proto_putc, PRINT_CALLBACK, (float)(value), ((!g_settings.report_inches) ? 3 : 5))
 	void proto_probe_result(uint8_t val);
 	void proto_gcode_coordsys(void);
 	void proto_gcode_modes(void);
