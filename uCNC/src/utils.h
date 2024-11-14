@@ -241,8 +241,8 @@ extern "C"
 
 #ifndef USE_MACRO_BUFFER
 #ifndef USE_CUSTOM_BUFFER_IMPLEMENTATION
-#define DECL_BUFFER(type, name, size) \
-	static type name##_bufferdata[size];         \
+#define DECL_BUFFER(type, name, size)  \
+	static type name##_bufferdata[size]; \
 	ring_buffer_t name = {0, 0, 0, name##_bufferdata, size, sizeof(type)}
 
 	uint8_t buffer_write_available(ring_buffer_t *buffer);
@@ -412,23 +412,29 @@ extern "C"
 	}                                                                                            \
 })
 
-#define BUFFER_CLEAR(buffer)      \
-	{                               \
-		__ATOMIC__                    \
-		{                             \
-			buffer##_bufferdata[0] = 0; \
-			buffer.tail = 0;            \
-			buffer.head = 0;            \
-			buffer.count = 0;           \
-		}                             \
+#define BUFFER_CLEAR(buffer)          \
+	{                                   \
+			__ATOMIC__{                     \
+					buffer##_bufferdata[0] = 0; \
+	buffer.tail = 0;                    \
+	buffer.head = 0;                    \
+	buffer.count = 0;                   \
+	}                                   \
 	}
 #endif
 
-#define __TIMEOUT_US__(timeout) for (int32_t elap_us_##timeout, curr_us_##timeout = mcu_free_micros(); ((int32_t)timeout) >= 0; elap_us_##timeout = mcu_free_micros() - curr_us_##timeout, timeout -= ABS(elap_us_##timeout), curr_us_##timeout = mcu_free_micros())
-#define __TIMEOUT_MS__(timeout) \
-	timeout *= 1000;              \
+#define __TIMEOUT_US__(timeout) for (int32_t elap_us_##timeout, curr_us_##timeout = mcu_free_micros(); timeout > 0; elap_us_##timeout = mcu_free_micros() - curr_us_##timeout, timeout -= MIN(timeout, ABS(elap_us_##timeout)), curr_us_##timeout = mcu_free_micros())
+#define __TIMEOUT_MS__(timeout)      \
+	if (timeout < (UINT32_MAX / 1000)) \
+	{                                  \
+		timeout *= 1000;                 \
+	}                                  \
+	else                               \
+	{                                  \
+		timeout = 0xFFFFFFFF;            \
+	}                                  \
 	__TIMEOUT_US__(timeout)
-#define __TIMEOUT_ASSERT__(timeout) if (((int32_t)timeout) < 0)
+#define __TIMEOUT_ASSERT__(timeout) if (timeout == 0)
 
 #if defined(__GNUC__) && __GNUC__ >= 7
 #define __FALL_THROUGH__ __attribute__((fallthrough));
