@@ -249,9 +249,6 @@ WEAK_EVENT_HANDLER(proto_gcode_modes)
  * all other implementations can use the formated print helper
  */
 
-// #define proto_itoa(value) prt_int((void*)proto_putc, PRINT_CALLBACK, (uint32_t)(value), 0)
-// #define proto_ftoa(value) prt_flt((void*)proto_putc, PRINT_CALLBACK, (float)(value), ((!g_settings.report_inches) ? 3 : 5))
-
 void proto_puts(const char *str)
 {
 	for (;;)
