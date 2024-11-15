@@ -111,12 +111,14 @@ static void FORCEINLINE debug_putc(char c)
 	if (BUFFER_FULL(debug_tx))
 	{
 		BUFFER_CLEAR(debug_tx);
-		rom_strcpy((char*)debug_tx_bufferdata, __romstr__("Debug buffer overflow!\0"));
-		debug_tx.count = strlen((char*)debug_tx_bufferdata);
+		rom_strcpy((char *)debug_tx_bufferdata, __romstr__("Debug buffer overflow!!\n\0"));
+		debug_tx_lines = 1;
+		debug_tx.count = strlen((char *)debug_tx_bufferdata);
 	}
 
 	BUFFER_ENQUEUE(debug_tx, &c);
-	if(c == '\n'){
+	if (c == '\n')
+	{
 		debug_tx_lines++;
 		debug_flush();
 	}
@@ -395,7 +397,7 @@ void grbl_stream_printf(const char *fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
-	prt_fmtva((void*)grbl_stream_putc, PRINT_CALLBACK, fmt, &args);
+	prt_fmtva((void *)grbl_stream_putc, PRINT_CALLBACK, fmt, &args);
 	va_end(args);
 }
 
@@ -435,4 +437,3 @@ void grbl_stream_print_cb(void *arg, char c)
 {
 	grbl_stream_putc(c);
 }
-
