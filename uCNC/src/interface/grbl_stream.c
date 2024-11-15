@@ -299,20 +299,12 @@ uint8_t grbl_stream_available(void)
 		grbl_stream_t *p = default_stream;
 		while (p != NULL)
 		{
-#ifdef ENABLE_DEBUG_STREAM
-			// skip the debug stream, if it differs from default_stream
-			if (p != DEBUG_STREAM || p == default_stream)
+			count = (!(p->stream_available)) ? 0 : p->stream_available();
+			if (count)
 			{
-#endif
-				count = (!(p->stream_available)) ? 0 : p->stream_available();
-				if (count)
-				{
-					grbl_stream_change(p);
-					return count;
-				}
-#ifdef ENABLE_DEBUG_STREAM
+				grbl_stream_change(p);
+				return count;
 			}
-#endif
 			p = p->next;
 		}
 	}
