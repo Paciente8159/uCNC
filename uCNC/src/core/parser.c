@@ -726,9 +726,9 @@ static uint8_t parser_grbl_exec_code(uint8_t code)
 #endif
 #ifdef ENABLE_RS274NGC_EXPRESSIONS
 	case GRBL_PRINT_PARAM:
-		if (parser_get_float(&value) == NUMBER_OK 
+		if (parser_get_float(&value) == NUMBER_OK
 #ifdef ENABLE_NAMED_PARAMETERS
-		|| parser_get_namedparam_id(&value) == NUMBER_OK
+				|| parser_get_namedparam_id(&value) == NUMBER_OK
 #endif
 		)
 		{
@@ -1252,6 +1252,11 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 		if (CHECKFLAG(cmd->words, (GCODE_WORD_S | GCODE_WORD_P)) != (GCODE_WORD_S | GCODE_WORD_P))
 		{
 			return STATUS_GCODE_VALUE_WORD_MISSING;
+		}
+
+		if ((words->p < 6) && (SERVOS_MASK & (1 << words->p)))
+		{
+			return STATUS_INVALID_STATEMENT;
 		}
 		break;
 #endif
