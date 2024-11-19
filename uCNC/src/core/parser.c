@@ -1314,7 +1314,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 		{
 #if (SERVOS_MASK != 0)
 		case M10:
-			if (words->p < 6)
+			if ((words->p < 6) && (SERVOS_MASK & (1 << words->p)))
 			{
 				io_set_pinvalue(words->p + SERVO_PINS_OFFSET, (uint8_t)CLAMP(words->s, 0, 255));
 			}
