@@ -19,6 +19,7 @@ Version 1.11 come with a full refactoring of the compilation units of µCNC inte
 	- improvements to the debug message system. Now a single call to DBGMSG macro is used. The same principle of formated messages is applied.
 	- Debug messages now have an intermediate buffer that stores the output before printing it to prevent outputing debug messages in the middle of onging protocol messages
 	- Added parsing support for O-Codes (subrotines)
+	- Initial support for RP2350.
 
 # IMPORTANT NOTE
 
@@ -257,6 +258,7 @@ It can run on:
 - NXP LPC1768/9 - v1.5.x (eeprom emulation and analog still being developed)
 - RP2040 - v1.6.x (supports wifi connection via telnet and bluetooth)
 - RP2040 - v1.9.x (added multicore mode)
+- RP2350 - v1.11.x (initial support)
 - STM32F0 (like the Bluepill) - v1.9.x
 - Windows PC (used for simulation/debugging only - ISR on Windows doesn't allow to use it as a real alternative)
 
