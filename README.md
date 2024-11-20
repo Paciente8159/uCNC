@@ -19,7 +19,7 @@ Version 1.11 come with a full refactoring of the compilation units of µCNC inte
 	- improvements to the debug message system. Now a single call to DBGMSG macro is used. The same principle of formated messages is applied.
 	- Debug messages now have an intermediate buffer that stores the output before printing it to prevent outputing debug messages in the middle of onging protocol messages
 	- Added parsing support for O-Codes (subrotines)
-	- Initial support for RP2350.
+	- Initial support for RP2350 (still experimental stage).
 
 # IMPORTANT NOTE
 
