@@ -4555,7 +4555,20 @@ extern "C"
 #define I2C_ADDRESS 0
 #endif
 
+#ifndef USE_ARDUINO_WIRE
 #define I2C_REG __helper__(LPC_I2C, I2C_PORT, )
+#else
+/**
+ * This allows future implementations of other Wire ports
+ * But for now the framework only implements Wire
+ */
+#define I2C_REG Wire
+// #if (I2C_PORT == 0)
+// #define I2C_REG Wire
+// #else
+// #define I2C_REG __helper__(Wire, I2C_PORT, )
+// #endif
+#endif
 #define I2C_PCLK __helper__(CLKPWR_PCLKSEL_I2C, I2C_PORT, )
 #define I2C_PCON __helper__(CLKPWR_PCONP_PCI2C, I2C_PORT, )
 
