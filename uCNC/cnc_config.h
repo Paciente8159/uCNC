@@ -321,6 +321,11 @@ extern "C"
 #define ENABLE_O_CODES_VERBOSE
 #endif
 
+/**
+ * Uncomment to prevent machine lock after end program (M2 or M30)
+ */
+// #define DISABLE_ENDPROGRAM_LOCK
+
 	/**
 	 * Shrink µCNC
 	 * It's possible to shrink µCNC by disable some core features:
