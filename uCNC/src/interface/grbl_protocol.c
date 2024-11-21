@@ -496,7 +496,7 @@ void proto_status(void)
 	}
 
 	proto_putc('|');
-	if (!(g_settings.status_report_mask & 1))
+	if ((g_settings.status_report_mask & 1))
 	{
 		proto_putc('M');
 	}
