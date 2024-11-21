@@ -726,9 +726,9 @@ static uint8_t parser_grbl_exec_code(uint8_t code)
 #endif
 #ifdef ENABLE_RS274NGC_EXPRESSIONS
 	case GRBL_PRINT_PARAM:
-		if (parser_get_float(&value) == NUMBER_OK 
+		if (parser_get_float(&value) == NUMBER_OK
 #ifdef ENABLE_NAMED_PARAMETERS
-		|| parser_get_namedparam_id(&value) == NUMBER_OK
+				|| parser_get_namedparam_id(&value) == NUMBER_OK
 #endif
 		)
 		{
@@ -1973,8 +1973,10 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 		break;
 	case 3: // M2
 	case 4: // M30 (pallet change has no effect)
+#ifndef DISABLE_ENDPROGRAM_LOCK
 		hold = true;
 		resetparser = true;
+#endif
 		break;
 	}
 
