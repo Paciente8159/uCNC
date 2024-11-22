@@ -80,6 +80,13 @@ extern "C"
 #endif
 #endif
 
+#if (MCU == MCU_RENESAS_RA)
+#include "renesas_ra/mcumap_renesas_ra.h"
+#ifndef CFG_TUSB_MCU
+#define CFG_TUSB_MCU OPT_MCU_RP2350
+#endif
+#endif
+
 #if (MCU == MCU_VIRTUAL_WIN)
 #include "virtual/mcumap_virtual.h"
 #endif
