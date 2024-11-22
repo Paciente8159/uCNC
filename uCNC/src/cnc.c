@@ -508,7 +508,7 @@ uint8_t cnc_unlock(bool force)
 
 		io_set_steps(g_settings.step_invert_mask);
 		io_enable_steppers(g_settings.step_enable_invert);
-		parser_reset(true); // reset stop group only
+		parser_reset(false); // reset parser
 
 		// hard reset
 		// if homing not enabled run startup blocks
