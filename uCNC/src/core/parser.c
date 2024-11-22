@@ -171,7 +171,7 @@ void parser_init(void)
 #endif
 	memset(parser_last_pos, 0, sizeof(parser_last_pos));
 	parser_parameters_load();
-	parser_reset(false);
+	parser_reset(true);
 }
 
 uint8_t parser_read_command(void)
@@ -1296,10 +1296,12 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 	// stoping from previous command M2 or M30 command
 	if (new_state->groups.stopping && !CHECKFLAG(cmd->groups, GCODE_GROUP_STOPPING))
 	{
+#ifndef DISABLE_ENDPROGRAM_LOCK
 		if (new_state->groups.stopping == 3 || new_state->groups.stopping == 4)
 		{
 			return STATUS_PROGRAM_ENDED;
 		}
+#endif
 
 		new_state->groups.stopping = 0;
 	}
@@ -1973,16 +1975,18 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 		break;
 	case 3: // M2
 	case 4: // M30 (pallet change has no effect)
-#ifndef DISABLE_ENDPROGRAM_LOCK
 		hold = true;
 		resetparser = true;
-#endif
 		break;
 	}
 
 	if (hold && !mc_get_checkmode())
 	{
+#ifndef DISABLE_ENDPROGRAM_LOCK
 		mc_pause();
+#else
+		itp_sync();
+#endif
 		if (resetparser)
 		{
 			cnc_stop();
@@ -2067,6 +2071,12 @@ static uint8_t parser_gcode_command(bool is_jogging)
 #endif
 		// if everything went ok updates the parser modal groups and position
 		memcpy(&parser_state, &next_state, sizeof(parser_state_t));
+#ifdef DISABLE_ENDPROGRAM_LOCK
+		if (next_state.groups.stopping == 3 || next_state.groups.stopping == 4)
+		{
+			parser_reset(false);
+		}
+#endif
 	}
 
 	return result;
@@ -2775,13 +2785,11 @@ void parser_discard_command(void)
 #endif
 }
 
-void parser_reset(bool stopgroup_only)
+void parser_reset(bool fullreset)
 {
-	parser_state.groups.stopping = 0; // resets all stopping commands (M0,M1,M2,M30,M60)
-	if (stopgroup_only)
-	{
-		return;
-	}
+	// modified based on https://linuxcnc.org/docs/html/gcode/m-code.html#mcode:m2-m30
+
+	parser_state.groups.stopping = 0;											// resets all stopping commands (M0,M1,M2,M30,M60)
 	parser_state.groups.coord_system = G54;								// G54
 	parser_state.groups.plane = G17;											// G17
 	parser_state.groups.feed_speed_override = M48;				// M48
@@ -2792,16 +2800,10 @@ void parser_reset(bool stopgroup_only)
 #if TOOL_COUNT > 0
 	parser_state.groups.coolant = M9;					// M9
 	parser_state.groups.spindle_turning = M5; // M5
-	parser_state.groups.tool_change = 1;
-#if TOOL_COUNT > 1
-	parser_state.tool_index = g_settings.default_tool;
-#endif
 	parser_state.groups.path_mode = G61;
 #endif
-	parser_state.groups.motion = G1;																							 // G1
-	parser_state.groups.units = G21;																							 // G21
-	memset(parser_parameters.g92_offset, 0, sizeof(parser_parameters.g92_offset)); // G92.2
-	parser_parameters.tool_length_offset = 0;
+	parser_state.groups.motion = G1; // G1
+	parser_state.groups.units = G21; // G21
 	parser_wco_counter = 0;
 #ifdef ENABLE_G39_H_MAPPING
 	parser_state.groups.height_map_active = 0;
@@ -2809,6 +2811,21 @@ void parser_reset(bool stopgroup_only)
 
 #ifdef ENABLE_PARSER_MODULES
 	EVENT_INVOKE(parser_reset, &parser_state);
+#endif
+
+	if (!fullreset)
+	{
+		return;
+	}
+
+	// extra reset stuff out of the M2/M30 scope
+	memset(parser_parameters.g92_offset, 0, sizeof(parser_parameters.g92_offset)); // G92.2
+	parser_parameters.tool_length_offset = 0;
+#if TOOL_COUNT > 0
+	parser_state.groups.tool_change = 1;
+#endif
+#if TOOL_COUNT > 1
+	parser_state.tool_index = g_settings.default_tool;
 #endif
 }
 

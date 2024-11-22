@@ -323,7 +323,7 @@ extern "C"
 	void parser_parameters_reset(void);
 	void parser_parameters_save(void);
 	void parser_sync_position(void);
-	void parser_reset(bool stopgroup_only);
+	void parser_reset(bool fullreset);
 	void parser_machine_to_work(float *axis);
 	uint8_t parser_get_float(float *value);
 	void parser_discard_command(void);
