@@ -3228,6 +3228,10 @@ uint8_t parser_exec_command_block(parser_state_t *new_state, parser_words_t *wor
 		}
 	}
 
+	// set possible feed and spindle changes embedded in the canned command
+	new_state->feedrate = canned_state.feedrate;
+	new_state->spindle = canned_state.spindle;
+
 	return error;
 }
 #endif
