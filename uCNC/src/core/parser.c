@@ -1414,12 +1414,16 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 	// 9. overrides
 	block_data.motion_flags.bit.feed_override = new_state->groups.feed_speed_override ? 1 : 0;
 
-	// 10. dwell
-	if (new_state->groups.nonmodal == G4)
+	// 10. dwell (or if any other nonmodal command except G53 requires a sync motion)
+	if (new_state->groups.nonmodal != 0 && new_state->groups.nonmodal != G53)
 	{
-		// calc dwell in milliseconds
-		block_data.dwell = MAX(block_data.dwell, (uint16_t)lroundf(MIN(words->p * 1000.0f, 65535)));
-		new_state->groups.nonmodal = 0;
+		itp_sync();
+		if (new_state->groups.nonmodal == G4)
+		{
+			// calc dwell in milliseconds
+			block_data.dwell = MAX(block_data.dwell, (uint16_t)lroundf(MIN(words->p * 1000.0f, 65535)));
+			new_state->groups.nonmodal = 0;
+		}
 	}
 
 	// after all spindle, overrides, coolant and dwells are set
@@ -1520,6 +1524,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 #ifndef DISABLE_COORD_SYS_SUPPORT
 	if (CHECKFLAG(cmd->groups, GCODE_GROUP_COORDSYS))
 	{
+		itp_sync();
 		parser_parameters.coord_system_index = new_state->groups.coord_system;
 		parser_coordinate_system_load(parser_parameters.coord_system_index, parser_parameters.coord_system_offset);
 		parser_wco_counter = 0;
@@ -1540,9 +1545,13 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 
 	// 17. set distance mode (G90, G91)
 	memcpy(target, parser_last_pos, sizeof(parser_last_pos));
+	// absolute distances if distance mode is G90
+	bool abspos = (new_state->groups.distance_mode == G90);
+	// or if any nonmodal command is active (execept G4 that auto clears itself)
+	abspos |= (new_state->groups.nonmodal != 0);
+	// or if any nonmodal command is active (execept G4 that auto clears itself)
 
 	// for all not explicitly declared target retain their position or add offset
-	bool abspos = (new_state->groups.distance_mode == G90) | (new_state->groups.nonmodal == G53);
 #ifdef AXIS_X
 	if (CHECKFLAG(cmd->words, GCODE_WORD_X))
 	{
@@ -1700,7 +1709,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 			{
 				if (words->l == 20)
 				{
-					coords[i] = -(target[i] - parser_last_pos[i] - parser_parameters.g92_offset[i]);
+					coords[i] = -(target[i] - parser_last_pos[i]);
 				}
 				else
 				{
@@ -1767,7 +1776,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 		for (uint8_t i = AXIS_COUNT; i != 0;)
 		{
 			i--;
-			parser_parameters.g92_offset[i] = -(target[i] - parser_last_pos[i] - parser_parameters.g92_offset[i]);
+			parser_parameters.g92_offset[i] = -(target[i] - parser_last_pos[i] + parser_parameters.coord_system_offset[i]);
 		}
 		memcpy(g92permanentoffset, parser_parameters.g92_offset, sizeof(g92permanentoffset));
 #ifdef G92_STORE_NONVOLATILE
