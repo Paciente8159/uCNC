@@ -1000,8 +1000,10 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 			{
 				return STATUS_GCODE_UNSUPPORTED_COMMAND;
 			}
-			// P is not between 1 and N of coord systems
+// P is not between 1 and N of coord systems
+#ifndef DISABLE_HOME_SUPPORT
 			if (words->p != 28 && words->p != 30)
+#endif
 			{
 				if (words->p < 0 || words->p > COORD_SYS_COUNT)
 				{
@@ -1640,6 +1642,9 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 		}
 #endif
 		break;
+	case G92:
+		index = G92OFFSET;
+		break;
 	case G92_1: // G92.1
 		memset(g92permanentoffset, 0, sizeof(g92permanentoffset));
 		__FALL_THROUGH__
@@ -1654,45 +1659,46 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 		parser_wco_counter = 0;
 		new_state->groups.nonmodal = 0; // this command is compatible with motion commands
 		break;
+	case G53:
+		index = 254;
+		break;
 	}
 
 	// check from were to read the previous values for the target array
-	if (index == 255)
+	float coords[AXIS_COUNT];
+	bool relative_target = true;
+	float *relative_offset = NULL;
+	switch (index)
 	{
-		switch (new_state->groups.nonmodal)
+	case 254: // G53 (passthrough)
+		break;
+	case 255: // No nonmodal
+		if ((new_state->groups.distance_mode == G90))
 		{
-		case G53:
-			// G28 and G30 make the planed motion (absolute or relative)
-			//         case G28:
-			//         case G30:
-			break;
-		default:
-			if ((new_state->groups.distance_mode == G90))
+			for (uint8_t i = AXIS_COUNT; i != 0;)
 			{
-				for (uint8_t i = AXIS_COUNT; i != 0;)
+				i--;
+				if (CHECKFLAG(cmd->words, (1 << i)))
 				{
-					i--;
-					if (CHECKFLAG(cmd->words, (1 << i)))
-					{
-						target[i] += parser_parameters.coord_system_offset[i] + parser_parameters.g92_offset[i];
-					}
+					target[i] += parser_parameters.coord_system_offset[i] + parser_parameters.g92_offset[i];
 				}
-#ifdef AXIS_TOOL
-				if (CHECKFLAG(cmd->words, (1 << AXIS_TOOL)))
-				{
-					target[AXIS_TOOL] += parser_parameters.tool_length_offset;
-				}
-#endif
 			}
-			break;
+#ifdef AXIS_TOOL
+			if (CHECKFLAG(cmd->words, (1 << AXIS_TOOL)))
+			{
+				target[AXIS_TOOL] += parser_parameters.tool_length_offset;
+			}
+#endif
 		}
-	}
-
-// stores G10 L2 command in the right address
+		break;
+	case G92OFFSET:
+		relative_offset = parser_parameters.coord_system_offset;
+		memcpy(coords, parser_parameters.g92_offset, sizeof(coords));
+		break;
 #ifndef DISABLE_G10_SUPPORT
-	if (index <= G30HOME)
-	{
-		float coords[AXIS_COUNT];
+	default:
+		relative_offset = parser_parameters.g92_offset;
+		relative_target = (words->l == 20);
 		if (index == parser_parameters.coord_system_index)
 		{
 			memcpy(coords, parser_parameters.coord_system_offset, sizeof(coords));
@@ -1701,24 +1707,22 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 		{
 			parser_coordinate_system_load(index, coords);
 		}
+		break;
+#endif
+	}
 
+	if (index <= G92OFFSET)
+	{
 		for (uint8_t i = AXIS_COUNT; i != 0;)
 		{
 			i--;
 			if (CHECKFLAG(cmd->words, (1 << i)))
 			{
-				if (words->l == 20)
-				{
-					coords[i] = -(target[i] - parser_last_pos[i]);
-				}
-				else
-				{
-					coords[i] = target[i];
-				}
+				coords[i] = (relative_target) ? -(target[i] - parser_last_pos[i] + relative_offset[i]) : target[i];
 			}
 		}
 #ifdef AXIS_TOOL
-		if (words->l == 20)
+		if (relative_target)
 		{
 			if (CHECKFLAG(cmd->words, (1 << AXIS_TOOL)))
 			{
@@ -1726,6 +1730,24 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 			}
 		}
 #endif
+	}
+
+	// stores G10 or G92 command in the right address
+	switch (index)
+	{
+	case 254:
+	case 255:
+		break;
+	case G92OFFSET:
+		memcpy(parser_parameters.g92_offset, coords, sizeof(parser_parameters.g92_offset));
+		memcpy(g92permanentoffset, parser_parameters.g92_offset, sizeof(g92permanentoffset));
+#ifdef G92_STORE_NONVOLATILE
+		settings_save(G92ADDRESS, (uint8_t *)&g92permanentoffset, PARSER_PARAM_SIZE);
+#endif
+		parser_wco_counter = 0;
+		break;
+#ifndef DISABLE_G10_SUPPORT
+	default:
 		settings_save(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (index * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)coords, PARSER_PARAM_SIZE);
 #ifndef DISABLE_COORDINATES_SYSTEM_RAM
 		memcpy(&coordinate_systems[index], coords, PARSER_PARAM_SIZE);
@@ -1735,58 +1757,14 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 			memcpy(parser_parameters.coord_system_offset, coords, PARSER_PARAM_SIZE);
 		}
 		parser_wco_counter = 0;
-	}
+		break;
 #endif
+	}
+
 	// laser disabled in nonmodal moves
 	if (g_settings.laser_mode && new_state->groups.nonmodal)
 	{
 		block_data.spindle = 0;
-	}
-
-	switch (new_state->groups.nonmodal)
-	{
-#ifndef DISABLE_HOME_SUPPORT
-	case G28: // G28
-	case G30: // G30
-		block_data.feed = FLT_MAX;
-		if (CHECKFLAG(cmd->words, GCODE_ALL_AXIS))
-		{
-			error = mc_line(target, &block_data);
-			update_tools = false;
-			if (error)
-			{
-				return error;
-			}
-		}
-
-		if (new_state->groups.nonmodal == G28)
-		{
-			parser_coordinate_system_load(G28HOME, target);
-		}
-		else
-		{
-			parser_coordinate_system_load(G30HOME, target);
-		}
-		error = mc_line((float *)&target, &block_data);
-		// saves position
-		memcpy(parser_last_pos, target, sizeof(parser_last_pos));
-		break;
-#endif
-	case G92: // G92
-		for (uint8_t i = AXIS_COUNT; i != 0;)
-		{
-			i--;
-			parser_parameters.g92_offset[i] = -(target[i] - parser_last_pos[i] + parser_parameters.coord_system_offset[i]);
-		}
-		memcpy(g92permanentoffset, parser_parameters.g92_offset, sizeof(g92permanentoffset));
-#ifdef G92_STORE_NONVOLATILE
-		settings_save(G92ADDRESS, (uint8_t *)&g92permanentoffset, PARSER_PARAM_SIZE);
-#endif
-		parser_wco_counter = 0;
-		break;
-	case G53:
-		new_state->groups.nonmodal = 0; // this command is compatible with motion commands
-		break;
 	}
 
 	// 20. perform motion (G0 to G3, G80 to G89), as modified (possibly) by G53.
