@@ -1193,6 +1193,13 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 		}
 	}
 
+	// https://linuxcnc.org/docs/html/gcode/g-code.html#gcode:g80
+	// any axis word with active G80 command is invalid
+	if (CHECKFLAG(cmd->words, GCODE_ALL_AXIS) && new_state->groups.motion == G80)
+	{
+		return STATUS_GCODE_AXIS_WORDS_EXIST;
+	}
+
 	// group 2 - plane selection (nothing to be checked)
 	// group 3 - distance mode (nothing to be checked)
 
@@ -3214,6 +3221,10 @@ uint8_t parser_exec_command_block(parser_state_t *new_state, parser_words_t *wor
 			break;
 		}
 	}
+
+	// set possible feed and spindle changes embedded in the canned command
+	new_state->feedrate = canned_state.feedrate;
+	new_state->spindle = canned_state.spindle;
 
 	return error;
 }
