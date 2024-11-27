@@ -947,6 +947,9 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 
 static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
 {
+	bool requires_feed = true;
+	bool has_axis = CHECKFLAG(cmd->words, GCODE_ALL_AXIS);
+	
 	// only alow groups 3, 6 and modal G53
 	if (cnc_get_exec_state(EXEC_JOG))
 	{
@@ -990,6 +993,7 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 #ifndef DISABLE_G10_SUPPORT
 		case G10:
 			// G10
+			requires_feed = false;
 			// if no P or L is present
 			if (!(cmd->words & (GCODE_WORD_P | GCODE_WORD_L)))
 			{
@@ -1013,7 +1017,8 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 			break;
 #endif
 		case G92:
-			if (!CHECKFLAG(cmd->words, GCODE_ALL_AXIS))
+			requires_feed = false;
+			if (!has_axis)
 			{
 				return STATUS_GCODE_NO_AXIS_WORDS;
 			}
@@ -1032,17 +1037,20 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 	// group 1 - motion (incomplete)
 	// TODO
 	// subset of canned cycles
-	if (CHECKFLAG(cmd->groups, GCODE_GROUP_MOTION))
+	if (has_axis || CHECKFLAG(cmd->groups, GCODE_GROUP_MOTION))
 	{
 		switch (new_state->groups.motion)
 		{
-#ifndef IGNORE_G0_G1_MISSING_AXIS_WORDS
 		case G0: // G0
+			requires_feed = false;
+			__FALL_THROUGH__
 		case G1: // G1
+#ifdef IGNORE_G0_G1_MISSING_AXIS_WORDS
+			break;
 #endif
 #ifndef DISABLE_PROBING_SUPPORT
 		case G38: // G38.2, G38.3, G38.4, G38.5
-			if (!CHECKFLAG(cmd->words, GCODE_ALL_AXIS))
+			if (!has_axis)
 			{
 				return STATUS_GCODE_NO_AXIS_WORDS;
 			}
@@ -1104,11 +1112,11 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 			break;
 #endif
 		case G80: // G80 and
-			if (CHECKFLAG(cmd->words, GCODE_ALL_AXIS) && !cmd->group_0_1_useaxis)
+			if (has_axis)
 			{
 				return STATUS_GCODE_AXIS_WORDS_EXIST;
 			}
-
+			requires_feed = false;
 			break;
 #ifdef ENABLE_G39_H_MAPPING
 		case G39:
@@ -1136,7 +1144,7 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 		default: // G81..G89 canned cycles (partially implemented)
 			// It is an error if:
 			// X, Y, and Z words are all missing during a canned cycle,
-			if (!CHECKFLAG(cmd->words, GCODE_ALL_AXIS))
+			if (!has_axis)
 			{
 				return STATUS_GCODE_NO_AXIS_WORDS;
 			}
@@ -1169,7 +1177,7 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 		}
 
 		// group 5 - feed rate mode
-		if (new_state->groups.motion != G0)
+		if (requires_feed && has_axis)
 		{
 			if (!CHECKFLAG(cmd->words, GCODE_WORD_F))
 			{
@@ -1192,14 +1200,6 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 			}
 		}
 	}
-
-	// https://linuxcnc.org/docs/html/gcode/g-code.html#gcode:g80
-	// any axis word with active G80 command is invalid
-	if (CHECKFLAG(cmd->words, GCODE_ALL_AXIS) && new_state->groups.motion == G80)
-	{
-		return STATUS_GCODE_AXIS_WORDS_EXIST;
-	}
-
 	// group 2 - plane selection (nothing to be checked)
 	// group 3 - distance mode (nothing to be checked)
 
@@ -2327,8 +2327,6 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 		}
 	}
 
-	new_state->groups.motion_mantissa = mantissa;
-
 	switch (code)
 	{
 // motion codes
@@ -2386,6 +2384,7 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 #endif
 		new_group |= GCODE_GROUP_MOTION;
 		new_state->groups.motion = code;
+		new_state->groups.motion_mantissa = mantissa;
 		break;
 #ifndef DISABLE_ARC_SUPPORT
 	case 17:
@@ -2797,6 +2796,7 @@ void parser_reset(bool fullreset)
 	parser_state.groups.path_mode = G61;
 #endif
 	parser_state.groups.motion = G1; // G1
+	parser_state.groups.motion_mantissa = 0;
 	parser_state.groups.units = G21; // G21
 	parser_wco_counter = 0;
 #ifdef ENABLE_G39_H_MAPPING
