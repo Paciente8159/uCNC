@@ -4602,7 +4602,7 @@ extern "C"
 #else
 #define ITP_PCLKSEL_REG PCLKSEL1
 #endif
-#define ITP_PCLKSEL_VAL (1 << (__helper__(CLKPWR_PCLKSEL_TIMER, ITP_TIMER, ) & 0x1F))
+#define ITP_PCLKSEL_MASK (3UL << (__helper__(CLKPWR_PCLKSEL_TIMER, ITP_TIMER, ) & 0x1F))
 
 #define MCU_RTC_ISR SysTick_Handler
 
@@ -4619,7 +4619,7 @@ extern "C"
 #else
 #define SERVO_PCLKSEL_REG PCLKSEL1
 #endif
-#define SERVO_PCLKSEL_VAL (1 << (__helper__(CLKPWR_PCLKSEL_TIMER, SERVO_TIMER, ) & 0x1F))
+#define SERVO_PCLKSEL_MASK (3UL << (__helper__(CLKPWR_PCLKSEL_TIMER, SERVO_TIMER, ) & 0x1F))
 
 #ifdef ONESHOT_TIMER
 #define MCU_HAS_ONESHOT_TIMER
@@ -4633,7 +4633,7 @@ extern "C"
 #else
 #define ONESHOT_PCLKSEL_REG PCLKSEL1
 #endif
-#define ONESHOT_PCLKSEL_VAL (1 << (__helper__(CLKPWR_PCLKSEL_TIMER, ONESHOT_TIMER, ) & 0x1F))
+#define ONESHOT_PCLKSEL_MASK (3UL << (__helper__(CLKPWR_PCLKSEL_TIMER, ONESHOT_TIMER, ) & 0x1F))
 #endif
 
 // Indirect macro access
