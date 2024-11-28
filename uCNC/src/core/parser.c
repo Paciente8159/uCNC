@@ -1668,6 +1668,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 		break;
 	case G53:
 		index = 254;
+		new_state->groups.nonmodal = 0; // this command is compatible with motion commands
 		break;
 	}
 
