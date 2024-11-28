@@ -768,7 +768,7 @@ void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 {
 	uint32_t val = (uint32_t)ticks;
 	val <<= prescaller;
-	val = MAX(val, 2);
+
 	LPC_SC->PCONP |= ITP_PCONP;
 	LPC_SC->ITP_PCLKSEL_REG &= ~ITP_PCLKSEL_MASK; // system clk/4
 
@@ -781,7 +781,7 @@ void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 	ITP_TIMER_REG->TCR &= ~TIM_RESET; // release reset
 	ITP_TIMER_REG->EMR = 0;
 
-	ITP_TIMER_REG->PR = ((F_CPU >> 2) / 2000000UL) - 1; // for 0.5us (clocks twice per us)
+	ITP_TIMER_REG->PR = (F_CPU >> 2) / 2000000UL; // for 0.5us (clocks twice per us)
 	ITP_TIMER_REG->IR = 0xFFFFFFFF;
 
 	ITP_TIMER_REG->MR0 = val;
@@ -802,9 +802,7 @@ void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller)
 {
 	uint32_t val = (uint32_t)ticks;
 	val <<= prescaller;
-	val = MAX(val, 2);
 	ITP_TIMER_REG->TCR &= ~TIM_ENABLE;
-	ITP_TIMER_REG->MR1 = val >> 1;
 	ITP_TIMER_REG->MR0 = val;
 	ITP_TIMER_REG->TCR |= TIM_RESET;
 	ITP_TIMER_REG->TCR &= ~TIM_RESET;
