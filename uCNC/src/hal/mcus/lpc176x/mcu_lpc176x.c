@@ -758,7 +758,7 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 
 float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller)
 {
-	return (1000000UL / (float)(((uint32_t)ticks) << prescaller));
+	return (1000000.0f / (float)(((uint32_t)ticks) << prescaller));
 }
 
 /**
