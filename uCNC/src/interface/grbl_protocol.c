@@ -496,7 +496,7 @@ void proto_status(void)
 	}
 
 	proto_putc('|');
-	if (!(g_settings.status_report_mask & 1))
+	if ((g_settings.status_report_mask & 1))
 	{
 		proto_putc('M');
 	}
@@ -734,7 +734,7 @@ void proto_gcode_modes(void)
 	proto_putc('M');
 	proto_itoa(modalgroups[10]);
 	proto_putc(' ');
-	proto_putc('M');
+	proto_putc('T');
 	proto_itoa(modalgroups[11]);
 	proto_putc(' ');
 	proto_putc('F');

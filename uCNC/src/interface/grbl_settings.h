@@ -138,7 +138,7 @@ extern "C"
 #define PARSER_PARAM_ADDR_OFFSET (PARSER_PARAM_SIZE + 1)																							// parser parameters array size + 1 crc byte
 #define G28HOME (COORD_SYS_COUNT)																																			// G28 index
 #define G30HOME (COORD_SYS_COUNT + 1)																																	// G30 index
-#define G92OFFSET (COORD_SYS_COUNT + 2)																																// G92 index
+#define G92OFFSET (COORD_SYS_COUNT + ADDITIONAL_COORDINATES)																																// G92 index
 #define PARSER_CORDSYS_ADDRESS (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET)														// 1st coordinate system offset eeprom address (G54)
 #define G28ADDRESS (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (PARSER_PARAM_ADDR_OFFSET * G28HOME)) // G28 coordinate offset eeprom address
 #define G30ADDRESS (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (PARSER_PARAM_ADDR_OFFSET * G30HOME)) // G28 coordinate offset eeprom address
