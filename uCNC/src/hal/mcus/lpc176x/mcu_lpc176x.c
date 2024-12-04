@@ -21,6 +21,7 @@
 
 #if (MCU == MCU_LPC176X)
 #include "system_LPC17xx.h"
+// #include "mbed.h"
 
 #ifdef MCU_HAS_USB
 #ifdef USE_ARDUINO_CDC
@@ -41,7 +42,11 @@ extern void lpc176x_usb_write(uint8_t *ptr, uint8_t len);
  * Can count up to almost 50 days
  **/
 // provided by the framework
+#ifdef ARDUINO
 extern volatile uint64_t _millis;
+#else
+volatile uint64_t _millis;
+#endif
 volatile bool lpc_global_isr_enabled;
 
 // define the mcu internal servo variables
@@ -182,23 +187,26 @@ void MCU_RTC_ISR(void)
 
 void MCU_ITP_ISR(void)
 {
-	mcu_disable_global_isr();
+	// uint32_t status = ITP_TIMER_REG->IR;
 
-	NVIC_ClearPendingIRQ(ITP_TIMER_IRQ);
+	// mcu_disable_global_isr();
 
-	if (CHECKBIT(ITP_TIMER_REG->IR, TIM_MR1_INT))
-	{
-		mcu_step_reset_cb();
-		SETBIT(ITP_TIMER_REG->IR, TIM_MR1_INT);
-	}
+	// if (CHECKBIT(ITP_TIMER_REG->IR, TIM_MR1_INT))
+	// {
+	// 	mcu_step_reset_cb();
+	// 	SETBIT(ITP_TIMER_REG->IR, TIM_MR1_INT);
+	// }
 
-	if (CHECKBIT(ITP_TIMER_REG->IR, TIM_MR0_INT))
-	{
-		mcu_step_cb();
-		SETBIT(ITP_TIMER_REG->IR, TIM_MR0_INT);
-	}
+	// if (CHECKBIT(status, TIM_MR0_INT))
+	// {
+	// 	mcu_step_cb();
+	mcu_toggle_output(STEP0);
+	// SETBIT(ITP_TIMER_REG->IR, TIM_MR0_INT);
+	// }
 
-	mcu_enable_global_isr();
+	// NVIC_ClearPendingIRQ(ITP_TIMER_IRQ);
+
+	// mcu_enable_global_isr();
 }
 
 void mcu_clocks_init(void)
@@ -215,12 +223,12 @@ void mcu_clocks_init(void)
 	LPC_PINCON->PINMODE8 = 0xAAAAAAAA;
 	LPC_PINCON->PINMODE9 = 0xAAAAAAAA;
 
-	if (!(CoreDebug->DEMCR & CoreDebug_DEMCR_TRCENA_Msk))
-	{
-		CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
-		DWT->CYCCNT = 0;
-		DWT->CTRL |= 0x1UL;
-	}
+	// if (!(CoreDebug->DEMCR & CoreDebug_DEMCR_TRCENA_Msk))
+	// {
+	// 	CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+	// 	DWT->CYCCNT = 0;
+	// 	DWT->CTRL |= 0x1UL;
+	// }
 }
 
 /**
@@ -488,7 +496,9 @@ void mcu_init(void)
 #if SERVOS_MASK > 0
 	servo_timer_init();
 #endif
+#if defined(MCU_HAS_SPI2) || defined(MCU_HAS_SPI)
 	GPDMA_Init();
+#endif
 #ifdef MCU_HAS_SPI
 	// powerup DMA
 	// LPC_SC->PCONP |= CLKPWR_PCONP_PCGPDMA;
@@ -767,32 +777,31 @@ float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller)
 void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 {
 	uint32_t val = (uint32_t)ticks;
-	val <<= prescaller;
+	val *= prescaller;
 
 	LPC_SC->PCONP |= ITP_PCONP;
 	LPC_SC->ITP_PCLKSEL_REG &= ~ITP_PCLKSEL_MASK; // system clk/4
 
+	ITP_TIMER_REG->TCR = TIM_RESET; // Reset Counter
 	ITP_TIMER_REG->CTCR = 0;
-	ITP_TIMER_REG->CCR &= ~0x03;
+	ITP_TIMER_REG->CCR = 0;
 	ITP_TIMER_REG->TC = 0;
 	ITP_TIMER_REG->PC = 0;
 	ITP_TIMER_REG->PR = 0;
-	ITP_TIMER_REG->TCR |= TIM_RESET;	// Reset Counter
-	ITP_TIMER_REG->TCR &= ~TIM_RESET; // release reset
 	ITP_TIMER_REG->EMR = 0;
 
-	ITP_TIMER_REG->PR = (F_CPU >> 2) / 2000000UL; // for 0.5us (clocks twice per us)
-	ITP_TIMER_REG->IR = 0xFFFFFFFF;
-
-	ITP_TIMER_REG->MR0 = val;
-	ITP_TIMER_REG->MCR = 0x03; // Interrupt on MC0 and MC1 and reset on MC0
+	ITP_TIMER_REG->PR = 24; //((F_CPU / 4) / 1000000UL) - 1; // for 0.5us (clocks twice per us)
+	// ITP_TIMER_REG->IR = 0xFFFFFFFF;
+	SETBIT(ITP_TIMER_REG->IR, TIM_MR0_INT);
+	ITP_TIMER_REG->MR0 = 1;
+	ITP_TIMER_REG->MCR = 0x03; // Interrupt on MC0 and reset on MC0
 
 	NVIC_SetPriority(ITP_TIMER_IRQ, 1);
 	NVIC_ClearPendingIRQ(ITP_TIMER_IRQ);
 	NVIC_EnableIRQ(ITP_TIMER_IRQ);
 
 	// TIM_Cmd(ITP_TIMER_REG, ENABLE);
-	ITP_TIMER_REG->TCR |= TIM_ENABLE;
+	ITP_TIMER_REG->TCR = TIM_ENABLE;
 }
 
 /**
@@ -1741,5 +1750,15 @@ void mcu_start_timeout()
 }
 #endif
 #endif
+
+int main()
+{
+	ucnc_init();
+	mcu_start_itp_isr(1, 1);
+	for (;;)
+	{
+		// ucnc_run();
+	}
+}
 
 #endif

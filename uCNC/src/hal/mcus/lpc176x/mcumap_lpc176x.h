@@ -37,14 +37,15 @@ extern "C"
 #include <stdint.h>
 #include <stdbool.h>
 #include <math.h>
-#include "lpc_types.h"
-#include "lpc17xx_pinsel.h"
-#include "lpc17xx_uart.h"
-#include "lpc17xx_clkpwr.h"
-#include "lpc17xx_timer.h"
-#include "lpc17xx_systick.h"
-#include "lpc17xx_pwm.h"
-#include "lpc17xx_adc.h"
+// #include "lpc_types.h"
+// #include "lpc17xx_pinsel.h"
+// #include "lpc17xx_uart.h"
+// #include "lpc17xx_clkpwr.h"
+// #include "lpc17xx_timer.h"
+// #include "lpc17xx_systick.h"
+// #include "lpc17xx_pwm.h"
+// #include "lpc17xx_adc.h"
+#include "lpc176x_defs.h"
 
 // defines the frequency of the mcu
 #ifndef F_CPU
@@ -70,6 +71,7 @@ extern "C"
 #define __IM volatile const /*! Defines 'read only' structure member permissions */
 #define __IOM volatile			/*! Defines 'read / write' structure member permissions */
 
+#ifndef DWT
 	typedef struct
 	{
 		__IOM uint32_t CTRL;			/*!< Offset: 0x000 (R/W)  Control Register */
@@ -99,6 +101,7 @@ extern "C"
 
 #define DWT_BASE (0xE0001000UL)		 /*!< DWT Base Address */
 #define DWT ((DWT_Type *)DWT_BASE) /*!< DWT configuration struct */
+#endif
 
 // custom cycle counter
 #ifndef MCU_CLOCKS_PER_CYCLE
@@ -4457,8 +4460,8 @@ extern "C"
 #define SPI_PCLKSEL_MASK (3 << 10)
 #endif
 
-#include "lpc17xx_ssp.h"
-#include "lpc17xx_gpdma.h"
+// #include "lpc17xx_ssp.h"
+// #include "lpc17xx_gpdma.h"
 
 #if ((SPI_PORT == 0) && (SPI_SDO_MBED_PIN == P0_18) && (SPI_SDI_MBED_PIN == P0_17) && (SPI_CLK_MBED_PIN == P0_15))
 #define SPI_ALT_FUNC 2
@@ -4511,8 +4514,8 @@ extern "C"
 #define SPI2_PCLKSEL_MASK (3 << 10)
 #endif
 
-#include "lpc17xx_ssp.h"
-#include "lpc17xx_gpdma.h"
+// #include "lpc17xx_ssp.h"
+// #include "lpc17xx_gpdma.h"
 
 #if ((SPI2_PORT == 0) && (SPI2_SDO_MBED_PIN == P0_18) && (SPI2_SDI_MBED_PIN == P0_17) && (SPI2_CLK_MBED_PIN == P0_15))
 #define SPI2_ALT_FUNC 2
@@ -4572,7 +4575,7 @@ extern "C"
 #define I2C_PCLK __helper__(CLKPWR_PCLKSEL_I2C, I2C_PORT, )
 #define I2C_PCON __helper__(CLKPWR_PCONP_PCI2C, I2C_PORT, )
 
-#include "lpc17xx_i2c.h"
+// #include "lpc17xx_i2c.h"
 #define I2C_ISR __helper__(I2C, I2C_PORT, _IRQHandler)
 #define I2C_IRQ __helper__(I2C, I2C_PORT, _IRQn)
 

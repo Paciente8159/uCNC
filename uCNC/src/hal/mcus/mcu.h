@@ -665,6 +665,7 @@ extern spi_port_t mcu_spi2_port;
 #endif
 #endif
 
+#ifdef MCU_HAS_UART
 #ifndef mcu_getc
 #define mcu_getc (&mcu_uart_getc)
 #endif
@@ -679,6 +680,23 @@ extern spi_port_t mcu_spi2_port;
 #endif
 #ifndef mcu_flush
 #define mcu_flush (&mcu_uart_flush)
+#endif
+#else
+#ifndef mcu_getc
+#define mcu_getc (NULL)
+#endif
+#ifndef mcu_available
+#define mcu_available (NULL)
+#endif
+#ifndef mcu_clear
+#define mcu_clear (NULL)
+#endif
+#ifndef mcu_putc
+#define mcu_putc (NULL)
+#endif
+#ifndef mcu_flush
+#define mcu_flush (NULL)
+#endif
 #endif
 
 #ifdef __cplusplus

@@ -84,18 +84,18 @@ extern "C"
 // #define PROBE_ISR -3
 
 // Setup com pins
-#define RX_BIT 3
-#define TX_BIT 2
-#define RX_PORT 0
-#define TX_PORT 0
-#define RX_PULLUP
+// #define RX_BIT 3
+// #define TX_BIT 2
+// #define RX_PORT 0
+// #define TX_PORT 0
+// #define RX_PULLUP
 	// only uncomment this if other port other then 0 is used
 	// #define UART_PORT 0
 
-#define USB_DM_BIT 30
-#define USB_DM_PORT 0
-#define USB_DP_BIT 29
-#define USB_DP_PORT 0
+// #define USB_DM_BIT 30
+// #define USB_DM_PORT 0
+// #define USB_DP_BIT 29
+// #define USB_DP_PORT 0
 
 // // Setup PWM
 #define PWM0_BIT 5	// assigns PWM0 pin
@@ -152,11 +152,11 @@ extern "C"
 #define ANALOG2_CHANNEL 2
 
 // hardware I2C
-#define I2C_CLK_BIT 1
-#define I2C_CLK_PORT 0
-#define I2C_DATA_BIT 0
-#define I2C_DATA_PORT 0
-#define I2C_PORT 1
+// #define I2C_CLK_BIT 1
+// #define I2C_CLK_PORT 0
+// #define I2C_DATA_BIT 0
+// #define I2C_DATA_PORT 0
+// #define I2C_PORT 1
 // software I2C
 // #define DIN30_BIT 1
 // #define DIN30_PORT 0
@@ -164,15 +164,15 @@ extern "C"
 // #define DIN31_PORT 0
 
 // hardware SPI (onboard SD card)
-#define SPI_SDO_BIT 9
-#define SPI_SDO_PORT 0
-#define SPI_SDI_BIT 8
-#define SPI_SDI_PORT 0
-#define SPI_CLK_BIT 7
-#define SPI_CLK_PORT 0
-#define SPI_CS_BIT 6
-#define SPI_CS_PORT 0
-#define SPI_PORT 1
+// #define SPI_SDO_BIT 9
+// #define SPI_SDO_PORT 0
+// #define SPI_SDI_BIT 8
+// #define SPI_SDI_PORT 0
+// #define SPI_CLK_BIT 7
+// #define SPI_CLK_PORT 0
+// #define SPI_CS_BIT 6
+// #define SPI_CS_PORT 0
+// #define SPI_PORT 1
 
 // sd card detect
 // #define DIN19_BIT 31
@@ -180,15 +180,15 @@ extern "C"
 // #define DIN19_PULLUP
 
 // hardware SPI (display adapter)
-#define SPI2_SDO_BIT 18
-#define SPI2_SDO_PORT 0
-#define SPI2_SDI_BIT 17
-#define SPI2_SDI_PORT 0
-#define SPI2_CLK_BIT 15
-#define SPI2_CLK_PORT 0
-#define SPI2_CS_BIT 23
-#define SPI2_CS_PORT 0
-#define SPI2_PORT 0
+// #define SPI2_SDO_BIT 18
+// #define SPI2_SDO_PORT 0
+// #define SPI2_SDI_BIT 17
+// #define SPI2_SDI_PORT 0
+// #define SPI2_CLK_BIT 15
+// #define SPI2_CLK_PORT 0
+// #define SPI2_CS_BIT 23
+// #define SPI2_CS_PORT 0
+// #define SPI2_PORT 0
 
 
 // software SPI
