@@ -764,6 +764,7 @@ void itp_stop(void)
 		cnc_set_exec_state(EXEC_UNHOMED);
 	}
 
+	mcu_delay_us(10);
 	io_set_steps(g_settings.step_invert_mask);
 #if TOOL_COUNT > 0
 	if (g_settings.laser_mode)
