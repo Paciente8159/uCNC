@@ -86,8 +86,8 @@ extern "C"
 // Setup com pins
 #define RX_BIT 0
 #define TX_BIT 1
-#define RX_PORT D
-#define TX_PORT D
+#define RX_PORT 3
+#define TX_PORT 3
 #define RX_PULLUP
 	// only uncomment this if other port other then 0 is used
 	// #define UART_PORT 0

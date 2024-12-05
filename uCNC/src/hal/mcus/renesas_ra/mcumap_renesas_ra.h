@@ -1945,9 +1945,9 @@ extern "C"
 #define TOGGLEFLAG(x, y) ((x) ^= (y)) /* Toggle byte y in byte x*/
 #endif
 
-// #include <ra/fsp/src/bsp/mcu/all/bsp_io.h>
+	// #include <ra/fsp/src/bsp/mcu/all/bsp_io.h>
 
-#define mcu_config_output(X) R_BSP_PinCfg(__indirect__(X, GPIO), BSP_IO_DIRECTION_OUTPUT)
+#define mcu_config_output(X) ({ R_PFS->PORT[__indirect__(X, PORT)].PIN[__indirect__(X, BIT) & BSP_IO_PRV_8BIT_MASK].PmnPFS = BSP_IO_DIRECTION_OUTPUT; })
 #define mcu_config_pwm(X, freq)            \
 	{                                        \
 		pinMode(__indirect__(X, BIT), OUTPUT); \
@@ -1958,13 +1958,15 @@ extern "C"
 #define mcu_config_input(X) R_BSP_PinCfg(__indirect__(X, GPIO), BSP_IO_DIRECTION_INPUT)
 #define mcu_config_analog(X) mcu_config_input(X)
 #define mcu_config_pullup(X) pinMode(__indirect__(X, BIT), INPUT_PULLUP)
-#define mcu_config_input_isr(X) attachInterrupt(digitalPinToInterrupt(__indirect__(X, BIT)), mcu_din_isr, CHANGE)
 
-#define mcu_get_input(X) CHECKBIT(sio_hw->gpio_in, __indirect__(X, BIT))
-#define mcu_get_output(X) CHECKBIT(sio_hw->gpio_out, __indirect__(X, BIT))
-#define mcu_set_output(X) ({ sio_hw->gpio_set = (1UL << __indirect__(X, BIT)); })
-#define mcu_clear_output(X) ({ sio_hw->gpio_clr = (1UL << __indirect__(X, BIT)); })
-#define mcu_toggle_output(X) ({ sio_hw->gpio_togl = (1UL << __indirect__(X, BIT)); })
+extern void mcu_din_isr(void);
+#define mcu_config_input_isr(X) attachInterrupt(digitalPinToInterrupt(__indirect__(X, GPIO)), mcu_din_isr, CHANGE)
+
+#define mcu_get_input(X) digitalRead(__indirect__(X, GPIO))
+#define mcu_get_output(X) digitalRead(__indirect__(X, GPIO))
+#define mcu_set_output(X) ({ digitalWrite(__indirect__(X, GPIO), 1); })
+#define mcu_clear_output(X) ({ digitalWrite(__indirect__(X, GPIO), 0); })
+#define mcu_toggle_output(X) ({ digitalWrite(__indirect__(X, GPIO), !digitalRead(__indirect__(X, GPIO))); })
 
 	extern uint8_t rp2040_pwm[16];
 #define mcu_set_pwm(X, Y)                 \
