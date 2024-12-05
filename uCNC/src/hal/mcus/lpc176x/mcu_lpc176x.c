@@ -181,19 +181,21 @@ void MCU_RTC_ISR(void)
 void MCU_ITP_ISR(void)
 {
 	mcu_disable_global_isr();
-
 	NVIC_ClearPendingIRQ(ITP_TIMER_IRQ);
 
-	if (CHECKBIT(ITP_TIMER_REG->IR, TIM_MR1_INT))
-	{
-		mcu_step_reset_cb();
-		SETBIT(ITP_TIMER_REG->IR, TIM_MR1_INT);
-	}
-
+	static bool resetstep = false;
 	if (CHECKBIT(ITP_TIMER_REG->IR, TIM_MR0_INT))
 	{
-		mcu_step_cb();
 		SETBIT(ITP_TIMER_REG->IR, TIM_MR0_INT);
+		if (!resetstep)
+		{
+			mcu_step_cb();
+		}
+		else
+		{
+			mcu_step_reset_cb();
+		}
+		resetstep = !resetstep;
 	}
 
 	mcu_enable_global_isr();
@@ -741,13 +743,13 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 {
 	frequency = CLAMP((float)F_STEP_MIN, frequency, (float)F_STEP_MAX);
 	// up and down counter (generates half the step rate at each event)
-	uint32_t totalticks = (uint32_t)((float)1000000UL / frequency);
+	uint32_t totalticks = (uint32_t)((float)(F_CPU >> 3) / frequency);
 	// *prescaller = 0;
 	// *ticks = (uint16_t)totalticks;
-	*prescaller = 1;
+	*prescaller = 0;
 	while (totalticks > 0x0000FFFFUL)
 	{
-		(*prescaller) <<= 1;
+		(*prescaller) += 1;
 		totalticks >>= 1;
 	}
 
@@ -756,7 +758,7 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 
 float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller)
 {
-	return (1000000.0f / (float)(((uint32_t)ticks) << prescaller));
+	return ((F_CPU >> 3) / (float)(((uint32_t)ticks) << prescaller));
 }
 
 /**
@@ -779,7 +781,7 @@ void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 	ITP_TIMER_REG->TCR &= ~TIM_RESET; // release reset
 	ITP_TIMER_REG->EMR = 0;
 
-	ITP_TIMER_REG->PR = (F_CPU >> 2) / 2000000UL; // for 0.5us (clocks twice per us)
+	ITP_TIMER_REG->PR = 0; // for higher resolution use PR = 0 that means that the timer will tick at (F_CPU/4)
 	ITP_TIMER_REG->IR = 0xFFFFFFFF;
 
 	ITP_TIMER_REG->MR0 = val;
