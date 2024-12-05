@@ -154,19 +154,17 @@ void servo_timer_init(void)
 void MCU_SERVO_ISR(void)
 {
 	mcu_disable_global_isr();
-
-	static bool resetstep = false;
-	if (CHECKBIT(SERVO_TIMER_REG->IR, TIM_MR0_INT))
+	if (CHECKBIT(SERVO_TIMER_REG->IR, TIM_MR1_INT))
 	{
-		NVIC_ClearPendingIRQ(ITP_TIMER_IRQ);
-		SETBIT(SERVO_TIMER_REG->IR, TIM_MR0_INT);
-		if (!resetstep)
-			mcu_step_cb();
-		else
-			mcu_step_reset_cb();
-		resetstep = !resetstep;
+		mcu_clear_servos();
+		SETBIT(SERVO_TIMER_REG->IR, TIM_MR1_INT);
 	}
 
+	if (CHECKBIT(SERVO_TIMER_REG->IR, TIM_MR0_INT))
+	{
+		mcu_set_servos();
+		SETBIT(SERVO_TIMER_REG->IR, TIM_MR0_INT);
+	}
 	mcu_enable_global_isr();
 }
 
