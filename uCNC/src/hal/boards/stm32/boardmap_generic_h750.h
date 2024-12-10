@@ -32,6 +32,8 @@ extern "C"
 #define BOARD_NAME "STM32 Generic H750"
 #endif
 
+#define RAM_ONLY_SETTINGS
+
 // Setup step pins
 #define STEP0_BIT 0	 // assigns STEP0 pin
 #define STEP0_PORT A // assigns STEP0 port
