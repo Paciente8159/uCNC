@@ -6,6 +6,27 @@
 
 # Changelog
 
+[@tomjnixon](https://github.com/tomjnixon)	- fixed ignored G53 introduced by #791 (#793)
+																						- fixed status report mask setting introduced in v1.11 (#789)
+
+## [1.11.1] - 13-12-2024
+
+### Changed
+
+- minor improvements the the AVR ini file and better comments (#784)
+- change to the parser to unify G92 and G10 processing path (#791)
+
+### Fixed
+
+- fixed M2/M30 command behavior to match LinuxCNC (#786)
+- fixed status report Tool info (#787)
+- fixed status report mask setting introduced in v1.11 (#789)
+- fixed G10 L20 behavior when the current modal distance mode is in incremental mode (#791)
+- fixed cycle feed and spindle update in a canned cycle (#788)
+- fixed/improved motion mode validation (#792)
+- fixed ignored G53 introduced by #791 (#793)
+- fixed step generation ISR algorithm for LPC17XX (#794)
+
 ## [1.11.0] - 20-11-2024
 
 ### Added
@@ -1805,6 +1826,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.11.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.11.1
 [1.11.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.11.0
 [1.11.0-rc]: https://github.com/Paciente8159/uCNC/releases/tag/v1.11.0-rc
 [1.10.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.10.2
