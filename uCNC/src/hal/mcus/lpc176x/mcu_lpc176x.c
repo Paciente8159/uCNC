@@ -126,7 +126,7 @@ static FORCEINLINE void mcu_set_servos()
 void servo_timer_init(void)
 {
 	LPC_SC->PCONP |= SERVO_PCONP;
-	LPC_SC->SERVO_PCLKSEL_REG &= ~SERVO_PCLKSEL_VAL; // system clk/4
+	LPC_SC->SERVO_PCLKSEL_REG &= ~SERVO_PCLKSEL_MASK; // system clk/4
 
 	SERVO_TIMER_REG->CTCR = 0;
 	SERVO_TIMER_REG->CCR &= ~0x03;
@@ -166,10 +166,6 @@ void MCU_SERVO_ISR(void)
 		SETBIT(SERVO_TIMER_REG->IR, TIM_MR0_INT);
 	}
 	mcu_enable_global_isr();
-	// mcu_clear_servos();
-	// TIM_ClearIntPending(SERVO_TIMER_REG, SERVO_INT_FLAG);
-	// NVIC_ClearPendingIRQ(SERVO_TIMER_IRQ);
-	// TIM_Cmd(SERVO_TIMER_REG, DISABLE);
 }
 
 #endif
@@ -185,17 +181,21 @@ void MCU_RTC_ISR(void)
 void MCU_ITP_ISR(void)
 {
 	mcu_disable_global_isr();
+	NVIC_ClearPendingIRQ(ITP_TIMER_IRQ);
 
-	if (CHECKBIT(ITP_TIMER_REG->IR, TIM_MR1_INT))
-	{
-		mcu_step_reset_cb();
-		SETBIT(ITP_TIMER_REG->IR, TIM_MR1_INT);
-	}
-
+	static bool resetstep = false;
 	if (CHECKBIT(ITP_TIMER_REG->IR, TIM_MR0_INT))
 	{
-		mcu_step_cb();
 		SETBIT(ITP_TIMER_REG->IR, TIM_MR0_INT);
+		if (!resetstep)
+		{
+			mcu_step_cb();
+		}
+		else
+		{
+			mcu_step_reset_cb();
+		}
+		resetstep = !resetstep;
 	}
 
 	mcu_enable_global_isr();
@@ -743,7 +743,7 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 {
 	frequency = CLAMP((float)F_STEP_MIN, frequency, (float)F_STEP_MAX);
 	// up and down counter (generates half the step rate at each event)
-	uint32_t totalticks = (uint32_t)((float)1000000UL / frequency);
+	uint32_t totalticks = (uint32_t)((float)(F_CPU >> 3) / frequency);
 	// *prescaller = 0;
 	// *ticks = (uint16_t)totalticks;
 	*prescaller = 0;
@@ -758,7 +758,7 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 
 float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller)
 {
-	return (1000000.0f / (float)(((uint32_t)ticks) << prescaller));
+	return ((F_CPU >> 3) / (float)(((uint32_t)ticks) << prescaller));
 }
 
 /**
@@ -768,8 +768,9 @@ void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 {
 	uint32_t val = (uint32_t)ticks;
 	val <<= prescaller;
+
 	LPC_SC->PCONP |= ITP_PCONP;
-	LPC_SC->ITP_PCLKSEL_REG &= ~ITP_PCLKSEL_VAL; // system clk/4
+	LPC_SC->ITP_PCLKSEL_REG &= ~ITP_PCLKSEL_MASK; // system clk/4
 
 	ITP_TIMER_REG->CTCR = 0;
 	ITP_TIMER_REG->CCR &= ~0x03;
@@ -780,12 +781,11 @@ void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 	ITP_TIMER_REG->TCR &= ~TIM_RESET; // release reset
 	ITP_TIMER_REG->EMR = 0;
 
-	ITP_TIMER_REG->PR = ((F_CPU >> 2) / 1000000UL) - 1; // for 1us
+	ITP_TIMER_REG->PR = 0; // for higher resolution use PR = 0 that means that the timer will tick at (F_CPU/4)
 	ITP_TIMER_REG->IR = 0xFFFFFFFF;
 
-	ITP_TIMER_REG->MR1 = val >> 1;
 	ITP_TIMER_REG->MR0 = val;
-	ITP_TIMER_REG->MCR = 0x0B; // Interrupt on MC0 and MC1 and reset on MC0
+	ITP_TIMER_REG->MCR = 0x03; // Interrupt on MC0 and MC1 and reset on MC0
 
 	NVIC_SetPriority(ITP_TIMER_IRQ, 1);
 	NVIC_ClearPendingIRQ(ITP_TIMER_IRQ);
@@ -803,7 +803,6 @@ void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller)
 	uint32_t val = (uint32_t)ticks;
 	val <<= prescaller;
 	ITP_TIMER_REG->TCR &= ~TIM_ENABLE;
-	ITP_TIMER_REG->MR1 = val >> 1;
 	ITP_TIMER_REG->MR0 = val;
 	ITP_TIMER_REG->TCR |= TIM_RESET;
 	ITP_TIMER_REG->TCR &= ~TIM_RESET;
@@ -992,7 +991,7 @@ void mcu_dotasks()
  * */
 uint8_t mcu_eeprom_getc(uint16_t address)
 {
-	DBGMSG("EEPROM invalid address @ %u",address);
+	DBGMSG("EEPROM invalid address @ %u", address);
 	return 0;
 }
 
@@ -1001,7 +1000,7 @@ uint8_t mcu_eeprom_getc(uint16_t address)
  * */
 void mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
-	DBGMSG("EEPROM invalid address @ %u",address);
+	DBGMSG("EEPROM invalid address @ %u", address);
 }
 
 /**
@@ -1707,7 +1706,7 @@ void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 {
 	mcu_timeout_cb = fp;
 	LPC_SC->PCONP |= ONESHOT_PCONP;
-	LPC_SC->ONESHOT_PCLKSEL_REG &= ~ONESHOT_PCLKSEL_VAL; // system clk/4
+	LPC_SC->ONESHOT_PCLKSEL_REG &= ~ONESHOT_PCLKSEL_MASK; // system clk/4
 
 	ONESHOT_TIMER_REG->CTCR = 0;
 	ONESHOT_TIMER_REG->CCR &= ~0x03;
