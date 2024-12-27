@@ -43,7 +43,7 @@ extern "C"
 
 // defines the maximum and minimum step rates
 #ifndef F_STEP_MAX
-#define F_STEP_MAX 100000
+#define F_STEP_MAX 500000
 #endif
 #ifndef F_STEP_MIN
 #define F_STEP_MIN 4
@@ -4594,7 +4594,7 @@ extern "C"
 		__indirect__(diopin, GPIO)->AFR[(__indirect__(diopin, BIT) >> 3)] &= ~(0xf << ((__indirect__(diopin, BIT) & 0x07) << 2));                                   \
 		__indirect__(diopin, GPIO)->AFR[(__indirect__(diopin, BIT) >> 3)] |= ((__indirect__(diopin, AF) << ((__indirect__(diopin, BIT) & 0x07) << 2))); /*af mode*/ \
 		__indirect__(diopin, TIMREG)->CR1 = 0;                                                                                                                      \
-		__indirect__(diopin, TIMREG)->PSC = (uint16_t)(__indirect__(diopin, CLOCK) / 1000000UL) - 1;                                                                \
+		__indirect__(diopin, TIMREG)->PSC = (uint16_t)(__indirect__(diopin, CLOCK) / 500000UL) - 1;                                                                \
 		__indirect__(diopin, TIMREG)->ARR = (uint16_t)(1000000UL / freq);                                                                                           \
 		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR) = 0;                                                                                                \
 		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCMREG) = __indirect__(diopin, MODE);                                                                    \

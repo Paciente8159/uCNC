@@ -542,6 +542,7 @@ void mcu_usart_init(void)
 
 #ifdef MCU_HAS_UART
 	/*enables RCC clocks and GPIO*/
+	RCC->D2CCIP2R &= ~0x3F;
 	RCC->COM_APB |= (COM_APBEN);
 	mcu_config_af(TX, GPIO_AF_USART);
 	mcu_config_af(RX, GPIO_AF_USART);
@@ -551,11 +552,8 @@ void mcu_usart_init(void)
 	COM_UART->CR3 = 0;
 	COM_UART->ISR = 0;
 	// //115200 baudrate
-	float baudrate = ((float)(UART_CLOCK >> 4) / ((float)(BAUDRATE)));
+	float baudrate = ((float)(UART_CLOCK) / ((float)(BAUDRATE)));
 	uint16_t brr = (uint16_t)baudrate;
-	baudrate -= brr;
-	brr <<= 4;
-	brr += (uint16_t)roundf(16.0f * baudrate);
 	COM_UART->BRR = brr;
 	COM_UART->CR1 |= USART_CR1_RXNEIE_RXFNEIE; // enable RXNEIE
 	NVIC_SetPriority(COM_IRQ, 3);
@@ -566,6 +564,7 @@ void mcu_usart_init(void)
 
 #ifdef MCU_HAS_UART2
 	/*enables RCC clocks and GPIO*/
+	RCC->D2CCIP2R &= ~0x3F;
 	RCC->COM2_APB |= (COM2_APBEN);
 	mcu_config_af(TX2, GPIO_AF_USART2);
 	mcu_config_af(RX2, GPIO_AF_USART2);
@@ -575,11 +574,8 @@ void mcu_usart_init(void)
 	COM2_UART->CR3 = 0;
 	COM2_UART->ISR = 0;
 	// //115200 baudrate
-	float baudrate2 = ((float)(UART2_CLOCK >> 4) / ((float)(BAUDRATE2)));
+	float baudrate2 = ((float)(UART2_CLOCK) / ((float)(BAUDRATE2)));
 	uint16_t brr2 = (uint16_t)baudrate2;
-	baudrate2 -= brr2;
-	brr2 <<= 4;
-	brr2 += (uint16_t)roundf(16.0f * baudrate2);
 	COM2_UART->BRR = brr2;
 	COM2_UART->CR1 |= USART_CR1_RXNEIE_RXFNEIE; // enable RXNEIE
 	NVIC_SetPriority(COM2_IRQ, 3);
