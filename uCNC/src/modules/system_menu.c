@@ -255,7 +255,6 @@ DECL_MODULE(system_menu)
 	DECL_MENU_VAR(5, s107, STR_EFF_RAD, &g_settings.delta_effector_radius, VAR_TYPE_FLOAT);
 	DECL_MENU_VAR(5, s108, STR_BICEP_LEN, &g_settings.delta_bicep_length, VAR_TYPE_FLOAT);
 	DECL_MENU_VAR(5, s109, STR_FARM_LEN, &g_settings.delta_forearm_length, VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(5, s28, STR_HOME_ANG, &g_settings.delta_bicep_homing_angle, VAR_TYPE_FLOAT);
 #endif
 #endif
 

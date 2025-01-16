@@ -224,7 +224,11 @@ const setting_id_t __rom__ g_settings_id_table[] = {
 #if (KINEMATIC == KINEMATIC_LINEAR_DELTA)
 		{.id = 106, .memptr = &g_settings.delta_arm_length, .type = SETTING_TYPE(0)},
 		{.id = 107, .memptr = &g_settings.delta_armbase_radius, .type = SETTING_TYPE(0)},
+#elif (KINEMATIC == KINEMATIC_DELTA)
 		{.id = 28, .memptr = &g_settings.delta_bicep_homing_angle, .type = SETTING_TYPE(0)},
+		{.id = 106, .memptr = &g_settings.delta_base_radius, .type = SETTING_TYPE(0)},
+		{.id = 107, .memptr = &g_settings.delta_effector_radius, .type = SETTING_TYPE(0)},
+		{.id = 108, .memptr = &g_settings.delta_bicep_length, .type = SETTING_TYPE(0)},
 		{.id = 109, .memptr = &g_settings.delta_forearm_length, .type = SETTING_TYPE(0)},
 #elif (KINEMATIC == KINEMATIC_SCARA)
 		{.id = 106, .memptr = &g_settings.scara_arm_length, .type = SETTING_TYPE(0)},

@@ -387,7 +387,7 @@ MCU_CALLBACK void mcu_rtc_cb(uint32_t millis)
 }
 #endif
 
-void cnc_home(void)
+uint8_t cnc_home(void)
 {
 	cnc_set_exec_state(EXEC_HOMING);
 	uint8_t error = kinematics_home();
@@ -409,6 +409,8 @@ void cnc_home(void)
 	{
 		cnc_run_startup_blocks();
 	}
+
+	return error;
 }
 
 void cnc_alarm(int8_t code)
