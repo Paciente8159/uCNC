@@ -83,70 +83,80 @@ void kinematics_apply_forward(int32_t *steps, float *axis)
 uint8_t kinematics_home(void)
 {
 	float target[AXIS_COUNT];
+	uint8_t error = STATUS_OK;
 
 #ifndef DISABLE_ALL_LIMITS
 #if AXIS_Z_HOMING_MASK != 0
-	if (mc_home_axis(AXIS_Z_HOMING_MASK, LINACT2_LIMIT_MASK))
+	error = mc_home_axis(AXIS_Z_HOMING_MASK, LINACT2_LIMIT_MASK);
+	if (error != STATUS_OK)
 	{
-		return KINEMATIC_HOMING_ERROR_Z;
+		return error;
 	}
 #endif
 
 #ifndef ENABLE_XY_SIMULTANEOUS_HOMING
 
 #if AXIS_X_HOMING_MASK != 0
-	if (mc_home_axis(AXIS_X_HOMING_MASK, LINACT0_LIMIT_MASK))
+	error = mc_home_axis(AXIS_X_HOMING_MASK, LINACT0_LIMIT_MASK);
+	if (error != STATUS_OK)
 	{
-		return KINEMATIC_HOMING_ERROR_X;
+		return error;
 	}
 #endif
 
 #if AXIS_Y_HOMING_MASK != 0
-	if (mc_home_axis(AXIS_Y_HOMING_MASK, LINACT1_LIMIT_MASK))
+	error = mc_home_axis(AXIS_Y_HOMING_MASK, LINACT1_LIMIT_MASK);
+	if (error != STATUS_OK)
 	{
-		return KINEMATIC_HOMING_ERROR_Y;
+		return error;
 	}
 #endif
 
 #else
 
 #if AXIS_X_HOMING_MASK != 0 && AXIS_Y_HOMING_MASK != 0
-	if (mc_home_axis(AXIS_X_HOMING_MASK | AXIS_Y_HOMING_MASK, LINACT0_LIMIT_MASK | LINACT1_LIMIT_MASK))
+	error = mc_home_axis(AXIS_X_HOMING_MASK | AXIS_Y_HOMING_MASK, LINACT0_LIMIT_MASK | LINACT1_LIMIT_MASK);
+	if (error != STATUS_OK)
 	{
-		return KINEMATIC_HOMING_ERROR_XY;
+		return error;
 	}
 #elif AXIS_X_HOMING_MASK != 0
-	if (mc_home_axis(AXIS_X_HOMING_MASK, LINACT0_LIMIT_MASK))
+	error = mc_home_axis(AXIS_X_HOMING_MASK, LINACT0_LIMIT_MASK);
+	if (error != STATUS_OK)
 	{
-		return KINEMATIC_HOMING_ERROR_X;
+		return error;
 	}
 #elif AXIS_Y_HOMING_MASK != 0
-	if (mc_home_axis(AXIS_Y_HOMING_MASK, LINACT1_LIMIT_MASK))
+	error = mc_home_axis(AXIS_Y_HOMING_MASK, LINACT1_LIMIT_MASK);
+	if (error != STATUS_OK)
 	{
-		return KINEMATIC_HOMING_ERROR_Y;
+		return error;
 	}
 #endif
 
 #endif
 
 #if AXIS_A_HOMING_MASK != 0
-	if (mc_home_axis(AXIS_A_HOMING_MASK, LINACT3_LIMIT_MASK))
+	error = mc_home_axis(AXIS_A_HOMING_MASK, LINACT3_LIMIT_MASK);
+	if (error != STATUS_OK)
 	{
-		return KINEMATIC_HOMING_ERROR_A;
+		return error;
 	}
 #endif
 
 #if AXIS_B_HOMING_MASK != 0
-	if (mc_home_axis(AXIS_B_HOMING_MASK, LINACT4_LIMIT_MASK))
+	error = mc_home_axis(AXIS_B_HOMING_MASK, LINACT4_LIMIT_MASK);
+	if (error != STATUS_OK)
 	{
-		return KINEMATIC_HOMING_ERROR_B;
+		return error;
 	}
 #endif
 
 #if AXIS_C_HOMING_MASK != 0
-	if (mc_home_axis(AXIS_C_HOMING_MASK, LINACT5_LIMIT_MASK))
+	error = mc_home_axis(AXIS_C_HOMING_MASK, LINACT5_LIMIT_MASK);
+	if (error != STATUS_OK)
 	{
-		return KINEMATIC_HOMING_ERROR_C;
+		return error;
 	}
 #endif
 
@@ -164,7 +174,7 @@ uint8_t kinematics_home(void)
 	block_data.spindle = 0;
 	block_data.dwell = 0;
 	// starts offset and waits to finnish
-	mc_line(target, &block_data);
+	error = mc_line(target, &block_data);
 	itp_sync();
 #endif
 
@@ -181,7 +191,7 @@ uint8_t kinematics_home(void)
 	// reset position
 	itp_reset_rt_position(target);
 
-	return STATUS_OK;
+	return error;
 }
 
 bool kinematics_check_boundaries(float *axis)

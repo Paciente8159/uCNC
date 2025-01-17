@@ -771,7 +771,10 @@ bool mc_home_motion(uint8_t axis_mask, bool is_origin_search, motion_data_t *blo
 		}
 	}
 
-	cnc_unlock(true);
+	if (cnc_unlock(true) != UNLOCK_OK)
+	{
+		return false;
+	}
 	mc_line(target, block_data);
 
 	if (itp_sync() != STATUS_OK)
