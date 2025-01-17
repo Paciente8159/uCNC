@@ -700,6 +700,7 @@ static uint8_t parser_grbl_exec_code(uint8_t code)
 		}
 
 #if ASSERT_PIN(SAFETY_DOOR)
+		cnc_clear_exec_state(EXEC_DOOR);
 		if (cnc_get_exec_state(EXEC_DOOR))
 		{
 			return STATUS_CHECK_DOOR;
