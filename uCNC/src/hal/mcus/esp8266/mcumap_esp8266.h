@@ -1233,11 +1233,11 @@ extern "C"
 #define mcu_config_pullup(X) pinMode(__indirect__(X, BIT), INPUT_PULLUP)
 #define mcu_config_input_isr(X) attachInterrupt(digitalPinToInterrupt(__indirect__(X, BIT)), __indirect__(X, ISRCALLBACK), CHANGE)
 
-#define mcu_get_input(X) digitalRead(__indirect__(X, BIT))
-#define mcu_get_output(X) digitalRead(__indirect__(X, BIT))
-#define mcu_set_output(X) digitalWrite(__indirect__(X, BIT), 1)
-#define mcu_clear_output(X) digitalWrite(__indirect__(X, BIT), 0)
-#define mcu_toggle_output(X) digitalWrite(__indirect__(X, BIT), !digitalRead(__indirect__(X, BIT)))
+#define mcu_get_input(X) ((__indirect__(X, BIT) != 16) ? GPIP(__indirect__(X, BIT)) : (GP16I & 0x01))
+#define mcu_get_output(X) ((__indirect__(X, BIT) != 16) ? GPIP(__indirect__(X, BIT)) : (GP16I & 0x01))
+#define mcu_set_output(X) ({if(__indirect__(X, BIT)!=16){GPOS=(1<<__indirect__(X, BIT));}else{GP16O |= 1;} })
+#define mcu_clear_output(X) ({if(__indirect__(X, BIT)!=16){GPOC=(1<<__indirect__(X, BIT));}else{GP16O &= ~1;} })
+#define mcu_toggle_output(X) ((!!mcu_get_output(X)) ? mcu_clear_output(X) : mcu_set_output(X))
 
 #define mcu_get_analog(X) analogRead(__indirect__(X, BIT))
 

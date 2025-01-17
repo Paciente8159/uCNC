@@ -91,7 +91,6 @@ extern "C"
 	bool mcu_custom_grbl_cmd(void *args)
 	{
 		grbl_cmd_args_t *cmd_params = (grbl_cmd_args_t *)args;
-		uint8_t str[64];
 		char arg[ARG_MAX_LEN];
 		uint8_t has_arg = (cmd_params->next_char == '=');
 		memset(arg, 0, sizeof(arg));
@@ -310,7 +309,6 @@ extern "C"
 #ifdef ENABLE_WIFI
 		static uint32_t next_info = 30000;
 		static bool connected = false;
-		uint8_t str[64];
 
 		if (!wifi_settings.wifi_on)
 		{
@@ -730,8 +728,6 @@ extern "C"
 
 		if (wifi_settings.wifi_on)
 		{
-			uint8_t str[64];
-
 			switch (wifi_settings.wifi_mode)
 			{
 			case 1:
