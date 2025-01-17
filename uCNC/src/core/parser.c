@@ -699,17 +699,15 @@ static uint8_t parser_grbl_exec_code(uint8_t code)
 			return STATUS_SETTING_DISABLED;
 		}
 
-		if (cnc_unlock(true) == UNLOCK_OK)
-		{
 #if ASSERT_PIN(SAFETY_DOOR)
-			if (cnc_get_exec_state(EXEC_DOOR))
-			{
-				return STATUS_CHECK_DOOR;
-			}
-#endif
-			cnc_home();
+		cnc_clear_exec_state(EXEC_DOOR);
+		if (cnc_get_exec_state(EXEC_DOOR))
+		{
+			return STATUS_CHECK_DOOR;
 		}
-		break;
+#endif
+		return cnc_home();
+
 	case GRBL_HELP:
 		proto_print(MSG_HELP);
 		break;
@@ -949,7 +947,7 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 {
 	bool requires_feed = true;
 	bool has_axis = CHECKFLAG(cmd->words, GCODE_ALL_AXIS);
-	
+
 	// only alow groups 3, 6 and modal G53
 	if (cnc_get_exec_state(EXEC_JOG))
 	{
