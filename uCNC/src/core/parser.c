@@ -1175,7 +1175,7 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 		}
 
 		// group 5 - feed rate mode
-		if (requires_feed && has_axis)
+		if (requires_feed && has_axis && !cmd->group_extended)
 		{
 			if (!CHECKFLAG(cmd->words, GCODE_WORD_F))
 			{
