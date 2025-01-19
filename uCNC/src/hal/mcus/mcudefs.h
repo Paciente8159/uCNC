@@ -50,7 +50,9 @@ extern "C"
 
 #if (MCU == MCU_STM32H7X)
 #include "stm32h7x/mcumap_stm32h7x.h"
-#define CFG_TUSB_MCU OPT_MCU_STM32H7
+// #define CFG_TUSB_MCU OPT_MCU_STM32H7
+// #define USBCON
+// #define USBD_USE_CDC
 #endif
 
 #if (MCU == MCU_SAMD21)
