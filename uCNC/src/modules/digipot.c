@@ -21,7 +21,13 @@
 
 #ifdef STEPPER_CURR_DIGIPOT
 
+#if defined(STEPPER_CURR_DIGIPOT_HW_SPI_PORT) && defined(MCU_HAS_SPI)
+HARDSPI(digipotspi, 1000000UL, 0, mcu_spi_port)
+#elif defined(STEPPER_CURR_DIGIPOT_HW_SPI2_PORT) && defined(MCU_HAS_SPI2)
+HARDSPI(digipotspi, 1000000UL, 0, mcu_spi2_port)
+#else
 SOFTSPI(digipotspi, 1000000UL, 0, STEPPER_DIGIPOT_SDO, STEPPER_DIGIPOT_SDI, STEPPER_DIGIPOT_CLK)
+#endif
 
 /*custom gcode commands*/
 #if defined(ENABLE_PARSER_MODULES)
@@ -70,6 +76,8 @@ bool m907_exec(void *args)
 		{
 			return STATUS_GCODE_NO_AXIS_WORDS;
 		}
+
+		softspi_start(&digipotspi);
 
 		io_clear_output(STEPPER_DIGIPOT_CS);
 
@@ -131,6 +139,8 @@ bool m907_exec(void *args)
 		}
 
 		io_set_output(STEPPER_DIGIPOT_CS);
+
+		softspi_stop(&digipotspi);
 
 		*(ptr->error) = STATUS_OK;
 		return EVENT_HANDLED;
