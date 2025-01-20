@@ -26,21 +26,21 @@
 #include <math.h>
 
 #ifdef MCU_HAS_USB
-// #include <tusb_ucnc.h>
-#include "usbd_cdc.h"
-#include "usbd_cdc_if.h"
-#include "usbd_desc.h"
-// replacements for Arduino CDC -> TinyUSB
-#define tusb_cdc_init CDC_init
-#define tusb_cdc_isr_handler()
-#define tusb_cdc_task() CDC_resume_receive()
-#define tusb_cdc_available() CDC_ReceiveQueue_ReadSize(&ReceiveQueue)
-#define tusb_cdc_read() CDC_ReceiveQueue_Dequeue(&ReceiveQueue)
-#define tusb_cdc_flush() CDC_continue_transmit()
-#define tusb_cdc_write(ch) CDC_TransmitQueue_Enqueue(&TransmitQueue, &c, 1)
-#define tusb_cdc_write_available() CDC_TransmitQueue_WriteSize(&TransmitQueue)
-#define tusb_cdc_write_buffer(buffer, bufsize) CDC_TransmitQueue_Enqueue(&TransmitQueue, buffer, bufsize)
-#define tusb_cdc_connected CDC_connected()
+#include <tusb_ucnc.h>
+// #include "usbd_cdc.h"
+// #include "usbd_cdc_if.h"
+// #include "usbd_desc.h"
+// // replacements for Arduino CDC -> TinyUSB
+// #define tusb_cdc_init CDC_init
+// #define tusb_cdc_isr_handler()
+// #define tusb_cdc_task() CDC_resume_receive()
+// #define tusb_cdc_available() CDC_ReceiveQueue_ReadSize(&ReceiveQueue)
+// #define tusb_cdc_read() CDC_ReceiveQueue_Dequeue(&ReceiveQueue)
+// #define tusb_cdc_flush() CDC_continue_transmit()
+// #define tusb_cdc_write(ch) CDC_TransmitQueue_Enqueue(&TransmitQueue, &c, 1)
+// #define tusb_cdc_write_available() CDC_TransmitQueue_WriteSize(&TransmitQueue)
+// #define tusb_cdc_write_buffer(buffer, bufsize) CDC_TransmitQueue_Enqueue(&TransmitQueue, buffer, bufsize)
+// #define tusb_cdc_connected CDC_connected()
 #endif
 
 // #ifndef FLASH_SIZE
@@ -187,16 +187,16 @@ void MCU_SERIAL2_ISR(void)
 }
 #endif
 
-// #ifdef MCU_HAS_USB
-// void OTG_FS_IRQHandler(void)
-// {
-// 	mcu_disable_global_isr();
-// 	tusb_cdc_isr_handler();
-// 	USB_OTG_FS->GINTSTS = 0xBFFFFFFFU;
-// 	NVIC_ClearPendingIRQ(OTG_FS_IRQn);
-// 	mcu_enable_global_isr();
-// }
-// #endif
+#ifdef MCU_HAS_USB
+void OTG_FS_IRQHandler(void)
+{
+	mcu_disable_global_isr();
+	tusb_cdc_isr_handler();
+	USB_OTG_FS->GINTSTS = 0xF8F0FC0A;
+	NVIC_ClearPendingIRQ(OTG_FS_IRQn);
+	mcu_enable_global_isr();
+}
+#endif
 
 // define the mcu internal servo variables
 #if SERVOS_MASK > 0
@@ -532,25 +532,29 @@ void mcu_usart_init(void)
 	mcu_config_input(USB_DP);
 	mcu_config_af(USB_DP, GPIO_OTG_FS);
 	mcu_config_af(USB_DM, GPIO_OTG_FS);
-	// // RCC->AHB1ENR |= RCC_AHB1ENR_USB2OTGFSEN;
-	// __HAL_RCC_USB_OTG_FS_CLK_ENABLE();
+	RCC->AHB1ENR |= RCC_AHB1ENR_USB2OTGFSEN;
+
+	// enable usb vreg
+	PWR->CR3 |= PWR_CR3_USBREGEN;
+	while(!CHECKFLAG(PWR->CR3, PWR_FLAG_USB33RDY));
+	PWR->CR3 |= PWR_CR3_USB33DEN;
+
 	// /* Disable all interrupts. */
-	// USB_OTG_FS->GINTMSK = 0U;
+	USB_OTG_FS->GINTMSK = 0U;
 
 	// /* Operate as device only mode */
-	// USB_OTG_FS->GUSBCFG |= USB_OTG_GUSBCFG_FDMOD;
+	USB_OTG_FS->GUSBCFG |= (USB_OTG_GUSBCFG_FDMOD | USB_OTG_GUSBCFG_PHYSEL);
 
-	// // /* Clear any pending interrupts */
-	// USB_OTG_FS->GINTSTS = 0xBFFFFFFFU;
-	// USB_OTG_FS->GINTMSK |= USB_OTG_GINTMSK_OTGINT;
+	// /* Clear any pending interrupts */
+	USB_OTG_FS->GINTSTS = 0xF8F0FC0A;
+	USB_OTG_FS->GINTMSK |= USB_OTG_GINTMSK_OTGINT;
 
-	// NVIC_SetPriority(OTG_FS_IRQn, 10);
-	// NVIC_ClearPendingIRQ(OTG_FS_IRQn);
-	// NVIC_EnableIRQ(OTG_FS_IRQn);
+	USB_OTG_FS->GCCFG |= USB_OTG_GCCFG_PWRDWN;
+	// USB_OTG_FS->GCCFG &= ~USB_OTG_GCCFG_VBDEN;
 
-	// // USB_OTG_FS->GCCFG |= USB_OTG_GCCFG_NOVBUSSENS;
-	// // USB_OTG_FS->GCCFG &= ~USB_OTG_GCCFG_VBUSBSEN;
-	// // USB_OTG_FS->GCCFG &= ~USB_OTG_GCCFG_VBUSASEN;
+	NVIC_SetPriority(OTG_FS_IRQn, 10);
+	NVIC_ClearPendingIRQ(OTG_FS_IRQn);
+	NVIC_EnableIRQ(OTG_FS_IRQn);
 
 	tusb_cdc_init();
 #endif
