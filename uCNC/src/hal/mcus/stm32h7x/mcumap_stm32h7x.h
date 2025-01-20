@@ -2065,25 +2065,25 @@ extern "C"
 #define DIO207_RCCEN SPI_CS_RCCEN
 #define DIO207_GPIO SPI_CS_GPIO
 #endif
-#if (defined(I2C_SCL_PORT) && defined(I2C_SCL_BIT))
-#define I2C_SCL 208
-#define I2C_SCL_RCCEN (__rccgpioen__(I2C_SCL_PORT))
-#define I2C_SCL_GPIO (__gpio__(I2C_SCL_PORT))
+#if (defined(I2C_CLK_PORT) && defined(I2C_CLK_BIT))
+#define I2C_CLK 208
+#define I2C_CLK_RCCEN (__rccgpioen__(I2C_CLK_PORT))
+#define I2C_CLK_GPIO (__gpio__(I2C_CLK_PORT))
 #define DIO208 208
-#define DIO208_PORT I2C_SCL_PORT
-#define DIO208_BIT I2C_SCL_BIT
-#define DIO208_RCCEN I2C_SCL_RCCEN
-#define DIO208_GPIO I2C_SCL_GPIO
+#define DIO208_PORT I2C_CLK_PORT
+#define DIO208_BIT I2C_CLK_BIT
+#define DIO208_RCCEN I2C_CLK_RCCEN
+#define DIO208_GPIO I2C_CLK_GPIO
 #endif
-#if (defined(I2C_SDA_PORT) && defined(I2C_SDA_BIT))
-#define I2C_SDA 209
-#define I2C_SDA_RCCEN (__rccgpioen__(I2C_SDA_PORT))
-#define I2C_SDA_GPIO (__gpio__(I2C_SDA_PORT))
+#if (defined(I2C_DATA_PORT) && defined(I2C_DATA_BIT))
+#define I2C_DATA 209
+#define I2C_DATA_RCCEN (__rccgpioen__(I2C_DATA_PORT))
+#define I2C_DATA_GPIO (__gpio__(I2C_DATA_PORT))
 #define DIO209 209
-#define DIO209_PORT I2C_SDA_PORT
-#define DIO209_BIT I2C_SDA_BIT
-#define DIO209_RCCEN I2C_SDA_RCCEN
-#define DIO209_GPIO I2C_SDA_GPIO
+#define DIO209_PORT I2C_DATA_PORT
+#define DIO209_BIT I2C_DATA_BIT
+#define DIO209_RCCEN I2C_DATA_RCCEN
+#define DIO209_GPIO I2C_DATA_GPIO
 #endif
 #if (defined(TX2_PORT) && defined(TX2_BIT))
 #define TX2 210
@@ -4388,9 +4388,9 @@ extern "C"
 #define I2C_PORT 1
 #endif
 
-#define I2C_APBEN __helper__(RCC_APB1ENR_I2C, I2C_PORT, EN)
+#define I2C_APBEN __helper__(RCC_APB1LENR_I2C, I2C_PORT, EN)
 #define I2C_REG __helper__(I2C, I2C_PORT, )
-#define I2C_SPEEDRANGE (HAL_RCC_GetPCLK1Freq() / 1000000UL)
+#define I2C_TIMINGS_REG 0x0
 #define I2C_AFIO 4
 
 #define I2C_IRQ __helper__(I2C, I2C_PORT, _EV_IRQn)

@@ -23,6 +23,7 @@
 #include "core_cm7.h"
 #include "stm32h7xx.h"
 #include "mcumap_stm32h7x.h"
+#include "stm32h7xx_hal.h"
 #include <math.h>
 
 #ifdef MCU_HAS_USB
@@ -536,7 +537,8 @@ void mcu_usart_init(void)
 
 	// enable usb vreg
 	PWR->CR3 |= PWR_CR3_USBREGEN;
-	while(!CHECKFLAG(PWR->CR3, PWR_FLAG_USB33RDY));
+	while (!CHECKFLAG(PWR->CR3, PWR_FLAG_USB33RDY))
+		;
 	PWR->CR3 |= PWR_CR3_USB33DEN;
 
 	// /* Disable all interrupts. */
@@ -789,7 +791,9 @@ void mcu_init(void)
 	SPI2_REG->CR1 |= SPI_CR1_SPE;
 #endif
 #ifdef MCU_HAS_I2C
-	RCC->APB1ENR |= I2C_APBEN;
+	RCC->APB1LENR |= __helper__(RCC_APB1LENR_I2C, I2C_PORT, EN);
+	RCC->APB1LRSTR |= (__helper__(RCC_APB1LRSTR_I2C, I2C_PORT, RST));
+	RCC->APB1LRSTR &= ~(__helper__(RCC_APB1LRSTR_I2C, I2C_PORT, RST));
 	mcu_config_af(I2C_CLK, I2C_AFIO);
 	mcu_config_af(I2C_DATA, I2C_AFIO);
 	mcu_config_pullup(I2C_CLK);
@@ -797,13 +801,9 @@ void mcu_init(void)
 	// set opendrain
 	mcu_config_opendrain(I2C_CLK);
 	mcu_config_opendrain(I2C_DATA);
-	// reset I2C
-	I2C_REG->CR1 |= I2C_CR1_SWRST;
-	I2C_REG->CR1 &= ~I2C_CR1_SWRST;
+
 	// set max freq
-	I2C_REG->CR2 |= I2C_SPEEDRANGE;
-	I2C_REG->TRISE = (I2C_SPEEDRANGE + 1);
-	I2C_REG->CCR |= (I2C_FREQ <= 100000UL) ? ((I2C_SPEEDRANGE * 5) & 0x0FFF) : (((I2C_SPEEDRANGE * 5 / 6) & 0x0FFF) | I2C_CCR_FS);
+	I2C_REG->TIMINGR = I2C_TIMINGS_REG;
 	// initialize the I2C configuration register
 	I2C_REG->CR1 |= I2C_CR1_PE;
 #endif
