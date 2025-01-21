@@ -977,7 +977,7 @@ extern "C"
 
 	bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 	{
-		SPI.transferBytes(out, int, len);
+		SPI.transferBytes(out, in, len);
 		return false;
 	}
 
@@ -1027,6 +1027,7 @@ extern "C"
 		if (NVM_STORAGE_SIZE <= address)
 		{
 			DBGMSG("EEPROM invalid address @ %u", address);
+			return;
 		}
 		EEPROM.write(address, value);
 	}
