@@ -877,16 +877,16 @@ void __attribute__((weak)) mcu_io_init(void)
 #endif
 #endif
 #if ASSERT_PIN_IO(SPI2_CLK)
-mcu_config_output(SPI2_CLK);
+	mcu_config_output(SPI2_CLK);
 #endif
 #if ASSERT_PIN_IO(SPI2_SDI)
-mcu_config_output(SPI2_SDI);
+	mcu_config_output(SPI2_SDI);
 #endif
 #if ASSERT_PIN_IO(SPI2_SDO)
-mcu_config_output(SPI2_SDO);
+	mcu_config_output(SPI2_SDO);
 #endif
 #if ASSERT_PIN(SPI2_CS)
-mcu_config_output(SPI2_CS);
+	mcu_config_output(SPI2_CS);
 #endif
 
 #ifdef MCU_HAS_UART
@@ -931,6 +931,29 @@ void __attribute__((weak)) mcu_io_reset(void)
 {
 }
 #endif
+
+// Non volatile memory
+/**
+ * gets a byte at the given EEPROM (or other non volatile memory) address of the MCU.
+ * */
+uint8_t __attribute__((weak)) mcu_eeprom_getc(uint16_t address)
+{
+	return 0;
+}
+
+/**
+ * sets a byte at the given EEPROM (or other non volatile memory) address of the MCU.
+ * */
+void __attribute__((weak)) mcu_eeprom_putc(uint16_t address, uint8_t value)
+{
+}
+
+/**
+ * flushes all recorded registers into the eeprom.
+ * */
+void __attribute__((weak)) mcu_eeprom_flush(void)
+{
+}
 
 // ISR
 // New uint8_t handle strategy
