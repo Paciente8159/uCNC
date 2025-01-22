@@ -272,8 +272,8 @@ These pins also obey a numbering system to make them transversal between boards 
 | 205 | DIO205 | SPI_SDI |
 | 206 | DIO206 | SPI_SDO |
 | 207 | DIO207 | SPI_CS |
-| 208 | DIO208 | I2C_SCL |
-| 209 | DIO209 | I2C_SDA |
+| 208 | DIO208 | I2C_CLK |
+| 209 | DIO209 | I2C_DATA |
 | 210 | DIO210 | TX2 |
 | 211 | DIO211 | RX2 |
 | 212 | DIO212 | SPI2_CLK |

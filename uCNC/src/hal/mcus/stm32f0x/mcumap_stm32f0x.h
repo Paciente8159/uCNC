@@ -41,6 +41,10 @@ extern "C"
 #define F_CPU SystemCoreClock
 #endif
 
+#ifndef HSI_VALUE
+#define HSI_VALUE 8000000UL
+#endif
+
 // defines the maximum and minimum step rates
 #ifndef F_STEP_MAX
 #define F_STEP_MAX 100000
@@ -2058,25 +2062,25 @@ extern "C"
 #define DIO207_AHBEN SPI_CS_AHBEN
 #define DIO207_GPIO SPI_CS_GPIO
 #endif
-#if (defined(I2C_SCL_PORT) && defined(I2C_SCL_BIT))
-#define I2C_SCL 208
-#define I2C_SCL_AHBEN (__rccgpioen__(I2C_SCL_PORT))
-#define I2C_SCL_GPIO (__gpio__(I2C_SCL_PORT))
+#if (defined(I2C_CLK_PORT) && defined(I2C_CLK_BIT))
+#define I2C_CLK 208
+#define I2C_CLK_AHBEN (__rccgpioen__(I2C_CLK_PORT))
+#define I2C_CLK_GPIO (__gpio__(I2C_CLK_PORT))
 #define DIO208 208
-#define DIO208_PORT I2C_SCL_PORT
-#define DIO208_BIT I2C_SCL_BIT
-#define DIO208_AHBEN I2C_SCL_AHBEN
-#define DIO208_GPIO I2C_SCL_GPIO
+#define DIO208_PORT I2C_CLK_PORT
+#define DIO208_BIT I2C_CLK_BIT
+#define DIO208_AHBEN I2C_CLK_AHBEN
+#define DIO208_GPIO I2C_CLK_GPIO
 #endif
-#if (defined(I2C_SDA_PORT) && defined(I2C_SDA_BIT))
-#define I2C_SDA 209
-#define I2C_SDA_AHBEN (__rccgpioen__(I2C_SDA_PORT))
-#define I2C_SDA_GPIO (__gpio__(I2C_SDA_PORT))
+#if (defined(I2C_DATA_PORT) && defined(I2C_DATA_BIT))
+#define I2C_DATA 209
+#define I2C_DATA_AHBEN (__rccgpioen__(I2C_DATA_PORT))
+#define I2C_DATA_GPIO (__gpio__(I2C_DATA_PORT))
 #define DIO209 209
-#define DIO209_PORT I2C_SDA_PORT
-#define DIO209_BIT I2C_SDA_BIT
-#define DIO209_AHBEN I2C_SDA_AHBEN
-#define DIO209_GPIO I2C_SDA_GPIO
+#define DIO209_PORT I2C_DATA_PORT
+#define DIO209_BIT I2C_DATA_BIT
+#define DIO209_AHBEN I2C_DATA_AHBEN
+#define DIO209_GPIO I2C_DATA_GPIO
 #endif
 #if (defined(TX2_PORT) && defined(TX2_BIT))
 #define TX2 210
@@ -4607,8 +4611,8 @@ extern "C"
 #define I2C_DATA_AFIO 5
 #endif
 
-#define I2C_IRQ __helper__(I2C, I2C_PORT, _EV_IRQn)
-#define I2C_ISR __helper__(I2C, I2C_PORT, _EV_IRQHandler)
+#define I2C_IRQ __helper__(I2C, I2C_PORT, _IRQn)
+#define I2C_ISR __helper__(I2C, I2C_PORT, _IRQHandler)
 
 #ifndef I2C_FREQ
 #define I2C_FREQ 400000UL

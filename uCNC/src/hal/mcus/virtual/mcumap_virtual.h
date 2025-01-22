@@ -398,9 +398,9 @@
 #define DIO206 206
 #define SPI_CS 207
 #define DIO207 207
-#define I2C_SCL 208
+#define I2C_CLK 208
 #define DIO208 208
-#define I2C_SDA 209
+#define I2C_DATA 209
 #define DIO209 209
 #define TX2 210
 #define DIO210 210
