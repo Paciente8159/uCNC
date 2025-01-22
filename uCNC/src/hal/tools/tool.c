@@ -27,9 +27,13 @@
 #if TOOL_COUNT == 1
 #define tool_current TOOL1
 #else
+#if TOOL_COUNT > 0
 static tool_t tool_current;
 #endif
+#endif
+#if TOOL_COUNT > 0
 static int16_t tool_current_speed;
+#endif
 
 #ifdef TOOL1
 DECL_TOOL(TOOL1);
