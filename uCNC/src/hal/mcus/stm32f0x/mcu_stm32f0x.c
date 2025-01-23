@@ -688,11 +688,7 @@ void mcu_init(void)
 	I2C_REG->CR1 |= I2C_CR1_SWRST;
 	I2C_REG->CR1 &= ~I2C_CR1_SWRST;
 	// set max freq
-	I2C_REG->CR2 |= I2C_SPEEDRANGE;
-	I2C_REG->TRISE = (I2C_SPEEDRANGE + 1);
-	I2C_REG->CCR |= (I2C_FREQ <= 100000UL) ? ((I2C_SPEEDRANGE * 5) & 0x0FFF) : (((I2C_SPEEDRANGE * 5 / 6) & 0x0FFF) | I2C_CCR_FS);
-	// initialize the SPI configuration register
-	I2C_REG->CR1 |= I2C_CR1_PE;
+	mcu_i2c_config(I2C_FREQ);
 #endif
 
 	mcu_disable_probe_isr();
@@ -874,7 +870,7 @@ uint8_t mcu_eeprom_getc(uint16_t address)
 {
 	if (NVM_STORAGE_SIZE <= address)
 	{
-		DBGMSG("EEPROM invalid address @ %u",address);
+		DBGMSG("EEPROM invalid address @ %u", address);
 		return 0;
 	}
 	uint16_t offset = mcu_access_flash_page(address);
@@ -904,7 +900,7 @@ void mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
 	if (NVM_STORAGE_SIZE <= address)
 	{
-		DBGMSG("EEPROM invalid address @ %u",address);
+		DBGMSG("EEPROM invalid address @ %u", address);
 	}
 
 	uint16_t offset = mcu_access_flash_page(address);
@@ -946,7 +942,7 @@ void mcu_eeprom_flush()
 				proto_error(42); // STATUS_SETTING_WRITE_FAIL
 			if (FLASH->SR & FLASH_SR_WRPRTERR)
 				proto_error(43); // STATUS_SETTING_PROTECTED_FAIL
-			FLASH->CR = 0;						 // Ensure PG bit is low
+			FLASH->CR = 0;		 // Ensure PG bit is low
 			FLASH->SR = 0;
 			eeprom++;
 			ptr++;
@@ -1387,174 +1383,79 @@ bool mcu_spi2_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t d
 #endif
 
 #ifdef MCU_HAS_I2C
+
 #if I2C_ADDRESS == 0
-void mcu_i2c_write_stop(bool *stop)
-{
-	if (*stop)
-	{
-		int32_t ms_timeout = 25;
-
-		I2C_REG->CR1 |= I2C_CR1_STOP;
-		__TIMEOUT_MS__(ms_timeout)
-		{
-			if (I2C_REG->CR1 & I2C_CR1_STOP)
-			{
-				return;
-			}
-		}
-	}
-}
-
-static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop, uint32_t ms_timeout)
-{
-	bool stop __attribute__((__cleanup__(mcu_i2c_write_stop))) = send_stop;
-	int32_t timeout = ms_timeout;
-
-	uint32_t status = send_start ? I2C_SR1_ADDR : I2C_SR1_BTF;
-	I2C_REG->SR1 &= ~I2C_SR1_AF;
-	if (send_start)
-	{
-		if ((I2C_REG->SR1 & I2C_SR1_ARLO) || ((I2C_REG->CR1 & I2C_CR1_START) && (I2C_REG->CR1 & I2C_CR1_STOP)))
-		{
-			// Save values
-			uint32_t cr2 = I2C_REG->CR2;
-			uint32_t ccr = I2C_REG->CCR;
-			uint32_t trise = I2C_REG->TRISE;
-
-			// Software reset
-			I2C_REG->CR1 |= I2C_CR1_SWRST;
-			I2C_REG->CR1 &= ~I2C_CR1_SWRST;
-
-			// Restore values
-			I2C_REG->CR2 = cr2;
-			I2C_REG->CCR = ccr;
-			I2C_REG->TRISE = trise;
-
-			// Enable
-			I2C_REG->CR1 |= I2C_CR1_PE;
-		}
-
-		// init
-		I2C_REG->CR1 |= I2C_CR1_START;
-
-		__TIMEOUT_MS__(timeout)
-		{
-			if ((I2C_REG->SR1 & I2C_SR1_SB) && (I2C_REG->SR2 & I2C_SR2_MSL) && (I2C_REG->SR2 & I2C_SR2_BUSY))
-			{
-				break;
-			}
-			if (I2C_REG->SR1 & I2C_SR1_ARLO)
-			{
-				stop = false;
-				return I2C_NOTOK;
-			}
-		}
-
-		__TIMEOUT_ASSERT__(timeout)
-		{
-			stop = true;
-			return I2C_NOTOK;
-		}
-
-		if (I2C_REG->SR1 & I2C_SR1_AF)
-		{
-			stop = true;
-			return I2C_NOTOK;
-		}
-	}
-
-	I2C_REG->DR = data;
-	timeout = ms_timeout;
-	__TIMEOUT_MS__(timeout)
-	{
-		if (I2C_REG->SR1 & status)
-		{
-			break;
-		}
-		if (I2C_REG->SR1 & I2C_SR1_AF)
-		{
-			break;
-		}
-		if (I2C_REG->SR1 & I2C_SR1_ARLO)
-		{
-			stop = false;
-			return I2C_NOTOK;
-		}
-	}
-
-	__TIMEOUT_ASSERT__(timeout)
-	{
-		stop = true;
-		return I2C_NOTOK;
-	}
-	// read SR2 to clear ADDR
-	if (send_start)
-	{
-		status = I2C_REG->SR2;
-	}
-
-	if (I2C_REG->SR1 & I2C_SR1_AF)
-	{
-		stop = true;
-		return I2C_NOTOK;
-	}
-
-	return I2C_OK;
-}
-
-static uint8_t mcu_i2c_read(uint8_t *data, bool with_ack, bool send_stop, uint32_t ms_timeout)
-{
-	*data = 0xFF;
-	bool stop __attribute__((__cleanup__(mcu_i2c_write_stop))) = send_stop;
-
-	if (!with_ack)
-	{
-		I2C_REG->CR1 &= ~I2C_CR1_ACK;
-	}
-	else
-	{
-		I2C_REG->CR1 |= I2C_CR1_ACK;
-	}
-
-	__TIMEOUT_MS__(ms_timeout)
-	{
-		if (I2C_REG->SR1 & I2C_SR1_RXNE)
-		{
-			*data = I2C_REG->DR;
-			return I2C_OK;
-		}
-	}
-
-	stop = true;
-	return I2C_NOTOK;
-}
-
 #ifndef mcu_i2c_send
+#define STM_VAL2REG(val, X) (((val << X##_Pos) & X##_Msk))
 // master sends command to slave
 uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool release, uint32_t ms_timeout)
 {
-	if (data && datalen)
+	if (!data || !datalen)
 	{
-		if (mcu_i2c_write(address << 1, true, false, ms_timeout) == I2C_OK) // start, send address, write
-		{
-			// send data, stop
-			do
-			{
-				datalen--;
-				bool last = (datalen == 0);
-				if (mcu_i2c_write(*data, false, (release & last), ms_timeout) != I2C_OK)
-				{
-					return I2C_NOTOK;
-				}
-				data++;
-
-			} while (datalen);
-
-			return I2C_OK;
-		}
+		return I2C_NOTOK;
 	}
 
-	return I2C_NOTOK;
+	I2C_REG->CR2 = (address << 1) | I2C_CR2_START | STM_VAL2REG(datalen, I2C_CR2_NBYTES);
+	for (uint8_t i = 0; i < datalen; i++)
+	{
+		if ((I2C_REG->ISR & I2C_ISR_NACKF))
+		{
+			return I2C_NOTOK;
+		}
+		uint32_t t = ms_timeout;
+		__TIMEOUT_MS__(t)
+		{
+			if ((I2C_REG->ISR & I2C_ISR_TXIS))
+			{
+				break;
+			}
+		}
+
+		__TIMEOUT_ASSERT__(t)
+		{
+			return I2C_NOTOK;
+		}
+
+		I2C_REG->TXDR = data[i];
+	}
+
+	if (release)
+	{
+		uint32_t t = ms_timeout;
+		__TIMEOUT_MS__(t)
+		{
+			if ((I2C_REG->ISR & I2C_ISR_TC))
+			{
+				break;
+			}
+		}
+
+		__TIMEOUT_ASSERT__(t)
+		{
+			return I2C_NOTOK;
+		}
+
+		I2C_REG->CR2 |= I2C_CR2_STOP;
+
+		t = ms_timeout;
+		__TIMEOUT_MS__(t)
+		{
+			if ((I2C_REG->ISR & I2C_ISR_STOPF))
+			{
+				break;
+			}
+		}
+
+		__TIMEOUT_ASSERT__(t)
+		{
+			return I2C_NOTOK;
+		}
+
+		I2C_REG->ICR |= I2C_ICR_STOPCF;
+		I2C_REG->CR2 = 0x0;
+	}
+
+	return I2C_OK;
 }
 #endif
 
@@ -1562,25 +1463,68 @@ uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool relea
 // master receive response from slave
 uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_t ms_timeout)
 {
-	if (data && datalen)
+	if (!data || !datalen)
 	{
-		if (mcu_i2c_write((address << 1) | 0x01, true, false, ms_timeout) == I2C_OK) // start, send address, write
+		return I2C_NOTOK;
+	}
+
+	uint32_t t = ms_timeout;
+	__TIMEOUT_MS__(t)
+	{
+		if (!(I2C_REG->ISR & I2C_ISR_BUSY))
 		{
-			do
-			{
-				datalen--;
-				bool last = (datalen == 0);
-				if (mcu_i2c_read(data, !last, last, ms_timeout) != I2C_OK)
-				{
-					return I2C_NOTOK;
-				}
-				data++;
-			} while (datalen);
-			return I2C_OK;
+			break;
 		}
 	}
 
-	return I2C_NOTOK;
+	__TIMEOUT_ASSERT__(t)
+	{
+		return I2C_NOTOK;
+	}
+
+	I2C_REG->CR2 = I2C_CR2_RD_WRN | I2C_CR2_AUTOEND | STM_VAL2REG(datalen, I2C_CR2_NBYTES) | (address << 1) | (I2C_CR2_START);
+
+	for (uint8_t i = 0; i < datalen; i++)
+	{
+		t = ms_timeout;
+		__TIMEOUT_MS__(t)
+		{
+			if (((I2C_REG->ISR & I2C_ISR_BERR)) || ((I2C_REG->ISR & I2C_ISR_ARLO)))
+			{
+				return I2C_NOTOK;
+			}
+			if ((I2C_REG->ISR & I2C_ISR_RXNE))
+			{
+				break;
+			}
+		}
+
+		__TIMEOUT_ASSERT__(t)
+		{
+			return I2C_NOTOK;
+		}
+
+		data[i] = (uint8_t)I2C_REG->RXDR;
+	}
+
+	t = ms_timeout;
+	__TIMEOUT_MS__(t)
+	{
+		if (!(I2C_REG->ISR & I2C_ISR_STOPF))
+		{
+			break;
+		}
+	}
+
+	__TIMEOUT_ASSERT__(t)
+	{
+		return I2C_NOTOK;
+	}
+
+	I2C_REG->ICR |= I2C_ICR_STOPCF;
+	I2C_REG->CR2 = 0x0;
+
+	return I2C_OK;
 }
 #endif
 #endif
@@ -1588,12 +1532,16 @@ uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_
 #ifndef mcu_i2c_config
 void mcu_i2c_config(uint32_t frequency)
 {
+	RCC->APB1ENR &= ~I2C_APBEN;
+	RCC->CFGR3 &= ~RCC_CFGR3_I2C1SW; // use HSI clock source
+	while (RCC->CFGR3 & RCC_CFGR3_I2C1SW)
+		;
 	RCC->APB1ENR |= I2C_APBEN;
 	mcu_config_opendrain(I2C_CLK);
 	mcu_config_opendrain(I2C_DATA);
 	mcu_config_af(I2C_CLK, GPIO_AF);
 	mcu_config_af(I2C_DATA, GPIO_AF);
-#ifdef SPI_REMAP
+#ifdef I2C_REMAP
 	AFIO->MAPR |= I2C_REMAP;
 #endif
 	// reset I2C
@@ -1601,26 +1549,49 @@ void mcu_i2c_config(uint32_t frequency)
 	I2C_REG->CR1 &= ~I2C_CR1_SWRST;
 #if I2C_ADDRESS == 0
 	// set max freq
-	I2C_REG->CR2 |= I2C_SPEEDRANGE;
-	I2C_REG->TRISE = (I2C_SPEEDRANGE + 1);
-	I2C_REG->CCR |= (frequency <= 100000UL) ? ((I2C_SPEEDRANGE * 5) & 0x0FFF) : (((I2C_SPEEDRANGE * 5 / 6) & 0x0FFF) | I2C_CCR_FS);
+	uint8_t presc = 0;
+	while ((HSI_VALUE / (presc + 1)) > (frequency * 255UL))
+	{
+		presc++;
+	}
+
+	float i2c_osc = (uint8_t)CLAMP(0, (HSI_VALUE / (presc + 1)), 0x0F);
+	uint8_t scll = 0, sclh = scll = (uint8_t)CLAMP(0, (i2c_osc / (frequency * 2) - 1), 0xFFFF); // half time clock up and clock down
+	float risetime = 8333333.3f, falltime = 8333333.3f;
+	if (frequency <= 100000UL) // standart mode (max fall time 1000ns(1Mhz) and max rise time 300ns(3,3MHZ))
+	{
+		risetime = 1000000.0f;
+		falltime = 3333333.3f;
+	}
+	else if (frequency <= 400000UL) // fast mode
+	{
+		risetime = 3333333.3f;
+		falltime = 3333333.3f;
+	}
+
+	uint8_t scldel = (uint8_t)CLAMP(0, (ceilf((float)i2c_osc / risetime) - 1), 0x0F);
+	uint8_t sdadel = (uint8_t)CLAMP(0, (ceilf((float)i2c_osc / falltime) - 1), 0x0F);
+
+	sclh -= sdadel;
+
+	I2C_REG->TIMEOUTR = (STM_VAL2REG(presc, I2C_TIMINGR_PRESC) | STM_VAL2REG(scll, I2C_TIMINGR_SCLL) | STM_VAL2REG(sclh, I2C_TIMINGR_SCLH) | STM_VAL2REG(scldel, I2C_TIMINGR_SCLDEL) | STM_VAL2REG(sdadel, I2C_TIMINGR_SDADEL));
 #else
 	// set address
-	I2C_REG->OAR1 &= ~(I2C_OAR1_ADDMODE | 0x0F);
+	I2C_REG->OAR1 &= ~(I2C_OAR1_OA1MODE | 0x0F);
 	I2C_REG->OAR1 |= (I2C_ADDRESS << 1);
 	I2C_REG->OAR2 = 0;
 	I2C_REG->CR1 &= ~I2C_CR1_NOSTRETCH;
-	// enable events
-	I2C_REG->CR2 |= (I2C_CR2_ITEVTEN | I2C_CR2_ITERREN | I2C_CR2_ITBUFEN);
+	// enable interrupts
+	I2C_REG->CR1 |= (I2C_CR1_RXIE | I2C_CR1_TXIE | I2C_CR1_ADDRIE);
 	NVIC_SetPriority(I2C_IRQ, 10);
 	NVIC_ClearPendingIRQ(I2C_IRQ);
 	NVIC_EnableIRQ(I2C_IRQ);
 #endif
 	// initialize the SPI configuration register
-	I2C_REG->CR1 |= (I2C_CR1_PE | I2C_CR1_ENGC);
+	I2C_REG->CR1 |= (I2C_CR1_PE | I2C_CR1_GCEN);
 #if I2C_ADDRESS != 0
 	// prepare ACK in slave mode
-	I2C_REG->CR1 |= I2C_CR1_ACK;
+	I2C_REG->CR2 &= ~I2C_CR2_NACK;
 #endif
 }
 #endif
@@ -1637,16 +1608,13 @@ void I2C_ISR(void)
 
 	// address match or generic call
 	// Clear ISR flag by reading SR1 and SR2 registers
-	if ((I2C_REG->SR1 & I2C_SR1_ADDR))
+	if ((I2C_REG->ISR & I2C_ISR_ADDR))
 	{
 		// clear the ISR flag
-		volatile uint32_t status = I2C_REG->SR1;
-		(void)status;
-		status = I2C_REG->SR2;
-		(void)status;
+		volatile uint32_t status = I2C_REG->ISR;
 
 		// // Address matched, do necessary processing
-		if ((status & I2C_SR2_TRA) && !datalen)
+		if ((status & I2C_ISR_ADDR) && !datalen)
 		{
 			mcu_i2c_buffer[i] = 0;
 			// unlock ISR and process the info request
@@ -1657,52 +1625,47 @@ void I2C_ISR(void)
 		i = 0;
 	}
 
-	if ((I2C_REG->SR1 & I2C_SR1_RXNE))
+	if ((I2C_REG->ISR & I2C_ISR_RXNE))
 	{
-		mcu_i2c_buffer[i++] = I2C_REG->DR;
+		mcu_i2c_buffer[i++] = I2C_REG->RXDR;
 	}
 
-	if ((I2C_REG->SR1 & I2C_SR1_TXE))
+	if ((I2C_REG->ISR & I2C_ISR_TXE))
 	{
-		I2C_REG->DR = mcu_i2c_buffer[i++];
+		I2C_REG->TXDR = mcu_i2c_buffer[i++];
 		if (i > datalen)
 		{
 			// send NACK
-			I2C_REG->CR1 |= I2C_CR1_STOP;
+			I2C_REG->CR2 |= I2C_CR2_STOP;
 			datalen = 0;
 		}
 	}
 
 	// Clear ISR flag by reading SR1 and writing CR1 registers
-	if ((I2C_REG->SR1 & I2C_SR1_STOPF))
+	if ((I2C_REG->ISR & I2C_ISR_STOPF))
 	{
 		// clear the ISR flag
-		volatile uint32_t status = I2C_REG->SR1;
-		(void)status;
-		I2C_REG->CR1 |= I2C_CR1_PE;
+		I2C_REG->ICR |= I2C_ICR_STOPCF;
 		// stop transmission
 		datalen = 0;
 	}
 
 	// An error ocurred
-	if (I2C_REG->SR1 & 0XFF00)
+	if (I2C_REG->ISR & 0X3F00)
 	{
 		// prepare ACK for next transmission
 		index = 0;
 		datalen = 0;
-		I2C_REG->CR1 |= I2C_CR1_ACK;
-		I2C_REG->CR2 |= (I2C_CR2_ITEVTEN | I2C_CR2_ITERREN);
+		I2C_REG->CR1 &= ~I2C_CR1_NACKIE;
+		I2C_REG->CR1 |= (I2C_CR1_RXIE | I2C_CR1_TXIE);
 		// clear ISR flag
-		I2C_REG->SR1 = I2C_REG->SR1 & 0X00FF;
-		volatile uint32_t status = I2C_REG->SR1;
-		(void)status;
-		status = I2C_REG->SR2;
-		(void)status;
+		I2C_REG->ICR = 0X00FF;
+		volatile uint32_t status = I2C_REG->ISR;
 	}
 
 	// prepare ACK for next transmition
 	index = i;
-	I2C_REG->CR1 |= I2C_CR1_ACK;
+	I2C_REG->CR1 &= ~I2C_CR1_NACKIE;
 	NVIC_ClearPendingIRQ(I2C_IRQ);
 }
 #endif
