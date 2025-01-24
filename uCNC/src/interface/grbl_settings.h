@@ -175,6 +175,10 @@ typedef uint16_t setting_offset_t;
 #define SETTING_TYPE_MASK(T) ((T >> 5) & 0x3)
 #define SETTING_ARRAY 0x80
 #define SETTING_ARRCNT(X) (X & 0x1F)
+#define SETTING_TYPE_BOOL SETTING_TYPE(1)
+#define SETTING_TYPE_UINT8 SETTING_TYPE(2)
+#define SETTING_TYPE_UINT16 SETTING_TYPE(3)
+#define SETTING_TYPE_FLOAT SETTING_TYPE(0)
 
 	typedef struct setting_id_
 	{
