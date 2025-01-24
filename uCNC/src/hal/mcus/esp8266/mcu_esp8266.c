@@ -42,7 +42,7 @@
 #define UART_PARITY_M 0x00000001
 #define UART_PARITY_S 0
 
-static volatile bool esp8266_global_isr_enabled;
+volatile uint32_t esp8266_global_isr;
 static volatile uint32_t mcu_runtime_ms;
 
 void esp8266_uart_init(int baud);
@@ -323,6 +323,7 @@ IRAM_ATTR void mcu_itp_isr(void)
  * */
 void mcu_init(void)
 {
+	esp8266_global_isr = 0;
 	mcu_io_init();
 #ifndef RAM_ONLY_SETTINGS
 	esp8266_eeprom_init(NVM_STORAGE_SIZE); // 2K Emulated EEPROM
@@ -425,44 +426,6 @@ uint8_t mcu_get_servo(uint8_t servo)
 #endif
 	return 0;
 }
-
-// ISR
-/**
- * enables global interrupts on the MCU
- * can be defined either as a function or a macro call
- * */
-#ifndef mcu_enable_global_isr
-void mcu_enable_global_isr(void)
-{
-	// ets_intr_unlock();
-	// xt_rsil(0);
-	esp8266_global_isr_enabled = true;
-}
-#endif
-
-/**
- * disables global interrupts on the MCU
- * can be defined either as a function or a macro call
- * */
-#ifndef mcu_disable_global_isr
-void mcu_disable_global_isr(void)
-{
-	esp8266_global_isr_enabled = false;
-	// xt_rsil(15);
-	// ets_intr_lock();
-}
-#endif
-
-/**
- * gets global interrupts state on the MCU
- * can be defined either as a function or a macro call
- * */
-#ifndef mcu_get_global_isr
-bool mcu_get_global_isr(void)
-{
-	return esp8266_global_isr_enabled;
-}
-#endif
 
 // Step interpolator
 /**
