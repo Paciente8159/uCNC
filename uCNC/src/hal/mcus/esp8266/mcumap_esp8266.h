@@ -1224,22 +1224,92 @@ extern "C"
 #define mcu_set_pwm(X, Y) ({ g_io_soft_pwm[X - PWM_PINS_OFFSET] = (0xFF & Y); })
 #define mcu_get_pwm(X) g_io_soft_pwm[X - PWM_PINS_OFFSET]
 
-#define mcu_config_output(X) pinMode(__indirect__(X, BIT), OUTPUT)
+#define mcu_config_input(X)                                                                \
+	if (__indirect__(X, BIT) < 16)                                                           \
+	{                                                                                        \
+		GPF(__indirect__(X, BIT)) = GPFFS(GPFFS_GPIO(__indirect__(X, BIT)));                   \
+		GPEC = (1 << __indirect__(X, BIT));                                                    \
+		GPC(__indirect__(X, BIT)) = (GPC(__indirect__(X, BIT)) & (0xF << GPCI)) | (1 << GPCD); \
+	}                                                                                        \
+	if (__indirect__(X, BIT) == 16)                                                          \
+	{                                                                                        \
+		GPF16 = GP16FFS(GPFFS_GPIO(16));                                                       \
+		GPC16 = 0;                                                                             \
+		GP16E &= ~1;                                                                           \
+	}
+
+#define mcu_config_pullup(X)                  \
+	if (__indirect__(X, BIT) < 16)              \
+	{                                           \
+		GPF(__indirect__(X, BIT)) |= (1 << GPFPU) \
+	}
+
+#define mcu_config_output(X)                                                 \
+	if (__indirect__(X, BIT) < 16)                                             \
+	{                                                                          \
+		GPF(__indirect__(X, BIT)) = GPFFS(GPFFS_GPIO(__indirect__(X, BIT)));     \
+		GPC(__indirect__(X, BIT)) = (GPC(__indirect__(X, BIT)) & (0xF << GPCI)); \
+		GPES = (1 << __indirect__(X, BIT));                                      \
+	}                                                                          \
+	if (__indirect__(X, BIT) == 16)                                            \
+	{                                                                          \
+		GPF16 = GP16FFS(GPFFS_GPIO(16));                                         \
+		GPC16 = 0;                                                               \
+		GP16E |= 1;                                                              \
+	}
+
+#define mcu_config_output_od(X)               \
+	if (__indirect__(X, BIT) < 16)              \
+	{                                           \
+		GPIEC = (1 << __indirect__(X, BIT));      \
+		GPC(__indirect__(X, BIT)) |= (1 << GPCD); \
+		GPES = (1 << __indirect__(X, BIT));       \
+	}
+
+#define mcu_config_af(X, FUNC)                                          \
+	{                                                                     \
+		GPIEC = (1 << __indirect__(X, BIT));                                \
+		GPF(__indirect__(X, BIT)) = GPFFS(GPFFS_BUS(__indirect__(X, BIT))); \
+		GPES = (1 << __indirect__(X, BIT));                                 \
+		switch (FUNC)                                                       \
+		{                                                                   \
+		case SPECIAL:                                                       \
+			if (__indirect__(X, BIT) == 3)                                    \
+			{                                                                 \
+				GPF(__indirect__(X, BIT)) |= (1 << GPFPU);                      \
+			}                                                                 \
+			break;                                                            \
+		default:                                                            \
+			GPF(__indirect__(X, BIT)) = GPFFS((FUNC >> 4) & 0x07);            \
+			if (__indirect__(X, BIT) == 13 && mode == FUNCTION_4)             \
+				GPF(__indirect__(X, BIT)) |= (1 << GPFPU);                      \
+			break;                                                            \
+		}                                                                   \
+	}
+
 #define mcu_config_pwm(X, freq) \
 	g_soft_pwm_res = 1;           \
-	pinMode(__indirect__(X, BIT), OUTPUT)
-#define mcu_config_input(X) pinMode(__indirect__(X, BIT), INPUT)
+	mcu_config_output(X)
+
 #define mcu_config_analog(X) mcu_config_input(X)
-#define mcu_config_pullup(X) pinMode(__indirect__(X, BIT), INPUT_PULLUP)
+
 #define mcu_config_input_isr(X) attachInterrupt(digitalPinToInterrupt(__indirect__(X, BIT)), __indirect__(X, ISRCALLBACK), CHANGE)
 
-#define mcu_get_input(X) ((__indirect__(X, BIT) != 16) ? GPIP(__indirect__(X, BIT)) : (GP16I & 0x01))
-#define mcu_get_output(X) ((__indirect__(X, BIT) != 16) ? GPIP(__indirect__(X, BIT)) : (GP16I & 0x01))
-#define mcu_set_output(X) ({if(__indirect__(X, BIT)!=16){GPOS=(1<<__indirect__(X, BIT));}else{GP16O |= 1;} })
-#define mcu_clear_output(X) ({if(__indirect__(X, BIT)!=16){GPOC=(1<<__indirect__(X, BIT));}else{GP16O &= ~1;} })
+#define mcu_get_input(X) ((__indirect__(X, BIT) < 16) ? GPIP(__indirect__(X, BIT)) : (GP16I & 0x01))
+#define mcu_get_output(X) ((__indirect__(X, BIT) < 16) ? GPIP(__indirect__(X, BIT)) : (GP16I & 0x01))
+#define mcu_set_output(X) ({if(__indirect__(X, BIT) < 16){GPOS=(1<<__indirect__(X, BIT));}else{GP16O |= 1;} })
+#define mcu_clear_output(X) ({if(__indirect__(X, BIT) < 16){GPOC=(1<<__indirect__(X, BIT));}else{GP16O &= ~1;} })
 #define mcu_toggle_output(X) ((!!mcu_get_output(X)) ? mcu_clear_output(X) : mcu_set_output(X))
 
-#define mcu_get_analog(X) analogRead(__indirect__(X, BIT))
+#define mcu_get_analog(X)                                      \
+	if (__indirect__(X, BIT) == 17 || __indirect__(X, BIT) == 0) \
+	{                                                            \
+		return system_adc_read();                                  \
+	}                                                            \
+	else                                                         \
+	{                                                            \
+		return (mcu_get_input()) ? 1023 : 0;                       \
+	}
 
 #define cpucount()                            \
 	({                                          \
