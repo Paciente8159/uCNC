@@ -506,16 +506,16 @@ uint8_t settings_change(setting_offset_t id, float value)
 			{
 				switch (SETTING_TYPE_MASK(s.type))
 				{
-				case 1:
+				case SETTING_TYPE_BOOL:
 					((bool *)s.memptr)[(uint8_t)id - s.id] = value1;
 					break;
-				case 2:
+				case SETTING_TYPE_UINT8:
 					((uint8_t *)s.memptr)[(uint8_t)id - s.id] = value8;
 					break;
-				case 3:
+				case SETTING_TYPE_UINT16:
 					((uint16_t *)s.memptr)[(uint8_t)id - s.id] = value16;
 					break;
-				default:
+				default: // default is float
 					((float *)s.memptr)[(uint8_t)id - s.id] = value;
 					break;
 				}
