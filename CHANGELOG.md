@@ -6,7 +6,7 @@
 
 # Changelog
 
-## [1.11.2] - unreleased
+## [1.11.2] - 25-01-2025
 
 ### Added
 
@@ -15,6 +15,7 @@
 
 ### Changed
 
+- improved settings variable types code readability (#821)
 - improved homing error codes output/logic (#804)
 - modified ESP8266 to use direct GPIO registers (#800)
 
