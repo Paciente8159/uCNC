@@ -172,7 +172,7 @@ typedef uint16_t setting_offset_t;
 #endif
 
 #define SETTING_TYPE(T) (T << 5)
-#define SETTING_TYPE_MASK(T) ((T >> 5) & 0x3)
+#define SETTING_TYPE_MASK(T) (T & (0x03 << 5))
 #define SETTING_ARRAY 0x80
 #define SETTING_ARRCNT(X) (X & 0x1F)
 #define SETTING_TYPE_BOOL SETTING_TYPE(1)
