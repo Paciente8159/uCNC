@@ -77,6 +77,68 @@ static FORCEINLINE void mcu_gen_oneshot(void)
 }
 #endif
 
+#ifdef IC74HC595_CUSTOM_SHIFT_IO
+
+#ifndef IC74HC595_COUNT
+#define IC74HC595_COUNT 0
+#endif
+
+#ifndef IC74HC595_DATA
+#define IC74HC595_DATA DOUT8
+#endif
+
+#ifndef IC74HC595_CLK
+#define IC74HC595_CLK DOUT9
+#endif
+
+#ifndef IC74HC595_LATCH
+#define IC74HC595_LATCH DOUT10
+#endif
+
+#ifndef IC74HC595_DELAY_CYCLES
+#define IC74HC595_DELAY_CYCLES 0
+#endif
+
+IRAM_ATTR void esp8266_ic74hc595_shift_io_pins(void)
+{
+	uint8_t pins[IC74HC595_COUNT];
+	__ATOMIC__
+	{
+		memcpy(pins, (const void *)ic74hc595_io_pins, IC74HC595_COUNT);
+		mcu_clear_output(IC74HC595_LATCH);
+		for (uint8_t i = IC74HC595_COUNT; i != 0;)
+		{
+			i--;
+#if (defined(IC74HC595_USE_HW_SPI) && defined(MCU_HAS_SPI))
+			mcu_spi_xmit(pins[i]);
+#else
+			uint8_t pinbyte = pins[i];
+			for (uint8_t j = 0x80; j != 0; j >>= 1)
+			{
+#if (IC74HC595_DELAY_CYCLES)
+				ic74hc595_delay();
+#endif
+				mcu_clear_output(IC74HC595_CLK);
+				if (pinbyte & j)
+				{
+					mcu_set_output(IC74HC595_DATA);
+				}
+				else
+				{
+					mcu_clear_output(IC74HC595_DATA);
+				}
+				mcu_set_output(IC74HC595_CLK);
+			}
+#endif
+		}
+#if (IC74HC595_DELAY_CYCLES)
+		ic74hc595_delay();
+#endif
+		mcu_set_output(IC74HC595_LATCH);
+	}
+}
+#endif
+
 #if SERVOS_MASK > 0
 static uint32_t servo_tick_counter = 0;
 static uint32_t servo_tick_alarm = 0;
@@ -263,7 +325,11 @@ IRAM_ATTR void mcu_itp_isr(void)
 	mcu_gen_pwm_and_servo();
 	mcu_gen_oneshot();
 #if defined(IC74HC595_HAS_STEPS) || defined(IC74HC595_HAS_DIRS) || defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS)
+#ifdef IC74HC595_CUSTOM_SHIFT_IO
+	esp8266_ic74hc595_shift_io_pins();
+#else
 	ic74hc595_shift_io_pins();
+#endif
 #endif
 }
 
