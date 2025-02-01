@@ -1371,6 +1371,7 @@ bool mcu_spi2_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t d
 }
 #endif
 
+#ifndef USE_ARDUINO_I2C_LIBRARY
 #ifdef MCU_HAS_I2C
 
 #if I2C_ADDRESS == 0
@@ -1690,6 +1691,7 @@ void I2C_ISR(void)
 }
 #endif
 
+#endif
 #endif
 
 #ifdef MCU_HAS_ONESHOT_TIMER
