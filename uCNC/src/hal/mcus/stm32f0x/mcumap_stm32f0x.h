@@ -4299,11 +4299,11 @@ extern "C"
 #ifndef SPI_SDI_AFIO
 #error "SPI pin configuration not supported"
 #endif
-// #ifdef SPI_CS
-// #ifndef SPI_CS_AFIO
-// #error "SPI pin configuration not supported"
-// #endif
-// #endif
+	// #ifdef SPI_CS
+	// #ifndef SPI_CS_AFIO
+	// #error "SPI pin configuration not supported"
+	// #endif
+	// #endif
 
 #define SPI_REG __helper__(SPI, SPI_PORT, )
 #if (SPI_PORT == 2 || SPI_PORT == 3)
@@ -4526,11 +4526,11 @@ extern "C"
 #ifndef SPI2_SDI_AFIO
 #error "SPI2 pin configuration not supported"
 #endif
-// #ifdef SPI2_CS
-// #ifndef SPI2_CS_AFIO
-// #error "SPI2 pin configuration not supported"
-// #endif
-// #endif
+	// #ifdef SPI2_CS
+	// #ifndef SPI2_CS_AFIO
+	// #error "SPI2 pin configuration not supported"
+	// #endif
+	// #endif
 
 #define SPI2_REG __helper__(SPI, SPI2_PORT, )
 #if (SPI2_PORT == 2 || SPI2_PORT == 3)
@@ -4586,6 +4586,12 @@ extern "C"
 #define I2C_REG __helper__(I2C, I2C_PORT, )
 #define I2C_SPEEDRANGE (HAL_RCC_GetPCLK1Freq() / 1000000UL)
 
+#if (I2C_PORT == 1) && (I2C_CLK_PIN == STM32IO_A9)
+#define I2C_CLK_AFIO 4
+#endif
+#if (I2C_PORT == 1) && (I2C_DATA_PIN == STM32IO_A10)
+#define I2C_DATA_AFIO 4
+#endif
 #if (I2C_PORT == 1) && (I2C_CLK_PIN == STM32IO_B6)
 #define I2C_CLK_AFIO 1
 #endif
@@ -4598,10 +4604,10 @@ extern "C"
 #if (I2C_PORT == 1) && (I2C_DATA_PIN == STM32IO_B9)
 #define I2C_DATA_AFIO 1
 #endif
-#if (I2C_PORT == 2) && (I2C_CLK_PIN == STM32IO_B10)
+#if ((I2C_PORT == 1) || (I2C_PORT == 2)) && (I2C_CLK_PIN == STM32IO_B10)
 #define I2C_CLK_AFIO 1
 #endif
-#if (I2C_PORT == 2) && (I2C_DATA_PIN == STM32IO_B11)
+#if ((I2C_PORT == 1) || (I2C_PORT == 2)) && (I2C_DATA_PIN == STM32IO_B11)
 #define I2C_DATA_AFIO 1
 #endif
 #if (I2C_PORT == 2) && (I2C_CLK_PIN == STM32IO_B13)
@@ -4609,6 +4615,18 @@ extern "C"
 #endif
 #if (I2C_PORT == 2) && (I2C_DATA_PIN == STM32IO_B14)
 #define I2C_DATA_AFIO 5
+#endif
+#if (I2C_PORT == 1) && (I2C_CLK_PIN == STM32IO_F1)
+#define I2C_CLK_AFIO 1
+#endif
+#if (I2C_PORT == 1) && (I2C_DATA_PIN == STM32IO_F0)
+#define I2C_DATA_AFIO 1
+#endif
+#if ((I2C_PORT == 1) || (I2C_PORT == 2)) && (I2C_CLK_PIN == STM32IO_F6)
+#define I2C_CLK_AFIO 0
+#endif
+#if ((I2C_PORT == 1) || (I2C_PORT == 2)) && (I2C_DATA_PIN == STM32IO_F7)
+#define I2C_DATA_AFIO 0
 #endif
 
 #define I2C_IRQ __helper__(I2C, I2C_PORT, _IRQn)

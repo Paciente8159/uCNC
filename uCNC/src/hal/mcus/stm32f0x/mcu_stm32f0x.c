@@ -676,17 +676,6 @@ void mcu_init(void)
 	SPI2_REG->CR1 |= SPI_CR1_SPE;
 #endif
 #ifdef MCU_HAS_I2C
-	RCC->APB1ENR |= I2C_APBEN;
-	mcu_config_af(I2C_CLK, I2C_CLK_AFIO);
-	mcu_config_af(I2C_DATA, I2C_DATA_AFIO);
-	mcu_config_pullup(I2C_CLK);
-	mcu_config_pullup(I2C_DATA);
-	// set opendrain
-	mcu_config_opendrain(I2C_CLK);
-	mcu_config_opendrain(I2C_DATA);
-	// reset I2C
-	I2C_REG->CR1 |= I2C_CR1_SWRST;
-	I2C_REG->CR1 &= ~I2C_CR1_SWRST;
 	// set max freq
 	mcu_i2c_config(I2C_FREQ);
 #endif
@@ -1395,7 +1384,8 @@ uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool relea
 		return I2C_NOTOK;
 	}
 
-	I2C_REG->CR2 = (address << 1) | I2C_CR2_START | STM_VAL2REG(datalen, I2C_CR2_NBYTES);
+	I2C_REG->CR2 = I2C_CR2_HEAD10R | (address << 1) | STM_VAL2REG(datalen, I2C_CR2_NBYTES);
+	I2C_REG->CR2 |= I2C_CR2_START;
 	for (uint8_t i = 0; i < datalen; i++)
 	{
 		if ((I2C_REG->ISR & I2C_ISR_NACKF))
@@ -1482,7 +1472,8 @@ uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_
 		return I2C_NOTOK;
 	}
 
-	I2C_REG->CR2 = I2C_CR2_RD_WRN | I2C_CR2_AUTOEND | STM_VAL2REG(datalen, I2C_CR2_NBYTES) | (address << 1) | (I2C_CR2_START);
+	I2C_REG->CR2 = I2C_CR2_HEAD10R | I2C_CR2_RD_WRN | I2C_CR2_AUTOEND | STM_VAL2REG(datalen, I2C_CR2_NBYTES) | (address << 1);
+	I2C_REG->CR2 |= I2C_CR2_START;
 
 	for (uint8_t i = 0; i < datalen; i++)
 	{
@@ -1532,30 +1523,32 @@ uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_
 #ifndef mcu_i2c_config
 void mcu_i2c_config(uint32_t frequency)
 {
+	I2C_REG->CR1 &= ~I2C_CR1_PE;
 	RCC->APB1ENR &= ~I2C_APBEN;
 	RCC->CFGR3 &= ~RCC_CFGR3_I2C1SW; // use HSI clock source
 	while (RCC->CFGR3 & RCC_CFGR3_I2C1SW)
 		;
 	RCC->APB1ENR |= I2C_APBEN;
+	mcu_config_af(I2C_CLK, I2C_CLK_AFIO);
+	mcu_config_af(I2C_DATA, I2C_DATA_AFIO);
+	mcu_config_pullup(I2C_CLK);
+	mcu_config_pullup(I2C_DATA);
+	// set opendrain
 	mcu_config_opendrain(I2C_CLK);
 	mcu_config_opendrain(I2C_DATA);
-	mcu_config_af(I2C_CLK, GPIO_AF);
-	mcu_config_af(I2C_DATA, GPIO_AF);
 #ifdef I2C_REMAP
 	AFIO->MAPR |= I2C_REMAP;
 #endif
-	// reset I2C
-	I2C_REG->CR1 |= I2C_CR1_SWRST;
-	I2C_REG->CR1 &= ~I2C_CR1_SWRST;
+	I2C_REG->CR1 &= ~(I2C_CR1_ANFOFF | I2C_CR1_DNF);
 #if I2C_ADDRESS == 0
 	// set max freq
 	uint8_t presc = 0;
-	while ((HSI_VALUE / (presc + 1)) > (frequency * 255UL))
+	while (((HSI_VALUE / presc) - 1) > (frequency * 255UL))
 	{
 		presc++;
 	}
 
-	float i2c_osc = (uint8_t)CLAMP(0, (HSI_VALUE / (presc + 1)), 0x0F);
+	float i2c_osc = (uint8_t)CLAMP(0, ((HSI_VALUE / presc) - 1), 0x0F);
 	uint8_t scll = 0, sclh = scll = (uint8_t)CLAMP(0, (i2c_osc / (frequency * 2) - 1), 0xFFFF); // half time clock up and clock down
 	float risetime = 8333333.3f, falltime = 8333333.3f;
 	if (frequency <= 100000UL) // standart mode (max fall time 1000ns(1Mhz) and max rise time 300ns(3,3MHZ))
@@ -1575,6 +1568,9 @@ void mcu_i2c_config(uint32_t frequency)
 	sclh -= sdadel;
 
 	I2C_REG->TIMEOUTR = (STM_VAL2REG(presc, I2C_TIMINGR_PRESC) | STM_VAL2REG(scll, I2C_TIMINGR_SCLL) | STM_VAL2REG(sclh, I2C_TIMINGR_SCLH) | STM_VAL2REG(scldel, I2C_TIMINGR_SCLDEL) | STM_VAL2REG(sdadel, I2C_TIMINGR_SDADEL));
+	I2C_REG->CR1 &= ~I2C_CR1_NOSTRETCH;
+	I2C_REG->CR2 |= I2C_CR2_HEAD10R;
+	I2C_REG->CR2 &= ~I2C_CR2_ADD10;
 #else
 	// set address
 	I2C_REG->OAR1 &= ~(I2C_OAR1_OA1MODE | 0x0F);
@@ -1588,8 +1584,9 @@ void mcu_i2c_config(uint32_t frequency)
 	NVIC_EnableIRQ(I2C_IRQ);
 #endif
 	// initialize the SPI configuration register
-	I2C_REG->CR1 |= (I2C_CR1_PE | I2C_CR1_GCEN);
+	I2C_REG->CR1 |= I2C_CR1_PE;
 #if I2C_ADDRESS != 0
+	I2C_REG->CR1 |= I2C_CR1_GCEN;
 	// prepare ACK in slave mode
 	I2C_REG->CR2 &= ~I2C_CR2_NACK;
 #endif
