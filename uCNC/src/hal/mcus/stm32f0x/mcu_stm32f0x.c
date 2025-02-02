@@ -1375,42 +1375,54 @@ bool mcu_spi2_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t d
 #ifdef MCU_HAS_I2C
 
 #if I2C_ADDRESS == 0
-#ifndef mcu_i2c_send
 #define STM_VAL2REG(val, X) (uint32_t)(((((uint32_t)val) << X##_Pos) & X##_Msk))
 
-void mcu_i2c_stop(void)
+void mcu_i2c_stop(bool *stop)
 {
 	I2C_REG->CR2 |= I2C_CR2_STOP;
 	while (!(I2C_REG->ISR & I2C_ISR_STOPF))
 		;
 	I2C_REG->ICR |= I2C_ICR_STOPCF;
 	I2C_REG->CR2 = 0x0;
+	I2C_REG->CR1 &= ~I2C_CR1_PE;
 }
 
+#ifndef mcu_i2c_send
 // master sends command to slave
 uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool release, uint32_t ms_timeout)
 {
+	bool stop __attribute__((__cleanup__(mcu_i2c_stop))) = release;
+
 	if (!data || !datalen)
 	{
 		return I2C_NOTOK;
 	}
 
-	I2C_REG->CR2 = 0;
-	I2C_REG->CR2 = I2C_CR2_HEAD10R | (address << 1) | STM_VAL2REG(datalen, I2C_CR2_NBYTES);
+	/*Enable I2C*/
+	I2C_REG->CR1 |= I2C_CR1_PE;
+	/*Set slave address*/
+	I2C_REG->CR2 = (address << 1);
+	/*7-bit addressing*/
+	I2C_REG->CR2 &= ~I2C_CR2_ADD10;
+	/*Set number to transfer to length for write operation*/
+	I2C_REG->CR2 |= (datalen << I2C_CR2_NBYTES_Pos);
+	/*Set the mode to write mode*/
+	I2C_REG->CR2 &= ~I2C_CR2_RD_WRN;
+	/*Generate start*/
 	I2C_REG->CR2 |= I2C_CR2_START;
-	while ((I2C_REG->CR2 & I2C_CR2_START))
-		;
 	for (uint8_t i = 0; i < datalen; i++)
 	{
-		if ((I2C_REG->ISR & I2C_ISR_NACKF))
-		{
-			mcu_i2c_stop();
-			return I2C_NOTOK;
-		}
+		/*Check if TX buffer is empty*/
 		uint32_t t = ms_timeout;
 		__TIMEOUT_MS__(t)
 		{
-			if ((I2C_REG->ISR & (I2C_ISR_TXIS | I2C_ISR_TC)))
+			if ((I2C_REG->ISR & I2C_ISR_NACKF))
+			{
+				stop = true;
+				return I2C_NOTOK;
+			}
+
+			if ((I2C_REG->ISR & (I2C_ISR_TXE)))
 			{
 				break;
 			}
@@ -1418,10 +1430,11 @@ uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool relea
 
 		__TIMEOUT_ASSERT__(t)
 		{
-			mcu_i2c_stop();
+			stop = true;
 			return I2C_NOTOK;
 		}
 
+		/*send memory address*/
 		I2C_REG->TXDR = data[i];
 	}
 
@@ -1438,28 +1451,8 @@ uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool relea
 
 		__TIMEOUT_ASSERT__(t)
 		{
-			mcu_i2c_stop();
 			return I2C_NOTOK;
 		}
-
-		I2C_REG->CR2 |= I2C_CR2_STOP;
-
-		t = ms_timeout;
-		__TIMEOUT_MS__(t)
-		{
-			if ((I2C_REG->ISR & I2C_ISR_STOPF))
-			{
-				break;
-			}
-		}
-
-		__TIMEOUT_ASSERT__(t)
-		{
-			return I2C_NOTOK;
-		}
-
-		I2C_REG->ICR |= I2C_ICR_STOPCF;
-		I2C_REG->CR2 = 0x0;
 	}
 
 	return I2C_OK;
@@ -1470,6 +1463,8 @@ uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool relea
 // master receive response from slave
 uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_t ms_timeout)
 {
+	bool stop __attribute__((__cleanup__(mcu_i2c_stop))) = true;
+
 	if (!data || !datalen)
 	{
 		return I2C_NOTOK;
@@ -1486,11 +1481,12 @@ uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_
 
 	__TIMEOUT_ASSERT__(t)
 	{
-		mcu_i2c_stop();
 		return I2C_NOTOK;
 	}
 
-	I2C_REG->CR2 = I2C_CR2_HEAD10R | I2C_CR2_RD_WRN | I2C_CR2_AUTOEND | STM_VAL2REG(datalen, I2C_CR2_NBYTES) | (address << I2C_CR2_SADD_Pos);
+	/*Enable I2C*/
+	I2C_REG->CR1 |= I2C_CR1_PE;
+	I2C_REG->CR2 = I2C_CR2_HEAD10R | I2C_CR2_RD_WRN  | STM_VAL2REG(datalen, I2C_CR2_NBYTES) | (address << 1);
 	I2C_REG->CR2 |= I2C_CR2_START;
 	while ((I2C_REG->CR2 & I2C_CR2_START))
 		;
@@ -1501,7 +1497,6 @@ uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_
 		{
 			if (((I2C_REG->ISR & I2C_ISR_BERR)) || ((I2C_REG->ISR & I2C_ISR_ARLO)))
 			{
-				mcu_i2c_stop();
 				return I2C_NOTOK;
 			}
 			if ((I2C_REG->ISR & I2C_ISR_RXNE))
@@ -1512,31 +1507,11 @@ uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_
 
 		__TIMEOUT_ASSERT__(t)
 		{
-			mcu_i2c_stop();
 			return I2C_NOTOK;
 		}
 
 		data[i] = (uint8_t)I2C_REG->RXDR;
 	}
-
-	t = ms_timeout;
-	__TIMEOUT_MS__(t)
-	{
-		if (!(I2C_REG->ISR & I2C_ISR_STOPF))
-		{
-			break;
-		}
-	}
-
-	__TIMEOUT_ASSERT__(t)
-	{
-		return I2C_NOTOK;
-	}
-
-	I2C_REG->ICR |= I2C_ICR_STOPCF;
-	while ((I2C_REG->ICR & I2C_ICR_STOPCF))
-		;
-	I2C_REG->CR2 = 0x0;
 
 	return I2C_OK;
 }
