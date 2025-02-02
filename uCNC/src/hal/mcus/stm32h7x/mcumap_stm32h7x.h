@@ -4378,6 +4378,10 @@ extern "C"
 
 // I2C
 #if (defined(I2C_CLK) && defined(I2C_DATA))
+
+#define I2C_CLK_PIN __iopin__(I2C_CLK_PORT, I2C_CLK_BIT)
+#define I2C_DATA_PIN __iopin__(I2C_DATA_PORT, I2C_DATA_BIT)
+
 #define MCU_HAS_I2C
 #define MCU_SUPPORTS_I2C_SLAVE
 #ifndef I2C_ADDRESS
@@ -4388,13 +4392,105 @@ extern "C"
 #define I2C_PORT 1
 #endif
 
+#if (I2C_PORT == 4)
+#define I2C_APBREG APB4ENR
+#define I2C_APBEN __helper__(RCC_APB4ENR_I2C, I2C_PORT, EN)
+#else
+#define I2C_APBREG APB1LENR
 #define I2C_APBEN __helper__(RCC_APB1LENR_I2C, I2C_PORT, EN)
+#endif
 #define I2C_REG __helper__(I2C, I2C_PORT, )
-#define I2C_TIMINGS_REG 0x0
-#define I2C_AFIO 4
+#define I2C_SPEEDRANGE (HAL_RCC_GetPCLK1Freq() / 1000000UL)
 
-#define I2C_IRQ __helper__(I2C, I2C_PORT, _EV_IRQn)
-#define I2C_ISR __helper__(I2C, I2C_PORT, _EV_IRQHandler)
+#if (I2C_PORT == 1)
+#if (I2C_DATA_PIN == STM32IO_A10)
+#define I2C_DATA_AFIO 4
+#endif
+#if (I2C_CLK_PIN == STM32IO_B6)
+#define I2C_CLK_AFIO 4
+#endif
+#if (I2C_DATA_PIN == STM32IO_B7)
+#define I2C_DATA_AFIO 4
+#endif
+#if (I2C_CLK_PIN == STM32IO_B8)
+#define I2C_CLK_AFIO 4
+#endif
+#if (I2C_DATA_PIN == STM32IO_B9)
+#define I2C_DATA_AFIO 4
+#endif
+#if (I2C_CLK_PIN == STM32IO_F1)
+#define I2C_CLK_AFIO 4
+#endif
+#if (I2C_DATA_PIN == STM32IO_F0)
+#define I2C_DATA_AFIO 4
+#endif
+#elif (I2C_PORT == 2)
+#if (I2C_CLK_PIN == STM32IO_B10)
+#define I2C_CLK_AFIO 4
+#endif
+#if (I2C_DATA_PIN == STM32IO_B11)
+#define I2C_DATA_AFIO 4
+#endif
+#if (I2C_CLK_PIN == STM32IO_F14)
+#define I2C_CLK_AFIO 4
+#endif
+#if (I2C_DATA_PIN == STM32IO_F15)
+#define I2C_DATA_AFIO 4
+#endif
+#if (I2C_CLK_PIN == STM32IO_H4)
+#define I2C_CLK_AFIO 4
+#endif
+#if (I2C_DATA_PIN == STM32IO_H5)
+#define I2C_DATA_AFIO 4
+#endif
+#elif (I2C_PORT == 3)
+#if (I2C_CLK_PIN == STM32IO_A8)
+#define I2C_CLK_AFIO 4
+#endif
+#if (I2C_CLK_PIN == STM32IO_C9)
+#define I2C_DATA_AFIO 4
+#endif
+#if (I2C_CLK_PIN == STM32IO_H7)
+#define I2C_CLK_AFIO 4
+#endif
+#if (I2C_DATA_PIN == STM32IO_H8)
+#define I2C_DATA_AFIO 4
+#endif
+#elif (I2C_PORT == 4)
+#if (I2C_CLK_PIN == STM32IO_D12)
+#define I2C_CLK_AFIO 4
+#endif
+#if (I2C_DATA_PIN == STM32IO_D13)
+#define I2C_DATA_AFIO 4
+#endif
+#if (I2C_CLK_PIN == STM32IO_F14)
+#define I2C_CLK_AFIO 4
+#endif
+#if (I2C_DATA_PIN == STM32IO_F15)
+#define I2C_DATA_AFIO 4
+#endif
+#if (I2C_CLK_PIN == STM32IO_H11)
+#define I2C_CLK_AFIO 4
+#endif
+#if (I2C_DATA_PIN == STM32IO_H12)
+#define I2C_DATA_AFIO 4
+#endif
+#if (I2C_CLK_PIN == STM32IO_B6)
+#define I2C_CLK_AFIO 6
+#endif
+#if (I2C_DATA_PIN == STM32IO_B7)
+#define I2C_DATA_AFIO 6
+#endif
+#if (I2C_CLK_PIN == STM32IO_B8)
+#define I2C_CLK_AFIO 6
+#endif
+#if (I2C_DATA_PIN == STM32IO_B9)
+#define I2C_DATA_AFIO 6
+#endif
+#endif
+
+#define I2C_IRQ __helper__(I2C, I2C_PORT, _IRQn)
+#define I2C_ISR __helper__(I2C, I2C_PORT, _IRQHandler)
 
 #ifndef I2C_FREQ
 #define I2C_FREQ 400000UL
