@@ -1538,7 +1538,6 @@ bool mcu_spi2_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t d
 #ifdef MCU_HAS_I2C
 
 #if I2C_ADDRESS == 0
-#ifndef mcu_i2c_send
 #define STM_VAL2REG(val, X) (uint32_t)(((((uint32_t)val) << X##_Pos) & X##_Msk))
 
 void mcu_i2c_stop(bool *stop)
@@ -1551,6 +1550,7 @@ void mcu_i2c_stop(bool *stop)
 	I2C_REG->CR1 &= ~I2C_CR1_PE;
 }
 
+#ifndef mcu_i2c_send
 // master sends command to slave
 uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool release, uint32_t ms_timeout)
 {
