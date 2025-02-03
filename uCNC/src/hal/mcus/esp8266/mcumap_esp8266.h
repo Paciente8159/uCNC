@@ -1164,7 +1164,33 @@ extern "C"
 
 #if (defined(TX) && defined(RX))
 #define MCU_HAS_UART
+#ifndef UART_PORT
+#define UART_PORT 0
 #endif
+#if (RX_BIT == 3 && (TX_BIT == 1 || TX_BIT == 2) && UART_PORT == 0)
+#elif (RX_BIT == 13 && TX_BIT == 15 && UART_PORT == 0)
+#define UART_PIN_SWAP
+#elif (RX_BIT == 8 && TX_BIT == 2 && UART_PORT == 1)
+#else
+#error "Invalid UART pinout configuration"
+#endif
+#endif
+
+#if (defined(TX2) && defined(RX2))
+#define MCU_HAS_UART2
+#ifndef UART2_PORT
+#define UART2_PORT 1
+#endif
+#if (RX2_BIT == 3 && (TX2_BIT == 1 || TX2_BIT == 2) && UART2_PORT == 0)
+#elif (RX2_BIT == 13 && TX2_BIT == 15 && UART2_PORT == 0)
+#define UART2_PIN_SWAP
+#elif (RX2_BIT == 8 && TX2_BIT == 2 && UART2_PORT == 1)
+#else
+#error "Invalid UART2 pinout configuration"
+#endif
+#endif
+
+
 #if (defined(USB_DP) && defined(USB_DM))
 #define MCU_HAS_USB
 #endif
@@ -1179,10 +1205,6 @@ extern "C"
 #ifndef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 #define BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 #endif
-#endif
-
-#ifndef UART_PORT
-#define UART_PORT 0
 #endif
 
 #define MCU_HAS_ONESHOT_TIMER
@@ -1241,7 +1263,7 @@ extern "C"
 #define mcu_config_pullup(X)                  \
 	if (__indirect__(X, BIT) < 16)              \
 	{                                           \
-		GPF(__indirect__(X, BIT)) |= (1 << GPFPU) \
+		GPF(__indirect__(X, BIT)) |= (1 << GPFPU); \
 	}
 
 #define mcu_config_output(X)                                                 \
@@ -1281,7 +1303,7 @@ extern "C"
 			break;                                                            \
 		default:                                                            \
 			GPF(__indirect__(X, BIT)) = GPFFS((FUNC >> 4) & 0x07);            \
-			if (__indirect__(X, BIT) == 13 && mode == FUNCTION_4)             \
+			if (__indirect__(X, BIT) == 13 && FUNC == FUNCTION_4)             \
 				GPF(__indirect__(X, BIT)) |= (1 << GPFPU);                      \
 			break;                                                            \
 		}                                                                   \
@@ -1313,9 +1335,9 @@ extern "C"
 
 	// ISR
 	extern volatile uint32_t esp8266_global_isr;
-#define mcu_enable_global_isr ({xt_wsr_ps(esp8266_global_isr); esp8266_global_isr = 15 })
-#define mcu_disable_global_isr ({ esp8266_global_isr = xt_rsil(15); })
-#define mcu_get_global_isr (esp8266_global_isr != 15)
+#define mcu_enable_global_isr() ({/*xt_wsr_ps(esp8266_global_isr);*/ esp8266_global_isr = 15; })
+#define mcu_disable_global_isr() ({ esp8266_global_isr = /*xt_rsil(15)*/0; })
+#define mcu_get_global_isr() (esp8266_global_isr != 15)
 
 #define cpucount()                            \
 	({                                          \

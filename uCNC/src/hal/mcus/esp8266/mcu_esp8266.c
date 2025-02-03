@@ -267,51 +267,151 @@ IRAM_ATTR void mcu_itp_isr(void)
 #endif
 }
 
-// static void mcu_uart_isr(void *arg)
-// {
-// 	/*ATTENTION:*/
-// 	/*IN NON-OS VERSION SDK, DO NOT USE "ICACHE_FLASH_ATTR" FUNCTIONS IN THE WHOLE HANDLER PROCESS*/
-// 	/*ALL THE FUNCTIONS CALLED IN INTERRUPT HANDLER MUST BE DECLARED IN RAM */
-// 	/*IF NOT , POST AN EVENT AND PROCESS IN SYSTEM TASK */
-// 	if ((READ_PERI_REG(UART_INT_ST(0)) & UART_FRM_ERR_INT_ST))
-// 	{
-// 		WRITE_PERI_REG(UART_INT_CLR(0), UART_FRM_ERR_INT_CLR);
-// 	}
-// 	else if ((READ_PERI_REG(UART_INT_ST(0)) & (UART_RXFIFO_FULL_INT_ST | UART_RXFIFO_TOUT_INT_ST)))
-// 	{
-// 		// disable ISR
-// 		CLEAR_PERI_REG_MASK(UART_INT_ENA(0), UART_RXFIFO_FULL_INT_ENA | UART_RXFIFO_TOUT_INT_ENA);
-// 		WRITE_PERI_REG(UART_INT_CLR(0), (READ_PERI_REG(UART_INT_ST(0)) & (UART_RXFIFO_FULL_INT_ST | UART_RXFIFO_TOUT_INT_ST)));
-// 		uint8_t fifo_len = (READ_PERI_REG(UART_STATUS(0)) >> UART_RXFIFO_CNT_S) & UART_RXFIFO_CNT;
-// 		uint8_t c = 0;
+#include <uart.h>
+#include <esp8266_peri.h>
+#ifdef MCU_HAS_UART
+#ifndef UART_TX_BUFFER_SIZE
+#define UART_TX_BUFFER_SIZE 64
+#endif
+DECL_BUFFER(uint8_t, uart_rx, RX_BUFFER_SIZE);
+DECL_BUFFER(uint8_t, uart_tx, UART_TX_BUFFER_SIZE);
+uint8_t mcu_uart_getc(void)
+{
+	uint8_t c = 0;
+	BUFFER_DEQUEUE(uart_rx, &c);
+	return c;
+}
 
-// 		for (uint8_t i = 0; i < fifo_len; i++)
-// 		{
-// 			c = READ_PERI_REG(UART_FIFO(0)) & 0xFF;
-// 			mcu_com_rx_cb(c);
-// 		}
+uint8_t mcu_uart_available(void)
+{
+	return BUFFER_READ_AVAILABLE(uart_rx);
+}
 
-// 		WRITE_PERI_REG(UART_INT_CLR(0), UART_RXFIFO_FULL_INT_CLR | UART_RXFIFO_TOUT_INT_CLR);
-// 		// reenable ISR
-// 		SET_PERI_REG_MASK(UART_INT_ENA(0), UART_RXFIFO_FULL_INT_ENA | UART_RXFIFO_TOUT_INT_ENA);
-// 	}
-// 	else if (UART_TXFIFO_EMPTY_INT_ST == (READ_PERI_REG(UART_INT_ST(0)) & UART_TXFIFO_EMPTY_INT_ST))
-// 	{
-// 		/* to output uart data from uart buffer directly in empty interrupt handler*/
-// 		/*instead of processing in system event, in order not to wait for current task/function to quit */
-// 		/*ATTENTION:*/
-// 		/*IN NON-OS VERSION SDK, DO NOT USE "ICACHE_FLASH_ATTR" FUNCTIONS IN THE WHOLE HANDLER PROCESS*/
-// 		/*ALL THE FUNCTIONS CALLED IN INTERRUPT HANDLER MUST BE DECLARED IN RAM */
-// 		CLEAR_PERI_REG_MASK(UART_INT_ENA(0), UART_TXFIFO_EMPTY_INT_ENA);
-// 		mcu_com_tx_cb();
-// 		// system_os_post(uart_recvTaskPrio, 1, 0);
-// 		WRITE_PERI_REG(UART_INT_CLR(0), UART_TXFIFO_EMPTY_INT_CLR);
-// 	}
-// 	else if (UART_RXFIFO_OVF_INT_ST == (READ_PERI_REG(UART_INT_ST(0)) & UART_RXFIFO_OVF_INT_ST))
-// 	{
-// 		WRITE_PERI_REG(UART_INT_CLR(0), UART_RXFIFO_OVF_INT_CLR);
-// 	}
-// }
+void mcu_uart_clear(void)
+{
+	BUFFER_CLEAR(uart_rx);
+}
+
+void mcu_uart_putc(uint8_t c)
+{
+	while (BUFFER_FULL(uart_tx))
+	{
+		mcu_uart_flush();
+	}
+	BUFFER_ENQUEUE(uart_tx, &c);
+}
+
+void mcu_uart_flush(void)
+{
+	while (!BUFFER_EMPTY(uart_tx))
+	{
+		while (((USS(UART_PORT) >> USTXC) & UART_TXFIFO_CNT) >= 0x7f)
+		{
+			esp_yield();
+		}
+
+		uint8_t c = 0;
+		BUFFER_DEQUEUE(uart_tx, &c);
+		USF(UART_PORT) = c;
+	}
+}
+
+/**
+ * ISR implementation (not used)
+ * The ESP8266 has a UART FIFO. Should be enough to coupled with the Software buffer and the mcu task loop
+ * */
+void IRAM_ATTR mcu_uart_isr(void *arg)
+{
+	uint32_t usis = USIS(UART_PORT);
+
+	if (usis & ((1 << UIFF) | (1 << UITO)))
+	{
+		while ((USS(UART_PORT) >> USRXC) & 0xFF)
+		{
+			// system_soft_wdt_feed();
+#ifndef DETACH_UART_FROM_MAIN_PROTOCOL
+			uint8_t c = (uint8_t)USF(UART_PORT);
+			if (mcu_com_rx_cb(c))
+			{
+				if (BUFFER_FULL(uart_rx))
+				{
+					c = OVF;
+				}
+
+				BUFFER_ENQUEUE(uart_rx, &c);
+			}
+#else
+			mcu_uart_rx_cb((uint8_t)USF(UART_PORT));
+#endif
+		}
+	}
+
+	if (usis & ((1 << UIOF) | (1 << UIFR) | (1 << UIPE)))
+	{
+		uint8_t c = OVF;
+#ifndef DETACH_UART_FROM_MAIN_PROTOCOL
+		BUFFER_ENQUEUE(uart_rx, &c);
+#else
+		mcu_uart_rx_cb((uint8_t)USF(UART_PORT));
+#endif
+	}
+
+	USIC(UART_PORT) = usis;
+}
+#endif
+
+void mcu_uart_init()
+{
+#ifdef MCU_HAS_UART
+	ETS_UART_INTR_DISABLE();
+	mcu_config_input(RX);
+	mcu_config_input(TX);
+	mcu_config_af(RX, SPECIAL);
+#if UART_PORT == 0
+	mcu_config_af(TX, (TX_BIT == 1) ? FUNCTION_0 : FUNCTION_4);
+#else
+	mcu_config_af(TX, SPECIAL);
+#endif
+#ifndef UART_PIN_SWAP
+	IOSWAP &= ~(1 << IOSWAPU0);
+#else
+	IOSWAP |= ~(1 << IOSWAPU0);
+#endif
+	USD(UART_PORT) = (ESP8266_CLOCK / BAUDRATE);
+	USC0(UART_PORT) = UART_8N1;
+	USC1(UART_PORT) = 0;
+	USIC(UART_PORT) = 0xffff;
+	USIE(UART_PORT) = 0;
+	/*With ISR*/
+	// USC1(UART_PORT) = (16 << UCFFT) | (1 << UCTOE) | (16 << UCTOT);
+	// USIC(UART_PORT) = 0xffff;
+	// USIE(UART_PORT) = (1 << UIFF) | (1 << UIOF) | (1 << UIFR) | (1 << UIPE) | (1 << UITO);
+	// ETS_UART_INTR_ATTACH(mcu_uart_isr, NULL);
+	// ETS_UART_INTR_ENABLE();
+#endif
+
+#ifdef MCU_HAS_UART2
+	ETS_UART_INTR_DISABLE();
+	mcu_config_input(RX2);
+	mcu_config_input(TX2);
+	mcu_config_af(RX2, SPECIAL);
+#if UART_PORT == 0
+	mcu_config_af(TX2, (TX2_BIT == 1) ? FUNCTION_0 : FUNCTION_4);
+#else
+	mcu_config_af(TX2, SPECIAL);
+#endif
+#ifndef UART2_PIN_SWAP
+	IOSWAP &= ~(1 << IOSWAPU0);
+#else
+	IOSWAP |= ~(1 << IOSWAPU0);
+#endif
+	USD(UART2_PORT) = (ESP8266_CLOCK / BAUDRATE2);
+	USC0(UART2_PORT) = UART_8N1;
+	USC1(UART2_PORT) = 0;
+	USIC(UART2_PORT) = 0xffff;
+	USIE(UART2_PORT) = 0;
+#endif
+}
 
 /**
  * initializes the mcu
@@ -321,10 +421,44 @@ IRAM_ATTR void mcu_itp_isr(void)
  *   - configure uart or usb
  *   - start the internal RTC
  * */
+
+// #include "freertos/FreeRTOS.h"
+// #include "freertos/task.h"
+
+static void mcu_uart_process()
+{
+#ifdef MCU_HAS_UART
+	uint32_t timeout = 1;
+	__TIMEOUT_MS__(timeout)
+	{
+		if (!((USS(UART_PORT) >> USRXC) & 0xFF))
+		{
+			break;
+		}
+#ifndef DETACH_UART_FROM_MAIN_PROTOCOL
+		uint8_t c = (uint8_t)USF(UART_PORT);
+		if (mcu_com_rx_cb(c))
+		{
+			if (BUFFER_FULL(uart_rx))
+			{
+				c = OVF;
+			}
+
+			BUFFER_ENQUEUE(uart_rx, &c);
+		}
+#else
+		mcu_uart_rx_cb((uint8_t)USF(UART_PORT));
+#endif
+	}
+#endif
+}
+
 void mcu_init(void)
 {
 	esp8266_global_isr = 0;
 	mcu_io_init();
+	mcu_uart_init();
+	// xTaskCreate(mcu_uart_process, "mcu_uart_process", 1024, NULL, 10, NULL);
 #ifndef RAM_ONLY_SETTINGS
 	esp8266_eeprom_init(NVM_STORAGE_SIZE); // 2K Emulated EEPROM
 #endif
@@ -530,6 +664,7 @@ void mcu_dotasks(void)
 {
 	// reset WDT
 	system_soft_wdt_feed();
+	mcu_uart_process();
 	esp8266_uart_process();
 }
 

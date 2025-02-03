@@ -711,7 +711,7 @@ extern "C"
 
 	void esp8266_uart_init(int baud)
 	{
-		Serial.begin(baud);
+		// Serial.begin(baud);
 		DBGMSG("Wifi assert");
 #ifdef ENABLE_WIFI
 		DBGMSG("Wifi startup");
@@ -790,53 +790,53 @@ extern "C"
 #endif
 	}
 
-#ifdef MCU_HAS_UART
-#ifndef UART_TX_BUFFER_SIZE
-#define UART_TX_BUFFER_SIZE 64
-#endif
-	DECL_BUFFER(uint8_t, uart_rx, RX_BUFFER_SIZE);
-	DECL_BUFFER(uint8_t, uart_tx, UART_TX_BUFFER_SIZE);
-	uint8_t mcu_uart_getc(void)
-	{
-		uint8_t c = 0;
-		BUFFER_DEQUEUE(uart_rx, &c);
-		return c;
-	}
+// #ifdef MCU_HAS_UART
+// #ifndef UART_TX_BUFFER_SIZE
+// #define UART_TX_BUFFER_SIZE 64
+// #endif
+// 	DECL_BUFFER(uint8_t, uart_rx, RX_BUFFER_SIZE);
+// 	DECL_BUFFER(uint8_t, uart_tx, UART_TX_BUFFER_SIZE);
+// 	uint8_t mcu_uart_getc(void)
+// 	{
+// 		uint8_t c = 0;
+// 		BUFFER_DEQUEUE(uart_rx, &c);
+// 		return c;
+// 	}
 
-	uint8_t mcu_uart_available(void)
-	{
-		return BUFFER_READ_AVAILABLE(uart_rx);
-	}
+// 	uint8_t mcu_uart_available(void)
+// 	{
+// 		return BUFFER_READ_AVAILABLE(uart_rx);
+// 	}
 
-	void mcu_uart_clear(void)
-	{
-		BUFFER_CLEAR(uart_rx);
-	}
+// 	void mcu_uart_clear(void)
+// 	{
+// 		BUFFER_CLEAR(uart_rx);
+// 	}
 
-	void mcu_uart_putc(uint8_t c)
-	{
-		while (BUFFER_FULL(uart_tx))
-		{
-			mcu_uart_flush();
-		}
-		BUFFER_ENQUEUE(uart_tx, &c);
-	}
+// 	void mcu_uart_putc(uint8_t c)
+// 	{
+// 		while (BUFFER_FULL(uart_tx))
+// 		{
+// 			mcu_uart_flush();
+// 		}
+// 		BUFFER_ENQUEUE(uart_tx, &c);
+// 	}
 
-	void mcu_uart_flush(void)
-	{
-		while (!BUFFER_EMPTY(uart_tx))
-		{
-			uint8_t tmp[UART_TX_BUFFER_SIZE + 1];
-			memset(tmp, 0, sizeof(tmp));
-			uint8_t r;
-			uint8_t max = (uint8_t)MIN(Serial.availableForWrite(), UART_TX_BUFFER_SIZE);
+// 	void mcu_uart_flush(void)
+// 	{
+// 		while (!BUFFER_EMPTY(uart_tx))
+// 		{
+// 			uint8_t tmp[UART_TX_BUFFER_SIZE + 1];
+// 			memset(tmp, 0, sizeof(tmp));
+// 			uint8_t r;
+// 			uint8_t max = (uint8_t)MIN(Serial.availableForWrite(), UART_TX_BUFFER_SIZE);
 
-			BUFFER_READ(uart_tx, tmp, max, r);
-			Serial.write(tmp, r);
-			Serial.flush();
-		}
-	}
-#endif
+// 			BUFFER_READ(uart_tx, tmp, max, r);
+// 			Serial.write(tmp, r);
+// 			Serial.flush();
+// 		}
+// 	}
+// #endif
 
 #ifdef MCU_HAS_WIFI
 #ifndef WIFI_TX_BUFFER_SIZE
@@ -895,24 +895,24 @@ extern "C"
 
 	void esp8266_uart_process(void)
 	{
-		while (Serial.available() > 0)
-		{
-			system_soft_wdt_feed();
-#ifndef DETACH_UART_FROM_MAIN_PROTOCOL
-			uint8_t c = (uint8_t)Serial.read();
-			if (mcu_com_rx_cb(c))
-			{
-				if (BUFFER_FULL(uart_rx))
-				{
-					c = OVF;
-				}
+// 		while (Serial.available() > 0)
+// 		{
+// 			system_soft_wdt_feed();
+// #ifndef DETACH_UART_FROM_MAIN_PROTOCOL
+// 			uint8_t c = (uint8_t)Serial.read();
+// 			if (mcu_com_rx_cb(c))
+// 			{
+// 				if (BUFFER_FULL(uart_rx))
+// 				{
+// 					c = OVF;
+// 				}
 
-				BUFFER_ENQUEUE(uart_rx, &c);
-			}
-#else
-			mcu_uart_rx_cb((uint8_t)Serial.read());
-#endif
-		}
+// 				BUFFER_ENQUEUE(uart_rx, &c);
+// 			}
+// #else
+// 			mcu_uart_rx_cb((uint8_t)Serial.read());
+// #endif
+// 		}
 
 #ifdef ENABLE_WIFI
 		if (esp8266_wifi_clientok())
@@ -1036,7 +1036,7 @@ extern "C"
 	{
 		if (!EEPROM.commit())
 		{
-			Serial.println("[MSG: EEPROM write error]");
+			// Serial.println("[MSG: EEPROM write error]");
 		}
 	}
 }
