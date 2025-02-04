@@ -1045,6 +1045,37 @@ extern "C"
 #define I2C_DATA 209
 #define DIO209_BIT (I2C_DATA_BIT)
 #endif
+#if(defined(TX2_BIT))
+#define DIO210 210
+#define TX2 210
+#define DIO210_BIT (TX2_BIT)
+#endif
+#if(defined(RX2_BIT))
+#define DIO211 211
+#define RX2 211
+#define DIO211_BIT (RX2_BIT)
+#endif
+#if(defined(SPI2_CLK_BIT))
+#define DIO212 212
+#define SPI2_CLK 212
+#define DIO212_BIT (SPI2_CLK_BIT)
+#endif
+#if(defined(SPI2_SDI_BIT))
+#define DIO213 213
+#define SPI2_SDI 213
+#define DIO213_BIT (SPI2_SDI_BIT)
+#endif
+#if(defined(SPI2_SDO_BIT))
+#define DIO214 214
+#define SPI2_SDO 214
+#define DIO214_BIT (SPI2_SDO_BIT)
+#endif
+#if(defined(SPI2_CS_BIT))
+#define DIO215 215
+#define SPI2_CS 215
+#define DIO215_BIT (SPI2_CS_BIT)
+#endif
+
 
 	// ISR on change inputs
 	extern void mcu_din_isr(void);
@@ -1180,6 +1211,9 @@ extern "C"
 #define MCU_HAS_UART2
 #ifndef UART2_PORT
 #define UART2_PORT 1
+#endif
+#ifndef BAUDRATE2
+#define BAUDRATE2 BAUDRATE
 #endif
 #if (RX2_BIT == 3 && (TX2_BIT == 1 || TX2_BIT == 2) && UART2_PORT == 0)
 #elif (RX2_BIT == 13 && TX2_BIT == 15 && UART2_PORT == 0)

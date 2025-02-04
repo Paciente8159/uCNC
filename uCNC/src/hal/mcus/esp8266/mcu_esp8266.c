@@ -29,18 +29,10 @@
 #include "c_types.h"
 #include "gpio.h"
 #include "eagle_soc.h"
-#include "uart_register.h"
 #include "osapi.h"
 #ifdef MCU_HAS_I2C
 #include "twi.h"
 #endif
-
-#define UART_PARITY_EN (BIT(1))
-#define UART_PARITY_EN_M 0x00000001
-#define UART_PARITY_EN_S 1
-#define UART_PARITY (BIT(0))
-#define UART_PARITY_M 0x00000001
-#define UART_PARITY_S 0
 
 volatile uint32_t esp8266_global_isr;
 static volatile uint32_t mcu_runtime_ms;
@@ -267,151 +259,6 @@ IRAM_ATTR void mcu_itp_isr(void)
 #endif
 }
 
-#include <uart.h>
-#include <esp8266_peri.h>
-#ifdef MCU_HAS_UART
-#ifndef UART_TX_BUFFER_SIZE
-#define UART_TX_BUFFER_SIZE 64
-#endif
-DECL_BUFFER(uint8_t, uart_rx, RX_BUFFER_SIZE);
-DECL_BUFFER(uint8_t, uart_tx, UART_TX_BUFFER_SIZE);
-uint8_t mcu_uart_getc(void)
-{
-	uint8_t c = 0;
-	BUFFER_DEQUEUE(uart_rx, &c);
-	return c;
-}
-
-uint8_t mcu_uart_available(void)
-{
-	return BUFFER_READ_AVAILABLE(uart_rx);
-}
-
-void mcu_uart_clear(void)
-{
-	BUFFER_CLEAR(uart_rx);
-}
-
-void mcu_uart_putc(uint8_t c)
-{
-	while (BUFFER_FULL(uart_tx))
-	{
-		mcu_uart_flush();
-	}
-	BUFFER_ENQUEUE(uart_tx, &c);
-}
-
-void mcu_uart_flush(void)
-{
-	while (!BUFFER_EMPTY(uart_tx))
-	{
-		while (((USS(UART_PORT) >> USTXC) & UART_TXFIFO_CNT) >= 0x7f)
-		{
-			esp_yield();
-		}
-
-		uint8_t c = 0;
-		BUFFER_DEQUEUE(uart_tx, &c);
-		USF(UART_PORT) = c;
-	}
-}
-
-/**
- * ISR implementation (not used)
- * The ESP8266 has a UART FIFO. Should be enough to coupled with the Software buffer and the mcu task loop
- * */
-void IRAM_ATTR mcu_uart_isr(void *arg)
-{
-	uint32_t usis = USIS(UART_PORT);
-
-	if (usis & ((1 << UIFF) | (1 << UITO)))
-	{
-		while ((USS(UART_PORT) >> USRXC) & 0xFF)
-		{
-			// system_soft_wdt_feed();
-#ifndef DETACH_UART_FROM_MAIN_PROTOCOL
-			uint8_t c = (uint8_t)USF(UART_PORT);
-			if (mcu_com_rx_cb(c))
-			{
-				if (BUFFER_FULL(uart_rx))
-				{
-					c = OVF;
-				}
-
-				BUFFER_ENQUEUE(uart_rx, &c);
-			}
-#else
-			mcu_uart_rx_cb((uint8_t)USF(UART_PORT));
-#endif
-		}
-	}
-
-	if (usis & ((1 << UIOF) | (1 << UIFR) | (1 << UIPE)))
-	{
-		uint8_t c = OVF;
-#ifndef DETACH_UART_FROM_MAIN_PROTOCOL
-		BUFFER_ENQUEUE(uart_rx, &c);
-#else
-		mcu_uart_rx_cb((uint8_t)USF(UART_PORT));
-#endif
-	}
-
-	USIC(UART_PORT) = usis;
-}
-#endif
-
-void mcu_uart_init()
-{
-#ifdef MCU_HAS_UART
-	ETS_UART_INTR_DISABLE();
-	mcu_config_input(RX);
-	mcu_config_input(TX);
-	mcu_config_af(RX, SPECIAL);
-#if UART_PORT == 0
-	mcu_config_af(TX, (TX_BIT == 1) ? FUNCTION_0 : FUNCTION_4);
-#else
-	mcu_config_af(TX, SPECIAL);
-#endif
-#ifndef UART_PIN_SWAP
-	IOSWAP &= ~(1 << IOSWAPU0);
-#else
-	IOSWAP |= ~(1 << IOSWAPU0);
-#endif
-	USD(UART_PORT) = (ESP8266_CLOCK / BAUDRATE);
-	USC0(UART_PORT) = UART_8N1;
-	USC1(UART_PORT) = 0;
-	USIC(UART_PORT) = 0xffff;
-	USIE(UART_PORT) = 0;
-	/*With ISR*/
-	// USC1(UART_PORT) = (16 << UCFFT) | (1 << UCTOE) | (16 << UCTOT);
-	// USIC(UART_PORT) = 0xffff;
-	// USIE(UART_PORT) = (1 << UIFF) | (1 << UIOF) | (1 << UIFR) | (1 << UIPE) | (1 << UITO);
-	// ETS_UART_INTR_ATTACH(mcu_uart_isr, NULL);
-	// ETS_UART_INTR_ENABLE();
-#endif
-
-#ifdef MCU_HAS_UART2
-	ETS_UART_INTR_DISABLE();
-	mcu_config_input(RX2);
-	mcu_config_input(TX2);
-	mcu_config_af(RX2, SPECIAL);
-#if UART_PORT == 0
-	mcu_config_af(TX2, (TX2_BIT == 1) ? FUNCTION_0 : FUNCTION_4);
-#else
-	mcu_config_af(TX2, SPECIAL);
-#endif
-#ifndef UART2_PIN_SWAP
-	IOSWAP &= ~(1 << IOSWAPU0);
-#else
-	IOSWAP |= ~(1 << IOSWAPU0);
-#endif
-	USD(UART2_PORT) = (ESP8266_CLOCK / BAUDRATE2);
-	USC0(UART2_PORT) = UART_8N1;
-	USC1(UART2_PORT) = 0;
-	USIC(UART2_PORT) = 0xffff;
-	USIE(UART2_PORT) = 0;
-#endif
-}
 
 /**
  * initializes the mcu
@@ -422,36 +269,8 @@ void mcu_uart_init()
  *   - start the internal RTC
  * */
 
-// #include "freertos/FreeRTOS.h"
-// #include "freertos/task.h"
-
-static void mcu_uart_process()
-{
-#ifdef MCU_HAS_UART
-	uint32_t timeout = 1;
-	__TIMEOUT_MS__(timeout)
-	{
-		if (!((USS(UART_PORT) >> USRXC) & 0xFF))
-		{
-			break;
-		}
-#ifndef DETACH_UART_FROM_MAIN_PROTOCOL
-		uint8_t c = (uint8_t)USF(UART_PORT);
-		if (mcu_com_rx_cb(c))
-		{
-			if (BUFFER_FULL(uart_rx))
-			{
-				c = OVF;
-			}
-
-			BUFFER_ENQUEUE(uart_rx, &c);
-		}
-#else
-		mcu_uart_rx_cb((uint8_t)USF(UART_PORT));
-#endif
-	}
-#endif
-}
+extern void mcu_uart_dotasks(void);
+extern void mcu_uart_init(void);
 
 void mcu_init(void)
 {
@@ -483,6 +302,19 @@ void mcu_init(void)
 	i2c_master_gpio_init();
 	i2c_master_init();
 #endif
+}
+
+/**
+ * runs all internal tasks of the MCU.
+ * for the moment these are:
+ *   - if USB is enabled and MCU uses tinyUSB framework run tinyUSB tud_task
+ * */
+void mcu_dotasks(void)
+{
+	// reset WDT
+	system_soft_wdt_feed();
+	mcu_uart_dotasks();
+	esp8266_uart_process();
 }
 
 /**
@@ -653,19 +485,6 @@ void esp8266_delay_us(uint16_t delay)
 uint32_t mcu_free_micros()
 {
 	return (uint32_t)(system_get_time() % 1000);
-}
-
-/**
- * runs all internal tasks of the MCU.
- * for the moment these are:
- *   - if USB is enabled and MCU uses tinyUSB framework run tinyUSB tud_task
- * */
-void mcu_dotasks(void)
-{
-	// reset WDT
-	system_soft_wdt_feed();
-	mcu_uart_process();
-	esp8266_uart_process();
 }
 
 // #ifdef MCU_HAS_I2C
