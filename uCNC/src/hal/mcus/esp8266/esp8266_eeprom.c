@@ -58,7 +58,7 @@ static uint16_t mcu_access_flash_page(uint16_t address)
 		eeprom_current_sector = sector;
 		// loads a new sector to memory
 		mcu_disable_global_isr();
-		spi_flash_read(EEPROM_FLASH_ADDR(sector, 0, 0), eeprom_data, EEPROM_DATA_SIZE);
+		spi_flash_read(EEPROM_FLASH_ADDR(sector, 0, 0), (uint32_t*)eeprom_data, EEPROM_DATA_SIZE);
 		mcu_enable_global_isr();
 	}
 
@@ -77,7 +77,7 @@ void mcu_eeprom_init(void)
 
 #if (NVM_STORAGE_SIZE > SPI_FLASH_SEC_SIZE)
 	mcu_disable_global_isr();
-	spi_flash_read(EEPROM_FLASH_ADDR(0, 0, 0), eeprom_data, EEPROM_DATA_SIZE);
+	spi_flash_read(EEPROM_FLASH_ADDR(0, 0, 0), (uint32_t*)eeprom_data, EEPROM_DATA_SIZE);
 	mcu_enable_global_isr();
 #else
 	// if multiple pages fit in a section find the last writen page
@@ -87,7 +87,7 @@ void mcu_eeprom_init(void)
 		// just load the 4 first bytes
 		memset(tmp, 0, 4);
 		mcu_disable_global_isr();
-		spi_flash_read(EEPROM_FLASH_ADDR(0, 0, 0), tmp, 4);
+		spi_flash_read(EEPROM_FLASH_ADDR(0, 0, 0), (uint32_t*)tmp, 4);
 		mcu_enable_global_isr();
 		if (tmp[0] != 0)
 		{
@@ -100,7 +100,7 @@ void mcu_eeprom_init(void)
 	}
 
 	mcu_disable_global_isr();
-	spi_flash_read(EEPROM_FLASH_ADDR(0, eeprom_current_page, 0), eeprom_data, EEPROM_DATA_SIZE);
+	spi_flash_read(EEPROM_FLASH_ADDR(0, eeprom_current_page, 0), (uint32_t*)eeprom_data, EEPROM_DATA_SIZE);
 	mcu_enable_global_isr();
 #endif
 }
@@ -178,7 +178,7 @@ void mcu_eeprom_flush(void)
 		}
 
 		mcu_disable_global_isr();
-		spi_flash_write(EEPROM_FLASH_ADDR((sector + i), eeprom_current_page, 0), eeprom_data, EEPROM_DATA_SIZE);
+		spi_flash_write(EEPROM_FLASH_ADDR((sector + i), eeprom_current_page, 0), (uint32_t*)eeprom_data, EEPROM_DATA_SIZE);
 		mcu_enable_global_isr();
 	}
 }
