@@ -26,7 +26,15 @@
 #include "osapi.h"
 #include "spi_flash.h"
 
-static uint8_t eeprom_data[SPI_FLASH_SEC_SIZE];
+#ifndef RAM_ONLY_SETTINGS
+
+#if (NVM_STORAGE_SIZE > SPI_FLASH_SEC_SIZE)
+#define EEPROM_DATA_SIZE SPI_FLASH_SEC_SIZE // loads a partial page into RAM
+#else
+#define EEPROM_DATA_SIZE NVM_STORAGE_SIZE // loads a full page into RAM
+#endif
+
+static uint8_t eeprom_data[EEPROM_DATA_SIZE]; // loads a full page into RAM
 static uint16_t eeprom_current_page;
 static uint16_t eeprom_current_sector;
 static bool eeprom_modified;
@@ -35,11 +43,12 @@ static bool eeprom_modified;
 #define EEPROM_MAX_PAGES ((uint16_t)((SPI_FLASH_SEC_SIZE - 1) / NVM_STORAGE_SIZE) + 1)
 #define EEPROM_FLASH_BASE_SECTOR ((EEPROM_start - 0x40200000) / SPI_FLASH_SEC_SIZE)
 #define EEPROM_SECTOR(offset) (EEPROM_FLASH_BASE_SECTOR + (((offset) / SPI_FLASH_SEC_SIZE)))
-#define EEPROM_FLASH_ADDR(sector, page, offset) (EEPROM_FLASH_BASE_SECTOR + (sector) * SPI_FLASH_SEC_SIZE + (page) * NVM_STORAGE_SIZE + (offset))
+#define EEPROM_FLASH_ADDR(sector, page, offset) ((EEPROM_FLASH_BASE_SECTOR * SPI_FLASH_SEC_SIZE) + (sector) * SPI_FLASH_SEC_SIZE + (page) * NVM_STORAGE_SIZE + (offset))
 #define EEPROM_SECTOR_ADDR(page, offset) (((page) * NVM_STORAGE_SIZE + (offset)) & (SPI_FLASH_SEC_SIZE - 1))
 
 static uint16_t mcu_access_flash_page(uint16_t address)
 {
+#if (NVM_STORAGE_SIZE > SPI_FLASH_SEC_SIZE)
 	uint16_t sector = EEPROM_SECTOR(address + (eeprom_current_page * NVM_STORAGE_SIZE));
 	// if the NVM takes multiple sectors load the new sector
 	if (eeprom_current_sector != sector)
@@ -49,12 +58,15 @@ static uint16_t mcu_access_flash_page(uint16_t address)
 		eeprom_current_sector = sector;
 		// loads a new sector to memory
 		mcu_disable_global_isr();
-		spi_flash_read(EEPROM_FLASH_ADDR(sector, 0, 0), eeprom_data, SPI_FLASH_SEC_SIZE);
+		spi_flash_read(EEPROM_FLASH_ADDR(sector, 0, 0), eeprom_data, EEPROM_DATA_SIZE);
 		mcu_enable_global_isr();
 	}
 
 	// returns the offset within that sector
 	return (uint16_t)EEPROM_SECTOR_ADDR(eeprom_current_page, address);
+#else
+	return (uint16_t)address;
+#endif
 }
 
 void mcu_eeprom_init(void)
@@ -63,25 +75,34 @@ void mcu_eeprom_init(void)
 	eeprom_current_sector = 0;
 	eeprom_modified = 0;
 
+#if (NVM_STORAGE_SIZE > SPI_FLASH_SEC_SIZE)
 	mcu_disable_global_isr();
-	spi_flash_read(EEPROM_FLASH_ADDR(0, 0, 0), eeprom_data, SPI_FLASH_SEC_SIZE);
+	spi_flash_read(EEPROM_FLASH_ADDR(0, 0, 0), eeprom_data, EEPROM_DATA_SIZE);
 	mcu_enable_global_isr();
-
+#else
 	// if multiple pages fit in a section find the last writen page
-	if ((EEPROM_MAX_PAGES > 1))
+	uint8_t tmp[4];
+	for (uint16_t i = 0; i < EEPROM_MAX_PAGES; i++)
 	{
-		for (uint16_t i = 0; i < EEPROM_MAX_PAGES; i++)
+		// just load the 4 first bytes
+		memset(tmp, 0, 4);
+		mcu_disable_global_isr();
+		spi_flash_read(EEPROM_FLASH_ADDR(0, 0, 0), tmp, 4);
+		mcu_enable_global_isr();
+		if (tmp[0] != 0)
 		{
-			if (eeprom_data[EEPROM_SECTOR_ADDR(i, 0)] != 0)
-			{
-				eeprom_current_page = i;
-			}
-			else
-			{
-				break;
-			}
+			eeprom_current_page = i;
+		}
+		else
+		{
+			break;
 		}
 	}
+
+	mcu_disable_global_isr();
+	spi_flash_read(EEPROM_FLASH_ADDR(0, eeprom_current_page, 0), eeprom_data, EEPROM_DATA_SIZE);
+	mcu_enable_global_isr();
+#endif
 }
 
 // Non volatile memory
@@ -90,9 +111,14 @@ void mcu_eeprom_init(void)
  * */
 uint8_t mcu_eeprom_getc(uint16_t address)
 {
+	// invalid addresss
+	if (address > NVM_STORAGE_SIZE)
+	{
+		return 0;
+	}
 	// gets the address within the sector
-	uint16_t sector_address = mcu_access_flash_page(address);
-	return eeprom_data[sector_address];
+	uint16_t data_address = mcu_access_flash_page(address);
+	return eeprom_data[data_address];
 }
 
 /**
@@ -100,15 +126,21 @@ uint8_t mcu_eeprom_getc(uint16_t address)
  * */
 void mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
+	// invalid address
+	if (address > NVM_STORAGE_SIZE)
+	{
+		return;
+	}
+
 	// gets the address within the sector
-	uint16_t sector_address = mcu_access_flash_page(address);
+	uint16_t data_address = mcu_access_flash_page(address);
 	// check if the value is changed or not
-	if (eeprom_data[sector_address] != value)
+	if (eeprom_data[data_address] != value)
 	{
 		eeprom_modified = true;
 	}
 
-	eeprom_data[sector_address] = value;
+	eeprom_data[data_address] = value;
 }
 
 /**
@@ -146,8 +178,9 @@ void mcu_eeprom_flush(void)
 		}
 
 		mcu_disable_global_isr();
-		spi_flash_write(EEPROM_FLASH_ADDR((sector + i), eeprom_current_page, 0), eeprom_data, MIN(NVM_STORAGE_SIZE, SPI_FLASH_SEC_SIZE));
+		spi_flash_write(EEPROM_FLASH_ADDR((sector + i), eeprom_current_page, 0), eeprom_data, EEPROM_DATA_SIZE);
 		mcu_enable_global_isr();
 	}
 }
+#endif
 #endif

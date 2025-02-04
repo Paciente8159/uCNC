@@ -40,10 +40,6 @@ static volatile uint32_t mcu_runtime_ms;
 void esp8266_uart_init(int baud);
 void esp8266_uart_process(void);
 
-#ifndef RAM_ONLY_SETTINGS
-extern void esp8266_eeprom_init(int size);
-#endif
-
 ETSTimer esp8266_rtc_timer;
 
 #ifndef ITP_SAMPLE_RATE
@@ -271,6 +267,9 @@ IRAM_ATTR void mcu_itp_isr(void)
 
 extern void mcu_uart_dotasks(void);
 extern void mcu_uart_init(void);
+#ifndef RAM_ONLY_SETTINGS
+extern void mcu_eeprom_init(void);
+#endif
 
 void mcu_init(void)
 {
@@ -279,7 +278,7 @@ void mcu_init(void)
 	mcu_uart_init();
 	// xTaskCreate(mcu_uart_process, "mcu_uart_process", 1024, NULL, 10, NULL);
 #ifndef RAM_ONLY_SETTINGS
-	esp8266_eeprom_init(NVM_STORAGE_SIZE); // 2K Emulated EEPROM
+	mcu_eeprom_init(); // Emulated EEPROM
 #endif
 
 	esp8266_uart_init(BAUDRATE);

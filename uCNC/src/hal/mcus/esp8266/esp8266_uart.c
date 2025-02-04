@@ -19,6 +19,7 @@
 #include "../../../cnc.h"
 
 #if (MCU == MCU_ESP8266)
+#include "ets_sys.h"
 #include "uart_register.h"
 #include <uart.h>
 #include <esp8266_peri.h>
