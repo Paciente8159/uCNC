@@ -1001,46 +1001,46 @@ extern "C"
 
 #endif
 
-#ifndef RAM_ONLY_SETTINGS
-#include <Arduino.h>
-#include <EEPROM.h>
-#include <stdint.h>
-extern "C"
-{
-	void esp8266_eeprom_init(int size)
-	{
-		EEPROM.begin(size);
-	}
+// #ifndef RAM_ONLY_SETTINGS
+// #include <Arduino.h>
+// #include <EEPROM.h>
+// #include <stdint.h>
+// extern "C"
+// {
+// 	void esp8266_eeprom_init(int size)
+// 	{
+// 		EEPROM.begin(size);
+// 	}
 
-	uint8_t mcu_eeprom_getc(uint16_t address)
-	{
-		if (NVM_STORAGE_SIZE <= address)
-		{
-			DBGMSG("EEPROM invalid address @ %u", address);
-			return 0;
-		}
-		return EEPROM.read(address);
-	}
+// 	uint8_t mcu_eeprom_getc(uint16_t address)
+// 	{
+// 		if (NVM_STORAGE_SIZE <= address)
+// 		{
+// 			DBGMSG("EEPROM invalid address @ %u", address);
+// 			return 0;
+// 		}
+// 		return EEPROM.read(address);
+// 	}
 
-	void mcu_eeprom_putc(uint16_t address, uint8_t value)
-	{
-		if (NVM_STORAGE_SIZE <= address)
-		{
-			DBGMSG("EEPROM invalid address @ %u", address);
-			return;
-		}
-		EEPROM.write(address, value);
-	}
+// 	void mcu_eeprom_putc(uint16_t address, uint8_t value)
+// 	{
+// 		if (NVM_STORAGE_SIZE <= address)
+// 		{
+// 			DBGMSG("EEPROM invalid address @ %u", address);
+// 			return;
+// 		}
+// 		EEPROM.write(address, value);
+// 	}
 
-	void mcu_eeprom_flush(void)
-	{
-		if (!EEPROM.commit())
-		{
-			// Serial.println("[MSG: EEPROM write error]");
-		}
-	}
-}
+// 	void mcu_eeprom_flush(void)
+// 	{
+// 		if (!EEPROM.commit())
+// 		{
+// 			// Serial.println("[MSG: EEPROM write error]");
+// 		}
+// 	}
+// }
 
-#endif
+// #endif
 
 #endif
