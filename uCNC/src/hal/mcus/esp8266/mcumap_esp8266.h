@@ -1045,37 +1045,36 @@ extern "C"
 #define I2C_DATA 209
 #define DIO209_BIT (I2C_DATA_BIT)
 #endif
-#if(defined(TX2_BIT))
+#if (defined(TX2_BIT))
 #define DIO210 210
 #define TX2 210
 #define DIO210_BIT (TX2_BIT)
 #endif
-#if(defined(RX2_BIT))
+#if (defined(RX2_BIT))
 #define DIO211 211
 #define RX2 211
 #define DIO211_BIT (RX2_BIT)
 #endif
-#if(defined(SPI2_CLK_BIT))
+#if (defined(SPI2_CLK_BIT))
 #define DIO212 212
 #define SPI2_CLK 212
 #define DIO212_BIT (SPI2_CLK_BIT)
 #endif
-#if(defined(SPI2_SDI_BIT))
+#if (defined(SPI2_SDI_BIT))
 #define DIO213 213
 #define SPI2_SDI 213
 #define DIO213_BIT (SPI2_SDI_BIT)
 #endif
-#if(defined(SPI2_SDO_BIT))
+#if (defined(SPI2_SDO_BIT))
 #define DIO214 214
 #define SPI2_SDO 214
 #define DIO214_BIT (SPI2_SDO_BIT)
 #endif
-#if(defined(SPI2_CS_BIT))
+#if (defined(SPI2_CS_BIT))
 #define DIO215 215
 #define SPI2_CS 215
 #define DIO215_BIT (SPI2_CS_BIT)
 #endif
-
 
 	// ISR on change inputs
 	extern void mcu_din_isr(void);
@@ -1224,7 +1223,6 @@ extern "C"
 #endif
 #endif
 
-
 #if (defined(USB_DP) && defined(USB_DM))
 #define MCU_HAS_USB
 #endif
@@ -1245,12 +1243,41 @@ extern "C"
 
 // SPI
 #if (defined(SPI_CLK) && defined(SPI_SDI) && defined(SPI_SDO))
+#if ((SPI_CLK_BIT == 14) && (SPI_SDO_BIT == 13) && (SPI_SDI_BIT == 12))
+#undef SPI_PORT
+#define SPI_PORT 0
+#elif ((SPI_CLK_BIT == 6) && (SPI_SDO_BIT == 8) && (SPI_SDI_BIT == 7))
+#undef SPI_PORT
+#define SPI_PORT 1
+#else
+#error "Invalid SPI port pin configuration"
+#endif
 #define MCU_HAS_SPI
 #ifndef SPI_MODE
 #define SPI_MODE 0
 #endif
 #ifndef SPI_FREQ
 #define SPI_FREQ 1000000UL
+#endif
+#endif
+
+// SPI2
+#if (defined(SPI2_CLK) && defined(SPI2_SDI) && defined(SPI2_SDO))
+#if ((SPI2_CLK_BIT == 14) && (SPI2_SDO_BIT == 13) && (SPI2_SDI_BIT == 12))
+#undef SPI2_PORT
+#define SPI2_PORT 0
+#elif ((SPI2_CLK_BIT == 6) && (SPI2_SDO_BIT == 8) && (SPI2_SDI_BIT == 7))
+#undef SPI2_PORT
+#define SPI2_PORT 1
+#else
+#error "Invalid SPI2 port pin configuration"
+#endif
+#define MCU_HAS_SPI2
+#ifndef SPI2_MODE
+#define SPI2_MODE 0
+#endif
+#ifndef SPI2_FREQ
+#define SPI2_FREQ 1000000UL
 #endif
 #endif
 
@@ -1294,9 +1321,9 @@ extern "C"
 		GP16E &= ~1;                                                                           \
 	}
 
-#define mcu_config_pullup(X)                  \
-	if (__indirect__(X, BIT) < 16)              \
-	{                                           \
+#define mcu_config_pullup(X)                   \
+	if (__indirect__(X, BIT) < 16)               \
+	{                                            \
 		GPF(__indirect__(X, BIT)) |= (1 << GPFPU); \
 	}
 
@@ -1369,9 +1396,9 @@ extern "C"
 
 	// ISR
 	extern volatile uint32_t esp8266_global_isr;
-#define mcu_enable_global_isr() ({/*xt_wsr_ps(esp8266_global_isr);*/ esp8266_global_isr = 15; })
-#define mcu_disable_global_isr() ({ esp8266_global_isr = /*xt_rsil(15)*/0; })
-#define mcu_get_global_isr() (esp8266_global_isr != 15)
+#define mcu_enable_global_isr() ({xt_wsr_ps(esp8266_global_isr); esp8266_global_isr = 15; })
+#define mcu_disable_global_isr() ({ esp8266_global_isr = xt_rsil(15); })
+#define mcu_get_global_isr() (esp8266_global_isr == 15)
 
 #define cpucount()                            \
 	({                                          \

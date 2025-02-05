@@ -948,58 +948,58 @@ extern "C"
 	}
 }
 
-#ifdef MCU_HAS_SPI
-#include <Arduino.h>
-#include <SPI.h>
-// #include "esp_peri.h"
-extern "C"
-{
-#include "../../../cnc.h"
-	void esp8266_spi_init(uint32_t freq, uint8_t mode)
-	{
-		SPI.begin();
-		spi_config_t conf = {0};
-		conf.mode = SPI_MODE;
-		mcu_spi_config(conf, freq);
-	}
+// #ifdef MCU_HAS_SPI
+// #include <Arduino.h>
+// #include <SPI.h>
+// // #include "esp_peri.h"
+// extern "C"
+// {
+// #include "../../../cnc.h"
+// 	void esp8266_spi_init(uint32_t freq, uint8_t mode)
+// 	{
+// 		SPI.begin();
+// 		spi_config_t conf = {0};
+// 		conf.mode = SPI_MODE;
+// 		mcu_spi_config(conf, freq);
+// 	}
 
-	void mcu_spi_config(spi_config_t config, uint32_t freq)
-	{
-		SPI.setFrequency(freq);
-		SPI.setDataMode(config.mode);
-		SPI.setBitOrder(MSBFIRST);
-	}
+// 	void mcu_spi_config(spi_config_t config, uint32_t freq)
+// 	{
+// 		SPI.setFrequency(freq);
+// 		SPI.setDataMode(config.mode);
+// 		SPI.setBitOrder(MSBFIRST);
+// 	}
 
-	void mcu_spi_start(spi_config_t config, uint32_t freq)
-	{
-		SPI.beginTransaction(SPISettings(freq, MSBFIRST, config.mode));
-	}
+// 	void mcu_spi_start(spi_config_t config, uint32_t freq)
+// 	{
+// 		SPI.beginTransaction(SPISettings(freq, MSBFIRST, config.mode));
+// 	}
 
-	bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
-	{
-		SPI.transferBytes(out, in, len);
-		return false;
-	}
+// 	bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
+// 	{
+// 		SPI.transferBytes(out, in, len);
+// 		return false;
+// 	}
 
-	void mcu_spi_end(void)
-	{
-		SPI.endTransaction();
-	}
+// 	void mcu_spi_end(void)
+// 	{
+// 		SPI.endTransaction();
+// 	}
 
-	uint8_t mcu_spi_xmit(uint8_t c)
-	{
-		return SPI.transfer(c);
-		// while (SPI1CMD & SPIBUSY)
-		// 	;
-		// SPI1W0 = c;
-		// SPI1CMD |= SPIBUSY;
-		// while (SPI1CMD & SPIBUSY)
-		// 	;
-		// return (uint8_t)(SPI1W0 & 0xff);
-	}
-}
+// 	uint8_t mcu_spi_xmit(uint8_t c)
+// 	{
+// 		return SPI.transfer(c);
+// 		// while (SPI1CMD & SPIBUSY)
+// 		// 	;
+// 		// SPI1W0 = c;
+// 		// SPI1CMD |= SPIBUSY;
+// 		// while (SPI1CMD & SPIBUSY)
+// 		// 	;
+// 		// return (uint8_t)(SPI1W0 & 0xff);
+// 	}
+// }
 
-#endif
+// #endif
 
 // #ifndef RAM_ONLY_SETTINGS
 // #include <Arduino.h>

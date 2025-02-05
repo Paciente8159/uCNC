@@ -270,10 +270,11 @@ extern void mcu_uart_init(void);
 #ifndef RAM_ONLY_SETTINGS
 extern void mcu_eeprom_init(void);
 #endif
+extern void mcu_spi_init();
 
 void mcu_init(void)
 {
-	esp8266_global_isr = 0;
+	esp8266_global_isr = 15;
 	mcu_io_init();
 	mcu_uart_init();
 	// xTaskCreate(mcu_uart_process, "mcu_uart_process", 1024, NULL, 10, NULL);
@@ -294,8 +295,10 @@ void mcu_init(void)
 	timer1_write((APB_CLK_FREQ / ITP_SAMPLE_RATE));
 
 #ifdef MCU_HAS_SPI
-	esp8266_spi_init(SPI_FREQ, SPI_MODE);
+	// esp8266_spi_init(SPI_FREQ, SPI_MODE);
 #endif
+
+void mcu_spi_init();
 
 #ifdef MCU_HAS_I2C
 	i2c_master_gpio_init();
