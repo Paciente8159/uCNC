@@ -1245,10 +1245,10 @@ extern "C"
 #if (defined(SPI_CLK) && defined(SPI_SDI) && defined(SPI_SDO))
 #if ((SPI_CLK_BIT == 14) && (SPI_SDO_BIT == 13) && (SPI_SDI_BIT == 12))
 #undef SPI_PORT
-#define SPI_PORT 0
-#elif ((SPI_CLK_BIT == 6) && (SPI_SDO_BIT == 8) && (SPI_SDI_BIT == 7))
-#undef SPI_PORT
 #define SPI_PORT 1
+#elif ((SPI_CLK_BIT == 6) && (SPI_SDO_BIT == 8) && (SPI_SDI_BIT == 7) && (SPI_CS_BIT == 0))
+#undef SPI_PORT
+#define SPI_PORT 0
 #else
 #error "Invalid SPI port pin configuration"
 #endif
@@ -1265,10 +1265,10 @@ extern "C"
 #if (defined(SPI2_CLK) && defined(SPI2_SDI) && defined(SPI2_SDO))
 #if ((SPI2_CLK_BIT == 14) && (SPI2_SDO_BIT == 13) && (SPI2_SDI_BIT == 12))
 #undef SPI2_PORT
-#define SPI2_PORT 0
-#elif ((SPI2_CLK_BIT == 6) && (SPI2_SDO_BIT == 8) && (SPI2_SDI_BIT == 7))
-#undef SPI2_PORT
 #define SPI2_PORT 1
+#elif ((SPI2_CLK_BIT == 6) && (SPI2_SDO_BIT == 8) && (SPI2_SDI_BIT == 7) && (SPI2_CS_BIT == 0))
+#undef SPI2_PORT
+#define SPI2_PORT 0
 #else
 #error "Invalid SPI2 port pin configuration"
 #endif
@@ -1396,8 +1396,8 @@ extern "C"
 
 	// ISR
 	extern volatile uint32_t esp8266_global_isr;
-#define mcu_enable_global_isr() ({xt_wsr_ps(esp8266_global_isr); esp8266_global_isr = 15; })
-#define mcu_disable_global_isr() ({ esp8266_global_isr = xt_rsil(15); })
+#define mcu_enable_global_isr() ({/*xt_wsr_ps(esp8266_global_isr);*/ esp8266_global_isr = 15; })
+#define mcu_disable_global_isr() ({ esp8266_global_isr = /*xt_rsil*/(15); })
 #define mcu_get_global_isr() (esp8266_global_isr == 15)
 
 #define cpucount()                            \
