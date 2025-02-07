@@ -37,8 +37,10 @@
 volatile uint32_t esp8266_global_isr;
 static volatile uint32_t mcu_runtime_ms;
 
-void esp8266_uart_init(int baud);
-void esp8266_uart_process(void);
+#ifdef MCU_HAS_WIFI
+extern void esp8266_wifi_init(void);
+extern void esp8266_wifi_dotasks(void);
+#endif
 
 ETSTimer esp8266_rtc_timer;
 
@@ -255,7 +257,6 @@ IRAM_ATTR void mcu_itp_isr(void)
 #endif
 }
 
-
 /**
  * initializes the mcu
  * this function needs to:
@@ -277,12 +278,14 @@ void mcu_init(void)
 	esp8266_global_isr = 15;
 	mcu_io_init();
 	mcu_uart_init();
-	// xTaskCreate(mcu_uart_process, "mcu_uart_process", 1024, NULL, 10, NULL);
+
 #ifndef RAM_ONLY_SETTINGS
 	mcu_eeprom_init(); // Emulated EEPROM
 #endif
 
-	esp8266_uart_init(BAUDRATE);
+#ifdef MCU_HAS_WIFI
+	esp8266_wifi_init();
+#endif
 
 	// init rtc
 	os_timer_setfn(&esp8266_rtc_timer, (os_timer_func_t *)&mcu_rtc_isr, NULL);
@@ -295,10 +298,8 @@ void mcu_init(void)
 	timer1_write((APB_CLK_FREQ / ITP_SAMPLE_RATE));
 
 #ifdef MCU_HAS_SPI
-	// esp8266_spi_init(SPI_FREQ, SPI_MODE);
+	mcu_spi_init();
 #endif
-
-void mcu_spi_init();
 
 #ifdef MCU_HAS_I2C
 	i2c_master_gpio_init();
@@ -316,7 +317,9 @@ void mcu_dotasks(void)
 	// reset WDT
 	system_soft_wdt_feed();
 	mcu_uart_dotasks();
-	esp8266_uart_process();
+#ifdef MCU_HAS_WIFI
+	esp8266_wifi_dotasks();
+#endif
 }
 
 /**

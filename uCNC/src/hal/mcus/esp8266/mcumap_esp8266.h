@@ -1396,9 +1396,12 @@ extern "C"
 
 	// ISR
 	extern volatile uint32_t esp8266_global_isr;
-#define mcu_enable_global_isr() ({/*xt_wsr_ps(esp8266_global_isr);*/ esp8266_global_isr = 15; })
-#define mcu_disable_global_isr() ({ esp8266_global_isr = /*xt_rsil*/(15); })
-#define mcu_get_global_isr() (esp8266_global_isr == 15)
+#define mcu_enable_global_isr()
+#define mcu_disable_global_isr()
+#define mcu_get_global_isr() true
+	// #define mcu_enable_global_isr() ({/*xt_wsr_ps(esp8266_global_isr);*/ esp8266_global_isr = 15; })
+	// #define mcu_disable_global_isr() ({ esp8266_global_isr = /*xt_rsil*/(15); })
+	// #define mcu_get_global_isr() (esp8266_global_isr == 15)
 
 #define cpucount()                            \
 	({                                          \

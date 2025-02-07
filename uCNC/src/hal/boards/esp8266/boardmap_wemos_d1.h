@@ -32,6 +32,9 @@ extern "C"
 #define BOARD_NAME "WEMOS D1"
 #endif
 
+#undef ENABLE_WIFI
+#define ENABLE_WIFI
+
 // SAME AS GRBL for test purposes
 // Setup step pins
 #define STEP2_BIT 4	 // assigns STEP2 pin
@@ -77,12 +80,12 @@ extern "C"
 #define STEP0_EN_PORT D
 
 // SPI
-#define SPI_CLK_BIT 14
-#define SPI_CLK_PORT D
-#define SPI_SDO_BIT 13
-#define SPI_SDO_PORT D
-#define SPI_SDI_BIT 12
-#define SPI_SDI_PORT D
+// #define SPI_CLK_BIT 14
+// #define SPI_CLK_PORT D
+// #define SPI_SDO_BIT 13
+// #define SPI_SDO_PORT D
+// #define SPI_SDI_BIT 12
+// #define SPI_SDI_PORT D
 
 #ifdef __cplusplus
 }

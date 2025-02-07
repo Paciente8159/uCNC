@@ -338,7 +338,6 @@ extern spi_port_t mcu_spi2_port;
 #define MCU_SPI2 NULL
 #endif
 
-#include "spi_register.h"
 void mcu_spi_init(void)
 {
 #ifdef MCU_HAS_SPI
