@@ -28,26 +28,42 @@
 #ifndef mcu_spi_bulk_transfer
 bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 {
-	uint16_t aligned_len = (len & 0xFFFC);
+	static uint16_t remaining = 0;
+	static bool waiting = false;
+	uint16_t aligned_len = remaining;
+
+	if (!aligned_len)
+	{
+		aligned_len = (len & 0xFFFC);
+	}
+
 	while (aligned_len)
 	{
 		volatile uint32_t *spififo = &SPI1W0;
 		uint16_t chunck = MIN(aligned_len, 64);
-		while (SPI1CMD & SPIBUSY)
-			;
-		if (out)
+		if (!waiting)
 		{
-			memcpy((void *)spififo, out, chunck);
-			out += chunck;
-		}
-		else
-		{
-			memset((void *)spififo, 0xFF, chunck);
+			while (SPI1CMD & SPIBUSY)
+				;
+			if (out)
+			{
+				memcpy((void *)spififo, out, chunck);
+				out += chunck;
+			}
+			else
+			{
+				memset((void *)spififo, 0xFF, chunck);
+			}
+			SPI1CMD |= SPIBUSY;
+			waiting = true;
 		}
 
-		SPI1CMD |= SPIBUSY;
-		while (SPI1CMD & SPIBUSY)
-			;
+		if (SPI1CMD & SPIBUSY)
+		{
+			return true;
+		}
+
+		waiting = false;
 
 		if (in)
 		{
@@ -55,6 +71,7 @@ bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 			in += chunck;
 		}
 		aligned_len -= chunck;
+		remaining = aligned_len;
 	}
 
 	len -= aligned_len;
@@ -72,6 +89,7 @@ bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 		len--;
 	}
 
+	remaining = 0;
 	return false;
 }
 #endif
@@ -199,26 +217,42 @@ uint8_t mcu_spi2_xmit(uint8_t data)
 #ifndef mcu_spi2_bulk_transfer
 bool mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 {
-	uint16_t aligned_len = (len & 0xFFFC);
+	static uint16_t remaining = 0;
+	static bool waiting = false;
+	uint16_t aligned_len = remaining;
+
+	if (!aligned_len)
+	{
+		aligned_len = (len & 0xFFFC);
+	}
+
 	while (aligned_len)
 	{
 		volatile uint32_t *spififo = &SPI1W0;
 		uint16_t chunck = MIN(aligned_len, 64);
-		while (SPI1CMD & SPIBUSY)
-			;
-		if (out)
+		if (!waiting)
 		{
-			memcpy((void *)spififo, out, chunck);
-			out += chunck;
-		}
-		else
-		{
-			memset((void *)spififo, 0xFF, chunck);
+			while (SPI1CMD & SPIBUSY)
+				;
+			if (out)
+			{
+				memcpy((void *)spififo, out, chunck);
+				out += chunck;
+			}
+			else
+			{
+				memset((void *)spififo, 0xFF, chunck);
+			}
+			SPI1CMD |= SPIBUSY;
+			waiting = true;
 		}
 
-		SPI1CMD |= SPIBUSY;
-		while (SPI1CMD & SPIBUSY)
-			;
+		if (SPI1CMD & SPIBUSY)
+		{
+			return true;
+		}
+
+		waiting = false;
 
 		if (in)
 		{
@@ -226,6 +260,7 @@ bool mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 			in += chunck;
 		}
 		aligned_len -= chunck;
+		remaining = aligned_len;
 	}
 
 	len -= aligned_len;
@@ -243,6 +278,7 @@ bool mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 		len--;
 	}
 
+	remaining = 0;
 	return false;
 }
 #endif
