@@ -3839,12 +3839,6 @@ extern "C"
 #define SPI_FREQ 1000000UL
 #endif
 // remmaping and pin checking
-#if (SPI_PORT == 4) && (SPI_SDO_PIN == STM32IO_A1)
-#define SPI_SDO_AFIO 5
-#endif
-#if (SPI_PORT == 3) && (SPI_CLK_PIN == STM32IO_B12)
-#define SPI_CLK_AFIO 7
-#endif
 #if (SPI_PORT == 1) && (SPI_CS_PIN == STM32IO_A4)
 #define SPI_CS_AFIO 5
 #endif
@@ -3857,8 +3851,29 @@ extern "C"
 #if (SPI_PORT == 1) && (SPI_SDO_PIN == STM32IO_A7)
 #define SPI_SDO_AFIO 5
 #endif
+#if (SPI_PORT == 3) && (SPI_CS_PIN == STM32IO_A4)
+#define SPI_CS_AFIO 6
+#endif
+#if (SPI_PORT == 6) && (SPI_CLK_PIN == STM32IO_A5)
+#define SPI_CLK_AFIO 8
+#endif
+#if (SPI_PORT == 2) && (SPI_CLK_PIN == STM32IO_A9)
+#define SPI_CLK_AFIO 5
+#endif
+#if (SPI_PORT == 2) && (SPI_CS_PIN == STM32IO_A11)
+#define SPI_CS_AFIO 5
+#endif
+#if (SPI_PORT == 2) && (SPI_CLK_PIN == STM32IO_A12)
+#define SPI_CLK_AFIO 5
+#endif
 #if (SPI_PORT == 1) && (SPI_CS_PIN == STM32IO_A15)
 #define SPI_CS_AFIO 5
+#endif
+#if (SPI_PORT == 3) && (SPI_CS_PIN == STM32IO_A15)
+#define SPI_CS_AFIO 6
+#endif
+#if (SPI_PORT == 6) && (SPI_CS_PIN == STM32IO_A15)
+#define SPI_CS_AFIO 7
 #endif
 #if (SPI_PORT == 1) && (SPI_CLK_PIN == STM32IO_B3)
 #define SPI_CLK_AFIO 5
@@ -3868,6 +3883,30 @@ extern "C"
 #endif
 #if (SPI_PORT == 1) && (SPI_SDO_PIN == STM32IO_B5)
 #define SPI_SDO_AFIO 5
+#endif
+#if (SPI_PORT == 3) && (SPI_CLK_PIN == STM32IO_B3)
+#define SPI_CLK_AFIO 6
+#endif
+#if (SPI_PORT == 3) && (SPI_SDI_PIN == STM32IO_B4)
+#define SPI_SDI_AFIO 6
+#endif
+#if (SPI_PORT == 3) && (SPI_SDO_PIN == STM32IO_B2)
+#define SPI_SDO_AFIO 7
+#endif
+#if (SPI_PORT == 2) && (SPI_CS_PIN == STM32IO_B4)
+#define SPI_CS_AFIO 7
+#endif
+#if (SPI_PORT == 3) && (SPI_SDO_PIN == STM32IO_B5)
+#define SPI_SDO_AFIO 7
+#endif
+#if (SPI_PORT == 6) && (SPI_CLK_PIN == STM32IO_B3)
+#define SPI_CLK_AFIO 8
+#endif
+#if (SPI_PORT == 6) && (SPI_SDI_PIN == STM32IO_B4)
+#define SPI_SDI_AFIO 8
+#endif
+#if (SPI_PORT == 6) && (SPI_SDO_PIN == STM32IO_B5)
+#define SPI_SDO_AFIO 8
 #endif
 #if (SPI_PORT == 2) && (SPI_CS_PIN == STM32IO_B9)
 #define SPI_CS_AFIO 5
@@ -3887,14 +3926,23 @@ extern "C"
 #if (SPI_PORT == 2) && (SPI_SDO_PIN == STM32IO_B15)
 #define SPI_SDO_AFIO 5
 #endif
+#if (SPI_PORT == 2) && (SPI_SDO_PIN == STM32IO_C1)
+#define SPI_SDO_AFIO 5
+#endif
 #if (SPI_PORT == 2) && (SPI_SDI_PIN == STM32IO_C2)
 #define SPI_SDI_AFIO 5
 #endif
 #if (SPI_PORT == 2) && (SPI_SDO_PIN == STM32IO_C3)
 #define SPI_SDO_AFIO 5
 #endif
-#if (SPI_PORT == 2) && (SPI_CLK_PIN == STM32IO_C7)
-#define SPI_CLK_AFIO 5
+#if (SPI_PORT == 3) && (SPI_CLK_PIN == STM32IO_C10)
+#define SPI_CLK_AFIO 6
+#endif
+#if (SPI_PORT == 3) && (SPI_SDI_PIN == STM32IO_C11)
+#define SPI_SDI_AFIO 6
+#endif
+#if (SPI_PORT == 3) && (SPI_SDO_PIN == STM32IO_C12)
+#define SPI_SDO_AFIO 6
 #endif
 #if (SPI_PORT == 2) && (SPI_CLK_PIN == STM32IO_D3)
 #define SPI_CLK_AFIO 5
@@ -3902,16 +3950,19 @@ extern "C"
 #if (SPI_PORT == 3) && (SPI_SDO_PIN == STM32IO_D6)
 #define SPI_SDO_AFIO 5
 #endif
-#if (SPI_PORT == 4) && (SPI_CLK_PIN == STM32IO_E3)
+#if (SPI_PORT == 1) && (SPI_SDO_PIN == STM32IO_D7)
+#define SPI_SDO_AFIO 5
+#endif
+#if (SPI_PORT == 4) && (SPI_CLK_PIN == STM32IO_E2)
 #define SPI_CLK_AFIO 5
 #endif
-#if (SPI_PORT == 4) && (SPI_CS_PIN == STM32IO_E5)
+#if (SPI_PORT == 4) && (SPI_CS_PIN == STM32IO_E4)
 #define SPI_CS_AFIO 5
 #endif
-#if (SPI_PORT == 4) && (SPI_SDI_PIN == STM32IO_E6)
+#if (SPI_PORT == 4) && (SPI_SDI_PIN == STM32IO_E5)
 #define SPI_SDI_AFIO 5
 #endif
-#if (SPI_PORT == 4) && (SPI_SDO_PIN == STM32IO_E7)
+#if (SPI_PORT == 4) && (SPI_SDO_PIN == STM32IO_E6)
 #define SPI_SDO_AFIO 5
 #endif
 #if (SPI_PORT == 4) && (SPI_CS_PIN == STM32IO_E11)
@@ -3926,77 +3977,74 @@ extern "C"
 #if (SPI_PORT == 4) && (SPI_SDO_PIN == STM32IO_E14)
 #define SPI_SDO_AFIO 5
 #endif
-#if (SPI_PORT == 3) && (SPI_CS_PIN == STM32IO_A4)
-#define SPI_CS_AFIO 6
+#if (SPI_PORT == 5) && (SPI_CS_PIN == STM32IO_F6)
+#define SPI_CS_AFIO 5
 #endif
-#if (SPI_PORT == 5) && (SPI_SDO_PIN == STM32IO_A10)
-#define SPI_SDO_AFIO 6
+#if (SPI_PORT == 5) && (SPI_CLK_PIN == STM32IO_F7)
+#define SPI_CLK_AFIO 5
 #endif
-#if (SPI_PORT == 4) && (SPI_SDI_PIN == STM32IO_A11)
-#define SPI_SDI_AFIO 6
+#if (SPI_PORT == 5) && (SPI_SDI_PIN == STM32IO_F8)
+#define SPI_SDI_AFIO 5
 #endif
-#if (SPI_PORT == 5) && (SPI_SDI_PIN == STM32IO_A12)
-#define SPI_SDI_AFIO 6
+#if (SPI_PORT == 5) && (SPI_SDO_PIN == STM32IO_F9)
+#define SPI_SDO_AFIO 5
 #endif
-#if (SPI_PORT == 3) && (SPI_CS_PIN == STM32IO_A15)
-#define SPI_CS_AFIO 6
+#if (SPI_PORT == 5) && (SPI_SDO_PIN == STM32IO_F11)
+#define SPI_SDO_AFIO 5
 #endif
-#if (SPI_PORT == 5) && (SPI_CLK_PIN == STM32IO_B0)
-#define SPI_CLK_AFIO 6
+#if (SPI_PORT == 6) && (SPI_CS_PIN == STM32IO_G8)
+#define SPI_CS_AFIO 5
 #endif
-#if (SPI_PORT == 5) && (SPI_CD_PIN == STM32IO_B1)
-#define SPI_CD_AFIO 6
+#if (SPI_PORT == 1) && (SPI_SDI_PIN == STM32IO_G9)
+#define SPI_SDI_AFIO 5
 #endif
-#if (SPI_PORT == 3) && (SPI_CLK_PIN == STM32IO_B3)
-#define SPI_CLK_AFIO 6
+#if (SPI_PORT == 1) && (SPI_CS_PIN == STM32IO_G10)
+#define SPI_CS_AFIO 5
 #endif
-#if (SPI_PORT == 3) && (SPI_SDI_PIN == STM32IO_B4)
-#define SPI_SDI_AFIO 6
+#if (SPI_PORT == 1) && (SPI_CLK_PIN == STM32IO_G11)
+#define SPI_CLK_AFIO 5
 #endif
-#if (SPI_PORT == 3) && (SPI_SDO_PIN == STM32IO_B5)
-#define SPI_SDO_AFIO 6
+#if (SPI_PORT == 6) && (SPI_SDI_PIN == STM32IO_G12)
+#define SPI_SDI_AFIO 5
 #endif
-#if (SPI_PORT == 5) && (SPI_SDO_PIN == STM32IO_B8)
-#define SPI_SDO_AFIO 6
+#if (SPI_PORT == 6) && (SPI_CLK_PIN == STM32IO_G13)
+#define SPI_CLK_AFIO 5
 #endif
-#if (SPI_PORT == 4) && (SPI_CS_PIN == STM32IO_B12)
-#define SPI_CS_AFIO 6
+#if (SPI_PORT == 6) && (SPI_SDO_PIN == STM32IO_G14)
+#define SPI_SDO_AFIO 5
 #endif
-#if (SPI_PORT == 4) && (SPI_CLK_PIN == STM32IO_B13)
-#define SPI_CLK_AFIO 6
+#if (SPI_PORT == 5) && (SPI_CS_PIN == STM32IO_H5)
+#define SPI_CS_AFIO 5
 #endif
-#if (SPI_PORT == 3) && (SPI_CLK_PIN == STM32IO_C10)
-#define SPI_CLK_AFIO 6
+#if (SPI_PORT == 5) && (SPI_CLK_PIN == STM32IO_H6)
+#define SPI_CLK_AFIO 5
 #endif
-#if (SPI_PORT == 3) && (SPI_SDI_PIN == STM32IO_C11)
-#define SPI_SDI_AFIO 6
+#if (SPI_PORT == 5) && (SPI_SDI_PIN == STM32IO_H7)
+#define SPI_SDI_AFIO 5
 #endif
-#if (SPI_PORT == 3) && (SPI_SDO_PIN == STM32IO_C12)
-#define SPI_SDO_AFIO 6
+#if (SPI_PORT == 2) && (SPI_CS_PIN == STM32IO_I0)
+#define SPI_CS_AFIO 5
 #endif
-#if (SPI_PORT == 5) && (SPI_CLK_PIN == STM32IO_E3)
-#define SPI_CLK_AFIO 6
+#if (SPI_PORT == 2) && (SPI_CLK_PIN == STM32IO_I1)
+#define SPI_CLK_AFIO 5
 #endif
-#if (SPI_PORT == 5) && (SPI_CS_PIN == STM32IO_E5)
-#define SPI_CS_AFIO 6
+#if (SPI_PORT == 2) && (SPI_SDI_PIN == STM32IO_I2)
+#define SPI_SDI_AFIO 5
 #endif
-#if (SPI_PORT == 5) && (SPI_SDI_PIN == STM32IO_E6)
-#define SPI_SDI_AFIO 6
+#if (SPI_PORT == 2) && (SPI_SDO_PIN == STM32IO_I3)
+#define SPI_SDO_AFIO 5
 #endif
-#if (SPI_PORT == 5) && (SPI_SDO_PIN == STM32IO_E7)
-#define SPI_SDO_AFIO 6
+#if (SPI_PORT == 5) && (SPI_SDO_PIN == STM32IO_J10)
+#define SPI_SDO_AFIO 5
 #endif
-#if (SPI_PORT == 5) && (SPI_CS_PIN == STM32IO_E11)
-#define SPI_CS_AFIO 6
+#if (SPI_PORT == 5) && (SPI_SDI_PIN == STM32IO_J11)
+#define SPI_SDI_AFIO 5
 #endif
-#if (SPI_PORT == 5) && (SPI_CLK_PIN == STM32IO_E12)
-#define SPI_CLK_AFIO 6
+#if (SPI_PORT == 5) && (SPI_CLK_PIN == STM32IO_K0)
+#define SPI_CLK_AFIO 5
 #endif
-#if (SPI_PORT == 5) && (SPI_SDI_PIN == STM32IO_E13)
-#define SPI_SDI_AFIO 6
-#endif
-#if (SPI_PORT == 5) && (SPI_SDO_PIN == STM32IO_E14)
-#define SPI_SDO_AFIO 6
+#if (SPI_PORT == 5) && (SPI_CS_PIN == STM32IO_K1)
+#define SPI_CS_AFIO 5
 #endif
 
 #ifndef SPI_CLK_AFIO
@@ -4016,8 +4064,8 @@ extern "C"
 
 #define SPI_REG __helper__(SPI, SPI_PORT, )
 #if (SPI_PORT == 2 || SPI_PORT == 3)
-#define SPI_ENREG RCC->APB1ENR
-#define SPI_ENVAL __helper__(RCC_APB1ENR_SPI, SPI_PORT, EN)
+#define SPI_ENREG RCC->APB1LENR
+#define SPI_ENVAL __helper__(RCC_APB1LENR_SPI, SPI_PORT, EN)
 #define SPI_CLOCK HAL_RCC_GetPCLK1Freq()
 #else
 #define SPI_ENREG RCC->APB2ENR
@@ -4116,12 +4164,6 @@ extern "C"
 #define SPI2_FREQ 1000000UL
 #endif
 // remmaping and pin checking
-#if (SPI2_PORT == 4) && (SPI2_SDO_PIN == STM32IO_A1)
-#define SPI2_SDO_AFIO 5
-#endif
-#if (SPI2_PORT == 3) && (SPI2_CLK_PIN == STM32IO_B12)
-#define SPI2_CLK_AFIO 7
-#endif
 #if (SPI2_PORT == 1) && (SPI2_CS_PIN == STM32IO_A4)
 #define SPI2_CS_AFIO 5
 #endif
@@ -4134,8 +4176,29 @@ extern "C"
 #if (SPI2_PORT == 1) && (SPI2_SDO_PIN == STM32IO_A7)
 #define SPI2_SDO_AFIO 5
 #endif
+#if (SPI2_PORT == 3) && (SPI2_CS_PIN == STM32IO_A4)
+#define SPI2_CS_AFIO 6
+#endif
+#if (SPI2_PORT == 6) && (SPI2_CLK_PIN == STM32IO_A5)
+#define SPI2_CLK_AFIO 8
+#endif
+#if (SPI2_PORT == 2) && (SPI2_CLK_PIN == STM32IO_A9)
+#define SPI2_CLK_AFIO 5
+#endif
+#if (SPI2_PORT == 2) && (SPI2_CS_PIN == STM32IO_A11)
+#define SPI2_CS_AFIO 5
+#endif
+#if (SPI2_PORT == 2) && (SPI2_CLK_PIN == STM32IO_A12)
+#define SPI2_CLK_AFIO 5
+#endif
 #if (SPI2_PORT == 1) && (SPI2_CS_PIN == STM32IO_A15)
 #define SPI2_CS_AFIO 5
+#endif
+#if (SPI2_PORT == 3) && (SPI2_CS_PIN == STM32IO_A15)
+#define SPI2_CS_AFIO 6
+#endif
+#if (SPI2_PORT == 6) && (SPI2_CS_PIN == STM32IO_A15)
+#define SPI2_CS_AFIO 7
 #endif
 #if (SPI2_PORT == 1) && (SPI2_CLK_PIN == STM32IO_B3)
 #define SPI2_CLK_AFIO 5
@@ -4145,6 +4208,30 @@ extern "C"
 #endif
 #if (SPI2_PORT == 1) && (SPI2_SDO_PIN == STM32IO_B5)
 #define SPI2_SDO_AFIO 5
+#endif
+#if (SPI2_PORT == 3) && (SPI2_CLK_PIN == STM32IO_B3)
+#define SPI2_CLK_AFIO 6
+#endif
+#if (SPI2_PORT == 3) && (SPI2_SDI_PIN == STM32IO_B4)
+#define SPI2_SDI_AFIO 6
+#endif
+#if (SPI2_PORT == 3) && (SPI2_SDO_PIN == STM32IO_B2)
+#define SPI2_SDO_AFIO 7
+#endif
+#if (SPI2_PORT == 2) && (SPI2_CS_PIN == STM32IO_B4)
+#define SPI2_CS_AFIO 7
+#endif
+#if (SPI2_PORT == 3) && (SPI2_SDO_PIN == STM32IO_B5)
+#define SPI2_SDO_AFIO 7
+#endif
+#if (SPI2_PORT == 6) && (SPI2_CLK_PIN == STM32IO_B3)
+#define SPI2_CLK_AFIO 8
+#endif
+#if (SPI2_PORT == 6) && (SPI2_SDI_PIN == STM32IO_B4)
+#define SPI2_SDI_AFIO 8
+#endif
+#if (SPI2_PORT == 6) && (SPI2_SDO_PIN == STM32IO_B5)
+#define SPI2_SDO_AFIO 8
 #endif
 #if (SPI2_PORT == 2) && (SPI2_CS_PIN == STM32IO_B9)
 #define SPI2_CS_AFIO 5
@@ -4164,14 +4251,23 @@ extern "C"
 #if (SPI2_PORT == 2) && (SPI2_SDO_PIN == STM32IO_B15)
 #define SPI2_SDO_AFIO 5
 #endif
+#if (SPI2_PORT == 2) && (SPI2_SDO_PIN == STM32IO_C1)
+#define SPI2_SDO_AFIO 5
+#endif
 #if (SPI2_PORT == 2) && (SPI2_SDI_PIN == STM32IO_C2)
 #define SPI2_SDI_AFIO 5
 #endif
 #if (SPI2_PORT == 2) && (SPI2_SDO_PIN == STM32IO_C3)
 #define SPI2_SDO_AFIO 5
 #endif
-#if (SPI2_PORT == 2) && (SPI2_CLK_PIN == STM32IO_C7)
-#define SPI2_CLK_AFIO 5
+#if (SPI2_PORT == 3) && (SPI2_CLK_PIN == STM32IO_C10)
+#define SPI2_CLK_AFIO 6
+#endif
+#if (SPI2_PORT == 3) && (SPI2_SDI_PIN == STM32IO_C11)
+#define SPI2_SDI_AFIO 6
+#endif
+#if (SPI2_PORT == 3) && (SPI2_SDO_PIN == STM32IO_C12)
+#define SPI2_SDO_AFIO 6
 #endif
 #if (SPI2_PORT == 2) && (SPI2_CLK_PIN == STM32IO_D3)
 #define SPI2_CLK_AFIO 5
@@ -4179,16 +4275,19 @@ extern "C"
 #if (SPI2_PORT == 3) && (SPI2_SDO_PIN == STM32IO_D6)
 #define SPI2_SDO_AFIO 5
 #endif
-#if (SPI2_PORT == 4) && (SPI2_CLK_PIN == STM32IO_E3)
+#if (SPI2_PORT == 1) && (SPI2_SDO_PIN == STM32IO_D7)
+#define SPI2_SDO_AFIO 5
+#endif
+#if (SPI2_PORT == 4) && (SPI2_CLK_PIN == STM32IO_E2)
 #define SPI2_CLK_AFIO 5
 #endif
-#if (SPI2_PORT == 4) && (SPI2_CS_PIN == STM32IO_E5)
+#if (SPI2_PORT == 4) && (SPI2_CS_PIN == STM32IO_E4)
 #define SPI2_CS_AFIO 5
 #endif
-#if (SPI2_PORT == 4) && (SPI2_SDI_PIN == STM32IO_E6)
+#if (SPI2_PORT == 4) && (SPI2_SDI_PIN == STM32IO_E5)
 #define SPI2_SDI_AFIO 5
 #endif
-#if (SPI2_PORT == 4) && (SPI2_SDO_PIN == STM32IO_E7)
+#if (SPI2_PORT == 4) && (SPI2_SDO_PIN == STM32IO_E6)
 #define SPI2_SDO_AFIO 5
 #endif
 #if (SPI2_PORT == 4) && (SPI2_CS_PIN == STM32IO_E11)
@@ -4203,77 +4302,74 @@ extern "C"
 #if (SPI2_PORT == 4) && (SPI2_SDO_PIN == STM32IO_E14)
 #define SPI2_SDO_AFIO 5
 #endif
-#if (SPI2_PORT == 3) && (SPI2_CS_PIN == STM32IO_A4)
-#define SPI2_CS_AFIO 6
+#if (SPI2_PORT == 5) && (SPI2_CS_PIN == STM32IO_F6)
+#define SPI2_CS_AFIO 5
 #endif
-#if (SPI2_PORT == 5) && (SPI2_SDO_PIN == STM32IO_A10)
-#define SPI2_SDO_AFIO 6
+#if (SPI2_PORT == 5) && (SPI2_CLK_PIN == STM32IO_F7)
+#define SPI2_CLK_AFIO 5
 #endif
-#if (SPI2_PORT == 4) && (SPI2_SDI_PIN == STM32IO_A11)
-#define SPI2_SDI_AFIO 6
+#if (SPI2_PORT == 5) && (SPI2_SDI_PIN == STM32IO_F8)
+#define SPI2_SDI_AFIO 5
 #endif
-#if (SPI2_PORT == 5) && (SPI2_SDI_PIN == STM32IO_A12)
-#define SPI2_SDI_AFIO 6
+#if (SPI2_PORT == 5) && (SPI2_SDO_PIN == STM32IO_F9)
+#define SPI2_SDO_AFIO 5
 #endif
-#if (SPI2_PORT == 3) && (SPI2_CS_PIN == STM32IO_A15)
-#define SPI2_CS_AFIO 6
+#if (SPI2_PORT == 5) && (SPI2_SDO_PIN == STM32IO_F11)
+#define SPI2_SDO_AFIO 5
 #endif
-#if (SPI2_PORT == 5) && (SPI2_CLK_PIN == STM32IO_B0)
-#define SPI2_CLK_AFIO 6
+#if (SPI2_PORT == 6) && (SPI2_CS_PIN == STM32IO_G8)
+#define SPI2_CS_AFIO 5
 #endif
-#if (SPI2_PORT == 5) && (SPI2_CD_PIN == STM32IO_B1)
-#define SPI2_CD_AFIO 6
+#if (SPI2_PORT == 1) && (SPI2_SDI_PIN == STM32IO_G9)
+#define SPI2_SDI_AFIO 5
 #endif
-#if (SPI2_PORT == 3) && (SPI2_CLK_PIN == STM32IO_B3)
-#define SPI2_CLK_AFIO 6
+#if (SPI2_PORT == 1) && (SPI2_CS_PIN == STM32IO_G10)
+#define SPI2_CS_AFIO 5
 #endif
-#if (SPI2_PORT == 3) && (SPI2_SDI_PIN == STM32IO_B4)
-#define SPI2_SDI_AFIO 6
+#if (SPI2_PORT == 1) && (SPI2_CLK_PIN == STM32IO_G11)
+#define SPI2_CLK_AFIO 5
 #endif
-#if (SPI2_PORT == 3) && (SPI2_SDO_PIN == STM32IO_B5)
-#define SPI2_SDO_AFIO 6
+#if (SPI2_PORT == 6) && (SPI2_SDI_PIN == STM32IO_G12)
+#define SPI2_SDI_AFIO 5
 #endif
-#if (SPI2_PORT == 5) && (SPI2_SDO_PIN == STM32IO_B8)
-#define SPI2_SDO_AFIO 6
+#if (SPI2_PORT == 6) && (SPI2_CLK_PIN == STM32IO_G13)
+#define SPI2_CLK_AFIO 5
 #endif
-#if (SPI2_PORT == 4) && (SPI2_CS_PIN == STM32IO_B12)
-#define SPI2_CS_AFIO 6
+#if (SPI2_PORT == 6) && (SPI2_SDO_PIN == STM32IO_G14)
+#define SPI2_SDO_AFIO 5
 #endif
-#if (SPI2_PORT == 4) && (SPI2_CLK_PIN == STM32IO_B13)
-#define SPI2_CLK_AFIO 6
+#if (SPI2_PORT == 5) && (SPI2_CS_PIN == STM32IO_H5)
+#define SPI2_CS_AFIO 5
 #endif
-#if (SPI2_PORT == 3) && (SPI2_CLK_PIN == STM32IO_C10)
-#define SPI2_CLK_AFIO 6
+#if (SPI2_PORT == 5) && (SPI2_CLK_PIN == STM32IO_H6)
+#define SPI2_CLK_AFIO 5
 #endif
-#if (SPI2_PORT == 3) && (SPI2_SDI_PIN == STM32IO_C11)
-#define SPI2_SDI_AFIO 6
+#if (SPI2_PORT == 5) && (SPI2_SDI_PIN == STM32IO_H7)
+#define SPI2_SDI_AFIO 5
 #endif
-#if (SPI2_PORT == 3) && (SPI2_SDO_PIN == STM32IO_C12)
-#define SPI2_SDO_AFIO 6
+#if (SPI2_PORT == 2) && (SPI2_CS_PIN == STM32IO_I0)
+#define SPI2_CS_AFIO 5
 #endif
-#if (SPI2_PORT == 5) && (SPI2_CLK_PIN == STM32IO_E3)
-#define SPI2_CLK_AFIO 6
+#if (SPI2_PORT == 2) && (SPI2_CLK_PIN == STM32IO_I1)
+#define SPI2_CLK_AFIO 5
 #endif
-#if (SPI2_PORT == 5) && (SPI2_CS_PIN == STM32IO_E5)
-#define SPI2_CS_AFIO 6
+#if (SPI2_PORT == 2) && (SPI2_SDI_PIN == STM32IO_I2)
+#define SPI2_SDI_AFIO 5
 #endif
-#if (SPI2_PORT == 5) && (SPI2_SDI_PIN == STM32IO_E6)
-#define SPI2_SDI_AFIO 6
+#if (SPI2_PORT == 2) && (SPI2_SDO_PIN == STM32IO_I3)
+#define SPI2_SDO_AFIO 5
 #endif
-#if (SPI2_PORT == 5) && (SPI2_SDO_PIN == STM32IO_E7)
-#define SPI2_SDO_AFIO 6
+#if (SPI2_PORT == 5) && (SPI2_SDO_PIN == STM32IO_J10)
+#define SPI2_SDO_AFIO 5
 #endif
-#if (SPI2_PORT == 5) && (SPI2_CS_PIN == STM32IO_E11)
-#define SPI2_CS_AFIO 6
+#if (SPI2_PORT == 5) && (SPI2_SDI_PIN == STM32IO_J11)
+#define SPI2_SDI_AFIO 5
 #endif
-#if (SPI2_PORT == 5) && (SPI2_CLK_PIN == STM32IO_E12)
-#define SPI2_CLK_AFIO 6
+#if (SPI2_PORT == 5) && (SPI2_CLK_PIN == STM32IO_K0)
+#define SPI2_CLK_AFIO 5
 #endif
-#if (SPI2_PORT == 5) && (SPI2_SDI_PIN == STM32IO_E13)
-#define SPI2_SDI_AFIO 6
-#endif
-#if (SPI2_PORT == 5) && (SPI2_SDO_PIN == STM32IO_E14)
-#define SPI2_SDO_AFIO 6
+#if (SPI2_PORT == 5) && (SPI2_CS_PIN == STM32IO_K1)
+#define SPI2_CS_AFIO 5
 #endif
 
 #ifndef SPI2_CLK_AFIO
@@ -4293,8 +4389,8 @@ extern "C"
 
 #define SPI2_REG __helper__(SPI, SPI2_PORT, )
 #if (SPI2_PORT == 2 || SPI2_PORT == 3)
-#define SPI2_ENREG RCC->APB1ENR
-#define SPI2_ENVAL __helper__(RCC_APB1ENR_SPI, SPI2_PORT, EN)
+#define SPI2_ENREG RCC->APB1LENR
+#define SPI2_ENVAL __helper__(RCC_APB1LENR_SPI, SPI2_PORT, EN)
 #define SPI2_CLOCK HAL_RCC_GetPCLK1Freq()
 #else
 #define SPI2_ENREG RCC->APB2ENR
