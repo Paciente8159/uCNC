@@ -228,36 +228,37 @@ extern "C"
 	/**
 	 * RING BUFFER UTILS
 	 * **/
-#ifndef USE_MACRO_BUFFER
+
 	typedef struct ring_buffer_
 	{
-		volatile size_t count;
-		volatile size_t head;
-		volatile size_t tail;
+		volatile uint8_t count;
+		volatile uint8_t head;
+		volatile uint8_t tail;
 		uint8_t *data;
-		const size_t size;
+		const uint8_t size;
 		const uint8_t elem_size;
 	} ring_buffer_t;
 
+#ifndef USE_MACRO_BUFFER
 #ifndef USE_CUSTOM_BUFFER_IMPLEMENTATION
 #define DECL_BUFFER(type, name, size)  \
 	static type name##_bufferdata[size]; \
 	ring_buffer_t name = {0, 0, 0, name##_bufferdata, size, sizeof(type)}
 
-	size_t buffer_write_available(ring_buffer_t *buffer);
-	size_t buffer_read_available(ring_buffer_t *buffer);
+	uint8_t buffer_write_available(ring_buffer_t *buffer);
+	uint8_t buffer_read_available(ring_buffer_t *buffer);
 	bool buffer_empty(ring_buffer_t *buffer);
 	bool buffer_full(ring_buffer_t *buffer);
 	void buffer_peek(ring_buffer_t *buffer, void *ptr);
 	void buffer_dequeue(ring_buffer_t *buffer, void *ptr);
 	void buffer_enqueue(ring_buffer_t *buffer, void *ptr);
-	void buffer_write(ring_buffer_t *buffer, void *ptr, size_t len, size_t *written);
-	void buffer_read(ring_buffer_t *buffer, void *ptr, size_t len, size_t *read);
+	void buffer_write(ring_buffer_t *buffer, void *ptr, uint8_t len, uint8_t *written);
+	void buffer_read(ring_buffer_t *buffer, void *ptr, uint8_t len, uint8_t *read);
 	void buffer_clear(ring_buffer_t *buffer);
 
 #define BUFFER_INIT(type, buffer, size)
-#define BUFFER_WRITE_AVAILABLE(buffer) ((uint8_t)MIN(255, buffer_write_available(&buffer)))
-#define BUFFER_READ_AVAILABLE(buffer) ((uint8_t)MIN(255, buffer_read_available(&buffer)))
+#define BUFFER_WRITE_AVAILABLE(buffer) buffer_write_available(&buffer)
+#define BUFFER_READ_AVAILABLE(buffer) buffer_read_available(&buffer)
 #define BUFFER_EMPTY(buffer) buffer_empty(&buffer)
 #define BUFFER_FULL(buffer) buffer_full(&buffer)
 #define BUFFER_PEEK(buffer, ptr) buffer_peek(&buffer, ptr)
@@ -268,17 +269,6 @@ extern "C"
 #define BUFFER_CLEAR(buffer) buffer_clear(&buffer)
 #endif
 #else
-// MACRO BUFFER IS LIMITITED TO 256 (SMALLER CODE)
-typedef struct ring_buffer_
-{
-	volatile uint8_t count;
-	volatile uint8_t head;
-	volatile uint8_t tail;
-	uint8_t *data;
-	const uint8_t size;
-	const uint8_t elem_size;
-} ring_buffer_t;
-
 #define DECL_BUFFER(type, name, size)      \
 	static type name##_bufferdata[size];     \
 	static const uint8_t name##_size = size; \
@@ -433,8 +423,8 @@ typedef struct ring_buffer_
 	}
 #endif
 
-#define __TIMEOUT_US__(timeout) for (uint32_t elap_us_##timeout, curr_us_##timeout = mcu_free_micros(); timeout > 0; elap_us_##timeout = mcu_free_micros() - curr_us_##timeout, timeout -= MIN(timeout, ((elap_us_##timeout < 1000) ? elap_us_##timeout : 1000 + elap_us_##timeout)), curr_us_##timeout = mcu_free_micros())
-#define __TIMEOUT_MS__(timeout)                                                          \
+#define __TIMEOUT_US__(timeout) for (uint32_t elap_us_##timeout, curr_us_##timeout = mcu_free_micros(); timeout > 0; elap_us_##timeout = mcu_free_micros() - curr_us_##timeout, timeout -= MIN(timeout, ((elap_us_##timeout<1000) ? elap_us_##timeout : 1000 + elap_us_##timeout)), curr_us_##timeout = mcu_free_micros())
+#define __TIMEOUT_MS__(timeout)                                                           \
 	timeout = (((uint32_t)timeout) < (UINT32_MAX / 1000)) ? (timeout * 1000) : UINT32_MAX; \
 	__TIMEOUT_US__(timeout)
 #define __TIMEOUT_ASSERT__(timeout) if (timeout == 0)

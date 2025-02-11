@@ -67,8 +67,8 @@ extern "C"
 	// #define UART_PORT 0
 
 	// Setup PWM
-// #define PWM0_BIT 2	// assigns PWM0 pin
-// #define PWM0_PORT D // assigns PWM0 pin
+#define PWM0_BIT 2	// assigns PWM0 pin
+#define PWM0_PORT D // assigns PWM0 pin
 
 // Setup generic IO Pins
 // spindle dir
@@ -86,9 +86,6 @@ extern "C"
 // #define SPI_SDO_PORT D
 // #define SPI_SDI_BIT 12
 // #define SPI_SDI_PORT D
-
-#define DOUT31_BIT 2
-#define DOUT31_PORT D
 
 #ifdef __cplusplus
 }

@@ -241,12 +241,10 @@ IRAM_ATTR void mcu_controls_isr(void)
 	mcu_controls_changed_cb();
 }
 
-IRAM_ATTR void mcu_rtc_isr(void)
+IRAM_ATTR void mcu_rtc_isr(void *arg)
 {
 	mcu_runtime_ms++;
 	mcu_rtc_cb(mcu_runtime_ms);
-	uint32_t stamp = esp_get_cycle_count() + (ESP8266_CLOCK / 1000);
-	timer0_write(stamp);
 }
 
 IRAM_ATTR void mcu_itp_isr(void)
@@ -290,16 +288,8 @@ void mcu_init(void)
 #endif
 
 	// init rtc
-	// os_timer_setfn(&esp8266_rtc_timer, (os_timer_func_t *)&mcu_rtc_isr, NULL);
-	// os_timer_arm(&esp8266_rtc_timer, 1, true);
-
-	uint32_t stamp = esp_get_cycle_count() + (ESP8266_CLOCK / 1000);
-	__ATOMIC__
-	{
-		timer0_isr_init();
-		timer0_attachInterrupt(mcu_rtc_isr);
-		timer0_write(stamp);
-	}
+	os_timer_setfn(&esp8266_rtc_timer, (os_timer_func_t *)&mcu_rtc_isr, NULL);
+	os_timer_arm(&esp8266_rtc_timer, 1, true);
 
 	// init timer1
 	timer1_isr_init();

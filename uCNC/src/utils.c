@@ -18,12 +18,12 @@
 
 #include "cnc.h"
 
-size_t buffer_write_available(ring_buffer_t *buffer)
+uint8_t buffer_write_available(ring_buffer_t *buffer)
 {
 	return (buffer->size - buffer->count);
 }
 
-size_t buffer_read_available(ring_buffer_t *buffer)
+uint8_t buffer_read_available(ring_buffer_t *buffer)
 {
 	return buffer->count;
 }
@@ -89,10 +89,9 @@ void buffer_enqueue(ring_buffer_t *buffer, void *ptr)
 	}
 }
 
-void buffer_write(ring_buffer_t *buffer, void *ptr, size_t len, size_t *written)
+void buffer_write(ring_buffer_t *buffer, void *ptr, uint8_t len, uint8_t *written)
 {
-	size_t count, head;
-	uint8_t *p = (uint8_t *)ptr;
+	uint8_t count, head, *p = (uint8_t *)ptr;
 	__ATOMIC__
 	{
 		head = buffer->head;
@@ -101,7 +100,7 @@ void buffer_write(ring_buffer_t *buffer, void *ptr, size_t len, size_t *written)
 		*written = 0;
 		if (count)
 		{
-			size_t avail = (buffer->size - head);
+			uint8_t avail = (buffer->size - head);
 			if (avail < count && avail)
 			{
 				memcpy(&buffer->data[head * buffer->elem_size], ptr, avail * buffer->elem_size);
@@ -129,10 +128,9 @@ void buffer_write(ring_buffer_t *buffer, void *ptr, size_t len, size_t *written)
 	}
 }
 
-void buffer_read(ring_buffer_t *buffer, void *ptr, size_t len, size_t *read)
+void buffer_read(ring_buffer_t *buffer, void *ptr, uint8_t len, uint8_t *read)
 {
-	size_t count, tail;
-	uint8_t *p = (uint8_t *)ptr;
+	uint8_t count, tail, *p = (uint8_t *)ptr;
 	__ATOMIC__
 	{
 		tail = buffer->tail;
@@ -144,7 +142,7 @@ void buffer_read(ring_buffer_t *buffer, void *ptr, size_t len, size_t *read)
 		*read = 0;
 		if (count)
 		{
-			size_t avail = buffer->size - tail;
+			uint8_t avail = buffer->size - tail;
 			if (avail < count && avail)
 			{
 				memcpy(ptr, &buffer->data[tail * buffer->elem_size], avail * buffer->elem_size);

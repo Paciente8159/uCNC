@@ -1442,8 +1442,8 @@ extern "C"
 		memset(ptr, 0, buffer.elem_size);                 \
 	}
 #define BUFFER_ENQUEUE(buffer, ptr) queue_try_add((queue_t *)buffer.data, ptr)
-#define BUFFER_WRITE(buffer, ptr, len, written) ({for(size_t i = 0; i<len; i++){if(!queue_try_add((queue_t*)buffer.data, &ptr[i])){break;}written++;} })
-#define BUFFER_READ(buffer, ptr, len, read) ({for(size_t i = 0; i<len; i++){if(!queue_try_remove((queue_t*)buffer.data, &ptr[i])){break;}read++;} })
+#define BUFFER_WRITE(buffer, ptr, len, written) ({for(uint8_t i = 0; i<len; i++){if(!queue_try_add((queue_t*)buffer.data, &ptr[i])){break;}written++;} })
+#define BUFFER_READ(buffer, ptr, len, read) ({for(uint8_t i = 0; i<len; i++){if(!queue_try_remove((queue_t*)buffer.data, &ptr[i])){break;}read++;} })
 #define BUFFER_CLEAR(buffer)                        \
 	while (!queue_is_empty((queue_t *)buffer.data))   \
 	{                                                 \
