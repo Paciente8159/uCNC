@@ -1,6 +1,6 @@
 /*
-	Name: esp8266_uart.c
-	Description: Implements UART for ESP8266.
+	Name: esp8266_spi.c
+	Description: Implements SPI for ESP8266.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
@@ -129,7 +129,7 @@ void mcu_spi_config(spi_config_t config, uint32_t frequency)
 	SPI1C1 = 0;
 	SPI1C2 = 0;
 	SPI1U2 = 0;
-	SPI1U = SPIUMOSI | SPIUMISO | SPIUDUPLEX | SPIUSSE;
+	SPI1U = SPIUMOSI | SPIUDUPLEX | SPIUSSE;
 	// 8bit
 	SPI1U1 = (7 << SPILMOSI) | (7 << SPILMISO);
 	SPI1S = 0;

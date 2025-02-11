@@ -62,7 +62,7 @@ static uint8_t eeprom_status;
 static uint16_t mcu_access_flash_page(uint16_t address)
 {
 #if (NVM_STORAGE_SIZE_ALIGNED > SPI_FLASH_SEC_SIZE)
-	uint8_t sector = (uint8_t)address/SPI_FLASH_SEC_SIZE;
+	uint8_t sector = (uint8_t)address / SPI_FLASH_SEC_SIZE;
 	// if the NVM takes multiple sectors load the new sector
 	if (eeprom_current_sector != sector)
 	{
@@ -70,9 +70,10 @@ static uint16_t mcu_access_flash_page(uint16_t address)
 		eeprom_status = 0;
 		eeprom_current_sector = sector;
 		// loads a new sector to memory
-		mcu_disable_global_isr();
-		spi_flash_read(EEPROM_FLASH_ADDR(sector, 0, 0), eeprom_data, EEPROM_DATA_SIZE);
-		mcu_enable_global_isr();
+		__ATOMIC__
+		{
+			spi_flash_read(EEPROM_FLASH_ADDR(sector, 0, 0), eeprom_data, EEPROM_DATA_SIZE);
+		}
 	}
 
 	// returns the offset within that sector
@@ -89,9 +90,10 @@ void mcu_eeprom_init(void)
 
 #if (NVM_STORAGE_SIZE_ALIGNED > SPI_FLASH_SEC_SIZE)
 	eeprom_current_sector = 0;
-	mcu_disable_global_isr();
-	spi_flash_read(EEPROM_FLASH_ADDR(0, 0, 0), eeprom_ptr, EEPROM_DATA_SIZE);
-	mcu_enable_global_isr();
+	__ATOMIC__
+	{
+		spi_flash_read(EEPROM_FLASH_ADDR(0, 0, 0), eeprom_ptr, EEPROM_DATA_SIZE);
+	}
 #else
 	DBGMSG("search eeprom start\n");
 	// if multiple pages fit in a section find the last writen page
@@ -100,10 +102,11 @@ void mcu_eeprom_init(void)
 	{
 		// just load the 4 first bytes
 		memset(tmp, 0xFF, 4);
-		mcu_disable_global_isr();
 		DBGMSG("read address %lx\n", EEPROM_FLASH_ADDR(0, i, 0));
-		spi_flash_read(EEPROM_FLASH_ADDR(0, i, 0), (uint32_t *)tmp, 4);
-		mcu_enable_global_isr();
+		__ATOMIC__
+		{
+			spi_flash_read(EEPROM_FLASH_ADDR(0, i, 0), (uint32_t *)tmp, 4);
+		}
 		if (tmp[0] == FLASH_VALUE('V'))
 		{
 			DBGMSG("found at %u (try next)\n", i);
@@ -125,10 +128,11 @@ void mcu_eeprom_init(void)
 		}
 	}
 
-	mcu_disable_global_isr();
 	DBGMSG("load address %lx\n", EEPROM_FLASH_ADDR(0, eeprom_current_page, 0));
-	spi_flash_read(EEPROM_FLASH_ADDR(0, eeprom_current_page, 0), eeprom_data, EEPROM_DATA_SIZE);
-	mcu_enable_global_isr();
+	__ATOMIC__
+	{
+		spi_flash_read(EEPROM_FLASH_ADDR(0, eeprom_current_page, 0), eeprom_data, EEPROM_DATA_SIZE);
+	}
 #endif
 }
 
@@ -218,13 +222,14 @@ void mcu_eeprom_flush(void)
 	{
 		for (uint16_t i = 0; i < EEPROM_FLASH_SECTORS; i++)
 		{ // erases the sector if needed
-			mcu_disable_global_isr();
 			DBGMSG("write address %lx\n", EEPROM_FLASH_ADDR(i, eeprom_current_page, 0));
-			if (spi_flash_write(EEPROM_FLASH_ADDR(i, eeprom_current_page, 0), eeprom_data, EEPROM_DATA_SIZE) != SPI_FLASH_RESULT_OK)
+			__ATOMIC__
 			{
-				DBGMSG("write error");
+				if (spi_flash_write(EEPROM_FLASH_ADDR(i, eeprom_current_page, 0), eeprom_data, EEPROM_DATA_SIZE) != SPI_FLASH_RESULT_OK)
+				{
+					DBGMSG("write error");
+				}
 			}
-			mcu_enable_global_isr();
 		}
 	}
 

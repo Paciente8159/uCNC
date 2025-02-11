@@ -1399,9 +1399,18 @@ extern "C"
 #define mcu_enable_global_isr()
 #define mcu_disable_global_isr()
 #define mcu_get_global_isr() true
-	// #define mcu_enable_global_isr() ({/*xt_wsr_ps(esp8266_global_isr);*/ esp8266_global_isr = 15; })
-	// #define mcu_disable_global_isr() ({ esp8266_global_isr = /*xt_rsil*/(15); })
-	// #define mcu_get_global_isr() (esp8266_global_isr == 15)
+	/*
+		// #define mcu_enable_global_isr()    \
+	// 	if (esp8266_global_isr != 15)    \
+	// 	{                                \
+	// 		xt_wsr_ps(esp8266_global_isr); \
+	// 		esp8266_global_isr = 15;       \
+	// 	}
+		// #define mcu_disable_global_isr() ({ esp8266_global_isr = xt_rsil(15); })
+		// #define mcu_get_global_isr() (esp8266_global_isr != 15)
+		*/
+	static __attribute__((always_inline, unused)) inline void __esp8266_atomic_out(uint32_t *state) { xt_wsr_ps(*state); }
+#define __ATOMIC__ for(uint32_t __restore_atomic__ __attribute__((__cleanup__(__esp8266_atomic_out))) = xt_rsil(15), __loop = 1; __loop; __loop = 0)
 
 #define cpucount()                            \
 	({                                          \
@@ -1422,6 +1431,35 @@ extern "C"
 
 	// 	extern void esp8266_delay_us(uint16_t delay);
 	// #define mcu_delay_us(X) esp8266_delay_us(X)
+
+// #ifdef IC74HC595_CUSTOM_SHIFT_IO
+// #ifdef IC74HC595_COUNT
+// #undef IC74HC595_COUNT
+// #endif
+// #define IC74HC595_COUNT 4
+
+// #ifndef BYTE_OPS
+// #define BYTE_OPS
+// #define SETBIT(x, y) ((x) |= (1U << (y)))		 /* Set bit y in byte x*/
+// #define CLEARBIT(x, y) ((x) &= ~(1U << (y))) /* Clear bit y in byte x*/
+// #define CHECKBIT(x, y) ((x) & (1U << (y)))	 /* Check bit y in byte x*/
+// #define TOGGLEBIT(x, y) ((x) ^= (1U << (y))) /* Toggle bit y in byte x*/
+
+// #define SETFLAG(x, y) ((x) |= (y))		/* Set byte y in byte x*/
+// #define CLEARFLAG(x, y) ((x) &= ~(y)) /* Clear byte y in byte x*/
+// #define CHECKFLAG(x, y) ((x) & (y))		/* Check byte y in byte x*/
+// #define TOGGLEFLAG(x, y) ((x) ^= (y)) /* Toggle byte y in byte x*/
+// #endif
+
+// 	// custom pin operations for 74HS595
+// 	extern volatile uint32_t ic74hc595_spi_pins;
+// #define ic74hc595_pin_offset(pin) (__indirect__(pin, IO_OFFSET))
+// #define ic74hc595_pin_mask(pin) (uint32_t)(1UL << ic74hc595_pin_offset(pin))
+// #define ic74hc595_set_pin(pin) SETBIT(ic74hc595_spi_pins, __indirect__(pin, IO_OFFSET))
+// #define ic74hc595_clear_pin(pin) CLEARBIT(ic74hc595_spi_pins, __indirect__(pin, IO_OFFSET))
+// #define ic74hc595_toggle_pin(pin) TOGGLEBIT(ic74hc595_spi_pins, __indirect__(pin, IO_OFFSET))
+// #define ic74hc595_get_pin(pin) CHECKBIT(ic74hc595_spi_pins, __indirect__(pin, IO_OFFSET))
+// #endif
 
 #ifdef __cplusplus
 }
