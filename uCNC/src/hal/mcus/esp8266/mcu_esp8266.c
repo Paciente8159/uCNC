@@ -30,12 +30,88 @@
 #include "gpio.h"
 #include "eagle_soc.h"
 #include "osapi.h"
+#include <user_interface.h>
 #ifdef MCU_HAS_I2C
 #include "twi.h"
 #endif
 
 volatile uint32_t esp8266_global_isr;
 static volatile uint32_t mcu_runtime_ms;
+
+/**
+ * Buffered outputs
+ */
+volatile uint32_t esp8266_io_out;
+#if defined(IC74HC595_HAS_STEPS) || defined(IC74HC595_HAS_DIRS) || defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS)
+volatile uint32_t ic74hc595_io_out;
+extern volatile uint8_t ic74hc595_io_pins[IC74HC595_COUNT];
+#endif
+static uint8_t esp8266_step_mode;
+
+typedef struct esp8266_io_out_
+{
+	uint32_t io;
+#if defined(IC74HC595_HAS_STEPS) || defined(IC74HC595_HAS_DIRS) || defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS)
+	uint32_t ic74hc595;
+#endif
+} esp8266_io_out_t;
+
+#define OUT_IO_BUFFER_SIZE 2500
+esp8266_io_out_t out_io_buffer[OUT_IO_BUFFER_SIZE];
+static volatile uint16_t out_io_tail;
+static volatile uint16_t out_io_head;
+
+static void FORCEINLINE out_io_reset(void)
+{
+	out_io_tail = 0;
+	out_io_head = 0;
+	memset(out_io_buffer, 0, sizeof(out_io_buffer));
+}
+
+static bool FORCEINLINE out_io_full()
+{
+	uint16_t h = out_io_head + 1;
+	h = (h < OUT_IO_BUFFER_SIZE) ? h : 0;
+	return (h == out_io_tail);
+}
+
+static bool FORCEINLINE out_io_empty()
+{
+	return (out_io_head == out_io_tail);
+}
+
+static void FORCEINLINE out_io_push(esp8266_io_out_t val)
+{
+	uint16_t h = out_io_head;
+	out_io_buffer[h] = val;
+	h++;
+	h = (h < OUT_IO_BUFFER_SIZE) ? h : 0;
+	__ATOMIC__
+	{
+		out_io_head = h;
+	}
+}
+
+static esp8266_io_out_t FORCEINLINE out_io_pull(void)
+{
+	uint16_t t = out_io_tail;
+	esp8266_io_out_t val = out_io_buffer[t];
+
+	if (!out_io_empty())
+	{
+		t++;
+		t = (t < OUT_IO_BUFFER_SIZE) ? t : 0;
+		out_io_tail = t;
+	}
+	else
+	{
+		val.io = esp8266_io_out;
+#if defined(IC74HC595_HAS_STEPS) || defined(IC74HC595_HAS_DIRS) || defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS)
+		val.ic74hc595 = ic74hc595_io_out;
+#endif
+	}
+	return val;
+}
 
 #ifdef MCU_HAS_WIFI
 extern void esp8266_wifi_init(void);
@@ -241,22 +317,132 @@ IRAM_ATTR void mcu_controls_isr(void)
 	mcu_controls_changed_cb();
 }
 
+IRAM_ATTR void mcu_itp_isr(void)
+{
+	// GP16O |= 1;
+
+	// if (esp8266_step_mode == ITP_STEP_MODE_REALTIME)
+	// {
+	// 	mcu_gen_step();
+	// 	mcu_gen_pwm_and_servo();
+	// 	mcu_gen_oneshot();
+	// }
+
+	esp8266_io_out_t outputs = out_io_pull();
+	GPO = (outputs.io & 0xFFFF);
+	if (outputs.io & 0x10000)
+	{
+		GP16O |= 1;
+	}
+	else
+	{
+		GP16O &= ~1;
+	}
+
+#if defined(IC74HC595_HAS_STEPS) || defined(IC74HC595_HAS_DIRS) || defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS)
+#ifdef IC74HC595_CUSTOM_SHIFT_IO
+	SPI1W0 = outputs.ic74hc595;
+	SPI1CMD |= SPIBUSY;
+#else
+	memcpy(ic74hc595_io_pins, &(outputs.ic74hc595), IC74HC595_COUNT);
+	ic74hc595_shift_io_pins();
+#endif
+#endif
+	// GP16O &= ~1;
+}
+
+IRAM_ATTR void itp_buffer_dotasks(uint16_t limit)
+{
+	static bool running = false;
+	__ATOMIC__
+	{
+		if (running)
+		{
+			return;
+		}
+		running = true;
+	}
+
+	uint8_t mode = esp8266_step_mode;
+	// updates the working mode
+	if (mode & ITP_STEP_MODE_SYNC)
+	{
+		// let the buffer flush out
+		if (!out_io_empty())
+		{
+			running = false;
+			return;
+		}
+
+		timer1_disable();
+		out_io_reset();
+#if defined(IC74HC595_HAS_STEPS) || defined(IC74HC595_HAS_DIRS) || defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS)
+#ifdef IC74HC595_CUSTOM_SHIFT_IO
+		spi_config_t conf = {0};
+		mcu_spi_config(conf, 20000000);
+		SPI1U1 = (((IC74HC595_COUNT * 8) - 1) << SPILMOSI) | (((IC74HC595_COUNT * 8) - 1) << SPILMISO);
+#endif
+#endif
+		timer1_isr_init();
+		timer1_attachInterrupt(mcu_itp_isr);
+
+		switch (mode & ~ITP_STEP_MODE_SYNC)
+		{
+		case ITP_STEP_MODE_DEFAULT:
+			timer1_write((APB_CLK_FREQ / ITP_SAMPLE_RATE));
+			timer1_enable(TIM_DIV1, TIM_EDGE, TIM_LOOP);
+			break;
+		case ITP_STEP_MODE_REALTIME:
+			timer1_write((APB_CLK_FREQ / (ITP_SAMPLE_RATE >> 2)));
+			timer1_enable(TIM_DIV1, TIM_EDGE, TIM_LOOP);
+			break;
+		}
+
+		// clear sync flag
+		__ATOMIC__
+		{
+			esp8266_step_mode &= ~ITP_STEP_MODE_SYNC;
+		}
+	}
+
+	// fill the buffer in buffered mode
+	while (mode == ITP_STEP_MODE_DEFAULT && !out_io_full() && --limit)
+	{
+		mcu_gen_step();
+		mcu_gen_pwm_and_servo();
+		mcu_gen_oneshot();
+		esp8266_io_out_t outputs;
+		outputs.io = esp8266_io_out;
+#if defined(IC74HC595_HAS_STEPS) || defined(IC74HC595_HAS_DIRS) || defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS)
+		outputs.ic74hc595 = ic74hc595_io_out;
+#endif
+		out_io_push(outputs);
+	}
+
+	running = false;
+}
+
 IRAM_ATTR void mcu_rtc_isr(void)
 {
 	mcu_runtime_ms++;
 	mcu_rtc_cb(mcu_runtime_ms);
+	itp_buffer_dotasks(250);
 	uint32_t stamp = esp_get_cycle_count() + (ESP8266_CLOCK / 1000);
 	timer0_write(stamp);
 }
 
-IRAM_ATTR void mcu_itp_isr(void)
+// modifies the step generation mode
+uint8_t itp_set_step_mode(uint8_t mode)
 {
-	mcu_gen_step();
-	mcu_gen_pwm_and_servo();
-	mcu_gen_oneshot();
-#if defined(IC74HC595_HAS_STEPS) || defined(IC74HC595_HAS_DIRS) || defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS)
-	ic74hc595_shift_io_pins();
+	uint8_t last_mode = esp8266_step_mode;
+	itp_sync();
+#ifdef USE_I2S_REALTIME_MODE_ONLY
+	esp8266_step_mode = (ITP_STEP_MODE_SYNC | ITP_STEP_MODE_REALTIME);
+#else
+	esp8266_step_mode = (ITP_STEP_MODE_SYNC | mode);
 #endif
+	cnc_delay_ms(20);
+	return last_mode;
 }
 
 /**
@@ -289,23 +475,7 @@ void mcu_init(void)
 	esp8266_wifi_init();
 #endif
 
-	// init rtc
-	// os_timer_setfn(&esp8266_rtc_timer, (os_timer_func_t *)&mcu_rtc_isr, NULL);
-	// os_timer_arm(&esp8266_rtc_timer, 1, true);
-
-	uint32_t stamp = esp_get_cycle_count() + (ESP8266_CLOCK / 1000);
-	__ATOMIC__
-	{
-		timer0_isr_init();
-		timer0_attachInterrupt(mcu_rtc_isr);
-		timer0_write(stamp);
-	}
-
-	// init timer1
-	timer1_isr_init();
-	timer1_attachInterrupt(mcu_itp_isr);
-	timer1_enable(TIM_DIV1, TIM_EDGE, TIM_LOOP);
-	timer1_write((APB_CLK_FREQ / ITP_SAMPLE_RATE));
+	esp8266_step_mode = (ITP_STEP_MODE_DEFAULT | ITP_STEP_MODE_SYNC);
 
 #ifdef MCU_HAS_SPI
 	mcu_spi_init();
@@ -315,6 +485,14 @@ void mcu_init(void)
 	i2c_master_gpio_init();
 	i2c_master_init();
 #endif
+
+	uint32_t stamp = esp_get_cycle_count() + (ESP8266_CLOCK / 1000);
+	__ATOMIC__
+	{
+		timer0_isr_init();
+		timer0_attachInterrupt(mcu_rtc_isr);
+		timer0_write(stamp);
+	}
 }
 
 /**
@@ -330,6 +508,7 @@ void mcu_dotasks(void)
 #ifdef MCU_HAS_WIFI
 	esp8266_wifi_dotasks();
 #endif
+	itp_buffer_dotasks(0);
 }
 
 /**

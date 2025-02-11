@@ -1301,6 +1301,19 @@ extern "C"
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
 #endif
 
+#ifndef BYTE_OPS
+#define BYTE_OPS
+#define SETBIT(x, y) ((x) |= (1U << (y)))		 /* Set bit y in byte x*/
+#define CLEARBIT(x, y) ((x) &= ~(1U << (y))) /* Clear bit y in byte x*/
+#define CHECKBIT(x, y) ((x) & (1U << (y)))	 /* Check bit y in byte x*/
+#define TOGGLEBIT(x, y) ((x) ^= (1U << (y))) /* Toggle bit y in byte x*/
+
+#define SETFLAG(x, y) ((x) |= (y))		/* Set byte y in byte x*/
+#define CLEARFLAG(x, y) ((x) &= ~(y)) /* Clear byte y in byte x*/
+#define CHECKFLAG(x, y) ((x) & (y))		/* Check byte y in byte x*/
+#define TOGGLEFLAG(x, y) ((x) ^= (y)) /* Toggle byte y in byte x*/
+#endif
+
 #define MCU_HAS_SOFT_PWM_TIMER
 	extern uint8_t g_io_soft_pwm[16];
 	extern uint8_t g_soft_pwm_res;
@@ -1379,10 +1392,11 @@ extern "C"
 #define mcu_config_input_isr(X) attachInterrupt(digitalPinToInterrupt(__indirect__(X, BIT)), __indirect__(X, ISRCALLBACK), CHANGE)
 
 #define mcu_get_input(X) ((__indirect__(X, BIT) < 16) ? GPIP(__indirect__(X, BIT)) : (GP16I & 0x01))
-#define mcu_get_output(X) ((__indirect__(X, BIT) < 16) ? GPIP(__indirect__(X, BIT)) : (GP16I & 0x01))
-#define mcu_set_output(X) ({if(__indirect__(X, BIT) < 16){GPOS=(1<<__indirect__(X, BIT));}else{GP16O |= 1;} })
-#define mcu_clear_output(X) ({if(__indirect__(X, BIT) < 16){GPOC=(1<<__indirect__(X, BIT));}else{GP16O &= ~1;} })
-#define mcu_toggle_output(X) ((!!mcu_get_output(X)) ? mcu_clear_output(X) : mcu_set_output(X))
+	extern volatile uint32_t esp8266_io_out;
+#define mcu_get_output(X) CHECKBIT(esp8266_io_out, __indirect__(X, BIT))
+#define mcu_set_output(X) SETBIT(esp8266_io_out, __indirect__(X, BIT))
+#define mcu_clear_output(X) CLEARBIT(esp8266_io_out, __indirect__(X, BIT))
+#define mcu_toggle_output(X) TOGGLEBIT(esp8266_io_out, __indirect__(X, BIT))
 
 #define mcu_get_analog(X)                                      \
 	if (__indirect__(X, BIT) == 17 || __indirect__(X, BIT) == 0) \
@@ -1410,7 +1424,7 @@ extern "C"
 		// #define mcu_get_global_isr() (esp8266_global_isr != 15)
 		*/
 	static __attribute__((always_inline, unused)) inline void __esp8266_atomic_out(uint32_t *state) { xt_wsr_ps(*state); }
-#define __ATOMIC__ for(uint32_t __restore_atomic__ __attribute__((__cleanup__(__esp8266_atomic_out))) = xt_rsil(15), __loop = 1; __loop; __loop = 0)
+#define __ATOMIC__ for (uint32_t __restore_atomic__ __attribute__((__cleanup__(__esp8266_atomic_out))) = xt_rsil(15), __loop = 1; __loop; __loop = 0)
 
 #define cpucount()                            \
 	({                                          \
@@ -1432,34 +1446,22 @@ extern "C"
 	// 	extern void esp8266_delay_us(uint16_t delay);
 	// #define mcu_delay_us(X) esp8266_delay_us(X)
 
-// #ifdef IC74HC595_CUSTOM_SHIFT_IO
-// #ifdef IC74HC595_COUNT
-// #undef IC74HC595_COUNT
-// #endif
-// #define IC74HC595_COUNT 4
+#if IC74HC595_COUNT > 0
 
-// #ifndef BYTE_OPS
-// #define BYTE_OPS
-// #define SETBIT(x, y) ((x) |= (1U << (y)))		 /* Set bit y in byte x*/
-// #define CLEARBIT(x, y) ((x) &= ~(1U << (y))) /* Clear bit y in byte x*/
-// #define CHECKBIT(x, y) ((x) & (1U << (y)))	 /* Check bit y in byte x*/
-// #define TOGGLEBIT(x, y) ((x) ^= (1U << (y))) /* Toggle bit y in byte x*/
+#if IC74HC595_COUNT > 4
+#error "Maximum allowed IC74HC595_COUNT is 4 with IC74HC595_CUSTOM_SHIFT_IO"
+#endif
 
-// #define SETFLAG(x, y) ((x) |= (y))		/* Set byte y in byte x*/
-// #define CLEARFLAG(x, y) ((x) &= ~(y)) /* Clear byte y in byte x*/
-// #define CHECKFLAG(x, y) ((x) & (y))		/* Check byte y in byte x*/
-// #define TOGGLEFLAG(x, y) ((x) ^= (y)) /* Toggle byte y in byte x*/
-// #endif
+	// custom pin operations for 74HS595
+	extern volatile uint32_t ic74hc595_io_out;
+#define ic74hc595_pin_offset(pin) (__indirect__(pin, IO_OFFSET))
+#define ic74hc595_pin_mask(pin) (uint32_t)(1UL << ic74hc595_pin_offset(pin))
+#define ic74hc595_set_pin(pin) SETBIT(ic74hc595_io_out, __indirect__(pin, IO_OFFSET))
+#define ic74hc595_clear_pin(pin) CLEARBIT(ic74hc595_io_out, __indirect__(pin, IO_OFFSET))
+#define ic74hc595_toggle_pin(pin) TOGGLEBIT(ic74hc595_io_out, __indirect__(pin, IO_OFFSET))
+#define ic74hc595_get_pin(pin) CHECKBIT(ic74hc595_io_out, __indirect__(pin, IO_OFFSET))
 
-// 	// custom pin operations for 74HS595
-// 	extern volatile uint32_t ic74hc595_spi_pins;
-// #define ic74hc595_pin_offset(pin) (__indirect__(pin, IO_OFFSET))
-// #define ic74hc595_pin_mask(pin) (uint32_t)(1UL << ic74hc595_pin_offset(pin))
-// #define ic74hc595_set_pin(pin) SETBIT(ic74hc595_spi_pins, __indirect__(pin, IO_OFFSET))
-// #define ic74hc595_clear_pin(pin) CLEARBIT(ic74hc595_spi_pins, __indirect__(pin, IO_OFFSET))
-// #define ic74hc595_toggle_pin(pin) TOGGLEBIT(ic74hc595_spi_pins, __indirect__(pin, IO_OFFSET))
-// #define ic74hc595_get_pin(pin) CHECKBIT(ic74hc595_spi_pins, __indirect__(pin, IO_OFFSET))
-// #endif
+#endif
 
 #ifdef __cplusplus
 }
