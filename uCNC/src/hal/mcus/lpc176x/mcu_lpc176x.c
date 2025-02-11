@@ -898,7 +898,7 @@ void mcu_usb_flush(void)
 		// bulk sending
 		uint8_t tmp[USB_TX_BUFFER_SIZE + 1];
 		memset(tmp, 0, sizeof(tmp));
-		uint8_t r;
+		size_t r;
 
 		BUFFER_READ(usb_tx, tmp, USB_TX_BUFFER_SIZE, r);
 		lpc176x_usb_write(tmp, r);

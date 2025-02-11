@@ -880,7 +880,7 @@ void mcu_wifi_flush(void)
 		{
 			uint8_t tmp[WIFI_TX_BUFFER_SIZE + 1];
 			memset(tmp, 0, sizeof(tmp));
-			uint8_t r;
+			size_t r;
 
 			BUFFER_READ(wifi_tx, tmp, WIFI_TX_BUFFER_SIZE, r);
 			server_client.write(tmp, r);
@@ -933,7 +933,7 @@ void mcu_bt_flush(void)
 	{
 		uint8_t tmp[BLUETOOTH_TX_BUFFER_SIZE + 1];
 		memset(tmp, 0, sizeof(tmp));
-		uint8_t r;
+		size_t r;
 
 		BUFFER_READ(bt_tx, tmp, BLUETOOTH_TX_BUFFER_SIZE, r);
 		SerialBT.write(tmp, r);
@@ -1122,7 +1122,7 @@ extern "C"
 		{
 			uint8_t tmp[USB_TX_BUFFER_SIZE + 1];
 			memset(tmp, 0, sizeof(tmp));
-			uint8_t r;
+			size_t r;
 
 			BUFFER_READ(usb_tx, tmp, USB_TX_BUFFER_SIZE, r);
 			Serial.write(tmp, r);
@@ -1170,7 +1170,7 @@ extern "C"
 		{
 			uint8_t tmp[UART_TX_BUFFER_SIZE + 1];
 			memset(tmp, 0, sizeof(tmp));
-			uint8_t r = 0;
+			size_t r = 0;
 
 			BUFFER_READ(uart_tx, tmp, UART_TX_BUFFER_SIZE, r);
 			COM_UART.write(tmp, r);
@@ -1218,7 +1218,7 @@ extern "C"
 		{
 			uint8_t tmp[UART2_TX_BUFFER_SIZE + 1];
 			memset(tmp, 0, sizeof(tmp));
-			uint8_t r;
+			size_t r;
 
 			BUFFER_READ(uart2_tx, tmp, UART2_TX_BUFFER_SIZE, r);
 			COM2_UART.write(tmp, r);

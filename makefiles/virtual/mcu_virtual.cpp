@@ -108,7 +108,7 @@ extern "C"
 		{
 			uint8_t tmp[UART_TX_BUFFER_SIZE + 1];
 			memset(tmp, 0, sizeof(tmp));
-			uint8_t r = 0;
+			size_t r = 0;
 
 			BUFFER_READ(uart_tx, tmp, UART_TX_BUFFER_SIZE, r);
 			Serial.WriteData(tmp, r);
@@ -174,7 +174,7 @@ extern "C"
 		{
 			uint8_t tmp[UART2_TX_BUFFER_SIZE + 1];
 			memset(tmp, 0, sizeof(tmp));
-			uint8_t r = 0;
+			size_t r = 0;
 
 			BUFFER_READ(uart2_tx, tmp, UART2_TX_BUFFER_SIZE, r);
 			printf("%s", tmp);

@@ -832,8 +832,8 @@ extern "C"
 			{
 				uint8_t tmp[WIFI_TX_BUFFER_SIZE + 1];
 				memset(tmp, 0, sizeof(tmp));
-				uint8_t r;
-				uint8_t max = (uint8_t)MIN(telnet_client.availableForWrite(), WIFI_TX_BUFFER_SIZE);
+				size_t r;
+				size_t max = (uint8_t)MIN(telnet_client.availableForWrite(), WIFI_TX_BUFFER_SIZE);
 
 				BUFFER_READ(wifi_tx, tmp, max, r);
 				telnet_client.write(tmp, r);

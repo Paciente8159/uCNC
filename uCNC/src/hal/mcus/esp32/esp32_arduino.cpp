@@ -903,7 +903,7 @@ extern "C"
 			{
 				uint8_t tmp[WIFI_TX_BUFFER_SIZE + 1];
 				memset(tmp, 0, sizeof(tmp));
-				uint8_t r;
+				size_t r;
 
 				BUFFER_READ(wifi_tx, tmp, WIFI_TX_BUFFER_SIZE, r);
 				server_client.write(tmp, r);
@@ -958,7 +958,7 @@ extern "C"
 			{
 				uint8_t tmp[BLUETOOTH_TX_BUFFER_SIZE + 1];
 				memset(tmp, 0, sizeof(tmp));
-				uint8_t r;
+				size_t r;
 
 				BUFFER_READ(bt_tx, tmp, BLUETOOTH_TX_BUFFER_SIZE, r);
 				SerialBT.write(tmp, r);

@@ -244,7 +244,7 @@ static uint8_t running_file_getc(void)
 
 static uint8_t running_file_available()
 {
-	uint8_t avail = 0;
+	size_t avail = 0;
 #ifdef ENABLE_MAIN_LOOP_MODULES
 	avail = BUFFER_READ_AVAILABLE(fs_file_buffer);
 #else
@@ -277,7 +277,7 @@ bool running_file_loop(void *args)
 		size_t r = BUFFER_WRITE_AVAILABLE(fs_file_buffer);
 		uint8_t tmp[RX_BUFFER_SIZE];
 		size_t read = fs_read(fs_running_file, tmp, r);
-		uint8_t w = 0;
+		size_t w = 0;
 		BUFFER_WRITE(fs_file_buffer, tmp, read, w);
 		if (read < r || !fs_available(fs_running_file))
 		{
@@ -420,7 +420,7 @@ void fs_file_run(char *params)
 		size_t r = BUFFER_WRITE_AVAILABLE(fs_file_buffer);
 		uint8_t tmp[RX_BUFFER_SIZE];
 		size_t read = fs_read(fs_running_file, tmp, r);
-		uint8_t w = 0;
+		size_t w = 0;
 		BUFFER_WRITE(fs_file_buffer, tmp, read, w);
 #endif
 		// open a readonly stream

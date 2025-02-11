@@ -803,7 +803,7 @@ void mcu_uart_flush(void)
 	{
 		uint8_t tmp[UART_TX_BUFFER_SIZE + 1];
 		memset(tmp, 0, sizeof(tmp));
-		uint8_t r;
+		size_t r;
 
 		BUFFER_READ(uart_tx, tmp, UART_TX_BUFFER_SIZE, r);
 		uart_write_bytes(UART_PORT, tmp, r);
@@ -850,7 +850,7 @@ void mcu_uart2_flush(void)
 	{
 		uint8_t tmp[UART2_TX_BUFFER_SIZE + 1];
 		memset(tmp, 0, sizeof(tmp));
-		uint8_t r;
+		size_t r;
 
 		BUFFER_READ(uart2_tx, tmp, UART2_TX_BUFFER_SIZE, r);
 		uart_write_bytes(UART2_PORT, tmp, r);
