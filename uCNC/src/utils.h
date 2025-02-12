@@ -192,6 +192,12 @@ extern "C"
 #define M_COS_TAYLOR_1 0.1666666666666666667f
 #endif
 
+#define __TIMEOUT_US__(timeout) for (uint32_t elap_us_##timeout, curr_us_##timeout = mcu_free_micros(); timeout > 0; elap_us_##timeout = mcu_free_micros() - curr_us_##timeout, timeout -= MIN(timeout, ((elap_us_##timeout < 1000) ? elap_us_##timeout : 1000 + elap_us_##timeout)), curr_us_##timeout = mcu_free_micros())
+#define __TIMEOUT_MS__(timeout)                                                          \
+	timeout = (((uint32_t)timeout) < (UINT32_MAX / 1000)) ? (timeout * 1000) : UINT32_MAX; \
+	__TIMEOUT_US__(timeout)
+#define __TIMEOUT_ASSERT__(timeout) if (timeout == 0)
+
 #ifndef FORCEINLINE
 #define FORCEINLINE __attribute__((always_inline)) inline
 #endif
@@ -220,6 +226,50 @@ extern "C"
 #endif
 #ifndef __ATOMIC_FORCEON__
 #define __ATOMIC_FORCEON__ for (uint8_t __restore_atomic__ __attribute__((__cleanup__(__atomic_out_on))) = 1, __AtomLock = __atomic_in(); __AtomLock; __AtomLock = 0)
+#endif
+
+#ifndef DECL_MUTEX
+#define MUTEX_CLEANUP(name) \
+	static void name##_mutex_cleanup(uint8_t *m) { name##_mutex_lock = *m; }
+#define DECL_MUTEX(name)                     \
+	static volatile uint8_t name##_mutex_lock; \
+	MUTEX_CLEANUP(name)
+#define MUTEX_RELEASE(name) name##_mutex_lock = 0
+#define MUTEX_LOCK_OR_EXIT(name)                                                    \
+	uint8_t __attribute__((__cleanup__(name##_mutex_cleanup))) name##_mutex_temp = 0; \
+	__ATOMIC__                                                                        \
+	{                                                                                 \
+		name##_mutex_temp = name##_mutex_lock;                                          \
+		if (!name##_mutex_temp)                                                         \
+		{                                                                               \
+			name##_mutex_lock = 1;                                                        \
+		}                                                                               \
+		else                                                                            \
+		{                                                                               \
+			return;                                                                       \
+		}                                                                               \
+	}
+#define MUTEX_WAIT(name, timeout_us)                                           \
+	uint8_t __attribute__((__cleanup__(name##_mutex_cleanup))) name##_mutex_temp = 0; \
+	__TIMEOUT_US__(timeout_us)                                                        \
+	{                                                                                 \
+		__ATOMIC__                                                                      \
+		{                                                                               \
+			name##_mutex_temp = name##_mutex_lock;                                        \
+			if (!name##_mutex_temp)                                                       \
+			{                                                                             \
+				name##_mutex_lock = 1;                                                      \
+			}                                                                             \
+			else                                                                          \
+			{                                                                             \
+				return;                                                                     \
+			}                                                                             \
+		}                                                                               \
+		if (!name##_mutex_temp)                                                         \
+		{                                                                               \
+			break;                                                                        \
+		}                                                                               \
+	}
 #endif
 
 #define __STRGIFY__(s) #s
@@ -422,12 +472,6 @@ extern "C"
 	}                                   \
 	}
 #endif
-
-#define __TIMEOUT_US__(timeout) for (uint32_t elap_us_##timeout, curr_us_##timeout = mcu_free_micros(); timeout > 0; elap_us_##timeout = mcu_free_micros() - curr_us_##timeout, timeout -= MIN(timeout, ((elap_us_##timeout<1000) ? elap_us_##timeout : 1000 + elap_us_##timeout)), curr_us_##timeout = mcu_free_micros())
-#define __TIMEOUT_MS__(timeout)                                                           \
-	timeout = (((uint32_t)timeout) < (UINT32_MAX / 1000)) ? (timeout * 1000) : UINT32_MAX; \
-	__TIMEOUT_US__(timeout)
-#define __TIMEOUT_ASSERT__(timeout) if (timeout == 0)
 
 #if defined(__GNUC__) && __GNUC__ >= 7
 #define __FALL_THROUGH__ __attribute__((fallthrough));

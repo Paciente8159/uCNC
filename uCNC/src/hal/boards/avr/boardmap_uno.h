@@ -181,6 +181,9 @@ extern "C"
 #define PRINT_FTM_MINIMAL
 #endif
 
+#define IC74HC595_COUNT 2
+#define IC74HC165_COUNT 2
+
 #define DISABLE_COORDINATES_SYSTEM_RAM
 
 #ifdef __cplusplus
