@@ -229,14 +229,20 @@ extern "C"
 #endif
 
 #ifndef DECL_MUTEX
-#define MUTEX_CLEANUP(name) \
-	static void name##_mutex_cleanup(uint8_t *m) { name##_mutex_lock = *m; }
+#define MUTEX_CLEANUP(name)                    \
+	static void name##_mutex_cleanup(uint8_t *m) \
+	{                                            \
+		if (!*m /*can unlock*/)                    \
+		{                                          \
+			name##_mutex_lock = 0;                   \
+		}                                          \
+	}
 #define DECL_MUTEX(name)                     \
 	static volatile uint8_t name##_mutex_lock; \
 	MUTEX_CLEANUP(name)
-#define MUTEX_RELEASE(name) name##_mutex_lock = 0
-#define MUTEX_LOCK_OR_EXIT(name)                                                    \
-	uint8_t __attribute__((__cleanup__(name##_mutex_cleanup))) name##_mutex_temp = 0; \
+#define MUTEX_INIT(name) uint8_t __attribute__((__cleanup__(name##_mutex_cleanup))) name##_mutex_temp = 0
+#define MUTEX_RELEASE(name) if(!name##_mutex_temp /*has the lock*/) name##_mutex_lock = 0
+#define MUTEX_TAKE(name)                                                            \
 	__ATOMIC__                                                                        \
 	{                                                                                 \
 		name##_mutex_temp = name##_mutex_lock;                                          \
@@ -244,13 +250,10 @@ extern "C"
 		{                                                                               \
 			name##_mutex_lock = 1;                                                        \
 		}                                                                               \
-		else                                                                            \
-		{                                                                               \
-			return;                                                                       \
-		}                                                                               \
-	}
-#define MUTEX_WAIT(name, timeout_us)                                           \
-	uint8_t __attribute__((__cleanup__(name##_mutex_cleanup))) name##_mutex_temp = 0; \
+	}                                                                                 \
+	if (!name##_mutex_temp /*the lock was aquired*/)
+
+#define MUTEX_WAIT(name, timeout_us)                                                \
 	__TIMEOUT_US__(timeout_us)                                                        \
 	{                                                                                 \
 		__ATOMIC__                                                                      \
@@ -259,17 +262,11 @@ extern "C"
 			if (!name##_mutex_temp)                                                       \
 			{                                                                             \
 				name##_mutex_lock = 1;                                                      \
-			}                                                                             \
-			else                                                                          \
-			{                                                                             \
-				return;                                                                     \
+				break;                                                                      \
 			}                                                                             \
 		}                                                                               \
-		if (!name##_mutex_temp)                                                         \
-		{                                                                               \
-			break;                                                                        \
-		}                                                                               \
-	}
+	}                                                                                 \
+	if (!name##_mutex_temp && timeout_us != 0 /*the lock was aquired in time*/)
 #endif
 
 #define __STRGIFY__(s) #s

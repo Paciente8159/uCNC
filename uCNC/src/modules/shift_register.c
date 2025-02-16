@@ -71,83 +71,86 @@ volatile uint8_t ic74hc165_io_pins[IC74HC165_COUNT];
 
 DECL_MUTEX(shifter_running);
 
-MCU_CALLBACK void __attribute__((weak)) shift_register_io_pins(void)
+MCU_CALLBACK void /*__attribute__((weak))*/ shift_register_io_pins(void)
 {
-	MUTEX_LOCK_OR_EXIT(shifter_running);
+	MUTEX_INIT(shifter_running);
 
-	uint8_t pins[SHIFT_REGISTER_BYTES];
+	MUTEX_TAKE(shifter_running)
+	{
+		uint8_t pins[SHIFT_REGISTER_BYTES];
 
 #if (IC74HC165_COUNT > 0)
-	mcu_clear_output(IC74HC165_LOAD);
-	memset(pins, 0, IC74HC165_COUNT);
+		mcu_clear_output(IC74HC165_LOAD);
+		memset(pins, 0, IC74HC165_COUNT);
 #endif
-	__ATOMIC__
-	{
-#if (IC74HC595_COUNT > 0)
-		memcpy(pins, (const void *)ic74hc595_io_pins, IC74HC595_COUNT);
-#endif
-	}
-#if (IC74HC165_COUNT > 0)
-	mcu_delay_us(5);
-	mcu_set_output(IC74HC165_LOAD);
-#endif
-	mcu_clear_output(IC74HC595_LATCH);
-	
-	/**
-	 * shift bytes
-	 */
-	for (uint8_t i = SHIFT_REGISTER_BYTES; i != 0;)
-	{
-		i--;
-#if (defined(SHIFT_REGISTER_USE_HW_SPI) && defined(MCU_HAS_SPI))
-		mcu_spi_xmit(pins[i]);
-#else
-		uint8_t pinbyte = pins[i];
-		for (uint8_t j = 0x80; j != 0; j >>= 1)
+		__ATOMIC__
 		{
-#if (SHIFT_REGISTER_DELAY_CYCLES)
-			shift_register_delay();
-#endif
-			mcu_clear_output(SHIFT_REGISTER_CLK);
 #if (IC74HC595_COUNT > 0)
-			// write
-			if (pinbyte & j)
+			memcpy(pins, (const void *)ic74hc595_io_pins, IC74HC595_COUNT);
+#endif
+		}
+#if (IC74HC165_COUNT > 0)
+		mcu_delay_us(5);
+		mcu_set_output(IC74HC165_LOAD);
+#endif
+		mcu_clear_output(IC74HC595_LATCH);
+
+		/**
+		 * shift bytes
+		 */
+		for (uint8_t i = SHIFT_REGISTER_BYTES; i != 0;)
+		{
+			i--;
+#if (defined(SHIFT_REGISTER_USE_HW_SPI) && defined(MCU_HAS_SPI))
+			mcu_spi_xmit(pins[i]);
+#else
+			uint8_t pinbyte = pins[i];
+			for (uint8_t j = 0x80; j != 0; j >>= 1)
 			{
-				mcu_set_output(SHIFT_REGISTER_SDO);
-			}
-			else
-			{
-				mcu_clear_output(SHIFT_REGISTER_SDO);
-			}
+#if (SHIFT_REGISTER_DELAY_CYCLES)
+				shift_register_delay();
+#endif
+				mcu_clear_output(SHIFT_REGISTER_CLK);
+#if (IC74HC595_COUNT > 0)
+				// write
+				if (pinbyte & j)
+				{
+					mcu_set_output(SHIFT_REGISTER_SDO);
+				}
+				else
+				{
+					mcu_clear_output(SHIFT_REGISTER_SDO);
+				}
 #endif
 // read
 #if (IC74HC165_COUNT > 0)
-			if (mcu_get_input(SHIFT_REGISTER_SDI))
-			{
-				pinbyte |= j;
-			}
-			else
-			{
-				pinbyte &= ~j;
-			}
+				if (mcu_get_input(SHIFT_REGISTER_SDI))
+				{
+					pinbyte |= j;
+				}
+				else
+				{
+					pinbyte &= ~j;
+				}
 #endif
-			mcu_set_output(SHIFT_REGISTER_CLK);
+				mcu_set_output(SHIFT_REGISTER_CLK);
+			}
+
+#if (IC74HC165_COUNT > 0)
+			pins[i] = pinbyte;
+#endif
+
+#endif
 		}
-
-#if (IC74HC165_COUNT > 0)
-		pins[i] = pinbyte;
-#endif
-
-#endif
-	}
 #if (SHIFT_REGISTER_DELAY_CYCLES)
-	shift_register_delay();
+		shift_register_delay();
 #endif
 #if (IC74HC165_COUNT > 0)
-	memcpy(ic74hc165_io_pins, (const void *)pins, IC74HC165_COUNT);
+		memcpy((void *)ic74hc165_io_pins, (const void *)pins, IC74HC165_COUNT);
 #endif
-	mcu_set_output(IC74HC595_LATCH);
-	mcu_set_output(SHIFT_REGISTER_CLK);
+		mcu_set_output(IC74HC595_LATCH);
+		mcu_set_output(SHIFT_REGISTER_CLK);
+	}
 }
 #else
 MCU_CALLBACK void __attribute__((weak)) shift_register_io_pins(void)
