@@ -3470,6 +3470,37 @@ extern "C"
 			;                                              \
 	}
 
+#define MUTEX_CLEANUP(name)                    \
+	static void name##_mutex_cleanup(uint8_t *m) \
+	{                                            \
+		if (*m /*can unlock*/)                     \
+		{                                          \
+			xSemaphoreGive(name##_mutex_lock);       \
+		}                                          \
+	}
+#define DECL_MUTEX(name)                             \
+	static SemaphoreHandle_t name##_mutex_lock = NULL; \
+	MUTEX_CLEANUP(name)
+
+#define MUTEX_INIT(name)                         \
+	if (name##_mutex_lock == NULL)                 \
+	{                                              \
+		name##_mutex_lock = xSemaphoreCreateMutex(); \
+	}                                              \
+	uint8_t __attribute__((__cleanup__(name##_mutex_cleanup))) name##_mutex_temp = 0
+#define MUTEX_RELEASE(name)            \
+	if (name##_mutex_temp)               \
+	{                                    \
+		name##_mutex_temp = 0;             \
+		xSemaphoreGive(name##_mutex_lock); \
+	}
+#define MUTEX_TAKE(name)                                                                    \
+	name##_mutex_temp = (xSemaphoreTake(name##_mutex_lock, portMAX_DELAY) == pdTRUE) ? 1 : 0; \
+	if (name##_mutex_temp)
+#define MUTEX_WAIT(name, timeout_ms)                                                                          \
+	name##_mutex_temp = (xSemaphoreTake(name##_mutex_lock, timeout_us / portTICK_PERIOD_MS) == pdTRUE) ? 1 : 0; \
+	if (name##_mutex_temp)
+
 #ifdef __cplusplus
 }
 #endif

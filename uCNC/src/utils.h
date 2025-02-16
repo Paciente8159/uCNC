@@ -253,8 +253,8 @@ extern "C"
 	}                                                                                 \
 	if (!name##_mutex_temp /*the lock was aquired*/)
 
-#define MUTEX_WAIT(name, timeout_us)                                                \
-	__TIMEOUT_US__(timeout_us)                                                        \
+#define MUTEX_WAIT(name, timeout_ms)                                                \
+	__TIMEOUT_MS__(timeout_us)                                                        \
 	{                                                                                 \
 		__ATOMIC__                                                                      \
 		{                                                                               \
