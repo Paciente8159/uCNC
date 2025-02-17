@@ -79,12 +79,12 @@ extern "C"
 // #define STEP0_EN_BIT 0
 // #define STEP0_EN_PORT D
 
-#define LIMIT_X_BIT 4	 // assigns STEP2 pin
-#define LIMIT_X_PORT D // assigns STEP2 port
-#define LIMIT_Y_BIT 5	 // assigns STEP1 pin
-#define LIMIT_Y_PORT D // assigns STEP1 port
-#define LIMIT_Z_BIT 16 // assigns STEP0 pin
-#define LIMIT_Z_PORT D // assigns STEP0 port
+// #define LIMIT_X_BIT 4	 // assigns STEP2 pin
+// #define LIMIT_X_PORT D // assigns STEP2 port
+// #define LIMIT_Y_BIT 5	 // assigns STEP1 pin
+// #define LIMIT_Y_PORT D // assigns STEP1 port
+// #define LIMIT_Z_BIT 16 // assigns STEP0 pin
+// #define LIMIT_Z_PORT D // assigns STEP0 port
 
 // SPI
 #define SPI_CLK_BIT 14
@@ -121,6 +121,25 @@ extern "C"
 #define PWM4_IO_OFFSET 20
 #define DOUT0_IO_OFFSET 22
 #define DOUT2_IO_OFFSET 23
+
+#define IC74HC165_COUNT 4
+
+#define ESTOP_IO_OFFSET 0
+#define SECURITY_DOOR_IO_OFFSET 1
+#define FHOLD_IO_OFFSET 2
+#define CS_RES_IO_OFFSET 3
+#define LIMIT_X_IO_OFFSET 4
+#define LIMIT_X2_IO_OFFSET 5
+#define LIMIT_Y_IO_OFFSET 6
+#define LIMIT_Y2_IO_OFFSET 7
+#define LIMIT_Z_IO_OFFSET 8
+#define LIMIT_Z2_IO_OFFSET 9
+#define DIN0_IO_OFFSET 10
+#define DIN1_IO_OFFSET 11
+#define DIN2_IO_OFFSET 12
+#define DIN3_IO_OFFSET 13
+#define DIN4_IO_OFFSET 14
+
 
 #ifdef __cplusplus
 }

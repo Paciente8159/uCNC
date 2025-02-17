@@ -38,14 +38,38 @@
 volatile uint32_t esp8266_global_isr;
 static volatile uint32_t mcu_runtime_ms;
 
+#ifndef TIMER_IO_SAMPLE_RATE
+#define TIMER_IO_SAMPLE_RATE (F_STEP_MAX * 2)
+#endif
+
 /**
  * Buffered outputs
+ *
+ * ESP8266 is a low IO count MCU. It has only 17 GPIO pins which allows tracking with an uint32_t var
+ * It also does not have hardware PWM drivers so all PWM and Servo signals need to be generated using one of the 2 available timers, in this case the ITP timer
+ *
+ * To minimize the time spent inside the ISR all IO pins values are calculated and buffered in memory (about 10ms worth of motion)
+ * The timer ISR simply pulls one value of the buffer and updates the GPIO pins
+ *
+ * The mcu_dotasks needs to be called frequently to keep a minimal amount of data in the buffer before the timer ISR starves the buffer
+ * To ensure that this happens there is also a second call to the buffer feeding function from the RTC timer ISR that computes at least 2ms worth of motion
+ *
+ * In realtime mode the MCU switches to realtime mode and lowers the ITP step rate to a value that allows for slow stepping rates at realtime.
+ * Glitches in PWM and servos might occur but realtime motions should mainly occur when tools are off (like probing, homing, etc...)
+ *
+ * In the future one possibility that can be experimented is using an emulated encoder to perform the step counting in the ISR with simple code
  */
 volatile uint32_t esp8266_io_out;
+#if (IC74HC595_COUNT != 0)
 #if defined(IC74HC595_HAS_STEPS) || defined(IC74HC595_HAS_DIRS) || defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS)
 volatile uint32_t ic74hc595_io_out;
+#endif
 extern volatile uint8_t ic74hc595_io_pins[IC74HC595_COUNT];
 #endif
+#if (IC74HC165_COUNT != 0)
+extern volatile uint8_t ic74hc165_io_pins[IC74HC165_COUNT];
+#endif
+
 static uint8_t esp8266_step_mode;
 
 typedef struct esp8266_io_out_
@@ -56,7 +80,32 @@ typedef struct esp8266_io_out_
 #endif
 } esp8266_io_out_t;
 
-#define OUT_IO_BUFFER_SIZE 2500
+#ifdef IC74HC595_CUSTOM_SHIFT_IO
+// custom implementation of the shift register using the SPI port
+MCU_CALLBACK void spi_shift_register_io_pins(void)
+{
+#if (IC74HC595_COUNT != 0) || (IC74HC165_COUNT != 0)
+#if defined(IC74HC595_HAS_STEPS) || defined(IC74HC595_HAS_DIRS) || defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS)
+	memcpy((void *)((volatile uint32_t *)(0x60000000 + (0x140))) /*SPI1W0*/, (const void *)ic74hc595_io_pins, IC74HC595_COUNT);
+#endif
+	SPI1CMD |= SPIBUSY;
+#if defined(IC74HC165_HAS_LIMITS) || defined(IC74HC165_HAS_PROBE)
+	while (SPI1CMD & SPIBUSY)
+		;
+	memcpy((void *)ic74hc165_io_pins, (const void *)((volatile uint32_t *)(0x60000000 + (0x140))), IC74HC165_COUNT); // reads the previous SPI value
+	memset((void *)ic74hc165_io_pins, 0, IC74HC165_COUNT);
+#endif
+#endif
+}
+#endif
+
+#define OUT_IO_BUFFER_SIZE (TIMER_IO_SAMPLE_RATE * (10 / 1000))		// (10 / 1000) => 10ms
+#define OUT_IO_BUFFER_MINIMAL (TIMER_IO_SAMPLE_RATE * (2 / 1000)) // (2 / 1000) => 2ms
+
+/**
+ * IO buffer/queue implementation
+ * Implements a simple circular buffer
+ * */
 esp8266_io_out_t out_io_buffer[OUT_IO_BUFFER_SIZE];
 static volatile uint16_t out_io_tail;
 static volatile uint16_t out_io_head;
@@ -119,10 +168,6 @@ extern void esp8266_wifi_dotasks(void);
 #endif
 
 ETSTimer esp8266_rtc_timer;
-
-#ifndef ITP_SAMPLE_RATE
-#define ITP_SAMPLE_RATE (F_STEP_MAX * 2)
-#endif
 
 #ifdef MCU_HAS_ONESHOT_TIMER
 static uint32_t esp8266_oneshot_counter;
@@ -255,7 +300,7 @@ static FORCEINLINE void mcu_gen_pwm_and_servo(void)
 		// resets every 3ms
 		servo_tick_counter = ++counter;
 #endif
-		mcu_soft_io_counter = (int16_t)roundf((float)ITP_SAMPLE_RATE / 128000.0f);
+		mcu_soft_io_counter = (int16_t)roundf((float)TIMER_IO_SAMPLE_RATE / 128000.0f);
 	}
 	else
 	{
@@ -276,7 +321,7 @@ static FORCEINLINE void mcu_gen_step(void)
 		// stream mode tick
 		int32_t t = mcu_itp_timer_counter;
 		bool reset = step_reset;
-		t -= (int32_t)roundf(1000000.0f / (float)ITP_SAMPLE_RATE);
+		t -= (int32_t)roundf(1000000.0f / (float)TIMER_IO_SAMPLE_RATE);
 		if (t <= 0)
 		{
 			if (!reset)
@@ -319,8 +364,6 @@ IRAM_ATTR void mcu_controls_isr(void)
 
 IRAM_ATTR void mcu_itp_isr(void)
 {
-	// GP16O |= 1;
-
 	// if (esp8266_step_mode == ITP_STEP_MODE_REALTIME)
 	// {
 	// 	mcu_gen_step();
@@ -339,22 +382,14 @@ IRAM_ATTR void mcu_itp_isr(void)
 		GP16O &= ~1;
 	}
 
-#if defined(IC74HC595_HAS_STEPS) || defined(IC74HC595_HAS_DIRS) || defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS)
-#ifdef IC74HC595_CUSTOM_SHIFT_IO
-	SPI1W0 = outputs.ic74hc595;
-	SPI1CMD |= SPIBUSY;
-#else
-	memcpy(ic74hc595_io_pins, &(outputs.ic74hc595), IC74HC595_COUNT);
-	ic74hc595_shift_io_pins();
-#endif
-#endif
-	// GP16O &= ~1;
+	memcpy((void *)ic74hc595_io_pins, (const void *)&(outputs.ic74hc595), IC74HC595_COUNT);
+	spi_shift_register_io_pins();
 }
 
 IRAM_ATTR void itp_buffer_dotasks(uint16_t limit)
 {
 	static bool running = false;
-	__ATOMIC__
+	//__ATOMIC__
 	{
 		if (running)
 		{
@@ -383,20 +418,20 @@ IRAM_ATTR void itp_buffer_dotasks(uint16_t limit)
 		SPI1U1 = (((IC74HC595_COUNT * 8) - 1) << SPILMOSI) | (((IC74HC595_COUNT * 8) - 1) << SPILMISO);
 #endif
 #endif
-		timer1_isr_init();
-		timer1_attachInterrupt(mcu_itp_isr);
+		// timer1_isr_init();
+		// timer1_attachInterrupt(mcu_itp_isr);
 
-		switch (mode & ~ITP_STEP_MODE_SYNC)
-		{
-		case ITP_STEP_MODE_DEFAULT:
-			timer1_write((APB_CLK_FREQ / ITP_SAMPLE_RATE));
-			timer1_enable(TIM_DIV1, TIM_EDGE, TIM_LOOP);
-			break;
-		case ITP_STEP_MODE_REALTIME:
-			timer1_write((APB_CLK_FREQ / (ITP_SAMPLE_RATE >> 2)));
-			timer1_enable(TIM_DIV1, TIM_EDGE, TIM_LOOP);
-			break;
-		}
+		// switch (mode & ~ITP_STEP_MODE_SYNC)
+		// {
+		// case ITP_STEP_MODE_DEFAULT:
+		// 	timer1_write((APB_CLK_FREQ / TIMER_IO_SAMPLE_RATE));
+		// 	timer1_enable(TIM_DIV1, TIM_EDGE, TIM_LOOP);
+		// 	break;
+		// case ITP_STEP_MODE_REALTIME:
+		// 	timer1_write((APB_CLK_FREQ / (TIMER_IO_SAMPLE_RATE >> 2)));
+		// 	timer1_enable(TIM_DIV1, TIM_EDGE, TIM_LOOP);
+		// 	break;
+		// }
 
 		// clear sync flag
 		__ATOMIC__
@@ -426,7 +461,7 @@ IRAM_ATTR void mcu_rtc_isr(void)
 {
 	mcu_runtime_ms++;
 	mcu_rtc_cb(mcu_runtime_ms);
-	itp_buffer_dotasks(250);
+	itp_buffer_dotasks(OUT_IO_BUFFER_MINIMAL); // process at most 2ms of motion
 	uint32_t stamp = esp_get_cycle_count() + (ESP8266_CLOCK / 1000);
 	timer0_write(stamp);
 }
@@ -486,13 +521,12 @@ void mcu_init(void)
 	i2c_master_init();
 #endif
 
+	// kick start the RTC
+	// the RTC will start the ITP timer
 	uint32_t stamp = esp_get_cycle_count() + (ESP8266_CLOCK / 1000);
-	__ATOMIC__
-	{
-		timer0_isr_init();
-		timer0_attachInterrupt(mcu_rtc_isr);
-		timer0_write(stamp);
-	}
+	timer0_isr_init();
+	timer0_attachInterrupt(mcu_rtc_isr);
+	timer0_write(stamp);
 }
 
 /**
@@ -508,7 +542,7 @@ void mcu_dotasks(void)
 #ifdef MCU_HAS_WIFI
 	esp8266_wifi_dotasks();
 #endif
-	itp_buffer_dotasks(0);
+	itp_buffer_dotasks(-1);
 }
 
 /**
@@ -747,7 +781,7 @@ uint32_t mcu_free_micros()
 void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 {
 	mcu_timeout_cb = fp;
-	esp8266_oneshot_reload = (128000UL / timeout);
+	esp8266_oneshot_reload = (TIMER_IO_SAMPLE_RATE / timeout);
 }
 #endif
 
