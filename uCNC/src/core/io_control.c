@@ -236,6 +236,10 @@ MCU_IO_CALLBACK void mcu_inputs_changed_cb(void)
 	uint8_t inputs = 0;
 	uint8_t diff;
 
+#ifdef IC74HC165_HAS_DINS
+	shift_register_io_pins();
+#endif
+
 #if (ASSERT_PIN(DIN0) && defined(DIN0_ISR))
 	if (io_get_input(DIN0))
 	{
@@ -322,6 +326,9 @@ uint8_t io_get_limits(void)
 #ifdef DISABLE_ALL_LIMITS
 	return 0;
 #endif
+#ifdef IC74HC165_HAS_LIMITS
+	shift_register_io_pins();
+#endif
 	uint8_t value = 0;
 
 #if ASSERT_PIN(LIMIT_X)
@@ -374,6 +381,9 @@ uint8_t io_get_controls(void)
 {
 #ifdef DISABLE_ALL_CONTROLS
 	return 0;
+#endif
+#ifdef IC74HC165_HAS_CONTROLS
+	shift_register_io_pins();
 #endif
 	uint8_t value = 0;
 #if ASSERT_PIN(ESTOP)
@@ -428,6 +438,9 @@ bool io_get_probe(void)
 #if !ASSERT_PIN(PROBE)
 	return false;
 #else
+#ifdef IC74HC165_HAS_PROBE
+	shift_register_io_pins();
+#endif
 #if ASSERT_PIN(PROBE)
 	bool probe = (io_get_input(PROBE) != 0);
 	return (!g_settings.probe_invert_mask) ? probe : !probe;
@@ -527,7 +540,7 @@ void io_set_steps(uint8_t mask)
 #endif
 
 #ifdef IC74HC595_HAS_STEPS
-	ic74hc595_shift_io_pins();
+	shift_register_io_pins();
 #endif
 }
 
@@ -591,7 +604,7 @@ void io_toggle_steps(uint8_t mask)
 #endif
 
 #ifdef IC74HC595_HAS_STEPS
-	ic74hc595_shift_io_pins();
+	shift_register_io_pins();
 #endif
 }
 
@@ -710,7 +723,7 @@ void io_set_dirs(uint8_t mask)
 #endif
 
 #ifdef IC74HC595_HAS_DIRS
-	ic74hc595_shift_io_pins();
+	shift_register_io_pins();
 #endif
 }
 
@@ -802,7 +815,7 @@ void io_enable_steppers(uint8_t mask)
 #endif
 
 #ifdef IC74HC595_HAS_STEPS_EN
-	ic74hc595_shift_io_pins();
+	shift_register_io_pins();
 #endif
 }
 
@@ -985,7 +998,7 @@ MCU_CALLBACK void io_soft_pwm_update(void)
 #endif
 
 #ifdef IC74HC595_HAS_PWMS
-	ic74hc595_shift_io_pins();
+	shift_register_io_pins();
 #endif
 }
 #endif
@@ -1750,13 +1763,20 @@ void io_set_pinvalue(uint8_t pin, uint8_t value)
 		}
 	}
 
-#ifdef IC74HC595_HAS_DOUTS
-	ic74hc595_shift_io_pins();
+#if defined(IC74HC595_HAS_DOUTS) || defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS)
+	shift_register_io_pins();
 #endif
 }
 
 int16_t io_get_pinvalue(uint8_t pin)
 {
+#if (IC74HC165_COUNT > 0)
+	if (pin >= 100)
+	{
+		shift_register_io_pins();
+	}
+#endif
+
 	switch (pin)
 	{
 #if ASSERT_PIN(STEP0)
