@@ -71,7 +71,7 @@ volatile uint8_t ic74hc165_io_pins[IC74HC165_COUNT];
 
 DECL_MUTEX(shifter_running);
 
-MCU_CALLBACK void /*__attribute__((weak))*/ shift_register_io_pins(void)
+MCU_CALLBACK void __attribute__((weak)) shift_register_io_pins(void)
 {
 	MUTEX_INIT(shifter_running);
 
