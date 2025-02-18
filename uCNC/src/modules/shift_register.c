@@ -62,10 +62,10 @@
 #define shift_register_delay() mcu_delay_cycles(SHIFT_REGISTER_DELAY_CYCLES)
 #if (IC74HC595_COUNT != 0) || (IC74HC165_COUNT != 0)
 #if (IC74HC595_COUNT != 0)
-volatile uint8_t ic74hc595_io_pins[IC74HC595_COUNT];
+volatile uint8_t __attribute__((used)) ic74hc595_io_pins[IC74HC595_COUNT];
 #endif
 #if (IC74HC165_COUNT != 0)
-volatile uint8_t ic74hc165_io_pins[IC74HC165_COUNT];
+volatile uint8_t __attribute__((used)) ic74hc165_io_pins[IC74HC165_COUNT];
 #endif
 #ifndef SHIFT_REGISTER_CUSTOM_CALLBACK
 
