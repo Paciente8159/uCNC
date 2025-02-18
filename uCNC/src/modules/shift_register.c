@@ -59,11 +59,6 @@
 #define SHIFT_REGISTER_BYTES IC74HC165_COUNT
 #endif
 
-/*legacy*/
-#ifdef IC74HC595_CUSTOM_SHIFT_IO
-#define SHIFT_REGISTER_CUSTOM_CALLBACK
-#endif
-
 #define shift_register_delay() mcu_delay_cycles(SHIFT_REGISTER_DELAY_CYCLES)
 #if (IC74HC595_COUNT != 0) || (IC74HC165_COUNT != 0)
 #if (IC74HC595_COUNT != 0)
