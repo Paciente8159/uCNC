@@ -28,7 +28,9 @@
 
 #ifdef ENABLE_DEBUG_STREAM
 #undef DBGMSG(fmt, ...)
-#define DBGMSG(fmt, ...) prt_fmt(&mcu_uart_putc, PRINT_CALLBACK, fmt, ##__VA_ARGS__)
+#define DBGMSG(fmt, ...)                                       \
+	prt_fmt(&mcu_uart_putc, PRINT_CALLBACK, fmt, ##__VA_ARGS__); \
+	mcu_uart_flush()
 #endif
 
 #ifndef RAM_ONLY_SETTINGS
@@ -209,10 +211,13 @@ void mcu_eeprom_flush(void)
 			{ // erases the sector if needed
 
 				DBGMSG("erasing sector %u\n", i);
-				if (spi_flash_erase_sector(EEPROM_FLASH_BASE_SECTOR + i) != SPI_FLASH_RESULT_OK)
+				__ATOMIC__
 				{
-					DBGMSG("erase error");
-					return;
+					if (spi_flash_erase_sector(EEPROM_FLASH_BASE_SECTOR + i) != SPI_FLASH_RESULT_OK)
+					{
+						DBGMSG("erase error");
+						return;
+					}
 				}
 			}
 		}

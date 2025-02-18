@@ -59,6 +59,11 @@
 #define SHIFT_REGISTER_BYTES IC74HC165_COUNT
 #endif
 
+/*legacy*/
+#ifdef IC74HC595_CUSTOM_SHIFT_IO
+#define SHIFT_REGISTER_CUSTOM_CALLBACK
+#endif
+
 #define shift_register_delay() mcu_delay_cycles(SHIFT_REGISTER_DELAY_CYCLES)
 #if (IC74HC595_COUNT != 0) || (IC74HC165_COUNT != 0)
 #if (IC74HC595_COUNT != 0)
@@ -90,7 +95,7 @@ MCU_CALLBACK void __attribute__((weak)) shift_register_io_pins(void)
 #endif
 		}
 #if (IC74HC165_COUNT > 0)
-		mcu_delay_us(5);
+		// mcu_delay_us(5);
 		mcu_set_output(IC74HC165_LOAD);
 #endif
 		mcu_clear_output(IC74HC595_LATCH);
@@ -148,7 +153,12 @@ MCU_CALLBACK void __attribute__((weak)) shift_register_io_pins(void)
 #if (IC74HC165_COUNT > 0)
 		memcpy((void *)ic74hc165_io_pins, (const void *)pins, IC74HC165_COUNT);
 #endif
+#if (IC74HC165_COUNT > 0)
+		mcu_clear_output(IC74HC165_LOAD);
+#endif
+#if (IC74HC595_COUNT > 0)
 		mcu_set_output(IC74HC595_LATCH);
+#endif
 		mcu_set_output(SHIFT_REGISTER_CLK);
 	}
 }

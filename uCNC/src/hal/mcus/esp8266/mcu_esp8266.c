@@ -70,7 +70,7 @@ extern volatile uint8_t ic74hc595_io_pins[IC74HC595_COUNT];
 extern volatile uint8_t ic74hc165_io_pins[IC74HC165_COUNT];
 #endif
 
-static uint8_t esp8266_step_mode;
+static volatile uint8_t esp8266_step_mode;
 
 typedef struct esp8266_io_out_
 {
@@ -80,27 +80,53 @@ typedef struct esp8266_io_out_
 #endif
 } esp8266_io_out_t;
 
-#ifdef IC74HC595_CUSTOM_SHIFT_IO
+#ifdef SHIFT_REGISTER_CUSTOM_CALLBACK
+#ifndef IC74HC595_LATCH
+#define IC74HC595_LATCH DOUT10
+#endif
+
+#ifndef IC74HC165_LOAD
+#define IC74HC165_LOAD DOUT11
+#endif
+DECL_MUTEX(shifter_running);
 // custom implementation of the shift register using the SPI port
 MCU_CALLBACK void spi_shift_register_io_pins(void)
 {
+	MUTEX_INIT(shifter_running);
+
+	MUTEX_TAKE(shifter_running)
+	{
+#if (IC74HC165_COUNT > 0)
+		mcu_set_output(IC74HC165_LOAD);
+#endif
+#if (IC74HC595_COUNT > 0)
+		mcu_clear_output(IC74HC595_LATCH);
+#endif
+
 #if (IC74HC595_COUNT != 0) || (IC74HC165_COUNT != 0)
 #if defined(IC74HC595_HAS_STEPS) || defined(IC74HC595_HAS_DIRS) || defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS)
-	memcpy((void *)((volatile uint32_t *)(0x60000000 + (0x140))) /*SPI1W0*/, (const void *)ic74hc595_io_pins, IC74HC595_COUNT);
+		memcpy((void *)((volatile uint32_t *)(0x60000000 + (0x140))) /*SPI1W0*/, (const void *)ic74hc595_io_pins, IC74HC595_COUNT);
 #endif
-	SPI1CMD |= SPIBUSY;
+		SPI1CMD |= SPIBUSY;
 #if defined(IC74HC165_HAS_LIMITS) || defined(IC74HC165_HAS_PROBE)
-	while (SPI1CMD & SPIBUSY)
-		;
-	memcpy((void *)ic74hc165_io_pins, (const void *)((volatile uint32_t *)(0x60000000 + (0x140))), IC74HC165_COUNT); // reads the previous SPI value
-	memset((void *)ic74hc165_io_pins, 0, IC74HC165_COUNT);
+		while (SPI1CMD & SPIBUSY)
+			;
+		memcpy((void *)ic74hc165_io_pins, (const void *)((volatile uint32_t *)(0x60000000 + (0x140))), IC74HC165_COUNT); // reads the previous SPI value
+		memset((void *)ic74hc165_io_pins, 0, IC74HC165_COUNT);
 #endif
 #endif
+#if (IC74HC165_COUNT > 0)
+		mcu_clear_output(IC74HC165_LOAD);
+#endif
+#if (IC74HC595_COUNT > 0)
+		mcu_set_output(IC74HC595_LATCH);
+#endif
+	}
 }
 #endif
 
-#define OUT_IO_BUFFER_SIZE (TIMER_IO_SAMPLE_RATE * (10 / 1000))		// (10 / 1000) => 10ms
-#define OUT_IO_BUFFER_MINIMAL (TIMER_IO_SAMPLE_RATE * (2 / 1000)) // (2 / 1000) => 2ms
+#define OUT_IO_BUFFER_SIZE (TIMER_IO_SAMPLE_RATE * 10 / 1000)		// (10 / 1000) => 10ms
+#define OUT_IO_BUFFER_MINIMAL (TIMER_IO_SAMPLE_RATE * 2 / 1000) // (2 / 1000) => 2ms
 
 /**
  * IO buffer/queue implementation
@@ -364,12 +390,12 @@ IRAM_ATTR void mcu_controls_isr(void)
 
 IRAM_ATTR void mcu_itp_isr(void)
 {
-	// if (esp8266_step_mode == ITP_STEP_MODE_REALTIME)
-	// {
-	// 	mcu_gen_step();
-	// 	mcu_gen_pwm_and_servo();
-	// 	mcu_gen_oneshot();
-	// }
+	if (esp8266_step_mode == ITP_STEP_MODE_REALTIME)
+	{
+		mcu_gen_step();
+		mcu_gen_pwm_and_servo();
+		mcu_gen_oneshot();
+	}
 
 	esp8266_io_out_t outputs = out_io_pull();
 	GPO = (outputs.io & 0xFFFF);
@@ -386,10 +412,15 @@ IRAM_ATTR void mcu_itp_isr(void)
 	spi_shift_register_io_pins();
 }
 
-IRAM_ATTR void itp_buffer_dotasks(uint16_t limit)
+#undef DBGMSG(fmt, ...)
+#define DBGMSG(fmt, ...)                                       \
+	prt_fmt(&mcu_uart_putc, PRINT_CALLBACK, fmt, ##__VA_ARGS__); \
+	mcu_uart_flush()
+
+void itp_buffer_dotasks(uint16_t limit)
 {
-	static bool running = false;
-	//__ATOMIC__
+	static volatile bool running = false;
+	__ATOMIC__
 	{
 		if (running)
 		{
@@ -411,27 +442,25 @@ IRAM_ATTR void itp_buffer_dotasks(uint16_t limit)
 
 		timer1_disable();
 		out_io_reset();
-#if defined(IC74HC595_HAS_STEPS) || defined(IC74HC595_HAS_DIRS) || defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS)
-#ifdef IC74HC595_CUSTOM_SHIFT_IO
+#ifdef SHIFT_REGISTER_CUSTOM_CALLBACK
 		spi_config_t conf = {0};
 		mcu_spi_config(conf, 20000000);
 		SPI1U1 = (((IC74HC595_COUNT * 8) - 1) << SPILMOSI) | (((IC74HC595_COUNT * 8) - 1) << SPILMISO);
 #endif
-#endif
-		// timer1_isr_init();
-		// timer1_attachInterrupt(mcu_itp_isr);
+		timer1_isr_init();
+		timer1_attachInterrupt(mcu_itp_isr);
 
-		// switch (mode & ~ITP_STEP_MODE_SYNC)
-		// {
-		// case ITP_STEP_MODE_DEFAULT:
-		// 	timer1_write((APB_CLK_FREQ / TIMER_IO_SAMPLE_RATE));
-		// 	timer1_enable(TIM_DIV1, TIM_EDGE, TIM_LOOP);
-		// 	break;
-		// case ITP_STEP_MODE_REALTIME:
-		// 	timer1_write((APB_CLK_FREQ / (TIMER_IO_SAMPLE_RATE >> 2)));
-		// 	timer1_enable(TIM_DIV1, TIM_EDGE, TIM_LOOP);
-		// 	break;
-		// }
+		switch (mode & ~ITP_STEP_MODE_SYNC)
+		{
+		case ITP_STEP_MODE_DEFAULT:
+			timer1_write((APB_CLK_FREQ / TIMER_IO_SAMPLE_RATE));
+			timer1_enable(TIM_DIV1, TIM_EDGE, TIM_LOOP);
+			break;
+		case ITP_STEP_MODE_REALTIME:
+			timer1_write((APB_CLK_FREQ / (TIMER_IO_SAMPLE_RATE >> 2)));
+			timer1_enable(TIM_DIV1, TIM_EDGE, TIM_LOOP);
+			break;
+		}
 
 		// clear sync flag
 		__ATOMIC__
@@ -453,6 +482,13 @@ IRAM_ATTR void itp_buffer_dotasks(uint16_t limit)
 #endif
 		out_io_push(outputs);
 	}
+
+	// static uint32_t next_print;
+	// if (next_print < mcu_millis())
+	// {
+	// 	next_print = mcu_millis() + 3000;
+	// 	DBGMSG("mode: %hd, full?: %hd, buffer: %d\n", mode, (uint8_t)out_io_full(), out_io_head);
+	// }
 
 	running = false;
 }

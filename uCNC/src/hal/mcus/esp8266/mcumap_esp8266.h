@@ -1449,7 +1449,7 @@ extern "C"
 #if IC74HC595_COUNT > 0
 
 #if IC74HC595_COUNT > 4
-#error "Maximum allowed IC74HC595_COUNT is 4 with IC74HC595_CUSTOM_SHIFT_IO"
+#error "Maximum allowed IC74HC595_COUNT is 4 with SHIFT_REGISTER_CUSTOM_CALLBACK"
 #endif
 
 	// custom pin operations for 74HS595
