@@ -1762,19 +1762,17 @@ void io_set_pinvalue(uint8_t pin, uint8_t value)
 #endif
 		}
 	}
-
-#if defined(IC74HC595_HAS_DOUTS) || defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS)
-	shift_register_io_pins();
-#endif
 }
 
 int16_t io_get_pinvalue(uint8_t pin)
 {
 #if (IC74HC165_COUNT > 0)
-	if (pin >= 100)
+#if defined(IC74HC165_HAS_LIMITS) || defined(IC74HC165_HAS_CONTROLS) || defined(IC74HC165_HAS_PROBE)
+	if (pin >= 100 && pin < ANALOG_PINS_OFFSET)
 	{
 		shift_register_io_pins();
 	}
+#endif
 #endif
 
 	switch (pin)

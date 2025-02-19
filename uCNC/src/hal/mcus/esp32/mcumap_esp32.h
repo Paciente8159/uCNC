@@ -3470,13 +3470,16 @@ extern "C"
 			;                                              \
 	}
 
-#define MUTEX_CLEANUP(name)                    \
-	static void name##_mutex_cleanup(uint8_t *m) \
-	{                                            \
-		if (*m /*can unlock*/)                     \
-		{                                          \
-			xSemaphoreGive(name##_mutex_lock);       \
-		}                                          \
+#define __FREERTOS_MUTEX_TAKE__(mutex, timeout) ((xPortInIsrContext()) ? (xSemaphoreTakeFromISR(mutex, NULL)) : (xSemaphoreTake(mutex, timeout)))
+#define __FREERTOS_MUTEX_GIVE__(mutex) ((xPortInIsrContext()) ? (xSemaphoreGiveFromISR(mutex, NULL)) : (xSemaphoreGive(mutex)))
+
+#define MUTEX_CLEANUP(name)                       \
+	static void name##_mutex_cleanup(uint8_t *m)    \
+	{                                               \
+		if (*m /*can unlock*/)                        \
+		{                                             \
+			__FREERTOS_MUTEX_GIVE__(name##_mutex_lock); \
+		}                                             \
 	}
 #define DECL_MUTEX(name)                             \
 	static SemaphoreHandle_t name##_mutex_lock = NULL; \
@@ -3492,13 +3495,13 @@ extern "C"
 	if (name##_mutex_temp)               \
 	{                                    \
 		name##_mutex_temp = 0;             \
-		xSemaphoreGive(name##_mutex_lock); \
+		__FREERTOS_MUTEX_GIVE__(name##_mutex_lock); \
 	}
-#define MUTEX_TAKE(name)                                                                    \
-	name##_mutex_temp = (xSemaphoreTake(name##_mutex_lock, portMAX_DELAY) == pdTRUE) ? 1 : 0; \
+#define MUTEX_TAKE(name)                                                                             \
+	name##_mutex_temp = (__FREERTOS_MUTEX_TAKE__(name##_mutex_lock, portMAX_DELAY) == pdTRUE) ? 1 : 0; \
 	if (name##_mutex_temp)
-#define MUTEX_WAIT(name, timeout_ms)                                                                          \
-	name##_mutex_temp = (xSemaphoreTake(name##_mutex_lock, timeout_us / portTICK_PERIOD_MS) == pdTRUE) ? 1 : 0; \
+#define MUTEX_WAIT(name, timeout_ms)                                                                                     \
+	name##_mutex_temp = (__FREERTOS_MUTEX_TAKE__(name##_mutex_lock, (timeout_us / portTICK_PERIOD_MS)) == pdTRUE) ? 1 : 0; \
 	if (name##_mutex_temp)
 
 #ifdef __cplusplus
