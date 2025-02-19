@@ -2101,7 +2101,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN0)
 #define io130_config_input 
 #define io130_config_pullup
-#define io130_get_input io_extended_pins_update();ic74hc165_get_pin(DIN0)
+#define io130_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN0);})
 #endif
 #if ASSERT_PIN_IO(DIN1)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2121,7 +2121,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN1)
 #define io131_config_input 
 #define io131_config_pullup
-#define io131_get_input io_extended_pins_update();ic74hc165_get_pin(DIN1)
+#define io131_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN1);})
 #endif
 #if ASSERT_PIN_IO(DIN2)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2141,7 +2141,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN2)
 #define io132_config_input 
 #define io132_config_pullup
-#define io132_get_input io_extended_pins_update();ic74hc165_get_pin(DIN2)
+#define io132_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN2);})
 #endif
 #if ASSERT_PIN_IO(DIN3)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2161,7 +2161,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN3)
 #define io133_config_input 
 #define io133_config_pullup
-#define io133_get_input io_extended_pins_update();ic74hc165_get_pin(DIN3)
+#define io133_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN3);})
 #endif
 #if ASSERT_PIN_IO(DIN4)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2181,7 +2181,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN4)
 #define io134_config_input 
 #define io134_config_pullup
-#define io134_get_input io_extended_pins_update();ic74hc165_get_pin(DIN4)
+#define io134_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN4);})
 #endif
 #if ASSERT_PIN_IO(DIN5)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2201,7 +2201,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN5)
 #define io135_config_input 
 #define io135_config_pullup
-#define io135_get_input io_extended_pins_update();ic74hc165_get_pin(DIN5)
+#define io135_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN5);})
 #endif
 #if ASSERT_PIN_IO(DIN6)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2221,7 +2221,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN6)
 #define io136_config_input 
 #define io136_config_pullup
-#define io136_get_input io_extended_pins_update();ic74hc165_get_pin(DIN6)
+#define io136_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN6);})
 #endif
 #if ASSERT_PIN_IO(DIN7)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2241,7 +2241,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN7)
 #define io137_config_input 
 #define io137_config_pullup
-#define io137_get_input io_extended_pins_update();ic74hc165_get_pin(DIN7)
+#define io137_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN7);})
 #endif
 #if ASSERT_PIN_IO(DIN8)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2261,7 +2261,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN8)
 #define io138_config_input 
 #define io138_config_pullup
-#define io138_get_input io_extended_pins_update();ic74hc165_get_pin(DIN8)
+#define io138_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN8);})
 #endif
 #if ASSERT_PIN_IO(DIN9)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2281,7 +2281,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN9)
 #define io139_config_input 
 #define io139_config_pullup
-#define io139_get_input io_extended_pins_update();ic74hc165_get_pin(DIN9)
+#define io139_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN9);})
 #endif
 #if ASSERT_PIN_IO(DIN10)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2301,7 +2301,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN10)
 #define io140_config_input 
 #define io140_config_pullup
-#define io140_get_input io_extended_pins_update();ic74hc165_get_pin(DIN10)
+#define io140_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN10);})
 #endif
 #if ASSERT_PIN_IO(DIN11)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2321,7 +2321,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN11)
 #define io141_config_input 
 #define io141_config_pullup
-#define io141_get_input io_extended_pins_update();ic74hc165_get_pin(DIN11)
+#define io141_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN11);})
 #endif
 #if ASSERT_PIN_IO(DIN12)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2341,7 +2341,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN12)
 #define io142_config_input 
 #define io142_config_pullup
-#define io142_get_input io_extended_pins_update();ic74hc165_get_pin(DIN12)
+#define io142_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN12);})
 #endif
 #if ASSERT_PIN_IO(DIN13)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2361,7 +2361,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN13)
 #define io143_config_input 
 #define io143_config_pullup
-#define io143_get_input io_extended_pins_update();ic74hc165_get_pin(DIN13)
+#define io143_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN13);})
 #endif
 #if ASSERT_PIN_IO(DIN14)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2381,7 +2381,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN14)
 #define io144_config_input 
 #define io144_config_pullup
-#define io144_get_input io_extended_pins_update();ic74hc165_get_pin(DIN14)
+#define io144_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN14);})
 #endif
 #if ASSERT_PIN_IO(DIN15)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2401,7 +2401,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN15)
 #define io145_config_input 
 #define io145_config_pullup
-#define io145_get_input io_extended_pins_update();ic74hc165_get_pin(DIN15)
+#define io145_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN15);})
 #endif
 #if ASSERT_PIN_IO(DIN16)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2421,7 +2421,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN16)
 #define io146_config_input 
 #define io146_config_pullup
-#define io146_get_input io_extended_pins_update();ic74hc165_get_pin(DIN16)
+#define io146_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN16);})
 #endif
 #if ASSERT_PIN_IO(DIN17)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2441,7 +2441,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN17)
 #define io147_config_input 
 #define io147_config_pullup
-#define io147_get_input io_extended_pins_update();ic74hc165_get_pin(DIN17)
+#define io147_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN17);})
 #endif
 #if ASSERT_PIN_IO(DIN18)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2461,7 +2461,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN18)
 #define io148_config_input 
 #define io148_config_pullup
-#define io148_get_input io_extended_pins_update();ic74hc165_get_pin(DIN18)
+#define io148_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN18);})
 #endif
 #if ASSERT_PIN_IO(DIN19)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2481,7 +2481,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN19)
 #define io149_config_input 
 #define io149_config_pullup
-#define io149_get_input io_extended_pins_update();ic74hc165_get_pin(DIN19)
+#define io149_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN19);})
 #endif
 #if ASSERT_PIN_IO(DIN20)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2501,7 +2501,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN20)
 #define io150_config_input 
 #define io150_config_pullup
-#define io150_get_input io_extended_pins_update();ic74hc165_get_pin(DIN20)
+#define io150_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN20);})
 #endif
 #if ASSERT_PIN_IO(DIN21)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2521,7 +2521,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN21)
 #define io151_config_input 
 #define io151_config_pullup
-#define io151_get_input io_extended_pins_update();ic74hc165_get_pin(DIN21)
+#define io151_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN21);})
 #endif
 #if ASSERT_PIN_IO(DIN22)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2541,7 +2541,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN22)
 #define io152_config_input 
 #define io152_config_pullup
-#define io152_get_input io_extended_pins_update();ic74hc165_get_pin(DIN22)
+#define io152_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN22);})
 #endif
 #if ASSERT_PIN_IO(DIN23)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2561,7 +2561,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN23)
 #define io153_config_input 
 #define io153_config_pullup
-#define io153_get_input io_extended_pins_update();ic74hc165_get_pin(DIN23)
+#define io153_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN23);})
 #endif
 #if ASSERT_PIN_IO(DIN24)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2581,7 +2581,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN24)
 #define io154_config_input 
 #define io154_config_pullup
-#define io154_get_input io_extended_pins_update();ic74hc165_get_pin(DIN24)
+#define io154_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN24);})
 #endif
 #if ASSERT_PIN_IO(DIN25)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2601,7 +2601,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN25)
 #define io155_config_input 
 #define io155_config_pullup
-#define io155_get_input io_extended_pins_update();ic74hc165_get_pin(DIN25)
+#define io155_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN25);})
 #endif
 #if ASSERT_PIN_IO(DIN26)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2621,7 +2621,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN26)
 #define io156_config_input 
 #define io156_config_pullup
-#define io156_get_input io_extended_pins_update();ic74hc165_get_pin(DIN26)
+#define io156_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN26);})
 #endif
 #if ASSERT_PIN_IO(DIN27)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2641,7 +2641,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN27)
 #define io157_config_input 
 #define io157_config_pullup
-#define io157_get_input io_extended_pins_update();ic74hc165_get_pin(DIN27)
+#define io157_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN27);})
 #endif
 #if ASSERT_PIN_IO(DIN28)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2661,7 +2661,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN28)
 #define io158_config_input 
 #define io158_config_pullup
-#define io158_get_input io_extended_pins_update();ic74hc165_get_pin(DIN28)
+#define io158_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN28);})
 #endif
 #if ASSERT_PIN_IO(DIN29)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2681,7 +2681,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN29)
 #define io159_config_input 
 #define io159_config_pullup
-#define io159_get_input io_extended_pins_update();ic74hc165_get_pin(DIN29)
+#define io159_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN29);})
 #endif
 #if ASSERT_PIN_IO(DIN30)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2701,7 +2701,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN30)
 #define io160_config_input 
 #define io160_config_pullup
-#define io160_get_input io_extended_pins_update();ic74hc165_get_pin(DIN30)
+#define io160_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN30);})
 #endif
 #if ASSERT_PIN_IO(DIN31)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2721,7 +2721,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN31)
 #define io161_config_input 
 #define io161_config_pullup
-#define io161_get_input io_extended_pins_update();ic74hc165_get_pin(DIN31)
+#define io161_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN31);})
 #endif
 #if ASSERT_PIN_IO(DIN32)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2741,7 +2741,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN32)
 #define io162_config_input 
 #define io162_config_pullup
-#define io162_get_input io_extended_pins_update();ic74hc165_get_pin(DIN32)
+#define io162_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN32);})
 #endif
 #if ASSERT_PIN_IO(DIN33)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2761,7 +2761,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN33)
 #define io163_config_input 
 #define io163_config_pullup
-#define io163_get_input io_extended_pins_update();ic74hc165_get_pin(DIN33)
+#define io163_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN33);})
 #endif
 #if ASSERT_PIN_IO(DIN34)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2781,7 +2781,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN34)
 #define io164_config_input 
 #define io164_config_pullup
-#define io164_get_input io_extended_pins_update();ic74hc165_get_pin(DIN34)
+#define io164_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN34);})
 #endif
 #if ASSERT_PIN_IO(DIN35)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2801,7 +2801,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN35)
 #define io165_config_input 
 #define io165_config_pullup
-#define io165_get_input io_extended_pins_update();ic74hc165_get_pin(DIN35)
+#define io165_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN35);})
 #endif
 #if ASSERT_PIN_IO(DIN36)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2821,7 +2821,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN36)
 #define io166_config_input 
 #define io166_config_pullup
-#define io166_get_input io_extended_pins_update();ic74hc165_get_pin(DIN36)
+#define io166_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN36);})
 #endif
 #if ASSERT_PIN_IO(DIN37)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2841,7 +2841,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN37)
 #define io167_config_input 
 #define io167_config_pullup
-#define io167_get_input io_extended_pins_update();ic74hc165_get_pin(DIN37)
+#define io167_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN37);})
 #endif
 #if ASSERT_PIN_IO(DIN38)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2861,7 +2861,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN38)
 #define io168_config_input 
 #define io168_config_pullup
-#define io168_get_input io_extended_pins_update();ic74hc165_get_pin(DIN38)
+#define io168_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN38);})
 #endif
 #if ASSERT_PIN_IO(DIN39)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2881,7 +2881,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN39)
 #define io169_config_input 
 #define io169_config_pullup
-#define io169_get_input io_extended_pins_update();ic74hc165_get_pin(DIN39)
+#define io169_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN39);})
 #endif
 #if ASSERT_PIN_IO(DIN40)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2901,7 +2901,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN40)
 #define io170_config_input 
 #define io170_config_pullup
-#define io170_get_input io_extended_pins_update();ic74hc165_get_pin(DIN40)
+#define io170_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN40);})
 #endif
 #if ASSERT_PIN_IO(DIN41)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2921,7 +2921,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN41)
 #define io171_config_input 
 #define io171_config_pullup
-#define io171_get_input io_extended_pins_update();ic74hc165_get_pin(DIN41)
+#define io171_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN41);})
 #endif
 #if ASSERT_PIN_IO(DIN42)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2941,7 +2941,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN42)
 #define io172_config_input 
 #define io172_config_pullup
-#define io172_get_input io_extended_pins_update();ic74hc165_get_pin(DIN42)
+#define io172_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN42);})
 #endif
 #if ASSERT_PIN_IO(DIN43)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2961,7 +2961,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN43)
 #define io173_config_input 
 #define io173_config_pullup
-#define io173_get_input io_extended_pins_update();ic74hc165_get_pin(DIN43)
+#define io173_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN43);})
 #endif
 #if ASSERT_PIN_IO(DIN44)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2981,7 +2981,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN44)
 #define io174_config_input 
 #define io174_config_pullup
-#define io174_get_input io_extended_pins_update();ic74hc165_get_pin(DIN44)
+#define io174_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN44);})
 #endif
 #if ASSERT_PIN_IO(DIN45)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -3001,7 +3001,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN45)
 #define io175_config_input 
 #define io175_config_pullup
-#define io175_get_input io_extended_pins_update();ic74hc165_get_pin(DIN45)
+#define io175_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN45);})
 #endif
 #if ASSERT_PIN_IO(DIN46)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -3021,7 +3021,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN46)
 #define io176_config_input 
 #define io176_config_pullup
-#define io176_get_input io_extended_pins_update();ic74hc165_get_pin(DIN46)
+#define io176_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN46);})
 #endif
 #if ASSERT_PIN_IO(DIN47)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -3041,7 +3041,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN47)
 #define io177_config_input 
 #define io177_config_pullup
-#define io177_get_input io_extended_pins_update();ic74hc165_get_pin(DIN47)
+#define io177_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN47);})
 #endif
 #if ASSERT_PIN_IO(DIN48)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -3061,7 +3061,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN48)
 #define io178_config_input 
 #define io178_config_pullup
-#define io178_get_input io_extended_pins_update();ic74hc165_get_pin(DIN48)
+#define io178_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN48);})
 #endif
 #if ASSERT_PIN_IO(DIN49)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -3081,7 +3081,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN49)
 #define io179_config_input 
 #define io179_config_pullup
-#define io179_get_input io_extended_pins_update();ic74hc165_get_pin(DIN49)
+#define io179_get_input ({io_extended_pins_update();ic74hc165_get_pin(DIN49);})
 #endif
 #if ASSERT_PIN_IO(SPI_CS)
 #define io207_config_output mcu_config_output(SPI_CS)
