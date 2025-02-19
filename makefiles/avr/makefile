@@ -77,7 +77,7 @@ BIN = $(CP) -O binary -S
 # cpu
 CPU ?= atmega328p
 FREQ ?= 16000000L
-BOARD ?= UNO
+BOARD ?= BOARDMAP_FILE(src/hal/boards/avr/boardmap_uno.h)
 
 # mcu
 MCU = -mmcu=$(CPU)
@@ -90,8 +90,7 @@ AS_DEFS =
 BUILD_OPTIONS ?=
 
 C_DEFS =  $(BUILD_OPTIONS)\
--D$(BOARD) \
--DBOARD=BOARD_$(BOARD)
+-DBOARD=$(BOARD)
 
 # AS includes
 AS_INCLUDES = 
