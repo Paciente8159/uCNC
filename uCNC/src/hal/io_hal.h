@@ -12,6 +12,10 @@ extern uint8_t g_soft_pwm_res;
 extern uint8_t g_io_soft_pwm[16];
 extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 
+#ifndef io_extended_pins_update
+#define io_extended_pins_update() shift_register_io_pins()
+#endif
+
 /*IO HAL*/
 #if ASSERT_PIN_IO(STEP0)
 #define io1_config_output mcu_config_output(STEP0)
@@ -898,9 +902,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io47_get_input mcu_get_input(DOUT0)
 #elif ASSERT_PIN_EXTENDED(DOUT0)
 #define io47_config_output
-#define io47_set_output ic74hc595_set_pin(DOUT0);shift_register_io_pins()
-#define io47_clear_output ic74hc595_clear_pin(DOUT0);shift_register_io_pins()
-#define io47_toggle_output ic74hc595_toggle_pin(DOUT0);shift_register_io_pins()
+#define io47_set_output ic74hc595_set_pin(DOUT0);io_extended_pins_update()
+#define io47_clear_output ic74hc595_clear_pin(DOUT0);io_extended_pins_update()
+#define io47_toggle_output ic74hc595_toggle_pin(DOUT0);io_extended_pins_update()
 #define io47_get_output ic74hc595_get_pin(DOUT0)
 #endif
 #if ASSERT_PIN_IO(DOUT1)
@@ -914,9 +918,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io48_get_input mcu_get_input(DOUT1)
 #elif ASSERT_PIN_EXTENDED(DOUT1)
 #define io48_config_output
-#define io48_set_output ic74hc595_set_pin(DOUT1);shift_register_io_pins()
-#define io48_clear_output ic74hc595_clear_pin(DOUT1);shift_register_io_pins()
-#define io48_toggle_output ic74hc595_toggle_pin(DOUT1);shift_register_io_pins()
+#define io48_set_output ic74hc595_set_pin(DOUT1);io_extended_pins_update()
+#define io48_clear_output ic74hc595_clear_pin(DOUT1);io_extended_pins_update()
+#define io48_toggle_output ic74hc595_toggle_pin(DOUT1);io_extended_pins_update()
 #define io48_get_output ic74hc595_get_pin(DOUT1)
 #endif
 #if ASSERT_PIN_IO(DOUT2)
@@ -930,9 +934,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io49_get_input mcu_get_input(DOUT2)
 #elif ASSERT_PIN_EXTENDED(DOUT2)
 #define io49_config_output
-#define io49_set_output ic74hc595_set_pin(DOUT2);shift_register_io_pins()
-#define io49_clear_output ic74hc595_clear_pin(DOUT2);shift_register_io_pins()
-#define io49_toggle_output ic74hc595_toggle_pin(DOUT2);shift_register_io_pins()
+#define io49_set_output ic74hc595_set_pin(DOUT2);io_extended_pins_update()
+#define io49_clear_output ic74hc595_clear_pin(DOUT2);io_extended_pins_update()
+#define io49_toggle_output ic74hc595_toggle_pin(DOUT2);io_extended_pins_update()
 #define io49_get_output ic74hc595_get_pin(DOUT2)
 #endif
 #if ASSERT_PIN_IO(DOUT3)
@@ -946,9 +950,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io50_get_input mcu_get_input(DOUT3)
 #elif ASSERT_PIN_EXTENDED(DOUT3)
 #define io50_config_output
-#define io50_set_output ic74hc595_set_pin(DOUT3);shift_register_io_pins()
-#define io50_clear_output ic74hc595_clear_pin(DOUT3);shift_register_io_pins()
-#define io50_toggle_output ic74hc595_toggle_pin(DOUT3);shift_register_io_pins()
+#define io50_set_output ic74hc595_set_pin(DOUT3);io_extended_pins_update()
+#define io50_clear_output ic74hc595_clear_pin(DOUT3);io_extended_pins_update()
+#define io50_toggle_output ic74hc595_toggle_pin(DOUT3);io_extended_pins_update()
 #define io50_get_output ic74hc595_get_pin(DOUT3)
 #endif
 #if ASSERT_PIN_IO(DOUT4)
@@ -962,9 +966,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io51_get_input mcu_get_input(DOUT4)
 #elif ASSERT_PIN_EXTENDED(DOUT4)
 #define io51_config_output
-#define io51_set_output ic74hc595_set_pin(DOUT4);shift_register_io_pins()
-#define io51_clear_output ic74hc595_clear_pin(DOUT4);shift_register_io_pins()
-#define io51_toggle_output ic74hc595_toggle_pin(DOUT4);shift_register_io_pins()
+#define io51_set_output ic74hc595_set_pin(DOUT4);io_extended_pins_update()
+#define io51_clear_output ic74hc595_clear_pin(DOUT4);io_extended_pins_update()
+#define io51_toggle_output ic74hc595_toggle_pin(DOUT4);io_extended_pins_update()
 #define io51_get_output ic74hc595_get_pin(DOUT4)
 #endif
 #if ASSERT_PIN_IO(DOUT5)
@@ -978,9 +982,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io52_get_input mcu_get_input(DOUT5)
 #elif ASSERT_PIN_EXTENDED(DOUT5)
 #define io52_config_output
-#define io52_set_output ic74hc595_set_pin(DOUT5);shift_register_io_pins()
-#define io52_clear_output ic74hc595_clear_pin(DOUT5);shift_register_io_pins()
-#define io52_toggle_output ic74hc595_toggle_pin(DOUT5);shift_register_io_pins()
+#define io52_set_output ic74hc595_set_pin(DOUT5);io_extended_pins_update()
+#define io52_clear_output ic74hc595_clear_pin(DOUT5);io_extended_pins_update()
+#define io52_toggle_output ic74hc595_toggle_pin(DOUT5);io_extended_pins_update()
 #define io52_get_output ic74hc595_get_pin(DOUT5)
 #endif
 #if ASSERT_PIN_IO(DOUT6)
@@ -994,9 +998,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io53_get_input mcu_get_input(DOUT6)
 #elif ASSERT_PIN_EXTENDED(DOUT6)
 #define io53_config_output
-#define io53_set_output ic74hc595_set_pin(DOUT6);shift_register_io_pins()
-#define io53_clear_output ic74hc595_clear_pin(DOUT6);shift_register_io_pins()
-#define io53_toggle_output ic74hc595_toggle_pin(DOUT6);shift_register_io_pins()
+#define io53_set_output ic74hc595_set_pin(DOUT6);io_extended_pins_update()
+#define io53_clear_output ic74hc595_clear_pin(DOUT6);io_extended_pins_update()
+#define io53_toggle_output ic74hc595_toggle_pin(DOUT6);io_extended_pins_update()
 #define io53_get_output ic74hc595_get_pin(DOUT6)
 #endif
 #if ASSERT_PIN_IO(DOUT7)
@@ -1010,9 +1014,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io54_get_input mcu_get_input(DOUT7)
 #elif ASSERT_PIN_EXTENDED(DOUT7)
 #define io54_config_output
-#define io54_set_output ic74hc595_set_pin(DOUT7);shift_register_io_pins()
-#define io54_clear_output ic74hc595_clear_pin(DOUT7);shift_register_io_pins()
-#define io54_toggle_output ic74hc595_toggle_pin(DOUT7);shift_register_io_pins()
+#define io54_set_output ic74hc595_set_pin(DOUT7);io_extended_pins_update()
+#define io54_clear_output ic74hc595_clear_pin(DOUT7);io_extended_pins_update()
+#define io54_toggle_output ic74hc595_toggle_pin(DOUT7);io_extended_pins_update()
 #define io54_get_output ic74hc595_get_pin(DOUT7)
 #endif
 #if ASSERT_PIN_IO(DOUT8)
@@ -1026,9 +1030,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io55_get_input mcu_get_input(DOUT8)
 #elif ASSERT_PIN_EXTENDED(DOUT8)
 #define io55_config_output
-#define io55_set_output ic74hc595_set_pin(DOUT8);shift_register_io_pins()
-#define io55_clear_output ic74hc595_clear_pin(DOUT8);shift_register_io_pins()
-#define io55_toggle_output ic74hc595_toggle_pin(DOUT8);shift_register_io_pins()
+#define io55_set_output ic74hc595_set_pin(DOUT8);io_extended_pins_update()
+#define io55_clear_output ic74hc595_clear_pin(DOUT8);io_extended_pins_update()
+#define io55_toggle_output ic74hc595_toggle_pin(DOUT8);io_extended_pins_update()
 #define io55_get_output ic74hc595_get_pin(DOUT8)
 #endif
 #if ASSERT_PIN_IO(DOUT9)
@@ -1042,9 +1046,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io56_get_input mcu_get_input(DOUT9)
 #elif ASSERT_PIN_EXTENDED(DOUT9)
 #define io56_config_output
-#define io56_set_output ic74hc595_set_pin(DOUT9);shift_register_io_pins()
-#define io56_clear_output ic74hc595_clear_pin(DOUT9);shift_register_io_pins()
-#define io56_toggle_output ic74hc595_toggle_pin(DOUT9);shift_register_io_pins()
+#define io56_set_output ic74hc595_set_pin(DOUT9);io_extended_pins_update()
+#define io56_clear_output ic74hc595_clear_pin(DOUT9);io_extended_pins_update()
+#define io56_toggle_output ic74hc595_toggle_pin(DOUT9);io_extended_pins_update()
 #define io56_get_output ic74hc595_get_pin(DOUT9)
 #endif
 #if ASSERT_PIN_IO(DOUT10)
@@ -1058,9 +1062,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io57_get_input mcu_get_input(DOUT10)
 #elif ASSERT_PIN_EXTENDED(DOUT10)
 #define io57_config_output
-#define io57_set_output ic74hc595_set_pin(DOUT10);shift_register_io_pins()
-#define io57_clear_output ic74hc595_clear_pin(DOUT10);shift_register_io_pins()
-#define io57_toggle_output ic74hc595_toggle_pin(DOUT10);shift_register_io_pins()
+#define io57_set_output ic74hc595_set_pin(DOUT10);io_extended_pins_update()
+#define io57_clear_output ic74hc595_clear_pin(DOUT10);io_extended_pins_update()
+#define io57_toggle_output ic74hc595_toggle_pin(DOUT10);io_extended_pins_update()
 #define io57_get_output ic74hc595_get_pin(DOUT10)
 #endif
 #if ASSERT_PIN_IO(DOUT11)
@@ -1074,9 +1078,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io58_get_input mcu_get_input(DOUT11)
 #elif ASSERT_PIN_EXTENDED(DOUT11)
 #define io58_config_output
-#define io58_set_output ic74hc595_set_pin(DOUT11);shift_register_io_pins()
-#define io58_clear_output ic74hc595_clear_pin(DOUT11);shift_register_io_pins()
-#define io58_toggle_output ic74hc595_toggle_pin(DOUT11);shift_register_io_pins()
+#define io58_set_output ic74hc595_set_pin(DOUT11);io_extended_pins_update()
+#define io58_clear_output ic74hc595_clear_pin(DOUT11);io_extended_pins_update()
+#define io58_toggle_output ic74hc595_toggle_pin(DOUT11);io_extended_pins_update()
 #define io58_get_output ic74hc595_get_pin(DOUT11)
 #endif
 #if ASSERT_PIN_IO(DOUT12)
@@ -1090,9 +1094,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io59_get_input mcu_get_input(DOUT12)
 #elif ASSERT_PIN_EXTENDED(DOUT12)
 #define io59_config_output
-#define io59_set_output ic74hc595_set_pin(DOUT12);shift_register_io_pins()
-#define io59_clear_output ic74hc595_clear_pin(DOUT12);shift_register_io_pins()
-#define io59_toggle_output ic74hc595_toggle_pin(DOUT12);shift_register_io_pins()
+#define io59_set_output ic74hc595_set_pin(DOUT12);io_extended_pins_update()
+#define io59_clear_output ic74hc595_clear_pin(DOUT12);io_extended_pins_update()
+#define io59_toggle_output ic74hc595_toggle_pin(DOUT12);io_extended_pins_update()
 #define io59_get_output ic74hc595_get_pin(DOUT12)
 #endif
 #if ASSERT_PIN_IO(DOUT13)
@@ -1106,9 +1110,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io60_get_input mcu_get_input(DOUT13)
 #elif ASSERT_PIN_EXTENDED(DOUT13)
 #define io60_config_output
-#define io60_set_output ic74hc595_set_pin(DOUT13);shift_register_io_pins()
-#define io60_clear_output ic74hc595_clear_pin(DOUT13);shift_register_io_pins()
-#define io60_toggle_output ic74hc595_toggle_pin(DOUT13);shift_register_io_pins()
+#define io60_set_output ic74hc595_set_pin(DOUT13);io_extended_pins_update()
+#define io60_clear_output ic74hc595_clear_pin(DOUT13);io_extended_pins_update()
+#define io60_toggle_output ic74hc595_toggle_pin(DOUT13);io_extended_pins_update()
 #define io60_get_output ic74hc595_get_pin(DOUT13)
 #endif
 #if ASSERT_PIN_IO(DOUT14)
@@ -1122,9 +1126,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io61_get_input mcu_get_input(DOUT14)
 #elif ASSERT_PIN_EXTENDED(DOUT14)
 #define io61_config_output
-#define io61_set_output ic74hc595_set_pin(DOUT14);shift_register_io_pins()
-#define io61_clear_output ic74hc595_clear_pin(DOUT14);shift_register_io_pins()
-#define io61_toggle_output ic74hc595_toggle_pin(DOUT14);shift_register_io_pins()
+#define io61_set_output ic74hc595_set_pin(DOUT14);io_extended_pins_update()
+#define io61_clear_output ic74hc595_clear_pin(DOUT14);io_extended_pins_update()
+#define io61_toggle_output ic74hc595_toggle_pin(DOUT14);io_extended_pins_update()
 #define io61_get_output ic74hc595_get_pin(DOUT14)
 #endif
 #if ASSERT_PIN_IO(DOUT15)
@@ -1138,9 +1142,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io62_get_input mcu_get_input(DOUT15)
 #elif ASSERT_PIN_EXTENDED(DOUT15)
 #define io62_config_output
-#define io62_set_output ic74hc595_set_pin(DOUT15);shift_register_io_pins()
-#define io62_clear_output ic74hc595_clear_pin(DOUT15);shift_register_io_pins()
-#define io62_toggle_output ic74hc595_toggle_pin(DOUT15);shift_register_io_pins()
+#define io62_set_output ic74hc595_set_pin(DOUT15);io_extended_pins_update()
+#define io62_clear_output ic74hc595_clear_pin(DOUT15);io_extended_pins_update()
+#define io62_toggle_output ic74hc595_toggle_pin(DOUT15);io_extended_pins_update()
 #define io62_get_output ic74hc595_get_pin(DOUT15)
 #endif
 #if ASSERT_PIN_IO(DOUT16)
@@ -1154,9 +1158,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io63_get_input mcu_get_input(DOUT16)
 #elif ASSERT_PIN_EXTENDED(DOUT16)
 #define io63_config_output
-#define io63_set_output ic74hc595_set_pin(DOUT16);shift_register_io_pins()
-#define io63_clear_output ic74hc595_clear_pin(DOUT16);shift_register_io_pins()
-#define io63_toggle_output ic74hc595_toggle_pin(DOUT16);shift_register_io_pins()
+#define io63_set_output ic74hc595_set_pin(DOUT16);io_extended_pins_update()
+#define io63_clear_output ic74hc595_clear_pin(DOUT16);io_extended_pins_update()
+#define io63_toggle_output ic74hc595_toggle_pin(DOUT16);io_extended_pins_update()
 #define io63_get_output ic74hc595_get_pin(DOUT16)
 #endif
 #if ASSERT_PIN_IO(DOUT17)
@@ -1170,9 +1174,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io64_get_input mcu_get_input(DOUT17)
 #elif ASSERT_PIN_EXTENDED(DOUT17)
 #define io64_config_output
-#define io64_set_output ic74hc595_set_pin(DOUT17);shift_register_io_pins()
-#define io64_clear_output ic74hc595_clear_pin(DOUT17);shift_register_io_pins()
-#define io64_toggle_output ic74hc595_toggle_pin(DOUT17);shift_register_io_pins()
+#define io64_set_output ic74hc595_set_pin(DOUT17);io_extended_pins_update()
+#define io64_clear_output ic74hc595_clear_pin(DOUT17);io_extended_pins_update()
+#define io64_toggle_output ic74hc595_toggle_pin(DOUT17);io_extended_pins_update()
 #define io64_get_output ic74hc595_get_pin(DOUT17)
 #endif
 #if ASSERT_PIN_IO(DOUT18)
@@ -1186,9 +1190,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io65_get_input mcu_get_input(DOUT18)
 #elif ASSERT_PIN_EXTENDED(DOUT18)
 #define io65_config_output
-#define io65_set_output ic74hc595_set_pin(DOUT18);shift_register_io_pins()
-#define io65_clear_output ic74hc595_clear_pin(DOUT18);shift_register_io_pins()
-#define io65_toggle_output ic74hc595_toggle_pin(DOUT18);shift_register_io_pins()
+#define io65_set_output ic74hc595_set_pin(DOUT18);io_extended_pins_update()
+#define io65_clear_output ic74hc595_clear_pin(DOUT18);io_extended_pins_update()
+#define io65_toggle_output ic74hc595_toggle_pin(DOUT18);io_extended_pins_update()
 #define io65_get_output ic74hc595_get_pin(DOUT18)
 #endif
 #if ASSERT_PIN_IO(DOUT19)
@@ -1202,9 +1206,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io66_get_input mcu_get_input(DOUT19)
 #elif ASSERT_PIN_EXTENDED(DOUT19)
 #define io66_config_output
-#define io66_set_output ic74hc595_set_pin(DOUT19);shift_register_io_pins()
-#define io66_clear_output ic74hc595_clear_pin(DOUT19);shift_register_io_pins()
-#define io66_toggle_output ic74hc595_toggle_pin(DOUT19);shift_register_io_pins()
+#define io66_set_output ic74hc595_set_pin(DOUT19);io_extended_pins_update()
+#define io66_clear_output ic74hc595_clear_pin(DOUT19);io_extended_pins_update()
+#define io66_toggle_output ic74hc595_toggle_pin(DOUT19);io_extended_pins_update()
 #define io66_get_output ic74hc595_get_pin(DOUT19)
 #endif
 #if ASSERT_PIN_IO(DOUT20)
@@ -1218,9 +1222,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io67_get_input mcu_get_input(DOUT20)
 #elif ASSERT_PIN_EXTENDED(DOUT20)
 #define io67_config_output
-#define io67_set_output ic74hc595_set_pin(DOUT20);shift_register_io_pins()
-#define io67_clear_output ic74hc595_clear_pin(DOUT20);shift_register_io_pins()
-#define io67_toggle_output ic74hc595_toggle_pin(DOUT20);shift_register_io_pins()
+#define io67_set_output ic74hc595_set_pin(DOUT20);io_extended_pins_update()
+#define io67_clear_output ic74hc595_clear_pin(DOUT20);io_extended_pins_update()
+#define io67_toggle_output ic74hc595_toggle_pin(DOUT20);io_extended_pins_update()
 #define io67_get_output ic74hc595_get_pin(DOUT20)
 #endif
 #if ASSERT_PIN_IO(DOUT21)
@@ -1234,9 +1238,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io68_get_input mcu_get_input(DOUT21)
 #elif ASSERT_PIN_EXTENDED(DOUT21)
 #define io68_config_output
-#define io68_set_output ic74hc595_set_pin(DOUT21);shift_register_io_pins()
-#define io68_clear_output ic74hc595_clear_pin(DOUT21);shift_register_io_pins()
-#define io68_toggle_output ic74hc595_toggle_pin(DOUT21);shift_register_io_pins()
+#define io68_set_output ic74hc595_set_pin(DOUT21);io_extended_pins_update()
+#define io68_clear_output ic74hc595_clear_pin(DOUT21);io_extended_pins_update()
+#define io68_toggle_output ic74hc595_toggle_pin(DOUT21);io_extended_pins_update()
 #define io68_get_output ic74hc595_get_pin(DOUT21)
 #endif
 #if ASSERT_PIN_IO(DOUT22)
@@ -1250,9 +1254,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io69_get_input mcu_get_input(DOUT22)
 #elif ASSERT_PIN_EXTENDED(DOUT22)
 #define io69_config_output
-#define io69_set_output ic74hc595_set_pin(DOUT22);shift_register_io_pins()
-#define io69_clear_output ic74hc595_clear_pin(DOUT22);shift_register_io_pins()
-#define io69_toggle_output ic74hc595_toggle_pin(DOUT22);shift_register_io_pins()
+#define io69_set_output ic74hc595_set_pin(DOUT22);io_extended_pins_update()
+#define io69_clear_output ic74hc595_clear_pin(DOUT22);io_extended_pins_update()
+#define io69_toggle_output ic74hc595_toggle_pin(DOUT22);io_extended_pins_update()
 #define io69_get_output ic74hc595_get_pin(DOUT22)
 #endif
 #if ASSERT_PIN_IO(DOUT23)
@@ -1266,9 +1270,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io70_get_input mcu_get_input(DOUT23)
 #elif ASSERT_PIN_EXTENDED(DOUT23)
 #define io70_config_output
-#define io70_set_output ic74hc595_set_pin(DOUT23);shift_register_io_pins()
-#define io70_clear_output ic74hc595_clear_pin(DOUT23);shift_register_io_pins()
-#define io70_toggle_output ic74hc595_toggle_pin(DOUT23);shift_register_io_pins()
+#define io70_set_output ic74hc595_set_pin(DOUT23);io_extended_pins_update()
+#define io70_clear_output ic74hc595_clear_pin(DOUT23);io_extended_pins_update()
+#define io70_toggle_output ic74hc595_toggle_pin(DOUT23);io_extended_pins_update()
 #define io70_get_output ic74hc595_get_pin(DOUT23)
 #endif
 #if ASSERT_PIN_IO(DOUT24)
@@ -1282,9 +1286,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io71_get_input mcu_get_input(DOUT24)
 #elif ASSERT_PIN_EXTENDED(DOUT24)
 #define io71_config_output
-#define io71_set_output ic74hc595_set_pin(DOUT24);shift_register_io_pins()
-#define io71_clear_output ic74hc595_clear_pin(DOUT24);shift_register_io_pins()
-#define io71_toggle_output ic74hc595_toggle_pin(DOUT24);shift_register_io_pins()
+#define io71_set_output ic74hc595_set_pin(DOUT24);io_extended_pins_update()
+#define io71_clear_output ic74hc595_clear_pin(DOUT24);io_extended_pins_update()
+#define io71_toggle_output ic74hc595_toggle_pin(DOUT24);io_extended_pins_update()
 #define io71_get_output ic74hc595_get_pin(DOUT24)
 #endif
 #if ASSERT_PIN_IO(DOUT25)
@@ -1298,9 +1302,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io72_get_input mcu_get_input(DOUT25)
 #elif ASSERT_PIN_EXTENDED(DOUT25)
 #define io72_config_output
-#define io72_set_output ic74hc595_set_pin(DOUT25);shift_register_io_pins()
-#define io72_clear_output ic74hc595_clear_pin(DOUT25);shift_register_io_pins()
-#define io72_toggle_output ic74hc595_toggle_pin(DOUT25);shift_register_io_pins()
+#define io72_set_output ic74hc595_set_pin(DOUT25);io_extended_pins_update()
+#define io72_clear_output ic74hc595_clear_pin(DOUT25);io_extended_pins_update()
+#define io72_toggle_output ic74hc595_toggle_pin(DOUT25);io_extended_pins_update()
 #define io72_get_output ic74hc595_get_pin(DOUT25)
 #endif
 #if ASSERT_PIN_IO(DOUT26)
@@ -1314,9 +1318,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io73_get_input mcu_get_input(DOUT26)
 #elif ASSERT_PIN_EXTENDED(DOUT26)
 #define io73_config_output
-#define io73_set_output ic74hc595_set_pin(DOUT26);shift_register_io_pins()
-#define io73_clear_output ic74hc595_clear_pin(DOUT26);shift_register_io_pins()
-#define io73_toggle_output ic74hc595_toggle_pin(DOUT26);shift_register_io_pins()
+#define io73_set_output ic74hc595_set_pin(DOUT26);io_extended_pins_update()
+#define io73_clear_output ic74hc595_clear_pin(DOUT26);io_extended_pins_update()
+#define io73_toggle_output ic74hc595_toggle_pin(DOUT26);io_extended_pins_update()
 #define io73_get_output ic74hc595_get_pin(DOUT26)
 #endif
 #if ASSERT_PIN_IO(DOUT27)
@@ -1330,9 +1334,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io74_get_input mcu_get_input(DOUT27)
 #elif ASSERT_PIN_EXTENDED(DOUT27)
 #define io74_config_output
-#define io74_set_output ic74hc595_set_pin(DOUT27);shift_register_io_pins()
-#define io74_clear_output ic74hc595_clear_pin(DOUT27);shift_register_io_pins()
-#define io74_toggle_output ic74hc595_toggle_pin(DOUT27);shift_register_io_pins()
+#define io74_set_output ic74hc595_set_pin(DOUT27);io_extended_pins_update()
+#define io74_clear_output ic74hc595_clear_pin(DOUT27);io_extended_pins_update()
+#define io74_toggle_output ic74hc595_toggle_pin(DOUT27);io_extended_pins_update()
 #define io74_get_output ic74hc595_get_pin(DOUT27)
 #endif
 #if ASSERT_PIN_IO(DOUT28)
@@ -1346,9 +1350,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io75_get_input mcu_get_input(DOUT28)
 #elif ASSERT_PIN_EXTENDED(DOUT28)
 #define io75_config_output
-#define io75_set_output ic74hc595_set_pin(DOUT28);shift_register_io_pins()
-#define io75_clear_output ic74hc595_clear_pin(DOUT28);shift_register_io_pins()
-#define io75_toggle_output ic74hc595_toggle_pin(DOUT28);shift_register_io_pins()
+#define io75_set_output ic74hc595_set_pin(DOUT28);io_extended_pins_update()
+#define io75_clear_output ic74hc595_clear_pin(DOUT28);io_extended_pins_update()
+#define io75_toggle_output ic74hc595_toggle_pin(DOUT28);io_extended_pins_update()
 #define io75_get_output ic74hc595_get_pin(DOUT28)
 #endif
 #if ASSERT_PIN_IO(DOUT29)
@@ -1362,9 +1366,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io76_get_input mcu_get_input(DOUT29)
 #elif ASSERT_PIN_EXTENDED(DOUT29)
 #define io76_config_output
-#define io76_set_output ic74hc595_set_pin(DOUT29);shift_register_io_pins()
-#define io76_clear_output ic74hc595_clear_pin(DOUT29);shift_register_io_pins()
-#define io76_toggle_output ic74hc595_toggle_pin(DOUT29);shift_register_io_pins()
+#define io76_set_output ic74hc595_set_pin(DOUT29);io_extended_pins_update()
+#define io76_clear_output ic74hc595_clear_pin(DOUT29);io_extended_pins_update()
+#define io76_toggle_output ic74hc595_toggle_pin(DOUT29);io_extended_pins_update()
 #define io76_get_output ic74hc595_get_pin(DOUT29)
 #endif
 #if ASSERT_PIN_IO(DOUT30)
@@ -1378,9 +1382,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io77_get_input mcu_get_input(DOUT30)
 #elif ASSERT_PIN_EXTENDED(DOUT30)
 #define io77_config_output
-#define io77_set_output ic74hc595_set_pin(DOUT30);shift_register_io_pins()
-#define io77_clear_output ic74hc595_clear_pin(DOUT30);shift_register_io_pins()
-#define io77_toggle_output ic74hc595_toggle_pin(DOUT30);shift_register_io_pins()
+#define io77_set_output ic74hc595_set_pin(DOUT30);io_extended_pins_update()
+#define io77_clear_output ic74hc595_clear_pin(DOUT30);io_extended_pins_update()
+#define io77_toggle_output ic74hc595_toggle_pin(DOUT30);io_extended_pins_update()
 #define io77_get_output ic74hc595_get_pin(DOUT30)
 #endif
 #if ASSERT_PIN_IO(DOUT31)
@@ -1394,9 +1398,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io78_get_input mcu_get_input(DOUT31)
 #elif ASSERT_PIN_EXTENDED(DOUT31)
 #define io78_config_output
-#define io78_set_output ic74hc595_set_pin(DOUT31);shift_register_io_pins()
-#define io78_clear_output ic74hc595_clear_pin(DOUT31);shift_register_io_pins()
-#define io78_toggle_output ic74hc595_toggle_pin(DOUT31);shift_register_io_pins()
+#define io78_set_output ic74hc595_set_pin(DOUT31);io_extended_pins_update()
+#define io78_clear_output ic74hc595_clear_pin(DOUT31);io_extended_pins_update()
+#define io78_toggle_output ic74hc595_toggle_pin(DOUT31);io_extended_pins_update()
 #define io78_get_output ic74hc595_get_pin(DOUT31)
 #endif
 #if ASSERT_PIN_IO(DOUT32)
@@ -1410,9 +1414,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io79_get_input mcu_get_input(DOUT32)
 #elif ASSERT_PIN_EXTENDED(DOUT32)
 #define io79_config_output
-#define io79_set_output ic74hc595_set_pin(DOUT32);shift_register_io_pins()
-#define io79_clear_output ic74hc595_clear_pin(DOUT32);shift_register_io_pins()
-#define io79_toggle_output ic74hc595_toggle_pin(DOUT32);shift_register_io_pins()
+#define io79_set_output ic74hc595_set_pin(DOUT32);io_extended_pins_update()
+#define io79_clear_output ic74hc595_clear_pin(DOUT32);io_extended_pins_update()
+#define io79_toggle_output ic74hc595_toggle_pin(DOUT32);io_extended_pins_update()
 #define io79_get_output ic74hc595_get_pin(DOUT32)
 #endif
 #if ASSERT_PIN_IO(DOUT33)
@@ -1426,9 +1430,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io80_get_input mcu_get_input(DOUT33)
 #elif ASSERT_PIN_EXTENDED(DOUT33)
 #define io80_config_output
-#define io80_set_output ic74hc595_set_pin(DOUT33);shift_register_io_pins()
-#define io80_clear_output ic74hc595_clear_pin(DOUT33);shift_register_io_pins()
-#define io80_toggle_output ic74hc595_toggle_pin(DOUT33);shift_register_io_pins()
+#define io80_set_output ic74hc595_set_pin(DOUT33);io_extended_pins_update()
+#define io80_clear_output ic74hc595_clear_pin(DOUT33);io_extended_pins_update()
+#define io80_toggle_output ic74hc595_toggle_pin(DOUT33);io_extended_pins_update()
 #define io80_get_output ic74hc595_get_pin(DOUT33)
 #endif
 #if ASSERT_PIN_IO(DOUT34)
@@ -1442,9 +1446,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io81_get_input mcu_get_input(DOUT34)
 #elif ASSERT_PIN_EXTENDED(DOUT34)
 #define io81_config_output
-#define io81_set_output ic74hc595_set_pin(DOUT34);shift_register_io_pins()
-#define io81_clear_output ic74hc595_clear_pin(DOUT34);shift_register_io_pins()
-#define io81_toggle_output ic74hc595_toggle_pin(DOUT34);shift_register_io_pins()
+#define io81_set_output ic74hc595_set_pin(DOUT34);io_extended_pins_update()
+#define io81_clear_output ic74hc595_clear_pin(DOUT34);io_extended_pins_update()
+#define io81_toggle_output ic74hc595_toggle_pin(DOUT34);io_extended_pins_update()
 #define io81_get_output ic74hc595_get_pin(DOUT34)
 #endif
 #if ASSERT_PIN_IO(DOUT35)
@@ -1458,9 +1462,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io82_get_input mcu_get_input(DOUT35)
 #elif ASSERT_PIN_EXTENDED(DOUT35)
 #define io82_config_output
-#define io82_set_output ic74hc595_set_pin(DOUT35);shift_register_io_pins()
-#define io82_clear_output ic74hc595_clear_pin(DOUT35);shift_register_io_pins()
-#define io82_toggle_output ic74hc595_toggle_pin(DOUT35);shift_register_io_pins()
+#define io82_set_output ic74hc595_set_pin(DOUT35);io_extended_pins_update()
+#define io82_clear_output ic74hc595_clear_pin(DOUT35);io_extended_pins_update()
+#define io82_toggle_output ic74hc595_toggle_pin(DOUT35);io_extended_pins_update()
 #define io82_get_output ic74hc595_get_pin(DOUT35)
 #endif
 #if ASSERT_PIN_IO(DOUT36)
@@ -1474,9 +1478,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io83_get_input mcu_get_input(DOUT36)
 #elif ASSERT_PIN_EXTENDED(DOUT36)
 #define io83_config_output
-#define io83_set_output ic74hc595_set_pin(DOUT36);shift_register_io_pins()
-#define io83_clear_output ic74hc595_clear_pin(DOUT36);shift_register_io_pins()
-#define io83_toggle_output ic74hc595_toggle_pin(DOUT36);shift_register_io_pins()
+#define io83_set_output ic74hc595_set_pin(DOUT36);io_extended_pins_update()
+#define io83_clear_output ic74hc595_clear_pin(DOUT36);io_extended_pins_update()
+#define io83_toggle_output ic74hc595_toggle_pin(DOUT36);io_extended_pins_update()
 #define io83_get_output ic74hc595_get_pin(DOUT36)
 #endif
 #if ASSERT_PIN_IO(DOUT37)
@@ -1490,9 +1494,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io84_get_input mcu_get_input(DOUT37)
 #elif ASSERT_PIN_EXTENDED(DOUT37)
 #define io84_config_output
-#define io84_set_output ic74hc595_set_pin(DOUT37);shift_register_io_pins()
-#define io84_clear_output ic74hc595_clear_pin(DOUT37);shift_register_io_pins()
-#define io84_toggle_output ic74hc595_toggle_pin(DOUT37);shift_register_io_pins()
+#define io84_set_output ic74hc595_set_pin(DOUT37);io_extended_pins_update()
+#define io84_clear_output ic74hc595_clear_pin(DOUT37);io_extended_pins_update()
+#define io84_toggle_output ic74hc595_toggle_pin(DOUT37);io_extended_pins_update()
 #define io84_get_output ic74hc595_get_pin(DOUT37)
 #endif
 #if ASSERT_PIN_IO(DOUT38)
@@ -1506,9 +1510,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io85_get_input mcu_get_input(DOUT38)
 #elif ASSERT_PIN_EXTENDED(DOUT38)
 #define io85_config_output
-#define io85_set_output ic74hc595_set_pin(DOUT38);shift_register_io_pins()
-#define io85_clear_output ic74hc595_clear_pin(DOUT38);shift_register_io_pins()
-#define io85_toggle_output ic74hc595_toggle_pin(DOUT38);shift_register_io_pins()
+#define io85_set_output ic74hc595_set_pin(DOUT38);io_extended_pins_update()
+#define io85_clear_output ic74hc595_clear_pin(DOUT38);io_extended_pins_update()
+#define io85_toggle_output ic74hc595_toggle_pin(DOUT38);io_extended_pins_update()
 #define io85_get_output ic74hc595_get_pin(DOUT38)
 #endif
 #if ASSERT_PIN_IO(DOUT39)
@@ -1522,9 +1526,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io86_get_input mcu_get_input(DOUT39)
 #elif ASSERT_PIN_EXTENDED(DOUT39)
 #define io86_config_output
-#define io86_set_output ic74hc595_set_pin(DOUT39);shift_register_io_pins()
-#define io86_clear_output ic74hc595_clear_pin(DOUT39);shift_register_io_pins()
-#define io86_toggle_output ic74hc595_toggle_pin(DOUT39);shift_register_io_pins()
+#define io86_set_output ic74hc595_set_pin(DOUT39);io_extended_pins_update()
+#define io86_clear_output ic74hc595_clear_pin(DOUT39);io_extended_pins_update()
+#define io86_toggle_output ic74hc595_toggle_pin(DOUT39);io_extended_pins_update()
 #define io86_get_output ic74hc595_get_pin(DOUT39)
 #endif
 #if ASSERT_PIN_IO(DOUT40)
@@ -1538,9 +1542,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io87_get_input mcu_get_input(DOUT40)
 #elif ASSERT_PIN_EXTENDED(DOUT40)
 #define io87_config_output
-#define io87_set_output ic74hc595_set_pin(DOUT40);shift_register_io_pins()
-#define io87_clear_output ic74hc595_clear_pin(DOUT40);shift_register_io_pins()
-#define io87_toggle_output ic74hc595_toggle_pin(DOUT40);shift_register_io_pins()
+#define io87_set_output ic74hc595_set_pin(DOUT40);io_extended_pins_update()
+#define io87_clear_output ic74hc595_clear_pin(DOUT40);io_extended_pins_update()
+#define io87_toggle_output ic74hc595_toggle_pin(DOUT40);io_extended_pins_update()
 #define io87_get_output ic74hc595_get_pin(DOUT40)
 #endif
 #if ASSERT_PIN_IO(DOUT41)
@@ -1554,9 +1558,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io88_get_input mcu_get_input(DOUT41)
 #elif ASSERT_PIN_EXTENDED(DOUT41)
 #define io88_config_output
-#define io88_set_output ic74hc595_set_pin(DOUT41);shift_register_io_pins()
-#define io88_clear_output ic74hc595_clear_pin(DOUT41);shift_register_io_pins()
-#define io88_toggle_output ic74hc595_toggle_pin(DOUT41);shift_register_io_pins()
+#define io88_set_output ic74hc595_set_pin(DOUT41);io_extended_pins_update()
+#define io88_clear_output ic74hc595_clear_pin(DOUT41);io_extended_pins_update()
+#define io88_toggle_output ic74hc595_toggle_pin(DOUT41);io_extended_pins_update()
 #define io88_get_output ic74hc595_get_pin(DOUT41)
 #endif
 #if ASSERT_PIN_IO(DOUT42)
@@ -1570,9 +1574,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io89_get_input mcu_get_input(DOUT42)
 #elif ASSERT_PIN_EXTENDED(DOUT42)
 #define io89_config_output
-#define io89_set_output ic74hc595_set_pin(DOUT42);shift_register_io_pins()
-#define io89_clear_output ic74hc595_clear_pin(DOUT42);shift_register_io_pins()
-#define io89_toggle_output ic74hc595_toggle_pin(DOUT42);shift_register_io_pins()
+#define io89_set_output ic74hc595_set_pin(DOUT42);io_extended_pins_update()
+#define io89_clear_output ic74hc595_clear_pin(DOUT42);io_extended_pins_update()
+#define io89_toggle_output ic74hc595_toggle_pin(DOUT42);io_extended_pins_update()
 #define io89_get_output ic74hc595_get_pin(DOUT42)
 #endif
 #if ASSERT_PIN_IO(DOUT43)
@@ -1586,9 +1590,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io90_get_input mcu_get_input(DOUT43)
 #elif ASSERT_PIN_EXTENDED(DOUT43)
 #define io90_config_output
-#define io90_set_output ic74hc595_set_pin(DOUT43);shift_register_io_pins()
-#define io90_clear_output ic74hc595_clear_pin(DOUT43);shift_register_io_pins()
-#define io90_toggle_output ic74hc595_toggle_pin(DOUT43);shift_register_io_pins()
+#define io90_set_output ic74hc595_set_pin(DOUT43);io_extended_pins_update()
+#define io90_clear_output ic74hc595_clear_pin(DOUT43);io_extended_pins_update()
+#define io90_toggle_output ic74hc595_toggle_pin(DOUT43);io_extended_pins_update()
 #define io90_get_output ic74hc595_get_pin(DOUT43)
 #endif
 #if ASSERT_PIN_IO(DOUT44)
@@ -1602,9 +1606,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io91_get_input mcu_get_input(DOUT44)
 #elif ASSERT_PIN_EXTENDED(DOUT44)
 #define io91_config_output
-#define io91_set_output ic74hc595_set_pin(DOUT44);shift_register_io_pins()
-#define io91_clear_output ic74hc595_clear_pin(DOUT44);shift_register_io_pins()
-#define io91_toggle_output ic74hc595_toggle_pin(DOUT44);shift_register_io_pins()
+#define io91_set_output ic74hc595_set_pin(DOUT44);io_extended_pins_update()
+#define io91_clear_output ic74hc595_clear_pin(DOUT44);io_extended_pins_update()
+#define io91_toggle_output ic74hc595_toggle_pin(DOUT44);io_extended_pins_update()
 #define io91_get_output ic74hc595_get_pin(DOUT44)
 #endif
 #if ASSERT_PIN_IO(DOUT45)
@@ -1618,9 +1622,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io92_get_input mcu_get_input(DOUT45)
 #elif ASSERT_PIN_EXTENDED(DOUT45)
 #define io92_config_output
-#define io92_set_output ic74hc595_set_pin(DOUT45);shift_register_io_pins()
-#define io92_clear_output ic74hc595_clear_pin(DOUT45);shift_register_io_pins()
-#define io92_toggle_output ic74hc595_toggle_pin(DOUT45);shift_register_io_pins()
+#define io92_set_output ic74hc595_set_pin(DOUT45);io_extended_pins_update()
+#define io92_clear_output ic74hc595_clear_pin(DOUT45);io_extended_pins_update()
+#define io92_toggle_output ic74hc595_toggle_pin(DOUT45);io_extended_pins_update()
 #define io92_get_output ic74hc595_get_pin(DOUT45)
 #endif
 #if ASSERT_PIN_IO(DOUT46)
@@ -1634,9 +1638,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io93_get_input mcu_get_input(DOUT46)
 #elif ASSERT_PIN_EXTENDED(DOUT46)
 #define io93_config_output
-#define io93_set_output ic74hc595_set_pin(DOUT46);shift_register_io_pins()
-#define io93_clear_output ic74hc595_clear_pin(DOUT46);shift_register_io_pins()
-#define io93_toggle_output ic74hc595_toggle_pin(DOUT46);shift_register_io_pins()
+#define io93_set_output ic74hc595_set_pin(DOUT46);io_extended_pins_update()
+#define io93_clear_output ic74hc595_clear_pin(DOUT46);io_extended_pins_update()
+#define io93_toggle_output ic74hc595_toggle_pin(DOUT46);io_extended_pins_update()
 #define io93_get_output ic74hc595_get_pin(DOUT46)
 #endif
 #if ASSERT_PIN_IO(DOUT47)
@@ -1650,9 +1654,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io94_get_input mcu_get_input(DOUT47)
 #elif ASSERT_PIN_EXTENDED(DOUT47)
 #define io94_config_output
-#define io94_set_output ic74hc595_set_pin(DOUT47);shift_register_io_pins()
-#define io94_clear_output ic74hc595_clear_pin(DOUT47);shift_register_io_pins()
-#define io94_toggle_output ic74hc595_toggle_pin(DOUT47);shift_register_io_pins()
+#define io94_set_output ic74hc595_set_pin(DOUT47);io_extended_pins_update()
+#define io94_clear_output ic74hc595_clear_pin(DOUT47);io_extended_pins_update()
+#define io94_toggle_output ic74hc595_toggle_pin(DOUT47);io_extended_pins_update()
 #define io94_get_output ic74hc595_get_pin(DOUT47)
 #endif
 #if ASSERT_PIN_IO(DOUT48)
@@ -1666,9 +1670,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io95_get_input mcu_get_input(DOUT48)
 #elif ASSERT_PIN_EXTENDED(DOUT48)
 #define io95_config_output
-#define io95_set_output ic74hc595_set_pin(DOUT48);shift_register_io_pins()
-#define io95_clear_output ic74hc595_clear_pin(DOUT48);shift_register_io_pins()
-#define io95_toggle_output ic74hc595_toggle_pin(DOUT48);shift_register_io_pins()
+#define io95_set_output ic74hc595_set_pin(DOUT48);io_extended_pins_update()
+#define io95_clear_output ic74hc595_clear_pin(DOUT48);io_extended_pins_update()
+#define io95_toggle_output ic74hc595_toggle_pin(DOUT48);io_extended_pins_update()
 #define io95_get_output ic74hc595_get_pin(DOUT48)
 #endif
 #if ASSERT_PIN_IO(DOUT49)
@@ -1682,9 +1686,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io96_get_input mcu_get_input(DOUT49)
 #elif ASSERT_PIN_EXTENDED(DOUT49)
 #define io96_config_output
-#define io96_set_output ic74hc595_set_pin(DOUT49);shift_register_io_pins()
-#define io96_clear_output ic74hc595_clear_pin(DOUT49);shift_register_io_pins()
-#define io96_toggle_output ic74hc595_toggle_pin(DOUT49);shift_register_io_pins()
+#define io96_set_output ic74hc595_set_pin(DOUT49);io_extended_pins_update()
+#define io96_clear_output ic74hc595_clear_pin(DOUT49);io_extended_pins_update()
+#define io96_toggle_output ic74hc595_toggle_pin(DOUT49);io_extended_pins_update()
 #define io96_get_output ic74hc595_get_pin(DOUT49)
 #endif
 #if ASSERT_PIN_IO(LIMIT_X)
@@ -2097,7 +2101,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN0)
 #define io130_config_input 
 #define io130_config_pullup
-#define io130_get_input shift_register_io_pins();ic74hc165_get_pin(DIN0)
+#define io130_get_input io_extended_pins_update();ic74hc165_get_pin(DIN0)
 #endif
 #if ASSERT_PIN_IO(DIN1)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2117,7 +2121,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN1)
 #define io131_config_input 
 #define io131_config_pullup
-#define io131_get_input shift_register_io_pins();ic74hc165_get_pin(DIN1)
+#define io131_get_input io_extended_pins_update();ic74hc165_get_pin(DIN1)
 #endif
 #if ASSERT_PIN_IO(DIN2)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2137,7 +2141,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN2)
 #define io132_config_input 
 #define io132_config_pullup
-#define io132_get_input shift_register_io_pins();ic74hc165_get_pin(DIN2)
+#define io132_get_input io_extended_pins_update();ic74hc165_get_pin(DIN2)
 #endif
 #if ASSERT_PIN_IO(DIN3)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2157,7 +2161,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN3)
 #define io133_config_input 
 #define io133_config_pullup
-#define io133_get_input shift_register_io_pins();ic74hc165_get_pin(DIN3)
+#define io133_get_input io_extended_pins_update();ic74hc165_get_pin(DIN3)
 #endif
 #if ASSERT_PIN_IO(DIN4)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2177,7 +2181,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN4)
 #define io134_config_input 
 #define io134_config_pullup
-#define io134_get_input shift_register_io_pins();ic74hc165_get_pin(DIN4)
+#define io134_get_input io_extended_pins_update();ic74hc165_get_pin(DIN4)
 #endif
 #if ASSERT_PIN_IO(DIN5)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2197,7 +2201,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN5)
 #define io135_config_input 
 #define io135_config_pullup
-#define io135_get_input shift_register_io_pins();ic74hc165_get_pin(DIN5)
+#define io135_get_input io_extended_pins_update();ic74hc165_get_pin(DIN5)
 #endif
 #if ASSERT_PIN_IO(DIN6)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2217,7 +2221,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN6)
 #define io136_config_input 
 #define io136_config_pullup
-#define io136_get_input shift_register_io_pins();ic74hc165_get_pin(DIN6)
+#define io136_get_input io_extended_pins_update();ic74hc165_get_pin(DIN6)
 #endif
 #if ASSERT_PIN_IO(DIN7)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2237,7 +2241,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN7)
 #define io137_config_input 
 #define io137_config_pullup
-#define io137_get_input shift_register_io_pins();ic74hc165_get_pin(DIN7)
+#define io137_get_input io_extended_pins_update();ic74hc165_get_pin(DIN7)
 #endif
 #if ASSERT_PIN_IO(DIN8)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2257,7 +2261,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN8)
 #define io138_config_input 
 #define io138_config_pullup
-#define io138_get_input shift_register_io_pins();ic74hc165_get_pin(DIN8)
+#define io138_get_input io_extended_pins_update();ic74hc165_get_pin(DIN8)
 #endif
 #if ASSERT_PIN_IO(DIN9)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2277,7 +2281,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN9)
 #define io139_config_input 
 #define io139_config_pullup
-#define io139_get_input shift_register_io_pins();ic74hc165_get_pin(DIN9)
+#define io139_get_input io_extended_pins_update();ic74hc165_get_pin(DIN9)
 #endif
 #if ASSERT_PIN_IO(DIN10)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2297,7 +2301,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN10)
 #define io140_config_input 
 #define io140_config_pullup
-#define io140_get_input shift_register_io_pins();ic74hc165_get_pin(DIN10)
+#define io140_get_input io_extended_pins_update();ic74hc165_get_pin(DIN10)
 #endif
 #if ASSERT_PIN_IO(DIN11)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2317,7 +2321,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN11)
 #define io141_config_input 
 #define io141_config_pullup
-#define io141_get_input shift_register_io_pins();ic74hc165_get_pin(DIN11)
+#define io141_get_input io_extended_pins_update();ic74hc165_get_pin(DIN11)
 #endif
 #if ASSERT_PIN_IO(DIN12)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2337,7 +2341,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN12)
 #define io142_config_input 
 #define io142_config_pullup
-#define io142_get_input shift_register_io_pins();ic74hc165_get_pin(DIN12)
+#define io142_get_input io_extended_pins_update();ic74hc165_get_pin(DIN12)
 #endif
 #if ASSERT_PIN_IO(DIN13)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2357,7 +2361,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN13)
 #define io143_config_input 
 #define io143_config_pullup
-#define io143_get_input shift_register_io_pins();ic74hc165_get_pin(DIN13)
+#define io143_get_input io_extended_pins_update();ic74hc165_get_pin(DIN13)
 #endif
 #if ASSERT_PIN_IO(DIN14)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2377,7 +2381,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN14)
 #define io144_config_input 
 #define io144_config_pullup
-#define io144_get_input shift_register_io_pins();ic74hc165_get_pin(DIN14)
+#define io144_get_input io_extended_pins_update();ic74hc165_get_pin(DIN14)
 #endif
 #if ASSERT_PIN_IO(DIN15)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2397,7 +2401,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN15)
 #define io145_config_input 
 #define io145_config_pullup
-#define io145_get_input shift_register_io_pins();ic74hc165_get_pin(DIN15)
+#define io145_get_input io_extended_pins_update();ic74hc165_get_pin(DIN15)
 #endif
 #if ASSERT_PIN_IO(DIN16)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2417,7 +2421,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN16)
 #define io146_config_input 
 #define io146_config_pullup
-#define io146_get_input shift_register_io_pins();ic74hc165_get_pin(DIN16)
+#define io146_get_input io_extended_pins_update();ic74hc165_get_pin(DIN16)
 #endif
 #if ASSERT_PIN_IO(DIN17)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2437,7 +2441,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN17)
 #define io147_config_input 
 #define io147_config_pullup
-#define io147_get_input shift_register_io_pins();ic74hc165_get_pin(DIN17)
+#define io147_get_input io_extended_pins_update();ic74hc165_get_pin(DIN17)
 #endif
 #if ASSERT_PIN_IO(DIN18)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2457,7 +2461,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN18)
 #define io148_config_input 
 #define io148_config_pullup
-#define io148_get_input shift_register_io_pins();ic74hc165_get_pin(DIN18)
+#define io148_get_input io_extended_pins_update();ic74hc165_get_pin(DIN18)
 #endif
 #if ASSERT_PIN_IO(DIN19)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2477,7 +2481,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN19)
 #define io149_config_input 
 #define io149_config_pullup
-#define io149_get_input shift_register_io_pins();ic74hc165_get_pin(DIN19)
+#define io149_get_input io_extended_pins_update();ic74hc165_get_pin(DIN19)
 #endif
 #if ASSERT_PIN_IO(DIN20)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2497,7 +2501,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN20)
 #define io150_config_input 
 #define io150_config_pullup
-#define io150_get_input shift_register_io_pins();ic74hc165_get_pin(DIN20)
+#define io150_get_input io_extended_pins_update();ic74hc165_get_pin(DIN20)
 #endif
 #if ASSERT_PIN_IO(DIN21)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2517,7 +2521,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN21)
 #define io151_config_input 
 #define io151_config_pullup
-#define io151_get_input shift_register_io_pins();ic74hc165_get_pin(DIN21)
+#define io151_get_input io_extended_pins_update();ic74hc165_get_pin(DIN21)
 #endif
 #if ASSERT_PIN_IO(DIN22)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2537,7 +2541,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN22)
 #define io152_config_input 
 #define io152_config_pullup
-#define io152_get_input shift_register_io_pins();ic74hc165_get_pin(DIN22)
+#define io152_get_input io_extended_pins_update();ic74hc165_get_pin(DIN22)
 #endif
 #if ASSERT_PIN_IO(DIN23)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2557,7 +2561,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN23)
 #define io153_config_input 
 #define io153_config_pullup
-#define io153_get_input shift_register_io_pins();ic74hc165_get_pin(DIN23)
+#define io153_get_input io_extended_pins_update();ic74hc165_get_pin(DIN23)
 #endif
 #if ASSERT_PIN_IO(DIN24)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2577,7 +2581,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN24)
 #define io154_config_input 
 #define io154_config_pullup
-#define io154_get_input shift_register_io_pins();ic74hc165_get_pin(DIN24)
+#define io154_get_input io_extended_pins_update();ic74hc165_get_pin(DIN24)
 #endif
 #if ASSERT_PIN_IO(DIN25)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2597,7 +2601,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN25)
 #define io155_config_input 
 #define io155_config_pullup
-#define io155_get_input shift_register_io_pins();ic74hc165_get_pin(DIN25)
+#define io155_get_input io_extended_pins_update();ic74hc165_get_pin(DIN25)
 #endif
 #if ASSERT_PIN_IO(DIN26)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2617,7 +2621,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN26)
 #define io156_config_input 
 #define io156_config_pullup
-#define io156_get_input shift_register_io_pins();ic74hc165_get_pin(DIN26)
+#define io156_get_input io_extended_pins_update();ic74hc165_get_pin(DIN26)
 #endif
 #if ASSERT_PIN_IO(DIN27)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2637,7 +2641,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN27)
 #define io157_config_input 
 #define io157_config_pullup
-#define io157_get_input shift_register_io_pins();ic74hc165_get_pin(DIN27)
+#define io157_get_input io_extended_pins_update();ic74hc165_get_pin(DIN27)
 #endif
 #if ASSERT_PIN_IO(DIN28)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2657,7 +2661,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN28)
 #define io158_config_input 
 #define io158_config_pullup
-#define io158_get_input shift_register_io_pins();ic74hc165_get_pin(DIN28)
+#define io158_get_input io_extended_pins_update();ic74hc165_get_pin(DIN28)
 #endif
 #if ASSERT_PIN_IO(DIN29)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2677,7 +2681,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN29)
 #define io159_config_input 
 #define io159_config_pullup
-#define io159_get_input shift_register_io_pins();ic74hc165_get_pin(DIN29)
+#define io159_get_input io_extended_pins_update();ic74hc165_get_pin(DIN29)
 #endif
 #if ASSERT_PIN_IO(DIN30)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2697,7 +2701,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN30)
 #define io160_config_input 
 #define io160_config_pullup
-#define io160_get_input shift_register_io_pins();ic74hc165_get_pin(DIN30)
+#define io160_get_input io_extended_pins_update();ic74hc165_get_pin(DIN30)
 #endif
 #if ASSERT_PIN_IO(DIN31)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2717,7 +2721,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN31)
 #define io161_config_input 
 #define io161_config_pullup
-#define io161_get_input shift_register_io_pins();ic74hc165_get_pin(DIN31)
+#define io161_get_input io_extended_pins_update();ic74hc165_get_pin(DIN31)
 #endif
 #if ASSERT_PIN_IO(DIN32)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2737,7 +2741,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN32)
 #define io162_config_input 
 #define io162_config_pullup
-#define io162_get_input shift_register_io_pins();ic74hc165_get_pin(DIN32)
+#define io162_get_input io_extended_pins_update();ic74hc165_get_pin(DIN32)
 #endif
 #if ASSERT_PIN_IO(DIN33)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2757,7 +2761,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN33)
 #define io163_config_input 
 #define io163_config_pullup
-#define io163_get_input shift_register_io_pins();ic74hc165_get_pin(DIN33)
+#define io163_get_input io_extended_pins_update();ic74hc165_get_pin(DIN33)
 #endif
 #if ASSERT_PIN_IO(DIN34)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2777,7 +2781,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN34)
 #define io164_config_input 
 #define io164_config_pullup
-#define io164_get_input shift_register_io_pins();ic74hc165_get_pin(DIN34)
+#define io164_get_input io_extended_pins_update();ic74hc165_get_pin(DIN34)
 #endif
 #if ASSERT_PIN_IO(DIN35)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2797,7 +2801,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN35)
 #define io165_config_input 
 #define io165_config_pullup
-#define io165_get_input shift_register_io_pins();ic74hc165_get_pin(DIN35)
+#define io165_get_input io_extended_pins_update();ic74hc165_get_pin(DIN35)
 #endif
 #if ASSERT_PIN_IO(DIN36)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2817,7 +2821,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN36)
 #define io166_config_input 
 #define io166_config_pullup
-#define io166_get_input shift_register_io_pins();ic74hc165_get_pin(DIN36)
+#define io166_get_input io_extended_pins_update();ic74hc165_get_pin(DIN36)
 #endif
 #if ASSERT_PIN_IO(DIN37)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2837,7 +2841,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN37)
 #define io167_config_input 
 #define io167_config_pullup
-#define io167_get_input shift_register_io_pins();ic74hc165_get_pin(DIN37)
+#define io167_get_input io_extended_pins_update();ic74hc165_get_pin(DIN37)
 #endif
 #if ASSERT_PIN_IO(DIN38)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2857,7 +2861,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN38)
 #define io168_config_input 
 #define io168_config_pullup
-#define io168_get_input shift_register_io_pins();ic74hc165_get_pin(DIN38)
+#define io168_get_input io_extended_pins_update();ic74hc165_get_pin(DIN38)
 #endif
 #if ASSERT_PIN_IO(DIN39)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2877,7 +2881,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN39)
 #define io169_config_input 
 #define io169_config_pullup
-#define io169_get_input shift_register_io_pins();ic74hc165_get_pin(DIN39)
+#define io169_get_input io_extended_pins_update();ic74hc165_get_pin(DIN39)
 #endif
 #if ASSERT_PIN_IO(DIN40)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2897,7 +2901,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN40)
 #define io170_config_input 
 #define io170_config_pullup
-#define io170_get_input shift_register_io_pins();ic74hc165_get_pin(DIN40)
+#define io170_get_input io_extended_pins_update();ic74hc165_get_pin(DIN40)
 #endif
 #if ASSERT_PIN_IO(DIN41)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2917,7 +2921,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN41)
 #define io171_config_input 
 #define io171_config_pullup
-#define io171_get_input shift_register_io_pins();ic74hc165_get_pin(DIN41)
+#define io171_get_input io_extended_pins_update();ic74hc165_get_pin(DIN41)
 #endif
 #if ASSERT_PIN_IO(DIN42)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2937,7 +2941,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN42)
 #define io172_config_input 
 #define io172_config_pullup
-#define io172_get_input shift_register_io_pins();ic74hc165_get_pin(DIN42)
+#define io172_get_input io_extended_pins_update();ic74hc165_get_pin(DIN42)
 #endif
 #if ASSERT_PIN_IO(DIN43)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2957,7 +2961,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN43)
 #define io173_config_input 
 #define io173_config_pullup
-#define io173_get_input shift_register_io_pins();ic74hc165_get_pin(DIN43)
+#define io173_get_input io_extended_pins_update();ic74hc165_get_pin(DIN43)
 #endif
 #if ASSERT_PIN_IO(DIN44)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2977,7 +2981,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN44)
 #define io174_config_input 
 #define io174_config_pullup
-#define io174_get_input shift_register_io_pins();ic74hc165_get_pin(DIN44)
+#define io174_get_input io_extended_pins_update();ic74hc165_get_pin(DIN44)
 #endif
 #if ASSERT_PIN_IO(DIN45)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -2997,7 +3001,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN45)
 #define io175_config_input 
 #define io175_config_pullup
-#define io175_get_input shift_register_io_pins();ic74hc165_get_pin(DIN45)
+#define io175_get_input io_extended_pins_update();ic74hc165_get_pin(DIN45)
 #endif
 #if ASSERT_PIN_IO(DIN46)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -3017,7 +3021,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN46)
 #define io176_config_input 
 #define io176_config_pullup
-#define io176_get_input shift_register_io_pins();ic74hc165_get_pin(DIN46)
+#define io176_get_input io_extended_pins_update();ic74hc165_get_pin(DIN46)
 #endif
 #if ASSERT_PIN_IO(DIN47)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -3037,7 +3041,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN47)
 #define io177_config_input 
 #define io177_config_pullup
-#define io177_get_input shift_register_io_pins();ic74hc165_get_pin(DIN47)
+#define io177_get_input io_extended_pins_update();ic74hc165_get_pin(DIN47)
 #endif
 #if ASSERT_PIN_IO(DIN48)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -3057,7 +3061,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN48)
 #define io178_config_input 
 #define io178_config_pullup
-#define io178_get_input shift_register_io_pins();ic74hc165_get_pin(DIN48)
+#define io178_get_input io_extended_pins_update();ic74hc165_get_pin(DIN48)
 #endif
 #if ASSERT_PIN_IO(DIN49)
 #ifdef DISABLE_HAL_CONFIG_PROTECTION
@@ -3077,7 +3081,7 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #elif ASSERT_PIN_EXTENDED(DIN49)
 #define io179_config_input 
 #define io179_config_pullup
-#define io179_get_input shift_register_io_pins();ic74hc165_get_pin(DIN49)
+#define io179_get_input io_extended_pins_update();ic74hc165_get_pin(DIN49)
 #endif
 #if ASSERT_PIN_IO(SPI_CS)
 #define io207_config_output mcu_config_output(SPI_CS)
@@ -3090,9 +3094,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io207_get_input mcu_get_input(SPI_CS)
 #elif ASSERT_PIN_EXTENDED(SPI_CS)
 #define io207_config_output
-#define io207_set_output ic74hc595_set_pin(SPI_CS);shift_register_io_pins()
-#define io207_clear_output ic74hc595_clear_pin(SPI_CS);shift_register_io_pins()
-#define io207_toggle_output ic74hc595_toggle_pin(SPI_CS);shift_register_io_pins()
+#define io207_set_output ic74hc595_set_pin(SPI_CS);io_extended_pins_update()
+#define io207_clear_output ic74hc595_clear_pin(SPI_CS);io_extended_pins_update()
+#define io207_toggle_output ic74hc595_toggle_pin(SPI_CS);io_extended_pins_update()
 #define io207_get_output ic74hc595_get_pin(SPI_CS)
 #endif
 #if ASSERT_PIN_IO(SPI2_CS)
@@ -3106,9 +3110,9 @@ extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define io215_get_input mcu_get_input(SPI2_CS)
 #elif ASSERT_PIN_EXTENDED(SPI2_CS)
 #define io215_config_output
-#define io215_set_output ic74hc595_set_pin(SPI2_CS);shift_register_io_pins()
-#define io215_clear_output ic74hc595_clear_pin(SPI2_CS);shift_register_io_pins()
-#define io215_toggle_output ic74hc595_toggle_pin(SPI2_CS);shift_register_io_pins()
+#define io215_set_output ic74hc595_set_pin(SPI2_CS);io_extended_pins_update()
+#define io215_clear_output ic74hc595_clear_pin(SPI2_CS);io_extended_pins_update()
+#define io215_toggle_output ic74hc595_toggle_pin(SPI2_CS);io_extended_pins_update()
 #define io215_get_output ic74hc595_get_pin(SPI2_CS)
 #endif
 
