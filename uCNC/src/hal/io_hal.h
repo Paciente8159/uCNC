@@ -343,6 +343,7 @@ extern "C"
 #define io25_get_output ic74hc595_get_pin(PWM0)
 #define io25_config_pwm(freq)                       \
 	{                                                 \
+		io_config_output(PWM0);                         \
 		g_soft_pwm_res = mcu_softpwm_freq_config(freq); \
 	}
 #define io25_set_pwm(value)                                 \
@@ -368,6 +369,7 @@ extern "C"
 #define io26_get_output ic74hc595_get_pin(PWM1)
 #define io26_config_pwm(freq)                       \
 	{                                                 \
+		io_config_output(PWM1);                         \
 		g_soft_pwm_res = mcu_softpwm_freq_config(freq); \
 	}
 #define io26_set_pwm(value)                                 \
@@ -393,6 +395,7 @@ extern "C"
 #define io27_get_output ic74hc595_get_pin(PWM2)
 #define io27_config_pwm(freq)                       \
 	{                                                 \
+		io_config_output(PWM2);                         \
 		g_soft_pwm_res = mcu_softpwm_freq_config(freq); \
 	}
 #define io27_set_pwm(value)                                 \
@@ -418,6 +421,7 @@ extern "C"
 #define io28_get_output ic74hc595_get_pin(PWM3)
 #define io28_config_pwm(freq)                       \
 	{                                                 \
+		io_config_output(PWM3);                         \
 		g_soft_pwm_res = mcu_softpwm_freq_config(freq); \
 	}
 #define io28_set_pwm(value)                                 \
@@ -443,6 +447,7 @@ extern "C"
 #define io29_get_output ic74hc595_get_pin(PWM4)
 #define io29_config_pwm(freq)                       \
 	{                                                 \
+		io_config_output(PWM4);                         \
 		g_soft_pwm_res = mcu_softpwm_freq_config(freq); \
 	}
 #define io29_set_pwm(value)                                 \
@@ -468,6 +473,7 @@ extern "C"
 #define io30_get_output ic74hc595_get_pin(PWM5)
 #define io30_config_pwm(freq)                       \
 	{                                                 \
+		io_config_output(PWM5);                         \
 		g_soft_pwm_res = mcu_softpwm_freq_config(freq); \
 	}
 #define io30_set_pwm(value)                                 \
@@ -493,6 +499,7 @@ extern "C"
 #define io31_get_output ic74hc595_get_pin(PWM6)
 #define io31_config_pwm(freq)                       \
 	{                                                 \
+		io_config_output(PWM6);                         \
 		g_soft_pwm_res = mcu_softpwm_freq_config(freq); \
 	}
 #define io31_set_pwm(value)                                 \
@@ -518,6 +525,7 @@ extern "C"
 #define io32_get_output ic74hc595_get_pin(PWM7)
 #define io32_config_pwm(freq)                       \
 	{                                                 \
+		io_config_output(PWM7);                         \
 		g_soft_pwm_res = mcu_softpwm_freq_config(freq); \
 	}
 #define io32_set_pwm(value)                                 \
@@ -543,6 +551,7 @@ extern "C"
 #define io33_get_output ic74hc595_get_pin(PWM8)
 #define io33_config_pwm(freq)                       \
 	{                                                 \
+		io_config_output(PWM8);                         \
 		g_soft_pwm_res = mcu_softpwm_freq_config(freq); \
 	}
 #define io33_set_pwm(value)                                 \
@@ -568,6 +577,7 @@ extern "C"
 #define io34_get_output ic74hc595_get_pin(PWM9)
 #define io34_config_pwm(freq)                       \
 	{                                                 \
+		io_config_output(PWM9);                         \
 		g_soft_pwm_res = mcu_softpwm_freq_config(freq); \
 	}
 #define io34_set_pwm(value)                                 \
@@ -593,6 +603,7 @@ extern "C"
 #define io35_get_output ic74hc595_get_pin(PWM10)
 #define io35_config_pwm(freq)                       \
 	{                                                 \
+		io_config_output(PWM10);                        \
 		g_soft_pwm_res = mcu_softpwm_freq_config(freq); \
 	}
 #define io35_set_pwm(value)                                  \
@@ -618,6 +629,7 @@ extern "C"
 #define io36_get_output ic74hc595_get_pin(PWM11)
 #define io36_config_pwm(freq)                       \
 	{                                                 \
+		io_config_output(PWM11);                        \
 		g_soft_pwm_res = mcu_softpwm_freq_config(freq); \
 	}
 #define io36_set_pwm(value)                                  \
@@ -643,6 +655,7 @@ extern "C"
 #define io37_get_output ic74hc595_get_pin(PWM12)
 #define io37_config_pwm(freq)                       \
 	{                                                 \
+		io_config_output(PWM12);                        \
 		g_soft_pwm_res = mcu_softpwm_freq_config(freq); \
 	}
 #define io37_set_pwm(value)                                  \
@@ -668,6 +681,7 @@ extern "C"
 #define io38_get_output ic74hc595_get_pin(PWM13)
 #define io38_config_pwm(freq)                       \
 	{                                                 \
+		io_config_output(PWM13);                        \
 		g_soft_pwm_res = mcu_softpwm_freq_config(freq); \
 	}
 #define io38_set_pwm(value)                                  \
@@ -693,6 +707,7 @@ extern "C"
 #define io39_get_output ic74hc595_get_pin(PWM14)
 #define io39_config_pwm(freq)                       \
 	{                                                 \
+		io_config_output(PWM14);                        \
 		g_soft_pwm_res = mcu_softpwm_freq_config(freq); \
 	}
 #define io39_set_pwm(value)                                  \
@@ -718,6 +733,7 @@ extern "C"
 #define io40_get_output ic74hc595_get_pin(PWM15)
 #define io40_config_pwm(freq)                       \
 	{                                                 \
+		io_config_output(PWM15);                        \
 		g_soft_pwm_res = mcu_softpwm_freq_config(freq); \
 	}
 #define io40_set_pwm(value)                                  \
@@ -735,7 +751,7 @@ extern "C"
 #define io41_set_pwm(value) mcu_set_servo(SERVO0, value)
 #define io41_get_pwm mcu_get_servo(SERVO0)
 #elif ASSERT_PIN_EXTENDED(SERVO0)
-#define io41_config_output ({})
+#define io41_config_output
 #define io41_set_output ic74hc595_set_pin(SERVO0)
 #define io41_clear_output ic74hc595_clear_pin(SERVO0)
 #define io41_toggle_output ic74hc595_toggle_pin(SERVO0)
@@ -752,7 +768,7 @@ extern "C"
 #define io42_set_pwm(value) mcu_set_servo(SERVO1, value)
 #define io42_get_pwm mcu_get_servo(SERVO1)
 #elif ASSERT_PIN_EXTENDED(SERVO1)
-#define io42_config_output ({})
+#define io42_config_output
 #define io42_set_output ic74hc595_set_pin(SERVO1)
 #define io42_clear_output ic74hc595_clear_pin(SERVO1)
 #define io42_toggle_output ic74hc595_toggle_pin(SERVO1)
@@ -769,7 +785,7 @@ extern "C"
 #define io43_set_pwm(value) mcu_set_servo(SERVO2, value)
 #define io43_get_pwm mcu_get_servo(SERVO2)
 #elif ASSERT_PIN_EXTENDED(SERVO2)
-#define io43_config_output ({})
+#define io43_config_output
 #define io43_set_output ic74hc595_set_pin(SERVO2)
 #define io43_clear_output ic74hc595_clear_pin(SERVO2)
 #define io43_toggle_output ic74hc595_toggle_pin(SERVO2)
@@ -786,7 +802,7 @@ extern "C"
 #define io44_set_pwm(value) mcu_set_servo(SERVO3, value)
 #define io44_get_pwm mcu_get_servo(SERVO3)
 #elif ASSERT_PIN_EXTENDED(SERVO3)
-#define io44_config_output ({})
+#define io44_config_output
 #define io44_set_output ic74hc595_set_pin(SERVO3)
 #define io44_clear_output ic74hc595_clear_pin(SERVO3)
 #define io44_toggle_output ic74hc595_toggle_pin(SERVO3)
@@ -803,7 +819,7 @@ extern "C"
 #define io45_set_pwm(value) mcu_set_servo(SERVO4, value)
 #define io45_get_pwm mcu_get_servo(SERVO4)
 #elif ASSERT_PIN_EXTENDED(SERVO4)
-#define io45_config_output ({})
+#define io45_config_output
 #define io45_set_output ic74hc595_set_pin(SERVO4)
 #define io45_clear_output ic74hc595_clear_pin(SERVO4)
 #define io45_toggle_output ic74hc595_toggle_pin(SERVO4)
@@ -820,7 +836,7 @@ extern "C"
 #define io46_set_pwm(value) mcu_set_servo(SERVO5, value)
 #define io46_get_pwm mcu_get_servo(SERVO5)
 #elif ASSERT_PIN_EXTENDED(SERVO5)
-#define io46_config_output ({})
+#define io46_config_output
 #define io46_set_output ic74hc595_set_pin(SERVO5)
 #define io46_clear_output ic74hc595_clear_pin(SERVO5)
 #define io46_toggle_output ic74hc595_toggle_pin(SERVO5)
