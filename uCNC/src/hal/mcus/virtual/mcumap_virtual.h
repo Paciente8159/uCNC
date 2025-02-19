@@ -36,6 +36,8 @@
 #define rom_memcpy memcpy
 #define rom_read_byte *
 
+#define MCU_WEAK __attribute__((weak,weakref))
+
 /* 7.18.2.1  Limits of exact-width integer types */
 #define INT8_MIN (-128)
 #define INT16_MIN (-32768)
@@ -258,6 +260,8 @@
 #define DIO77 77
 #define DOUT31 78
 #define DIO78 78
+
+#ifndef EMULATE_74HC165
 #define LIMIT_X 100
 #define DIO100 100
 #define LIMIT_Y 101
@@ -286,38 +290,6 @@
 #define DIO112 112
 #define CS_RES 113
 #define DIO113 113
-#define ANALOG0 114
-#define DIO114 114
-#define ANALOG1 115
-#define DIO115 115
-#define ANALOG2 116
-#define DIO116 116
-#define ANALOG3 117
-#define DIO117 117
-#define ANALOG4 118
-#define DIO118 118
-#define ANALOG5 119
-#define DIO119 119
-#define ANALOG6 120
-#define DIO120 120
-#define ANALOG7 121
-#define DIO121 121
-#define ANALOG8 122
-#define DIO122 122
-#define ANALOG9 123
-#define DIO123 123
-#define ANALOG10 124
-#define DIO124 124
-#define ANALOG11 125
-#define DIO125 125
-#define ANALOG12 126
-#define DIO126 126
-#define ANALOG13 127
-#define DIO127 127
-#define ANALOG14 128
-#define DIO128 128
-#define ANALOG15 129
-#define DIO129 129
 #define DIN0 130
 #define DIO130 130
 #define DIN1 131
@@ -334,6 +306,30 @@
 #define DIO136 136
 #define DIN7 137
 #define DIO137 137
+#else
+#define IC74HC165_COUNT 4
+#define LIMIT_X_IO_OFFSET 0
+#define LIMIT_Y_IO_OFFSET 1
+#define LIMIT_Z_IO_OFFSET 2
+#define LIMIT_A_IO_OFFSET 3
+#define LIMIT_B_IO_OFFSET 4
+#define LIMIT_C_IO_OFFSET 5
+#define PROBE_IO_OFFSET 6
+#define ESTOP_IO_OFFSET 7
+#define SAFETY_DOOR_IO_OFFSET 8
+#define FHOLD_IO_OFFSET 9
+#define CS_RES_IO_OFFSET 10
+#define DIN0_IO_OFFSET 11
+#define DIN1_IO_OFFSET 12
+#define DIN2_IO_OFFSET 13
+#define DIN3_IO_OFFSET 14
+#define DIN4_IO_OFFSET 15
+#define DIN5_IO_OFFSET 16
+#define DIN6_IO_OFFSET 17
+#define DIN7_IO_OFFSET 18
+// #define PWM0_IO_OFFSET 24
+#endif
+
 #define DIN8 138
 #define DIO138 138
 #define DIN9 139
@@ -382,6 +378,38 @@
 #define DIO160 160
 #define DIN31 161
 #define DIO161 161
+#define ANALOG0 114
+#define DIO114 114
+#define ANALOG1 115
+#define DIO115 115
+#define ANALOG2 116
+#define DIO116 116
+#define ANALOG3 117
+#define DIO117 117
+#define ANALOG4 118
+#define DIO118 118
+#define ANALOG5 119
+#define DIO119 119
+#define ANALOG6 120
+#define DIO120 120
+#define ANALOG7 121
+#define DIO121 121
+#define ANALOG8 122
+#define DIO122 122
+#define ANALOG9 123
+#define DIO123 123
+#define ANALOG10 124
+#define DIO124 124
+#define ANALOG11 125
+#define DIO125 125
+#define ANALOG12 126
+#define DIO126 126
+#define ANALOG13 127
+#define DIO127 127
+#define ANALOG14 128
+#define DIO128 128
+#define ANALOG15 129
+#define DIO129 129
 #define TX 200
 #define DIO200 200
 #define RX 201
