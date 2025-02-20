@@ -54,9 +54,17 @@ extern "C"
 		{                                                                \
 			io_clear_output(TXPIN);                                        \
 		}                                                                \
+		if (ASSERT_PIN_EXTENDED(TXPIN))                                  \
+		{                                                                \
+			io_extended_pins_update();                                     \
+		}                                                                \
 	}                                                                  \
 	bool NAME##_rx(void)                                               \
 	{                                                                  \
+		if (ASSERT_PIN_EXTENDED(RXPIN))                                  \
+		{                                                                \
+			io_extended_pins_update();                                     \
+		}                                                                \
 		return io_get_input(RXPIN);                                      \
 	}                                                                  \
 	void NAME##_wait(void) { mcu_delay_cycles(F_CPU / BAUD); }         \
@@ -68,7 +76,7 @@ extern "C"
 	{                                                                  \
 		if (state)                                                       \
 		{                                                                \
-			io_set_output(TRXPIN);                                       \
+			io_set_output(TRXPIN);                                         \
 		}                                                                \
 		else                                                             \
 		{                                                                \
