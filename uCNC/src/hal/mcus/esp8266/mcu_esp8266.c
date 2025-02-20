@@ -417,8 +417,10 @@ IRAM_ATTR void mcu_itp_isr(void)
 		GP16O &= ~1;
 	}
 
+	#ifdef SHIFT_REGISTER_CUSTOM_CALLBACK
 	memcpy((void *)ic74hc595_io_pins, (const void *)&(outputs.ic74hc595), IC74HC595_COUNT);
 	spi_shift_register_io_pins();
+	#endif
 }
 
 #undef DBGMSG
