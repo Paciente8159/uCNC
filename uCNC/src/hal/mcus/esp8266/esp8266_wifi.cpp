@@ -104,33 +104,36 @@ extern "C"
 		{
 			if (!strcmp((const char *)&(cmd_params->cmd)[4], "ON"))
 			{
-				WiFi.disconnect();
-				switch (wifi_settings.wifi_mode)
+				__ATOMIC__
 				{
-				case 1:
-					WiFi.mode(WIFI_STA);
-					WiFi.begin(wifi_settings.ssid, wifi_settings.pass);
-					proto_info("Trying to connect to WiFi");
-					break;
-				case 2:
-					WiFi.mode(WIFI_AP);
-					WiFi.softAP(BOARD_NAME, wifi_settings.pass);
-					proto_info("AP started");
-					proto_info("SSID>" BOARD_NAME);
-					proto_info("IP>%s", WiFi.softAPIP().toString().c_str());
-					break;
-				default:
-					WiFi.mode(WIFI_AP_STA);
-					WiFi.begin(wifi_settings.ssid, wifi_settings.pass);
-					proto_info("Trying to connect to WiFi");
-					WiFi.softAP(BOARD_NAME, wifi_settings.pass);
-					proto_info("AP started");
-					proto_info("SSID>" BOARD_NAME);
-					proto_info("IP>%s", WiFi.softAPIP().toString().c_str());
-					break;
-				}
+					WiFi.disconnect();
+					switch (wifi_settings.wifi_mode)
+					{
+					case 1:
+						WiFi.mode(WIFI_STA);
+						WiFi.begin(wifi_settings.ssid, wifi_settings.pass);
+						proto_info("Trying to connect to WiFi");
+						break;
+					case 2:
+						WiFi.mode(WIFI_AP);
+						WiFi.softAP(BOARD_NAME, wifi_settings.pass);
+						proto_info("AP started");
+						proto_info("SSID>" BOARD_NAME);
+						proto_info("IP>%s", WiFi.softAPIP().toString().c_str());
+						break;
+					default:
+						WiFi.mode(WIFI_AP_STA);
+						WiFi.begin(wifi_settings.ssid, wifi_settings.pass);
+						proto_info("Trying to connect to WiFi");
+						WiFi.softAP(BOARD_NAME, wifi_settings.pass);
+						proto_info("AP started");
+						proto_info("SSID>" BOARD_NAME);
+						proto_info("IP>%s", WiFi.softAPIP().toString().c_str());
+						break;
+					}
 
-				wifi_settings.wifi_on = 1;
+					wifi_settings.wifi_on = 1;
+				}
 				settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
 				*(cmd_params->error) = STATUS_OK;
 				return EVENT_HANDLED;
@@ -138,8 +141,11 @@ extern "C"
 
 			if (!strcmp((const char *)&(cmd_params->cmd)[4], "OFF"))
 			{
-				WiFi.disconnect();
-				wifi_settings.wifi_on = 0;
+				__ATOMIC__
+				{
+					WiFi.disconnect();
+					wifi_settings.wifi_on = 0;
+				}
 				settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
 				*(cmd_params->error) = STATUS_OK;
 				return EVENT_HANDLED;

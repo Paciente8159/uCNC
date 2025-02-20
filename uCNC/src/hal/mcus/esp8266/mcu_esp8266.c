@@ -81,6 +81,7 @@ typedef struct esp8266_io_out_
 } esp8266_io_out_t;
 
 #ifdef SHIFT_REGISTER_CUSTOM_CALLBACK
+
 #ifndef IC74HC595_LATCH
 #define IC74HC595_LATCH DOUT10
 #endif
@@ -88,6 +89,14 @@ typedef struct esp8266_io_out_
 #ifndef IC74HC165_LOAD
 #define IC74HC165_LOAD DOUT11
 #endif
+
+#if (IC74HC595_COUNT >= IC74HC165_COUNT)
+#define SHIFT_REGISTER_BYTES IC74HC595_COUNT
+#else
+#define SHIFT_REGISTER_BYTES IC74HC165_COUNT
+#endif
+
+
 DECL_MUTEX(shifter_running);
 // custom implementation of the shift register using the SPI port
 MCU_CALLBACK void spi_shift_register_io_pins(void)
@@ -412,7 +421,7 @@ IRAM_ATTR void mcu_itp_isr(void)
 	spi_shift_register_io_pins();
 }
 
-#undef DBGMSG(fmt, ...)
+#undef DBGMSG
 #define DBGMSG(fmt, ...)                                       \
 	prt_fmt(&mcu_uart_putc, PRINT_CALLBACK, fmt, ##__VA_ARGS__); \
 	mcu_uart_flush()
@@ -420,7 +429,7 @@ IRAM_ATTR void mcu_itp_isr(void)
 void itp_buffer_dotasks(uint16_t limit)
 {
 	static volatile bool running = false;
-	__ATOMIC__
+	// __ATOMIC__
 	{
 		if (running)
 		{
@@ -445,7 +454,7 @@ void itp_buffer_dotasks(uint16_t limit)
 #ifdef SHIFT_REGISTER_CUSTOM_CALLBACK
 		spi_config_t conf = {0};
 		mcu_spi_config(conf, 20000000);
-		SPI1U1 = (((IC74HC595_COUNT * 8) - 1) << SPILMOSI) | (((IC74HC595_COUNT * 8) - 1) << SPILMISO);
+		SPI1U1 = (((SHIFT_REGISTER_BYTES * 8) - 1) << SPILMOSI) | (((SHIFT_REGISTER_BYTES * 8) - 1) << SPILMISO);
 #endif
 		timer1_isr_init();
 		timer1_attachInterrupt(mcu_itp_isr);
@@ -463,7 +472,7 @@ void itp_buffer_dotasks(uint16_t limit)
 		}
 
 		// clear sync flag
-		__ATOMIC__
+		// __ATOMIC__
 		{
 			esp8266_step_mode &= ~ITP_STEP_MODE_SYNC;
 		}
@@ -578,7 +587,7 @@ void mcu_dotasks(void)
 #ifdef MCU_HAS_WIFI
 	esp8266_wifi_dotasks();
 #endif
-	itp_buffer_dotasks(-1);
+	itp_buffer_dotasks(OUT_IO_BUFFER_MINIMAL);
 }
 
 /**
