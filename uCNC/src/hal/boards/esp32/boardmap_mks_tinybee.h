@@ -50,7 +50,7 @@ extern "C"
 // bitbanging 74hc595 (not used)
 // uses 3 x 74HS595
 // #define IC74HC595_COUNT 3
-// #define IC74HC595_DELAY_CYCLES 0
+// #define SHIFT_REGISTER_DELAY_CYCLES 0
 // configure the 74HC595 modules
 // #define DOUT8_BIT 27
 // #define DOUT9_BIT 25

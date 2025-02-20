@@ -216,6 +216,10 @@ extern "C"
 	void mcu_config_pwm(uint8_t pin, uint16_t freq);
 #endif
 
+#ifndef mcu_softpwm_freq_config
+uint8_t mcu_softpwm_freq_config(uint16_t freq);
+#endif
+
 /**
  * sets the pwm value of a built-in pwm pin
  * can be defined either as a function or a macro call
