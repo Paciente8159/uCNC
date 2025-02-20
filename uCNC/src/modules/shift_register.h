@@ -30,6 +30,10 @@ extern "C"
 
 void shift_register_io_pins(void);
 
+#ifndef io_extended_pins_update
+#define io_extended_pins_update() shift_register_io_pins()
+#endif;
+
 #ifdef __cplusplus
 }
 #endif

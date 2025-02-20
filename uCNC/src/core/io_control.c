@@ -1763,19 +1763,37 @@ void io_set_pinvalue(uint8_t pin, uint8_t value)
 		}
 	}
 
-#if defined(IC74HC595_HAS_DOUTS) || defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS)
-	shift_register_io_pins();
-#endif
+	// this ensures the pin is updated after writing (but might lead to slow or sucessive multiple readings and make firmware slow)
+	// extended pins (when not updated by an ISR), are updated frequently in the main loop
+	// for this reason will be assumed that extended pins might not update instantly.
+	// updating handling must be treated as a per need case like done in softuart/softspi modules
+
+	// #if (IC74HC595_COUNT > 0)
+	// #if defined(IC74HC165_HAS_PWM) || defined(IC74HC165_HAS_SERVOS) || defined(IC74HC165_HAS_DOUTS)
+	// 	if (pin >= PWM_PINS_OFFSET && pin < 100)
+	// 	{
+	// 		shift_register_io_pins();
+	// 	}
+	// #endif
+	// #endif
 }
 
 int16_t io_get_pinvalue(uint8_t pin)
 {
-#if (IC74HC165_COUNT > 0)
-	if (pin >= 100)
-	{
-		shift_register_io_pins();
-	}
-#endif
+
+	// this ensures the pin is updated before reading (but might lead to slow or sucessive multiple readings and make firmware slow)
+	// extended pins (when not updated by an ISR), are updated frequently in the main loop
+	// for this reason will be assumed that extended pins might not update instantly
+	// updating handling must be treated as a per need case like done in softuart/softspi modules
+
+	// #if (IC74HC165_COUNT > 0)
+	// #if defined(IC74HC165_HAS_LIMITS) || defined(IC74HC165_HAS_CONTROLS) || defined(IC74HC165_HAS_PROBE)
+	// 	if (pin >= 100 && pin < ANALOG_PINS_OFFSET)
+	// 	{
+	// 		shift_register_io_pins();
+	// 	}
+	// #endif
+	// #endif
 
 	switch (pin)
 	{
