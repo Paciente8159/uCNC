@@ -26,6 +26,8 @@ extern "C"
 
 #include "../mcus/mcus.h"
 
+#include "makefile_helper.h"
+
 /*
 	MCU port map
 */
