@@ -56,6 +56,7 @@ extern "C"
 #define BOARD_CUSTOM -1
 
 #ifdef BOARD_TYPE
+#undef BOARD
 #define AVR_BOARDMAPS "src/boards/avr/boardmap_"
 #if (BOARD_TYPE == BOARD_UNO)
 #define BOARD AVR_BOARDMAPS "uno.h"
