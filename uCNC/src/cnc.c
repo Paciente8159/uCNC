@@ -1065,6 +1065,9 @@ static void cnc_io_dotasks(void)
 {
 	// run internal mcu tasks (USB and communications)
 	mcu_dotasks();
+#if IC74HC595_COUNT > 0 || IC74HC165_COUNT > 0
+	shift_register_io_pins(); // update extended IO
+#endif
 	mcu_limits_changed_cb();
 	mcu_controls_changed_cb();
 

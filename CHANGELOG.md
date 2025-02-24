@@ -6,10 +6,32 @@
 
 # Changelog
 
-[@tomjnixon](https://github.com/tomjnixon)	- fixed ignored G53 introduced by #791 (#793)
-																						- fixed status report mask setting introduced in v1.11 (#789)
+## [1.11.2] - 25-01-2025
+
+### Added
+
+- added option to allow rotational axis to ignore limits after homing (#803)
+- added option to use HW SPI on digipot module (#808)
+
+### Changed
+
+- improved settings variable types code readability (#821)
+- improved homing error codes output/logic (#804)
+- modified ESP8266 to use direct GPIO registers (#800)
+
+### Fixed
+
+- fixed var type in some homing settings that caused incorrect value report/storing (#819)
+- fixed SPI typo on ESP8266 bulk send (#800)
+- fixed compilation error with TOOL_COUNT set to 0 (#814)
+- fixed parsing validation for extended commands with axis words (#809)
+- fixed 74hc595 module to get pin value mask (#797)
+- fixed kinematics default settings values for DELTA types (switched) (#796)
 
 ## [1.11.1] - 13-12-2024
+
+[@tomjnixon](https://github.com/tomjnixon)	- fixed ignored G53 introduced by #791 (#793)
+																						- fixed status report mask setting introduced in v1.11 (#789)
 
 ### Changed
 
@@ -1826,6 +1848,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.11.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.11.2
 [1.11.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.11.1
 [1.11.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.11.0
 [1.11.0-rc]: https://github.com/Paciente8159/uCNC/releases/tag/v1.11.0-rc
