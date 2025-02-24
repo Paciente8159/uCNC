@@ -57,27 +57,22 @@ extern "C"
 
 #ifdef BOARD_TYPE
 #undef BOARD
-#define AVR_BOARDMAPS "src/boards/avr/boardmap_"
 #if (BOARD_TYPE == BOARD_UNO)
-#define BOARD AVR_BOARDMAPS "uno.h"
-#endif
-#if (BOARD_TYPE == BOARD_RAMBO14)
-#define BOARD AVR_BOARDMAPS "rambo14.h"
-#endif
-#if (BOARD_TYPE == BOARD_RAMPS14)
-#define BOARD AVR_BOARDMAPS "ramps14.h"
-#endif
-#if (BOARD_TYPE == BOARD_MKS_DLC)
-#define BOARD AVR_BOARDMAPS "mks_dlc.h"
-#endif
-#if (BOARD_TYPE == BOARD_X_CONTROLLER)
-#define BOARD AVR_BOARDMAPS "x_controller.h"
-#endif
-#if (BOARD_TYPE == BOARD_MKS_GEN_L_V1)
-#define BOARD AVR_BOARDMAPS "mks_gen_l_v1.h"
-#endif
-#if (BOARD_TYPE == BOARD_UNO_SHIELD_V3)
-#define BOARD AVR_BOARDMAPS "uno_shield_v3.h"
+#define BOARD "src/hal/boards/avr/boardmap_uno.h"
+#elif (BOARD_TYPE == BOARD_RAMBO14)
+#define BOARD "src/hal/boards/avr/boardmap_rambo14.h"
+#elif (BOARD_TYPE == BOARD_RAMPS14)
+#define BOARD "src/hal/boards/avr/boardmap_ramps14.h"
+#elif (BOARD_TYPE == BOARD_MKS_DLC)
+#define BOARD "src/hal/boards/avr/boardmap_mks_dlc.h"
+#elif (BOARD_TYPE == BOARD_X_CONTROLLER)
+#define BOARD "src/hal/boards/avr/boardmap_x_controller.h"
+#elif (BOARD_TYPE == BOARD_MKS_GEN_L_V1)
+#define BOARD "src/hal/boards/avr/boardmap_mks_gen_l_v1.h"
+#elif (BOARD_TYPE == BOARD_UNO_SHIELD_V3)
+#define BOARD "src/hal/boards/avr/boardmap_uno_shield_v3.h"
+#else
+#error "Invalid board option"
 #endif
 #endif
 
