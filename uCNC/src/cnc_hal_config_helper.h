@@ -54,7 +54,7 @@ extern "C"
 // final HAL configurations
 #include "../cnc_hal_config.h"		//inicializes the HAL hardcoded connections
 #include "../cnc_hal_overrides.h" //config override file
-#include "modules/ic74hc595.h"		// io extender
+#include "modules/shift_register.h"		// io extender
 
 	/**
 	 *

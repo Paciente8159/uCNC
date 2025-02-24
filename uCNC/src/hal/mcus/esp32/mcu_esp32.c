@@ -139,13 +139,16 @@ static FORCEINLINE void mcu_gen_oneshot(void)
 uint8_t itp_set_step_mode(uint8_t mode)
 {
 	uint8_t last_mode = I2S_MODE;
-	itp_sync();
+	if (mode)
+	{
+		itp_sync();
 #ifdef USE_I2S_REALTIME_MODE_ONLY
-	__atomic_store_n((uint32_t *)&i2s_mode, (ITP_STEP_MODE_SYNC | ITP_STEP_MODE_REALTIME), __ATOMIC_RELAXED);
+		__atomic_store_n((uint32_t *)&i2s_mode, (ITP_STEP_MODE_SYNC | ITP_STEP_MODE_REALTIME), __ATOMIC_RELAXED);
 #else
-	__atomic_store_n((uint32_t *)&i2s_mode, (ITP_STEP_MODE_SYNC | mode), __ATOMIC_RELAXED);
+		__atomic_store_n((uint32_t *)&i2s_mode, (ITP_STEP_MODE_SYNC | mode), __ATOMIC_RELAXED);
 #endif
-	cnc_delay_ms(20);
+		cnc_delay_ms(20);
+	}
 	return last_mode;
 }
 
@@ -1059,7 +1062,7 @@ uint8_t mcu_eeprom_getc(uint16_t address)
 {
 	if (NVM_STORAGE_SIZE <= address)
 	{
-		DBGMSG("EEPROM invalid address @ %u",address);
+		DBGMSG("EEPROM invalid address @ %u", address);
 		return 0;
 	}
 #ifndef RAM_ONLY_SETTINGS
@@ -1080,7 +1083,7 @@ void mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
 	if (NVM_STORAGE_SIZE <= address)
 	{
-		DBGMSG("EEPROM invalid address @ %u",address);
+		DBGMSG("EEPROM invalid address @ %u", address);
 	}
 #ifndef RAM_ONLY_SETTINGS
 	// esp32_eeprom_write(address, value);
