@@ -77,7 +77,7 @@ BIN = $(CP) -O binary -S
 # cpu
 CPU ?= atmega328p
 FREQ ?= 16000000L
-BOARD ?= BOARD_UNO
+BOARD ?= UNO
 
 # mcu
 MCU = -mmcu=$(CPU)
