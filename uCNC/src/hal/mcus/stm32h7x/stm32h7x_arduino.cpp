@@ -1,9 +1,13 @@
 
 
+#ifdef __cplusplus
 extern "C"
 {
+#endif
 #include "../../../cnc.h"
+#ifdef __cplusplus
 }
+#endif
 
 #if (MCU == MCU_STM32H7X)
 #define _ARDUINO_PIN_NAME_(BIT, PORT) P##PORT##_##BIT
@@ -48,29 +52,45 @@ extern "C"
 #include <Arduino.h>
 #include <SPI.h>
 
-SPIClass arduino_spi = SPIClass(ARDUINO_PIN_NAME(SPI_SDO), ARDUINO_PIN_NAME(SPI_SDI), ARDUINO_PIN_NAME(SPI_CLK));
-uint32_t arduino_spi_clock;
-uint32_t arduino_spi_mode;
+SPIClass arduino_spi = SPIClass(ARDUINO_PIN_NAME(SPI_SDO), ARDUINO_PIN_NAME(SPI_SDI), ARDUINO_PIN_NAME(SPI_CLK), NC);
 
+#ifdef __cplusplus
 extern "C"
 {
-	
+#endif
+
 	void mcu_spi_config(spi_config_t config, uint32_t frequency)
 	{
 		arduino_spi.begin();
-		arduino_spi_clock = frequency;
-		arduino_spi_mode = config.mode;
+		mcu_spi_start(config, frequency);
+		mcu_spi_stop();
 	}
 
 	uint8_t mcu_spi_xmit(uint8_t c)
 	{
-		SPISettings s = SPISettings(arduino_spi_clock, MSBFIRST, arduino_spi_mode);
-		arduino_spi.beginTransaction(s);
-		uint8_t r = arduino_spi.transfer(c, false);
-		arduino_spi.endTransaction();
-		return r;
+		return arduino_spi.transfer(c, false);
 	}
+
+	void mcu_spi_start(spi_config_t config, uint32_t frequency)
+	{
+		arduino_spi.beginTransaction(SPISettings(frequency, MSBFIRST, config.mode));
+	}
+
+	void mcu_spi_stop(void)
+	{
+		arduino_spi.endTransaction();
+	}
+
+	bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
+	{
+		arduino_spi.transfer((const void *)out, (void *)in, len);
+		return false;
+	}
+
+#ifdef __cplusplus
 }
+#endif
+
 #endif
 #endif
 

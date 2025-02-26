@@ -4506,8 +4506,8 @@ extern "C"
 #endif
 #define I2C_REG __helper__(I2C, I2C_PORT, )
 
-#define I2C_CLOCK_SOURCE_CFG __helper__(__HAL_RCC_I2C, SPI_PORT, _CONFIG)
-#define I2C_CLOCK_SOURCE __helper__(RCC_I2C, SPI_PORT, CLKSOURCE_CSI)
+#define I2C_CLOCK_SOURCE_CFG __helper__(__HAL_RCC_I2C, I2C_PORT, _CONFIG)
+#define I2C_CLOCK_SOURCE __helper__(RCC_I2C, I2C_PORT, CLKSOURCE_CSI)
 
 #if (I2C_PORT == 1)
 #if (I2C_DATA_PIN == STM32IO_A10)

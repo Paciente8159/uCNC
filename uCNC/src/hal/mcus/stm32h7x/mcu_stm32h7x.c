@@ -1146,7 +1146,7 @@ void mcu_spi_config(spi_config_t config, uint32_t frequency)
 	SPI_REG->IFCR = 0xFFFFFFFFUL;
 	SPI_REG->IER = 0;
 	// clear speed and mode
-	SPI_REG->CFG2 = SPI_CFG2_SSM | SPI_CFG2_SSOE | SPI_CFG2_SP_0 | SPI_CFG2_MASTER | (((uint32_t)(config.mode & 0x3)) << SPI_CFG2_CPHA_Pos);
+	SPI_REG->CFG2 = SPI_CFG2_SSM | SPI_CFG2_SSOE /*| SPI_CFG2_SP_0*/ | SPI_CFG2_MASTER | (((uint32_t)(config.mode & 0x3)) << SPI_CFG2_CPHA_Pos);
 	SPI_REG->CFG1 &= ~(SPI_CFG1_DSIZE | SPI_CFG1_MBR | SPI_CFG1_FTHLV);
 	SPI_REG->CFG1 |= (SPI_CFG1_DSIZE_2 | SPI_CFG1_DSIZE_1 | SPI_CFG1_DSIZE_0) | (((uint32_t)speed) << SPI_CFG1_MBR_Pos);
 
@@ -1166,10 +1166,10 @@ uint8_t mcu_spi_xmit(uint8_t c)
 	SPI_REG->CR1 |= SPI_CR1_CSTART;
 	while (!(SPI_REG->SR & SPI_SR_TXP))
 		;
-	SPI_REG->TXDR = c;
+	*((__IO uint8_t *)&SPI_REG->TXDR) = c;
 	while (!(SPI_REG->SR & SPI_SR_RXP))
 		;
-	uint8_t data = SPI_REG->RXDR;
+	uint8_t data = *((__IO uint8_t *)&SPI_REG->RXDR);
 	SPI_REG->CR1 &= ~SPI_CR1_CSTART;
 	SPI_REG->CR1 &= ~SPI_CR1_SPE;
 	spi_port_state = SPI_IDLE;
@@ -1185,12 +1185,12 @@ void SPI_ISR()
 {
 	while ((SPI_REG->SR & SPI_SR_RXP) && spi_transfer_rx_len)
 	{
-		*spi_transfer_rx_ptr++ = SPI_REG->RXDR;
+		*spi_transfer_rx_ptr++ = *((__IO uint8_t *)&SPI_REG->RXDR);
 		--spi_transfer_rx_len;
 	}
 	while ((SPI_REG->SR & SPI_SR_TXP) && spi_transfer_tx_len)
 	{
-		SPI_REG->TXDR = *spi_transfer_tx_ptr++;
+		*((__IO uint8_t *)&SPI_REG->TXDR) = *spi_transfer_tx_ptr++;
 		--spi_transfer_tx_len;
 	}
 	if (spi_transfer_tx_len == 0 && spi_transfer_rx_len == 0)
