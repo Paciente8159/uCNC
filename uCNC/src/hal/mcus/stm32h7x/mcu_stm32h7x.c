@@ -1149,6 +1149,9 @@ void mcu_spi_config(spi_config_t config, uint32_t frequency)
 	SPI_REG->CFG2 = SPI_CFG2_SSM | SPI_CFG2_SSOE /*| SPI_CFG2_SP_0*/ | SPI_CFG2_MASTER | (((uint32_t)(config.mode & 0x3)) << SPI_CFG2_CPHA_Pos);
 	SPI_REG->CFG1 &= ~(SPI_CFG1_DSIZE | SPI_CFG1_MBR | SPI_CFG1_FTHLV);
 	SPI_REG->CFG1 |= (SPI_CFG1_DSIZE_2 | SPI_CFG1_DSIZE_1 | SPI_CFG1_DSIZE_0) | (((uint32_t)speed) << SPI_CFG1_MBR_Pos);
+	SPI_REG->CR1 |= SPI_CR1_SPE;
+	while (!(SPI_REG->CR1 & SPI_CR1_SPE))
+		;
 
 	NVIC_SetPriority(SPI_IRQ, 2);
 	NVIC_ClearPendingIRQ(SPI_IRQ);
@@ -1160,9 +1163,6 @@ void mcu_spi_config(spi_config_t config, uint32_t frequency)
 
 uint8_t mcu_spi_xmit(uint8_t c)
 {
-	SPI_REG->CR1 |= SPI_CR1_SPE;
-	while (!(SPI_REG->CR1 & SPI_CR1_SPE))
-		;
 	SPI_REG->CR1 |= SPI_CR1_CSTART;
 	while (!(SPI_REG->SR & SPI_SR_TXP))
 		;
@@ -1171,7 +1171,6 @@ uint8_t mcu_spi_xmit(uint8_t c)
 		;
 	uint8_t data = *((__IO uint8_t *)&SPI_REG->RXDR);
 	SPI_REG->CR1 &= ~SPI_CR1_CSTART;
-	SPI_REG->CR1 &= ~SPI_CR1_SPE;
 	spi_port_state = SPI_IDLE;
 	return data;
 }
@@ -1193,9 +1192,9 @@ void SPI_ISR()
 		*((__IO uint8_t *)&SPI_REG->TXDR) = *spi_transfer_tx_ptr++;
 		--spi_transfer_tx_len;
 	}
-	if (spi_transfer_tx_len == 0 && spi_transfer_rx_len == 0)
+	if (spi_transfer_tx_len == 0 && spi_transfer_rx_len == 0 && (SPI_REG->SR & SPI_SR_EOT))
 	{
-		SPI_REG->IER &= ~(SPI_IER_TXPIE | SPI_IER_RXPIE);
+		SPI_REG->IER &= ~(SPI_IER_EOTIE | SPI_IER_TXPIE | SPI_IER_RXPIE);
 		spi_port_state = SPI_TRANSMIT_COMPLETE;
 	}
 	NVIC_ClearPendingIRQ(SPI_IRQ);
@@ -1207,137 +1206,136 @@ void SPI_ISR()
  *	true - transfer in progress, keep polling
  *	false - transfer complete
  */
-bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t datalen)
-{
-	// if (!spi_enable_dma)
-	{
-		// Bulk transfer without DMA (uses ISR)
-		if (spi_port_state == SPI_IDLE)
-		{
-			SPI_REG->CR1 |= SPI_CR1_SPE;
-			while (!(SPI_REG->CR1 & SPI_CR1_SPE))
-				;
-			SPI_REG->CR1 |= SPI_CR1_CSTART;
-			SPI_REG->IFCR = 0xFFFFFFFFUL;
-			spi_port_state = SPI_TRANSMITTING;
+// bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t datalen)
+// {
+// 	// if (!spi_enable_dma)
+// 	{
+// 		// Bulk transfer without DMA (uses ISR)
+// 		if (spi_port_state == SPI_IDLE)
+// 		{
+// 			spi_port_state = SPI_TRANSMITTING;
 
-			spi_transfer_tx_ptr = tx_data;
-			spi_transfer_tx_len = datalen;
-			SPI_REG->IER |= SPI_IER_TXPIE;
+// 			spi_transfer_tx_ptr = tx_data;
+// 			spi_transfer_tx_len = datalen;
 
-			if (rx_data)
-			{
-				spi_transfer_rx_ptr = rx_data;
-				spi_transfer_rx_len = datalen;
-				SPI_REG->IER |= SPI_IER_RXPIE;
-			}
-			else
-			{
-				spi_transfer_rx_ptr = 0;
-				spi_transfer_rx_len = 0;
-			}
-		}
-		else if (spi_port_state == SPI_TRANSMIT_COMPLETE)
-		{
-			SPI_REG->CR1 &= ~SPI_CR1_CSTART;
-			SPI_REG->CR1 &= ~SPI_CR1_SPE;
-			spi_port_state = SPI_IDLE;
-			return false;
-		}
+// 			if (rx_data)
+// 			{
+// 				spi_transfer_rx_ptr = rx_data;
+// 				spi_transfer_rx_len = datalen;
+// 				SPI_REG->IER |= SPI_IER_RXPIE;
+// 			}
+// 			else
+// 			{
+// 				spi_transfer_rx_ptr = 0;
+// 				spi_transfer_rx_len = 0;
+// 			}
 
-		return true;
-	}
+// 			SPI_REG->IER = (SPI_IER_EOTIE | SPI_IER_TXPIE | SPI_IER_RXPIE);
+// 			SPI_REG->CR2 &= ~SPI_CR2_TSIZE;
+// 			SPI_REG->CR2 |= (datalen<<SPI_CR2_TSIZE_Pos);
+// 			SPI_REG->IFCR = 0xFFFFFFFFUL;
+// 			SPI_REG->CR1 |= SPI_CR1_CSTART;
+// 		}
+// 		else if (spi_port_state == SPI_TRANSMIT_COMPLETE)
+// 		{
+// 			SPI_REG->CR1 &= ~SPI_CR1_CSTART;
+// 			spi_port_state = SPI_IDLE;
+// 			return false;
+// 		}
 
-	// Using DMA
-	// if (spi_port_state == SPI_TRANSMITTING)
-	// {
-	// 	// Wait for transfers to complete
-	// 	if (!(SPI_DMA_TX_ISR >> (SPI_DMA_TX_IFR_POS + 5)) ||
-	// 			(!(SPI_DMA_RX_ISR >> (SPI_DMA_RX_IFR_POS + 5)) && rx_data))
-	// 		return true;
+// 		return true;
+// 	}
 
-	// 	// SPI hardware still transmitting the last byte
-	// 	if (SPI_REG->SR & SPI_SR_BSY)
-	// 		return true;
+// 	// Using DMA
+// 	// if (spi_port_state == SPI_TRANSMITTING)
+// 	// {
+// 	// 	// Wait for transfers to complete
+// 	// 	if (!(SPI_DMA_TX_ISR >> (SPI_DMA_TX_IFR_POS + 5)) ||
+// 	// 			(!(SPI_DMA_RX_ISR >> (SPI_DMA_RX_IFR_POS + 5)) && rx_data))
+// 	// 		return true;
 
-	// 	// Disable DMA use
-	// 	SPI_REG->CR2 &= ~SPI_CR2_TXDMAEN;
-	// 	if (rx_data)
-	// 		SPI_REG->CR2 &= ~SPI_CR2_RXDMAEN;
+// 	// 	// SPI hardware still transmitting the last byte
+// 	// 	if (SPI_REG->SR & SPI_SR_BSY)
+// 	// 		return true;
 
-	// 	// Transfer finished
-	// 	spi_port_state = SPI_IDLE;
-	// 	return false;
-	// }
+// 	// 	// Disable DMA use
+// 	// 	SPI_REG->CR2 &= ~SPI_CR2_TXDMAEN;
+// 	// 	if (rx_data)
+// 	// 		SPI_REG->CR2 &= ~SPI_CR2_RXDMAEN;
 
-	// if (spi_port_state != SPI_IDLE)
-	// {
-	// 	// Wait for idle
-	// 	if (SPI_REG->SR & SPI_SR_BSY)
-	// 		return true;
-	// 	spi_port_state = SPI_IDLE;
-	// }
+// 	// 	// Transfer finished
+// 	// 	spi_port_state = SPI_IDLE;
+// 	// 	return false;
+// 	// }
 
-	// // Wait until streams are available
-	// if ((SPI_DMA_TX_STREAM->CR & DMA_SxCR_EN) || ((SPI_DMA_RX_STREAM->CR & DMA_SxCR_EN) && rx_data))
-	// 	return true;
+// 	// if (spi_port_state != SPI_IDLE)
+// 	// {
+// 	// 	// Wait for idle
+// 	// 	if (SPI_REG->SR & SPI_SR_BSY)
+// 	// 		return true;
+// 	// 	spi_port_state = SPI_IDLE;
+// 	// }
 
-	// /***     Setup Transmit DMA     ***/
+// 	// // Wait until streams are available
+// 	// if ((SPI_DMA_TX_STREAM->CR & DMA_SxCR_EN) || ((SPI_DMA_RX_STREAM->CR & DMA_SxCR_EN) && rx_data))
+// 	// 	return true;
 
-	// // Clear flags
-	// SPI_DMA_TX_IFCR |= SPI_DMA_TX_IFCR_MASK;
+// 	// /***     Setup Transmit DMA     ***/
 
-	// SPI_DMA_TX_STREAM->CR =
-	// 		(SPI_DMA_TX_CHANNEL << DMA_SxCR_CHSEL_Pos) | // Select correct channel
-	// 		(0b01 << DMA_SxCR_PL_Pos) |									 // Set priority to medium
-	// 		DMA_SxCR_MINC |															 // Increment memory
-	// 		(0b01 << DMA_SxCR_DIR_Pos);									 // Memory to peripheral transfer direction
+// 	// // Clear flags
+// 	// SPI_DMA_TX_IFCR |= SPI_DMA_TX_IFCR_MASK;
 
-	// SPI_DMA_TX_STREAM->PAR = (uint32_t)&SPI_REG->DR;
-	// SPI_DMA_TX_STREAM->M0AR = (uint32_t)tx_data;
+// 	// SPI_DMA_TX_STREAM->CR =
+// 	// 		(SPI_DMA_TX_CHANNEL << DMA_SxCR_CHSEL_Pos) | // Select correct channel
+// 	// 		(0b01 << DMA_SxCR_PL_Pos) |									 // Set priority to medium
+// 	// 		DMA_SxCR_MINC |															 // Increment memory
+// 	// 		(0b01 << DMA_SxCR_DIR_Pos);									 // Memory to peripheral transfer direction
 
-	// SPI_DMA_TX_STREAM->NDTR = datalen;
+// 	// SPI_DMA_TX_STREAM->PAR = (uint32_t)&SPI_REG->DR;
+// 	// SPI_DMA_TX_STREAM->M0AR = (uint32_t)tx_data;
 
-	// SPI_DMA_TX_STREAM->FCR &= ~DMA_SxFCR_DMDIS; // Enable direct mode
+// 	// SPI_DMA_TX_STREAM->NDTR = datalen;
 
-	// // Enable DMA use for transmission
-	// SPI_REG->CR2 |= SPI_CR2_TXDMAEN;
+// 	// SPI_DMA_TX_STREAM->FCR &= ~DMA_SxFCR_DMDIS; // Enable direct mode
 
-	// if (rx_data)
-	// {
-	// 	/***     Setup Receive DMA     ***/
+// 	// // Enable DMA use for transmission
+// 	// SPI_REG->CR2 |= SPI_CR2_TXDMAEN;
 
-	// 	// Clear flags
-	// 	SPI_DMA_RX_IFCR |= SPI_DMA_RX_IFCR_MASK;
+// 	// if (rx_data)
+// 	// {
+// 	// 	/***     Setup Receive DMA     ***/
 
-	// 	SPI_DMA_RX_STREAM->CR =
-	// 			(SPI_DMA_RX_CHANNEL << DMA_SxCR_CHSEL_Pos) | // Select correct channel
-	// 			(0b01 << DMA_SxCR_PL_Pos) |									 // Set priority to medium
-	// 			DMA_SxCR_MINC |															 // Increment memory
-	// 			(0b00 << DMA_SxCR_DIR_Pos);									 // Peripheral to memory transfer direction
+// 	// 	// Clear flags
+// 	// 	SPI_DMA_RX_IFCR |= SPI_DMA_RX_IFCR_MASK;
 
-	// 	SPI_DMA_RX_STREAM->PAR = (uint32_t)&SPI_REG->DR;
-	// 	SPI_DMA_RX_STREAM->M0AR = (uint32_t)rx_data;
+// 	// 	SPI_DMA_RX_STREAM->CR =
+// 	// 			(SPI_DMA_RX_CHANNEL << DMA_SxCR_CHSEL_Pos) | // Select correct channel
+// 	// 			(0b01 << DMA_SxCR_PL_Pos) |									 // Set priority to medium
+// 	// 			DMA_SxCR_MINC |															 // Increment memory
+// 	// 			(0b00 << DMA_SxCR_DIR_Pos);									 // Peripheral to memory transfer direction
 
-	// 	SPI_DMA_RX_STREAM->NDTR = datalen;
+// 	// 	SPI_DMA_RX_STREAM->PAR = (uint32_t)&SPI_REG->DR;
+// 	// 	SPI_DMA_RX_STREAM->M0AR = (uint32_t)rx_data;
 
-	// 	SPI_DMA_RX_STREAM->FCR &= ~DMA_SxFCR_DMDIS; // Enable direct mode
+// 	// 	SPI_DMA_RX_STREAM->NDTR = datalen;
 
-	// 	// Enable DMA use for reception
-	// 	SPI_REG->CR2 |= SPI_CR2_RXDMAEN;
-	// }
+// 	// 	SPI_DMA_RX_STREAM->FCR &= ~DMA_SxFCR_DMDIS; // Enable direct mode
 
-	// /***     DMA Setup Complete     ***/
+// 	// 	// Enable DMA use for reception
+// 	// 	SPI_REG->CR2 |= SPI_CR2_RXDMAEN;
+// 	// }
 
-	// // Start streams
-	// SPI_DMA_TX_STREAM->CR |= DMA_SxCR_EN;
-	// if (rx_data)
-	// 	SPI_DMA_RX_STREAM->CR |= DMA_SxCR_EN;
+// 	// /***     DMA Setup Complete     ***/
 
-	// // Transmission started
-	// spi_port_state = SPI_TRANSMITTING;
-	return true;
-}
+// 	// // Start streams
+// 	// SPI_DMA_TX_STREAM->CR |= DMA_SxCR_EN;
+// 	// if (rx_data)
+// 	// 	SPI_DMA_RX_STREAM->CR |= DMA_SxCR_EN;
+
+// 	// // Transmission started
+// 	// spi_port_state = SPI_TRANSMITTING;
+// 	return true;
+// }
 
 #endif
 #endif
