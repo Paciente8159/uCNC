@@ -1,5 +1,6 @@
 
 
+#ifdef STM32H7xx
 #ifdef __cplusplus
 extern "C"
 {
@@ -94,4 +95,5 @@ extern "C"
 #endif
 #endif
 
+#endif
 #endif
