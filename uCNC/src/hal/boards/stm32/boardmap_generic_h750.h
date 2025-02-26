@@ -162,6 +162,8 @@ extern "C"
 	#define SPI_SDI_BIT 6
 	#define SPI_SDO_PORT A
 	#define SPI_SDO_BIT 7
+	#define SPI_CS_PORT A
+	#define SPI_CS_BIT 4
 	#define SPI_PORT 1
 
 	// #define SPI2_CLK_PORT B

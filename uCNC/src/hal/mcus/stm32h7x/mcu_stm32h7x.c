@@ -741,29 +741,9 @@ void mcu_init(void)
 	servo_timer_init();
 #endif
 #ifdef MCU_HAS_SPI
-	SPI_ENREG |= SPI_ENVAL;
-	mcu_config_af(SPI_SDI, SPI_SDI_AFIO);
-	mcu_config_af(SPI_CLK, SPI_CLK_AFIO);
-	mcu_config_af(SPI_SDO, SPI_SDO_AFIO);
-	// #if ASSERT_PIN_IO(SPI_CS)
-	// 	mcu_config_af(SPI_CS, SPI_CS_AFIO);
-	// #endif
-	// initialize the SPI configuration register
-	SPI_REG->CR1 = SPI_CR1_SSM		 // software slave management enabled
-								 | SPI_CR1_SSI	 // internal slave select
-								 | SPI_CR1_MSTR; // SPI master mode
-																 //    | (SPI_SPEED << 3) | SPI_MODE;
 	spi_config_t spi_conf = {0};
 	spi_conf.mode = SPI_MODE;
 	mcu_spi_config(spi_conf, SPI_FREQ);
-
-	RCC->AHB1ENR |= SPI_DMA_EN;
-
-	NVIC_SetPriority(SPI_IRQ, 2);
-	NVIC_ClearPendingIRQ(SPI_IRQ);
-	NVIC_EnableIRQ(SPI_IRQ);
-
-	SPI_REG->CR1 |= SPI_CR1_SPE;
 #endif
 #ifdef MCU_HAS_SPI2
 	SPI2_ENREG |= SPI2_ENVAL;
@@ -1093,39 +1073,40 @@ typedef enum spi_port_state_enum
 } spi_port_state_t;
 
 #ifdef MCU_HAS_SPI
+#ifndef USE_ARDUINO_SPI_LIBRARY
 static volatile spi_port_state_t spi_port_state = SPI_UNKNOWN;
 static bool spi_enable_dma = false;
 
 void mcu_spi_config(spi_config_t config, uint32_t frequency)
 {
-	uint8_t div = (uint8_t)(SPI_CLOCK / frequency);
+	uint8_t div = (frequency >= 2000000UL) ? (uint8_t)(SPI_CLOCK / frequency) : (uint8_t)(SPI_CLOCK_SLOW / frequency);
 
 	uint8_t speed;
-	if (div < 2)
+	if (div <= 2)
 	{
 		speed = 0;
 	}
-	else if (div < 4)
+	else if (div <= 4)
 	{
 		speed = 1;
 	}
-	else if (div < 8)
+	else if (div <= 8)
 	{
 		speed = 2;
 	}
-	else if (div < 16)
+	else if (div <= 16)
 	{
 		speed = 3;
 	}
-	else if (div < 32)
+	else if (div <= 32)
 	{
 		speed = 4;
 	}
-	else if (div < 64)
+	else if (div <= 64)
 	{
 		speed = 5;
 	}
-	else if (div < 128)
+	else if (div <= 128)
 	{
 		speed = 6;
 	}
@@ -1136,14 +1117,42 @@ void mcu_spi_config(spi_config_t config, uint32_t frequency)
 
 	// disable SPI
 	SPI_REG->CR1 &= ~SPI_CR1_SPE;
+
+	// config RCC
+	SPI_ENREG &= ~SPI_ENVAL;
+	/**
+	 * switch peripheral clock source depending on the required frequency
+	 */
+	if ((frequency >= 2000000UL))
+	{
+		__HAL_RCC_CLKP_CONFIG(RCC_CLKPSOURCE_HSI);
+	}
+	else
+	{
+		__HAL_RCC_CLKP_CONFIG(RCC_CLKPSOURCE_CSI);
+	}
+	SPI_CLOCK_SOURCE_CFG(SPI_CLOCK_SOURCE);
+	SPI_ENREG |= SPI_ENVAL;
+	mcu_config_af(SPI_SDI, SPI_SDI_AFIO);
+	mcu_config_af(SPI_CLK, SPI_CLK_AFIO);
+	mcu_config_af(SPI_SDO, SPI_SDO_AFIO);
+
+	while (SPI_REG->CR1 & SPI_CR1_SPE)
+		;
+	SPI_REG->CR1 |= SPI_CR1_SSI;
+	SPI_REG->CR2 = 0;
+	SPI_REG->CRCPOLY = 0;
+	SPI_REG->I2SCFGR = 0;
+	SPI_REG->IFCR = 0xFFFFFFFFUL;
+	SPI_REG->IER = 0;
 	// clear speed and mode
-	SPI_REG->CFG2 = 0;
-	SPI_REG->CFG2 |= SPI_CFG2_MASTER;
-	SPI_REG->CFG2 |= ((config.mode & 0x3) << SPI_CFG2_CPHA_Pos);
-	SPI_REG->CFG1 = 0;
-	SPI_REG->CFG1 |= (speed << SPI_CFG1_MBR_Pos);
-	// enable SPI
-	SPI_REG->CR1 |= SPI_CR1_SPE;
+	SPI_REG->CFG2 = SPI_CFG2_SSM | SPI_CFG2_SSOE | SPI_CFG2_SP_0 | SPI_CFG2_MASTER | (((uint32_t)(config.mode & 0x3)) << SPI_CFG2_CPHA_Pos);
+	SPI_REG->CFG1 &= ~(SPI_CFG1_DSIZE | SPI_CFG1_MBR | SPI_CFG1_FTHLV);
+	SPI_REG->CFG1 |= (SPI_CFG1_DSIZE_2 | SPI_CFG1_DSIZE_1 | SPI_CFG1_DSIZE_0) | (((uint32_t)speed) << SPI_CFG1_MBR_Pos);
+
+	NVIC_SetPriority(SPI_IRQ, 2);
+	NVIC_ClearPendingIRQ(SPI_IRQ);
+	NVIC_EnableIRQ(SPI_IRQ);
 
 	spi_port_state = SPI_IDLE;
 	spi_enable_dma = config.enable_dma;
@@ -1151,12 +1160,18 @@ void mcu_spi_config(spi_config_t config, uint32_t frequency)
 
 uint8_t mcu_spi_xmit(uint8_t c)
 {
+	SPI_REG->CR1 |= SPI_CR1_SPE;
+	while (!(SPI_REG->CR1 & SPI_CR1_SPE))
+		;
+	SPI_REG->CR1 |= SPI_CR1_CSTART;
 	while (!(SPI_REG->SR & SPI_SR_TXP))
 		;
 	SPI_REG->TXDR = c;
-	while ((SPI_REG->SR & SPI_SR_RXP))
+	while (!(SPI_REG->SR & SPI_SR_RXP))
 		;
 	uint8_t data = SPI_REG->RXDR;
+	SPI_REG->CR1 &= ~SPI_CR1_CSTART;
+	SPI_REG->CR1 &= ~SPI_CR1_SPE;
 	spi_port_state = SPI_IDLE;
 	return data;
 }
@@ -1168,15 +1183,15 @@ static uint16_t spi_transfer_rx_len = 0;
 
 void SPI_ISR()
 {
+	while ((SPI_REG->SR & SPI_SR_RXP) && spi_transfer_rx_len)
+	{
+		*spi_transfer_rx_ptr++ = SPI_REG->RXDR;
+		--spi_transfer_rx_len;
+	}
 	while ((SPI_REG->SR & SPI_SR_TXP) && spi_transfer_tx_len)
 	{
 		SPI_REG->TXDR = *spi_transfer_tx_ptr++;
 		--spi_transfer_tx_len;
-	}
-	if ((SPI_REG->SR & SPI_SR_RXP) && spi_transfer_rx_len)
-	{
-		*spi_transfer_rx_ptr++ = SPI_REG->RXDR;
-		--spi_transfer_rx_len;
 	}
 	if (spi_transfer_tx_len == 0 && spi_transfer_rx_len == 0)
 	{
@@ -1194,11 +1209,16 @@ void SPI_ISR()
  */
 bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t datalen)
 {
-	if (!spi_enable_dma)
+	// if (!spi_enable_dma)
 	{
 		// Bulk transfer without DMA (uses ISR)
 		if (spi_port_state == SPI_IDLE)
 		{
+			SPI_REG->CR1 |= SPI_CR1_SPE;
+			while (!(SPI_REG->CR1 & SPI_CR1_SPE))
+				;
+			SPI_REG->CR1 |= SPI_CR1_CSTART;
+			SPI_REG->IFCR = 0xFFFFFFFFUL;
 			spi_port_state = SPI_TRANSMITTING;
 
 			spi_transfer_tx_ptr = tx_data;
@@ -1219,6 +1239,8 @@ bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t da
 		}
 		else if (spi_port_state == SPI_TRANSMIT_COMPLETE)
 		{
+			SPI_REG->CR1 &= ~SPI_CR1_CSTART;
+			SPI_REG->CR1 &= ~SPI_CR1_SPE;
 			spi_port_state = SPI_IDLE;
 			return false;
 		}
@@ -1317,6 +1339,7 @@ bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t da
 	return true;
 }
 
+#endif
 #endif
 
 #ifdef MCU_HAS_SPI2
@@ -1702,10 +1725,7 @@ void mcu_i2c_config(uint32_t frequency)
 	RCC->CR |= RCC_CR_HSION;
 	while (!(RCC->CR & RCC_CR_HSIRDY))
 		;
-	__HAL_RCC_I2C123_CONFIG(RCC_I2C123CLKSOURCE_CSI);
-	__HAL_RCC_I2C4_CONFIG(RCC_I2C123CLKSOURCE_CSI);
-	// RCC->D2CCIP2R &= ~RCC_D2CCIP2R_I2C123SEL; // use HSI clock source
-	// RCC->D2CCIP2R |= STM_VAL2REG(2, RCC_D2CCIP2R_I2C123SEL);
+	I2C_CLOCK_SOURCE_CFG(I2C_CLOCK_SOURCE);
 	RCC->I2C_APBREG |= I2C_APBEN;
 	I2C_REG->CR1 &= ~I2C_CR1_PE;
 	mcu_config_af(I2C_CLK, I2C_CLK_AFIO);

@@ -4063,15 +4063,24 @@ extern "C"
 // #endif
 
 #define SPI_REG __helper__(SPI, SPI_PORT, )
-#if (SPI_PORT == 2 || SPI_PORT == 3)
+#if (SPI_PORT == 6)
+#define SPI_ENREG RCC->APB4ENR
+#define SPI_ENVAL __helper__(RCC_APB4ENR_SPI, SPI_PORT, EN)
+// #define SPI_CLOCK HAL_RCC_GetPCLK1Freq()
+#elif (SPI_PORT == 2 || SPI_PORT == 3)
 #define SPI_ENREG RCC->APB1LENR
 #define SPI_ENVAL __helper__(RCC_APB1LENR_SPI, SPI_PORT, EN)
-#define SPI_CLOCK HAL_RCC_GetPCLK1Freq()
+// #define SPI_CLOCK HAL_RCC_GetPCLK1Freq()
 #else
 #define SPI_ENREG RCC->APB2ENR
 #define SPI_ENVAL __helper__(RCC_APB2ENR_SPI, SPI_PORT, EN)
-#define SPI_CLOCK HAL_RCC_GetPCLK2Freq()
+// #define SPI_CLOCK HAL_RCC_GetPCLK2Freq()
 #endif
+
+#define SPI_CLOCK HSI_VALUE
+#define SPI_CLOCK_SLOW CSI_VALUE
+#define SPI_CLOCK_SOURCE_CFG __helper__(__HAL_RCC_SPI, SPI_PORT, _CONFIG)
+#define SPI_CLOCK_SOURCE __helper__(RCC_SPI, SPI_PORT, CLKSOURCE_CLKP)
 
 #define SPI_IRQ __helper__(SPI, SPI_PORT, _IRQn)
 #define SPI_ISR __helper__(SPI, SPI_PORT, _IRQHandler)
@@ -4496,7 +4505,9 @@ extern "C"
 #define I2C_APBEN __helper__(RCC_APB1LENR_I2C, I2C_PORT, EN)
 #endif
 #define I2C_REG __helper__(I2C, I2C_PORT, )
-#define I2C_SPEEDRANGE (HAL_RCC_GetPCLK1Freq() / 1000000UL)
+
+#define I2C_CLOCK_SOURCE_CFG __helper__(__HAL_RCC_I2C, SPI_PORT, _CONFIG)
+#define I2C_CLOCK_SOURCE __helper__(RCC_I2C, SPI_PORT, CLKSOURCE_CSI)
 
 #if (I2C_PORT == 1)
 #if (I2C_DATA_PIN == STM32IO_A10)
