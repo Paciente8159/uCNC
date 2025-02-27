@@ -102,6 +102,10 @@ extern "C"
 		{                                                       \
 			io_clear_output(CLKPIN);                              \
 		}                                                       \
+		if (ASSERT_PIN_EXTENDED(CLKPIN))                        \
+		{                                                       \
+			io_extended_pins_update();                            \
+		}                                                       \
 	}                                                         \
 	void NAME##_mosi(bool state)                              \
 	{                                                         \
@@ -113,8 +117,19 @@ extern "C"
 		{                                                       \
 			io_clear_output(MOSIPIN);                             \
 		}                                                       \
+		if (ASSERT_PIN_EXTENDED(MOSIPIN))                       \
+		{                                                       \
+			io_extended_pins_update();                            \
+		}                                                       \
 	}                                                         \
-	bool NAME##_miso(void) { return io_get_input(MISOPIN); }  \
+	bool NAME##_miso(void)                                    \
+	{                                                         \
+		if (ASSERT_PIN_EXTENDED(MISOPIN))                       \
+		{                                                       \
+			io_extended_pins_update();                            \
+		}                                                       \
+		return io_get_input(MISOPIN);                           \
+	}                                                         \
 	__attribute__((used)) softspi_port_t NAME = {.spiconfig = {.mode = MODE}, .spifreq = FREQ, .spiport = NULL, .clk = &NAME##_clk, .mosi = &NAME##_mosi, .miso = &NAME##_miso, .config = &NAME##_config};
 
 #define HARDSPI(NAME, FREQ, MODE, PORT) __attribute__((used)) softspi_port_t NAME = {.spiconfig = {.mode = MODE}, .spifreq = FREQ, .spiport = &PORT, .clk = NULL, .mosi = NULL, .miso = NULL, .config = NULL};
@@ -129,8 +144,8 @@ extern "C"
 	void softspi_stop(softspi_port_t *port);
 
 	// helper functions
-	static FORCEINLINE void softspi_set_mode(softspi_port_t *port, uint8_t spi_mode) { port->spiconfig.mode = spi_mode; }
-	static FORCEINLINE void softspi_set_frequency(softspi_port_t *port, uint32_t spi_freq) { port->spifreq = spi_freq; }
+	static FORCEINLINE void softspi_set_mode(softspi_port_t *port, uint8_t spi_mode) { port->spiconfig.mode = spi_mode; softspi_config(port, port->spiconfig, port->spifreq);}
+	static FORCEINLINE void softspi_set_frequency(softspi_port_t *port, uint32_t spi_freq) { softspi_config(port, port->spiconfig, spi_freq); }
 
 #ifdef __cplusplus
 }

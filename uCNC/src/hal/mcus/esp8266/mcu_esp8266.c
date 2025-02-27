@@ -263,7 +263,7 @@ IRAM_ATTR void mcu_itp_isr(void)
 	mcu_gen_pwm_and_servo();
 	mcu_gen_oneshot();
 #if defined(IC74HC595_HAS_STEPS) || defined(IC74HC595_HAS_DIRS) || defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS)
-	ic74hc595_shift_io_pins();
+	shift_register_io_pins();
 #endif
 }
 
