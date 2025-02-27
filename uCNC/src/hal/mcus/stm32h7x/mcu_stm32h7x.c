@@ -1344,36 +1344,36 @@ void SPI_ISR()
 static volatile spi_port_state_t spi2_port_state = SPI_UNKNOWN;
 static bool spi2_enable_dma = false;
 
-void mcu_spi2_config(spi_config_t config, uint32_t frequency)
+void mcu_spi_config(spi_config_t config, uint32_t frequency)
 {
-	uint8_t div = (uint8_t)(SPI2_CLOCK / frequency);
+	uint8_t div = (frequency >= 2000000UL) ? (uint8_t)(SPI2_CLOCK / frequency) : (uint8_t)(SPI2_CLOCK_SLOW / frequency);
 
 	uint8_t speed;
-	if (div < 2)
+	if (div <= 2)
 	{
 		speed = 0;
 	}
-	else if (div < 4)
+	else if (div <= 4)
 	{
 		speed = 1;
 	}
-	else if (div < 8)
+	else if (div <= 8)
 	{
 		speed = 2;
 	}
-	else if (div < 16)
+	else if (div <= 16)
 	{
 		speed = 3;
 	}
-	else if (div < 32)
+	else if (div <= 32)
 	{
 		speed = 4;
 	}
-	else if (div < 64)
+	else if (div <= 64)
 	{
 		speed = 5;
 	}
-	else if (div < 128)
+	else if (div <= 128)
 	{
 		speed = 6;
 	}
@@ -1382,29 +1382,62 @@ void mcu_spi2_config(spi_config_t config, uint32_t frequency)
 		speed = 7;
 	}
 
-	// disable SPI2
+	// disable SPI
 	SPI2_REG->CR1 &= ~SPI_CR1_SPE;
+
+	// config RCC
+	SPI2_ENREG &= ~SPI2_ENVAL;
+	/**
+	 * switch peripheral clock source depending on the required frequency
+	 */
+	if ((frequency >= 2000000UL))
+	{
+		__HAL_RCC_CLKP_CONFIG(RCC_CLKPSOURCE_HSI);
+	}
+	else
+	{
+		__HAL_RCC_CLKP_CONFIG(RCC_CLKPSOURCE_CSI);
+	}
+	SPI2_CLOCK_SOURCE_CFG(SPI2_CLOCK_SOURCE);
+	SPI2_ENREG |= SPI2_ENVAL;
+	mcu_config_af(SPI2_SDI, SPI2_SDI_AFIO);
+	mcu_config_af(SPI2_CLK, SPI2_CLK_AFIO);
+	mcu_config_af(SPI2_SDO, SPI2_SDO_AFIO);
+
+	while (SPI2_REG->CR1 & SPI_CR1_SPE)
+		;
+	SPI2_REG->CR1 |= SPI_CR1_SSI;
+	SPI2_REG->CR2 = 0;
+	SPI2_REG->CRCPOLY = 0;
+	SPI2_REG->I2SCFGR = 0;
+	SPI2_REG->IFCR = 0xFFFFFFFFUL;
+	SPI2_REG->IER = 0;
 	// clear speed and mode
-	SPI2_REG->CFG2 = 0;
-	SPI2_REG->CFG2 |= SPI_CFG2_MASTER;
-	SPI2_REG->CFG2 |= ((config.mode & 0x3) << SPI_CFG2_CPHA_Pos);
-	SPI2_REG->CFG1 = 0;
-	SPI2_REG->CFG1 |= (speed << SPI_CFG1_MBR_Pos);
-	// enable SPI2
+	SPI2_REG->CFG2 = SPI_CFG2_SSM | SPI_CFG2_SSOE /*| SPI_CFG2_SP_0*/ | SPI_CFG2_MASTER | (((uint32_t)(config.mode & 0x3)) << SPI_CFG2_CPHA_Pos);
+	SPI2_REG->CFG1 &= ~(SPI_CFG1_DSIZE | SPI_CFG1_MBR | SPI_CFG1_FTHLV);
+	SPI2_REG->CFG1 |= (SPI_CFG1_DSIZE_2 | SPI_CFG1_DSIZE_1 | SPI_CFG1_DSIZE_0) | (((uint32_t)speed) << SPI_CFG1_MBR_Pos);
 	SPI2_REG->CR1 |= SPI_CR1_SPE;
+	while (!(SPI2_REG->CR1 & SPI_CR1_SPE))
+		;
+
+	NVIC_SetPriority(SPI2_IRQ, 2);
+	NVIC_ClearPendingIRQ(SPI2_IRQ);
+	NVIC_EnableIRQ(SPI2_IRQ);
 
 	spi2_port_state = SPI_IDLE;
 	spi2_enable_dma = config.enable_dma;
 }
 
-uint8_t mcu_spi2_xmit(uint8_t c)
+uint8_t mcu_spi_xmit(uint8_t c)
 {
+	SPI2_REG->CR1 |= SPI_CR1_CSTART;
 	while (!(SPI2_REG->SR & SPI_SR_TXP))
 		;
-	SPI2_REG->TXDR = c;
-	while ((SPI2_REG->SR & SPI_SR_RXP))
+	*((__IO uint8_t *)&SPI2_REG->TXDR) = c;
+	while (!(SPI2_REG->SR & SPI_SR_RXP))
 		;
-	uint8_t data = SPI2_REG->RXDR;
+	uint8_t data = *((__IO uint8_t *)&SPI2_REG->RXDR);
+	SPI2_REG->CR1 &= ~SPI_CR1_CSTART;
 	spi2_port_state = SPI_IDLE;
 	return data;
 }

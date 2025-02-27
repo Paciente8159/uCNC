@@ -83,6 +83,8 @@ typedef struct
 } flash_eeprom_t;
 
 static flash_eeprom_t mcu_eeprom;
+#elif !defined(RAM_ONLY_SETTINGS)
+extern void esp32_eeprom_init(int size);
 #endif
 
 MCU_CALLBACK void mcu_itp_isr(void *arg);
@@ -632,8 +634,7 @@ void mcu_init(void)
 	{
 		log_e("eeprom failed to open");
 	}
-#else
-	extern void esp32_eeprom_init(int size);
+#elif !defined(RAM_ONLY_SETTINGS)
 	esp32_eeprom_init(NVM_STORAGE_SIZE);
 #endif
 
