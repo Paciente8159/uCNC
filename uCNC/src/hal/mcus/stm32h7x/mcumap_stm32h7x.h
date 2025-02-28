@@ -2153,7 +2153,7 @@ extern "C"
 #define MCU_HAS_UART2
 #endif
 #if (defined(USB_DP) && defined(USB_DM))
-#define GPIO_OTG_FS 0x0A
+#define GPIO_OTG_AF 0x0A
 #define MCU_HAS_USB
 	extern uint32_t tud_cdc_n_write_available(uint8_t itf);
 	extern uint32_t tud_cdc_n_available(uint8_t itf);

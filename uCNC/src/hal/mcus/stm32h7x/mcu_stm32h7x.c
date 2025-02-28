@@ -27,6 +27,12 @@
 #include <math.h>
 
 #ifdef MCU_HAS_USB
+#ifndef USB_OTG_FS
+#define USB_OTG_FS USB_OTG_HS
+#define OTG_FS_IRQHandler OTG_HS_IRQHandler
+#define OTG_FS_IRQn OTG_HS_IRQn
+#define RCC_AHB1ENR_USB2OTGFSEN RCC_AHB1ENR_USB1OTGHSEN
+#endif
 #include <tusb_ucnc.h>
 // #include "usbd_cdc.h"
 // #include "usbd_cdc_if.h"
@@ -531,8 +537,8 @@ void mcu_usart_init(void)
 	// configure USB as Virtual COM port
 	mcu_config_input(USB_DM);
 	mcu_config_input(USB_DP);
-	mcu_config_af(USB_DP, GPIO_OTG_FS);
-	mcu_config_af(USB_DM, GPIO_OTG_FS);
+	mcu_config_af(USB_DP, GPIO_OTG_AF);
+	mcu_config_af(USB_DM, GPIO_OTG_AF);
 	RCC->AHB1ENR |= RCC_AHB1ENR_USB2OTGFSEN;
 
 	// enable usb vreg
