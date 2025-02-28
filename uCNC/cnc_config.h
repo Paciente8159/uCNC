@@ -51,8 +51,10 @@ extern "C"
 	 *
 	 * */
 
+#ifndef BOARDMAP
 #ifndef BOARD
-#define BOARD "avr/boardmap_uno.h"
+#define BOARD BOARD_UNO
+#endif
 #endif
 
 // optional name to override default board name build info (if option enabled)

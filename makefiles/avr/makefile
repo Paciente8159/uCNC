@@ -77,7 +77,7 @@ BIN = $(CP) -O binary -S
 # cpu
 CPU ?= atmega328p
 FREQ ?= 16000000L
-BOARD ?= UNO
+BOARD ?= BOARD_UNO
 
 # mcu
 MCU = -mmcu=$(CPU)
@@ -90,7 +90,7 @@ AS_DEFS =
 BUILD_OPTIONS ?=
 
 C_DEFS =  $(BUILD_OPTIONS)\
--DBOARD_TYPE=BOARD_$(BOARD)
+-DBOARD=$(BOARD)
 
 # AS includes
 AS_INCLUDES = 

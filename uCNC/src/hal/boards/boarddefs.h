@@ -25,22 +25,25 @@ extern "C"
 #endif
 
 #include "../mcus/mcus.h"
-
-#include "makefile_helper.h"
+#include "boards_helper.h"
+#include "../../../boardmap_overrides.h"
 
 /*
 	MCU port map
 */
 #ifndef MCU
-#ifndef BOARD
-#error "Undefined board. You need to define your boardmap file"
+
+#ifndef BOARDMAP
+#error "Undefined boardmap. You need to define your boardmap file"
 #endif
 
 #define __BOARDMAP_FILE__(B) #B
 #define BOARDMAP_FILE(B) __BOARDMAP_FILE__(B)
-#include BOARD
+
+#include BOARDMAP
 #endif
 
+// reinclude the override file
 #include "../../../boardmap_overrides.h"
 #include "pin_mapping_helper.h"
 #include "../mcus/mcudefs.h" //configures the MCU for the selected board
