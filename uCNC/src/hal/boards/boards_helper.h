@@ -24,7 +24,7 @@ extern "C"
 {
 #endif
 
-//boards list
+// boards list
 /**
  * AVR
  */
@@ -129,7 +129,7 @@ extern "C"
 #define BOARDMAP "stm32/boardmap_mks_robin_nano_v3_1.h"
 #elif (BOARD == BOARD_SKR_PRO_V1_2)
 #define BOARDMAP "stm32/boardmap_srk_pro_v1_2.h"
-#define HAS_VALUE 8000000
+#define HSE_VALUE 8000000
 #define CUSTOM_PRE_MAIN
 #elif (BOARD == BOARD_NUCLEO_F411RE_SHIELD_V3)
 #define BOARDMAP "stm32/boardmap_nucleo_f411re_shield_v3.h"
@@ -167,10 +167,13 @@ extern "C"
 #elif (BOARD == BOARD_RPI_PICO2)
 #define BOARDMAP "rp2350/boardmap_rpi_pico2.h"
 // CUSTOM
-#elif (BOARD == BOARD_CUSTOM)
-#define BOARDMAP "boardmap_overrides.h"
-#elif !defined(BOARDMAP)
-#warning "Board configuration undefined or invalid"
+#elif (BOARD == BOARD_CUSTOM) || (BOARD == BOARD_UNDEFINED)
+#define BOARDMAP "../../../boardmap_overrides.h"
+#if (BOARD == BOARD_UNDEFINED)
+#warning "Board configuration undefined"
+#endif
+#else
+#error "Invalid board"
 #endif
 #endif
 
