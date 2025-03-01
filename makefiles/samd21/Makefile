@@ -81,7 +81,7 @@ BIN = $(CP) -O binary -S
 #######################################
 # cpu
 CPU = -mcpu=cortex-m0plus
-BOARD ?= MZERO
+BOARD ?= BOARD_MZERO
 
 # fpu
 # NONE for Cortex-M0/M0+/M3
@@ -104,7 +104,7 @@ C_DEFS =  $(BUILD_OPTIONS)\
 -DSAMD21 \
 -DCFG_TUSB_MCU=OPT_MCU_SAMD21 \
 -D__SAMD21E18A__ \
--DBOARD=BOARD_$(BOARD)
+-DBOARD=$(BOARD)
 
 # AS includes
 AS_INCLUDES = 
