@@ -1,10 +1,10 @@
 /*
-	Name: esp8266_uart.cpp
-	Description: Contains all Arduino ESP8266 C++ to C functions used by UART in µCNC.
+	Name: esp8266_wifi.cpp
+	Description: Implements Wifi and support services (including webserver, sockets and flash file system) for ESP8266 using Arduino libraries.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
-	Date: 27-07-2022
+	Date: 07-02-2025
 
 	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -17,11 +17,15 @@
 */
 
 #ifdef ESP8266
-#include "../../../../cnc_config.h"
 #include <Arduino.h>
 #include "user_interface.h"
 #include <stdint.h>
 #include <stdbool.h>
+
+extern "C"
+{
+#include "../../../cnc.h"
+}
 
 #ifdef ENABLE_WIFI
 #include <ESP8266WiFi.h>
@@ -100,33 +104,36 @@ extern "C"
 		{
 			if (!strcmp((const char *)&(cmd_params->cmd)[4], "ON"))
 			{
-				WiFi.disconnect();
-				switch (wifi_settings.wifi_mode)
+				__ATOMIC__
 				{
-				case 1:
-					WiFi.mode(WIFI_STA);
-					WiFi.begin(wifi_settings.ssid, wifi_settings.pass);
-					proto_info("Trying to connect to WiFi");
-					break;
-				case 2:
-					WiFi.mode(WIFI_AP);
-					WiFi.softAP(BOARD_NAME, wifi_settings.pass);
-					proto_info("AP started");
-					proto_info("SSID>" BOARD_NAME);
-					proto_info("IP>%s", WiFi.softAPIP().toString().c_str());
-					break;
-				default:
-					WiFi.mode(WIFI_AP_STA);
-					WiFi.begin(wifi_settings.ssid, wifi_settings.pass);
-					proto_info("Trying to connect to WiFi");
-					WiFi.softAP(BOARD_NAME, wifi_settings.pass);
-					proto_info("AP started");
-					proto_info("SSID>" BOARD_NAME);
-					proto_info("IP>%s", WiFi.softAPIP().toString().c_str());
-					break;
-				}
+					WiFi.disconnect();
+					switch (wifi_settings.wifi_mode)
+					{
+					case 1:
+						WiFi.mode(WIFI_STA);
+						WiFi.begin(wifi_settings.ssid, wifi_settings.pass);
+						proto_info("Trying to connect to WiFi");
+						break;
+					case 2:
+						WiFi.mode(WIFI_AP);
+						WiFi.softAP(BOARD_NAME, wifi_settings.pass);
+						proto_info("AP started");
+						proto_info("SSID>" BOARD_NAME);
+						proto_info("IP>%s", WiFi.softAPIP().toString().c_str());
+						break;
+					default:
+						WiFi.mode(WIFI_AP_STA);
+						WiFi.begin(wifi_settings.ssid, wifi_settings.pass);
+						proto_info("Trying to connect to WiFi");
+						WiFi.softAP(BOARD_NAME, wifi_settings.pass);
+						proto_info("AP started");
+						proto_info("SSID>" BOARD_NAME);
+						proto_info("IP>%s", WiFi.softAPIP().toString().c_str());
+						break;
+					}
 
-				wifi_settings.wifi_on = 1;
+					wifi_settings.wifi_on = 1;
+				}
 				settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
 				*(cmd_params->error) = STATUS_OK;
 				return EVENT_HANDLED;
@@ -134,8 +141,11 @@ extern "C"
 
 			if (!strcmp((const char *)&(cmd_params->cmd)[4], "OFF"))
 			{
-				WiFi.disconnect();
-				wifi_settings.wifi_on = 0;
+				__ATOMIC__
+				{
+					WiFi.disconnect();
+					wifi_settings.wifi_on = 0;
+				}
 				settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
 				*(cmd_params->error) = STATUS_OK;
 				return EVENT_HANDLED;
@@ -172,7 +182,6 @@ extern "C"
 
 			if (!strcmp((const char *)&(cmd_params->cmd)[4], "SCAN"))
 			{
-				// Serial.println("[MSG:Scanning Networks]");
 				proto_info("Scanning Networks");
 				int numSsid = WiFi.scanNetworks();
 				if (numSsid == -1)
@@ -709,9 +718,8 @@ extern "C"
 	}
 #endif
 
-	void esp8266_uart_init(int baud)
+	void esp8266_wifi_init()
 	{
-		Serial.begin(baud);
 		DBGMSG("Wifi assert");
 #ifdef ENABLE_WIFI
 		DBGMSG("Wifi startup");
@@ -790,54 +798,6 @@ extern "C"
 #endif
 	}
 
-#ifdef MCU_HAS_UART
-#ifndef UART_TX_BUFFER_SIZE
-#define UART_TX_BUFFER_SIZE 64
-#endif
-	DECL_BUFFER(uint8_t, uart_rx, RX_BUFFER_SIZE);
-	DECL_BUFFER(uint8_t, uart_tx, UART_TX_BUFFER_SIZE);
-	uint8_t mcu_uart_getc(void)
-	{
-		uint8_t c = 0;
-		BUFFER_DEQUEUE(uart_rx, &c);
-		return c;
-	}
-
-	uint8_t mcu_uart_available(void)
-	{
-		return BUFFER_READ_AVAILABLE(uart_rx);
-	}
-
-	void mcu_uart_clear(void)
-	{
-		BUFFER_CLEAR(uart_rx);
-	}
-
-	void mcu_uart_putc(uint8_t c)
-	{
-		while (BUFFER_FULL(uart_tx))
-		{
-			mcu_uart_flush();
-		}
-		BUFFER_ENQUEUE(uart_tx, &c);
-	}
-
-	void mcu_uart_flush(void)
-	{
-		while (!BUFFER_EMPTY(uart_tx))
-		{
-			uint8_t tmp[UART_TX_BUFFER_SIZE + 1];
-			memset(tmp, 0, sizeof(tmp));
-			uint8_t r;
-			uint8_t max = (uint8_t)MIN(Serial.availableForWrite(), UART_TX_BUFFER_SIZE);
-
-			BUFFER_READ(uart_tx, tmp, max, r);
-			Serial.write(tmp, r);
-			Serial.flush();
-		}
-	}
-#endif
-
 #ifdef MCU_HAS_WIFI
 #ifndef WIFI_TX_BUFFER_SIZE
 #define WIFI_TX_BUFFER_SIZE 64
@@ -893,27 +853,8 @@ extern "C"
 	}
 #endif
 
-	void esp8266_uart_process(void)
+	void esp8266_wifi_dotasks(void)
 	{
-		while (Serial.available() > 0)
-		{
-			system_soft_wdt_feed();
-#ifndef DETACH_UART_FROM_MAIN_PROTOCOL
-			uint8_t c = (uint8_t)Serial.read();
-			if (mcu_com_rx_cb(c))
-			{
-				if (BUFFER_FULL(uart_rx))
-				{
-					c = OVF;
-				}
-
-				BUFFER_ENQUEUE(uart_rx, &c);
-			}
-#else
-			mcu_uart_rx_cb((uint8_t)Serial.read());
-#endif
-		}
-
 #ifdef ENABLE_WIFI
 		if (esp8266_wifi_clientok())
 		{
@@ -947,100 +888,5 @@ extern "C"
 #endif
 	}
 }
-
-#ifdef MCU_HAS_SPI
-#include <Arduino.h>
-#include <SPI.h>
-// #include "esp_peri.h"
-extern "C"
-{
-#include "../../../cnc.h"
-	void esp8266_spi_init(uint32_t freq, uint8_t mode)
-	{
-		SPI.begin();
-		spi_config_t conf = {0};
-		conf.mode = SPI_MODE;
-		mcu_spi_config(conf, freq);
-	}
-
-	void mcu_spi_config(spi_config_t config, uint32_t freq)
-	{
-		SPI.setFrequency(freq);
-		SPI.setDataMode(config.mode);
-		SPI.setBitOrder(MSBFIRST);
-	}
-
-	void mcu_spi_start(spi_config_t config, uint32_t freq)
-	{
-		SPI.beginTransaction(SPISettings(freq, MSBFIRST, config.mode));
-	}
-
-	bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
-	{
-		SPI.transferBytes(out, in, len);
-		return false;
-	}
-
-	void mcu_spi_end(void)
-	{
-		SPI.endTransaction();
-	}
-
-	uint8_t mcu_spi_xmit(uint8_t c)
-	{
-		return SPI.transfer(c);
-		// while (SPI1CMD & SPIBUSY)
-		// 	;
-		// SPI1W0 = c;
-		// SPI1CMD |= SPIBUSY;
-		// while (SPI1CMD & SPIBUSY)
-		// 	;
-		// return (uint8_t)(SPI1W0 & 0xff);
-	}
-}
-
-#endif
-
-#ifndef RAM_ONLY_SETTINGS
-#include <Arduino.h>
-#include <EEPROM.h>
-#include <stdint.h>
-extern "C"
-{
-	void esp8266_eeprom_init(int size)
-	{
-		EEPROM.begin(size);
-	}
-
-	uint8_t mcu_eeprom_getc(uint16_t address)
-	{
-		if (NVM_STORAGE_SIZE <= address)
-		{
-			DBGMSG("EEPROM invalid address @ %u", address);
-			return 0;
-		}
-		return EEPROM.read(address);
-	}
-
-	void mcu_eeprom_putc(uint16_t address, uint8_t value)
-	{
-		if (NVM_STORAGE_SIZE <= address)
-		{
-			DBGMSG("EEPROM invalid address @ %u", address);
-			return;
-		}
-		EEPROM.write(address, value);
-	}
-
-	void mcu_eeprom_flush(void)
-	{
-		if (!EEPROM.commit())
-		{
-			Serial.println("[MSG: EEPROM write error]");
-		}
-	}
-}
-
-#endif
 
 #endif

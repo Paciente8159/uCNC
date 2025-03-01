@@ -86,7 +86,6 @@ MCU_CALLBACK void __attribute__((weak)) shift_register_io_pins(void)
 #if (IC74HC595_COUNT > 0)
 		__ATOMIC__
 		{
-
 			memcpy(pins, (const void *)ic74hc595_io_pins, IC74HC595_COUNT);
 		}
 		mcu_clear_output(IC74HC595_LATCH);

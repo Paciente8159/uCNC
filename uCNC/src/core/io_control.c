@@ -237,7 +237,7 @@ MCU_IO_CALLBACK void mcu_inputs_changed_cb(void)
 	uint8_t diff;
 
 #ifdef IC74HC165_HAS_DINS
-	shift_register_io_pins();
+	io_extended_pins_update();
 #endif
 
 #if (ASSERT_PIN(DIN0) && defined(DIN0_ISR))
@@ -327,7 +327,7 @@ uint8_t io_get_limits(void)
 	return 0;
 #endif
 #ifdef IC74HC165_HAS_LIMITS
-	shift_register_io_pins();
+	io_extended_pins_update();
 #endif
 	uint8_t value = 0;
 
@@ -383,7 +383,7 @@ uint8_t io_get_controls(void)
 	return 0;
 #endif
 #ifdef IC74HC165_HAS_CONTROLS
-	shift_register_io_pins();
+	io_extended_pins_update();
 #endif
 	uint8_t value = 0;
 #if ASSERT_PIN(ESTOP)
@@ -439,7 +439,7 @@ bool io_get_probe(void)
 	return false;
 #else
 #ifdef IC74HC165_HAS_PROBE
-	shift_register_io_pins();
+	io_extended_pins_update();
 #endif
 #if ASSERT_PIN(PROBE)
 	bool probe = (io_get_input(PROBE) != 0);
@@ -540,7 +540,7 @@ void io_set_steps(uint8_t mask)
 #endif
 
 #ifdef IC74HC595_HAS_STEPS
-	shift_register_io_pins();
+	io_extended_pins_update();
 #endif
 }
 
@@ -604,7 +604,7 @@ void io_toggle_steps(uint8_t mask)
 #endif
 
 #ifdef IC74HC595_HAS_STEPS
-	shift_register_io_pins();
+	io_extended_pins_update();
 #endif
 }
 
@@ -723,7 +723,7 @@ void io_set_dirs(uint8_t mask)
 #endif
 
 #ifdef IC74HC595_HAS_DIRS
-	shift_register_io_pins();
+	io_extended_pins_update();
 #endif
 }
 
@@ -815,7 +815,7 @@ void io_enable_steppers(uint8_t mask)
 #endif
 
 #ifdef IC74HC595_HAS_STEPS_EN
-	shift_register_io_pins();
+	io_extended_pins_update();
 #endif
 }
 
@@ -998,7 +998,7 @@ MCU_CALLBACK void io_soft_pwm_update(void)
 #endif
 
 #ifdef IC74HC595_HAS_PWMS
-	shift_register_io_pins();
+	io_extended_pins_update();
 #endif
 }
 #endif
@@ -1772,7 +1772,7 @@ void io_set_pinvalue(uint8_t pin, uint8_t value)
 	// #if defined(IC74HC165_HAS_PWM) || defined(IC74HC165_HAS_SERVOS) || defined(IC74HC165_HAS_DOUTS)
 	// 	if (pin >= PWM_PINS_OFFSET && pin < 100)
 	// 	{
-	// 		shift_register_io_pins();
+	// 		io_extended_pins_update();
 	// 	}
 	// #endif
 	// #endif
@@ -1790,7 +1790,7 @@ int16_t io_get_pinvalue(uint8_t pin)
 	// #if defined(IC74HC165_HAS_LIMITS) || defined(IC74HC165_HAS_CONTROLS) || defined(IC74HC165_HAS_PROBE)
 	// 	if (pin >= 100 && pin < ANALOG_PINS_OFFSET)
 	// 	{
-	// 		shift_register_io_pins();
+	// 		io_extended_pins_update();
 	// 	}
 	// #endif
 	// #endif
