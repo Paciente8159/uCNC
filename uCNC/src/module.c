@@ -22,7 +22,7 @@
 #include "modules/digipot.h"
 #include "modules/encoder.h"
 #include "modules/pid.h"
-#include "modules/ic74hc595.h"
+#include "modules/shift_register.h"
 #include "modules/modbus.h"
 #include "modules/softi2c.h"
 #include "modules/softspi.h"
@@ -48,6 +48,7 @@ static FORCEINLINE void load_modules(void)
 void mod_init(void)
 {
 	g_module_lockguard = 0;
+
 #ifdef ENABLE_DIGITAL_MSTEP
 	LOAD_MODULE(digimstep);
 #endif

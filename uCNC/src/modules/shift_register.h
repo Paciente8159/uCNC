@@ -1,10 +1,10 @@
 /*
-	Name: cnc_build.h
-	Description: Compile time configurations for µCNC.
+	Name: shift_register.h
+	Description: This module adds the ability to control the IC74HC595(outputs) and IC74HC165(inputs) shift register controllers (used for example in the MKS-DLC32 board) to µCNC.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
-	Date: 30/01/2020
+	Date: 12-02-2025
 
 	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,18 +16,23 @@
 	See the	GNU General Public License for more details.
 */
 
-#ifndef CNC_BUILD_H
-#define CNC_BUILD_H
+#ifndef SHIFT_REGISTER_H
+#define SHIFT_REGISTER_H
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-#define CNC_MAJOR_MINOR_VERSION "1.11"
-#define CNC_PATCH_VERSION ".2"
+#include "ic74hc595.h"
+#include "ic74hc165.h"
+#include "../module.h"
 
-#define CNC_VERSION CNC_MAJOR_MINOR_VERSION CNC_PATCH_VERSION
+void shift_register_io_pins(void);
+
+#ifndef io_extended_pins_update
+#define io_extended_pins_update() shift_register_io_pins()
+#endif
 
 #ifdef __cplusplus
 }
