@@ -517,7 +517,7 @@ IRAM_ATTR void mcu_itp_isr(void)
 #ifdef SHIFT_REGISTER_CUSTOM_CALLBACK
 	memcpy((void *)ic74hc595_io_pins, (const void *)&(outputs.ic74hc595), IC74HC595_COUNT);
 	spi_shift_register_io_pins();
-#else
+#elif (IC74HC595_COUNT != 0) || (IC74HC165_COUNT != 0)
 	memcpy((void *)ic74hc595_io_pins, (const void *)&(outputs.ic74hc595), IC74HC595_COUNT);
 	shift_register_io_pins();
 #endif
