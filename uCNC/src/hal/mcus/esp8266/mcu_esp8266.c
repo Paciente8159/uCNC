@@ -80,7 +80,27 @@ typedef struct esp8266_io_out_
 #endif
 } esp8266_io_out_t;
 
-#ifdef SHIFT_REGISTER_CUSTOM_CALLBACK
+#if (IC74HC595_COUNT >= IC74HC165_COUNT)
+#define SHIFT_REGISTER_BYTES IC74HC595_COUNT
+#else
+#define SHIFT_REGISTER_BYTES IC74HC165_COUNT
+#endif
+
+#ifndef SHIFT_REGISTER_SDO
+#define SHIFT_REGISTER_SDO DOUT8
+#endif
+
+#ifndef SHIFT_REGISTER_SDI
+#define SHIFT_REGISTER_SDI DIN8
+#endif
+
+#ifndef SHIFT_REGISTER_CLK
+#define SHIFT_REGISTER_CLK DOUT9
+#endif
+
+#ifndef IC74HC595_LATCH
+#define IC74HC595_LATCH DOUT10
+#endif
 
 #ifndef IC74HC595_LATCH
 #define IC74HC595_LATCH DOUT10
@@ -90,13 +110,13 @@ typedef struct esp8266_io_out_
 #define IC74HC165_LOAD DOUT11
 #endif
 
-#if (IC74HC595_COUNT >= IC74HC165_COUNT)
-#define SHIFT_REGISTER_BYTES IC74HC595_COUNT
-#else
-#define SHIFT_REGISTER_BYTES IC74HC165_COUNT
+#ifndef SHIFT_REGISTER_DELAY_CYCLES
+#define SHIFT_REGISTER_DELAY_CYCLES 0
 #endif
 
+#define shift_register_delay() mcu_delay_cycles(SHIFT_REGISTER_DELAY_CYCLES)
 
+#ifdef SHIFT_REGISTER_CUSTOM_CALLBACK
 DECL_MUTEX(shifter_running);
 // custom implementation of the shift register using the SPI port
 MCU_CALLBACK void spi_shift_register_io_pins(void)
@@ -106,10 +126,10 @@ MCU_CALLBACK void spi_shift_register_io_pins(void)
 	MUTEX_TAKE(shifter_running)
 	{
 #if (IC74HC165_COUNT > 0)
-		mcu_set_output(IC74HC165_LOAD);
+		mcu_set_output_gpio(IC74HC165_LOAD);
 #endif
 #if (IC74HC595_COUNT > 0)
-		mcu_clear_output(IC74HC595_LATCH);
+		mcu_clear_output_gpio(IC74HC595_LATCH);
 #endif
 
 #if (IC74HC595_COUNT != 0) || (IC74HC165_COUNT != 0)
@@ -121,17 +141,94 @@ MCU_CALLBACK void spi_shift_register_io_pins(void)
 		while (SPI1CMD & SPIBUSY)
 			;
 		memcpy((void *)ic74hc165_io_pins, (const void *)((volatile uint32_t *)(0x60000000 + (0x140))), IC74HC165_COUNT); // reads the previous SPI value
-		memset((void *)ic74hc165_io_pins, 0, IC74HC165_COUNT);
 #endif
 #endif
 #if (IC74HC165_COUNT > 0)
-		mcu_clear_output(IC74HC165_LOAD);
+		mcu_clear_output_gpio(IC74HC165_LOAD);
 #endif
 #if (IC74HC595_COUNT > 0)
-		mcu_set_output(IC74HC595_LATCH);
+		mcu_set_output_gpio(IC74HC595_LATCH);
 #endif
 	}
 }
+#else
+#if (IC74HC595_COUNT != 0) || (IC74HC165_COUNT != 0)
+// use direct gpio
+MCU_CALLBACK void shift_register_io_pins(void)
+{
+	uint8_t pins[SHIFT_REGISTER_BYTES];
+
+#if (IC74HC165_COUNT > 0)
+	memset(pins, 0, IC74HC165_COUNT);
+	mcu_set_output_gpio(IC74HC165_LOAD);
+#endif
+#if (IC74HC595_COUNT > 0)
+	memcpy(pins, (const void *)ic74hc595_io_pins, IC74HC595_COUNT);
+	mcu_clear_output_gpio(IC74HC595_LATCH);
+#endif
+	/**
+	 * shift bytes
+	 */
+	for (uint8_t i = SHIFT_REGISTER_BYTES; i != 0;)
+	{
+		i--;
+		asm volatile("": : :"memory");
+#if (defined(SHIFT_REGISTER_USE_HW_SPI) && defined(MCU_HAS_SPI))
+		pins[i] = mcu_spi_xmit(pins[i]);
+#else
+		uint8_t pinbyte = pins[i];
+		for (uint8_t j = 0x80; j != 0; j >>= 1)
+		{
+#if (SHIFT_REGISTER_DELAY_CYCLES)
+			shift_register_delay();
+#endif
+			mcu_clear_output_gpio(SHIFT_REGISTER_CLK);
+#if (IC74HC595_COUNT > 0)
+			// write
+			if (pinbyte & j)
+			{
+				mcu_set_output_gpio(SHIFT_REGISTER_SDO);
+			}
+			else
+			{
+				mcu_clear_output_gpio(SHIFT_REGISTER_SDO);
+			}
+#endif
+// read
+#if (IC74HC165_COUNT > 0)
+			if (mcu_get_input(SHIFT_REGISTER_SDI))
+			{
+				pinbyte |= j;
+			}
+			else
+			{
+				pinbyte &= ~j;
+			}
+#endif
+			mcu_set_output_gpio(SHIFT_REGISTER_CLK);
+		}
+
+#if (IC74HC165_COUNT > 0)
+		pins[i] = pinbyte;
+#endif
+
+#if (SHIFT_REGISTER_DELAY_CYCLES)
+		shift_register_delay();
+#endif
+		mcu_set_output_gpio(SHIFT_REGISTER_CLK);
+
+#endif
+	}
+
+#if (IC74HC165_COUNT > 0)
+	memcpy((void *)ic74hc165_io_pins, (const void *)pins, IC74HC165_COUNT);
+	mcu_clear_output_gpio(IC74HC165_LOAD); // allow a new load
+#endif
+#if (IC74HC595_COUNT > 0)
+	mcu_set_output_gpio(IC74HC595_LATCH);
+#endif
+}
+#endif
 #endif
 
 #define OUT_IO_BUFFER_SIZE (TIMER_IO_SAMPLE_RATE * 10 / 1000)		// (10 / 1000) => 10ms
@@ -417,10 +514,13 @@ IRAM_ATTR void mcu_itp_isr(void)
 		GP16O &= ~1;
 	}
 
-	#ifdef SHIFT_REGISTER_CUSTOM_CALLBACK
+#ifdef SHIFT_REGISTER_CUSTOM_CALLBACK
 	memcpy((void *)ic74hc595_io_pins, (const void *)&(outputs.ic74hc595), IC74HC595_COUNT);
 	spi_shift_register_io_pins();
-	#endif
+#else
+	memcpy((void *)ic74hc595_io_pins, (const void *)&(outputs.ic74hc595), IC74HC595_COUNT);
+	shift_register_io_pins();
+#endif
 }
 
 #undef DBGMSG
@@ -545,7 +645,6 @@ extern void mcu_spi_init();
 
 void mcu_init(void)
 {
-	esp8266_global_isr = 15;
 	mcu_io_init();
 	mcu_uart_init();
 

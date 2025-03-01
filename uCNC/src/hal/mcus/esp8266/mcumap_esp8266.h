@@ -1392,11 +1392,20 @@ extern "C"
 #define mcu_config_input_isr(X) attachInterrupt(digitalPinToInterrupt(__indirect__(X, BIT)), __indirect__(X, ISRCALLBACK), CHANGE)
 
 #define mcu_get_input(X) ((__indirect__(X, BIT) < 16) ? GPIP(__indirect__(X, BIT)) : (GP16I & 0x01))
+
+/**
+ * Due to the way this core works this has some special calls to make direct output pin calls
+ */
+#define mcu_get_output_gpio(X) ((__indirect__(X, BIT) == 16) ? CHECKBIT(GP16O, 1) : CHECKBIT(GPO, __indirect__(X, BIT)))
+#define mcu_set_output_gpio(X) ({if(__indirect__(X, BIT)==16){SETBIT(GP16O, 1);}else{GPOS = (1<<__indirect__(X, BIT));} })
+#define mcu_clear_output_gpio(X) ({if(__indirect__(X, BIT)==16){CLEARBIT(GP16O, 1);}else{GPOC = (1<<__indirect__(X, BIT));} })
+#define mcu_toggle_output_gpio(X) ({if(__indirect__(X, BIT)==16){TOGGLEBIT(GP16O, 1);}else{TOGGLEBIT(GPO,__indirect__(X, BIT));} })
+
 	extern volatile uint32_t esp8266_io_out;
-#define mcu_get_output(X) CHECKBIT(esp8266_io_out, __indirect__(X, BIT))
-#define mcu_set_output(X) SETBIT(esp8266_io_out, __indirect__(X, BIT))
-#define mcu_clear_output(X) CLEARBIT(esp8266_io_out, __indirect__(X, BIT))
-#define mcu_toggle_output(X) TOGGLEBIT(esp8266_io_out, __indirect__(X, BIT))
+#define mcu_get_output(X) ((X < 200) ? CHECKBIT(esp8266_io_out, __indirect__(X, BIT)) : mcu_get_output_gpio(X))
+#define mcu_set_output(X) ({if(X<200) {SETBIT(esp8266_io_out, __indirect__(X, BIT));}else{mcu_set_output_gpio(X);} })
+#define mcu_clear_output(X) ({if(X<200) {CLEARBIT(esp8266_io_out, __indirect__(X, BIT));}else{mcu_clear_output_gpio(X);} })
+#define mcu_toggle_output(X) ({if(X<200) {TOGGLEBIT(esp8266_io_out, __indirect__(X, BIT));}else{mcu_toggle_output_gpio(X);} })
 
 #define mcu_get_analog(X)                                      \
 	if (__indirect__(X, BIT) == 17 || __indirect__(X, BIT) == 0) \
@@ -1412,7 +1421,7 @@ extern "C"
 	extern volatile uint32_t esp8266_global_isr;
 #define mcu_enable_global_isr()
 #define mcu_disable_global_isr()
-#define mcu_get_global_isr() true
+#define mcu_get_global_isr() ({__asm__ __volatile__ ("rsr.ps %0" : "=r" (esp8266_global_isr)); ((esp8266_global_isr & 0xF) == 0); })
 	/*
 		// #define mcu_enable_global_isr()    \
 	// 	if (esp8266_global_isr != 15)    \
@@ -1454,12 +1463,18 @@ extern "C"
 
 	// custom pin operations for 74HS595
 	extern volatile uint32_t ic74hc595_io_out;
+#ifdef SHIFT_REGISTER_CUSTOM_CALLBACK
+// reverses bytes
+#define ic74hc595_pin_offset(pin) (((IC74HC595_COUNT - 1 - (__indirect__(pin, IO_OFFSET) >> 3)) << 3) | (__indirect__(pin, IO_OFFSET) & 0x7))
+#else
+#define io_extended_pins_update()
 #define ic74hc595_pin_offset(pin) (__indirect__(pin, IO_OFFSET))
+#endif
 #define ic74hc595_pin_mask(pin) (uint32_t)(1UL << ic74hc595_pin_offset(pin))
-#define ic74hc595_set_pin(pin) SETBIT(ic74hc595_io_out, __indirect__(pin, IO_OFFSET))
-#define ic74hc595_clear_pin(pin) CLEARBIT(ic74hc595_io_out, __indirect__(pin, IO_OFFSET))
-#define ic74hc595_toggle_pin(pin) TOGGLEBIT(ic74hc595_io_out, __indirect__(pin, IO_OFFSET))
-#define ic74hc595_get_pin(pin) CHECKBIT(ic74hc595_io_out, __indirect__(pin, IO_OFFSET))
+#define ic74hc595_set_pin(pin) SETBIT(ic74hc595_io_out, ic74hc595_pin_offset(pin))
+#define ic74hc595_clear_pin(pin) CLEARBIT(ic74hc595_io_out, ic74hc595_pin_offset(pin))
+#define ic74hc595_toggle_pin(pin) TOGGLEBIT(ic74hc595_io_out, ic74hc595_pin_offset(pin))
+#define ic74hc595_get_pin(pin) CHECKBIT(ic74hc595_io_out, ic74hc595_pin_offset(pin))
 
 #endif
 

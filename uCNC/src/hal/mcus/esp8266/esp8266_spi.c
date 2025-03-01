@@ -97,13 +97,13 @@ bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 #ifndef mcu_spi_xmit
 uint8_t mcu_spi_xmit(uint8_t data)
 {
-	while (SPI1CMD & SPIBUSY)
-		;
-	SPI1W0 = data;
+	// while (SPI1CMD & SPIBUSY)
+	// 	;
+	*((volatile uint8_t*)&SPI1W0) = data;
 	SPI1CMD |= SPIBUSY;
 	while (SPI1CMD & SPIBUSY)
 		;
-	return (uint8_t)(SPI1W0 & 0xff);
+	return (uint8_t)(*((volatile uint8_t*)&SPI1W0) & 0xff);
 }
 #endif
 
