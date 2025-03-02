@@ -1,10 +1,10 @@
 /*
-	Name: kinematics.h
-	Description: Defines the available machine types.
+	Name: kinematic_dummy.h
+	Description: Custom kinematics definitions for a dummy kinematics
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
-	Date: 11/11/2019
+	Date: 01-03-2025
 
 	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,27 +16,17 @@
 	See the	GNU General Public License for more details.
 */
 
-#ifndef KINEMATICS_H
-#define KINEMATICS_H
+#ifndef KINEMATIC_DUMMY_H
+#define KINEMATIC_DUMMY_H
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-#define KINEMATIC_CARTESIAN 1
-#define KINEMATIC_COREXY 2
-#define KINEMATIC_LINEAR_DELTA 3
-#define KINEMATIC_DELTA 4
-#define KINEMATIC_SCARA 5
-#define KINEMATIC_DUMMY 99
-
-#define COREXY_AXIS_XY 1
-#define COREXY_AXIS_XZ 2
-#define COREXY_AXIS_YZ 3
+#define KINEMATIC_TYPE_STR "DMY"
 
 #ifdef __cplusplus
 }
 #endif
-
 #endif

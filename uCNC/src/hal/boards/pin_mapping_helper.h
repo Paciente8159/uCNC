@@ -1404,13 +1404,13 @@ extern "C"
 #define SPI_CS_BIT MCU_PIN(SPI_CS_PIN,BIT)
 #define SPI_CS_PORT MCU_PIN(SPI_CS_PIN,PORT)
 #endif
-#if (defined(I2C_SCL_PIN) && !(defined(I2C_SCL_BIT) || defined(I2C_SCL_PORT)))
-#define I2C_SCL_BIT MCU_PIN(I2C_SCL_PIN,BIT)
-#define I2C_SCL_PORT MCU_PIN(I2C_SCL_PIN,PORT)
+#if (defined(I2C_CLK_PIN) && !(defined(I2C_CLK_BIT) || defined(I2C_CLK_PORT)))
+#define I2C_CLK_BIT MCU_PIN(I2C_CLK_PIN,BIT)
+#define I2C_CLK_PORT MCU_PIN(I2C_CLK_PIN,PORT)
 #endif
-#if (defined(I2C_SDA_PIN) && !(defined(I2C_SDA_BIT) || defined(I2C_SDA_PORT)))
-#define I2C_SDA_BIT MCU_PIN(I2C_SDA_PIN,BIT)
-#define I2C_SDA_PORT MCU_PIN(I2C_SDA_PIN,PORT)
+#if (defined(I2C_DATA_PIN) && !(defined(I2C_DATA_BIT) || defined(I2C_DATA_PORT)))
+#define I2C_DATA_BIT MCU_PIN(I2C_DATA_PIN,BIT)
+#define I2C_DATA_PORT MCU_PIN(I2C_DATA_PIN,PORT)
 #endif
 #if (defined(TX2_PIN) && !(defined(TX2_BIT) || defined(TX2_PORT)))
 #define TX2_BIT MCU_PIN(TX2_PIN,BIT)
