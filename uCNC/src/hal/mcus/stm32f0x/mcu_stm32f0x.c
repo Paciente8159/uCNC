@@ -1371,7 +1371,6 @@ bool mcu_spi2_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t d
 }
 #endif
 
-#ifndef USE_ARDUINO_I2C_LIBRARY
 #ifdef MCU_HAS_I2C
 
 #if I2C_ADDRESS == 0
@@ -1379,6 +1378,9 @@ bool mcu_spi2_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t d
 
 void mcu_i2c_stop(bool *stop)
 {
+	//not working (using autostop)
+	while (!(I2C_REG->ISR & I2C_ISR_TC))
+		;
 	I2C_REG->CR2 |= I2C_CR2_STOP;
 	while (!(I2C_REG->ISR & I2C_ISR_STOPF))
 		;
@@ -1391,7 +1393,7 @@ void mcu_i2c_stop(bool *stop)
 // master sends command to slave
 uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool release, uint32_t ms_timeout)
 {
-	bool stop __attribute__((__cleanup__(mcu_i2c_stop))) = release;
+	// bool stop __attribute__((__cleanup__(mcu_i2c_stop))) = release;
 
 	if (!data || !datalen)
 	{
@@ -1406,6 +1408,10 @@ uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool relea
 	I2C_REG->CR2 &= ~I2C_CR2_ADD10;
 	/*Set number to transfer to length for write operation*/
 	I2C_REG->CR2 |= (datalen << I2C_CR2_NBYTES_Pos);
+	if (release)
+	{
+		I2C_REG->CR2 |= I2C_CR2_AUTOEND;
+	}
 	/*Set the mode to write mode*/
 	I2C_REG->CR2 &= ~I2C_CR2_RD_WRN;
 	/*Generate start*/
@@ -1418,7 +1424,8 @@ uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool relea
 		{
 			if ((I2C_REG->ISR & I2C_ISR_NACKF))
 			{
-				stop = true;
+				// stop = true;
+				I2C_REG->CR2 |= I2C_CR2_STOP;
 				return I2C_NOTOK;
 			}
 
@@ -1430,7 +1437,7 @@ uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool relea
 
 		__TIMEOUT_ASSERT__(t)
 		{
-			stop = true;
+			I2C_REG->CR2 |= I2C_CR2_STOP;
 			return I2C_NOTOK;
 		}
 
@@ -1463,7 +1470,7 @@ uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool relea
 // master receive response from slave
 uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_t ms_timeout)
 {
-	bool stop __attribute__((__cleanup__(mcu_i2c_stop))) = true;
+	// bool stop __attribute__((__cleanup__(mcu_i2c_stop))) = true;
 
 	if (!data || !datalen)
 	{
@@ -1486,7 +1493,7 @@ uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_
 
 	/*Enable I2C*/
 	I2C_REG->CR1 |= I2C_CR1_PE;
-	I2C_REG->CR2 = I2C_CR2_HEAD10R | I2C_CR2_RD_WRN  | STM_VAL2REG(datalen, I2C_CR2_NBYTES) | (address << 1);
+	I2C_REG->CR2 = I2C_CR2_HEAD10R | I2C_CR2_RD_WRN | STM_VAL2REG(datalen, I2C_CR2_NBYTES) | (address << 1) | I2C_CR2_AUTOEND;
 	I2C_REG->CR2 |= I2C_CR2_START;
 	while ((I2C_REG->CR2 & I2C_CR2_START))
 		;
@@ -1522,32 +1529,23 @@ uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_
 void mcu_i2c_config(uint32_t frequency)
 {
 	RCC->APB1ENR &= ~I2C_APBEN;
-	RCC->CFGR3 &= ~RCC_CFGR3_I2C1SW; // use HSI clock source
-	while (RCC->CFGR3 & RCC_CFGR3_I2C1SW)
-		;
-	RCC->APB1ENR |= I2C_APBEN;
 	I2C_REG->CR1 &= ~I2C_CR1_PE;
+	RCC->APB1RSTR |= __helper__(RCC_APB1RSTR_I2C, I2C_PORT, RST);
+	RCC->APB1RSTR &= ~(__helper__(RCC_APB1RSTR_I2C, I2C_PORT, RST));
+	RCC->APB1ENR |= I2C_APBEN;
 	mcu_config_af(I2C_CLK, I2C_CLK_AFIO);
 	mcu_config_af(I2C_DATA, I2C_DATA_AFIO);
 	mcu_config_pullup(I2C_CLK);
 	mcu_config_pullup(I2C_DATA);
 	// set opendrain
-	mcu_config_opendrain(I2C_CLK);
-	mcu_config_opendrain(I2C_DATA);
+	// mcu_config_opendrain(I2C_CLK);
+	// mcu_config_opendrain(I2C_DATA);
 #ifdef I2C_REMAP
 	AFIO->MAPR |= I2C_REMAP;
 #endif
 	I2C_REG->CR1 &= ~(I2C_CR1_ANFOFF | I2C_CR1_DNF);
 #if I2C_ADDRESS == 0
-	// set max freq
-	uint8_t presc = 0;
-	while ((HSI_VALUE / (presc + 1)) > (frequency * 255UL))
-	{
-		presc++;
-	}
 
-	float i2c_osc = ((float)HSI_VALUE / (presc + 1));
-	uint8_t scll = 0, sclh = scll = (uint8_t)CLAMP(0, (i2c_osc / (frequency * 2) - 1), 0xFFFF); // half time clock up and clock down
 	float risetime = 8333333.3f, falltime = 8333333.3f;
 	if (frequency <= 100000UL) // standart mode (max fall time 1000ns(1Mhz) and max rise time 300ns(3,3MHZ))
 	{
@@ -1560,16 +1558,26 @@ void mcu_i2c_config(uint32_t frequency)
 		falltime = 3333333.3f;
 	}
 
+	// set max freq
+	uint8_t presc = 0;
+	while ((HAL_RCC_GetPCLK1Freq() / (presc + 1)) > (frequency * 0xff) || (HAL_RCC_GetPCLK1Freq() / (presc + 1)) > (((uint32_t)falltime) * 0xf))
+	{
+		presc++;
+	}
+
+	float i2c_osc = ((float)HAL_RCC_GetPCLK1Freq() / (presc + 1));
+	uint8_t scll = 0, sclh = scll = (uint8_t)CLAMP(0, (i2c_osc / (frequency * 2) - 1), 0xFFFF); // half time clock up and clock down
+
 	uint8_t scldel = (uint8_t)CLAMP(0, (ceilf((float)i2c_osc / risetime) - 1), 0x0F);
 	uint8_t sdadel = (uint8_t)CLAMP(0, (ceilf((float)i2c_osc / falltime) - 1), 0x0F);
 
 	sclh -= (sclh >= sdadel) ? sdadel : 0;
 	// presc = 0; scll = 0x9; sclh=0x3; sdadel = 0x1; scldel = 0x3;
 	uint32_t tmr = (STM_VAL2REG(presc, I2C_TIMINGR_PRESC) | STM_VAL2REG(scll, I2C_TIMINGR_SCLL) | STM_VAL2REG(sclh, I2C_TIMINGR_SCLH) | STM_VAL2REG(scldel, I2C_TIMINGR_SCLDEL) | STM_VAL2REG(sdadel, I2C_TIMINGR_SDADEL));
-	I2C_REG->TIMEOUTR = tmr;
-	I2C_REG->CR1 &= ~I2C_CR1_NOSTRETCH;
-	I2C_REG->CR2 |= I2C_CR2_HEAD10R;
-	I2C_REG->CR2 &= ~I2C_CR2_ADD10;
+	I2C_REG->CR1 &= ~(I2C_CR1_ANFOFF | I2C_CR1_DNF);
+	I2C_REG->TIMINGR = tmr; // 0xB0420F13;
+	I2C_REG->CR1 &= ~(I2C_CR1_NOSTRETCH);
+	I2C_REG->CR2 = 0;
 #else
 	// set address
 	I2C_REG->OAR1 &= ~(I2C_OAR1_OA1MODE | 0x0F);
@@ -1667,7 +1675,7 @@ void I2C_ISR(void)
 #endif
 
 #endif
-#endif
+
 
 #ifdef MCU_HAS_ONESHOT_TIMER
 
