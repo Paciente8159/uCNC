@@ -66,7 +66,7 @@ void ic74hc595_pio_init()
 
 // disable this function
 // IO will be updated at a fixed rate
-MCU_CALLBACK void ic74hc595_shift_io_pins(void)
+MCU_CALLBACK void shift_register_io_pins(void)
 {
 	ic74hc595_program_write(pio_ic74hc595, sm_ic74hc595, *((volatile uint32_t *)&ic74hc595_io_pins[0]));
 }
