@@ -27,13 +27,30 @@ void softspi_config(softspi_port_t *port, spi_config_t config, uint32_t frequenc
 #ifdef MCU_HAS_SPI
 		mcu_spi_config(config, frequency);
 #endif
+		return;
 	}
 
 	if (port->config)
 	{
 		// if port with custom method execute it
 		port->config(config, frequency);
+		return;
 	}
+
+#ifdef MCU_HAS_SPI
+	if (port->spiport == MCU_SPI)
+	{
+		mcu_spi_config(config, frequency);
+		return;
+	}
+#endif
+
+#ifdef MCU_HAS_SPI2
+	if (port->spiport == MCU_SPI2)
+	{
+		mcu_spi2_config(config, frequency);
+	}
+#endif
 }
 
 uint8_t softspi_xmit(softspi_port_t *port, uint8_t c)

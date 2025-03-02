@@ -144,8 +144,8 @@ extern "C"
 	void softspi_stop(softspi_port_t *port);
 
 	// helper functions
-	static FORCEINLINE void softspi_set_mode(softspi_port_t *port, uint8_t spi_mode) { port->spiconfig.mode = spi_mode; }
-	static FORCEINLINE void softspi_set_frequency(softspi_port_t *port, uint32_t spi_freq) { port->spifreq = spi_freq; }
+	static FORCEINLINE void softspi_set_mode(softspi_port_t *port, uint8_t spi_mode) { port->spiconfig.mode = spi_mode; softspi_config(port, port->spiconfig, port->spifreq);}
+	static FORCEINLINE void softspi_set_frequency(softspi_port_t *port, uint32_t spi_freq) { softspi_config(port, port->spiconfig, spi_freq); }
 
 #ifdef __cplusplus
 }
