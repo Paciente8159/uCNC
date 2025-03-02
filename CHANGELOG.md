@@ -5,6 +5,21 @@
 µCNC - A universal CNC firmware for microcontrollers
 
 # Changelog
+## [1.12.0] - undefined
+
+### Added
+
+- new shift register module that allows not only to add output IO extensions via 74HC595 but also input IO extensions via 74HC165 (#831)
+- added initial support for STM32H7 single core family. This core is still incomplete and is missing some features like analog pins, SPI DMA and EEPROM emulation (#837)
+
+### Changed
+
+- re-introduced boards friendly names for configuration via Arduino IDE and make files (#834)
+- ESP8266 full core code refactoring with a new custom integration for the new shift register via SPI allowing for mor IO on this MCU (#835)
+
+### Fixed
+
+- fixed softspi speed and mode functions to force settings update on hardware ports (#838)
 
 ## [1.11.2] - 25-01-2025
 
@@ -1848,6 +1863,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.12.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.12.0
 [1.11.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.11.2
 [1.11.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.11.1
 [1.11.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.11.0

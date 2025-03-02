@@ -11,15 +11,12 @@
 To configure µCNC to fit your hardware you can use [µCNC config builder web tool](https://paciente8159.github.io/uCNC-config-builder/) to generate the config override files.
 Although most of the options are configurable via the web tool, some options might be missing and you might need to add them manually (regarding tools or addon modules mostly).
 
-# VERSION 1.11+ NOTES
+# VERSION 1.12+ NOTES
 
-Version 1.11 come with a full refactoring of the compilation units of µCNC interface:
-  - all communications calls to output messages now are done via the proto_xxx calls in grbl_protocol.h. No more calls to serial stream directly mixed with protocol calls.
-	- self implemented subset/custom of stdio printf helpers. It's now possible to print formated messages via protocol. No need to do specific calls to print variables like numbers, strings, char, ip addresse, bytes, etc...
-	- improvements to the debug message system. Now a single call to DBGMSG macro is used. The same principle of formated messages is applied.
-	- Debug messages now have an intermediate buffer that stores the output before printing it to prevent outputing debug messages in the middle of onging protocol messages
-	- Added parsing support for O-Codes (subrotines)
-	- Initial support for RP2350 (still experimental stage).
+Version 1.12 come with:
+  - added suport for STM32H7 single core MCU family. This is support is not yet complete, as some features are missing (like analog inputs, DMA support for SPI and EEPROM emulation)
+	- complete code refactoring for ESP8266 core allowing to amke use of the new shift register to expand IO capabilities on this MCU (output and input)
+	- new shift register that now also supports 74HC165 (along with the 74HC595 previously integrated)
 
 # IMPORTANT NOTE
 
@@ -60,7 +57,14 @@ You can also reach me at µCNC discord channel
 
 ## Current µCNC status
 
-µCNC current major version is v1.11. You can check all the new features, changes and bug fixes in the [CHANGELOG](https://github.com/Paciente8159/uCNC/blob/master/CHANGELOG.md).
+µCNC current major version is v1.12. You can check all the new features, changes and bug fixes in the [CHANGELOG](https://github.com/Paciente8159/uCNC/blob/master/CHANGELOG.md).
+
+Version 1.12 added the following new major features.
+  - added suport for STM32H7 single core MCU family. This is support is not yet complete, as some features are missing (like analog inputs, DMA support for SPI and EEPROM emulation)
+	- complete code refactoring for ESP8266 core allowing to amke use of the new shift register to expand IO capabilities on this MCU (output and input) via SPI
+	- new shift register that now also supports 74HC165 (along with the 74HC595 previously integrated)
+	- slight refactoring of IO HAL to support the new shift register
+	- re-introduction of boards friendly names for configuration in Arduino IDE and makefiles
 
 Version 1.11 added the following new major features.
 - self implemented subset/custom of stdio printf helpers. It's now possible to print formated messages via protocol. No need to do specific calls to print variables like numbers, strings, char, ip addresse, bytes, etc...
@@ -253,13 +257,14 @@ It can run on:
 - STM32F1 (like the Bluepill) - v1.1.x
 - SAMD21 (Arduino Zero/M0) - v1.3.x
 - STM32F4 (like the Blackpill) - v1.4.x (Does not emulate EEPROM)
-- ESP8266 - v1.5.x (supports wifi connection via telnet, lacks analog and input isr)
+- ESP8266 - v1.5.x/v1.12.x (supports wifi connection via telnet, lacks analog and input isr)
 - ESP32 - v1.5.x (supports wifi connection via telnet and bluetooth)
 - NXP LPC1768/9 - v1.5.x (eeprom emulation and analog still being developed)
 - RP2040 - v1.6.x (supports wifi connection via telnet and bluetooth)
 - RP2040 - v1.9.x (added multicore mode)
-- RP2350 - v1.11.x (initial support)
 - STM32F0 (like the Bluepill) - v1.9.x
+- RP2350 - v1.11.x (initial support)
+- STM32H7 (single core) - v1.12.x (Still missing some features)
 - Windows PC (used for simulation/debugging only - ISR on Windows doesn't allow to use it as a real alternative)
 
 ### µCNC current supported kinematics
