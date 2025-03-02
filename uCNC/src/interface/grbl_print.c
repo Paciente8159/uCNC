@@ -349,7 +349,7 @@ size_t prt_fmtva(void *out, size_t maxlen, const char *fmt, va_list *args)
 					{
 						maxlen = prt_putc(out, maxlen, ',');
 					}
-					pt += (1 << (lcount - 1));
+					pt = (void *)&((uint8_t *)pt)[(1 << (lcount - 1))];
 				} while (elems);
 #endif
 				/* code */

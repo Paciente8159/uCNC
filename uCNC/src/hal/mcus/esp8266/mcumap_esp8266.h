@@ -43,7 +43,7 @@ extern "C"
 #endif
 // defines the maximum and minimum step rates
 #ifndef F_STEP_MAX
-#define F_STEP_MAX 64000
+#define F_STEP_MAX 55000
 #endif
 #ifndef F_STEP_MIN
 #define F_STEP_MIN 1
@@ -74,14 +74,14 @@ extern "C"
 #endif
 
 #ifdef ENABLE_RX_SYNC
-#define MCU_RX_CALLBACK ICACHE_FLASH_ATTR
+#define MCU_RX_CALLBACK MCU_CALLBACK
 #endif
 
 #ifdef ENABLE_TX_SYNC
-#define MCU_TX_CALLBACK ICACHE_FLASH_ATTR
+#define MCU_TX_CALLBACK MCU_CALLBACK
 #endif
 
-#define MCU_IO_CALLBACK ICACHE_FLASH_ATTR
+#define MCU_IO_CALLBACK MCU_CALLBACK
 
 #ifdef RX_BUFFER_CAPACITY
 #define RX_BUFFER_CAPACITY 255
@@ -1045,6 +1045,36 @@ extern "C"
 #define I2C_DATA 209
 #define DIO209_BIT (I2C_DATA_BIT)
 #endif
+#if (defined(TX2_BIT))
+#define DIO210 210
+#define TX2 210
+#define DIO210_BIT (TX2_BIT)
+#endif
+#if (defined(RX2_BIT))
+#define DIO211 211
+#define RX2 211
+#define DIO211_BIT (RX2_BIT)
+#endif
+#if (defined(SPI2_CLK_BIT))
+#define DIO212 212
+#define SPI2_CLK 212
+#define DIO212_BIT (SPI2_CLK_BIT)
+#endif
+#if (defined(SPI2_SDI_BIT))
+#define DIO213 213
+#define SPI2_SDI 213
+#define DIO213_BIT (SPI2_SDI_BIT)
+#endif
+#if (defined(SPI2_SDO_BIT))
+#define DIO214 214
+#define SPI2_SDO 214
+#define DIO214_BIT (SPI2_SDO_BIT)
+#endif
+#if (defined(SPI2_CS_BIT))
+#define DIO215 215
+#define SPI2_CS 215
+#define DIO215_BIT (SPI2_CS_BIT)
+#endif
 
 	// ISR on change inputs
 	extern void mcu_din_isr(void);
@@ -1164,7 +1194,35 @@ extern "C"
 
 #if (defined(TX) && defined(RX))
 #define MCU_HAS_UART
+#ifndef UART_PORT
+#define UART_PORT 0
 #endif
+#if (RX_BIT == 3 && (TX_BIT == 1 || TX_BIT == 2) && UART_PORT == 0)
+#elif (RX_BIT == 13 && TX_BIT == 15 && UART_PORT == 0)
+#define UART_PIN_SWAP
+#elif (RX_BIT == 8 && TX_BIT == 2 && UART_PORT == 1)
+#else
+#error "Invalid UART pinout configuration"
+#endif
+#endif
+
+#if (defined(TX2) && defined(RX2))
+#define MCU_HAS_UART2
+#ifndef UART2_PORT
+#define UART2_PORT 1
+#endif
+#ifndef BAUDRATE2
+#define BAUDRATE2 BAUDRATE
+#endif
+#if (RX2_BIT == 3 && (TX2_BIT == 1 || TX2_BIT == 2) && UART2_PORT == 0)
+#elif (RX2_BIT == 13 && TX2_BIT == 15 && UART2_PORT == 0)
+#define UART2_PIN_SWAP
+#elif (RX2_BIT == 8 && TX2_BIT == 2 && UART2_PORT == 1)
+#else
+#error "Invalid UART2 pinout configuration"
+#endif
+#endif
+
 #if (defined(USB_DP) && defined(USB_DM))
 #define MCU_HAS_USB
 #endif
@@ -1181,20 +1239,45 @@ extern "C"
 #endif
 #endif
 
-#ifndef UART_PORT
-#define UART_PORT 0
-#endif
-
 #define MCU_HAS_ONESHOT_TIMER
 
 // SPI
 #if (defined(SPI_CLK) && defined(SPI_SDI) && defined(SPI_SDO))
+#if ((SPI_CLK_BIT == 14) && (SPI_SDO_BIT == 13) && (SPI_SDI_BIT == 12))
+#undef SPI_PORT
+#define SPI_PORT 1
+#elif ((SPI_CLK_BIT == 6) && (SPI_SDO_BIT == 8) && (SPI_SDI_BIT == 7) && (SPI_CS_BIT == 0))
+#undef SPI_PORT
+#define SPI_PORT 0
+#else
+#error "Invalid SPI port pin configuration"
+#endif
 #define MCU_HAS_SPI
 #ifndef SPI_MODE
 #define SPI_MODE 0
 #endif
 #ifndef SPI_FREQ
 #define SPI_FREQ 1000000UL
+#endif
+#endif
+
+// SPI2
+#if (defined(SPI2_CLK) && defined(SPI2_SDI) && defined(SPI2_SDO))
+#if ((SPI2_CLK_BIT == 14) && (SPI2_SDO_BIT == 13) && (SPI2_SDI_BIT == 12))
+#undef SPI2_PORT
+#define SPI2_PORT 1
+#elif ((SPI2_CLK_BIT == 6) && (SPI2_SDO_BIT == 8) && (SPI2_SDI_BIT == 7) && (SPI2_CS_BIT == 0))
+#undef SPI2_PORT
+#define SPI2_PORT 0
+#else
+#error "Invalid SPI2 port pin configuration"
+#endif
+#define MCU_HAS_SPI2
+#ifndef SPI2_MODE
+#define SPI2_MODE 0
+#endif
+#ifndef SPI2_FREQ
+#define SPI2_FREQ 1000000UL
 #endif
 #endif
 
@@ -1218,28 +1301,139 @@ extern "C"
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
 #endif
 
+#ifndef BYTE_OPS
+#define BYTE_OPS
+#define SETBIT(x, y) ((x) |= (1U << (y)))		 /* Set bit y in byte x*/
+#define CLEARBIT(x, y) ((x) &= ~(1U << (y))) /* Clear bit y in byte x*/
+#define CHECKBIT(x, y) ((x) & (1U << (y)))	 /* Check bit y in byte x*/
+#define TOGGLEBIT(x, y) ((x) ^= (1U << (y))) /* Toggle bit y in byte x*/
+
+#define SETFLAG(x, y) ((x) |= (y))		/* Set byte y in byte x*/
+#define CLEARFLAG(x, y) ((x) &= ~(y)) /* Clear byte y in byte x*/
+#define CHECKFLAG(x, y) ((x) & (y))		/* Check byte y in byte x*/
+#define TOGGLEFLAG(x, y) ((x) ^= (y)) /* Toggle byte y in byte x*/
+#endif
+
 #define MCU_HAS_SOFT_PWM_TIMER
 	extern uint8_t g_io_soft_pwm[16];
 	extern uint8_t g_soft_pwm_res;
 #define mcu_set_pwm(X, Y) ({ g_io_soft_pwm[X - PWM_PINS_OFFSET] = (0xFF & Y); })
 #define mcu_get_pwm(X) g_io_soft_pwm[X - PWM_PINS_OFFSET]
 
-#define mcu_config_output(X) pinMode(__indirect__(X, BIT), OUTPUT)
+#define mcu_config_input(X)                                                                \
+	if (__indirect__(X, BIT) < 16)                                                           \
+	{                                                                                        \
+		GPF(__indirect__(X, BIT)) = GPFFS(GPFFS_GPIO(__indirect__(X, BIT)));                   \
+		GPEC = (1 << __indirect__(X, BIT));                                                    \
+		GPC(__indirect__(X, BIT)) = (GPC(__indirect__(X, BIT)) & (0xF << GPCI)) | (1 << GPCD); \
+	}                                                                                        \
+	if (__indirect__(X, BIT) == 16)                                                          \
+	{                                                                                        \
+		GPF16 = GP16FFS(GPFFS_GPIO(16));                                                       \
+		GPC16 = 0;                                                                             \
+		GP16E &= ~1;                                                                           \
+	}
+
+#define mcu_config_pullup(X)                   \
+	if (__indirect__(X, BIT) < 16)               \
+	{                                            \
+		GPF(__indirect__(X, BIT)) |= (1 << GPFPU); \
+	}
+
+#define mcu_config_output(X)                                                 \
+	if (__indirect__(X, BIT) < 16)                                             \
+	{                                                                          \
+		GPF(__indirect__(X, BIT)) = GPFFS(GPFFS_GPIO(__indirect__(X, BIT)));     \
+		GPC(__indirect__(X, BIT)) = (GPC(__indirect__(X, BIT)) & (0xF << GPCI)); \
+		GPES = (1 << __indirect__(X, BIT));                                      \
+	}                                                                          \
+	if (__indirect__(X, BIT) == 16)                                            \
+	{                                                                          \
+		GPF16 = GP16FFS(GPFFS_GPIO(16));                                         \
+		GPC16 = 0;                                                               \
+		GP16E |= 1;                                                              \
+	}
+
+#define mcu_config_output_od(X)               \
+	if (__indirect__(X, BIT) < 16)              \
+	{                                           \
+		GPIEC = (1 << __indirect__(X, BIT));      \
+		GPC(__indirect__(X, BIT)) |= (1 << GPCD); \
+		GPES = (1 << __indirect__(X, BIT));       \
+	}
+
+#define mcu_config_af(X, FUNC)                                          \
+	{                                                                     \
+		GPIEC = (1 << __indirect__(X, BIT));                                \
+		GPF(__indirect__(X, BIT)) = GPFFS(GPFFS_BUS(__indirect__(X, BIT))); \
+		GPES = (1 << __indirect__(X, BIT));                                 \
+		switch (FUNC)                                                       \
+		{                                                                   \
+		case SPECIAL:                                                       \
+			if (__indirect__(X, BIT) == 3)                                    \
+			{                                                                 \
+				GPF(__indirect__(X, BIT)) |= (1 << GPFPU);                      \
+			}                                                                 \
+			break;                                                            \
+		default:                                                            \
+			GPF(__indirect__(X, BIT)) = GPFFS((FUNC >> 4) & 0x07);            \
+			if (__indirect__(X, BIT) == 13 && FUNC == FUNCTION_4)             \
+				GPF(__indirect__(X, BIT)) |= (1 << GPFPU);                      \
+			break;                                                            \
+		}                                                                   \
+	}
+
 #define mcu_config_pwm(X, freq) \
 	g_soft_pwm_res = 1;           \
-	pinMode(__indirect__(X, BIT), OUTPUT)
-#define mcu_config_input(X) pinMode(__indirect__(X, BIT), INPUT)
+	mcu_config_output(X)
+
 #define mcu_config_analog(X) mcu_config_input(X)
-#define mcu_config_pullup(X) pinMode(__indirect__(X, BIT), INPUT_PULLUP)
+
 #define mcu_config_input_isr(X) attachInterrupt(digitalPinToInterrupt(__indirect__(X, BIT)), __indirect__(X, ISRCALLBACK), CHANGE)
 
-#define mcu_get_input(X) ((__indirect__(X, BIT) != 16) ? GPIP(__indirect__(X, BIT)) : (GP16I & 0x01))
-#define mcu_get_output(X) ((__indirect__(X, BIT) != 16) ? GPIP(__indirect__(X, BIT)) : (GP16I & 0x01))
-#define mcu_set_output(X) ({if(__indirect__(X, BIT)!=16){GPOS=(1<<__indirect__(X, BIT));}else{GP16O |= 1;} })
-#define mcu_clear_output(X) ({if(__indirect__(X, BIT)!=16){GPOC=(1<<__indirect__(X, BIT));}else{GP16O &= ~1;} })
-#define mcu_toggle_output(X) ((!!mcu_get_output(X)) ? mcu_clear_output(X) : mcu_set_output(X))
+#define mcu_get_input(X) ((__indirect__(X, BIT) < 16) ? GPIP(__indirect__(X, BIT)) : (GP16I & 0x01))
 
-#define mcu_get_analog(X) analogRead(__indirect__(X, BIT))
+/**
+ * Due to the way this core works this has some special calls to make direct output pin calls
+ */
+#define mcu_get_output_gpio(X) ((__indirect__(X, BIT) == 16) ? CHECKBIT(GP16O, 1) : CHECKBIT(GPO, __indirect__(X, BIT)))
+#define mcu_set_output_gpio(X) ({if(__indirect__(X, BIT)==16){SETBIT(GP16O, 1);}else{GPOS = (1<<__indirect__(X, BIT));} })
+#define mcu_clear_output_gpio(X) ({if(__indirect__(X, BIT)==16){CLEARBIT(GP16O, 1);}else{GPOC = (1<<__indirect__(X, BIT));} })
+#define mcu_toggle_output_gpio(X) ({if(__indirect__(X, BIT)==16){TOGGLEBIT(GP16O, 1);}else{TOGGLEBIT(GPO,__indirect__(X, BIT));} })
+
+	extern volatile uint32_t esp8266_io_out;
+#define mcu_get_output(X) ((X < 200) ? CHECKBIT(esp8266_io_out, __indirect__(X, BIT)) : mcu_get_output_gpio(X))
+#define mcu_set_output(X) ({if(X<200) {SETBIT(esp8266_io_out, __indirect__(X, BIT));}else{mcu_set_output_gpio(X);} })
+#define mcu_clear_output(X) ({if(X<200) {CLEARBIT(esp8266_io_out, __indirect__(X, BIT));}else{mcu_clear_output_gpio(X);} })
+#define mcu_toggle_output(X) ({if(X<200) {TOGGLEBIT(esp8266_io_out, __indirect__(X, BIT));}else{mcu_toggle_output_gpio(X);} })
+
+#define mcu_get_analog(X)                                      \
+	if (__indirect__(X, BIT) == 17 || __indirect__(X, BIT) == 0) \
+	{                                                            \
+		return system_adc_read();                                  \
+	}                                                            \
+	else                                                         \
+	{                                                            \
+		return (mcu_get_input()) ? 1023 : 0;                       \
+	}
+
+	// ISR
+	extern volatile uint32_t esp8266_global_isr;
+#define mcu_enable_global_isr()
+#define mcu_disable_global_isr()
+#define mcu_get_global_isr() ({__asm__ __volatile__ ("rsr.ps %0" : "=r" (esp8266_global_isr)); ((esp8266_global_isr & 0xF) == 0); })
+	/*
+		// #define mcu_enable_global_isr()    \
+	// 	if (esp8266_global_isr != 15)    \
+	// 	{                                \
+	// 		xt_wsr_ps(esp8266_global_isr); \
+	// 		esp8266_global_isr = 15;       \
+	// 	}
+		// #define mcu_disable_global_isr() ({ esp8266_global_isr = xt_rsil(15); })
+		// #define mcu_get_global_isr() (esp8266_global_isr != 15)
+		*/
+	static __attribute__((always_inline, unused)) inline void __esp8266_atomic_out(uint32_t *state) { xt_wsr_ps(*state); }
+#define __ATOMIC__ for (uint32_t __restore_atomic__ __attribute__((__cleanup__(__esp8266_atomic_out))) = xt_rsil(15), __loop = 1; __loop; __loop = 0)
 
 #define cpucount()                            \
 	({                                          \
@@ -1260,6 +1454,29 @@ extern "C"
 
 	// 	extern void esp8266_delay_us(uint16_t delay);
 	// #define mcu_delay_us(X) esp8266_delay_us(X)
+
+#if IC74HC595_COUNT > 0
+
+#if IC74HC595_COUNT > 4
+#error "Maximum allowed IC74HC595_COUNT is 4 with SHIFT_REGISTER_CUSTOM_CALLBACK"
+#endif
+
+	// custom pin operations for 74HS595
+	extern volatile uint32_t ic74hc595_io_out;
+#ifdef SHIFT_REGISTER_CUSTOM_CALLBACK
+// reverses bytes
+#define ic74hc595_pin_offset(pin) (((IC74HC595_COUNT - 1 - (__indirect__(pin, IO_OFFSET) >> 3)) << 3) | (__indirect__(pin, IO_OFFSET) & 0x7))
+#else
+#define io_extended_pins_update()
+#define ic74hc595_pin_offset(pin) (__indirect__(pin, IO_OFFSET))
+#endif
+#define ic74hc595_pin_mask(pin) (uint32_t)(1UL << ic74hc595_pin_offset(pin))
+#define ic74hc595_set_pin(pin) SETBIT(ic74hc595_io_out, ic74hc595_pin_offset(pin))
+#define ic74hc595_clear_pin(pin) CLEARBIT(ic74hc595_io_out, ic74hc595_pin_offset(pin))
+#define ic74hc595_toggle_pin(pin) TOGGLEBIT(ic74hc595_io_out, ic74hc595_pin_offset(pin))
+#define ic74hc595_get_pin(pin) CHECKBIT(ic74hc595_io_out, ic74hc595_pin_offset(pin))
+
+#endif
 
 #ifdef __cplusplus
 }
