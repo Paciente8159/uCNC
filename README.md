@@ -13,7 +13,7 @@ Although most of the options are configurable via the web tool, some options mig
 
 # VERSION 1.12+ NOTES
 
-Version 1.12 come with:
+Version 1.12 introduces the following changes:
   - added suport for STM32H7 single core MCU family. This is support is not yet complete, as some features are missing (like analog inputs, DMA support for SPI and EEPROM emulation)
 	- complete code refactoring for ESP8266 core allowing to amke use of the new shift register to expand IO capabilities on this MCU (output and input)
 	- new shift register that now also supports 74HC165 (along with the 74HC595 previously integrated)
@@ -118,7 +118,7 @@ Version 1.5 added a couple of new features.
 Version 1.4 added the following new features.
 
 - added support for STM32F4 MCU and the Blackpill boards.
-- new servo PIN type that generates a 50Hz with TOn - 1~2ms needed to control servo type motors.
+- new servo PIN type that generates a 50Hz with TOn (on phase) - 1~2ms (width) needed to control servo type motors.
 - support for delta kinematics.
 - new modular extension system based on events, delegates and listeners. It's now possible to inject code anywhere inside the core code by creating and adding code hooks that can then call and execute multiple listeners
 - added optional variable acceleration step generation (S-Curve speed profile)
