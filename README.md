@@ -11,12 +11,15 @@
 To configure µCNC to fit your hardware you can use [µCNC config builder web tool](https://paciente8159.github.io/uCNC-config-builder/) to generate the config override files.
 Although most of the options are configurable via the web tool, some options might be missing and you might need to add them manually (regarding tools or addon modules mostly).
 
-# VERSION 1.10+ NOTES
+# VERSION 1.11+ NOTES
 
-Version 1.10 introduces breaking changes from the previous version. These are:
-  - new SPI bulk transfer (used by some modules like SD card)
-
-Also a huge thank you note to [@patryk3211](https://github.com/patryk3211), for is contributions and development, of DMA and ISR driven SPI bulk transactions in several architectures.
+Version 1.11 come with a full refactoring of the compilation units of µCNC interface:
+  - all communications calls to output messages now are done via the proto_xxx calls in grbl_protocol.h. No more calls to serial stream directly mixed with protocol calls.
+	- self implemented subset/custom of stdio printf helpers. It's now possible to print formated messages via protocol. No need to do specific calls to print variables like numbers, strings, char, ip addresse, bytes, etc...
+	- improvements to the debug message system. Now a single call to DBGMSG macro is used. The same principle of formated messages is applied.
+	- Debug messages now have an intermediate buffer that stores the output before printing it to prevent outputing debug messages in the middle of onging protocol messages
+	- Added parsing support for O-Codes (subrotines)
+	- Initial support for RP2350 (still experimental stage).
 
 # IMPORTANT NOTE
 
@@ -57,7 +60,13 @@ You can also reach me at µCNC discord channel
 
 ## Current µCNC status
 
-µCNC current major version is v1.10. You can check all the new features, changes and bug fixes in the [CHANGELOG](https://github.com/Paciente8159/uCNC/blob/master/CHANGELOG.md).
+µCNC current major version is v1.11. You can check all the new features, changes and bug fixes in the [CHANGELOG](https://github.com/Paciente8159/uCNC/blob/master/CHANGELOG.md).
+
+Version 1.11 added the following new major features.
+- self implemented subset/custom of stdio printf helpers. It's now possible to print formated messages via protocol. No need to do specific calls to print variables like numbers, strings, char, ip addresse, bytes, etc...
+- improvements to the debug message system. Now a single call to DBGMSG macro is used. The same principle of formated messages is applied.
+- Debug messages now have an intermediate buffer that stores the output before printing it to prevent outputing debug messages in the middle of onging protocol messages
+- Parsing support for [O-Codes](https://linuxcnc.org/docs/html/gcode/o-code.html) (subrotines). These O-Codes can be executed from .nc files in the root dir of a pre-configured file system (either C for MCU flash or D for SD cards)
 
 Version 1.10 added the following new major features.
 - added support SPI bulk transfers. This improves SPI transmission speeds while keeping the whole firmware responsive, opening the door for new modules and upgrades to µCNC using SPI driven hardware like TFT displays.
@@ -153,6 +162,7 @@ List of Supported G-Codes since µCNC 1.9.2:
   - Valid Non-Command Words: A, B, C, F, H, I, J, K, L, N, P, Q, R, S, T, X, Y, Z
 	- User(read/write) and parser(read only) parameters like #5221 (#5221 returns the G38 result for X axis)
 	- Expressions like [1 + acos[0] - [#3 ** [4.0/2]]]
+	- O-Codes (must run from files)
 
   - Outside the RS274NGC scope
     - Bilinear surface mapping: G39,G39.1,G39.2*
@@ -248,6 +258,7 @@ It can run on:
 - NXP LPC1768/9 - v1.5.x (eeprom emulation and analog still being developed)
 - RP2040 - v1.6.x (supports wifi connection via telnet and bluetooth)
 - RP2040 - v1.9.x (added multicore mode)
+- RP2350 - v1.11.x (initial support)
 - STM32F0 (like the Bluepill) - v1.9.x
 - Windows PC (used for simulation/debugging only - ISR on Windows doesn't allow to use it as a real alternative)
 

@@ -68,13 +68,11 @@ extern "C"
 	{                                                                  \
 		if (state)                                                       \
 		{                                                                \
-			io_config_input(TRXPIN);                                       \
-			io_config_pullup(TRXPIN);                                      \
+			io_set_output(TRXPIN);                                       \
 		}                                                                \
 		else                                                             \
 		{                                                                \
 			io_clear_output(TRXPIN);                                       \
-			io_config_output(TRXPIN);                                      \
 		}                                                                \
 	}                                                                  \
 	bool NAME##_rx(void)                                               \

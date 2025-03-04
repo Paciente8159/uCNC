@@ -1027,24 +1027,9 @@ void mc_flush_pending_motion(void)
 
 void mc_print_hmap(void)
 {
-	protocol_send_string(MSG_START);
-	protocol_send_string(__romstr__("HMAP start corner;"));
-	serial_print_flt(hmap_x);
-	serial_putc(';');
-	serial_print_flt(hmap_y);
-	protocol_send_string(MSG_END);
-
-	protocol_send_string(MSG_START);
-	protocol_send_string(__romstr__("HMAP end corner;"));
-	serial_print_flt(hmap_x + hmap_x_offset);
-	serial_putc(';');
-	serial_print_flt(hmap_y + hmap_y_offset);
-	protocol_send_string(MSG_END);
-
-	protocol_send_string(MSG_START);
-	protocol_send_string(__romstr__("HMAP control points;"));
-	serial_print_int(H_MAPING_ARRAY_SIZE);
-	protocol_send_string(MSG_END);
+	proto_info("HMAP start corner: %f;%f", hmap_x, hmap_y);
+	proto_info("HMAP end corner: %f;%f", hmap_x + hmap_x_offset, hmap_y + hmap_y_offset);
+	proto_info("HMAP control points: %hd", H_MAPING_ARRAY_SIZE);
 
 	// print map
 	for (uint8_t j = 0; j < H_MAPING_GRID_FACTOR; j++)
@@ -1053,14 +1038,7 @@ void mc_print_hmap(void)
 		{
 			uint8_t map = i + (H_MAPING_GRID_FACTOR * j);
 			float new_h = hmap_offsets[map];
-			protocol_send_string(MSG_START);
-			protocol_send_string(__romstr__("HMAP;"));
-			serial_print_int(i);
-			serial_putc(';');
-			serial_print_int(j);
-			serial_putc(';');
-			serial_print_flt(new_h);
-			protocol_send_string(MSG_END);
+			proto_info("HMAP: %hd; %hd; %f", i, j, new_h);
 		}
 	}
 }
@@ -1188,7 +1166,7 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 			parser_get_probe(probe_position);
 			kinematics_steps_to_coordinates(probe_position, position);
 			hmap_offsets[i + H_MAPING_GRID_FACTOR * j] = position[AXIS_TOOL];
-			protocol_send_probe_result(1);
+			proto_probe_result(1);
 
 			// update to new target
 			target[AXIS_X] += offset_x;

@@ -2069,7 +2069,7 @@ extern "C"
 #define ic74hc595_toggle_pin(pin) ic74hc595_io_pins[(__indirect__(pin, IO_BYTEOFFSET))] ^= (__indirect__(pin, IO_BITMASK))
 #endif
 #ifndef ic74hc595_get_pin
-#define ic74hc595_get_pin(pin) (ic74hc595_io_pins[(__indirect__(pin, IO_BYTEOFFSET))] & (1 << __indirect__(pin, IO_BITMASK)))
+#define ic74hc595_get_pin(pin) (ic74hc595_io_pins[(__indirect__(pin, IO_BYTEOFFSET))] & (__indirect__(pin, IO_BITMASK)))
 #endif
 #else
 #define ic74hc595_set_pin(pin)

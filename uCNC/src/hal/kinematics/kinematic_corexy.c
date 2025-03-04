@@ -20,7 +20,7 @@
 #include "../../cnc.h"
 
 #if (KINEMATIC == KINEMATIC_COREXY)
-#include <stdio.h>
+
 #include <math.h>
 
 #if (COREXY_AXIS == COREXY_AXIS_XZ || COREXY_AXIS == COREXY_AXIS_YZ)

@@ -20,6 +20,10 @@
 #include "../cnc.h"
 #include "defaults.h"
 
+#ifndef DISABLE_SAFE_SETTINGS
+uint8_t g_settings_error;
+#endif
+
 // if settings struct is changed this version should change too
 #define SETTINGS_VERSION \
 	{                      \
@@ -88,10 +92,10 @@ static uint8_t crc7(uint8_t c, uint8_t crc)
 const settings_t __rom__ default_settings =
 		{
 				.version = SETTINGS_VERSION,
-				.max_step_rate = F_STEP_MAX,
-				#ifdef ENABLE_STEPPERS_DISABLE_TIMEOUT
+				.max_step_rate = (1000000.0f / F_STEP_MAX),
+#ifdef ENABLE_STEPPERS_DISABLE_TIMEOUT
 				.step_disable_timeout = 0,
-				#endif
+#endif
 				.step_invert_mask = DEFAULT_STEP_INV_MASK,
 				.dir_invert_mask = DEFAULT_DIR_INV_MASK,
 				.step_enable_invert = DEFAULT_STEP_ENA_INV,
@@ -165,31 +169,79 @@ const settings_t __rom__ default_settings =
 #endif
 };
 
+const setting_id_t __rom__ g_settings_id_table[] = {
+		{.id = 0, .memptr = &g_settings.max_step_rate, .type = SETTING_TYPE(0)},
+#ifdef ENABLE_STEPPERS_DISABLE_TIMEOUT
+		{.id = 1, .memptr = &g_settings.step_disable_timeout, .type = SETTING_TYPE(3)},
+#endif
+		{.id = 2, .memptr = &g_settings.step_invert_mask, .type = SETTING_TYPE(2)},
+		{.id = 3, .memptr = &g_settings.dir_invert_mask, .type = SETTING_TYPE(2)},
+		{.id = 4, .memptr = &g_settings.step_enable_invert, .type = SETTING_TYPE(1)},
+		{.id = 5, .memptr = &g_settings.limits_invert_mask, .type = SETTING_TYPE(2)},
+		{.id = 6, .memptr = &g_settings.probe_invert_mask, .type = SETTING_TYPE(2)},
+		{.id = 7, .memptr = &g_settings.control_invert_mask, .type = SETTING_TYPE(2)},
+#if ENCODERS > 0
+		{.id = 8, .memptr = &g_settings.encoders_pulse_invert_mask, .type = SETTING_TYPE(2)},
+		{.id = 9, .memptr = &g_settings.encoders_dir_invert_mask, .type = SETTING_TYPE(2)},
+#endif
+		{.id = 10, .memptr = &g_settings.status_report_mask, .type = SETTING_TYPE(2)},
+		{.id = 11, .memptr = &g_settings.g64_angle_factor, .type = SETTING_TYPE(0)},
+		{.id = 12, .memptr = &g_settings.arc_tolerance, .type = SETTING_TYPE(0)},
+		{.id = 13, .memptr = &g_settings.report_inches, .type = SETTING_TYPE(1)},
+#if S_CURVE_ACCELERATION_LEVEL == -1
+		{.id = 14, .memptr = &g_settings.s_curve_profile, .type = SETTING_TYPE(2)},
+#endif
+		{.id = 20, .memptr = &g_settings.soft_limits_enabled, .type = SETTING_TYPE(1)},
+		{.id = 21, .memptr = &g_settings.hard_limits_enabled, .type = SETTING_TYPE(1)},
+		{.id = 22, .memptr = &g_settings.homing_enabled, .type = SETTING_TYPE(1)},
+		{.id = 23, .memptr = &g_settings.homing_dir_invert_mask, .type = SETTING_TYPE(3)},
+		{.id = 24, .memptr = &g_settings.homing_slow_feed_rate, .type = SETTING_TYPE(3)},
+		{.id = 25, .memptr = &g_settings.homing_fast_feed_rate, .type = SETTING_TYPE(3)},
+		{.id = 26, .memptr = &g_settings.debounce_ms, .type = SETTING_TYPE(3)},
+		{.id = 27, .memptr = &g_settings.homing_offset, .type = SETTING_TYPE(0)},
+		{.id = 30, .memptr = &g_settings.spindle_max_rpm, .type = SETTING_TYPE(3)},
+		{.id = 31, .memptr = &g_settings.spindle_min_rpm, .type = SETTING_TYPE(3)},
+		{.id = 32, .memptr = &g_settings.laser_mode, .type = SETTING_TYPE(2)},
+#ifdef ENABLE_LASER_PPI
+		{.id = 33, .memptr = &g_settings.step_per_mm[0], .type = SETTING_TYPE(0)},
+		{.id = 34, .memptr = &g_settings.laser_ppi_uswidth, .type = SETTING_TYPE(3)},
+		{.id = 35, .memptr = &g_settings.laser_ppi_mixmode_ppi, .type = SETTING_TYPE(0)},
+		{.id = 36, .memptr = &g_settings.laser_ppi_mixmode_uswidth, .type = SETTING_TYPE(0)},
+#endif
+#ifdef ENABLE_SKEW_COMPENSATION
+		{.id = 37, .memptr = &g_settings.skew_xy_factor, .type = SETTING_TYPE(0)},
+#ifndef SKEW_COMPENSATION_XY_ONLY
+		{.id = 38, .memptr = &g_settings.skew_xz_factor, .type = SETTING_TYPE(0)},
+		{.id = 39, .memptr = &g_settings.skew_yz_factor, .type = SETTING_TYPE(0)},
+#endif
+#endif
+#if TOOL_COUNT > 1
+		{.id = 80, .memptr = &g_settings.default_tool, .type = SETTING_TYPE(2)},
+#endif
+#if TOOL_COUNT > 0
+		{.id = 81, .memptr = &g_settings.tool_length_offset, .type = SETTING_TYPE(0) | SETTING_ARRAY | SETTING_ARRCNT(TOOL_COUNT)},
+#endif
+#if (KINEMATIC == KINEMATIC_LINEAR_DELTA)
+		{.id = 106, .memptr = &g_settings.delta_arm_length, .type = SETTING_TYPE(0)},
+		{.id = 107, .memptr = &g_settings.delta_armbase_radius, .type = SETTING_TYPE(0)},
+		{.id = 28, .memptr = &g_settings.delta_bicep_homing_angle, .type = SETTING_TYPE(0)},
+		{.id = 109, .memptr = &g_settings.delta_forearm_length, .type = SETTING_TYPE(0)},
+#elif (KINEMATIC == KINEMATIC_SCARA)
+		{.id = 106, .memptr = &g_settings.scara_arm_length, .type = SETTING_TYPE(0)},
+		{.id = 107, .memptr = &g_settings.scara_forearm_length, .type = SETTING_TYPE(0)},
+		{.id = 28, .memptr = &g_settings.scara_arm_homing_angle, .type = SETTING_TYPE(0)},
+		{.id = 29, .memptr = &g_settings.scara_forearm_homing_angle, .type = SETTING_TYPE(0)},
+#endif
+		{.id = 100, .memptr = &g_settings.step_per_mm, .type = SETTING_TYPE(0) | SETTING_ARRAY | SETTING_ARRCNT(STEPPER_COUNT)},
+		{.id = 110, .memptr = &g_settings.max_feed_rate, .type = SETTING_TYPE(0) | SETTING_ARRAY | SETTING_ARRCNT(STEPPER_COUNT)},
+		{.id = 120, .memptr = &g_settings.acceleration, .type = SETTING_TYPE(0) | SETTING_ARRAY | SETTING_ARRCNT(STEPPER_COUNT)},
+		{.id = 130, .memptr = &g_settings.max_distance, .type = SETTING_TYPE(0) | SETTING_ARRAY | SETTING_ARRCNT(AXIS_COUNT)},
+#ifdef ENABLE_BACKLASH_COMPENSATION
+		{.id = 140, .memptr = &g_settings.backlash_steps, .type = SETTING_TYPE(3) | SETTING_ARRAY | SETTING_ARRCNT(AXIS_TO_STEPPERS)},
+#endif
+};
+
 #ifdef ENABLE_SETTINGS_MODULES
-// event_settings_change_handler
-WEAK_EVENT_HANDLER(settings_change)
-{
-	DEFAULT_EVENT_HANDLER(settings_change);
-}
-
-// event_settings_load_handler
-WEAK_EVENT_HANDLER(settings_load)
-{
-	DEFAULT_EVENT_HANDLER(settings_load);
-}
-
-// event_settings_save_handler
-WEAK_EVENT_HANDLER(settings_save)
-{
-	DEFAULT_EVENT_HANDLER(settings_save);
-}
-
-// event_settings_erase_handler
-WEAK_EVENT_HANDLER(settings_erase)
-{
-	DEFAULT_EVENT_HANDLER(settings_erase);
-}
-
 // event_settings_extended_load_handler
 WEAK_EVENT_HANDLER(settings_extended_load)
 {
@@ -220,6 +272,12 @@ WEAK_EVENT_HANDLER(settings_extended_erase)
 	}
 	DEFAULT_EVENT_HANDLER(settings_extended_erase);
 }
+
+// event_settings_extended_change_handler
+WEAK_EVENT_HANDLER(settings_extended_change)
+{
+	DEFAULT_EVENT_HANDLER(settings_extended_change);
+}
 #endif
 
 static uint8_t settings_size_crc(uint16_t size, uint8_t crc)
@@ -228,59 +286,68 @@ static uint8_t settings_size_crc(uint16_t size, uint8_t crc)
 	return crc7(((uint8_t *)&size)[1], crc);
 }
 
+void __attribute__((weak)) nvm_start_read(uint16_t address) {}
+void __attribute__((weak)) nvm_start_write(uint16_t address) {}
+uint8_t __attribute__((weak)) nvm_getc(uint16_t address) { return mcu_eeprom_getc(address); }
+void __attribute__((weak)) nvm_putc(uint16_t address, uint8_t c) { mcu_eeprom_putc(address, c); }
+void __attribute__((weak)) nvm_end_read(void) {}
+void __attribute__((weak)) nvm_end_write(void) { mcu_eeprom_flush(); }
+
 void settings_init(void)
 {
-	const uint8_t version[3] = SETTINGS_VERSION;
-	uint8_t error = settings_load(SETTINGS_ADDRESS_OFFSET, (uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
 
-	if (!error)
-	{
-		for (uint8_t i = 0; i < 3; i++)
-		{
-			if (g_settings.version[i] != version[i])
-			{
-				error = 1; // just set an error
-				break;
-			}
-		}
-	}
+#ifdef FORCE_GLOBALS_TO_0
+#ifndef DISABLE_SAFE_SETTINGS
+	g_settings_error = SETTINGS_OK;
+#endif
+#endif
+	uint8_t error = settings_load(SETTINGS_ADDRESS_OFFSET, (uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
 
 	if (error)
 	{
+#ifdef DISABLE_SAFE_SETTINGS
 		settings_reset(true);
-		protocol_send_error(STATUS_SETTING_READ_FAIL);
-		protocol_send_cnc_settings();
+#endif
+		proto_error(STATUS_SETTING_READ_FAIL);
+		proto_cnc_settings();
 	}
 }
 
 uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint16_t size)
 {
-	DEBUG_STR("EEPROM load @ ");
-	DEBUG_INT(address);
-	DEBUG_PUTC('\n');
+#ifdef RAM_ONLY_SETTINGS
+	DBGMSG("Default settings @ %u", address);
+	if (address == SETTINGS_ADDRESS_OFFSET)
+	{
+		rom_memcpy(&g_settings, &default_settings, sizeof(settings_t));
+	}
+	else
+	{
+		size = MAX(size, 1);
+		memset(__ptr, 0, size);
+	}
+	return 0; // loads defaults
+#endif
+
+	DBGMSG("EEPROM load @ %u", address);
 
 	// settiing address invalid
 	if (address == UINT16_MAX)
 	{
 		return STATUS_SETTING_DISABLED;
 	}
+
+	uint8_t crc = 0;
+	bool is_machine_settings = (address == SETTINGS_ADDRESS_OFFSET);
+
 #ifdef ENABLE_SETTINGS_MODULES
-	bool extended_load __attribute__((__cleanup__(EVENT_HANDLER_NAME(settings_extended_load)))) = (address == SETTINGS_ADDRESS_OFFSET);
-	settings_args_t args = {.address = address, .data = __ptr, .size = size};
-	// if handled exit
-	if (EVENT_INVOKE(settings_load, &args))
-	{
-		return STATUS_OK;
-	}
-	// if unable to get settings from external memory tries to get from internal EEPROM
+	bool extended_load __attribute__((__cleanup__(EVENT_HANDLER_NAME(settings_extended_load)))) = is_machine_settings;
 #endif
 
-#ifndef RAM_ONLY_SETTINGS
-	uint8_t crc = 0;
-
+	nvm_start_read(address);
 	for (uint16_t i = 0; i < size;)
 	{
-		uint8_t value = mcu_eeprom_getc(address++);
+		uint8_t value = nvm_getc(address++);
 		crc = crc7(value, crc);
 		if (__ptr)
 		{
@@ -296,61 +363,64 @@ uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint16_t size)
 	}
 
 	crc = settings_size_crc(size, crc);
+	crc ^= nvm_getc(address);
 
-	return (crc ^ mcu_eeprom_getc(address));
-#else
-	if (address == SETTINGS_ADDRESS_OFFSET)
+	nvm_end_read();
+
+#ifndef DISABLE_SAFE_SETTINGS
+	if (crc)
 	{
-		rom_memcpy(&g_settings, &default_settings, sizeof(settings_t));
+		g_settings_error |= SETTINGS_READ_ERROR;
 	}
-	else
-	{
-		size = MAX(size, 1);
-		memset(__ptr, 0, size);
-	}
-	return 0; // loads defaults
 #endif
+
+	if (is_machine_settings)
+	{
+		const uint8_t version[3] = SETTINGS_VERSION;
+		if ((g_settings.version[0] != version[0]) || (g_settings.version[1] != version[1]) || (g_settings.version[2] != version[2]))
+		{
+			return 1; // return error
+		}
+	}
+
+	return crc;
 }
 
 void settings_reset(bool erase_startup_blocks)
 {
 	settings_erase(SETTINGS_ADDRESS_OFFSET, (uint8_t *)&g_settings, sizeof(settings_t));
-	rom_memcpy(&g_settings, &default_settings, sizeof(settings_t));
 
-#if !defined(ENABLE_EXTRA_SYSTEM_CMDS) && !defined(RAM_ONLY_SETTINGS)
-	settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
 	if (erase_startup_blocks)
 	{
-		settings_erase(STARTUP_BLOCK0_ADDRESS_OFFSET, NULL, 1);
-		settings_erase(STARTUP_BLOCK1_ADDRESS_OFFSET, NULL, 1);
+		for (uint8_t i = 0; i < STARTUP_BLOCKS_COUNT; i++)
+		{
+			settings_erase(STARTUP_BLOCK_ADDRESS_OFFSET(i), NULL, 1);
+		}
 	}
-#endif
 }
 
 void settings_save(uint16_t address, uint8_t *__ptr, uint16_t size)
 {
-	DEBUG_STR("EEPROM save @ ");
-	DEBUG_INT(address);
-	DEBUG_PUTC('\n');
+#ifdef RAM_ONLY_SETTINGS
+	return;
+#endif
+
+	DBGMSG("EEPROM save @ %u", address);
 
 	if (address == UINT16_MAX)
 	{
+#ifndef DISABLE_SAFE_SETTINGS
+		g_settings_error |= SETTINGS_WRITE_ERROR;
+#endif
 		return;
 	}
 
 #ifdef ENABLE_SETTINGS_MODULES
 	bool extended_save __attribute__((__cleanup__(EVENT_HANDLER_NAME(settings_extended_save)))) = (address == SETTINGS_ADDRESS_OFFSET);
-	settings_args_t args = {.address = address, .data = __ptr, .size = size};
-	if (EVENT_INVOKE(settings_save, &args))
-	{
-		// if the event was handled
-		return;
-	}
 #endif
 
-#ifndef RAM_ONLY_SETTINGS
 	uint8_t crc = 0;
-
+	nvm_start_write(address);
 	for (uint16_t i = 0; i < size;)
 	{
 		if (cnc_get_exec_state(EXEC_RUN))
@@ -358,9 +428,9 @@ void settings_save(uint16_t address, uint8_t *__ptr, uint16_t size)
 			cnc_dotasks(); // updates buffer before cycling
 		}
 
-		uint8_t c = (__ptr != NULL) ? (*(__ptr++)) : ((uint8_t)serial_getc());
+		uint8_t c = (__ptr != NULL) ? (*(__ptr++)) : ((uint8_t)grbl_stream_getc());
 		crc = crc7(c, crc);
-		mcu_eeprom_putc(address++, c);
+		nvm_putc(address++, c);
 		i++;
 		if (!__ptr && (c == EOL))
 		{
@@ -371,9 +441,8 @@ void settings_save(uint16_t address, uint8_t *__ptr, uint16_t size)
 
 	crc = settings_size_crc(size, crc);
 
-	mcu_eeprom_putc(address, crc);
-	mcu_eeprom_flush();
-#endif
+	nvm_putc(address, crc);
+	nvm_end_write();
 }
 
 bool settings_allows_negative(setting_offset_t id)
@@ -395,7 +464,7 @@ bool settings_allows_negative(setting_offset_t id)
 
 uint8_t settings_change(setting_offset_t id, float value)
 {
-	uint8_t result = STATUS_OK;
+	uint8_t result = STATUS_INVALID_STATEMENT;
 	uint16_t value16 = (uint16_t)CLAMP(0, value, INT16_MAX);
 	uint8_t value8 = (uint8_t)MIN(value16, UINT8_MAX);
 
@@ -410,304 +479,135 @@ uint8_t settings_change(setting_offset_t id, float value)
 			return STATUS_NEGATIVE_VALUE;
 		}
 
-		uint8_t setting = (uint8_t)id;
-		switch (setting)
+		// id 0 conversion from us to frequency
+		if (id == 0)
 		{
-		case 0:
-			value = 1000000.0f / value;
-			if (value > F_STEP_MAX)
+			if (value < (1000000.0f / F_STEP_MAX))
 			{
 				return STATUS_MAX_STEP_RATE_EXCEEDED;
 			}
-			g_settings.max_step_rate = value;
-			break;
-#if EMULATE_GRBL_STARTUP > 0 || defined(ENABLE_STEPPERS_DISABLE_TIMEOUT)
-		// just adds this for compatibility
-		// this setting is not used
-		case 1:
-#ifdef ENABLE_STEPPERS_DISABLE_TIMEOUT
-			g_settings.step_disable_timeout = value16;
-#endif
-			break;
-#endif
-		case 2:
-			g_settings.step_invert_mask = value8;
-			break;
-		case 3:
-			g_settings.dir_invert_mask = value8;
-			break;
-		case 4:
-			g_settings.step_enable_invert = value8;
-			break;
-		case 5:
-			g_settings.limits_invert_mask = value8;
-			break;
-		case 6:
-			g_settings.probe_invert_mask = value1;
-			break;
-		case 7:
-			g_settings.control_invert_mask = (value8 & CONTROLS_MASK);
-			break;
-#if ENCODERS > 0
-		case 8:
-			g_settings.encoders_pulse_invert_mask = value8;
-			break;
-		case 9:
-			g_settings.encoders_dir_invert_mask = value8;
-			break;
-#endif
-		case 10:
-			g_settings.status_report_mask = value8;
-			break;
-		case 11:
-			g_settings.g64_angle_factor = value;
-			break;
-		case 12:
-			g_settings.arc_tolerance = value;
-			break;
-		case 13:
-			g_settings.report_inches = value1;
-			break;
-#if S_CURVE_ACCELERATION_LEVEL == -1
-		case 14:
-			g_settings.s_curve_profile = CLAMP(0, value8, 5);
-			break;
-#endif
-		case 20:
-			if (!g_settings.homing_enabled && value1)
-			{
-				return STATUS_SOFT_LIMIT_ERROR;
-			}
-			g_settings.soft_limits_enabled = value1;
-			break;
-		case 21:
-			g_settings.hard_limits_enabled = value1;
-			break;
-		case 22:
-			g_settings.homing_enabled = value1;
-			break;
-		case 23:
-			g_settings.homing_dir_invert_mask = value8;
-			break;
-		case 24:
-			g_settings.homing_slow_feed_rate = value;
-			break;
-		case 25:
-			g_settings.homing_fast_feed_rate = value;
-			break;
-		case 26:
-			g_settings.debounce_ms = value16;
-			break;
-		case 27:
-			g_settings.homing_offset = value;
-			break;
-		case 30:
-			g_settings.spindle_max_rpm = value16;
-			break;
-		case 31:
-			g_settings.spindle_min_rpm = value16;
-			break;
-		case 32:
-			g_settings.laser_mode = value8;
-			break;
-#ifdef ENABLE_LASER_PPI
-		case 33:
-			g_settings.step_per_mm[STEPPER_COUNT - 1] = value;
-			break;
-		case 34:
-			g_settings.laser_ppi_uswidth = value16;
-			break;
-		case 35:
-			g_settings.laser_ppi_mixmode_ppi = value;
-			break;
-		case 36:
-			g_settings.laser_ppi_mixmode_uswidth = value;
-			break;
-#endif
-#ifdef ENABLE_SKEW_COMPENSATION
-		case 37:
-			g_settings.skew_xy_factor = value;
-			break;
-#ifndef SKEW_COMPENSATION_XY_ONLY
-		case 38:
-			g_settings.skew_xz_factor = value;
-			break;
-		case 39:
-			g_settings.skew_yz_factor = value;
-			break;
-#endif
-#endif
-#if TOOL_COUNT > 1
-		case 80:
-			g_settings.default_tool = CLAMP(0, value8, (uint8_t)TOOL_COUNT);
-			break;
-#endif
-#if (KINEMATIC == KINEMATIC_LINEAR_DELTA)
-		case 106:
-			g_settings.delta_arm_length = value;
-			break;
-		case 107:
-			g_settings.delta_armbase_radius = value;
-			break;
-			// case 108:
-			//     g_settings.delta_efector_height = value;
-			//     break;
-#elif (KINEMATIC == KINEMATIC_DELTA)
-	case 106:
-		g_settings.delta_base_radius = value;
-		break;
-	case 107:
-		g_settings.delta_effector_radius = value;
-		break;
-	case 108:
-		g_settings.delta_bicep_length = value;
-		break;
-	case 109:
-		g_settings.delta_forearm_length = value;
-		break;
-	case 28:
-		g_settings.delta_bicep_homing_angle = value;
-		break;
-#elif (KINEMATIC == KINEMATIC_SCARA)
-	case 106:
-		g_settings.scara_arm_length = value;
-		break;
-	case 107:
-		g_settings.scara_forearm_length = value;
-		break;
-	case 28:
-		g_settings.scara_arm_homing_angle = value;
-		break;
-	case 29:
-		g_settings.scara_forearm_homing_angle = value;
-		break;
-#endif
-		default:
-			if (setting >= 100 && setting < (100 + AXIS_COUNT))
-			{
-				setting -= 100;
-				g_settings.step_per_mm[setting] = value;
-			}
-			else if (setting >= 110 && setting < (110 + AXIS_COUNT))
-			{
-				setting -= 110;
-				g_settings.max_feed_rate[setting] = value;
-			}
-			else if (setting >= 120 && setting < (120 + AXIS_COUNT))
-			{
-				setting -= 120;
-				g_settings.acceleration[setting] = value;
-			}
-			else if (setting >= 130 && setting < (130 + AXIS_COUNT))
-			{
-				setting -= 130;
-				g_settings.max_distance[setting] = value;
-			}
-#ifdef ENABLE_BACKLASH_COMPENSATION
-			else if (setting >= 140 && setting < (140 + AXIS_TO_STEPPERS))
-			{
-				setting -= 140;
-				g_settings.backlash_steps[setting] = value16;
-			}
-#endif
+		}
 
-#if TOOL_COUNT > 0
-			else if (setting > 80 && setting <= (80 + TOOL_COUNT))
+		uint8_t count = settings_count();
+		for (uint8_t i = 0; i < count; i++)
+		{
+			setting_id_t s = {0};
+			uint8_t max = 1;
+			rom_memcpy(&s, &g_settings_id_table[i], sizeof(setting_id_t));
+			if (s.type & SETTING_ARRAY)
 			{
-				setting -= 81;
-				g_settings.tool_length_offset[setting] = value;
+				max = SETTING_ARRCNT(s.type);
 			}
-#endif
-			else
+			if ((uint8_t)id >= s.id && (uint8_t)id < (s.id + max))
 			{
-				return STATUS_INVALID_STATEMENT;
+				switch (SETTING_TYPE_MASK(s.type))
+				{
+				case 1:
+					((bool *)s.memptr)[(uint8_t)id - s.id] = value1;
+					break;
+				case 2:
+					((uint8_t *)s.memptr)[(uint8_t)id - s.id] = value8;
+					break;
+				case 3:
+					((uint16_t *)s.memptr)[(uint8_t)id - s.id] = value16;
+					break;
+				default:
+					((float *)s.memptr)[(uint8_t)id - s.id] = value;
+					break;
+				}
+
+				result = STATUS_OK;
 			}
 		}
+
 #ifdef ENABLE_SETTINGS_MODULES
 	}
 	else
 	{
 		setting_args_t extended_setting = {.id = id, .value = value};
-		if (!EVENT_INVOKE(settings_change, &extended_setting))
+		if (!EVENT_INVOKE(settings_extended_change, &extended_setting))
 		{
 			return STATUS_INVALID_STATEMENT;
 		}
+		result = STATUS_OK;
 	}
 #endif
 
-#if !defined(ENABLE_EXTRA_SYSTEM_CMDS)
+#if !defined(ENABLE_EXTRA_SETTINGS_CMDS)
 	settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
 #endif
 
 	return result;
 }
 
+/**
+ * Erases settings
+ * If the address points to the SETTINGS_ADDRESS_OFFSET reloads default values and invokes extended settings erase event
+ * Coordinate systems and ofsetts are set to 0
+ * Startup blocks are set to 0
+ */
 void settings_erase(uint16_t address, uint8_t *__ptr, uint16_t size)
 {
-	DEBUG_STR("EEPROM erase @ ");
-	DEBUG_INT(address);
-	DEBUG_PUTC('\n');
+	DBGMSG("EEPROM erase @ %u", address);
+	uint8_t empty_startup_block = 0;
 
 	if (address == UINT16_MAX)
 	{
 		return;
 	}
 
-#ifdef ENABLE_SETTINGS_MODULES
-	bool extended_erase __attribute__((__cleanup__(EVENT_HANDLER_NAME(settings_extended_erase)))) = (address == SETTINGS_ADDRESS_OFFSET);
-	settings_args_t args = {.address = address, .data = __ptr, .size = size};
-	if (EVENT_INVOKE(settings_erase, &args))
-	{
-		// if the event was handled
-		return;
-	}
-#endif
-
+	bool is_machine_settings = (address == SETTINGS_ADDRESS_OFFSET);
+	// checks if it's a valid pointer (startup blocks are a special case that uses a NULL pointer)
 	if (__ptr)
 	{
-		memset(__ptr, 0, size);
+		if (is_machine_settings) // loads the defaults for settings
+		{
+			rom_memcpy(&g_settings, &default_settings, sizeof(settings_t));
+		}
+		else
+		{
+			memset(__ptr, 0, size);
+		}
+	}
+	else
+	{
+		__ptr = &empty_startup_block;
+		size = 1;
 	}
 
-#ifndef RAM_ONLY_SETTINGS
-	if (address != SETTINGS_ADDRESS_OFFSET)
-	{
-		for (uint16_t i = size; i != 0; i--)
-		{
-			if (cnc_get_exec_state(EXEC_RUN))
-			{
-				cnc_dotasks(); // updates buffer before cycling
-			}
-			mcu_eeprom_putc(address++, 0);
-		}
-
-		uint8_t crc = settings_size_crc(size, 0);
-
-		// erase crc byte that is next to data
-		mcu_eeprom_putc(address, crc);
-#if !defined(ENABLE_EXTRA_SYSTEM_CMDS)
-		mcu_eeprom_flush();
+#ifdef ENABLE_SETTINGS_MODULES
+	// propagates the erase event to all extended settings
+	EVENT_INVOKE(settings_extended_erase, &is_machine_settings);
 #endif
+
+#ifdef ENABLE_EXTRA_SETTINGS_CMDS
+	if (!is_machine_settings)
+	{
+#endif
+		// store the settings
+		settings_save(address, __ptr, size);
+#ifdef ENABLE_EXTRA_SETTINGS_CMDS
 	}
 #endif
 }
 
 bool settings_check_startup_gcode(uint16_t address)
 {
-	serial_broadcast(true);
-	serial_putc('>');
+	grbl_stream_start_broadcast();
+	proto_putc('>');
 #ifndef RAM_ONLY_SETTINGS
 	if (settings_load(address, NULL, UINT16_MAX))
 	{
-		serial_putc(':');
-		protocol_send_error(STATUS_SETTING_READ_FAIL);
+		proto_putc(':');
+		proto_error(STATUS_SETTING_READ_FAIL);
 		settings_erase(address, NULL, 1);
 		return false;
 	}
 
 	return true;
 #else
-	serial_putc(':');
-	protocol_send_ok();
+	proto_putc(':');
+	proto_error(0);
 	return false;
 #endif
 }
@@ -723,4 +623,9 @@ uint16_t settings_register_external_setting(uint16_t size)
 #warning "External/extension settings storing is disabled"
 	return UINT16_MAX;
 #endif
+}
+
+uint8_t settings_count(void)
+{
+	return sizeof(g_settings_id_table) / sizeof(setting_id_t);
 }

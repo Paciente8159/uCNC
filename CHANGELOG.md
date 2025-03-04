@@ -6,6 +6,79 @@
 
 # Changelog
 
+[@tomjnixon](https://github.com/tomjnixon)	- fixed ignored G53 introduced by #791 (#793)
+																						- fixed status report mask setting introduced in v1.11 (#789)
+
+## [1.11.1] - 13-12-2024
+
+### Changed
+
+- minor improvements the the AVR ini file and better comments (#784)
+- change to the parser to unify G92 and G10 processing path (#791)
+
+### Fixed
+
+- fixed M2/M30 command behavior to match LinuxCNC (#786)
+- fixed status report Tool info (#787)
+- fixed status report mask setting introduced in v1.11 (#789)
+- fixed G10 L20 behavior when the current modal distance mode is in incremental mode (#791)
+- fixed cycle feed and spindle update in a canned cycle (#788)
+- fixed/improved motion mode validation (#792)
+- fixed ignored G53 introduced by #791 (#793)
+- fixed step generation ISR algorithm for LPC17XX (#794)
+
+## [1.11.0] - 20-11-2024
+
+### Added
+
+- added support for printing values of numbered and via [messages](https://linuxcnc.org/docs/html/gcode/overview.html#gcode:messages)
+- added support for read-only [predifined named parameters](https://linuxcnc.org/docs/html/gcode/overview.html#gcode:predefined-named-parameters). Parameters can also be printed via $# command followed by the parameter number or parameter name (#767)
+- added support for [O-Codes similar to LinuxCNC](https://linuxcnc.org/docs/html/gcode/o-code.html). O-Codes or subrotines runs custom GCode code and perform conditional logic and complex loops. O-Codes run from media storage .nc files thus each subrotine is self contained and it's not necessary to declare the SUB and ENDSUB O-Codes. The O-Codes must reside in the root system file of a pre-configured FS (C for MCU Flash FS or D for SD card FS). (#765) (#769)
+- settings hardened safety features. On settings loading if an error is detected the machine enters locked mode and requires a full setting reset from the user before allowing unlock. This using the machine if the settings are not correctly loaded preventing failures when using settings from movable media sources like SD cards. Also on settings saving error the system will keep retrying to save the setting in case a write error occurs but allows the program to continue flowing. This option can be turned off by enabling ´DISABLE_SAFE_SETTINGS´ in the cnc_config.h file (#761) (#762)
+- self implemented subset/custom of stdio printf helpers. It's now possible to print formated messages via protocol. No need to do specific calls to print variables like numbers, strings, char, ip addresse, bytes, etc... (#760)
+- Debug messages now have an intermediate buffer that stores the output before printing it to prevent outputing debug messages in the middle of onging protocol messages (#760)
+- SPI with DMA support for RP2040 (#713)
+- Added initial support for RP2350 (#770)
+
+### Changed
+
+- all communications calls to output messages now are done via the proto_xxx calls in grbl_protocol.h. No more calls to serial stream directly mixed with protocol calls (#760)
+- improvements to the debug message system. Now a single call to DBGMSG macro is used. The same principle of formated messages is applied (#760)
+- modified/fixed emulated ONEWIRE transmission to use active output on low level logic (#778)
+- improved timeout block macro (#779)(#780)
+
+### Fixed
+
+- added custom MCU build option to fix PIO build errors using overrides (#764)
+- fixed/moved all custom PIO configurations generated in the web config builder to the platformio.ini file (fixes custom builds) (#766)
+- added missing checks for ENABLE_NAMED_PARAMETERS (#774)
+- fix parser backtracking char cleaning (#775)
+- several custom printf function fixes (#776)
+- fixed softuart module getc that prevented correct transmission start bit detection(#777)
+- fixed debug stream print overflow and print guard causing issues when the debug stream was not the default stream (#779)(#781)
+- fixed warning on LPC17XX I2C via Arduino Library (#783)
+
+## [1.11.0-rc] - 07-10-2024
+
+### Added
+
+- added support for printing values of numbered and via [messages](https://linuxcnc.org/docs/html/gcode/overview.html#gcode:messages)
+- added support for read-only [predifined named parameters](https://linuxcnc.org/docs/html/gcode/overview.html#gcode:predefined-named-parameters). Parameters can also be printed via $# command followed by the parameter number or parameter name (#767)
+- added support for [O-Codes similar to LinuxCNC](https://linuxcnc.org/docs/html/gcode/o-code.html). O-Codes or subrotines runs custom GCode code and perform conditional logic and complex loops. O-Codes run from media storage .nc files thus each subrotine is self contained and it's not necessary to declare the SUB and ENDSUB O-Codes. The O-Codes must reside in the root system file of a pre-configured FS (C for MCU Flash FS or D for SD card FS). (#765) (#769)
+- settings hardened safety features. On settings loading if an error is detected the machine enters locked mode and requires a full setting reset from the user before allowing unlock. This using the machine if the settings are not correctly loaded preventing failures when using settings from movable media sources like SD cards. Also on settings saving error the system will keep retrying to save the setting in case a write error occurs but allows the program to continue flowing. This option can be turned off by enabling ´DISABLE_SAFE_SETTINGS´ in the cnc_config.h file (#761) (#762)
+- self implemented subset/custom of stdio printf helpers. It's now possible to print formated messages via protocol. No need to do specific calls to print variables like numbers, strings, char, ip addresse, bytes, etc... (#760)
+- Debug messages now have an intermediate buffer that stores the output before printing it to prevent outputing debug messages in the middle of onging protocol messages (#760)
+
+### Changed
+
+- all communications calls to output messages now are done via the proto_xxx calls in grbl_protocol.h. No more calls to serial stream directly mixed with protocol calls (#760)
+- improvements to the debug message system. Now a single call to DBGMSG macro is used. The same principle of formated messages is applied (#760)
+
+### Fixed
+
+- added custom MCU build option to fix PIO build errors using overrides (#764)
+- fixed/moved all custom PIO configurations generated in the web config builder to the platformio.ini file (fixes custom builds) (#766)
+
 ## [1.10.2] - 07-10-2024
 
 [@ademenev](https://github.com/ademenev)	- new alternative axis configurations for CoreXY kinematics (#750)
@@ -1753,8 +1826,11 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
-[1.10.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.10.0
-[1.10.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.10.0
+[1.11.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.11.1
+[1.11.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.11.0
+[1.11.0-rc]: https://github.com/Paciente8159/uCNC/releases/tag/v1.11.0-rc
+[1.10.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.10.2
+[1.10.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.10.1
 [1.10.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.10.0
 [1.9.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.9.4
 [1.9.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.9.3

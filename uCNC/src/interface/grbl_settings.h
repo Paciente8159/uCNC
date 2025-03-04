@@ -29,14 +29,18 @@ extern "C"
 #include <stdint.h>
 #include <stdbool.h>
 
+#define SETTINGS_OK
+#define SETTINGS_READ_ERROR 1
+#define SETTINGS_WRITE_ERROR 2
+
 	typedef struct
 	{
 		uint8_t version[3];
 		float max_step_rate;
-		// step delay not used
-		#ifdef ENABLE_STEPPERS_DISABLE_TIMEOUT
+// step delay not used
+#ifdef ENABLE_STEPPERS_DISABLE_TIMEOUT
 		uint16_t step_disable_timeout;
-		#endif
+#endif
 		uint8_t step_invert_mask;
 		uint8_t dir_invert_mask;
 		uint8_t step_enable_invert;
@@ -112,20 +116,53 @@ extern "C"
 #endif
 	} settings_t;
 
+// settings base address
 #ifndef SETTINGS_ADDRESS_OFFSET
 #define SETTINGS_ADDRESS_OFFSET 0
 #endif
 #ifndef SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET
 #define SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET (SETTINGS_ADDRESS_OFFSET + sizeof(settings_t) + 1)
 #endif
+// coordinate systems base addresses
+#ifndef DISABLE_HOME_SUPPORT
+#define ADDITIONAL_COORDINATES 2
+#else
+#define ADDITIONAL_COORDINATES 0
+#endif
+#ifdef DISABLE_COORD_SYS_SUPPORT
+#define TOTAL_COORDINATE_SYSTEMS (1 + ADDITIONAL_COORDINATES)
+#else
+#define TOTAL_COORDINATE_SYSTEMS (COORD_SYS_COUNT + ADDITIONAL_COORDINATES)
+#endif
+#define PARSER_PARAM_SIZE (sizeof(float) * AXIS_COUNT)																								// parser parameters array size
+#define PARSER_PARAM_ADDR_OFFSET (PARSER_PARAM_SIZE + 1)																							// parser parameters array size + 1 crc byte
+#define G28HOME (COORD_SYS_COUNT)																																			// G28 index
+#define G30HOME (COORD_SYS_COUNT + 1)																																	// G30 index
+#define G92OFFSET (COORD_SYS_COUNT + ADDITIONAL_COORDINATES)																																// G92 index
+#define PARSER_CORDSYS_ADDRESS (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET)														// 1st coordinate system offset eeprom address (G54)
+#define G28ADDRESS (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (PARSER_PARAM_ADDR_OFFSET * G28HOME)) // G28 coordinate offset eeprom address
+#define G30ADDRESS (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (PARSER_PARAM_ADDR_OFFSET * G30HOME)) // G28 coordinate offset eeprom address
+#ifdef G92_STORE_NONVOLATILE
+#define G92ADDRESS (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (PARSER_PARAM_ADDR_OFFSET * G92OFFSET)) // G92 coordinate offset eeprom address
+#endif
+
+#ifndef STARTUP_BLOCKS_COUNT
+#define STARTUP_BLOCKS_COUNT 2
+#endif
+#ifndef STARTUP_BLOCK_SIZE
+#define STARTUP_BLOCK_SIZE RX_BUFFER_SIZE
+#endif
 #ifndef STARTUP_BLOCK0_ADDRESS_OFFSET
-#define STARTUP_BLOCK0_ADDRESS_OFFSET (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (((AXIS_COUNT * sizeof(float)) + 1) * (COORD_SYS_COUNT + 3)))
+#ifdef G92_STORE_NONVOLATILE
+#define STARTUP_BLOCK0_ADDRESS_OFFSET (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (PARSER_PARAM_ADDR_OFFSET * (TOTAL_COORDINATE_SYSTEMS + 1)))
+#else
+#define STARTUP_BLOCK0_ADDRESS_OFFSET (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (PARSER_PARAM_ADDR_OFFSET * TOTAL_COORDINATE_SYSTEMS))
 #endif
-#ifndef STARTUP_BLOCK1_ADDRESS_OFFSET
-#define STARTUP_BLOCK1_ADDRESS_OFFSET (STARTUP_BLOCK0_ADDRESS_OFFSET + RX_BUFFER_SIZE)
 #endif
+#define STARTUP_BLOCK_ADDRESS_OFFSET(NBLOCK) (STARTUP_BLOCK0_ADDRESS_OFFSET + (NBLOCK * RX_BUFFER_SIZE))
+
 #ifndef MODULES_SETTINGS_ADDRESS_OFFSET
-#define MODULES_SETTINGS_ADDRESS_OFFSET (STARTUP_BLOCK1_ADDRESS_OFFSET + RX_BUFFER_SIZE)
+#define MODULES_SETTINGS_ADDRESS_OFFSET STARTUP_BLOCK_ADDRESS_OFFSET(STARTUP_BLOCKS_COUNT)
 #endif
 
 #ifndef ENABLE_SETTINGS_MODULES
@@ -134,7 +171,33 @@ extern "C"
 typedef uint16_t setting_offset_t;
 #endif
 
+#define SETTING_TYPE(T) (T << 5)
+#define SETTING_TYPE_MASK(T) ((T >> 5) & 0x3)
+#define SETTING_ARRAY 0x80
+#define SETTING_ARRCNT(X) (X & 0x1F)
+
+	typedef struct setting_id_
+	{
+		setting_offset_t id;
+		void *memptr;
+		uint8_t type;
+	} setting_id_t;
+
+#ifndef DISABLE_SAFE_SETTINGS
+	extern uint8_t g_settings_error;
+#endif
 	extern settings_t g_settings;
+	extern const setting_id_t g_settings_id_table[];
+
+	/**
+	 * Overridable callbacks to implement external NVM mechanisms
+	 */
+	void nvm_start_read(uint16_t address);
+	void nvm_start_write(uint16_t address);
+	uint8_t nvm_getc(uint16_t address);
+	void nvm_putc(uint16_t address, uint8_t c);
+	void nvm_end_read(void);
+	void nvm_end_write(void);
 
 	void settings_init(void);
 	// Assumes that no structure being saved is bigger than 255 bytes
@@ -145,34 +208,22 @@ typedef uint16_t setting_offset_t;
 	void settings_erase(uint16_t address, uint8_t *__ptr, uint16_t size);
 	bool settings_check_startup_gcode(uint16_t address);
 	uint16_t settings_register_external_setting(uint16_t size);
+	uint8_t settings_count(void);
 
 #if (defined(ENABLE_SETTINGS_MODULES) || defined(BOARD_HAS_CUSTOM_SYSTEM_COMMANDS))
-	// event_settings_change_handler
-	typedef struct setting_args_
-	{
-		uint16_t id;
-		float value;
-	} setting_args_t;
-	DECL_EVENT_HANDLER(settings_change);
-	typedef struct settings_args_
-	{
-		uint16_t address;
-		uint8_t *data;
-		uint8_t size;
-	} settings_args_t;
-	// event_settings_load_handler
-	DECL_EVENT_HANDLER(settings_load);
-	// event_settings_save_handler
-	DECL_EVENT_HANDLER(settings_save);
-	// event_settings_erase_handler
-	DECL_EVENT_HANDLER(settings_erase);
-
 	// event_settings_extended_load_handler
 	DECL_EVENT_HANDLER(settings_extended_load);
 	// event_settings_extended_save_handler
 	DECL_EVENT_HANDLER(settings_extended_save);
 	// event_settings_extended_erase_handler
 	DECL_EVENT_HANDLER(settings_extended_erase);
+	// event_settings_extended_change_handler
+	typedef struct setting_args_
+	{
+		uint16_t id;
+		float value;
+	} setting_args_t;
+	DECL_EVENT_HANDLER(settings_extended_change);
 #endif
 
 /**
@@ -209,7 +260,7 @@ typedef uint16_t setting_offset_t;
 		memset(var, 0, sizeof(type) * count);                                            \
 		return EVENT_CONTINUE;                                                           \
 	}                                                                                  \
-	bool set##ID##_protocol_send_cnc_settings(void *args)                              \
+	bool set##ID##_proto_cnc_settings(void *args)                                      \
 	{                                                                                  \
 		type *ptr = var;                                                                 \
 		for (uint8_t i = 0; i < count; i++)                                              \
@@ -220,9 +271,9 @@ typedef uint16_t setting_offset_t;
 	}                                                                                  \
 	CREATE_EVENT_LISTENER(settings_extended_load, set##ID##_settings_load);            \
 	CREATE_EVENT_LISTENER(settings_extended_save, set##ID##_settings_save);            \
-	CREATE_EVENT_LISTENER(settings_change, set##ID##_settings_change);                 \
+	CREATE_EVENT_LISTENER(settings_extended_change, set##ID##_settings_change);        \
 	CREATE_EVENT_LISTENER(settings_extended_erase, set##ID##_settings_erase);          \
-	CREATE_EVENT_LISTENER(protocol_send_cnc_settings, set##ID##_protocol_send_cnc_settings)
+	CREATE_EVENT_LISTENER(proto_cnc_settings, set##ID##_proto_cnc_settings)
 #define DECL_EXTENDED_SETTING(ID, var, type, count, print_cb) __DECL_EXTENDED_SETTING__(ID, var, type, count, print_cb)
 
 #define __DECL_EXTENDED_STRING_SETTING__(ID, var, count)                               \
@@ -244,7 +295,7 @@ typedef uint16_t setting_offset_t;
 			settings_load(set##ID##_settings_address, (uint8_t *)var, sizeof(char) * count); \
 			for (uint8_t i = 0; i < count; i++)                                              \
 			{                                                                                \
-				char c = serial_getc();                                                        \
+				char c = grbl_stream_getc();                                                   \
 				if (c == EOL || c == '\n')                                                     \
 				{                                                                              \
 					var[i] = EOL;                                                                \
@@ -263,47 +314,47 @@ typedef uint16_t setting_offset_t;
 		settings_save(set##ID##_settings_address, (uint8_t *)var, sizeof(char) * count);   \
 		return EVENT_CONTINUE;                                                             \
 	}                                                                                    \
-	bool set##ID##_protocol_send_cnc_settings(void *args)                                \
+	bool set##ID##_proto_cnc_settings(void *args)                                        \
 	{                                                                                    \
 		memset(var, 0, sizeof(char) * count);                                              \
 		settings_load(set##ID##_settings_address, (uint8_t *)var, sizeof(char) * count);   \
-		serial_putc('$');                                                                  \
-		serial_print_int(ID);                                                              \
-		serial_putc('=');                                                                  \
+		proto_putc('$');                                                                   \
+		proto_printf("%ld", ID);                                                           \
+		proto_putc('=');                                                                   \
 		for (uint8_t i = 0; i < count; i++)                                                \
 		{                                                                                  \
 			char c = var[i];                                                                 \
 			if (c < 20 || c > 127)                                                           \
 			{                                                                                \
-				protocol_send_string(MSG_EOL);                                                 \
+				proto_print(MSG_EOL);                                                          \
 				return EVENT_CONTINUE;                                                         \
 			}                                                                                \
-			serial_putc(c);                                                                  \
+			proto_putc(c);                                                                   \
 		}                                                                                  \
 		return EVENT_CONTINUE;                                                             \
 	}                                                                                    \
 	CREATE_EVENT_LISTENER(settings_extended_load, set##ID##_settings_load);              \
 	CREATE_EVENT_LISTENER(settings_extended_save, set##ID##_settings_save);              \
-	CREATE_EVENT_LISTENER(settings_change, set##ID##_settings_change);                   \
+	CREATE_EVENT_LISTENER(settings_extended_change, set##ID##_settings_change);          \
 	CREATE_EVENT_LISTENER(settings_extended_erase, set##ID##_settings_erase);            \
-	CREATE_EVENT_LISTENER(protocol_send_cnc_settings, set##ID##_protocol_send_cnc_settings)
+	CREATE_EVENT_LISTENER(proto_cnc_settings, set##ID##_proto_cnc_settings)
 
 #define DECL_EXTENDED_STRING_SETTING(ID, var, count) __DECL_EXTENDED_STRING_SETTING__(ID, var, count)
 
 #define __EXTENDED_SETTING_ADDRESS__(ID) set##ID##_settings_address
 #define EXTENDED_SETTING_ADDRESS(ID) __EXTENDED_SETTING_ADDRESS__(ID)
 
-#define __EXTENDED_SETTING_INIT__(ID, var)                                                \
-	static bool set##ID##_init = false;                                                     \
-	if (!set##ID##_init)                                                                    \
-	{                                                                                       \
-		set##ID##_settings_address = settings_register_external_setting(sizeof(var));         \
-		ADD_EVENT_LISTENER(settings_extended_load, set##ID##_settings_load);                  \
-		ADD_EVENT_LISTENER(settings_extended_save, set##ID##_settings_save);                  \
-		ADD_EVENT_LISTENER(settings_change, set##ID##_settings_change);                       \
-		ADD_EVENT_LISTENER(settings_extended_erase, set##ID##_settings_erase);                \
-		ADD_EVENT_LISTENER(protocol_send_cnc_settings, set##ID##_protocol_send_cnc_settings); \
-		set##ID##_init = true;                                                                \
+#define __EXTENDED_SETTING_INIT__(ID, var)                                        \
+	static bool set##ID##_init = false;                                             \
+	if (!set##ID##_init)                                                            \
+	{                                                                               \
+		set##ID##_settings_address = settings_register_external_setting(sizeof(var)); \
+		ADD_EVENT_LISTENER(settings_extended_load, set##ID##_settings_load);          \
+		ADD_EVENT_LISTENER(settings_extended_save, set##ID##_settings_save);          \
+		ADD_EVENT_LISTENER(settings_extended_change, set##ID##_settings_change);      \
+		ADD_EVENT_LISTENER(settings_extended_erase, set##ID##_settings_erase);        \
+		ADD_EVENT_LISTENER(proto_cnc_settings, set##ID##_proto_cnc_settings);         \
+		set##ID##_init = true;                                                        \
 	}
 
 #define EXTENDED_SETTING_INIT(ID, var) __EXTENDED_SETTING_INIT__(ID, var)

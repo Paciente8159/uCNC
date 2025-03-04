@@ -4555,7 +4555,20 @@ extern "C"
 #define I2C_ADDRESS 0
 #endif
 
+#ifndef USE_ARDUINO_WIRE
 #define I2C_REG __helper__(LPC_I2C, I2C_PORT, )
+#else
+/**
+ * This allows future implementations of other Wire ports
+ * But for now the framework only implements Wire
+ */
+#define I2C_REG Wire
+// #if (I2C_PORT == 0)
+// #define I2C_REG Wire
+// #else
+// #define I2C_REG __helper__(Wire, I2C_PORT, )
+// #endif
+#endif
 #define I2C_PCLK __helper__(CLKPWR_PCLKSEL_I2C, I2C_PORT, )
 #define I2C_PCON __helper__(CLKPWR_PCONP_PCI2C, I2C_PORT, )
 
@@ -4589,7 +4602,7 @@ extern "C"
 #else
 #define ITP_PCLKSEL_REG PCLKSEL1
 #endif
-#define ITP_PCLKSEL_VAL (1 << (__helper__(CLKPWR_PCLKSEL_TIMER, ITP_TIMER, ) & 0x1F))
+#define ITP_PCLKSEL_MASK (3UL << (__helper__(CLKPWR_PCLKSEL_TIMER, ITP_TIMER, ) & 0x1F))
 
 #define MCU_RTC_ISR SysTick_Handler
 
@@ -4606,7 +4619,7 @@ extern "C"
 #else
 #define SERVO_PCLKSEL_REG PCLKSEL1
 #endif
-#define SERVO_PCLKSEL_VAL (1 << (__helper__(CLKPWR_PCLKSEL_TIMER, SERVO_TIMER, ) & 0x1F))
+#define SERVO_PCLKSEL_MASK (3UL << (__helper__(CLKPWR_PCLKSEL_TIMER, SERVO_TIMER, ) & 0x1F))
 
 #ifdef ONESHOT_TIMER
 #define MCU_HAS_ONESHOT_TIMER
@@ -4620,7 +4633,7 @@ extern "C"
 #else
 #define ONESHOT_PCLKSEL_REG PCLKSEL1
 #endif
-#define ONESHOT_PCLKSEL_VAL (1 << (__helper__(CLKPWR_PCLKSEL_TIMER, ONESHOT_TIMER, ) & 0x1F))
+#define ONESHOT_PCLKSEL_MASK (3UL << (__helper__(CLKPWR_PCLKSEL_TIMER, ONESHOT_TIMER, ) & 0x1F))
 #endif
 
 // Indirect macro access

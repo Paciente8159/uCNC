@@ -20,7 +20,7 @@
 #include "../../cnc.h"
 
 #if (KINEMATIC == KINEMATIC_SCARA)
-#include <stdio.h>
+
 #include <stdint.h>
 #include <math.h>
 

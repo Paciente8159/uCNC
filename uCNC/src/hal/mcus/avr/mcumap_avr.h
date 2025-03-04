@@ -33,7 +33,7 @@ extern "C"
 */
 #include <math.h>
 #include <inttypes.h>
-#include <stdio.h>
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -73,6 +73,7 @@ extern "C"
 #define rom_strncpy strncpy_P
 #define rom_memcpy memcpy_P
 #define rom_read_byte pgm_read_byte
+#define rom_strcmp strcmp_P
 
 #define __BYTE_ORDER__ __ORDER_LITTLE_ENDIAN__
 #define __SIZEOF_FLOAT__ 4
