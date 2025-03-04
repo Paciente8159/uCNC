@@ -35,31 +35,6 @@ extern "C"
 #define COREXY_AXIS_XZ 2
 #define COREXY_AXIS_YZ 3
 
-/**
- * Settings for the kinematics
- * 
- * KINEMATICS_VARS_DECL - variables declarations inside the g_settings
- * KINEMATICS_VARS_DEFAULTS_INIT -  default values initialization
- * KINEMATICS_VARS_SETTINGS_INIT - inititialization for the settings $ commands
- * KINEMATICS_VARS_SYSTEM_MENU_INIT - declaration/initialization of settings in the system menu 
- * 
- */
-#ifndef KINEMATICS_VARS_DECL
-#define KINEMATICS_VARS_DECL
-#endif
-
-#ifndef KINEMATICS_VARS_DEFAULTS_INIT
-#define KINEMATICS_VARS_DEFAULTS_INIT
-#endif
-
-#ifndef KINEMATICS_VARS_SETTINGS_INIT
-#define KINEMATICS_VARS_SETTINGS_INIT
-#endif
-
-#ifndef KINEMATICS_VARS_SYSTEM_MENU_INIT
-#define KINEMATICS_VARS_SYSTEM_MENU_INIT
-#endif
-
 #ifdef __cplusplus
 }
 #endif

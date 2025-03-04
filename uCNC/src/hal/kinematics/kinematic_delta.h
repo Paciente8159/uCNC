@@ -61,14 +61,12 @@ extern "C"
 																			{.id = 108, .memptr = &g_settings.delta_bicep_length, .type = SETTING_TYPE_FLOAT},      \
 																			{.id = 109, .memptr = &g_settings.delta_forearm_length, .type = SETTING_TYPE_FLOAT},
 
-#define KINEMATICS_VARS_SYSTEM_MENU_INIT                                                   \
-	DECL_MENU_GOTO(SYSTEM_MENU_ID_SETTINGS, kinemats, STR_KINEMATICS, CONST_VARG(5));        \
-	DECL_MENU_VAR(3, s28, STR_OFFSET, &g_settings.delta_bicep_homing_angle, VAR_TYPE_FLOAT); \
-	DECL_MENU(5, SYSTEM_MENU_ID_SETTINGS, STR_KINEMATICS);                                   \
-	DECL_MENU_VAR(5, s106, STR_BASE_RAD, &g_settings.delta_base_radius, VAR_TYPE_FLOAT);     \
-	DECL_MENU_VAR(5, s107, STR_EFF_RAD, &g_settings.delta_effector_radius, VAR_TYPE_FLOAT);  \
-	DECL_MENU_VAR(5, s108, STR_BICEP_LEN, &g_settings.delta_bicep_length, VAR_TYPE_FLOAT);   \
-	DECL_MENU_VAR(5, s109, STR_FARM_LEN, &g_settings.delta_forearm_length, VAR_TYPE_FLOAT);
+#define KINEMATICS_VARS_SYSTEM_MENU_INIT                                                                                  \
+	DECL_MENU_VAR(SYSTEM_MENU_ID_HOMING, s28, STR_OFFSET, &g_settings.delta_bicep_homing_angle, VAR_TYPE_FLOAT);            \
+	DECL_MENU_VAR(SYSTEM_MENU_ID_KINEMATIC_SETTINGS, s106, STR_BASE_RAD, &g_settings.delta_base_radius, VAR_TYPE_FLOAT);    \
+	DECL_MENU_VAR(SYSTEM_MENU_ID_KINEMATIC_SETTINGS, s107, STR_EFF_RAD, &g_settings.delta_effector_radius, VAR_TYPE_FLOAT); \
+	DECL_MENU_VAR(SYSTEM_MENU_ID_KINEMATIC_SETTINGS, s108, STR_BICEP_LEN, &g_settings.delta_bicep_length, VAR_TYPE_FLOAT);  \
+	DECL_MENU_VAR(SYSTEM_MENU_ID_KINEMATIC_SETTINGS, s109, STR_FARM_LEN, &g_settings.delta_forearm_length, VAR_TYPE_FLOAT);
 
 #ifdef __cplusplus
 }

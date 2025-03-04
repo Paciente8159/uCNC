@@ -73,9 +73,8 @@ extern "C"
 																			{.id = 107, .memptr = &g_settings.delta_armbase_radius, .type = SETTING_TYPE_FLOAT},
 
 #define KINEMATICS_VARS_SYSTEM_MENU_INIT                                             \
-	DECL_MENU(5, SYSTEM_MENU_ID_SETTINGS, STR_KINEMATICS);                             \
-	DECL_MENU_VAR(5, s106, STR_ARM_LEN, &g_settings.delta_arm_length, VAR_TYPE_FLOAT); \
-	DECL_MENU_VAR(5, s107, STR_BASE_RAD, &g_settings.delta_armbase_radius, VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(SYSTEM_MENU_ID_KINEMATIC_SETTINGS, s106, STR_ARM_LEN, &g_settings.delta_arm_length, VAR_TYPE_FLOAT); \
+	DECL_MENU_VAR(SYSTEM_MENU_ID_KINEMATIC_SETTINGS, s107, STR_BASE_RAD, &g_settings.delta_armbase_radius, VAR_TYPE_FLOAT);
 
 #ifdef __cplusplus
 }
