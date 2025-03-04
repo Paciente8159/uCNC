@@ -175,12 +175,6 @@ DECL_MODULE(system_menu)
 	DECL_MENU_VAR(3, s25, STR_FAST_FEED, &g_settings.homing_fast_feed_rate, VAR_TYPE_FLOAT);
 	DECL_MENU_VAR(3, s26, STR_DEBOUNCEMS, &g_settings.debounce_ms, VAR_TYPE_UINT16);
 	DECL_MENU_VAR(3, s27, STR_OFFSET, &g_settings.homing_offset, VAR_TYPE_FLOAT);
-#if (KINEMATIC == KINEMATIC_DELTA)
-	DECL_MENU_VAR(3, s28, STR_OFFSET, &g_settings.delta_bicep_homing_angle, VAR_TYPE_FLOAT);
-#elif (KINEMATIC == KINEMATIC_SCARA)
-	DECL_MENU_VAR(3, s28, STR_OFFSET, &g_settings.scara_arm_homing_angle, VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(3, s29, STR_OFFSET, &g_settings.scara_forearm_homing_angle, VAR_TYPE_FLOAT);
-#endif
 
 	// append steppers settings menu
 	DECL_MENU(4, SYSTEM_MENU_ID_SETTINGS, STR_AXIS);
@@ -247,16 +241,9 @@ DECL_MODULE(system_menu)
 	DECL_MENU_VAR(5, s39, STR_SKEW_FACTOR("YZ"), &g_settings.skew_yz_factor, VAR_TYPE_FLOAT);
 #endif
 #endif
-#if (KINEMATIC == KINEMATIC_LINEAR_DELTA)
-	DECL_MENU_VAR(5, s106, STR_ARM_LEN, &g_settings.delta_arm_length, VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(5, s107, STR_BASE_RAD, &g_settings.delta_armbase_radius, VAR_TYPE_FLOAT);
-#elif (KINEMATIC == KINEMATIC_DELTA)
-	DECL_MENU_VAR(5, s106, STR_BASE_RAD, &g_settings.delta_base_radius, VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(5, s107, STR_EFF_RAD, &g_settings.delta_effector_radius, VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(5, s108, STR_BICEP_LEN, &g_settings.delta_bicep_length, VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(5, s109, STR_FARM_LEN, &g_settings.delta_forearm_length, VAR_TYPE_FLOAT);
 #endif
-#endif
+
+KINEMATICS_VARS_SYSTEM_MENU_INIT
 
 	// reset system menu
 	system_menu_reset();

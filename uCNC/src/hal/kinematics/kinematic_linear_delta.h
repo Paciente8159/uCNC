@@ -62,6 +62,21 @@ extern "C"
 #define DELTA_ARM_MAX_ANGLE 89
 #endif
 
+#define KINEMATICS_VARS_DECL \
+	float delta_arm_length;    \
+	float delta_armbase_radius;
+
+#define KINEMATICS_VARS_DEFAULTS_INIT .delta_arm_length = DEFAULT_LIN_DELTA_ARM_LENGTH, \
+																			.delta_armbase_radius = DEFAULT_LIN_DELTA_BASE_RADIUS,
+
+#define KINEMATICS_VARS_SETTINGS_INIT {.id = 106, .memptr = &g_settings.delta_arm_length, .type = SETTING_TYPE_FLOAT}, \
+																			{.id = 107, .memptr = &g_settings.delta_armbase_radius, .type = SETTING_TYPE_FLOAT},
+
+#define KINEMATICS_VARS_SYSTEM_MENU_INIT                                             \
+	DECL_MENU(5, SYSTEM_MENU_ID_SETTINGS, STR_KINEMATICS);                             \
+	DECL_MENU_VAR(5, s106, STR_ARM_LEN, &g_settings.delta_arm_length, VAR_TYPE_FLOAT); \
+	DECL_MENU_VAR(5, s107, STR_BASE_RAD, &g_settings.delta_armbase_radius, VAR_TYPE_FLOAT);
+
 #ifdef __cplusplus
 }
 #endif
