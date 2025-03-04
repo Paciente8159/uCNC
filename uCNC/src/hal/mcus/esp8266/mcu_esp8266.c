@@ -313,10 +313,6 @@ IRAM_ATTR void mcu_itp_isr(void)
 // 	}
 // }
 
-static void mcu_usart_init(void)
-{
-	esp8266_uart_init(BAUDRATE);
-}
 /**
  * initializes the mcu
  * this function needs to:
@@ -332,7 +328,7 @@ void mcu_init(void)
 	esp8266_eeprom_init(NVM_STORAGE_SIZE); // 2K Emulated EEPROM
 #endif
 
-	mcu_usart_init();
+	esp8266_uart_init(BAUDRATE);
 
 	// init rtc
 	os_timer_setfn(&esp8266_rtc_timer, (os_timer_func_t *)&mcu_rtc_isr, NULL);
@@ -547,7 +543,7 @@ uint32_t mcu_millis()
 
 uint32_t mcu_micros()
 {
-	return (uint32_t)esp_system_get_time();
+	return (uint32_t)system_get_time();
 }
 
 void esp8266_delay_us(uint16_t delay)
@@ -559,7 +555,7 @@ void esp8266_delay_us(uint16_t delay)
 
 uint32_t mcu_free_micros()
 {
-	return (uint32_t)(esp_system_get_time() % 1000);
+	return (uint32_t)(system_get_time() % 1000);
 }
 
 /**

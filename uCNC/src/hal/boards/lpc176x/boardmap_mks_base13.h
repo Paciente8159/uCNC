@@ -24,6 +24,10 @@ extern "C"
 {
 #endif
 
+#ifndef MCU
+#define MCU MCU_LPC176X
+#endif
+
 #ifndef BOARD_NAME
 #define BOARD_NAME "MKS BASE v1.3"
 #endif

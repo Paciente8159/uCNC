@@ -20,7 +20,7 @@
 #include "../../cnc.h"
 
 #if (KINEMATIC == KINEMATIC_LINEAR_DELTA)
-#include <stdio.h>
+
 #include <math.h>
 
 #define STEPPER0_FACTX (cos(STEPPER0_ANGLE * DEG_RAD_MULT));

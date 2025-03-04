@@ -18,7 +18,7 @@
 */
 
 #include "../cnc.h"
-#include <stdio.h>
+
 #include <string.h>
 #include <stdint.h>
 #include <math.h>
@@ -26,11 +26,6 @@
 
 #ifndef INTERPOLATOR_BUFFER_SIZE
 #define INTERPOLATOR_BUFFER_SIZE 5 // number of windows in the buffer
-#endif
-
-// sets the sample frequency for the Riemann sum integral
-#ifndef INTERPOLATOR_FREQ
-#define INTERPOLATOR_FREQ 100
 #endif
 
 #define INTERPOLATOR_DELTA_T (1.0f / INTERPOLATOR_FREQ)
@@ -617,14 +612,26 @@ void itp_run(void)
 			segm_steps = (uint16_t)(remaining_steps - profile_steps_limit);
 		}
 
-// The DSS (Dynamic Step Spread) algorithm reduces stepper vibration by spreading step distribution at lower speads.
-// This is done by oversampling the Bresenham line algorithm by multiple factors of 2.
-// This way stepping actions fire in different moments in order to reduce vibration caused by the stepper internal mechanics.
-// This works in a similar way to Grbl's AMASS but has a modified implementation to minimize the processing penalty on the ISR and also take less static memory.
-// DSS never loads the step generating ISR with a frequency above half of the absolute maximum frequency
+		// The DSS (Dynamic Step Spread) algorithm reduces stepper vibration by spreading step distribution at lower speads.
+		// This is done by oversampling the Bresenham line algorithm by multiple factors of 2.
+		// This way stepping actions fire in different moments in order to reduce vibration caused by the stepper internal mechanics.
+		// This works in a similar way to Grbl's AMASS but has a modified implementation to minimize the processing penalty on the ISR and also take less static memory.
+		// DSS never loads the step generating ISR with a frequency above half of the absolute maximum frequency
+		float max_step_rate = 1000000.f / g_settings.max_step_rate;
 #if (DSS_MAX_OVERSAMPLING != 0)
 		float dss_speed = MAX(INTERPOLATOR_FREQ, current_speed);
 		uint8_t dss = 0;
+#ifdef ENABLE_PLASMA_THC
+		// plasma THC forces DSS to always be enabled at level 1 at least
+		if (g_settings.laser_mode == PLASMA_THC_MODE)
+		{
+			dss_speed = fast_flt_mul2(dss_speed);
+			// clamp top speed
+			current_speed = fast_flt_mul2(current_speed);
+			current_speed = MIN(current_speed, max_step_rate);
+			dss = 1;
+		}
+#endif
 		while (dss_speed < DSS_CUTOFF_FREQ && dss < DSS_MAX_OVERSAMPLING && segm_steps)
 		{
 			dss_speed = fast_flt_mul2(dss_speed);
@@ -640,11 +647,11 @@ void itp_run(void)
 
 		// completes the segment information (step speed, steps) and updates the block
 		sgm->remaining_steps = segm_steps << dss;
-		dss_speed = MIN(dss_speed, g_settings.max_step_rate);
+		dss_speed = MIN(dss_speed, max_step_rate);
 		mcu_freq_to_clocks(dss_speed, &(sgm->timer_counter), &(sgm->timer_prescaller));
 #else
 		sgm->remaining_steps = segm_steps;
-		current_speed = MIN(current_speed, g_settings.max_step_rate);
+		current_speed = MIN(current_speed, max_step_rate);
 		mcu_freq_to_clocks(MAX(INTERPOLATOR_FREQ, current_speed), &(sgm->timer_counter), &(sgm->timer_prescaller));
 #endif
 
@@ -757,6 +764,7 @@ void itp_stop(void)
 		cnc_set_exec_state(EXEC_UNHOMED);
 	}
 
+	mcu_delay_us(10);
 	io_set_steps(g_settings.step_invert_mask);
 #if TOOL_COUNT > 0
 	if (g_settings.laser_mode)
@@ -784,27 +792,11 @@ void itp_clear(void)
 void itp_get_rt_position(int32_t *position)
 {
 	memcpy(position, itp_rt_step_pos, sizeof(itp_rt_step_pos));
+}
 
-#if STEPPERS_ENCODERS_MASK != 0
-#if (defined(STEP0_ENCODER) && AXIS_TO_STEPPERS > 0)
-	itp_rt_step_pos[0] = encoder_get_position(STEP0_ENCODER);
-#endif
-#if (defined(STEP1_ENCODER) && AXIS_TO_STEPPERS > 1)
-	itp_rt_step_pos[1] = encoder_get_position(STEP1_ENCODER);
-#endif
-#if (defined(STEP2_ENCODER) && AXIS_TO_STEPPERS > 2)
-	itp_rt_step_pos[2] = encoder_get_position(STEP2_ENCODER);
-#endif
-#if (defined(STEP3_ENCODER) && AXIS_TO_STEPPERS > 3)
-	itp_rt_step_pos[3] = encoder_get_position(STEP3_ENCODER);
-#endif
-#if (defined(STEP4_ENCODER) && AXIS_TO_STEPPERS > 4)
-	itp_rt_step_pos[4] = encoder_get_position(STEP4_ENCODER);
-#endif
-#if (defined(STEP5_ENCODER) && AXIS_TO_STEPPERS > 5)
-	itp_rt_step_pos[5] = encoder_get_position(STEP5_ENCODER);
-#endif
-#endif
+void itp_sync_rt_position(int32_t *position)
+{
+	memcpy(itp_rt_step_pos, position, sizeof(itp_rt_step_pos));
 }
 
 int32_t itp_get_rt_position_index(int8_t index)
@@ -1337,43 +1329,6 @@ MCU_CALLBACK void mcu_step_cb(void)
 	stepbits = new_stepbits;
 #endif
 }
-
-//     void itp_nomotion(uint8_t type, uint16_t delay)
-//     {
-//         while (itp_sgm_is_full())
-//         {
-//             if (!cnc_dotasks())
-//             {
-//                 return;
-//             }
-//         }
-
-//         itp_sgm_data[itp_sgm_data_write].block = NULL;
-//         //clicks every 100ms (10Hz)
-//         if (delay)
-//         {
-//             mcu_freq_to_clocks(10, &(itp_sgm_data[itp_sgm_data_write].timer_counter), &(itp_sgm_data[itp_sgm_data_write].timer_prescaller));
-//         }
-//         else
-//         {
-//             mcu_freq_to_clocks(g_settings.max_step_rate, &(itp_sgm_data[itp_sgm_data_write].timer_counter), &(itp_sgm_data[itp_sgm_data_write].timer_prescaller));
-//         }
-//         itp_sgm_data[itp_sgm_data_write].remaining_steps = MAX(delay, 0);
-//         itp_sgm_data[itp_sgm_data_write].feed = 0;
-//         itp_sgm_data[itp_sgm_data_write].flags = type;
-// #if TOOL_COUNT > 0
-//         if (g_settings.laser_mode)
-//         {
-//             itp_sgm_data[itp_sgm_data_write].spindle = 0;
-//             itp_sgm_data[itp_sgm_data_write].spindle_inv = false;
-//         }
-//         else
-//         {
-//             planner_get_spindle_speed(1, &(itp_sgm_data[itp_sgm_data_write].spindle), &(itp_sgm_data[itp_sgm_data_write].spindle_inv));
-//         }
-// #endif
-//         itp_sgm_buffer_write();
-//     }
 
 void itp_start(bool is_synched)
 {

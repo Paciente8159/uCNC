@@ -174,6 +174,7 @@ extern "C"
 #endif
 
 #define DEG_RAD_MULT 0.0174532925199432958f
+#define RAD_DEG_MULT 57.295779513082320877f
 #define MM_INCH_MULT 0.0393700787401574803f
 #define INCH_MM_MULT 25.4f
 #define MIN_SEC_MULT 0.0166666666666666667f
@@ -233,39 +234,52 @@ extern "C"
 		volatile uint8_t count;
 		volatile uint8_t head;
 		volatile uint8_t tail;
+		uint8_t *data;
+		const uint8_t size;
+		const uint8_t elem_size;
 	} ring_buffer_t;
 
-#define DECL_BUFFER(T, N, S)         \
-	static T N##_bufferdata[S];        \
-	static const uint8_t N##_size = S; \
-	static ring_buffer_t N
+#ifndef USE_MACRO_BUFFER
+#ifndef USE_CUSTOM_BUFFER_IMPLEMENTATION
+#define DECL_BUFFER(type, name, size)  \
+	static type name##_bufferdata[size]; \
+	ring_buffer_t name = {0, 0, 0, name##_bufferdata, size, sizeof(type)}
 
+	uint8_t buffer_write_available(ring_buffer_t *buffer);
+	uint8_t buffer_read_available(ring_buffer_t *buffer);
+	bool buffer_empty(ring_buffer_t *buffer);
+	bool buffer_full(ring_buffer_t *buffer);
+	void buffer_peek(ring_buffer_t *buffer, void *ptr);
+	void buffer_dequeue(ring_buffer_t *buffer, void *ptr);
+	void buffer_enqueue(ring_buffer_t *buffer, void *ptr);
+	void buffer_write(ring_buffer_t *buffer, void *ptr, uint8_t len, uint8_t *written);
+	void buffer_read(ring_buffer_t *buffer, void *ptr, uint8_t len, uint8_t *read);
+	void buffer_clear(ring_buffer_t *buffer);
+
+#define BUFFER_INIT(type, buffer, size)
+#define BUFFER_WRITE_AVAILABLE(buffer) buffer_write_available(&buffer)
+#define BUFFER_READ_AVAILABLE(buffer) buffer_read_available(&buffer)
+#define BUFFER_EMPTY(buffer) buffer_empty(&buffer)
+#define BUFFER_FULL(buffer) buffer_full(&buffer)
+#define BUFFER_PEEK(buffer, ptr) buffer_peek(&buffer, ptr)
+#define BUFFER_DEQUEUE(buffer, ptr) buffer_dequeue(&buffer, ptr)
+#define BUFFER_ENQUEUE(buffer, ptr) buffer_enqueue(&buffer, ptr)
+#define BUFFER_WRITE(buffer, ptr, len, written) buffer_write(&buffer, ptr, len, &written)
+#define BUFFER_READ(buffer, ptr, len, read) buffer_read(&buffer, ptr, len, &read)
+#define BUFFER_CLEAR(buffer) buffer_clear(&buffer)
+#endif
+#else
+#define DECL_BUFFER(type, name, size)      \
+	static type name##_bufferdata[size];     \
+	static const uint8_t name##_size = size; \
+	ring_buffer_t name
+
+#define BUFFER_INIT(type, buffer, size)
 #define BUFFER_WRITE_AVAILABLE(buffer) (buffer##_size - buffer.count)
 #define BUFFER_READ_AVAILABLE(buffer) (buffer.count)
 #define BUFFER_EMPTY(buffer) (!buffer.count)
 #define BUFFER_FULL(buffer) (buffer.count == buffer##_size)
 #define BUFFER_PEEK(buffer) (buffer##_bufferdata[buffer.tail])
-#define BUFFER_REMOVE(buffer)    \
-	{                              \
-		uint8_t tail;                \
-		__ATOMIC__                   \
-		{                            \
-			tail = buffer.tail;        \
-		}                            \
-		if (!BUFFER_EMPTY(buffer))   \
-		{                            \
-			tail++;                    \
-			if (tail >= buffer##_size) \
-			{                          \
-				tail = 0;                \
-			}                          \
-			__ATOMIC__                 \
-			{                          \
-				buffer.tail = tail;      \
-				buffer.count--;          \
-			}                          \
-		}                            \
-	}
 
 #define BUFFER_DEQUEUE(buffer, ptr)                                            \
 	{                                                                            \
@@ -290,28 +304,6 @@ extern "C"
 		}                                                                          \
 	}
 
-#define BUFFER_STORE(buffer)     \
-	{                              \
-		if (!BUFFER_FULL(buffer))    \
-		{                            \
-			uint8_t head;              \
-			__ATOMIC__                 \
-			{                          \
-				head = buffer.head;      \
-			}                          \
-			head++;                    \
-			if (head >= buffer##_size) \
-			{                          \
-				head = 0;                \
-			}                          \
-			__ATOMIC__                 \
-			{                          \
-				buffer.head = head;      \
-				buffer.count++;          \
-			}                          \
-		}                            \
-	}
-
 #define BUFFER_ENQUEUE(buffer, ptr)                                            \
 	{                                                                            \
 		if (!BUFFER_FULL(buffer))                                                  \
@@ -334,7 +326,6 @@ extern "C"
 			}                                                                        \
 		}                                                                          \
 	}
-#define BUFFER_NEXT_FREE(buffer) (&buffer##_bufferdata[buffer.head])
 
 #define BUFFER_WRITE(buffer, ptr, len, written) ({                                             \
 	uint8_t count, head;                                                                         \
@@ -421,28 +412,30 @@ extern "C"
 	}                                                                                            \
 })
 
-#define BUFFER_CLEAR(buffer)      \
-	{                               \
-		__ATOMIC__                    \
-		{                             \
-			buffer##_bufferdata[0] = 0; \
-			buffer.tail = 0;            \
-			buffer.head = 0;            \
-			buffer.count = 0;           \
-		}                             \
+#define BUFFER_CLEAR(buffer)          \
+	{                                   \
+			__ATOMIC__{                     \
+					buffer##_bufferdata[0] = 0; \
+	buffer.tail = 0;                    \
+	buffer.head = 0;                    \
+	buffer.count = 0;                   \
+	}                                   \
 	}
+#endif
 
-#define __TIMEOUT_US__(timeout) for (int32_t elap_us_##timeout, curr_us_##timeout = mcu_free_micros(); ((int32_t)timeout) >= 0; elap_us_##timeout = mcu_free_micros() - curr_us_##timeout, timeout -= ABS(elap_us_##timeout), curr_us_##timeout = mcu_free_micros())
-#define __TIMEOUT_MS__(timeout) \
-	timeout *= 1000;              \
+#define __TIMEOUT_US__(timeout) for (uint32_t elap_us_##timeout, curr_us_##timeout = mcu_free_micros(); timeout > 0; elap_us_##timeout = mcu_free_micros() - curr_us_##timeout, timeout -= MIN(timeout, ((elap_us_##timeout<1000) ? elap_us_##timeout : 1000 + elap_us_##timeout)), curr_us_##timeout = mcu_free_micros())
+#define __TIMEOUT_MS__(timeout)                                                           \
+	timeout = (((uint32_t)timeout) < (UINT32_MAX / 1000)) ? (timeout * 1000) : UINT32_MAX; \
 	__TIMEOUT_US__(timeout)
-#define __TIMEOUT_ASSERT__(timeout) if (((int32_t)timeout) < 0)
+#define __TIMEOUT_ASSERT__(timeout) if (timeout == 0)
 
 #if defined(__GNUC__) && __GNUC__ >= 7
 #define __FALL_THROUGH__ __attribute__((fallthrough));
 #else
 #define __FALL_THROUGH__
 #endif /* __GNUC__ >= 7 */
+
+#define TOUPPER(c) ((c >= 'a' && c <= 'z') ? (c - 32) : c)
 
 #ifdef __cplusplus
 }

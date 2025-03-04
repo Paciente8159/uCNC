@@ -16,17 +16,32 @@
 	See the	GNU General Public License for more details.
 */
 
-#ifndef BOARDMAP_MKS_ROBIN_NANO_V12_H
-#define BOARDMAP_MKS_ROBIN_NANO_V12_H
+#ifndef BOARDMAP_SKR_PRO_V12_H
+#define BOARDMAP_SKR_PRO_V12_H
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
+#ifndef MCU
+#define MCU MCU_STM32F4X
+#endif
+
 #ifndef BOARD_NAME
 #define BOARD_NAME "SKR Pro 1.2"
 #endif
+
+// custom clocks setup
+#define CUSTOM_CLOCKS_INIT
+#ifndef HSE_VALUE
+#define HSE_VALUE 8000000UL
+#endif
+#define PLL_M (HSE_VALUE / 1000000)
+#define PLL_N 336
+#define PLL_P 2
+#define PLL_Q 7
+#define FLASH_LATENCY 5
 
 // Setup COM pins
 // #define UART_PORT 3
@@ -142,8 +157,8 @@ extern "C"
 #define SERVO_TIMER 5
 
 // activity led
-#define DOUT32_BIT 7
-#define DOUT32_PORT A
+#define DOUT31_BIT 7
+#define DOUT31_PORT A
 
 // TMC0 UART
 #define DOUT20_BIT 4
@@ -227,7 +242,7 @@ extern "C"
 #define DIN18_PORT G
 #define DIN18_PULLUP
 
-#define ONESHOT_TIMER 3
+#define ONESHOT_TIMER 4
 
 #ifdef __cplusplus
 }

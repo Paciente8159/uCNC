@@ -33,20 +33,29 @@ extern "C"
 #include "avr/mcumap_avr.h"
 #endif
 
+#if (MCU == MCU_STM32F0X)
+#include "stm32f0x/mcumap_stm32f0x.h"
+#define CFG_TUSB_MCU OPT_MCU_STM32F0
+#endif
+
 #if (MCU == MCU_STM32F1X)
 #include "stm32f1x/mcumap_stm32f1x.h"
+#define CFG_TUSB_MCU OPT_MCU_STM32F1
 #endif
 
 #if (MCU == MCU_STM32F4X)
 #include "stm32f4x/mcumap_stm32f4x.h"
+#define CFG_TUSB_MCU OPT_MCU_STM32F4
 #endif
 
 #if (MCU == MCU_SAMD21)
 #include "samd21/mcumap_samd21.h"
+#define CFG_TUSB_MCU OPT_MCU_SAMD21
 #endif
 
 #if (MCU == MCU_LPC176X)
 #include "lpc176x/mcumap_lpc176x.h"
+#define CFG_TUSB_MCU OPT_MCU_LPC175X_6X
 #endif
 
 #if (MCU == MCU_ESP8266)
@@ -61,6 +70,13 @@ extern "C"
 #include "rp2040/mcumap_rp2040.h"
 #ifndef CFG_TUSB_MCU
 #define CFG_TUSB_MCU OPT_MCU_RP2040
+#endif
+#endif
+
+#if (MCU == MCU_RP2350)
+#include "rp2350/mcumap_rp2350.h"
+#ifndef CFG_TUSB_MCU
+#define CFG_TUSB_MCU OPT_MCU_RP2350
 #endif
 #endif
 

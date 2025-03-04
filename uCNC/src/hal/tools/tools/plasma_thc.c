@@ -19,7 +19,7 @@
 #include <math.h>
 #include <float.h>
 #include <stdint.h>
-#include <stdio.h>
+
 
 #include "../../../cnc.h"
 
@@ -124,10 +124,11 @@ uint8_t __attribute__((weak)) plasma_thc_vad_active(void)
 	float feed = fast_flt_sqrt(p->feed_sqr) * p->feed_conversion;
 	float current_feed = itp_get_rt_feed();
 	float ratio = current_feed / feed;
-	if (ratio < plasma_start_params.vad){
+	if (ratio < plasma_start_params.vad)
+	{
 		return PLASMA_THC_VAD_ACTIVE;
 	}
-	
+
 	return 0;
 }
 
@@ -427,56 +428,57 @@ static void pid_update(void)
 }
 
 // uses similar status to grblhal
-bool plasma_protocol_send_status(void *args)
+bool plasma_proto_status(void *args)
 {
 	uint8_t state = plasma_thc_state;
-	
-	protocol_send_string(__romstr__("THC:"));
+
+	proto_print("THC:");
 
 	plasma_thc_extension_send_status();
-	
+
 	if (CHECKFLAG(state, PLASMA_THC_ENABLED))
 	{
-		serial_putc('E');
+		proto_putc('E');
 	}
-	else{
-		serial_putc('*');
+	else
+	{
+		proto_putc('*');
 	}
 	if (CHECKFLAG(state, PLASMA_THC_ACTIVE))
 	{
-		serial_putc('R');
+		proto_putc('R');
 	}
 #if ASSERT_PIN(PLASMA_ON_OUTPUT)
 	if (io_get_output(PLASMA_ON_OUTPUT))
 	{
-		serial_putc('T');
+		proto_putc('T');
 	}
 #endif
 	if (plasma_thc_arc_ok())
 	{
-		serial_putc('A');
+		proto_putc('A');
 	}
 	if (plasma_thc_vad_active())
 	{
-		serial_putc('V');
+		proto_putc('V');
 	}
 	if (plasma_thc_up())
 	{
-		serial_putc('U');
+		proto_putc('U');
 	}
 	if (plasma_thc_down())
 	{
-		serial_putc('D');
+		proto_putc('D');
 	}
 
 	return EVENT_CONTINUE;
 }
 
-CREATE_EVENT_LISTENER(protocol_send_status, plasma_protocol_send_status);
+CREATE_EVENT_LISTENER(proto_status, plasma_proto_status);
 
 DECL_MODULE(plasma_thc)
 {
-	ADD_EVENT_LISTENER(protocol_send_status, plasma_protocol_send_status);
+	ADD_EVENT_LISTENER(proto_status, plasma_proto_status);
 #ifdef ENABLE_PARSER_MODULES
 	ADD_EVENT_LISTENER(gcode_parse, m103_parse);
 	ADD_EVENT_LISTENER(gcode_exec, m103_exec);
@@ -486,12 +488,16 @@ DECL_MODULE(plasma_thc)
 #endif
 }
 
+static bool previous_mode;
+
 static void startup_code(void)
 {
 // force plasma off
 #if ASSERT_PIN(PLASMA_ON_OUTPUT)
 	io_clear_output(PLASMA_ON_OUTPUT);
 #endif
+	previous_mode = g_settings.laser_mode;
+	g_settings.laser_mode = PLASMA_THC_MODE;
 }
 
 static void shutdown_code(void)
@@ -500,6 +506,7 @@ static void shutdown_code(void)
 #if ASSERT_PIN(PLASMA_ON_OUTPUT)
 	io_clear_output(PLASMA_ON_OUTPUT);
 #endif
+	g_settings.laser_mode = previous_mode;
 }
 
 static void set_speed(int16_t value)

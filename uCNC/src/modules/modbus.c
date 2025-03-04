@@ -64,11 +64,13 @@ void send_request(modbus_request_t request, uint8_t len, softuart_port_t *port)
 	request.crc = crc16(data, len);
 
 #ifdef ENABLE_MODBUS_VERBOSE
-	protocol_send_string(MSG_START);
-	protocol_send_string(__romstr__("MODBUS-OUT"));
-	serial_print_bytes((uint8_t *)&request, len);
-	serial_print_bytes((uint8_t *)&(request.crc), 2);
-	protocol_send_string(MSG_END);
+	proto_print(MSG_FEEDBACK_START "MODBUS-OUT");
+	for (uint8_t i = 0; i < len; i++)
+	{
+		proto_printf("%x", ((uint8_t *)&request)[i]);
+	}
+	proto_printf("%lx", request.crc);
+	proto_print(MSG_FEEDBACK_END);
 #endif
 
 	while (len--)
@@ -100,10 +102,12 @@ bool read_response(modbus_response_t *response, uint8_t len, softuart_port_t *po
 	} while ((c >= 0) && (count < len));
 
 #ifdef ENABLE_MODBUS_VERBOSE
-	protocol_send_string(MSG_START);
-	protocol_send_string(__romstr__("MODBUS-IN"));
-	serial_print_bytes((uint8_t *)response, count);
-	protocol_send_string(MSG_END);
+	proto_print(MSG_FEEDBACK_START "MODBUS-IN");
+	for (uint8_t i = 0; i < count; i++)
+	{
+		proto_printf("%x", response[i]);
+	}
+	proto_print(MSG_FEEDBACK_END);
 #endif
 	// minimum message length
 	if (count < 6)

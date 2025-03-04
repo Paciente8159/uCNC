@@ -102,55 +102,41 @@ extern "C"
 #include "../../../cnc.h"
 
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
-	uint8_t mcu_custom_grbl_cmd(uint8_t *grbl_cmd_str, uint8_t grbl_cmd_len, uint8_t next_char)
+	bool mcu_custom_grbl_cmd(void *args)
 	{
-		uint8_t str[64];
-		uint8_t arg[ARG_MAX_LEN];
-		uint8_t has_arg = (next_char == '=');
+		grbl_cmd_args_t *cmd_params = (grbl_cmd_args_t *)args;
+		char arg[ARG_MAX_LEN];
+		uint8_t has_arg = (cmd_params->next_char == '=');
 		memset(arg, 0, sizeof(arg));
-		if (has_arg)
-		{
-			uint8_t c = serial_getc();
-			uint8_t i = 0;
-			while (c)
-			{
-				arg[i++] = c;
-				if (i >= ARG_MAX_LEN)
-				{
-					return STATUS_INVALID_STATEMENT;
-				}
-				c = serial_getc();
-			}
-		}
 
 #ifdef ENABLE_BLUETOOTH
-		if (!strncmp((const char *)grbl_cmd_str, "BTH", 3))
+		if (!strncmp((const char *)(cmd_params->cmd), "BTH", 3))
 		{
-			if (!strcmp((const char *)&grbl_cmd_str[3], "ON"))
+			if (!strcmp((const char *)&(cmd_params->cmd)[3], "ON"))
 			{
 				SerialBT.begin(BOARD_NAME);
-				protocol_send_feedback("Bluetooth enabled");
+				proto_info("Bluetooth enabled");
 				bt_on = 1;
 				settings_save(bt_settings_offset, &bt_on, 1);
-
-				return STATUS_OK;
+				*(cmd_params->error) = STATUS_OK;
+				return EVENT_HANDLED;
 			}
 
-			if (!strcmp((const char *)&grbl_cmd_str[3], "OFF"))
+			if (!strcmp((const char *)&(cmd_params->cmd)[3], "OFF"))
 			{
 				SerialBT.end();
-				protocol_send_feedback("Bluetooth disabled");
+				proto_info("Bluetooth disabled");
 				bt_on = 0;
 				settings_save(bt_settings_offset, &bt_on, 1);
-
-				return STATUS_OK;
+				*(cmd_params->error) = STATUS_OK;
+				return EVENT_HANDLED;
 			}
 		}
 #endif
 #ifdef ENABLE_WIFI
-		if (!strncmp((const char *)grbl_cmd_str, "WIFI", 4))
+		if (!strncmp((const char *)(cmd_params->cmd), "WIFI", 4))
 		{
-			if (!strcmp((const char *)&grbl_cmd_str[4], "ON"))
+			if (!strcmp((const char *)&(cmd_params->cmd)[4], "ON"))
 			{
 				WiFi.disconnect();
 				switch (wifi_settings.wifi_mode)
@@ -158,106 +144,121 @@ extern "C"
 				case 1:
 					WiFi.mode(WIFI_STA);
 					WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
-					protocol_send_feedback("Trying to connect to WiFi");
+					proto_info("Trying to connect to WiFi");
 					break;
 				case 2:
 					WiFi.mode(WIFI_AP);
 					WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
-					protocol_send_feedback("AP started");
-					protocol_send_feedback("SSID>" BOARD_NAME);
-					sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
-					protocol_send_feedback((const char *)str);
+					proto_info("AP started");
+					proto_info("SSID>" BOARD_NAME);
+					proto_info("IP>%s", WiFi.softAPIP().toString().c_str());
 					break;
 				default:
 					WiFi.mode(WIFI_AP_STA);
 					WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
-					protocol_send_feedback("Trying to connect to WiFi");
+					proto_info("Trying to connect to WiFi");
 					WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
-					protocol_send_feedback("AP started");
-					protocol_send_feedback("SSID>" BOARD_NAME);
-					sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
-					protocol_send_feedback((const char *)str);
+					proto_info("AP started");
+					proto_info("SSID>" BOARD_NAME);
+					proto_info("IP>%s", WiFi.softAPIP().toString().c_str());
 					break;
 				}
 
 				wifi_settings.wifi_on = 1;
 				settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
-				return STATUS_OK;
+				*(cmd_params->error) = STATUS_OK;
+				return EVENT_HANDLED;
 			}
 
-			if (!strcmp((const char *)&grbl_cmd_str[4], "OFF"))
+			if (!strcmp((const char *)&(cmd_params->cmd)[4], "OFF"))
 			{
 				WiFi.disconnect();
 				wifi_settings.wifi_on = 0;
 				settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
-				return STATUS_OK;
+				*(cmd_params->error) = STATUS_OK;
+				return EVENT_HANDLED;
 			}
 
-			if (!strcmp((const char *)&grbl_cmd_str[4], "SSID"))
+			if (!strcmp((const char *)&(cmd_params->cmd)[4], "SSID"))
 			{
 				if (has_arg)
 				{
-					uint8_t len = strlen((const char *)arg);
+					int8_t len = parser_get_grbl_cmd_arg(arg, ARG_MAX_LEN);
+
+					if (len < 0)
+					{
+						*(cmd_params->error) = STATUS_INVALID_STATEMENT;
+						return EVENT_HANDLED;
+					}
+
 					if (len > WIFI_SSID_MAX_LEN)
 					{
-						protocol_send_feedback("WiFi SSID is too long");
+						proto_info("WiFi SSID is too long");
 					}
 					memset(wifi_settings.ssid, 0, sizeof(wifi_settings.ssid));
 					strcpy((char *)wifi_settings.ssid, (const char *)arg);
 					settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
-					protocol_send_feedback("WiFi SSID modified");
+					proto_info("WiFi SSID modified");
 				}
 				else
 				{
-					sprintf((char *)str, "SSID>%s", wifi_settings.ssid);
-					protocol_send_feedback((const char *)str);
+					proto_info("SSID>%s", wifi_settings.ssid);
 				}
-				return STATUS_OK;
+				*(cmd_params->error) = STATUS_OK;
+				return EVENT_HANDLED;
 			}
 
-			if (!strcmp((const char *)&grbl_cmd_str[4], "SCAN"))
+			if (!strcmp((const char *)&(cmd_params->cmd)[4], "SCAN"))
 			{
 				// Serial.println("[MSG:Scanning Networks]");
-				protocol_send_feedback("Scanning Networks");
+				proto_info("Scanning Networks");
 				int numSsid = WiFi.scanNetworks();
 				if (numSsid == -1)
 				{
-					protocol_send_feedback("Failed to scan!");
-					while (true)
-						;
+					proto_info("Failed to scan!");
+					return EVENT_HANDLED;
 				}
 
 				// print the list of networks seen:
-				sprintf((char *)str, "%d available networks", numSsid);
-				protocol_send_feedback((const char *)str);
+				proto_info("%d available networks", numSsid);
 
 				// print the network number and name for each network found:
 				for (int netid = 0; netid < numSsid; netid++)
 				{
-					sprintf((char *)str, "%d) %s\tSignal:  %ddBm", netid, WiFi.SSID(netid).c_str(), WiFi.RSSI(netid));
-					protocol_send_feedback((const char *)str);
+					proto_info("%d) %s\tSignal:  %ddBm", netid, WiFi.SSID(netid).c_str(), WiFi.RSSI(netid));
 				}
-				return STATUS_OK;
+				*(cmd_params->error) = STATUS_OK;
+				return EVENT_HANDLED;
 			}
 
-			if (!strcmp((const char *)&grbl_cmd_str[4], "SAVE"))
+			if (!strcmp((const char *)&(cmd_params->cmd)[4], "SAVE"))
 			{
 				settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
-				protocol_send_feedback("WiFi settings saved");
-				return STATUS_OK;
+				proto_info("WiFi settings saved");
+				*(cmd_params->error) = STATUS_OK;
+				return EVENT_HANDLED;
 			}
 
-			if (!strcmp((const char *)&grbl_cmd_str[4], "RESET"))
+			if (!strcmp((const char *)&(cmd_params->cmd)[4], "RESET"))
 			{
 				settings_erase(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
-				protocol_send_feedback("WiFi settings deleted");
-				return STATUS_OK;
+				proto_info("WiFi settings deleted");
+				*(cmd_params->error) = STATUS_OK;
+				return EVENT_HANDLED;
 			}
 
-			if (!strcmp((const char *)&grbl_cmd_str[4], "MODE"))
+			if (!strcmp((const char *)&(cmd_params->cmd)[4], "MODE"))
 			{
 				if (has_arg)
 				{
+					int8_t len = parser_get_grbl_cmd_arg(arg, ARG_MAX_LEN);
+
+					if (len < 0)
+					{
+						*(cmd_params->error) = STATUS_INVALID_STATEMENT;
+						return EVENT_HANDLED;
+					}
+
 					int mode = atoi((const char *)arg) - 1;
 					if (mode >= 0)
 					{
@@ -265,71 +266,78 @@ extern "C"
 					}
 					else
 					{
-						protocol_send_feedback("Invalid value. STA+AP(1), STA(2), AP(3)");
+						proto_info("Invalid value. STA+AP(1), STA(2), AP(3)");
 					}
 				}
 
 				switch (wifi_settings.wifi_mode)
 				{
 				case 0:
-					protocol_send_feedback("WiFi mode>STA+AP");
+					proto_info("WiFi mode>STA+AP");
 					break;
 				case 1:
-					protocol_send_feedback("WiFi mode>STA");
+					proto_info("WiFi mode>STA");
 					break;
 				case 2:
-					protocol_send_feedback("WiFi mode>AP");
+					proto_info("WiFi mode>AP");
 					break;
 				}
-				return STATUS_OK;
+				*(cmd_params->error) = STATUS_OK;
+				return EVENT_HANDLED;
 			}
 
-			if (!strcmp((const char *)&grbl_cmd_str[4], "PASS") && has_arg)
+			if (!strcmp((const char *)&(cmd_params->cmd)[4], "PASS") && has_arg)
 			{
-				uint8_t len = strlen((const char *)arg);
+				int8_t len = parser_get_grbl_cmd_arg(arg, ARG_MAX_LEN);
+
+				if (len < 0)
+				{
+					*(cmd_params->error) = STATUS_INVALID_STATEMENT;
+					return EVENT_HANDLED;
+				}
 				if (len > WIFI_SSID_MAX_LEN)
 				{
-					protocol_send_feedback("WiFi pass is too long");
+					proto_info("WiFi pass is too long");
 				}
 				memset(wifi_settings.pass, 0, sizeof(wifi_settings.pass));
 				strcpy((char *)wifi_settings.pass, (const char *)arg);
-				protocol_send_feedback("WiFi password modified");
-				return STATUS_OK;
+				proto_info("WiFi password modified");
+				*(cmd_params->error) = STATUS_OK;
+				return EVENT_HANDLED;
 			}
 
-			if (!strcmp((const char *)&grbl_cmd_str[4], "IP"))
+			if (!strcmp((const char *)&(cmd_params->cmd)[4], "IP"))
 			{
 				if (wifi_settings.wifi_on)
 				{
 					switch (wifi_settings.wifi_mode)
 					{
 					case 1:
-						sprintf((char *)str, "IP>%s", WiFi.localIP().toString().c_str());
-						protocol_send_feedback((const char *)str);
+						proto_info("IP>%s", WiFi.localIP().toString().c_str());
 						break;
 					case 2:
-						sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
-						protocol_send_feedback((const char *)str);
+						proto_info("IP>%s", WiFi.softAPIP().toString().c_str());
 						break;
 					default:
-						sprintf((char *)str, "STA IP>%s", WiFi.localIP().toString().c_str());
-						protocol_send_feedback((const char *)str);
-						sprintf((char *)str, "AP IP>%s", WiFi.softAPIP().toString().c_str());
-						protocol_send_feedback((const char *)str);
+						proto_info("STA IP>%s", WiFi.localIP().toString().c_str());
+						proto_info("AP IP>%s", WiFi.softAPIP().toString().c_str());
 						break;
 					}
 				}
 				else
 				{
-					protocol_send_feedback("WiFi is off");
+					proto_info("WiFi is off");
 				}
 
-				return STATUS_OK;
+				*(cmd_params->error) = STATUS_OK;
+				return EVENT_HANDLED;
 			}
 		}
 #endif
-		return STATUS_INVALID_STATEMENT;
+		return EVENT_CONTINUE;
 	}
+
+	CREATE_EVENT_LISTENER(grbl_cmd, mcu_custom_grbl_cmd);
 #endif
 
 	bool esp32_wifi_clientok(void)
@@ -337,7 +345,6 @@ extern "C"
 #ifdef ENABLE_WIFI
 		static uint32_t next_info = 30000;
 		static bool connected = false;
-		uint8_t str[64];
 
 		if (!wifi_settings.wifi_on)
 		{
@@ -352,18 +359,16 @@ extern "C"
 				return false;
 			}
 			next_info = mcu_millis() + 30000;
-			protocol_send_feedback("Disconnected from WiFi");
+			proto_info("Disconnected from WiFi");
 			return false;
 		}
 
 		if (!connected)
 		{
 			connected = true;
-			protocol_send_feedback("Connected to WiFi");
-			sprintf((char *)str, "SSID>%s", wifi_settings.ssid);
-			protocol_send_feedback((const char *)str);
-			sprintf((char *)str, "IP>%s", WiFi.localIP().toString().c_str());
-			protocol_send_feedback((const char *)str);
+			proto_info("Connected to WiFi");
+			proto_info("SSID>%s", wifi_settings.ssid);
+			proto_info("IP>%s", WiFi.localIP().toString().c_str());
 		}
 
 		if (telnet_server.hasClient())
@@ -390,14 +395,13 @@ extern "C"
 		return false;
 	}
 
-#if defined(ENABLE_WIFI) && defined(MCU_HAS_ENDPOINTS)
+#if defined(MCU_HAS_WIFI) && defined(MCU_HAS_ENDPOINTS)
 
-#include "../../../modules/endpoint.h"
 #define MCU_FLASH_FS_LITTLE_FS 1
 #define MCU_FLASH_FS_SPIFFS 2
 
 #ifndef MCU_FLASH_FS
-#define MCU_FLASH_FS MCU_FLASH_FS_SPIFFS
+#define MCU_FLASH_FS MCU_FLASH_FS_LITTLE_FS
 #endif
 
 #if (MCU_FLASH_FS == MCU_FLASH_FS_LITTLE_FS)
@@ -410,151 +414,129 @@ extern "C"
 #define FLASH_FS SPIFFS
 #endif
 
-	void fs_file_updater()
+/**
+ * Implements the function calls for the file system C wrapper
+ */
+#include "../../../modules/file_system.h"
+#define fileptr_t(ptr) static_cast<File>(*(reinterpret_cast<File *>(ptr)))
+	fs_t flash_fs;
+
+	int flash_fs_available(fs_file_t *fp)
 	{
-		static File upload_file;
-		if (!web_server.uri().startsWith(FS_URI) || (web_server.method() != HTTP_POST && web_server.method() != HTTP_PUT))
-		{
-			return;
-		}
-
-		String urlpath = String((web_server.uri().substring(FS_URI_LEN).length() != 0) ? web_server.uri().substring(FS_URI_LEN) : "/");
-
-		if (!FLASH_FS.exists(urlpath))
-		{
-			return;
-		}
-
-		HTTPUpload &upload = web_server.upload();
-		if (upload.status == UPLOAD_FILE_START)
-		{
-			if (web_server.method() == HTTP_POST)
-			{
-				if (!urlpath.endsWith("/"))
-				{
-					urlpath.concat("/");
-				}
-
-				urlpath.concat(upload.filename);
-			}
-			upload_file = FLASH_FS.open(urlpath, "w");
-		}
-		else if (upload.status == UPLOAD_FILE_WRITE)
-		{
-			if (upload_file)
-			{
-				upload_file.write(upload.buf, upload.currentSize);
-			}
-		}
-		else if (upload.status == UPLOAD_FILE_END)
-		{
-			if (upload_file)
-			{
-				upload_file.close();
-			}
-		}
+		return fileptr_t(fp->file_ptr).available();
 	}
 
-	void fs_file_browser()
+	void flash_fs_close(fs_file_t *fp)
 	{
-		File fp;
-		char path[256];
-
-		// updated page
-		if (web_server.hasArg("update") && web_server.method() == HTTP_GET)
-		{
-			web_server.sendHeader("Content-Encoding", "gzip");
-			web_server.send_P(200, __romstr__("text/html"), fs_write_page, FS_WRITE_GZ_SIZE);
-			return;
-		}
-
-		String urlpath = String((web_server.uri().substring(FS_URI_LEN).length() != 0) ? web_server.uri().substring(FS_URI_LEN) : "/");
-
-		if (!FLASH_FS.exists(urlpath))
-		{
-			endpoint_send(404, "application/json", "{\"result\":\"notfound\"}");
-			return;
-		}
-
-		fp = FLASH_FS.open(urlpath, "r");
-
-		switch (web_server.method())
-		{
-		case HTTP_DELETE:
-			if (fp.isDirectory())
-			{
-				FLASH_FS.rmdir(urlpath);
-			}
-			else
-			{
-				FLASH_FS.remove(urlpath);
-			}
-			__FALL_THROUGH__
-		case HTTP_PUT:
-		case HTTP_POST:
-			if (web_server.hasArg("redirect"))
-			{
-				memset(path, 0, 256);
-				web_server.sendHeader("Location", web_server.arg("redirect"));
-				sprintf(path, "{\"redirect\":\"%s\"}", web_server.arg("redirect").c_str());
-				web_server.send(303, "application/json", path);
-			}
-			else
-			{
-				endpoint_send(200, "application/json", "{\"result\":\"ok\"}");
-			}
-
-			break;
-		default: // handle as get
-			if (fp.isDirectory())
-			{
-				// start chunck transmition;
-				endpoint_request_uri(path, 256);
-				endpoint_send(200, "application/json", NULL);
-				endpoint_send(200, "application/json", "{\"result\":\"ok\",\"path\":\"");
-				endpoint_send(200, "application/json", path);
-				endpoint_send(200, "application/json", "\",\"data\":[");
-				File file = fp.openNextFile();
-
-				while (file)
-				{
-					memset(path, 0, 256);
-					if (file.isDirectory())
-					{
-						sprintf(path, "{\"type\":\"dir\",\"name\":\"%s\",\"attr\":%d},", file.name(), 0);
-					}
-					else
-					{
-						sprintf(path, "{\"type\":\"file\",\"name\":\"%s\",\"attr\":0,\"size\":%lu,\"date\":0}", file.name(), (unsigned long int)file.size());
-					}
-
-					file = fp.openNextFile();
-					if (file)
-					{
-						// trailling comma
-						path[strlen(path)] = ',';
-					}
-					endpoint_send(200, "application/json", path);
-				}
-				endpoint_send(200, "application/json", "]}\n");
-				// close the stream
-				endpoint_send(200, "application/json", "");
-			}
-			else
-			{
-				web_server.streamFile(fp, "application/octet-stream");
-			}
-			break;
-		}
-
-		fp.close();
+		fileptr_t(fp->file_ptr).close();
 	}
 
+	bool flash_fs_remove(const char *path)
+	{
+		return FLASH_FS.remove(path);
+	}
+
+	bool flash_fs_next_file(fs_file_t *fp, fs_file_info_t *finfo)
+	{
+		File f = ((File *)fp->file_ptr)->openNextFile();
+		if (!f || !finfo)
+		{
+			return false;
+		}
+		memset(finfo->full_name, 0, sizeof(finfo->full_name));
+		strncpy(finfo->full_name, f.name(), (FS_PATH_NAME_MAX_LEN - strlen(f.name())));
+		finfo->is_dir = f.isDirectory();
+		finfo->size = f.size();
+		finfo->timestamp = f.getLastWrite();
+		f.close();
+		return true;
+	}
+
+	size_t flash_fs_read(fs_file_t *fp, uint8_t *buffer, size_t len)
+	{
+		return fileptr_t(fp->file_ptr).read(buffer, len);
+	}
+
+	size_t flash_fs_write(fs_file_t *fp, const uint8_t *buffer, size_t len)
+	{
+		return fileptr_t(fp->file_ptr).write(buffer, len);
+	}
+
+	bool flash_fs_info(const char *path, fs_file_info_t *finfo)
+	{
+		File f = FLASH_FS.open(path, "r");
+		if (f && finfo)
+		{
+			memset(finfo->full_name, 0, sizeof(finfo->full_name));
+			strncpy(finfo->full_name, f.name(), (FS_PATH_NAME_MAX_LEN - strlen(f.name())));
+			finfo->is_dir = f.isDirectory();
+			finfo->size = f.size();
+			finfo->timestamp = (uint32_t)f.getLastWrite();
+			f.close();
+			return true;
+		}
+
+		return false;
+	}
+
+	fs_file_t *flash_fs_open(const char *path, const char *mode)
+	{
+		fs_file_t *fp = (fs_file_t *)calloc(1, sizeof(fs_file_t));
+		if (fp)
+		{
+			fp->file_ptr = calloc(1, sizeof(File));
+			if (fp->file_ptr)
+			{
+				*(static_cast<File *>(fp->file_ptr)) = FLASH_FS.open(path, mode);
+				if (*(static_cast<File *>(fp->file_ptr)))
+				{
+					memset(fp->file_info.full_name, 0, sizeof(fp->file_info.full_name));
+					fp->file_info.full_name[0] = '/';
+					fp->file_info.full_name[1] = flash_fs.drive;
+					fp->file_info.full_name[2] = '/';
+					strncat(fp->file_info.full_name, ((File *)fp->file_ptr)->name(), FS_PATH_NAME_MAX_LEN - 3);
+					fp->file_info.is_dir = ((File *)fp->file_ptr)->isDirectory();
+					fp->file_info.size = ((File *)fp->file_ptr)->size();
+					fp->file_info.timestamp = (uint32_t)((File *)fp->file_ptr)->getLastWrite();
+					fp->fs_ptr = &flash_fs;
+					return fp;
+				}
+				fs_safe_free(fp->file_ptr);
+			}
+			fs_safe_free(fp);
+		}
+		return NULL;
+	}
+
+	fs_file_t *flash_fs_opendir(const char *path)
+	{
+		return flash_fs_open(path, "r");
+	}
+
+	bool flash_fs_seek(fs_file_t *fp, uint32_t position)
+	{
+		return fp->fs_ptr->seek(fp, position);
+	}
+
+	bool flash_fs_mkdir(const char *path)
+	{
+		return FLASH_FS.mkdir(path);
+	}
+
+	bool flash_fs_rmdir(const char *path)
+	{
+		return FLASH_FS.rmdir(path);
+	}
+
+/**
+ * Implements the function calls for the enpoints C wrapper
+ */
+#include "../../../modules/endpoint.h"
 	void endpoint_add(const char *uri, uint8_t method, endpoint_delegate request_handler, endpoint_delegate file_handler)
 	{
 		if (!method)
 		{
-			method = 255;
+			method = HTTP_ANY;
 		}
 
 		String s = String(uri);
@@ -590,10 +572,10 @@ extern "C"
 		return true;
 	}
 
-	void endpoint_send(int code, const char *content_type, const char *data)
+	void endpoint_send(int code, const char *content_type, const uint8_t *data, size_t data_len)
 	{
 		static uint8_t in_chuncks = 0;
-		if (!data)
+		if (!content_type)
 		{
 			in_chuncks = 1;
 			web_server.setContentLength(CONTENT_LENGTH_UNKNOWN);
@@ -606,11 +588,19 @@ extern "C"
 				in_chuncks = 2;
 				__FALL_THROUGH__
 			case 0:
-				web_server.send(code, content_type, data);
+				web_server.send(code, content_type, (const char *)data);
 				break;
 			default:
-				web_server.sendContent(data);
-				in_chuncks = strlen(data) ? 2 : 0;
+				if (data)
+				{
+					web_server.sendContent((char *)data, data_len);
+					in_chuncks = 2;
+				}
+				else
+				{
+					web_server.sendContent("");
+					in_chuncks = 0;
+				}
 				break;
 			}
 		}
@@ -636,7 +626,7 @@ extern "C"
 	endpoint_upload_t endpoint_file_upload_status(void)
 	{
 		HTTPUpload &upload = web_server.upload();
-		endpoint_upload_t status = {.status=(uint8_t)upload.status, .data = upload.buf, .datalen = upload.currentSize};
+		endpoint_upload_t status = {.status = (uint8_t)upload.status, .data = upload.buf, .datalen = upload.currentSize};
 		return status;
 	}
 
@@ -660,7 +650,7 @@ extern "C"
 	void endpoint_file_upload_name(char *filename, size_t maxlen)
 	{
 		HTTPUpload &upload = web_server.upload();
-		strncpy(filename, upload.filename.c_str(), maxlen);
+		strncat(filename, upload.filename.c_str(), maxlen - strlen(filename));
 	}
 
 #endif
@@ -756,18 +746,36 @@ extern "C"
 #endif
 
 #ifdef ENABLE_WIFI
+
 	void mcu_wifi_task(void *arg)
 	{
 		WiFi.begin();
 		telnet_server.begin();
 		telnet_server.setNoDelay(true);
-#ifndef CUSTOM_OTA_ENDPOINT
-		httpUpdater.setup(&web_server, update_path, update_username, update_password);
+#ifdef MCU_HAS_ENDPOINTS
+		FLASH_FS.begin();
+		flash_fs = {
+				.drive = 'C',
+				.open = flash_fs_open,
+				.read = flash_fs_read,
+				.write = flash_fs_write,
+				.seek = flash_fs_seek,
+				.available = flash_fs_available,
+				.close = flash_fs_close,
+				.remove = flash_fs_remove,
+				.opendir = flash_fs_opendir,
+				.mkdir = flash_fs_mkdir,
+				.rmdir = flash_fs_rmdir,
+				.next_file = flash_fs_next_file,
+				.finfo = flash_fs_info,
+				.next = NULL};
+		fs_mount(&flash_fs);
 #endif
-		FLASH_FS.begin(true, FS_URI);
-		endpoint_add(FS_URI, HTTP_ANY, fs_file_browser, fs_file_updater);
-		endpoint_add(FS_URI "/*", HTTP_ANY, fs_file_browser, fs_file_updater);
+#ifndef CUSTOM_OTA_ENDPOINT
+		httpUpdater.setup(&web_server, OTA_URI, update_username, update_password);
+#endif
 		web_server.begin();
+
 #ifdef MCU_HAS_WEBSOCKETS
 		socket_server.begin();
 		socket_server.onEvent(webSocketEvent);
@@ -776,32 +784,28 @@ extern "C"
 
 		if (wifi_settings.wifi_on)
 		{
-			uint8_t str[64];
-
 			switch (wifi_settings.wifi_mode)
 			{
 			case 1:
 				WiFi.mode(WIFI_STA);
 				WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
-				protocol_send_feedback("Trying to connect to WiFi");
+				proto_info("Trying to connect to WiFi");
 				break;
 			case 2:
 				WiFi.mode(WIFI_AP);
 				WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
-				protocol_send_feedback("AP started");
-				protocol_send_feedback("SSID>" BOARD_NAME);
-				sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
-				protocol_send_feedback((const char *)str);
+				proto_info("AP started");
+				proto_info("SSID>" BOARD_NAME);
+				proto_info("IP>%s", WiFi.softAPIP().toString().c_str());
 				break;
 			default:
 				WiFi.mode(WIFI_AP_STA);
 				WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
-				protocol_send_feedback("Trying to connect to WiFi");
+				proto_info("Trying to connect to WiFi");
 				WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
-				protocol_send_feedback("AP started");
-				protocol_send_feedback("SSID>" BOARD_NAME);
-				sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
-				protocol_send_feedback((const char *)str);
+				proto_info("AP started");
+				proto_info("SSID>" BOARD_NAME);
+				proto_info("IP>%s", WiFi.softAPIP().toString().c_str());
 				break;
 			}
 		}
@@ -836,13 +840,9 @@ extern "C"
 			settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
 		}
 
-		xTaskCreatePinnedToCore(mcu_wifi_task, "wifiTask", 4069, NULL, 1, NULL, CONFIG_ARDUINO_RUNNING_CORE);
+		xTaskCreatePinnedToCore(mcu_wifi_task, "wifiTask", 8192, NULL, 1, NULL, CONFIG_ARDUINO_RUNNING_CORE);
 		// taskYIELD();
 
-// #ifdef MCU_HAS_WEBSOCKETS
-// 		socket_server.begin();
-// 		socket_server.onEvent(webSocketEvent);
-// #endif
 #endif
 #ifdef ENABLE_BLUETOOTH
 		bt_settings_offset = settings_register_external_setting(1);
@@ -855,6 +855,10 @@ extern "C"
 		{
 			SerialBT.begin(BOARD_NAME);
 		}
+#endif
+
+#ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
+		ADD_EVENT_LISTENER(grbl_cmd, mcu_custom_grbl_cmd);
 #endif
 	}
 
@@ -1008,8 +1012,7 @@ extern "C"
 						c = OVF;
 					}
 
-					*(BUFFER_NEXT_FREE(bt_rx)) = c;
-					BUFFER_STORE(bt_rx);
+					BUFFER_ENQUEUE(bt_rx, &c);
 				}
 #else
 				mcu_bt_rx_cb((uint8_t)SerialBT.read());
@@ -1033,8 +1036,7 @@ extern "C"
 						c = OVF;
 					}
 
-					*(BUFFER_NEXT_FREE(wifi_rx)) = c;
-					BUFFER_STORE(wifi_rx);
+					BUFFER_ENQUEUE(wifi_rx, &c);
 				}
 #else
 				mcu_wifi_rx_cb((uint8_t)server_client.read());
@@ -1119,9 +1121,7 @@ extern "C"
 	{
 		if (NVM_STORAGE_SIZE <= address)
 		{
-			DEBUG_STR("EEPROM invalid address @ ");
-			DEBUG_INT(address);
-			DEBUG_PUTC('\n');
+			DBGMSG("EEPROM invalid address @ %u", address);
 			return 0;
 		}
 		return EEPROM.read(address);
@@ -1131,9 +1131,7 @@ extern "C"
 	{
 		if (NVM_STORAGE_SIZE <= address)
 		{
-			DEBUG_STR("EEPROM invalid address @ ");
-			DEBUG_INT(address);
-			DEBUG_PUTC('\n');
+			DBGMSG("EEPROM invalid address @ %u", address);
 		}
 		EEPROM.write(address, value);
 	}
@@ -1142,7 +1140,7 @@ extern "C"
 	{
 		if (!EEPROM.commit())
 		{
-			protocol_send_feedback(" EEPROM write error");
+			proto_info("EEPROM write error");
 		}
 	}
 }
@@ -1151,35 +1149,98 @@ extern "C"
 #if defined(MCU_HAS_SPI) && defined(USE_ARDUINO_SPI_LIBRARY)
 #include <SPI.h>
 SPIClass *esp32spi = NULL;
-uint32_t esp32spifreq = SPI_FREQ;
-uint8_t esp32spimode = SPI_MODE0;
+static uint8_t spi_mode = 0;
+static uint32_t spi_freq = 1000000UL;
 extern "C"
 {
-	void mcu_spi_config(uint8_t mode, uint32_t freq)
-	{
-		if (esp32spi != NULL)
-		{
-			esp32spi->end();
-			esp32spi = NULL;
-		}
 
+	void mcu_spi_init(void)
+	{
 #if (SPI_CLK_BIT == 14 || SPI_CLK_BIT == 25)
 		esp32spi = new SPIClass(HSPI);
 #else
 		esp32spi = new SPIClass(VSPI);
 #endif
-		esp32spi->begin(SPI_CLK_BIT, SPI_SDI_BIT, SPI_SDO_BIT, SPI_CS_BIT);
-		esp32spifreq = freq;
-		esp32spimode = mode;
+		esp32spi->begin(SPI_CLK_BIT, SPI_SDI_BIT, SPI_SDO_BIT, -1);
+	}
+
+	void mcu_spi_config(spi_config_t config, uint32_t freq)
+	{
+		spi_freq = freq;
+		spi_mode = config.mode;
+		esp32spi->setFrequency(freq);
+		esp32spi->setDataMode(config.mode);
 	}
 
 	uint8_t mcu_spi_xmit(uint8_t data)
 	{
+		return esp32spi->transfer(data);
+	}
 
-		esp32spi->beginTransaction(SPISettings(esp32spifreq, MSBFIRST, esp32spimode));
-		data = esp32spi->transfer(data);
+	void mcu_spi_start(spi_config_t config, uint32_t frequency)
+	{
+		esp32spi->beginTransaction(SPISettings(frequency, MSBFIRST, config.mode));
+	}
+
+	bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
+	{
+		esp32spi->transferBytes(out, in, len);
+		return false;
+	}
+
+	void mcu_spi_stop(void)
+	{
 		esp32spi->endTransaction();
-		return data;
+	}
+}
+
+#endif
+
+#if defined(MCU_HAS_SPI2) && defined(USE_ARDUINO_SPI_LIBRARY)
+#include <SPI.h>
+SPIClass *esp32spi2 = NULL;
+static uint8_t spi2_mode = 0;
+static uint32_t spi2_freq = 1000000UL;
+extern "C"
+{
+
+	void mcu_spi2_init(void)
+	{
+#if (SPI2_CLK_BIT == 14 || SPI2_CLK_BIT == 25)
+		esp32spi2 = new SPIClass(HSPI);
+#else
+		esp32spi2 = new SPIClass(VSPI);
+#endif
+		esp32spi2->begin(SPI2_CLK_BIT, SPI2_SDI_BIT, SPI2_SDO_BIT, -1);
+	}
+
+	void mcu_spi2_config(spi_config_t config, uint32_t freq)
+	{
+		spi2_freq = freq;
+		spi2_mode = config.mode;
+		esp32spi2->setFrequency(freq);
+		esp32spi2->setDataMode(config.mode);
+	}
+
+	uint8_t mcu_spi2_xmit(uint8_t data)
+	{
+		return esp32spi2->transfer(data);
+	}
+
+	void mcu_spi2_start(spi_config_t config, uint32_t frequency)
+	{
+		esp32spi2->beginTransaction(SPISettings(frequency, MSBFIRST, config.mode));
+	}
+
+	bool mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
+	{
+		esp32spi2->transferBytes(out, in, len);
+		return false;
+	}
+
+	void mcu_spi2_stop(void)
+	{
+		esp32spi2->endTransaction();
 	}
 }
 
