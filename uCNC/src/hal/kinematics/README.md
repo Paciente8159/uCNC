@@ -194,14 +194,15 @@ If you need uint32_t you should store it as a float. You can also use arrays of 
 
 ```
 	/**
-	 * this integrates the variables in the global settings (g_settings struct) API and assigned each setting an ID and the appropriate type
+	 * this integrates the variables in the global settings (global g_settings struct) API and assigned each setting an ID and the appropriate type
 	 * for example to access my_kynematic_var1 you assign id 28 then you can use command $28= to change it's value
 	 * in the case of an array you assign the id of the first index and all subsequent values allow to access the other array positions
 	 * for example my_kynematic_var3 id is 106. To access my_kynematic_var3[1] you access id 106 + 1 that is $107=
 	 *
 	 * check the types [here](https://github.com/Paciente8159/uCNC/blob/2366e954879c59935c8d9c40f73a8b78f06f2e2c/uCNC/src/interface/grbl_settings.h#L178)
-	 *
-	 *
+	 * Also note that the global g_settings struct expects the ID's to be in the range of 0-255
+	 * All ID's from id 256 and above are managed via the [extended settings API](https://github.com/Paciente8159/uCNC/blob/8d94b616589c538a663df2833017272f4e5ee7ec/uCNC/src/interface/grbl_settings.h#L226)
+   *
 	 */
 	#define KINEMATICS_VARS_SETTINGS_INIT   \
 		{.id = 28, .memptr = &g_settings.my_kynematic_var1, .type = SETTING_TYPE_FLOAT},																			\
