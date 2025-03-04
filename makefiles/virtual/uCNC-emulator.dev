@@ -4,13 +4,13 @@ Name=uCNC-emulator
 Type=1
 Ver=2
 ObjFiles=
-Includes=C:\Users\jcmartins\Downloads\GitHub\uCNC\uCNC;C:\Users\jcmartins\.platformio\packages\toolchain-gccmingw32\i686-w64-mingw32\include\;C:\Users\jcmartins\Downloads\GitHub\uCNC\makefiles\virtual
-Libs=C:\Users\jcmartins\Downloads\GitHub\uCNC\uCNC
+Includes=C:\Users\jcmartins\Downloads\GitHub\uCNC\uCNC;C:\Users\jcmartins\.platformio\packages\toolchain-gccmingw32\i686-w64-mingw32\include\;C:\Users\jcmartins\Downloads\GitHub\uCNC\makefiles\virtual;C:\Users\JCEM\Documents\GitHub\uCNC\uCNC;C:\Users\JCEM\.platformio\packages\toolchain-gccmingw32\i686-w64-mingw32\include\;C:\Users\JCEM\Documents\GitHub\uCNC\makefiles\virtual
+Libs=C:\Users\jcmartins\Downloads\GitHub\uCNC\uCNC;C:\Users\JCEM\Documents\GitHub\uCNC\uCNC
 PrivateResource=
-ResourceIncludes=C:\Users\jcmartins\Downloads\GitHub\uCNC\uCNC
+ResourceIncludes=C:\Users\jcmartins\Downloads\GitHub\uCNC\uCNC;C:\Users\JCEM\Documents\GitHub\uCNC\uCNC
 MakeIncludes=
-Compiler=-DBOARD=BOARD_VIRTUAL_@@_
-CppCompiler=-DBOARD=BOARD_VIRTUAL_@@_
+Compiler=-DMCU=MCU_VIRTUAL_WIN_@@_
+CppCompiler=-DMCU=MCU_VIRTUAL_WIN_@@_
 Linker=-lws2_32_@@_
 IsCpp=1
 Icon=
@@ -29,7 +29,7 @@ IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=1
 CompilerSettings=000000e0g0000000001000000
-UnitCount=89
+UnitCount=94
 
 [VersionInfo]
 Major=1
@@ -400,97 +400,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit39]
-FileName=..\..\uCNC\src\interface\protocol.c
-CompileCpp=1
-Folder=
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
-[Unit40]
-FileName=..\..\uCNC\src\interface\protocol.h
-CompileCpp=1
-Folder=
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
-[Unit41]
-FileName=..\..\uCNC\src\interface\serial.c
-CompileCpp=1
-Folder=
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
 [Unit42]
-FileName=..\..\uCNC\src\interface\serial.h
-CompileCpp=1
-Folder=
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
-[Unit43]
-FileName=..\..\uCNC\src\interface\settings.c
-CompileCpp=1
-Folder=
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
-[Unit44]
-FileName=..\..\uCNC\src\interface\settings.h
-CompileCpp=1
-Folder=
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
-[Unit45]
-FileName=..\..\uCNC\src\hal\io_hal.h
-CompileCpp=1
-Folder=
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
-[Unit46]
-FileName=..\..\uCNC\src\hal\tools\tool.c
-CompileCpp=1
-Folder=
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
-[Unit47]
-FileName=..\..\uCNC\src\hal\tools\tool.h
-CompileCpp=1
-Folder=
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
-[Unit48]
 FileName=..\..\uCNC\src\hal\tools\tool_helper.h
 CompileCpp=1
 Folder=
@@ -500,7 +410,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit49]
+[Unit43]
 FileName=..\..\uCNC\src\hal\tools\tools\laser_ppi.c
 CompileCpp=1
 Folder=
@@ -510,7 +420,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit50]
+[Unit44]
 FileName=..\..\uCNC\src\hal\tools\tools\laser_pwm.c
 CompileCpp=1
 Folder=
@@ -520,7 +430,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit51]
+[Unit45]
 FileName=..\..\uCNC\src\hal\tools\tools\pen_servo.c
 CompileCpp=1
 Folder=
@@ -530,7 +440,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit52]
+[Unit46]
 FileName=..\..\uCNC\src\hal\tools\tools\plasma_thc.c
 CompileCpp=1
 Folder=
@@ -540,7 +450,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit53]
+[Unit47]
 FileName=..\..\uCNC\src\hal\tools\tools\spindle_besc.c
 CompileCpp=1
 Folder=
@@ -550,7 +460,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit54]
+[Unit48]
 FileName=..\..\uCNC\src\hal\tools\tools\spindle_pwm.c
 CompileCpp=1
 Folder=
@@ -560,7 +470,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit55]
+[Unit49]
 FileName=..\..\uCNC\src\hal\tools\tools\spindle_relay.c
 CompileCpp=1
 Folder=
@@ -570,7 +480,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit56]
+[Unit50]
 FileName=..\..\uCNC\src\hal\tools\tools\vfd_modbus.c
 CompileCpp=1
 Folder=
@@ -580,7 +490,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit57]
+[Unit51]
 FileName=..\..\uCNC\src\hal\tools\tools\vfd_pwm.c
 CompileCpp=1
 Folder=
@@ -590,7 +500,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit58]
+[Unit52]
 FileName=..\..\uCNC\src\hal\mcus\mcu.c
 CompileCpp=1
 Folder=
@@ -600,7 +510,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit59]
+[Unit53]
 FileName=..\..\uCNC\src\hal\mcus\mcu.h
 CompileCpp=1
 Folder=
@@ -610,7 +520,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit60]
+[Unit54]
 FileName=..\..\uCNC\src\hal\mcus\mcudefs.h
 CompileCpp=1
 Folder=
@@ -620,7 +530,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit61]
+[Unit55]
 FileName=..\..\uCNC\src\hal\mcus\mcus.h
 CompileCpp=1
 Folder=
@@ -630,7 +540,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit62]
+[Unit56]
 FileName=..\..\uCNC\src\hal\mcus\virtual\mcumap_virtual.h
 CompileCpp=1
 Folder=
@@ -640,7 +550,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit63]
+[Unit57]
 FileName=..\..\uCNC\src\hal\kinematics\kinematic.c
 CompileCpp=1
 Folder=
@@ -650,7 +560,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit64]
+[Unit58]
 FileName=..\..\uCNC\src\hal\kinematics\kinematic.h
 CompileCpp=1
 Folder=
@@ -660,7 +570,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit65]
+[Unit59]
 FileName=..\..\uCNC\src\hal\kinematics\kinematic_cartesian.c
 CompileCpp=1
 Folder=
@@ -670,7 +580,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit66]
+[Unit60]
 FileName=..\..\uCNC\src\hal\kinematics\kinematic_cartesian.h
 CompileCpp=1
 Folder=
@@ -680,7 +590,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit67]
+[Unit61]
 FileName=..\..\uCNC\src\hal\kinematics\kinematic_corexy.c
 CompileCpp=1
 Folder=
@@ -690,7 +600,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit68]
+[Unit62]
 FileName=..\..\uCNC\src\hal\kinematics\kinematic_corexy.h
 CompileCpp=1
 Folder=
@@ -700,7 +610,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit69]
+[Unit63]
 FileName=..\..\uCNC\src\hal\kinematics\kinematic_delta.c
 CompileCpp=1
 Folder=
@@ -710,7 +620,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit70]
+[Unit64]
 FileName=..\..\uCNC\src\hal\kinematics\kinematic_delta.h
 CompileCpp=1
 Folder=
@@ -720,7 +630,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit71]
+[Unit65]
 FileName=..\..\uCNC\src\hal\kinematics\kinematic_linear_delta.c
 CompileCpp=1
 Folder=
@@ -730,7 +640,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit72]
+[Unit66]
 FileName=..\..\uCNC\src\hal\kinematics\kinematic_linear_delta.h
 CompileCpp=1
 Folder=
@@ -740,7 +650,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit73]
+[Unit67]
 FileName=..\..\uCNC\src\hal\kinematics\kinematic_scara.c
 CompileCpp=1
 Folder=
@@ -750,7 +660,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit74]
+[Unit68]
 FileName=..\..\uCNC\src\hal\kinematics\kinematic_scara.h
 CompileCpp=1
 Folder=
@@ -760,7 +670,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit75]
+[Unit69]
 FileName=..\..\uCNC\src\hal\kinematics\kinematicdefs.h
 CompileCpp=1
 Folder=
@@ -770,7 +680,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit76]
+[Unit70]
 FileName=..\..\uCNC\src\hal\kinematics\kinematics.h
 CompileCpp=1
 Folder=
@@ -780,7 +690,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit77]
+[Unit71]
 FileName=..\..\uCNC\src\hal\boards\boarddefs.h
 CompileCpp=1
 Folder=
@@ -790,17 +700,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit78]
-FileName=..\..\uCNC\src\hal\boards\boards.h
-CompileCpp=1
-Folder=
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
-[Unit79]
+[Unit72]
 FileName=..\..\uCNC\src\core\interpolator.c
 CompileCpp=1
 Folder=
@@ -810,7 +710,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit80]
+[Unit73]
 FileName=..\..\uCNC\src\core\interpolator.h
 CompileCpp=1
 Folder=
@@ -820,7 +720,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit81]
+[Unit74]
 FileName=..\..\uCNC\src\core\io_control.c
 CompileCpp=1
 Folder=
@@ -830,7 +730,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit82]
+[Unit75]
 FileName=..\..\uCNC\src\core\io_control.h
 CompileCpp=1
 Folder=
@@ -840,7 +740,17 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit84]
+[Unit76]
+FileName=..\..\uCNC\src\core\motion_control.c
+CompileCpp=1
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit77]
 FileName=..\..\uCNC\src\core\motion_control.h
 CompileCpp=1
 Folder=
@@ -850,17 +760,17 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit85]
+[Unit78]
 FileName=..\..\uCNC\src\core\parser.c
+CompileCpp=1
 Folder=
 Compile=1
 Link=1
 Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
-CompileCpp=1
 
-[Unit86]
+[Unit79]
 FileName=..\..\uCNC\src\core\parser.h
 CompileCpp=1
 Folder=
@@ -870,7 +780,27 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit89]
+[Unit80]
+FileName=..\..\uCNC\src\core\planner.c
+CompileCpp=1
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit81]
+FileName=..\..\uCNC\src\core\planner.h
+CompileCpp=1
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit82]
 FileName=..\..\uCNC\src\utils.c
 CompileCpp=1
 Folder=
@@ -880,8 +810,48 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
+[Unit84]
+FileName=..\..\uCNC\src\interface\grbl_protocol.c
+CompileCpp=1
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit85]
+FileName=..\..\uCNC\src\interface\grbl_settings.c
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+CompileCpp=1
+
+[Unit86]
+FileName=..\..\uCNC\src\interface\grbl_stream.c
+CompileCpp=1
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit89]
+FileName=..\..\uCNC\src\interface\grbl_settings.h
+CompileCpp=1
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
 [Unit90]
-FileName=..\..\uCNC\src\core\parser.h
+FileName=..\..\uCNC\src\interface\grbl_stream.h
 CompileCpp=1
 Folder=
 Compile=1
@@ -891,17 +861,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit91]
-FileName=..\..\uCNC\src\core\planner.c
-CompileCpp=1
-Folder=
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
-[Unit92]
-FileName=..\..\uCNC\src\core\planner.h
+FileName=..\..\uCNC\src\interface\serial_compatibility.h
 CompileCpp=1
 Folder=
 Compile=1
@@ -911,7 +871,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit93]
-FileName=..\..\uCNC\src\core\planner.c
+FileName=..\..\uCNC\src\modules\file_system.h
 CompileCpp=1
 Folder=
 Compile=1
@@ -921,27 +881,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit96]
-FileName=mcu_virtual.cpp
-CompileCpp=1
-Folder=
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
-[Unit94]
-FileName=..\..\uCNC\src\core\planner.h
-CompileCpp=1
-Folder=
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
-[Unit83]
-FileName=..\..\uCNC\src\core\motion_control.c
+FileName=..\..\uCNC\src\modules\m66\parser_m66.c
 CompileCpp=1
 Folder=
 Compile=1
@@ -961,7 +901,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit87]
-FileName=..\..\uCNC\src\core\planner.c
+FileName=..\..\uCNC\src\interface\grbl_print.h
 CompileCpp=1
 Folder=
 Compile=1
@@ -971,7 +911,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit88]
-FileName=..\..\uCNC\src\core\planner.h
+FileName=..\..\uCNC\src\interface\grbl_protocol.h
 CompileCpp=1
 Folder=
 Compile=1
@@ -992,6 +932,106 @@ BuildCmd=
 
 [Unit37]
 FileName=..\..\uCNC\src\interface\defaults.h
+CompileCpp=1
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit41]
+FileName=..\..\uCNC\src\hal\tools\tool.h
+CompileCpp=1
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit39]
+FileName=..\..\uCNC\src\hal\io_hal.h
+CompileCpp=1
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit40]
+FileName=..\..\uCNC\src\hal\tools\tool.c
+CompileCpp=1
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit95]
+FileName=..\..\uCNC\src\modules\system_menu.h
+CompileCpp=1
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit97]
+FileName=..\..\uCNC\src\modules\m67_m68\parser_m67_m68.c
+CompileCpp=1
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit98]
+FileName=..\..\uCNC\src\modules\m80_m81\parser_m80_m81.c
+CompileCpp=1
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit99]
+FileName=..\..\uCNC\src\modules\smoothie_clustering\smoothie_clustering.c
+CompileCpp=1
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit83]
+FileName=..\..\uCNC\src\interface\grbl_print.c
+CompileCpp=1
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit92]
+FileName=..\..\uCNC\src\modules\file_system.c
+CompileCpp=1
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit94]
+FileName=..\..\uCNC\src\core\parser_expr.c
 CompileCpp=1
 Folder=
 Compile=1

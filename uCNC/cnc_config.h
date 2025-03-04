@@ -45,11 +45,14 @@ extern "C"
 
 	/**
 	 * Choose the board
-	 * Check boards.h for list of available/supported boards
+	 * Select the boardmap for your board.
+	 * Boardmaps are available at src/hal/boards/
+	 * Or you can create your custom boardmap
+	 *
 	 * */
 
 #ifndef BOARD
-#define BOARD BOARD_UNO
+#define BOARD "avr/boardmap_uno.h"
 #endif
 
 // optional name to override default board name build info (if option enabled)
@@ -82,12 +85,6 @@ extern "C"
 #define COORD_SYS_COUNT 6
 
 	/**
-	 * Uncomment to enable G92 storing on non volatile memory
-	 * If disabled G92 will be stored in RAM only. Soft-reset will not erase stored value.
-	 * */
-	// #define G92_STORE_NONVOLATILE
-
-	/**
 	 * Number of segments of an arc computed with aprox. of sin/cos math
 	 * operation before performing a full calculation
 	 * */
@@ -99,7 +96,7 @@ extern "C"
 	 * Uncomment to enable. Only necessary to debug communication problems
 	 * */
 
-	// #define ECHO_CMD
+	//	  #define ECHO_CMD
 
 	/**
 	 * Debug command parsing time
@@ -107,6 +104,28 @@ extern "C"
 	 * */
 
 	// #define ENABLE_PARSING_TIME_DEBUG
+
+	/**
+	 * Disable settings safety.
+	 * This is a feature introduced in version 1.11 to prevent user from using the machine in case of settings loading error and causing havoc
+	 * Disabling settings safety will make the settins run in legacy more where they are simply reset to default on error without forcing the user to re-check them
+	 */
+
+	//	 #define DISABLE_SAFE_SETTINGS
+
+	/**
+	 * Uncomment to enable G92 storing on non volatile memory
+	 * If disabled G92 will be stored in RAM only. Soft-reset will not erase stored value.
+	 * */
+	// #define G92_STORE_NONVOLATILE
+
+	/**
+	 * This uses RAM only settings
+	 * Storing is disabled and the defaults will be loaded at each power up
+	 * This is useful if you don't have EEPROM/FLASH storage or the divide read/write maximum cycle count is low to prevent damage
+	 * This is also usefull if the sender provides all settings at startup/connection
+	 * */
+		//  #define RAM_ONLY_SETTINGS
 
 	/**
 	 * Override default configuration settings. Use _PER_AXIS parameters to
@@ -133,12 +152,12 @@ extern "C"
 	// #define DEFAULT_ARC_TOLERANCE 0.002
 	// #define DEFAULT_DEBOUNCE_MS 250
 
-#if defined(KINEMATIC_DELTA)
+#if defined(KINEMATIC_LINEAR_DELTA)
 	// #define DEFAULT_LIN_DELTA_ARM_LENGTH 230
 	// #define DEFAULT_LIN_DELTA_BASE_RADIUS 115
 #endif
 
-#if defined(KINEMATIC_LINEAR_DELTA)
+#if defined(KINEMATIC_DELTA)
 	// #define DEFAULT_DELTA_BICEP_LENGTH 100
 	// #define DEFAULT_DELTA_FOREARM_LENGTH 300
 	// #define DEFAULT_DELTA_EFFECTOR_RADIUS 24
@@ -270,13 +289,13 @@ extern "C"
 	 * processes comment as defined in the RS274NGC
 	 * */
 
-	// #define PROCESS_COMMENTS
+// #define PROCESS_COMMENTS
 
 	/**
 	 * Enables RS274NGC canned cycles
 	 * */
 
-	// #define ENABLE_CANNED_CYCLES
+	//  #define ENABLE_CANNED_CYCLES
 
 	/**
 	 * accepts the E word (currently is processed has A)
@@ -287,7 +306,25 @@ extern "C"
 	/**
 	 * Enables RS274NGC expression parsing
 	 * **/
-	//  #define ENABLE_RS274NGC_EXPRESSIONS
+// #define ENABLE_RS274NGC_EXPRESSIONS
+#ifdef ENABLE_RS274NGC_EXPRESSIONS
+	// Uncomment to enable named parameters
+#define ENABLE_NAMED_PARAMETERS
+// Uncomment to enable O codes
+#define ENABLE_O_CODES
+/**
+ * uncomment this to allow commands results to be printed to the stream that called the O code
+ * usually senders expect to receive and ok or error as response to a single code line
+ * enabling this will also print the ok/error responses of the codes in the subroutines to the stream that
+ * invoked the command
+ */
+#define ENABLE_O_CODES_VERBOSE
+#endif
+
+/**
+ * Uncomment to prevent machine lock after end program (M2 or M30)
+ */
+// #define DISABLE_ENDPROGRAM_LOCK
 
 	/**
 	 * Shrink µCNC
@@ -494,6 +531,17 @@ extern "C"
 #define S_CURVE_ACCELERATION_LEVEL 0
 
 	/**
+	 *
+	 * Enables steppers to go idle after some amount of time not moving.
+	 * This implements Grbl setting $1
+	 * Unlike Grbl this accepts a 16bit value so a timeout up 30 seconds can be defined. A value of 0 will disable it.
+	 * Warning: This can and will cause steppers to loose position.
+	 *
+	 * */
+
+	// #define ENABLE_STEPPERS_DISABLE_TIMEOUT
+
+	/**
 	 * Forces pin pooling for all limits and control pins (with or without
 	 * interrupts)
 	 * */
@@ -546,6 +594,13 @@ extern "C"
 	// #define ENABLE_IO_ALARM_DEBUG
 
 	/**
+	 * Enabled extra pin diagnostic command $P
+	 */
+	// #define ENABLE_PIN_DEBUG_EXTRA_CMD
+	// uncomment o translate pins names when printing pins states with $P command
+	// #define ENABLE_PIN_TRANSLATIONS
+
+	/**
 	 * Modifies the startup message to emulate Grbl (required by some programs so
 	 * that uCNC is recognized a Grbl protocol controller device)
 	 * 0 - disables
@@ -562,23 +617,6 @@ extern "C"
 	 * */
 
 #define ENABLE_SYSTEM_INFO
-
-	/**
-	 * Enables additional core grbl system commands
-	 * For settings allows settings to only be stored in EEPROM/Flash explicitly
-	 * on special command This makes that all $<setting-id>=<setting-value>
-	 * commands are only performed in SRAM and not stored directly to
-	 * EEPROM/Flash A few commands are added: $SS - Settings store - records
-	 * settings from SRAM to EEPROM/Flash $SL - Settings load - Loads settings
-	 * from EEPROM/Flash to SRAM $SR - Settings reset - Reloads the default value
-	 * settings from ROM to SRAM
-	 *
-	 * For pin diagnostics enables command $P
-	 * */
-
-	// #define ENABLE_EXTRA_SYSTEM_CMDS
-	// uncomment o translate pins names when printing pins states with $P command
-	// #define ENABLE_PIN_TRANSLATIONS
 
 	/**
 	 * Compilation specific options
@@ -598,11 +636,16 @@ extern "C"
 #define CRC_WITHOUT_LOOKUP_TABLE
 
 	/**
-	 * This uses RAM only settings
-	 * Storing is disabled and the defaults will be loaded at each power up
-	 * This is useful if you don't have EEPROM/FLASH storage or the divide read/write maximum cycle count is low to prevent damage
+	 * Enable extra settings commands.
+	 * For settings allows settings to only be stored in EEPROM/Flash explicitly
+	 * on special command This makes that all $<setting-id>=<setting-value>
+	 * commands are only performed in SRAM and not stored directly to
+	 * EEPROM/Flash A few commands are added: $SS - Settings store - records
+	 * settings from SRAM to EEPROM/Flash $SL - Settings load - Loads settings
+	 * from EEPROM/Flash to SRAM $SR - Settings reset - Reloads the default value
+	 * settings from ROM to SRAM
 	 * */
-	// #define RAM_ONLY_SETTINGS
+	// #define ENABLE_EXTRA_SETTINGS_CMDS
 
 	/**
 	 * EXPERIMENTAL! Uncomment to enable fast math macros to reduce the number of

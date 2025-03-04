@@ -24,6 +24,10 @@ extern "C"
 {
 #endif
 
+#ifndef MCU
+#define MCU MCU_AVR
+#endif
+
 #ifndef BOARD_NAME
 #define BOARD_NAME "X CONTROLLER"
 #endif
@@ -31,18 +35,10 @@ extern "C"
 #include "boardmap_uno.h"
 
 // free FHOLD and CS RES pins
-#ifdef FHOLD_PORT
 #undef FHOLD_PORT
-#endif
-#ifdef FHOLD_BIT
 #undef FHOLD_BIT
-#endif
-#ifdef CS_RES_PORT
 #undef CS_RES_PORT
-#endif
-#ifdef CS_RES_BIT
 #undef CS_RES_BIT
-#endif
 
 #define INVERT_EMERGENCY_STOP
 

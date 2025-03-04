@@ -24,6 +24,10 @@ extern "C"
 {
 #endif
 
+#ifndef MCU
+#define MCU MCU_AVR
+#endif
+
 #ifndef BOARD_NAME
 #define BOARD_NAME "Arduino UNO"
 #endif
@@ -149,16 +153,35 @@ extern "C"
 #define PLANNER_BUFFER_SIZE 14
 #endif
 // reduces ITP code size by avoiding some optimizations
-#ifdef STEP_ISR_SKIP_MAIN
 #undef STEP_ISR_SKIP_MAIN
-#endif
-#ifdef STEP_ISR_SKIP_IDLE
 #undef STEP_ISR_SKIP_IDLE
-#endif
 
 #ifndef USE_MACRO_BUFFER
 #define USE_MACRO_BUFFER
 #endif
+
+#ifndef DISABLE_SETTINGS_MODULES
+#define DISABLE_SETTINGS_MODULES
+#endif
+
+#ifndef DISABLE_MULTISTREAM_SERIAL
+#define DISABLE_MULTISTREAM_SERIAL
+#endif
+
+#ifndef DISABLE_RTC_CODE
+#define DISABLE_RTC_CODE
+#endif
+
+#ifdef EMULATE_GRBL_STARTUP
+#undef EMULATE_GRBL_STARTUP
+#define EMULATE_GRBL_STARTUP 2
+#endif
+
+#ifndef PRINT_FTM_MINIMAL
+#define PRINT_FTM_MINIMAL
+#endif
+
+#define DISABLE_COORDINATES_SYSTEM_RAM
 
 #ifdef __cplusplus
 }

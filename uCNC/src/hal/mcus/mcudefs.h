@@ -73,6 +73,13 @@ extern "C"
 #endif
 #endif
 
+#if (MCU == MCU_RP2350)
+#include "rp2350/mcumap_rp2350.h"
+#ifndef CFG_TUSB_MCU
+#define CFG_TUSB_MCU OPT_MCU_RP2350
+#endif
+#endif
+
 #if (MCU == MCU_VIRTUAL_WIN)
 #include "virtual/mcumap_virtual.h"
 #endif

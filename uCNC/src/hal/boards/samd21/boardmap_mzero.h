@@ -24,6 +24,10 @@ extern "C"
 {
 #endif
 
+#ifndef MCU
+#define MCU MCU_SAMD21
+#endif
+
 #ifndef BOARD_NAME
 #define BOARD_NAME "Arduino M0"
 #endif
@@ -144,6 +148,13 @@ extern "C"
 	// #define DIN30_PORT A
 	// #define DIN31_BIT 22
 	// #define DIN31_PORT A
+
+// #define SPI_CLK_PORT A
+// #define SPI_CLK_BIT 17
+// #define SPI_SDI_PORT A
+// #define SPI_SDI_BIT 19
+// #define SPI_SDO_PORT A
+// #define SPI_SDO_BIT 16
 
 #define ONESHOT_TIMER 2
 

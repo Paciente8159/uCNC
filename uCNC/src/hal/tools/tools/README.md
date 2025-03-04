@@ -161,10 +161,6 @@ These are the default µCNC pins/definitions for this tool:
 #ifndef PEN_SERVO_LOW
 #define PEN_SERVO_LOW 50
 #endif
-// defaults the servo ouput value for the pen to be mid position to 127 (0-255 range)
-#ifndef PEN_SERVO_MID
-#define PEN_SERVO_MID 127
-#endif
 // defaults the servo ouput value for the pen to be high position to 255 (0-255 range)
 #ifndef PEN_SERVO_HIGH
 #define PEN_SERVO_HIGH 255

@@ -1538,6 +1538,330 @@ extern "C"
 #define DIO78_PINHALF DOUT31_PINHALF
 #define DIO78_PINCON DOUT31_PINCON
 #endif
+#if (defined(DOUT32_PORT) && defined(DOUT32_BIT))
+#define DOUT32 79
+#define DOUT32_MBED_PIN __mbedpin__(DOUT32_PORT, DOUT32_BIT)
+#define DOUT32_GPIOREG __gpioreg__(DOUT32_PORT)
+#if (DOUT32_BIT < 16)
+#define DOUT32_PINHALF L
+#else
+#define DOUT32_PINHALF H
+#endif
+#define DOUT32_PINCON __pincon__(DOUT32_PORT, DOUT32_PINHALF)
+#define DIO79 79
+#define DIO79_MBED_PIN DOUT32_MBED_PIN
+#define DIO79_PORT DOUT32_PORT
+#define DIO79_BIT DOUT32_BIT
+#define DIO79_GPIOREG DOUT32_GPIOREG
+#define DIO79_PINHALF DOUT32_PINHALF
+#define DIO79_PINCON DOUT32_PINCON
+#endif
+#if (defined(DOUT33_PORT) && defined(DOUT33_BIT))
+#define DOUT33 80
+#define DOUT33_MBED_PIN __mbedpin__(DOUT33_PORT, DOUT33_BIT)
+#define DOUT33_GPIOREG __gpioreg__(DOUT33_PORT)
+#if (DOUT33_BIT < 16)
+#define DOUT33_PINHALF L
+#else
+#define DOUT33_PINHALF H
+#endif
+#define DOUT33_PINCON __pincon__(DOUT33_PORT, DOUT33_PINHALF)
+#define DIO80 80
+#define DIO80_MBED_PIN DOUT33_MBED_PIN
+#define DIO80_PORT DOUT33_PORT
+#define DIO80_BIT DOUT33_BIT
+#define DIO80_GPIOREG DOUT33_GPIOREG
+#define DIO80_PINHALF DOUT33_PINHALF
+#define DIO80_PINCON DOUT33_PINCON
+#endif
+#if (defined(DOUT34_PORT) && defined(DOUT34_BIT))
+#define DOUT34 81
+#define DOUT34_MBED_PIN __mbedpin__(DOUT34_PORT, DOUT34_BIT)
+#define DOUT34_GPIOREG __gpioreg__(DOUT34_PORT)
+#if (DOUT34_BIT < 16)
+#define DOUT34_PINHALF L
+#else
+#define DOUT34_PINHALF H
+#endif
+#define DOUT34_PINCON __pincon__(DOUT34_PORT, DOUT34_PINHALF)
+#define DIO81 81
+#define DIO81_MBED_PIN DOUT34_MBED_PIN
+#define DIO81_PORT DOUT34_PORT
+#define DIO81_BIT DOUT34_BIT
+#define DIO81_GPIOREG DOUT34_GPIOREG
+#define DIO81_PINHALF DOUT34_PINHALF
+#define DIO81_PINCON DOUT34_PINCON
+#endif
+#if (defined(DOUT35_PORT) && defined(DOUT35_BIT))
+#define DOUT35 82
+#define DOUT35_MBED_PIN __mbedpin__(DOUT35_PORT, DOUT35_BIT)
+#define DOUT35_GPIOREG __gpioreg__(DOUT35_PORT)
+#if (DOUT35_BIT < 16)
+#define DOUT35_PINHALF L
+#else
+#define DOUT35_PINHALF H
+#endif
+#define DOUT35_PINCON __pincon__(DOUT35_PORT, DOUT35_PINHALF)
+#define DIO82 82
+#define DIO82_MBED_PIN DOUT35_MBED_PIN
+#define DIO82_PORT DOUT35_PORT
+#define DIO82_BIT DOUT35_BIT
+#define DIO82_GPIOREG DOUT35_GPIOREG
+#define DIO82_PINHALF DOUT35_PINHALF
+#define DIO82_PINCON DOUT35_PINCON
+#endif
+#if (defined(DOUT36_PORT) && defined(DOUT36_BIT))
+#define DOUT36 83
+#define DOUT36_MBED_PIN __mbedpin__(DOUT36_PORT, DOUT36_BIT)
+#define DOUT36_GPIOREG __gpioreg__(DOUT36_PORT)
+#if (DOUT36_BIT < 16)
+#define DOUT36_PINHALF L
+#else
+#define DOUT36_PINHALF H
+#endif
+#define DOUT36_PINCON __pincon__(DOUT36_PORT, DOUT36_PINHALF)
+#define DIO83 83
+#define DIO83_MBED_PIN DOUT36_MBED_PIN
+#define DIO83_PORT DOUT36_PORT
+#define DIO83_BIT DOUT36_BIT
+#define DIO83_GPIOREG DOUT36_GPIOREG
+#define DIO83_PINHALF DOUT36_PINHALF
+#define DIO83_PINCON DOUT36_PINCON
+#endif
+#if (defined(DOUT37_PORT) && defined(DOUT37_BIT))
+#define DOUT37 84
+#define DOUT37_MBED_PIN __mbedpin__(DOUT37_PORT, DOUT37_BIT)
+#define DOUT37_GPIOREG __gpioreg__(DOUT37_PORT)
+#if (DOUT37_BIT < 16)
+#define DOUT37_PINHALF L
+#else
+#define DOUT37_PINHALF H
+#endif
+#define DOUT37_PINCON __pincon__(DOUT37_PORT, DOUT37_PINHALF)
+#define DIO84 84
+#define DIO84_MBED_PIN DOUT37_MBED_PIN
+#define DIO84_PORT DOUT37_PORT
+#define DIO84_BIT DOUT37_BIT
+#define DIO84_GPIOREG DOUT37_GPIOREG
+#define DIO84_PINHALF DOUT37_PINHALF
+#define DIO84_PINCON DOUT37_PINCON
+#endif
+#if (defined(DOUT38_PORT) && defined(DOUT38_BIT))
+#define DOUT38 85
+#define DOUT38_MBED_PIN __mbedpin__(DOUT38_PORT, DOUT38_BIT)
+#define DOUT38_GPIOREG __gpioreg__(DOUT38_PORT)
+#if (DOUT38_BIT < 16)
+#define DOUT38_PINHALF L
+#else
+#define DOUT38_PINHALF H
+#endif
+#define DOUT38_PINCON __pincon__(DOUT38_PORT, DOUT38_PINHALF)
+#define DIO85 85
+#define DIO85_MBED_PIN DOUT38_MBED_PIN
+#define DIO85_PORT DOUT38_PORT
+#define DIO85_BIT DOUT38_BIT
+#define DIO85_GPIOREG DOUT38_GPIOREG
+#define DIO85_PINHALF DOUT38_PINHALF
+#define DIO85_PINCON DOUT38_PINCON
+#endif
+#if (defined(DOUT39_PORT) && defined(DOUT39_BIT))
+#define DOUT39 86
+#define DOUT39_MBED_PIN __mbedpin__(DOUT39_PORT, DOUT39_BIT)
+#define DOUT39_GPIOREG __gpioreg__(DOUT39_PORT)
+#if (DOUT39_BIT < 16)
+#define DOUT39_PINHALF L
+#else
+#define DOUT39_PINHALF H
+#endif
+#define DOUT39_PINCON __pincon__(DOUT39_PORT, DOUT39_PINHALF)
+#define DIO86 86
+#define DIO86_MBED_PIN DOUT39_MBED_PIN
+#define DIO86_PORT DOUT39_PORT
+#define DIO86_BIT DOUT39_BIT
+#define DIO86_GPIOREG DOUT39_GPIOREG
+#define DIO86_PINHALF DOUT39_PINHALF
+#define DIO86_PINCON DOUT39_PINCON
+#endif
+#if (defined(DOUT40_PORT) && defined(DOUT40_BIT))
+#define DOUT40 87
+#define DOUT40_MBED_PIN __mbedpin__(DOUT40_PORT, DOUT40_BIT)
+#define DOUT40_GPIOREG __gpioreg__(DOUT40_PORT)
+#if (DOUT40_BIT < 16)
+#define DOUT40_PINHALF L
+#else
+#define DOUT40_PINHALF H
+#endif
+#define DOUT40_PINCON __pincon__(DOUT40_PORT, DOUT40_PINHALF)
+#define DIO87 87
+#define DIO87_MBED_PIN DOUT40_MBED_PIN
+#define DIO87_PORT DOUT40_PORT
+#define DIO87_BIT DOUT40_BIT
+#define DIO87_GPIOREG DOUT40_GPIOREG
+#define DIO87_PINHALF DOUT40_PINHALF
+#define DIO87_PINCON DOUT40_PINCON
+#endif
+#if (defined(DOUT41_PORT) && defined(DOUT41_BIT))
+#define DOUT41 88
+#define DOUT41_MBED_PIN __mbedpin__(DOUT41_PORT, DOUT41_BIT)
+#define DOUT41_GPIOREG __gpioreg__(DOUT41_PORT)
+#if (DOUT41_BIT < 16)
+#define DOUT41_PINHALF L
+#else
+#define DOUT41_PINHALF H
+#endif
+#define DOUT41_PINCON __pincon__(DOUT41_PORT, DOUT41_PINHALF)
+#define DIO88 88
+#define DIO88_MBED_PIN DOUT41_MBED_PIN
+#define DIO88_PORT DOUT41_PORT
+#define DIO88_BIT DOUT41_BIT
+#define DIO88_GPIOREG DOUT41_GPIOREG
+#define DIO88_PINHALF DOUT41_PINHALF
+#define DIO88_PINCON DOUT41_PINCON
+#endif
+#if (defined(DOUT42_PORT) && defined(DOUT42_BIT))
+#define DOUT42 89
+#define DOUT42_MBED_PIN __mbedpin__(DOUT42_PORT, DOUT42_BIT)
+#define DOUT42_GPIOREG __gpioreg__(DOUT42_PORT)
+#if (DOUT42_BIT < 16)
+#define DOUT42_PINHALF L
+#else
+#define DOUT42_PINHALF H
+#endif
+#define DOUT42_PINCON __pincon__(DOUT42_PORT, DOUT42_PINHALF)
+#define DIO89 89
+#define DIO89_MBED_PIN DOUT42_MBED_PIN
+#define DIO89_PORT DOUT42_PORT
+#define DIO89_BIT DOUT42_BIT
+#define DIO89_GPIOREG DOUT42_GPIOREG
+#define DIO89_PINHALF DOUT42_PINHALF
+#define DIO89_PINCON DOUT42_PINCON
+#endif
+#if (defined(DOUT43_PORT) && defined(DOUT43_BIT))
+#define DOUT43 90
+#define DOUT43_MBED_PIN __mbedpin__(DOUT43_PORT, DOUT43_BIT)
+#define DOUT43_GPIOREG __gpioreg__(DOUT43_PORT)
+#if (DOUT43_BIT < 16)
+#define DOUT43_PINHALF L
+#else
+#define DOUT43_PINHALF H
+#endif
+#define DOUT43_PINCON __pincon__(DOUT43_PORT, DOUT43_PINHALF)
+#define DIO90 90
+#define DIO90_MBED_PIN DOUT43_MBED_PIN
+#define DIO90_PORT DOUT43_PORT
+#define DIO90_BIT DOUT43_BIT
+#define DIO90_GPIOREG DOUT43_GPIOREG
+#define DIO90_PINHALF DOUT43_PINHALF
+#define DIO90_PINCON DOUT43_PINCON
+#endif
+#if (defined(DOUT44_PORT) && defined(DOUT44_BIT))
+#define DOUT44 91
+#define DOUT44_MBED_PIN __mbedpin__(DOUT44_PORT, DOUT44_BIT)
+#define DOUT44_GPIOREG __gpioreg__(DOUT44_PORT)
+#if (DOUT44_BIT < 16)
+#define DOUT44_PINHALF L
+#else
+#define DOUT44_PINHALF H
+#endif
+#define DOUT44_PINCON __pincon__(DOUT44_PORT, DOUT44_PINHALF)
+#define DIO91 91
+#define DIO91_MBED_PIN DOUT44_MBED_PIN
+#define DIO91_PORT DOUT44_PORT
+#define DIO91_BIT DOUT44_BIT
+#define DIO91_GPIOREG DOUT44_GPIOREG
+#define DIO91_PINHALF DOUT44_PINHALF
+#define DIO91_PINCON DOUT44_PINCON
+#endif
+#if (defined(DOUT45_PORT) && defined(DOUT45_BIT))
+#define DOUT45 92
+#define DOUT45_MBED_PIN __mbedpin__(DOUT45_PORT, DOUT45_BIT)
+#define DOUT45_GPIOREG __gpioreg__(DOUT45_PORT)
+#if (DOUT45_BIT < 16)
+#define DOUT45_PINHALF L
+#else
+#define DOUT45_PINHALF H
+#endif
+#define DOUT45_PINCON __pincon__(DOUT45_PORT, DOUT45_PINHALF)
+#define DIO92 92
+#define DIO92_MBED_PIN DOUT45_MBED_PIN
+#define DIO92_PORT DOUT45_PORT
+#define DIO92_BIT DOUT45_BIT
+#define DIO92_GPIOREG DOUT45_GPIOREG
+#define DIO92_PINHALF DOUT45_PINHALF
+#define DIO92_PINCON DOUT45_PINCON
+#endif
+#if (defined(DOUT46_PORT) && defined(DOUT46_BIT))
+#define DOUT46 93
+#define DOUT46_MBED_PIN __mbedpin__(DOUT46_PORT, DOUT46_BIT)
+#define DOUT46_GPIOREG __gpioreg__(DOUT46_PORT)
+#if (DOUT46_BIT < 16)
+#define DOUT46_PINHALF L
+#else
+#define DOUT46_PINHALF H
+#endif
+#define DOUT46_PINCON __pincon__(DOUT46_PORT, DOUT46_PINHALF)
+#define DIO93 93
+#define DIO93_MBED_PIN DOUT46_MBED_PIN
+#define DIO93_PORT DOUT46_PORT
+#define DIO93_BIT DOUT46_BIT
+#define DIO93_GPIOREG DOUT46_GPIOREG
+#define DIO93_PINHALF DOUT46_PINHALF
+#define DIO93_PINCON DOUT46_PINCON
+#endif
+#if (defined(DOUT47_PORT) && defined(DOUT47_BIT))
+#define DOUT47 94
+#define DOUT47_MBED_PIN __mbedpin__(DOUT47_PORT, DOUT47_BIT)
+#define DOUT47_GPIOREG __gpioreg__(DOUT47_PORT)
+#if (DOUT47_BIT < 16)
+#define DOUT47_PINHALF L
+#else
+#define DOUT47_PINHALF H
+#endif
+#define DOUT47_PINCON __pincon__(DOUT47_PORT, DOUT47_PINHALF)
+#define DIO94 94
+#define DIO94_MBED_PIN DOUT47_MBED_PIN
+#define DIO94_PORT DOUT47_PORT
+#define DIO94_BIT DOUT47_BIT
+#define DIO94_GPIOREG DOUT47_GPIOREG
+#define DIO94_PINHALF DOUT47_PINHALF
+#define DIO94_PINCON DOUT47_PINCON
+#endif
+#if (defined(DOUT48_PORT) && defined(DOUT48_BIT))
+#define DOUT48 95
+#define DOUT48_MBED_PIN __mbedpin__(DOUT48_PORT, DOUT48_BIT)
+#define DOUT48_GPIOREG __gpioreg__(DOUT48_PORT)
+#if (DOUT48_BIT < 16)
+#define DOUT48_PINHALF L
+#else
+#define DOUT48_PINHALF H
+#endif
+#define DOUT48_PINCON __pincon__(DOUT48_PORT, DOUT48_PINHALF)
+#define DIO95 95
+#define DIO95_MBED_PIN DOUT48_MBED_PIN
+#define DIO95_PORT DOUT48_PORT
+#define DIO95_BIT DOUT48_BIT
+#define DIO95_GPIOREG DOUT48_GPIOREG
+#define DIO95_PINHALF DOUT48_PINHALF
+#define DIO95_PINCON DOUT48_PINCON
+#endif
+#if (defined(DOUT49_PORT) && defined(DOUT49_BIT))
+#define DOUT49 96
+#define DOUT49_MBED_PIN __mbedpin__(DOUT49_PORT, DOUT49_BIT)
+#define DOUT49_GPIOREG __gpioreg__(DOUT49_PORT)
+#if (DOUT49_BIT < 16)
+#define DOUT49_PINHALF L
+#else
+#define DOUT49_PINHALF H
+#endif
+#define DOUT49_PINCON __pincon__(DOUT49_PORT, DOUT49_PINHALF)
+#define DIO96 96
+#define DIO96_MBED_PIN DOUT49_MBED_PIN
+#define DIO96_PORT DOUT49_PORT
+#define DIO96_BIT DOUT49_BIT
+#define DIO96_GPIOREG DOUT49_GPIOREG
+#define DIO96_PINHALF DOUT49_PINHALF
+#define DIO96_PINCON DOUT49_PINCON
+#endif
 #if (defined(LIMIT_X_PORT) && defined(LIMIT_X_BIT))
 #define LIMIT_X 100
 #define LIMIT_X_MBED_PIN __mbedpin__(LIMIT_X_PORT, LIMIT_X_BIT)
@@ -2654,6 +2978,330 @@ extern "C"
 #define DIO161_PINHALF DIN31_PINHALF
 #define DIO161_PINCON DIN31_PINCON
 #endif
+#if (defined(DIN32_PORT) && defined(DIN32_BIT))
+#define DIN32 162
+#define DIN32_MBED_PIN __mbedpin__(DIN32_PORT, DIN32_BIT)
+#define DIN32_GPIOREG __gpioreg__(DIN32_PORT)
+#if (DIN32_BIT < 16)
+#define DIN32_PINHALF L
+#else
+#define DIN32_PINHALF H
+#endif
+#define DIN32_PINCON __pincon__(DIN32_PORT, DIN32_PINHALF)
+#define DIO162 162
+#define DIO162_MBED_PIN DIN32_MBED_PIN
+#define DIO162_PORT DIN32_PORT
+#define DIO162_BIT DIN32_BIT
+#define DIO162_GPIOREG DIN32_GPIOREG
+#define DIO162_PINHALF DIN32_PINHALF
+#define DIO162_PINCON DIN32_PINCON
+#endif
+#if (defined(DIN33_PORT) && defined(DIN33_BIT))
+#define DIN33 163
+#define DIN33_MBED_PIN __mbedpin__(DIN33_PORT, DIN33_BIT)
+#define DIN33_GPIOREG __gpioreg__(DIN33_PORT)
+#if (DIN33_BIT < 16)
+#define DIN33_PINHALF L
+#else
+#define DIN33_PINHALF H
+#endif
+#define DIN33_PINCON __pincon__(DIN33_PORT, DIN33_PINHALF)
+#define DIO163 163
+#define DIO163_MBED_PIN DIN33_MBED_PIN
+#define DIO163_PORT DIN33_PORT
+#define DIO163_BIT DIN33_BIT
+#define DIO163_GPIOREG DIN33_GPIOREG
+#define DIO163_PINHALF DIN33_PINHALF
+#define DIO163_PINCON DIN33_PINCON
+#endif
+#if (defined(DIN34_PORT) && defined(DIN34_BIT))
+#define DIN34 164
+#define DIN34_MBED_PIN __mbedpin__(DIN34_PORT, DIN34_BIT)
+#define DIN34_GPIOREG __gpioreg__(DIN34_PORT)
+#if (DIN34_BIT < 16)
+#define DIN34_PINHALF L
+#else
+#define DIN34_PINHALF H
+#endif
+#define DIN34_PINCON __pincon__(DIN34_PORT, DIN34_PINHALF)
+#define DIO164 164
+#define DIO164_MBED_PIN DIN34_MBED_PIN
+#define DIO164_PORT DIN34_PORT
+#define DIO164_BIT DIN34_BIT
+#define DIO164_GPIOREG DIN34_GPIOREG
+#define DIO164_PINHALF DIN34_PINHALF
+#define DIO164_PINCON DIN34_PINCON
+#endif
+#if (defined(DIN35_PORT) && defined(DIN35_BIT))
+#define DIN35 165
+#define DIN35_MBED_PIN __mbedpin__(DIN35_PORT, DIN35_BIT)
+#define DIN35_GPIOREG __gpioreg__(DIN35_PORT)
+#if (DIN35_BIT < 16)
+#define DIN35_PINHALF L
+#else
+#define DIN35_PINHALF H
+#endif
+#define DIN35_PINCON __pincon__(DIN35_PORT, DIN35_PINHALF)
+#define DIO165 165
+#define DIO165_MBED_PIN DIN35_MBED_PIN
+#define DIO165_PORT DIN35_PORT
+#define DIO165_BIT DIN35_BIT
+#define DIO165_GPIOREG DIN35_GPIOREG
+#define DIO165_PINHALF DIN35_PINHALF
+#define DIO165_PINCON DIN35_PINCON
+#endif
+#if (defined(DIN36_PORT) && defined(DIN36_BIT))
+#define DIN36 166
+#define DIN36_MBED_PIN __mbedpin__(DIN36_PORT, DIN36_BIT)
+#define DIN36_GPIOREG __gpioreg__(DIN36_PORT)
+#if (DIN36_BIT < 16)
+#define DIN36_PINHALF L
+#else
+#define DIN36_PINHALF H
+#endif
+#define DIN36_PINCON __pincon__(DIN36_PORT, DIN36_PINHALF)
+#define DIO166 166
+#define DIO166_MBED_PIN DIN36_MBED_PIN
+#define DIO166_PORT DIN36_PORT
+#define DIO166_BIT DIN36_BIT
+#define DIO166_GPIOREG DIN36_GPIOREG
+#define DIO166_PINHALF DIN36_PINHALF
+#define DIO166_PINCON DIN36_PINCON
+#endif
+#if (defined(DIN37_PORT) && defined(DIN37_BIT))
+#define DIN37 167
+#define DIN37_MBED_PIN __mbedpin__(DIN37_PORT, DIN37_BIT)
+#define DIN37_GPIOREG __gpioreg__(DIN37_PORT)
+#if (DIN37_BIT < 16)
+#define DIN37_PINHALF L
+#else
+#define DIN37_PINHALF H
+#endif
+#define DIN37_PINCON __pincon__(DIN37_PORT, DIN37_PINHALF)
+#define DIO167 167
+#define DIO167_MBED_PIN DIN37_MBED_PIN
+#define DIO167_PORT DIN37_PORT
+#define DIO167_BIT DIN37_BIT
+#define DIO167_GPIOREG DIN37_GPIOREG
+#define DIO167_PINHALF DIN37_PINHALF
+#define DIO167_PINCON DIN37_PINCON
+#endif
+#if (defined(DIN38_PORT) && defined(DIN38_BIT))
+#define DIN38 168
+#define DIN38_MBED_PIN __mbedpin__(DIN38_PORT, DIN38_BIT)
+#define DIN38_GPIOREG __gpioreg__(DIN38_PORT)
+#if (DIN38_BIT < 16)
+#define DIN38_PINHALF L
+#else
+#define DIN38_PINHALF H
+#endif
+#define DIN38_PINCON __pincon__(DIN38_PORT, DIN38_PINHALF)
+#define DIO168 168
+#define DIO168_MBED_PIN DIN38_MBED_PIN
+#define DIO168_PORT DIN38_PORT
+#define DIO168_BIT DIN38_BIT
+#define DIO168_GPIOREG DIN38_GPIOREG
+#define DIO168_PINHALF DIN38_PINHALF
+#define DIO168_PINCON DIN38_PINCON
+#endif
+#if (defined(DIN39_PORT) && defined(DIN39_BIT))
+#define DIN39 169
+#define DIN39_MBED_PIN __mbedpin__(DIN39_PORT, DIN39_BIT)
+#define DIN39_GPIOREG __gpioreg__(DIN39_PORT)
+#if (DIN39_BIT < 16)
+#define DIN39_PINHALF L
+#else
+#define DIN39_PINHALF H
+#endif
+#define DIN39_PINCON __pincon__(DIN39_PORT, DIN39_PINHALF)
+#define DIO169 169
+#define DIO169_MBED_PIN DIN39_MBED_PIN
+#define DIO169_PORT DIN39_PORT
+#define DIO169_BIT DIN39_BIT
+#define DIO169_GPIOREG DIN39_GPIOREG
+#define DIO169_PINHALF DIN39_PINHALF
+#define DIO169_PINCON DIN39_PINCON
+#endif
+#if (defined(DIN40_PORT) && defined(DIN40_BIT))
+#define DIN40 170
+#define DIN40_MBED_PIN __mbedpin__(DIN40_PORT, DIN40_BIT)
+#define DIN40_GPIOREG __gpioreg__(DIN40_PORT)
+#if (DIN40_BIT < 16)
+#define DIN40_PINHALF L
+#else
+#define DIN40_PINHALF H
+#endif
+#define DIN40_PINCON __pincon__(DIN40_PORT, DIN40_PINHALF)
+#define DIO170 170
+#define DIO170_MBED_PIN DIN40_MBED_PIN
+#define DIO170_PORT DIN40_PORT
+#define DIO170_BIT DIN40_BIT
+#define DIO170_GPIOREG DIN40_GPIOREG
+#define DIO170_PINHALF DIN40_PINHALF
+#define DIO170_PINCON DIN40_PINCON
+#endif
+#if (defined(DIN41_PORT) && defined(DIN41_BIT))
+#define DIN41 171
+#define DIN41_MBED_PIN __mbedpin__(DIN41_PORT, DIN41_BIT)
+#define DIN41_GPIOREG __gpioreg__(DIN41_PORT)
+#if (DIN41_BIT < 16)
+#define DIN41_PINHALF L
+#else
+#define DIN41_PINHALF H
+#endif
+#define DIN41_PINCON __pincon__(DIN41_PORT, DIN41_PINHALF)
+#define DIO171 171
+#define DIO171_MBED_PIN DIN41_MBED_PIN
+#define DIO171_PORT DIN41_PORT
+#define DIO171_BIT DIN41_BIT
+#define DIO171_GPIOREG DIN41_GPIOREG
+#define DIO171_PINHALF DIN41_PINHALF
+#define DIO171_PINCON DIN41_PINCON
+#endif
+#if (defined(DIN42_PORT) && defined(DIN42_BIT))
+#define DIN42 172
+#define DIN42_MBED_PIN __mbedpin__(DIN42_PORT, DIN42_BIT)
+#define DIN42_GPIOREG __gpioreg__(DIN42_PORT)
+#if (DIN42_BIT < 16)
+#define DIN42_PINHALF L
+#else
+#define DIN42_PINHALF H
+#endif
+#define DIN42_PINCON __pincon__(DIN42_PORT, DIN42_PINHALF)
+#define DIO172 172
+#define DIO172_MBED_PIN DIN42_MBED_PIN
+#define DIO172_PORT DIN42_PORT
+#define DIO172_BIT DIN42_BIT
+#define DIO172_GPIOREG DIN42_GPIOREG
+#define DIO172_PINHALF DIN42_PINHALF
+#define DIO172_PINCON DIN42_PINCON
+#endif
+#if (defined(DIN43_PORT) && defined(DIN43_BIT))
+#define DIN43 173
+#define DIN43_MBED_PIN __mbedpin__(DIN43_PORT, DIN43_BIT)
+#define DIN43_GPIOREG __gpioreg__(DIN43_PORT)
+#if (DIN43_BIT < 16)
+#define DIN43_PINHALF L
+#else
+#define DIN43_PINHALF H
+#endif
+#define DIN43_PINCON __pincon__(DIN43_PORT, DIN43_PINHALF)
+#define DIO173 173
+#define DIO173_MBED_PIN DIN43_MBED_PIN
+#define DIO173_PORT DIN43_PORT
+#define DIO173_BIT DIN43_BIT
+#define DIO173_GPIOREG DIN43_GPIOREG
+#define DIO173_PINHALF DIN43_PINHALF
+#define DIO173_PINCON DIN43_PINCON
+#endif
+#if (defined(DIN44_PORT) && defined(DIN44_BIT))
+#define DIN44 174
+#define DIN44_MBED_PIN __mbedpin__(DIN44_PORT, DIN44_BIT)
+#define DIN44_GPIOREG __gpioreg__(DIN44_PORT)
+#if (DIN44_BIT < 16)
+#define DIN44_PINHALF L
+#else
+#define DIN44_PINHALF H
+#endif
+#define DIN44_PINCON __pincon__(DIN44_PORT, DIN44_PINHALF)
+#define DIO174 174
+#define DIO174_MBED_PIN DIN44_MBED_PIN
+#define DIO174_PORT DIN44_PORT
+#define DIO174_BIT DIN44_BIT
+#define DIO174_GPIOREG DIN44_GPIOREG
+#define DIO174_PINHALF DIN44_PINHALF
+#define DIO174_PINCON DIN44_PINCON
+#endif
+#if (defined(DIN45_PORT) && defined(DIN45_BIT))
+#define DIN45 175
+#define DIN45_MBED_PIN __mbedpin__(DIN45_PORT, DIN45_BIT)
+#define DIN45_GPIOREG __gpioreg__(DIN45_PORT)
+#if (DIN45_BIT < 16)
+#define DIN45_PINHALF L
+#else
+#define DIN45_PINHALF H
+#endif
+#define DIN45_PINCON __pincon__(DIN45_PORT, DIN45_PINHALF)
+#define DIO175 175
+#define DIO175_MBED_PIN DIN45_MBED_PIN
+#define DIO175_PORT DIN45_PORT
+#define DIO175_BIT DIN45_BIT
+#define DIO175_GPIOREG DIN45_GPIOREG
+#define DIO175_PINHALF DIN45_PINHALF
+#define DIO175_PINCON DIN45_PINCON
+#endif
+#if (defined(DIN46_PORT) && defined(DIN46_BIT))
+#define DIN46 176
+#define DIN46_MBED_PIN __mbedpin__(DIN46_PORT, DIN46_BIT)
+#define DIN46_GPIOREG __gpioreg__(DIN46_PORT)
+#if (DIN46_BIT < 16)
+#define DIN46_PINHALF L
+#else
+#define DIN46_PINHALF H
+#endif
+#define DIN46_PINCON __pincon__(DIN46_PORT, DIN46_PINHALF)
+#define DIO176 176
+#define DIO176_MBED_PIN DIN46_MBED_PIN
+#define DIO176_PORT DIN46_PORT
+#define DIO176_BIT DIN46_BIT
+#define DIO176_GPIOREG DIN46_GPIOREG
+#define DIO176_PINHALF DIN46_PINHALF
+#define DIO176_PINCON DIN46_PINCON
+#endif
+#if (defined(DIN47_PORT) && defined(DIN47_BIT))
+#define DIN47 177
+#define DIN47_MBED_PIN __mbedpin__(DIN47_PORT, DIN47_BIT)
+#define DIN47_GPIOREG __gpioreg__(DIN47_PORT)
+#if (DIN47_BIT < 16)
+#define DIN47_PINHALF L
+#else
+#define DIN47_PINHALF H
+#endif
+#define DIN47_PINCON __pincon__(DIN47_PORT, DIN47_PINHALF)
+#define DIO177 177
+#define DIO177_MBED_PIN DIN47_MBED_PIN
+#define DIO177_PORT DIN47_PORT
+#define DIO177_BIT DIN47_BIT
+#define DIO177_GPIOREG DIN47_GPIOREG
+#define DIO177_PINHALF DIN47_PINHALF
+#define DIO177_PINCON DIN47_PINCON
+#endif
+#if (defined(DIN48_PORT) && defined(DIN48_BIT))
+#define DIN48 178
+#define DIN48_MBED_PIN __mbedpin__(DIN48_PORT, DIN48_BIT)
+#define DIN48_GPIOREG __gpioreg__(DIN48_PORT)
+#if (DIN48_BIT < 16)
+#define DIN48_PINHALF L
+#else
+#define DIN48_PINHALF H
+#endif
+#define DIN48_PINCON __pincon__(DIN48_PORT, DIN48_PINHALF)
+#define DIO178 178
+#define DIO178_MBED_PIN DIN48_MBED_PIN
+#define DIO178_PORT DIN48_PORT
+#define DIO178_BIT DIN48_BIT
+#define DIO178_GPIOREG DIN48_GPIOREG
+#define DIO178_PINHALF DIN48_PINHALF
+#define DIO178_PINCON DIN48_PINCON
+#endif
+#if (defined(DIN49_PORT) && defined(DIN49_BIT))
+#define DIN49 179
+#define DIN49_MBED_PIN __mbedpin__(DIN49_PORT, DIN49_BIT)
+#define DIN49_GPIOREG __gpioreg__(DIN49_PORT)
+#if (DIN49_BIT < 16)
+#define DIN49_PINHALF L
+#else
+#define DIN49_PINHALF H
+#endif
+#define DIN49_PINCON __pincon__(DIN49_PORT, DIN49_PINHALF)
+#define DIO179 179
+#define DIO179_MBED_PIN DIN49_MBED_PIN
+#define DIO179_PORT DIN49_PORT
+#define DIO179_BIT DIN49_BIT
+#define DIO179_GPIOREG DIN49_GPIOREG
+#define DIO179_PINHALF DIN49_PINHALF
+#define DIO179_PINCON DIN49_PINCON
+#endif
 #if (defined(TX_PORT) && defined(TX_BIT))
 #define TX 200
 #define TX_MBED_PIN __mbedpin__(TX_PORT, TX_BIT)
@@ -2869,6 +3517,78 @@ extern "C"
 #define DIO211_GPIOREG RX2_GPIOREG
 #define DIO211_PINHALF RX2_PINHALF
 #define DIO211_PINCON RX2_PINCON
+#endif
+#if (defined(SPI2_CLK_PORT) && defined(SPI2_CLK_BIT))
+#define SPI2_CLK 212
+#define SPI2_CLK_MBED_PIN __mbedpin__(SPI2_CLK_PORT, SPI2_CLK_BIT)
+#define SPI2_CLK_GPIOREG __gpioreg__(SPI2_CLK_PORT)
+#if (SPI2_CLK_BIT < 16)
+#define SPI2_CLK_PINHALF L
+#else
+#define SPI2_CLK_PINHALF H
+#endif
+#define SPI2_CLK_PINCON __pincon__(SPI2_CLK_PORT, SPI2_CLK_PINHALF)
+#define DIO212 212
+#define DIO212_MBED_PIN SPI2_CLK_MBED_PIN
+#define DIO212_PORT SPI2_CLK_PORT
+#define DIO212_BIT SPI2_CLK_BIT
+#define DIO212_GPIOREG SPI2_CLK_GPIOREG
+#define DIO212_PINHALF SPI2_CLK_PINHALF
+#define DIO212_PINCON SPI2_CLK_PINCON
+#endif
+#if (defined(SPI2_SDI_PORT) && defined(SPI2_SDI_BIT))
+#define SPI2_SDI 213
+#define SPI2_SDI_MBED_PIN __mbedpin__(SPI2_SDI_PORT, SPI2_SDI_BIT)
+#define SPI2_SDI_GPIOREG __gpioreg__(SPI2_SDI_PORT)
+#if (SPI2_SDI_BIT < 16)
+#define SPI2_SDI_PINHALF L
+#else
+#define SPI2_SDI_PINHALF H
+#endif
+#define SPI2_SDI_PINCON __pincon__(SPI2_SDI_PORT, SPI2_SDI_PINHALF)
+#define DIO213 213
+#define DIO213_MBED_PIN SPI2_SDI_MBED_PIN
+#define DIO213_PORT SPI2_SDI_PORT
+#define DIO213_BIT SPI2_SDI_BIT
+#define DIO213_GPIOREG SPI2_SDI_GPIOREG
+#define DIO213_PINHALF SPI2_SDI_PINHALF
+#define DIO213_PINCON SPI2_SDI_PINCON
+#endif
+#if (defined(SPI2_SDO_PORT) && defined(SPI2_SDO_BIT))
+#define SPI2_SDO 214
+#define SPI2_SDO_MBED_PIN __mbedpin__(SPI2_SDO_PORT, SPI2_SDO_BIT)
+#define SPI2_SDO_GPIOREG __gpioreg__(SPI2_SDO_PORT)
+#if (SPI2_SDO_BIT < 16)
+#define SPI2_SDO_PINHALF L
+#else
+#define SPI2_SDO_PINHALF H
+#endif
+#define SPI2_SDO_PINCON __pincon__(SPI2_SDO_PORT, SPI2_SDO_PINHALF)
+#define DIO214 214
+#define DIO214_MBED_PIN SPI2_SDO_MBED_PIN
+#define DIO214_PORT SPI2_SDO_PORT
+#define DIO214_BIT SPI2_SDO_BIT
+#define DIO214_GPIOREG SPI2_SDO_GPIOREG
+#define DIO214_PINHALF SPI2_SDO_PINHALF
+#define DIO214_PINCON SPI2_SDO_PINCON
+#endif
+#if (defined(SPI2_CS_PORT) && defined(SPI2_CS_BIT))
+#define SPI2_CS 215
+#define SPI2_CS_MBED_PIN __mbedpin__(SPI2_CS_PORT, SPI2_CS_BIT)
+#define SPI2_CS_GPIOREG __gpioreg__(SPI2_CS_PORT)
+#if (SPI2_CS_BIT < 16)
+#define SPI2_CS_PINHALF L
+#else
+#define SPI2_CS_PINHALF H
+#endif
+#define SPI2_CS_PINCON __pincon__(SPI2_CS_PORT, SPI2_CS_PINHALF)
+#define DIO215 215
+#define DIO215_MBED_PIN SPI2_CS_MBED_PIN
+#define DIO215_PORT SPI2_CS_PORT
+#define DIO215_BIT SPI2_CS_BIT
+#define DIO215_GPIOREG SPI2_CS_GPIOREG
+#define DIO215_PINHALF SPI2_CS_PINHALF
+#define DIO215_PINCON SPI2_CS_PINCON
 #endif
 
 #if (defined(TX) && defined(RX))
@@ -3738,6 +4458,7 @@ extern "C"
 #endif
 
 #include "lpc17xx_ssp.h"
+#include "lpc17xx_gpdma.h"
 
 #if ((SPI_PORT == 0) && (SPI_SDO_MBED_PIN == P0_18) && (SPI_SDI_MBED_PIN == P0_17) && (SPI_CLK_MBED_PIN == P0_15))
 #define SPI_ALT_FUNC 2
@@ -3748,6 +4469,74 @@ extern "C"
 #else
 #error "SPI pin configuration not supported"
 #endif
+
+#if (SPI_PORT == 0)
+#define SPI_DMA_TX_CH 0
+#define SPI_DMA_RX_CH 1
+#else
+#define SPI_DMA_TX_CH 2
+#define SPI_DMA_RX_CH 3
+#endif
+#define SPI_DMA_TX_DEST __helper__(GPDMA_CONN_SSP, SPI_PORT, _Tx)
+#define SPI_DMA_RX_DEST __helper__(GPDMA_CONN_SSP, SPI_PORT, _Rx)
+#define SPI_DMA_TX_CHANNEL __helper__(LPC_GPDMACH, SPI_DMA_TX_CH, )
+#define SPI_DMA_RX_CHANNEL __helper__(LPC_GPDMACH, SPI_DMA_RX_CH, )
+#define MCU_SPI_ISR __helper__(SSP, SPI_PORT, _IRQHandler)
+#define MCU_SPI_IRQ __helper__(SSP, SPI_PORT, _IRQn)
+
+#endif
+
+// SPI2
+#if (defined(SPI2_CLK) && defined(SPI2_SDI) && defined(SPI2_SDO))
+#define MCU_HAS_SPI2
+#ifndef SPI2_MODE
+#define SPI2_MODE 0
+#endif
+#ifndef SPI2_FREQ
+#define SPI2_FREQ 1000000UL
+#endif
+#ifndef SPI2_PORT
+#define SPI2_PORT 1
+#endif
+
+#define SPI2_COUNTER_DIV(X) CLAMP(2, ((F_CPU >> 3) / X), 254)
+
+#define SPI2_REG __helper__(LPC_SSP, SPI2_PORT, )
+#define SPI2_PCONP __helper__(CLKPWR_PCONP_PCSSP, SPI2_PORT, )
+#if (SPI2_PORT == 0)
+#define SPI2_PCLKSEL_REG PCLKSEL1
+#define SPI2_PCLKSEL_MASK (3 << 20)
+#else
+#define SPI2_PCLKSEL_REG PCLKSEL0
+#define SPI2_PCLKSEL_MASK (3 << 10)
+#endif
+
+#include "lpc17xx_ssp.h"
+#include "lpc17xx_gpdma.h"
+
+#if ((SPI2_PORT == 0) && (SPI2_SDO_MBED_PIN == P0_18) && (SPI2_SDI_MBED_PIN == P0_17) && (SPI2_CLK_MBED_PIN == P0_15))
+#define SPI2_ALT_FUNC 2
+#elif ((SPI2_PORT == 0) && (SPI2_SDO_MBED_PIN == P0_24) && (SPI2_SDI_MBED_PIN == P0_23) && (SPI2_CLK_MBED_PIN == P0_20))
+#define SPI2_ALT_FUNC 3
+#elif ((SPI2_PORT == 1) && (SPI2_SDO_MBED_PIN == P0_9) && (SPI2_SDI_MBED_PIN == P0_8) && (SPI2_CLK_MBED_PIN == P0_7))
+#define SPI2_ALT_FUNC 2
+#else
+#error "SPI2 pin configuration not supported"
+#endif
+
+#if (SPI2_PORT == 0)
+#define SPI2_DMA_TX_CH 0
+#define SPI2_DMA_RX_CH 1
+#else
+#define SPI2_DMA_TX_CH 2
+#define SPI2_DMA_RX_CH 3
+#endif
+#define SPI2_DMA_TX_DEST __helper__(GPDMA_CONN_SSP,SPI2_PORT,_Tx)
+#define SPI2_DMA_RX_DEST __helper__(GPDMA_CONN_SSP,SPI2_PORT,_Rx)
+#define SPI2_DMA_TX_CHANNEL __helper__(LPC_GPDMACH,SPI2_DMA_TX_CH,)
+#define SPI2_DMA_RX_CHANNEL __helper__(LPC_GPDMACH,SPI2_DMA_RX_CH,)
+#define MCU_SPI2_ISR __helper__(SSP, SPI2_PORT, _IRQHandler)
+#define MCU_SPI2_IRQ __helper__(SSP, SPI2_PORT, _IRQn)
 
 #endif
 
@@ -3766,7 +4555,20 @@ extern "C"
 #define I2C_ADDRESS 0
 #endif
 
+#ifndef USE_ARDUINO_WIRE
 #define I2C_REG __helper__(LPC_I2C, I2C_PORT, )
+#else
+/**
+ * This allows future implementations of other Wire ports
+ * But for now the framework only implements Wire
+ */
+#define I2C_REG Wire
+// #if (I2C_PORT == 0)
+// #define I2C_REG Wire
+// #else
+// #define I2C_REG __helper__(Wire, I2C_PORT, )
+// #endif
+#endif
 #define I2C_PCLK __helper__(CLKPWR_PCLKSEL_I2C, I2C_PORT, )
 #define I2C_PCON __helper__(CLKPWR_PCONP_PCI2C, I2C_PORT, )
 
@@ -3800,7 +4602,7 @@ extern "C"
 #else
 #define ITP_PCLKSEL_REG PCLKSEL1
 #endif
-#define ITP_PCLKSEL_VAL (1 << (__helper__(CLKPWR_PCLKSEL_TIMER, ITP_TIMER, ) & 0x1F))
+#define ITP_PCLKSEL_MASK (3UL << (__helper__(CLKPWR_PCLKSEL_TIMER, ITP_TIMER, ) & 0x1F))
 
 #define MCU_RTC_ISR SysTick_Handler
 
@@ -3817,7 +4619,7 @@ extern "C"
 #else
 #define SERVO_PCLKSEL_REG PCLKSEL1
 #endif
-#define SERVO_PCLKSEL_VAL (1 << (__helper__(CLKPWR_PCLKSEL_TIMER, SERVO_TIMER, ) & 0x1F))
+#define SERVO_PCLKSEL_MASK (3UL << (__helper__(CLKPWR_PCLKSEL_TIMER, SERVO_TIMER, ) & 0x1F))
 
 #ifdef ONESHOT_TIMER
 #define MCU_HAS_ONESHOT_TIMER
@@ -3831,7 +4633,7 @@ extern "C"
 #else
 #define ONESHOT_PCLKSEL_REG PCLKSEL1
 #endif
-#define ONESHOT_PCLKSEL_VAL (1 << (__helper__(CLKPWR_PCLKSEL_TIMER, ONESHOT_TIMER, ) & 0x1F))
+#define ONESHOT_PCLKSEL_MASK (3UL << (__helper__(CLKPWR_PCLKSEL_TIMER, ONESHOT_TIMER, ) & 0x1F))
 #endif
 
 // Indirect macro access
@@ -3940,7 +4742,7 @@ extern "C"
 		__disable_irq();                \
 	}
 #define mcu_get_global_isr() lpc_global_isr_enabled
-#define mcu_free_micros() ({                  (1000UL - (SysTick->VAL * 1000UL / SysTick->LOAD)); })
+#define mcu_free_micros() ({ (1000UL - (SysTick->VAL * 1000UL / SysTick->LOAD)); })
 
 #ifdef MCU_HAS_ONESHOT_TIMER
 #define mcu_start_timeout() (ONESHOT_TIMER_REG->TCR |= TIM_ENABLE)

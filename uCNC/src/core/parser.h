@@ -114,19 +114,6 @@ extern "C"
 #define EXTENDED_GCODE(X) (EXTENDED_GCODE_BASE + (int16_t)(X * 10))
 #define EXTENDED_MOTION_GCODE(X) (-X)
 
-#define PARSER_PARAM_SIZE (sizeof(float) * AXIS_COUNT)	 // parser parameters array size
-#define PARSER_PARAM_ADDR_OFFSET (PARSER_PARAM_SIZE + 1) // parser parameters array size + 1 crc byte
-#define G28HOME COORD_SYS_COUNT													 // G28 index
-#define G30HOME COORD_SYS_COUNT + 1											 // G30 index
-#define G92OFFSET COORD_SYS_COUNT + 2										 // G92 index
-
-#define PARSER_CORDSYS_ADDRESS SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET															// 1st coordinate system offset eeprom address (G54)
-#define G28ADDRESS (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (PARSER_PARAM_ADDR_OFFSET * G28HOME)) // G28 coordinate offset eeprom address
-#define G30ADDRESS (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (PARSER_PARAM_ADDR_OFFSET * G30HOME)) // G28 coordinate offset eeprom address
-#ifdef G92_STORE_NONVOLATILE
-#define G92ADDRESS (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (PARSER_PARAM_ADDR_OFFSET * G92OFFSET)) // G92 coordinate offset eeprom address
-#endif
-
 #define NUMBER_UNDEF 0
 #define NUMBER_OK 0x20
 #define NUMBER_ISFLOAT 0x40
@@ -203,16 +190,25 @@ extern "C"
 
 #ifdef ENABLE_RS274NGC_EXPRESSIONS
 #ifndef RS274NGC_MAX_USER_VARS
-#define RS274NGC_MAX_USER_VARS 16
+#define RS274NGC_MAX_USER_VARS 30
 #endif
 #ifndef MAX_PARSER_STACK_DEPTH
 #define MAX_PARSER_STACK_DEPTH 16
 #endif
-typedef struct parser_stack_
-{
-	float lhs;
-	uint8_t op;
-} parser_stack_t;
+#ifndef RS274NGC_MAX_PARAMS_SET_PER_LINE
+#define RS274NGC_MAX_PARAMS_SET_PER_LINE 10
+#endif
+	typedef struct parser_stack_
+	{
+		float lhs;
+		uint8_t op;
+	} parser_stack_t;
+
+	typedef struct parser_param_modif_
+	{
+		uint16_t id;
+		float value;
+	} parser_param_modif_t;
 #endif
 
 	// 34bytes in total
@@ -309,7 +305,8 @@ typedef struct parser_stack_
 		uint32_t line;
 #endif
 #ifdef ENABLE_RS274NGC_EXPRESSIONS
-float user_vars[RS274NGC_MAX_USER_VARS];
+		uint8_t modified_params_count;
+		parser_param_modif_t modified_params[RS274NGC_MAX_PARAMS_SET_PER_LINE];
 #endif
 	} parser_state_t;
 
@@ -326,11 +323,22 @@ float user_vars[RS274NGC_MAX_USER_VARS];
 	void parser_parameters_reset(void);
 	void parser_parameters_save(void);
 	void parser_sync_position(void);
-	void parser_reset(bool stopgroup_only);
+	void parser_reset(bool fullreset);
 	void parser_machine_to_work(float *axis);
 	uint8_t parser_get_float(float *value);
-	uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
 	void parser_discard_command(void);
+	unsigned char parser_get_next_preprocessed(bool peek);
+#ifdef ENABLE_RS274NGC_EXPRESSIONS
+	float parser_get_parameter(uint16_t param);
+	void parser_set_parameter(uint16_t param, float value);
+#ifdef ENABLE_O_CODES
+	uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parser_cmd_explicit_t *cmd);
+	bool o_code_end_subrotine(void);
+#endif
+#ifdef ENABLE_NAMED_PARAMETERS
+	uint8_t parser_get_namedparam_id(float *value);
+#endif
+#endif
 
 #ifdef ENABLE_PARSER_MODULES
 	// generates a default delegate, event and handler hook
@@ -378,7 +386,7 @@ float user_vars[RS274NGC_MAX_USER_VARS];
 	DECL_EVENT_HANDLER(parser_reset);
 #endif
 
-#if (defined(ENABLE_PARSER_MODULES)||defined(BOARD_HAS_CUSTOM_SYSTEM_COMMANDS))
+#if (defined(ENABLE_PARSER_MODULES) || defined(BOARD_HAS_CUSTOM_SYSTEM_COMMANDS))
 
 	// event_grbl_cmd_handler
 	typedef struct grbl_cmd_args_

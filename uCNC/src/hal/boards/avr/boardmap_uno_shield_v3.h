@@ -24,6 +24,10 @@ extern "C"
 {
 #endif
 
+#ifndef MCU
+#define MCU MCU_AVR
+#endif
+
 #ifndef BOARD_NAME
 #define BOARD_NAME "UNO SHIELD V3"
 #endif
@@ -31,24 +35,12 @@ extern "C"
 #include "boardmap_uno.h"
 
 // swap limit z and replace pwm by spin enable pin
-#ifdef LIMIT_Z_BIT
 #undef LIMIT_Z_BIT
-#endif
-#ifdef LIMIT_Z_PORT
 #undef LIMIT_Z_PORT
-#endif
-#ifdef PWM0_BIT
 #undef PWM0_BIT
-#endif
-#ifdef PWM0_PORT
 #undef PWM0_PORT
-#endif
-#ifdef PWM0_CHANNEL
 #undef PWM0_CHANNEL
-#endif
-#ifdef PWM0_TIMER
 #undef PWM0_TIMER
-#endif
 
 // Grbl 0.8 limit z
 #define LIMIT_Z_BIT 3	 // assigns LIMIT_Z pin

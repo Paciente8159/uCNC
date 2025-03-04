@@ -24,6 +24,10 @@ extern "C"
 {
 #endif
 
+#ifndef MCU
+#define MCU MCU_RP2040
+#endif
+
 #ifndef BOARD_NAME
 #define BOARD_NAME "RPi Pico"
 #endif
@@ -123,6 +127,18 @@ extern "C"
 	// #define STEP4_IO_OFFSET 13
 	// #define DIR4_IO_OFFSET 14
 	// #define DOUT0_IO_OFFSET 15
+
+#define SPI2_CLK_BIT 18
+#define SPI2_SDO_BIT 19
+#define SPI2_SDI_BIT 16
+#define SPI2_CS_BIT 17
+#define SPI2_PORT 0
+
+// #define SPI2_CLK_BIT 10
+// #define SPI2_SDO_BIT 11
+// #define SPI2_SDI_BIT 12
+// #define SPI2_CS_BIT 13
+// #define SPI2_PORT 1
 
 	/**
 	 * New multicore mode - Experimental

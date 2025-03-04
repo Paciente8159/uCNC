@@ -126,7 +126,7 @@ static FORCEINLINE void mcu_set_servos()
 void servo_timer_init(void)
 {
 	LPC_SC->PCONP |= SERVO_PCONP;
-	LPC_SC->SERVO_PCLKSEL_REG &= ~SERVO_PCLKSEL_VAL; // system clk/4
+	LPC_SC->SERVO_PCLKSEL_REG &= ~SERVO_PCLKSEL_MASK; // system clk/4
 
 	SERVO_TIMER_REG->CTCR = 0;
 	SERVO_TIMER_REG->CCR &= ~0x03;
@@ -166,10 +166,6 @@ void MCU_SERVO_ISR(void)
 		SETBIT(SERVO_TIMER_REG->IR, TIM_MR0_INT);
 	}
 	mcu_enable_global_isr();
-	// mcu_clear_servos();
-	// TIM_ClearIntPending(SERVO_TIMER_REG, SERVO_INT_FLAG);
-	// NVIC_ClearPendingIRQ(SERVO_TIMER_IRQ);
-	// TIM_Cmd(SERVO_TIMER_REG, DISABLE);
 }
 
 #endif
@@ -185,17 +181,21 @@ void MCU_RTC_ISR(void)
 void MCU_ITP_ISR(void)
 {
 	mcu_disable_global_isr();
+	NVIC_ClearPendingIRQ(ITP_TIMER_IRQ);
 
-	if (CHECKBIT(ITP_TIMER_REG->IR, TIM_MR1_INT))
-	{
-		mcu_step_reset_cb();
-		SETBIT(ITP_TIMER_REG->IR, TIM_MR1_INT);
-	}
-
+	static bool resetstep = false;
 	if (CHECKBIT(ITP_TIMER_REG->IR, TIM_MR0_INT))
 	{
-		mcu_step_cb();
 		SETBIT(ITP_TIMER_REG->IR, TIM_MR0_INT);
+		if (!resetstep)
+		{
+			mcu_step_cb();
+		}
+		else
+		{
+			mcu_step_reset_cb();
+		}
+		resetstep = !resetstep;
 	}
 
 	mcu_enable_global_isr();
@@ -488,7 +488,13 @@ void mcu_init(void)
 #if SERVOS_MASK > 0
 	servo_timer_init();
 #endif
+	GPDMA_Init();
 #ifdef MCU_HAS_SPI
+	// powerup DMA
+	// LPC_SC->PCONP |= CLKPWR_PCONP_PCGPDMA;
+	// SPI_DMA_TX_CHANNEL->DMACCConfig = 0;
+	// SPI_DMA_RX_CHANNEL->DMACCConfig = 0;
+
 	mcu_config_af(SPI_CLK, SPI_ALT_FUNC);
 	mcu_config_af(SPI_SDO, SPI_ALT_FUNC);
 	mcu_config_af(SPI_SDI, SPI_ALT_FUNC);
@@ -501,6 +507,26 @@ void mcu_init(void)
 	SPI_REG->CR0 |= SPI_MODE << 6; // clock phase
 	SPI_REG->CR0 |= 7 << 0;				 // 8 bits
 	SPI_REG->CR1 |= 1 << 1;				 // enable SSP*/
+
+#endif
+#ifdef MCU_HAS_SPI2
+	// powerup DMA
+	// LPC_SC->PCONP |= CLKPWR_PCONP_PCGPDMA;
+	// SPI2_DMA_TX_CHANNEL->DMACCConfig = 0;
+	// SPI2_DMA_RX_CHANNEL->DMACCConfig = 0;
+
+	mcu_config_af(SPI2_CLK, SPI2_ALT_FUNC);
+	mcu_config_af(SPI2_SDO, SPI2_ALT_FUNC);
+	mcu_config_af(SPI2_SDI, SPI2_ALT_FUNC);
+	mcu_config_af(SPI2_CS, SPI2_ALT_FUNC);
+	LPC_SC->PCONP |= SPI2_PCONP;
+	LPC_SC->SPI2_PCLKSEL_REG &= ~SPI2_PCLKSEL_MASK; // div clock by 4
+	uint8_t div2 = SPI2_COUNTER_DIV(SPI2_FREQ);
+	div2 += (div2 & 0x01) ? 1 : 0;
+	SPI2_REG->CPSR = div2;					 // internal divider
+	SPI2_REG->CR0 |= SPI2_MODE << 6; // clock phase
+	SPI2_REG->CR0 |= 7 << 0;				 // 8 bits
+	SPI2_REG->CR1 |= 1 << 1;				 // enable SSP*/
 
 #endif
 #ifdef MCU_HAS_I2C
@@ -717,13 +743,13 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 {
 	frequency = CLAMP((float)F_STEP_MIN, frequency, (float)F_STEP_MAX);
 	// up and down counter (generates half the step rate at each event)
-	uint32_t totalticks = (uint32_t)((float)1000000UL / frequency);
+	uint32_t totalticks = (uint32_t)((float)(F_CPU >> 3) / frequency);
 	// *prescaller = 0;
 	// *ticks = (uint16_t)totalticks;
 	*prescaller = 0;
 	while (totalticks > 0x0000FFFFUL)
 	{
-		*prescaller++;
+		(*prescaller) += 1;
 		totalticks >>= 1;
 	}
 
@@ -732,7 +758,7 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 
 float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller)
 {
-	return (1000000.0f / (float)(((uint32_t)ticks) << prescaller));
+	return ((F_CPU >> 3) / (float)(((uint32_t)ticks) << prescaller));
 }
 
 /**
@@ -742,8 +768,9 @@ void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 {
 	uint32_t val = (uint32_t)ticks;
 	val <<= prescaller;
+
 	LPC_SC->PCONP |= ITP_PCONP;
-	LPC_SC->ITP_PCLKSEL_REG &= ~ITP_PCLKSEL_VAL; // system clk/4
+	LPC_SC->ITP_PCLKSEL_REG &= ~ITP_PCLKSEL_MASK; // system clk/4
 
 	ITP_TIMER_REG->CTCR = 0;
 	ITP_TIMER_REG->CCR &= ~0x03;
@@ -754,12 +781,11 @@ void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 	ITP_TIMER_REG->TCR &= ~TIM_RESET; // release reset
 	ITP_TIMER_REG->EMR = 0;
 
-	ITP_TIMER_REG->PR = ((F_CPU >> 2) / 1000000UL) - 1; // for 1us
+	ITP_TIMER_REG->PR = 0; // for higher resolution use PR = 0 that means that the timer will tick at (F_CPU/4)
 	ITP_TIMER_REG->IR = 0xFFFFFFFF;
 
-	ITP_TIMER_REG->MR1 = val >> 1;
 	ITP_TIMER_REG->MR0 = val;
-	ITP_TIMER_REG->MCR = 0x0B; // Interrupt on MC0 and MC1 and reset on MC0
+	ITP_TIMER_REG->MCR = 0x03; // Interrupt on MC0 and MC1 and reset on MC0
 
 	NVIC_SetPriority(ITP_TIMER_IRQ, 1);
 	NVIC_ClearPendingIRQ(ITP_TIMER_IRQ);
@@ -777,7 +803,6 @@ void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller)
 	uint32_t val = (uint32_t)ticks;
 	val <<= prescaller;
 	ITP_TIMER_REG->TCR &= ~TIM_ENABLE;
-	ITP_TIMER_REG->MR1 = val >> 1;
 	ITP_TIMER_REG->MR0 = val;
 	ITP_TIMER_REG->TCR |= TIM_RESET;
 	ITP_TIMER_REG->TCR &= ~TIM_RESET;
@@ -966,9 +991,7 @@ void mcu_dotasks()
  * */
 uint8_t mcu_eeprom_getc(uint16_t address)
 {
-	DEBUG_STR("EEPROM invalid address @ ");
-	DEBUG_INT(address);
-	DEBUG_PUTC('\n');
+	DBGMSG("EEPROM invalid address @ %u", address);
 	return 0;
 }
 
@@ -977,9 +1000,7 @@ uint8_t mcu_eeprom_getc(uint16_t address)
  * */
 void mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
-	DEBUG_STR("EEPROM invalid address @ ");
-	DEBUG_INT(address);
-	DEBUG_PUTC('\n');
+	DBGMSG("EEPROM invalid address @ %u", address);
 }
 
 /**
@@ -990,15 +1011,34 @@ void mcu_eeprom_flush(void)
 }
 
 #ifdef MCU_HAS_SPI
-void mcu_spi_config(uint8_t mode, uint32_t frequency)
+static bool spi_dma_enabled = false;
+#define SPI_TX_DONE 1
+#define SPI_RX_DONE 2
+#define SPI_DONE (SPI_TX_DONE | SPI_RX_DONE)
+#define SPI_ERROR 7
+static volatile uint8_t spi_transfer_done = 0;
+void mcu_spi_config(spi_config_t config, uint32_t frequency)
 {
 	uint8_t div = SPI_COUNTER_DIV(frequency);
 	div += (div & 0x01) ? 1 : 0;
-	mode = CLAMP(0, mode, 3);
-	SPI_REG->CR1 &= ~(1 << 1); // disable SSP
-	SPI_REG->CPSR = div;			 // internal divider
-	SPI_REG->CR0 |= mode << 6; // clock phase
-	SPI_REG->CR1 |= 1 << 1;		 // enable SSP
+	SPI_REG->CR1 &= ~(1 << 1);				// disable SSP
+	SPI_REG->CPSR = div;							// internal divider
+	SPI_REG->CR0 |= config.mode << 6; // clock phase
+	SPI_REG->CR1 |= 1 << 1;						// enable SSP
+	// SSP_DeInit(SPI_REG);
+
+	// SSP_CFG_Type ssp_cfg = {
+	// 		.ClockRate = frequency,
+	// 		.Databit = SSP_DATABIT_8,
+	// 		.FrameFormat = SSP_FRAME_SPI,
+	// 		.Mode = SSP_MASTER_MODE,
+	// 		.CPHA = (config.mode & 0x01),
+	// 		.CPOL = ((config.mode >> 1) & 0x01),
+	// };
+
+	// SSP_Init(SPI_REG, &ssp_cfg);
+
+	spi_dma_enabled = config.enable_dma;
 }
 
 uint8_t mcu_spi_xmit(uint8_t c)
@@ -1007,6 +1047,339 @@ uint8_t mcu_spi_xmit(uint8_t c)
 	while (!(SPI_REG->SR & SSP_SR_RNE))
 		;
 	return SPI_REG->DR;
+}
+
+#ifndef BULK_SPI_TIMEOUT
+#define BULK_SPI_TIMEOUT (1000 / INTERPOLATOR_FREQ)
+#endif
+
+// based on Marlin code
+static void mcu_prep_spidma_transfer(void *buf, uint16_t length, bool is_rx)
+{
+	// TODO: LPC dma can only write 0xFFF bytes at once.
+	GPDMA_Channel_CFG_Type GPDMACfg;
+
+	/* Configure GPDMA channel 0 -------------------------------------------------------------*/
+	/* DMA Channel 0 */
+	GPDMACfg.ChannelNum = ((is_rx) ? SPI_DMA_RX_CH : SPI_DMA_TX_CH);
+
+	if (!is_rx)
+	{
+		// Source memory
+		GPDMACfg.SrcMemAddr = (uint32_t)buf;
+		// Destination memory - Not used
+		GPDMACfg.DstMemAddr = 0;
+		// Source connection - unused
+		GPDMACfg.SrcConn = 0;
+		// Destination connection
+		GPDMACfg.DstConn = SPI_DMA_TX_DEST;
+	}
+	else
+	{
+		// Source memory
+		GPDMACfg.SrcMemAddr = 0;
+		// Destination memory - Not used
+		GPDMACfg.DstMemAddr = (uint32_t)buf;
+		// Source connection - unused
+		GPDMACfg.SrcConn = SPI_DMA_RX_DEST;
+		// Destination connection
+		GPDMACfg.DstConn = 0;
+	}
+	// Transfer size
+	GPDMACfg.TransferSize = length;
+	// Transfer width
+	GPDMACfg.TransferWidth = GPDMA_WIDTH_BYTE;
+	// Transfer type
+	GPDMACfg.TransferType = (is_rx) ? GPDMA_TRANSFERTYPE_P2M : GPDMA_TRANSFERTYPE_M2P;
+
+	GPDMACfg.DMALLI = 0;
+
+	// Enable dma on SPI
+	SSP_DMACmd(SPI_REG, ((is_rx) ? SSP_DMA_RX : SSP_DMA_TX), ENABLE);
+
+	GPDMACfg.MemoryIncrease = (is_rx) ? GPDMA_DMACCxControl_DI : GPDMA_DMACCxControl_SI;
+
+	// Setup channel with given parameter
+	GPDMA_Setup(&GPDMACfg);
+
+	// Enable DMA
+	GPDMA_ChannelCmd(((is_rx) ? SPI_DMA_RX_CH : SPI_DMA_TX_CH), ENABLE);
+}
+
+static bool mcu_assert_spidma_transfer(bool is_rx)
+{
+	// Wait for data transfer
+	if (!GPDMA_IntGetStatus(GPDMA_STAT_INTTC, ((is_rx) ? SPI_DMA_RX_CH : SPI_DMA_TX_CH)) && !GPDMA_IntGetStatus(GPDMA_STAT_INTERR, ((is_rx) ? SPI_DMA_RX_CH : SPI_DMA_TX_CH)))
+	{
+		return true;
+	}
+
+	// Clear err and int
+	GPDMA_ClearIntPending(GPDMA_STATCLR_INTTC, ((is_rx) ? SPI_DMA_RX_CH : SPI_DMA_TX_CH));
+	GPDMA_ClearIntPending(GPDMA_STATCLR_INTERR, ((is_rx) ? SPI_DMA_RX_CH : SPI_DMA_TX_CH));
+
+	// Disable DMA
+	GPDMA_ChannelCmd(((is_rx) ? SPI_DMA_RX_CH : SPI_DMA_TX_CH), DISABLE);
+
+	if (is_rx)
+	{
+		while (!SSP_GetStatus(SPI_REG, SSP_STAT_TXFIFO_EMPTY))
+			;
+	}
+	else
+	{
+		while (SSP_GetStatus(SPI_REG, SSP_STAT_RXFIFO_NOTEMPTY))
+			;
+	}
+
+	while (SSP_GetStatus(SPI_REG, SSP_STAT_BUSY) == SET)
+		;
+
+	SSP_DMACmd(SPI_REG, ((is_rx) ? SSP_DMA_RX : SSP_DMA_TX), DISABLE);
+	return false;
+}
+
+bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
+{
+	static bool is_running = false;
+
+	if (!is_running)
+	{
+		is_running = true;
+		if (spi_dma_enabled && !in) // DMA only seems to work correctly in send only transmissions
+		{
+			// if (in)
+			// {
+			// 	mcu_prep_dma_transfer(in, len, true);
+			// }
+			mcu_prep_spidma_transfer((void *)out, len, false);
+			return true;
+		}
+		else
+		{
+			uint32_t timeout = BULK_SPI_TIMEOUT + mcu_millis();
+			while (len--)
+			{
+				uint8_t c = mcu_spi_xmit(*out++);
+				if (in)
+				{
+					*in++ = c;
+				}
+
+				if (timeout < mcu_millis())
+				{
+					timeout = BULK_SPI_TIMEOUT + mcu_millis();
+					cnc_dotasks();
+				}
+			}
+			is_running = false;
+			return false;
+		}
+	}
+	else
+	{
+		if (spi_dma_enabled && !in)
+		{
+			if (!mcu_assert_spidma_transfer(false))
+			{
+				// if (in)
+				// {
+				// 	while (mcu_assert_dma_transfer(true))
+				// 		;
+				// }
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
+#endif
+
+#ifdef MCU_HAS_SPI2
+static bool spi2_dma_enabled = false;
+#define SPI2_TX_DONE 1
+#define SPI2_RX_DONE 2
+#define SPI2_DONE (SPI2_TX_DONE | SPI2_RX_DONE)
+#define SPI2_ERROR 7
+static volatile uint8_t spi2_transfer_done = 0;
+void mcu_spi2_config(spi_config_t config, uint32_t frequency)
+{
+	uint8_t div = SPI2_COUNTER_DIV(frequency);
+	div += (div & 0x01) ? 1 : 0;
+	SPI2_REG->CR1 &= ~(1 << 1);				 // disable SSP
+	SPI2_REG->CPSR = div;							 // internal divider
+	SPI2_REG->CR0 |= config.mode << 6; // clock phase
+	SPI2_REG->CR1 |= 1 << 1;					 // enable SSP
+	// SSP_DeInit(SPI2_REG);
+
+	// SSP_CFG_Type ssp_cfg = {
+	// 		.ClockRate = frequency,
+	// 		.Databit = SSP_DATABIT_8,
+	// 		.FrameFormat = SSP_FRAME_SPI2,
+	// 		.Mode = SSP_MASTER_MODE,
+	// 		.CPHA = (config.mode & 0x01),
+	// 		.CPOL = ((config.mode >> 1) & 0x01),
+	// };
+
+	// SSP_Init(SPI2_REG, &ssp_cfg);
+
+	spi2_dma_enabled = config.enable_dma;
+}
+
+uint8_t mcu_spi2_xmit(uint8_t c)
+{
+	SPI2_REG->DR = c;
+	while (!(SPI2_REG->SR & SSP_SR_RNE))
+		;
+	return SPI2_REG->DR;
+}
+
+#ifndef BULK_SPI2_TIMEOUT
+#define BULK_SPI2_TIMEOUT (1000 / INTERPOLATOR_FREQ)
+#endif
+
+// based on Marlin code
+static void mcu_prep_spi2dma_transfer(void *buf, uint16_t length, bool is_rx)
+{
+	// TODO: LPC dma can only write 0xFFF bytes at once.
+	GPDMA_Channel_CFG_Type GPDMACfg;
+
+	/* Configure GPDMA channel 0 -------------------------------------------------------------*/
+	/* DMA Channel 0 */
+	GPDMACfg.ChannelNum = ((is_rx) ? SPI2_DMA_RX_CH : SPI2_DMA_TX_CH);
+
+	if (!is_rx)
+	{
+		// Source memory
+		GPDMACfg.SrcMemAddr = (uint32_t)buf;
+		// Destination memory - Not used
+		GPDMACfg.DstMemAddr = 0;
+		// Source connection - unused
+		GPDMACfg.SrcConn = 0;
+		// Destination connection
+		GPDMACfg.DstConn = SPI2_DMA_TX_DEST;
+	}
+	else
+	{
+		// Source memory
+		GPDMACfg.SrcMemAddr = 0;
+		// Destination memory - Not used
+		GPDMACfg.DstMemAddr = (uint32_t)buf;
+		// Source connection - unused
+		GPDMACfg.SrcConn = SPI2_DMA_RX_DEST;
+		// Destination connection
+		GPDMACfg.DstConn = 0;
+	}
+	// Transfer size
+	GPDMACfg.TransferSize = length;
+	// Transfer width
+	GPDMACfg.TransferWidth = GPDMA_WIDTH_BYTE;
+	// Transfer type
+	GPDMACfg.TransferType = (is_rx) ? GPDMA_TRANSFERTYPE_P2M : GPDMA_TRANSFERTYPE_M2P;
+
+	GPDMACfg.DMALLI = 0;
+
+	// Enable dma on SPI2
+	SSP_DMACmd(SPI2_REG, ((is_rx) ? SSP_DMA_RX : SSP_DMA_TX), ENABLE);
+
+	GPDMACfg.MemoryIncrease = (is_rx) ? GPDMA_DMACCxControl_DI : GPDMA_DMACCxControl_SI;
+
+	// Setup channel with given parameter
+	GPDMA_Setup(&GPDMACfg);
+
+	// Enable DMA
+	GPDMA_ChannelCmd(((is_rx) ? SPI2_DMA_RX_CH : SPI2_DMA_TX_CH), ENABLE);
+}
+
+static bool mcu_assert_spi2dma_transfer(bool is_rx)
+{
+	// Wait for data transfer
+	if (!GPDMA_IntGetStatus(GPDMA_STAT_INTTC, ((is_rx) ? SPI2_DMA_RX_CH : SPI2_DMA_TX_CH)) && !GPDMA_IntGetStatus(GPDMA_STAT_INTERR, ((is_rx) ? SPI2_DMA_RX_CH : SPI2_DMA_TX_CH)))
+	{
+		return true;
+	}
+
+	// Clear err and int
+	GPDMA_ClearIntPending(GPDMA_STATCLR_INTTC, ((is_rx) ? SPI2_DMA_RX_CH : SPI2_DMA_TX_CH));
+	GPDMA_ClearIntPending(GPDMA_STATCLR_INTERR, ((is_rx) ? SPI2_DMA_RX_CH : SPI2_DMA_TX_CH));
+
+	// Disable DMA
+	GPDMA_ChannelCmd(((is_rx) ? SPI2_DMA_RX_CH : SPI2_DMA_TX_CH), DISABLE);
+
+	if (is_rx)
+	{
+		while (!SSP_GetStatus(SPI2_REG, SSP_STAT_TXFIFO_EMPTY))
+			;
+	}
+	else
+	{
+		while (SSP_GetStatus(SPI2_REG, SSP_STAT_RXFIFO_NOTEMPTY))
+			;
+	}
+
+	while (SSP_GetStatus(SPI2_REG, SSP_STAT_BUSY) == SET)
+		;
+
+	SSP_DMACmd(SPI2_REG, ((is_rx) ? SSP_DMA_RX : SSP_DMA_TX), DISABLE);
+	return false;
+}
+
+bool mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
+{
+	static bool is_running = false;
+
+	if (!is_running)
+	{
+		is_running = true;
+		if (spi2_dma_enabled && !in) // DMA only seems to work correctly in send only transmissions
+		{
+			// if (in)
+			// {
+			// 	mcu_prep_dma_transfer(in, len, true);
+			// }
+			mcu_prep_spi2dma_transfer((void *)out, len, false);
+			return true;
+		}
+		else
+		{
+			uint32_t timeout = BULK_SPI2_TIMEOUT + mcu_millis();
+			while (len--)
+			{
+				uint8_t c = mcu_spi2_xmit(*out++);
+				if (in)
+				{
+					*in++ = c;
+				}
+
+				if (timeout < mcu_millis())
+				{
+					timeout = BULK_SPI2_TIMEOUT + mcu_millis();
+					cnc_dotasks();
+				}
+			}
+			is_running = false;
+			return false;
+		}
+	}
+	else
+	{
+		if (spi2_dma_enabled && !in)
+		{
+			if (!mcu_assert_spi2dma_transfer(false))
+			{
+				// if (in)
+				// {
+				// 	while (mcu_assert_dma_transfer(true))
+				// 		;
+				// }
+				return false;
+			}
+		}
+	}
+
+	return true;
 }
 
 #endif
@@ -1333,7 +1706,7 @@ void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 {
 	mcu_timeout_cb = fp;
 	LPC_SC->PCONP |= ONESHOT_PCONP;
-	LPC_SC->ONESHOT_PCLKSEL_REG &= ~ONESHOT_PCLKSEL_VAL; // system clk/4
+	LPC_SC->ONESHOT_PCLKSEL_REG &= ~ONESHOT_PCLKSEL_MASK; // system clk/4
 
 	ONESHOT_TIMER_REG->CTCR = 0;
 	ONESHOT_TIMER_REG->CCR &= ~0x03;

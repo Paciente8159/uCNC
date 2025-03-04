@@ -24,7 +24,7 @@ extern "C"
 {
 #endif
 
-#define MCU_NONE 0
+#define MCU_CUSTOM 0
 #define MCU_AVR 1
 #define MCU_STM32F1X 10
 #define MCU_STM32F4X 11
@@ -34,6 +34,7 @@ extern "C"
 #define MCU_ESP8266 40
 #define MCU_ESP32 50
 #define MCU_RP2040 60
+#define MCU_RP2350 61
 #define MCU_VIRTUAL_WIN 99
 
 #ifdef __cplusplus

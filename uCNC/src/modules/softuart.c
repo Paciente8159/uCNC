@@ -74,6 +74,22 @@ int16_t softuart_getc(softuart_port_t *port, uint32_t ms_timeout)
 	}
 	else
 	{
+
+		// wait for port to go idle
+		uint32_t t = ms_timeout;
+		__TIMEOUT_MS__(t)
+		{
+			if (port->rx())
+			{
+				break;
+			}
+		}
+
+		__TIMEOUT_ASSERT__(t)
+		{
+			return 0;
+		}
+
 		__TIMEOUT_MS__(ms_timeout)
 		{
 			if (!port->rx())
@@ -101,7 +117,6 @@ int16_t softuart_getc(softuart_port_t *port, uint32_t ms_timeout)
 			}
 			mask <<= 1;
 		} while (--bits);
-		port->waithalf();
 	}
 
 	return (int16_t)val;

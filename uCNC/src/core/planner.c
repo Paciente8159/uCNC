@@ -548,7 +548,7 @@ void planner_spindle_ovr_toggle(void)
 		uint8_t newstate = spindle_override ^ g_planner_state.state_flags.bit.spindle_running;
 		if (newstate)
 		{
-			protocol_send_feedback(MSG_FEEDBACK_10);
+			proto_feedback(MSG_FEEDBACK_10);
 		}
 		spindle_override = newstate;
 	}
@@ -560,7 +560,7 @@ void planner_spindle_ovr_reset(void)
 	{
 		if (g_planner_state.state_flags.bit.spindle_running && spindle_override)
 		{
-			protocol_send_feedback(MSG_FEEDBACK_10);
+			proto_feedback(MSG_FEEDBACK_10);
 		}
 	}
 

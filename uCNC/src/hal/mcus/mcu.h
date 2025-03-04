@@ -77,6 +77,9 @@ extern "C"
 #ifndef rom_read_byte
 #define rom_read_byte *
 #endif
+#ifndef rom_strcmp
+#define rom_strcmp strcmp
+#endif
 
 	// the extern is not necessary
 	// this explicit declaration just serves to reeinforce the idea that these callbacks are implemented on other µCNC core code translation units
@@ -341,104 +344,61 @@ extern "C"
 #error "MCU_CYCLES_PER_LOOP_OVERHEAD not defined for this MCU"
 #endif
 
-#define mcu_delay_cycles(X)                                                                                                               \
-	{                                                                                                                                       \
-		if (X > (MCU_CYCLES_PER_LOOP + MCU_CYCLES_PER_LOOP_OVERHEAD))                                                                         \
-		{                                                                                                                                     \
-			mcu_delay_loop((uint16_t)((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP));                                               \
-			if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) - (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 0)  \
-			{                                                                                                                                   \
-				mcu_nop();                                                                                                                        \
-			}                                                                                                                                   \
-			if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) - (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 1)  \
-			{                                                                                                                                   \
-				mcu_nop();                                                                                                                        \
-			}                                                                                                                                   \
-			if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) - (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 2)  \
-			{                                                                                                                                   \
-				mcu_nop();                                                                                                                        \
-			}                                                                                                                                   \
-			if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) - (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 3)  \
-			{                                                                                                                                   \
-				mcu_nop();                                                                                                                        \
-			}                                                                                                                                   \
-			if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) - (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 4)  \
-			{                                                                                                                                   \
-				mcu_nop();                                                                                                                        \
-			}                                                                                                                                   \
-			if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) - (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 5)  \
-			{                                                                                                                                   \
-				mcu_nop();                                                                                                                        \
-			}                                                                                                                                   \
-			if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) - (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 6)  \
-			{                                                                                                                                   \
-				mcu_nop();                                                                                                                        \
-			}                                                                                                                                   \
-			if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) - (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 7)  \
-			{                                                                                                                                   \
-				mcu_nop();                                                                                                                        \
-			}                                                                                                                                   \
-			if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) - (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 8)  \
-			{                                                                                                                                   \
-				mcu_nop();                                                                                                                        \
-			}                                                                                                                                   \
-			if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) - (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 9)  \
-			{                                                                                                                                   \
-				mcu_nop();                                                                                                                        \
-			}                                                                                                                                   \
-			if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) - (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 10) \
-			{                                                                                                                                   \
-				mcu_nop();                                                                                                                        \
-			}                                                                                                                                   \
-		}                                                                                                                                     \
-		else                                                                                                                                  \
-		{                                                                                                                                     \
-			if ((X - ((X / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 0)                                                                    \
-			{                                                                                                                                   \
-				mcu_nop();                                                                                                                        \
-			}                                                                                                                                   \
-			if ((X - ((X / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 1)                                                                    \
-			{                                                                                                                                   \
-				mcu_nop();                                                                                                                        \
-			}                                                                                                                                   \
-			if ((X - ((X / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 2)                                                                    \
-			{                                                                                                                                   \
-				mcu_nop();                                                                                                                        \
-			}                                                                                                                                   \
-			if ((X - ((X / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 3)                                                                    \
-			{                                                                                                                                   \
-				mcu_nop();                                                                                                                        \
-			}                                                                                                                                   \
-			if ((X - ((X / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 4)                                                                    \
-			{                                                                                                                                   \
-				mcu_nop();                                                                                                                        \
-			}                                                                                                                                   \
-			if ((X - ((X / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 5)                                                                    \
-			{                                                                                                                                   \
-				mcu_nop();                                                                                                                        \
-			}                                                                                                                                   \
-			if ((X - ((X / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 6)                                                                    \
-			{                                                                                                                                   \
-				mcu_nop();                                                                                                                        \
-			}                                                                                                                                   \
-			if ((X - ((X / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 7)                                                                    \
-			{                                                                                                                                   \
-				mcu_nop();                                                                                                                        \
-			}                                                                                                                                   \
-			if ((X - ((X / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 8)                                                                    \
-			{                                                                                                                                   \
-				mcu_nop();                                                                                                                        \
-			}                                                                                                                                   \
-			if ((X - ((X / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 9)                                                                    \
-			{                                                                                                                                   \
-				mcu_nop();                                                                                                                        \
-			}                                                                                                                                   \
-			if ((X - ((X / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 10)                                                                   \
-			{                                                                                                                                   \
-				mcu_nop();                                                                                                                        \
-			}                                                                                                                                   \
-		}                                                                                                                                     \
-	}
+#define mcu_delay_cycles(X)                                                                                                                       \
+	do                                                                                                                                              \
+	{                                                                                                                                               \
+		if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) > 0)                                                                           \
+		{                                                                                                                                             \
+			mcu_delay_loop((uint16_t)((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP));                                                       \
+		}                                                                                                                                             \
+		switch ((((X - MCU_CYCLES_PER_LOOP_OVERHEAD - MCU_CYCLES_PER_LOOP) >= 0) ? ((X - MCU_CYCLES_PER_LOOP_OVERHEAD) % MCU_CYCLES_PER_LOOP) : (X))) \
+		{                                                                                                                                             \
+		case 15:                                                                                                                                      \
+			asm volatile("nop");                                                                                                                        \
+			__FALL_THROUGH__                                                                                                                            \
+		case 14:                                                                                                                                      \
+			asm volatile("nop");                                                                                                                        \
+			__FALL_THROUGH__                                                                                                                            \
+		case 13:                                                                                                                                      \
+			asm volatile("nop");                                                                                                                        \
+			__FALL_THROUGH__                                                                                                                            \
+		case 12:                                                                                                                                      \
+			asm volatile("nop");                                                                                                                        \
+			__FALL_THROUGH__                                                                                                                            \
+		case 11:                                                                                                                                      \
+			asm volatile("nop");                                                                                                                        \
+			__FALL_THROUGH__                                                                                                                            \
+		case 10:                                                                                                                                      \
+			asm volatile("nop");                                                                                                                        \
+			__FALL_THROUGH__                                                                                                                            \
+		case 9:                                                                                                                                       \
+			asm volatile("nop");                                                                                                                        \
+			__FALL_THROUGH__                                                                                                                            \
+		case 8:                                                                                                                                       \
+			asm volatile("nop");                                                                                                                        \
+			__FALL_THROUGH__                                                                                                                            \
+		case 7:                                                                                                                                       \
+			asm volatile("nop");                                                                                                                        \
+			__FALL_THROUGH__                                                                                                                            \
+		case 6:                                                                                                                                       \
+			asm volatile("nop");                                                                                                                        \
+			__FALL_THROUGH__                                                                                                                            \
+		case 5:                                                                                                                                       \
+			asm volatile("nop");                                                                                                                        \
+			__FALL_THROUGH__                                                                                                                            \
+		case 4:                                                                                                                                       \
+			asm volatile("nop");                                                                                                                        \
+			__FALL_THROUGH__                                                                                                                            \
+		case 3:                                                                                                                                       \
+			asm volatile("nop");                                                                                                                        \
+			__FALL_THROUGH__                                                                                                                            \
+		case 2:                                                                                                                                       \
+			asm volatile("nop");                                                                                                                        \
+			__FALL_THROUGH__                                                                                                                            \
+		case 1:                                                                                                                                       \
+			asm volatile("nop");                                                                                                                        \
+		}                                                                                                                                             \
+	} while (0)
 #endif
 
 #ifndef mcu_delay_100ns
@@ -494,13 +454,39 @@ extern "C"
 	 * */
 	void mcu_eeprom_flush(void);
 
+	typedef union
+	{
+		uint8_t flags;
+		struct
+		{
+			uint8_t mode : 3;
+			uint8_t : 1; // reserved for bit order
+			uint8_t enable_dma : 1;
+			uint8_t : 3; // reserved
+		};
+	} spi_config_t;
+
+	// hardware port function calls
+	typedef struct spi_port_
+	{
+		bool isbusy;
+		void (*start)(spi_config_t, uint32_t);
+		uint8_t (*xmit)(uint8_t);
+		bool (*bulk_xmit)(const uint8_t *, uint8_t *, uint16_t);
+		void (*stop)(void);
+	} spi_port_t;
+
 #ifdef MCU_HAS_SPI
 #ifndef mcu_spi_xmit
 	uint8_t mcu_spi_xmit(uint8_t data);
 #endif
 
+#ifndef mcu_spi_bulk_transfer
+	bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len);
+#endif
+
 #ifndef mcu_spi_start
-	void mcu_spi_start(uint8_t mode, uint32_t frequency);
+	void mcu_spi_start(spi_config_t config, uint32_t frequency);
 #endif
 
 #ifndef mcu_spi_stop
@@ -508,8 +494,40 @@ extern "C"
 #endif
 
 #ifndef mcu_spi_config
-	void mcu_spi_config(uint8_t mode, uint32_t frequency);
+	void mcu_spi_config(spi_config_t config, uint32_t frequency);
 #endif
+
+	extern spi_port_t mcu_spi_port;
+#define MCU_SPI (&mcu_spi_port)
+#else
+#define MCU_SPI NULL
+#endif
+
+#ifdef MCU_HAS_SPI2
+#ifndef mcu_spi2_xmit
+	uint8_t mcu_spi2_xmit(uint8_t data);
+#endif
+
+#ifndef mcu_spi2_bulk_transfer
+	bool mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len);
+#endif
+
+#ifndef mcu_spi2_start
+	void mcu_spi2_start(spi_config_t config, uint32_t frequency);
+#endif
+
+#ifndef mcu_spi2_stop
+	void mcu_spi2_stop(void);
+#endif
+
+#ifndef mcu_spi2_config
+	void mcu_spi2_config(spi_config_t config, uint32_t frequency);
+#endif
+
+	extern spi_port_t mcu_spi2_port;
+#define MCU_SPI2 (&mcu_spi2_port)
+#else
+#define MCU_SPI2 NULL
 #endif
 
 #ifdef MCU_HAS_I2C
