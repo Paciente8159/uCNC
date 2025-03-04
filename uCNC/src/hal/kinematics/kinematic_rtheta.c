@@ -28,14 +28,18 @@
 #define DOUBLE_PI_INV (0.5f * M_PI_INV)
 
 static float arm_angle_fact;
+static float arm_length_fact;
 static float theta_reduction_ratio;
+static float theta_reduction_ratio_inv;
 static float arm;
 
 void kinematics_init(void)
 {
 	// reset home offset
 	arm_angle_fact = 2.0f * M_PI / g_settings.step_per_mm[0];
+	arm_length_fact = 1 / g_settings.step_per_mm[1];
 	theta_reduction_ratio = g_settings.rtheta_theta_reduction_ratio;
+	theta_reduction_ratio_inv = 1/g_settings.rtheta_theta_reduction_ratio;
 	arm = g_settings.rtheta_arm_length;
 	mc_sync_position();
 }
@@ -60,8 +64,8 @@ void kinematics_apply_forward(int32_t *steps, float *axis)
 {
 	// calcs X and Y based on theta angle and arm length
 
-	float angle = steps[AXIS_X] * arm_angle_fact * (1/theta_reduction_ratio);
-	float distance = steps[AXIS_Y]/g_settings.step_per_mm[1];
+	float angle = steps[AXIS_X] * arm_angle_fact * theta_reduction_ratio_inv;
+	float distance = steps[AXIS_Y] * arm_length_fact;
 	axis[AXIS_X] = distance * cos(angle);
 	axis[AXIS_Y] = distance * sin(angle);
 
@@ -128,6 +132,14 @@ uint8_t kinematics_home(void)
 #endif
 
 	cnc_unlock(true);
+
+	int32_t steps_homing[STEPPER_COUNT] = {0};
+	steps_homing[0] = g_settings.rtheta_theta_homing_angle * g_settings.step_per_mm[0] * FULL_TURN_INV;
+	steps_homing[1] = g_settings.rthera_arm_homing_distance * g_settings.step_per_mm[1] * FULL_TURN_INV;
+	kinematics_apply_forward(steps_homing, target);
+	itp_reset_rt_position(target);
+	mc_sync_position();
+
 	motion_data_t block_data = {0};
 	mc_get_position(target);
 
