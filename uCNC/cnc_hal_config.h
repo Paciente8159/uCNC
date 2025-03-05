@@ -401,8 +401,9 @@ extern "C"
 // #define ENC0_DIR DIN7
 
 // // Encoder mode
-// #define ENC0_PULSE DIN0
-// #define ENC0_DIR DIN8
+#define ENC0_PULSE DIN0
+#define ENC0_DIR DIN8
+#define ENC0_TYPE ENC_TYPE_I2C
 
 // #define ENC1_PULSE DIN1
 // #define ENC1_DIR DIN9
@@ -414,6 +415,16 @@ extern "C"
 // #define STEP0_ENCODER ENC0
 // #define STEP1_ENCODER ENC1
 // #define STEP2_ENCODER ENC2
+
+// By default encoders are configured as pulse encoders
+// But encoders can also be defined as I2C or SSI encoders
+// for these types of encoders the PULSE pin is used as the clock communication pin
+// the DIR pin is used as the data pin
+// I2C or SSI encoders can share the same CLOCK pin for better optimization
+// for example to use ENC1 with I2C and ENC2 with SSI
+
+// #define ENC1_TYPE ENC_TYPE_I2C
+// #define ENC2_TYPE ENC_TYPE_SSI
 
 // Assign an encoder has an RPM encoder
 // #define ENABLE_ENCODER_RPM

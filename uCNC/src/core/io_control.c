@@ -289,14 +289,14 @@ MCU_IO_CALLBACK void mcu_inputs_changed_cb(void)
 	}
 #endif
 
-#if (ENCODERS > 0)
+#if (ENCODERS_MASK)
 	inputs ^= g_settings.encoders_pulse_invert_mask;
 #endif
 	diff = inputs ^ prev_inputs;
 
 	if (diff)
 	{
-#if (ENCODERS > 0)
+#if (ENCODERS_MASK)
 		encoders_update(inputs, diff);
 #endif
 #ifdef ENABLE_IO_MODULES
