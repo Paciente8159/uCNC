@@ -85,9 +85,10 @@ SOFTSPI(enc7, ENC7_FREQ, 0, UNDEF_PIN, ENC7_DIR, ENC7_PULSE);
  * Additional read functions for other types of encoders can be added later
  * For now support for the MT6701 is added
  */
-
+static uint16_t encoder_last_read[ENCODERS];
 uint16_t read_encoder_mt6701_i2c(softi2c_port_t *port)
 {
+	return encoder_last_read[ENC0] + 2;
 	uint8_t reg = 0x03;
 	uint8_t data[2] = {0};
 	softi2c_send(port, 0x06, &reg, 1, false, 1);
@@ -101,7 +102,7 @@ uint16_t read_encoder_mt6701_ssi(softspi_port_t *port)
 {
 	uint32_t data = 0;
 	softspi_start(port);
-	softspi_bulk_xmit(port, &data, &data, 3);
+	softspi_bulk_xmit(port, (uint8_t*)&data, (uint8_t*)&data, 3);
 	softspi_stop(port);
 	return (uint16_t)((data >> 10) & 0x3fff);
 }
@@ -261,7 +262,7 @@ void encoders_update(uint8_t pulse, uint8_t diff)
 #endif
 
 #if defined(ENC0_READ) || defined(ENC1_READ) || defined(ENC2_READ) || defined(ENC3_READ) || defined(ENC4_READ) || defined(ENC5_READ) || defined(ENC6_READ) || defined(ENC7_READ)
-static uint16_t encoder_last_read[ENCODERS];
+//static uint16_t encoder_last_read[ENCODERS];
 static int32_t encoder_get_diff_read(uint8_t i)
 {
 	int32_t encoder_read = 0;
@@ -273,13 +274,13 @@ static int32_t encoder_get_diff_read(uint8_t i)
 		encoder_read = ENC0_READ;
 		diff = (!(g_settings.encoders_dir_invert_mask & (1 << ENC0))) ? (encoder_read - encoder_last_read[ENC0]) : (encoder_last_read[ENC0] - encoder_read);
 		encoder_last_read[ENC0] = encoder_read;
-		if (diff < -(g_settings.encoders_ppr[ENC0] >> 1))
+		if (diff < -(ENC0_PPR >> 1))
 		{
-			return (diff + g_settings.encoders_ppr[ENC0]);
+			return (diff + ENC0_PPR);
 		}
-		if (diff > (g_settings.encoders_ppr[ENC0] >> 1))
+		if (diff > (ENC0_PPR >> 1))
 		{
-			return (diff + g_settings.encoders_ppr[ENC0]);
+			return (diff + ENC0_PPR);
 		}
 		return diff;
 #endif
@@ -288,13 +289,13 @@ static int32_t encoder_get_diff_read(uint8_t i)
 		encoder_read = ENC1_READ;
 		diff = (!(g_settings.encoders_dir_invert_mask & (1 << ENC1))) ? (encoder_read - encoder_last_read[ENC1]) : (encoder_last_read[ENC1] - encoder_read);
 		encoder_last_read[ENC1] = encoder_read;
-		if (diff < -(g_settings.encoders_ppr[ENC1] >> 1))
+		if (diff < -(ENC1_PPR >> 1))
 		{
-			return (diff + g_settings.encoders_ppr[ENC1]);
+			return (diff + ENC1_PPR);
 		}
-		if (diff > (g_settings.encoders_ppr[ENC1] >> 1))
+		if (diff > (ENC1_PPR >> 1))
 		{
-			return (diff + g_settings.encoders_ppr[ENC1]);
+			return (diff + ENC1_PPR);
 		}
 		return diff;
 #endif
@@ -303,13 +304,13 @@ static int32_t encoder_get_diff_read(uint8_t i)
 		encoder_read = ENC2_READ;
 		diff = (!(g_settings.encoders_dir_invert_mask & (1 << ENC2))) ? (encoder_read - encoder_last_read[ENC2]) : (encoder_last_read[ENC2] - encoder_read);
 		encoder_last_read[ENC2] = encoder_read;
-		if (diff < -(g_settings.encoders_ppr[ENC2] >> 1))
+		if (diff < -(ENC2_PPR >> 1))
 		{
-			return (diff + g_settings.encoders_ppr[ENC2]);
+			return (diff + ENC2_PPR);
 		}
-		if (diff > (g_settings.encoders_ppr[ENC2] >> 1))
+		if (diff > (ENC2_PPR >> 1))
 		{
-			return (diff + g_settings.encoders_ppr[ENC2]);
+			return (diff + ENC2_PPR);
 		}
 		return diff;
 #endif
@@ -318,13 +319,13 @@ static int32_t encoder_get_diff_read(uint8_t i)
 		encoder_read = ENC3_READ;
 		diff = (!(g_settings.encoders_dir_invert_mask & (1 << ENC3))) ? (encoder_read - encoder_last_read[ENC3]) : (encoder_last_read[ENC3] - encoder_read);
 		encoder_last_read[ENC3] = encoder_read;
-		if (diff < -(g_settings.encoders_ppr[ENC3] >> 1))
+		if (diff < -(ENC3_PPR >> 1))
 		{
-			return (diff + g_settings.encoders_ppr[ENC3]);
+			return (diff + ENC3_PPR);
 		}
-		if (diff > (g_settings.encoders_ppr[ENC3] >> 1))
+		if (diff > (ENC3_PPR >> 1))
 		{
-			return (diff + g_settings.encoders_ppr[ENC3]);
+			return (diff + ENC3_PPR);
 		}
 		return diff;
 #endif
@@ -333,13 +334,13 @@ static int32_t encoder_get_diff_read(uint8_t i)
 		encoder_read = ENC4_READ;
 		diff = (!(g_settings.encoders_dir_invert_mask & (1 << ENC4))) ? (encoder_read - encoder_last_read[ENC4]) : (encoder_last_read[ENC4] - encoder_read);
 		encoder_last_read[ENC4] = encoder_read;
-		if (diff < -(g_settings.encoders_ppr[ENC4] >> 1))
+		if (diff < -(ENC4_PPR >> 1))
 		{
-			return (diff + g_settings.encoders_ppr[ENC4]);
+			return (diff + ENC4_PPR);
 		}
-		if (diff > (g_settings.encoders_ppr[ENC4] >> 1))
+		if (diff > (ENC4_PPR >> 1))
 		{
-			return (diff + g_settings.encoders_ppr[ENC4]);
+			return (diff + ENC4_PPR);
 		}
 		return diff;
 #endif
@@ -348,13 +349,13 @@ static int32_t encoder_get_diff_read(uint8_t i)
 		encoder_read = ENC5_READ;
 		diff = (!(g_settings.encoders_dir_invert_mask & (1 << ENC5))) ? (encoder_read - encoder_last_read[ENC5]) : (encoder_last_read[ENC5] - encoder_read);
 		encoder_last_read[ENC5] = encoder_read;
-		if (diff < -(g_settings.encoders_ppr[ENC5] >> 1))
+		if (diff < -(ENC5_PPR >> 1))
 		{
-			return (diff + g_settings.encoders_ppr[ENC5]);
+			return (diff + ENC5_PPR);
 		}
-		if (diff > (g_settings.encoders_ppr[ENC5] >> 1))
+		if (diff > (ENC5_PPR >> 1))
 		{
-			return (diff + g_settings.encoders_ppr[ENC5]);
+			return (diff + ENC5_PPR);
 		}
 		return diff;
 #endif
@@ -363,13 +364,13 @@ static int32_t encoder_get_diff_read(uint8_t i)
 		encoder_read = ENC6_READ;
 		diff = (!(g_settings.encoders_dir_invert_mask & (1 << ENC6))) ? (encoder_read - encoder_last_read[ENC6]) : (encoder_last_read[ENC6] - encoder_read);
 		encoder_last_read[ENC6] = encoder_read;
-		if (diff < -(g_settings.encoders_ppr[ENC6] >> 1))
+		if (diff < -(ENC6_PPR >> 1))
 		{
-			return (diff + g_settings.encoders_ppr[ENC6]);
+			return (diff + ENC6_PPR);
 		}
-		if (diff > (g_settings.encoders_ppr[ENC6] >> 1))
+		if (diff > (ENC6_PPR >> 1))
 		{
-			return (diff + g_settings.encoders_ppr[ENC6]);
+			return (diff + ENC6_PPR);
 		}
 		return diff;
 #endif
@@ -378,13 +379,13 @@ static int32_t encoder_get_diff_read(uint8_t i)
 		encoder_read = ENC7_READ;
 		diff = (!(g_settings.encoders_dir_invert_mask & (1 << ENC7))) ? (encoder_read - encoder_last_read[ENC7]) : (encoder_last_read[ENC7] - encoder_read);
 		encoder_last_read[ENC7] = encoder_read;
-		if (diff < -(g_settings.encoders_ppr[ENC7] >> 1))
+		if (diff < -(ENC7_PPR >> 1))
 		{
-			return (diff + g_settings.encoders_ppr[ENC7]);
+			return (diff + ENC7_PPR);
 		}
-		if (diff > (g_settings.encoders_ppr[ENC7] >> 1))
+		if (diff > (ENC7_PPR >> 1))
 		{
-			return (diff + g_settings.encoders_ppr[ENC7]);
+			return (diff + ENC7_PPR);
 		}
 		return diff;
 #endif

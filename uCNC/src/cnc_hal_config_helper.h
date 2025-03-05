@@ -244,19 +244,22 @@ extern "C"
 #if (!ASSERT_PIN(ENC0_DIR))
 #error "The ENC0 dir pin is not defined"
 #endif
+#ifndef ENC0_PPR
+#error "The ENC0 PPR is not defined"
+#endif
 #ifndef ENC0_TYPE
 #define ENC0_TYPE ENC_TYPE_PULSE
 #endif
-#if ENC0_TYPE==ENC_TYPE_PULSE
+#if ENC0_TYPE == ENC_TYPE_PULSE
 #define ENC0_MASK (1 << (ENC0_PULSE - DIN_PINS_OFFSET))
-#elif ENC0_TYPE==ENC_TYPE_I2C
+#elif ENC0_TYPE == ENC_TYPE_I2C
 #ifndef ENC0_FREQ
 #define ENC0_FREQ 400000
 #endif
 #ifndef ENC0_READ
 #define ENC0_READ read_encoder_mt6701_i2c(&enc0)
 #endif
-#elif ENC0_TYPE==ENC_TYPE_SSI
+#elif ENC0_TYPE == ENC_TYPE_SSI
 #ifndef ENC0_FREQ
 #define ENC0_FREQ 15000000
 #endif
@@ -272,19 +275,22 @@ extern "C"
 #if (!ASSERT_PIN(ENC1_DIR))
 #error "The ENC1 dir pin is not defined"
 #endif
+#ifndef ENC1_PPR
+#error "The ENC1 PPR is not defined"
+#endif
 #ifndef ENC1_TYPE
 #define ENC1_TYPE ENC_TYPE_PULSE
 #endif
-#if ENC1_TYPE==ENC_TYPE_PULSE
+#if ENC1_TYPE == ENC_TYPE_PULSE
 #define ENC1_MASK (1 << (ENC1_PULSE - DIN_PINS_OFFSET))
-#elif ENC1_TYPE==ENC_TYPE_I2C
+#elif ENC1_TYPE == ENC_TYPE_I2C
 #ifndef ENC1_FREQ
 #define ENC1_FREQ 400000
 #endif
 #ifndef ENC1_READ
 #define ENC1_READ read_encoder_mt6701_i2c(&enc1)
 #endif
-#elif ENC1_TYPE==ENC_TYPE_SSI
+#elif ENC1_TYPE == ENC_TYPE_SSI
 #ifndef ENC1_FREQ
 #define ENC1_FREQ 15000000
 #endif
@@ -300,19 +306,22 @@ extern "C"
 #if (!ASSERT_PIN(ENC2_DIR))
 #error "The ENC2 dir pin is not defined"
 #endif
+#ifndef ENC2_PPR
+#error "The ENC2 PPR is not defined"
+#endif
 #ifndef ENC2_TYPE
 #define ENC2_TYPE ENC_TYPE_PULSE
 #endif
-#if ENC2_TYPE==ENC_TYPE_PULSE
+#if ENC2_TYPE == ENC_TYPE_PULSE
 #define ENC2_MASK (1 << (ENC2_PULSE - DIN_PINS_OFFSET))
-#elif ENC2_TYPE==ENC_TYPE_I2C
+#elif ENC2_TYPE == ENC_TYPE_I2C
 #ifndef ENC2_FREQ
 #define ENC2_FREQ 400000
 #endif
 #ifndef ENC2_READ
 #define ENC2_READ read_encoder_mt6701_i2c(&enc2)
 #endif
-#elif ENC2_TYPE==ENC_TYPE_SSI
+#elif ENC2_TYPE == ENC_TYPE_SSI
 #ifndef ENC2_FREQ
 #define ENC2_FREQ 15000000
 #endif
@@ -328,19 +337,22 @@ extern "C"
 #if (!ASSERT_PIN(ENC3_DIR))
 #error "The ENC3 dir pin is not defined"
 #endif
+#ifndef ENC3_PPR
+#error "The ENC3 PPR is not defined"
+#endif
 #ifndef ENC3_TYPE
 #define ENC3_TYPE ENC_TYPE_PULSE
 #endif
-#if ENC3_TYPE==ENC_TYPE_PULSE
+#if ENC3_TYPE == ENC_TYPE_PULSE
 #define ENC3_MASK (1 << (ENC3_PULSE - DIN_PINS_OFFSET))
-#elif ENC3_TYPE==ENC_TYPE_I2C
+#elif ENC3_TYPE == ENC_TYPE_I2C
 #ifndef ENC3_FREQ
 #define ENC3_FREQ 400000
 #endif
 #ifndef ENC3_READ
 #define ENC3_READ read_encoder_mt6701_i2c(&enc3)
 #endif
-#elif ENC3_TYPE==ENC_TYPE_SSI
+#elif ENC3_TYPE == ENC_TYPE_SSI
 #ifndef ENC3_FREQ
 #define ENC3_FREQ 15000000
 #endif
@@ -356,19 +368,22 @@ extern "C"
 #if (!ASSERT_PIN(ENC4_DIR))
 #error "The ENC4 dir pin is not defined"
 #endif
+#ifndef ENC4_PPR
+#error "The ENC4 PPR is not defined"
+#endif
 #ifndef ENC4_TYPE
 #define ENC4_TYPE ENC_TYPE_PULSE
 #endif
-#if ENC4_TYPE==ENC_TYPE_PULSE
+#if ENC4_TYPE == ENC_TYPE_PULSE
 #define ENC4_MASK (1 << (ENC4_PULSE - DIN_PINS_OFFSET))
-#elif ENC4_TYPE==ENC_TYPE_I2C
+#elif ENC4_TYPE == ENC_TYPE_I2C
 #ifndef ENC4_FREQ
 #define ENC4_FREQ 400000
 #endif
 #ifndef ENC4_READ
 #define ENC4_READ read_encoder_mt6701_i2c(&enc4)
 #endif
-#elif ENC4_TYPE==ENC_TYPE_SSI
+#elif ENC4_TYPE == ENC_TYPE_SSI
 #ifndef ENC4_FREQ
 #define ENC4_FREQ 15000000
 #endif
@@ -384,19 +399,22 @@ extern "C"
 #if (!ASSERT_PIN(ENC5_DIR))
 #error "The ENC5 dir pin is not defined"
 #endif
+#ifndef ENC5_PPR
+#error "The ENC5 PPR is not defined"
+#endif
 #ifndef ENC5_TYPE
 #define ENC5_TYPE ENC_TYPE_PULSE
 #endif
-#if ENC5_TYPE==ENC_TYPE_PULSE
+#if ENC5_TYPE == ENC_TYPE_PULSE
 #define ENC5_MASK (1 << (ENC5_PULSE - DIN_PINS_OFFSET))
-#elif ENC5_TYPE==ENC_TYPE_I2C
+#elif ENC5_TYPE == ENC_TYPE_I2C
 #ifndef ENC5_FREQ
 #define ENC5_FREQ 400000
 #endif
 #ifndef ENC5_READ
 #define ENC5_READ read_encoder_mt6701_i2c(&enc5)
 #endif
-#elif ENC5_TYPE==ENC_TYPE_SSI
+#elif ENC5_TYPE == ENC_TYPE_SSI
 #ifndef ENC5_FREQ
 #define ENC5_FREQ 15000000
 #endif
@@ -412,19 +430,22 @@ extern "C"
 #if (!ASSERT_PIN(ENC6_DIR))
 #error "The ENC6 dir pin is not defined"
 #endif
+#ifndef ENC6_PPR
+#error "The ENC6 PPR is not defined"
+#endif
 #ifndef ENC6_TYPE
 #define ENC6_TYPE ENC_TYPE_PULSE
 #endif
-#if ENC6_TYPE==ENC_TYPE_PULSE
+#if ENC6_TYPE == ENC_TYPE_PULSE
 #define ENC6_MASK (1 << (ENC6_PULSE - DIN_PINS_OFFSET))
-#elif ENC6_TYPE==ENC_TYPE_I2C
+#elif ENC6_TYPE == ENC_TYPE_I2C
 #ifndef ENC6_FREQ
 #define ENC6_FREQ 400000
 #endif
 #ifndef ENC6_READ
 #define ENC6_READ read_encoder_mt6701_i2c(&enc6)
 #endif
-#elif ENC6_TYPE==ENC_TYPE_SSI
+#elif ENC6_TYPE == ENC_TYPE_SSI
 #ifndef ENC6_FREQ
 #define ENC6_FREQ 15000000
 #endif
@@ -440,19 +461,22 @@ extern "C"
 #if (!ASSERT_PIN(ENC7_DIR))
 #error "The ENC7 dir pin is not defined"
 #endif
+#ifndef ENC7_PPR
+#error "The ENC7 PPR is not defined"
+#endif
 #ifndef ENC7_TYPE
 #define ENC7_TYPE ENC_TYPE_PULSE
 #endif
-#if ENC7_TYPE==ENC_TYPE_PULSE
+#if ENC7_TYPE == ENC_TYPE_PULSE
 #define ENC7_MASK (1 << (ENC7_PULSE - DIN_PINS_OFFSET))
-#elif ENC7_TYPE==ENC_TYPE_I2C
+#elif ENC7_TYPE == ENC_TYPE_I2C
 #ifndef ENC7_FREQ
 #define ENC7_FREQ 400000
 #endif
 #ifndef ENC7_READ
 #define ENC7_READ read_encoder_mt6701_i2c(&enc7)
 #endif
-#elif ENC7_TYPE==ENC_TYPE_SSI
+#elif ENC7_TYPE == ENC_TYPE_SSI
 #ifndef ENC7_FREQ
 #define ENC7_FREQ 15000000
 #endif
