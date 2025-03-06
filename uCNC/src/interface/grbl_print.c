@@ -79,7 +79,7 @@ size_t prt_byte(void *out, size_t maxlen, const uint8_t *data, uint8_t flags)
 		maxlen = prt_putc(out, maxlen, '0');
 		maxlen = prt_putc(out, maxlen, 'x');
 	}
-	for (uint8_t i = size; i !=0;)
+	for (uint8_t i = size; i != 0;)
 	{
 		i--;
 		uint8_t up = data[i] >> 4;
@@ -207,8 +207,8 @@ size_t prt_fmtva(void *out, size_t maxlen, const char *fmt, va_list *args)
 #ifndef PRINT_FTM_MINIMAL
 		const char *s;
 		uint8_t hexflags = HEX_NONE;
-		void *pt = NULL;
 #endif
+		void *pt = NULL;
 		int32_t li = 0;
 		float f, *f_ptr = NULL;
 		uint8_t elems = 0;
@@ -296,14 +296,13 @@ size_t prt_fmtva(void *out, size_t maxlen, const char *fmt, va_list *args)
 				cval = 1;
 				__FALL_THROUGH__
 			case 'u':
-#ifndef PRINT_FTM_MINIMAL
+				// #ifndef PRINT_FTM_MINIMAL
 				if (elems)
 				{
 					pt = va_arg(*args, void *);
 				}
 				else
 				{
-#endif
 					switch (lcount)
 					{
 					case 4:
@@ -314,45 +313,47 @@ size_t prt_fmtva(void *out, size_t maxlen, const char *fmt, va_list *args)
 						li = va_arg(*args, int);
 						break;
 					}
-#ifndef PRINT_FTM_MINIMAL
 					pt = &li;
 					elems = 1;
 				}
 				do
 				{
+#ifndef PRINT_FTM_MINIMAL
 					switch (c)
 					{
 					case 'x':
 					case 'X':
-#ifndef PRINT_FTM_MINIMAL
 						maxlen = prt_byte(out, maxlen, (const uint8_t *)pt, (hexflags | lcount));
-#else
-						maxlen = prt_byte(out, maxlen, (const uint8_t *)&li, (hexflags | lcount));
-#endif
 						break;
 					case 'I':
 						maxlen = prt_ip(out, maxlen, li);
 						break;
 					default:
 #endif
-						if (cval && (li < 0))
+						switch (lcount)
 						{
-							maxlen = prt_putc(out, maxlen, '-');
-							li = -li;
+						case 1:
+							maxlen = prt_int(out, maxlen, (uint32_t)*((uint8_t *)pt), 0);
+							pt += 1;
+							break;
+						case 2:
+							maxlen = prt_int(out, maxlen, (uint32_t)*((uint16_t *)pt), 0);
+							pt += 2;
+							break;
+						default:
+							maxlen = prt_int(out, maxlen, (uint32_t)*((uint32_t *)pt), 0);
+							pt += 4;
+							break;
 						}
-						li &= (0xffffffff >> ((4 - lcount) << 3));
-						maxlen = prt_int(out, maxlen, (uint32_t)li, 0);
-#ifndef PRINT_FTM_MINIMAL
 						break;
+#ifndef PRINT_FTM_MINIMAL
 					}
+#endif
 					if (elems && --elems)
 					{
 						maxlen = prt_putc(out, maxlen, ',');
 					}
-					pt = (void *)&((uint8_t *)pt)[(1 << (lcount - 1))];
 				} while (elems);
-#endif
-				/* code */
 				break;
 #ifndef PRINT_FTM_MINIMAL
 			case 'A':
@@ -384,7 +385,7 @@ size_t prt_fmtva(void *out, size_t maxlen, const char *fmt, va_list *args)
 
 					case 'a':
 					case 'A':
-						maxlen = prt_byte(out, maxlen, (const uint8_t *)f_ptr, (hexflags | VAR_DWORD));
+						maxlen = prt_byte(out, maxlen, (const uint8_t *)f_ptr++, (hexflags | VAR_DWORD));
 						break;
 					default:
 						maxlen = prt_flt(out, maxlen, *f_ptr++, precision);
