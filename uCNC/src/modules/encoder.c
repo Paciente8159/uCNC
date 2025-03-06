@@ -88,7 +88,6 @@ SOFTSPI(enc7, ENC7_FREQ, 0, UNDEF_PIN, ENC7_DIR, ENC7_PULSE);
 static uint16_t encoder_last_read[ENCODERS];
 uint16_t read_encoder_mt6701_i2c(softi2c_port_t *port)
 {
-	return encoder_last_read[ENC0] + 2;
 	uint8_t reg = 0x03;
 	uint8_t data[2] = {0};
 	softi2c_send(port, 0x06, &reg, 1, false, 1);
@@ -102,7 +101,7 @@ uint16_t read_encoder_mt6701_ssi(softspi_port_t *port)
 {
 	uint32_t data = 0;
 	softspi_start(port);
-	softspi_bulk_xmit(port, (uint8_t*)&data, (uint8_t*)&data, 3);
+	softspi_bulk_xmit(port, (uint8_t *)&data, (uint8_t *)&data, 3);
 	softspi_stop(port);
 	return (uint16_t)((data >> 10) & 0x3fff);
 }
@@ -262,7 +261,7 @@ void encoders_update(uint8_t pulse, uint8_t diff)
 #endif
 
 #if defined(ENC0_READ) || defined(ENC1_READ) || defined(ENC2_READ) || defined(ENC3_READ) || defined(ENC4_READ) || defined(ENC5_READ) || defined(ENC6_READ) || defined(ENC7_READ)
-//static uint16_t encoder_last_read[ENCODERS];
+// static uint16_t encoder_last_read[ENCODERS];
 static int32_t encoder_get_diff_read(uint8_t i)
 {
 	int32_t encoder_read = 0;
@@ -429,7 +428,10 @@ void encoders_reset_position(void)
 {
 	for (uint8_t i = 0; i < ENCODERS; i++)
 	{
-		encoder_reset_position(i, 0);
+		if (!((1UL << i) && STEPPERS_ENCODERS_MASK))
+		{
+			encoder_reset_position(i, 0);
+		}
 	}
 }
 
