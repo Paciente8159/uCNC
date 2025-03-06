@@ -17,6 +17,7 @@
 */
 
 #include "../../cnc.h"
+#include <math.h>
 
 #ifdef MCU_HAS_ONESHOT_TIMER
 MCU_CALLBACK mcu_timeout_delgate mcu_timeout_cb;
