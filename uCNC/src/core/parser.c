@@ -64,7 +64,6 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
 static uint8_t parser_grbl_command(void);
 FORCEINLINE static uint8_t parser_gcode_command(bool is_jogging);
-static void parser_coordinate_system_load(uint8_t param, float *target);
 
 #ifdef ENABLE_RS274NGC_EXPRESSIONS
 extern char parser_backtrack;
@@ -1744,27 +1743,9 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 	case 254:
 	case 255:
 		break;
-	case G92OFFSET:
-		memcpy(parser_parameters.g92_offset, coords, sizeof(parser_parameters.g92_offset));
-		memcpy(g92permanentoffset, parser_parameters.g92_offset, sizeof(g92permanentoffset));
-#ifdef G92_STORE_NONVOLATILE
-		settings_save(G92ADDRESS, (uint8_t *)&g92permanentoffset, PARSER_PARAM_SIZE);
-#endif
-		parser_wco_counter = 0;
-		break;
-#ifndef DISABLE_G10_SUPPORT
 	default:
-		settings_save(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (index * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)coords, PARSER_PARAM_SIZE);
-#ifndef DISABLE_COORDINATES_SYSTEM_RAM
-		memcpy(&coordinate_systems[index], coords, PARSER_PARAM_SIZE);
-#endif
-		if (index == parser_parameters.coord_system_index)
-		{
-			memcpy(parser_parameters.coord_system_offset, coords, PARSER_PARAM_SIZE);
-		}
-		parser_wco_counter = 0;
+		parser_coordinate_system_save(index, coords);
 		break;
-#endif
 	}
 
 	// laser disabled in nonmodal moves
@@ -2891,6 +2872,33 @@ void parser_coordinate_system_load(uint8_t param, float *target)
 #endif
 		break;
 	}
+}
+
+void parser_coordinate_system_save(uint8_t param, float *target)
+{
+	switch (param)
+	{
+	case G92OFFSET:
+#ifdef G92_STORE_NONVOLATILE
+		settings_save(G92ADDRESS, (uint8_t *)target, PARSER_PARAM_SIZE);
+#endif
+		memcpy(parser_parameters.g92_offset, target, sizeof(parser_parameters.g92_offset));
+		memcpy(g92permanentoffset, target, sizeof(g92permanentoffset));
+		break;
+#ifndef DISABLE_G10_SUPPORT
+	default:
+		settings_save(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (param * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)target, PARSER_PARAM_SIZE);
+#ifndef DISABLE_COORDINATES_SYSTEM_RAM
+		memcpy((uint8_t *)coordinate_systems[param], target, PARSER_PARAM_SIZE);
+#endif
+		if (param == parser_parameters.coord_system_index)
+		{
+			memcpy(parser_parameters.coord_system_offset, target, PARSER_PARAM_SIZE);
+		}
+		break;
+	}
+#endif
+	parser_wco_counter = 0;
 }
 
 /**
