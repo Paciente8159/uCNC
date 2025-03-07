@@ -512,7 +512,7 @@ uint8_t mcu_softpwm_freq_config(uint16_t freq)
 	// reduces bit resolution for higher frequencies
 
 	// determines the bit resolution (7 - esp32_pwm_res);
-	uint8_t res = (uint8_t)MAX((int8_t)ceilf(log2(freq * 0.002f)), 0);
+	uint8_t res = (uint8_t)MAX((int8_t)ceilf(LOG2(freq * 0.002f)), 0);
 	return res;
 }
 #endif

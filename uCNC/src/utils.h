@@ -191,6 +191,14 @@ extern "C"
 #ifndef M_COS_TAYLOR_1
 #define M_COS_TAYLOR_1 0.1666666666666666667f
 #endif
+#ifndef M_LN2
+#define M_LN2 0.693147180559945309417f
+#endif
+
+// some math.h libraries do not define log of base 2
+#ifndef LOG2
+#define LOG2(x) log(x)/M_LN2
+#endif
 
 #define __TIMEOUT_US__(timeout) for (uint32_t elap_us_##timeout, curr_us_##timeout = mcu_free_micros(); timeout > 0; elap_us_##timeout = mcu_free_micros() - curr_us_##timeout, timeout -= MIN(timeout, ((elap_us_##timeout < 1000) ? elap_us_##timeout : 1000 + elap_us_##timeout)), curr_us_##timeout = mcu_free_micros())
 #define __TIMEOUT_MS__(timeout)                                                          \
