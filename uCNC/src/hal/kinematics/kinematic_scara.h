@@ -61,8 +61,8 @@ extern "C"
 																			{.id = 107, .memptr = &g_settings.scara_forearm_length, .type = SETTING_TYPE_FLOAT},
 
 #define KINEMATICS_VARS_SYSTEM_MENU_INIT                                                                     \
-	DECL_MENU_VAR(SYSTEM_MENU_ID_HOMING, s28, STR_OFFSET, &g_settings.scara_arm_homing_angle, VAR_TYPE_FLOAT); \
-	DECL_MENU_VAR(SYSTEM_MENU_ID_HOMING, s29, STR_OFFSET, &g_settings.scara_forearm_homing_angle, VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(SYSTEM_MENU_ID_HOMING, s28, STR_HOME_ANG, &g_settings.scara_arm_homing_angle, VAR_TYPE_FLOAT); \
+	DECL_MENU_VAR(SYSTEM_MENU_ID_HOMING, s29, STR_F_ARM_HOME_ANG, &g_settings.scara_forearm_homing_angle, VAR_TYPE_FLOAT);
 
 #ifdef __cplusplus
 }

@@ -196,8 +196,8 @@ extern "C"
 #endif
 
 // some math.h libraries do not define log of base 2
-#ifndef LOG2
-#define LOG2(x) log(x)/M_LN2
+#ifndef LN
+#define LN(x) log(x)/M_LN2
 #endif
 
 #define __TIMEOUT_US__(timeout) for (uint32_t elap_us_##timeout, curr_us_##timeout = mcu_free_micros(); timeout > 0; elap_us_##timeout = mcu_free_micros() - curr_us_##timeout, timeout -= MIN(timeout, ((elap_us_##timeout < 1000) ? elap_us_##timeout : 1000 + elap_us_##timeout)), curr_us_##timeout = mcu_free_micros())

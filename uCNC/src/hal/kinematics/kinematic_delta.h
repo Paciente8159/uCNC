@@ -62,7 +62,7 @@ extern "C"
 																			{.id = 109, .memptr = &g_settings.delta_forearm_length, .type = SETTING_TYPE_FLOAT},
 
 #define KINEMATICS_VARS_SYSTEM_MENU_INIT                                                                                  \
-	DECL_MENU_VAR(SYSTEM_MENU_ID_HOMING, s28, STR_OFFSET, &g_settings.delta_bicep_homing_angle, VAR_TYPE_FLOAT);            \
+	DECL_MENU_VAR(SYSTEM_MENU_ID_HOMING, s28, STR_HOME_ANG, &g_settings.delta_bicep_homing_angle, VAR_TYPE_FLOAT);            \
 	DECL_MENU_VAR(SYSTEM_MENU_ID_KINEMATIC_SETTINGS, s106, STR_BASE_RAD, &g_settings.delta_base_radius, VAR_TYPE_FLOAT);    \
 	DECL_MENU_VAR(SYSTEM_MENU_ID_KINEMATIC_SETTINGS, s107, STR_EFF_RAD, &g_settings.delta_effector_radius, VAR_TYPE_FLOAT); \
 	DECL_MENU_VAR(SYSTEM_MENU_ID_KINEMATIC_SETTINGS, s108, STR_BICEP_LEN, &g_settings.delta_bicep_length, VAR_TYPE_FLOAT);  \
