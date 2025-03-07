@@ -67,6 +67,8 @@ extern "C"
 #include "kinematic_delta.h"
 #elif (KINEMATIC == KINEMATIC_SCARA)
 #include "kinematic_scara.h"
+#elif (KINEMATIC == KINEMATICS_RTHETA)
+#include "kinematic_rtheta.h"
 #elif (KINEMATIC == KINEMATIC_DUMMY)
 #include "kinematic_dummy.h"
 #else

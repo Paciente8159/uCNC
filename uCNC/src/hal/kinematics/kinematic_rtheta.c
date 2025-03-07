@@ -47,7 +47,7 @@ void kinematics_init(void)
 void kinematics_apply_inverse(float *axis, int32_t *steps)
 {
 	float angle = atan2f(axis[AXIS_Y], axis[AXIS_X]);
-	float distance = sqrt([AXIS_X] * axis[AXIS_X] + axis[AXIS_Y] * axis[AXIS_Y]);
+	float distance = sqrt(axis[AXIS_X] * axis[AXIS_X] + axis[AXIS_Y] * axis[AXIS_Y]);
 
 	steps[0] = (int32_t)roundf(theta_reduction_ratio * angle * DOUBLE_PI_INV * g_settings.step_per_mm[0]);
 	steps[1] = (int32_t)roundf(distance * g_settings.step_per_mm[1]);
