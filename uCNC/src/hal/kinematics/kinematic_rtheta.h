@@ -43,6 +43,53 @@ extern "C"
 */
 	// #define ENABLE_SKEW_COMPENSATION
 
+#define KINEMATICS_VARS_DECL          \
+	float rtheta_theta_homing_angle;    \
+	float rthera_arm_homing_distance;   \
+	float rtheta_theta_reduction_ratio; \
+	float rtheta_arm_length;
+
+#ifndef RTHETA_HOME_ANGLE_DEFAULT
+#define RTHETA_HOME_ANGLE_DEFAULT 0
+#endif
+#ifndef RTHETA_HOME_DIST_DEFAULT
+#define RTHETA_HOME_DIST_DEFAULT 0
+#endif
+#ifndef s
+#define RTHETA_RATIO_DEFAULT 1
+#endif
+#ifndef RTHETA_ARM_LEN_DEFAULT
+#define RTHETA_ARM_LEN_DEFAULT 100
+#endif
+
+#define KINEMATICS_VARS_DEFAULTS_INIT .rtheta_theta_homing_angle = RTHETA_HOME_ANGLE_DEFAULT, \
+																			.rthera_arm_homing_distance = RTHETA_HOME_DIST_DEFAULT, \
+																			.rtheta_theta_reduction_ratio = RTHETA_RATIO_DEFAULT,   \
+																			.rtheta_arm_length = RTHETA_ARM_LEN_DEFAULT,
+
+#define KINEMATICS_VARS_SETTINGS_INIT {.id = 28, .memptr = &g_settings.rtheta_theta_homing_angle, .type = SETTING_TYPE_FLOAT},     \
+																			{.id = 29, .memptr = &g_settings.rthera_arm_homing_distance, .type = SETTING_TYPE_FLOAT},    \
+																			{.id = 106, .memptr = &g_settings.rtheta_theta_reduction_ratio, .type = SETTING_TYPE_FLOAT}, \
+																			{.id = 107, .memptr = &g_settings.rtheta_arm_length, .type = SETTING_TYPE_FLOAT},
+#ifndef STR_RTHETA_HOME_ANGLE
+#define STR_RTHETA_HOME_ANGLE "RTh Homing angle"
+#endif
+#ifndef STR_RTHETA_HOME_DIST
+#define STR_RTHETA_HOME_DIST "RTh Homing dist."
+#endif
+#ifndef STR_RTHETA_RATIO
+#define STR_RTHETA_RATIO "RTh red. ratio"
+#endif
+#ifndef STR_RTHETA_ARM_LEN
+#define STR_RTHETA_ARM_LEN "RTh arm length"
+#endif
+
+#define KINEMATICS_VARS_SYSTEM_MENU_INIT                                                                                              \
+	DECL_MENU_VAR(SYSTEM_MENU_ID_HOMING, s28, STR_RTHETA_HOME_ANGLE, &g_settings.rtheta_theta_homing_angle, VAR_TYPE_FLOAT);            \
+	DECL_MENU_VAR(SYSTEM_MENU_ID_HOMING, s29, STR_RTHETA_HOME_DIST, &g_settings.rthera_arm_homing_distance, VAR_TYPE_FLOAT);            \
+	DECL_MENU_VAR(SYSTEM_MENU_ID_KINEMATIC_SETTINGS, s106, STR_RTHETA_RATIO, &g_settings.rtheta_theta_reduction_ratio, VAR_TYPE_FLOAT); \
+	DECL_MENU_VAR(SYSTEM_MENU_ID_KINEMATIC_SETTINGS, s107, STR_RTHETA_ARM_LEN, &g_settings.rtheta_arm_length, VAR_TYPE_FLOAT);
+
 #ifdef __cplusplus
 }
 #endif
