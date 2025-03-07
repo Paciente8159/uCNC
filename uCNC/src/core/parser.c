@@ -57,7 +57,7 @@ static float coordinate_systems[TOTAL_COORDINATE_SYSTEMS][AXIS_COUNT];
 #define MOTION_MODAL 255
 #define MOTION_G53 254
 #define MOTION_G28 252
-#define MOTION_G30 523
+#define MOTION_G30 253
 
 FORCEINLINE static void parser_get_comment(uint8_t start_char);
 FORCEINLINE static uint8_t parser_get_token(uint8_t *word, float *value);
