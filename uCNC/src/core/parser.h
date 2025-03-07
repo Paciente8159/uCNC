@@ -328,6 +328,8 @@ extern "C"
 	uint8_t parser_get_float(float *value);
 	void parser_discard_command(void);
 	unsigned char parser_get_next_preprocessed(bool peek);
+	void parser_coordinate_system_load(uint8_t param, float *target);
+	void parser_coordinate_system_save(uint8_t param, float *target);
 #ifdef ENABLE_RS274NGC_EXPRESSIONS
 	float parser_get_parameter(uint16_t param);
 	void parser_set_parameter(uint16_t param, float value);
