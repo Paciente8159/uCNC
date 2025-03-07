@@ -136,25 +136,10 @@ const settings_t __rom__ default_settings =
 #endif
 				.tool_length_offset = DEFAULT_ARRAY(TOOL_COUNT, 0),
 #endif
-#if (KINEMATIC == KINEMATIC_LINEAR_DELTA)
-				.delta_arm_length = DEFAULT_LIN_DELTA_ARM_LENGTH,
-				.delta_armbase_radius = DEFAULT_LIN_DELTA_BASE_RADIUS,
-// float delta_efector_height;
-#elif (KINEMATIC == KINEMATIC_DELTA)
-				.delta_base_radius = DEFAULT_DELTA_BASE_RADIUS,
-				.delta_effector_radius = DEFAULT_DELTA_EFFECTOR_RADIUS,
-				.delta_bicep_length = DEFAULT_DELTA_BICEP_LENGTH,
-				.delta_forearm_length = DEFAULT_DELTA_FOREARM_LENGTH,
-				.delta_bicep_homing_angle = DEFAULT_DELTA_BICEP_HOMING_ANGLE,
-#elif (KINEMATIC == KINEMATIC_SCARA)
-				.scara_arm_length = DEFAULT_SCARA_ARM_LENGTH,
-				.scara_forearm_length = DEFAULT_SCARA_FOREARM_LENGTH,
-				.scara_arm_homing_angle = DEFAULT_SCARA_ARM_HOMING_ANGLE,
-				.scara_forearm_homing_angle = DEFAULT_SCARA_FOREARM_HOMING_ANGLE,
-#endif
+				KINEMATICS_VARS_DEFAULTS_INIT /*KINEMATICS DEFAULTS*/
 
 #ifdef ENABLE_BACKLASH_COMPENSATION
-				.backlash_steps = DEFAULT_ARRAY(AXIS_TO_STEPPERS, 0),
+						.backlash_steps = DEFAULT_ARRAY(AXIS_TO_STEPPERS, 0),
 #endif
 #ifdef ENABLE_SKEW_COMPENSATION
 				.skew_xy_factor = 0,
@@ -221,21 +206,8 @@ const setting_id_t __rom__ g_settings_id_table[] = {
 #if TOOL_COUNT > 0
 		{.id = 81, .memptr = &g_settings.tool_length_offset, .type = SETTING_TYPE_FLOAT | SETTING_ARRAY | SETTING_ARRCNT(TOOL_COUNT)},
 #endif
-#if (KINEMATIC == KINEMATIC_LINEAR_DELTA)
-		{.id = 106, .memptr = &g_settings.delta_arm_length, .type = SETTING_TYPE_FLOAT},
-		{.id = 107, .memptr = &g_settings.delta_armbase_radius, .type = SETTING_TYPE_FLOAT},
-#elif (KINEMATIC == KINEMATIC_DELTA)
-		{.id = 28, .memptr = &g_settings.delta_bicep_homing_angle, .type = SETTING_TYPE_FLOAT},
-		{.id = 106, .memptr = &g_settings.delta_base_radius, .type = SETTING_TYPE_FLOAT},
-		{.id = 107, .memptr = &g_settings.delta_effector_radius, .type = SETTING_TYPE_FLOAT},
-		{.id = 108, .memptr = &g_settings.delta_bicep_length, .type = SETTING_TYPE_FLOAT},
-		{.id = 109, .memptr = &g_settings.delta_forearm_length, .type = SETTING_TYPE_FLOAT},
-#elif (KINEMATIC == KINEMATIC_SCARA)
-		{.id = 106, .memptr = &g_settings.scara_arm_length, .type = SETTING_TYPE_FLOAT},
-		{.id = 107, .memptr = &g_settings.scara_forearm_length, .type = SETTING_TYPE_FLOAT},
-		{.id = 28, .memptr = &g_settings.scara_arm_homing_angle, .type = SETTING_TYPE_FLOAT},
-		{.id = 29, .memptr = &g_settings.scara_forearm_homing_angle, .type = SETTING_TYPE_FLOAT},
-#endif
+		KINEMATICS_VARS_SETTINGS_INIT /*KINEMATICS INITIALIZATION*/
+
 		{.id = 100, .memptr = &g_settings.step_per_mm, .type = SETTING_TYPE_FLOAT | SETTING_ARRAY | SETTING_ARRCNT(STEPPER_COUNT)},
 		{.id = 110, .memptr = &g_settings.max_feed_rate, .type = SETTING_TYPE_FLOAT | SETTING_ARRAY | SETTING_ARRCNT(STEPPER_COUNT)},
 		{.id = 120, .memptr = &g_settings.acceleration, .type = SETTING_TYPE_FLOAT | SETTING_ARRAY | SETTING_ARRCNT(STEPPER_COUNT)},
