@@ -447,6 +447,9 @@ void itp_run(void)
 				float accel_dist = ABS(junction_speed_sqr - itp_cur_plan_block->entry_feed_sqr) * accel_inv;
 				accel_dist = fast_flt_div2(accel_dist);
 				accel_until -= floorf(accel_dist);
+#ifdef ENABLE_PLANNER_ACCEL_NONOPTIMAL
+				accel_until = MIN(accel_until, remaining_steps);
+#endif
 				float t = ABS(junction_speed - current_speed);
 #if S_CURVE_ACCELERATION_LEVEL != 0
 				acc_scale = t;
@@ -708,6 +711,7 @@ void itp_run(void)
 		{
 			itp_cur_plan_block->entry_feed_sqr = fast_flt_pow2(junction_speed);
 		}
+#endif
 
 		itp_cur_plan_block->steps[itp_cur_plan_block->main_stepper] = remaining_steps;
 
