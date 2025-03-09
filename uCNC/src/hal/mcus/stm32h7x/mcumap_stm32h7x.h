@@ -5042,31 +5042,48 @@ extern "C"
 #define ADC_COMMON(X) __helper__(ADC, __indirect__(X, ADC), _COMMON)
 #define ADC(X) __helper__(ADC, __indirect__(X, ADC), )
 
-#define mcu_config_analog(diopin)                                                                                        \
-	{                                                                                                                      \
-		RCC->AHB4ENR |= __indirect__(diopin, RCCEN);                                                                         \
-		ADC_COMMON(diopin)->CCR &= ~(ADC_CCR_PRESC);                                                                         \
-		ADC_COMMON(diopin)->CCR |= (ADC_CCR_PRESC_0 | ADC_CCR_PRESC_1);                                                      \
-		if (__indirect__(diopin, ADC) != 3)                                                                                  \
-		{                                                                                                                    \
-			RCC->AHB1ENR |= (RCC_AHB1ENR_ADC12EN);                                                                             \
-		}                                                                                                                    \
-		else                                                                                                                 \
-		{                                                                                                                    \
-			RCC->AHB4ENR |= RCC_AHB4ENR_ADC3EN;                                                                                \
-		}                                                                                                                    \
-		ADC(diopin)->SQR1 = 1; /*one conversion*/                                                                            \
-		ADC(diopin)->SMPR1 = 0x4fffffff & 0x36DB6DB6;                                                                        \
-		ADC(diopin)->SMPR2 = 0x4ffffffff & 0x36DB6DB6;                                                                       \
-		ADC(diopin)->CFGR &= ~ADC_CFGR_CONT;																											/*single conversion mode*/ \
-		__indirect__(diopin, GPIO)->MODER &= ~(GPIO_RESET << ((__indirect__(diopin, BIT)) << 1)); /*reset dir*/              \
-		__indirect__(diopin, GPIO)->MODER |= (GPIO_ANALOG << ((__indirect__(diopin, BIT)) << 1)); /*analog mode*/            \
-		ADC(diopin)->ISR |= ADC_ISR_ADRDY;                                                                                   \
-		ADC(diopin)->CR |= ADC_CR_ADEN; /*enable adc*/                                                                       \
-		while (!(ADC(diopin)->ISR & ADC_ISR_ADRDY))                                                                          \
-			;                                                                                                                  \
-		ADC(diopin)->ISR |= ADC_ISR_ADRDY;                                                                                   \
-		ADC(diopin)->CFGR &= ~(ADC_CFGR_EXTEN); /*external start trigger software*/                                          \
+	// configuration
+	// CR=268436224
+	// CFGR=2147487756
+	// CFG2=0;
+	// SMPR1=268435455
+	// SMPR2=1073741823
+	// CCR=196608
+	// PSEL=0
+	//channel select
+	// SMPR2=1072431103
+	// PSEL=65536
+	// SQR1=1024
+	// CALFACT=995
+	// start
+	// CR=268436225
+
+#define mcu_config_analog(diopin)                                                                             \
+	{                                                                                                           \
+		RCC->AHB4ENR |= __indirect__(diopin, RCCEN);                                                              \
+		__indirect__(diopin, GPIO)->MODER &= ~(GPIO_RESET << ((__indirect__(diopin, BIT)) << 1)); /*reset dir*/   \
+		__indirect__(diopin, GPIO)->MODER |= (GPIO_ANALOG << ((__indirect__(diopin, BIT)) << 1)); /*analog mode*/ \
+		if (__indirect__(diopin, ADC) != 3)                                                                       \
+		{                                                                                                         \
+			RCC->AHB1ENR |= (RCC_AHB1ENR_ADC12EN);                                                                  \
+		}                                                                                                         \
+		else                                                                                                      \
+		{                                                                                                         \
+			RCC->AHB4ENR |= RCC_AHB4ENR_ADC3EN;                                                                     \
+		}                                                                                                         \
+		ADC_COMMON(diopin)->CCR &= ~(ADC_CCR_PRESC | ADC_CCR_CKMODE);                                             \
+		ADC_COMMON(diopin)->CCR |= (/*ADC_CCR_PRESC_3 | */ADC_CCR_CKMODE_1 | ADC_CCR_CKMODE_0);                                                             \
+		ADC(diopin)->SQR1 = 1; /*one conversion*/                                                                 \
+		ADC(diopin)->SMPR1 = 0x4fffffff /*& 0x1B6DB6DB*/;                                                             \
+		ADC(diopin)->SMPR2 = 0x4ffffffff /*& 0x1B6DB6DB*/;                                                            \
+		ADC(diopin)->CFGR = 0x8000100C; /*10-bit resolution / Injected Queue disable /  ADC_DR register is overwritten / external start trigger software */                         \
+		ADC(diopin)->CFGR2 = 0;        \
+		ADC(diopin)->CR &= ~ADC_CR_DEEPPWD; /*disable power down*/      \
+		ADC(diopin)->CR |= ADC_CR_BOOST; /*enable boost mode*/      \
+		ADC(diopin)->ISR |= ADC_ISR_LDORDY;                             \
+		ADC(diopin)->CR |= (ADC_CR_ADVREGEN); /*enable adc voltage reg*/            \
+		while (!(ADC(diopin)->ISR & ADC_ISR_LDORDY))                    \
+			;                                                             \
 	}
 
 #define mcu_get_input(diopin) (CHECKBIT(__indirect__(diopin, GPIO)->IDR, __indirect__(diopin, BIT)))
@@ -5081,14 +5098,21 @@ extern "C"
 
 #define mcu_get_pwm(diopin) ((uint8_t)((((uint32_t)__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR)) * 255) / ((uint32_t)__indirect__(diopin, TIMREG)->ARR)))
 
-#define mcu_get_analog(diopin)                         \
-	({                                                   \
-		ADC(diopin)->SQR1 = __indirect__(diopin, CHANNEL); \
-		ADC(diopin)->CR |= ADC_CR_ADSTART;                 \
-		while (!(ADC(diopin)->ISR & ADC_ISR_EOC))          \
-			;                                                \
-		ADC(diopin)->ISR |= ADC_ISR_EOC;                   \
-		(0x3FF & (ADC(diopin)->DR >> 2));                  \
+#define mcu_get_analog(diopin)                                      \
+	({                                                                \
+		ADC(diopin)->ISR |= ADC_ISR_ADRDY;                              \
+		ADC(diopin)->CR |= ADC_CR_ADEN; /*enable adc*/                  \
+		while (!(ADC(diopin)->ISR & ADC_ISR_ADRDY))                     \
+			;                                                             \
+		ADC(diopin)->PCSEL = (1UL << __indirect__(diopin, CHANNEL));    \
+		ADC(diopin)->SQR1 = (__indirect__(diopin, CHANNEL)<<ADC_SQR1_SQ1_Pos);              \
+		ADC(diopin)->CFGR &= ~ADC_CFGR_CONT; /*single conversion mode*/ \
+		ADC(diopin)->CR |= ADC_CR_ADSTART;                              \
+		while (!(ADC(diopin)->ISR & ADC_ISR_EOC))                       \
+			;                                                             \
+		int16_t read = (/*0x3FF &*/ (ADC(diopin)->DR));                 \
+		ADC(diopin)->CR |= ADC_CR_ADDIS;	 /*disable adc*/              \
+		read;                                                           \
 	})
 
 #if defined(PROBE) && defined(PROBE_ISR)
