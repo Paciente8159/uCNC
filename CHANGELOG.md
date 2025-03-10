@@ -5,21 +5,28 @@
 µCNC - A universal CNC firmware for microcontrollers
 
 # Changelog
-## [1.12.0] - undefined
+## [1.12.0] - 10-03-2025
+
+[@DevanshGarg31](https://github.com/DevanshGarg31)	- added RTheta kinematics (#839)
 
 ### Added
 
 - new shift register module that allows not only to add output IO extensions via 74HC595 but also input IO extensions via 74HC165 (#831)
-- added initial support for STM32H7 single core family. This core is still incomplete and is missing some features like analog pins, SPI DMA and EEPROM emulation (#837)
+- added initial support for STM32H7 single core family. This core is still incomplete and is missing some features, SPI DMA and EEPROM emulation (#837) (#846)
+- added RTheta kinematics (#839) (#845)
 
 ### Changed
 
 - re-introduced boards friendly names for configuration via Arduino IDE and make files (#834)
 - ESP8266 full core code refactoring with a new custom integration for the new shift register via SPI allowing for mor IO on this MCU (#835)
+- improved loop cycle macro (#799)
+- modified Kinematics settings to be able to define custom settings for kinematics in the kinematics definition file, without the need to change several files (#840)
 
 ### Fixed
 
 - fixed softspi speed and mode functions to force settings update on hardware ports (#838)
+- fixed integration of G28.1/G30.1 module and G28/G30 parser execution (#843) (#844)
+- fixed integer array formated print (#842)
 
 ## [1.11.2] - 25-01-2025
 
