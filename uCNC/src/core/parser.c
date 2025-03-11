@@ -54,6 +54,11 @@ static float parser_last_pos[AXIS_COUNT];
 static float coordinate_systems[TOTAL_COORDINATE_SYSTEMS][AXIS_COUNT];
 #endif
 
+#define MOTION_MODAL 255
+#define MOTION_G53 254
+#define MOTION_G28 252
+#define MOTION_G30 253
+
 FORCEINLINE static void parser_get_comment(uint8_t start_char);
 FORCEINLINE static uint8_t parser_get_token(uint8_t *word, float *value);
 FORCEINLINE static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t *new_state, parser_cmd_explicit_t *cmd);
@@ -64,7 +69,6 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
 static uint8_t parser_grbl_command(void);
 FORCEINLINE static uint8_t parser_gcode_command(bool is_jogging);
-static void parser_coordinate_system_load(uint8_t param, float *target);
 
 #ifdef ENABLE_RS274NGC_EXPRESSIONS
 extern char parser_backtrack;
@@ -977,6 +981,12 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 	{
 		switch (new_state->groups.nonmodal)
 		{
+#ifndef DISABLE_HOME_SUPPORT
+		case G28:
+		case G30:
+			requires_feed = false;
+			break;
+#endif
 		case G4:
 			if (!(cmd->words & (GCODE_WORD_P)))
 			{
@@ -1624,7 +1634,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 	}
 
 	// if non-modal is executed
-	uint8_t index = 255;
+	uint8_t index = MOTION_MODAL;
 	error = STATUS_OK;
 	switch (new_state->groups.nonmodal)
 	{
@@ -1645,8 +1655,16 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 			index--;
 			break;
 		}
-#endif
 		break;
+#endif
+#ifndef DISABLE_HOME_SUPPORT
+	case G28:
+		index = MOTION_G28;
+		break;
+	case G30:
+		index = MOTION_G30;
+		break;
+#endif
 	case G92:
 		index = G92OFFSET;
 		break;
@@ -1676,9 +1694,16 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 	float *relative_offset = NULL;
 	switch (index)
 	{
-	case 254: // G53 (passthrough)
+	case MOTION_G53: // G53 (passthrough)
 		break;
-	case 255: // No nonmodal
+		// No nonmodal or G28/G30
+#ifndef DISABLE_HOME_SUPPORT
+	case MOTION_G28:
+	case MOTION_G30:
+		parser_coordinate_system_load(G28HOME + (index - MOTION_G28), coords);
+		__FALL_THROUGH__
+#endif
+	case MOTION_MODAL:
 		if ((new_state->groups.distance_mode == G90))
 		{
 			for (uint8_t i = AXIS_COUNT; i != 0;)
@@ -1738,39 +1763,35 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 #endif
 	}
 
-	// stores G10 or G92 command in the right address
-	switch (index)
-	{
-	case 254:
-	case 255:
-		break;
-	case G92OFFSET:
-		memcpy(parser_parameters.g92_offset, coords, sizeof(parser_parameters.g92_offset));
-		memcpy(g92permanentoffset, parser_parameters.g92_offset, sizeof(g92permanentoffset));
-#ifdef G92_STORE_NONVOLATILE
-		settings_save(G92ADDRESS, (uint8_t *)&g92permanentoffset, PARSER_PARAM_SIZE);
-#endif
-		parser_wco_counter = 0;
-		break;
-#ifndef DISABLE_G10_SUPPORT
-	default:
-		settings_save(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (index * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)coords, PARSER_PARAM_SIZE);
-#ifndef DISABLE_COORDINATES_SYSTEM_RAM
-		memcpy(&coordinate_systems[index], coords, PARSER_PARAM_SIZE);
-#endif
-		if (index == parser_parameters.coord_system_index)
-		{
-			memcpy(parser_parameters.coord_system_offset, coords, PARSER_PARAM_SIZE);
-		}
-		parser_wco_counter = 0;
-		break;
-#endif
-	}
-
 	// laser disabled in nonmodal moves
 	if (g_settings.laser_mode && new_state->groups.nonmodal)
 	{
 		block_data.spindle = 0;
+	}
+
+	// stores G10 or G92 command in the right address
+	switch (index)
+	{
+	case MOTION_MODAL:
+	case MOTION_G53:
+		break;
+#ifndef DISABLE_HOME_SUPPORT
+	case MOTION_G28:
+	case MOTION_G30:
+		block_data.feed = FLT_MAX;
+		error = mc_line(target, &block_data);
+		if (error == STATUS_OK)
+		{
+			memcpy(target, coords, sizeof(target));
+			block_data.feed = FLT_MAX;
+			error = mc_line(target, &block_data);
+			memcpy(parser_last_pos, target, sizeof(parser_last_pos));
+		}
+		break;
+#endif
+	default:
+		parser_coordinate_system_save(index, coords);
+		break;
 	}
 
 	// 20. perform motion (G0 to G3, G80 to G89), as modified (possibly) by G53.
@@ -2891,6 +2912,33 @@ void parser_coordinate_system_load(uint8_t param, float *target)
 #endif
 		break;
 	}
+}
+
+void parser_coordinate_system_save(uint8_t param, float *target)
+{
+	switch (param)
+	{
+	case G92OFFSET:
+#ifdef G92_STORE_NONVOLATILE
+		settings_save(G92ADDRESS, (uint8_t *)target, PARSER_PARAM_SIZE);
+#endif
+		memcpy(parser_parameters.g92_offset, target, sizeof(parser_parameters.g92_offset));
+		memcpy(g92permanentoffset, target, sizeof(g92permanentoffset));
+		break;
+#ifndef DISABLE_G10_SUPPORT
+	default:
+		settings_save(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (param * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)target, PARSER_PARAM_SIZE);
+#ifndef DISABLE_COORDINATES_SYSTEM_RAM
+		memcpy((uint8_t *)coordinate_systems[param], target, PARSER_PARAM_SIZE);
+#endif
+		if (param == parser_parameters.coord_system_index)
+		{
+			memcpy(parser_parameters.coord_system_offset, target, PARSER_PARAM_SIZE);
+		}
+		break;
+	}
+#endif
+	parser_wco_counter = 0;
 }
 
 /**

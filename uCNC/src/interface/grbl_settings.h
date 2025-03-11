@@ -84,24 +84,11 @@ extern "C"
 #endif
 		float tool_length_offset[TOOL_COUNT];
 #endif
-#if (KINEMATIC == KINEMATIC_LINEAR_DELTA)
-		float delta_arm_length;
-		float delta_armbase_radius;
-		// float delta_efector_height;
-#elif (KINEMATIC == KINEMATIC_DELTA)
-	float delta_base_radius;
-	float delta_effector_radius;
-	float delta_bicep_length;
-	float delta_forearm_length;
-	float delta_bicep_homing_angle;
-#elif (KINEMATIC == KINEMATIC_SCARA)
-	float scara_arm_length;
-	float scara_forearm_length;
-	float scara_arm_homing_angle;
-	float scara_forearm_homing_angle;
-#endif
+
+		KINEMATICS_VARS_DECL /*KINEMATICS VARS DECLARATIONS*/
+
 #ifdef ENABLE_BACKLASH_COMPENSATION
-		uint16_t backlash_steps[AXIS_TO_STEPPERS];
+				uint16_t backlash_steps[AXIS_TO_STEPPERS];
 #endif
 #ifdef ENABLE_SKEW_COMPENSATION
 		float skew_xy_factor;
@@ -139,7 +126,7 @@ extern "C"
 #define PARSER_PARAM_ADDR_OFFSET (PARSER_PARAM_SIZE + 1)																							// parser parameters array size + 1 crc byte
 #define G28HOME (COORD_SYS_COUNT)																																			// G28 index
 #define G30HOME (COORD_SYS_COUNT + 1)																																	// G30 index
-#define G92OFFSET (COORD_SYS_COUNT + ADDITIONAL_COORDINATES)																																// G92 index
+#define G92OFFSET (COORD_SYS_COUNT + ADDITIONAL_COORDINATES)																					// G92 index
 #define PARSER_CORDSYS_ADDRESS (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET)														// 1st coordinate system offset eeprom address (G54)
 #define G28ADDRESS (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (PARSER_PARAM_ADDR_OFFSET * G28HOME)) // G28 coordinate offset eeprom address
 #define G30ADDRESS (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (PARSER_PARAM_ADDR_OFFSET * G30HOME)) // G28 coordinate offset eeprom address

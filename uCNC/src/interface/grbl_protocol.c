@@ -304,7 +304,7 @@ void proto_feedback_fmt(const char *fmt, ...)
 	va_start(args, fmt);
 	grbl_stream_start_broadcast();
 	proto_putc('[');
-	prt_fmtva((void*)grbl_stream_putc, PRINT_CALLBACK, fmt, &args);
+	prt_fmtva((void *)grbl_stream_putc, PRINT_CALLBACK, fmt, &args);
 	proto_print(MSG_FEEDBACK_END);
 	va_end(args);
 }
@@ -803,12 +803,31 @@ void proto_cnc_settings(void)
 {
 	protocol_busy = true;
 	uint8_t count = settings_count();
+#ifdef PRINT_CNC_SETTINGS_IN_ORDER
+	int16_t curr_id = -1;
+#endif
 
 	for (uint8_t i = 0; i < count; i++)
 	{
 		setting_id_t s = {0};
 		uint8_t max = 1;
+#ifdef PRINT_CNC_SETTINGS_IN_ORDER
+		uint8_t dist = 255;
+		for (uint8_t j = 0; j < count; j++)
+		{
+			setting_id_t p = {0};
+			rom_memcpy(&p, &g_settings_id_table[j], sizeof(setting_id_t));
+			if ((p.id - curr_id) > 0 && (p.id - curr_id) < dist)
+			{
+				dist = (p.id - curr_id);
+				memcpy(&s, &p, sizeof(setting_id_t));
+			}
+		}
+		curr_id = s.id;
+#else
 		rom_memcpy(&s, &g_settings_id_table[i], sizeof(setting_id_t));
+#endif
+
 		if (s.type & SETTING_ARRAY)
 		{
 			max = SETTING_ARRCNT(s.type);
@@ -824,11 +843,11 @@ void proto_cnc_settings(void)
 				proto_gcode_setting_line_int(s.id, val);
 				break;
 			case SETTING_TYPE_UINT8:
-				val = (uint32_t) * ((uint8_t *)s.memptr);
+				val = (uint32_t)*((uint8_t *)s.memptr);
 				proto_gcode_setting_line_int(s.id, val);
 				break;
 			case SETTING_TYPE_UINT16:
-				val = (uint32_t) * ((uint16_t *)s.memptr);
+				val = (uint32_t)*((uint16_t *)s.memptr);
 				proto_gcode_setting_line_int(s.id, val);
 				break;
 			default: // default is float

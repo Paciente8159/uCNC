@@ -38,10 +38,31 @@ extern "C"
 #define KINEMATICS_MOTION_SEGMENT_SIZE 1.0f
 #endif
 
-	/*
-	Enable Skew compensation
-*/
+	/**
+	 * Enable Skew compensation
+	 */
+
 	// #define ENABLE_SKEW_COMPENSATION
+
+#define KINEMATICS_VARS_DECL    \
+	float scara_arm_length;       \
+	float scara_forearm_length;   \
+	float scara_arm_homing_angle; \
+	float scara_forearm_homing_angle;
+
+#define KINEMATICS_VARS_DEFAULTS_INIT .scara_arm_length = DEFAULT_SCARA_ARM_LENGTH,             \
+																			.scara_forearm_length = DEFAULT_SCARA_FOREARM_LENGTH,     \
+																			.scara_arm_homing_angle = DEFAULT_SCARA_ARM_HOMING_ANGLE, \
+																			.scara_forearm_homing_angle = DEFAULT_SCARA_FOREARM_HOMING_ANGLE,
+
+#define KINEMATICS_VARS_SETTINGS_INIT {.id = 28, .memptr = &g_settings.scara_arm_homing_angle, .type = SETTING_TYPE_FLOAT},     \
+																			{.id = 29, .memptr = &g_settings.scara_forearm_homing_angle, .type = SETTING_TYPE_FLOAT}, \
+																			{.id = 106, .memptr = &g_settings.scara_arm_length, .type = SETTING_TYPE_FLOAT},          \
+																			{.id = 107, .memptr = &g_settings.scara_forearm_length, .type = SETTING_TYPE_FLOAT},
+
+#define KINEMATICS_VARS_SYSTEM_MENU_INIT                                                                     \
+	DECL_MENU_VAR(SYSTEM_MENU_ID_HOMING, s28, STR_HOME_ANG, &g_settings.scara_arm_homing_angle, VAR_TYPE_FLOAT); \
+	DECL_MENU_VAR(SYSTEM_MENU_ID_HOMING, s29, STR_F_ARM_HOME_ANG, &g_settings.scara_forearm_homing_angle, VAR_TYPE_FLOAT);
 
 #ifdef __cplusplus
 }

@@ -67,6 +67,8 @@ extern "C"
 #include "kinematic_delta.h"
 #elif (KINEMATIC == KINEMATIC_SCARA)
 #include "kinematic_scara.h"
+#elif (KINEMATIC == KINEMATICS_RTHETA)
+#include "kinematic_rtheta.h"
 #elif (KINEMATIC == KINEMATIC_DUMMY)
 #include "kinematic_dummy.h"
 #else
@@ -74,6 +76,32 @@ extern "C"
 #endif
 
 #include "kinematic.h"
+
+/**
+ * Settings for the kinematics
+ * 
+ * KINEMATICS_VARS_DECL - variables declarations inside the g_settings
+ * KINEMATICS_VARS_DEFAULTS_INIT -  default values initialization
+ * KINEMATICS_VARS_SETTINGS_INIT - inititialization for the settings $ commands
+ * KINEMATICS_VARS_SYSTEM_MENU_INIT - declaration/initialization of settings in the system menu 
+ * 
+ */
+#ifndef KINEMATICS_VARS_DECL
+#define KINEMATICS_VARS_DECL
+#endif
+
+#ifndef KINEMATICS_VARS_DEFAULTS_INIT
+#define KINEMATICS_VARS_DEFAULTS_INIT
+#endif
+
+#ifndef KINEMATICS_VARS_SETTINGS_INIT
+#define KINEMATICS_VARS_SETTINGS_INIT
+#endif
+
+// only define if needed
+// #ifndef KINEMATICS_VARS_SYSTEM_MENU_INIT
+// #define KINEMATICS_VARS_SYSTEM_MENU_INIT
+// #endif
 
 #ifdef __cplusplus
 }

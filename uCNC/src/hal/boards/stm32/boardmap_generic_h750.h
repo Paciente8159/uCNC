@@ -174,6 +174,10 @@ extern "C"
 	// #define SPI2_SDO_BIT 15
 	// #define SPI2_PORT 2
 
+	#define ANALOG0_BIT 0
+	#define ANALOG0_PORT A
+	#define ANALOG0_CHANNEL 16
+
 #define ONESHOT_TIMER 1
 
 #ifdef __cplusplus
