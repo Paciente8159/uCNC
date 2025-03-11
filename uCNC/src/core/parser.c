@@ -1785,6 +1785,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 			memcpy(target, coords, sizeof(target));
 			block_data.feed = FLT_MAX;
 			error = mc_line(target, &block_data);
+			memcpy(parser_last_pos, target, sizeof(parser_last_pos));
 		}
 		break;
 #endif
