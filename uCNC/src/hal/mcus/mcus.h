@@ -34,6 +34,8 @@ extern "C"
 #define MCU_LPC176X 30
 #define MCU_ESP8266 40
 #define MCU_ESP32 50
+#define MCU_ESP32C 51
+#define MCU_ESP32S 52
 #define MCU_RP2040 60
 #define MCU_RP2350 61
 #define MCU_VIRTUAL_WIN 99
