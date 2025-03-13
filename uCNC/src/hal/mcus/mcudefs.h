@@ -83,6 +83,12 @@ extern "C"
 
 #if (MCU == MCU_ESP32S)
 #include "esp32s/mcumap_esp32s.h"
+#ifndef CFG_TUSB_MCU
+#define CFG_TUSB_MCU OPT_MCU_ESP32S3
+#endif
+#ifndef CFG_TUSB_OS
+#define CFG_TUSB_OS OPT_OS_FREERTOS
+#endif
 #endif
 
 #if (MCU == MCU_RP2040)
