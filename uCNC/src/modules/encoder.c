@@ -90,11 +90,15 @@ uint16_t read_encoder_mt6701_i2c(softi2c_port_t *port)
 {
 	uint8_t reg = 0x03;
 	uint8_t data[2] = {0};
-	softi2c_send(port, 0x06, &reg, 1, false, 1);
-	softi2c_receive(port, 0x06, data, 2, 1);
-	uint16_t res = ((uint16_t)data[0]) << 8;
-	res |= data[1];
-	return (res >> 2);
+	uint16_t res = 0;
+	if (softi2c_send(port, 0x06, &reg, 1, false, 10) == I2C_OK)
+	{
+		softi2c_receive(port, 0x06, data, 2, 10);
+		res = ((uint16_t)data[0]) << 6;
+		res |= (data[1] >> 2);
+	}
+
+	return res;
 }
 
 uint16_t read_encoder_mt6701_ssi(softspi_port_t *port)
@@ -279,7 +283,7 @@ static int32_t encoder_get_diff_read(uint8_t i)
 		}
 		if (diff > (ENC0_PPR >> 1))
 		{
-			return (diff + ENC0_PPR);
+			return (diff - ENC0_PPR);
 		}
 		return diff;
 #endif
@@ -471,6 +475,30 @@ void encoders_itp_reset_rt_position(float *origin)
 
 DECL_MODULE(encoder)
 {
+#if ENC0_TYPE == ENC_TYPE_I2C
+	softi2c_config(&enc0, ENC0_FREQ);
+#endif
+#if ENC1_TYPE == ENC_TYPE_I2C
+	softi2c_config(&enc1, ENC1_FREQ);
+#endif
+#if ENC2_TYPE == ENC_TYPE_I2C
+	softi2c_config(&enc2, ENC2_FREQ);
+#endif
+#if ENC3_TYPE == ENC_TYPE_I2C
+	softi2c_config(&enc3, ENC3_FREQ);
+#endif
+#if ENC4_TYPE == ENC_TYPE_I2C
+	softi2c_config(&enc4, ENC4_FREQ);
+#endif
+#if ENC5_TYPE == ENC_TYPE_I2C
+	softi2c_config(&enc5, ENC5_FREQ);
+#endif
+#if ENC6_TYPE == ENC_TYPE_I2C
+	softi2c_config(&enc6, ENC6_FREQ);
+#endif
+#if ENC7_TYPE == ENC_TYPE_I2C
+	softi2c_config(&enc7, ENC7_FREQ);
+#endif
 	encoders_reset_position();
 }
 
