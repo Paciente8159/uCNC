@@ -18,14 +18,12 @@
 #include "../cnc.h"
 #include "softi2c.h"
 
-#define softi2c_delay(x) ({uint32_t i2c_delay = x;__TIMEOUT_US__(i2c_delay);})
-
 static void softi2c_stop(softi2c_port_t *port)
 {
 	port->sda(false);
-	softi2c_delay(port->i2cdelay);
+	mcu_delay_us(port->i2cdelay);
 	port->scl(true);
-	softi2c_delay(port->i2cdelay);
+	mcu_delay_us(port->i2cdelay);
 	port->sda(true);
 }
 
@@ -84,27 +82,27 @@ static uint8_t softi2c_write(softi2c_port_t *port, uint8_t c, bool send_start, b
 		}
 
 		port->sda(false);
-		softi2c_delay(port->i2cdelay);
+		mcu_delay_us(port->i2cdelay);
 		port->scl(false);
-		softi2c_delay(port->i2cdelay);
+		mcu_delay_us(port->i2cdelay);
 	}
 
 	for (uint8_t i = 0; i < 8; i++)
 	{
 		port->sda((c & 0x80));
-		softi2c_delay(port->i2cdelay);
+		mcu_delay_us(port->i2cdelay);
 		if (softi2c_clock_stretch(port, ms_timeout) != I2C_OK)
 		{
 			return I2C_NOTOK;
 		}
-		softi2c_delay(port->i2cdelay);
+		mcu_delay_us(port->i2cdelay);
 		port->scl(false); // write the most-significant bit
 		c <<= 1;
 	}
 
 	// read ack
 	port->sda(true);
-	softi2c_delay(port->i2cdelay);
+	mcu_delay_us(port->i2cdelay);
 	if (softi2c_clock_stretch(port, ms_timeout) != I2C_OK)
 	{
 		return I2C_NOTOK;
@@ -126,7 +124,7 @@ static uint8_t softi2c_read(softi2c_port_t *port, bool with_ack, bool send_stop,
 	cnc_dotasks();
 	for (uint8_t i = 0; i < 8; i++)
 	{
-		softi2c_delay(port->i2cdelay);
+		mcu_delay_us(port->i2cdelay);
 		if (softi2c_clock_stretch(port, ms_timeout) != I2C_OK)
 		{
 			return I2C_NOTOK;
@@ -137,12 +135,12 @@ static uint8_t softi2c_read(softi2c_port_t *port, bool with_ack, bool send_stop,
 	}
 
 	port->sda(!with_ack);
-	softi2c_delay(port->i2cdelay);
+	mcu_delay_us(port->i2cdelay);
 	if (softi2c_clock_stretch(port, ms_timeout) != I2C_OK)
 	{
 		return I2C_NOTOK;
 	}
-	softi2c_delay(port->i2cdelay);
+	mcu_delay_us(port->i2cdelay);
 	port->scl(false);
 
 	if (send_stop)

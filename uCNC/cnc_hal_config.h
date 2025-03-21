@@ -403,20 +403,21 @@ extern "C"
 // #define ENC0_PPR 16384
 
 // // Encoder mode
-#define ENC0_PULSE DOUT15
-#define ENC0_DIR DOUT16
-#define ENC0_PPR 16384
+// #define ENC0_PULSE DOUT15
+// #define ENC0_DIR DOUT16
+// #define ENC0_PPR 16384
 
-#define ENC0_TYPE ENC_TYPE_I2C
+// Encoder Type
+// #define ENC0_TYPE ENC_TYPE_I2C
 
-	// #define ENC1_PULSE DIN1
-	// #define ENC1_DIR DIN9
+// #define ENC1_PULSE DIN1
+// #define ENC1_DIR DIN9
 
-	// #define ENC2_PULSE DIN2
-	// #define ENC2_DIR DIN10
+// #define ENC2_PULSE DIN2
+// #define ENC2_DIR DIN10
 
-	// Assign encoders to steppers
-#define STEP0_ENCODER ENC0
+// Assign encoders to steppers
+// #define STEP0_ENCODER ENC0
 // #define STEP1_ENCODER ENC1
 // #define STEP2_ENCODER ENC2
 
@@ -435,14 +436,14 @@ extern "C"
 #ifdef ENABLE_ENCODER_RPM
 
 // Assign an encoder to work as the RPM encoder
-#define RPM_ENCODER ENC0
+// #define RPM_ENCODER ENC0
 
 // Optional set a second encoder pin has an encoder index
 // This assumes the index pulse occurs when pulse pin is also triggered
 // #define RPM_INDEX_INPUT DIN8
 
 // Resolution of the RPM encoder or Pulses Per Revolution
-#define RPM_PPR 24
+// #define RPM_PPR 24
 
 // uncomment to update tool sync on index pulse only
 // instead of updating in every PPR
