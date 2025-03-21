@@ -414,9 +414,7 @@ extern "C"
  * the maximum allowed delay is 255 us
  * */
 #ifndef mcu_delay_us
-#define mcu_delay_us(X) \
-	if (X)                \
-		for (int32_t elap_us = 0, timeout = X, curr_us = mcu_free_micros(); timeout > 0; ({elap_us = mcu_free_micros() - curr_us; asm volatile("":::"memory"); timeout -= ((elap_us >= 0) ? elap_us : 1000 + elap_us); curr_us = elap_us; }))
+#define mcu_delay_us(X) for (int32_t elap_us = 0, timeout = X, curr_us = mcu_free_micros(); timeout > 0; ({elap_us = mcu_free_micros(); int32_t tmp = elap_us-curr_us; curr_us = elap_us; timeout -= ((tmp >= 0) ? tmp : 1000 + tmp); }))
 #endif
 
 #ifdef MCU_HAS_ONESHOT_TIMER

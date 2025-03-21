@@ -197,12 +197,12 @@ extern "C"
 
 // some math.h libraries do not define log of base 2
 #ifndef LN
-#define LN(x) log(x)/M_LN2
+#define LN(x) log(x) / M_LN2
 #endif
 
-#define __TIMEOUT_US__(timeout) for (uint32_t elap_us_##timeout, curr_us_##timeout = mcu_free_micros(); timeout > 0; ({elap_us_##timeout = mcu_free_micros() - curr_us_##timeout; asm volatile("":::"memory"); timeout -= MIN(timeout, ((elap_us_##timeout < 1000) ? elap_us_##timeout : 1000 + elap_us_##timeout)); curr_us_##timeout = curr_us_##timeout;}))
+#define __TIMEOUT_US__(timeout) for (int32_t elap_us = 0, curr_us = mcu_free_micros(); timeout > 0; ({elap_us = mcu_free_micros(); int32_t tmp = elap_us-curr_us; curr_us = elap_us; timeout -= ((tmp >= 0) ? tmp : 1000 + tmp); }))
 #define __TIMEOUT_MS__(timeout)                                                          \
-	timeout = (((uint32_t)timeout) < (UINT32_MAX / 1000)) ? (timeout * 1000) : UINT32_MAX; \
+	timeout = (((uint32_t)timeout) < (INT32_MAX / 1000)) ? (timeout * 1000) : INT32_MAX; \
 	__TIMEOUT_US__(timeout)
 #define __TIMEOUT_ASSERT__(timeout) if (timeout == 0)
 
@@ -249,31 +249,33 @@ extern "C"
 	static volatile uint8_t name##_mutex_lock; \
 	MUTEX_CLEANUP(name)
 #define MUTEX_INIT(name) uint8_t __attribute__((__cleanup__(name##_mutex_cleanup))) name##_mutex_temp = 0
-#define MUTEX_RELEASE(name) if(!name##_mutex_temp /*has the lock*/) name##_mutex_lock = 0
-#define MUTEX_TAKE(name)                                                            \
-	__ATOMIC__                                                                        \
-	{                                                                                 \
-		name##_mutex_temp = name##_mutex_lock;                                          \
-		if (!name##_mutex_temp)                                                         \
-		{                                                                               \
-			name##_mutex_lock = 1;                                                        \
-		}                                                                               \
-	}                                                                                 \
+#define MUTEX_RELEASE(name)                \
+	if (!name##_mutex_temp /*has the lock*/) \
+	name##_mutex_lock = 0
+#define MUTEX_TAKE(name)                   \
+	__ATOMIC__                               \
+	{                                        \
+		name##_mutex_temp = name##_mutex_lock; \
+		if (!name##_mutex_temp)                \
+		{                                      \
+			name##_mutex_lock = 1;               \
+		}                                      \
+	}                                        \
 	if (!name##_mutex_temp /*the lock was aquired*/)
 
-#define MUTEX_WAIT(name, timeout_ms)                                                \
-	__TIMEOUT_MS__(timeout_us)                                                        \
-	{                                                                                 \
-		__ATOMIC__                                                                      \
-		{                                                                               \
-			name##_mutex_temp = name##_mutex_lock;                                        \
-			if (!name##_mutex_temp)                                                       \
-			{                                                                             \
-				name##_mutex_lock = 1;                                                      \
-				break;                                                                      \
-			}                                                                             \
-		}                                                                               \
-	}                                                                                 \
+#define MUTEX_WAIT(name, timeout_ms)         \
+	__TIMEOUT_MS__(timeout_us)                 \
+	{                                          \
+		__ATOMIC__                               \
+		{                                        \
+			name##_mutex_temp = name##_mutex_lock; \
+			if (!name##_mutex_temp)                \
+			{                                      \
+				name##_mutex_lock = 1;               \
+				break;                               \
+			}                                      \
+		}                                        \
+	}                                          \
 	if (!name##_mutex_temp && timeout_us != 0 /*the lock was aquired in time*/)
 #endif
 
