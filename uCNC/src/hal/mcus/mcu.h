@@ -217,7 +217,7 @@ extern "C"
 #endif
 
 #ifndef mcu_softpwm_freq_config
-uint8_t mcu_softpwm_freq_config(uint16_t freq);
+	uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #endif
 
 /**
@@ -414,7 +414,7 @@ uint8_t mcu_softpwm_freq_config(uint16_t freq);
  * the maximum allowed delay is 255 us
  * */
 #ifndef mcu_delay_us
-#define mcu_delay_us(X) mcu_delay_cycles(F_CPU / MCU_CLOCKS_PER_CYCLE / 1000000UL * X)
+#define mcu_delay_us(X) for (int32_t elap_us = 0, timeout = X, curr_us = mcu_free_micros(); timeout > 0; ({elap_us = mcu_free_micros(); int32_t tmp = elap_us-curr_us; curr_us = elap_us; timeout -= ((tmp >= 0) ? tmp : 1000 + tmp); }))
 #endif
 
 #ifdef MCU_HAS_ONESHOT_TIMER
