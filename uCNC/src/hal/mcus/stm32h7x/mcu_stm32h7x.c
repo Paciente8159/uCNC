@@ -33,21 +33,24 @@
 #define OTG_FS_IRQn OTG_HS_IRQn
 #define RCC_AHB1ENR_USB2OTGFSEN RCC_AHB1ENR_USB1OTGHSEN
 #endif
+#ifndef PIO_FRAMEWORK_ARDUINO_ENABLE_CDC
 #include <tusb_ucnc.h>
-// #include "usbd_cdc.h"
-// #include "usbd_cdc_if.h"
-// #include "usbd_desc.h"
-// // replacements for Arduino CDC -> TinyUSB
-// #define tusb_cdc_init CDC_init
-// #define tusb_cdc_isr_handler()
-// #define tusb_cdc_task() CDC_resume_receive()
-// #define tusb_cdc_available() CDC_ReceiveQueue_ReadSize(&ReceiveQueue)
-// #define tusb_cdc_read() CDC_ReceiveQueue_Dequeue(&ReceiveQueue)
-// #define tusb_cdc_flush() CDC_continue_transmit()
-// #define tusb_cdc_write(ch) CDC_TransmitQueue_Enqueue(&TransmitQueue, &c, 1)
-// #define tusb_cdc_write_available() CDC_TransmitQueue_WriteSize(&TransmitQueue)
-// #define tusb_cdc_write_buffer(buffer, bufsize) CDC_TransmitQueue_Enqueue(&TransmitQueue, buffer, bufsize)
-// #define tusb_cdc_connected CDC_connected()
+#else
+#include "usbd_cdc.h"
+#include "usbd_cdc_if.h"
+#include "usbd_desc.h"
+// replacements for Arduino CDC -> TinyUSB
+#define tusb_cdc_init CDC_init
+#define tusb_cdc_isr_handler()
+#define tusb_cdc_task() CDC_resume_receive()
+#define tusb_cdc_available() CDC_ReceiveQueue_ReadSize(&ReceiveQueue)
+#define tusb_cdc_read() CDC_ReceiveQueue_Dequeue(&ReceiveQueue)
+#define tusb_cdc_flush() CDC_continue_transmit()
+#define tusb_cdc_write(ch) CDC_TransmitQueue_Enqueue(&TransmitQueue, &c, 1)
+#define tusb_cdc_write_available() CDC_TransmitQueue_WriteSize(&TransmitQueue)
+#define tusb_cdc_write_buffer(buffer, bufsize) CDC_TransmitQueue_Enqueue(&TransmitQueue, buffer, bufsize)
+#define tusb_cdc_connected CDC_connected()
+#endif
 #endif
 
 // #ifndef FLASH_SIZE
@@ -194,7 +197,7 @@ void MCU_SERIAL2_ISR(void)
 }
 #endif
 
-#ifdef MCU_HAS_USB
+#if defined(MCU_HAS_USB) && !defined(PIO_FRAMEWORK_ARDUINO_ENABLE_CDC)
 void OTG_FS_IRQHandler(void)
 {
 	mcu_disable_global_isr();
@@ -533,7 +536,7 @@ void mcu_clocks_init()
 
 void mcu_usart_init(void)
 {
-#ifdef MCU_HAS_USB
+	#if defined(MCU_HAS_USB) && !defined(PIO_FRAMEWORK_ARDUINO_ENABLE_CDC)
 	// configure USB as Virtual COM port
 	mcu_config_input(USB_DM);
 	mcu_config_input(USB_DP);
@@ -565,6 +568,9 @@ void mcu_usart_init(void)
 	NVIC_EnableIRQ(OTG_FS_IRQn);
 
 	tusb_cdc_init();
+	#elif defined(MCU_HAS_USB)
+	extern void mcu_usb_init(void);
+	mcu_usb_init();
 #endif
 
 #ifdef MCU_HAS_UART
