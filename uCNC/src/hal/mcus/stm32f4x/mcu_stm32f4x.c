@@ -43,7 +43,13 @@
 #define FLASH_EEPROM_SIZE_WORD (NVM_STORAGE_SIZE >> 2)
 #define FLASH_EEPROM_SIZE_WORD_ALIGNED (FLASH_EEPROM_SIZE_WORD << 2)
 
+#if FLASH_SIZE < 0x10000UL
+#define FLASH_SECTOR_SIZE 0x4000UL
+#elif FLASH_SIZE < 0x20000UL
+#define FLASH_SECTOR_SIZE 0x10000UL
+#else
 #define FLASH_SECTOR_SIZE 0x20000UL
+#endif
 #define FLASH_SECTORS (FLASH_SIZE / FLASH_SECTOR_SIZE) + 4
 
 #define FLASH_EEPROM_START (FLASH_LIMIT - FLASH_SECTOR_SIZE + 1)
@@ -434,13 +440,13 @@ static void mcu_usart_init(void);
 #define APB2_PRESC ((F_CPU > 90000000UL) ? RCC_CFGR_PPRE2_DIV2 : RCC_CFGR_PPRE2_DIV1)
 #endif
 #ifndef FLASH_LATENCY
-#if(F_CPU <= 90000000UL)
+#if (F_CPU <= 90000000UL)
 #define FLASH_LATENCY FLASH_ACR_LATENCY_2WS
-#elif(F_CPU <= 120000000UL)
+#elif (F_CPU <= 120000000UL)
 #define FLASH_LATENCY FLASH_ACR_LATENCY_3WS
-#elif(F_CPU <= 150000000UL)
+#elif (F_CPU <= 150000000UL)
 #define FLASH_LATENCY FLASH_ACR_LATENCY_4WS
-#elif(F_CPU <= 1800000000UL)
+#elif (F_CPU <= 1800000000UL)
 #define FLASH_LATENCY FLASH_ACR_LATENCY_5WS
 #else
 #define FLASH_LATENCY FLASH_ACR_LATENCY_6WS
@@ -943,6 +949,7 @@ void mcu_dotasks()
 // gets were the first copy of the eeprom is
 static void mcu_eeprom_init(void)
 {
+#ifndef DISABLE_EEPROM_EMULATION
 	uint32_t eeprom_offset = 0;
 	for (eeprom_offset = 0; eeprom_offset < FLASH_SECTOR_SIZE; eeprom_offset += FLASH_EEPROM_SIZE_WORD_ALIGNED)
 	{
@@ -976,6 +983,7 @@ static void mcu_eeprom_init(void)
 		eeprom++;
 		ptr++;
 	}
+#endif
 }
 
 // Non volatile memory
@@ -983,7 +991,7 @@ uint8_t mcu_eeprom_getc(uint16_t address)
 {
 	if (NVM_STORAGE_SIZE <= address)
 	{
-		DBGMSG("EEPROM invalid address @ %u",address);
+		DBGMSG("EEPROM invalid address @ %u", address);
 		return 0;
 	}
 	return stm32_eeprom_buffer[address];
@@ -991,6 +999,7 @@ uint8_t mcu_eeprom_getc(uint16_t address)
 
 static void mcu_eeprom_erase(void)
 {
+#ifndef DISABLE_EEPROM_EMULATION
 	while (FLASH->SR & FLASH_SR_BSY)
 		; // wait while busy
 	// unlock flash if locked
@@ -1005,13 +1014,14 @@ static void mcu_eeprom_erase(void)
 	while (FLASH->SR & FLASH_SR_BSY)
 		; // wait while busy
 	FLASH->CR = 0;
+#endif
 }
 
 void mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
 	if (NVM_STORAGE_SIZE <= address)
 	{
-		DBGMSG("EEPROM invalid address @ %u",address);
+		DBGMSG("EEPROM invalid address @ %u", address);
 	}
 	// if the value of the eeprom is modified then it will be marked as dirty
 	// flash default value is 0xFF. If programming can change value from 1 to 0 but not the other way around
@@ -1031,6 +1041,7 @@ void mcu_eeprom_putc(uint16_t address, uint8_t value)
 
 void mcu_eeprom_flush()
 {
+#ifndef DISABLE_EEPROM_EMULATION
 	if (stm32_flash_modified)
 	{
 		if (CHECKFLAG(stm32_flash_modified, EEPROM_NEEDS_NEWPAGE))
@@ -1069,7 +1080,7 @@ void mcu_eeprom_flush()
 				proto_error(42); // STATUS_SETTING_WRITE_FAIL
 			if (FLASH->SR & FLASH_SR_WRPERR)
 				proto_error(43); // STATUS_SETTING_PROTECTED_FAIL
-			FLASH->CR = 0;						 // Ensure PG bit is low
+			FLASH->CR = 0;		 // Ensure PG bit is low
 			FLASH->SR = 0;
 			eeprom++;
 			ptr++;
@@ -1078,6 +1089,7 @@ void mcu_eeprom_flush()
 
 		// Restore interrupt flag state.*/
 	}
+#endif
 }
 
 typedef enum spi_port_state_enum
