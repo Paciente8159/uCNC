@@ -170,8 +170,8 @@ extern "C"
 #define DOUT3_PORT B
 
 // led pin
-#define DOUT31_BIT 13
-#define DOUT31_PORT A
+#define DOUT31_BIT 8
+#define DOUT31_PORT G
 
 // analog input
 // #define ANALOG0_BIT 2

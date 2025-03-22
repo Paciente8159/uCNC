@@ -15,14 +15,6 @@ extern "C"
 #define _ARDUINO_PIN_NAME(BIT, PORT) _ARDUINO_PIN_NAME_(BIT, PORT)
 #define ARDUINO_PIN_NAME(PIN) (uint32_t)_ARDUINO_PIN_NAME(PIN##_BIT, PIN##_PORT)
 
-#ifdef PIO_FRAMEWORK_ARDUINO_ENABLE_CDC
-#include <USBSerial.h>
-extern "C" void mcu_usb_init(void)
-{
-	SerialUSB.begin(BAUDRATE);
-}
-#endif
-
 #ifdef USE_ARDUINO_I2C_LIBRARY
 #undef I2C_OK
 #ifdef MCU_HAS_I2C
