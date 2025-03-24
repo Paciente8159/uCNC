@@ -4876,12 +4876,7 @@ extern "C"
 	}
 #define mcu_get_global_isr() stm32_global_isr_enabled
 #define mcu_free_micros() ({ (1000UL - (SysTick->VAL * 1000UL / SysTick->LOAD)); })
-#define mcu_delay_cycles(X) \
-	{                         \
-		uint32_t t = X;         \
-		__TIMEOUT_US__(t);      \
-	}
-
+#define mcu_delay_cycles(X) mcu_delay_us(X/(F_CPU/1000000UL))
 #define GPIO_RESET 0x3U
 #define GPIO_INPUT 0x0U
 #define GPIO_OUTPUT 0x1U
