@@ -22,13 +22,13 @@ extern "C"
 #define ENABLE_PARSER_MODULES
 #define SD_CARD_INTERFACE SD_CARD_HW_CUSTOM
 #define SD_SPI_CS SPI_CS
-#define SD_CARD_DETECT_PIN DIN19
+#define SD_CARD_DETECT_PIN UNDEF_PIN
 #define FF_USE_LFN 1
 #define ENABLE_SETTINGS_ON_SD_SDCARD
 //Custom configurations
 
 
-#define LOAD_MODULES_OVERRIDE() ({LOAD_MODULE(stm32h7_mmcsd);LOAD_MODULE(sd_card_v2);})
+#define LOAD_MODULES_OVERRIDE() ({LOAD_MODULE(stm32_sdio);LOAD_MODULE(sd_card_v2);})
 
 #ifdef __cplusplus
 }
