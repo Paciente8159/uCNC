@@ -868,6 +868,7 @@ uint8_t mcu_eeprom_getc(uint16_t address)
 
 static void mcu_eeprom_erase(uint16_t address)
 {
+#ifndef DISABLE_EEPROM_EMULATION
 	while (FLASH->SR & FLASH_SR_BSY)
 		; // wait while busy
 	// unlock flash if locked
@@ -883,6 +884,7 @@ static void mcu_eeprom_erase(uint16_t address)
 	while (FLASH->SR & FLASH_SR_BSY)
 		; // wait while busy
 	FLASH->CR = 0;
+#endif
 }
 
 void mcu_eeprom_putc(uint16_t address, uint8_t value)
@@ -904,6 +906,7 @@ void mcu_eeprom_putc(uint16_t address, uint8_t value)
 
 void mcu_eeprom_flush()
 {
+#ifndef DISABLE_EEPROM_EMULATION
 	if (stm32_flash_modified)
 	{
 		mcu_eeprom_erase(stm32_flash_current_page);
@@ -939,6 +942,7 @@ void mcu_eeprom_flush()
 		stm32_flash_modified = false;
 		// Restore interrupt flag state.*/
 	}
+#endif
 }
 
 typedef enum spi_port_state_enum
@@ -1378,7 +1382,7 @@ bool mcu_spi2_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t d
 
 void mcu_i2c_stop(bool *stop)
 {
-	//not working (using autostop)
+	// not working (using autostop)
 	while (!(I2C_REG->ISR & I2C_ISR_TC))
 		;
 	I2C_REG->CR2 |= I2C_CR2_STOP;
@@ -1675,7 +1679,6 @@ void I2C_ISR(void)
 #endif
 
 #endif
-
 
 #ifdef MCU_HAS_ONESHOT_TIMER
 
