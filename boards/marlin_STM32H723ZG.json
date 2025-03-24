@@ -1,0 +1,39 @@
+{
+  "build": {
+    "core": "stm32",
+    "cpu": "cortex-m7",
+    "extra_flags": "-DSTM32H7xx -DSTM32H723xx",
+    "f_cpu": "550000000L",
+    "mcu": "stm32h723zgt6",
+    "product_line": "STM32H723xx",
+    "variant": "MARLIN_H723ZG"
+  },
+  "connectivity": [
+    "can",
+    "ethernet"
+  ],
+  "debug": {
+      "jlink_device": "STM32H723ZG",
+      "openocd_target": "stm32h7x",
+      "svd_path": "STM32H723.svd"
+    },
+  "frameworks": [
+    "arduino",
+    "stm32cube"
+  ],
+  "name": "STM32H723ZG (564k RAM. 1024k Flash)",
+  "upload": {
+    "disable_flushing": false,
+    "maximum_ram_size": 577536,
+    "maximum_size": 1048576,
+    "protocol": "stlink",
+    "protocols": [
+      "stlink",
+      "dfu",
+      "jlink",
+      "cmsis-dap"
+    ]
+  },
+  "url": "https://www.st.com/en/microcontrollers-microprocessors/stm32h723zg.html",
+  "vendor": "ST"
+}
