@@ -5,7 +5,25 @@
 byte mac[] = {
 		0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED};
 
-EthernetServer webserver(80);
+#ifndef TELNET_PORT
+#define TELNET_PORT 23
+#endif
+
+#ifndef WEBSERVER_PORT
+#define WEBSERVER_PORT 80
+#endif
+
+#ifndef WEBSOCKET_PORT
+#define WEBSOCKET_PORT 8080
+#endif
+
+#ifndef WEBSOCKET_MAX_CLIENTS
+#define WEBSOCKET_MAX_CLIENTS 2
+#endif
+
+EthernetServer web_server(WEBSERVER_PORT);
+EthernetServer telnet_server(TELNET_PORT);
+EthernetClient server_client;
 
 extern "C"
 {
@@ -42,6 +60,96 @@ extern "C"
 					proto_info("IP>%I", ip);
 				}
 			}
+		}
+	}
+
+	void ethernet_loop()
+	{
+		switch (Ethernet.maintain())
+		{
+		case 1:
+			// renewed fail
+			DBGMSG("Error: renewed fail");
+			ethernet_status = ETHERNET_DISCONNECTED;
+			break;
+
+		case 2:
+			// renewed success
+			DBGMSG("Renewed success");
+			ethernet_status = ETHERNET_CONNECTED;
+			break;
+
+		case 3:
+			// rebind fail
+			DBGMSG("Error: rebind fail");
+			ethernet_status = ETHERNET_DISCONNECTED;
+			break;
+
+		case 4:
+			// rebind success
+			DBGMSG("Rebind success");
+			ethernet_status = ETHERNET_CONNECTED;
+			break;
+
+		default:
+			// nothing happened
+			break;
+		}
+	}
+
+	bool ethernet_clientok(void)
+	{
+		static uint32_t next_info = 30000;
+		static bool connected = false;
+		uint8_t str[128];
+
+		if ((ethernet_status == ETHERNET_DISCONNECTED))
+		{
+			connected = false;
+			if (next_info > millis())
+			{
+				return false;
+			}
+			next_info = millis() + 30000;
+			proto_info("Disconnected from Ethernet");
+			return false;
+		}
+
+		if (!connected)
+		{
+			connected = true;
+			proto_info("Connected to Ethernet");
+			uint32_t ip = Ethernet.localIP();
+			proto_info("IP>%I", ip);
+		}
+
+		if(!server_client){
+			server_client = telnet_server.available();
+			if(server_client){
+				server_client.println("[MSG:New client connected]");
+			}
+			return false;
+		}
+		else
+		{
+			return server_client.connected();
+		}
+		return false;
+	}
+
+	void ethernet_dotasks()
+	{
+		switch (ethernet_status)
+		{
+		case ETHERNET_OFF:
+			ethernet_init();
+			break;
+		case ETHERNET_DISCONNECTED:
+			// ethernet_init();
+			break;
+		case ETHERNET_CONNECTED:
+			ethernet_loop();
+			break;
 		}
 	}
 }
