@@ -839,15 +839,15 @@ void proto_cnc_settings(void)
 			switch (SETTING_TYPE_MASK(s.type))
 			{
 			case SETTING_TYPE_BOOL:
-				val = (uint32_t)((bool *)s.memptr)[j];
+				val = (uint32_t)(((bool *)s.memptr)[j]);
 				proto_gcode_setting_line_int(s.id, val);
 				break;
 			case SETTING_TYPE_UINT8:
-				val = (uint32_t)*((uint8_t *)s.memptr);
+				val = (uint32_t)(((uint8_t *)s.memptr)[j]);
 				proto_gcode_setting_line_int(s.id, val);
 				break;
 			case SETTING_TYPE_UINT16:
-				val = (uint32_t)*((uint16_t *)s.memptr);
+				val = (uint32_t)(((uint16_t *)s.memptr)[j]);
 				proto_gcode_setting_line_int(s.id, val);
 				break;
 			default: // default is float
