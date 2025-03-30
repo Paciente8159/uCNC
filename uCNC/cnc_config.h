@@ -486,6 +486,30 @@ extern "C"
 	// #define ENABLE_BACKLASH_COMPENSATION
 
 	/**
+	 * By enabling this option the planner will only care about the exit speed.
+	 * This will make the planner not perform the forward pass to adjust entry speeds.
+	 * The adjustment of the next planner block is made on the fly when the block is loaded.
+	 * */
+	//  #define ENABLE_PLANNER_SPEED_OVERSHOOT
+
+	/**
+	 * By enabling this option the planner will junction speed based on accel only if need
+	 * meaning that the junction speed will only be the maximum value between current and exit speed
+	 * This will eliminate ramp up and down completly and over-simplify calculations
+	 * */
+	// #define ENABLE_PLANNER_ACCEL_NONOPTIMAL
+
+	/**
+	 * By enabling this option the planner will only perform acceleration if the exit speed is higher
+	 * then the current speed and the distance travelled is lower then a give threshold (in steps)
+	 * This will prevent sucessive ramp up and down speed profiles a produce more continuous speed motions
+	 * */
+	// #define ENABLE_PLANNER_NOACCEL_ON_SLOWER_EXIT
+	#ifdef ENABLE_PLANNER_NOACCEL_ON_SLOWER_EXIT
+	#define ENABLE_PLANNER_NOACCEL_MAX_STEP_DISTANCE 200
+	#endif
+
+	/**
 	 * Uncomment these to enable step ISR calculation strategies (uses more
 	 * memory) STEP_ISR_SKIP_MAIN - carries the information about the main
 	 * stepper (performs a step in every ISR tick) and skips calculations
