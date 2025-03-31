@@ -20,7 +20,6 @@
 #include <float.h>
 #include <stdint.h>
 
-
 #include "../../../cnc.h"
 
 #ifndef PLASMA_UP_INPUT
@@ -65,14 +64,14 @@ static volatile int8_t plasma_step_error;
 
 typedef struct plasma_start_params_
 {
-	float probe_depth;	  // I
-	float probe_feed;	  // J
+	float probe_depth;		// I
+	float probe_feed;			// J
 	float retract_height; // R
-	float cut_depth;	  // K
-	float cut_feed;		  // F
-	float vad;			  // D
-	uint16_t dwell;		  // P*1000
-	uint8_t retries;	  // L
+	float cut_depth;			// K
+	float cut_feed;				// F
+	float vad;						// D
+	uint16_t dwell;				// P*1000
+	uint8_t retries;			// L
 } plasma_start_params_t;
 static plasma_start_params_t plasma_start_params;
 
@@ -106,6 +105,23 @@ uint8_t __attribute__((weak)) plasma_thc_arc_ok(void)
 	return io_get_input(PLASMA_ARC_OK_INPUT);
 #else
 	return 0;
+#endif
+}
+
+void __attribute__((weak)) plasma_thc_arc_onff(uint8_t value)
+{
+#if ASSERT_PIN(PLASMA_ON_OUTPUT)
+	if (value)
+	{
+		// turn plasma on
+		io_set_output(PLASMA_ON_OUTPUT);
+	}
+	else
+	{
+		// disable plasma and sync position
+		io_clear_output(PLASMA_ON_OUTPUT);
+		mc_sync_position();
+	}
 #endif
 }
 
@@ -538,19 +554,7 @@ static void set_speed(int16_t value)
 		}
 	}
 
-#if ASSERT_PIN(PLASMA_ON_OUTPUT)
-	if (value)
-	{
-		// turn plasma on
-		io_set_output(PLASMA_ON_OUTPUT);
-	}
-	else
-	{
-		// disable plasma and sync position
-		io_clear_output(PLASMA_ON_OUTPUT);
-		mc_sync_position();
-	}
-#endif
+	plasma_thc_arc_onff(value);
 }
 
 static int16_t range_speed(int16_t value, uint8_t conv)
@@ -569,12 +573,12 @@ static void set_coolant(uint8_t value)
 }
 
 const tool_t plasma_thc = {
-	.startup_code = &startup_code,
-	.shutdown_code = &shutdown_code,
-	.pid_update = &pid_update,
-	.range_speed = &range_speed,
-	.get_speed = NULL,
-	.set_speed = &set_speed,
-	.set_coolant = &set_coolant};
+		.startup_code = &startup_code,
+		.shutdown_code = &shutdown_code,
+		.pid_update = &pid_update,
+		.range_speed = &range_speed,
+		.get_speed = NULL,
+		.set_speed = &set_speed,
+		.set_coolant = &set_coolant};
 
 #endif
