@@ -132,7 +132,7 @@ uint8_t __attribute__((weak)) plasma_thc_vad_active(void)
 	return 0;
 }
 
-bool plasma_thc_probe_and_start(void)
+bool __attribute__((weak)) plasma_thc_probe_and_start(void)
 {
 	static bool plasma_starting = false;
 	if (plasma_starting)

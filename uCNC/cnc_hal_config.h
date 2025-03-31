@@ -63,9 +63,18 @@ extern "C"
 #define LIMIT_B_PULLUP_ENABLE
 #define LIMIT_C_PULLUP_ENABLE
 
-// Uncomment to enable weak pull up resistor for probe
-// If the pin is not defined in the board this will be ignored
+/**
+ * Uncomment to enable weak pull up resistor for probe
+ * If the pin is not defined in the board this will be ignored
+ */
 // #define PROBE_PULLUP_ENABLE
+
+/**
+ * Uncomment to enable custom probing overrides
+ * This allows to create a custom probing inputs (like other inputs, software conditions, etc..)
+ * Note that $6 will have no effect on the custom probing logic
+ */
+// #define PROBE_ENABLE_CUSTOM_CALLBACK
 
 // Uncomment to enable weak pull up resistors for control pins
 // If the pin is not defined in the board this will be ignored
