@@ -20,7 +20,6 @@
 #include <float.h>
 #include <stdint.h>
 
-
 #include "../../../cnc.h"
 
 #ifndef PLASMA_UP_INPUT
@@ -65,14 +64,14 @@ static volatile int8_t plasma_step_error;
 
 typedef struct plasma_start_params_
 {
-	float probe_depth;	  // I
-	float probe_feed;	  // J
+	float probe_depth;		// I
+	float probe_feed;			// J
 	float retract_height; // R
-	float cut_depth;	  // K
-	float cut_feed;		  // F
-	float vad;			  // D
-	uint16_t dwell;		  // P*1000
-	uint8_t retries;	  // L
+	float cut_depth;			// K
+	float cut_feed;				// F
+	float vad;						// D
+	uint16_t dwell;				// P*1000
+	uint8_t retries;			// L
 } plasma_start_params_t;
 static plasma_start_params_t plasma_start_params;
 
@@ -109,6 +108,23 @@ uint8_t __attribute__((weak)) plasma_thc_arc_ok(void)
 #endif
 }
 
+void __attribute__((weak)) plasma_thc_arc_onff(uint8_t value)
+{
+#if ASSERT_PIN(PLASMA_ON_OUTPUT)
+	if (value)
+	{
+		// turn plasma on
+		io_set_output(PLASMA_ON_OUTPUT);
+	}
+	else
+	{
+		// disable plasma and sync position
+		io_clear_output(PLASMA_ON_OUTPUT);
+		mc_sync_position();
+	}
+#endif
+}
+
 // overridable
 // user can implement aditional data to be printed in the status message
 void __attribute__((weak)) plasma_thc_extension_send_status(void)
@@ -132,7 +148,7 @@ uint8_t __attribute__((weak)) plasma_thc_vad_active(void)
 	return 0;
 }
 
-bool plasma_thc_probe_and_start(void)
+bool __attribute__((weak)) plasma_thc_probe_and_start(void)
 {
 	static bool plasma_starting = false;
 	if (plasma_starting)
@@ -321,39 +337,85 @@ bool m103_exec(void *args)
 #define M63 EXTENDED_MCODE(63)
 #define M64 EXTENDED_MCODE(64)
 #define M65 EXTENDED_MCODE(65)
+#define M101 EXTENDED_MCODE(101)
+#define M102 EXTENDED_MCODE(102)
 
-bool plasma_virtual_pins(void *args)
+bool plasma_virtual_pins_parse(void *args)
 {
-	gcode_exec_args_t *ptr = (gcode_exec_args_t *)args;
-	switch (ptr->cmd->group_extended)
+	gcode_parse_args_t *ptr = (gcode_parse_args_t *)args;
+	if (ptr->word == 'M')
 	{
-	case M62:
-	case M64:
-		if (ptr->words->p == PLASMA_THC_ENABLE_PIN)
+		if (ptr->cmd->group_extended != 0)
 		{
-			SETFLAG(plasma_thc_state, PLASMA_THC_ENABLED);
+			// there is a collision of custom gcode commands (only one per line can be processed)
+			*(ptr->error) = STATUS_GCODE_MODAL_GROUP_VIOLATION;
+			return EVENT_HANDLED;
+		}
+
+		switch (ptr->code)
+		{
+		case 62:
+		case 63:
+		case 64:
+		case 65:
+		case 101:
+		case 102:
+			// tells the gcode validation and execution functions this is custom code M42 (ID must be unique)
+			ptr->cmd->group_extended = EXTENDED_MCODE(ptr->code);
 			*(ptr->error) = STATUS_OK;
 			return EVENT_HANDLED;
 		}
+	}
+
+	// if this is not catched by this parser, just send back the error so other extenders can process it
+	return EVENT_CONTINUE;
+}
+
+CREATE_EVENT_LISTENER(gcode_parse, plasma_virtual_pins_parse);
+
+bool plasma_virtual_pins_exec(void *args)
+{
+	gcode_exec_args_t *ptr = (gcode_exec_args_t *)args;
+	bool plasma_enable_pin = (ptr->words->p == PLASMA_THC_ENABLE_PIN);
+	uint16_t cmd = ptr->cmd->group_extended;
+
+	switch (cmd)
+	{
+	case M101:
+		cmd = M62;								// on sync
+		plasma_enable_pin = true; // virtual pin
 		break;
-	case M63:
-		mc_sync_position();
-	case M65:
-		if (ptr->words->p == PLASMA_THC_ENABLE_PIN)
+	case M102:
+		cmd = M63;								// off sync
+		plasma_enable_pin = true; // virtual pin
+		break;
+	}
+
+	if (plasma_enable_pin)
+	{
+		switch (cmd)
 		{
+		case M62:
+			mc_sync_position();
+			__FALL_THROUGH__
+		case M64:
+			SETFLAG(plasma_thc_state, PLASMA_THC_ENABLED);
+			*(ptr->error) = STATUS_OK;
+			return EVENT_HANDLED;
+		case M63:
+			mc_sync_position();
+			__FALL_THROUGH__
+		case M65:
 			CLEARFLAG(plasma_thc_state, PLASMA_THC_ENABLED);
 			*(ptr->error) = STATUS_OK;
 			return EVENT_HANDLED;
 		}
-		break;
-	default:
-		break;
 	}
 
 	return EVENT_CONTINUE;
 }
 
-CREATE_EVENT_LISTENER(gcode_exec, plasma_virtual_pins);
+CREATE_EVENT_LISTENER(gcode_exec, plasma_virtual_pins_exec);
 #endif
 
 static void pid_update(void)
@@ -482,7 +544,8 @@ DECL_MODULE(plasma_thc)
 #ifdef ENABLE_PARSER_MODULES
 	ADD_EVENT_LISTENER(gcode_parse, m103_parse);
 	ADD_EVENT_LISTENER(gcode_exec, m103_exec);
-	ADD_EVENT_LISTENER(gcode_exec, plasma_virtual_pins);
+	ADD_EVENT_LISTENER(gcode_parse, plasma_virtual_pins_parse);
+	ADD_EVENT_LISTENER(gcode_exec, plasma_virtual_pins_exec);
 #else
 #error "Parser extensions are not enabled. M103 code extension will not work."
 #endif
@@ -538,19 +601,7 @@ static void set_speed(int16_t value)
 		}
 	}
 
-#if ASSERT_PIN(PLASMA_ON_OUTPUT)
-	if (value)
-	{
-		// turn plasma on
-		io_set_output(PLASMA_ON_OUTPUT);
-	}
-	else
-	{
-		// disable plasma and sync position
-		io_clear_output(PLASMA_ON_OUTPUT);
-		mc_sync_position();
-	}
-#endif
+	plasma_thc_arc_onff(value);
 }
 
 static int16_t range_speed(int16_t value, uint8_t conv)
@@ -569,12 +620,12 @@ static void set_coolant(uint8_t value)
 }
 
 const tool_t plasma_thc = {
-	.startup_code = &startup_code,
-	.shutdown_code = &shutdown_code,
-	.pid_update = &pid_update,
-	.range_speed = &range_speed,
-	.get_speed = NULL,
-	.set_speed = &set_speed,
-	.set_coolant = &set_coolant};
+		.startup_code = &startup_code,
+		.shutdown_code = &shutdown_code,
+		.pid_update = &pid_update,
+		.range_speed = &range_speed,
+		.get_speed = NULL,
+		.set_speed = &set_speed,
+		.set_coolant = &set_coolant};
 
 #endif
