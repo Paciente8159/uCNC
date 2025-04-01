@@ -44,7 +44,7 @@ extern "C" {
   #define HAL_DMA_MODULE_ENABLED
 #endif
 #ifndef HAL_EXTI_MODULE_ENABLED
-  #define HAL_EXTI_MODULE_ENABLED // Needed for Endstop (and other external) Interrupts
+  // #define HAL_EXTI_MODULE_ENABLED // Needed for Endstop (and other external) Interrupts
 #endif
 #ifndef HAL_FLASH_MODULE_ENABLED
   #define HAL_FLASH_MODULE_ENABLED
@@ -71,7 +71,7 @@ extern "C" {
   #define HAL_SPI_MODULE_ENABLED
 #endif
 #ifndef HAL_TIM_MODULE_ENABLED
-  #define HAL_TIM_MODULE_ENABLED
+  // #define HAL_TIM_MODULE_ENABLED
 #endif
 #ifndef HAL_CORTEX_MODULE_ENABLED
   #define HAL_CORTEX_MODULE_ENABLED
