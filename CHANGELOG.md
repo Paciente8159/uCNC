@@ -5,6 +5,25 @@
 µCNC - A universal CNC firmware for microcontrollers
 
 # Changelog
+## [1.12.1] - 01-04-2025
+
+### Added
+
+- added DISABLE_EEPROM_EMULATION option on STM32 to allow EEPROM emulation disabling while allowing to add an external settings NVM support like SD card or external Flash/EEPROM (#849)
+- added support for STM32H723 chip (and SKR3 board - untested) (#853)
+- added new probing override callback that allows to add and remove custom probing methods besides the PROBE pin input (#855)
+- added Plasma THC tool M101 (THC enable) and M102 (THC disable) commands (#855)
+
+### Changed
+
+- modified Plasma THC tool to become independent of the M62-M65 module command (#855)
+
+### Fixed
+
+- fixed parser position update after G28/G30 command (#847)
+- fixed limits inversion mask to match limits masking when custom masks are used (#850)
+- fixed settings print of integer array values (#854)
+
 ## [1.12.0] - 10-03-2025
 
 [@DevanshGarg31](https://github.com/DevanshGarg31)	- added RTheta kinematics (#839)
@@ -1870,6 +1889,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.12.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.12.1
 [1.12.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.12.0
 [1.11.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.11.2
 [1.11.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.11.1
