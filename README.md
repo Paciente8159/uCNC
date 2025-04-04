@@ -11,9 +11,9 @@
 To configure µCNC to fit your hardware you can use [µCNC config builder web tool](https://paciente8159.github.io/uCNC-config-builder/) to generate the config override files.
 Although most of the options are configurable via the web tool, some options might be missing and you might need to add them manually (regarding tools or addon modules mostly).
 
-# USEFULL LINKS
+# Useful Links
 
-Some usefull links with detailed information about µCNC
+Some useful links with detailed information about µCNC
 _**Jump to section**_
 * [µCNC Wiki](https://github.com/Paciente8159/uCNC/wiki)
 * [µCNC config files](https://github.com/Paciente8159/uCNC/tree/master/uCNC/README.md)
