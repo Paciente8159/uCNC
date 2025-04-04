@@ -11,6 +11,20 @@
 To configure µCNC to fit your hardware you can use [µCNC config builder web tool](https://paciente8159.github.io/uCNC-config-builder/) to generate the config override files.
 Although most of the options are configurable via the web tool, some options might be missing and you might need to add them manually (regarding tools or addon modules mostly).
 
+# USEFULL LINKS
+
+Some usefull links with detailed information about µCNC
+_**Jump to section**_
+* [µCNC Wiki](https://github.com/Paciente8159/uCNC/wiki)
+* [µCNC config files](https://github.com/Paciente8159/uCNC/tree/master/uCNC/README.md)
+* [µCNC custom modules and events system](https://github.com/Paciente8159/uCNC/blob/master/uCNC/src/README.md)
+* [µCNC kinematics HAL](https://github.com/Paciente8159/uCNC/blob/master/uCNC/src/hal/kinematics/README.md)
+* [µCNC MCU HAL](https://github.com/Paciente8159/uCNC/blob/master/uCNC/src/hal/mcus/README.md)
+* [µCNC tool HAL](https://github.com/Paciente8159/uCNC/tree/master/uCNC/src/hal/tools/README.md)
+	* [µCNC existing tools configuration](https://github.com/Paciente8159/uCNC/blob/master/uCNC/src/hal/tools/tools/README.md)
+* [µCNC default pinouts](https://github.com/Paciente8159/uCNC/blob/master/PINOUTS.md)
+
+
 # VERSION 1.12+ NOTES
 
 Version 1.12 introduces the following changes:
