@@ -29,7 +29,6 @@
 #define COREXY_EXTRA_AXIS_START 2
 #endif
 
-
 void kinematics_init(void)
 {
 }
@@ -62,9 +61,9 @@ void kinematics_apply_forward(int32_t *steps, float *axis)
 #if (COREXY_AXIS == COREXY_AXIS_XZ)
 	axis[AXIS_X] = (float)(0.5f * (float)(steps[0] + steps[2]) / g_settings.step_per_mm[0]);
 	axis[AXIS_Z] = (float)(0.5f * (float)(steps[0] - steps[2]) / g_settings.step_per_mm[2]);
-  axis[AXIS_Y] = (((float)steps[1]) / g_settings.step_per_mm[1]);
+	axis[AXIS_Y] = (((float)steps[1]) / g_settings.step_per_mm[1]);
 #elif (COREXY_AXIS == COREXY_AXIS_YZ)
-  axis[AXIS_X] = (((float)steps[0]) / g_settings.step_per_mm[0]);
+	axis[AXIS_X] = (((float)steps[0]) / g_settings.step_per_mm[0]);
 	axis[AXIS_Y] = (float)(0.5f * (float)(steps[1] + steps[2]) / g_settings.step_per_mm[1]);
 	axis[AXIS_Z] = (float)(0.5f * (float)(steps[1] - steps[2]) / g_settings.step_per_mm[2]);
 #else
@@ -204,14 +203,17 @@ bool kinematics_check_boundaries(float *axis)
 	for (uint8_t i = AXIS_COUNT; i != 0;)
 	{
 		i--;
-#ifdef SET_ORIGIN_AT_HOME_POS
-		float value = !(g_settings.homing_dir_invert_mask & (1 << i)) ? axis[i] : -axis[i];
-#else
-		float value = axis[i];
-#endif
-		if (value > g_settings.max_distance[i] || value < 0)
+		if (g_settings.max_distance[i]) // ignore any undefined axis
 		{
-			return false;
+#ifdef SET_ORIGIN_AT_HOME_POS
+			float value = !(g_settings.homing_dir_invert_mask & (1 << i)) ? axis[i] : -axis[i];
+#else
+			float value = axis[i];
+#endif
+			if (value > g_settings.max_distance[i] || value < 0)
+			{
+				return false;
+			}
 		}
 	}
 

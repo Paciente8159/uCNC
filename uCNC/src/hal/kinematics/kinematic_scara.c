@@ -27,7 +27,6 @@
 #define FULL_TURN_INV 0.0027777777777777778f
 #define DOUBLE_PI_INV (0.5f * M_PI_INV)
 
-
 static float scara_arm_angle_fact[2];
 static float scara_min_distance_to_center_sqr;
 static float scara_max_distance_to_center_sqr;
@@ -172,7 +171,7 @@ uint8_t kinematics_home(void)
 	error = mc_line(target, &block_data);
 	itp_sync();
 #endif
-	
+
 	return error;
 }
 
@@ -190,7 +189,7 @@ bool kinematics_check_boundaries(float *axis)
 	{
 		return true;
 	}
-	
+
 	float distance_to_center_sqr = axis[AXIS_X] * axis[AXIS_X] + axis[AXIS_Y] * axis[AXIS_Y];
 
 	if (distance_to_center_sqr < scara_min_distance_to_center_sqr || distance_to_center_sqr > scara_max_distance_to_center_sqr)
@@ -198,17 +197,21 @@ bool kinematics_check_boundaries(float *axis)
 		return false;
 	}
 
+	// remaining axis
 	for (uint8_t i = AXIS_COUNT; i != 2;)
 	{
 		i--;
-#ifdef SET_ORIGIN_AT_HOME_POS
-		float value = !(g_settings.homing_dir_invert_mask & (1 << i)) ? axis[i] : -axis[i];
-#else
-		float value = axis[i];
-#endif
-		if (value > g_settings.max_distance[i] || value < 0)
+		if (g_settings.max_distance[i]) // ignore any undefined axis
 		{
-			return false;
+#ifdef SET_ORIGIN_AT_HOME_POS
+			float value = !(g_settings.homing_dir_invert_mask & (1 << i)) ? axis[i] : -axis[i];
+#else
+			float value = axis[i];
+#endif
+			if (value > g_settings.max_distance[i] || value < 0)
+			{
+				return false;
+			}
 		}
 	}
 
