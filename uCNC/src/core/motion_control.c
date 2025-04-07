@@ -44,6 +44,7 @@
 
 #define KINEMATICS_MOTION_SEGMENT_INV_SIZE (1.0f / KINEMATICS_MOTION_SEGMENT_SIZE)
 
+static bool mc_flush_pending;
 static bool mc_checkmode;
 static int32_t mc_last_step_pos[STEPPER_COUNT];
 static float mc_last_target[AXIS_COUNT];
@@ -170,9 +171,6 @@ static uint8_t mc_line_segment(int32_t *step_new_pos, motion_data_t *block_data)
 		return STATUS_OK;
 	}
 
-	// stores current step target position
-	memcpy(mc_last_step_pos, step_new_pos, sizeof(mc_last_step_pos));
-
 	if (!mc_checkmode) // check mode (gcode simulation) doesn't send code to planner
 	{
 #ifdef ENABLE_BACKLASH_COMPENSATION
@@ -224,12 +222,21 @@ static uint8_t mc_line_segment(int32_t *step_new_pos, motion_data_t *block_data)
 		}
 #endif
 
-		while (planner_buffer_is_full())
+		bool mc_flushed = false;
+		while (planner_buffer_is_full() && !mc_flushed)
 		{
 			if (!cnc_dotasks())
 			{
 				return STATUS_CRITICAL_FAIL;
 			}
+			mc_flushed = mc_flush_pending;
+		}
+
+		mc_flush_pending = false;
+
+		if (mc_flushed)
+		{
+			return STATUS_JOG_CANCELED;
 		}
 
 #ifdef ENABLE_MOTION_CONTROL_MODULES
@@ -237,10 +244,17 @@ static uint8_t mc_line_segment(int32_t *step_new_pos, motion_data_t *block_data)
 		EVENT_INVOKE(mc_line_segment, block_data);
 #endif
 
+#ifdef ENABLE_STEPPERS_DISABLE_TIMEOUT
+		io_enable_steppers(g_settings.step_enable_invert); // re-enable steppers for motion
+#endif
+
 		planner_add_line(block_data);
 		// dwell should only execute on the first request
 		block_data->dwell = 0;
 	}
+
+	// stores current step target position
+	memcpy(mc_last_step_pos, step_new_pos, sizeof(mc_last_step_pos));
 
 	return STATUS_OK;
 }
@@ -685,7 +699,7 @@ uint8_t mc_dwell(motion_data_t *block_data)
 	if (!mc_checkmode) // check mode (gcode simulation) doesn't send code to planner
 	{
 		mc_update_tools(block_data);
-		cnc_delay_ms(block_data->dwell);
+		cnc_dwell_ms(block_data->dwell);
 	}
 
 	return STATUS_OK;
@@ -714,7 +728,10 @@ uint8_t mc_update_tools(motion_data_t *block_data)
 			return STATUS_CRITICAL_FAIL;
 		}
 		// synchronizes the tools
-		planner_sync_tools(block_data);
+		if (block_data)
+		{
+			planner_sync_tools(block_data);
+		}
 		itp_sync_spindle();
 	}
 #endif
@@ -728,13 +745,59 @@ void mc_home_axis_finalize(homing_status_t *status)
 }
 #endif
 
-uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
+bool mc_home_motion(uint8_t axis_mask, bool is_origin_search, motion_data_t *block_data)
 {
 	float target[AXIS_COUNT];
+
+	// Sync motion control with real time positon
+	mc_sync_position();
+	mc_get_position(target);
+
+	// Set movement distance for each axis
+	for (uint8_t i = 0; i < AXIS_COUNT; i++)
+	{
+		uint8_t imask = (1 << i);
+		if (imask & axis_mask)
+		{
+			// Invert the distance if configuration says so
+			if (g_settings.homing_dir_invert_mask & axis_mask)
+			{
+				target[i] -= (is_origin_search) ? (g_settings.max_distance[i] * -1.5f) : g_settings.homing_offset * 5.0f;
+			}
+			else
+			{
+				target[i] += (is_origin_search) ? (g_settings.max_distance[i] * -1.5f) : g_settings.homing_offset * 5.0f;
+			}
+		}
+	}
+
+	if (cnc_unlock(true) != UNLOCK_OK)
+	{
+		return false;
+	}
+	mc_line(target, block_data);
+
+	if (itp_sync() != STATUS_OK)
+	{
+		// Motion failed
+		return false;
+	}
+
+	// Flush buffers and stop motion
+	itp_stop();
+	itp_clear();
+	planner_clear();
+
+	// Motion completed successfully
+	return true;
+}
+
+uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
+{
 	motion_data_t block_data = {0};
 	uint8_t limits_flags;
 	uint8_t restore_step_mode __attribute__((__cleanup__(mc_restore_step_mode))) = itp_set_step_mode(ITP_STEP_MODE_REALTIME);
-	
+
 #ifdef ENABLE_MOTION_CONTROL_MODULES
 	homing_status_t homing_status __attribute__((__cleanup__(mc_home_axis_finalize))) = {axis_mask, axis_limit, STATUS_OK};
 #endif
@@ -771,115 +834,60 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 		return STATUS_CRITICAL_FAIL;
 	}
 
-	// sync's the motion control with the real time position
-	mc_sync_position();
-	mc_get_position(target);
-
-	// set's the homing distance for each axis
-	for (uint8_t i = 0; i < AXIS_COUNT; i++)
-	{
-		uint8_t imask = (1 << i);
-		if (imask & axis_mask)
-		{
-			float max_home_dist;
-			max_home_dist = -g_settings.max_distance[i] * 1.5f;
-
-			// checks homing dir
-			if (g_settings.homing_dir_invert_mask & axis_mask)
-			{
-				max_home_dist = -max_home_dist;
-			}
-			target[i] += max_home_dist;
-		}
-	}
-
 	// initializes planner block data
-	// memset(block_data.steps, 0, sizeof(block_data.steps));
-	// block_data.steps[axis] = max_home_dist;
 	block_data.feed = g_settings.homing_fast_feed_rate;
-	block_data.spindle = 0;
-	block_data.dwell = 0;
 	block_data.motion_mode = MOTIONCONTROL_MODE_FEED;
 
-	cnc_unlock(true);
-	mc_line(target, &block_data);
-
-	if (itp_sync() != STATUS_OK)
+#ifdef ENABLE_LONG_HOMING_CYCLE
+	uint8_t homing_passes = 2;
+	while (homing_passes--)
 	{
-		return STATUS_CRITICAL_FAIL;
-	}
-
-	// flushes buffers
-	itp_stop();
-	itp_clear();
-	planner_clear();
-
-	cnc_delay_ms(g_settings.debounce_ms); // adds a delay before reading io pin (debounce)
-	limits_flags = io_get_limits();
-
-	// the wrong switch was activated bails
-	if (!CHECKFLAG(limits_flags, axis_limit))
-	{
-		cnc_set_exec_state(EXEC_UNHOMED);
-		cnc_alarm(EXEC_ALARM_HOMING_FAIL_APPROACH);
-		return STATUS_CRITICAL_FAIL;
-	}
-
-	// sync's the motion control with the real time position
-	mc_sync_position();
-	mc_get_position(target);
-
-	// set's the homing distance for each axis
-	for (uint8_t i = 0; i < AXIS_COUNT; i++)
-	{
-		uint8_t imask = (1 << i);
-		if (imask & axis_mask)
+#endif
+		if (!mc_home_motion(axis_mask, true, &block_data))
 		{
-			// back off from switch at lower speed
-			float max_home_dist = g_settings.homing_offset * 5.0f;
-
-			// checks homing dir
-			if (g_settings.homing_dir_invert_mask & axis_mask)
-			{
-				max_home_dist = -max_home_dist;
-			}
-			target[i] += max_home_dist;
+			return STATUS_CRITICAL_FAIL;
 		}
+
+		cnc_delay_ms(g_settings.debounce_ms); // adds a delay before reading io pin (debounce)
+		limits_flags = io_get_limits();
+
+		// the wrong switch was activated bails
+		if (!CHECKFLAG(limits_flags, axis_limit))
+		{
+			cnc_set_exec_state(EXEC_UNHOMED);
+			cnc_alarm(EXEC_ALARM_HOMING_FAIL_APPROACH);
+			return STATUS_CRITICAL_FAIL;
+		}
+
+		// temporary inverts the limit mask to trigger ISR on switch release
+		io_invert_limits(axis_limit);
+
+#ifndef ENABLE_LONG_HOMING_CYCLE
+		// modify the speed to slow search speed
+		block_data.feed = g_settings.homing_slow_feed_rate;
+#endif
+
+		if (!mc_home_motion(axis_mask, false, &block_data))
+		{
+			return STATUS_CRITICAL_FAIL;
+		}
+
+		cnc_delay_ms(g_settings.debounce_ms); // adds a delay before reading io pin (debounce)
+		// resets limit mask
+		io_invert_limits(0);
+		limits_flags = io_get_limits();
+		if (CHECKFLAG(limits_flags, axis_limit))
+		{
+			cnc_set_exec_state(EXEC_UNHOMED);
+			cnc_alarm(EXEC_ALARM_HOMING_FAIL_PULLOFF);
+			return STATUS_CRITICAL_FAIL;
+		}
+
+#ifdef ENABLE_LONG_HOMING_CYCLE
+		// do the second pass at slow speed
+		block_data.feed = g_settings.homing_slow_feed_rate;
 	}
-
-	block_data.feed = g_settings.homing_slow_feed_rate;
-	// block_data.steps[axis] = max_home_dist;
-	// unlocks the machine for next motion (this will clear the EXEC_UNHOMED flag
-	// temporary inverts the limit mask to trigger ISR on switch release
-	io_invert_limits(axis_limit);
-
-	cnc_unlock(true);
-	mc_line(target, &block_data);
-
-	if (itp_sync() != STATUS_OK)
-	{
-		// restores limits mask
-		return STATUS_CRITICAL_FAIL;
-	}
-
-	cnc_delay_ms(g_settings.debounce_ms); // adds a delay before reading io pin (debounce)
-	// resets limit mask
-	io_invert_limits(0);
-	// stops, flushes buffers and clears the hold if active
-	cnc_stop();
-	// clearing the interpolator unlockes any locked stepper
-	itp_clear();
-	planner_clear();
-
-	cnc_delay_ms(g_settings.debounce_ms); // adds a delay before reading io pin (debounce)
-	limits_flags = io_get_limits();
-
-	if (CHECKFLAG(limits_flags, axis_limit))
-	{
-		cnc_set_exec_state(EXEC_UNHOMED);
-		cnc_alarm(EXEC_ALARM_HOMING_FAIL_APPROACH);
-		return STATUS_CRITICAL_FAIL;
-	}
+#endif
 
 #ifdef ENABLE_MOTION_CONTROL_MODULES
 	// if cleanup is called at any other exit point then homing has failed
@@ -940,7 +948,11 @@ uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data)
 	// disables the probe
 	io_disable_probe();
 	itp_clear();
-	planner_clear();
+	// clears the buffer but conserves the tool data
+	while (!planner_buffer_is_empty())
+	{
+		planner_discard_block();
+	}
 	// clears hold
 	cnc_clear_exec_state(EXEC_HOLD);
 
@@ -996,6 +1008,11 @@ uint8_t mc_incremental_jog(float *target_offset, motion_data_t *block_data)
 		new_target[i] += target_offset[i];
 	}
 
+#if TOOL_COUNT > 0
+	block_data->motion_flags.reg = g_planner_state.state_flags.reg;
+	block_data->spindle = g_planner_state.spindle_speed;
+#endif
+
 	uint8_t error = mc_line(new_target, block_data);
 
 	if (error == STATUS_OK)
@@ -1006,28 +1023,18 @@ uint8_t mc_incremental_jog(float *target_offset, motion_data_t *block_data)
 	return error;
 }
 
+void mc_flush_pending_motion(void)
+{
+	mc_flush_pending = true;
+}
+
 #ifdef ENABLE_G39_H_MAPPING
 
 void mc_print_hmap(void)
 {
-	protocol_send_string(MSG_START);
-	protocol_send_string(__romstr__("HMAP start corner;"));
-	serial_print_flt(hmap_x);
-	serial_putc(';');
-	serial_print_flt(hmap_y);
-	protocol_send_string(MSG_END);
-
-	protocol_send_string(MSG_START);
-	protocol_send_string(__romstr__("HMAP end corner;"));
-	serial_print_flt(hmap_x + hmap_x_offset);
-	serial_putc(';');
-	serial_print_flt(hmap_y + hmap_y_offset);
-	protocol_send_string(MSG_END);
-
-	protocol_send_string(MSG_START);
-	protocol_send_string(__romstr__("HMAP control points;"));
-	serial_print_int(H_MAPING_ARRAY_SIZE);
-	protocol_send_string(MSG_END);
+	proto_info("HMAP start corner: %f;%f", hmap_x, hmap_y);
+	proto_info("HMAP end corner: %f;%f", hmap_x + hmap_x_offset, hmap_y + hmap_y_offset);
+	proto_info("HMAP control points: %hd", H_MAPING_ARRAY_SIZE);
 
 	// print map
 	for (uint8_t j = 0; j < H_MAPING_GRID_FACTOR; j++)
@@ -1036,14 +1043,7 @@ void mc_print_hmap(void)
 		{
 			uint8_t map = i + (H_MAPING_GRID_FACTOR * j);
 			float new_h = hmap_offsets[map];
-			protocol_send_string(MSG_START);
-			protocol_send_string(__romstr__("HMAP;"));
-			serial_print_int(i);
-			serial_putc(';');
-			serial_print_int(j);
-			serial_putc(';');
-			serial_print_flt(new_h);
-			protocol_send_string(MSG_END);
+			proto_info("HMAP: %hd; %hd; %f", i, j, new_h);
 		}
 	}
 }
@@ -1126,7 +1126,13 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 	float position[AXIS_COUNT];
 	float feed = block_data->feed;
 
+	// clear the previous map
+	memset(hmap_offsets, 0, sizeof(hmap_offsets));
+
 	mc_get_position(position);
+
+	float minretract_h = position[AXIS_TOOL] + retract_h;
+	float maxretract_h = minretract_h;
 
 	for (uint8_t j = 0; j < H_MAPING_GRID_FACTOR; j++)
 	{
@@ -1134,16 +1140,15 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 		for (uint8_t i = 0; i < H_MAPING_GRID_FACTOR; i++)
 		{
 			block_data->feed = FLT_MAX;
-			// retract if needed
-			if (position[AXIS_TOOL] < (target[AXIS_TOOL] + retract_h))
+			// retract (higher if needed)
+			maxretract_h = MAX(maxretract_h, position[AXIS_TOOL] + retract_h);
+			position[AXIS_TOOL] = MAX(minretract_h, position[AXIS_TOOL] + retract_h);
+			error = mc_line(position, block_data);
+			if (error != STATUS_OK)
 			{
-				position[AXIS_TOOL] = (target[AXIS_TOOL] + retract_h);
-				error = mc_line(position, block_data);
-				if (error != STATUS_OK)
-				{
-					return error;
-				}
+				return error;
 			}
+
 			// transverse motion to position
 			position[AXIS_X] = target[AXIS_X];
 			position[AXIS_Y] = target[AXIS_Y];
@@ -1166,7 +1171,7 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 			parser_get_probe(probe_position);
 			kinematics_steps_to_coordinates(probe_position, position);
 			hmap_offsets[i + H_MAPING_GRID_FACTOR * j] = position[AXIS_TOOL];
-			protocol_send_probe_result(1);
+			proto_probe_result(1);
 
 			// update to new target
 			target[AXIS_X] += offset_x;
@@ -1177,14 +1182,13 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 
 	block_data->feed = FLT_MAX;
 	// fast retract if needed
-	if (position[AXIS_TOOL] < (target[AXIS_TOOL] + retract_h))
+	// retract (higher if needed)
+	block_data->feed = FLT_MAX;
+	position[AXIS_TOOL] = maxretract_h;
+	error = mc_line(position, block_data);
+	if (error != STATUS_OK)
 	{
-		position[AXIS_TOOL] = (target[AXIS_TOOL] + retract_h);
-		error = mc_line(position, block_data);
-		if (error != STATUS_OK)
-		{
-			return error;
-		}
+		return error;
 	}
 
 	// transverse to 1st point
@@ -1227,7 +1231,20 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 	// print map
 	mc_print_hmap();
 
+	if (itp_sync() != STATUS_OK)
+	{
+		return STATUS_CRITICAL_FAIL;
+	}
+
+	// sync position of all systems
+	mc_sync_position();
+
 	return STATUS_OK;
+}
+
+void mc_clear_hmap(void)
+{
+	memset(hmap_offsets, 0, sizeof(hmap_offsets));
 }
 #endif
 

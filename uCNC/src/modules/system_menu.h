@@ -64,10 +64,30 @@ extern "C"
 #define SYSTEM_MENU_MODE_REDRAW 1
 #define SYSTEM_MENU_MODE_NONE 0
 
+// System menu IDs
+#define SYSTEM_MENU_ID_STARTUP 255
+#define SYSTEM_MENU_ID_IDLE 0
+#define SYSTEM_MENU_ID_MAIN_MENU 1
+#define SYSTEM_MENU_ID_SETTINGS 2
+#define SYSTEM_MENU_ID_HOMING 3
+#define SYSTEM_MENU_ID_STEPPER_SETTINGS 4
+#define SYSTEM_MENU_ID_KINEMATIC_SETTINGS 5
+#define SYSTEM_MENU_ID_IO_SETTIGNS 6
+#define SYSTEM_MENU_ID_JOG 7
+#define SYSTEM_MENU_ID_OVERRIDES 8
+#define SYSTEM_MENU_ID_MISC_SETTINGS 9
+
 #define SYSTEM_MENU_ACTION_NONE 0
 #define SYSTEM_MENU_ACTION_SELECT 1
 #define SYSTEM_MENU_ACTION_NEXT 2
 #define SYSTEM_MENU_ACTION_PREV 3
+
+// Characters given to this macro should be in range of printable ASCII characters (32-127)
+#define SYSTEM_MENU_ACTION_CHAR_INPUT(c) (c)
+// Action ID range from 128 - 137
+#define SYSTEM_MENU_ACTION_SIDE_BUTTON(b) ((b) + 128)
+// Action ID range from 138 - 147
+#define SYSTEM_MENU_ACTION_SPECIAL_BUTTON(b) ((b) + 138)
 
 #define VAR_TYPE_BOOLEAN 1
 #define VAR_TYPE_UINT8 2
@@ -134,7 +154,7 @@ extern "C"
 	} system_menu_t;
 
 #define MENU_ENTRY(name) ((system_menu_item_t *)&name)
-#define DECL_MENU_ENTRY(menu_id, name, strvalue, arg_ptr, display_cb, display_cb_arg, action_cb, action_cb_arg)                                                                                                   \
+#define DECL_MENU_ENTRY(menu_id, name, strvalue, arg_ptr, display_cb, display_cb_arg, action_cb, action_cb_arg)                                                                                                 \
 	static const system_menu_item_t name##_item __rom__ = {.label = strvalue, .argptr = arg_ptr, .item_render = display_cb, .render_arg = display_cb_arg, .item_action = action_cb, .action_arg = action_cb_arg}; \
 	static system_menu_index_t name = {.menu_item = &name##_item, .next = NULL};                                                                                                                                  \
 	system_menu_append_item(menu_id, &name)
@@ -149,11 +169,11 @@ extern "C"
 #define DECL_MENU_VAR_CUSTOM_EDIT(menu_id, name, strvalue, varptr, vartype, actioncb, actioncb_arg) DECL_MENU_ENTRY(menu_id, name, strvalue, varptr, system_menu_item_render_var_arg, CONST_VARG(vartype), actioncb, actioncb_arg)
 #define DECL_MENU_ACTION(menu_id, name, strvalue, action_cb, action_cb_arg) DECL_MENU_ENTRY(menu_id, name, strvalue, NULL, NULL, NULL, action_cb, action_cb_arg)
 
-#define DECL_MENU(id, parentid, label)                                                                                                                                                      \
+#define DECL_MENU(id, parentid, label)                                                                                                                                                    \
 	static const char m##id##_label[] __rom__ = label;                                                                                                                                      \
 	static system_menu_page_t m##id = {.menu_id = id, .parent_id = parentid, .page_label = m##id##_label, .page_render = NULL, .page_action = NULL, .items_index = NULL, .extended = NULL}; \
 	system_menu_append(&m##id)
-#define DECL_DYNAMIC_MENU(id, parentid, render_cb, action_cb)                                                                                                                                                      \
+#define DECL_DYNAMIC_MENU(id, parentid, render_cb, action_cb)                                                                                                                              \
 	static system_menu_page_t m##id = {.menu_id = id, .parent_id = parentid, .page_label = NULL, .page_render = render_cb, .page_action = action_cb, .items_index = NULL, .extended = NULL}; \
 	system_menu_append(&m##id)
 #define MENU(id) (&m##id)
@@ -162,6 +182,9 @@ extern "C"
 
 	extern system_menu_t g_system_menu;
 
+	extern float g_system_menu_jog_distance;
+	extern float g_system_menu_jog_feed;
+
 	DECL_MODULE(system_menu);
 	void system_menu_reset(void);
 	void system_menu_go_idle(void);
@@ -169,6 +192,10 @@ extern "C"
 	void system_menu_render(void);
 	void system_menu_show_modal_popup(uint32_t timeout, const char *__s);
 	void system_menu_action_timeout(uint32_t delay);
+	void system_menu_goto(uint8_t id);
+
+	void system_menu_set_render_callback(uint8_t menu_id, system_menu_page_render_cb callback);
+	void system_menu_set_action_callback(uint8_t menu_id, system_menu_page_action_cb callback);
 
 	void system_menu_append(system_menu_page_t *newpage);
 	void system_menu_append_item(uint8_t menu_id, system_menu_index_t *newitem);
@@ -192,6 +219,12 @@ extern "C"
 	uint8_t system_menu_send_cmd(const char *__s);
 
 	/**
+	 * Overridable system menu actions to be implemented for the user input system
+	 * **/
+
+	void system_menu_action_custom_code(uint8_t action);
+
+	/**
 	 * Helper µCNC action callbacks
 	 * **/
 	bool system_menu_action_goto(uint8_t action, system_menu_item_t *item);
@@ -213,16 +246,8 @@ extern "C"
 	/**
 	 * Helper µCNC to display variables
 	 * **/
-	extern char *system_menu_var_to_str_set_buffer_ptr;
-	void system_menu_var_to_str_set_buffer(char *ptr);
-	void system_menu_var_to_str(char c);
-
-#define system_menu_int_to_str(buf_ptr, var)    \
-	system_menu_var_to_str_set_buffer(buf_ptr); \
-	print_int(system_menu_var_to_str, (uint32_t)var)
-#define system_menu_flt_to_str(buf_ptr, var)    \
-	system_menu_var_to_str_set_buffer(buf_ptr); \
-	print_flt(system_menu_var_to_str, (float)var)
+#define system_menu_int_to_str(buf_ptr, var) ({ char* _ptr = (buf_ptr); char** ptr_ptr = &_ptr; prt_int(ptr_ptr, PRINT_MAX, (uint32_t)var, 0); })
+#define system_menu_flt_to_str(buf_ptr, var) ({ char* _ptr = (buf_ptr); char** ptr_ptr = &_ptr; prt_flt(ptr_ptr, PRINT_MAX, (float)var, ((!g_settings.report_inches) ? 3 : 5)); })
 
 #ifdef __cplusplus
 }

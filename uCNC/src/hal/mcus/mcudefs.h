@@ -33,20 +33,40 @@ extern "C"
 #include "avr/mcumap_avr.h"
 #endif
 
+#if (MCU == MCU_STM32F0X)
+#include "stm32f0x/mcumap_stm32f0x.h"
+#define CFG_TUSB_MCU OPT_MCU_STM32F0
+#endif
+
 #if (MCU == MCU_STM32F1X)
 #include "stm32f1x/mcumap_stm32f1x.h"
+#define CFG_TUSB_MCU OPT_MCU_STM32F1
 #endif
 
 #if (MCU == MCU_STM32F4X)
 #include "stm32f4x/mcumap_stm32f4x.h"
+#define CFG_TUSB_MCU OPT_MCU_STM32F4
+#endif
+
+#if (MCU == MCU_STM32H7X)
+#include "stm32h7x/mcumap_stm32h7x.h"
+#define CFG_TUSB_MCU OPT_MCU_STM32H7
+// #define CFG_TUSB_OS                  OPT_OS_NONE
+// #define BOARD_DEVICE_RHPORT_SPEED    OPT_MODE_HIGH_SPEED  // 480mbps
+// #define BOARD_DEVICE_RHPORT_NUM     1
+// #define CFG_TUSB_RHPORT1_MODE       (OPT_MODE_DEVICE | OPT_MODE_HIGH_SPEED)
+// #define USBCON
+// #define USBD_USE_CDC
 #endif
 
 #if (MCU == MCU_SAMD21)
 #include "samd21/mcumap_samd21.h"
+#define CFG_TUSB_MCU OPT_MCU_SAMD21
 #endif
 
 #if (MCU == MCU_LPC176X)
 #include "lpc176x/mcumap_lpc176x.h"
+#define CFG_TUSB_MCU OPT_MCU_LPC175X_6X
 #endif
 
 #if (MCU == MCU_ESP8266)
@@ -64,12 +84,23 @@ extern "C"
 #endif
 #endif
 
+#if (MCU == MCU_RP2350)
+#include "rp2350/mcumap_rp2350.h"
+#ifndef CFG_TUSB_MCU
+#define CFG_TUSB_MCU OPT_MCU_RP2350
+#endif
+#endif
+
 #if (MCU == MCU_VIRTUAL_WIN)
 #include "virtual/mcumap_virtual.h"
 #endif
 
 #ifndef MCU
 #error Undefined mcu
+#endif
+
+#ifndef NVM_STORAGE_SIZE
+#define NVM_STORAGE_SIZE 0x400
 #endif
 
 #include "mcu.h" //exposes the MCU HAL interface

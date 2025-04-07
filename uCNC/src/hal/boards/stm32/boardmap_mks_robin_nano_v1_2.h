@@ -24,13 +24,12 @@ extern "C"
 {
 #endif
 
-#ifndef BOARD_NAME
-#define BOARD_NAME "MKS Robin Nano 1.2"
+#ifndef MCU
+#define MCU MCU_STM32F1X
 #endif
 
-#define NO_USB_VCP
-#ifdef USB_VCP
-#undef USB_VCP
+#ifndef BOARD_NAME
+#define BOARD_NAME "MKS Robin Nano 1.2"
 #endif
 
 // Setup step pins
@@ -74,7 +73,7 @@ extern "C"
 #define LIMIT_X_PORT A	// assigns LIMIT_X port
 #define LIMIT_Y_BIT 12	// assigns LIMIT_Y pin
 #define LIMIT_Y_PORT A	// assigns LIMIT_Y port
-#define LIMIT_Z_BIT 4	// assigns LIMIT_Z+ pin
+#define LIMIT_Z_BIT 4		// assigns LIMIT_Z+ pin
 #define LIMIT_Z_PORT C	// assigns LIMIT_Z+ port
 #define LIMIT_Z2_BIT 11 // assigns LIMIT_Z- pin
 #define LIMIT_Z2_PORT A // assigns LIMIT_Z- port
@@ -86,7 +85,7 @@ extern "C"
 #define LIMIT_Z2_ISR
 
 // Setup probe pin
-#define PROBE_BIT 8
+#define PROBE_BIT 4
 #define PROBE_PORT A
 #define PROBE_ISR
 
@@ -124,10 +123,14 @@ extern "C"
 #define ANALOG2_PORT C
 #define ANALOG2_CHANNEL 12
 
+#define SERVO0_BIT 8
+#define SERVO0_PORT A
+
 // Setup the Step Timer used has the heartbeat for µCNC
 #define ITP_TIMER 5
+#define SERVO_TIMER 4
 
-//software SPI for card access
+// software SPI for card access
 #define DOUT29_BIT 2
 #define DOUT29_PORT D
 #define DIN29_BIT 8
@@ -136,11 +139,11 @@ extern "C"
 #define DOUT30_PORT C
 #define SPI_CS_BIT 11
 #define SPI_CS_PORT C
-//SD detect pin
+// SD detect pin
 #define DIN19_BIT 12
 #define DIN19_PORT D
 
-#define ONESHOT_TIMER 2
+#define ONESHOT_TIMER 8
 
 #ifdef __cplusplus
 }

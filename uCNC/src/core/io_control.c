@@ -93,7 +93,7 @@ MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 #ifdef DISABLE_ALL_LIMITS
 	return;
 #else
-	static uint8_t prev_limits = 0;
+	static volatile uint8_t prev_limits = 0;
 	uint8_t limits = io_get_limits();
 	uint8_t limits_diff = prev_limits;
 	prev_limits = limits;
@@ -115,6 +115,15 @@ MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 				// changed limit is from the current mask
 				if ((limits_diff & limits_ref))
 				{
+					/**
+					 * Disabled for now. For re-evaluation
+					 */
+					// Changed limit is not active, don't trip the alarm
+					// if(!(limits_diff & limits))
+					// {
+					// 	return;
+					// }
+
 					// lock steps on the current limits
 					itp_lock_stepper(limits);
 
@@ -143,10 +152,11 @@ MCU_IO_CALLBACK void mcu_controls_changed_cb(void)
 #ifdef DISABLE_ALL_CONTROLS
 	return;
 #else
-	static uint8_t prev_controls = 0;
+	static volatile uint8_t prev_controls = 0;
 	uint8_t controls = io_get_controls();
+	uint8_t changed = prev_controls ^ controls;
 
-	if (!(prev_controls ^ controls))
+	if (!changed)
 	{
 		return;
 	}
@@ -176,11 +186,11 @@ MCU_IO_CALLBACK void mcu_controls_changed_cb(void)
 #if ASSERT_PIN(FHOLD)
 	if (CHECKFLAG(controls, FHOLD_MASK))
 	{
-		cnc_set_exec_state(EXEC_HOLD);
+		cnc_call_rt_command(CMD_CODE_FEED_HOLD);
 	}
 #endif
 #if ASSERT_PIN(CS_RES)
-	if (CHECKFLAG(controls, CS_RES_MASK))
+	if (CHECKFLAG(controls & changed, CS_RES_MASK))
 	{
 		cnc_call_rt_command(CMD_CODE_CYCLE_START);
 	}
@@ -222,9 +232,13 @@ MCU_IO_CALLBACK void mcu_probe_changed_cb(void)
 
 MCU_IO_CALLBACK void mcu_inputs_changed_cb(void)
 {
-	static uint8_t prev_inputs = 0;
+	static volatile uint8_t prev_inputs = 0;
 	uint8_t inputs = 0;
 	uint8_t diff;
+
+#ifdef IC74HC165_HAS_DINS
+	io_extended_pins_update();
+#endif
 
 #if (ASSERT_PIN(DIN0) && defined(DIN0_ISR))
 	if (io_get_input(DIN0))
@@ -312,6 +326,9 @@ uint8_t io_get_limits(void)
 #ifdef DISABLE_ALL_LIMITS
 	return 0;
 #endif
+#ifdef IC74HC165_HAS_LIMITS
+	io_extended_pins_update();
+#endif
 	uint8_t value = 0;
 
 #if ASSERT_PIN(LIMIT_X)
@@ -350,6 +367,13 @@ uint8_t io_get_limits(void)
 		result ^= io_invert_limits_mask;
 	}
 
+#if (LIMITS_NORMAL_OPERATION_MASK != 0)
+	if (!cnc_get_exec_state(EXEC_HOMING))
+	{
+		result &= ~LIMITS_NORMAL_OPERATION_MASK;
+	}
+#endif
+
 	return result;
 }
 
@@ -357,6 +381,9 @@ uint8_t io_get_controls(void)
 {
 #ifdef DISABLE_ALL_CONTROLS
 	return 0;
+#endif
+#ifdef IC74HC165_HAS_CONTROLS
+	io_extended_pins_update();
 #endif
 	uint8_t value = 0;
 #if ASSERT_PIN(ESTOP)
@@ -379,14 +406,29 @@ uint8_t io_get_controls(void)
 	return (value ^ (g_settings.control_invert_mask & CONTROLS_INV_MASK));
 }
 
+#ifdef PROBE_ENABLE_CUSTOM_CALLBACK
+typedef bool (*io_probe_get_cb)(void);
+typedef bool (*io_probe_action_cb)(void);
+io_probe_get_cb io_probe_custom_get = NULL;
+io_probe_action_cb io_probe_custom_enable = NULL;
+io_probe_action_cb io_probe_custom_disable = NULL;
+#endif
+
 void io_enable_probe(void)
 {
+#ifdef PROBE_ENABLE_CUSTOM_CALLBACK
+	if (io_probe_custom_enable)
+	{
+		io_probe_custom_enable();
+		return;
+	}
+#endif
 #if ASSERT_PIN(PROBE)
 	io_last_probe = io_get_probe();
 #ifdef ENABLE_IO_MODULES
 	EVENT_INVOKE(probe_enable, NULL);
 #endif
-#ifndef FORCE_SOFT_POLLING
+#if !defined(FORCE_SOFT_POLLING) && defined(PROBE_ISR)
 	mcu_enable_probe_isr();
 #endif
 	io_probe_enabled = true;
@@ -395,9 +437,16 @@ void io_enable_probe(void)
 
 void io_disable_probe(void)
 {
+#ifdef PROBE_ENABLE_CUSTOM_CALLBACK
+	if (io_probe_custom_disable)
+	{
+		io_probe_custom_disable();
+		return;
+	}
+#endif
 #if ASSERT_PIN(PROBE)
 	io_probe_enabled = false;
-#ifndef FORCE_SOFT_POLLING
+#if !defined(FORCE_SOFT_POLLING) && defined(PROBE_ISR)
 	mcu_disable_probe_isr();
 #endif
 #ifdef ENABLE_IO_MODULES
@@ -408,9 +457,19 @@ void io_disable_probe(void)
 
 bool io_get_probe(void)
 {
+#ifdef PROBE_ENABLE_CUSTOM_CALLBACK
+	if (io_probe_custom_get)
+	{
+		return io_probe_custom_get();
+	}
+#endif
+
 #if !ASSERT_PIN(PROBE)
 	return false;
 #else
+#ifdef IC74HC165_HAS_PROBE
+	io_extended_pins_update();
+#endif
 #if ASSERT_PIN(PROBE)
 	bool probe = (io_get_input(PROBE) != 0);
 	return (!g_settings.probe_invert_mask) ? probe : !probe;
@@ -510,7 +569,7 @@ void io_set_steps(uint8_t mask)
 #endif
 
 #ifdef IC74HC595_HAS_STEPS
-	ic74hc595_shift_io_pins();
+	io_extended_pins_update();
 #endif
 }
 
@@ -574,7 +633,32 @@ void io_toggle_steps(uint8_t mask)
 #endif
 
 #ifdef IC74HC595_HAS_STEPS
-	ic74hc595_shift_io_pins();
+	io_extended_pins_update();
+#endif
+}
+
+void io_get_steps_pos(int32_t *position)
+{
+	itp_get_rt_position(position);
+#if STEPPERS_ENCODERS_MASK != 0
+#if (defined(STEP0_ENCODER) && AXIS_TO_STEPPERS > 0)
+	position[0] = encoder_get_position(STEP0_ENCODER);
+#endif
+#if (defined(STEP1_ENCODER) && AXIS_TO_STEPPERS > 1)
+	position[1] = encoder_get_position(STEP1_ENCODER);
+#endif
+#if (defined(STEP2_ENCODER) && AXIS_TO_STEPPERS > 2)
+	position[2] = encoder_get_position(STEP2_ENCODER);
+#endif
+#if (defined(STEP3_ENCODER) && AXIS_TO_STEPPERS > 3)
+	position[3] = encoder_get_position(STEP3_ENCODER);
+#endif
+#if (defined(STEP4_ENCODER) && AXIS_TO_STEPPERS > 4)
+	position[4] = encoder_get_position(STEP4_ENCODER);
+#endif
+#if (defined(STEP5_ENCODER) && AXIS_TO_STEPPERS > 5)
+	position[5] = encoder_get_position(STEP5_ENCODER);
+#endif
 #endif
 }
 
@@ -668,7 +752,7 @@ void io_set_dirs(uint8_t mask)
 #endif
 
 #ifdef IC74HC595_HAS_DIRS
-	ic74hc595_shift_io_pins();
+	io_extended_pins_update();
 #endif
 }
 
@@ -760,7 +844,7 @@ void io_enable_steppers(uint8_t mask)
 #endif
 
 #ifdef IC74HC595_HAS_STEPS_EN
-	ic74hc595_shift_io_pins();
+	io_extended_pins_update();
 #endif
 }
 
@@ -943,7 +1027,7 @@ MCU_CALLBACK void io_soft_pwm_update(void)
 #endif
 
 #ifdef IC74HC595_HAS_PWMS
-	ic74hc595_shift_io_pins();
+	io_extended_pins_update();
 #endif
 }
 #endif
@@ -1228,6 +1312,106 @@ void io_set_pinvalue(uint8_t pin, uint8_t value)
 			io_set_output(DOUT31);
 			break;
 #endif
+#if ASSERT_PIN(DOUT32)
+		case DOUT32:
+			io_set_output(DOUT32);
+			break;
+#endif
+#if ASSERT_PIN(DOUT33)
+		case DOUT33:
+			io_set_output(DOUT33);
+			break;
+#endif
+#if ASSERT_PIN(DOUT34)
+		case DOUT34:
+			io_set_output(DOUT34);
+			break;
+#endif
+#if ASSERT_PIN(DOUT35)
+		case DOUT35:
+			io_set_output(DOUT35);
+			break;
+#endif
+#if ASSERT_PIN(DOUT36)
+		case DOUT36:
+			io_set_output(DOUT36);
+			break;
+#endif
+#if ASSERT_PIN(DOUT37)
+		case DOUT37:
+			io_set_output(DOUT37);
+			break;
+#endif
+#if ASSERT_PIN(DOUT38)
+		case DOUT38:
+			io_set_output(DOUT38);
+			break;
+#endif
+#if ASSERT_PIN(DOUT39)
+		case DOUT39:
+			io_set_output(DOUT39);
+			break;
+#endif
+#if ASSERT_PIN(DOUT40)
+		case DOUT40:
+			io_set_output(DOUT40);
+			break;
+#endif
+#if ASSERT_PIN(DOUT41)
+		case DOUT41:
+			io_set_output(DOUT41);
+			break;
+#endif
+#if ASSERT_PIN(DOUT42)
+		case DOUT42:
+			io_set_output(DOUT42);
+			break;
+#endif
+#if ASSERT_PIN(DOUT43)
+		case DOUT43:
+			io_set_output(DOUT43);
+			break;
+#endif
+#if ASSERT_PIN(DOUT44)
+		case DOUT44:
+			io_set_output(DOUT44);
+			break;
+#endif
+#if ASSERT_PIN(DOUT45)
+		case DOUT45:
+			io_set_output(DOUT45);
+			break;
+#endif
+#if ASSERT_PIN(DOUT46)
+		case DOUT46:
+			io_set_output(DOUT46);
+			break;
+#endif
+#if ASSERT_PIN(DOUT47)
+		case DOUT47:
+			io_set_output(DOUT47);
+			break;
+#endif
+#if ASSERT_PIN(DOUT48)
+		case DOUT48:
+			io_set_output(DOUT48);
+			break;
+#endif
+#if ASSERT_PIN(DOUT49)
+		case DOUT49:
+			io_set_output(DOUT49);
+			break;
+#endif
+#if ASSERT_PIN(SPI_CS)
+		case SPI_CS:
+			io_set_output(SPI_CS);
+			break;
+#endif
+#if ASSERT_PIN(SPI2_CS)
+		case SPI2_CS:
+			io_set_output(SPI2_CS);
+			break;
+#endif
 		}
 	}
 	else
@@ -1505,16 +1689,141 @@ void io_set_pinvalue(uint8_t pin, uint8_t value)
 			io_clear_output(DOUT31);
 			break;
 #endif
+#if ASSERT_PIN(DOUT32)
+		case DOUT32:
+			io_clear_output(DOUT32);
+			break;
+#endif
+#if ASSERT_PIN(DOUT33)
+		case DOUT33:
+			io_clear_output(DOUT33);
+			break;
+#endif
+#if ASSERT_PIN(DOUT34)
+		case DOUT34:
+			io_clear_output(DOUT34);
+			break;
+#endif
+#if ASSERT_PIN(DOUT35)
+		case DOUT35:
+			io_clear_output(DOUT35);
+			break;
+#endif
+#if ASSERT_PIN(DOUT36)
+		case DOUT36:
+			io_clear_output(DOUT36);
+			break;
+#endif
+#if ASSERT_PIN(DOUT37)
+		case DOUT37:
+			io_clear_output(DOUT37);
+			break;
+#endif
+#if ASSERT_PIN(DOUT38)
+		case DOUT38:
+			io_clear_output(DOUT38);
+			break;
+#endif
+#if ASSERT_PIN(DOUT39)
+		case DOUT39:
+			io_clear_output(DOUT39);
+			break;
+#endif
+#if ASSERT_PIN(DOUT40)
+		case DOUT40:
+			io_clear_output(DOUT40);
+			break;
+#endif
+#if ASSERT_PIN(DOUT41)
+		case DOUT41:
+			io_clear_output(DOUT41);
+			break;
+#endif
+#if ASSERT_PIN(DOUT42)
+		case DOUT42:
+			io_clear_output(DOUT42);
+			break;
+#endif
+#if ASSERT_PIN(DOUT43)
+		case DOUT43:
+			io_clear_output(DOUT43);
+			break;
+#endif
+#if ASSERT_PIN(DOUT44)
+		case DOUT44:
+			io_clear_output(DOUT44);
+			break;
+#endif
+#if ASSERT_PIN(DOUT45)
+		case DOUT45:
+			io_clear_output(DOUT45);
+			break;
+#endif
+#if ASSERT_PIN(DOUT46)
+		case DOUT46:
+			io_clear_output(DOUT46);
+			break;
+#endif
+#if ASSERT_PIN(DOUT47)
+		case DOUT47:
+			io_clear_output(DOUT47);
+			break;
+#endif
+#if ASSERT_PIN(DOUT48)
+		case DOUT48:
+			io_clear_output(DOUT48);
+			break;
+#endif
+#if ASSERT_PIN(DOUT49)
+		case DOUT49:
+			io_clear_output(DOUT49);
+			break;
+#endif
+#if ASSERT_PIN(SPI_CS)
+		case SPI_CS:
+			io_clear_output(SPI_CS);
+			break;
+#endif
+#if ASSERT_PIN(SPI2_CS)
+		case SPI2_CS:
+			io_clear_output(SPI2_CS);
+			break;
+#endif
 		}
 	}
 
-#ifdef IC74HC595_HAS_DOUTS
-	ic74hc595_shift_io_pins();
-#endif
+	// this ensures the pin is updated after writing (but might lead to slow or sucessive multiple readings and make firmware slow)
+	// extended pins (when not updated by an ISR), are updated frequently in the main loop
+	// for this reason will be assumed that extended pins might not update instantly.
+	// updating handling must be treated as a per need case like done in softuart/softspi modules
+
+	// #if (IC74HC595_COUNT > 0)
+	// #if defined(IC74HC165_HAS_PWM) || defined(IC74HC165_HAS_SERVOS) || defined(IC74HC165_HAS_DOUTS)
+	// 	if (pin >= PWM_PINS_OFFSET && pin < 100)
+	// 	{
+	// 		io_extended_pins_update();
+	// 	}
+	// #endif
+	// #endif
 }
 
 int16_t io_get_pinvalue(uint8_t pin)
 {
+
+	// this ensures the pin is updated before reading (but might lead to slow or sucessive multiple readings and make firmware slow)
+	// extended pins (when not updated by an ISR), are updated frequently in the main loop
+	// for this reason will be assumed that extended pins might not update instantly
+	// updating handling must be treated as a per need case like done in softuart/softspi modules
+
+	// #if (IC74HC165_COUNT > 0)
+	// #if defined(IC74HC165_HAS_LIMITS) || defined(IC74HC165_HAS_CONTROLS) || defined(IC74HC165_HAS_PROBE)
+	// 	if (pin >= 100 && pin < ANALOG_PINS_OFFSET)
+	// 	{
+	// 		io_extended_pins_update();
+	// 	}
+	// #endif
+	// #endif
+
 	switch (pin)
 	{
 #if ASSERT_PIN(STEP0)
@@ -1805,6 +2114,79 @@ int16_t io_get_pinvalue(uint8_t pin)
 	case DOUT31:
 		return (io_get_output(DOUT31) != 0);
 #endif
+#if ASSERT_PIN(DOUT32)
+	case DOUT32:
+		return (io_get_output(DOUT32) != 0);
+#endif
+#if ASSERT_PIN(DOUT33)
+	case DOUT33:
+		return (io_get_output(DOUT33) != 0);
+#endif
+#if ASSERT_PIN(DOUT34)
+	case DOUT34:
+		return (io_get_output(DOUT34) != 0);
+#endif
+#if ASSERT_PIN(DOUT35)
+	case DOUT35:
+		return (io_get_output(DOUT35) != 0);
+#endif
+#if ASSERT_PIN(DOUT36)
+	case DOUT36:
+		return (io_get_output(DOUT36) != 0);
+#endif
+#if ASSERT_PIN(DOUT37)
+	case DOUT37:
+		return (io_get_output(DOUT37) != 0);
+#endif
+#if ASSERT_PIN(DOUT38)
+	case DOUT38:
+		return (io_get_output(DOUT38) != 0);
+#endif
+#if ASSERT_PIN(DOUT39)
+	case DOUT39:
+		return (io_get_output(DOUT39) != 0);
+#endif
+#if ASSERT_PIN(DOUT40)
+	case DOUT40:
+		return (io_get_output(DOUT40) != 0);
+#endif
+#if ASSERT_PIN(DOUT41)
+	case DOUT41:
+		return (io_get_output(DOUT41) != 0);
+#endif
+#if ASSERT_PIN(DOUT42)
+	case DOUT42:
+		return (io_get_output(DOUT42) != 0);
+#endif
+#if ASSERT_PIN(DOUT43)
+	case DOUT43:
+		return (io_get_output(DOUT43) != 0);
+#endif
+#if ASSERT_PIN(DOUT44)
+	case DOUT44:
+		return (io_get_output(DOUT44) != 0);
+#endif
+#if ASSERT_PIN(DOUT45)
+	case DOUT45:
+		return (io_get_output(DOUT45) != 0);
+#endif
+#if ASSERT_PIN(DOUT46)
+	case DOUT46:
+		return (io_get_output(DOUT46) != 0);
+#endif
+#if ASSERT_PIN(DOUT47)
+	case DOUT47:
+		return (io_get_output(DOUT47) != 0);
+#endif
+#if ASSERT_PIN(DOUT48)
+	case DOUT48:
+		return (io_get_output(DOUT48) != 0);
+#endif
+#if ASSERT_PIN(DOUT49)
+	case DOUT49:
+		return (io_get_output(DOUT49) != 0);
+#endif
+
 #if ASSERT_PIN(LIMIT_X)
 	case LIMIT_X:
 		return (io_get_input(LIMIT_X) != 0);
@@ -1867,67 +2249,67 @@ int16_t io_get_pinvalue(uint8_t pin)
 #endif
 #if ASSERT_PIN(ANALOG0)
 	case ANALOG0:
-		return mcu_get_analog(ANALOG0);
+		return io_get_analog(ANALOG0);
 #endif
 #if ASSERT_PIN(ANALOG1)
 	case ANALOG1:
-		return mcu_get_analog(ANALOG1);
+		return io_get_analog(ANALOG1);
 #endif
 #if ASSERT_PIN(ANALOG2)
 	case ANALOG2:
-		return mcu_get_analog(ANALOG2);
+		return io_get_analog(ANALOG2);
 #endif
 #if ASSERT_PIN(ANALOG3)
 	case ANALOG3:
-		return mcu_get_analog(ANALOG3);
+		return io_get_analog(ANALOG3);
 #endif
 #if ASSERT_PIN(ANALOG4)
 	case ANALOG4:
-		return mcu_get_analog(ANALOG4);
+		return io_get_analog(ANALOG4);
 #endif
 #if ASSERT_PIN(ANALOG5)
 	case ANALOG5:
-		return mcu_get_analog(ANALOG5);
+		return io_get_analog(ANALOG5);
 #endif
 #if ASSERT_PIN(ANALOG6)
 	case ANALOG6:
-		return mcu_get_analog(ANALOG6);
+		return io_get_analog(ANALOG6);
 #endif
 #if ASSERT_PIN(ANALOG7)
 	case ANALOG7:
-		return mcu_get_analog(ANALOG7);
+		return io_get_analog(ANALOG7);
 #endif
 #if ASSERT_PIN(ANALOG8)
 	case ANALOG8:
-		return mcu_get_analog(ANALOG8);
+		return io_get_analog(ANALOG8);
 #endif
 #if ASSERT_PIN(ANALOG9)
 	case ANALOG9:
-		return mcu_get_analog(ANALOG9);
+		return io_get_analog(ANALOG9);
 #endif
 #if ASSERT_PIN(ANALOG10)
 	case ANALOG10:
-		return mcu_get_analog(ANALOG10);
+		return io_get_analog(ANALOG10);
 #endif
 #if ASSERT_PIN(ANALOG11)
 	case ANALOG11:
-		return mcu_get_analog(ANALOG11);
+		return io_get_analog(ANALOG11);
 #endif
 #if ASSERT_PIN(ANALOG12)
 	case ANALOG12:
-		return mcu_get_analog(ANALOG12);
+		return io_get_analog(ANALOG12);
 #endif
 #if ASSERT_PIN(ANALOG13)
 	case ANALOG13:
-		return mcu_get_analog(ANALOG13);
+		return io_get_analog(ANALOG13);
 #endif
 #if ASSERT_PIN(ANALOG14)
 	case ANALOG14:
-		return mcu_get_analog(ANALOG14);
+		return io_get_analog(ANALOG14);
 #endif
 #if ASSERT_PIN(ANALOG15)
 	case ANALOG15:
-		return mcu_get_analog(ANALOG15);
+		return io_get_analog(ANALOG15);
 #endif
 #if ASSERT_PIN(DIN0)
 	case DIN0:
@@ -2057,6 +2439,78 @@ int16_t io_get_pinvalue(uint8_t pin)
 	case DIN31:
 		return (io_get_input(DIN31) != 0);
 #endif
+#if ASSERT_PIN(DIN32)
+	case DIN32:
+		return (io_get_input(DIN32) != 0);
+#endif
+#if ASSERT_PIN(DIN33)
+	case DIN33:
+		return (io_get_input(DIN33) != 0);
+#endif
+#if ASSERT_PIN(DIN34)
+	case DIN34:
+		return (io_get_input(DIN34) != 0);
+#endif
+#if ASSERT_PIN(DIN35)
+	case DIN35:
+		return (io_get_input(DIN35) != 0);
+#endif
+#if ASSERT_PIN(DIN36)
+	case DIN36:
+		return (io_get_input(DIN36) != 0);
+#endif
+#if ASSERT_PIN(DIN37)
+	case DIN37:
+		return (io_get_input(DIN37) != 0);
+#endif
+#if ASSERT_PIN(DIN38)
+	case DIN38:
+		return (io_get_input(DIN38) != 0);
+#endif
+#if ASSERT_PIN(DIN39)
+	case DIN39:
+		return (io_get_input(DIN39) != 0);
+#endif
+#if ASSERT_PIN(DIN40)
+	case DIN40:
+		return (io_get_input(DIN40) != 0);
+#endif
+#if ASSERT_PIN(DIN41)
+	case DIN41:
+		return (io_get_input(DIN41) != 0);
+#endif
+#if ASSERT_PIN(DIN42)
+	case DIN42:
+		return (io_get_input(DIN42) != 0);
+#endif
+#if ASSERT_PIN(DIN43)
+	case DIN43:
+		return (io_get_input(DIN43) != 0);
+#endif
+#if ASSERT_PIN(DIN44)
+	case DIN44:
+		return (io_get_input(DIN44) != 0);
+#endif
+#if ASSERT_PIN(DIN45)
+	case DIN45:
+		return (io_get_input(DIN45) != 0);
+#endif
+#if ASSERT_PIN(DIN46)
+	case DIN46:
+		return (io_get_input(DIN46) != 0);
+#endif
+#if ASSERT_PIN(DIN47)
+	case DIN47:
+		return (io_get_input(DIN47) != 0);
+#endif
+#if ASSERT_PIN(DIN48)
+	case DIN48:
+		return (io_get_input(DIN48) != 0);
+#endif
+#if ASSERT_PIN(DIN49)
+	case DIN49:
+		return (io_get_input(DIN49) != 0);
+#endif
 #if ASSERT_PIN(SERVO0)
 	case SERVO0:
 		return (uint8_t)mcu_get_servo(SERVO0);
@@ -2080,6 +2534,14 @@ int16_t io_get_pinvalue(uint8_t pin)
 #if ASSERT_PIN(SERVO5)
 	case SERVO5:
 		return (uint8_t)mcu_get_servo(SERVO5);
+#endif
+#if ASSERT_PIN(SPI_CS)
+	case SPI_CS:
+		return (mcu_get_output(SPI_CS) != 0);
+#endif
+#if ASSERT_PIN(SPI2_CS)
+	case SPI2_CS:
+		return (mcu_get_output(SPI2_CS) != 0);
 #endif
 	}
 	return -1;

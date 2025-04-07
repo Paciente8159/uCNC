@@ -6,7 +6,7 @@ _µCNC for STM32F1x/STM32F4x can be built this way_
 2. Install the PlatformIO extension.
 3. Open uCNC folder in VSCode.
 4. Edit ```cnc_config.h file``` and ```cnc_hal_config.h file``` to fit your needs and board.
-5. f needed edit the platformio.ini file environment for your board. Compile the sketch and upload it to your board.
+5. If needed edit the platformio.ini file environment for your board. Compile the sketch and upload it to your board.
 
 ## Method two - Arduino IDE (easiest)
 **WARNING:** _Arduino IDE will produce a larger output file. The makefile method has better compilation optimizations that produce a smaller binary file._

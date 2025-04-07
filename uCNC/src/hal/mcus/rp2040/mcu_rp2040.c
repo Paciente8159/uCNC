@@ -66,7 +66,7 @@ void ic74hc595_pio_init()
 
 // disable this function
 // IO will be updated at a fixed rate
-MCU_CALLBACK void ic74hc595_shift_io_pins(void)
+MCU_CALLBACK void shift_register_io_pins(void)
 {
 	ic74hc595_program_write(pio_ic74hc595, sm_ic74hc595, *((volatile uint32_t *)&ic74hc595_io_pins[0]));
 }
@@ -288,9 +288,24 @@ void mcu_rtc_isr(void)
 	mcu_rtc_cb(millis());
 }
 
-static void mcu_usart_init(void)
+/**
+ * Multicore code
+ * **/
+void rp2040_core0_loop()
 {
-	rp2040_uart_init(BAUDRATE);
+	rp2040_uart_process();
+}
+
+void setup1()
+{
+}
+
+void loop1()
+{
+	for (;;)
+	{
+		cnc_run();
+	}
 }
 
 /**
@@ -308,7 +323,11 @@ void mcu_init(void)
 #ifdef IC74HC595_CUSTOM_SHIFT_IO
 	ic74hc595_pio_init();
 #endif
-	mcu_usart_init();
+#ifndef RAM_ONLY_SETTINGS
+	rp2040_eeprom_init(NVM_STORAGE_SIZE); // 2K Emulated EEPROM
+#endif
+
+	rp2040_uart_init(BAUDRATE);
 
 	pinMode(LED_BUILTIN, OUTPUT);
 	// init rtc, oneshot and servo alarms
@@ -320,11 +339,16 @@ void mcu_init(void)
 	servo_alarm.alarm_cb = &mcu_clear_servos;
 #endif
 
-#ifndef RAM_ONLY_SETTINGS
-	rp2040_eeprom_init(2048); // 2K Emulated EEPROM
-#endif
 #ifdef MCU_HAS_SPI
-	mcu_spi_config(SPI_FREQ, SPI_MODE);
+	spi_config_t spi_conf = {0};
+	spi_conf.mode = SPI_MODE;
+	mcu_spi_config(spi_conf, SPI_FREQ);
+#endif
+
+#ifdef MCU_HAS_SPI2
+	spi_config_t spi2_conf = {0};
+	spi2_conf.mode = SPI2_MODE;
+	mcu_spi2_config(spi2_conf, SPI2_FREQ);
 #endif
 
 #ifdef MCU_HAS_I2C
@@ -534,7 +558,9 @@ void mcu_stop_itp_isr(void)
  * */
 void mcu_dotasks(void)
 {
+#ifndef RP2040_RUN_MULTICORE
 	rp2040_uart_process();
+#endif
 }
 
 // Non volatile memory
@@ -543,6 +569,11 @@ void mcu_dotasks(void)
  * */
 uint8_t mcu_eeprom_getc(uint16_t address)
 {
+	if (NVM_STORAGE_SIZE <= address)
+	{
+		DBGMSG("EEPROM invalid address @ %u", address);
+		return 0;
+	}
 #ifndef RAM_ONLY_SETTINGS
 	return rp2040_eeprom_read(address);
 #else
@@ -555,6 +586,10 @@ uint8_t mcu_eeprom_getc(uint16_t address)
  * */
 void mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
+	if (NVM_STORAGE_SIZE <= address)
+	{
+		DBGMSG("EEPROM invalid address @ %u", address);
+	}
 #ifndef RAM_ONLY_SETTINGS
 	rp2040_eeprom_write(address, value);
 #endif
@@ -617,6 +652,284 @@ void mcu_start_timeout()
 	mcu_enqueue_alarm(&oneshot_alarm, rp2040_oneshot_reload);
 }
 #endif
+#endif
+
+/**
+ *
+ * This handles SPI communications
+ *
+ * **/
+
+#if defined(MCU_HAS_SPI) && !defined(USE_ARDUINO_SPI_LIBRARY)
+#include <hardware/spi.h>
+#include <hardware/dma.h>
+#include "pico/stdlib.h"
+#include "pico/binary_info.h"
+
+static spi_config_t rp2040_spi_config;
+
+void mcu_spi_init(void)
+{
+	spi_init(SPI_HW, SPI_FREQ);
+	// Enable SPI 0 at 1 MHz and connect to GPIOs
+	gpio_set_function(SPI_CLK_BIT, GPIO_FUNC_SPI);
+	gpio_set_function(SPI_SDO_BIT, GPIO_FUNC_SPI);
+	gpio_set_function(SPI_SDI_BIT, GPIO_FUNC_SPI);
+#ifdef SPI_CS_BIT
+	gpio_init(SPI_CS_BIT);
+#endif
+}
+
+void mcu_spi_config(spi_config_t config, uint32_t frequency)
+{
+	rp2040_spi_config = config;
+	spi_deinit(SPI_HW);
+	spi_set_baudrate(SPI_HW, frequency);
+	spi_set_format(SPI_HW, 8, ((config.mode >> 1) & 0x01), (config.mode & 0x01), SPI_MSB_FIRST);
+	mcu_spi_init();
+}
+
+uint8_t mcu_spi_xmit(uint8_t data)
+{
+	spi_get_hw(SPI_HW)->dr = data;
+	while ((spi_get_hw(SPI_HW)->sr & SPI_SSPSR_BSY_BITS))
+		;
+	return (spi_get_hw(SPI_HW)->dr & 0xFF);
+}
+
+void mcu_spi_start(spi_config_t config, uint32_t frequency)
+{
+	mcu_spi_config(config, frequency);
+}
+
+void mcu_spi_stop(void)
+{
+}
+
+#ifndef BULK_SPI_TIMEOUT
+#define BULK_SPI_TIMEOUT (1000 / INTERPOLATOR_FREQ)
+#endif
+
+bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
+{
+	static bool transmitting = false;
+	// Grab some unused dma channels
+	static uint dma_tx = 0;
+	static uint dma_rx = 0;
+
+	if (rp2040_spi_config.enable_dma)
+	{
+		if (!transmitting)
+		{
+			uint32_t startmask = (1u << dma_tx);
+			// We set the outbound DMA to transfer from a memory buffer to the SPI transmit FIFO paced by the SPI TX FIFO DREQ
+			// The default is for the read address to increment every element (in this case 1 byte = DMA_SIZE_8)
+			// and for the write address to remain unchanged.
+			dma_tx = dma_claim_unused_channel(true);
+
+			dma_channel_config c = dma_channel_get_default_config(dma_tx);
+			channel_config_set_transfer_data_size(&c, DMA_SIZE_8);
+			channel_config_set_dreq(&c, spi_get_dreq(spi_default, true));
+			dma_channel_configure(dma_tx, &c,
+														&spi_get_hw(SPI_HW)->dr, // write address
+														out,										 // read address
+														len,										 // element count (each element is of size transfer_data_size)
+														false);									 // don't start yet
+
+			if (in)
+			{
+				// We set the inbound DMA to transfer from the SPI receive FIFO to a memory buffer paced by the SPI RX FIFO DREQ
+				// We configure the read address to remain unchanged for each element, but the write
+				// address to increment (so data is written throughout the buffer)
+				dma_rx = dma_claim_unused_channel(true);
+				c = dma_channel_get_default_config(dma_rx);
+				channel_config_set_transfer_data_size(&c, DMA_SIZE_8);
+				channel_config_set_dreq(&c, spi_get_dreq(spi_default, false));
+				channel_config_set_read_increment(&c, false);
+				channel_config_set_write_increment(&c, true);
+				dma_channel_configure(dma_rx, &c,
+															in,											 // write address
+															&spi_get_hw(SPI_HW)->dr, // read address
+															len,										 // element count (each element is of size transfer_data_size)
+															false);									 // don't start yet
+
+				startmask |= (1u << dma_rx);
+			}
+
+			// start the DMA transmission
+			dma_start_channel_mask(startmask);
+			transmitting = true;
+		}
+		else
+		{
+			if (!dma_channel_is_busy(dma_tx) && !dma_channel_is_busy(dma_rx))
+			{
+				dma_channel_unclaim(dma_tx);
+				dma_channel_unclaim(dma_rx);
+				transmitting = false;
+			}
+		}
+	}
+	else
+	{
+		transmitting = false;
+		uint32_t timeout = BULK_SPI_TIMEOUT + mcu_millis();
+		while (len--)
+		{
+			uint8_t c = mcu_spi_xmit(*out++);
+			if (in)
+			{
+				*in++ = c;
+			}
+
+			if (timeout < mcu_millis())
+			{
+				timeout = BULK_SPI_TIMEOUT + mcu_millis();
+				cnc_dotasks();
+			}
+		}
+
+		return false;
+	}
+
+	return transmitting;
+}
+#endif
+
+#if defined(MCU_HAS_SPI2) && !defined(USE_ARDUINO_SPI_LIBRARY)
+#include <hardware/spi.h>
+#include <hardware/dma.h>
+#include "pico/stdlib.h"
+#include "pico/binary_info.h"
+
+static spi_config_t rp2040_spi2_config;
+
+void mcu_spi2_init(void)
+{
+	spi_init(SPI2_HW, SPI2_FREQ);
+	// Enable SPI 0 at 1 MHz and connect to GPIOs
+	gpio_set_function(SPI2_CLK_BIT, GPIO_FUNC_SPI);
+	gpio_set_function(SPI2_SDO_BIT, GPIO_FUNC_SPI);
+	gpio_set_function(SPI2_SDI_BIT, GPIO_FUNC_SPI);
+#ifdef SPI2_CS_BIT
+	gpio_init(SPI2_CS_BIT);
+#endif
+}
+
+void mcu_spi2_config(spi_config_t config, uint32_t frequency)
+{
+	rp2040_spi2_config = config;
+	spi_deinit(SPI2_HW);
+	spi_set_baudrate(SPI2_HW, frequency);
+	spi_set_format(SPI2_HW, 8, ((config.mode >> 1) & 0x01), (config.mode & 0x01), SPI_MSB_FIRST);
+	mcu_spi2_init();
+}
+
+uint8_t mcu_spi2_xmit(uint8_t data)
+{
+	spi_get_hw(SPI2_HW)->dr = data;
+	while ((spi_get_hw(SPI2_HW)->sr & SPI_SSPSR_BSY_BITS))
+		;
+	return (spi_get_hw(SPI2_HW)->dr & 0xFF);
+}
+
+void mcu_spi2_start(spi_config_t config, uint32_t frequency)
+{
+	mcu_spi2_config(config, frequency);
+}
+
+void mcu_spi2_stop(void)
+{
+}
+
+#ifndef BULK_SPI2_TIMEOUT
+#define BULK_SPI2_TIMEOUT (1000 / INTERPOLATOR_FREQ)
+#endif
+
+bool mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
+{
+	static bool transmitting = false;
+	// Grab some unused dma channels
+	static uint dma_tx = 0;
+	static uint dma_rx = 0;
+
+	if (rp2040_spi2_config.enable_dma)
+	{
+		if (!transmitting)
+		{
+			uint32_t startmask = (1u << dma_tx);
+			// We set the outbound DMA to transfer from a memory buffer to the SPI transmit FIFO paced by the SPI TX FIFO DREQ
+			// The default is for the read address to increment every element (in this case 1 byte = DMA_SIZE_8)
+			// and for the write address to remain unchanged.
+			dma_tx = dma_claim_unused_channel(true);
+
+			dma_channel_config c = dma_channel_get_default_config(dma_tx);
+			channel_config_set_transfer_data_size(&c, DMA_SIZE_8);
+			channel_config_set_dreq(&c, spi_get_dreq(spi_default, true));
+			dma_channel_configure(dma_tx, &c,
+														&spi_get_hw(SPI2_HW)->dr, // write address
+														out,										 // read address
+														len,										 // element count (each element is of size transfer_data_size)
+														false);									 // don't start yet
+
+			if (in)
+			{
+				// We set the inbound DMA to transfer from the SPI receive FIFO to a memory buffer paced by the SPI RX FIFO DREQ
+				// We configure the read address to remain unchanged for each element, but the write
+				// address to increment (so data is written throughout the buffer)
+				dma_rx = dma_claim_unused_channel(true);
+				c = dma_channel_get_default_config(dma_rx);
+				channel_config_set_transfer_data_size(&c, DMA_SIZE_8);
+				channel_config_set_dreq(&c, spi_get_dreq(spi_default, false));
+				channel_config_set_read_increment(&c, false);
+				channel_config_set_write_increment(&c, true);
+				dma_channel_configure(dma_rx, &c,
+															in,											 // write address
+															&spi_get_hw(SPI2_HW)->dr, // read address
+															len,										 // element count (each element is of size transfer_data_size)
+															false);									 // don't start yet
+
+				startmask |= (1u << dma_rx);
+			}
+
+			// start the DMA transmission
+			dma_start_channel_mask(startmask);
+			transmitting = true;
+		}
+		else
+		{
+			if (!dma_channel_is_busy(dma_tx) && !dma_channel_is_busy(dma_rx))
+			{
+				dma_channel_unclaim(dma_tx);
+				dma_channel_unclaim(dma_rx);
+				transmitting = false;
+			}
+		}
+	}
+	else
+	{
+		transmitting = false;
+		uint32_t timeout = BULK_SPI2_TIMEOUT + mcu_millis();
+		while (len--)
+		{
+			uint8_t c = mcu_spi2_xmit(*out++);
+			if (in)
+			{
+				*in++ = c;
+			}
+
+			if (timeout < mcu_millis())
+			{
+				timeout = BULK_SPI2_TIMEOUT + mcu_millis();
+				cnc_dotasks();
+			}
+		}
+
+		return false;
+	}
+
+	return transmitting;
+}
 #endif
 
 #endif

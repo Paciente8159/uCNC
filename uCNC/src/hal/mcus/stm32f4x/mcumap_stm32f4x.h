@@ -63,12 +63,12 @@ extern "C"
 #ifndef MCU_CLOCKS_PER_CYCLE
 #define MCU_CLOCKS_PER_CYCLE 1
 #endif
-#define mcu_delay_cycles(X)     \
-	{                           \
+#define mcu_delay_cycles(X) \
+	{                         \
 		DWT->CYCCNT = 0;        \
 		uint32_t t = X;         \
 		while (t > DWT->CYCCNT) \
-			;                   \
+			;                     \
 	}
 
 // Helper macros
@@ -1005,6 +1005,186 @@ extern "C"
 #define DIO78_AHB1EN DOUT31_AHB1EN
 #define DIO78_GPIO DOUT31_GPIO
 #endif
+#if (defined(DOUT32_PORT) && defined(DOUT32_BIT))
+#define DOUT32 79
+#define DOUT32_AHB1EN (__rccgpioen__(DOUT32_PORT))
+#define DOUT32_GPIO (__gpio__(DOUT32_PORT))
+#define DIO79 79
+#define DIO79_PORT DOUT32_PORT
+#define DIO79_BIT DOUT32_BIT
+#define DIO79_AHB1EN DOUT32_AHB1EN
+#define DIO79_GPIO DOUT32_GPIO
+#endif
+#if (defined(DOUT33_PORT) && defined(DOUT33_BIT))
+#define DOUT33 80
+#define DOUT33_AHB1EN (__rccgpioen__(DOUT33_PORT))
+#define DOUT33_GPIO (__gpio__(DOUT33_PORT))
+#define DIO80 80
+#define DIO80_PORT DOUT33_PORT
+#define DIO80_BIT DOUT33_BIT
+#define DIO80_AHB1EN DOUT33_AHB1EN
+#define DIO80_GPIO DOUT33_GPIO
+#endif
+#if (defined(DOUT34_PORT) && defined(DOUT34_BIT))
+#define DOUT34 81
+#define DOUT34_AHB1EN (__rccgpioen__(DOUT34_PORT))
+#define DOUT34_GPIO (__gpio__(DOUT34_PORT))
+#define DIO81 81
+#define DIO81_PORT DOUT34_PORT
+#define DIO81_BIT DOUT34_BIT
+#define DIO81_AHB1EN DOUT34_AHB1EN
+#define DIO81_GPIO DOUT34_GPIO
+#endif
+#if (defined(DOUT35_PORT) && defined(DOUT35_BIT))
+#define DOUT35 82
+#define DOUT35_AHB1EN (__rccgpioen__(DOUT35_PORT))
+#define DOUT35_GPIO (__gpio__(DOUT35_PORT))
+#define DIO82 82
+#define DIO82_PORT DOUT35_PORT
+#define DIO82_BIT DOUT35_BIT
+#define DIO82_AHB1EN DOUT35_AHB1EN
+#define DIO82_GPIO DOUT35_GPIO
+#endif
+#if (defined(DOUT36_PORT) && defined(DOUT36_BIT))
+#define DOUT36 83
+#define DOUT36_AHB1EN (__rccgpioen__(DOUT36_PORT))
+#define DOUT36_GPIO (__gpio__(DOUT36_PORT))
+#define DIO83 83
+#define DIO83_PORT DOUT36_PORT
+#define DIO83_BIT DOUT36_BIT
+#define DIO83_AHB1EN DOUT36_AHB1EN
+#define DIO83_GPIO DOUT36_GPIO
+#endif
+#if (defined(DOUT37_PORT) && defined(DOUT37_BIT))
+#define DOUT37 84
+#define DOUT37_AHB1EN (__rccgpioen__(DOUT37_PORT))
+#define DOUT37_GPIO (__gpio__(DOUT37_PORT))
+#define DIO84 84
+#define DIO84_PORT DOUT37_PORT
+#define DIO84_BIT DOUT37_BIT
+#define DIO84_AHB1EN DOUT37_AHB1EN
+#define DIO84_GPIO DOUT37_GPIO
+#endif
+#if (defined(DOUT38_PORT) && defined(DOUT38_BIT))
+#define DOUT38 85
+#define DOUT38_AHB1EN (__rccgpioen__(DOUT38_PORT))
+#define DOUT38_GPIO (__gpio__(DOUT38_PORT))
+#define DIO85 85
+#define DIO85_PORT DOUT38_PORT
+#define DIO85_BIT DOUT38_BIT
+#define DIO85_AHB1EN DOUT38_AHB1EN
+#define DIO85_GPIO DOUT38_GPIO
+#endif
+#if (defined(DOUT39_PORT) && defined(DOUT39_BIT))
+#define DOUT39 86
+#define DOUT39_AHB1EN (__rccgpioen__(DOUT39_PORT))
+#define DOUT39_GPIO (__gpio__(DOUT39_PORT))
+#define DIO86 86
+#define DIO86_PORT DOUT39_PORT
+#define DIO86_BIT DOUT39_BIT
+#define DIO86_AHB1EN DOUT39_AHB1EN
+#define DIO86_GPIO DOUT39_GPIO
+#endif
+#if (defined(DOUT40_PORT) && defined(DOUT40_BIT))
+#define DOUT40 87
+#define DOUT40_AHB1EN (__rccgpioen__(DOUT40_PORT))
+#define DOUT40_GPIO (__gpio__(DOUT40_PORT))
+#define DIO87 87
+#define DIO87_PORT DOUT40_PORT
+#define DIO87_BIT DOUT40_BIT
+#define DIO87_AHB1EN DOUT40_AHB1EN
+#define DIO87_GPIO DOUT40_GPIO
+#endif
+#if (defined(DOUT41_PORT) && defined(DOUT41_BIT))
+#define DOUT41 88
+#define DOUT41_AHB1EN (__rccgpioen__(DOUT41_PORT))
+#define DOUT41_GPIO (__gpio__(DOUT41_PORT))
+#define DIO88 88
+#define DIO88_PORT DOUT41_PORT
+#define DIO88_BIT DOUT41_BIT
+#define DIO88_AHB1EN DOUT41_AHB1EN
+#define DIO88_GPIO DOUT41_GPIO
+#endif
+#if (defined(DOUT42_PORT) && defined(DOUT42_BIT))
+#define DOUT42 89
+#define DOUT42_AHB1EN (__rccgpioen__(DOUT42_PORT))
+#define DOUT42_GPIO (__gpio__(DOUT42_PORT))
+#define DIO89 89
+#define DIO89_PORT DOUT42_PORT
+#define DIO89_BIT DOUT42_BIT
+#define DIO89_AHB1EN DOUT42_AHB1EN
+#define DIO89_GPIO DOUT42_GPIO
+#endif
+#if (defined(DOUT43_PORT) && defined(DOUT43_BIT))
+#define DOUT43 90
+#define DOUT43_AHB1EN (__rccgpioen__(DOUT43_PORT))
+#define DOUT43_GPIO (__gpio__(DOUT43_PORT))
+#define DIO90 90
+#define DIO90_PORT DOUT43_PORT
+#define DIO90_BIT DOUT43_BIT
+#define DIO90_AHB1EN DOUT43_AHB1EN
+#define DIO90_GPIO DOUT43_GPIO
+#endif
+#if (defined(DOUT44_PORT) && defined(DOUT44_BIT))
+#define DOUT44 91
+#define DOUT44_AHB1EN (__rccgpioen__(DOUT44_PORT))
+#define DOUT44_GPIO (__gpio__(DOUT44_PORT))
+#define DIO91 91
+#define DIO91_PORT DOUT44_PORT
+#define DIO91_BIT DOUT44_BIT
+#define DIO91_AHB1EN DOUT44_AHB1EN
+#define DIO91_GPIO DOUT44_GPIO
+#endif
+#if (defined(DOUT45_PORT) && defined(DOUT45_BIT))
+#define DOUT45 92
+#define DOUT45_AHB1EN (__rccgpioen__(DOUT45_PORT))
+#define DOUT45_GPIO (__gpio__(DOUT45_PORT))
+#define DIO92 92
+#define DIO92_PORT DOUT45_PORT
+#define DIO92_BIT DOUT45_BIT
+#define DIO92_AHB1EN DOUT45_AHB1EN
+#define DIO92_GPIO DOUT45_GPIO
+#endif
+#if (defined(DOUT46_PORT) && defined(DOUT46_BIT))
+#define DOUT46 93
+#define DOUT46_AHB1EN (__rccgpioen__(DOUT46_PORT))
+#define DOUT46_GPIO (__gpio__(DOUT46_PORT))
+#define DIO93 93
+#define DIO93_PORT DOUT46_PORT
+#define DIO93_BIT DOUT46_BIT
+#define DIO93_AHB1EN DOUT46_AHB1EN
+#define DIO93_GPIO DOUT46_GPIO
+#endif
+#if (defined(DOUT47_PORT) && defined(DOUT47_BIT))
+#define DOUT47 94
+#define DOUT47_AHB1EN (__rccgpioen__(DOUT47_PORT))
+#define DOUT47_GPIO (__gpio__(DOUT47_PORT))
+#define DIO94 94
+#define DIO94_PORT DOUT47_PORT
+#define DIO94_BIT DOUT47_BIT
+#define DIO94_AHB1EN DOUT47_AHB1EN
+#define DIO94_GPIO DOUT47_GPIO
+#endif
+#if (defined(DOUT48_PORT) && defined(DOUT48_BIT))
+#define DOUT48 95
+#define DOUT48_AHB1EN (__rccgpioen__(DOUT48_PORT))
+#define DOUT48_GPIO (__gpio__(DOUT48_PORT))
+#define DIO95 95
+#define DIO95_PORT DOUT48_PORT
+#define DIO95_BIT DOUT48_BIT
+#define DIO95_AHB1EN DOUT48_AHB1EN
+#define DIO95_GPIO DOUT48_GPIO
+#endif
+#if (defined(DOUT49_PORT) && defined(DOUT49_BIT))
+#define DOUT49 96
+#define DOUT49_AHB1EN (__rccgpioen__(DOUT49_PORT))
+#define DOUT49_GPIO (__gpio__(DOUT49_PORT))
+#define DIO96 96
+#define DIO96_PORT DOUT49_PORT
+#define DIO96_BIT DOUT49_BIT
+#define DIO96_AHB1EN DOUT49_AHB1EN
+#define DIO96_GPIO DOUT49_GPIO
+#endif
 #if (defined(LIMIT_X_PORT) && defined(LIMIT_X_BIT))
 #define LIMIT_X 100
 #define LIMIT_X_AHB1EN (__rccgpioen__(LIMIT_X_PORT))
@@ -1625,6 +1805,186 @@ extern "C"
 #define DIO161_AHB1EN DIN31_AHB1EN
 #define DIO161_GPIO DIN31_GPIO
 #endif
+#if (defined(DIN32_PORT) && defined(DIN32_BIT))
+#define DIN32 162
+#define DIN32_AHB1EN (__rccgpioen__(DIN32_PORT))
+#define DIN32_GPIO (__gpio__(DIN32_PORT))
+#define DIO162 162
+#define DIO162_PORT DIN32_PORT
+#define DIO162_BIT DIN32_BIT
+#define DIO162_AHB1EN DIN32_AHB1EN
+#define DIO162_GPIO DIN32_GPIO
+#endif
+#if (defined(DIN33_PORT) && defined(DIN33_BIT))
+#define DIN33 163
+#define DIN33_AHB1EN (__rccgpioen__(DIN33_PORT))
+#define DIN33_GPIO (__gpio__(DIN33_PORT))
+#define DIO163 163
+#define DIO163_PORT DIN33_PORT
+#define DIO163_BIT DIN33_BIT
+#define DIO163_AHB1EN DIN33_AHB1EN
+#define DIO163_GPIO DIN33_GPIO
+#endif
+#if (defined(DIN34_PORT) && defined(DIN34_BIT))
+#define DIN34 164
+#define DIN34_AHB1EN (__rccgpioen__(DIN34_PORT))
+#define DIN34_GPIO (__gpio__(DIN34_PORT))
+#define DIO164 164
+#define DIO164_PORT DIN34_PORT
+#define DIO164_BIT DIN34_BIT
+#define DIO164_AHB1EN DIN34_AHB1EN
+#define DIO164_GPIO DIN34_GPIO
+#endif
+#if (defined(DIN35_PORT) && defined(DIN35_BIT))
+#define DIN35 165
+#define DIN35_AHB1EN (__rccgpioen__(DIN35_PORT))
+#define DIN35_GPIO (__gpio__(DIN35_PORT))
+#define DIO165 165
+#define DIO165_PORT DIN35_PORT
+#define DIO165_BIT DIN35_BIT
+#define DIO165_AHB1EN DIN35_AHB1EN
+#define DIO165_GPIO DIN35_GPIO
+#endif
+#if (defined(DIN36_PORT) && defined(DIN36_BIT))
+#define DIN36 166
+#define DIN36_AHB1EN (__rccgpioen__(DIN36_PORT))
+#define DIN36_GPIO (__gpio__(DIN36_PORT))
+#define DIO166 166
+#define DIO166_PORT DIN36_PORT
+#define DIO166_BIT DIN36_BIT
+#define DIO166_AHB1EN DIN36_AHB1EN
+#define DIO166_GPIO DIN36_GPIO
+#endif
+#if (defined(DIN37_PORT) && defined(DIN37_BIT))
+#define DIN37 167
+#define DIN37_AHB1EN (__rccgpioen__(DIN37_PORT))
+#define DIN37_GPIO (__gpio__(DIN37_PORT))
+#define DIO167 167
+#define DIO167_PORT DIN37_PORT
+#define DIO167_BIT DIN37_BIT
+#define DIO167_AHB1EN DIN37_AHB1EN
+#define DIO167_GPIO DIN37_GPIO
+#endif
+#if (defined(DIN38_PORT) && defined(DIN38_BIT))
+#define DIN38 168
+#define DIN38_AHB1EN (__rccgpioen__(DIN38_PORT))
+#define DIN38_GPIO (__gpio__(DIN38_PORT))
+#define DIO168 168
+#define DIO168_PORT DIN38_PORT
+#define DIO168_BIT DIN38_BIT
+#define DIO168_AHB1EN DIN38_AHB1EN
+#define DIO168_GPIO DIN38_GPIO
+#endif
+#if (defined(DIN39_PORT) && defined(DIN39_BIT))
+#define DIN39 169
+#define DIN39_AHB1EN (__rccgpioen__(DIN39_PORT))
+#define DIN39_GPIO (__gpio__(DIN39_PORT))
+#define DIO169 169
+#define DIO169_PORT DIN39_PORT
+#define DIO169_BIT DIN39_BIT
+#define DIO169_AHB1EN DIN39_AHB1EN
+#define DIO169_GPIO DIN39_GPIO
+#endif
+#if (defined(DIN40_PORT) && defined(DIN40_BIT))
+#define DIN40 170
+#define DIN40_AHB1EN (__rccgpioen__(DIN40_PORT))
+#define DIN40_GPIO (__gpio__(DIN40_PORT))
+#define DIO170 170
+#define DIO170_PORT DIN40_PORT
+#define DIO170_BIT DIN40_BIT
+#define DIO170_AHB1EN DIN40_AHB1EN
+#define DIO170_GPIO DIN40_GPIO
+#endif
+#if (defined(DIN41_PORT) && defined(DIN41_BIT))
+#define DIN41 171
+#define DIN41_AHB1EN (__rccgpioen__(DIN41_PORT))
+#define DIN41_GPIO (__gpio__(DIN41_PORT))
+#define DIO171 171
+#define DIO171_PORT DIN41_PORT
+#define DIO171_BIT DIN41_BIT
+#define DIO171_AHB1EN DIN41_AHB1EN
+#define DIO171_GPIO DIN41_GPIO
+#endif
+#if (defined(DIN42_PORT) && defined(DIN42_BIT))
+#define DIN42 172
+#define DIN42_AHB1EN (__rccgpioen__(DIN42_PORT))
+#define DIN42_GPIO (__gpio__(DIN42_PORT))
+#define DIO172 172
+#define DIO172_PORT DIN42_PORT
+#define DIO172_BIT DIN42_BIT
+#define DIO172_AHB1EN DIN42_AHB1EN
+#define DIO172_GPIO DIN42_GPIO
+#endif
+#if (defined(DIN43_PORT) && defined(DIN43_BIT))
+#define DIN43 173
+#define DIN43_AHB1EN (__rccgpioen__(DIN43_PORT))
+#define DIN43_GPIO (__gpio__(DIN43_PORT))
+#define DIO173 173
+#define DIO173_PORT DIN43_PORT
+#define DIO173_BIT DIN43_BIT
+#define DIO173_AHB1EN DIN43_AHB1EN
+#define DIO173_GPIO DIN43_GPIO
+#endif
+#if (defined(DIN44_PORT) && defined(DIN44_BIT))
+#define DIN44 174
+#define DIN44_AHB1EN (__rccgpioen__(DIN44_PORT))
+#define DIN44_GPIO (__gpio__(DIN44_PORT))
+#define DIO174 174
+#define DIO174_PORT DIN44_PORT
+#define DIO174_BIT DIN44_BIT
+#define DIO174_AHB1EN DIN44_AHB1EN
+#define DIO174_GPIO DIN44_GPIO
+#endif
+#if (defined(DIN45_PORT) && defined(DIN45_BIT))
+#define DIN45 175
+#define DIN45_AHB1EN (__rccgpioen__(DIN45_PORT))
+#define DIN45_GPIO (__gpio__(DIN45_PORT))
+#define DIO175 175
+#define DIO175_PORT DIN45_PORT
+#define DIO175_BIT DIN45_BIT
+#define DIO175_AHB1EN DIN45_AHB1EN
+#define DIO175_GPIO DIN45_GPIO
+#endif
+#if (defined(DIN46_PORT) && defined(DIN46_BIT))
+#define DIN46 176
+#define DIN46_AHB1EN (__rccgpioen__(DIN46_PORT))
+#define DIN46_GPIO (__gpio__(DIN46_PORT))
+#define DIO176 176
+#define DIO176_PORT DIN46_PORT
+#define DIO176_BIT DIN46_BIT
+#define DIO176_AHB1EN DIN46_AHB1EN
+#define DIO176_GPIO DIN46_GPIO
+#endif
+#if (defined(DIN47_PORT) && defined(DIN47_BIT))
+#define DIN47 177
+#define DIN47_AHB1EN (__rccgpioen__(DIN47_PORT))
+#define DIN47_GPIO (__gpio__(DIN47_PORT))
+#define DIO177 177
+#define DIO177_PORT DIN47_PORT
+#define DIO177_BIT DIN47_BIT
+#define DIO177_AHB1EN DIN47_AHB1EN
+#define DIO177_GPIO DIN47_GPIO
+#endif
+#if (defined(DIN48_PORT) && defined(DIN48_BIT))
+#define DIN48 178
+#define DIN48_AHB1EN (__rccgpioen__(DIN48_PORT))
+#define DIN48_GPIO (__gpio__(DIN48_PORT))
+#define DIO178 178
+#define DIO178_PORT DIN48_PORT
+#define DIO178_BIT DIN48_BIT
+#define DIO178_AHB1EN DIN48_AHB1EN
+#define DIO178_GPIO DIN48_GPIO
+#endif
+#if (defined(DIN49_PORT) && defined(DIN49_BIT))
+#define DIN49 179
+#define DIN49_AHB1EN (__rccgpioen__(DIN49_PORT))
+#define DIN49_GPIO (__gpio__(DIN49_PORT))
+#define DIO179 179
+#define DIO179_PORT DIN49_PORT
+#define DIO179_BIT DIN49_BIT
+#define DIO179_AHB1EN DIN49_AHB1EN
+#define DIO179_GPIO DIN49_GPIO
+#endif
 #if (defined(TX_PORT) && defined(TX_BIT))
 #define TX 200
 #define TX_AHB1EN (__rccgpioen__(TX_PORT))
@@ -1744,6 +2104,46 @@ extern "C"
 #define DIO211_BIT RX2_BIT
 #define DIO211_AHB1EN RX2_AHB1EN
 #define DIO211_GPIO RX2_GPIO
+#endif
+#if (defined(SPI2_CLK_PORT) && defined(SPI2_CLK_BIT))
+#define SPI2_CLK 212
+#define SPI2_CLK_AHB1EN (__rccgpioen__(SPI2_CLK_PORT))
+#define SPI2_CLK_GPIO (__gpio__(SPI2_CLK_PORT))
+#define DIO212 212
+#define DIO212_PORT SPI2_CLK_PORT
+#define DIO212_BIT SPI2_CLK_BIT
+#define DIO212_AHB1EN SPI2_CLK_AHB1EN
+#define DIO212_GPIO SPI2_CLK_GPIO
+#endif
+#if (defined(SPI2_SDI_PORT) && defined(SPI2_SDI_BIT))
+#define SPI2_SDI 213
+#define SPI2_SDI_AHB1EN (__rccgpioen__(SPI2_SDI_PORT))
+#define SPI2_SDI_GPIO (__gpio__(SPI2_SDI_PORT))
+#define DIO213 213
+#define DIO213_PORT SPI2_SDI_PORT
+#define DIO213_BIT SPI2_SDI_BIT
+#define DIO213_AHB1EN SPI2_SDI_AHB1EN
+#define DIO213_GPIO SPI2_SDI_GPIO
+#endif
+#if (defined(SPI2_SDO_PORT) && defined(SPI2_SDO_BIT))
+#define SPI2_SDO 214
+#define SPI2_SDO_AHB1EN (__rccgpioen__(SPI2_SDO_PORT))
+#define SPI2_SDO_GPIO (__gpio__(SPI2_SDO_PORT))
+#define DIO214 214
+#define DIO214_PORT SPI2_SDO_PORT
+#define DIO214_BIT SPI2_SDO_BIT
+#define DIO214_AHB1EN SPI2_SDO_AHB1EN
+#define DIO214_GPIO SPI2_SDO_GPIO
+#endif
+#if (defined(SPI2_CS_PORT) && defined(SPI2_CS_BIT))
+#define SPI2_CS 215
+#define SPI2_CS_AHB1EN (__rccgpioen__(SPI2_CS_PORT))
+#define SPI2_CS_GPIO (__gpio__(SPI2_CS_PORT))
+#define DIO215 215
+#define DIO215_PORT SPI2_CS_PORT
+#define DIO215_BIT SPI2_CS_BIT
+#define DIO215_AHB1EN SPI2_CS_AHB1EN
+#define DIO215_GPIO SPI2_CS_GPIO
 #endif
 
 #if (defined(TX) && defined(RX))
@@ -2117,18 +2517,18 @@ extern "C"
 #define PWM0_CCMREG CCMR1
 #endif
 #if (PWM0_TIMER == 1)
-#define PWM0_ENOUTPUT            \
-	{                            \
+#define PWM0_ENOUTPUT        \
+	{                          \
 		TIM1->BDTR |= (1 << 15); \
 	}
 #elif (PWM0_TIMER == 8)
-#define PWM0_ENOUTPUT            \
-	{                            \
+#define PWM0_ENOUTPUT        \
+	{                          \
 		TIM8->BDTR |= (1 << 15); \
 	}
 #else
 #define PWM0_ENOUTPUT \
-	{                 \
+	{                   \
 	}
 #endif
 #if (PWM0_TIMER >= 1) && (PWM0_TIMER <= 2)
@@ -2178,18 +2578,18 @@ extern "C"
 #define PWM1_CCMREG CCMR1
 #endif
 #if (PWM1_TIMER == 1)
-#define PWM1_ENOUTPUT            \
-	{                            \
+#define PWM1_ENOUTPUT        \
+	{                          \
 		TIM1->BDTR |= (1 << 15); \
 	}
 #elif (PWM1_TIMER == 8)
-#define PWM1_ENOUTPUT            \
-	{                            \
+#define PWM1_ENOUTPUT        \
+	{                          \
 		TIM8->BDTR |= (1 << 15); \
 	}
 #else
 #define PWM1_ENOUTPUT \
-	{                 \
+	{                   \
 	}
 #endif
 #if (PWM1_TIMER >= 1) && (PWM1_TIMER <= 2)
@@ -2239,18 +2639,18 @@ extern "C"
 #define PWM2_CCMREG CCMR1
 #endif
 #if (PWM2_TIMER == 1)
-#define PWM2_ENOUTPUT            \
-	{                            \
+#define PWM2_ENOUTPUT        \
+	{                          \
 		TIM1->BDTR |= (1 << 15); \
 	}
 #elif (PWM2_TIMER == 8)
-#define PWM2_ENOUTPUT            \
-	{                            \
+#define PWM2_ENOUTPUT        \
+	{                          \
 		TIM8->BDTR |= (1 << 15); \
 	}
 #else
 #define PWM2_ENOUTPUT \
-	{                 \
+	{                   \
 	}
 #endif
 #if (PWM2_TIMER >= 1) && (PWM2_TIMER <= 2)
@@ -2300,18 +2700,18 @@ extern "C"
 #define PWM3_CCMREG CCMR1
 #endif
 #if (PWM3_TIMER == 1)
-#define PWM3_ENOUTPUT            \
-	{                            \
+#define PWM3_ENOUTPUT        \
+	{                          \
 		TIM1->BDTR |= (1 << 15); \
 	}
 #elif (PWM3_TIMER == 8)
-#define PWM3_ENOUTPUT            \
-	{                            \
+#define PWM3_ENOUTPUT        \
+	{                          \
 		TIM8->BDTR |= (1 << 15); \
 	}
 #else
 #define PWM3_ENOUTPUT \
-	{                 \
+	{                   \
 	}
 #endif
 #if (PWM3_TIMER >= 1) && (PWM3_TIMER <= 2)
@@ -2361,18 +2761,18 @@ extern "C"
 #define PWM4_CCMREG CCMR1
 #endif
 #if (PWM4_TIMER == 1)
-#define PWM4_ENOUTPUT            \
-	{                            \
+#define PWM4_ENOUTPUT        \
+	{                          \
 		TIM1->BDTR |= (1 << 15); \
 	}
 #elif (PWM4_TIMER == 8)
-#define PWM4_ENOUTPUT            \
-	{                            \
+#define PWM4_ENOUTPUT        \
+	{                          \
 		TIM8->BDTR |= (1 << 15); \
 	}
 #else
 #define PWM4_ENOUTPUT \
-	{                 \
+	{                   \
 	}
 #endif
 #if (PWM4_TIMER >= 1) && (PWM4_TIMER <= 2)
@@ -2422,18 +2822,18 @@ extern "C"
 #define PWM5_CCMREG CCMR1
 #endif
 #if (PWM5_TIMER == 1)
-#define PWM5_ENOUTPUT            \
-	{                            \
+#define PWM5_ENOUTPUT        \
+	{                          \
 		TIM1->BDTR |= (1 << 15); \
 	}
 #elif (PWM5_TIMER == 8)
-#define PWM5_ENOUTPUT            \
-	{                            \
+#define PWM5_ENOUTPUT        \
+	{                          \
 		TIM8->BDTR |= (1 << 15); \
 	}
 #else
 #define PWM5_ENOUTPUT \
-	{                 \
+	{                   \
 	}
 #endif
 #if (PWM5_TIMER >= 1) && (PWM5_TIMER <= 2)
@@ -2483,18 +2883,18 @@ extern "C"
 #define PWM6_CCMREG CCMR1
 #endif
 #if (PWM6_TIMER == 1)
-#define PWM6_ENOUTPUT            \
-	{                            \
+#define PWM6_ENOUTPUT        \
+	{                          \
 		TIM1->BDTR |= (1 << 15); \
 	}
 #elif (PWM6_TIMER == 8)
-#define PWM6_ENOUTPUT            \
-	{                            \
+#define PWM6_ENOUTPUT        \
+	{                          \
 		TIM8->BDTR |= (1 << 15); \
 	}
 #else
 #define PWM6_ENOUTPUT \
-	{                 \
+	{                   \
 	}
 #endif
 #if (PWM6_TIMER >= 1) && (PWM6_TIMER <= 2)
@@ -2544,18 +2944,18 @@ extern "C"
 #define PWM7_CCMREG CCMR1
 #endif
 #if (PWM7_TIMER == 1)
-#define PWM7_ENOUTPUT            \
-	{                            \
+#define PWM7_ENOUTPUT        \
+	{                          \
 		TIM1->BDTR |= (1 << 15); \
 	}
 #elif (PWM7_TIMER == 8)
-#define PWM7_ENOUTPUT            \
-	{                            \
+#define PWM7_ENOUTPUT        \
+	{                          \
 		TIM8->BDTR |= (1 << 15); \
 	}
 #else
 #define PWM7_ENOUTPUT \
-	{                 \
+	{                   \
 	}
 #endif
 #if (PWM7_TIMER >= 1) && (PWM7_TIMER <= 2)
@@ -2605,18 +3005,18 @@ extern "C"
 #define PWM8_CCMREG CCMR1
 #endif
 #if (PWM8_TIMER == 1)
-#define PWM8_ENOUTPUT            \
-	{                            \
+#define PWM8_ENOUTPUT        \
+	{                          \
 		TIM1->BDTR |= (1 << 15); \
 	}
 #elif (PWM8_TIMER == 8)
-#define PWM8_ENOUTPUT            \
-	{                            \
+#define PWM8_ENOUTPUT        \
+	{                          \
 		TIM8->BDTR |= (1 << 15); \
 	}
 #else
 #define PWM8_ENOUTPUT \
-	{                 \
+	{                   \
 	}
 #endif
 #if (PWM8_TIMER >= 1) && (PWM8_TIMER <= 2)
@@ -2666,18 +3066,18 @@ extern "C"
 #define PWM9_CCMREG CCMR1
 #endif
 #if (PWM9_TIMER == 1)
-#define PWM9_ENOUTPUT            \
-	{                            \
+#define PWM9_ENOUTPUT        \
+	{                          \
 		TIM1->BDTR |= (1 << 15); \
 	}
 #elif (PWM9_TIMER == 8)
-#define PWM9_ENOUTPUT            \
-	{                            \
+#define PWM9_ENOUTPUT        \
+	{                          \
 		TIM8->BDTR |= (1 << 15); \
 	}
 #else
 #define PWM9_ENOUTPUT \
-	{                 \
+	{                   \
 	}
 #endif
 #if (PWM9_TIMER >= 1) && (PWM9_TIMER <= 2)
@@ -2727,18 +3127,18 @@ extern "C"
 #define PWM10_CCMREG CCMR1
 #endif
 #if (PWM10_TIMER == 1)
-#define PWM10_ENOUTPUT           \
-	{                            \
+#define PWM10_ENOUTPUT       \
+	{                          \
 		TIM1->BDTR |= (1 << 15); \
 	}
 #elif (PWM10_TIMER == 8)
-#define PWM10_ENOUTPUT           \
-	{                            \
+#define PWM10_ENOUTPUT       \
+	{                          \
 		TIM8->BDTR |= (1 << 15); \
 	}
 #else
 #define PWM10_ENOUTPUT \
-	{                  \
+	{                    \
 	}
 #endif
 #if (PWM10_TIMER >= 1) && (PWM10_TIMER <= 2)
@@ -2788,18 +3188,18 @@ extern "C"
 #define PWM11_CCMREG CCMR1
 #endif
 #if (PWM11_TIMER == 1)
-#define PWM11_ENOUTPUT           \
-	{                            \
+#define PWM11_ENOUTPUT       \
+	{                          \
 		TIM1->BDTR |= (1 << 15); \
 	}
 #elif (PWM11_TIMER == 8)
-#define PWM11_ENOUTPUT           \
-	{                            \
+#define PWM11_ENOUTPUT       \
+	{                          \
 		TIM8->BDTR |= (1 << 15); \
 	}
 #else
 #define PWM11_ENOUTPUT \
-	{                  \
+	{                    \
 	}
 #endif
 #if (PWM11_TIMER >= 1) && (PWM11_TIMER <= 2)
@@ -2849,18 +3249,18 @@ extern "C"
 #define PWM12_CCMREG CCMR1
 #endif
 #if (PWM12_TIMER == 1)
-#define PWM12_ENOUTPUT           \
-	{                            \
+#define PWM12_ENOUTPUT       \
+	{                          \
 		TIM1->BDTR |= (1 << 15); \
 	}
 #elif (PWM12_TIMER == 8)
-#define PWM12_ENOUTPUT           \
-	{                            \
+#define PWM12_ENOUTPUT       \
+	{                          \
 		TIM8->BDTR |= (1 << 15); \
 	}
 #else
 #define PWM12_ENOUTPUT \
-	{                  \
+	{                    \
 	}
 #endif
 #if (PWM12_TIMER >= 1) && (PWM12_TIMER <= 2)
@@ -2910,18 +3310,18 @@ extern "C"
 #define PWM13_CCMREG CCMR1
 #endif
 #if (PWM13_TIMER == 1)
-#define PWM13_ENOUTPUT           \
-	{                            \
+#define PWM13_ENOUTPUT       \
+	{                          \
 		TIM1->BDTR |= (1 << 15); \
 	}
 #elif (PWM13_TIMER == 8)
-#define PWM13_ENOUTPUT           \
-	{                            \
+#define PWM13_ENOUTPUT       \
+	{                          \
 		TIM8->BDTR |= (1 << 15); \
 	}
 #else
 #define PWM13_ENOUTPUT \
-	{                  \
+	{                    \
 	}
 #endif
 #if (PWM13_TIMER >= 1) && (PWM13_TIMER <= 2)
@@ -2971,18 +3371,18 @@ extern "C"
 #define PWM14_CCMREG CCMR1
 #endif
 #if (PWM14_TIMER == 1)
-#define PWM14_ENOUTPUT           \
-	{                            \
+#define PWM14_ENOUTPUT       \
+	{                          \
 		TIM1->BDTR |= (1 << 15); \
 	}
 #elif (PWM14_TIMER == 8)
-#define PWM14_ENOUTPUT           \
-	{                            \
+#define PWM14_ENOUTPUT       \
+	{                          \
 		TIM8->BDTR |= (1 << 15); \
 	}
 #else
 #define PWM14_ENOUTPUT \
-	{                  \
+	{                    \
 	}
 #endif
 #if (PWM14_TIMER >= 1) && (PWM14_TIMER <= 2)
@@ -3032,18 +3432,18 @@ extern "C"
 #define PWM15_CCMREG CCMR1
 #endif
 #if (PWM15_TIMER == 1)
-#define PWM15_ENOUTPUT           \
-	{                            \
+#define PWM15_ENOUTPUT       \
+	{                          \
 		TIM1->BDTR |= (1 << 15); \
 	}
 #elif (PWM15_TIMER == 8)
-#define PWM15_ENOUTPUT           \
-	{                            \
+#define PWM15_ENOUTPUT       \
+	{                          \
 		TIM8->BDTR |= (1 << 15); \
 	}
 #else
 #define PWM15_ENOUTPUT \
-	{                  \
+	{                    \
 	}
 #endif
 #if (PWM15_TIMER >= 1) && (PWM15_TIMER <= 2)
@@ -3458,11 +3858,11 @@ extern "C"
 #ifndef SPI_SDI_AFIO
 #error "SPI pin configuration not supported"
 #endif
-#ifdef SPI_CS
-#ifndef SPI_CS_AFIO
-#error "SPI pin configuration not supported"
-#endif
-#endif
+// #ifdef SPI_CS
+// #ifndef SPI_CS_AFIO
+// #error "SPI pin configuration not supported"
+// #endif
+// #endif
 
 #define SPI_REG __helper__(SPI, SPI_PORT, )
 #if (SPI_PORT == 2 || SPI_PORT == 3)
@@ -3475,7 +3875,356 @@ extern "C"
 #define SPI_CLOCK HAL_RCC_GetPCLK2Freq()
 #endif
 
+#define SPI_IRQ __helper__(SPI, SPI_PORT, _IRQn)
+#define SPI_ISR __helper__(SPI, SPI_PORT, _IRQHandler)
+
+#if (SPI_PORT == 1)
+#define SPI_DMA_CONTROLLER_NUM 2
+#define SPI_DMA_TX_STREAM_NUM 3
+#define SPI_DMA_RX_STREAM_NUM 2
+#define SPI_DMA_TX_CHANNEL 3
+#define SPI_DMA_RX_CHANNEL 3
+#define SPI_DMA_TX_IFR_POS 22
+#define SPI_DMA_RX_IFR_POS 16
+#elif (SPI_PORT == 2)
+#define SPI_DMA_CONTROLLER_NUM 1
+#define SPI_DMA_TX_STREAM_NUM 4
+#define SPI_DMA_RX_STREAM_NUM 3
+#define SPI_DMA_TX_CHANNEL 0
+#define SPI_DMA_RX_CHANNEL 0
+#define SPI_DMA_TX_IFR_POS 0
+#define SPI_DMA_RX_IFR_POS 22
+#elif (SPI_PORT == 3)
+#define SPI_DMA_CONTROLLER_NUM 1
+#define SPI_DMA_TX_CHANNEL 0
+#define SPI_DMA_RX_CHANNEL 0
+#define SPI_DMA_TX_STREAM_NUM 5
+#define SPI_DMA_RX_STREAM_NUM 2
+#define SPI_DMA_TX_IFR_POS 6
+#define SPI_DMA_RX_IFR_POS 16
+#elif (SPI_PORT == 4)
+#define SPI_DMA_CONTROLLER_NUM 2
+#define SPI_DMA_TX_CHANNEL 5
+#define SPI_DMA_RX_CHANNEL 5
+#define SPI_DMA_TX_STREAM_NUM 4
+#define SPI_DMA_RX_STREAM_NUM 3
+#define SPI_DMA_TX_IFR_POS 0
+#define SPI_DMA_RX_IFR_POS 22
+#elif (SPI_PORT == 5)
+#define SPI_DMA_CONTROLLER_NUM 2
+#define SPI_DMA_TX_CHANNEL 7
+#define SPI_DMA_RX_CHANNEL 7
+#define SPI_DMA_TX_STREAM_NUM 6
+#define SPI_DMA_RX_STREAM_NUM 5
+#define SPI_DMA_TX_IFR_POS 16
+#define SPI_DMA_RX_IFR_POS 6
+#else
+#error "Invalid SPI port"
 #endif
+
+#define SPI_DMA_CONTROLLER __helper__(DMA, SPI_DMA_CONTROLLER_NUM, )
+#define SPI_DMA_EN __helper__(RCC_AHB1ENR_DMA, SPI_DMA_CONTROLLER_NUM, EN)
+
+#define SPI_DMA_TX_STREAM __helper__(__helper__(DMA, SPI_DMA_CONTROLLER_NUM, _Stream), SPI_DMA_TX_STREAM_NUM, )
+#if (SPI_DMA_TX_STREAM_NUM <= 3)
+#define SPI_DMA_TX_IFCR SPI_DMA_CONTROLLER->LIFCR
+#define SPI_DMA_TX_ISR SPI_DMA_CONTROLLER->LISR
+#else
+#define SPI_DMA_TX_IFCR SPI_DMA_CONTROLLER->HIFCR
+#define SPI_DMA_TX_ISR SPI_DMA_CONTROLLER->HISR
+#endif
+
+#define SPI_DMA_RX_STREAM __helper__(__helper__(DMA, SPI_DMA_CONTROLLER_NUM, _Stream), SPI_DMA_RX_STREAM_NUM, )
+#if (SPI_DMA_RX_STREAM_NUM <= 3)
+#define SPI_DMA_RX_IFCR SPI_DMA_CONTROLLER->LIFCR
+#define SPI_DMA_RX_ISR SPI_DMA_CONTROLLER->LISR
+#else
+#define SPI_DMA_RX_IFCR SPI_DMA_CONTROLLER->HIFCR
+#define SPI_DMA_RX_ISR SPI_DMA_CONTROLLER->HISR
+#endif
+
+#define SPI_DMA_TX_IFCR_MASK (0b111101 << SPI_DMA_TX_IFR_POS)
+#define SPI_DMA_RX_IFCR_MASK (0b111101 << SPI_DMA_RX_IFR_POS)
+
+#endif
+
+#if (defined(SPI2_CLK) && defined(SPI2_SDO) && defined(SPI2_SDI))
+#define SPI2_CLK_PIN __iopin__(SPI2_CLK_PORT, SPI2_CLK_BIT)
+#define SPI2_SDO_PIN __iopin__(SPI2_SDO_PORT, SPI2_SDO_BIT)
+#define SPI2_SDI_PIN __iopin__(SPI2_SDI_PORT, SPI2_SDI_BIT)
+#ifdef SPI2_CS
+#define SPI2_CS_PIN __iopin__(SPI2_CS_PORT, SPI2_CS_BIT)
+#endif
+#define MCU_HAS_SPI2
+#ifndef SPI2_PORT
+#define SPI2_PORT 1
+#endif
+#ifndef SPI2_MODE
+#define SPI2_MODE 0
+#endif
+#ifndef SPI2_FREQ
+#define SPI2_FREQ 1000000UL
+#endif
+// remmaping and pin checking
+#if (SPI2_PORT == 4) && (SPI2_SDO_PIN == STM32IO_A1)
+#define SPI2_SDO_AFIO 5
+#endif
+#if (SPI2_PORT == 3) && (SPI2_CLK_PIN == STM32IO_B12)
+#define SPI2_CLK_AFIO 7
+#endif
+#if (SPI2_PORT == 1) && (SPI2_CS_PIN == STM32IO_A4)
+#define SPI2_CS_AFIO 5
+#endif
+#if (SPI2_PORT == 1) && (SPI2_CLK_PIN == STM32IO_A5)
+#define SPI2_CLK_AFIO 5
+#endif
+#if (SPI2_PORT == 1) && (SPI2_SDI_PIN == STM32IO_A6)
+#define SPI2_SDI_AFIO 5
+#endif
+#if (SPI2_PORT == 1) && (SPI2_SDO_PIN == STM32IO_A7)
+#define SPI2_SDO_AFIO 5
+#endif
+#if (SPI2_PORT == 1) && (SPI2_CS_PIN == STM32IO_A15)
+#define SPI2_CS_AFIO 5
+#endif
+#if (SPI2_PORT == 1) && (SPI2_CLK_PIN == STM32IO_B3)
+#define SPI2_CLK_AFIO 5
+#endif
+#if (SPI2_PORT == 1) && (SPI2_SDI_PIN == STM32IO_B4)
+#define SPI2_SDI_AFIO 5
+#endif
+#if (SPI2_PORT == 1) && (SPI2_SDO_PIN == STM32IO_B5)
+#define SPI2_SDO_AFIO 5
+#endif
+#if (SPI2_PORT == 2) && (SPI2_CS_PIN == STM32IO_B9)
+#define SPI2_CS_AFIO 5
+#endif
+#if (SPI2_PORT == 2) && (SPI2_CLK_PIN == STM32IO_B10)
+#define SPI2_CLK_AFIO 5
+#endif
+#if (SPI2_PORT == 2) && (SPI2_CS_PIN == STM32IO_B12)
+#define SPI2_CS_AFIO 5
+#endif
+#if (SPI2_PORT == 2) && (SPI2_CLK_PIN == STM32IO_B13)
+#define SPI2_CLK_AFIO 5
+#endif
+#if (SPI2_PORT == 2) && (SPI2_SDI_PIN == STM32IO_B14)
+#define SPI2_SDI_AFIO 5
+#endif
+#if (SPI2_PORT == 2) && (SPI2_SDO_PIN == STM32IO_B15)
+#define SPI2_SDO_AFIO 5
+#endif
+#if (SPI2_PORT == 2) && (SPI2_SDI_PIN == STM32IO_C2)
+#define SPI2_SDI_AFIO 5
+#endif
+#if (SPI2_PORT == 2) && (SPI2_SDO_PIN == STM32IO_C3)
+#define SPI2_SDO_AFIO 5
+#endif
+#if (SPI2_PORT == 2) && (SPI2_CLK_PIN == STM32IO_C7)
+#define SPI2_CLK_AFIO 5
+#endif
+#if (SPI2_PORT == 2) && (SPI2_CLK_PIN == STM32IO_D3)
+#define SPI2_CLK_AFIO 5
+#endif
+#if (SPI2_PORT == 3) && (SPI2_SDO_PIN == STM32IO_D6)
+#define SPI2_SDO_AFIO 5
+#endif
+#if (SPI2_PORT == 4) && (SPI2_CLK_PIN == STM32IO_E3)
+#define SPI2_CLK_AFIO 5
+#endif
+#if (SPI2_PORT == 4) && (SPI2_CS_PIN == STM32IO_E5)
+#define SPI2_CS_AFIO 5
+#endif
+#if (SPI2_PORT == 4) && (SPI2_SDI_PIN == STM32IO_E6)
+#define SPI2_SDI_AFIO 5
+#endif
+#if (SPI2_PORT == 4) && (SPI2_SDO_PIN == STM32IO_E7)
+#define SPI2_SDO_AFIO 5
+#endif
+#if (SPI2_PORT == 4) && (SPI2_CS_PIN == STM32IO_E11)
+#define SPI2_CS_AFIO 5
+#endif
+#if (SPI2_PORT == 4) && (SPI2_CLK_PIN == STM32IO_E12)
+#define SPI2_CLK_AFIO 5
+#endif
+#if (SPI2_PORT == 4) && (SPI2_SDI_PIN == STM32IO_E13)
+#define SPI2_SDI_AFIO 5
+#endif
+#if (SPI2_PORT == 4) && (SPI2_SDO_PIN == STM32IO_E14)
+#define SPI2_SDO_AFIO 5
+#endif
+#if (SPI2_PORT == 3) && (SPI2_CS_PIN == STM32IO_A4)
+#define SPI2_CS_AFIO 6
+#endif
+#if (SPI2_PORT == 5) && (SPI2_SDO_PIN == STM32IO_A10)
+#define SPI2_SDO_AFIO 6
+#endif
+#if (SPI2_PORT == 4) && (SPI2_SDI_PIN == STM32IO_A11)
+#define SPI2_SDI_AFIO 6
+#endif
+#if (SPI2_PORT == 5) && (SPI2_SDI_PIN == STM32IO_A12)
+#define SPI2_SDI_AFIO 6
+#endif
+#if (SPI2_PORT == 3) && (SPI2_CS_PIN == STM32IO_A15)
+#define SPI2_CS_AFIO 6
+#endif
+#if (SPI2_PORT == 5) && (SPI2_CLK_PIN == STM32IO_B0)
+#define SPI2_CLK_AFIO 6
+#endif
+#if (SPI2_PORT == 5) && (SPI2_CD_PIN == STM32IO_B1)
+#define SPI2_CD_AFIO 6
+#endif
+#if (SPI2_PORT == 3) && (SPI2_CLK_PIN == STM32IO_B3)
+#define SPI2_CLK_AFIO 6
+#endif
+#if (SPI2_PORT == 3) && (SPI2_SDI_PIN == STM32IO_B4)
+#define SPI2_SDI_AFIO 6
+#endif
+#if (SPI2_PORT == 3) && (SPI2_SDO_PIN == STM32IO_B5)
+#define SPI2_SDO_AFIO 6
+#endif
+#if (SPI2_PORT == 5) && (SPI2_SDO_PIN == STM32IO_B8)
+#define SPI2_SDO_AFIO 6
+#endif
+#if (SPI2_PORT == 4) && (SPI2_CS_PIN == STM32IO_B12)
+#define SPI2_CS_AFIO 6
+#endif
+#if (SPI2_PORT == 4) && (SPI2_CLK_PIN == STM32IO_B13)
+#define SPI2_CLK_AFIO 6
+#endif
+#if (SPI2_PORT == 3) && (SPI2_CLK_PIN == STM32IO_C10)
+#define SPI2_CLK_AFIO 6
+#endif
+#if (SPI2_PORT == 3) && (SPI2_SDI_PIN == STM32IO_C11)
+#define SPI2_SDI_AFIO 6
+#endif
+#if (SPI2_PORT == 3) && (SPI2_SDO_PIN == STM32IO_C12)
+#define SPI2_SDO_AFIO 6
+#endif
+#if (SPI2_PORT == 5) && (SPI2_CLK_PIN == STM32IO_E3)
+#define SPI2_CLK_AFIO 6
+#endif
+#if (SPI2_PORT == 5) && (SPI2_CS_PIN == STM32IO_E5)
+#define SPI2_CS_AFIO 6
+#endif
+#if (SPI2_PORT == 5) && (SPI2_SDI_PIN == STM32IO_E6)
+#define SPI2_SDI_AFIO 6
+#endif
+#if (SPI2_PORT == 5) && (SPI2_SDO_PIN == STM32IO_E7)
+#define SPI2_SDO_AFIO 6
+#endif
+#if (SPI2_PORT == 5) && (SPI2_CS_PIN == STM32IO_E11)
+#define SPI2_CS_AFIO 6
+#endif
+#if (SPI2_PORT == 5) && (SPI2_CLK_PIN == STM32IO_E12)
+#define SPI2_CLK_AFIO 6
+#endif
+#if (SPI2_PORT == 5) && (SPI2_SDI_PIN == STM32IO_E13)
+#define SPI2_SDI_AFIO 6
+#endif
+#if (SPI2_PORT == 5) && (SPI2_SDO_PIN == STM32IO_E14)
+#define SPI2_SDO_AFIO 6
+#endif
+
+#ifndef SPI2_CLK_AFIO
+#error "SPI2 pin configuration not supported"
+#endif
+#ifndef SPI2_SDO_AFIO
+#error "SPI2 pin configuration not supported"
+#endif
+#ifndef SPI2_SDI_AFIO
+#error "SPI2 pin configuration not supported"
+#endif
+// #ifdef SPI2_CS
+// #ifndef SPI2_CS_AFIO
+// #error "SPI2 pin configuration not supported"
+// #endif
+// #endif
+
+#define SPI2_REG __helper__(SPI, SPI2_PORT, )
+#if (SPI2_PORT == 2 || SPI2_PORT == 3)
+#define SPI2_ENREG RCC->APB1ENR
+#define SPI2_ENVAL __helper__(RCC_APB1ENR_SPI, SPI2_PORT, EN)
+#define SPI2_CLOCK HAL_RCC_GetPCLK1Freq()
+#else
+#define SPI2_ENREG RCC->APB2ENR
+#define SPI2_ENVAL __helper__(RCC_APB2ENR_SPI, SPI2_PORT, EN)
+#define SPI2_CLOCK HAL_RCC_GetPCLK2Freq()
+#endif
+
+#define SPI2_IRQ __helper__(SPI, SPI2_PORT, _IRQn)
+#define SPI2_ISR __helper__(SPI, SPI2_PORT, _IRQHandler)
+
+#if (SPI2_PORT == 1)
+#define SPI2_DMA_CONTROLLER_NUM 2
+#define SPI2_DMA_TX_STREAM_NUM 3
+#define SPI2_DMA_RX_STREAM_NUM 2
+#define SPI2_DMA_TX_CHANNEL 3
+#define SPI2_DMA_RX_CHANNEL 3
+#define SPI2_DMA_TX_IFR_POS 22
+#define SPI2_DMA_RX_IFR_POS 16
+#elif (SPI2_PORT == 2)
+#define SPI2_DMA_CONTROLLER_NUM 1
+#define SPI2_DMA_TX_STREAM_NUM 4
+#define SPI2_DMA_RX_STREAM_NUM 3
+#define SPI2_DMA_TX_CHANNEL 0
+#define SPI2_DMA_RX_CHANNEL 0
+#define SPI2_DMA_TX_IFR_POS 0
+#define SPI2_DMA_RX_IFR_POS 22
+#elif (SPI2_PORT == 3)
+#define SPI2_DMA_CONTROLLER_NUM 1
+#define SPI2_DMA_TX_CHANNEL 0
+#define SPI2_DMA_RX_CHANNEL 0
+#define SPI2_DMA_TX_STREAM_NUM 5
+#define SPI2_DMA_RX_STREAM_NUM 2
+#define SPI2_DMA_TX_IFR_POS 6
+#define SPI2_DMA_RX_IFR_POS 16
+#elif (SPI2_PORT == 4)
+#define SPI2_DMA_CONTROLLER_NUM 2
+#define SPI2_DMA_TX_CHANNEL 5
+#define SPI2_DMA_RX_CHANNEL 5
+#define SPI2_DMA_TX_STREAM_NUM 4
+#define SPI2_DMA_RX_STREAM_NUM 3
+#define SPI2_DMA_TX_IFR_POS 0
+#define SPI2_DMA_RX_IFR_POS 22
+#elif (SPI2_PORT == 5)
+#define SPI2_DMA_CONTROLLER_NUM 2
+#define SPI2_DMA_TX_CHANNEL 7
+#define SPI2_DMA_RX_CHANNEL 7
+#define SPI2_DMA_TX_STREAM_NUM 6
+#define SPI2_DMA_RX_STREAM_NUM 5
+#define SPI2_DMA_TX_IFR_POS 16
+#define SPI2_DMA_RX_IFR_POS 6
+#else
+#error "Invalid SPI2 port"
+#endif
+
+#define SPI2_DMA_CONTROLLER __helper__(DMA, SPI2_DMA_CONTROLLER_NUM, )
+#define SPI2_DMA_EN __helper__(RCC_AHB1ENR_DMA, SPI2_DMA_CONTROLLER_NUM, EN)
+
+#define SPI2_DMA_TX_STREAM __helper__(__helper__(DMA, SPI2_DMA_CONTROLLER_NUM, _Stream), SPI2_DMA_TX_STREAM_NUM, )
+#if (SPI2_DMA_TX_STREAM_NUM <= 3)
+#define SPI2_DMA_TX_IFCR SPI2_DMA_CONTROLLER->LIFCR
+#define SPI2_DMA_TX_ISR SPI2_DMA_CONTROLLER->LISR
+#else
+#define SPI2_DMA_TX_IFCR SPI2_DMA_CONTROLLER->HIFCR
+#define SPI2_DMA_TX_ISR SPI2_DMA_CONTROLLER->HISR
+#endif
+
+#define SPI2_DMA_RX_STREAM __helper__(__helper__(DMA, SPI2_DMA_CONTROLLER_NUM, _Stream), SPI2_DMA_RX_STREAM_NUM, )
+#if (SPI2_DMA_RX_STREAM_NUM <= 3)
+#define SPI2_DMA_RX_IFCR SPI2_DMA_CONTROLLER->LIFCR
+#define SPI2_DMA_RX_ISR SPI2_DMA_CONTROLLER->LISR
+#else
+#define SPI2_DMA_RX_IFCR SPI2_DMA_CONTROLLER->HIFCR
+#define SPI2_DMA_RX_ISR SPI2_DMA_CONTROLLER->HISR
+#endif
+
+#define SPI2_DMA_TX_IFCR_MASK (0b111101 << SPI2_DMA_TX_IFR_POS)
+#define SPI2_DMA_RX_IFCR_MASK (0b111101 << SPI2_DMA_RX_IFR_POS)
+
+#endif
+
 
 // I2C
 #if (defined(I2C_CLK) && defined(I2C_DATA))
@@ -3651,47 +4400,47 @@ extern "C"
 #define TOGGLEFLAG(x, y) ((x) ^= (y))
 #endif
 
-#define mcu_config_input(diopin)                                                                                                    \
-	{                                                                                                                               \
+#define mcu_config_input(diopin)                                                                                                \
+	{                                                                                                                             \
 		RCC->AHB1ENR |= __indirect__(diopin, AHB1EN);                                                                               \
 		__indirect__(diopin, GPIO)->MODER &= ~(GPIO_RESET << ((__indirect__(diopin, BIT)) << 1)); /*reset dir (defaults to input)*/ \
 	}
 
-#define mcu_config_output(diopin)                                                                                 \
-	{                                                                                                             \
+#define mcu_config_output(diopin)                                                                             \
+	{                                                                                                           \
 		RCC->AHB1ENR |= __indirect__(diopin, AHB1EN);                                                             \
 		__indirect__(diopin, GPIO)->MODER &= ~(GPIO_RESET << ((__indirect__(diopin, BIT)) << 1)); /*reset dir*/   \
 		__indirect__(diopin, GPIO)->MODER |= (GPIO_OUTPUT << ((__indirect__(diopin, BIT)) << 1)); /*output mode*/ \
-		__indirect__(diopin, GPIO)->OSPEEDR |= (0x02 << ((__indirect__(diopin, BIT)) << 1));	  /*output mode*/ \
+		__indirect__(diopin, GPIO)->OSPEEDR |= (0x02 << ((__indirect__(diopin, BIT)) << 1));			/*output mode*/ \
 	}
 
-#define mcu_config_af(diopin, afrval)                                                                                                               \
-	{                                                                                                                                               \
+#define mcu_config_af(diopin, afrval)                                                                                                           \
+	{                                                                                                                                             \
 		RCC->AHB1ENR |= __indirect__(diopin, AHB1EN);                                                                                               \
 		__indirect__(diopin, GPIO)->MODER &= ~(GPIO_RESET << ((__indirect__(diopin, BIT)) << 1)); /*reset dir*/                                     \
-		__indirect__(diopin, GPIO)->MODER |= (GPIO_AF << ((__indirect__(diopin, BIT)) << 1));	  /*af mode*/                                       \
+		__indirect__(diopin, GPIO)->MODER |= (GPIO_AF << ((__indirect__(diopin, BIT)) << 1));			/*af mode*/                                       \
 		__indirect__(diopin, GPIO)->AFR[(__indirect__(diopin, BIT) >> 3)] &= ~(0xf << ((__indirect__(diopin, BIT) & 0x07) << 2));                   \
 		__indirect__(diopin, GPIO)->AFR[(__indirect__(diopin, BIT) >> 3)] |= (afrval << ((__indirect__(diopin, BIT) & 0x07) << 2)); /*af mode*/     \
-		__indirect__(diopin, GPIO)->OSPEEDR |= (0x03 << ((__indirect__(diopin, BIT)) << 1));										/*output mode*/ \
+		__indirect__(diopin, GPIO)->OSPEEDR |= (0x03 << ((__indirect__(diopin, BIT)) << 1));																				/*output mode*/ \
 	}
 
-#define mcu_config_pullup(diopin)                                                                    \
-	{                                                                                                \
+#define mcu_config_pullup(diopin)                                                                \
+	{                                                                                              \
 		__indirect__(diopin, GPIO)->PUPDR &= ~(GPIO_RESET << ((__indirect__(diopin, BIT)) << 1));    \
 		__indirect__(diopin, GPIO)->PUPDR |= (GPIO_IN_PULLUP << ((__indirect__(diopin, BIT)) << 1)); \
 	}
 
-#define mcu_config_opendrain(diopin)                                                \
-	{                                                                               \
+#define mcu_config_opendrain(diopin)                                            \
+	{                                                                             \
 		__indirect__(diopin, GPIO)->OTYPER |= (1 << ((__indirect__(diopin, BIT)))); \
 	}
 
-#define mcu_config_pwm(diopin, freq)                                                                                                                                \
-	{                                                                                                                                                               \
+#define mcu_config_pwm(diopin, freq)                                                                                                                            \
+	{                                                                                                                                                             \
 		RCC->AHB1ENR |= __indirect__(diopin, AHB1EN);                                                                                                               \
 		__indirect__(diopin, ENREG) |= __indirect__(diopin, APBEN);                                                                                                 \
 		__indirect__(diopin, GPIO)->MODER &= ~(GPIO_RESET << ((__indirect__(diopin, BIT)) << 1)); /*reset dir*/                                                     \
-		__indirect__(diopin, GPIO)->MODER |= (GPIO_AF << ((__indirect__(diopin, BIT)) << 1));	  /*af mode*/                                                       \
+		__indirect__(diopin, GPIO)->MODER |= (GPIO_AF << ((__indirect__(diopin, BIT)) << 1));			/*af mode*/                                                       \
 		__indirect__(diopin, GPIO)->AFR[(__indirect__(diopin, BIT) >> 3)] &= ~(0xf << ((__indirect__(diopin, BIT) & 0x07) << 2));                                   \
 		__indirect__(diopin, GPIO)->AFR[(__indirect__(diopin, BIT) >> 3)] |= ((__indirect__(diopin, AF) << ((__indirect__(diopin, BIT) & 0x07) << 2))); /*af mode*/ \
 		__indirect__(diopin, TIMREG)->CR1 = 0;                                                                                                                      \
@@ -3705,8 +4454,8 @@ extern "C"
 		__indirect__(diopin, ENOUTPUT);                                                                                                                             \
 	}
 
-#define mcu_config_input_isr(diopin)                                                                              \
-	{                                                                                                             \
+#define mcu_config_input_isr(diopin)                                                                          \
+	{                                                                                                           \
 		RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;                                                                     \
 		SYSCFG->EXTICR[(__indirect__(diopin, EXTIREG))] &= ~(0xF << (((__indirect__(diopin, BIT)) & 0x03) << 2)); \
 		SYSCFG->EXTICR[(__indirect__(diopin, EXTIREG))] |= (__indirect__(diopin, EXTIVAL));                       \
@@ -3726,8 +4475,8 @@ extern "C"
 #define ADC_COMMON ADC123_COMMON
 #endif
 
-#define mcu_config_analog(diopin)                                                                                                     \
-	{                                                                                                                                 \
+#define mcu_config_analog(diopin)                                                                                                 \
+	{                                                                                                                               \
 		ADC_COMMON->CCR &= ~(ADC_CCR_ADCPRE);                                                                                         \
 		ADC_COMMON->CCR |= (ADC_CCR_ADCPRE_0 | ADC_CCR_ADCPRE_1);                                                                     \
 		RCC->APB2ENR |= (RCC_APB2ENR_ADC1EN);                                                                                         \
@@ -3735,11 +4484,11 @@ extern "C"
 		ADC1->SQR1 = 1; /*one conversion*/                                                                                            \
 		ADC1->SMPR1 = 0x00ffffff & 0x36DB6DB6;                                                                                        \
 		ADC1->SMPR2 = 0x36DB6DB6;                                                                                                     \
-		ADC1->CR2 &= ~ADC_CR2_CONT;																  /*single conversion mode*/          \
+		ADC1->CR2 &= ~ADC_CR2_CONT;																																/*single conversion mode*/          \
 		__indirect__(diopin, GPIO)->MODER &= ~(GPIO_RESET << ((__indirect__(diopin, BIT)) << 1)); /*reset dir*/                       \
 		__indirect__(diopin, GPIO)->MODER |= (GPIO_ANALOG << ((__indirect__(diopin, BIT)) << 1)); /*analog mode*/                     \
-		ADC1->CR2 |= ADC_CR2_ADON;																  /*enable adc*/                      \
-		ADC1->CR2 |= (ADC_CR2_EXTEN_0 | ADC_CR2_EXTEN_1);										  /*external start trigger software*/ \
+		ADC1->CR2 |= ADC_CR2_ADON;																																/*enable adc*/                      \
+		ADC1->CR2 |= (ADC_CR2_EXTEN_0 | ADC_CR2_EXTEN_1);																					/*external start trigger software*/ \
 	}
 
 #define mcu_get_input(diopin) (CHECKBIT(__indirect__(diopin, GPIO)->IDR, __indirect__(diopin, BIT)))
@@ -3747,52 +4496,40 @@ extern "C"
 #define mcu_set_output(diopin) (__indirect__(diopin, GPIO)->BSRR = (1UL << __indirect__(diopin, BIT)))
 #define mcu_clear_output(diopin) (__indirect__(diopin, GPIO)->BSRR = ((1UL << 16) << __indirect__(diopin, BIT)))
 #define mcu_toggle_output(diopin) (TOGGLEBIT(__indirect__(diopin, GPIO)->ODR, __indirect__(diopin, BIT)))
-#define mcu_set_pwm(diopin, pwmvalue)                                                                                               \
-	{                                                                                                                               \
+#define mcu_set_pwm(diopin, pwmvalue)                                                                                           \
+	{                                                                                                                             \
 		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR) = (uint16_t)((__indirect__(diopin, TIMREG)->ARR * pwmvalue) / 255); \
 	}
 
 #define mcu_get_pwm(diopin) ((uint8_t)((((uint32_t)__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR)) * 255) / ((uint32_t)__indirect__(diopin, TIMREG)->ARR)))
 
-#define mcu_get_analog(diopin)                      \
-	({                                              \
+#define mcu_get_analog(diopin)                  \
+	({                                            \
 		ADC1->SQR3 = __indirect__(diopin, CHANNEL); \
 		ADC1->CR2 |= ADC_CR2_SWSTART;               \
 		ADC1->CR2 &= ~ADC_CR2_SWSTART;              \
 		while (!(ADC1->SR & ADC_SR_EOC))            \
-			;                                       \
+			;                                         \
 		ADC1->SR &= ~ADC_SR_EOC;                    \
 		(0x3FF & (ADC1->DR >> 2));                  \
 	})
 
-#define mcu_spi_xmit(X)                                               \
-	({                                                                \
-		SPI_REG->DR = X;                                              \
-		while (!(SPI1->SR & SPI_SR_TXE) && !(SPI1->SR & SPI_SR_RXNE)) \
-			;                                                         \
-		uint8_t data = SPI_REG->DR;                                   \
-		while (SPI1->SR & SPI_SR_BSY)                                 \
-			;                                                         \
-		data;                                                         \
-	})
-#ifdef PROBE
-#ifdef PROBE_ISR
+#if defined(PROBE) && defined(PROBE_ISR)
 #define mcu_enable_probe_isr() SETBIT(EXTI->IMR, PROBE_BIT)
 #define mcu_disable_probe_isr() CLEARBIT(EXTI->IMR, PROBE_BIT)
 #else
 #define mcu_enable_probe_isr()
 #define mcu_disable_probe_isr()
 #endif
-#endif
 
 	extern volatile bool stm32_global_isr_enabled;
-#define mcu_enable_global_isr()          \
-	{                                    \
+#define mcu_enable_global_isr()      \
+	{                                  \
 		__enable_irq();                  \
 		stm32_global_isr_enabled = true; \
 	}
-#define mcu_disable_global_isr()          \
-	{                                     \
+#define mcu_disable_global_isr()      \
+	{                                   \
 		stm32_global_isr_enabled = false; \
 		__disable_irq();                  \
 	}
@@ -3816,8 +4553,8 @@ extern "C"
 /**
  * starts the timeout. Once hit the the respective callback is called
  * */
-#define mcu_start_timeout()           \
-	({                                \
+#define mcu_start_timeout()       \
+	({                              \
 		ONESHOT_TIMER_REG->SR = 0;    \
 		ONESHOT_TIMER_REG->CNT = 0;   \
 		ONESHOT_TIMER_REG->DIER |= 1; \

@@ -24,6 +24,10 @@ extern "C"
 {
 #endif
 
+#ifndef MCU
+#define MCU MCU_SAMD21
+#endif
+
 #ifndef BOARD_NAME
 #define BOARD_NAME "Arduino M0"
 #endif
@@ -53,7 +57,7 @@ extern "C"
 #define DIR2_PORT A // assigns DIR2 port
 
 // Setup limit pins
-#define LIMIT_X_BIT 7  // assigns LIMIT_X pin
+#define LIMIT_X_BIT 7	 // assigns LIMIT_X pin
 #define LIMIT_X_PORT A // assigns LIMIT_X port
 #define LIMIT_Y_BIT 18 // assigns LIMIT_Y pin
 #define LIMIT_Y_PORT A // assigns LIMIT_Y port
@@ -100,11 +104,11 @@ extern "C"
 #define USB_DP_MUX G
 
 // Setup PWM
-#define PWM0_BIT 16	   // assigns PWM0 pin
-#define PWM0_PORT A	   // assigns PWM0 port
+#define PWM0_BIT 16		 // assigns PWM0 pin
+#define PWM0_PORT A		 // assigns PWM0 port
 #define PWM0_CHANNEL 0 // assigns PWM0 channel
-#define PWM0_TIMER 2   // assigns PWM0 timer
-#define PWM0_MUX E	   // assigns PWM0 mux
+#define PWM0_TIMER 2	 // assigns PWM0 timer
+#define PWM0_MUX E		 // assigns PWM0 mux
 
 // Setup generic IO Pins
 // Functionalities are set in cnc_hal_config.h file
@@ -138,12 +142,19 @@ extern "C"
 #define I2C_DATA_BIT 22
 #define I2C_DATA_PORT A
 #define I2C_PORT 3
-// #define I2C_ADDRESS 0
+	// #define I2C_ADDRESS 0
 
-// #define DIN30_BIT 23
-// #define DIN30_PORT A
-// #define DIN31_BIT 22
-// #define DIN31_PORT A
+	// #define DIN30_BIT 23
+	// #define DIN30_PORT A
+	// #define DIN31_BIT 22
+	// #define DIN31_PORT A
+
+// #define SPI_CLK_PORT A
+// #define SPI_CLK_BIT 17
+// #define SPI_SDI_PORT A
+// #define SPI_SDI_BIT 19
+// #define SPI_SDO_PORT A
+// #define SPI_SDO_BIT 16
 
 #define ONESHOT_TIMER 2
 

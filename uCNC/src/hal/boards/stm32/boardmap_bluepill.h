@@ -24,6 +24,10 @@ extern "C"
 {
 #endif
 
+#ifndef MCU
+#define MCU MCU_STM32F1X
+#endif
+
 #ifndef BOARD_NAME
 #define BOARD_NAME "STM32 Bluepill"
 #endif
@@ -133,24 +137,39 @@ extern "C"
 
 	// Setup the Step Timer used has the heartbeat for µCNC
 	// On STM32F1x cores this will default to Timer 2
-	//#define ITP_TIMER 2
+	// #define ITP_TIMER 2
 
 	// Setup the Timer to be used exclusively by servos in µCNC.
 	// If no servos are configured then the timer is free for other functions (like PWM) (even if defined in the board)
 	// On STM32F1x cores this will default to Timer 3
-	//#define SERVO_TIMER 3
+	// #define SERVO_TIMER 3
 
-// #define I2C_CLK_BIT 10
-// #define I2C_CLK_PORT B
-// #define I2C_DATA_BIT 11
-// #define I2C_DATA_PORT B
-// #define I2C_PORT 2
-// #define I2C_ADDRESS 1
+	// #define I2C_CLK_BIT 10
+	// #define I2C_CLK_PORT B
+	// #define I2C_DATA_BIT 11
+	// #define I2C_DATA_PORT B
+	// #define I2C_PORT 2
+	// #define I2C_ADDRESS 1
 
-// #define DIN7_BIT 5
-// #define DIN7_PORT B
-// #define DIN7_ISR
-// #define DIN7_PULLUP
+	// #define DIN7_BIT 5
+	// #define DIN7_PORT B
+	// #define DIN7_ISR
+	// #define DIN7_PULLUP
+
+// #define SPI_CLK_PORT A
+// #define SPI_CLK_BIT 5
+// #define SPI_SDI_PORT A
+// #define SPI_SDI_BIT 6
+// #define SPI_SDO_PORT A
+// #define SPI_SDO_BIT 7
+
+// #define SPI2_CLK_PORT B
+// #define SPI2_CLK_BIT 13
+// #define SPI2_SDI_PORT B
+// #define SPI2_SDI_BIT 14
+// #define SPI2_SDO_PORT B
+// #define SPI2_SDO_BIT 15
+// #define SPI2_PORT 2
 
 #define ONESHOT_TIMER 1
 

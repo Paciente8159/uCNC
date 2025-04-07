@@ -38,10 +38,10 @@ extern "C"
  *
  **/
 #define io_config_input(pin) io_hal_config_input(pin)
-#define io_config_pullup(pin)  io_hal_config_pullup(pin)
-#define io_get_input(pin)  io_hal_get_input(pin)
-#define io_config_analog(pin)  io_hal_config_analog(pin)
-#define io_get_analog(pin)  io_hal_get_analog(pin)
+#define io_config_pullup(pin) io_hal_config_pullup(pin)
+#define io_get_input(pin) io_hal_get_input(pin)
+#define io_config_analog(pin) io_hal_config_analog(pin)
+#define io_get_analog(pin) io_hal_get_analog(pin)
 
 #define io_config_output(pin) io_hal_config_output(pin)
 #define io_set_output(pin) io_hal_set_output(pin)
@@ -56,13 +56,20 @@ extern "C"
 	MCU_CALLBACK void io_soft_pwm_update(void);
 #endif
 
-	// inputs
-	#ifdef ENABLE_MULTI_STEP_HOMING
+// inputs
+#ifdef ENABLE_MULTI_STEP_HOMING
 	void io_lock_limits(uint8_t limitmask);
-	#endif
+#endif
 	void io_invert_limits(uint8_t limitmask);
 	uint8_t io_get_limits(void);
 	uint8_t io_get_controls(void);
+#ifdef PROBE_ENABLE_CUSTOM_CALLBACK
+typedef bool (*io_probe_get_cb)(void);
+typedef bool (*io_probe_action_cb)(void);
+extern io_probe_get_cb io_probe_custom_get;
+extern io_probe_action_cb io_probe_custom_enable;
+extern io_probe_action_cb io_probe_custom_disable;
+#endif
 	void io_enable_probe(void);
 	void io_disable_probe(void);
 	bool io_get_probe(void);
@@ -71,6 +78,7 @@ extern "C"
 	void io_set_steps(uint8_t mask);
 	void io_toggle_steps(uint8_t mask);
 	void io_set_dirs(uint8_t mask);
+	void io_get_steps_pos(int32_t *position);
 
 	void io_enable_steppers(uint8_t mask);
 

@@ -1,0 +1,57 @@
+;
+;Name: ic74hc595.pio
+;Description: Implements a custom PIO for 74HC595 shift register in µCNC for RP2040.
+;
+;Copyright: Copyright (c) João Martins
+;Author: João Martins
+;Date: 02-11-2023
+;
+;µCNC is free software: you can redistribute it and/or modify
+;it under the terms of the GNU General Public License as published by
+;the Free Software Foundation, either version 3 of the License, or
+;(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+;
+;µCNC is distributed WITHOUT ANY WARRANTY;
+;Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+;See the	GNU General Public License for more details.
+;
+
+.program ic74hc595
+.side_set 1 opt
+
+pull						; shift TX to OSR
+set x, 31					; load loop counter
+set pins, 0 				; set all pins low (latch)
+bitloop:                   	; loop bits
+out pins, 1 side 0        	; Shift 1 bit from OSR to the data pin and the remaining down
+jmp x-- bitloop side 1		; decrement loop and bring clock up
+set pins, 2 				; set 3rd pin (4=0b100) up (latch)
+
+% c-sdk {
+#include "hardware/clocks.h"
+
+static inline void ic74hc595_program_init(PIO pio, uint sm, uint offset, uint pin_data, uint pin_clk, uint pin_latch, uint freq) {
+	pio_sm_config c = ic74hc595_program_get_default_config(offset);
+	sm_config_set_out_pins(&c, pin_data, 1); // define one pin to respond to the out instruction
+	sm_config_set_set_pins(&c, pin_clk, 2);	 // define all pins to respond to the set instruction
+	sm_config_set_sideset_pins(&c, pin_clk); // define clock as the side set base pin (and only)
+	// Only support MSB-first in this example code (shift to left, no auto push/pull, threshold=nbits)
+	sm_config_set_out_shift(&c, false, false, 32);
+	// All pins output
+	pio_sm_set_consecutive_pindirs(pio, sm, pin_data, 3, true);
+	pio_gpio_init(pio, pin_data);
+	pio_gpio_init(pio, pin_clk);
+	pio_gpio_init(pio, pin_latch);
+	// We only need TX, so get an 8-deep FIFO!
+	sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_TX);
+	// SM transmits 1 bit per 8 execution cycles.
+	float div = (float)clock_get_hz(clk_sys) / (freq << 1);
+	sm_config_set_clkdiv(&c, div);
+	pio_sm_init(pio, sm, offset, &c);
+	pio_sm_set_enabled(pio, sm, true);
+}
+
+static inline void ic74hc595_program_write(PIO pio, uint sm, uint out) {
+    pio_sm_put_blocking(pio, sm, out);
+}
+%}

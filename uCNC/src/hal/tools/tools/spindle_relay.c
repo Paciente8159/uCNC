@@ -81,11 +81,18 @@ void set_coolant(uint8_t value)
 #endif
 }
 
+static int16_t range_speed(int16_t value, uint8_t conv)
+{
+	// binary output
+	value = (value) ? 1 : 0;
+	return value;
+}
+
 const tool_t spindle_relay = {
 	.startup_code = NULL,
 	.shutdown_code = NULL,
 	.pid_update = NULL,
-	.range_speed = NULL,
+	.range_speed = &range_speed,
 	.get_speed = NULL,
 	.set_speed = &set_speed,
 	.set_coolant = &set_coolant};

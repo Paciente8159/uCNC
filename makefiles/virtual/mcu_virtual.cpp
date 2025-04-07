@@ -16,7 +16,7 @@
 	See the	GNU General Public License for more details.
 */
 #include "../../uCNC/src/cnc.h"
-#if (BOARD == BOARD_VIRTUAL)
+#if (MCU == MCU_VIRTUAL_WIN)
 
 #ifdef __cplusplus
 extern "C"
@@ -176,47 +176,7 @@ extern "C"
 			memset(tmp, 0, sizeof(tmp));
 			uint8_t r = 0;
 
-			uint8_t count, tail;
-			__ATOMIC__
-			{
-				tail = uart2_tx.tail;
-				count = uart2_tx.count;
-			}
-			if (count > UART2_TX_BUFFER_SIZE)
-			{
-				count = UART2_TX_BUFFER_SIZE;
-			}
-			r = 0;
-			if (count)
-			{
-				uint8_t avail = uart2_tx_size - tail;
-				if (avail < count && avail)
-				{
-					memcpy(tmp, &uart2_tx_bufferdata[tail], avail * sizeof(uart2_tx_bufferdata[0]));
-					r = avail;
-					count -= avail;
-					tail = 0;
-				}
-				else
-				{
-					avail = 0;
-				}
-				if (count)
-				{
-					memcpy(&tmp[avail], &uart2_tx_bufferdata[tail], count * sizeof(uart2_tx_bufferdata[0]));
-					r += count;
-					__ATOMIC__
-					{
-						tail += count;
-						if (tail == uart2_tx_size)
-						{
-							tail = 0;
-						}
-						uart2_tx.tail = tail;
-						uart2_tx.count -= r;
-					}
-				}
-			}
+			BUFFER_READ(uart2_tx, tmp, UART2_TX_BUFFER_SIZE, r);
 			printf("%s", tmp);
 		}
 	}
@@ -224,7 +184,7 @@ extern "C"
 #include <conio.h>
 	void mcu_uart2_process()
 	{
-		while (kbhit())
+		if (kbhit())
 		{
 			char c = getch();
 			putchar(c);
@@ -342,16 +302,16 @@ extern "C"
 			BOOL fConnected = FALSE;
 
 			hPipe = CreateNamedPipe(
-				lpszPipename,				// pipe name
-				PIPE_ACCESS_DUPLEX,			// read/write access
-				PIPE_TYPE_MESSAGE |			// message type pipe
-					PIPE_READMODE_MESSAGE | // message-read mode
-					PIPE_WAIT,				// blocking mode
-				PIPE_UNLIMITED_INSTANCES,	// max. instances
-				sizeof(VIRTUAL_MAP),		// output buffer size
-				sizeof(VIRTUAL_MAP),		// input buffer size
-				0,							// client time-out
-				NULL);						// no template file
+					lpszPipename,								// pipe name
+					PIPE_ACCESS_DUPLEX,					// read/write access
+					PIPE_TYPE_MESSAGE |					// message type pipe
+							PIPE_READMODE_MESSAGE | // message-read mode
+							PIPE_WAIT,							// blocking mode
+					PIPE_UNLIMITED_INSTANCES,		// max. instances
+					sizeof(VIRTUAL_MAP),				// output buffer size
+					sizeof(VIRTUAL_MAP),				// input buffer size
+					0,													// client time-out
+					NULL);											// no template file
 
 			if (hPipe == INVALID_HANDLE_VALUE)
 			{
@@ -376,11 +336,11 @@ extern "C"
 					memcpy(lpvMessage, (void *)&virtualmap, sizeof(VIRTUAL_MAP));
 
 					fSuccess = WriteFile(
-						hPipe,		// pipe handle
-						lpvMessage, // message
-						cbToWrite,	// message length
-						&cbWritten, // bytes written
-						NULL);		// not overlapped
+							hPipe,			// pipe handle
+							lpvMessage, // message
+							cbToWrite,	// message length
+							&cbWritten, // bytes written
+							NULL);			// not overlapped
 
 					if (!fSuccess)
 					{
@@ -391,11 +351,11 @@ extern "C"
 					// Read from the pipe.
 
 					fSuccess = ReadFile(
-						hPipe,		// pipe handle
-						lpvMessage, // buffer to receive reply
-						cbToWrite,	// size of buffer
-						&cbRead,	// number of bytes read
-						NULL);		// not overlapped
+							hPipe,			// pipe handle
+							lpvMessage, // buffer to receive reply
+							cbToWrite,	// size of buffer
+							&cbRead,		// number of bytes read
+							NULL);			// not overlapped
 
 					if (!fSuccess && GetLastError() != ERROR_MORE_DATA)
 						break;
@@ -623,7 +583,7 @@ extern "C"
 	 *
 	 * **/
 
-	#ifndef ITP_SAMPLE_RATE
+#ifndef ITP_SAMPLE_RATE
 #define ITP_SAMPLE_RATE (F_STEP_MAX * 2)
 #endif
 
@@ -873,15 +833,254 @@ extern "C"
 
 	void ticksimul(void)
 	{
-//		long t = stopCycleCounter();
-//		printf("Elapsed %dus\n\r", (int)((double)t / cyclesPerMicrosecond));
+		//		long t = stopCycleCounter();
+		//		printf("Elapsed %dus\n\r", (int)((double)t / cyclesPerMicrosecond));
 		for (int i = 0; i < (int)ceil(20 * ITP_SAMPLE_RATE / 1000); i++)
 		{
 			mcu_gen_step();
 		}
 
 		mcu_rtc_cb(mcu_millis());
-//		startCycleCounter();
+		//		startCycleCounter();
+	}
+
+/**
+ * Emulate internal flash
+ */
+#include <dirent.h>
+#include "src/modules/file_system.h"
+
+	static fs_t flash_fs;
+
+	bool flash_fs_finfo(const char *path, fs_file_info_t *finfo)
+	{
+		WIN32_FIND_DATA findFileData;
+		HANDLE hFind;
+
+		// Ensure finfo structure is not NULL
+		if (!finfo || !path)
+		{
+			return false;
+		}
+
+		char fpath[256] = "./";
+		if (strcmp("/", path))
+		{
+			strcat(fpath, path);
+		}
+		else
+		{
+			fpath[1] = 0;
+		}
+
+		// Try to find the file or directory
+		hFind = FindFirstFile(fpath, &findFileData);
+		if (hFind == INVALID_HANDLE_VALUE)
+		{
+			// File or directory not found
+			return false;
+		}
+
+		// Copy the full name into the structure
+		strncpy(finfo->full_name, path, FS_PATH_NAME_MAX_LEN - 1);
+		finfo->full_name[FS_PATH_NAME_MAX_LEN - 1] = '\0'; // Null-terminate just in case
+
+		// Check if it is a directory or a file
+		if (findFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+		{
+			finfo->is_dir = true;
+			finfo->size = 0; // For directories, we don't typically care about size
+		}
+		else
+		{
+			finfo->is_dir = false;
+
+			// File size (64-bit), we take only the lower 32 bits as per fs_file_info_t definition
+			finfo->size = (uint32_t)findFileData.nFileSizeLow;
+		}
+
+		// File time to timestamp conversion (Unix time)
+		FILETIME ft = findFileData.ftLastWriteTime;
+		ULARGE_INTEGER ull;
+		ull.LowPart = ft.dwLowDateTime;
+		ull.HighPart = ft.dwHighDateTime;
+
+		// Windows file time is in 100-nanosecond intervals since January 1, 1601 (UTC)
+		// Unix timestamp is in seconds since January 1, 1970 (UTC)
+		// Convert by subtracting the number of 100-nanosecond intervals between these dates
+		// (11644473600 seconds between 1601 and 1970) and dividing by 10,000,000 to convert to seconds.
+		uint64_t fileTime = ull.QuadPart;
+		fileTime -= 116444736000000000ULL;
+		finfo->timestamp = (uint32_t)(fileTime / 10000000ULL);
+
+		// Close the find handle
+		FindClose(hFind);
+
+		return true;
+	}
+
+	fs_file_t *flash_fs_opendir(const char *path)
+	{
+		fs_file_t *fp = (fs_file_t *)calloc(1, sizeof(fs_file_t));
+		char dir[256] = ".";
+		if (strcmp("/", path))
+		{
+			strcat(dir, path);
+		}
+
+		if (fp)
+		{
+			fs_file_info_t info = {0};
+			flash_fs_finfo(path, &info);
+			fp->file_ptr = opendir(dir);
+			if (fp->file_ptr)
+			{
+				memcpy(&fp->file_info, &info, sizeof(fs_file_info_t));
+				return fp;
+			}
+			fs_safe_free(fp);
+		}
+
+		return NULL;
+	}
+
+	fs_file_t *flash_fs_open(const char *path, const char *mode)
+	{
+
+		fs_file_info_t finfo;
+		char file[256] = ".";
+		if (strcmp("/", path))
+		{
+			strcat(file, path);
+		}
+
+		if (flash_fs_finfo(path, &finfo))
+		{
+			fs_file_t *fp = (fs_file_t *)calloc(1, sizeof(fs_file_t));
+			if (fp)
+			{
+				if (!finfo.is_dir)
+				{
+					fp->file_ptr = fopen(file, mode);
+					if (fp->file_ptr)
+					{
+						memset(fp->file_info.full_name, 0, sizeof(fp->file_info.full_name));
+						fp->file_info.full_name[0] = '/';
+						fp->file_info.full_name[1] = flash_fs.drive;
+						fp->file_info.full_name[2] = '/';
+						strncat(fp->file_info.full_name, finfo.full_name, FS_PATH_NAME_MAX_LEN - 3);
+						fp->file_info.is_dir = finfo.is_dir;
+						fp->file_info.size = finfo.size;
+						fp->file_info.timestamp = finfo.timestamp;
+						fp->fs_ptr = &flash_fs;
+						return fp;
+					}
+					fs_safe_free(fp);
+				}
+				else
+				{
+					return flash_fs_opendir(path);
+				}
+			}
+			return NULL;
+		}
+	}
+
+	size_t flash_fs_read(fs_file_t *fp, uint8_t *buffer, size_t len)
+	{
+		if (fp)
+		{
+			if (fp->file_ptr)
+			{
+				return fread(buffer, 1, len, (FILE *)fp->file_ptr);
+			}
+		}
+		return 0;
+	}
+
+	size_t flash_fs_write(fs_file_t *fp, const uint8_t *buffer, size_t len)
+	{
+		if (fp)
+		{
+			if (fp->file_ptr)
+			{
+				return fwrite(buffer, 1, len, (FILE *)fp->file_ptr);
+			}
+		}
+		return 0;
+	}
+
+	bool flash_fs_seek(fs_file_t *fp, uint32_t position)
+	{
+		if (fp && fp->file_ptr)
+		{
+			fseek((FILE *)fp->file_ptr, position, SEEK_SET);
+			return true;
+		}
+		return false;
+	}
+
+	int flash_fs_available(fs_file_t *fp)
+	{
+		if (fp && fp->file_ptr)
+		{
+			return (fp->file_info.size - ftell((FILE *)fp->file_ptr));
+		}
+		return 0;
+	}
+
+	void flash_fs_close(fs_file_t *fp)
+	{
+		if (fp && fp->file_ptr)
+		{
+			if (fp->file_info.is_dir)
+			{
+				closedir((DIR *)fp->file_ptr);
+			}
+			else
+			{
+				fclose((FILE *)fp->file_ptr);
+			}
+		}
+	}
+
+	bool flash_fs_remove(const char *path)
+	{
+		if (flash_fs.drive)
+		{
+			return remove(path) == 0;
+		}
+	}
+
+	bool flash_fs_mkdir(const char *path)
+	{
+		if (flash_fs.drive)
+		{
+			return mkdir(path) == 0;
+		}
+	}
+
+	bool flash_fs_rmdir(const char *path)
+	{
+		if (flash_fs.drive)
+		{
+			return rmdir(path) == 0;
+		}
+	}
+
+	bool flash_fs_next_file(fs_file_t *fp, fs_file_info_t *finfo)
+	{
+		if (fp && fp->file_ptr)
+		{
+			struct dirent *entry = readdir((DIR *)fp->file_ptr);
+			if (entry != NULL)
+			{
+				flash_fs_finfo(entry->d_name, finfo);
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**
@@ -899,6 +1098,22 @@ extern "C"
 		start_timer(20, &ticksimul);
 		pthread_create(&thread_io, NULL, &ioserver, NULL);
 		mcu_enable_global_isr();
+		flash_fs = {
+				.drive = 'C',
+				.open = flash_fs_open,
+				.read = flash_fs_read,
+				.write = flash_fs_write,
+				.seek = flash_fs_seek,
+				.available = flash_fs_available,
+				.close = flash_fs_close,
+				.remove = flash_fs_remove,
+				.opendir = flash_fs_opendir,
+				.mkdir = flash_fs_mkdir,
+				.rmdir = flash_fs_rmdir,
+				.next_file = flash_fs_next_file,
+				.finfo = flash_fs_finfo,
+				.next = NULL};
+		fs_mount(&flash_fs);
 	}
 
 	int main(int argc, char **argv)
@@ -910,6 +1125,26 @@ extern "C"
 		}
 		return 0;
 	}
+
+	uint8_t itp_set_step_mode(uint8_t mode) { return 0; }
+
+	uint32_t mcu_free_micros(void)
+	{
+		return (uint32_t)(mcu_free_micros() % 1000);
+	}
+
+	/**
+	 *Solve compiler issues
+	 */
+	void mcu_io_reset(void)
+	{
+	}
+	void nvm_start_read(uint16_t address) {}
+	void nvm_start_write(uint16_t address) {}
+	uint8_t nvm_getc(uint16_t address) { return mcu_eeprom_getc(address); }
+	void nvm_putc(uint16_t address, uint8_t c) { mcu_eeprom_putc(address, c); }
+	void nvm_end_read(void) {}
+	void nvm_end_write(void) { mcu_eeprom_flush(); }
 #ifdef __cplusplus
 }
 #endif

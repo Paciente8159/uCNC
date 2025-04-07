@@ -118,8 +118,11 @@ extern "C"
 
 	uint8_t mc_incremental_jog(float *target_offset, motion_data_t *block_data);
 
+	void mc_flush_pending_motion(void);
+
 #ifdef ENABLE_G39_H_MAPPING
 	uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data_t *block_data);
+	void mc_clear_hmap(void);
 #endif
 
 #ifdef ENABLE_MOTION_CONTROL_PLANNER_HIJACKING

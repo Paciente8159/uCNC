@@ -24,13 +24,17 @@ extern "C"
 {
 #endif
 
+#ifndef MCU
+#define MCU MCU_ESP32
+#endif
+
 #ifndef BOARD_NAME
 #define BOARD_NAME "ESP32 SHIELD V3"
 #endif
 
 #include "boardmap_wemos_d1_r32.h"
 
-//swap limit z and replace pwm by spin enable pin
+// swap limit z and replace pwm by spin enable pin
 #ifdef LIMIT_Z_BIT
 #undef LIMIT_Z_BIT
 #endif
@@ -39,7 +43,7 @@ extern "C"
 #endif
 
 // Grbl 0.8 limit z
-#define LIMIT_Z_BIT 23  // assigns LIMIT_Z pin
+#define LIMIT_Z_BIT 23 // assigns LIMIT_Z pin
 
 // Grbl 0.8 spindle en
 #define PWM0_BIT 19 // assigns PWM0 pin

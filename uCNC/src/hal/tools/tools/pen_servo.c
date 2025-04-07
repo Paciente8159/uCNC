@@ -31,13 +31,10 @@
 #ifndef PEN_SERVO_LOW
 #define PEN_SERVO_LOW 50
 #endif
-#ifndef PEN_SERVO_MID
-#define PEN_SERVO_MID 127
-#endif
 #ifndef PEN_SERVO_HIGH
 #define PEN_SERVO_HIGH 255
 #endif
-#define PEN_SERVO_RANGE (ABS((PEN_SERVO_HIGH - PEN_SERVO_LOW)))
+#define PEN_SERVO_RANGE ((PEN_SERVO_HIGH) - (PEN_SERVO_LOW))
 
 static void startup_code(void)
 {
@@ -62,10 +59,10 @@ static int16_t range_speed(int16_t value, uint8_t conv)
 
 	if (!conv)
 	{
-		value = (int16_t)((PEN_SERVO_RANGE) * (((float)value) / g_settings.spindle_max_rpm) + PEN_SERVO_LOW);
+		value = (int16_t)(((float)PEN_SERVO_RANGE) * ((float)value) / ((float)g_settings.spindle_max_rpm) + PEN_SERVO_LOW);
 	}
 	else{
-		value = (int16_t)roundf((1.0f / (float)PEN_SERVO_RANGE) * (value - PEN_SERVO_LOW) * g_settings.spindle_max_rpm);
+		value = (int16_t)((((float)value) - ((float)PEN_SERVO_LOW)) * ((float)g_settings.spindle_max_rpm) / ((float)PEN_SERVO_RANGE));
 	}
 
 	return value;
@@ -73,18 +70,11 @@ static int16_t range_speed(int16_t value, uint8_t conv)
 
 static void set_speed(int16_t value)
 {
-	if ((value <= 0))
-	{
+  value = CLAMP(PEN_SERVO_LOW, value, PEN_SERVO_HIGH);
+
 #if ASSERT_PIN(PEN_SERVO)
-		io_set_pwm(PEN_SERVO, PEN_SERVO_LOW);
+  io_set_pwm(PEN_SERVO, (uint8_t)value);
 #endif
-	}
-	else
-	{
-#if ASSERT_PIN(PEN_SERVO)
-		io_set_pwm(PEN_SERVO, (uint8_t)value);
-#endif
-	}
 }
 
 const tool_t pen_servo = {

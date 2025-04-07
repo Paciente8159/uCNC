@@ -5,8 +5,408 @@
 µCNC - A universal CNC firmware for microcontrollers
 
 # Changelog
+## [1.12.1] - 01-04-2025
 
-# Changelog
+### Added
+
+- added DISABLE_EEPROM_EMULATION option on STM32 to allow EEPROM emulation disabling while allowing to add an external settings NVM support like SD card or external Flash/EEPROM (#849)
+- added support for STM32H723 chip (and SKR3 board - untested) (#853)
+- added new probing override callback that allows to add and remove custom probing methods besides the PROBE pin input (#855)
+- added Plasma THC tool M101 (THC enable) and M102 (THC disable) commands (#855)
+
+### Changed
+
+- modified Plasma THC tool to become independent of the M62-M65 module command (#855)
+
+### Fixed
+
+- fixed parser position update after G28/G30 command (#847)
+- fixed limits inversion mask to match limits masking when custom masks are used (#850)
+- fixed settings print of integer array values (#854)
+
+## [1.12.0] - 10-03-2025
+
+[@DevanshGarg31](https://github.com/DevanshGarg31)	- added RTheta kinematics (#839)
+
+### Added
+
+- new shift register module that allows not only to add output IO extensions via 74HC595 but also input IO extensions via 74HC165 (#831)
+- added initial support for STM32H7 single core family. This core is still incomplete and is missing some features, SPI DMA and EEPROM emulation (#837) (#846)
+- added RTheta kinematics (#839) (#845)
+
+### Changed
+
+- re-introduced boards friendly names for configuration via Arduino IDE and make files (#834)
+- ESP8266 full core code refactoring with a new custom integration for the new shift register via SPI allowing for mor IO on this MCU (#835)
+- improved loop cycle macro (#799)
+- modified Kinematics settings to be able to define custom settings for kinematics in the kinematics definition file, without the need to change several files (#840)
+
+### Fixed
+
+- fixed softspi speed and mode functions to force settings update on hardware ports (#838)
+- fixed integration of G28.1/G30.1 module and G28/G30 parser execution (#843) (#844)
+- fixed integer array formated print (#842)
+
+## [1.11.2] - 25-01-2025
+
+### Added
+
+- added option to allow rotational axis to ignore limits after homing (#803)
+- added option to use HW SPI on digipot module (#808)
+
+### Changed
+
+- improved settings variable types code readability (#821)
+- improved homing error codes output/logic (#804)
+- modified ESP8266 to use direct GPIO registers (#800)
+
+### Fixed
+
+- fixed var type in some homing settings that caused incorrect value report/storing (#819)
+- fixed SPI typo on ESP8266 bulk send (#800)
+- fixed compilation error with TOOL_COUNT set to 0 (#814)
+- fixed parsing validation for extended commands with axis words (#809)
+- fixed 74hc595 module to get pin value mask (#797)
+- fixed kinematics default settings values for DELTA types (switched) (#796)
+
+## [1.11.1] - 13-12-2024
+
+[@tomjnixon](https://github.com/tomjnixon)	- fixed ignored G53 introduced by #791 (#793)
+																						- fixed status report mask setting introduced in v1.11 (#789)
+
+### Changed
+
+- minor improvements the the AVR ini file and better comments (#784)
+- change to the parser to unify G92 and G10 processing path (#791)
+
+### Fixed
+
+- fixed M2/M30 command behavior to match LinuxCNC (#786)
+- fixed status report Tool info (#787)
+- fixed status report mask setting introduced in v1.11 (#789)
+- fixed G10 L20 behavior when the current modal distance mode is in incremental mode (#791)
+- fixed cycle feed and spindle update in a canned cycle (#788)
+- fixed/improved motion mode validation (#792)
+- fixed ignored G53 introduced by #791 (#793)
+- fixed step generation ISR algorithm for LPC17XX (#794)
+
+## [1.11.0] - 20-11-2024
+
+### Added
+
+- added support for printing values of numbered and via [messages](https://linuxcnc.org/docs/html/gcode/overview.html#gcode:messages)
+- added support for read-only [predifined named parameters](https://linuxcnc.org/docs/html/gcode/overview.html#gcode:predefined-named-parameters). Parameters can also be printed via $# command followed by the parameter number or parameter name (#767)
+- added support for [O-Codes similar to LinuxCNC](https://linuxcnc.org/docs/html/gcode/o-code.html). O-Codes or subrotines runs custom GCode code and perform conditional logic and complex loops. O-Codes run from media storage .nc files thus each subrotine is self contained and it's not necessary to declare the SUB and ENDSUB O-Codes. The O-Codes must reside in the root system file of a pre-configured FS (C for MCU Flash FS or D for SD card FS). (#765) (#769)
+- settings hardened safety features. On settings loading if an error is detected the machine enters locked mode and requires a full setting reset from the user before allowing unlock. This using the machine if the settings are not correctly loaded preventing failures when using settings from movable media sources like SD cards. Also on settings saving error the system will keep retrying to save the setting in case a write error occurs but allows the program to continue flowing. This option can be turned off by enabling ´DISABLE_SAFE_SETTINGS´ in the cnc_config.h file (#761) (#762)
+- self implemented subset/custom of stdio printf helpers. It's now possible to print formated messages via protocol. No need to do specific calls to print variables like numbers, strings, char, ip addresse, bytes, etc... (#760)
+- Debug messages now have an intermediate buffer that stores the output before printing it to prevent outputing debug messages in the middle of onging protocol messages (#760)
+- SPI with DMA support for RP2040 (#713)
+- Added initial support for RP2350 (#770)
+
+### Changed
+
+- all communications calls to output messages now are done via the proto_xxx calls in grbl_protocol.h. No more calls to serial stream directly mixed with protocol calls (#760)
+- improvements to the debug message system. Now a single call to DBGMSG macro is used. The same principle of formated messages is applied (#760)
+- modified/fixed emulated ONEWIRE transmission to use active output on low level logic (#778)
+- improved timeout block macro (#779)(#780)
+
+### Fixed
+
+- added custom MCU build option to fix PIO build errors using overrides (#764)
+- fixed/moved all custom PIO configurations generated in the web config builder to the platformio.ini file (fixes custom builds) (#766)
+- added missing checks for ENABLE_NAMED_PARAMETERS (#774)
+- fix parser backtracking char cleaning (#775)
+- several custom printf function fixes (#776)
+- fixed softuart module getc that prevented correct transmission start bit detection(#777)
+- fixed debug stream print overflow and print guard causing issues when the debug stream was not the default stream (#779)(#781)
+- fixed warning on LPC17XX I2C via Arduino Library (#783)
+
+## [1.11.0-rc] - 07-10-2024
+
+### Added
+
+- added support for printing values of numbered and via [messages](https://linuxcnc.org/docs/html/gcode/overview.html#gcode:messages)
+- added support for read-only [predifined named parameters](https://linuxcnc.org/docs/html/gcode/overview.html#gcode:predefined-named-parameters). Parameters can also be printed via $# command followed by the parameter number or parameter name (#767)
+- added support for [O-Codes similar to LinuxCNC](https://linuxcnc.org/docs/html/gcode/o-code.html). O-Codes or subrotines runs custom GCode code and perform conditional logic and complex loops. O-Codes run from media storage .nc files thus each subrotine is self contained and it's not necessary to declare the SUB and ENDSUB O-Codes. The O-Codes must reside in the root system file of a pre-configured FS (C for MCU Flash FS or D for SD card FS). (#765) (#769)
+- settings hardened safety features. On settings loading if an error is detected the machine enters locked mode and requires a full setting reset from the user before allowing unlock. This using the machine if the settings are not correctly loaded preventing failures when using settings from movable media sources like SD cards. Also on settings saving error the system will keep retrying to save the setting in case a write error occurs but allows the program to continue flowing. This option can be turned off by enabling ´DISABLE_SAFE_SETTINGS´ in the cnc_config.h file (#761) (#762)
+- self implemented subset/custom of stdio printf helpers. It's now possible to print formated messages via protocol. No need to do specific calls to print variables like numbers, strings, char, ip addresse, bytes, etc... (#760)
+- Debug messages now have an intermediate buffer that stores the output before printing it to prevent outputing debug messages in the middle of onging protocol messages (#760)
+
+### Changed
+
+- all communications calls to output messages now are done via the proto_xxx calls in grbl_protocol.h. No more calls to serial stream directly mixed with protocol calls (#760)
+- improvements to the debug message system. Now a single call to DBGMSG macro is used. The same principle of formated messages is applied (#760)
+
+### Fixed
+
+- added custom MCU build option to fix PIO build errors using overrides (#764)
+- fixed/moved all custom PIO configurations generated in the web config builder to the platformio.ini file (fixes custom builds) (#766)
+
+## [1.10.2] - 07-10-2024
+
+[@ademenev](https://github.com/ademenev)	- new alternative axis configurations for CoreXY kinematics (#750)
+[@ricochet1k](https://github.com/ricochet1k)	- fixed STM32 prescaller calculations (#757)
+
+### Added
+
+- new custom PIO scripts to allow automated module download and configuration (#754)
+- new alternative axis configurations for CoreXY kinematics (#750)
+
+### Fixed
+
+- fixed STM32 I2C IO alternate function configurations (#755)
+- fixed debug stream configuration (#756)
+- fixed STM32 prescaller calculations (#757)
+- fixed STM32 SPI transmit function (#758)
+- several platform/framework version errors and Arduino IDE build errors fixed
+
+
+## [1.10.1] - 12-09-2024
+
+[@patryk3211](https://github.com/patryk3211)	- modified system menu jog parameters to be globally accessible (#740)
+[@etet100](https://github.com/etet100)	- fixed typo on steppers timeout sleep build flag
+
+### Added
+
+- new overridable PIO configuration ini file to integrate with the Web Builder and allow configuration customizations (#746)
+- added boardmap for AVR Melzi v1.1.4 board (#749)
+- added several PIO environment, one for each architecture to allow compilation for custom boards generated via Web Builder (#752)
+- added new option to force HAL to set the IO pin direction every time there is a request to change the pin value. This is now the default for ESP32 to fix GPIO configuration lost mid execution (on resets, drivers reconfigurations, etc..) (#753)
+
+### Changed
+
+- modified system menu jog parameters to be globally accessible (#740)
+- several modifications to PIO ini files, boardmaps and configurations to improve board customization via Web Builder (#752)
+
+### Fixed
+
+- locked RP2040 build platform version to prevent compilation issues to breaking changes (#739)
+- fixed STM32F4 APB2 configuration macros that could try to use invalid values (#738)
+- fixed ESP32 mcumap typos and bugs (#741) (#744)
+- fixed software SPI resource locking bug (#743)
+- fixed ESP32 SPI initialization functions that cause system crashes (#745)
+- fixed issue with ESP32 were GPIO would loose the initial configuration and returned to the state at boot time (#747) (#753)
+- fixed typo on steppers timeout sleep build flag
+- fixed ESP32 software generated signals for IO extenders (#748)(#753)
+- fixed query status response when sender uses a carriage return/linefeed char after the question mark making the firmware respond with an OK before the status (UGS for example) and make the sender fail to recogize the response (#751)
+
+## [1.10.0] - 16-08-2024
+
+[@patryk3211](https://github.com/patryk3211)	- added DMA supported SPI bulk transfers for all STM32 architectures and SAMD21 (#700) (#714)
+																							- system_menu_goto is now a global function (#730)
+																							- added extra pre-built actions to system menu and added friendly macros to menu pages number system (#718)
+																							- additional system menu language strings (#735)
+[@fooker](https://github.com/fooker)					- fixed servo pen tool speed range calculation callback (#733)
+
+### Added
+
+- added general support for SPI bulk transfers and modified SPI and SoftSPI HAL. (#701)(#712)
+- added DMA supported SPI bulk transfers for all STM32 architectures and SAMD21. (#700) (#714)
+- new module resource guard to allow access locks to shared hardware and software resources. simplified/removed soft/hard SPI config struck and lock flags(#716)
+- new pin mapping helper that allow an easier pin mapping definition/setup for boardmaps (#722)
+- extended generic IO pin range from 32 to 50 (#725)
+- new module event listeners with resource sharing lock guard (#728)
+- new MKS Robin Nano v3.1 boardmap (#729)
+- added support for the SPI2 port on all architectures that support it (#724)
+- added extra pre-built actions to system menu and added friendly macros to menu pages number system (#718)
+- additional system menu language strings (#735)
+- added stepper idle timeout functionality via $1 parameter (#734)
+
+### Changed
+
+- better SPI sharing by separation of hardware and software configurations and settings, and better busy state keeping (#715)
+- added function to be able to modify a renderer/action callback for any system menu page and added extensible action code handler (#717)
+- locked STM32 framework locking to prevent incorrect PIO configuration errors (#726)
+-  system_menu_goto is now a global function. It also makes the function set action timeout and redraw flags to make sure the new screen gets shown even if it's not called from system_menu_action (#730)
+- modified configurable STM32F4 and STM32F1 system clocks configuration (#732)
+
+### Fixed
+
+- fixed file system system commands to match #696. This was preventing commands from propagating (#705)
+- fixed ESP8266 calls to get mcu time in microseconds and SPI transfer start (#707)
+- fixed activity pin declaration on SKR Pro V1.2 board (#723)
+- fixed typos (#731)
+- fixed missing generic IO pins value reading and status print (#736) (#737)
+- fixed servo pen tool speed range calculation callback (#733)
+
+## [1.9.4] - 20-07-2024 (republished)
+
+[@patryk3211](https://github.com/patryk3211) - fixed STM32Fx boards SPI implementation (#699)
+
+### Added
+
+- added HAL control access to the SPI CS pin to avoid having to waste a DOUT pin to control it. (#704)
+
+### Changed
+
+- modified flags for ESP32 to force Arduino SPI version (some boards seem to have problems with the SDK version) (#695)
+- modified/merged entry point of user and architecture/board custom Grbl/System commands. This also fixed an issue that made impossible to pass arguments to user commands when the board had custom commands, since the buffer was parsed before command was evaluated for execution. (#696)
+- reverted #695 and #691 for ESP32 Arduino SPI code
+
+### Fixed
+
+- fixed STM32Fx boards compilation errors is probe pin was undefined (#698)
+- fixed STM32Fx boards SPI implementation (#699)
+- fixed ESP32 boards SPI frequency/mode configuration (#703)
+- fixed incomplete code propagation of #696. This prevented Grbl/System commands to propagate correctly and directly affected mount and unmount command of the SD card module (#705)
+- fixed file system commands parsing
+
+## [1.9.3] - 07-07-2024
+
+[@patryk3211](https://github.com/patryk3211) - fixed homing pulloff fail alarm code (#689) and 2 phase homing cycle (#690)
+
+### Added
+
+- added new option to do a 2 phase homing cycle. Instead of the default fast-seek/slow-pulloff the new option modifies the behavior to fast-seek/fast-pulloff/slow-seek/slow-pulloff. This might increase homing repeatability (#690)
+
+### Changed
+
+- modified homing cycle to make code smaller (#693)
+- improved softspi module and exposed HW SPI struct if available via softspi. This as several advantages and allows to share the same HW SPI in different speeds and modes. Also soft SPI now initializes pins on config. This fixed issues were the RTOS or Arduino modified the initial pin setting that was initialized by µCNC. (#691)
+
+### Fixed
+
+- fixed homing pulloff fail alarm code (#689)
+
+## [1.9.2] - 13-06-2024
+
+### Added
+
+- option to allow RS274NGC expression and numbered parameters parsing (#688)
+
+## [1.9.1] - 03-05-2024
+
+### Added
+
+- added new option to run the step generator interpolator in an ISR task and outside of the main loop. This should ensures the interpolator and the step ISR never gets starved and might aid to future code simplification (#685)
+
+### Changed
+
+- modified platformIO configuration files to include common libraries via the main platform.ini file (like u8g2)
+
+### Fixed
+
+- fixed G39/Height map clearing calls (#683)
+- fixed file system typo that caused to build errors (#682)
+
+## [1.9.0] - 18-04-2024
+
+### Added
+
+- added support for STM32F0 core (#681)
+- new file system module. A C wrapper to work with files (in Flash or external memories) (#674)
+- new generic, customizable ring buffer for communications (#676)
+- new option to run RP2040 in multicore mode (experimental) (#677)
+
+### Changed
+
+- force DSS mode in THC tool mode (#625)
+- decouple step encoder position from the interpolator step position (#630)
+
+### Fixed
+
+- fix systems sync after HMap generation and retration motions between probes (#680)
+
+## [1.9.0-beta] - 11-04-2024
+
+### Added
+
+- new file system module. A C wrapper to work with files (in Flash or external memories) (#674)
+- new generic, customizable ring buffer for communications (#676)
+- new option to run RP2040 in multicore mode (experimental) (#677)
+
+### Changed
+
+- force DSS mode in THC tool mode (#625)
+- decouple step encoder position from the interpolator step position (#630)
+
+### Fixed
+
+- fix systems sync after HMap generation and retration motions between probes (#680)
+
+## [1.8.11] - 03-04-2024
+
+### Fixed
+
+- fixed interpolator deacceleation steps calculations if time slices less then 1 (#678)
+
+## [1.8.10] - 29-03-2024
+
+### Fixed
+
+- prevent floating point round errors in speed calculations when time slices are too small (#673)
+
+## [1.8.9] - 26-03-2024
+
+## Contributors
+[@lonelycorn](https://github.com/lonelycorn) - fixed DEBUG_STREAM when only one stream available (#664)
+[@kunikonno](https://github.com/kunikonno) - fixed WiFi settings loading at initialization (#659)(#660)
+
+### Added
+
+- new flash files JSON API (RP2040, ESP32 and ESP8266) (#663)
+
+### Changed
+
+- clamp DSS_CUTOFF_FREQ in the sanity check (#670)
+- added custom function to allow predefining IO state at startup (#669)
+- added spindle relay tool speed range function (#658)
+
+### Fixed
+
+- prevent DEBUG_STREAM printing before initialization (#666)
+- fixed DEBUG_STREAM when only one stream available (#664)
+- fixed ESP8266 EEPROM WiFi saved settings not loaded at initialization (#660)
+- fixed RP2040 EEPROM WiFi saved settings not loaded at initialization (#659)
+
+## [1.8.8] - 03-03-2024
+
+## Contributors
+[@lonelycorn](https://github.com/lonelycorn) - modified mcumap macros of ESP32 to improve support for ESP32 family (#649) and removed duplicated servo variables for ESP32 (#648)
+[@ademenev](https://github.com/ademenev) - added kinematics option for MP Scara (#645)
+
+### Added
+
+- Fs page update endpoint (#612)
+- added option for rotational axis work always in relative distances (#624)
+- STM32 NucleoF411RE boardmap with CNC Shield V3 (#628)
+- added option to enable translated pins names status print (#634)
+- added kinematics option for MP Scara (#645)
+- added aditional Grbl emulation level to prevent miss detection of senders (#650)
+- added option to do limit detection at the step ISR (#652)
+
+### Changed
+
+- allow execution of main loop events with HOLD condition active (#633)
+- modified extended settings event hooks to be separated from other overriding events and propagations methods (#635) (#637) (#641)
+- allow detached ports to keep or not an internal buffer (#639)
+- cross architecture definition of NVM_STORAGE_SIZE and setting (#643)
+- moved spindle restore logic to planner override (#647)
+- modified mcumap macros of ESP32 to improve support for ESP32 family (#649) (#654)
+- modified endpoints to support handling of wildcard terminators (#655)
+- on command error now also the parser is forced to sync with other sub-systems (#657)
+- modified behavior of Cycle Start/Resume button to execute only once per press (#657)
+
+### Fixed
+
+- fixed extensions settings event handling that prevented extended settings to be saved (#615)
+- fixed STM32F4 compilation error when I2C HW was defined (#615)
+- fixed program stall while waiting for timeout condition inside an ISR (#619)
+- fixed STM32F4 SPI configuration AFIO fixed (#622)
+- fixed range function for Plasma THC (#627)
+- fixed STM32F4 APB registers of timers in the mcumap (#629)
+- fixed compilation error when tool count was set to 0 (#632)
+- fixed realtime command spindle toggle control over the tool (#631)
+- fixed spindle restart message spawning (#636)
+- fixed uart2 detach from main protocol typo in multiple boards (#638)
+- fixed reset command parsing and early execution (#642)
+- fixed spindle stop/restore after cancel a jog (#644)
+- fixed dwell/delay execute even after a reset occured (#646)
+- removed duplicated servo variables for ESP32 (#648)
+- fixed low speed clock options for STM32F1 (#653)
+- fixed STM32 I2C stop bit logic to prevent trail of pulses at the end of a read operation (#656)
+- fixed pending jog motions after jog cancel (#657)
+- fixed interpolator acceleration calculations to prevent ultra thin time sampling windows (#657)
 
 ## [1.8.7] - 03-02-2024
 
@@ -1489,7 +1889,27 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
-[1.8.6]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.5
+[1.12.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.12.1
+[1.12.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.12.0
+[1.11.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.11.2
+[1.11.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.11.1
+[1.11.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.11.0
+[1.11.0-rc]: https://github.com/Paciente8159/uCNC/releases/tag/v1.11.0-rc
+[1.10.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.10.2
+[1.10.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.10.1
+[1.10.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.10.0
+[1.9.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.9.4
+[1.9.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.9.3
+[1.9.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.9.2
+[1.9.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.9.1
+[1.9.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.9.0
+[1.9.0-beta]: https://github.com/Paciente8159/uCNC/releases/tag/v1.9.0-beta
+[1.8.11]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.11
+[1.8.10]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.10
+[1.8.9]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.9
+[1.8.8]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.8
+[1.8.7]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.7
+[1.8.6]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.6
 [1.8.5]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.5
 [1.8.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.4
 [1.8.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.3

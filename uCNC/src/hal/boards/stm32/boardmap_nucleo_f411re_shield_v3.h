@@ -24,12 +24,16 @@ extern "C"
 {
 #endif
 
+#ifndef MCU
+#define MCU MCU_STM32F4X
+#endif
+
 #ifndef BOARD_NAME
 #define BOARD_NAME "STM32 Nucleo F411RE"
 #endif
 
 // Setup step pins
-#define STEP0_BIT 10	 // assigns STEP0 pin
+#define STEP0_BIT 10 // assigns STEP0 pin
 #define STEP0_PORT A // assigns STEP0 port
 #define STEP1_BIT 3	 // assigns STEP1 pin
 #define STEP1_PORT B // assigns STEP1 port
@@ -41,7 +45,7 @@ extern "C"
 // Setup dir pins
 #define DIR0_BIT 4	// assigns DIR0 pin
 #define DIR0_PORT B // assigns DIR0 port
-#define DIR1_BIT 10	// assigns DIR1 pin
+#define DIR1_BIT 10 // assigns DIR1 pin
 #define DIR1_PORT B // assigns DIR1 port
 #define DIR2_BIT 8	// assigns DIR2 pin
 #define DIR2_PORT A // assigns DIR2 port
@@ -49,11 +53,11 @@ extern "C"
 // #define DIR3_PORT A // assigns DIR3 port but must comment Spindle PWM and Dir
 
 // Setup limit pins
-#define LIMIT_X_BIT 7 // assigns LIMIT_X pin
+#define LIMIT_X_BIT 7	 // assigns LIMIT_X pin
 #define LIMIT_X_PORT C // assigns LIMIT_X port
-#define LIMIT_Y_BIT 6 // assigns LIMIT_Y pin
+#define LIMIT_Y_BIT 6	 // assigns LIMIT_Y pin
 #define LIMIT_Y_PORT B // assigns LIMIT_Y port
-#define LIMIT_Z_BIT 7 // assigns LIMIT_Z pin
+#define LIMIT_Z_BIT 7	 // assigns LIMIT_Z pin
 #define LIMIT_Z_PORT A // assigns LIMIT_Z port
 
 // Enable limits switch interrupt
@@ -128,12 +132,12 @@ extern "C"
 
 	// Setup the Step Timer used has the heartbeat for µCNC
 	// On STM32F1x cores this will default to Timer 2
-	//#define ITP_TIMER 2
+	// #define ITP_TIMER 2
 
 	// Setup the Timer to be used exclusively by servos in µCNC.
 	// If no servos are configured then the timer is free for other functions (like PWM) (even if defined in the board)
 	// On STM32F1x cores this will default to Timer 3
-	//#define SERVO_TIMER 3
+	// #define SERVO_TIMER 3
 
 // I2C port
 #define I2C_CLK_BIT 8
@@ -141,7 +145,7 @@ extern "C"
 #define I2C_DATA_BIT 9
 #define I2C_DATA_PORT B
 #define I2C_PORT 1
-// #define I2C_ADDRESS 1
+	// #define I2C_ADDRESS 1
 
 #define ONESHOT_TIMER 1
 

@@ -20,8 +20,15 @@
 #include "../../cnc.h"
 
 #if (KINEMATIC == KINEMATIC_COREXY)
-#include <stdio.h>
+
 #include <math.h>
+
+#if (COREXY_AXIS == COREXY_AXIS_XZ || COREXY_AXIS == COREXY_AXIS_YZ)
+#define COREXY_EXTRA_AXIS_START 3
+#else
+#define COREXY_EXTRA_AXIS_START 2
+#endif
+
 
 void kinematics_init(void)
 {
@@ -29,11 +36,21 @@ void kinematics_init(void)
 
 void kinematics_apply_inverse(float *axis, int32_t *steps)
 {
+#if (COREXY_AXIS == COREXY_AXIS_XZ)
+	steps[0] = (int32_t)lroundf(g_settings.step_per_mm[0] * (axis[AXIS_X] + axis[AXIS_Z]));
+	steps[1] = (int32_t)lroundf(g_settings.step_per_mm[1] * axis[AXIS_Y]);
+	steps[2] = (int32_t)lroundf(g_settings.step_per_mm[2] * (axis[AXIS_X] - axis[AXIS_Z]));
+#elif (COREXY_AXIS == COREXY_AXIS_YZ)
+	steps[0] = (int32_t)lroundf(g_settings.step_per_mm[0] * axis[0]);
+	steps[1] = (int32_t)lroundf(g_settings.step_per_mm[1] * (axis[AXIS_Y] + axis[AXIS_Z]));
+	steps[2] = (int32_t)lroundf(g_settings.step_per_mm[2] * (axis[AXIS_Y] - axis[AXIS_Z]));
+#else
 	steps[0] = (int32_t)lroundf(g_settings.step_per_mm[0] * (axis[AXIS_X] + axis[AXIS_Y]));
 	steps[1] = (int32_t)lroundf(g_settings.step_per_mm[1] * (axis[AXIS_X] - axis[AXIS_Y]));
+#endif
 
-#if AXIS_COUNT > 2
-	for (uint8_t i = 2; i < AXIS_COUNT; i++)
+#if AXIS_COUNT > COREXY_EXTRA_AXIS_START
+	for (uint8_t i = COREXY_EXTRA_AXIS_START; i < AXIS_COUNT; i++)
 	{
 		steps[i] = (int32_t)lroundf(g_settings.step_per_mm[i] * axis[i]);
 	}
@@ -42,11 +59,21 @@ void kinematics_apply_inverse(float *axis, int32_t *steps)
 
 void kinematics_apply_forward(int32_t *steps, float *axis)
 {
+#if (COREXY_AXIS == COREXY_AXIS_XZ)
+	axis[AXIS_X] = (float)(0.5f * (float)(steps[0] + steps[2]) / g_settings.step_per_mm[0]);
+	axis[AXIS_Z] = (float)(0.5f * (float)(steps[0] - steps[2]) / g_settings.step_per_mm[2]);
+  axis[AXIS_Y] = (((float)steps[1]) / g_settings.step_per_mm[1]);
+#elif (COREXY_AXIS == COREXY_AXIS_YZ)
+  axis[AXIS_X] = (((float)steps[0]) / g_settings.step_per_mm[0]);
+	axis[AXIS_Y] = (float)(0.5f * (float)(steps[1] + steps[2]) / g_settings.step_per_mm[1]);
+	axis[AXIS_Z] = (float)(0.5f * (float)(steps[1] - steps[2]) / g_settings.step_per_mm[2]);
+#else
 	axis[AXIS_X] = (float)(0.5f * (float)(steps[0] + steps[1]) / g_settings.step_per_mm[0]);
 	axis[AXIS_Y] = (float)(0.5f * (float)(steps[0] - steps[1]) / g_settings.step_per_mm[1]);
+#endif
 
-#if AXIS_COUNT > 2
-	for (uint8_t i = 2; i < AXIS_COUNT; i++)
+#if AXIS_COUNT > COREXY_EXTRA_AXIS_START
+	for (uint8_t i = COREXY_EXTRA_AXIS_START; i < AXIS_COUNT; i++)
 	{
 		axis[i] = (((float)steps[i]) / g_settings.step_per_mm[i]);
 	}
@@ -56,70 +83,80 @@ void kinematics_apply_forward(int32_t *steps, float *axis)
 uint8_t kinematics_home(void)
 {
 	float target[AXIS_COUNT];
+	uint8_t error = STATUS_OK;
 
 #ifndef DISABLE_ALL_LIMITS
 #if AXIS_Z_HOMING_MASK != 0
-	if (mc_home_axis(AXIS_Z_HOMING_MASK, LINACT2_LIMIT_MASK))
+	error = mc_home_axis(AXIS_Z_HOMING_MASK, LINACT2_LIMIT_MASK);
+	if (error != STATUS_OK)
 	{
-		return KINEMATIC_HOMING_ERROR_Z;
+		return error;
 	}
 #endif
 
 #ifndef ENABLE_XY_SIMULTANEOUS_HOMING
 
 #if AXIS_X_HOMING_MASK != 0
-	if (mc_home_axis(AXIS_X_HOMING_MASK, LINACT0_LIMIT_MASK))
+	error = mc_home_axis(AXIS_X_HOMING_MASK, LINACT0_LIMIT_MASK);
+	if (error != STATUS_OK)
 	{
-		return KINEMATIC_HOMING_ERROR_X;
+		return error;
 	}
 #endif
 
 #if AXIS_Y_HOMING_MASK != 0
-	if (mc_home_axis(AXIS_Y_HOMING_MASK, LINACT1_LIMIT_MASK))
+	error = mc_home_axis(AXIS_Y_HOMING_MASK, LINACT1_LIMIT_MASK);
+	if (error != STATUS_OK)
 	{
-		return KINEMATIC_HOMING_ERROR_Y;
+		return error;
 	}
 #endif
 
 #else
 
 #if AXIS_X_HOMING_MASK != 0 && AXIS_Y_HOMING_MASK != 0
-	if (mc_home_axis(AXIS_X_HOMING_MASK | AXIS_Y_HOMING_MASK, LINACT0_LIMIT_MASK | LINACT1_LIMIT_MASK))
+	error = mc_home_axis(AXIS_X_HOMING_MASK | AXIS_Y_HOMING_MASK, LINACT0_LIMIT_MASK | LINACT1_LIMIT_MASK);
+	if (error != STATUS_OK)
 	{
-		return KINEMATIC_HOMING_ERROR_XY;
+		return error;
 	}
 #elif AXIS_X_HOMING_MASK != 0
-	if (mc_home_axis(AXIS_X_HOMING_MASK, LINACT0_LIMIT_MASK))
+	error = mc_home_axis(AXIS_X_HOMING_MASK, LINACT0_LIMIT_MASK);
+	if (error != STATUS_OK)
 	{
-		return KINEMATIC_HOMING_ERROR_X;
+		return error;
 	}
 #elif AXIS_Y_HOMING_MASK != 0
-	if (mc_home_axis(AXIS_Y_HOMING_MASK, LINACT1_LIMIT_MASK))
+	error = mc_home_axis(AXIS_Y_HOMING_MASK, LINACT1_LIMIT_MASK);
+	if (error != STATUS_OK)
 	{
-		return KINEMATIC_HOMING_ERROR_Y;
+		return error;
 	}
 #endif
 
 #endif
 
 #if AXIS_A_HOMING_MASK != 0
-	if (mc_home_axis(AXIS_A_HOMING_MASK, LINACT3_LIMIT_MASK))
+	error = mc_home_axis(AXIS_A_HOMING_MASK, LINACT3_LIMIT_MASK);
+	if (error != STATUS_OK)
 	{
-		return KINEMATIC_HOMING_ERROR_A;
+		return error;
 	}
 #endif
 
 #if AXIS_B_HOMING_MASK != 0
-	if (mc_home_axis(AXIS_B_HOMING_MASK, LINACT4_LIMIT_MASK))
+	error = mc_home_axis(AXIS_B_HOMING_MASK, LINACT4_LIMIT_MASK);
+	if (error != STATUS_OK)
 	{
-		return KINEMATIC_HOMING_ERROR_B;
+		return error;
 	}
 #endif
 
 #if AXIS_C_HOMING_MASK != 0
-	if (mc_home_axis(AXIS_C_HOMING_MASK, LINACT5_LIMIT_MASK))
+	error = mc_home_axis(AXIS_C_HOMING_MASK, LINACT5_LIMIT_MASK);
+	if (error != STATUS_OK)
 	{
-		return KINEMATIC_HOMING_ERROR_C;
+		return error;
 	}
 #endif
 
@@ -137,7 +174,7 @@ uint8_t kinematics_home(void)
 	block_data.spindle = 0;
 	block_data.dwell = 0;
 	// starts offset and waits to finnish
-	mc_line(target, &block_data);
+	error = mc_line(target, &block_data);
 	itp_sync();
 #endif
 
@@ -154,7 +191,7 @@ uint8_t kinematics_home(void)
 	// reset position
 	itp_reset_rt_position(target);
 
-	return STATUS_OK;
+	return error;
 }
 
 bool kinematics_check_boundaries(float *axis)

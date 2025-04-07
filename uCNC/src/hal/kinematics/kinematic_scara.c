@@ -20,7 +20,7 @@
 #include "../../cnc.h"
 
 #if (KINEMATIC == KINEMATIC_SCARA)
-#include <stdio.h>
+
 #include <stdint.h>
 #include <math.h>
 
@@ -51,10 +51,14 @@ void kinematics_apply_inverse(float *axis, int32_t *steps)
 
 	float distance = (axis[AXIS_X] * axis[AXIS_X] + axis[AXIS_Y] * axis[AXIS_Y] - arm * arm - forearm * forearm) / (2.0f * arm * forearm);
 	float angle2 = acosf(distance);
-
-	steps[1] = (int32_t)roundf(angle2 * DOUBLE_PI_INV * g_settings.step_per_mm[1]);
 	float angle1 = atan2f(axis[AXIS_Y], axis[AXIS_X]) - atan2f(forearm * sin(angle2), (arm + forearm * distance));
+
+#ifdef MP_SCARA
+	angle2 += angle1;
+#endif
+
 	steps[0] = (int32_t)roundf(angle1 * DOUBLE_PI_INV * g_settings.step_per_mm[0]);
+	steps[1] = (int32_t)roundf(angle2 * DOUBLE_PI_INV * g_settings.step_per_mm[1]);
 
 #if AXIS_COUNT > 2
 	for (uint8_t i = 2; i < AXIS_COUNT; i++)
@@ -72,7 +76,9 @@ void kinematics_apply_forward(int32_t *steps, float *axis)
 	float joint1 = steps[0] * scara_arm_angle_fact[0];
 	float joint2 = steps[1] * scara_arm_angle_fact[1];
 
+#ifndef MP_SCARA
 	joint2 += joint1;
+#endif
 
 	float arm = g_settings.scara_arm_length;
 	float forearm = g_settings.scara_forearm_length;
@@ -91,47 +97,54 @@ void kinematics_apply_forward(int32_t *steps, float *axis)
 uint8_t kinematics_home(void)
 {
 	float target[AXIS_COUNT];
+	uint8_t error = STATUS_OK;
 
 #ifndef DISABLE_ALL_LIMITS
 #if AXIS_Z_HOMING_MASK != 0
-	if (mc_home_axis(AXIS_Z_HOMING_MASK, LINACT2_LIMIT_MASK))
+	error = mc_home_axis(AXIS_Z_HOMING_MASK, LINACT2_LIMIT_MASK);
+	if (error != STATUS_OK)
 	{
-		return KINEMATIC_HOMING_ERROR_Z;
+		return error;
 	}
 #endif
 
 #if AXIS_X_HOMING_MASK != 0
-	if (mc_home_axis(AXIS_X_HOMING_MASK, LINACT0_LIMIT_MASK))
+	error = mc_home_axis(AXIS_X_HOMING_MASK, LINACT0_LIMIT_MASK);
+	if (error != STATUS_OK)
 	{
-		return KINEMATIC_HOMING_ERROR_X;
+		return error;
 	}
 #endif
 
 #if AXIS_Y_HOMING_MASK != 0
-	if (mc_home_axis(AXIS_Y_HOMING_MASK, LINACT1_LIMIT_MASK))
+	error = mc_home_axis(AXIS_Y_HOMING_MASK, LINACT1_LIMIT_MASK);
+	if (error != STATUS_OK)
 	{
-		return KINEMATIC_HOMING_ERROR_Y;
+		return error;
 	}
 #endif
 
 #if AXIS_A_HOMING_MASK != 0
-	if (mc_home_axis(AXIS_A_HOMING_MASK, LINACT3_LIMIT_MASK))
+	error = mc_home_axis(AXIS_A_HOMING_MASK, LINACT3_LIMIT_MASK);
+	if (error != STATUS_OK)
 	{
-		return (KINEMATIC_HOMING_ERROR_X | KINEMATIC_HOMING_ERROR_Y | KINEMATIC_HOMING_ERROR_Z);
+		return error;
 	}
 #endif
 
 #if AXIS_B_HOMING_MASK != 0
-	if (mc_home_axis(AXIS_B_HOMING_MASK, LINACT4_LIMIT_MASK))
+	error = mc_home_axis(AXIS_B_HOMING_MASK, LINACT4_LIMIT_MASK);
+	if (error != STATUS_OK)
 	{
-		return KINEMATIC_HOMING_ERROR_B;
+		return error;
 	}
 #endif
 
 #if AXIS_C_HOMING_MASK != 0
-	if (mc_home_axis(AXIS_C_HOMING_MASK, LINACT5_LIMIT_MASK))
+	error = mc_home_axis(AXIS_C_HOMING_MASK, LINACT5_LIMIT_MASK);
+	if (error != STATUS_OK)
 	{
-		return KINEMATIC_HOMING_ERROR_C;
+		return error;
 	}
 #endif
 
@@ -156,11 +169,11 @@ uint8_t kinematics_home(void)
 	block_data.spindle = 0;
 	block_data.dwell = 0;
 	// starts offset and waits to finnish
-	mc_line(target, &block_data);
+	error = mc_line(target, &block_data);
 	itp_sync();
 #endif
 	
-	return STATUS_OK;
+	return error;
 }
 
 void kinematics_apply_transform(float *axis)

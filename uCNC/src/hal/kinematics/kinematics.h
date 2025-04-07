@@ -29,6 +29,11 @@ extern "C"
 #define KINEMATIC_LINEAR_DELTA 3
 #define KINEMATIC_DELTA 4
 #define KINEMATIC_SCARA 5
+#define KINEMATIC_DUMMY 99
+
+#define COREXY_AXIS_XY 1
+#define COREXY_AXIS_XZ 2
+#define COREXY_AXIS_YZ 3
 
 #ifdef __cplusplus
 }

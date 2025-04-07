@@ -24,6 +24,10 @@ extern "C"
 {
 #endif
 
+#ifndef MCU
+#define MCU MCU_LPC176X
+#endif
+
 #ifndef BOARD_NAME
 #define BOARD_NAME "RAMPS 1.4 RE-ARM"
 #endif
@@ -85,8 +89,8 @@ extern "C"
 #define RX_PORT 0
 #define TX_PORT 0
 #define RX_PULLUP
-// only uncomment this if other port other then 0 is used
-//#define UART_PORT 0
+	// only uncomment this if other port other then 0 is used
+	// #define UART_PORT 0
 
 #define USB_DM_BIT 30
 #define USB_DM_PORT 0
@@ -123,10 +127,10 @@ extern "C"
 
 	// Setup the Step Timer used has the heartbeat for µCNC
 	// Timer 0 is used by default
-	//#define ITP_TIMER 0
+	// #define ITP_TIMER 0
 	// Setup the SERVO Timer used by µCNC
 	// Timer 1 is set by default
-	//#define SERVO_TIMER 1
+	// #define SERVO_TIMER 1
 
 #define SERVO3_BIT 18
 #define SERVO3_PORT 1
@@ -159,7 +163,7 @@ extern "C"
 // #define DIN31_BIT 0
 // #define DIN31_PORT 0
 
-// hardware SPI (onboard)
+// hardware SPI (onboard SD card)
 #define SPI_SDO_BIT 9
 #define SPI_SDO_PORT 0
 #define SPI_SDI_BIT 8
@@ -170,23 +174,23 @@ extern "C"
 #define SPI_CS_PORT 0
 #define SPI_PORT 1
 
-// hardware SPI (display adapter)
-// #define SPI_SDO_BIT 18
-// #define SPI_SDO_PORT 0
-// #define SPI_SDI_BIT 17
-// #define SPI_SDI_PORT 0
-// #define SPI_CLK_BIT 15
-// #define SPI_CLK_PORT 0
-// #define SPI_CS_BIT 23
-// #define SPI_CS_PORT 0
-// #define SPI_PORT 0
 // sd card detect
 // #define DIN19_BIT 31
 // #define DIN19_PORT 1
 // #define DIN19_PULLUP
 
-// #define SPI_PORT 1
-// #define SPI_FREQ 100000UL
+// hardware SPI (display adapter)
+#define SPI2_SDO_BIT 18
+#define SPI2_SDO_PORT 0
+#define SPI2_SDI_BIT 17
+#define SPI2_SDI_PORT 0
+#define SPI2_CLK_BIT 15
+#define SPI2_CLK_PORT 0
+#define SPI2_CS_BIT 23
+#define SPI2_CS_PORT 0
+#define SPI2_PORT 0
+
+
 // software SPI
 // #define DOUT29_BIT 9
 // #define DOUT29_PORT 0
@@ -195,29 +199,29 @@ extern "C"
 // #define DOUT30_BIT 7
 // #define DOUT30_PORT 0
 
-//pins for smart adapter
-//clk
+// pins for smart adapter
+// clk
 #define DOUT4_BIT 15
 #define DOUT4_PORT 0
-//data
+// data
 #define DOUT5_BIT 18
 #define DOUT5_PORT 0
-//cs
+// cs
 #define DOUT6_BIT 16
 #define DOUT6_PORT 0
 
-//beep
+// beep
 #define DOUT7_BIT 30
 #define DOUT7_PORT 1
-//enc btn
+// enc btn
 #define DIN16_BIT 11
 #define DIN16_PORT 2
 #define DIN16_PULLUP
-//enc 1
+// enc 1
 #define DIN17_BIT 25
 #define DIN17_PORT 3
 #define DIN17_PULLUP
-//enc 2
+// enc 2
 #define DIN18_BIT 26
 #define DIN18_PORT 3
 #define DIN18_PULLUP

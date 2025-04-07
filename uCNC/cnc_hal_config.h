@@ -63,9 +63,18 @@ extern "C"
 #define LIMIT_B_PULLUP_ENABLE
 #define LIMIT_C_PULLUP_ENABLE
 
-// Uncomment to enable weak pull up resistor for probe
-// If the pin is not defined in the board this will be ignored
+/**
+ * Uncomment to enable weak pull up resistor for probe
+ * If the pin is not defined in the board this will be ignored
+ */
 // #define PROBE_PULLUP_ENABLE
+
+/**
+ * Uncomment to enable custom probing overrides
+ * This allows to create a custom probing inputs (like other inputs, software conditions, etc..)
+ * Note that $6 will have no effect on the custom probing logic
+ */
+// #define PROBE_ENABLE_CUSTOM_CALLBACK
 
 // Uncomment to enable weak pull up resistors for control pins
 // If the pin is not defined in the board this will be ignored
@@ -108,12 +117,20 @@ extern "C"
 // #define ENABLE_XY_SIMULTANEOUS_HOMING
 
 /**
+ * Rotational axis - disable limits after homing
+ * Enable this option if you want to disable the limits for rotation axis to work
+ * allowing them to rotatle freely
+ *
+ */
+// #define DISABLE_ROTATIONAL_AXIS_LIMITS_AFTER_HOMING
+
+/**
  * Rotational axis - force relative distances
  * Enable this option if you want the rotation axis to work in relative distance mode only
  * This will mean that no matter if the machine is working in absolute (G90) or relative (G91) coordinates
  * the rotational axis will always calculate the motion in relative distance mode
- * 
-*/
+ *
+ */
 // #define AXIS_A_FORCE_RELATIVE_MODE
 // #define AXIS_B_FORCE_RELATIVE_MODE
 // #define AXIS_C_FORCE_RELATIVE_MODE
@@ -552,6 +569,13 @@ extern "C"
 #ifndef SYSTEM_MENU_MAX_STR_LEN
 // #define SYSTEM_MENU_MAX_STR_LEN 32
 #endif
+
+/**
+ * Force the IO direction to be configure before each request
+ * This sets the pin direction before trying to control it
+ * Some MCU like ESP32 require this option to be enabled because the IO by some SDK function calls without realizing
+ */
+// #define FORCE_HAL_IO_DIRECTION_ONREQUEST
 
 #ifdef __cplusplus
 }

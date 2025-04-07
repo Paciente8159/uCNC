@@ -12,9 +12,9 @@ This wiring can be completely modified by the user.
 | DOUT5   | DISPLAY DAT    |
 | DOUT6   | DISPLAY CS    |
 | DOUT7   | DISPLAY BEEP    |
-| DOUT8   | IC74HC595_DATA    |
-| DOUT9   | IC74HC595_CLK    |
-| DOUT10   | IC74HC595_LATCH    |
+| DOUT8   | SHIFT_REGISTER_DATA    |
+| DOUT9   | SHIFT_REGISTER_CLK    |
+| DOUT10   | SHIFT_REGISTER_LATCH    |
 | DOUT11   | STEPPER_DIGIPOT_CS    |
 | DOUT12   | STEPPER0_MSTEP1    |
 | DOUT13   | STEPPER1_MSTEP1    |
@@ -36,6 +36,24 @@ This wiring can be completely modified by the user.
 | DOUT29   | SOFT_SPI_SDO or TMC_SPI_SDO or STEPPER_DIGIPOT_SDO    |
 | DOUT30   | SOFT_SPI_CLK or TMC_SPI_CLK or STEPPER_DIGIPOT_CLK    |
 | DOUT31   | ACTIVITY_LED    |
+| DOUT32 | |
+| DOUT33 | |
+| DOUT34 | |
+| DOUT35 | |
+| DOUT36 | |
+| DOUT37 | |
+| DOUT38 | |
+| DOUT39 | |
+| DOUT40 | |
+| DOUT41 | |
+| DOUT42 | |
+| DOUT43 | |
+| DOUT44 | |
+| DOUT45 | |
+| DOUT46 | |
+| DOUT47 | |
+| DOUT48 | |
+| DOUT49 | |
 | DIN0   | ENC0_PULSE    |
 | DIN1   | ENC1_PULSE    |
 | DIN2   | ENC2_PULSE    |
@@ -68,3 +86,22 @@ This wiring can be completely modified by the user.
 | DIN29   | SOFT_SPI_SDI or TMC_SPI_SDI or STEPPER_DIGIPOT_SDI    |
 | DIN30   | SOFT_I2C_CLK    |
 | DIN31   | SOFT_I2C_DATA    |
+| DOUT32 | |
+| DOUT33 | |
+| DOUT34 | |
+| DOUT35 | |
+| DOUT36 | |
+| DOUT37 | |
+| DOUT38 | |
+| DOUT39 | |
+| DOUT40 | |
+| DOUT41 | |
+| DOUT42 | |
+| DOUT43 | |
+| DOUT44 | |
+| DOUT45 | |
+| DOUT46 | |
+| DOUT47 | |
+| DOUT48 | |
+| DOUT49 | |
+

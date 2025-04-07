@@ -43,44 +43,49 @@ extern "C"
 #define SOFTUART_HW_RX_FALLBACK mcu_uart2_getc
 #endif
 
-
-#define SOFTUART(NAME, BAUD, TXPIN, RXPIN)                             \
+#define SOFTUART(NAME, BAUD, TXPIN, RXPIN)                           \
 	void NAME##_tx(bool state)                                         \
 	{                                                                  \
-		if (state)                                                     \
-		{                                                              \
-			io_set_output(TXPIN);                                      \
-		}                                                              \
-		else                                                           \
-		{                                                              \
-			io_clear_output(TXPIN);                                    \
-		}                                                              \
+		if (state)                                                       \
+		{                                                                \
+			io_set_output(TXPIN);                                          \
+		}                                                                \
+		else                                                             \
+		{                                                                \
+			io_clear_output(TXPIN);                                        \
+		}                                                                \
+		if (ASSERT_PIN_EXTENDED(TXPIN))                                  \
+		{                                                                \
+			io_extended_pins_update();                                     \
+		}                                                                \
 	}                                                                  \
 	bool NAME##_rx(void)                                               \
 	{                                                                  \
-		return io_get_input(RXPIN);                                    \
+		if (ASSERT_PIN_EXTENDED(RXPIN))                                  \
+		{                                                                \
+			io_extended_pins_update();                                     \
+		}                                                                \
+		return io_get_input(RXPIN);                                      \
 	}                                                                  \
 	void NAME##_wait(void) { mcu_delay_cycles(F_CPU / BAUD); }         \
 	void NAME##_waithalf(void) { mcu_delay_cycles(F_CPU / 2 / BAUD); } \
 	__attribute__((used)) softuart_port_t NAME = {.wait = &NAME##_wait, .waithalf = &NAME##_waithalf, .tx = &NAME##_tx, .rx = &NAME##_rx};
 
-#define ONEWIRE(NAME, BAUD, TRXPIN)                                    \
+#define ONEWIRE(NAME, BAUD, TRXPIN)                                  \
 	void NAME##_tx(bool state)                                         \
 	{                                                                  \
-		if (state)                                                     \
-		{                                                              \
-			io_config_input(TRXPIN);                                   \
-			io_config_pullup(TRXPIN);                                  \
-		}                                                              \
-		else                                                           \
-		{                                                              \
-			io_clear_output(TRXPIN);                                   \
-			io_config_output(TRXPIN);                                  \
-		}                                                              \
+		if (state)                                                       \
+		{                                                                \
+			io_set_output(TRXPIN);                                         \
+		}                                                                \
+		else                                                             \
+		{                                                                \
+			io_clear_output(TRXPIN);                                       \
+		}                                                                \
 	}                                                                  \
 	bool NAME##_rx(void)                                               \
 	{                                                                  \
-		return io_get_input(TRXPIN);                                   \
+		return io_get_input(TRXPIN);                                     \
 	}                                                                  \
 	void NAME##_wait(void) { mcu_delay_cycles(F_CPU / BAUD); }         \
 	void NAME##_waithalf(void) { mcu_delay_cycles(F_CPU / 2 / BAUD); } \

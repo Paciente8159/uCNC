@@ -41,7 +41,6 @@ extern "C"
 #include "cnc_build.h"
 // make the needed includes (do not change the order)
 // include lists of available option
-#include "hal/boards/boards.h"
 #include "hal/mcus/mcus.h"
 #include "hal/kinematics/kinematics.h"
 // user configurations
@@ -53,9 +52,9 @@ extern "C"
 // machine tools configurations
 #include "hal/tools/tool.h" //configures the kinematics for the cnc machine
 // final HAL configurations
-#include "../cnc_hal_config.h"	  //inicializes the HAL hardcoded connections
+#include "../cnc_hal_config.h"		//inicializes the HAL hardcoded connections
 #include "../cnc_hal_overrides.h" //config override file
-#include "modules/ic74hc595.h"	  // io extender
+#include "modules/shift_register.h"		// io extender
 
 	/**
 	 *
@@ -196,9 +195,27 @@ extern "C"
 #endif
 
 #ifdef ENABLE_RT_PROBE_CHECKING
-#ifdef PROBE_ISR
 #undef PROBE_ISR
+#ifdef mcu_enable_probe_isr
+#undef mcu_enable_probe_isr
+#define mcu_enable_probe_isr()
 #endif
+#ifdef mcu_disable_probe_isr
+#undef mcu_disable_probe_isr
+#define mcu_disable_probe_isr()
+#endif
+#endif
+
+#ifdef ENABLE_RT_LIMITS_CHECKING
+#undef LIMIT_X_ISR
+#undef LIMIT_X2_ISR
+#undef LIMIT_Y_ISR
+#undef LIMIT_Y2_ISR
+#undef LIMIT_Z_ISR
+#undef LIMIT_Z2_ISR
+#undef LIMIT_A_ISR
+#undef LIMIT_B_ISR
+#undef LIMIT_C_ISR
 #endif
 
 #ifdef ESTOP_PULLUP_ENABLE
@@ -950,6 +967,132 @@ extern "C"
 #endif
 #define DIO78 UNDEF_PIN
 #endif
+#ifndef DOUT32
+#define DOUT32 UNDEF_PIN
+#ifdef DIO79
+#undef DIO79
+#endif
+#define DIO79 UNDEF_PIN
+#endif
+#ifndef DOUT33
+#define DOUT33 UNDEF_PIN
+#ifdef DIO80
+#undef DIO80
+#endif
+#define DIO80 UNDEF_PIN
+#endif
+#ifndef DOUT34
+#define DOUT34 UNDEF_PIN
+#ifdef DIO81
+#undef DIO81
+#endif
+#define DIO81 UNDEF_PIN
+#endif
+#ifndef DOUT35
+#define DOUT35 UNDEF_PIN
+#ifdef DIO82
+#undef DIO82
+#endif
+#define DIO82 UNDEF_PIN
+#endif
+#ifndef DOUT36
+#define DOUT36 UNDEF_PIN
+#ifdef DIO83
+#undef DIO83
+#endif
+#define DIO83 UNDEF_PIN
+#endif
+#ifndef DOUT37
+#define DOUT37 UNDEF_PIN
+#ifdef DIO84
+#undef DIO84
+#endif
+#define DIO84 UNDEF_PIN
+#endif
+#ifndef DOUT38
+#define DOUT38 UNDEF_PIN
+#ifdef DIO85
+#undef DIO85
+#endif
+#define DIO85 UNDEF_PIN
+#endif
+#ifndef DOUT39
+#define DOUT39 UNDEF_PIN
+#ifdef DIO86
+#undef DIO86
+#endif
+#define DIO86 UNDEF_PIN
+#endif
+#ifndef DOUT40
+#define DOUT40 UNDEF_PIN
+#ifdef DIO87
+#undef DIO87
+#endif
+#define DIO87 UNDEF_PIN
+#endif
+#ifndef DOUT41
+#define DOUT41 UNDEF_PIN
+#ifdef DIO88
+#undef DIO88
+#endif
+#define DIO88 UNDEF_PIN
+#endif
+#ifndef DOUT42
+#define DOUT42 UNDEF_PIN
+#ifdef DIO89
+#undef DIO89
+#endif
+#define DIO89 UNDEF_PIN
+#endif
+#ifndef DOUT43
+#define DOUT43 UNDEF_PIN
+#ifdef DIO90
+#undef DIO90
+#endif
+#define DIO90 UNDEF_PIN
+#endif
+#ifndef DOUT44
+#define DOUT44 UNDEF_PIN
+#ifdef DIO91
+#undef DIO91
+#endif
+#define DIO91 UNDEF_PIN
+#endif
+#ifndef DOUT45
+#define DOUT45 UNDEF_PIN
+#ifdef DIO92
+#undef DIO92
+#endif
+#define DIO92 UNDEF_PIN
+#endif
+#ifndef DOUT46
+#define DOUT46 UNDEF_PIN
+#ifdef DIO93
+#undef DIO93
+#endif
+#define DIO93 UNDEF_PIN
+#endif
+#ifndef DOUT47
+#define DOUT47 UNDEF_PIN
+#ifdef DIO94
+#undef DIO94
+#endif
+#define DIO94 UNDEF_PIN
+#endif
+#ifndef DOUT48
+#define DOUT48 UNDEF_PIN
+#ifdef DIO95
+#undef DIO95
+#endif
+#define DIO95 UNDEF_PIN
+#endif
+#ifndef DOUT49
+#define DOUT49 UNDEF_PIN
+#ifdef DIO96
+#undef DIO96
+#endif
+#define DIO96 UNDEF_PIN
+#endif
 #ifndef LIMIT_X
 #define LIMIT_X UNDEF_PIN
 #ifdef DIO100
@@ -1384,6 +1527,132 @@ extern "C"
 #endif
 #define DIO161 UNDEF_PIN
 #endif
+#ifndef DIN32
+#define DIN32 UNDEF_PIN
+#ifdef DIO162
+#undef DIO162
+#endif
+#define DIO162 UNDEF_PIN
+#endif
+#ifndef DIN33
+#define DIN33 UNDEF_PIN
+#ifdef DIO163
+#undef DIO163
+#endif
+#define DIO163 UNDEF_PIN
+#endif
+#ifndef DIN34
+#define DIN34 UNDEF_PIN
+#ifdef DIO164
+#undef DIO164
+#endif
+#define DIO164 UNDEF_PIN
+#endif
+#ifndef DIN35
+#define DIN35 UNDEF_PIN
+#ifdef DIO165
+#undef DIO165
+#endif
+#define DIO165 UNDEF_PIN
+#endif
+#ifndef DIN36
+#define DIN36 UNDEF_PIN
+#ifdef DIO166
+#undef DIO166
+#endif
+#define DIO166 UNDEF_PIN
+#endif
+#ifndef DIN37
+#define DIN37 UNDEF_PIN
+#ifdef DIO167
+#undef DIO167
+#endif
+#define DIO167 UNDEF_PIN
+#endif
+#ifndef DIN38
+#define DIN38 UNDEF_PIN
+#ifdef DIO168
+#undef DIO168
+#endif
+#define DIO168 UNDEF_PIN
+#endif
+#ifndef DIN39
+#define DIN39 UNDEF_PIN
+#ifdef DIO169
+#undef DIO169
+#endif
+#define DIO169 UNDEF_PIN
+#endif
+#ifndef DIN40
+#define DIN40 UNDEF_PIN
+#ifdef DIO170
+#undef DIO170
+#endif
+#define DIO170 UNDEF_PIN
+#endif
+#ifndef DIN41
+#define DIN41 UNDEF_PIN
+#ifdef DIO171
+#undef DIO171
+#endif
+#define DIO171 UNDEF_PIN
+#endif
+#ifndef DIN42
+#define DIN42 UNDEF_PIN
+#ifdef DIO172
+#undef DIO172
+#endif
+#define DIO172 UNDEF_PIN
+#endif
+#ifndef DIN43
+#define DIN43 UNDEF_PIN
+#ifdef DIO173
+#undef DIO173
+#endif
+#define DIO173 UNDEF_PIN
+#endif
+#ifndef DIN44
+#define DIN44 UNDEF_PIN
+#ifdef DIO174
+#undef DIO174
+#endif
+#define DIO174 UNDEF_PIN
+#endif
+#ifndef DIN45
+#define DIN45 UNDEF_PIN
+#ifdef DIO175
+#undef DIO175
+#endif
+#define DIO175 UNDEF_PIN
+#endif
+#ifndef DIN46
+#define DIN46 UNDEF_PIN
+#ifdef DIO176
+#undef DIO176
+#endif
+#define DIO176 UNDEF_PIN
+#endif
+#ifndef DIN47
+#define DIN47 UNDEF_PIN
+#ifdef DIO177
+#undef DIO177
+#endif
+#define DIO177 UNDEF_PIN
+#endif
+#ifndef DIN48
+#define DIN48 UNDEF_PIN
+#ifdef DIO178
+#undef DIO178
+#endif
+#define DIO178 UNDEF_PIN
+#endif
+#ifndef DIN49
+#define DIN49 UNDEF_PIN
+#ifdef DIO179
+#undef DIO179
+#endif
+#define DIO179 UNDEF_PIN
+#endif
 #ifndef TX
 #define TX UNDEF_PIN
 #ifdef DIO200
@@ -1467,6 +1736,34 @@ extern "C"
 #undef DIO211
 #endif
 #define DIO211 UNDEF_PIN
+#endif
+#ifndef SPI2_CLK
+#define SPI2_CLK UNDEF_PIN
+#ifdef DIO212
+#undef DIO212
+#endif
+#define DIO212 UNDEF_PIN
+#endif
+#ifndef SPI2_SDI
+#define SPI2_SDI UNDEF_PIN
+#ifdef DIO213
+#undef DIO213
+#endif
+#define DIO213 UNDEF_PIN
+#endif
+#ifndef SPI2_SDO
+#define SPI2_SDO UNDEF_PIN
+#ifdef DIO214
+#undef DIO214
+#endif
+#define DIO214 UNDEF_PIN
+#endif
+#ifndef SPI2_CS
+#define SPI2_CS UNDEF_PIN
+#ifdef DIO215
+#undef DIO215
+#endif
+#define DIO215 UNDEF_PIN
 #endif
 
 // set default limits and step associations
@@ -1658,52 +1955,60 @@ extern "C"
 #if (!ASSERT_PIN(LIMIT_X))
 #define LIMIT_X_INV_MASK 0
 #else
-#define LIMIT_X_INV_MASK 1
+#define LIMIT_X_INV_MASK LIMIT_X_IO_MASK
 #endif
 #if (!ASSERT_PIN(LIMIT_Y))
 #define LIMIT_Y_INV_MASK 0
 #else
-#define LIMIT_Y_INV_MASK 2
+#define LIMIT_Y_INV_MASK LIMIT_Y_IO_MASK
 #endif
 #if (!ASSERT_PIN(LIMIT_Z))
 #define LIMIT_Z_INV_MASK 0
 #else
-#define LIMIT_Z_INV_MASK 4
+#define LIMIT_Z_INV_MASK LIMIT_Z_IO_MASK
 #endif
 #if (!ASSERT_PIN(LIMIT_A))
 #define LIMIT_A_INV_MASK 0
 #else
-#define LIMIT_A_INV_MASK 8
+#define LIMIT_A_INV_MASK LIMIT_A_IO_MASK
 #endif
 #if (!ASSERT_PIN(LIMIT_B))
 #define LIMIT_B_INV_MASK 0
 #else
-#define LIMIT_B_INV_MASK 16
+#define LIMIT_B_INV_MASK LIMIT_B_IO_MASK
 #endif
 #if (!ASSERT_PIN(LIMIT_C))
 #define LIMIT_C_INV_MASK 0
 #else
-#define LIMIT_C_INV_MASK 32
+#define LIMIT_C_INV_MASK LIMIT_C_IO_MASK
 #endif
 
 #if (!ASSERT_PIN(LIMIT_X2))
 #define LIMIT_X2_INV_MASK 0
 #else
-#define LIMIT_X2_INV_MASK 1
+#define LIMIT_X2_INV_MASK LIMIT_X2_IO_MASK
 #endif
 #if (!ASSERT_PIN(LIMIT_Y2))
 #define LIMIT_Y2_INV_MASK 0
 #else
-#define LIMIT_Y2_INV_MASK 2
+#define LIMIT_Y2_INV_MASK LIMIT_Y2_IO_MASK
 #endif
 #if (!ASSERT_PIN(LIMIT_Z2))
 #define LIMIT_Z2_INV_MASK 0
 #else
-#define LIMIT_Z2_INV_MASK 4
+#define LIMIT_Z2_INV_MASK LIMIT_Z2_IO_MASK
 #endif
 
-#define LIMITS_INV_MASK (LIMIT_X_INV_MASK | LIMIT_Y_INV_MASK | LIMIT_Z_INV_MASK | LIMIT_A_INV_MASK | LIMIT_B_INV_MASK | LIMIT_C_INV_MASK)
 #define LIMITS_DUAL_INV_MASK (LIMIT_X2_INV_MASK | LIMIT_Y2_INV_MASK | LIMIT_Z2_INV_MASK)
+#define LIMITS_INV_MASK (LIMIT_X_INV_MASK | LIMIT_Y_INV_MASK | LIMIT_Z_INV_MASK | LIMIT_A_INV_MASK | LIMIT_B_INV_MASK | LIMIT_C_INV_MASK | LIMITS_DUAL_INV_MASK)
+
+#ifndef LIMITS_NORMAL_OPERATION_MASK
+#ifdef DISABLE_ROTATIONAL_AXIS_LIMITS_AFTER_HOMING
+#define LIMITS_NORMAL_OPERATION_MASK (LIMIT_A_IO_MASK | LIMIT_B_IO_MASK | LIMIT_C_IO_MASK)
+#else
+#define LIMITS_NORMAL_OPERATION_MASK 0
+#endif
+#endif
 
 #if (ASSERT_PIN(DIN0) && defined(DIN0_ISR))
 #define DIN0_MASK 1
@@ -1811,6 +2116,10 @@ extern "C"
 #define CTRL_SCHED_CHECK_VAL (1 << (CTRL_SCHED_CHECK))
 #endif
 
+#ifdef DISABLE_RTC_CODE
+#undef ENABLE_ITP_FEED_TASK
+#endif
+
 #ifndef BRESENHAM_16BIT
 	typedef uint32_t step_t;
 #define MAX_STEPS_PER_LINE_BITS (32 - (2 + DSS_MAX_OVERSAMPLING))
@@ -1821,7 +2130,9 @@ typedef uint16_t step_t;
 #define MAX_STEPS_PER_LINE (1UL << MAX_STEPS_PER_LINE_BITS)
 
 #if DSS_CUTOFF_FREQ > (F_STEP_MAX >> 3)
-#error "DSS_CUTOFF_FREQ should not be set above 1/8th of the max step rate"
+#undef DSS_CUTOFF_FREQ
+#define DSS_CUTOFF_FREQ (F_STEP_MAX >> 3)
+#warning "DSS_CUTOFF_FREQ was limited to 1/8th of the max step rate"
 #endif
 
 #if ((S_CURVE_ACCELERATION_LEVEL < -1) || (S_CURVE_ACCELERATION_LEVEL > 5))
@@ -2111,6 +2422,9 @@ typedef uint16_t step_t;
 #endif
 #ifndef ENABLE_RT_SYNC_MOTIONS
 #define ENABLE_RT_SYNC_MOTIONS
+#endif
+#if (DSS_MAX_OVERSAMPLING < 1)
+#error "Plasma THC requires DSS to be enabled"
 #endif
 #endif
 

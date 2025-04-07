@@ -11,15 +11,26 @@
 To configure µCNC to fit your hardware you can use [µCNC config builder web tool](https://paciente8159.github.io/uCNC-config-builder/) to generate the config override files.
 Although most of the options are configurable via the web tool, some options might be missing and you might need to add them manually (regarding tools or addon modules mostly).
 
-# VERSION 1.8+ NOTES
+# Useful Links
 
-Version 1.8 introduced several breaking changes from the previous version. These are:
-  - Tools functions declarations. This version also introduces a new IO HAL that makes io abstraction easier and more performant.
-  - New serial/multi-stream interface. All communications ports and extension modules (displays, SD cards, etc..) that communicate to the parser now do it via a custom serial stream implementation. Serial streams are segregated and responses are sent back to the source only instead of all ports. Some types of messages are still broadcast (like status reports, alarms and feedback messages).
-  - Modules now also defines HOOKs that can be used as hookable points for a single consumer function.
-  - There are several README documents that contain relevant information about parts of the system/HAL/modules etc. This makes it easier to keep the information up to date with each change.
+Some useful links with detailed information about µCNC
+_**Jump to section**_
+* [µCNC Wiki](https://github.com/Paciente8159/uCNC/wiki)
+* [µCNC config files](https://github.com/Paciente8159/uCNC/tree/master/uCNC/README.md)
+* [µCNC custom modules and events system](https://github.com/Paciente8159/uCNC/blob/master/uCNC/src/README.md)
+* [µCNC kinematics HAL](https://github.com/Paciente8159/uCNC/blob/master/uCNC/src/hal/kinematics/README.md)
+* [µCNC MCU HAL](https://github.com/Paciente8159/uCNC/blob/master/uCNC/src/hal/mcus/README.md)
+* [µCNC tool HAL](https://github.com/Paciente8159/uCNC/tree/master/uCNC/src/hal/tools/README.md)
+	* [µCNC existing tools configuration](https://github.com/Paciente8159/uCNC/blob/master/uCNC/src/hal/tools/tools/README.md)
+* [µCNC default pinouts](https://github.com/Paciente8159/uCNC/blob/master/PINOUTS.md)
 
-With version 1.8 µCNC is becomming too large for Atmega328P (still supports it, but barelly fits). For that reason and to keep giving support for this MCU a branch of version 1.7 will be maintained with all the latest bugfixes and patches.
+
+# VERSION 1.12+ NOTES
+
+Version 1.12 introduces the following changes:
+  - added suport for STM32H7 single core MCU family. This is support is not yet complete, as some features are missing (like analog inputs, DMA support for SPI and EEPROM emulation)
+	- complete code refactoring for ESP8266 core allowing to amke use of the new shift register to expand IO capabilities on this MCU (output and input)
+	- new shift register that now also supports 74HC165 (along with the 74HC595 previously integrated)
 
 # IMPORTANT NOTE
 
@@ -60,7 +71,33 @@ You can also reach me at µCNC discord channel
 
 ## Current µCNC status
 
-µCNC current major version is v1.8. You can check all the new features, changes and bug fixes in the [CHANGELOG](https://github.com/Paciente8159/uCNC/blob/master/CHANGELOG.md).
+µCNC current major version is v1.12. You can check all the new features, changes and bug fixes in the [CHANGELOG](https://github.com/Paciente8159/uCNC/blob/master/CHANGELOG.md).
+
+Version 1.12 added the following new major features.
+  - added suport for STM32H7 single core MCU family. This is support is not yet complete, as some features are missing (like analog inputs, DMA support for SPI and EEPROM emulation)
+	- complete code refactoring for ESP8266 core allowing to amke use of the new shift register to expand IO capabilities on this MCU (output and input) via SPI
+	- new shift register that now also supports 74HC165 (along with the 74HC595 previously integrated)
+	- slight refactoring of IO HAL to support the new shift register
+	- re-introduction of boards friendly names for configuration in Arduino IDE and makefiles
+
+Version 1.11 added the following new major features.
+- self implemented subset/custom of stdio printf helpers. It's now possible to print formated messages via protocol. No need to do specific calls to print variables like numbers, strings, char, ip addresse, bytes, etc...
+- improvements to the debug message system. Now a single call to DBGMSG macro is used. The same principle of formated messages is applied.
+- Debug messages now have an intermediate buffer that stores the output before printing it to prevent outputing debug messages in the middle of onging protocol messages
+- Parsing support for [O-Codes](https://linuxcnc.org/docs/html/gcode/o-code.html) (subrotines). These O-Codes can be executed from .nc files in the root dir of a pre-configured file system (either C for MCU flash or D for SD cards)
+
+Version 1.10 added the following new major features.
+- added support SPI bulk transfers. This improves SPI transmission speeds while keeping the whole firmware responsive, opening the door for new modules and upgrades to µCNC using SPI driven hardware like TFT displays.
+- increased general purpose IO pins from 32 outputs/32 inputs to 50 outputs/50 inputs
+- added support for a second SPI port
+
+Version 1.9 added the following new major features.
+
+- added support for STM32F0 MCU and an initial Bluepill example board.
+- new File System module. This new file system module acts like a C wrapper for accessing both Flash memory files and external memories (like SD cards), and abstracts the underlaying file systems used (LittleFS, SPIFFS, FatFs, etc...). It also integrates the File System with other modules such as System Menu and Endpoints to allow quicker and transversal development of features accross different MCU
+- new generic ring buffer in utils.h. This adds flexibility to make use of generic ring buffer implementations (via macros or pure C implementation with functions, or using custom SDK implementations for a particular architecture/use case). One example is to adapt generic ring buffer access to a multicore MCU.
+- new multicore mode for RP2040, using generic ring buffer implementation supported no multicore queue. This allows running all µCNC communications tasks (USB, UART, WIFI, etc...) in one core, while the other core is dedicated to parsing and executing GCode commands.
+- Suport for RS274NGC [expressions](https://linuxcnc.org/docs/html/gcode/overview.html#gcode:expressions) and [numbered parameters](https://linuxcnc.org/docs/html/gcode/overview.html#sub:numbered-parameters).
 
 Version 1.8 added the following new major features.
 
@@ -95,7 +132,7 @@ Version 1.5 added a couple of new features.
 Version 1.4 added the following new features.
 
 - added support for STM32F4 MCU and the Blackpill boards.
-- new servo PIN type that generates a 50Hz with TOn - 1~2ms needed to control servo type motors.
+- new servo PIN type that generates a 50Hz with TOn (on phase) - 1~2ms (width) needed to control servo type motors.
 - support for delta kinematics.
 - new modular extension system based on events, delegates and listeners. It's now possible to inject code anywhere inside the core code by creating and adding code hooks that can then call and execute multiple listeners
 - added optional variable acceleration step generation (S-Curve speed profile)
@@ -125,7 +162,7 @@ These include:
 µCNC for now supports most of the RS274NGC v3:
 
 ```
-List of Supported G-Codes since µCNC 1.3.0:
+List of Supported G-Codes since µCNC 1.9.2:
   - Non-Modal Commands: G4, G10*, G28, G30, G53, G92, G92.1, G92.2, G92.3
   - Motion Modes: G0, G1, G2, G3, G38.2, G38.3, G38.4, G38.5, G80, G81*, G82*, G83*, G85*, G86*, G89*
   - Feed Rate Modes: G93, G94
@@ -141,6 +178,9 @@ List of Supported G-Codes since µCNC 1.3.0:
   - Spindle Control: M3, M4, M5
   - Tool Change: M6
   - Valid Non-Command Words: A, B, C, F, H, I, J, K, L, N, P, Q, R, S, T, X, Y, Z
+	- User(read/write) and parser(read only) parameters like #5221 (#5221 returns the G38 result for X axis)
+	- Expressions like [1 + acos[0] - [#3 ** [4.0/2]]]
+	- O-Codes (must run from files)
 
   - Outside the RS274NGC scope
     - Bilinear surface mapping: G39,G39.1,G39.2*
@@ -203,8 +243,8 @@ TODO List of G-Codes in µCNC future releases:
   - 1 door open switch (interrupt driven)
   - 16 pwm outputs
   - 16 analog inputs
-  - 32* generic digital inputs
-  - 32* generic digital outputs
+  - 50* generic digital inputs
+  - 50* generic digital outputs
   - 6 servo control outputs (50Hz-PPM)
 
 * see notes
@@ -215,8 +255,8 @@ NOTES:
 
 - _6 steppers + 2 extra that can be configured to mirror 2 of the other 6 for dual drive axis_
 - _6 limit switch (one per axis) plus 3 optional second axis X, Y or Z support dual endstops_
-- _Generic inputs support interrupts on the first 8 pins. Prior to version 1.4 the number of generic inputs was limited to 16._
-- _Prior to version 1.4 the number of generic outputs was limited to 16._
+- _Generic inputs support interrupts on the first 8 pins. Prior to version 1.4 the number of generic inputs was limited to 16. Prior to version 1.10 the number of generic inputs was limited to 32._
+- _Prior to version 1.4 the number of generic outputs was limited to 16. Prior to version 1.8 the number of generic outputs was limited to 32._
 
 µCNC with a configuration similar to Grbl is be able to keep up to 30KHz step rate for a 3 axis machine on an Arduino Uno at 16Mhz. (the stated rate depends on the length of the segments too, since many short length segments don't allow full speed to be achieved). For this specific type of use (like in laser engraving) a 16-bit version of stepping algorithm is possible pushing the theoretical step rate limit to 40KHz on a single UNO board.
 
@@ -231,10 +271,14 @@ It can run on:
 - STM32F1 (like the Bluepill) - v1.1.x
 - SAMD21 (Arduino Zero/M0) - v1.3.x
 - STM32F4 (like the Blackpill) - v1.4.x (Does not emulate EEPROM)
-- ESP8266 - v1.5.x (supports wifi connection via telnet, lacks analog and input isr)
+- ESP8266 - v1.5.x/v1.12.x (supports wifi connection via telnet, lacks analog and input isr)
 - ESP32 - v1.5.x (supports wifi connection via telnet and bluetooth)
 - NXP LPC1768/9 - v1.5.x (eeprom emulation and analog still being developed)
 - RP2040 - v1.6.x (supports wifi connection via telnet and bluetooth)
+- RP2040 - v1.9.x (added multicore mode)
+- STM32F0 (like the Bluepill) - v1.9.x
+- RP2350 - v1.11.x (initial support)
+- STM32H7 (single core) - v1.12.x (Still missing some features)
 - Windows PC (used for simulation/debugging only - ISR on Windows doesn't allow to use it as a real alternative)
 
 ### µCNC current supported kinematics

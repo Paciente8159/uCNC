@@ -20,7 +20,7 @@
 #include "../../cnc.h"
 
 #if (KINEMATIC == KINEMATIC_DELTA)
-#include <stdio.h>
+
 #include <stdint.h>
 #include <math.h>
 
@@ -326,6 +326,8 @@ uint8_t kinematics_home(void)
 {
 	// delta starts by invalidating the current position and considers it's at the far end of the homing position
 	float axis[AXIS_COUNT];
+	uint8_t error = STATUS_OK;
+
 	// reset home offset
 	delta_cuboid_z_home = 0;
 	// reset coordinates
@@ -335,30 +337,34 @@ uint8_t kinematics_home(void)
 	// sync interpolator to new position (motion homing syncs remaining systems)
 	itp_reset_rt_position(axis);
 
-	if (mc_home_axis(AXIS_Z_MASK, LIMITS_DELTA_MASK))
+	error = mc_home_axis(AXIS_Z_HOMING_MASK, LIMITS_DELTA_MASK);
+	if (error != STATUS_OK)
 	{
-		return KINEMATIC_HOMING_ERROR_Z;
+		return error;
 	}
 
 
 #if AXIS_A_HOMING_MASK != 0
-	if (mc_home_axis(AXIS_A_HOMING_MASK, LINACT3_LIMIT_MASK))
+	error = mc_home_axis(AXIS_A_HOMING_MASK, LINACT3_LIMIT_MASK);
+	if (error != STATUS_OK)
 	{
-		return KINEMATIC_HOMING_ERROR_A;
+		return error;
 	}
 #endif
 
 #if AXIS_B_HOMING_MASK != 0
-	if (mc_home_axis(AXIS_B_HOMING_MASK, LINACT4_LIMIT_MASK))
+	error = mc_home_axis(AXIS_B_HOMING_MASK, LINACT4_LIMIT_MASK);
+	if (error != STATUS_OK)
 	{
-		return KINEMATIC_HOMING_ERROR_B;
+		return error;
 	}
 #endif
 
 #if AXIS_C_HOMING_MASK != 0
-	if (mc_home_axis(AXIS_C_HOMING_MASK, LINACT5_LIMIT_MASK))
+	error = mc_home_axis(AXIS_C_HOMING_MASK, LINACT5_LIMIT_MASK);
+	if (error != STATUS_OK)
 	{
-		return KINEMATIC_HOMING_ERROR_C;
+		return error;
 	}
 #endif
 
@@ -380,7 +386,7 @@ uint8_t kinematics_home(void)
 	block_data.spindle = 0;
 	block_data.dwell = 0;
 	// starts offset and waits to finnish
-	mc_line(target, &block_data);
+	error = mc_line(target, &block_data);
 	itp_sync();
 
 // add the internal offset to the kinematics
@@ -395,7 +401,7 @@ uint8_t kinematics_home(void)
 	itp_reset_rt_position(target);
 	mc_sync_position();
 
-	return STATUS_OK;
+	return error;
 }
 
 bool kinematics_check_boundaries(float *axis)
