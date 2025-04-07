@@ -511,8 +511,10 @@ void proto_status(void)
 	proto_ftoa_array(axis, MAX(AXIS_COUNT, 3));
 	proto_print(MSG_STATUS_FS);
 	proto_ftoa(feed);
+#if TOOL_COUNT > 0
 	proto_putc(',');
 	proto_itoa(spindle);
+#endif
 
 #ifdef GCODE_PROCESS_LINE_NUMBERS
 	proto_print(MSG_STATUS_LINE);
