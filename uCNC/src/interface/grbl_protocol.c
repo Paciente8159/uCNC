@@ -329,6 +329,9 @@ WEAK_EVENT_HANDLER(proto_status)
 static FORCEINLINE void proto_status_tail(void)
 {
 	float axis[MAX(AXIS_COUNT, 3)];
+#if AXIS_COUNT < 3
+	memset(axis, 0, sizeof(axis));
+#endif
 	if (parser_get_wco(axis))
 	{
 		proto_print(MSG_STATUS_WCO);
@@ -394,6 +397,9 @@ void proto_status(void)
 	grbl_stream_start_broadcast();
 
 	float axis[MAX(AXIS_COUNT, 3)];
+#if AXIS_COUNT < 3
+	memset(axis, 0, sizeof(axis));
+#endif
 
 	int32_t steppos[AXIS_TO_STEPPERS];
 	io_get_steps_pos(steppos);
@@ -508,17 +514,7 @@ void proto_status(void)
 
 	feed = (!g_settings.report_inches) ? feed : (feed * MM_INCH_MULT);
 	proto_print(MSG_STATUS_POS);
-	proto_ftoa_array(axis, AXIS_COUNT);
-	#if AXIS_COUNT < 3
-		for (uint8_t i = AXIS_COUNT; i < 3; i++)
-		{
-			if (i)
-			{
-				proto_putc(',');
-			}
-			proto_ftoa(0);
-		}
-	#endif
+	proto_ftoa_array(axis, MAX(AXIS_COUNT, 3));
 	proto_print(MSG_STATUS_FS);
 	proto_ftoa(feed);
 #if TOOL_COUNT > 0
@@ -609,6 +605,9 @@ void proto_gcode_coordsys(void)
 {
 	protocol_busy = true;
 	float axis[MAX(AXIS_COUNT, 3)];
+#if AXIS_COUNT < 3
+	memset(axis, 0, sizeof(axis));
+#endif
 
 	for (uint8_t i = 0; i < COORD_SYS_COUNT; i++)
 	{
@@ -660,6 +659,9 @@ void proto_gcode_coordsys(void)
 void proto_probe_result(uint8_t val)
 {
 	float axis[MAX(AXIS_COUNT, 3)];
+#if AXIS_COUNT < 3
+	memset(axis, 0, sizeof(axis));
+#endif
 	parser_get_coordsys(255, axis);
 	proto_print("[PRB:");
 	proto_ftoa_array(axis, MAX(AXIS_COUNT, 3));

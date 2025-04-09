@@ -1221,6 +1221,9 @@ static void system_menu_render_axis_position(uint8_t render_flags, system_menu_i
 		system_menu_action_timeout(SYSTEM_MENU_REDRAW_IDLE_MS);
 
 		float axis[MAX(AXIS_COUNT, 3)];
+#if AXIS_COUNT < 3
+		memset(axis, 0, sizeof(axis));
+#endif
 		int32_t steppos[STEPPER_COUNT];
 		itp_get_rt_position(steppos);
 		kinematics_steps_to_coordinates(steppos, axis);
