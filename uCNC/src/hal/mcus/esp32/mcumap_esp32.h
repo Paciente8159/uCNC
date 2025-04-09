@@ -3473,6 +3473,9 @@ extern "C"
 #define __FREERTOS_MUTEX_TAKE__(mutex, timeout) ((xPortInIsrContext()) ? (xSemaphoreTakeFromISR(mutex, NULL)) : (xSemaphoreTake(mutex, timeout)))
 #define __FREERTOS_MUTEX_GIVE__(mutex) ((xPortInIsrContext()) ? (xSemaphoreGiveFromISR(mutex, NULL)) : (xSemaphoreGive(mutex)))
 
+#define mcu_in_isr_context xPortInIsrContext
+#define cnc_yield taskYIELD
+
 #define MUTEX_CLEANUP(name)                       \
 	static void name##_mutex_cleanup(uint8_t *m)    \
 	{                                               \

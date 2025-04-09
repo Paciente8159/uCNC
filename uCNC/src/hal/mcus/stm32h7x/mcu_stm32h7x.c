@@ -370,6 +370,7 @@ void osSystickHandler(void)
 #endif
 {
 	mcu_disable_global_isr();
+	mcu_isr_context_enter();
 #if SERVOS_MASK > 0
 	static uint8_t ms_servo_counter = 0;
 	uint8_t servo_counter = ms_servo_counter;

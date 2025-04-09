@@ -167,7 +167,7 @@ extern "C"
 	bool cnc_dotasks(void);
 	static inline void __cnc_yield(void)
 	{
-		if (mcu_in_isr_context())
+		if (!mcu_in_isr_context())
 		{
 			cnc_dotasks();
 		}

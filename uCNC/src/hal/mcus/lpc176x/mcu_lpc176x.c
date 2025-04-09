@@ -173,6 +173,7 @@ void MCU_SERVO_ISR(void)
 void MCU_RTC_ISR(void)
 {
 	mcu_disable_global_isr();
+	mcu_isr_context_enter();
 	_millis++;
 	mcu_rtc_cb((uint32_t)_millis);
 	mcu_enable_global_isr();

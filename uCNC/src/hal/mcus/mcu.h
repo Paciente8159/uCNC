@@ -282,10 +282,12 @@ extern "C"
  * returns true if is in ISR context or false otherwise
  * */
 #ifndef mcu_in_isr_context
-extern volatile uint8_t mcu_in_isr_context_counter;
-bool mcu_in_isr_context(void);
-void mcu_in_isr_context_leave(uint8_t *counter);
-#define mcu_isr_context_enter() uint8_t isr_context __attribute__((__cleanup__(mcu_in_isr_context_leave))) = 0;
+	extern volatile uint8_t mcu_in_isr_context_counter;
+	bool mcu_in_isr_context(void);
+	void mcu_in_isr_context_leave(uint8_t *counter);
+#define mcu_isr_context_enter()                \
+	__ATOMIC__ { mcu_in_isr_context_counter++; } \
+	uint8_t isr_context __attribute__((__cleanup__(mcu_in_isr_context_leave))) = 0
 #endif
 
 	// Step interpolator
