@@ -401,7 +401,7 @@ static int32_t encoder_get_diff_read(uint8_t i)
 void encoders_dotasks(void)
 {
 #ifdef ENC0_READ
-	encoders_pos[0] += encoder_get_diff_read(0);
+		encoders_pos[0] += encoder_get_diff_read(0);
 #endif
 #ifdef ENC1_READ
 	encoders_pos[1] += encoder_get_diff_read(1);

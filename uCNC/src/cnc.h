@@ -165,6 +165,16 @@ extern "C"
 	void cnc_run(void);
 	// do events returns true if all OK and false if an ABORT alarm is reached
 	bool cnc_dotasks(void);
+	static inline void __cnc_yield(void)
+	{
+		if (mcu_in_isr_context())
+		{
+			cnc_dotasks();
+		}
+	}
+#ifndef cnc_yield
+#define cnc_yield() __cnc_yield()
+#endif
 	uint8_t cnc_home(void);
 	void cnc_alarm(int8_t code);
 	bool cnc_has_alarm(void);

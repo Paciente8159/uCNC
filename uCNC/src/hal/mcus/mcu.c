@@ -1128,3 +1128,21 @@ uint8_t __attribute__((weak)) mcu_softpwm_freq_config(uint16_t freq)
 	uint8_t res = (uint8_t)MAX((int8_t)ceilf(LN(freq * 0.002f)), 0);
 	return res;
 }
+
+/**
+ * ISR context autoflag
+ * This allow to signal that the current code is running in ISR context
+ * The
+ */
+#ifndef mcu_in_isr_context
+volatile uint8_t mcu_in_isr_context_counter;
+void mcu_in_isr_context_leave(uint8_t *counter)
+{
+	__ATOMIC__ { mcu_in_isr_context_counter--; }
+}
+
+bool mcu_in_isr_context(void)
+{
+	return (mcu_in_isr_context_counter != 0);
+}
+#endif
