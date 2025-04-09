@@ -508,7 +508,17 @@ void proto_status(void)
 
 	feed = (!g_settings.report_inches) ? feed : (feed * MM_INCH_MULT);
 	proto_print(MSG_STATUS_POS);
-	proto_ftoa_array(axis, MAX(AXIS_COUNT, 3));
+	proto_ftoa_array(axis, AXIS_COUNT);
+	#if AXIS_COUNT < 3
+		for (uint8_t i = AXIS_COUNT; i < 3; i++)
+		{
+			if (i)
+			{
+				proto_putc(',');
+			}
+			proto_ftoa(0);
+		}
+	#endif
 	proto_print(MSG_STATUS_FS);
 	proto_ftoa(feed);
 #if TOOL_COUNT > 0
