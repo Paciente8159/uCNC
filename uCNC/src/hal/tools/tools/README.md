@@ -497,20 +497,21 @@ Additionally a MCode command M103 is available to control the probing and arc st
 The command has these arguments
 
 ```
-M103 I<probe depth in units> J<probe feed in units/s> R<probe retract heigth in units> K<probe depth in units> F<cut feed in units/s> D<Velocity Anti-Dive ration (0 to 100 (%))> P<cut dwell time in seconds> L<max number of arc start retries>
+M103 I<probe depth in units> J<probe feed in units/s> R<probe retract heigth in units> K<cut depth in units> F<cut feed in units/s> D<Velocity Anti-Dive ration (0 to 100 (%))> P<cut dwell time in seconds> L<max number of arc start retries>
 ```
 
-After these parameters are set THC must be enabled via M62(synched) or M64(immediately).
+After these parameters are set THC must be enabled via M101 or M62 P<PLASMA_THC_ENABLE_PIN> (both synched with motion) or M64 P<PLASMA_THC_ENABLE_PIN>(immediately).
+THC can be disabled via M102 or M63 P<PLASMA_THC_ENABLE_PIN> (both synched with motion) or M64 P<PLASMA_THC_ENABLE_PIN>(immediately).
 
 With THC enable the M3/M4 commands will do the following motions before igniting the torch.
 
   - check if ARC OK signal is off
   - turn the torch off
-  - probes down until it hits the metal or fails if after the max probe distance to the metal is not found and retries
-  - retracts up until it looses contact or fails if after the max probe distance to the metal is not found and retries
-  - retracts (fast move) to the initial cut height
-  - turns the torch on, waits the programmed time to form the puddle and read if the arc is ok
-  - if arc is ok, travells at the cut feed to the final cut height
+  - probes down at speed (J) until it hits the metal or fails if after the max probe distance (I) to the metal is not found and retries (L)
+  - retracts up at speed (J) until it looses contact or fails if after half the max probe distance (I/2) to the metal is not found and retries (L)
+  - retracts (fast move) to the initial cut height (R)
+  - turns the torch on, waits the programmed time (P) to form the puddle and read if the arc is ok
+  - if arc is ok, travells at the cut feed (F) to the final cut height (K)
 
 After this the motion cut executes. During this time the THC constantly monitors the arc ok signal and halts if it fails, and the up and down signals to see if it as to adjust the cutting height.
 

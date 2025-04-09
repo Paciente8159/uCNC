@@ -255,7 +255,7 @@ extern "C"
 #if TOOL_COUNT > 0
 #define MSG_STATUS_FS "|FS:"
 #else
-#define MSG_STATUS_FS "|F:%f"
+#define MSG_STATUS_FS "|F:"
 #endif
 #define MSG_STATUS_WCO "|WCO:"
 #define MSG_STATUS_OVR "|Ov:"

@@ -14,6 +14,8 @@ _**Jump to section**_
    * [How is a pin evaluated?](#how-is-a-pin-evaluated)
    * [Creating the HAL for a custom MCU](#creating-the-hal-for-a-custom-mcu)
    * [Implementation example for a custom MCU using ArduinoIDE](#implementation-example-for-a-custom-mcu-using-arduinoide)
+	 * [Custom MCU IO initialization and reset logic](#custom-mcu-io-initialization-and-reset-logic)
+	 
 
 # µCNC HAL (Hardware Abstraction Layer)
 µCNC has several HAL dimensions/layers. The first and most important layer is the microcontroller HAL.
@@ -1092,3 +1094,30 @@ We can now define a macro `mcu_set_output` that makes use of this replacement an
 
 Again the preprocessor will convert `mcu_set_output(DOUT0)` to `digitalWrite(50)` like we need it. And this aplicable to all pins.
 
+### Custom MCU IO initialization and reset logic
+
+Custom MCU initialization and reset logic can be done via override of the `void __attribute__((weak)) mcu_io_reset(void)` function.
+Any code you need to run after powerup and after the MCU initialization and before all sub-systems are initialized.
+Here is an example of how to implement internal weak pulldown resistors for the limit switches on the STM32F4 MCU. By adding a .c file the root of the project and adding this code that can be done:
+
+```
+#include "src/cnc.h"
+
+#if (MCU == MCU_STM32F4X)
+
+#define GPIO_IN_PULLDOWN 0x02
+#define mcu_config_pulldown(diopin)                                                                \
+	{                                                                                              \
+		__indirect__(diopin, GPIO)->PUPDR &= ~(GPIO_RESET << ((__indirect__(diopin, BIT)) << 1));    \
+		__indirect__(diopin, GPIO)->PUPDR |= (GPIO_IN_PULLDOWN << ((__indirect__(diopin, BIT)) << 1)); \
+	}
+
+void mcu_io_reset(void)
+{
+	mcu_config_pulldown(LIMIT_X);
+	mcu_config_pulldown(LIMIT_Y);
+	mcu_config_pulldown(LIMIT_Z);
+}
+
+#endif
+```

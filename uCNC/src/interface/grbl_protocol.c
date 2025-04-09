@@ -508,11 +508,23 @@ void proto_status(void)
 
 	feed = (!g_settings.report_inches) ? feed : (feed * MM_INCH_MULT);
 	proto_print(MSG_STATUS_POS);
-	proto_ftoa_array(axis, MAX(AXIS_COUNT, 3));
+	proto_ftoa_array(axis, AXIS_COUNT);
+	#if AXIS_COUNT < 3
+		for (uint8_t i = AXIS_COUNT; i < 3; i++)
+		{
+			if (i)
+			{
+				proto_putc(',');
+			}
+			proto_ftoa(0);
+		}
+	#endif
 	proto_print(MSG_STATUS_FS);
 	proto_ftoa(feed);
+#if TOOL_COUNT > 0
 	proto_putc(',');
 	proto_itoa(spindle);
+#endif
 
 #ifdef GCODE_PROCESS_LINE_NUMBERS
 	proto_print(MSG_STATUS_LINE);
@@ -839,15 +851,15 @@ void proto_cnc_settings(void)
 			switch (SETTING_TYPE_MASK(s.type))
 			{
 			case SETTING_TYPE_BOOL:
-				val = (uint32_t)((bool *)s.memptr)[j];
+				val = (uint32_t)(((bool *)s.memptr)[j]);
 				proto_gcode_setting_line_int(s.id, val);
 				break;
 			case SETTING_TYPE_UINT8:
-				val = (uint32_t)*((uint8_t *)s.memptr);
+				val = (uint32_t)(((uint8_t *)s.memptr)[j]);
 				proto_gcode_setting_line_int(s.id, val);
 				break;
 			case SETTING_TYPE_UINT16:
-				val = (uint32_t)*((uint16_t *)s.memptr);
+				val = (uint32_t)(((uint16_t *)s.memptr)[j]);
 				proto_gcode_setting_line_int(s.id, val);
 				break;
 			default: // default is float

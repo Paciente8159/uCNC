@@ -406,8 +406,23 @@ uint8_t io_get_controls(void)
 	return (value ^ (g_settings.control_invert_mask & CONTROLS_INV_MASK));
 }
 
+#ifdef PROBE_ENABLE_CUSTOM_CALLBACK
+typedef bool (*io_probe_get_cb)(void);
+typedef bool (*io_probe_action_cb)(void);
+io_probe_get_cb io_probe_custom_get = NULL;
+io_probe_action_cb io_probe_custom_enable = NULL;
+io_probe_action_cb io_probe_custom_disable = NULL;
+#endif
+
 void io_enable_probe(void)
 {
+#ifdef PROBE_ENABLE_CUSTOM_CALLBACK
+	if (io_probe_custom_enable)
+	{
+		io_probe_custom_enable();
+		return;
+	}
+#endif
 #if ASSERT_PIN(PROBE)
 	io_last_probe = io_get_probe();
 #ifdef ENABLE_IO_MODULES
@@ -422,6 +437,13 @@ void io_enable_probe(void)
 
 void io_disable_probe(void)
 {
+#ifdef PROBE_ENABLE_CUSTOM_CALLBACK
+	if (io_probe_custom_disable)
+	{
+		io_probe_custom_disable();
+		return;
+	}
+#endif
 #if ASSERT_PIN(PROBE)
 	io_probe_enabled = false;
 #if !defined(FORCE_SOFT_POLLING) && defined(PROBE_ISR)
@@ -435,6 +457,13 @@ void io_disable_probe(void)
 
 bool io_get_probe(void)
 {
+#ifdef PROBE_ENABLE_CUSTOM_CALLBACK
+	if (io_probe_custom_get)
+	{
+		return io_probe_custom_get();
+	}
+#endif
+
 #if !ASSERT_PIN(PROBE)
 	return false;
 #else

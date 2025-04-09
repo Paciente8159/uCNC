@@ -28,26 +28,21 @@
 
 #ifdef MCU_HAS_USB
 #ifndef USB_OTG_FS
+#define USB_HIGHSPEED_MODE
+#endif
+
+#ifdef USB_HIGHSPEED_MODE
 #define USB_OTG_FS USB_OTG_HS
 #define OTG_FS_IRQHandler OTG_HS_IRQHandler
 #define OTG_FS_IRQn OTG_HS_IRQn
 #define RCC_AHB1ENR_USB2OTGFSEN RCC_AHB1ENR_USB1OTGHSEN
+#define BOARD_DEVICE_RHPORT_SPEED OPT_MODE_HIGH_SPEED
+#define BOARD_DEVICE_RHPORT_NUM 1
+#define BOARD_DEVICE_RHPORT_SPEED OPT_MODE_HIGH_SPEED
+#define CFG_TUSB_RHPORT1_MODE (OPT_MODE_DEVICE | OPT_MODE_HIGH_SPEED)
 #endif
+
 #include <tusb_ucnc.h>
-// #include "usbd_cdc.h"
-// #include "usbd_cdc_if.h"
-// #include "usbd_desc.h"
-// // replacements for Arduino CDC -> TinyUSB
-// #define tusb_cdc_init CDC_init
-// #define tusb_cdc_isr_handler()
-// #define tusb_cdc_task() CDC_resume_receive()
-// #define tusb_cdc_available() CDC_ReceiveQueue_ReadSize(&ReceiveQueue)
-// #define tusb_cdc_read() CDC_ReceiveQueue_Dequeue(&ReceiveQueue)
-// #define tusb_cdc_flush() CDC_continue_transmit()
-// #define tusb_cdc_write(ch) CDC_TransmitQueue_Enqueue(&TransmitQueue, &c, 1)
-// #define tusb_cdc_write_available() CDC_TransmitQueue_WriteSize(&TransmitQueue)
-// #define tusb_cdc_write_buffer(buffer, bufsize) CDC_TransmitQueue_Enqueue(&TransmitQueue, buffer, bufsize)
-// #define tusb_cdc_connected CDC_connected()
 #endif
 
 // #ifndef FLASH_SIZE
@@ -194,7 +189,7 @@ void MCU_SERIAL2_ISR(void)
 }
 #endif
 
-#ifdef MCU_HAS_USB
+#if defined(MCU_HAS_USB) && !defined(USBD_USE_CDC)
 void OTG_FS_IRQHandler(void)
 {
 	mcu_disable_global_isr();
@@ -533,7 +528,8 @@ void mcu_clocks_init()
 
 void mcu_usart_init(void)
 {
-#ifdef MCU_HAS_USB
+#if defined(MCU_HAS_USB)
+	__HAL_RCC_GPIOA_CLK_ENABLE();
 	// configure USB as Virtual COM port
 	mcu_config_input(USB_DM);
 	mcu_config_input(USB_DP);
@@ -551,6 +547,7 @@ void mcu_usart_init(void)
 	USB_OTG_FS->GINTMSK = 0U;
 
 	// /* Operate as device only mode */
+	USB_OTG_FS->GUSBCFG &= ~USB_OTG_GUSBCFG_FHMOD;
 	USB_OTG_FS->GUSBCFG |= (USB_OTG_GUSBCFG_FDMOD | USB_OTG_GUSBCFG_PHYSEL);
 
 	// /* Clear any pending interrupts */
@@ -558,7 +555,8 @@ void mcu_usart_init(void)
 	USB_OTG_FS->GINTMSK |= USB_OTG_GINTMSK_OTGINT;
 
 	USB_OTG_FS->GCCFG |= USB_OTG_GCCFG_PWRDWN;
-	// USB_OTG_FS->GCCFG &= ~USB_OTG_GCCFG_VBDEN;
+	USB_OTG_FS->GOTGCTL |= USB_OTG_GOTGCTL_BVALOEN;
+	USB_OTG_FS->GOTGCTL |= USB_OTG_GOTGCTL_BVALOVAL;
 
 	NVIC_SetPriority(OTG_FS_IRQn, 10);
 	NVIC_ClearPendingIRQ(OTG_FS_IRQn);
