@@ -370,6 +370,18 @@ MCU_CALLBACK void mcu_rtc_cb(uint32_t millis)
 	itp_feed_counter = mls;
 #endif
 
+#if ENCODERS > 0
+#if defined(ENC0_READ) || defined(ENC1_READ) || defined(ENC2_READ) || defined(ENC3_READ) || defined(ENC4_READ) || defined(ENC5_READ) || defined(ENC6_READ) || defined(ENC7_READ)
+	static bool run_lock = false;
+	if (!run_lock)
+	{
+		run_lock = true;
+		encoders_dotasks(); // this ensures that the encoders get read in a regular base
+		run_lock = false;
+	}
+#endif
+#endif
+
 #ifdef ENABLE_MAIN_LOOP_MODULES
 	if (!cnc_get_exec_state(EXEC_ALARM))
 	{

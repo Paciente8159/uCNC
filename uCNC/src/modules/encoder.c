@@ -398,13 +398,38 @@ static int32_t encoder_get_diff_read(uint8_t i)
 }
 #endif
 
+void encoders_dotasks(void)
+{
+#ifdef ENC0_READ
+	encoders_pos[0] += encoder_get_diff_read(0);
+#endif
+#ifdef ENC1_READ
+	encoders_pos[1] += encoder_get_diff_read(1);
+#endif
+#ifdef ENC2_READ
+	encoders_pos[2] += encoder_get_diff_read(2);
+#endif
+#ifdef ENC3_READ
+	encoders_pos[3] += encoder_get_diff_read(3);
+#endif
+#ifdef ENC4_READ
+	encoders_pos[4] += encoder_get_diff_read(4);
+#endif
+#ifdef ENC5_READ
+	encoders_pos[5] += encoder_get_diff_read(5);
+#endif
+#ifdef ENC6_READ
+	encoders_pos[6] += encoder_get_diff_read(6);
+#endif
+#ifdef ENC7_READ
+	encoders_pos[7] += encoder_get_diff_read(7);
+#endif
+}
+
 int32_t encoder_get_position(uint8_t i)
 {
 	__ATOMIC__
 	{
-#if defined(ENC0_READ) || defined(ENC1_READ) || defined(ENC2_READ) || defined(ENC3_READ) || defined(ENC4_READ) || defined(ENC5_READ) || defined(ENC6_READ) || defined(ENC7_READ)
-		encoders_pos[i] += encoder_get_diff_read(i);
-#endif
 		return encoders_pos[i];
 	}
 
