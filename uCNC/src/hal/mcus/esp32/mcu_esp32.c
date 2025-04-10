@@ -19,12 +19,6 @@
 #include "../../../cnc.h"
 
 #if (MCU == MCU_ESP32)
-#include "esp_timer.h"
-#include "esp_task_wdt.h"
-#include "esp_ipc.h"
-#include "driver/uart.h"
-#include "driver/timer.h"
-#include "soc/i2s_struct.h"
 #ifdef MCU_HAS_I2C
 #include "driver/i2c.h"
 #endif
@@ -529,6 +523,48 @@ void mcu_core0_tasks_init(void *arg)
 #endif
 }
 
+#ifdef ENABLE_MAIN_LOOP_MODULES
+
+// override the rtc_tick
+// this run nothing
+// instead the event handler will run on it's own task
+OVERRIDE_EVENT_HANDLER(rtc_tick)
+{
+	return EVENT_CONTINUE;
+}
+
+bool esp32_custom_rtc_tick_event_handler(void *args)
+{
+	DEFAULT_EVENT_HANDLER(rtc_tick);
+}
+
+void mcu_rtc_event_task(void *arg)
+{
+	for (;;)
+	{
+		esp32_custom_rtc_tick_event_handler(NULL);
+		vTaskDelay(1);
+	}
+}
+
+// // override the cnc_dotasks
+// // this run nothing
+// // instead the event handler will run on it's own task
+// OVERRIDE_EVENT_HANDLER(cnc_dotasks){
+// }
+
+// void mcu_loop_event_task(void *arg)
+// {
+// 	portTickType xLastWakeTimeUpload = xTaskGetTickCount();
+// 	for (;;)
+// 	{
+// 		void* args = NULL;
+// 		DEFAULT_EVENT_HANDLER(rtc_tick);
+// 		vTaskDelay(1);
+// 	}
+// }
+#endif
+
 void mcu_rtc_task(void *arg)
 {
 	portTickType xLastWakeTimeUpload = xTaskGetTickCount();
@@ -680,6 +716,10 @@ void mcu_init(void)
 
 	// initialize rtc timer (currently on core 1)
 	xTaskCreatePinnedToCore(mcu_rtc_task, "rtcTask", 2048, NULL, 7, NULL, CONFIG_ARDUINO_RUNNING_CORE);
+#ifdef ENABLE_MAIN_LOOP_MODULES
+	xTaskCreatePinnedToCore(mcu_rtc_event_task, "rtcEventTask", 4096, NULL, 1, NULL, CONFIG_ARDUINO_RUNNING_CORE);
+	// xTaskCreatePinnedToCore(mcu_loop_event_task, "loopEventTask", 8192, NULL, 1, NULL, CONFIG_ARDUINO_RUNNING_CORE);
+#endif
 
 #ifdef MCU_HAS_SPI
 

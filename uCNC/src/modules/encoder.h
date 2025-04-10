@@ -48,7 +48,6 @@ extern "C"
 	void encoders_reset_position(void);
 	void encoders_itp_reset_rt_position(float *origin);
 	void encoders_update(uint8_t pulse, uint8_t diff);
-	void encoders_dotasks(void);
 	uint16_t encoder_get_rpm(void);
 	extern bool encoder_rpm_updated;
 

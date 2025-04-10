@@ -557,6 +557,15 @@ extern "C"
 
 #endif
 
+#if ENCODERS > 0
+#if defined(ENC0_READ) || defined(ENC1_READ) || defined(ENC2_READ) || defined(ENC3_READ) || defined(ENC4_READ) || defined(ENC5_READ) || defined(ENC6_READ) || defined(ENC7_READ)
+#ifndef ENABLE_MAIN_LOOP_MODULES
+#define ENABLE_MAIN_LOOP_MODULES
+#warning "Communication encoders enabled ENABLE_MAIN_LOOP_MODULES"
+#endif
+#endif
+#endif
+
 #ifndef STEPPERS_ENCODERS_MASK
 #define STEPPERS_ENCODERS_MASK 0
 #endif
@@ -568,13 +577,17 @@ extern "C"
 #ifdef STEPPER_CURR_DIGIPOT
 #ifndef ENABLE_MAIN_LOOP_MODULES
 #define ENABLE_MAIN_LOOP_MODULES
+#warning "Stepper current digipot enabled ENABLE_MAIN_LOOP_MODULES"
 #endif
 #endif
 
 /*laser ppi*/
 #if (TOOL_COUNT < 1)
+#ifdef ENABLE_LASER_PPI
 #undef ENABLE_LASER_PPI
 #undef ENABLE_PLASMA_THC
+#warning "Tool count 0. Laser PPI disabled"
+#endif
 #endif
 
 #ifdef ENABLE_LASER_PPI

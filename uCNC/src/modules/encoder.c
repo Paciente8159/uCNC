@@ -398,7 +398,7 @@ static int32_t encoder_get_diff_read(uint8_t i)
 }
 #endif
 
-void encoders_dotasks(void)
+bool encoders_dotasks(void* args)
 {
 #ifdef ENC0_READ
 		encoders_pos[0] += encoder_get_diff_read(0);
@@ -424,7 +424,10 @@ void encoders_dotasks(void)
 #ifdef ENC7_READ
 	encoders_pos[7] += encoder_get_diff_read(7);
 #endif
+
+return EVENT_CONTINUE;
 }
+CREATE_EVENT_LISTENER_WITHLOCK(rtc_tick, encoders_dotasks, LISTENER_SWI2C_LOCK);
 
 int32_t encoder_get_position(uint8_t i)
 {
@@ -525,6 +528,8 @@ DECL_MODULE(encoder)
 	softi2c_config(&enc7, ENC7_FREQ);
 #endif
 	encoders_reset_position();
+
+	ADD_EVENT_LISTENER(rtc_tick, encoders_dotasks);
 }
 
 #endif

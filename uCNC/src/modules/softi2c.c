@@ -38,7 +38,7 @@ static uint8_t softi2c_clock_stretch(softi2c_port_t *port, uint32_t ms_timeout)
 		{
 			return I2C_OK;
 		}
-		// if not in ISR run main loop
+
 		cnc_yield();
 	}
 
@@ -61,11 +61,7 @@ static uint8_t softi2c_write(softi2c_port_t *port, uint8_t c, bool send_start, b
 			{
 				break;
 			}
-			// if not in ISR run main loop
-			if (mcu_get_global_isr())
-			{
-				cnc_yield();
-			}
+			cnc_yield();
 		}
 		__TIMEOUT_ASSERT__(timeout)
 		{

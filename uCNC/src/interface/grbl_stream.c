@@ -243,7 +243,7 @@ static FORCEINLINE char _grbl_stream_peek(void)
 
 	while (!grbl_stream_available())
 	{
-		cnc_yield();
+		cnc_dotasks();
 	}
 
 #ifndef DISABLE_MULTISTREAM_SERIAL

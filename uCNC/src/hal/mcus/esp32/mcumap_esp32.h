@@ -30,6 +30,11 @@ extern "C"
 #include "hal/gpio_ll.h"
 #include "driver/adc.h"
 #include "driver/ledc.h"
+#include "esp_task_wdt.h"
+#include "esp_ipc.h"
+#include "driver/uart.h"
+#include "driver/timer.h"
+#include "soc/i2s_struct.h"
 
 /*
 	Generates all the interface definitions.
@@ -3474,7 +3479,7 @@ extern "C"
 #define __FREERTOS_MUTEX_GIVE__(mutex) ((xPortInIsrContext()) ? (xSemaphoreGiveFromISR(mutex, NULL)) : (xSemaphoreGive(mutex)))
 
 #define mcu_in_isr_context xPortInIsrContext
-#define cnc_yield taskYIELD
+#define cnc_yield() esp_task_wdt_reset();vTaskDelay(1)
 
 #define MUTEX_CLEANUP(name)                       \
 	static void name##_mutex_cleanup(uint8_t *m)    \
