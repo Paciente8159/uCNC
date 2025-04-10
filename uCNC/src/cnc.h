@@ -176,7 +176,7 @@ extern "C"
 #define cnc_yield()          \
 	if (!mcu_in_isr_context()) \
 	{                          \
-		__cnc_yield()            \
+		__cnc_yield();            \
 	}
 #endif
 	uint8_t cnc_home(void);

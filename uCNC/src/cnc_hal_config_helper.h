@@ -559,9 +559,13 @@ extern "C"
 
 #if ENCODERS > 0
 #if defined(ENC0_READ) || defined(ENC1_READ) || defined(ENC2_READ) || defined(ENC3_READ) || defined(ENC4_READ) || defined(ENC5_READ) || defined(ENC6_READ) || defined(ENC7_READ)
+#ifdef DISABLE_RTC_CODE
+#undef DISABLE_RTC_CODE
+#warning "Communication encoders removed DISABLE_RTC_CODE"
+#endif
 #ifndef ENABLE_MAIN_LOOP_MODULES
 #define ENABLE_MAIN_LOOP_MODULES
-#warning "Communication encoders enabled ENABLE_MAIN_LOOP_MODULES"
+#warning "Communication encoders added ENABLE_MAIN_LOOP_MODULES"
 #endif
 #endif
 #endif
