@@ -148,7 +148,7 @@ static void delta_calc_bounds(void)
 		axis[AXIS_Z] = middlez - sum;
 		kinematics_apply_inverse(axis, r[7]);
 		if (r[0][0] == INT32_MAX || r[1][0] == INT32_MAX || r[2][0] == INT32_MAX || r[3][0] == INT32_MAX ||
-			r[4][0] == INT32_MAX || r[5][0] == INT32_MAX || r[6][0] == INT32_MAX || r[7][0] == INT32_MAX)
+				r[4][0] == INT32_MAX || r[5][0] == INT32_MAX || r[6][0] == INT32_MAX || r[7][0] == INT32_MAX)
 		{
 			sum -= dist;
 			dist *= 0.5;
@@ -204,7 +204,7 @@ int8_t delta_calcAngleYZ(float x0, float y0, float z0, float *theta)
 	float re = g_settings.delta_forearm_length;
 	float rf = g_settings.delta_bicep_length;
 	float y1 = -delta_base_half_f_tg30; // f/2 * tg 30
-	y0 -= delta_effector_half_f_tg30;	// shift center to edge
+	y0 -= delta_effector_half_f_tg30;		// shift center to edge
 	// z = a + b*y
 	float a = fast_flt_div2((x0 * x0 + y0 * y0 + z0 * z0 + rf * rf - re * re - y1 * y1)) / z0;
 	float b = (y1 - y0) / z0;
@@ -343,7 +343,6 @@ uint8_t kinematics_home(void)
 		return error;
 	}
 
-
 #if AXIS_A_HOMING_MASK != 0
 	error = mc_home_axis(AXIS_A_HOMING_MASK, LINACT3_LIMIT_MASK);
 	if (error != STATUS_OK)
@@ -439,6 +438,24 @@ bool kinematics_check_boundaries(float *axis)
 	if (axis[AXIS_Z] < (delta_cuboid_z_min - z_offset) || axis[AXIS_Z] > (delta_cuboid_z_max - z_offset))
 	{
 		return false;
+	}
+
+	// remaining axis
+	for (uint8_t i = AXIS_COUNT; i != 3;)
+	{
+		i--;
+		if (g_settings.max_distance[i]) // ignore any undefined axis
+		{
+#ifdef SET_ORIGIN_AT_HOME_POS
+			float value = !(g_settings.homing_dir_invert_mask & (1 << i)) ? axis[i] : -axis[i];
+#else
+			float value = axis[i];
+#endif
+			if (value > g_settings.max_distance[i] || value < 0)
+			{
+				return false;
+			}
+		}
 	}
 
 	return true;
