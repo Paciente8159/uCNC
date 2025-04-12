@@ -332,31 +332,31 @@ uint8_t io_get_limits(void)
 	uint8_t value = 0;
 
 #if ASSERT_PIN(LIMIT_X)
-	value |= ((io_get_input(LIMIT_X)) ? LIMIT_X_IO_MASK : 0);
+	value |= ((IO_CONDITION_LIMIT_X) ? LIMIT_X_IO_MASK : 0);
 #endif
 #if ASSERT_PIN(LIMIT_Y)
-	value |= ((io_get_input(LIMIT_Y)) ? LIMIT_Y_IO_MASK : 0);
+	value |= ((IO_CONDITION_LIMIT_Y) ? LIMIT_Y_IO_MASK : 0);
 #endif
 #if ASSERT_PIN(LIMIT_Z)
-	value |= ((io_get_input(LIMIT_Z)) ? LIMIT_Z_IO_MASK : 0);
+	value |= ((IO_CONDITION_LIMIT_Z) ? LIMIT_Z_IO_MASK : 0);
 #endif
 #if ASSERT_PIN(LIMIT_X2)
-	value |= ((io_get_input(LIMIT_X2)) ? LIMIT_X2_IO_MASK : 0);
+	value |= ((IO_CONDITION_LIMIT_X2) ? LIMIT_X2_IO_MASK : 0);
 #endif
 #if ASSERT_PIN(LIMIT_Y2)
-	value |= ((io_get_input(LIMIT_Y2)) ? LIMIT_Y2_IO_MASK : 0);
+	value |= ((IO_CONDITION_LIMIT_Y2) ? LIMIT_Y2_IO_MASK : 0);
 #endif
 #if ASSERT_PIN(LIMIT_Z2)
-	value |= ((io_get_input(LIMIT_Z2)) ? LIMIT_Z2_IO_MASK : 0);
+	value |= ((IO_CONDITION_LIMIT_Z2) ? LIMIT_Z2_IO_MASK : 0);
 #endif
 #if ASSERT_PIN(LIMIT_A)
-	value |= ((io_get_input(LIMIT_A)) ? LIMIT_A_IO_MASK : 0);
+	value |= ((IO_CONDITION_LIMIT_A) ? LIMIT_A_IO_MASK : 0);
 #endif
 #if ASSERT_PIN(LIMIT_B)
-	value |= ((io_get_input(LIMIT_B)) ? LIMIT_B_IO_MASK : 0);
+	value |= ((IO_CONDITION_LIMIT_B) ? LIMIT_B_IO_MASK : 0);
 #endif
 #if ASSERT_PIN(LIMIT_C)
-	value |= ((io_get_input(LIMIT_C)) ? LIMIT_C_IO_MASK : 0);
+	value |= ((IO_CONDITION_LIMIT_C) ? LIMIT_C_IO_MASK : 0);
 #endif
 
 	uint8_t inv = g_settings.limits_invert_mask;
@@ -388,19 +388,19 @@ uint8_t io_get_controls(void)
 	uint8_t value = 0;
 #if ASSERT_PIN(ESTOP)
 #ifndef INVERT_EMERGENCY_STOP
-	value |= ((io_get_input(ESTOP)) ? ESTOP_MASK : 0);
+	value |= ((IO_CONDITION_ESTOP) ? ESTOP_MASK : 0);
 #else
-	value |= ((!io_get_input(ESTOP)) ? ESTOP_MASK : 0);
+	value |= ((!IO_CONDITION_ESTOP) ? ESTOP_MASK : 0);
 #endif
 #endif
 #if ASSERT_PIN(SAFETY_DOOR)
-	value |= ((io_get_input(SAFETY_DOOR)) ? SAFETY_DOOR_MASK : 0);
+	value |= ((IO_CONDITION_SAFETY_DOOR) ? SAFETY_DOOR_MASK : 0);
 #endif
 #if ASSERT_PIN(FHOLD)
-	value |= ((io_get_input(FHOLD)) ? FHOLD_MASK : 0);
+	value |= ((IO_CONDITION_FHOLD) ? FHOLD_MASK : 0);
 #endif
 #if ASSERT_PIN(CS_RES)
-	value |= ((io_get_input(CS_RES)) ? CS_RES_MASK : 0);
+	value |= ((IO_CONDITION_CS_RES) ? CS_RES_MASK : 0);
 #endif
 
 	return (value ^ (g_settings.control_invert_mask & CONTROLS_INV_MASK));
@@ -471,7 +471,7 @@ bool io_get_probe(void)
 	io_extended_pins_update();
 #endif
 #if ASSERT_PIN(PROBE)
-	bool probe = (io_get_input(PROBE) != 0);
+	bool probe = (IO_CONDITION_PROBE != 0);
 	return (!g_settings.probe_invert_mask) ? probe : !probe;
 #else
 	return false;
@@ -2229,11 +2229,7 @@ int16_t io_get_pinvalue(uint8_t pin)
 #endif
 #if ASSERT_PIN(ESTOP)
 	case ESTOP:
-#ifndef INVERT_EMERGENCY_STOP
 		return (io_get_input(ESTOP) != 0);
-#else
-		return (io_get_input(ESTOP) == 0);
-#endif
 #endif
 #if ASSERT_PIN(SAFETY_DOOR)
 	case SAFETY_DOOR:
