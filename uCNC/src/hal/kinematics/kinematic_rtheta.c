@@ -39,7 +39,7 @@ void kinematics_init(void)
 	arm_angle_fact = 2.0f * M_PI / g_settings.step_per_mm[0];
 	arm_length_fact = 1 / g_settings.step_per_mm[1];
 	theta_reduction_ratio = g_settings.rtheta_theta_reduction_ratio;
-	theta_reduction_ratio_inv = 1/g_settings.rtheta_theta_reduction_ratio;
+	theta_reduction_ratio_inv = 1 / g_settings.rtheta_theta_reduction_ratio;
 	arm = g_settings.rtheta_arm_length;
 	mc_sync_position();
 }
@@ -155,7 +155,7 @@ uint8_t kinematics_home(void)
 	error = mc_line(target, &block_data);
 	itp_sync();
 #endif
-	
+
 	return error;
 }
 
@@ -173,10 +173,10 @@ bool kinematics_check_boundaries(float *axis)
 	{
 		return true;
 	}
-	
+
 	float distance_to_center_sqr = axis[AXIS_X] * axis[AXIS_X] + axis[AXIS_Y] * axis[AXIS_Y];
 
-	if (distance_to_center_sqr > arm*arm)
+	if (distance_to_center_sqr > arm * arm)
 	{
 		return false;
 	}
@@ -184,14 +184,17 @@ bool kinematics_check_boundaries(float *axis)
 	for (uint8_t i = AXIS_COUNT; i != 2;)
 	{
 		i--;
-#ifdef SET_ORIGIN_AT_HOME_POS
-		float value = !(g_settings.homing_dir_invert_mask & (1 << i)) ? axis[i] : -axis[i];
-#else
-		float value = axis[i];
-#endif
-		if (value > g_settings.max_distance[i] || value < 0)
+		if (g_settings.max_distance[i]) // ignore any undefined axis
 		{
-			return false;
+#ifdef SET_ORIGIN_AT_HOME_POS
+			float value = !(g_settings.homing_dir_invert_mask & (1 << i)) ? axis[i] : -axis[i];
+#else
+			float value = axis[i];
+#endif
+			if (value > g_settings.max_distance[i] || value < 0)
+			{
+				return false;
+			}
 		}
 	}
 

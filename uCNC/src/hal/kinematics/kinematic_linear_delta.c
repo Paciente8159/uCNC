@@ -118,9 +118,9 @@ void kinematics_apply_forward(int32_t *steps, float *axis)
 	// The cross product of the unit x and y is the unit z
 	// float[] ez = vectorCrossProd(ex, ey);
 	float ez[3] = {
-		ex[1] * ey[2] - ex[2] * ey[1],
-		ex[2] * ey[0] - ex[0] * ey[2],
-		ex[0] * ey[1] - ex[1] * ey[0]};
+			ex[1] * ey[2] - ex[2] * ey[1],
+			ex[2] * ey[0] - ex[0] * ey[2],
+			ex[0] * ey[1] - ex[1] * ey[0]};
 
 	// We now have the d, i and j values defined in Wikipedia.
 	// Plug them into the equations defined in Wikipedia for Xnew, Ynew and Znew
@@ -150,7 +150,6 @@ uint8_t kinematics_home(void)
 	{
 		return error;
 	}
-
 
 #if AXIS_A_HOMING_MASK != 0
 	error = mc_home_axis(AXIS_A_HOMING_MASK, LINACT3_LIMIT_MASK);
@@ -234,6 +233,24 @@ bool kinematics_check_boundaries(float *axis)
 		return false;
 	}
 #endif
+
+	// remaining axis
+	for (uint8_t i = AXIS_COUNT; i != 3;)
+	{
+		i--;
+		if (g_settings.max_distance[i]) // ignore any undefined axis
+		{
+#ifdef SET_ORIGIN_AT_HOME_POS
+			float value = !(g_settings.homing_dir_invert_mask & (1 << i)) ? axis[i] : -axis[i];
+#else
+			float value = axis[i];
+#endif
+			if (value > g_settings.max_distance[i] || value < 0)
+			{
+				return false;
+			}
+		}
+	}
 
 	return true;
 }
