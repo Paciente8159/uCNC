@@ -56,6 +56,52 @@ extern "C"
 	MCU_CALLBACK void io_soft_pwm_update(void);
 #endif
 
+/**
+ * Configurable input conditions that trigger the respective alarm conditions
+ */
+#ifndef IO_CONDITION_ESTOP
+#define IO_CONDITION_ESTOP (io_get_input(ESTOP))
+#endif
+#ifndef IO_CONDITION_SAFETY_DOOR
+#define IO_CONDITION_SAFETY_DOOR (io_get_input(SAFETY_DOOR))
+#endif
+#ifndef IO_CONDITION_FHOLD
+#define IO_CONDITION_FHOLD (io_get_input(FHOLD))
+#endif
+#ifndef IO_CONDITION_CS_RES
+#define IO_CONDITION_CS_RES (io_get_input(CS_RES))
+#endif
+#ifndef IO_CONDITION_PROBE
+#define IO_CONDITION_PROBE (io_get_input(PROBE))
+#endif
+#ifndef IO_CONDITION_LIMIT_X
+#define IO_CONDITION_LIMIT_X (io_get_input(LIMIT_X))
+#endif
+#ifndef IO_CONDITION_LIMIT_X2
+#define IO_CONDITION_LIMIT_X2 (io_get_input(LIMIT_X2))
+#endif
+#ifndef IO_CONDITION_LIMIT_Y
+#define IO_CONDITION_LIMIT_Y (io_get_input(LIMIT_Y))
+#endif
+#ifndef IO_CONDITION_LIMIT_Y2
+#define IO_CONDITION_LIMIT_Y2 (io_get_input(LIMIT_Y2))
+#endif
+#ifndef IO_CONDITION_LIMIT_Z
+#define IO_CONDITION_LIMIT_Z (io_get_input(LIMIT_Z))
+#endif
+#ifndef IO_CONDITION_LIMIT_Z2
+#define IO_CONDITION_LIMIT_Z2 (io_get_input(LIMIT_Z2))
+#endif
+#ifndef IO_CONDITION_LIMIT_A
+#define IO_CONDITION_LIMIT_A (io_get_input(LIMIT_A))
+#endif
+#ifndef IO_CONDITION_LIMIT_B
+#define IO_CONDITION_LIMIT_B (io_get_input(LIMIT_B))
+#endif
+#ifndef IO_CONDITION_LIMIT_C
+#define IO_CONDITION_LIMIT_C (io_get_input(LIMIT_C))
+#endif
+
 // inputs
 #ifdef ENABLE_MULTI_STEP_HOMING
 	void io_lock_limits(uint8_t limitmask);
