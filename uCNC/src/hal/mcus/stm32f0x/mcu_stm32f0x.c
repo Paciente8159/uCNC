@@ -45,24 +45,27 @@
 #define FLASH_PAGE_SIZE (1 << 10)
 #endif
 #define FLASH_EEPROM_PAGES (((NVM_STORAGE_SIZE - 1) >> 10) + 1)
-#define FLASH_EEPROM (FLASH_LIMIT - ((FLASH_EEPROM_PAGES << 10) - 1))
-#define FLASH_PAGE_MASK (0xFFFF - (1 << 10) + 1)
-#define FLASH_PAGE_OFFSET_MASK (0xFFFF & ~FLASH_PAGE_MASK)
+#define FLASH_EEPROM_START (FLASH_LIMIT - ((FLASH_EEPROM_PAGES << 10) - 1))
 #else
 #ifndef FLASH_PAGE_SIZE
 #define FLASH_PAGE_SIZE (1 << 11)
 #endif
 #define FLASH_EEPROM_PAGES (((NVM_STORAGE_SIZE - 1) >> 11) + 1)
-#define FLASH_EEPROM (FLASH_LIMIT - ((FLASH_EEPROM_PAGES << 11) - 1))
-#define FLASH_PAGE_MASK (0xFFFF - (1 << 11) + 1)
-#define FLASH_PAGE_OFFSET_MASK (0xFFFF & ~FLASH_PAGE_MASK)
+#define FLASH_EEPROM_START (FLASH_LIMIT - ((FLASH_EEPROM_PAGES << 11) - 1))
 #endif
 
-#define READ_FLASH(ram_ptr, flash_ptr) (*ram_ptr = ~(*flash_ptr))
-#define WRITE_FLASH(flash_ptr, ram_ptr) (*flash_ptr = ~(*ram_ptr))
-static uint8_t stm32_flash_page[FLASH_PAGE_SIZE];
-static uint16_t stm32_flash_current_page;
-static bool stm32_flash_modified;
+#define FLASH_PAGE_MASK (0xFFFF - FLASH_PAGE_SIZE + 1)
+#define FLASH_PAGE_OFFSET_MASK (0xFFFF & ~FLASH_PAGE_MASK)
+
+#define READ_FLASH(ram_ptr, flash_ptr) (*(ram_ptr) = ~(*(flash_ptr)))
+#define WRITE_FLASH(flash_ptr, ram_ptr) (*(flash_ptr) = ~(*(ram_ptr)))
+static uint8_t stm32_eeprom_ram[NVM_STORAGE_SIZE];
+static uint16_t stm32_flash_current_offset;
+static uint8_t stm32_eeprom_ram_dirty;
+#define EEPROM_OK 0
+#define EEPROM_DIRTY 1
+#define EEPROM_FULL_WRITE 2
+static void mcu_eeprom_init(void);
 
 /**
  * The internal clock counter
@@ -681,7 +684,7 @@ void mcu_init(void)
 #endif
 
 	mcu_disable_probe_isr();
-	stm32_flash_current_page = -1;
+	mcu_eeprom_init();
 	stm32_global_isr_enabled = false;
 	mcu_enable_global_isr();
 }
@@ -829,29 +832,34 @@ void mcu_dotasks()
 #endif
 }
 
-// checks if the current page is loaded to ram
-// if not loads it
-static uint16_t mcu_access_flash_page(uint16_t address)
+// initializes the eeprom
+void mcu_eeprom_init(void)
 {
-	uint16_t address_page = address & FLASH_PAGE_MASK;
-	uint16_t address_offset = address & FLASH_PAGE_OFFSET_MASK;
-	if (stm32_flash_current_page != address_page)
+	// searches for the first section of flash that is unwriten
+	stm32_flash_current_offset = 0;
+	uint32_t value = 0;
+	volatile uint32_t *eeprom = ((volatile uint32_t *)(FLASH_EEPROM_START));
+	for (;;)
 	{
-		mcu_eeprom_flush();
-		stm32_flash_modified = false;
-		stm32_flash_current_page = address_page;
-		uint16_t counter = (uint16_t)(FLASH_PAGE_SIZE >> 2);
-		uint32_t *ptr = ((uint32_t *)&stm32_flash_page[0]);
-		volatile uint32_t *eeprom = ((volatile uint32_t *)(FLASH_EEPROM + address_page));
-		while (counter--)
+		READ_FLASH(&value, eeprom);
+		stm32_flash_current_offset += NVM_STORAGE_SIZE;
+		if (((FLASH_EEPROM_START + stm32_flash_current_offset) >= FLASH_LIMIT) || !value)
 		{
-			READ_FLASH(ptr, eeprom);
-			eeprom++;
-			ptr++;
+			break;
 		}
+		eeprom = ((volatile uint32_t *)(FLASH_EEPROM_START + stm32_flash_current_offset));
 	}
+	stm32_flash_current_offset -= NVM_STORAGE_SIZE; // last position with data
 
-	return address_offset;
+	uint16_t counter = (uint16_t)(NVM_STORAGE_SIZE >> 2);
+	uint32_t *ptr = ((uint32_t *)&stm32_eeprom_ram[0]);
+	eeprom = ((volatile uint32_t *)(FLASH_EEPROM_START + stm32_flash_current_offset));
+	while (counter--)
+	{
+		READ_FLASH(ptr, eeprom);
+		eeprom++;
+		ptr++;
+	}
 }
 
 // Non volatile memory
@@ -862,29 +870,7 @@ uint8_t mcu_eeprom_getc(uint16_t address)
 		DBGMSG("EEPROM invalid address @ %u", address);
 		return 0;
 	}
-	uint16_t offset = mcu_access_flash_page(address);
-	return stm32_flash_page[offset];
-}
-
-static void mcu_eeprom_erase(uint16_t address)
-{
-#ifndef DISABLE_EEPROM_EMULATION
-	while (FLASH->SR & FLASH_SR_BSY)
-		; // wait while busy
-	// unlock flash if locked
-	if (FLASH->CR & FLASH_CR_LOCK)
-	{
-		FLASH->KEYR = 0x45670123;
-		FLASH->KEYR = 0xCDEF89AB;
-	}
-	FLASH->CR = 0;						 // Ensure PG bit is low
-	FLASH->CR |= FLASH_CR_PER; // set the PER bit
-	FLASH->AR = (FLASH_EEPROM + address);
-	FLASH->CR |= FLASH_CR_STRT; // set the start bit
-	while (FLASH->SR & FLASH_SR_BSY)
-		; // wait while busy
-	FLASH->CR = 0;
-#endif
+	return stm32_eeprom_ram[address];
 }
 
 void mcu_eeprom_putc(uint16_t address, uint8_t value)
@@ -894,25 +880,70 @@ void mcu_eeprom_putc(uint16_t address, uint8_t value)
 		DBGMSG("EEPROM invalid address @ %u", address);
 	}
 
-	uint16_t offset = mcu_access_flash_page(address);
-
-	if (stm32_flash_page[offset] != value)
+	// all bits that changed and
+	if (stm32_eeprom_ram[address] != value)
 	{
-		stm32_flash_modified = true;
+		stm32_eeprom_ram_dirty |= ((stm32_eeprom_ram[address] ^ value) & ~value) ? EEPROM_FULL_WRITE : EEPROM_DIRTY;
 	}
 
-	stm32_flash_page[offset] = value;
+	stm32_eeprom_ram[address] = value;
+}
+
+static void mcu_eeprom_erase(void)
+{
+#ifndef DISABLE_EEPROM_EMULATION
+	for (uint16_t page = 0; page < FLASH_EEPROM_PAGES; page++)
+	{
+		while (FLASH->SR & FLASH_SR_BSY)
+			; // wait while busy
+		// unlock flash if locked
+		if (FLASH->CR & FLASH_CR_LOCK)
+		{
+			FLASH->KEYR = 0x45670123;
+			FLASH->KEYR = 0xCDEF89AB;
+		}
+		FLASH->CR = 0;						 // Ensure PG bit is low
+		FLASH->CR |= FLASH_CR_PER; // set the PER bit
+		FLASH->AR = (FLASH_EEPROM_START + (page * FLASH_PAGE_SIZE));
+		FLASH->CR |= FLASH_CR_STRT; // set the start bit
+		while (FLASH->SR & FLASH_SR_BSY)
+			; // wait while busy
+		FLASH->CR = 0;
+	}
+#endif
 }
 
 void mcu_eeprom_flush()
 {
 #ifndef DISABLE_EEPROM_EMULATION
-	if (stm32_flash_modified)
+	if (stm32_eeprom_ram_dirty)
 	{
-		mcu_eeprom_erase(stm32_flash_current_page);
-		volatile uint16_t *eeprom = ((volatile uint16_t *)(FLASH_EEPROM + stm32_flash_current_page));
-		uint16_t *ptr = ((uint16_t *)&stm32_flash_page[0]);
-		uint16_t counter = (uint16_t)(FLASH_PAGE_SIZE >> 1);
+		if (stm32_eeprom_ram_dirty & EEPROM_FULL_WRITE)
+		{
+			for (;;)
+			{
+				stm32_flash_current_offset += NVM_STORAGE_SIZE;
+				if (((FLASH_EEPROM_START + stm32_flash_current_offset + NVM_STORAGE_SIZE) >= FLASH_LIMIT))
+				{
+					// erases all sectors used for eeprom emulation and starts writing the eeprom
+					stm32_flash_current_offset = 0;
+					mcu_eeprom_erase();
+				}
+
+				uint32_t flash_offset = FLASH_EEPROM_START + stm32_flash_current_offset;
+				volatile uint32_t *eeprom = ((volatile uint32_t *)(flash_offset));
+				uint32_t value = 0;
+				READ_FLASH(&value, eeprom);
+				if (!value)
+				{
+					break;
+				}
+			}
+		}
+
+		volatile uint16_t *eeprom = ((volatile uint16_t *)(FLASH_EEPROM_START + stm32_flash_current_offset));
+		uint16_t *ptr = ((uint16_t *)&stm32_eeprom_ram[0]);
+		uint16_t counter = (uint16_t)(NVM_STORAGE_SIZE >> 1);
 		while (counter--)
 		{
 			while (FLASH->SR & FLASH_SR_BSY)
@@ -939,7 +970,7 @@ void mcu_eeprom_flush()
 			eeprom++;
 			ptr++;
 		}
-		stm32_flash_modified = false;
+		stm32_eeprom_ram_dirty = EEPROM_OK;
 		// Restore interrupt flag state.*/
 	}
 #endif
