@@ -166,14 +166,17 @@ bool kinematics_check_boundaries(float *axis)
 	for (uint8_t i = AXIS_COUNT; i != 0;)
 	{
 		i--;
-#ifdef SET_ORIGIN_AT_HOME_POS
-		float value = !(g_settings.homing_dir_invert_mask & (1 << i)) ? axis[i] : -axis[i];
-#else
-		float value = axis[i];
-#endif
-		if (value > g_settings.max_distance[i] || value < 0)
+		if (g_settings.max_distance[i]) //ignore any undefined axis
 		{
-			return false;
+#ifdef SET_ORIGIN_AT_HOME_POS
+			float value = !(g_settings.homing_dir_invert_mask & (1 << i)) ? axis[i] : -axis[i];
+#else
+			float value = axis[i];
+#endif
+			if (value > g_settings.max_distance[i] || value < 0)
+			{
+				return false;
+			}
 		}
 	}
 
