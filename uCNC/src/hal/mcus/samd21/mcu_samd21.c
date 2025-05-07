@@ -554,6 +554,7 @@ void sysTickHook(void)
 #endif
 {
 	mcu_disable_global_isr();
+	mcu_isr_context_enter();
 	// counts to 20 and reloads
 #if SERVOS_MASK > 0
 	static uint8_t ms_servo_counter = 0;
