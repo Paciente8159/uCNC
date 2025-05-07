@@ -52,9 +52,9 @@ extern "C"
 // machine tools configurations
 #include "hal/tools/tool.h" //configures the kinematics for the cnc machine
 // final HAL configurations
-#include "../cnc_hal_config.h"		//inicializes the HAL hardcoded connections
-#include "../cnc_hal_overrides.h" //config override file
-#include "modules/shift_register.h"		// io extender
+#include "../cnc_hal_config.h"			//inicializes the HAL hardcoded connections
+#include "../cnc_hal_overrides.h"		//config override file
+#include "modules/shift_register.h" // io extender
 
 	/**
 	 *
@@ -2393,6 +2393,15 @@ typedef uint16_t step_t;
 #undef ENABLE_G39_H_MAPPING
 #warning "ENABLE_G39_H_MAPPING disabled via because AXIS_TOOL is not defined"
 #endif
+#endif
+
+#ifdef ENABLE_G39_H_MAPPING
+#if H_MAPING_GRID_FACTOR < 2 || H_MAPING_GRID_FACTOR > 6
+#error "H_MAPING_GRID_FACTOR must be a value between 2 and 6"
+#endif
+#define H_MAPING_ARRAY_SIZE (H_MAPING_GRID_FACTOR * H_MAPING_GRID_FACTOR)
+#else
+#undef H_MAPPING_EEPROM_STORE_ENABLED
 #endif
 
 #ifndef DISABLE_SETTINGS_MODULES

@@ -55,17 +55,19 @@ static uint8_t mc_last_dirbits;
 
 #ifdef ENABLE_G39_H_MAPPING
 
-#if H_MAPING_GRID_FACTOR < 2 || H_MAPING_GRID_FACTOR > 6
-#error "H_MAPING_GRID_FACTOR must be a value between 2 and 6"
-#endif
-
-#define H_MAPING_ARRAY_SIZE (H_MAPING_GRID_FACTOR * H_MAPING_GRID_FACTOR)
-
+#ifndef H_MAPPING_EEPROM_STORE_ENABLED
 static float hmap_x;
 static float hmap_y;
 static float hmap_x_offset;
 static float hmap_y_offset;
 static float hmap_offsets[H_MAPING_ARRAY_SIZE];
+#else
+#define hmap_x g_settings.hmap_x
+#define hmap_y g_settings.hmap_y
+#define hmap_x_offset g_settings.hmap_x_offset
+#define hmap_y_offset g_settings.hmap_y_offset
+#define hmap_offsets g_settings.hmap_offsets
+#endif
 
 // the maximum subsegment length factor
 #define H_MAPING_SEGMENT_INV_SIZE (MAX(((float)H_MAPING_GRID_FACTOR / hmap_x_offset), ((float)H_MAPING_GRID_FACTOR / hmap_y_offset)))
@@ -103,7 +105,9 @@ void mc_init(void)
 #endif
 #endif
 #ifdef ENABLE_G39_H_MAPPING
+#ifndef H_MAPPING_EEPROM_STORE_ENABLED
 	memset(hmap_offsets, 0, sizeof(hmap_offsets));
+#endif
 #endif
 	mc_checkmode = false;
 	mc_sync_position();
@@ -802,10 +806,10 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 	homing_status_t homing_status __attribute__((__cleanup__(mc_home_axis_finalize))) = {axis_mask, axis_limit, STATUS_OK};
 #endif
 
-#ifdef ENABLE_G39_H_MAPPING
-	// resets height map
-	memset(hmap_offsets, 0, sizeof(hmap_offsets));
-#endif
+// #ifdef ENABLE_G39_H_MAPPING
+// 	// resets height map
+// 	memset(hmap_offsets, 0, sizeof(hmap_offsets));
+// #endif
 
 #ifdef ENABLE_MOTION_CONTROL_MODULES
 	EVENT_INVOKE(mc_home_axis_start, &homing_status);
@@ -1125,9 +1129,10 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 	float offset_y = offset[1] / (H_MAPING_GRID_FACTOR - 1);
 	float position[AXIS_COUNT];
 	float feed = block_data->feed;
+	float new_hmap_offsets[H_MAPING_ARRAY_SIZE];
 
 	// clear the previous map
-	memset(hmap_offsets, 0, sizeof(hmap_offsets));
+	memset(new_hmap_offsets, 0, sizeof(new_hmap_offsets));
 
 	mc_get_position(position);
 
@@ -1170,7 +1175,7 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 			int32_t probe_position[STEPPER_COUNT];
 			parser_get_probe(probe_position);
 			kinematics_steps_to_coordinates(probe_position, position);
-			hmap_offsets[i + H_MAPING_GRID_FACTOR * j] = position[AXIS_TOOL];
+			new_hmap_offsets[i + H_MAPING_GRID_FACTOR * j] = position[AXIS_TOOL];
 			proto_probe_result(1);
 
 			// update to new target
@@ -1203,22 +1208,22 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 
 	// move to 1st point at feed speed
 	block_data->feed = feed;
-	position[AXIS_TOOL] = hmap_offsets[0];
+	position[AXIS_TOOL] = new_hmap_offsets[0];
 	error = mc_line(position, block_data);
 	if (error != STATUS_OK)
 	{
 		return error;
 	}
 
-	float h_offset_base = hmap_offsets[0];
+	float h_offset_base = new_hmap_offsets[0];
 	// make offsets relative to point 0,0
 	for (uint8_t j = 0; j < H_MAPING_GRID_FACTOR; j++)
 	{
 		for (uint8_t i = 0; i < H_MAPING_GRID_FACTOR; i++)
 		{
 			uint8_t map = i + (H_MAPING_GRID_FACTOR * j);
-			float new_h = hmap_offsets[map] - h_offset_base;
-			hmap_offsets[map] = new_h;
+			float new_h = new_hmap_offsets[map] - h_offset_base;
+			new_hmap_offsets[map] = new_h;
 		}
 	}
 
@@ -1227,6 +1232,13 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 	hmap_y = start_y;
 	hmap_x_offset = offset[0];
 	hmap_y_offset = offset[1];
+
+	// copy the new map tp the hmap array
+	memcpy(hmap_offsets, new_hmap_offsets, sizeof(new_hmap_offsets));
+	#ifdef H_MAPPING_EEPROM_STORE_ENABLED
+	// store the new map
+	settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
+	#endif
 
 	// print map
 	mc_print_hmap();

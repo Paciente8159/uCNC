@@ -215,7 +215,18 @@ const setting_id_t __rom__ g_settings_id_table[] = {
 #ifdef ENABLE_BACKLASH_COMPENSATION
 		{.id = 140, .memptr = &g_settings.backlash_steps, .type = SETTING_TYPE_UINT16 | SETTING_ARRAY | SETTING_ARRCNT(AXIS_TO_STEPPERS)},
 #endif
-};
+#ifdef H_MAPPING_EEPROM_STORE_ENABLED
+#define H_MAPING_ARRAY_HALF_SIZE ((H_MAPING_GRID_FACTOR * H_MAPING_GRID_FACTOR) >> 1)
+		{.id = 215, .memptr = &g_settings.hmap_x, .type = SETTING_TYPE_FLOAT},
+		{.id = 216, .memptr = &g_settings.hmap_y, .type = SETTING_TYPE_FLOAT},
+		{.id = 217, .memptr = &g_settings.hmap_x_offset, .type = SETTING_TYPE_FLOAT},
+		{.id = 218, .memptr = &g_settings.hmap_y_offset, .type = SETTING_TYPE_FLOAT},
+		// since the array can have 36 entries we need to split this in 2 halfs because array entries support only up to 31 entries
+		{.id = 219, .memptr = &g_settings.hmap_offsets, .type = SETTING_TYPE_FLOAT | SETTING_ARRAY | SETTING_ARRCNT(H_MAPING_ARRAY_HALF_SIZE)},
+		{.id = 219 + H_MAPING_ARRAY_HALF_SIZE, .memptr = &g_settings.hmap_offsets[H_MAPING_ARRAY_HALF_SIZE], .type = SETTING_TYPE_FLOAT | SETTING_ARRAY | SETTING_ARRCNT(H_MAPING_ARRAY_HALF_SIZE)},
+#endif
+}
+;
 
 #ifdef ENABLE_SETTINGS_MODULES
 // event_settings_extended_load_handler

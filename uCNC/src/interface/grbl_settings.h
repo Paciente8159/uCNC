@@ -101,6 +101,13 @@ extern "C"
 		uint8_t encoders_pulse_invert_mask;
 		uint8_t encoders_dir_invert_mask;
 #endif
+#ifdef H_MAPPING_EEPROM_STORE_ENABLED
+		float hmap_x;
+		float hmap_y;
+		float hmap_x_offset;
+		float hmap_y_offset;
+		float hmap_offsets[H_MAPING_ARRAY_SIZE];
+#endif
 	} settings_t;
 
 // settings base address
