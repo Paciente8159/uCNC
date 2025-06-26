@@ -5,6 +5,18 @@
 µCNC - A universal CNC firmware for microcontrollers
 
 # Changelog
+
+## [1.12.3] - 26-06-2025
+
+### Added
+
+- allow storing HMapping (G39) in non volatile memory (Grbl settings) (#865)
+
+### Fixed
+
+- fixed block speed synchronization in the interpolator after (planner block transition speed synchronization) (#873)
+
+
 ## [1.12.2] - 05-05-2025
 
 ### Added
@@ -1905,6 +1917,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.12.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.12.3
 [1.12.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.12.2
 [1.12.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.12.1
 [1.12.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.12.0
