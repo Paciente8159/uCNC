@@ -465,6 +465,8 @@ extern "C"
 // this sets the size of the Hmap -> H_MAPING_GRID_FACTOR ^ 2
 // the minimum value is 2 (4 points) and the maximum is 6 (36 points)
 #define H_MAPING_GRID_FACTOR 3
+// uncomment to enable storing HMap settings $215-255
+// #define H_MAPPING_EEPROM_STORE_ENABLED
 #endif
 
 	/**
