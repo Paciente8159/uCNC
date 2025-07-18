@@ -974,7 +974,7 @@ void rp2350_wifi_bt_process(void)
 			{
 				if (BUFFER_FULL(wifi_rx))
 				{
-					c = OVF;
+					STREAM_OVF(c);
 				}
 
 				BUFFER_ENQUEUE(wifi_rx, &c);
@@ -1004,7 +1004,7 @@ void rp2350_wifi_bt_process(void)
 		{
 			if (BUFFER_FULL(bt_rx))
 			{
-				c = OVF;
+				STREAM_OVF(c);
 			}
 
 			BUFFER_ENQUEUE(bt_rx, &c);
@@ -1238,7 +1238,7 @@ extern "C"
 			{
 				if (BUFFER_FULL(usb_rx))
 				{
-					c = OVF;
+					STREAM_OVF(c);
 				}
 
 				BUFFER_ENQUEUE(usb_rx, &c);
@@ -1259,7 +1259,7 @@ extern "C"
 			{
 				if (BUFFER_FULL(uart_rx))
 				{
-					c = OVF;
+					STREAM_OVF(c);
 				}
 
 				BUFFER_ENQUEUE(uart_rx, &c);
@@ -1280,7 +1280,7 @@ extern "C"
 			{
 				if (BUFFER_FULL(uart2_rx))
 				{
-					c = OVF;
+					STREAM_OVF(c);
 				}
 
 				BUFFER_ENQUEUE(uart2_rx, &c);
@@ -1291,7 +1291,7 @@ extern "C"
 #ifndef UART2_DISABLE_BUFFER
 			if (BUFFER_FULL(uart2_rx))
 			{
-				c = OVF;
+				STREAM_OVF(c);
 			}
 
 			BUFFER_ENQUEUE(uart2_rx, &c);

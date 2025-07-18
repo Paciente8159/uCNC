@@ -99,7 +99,7 @@ void MCU_SERIAL_ISR(void)
 			{
 				if (BUFFER_FULL(uart_rx))
 				{
-					c = OVF;
+					STREAM_OVF(c);
 				}
 
 				BUFFER_ENQUEUE(uart_rx, &c);
@@ -144,7 +144,7 @@ void MCU_SERIAL2_ISR(void)
 			{
 				if (BUFFER_FULL(uart2_rx))
 				{
-					c = OVF;
+					STREAM_OVF(c);
 				}
 
 				BUFFER_ENQUEUE(uart2_rx, &c);
@@ -154,7 +154,7 @@ void MCU_SERIAL2_ISR(void)
 #ifndef UART2_DISABLE_BUFFER
 			if (BUFFER_FULL(uart2_rx))
 			{
-				c = OVF;
+				STREAM_OVF(c);
 			}
 
 			BUFFER_ENQUEUE(uart2_rx, &c);
@@ -917,7 +917,7 @@ void mcu_dotasks()
 		{
 			if (BUFFER_FULL(usb_rx))
 			{
-				c = OVF;
+				STREAM_OVF(c);
 			}
 
 			BUFFER_ENQUEUE(usb_rx, &c);

@@ -867,7 +867,7 @@ extern "C"
 				{
 					if (BUFFER_FULL(wifi_rx))
 					{
-						c = OVF;
+						STREAM_OVF(c);
 					}
 
 					BUFFER_ENQUEUE(wifi_rx, &c);
