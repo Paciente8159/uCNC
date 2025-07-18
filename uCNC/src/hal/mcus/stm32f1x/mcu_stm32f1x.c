@@ -57,6 +57,11 @@
 #define FLASH_PAGE_OFFSET_MASK (0xFFFF & ~FLASH_PAGE_MASK)
 #endif
 
+#ifdef DISABLE_EEPROM_EMULATION
+#undef FLASH_PAGE_SIZE
+#define FLASH_PAGE_SIZE NVM_STORAGE_SIZE
+#endif
+
 #define READ_FLASH(ram_ptr, flash_ptr) (*ram_ptr = ~(*flash_ptr))
 #define WRITE_FLASH(flash_ptr, ram_ptr) (*flash_ptr = ~(*ram_ptr))
 static uint8_t stm32_flash_page[FLASH_PAGE_SIZE];
@@ -94,7 +99,7 @@ void MCU_SERIAL_ISR(void)
 			{
 				if (BUFFER_FULL(uart_rx))
 				{
-					c = OVF;
+					STREAM_OVF(c);
 				}
 
 				BUFFER_ENQUEUE(uart_rx, &c);
@@ -139,7 +144,7 @@ void MCU_SERIAL2_ISR(void)
 			{
 				if (BUFFER_FULL(uart2_rx))
 				{
-					c = OVF;
+					STREAM_OVF(c);
 				}
 
 				BUFFER_ENQUEUE(uart2_rx, &c);
@@ -149,7 +154,7 @@ void MCU_SERIAL2_ISR(void)
 #ifndef UART2_DISABLE_BUFFER
 			if (BUFFER_FULL(uart2_rx))
 			{
-				c = OVF;
+				STREAM_OVF(c);
 			}
 
 			BUFFER_ENQUEUE(uart2_rx, &c);
@@ -912,7 +917,7 @@ void mcu_dotasks()
 		{
 			if (BUFFER_FULL(usb_rx))
 			{
-				c = OVF;
+				STREAM_OVF(c);
 			}
 
 			BUFFER_ENQUEUE(usb_rx, &c);
@@ -928,6 +933,9 @@ void mcu_dotasks()
 // if not loads it
 static uint16_t mcu_access_flash_page(uint16_t address)
 {
+#ifdef DISABLE_EEPROM_EMULATION
+	return address;
+#else
 	uint16_t address_page = address & FLASH_PAGE_MASK;
 	uint16_t address_offset = address & FLASH_PAGE_OFFSET_MASK;
 	if (stm32_flash_current_page != address_page)
@@ -947,6 +955,7 @@ static uint16_t mcu_access_flash_page(uint16_t address)
 	}
 
 	return address_offset;
+#endif
 }
 
 // Non volatile memory
@@ -954,7 +963,7 @@ uint8_t mcu_eeprom_getc(uint16_t address)
 {
 	if (NVM_STORAGE_SIZE <= address)
 	{
-		DBGMSG("EEPROM invalid address @ %u",address);
+		DBGMSG("EEPROM invalid address @ %u", address);
 		return 0;
 	}
 	uint16_t offset = mcu_access_flash_page(address);
@@ -963,6 +972,7 @@ uint8_t mcu_eeprom_getc(uint16_t address)
 
 static void mcu_eeprom_erase(uint16_t address)
 {
+#ifndef DISABLE_EEPROM_EMULATION
 	while (FLASH->SR & FLASH_SR_BSY)
 		; // wait while busy
 	// unlock flash if locked
@@ -978,13 +988,14 @@ static void mcu_eeprom_erase(uint16_t address)
 	while (FLASH->SR & FLASH_SR_BSY)
 		; // wait while busy
 	FLASH->CR = 0;
+#endif
 }
 
 void mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
 	if (NVM_STORAGE_SIZE <= address)
 	{
-		DBGMSG("EEPROM invalid address @ %u",address);
+		DBGMSG("EEPROM invalid address @ %u", address);
 	}
 
 	uint16_t offset = mcu_access_flash_page(address);
@@ -999,6 +1010,7 @@ void mcu_eeprom_putc(uint16_t address, uint8_t value)
 
 void mcu_eeprom_flush()
 {
+#ifndef DISABLE_EEPROM_EMULATION
 	if (stm32_flash_modified)
 	{
 		mcu_eeprom_erase(stm32_flash_current_page);
@@ -1026,7 +1038,7 @@ void mcu_eeprom_flush()
 				proto_error(42); // STATUS_SETTING_WRITE_FAIL
 			if (FLASH->SR & FLASH_SR_WRPRTERR)
 				proto_error(43); // STATUS_SETTING_PROTECTED_FAIL
-			FLASH->CR = 0;						 // Ensure PG bit is low
+			FLASH->CR = 0;		 // Ensure PG bit is low
 			FLASH->SR = 0;
 			eeprom++;
 			ptr++;
@@ -1034,6 +1046,7 @@ void mcu_eeprom_flush()
 		stm32_flash_modified = false;
 		// Restore interrupt flag state.*/
 	}
+#endif
 }
 
 typedef enum spi_port_state_enum

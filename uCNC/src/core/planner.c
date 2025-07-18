@@ -217,11 +217,15 @@ void planner_discard_block(void)
 	}
 
 	uint8_t index = planner_data_read;
+	uint8_t prev_index = index;
 
 	if (++index == PLANNER_BUFFER_SIZE)
 	{
 		index = 0;
 	}
+
+	// syncs blocks feedrates
+	planner_data[index].entry_feed_sqr = planner_data[prev_index].entry_feed_sqr;
 
 	blocks--;
 #if TOOL_COUNT > 0

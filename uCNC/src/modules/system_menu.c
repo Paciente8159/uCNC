@@ -149,6 +149,14 @@ DECL_MODULE(system_menu)
 	DECL_MENU_VAR(SYSTEM_MENU_ID_MISC_SETTINGS, s11, STR_G64_FACT, &g_settings.g64_angle_factor, VAR_TYPE_FLOAT);
 	DECL_MENU_VAR(SYSTEM_MENU_ID_MISC_SETTINGS, s12, STR_ARC_TOL, &g_settings.arc_tolerance, VAR_TYPE_FLOAT);
 
+#ifdef H_MAPPING_EEPROM_STORE_ENABLED
+	DECL_MENU_VAR(SYSTEM_MENU_ID_MISC_SETTINGS, s215, STR_ARC_TOL, &g_settings.hmap_x, VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(SYSTEM_MENU_ID_MISC_SETTINGS, s216, STR_ARC_TOL, &g_settings.hmap_y, VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(SYSTEM_MENU_ID_MISC_SETTINGS, s217, STR_ARC_TOL, &g_settings.hmap_x_offset, VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(SYSTEM_MENU_ID_MISC_SETTINGS, s218, STR_ARC_TOL, &g_settings.hmap_y_offset, VAR_TYPE_FLOAT);
+	// TODO allow edit each offset individually
+#endif
+
 	DECL_MENU(SYSTEM_MENU_ID_IO_SETTIGNS, SYSTEM_MENU_ID_SETTINGS, STR_IO_CONFIG);
 	DECL_MENU_VAR(SYSTEM_MENU_ID_IO_SETTIGNS, s2, STR_STEP_INV, &g_settings.dir_invert_mask, VAR_TYPE_UINT8);
 	DECL_MENU_VAR(SYSTEM_MENU_ID_IO_SETTIGNS, s3, STR_DIR_INV, &g_settings.dir_invert_mask, VAR_TYPE_UINT8);
@@ -1221,6 +1229,9 @@ static void system_menu_render_axis_position(uint8_t render_flags, system_menu_i
 		system_menu_action_timeout(SYSTEM_MENU_REDRAW_IDLE_MS);
 
 		float axis[MAX(AXIS_COUNT, 3)];
+#if AXIS_COUNT < 3
+		memset(axis, 0, sizeof(axis));
+#endif
 		int32_t steppos[STEPPER_COUNT];
 		itp_get_rt_position(steppos);
 		kinematics_steps_to_coordinates(steppos, axis);

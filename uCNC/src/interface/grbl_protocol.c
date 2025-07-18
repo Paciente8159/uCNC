@@ -329,6 +329,9 @@ WEAK_EVENT_HANDLER(proto_status)
 static FORCEINLINE void proto_status_tail(void)
 {
 	float axis[MAX(AXIS_COUNT, 3)];
+#if AXIS_COUNT < 3
+	memset(axis, 0, sizeof(axis));
+#endif
 	if (parser_get_wco(axis))
 	{
 		proto_print(MSG_STATUS_WCO);
@@ -394,6 +397,9 @@ void proto_status(void)
 	grbl_stream_start_broadcast();
 
 	float axis[MAX(AXIS_COUNT, 3)];
+#if AXIS_COUNT < 3
+	memset(axis, 0, sizeof(axis));
+#endif
 
 	int32_t steppos[AXIS_TO_STEPPERS];
 	io_get_steps_pos(steppos);
@@ -511,8 +517,10 @@ void proto_status(void)
 	proto_ftoa_array(axis, MAX(AXIS_COUNT, 3));
 	proto_print(MSG_STATUS_FS);
 	proto_ftoa(feed);
+#if TOOL_COUNT > 0
 	proto_putc(',');
 	proto_itoa(spindle);
+#endif
 
 #ifdef GCODE_PROCESS_LINE_NUMBERS
 	proto_print(MSG_STATUS_LINE);
@@ -597,6 +605,9 @@ void proto_gcode_coordsys(void)
 {
 	protocol_busy = true;
 	float axis[MAX(AXIS_COUNT, 3)];
+#if AXIS_COUNT < 3
+	memset(axis, 0, sizeof(axis));
+#endif
 
 	for (uint8_t i = 0; i < COORD_SYS_COUNT; i++)
 	{
@@ -648,6 +659,9 @@ void proto_gcode_coordsys(void)
 void proto_probe_result(uint8_t val)
 {
 	float axis[MAX(AXIS_COUNT, 3)];
+#if AXIS_COUNT < 3
+	memset(axis, 0, sizeof(axis));
+#endif
 	parser_get_coordsys(255, axis);
 	proto_print("[PRB:");
 	proto_ftoa_array(axis, MAX(AXIS_COUNT, 3));
@@ -839,15 +853,15 @@ void proto_cnc_settings(void)
 			switch (SETTING_TYPE_MASK(s.type))
 			{
 			case SETTING_TYPE_BOOL:
-				val = (uint32_t)((bool *)s.memptr)[j];
+				val = (uint32_t)(((bool *)s.memptr)[j]);
 				proto_gcode_setting_line_int(s.id, val);
 				break;
 			case SETTING_TYPE_UINT8:
-				val = (uint32_t)*((uint8_t *)s.memptr);
+				val = (uint32_t)(((uint8_t *)s.memptr)[j]);
 				proto_gcode_setting_line_int(s.id, val);
 				break;
 			case SETTING_TYPE_UINT16:
-				val = (uint32_t)*((uint16_t *)s.memptr);
+				val = (uint32_t)(((uint16_t *)s.memptr)[j]);
 				proto_gcode_setting_line_int(s.id, val);
 				break;
 			default: // default is float

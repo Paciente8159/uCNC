@@ -184,7 +184,7 @@ uint8_t cnc_parse_cmd(void)
 		switch (c)
 		{
 		case OVF:
-			grbl_stream_clear();
+			grbl_stream_overflow_flush();
 			error = STATUS_OVERFLOW;
 			break;
 		case EOL: // not necessary but faster to catch empty lines and windows newline (CR+LF)
