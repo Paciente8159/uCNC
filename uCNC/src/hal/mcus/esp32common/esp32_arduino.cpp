@@ -16,7 +16,7 @@
 	See the	GNU General Public License for more details.
 */
 
-#ifdef ESP32
+#if defined(ESP32) /*&& !(defined(ESP32C3) || defined(ESP32S3))*/
 #include <Arduino.h>
 #include "esp_task_wdt.h"
 #include <stdint.h>
@@ -824,8 +824,11 @@ extern "C"
 	}
 #endif
 
-	void esp32_wifi_bt_init(void)
+	void esp32_usb_wifi_bt_init(void)
 	{
+#if defined(MCU_HAS_USB) && defined(USE_ARDUINO_CDC)
+		Serial.begin(BAUDRATE);
+#endif
 #ifdef ENABLE_WIFI
 #ifndef ENABLE_BLUETOOTH
 		WiFi.setSleep(WIFI_PS_NONE);
@@ -861,6 +864,56 @@ extern "C"
 		ADD_EVENT_LISTENER(grbl_cmd, mcu_custom_grbl_cmd);
 #endif
 	}
+
+#if defined(MCU_HAS_USB) && defined(USE_ARDUINO_CDC)
+#ifndef USB_TX_BUFFER_SIZE
+#define USB_TX_BUFFER_SIZE 64
+#endif
+	DECL_BUFFER(uint8_t, usb_rx, RX_BUFFER_SIZE);
+	DECL_BUFFER(uint8_t, usb_tx, USB_TX_BUFFER_SIZE);
+
+	uint8_t mcu_usb_getc(void)
+	{
+		uint8_t c = 0;
+		BUFFER_DEQUEUE(usb_rx, &c);
+		return c;
+	}
+
+	uint8_t mcu_usb_available(void)
+	{
+		return BUFFER_READ_AVAILABLE(usb_rx);
+	}
+
+	void mcu_usb_clear(void)
+	{
+		BUFFER_CLEAR(usb_rx);
+	}
+
+	void mcu_usb_putc(uint8_t c)
+	{
+		while (BUFFER_FULL(usb_tx))
+		{
+			mcu_usb_flush();
+		}
+		BUFFER_ENQUEUE(usb_tx, &c);
+	}
+
+	void mcu_usb_flush(void)
+	{
+		while (!BUFFER_EMPTY(usb_tx))
+		{
+			uint8_t tmp[USB_TX_BUFFER_SIZE + 1];
+			memset(tmp, 0, sizeof(tmp));
+			uint8_t r;
+			int maxsend = MAX(USB_TX_BUFFER_SIZE, Serial.availableForWrite());
+			BUFFER_READ(usb_tx, tmp, MIN(255, maxsend), r);
+			Serial.write(tmp, r);
+			Serial.flush();
+		}
+
+		Serial.flush();
+	}
+#endif
 
 #ifdef MCU_HAS_WIFI
 #ifndef WIFI_TX_BUFFER_SIZE
@@ -995,8 +1048,29 @@ extern "C"
 		return (uint8_t)0;
 	}
 
-	void esp32_wifi_bt_process(void)
+	void esp32_usb_wifi_bt_process(void)
 	{
+#if defined(MCU_HAS_USB) && defined(USE_ARDUINO_CDC)
+		while (Serial.available())
+		{
+			esp_task_wdt_reset();
+#ifndef DETACH_USB_FROM_MAIN_PROTOCOL
+			uint8_t c = Serial.read();
+			if (mcu_com_rx_cb(c))
+			{
+				if (BUFFER_FULL(usb_rx))
+				{
+					STREAM_OVF(c);
+				}
+
+				BUFFER_ENQUEUE(usb_rx, &c);
+			}
+#else
+			mcu_usb_rx_cb((uint8_t)SerialBT.read());
+#endif
+		}
+#endif
+
 #ifdef ENABLE_BLUETOOTH
 		if (SerialBT.hasClient())
 		{

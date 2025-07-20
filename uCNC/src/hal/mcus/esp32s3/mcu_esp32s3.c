@@ -1,26 +1,26 @@
-// /*
-// 	Name: mcu_esp32.c
-// 	Description: Implements the µCNC HAL for ESP32.
+/*
+	Name: mcu_esp32s.c
+	Description: Implements the µCNC HAL for ESP32S.
 
-// 	Copyright: Copyright (c) João Martins
-// 	Author: João Martins
-// 	Date: 05-02-2022
+	Copyright: Copyright (c) João Martins
+	Author: João Martins
+	Date: 13-03-2025
 
-// 	µCNC is free software: you can redistribute it and/or modify
-// 	it under the terms of the GNU General Public License as published by
-// 	the Free Software Foundation, either version 3 of the License, or
-// 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+	µCNC is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-// 	µCNC is distributed WITHOUT ANY WARRANTY;
-// 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-// 	See the	GNU General Public License for more details.
-// */
+	µCNC is distributed WITHOUT ANY WARRANTY;
+	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	See the	GNU General Public License for more details.
+*/
 
-// #include "../../../cnc.h"
+#include "../../../cnc.h"
 
-// #if (MCU == MCU_ESP32C)
-// #include "esp_timer.h"
-// #include "esp_task_wdt.h"
+#if (MCU == MCU_ESP32S3)
+#include "esp_timer.h"
+#include "esp_task_wdt.h"
 // #include "esp_ipc.h"
 // #include "driver/uart.h"
 // #include "driver/timer.h"
@@ -50,16 +50,16 @@
 // #include <stdint.h>
 // #include <math.h>
 
-// static volatile bool esp32_global_isr_enabled;
+static volatile bool esp32_global_isr_enabled;
 // static volatile bool mcu_itp_timer_running;
 // #ifdef IC74HC595_CUSTOM_SHIFT_IO
 // volatile uint32_t ic74hc595_i2s_pins;
 // #endif
 // hw_timer_t *esp32_step_timer;
 
-// void esp32_wifi_bt_init(void);
-// void esp32_wifi_bt_flush(uint8_t *buffer);
-// void esp32_wifi_bt_process(void);
+// void esp32_usb_wifi_bt_init(void);
+// void esp32_usb_wifi_bt_flush(uint8_t *buffer);
+// void esp32_usb_wifi_bt_process(void);
 
 // #ifdef USE_ARDUINO_SPI_LIBRARY
 // #ifdef MCU_HAS_SPI
@@ -309,9 +309,9 @@
 // }
 // #endif
 
-// #ifndef ITP_SAMPLE_RATE
-// #define ITP_SAMPLE_RATE (F_STEP_MAX * 2)
-// #endif
+#ifndef ITP_SAMPLE_RATE
+#define ITP_SAMPLE_RATE (F_STEP_MAX * 2)
+#endif
 
 // // this function updates IO updated will run @128KHz
 // /**
@@ -448,39 +448,39 @@
 // 	}
 // }
 
-// static volatile uint32_t mcu_itp_timer_reload;
-// static volatile bool mcu_itp_timer_running;
-// static MCU_CALLBACK void mcu_gen_step(void)
-// {
-// 	static bool step_reset = true;
-// 	static int32_t mcu_itp_timer_counter;
+static volatile uint32_t mcu_itp_timer_reload;
+static volatile bool mcu_itp_timer_running;
+static MCU_CALLBACK void mcu_gen_step(void)
+{
+	static bool step_reset = true;
+	static int32_t mcu_itp_timer_counter;
 
-// 	// generate steps
-// 	if (mcu_itp_timer_running)
-// 	{
-// 		// stream mode tick
-// 		int32_t t = mcu_itp_timer_counter;
-// 		bool reset = step_reset;
-// 		t -= (int32_t)roundf(1000000.0f / (float)ITP_SAMPLE_RATE);
-// 		if (t <= 0)
-// 		{
-// 			if (!reset)
-// 			{
-// 				mcu_step_cb();
-// 			}
-// 			else
-// 			{
-// 				mcu_step_reset_cb();
-// 			}
-// 			step_reset = !reset;
-// 			mcu_itp_timer_counter = mcu_itp_timer_reload + t;
-// 		}
-// 		else
-// 		{
-// 			mcu_itp_timer_counter = t;
-// 		}
-// 	}
-// }
+	// generate steps
+	if (mcu_itp_timer_running)
+	{
+		// stream mode tick
+		int32_t t = mcu_itp_timer_counter;
+		bool reset = step_reset;
+		t -= (int32_t)roundf(1000000.0f / (float)ITP_SAMPLE_RATE);
+		if (t <= 0)
+		{
+			if (!reset)
+			{
+				mcu_step_cb();
+			}
+			else
+			{
+				mcu_step_reset_cb();
+			}
+			step_reset = !reset;
+			mcu_itp_timer_counter = mcu_itp_timer_reload + t;
+		}
+		else
+		{
+			mcu_itp_timer_counter = t;
+		}
+	}
+}
 
 // MCU_CALLBACK void mcu_gpio_isr(void *type)
 // {
@@ -529,15 +529,15 @@
 // #endif
 // }
 
-// void mcu_rtc_task(void *arg)
-// {
-// 	portTickType xLastWakeTimeUpload = xTaskGetTickCount();
-// 	for (;;)
-// 	{
-// 		mcu_rtc_cb(mcu_millis());
-// 		vTaskDelayUntil(&xLastWakeTimeUpload, (1 / portTICK_RATE_MS));
-// 	}
-// }
+void mcu_rtc_task(void *arg)
+{
+	portTickType xLastWakeTimeUpload = xTaskGetTickCount();
+	for (;;)
+	{
+		mcu_rtc_cb(mcu_millis());
+		vTaskDelayUntil(&xLastWakeTimeUpload, (1 / portTICK_RATE_MS));
+	}
+}
 
 // MCU_CALLBACK void mcu_itp_isr(void *arg)
 // {
@@ -578,138 +578,155 @@
 // 	timer_group_enable_alarm_in_isr(ITP_TIMER_TG, ITP_TIMER_IDX);
 // }
 
-// /**
-//  * initializes the mcu
-//  * this function needs to:
-//  *   - configure all IO pins (digital IO, PWM, Analog, etc...)
-//  *   - configure all interrupts
-//  *   - configure uart or usb
-//  *   - start the internal RTC
-//  * */
-// void mcu_init(void)
-// {
-// #if (defined(LIMIT_X_ISR) || defined(LIMIT_Y_ISR) || defined(LIMIT_Z_ISR) || defined(LIMIT_X2_ISR) || defined(LIMIT_Y2_ISR) || defined(LIMIT_Z2_ISR) || defined(LIMIT_A_ISR) || defined(LIMIT_B_ISR) || defined(LIMIT_C_ISR) || defined(PROBE_ISR) || defined(ESTOP_ISR) || defined(SAFETY_DOOR_ISR) || defined(FHOLD_ISR) || defined(CS_RES_ISR) || defined(DIN0_ISR) || defined(DIN1_ISR) || defined(DIN2_ISR) || defined(DIN3_ISR) || defined(DIN4_ISR) || defined(DIN5_ISR) || defined(DIN6_ISR) || defined(DIN7_ISR))
-// 	gpio_install_isr_service(0);
-// #endif
+/**
+ * initializes the mcu
+ * this function needs to:
+ *   - configure all IO pins (digital IO, PWM, Analog, etc...)
+ *   - configure all interrupts
+ *   - configure uart or usb
+ *   - start the internal RTC
+ * */
+void mcu_init(void)
+{
+#if (defined(LIMIT_X_ISR) || defined(LIMIT_Y_ISR) || defined(LIMIT_Z_ISR) || defined(LIMIT_X2_ISR) || defined(LIMIT_Y2_ISR) || defined(LIMIT_Z2_ISR) || defined(LIMIT_A_ISR) || defined(LIMIT_B_ISR) || defined(LIMIT_C_ISR) || defined(PROBE_ISR) || defined(ESTOP_ISR) || defined(SAFETY_DOOR_ISR) || defined(FHOLD_ISR) || defined(CS_RES_ISR) || defined(DIN0_ISR) || defined(DIN1_ISR) || defined(DIN2_ISR) || defined(DIN3_ISR) || defined(DIN4_ISR) || defined(DIN5_ISR) || defined(DIN6_ISR) || defined(DIN7_ISR))
+	gpio_install_isr_service(0);
+#endif
 
-// 	mcu_io_init();
+	mcu_io_init();
 
-// #ifdef MCU_HAS_UART2
-// 	// initialize UART
-// 	const uart_config_t uart2config = {
-// 			.baud_rate = BAUDRATE2,
-// 			.data_bits = UART_DATA_8_BITS,
-// 			.parity = UART_PARITY_DISABLE,
-// 			.stop_bits = UART_STOP_BITS_1,
-// 			.flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-// 			.source_clk = UART_SCLK_APB};
-// 	// We won't use a buffer for sending data.
-// 	uart_param_config(UART2_PORT, &uart2config);
-// 	uart_set_pin(UART2_PORT, TX2_BIT, RX2_BIT, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
-// #endif
+#ifdef MCU_HAS_UART
+	extern void mcu_uart_init(void);
+	mcu_uart_init();
+#endif
 
-// 	// launches isr tasks that will run on core 0
-// 	// currently it's running PWM and UART on core 0
-// 	// Arduino Bluetooth also runs on core 0
-// 	// Arduino WiFi ???
-// 	esp_ipc_call_blocking(0, mcu_core0_tasks_init, NULL);
+#ifdef MCU_HAS_UART2
+	extern void mcu_uart2_init(void);
+	mcu_uart2_init();
+#endif
 
-// 	// starts EEPROM before UART to enable WiFi and BT settings
-// #if !defined(RAM_ONLY_SETTINGS) && !defined(USE_ARDUINO_EEPROM_LIBRARY)
-// 	// esp32_eeprom_init(NVM_STORAGE_SIZE); // 1K Emulated EEPROM
+#ifdef MCU_HAS_USB
+	extern void mcu_usb_init(void);
+	mcu_usb_init();
+#endif
 
-// 	// starts nvs
-// 	mcu_eeprom.size = 0;
-// 	memset(mcu_eeprom.data, 0, NVM_STORAGE_SIZE);
-// 	if (nvs_open("eeprom", NVS_READWRITE, &mcu_eeprom.nvs_handle) == ESP_OK)
-// 	{
-// 		// determines the maximum sector size of NVS that can be read/write
-// 		nvs_get_blob(mcu_eeprom.nvs_handle, "eeprom", NULL, &mcu_eeprom.size);
-// 		if (NVM_STORAGE_SIZE > mcu_eeprom.size)
-// 		{
-// 			log_e("eeprom does not have enough space");
-// 			mcu_eeprom.size = 0;
-// 		}
+	xTaskCreatePinnedToCore(mcu_rtc_task, "rtcTask", 2048, NULL, 7, NULL, CONFIG_ARDUINO_RUNNING_CORE);
 
-// 		nvs_get_blob(mcu_eeprom.nvs_handle, "eeprom", mcu_eeprom.data, &mcu_eeprom.size);
-// 	}
-// 	else
-// 	{
-// 		log_e("eeprom failed to open");
-// 	}
-// #elif !defined(RAM_ONLY_SETTINGS)
-// 	esp32_eeprom_init(NVM_STORAGE_SIZE);
-// #endif
+	// #ifdef MCU_HAS_UART2
+	// 	// initialize UART
+	// 	const uart_config_t uart2config = {
+	// 			.baud_rate = BAUDRATE2,
+	// 			.data_bits = UART_DATA_8_BITS,
+	// 			.parity = UART_PARITY_DISABLE,
+	// 			.stop_bits = UART_STOP_BITS_1,
+	// 			.flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+	// 			.source_clk = UART_SCLK_APB};
+	// 	// We won't use a buffer for sending data.
+	// 	uart_param_config(UART2_PORT, &uart2config);
+	// 	uart_set_pin(UART2_PORT, TX2_BIT, RX2_BIT, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+	// #endif
 
-// #ifdef MCU_HAS_UART
-// 	// initialize UART
-// 	const uart_config_t uartconfig = {
-// 			.baud_rate = BAUDRATE,
-// 			.data_bits = UART_DATA_8_BITS,
-// 			.parity = UART_PARITY_DISABLE,
-// 			.stop_bits = UART_STOP_BITS_1,
-// 			.flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-// 			.source_clk = UART_SCLK_APB};
-// 	// We won't use a buffer for sending data.
-// 	uart_param_config(UART_PORT, &uartconfig);
-// 	uart_set_pin(UART_PORT, TX_BIT, RX_BIT, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
-// #endif
+	// 	// launches isr tasks that will run on core 0
+	// 	// currently it's running PWM and UART on core 0
+	// 	// Arduino Bluetooth also runs on core 0
+	// 	// Arduino WiFi ???
+	// 	esp_ipc_call_blocking(0, mcu_core0_tasks_init, NULL);
 
-// 	// inititialize ITP timer
-// 	timer_config_t itpconfig = {0};
-// 	itpconfig.divider = 2;
-// 	itpconfig.counter_dir = TIMER_COUNT_UP;
-// 	itpconfig.counter_en = TIMER_PAUSE;
-// 	itpconfig.intr_type = TIMER_INTR_MAX;
-// 	itpconfig.alarm_en = TIMER_ALARM_EN;
-// 	itpconfig.auto_reload = true;
-// 	timer_init(ITP_TIMER_TG, ITP_TIMER_IDX, &itpconfig);
-// 	/* Timer's counter will initially start from value below.
-// 		 Also, if auto_reload is set, this value will be automatically reload on alarm */
-// 	timer_set_counter_value(ITP_TIMER_TG, ITP_TIMER_IDX, 0x00000000ULL);
-// 	/* Configure the alarm value and the interrupt on alarm. */
-// 	timer_set_alarm_value(ITP_TIMER_TG, ITP_TIMER_IDX, (uint64_t)(getApbFrequency() / (ITP_SAMPLE_RATE * 2)));
-// 	// register PWM isr
-// 	timer_isr_register(ITP_TIMER_TG, ITP_TIMER_IDX, mcu_itp_isr, NULL, 0, NULL);
-// 	timer_enable_intr(ITP_TIMER_TG, ITP_TIMER_IDX);
-// 	timer_start(ITP_TIMER_TG, ITP_TIMER_IDX);
+	// 	// starts EEPROM before UART to enable WiFi and BT settings
+	// #if !defined(RAM_ONLY_SETTINGS) && !defined(USE_ARDUINO_EEPROM_LIBRARY)
+	// 	// esp32_eeprom_init(NVM_STORAGE_SIZE); // 1K Emulated EEPROM
 
-// #ifdef IC74HC595_CUSTOM_SHIFT_IO
-// 	esp32_i2s_extender_init();
-// #endif
+	// 	// starts nvs
+	// 	mcu_eeprom.size = 0;
+	// 	memset(mcu_eeprom.data, 0, NVM_STORAGE_SIZE);
+	// 	if (nvs_open("eeprom", NVS_READWRITE, &mcu_eeprom.nvs_handle) == ESP_OK)
+	// 	{
+	// 		// determines the maximum sector size of NVS that can be read/write
+	// 		nvs_get_blob(mcu_eeprom.nvs_handle, "eeprom", NULL, &mcu_eeprom.size);
+	// 		if (NVM_STORAGE_SIZE > mcu_eeprom.size)
+	// 		{
+	// 			log_e("eeprom does not have enough space");
+	// 			mcu_eeprom.size = 0;
+	// 		}
 
-// 	// initialize rtc timer (currently on core 1)
-// 	xTaskCreatePinnedToCore(mcu_rtc_task, "rtcTask", 2048, NULL, 7, NULL, CONFIG_ARDUINO_RUNNING_CORE);
+	// 		nvs_get_blob(mcu_eeprom.nvs_handle, "eeprom", mcu_eeprom.data, &mcu_eeprom.size);
+	// 	}
+	// 	else
+	// 	{
+	// 		log_e("eeprom failed to open");
+	// 	}
+	// #elif !defined(RAM_ONLY_SETTINGS)
+	// 	esp32_eeprom_init(NVM_STORAGE_SIZE);
+	// #endif
 
-// #ifdef MCU_HAS_SPI
+	// #ifdef MCU_HAS_UART
+	// 	// initialize UART
+	// 	const uart_config_t uartconfig = {
+	// 			.baud_rate = BAUDRATE,
+	// 			.data_bits = UART_DATA_8_BITS,
+	// 			.parity = UART_PARITY_DISABLE,
+	// 			.stop_bits = UART_STOP_BITS_1,
+	// 			.flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+	// 			.source_clk = UART_SCLK_APB};
+	// 	// We won't use a buffer for sending data.
+	// 	uart_param_config(UART_PORT, &uartconfig);
+	// 	uart_set_pin(UART_PORT, TX_BIT, RX_BIT, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+	// #endif
 
-// 	spi_config_t spi_conf = {0};
-// #ifndef USE_ARDUINO_SPI_LIBRARY
-// 	spi_conf.mode = SPI_MODE;
-// #else
-// 	mcu_spi_init();
-// #endif
-// 	mcu_spi_config(spi_conf, SPI_FREQ);
-// #endif
+	// 	// inititialize ITP timer
+	// 	timer_config_t itpconfig = {0};
+	// 	itpconfig.divider = 2;
+	// 	itpconfig.counter_dir = TIMER_COUNT_UP;
+	// 	itpconfig.counter_en = TIMER_PAUSE;
+	// 	itpconfig.intr_type = TIMER_INTR_MAX;
+	// 	itpconfig.alarm_en = TIMER_ALARM_EN;
+	// 	itpconfig.auto_reload = true;
+	// 	timer_init(ITP_TIMER_TG, ITP_TIMER_IDX, &itpconfig);
+	// 	/* Timer's counter will initially start from value below.
+	// 		 Also, if auto_reload is set, this value will be automatically reload on alarm */
+	// 	timer_set_counter_value(ITP_TIMER_TG, ITP_TIMER_IDX, 0x00000000ULL);
+	// 	/* Configure the alarm value and the interrupt on alarm. */
+	// 	timer_set_alarm_value(ITP_TIMER_TG, ITP_TIMER_IDX, (uint64_t)(getApbFrequency() / (ITP_SAMPLE_RATE * 2)));
+	// 	// register PWM isr
+	// 	timer_isr_register(ITP_TIMER_TG, ITP_TIMER_IDX, mcu_itp_isr, NULL, 0, NULL);
+	// 	timer_enable_intr(ITP_TIMER_TG, ITP_TIMER_IDX);
+	// 	timer_start(ITP_TIMER_TG, ITP_TIMER_IDX);
 
-// #ifdef MCU_HAS_SPI2
+	// #ifdef IC74HC595_CUSTOM_SHIFT_IO
+	// 	esp32_i2s_extender_init();
+	// #endif
 
-// 	spi_config_t spi2_conf = {0};
-// #ifndef USE_ARDUINO_SPI_LIBRARY
-// 	spi2_conf.mode = SPI2_MODE;
-// #else
-// 	mcu_spi2_init();
-// #endif
-// 	mcu_spi2_config(spi2_conf, SPI2_FREQ);
-// #endif
+	// 	// initialize rtc timer (currently on core 1)
+	// 	xTaskCreatePinnedToCore(mcu_rtc_task, "rtcTask", 2048, NULL, 7, NULL, CONFIG_ARDUINO_RUNNING_CORE);
 
-// #ifdef MCU_HAS_I2C
-// 	mcu_i2c_config(I2C_FREQ);
-// #endif
+	// #ifdef MCU_HAS_SPI
 
-// 	esp32_wifi_bt_init();
-// 	mcu_enable_global_isr();
-// }
+	// 	spi_config_t spi_conf = {0};
+	// #ifndef USE_ARDUINO_SPI_LIBRARY
+	// 	spi_conf.mode = SPI_MODE;
+	// #else
+	// 	mcu_spi_init();
+	// #endif
+	// 	mcu_spi_config(spi_conf, SPI_FREQ);
+	// #endif
+
+	// #ifdef MCU_HAS_SPI2
+
+	// 	spi_config_t spi2_conf = {0};
+	// #ifndef USE_ARDUINO_SPI_LIBRARY
+	// 	spi2_conf.mode = SPI2_MODE;
+	// #else
+	// 	mcu_spi2_init();
+	// #endif
+	// 	mcu_spi2_config(spi2_conf, SPI2_FREQ);
+	// #endif
+
+	// #ifdef MCU_HAS_I2C
+	// 	mcu_i2c_config(I2C_FREQ);
+	// #endif
+
+	// 	esp32_usb_wifi_bt_init();
+	// 	mcu_enable_global_isr();
+}
 
 // /**
 //  * enables the pin probe mcu isr on change
@@ -862,197 +879,212 @@
 // }
 // #endif
 
-// // ISR
-// /**
-//  * enables global interrupts on the MCU
-//  * can be defined either as a function or a macro call
-//  * */
-// #ifndef mcu_enable_global_isr
-// void mcu_enable_global_isr(void)
-// {
-// 	// ets_intr_unlock();
-// 	esp32_global_isr_enabled = true;
-// }
-// #endif
+// ISR
+/**
+ * enables global interrupts on the MCU
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_enable_global_isr
+void mcu_enable_global_isr(void)
+{
+	// ets_intr_unlock();
+	esp32_global_isr_enabled = true;
+}
+#endif
 
-// /**
-//  * disables global interrupts on the MCU
-//  * can be defined either as a function or a macro call
-//  * */
-// #ifndef mcu_disable_global_isr
-// void mcu_disable_global_isr(void)
-// {
-// 	esp32_global_isr_enabled = false;
-// 	// ets_intr_lock();
-// }
-// #endif
+/**
+ * disables global interrupts on the MCU
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_disable_global_isr
+void mcu_disable_global_isr(void)
+{
+	esp32_global_isr_enabled = false;
+	// ets_intr_lock();
+}
+#endif
 
-// /**
-//  * gets global interrupts state on the MCU
-//  * can be defined either as a function or a macro call
-//  * */
-// #ifndef mcu_get_global_isr
-// bool mcu_get_global_isr(void)
-// {
-// 	return esp32_global_isr_enabled;
-// }
-// #endif
+/**
+ * gets global interrupts state on the MCU
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_get_global_isr
+bool mcu_get_global_isr(void)
+{
+	return esp32_global_isr_enabled;
+}
+#endif
 
-// // Step interpolator
-// /**
-//  * convert step rate to clock cycles
-//  * */
-// void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
-// {
-// 	frequency = CLAMP((float)F_STEP_MIN, frequency, (float)F_STEP_MAX);
-// 	// up and down counter (generates half the step rate at each event)
-// 	uint32_t totalticks = (uint32_t)((500000.0f) / frequency);
-// 	*prescaller = 1;
-// 	while (totalticks > 0xFFFF)
-// 	{
-// 		(*prescaller) <<= 1;
-// 		totalticks >>= 1;
-// 	}
+// Step interpolator
+/**
+ * convert step rate to clock cycles
+ * */
+void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
+{
+	frequency = CLAMP((float)F_STEP_MIN, frequency, (float)F_STEP_MAX);
+	// up and down counter (generates half the step rate at each event)
+	uint32_t totalticks = (uint32_t)((500000.0f) / frequency);
+	*prescaller = 1;
+	while (totalticks > 0xFFFF)
+	{
+		(*prescaller) <<= 1;
+		totalticks >>= 1;
+	}
 
-// 	*ticks = (uint16_t)totalticks;
-// }
+	*ticks = (uint16_t)totalticks;
+}
 
-// float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller)
-// {
-// 	uint32_t totalticks = (uint32_t)ticks * prescaller;
-// 	return 500000.0f / ((float)totalticks);
-// }
+float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller)
+{
+	uint32_t totalticks = (uint32_t)ticks * prescaller;
+	return 500000.0f / ((float)totalticks);
+}
 
-// /**
-//  * starts the timer interrupt that generates the step pulses for the interpolator
-//  * */
+/**
+ * starts the timer interrupt that generates the step pulses for the interpolator
+ * */
 
-// void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
-// {
-// 	if (!mcu_itp_timer_running)
-// 	{
-// 		mcu_itp_timer_reload = ticks * prescaller;
-// 		mcu_itp_timer_running = true;
-// 	}
-// 	else
-// 	{
-// 		mcu_change_itp_isr(ticks, prescaller);
-// 	}
-// }
+void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
+{
+	if (!mcu_itp_timer_running)
+	{
+		mcu_itp_timer_reload = ticks * prescaller;
+		mcu_itp_timer_running = true;
+	}
+	else
+	{
+		mcu_change_itp_isr(ticks, prescaller);
+	}
+}
 
-// /**
-//  * changes the step rate of the timer interrupt that generates the step pulses for the interpolator
-//  * */
-// void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller)
-// {
-// 	if (mcu_itp_timer_running)
-// 	{
-// 		mcu_itp_timer_reload = ticks * prescaller;
-// 	}
-// 	else
-// 	{
-// 		mcu_start_itp_isr(ticks, prescaller);
-// 	}
-// }
+/**
+ * changes the step rate of the timer interrupt that generates the step pulses for the interpolator
+ * */
+void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller)
+{
+	if (mcu_itp_timer_running)
+	{
+		mcu_itp_timer_reload = ticks * prescaller;
+	}
+	else
+	{
+		mcu_start_itp_isr(ticks, prescaller);
+	}
+}
 
-// /**
-//  * stops the timer interrupt that generates the step pulses for the interpolator
-//  * */
-// void mcu_stop_itp_isr(void)
-// {
-// 	if (mcu_itp_timer_running)
-// 	{
-// 		mcu_itp_timer_running = false;
-// 	}
-// }
+/**
+ * stops the timer interrupt that generates the step pulses for the interpolator
+ * */
+void mcu_stop_itp_isr(void)
+{
+	if (mcu_itp_timer_running)
+	{
+		mcu_itp_timer_running = false;
+	}
+}
 
-// /**
-//  * gets the MCU running time in milliseconds.
-//  * the time counting is controled by the internal RTC
-//  * */
-// extern int64_t esp_system_get_time(void);
-// uint32_t mcu_millis()
-// {
-// 	return (uint32_t)(esp_system_get_time() / 1000);
-// }
+/**
+ * gets the MCU running time in milliseconds.
+ * the time counting is controled by the internal RTC
+ * */
+extern int64_t esp_system_get_time(void);
+uint32_t mcu_millis()
+{
+	return (uint32_t)(esp_system_get_time() / 1000);
+}
 
-// uint32_t mcu_micros()
-// {
-// 	return (uint32_t)esp_system_get_time();
-// }
+uint32_t mcu_micros()
+{
+	return (uint32_t)esp_system_get_time();
+}
 
-// uint32_t mcu_free_micros()
-// {
-// 	return (uint32_t)(esp_system_get_time() % 1000);
-// }
+uint32_t mcu_free_micros()
+{
+	return (uint32_t)(esp_system_get_time() % 1000);
+}
 
-// void esp32_delay_us(uint16_t delay)
-// {
-// 	int64_t time = esp_system_get_time() + delay - 1;
-// 	while (time > esp_system_get_time())
-// 		;
-// }
+void esp32_delay_us(uint16_t delay)
+{
+	int64_t time = esp_system_get_time() + delay - 1;
+	while (time > esp_system_get_time())
+		;
+}
 
-// /**
-//  * runs all internal tasks of the MCU.
-//  * for the moment these are:
-//  *   - if USB is enabled and MCU uses tinyUSB framework run tinyUSB tud_task
-//  * */
-// void mcu_dotasks(void)
-// {
-// 	// reset WDT
-// 	esp_task_wdt_reset();
+/**
+ * runs all internal tasks of the MCU.
+ * for the moment these are:
+ *   - if USB is enabled and MCU uses tinyUSB framework run tinyUSB tud_task
+ * */
+void mcu_dotasks(void)
+{
+	// reset WDT
+	esp_task_wdt_reset();
 
-// 	// loop through received data
-// 	uint8_t rxdata[RX_BUFFER_SIZE];
-// 	int rxlen, i;
-// #ifdef MCU_HAS_UART
-// 	rxlen = uart_read_bytes(UART_PORT, rxdata, RX_BUFFER_CAPACITY, 0);
-// 	for (i = 0; i < rxlen; i++)
-// 	{
-// 		uint8_t c = (uint8_t)rxdata[i];
-// 		if (mcu_com_rx_cb(c))
-// 		{
-// 			if (BUFFER_FULL(uart_rx))
-// 			{
-// 				c = OVF;
-// 			}
+#ifdef MCU_HAS_UART
+	extern void mcu_uart_dotasks(void);
+	mcu_uart_dotasks();
+#endif
 
-// 			BUFFER_ENQUEUE(uart_rx, &c);
-// 		}
-// 	}
-// #endif
-// #if defined(MCU_HAS_UART2)
-// 	rxlen = uart_read_bytes(UART2_PORT, rxdata, RX_BUFFER_CAPACITY, 0);
-// 	for (i = 0; i < rxlen; i++)
-// 	{
-// 		uint8_t c = (uint8_t)rxdata[i];
-// #if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
-// 		if (mcu_com_rx_cb(c))
-// 		{
-// 			if (BUFFER_FULL(uart2_rx))
-// 			{
-// 				c = OVF;
-// 			}
+#ifdef MCU_HAS_UART2
+	extern void mcu_uart2_dotasks(void);
+	mcu_uart2_dotasks();
+#endif
 
-// 			BUFFER_ENQUEUE(uart2_rx, &c);
-// 		}
-// #else
-// 		mcu_uart2_rx_cb(c);
-// #ifndef UART2_DISABLE_BUFFER
-// 		if (BUFFER_FULL(uart2_rx))
-// 		{
-// 			c = OVF;
-// 		}
+#ifdef MCU_HAS_USB
+	extern void mcu_usb_dotasks(void);
+	mcu_usb_dotasks();
+#endif
 
-// 		BUFFER_ENQUEUE(uart2_rx, &c);
-// #endif
-// #endif
-// 	}
-// #endif
+	// 	// loop through received data
+	// 	uint8_t rxdata[RX_BUFFER_SIZE];
+	// 	int rxlen, i;
+	// #ifdef MCU_HAS_UART
+	// 	rxlen = uart_read_bytes(UART_PORT, rxdata, RX_BUFFER_CAPACITY, 0);
+	// 	for (i = 0; i < rxlen; i++)
+	// 	{
+	// 		uint8_t c = (uint8_t)rxdata[i];
+	// 		if (mcu_com_rx_cb(c))
+	// 		{
+	// 			if (BUFFER_FULL(uart_rx))
+	// 			{
+	// 				c = OVF;
+	// 			}
 
-// 	esp32_wifi_bt_process();
-// }
+	// 			BUFFER_ENQUEUE(uart_rx, &c);
+	// 		}
+	// 	}
+	// #endif
+	// #if defined(MCU_HAS_UART2)
+	// 	rxlen = uart_read_bytes(UART2_PORT, rxdata, RX_BUFFER_CAPACITY, 0);
+	// 	for (i = 0; i < rxlen; i++)
+	// 	{
+	// 		uint8_t c = (uint8_t)rxdata[i];
+	// #if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
+	// 		if (mcu_com_rx_cb(c))
+	// 		{
+	// 			if (BUFFER_FULL(uart2_rx))
+	// 			{
+	// 				c = OVF;
+	// 			}
+
+	// 			BUFFER_ENQUEUE(uart2_rx, &c);
+	// 		}
+	// #else
+	// 		mcu_uart2_rx_cb(c);
+	// #ifndef UART2_DISABLE_BUFFER
+	// 		if (BUFFER_FULL(uart2_rx))
+	// 		{
+	// 			c = OVF;
+	// 		}
+
+	// 		BUFFER_ENQUEUE(uart2_rx, &c);
+	// #endif
+	// #endif
+	// 	}
+	// #endif
+
+	// 	esp32_usb_wifi_bt_process();
+}
 
 // // Non volatile memory
 // /**
@@ -1556,4 +1588,4 @@
 // 	return 0;
 // }
 
-// #endif
+#endif

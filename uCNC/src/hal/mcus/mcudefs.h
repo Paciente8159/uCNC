@@ -77,12 +77,12 @@ extern "C"
 #include "esp32/mcumap_esp32.h"
 #endif
 
-#if (MCU == MCU_ESP32C)
-#include "esp32c/mcumap_esp32c.h"
+#if (MCU == MCU_ESP32C3)
+#include "esp32c3/mcumap_esp32c3.h"
 #endif
 
-#if (MCU == MCU_ESP32S)
-#include "esp32s/mcumap_esp32s.h"
+#if (MCU == MCU_ESP32S3)
+#include "esp32s3/mcumap_esp32s3.h"
 #ifndef CFG_TUSB_MCU
 #define CFG_TUSB_MCU OPT_MCU_ESP32S3
 #endif

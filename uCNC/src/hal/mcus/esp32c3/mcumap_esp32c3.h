@@ -16,8 +16,8 @@
 	See the	GNU General Public License for more details.
 */
 
-#ifndef MCUMAP_ESP32_C_H
-#define MCUMAP_ESP32_C_H
+#ifndef MCUMAP_ESP32C3_H
+#define MCUMAP_ESP32C3_H
 
 #ifdef __cplusplus
 extern "C"
@@ -1628,7 +1628,7 @@ extern "C"
 #define PROBE_INREG IN0
 #else
 #define PROBE_OUTREG OUT1
-#define PROBE_INREG IN1
+#define PROBE_INREG IN0
 #endif
 #define DIO109 109
 #define DIO109_BIT PROBE_BIT
@@ -3462,7 +3462,7 @@ extern "C"
 	extern void esp32_delay_us(uint16_t delay);
 #define mcu_delay_us(X) esp32_delay_us(X)
 
-#include "xtensa/core-macros.h"
+// #include "xtensa/core-macros.h"
 #define mcu_delay_cycles(X)                          \
 	{                                                  \
 		uint32_t x = XTHAL_GET_CCOUNT();                 \

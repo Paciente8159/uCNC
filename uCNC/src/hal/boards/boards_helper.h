@@ -78,9 +78,13 @@ extern "C"
 #define BOARD_MKS_DLC32 5002
 #define BOARD_ESP32_SHIELD_V3 5003
 /**
- * ESP32-Cx
+ * ESP32C3
  */
-#define BOARD_CORE_C3 5100
+#define BOARD_ESP32C3_CORE 5100
+/**
+ * ESP32S3
+ */
+#define BOARD_ESP32S3_DEVKIT 5200
 /**
  * RP2040
  */
@@ -166,10 +170,10 @@ extern "C"
 #elif (BOARD == BOARD_ESP32_SHIELD_V3)
 #define BOARDMAP "esp32/boardmap_esp32_shield_v3.h"
 // ESP32-Cx
-#elif (BOARD == BOARD_CORE_Cx)
+#elif (BOARD == BOARD_ESP32C3_CORE)
 #define BOARDMAP "esp32/boardmap_core_c3.h"
 // ESP32-Sx
-#elif (BOARD == MCU_ESP32S)
+#elif (BOARD == BOARD_ESP32S3_DEVKIT)
 #define BOARDMAP "esp32/boardmap_devkit_s3.h"
 // RP2040
 #elif (BOARD == BOARD_RPI_PICO)

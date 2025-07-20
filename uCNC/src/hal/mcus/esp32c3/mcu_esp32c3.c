@@ -1,10 +1,10 @@
 /*
-	Name: mcu_esp32.c
-	Description: Implements the µCNC HAL for ESP32.
+	Name: mcu_esp32_cx.c
+	Description: Implements the µCNC HAL for ESP32-Cx.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
-	Date: 05-02-2022
+	Date: 20-07-2025
 
 	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -18,13 +18,15 @@
 
 #include "../../../cnc.h"
 
-#if (MCU == MCU_ESP32)
+#if (MCU == MCU_ESP32C3)
+#include "sys/time.h"
 #include "esp_timer.h"
 #include "esp_task_wdt.h"
 #include "esp_ipc.h"
 #include "driver/uart.h"
 #include "driver/timer.h"
 #include "soc/i2s_struct.h"
+#include <stdint.h>
 #ifdef MCU_HAS_I2C
 #include "driver/i2c.h"
 #endif
@@ -588,124 +590,112 @@ MCU_CALLBACK void mcu_itp_isr(void *arg)
  * */
 void mcu_init(void)
 {
-#if (defined(LIMIT_X_ISR) || defined(LIMIT_Y_ISR) || defined(LIMIT_Z_ISR) || defined(LIMIT_X2_ISR) || defined(LIMIT_Y2_ISR) || defined(LIMIT_Z2_ISR) || defined(LIMIT_A_ISR) || defined(LIMIT_B_ISR) || defined(LIMIT_C_ISR) || defined(PROBE_ISR) || defined(ESTOP_ISR) || defined(SAFETY_DOOR_ISR) || defined(FHOLD_ISR) || defined(CS_RES_ISR) || defined(DIN0_ISR) || defined(DIN1_ISR) || defined(DIN2_ISR) || defined(DIN3_ISR) || defined(DIN4_ISR) || defined(DIN5_ISR) || defined(DIN6_ISR) || defined(DIN7_ISR))
-	gpio_install_isr_service(0);
-#endif
-
 	mcu_io_init();
 
-#ifdef MCU_HAS_UART2
-	// initialize UART
-	const uart_config_t uart2config = {
-			.baud_rate = BAUDRATE2,
-			.data_bits = UART_DATA_8_BITS,
-			.parity = UART_PARITY_DISABLE,
-			.stop_bits = UART_STOP_BITS_1,
-			.flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-			.source_clk = UART_SCLK_APB};
-	// We won't use a buffer for sending data.
-	uart_param_config(UART2_PORT, &uart2config);
-	uart_set_pin(UART2_PORT, TX2_BIT, RX2_BIT, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
-#endif
+// #ifdef MCU_HAS_UART2
+// 	// initialize UART
+// 	const uart_config_t uart2config = {
+// 			.baud_rate = BAUDRATE2,
+// 			.data_bits = UART_DATA_8_BITS,
+// 			.parity = UART_PARITY_DISABLE,
+// 			.stop_bits = UART_STOP_BITS_1,
+// 			.flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+// 			.source_clk = UART_SCLK_APB};
+// 	// We won't use a buffer for sending data.
+// 	uart_param_config(UART2_PORT, &uart2config);
+// 	uart_set_pin(UART2_PORT, TX2_BIT, RX2_BIT, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+// #endif
 
-	// launches isr tasks that will run on core 0
-	// currently it's running PWM and UART on core 0
-	// Arduino Bluetooth also runs on core 0
-	// Arduino WiFi ???
-	esp_ipc_call_blocking(0, mcu_core0_tasks_init, NULL);
+// 	// starts EEPROM before UART to enable WiFi and BT settings
+// #if !defined(RAM_ONLY_SETTINGS) && !defined(USE_ARDUINO_EEPROM_LIBRARY)
+// 	// esp32_eeprom_init(NVM_STORAGE_SIZE); // 1K Emulated EEPROM
 
-	// starts EEPROM before UART to enable WiFi and BT settings
-#if !defined(RAM_ONLY_SETTINGS) && !defined(USE_ARDUINO_EEPROM_LIBRARY)
-	// esp32_eeprom_init(NVM_STORAGE_SIZE); // 1K Emulated EEPROM
+// 	// starts nvs
+// 	mcu_eeprom.size = 0;
+// 	memset(mcu_eeprom.data, 0, NVM_STORAGE_SIZE);
+// 	if (nvs_open("eeprom", NVS_READWRITE, &mcu_eeprom.nvs_handle) == ESP_OK)
+// 	{
+// 		// determines the maximum sector size of NVS that can be read/write
+// 		nvs_get_blob(mcu_eeprom.nvs_handle, "eeprom", NULL, &mcu_eeprom.size);
+// 		if (NVM_STORAGE_SIZE > mcu_eeprom.size)
+// 		{
+// 			log_e("eeprom does not have enough space");
+// 			mcu_eeprom.size = 0;
+// 		}
 
-	// starts nvs
-	mcu_eeprom.size = 0;
-	memset(mcu_eeprom.data, 0, NVM_STORAGE_SIZE);
-	if (nvs_open("eeprom", NVS_READWRITE, &mcu_eeprom.nvs_handle) == ESP_OK)
-	{
-		// determines the maximum sector size of NVS that can be read/write
-		nvs_get_blob(mcu_eeprom.nvs_handle, "eeprom", NULL, &mcu_eeprom.size);
-		if (NVM_STORAGE_SIZE > mcu_eeprom.size)
-		{
-			log_e("eeprom does not have enough space");
-			mcu_eeprom.size = 0;
-		}
+// 		nvs_get_blob(mcu_eeprom.nvs_handle, "eeprom", mcu_eeprom.data, &mcu_eeprom.size);
+// 	}
+// 	else
+// 	{
+// 		log_e("eeprom failed to open");
+// 	}
+// #elif !defined(RAM_ONLY_SETTINGS)
+// 	esp32_eeprom_init(NVM_STORAGE_SIZE);
+// #endif
 
-		nvs_get_blob(mcu_eeprom.nvs_handle, "eeprom", mcu_eeprom.data, &mcu_eeprom.size);
-	}
-	else
-	{
-		log_e("eeprom failed to open");
-	}
-#elif !defined(RAM_ONLY_SETTINGS)
-	esp32_eeprom_init(NVM_STORAGE_SIZE);
-#endif
+// #ifdef MCU_HAS_UART
+// 	// initialize UART
+// 	const uart_config_t uartconfig = {
+// 			.baud_rate = BAUDRATE,
+// 			.data_bits = UART_DATA_8_BITS,
+// 			.parity = UART_PARITY_DISABLE,
+// 			.stop_bits = UART_STOP_BITS_1,
+// 			.flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+// 			.source_clk = UART_SCLK_APB};
+// 	// We won't use a buffer for sending data.
+// 	uart_param_config(UART_PORT, &uartconfig);
+// 	uart_set_pin(UART_PORT, TX_BIT, RX_BIT, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+// #endif
 
-#ifdef MCU_HAS_UART
-	// initialize UART
-	const uart_config_t uartconfig = {
-			.baud_rate = BAUDRATE,
-			.data_bits = UART_DATA_8_BITS,
-			.parity = UART_PARITY_DISABLE,
-			.stop_bits = UART_STOP_BITS_1,
-			.flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-			.source_clk = UART_SCLK_APB};
-	// We won't use a buffer for sending data.
-	uart_param_config(UART_PORT, &uartconfig);
-	uart_set_pin(UART_PORT, TX_BIT, RX_BIT, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
-#endif
+// 	// inititialize ITP timer
+// 	timer_config_t itpconfig = {0};
+// 	itpconfig.divider = 2;
+// 	itpconfig.counter_dir = TIMER_COUNT_UP;
+// 	itpconfig.counter_en = TIMER_PAUSE;
+// 	itpconfig.intr_type = TIMER_INTR_MAX;
+// 	itpconfig.alarm_en = TIMER_ALARM_EN;
+// 	itpconfig.auto_reload = true;
+// 	timer_init(ITP_TIMER_TG, ITP_TIMER_IDX, &itpconfig);
+// 	/* Timer's counter will initially start from value below.
+// 		 Also, if auto_reload is set, this value will be automatically reload on alarm */
+// 	timer_set_counter_value(ITP_TIMER_TG, ITP_TIMER_IDX, 0x00000000ULL);
+// 	/* Configure the alarm value and the interrupt on alarm. */
+// 	timer_set_alarm_value(ITP_TIMER_TG, ITP_TIMER_IDX, (uint64_t)(getApbFrequency() / (ITP_SAMPLE_RATE * 2)));
+// 	// register PWM isr
+// 	timer_isr_register(ITP_TIMER_TG, ITP_TIMER_IDX, mcu_itp_isr, NULL, 0, NULL);
+// 	timer_enable_intr(ITP_TIMER_TG, ITP_TIMER_IDX);
+// 	timer_start(ITP_TIMER_TG, ITP_TIMER_IDX);
 
-	// inititialize ITP timer
-	timer_config_t itpconfig = {0};
-	itpconfig.divider = 2;
-	itpconfig.counter_dir = TIMER_COUNT_UP;
-	itpconfig.counter_en = TIMER_PAUSE;
-	itpconfig.intr_type = TIMER_INTR_MAX;
-	itpconfig.alarm_en = TIMER_ALARM_EN;
-	itpconfig.auto_reload = true;
-	timer_init(ITP_TIMER_TG, ITP_TIMER_IDX, &itpconfig);
-	/* Timer's counter will initially start from value below.
-		 Also, if auto_reload is set, this value will be automatically reload on alarm */
-	timer_set_counter_value(ITP_TIMER_TG, ITP_TIMER_IDX, 0x00000000ULL);
-	/* Configure the alarm value and the interrupt on alarm. */
-	timer_set_alarm_value(ITP_TIMER_TG, ITP_TIMER_IDX, (uint64_t)(getApbFrequency() / (ITP_SAMPLE_RATE * 2)));
-	// register PWM isr
-	timer_isr_register(ITP_TIMER_TG, ITP_TIMER_IDX, mcu_itp_isr, NULL, 0, NULL);
-	timer_enable_intr(ITP_TIMER_TG, ITP_TIMER_IDX);
-	timer_start(ITP_TIMER_TG, ITP_TIMER_IDX);
+// #ifdef IC74HC595_CUSTOM_SHIFT_IO
+// 	esp32_i2s_extender_init();
+// #endif
 
-#ifdef IC74HC595_CUSTOM_SHIFT_IO
-	esp32_i2s_extender_init();
-#endif
 
-	// initialize rtc timer (currently on core 1)
-	xTaskCreatePinnedToCore(mcu_rtc_task, "rtcTask", 2048, NULL, 7, NULL, CONFIG_ARDUINO_RUNNING_CORE);
+// #ifdef MCU_HAS_SPI
 
-#ifdef MCU_HAS_SPI
+// 	spi_config_t spi_conf = {0};
+// #ifndef USE_ARDUINO_SPI_LIBRARY
+// 	spi_conf.mode = SPI_MODE;
+// #else
+// 	mcu_spi_init();
+// #endif
+// 	mcu_spi_config(spi_conf, SPI_FREQ);
+// #endif
 
-	spi_config_t spi_conf = {0};
-#ifndef USE_ARDUINO_SPI_LIBRARY
-	spi_conf.mode = SPI_MODE;
-#else
-	mcu_spi_init();
-#endif
-	mcu_spi_config(spi_conf, SPI_FREQ);
-#endif
+// #ifdef MCU_HAS_SPI2
 
-#ifdef MCU_HAS_SPI2
+// 	spi_config_t spi2_conf = {0};
+// #ifndef USE_ARDUINO_SPI_LIBRARY
+// 	spi2_conf.mode = SPI2_MODE;
+// #else
+// 	mcu_spi2_init();
+// #endif
+// 	mcu_spi2_config(spi2_conf, SPI2_FREQ);
+// #endif
 
-	spi_config_t spi2_conf = {0};
-#ifndef USE_ARDUINO_SPI_LIBRARY
-	spi2_conf.mode = SPI2_MODE;
-#else
-	mcu_spi2_init();
-#endif
-	mcu_spi2_config(spi2_conf, SPI2_FREQ);
-#endif
-
-#ifdef MCU_HAS_I2C
-	mcu_i2c_config(I2C_FREQ);
-#endif
+// #ifdef MCU_HAS_I2C
+// 	mcu_i2c_config(I2C_FREQ);
+// #endif
 
 	esp32_usb_wifi_bt_init();
 	mcu_enable_global_isr();
@@ -970,27 +960,42 @@ void mcu_stop_itp_isr(void)
  * gets the MCU running time in milliseconds.
  * the time counting is controled by the internal RTC
  * */
-extern int64_t esp_system_get_time(void);
 uint32_t mcu_millis()
 {
-	return (uint32_t)(esp_system_get_time() / 1000);
+	struct timeval tv_now;
+	gettimeofday(&tv_now, NULL);
+	int64_t time_us = (int64_t)((int64_t)tv_now.tv_sec * 1000L) + ((int64_t)((int64_t)tv_now.tv_usec * 0.001));
+	return (uint32_t)(time_us);
 }
 
 uint32_t mcu_micros()
 {
-	return (uint32_t)esp_system_get_time();
+	struct timeval tv_now;
+	gettimeofday(&tv_now, NULL);
+	int64_t time_us = (int64_t)tv_now.tv_sec * 1000000L + (int64_t)tv_now.tv_usec;
+	return (uint32_t)(time_us);
 }
 
 uint32_t mcu_free_micros()
 {
-	return (uint32_t)(esp_system_get_time() % 1000);
+	struct timeval tv_now;
+	gettimeofday(&tv_now, NULL);
+	int64_t time_us = (int64_t)tv_now.tv_sec * 1000000L + (int64_t)tv_now.tv_usec;
+	return (uint32_t)(time_us);
 }
 
 void esp32_delay_us(uint16_t delay)
 {
-	int64_t time = esp_system_get_time() + delay - 1;
-	while (time > esp_system_get_time())
-		;
+	struct timeval tv_now;
+	gettimeofday(&tv_now, NULL);
+	int64_t time = (int64_t)tv_now.tv_sec * 1000000L + (int64_t)tv_now.tv_usec;
+	time += delay - 1;
+	gettimeofday(&tv_now, NULL);
+	int64_t time_us = (int64_t)tv_now.tv_sec * 1000000L + (int64_t)tv_now.tv_usec;
+	while (time > time_us)
+	{
+		time_us = (int64_t)tv_now.tv_sec * 1000000L + (int64_t)tv_now.tv_usec;
+	}
 }
 
 /**
@@ -1015,7 +1020,7 @@ void mcu_dotasks(void)
 		{
 			if (BUFFER_FULL(uart_rx))
 			{
-				STREAM_OVF(c);
+				c = OVF;
 			}
 
 			BUFFER_ENQUEUE(uart_rx, &c);
@@ -1032,7 +1037,7 @@ void mcu_dotasks(void)
 		{
 			if (BUFFER_FULL(uart2_rx))
 			{
-				STREAM_OVF(c);
+				c = OVF;
 			}
 
 			BUFFER_ENQUEUE(uart2_rx, &c);
@@ -1042,7 +1047,7 @@ void mcu_dotasks(void)
 #ifndef UART2_DISABLE_BUFFER
 		if (BUFFER_FULL(uart2_rx))
 		{
-			STREAM_OVF(c);
+			c = OVF;
 		}
 
 		BUFFER_ENQUEUE(uart2_rx, &c);

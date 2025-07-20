@@ -25,7 +25,7 @@ extern "C"
 #endif
 
 #ifndef MCU
-#define MCU MCU_ESP32S
+#define MCU MCU_ESP32S3
 #endif
 
 #ifndef BOARD_NAME

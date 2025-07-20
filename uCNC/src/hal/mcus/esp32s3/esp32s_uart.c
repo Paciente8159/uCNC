@@ -18,7 +18,7 @@
 
 #include "../../../cnc.h"
 
-#if (MCU == MCU_ESP32S)
+#if (MCU == MCU_ESP32S3)
 #include "driver/uart.h"
 
 #ifdef MCU_HAS_UART

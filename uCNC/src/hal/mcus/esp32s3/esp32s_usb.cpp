@@ -16,7 +16,7 @@
 	See the	GNU General Public License for more details.
 */
 
-#ifdef ESP32
+#ifdef ESP32S3
 #include <Arduino.H>
 #include "USBCDC.h"
 #include <stdint.h>
@@ -50,7 +50,7 @@ extern "C" {
 #endif
 
 #include "../../../cnc.h"
-#if (MCU == MCU_ESP32S || defined(ESP32S3) || defined(ESP32S2))
+#if (MCU == MCU_ESP32S3 || defined(ESP32S3) || defined(ESP32S2))
 
 #ifdef MCU_HAS_USB
 

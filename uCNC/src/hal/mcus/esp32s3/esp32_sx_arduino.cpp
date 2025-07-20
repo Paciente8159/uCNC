@@ -824,7 +824,7 @@
 // 	}
 // #endif
 
-// 	void esp32_wifi_bt_init(void)
+// 	void esp32_usb_wifi_bt_init(void)
 // 	{
 // #ifdef ENABLE_WIFI
 // #ifndef ENABLE_BLUETOOTH
@@ -995,7 +995,7 @@
 // 		return (uint8_t)0;
 // 	}
 
-// 	void esp32_wifi_bt_process(void)
+// 	void esp32_usb_wifi_bt_process(void)
 // 	{
 // #ifdef ENABLE_BLUETOOTH
 // 		if (SerialBT.hasClient())

@@ -16,8 +16,8 @@
 	See the	GNU General Public License for more details.
 */
 
-#ifndef MCUMAP_ESP32_S_H
-#define MCUMAP_ESP32_S_H
+#ifndef MCUMAP_ESP32S3_H
+#define MCUMAP_ESP32S3_H
 
 #ifdef __cplusplus
 extern "C"
