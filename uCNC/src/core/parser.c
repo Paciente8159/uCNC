@@ -531,11 +531,30 @@ static uint8_t parser_grbl_command(void)
 					}
 
 					settings_save(block_address, NULL, UINT16_MAX);
-					// run startup block
-					grbl_stream_start_broadcast();
-					grbl_stream_eeprom(block_address);
-					// checks the command validity
-					error = parser_fetch_command(&next_state, &words, &cmd);
+#ifdef ENABLE_MULTILINE_STARTUP_BLOCKS
+					uint16_t address = block_address;
+					uint8_t c = EOL;
+					do
+					{
+#endif
+						// run startup block
+						grbl_stream_start_broadcast();
+						grbl_stream_eeprom(block_address);
+						// checks the command validity
+						error = parser_fetch_command(&next_state, &words, &cmd);
+#ifdef ENABLE_MULTILINE_STARTUP_BLOCKS
+						do
+						{
+							c = mcu_eeprom_getc(block_address++);
+							if (c == '|')
+							{
+								break;
+							}
+						} while (c != EOL);
+					} while (c != EOL && error == STATUS_OK);
+					// restore address
+					block_address = address;
+#endif
 					// if uncomment will also check if any gcode rules are violated
 					// allow bad rules for now to fit UNO. Will be catched when trying to execute the line
 					// if (error == STATUS_OK)

@@ -216,7 +216,14 @@ static uint16_t stream_eeprom_address;
 static uint8_t stream_eeprom_getc(void)
 {
 	uint8_t c = mcu_eeprom_getc(stream_eeprom_address++);
+#ifdef ENABLE_MULTILINE_STARTUP_BLOCKS
+	if (c == '|')
+	{
+		c = EOL;
+	}
+#endif
 	grbl_stream_putc((c != EOL) ? c : ':');
+
 	return c;
 }
 

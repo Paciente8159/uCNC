@@ -329,6 +329,11 @@ extern "C"
  */
 // #define DISABLE_ENDPROGRAM_LOCK
 
+/**
+ * Allow multiline startup blocks. Multiline startup blocks allow to add a multiple GCode command blocks using the | char as a separator
+ */
+//  #define ENABLE_MULTILINE_STARTUP_BLOCKS
+
 	/**
 	 * Shrink µCNC
 	 * It's possible to shrink µCNC by disable some core features:
