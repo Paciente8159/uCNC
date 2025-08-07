@@ -488,7 +488,6 @@ static uint8_t parser_grbl_command(void)
 				{
 #endif
 					val = 0;
-					is_array = false;
 					if (!parser_get_float(&val))
 					{
 #ifdef ENABLE_SETTINGS_MODULES
@@ -498,9 +497,10 @@ static uint8_t parser_grbl_command(void)
 					}
 
 #ifdef ALLOW_SETTINGS_ARRAY_FORMAT
+					is_array = false;
 					if (grbl_stream_peek() == ',')
 					{
-						 is_array = true;
+						is_array = true;
 						uint8_t result = settings_change(setting_num, val);
 						if (result != STATUS_OK)
 						{
