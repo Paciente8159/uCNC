@@ -482,14 +482,35 @@ static uint8_t parser_grbl_command(void)
 					return STATUS_INVALID_STATEMENT;
 				}
 
-				val = 0;
-				if (!parser_get_float(&val))
+#ifdef ALLOW_SETTINGS_ARRAY_FORMAT
+				bool is_array = false;
+				do
 				{
-#ifdef ENABLE_SETTINGS_MODULES
-					return settings_change(setting_num, val);
 #endif
-					return STATUS_BAD_NUMBER_FORMAT;
-				}
+					val = 0;
+					is_array = false;
+					if (!parser_get_float(&val))
+					{
+#ifdef ENABLE_SETTINGS_MODULES
+						return settings_change(setting_num, val);
+#endif
+						return STATUS_BAD_NUMBER_FORMAT;
+					}
+
+#ifdef ALLOW_SETTINGS_ARRAY_FORMAT
+					if (grbl_stream_peek() == ',')
+					{
+						 is_array = true;
+						uint8_t result = settings_change(setting_num, val);
+						if (result != STATUS_OK)
+						{
+							return result;
+						}
+						setting_num++;
+						grbl_stream_getc();
+					}
+				} while (is_array);
+#endif
 
 				if (grbl_stream_getc() != EOL)
 				{
