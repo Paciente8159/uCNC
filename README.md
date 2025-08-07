@@ -34,8 +34,10 @@ Version 1.12 introduces the following changes:
 
 # IMPORTANT NOTE
 
-By default and as a safety measure µCNC control inputs (Emergency stop, Safety door, Hold, Cycle start-resume), as well as limit switches and probe, are held high by the microcontroller input weak-pull up resistors. If left unconnected or connected to normally opened switches these inputs will be in an active/triggered state and the controller may lock all motions.
-There are a few ways you can reconfigure µCNC to enable normal operation [here](https://github.com/Paciente8159/uCNC/wiki/Basic-user-guide#%C2%B5cnc-wiring).
+The default behavior for µCNC will be as described:
+
+  - All control inputs (Emergency stop, Safety door, Hold, Cycle start-resume), limit switches and probe input are held high by the MCU internal weak pull ups and will be active if left unconnected. If Emergency Stop is active the board will remain in Alarm mode and will not allow you to do much (besides querying the current board status via `?`). There are a few ways you can reconfigure µCNC to enable normal operation [here](https://github.com/Paciente8159/uCNC/wiki/Basic-user-guide#%C2%B5cnc-wiring)
+	- On first time flashing the board, or if the settings structure is modified, the board will be (and remain) in Alarm mode until a full settings reset is performed (`$RST=*`). This forces the user to acknowledge that the settings were modified and that the current parameters are known. This is a safety feature that prevents users to start using the machine with the default values of the settings accidentally (for example if using the SD card as a settings storage source and some sort of reading error occurs). You can revert this behavior to the Grbl default by enabling `DISABLE_SAFE_SETTINGS` option.
 
 Also beware that the main branch contain the latest changes, including bug fixes and some intermediate changes. Some of theses changes are very extent and can come with issues and although new PR are tested, they might have unexpected errors or behavior. If you find and issue please report. Also prefer the latest release version over the master branch.
 
@@ -57,7 +59,8 @@ You can navigate the [project wiki](https://github.com/Paciente8159/uCNC/wiki) t
 
 You can expand µCNC using via modules. The available modules are at the [µCNC-modules repository](https://github.com/Paciente8159/uCNC-modules).
 
-You can now also use [µCNC config builder web tool](https://paciente8159.github.io/uCNC-config-builder/) to generate the files needed to adapt µCNC to your board.
+A new [µCNC configuration webapp tool](https://github.com/Paciente8159/uCNC-webconfig) is now available (still in test mode) and will support version 1.12+ and allows you to generate/store your project configuration.
+For previous versions, the [old configuration webapp tool](https://paciente8159.github.io/uCNC-config-builder/) will continue to remain avaliable.
 
 You can also reach me at µCNC discord channel
 

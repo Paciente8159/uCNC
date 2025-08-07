@@ -127,7 +127,7 @@ extern "C"
 			{
 				if (BUFFER_FULL(uart_rx))
 				{
-					c = OVF;
+					STREAM_OVF(c);
 				}
 				BUFFER_ENQUEUE(uart_rx, &c);
 			}
@@ -196,7 +196,9 @@ extern "C"
 			{
 				if (BUFFER_FULL(uart2_rx))
 				{
-					c = OVF;
+					grbl_stream_overflow(c);
+					return;
+//					STREAM_OVF(c);
 				}
 				BUFFER_ENQUEUE(uart2_rx, &c);
 			}

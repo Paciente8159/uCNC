@@ -219,6 +219,16 @@ const setting_id_t __rom__ g_settings_id_table[] = {
 #if ENCODERS
 		{.id = 150, .memptr = &g_settings.encoders_resolution, .type = SETTING_TYPE_FLOAT | SETTING_ARRAY | SETTING_ARRCNT(ENCODERS)},
 #endif
+#ifdef H_MAPPING_EEPROM_STORE_ENABLED
+#define H_MAPING_ARRAY_HALF_SIZE ((H_MAPING_GRID_FACTOR * H_MAPING_GRID_FACTOR) >> 1)
+		{.id = 215, .memptr = &g_settings.hmap_x, .type = SETTING_TYPE_FLOAT},
+		{.id = 216, .memptr = &g_settings.hmap_y, .type = SETTING_TYPE_FLOAT},
+		{.id = 217, .memptr = &g_settings.hmap_x_offset, .type = SETTING_TYPE_FLOAT},
+		{.id = 218, .memptr = &g_settings.hmap_y_offset, .type = SETTING_TYPE_FLOAT},
+		// since the array can have 36 entries we need to split this in 2 halfs because array entries support only up to 31 entries
+		{.id = 219, .memptr = &g_settings.hmap_offsets, .type = SETTING_TYPE_FLOAT | SETTING_ARRAY | SETTING_ARRCNT(H_MAPING_ARRAY_HALF_SIZE)},
+		{.id = 219 + H_MAPING_ARRAY_HALF_SIZE, .memptr = &g_settings.hmap_offsets[H_MAPING_ARRAY_HALF_SIZE], .type = SETTING_TYPE_FLOAT | SETTING_ARRAY | SETTING_ARRCNT(H_MAPING_ARRAY_HALF_SIZE)},
+#endif
 };
 
 #ifdef ENABLE_SETTINGS_MODULES

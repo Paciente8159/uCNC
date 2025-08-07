@@ -5,6 +5,34 @@
 µCNC - A universal CNC firmware for microcontrollers
 
 # Changelog
+
+## [1.12.3] - 26-06-2025
+
+### Added
+
+- allow storing HMapping (G39) in non volatile memory (Grbl settings) (#865)
+
+### Fixed
+
+- fixed block speed synchronization in the interpolator after (planner block transition speed synchronization) (#873)
+
+
+## [1.12.2] - 05-05-2025
+
+### Added
+
+- added boardmap support for Fysetc Cheetah v2 (#856)
+- added new logic IO conditions macros. This allows users to define custom logic for limits, control and probe pins (#863)
+
+### Changed
+
+- disable softlimits checking for dimensions set to 0/infinit limit (#860)
+
+### Fixed
+
+- fixed status report format when tool count is set to 0 (#859)
+- fixed status report format print for axis count lower then 3 (#861) (#862)
+
 ## [1.12.1] - 01-04-2025
 
 ### Added
@@ -1889,6 +1917,8 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.12.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.12.3
+[1.12.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.12.2
 [1.12.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.12.1
 [1.12.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.12.0
 [1.11.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.11.2

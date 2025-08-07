@@ -78,6 +78,7 @@ void mcu_uart_flush(void)
 void IRAM_ATTR mcu_uart_isr(void *arg)
 {
 	uint32_t usis = USIS(UART_PORT);
+	uint8_t c = 0;
 
 	if (usis & ((1 << UIFF) | (1 << UITO)))
 	{
@@ -85,12 +86,13 @@ void IRAM_ATTR mcu_uart_isr(void *arg)
 		{
 			// system_soft_wdt_feed();
 #ifndef DETACH_UART_FROM_MAIN_PROTOCOL
-			uint8_t c = (uint8_t)USF(UART_PORT);
+			c = (uint8_t)USF(UART_PORT);
 			if (mcu_com_rx_cb(c))
 			{
 				if (BUFFER_FULL(uart_rx))
 				{
-					c = OVF;
+					USIC(UART_PORT) = usis;
+					STREAM_OVF(c);
 				}
 
 				BUFFER_ENQUEUE(uart_rx, &c);
@@ -103,12 +105,8 @@ void IRAM_ATTR mcu_uart_isr(void *arg)
 
 	if (usis & ((1 << UIOF) | (1 << UIFR) | (1 << UIPE)))
 	{
-		uint8_t c = OVF;
-#ifndef DETACH_UART_FROM_MAIN_PROTOCOL
-		BUFFER_ENQUEUE(uart_rx, &c);
-#else
-		mcu_uart_rx_cb((uint8_t)USF(UART_PORT));
-#endif
+		USIC(UART_PORT) = usis;
+		STREAM_OVF(c);
 	}
 
 	USIC(UART_PORT) = usis;
@@ -130,7 +128,7 @@ static void mcu_uart_process()
 		{
 			if (BUFFER_FULL(uart_rx))
 			{
-				c = OVF;
+				STREAM_OVF(c);
 			}
 
 			BUFFER_ENQUEUE(uart_rx, &c);
@@ -209,7 +207,8 @@ void IRAM_ATTR mcu_uart2_isr(void *arg)
 			{
 				if (BUFFER_FULL(uart2_rx))
 				{
-					c = OVF;
+					USIC(UART2_PORT) = usis;
+					STREAM_OVF(c);
 				}
 
 				BUFFER_ENQUEUE(uart2_rx, &c);
@@ -222,12 +221,8 @@ void IRAM_ATTR mcu_uart2_isr(void *arg)
 
 	if (usis & ((1 << UIOF) | (1 << UIFR) | (1 << UIPE)))
 	{
-		uint8_t c = OVF;
-#ifndef DETACH_UART2_FROM_MAIN_PROTOCOL
-		BUFFER_ENQUEUE(uart2_rx, &c);
-#else
-		mcu_uart2_rx_cb((uint8_t)USF(UART2_PORT));
-#endif
+		USIC(UART2_PORT) = usis;
+		STREAM_OVF(c);
 	}
 
 	USIC(UART2_PORT) = usis;
@@ -249,7 +244,7 @@ static void mcu_uart2_process()
 		{
 			if (BUFFER_FULL(uart2_rx))
 			{
-				c = OVF;
+				STREAM_OVF(c);
 			}
 
 			BUFFER_ENQUEUE(uart2_rx, &c);

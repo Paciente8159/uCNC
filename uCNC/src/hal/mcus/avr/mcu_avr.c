@@ -387,7 +387,7 @@ ISR(COM_RX_vect, ISR_BLOCK)
 	{
 		if (BUFFER_FULL(uart_rx))
 		{
-			c = OVF;
+			STREAM_OVF(c);
 		}
 
 		BUFFER_ENQUEUE(uart_rx, &c);
@@ -425,7 +425,7 @@ ISR(COM2_RX_vect, ISR_BLOCK)
 	{
 		if (BUFFER_FULL(uart2_rx))
 		{
-			c = OVF;
+			STREAM_OVF(c);
 		}
 
 		BUFFER_ENQUEUE(uart2_rx, &c);
@@ -435,7 +435,7 @@ ISR(COM2_RX_vect, ISR_BLOCK)
 #ifndef UART2_DISABLE_BUFFER
 	if (BUFFER_FULL(uart2_rx))
 	{
-		c = OVF;
+		STREAM_OVF(c);
 	}
 
 	BUFFER_ENQUEUE(uart2_rx, &c);

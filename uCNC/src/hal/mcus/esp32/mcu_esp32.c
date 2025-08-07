@@ -1055,7 +1055,7 @@ void mcu_dotasks(void)
 		{
 			if (BUFFER_FULL(uart_rx))
 			{
-				c = OVF;
+				STREAM_OVF(c);
 			}
 
 			BUFFER_ENQUEUE(uart_rx, &c);
@@ -1072,7 +1072,7 @@ void mcu_dotasks(void)
 		{
 			if (BUFFER_FULL(uart2_rx))
 			{
-				c = OVF;
+				STREAM_OVF(c);
 			}
 
 			BUFFER_ENQUEUE(uart2_rx, &c);
@@ -1082,7 +1082,7 @@ void mcu_dotasks(void)
 #ifndef UART2_DISABLE_BUFFER
 		if (BUFFER_FULL(uart2_rx))
 		{
-			c = OVF;
+			STREAM_OVF(c);
 		}
 
 		BUFFER_ENQUEUE(uart2_rx, &c);

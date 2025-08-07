@@ -29,6 +29,9 @@ static FORCEINLINE void grbl_stream_flush(void);
 #ifndef DEBUG_TX_BUFFER_SIZE
 #define DEBUG_TX_BUFFER_SIZE 250
 #endif
+#if DEBUG_TX_BUFFER_SIZE > 255
+#error "DEBUG_TX_BUFFER_SIZE cannot exceed 255"
+#endif
 DECL_BUFFER(uint8_t, debug_tx, DEBUG_TX_BUFFER_SIZE);
 static volatile uint8_t debug_tx_lines;
 #endif
@@ -213,7 +216,14 @@ static uint16_t stream_eeprom_address;
 static uint8_t stream_eeprom_getc(void)
 {
 	uint8_t c = mcu_eeprom_getc(stream_eeprom_address++);
+#ifdef ENABLE_MULTILINE_STARTUP_BLOCKS
+	if (c == '|')
+	{
+		c = EOL;
+	}
+#endif
 	grbl_stream_putc((c != EOL) ? c : ':');
+
 	return c;
 }
 
@@ -278,6 +288,51 @@ char grbl_stream_peek(void)
 	return peek;
 }
 
+uint8_t grbl_stream_overflow_count;
+void grbl_stream_overflow(uint8_t c)
+{
+	switch (c)
+	{
+	case '\n':
+	case '\r':
+	case 0:
+		grbl_stream_overflow_count++;
+		break;
+	}
+	grbl_stream_peek_buffer = OVF;
+}
+
+void grbl_stream_overflow_flush(void)
+{
+	uint8_t avail = (!!stream_available) ? stream_available() : 1;
+	while (avail && stream_getc)
+	{
+		uint8_t c = stream_getc();
+		switch (c)
+		{
+		case '\n':
+		case '\r':
+		case 0:
+			proto_error(STATUS_OVERFLOW);
+			break;
+		}
+
+		avail = (!!stream_available) ? stream_available() : 1;
+	}
+
+	if (stream_clear)
+	{
+		stream_clear();
+	}
+
+	while (grbl_stream_overflow_count--)
+	{
+		proto_error(STATUS_OVERFLOW);
+	}
+
+	grbl_stream_peek_buffer = 0;
+}
+
 uint8_t grbl_stream_available(void)
 {
 	if (stream_available == NULL)
@@ -329,6 +384,7 @@ void grbl_stream_clear(void)
 #else
 	mcu_clear();
 #endif
+	grbl_stream_peek_buffer = 0;
 }
 
 #ifndef DISABLE_MULTISTREAM_SERIAL

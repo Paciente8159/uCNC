@@ -36,6 +36,7 @@ extern "C"
 #define BOARD_MKS_GEN_L_V1 6
 #define BOARD_UNO_SHIELD_V3 7
 #define BOARD_MELZI_V1_14 8
+#define BOARD_MEGA_SHIELD_V3_H 9
 #define BOARD_RAMPS14_MIRROR 200
 /**
  * STM32F0
@@ -115,6 +116,8 @@ extern "C"
 #define BOARDMAP "avr/boardmap_mks_gen_l_v1.h"
 #elif (BOARD == BOARD_UNO_SHIELD_V3)
 #define BOARDMAP "avr/boardmap_uno_shield_v3.h"
+#elif (BOARD == BOARD_MEGA_SHIELD_V3_H)
+#define BOARDMAP "avr/boardmap_mega_shield_v3.h"
 // STM32F0
 #elif (BOARD == BOARD_BLUEPILL_F0)
 #define BOARDMAP "stm32/boardmap_bluepill_f0.h"

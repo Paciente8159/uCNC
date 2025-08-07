@@ -24,7 +24,6 @@ extern "C"
 {
 #endif
 
-
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdarg.h>
@@ -37,6 +36,10 @@ extern "C"
 #define RX_BUFFER_CAPACITY 128
 #endif
 #define RX_BUFFER_SIZE (RX_BUFFER_CAPACITY + SAFEMARGIN) // buffer sizes
+
+#if RX_BUFFER_SIZE > 255
+#error "RX_BUFFER_SIZE cannot exceed 255"
+#endif
 
 	typedef uint8_t (*grbl_stream_getc_cb)(void);
 	typedef uint8_t (*grbl_stream_available_cb)(void);
@@ -63,7 +66,14 @@ extern "C"
 
 	void grbl_stream_start_broadcast(void);
 	void grbl_stream_putc(char c);
-	void grbl_stream_printf(const char* fmt, ...);
+	void grbl_stream_printf(const char *fmt, ...);
+	void grbl_stream_overflow(uint8_t c);
+	void grbl_stream_overflow_flush(void);
+
+	// marks an overflow error on a stream
+#define STREAM_OVF(c)      \
+	grbl_stream_overflow(c); \
+	return
 
 	char grbl_stream_getc(void);
 	char grbl_stream_peek(void);
@@ -86,8 +96,8 @@ extern "C"
 #define DEBUG_PRELUDE "[DBG:"
 #endif
 
-// not to be used directly
-void debug_printf(const char *fmt, ...);
+	// not to be used directly
+	void debug_printf(const char *fmt, ...);
 #define DBGMSG(fmt, ...) debug_printf(__romstr__(DEBUG_PRELUDE fmt MSG_FEEDBACK_END), ##__VA_ARGS__)
 #else
 #define DBGMSG(fmt, ...)
