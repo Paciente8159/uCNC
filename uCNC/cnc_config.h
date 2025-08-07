@@ -377,6 +377,13 @@ extern "C"
 	 * */
 // #define DISABLE_SETTINGS_MODULES
 
+	/**
+	 * Allow to set continuous settings as an array
+	 * For example set steps per mm with one command
+	 * $100=200.0,200.0,80.0
+	 * */
+//  #define ALLOW_SETTINGS_ARRAY_FORMAT
+
 /**
  * Report specific options
  * */
