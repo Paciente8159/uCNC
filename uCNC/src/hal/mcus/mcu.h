@@ -217,7 +217,7 @@ extern "C"
 #endif
 
 #ifndef mcu_softpwm_freq_config
-uint8_t mcu_softpwm_freq_config(uint16_t freq);
+	uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #endif
 
 /**
@@ -275,6 +275,19 @@ uint8_t mcu_softpwm_freq_config(uint16_t freq);
  * */
 #ifndef mcu_get_global_isr
 	bool mcu_get_global_isr(void);
+#endif
+
+/**
+ * allows to determine the current running context on the MCU
+ * returns true if is in ISR context or false otherwise
+ * */
+#ifndef mcu_in_isr_context
+	extern volatile uint8_t mcu_in_isr_context_counter;
+	bool mcu_in_isr_context(void);
+	void mcu_in_isr_context_leave(uint8_t *counter);
+#define mcu_isr_context_enter()                \
+	__ATOMIC__ { mcu_in_isr_context_counter++; } \
+	uint8_t isr_context __attribute__((__cleanup__(mcu_in_isr_context_leave))) = 0
 #endif
 
 	// Step interpolator
@@ -414,7 +427,7 @@ uint8_t mcu_softpwm_freq_config(uint16_t freq);
  * the maximum allowed delay is 255 us
  * */
 #ifndef mcu_delay_us
-#define mcu_delay_us(X) mcu_delay_cycles(F_CPU / MCU_CLOCKS_PER_CYCLE / 1000000UL * X)
+#define mcu_delay_us(X) for (int32_t elap_us = 0, timeout = X, curr_us = mcu_free_micros(); timeout > 0; ({elap_us = mcu_free_micros(); int32_t tmp = elap_us-curr_us; curr_us = elap_us; timeout -= ((tmp >= 0) ? tmp : 1000 + tmp); }))
 #endif
 
 #ifdef MCU_HAS_ONESHOT_TIMER
