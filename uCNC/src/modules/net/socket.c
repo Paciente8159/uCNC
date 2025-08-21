@@ -1,5 +1,5 @@
 /*
-	Name: bsd_socket.c
+	Name: socket.c
 	Description: Implements a simple Raw Socket Server based on BSD/POSIX Sockets for µCNC.
 
 	Copyright: Copyright (c) João Martins
@@ -19,10 +19,6 @@
 #include "../../cnc.h"
 #include "socket.h"
 #include <string.h>
-
-#ifndef INVALID_SOCKET
-#define INVALID_SOCKET (-1)
-#endif
 
 /* Global socket interfaces */
 static socket_if_t raw_sockets[MAX_SOCKETS];

@@ -24,10 +24,10 @@ extern "C"
 {
 #endif
 
-#include "../../module.h"
-#include "socket.h"
 #include <stdlib.h>
 #include <stdint.h>
+#include "socket.h"
+#include "../../module.h"
 
 	DECL_MODULE(telnet_server);
 

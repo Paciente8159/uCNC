@@ -26,36 +26,8 @@ extern "C"
 
 #include <stdlib.h>
 #include <stdint.h>
+#include "utils/bsd_socket.h"
 #include "../../module.h"
-
-struct bsd_sockaddr_in
-{
-	uint16_t sin_family;
-	uint16_t sin_port;
-	uint32_t sin_addr;
-	unsigned char sin_zero[8];
-};
-
-static inline uint16_t bsd_htons(uint16_t x) {
-    return (uint16_t)(((x & 0x00ffu) << 8) | ((x & 0xff00u) >> 8));
-}
-static inline uint32_t bsd_htonl(uint32_t x) {
-    return ((x & 0x000000ffUL) << 24) |
-           ((x & 0x0000ff00UL) << 8)  |
-           ((x & 0x00ff0000UL) >> 8)  |
-           ((x & 0xff000000UL) >> 24);
-}
-
-/* Socket API prototypes — These must be implemented either in the MCU of for a specific module driver to provide the TCP/IP stack interface*/
-int bsd_socket(int domain, int type, int protocol);
-int bsd_bind(int sockfd, const struct bsd_sockaddr_in *addr, int addrlen);
-int bsd_listen(int sockfd, int backlog);
-int bsd_accept(int sockfd, struct bsd_sockaddr_in *addr, int *addrlen);
-int bsd_setsockopt(int sockfd, int level, int optname, const void *optval, int optlen);
-int bsd_fcntl(int fd, int cmd, long arg);
-int bsd_recv(int sockfd, void *buf, size_t len, int flags);
-int bsd_send(int sockfd, const void *buf, size_t len, int flags);
-int bsd_close(int fd);
 
 #ifndef MAX_SOCKETS
 #define MAX_SOCKETS 4
@@ -69,6 +41,10 @@ int bsd_close(int fd);
 
 #ifndef IP_ANY
 #define IP_ANY 0
+#endif
+
+#ifndef INVALID_SOCKET
+#define INVALID_SOCKET (-1)
 #endif
 
 typedef void (*socket_data_delegate)(int client_index, void* data, size_t data_len);
