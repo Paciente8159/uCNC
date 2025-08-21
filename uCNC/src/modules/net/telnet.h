@@ -1,5 +1,5 @@
 /*
-	Name: bsd_telnet.h
+	Name: telnet.h
 	Description: Implements a simple Telnet Server based on BSD/POSIX Sockets for µCNC.
 
 	Copyright: Copyright (c) João Martins
@@ -16,11 +16,23 @@
 	See the	GNU General Public License for more details.
 */
 
-#ifndef BSD_TELNET_H
-#define BSD_TELNET_H
+#ifndef TELNET_H
+#define TELNET_H
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+#include "../../module.h"
+#include "socket.h"
 #include <stdlib.h>
 #include <stdint.h>
 
+	DECL_MODULE(telnet_server);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

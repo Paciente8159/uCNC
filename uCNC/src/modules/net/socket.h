@@ -1,5 +1,5 @@
 /*
-	Name: bsd_socket.h
+	Name: socket.h
 	Description: Implements a simple Raw Socket Server based on BSD/POSIX Sockets for µCNC.
 
 	Copyright: Copyright (c) João Martins
@@ -16,11 +16,17 @@
 	See the	GNU General Public License for more details.
 */
 
-#ifndef BSD_SOCKET_H
-#define BSD_SOCKET_H
+#ifndef SOCKET_H
+#define SOCKET_H
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
 #include <stdlib.h>
 #include <stdint.h>
+#include "../../module.h"
 
 struct bsd_sockaddr_in
 {
@@ -61,25 +67,37 @@ int bsd_close(int fd);
 #define SOCKET_MAX_DATA_SIZE 256
 #endif
 
-typedef void (*socket_received_data_delegate)(void* data, size_t data_len);
+#ifndef IP_ANY
+#define IP_ANY 0
+#endif
+
+typedef void (*socket_data_delegate)(int client_index, void* data, size_t data_len);
+typedef void (*socket_connect_delegate)(int client_index);
 
 typedef struct socket_if_{
 	int socket_if;
 	int socket_clients[SOCKET_MAX_CLIENTS];
-	int current_client;
-	socket_received_data_delegate received_data_handler;
+	socket_data_delegate client_ondata_cb;
+	socket_connect_delegate client_onconnected_cb;
+	socket_connect_delegate client_ondisconnected_cb;
 } socket_if_t;
 
 // creates a new socket connection and starts to listen for new clients (non blocking). Returns -1 if it fails. Otherwise returns the socket interface number (from bsd_socket)
-socket_if_t* socket_start(int domain, int type, int protocol, uint32_t ip_listen, uint16_t port, socket_received_data_delegate* handler);
-// sends data to a specific socket interface to the current client
-int socket_send(socket_if_t *socket, char* data, size_t data_len, int flags);
+socket_if_t* socket_start(uint32_t ip_listen, uint16_t port, int domain, int type, int protocol);
+void socket_add_ondata_handler(socket_if_t* socket, socket_data_delegate callback);
+void socket_add_onconnected_handler(socket_if_t* socket, socket_connect_delegate callback);
+void socket_add_ondisconnected_handler(socket_if_t* socket, socket_connect_delegate callback);
+// sends data to a specific socket interface to a client
+int socket_send(socket_if_t *socket, int client, char* data, size_t data_len, int flags);
 // sends data to a specific socket interface to all clients
 int socket_broadcast(socket_if_t *socket, char* data, size_t data_len, int flags);
-
-// initializes g_sockets
-void socket_server_int();
 // runs the loop that handles new client accpts and handles each socket/client data handling (non blocking)
-void socker_server_run();
+void socker_server_run(socket_if_t* socket);
+// initializes sockets server
+DECL_MODULE(socket_server);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -16,8 +16,8 @@
 	See the	GNU General Public License for more details.
 */
 
-#include "../cnc.h"
-#include "bsd_socket.h"
+#include "../../cnc.h"
+#include "socket.h"
 #include <string.h>
 
 #ifndef INVALID_SOCKET
@@ -37,18 +37,7 @@ static int find_free_socket_if(void)
 	return -1;
 }
 
-void socket_server_int(void)
-{
-	for (int i = 0; i < MAX_SOCKETS; i++)
-	{
-		raw_sockets[i].socket_if = -1;
-		raw_sockets[i].current_client = -1;
-		memset(raw_sockets[i].socket_clients, -1, sizeof(raw_sockets[i].socket_clients));
-		raw_sockets[i].received_data_handler = NULL;
-	}
-}
-
-socket_if_t *socket_start(int domain, int type, int protocol, uint32_t ip_listen, uint16_t port, socket_received_data_delegate *handler)
+socket_if_t *socket_start(uint32_t ip_listen, uint16_t port, int domain, int type, int protocol)
 {
 	int idx = find_free_socket_if();
 	if (idx < 0)
@@ -61,8 +50,8 @@ socket_if_t *socket_start(int domain, int type, int protocol, uint32_t ip_listen
 	struct bsd_sockaddr_in addr;
 	memset(&addr, 0, sizeof(addr));
 	addr.sin_family = (uint16_t)domain;
-	addr.sin_port = bsd_htons(port); // default port (can be changed by user)
-	addr.sin_addr = bsd_htonl(ip_listen);	 // any address
+	addr.sin_port = bsd_htons(port);			// default port (can be changed by user)
+	addr.sin_addr = bsd_htonl(ip_listen); // any address
 
 	if (bsd_bind(s, &addr, sizeof(addr)) < 0)
 	{
@@ -80,17 +69,29 @@ socket_if_t *socket_start(int domain, int type, int protocol, uint32_t ip_listen
 	}
 
 	raw_sockets[idx].socket_if = s;
-	raw_sockets[idx].current_client = -1;
 	memset(raw_sockets[idx].socket_clients, -1, sizeof(raw_sockets[idx].socket_clients));
-	raw_sockets[idx].received_data_handler = handler;
 	return &raw_sockets[idx];
 }
 
-int socket_send(socket_if_t *socket, char *data, size_t data_len, int flags)
+void socket_add_ondata_handler(socket_if_t *socket, socket_data_delegate callback)
+{
+	socket->client_ondata_cb = callback;
+}
+
+void socket_add_onconnected_handler(socket_if_t *socket, socket_connect_delegate callback)
+{
+	socket->client_onconnected_cb = callback;
+}
+
+void socket_add_ondisconnected_handler(socket_if_t *socket, socket_connect_delegate callback)
+{
+	socket->client_ondisconnected_cb = callback;
+}
+
+int socket_send(socket_if_t *socket, int client, char *data, size_t data_len, int flags)
 {
 	if (!socket)
 		return -1;
-	int client = socket->current_client;
 	if (client < 0)
 		return -1;
 	return bsd_send(client, data, data_len, flags);
@@ -122,7 +123,10 @@ static void add_client(socket_if_t *iface, int client_fd)
 		if (iface->socket_clients[i] < 0)
 		{
 			iface->socket_clients[i] = client_fd;
-			iface->current_client = client_fd;
+			if (iface->client_onconnected_cb)
+			{
+				iface->client_onconnected_cb(client_fd);
+			}
 			return;
 		}
 	}
@@ -138,51 +142,72 @@ static void remove_client(socket_if_t *iface, int idx)
 		if (iface->socket_clients[idx] >= 0)
 		{
 			bsd_close(iface->socket_clients[idx]);
+			if (iface->client_ondisconnected_cb)
+			{
+				iface->client_ondisconnected_cb(iface->socket_clients[idx]);
+			}
 			iface->socket_clients[idx] = -1;
 		}
 	}
 }
 
-void socker_server_run(void)
+void socker_server_run(socket_if_t *socket)
 {
+	// if no socket is defined loops all sockets
+	if (!socket)
+	{
+		for (int i = 0; i < MAX_SOCKETS; i++)
+		{
+			socker_server_run(&raw_sockets[i]);
+		}
+	}
+
 	char buffer[SOCKET_MAX_DATA_SIZE];
 
-	for (int i = 0; i < MAX_SOCKETS; i++)
+	if (socket->socket_if >= 0)
 	{
-		socket_if_t *iface = &raw_sockets[i];
-		if (iface->socket_if >= 0)
+		/* Accept new clients if TCP */
+		int client_fd;
+		struct bsd_sockaddr_in cli_addr;
+		int cli_len = sizeof(cli_addr);
+
+		client_fd = bsd_accept(socket->socket_if, &cli_addr, &cli_len);
+		if (client_fd >= 0)
 		{
-			/* Accept new clients if TCP */
-			int client_fd;
-			struct bsd_sockaddr_in cli_addr;
-			int cli_len = sizeof(cli_addr);
+			add_client(socket, client_fd);
+		}
 
-			client_fd = bsd_accept(iface->socket_if, &cli_addr, &cli_len);
-			if (client_fd >= 0)
+		/* Poll each client for data (non-blocking) */
+		for (int c = 0; c < SOCKET_MAX_CLIENTS; c++)
+		{
+			int fd = socket->socket_clients[c];
+			if (fd >= 0)
 			{
-				add_client(iface, client_fd);
-			}
-
-			/* Poll each client for data (non-blocking) */
-			for (int c = 0; c < SOCKET_MAX_CLIENTS; c++)
-			{
-				int fd = iface->socket_clients[c];
-				if (fd >= 0)
+				int len = bsd_recv(fd, buffer, sizeof(buffer), 0);
+				if (len > 0)
 				{
-					int len = bsd_recv(fd, buffer, sizeof(buffer), 0);
-					if (len > 0)
+					if (socket->client_ondata_cb)
 					{
-						if (iface->received_data_handler)
-						{
-							iface->received_data_handler(buffer, (size_t)len);
-						}
+						socket->client_ondata_cb(fd, buffer, (size_t)len);
 					}
-					else if (len == 0)
-					{
-						remove_client(iface, c);
-					}
+				}
+				else if (len == 0)
+				{
+					remove_client(socket, c);
 				}
 			}
 		}
+	}
+}
+
+DECL_MODULE(socket_server)
+{
+	for (int i = 0; i < MAX_SOCKETS; i++)
+	{
+		raw_sockets[i].socket_if = -1;
+		memset(raw_sockets[i].socket_clients, -1, sizeof(raw_sockets[i].socket_clients));
+		raw_sockets[i].client_ondata_cb = NULL;
+		raw_sockets[i].client_onconnected_cb = NULL;
+		raw_sockets[i].client_ondisconnected_cb = NULL;
 	}
 }
