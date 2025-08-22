@@ -23,6 +23,86 @@
 MCU_CALLBACK mcu_timeout_delgate mcu_timeout_cb;
 #endif
 
+// generic telnet stream implementation for all MCUs that have some sort of implementation
+// this can also be used by modules that implement sockets
+
+#if defined(MCU_HAS_SOCKETS) && defined(ENABLE_SOCKETS)
+#include "../../modules/net/telnet.h"
+#ifndef TELNET_TX_BUFFER_SIZE
+#define TELNET_TX_BUFFER_SIZE 64
+#endif
+
+DECL_BUFFER(uint8_t, telnet_rx, RX_BUFFER_SIZE);
+DECL_BUFFER(uint8_t, telnet_tx, TELNET_TX_BUFFER_SIZE);
+
+void mcu_telnet_onrecv(void *data, size_t data_len)
+{
+	uint8_t *buffer = (uint8_t *)data;
+	for (size_t i = 0; i < data_len; i++)
+	{
+		uint8_t ch = buffer[i++];
+		if (mcu_com_rx_cb(ch))
+		{
+			if (!BUFFER_FULL(telnet_rx))
+			{
+				BUFFER_ENQUEUE(telnet_rx, &ch);
+			}
+			else
+			{
+				STREAM_OVF(ch); // Optional overflow handler
+			}
+		}
+	}
+}
+
+uint8_t mcu_telnet_available(void)
+{
+	return BUFFER_READ_AVAILABLE(telnet_rx);
+}
+
+uint8_t mcu_telnet_getc(void)
+{
+	uint8_t c = 0;
+	BUFFER_DEQUEUE(telnet_rx, &c);
+	return c;
+}
+
+void mcu_telnet_putc(uint8_t c)
+{
+	if (!BUFFER_FULL(telnet_tx))
+	{
+		BUFFER_ENQUEUE(telnet_tx, &c);
+	}
+}
+
+void mcu_telnet_clear(void)
+{
+	BUFFER_CLEAR(telnet_tx);
+}
+
+void mcu_telnet_flush(void)
+{
+	if (!telnet_hasclients())
+		return;
+
+	while (!BUFFER_EMPTY(telnet_tx))
+	{
+		uint8_t tmp[TELNET_TX_BUFFER_SIZE];
+		memset(tmp, 0, sizeof(tmp));
+		uint8_t r = 0;
+		BUFFER_READ(telnet_tx, tmp, TELNET_TX_BUFFER_SIZE, r);
+		telnet_broadcast((char *)tmp, r, 0);
+	}
+}
+
+void mcu_telnet_run(void)
+{
+	telnet_server_run();
+	mcu_telnet_flush();
+}
+
+#endif
+
 // most MCU can perform some sort of loop within 4 to 6 CPU cycles + a small function call overhead
 // the amount of cycles per loop and overhead can be tuned with a scope or by inspecting the produced asm
 // and adjusted in each MCU
@@ -911,12 +991,16 @@ void __attribute__((weak)) mcu_io_init(void)
 	BUFFER_INIT(uint8_t, usb_tx, USB_TX_BUFFER_SIZE);
 	BUFFER_INIT(uint8_t, usb_rx, RX_BUFFER_SIZE);
 #endif
-#ifdef MCU_HAS_WIFI
+#if defined(MCU_HAS_SOCKETS) && defined(ENABLE_SOCKETS)
 #ifndef WIFI_TX_BUFFER_SIZE
 #define WIFI_TX_BUFFER_SIZE 64
 #endif
-	BUFFER_INIT(uint8_t, wifi_tx, WIFI_TX_BUFFER_SIZE);
-	BUFFER_INIT(uint8_t, wifi_rx, RX_BUFFER_SIZE);
+	BUFFER_INIT(uint8_t, telnet_tx, WIFI_TX_BUFFER_SIZE);
+	BUFFER_INIT(uint8_t, telnet_rx, RX_BUFFER_SIZE);
+
+	LOAD_MODULE(socket_server);
+	LOAD_MODULE(telnet_server);
+	HOOK_ATTACH_CALLBACK(telnet_onrecv, mcu_telnet_onrecv);
 #endif
 #ifdef MCU_HAS_BLUETOOTH
 #ifndef BLUETOOTH_TX_BUFFER_SIZE
@@ -1019,9 +1103,9 @@ MCU_RX_CALLBACK void __attribute__((weak)) mcu_usb_rx_cb(uint8_t c) {}
 #endif
 #endif
 
-#ifdef MCU_HAS_WIFI
-#ifdef DETACH_WIFI_FROM_MAIN_PROTOCOL
-MCU_RX_CALLBACK void __attribute__((weak)) mcu_wifi_rx_cb(uint8_t c) {}
+#if defined(MCU_HAS_SOCKETS) && defined(ENABLE_SOCKETS)
+#ifdef DETACH_TELNET_FROM_MAIN_PROTOCOL
+MCU_RX_CALLBACK void __attribute__((weak)) mcu_telnet_rx_cb(uint8_t c) {}
 #endif
 #endif
 

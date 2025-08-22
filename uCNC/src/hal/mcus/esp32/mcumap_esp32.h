@@ -3266,7 +3266,7 @@ extern "C"
 #define MCU_HAS_USB
 #endif
 #ifdef ENABLE_WIFI
-#define MCU_HAS_WIFI
+#define MCU_HAS_SOCKETS
 #ifndef DISABLE_ENDPOINTS
 #define MCU_HAS_ENDPOINTS
 #endif

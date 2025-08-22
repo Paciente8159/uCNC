@@ -55,6 +55,12 @@ socket_if_t *socket_start(uint32_t ip_listen, uint16_t port, int domain, int typ
 		return NULL;
 	}
 
+	if (bsd_fcntl(s, F_SETFL, O_NONBLOCK) < 0)
+	{
+		bsd_close(s);
+		return NULL;
+	}
+
 	if (type == 1 /* SOCK_STREAM */)
 	{
 		if (bsd_listen(s, SOCKET_MAX_CLIENTS) < 0)
@@ -147,14 +153,14 @@ static void remove_client(socket_if_t *iface, int idx)
 	}
 }
 
-void socker_server_run(socket_if_t *socket)
+void socket_server_run(socket_if_t *socket)
 {
 	// if no socket is defined loops all sockets
 	if (!socket)
 	{
 		for (int i = 0; i < MAX_SOCKETS; i++)
 		{
-			socker_server_run(&raw_sockets[i]);
+			socket_server_run(&raw_sockets[i]);
 		}
 	}
 
@@ -194,6 +200,25 @@ void socker_server_run(socket_if_t *socket)
 			}
 		}
 	}
+}
+
+int socket_server_hasclients(socket_if_t *socket)
+{
+	int clients = 0;
+	for (int i = 0; i < MAX_SOCKETS; i++)
+	{
+		socket_if_t *s = &raw_sockets[i];
+		if (s == socket || !socket)
+			for (int c = 0; c < SOCKET_MAX_CLIENTS; c++)
+			{
+				if (s->socket_clients[c] >= 0)
+				{
+					clients++;
+				}
+			}
+	}
+
+	return clients;
 }
 
 DECL_MODULE(socket_server)

@@ -29,7 +29,23 @@ extern "C"
 #include "socket.h"
 #include "../../module.h"
 
+/* Telnet protocol constants */
+#define TELNET_IAC 255
+#define TELNET_WILL 251
+#define TELNET_WONT 252
+#define TELNET_DO 253
+#define TELNET_DONT 254
+
 	DECL_MODULE(telnet_server);
+	void telnet_server_run(void);
+	// fires when new data is available
+	DECL_HOOK(telnet_onrecv, void *data, size_t data_len);
+	// gets how many clients are connected to the telnet server
+	int telnet_hasclients(void);
+	// sends data to a specific socket interface to a client
+	int telnet_send(int client, char *data, size_t data_len, int flags);
+	// sends data to a specific socket interface to all clients
+	int telnet_broadcast(char *data, size_t data_len, int flags);
 
 #ifdef __cplusplus
 }

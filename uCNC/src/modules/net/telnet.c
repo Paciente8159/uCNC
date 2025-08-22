@@ -22,14 +22,9 @@
 #include <string.h>
 #include <ctype.h>
 
-/* Telnet protocol constants */
-#define TELNET_IAC 255
-#define TELNET_WILL 251
-#define TELNET_WONT 252
-#define TELNET_DO 253
-#define TELNET_DONT 254
-
+#ifndef TELNET_PORT
 #define TELNET_PORT 23
+#endif
 
 static socket_if_t *telnet_srv = NULL;
 
@@ -49,11 +44,12 @@ static void telnet_negotiate(int client_index)
 	telnet_send_option(client_index, TELNET_DONT, 0);
 }
 
+CREATE_HOOK(telnet_onrecv);
+
 /* Telnet payload handler */
 static void telnet_data_handler(int client_index, void *data, size_t data_len)
 {
-	char *bytes = (char *)data;
-	char outbuf[SOCKET_MAX_DATA_SIZE];
+	uint8_t *bytes = (uint8_t *)data;
 	size_t outlen = 0;
 
 	for (size_t i = 0; i < data_len;)
@@ -62,31 +58,24 @@ static void telnet_data_handler(int client_index, void *data, size_t data_len)
 		{
 			if (i + 2 < data_len)
 			{
-				i += 3; /* skip IAC sequence */
+				i += 3; // Skip IAC sequence
 			}
 			else
-				break;
+			{
+				break; // Incomplete IAC sequence
+			}
 		}
 		else
 		{
 			char ch = bytes[i++];
-			if (isprint((unsigned char)ch) || ch == '\r' || ch == '\n')
-			{
-				if (outlen < sizeof(outbuf))
-				{
-					outbuf[outlen++] = ch;
-				}
-			}
+			bytes[outlen++] = ch;
 		}
 	}
 
 	if (outlen > 0)
 	{
-		/* Echo back the received text */
-		socket_send(telnet_srv, client_index, outbuf, outlen, 0);
-		/* Optional: prompt */
-		const char prompt[] = "\r\n> ";
-		socket_send(telnet_srv, client_index, (char *)prompt, sizeof(prompt) - 1, 0);
+		// Invoke the hook with modified buffer and adjusted length
+		HOOK_INVOKE(telnet_onrecv, data, outlen);
 	}
 }
 
@@ -97,9 +86,13 @@ static void telnet_new_client_handler(int client)
 	socket_send(telnet_srv, client, (char *)welcome, sizeof(welcome) - 1, 0);
 }
 
+int telnet_hasclients(void)
+{
+	return socket_server_hasclients(telnet_srv);
+}
+
 DECL_MODULE(telnet_server)
 {
-
 	telnet_srv = socket_start(IP_ANY, TELNET_PORT, 2 /*AF_INET*/, 1 /*SOCK_STREAM*/, 0);
 	if (!telnet_srv)
 		return;
@@ -110,5 +103,16 @@ DECL_MODULE(telnet_server)
 
 void telnet_server_run(void)
 {
-	socker_server_run(telnet_srv);
+	socket_server_run(telnet_srv);
+}
+
+// sends data to a specific socket interface to a client
+int telnet_send(int client, char *data, size_t data_len, int flags)
+{
+	return socket_send(telnet_srv, client, data, data_len, flags);
+}
+// sends data to a specific socket interface to all clients
+int telnet_broadcast(char *data, size_t data_len, int flags)
+{
+	return socket_broadcast(telnet_srv, data, data_len, flags);
 }

@@ -395,7 +395,7 @@ extern "C"
 		return false;
 	}
 
-#if defined(MCU_HAS_WIFI) && defined(MCU_HAS_ENDPOINTS)
+#if defined(MCU_HAS_SOCKETS) && defined(MCU_HAS_ENDPOINTS)
 
 #define MCU_FLASH_FS_LITTLE_FS 1
 #define MCU_FLASH_FS_SPIFFS 2
@@ -747,7 +747,7 @@ extern "C"
 
 #ifdef ENABLE_WIFI
 
-	void mcu_wifi_task(void *arg)
+	void mcu_telnet_task(void *arg)
 	{
 		WiFi.begin();
 		telnet_server.begin();
@@ -840,7 +840,7 @@ extern "C"
 			settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
 		}
 
-		xTaskCreatePinnedToCore(mcu_wifi_task, "wifiTask", 8192, NULL, 1, NULL, CONFIG_ARDUINO_RUNNING_CORE);
+		xTaskCreatePinnedToCore(mcu_telnet_task, "wifiTask", 8192, NULL, 1, NULL, CONFIG_ARDUINO_RUNNING_CORE);
 		// taskYIELD();
 
 #endif
@@ -862,57 +862,57 @@ extern "C"
 #endif
 	}
 
-#ifdef MCU_HAS_WIFI
+#if defined(MCU_HAS_SOCKETS) && defined(ENABLE_SOCKETS)
 #ifndef WIFI_TX_BUFFER_SIZE
 #define WIFI_TX_BUFFER_SIZE 64
 #endif
-	DECL_BUFFER(uint8_t, wifi_rx, RX_BUFFER_SIZE);
-	DECL_BUFFER(uint8_t, wifi_tx, WIFI_TX_BUFFER_SIZE);
+	DECL_BUFFER(uint8_t, telnet_rx, RX_BUFFER_SIZE);
+	DECL_BUFFER(uint8_t, telnet_tx, WIFI_TX_BUFFER_SIZE);
 
-	uint8_t mcu_wifi_getc(void)
+	uint8_t mcu_telnet_getc(void)
 	{
 		uint8_t c = 0;
-		BUFFER_DEQUEUE(wifi_rx, &c);
+		BUFFER_DEQUEUE(telnet_rx, &c);
 		return c;
 	}
 
-	uint8_t mcu_wifi_available(void)
+	uint8_t mcu_telnet_available(void)
 	{
-		return BUFFER_READ_AVAILABLE(wifi_rx);
+		return BUFFER_READ_AVAILABLE(telnet_rx);
 	}
 
-	void mcu_wifi_clear(void)
+	void mcu_telnet_clear(void)
 	{
-		BUFFER_CLEAR(wifi_rx);
+		BUFFER_CLEAR(telnet_rx);
 	}
 
-	void mcu_wifi_putc(uint8_t c)
+	void mcu_telnet_putc(uint8_t c)
 	{
-		while (BUFFER_FULL(wifi_tx))
+		while (BUFFER_FULL(telnet_tx))
 		{
-			mcu_wifi_flush();
+			mcu_telnet_flush();
 		}
-		BUFFER_ENQUEUE(wifi_tx, &c);
+		BUFFER_ENQUEUE(telnet_tx, &c);
 	}
 
-	void mcu_wifi_flush(void)
+	void mcu_telnet_flush(void)
 	{
 		if (esp32_wifi_clientok())
 		{
-			while (!BUFFER_EMPTY(wifi_tx))
+			while (!BUFFER_EMPTY(telnet_tx))
 			{
 				uint8_t tmp[WIFI_TX_BUFFER_SIZE + 1];
 				memset(tmp, 0, sizeof(tmp));
 				uint8_t r;
 
-				BUFFER_READ(wifi_tx, tmp, WIFI_TX_BUFFER_SIZE, r);
+				BUFFER_READ(telnet_tx, tmp, WIFI_TX_BUFFER_SIZE, r);
 				server_client.write(tmp, r);
 			}
 		}
 		else
 		{
 			// no client (discard)
-			BUFFER_CLEAR(wifi_tx);
+			BUFFER_CLEAR(telnet_tx);
 		}
 	}
 #endif
@@ -1027,19 +1027,19 @@ extern "C"
 			while (server_client.available() > 0)
 			{
 				esp_task_wdt_reset();
-#ifndef DETACH_WIFI_FROM_MAIN_PROTOCOL
+#ifndef DETACH_TELNET_FROM_MAIN_PROTOCOL
 				uint8_t c = server_client.read();
 				if (mcu_com_rx_cb(c))
 				{
-					if (BUFFER_FULL(wifi_rx))
+					if (BUFFER_FULL(telnet_rx))
 					{
 						STREAM_OVF(c);
 					}
 
-					BUFFER_ENQUEUE(wifi_rx, &c);
+					BUFFER_ENQUEUE(telnet_rx, &c);
 				}
 #else
-				mcu_wifi_rx_cb((uint8_t)server_client.read());
+				mcu_telnet_rx_cb((uint8_t)server_client.read());
 #endif
 			}
 		}

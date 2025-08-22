@@ -27,6 +27,13 @@ extern "C"
 #include <stdlib.h>
 #include <stdint.h>
 
+#ifndef F_SETFL 
+#define F_SETFL 0x800
+#endif
+#ifndef O_NONBLOCK
+#define O_NONBLOCK 0x800
+#endif
+
 struct bsd_sockaddr_in
 {
 	uint16_t sin_family;
