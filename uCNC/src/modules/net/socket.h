@@ -68,7 +68,7 @@ int socket_send(socket_if_t *socket, int client, char* data, size_t data_len, in
 // sends data to a specific socket interface to all clients
 int socket_broadcast(socket_if_t *socket, char* data, size_t data_len, int flags);
 // runs the loop that handles new client accpts and handles each socket/client data handling (non blocking)
-void socket_server_run(socket_if_t* socket);
+void socket_server_dotasks(void);
 // returns the number of active clients in a socket. if socket is NULL returns all connected clients in all sockets
 int socket_server_hasclients(socket_if_t* socket);
 // initializes sockets server

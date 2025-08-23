@@ -102,11 +102,6 @@ DECL_MODULE(telnet_server)
 	HOOK_ATTACH_CALLBACK(telnet_onrecv, mcu_telnet_onrecv);
 }
 
-void telnet_server_run(void)
-{
-	socket_server_run(telnet_srv);
-}
-
 // sends data to a specific socket interface to a client
 int telnet_send(int client, char *data, size_t data_len, int flags)
 {

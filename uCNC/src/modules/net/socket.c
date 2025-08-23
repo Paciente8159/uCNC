@@ -153,51 +153,44 @@ static void remove_client(socket_if_t *iface, int idx)
 	}
 }
 
-void socket_server_run(socket_if_t *socket)
+void socket_server_dotasks(void)
 {
-	// if no socket is defined loops all sockets
-	if (!socket)
+	for (int i = 0; i < MAX_SOCKETS; i++)
 	{
-		for (int i = 0; i < MAX_SOCKETS; i++)
+		socket_if_t *socket = &raw_sockets[i];
+		char buffer[SOCKET_MAX_DATA_SIZE];
+
+		if (socket->socket_if >= 0)
 		{
-			socket_server_run(&raw_sockets[i]);
-		}
+			/* Accept new clients if TCP */
+			int client_fd;
+			struct bsd_sockaddr_in cli_addr;
+			int cli_len = sizeof(cli_addr);
 
-		return;
-	}
-
-	char buffer[SOCKET_MAX_DATA_SIZE];
-
-	if (socket->socket_if >= 0)
-	{
-		/* Accept new clients if TCP */
-		int client_fd;
-		struct bsd_sockaddr_in cli_addr;
-		int cli_len = sizeof(cli_addr);
-
-		client_fd = bsd_accept(socket->socket_if, &cli_addr, &cli_len);
-		if (client_fd >= 0)
-		{
-			add_client(socket, client_fd);
-		}
-
-		/* Poll each client for data (non-blocking) */
-		for (int c = 0; c < SOCKET_MAX_CLIENTS; c++)
-		{
-			int fd = socket->socket_clients[c];
-			if (fd >= 0)
+			client_fd = bsd_accept(socket->socket_if, &cli_addr, &cli_len);
+			if (client_fd >= 0)
 			{
-				int len = bsd_recv(fd, buffer, sizeof(buffer), 0);
-				if (len > 0)
+				add_client(socket, client_fd);
+			}
+
+			/* Poll each client for data (non-blocking) */
+			for (int c = 0; c < SOCKET_MAX_CLIENTS; c++)
+			{
+				int fd = socket->socket_clients[c];
+				if (fd >= 0)
 				{
-					if (socket->client_ondata_cb)
+					int len = bsd_recv(fd, buffer, sizeof(buffer), 0);
+					if (len > 0)
 					{
-						socket->client_ondata_cb(fd, buffer, (size_t)len);
+						if (socket->client_ondata_cb)
+						{
+							socket->client_ondata_cb(fd, buffer, (size_t)len);
+						}
 					}
-				}
-				else if (len == 0)
-				{
-					remove_client(socket, c);
+					else if (len == 0)
+					{
+						remove_client(socket, c);
+					}
 				}
 			}
 		}

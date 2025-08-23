@@ -586,6 +586,3 @@ DECL_MODULE(http_server) {
   socket_add_ondisconnected_handler(http_srv, http_on_disconnected);
 }
 
-void http_server_run(void) {
-  socket_server_run(http_srv);
-}

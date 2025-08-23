@@ -1100,6 +1100,10 @@ static void cnc_io_dotasks(void)
 		}
 	}
 #endif
+
+#ifdef ENABLE_SOCKETS
+	socket_server_dotasks();
+#endif
 }
 
 #ifdef ENABLE_MULTILINE_STARTUP_BLOCKS

@@ -97,7 +97,6 @@ void mcu_telnet_flush(void)
 
 void mcu_telnet_run(void)
 {
-	telnet_server_run();
 	mcu_telnet_flush();
 }
 
