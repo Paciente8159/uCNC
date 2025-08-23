@@ -1226,7 +1226,7 @@ extern "C"
 #if (defined(USB_DP) && defined(USB_DM))
 #define MCU_HAS_USB
 #endif
-#ifdef ENABLE_WIFI
+#ifdef ENABLE_SOCKETS
 #define MCU_HAS_SOCKETS
 #ifndef DISABLE_ENDPOINTS
 #define MCU_HAS_ENDPOINTS

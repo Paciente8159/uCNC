@@ -32,8 +32,8 @@ extern "C"
 #define BOARD_NAME "WEMOS D1"
 #endif
 
-#undef ENABLE_WIFI
-#define ENABLE_WIFI
+#undef ENABLE_SOCKETS
+#define ENABLE_SOCKETS
 
 // SAME AS GRBL for test purposes
 // Setup step pins

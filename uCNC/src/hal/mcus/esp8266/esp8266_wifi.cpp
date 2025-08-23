@@ -27,7 +27,7 @@ extern "C"
 #include "../../../cnc.h"
 }
 
-#ifdef ENABLE_WIFI
+#ifdef ENABLE_SOCKETS
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266HTTPUpdateServer.h>
@@ -99,7 +99,7 @@ extern "C"
 		uint8_t has_arg = (cmd_params->next_char == '=');
 		memset(arg, 0, sizeof(arg));
 
-#ifdef ENABLE_WIFI
+#ifdef ENABLE_SOCKETS
 		if (!strncmp((const char *)(cmd_params->cmd), "WIFI", 4))
 		{
 			if (!strcmp((const char *)&(cmd_params->cmd)[4], "ON"))
@@ -315,7 +315,7 @@ extern "C"
 
 	bool esp8266_wifi_clientok(void)
 	{
-#ifdef ENABLE_WIFI
+#ifdef ENABLE_SOCKETS
 		static uint32_t next_info = 30000;
 		static bool connected = false;
 
@@ -344,26 +344,26 @@ extern "C"
 			proto_info("IP>%s", WiFi.localIP().toString().c_str());
 		}
 
-		if (telnet_server.hasClient())
-		{
-			if (telnet_client)
-			{
-				if (telnet_client.connected())
-				{
-					telnet_client.stop();
-				}
-			}
-			telnet_client = telnet_server.accept();
-			telnet_client.println("[MSG:New client connected]");
-			return false;
-		}
-		else if (telnet_client)
-		{
-			if (telnet_client.connected())
-			{
-				return true;
-			}
-		}
+		// if (telnet_server.hasClient())
+		// {
+		// 	if (telnet_client)
+		// 	{
+		// 		if (telnet_client.connected())
+		// 		{
+		// 			telnet_client.stop();
+		// 		}
+		// 	}
+		// 	telnet_client = telnet_server.accept();
+		// 	telnet_client.println("[MSG:New client connected]");
+		// 	return false;
+		// }
+		// else if (telnet_client)
+		// {
+		// 	if (telnet_client.connected())
+		// 	{
+		// 		return true;
+		// 	}
+		// }
 #endif
 		return false;
 	}
@@ -628,7 +628,7 @@ extern "C"
 
 #endif
 
-#if defined(ENABLE_WIFI) && defined(MCU_HAS_WEBSOCKETS)
+#if defined(ENABLE_SOCKETS) && defined(MCU_HAS_WEBSOCKETS)
 #include "WebSocketsServer.h"
 #include "../../../modules/websocket.h"
 	WebSocketsServer socket_server(WEBSOCKET_PORT);
@@ -721,7 +721,7 @@ extern "C"
 	void esp8266_wifi_init()
 	{
 		DBGMSG("Wifi assert");
-#ifdef ENABLE_WIFI
+#ifdef ENABLE_SOCKETS
 		DBGMSG("Wifi startup");
 		WiFi.setSleepMode(WIFI_NONE_SLEEP);
 
@@ -761,8 +761,11 @@ extern "C"
 				break;
 			}
 		}
-		telnet_server.begin();
-		telnet_server.setNoDelay(true);
+		// telnet_server.begin();
+		// telnet_server.setNoDelay(true);
+		LOAD_MODULE(socket_server);
+		LOAD_MODULE(telnet_server);
+
 #ifdef MCU_HAS_ENDPOINTS
 		FLASH_FS.begin();
 		flash_fs = {
@@ -798,85 +801,86 @@ extern "C"
 #endif
 	}
 
-#if defined(MCU_HAS_SOCKETS) && defined(ENABLE_SOCKETS)
-#ifndef WIFI_TX_BUFFER_SIZE
-#define WIFI_TX_BUFFER_SIZE 64
-#endif
-	DECL_BUFFER(uint8_t, telnet_rx, RX_BUFFER_SIZE);
-	DECL_BUFFER(uint8_t, telnet_tx, WIFI_TX_BUFFER_SIZE);
+	// #if defined(MCU_HAS_SOCKETS) && defined(ENABLE_SOCKETS)
+	// #ifndef WIFI_TX_BUFFER_SIZE
+	// #define WIFI_TX_BUFFER_SIZE 64
+	// #endif
+	// 	DECL_BUFFER(uint8_t, telnet_rx, RX_BUFFER_SIZE);
+	// 	DECL_BUFFER(uint8_t, telnet_tx, WIFI_TX_BUFFER_SIZE);
 
-	uint8_t mcu_telnet_getc(void)
-	{
-		uint8_t c = 0;
-		BUFFER_DEQUEUE(telnet_rx, &c);
-		return c;
-	}
+	// 	uint8_t mcu_telnet_getc(void)
+	// 	{
+	// 		uint8_t c = 0;
+	// 		BUFFER_DEQUEUE(telnet_rx, &c);
+	// 		return c;
+	// 	}
 
-	uint8_t mcu_telnet_available(void)
-	{
-		return BUFFER_READ_AVAILABLE(telnet_rx);
-	}
+	// 	uint8_t mcu_telnet_available(void)
+	// 	{
+	// 		return BUFFER_READ_AVAILABLE(telnet_rx);
+	// 	}
 
-	void mcu_telnet_clear(void)
-	{
-		BUFFER_CLEAR(telnet_rx);
-	}
-	void mcu_telnet_putc(uint8_t c)
-	{
-		while (BUFFER_FULL(telnet_tx))
-		{
-			mcu_telnet_flush();
-		}
-		BUFFER_ENQUEUE(telnet_tx, &c);
-	}
+	// 	void mcu_telnet_clear(void)
+	// 	{
+	// 		BUFFER_CLEAR(telnet_rx);
+	// 	}
+	// 	void mcu_telnet_putc(uint8_t c)
+	// 	{
+	// 		while (BUFFER_FULL(telnet_tx))
+	// 		{
+	// 			mcu_telnet_flush();
+	// 		}
+	// 		BUFFER_ENQUEUE(telnet_tx, &c);
+	// 	}
 
-	void mcu_telnet_flush(void)
-	{
-		if (esp8266_wifi_clientok())
-		{
-			while (!BUFFER_EMPTY(telnet_tx))
-			{
-				uint8_t tmp[WIFI_TX_BUFFER_SIZE + 1];
-				memset(tmp, 0, sizeof(tmp));
-				uint8_t r;
-				uint8_t max = (uint8_t)MIN(telnet_client.availableForWrite(), WIFI_TX_BUFFER_SIZE);
+	// 	void mcu_telnet_flush(void)
+	// 	{
+	// 		if (esp8266_wifi_clientok())
+	// 		{
+	// 			while (!BUFFER_EMPTY(telnet_tx))
+	// 			{
+	// 				uint8_t tmp[WIFI_TX_BUFFER_SIZE + 1];
+	// 				memset(tmp, 0, sizeof(tmp));
+	// 				uint8_t r;
+	// 				uint8_t max = (uint8_t)MIN(telnet_client.availableForWrite(), WIFI_TX_BUFFER_SIZE);
 
-				BUFFER_READ(telnet_tx, tmp, max, r);
-				telnet_client.write(tmp, r);
-			}
-		}
-		else
-		{
-			// no client (discard)
-			BUFFER_CLEAR(telnet_tx);
-		}
-	}
-#endif
+	// 				BUFFER_READ(telnet_tx, tmp, max, r);
+	// 				telnet_client.write(tmp, r);
+	// 			}
+	// 		}
+	// 		else
+	// 		{
+	// 			// no client (discard)
+	// 			BUFFER_CLEAR(telnet_tx);
+	// 		}
+	// 	}
+	// #endif
 
 	void esp8266_wifi_dotasks(void)
 	{
-#ifdef ENABLE_WIFI
-		if (esp8266_wifi_clientok())
-		{
-			while (telnet_client.available() > 0)
-			{
-				system_soft_wdt_feed();
-#ifndef DETACH_TELNET_FROM_MAIN_PROTOCOL
-				uint8_t c = (uint8_t)telnet_client.read();
-				if (mcu_com_rx_cb(c))
-				{
-					if (BUFFER_FULL(telnet_rx))
-					{
-						STREAM_OVF(c);
-					}
+#ifdef ENABLE_SOCKETS
+		// 		if (esp8266_wifi_clientok())
+		// 		{
+		// 			while (telnet_client.available() > 0)
+		// 			{
+		// 				system_soft_wdt_feed();
+		// #ifndef DETACH_TELNET_FROM_MAIN_PROTOCOL
+		// 				uint8_t c = (uint8_t)telnet_client.read();
+		// 				if (mcu_com_rx_cb(c))
+		// 				{
+		// 					if (BUFFER_FULL(telnet_rx))
+		// 					{
+		// 						STREAM_OVF(c);
+		// 					}
 
-					BUFFER_ENQUEUE(telnet_rx, &c);
-				}
-#else
-				mcu_telnet_rx_cb((uint8_t)telnet_client.read());
-#endif
-			}
-		}
+		// 					BUFFER_ENQUEUE(telnet_rx, &c);
+		// 				}
+		// #else
+		// 				mcu_telnet_rx_cb((uint8_t)telnet_client.read());
+		// #endif
+		// 			}
+		// 		}
+		mcu_telnet_run();
 
 		if (wifi_settings.wifi_on)
 		{

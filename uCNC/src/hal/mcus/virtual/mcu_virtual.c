@@ -345,7 +345,8 @@ extern "C"
 		mcu_uart2_process();
 #endif
 #if defined(ENABLE_SOCKETS) && defined(MCU_HAS_SOCKETS)
-		mcu_telnet_run();
+		// mcu_telnet_run();
+		socket_server_run(NULL);
 #endif
 	}
 
@@ -1012,12 +1013,47 @@ extern "C"
 		flash_fs.finfo = flash_fs_finfo;
 		flash_fs.next = NULL;
 		fs_mount(&flash_fs);
+		
+#ifdef MCU_HAS_UART
+#ifndef UART_TX_BUFFER_SIZE
+#define UART_TX_BUFFER_SIZE 64
+#endif
+	BUFFER_INIT(uint8_t, uart_tx, UART_TX_BUFFER_SIZE);
+	BUFFER_INIT(uint8_t, uart_rx, RX_BUFFER_SIZE);
+#endif
+#ifdef MCU_HAS_UART2
+#ifndef UART2_TX_BUFFER_SIZE
+#define UART2_TX_BUFFER_SIZE 64
+#endif
+	BUFFER_INIT(uint8_t, uart2_tx, UART2_TX_BUFFER_SIZE);
+	BUFFER_INIT(uint8_t, uart2_rx, RX_BUFFER_SIZE);
+#endif
+#ifdef MCU_HAS_USB
+#ifndef USB_TX_BUFFER_SIZE
+#define USB_TX_BUFFER_SIZE 64
+#endif
+	BUFFER_INIT(uint8_t, usb_tx, USB_TX_BUFFER_SIZE);
+	BUFFER_INIT(uint8_t, usb_rx, RX_BUFFER_SIZE);
+#endif
+#if defined(MCU_HAS_SOCKETS) && defined(ENABLE_SOCKETS)
+#ifndef WIFI_TX_BUFFER_SIZE
+#define WIFI_TX_BUFFER_SIZE 64
+#endif
+	BUFFER_INIT(uint8_t, telnet_tx, WIFI_TX_BUFFER_SIZE);
+	BUFFER_INIT(uint8_t, telnet_rx, RX_BUFFER_SIZE);
+#endif
+#ifdef MCU_HAS_BLUETOOTH
+#ifndef BLUETOOTH_TX_BUFFER_SIZE
+#define BLUETOOTH_TX_BUFFER_SIZE 64
+#endif
+	BUFFER_INIT(uint8_t, bt_tx, BLUETOOTH_TX_BUFFER_SIZE);
+	BUFFER_INIT(uint8_t, bt_rx, RX_BUFFER_SIZE);
+#endif
 
-#ifdef ENABLE_SOCKETS
+#if defined(ENABLE_SOCKETS) && defined(MCU_HAS_SOCKETS)
 		init_winsock();
 		LOAD_MODULE(socket_server);
 		LOAD_MODULE(telnet_server);
-		HOOK_ATTACH_CALLBACK(telnet_onrecv, mcu_telnet_onrecv);
 #endif
 	}
 
@@ -1050,7 +1086,7 @@ extern "C"
 	void nvm_end_read(void) {}
 	void nvm_end_write(void) { mcu_eeprom_flush(); }
 
-#ifdef ENABLE_SOCKETS
+#if defined(ENABLE_SOCKETS) && defined(MCU_HAS_SOCKETS)
 
 #include "../../../modules/endpoint.h"
 #include <winsock2.h>
@@ -1123,7 +1159,7 @@ extern "C"
 		return closesocket(fd);
 	}
 
-#endif /* MCU_HAS_ENDPOINTS */
+#endif
 
 #ifdef __cplusplus
 }

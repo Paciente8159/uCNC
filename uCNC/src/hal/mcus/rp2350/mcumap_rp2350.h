@@ -1197,7 +1197,7 @@ extern "C"
 #if (defined(USB_DP) && defined(USB_DM))
 #define MCU_HAS_USB
 #endif
-// #ifdef ENABLE_WIFI
+// #ifdef ENABLE_SOCKETS
 // #define MCU_HAS_SOCKETS
 // #ifndef DISABLE_ENDPOINTS
 // #define MCU_HAS_ENDPOINTS
@@ -1405,7 +1405,7 @@ extern "C"
 #define mcu_micros() micros()
 #define mcu_free_micros() micros()
 
-#if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
+#if (defined(ENABLE_SOCKETS) || defined(ENABLE_BLUETOOTH))
 #ifndef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 #define BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 #endif

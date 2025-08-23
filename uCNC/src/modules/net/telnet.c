@@ -99,6 +99,7 @@ DECL_MODULE(telnet_server)
 
 	socket_add_ondata_handler(telnet_srv, telnet_data_handler);
 	socket_add_onconnected_handler(telnet_srv, telnet_new_client_handler);
+	HOOK_ATTACH_CALLBACK(telnet_onrecv, mcu_telnet_onrecv);
 }
 
 void telnet_server_run(void)

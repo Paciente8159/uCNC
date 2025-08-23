@@ -155,7 +155,7 @@ static char *memmem_local(const char *h, size_t hlen, const char *n, size_t nlen
   return NULL;
 }
 
-static char *strcasestr(const char *haystack, const char *needle) {
+static char *strcasestr_local(const char *haystack, const char *needle) {
     if (!*needle) return (char *)haystack;
     for (; *haystack; haystack++) {
         const char *h = haystack;
@@ -171,12 +171,12 @@ static char *strcasestr(const char *haystack, const char *needle) {
 
 static void extract_boundary_line(const char *headers, char *dst, size_t dstsz, size_t *out_len) {
   /* Look for boundary=xyz in Content-Type */
-  const char *p = strcasestr(headers, "Content-Type:");
+  const char *p = strcasestr_local(headers, "Content-Type:");
   *out_len = 0;
   if (!p) { dst[0] = '\0'; return; }
   const char *eol = strstr(p, "\r\n");
   if (!eol) eol = p + strlen(p);
-  const char *b = strcasestr(p, "boundary=");
+  const char *b = strcasestr_local(p, "boundary=");
   if (!b || b > eol) { dst[0] = '\0'; return; }
   b += 9;
   /* build the actual delimiter used in body: starts with -- */
@@ -186,7 +186,7 @@ static void extract_boundary_line(const char *headers, char *dst, size_t dstsz, 
 }
 
 static void extract_filename_from_part_headers(const char *part_hdrs, char *dst, size_t dstsz) {
-  const char *p = strcasestr(part_hdrs, "filename=\"");
+  const char *p = strcasestr_local(part_hdrs, "filename=\"");
   if (p) {
     p += 10;
     const char *q = strchr(p, '"');

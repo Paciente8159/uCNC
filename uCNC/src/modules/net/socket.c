@@ -162,6 +162,8 @@ void socket_server_run(socket_if_t *socket)
 		{
 			socket_server_run(&raw_sockets[i]);
 		}
+
+		return;
 	}
 
 	char buffer[SOCKET_MAX_DATA_SIZE];

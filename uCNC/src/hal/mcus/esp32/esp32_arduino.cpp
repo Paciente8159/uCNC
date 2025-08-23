@@ -42,7 +42,7 @@ uint8_t bt_on;
 uint16_t bt_settings_offset;
 #endif
 
-#ifdef ENABLE_WIFI
+#ifdef ENABLE_SOCKETS
 #include <WiFi.h>
 #include <WebServer.h>
 #include <HTTPUpdateServer.h>
@@ -133,7 +133,7 @@ extern "C"
 			}
 		}
 #endif
-#ifdef ENABLE_WIFI
+#ifdef ENABLE_SOCKETS
 		if (!strncmp((const char *)(cmd_params->cmd), "WIFI", 4))
 		{
 			if (!strcmp((const char *)&(cmd_params->cmd)[4], "ON"))
@@ -342,7 +342,7 @@ extern "C"
 
 	bool esp32_wifi_clientok(void)
 	{
-#ifdef ENABLE_WIFI
+#ifdef ENABLE_SOCKETS
 		static uint32_t next_info = 30000;
 		static bool connected = false;
 
@@ -655,7 +655,7 @@ extern "C"
 
 #endif
 
-#if defined(ENABLE_WIFI) && defined(MCU_HAS_WEBSOCKETS)
+#if defined(ENABLE_SOCKETS) && defined(MCU_HAS_WEBSOCKETS)
 #include "WebSocketsServer.h"
 #include "../../../modules/websocket.h"
 	WebSocketsServer socket_server(WEBSOCKET_PORT);
@@ -745,7 +745,7 @@ extern "C"
 	}
 #endif
 
-#ifdef ENABLE_WIFI
+#ifdef ENABLE_SOCKETS
 
 	void mcu_telnet_task(void *arg)
 	{
@@ -826,7 +826,7 @@ extern "C"
 
 	void esp32_wifi_bt_init(void)
 	{
-#ifdef ENABLE_WIFI
+#ifdef ENABLE_SOCKETS
 #ifndef ENABLE_BLUETOOTH
 		WiFi.setSleep(WIFI_PS_NONE);
 #endif
@@ -975,7 +975,7 @@ extern "C"
 
 	uint8_t esp32_wifi_bt_read(void)
 	{
-#ifdef ENABLE_WIFI
+#ifdef ENABLE_SOCKETS
 		if (esp32_wifi_clientok())
 		{
 			if (server_client.available() > 0)
@@ -1021,7 +1021,7 @@ extern "C"
 		}
 #endif
 
-#ifdef ENABLE_WIFI
+#ifdef ENABLE_SOCKETS
 		if (esp32_wifi_clientok())
 		{
 			while (server_client.available() > 0)
