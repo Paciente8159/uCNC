@@ -3273,6 +3273,9 @@ extern "C"
 #ifndef DISABLE_WEBSOCKETS
 #define MCU_HAS_WEBSOCKETS
 #endif
+#ifndef MCU_HAS_RTOS
+#define MCU_HAS_RTOS
+#endif
 #ifndef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 #define BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 #endif

@@ -72,8 +72,8 @@ const char *update_path = OTA_URI;
 const char *update_username = WIFI_USER;
 const char *update_password = WIFI_PASS;
 #define MAX_SRV_CLIENTS 1
-WiFiServer telnet_server(TELNET_PORT);
-WiFiClient telnet_client;
+// WiFiServer telnet_server(TELNET_PORT);
+// WiFiClient telnet_client;
 
 typedef struct
 {
@@ -880,7 +880,6 @@ extern "C"
 		// #endif
 		// 			}
 		// 		}
-		mcu_telnet_run();
 
 		if (wifi_settings.wifi_on)
 		{

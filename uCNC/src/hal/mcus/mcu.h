@@ -613,7 +613,6 @@ uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #ifdef DETACH_TELNET_FROM_MAIN_PROTOCOL
 	MCU_RX_CALLBACK void mcu_telnet_rx_cb(uint8_t c);
 #endif
-  void mcu_telnet_run(void); // must run in the main loop
 	void mcu_telnet_init(void); // must be called from mcu_init if the default mcu_init is overriden
 	void mcu_telnet_onrecv(void *data, size_t data_len); // the callback when data is received
 #endif

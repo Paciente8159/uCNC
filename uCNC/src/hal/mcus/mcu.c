@@ -69,10 +69,11 @@ uint8_t mcu_telnet_getc(void)
 
 void mcu_telnet_putc(uint8_t c)
 {
-	if (!BUFFER_FULL(telnet_tx))
+	while (BUFFER_FULL(telnet_tx))
 	{
-		BUFFER_ENQUEUE(telnet_tx, &c);
+		mcu_telnet_flush();
 	}
+	BUFFER_ENQUEUE(telnet_tx, &c);
 }
 
 void mcu_telnet_clear(void)
@@ -82,9 +83,12 @@ void mcu_telnet_clear(void)
 
 void mcu_telnet_flush(void)
 {
-	if (!telnet_hasclients())
+	// if no clients just throws away the buffer
+	if (!telnet_hasclients()){
+		BUFFER_CLEAR(telnet_tx);
 		return;
-
+	}
+		
 	while (!BUFFER_EMPTY(telnet_tx))
 	{
 		uint8_t tmp[TELNET_TX_BUFFER_SIZE];
@@ -93,11 +97,6 @@ void mcu_telnet_flush(void)
 		BUFFER_READ(telnet_tx, tmp, TELNET_TX_BUFFER_SIZE, r);
 		telnet_broadcast((char *)tmp, r, 0);
 	}
-}
-
-void mcu_telnet_run(void)
-{
-	mcu_telnet_flush();
 }
 
 #endif

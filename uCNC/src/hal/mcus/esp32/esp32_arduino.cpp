@@ -82,7 +82,7 @@ const char *update_path = OTA_URI;
 const char *update_username = WIFI_USER;
 const char *update_password = WIFI_PASS;
 #define MAX_SRV_CLIENTS 1
-WiFiServer telnet_server(TELNET_PORT);
+// WiFiServer telnet_server(TELNET_PORT);
 WiFiClient server_client;
 
 typedef struct
@@ -340,60 +340,60 @@ extern "C"
 	CREATE_EVENT_LISTENER(grbl_cmd, mcu_custom_grbl_cmd);
 #endif
 
-	bool esp32_wifi_clientok(void)
-	{
-#ifdef ENABLE_SOCKETS
-		static uint32_t next_info = 30000;
-		static bool connected = false;
+	// 	bool esp32_wifi_clientok(void)
+	// 	{
+	// #ifdef ENABLE_SOCKETS
+	// 		static uint32_t next_info = 30000;
+	// 		static bool connected = false;
 
-		if (!wifi_settings.wifi_on)
-		{
-			return false;
-		}
+	// 		if (!wifi_settings.wifi_on)
+	// 		{
+	// 			return false;
+	// 		}
 
-		if ((WiFi.status() != WL_CONNECTED))
-		{
-			connected = false;
-			if (next_info > mcu_millis())
-			{
-				return false;
-			}
-			next_info = mcu_millis() + 30000;
-			proto_info("Disconnected from WiFi");
-			return false;
-		}
+	// 		if ((WiFi.status() != WL_CONNECTED))
+	// 		{
+	// 			connected = false;
+	// 			if (next_info > mcu_millis())
+	// 			{
+	// 				return false;
+	// 			}
+	// 			next_info = mcu_millis() + 30000;
+	// 			proto_info("Disconnected from WiFi");
+	// 			return false;
+	// 		}
 
-		if (!connected)
-		{
-			connected = true;
-			proto_info("Connected to WiFi");
-			proto_info("SSID>%s", wifi_settings.ssid);
-			proto_info("IP>%s", WiFi.localIP().toString().c_str());
-		}
+	// 		if (!connected)
+	// 		{
+	// 			connected = true;
+	// 			proto_info("Connected to WiFi");
+	// 			proto_info("SSID>%s", wifi_settings.ssid);
+	// 			proto_info("IP>%s", WiFi.localIP().toString().c_str());
+	// 		}
 
-		if (telnet_server.hasClient())
-		{
-			if (server_client)
-			{
-				if (server_client.connected())
-				{
-					server_client.stop();
-				}
-			}
-			server_client = telnet_server.available();
-			server_client.println("[MSG:New client connected]");
-			return false;
-		}
-		else if (server_client)
-		{
-			if (server_client.connected())
-			{
-				return true;
-			}
-		}
-#endif
-		return false;
-	}
+	// 		// if (telnet_server.hasClient())
+	// 		// {
+	// 		// 	if (server_client)
+	// 		// 	{
+	// 		// 		if (server_client.connected())
+	// 		// 		{
+	// 		// 			server_client.stop();
+	// 		// 		}
+	// 		// 	}
+	// 		// 	server_client = telnet_server.available();
+	// 		// 	server_client.println("[MSG:New client connected]");
+	// 		// 	return false;
+	// 		// }
+	// 		// else if (server_client)
+	// 		// {
+	// 		// 	if (server_client.connected())
+	// 		// 	{
+	// 		// 		return true;
+	// 		// 	}
+	// 		// }
+	// #endif
+	// 		return false;
+	// 	}
 
 #if defined(MCU_HAS_SOCKETS) && defined(MCU_HAS_ENDPOINTS)
 
@@ -750,8 +750,8 @@ extern "C"
 	void mcu_telnet_task(void *arg)
 	{
 		WiFi.begin();
-		telnet_server.begin();
-		telnet_server.setNoDelay(true);
+		// telnet_server.begin();
+		// telnet_server.setNoDelay(true);
 #ifdef MCU_HAS_ENDPOINTS
 		FLASH_FS.begin();
 		flash_fs = {
@@ -810,13 +810,20 @@ extern "C"
 			}
 		}
 
+#if defined(ENABLE_SOCKETS) && defined(MCU_HAS_RTOS)
+		LOAD_MODULE(telnet_server);
+#endif
+
 		for (;;)
 		{
 			if (wifi_settings.wifi_on)
 			{
-				web_server.handleClient();
-#ifdef MCU_HAS_WEBSOCKETS
-				socket_server.loop();
+// 				web_server.handleClient();
+// #ifdef MCU_HAS_WEBSOCKETS
+// 				socket_server.loop();
+// #endif
+#if defined(ENABLE_SOCKETS) && defined(MCU_HAS_RTOS)
+				socket_server_dotasks();
 #endif
 			}
 			taskYIELD();
@@ -862,60 +869,60 @@ extern "C"
 #endif
 	}
 
-#if defined(MCU_HAS_SOCKETS) && defined(ENABLE_SOCKETS)
-#ifndef WIFI_TX_BUFFER_SIZE
-#define WIFI_TX_BUFFER_SIZE 64
-#endif
-	DECL_BUFFER(uint8_t, telnet_rx, RX_BUFFER_SIZE);
-	DECL_BUFFER(uint8_t, telnet_tx, WIFI_TX_BUFFER_SIZE);
+	// #if defined(MCU_HAS_SOCKETS) && defined(ENABLE_SOCKETS)
+	// #ifndef WIFI_TX_BUFFER_SIZE
+	// #define WIFI_TX_BUFFER_SIZE 64
+	// #endif
+	// 	DECL_BUFFER(uint8_t, telnet_rx, RX_BUFFER_SIZE);
+	// 	DECL_BUFFER(uint8_t, telnet_tx, WIFI_TX_BUFFER_SIZE);
 
-	uint8_t mcu_telnet_getc(void)
-	{
-		uint8_t c = 0;
-		BUFFER_DEQUEUE(telnet_rx, &c);
-		return c;
-	}
+	// 	uint8_t mcu_telnet_getc(void)
+	// 	{
+	// 		uint8_t c = 0;
+	// 		BUFFER_DEQUEUE(telnet_rx, &c);
+	// 		return c;
+	// 	}
 
-	uint8_t mcu_telnet_available(void)
-	{
-		return BUFFER_READ_AVAILABLE(telnet_rx);
-	}
+	// 	uint8_t mcu_telnet_available(void)
+	// 	{
+	// 		return BUFFER_READ_AVAILABLE(telnet_rx);
+	// 	}
 
-	void mcu_telnet_clear(void)
-	{
-		BUFFER_CLEAR(telnet_rx);
-	}
+	// 	void mcu_telnet_clear(void)
+	// 	{
+	// 		BUFFER_CLEAR(telnet_rx);
+	// 	}
 
-	void mcu_telnet_putc(uint8_t c)
-	{
-		while (BUFFER_FULL(telnet_tx))
-		{
-			mcu_telnet_flush();
-		}
-		BUFFER_ENQUEUE(telnet_tx, &c);
-	}
+	// 	void mcu_telnet_putc(uint8_t c)
+	// 	{
+	// 		while (BUFFER_FULL(telnet_tx))
+	// 		{
+	// 			mcu_telnet_flush();
+	// 		}
+	// 		BUFFER_ENQUEUE(telnet_tx, &c);
+	// 	}
 
-	void mcu_telnet_flush(void)
-	{
-		if (esp32_wifi_clientok())
-		{
-			while (!BUFFER_EMPTY(telnet_tx))
-			{
-				uint8_t tmp[WIFI_TX_BUFFER_SIZE + 1];
-				memset(tmp, 0, sizeof(tmp));
-				uint8_t r;
+	// 	void mcu_telnet_flush(void)
+	// 	{
+	// 		if (esp32_wifi_clientok())
+	// 		{
+	// 			while (!BUFFER_EMPTY(telnet_tx))
+	// 			{
+	// 				uint8_t tmp[WIFI_TX_BUFFER_SIZE + 1];
+	// 				memset(tmp, 0, sizeof(tmp));
+	// 				uint8_t r;
 
-				BUFFER_READ(telnet_tx, tmp, WIFI_TX_BUFFER_SIZE, r);
-				server_client.write(tmp, r);
-			}
-		}
-		else
-		{
-			// no client (discard)
-			BUFFER_CLEAR(telnet_tx);
-		}
-	}
-#endif
+	// 				BUFFER_READ(telnet_tx, tmp, WIFI_TX_BUFFER_SIZE, r);
+	// 				server_client.write(tmp, r);
+	// 			}
+	// 		}
+	// 		else
+	// 		{
+	// 			// no client (discard)
+	// 			BUFFER_CLEAR(telnet_tx);
+	// 		}
+	// 	}
+	// #endif
 
 #ifdef MCU_HAS_BLUETOOTH
 #ifndef BLUETOOTH_TX_BUFFER_SIZE
@@ -973,27 +980,27 @@ extern "C"
 	}
 #endif
 
-	uint8_t esp32_wifi_bt_read(void)
-	{
-#ifdef ENABLE_SOCKETS
-		if (esp32_wifi_clientok())
-		{
-			if (server_client.available() > 0)
-			{
-				return (uint8_t)server_client.read();
-			}
-		}
-#endif
+	// 	uint8_t esp32_wifi_bt_read(void)
+	// 	{
+	// #ifdef ENABLE_SOCKETS
+	// 		if (esp32_wifi_clientok())
+	// 		{
+	// 			if (server_client.available() > 0)
+	// 			{
+	// 				return (uint8_t)server_client.read();
+	// 			}
+	// 		}
+	// #endif
 
-#ifdef ENABLE_BLUETOOTH
-		if (SerialBT.hasClient())
-		{
-			return (uint8_t)SerialBT.read();
-		}
-#endif
+	// #ifdef ENABLE_BLUETOOTH
+	// 		if (SerialBT.hasClient())
+	// 		{
+	// 			return (uint8_t)SerialBT.read();
+	// 		}
+	// #endif
 
-		return (uint8_t)0;
-	}
+	// 		return (uint8_t)0;
+	// 	}
 
 	void esp32_wifi_bt_process(void)
 	{
@@ -1020,34 +1027,33 @@ extern "C"
 			}
 		}
 #endif
+		// #ifdef ENABLE_SOCKETS
+		// 		if (esp32_wifi_clientok())
+		// 		{
+		// 			while (server_client.available() > 0)
+		// 			{
+		// 				esp_task_wdt_reset();
+		// #ifndef DETACH_TELNET_FROM_MAIN_PROTOCOL
+		// 				uint8_t c = server_client.read();
+		// 				if (mcu_com_rx_cb(c))
+		// 				{
+		// 					if (BUFFER_FULL(telnet_rx))
+		// 					{
+		// 						STREAM_OVF(c);
+		// 					}
 
-#ifdef ENABLE_SOCKETS
-		if (esp32_wifi_clientok())
-		{
-			while (server_client.available() > 0)
-			{
-				esp_task_wdt_reset();
-#ifndef DETACH_TELNET_FROM_MAIN_PROTOCOL
-				uint8_t c = server_client.read();
-				if (mcu_com_rx_cb(c))
-				{
-					if (BUFFER_FULL(telnet_rx))
-					{
-						STREAM_OVF(c);
-					}
+		// 					BUFFER_ENQUEUE(telnet_rx, &c);
+		// 				}
+		// #else
+		// 				mcu_telnet_rx_cb((uint8_t)server_client.read());
+		// #endif
+		// 			}
+		// 		}
 
-					BUFFER_ENQUEUE(telnet_rx, &c);
-				}
-#else
-				mcu_telnet_rx_cb((uint8_t)server_client.read());
-#endif
-			}
-		}
-
-// #ifdef MCU_HAS_WEBSOCKETS
-// 		socket_server.loop();
-// #endif
-#endif
+		// // #ifdef MCU_HAS_WEBSOCKETS
+		// // 		socket_server.loop();
+		// // #endif
+		// #endif
 	}
 
 #ifdef MCU_HAS_I2C

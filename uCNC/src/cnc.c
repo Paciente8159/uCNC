@@ -1101,7 +1101,7 @@ static void cnc_io_dotasks(void)
 	}
 #endif
 
-#ifdef ENABLE_SOCKETS
+#if defined(ENABLE_SOCKETS) && !defined(MCU_HAS_RTOS)
 	socket_server_dotasks();
 #endif
 }
