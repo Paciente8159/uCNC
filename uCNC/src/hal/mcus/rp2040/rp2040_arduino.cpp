@@ -86,7 +86,7 @@ HTTPUpdateServer httpUpdater;
 const char *update_username = WIFI_USER;
 const char *update_password = WIFI_PASS;
 #define MAX_SRV_CLIENTS 1
-WiFiServer telnet_server(TELNET_PORT);
+// WiFiServer telnet_server(TELNET_PORT);
 WiFiClient server_client;
 
 typedef struct
@@ -341,61 +341,61 @@ bool mcu_custom_grbl_cmd(void *args)
 CREATE_EVENT_LISTENER(grbl_cmd, mcu_custom_grbl_cmd);
 #endif
 
-bool rp2040_wifi_clientok(void)
-{
-#if defined(MCU_HAS_SOCKETS) && defined(ENABLE_SOCKETS)
-	static uint32_t next_info = 30000;
-	static bool connected = false;
-	uint8_t str[128];
+// bool rp2040_wifi_clientok(void)
+// {
+// #if defined(MCU_HAS_SOCKETS) && defined(ENABLE_SOCKETS)
+// 	static uint32_t next_info = 30000;
+// 	static bool connected = false;
+// 	uint8_t str[128];
 
-	if (!wifi_settings.wifi_on)
-	{
-		return false;
-	}
+// 	if (!wifi_settings.wifi_on)
+// 	{
+// 		return false;
+// 	}
 
-	if ((WiFi.status() != WL_CONNECTED))
-	{
-		connected = false;
-		if (next_info > millis())
-		{
-			return false;
-		}
-		next_info = millis() + 30000;
-		proto_info("Disconnected from WiFi");
-		return false;
-	}
+// 	if ((WiFi.status() != WL_CONNECTED))
+// 	{
+// 		connected = false;
+// 		if (next_info > millis())
+// 		{
+// 			return false;
+// 		}
+// 		next_info = millis() + 30000;
+// 		proto_info("Disconnected from WiFi");
+// 		return false;
+// 	}
 
-	if (!connected)
-	{
-		connected = true;
-		proto_info("Connected to WiFi");
-		proto_info("SSID>%s", wifi_settings.ssid);
-		proto_info("IP>%s", WiFi.localIP().toString().c_str());
-	}
+// 	if (!connected)
+// 	{
+// 		connected = true;
+// 		proto_info("Connected to WiFi");
+// 		proto_info("SSID>%s", wifi_settings.ssid);
+// 		proto_info("IP>%s", WiFi.localIP().toString().c_str());
+// 	}
 
-	if (telnet_server.hasClient())
-	{
-		if (server_client)
-		{
-			if (server_client.connected())
-			{
-				server_client.stop();
-			}
-		}
-		server_client = telnet_server.accept();
-		server_client.println("[MSG:New client connected]");
-		return false;
-	}
-	else if (server_client)
-	{
-		if (server_client.connected())
-		{
-			return true;
-		}
-	}
-#endif
-	return false;
-}
+// 	// if (telnet_server.hasClient())
+// 	// {
+// 	// 	if (server_client)
+// 	// 	{
+// 	// 		if (server_client.connected())
+// 	// 		{
+// 	// 			server_client.stop();
+// 	// 		}
+// 	// 	}
+// 	// 	server_client = telnet_server.accept();
+// 	// 	server_client.println("[MSG:New client connected]");
+// 	// 	return false;
+// 	// }
+// 	// else if (server_client)
+// 	// {
+// 	// 	if (server_client.connected())
+// 	// 	{
+// 	// 		return true;
+// 	// 	}
+// 	// }
+// #endif
+// 	return false;
+// }
 
 #if defined(MCU_HAS_SOCKETS) && defined(MCU_HAS_ENDPOINTS)
 
@@ -790,8 +790,11 @@ void rp2040_wifi_bt_init(void)
 			break;
 		}
 	}
-	telnet_server.begin();
-	telnet_server.setNoDelay(true);
+	// telnet_server.begin();
+	// telnet_server.setNoDelay(true);
+	LOAD_MODULE(socket_server);
+	LOAD_MODULE(telnet_server);
+
 #ifdef MCU_HAS_ENDPOINTS
 	FLASH_FS.begin();
 	flash_fs = {
@@ -811,15 +814,15 @@ void rp2040_wifi_bt_init(void)
 			.next = NULL};
 	fs_mount(&flash_fs);
 #endif
-#ifndef CUSTOM_OTA_ENDPOINT
-	httpUpdater.setup(&web_server, OTA_URI, update_username, update_password);
-#endif
-	web_server.begin();
+// #ifndef CUSTOM_OTA_ENDPOINT
+// 	httpUpdater.setup(&web_server, OTA_URI, update_username, update_password);
+// #endif
+// 	web_server.begin();
 
-#ifdef MCU_HAS_WEBSOCKETS
-	socket_server.begin();
-	socket_server.onEvent(webSocketEvent);
-#endif
+// #ifdef MCU_HAS_WEBSOCKETS
+// 	socket_server.begin();
+// 	socket_server.onEvent(webSocketEvent);
+// #endif
 #endif
 #ifdef ENABLE_BLUETOOTH
 	bt_settings_offset = settings_register_external_setting(1);
@@ -839,60 +842,60 @@ void rp2040_wifi_bt_init(void)
 #endif
 }
 
-#if defined(MCU_HAS_SOCKETS) && defined(ENABLE_SOCKETS)
-#ifndef WIFI_TX_BUFFER_SIZE
-#define WIFI_TX_BUFFER_SIZE 64
-#endif
-DECL_BUFFER(uint8_t, telnet_tx, WIFI_TX_BUFFER_SIZE);
-DECL_BUFFER(uint8_t, telnet_rx, RX_BUFFER_SIZE);
+// #if defined(MCU_HAS_SOCKETS) && defined(ENABLE_SOCKETS)
+// #ifndef WIFI_TX_BUFFER_SIZE
+// #define WIFI_TX_BUFFER_SIZE 64
+// #endif
+// DECL_BUFFER(uint8_t, telnet_tx, WIFI_TX_BUFFER_SIZE);
+// DECL_BUFFER(uint8_t, telnet_rx, RX_BUFFER_SIZE);
 
-uint8_t mcu_telnet_getc(void)
-{
-	uint8_t c = 0;
-	BUFFER_DEQUEUE(telnet_rx, &c);
-	return c;
-}
+// uint8_t mcu_telnet_getc(void)
+// {
+// 	uint8_t c = 0;
+// 	BUFFER_DEQUEUE(telnet_rx, &c);
+// 	return c;
+// }
 
-uint8_t mcu_telnet_available(void)
-{
-	return BUFFER_READ_AVAILABLE(telnet_rx);
-}
+// uint8_t mcu_telnet_available(void)
+// {
+// 	return BUFFER_READ_AVAILABLE(telnet_rx);
+// }
 
-void mcu_telnet_clear(void)
-{
-	BUFFER_CLEAR(telnet_rx);
-}
+// void mcu_telnet_clear(void)
+// {
+// 	BUFFER_CLEAR(telnet_rx);
+// }
 
-void mcu_telnet_putc(uint8_t c)
-{
-	while (BUFFER_FULL(telnet_tx))
-	{
-		mcu_telnet_flush();
-	}
-	BUFFER_ENQUEUE(telnet_tx, &c);
-}
+// void mcu_telnet_putc(uint8_t c)
+// {
+// 	while (BUFFER_FULL(telnet_tx))
+// 	{
+// 		mcu_telnet_flush();
+// 	}
+// 	BUFFER_ENQUEUE(telnet_tx, &c);
+// }
 
-void mcu_telnet_flush(void)
-{
-	if (rp2040_wifi_clientok())
-	{
-		while (!BUFFER_EMPTY(telnet_tx))
-		{
-			uint8_t tmp[WIFI_TX_BUFFER_SIZE + 1];
-			memset(tmp, 0, sizeof(tmp));
-			uint8_t r;
+// void mcu_telnet_flush(void)
+// {
+// 	if (rp2040_wifi_clientok())
+// 	{
+// 		while (!BUFFER_EMPTY(telnet_tx))
+// 		{
+// 			uint8_t tmp[WIFI_TX_BUFFER_SIZE + 1];
+// 			memset(tmp, 0, sizeof(tmp));
+// 			uint8_t r;
 
-			BUFFER_READ(telnet_tx, tmp, WIFI_TX_BUFFER_SIZE, r);
-			server_client.write(tmp, r);
-		}
-	}
-	else
-	{
-		// no client (discard)
-		BUFFER_CLEAR(telnet_tx);
-	}
-}
-#endif
+// 			BUFFER_READ(telnet_tx, tmp, WIFI_TX_BUFFER_SIZE, r);
+// 			server_client.write(tmp, r);
+// 		}
+// 	}
+// 	else
+// 	{
+// 		// no client (discard)
+// 		BUFFER_CLEAR(telnet_tx);
+// 	}
+// }
+// #endif
 
 #ifdef MCU_HAS_BLUETOOTH
 #ifndef BLUETOOTH_TX_BUFFER_SIZE
@@ -944,15 +947,15 @@ void mcu_bt_flush(void)
 
 uint8_t rp2040_wifi_bt_read(void)
 {
-#if defined(MCU_HAS_SOCKETS) && defined(ENABLE_SOCKETS)
-	if (rp2040_wifi_clientok())
-	{
-		if (server_client.available() > 0)
-		{
-			return (uint8_t)server_client.read();
-		}
-	}
-#endif
+// #if defined(MCU_HAS_SOCKETS) && defined(ENABLE_SOCKETS)
+// 	if (rp2040_wifi_clientok())
+// 	{
+// 		if (server_client.available() > 0)
+// 		{
+// 			return (uint8_t)server_client.read();
+// 		}
+// 	}
+// #endif
 
 #ifdef ENABLE_BLUETOOTH
 	return (uint8_t)SerialBT.read();
@@ -963,37 +966,41 @@ uint8_t rp2040_wifi_bt_read(void)
 
 void rp2040_wifi_bt_process(void)
 {
-#if defined(MCU_HAS_SOCKETS) && defined(ENABLE_SOCKETS)
-	if (rp2040_wifi_clientok())
-	{
-		while (server_client.available() > 0)
-		{
-#ifndef DETACH_TELNET_FROM_MAIN_PROTOCOL
-			uint8_t c = (uint8_t)server_client.read();
-			if (mcu_com_rx_cb(c))
-			{
-				if (BUFFER_FULL(telnet_rx))
-				{
-					STREAM_OVF(c);
-				}
+// #if defined(MCU_HAS_SOCKETS) && defined(ENABLE_SOCKETS)
+// 	if (rp2040_wifi_clientok())
+// 	{
+// 		while (server_client.available() > 0)
+// 		{
+// #ifndef DETACH_TELNET_FROM_MAIN_PROTOCOL
+// 			uint8_t c = (uint8_t)server_client.read();
+// 			if (mcu_com_rx_cb(c))
+// 			{
+// 				if (BUFFER_FULL(telnet_rx))
+// 				{
+// 					STREAM_OVF(c);
+// 				}
 
-				BUFFER_ENQUEUE(telnet_rx, &c);
-			}
+// 				BUFFER_ENQUEUE(telnet_rx, &c);
+// 			}
 
-#else
-			mcu_telnet_rx_cb((uint8_t)server_client.read());
-#endif
-		}
-	}
+// #else
+// 			mcu_telnet_rx_cb((uint8_t)server_client.read());
+// #endif
+// 		}
+// 	}
 
-	if (wifi_settings.wifi_on)
-	{
-		web_server.handleClient();
-#ifdef MCU_HAS_WEBSOCKETS
-		socket_server.loop();
-#endif
-	}
-#endif
+// 	if (wifi_settings.wifi_on)
+// 	{
+// 		web_server.handleClient();
+// #ifdef MCU_HAS_WEBSOCKETS
+// 		socket_server.loop();
+// #endif
+// 	}
+// #endif
+	// proto_putc('-');
+	// socket_server_dotasks();
+	// proto_printf("+\n");
+cyw43_arch_poll();
 
 #ifdef ENABLE_BLUETOOTH
 	while (SerialBT.available() > 0)

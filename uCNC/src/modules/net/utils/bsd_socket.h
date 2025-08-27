@@ -33,6 +33,18 @@ extern "C"
 #ifndef O_NONBLOCK
 #define O_NONBLOCK 0x800
 #endif
+#ifndef AF_INET
+#define AF_INET 2
+#endif
+#ifndef SOCK_STREAM
+#define SOCK_STREAM     1
+#endif
+#ifndef SOCK_DGRAM
+#define SOCK_DGRAM      2
+#endif
+#ifndef SOCK_RAW
+#define SOCK_RAW        3
+#endif
 
 struct bsd_sockaddr_in
 {
