@@ -1,5 +1,5 @@
 /*
-	Name: socket.c
+	Name: telnet.c
 	Description: Implements a simple Telnet Server based on BSD/POSIX Sockets for µCNC.
 
 	Copyright: Copyright (c) João Martins
@@ -22,33 +22,26 @@
 #include <string.h>
 #include <ctype.h>
 
-#ifndef TELNET_PORT
-#define TELNET_PORT 23
-#endif
-
-static socket_if_t *telnet_srv = NULL;
-
 /* Send a Telnet command using the abstraction layer */
-static void telnet_send_option(int client_index, uint8_t cmd, uint8_t option)
+static void telnet_send_option(telnet_protocol_t* telnet, int client_fd, uint8_t cmd, uint8_t option)
 {
 	uint8_t buf[3] = {TELNET_IAC, cmd, option};
-	socket_send(telnet_srv, client_index, (char *)buf, sizeof(buf), 0);
+	socket_send(telnet->telnet_socket, client_fd, (char *)buf, sizeof(buf), 0);
 }
 
-static void telnet_negotiate(int client_index)
+static void telnet_negotiate(telnet_protocol_t* telnet, int client_fd)
 {
 	/* Refuse all options for simplicity */
-	telnet_send_option(client_index, TELNET_WILL, 0);
-	telnet_send_option(client_index, TELNET_WONT, 0);
-	telnet_send_option(client_index, TELNET_DO, 0);
-	telnet_send_option(client_index, TELNET_DONT, 0);
+	telnet_send_option(telnet, client_fd, TELNET_WILL, 0);
+	telnet_send_option(telnet, client_fd, TELNET_WONT, 0);
+	telnet_send_option(telnet, client_fd, TELNET_DO, 0);
+	telnet_send_option(telnet, client_fd, TELNET_DONT, 0);
 }
 
-CREATE_HOOK(telnet_onrecv);
-
 /* Telnet payload handler */
-static void telnet_data_handler(int client_index, void *data, size_t data_len)
+static void telnet_data_handler(uint8_t client_idx, char *data, size_t data_len, void* protocol)
 {
+	telnet_protocol_t* telnet = (telnet_protocol_t*) protocol;
 	uint8_t *bytes = (uint8_t *)data;
 	size_t outlen = 0;
 
@@ -75,40 +68,53 @@ static void telnet_data_handler(int client_index, void *data, size_t data_len)
 	if (outlen > 0)
 	{
 		// Invoke the hook with modified buffer and adjusted length
-		HOOK_INVOKE(telnet_onrecv, data, outlen);
+		if(telnet && telnet->telnet_onrecv_cb){
+			telnet->telnet_onrecv_cb(client_idx, data, outlen);
+		}
 	}
 }
 
-static void telnet_new_client_handler(int client)
+static void telnet_new_client_handler(int client, void* protocol)
 {
-	telnet_negotiate(client);
-	const char welcome[] = "Welcome to Embedded Telnet\r\n> ";
-	socket_send(telnet_srv, client, (char *)welcome, sizeof(welcome) - 1, 0);
+	telnet_protocol_t* telnet = (telnet_protocol_t*) protocol;
+	telnet_negotiate(telnet, client);
+	const char welcome[] = "uCNC Telnet\r\n> ";
+	socket_send(telnet->telnet_socket, client, (char *)welcome, sizeof(welcome) - 1, 0);
 }
 
-int telnet_hasclients(void)
+int telnet_hasclients(telnet_protocol_t* telnet)
 {
-	return socket_server_hasclients(telnet_srv);
+	return socket_server_hasclients(telnet->telnet_socket);
 }
 
-DECL_MODULE(telnet_server)
+socket_if_t *telnet_start_listen(telnet_protocol_t *telnet_protocol, int port)
 {
-	telnet_srv = socket_start(IP_ANY, TELNET_PORT, 2 /*AF_INET*/, 1 /*SOCK_STREAM*/, 0);
-	if (!telnet_srv)
+	LOAD_MODULE(socket_server);
+	socket_if_t *socket = socket_start_listen(IP_ANY, port, 2 /*AF_INET*/, 1 /*SOCK_STREAM*/, 0);
+	if (!socket)
 		return;
 
-	socket_add_ondata_handler(telnet_srv, telnet_data_handler);
-	socket_add_onconnected_handler(telnet_srv, telnet_new_client_handler);
-	HOOK_ATTACH_CALLBACK(telnet_onrecv, mcu_telnet_onrecv);
+	socket_add_ondata_handler(socket, telnet_data_handler);
+	socket_add_onconnected_handler(socket, telnet_new_client_handler);
+
+	// binds the socket to the prototol
+	socket->protocol = telnet_protocol;
+	telnet_protocol->telnet_socket = socket;
+	return socket;
+}
+
+void telnet_stop(telnet_protocol_t *telnet_protocol){
+	socket_stop_listening(telnet_protocol->telnet_socket);
+	telnet_protocol->telnet_socket = NULL;
 }
 
 // sends data to a specific socket interface to a client
-int telnet_send(int client, char *data, size_t data_len, int flags)
+int telnet_send(telnet_protocol_t *telnet, uint8_t client_idx, uint8_t *data, size_t data_len, int flags)
 {
-	return socket_send(telnet_srv, client, data, data_len, flags);
+	return socket_send(telnet->telnet_socket, client_idx, data, data_len, flags);
 }
 // sends data to a specific socket interface to all clients
-int telnet_broadcast(char *data, size_t data_len, int flags)
+int telnet_broadcast(telnet_protocol_t *telnet, uint8_t *data, size_t data_len, int flags)
 {
-	return socket_broadcast(telnet_srv, data, data_len, flags);
+	return socket_broadcast(telnet->telnet_socket, data, data_len, flags);
 }

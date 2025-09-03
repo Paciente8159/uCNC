@@ -190,6 +190,7 @@ size_t prt_ip(void *out, size_t maxlen, uint32_t ip)
 
 size_t prt_fmtva(void *out, size_t maxlen, const char *fmt, va_list *args)
 {
+	size_t cap = maxlen;
 	char *ptr = (char *)out;
 	char **memref;
 	if (maxlen != PRINT_CALLBACK)
@@ -416,7 +417,7 @@ size_t prt_fmtva(void *out, size_t maxlen, const char *fmt, va_list *args)
 		}
 	} while (c);
 
-	return maxlen;
+	return (cap - maxlen);
 }
 
 size_t prt_fmt(void *out, size_t maxlen, const char *fmt, ...)

@@ -19,6 +19,7 @@
 #include "../../cnc.h"
 #include "socket.h"
 #include <string.h>
+#include <errno.h>
 
 /* Global socket interfaces */
 static socket_if_t raw_sockets[MAX_SOCKETS];
@@ -33,7 +34,7 @@ static int find_free_socket_if(void)
 	return -1;
 }
 
-socket_if_t *socket_start(uint32_t ip_listen, uint16_t port, int domain, int type, int protocol)
+socket_if_t *socket_start_listen(uint32_t ip_listen, uint16_t port, int domain, int type, int protocol)
 {
 	int idx = find_free_socket_if();
 	if (idx < 0)
@@ -75,9 +76,34 @@ socket_if_t *socket_start(uint32_t ip_listen, uint16_t port, int domain, int typ
 	return &raw_sockets[idx];
 }
 
+void socket_stop_listening(socket_if_t *socket)
+{
+	if (socket)
+	{
+		for (uint8_t i = 0; i < SOCKET_MAX_CLIENTS; i++)
+		{
+			if (socket->socket_clients[i] >= 0)
+			{
+				bsd_close(socket->socket_clients[i]);
+				socket->socket_clients[i] = -1;
+			}
+		}
+		socket->socket_if = -1;
+		socket->client_ondata_cb = NULL;
+		socket->client_onconnected_cb = NULL;
+		socket->client_ondisconnected_cb = NULL;
+		socket->protocol = NULL;
+	}
+}
+
 void socket_add_ondata_handler(socket_if_t *socket, socket_data_delegate callback)
 {
 	socket->client_ondata_cb = callback;
+}
+
+void socket_add_onidle_handler(socket_if_t *socket, socket_idle_delegate callback)
+{
+	socket->client_onidle_cb = callback;
 }
 
 void socket_add_onconnected_handler(socket_if_t *socket, socket_connect_delegate callback)
@@ -90,19 +116,28 @@ void socket_add_ondisconnected_handler(socket_if_t *socket, socket_connect_deleg
 	socket->client_ondisconnected_cb = callback;
 }
 
-int socket_send(socket_if_t *socket, int client, char *data, size_t data_len, int flags)
+int socket_send(socket_if_t *socket, uint8_t client_idx, uint8_t *data, size_t data_len, int flags)
 {
 	if (!socket)
+	{
 		return -1;
+	}
+
+	int client = socket->socket_clients[client_idx];
 	if (client < 0)
+	{
 		return -1;
+	}
+
 	return bsd_send(client, data, data_len, flags);
 }
 
-int socket_broadcast(socket_if_t *socket, char *data, size_t data_len, int flags)
+int socket_broadcast(socket_if_t *socket, uint8_t *data, size_t data_len, int flags)
 {
 	if (!socket)
+	{
 		return -1;
+	}
 	int sent = 0;
 	for (int i = 0; i < SOCKET_MAX_CLIENTS; i++)
 	{
@@ -120,14 +155,17 @@ int socket_broadcast(socket_if_t *socket, char *data, size_t data_len, int flags
 /* Helper: add new client */
 static void add_client(socket_if_t *iface, int client_fd)
 {
-	for (int i = 0; i < SOCKET_MAX_CLIENTS; i++)
+	for (uint8_t i = 0; i < SOCKET_MAX_CLIENTS; i++)
 	{
 		if (iface->socket_clients[i] < 0)
 		{
 			iface->socket_clients[i] = client_fd;
+#ifdef ENABLE_SOCKET_TIMEOUTS
+			iface->client_activity[i] = mcu_millis();
+#endif
 			if (iface->client_onconnected_cb)
 			{
-				iface->client_onconnected_cb(client_fd);
+				iface->client_onconnected_cb(i, iface->protocol);
 			}
 			return;
 		}
@@ -146,11 +184,17 @@ static void remove_client(socket_if_t *iface, int idx)
 			bsd_close(iface->socket_clients[idx]);
 			if (iface->client_ondisconnected_cb)
 			{
-				iface->client_ondisconnected_cb(iface->socket_clients[idx]);
+				iface->client_ondisconnected_cb(idx, iface->protocol);
 			}
 			iface->socket_clients[idx] = -1;
 		}
 	}
+}
+
+// closes a connection to a client
+void socket_free(socket_if_t *socket, uint8_t client_idx)
+{
+	remove_client(socket, client_idx);
 }
 
 void socket_server_dotasks(void)
@@ -158,7 +202,7 @@ void socket_server_dotasks(void)
 	for (int i = 0; i < MAX_SOCKETS; i++)
 	{
 		socket_if_t *socket = &raw_sockets[i];
-		char buffer[SOCKET_MAX_DATA_SIZE];
+		char buffer[SOCKET_MAX_DATA_SIZE + 1]; // space for a null character
 
 		if (socket->socket_if >= 0)
 		{
@@ -174,22 +218,42 @@ void socket_server_dotasks(void)
 			}
 
 			/* Poll each client for data (non-blocking) */
-			for (int c = 0; c < SOCKET_MAX_CLIENTS; c++)
+			for (uint8_t c = 0; c < SOCKET_MAX_CLIENTS; c++)
 			{
+				uint32_t now = mcu_millis();
 				int fd = socket->socket_clients[c];
+				void *proto = socket->protocol;
 				if (fd >= 0)
 				{
-					int len = bsd_recv(fd, buffer, sizeof(buffer), 0);
+					// memset(buffer, 0, sizeof(buffer));
+					int len = bsd_recv(fd, buffer, SOCKET_MAX_DATA_SIZE, 0);
+					buffer[len] = 0;
 					if (len > 0)
 					{
+#ifdef ENABLE_SOCKET_TIMEOUTS
+						socket->client_activity[c] = now;
+#endif
 						if (socket->client_ondata_cb)
 						{
-							socket->client_ondata_cb(fd, buffer, (size_t)len);
+							socket->client_ondata_cb(c, buffer, (size_t)len, proto);
 						}
 					}
-					else if (len == 0)
+					else if (!len)
 					{
 						remove_client(socket, c);
+					}
+
+					else
+					{
+						if (socket->client_onidle_cb)
+						{
+#ifdef ENABLE_SOCKET_TIMEOUTS
+							uint32_t idle = now - socket->client_activity[c];
+							socket->client_onidle_cb(c, idle, socket->protocol);
+#else
+							socket->client_onidle_cb(c, 0, socket->protocol);
+#endif
+						}
 					}
 				}
 			}
@@ -216,14 +280,32 @@ int socket_server_hasclients(socket_if_t *socket)
 	return clients;
 }
 
+int socket_get_clientindex(socket_if_t *socket, int socket_fd)
+{
+	for (int c = 0; c < SOCKET_MAX_CLIENTS; c++)
+	{
+		if (socket->socket_clients[c] == socket_fd)
+		{
+			return c;
+		}
+	}
+	return -1;
+}
+
 DECL_MODULE(socket_server)
 {
-	for (int i = 0; i < MAX_SOCKETS; i++)
+	RUNONCE
 	{
-		raw_sockets[i].socket_if = -1;
-		memset(raw_sockets[i].socket_clients, -1, sizeof(raw_sockets[i].socket_clients));
-		raw_sockets[i].client_ondata_cb = NULL;
-		raw_sockets[i].client_onconnected_cb = NULL;
-		raw_sockets[i].client_ondisconnected_cb = NULL;
+		for (int i = 0; i < MAX_SOCKETS; i++)
+		{
+			raw_sockets[i].socket_if = -1;
+			memset(raw_sockets[i].socket_clients, -1, sizeof(raw_sockets[i].socket_clients));
+			raw_sockets[i].client_ondata_cb = NULL;
+			raw_sockets[i].client_onidle_cb = NULL;
+			raw_sockets[i].client_onconnected_cb = NULL;
+			raw_sockets[i].client_ondisconnected_cb = NULL;
+			raw_sockets[i].protocol = NULL;
+		}
+		RUNONCE_COMPLETE();
 	}
 }

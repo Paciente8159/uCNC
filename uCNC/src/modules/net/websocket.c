@@ -1,629 +1,641 @@
-// #include <stdint.h>
-// #include <stddef.h>
-// #include <string.h>
-// #include "websocket.h"
-// #include "utils/base64.h"
-// #include "utils/sha1.h"
-
-// /*  Internal state  */
-
-// #ifndef INVALID_SOCKET
-// #define INVALID_SOCKET (-1)
-// #endif
-
-// #define WS_GUID "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
-
-// typedef enum
-// {
-// 	WS_S_HANDSHAKE = 0,
-// 	WS_S_OPEN = 1,
-// 	WS_S_CLOSING = 2
-// } ws_phase_t;
-
-// typedef struct
-// {
-// 	int active;
-// 	ws_phase_t phase;
-
-// 	// Handshake accumulation
-// 	char hs_buf[WEBSOCKET_MAX_HEADER_BUF];
-// 	size_t hs_len;
-
-// 	// Frame parsing
-// 	uint8_t hdr[14];	/* At most 14 bytes header */
-// 	uint8_t hdr_have; /* bytes filled in hdr[] */
-// 	uint8_t hdr_need; /* total header length once known */
-// 	uint8_t fin;
-// 	uint8_t opcode;
-// 	uint8_t masked;
-// 	uint8_t mask[4];
-// 	uint8_t mask_i;
-// 	uint64_t payload_len;
-// 	uint64_t payload_rem;
-// } ws_client_state_t;
-
-// // Server instance
-// static socket_if_t *ws_srv = NULL;
-// static ws_client_state_t ws_clients[WEBSOCKET_MAX_CLIENTS];
-
-// // User callbacks
-// static ws_on_text_cb cb_text = NULL;
-// static ws_on_binary_cb cb_binary = NULL;
-// static ws_on_open_cb cb_open = NULL;
-// static ws_on_close_cb cb_close = NULL;
-
-// // Utilities
-
-// static int find_slot_by_fd(int fd)
-// {
-// 	if (!ws_srv)
-// 		return -1;
-// 	for (int i = 0; i < SOCKET_MAX_CLIENTS; i++)
-// 	{
-// 		if (ws_srv->socket_clients[i] == fd)
-// 			return i;
-// 	}
-// 	return -1;
-// }
-
-// // Case-insensitive starts-with
-// static int istarts_with(const char *s, const char *pfx)
-// {
-// 	while (*pfx && *s)
-// 	{
-// 		char a = *s, b = *pfx;
-// 		if (a >= 'A' && a <= 'Z')
-// 			a += 32;
-// 		if (b >= 'A' && b <= 'Z')
-// 			b += 32;
-// 		if (a != b)
-// 			return 0;
-// 		s++;
-// 		pfx++;
-// 	}
-// 	return *pfx == '\0';
-// }
-
-// // Find CRLFCRLF in buffer, return index of the byte just after the sequence, or -1
-// static int find_hdr_end(const char *buf, size_t len)
-// {
-// 	if (len < 4)
-// 		return -1;
-// 	for (size_t i = 3; i < len; i++)
-// 	{
-// 		if (buf[i - 3] == '\r' && buf[i - 2] == '\n' && buf[i - 1] == '\r' && buf[i] == '\n')
-// 		{
-// 			return (int)(i + 1);
-// 		}
-// 	}
-// 	return -1;
-// }
-
-// // Handshake
-
-// static void ws_reset_client(ws_client_state_t *st)
-// {
-// 	memset(st, 0, sizeof(*st));
-// 	st->active = 1;
-// 	st->phase = WS_S_HANDSHAKE;
-// }
-
-// static int ws_send_upgrade_response(int client_fd, const char *sec_key, size_t sec_key_len)
-// {
-// 	/* SHA1( key + GUID ), then Base64 */
-// 	sha1_ctx ctx;
-// 	uint8_t digest[20];
-// 	char accept_key[32]; /* 28 chars + safety */
-// 	size_t accept_len;
-
-// 	sha1_init(&ctx);
-// 	sha1_update(&ctx, sec_key, sec_key_len);
-// 	sha1_update(&ctx, WS_GUID, strlen(WS_GUID));
-// 	sha1_final(&ctx, digest);
-
-// 	accept_len = base64_encode(digest, 20, accept_key, 32);
-
-// 	static const char resp1[] =
-// 			"HTTP/1.1 101 Switching Protocols\r\n"
-// 			"Upgrade: websocket\r\n"
-// 			"Connection: Upgrade\r\n"
-// 			"Sec-WebSocket-Accept: ";
-// 	static const char resp2[] = "\r\n\r\n";
-
-// 	int r = 0;
-// 	if (socket_send(ws_srv, client_fd, (char *)resp1, sizeof(resp1) - 1, 0) < 0)
-// 		r = -1;
-// 	if (r == 0 && socket_send(ws_srv, client_fd, accept_key, accept_len, 0) < 0)
-// 		r = -1;
-// 	if (r == 0 && socket_send(ws_srv, client_fd, (char *)resp2, sizeof(resp2) - 1, 0) < 0)
-// 		r = -1;
-// 	return r;
-// }
-
-// static int ws_do_handshake(int slot)
-// {
-// 	ws_client_state_t *st = &ws_clients[slot];
-// 	/* Must contain CRLFCRLF by the time we call this */
-// 	int end = find_hdr_end(st->hs_buf, st->hs_len);
-// 	if (end < 0)
-// 		return 0;
-
-// 	/* Very small, forgiving header parse */
-// 	const char *h = st->hs_buf;
-// 	size_t hlen = (size_t)end;
-
-// 	/* Check "GET" line minimality */
-// 	if (!(hlen >= 4 && h[0] == 'G' && h[1] == 'E' && h[2] == 'T' && h[3] == ' '))
-// 	{
-// 		return -1;
-// 	}
-
-// 	/* Find Sec-WebSocket-Key header (case-insensitive) */
-// 	const char *p = h;
-// 	const char *key_start = NULL;
-// 	size_t key_len = 0;
-
-// 	while (p < h + hlen)
-// 	{
-// 		/* Find line end */
-// 		const char *line_end = p;
-// 		while (line_end < h + hlen && !(line_end[0] == '\r' && (line_end + 1) < h + hlen && line_end[1] == '\n'))
-// 		{
-// 			line_end++;
-// 		}
-// 		size_t line_len = (size_t)(line_end - p);
-// 		if (line_len == 0)
-// 			break; /* end of headers */
-
-// 		/* Match header name */
-// 		if (line_len > 18 && istarts_with(p, "Sec-WebSocket-Key:"))
-// 		{
-// 			const char *v = p + 18;
-// 			/* Skip spaces */
-// 			while (v < line_end && (*v == ' ' || *v == '\t'))
-// 				v++;
-// 			key_start = v;
-// 			/* Trim trailing spaces */
-// 			const char *ve = line_end;
-// 			while (ve > v && (ve[-1] == ' ' || ve[-1] == '\t'))
-// 				ve--;
-// 			key_len = (size_t)(ve - v);
-// 		}
-
-// 		/* Next line */
-// 		p = line_end + 2;
-// 	}
-
-// 	if (!key_start || key_len == 0)
-// 	{
-// 		return -1;
-// 	}
-
-// 	int client_fd = ws_srv->socket_clients[slot];
-// 	if (ws_send_upgrade_response(client_fd, key_start, key_len) < 0)
-// 	{
-// 		return -1;
-// 	}
-
-// 	st->phase = WS_S_OPEN;
-// 	st->hs_len = 0; /* free the buffer */
-// 	if (cb_open)
-// 		cb_open(client_fd);
-// 	return 1;
-// }
-
-// /*  Frame I/O  */
-
-// static int ws_send_frame_header(int client_fd, uint8_t opcode, size_t len)
-// {
-// 	/* Server-to-client: FIN=1, no mask */
-// 	uint8_t hdr[10];
-// 	size_t hlen = 0;
-
-// 	hdr[hlen++] = 0x80 | (opcode & 0x0F);
-// 	if (len <= 125)
-// 	{
-// 		hdr[hlen++] = (uint8_t)(len & 0x7F);
-// 	}
-// 	else if (len <= 0xFFFF)
-// 	{
-// 		hdr[hlen++] = 126;
-// 		uint16_t n = (uint16_t)len;
-// 		hdr[hlen++] = (uint8_t)((n >> 8) & 0xFF);
-// 		hdr[hlen++] = (uint8_t)(n & 0xFF);
-// 	}
-// 	else
-// 	{
-// 		hdr[hlen++] = 127;
-// 		uint64_t v = (uint64_t)len;
-// 		/* network order 8 bytes */
-// 		for (int i = 7; i >= 0; i--)
-// 		{
-// 			hdr[hlen++] = (uint8_t)((v >> (i * 8)) & 0xFF);
-// 		}
-// 	}
-
-// 	return socket_send(ws_srv, client_fd, (char *)hdr, hlen, 0);
-// }
-
-// int websocket_send_text(int client_fd, const char *data, size_t len)
-// {
-// 	if (!ws_srv)
-// 		return -1;
-// 	if (ws_send_frame_header(client_fd, WS_OPCODE_TEXT, len) < 0)
-// 		return -1;
-// 	return socket_send(ws_srv, client_fd, (char *)data, len, 0);
-// }
-
-// int websocket_send_binary(int client_fd, const uint8_t *data, size_t len)
-// {
-// 	if (!ws_srv)
-// 		return -1;
-// 	if (ws_send_frame_header(client_fd, WS_OPCODE_BINARY, len) < 0)
-// 		return -1;
-// 	return socket_send(ws_srv, client_fd, (char *)data, len, 0);
-// }
-
-// int websocket_send_pong(int client_fd, const uint8_t *data, size_t len)
-// {
-// 	if (!ws_srv)
-// 		return -1;
-// 	if (ws_send_frame_header(client_fd, WS_OPCODE_PONG, len) < 0)
-// 		return -1;
-// 	return socket_send(ws_srv, client_fd, (char *)data, len, 0);
-// }
-
-// int websocket_send_close(int client_fd, uint16_t code)
-// {
-// 	if (!ws_srv)
-// 		return -1;
-// 	uint8_t payload[2];
-// 	payload[0] = (uint8_t)((code >> 8) & 0xFF);
-// 	payload[1] = (uint8_t)(code & 0xFF);
-// 	if (ws_send_frame_header(client_fd, WS_OPCODE_CLOSE, sizeof(payload)) < 0)
-// 		return -1;
-// 	return socket_send(ws_srv, client_fd, (char *)payload, sizeof(payload), 0);
-// }
-
-// /* Parse frame header incrementally */
-// static int ws_parse_header(ws_client_state_t *st)
-// {
-// 	if (st->hdr_have < 2)
-// 		return 0;
-
-// 	uint8_t b0 = st->hdr[0];
-// 	uint8_t b1 = st->hdr[1];
-// 	st->fin = (b0 >> 7) & 1u;
-// 	st->opcode = (uint8_t)(b0 & 0x0F);
-// 	st->masked = (uint8_t)((b1 >> 7) & 1u);
-
-// 	size_t need = 2;
-// 	uint8_t len7 = (uint8_t)(b1 & 0x7F);
-// 	if (len7 == 126)
-// 		need += 2;
-// 	else if (len7 == 127)
-// 		need += 8;
-// 	if (st->masked)
-// 		need += 4;
-
-// 	st->hdr_need = (uint8_t)need;
-// 	if (st->hdr_have < st->hdr_need)
-// 		return 0;
-
-// 	/* Length */
-// 	size_t o = 2;
-// 	uint64_t plen = 0;
-// 	if (len7 < 126)
-// 	{
-// 		plen = len7;
-// 	}
-// 	else if (len7 == 126)
-// 	{
-// 		plen = ((uint64_t)st->hdr[o] << 8) | (uint64_t)st->hdr[o + 1];
-// 		o += 2;
-// 	}
-// 	else
-// 	{
-// 		/* 64-bit length */
-// 		for (int i = 0; i < 8; i++)
-// 		{
-// 			plen = (plen << 8) | st->hdr[o + i];
-// 		}
-// 		o += 8;
-// 	}
-
-// 	if (!st->masked)
-// 	{
-// 		/* Per RFC, client-to-server frames MUST be masked. */
-// 		st->payload_len = 0;
-// 		st->payload_rem = 0;
-// 		return -2; /* protocol error */
-// 	}
-
-// 	/* Mask key */
-// 	st->mask[0] = st->hdr[o + 0];
-// 	st->mask[1] = st->hdr[o + 1];
-// 	st->mask[2] = st->hdr[o + 2];
-// 	st->mask[3] = st->hdr[o + 3];
-// 	st->mask_i = 0;
-
-// 	st->payload_len = plen;
-// 	st->payload_rem = plen;
-
-// 	return 1; /* header complete */
-// }
-
-// /* Process payload chunk in-place (unmask), deliver to callbacks immediately */
-// static void ws_deliver_payload(int client_fd, ws_client_state_t *st, uint8_t *p, size_t n)
-// {
-// 	/* Unmask in-place */
-// 	for (size_t i = 0; i < n; i++)
-// 	{
-// 		p[i] ^= st->mask[st->mask_i & 3];
-// 		st->mask_i++;
-// 	}
-
-// 	int fin = (st->payload_rem == n) ? (st->fin ? 1 : 0) : 0;
-
-// 	if (st->opcode == WS_OPCODE_TEXT || st->opcode == WS_OPCODE_CONT)
-// 	{
-// 		if (cb_text)
-// 			cb_text(client_fd, (const char *)p, n, fin);
-// 		else
-// 		{
-// 			/* Default behavior: echo text frames */
-// 			websocket_send_text(client_fd, (const char *)p, n);
-// 		}
-// 	}
-// 	else if (st->opcode == WS_OPCODE_BINARY)
-// 	{
-// 		if (cb_binary)
-// 			cb_binary(client_fd, (const uint8_t *)p, n, fin);
-// 	}
-// }
-
-// /* Main per-chunk processor (after handshake) */
-// static void ws_process_data_open(int client_fd, int slot, uint8_t *data, size_t len)
-// {
-// 	ws_client_state_t *st = &ws_clients[slot];
-// 	size_t i = 0;
-
-// 	while (i < len)
-// 	{
-// 		/* Need header? */
-// 		if (st->payload_rem == 0)
-// 		{
-// 			/* Fill header */
-// 			while (st->hdr_have < 2 && i < len)
-// 			{
-// 				st->hdr[st->hdr_have++] = data[i++];
-// 			}
-// 			if (st->hdr_have >= 2)
-// 			{
-// 				int ph = ws_parse_header(st);
-// 				if (ph < 0)
-// 				{
-// 					/* Protocol error -> try to send close, mark closing */
-// 					websocket_send_close(client_fd, 1002); /* Protocol error */
-// 					st->phase = WS_S_CLOSING;
-// 					return;
-// 				}
-// 				/* If not enough header bytes yet, continue filling */
-// 				while (st->hdr_have < st->hdr_need && i < len)
-// 				{
-// 					st->hdr[st->hdr_have++] = data[i++];
-// 				}
-// 				if (st->hdr_have >= st->hdr_need)
-// 				{
-// 					/* Header complete */
-// 					if (st->opcode == WS_OPCODE_PING)
-// 					{
-// 						/* Echo pong with same payload (we will read payload next loop) */
-// 						/* Fall through to read payload, then send pong */
-// 					}
-// 					else if (st->opcode == WS_OPCODE_PONG)
-// 					{
-// 						/* Ignore payload */
-// 					}
-// 					else if (st->opcode == WS_OPCODE_CLOSE)
-// 					{
-// 						/* Read optional payload (2-byte code), then respond close */
-// 						/* We'll consume payload and then send close */
-// 					}
-// 				}
-// 				else
-// 				{
-// 					/* Wait for more data */
-// 					return;
-// 				}
-// 			}
-// 			else
-// 			{
-// 				/* Need more data for header */
-// 				return;
-// 			}
-// 		}
-
-// 		/* Consume payload */
-// 		if (st->payload_rem > 0)
-// 		{
-// 			size_t take = (size_t)((len - i) < st->payload_rem ? (len - i) : st->payload_rem);
-
-// 			if (st->opcode == WS_OPCODE_PING)
-// 			{
-// 				/* Unmask into a small temp if needed? We can unmask in-place then reply. */
-// 				ws_deliver_payload(client_fd, st, &data[i], take); /* delivers to default or user (won't for ping) */
-// 				/* For Ping, the “deliver” above is a no-op for user; now respond */
-// 				websocket_send_pong(client_fd, &data[i], take);
-// 			}
-// 			else if (st->opcode == WS_OPCODE_CLOSE)
-// 			{
-// 				/* Optionally parse status code if present in first 2 bytes */
-// 				uint16_t code = 1000;
-// 				if (st->payload_len >= 2 && st->payload_rem == st->payload_len && take >= 2)
-// 				{
-// 					uint8_t tmp[2];
-// 					/* Unmask first two bytes only to get code */
-// 					tmp[0] = (uint8_t)(data[i] ^ st->mask[st->mask_i & 3]);
-// 					st->mask_i++;
-// 					tmp[1] = (uint8_t)(data[i + 1] ^ st->mask[st->mask_i & 3]);
-// 					st->mask_i++;
-// 					code = ((uint16_t)tmp[0] << 8) | (uint16_t)tmp[1];
-// 					/* Unmask the rest (if any) without using it */
-// 					for (size_t k = 2; k < take; k++)
-// 					{
-// 						(void)(data[i + k] ^= st->mask[st->mask_i & 3]);
-// 						st->mask_i++;
-// 					}
-// 				}
-// 				else
-// 				{
-// 					for (size_t k = 0; k < take; k++)
-// 					{
-// 						(void)(data[i + k] ^= st->mask[st->mask_i & 3]);
-// 						st->mask_i++;
-// 					}
-// 				}
-// 				if (cb_close)
-// 					cb_close(client_fd, code);
-// 				websocket_send_close(client_fd, code);
-// 			}
-// 			else if (st->opcode == WS_OPCODE_PONG)
-// 			{
-// 				/* Unmask-and-ignore */
-// 				for (size_t k = 0; k < take; k++)
-// 				{
-// 					(void)(data[i + k] ^= st->mask[st->mask_i & 3]);
-// 					st->mask_i++;
-// 				}
-// 			}
-// 			else
-// 			{
-// 				/* Text / Binary / Continuation payload delivery */
-// 				ws_deliver_payload(client_fd, st, &data[i], take);
-// 			}
-
-// 			i += take;
-// 			st->payload_rem -= take;
-
-// 			if (st->payload_rem == 0)
-// 			{
-// 				/* Reset for next frame */
-// 				st->hdr_have = 0;
-// 				st->hdr_need = 0;
-// 				st->mask_i = 0;
-// 				/* If we were closing, stop processing further */
-// 				if (st->opcode == WS_OPCODE_CLOSE)
-// 				{
-// 					st->phase = WS_S_CLOSING;
-// 					return;
-// 				}
-// 			}
-// 		}
-// 	}
-// }
-
-// /*  Socket callbacks  */
-
-// static void ws_on_data(int client_fd, void *buf, size_t len)
-// {
-// 	int slot = find_slot_by_fd(client_fd);
-// 	if (slot < 0)
-// 		return;
-// 	ws_client_state_t *st = &ws_clients[slot];
-// 	uint8_t *data = (uint8_t *)buf;
-
-// 	if (!st->active)
-// 		ws_reset_client(st);
-
-// 	if (st->phase == WS_S_HANDSHAKE)
-// 	{
-// 		/* Accumulate headers until CRLFCRLF */
-// 		if (st->hs_len < sizeof(st->hs_buf))
-// 		{
-// 			size_t space = sizeof(st->hs_buf) - st->hs_len;
-// 			size_t cp = (len < space) ? len : space;
-// 			memcpy(&st->hs_buf[st->hs_len], data, cp);
-// 			st->hs_len += cp;
-
-// 			int res = ws_do_handshake(slot);
-// 			if (res < 0)
-// 			{
-// 				/* Bad handshake: ignore or optionally close connection */
-// 				/* No active close API: leave it to peer */
-// 				return;
-// 			}
-// 			else if (res > 0)
-// 			{
-// 				/* Handshake done; if there was overflow (more bytes beyond headers) we ignore.
-// 					 Subsequent recv calls will deliver frames. */
-// 			}
-// 		}
-// 		return;
-// 	}
-
-// 	if (st->phase == WS_S_OPEN)
-// 	{
-// 		ws_process_data_open(client_fd, slot, data, len);
-// 		return;
-// 	}
-
-// 	/* WS_S_CLOSING: ignore further payload; rely on peer to close */
-// }
-
-// static void ws_on_connected(int client_fd)
-// {
-// 	int slot = find_slot_by_fd(client_fd);
-// 	if (slot >= 0)
-// 		ws_reset_client(&ws_clients[slot]);
-// }
-
-// static void ws_on_disconnected(int client_fd)
-// {
-// 	int slot = find_slot_by_fd(client_fd);
-// 	if (slot >= 0)
-// 	{
-// 		memset(&ws_clients[slot], 0, sizeof(ws_clients[slot]));
-// 	}
-// }
-
-// /*  Public callbacks registration  */
-
-// void websocket_set_on_text(ws_on_text_cb cb) { cb_text = cb; }
-// void websocket_set_on_binary(ws_on_binary_cb cb) { cb_binary = cb; }
-// void websocket_set_on_open(ws_on_open_cb cb) { cb_open = cb; }
-// void websocket_set_on_close(ws_on_close_cb cb) { cb_close = cb; }
-
-// /*  Module glue  */
-
-// #ifndef WEBSOCKET_PORT
-// #define WEBSOCKET_PORT 80 /* change if needed */
-// #endif
-
-// DECL_MODULE(websocket_server)
-// {
-// 	ws_srv = socket_start(IP_ANY, WEBSOCKET_PORT, 2 /*AF_INET*/, 1 /*SOCK_STREAM*/, 0);
-// 	if (!ws_srv)
-// 		return;
-
-// 	for (int i = 0; i < WEBSOCKET_MAX_CLIENTS; i++)
-// 	{
-// 		memset(&ws_clients[i], 0, sizeof(ws_clients[i]));
-// 	}
-
-// 	socket_add_ondata_handler(ws_srv, ws_on_data);
-// 	socket_add_onconnected_handler(ws_srv, ws_on_connected);
-// 	socket_add_ondisconnected_handler(ws_srv, ws_on_disconnected);
-
-// 	/* Optional default behavior: welcome message after handshake (done in cb_open). */
-// 	if (!cb_open)
-// 	{
-// 		/* Install a tiny default open-callback that sends a hello on first text frame echo. */
-// 		cb_open = NULL; /* keep default no-op */
-// 	}
-// }
-
-// void websocket_server_run(void)
-// {
-// 	socket_server_run(ws_srv);
-// }
+/*
+	Name: websocket.c
+	Description: Implements a simple Websocket Server based on BSD/POSIX Sockets for µCNC.
+
+	Copyright: Copyright (c) João Martins
+	Author: João Martins
+	Date: 03-09-2025
+
+	µCNC is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+
+	µCNC is distributed WITHOUT ANY WARRANTY;
+	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	See the	GNU General Public License for more details.
+*/
+
+#include "../../cnc.h"
+#include <stdlib.h>
+#include <stdint.h>
+#include <string.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include "websocket.h"
+
+#ifndef WEBSOCKET_PORT
+#define WEBSOCKET_PORT 8080
+#endif
+
+// Magic GUID for Sec-WebSocket-Accept
+static const char WS_GUID[] = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+
+// Max size of streaming unmask buffer per step
+#ifndef WS_STREAM_CHUNK
+#define WS_STREAM_CHUNK 256
+#endif
+
+#ifndef WEBSOCKET_MAX_CLIENTS
+#define WEBSOCKET_MAX_CLIENTS SOCKET_MAX_CLIENTS
+#endif
+
+#ifndef WEBSOCKET_MAX_IDLE_TIMEOUT
+#define WEBSOCKET_MAX_IDLE_TIMEOUT 10000
+#endif
+
+static void ws_on_connected(uint8_t client_idx, void *protocol);
+static void ws_on_disconnected(uint8_t client_idx, void *protocol);
+static void ws_on_data(uint8_t client_idx, char *data, size_t data_len, void *protocol);
+static void ws_frame_reset(ws_client_state_t *c);
+static int ws_parse_header(ws_client_state_t *c);
+static void ws_dispatch_payload(websocket_protocol_t *ws, ws_client_state_t *c, uint8_t client_idx, const uint8_t *buf, size_t n, bool final_for_chunk);
+static int ws_send_frame(websocket_protocol_t *ws, uint8_t client_idx, uint8_t opcode, const uint8_t *payload, size_t len, bool broadcast);
+static void ws_protocol_error_close(websocket_protocol_t *ws, uint8_t client_idx, ws_client_state_t *c, uint16_t code);
+
+static void ws_reset_client(ws_client_state_t *c)
+{
+	memset(c, 0, sizeof(*c));
+}
+
+static void ws_frame_reset(ws_client_state_t *c)
+{
+	c->hdr_have = 0;
+	c->hdr_need = 0;
+	c->fin = 0;
+	// Do not clear c->opcode here; it is cleared when a message FIN is seen
+	c->masked = 0;
+	c->mask_i = 0;
+	c->payload_len = 0;
+	c->payload_rem = 0;
+	c->control_len = 0;
+	memset(c->hdr, 0, sizeof(c->hdr));
+}
+
+// Parse frame header into client state; returns 0 when ready, 1 when need more, -1 on protocol error
+static int ws_parse_header(ws_client_state_t *c)
+{
+	if (c->hdr_have < 2)
+		return 1;
+
+	const uint8_t b0 = c->hdr[0];
+	const uint8_t b1 = c->hdr[1];
+
+	const uint8_t fin = (uint8_t)((b0 >> 7) & 1u);
+	const uint8_t rsv = (uint8_t)((b0 >> 4) & 0x7u);
+	const uint8_t opcode = (uint8_t)(b0 & 0x0Fu);
+	const uint8_t masked = (uint8_t)((b1 >> 7) & 1u);
+	uint64_t payload_len = (uint8_t)(b1 & 0x7Fu);
+
+	// RSV must be 0 unless extensions negotiated
+	if (rsv != 0)
+		return -1;
+
+	size_t need = 2;
+	if (payload_len == 126)
+		need += 2;
+	else if (payload_len == 127)
+		need += 8;
+	if (masked)
+		need += 4;
+
+	c->hdr_need = (uint8_t)need;
+	if (c->hdr_have < c->hdr_need)
+		return 1;
+
+	size_t idx = 2;
+	if (payload_len == 126)
+	{
+		payload_len = ((uint64_t)c->hdr[idx] << 8) | (uint64_t)c->hdr[idx + 1];
+		idx += 2;
+	}
+	else if (payload_len == 127)
+	{
+		payload_len =
+				((uint64_t)c->hdr[idx + 0] << 56) |
+				((uint64_t)c->hdr[idx + 1] << 48) |
+				((uint64_t)c->hdr[idx + 2] << 40) |
+				((uint64_t)c->hdr[idx + 3] << 32) |
+				((uint64_t)c->hdr[idx + 4] << 24) |
+				((uint64_t)c->hdr[idx + 5] << 16) |
+				((uint64_t)c->hdr[idx + 6] << 8) |
+				((uint64_t)c->hdr[idx + 7]);
+		idx += 8;
+	}
+
+	uint8_t mask[4] = {0, 0, 0, 0};
+	if (masked)
+	{
+		mask[0] = c->hdr[idx + 0];
+		mask[1] = c->hdr[idx + 1];
+		mask[2] = c->hdr[idx + 2];
+		mask[3] = c->hdr[idx + 3];
+		idx += 4;
+	}
+
+	// Client->server frames must be masked
+	if (!masked)
+		return -1;
+
+	// Control frames: FIN must be 1 and payload <= 125
+	const bool is_control = ((opcode & 0x08) != 0);
+	if (is_control)
+	{
+		if (!fin || payload_len > 125)
+			return -1;
+	}
+
+	c->fin = fin;
+	if (opcode != 0x0)
+	{
+		// New message starts (non-continuation)
+		// Valid if no previous message is in progress
+		// (We use c->opcode == 0 to indicate no message in progress)
+		if (!is_control && c->opcode != 0)
+		{
+			// A new data message while a previous message is fragmented is invalid
+			return -1;
+		}
+		c->opcode = opcode;
+	}
+	else
+	{
+		// Continuation: must have a data message in progress
+		if (!is_control && c->opcode == 0)
+		{
+			return -1;
+		}
+	}
+
+	c->masked = masked;
+	c->mask[0] = mask[0];
+	c->mask[1] = mask[1];
+	c->mask[2] = mask[2];
+	c->mask[3] = mask[3];
+	c->mask_i = 0;
+	c->payload_len = payload_len;
+	c->payload_rem = payload_len;
+
+	return 0;
+}
+
+static void ws_dispatch_payload(websocket_protocol_t *ws, ws_client_state_t *c, uint8_t client_idx, const uint8_t *buf, size_t n, bool final_for_chunk)
+{
+	uint8_t eff_opcode = c->opcode;
+	uint8_t flags = 0;
+	switch (eff_opcode)
+	{
+	case 0x1:
+		flags |= WS_OPCODE_TEXT;
+		break;
+	case 0x2:
+		flags |= WS_OPCODE_BIN;
+		break;
+	default:
+		break;
+	}
+	if (final_for_chunk)
+		flags |= WS_OPCODE_FRAGMENT_FIN;
+
+	if (ws && ws->ws_onrecv_cb && n)
+	{
+		ws->ws_onrecv_cb(client_idx, (void *)buf, n, flags);
+	}
+}
+
+// Encode and send a single frame (server->client frames are not masked)
+static int ws_send_frame(websocket_protocol_t *ws, uint8_t client_idx, uint8_t opcode, const uint8_t *payload, size_t len, bool broadcast)
+{
+	if ((opcode & 0x08) && len > 125)
+		return -1; // control frames <=125
+	uint8_t hdr[14];
+	size_t hlen = 0;
+
+	hdr[0] = (uint8_t)(0x80u | (opcode & 0x0Fu)); // FIN=1
+	if (len <= 125)
+	{
+		hdr[1] = (uint8_t)len; // MASK=0
+		hlen = 2;
+	}
+	else if (len <= 0xFFFFu)
+	{
+		hdr[1] = 126;
+		hdr[2] = (uint8_t)((len >> 8) & 0xFF);
+		hdr[3] = (uint8_t)(len & 0xFF);
+		hlen = 4;
+	}
+	else
+	{
+		uint64_t L = (uint64_t)len;
+		hdr[1] = 127;
+		hdr[2] = (uint8_t)((L >> 56) & 0xFF);
+		hdr[3] = (uint8_t)((L >> 48) & 0xFF);
+		hdr[4] = (uint8_t)((L >> 40) & 0xFF);
+		hdr[5] = (uint8_t)((L >> 32) & 0xFF);
+		hdr[6] = (uint8_t)((L >> 24) & 0xFF);
+		hdr[7] = (uint8_t)((L >> 16) & 0xFF);
+		hdr[8] = (uint8_t)((L >> 8) & 0xFF);
+		hdr[9] = (uint8_t)(L & 0xFF);
+		hlen = 10;
+	}
+
+	if (broadcast)
+	{
+		socket_broadcast(ws->ws_socket, (const char *)hdr, hlen, 0);
+		if (len)
+			socket_broadcast(ws->ws_socket, (const char *)payload, len, 0);
+	}
+	else
+	{
+		socket_send(ws->ws_socket, client_idx, (const char *)hdr, hlen, 0);
+		if (len)
+			socket_send(ws->ws_socket, client_idx, (const char *)payload, len, 0);
+	}
+	return (int)(hlen + len);
+}
+
+static void ws_protocol_error_close(websocket_protocol_t *ws, uint8_t client_idx, ws_client_state_t *c, uint16_t code)
+{
+	uint8_t payload[2];
+	payload[0] = (uint8_t)((code >> 8) & 0xFF);
+	payload[1] = (uint8_t)(code & 0xFF);
+	ws_send_frame(ws, client_idx, 0x8, payload, 2, false);
+	c->status = WS_S_CLOSING;
+}
+
+static void ws_on_connected(uint8_t client_idx, void *protocol)
+{
+	websocket_protocol_t *ws = (websocket_protocol_t *)protocol;
+	ws_client_state_t *c = &ws->ws_clients[client_idx];
+	ws_reset_client(c);
+	c->active = 1;
+	c->status = WS_S_HANDSHAKE;
+}
+
+static void ws_on_disconnected(uint8_t client_idx, void *protocol)
+{
+	websocket_protocol_t *ws = (websocket_protocol_t *)protocol;
+	ws_client_state_t *c = &ws->ws_clients[client_idx];
+	if (!c->active)
+		return;
+
+	if (c->status == WS_S_OPEN || c->status == WS_S_CLOSING)
+	{
+		if (ws && ws->ws_onclose_cb)
+			ws->ws_onclose_cb(client_idx, (uint16_t)1001);
+	}
+	ws_reset_client(c);
+}
+
+static void ws_handle_control_complete(websocket_protocol_t *ws, ws_client_state_t *c, uint8_t client_idx, uint8_t cur_opcode)
+{
+	if (cur_opcode == 0x9)
+	{
+		// PING -> echo PONG with same payload
+		ws_send_frame(ws, client_idx, 0xA, c->control_buf, c->control_len, false);
+	}
+	else if (cur_opcode == 0xA)
+	{
+		// PONG -> ignore or notify upper layer if needed
+	}
+	else if (cur_opcode == 0x8)
+	{
+		// CLOSE -> mirror payload, notify, and enter closing
+		uint16_t code = 1000;
+		if (c->control_len >= 2)
+		{
+			code = (uint16_t)((c->control_buf[0] << 8) | c->control_buf[1]);
+		}
+		if (ws && ws->ws_onclose_cb)
+			ws->ws_onclose_cb(client_idx, code);
+		ws_send_frame(ws, client_idx, 0x8, c->control_buf, c->control_len, false);
+		c->status = WS_S_CLOSING;
+	}
+	c->control_len = 0;
+}
+
+static void ws_finish_message_if_needed(ws_client_state_t *c)
+{
+	if (c->fin)
+	{
+		// End-of-message for data frames
+		if ((c->opcode & 0x08) == 0)
+		{
+			// Clear message opcode only for data messages (not control)
+			c->opcode = 0;
+		}
+	}
+}
+
+// on idle checks for any connection waiting to be closed
+static void ws_on_idle(uint8_t client_idx, uint32_t idle_ms, void *protocol)
+{
+	websocket_protocol_t *ws = (websocket_protocol_t *)protocol;
+	if (ws->ws_clients[client_idx].status == WS_S_CLOSING)
+	{
+		socket_free(ws->ws_socket, client_idx);
+		ws_reset_client(&(ws->ws_clients[client_idx]));
+	}
+}
+
+static void ws_on_data(uint8_t client_idx, char *data, size_t data_len, void *protocol)
+{
+	websocket_protocol_t *ws = (websocket_protocol_t *)protocol;
+	ws_client_state_t *c = &ws->ws_clients[client_idx];
+	if (!c->active)
+		return;
+
+	uint8_t *p = (uint8_t *)data;
+
+	if (c->status == WS_S_HANDSHAKE)
+	{
+		for (;;)
+		{
+			if (c->req.status != REQ_START_FINISHED)
+			{
+				http_request_parse_start(&c->req, (char **)&data, &data_len);
+				memset(&c->header, 0, sizeof(c->header));
+			}
+			if (c->req.status == REQ_START_FINISHED)
+			{
+				http_request_parse_header(&c->header, (char **)&data, &data_len);
+				if (c->header.status == REQ_HEAD_FINISHED)
+				{
+					if (c->header.name[0] == 0)
+					{
+						// headers complete, craft handshake response
+						if (c->handshake.hs_got_upgrade && c->handshake.hs_got_connection &&
+								c->handshake.hs_got_key && c->handshake.hs_got_version)
+						{
+							// Compute accept and reply
+							uint8_t digest[20];
+							sha1_ctx ctx;
+							sha1_init(&ctx);
+							sha1_update(&ctx, (const uint8_t *)c->handshake.hs_key, strlen(c->handshake.hs_key));
+							sha1_update(&ctx, (const uint8_t *)WS_GUID, strlen(WS_GUID));
+							sha1_final(&ctx, digest);
+							char accept_b64[64];
+							base64_encode(digest, 20, accept_b64, sizeof(accept_b64));
+							char resp[256];
+							int n = str_snprintf(resp, sizeof(resp),
+																	 "HTTP/1.1 101 Switching Protocols\r\n"
+																	 "Upgrade: websocket\r\n"
+																	 "Connection: Upgrade\r\n"
+																	 "Sec-WebSocket-Accept: %s\r\n"
+																	 "\r\n",
+																	 accept_b64);
+							socket_send(ws->ws_socket, client_idx, resp, (size_t)n, 0);
+							c->status = WS_S_OPEN;
+							if (ws && ws->ws_onopen_cb)
+								ws->ws_onopen_cb(client_idx);
+						}
+						else
+						{
+							static const char bad[] =
+									"HTTP/1.1 400 Bad Request\r\n"
+									"Connection: close\r\n"
+									"Content-Length: 0\r\n"
+									"\r\n";
+							socket_send(ws->ws_socket, client_idx, bad, sizeof(bad) - 1, 0);
+							c->status = WS_S_CLOSING;
+						}
+						return;
+					}
+					http_request_ws_handshake(&c->handshake, &c->header);
+					memset(&c->header, 0, sizeof(c->header));
+				}
+			}
+			if (!data_len)
+				return;
+		}
+	}
+
+	if (c->status == WS_S_CLOSING)
+	{
+		// Ignore further data; waiting for TCP close
+		return;
+	}
+
+	size_t nleft = data_len;
+
+	// Phase: OPEN — streaming frame parsing
+	while (nleft > 0)
+	{
+		// 1) Accumulate header (14 bytes max) incrementally
+		if (c->hdr_need == 0 || c->hdr_have < c->hdr_need)
+		{
+			// First ensure the first 2 bytes
+			if (c->hdr_have < 2)
+			{
+				size_t need2 = 2 - c->hdr_have;
+				size_t take = (nleft < need2) ? nleft : need2;
+				memcpy(c->hdr + c->hdr_have, p, take);
+				c->hdr_have += (uint8_t)take;
+				p += take;
+				nleft -= take;
+				if (c->hdr_have < 2)
+					break; // need more
+			}
+
+			// Compute full header length once first 2 bytes are available
+			if (c->hdr_need == 0)
+			{
+				uint8_t b1 = c->hdr[1] & 0x7Fu;
+				size_t need = 2;
+				if (b1 == 126)
+					need += 2;
+				else if (b1 == 127)
+					need += 8;
+				if (c->hdr[1] & 0x80u)
+					need += 4; // mask
+				c->hdr_need = (uint8_t)need;
+			}
+
+			// Pull the rest of the header if available
+			if (c->hdr_have < c->hdr_need)
+			{
+				size_t need_more = c->hdr_need - c->hdr_have;
+				size_t take = (nleft < need_more) ? nleft : need_more;
+				memcpy(c->hdr + c->hdr_have, p, take);
+				c->hdr_have += (uint8_t)take;
+				p += take;
+				nleft -= take;
+				if (c->hdr_have < c->hdr_need)
+					break; // need more
+			}
+
+			// Parse header now that we have it all
+			int pr = ws_parse_header(c);
+			if (pr < 0)
+			{
+				ws_protocol_error_close(ws, client_idx, c, 1002);
+				return;
+			}
+		}
+
+		// 2) Payload: stream in <= WS_STREAM_CHUNK pieces, unmasking on the fly
+		uint8_t cur_frame_opcode = (uint8_t)(c->hdr[0] & 0x0Fu);
+		bool is_control = ((cur_frame_opcode & 0x08) != 0);
+
+		// Take up to payload_rem and what remains in this TCP chunk
+		size_t take_total = (nleft < c->payload_rem) ? nleft : (size_t)c->payload_rem;
+
+		while (take_total > 0)
+		{
+			size_t chunk = (take_total > WS_STREAM_CHUNK) ? WS_STREAM_CHUNK : take_total;
+			uint8_t tmp[WS_STREAM_CHUNK];
+
+			// Unmask into tmp
+			for (size_t i = 0; i < chunk; ++i)
+			{
+				uint8_t v = p[i];
+				if (c->masked)
+					v ^= c->mask[(c->mask_i++) & 3u];
+				tmp[i] = v;
+			}
+
+			if (is_control)
+			{
+				// Buffer control bytes until full payload (<=125 total)
+				size_t room = sizeof(c->control_buf) - c->control_len;
+				size_t copy = (chunk < room) ? chunk : room;
+				if (copy != chunk)
+				{
+					// control payload overflow -> protocol error
+					ws_protocol_error_close(ws, client_idx, c, 1002);
+					return;
+				}
+				memcpy(c->control_buf + c->control_len, tmp, chunk);
+				c->control_len += (uint8_t)chunk;
+			}
+			else
+			{
+				// Data frames: stream out immediately
+				bool final_for_chunk = (chunk == c->payload_rem) && (c->fin != 0);
+				ws_dispatch_payload(ws, c, client_idx, tmp, chunk, final_for_chunk);
+			}
+
+			p += chunk;
+			nleft -= chunk;
+			take_total -= chunk;
+			c->payload_rem -= chunk;
+		}
+
+		// 3) If frame payload complete, act on it
+		if (c->payload_rem == 0)
+		{
+			if (is_control)
+			{
+				ws_handle_control_complete(ws, c, client_idx, cur_frame_opcode);
+				if (c->status == WS_S_CLOSING)
+				{
+					// After responding to CLOSE, we’re closing
+					ws_frame_reset(c);
+					return;
+				}
+			}
+			else
+			{
+				ws_finish_message_if_needed(c);
+			}
+			ws_frame_reset(c);
+		}
+	}
+}
+
+int websocket_send(websocket_protocol_t *ws, uint8_t client_idx, const char *data, size_t len, uint8_t send_code)
+{
+	bool broadcast = (send_code & WS_SEND_BROADCAST) != 0;
+	uint8_t type = send_code & WS_SEND_TYPE;
+	if (type == 0)
+		return -1;
+
+	uint8_t opcode = 0x1; // default text
+	const uint8_t *payload = (const uint8_t *)data;
+	size_t payload_len = len;
+
+	if (send_code & WS_SEND_CLOSE)
+	{
+		opcode = 0x8;
+		uint8_t closebuf[2 + 123];
+		size_t clen = 0;
+		if (len >= 2)
+		{
+			size_t reason_len = len - 2;
+			if (reason_len > 123)
+				reason_len = 123;
+			memcpy(closebuf, data, 2 + reason_len);
+			payload = closebuf;
+			payload_len = 2 + reason_len;
+			clen = payload_len;
+		}
+		else
+		{
+			// default 1000
+			closebuf[0] = 0x03;
+			closebuf[1] = 0xE8;
+			payload = closebuf;
+			payload_len = 2;
+			clen = 2;
+		}
+		int sent = ws_send_frame(ws, client_idx, opcode, payload, clen, broadcast);
+
+		// Mark closing locally
+		if (broadcast)
+		{
+			for (int i = 0; i < (int)WEBSOCKET_MAX_CLIENTS; ++i)
+			{
+				if (ws->ws_clients[i].active && ws->ws_clients[i].status == WS_S_OPEN)
+				{
+					ws->ws_clients[i].status = WS_S_CLOSING;
+				}
+			}
+		}
+		else if (ws->ws_socket->socket_clients[client_idx] >= 0)
+		{
+			ws->ws_clients[client_idx].status = WS_S_CLOSING;
+		}
+		return sent;
+	}
+
+	if (send_code & WS_SEND_PING)
+	{
+		opcode = 0x9;
+		if (payload_len > 125)
+			payload_len = 125;
+		return ws_send_frame(ws, client_idx, opcode, payload, payload_len, broadcast);
+	}
+
+	if (send_code & WS_SEND_PONG)
+	{
+		opcode = 0xA;
+		if (payload_len > 125)
+			payload_len = 125;
+		return ws_send_frame(ws, client_idx, opcode, payload, payload_len, broadcast);
+	}
+
+	if (send_code & WS_SEND_BIN)
+		opcode = 0x2;
+	else
+		opcode = 0x1;
+	return ws_send_frame(ws, client_idx, opcode, payload, payload_len, broadcast);
+}
+
+socket_if_t *websocket_start_listen(websocket_protocol_t *ws, int port)
+{
+	LOAD_MODULE(socket_server);
+	socket_if_t *socket = socket_start_listen(IP_ANY, port, 2 /*AF_INET*/, 1 /*SOCK_STREAM*/, 0);
+
+	for (int i = 0; i < (int)WEBSOCKET_MAX_CLIENTS; ++i)
+	{
+		ws_reset_client(&(ws->ws_clients[i]));
+	}
+	socket_add_ondata_handler(socket, ws_on_data);
+	socket_add_onidle_handler(socket, ws_on_idle);
+	socket_add_onconnected_handler(socket, ws_on_connected);
+	socket_add_ondisconnected_handler(socket, ws_on_disconnected);
+
+	socket->protocol = ws;
+	ws->ws_socket = socket;
+	return socket;
+}

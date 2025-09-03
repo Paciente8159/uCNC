@@ -36,7 +36,7 @@ extern "C"
 #define SOCKET_MAX_CLIENTS 5
 #endif
 #ifndef SOCKET_MAX_DATA_SIZE
-#define SOCKET_MAX_DATA_SIZE 256
+#define SOCKET_MAX_DATA_SIZE 32
 #endif
 
 #ifndef IP_ANY
@@ -47,26 +47,40 @@ extern "C"
 #define INVALID_SOCKET (-1)
 #endif
 
-typedef void (*socket_data_delegate)(int client_index, void* data, size_t data_len);
-typedef void (*socket_connect_delegate)(int client_index);
+#ifndef SOCKET_IDLE_TIMEOUT
+#define SOCKET_IDLE_TIMEOUT 60
+#endif
+
+typedef void (*socket_data_delegate)(uint8_t client_idx, char* data, size_t data_len, void* protocol);
+typedef void (*socket_connect_delegate)(uint8_t client_idx, void* protocol);
+typedef void (*socket_idle_delegate)(uint8_t client_idx, uint32_t idle_ms, void* protocol);
 
 typedef struct socket_if_{
 	int socket_if;
 	int socket_clients[SOCKET_MAX_CLIENTS];
+	#ifdef ENABLE_SOCKET_TIMEOUTS
+	uint32_t client_activity[SOCKET_MAX_CLIENTS];
+	#endif
 	socket_data_delegate client_ondata_cb;
+	socket_idle_delegate client_onidle_cb;
 	socket_connect_delegate client_onconnected_cb;
 	socket_connect_delegate client_ondisconnected_cb;
+	void* protocol;
 } socket_if_t;
 
 // creates a new socket connection and starts to listen for new clients (non blocking). Returns -1 if it fails. Otherwise returns the socket interface number (from bsd_socket)
-socket_if_t* socket_start(uint32_t ip_listen, uint16_t port, int domain, int type, int protocol);
+socket_if_t* socket_start_listen(uint32_t ip_listen, uint16_t port, int domain, int type, int protocol);
+void socket_stop_listening(socket_if_t* socket);
 void socket_add_ondata_handler(socket_if_t* socket, socket_data_delegate callback);
+void socket_add_onidle_handler(socket_if_t* socket, socket_idle_delegate callback);
 void socket_add_onconnected_handler(socket_if_t* socket, socket_connect_delegate callback);
 void socket_add_ondisconnected_handler(socket_if_t* socket, socket_connect_delegate callback);
 // sends data to a specific socket interface to a client
-int socket_send(socket_if_t *socket, int client, char* data, size_t data_len, int flags);
+int socket_send(socket_if_t *socket, uint8_t client_idx, uint8_t* data, size_t data_len, int flags);
 // sends data to a specific socket interface to all clients
-int socket_broadcast(socket_if_t *socket, char* data, size_t data_len, int flags);
+int socket_broadcast(socket_if_t *socket, uint8_t* data, size_t data_len, int flags);
+// closes a connection to a client
+void socket_free(socket_if_t* socket, uint8_t client_idx);
 // runs the loop that handles new client accpts and handles each socket/client data handling (non blocking)
 void socket_server_dotasks(void);
 // returns the number of active clients in a socket. if socket is NULL returns all connected clients in all sockets

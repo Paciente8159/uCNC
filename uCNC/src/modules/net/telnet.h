@@ -36,16 +36,21 @@ extern "C"
 #define TELNET_DO 253
 #define TELNET_DONT 254
 
-	DECL_MODULE(telnet_server);
-	void telnet_server_run(void);
-	// fires when new data is available
-	DECL_HOOK(telnet_onrecv, void *data, size_t data_len);
+	typedef void (*telnet_onrecv_delegate_t)(uint8_t client_idx, void *data, size_t data_len);
+	typedef struct telnet_protocol_
+	{
+		socket_if_t* telnet_socket;
+		telnet_onrecv_delegate_t telnet_onrecv_cb;
+	} telnet_protocol_t;
+
+	socket_if_t *telnet_start_listen(telnet_protocol_t *telnet_protocol, int port);
+	void telnet_stop(telnet_protocol_t *telnet_protocol);
 	// gets how many clients are connected to the telnet server
-	int telnet_hasclients(void);
+	int telnet_hasclients(telnet_protocol_t* telnet);
 	// sends data to a specific socket interface to a client
-	int telnet_send(int client, char *data, size_t data_len, int flags);
+	int telnet_send(telnet_protocol_t *telnet, uint8_t client_idx, uint8_t *data, size_t data_len, int flags);
 	// sends data to a specific socket interface to all clients
-	int telnet_broadcast(char *data, size_t data_len, int flags);
+	int telnet_broadcast(telnet_protocol_t *telnet, uint8_t *data, size_t data_len, int flags);
 
 #ifdef __cplusplus
 }

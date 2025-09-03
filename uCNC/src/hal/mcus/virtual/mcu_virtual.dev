@@ -4,7 +4,7 @@ Name=mcu_virtual
 Type=1
 Ver=2
 ObjFiles=
-Includes=C:\Users\JCEM\.platformio\packages\toolchain-gccmingw32\i686-w64-mingw32\include\;C:\Users\JCEM\Documents\GitHub\uCNC\uCNC
+Includes=C:\Users\JCEM\.platformio\packages\toolchain-gccmingw32\i686-w64-mingw32\include\;C:\Users\JCEM\Documents\GitHub\uCNC\uCNC;C:\Users\jcmartins\.platformio\packages\toolchain-gccmingw32\i686-w64-mingw32\include\;C:\Users\jcmartins\Downloads\GitHub\uCNC\uCNC
 Libs=
 PrivateResource=
 ResourceIncludes=
@@ -28,8 +28,8 @@ Folders=
 IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=1
-CompilerSettings=00000000a0000000001000000
-UnitCount=111
+CompilerSettings=10000000a0000000001000000
+UnitCount=112
 
 [VersionInfo]
 Major=1
@@ -1030,27 +1030,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit99]
-FileName=..\..\..\modules\websocket.h
-CompileCpp=0
-Folder=
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
 [Unit100]
-FileName=..\..\..\modules\language\language_en.h
-CompileCpp=0
-Folder=
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
-[Unit101]
 FileName=..\..\..\modules\net\http.c
 CompileCpp=0
 Folder=
@@ -1060,7 +1040,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit102]
+[Unit101]
 FileName=..\..\..\modules\net\http.h
 CompileCpp=0
 Folder=
@@ -1070,7 +1050,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit103]
+[Unit102]
 FileName=..\..\..\modules\net\socket.c
 CompileCpp=0
 Folder=
@@ -1080,7 +1060,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit104]
+[Unit103]
 FileName=..\..\..\modules\net\socket.h
 CompileCpp=0
 Folder=
@@ -1090,7 +1070,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit105]
+[Unit104]
 FileName=..\..\..\modules\net\telnet.c
 CompileCpp=0
 Folder=
@@ -1100,7 +1080,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit106]
+[Unit105]
 FileName=..\..\..\modules\net\telnet.h
 CompileCpp=0
 Folder=
@@ -1110,7 +1090,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit107]
+[Unit106]
 FileName=..\..\..\modules\net\websocket.c
 CompileCpp=0
 Folder=
@@ -1120,7 +1100,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit108]
+[Unit107]
 FileName=..\..\..\modules\net\utils\base64.h
 CompileCpp=0
 Folder=
@@ -1130,7 +1110,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit109]
+[Unit108]
 FileName=..\..\..\modules\net\utils\bsd_socket.h
 CompileCpp=0
 Folder=
@@ -1140,7 +1120,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit110]
+[Unit109]
 FileName=..\..\..\modules\net\utils\http_request.h
 CompileCpp=0
 Folder=
@@ -1150,8 +1130,48 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit111]
+[Unit110]
 FileName=..\..\..\modules\net\utils\sha1.h
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit111]
+FileName=..\..\..\modules\web_pendant\web_pendant.c
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit112]
+FileName=..\..\..\modules\net\websocket.h
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit113]
+FileName=..\..\..\modules\net\websocket.h
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit99]
+FileName=..\..\..\modules\language\language_en.h
 CompileCpp=0
 Folder=
 Compile=1

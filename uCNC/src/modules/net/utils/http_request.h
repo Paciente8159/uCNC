@@ -1,380 +1,646 @@
-/*
-	Name: http_request.h
-	Description: Implements HTTP request parsing functions for µCNC.
-
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 20-08-2025
-
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
-
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
-*/
-
 #ifndef HTTP_REQUEST_H
 #define HTTP_REQUEST_H
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
 #include <stdint.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
 #include <ctype.h>
-#include <stdio.h>
 
-#define HTTP_REQ_ANY 0
+// Request method definitions
+#define HTTP_REQ_ANY 255
+#define HTTP_REQ_NONE 0
 #define HTTP_REQ_GET 1
 #define HTTP_REQ_POST 2
 #define HTTP_REQ_PUT 3
 #define HTTP_REQ_DELETE 4
-#define HTTP_REQ_OTHER 128
+#define HTTP_REQ_OTHER 127
 
+// URL and arguments limits
+#define MAX_URL_LEN 128
+#define MAX_URL_ARGS 8
+#define MAX_URL_ARG_LEN 32
+
+// uploads
+#define MAX_UPLOAD_BOUNDARY_LEN 128
 #ifndef FS_PATH_NAME_MAX_LEN
 #define FS_PATH_NAME_MAX_LEN 256
 #endif
-#ifndef MAX_URL_LEN
-#define MAX_URL_LEN FS_PATH_NAME_MAX_LEN
+
+// WebSocket specific limits
+#define WEBSOCKET_MAX_HEADER_BUF 256
+// #define SOCKET_MAX_DATA_SIZE 512
+
+#define REQ_START_INIT 0
+#define REQ_START_METHOD_PARSED 1
+#define REQ_START_URI_PARSED 2
+// #define REQ_START_ANCHOR_FOUND 3
+// #define REQ_START_ANCHOR_PARSED 4
+#define REQ_START_QUERY_FOUND 5
+#define REQ_START_QUERYVAR_FOUND 6
+#define REQ_START_QUERYARG_FOUND 7
+#define REQ_START_QUERY_PARSED 8
+#define REQ_START_EOL_FOUND 9
+#define REQ_START_FINISHED 10
+
+#define REQ_HEAD_INIT 0
+#define REQ_HEAD_NAME_PARSED 1
+#define REQ_HEAD_VALUE_PARSED 2
+#define REQ_HEAD_EOL_FOUND 3
+#define REQ_HEAD_FINISHED 4
+
+#ifndef MAX
+#define MAX(a, b) (((a) >= (b)) ? (a) : (b))
 #endif
-#ifndef MAX_URL_ARGS
-#define MAX_URL_ARGS 10
+#ifndef MIN
+#define MIN(a, b) (((a) <= (b)) ? (a) : (b))
 #endif
-#ifndef MAX_URL_ARG_LEN
-#define MAX_URL_ARG_LEN 50
+#ifndef CLAMP
+#define CLAMP(a, b, c) (MIN((c), MAX((a), (b))))
+#endif
+#ifndef ABS
+#define ABS(a) (((a) >= 0) ? (a) : -(a))
 #endif
 
+#ifndef CLAMP
+#define CLAMP(a, b, c) (MIN((c), MAX((a), (b))))
+#endif
 
-	/* Per-connection request context */
-	typedef struct
+typedef struct
+{
+	uint8_t status;
+	int8_t method;
+	char uri[MAX_URL_LEN];
+	size_t arg_count;
+	char arg_name[MAX_URL_ARGS][MAX_URL_ARG_LEN];
+	char arg_val[MAX_URL_ARGS][MAX_URL_ARG_LEN];
+	char last_char;
+} request_ctx_t;
+
+typedef struct
+{
+	uint8_t status;
+	char name[MAX_URL_ARG_LEN];
+	char value[MAX_URL_ARG_LEN];
+} request_header_t;
+
+typedef struct
+{
+	uint8_t status;
+	bool upload_active;
+	bool upload_started;
+	char boundary[MAX_UPLOAD_BOUNDARY_LEN];
+	size_t boundary_len;
+	char upload_name[FS_PATH_NAME_MAX_LEN];
+} request_upload_t;
+
+typedef struct
+{
+	// Handshake accumulation
+	char hs_line[WEBSOCKET_MAX_HEADER_BUF]; // buffer for current line
+	size_t hs_line_len;
+	bool hs_got_upgrade;
+	bool hs_got_connection;
+	bool hs_got_key;
+	bool hs_got_version;
+	char hs_key[64];
+	bool req_complete;
+} ws_handshake_t;
+
+static int strncasecmp_local(const char *s1, const char *s2, size_t len)
+{
+	while (len--)
 	{
-		uint8_t method;
-		char uri[MAX_URL_LEN];
-		size_t arg_count;
-		char arg_name[MAX_URL_ARGS][MAX_URL_ARG_LEN];
-		char arg_val[MAX_URL_ARGS][MAX_URL_ARG_LEN];
-	} request_ctx_t;
+		unsigned char c1 = (unsigned char)*s1++;
+		unsigned char c2 = (unsigned char)*s2++;
 
-	static void trim_line_end(char *s)
+		if (c1 >= 'A' && c1 <= 'Z')
+			c1 += 'a' - 'A';
+		if (c2 >= 'A' && c2 <= 'Z')
+			c2 += 'a' - 'A';
+
+		if (c1 != c2)
+			return c1 - c2;
+		if (c1 == '\0')
+			return 0;
+	}
+	return 0;
+}
+
+static const char *strcasestr_local(const char *haystack, const char *needle)
+{
+	if (!*needle) // Empty needle matches at start
+		return haystack;
+
+	for (const char *h = haystack; *h; h++)
 	{
-		if (!s)
-			return;
-		size_t n = strlen(s);
-		while (n > 0 && (s[n - 1] == '\r' || s[n - 1] == '\n'))
+		const char *n = needle;
+		const char *hh = h;
+
+		// Compare until mismatch or end of needle
+		while (*n && *hh)
 		{
-			s[--n] = '\0';
+			unsigned char c1 = (unsigned char)*hh;
+			unsigned char c2 = (unsigned char)*n;
+
+			if (c1 >= 'A' && c1 <= 'Z')
+				c1 += 'a' - 'A';
+			if (c2 >= 'A' && c2 <= 'Z')
+				c2 += 'a' - 'A';
+
+			if (c1 != c2)
+				break;
+
+			hh++;
+			n++;
+		}
+
+		if (*n == '\0') // Found full match
+			return h;
+	}
+
+	return NULL; // No match
+}
+
+static inline char *strntrim_local(char *s)
+{
+	if (s == NULL)
+		return NULL;
+
+	// Skip leading whitespace
+	char *start = s;
+	while (*start && (start[0] == ' ' || start[0] == '\t'))
+		start++;
+
+	// Find end of string, then skip trailing whitespace
+	char *end = s + strlen(s);
+	while (end > start && (end[-1] == ' ' || end[-1] == '\t'))
+		end--;
+
+	// Compute new length and shift left if needed
+	size_t new_len = (size_t)(end - start);
+	if (start != s)
+		memmove(s, start, new_len); // safe for overlap
+
+	s[new_len] = '\0';
+	return s;
+}
+
+static char *find_char(const char *buf, size_t len, char c)
+{
+
+	for (size_t i = 0; i < len; i++)
+	{
+		if (buf[i] == c)
+			return (char *)&buf[i];
+		if (!buf[i])
+		{
+			return NULL;
 		}
 	}
+	return NULL;
+}
 
-	static void to_upper_str(char *s)
+static char *find_closest(char *buffer, size_t len, char c1, char c2)
+{
+	char *p1 = find_char(buffer, len, c1);
+	char *p2 = find_char(buffer, len, c2);
+
+	if (p1 && p2)
 	{
-		if (!s)
-			return;
-		for (; *s; ++s)
-			*s = (char)toupper((unsigned char)*s);
+		return MIN(p1, p2);
+	}
+	else if (p1)
+	{
+		return p1;
 	}
 
-	static int hex_val(int c)
-	{
-		if (c >= '0' && c <= '9')
-			return c - '0';
-		c = tolower(c);
-		if (c >= 'a' && c <= 'f')
-			return 10 + (c - 'a');
-		return -1;
-	}
+	return p2;
+}
 
-	static void url_decode(const char *src, char *dst, size_t dst_size, int plus_to_space)
+static inline int hex_val(int c)
+{
+	if (c >= '0' && c <= '9')
+		return c - '0';
+	c = tolower(c);
+	if (c >= 'a' && c <= 'f')
+		return 10 + (c - 'a');
+	return -1;
+}
+
+static inline void url_decode(const char *src, char *dst, size_t dst_size, int plus_to_space)
+{
+	// Decodes %HH and, if plus_to_space!=0, converts '+' to space
+	if (!dst_size)
+		return;
+	size_t di = 0;
+	for (size_t i = 0; src[i] && i < dst_size;)
 	{
-		// Decodes %HH and, if plus_to_space!=0, converts '+' to space
-		if (!dst_size)
-			return;
-		size_t di = 0;
-		for (size_t i = 0; src[i] && i < dst_size;)
+		char c = src[i];
+		if (c == '%' && src[i + 1] && src[i + 2])
 		{
-			char c = src[i];
-			if (c == '%' && src[i + 1] && src[i + 2])
+			int hi = hex_val((unsigned char)src[i + 1]);
+			int lo = hex_val((unsigned char)src[i + 2]);
+			if (hi >= 0 && lo >= 0)
 			{
-				int hi = hex_val((unsigned char)src[i + 1]);
-				int lo = hex_val((unsigned char)src[i + 2]);
-				if (hi >= 0 && lo >= 0)
-				{
-					dst[di++] = (char)((hi << 4) | lo);
-					i += 3;
-					continue;
-				}
-			}
-			if (plus_to_space && c == '+')
-				c = ' ';
-			dst[di++] = c;
-			i++;
-		}
-	}
-
-	static uint8_t map_method(const char *m)
-	{
-		if (strcmp(m, "GET") == 0)
-			return HTTP_REQ_GET;
-		if (strcmp(m, "POST") == 0)
-			return HTTP_REQ_POST;
-		if (strcmp(m, "PUT") == 0)
-			return HTTP_REQ_PUT;
-		if (strcmp(m, "DELETE") == 0)
-			return HTTP_REQ_DELETE;
-		// Other verbs (HEAD, OPTIONS, PATCH, CONNECT, TRACE, etc.)
-		return HTTP_REQ_OTHER;
-	}
-
-	static void reset_ctx(request_ctx_t *ctx)
-	{
-		ctx->method = HTTP_REQ_ANY;
-		if (FS_PATH_NAME_MAX_LEN > 0)
-			ctx->uri[0] = '\0';
-		ctx->arg_count = 0;
-		for (size_t i = 0; i < MAX_URL_ARGS; ++i)
-		{
-			if (MAX_URL_ARG_LEN > 0)
-			{
-				ctx->arg_name[i][0] = '\0';
-				ctx->arg_val[i][0] = '\0';
+				dst[di++] = (char)((hi << 4) | lo);
+				dst[di] = 0;
+				i += 3;
+				continue;
 			}
 		}
+		if (plus_to_space && c == '+')
+			c = ' ';
+		dst[di++] = c;
+		i++;
 	}
+}
 
-	static void set_uri(request_ctx_t *ctx, const char *path)
+static void strncat_local(char *dst, size_t maxlen, char *src, size_t ncount)
+{
+	size_t p = strlen(dst);
+	maxlen -= p;
+	maxlen = MIN(strlen(src), maxlen);
+	strncpy(&dst[p], src, MIN(maxlen, ncount));
+}
+
+#define append_str(dst, src) strncat_local(dst, sizeof(dst), src, strlen(src))
+
+static uint8_t http_discard_line(uint8_t status, uint8_t initial_condition, char **buf, size_t *len)
+{
+	char *buffer = *buf;
+	char *target = NULL;
+
+	if (!*len)
+		return status;
+
+	if (status == initial_condition)
 	{
-		if (!path || !*path)
-			path = "/";
-		// Normalize: ensure it starts with '/'
-		if (path[0] != '/')
+		target = find_char(buffer, *len, '\r');
+		if (target)
 		{
-			// Special-case asterisk form "*"
-			if (strcmp(path, "*") == 0)
-			{
-				// Treat as server-wide; normalize to "/"
-				snprintf(ctx->uri, FS_PATH_NAME_MAX_LEN, "/");
-				return;
-			}
-			snprintf(ctx->uri, FS_PATH_NAME_MAX_LEN, "/%s", path);
+			*target++ = 0;
+			status++;
+			(*len) -= (target - buffer);
+			buffer = target;
 		}
 		else
 		{
-			snprintf(ctx->uri, FS_PATH_NAME_MAX_LEN, "%s", path);
-		}
-		ctx->uri[FS_PATH_NAME_MAX_LEN - 1] = '\0';
-		char *hash = strchr(ctx->uri, '#');
-		if(hash){
-			*hash = '\0';
+			status = initial_condition;
+			*len = 0;
 		}
 	}
 
-	static void parse_query_into_ctx(request_ctx_t *ctx, const char *query)
+	if (!*len)
+		return status;
+
+	if (status == (initial_condition + 1))
 	{
-		if (!query || !*query) return;
-		
-		const char *p = query;
-		while (*p && ctx->arg_count < MAX_URL_ARGS) {
-			const char *amp = strchr(p, '&');
-			const char *eq = strchr(p, '=');
-			
-			if (amp && eq && eq > amp) eq = NULL;
-			
-			size_t name_len = eq ? (size_t)(eq - p) : 
-							 (amp ? (size_t)(amp - p) : strlen(p));
-			
-			if (name_len >= MAX_URL_ARG_LEN) name_len = MAX_URL_ARG_LEN - 1;
-			
-			// Decode name directly into ctx buffer
-			memset(ctx->arg_name[ctx->arg_count], 0, sizeof(ctx->arg_name[ctx->arg_count]));
-			url_decode(p, ctx->arg_name[ctx->arg_count], name_len, 1);
-			
-			// Decode value if present
-			if (eq) {
-				const char *val = eq + 1;
-				size_t val_len = amp ? (size_t)(amp - val) : strlen(val);
-				if (val_len >= MAX_URL_ARG_LEN) val_len = MAX_URL_ARG_LEN - 1;
-				memset(ctx->arg_val[ctx->arg_count], 0, sizeof(ctx->arg_val[ctx->arg_count]));
-				url_decode(val, ctx->arg_val[ctx->arg_count], val_len, 1);
-			} else {
-				ctx->arg_val[ctx->arg_count][0] = '\0';
-			}
-			
-			ctx->arg_count++;
-			
-			if (!amp) break;
-			p = amp + 1;
+		if (*buffer == '\n')
+		{
+			*buffer++ = 0;
+			status++;
+			(*len)--;
+		}
+		else
+		{
+			status = initial_condition;
 		}
 	}
 
-	static void split_path_and_query(const char *target, char *out_path, 
-                               size_t out_path_size, const char **out_query)
-{
-    const char *qmark = strchr(target, '?');
-    const char *hash = strchr(target, '#');
-    
-    // Get path length up to first ? or #
-    size_t path_len = qmark ? (size_t)(qmark - target) : 
-                     (hash ? (size_t)(hash - target) : strlen(target));
-                     
-    if (path_len >= out_path_size) {
-        path_len = out_path_size - 1;
-    }
-    
-    // Copy path
-    memcpy(out_path, target, path_len);
-    out_path[path_len] = '\0';
-    
-    // Set query pointer after ? if it exists, otherwise NULL
-    *out_query = qmark ? (qmark + 1) : NULL;
-    
-    // If we have both query and hash, null-terminate query at hash
-    if (*out_query && hash) {
-        ((char*)*out_query)[hash - *out_query] = '\0';
-    }
+	*buf = buffer;
+	return status;
 }
 
-	static void parse_target_into_ctx(request_ctx_t *ctx, const char *method, const char *target)
+static void http_request_parse_start(request_ctx_t *ctx, char **buf, size_t *len)
+{
+	char *buffer = *buf;
+	ctx->last_char = buffer[*len - 1];
+	// Initialize context if not already processed
+	if (ctx->status < REQ_START_FINISHED)
 	{
-		// Determine target form and normalize to path + query
-		// Cases:
-		// 1) origin-form: starts with '/'
-		// 2) absolute-form: scheme://authority/path?query
-		// 3) authority-form: host:port (CONNECT)
-		// 4) asterisk-form: "*"
-		char pathbuf[FS_PATH_NAME_MAX_LEN];
-		const char *query = NULL;
+		char *target = buffer;
 
-		if (target[0] == '/')
+		// this also signals the line start (since a chunck of the http request may not contain a complete line)
+		if (ctx->status < REQ_START_METHOD_PARSED)
 		{
-			split_path_and_query(target, pathbuf, sizeof(pathbuf), &query);
-			set_uri(ctx, pathbuf);
-			parse_query_into_ctx(ctx, query);
-			return;
-		}
-
-		if (strcmp(target, "*") == 0)
-		{
-			set_uri(ctx, "/");
-			return;
-		}
-
-		const char *scheme_sep = strstr(target, "://");
-		if (scheme_sep)
-		{
-			// absolute-form: skip scheme://authority
-			const char *after_auth = strchr(scheme_sep + 3, '/');
-			if (!after_auth)
+			target = find_char(buffer, 10, ' ');
+			if (!target) // it should at least find the method at the start of the string. If not something went wrong
 			{
-				set_uri(ctx, "/");
 				return;
 			}
-			split_path_and_query(after_auth, pathbuf, sizeof(pathbuf), &query);
-			set_uri(ctx, pathbuf);
-			parse_query_into_ctx(ctx, query);
-			return;
+			size_t l = (target - buffer);
+			*target++ = 0;
+
+			if (!strncasecmp_local(buffer, "GET", l))
+			{
+				ctx->method = HTTP_REQ_GET;
+			}
+			else if (!strncasecmp_local(buffer, "POST", l))
+			{
+				ctx->method = HTTP_REQ_POST;
+			}
+			else if (!strncasecmp_local(buffer, "PUT", l))
+			{
+				ctx->method = HTTP_REQ_PUT;
+			}
+			else if (!strncasecmp_local(buffer, "DELETE", l))
+			{
+				ctx->method = HTTP_REQ_DELETE;
+			}
+			else
+			{
+				ctx->method = HTTP_REQ_OTHER;
+			}
+
+			(*len) -= (target - buffer);
+			buffer = target;
+			ctx->status = REQ_START_METHOD_PARSED;
 		}
 
-		// Potential authority-form (usually with CONNECT): host[:port]
-		int looks_authority = (strchr(target, '/') == NULL) && (strchr(target, ' ') == NULL);
-		if (looks_authority || strcmp(method, "CONNECT") == 0)
+		if (!*len)
+			return;
+
+		if (ctx->status < REQ_START_URI_PARSED)
 		{
-			// No path; normalize to "/" and ignore args
-			set_uri(ctx, "/");
-			return;
+			// now tries to find the method target
+			target = find_char(buffer, *len, ' ');
+			size_t upto = *len;
+			if (target)
+			{
+				upto = (target - buffer);
+			}
+			// tries anchor
+			target = find_closest(buffer, upto, '#', '?');
+			if (!target)
+			{
+				target = find_char(buffer, *len, ' ');
+			}
+
+			if (target)
+			{
+				switch (*target)
+				{
+				case '?':
+					ctx->status = REQ_START_QUERY_FOUND;
+					break;
+				case ' ':
+					ctx->status = REQ_START_QUERY_PARSED;
+					break;
+				case '#':
+					ctx->status = REQ_START_URI_PARSED;
+					break;
+				}
+				*target++ = 0;
+			}
+			else
+			{
+				target = &buffer[*len];
+			}
+
+			append_str(ctx->uri, buffer);
+			(*len) -= (target - buffer);
+			buffer = target;
 		}
 
-		// Fallback: treat as path-ish token
-		split_path_and_query(target, pathbuf, sizeof(pathbuf), &query);
-		set_uri(ctx, pathbuf);
-		parse_query_into_ctx(ctx, query);
-	}
+		// parses query
+		while (ctx->status < REQ_START_QUERY_PARSED)
+		{
+			if (!*len)
+				return;
 
-	static void parse_tokens(const char *line, char *method, size_t msz, char *target, size_t tsz, char *version, size_t vsz)
-	{
-		method[0] = target[0] = version[0] = '\0';
-		const char *p = line;
-		const char *token_start;
+			int p = 0;
+			size_t namelen = 0;
+			uint8_t counter = ctx->arg_count;
+			if (counter >= MAX_URL_ARGS)
+			{
+				ctx->status = REQ_START_QUERY_PARSED;
+				break;
+			}
 
-		// Skip leading spaces
-		while (*p && isspace((unsigned char)*p)) p++;
-		
-		// Method
-		token_start = p;
-		while (*p && !isspace((unsigned char)*p)) p++;
-		size_t len = (size_t)(p - token_start);
-		if (len >= msz) len = msz - 1;
-		memcpy(method, token_start, len);
-		method[len] = '\0';
-		
-		// Skip spaces between tokens
-		while (*p && isspace((unsigned char)*p)) p++;
-		
-		// Target
-		token_start = p;
-		while (*p && !isspace((unsigned char)*p)) p++;
-		len = (size_t)(p - token_start);
-		if (len >= tsz) len = tsz - 1;
-		memcpy(target, token_start, len);
-		target[len] = '\0';
-		
-		// Skip spaces between tokens
-		while (*p && isspace((unsigned char)*p)) p++;
-		
-		// Version
-		token_start = p;
-		while (*p && !isspace((unsigned char)*p)) p++;
-		len = (size_t)(p - token_start);
-		if (len >= vsz) len = vsz - 1;
-		memcpy(version, token_start, len);
-		version[len] = '\0';
-	}
+			switch (ctx->status)
+			{
+			case REQ_START_URI_PARSED:
+				target = find_closest(buffer, *len, '?', ' ');
+				if (target)
+				{
+					ctx->status = (*target == ' ') ? REQ_START_QUERY_PARSED : REQ_START_QUERYVAR_FOUND;
+				}
+				else
+				{
+					*len = 0;
+					break;
+				}
 
-	static void parse_request_line(request_ctx_t *ctx, char *line)
-	{
-		if (!ctx || !line) return;
-		reset_ctx(ctx);
+				*target++ = 0;
+				(*len) -= (target - buffer);
+				buffer = target;
 
-		// Find end of line to avoid processing CRLF
-		char *end = line;
-		while (*end && *end != '\r' && *end != '\n') end++;
-		
-		// Temporarily null-terminate at end of line
-		char saved = *end;
-		*end = '\0';
+				break;
+			case REQ_START_QUERYVAR_FOUND:
+				target = find_closest(buffer, *len, '=', '&');
+				if (target)
+				{
+					if (*target == '=')
+					{
+						ctx->status = REQ_START_QUERYARG_FOUND;
+					}
+					*target++ = 0;
+					memset(ctx->arg_val[ctx->arg_count], 0, sizeof(ctx->arg_val[ctx->arg_count]));
+					counter++;
+				}
+				else
+				{
+					target = find_char(buffer, *len, ' ');
+					if (target)
+					{
+						*target++ = 0;
+						ctx->status = REQ_START_QUERY_PARSED;
+					}
+					else
+					{
+						target = &buffer[*len];
+					}
+				}
 
-		// Parse tokens
-		char method[16], target[MAX_URL_LEN];
-		char version[16]; // HTTP version isn't used but kept for protocol validation
-		parse_tokens(line, method, sizeof(method), target, sizeof(target), 
-					version, sizeof(version));
+				// p = strlen(ctx->arg_name[ctx->arg_count]);
+				// namelen = sizeof(ctx->arg_name[ctx->arg_count]) - p;
+				// namelen = MIN(strlen(buffer), namelen);
+				// strncpy(&ctx->arg_name[ctx->arg_count][p], buffer, namelen);
+				append_str(ctx->arg_name[ctx->arg_count], buffer);
+				(*len) -= (target - buffer);
+				buffer = target;
+				ctx->arg_count = counter;
+				break;
+			case REQ_START_QUERYARG_FOUND:
+				target = find_char(buffer, *len, '&');
+				if (target)
+				{
+					*target++ = 0;
+					memset(ctx->arg_name[ctx->arg_count], 0, sizeof(ctx->arg_name[ctx->arg_count]));
+					ctx->status = REQ_START_QUERYVAR_FOUND;
+				}
+				else
+				{
+					target = find_char(buffer, *len, ' ');
+					if (target)
+					{
+						*target++ = 0;
+						ctx->status = REQ_START_QUERY_PARSED;
+					}
+					else
+					{
+						target = &buffer[*len];
+					}
+				}
 
-		// Restore original line ending
-		*end = saved;
-
-		if (method[0] == '\0' || target[0] == '\0') {
-			return; // Malformed
+				// p = strlen(ctx->arg_val[ctx->arg_count - 1]);
+				// namelen = sizeof(ctx->arg_val[ctx->arg_count - 1]) - p;
+				// namelen = MIN(*len, namelen);
+				// namelen = MIN(strlen(buffer), namelen);
+				// strncpy(&ctx->arg_val[ctx->arg_count - 1][p], buffer, namelen);
+				append_str(ctx->arg_val[ctx->arg_count], buffer);
+				(*len) -= (target - buffer);
+				buffer = target;
+				break;
+			}
 		}
 
-		to_upper_str(method);
-		ctx->method = map_method(method);
-
-		// Parse target directly into ctx
-		parse_target_into_ctx(ctx, method, target);
-
-		// Default URI if none set
-		if (ctx->uri[0] == '\0') {
-			set_uri(ctx, "/");
-		}
+		ctx->status = http_discard_line(ctx->status, REQ_START_QUERY_PARSED, &buffer, len);
 	}
 
-#ifdef __cplusplus
+	*buf = buffer;
 }
-#endif
+
+static void http_request_parse_header(request_header_t *header, char **buf, size_t *len)
+{
+	char *buffer = *buf;
+	char *target = NULL;
+
+	if (header->status < REQ_HEAD_NAME_PARSED)
+	{
+
+		// size_t used = strlen(header->name);
+		// size_t maxlen = sizeof(header->name) - used;
+
+		target = find_closest(buffer, *len, ':', '\r');
+		if (target && *target == '\r')
+		{
+			header->status = REQ_HEAD_VALUE_PARSED;
+		}
+		else if (target)
+		{
+			header->status = REQ_HEAD_NAME_PARSED;
+			*target++ = 0;
+			// strncpy(&header->name[used], buffer, maxlen);
+			append_str(header->name, buffer);
+			(*len) -= (target - buffer);
+			buffer = target;
+		}
+		else
+		{
+			// target = strncpy(&header->name[used], buffer, maxlen);
+			strncat_local(header->name, sizeof(header->name), buffer, *len);
+			*len = 0;
+			buffer = target;
+		}
+	}
+
+	if (header->status < REQ_HEAD_VALUE_PARSED)
+	{
+
+		if (!*len)
+			return;
+
+		size_t used = strlen(header->value);
+		size_t maxlen = sizeof(header->value) - used;
+
+		target = find_char(buffer, *len, '\r');
+		size_t ncount = *len;
+		if (target || (ncount > maxlen))
+		{
+			header->status = REQ_HEAD_VALUE_PARSED;
+			if (target)
+			{
+				ncount = (target - buffer);
+			}
+			else
+			{
+				target = &buffer[ncount];
+			}
+		}
+		else
+		{
+			target = &buffer[*len];
+		}
+
+		strncat_local(header->value, sizeof(header->value), buffer, ncount);
+		(*len) -= ncount;
+		buffer = target;
+	}
+
+	header->status = http_discard_line(header->status, REQ_HEAD_VALUE_PARSED, &buffer, len);
+	*buf = buffer;
+}
+
+static void http_request_ws_handshake(ws_handshake_t *wsh, request_header_t *header)
+{
+	if (!strncasecmp_local("upgrade", header->name, 7) && strcasestr_local(header->value, "websocket"))
+	{
+		wsh->hs_got_upgrade = true;
+	}
+	else if (!strncasecmp_local("connection", header->name, 9) && strcasestr_local(header->value, "upgrade"))
+	{
+		wsh->hs_got_connection = true;
+	}
+	else if (!strncasecmp_local("sec-websocket-key", header->name, 17))
+	{
+		strntrim_local(header->value);
+		size_t l1 = strlen(header->value);
+		size_t l2 = sizeof(wsh->hs_key);
+		strncpy(wsh->hs_key, header->value, MAX(l1, l2));
+		wsh->hs_got_key = true;
+	}
+	else if (!strncasecmp_local("sec-websocket-version", header->name, 21) && strcasestr_local(header->value, "13"))
+	{
+		wsh->hs_got_version = true;
+	}
+}
+
+static void http_request_file_upload(request_upload_t *upload, request_header_t *header)
+{
+	if (!strncasecmp_local("content-type", header->name, sizeof("content-type")))
+	{
+		char *b = strcasestr_local(header->value, "boundary=");
+		memset(upload->boundary, 0, sizeof(upload->boundary));
+		upload->boundary_len = 0;
+		if (b)
+		{
+			upload->boundary[0] = '-';
+			upload->boundary[1] = '-';
+			strncpy(&upload->boundary[2], b, sizeof(upload->boundary) - 2);
+			upload->boundary_len = strlen(upload->boundary);
+			upload->upload_active = true;
+		}
+	}
+	else if (!strncasecmp_local("content-disposition", header->name, sizeof("content-disposition")))
+	{
+		char *b = strcasestr_local(header->value, "filename=\"");
+		memset(upload->upload_name, 0, sizeof(upload->upload_name));
+		if (b)
+		{
+			strncpy(upload->upload_name, b, sizeof(upload->upload_name));
+			b = find_char(upload->upload_name, sizeof(upload->upload_name), '"');
+			if (b)
+			{
+				*b = 0;
+			}
+		}
+		else
+		{
+			strncpy(upload->upload_name, "upload.bin\0", sizeof(upload->upload_name));
+		}
+	}
+}
 
 #endif

@@ -50,35 +50,32 @@ typedef struct http_upload_ {
   size_t   datalen;                        /* current chunk size */
 } http_upload_t;
 
-typedef void (*http_delegate)(void);
+typedef void (*http_delegate)(int client_idx);
 
 /* Module entry */
 DECL_MODULE(http_server);
-
-/* Main run loop (non-blocking), mirrors telnet_server_run */
-void http_server_run(void);
 
 /* Routing */
 void http_add(const char *uri, uint8_t method, http_delegate request_handler, http_delegate file_handler);
 
 /* Request accessors (current client context) */
-int  http_request_hasargs(void);
-void http_request_uri(char *uri, size_t maxlen);
-bool http_request_arg(const char *argname, char *argvalue, size_t maxlen);
-uint8_t http_request_method(void);
+int  http_request_hasargs(int client_idx);
+void http_request_uri(int client_idx, char *uri, size_t maxlen);
+bool http_request_arg(int client_idx, const char *argname, char *argvalue, size_t maxlen);
+uint8_t http_request_method(int client_idx);
 
 /* Response helpers (current client context) */
-void http_send(int code, const char *content_type, const uint8_t *data, size_t data_len);
-static inline void http_send_str(int code, const char *content_type, const char *data) {
-  http_send(code, content_type, (const uint8_t*)data, data ? strlen(data) : 0);
+void http_send(int client_idx, int code, const char *content_type, const uint8_t *data, size_t data_len);
+static inline void http_send_str(int client_idx, int code, const char *content_type, const char *data) {
+  http_send(client_idx, code, content_type, (const uint8_t*)data, data ? strlen(data) : 0);
 }
-void http_send_header(const char *name, const char *data, bool first);
-bool http_send_file(const char *file_path, const char *content_type);
+void http_send_header(int client_idx, const char *name, const char *data, bool first);
+bool http_send_file(int client_idx, const char *file_path, const char *content_type);
 
 /* Upload helpers (polled by file_handler) */
-http_upload_t http_file_upload_status(void);
-void          http_file_upload_name(char *filename, size_t maxlen);
-char         *http_file_upload_buffer(size_t *len);
+http_upload_t http_file_upload_status(int client_idx);
+void          http_file_upload_name(int client_idx, char *filename, size_t maxlen);
+char         *http_file_upload_buffer(int client_idx, size_t *len);
 
 #endif /* HTTP_SERVER_H */
 

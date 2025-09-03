@@ -1048,8 +1048,9 @@ extern "C"
 
 #if defined(ENABLE_SOCKETS) && defined(MCU_HAS_SOCKETS)
 		init_winsock();
-		LOAD_MODULE(socket_server);
-		LOAD_MODULE(telnet_server);
+		extern socket_if_t* telnet_sock;
+		extern const telnet_protocol_t telnet_proto;
+		telnet_sock = telnet_start_listen(&telnet_proto, 23);
 #endif
 	}
 

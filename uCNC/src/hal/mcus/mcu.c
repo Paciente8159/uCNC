@@ -28,19 +28,29 @@ MCU_CALLBACK mcu_timeout_delgate mcu_timeout_cb;
 
 #if defined(MCU_HAS_SOCKETS) && defined(ENABLE_SOCKETS)
 #include "../../modules/net/telnet.h"
+
+#ifndef TELNET_PORT
+#define TELNET_PORT 23
+#endif
+
 #ifndef TELNET_TX_BUFFER_SIZE
 #define TELNET_TX_BUFFER_SIZE 64
 #endif
 
+// the telnet socket pointer
+socket_if_t* telnet_sock;
+void mcu_telnet_onrecv(uint8_t client_idx, void *data, size_t data_len);
+// the telnet onrecv callback
+telnet_protocol_t telnet_proto = {.telnet_onrecv_cb = mcu_telnet_onrecv};
 DECL_BUFFER(uint8_t, telnet_rx, RX_BUFFER_SIZE);
 DECL_BUFFER(uint8_t, telnet_tx, TELNET_TX_BUFFER_SIZE);
 
-void mcu_telnet_onrecv(void *data, size_t data_len)
+void mcu_telnet_onrecv(uint8_t client_idx, void *data, size_t data_len)
 {
 	uint8_t *buffer = (uint8_t *)data;
 	for (size_t i = 0; i < data_len; i++)
 	{
-		uint8_t ch = buffer[i++];
+		uint8_t ch = buffer[i];
 		if (mcu_com_rx_cb(ch))
 		{
 			if (!BUFFER_FULL(telnet_rx))
@@ -84,7 +94,7 @@ void mcu_telnet_clear(void)
 void mcu_telnet_flush(void)
 {
 	// if no clients just throws away the buffer
-	if (!telnet_hasclients()){
+	if (!telnet_hasclients(&telnet_proto)){
 		BUFFER_CLEAR(telnet_tx);
 		return;
 	}
@@ -95,7 +105,7 @@ void mcu_telnet_flush(void)
 		memset(tmp, 0, sizeof(tmp));
 		uint8_t r = 0;
 		BUFFER_READ(telnet_tx, tmp, TELNET_TX_BUFFER_SIZE, r);
-		telnet_broadcast((char *)tmp, r, 0);
+		telnet_broadcast(telnet_sock, tmp, r, 0);
 	}
 }
 
