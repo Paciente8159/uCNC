@@ -24,7 +24,7 @@
 #define MAX_HEADER_LEN 128
 
 // uploads
-#define MAX_UPLOAD_BOUNDARY_LEN 128
+#define MAX_UPLOAD_BOUNDARY_LEN MAX_HEADER_LEN
 #ifndef FS_PATH_NAME_MAX_LEN
 #define FS_PATH_NAME_MAX_LEN 256
 #endif
@@ -50,6 +50,13 @@
 #define REQ_HEAD_VALUE_PARSED 2
 #define REQ_HEAD_EOL_FOUND 3
 #define REQ_HEAD_FINISHED 4
+
+#define REQ_UPLOAD_NONE 0
+#define REQ_UPLOAD_INIT 1
+#define REQ_UPLOAD_BOUNDARY_FOUND 2
+#define REQ_UPLOAD_FILENAME_FOUND 3
+#define REQ_UPLOAD_INIT_FINISHED 4
+#define REQ_UPLOAD_START 5
 
 #ifndef MAX
 #define MAX(a, b) (((a) >= (b)) ? (a) : (b))
@@ -89,10 +96,10 @@ typedef struct
 typedef struct
 {
 	uint8_t status;
-	bool upload_active;
-	bool upload_started;
+	long int upload_len;
 	char boundary[MAX_UPLOAD_BOUNDARY_LEN];
 	size_t boundary_len;
+	size_t partial_len;
 	char upload_name[FS_PATH_NAME_MAX_LEN];
 } request_upload_t;
 
@@ -323,7 +330,7 @@ static void http_request_parse_start(request_ctx_t *ctx, char **buf, size_t *len
 	{
 		char *target = buffer;
 
-		// this also signals the line start (since a chunck of the http request may not contain a complete line)
+		// this also signals the line start (since a chunk of the http request may not contain a complete line)
 		if (ctx->status < REQ_START_METHOD_PARSED)
 		{
 			target = find_char(buffer, 10, ' ');
@@ -519,24 +526,30 @@ static void http_request_parse_header(request_header_t *header, char **buf, size
 	char *buffer = *buf;
 	char *target = NULL;
 
+	if (header->status == REQ_HEAD_FINISHED)
+	{
+		// auto reset
+		memset(header, 0, sizeof(request_header_t));
+	}
+
 	if (header->status < REQ_HEAD_NAME_PARSED)
 	{
-
-		// size_t used = strlen(header->name);
-		// size_t maxlen = sizeof(header->name) - used;
-
 		target = find_closest(buffer, *len, ':', '\r');
-		if (target && *target == '\r')
+		if (target)
 		{
-			header->status = REQ_HEAD_VALUE_PARSED;
-		}
-		else if (target)
-		{
-			header->status = REQ_HEAD_NAME_PARSED;
-			*target++ = 0;
+			if (*target == '\r')
+			{
+				header->status = REQ_HEAD_VALUE_PARSED;
+			}
+			else
+			{
+				header->status = REQ_HEAD_NAME_PARSED;
+				*target++ = 0;
+			}
 			// strncpy(&header->name[used], buffer, maxlen);
-			append_str(header->name, buffer);
-			(*len) -= (target - buffer);
+			size_t copylen = (target - buffer);
+			strncat_local(header->name, sizeof(header->name), buffer, copylen);
+			(*len) -= copylen;
 			buffer = target;
 		}
 		else
@@ -618,12 +631,23 @@ static void http_request_file_upload(request_upload_t *upload, request_header_t 
 		upload->boundary_len = 0;
 		if (b)
 		{
+			b += 9;
 			upload->boundary[0] = '-';
 			upload->boundary[1] = '-';
 			strncpy(&upload->boundary[2], b, sizeof(upload->boundary) - 2);
+			char *b = find_char(&upload->boundary, '"', strlen(upload->boundary));
+			if (b)
+			{
+				*b = 0;
+			}
 			upload->boundary_len = strlen(upload->boundary);
-			upload->upload_active = true;
+			upload->status = REQ_UPLOAD_INIT;
 		}
+	}
+	else if (!strncasecmp_local("content-length", header->name, sizeof("content-length")))
+	{
+		strntrim_local(header->value);
+		upload->upload_len = atol(header->value);
 	}
 	else if (!strncasecmp_local("content-disposition", header->name, sizeof("content-disposition")))
 	{
@@ -642,6 +666,68 @@ static void http_request_file_upload(request_upload_t *upload, request_header_t 
 		{
 			strncpy(upload->upload_name, "upload.bin\0", sizeof(upload->upload_name));
 		}
+	}
+}
+
+static void http_request_multipart_chunk(char **buf, size_t *len, request_upload_t *upload, request_header_t *header)
+{
+	char *buffer = *buf;
+	char *target = NULL;
+
+	size_t datalen = *len;
+
+	if (upload->status < REQ_UPLOAD_INIT_FINISHED)
+	{
+		while (*len)
+		{
+			http_request_parse_header(header, buf, len);
+			if (header->status == REQ_HEAD_FINISHED)
+			{
+				if (header->name[0] == 0)
+				{
+					upload->status = (upload->status == REQ_UPLOAD_FILENAME_FOUND) ? REQ_UPLOAD_INIT_FINISHED : REQ_UPLOAD_INIT;
+					upload->upload_len -= (datalen - *len);
+					// updates the expected file size
+					// the boundary end marker is \r\n<boundary>--\r\n
+					upload->upload_len -= (upload->boundary_len + 6);
+					return;
+				}
+
+				switch (upload->status)
+				{
+				case REQ_UPLOAD_INIT:
+					if (!strncmp(upload->boundary, header->name, upload->boundary_len))
+					{
+						// bound boundary
+						upload->status = REQ_UPLOAD_BOUNDARY_FOUND;
+					}
+					break;
+				case REQ_UPLOAD_BOUNDARY_FOUND:
+					if (!strncasecmp_local("content-disposition", header->name, sizeof("content-disposition")))
+					{
+						target = strcasestr_local(header->value, "filename=\"");
+						if (target)
+						{
+							target += 10;
+							for (int i = 0; i < sizeof(upload->upload_name); i++)
+							{
+								upload->upload_name[i] = 0;
+								if (!*target || *target == '"')
+								{
+									break;
+								}
+								upload->upload_name[i] = *target++;
+							}
+
+							// bound boundary
+							upload->status = REQ_UPLOAD_FILENAME_FOUND;
+						}
+					}
+					break;
+				}
+			}
+		}
+		upload->upload_len -= (datalen - *len);
 	}
 }
 

@@ -518,7 +518,7 @@ bool fs_cmd_parser(void *args)
 CREATE_EVENT_LISTENER(grbl_cmd, fs_cmd_parser);
 #endif
 
-#if defined(MCU_HAS_SOCKETS) && defined(ENABLE_SOCKETS)
+#ifdef ENABLE_SOCKETS
 
 #ifndef FS_JSON_ENDPOINT
 #define FS_JSON_ENDPOINT "/fs-json"
@@ -624,7 +624,7 @@ void fs_file_json_api(int client_idx)
 		{
 			if (finfo.is_dir)
 			{
-				// start chunck transmition;
+				// start chunk transmition;
 				http_send(client_idx, 200, NULL, NULL, 0);
 				http_send_str(client_idx, 200, "application/json", "{\"result\":\"ok\",\"path\":\"");
 				http_send_str(client_idx, 200, "application/json", fs_url);
@@ -1008,7 +1008,7 @@ void fs_mount(fs_t *drive)
 
 	RUNONCE
 	{
-#if defined(MCU_HAS_SOCKETS) && defined(ENABLE_SOCKETS)
+#ifdef ENABLE_SOCKETS
 		LOAD_MODULE(http_server);
 		http_add(FS_JSON_ENDPOINT, HTTP_REQ_ANY, fs_file_json_api, fs_json_uploader);
 		http_add(FS_JSON_ENDPOINT "/*", HTTP_REQ_ANY, fs_file_json_api, fs_json_uploader);

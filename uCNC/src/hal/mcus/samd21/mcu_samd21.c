@@ -1247,7 +1247,7 @@ static void mcu_write_flash_page(const uint32_t destination_address, const uint8
 		}
 
 		NVM_MEMORY[((destination_address + i) / 2)] = data;
-		// Data boundaries of the eeprom in 16bit chuncks
+		// Data boundaries of the eeprom in 16bit chunks
 		i += 2;
 	}
 

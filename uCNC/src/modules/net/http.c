@@ -54,6 +54,7 @@ typedef struct
 	request_ctx_t req;
 	request_header_t head;
 	request_upload_t upl;
+	http_upload_t fileupl;
 
 	/* Request parsing */
 	bool have_reqline;
@@ -110,10 +111,10 @@ static void release_client(client_idx)
 {
 	if (client_idx >= 0)
 	{
-		if (clients[client_idx].upl.upload_active)
+		if (clients[client_idx].upl.status == REQ_UPLOAD_INIT_FINISHED)
 		{
 			/* Notify abort if we die mid-upload */
-			clients[client_idx].up_status = HHTP_UPLOAD_ABORT;
+			clients[client_idx].up_status = HTTP_UPLOAD_ABORT;
 			if (clients[client_idx].route && clients[client_idx].route->file_handler)
 			{
 				clients[client_idx].route->file_handler(client_idx);
@@ -195,40 +196,54 @@ static void extract_filename_from_part_headers(const char *part_hdrs, char *dst,
 // 	}
 // 	return NULL;
 // }
-static bool uri_matches(const char *pattern, const char *uri) {
-    // Simple wildcard match: '*' matches any sequence
-    while (*pattern && *uri) {
-        if (*pattern == '*') {
-            // Skip consecutive '*' characters
-            while (*pattern == '*') pattern++;
-            if (!*pattern) return true; // Trailing '*' matches everything
-            while (*uri) {
-                if (uri_matches(pattern, uri)) return true;
-                uri++;
-            }
-            return false;
-        } else if (*pattern == *uri) {
-            pattern++;
-            uri++;
-        } else {
-            return false;
-        }
-    }
-    // Handle trailing '*' in pattern
-    while (*pattern == '*') pattern++;
-    return !*pattern && !*uri;
+static bool uri_matches(const char *pattern, const char *uri)
+{
+	// Simple wildcard match: '*' matches any sequence
+	while (*pattern && *uri)
+	{
+		if (*pattern == '*')
+		{
+			// Skip consecutive '*' characters
+			while (*pattern == '*')
+				pattern++;
+			if (!*pattern)
+				return true; // Trailing '*' matches everything
+			while (*uri)
+			{
+				if (uri_matches(pattern, uri))
+					return true;
+				uri++;
+			}
+			return false;
+		}
+		else if (*pattern == *uri)
+		{
+			pattern++;
+			uri++;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	// Handle trailing '*' in pattern
+	while (*pattern == '*')
+		pattern++;
+	return !*pattern && !*uri;
 }
 
-static const http_route_t *match_route(const char *uri, uint8_t method) {
-    for (size_t i = 0; i < route_count; i++) {
-        if ((routes[i].method == HTTP_REQ_ANY || routes[i].method == method) &&
-            uri_matches(routes[i].uri, uri)) {
-            return &routes[i];
-        }
-    }
-    return NULL;
+static const http_route_t *match_route(const char *uri, uint8_t method)
+{
+	for (size_t i = 0; i < route_count; i++)
+	{
+		if ((routes[i].method == HTTP_REQ_ANY || routes[i].method == method) &&
+				uri_matches(routes[i].uri, uri))
+		{
+			return &routes[i];
+		}
+	}
+	return NULL;
 }
-
 
 void http_add(const char *uri, uint8_t method, http_delegate request_handler, http_delegate file_handler)
 {
@@ -435,23 +450,9 @@ bool http_send_file(int client_idx, const char *file_path, const char *content_t
 
 /* --------------- upload accessors ----------------- */
 
-static http_upload_t up_view;
-
 http_upload_t http_file_upload_status(int client_idx)
 {
-	http_client_t *c = &clients[client_idx];
-	if (!c)
-	{
-		http_upload_t z;
-		memset(&z, 0, sizeof(z));
-		return z;
-	}
-	up_view.status = c->up_status;
-	strncpy(up_view.filename, c->upl.upload_name, sizeof(up_view.filename) - 1);
-	up_view.filename[sizeof(up_view.filename) - 1] = '\0';
-	up_view.data = c->up_len ? c->up_buf : NULL;
-	up_view.datalen = c->up_len;
-	return up_view;
+	return clients[client_idx].fileupl;
 }
 
 void http_file_upload_name(int client_idx, char *filename, size_t maxlen)
@@ -487,7 +488,6 @@ char *http_file_upload_buffer(int client_idx, size_t *len)
 static void dispatch_request(int client_idx)
 {
 	http_client_t *c = &clients[client_idx];
-	c->route = match_route(c->req.uri, c->req.method);
 	if (!c->route)
 	{
 		/* Minimal 404 */
@@ -510,102 +510,84 @@ static void maybe_invoke_file_handler(int client_idx)
 	c->route->file_handler(client_idx);
 }
 
-/* Process body bytes; supports multipart/form-data streaming */
-static void handle_upload_bytes(int client_idx, const char *buf, size_t len)
+static void handle_upload_bytes(int client_idx, char **buf, size_t *len)
 {
 	http_client_t *c = &clients[client_idx];
-	if (!c->upl.upload_active || c->upl.boundary_len == 0)
+	if (!c->upl.status || c->upl.boundary_len == 0 || *len == 0)
 		return;
 
-	const char *p = buf;
-	size_t rem = len;
+	char *buffer = *buf;
+	size_t rem = *len;
 
-	/* On first body data after headers: expect boundary line and part headers */
-	if (!c->upl.upload_started)
+	// First-time: wait for starting boundary + part headers
+	http_request_multipart_chunk(buf, len, &c->upl, &c->head);
+	if (c->upl.status < REQ_UPLOAD_INIT_FINISHED)
 	{
-		/* Ensure we have the starting boundary */
-		char *b = memmem_local(p, rem, c->upl.boundary, c->upl.boundary_len);
-		if (!b)
-			return; /* wait for more */
-		p = b + c->upl.boundary_len;
-		rem = len - (size_t)(p - buf);
-
-		/* After boundary, optional CRLF and part headers until CRLFCRLF */
-		char *part_hdr_end = memmem_local(p, rem, "\r\n\r\n", 4);
-		if (!part_hdr_end)
-		{
-			/* Not all part headers arrived yet; accumulate is omitted to save RAM.
-				 Wait for next call where we get them contiguous. */
-			return;
-		}
-		/* Extract filename */
-		char tmp[256];
-		size_t phlen = (size_t)(part_hdr_end - p);
-		size_t copy = phlen < sizeof(tmp) - 1 ? phlen : sizeof(tmp) - 1;
-		memcpy(tmp, p, copy);
-		tmp[copy] = '\0';
-		extract_filename_from_part_headers(tmp, c->upl.upload_name, sizeof(c->upl.upload_name));
-
-		/* File data starts after CRLFCRLF */
-		p = part_hdr_end + 4;
-		rem = len - (size_t)(p - buf);
-
-		c->upl.upload_started = true;
-		c->up_status = HHTP_UPLOAD_START;
-		c->up_len = 0;
-		maybe_invoke_file_handler(client_idx);
-	}
-
-	/* Stream until boundary or end */
-	if (rem == 0)
 		return;
-
-	/* Look for end boundary in current chunk */
-	char *bpos = memmem_local(p, rem, c->upl.boundary, c->upl.boundary_len);
-	size_t to_copy;
-	bool at_end = false;
-
-	if (bpos)
-	{
-		/* Data ends right before "\r\n--boundary" (there is usually \r\n before boundary) */
-		const char *endmark = bpos - 2; /* try to skip preceding CRLF */
-		if (endmark >= p)
-		{
-			to_copy = (size_t)(endmark - p);
-		}
-		else
-		{
-			to_copy = 0;
-		}
-		at_end = true;
 	}
-	else
+	else if (c->upl.status < REQ_UPLOAD_START)
 	{
-		to_copy = rem;
-	}
-
-	/* Copy small slice to up_buf (bounded) and notify */
-	size_t chunk = (to_copy > HTTP_UPLOAD_BUF_SIZE) ? HTTP_UPLOAD_BUF_SIZE : to_copy;
-	if (chunk)
-	{
-		memcpy(c->up_buf, p, chunk);
-		c->up_len = chunk;
-		c->up_status = c->upl.upload_started ? HHTP_UPLOAD_PART : HHTP_UPLOAD_START;
+		c->upl.status = REQ_UPLOAD_START;
+		c->fileupl.status = HTTP_UPLOAD_START;
+		c->fileupl.filename = c->upl.upload_name;
 		maybe_invoke_file_handler(client_idx);
 	}
-	else
+
+	// Stream file data until boundary
+	if (*len && c->upl.upload_len)
 	{
-		c->up_len = 0;
+		if(*len < c->upl.upload_len){
+			c->fileupl.datalen = *len;
+			c->fileupl.status = HTTP_UPLOAD_PART;
+			*len = 0;
+		}
+		else{
+			c->fileupl.status = HTTP_UPLOAD_END;
+			c->fileupl.datalen = c->upl.upload_len;
+			*len -= c->upl.upload_len;
+		}
+		c->fileupl.data = buffer;
+		maybe_invoke_file_handler(client_idx);
+		c->upl.upload_len -= c->fileupl.datalen;
+		// char *bpos = memmem_local(buffer, rem, c->upl.boundary, c->upl.boundary_len);
+		// size_t to_copy;
+		// bool at_end = false;
+
+		// if (bpos)
+		// {
+		// 	const char *endmark = bpos - 2; // skip CRLF
+		// 	to_copy = (endmark >= buffer) ? (size_t)(endmark - buffer) : 0;
+		// 	at_end = true;
+		// }
+		// else
+		// {
+		// 	to_copy = rem;
+		// }
+
+		// size_t chunk = (to_copy > HTTP_UPLOAD_BUF_SIZE) ? HTTP_UPLOAD_BUF_SIZE : to_copy;
+		// if (chunk)
+		// {
+		// 	memcpy(c->up_buf, buffer, chunk);
+		// 	c->up_len = chunk;
+		// 	c->up_status = HTTP_UPLOAD_PART;
+		// 	maybe_invoke_file_handler(client_idx);
+		// }
+
+		// buffer += to_copy;
+		// rem -= to_copy;
+
+		// if (at_end)
+		// {
+		// 	c->up_len = 0;
+		// 	c->up_status = HTTP_UPLOAD_END;
+		// 	maybe_invoke_file_handler(client_idx);
+		// 	c->upl.status = REQ_UPLOAD_NONE;
+		// 	break;
+		// }
 	}
 
-	if (at_end)
-	{
-		/* Final notification with zero data to mark end consistently */
-		c->up_len = 0;
-		c->up_status = HHTP_UPLOAD_END;
-		maybe_invoke_file_handler(client_idx);
-		c->upl.upload_active = false;
-	}
+	// Tell caller how many bytes remain unprocessed
+	//	*len = rem;
 }
 
 /* --------------- socket callbacks ----------------- */
@@ -635,14 +617,16 @@ static void http_on_data(int client_idx, char *data, size_t data_len)
 		if (!c->have_reqline)
 		{
 			http_request_parse_start(&c->req, &bytes, &data_len);
-			c->have_reqline = (c->req.status == REQ_START_FINISHED);
-			memset(&c->head, 0, sizeof(c->head));
+			if ((c->req.status == REQ_START_FINISHED))
+			{
+				c->route = match_route(c->req.uri, c->req.method);
+				c->have_reqline = true;
+			}
 		}
 		else if (!c->have_headers) // parse request headers
 		{
 			while (data_len)
 			{
-
 				http_request_parse_header(&c->head, &bytes, &data_len);
 				if (c->head.status == REQ_HEAD_FINISHED)
 				{
@@ -653,54 +637,36 @@ static void http_on_data(int client_idx, char *data, size_t data_len)
 						if (strcasestr_local(c->head.value, "close"))
 							c->keep_alive = false;
 					}
-						if (c->head.name[0] == 0)
-						{
-							// empty line
-							// headers done
-							c->have_headers = true;
+					if (c->head.name[0] == 0)
+					{
+						// empty line
+						// headers done
+						c->have_headers = true;
 
-							handle_upload_bytes(client_idx, bytes, data_len);
-							// dispatch response
-							if (!c->upl.upload_active)
-							{
-								dispatch_request(client_idx);
-							}
-							break;
+						// dispatch response
+						if (!c->upl.status)
+						{
+							dispatch_request(client_idx);
 						}
+						else
+						{
+							handle_upload_bytes(client_idx, &bytes, &data_len);
+						}
+						break;
+					}
 					if (c->req.method == HTTP_REQ_POST || c->req.method == HTTP_REQ_PUT)
 					{
 						http_request_file_upload(&c->upl, &c->head);
 					}
-
-					// reset header for next one
-					memset(&c->head, 0, sizeof(c->head));
 				}
 			}
 		}
 		else
 		{
-			handle_upload_bytes(client_idx, bytes, data_len);
+			handle_upload_bytes(client_idx, &bytes, &data_len);
 		}
 
 	} while (data_len);
-
-	// If we have a complete request (reqline + headers), prepare for next
-	if (c->have_reqline && c->have_headers)
-	{
-		// If not keep-alive, close after response
-		if (!c->keep_alive)
-		{
-			socket_free(http_srv, client_idx);
-			client_reset(client_idx);
-			return;
-		}
-		else
-		{
-			// Reset only request state, keep socket open
-			reset_request_state(client_idx);
-			// Loop continues if more data in buffer (pipelined requests)
-		}
-	}
 }
 
 DECL_MODULE(http_server)
