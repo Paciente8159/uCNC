@@ -105,7 +105,7 @@ void mcu_telnet_flush(void)
 		memset(tmp, 0, sizeof(tmp));
 		uint8_t r = 0;
 		BUFFER_READ(telnet_tx, tmp, TELNET_TX_BUFFER_SIZE, r);
-		telnet_broadcast(telnet_sock, tmp, r, 0);
+		telnet_broadcast(&telnet_proto, tmp, r, 0);
 	}
 }
 
