@@ -718,7 +718,7 @@ void fs_json_uploader(int client_idx)
 				len++;
 			}
 			// append the file name
-			http_file_upload_name(client_idx, urlpath, 256);
+			http_file_upload_name(client_idx, urlpath, 256 - len);
 		}
 		file_upload = fs_open(file, "w");
 		break;

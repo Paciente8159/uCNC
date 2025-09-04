@@ -26,7 +26,7 @@ MCU_CALLBACK mcu_timeout_delgate mcu_timeout_cb;
 // generic telnet stream implementation for all MCUs that have some sort of implementation
 // this can also be used by modules that implement sockets
 
-#if defined(MCU_HAS_SOCKETS) && defined(ENABLE_SOCKETS)
+#ifdef ENABLE_SOCKETS
 #include "../../modules/net/telnet.h"
 
 #ifndef TELNET_PORT
@@ -999,12 +999,13 @@ void __attribute__((weak)) mcu_io_init(void)
 	BUFFER_INIT(uint8_t, usb_tx, USB_TX_BUFFER_SIZE);
 	BUFFER_INIT(uint8_t, usb_rx, RX_BUFFER_SIZE);
 #endif
-#if defined(MCU_HAS_SOCKETS) && defined(ENABLE_SOCKETS)
+#ifdef ENABLE_SOCKETS
 #ifndef WIFI_TX_BUFFER_SIZE
 #define WIFI_TX_BUFFER_SIZE 64
 #endif
 	BUFFER_INIT(uint8_t, telnet_tx, WIFI_TX_BUFFER_SIZE);
 	BUFFER_INIT(uint8_t, telnet_rx, RX_BUFFER_SIZE);
+	telnet_sock = telnet_start_listen(&telnet_proto, 23);
 #endif
 #ifdef MCU_HAS_BLUETOOTH
 #ifndef BLUETOOTH_TX_BUFFER_SIZE
@@ -1107,7 +1108,7 @@ MCU_RX_CALLBACK void __attribute__((weak)) mcu_usb_rx_cb(uint8_t c) {}
 #endif
 #endif
 
-#if defined(MCU_HAS_SOCKETS) && defined(ENABLE_SOCKETS)
+#ifdef ENABLE_SOCKETS
 #ifdef DETACH_TELNET_FROM_MAIN_PROTOCOL
 MCU_RX_CALLBACK void __attribute__((weak)) mcu_telnet_rx_cb(uint8_t c) {}
 #endif

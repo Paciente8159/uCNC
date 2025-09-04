@@ -868,6 +868,8 @@ if (strcmp("/", path) == 0 || strcmp(".", path) == 0) {
 		char file[256] = ".";
 		if (strcmp("/", path))
 			strncat(file, path, sizeof(file) - 2);
+			
+		FILE* tmpfile = fopen(file, mode);
 
 		if (!flash_fs_finfo(path, &finfo))
 			return NULL;
@@ -877,7 +879,7 @@ if (strcmp("/", path) == 0 || strcmp(".", path) == 0) {
 			fs_file_t *fp = (fs_file_t *)calloc(1, sizeof(fs_file_t));
 			if (!fp)
 				return NULL;
-			fp->file_ptr = fopen(file, mode);
+			fp->file_ptr = tmpfile;
 			if (fp->file_ptr)
 			{
 				memset(fp->file_info.full_name, 0, sizeof(fp->file_info.full_name));

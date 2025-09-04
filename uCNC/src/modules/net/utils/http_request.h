@@ -57,6 +57,8 @@
 #define REQ_UPLOAD_FILENAME_FOUND 3
 #define REQ_UPLOAD_INIT_FINISHED 4
 #define REQ_UPLOAD_START 5
+#define REQ_UPLOAD_FINISH 6
+#define REQ_UPLOAD_CLOSE 7
 
 #ifndef MAX
 #define MAX(a, b) (((a) >= (b)) ? (a) : (b))
@@ -635,7 +637,7 @@ static void http_request_file_upload(request_upload_t *upload, request_header_t 
 			upload->boundary[0] = '-';
 			upload->boundary[1] = '-';
 			strncpy(&upload->boundary[2], b, sizeof(upload->boundary) - 2);
-			char *b = find_char(&upload->boundary, '"', strlen(upload->boundary));
+			char *b = find_char(upload->boundary, '"', strlen(upload->boundary));
 			if (b)
 			{
 				*b = 0;
@@ -671,7 +673,6 @@ static void http_request_file_upload(request_upload_t *upload, request_header_t 
 
 static void http_request_multipart_chunk(char **buf, size_t *len, request_upload_t *upload, request_header_t *header)
 {
-	char *buffer = *buf;
 	char *target = NULL;
 
 	size_t datalen = *len;

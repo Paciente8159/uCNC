@@ -99,6 +99,7 @@ static void reset_request_state(int client_idx)
 	memset(&clients[client_idx].req, 0, sizeof(clients[client_idx].req));
 	memset(&clients[client_idx].head, 0, sizeof(clients[client_idx].head));
 	memset(&clients[client_idx].upl, 0, sizeof(clients[client_idx].upl));
+	memset(&clients[client_idx].fileupl, 0, sizeof(clients[client_idx].fileupl));
 	clients[client_idx].have_reqline = false;
 	clients[client_idx].have_headers = false;
 	clients[client_idx].headers_sent = false;
@@ -458,6 +459,7 @@ http_upload_t http_file_upload_status(int client_idx)
 void http_file_upload_name(int client_idx, char *filename, size_t maxlen)
 {
 	http_client_t *c = &clients[client_idx];
+
 	if (!filename || maxlen == 0)
 		return;
 	if (!c)
@@ -465,7 +467,8 @@ void http_file_upload_name(int client_idx, char *filename, size_t maxlen)
 		filename[0] = '\0';
 		return;
 	}
-	strncpy(filename, c->upl.upload_name, maxlen - 1);
+	size_t start = strlen(filename);
+	strncpy(&filename[start], c->upl.upload_name, maxlen - 1);
 	filename[maxlen - 1] = '\0';
 }
 
@@ -516,11 +519,9 @@ static void handle_upload_bytes(int client_idx, char **buf, size_t *len)
 	if (!c->upl.status || c->upl.boundary_len == 0 || *len == 0)
 		return;
 
-	char *buffer = *buf;
-	size_t rem = *len;
-
 	// First-time: wait for starting boundary + part headers
 	http_request_multipart_chunk(buf, len, &c->upl, &c->head);
+	char *buffer = *buf;
 	if (c->upl.status < REQ_UPLOAD_INIT_FINISHED)
 	{
 		return;
@@ -534,60 +535,54 @@ static void handle_upload_bytes(int client_idx, char **buf, size_t *len)
 	}
 
 	// Stream file data until boundary
-	if (*len && c->upl.upload_len)
+	if (c->upl.status == REQ_UPLOAD_START)
 	{
-		if(*len < c->upl.upload_len){
-			c->fileupl.datalen = *len;
+		if (*len && c->upl.upload_len)
+		{
+			if (*len < c->upl.upload_len)
+			{
+				c->fileupl.datalen = *len;
+				*len = 0;
+			}
+			else
+			{
+				c->fileupl.datalen = c->upl.upload_len;
+				*len -= c->upl.upload_len;
+			}
 			c->fileupl.status = HTTP_UPLOAD_PART;
-			*len = 0;
+			c->fileupl.data = buffer;
+			maybe_invoke_file_handler(client_idx);
+			c->upl.upload_len -= c->fileupl.datalen;
+			*buf = &buffer[c->fileupl.datalen];
+			buffer = *buf;
+			return;
 		}
-		else{
+		else if (!c->upl.upload_len)
+		{
 			c->fileupl.status = HTTP_UPLOAD_END;
-			c->fileupl.datalen = c->upl.upload_len;
-			*len -= c->upl.upload_len;
+			maybe_invoke_file_handler(client_idx);
+			c->upl.status = REQ_UPLOAD_FINISH;
+			append_str(c->upl.boundary, "--");
 		}
-		c->fileupl.data = buffer;
-		maybe_invoke_file_handler(client_idx);
-		c->upl.upload_len -= c->fileupl.datalen;
-		// char *bpos = memmem_local(buffer, rem, c->upl.boundary, c->upl.boundary_len);
-		// size_t to_copy;
-		// bool at_end = false;
-
-		// if (bpos)
-		// {
-		// 	const char *endmark = bpos - 2; // skip CRLF
-		// 	to_copy = (endmark >= buffer) ? (size_t)(endmark - buffer) : 0;
-		// 	at_end = true;
-		// }
-		// else
-		// {
-		// 	to_copy = rem;
-		// }
-
-		// size_t chunk = (to_copy > HTTP_UPLOAD_BUF_SIZE) ? HTTP_UPLOAD_BUF_SIZE : to_copy;
-		// if (chunk)
-		// {
-		// 	memcpy(c->up_buf, buffer, chunk);
-		// 	c->up_len = chunk;
-		// 	c->up_status = HTTP_UPLOAD_PART;
-		// 	maybe_invoke_file_handler(client_idx);
-		// }
-
-		// buffer += to_copy;
-		// rem -= to_copy;
-
-		// if (at_end)
-		// {
-		// 	c->up_len = 0;
-		// 	c->up_status = HTTP_UPLOAD_END;
-		// 	maybe_invoke_file_handler(client_idx);
-		// 	c->upl.status = REQ_UPLOAD_NONE;
-		// 	break;
-		// }
 	}
 
-	// Tell caller how many bytes remain unprocessed
-	//	*len = rem;
+	if (c->upl.status == REQ_UPLOAD_FINISH)
+	{
+		http_request_parse_header(&c->head, buf, len);
+		if (c->head.status == REQ_HEAD_FINISHED)
+		{
+			if(c->head.name[0]==0){/*discard empty line*/}
+			else if(!strncmp(c->head.name, c->upl.boundary, strlen(c->upl.boundary))){
+				http_send_str(client_idx, 200, "text/plain; charset=UTF-8", "File uploaded successfully");
+				http_send(client_idx, 200, "text/plain; charset=UTF-8", NULL, 0);
+				reset_request_state(client_idx);
+			}
+			else{
+				http_send_str(client_idx, 413, "text/plain; charset=UTF-8", "File error");
+				http_send(client_idx, 413, "text/plain; charset=UTF-8", NULL, 0);
+			}
+		}
+	}
 }
 
 /* --------------- socket callbacks ----------------- */

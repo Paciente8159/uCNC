@@ -92,7 +92,7 @@ socket_if_t *telnet_start_listen(telnet_protocol_t *telnet_protocol, int port)
 	LOAD_MODULE(socket_server);
 	socket_if_t *socket = socket_start_listen(IP_ANY, port, 2 /*AF_INET*/, 1 /*SOCK_STREAM*/, 0);
 	if (!socket)
-		return;
+		return NULL;
 
 	socket_add_ondata_handler(socket, telnet_data_handler);
 	socket_add_onconnected_handler(socket, telnet_new_client_handler);
