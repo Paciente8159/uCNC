@@ -809,9 +809,14 @@ extern "C"
 		if (!path || !finfo)
 			return false;
 
-		char fpath[256] = "./";
-		if (strcmp("/", path))
-			strncat(fpath, path, sizeof(fpath) - 3);
+	char fpath[256];
+if (strcmp("/", path) == 0 || strcmp(".", path) == 0) {
+    strncpy(fpath, "./*", sizeof(fpath) - 1);
+    fpath[sizeof(fpath) - 1] = '\0';
+} else {
+    snprintf(fpath, sizeof(fpath), "./%s", path);
+}
+
 
 		WIN32_FIND_DATAA fd = {0};
 		HANDLE h = FindFirstFileA(fpath, &fd);

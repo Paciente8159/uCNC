@@ -64,7 +64,7 @@ typedef struct
 	/* Small chunk buffer surfaced to app */
 	uint8_t up_buf[HTTP_UPLOAD_BUF_SIZE];
 	size_t up_len;
-	uint8_t up_status; /* HHTP_UPLOAD_* */
+	uint8_t up_status; /* HTTP_UPLOAD_* */
 
 	/* Response bookkeeping */
 	bool headers_sent;
@@ -183,18 +183,52 @@ static void extract_filename_from_part_headers(const char *part_hdrs, char *dst,
 }
 
 /* route lookup: exact match on URI and method */
-static const http_route_t *match_route(const char *uri, uint8_t method)
-{
-	for (size_t i = 0; i < route_count; i++)
-	{
-		if ((routes[i].method == HTTP_REQ_ANY || routes[i].method == method) &&
-				strcmp(routes[i].uri, uri) == 0)
-		{
-			return &routes[i];
-		}
-	}
-	return NULL;
+// static const http_route_t *match_route(const char *uri, uint8_t method)
+// {
+// 	for (size_t i = 0; i < route_count; i++)
+// 	{
+// 		if ((routes[i].method == HTTP_REQ_ANY || routes[i].method == method) &&
+// 				strcmp(routes[i].uri, uri) == 0)
+// 		{
+// 			return &routes[i];
+// 		}
+// 	}
+// 	return NULL;
+// }
+static bool uri_matches(const char *pattern, const char *uri) {
+    // Simple wildcard match: '*' matches any sequence
+    while (*pattern && *uri) {
+        if (*pattern == '*') {
+            // Skip consecutive '*' characters
+            while (*pattern == '*') pattern++;
+            if (!*pattern) return true; // Trailing '*' matches everything
+            while (*uri) {
+                if (uri_matches(pattern, uri)) return true;
+                uri++;
+            }
+            return false;
+        } else if (*pattern == *uri) {
+            pattern++;
+            uri++;
+        } else {
+            return false;
+        }
+    }
+    // Handle trailing '*' in pattern
+    while (*pattern == '*') pattern++;
+    return !*pattern && !*uri;
 }
+
+static const http_route_t *match_route(const char *uri, uint8_t method) {
+    for (size_t i = 0; i < route_count; i++) {
+        if ((routes[i].method == HTTP_REQ_ANY || routes[i].method == method) &&
+            uri_matches(routes[i].uri, uri)) {
+            return &routes[i];
+        }
+    }
+    return NULL;
+}
+
 
 void http_add(const char *uri, uint8_t method, http_delegate request_handler, http_delegate file_handler)
 {
@@ -589,7 +623,6 @@ static void http_on_disconnected(int client_idx)
 static void http_on_data(int client_idx, char *data, size_t data_len)
 {
 	http_client_t *c = &clients[client_idx]; // get_client_slot(client_idx);
-	request_upload_t upload;
 	if (!c || data_len == 0)
 		return;
 
@@ -620,7 +653,6 @@ static void http_on_data(int client_idx, char *data, size_t data_len)
 						if (strcasestr_local(c->head.value, "close"))
 							c->keep_alive = false;
 					}
-					if (c->head.name)
 						if (c->head.name[0] == 0)
 						{
 							// empty line
@@ -637,7 +669,7 @@ static void http_on_data(int client_idx, char *data, size_t data_len)
 						}
 					if (c->req.method == HTTP_REQ_POST || c->req.method == HTTP_REQ_PUT)
 					{
-						http_request_file_upload(&upload, &c->head);
+						http_request_file_upload(&c->upl, &c->head);
 					}
 
 					// reset header for next one

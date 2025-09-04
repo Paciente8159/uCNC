@@ -44,7 +44,7 @@
 #endif
 
 typedef struct http_upload_ {
-  uint8_t  status;                         /* HHTP_UPLOAD_* */
+  uint8_t  status;                         /* HTTP_UPLOAD_* */
   char     filename[FS_PATH_NAME_MAX_LEN]; /* sanitized base name */
   uint8_t *data;                           /* pointer to current chunk buffer */
   size_t   datalen;                        /* current chunk size */

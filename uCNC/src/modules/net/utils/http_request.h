@@ -21,6 +21,8 @@
 #define MAX_URL_ARGS 8
 #define MAX_URL_ARG_LEN 32
 
+#define MAX_HEADER_LEN 128
+
 // uploads
 #define MAX_UPLOAD_BOUNDARY_LEN 128
 #ifndef FS_PATH_NAME_MAX_LEN
@@ -80,8 +82,8 @@ typedef struct
 typedef struct
 {
 	uint8_t status;
-	char name[MAX_URL_ARG_LEN];
-	char value[MAX_URL_ARG_LEN];
+	char name[MAX_HEADER_LEN];
+	char value[MAX_HEADER_LEN];
 } request_header_t;
 
 typedef struct
