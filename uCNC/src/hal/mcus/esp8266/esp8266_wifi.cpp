@@ -343,32 +343,11 @@ extern "C"
 			proto_info("SSID>%s", wifi_settings.ssid);
 			proto_info("IP>%s", WiFi.localIP().toString().c_str());
 		}
-
-		// if (telnet_server.hasClient())
-		// {
-		// 	if (telnet_client)
-		// 	{
-		// 		if (telnet_client.connected())
-		// 		{
-		// 			telnet_client.stop();
-		// 		}
-		// 	}
-		// 	telnet_client = telnet_server.accept();
-		// 	telnet_client.println("[MSG:New client connected]");
-		// 	return false;
-		// }
-		// else if (telnet_client)
-		// {
-		// 	if (telnet_client.connected())
-		// 	{
-		// 		return true;
-		// 	}
-		// }
 #endif
 		return false;
 	}
 
-#if defined(MCU_HAS_SOCKETS) && defined(MCU_HAS_ENDPOINTS)
+#ifdef ENABLE_SOCKETS
 
 #define MCU_FLASH_FS_LITTLE_FS 1
 #define MCU_FLASH_FS_SPIFFS 2
@@ -500,228 +479,12 @@ extern "C"
 	{
 		return FLASH_FS.rmdir(path);
 	}
-
-/**
- * Implements the function calls for the enpoints C wrapper
- */
-// #include "../../../modules/endpoint.h"
-// 	void endpoint_add(const char *uri, uint8_t method, endpoint_delegate request_handler, endpoint_delegate file_handler)
-// 	{
-// 		if (!method)
-// 		{
-// 			method = HTTP_ANY;
-// 		}
-
-// 		String s = String(uri);
-
-// 		if (s.endsWith("*"))
-// 		{
-// 			web_server.on(UriWildcard(s.substring(0, s.length() - 1)), (HTTPMethod)method, request_handler, file_handler);
-// 		}
-// 		else
-// 		{
-// 			web_server.on(Uri(uri), (HTTPMethod)method, request_handler, file_handler);
-// 		}
-// 	}
-
-// 	void endpoint_request_uri(char *uri, size_t maxlen)
-// 	{
-// 		strncpy(uri, web_server.uri().c_str(), maxlen);
-// 	}
-
-// 	int endpoint_request_hasargs(void)
-// 	{
-// 		return web_server.args();
-// 	}
-
-// 	bool endpoint_request_arg(const char *argname, char *argvalue, size_t maxlen)
-// 	{
-// 		if (!web_server.hasArg(String(argname)))
-// 		{
-// 			argvalue[0] = 0;
-// 			return false;
-// 		}
-// 		strncpy(argvalue, web_server.arg(String(argname)).c_str(), maxlen);
-// 		return true;
-// 	}
-
-// 	void endpoint_send(int code, const char *content_type, const uint8_t *data, size_t data_len)
-// 	{
-// 		static uint8_t in_chuncks = 0;
-// 		if (!content_type)
-// 		{
-// 			in_chuncks = 1;
-// 			web_server.setContentLength(CONTENT_LENGTH_UNKNOWN);
-// 		}
-// 		else
-// 		{
-// 			switch (in_chuncks)
-// 			{
-// 			case 1:
-// 				in_chuncks = 2;
-// 				__FALL_THROUGH__
-// 			case 0:
-// 				web_server.send(code, content_type, data, data_len);
-// 				break;
-// 			default:
-// 				if (data)
-// 				{
-// 					web_server.sendContent((char *)data, data_len);
-// 					in_chuncks = 2;
-// 				}
-// 				else
-// 				{
-// 					web_server.sendContent("");
-// 					in_chuncks = 0;
-// 				}
-// 				break;
-// 			}
-// 		}
-// 	}
-
-// 	void endpoint_send_header(const char *name, const char *data, bool first)
-// 	{
-// 		web_server.sendHeader(name, data, first);
-// 	}
-
-// 	bool endpoint_send_file(const char *file_path, const char *content_type)
-// 	{
-// 		if (FLASH_FS.exists(file_path))
-// 		{
-// 			File file = FLASH_FS.open(file_path, "r");
-// 			web_server.streamFile(file, content_type);
-// 			file.close();
-// 			return true;
-// 		}
-// 		return false;
-// 	}
-
-// 	endpoint_upload_t endpoint_file_upload_status(void)
-// 	{
-// 		HTTPUpload &upload = web_server.upload();
-// 		endpoint_upload_t status = {.status = (uint8_t)upload.status, .data = upload.buf, .datalen = upload.currentSize};
-// 		return status;
-// 	}
-
-// 	uint8_t endpoint_request_method(void)
-// 	{
-// 		switch (web_server.method())
-// 		{
-// 		case HTTP_GET:
-// 			return ENDPOINT_GET;
-// 		case HTTP_POST:
-// 			return ENDPOINT_POST;
-// 		case HTTP_PUT:
-// 			return ENDPOINT_PUT;
-// 		case HTTP_DELETE:
-// 			return ENDPOINT_DELETE;
-// 		default:
-// 			return (ENDPOINT_OTHER | (uint8_t)web_server.method());
-// 		}
-// 	}
-
-// 	void endpoint_file_upload_name(char *filename, size_t maxlen)
-// 	{
-// 		HTTPUpload &upload = web_server.upload();
-// 		strncat(filename, upload.filename.c_str(), maxlen - strlen(filename));
-// 	}
-
 #endif
-
-// #if defined(ENABLE_SOCKETS) && defined(MCU_HAS_WEBSOCKETS)
-// #include "WebSocketsServer.h"
-// #include "../../../modules/websocket.h"
-// 	WebSocketsServer socket_server(WEBSOCKET_PORT);
-
-// 	WEAK_EVENT_HANDLER(websocket_client_connected)
-// 	{
-// 		DEFAULT_EVENT_HANDLER(websocket_client_connected);
-// 	}
-
-// 	WEAK_EVENT_HANDLER(websocket_client_disconnected)
-// 	{
-// 		DEFAULT_EVENT_HANDLER(websocket_client_disconnected);
-// 	}
-
-// 	WEAK_EVENT_HANDLER(websocket_client_receive)
-// 	{
-// 		DEFAULT_EVENT_HANDLER(websocket_client_receive);
-// 	}
-
-// 	WEAK_EVENT_HANDLER(websocket_client_error)
-// 	{
-// 		DEFAULT_EVENT_HANDLER(websocket_client_error);
-// 	}
-
-// 	void websocket_send(uint8_t clientid, uint8_t *data, size_t length, uint8_t flags)
-// 	{
-// 		switch (flags & WS_SEND_TYPE)
-// 		{
-// 		case WS_SEND_TXT:
-// 			if (flags & WS_SEND_BROADCAST)
-// 			{
-// 				socket_server.broadcastTXT(data, length);
-// 			}
-// 			else
-// 			{
-// 				socket_server.sendTXT(clientid, data, length);
-// 			}
-// 			break;
-// 		case WS_SEND_BIN:
-// 			if (flags & WS_SEND_BROADCAST)
-// 			{
-// 				socket_server.broadcastTXT(data, length);
-// 			}
-// 			else
-// 			{
-// 				socket_server.sendTXT(clientid, data, length);
-// 			}
-// 			break;
-// 		case WS_SEND_PING:
-// 			if (flags & WS_SEND_BROADCAST)
-// 			{
-// 				socket_server.broadcastPing(data, length);
-// 			}
-// 			else
-// 			{
-// 				socket_server.sendPing(clientid, data, length);
-// 			}
-// 			break;
-// 		}
-// 	}
-
-// 	void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
-// 	{
-// 		websocket_event_t event = {num, (uint32_t)socket_server.remoteIP(num), type, payload, length};
-// 		switch (type)
-// 		{
-// 		case WStype_DISCONNECTED:
-// 			EVENT_INVOKE(websocket_client_disconnected, &event);
-// 			break;
-// 		case WStype_CONNECTED:
-// 			EVENT_INVOKE(websocket_client_connected, &event);
-// 			break;
-// 		case WStype_ERROR:
-// 			EVENT_INVOKE(websocket_client_error, &event);
-// 			break;
-// 		case WStype_TEXT:
-// 		case WStype_BIN:
-// 		case WStype_FRAGMENT_TEXT_START:
-// 		case WStype_FRAGMENT_BIN_START:
-// 		case WStype_FRAGMENT:
-// 		case WStype_FRAGMENT_FIN:
-// 		case WStype_PING:
-// 		case WStype_PONG:
-// 			EVENT_INVOKE(websocket_client_receive, &event);
-// 			break;
-// 		}
-// 	}
-// #endif
 
 	void esp8266_wifi_init()
 	{
 		DBGMSG("Wifi assert");
-#ifdef ENABLE_SOCKETS
+#if defined(ENABLE_SOCKETS) && defined(MCU_HAS_WEBSOCKETS)
 		DBGMSG("Wifi startup");
 		WiFi.setSleepMode(WIFI_NONE_SLEEP);
 
@@ -761,12 +524,9 @@ extern "C"
 				break;
 			}
 		}
-		// telnet_server.begin();
-		// telnet_server.setNoDelay(true);
-		// LOAD_MODULE(socket_server);
-		// LOAD_MODULE(telnet_server);
+#endif
 
-#ifdef MCU_HAS_ENDPOINTS
+#if defined(ENABLE_SOCKETS)
 		FLASH_FS.begin();
 		flash_fs = {
 				.drive = 'C',
@@ -785,110 +545,15 @@ extern "C"
 				.next = NULL};
 		fs_mount(&flash_fs);
 #endif
-// #ifndef CUSTOM_OTA_ENDPOINT
-// 		httpUpdater.setup(&web_server, OTA_URI, update_username, update_password);
-// #endif
-// 		web_server.begin();
-
-// #ifdef MCU_HAS_WEBSOCKETS
-// 		socket_server.begin();
-// 		socket_server.onEvent(webSocketEvent);
-// #endif
-#endif
 
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 		ADD_EVENT_LISTENER(grbl_cmd, mcu_custom_grbl_cmd);
 #endif
 	}
 
-	// #if defined(MCU_HAS_SOCKETS) && defined(ENABLE_SOCKETS)
-	// #ifndef WIFI_TX_BUFFER_SIZE
-	// #define WIFI_TX_BUFFER_SIZE 64
-	// #endif
-	// 	DECL_BUFFER(uint8_t, telnet_rx, RX_BUFFER_SIZE);
-	// 	DECL_BUFFER(uint8_t, telnet_tx, WIFI_TX_BUFFER_SIZE);
-
-	// 	uint8_t mcu_telnet_getc(void)
-	// 	{
-	// 		uint8_t c = 0;
-	// 		BUFFER_DEQUEUE(telnet_rx, &c);
-	// 		return c;
-	// 	}
-
-	// 	uint8_t mcu_telnet_available(void)
-	// 	{
-	// 		return BUFFER_READ_AVAILABLE(telnet_rx);
-	// 	}
-
-	// 	void mcu_telnet_clear(void)
-	// 	{
-	// 		BUFFER_CLEAR(telnet_rx);
-	// 	}
-	// 	void mcu_telnet_putc(uint8_t c)
-	// 	{
-	// 		while (BUFFER_FULL(telnet_tx))
-	// 		{
-	// 			mcu_telnet_flush();
-	// 		}
-	// 		BUFFER_ENQUEUE(telnet_tx, &c);
-	// 	}
-
-	// 	void mcu_telnet_flush(void)
-	// 	{
-	// 		if (esp8266_wifi_clientok())
-	// 		{
-	// 			while (!BUFFER_EMPTY(telnet_tx))
-	// 			{
-	// 				uint8_t tmp[WIFI_TX_BUFFER_SIZE + 1];
-	// 				memset(tmp, 0, sizeof(tmp));
-	// 				uint8_t r;
-	// 				uint8_t max = (uint8_t)MIN(telnet_client.availableForWrite(), WIFI_TX_BUFFER_SIZE);
-
-	// 				BUFFER_READ(telnet_tx, tmp, max, r);
-	// 				telnet_client.write(tmp, r);
-	// 			}
-	// 		}
-	// 		else
-	// 		{
-	// 			// no client (discard)
-	// 			BUFFER_CLEAR(telnet_tx);
-	// 		}
-	// 	}
-	// #endif
-
 	void esp8266_wifi_dotasks(void)
 	{
-#ifdef ENABLE_SOCKETS
-		// 		if (esp8266_wifi_clientok())
-		// 		{
-		// 			while (telnet_client.available() > 0)
-		// 			{
-		// 				system_soft_wdt_feed();
-		// #ifndef DETACH_TELNET_FROM_MAIN_PROTOCOL
-		// 				uint8_t c = (uint8_t)telnet_client.read();
-		// 				if (mcu_com_rx_cb(c))
-		// 				{
-		// 					if (BUFFER_FULL(telnet_rx))
-		// 					{
-		// 						STREAM_OVF(c);
-		// 					}
-
-		// 					BUFFER_ENQUEUE(telnet_rx, &c);
-		// 				}
-		// #else
-		// 				mcu_telnet_rx_cb((uint8_t)telnet_client.read());
-		// #endif
-		// 			}
-		// 		}
-
-		// if (wifi_settings.wifi_on)
-		// {
-			// web_server.handleClient();
-// #ifdef MCU_HAS_WEBSOCKETS
-// 			socket_server.loop();
-// #endif
-		// }
-#endif
+		esp8266_wifi_clientok();
 	}
 }
 
