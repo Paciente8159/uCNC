@@ -17,8 +17,9 @@
 */
 
 #include "../../../cnc.h"
-#include "http_request.h"
+#ifdef ENABLE_SOCKETS
 
+#include "http_request.h"
 
 int strncasecmp_local(char *s1, char *s2, size_t len)
 {
@@ -626,3 +627,5 @@ void http_request_multipart_chunk(char **buf, size_t *len, request_upload_t *upl
 		upload->upload_len -= (datalen - *len);
 	}
 }
+
+#endif

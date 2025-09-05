@@ -17,6 +17,8 @@
 */
 
 #include "../../cnc.h"
+#ifdef ENABLE_SOCKETS
+
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
@@ -612,3 +614,5 @@ DECL_MODULE(http_server)
 		RUNONCE_COMPLETE();
 	}
 }
+
+#endif

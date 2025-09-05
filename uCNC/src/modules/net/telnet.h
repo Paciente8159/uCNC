@@ -48,9 +48,9 @@ extern "C"
 	// gets how many clients are connected to the telnet server
 	int telnet_hasclients(telnet_protocol_t* telnet);
 	// sends data to a specific socket interface to a client
-	int telnet_send(telnet_protocol_t *telnet, uint8_t client_idx, uint8_t *data, size_t data_len, int flags);
+	int telnet_send(telnet_protocol_t *telnet, uint8_t client_idx, char *data, size_t data_len, int flags);
 	// sends data to a specific socket interface to all clients
-	int telnet_broadcast(telnet_protocol_t *telnet, uint8_t *data, size_t data_len, int flags);
+	int telnet_broadcast(telnet_protocol_t *telnet, char *data, size_t data_len, int flags);
 
 #ifdef __cplusplus
 }

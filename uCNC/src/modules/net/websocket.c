@@ -23,6 +23,8 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include "websocket.h"
+
+#ifdef ENABLE_SOCKETS
 #include "utils/sha1.h"
 #include "utils/base64.h"
 
@@ -641,3 +643,5 @@ socket_if_t *websocket_start_listen(websocket_protocol_t *ws, int port)
 	ws->ws_socket = socket;
 	return socket;
 }
+
+#endif

@@ -17,6 +17,8 @@
 */
 
 #include "../../cnc.h"
+#ifdef ENABLE_SOCKETS
+
 #include "socket.h"
 #include <string.h>
 #include <errno.h>
@@ -311,3 +313,5 @@ DECL_MODULE(socket_server)
 		RUNONCE_COMPLETE();
 	}
 }
+
+#endif

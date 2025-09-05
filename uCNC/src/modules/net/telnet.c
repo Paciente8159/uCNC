@@ -22,6 +22,8 @@
 #include <string.h>
 #include <ctype.h>
 
+#ifdef ENABLE_SOCKETS
+
 /* Send a Telnet command using the abstraction layer */
 static void telnet_send_option(telnet_protocol_t* telnet, int client_fd, uint8_t cmd, uint8_t option)
 {
@@ -109,12 +111,14 @@ void telnet_stop(telnet_protocol_t *telnet_protocol){
 }
 
 // sends data to a specific socket interface to a client
-int telnet_send(telnet_protocol_t *telnet, uint8_t client_idx, uint8_t *data, size_t data_len, int flags)
+int telnet_send(telnet_protocol_t *telnet, uint8_t client_idx, char *data, size_t data_len, int flags)
 {
 	return socket_send(telnet->telnet_socket, client_idx, data, data_len, flags);
 }
 // sends data to a specific socket interface to all clients
-int telnet_broadcast(telnet_protocol_t *telnet, uint8_t *data, size_t data_len, int flags)
+int telnet_broadcast(telnet_protocol_t *telnet, char *data, size_t data_len, int flags)
 {
 	return socket_broadcast(telnet->telnet_socket, data, data_len, flags);
 }
+
+#endif
