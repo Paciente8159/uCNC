@@ -45,10 +45,10 @@ char *strcasestr_local(char *haystack, char *needle)
 	if (!*needle) // Empty needle matches at start
 		return haystack;
 
-	for (const char *h = haystack; *h; h++)
+	for (char *h = haystack; *h; h++)
 	{
-		const char *n = needle;
-		const char *hh = h;
+		char *n = needle;
+		char *hh = h;
 
 		// Compare until mismatch or end of needle
 		while (*n && *hh)

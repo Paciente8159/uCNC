@@ -243,15 +243,15 @@ static int ws_send_frame(websocket_protocol_t *ws, uint8_t client_idx, uint8_t o
 
 	if (broadcast)
 	{
-		socket_broadcast(ws->ws_socket, (const char *)hdr, hlen, 0);
+		socket_broadcast(ws->ws_socket, (char *)hdr, hlen, 0);
 		if (len)
-			socket_broadcast(ws->ws_socket, (const char *)payload, len, 0);
+			socket_broadcast(ws->ws_socket, (char *)payload, len, 0);
 	}
 	else
 	{
-		socket_send(ws->ws_socket, client_idx, (const char *)hdr, hlen, 0);
+		socket_send(ws->ws_socket, client_idx, (char *)hdr, hlen, 0);
 		if (len)
-			socket_send(ws->ws_socket, client_idx, (const char *)payload, len, 0);
+			socket_send(ws->ws_socket, client_idx, (char *)payload, len, 0);
 	}
 	return (int)(hlen + len);
 }

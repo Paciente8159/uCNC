@@ -446,7 +446,7 @@
 // 					return EVENT_HANDLED;
 // 				}
 
-// 				int mode = atoi((const char *)arg) - 1;
+// 				int mode = atoi((const char *)arg);
 // 				if (mode >= 0)
 // 				{
 // 					wifi_settings.wifi_mode = mode;
@@ -556,8 +556,8 @@
 // 	// telnet_server.setNoDelay(true);
 // 	// LOAD_MODULE(socket_server);
 // 	// LOAD_MODULE(telnet_server);
-// 	extern socket_if_t *telnet_sock;
-// 	extern const telnet_protocol_t telnet_proto;
+// 	// extern socket_if_t *telnet_sock;
+// 	// extern const telnet_protocol_t telnet_proto;
 // 	// telnet_sock = telnet_start_listen(&telnet_proto, 23);
 
 // // #ifdef MCU_HAS_ENDPOINTS
