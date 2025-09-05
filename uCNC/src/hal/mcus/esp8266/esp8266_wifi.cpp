@@ -18,6 +18,7 @@
 
 #ifdef ESP8266
 #include <Arduino.h>
+#include <Updater.h> // ESP8266 Arduino core Update class
 #include "user_interface.h"
 #include <stdint.h>
 #include <stdbool.h>
@@ -479,6 +480,76 @@ extern "C"
 	{
 		return FLASH_FS.rmdir(path);
 	}
+
+#include "../../../modules/net/http.h"
+	// HTML form for firmware upload (simplified from ESP8266HTTPUpdateServer)
+	static const char updateForm[] PROGMEM =
+			"<!DOCTYPE html><html><body>"
+			"<form method='POST' action='/update' enctype='multipart/form-data'>"
+			"Firmware:<br><input type='file' name='firmware'>"
+			"<input type='submit' value='Update'>"
+			"</form></body></html>";
+
+	// Request handler for GET /update
+	static void ota_page_cb(int client_idx)
+	{
+		http_send_str(client_idx, 200, "text/html", (char *)updateForm);
+		http_send(client_idx, 200, "text/html", NULL, 0);
+	}
+
+	// File upload handler for POST /update
+	static void ota_upload_cb(int client_idx)
+	{
+		http_upload_t up = http_file_upload_status(client_idx);
+
+		if (up.status == HTTP_UPLOAD_START)
+		{
+			// Called once at start of upload
+			Serial.printf("Update start: %s\n", up.filename);
+			uint32_t maxSketchSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
+			if (!Update.begin(maxSketchSpace, U_FLASH))
+			{
+				Update.printError(Serial);
+			}
+		}
+		else if (up.status == HTTP_UPLOAD_PART)
+		{
+			// Called for each chunk
+			if (Update.write(up.data, up.datalen) != up.datalen)
+			{
+				Update.printError(Serial);
+			}
+		}
+		else if (up.status == HTTP_UPLOAD_END)
+		{
+			// Called once at end of upload
+			if (Update.end(true))
+			{
+				Serial.printf("Update Success: %u bytes\n", up.datalen);
+				http_send_str(client_idx, 200, "text/plain", "Update Success! Rebooting...");
+				http_send(client_idx, 200, "text/plain", NULL, 0);
+				delay(100);
+				ESP.restart();
+			}
+			else
+			{
+				Update.printError(Serial);
+				http_send_str(client_idx, 500, "text/plain", "Update Failed");
+				http_send(client_idx, 500, "text/plain", NULL, 0);
+			}
+		}
+		else if (up.status == HTTP_UPLOAD_ABORT)
+		{
+			Update.end();
+			Serial.println("Update aborted");
+		}
+	}
+
+	void ota_server_start(void)
+	{
+		LOAD_MODULE(http_server);
+		http_add("/update", HTTP_REQ_ANY, ota_page_cb, ota_upload_cb);
+	}
 #endif
 
 	void esp8266_wifi_init()
@@ -544,6 +615,8 @@ extern "C"
 				.finfo = flash_fs_info,
 				.next = NULL};
 		fs_mount(&flash_fs);
+
+		ota_server_start();
 #endif
 
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS

@@ -19,6 +19,11 @@
 #ifndef HTTP_SERVER_H
 #define HTTP_SERVER_H
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
@@ -72,5 +77,9 @@ bool http_send_file(int client_idx, char *file_path, char *content_type);
 http_upload_t http_file_upload_status(int client_idx);
 void http_file_upload_name(int client_idx, char *filename, size_t maxlen);
 char *http_file_upload_buffer(int client_idx, size_t *len);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* HTTP_SERVER_H */
