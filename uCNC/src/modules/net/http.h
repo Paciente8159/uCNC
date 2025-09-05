@@ -51,22 +51,22 @@ typedef void (*http_delegate)(int client_idx);
 DECL_MODULE(http_server);
 
 /* Routing */
-void http_add(const char *uri, uint8_t method, http_delegate request_handler, http_delegate file_handler);
+void http_add(char *uri, uint8_t method, http_delegate request_handler, http_delegate file_handler);
 
 /* Request accessors (current client context) */
 int http_request_hasargs(int client_idx);
 void http_request_uri(int client_idx, char *uri, size_t maxlen);
-bool http_request_arg(int client_idx, const char *argname, char *argvalue, size_t maxlen);
+bool http_request_arg(int client_idx, char *argname, char *argvalue, size_t maxlen);
 uint8_t http_request_method(int client_idx);
 
 /* Response helpers (current client context) */
-void http_send(int client_idx, int code, const char *content_type, const uint8_t *data, size_t data_len);
-static inline void http_send_str(int client_idx, int code, const char *content_type, const char *data)
+void http_send(int client_idx, int code, char *content_type, uint8_t *data, size_t data_len);
+static inline void http_send_str(int client_idx, int code, char *content_type, char *data)
 {
-	http_send(client_idx, code, content_type, (const uint8_t *)data, data ? strlen(data) : 0);
+	http_send(client_idx, code, content_type, (uint8_t *)data, data ? strlen(data) : 0);
 }
-void http_send_header(int client_idx, const char *name, const char *data, bool first);
-bool http_send_file(int client_idx, const char *file_path, const char *content_type);
+void http_send_header(int client_idx, char *name, char *data, bool first);
+bool http_send_file(int client_idx, char *file_path, char *content_type);
 
 /* Upload helpers (polled by file_handler) */
 http_upload_t http_file_upload_status(int client_idx);

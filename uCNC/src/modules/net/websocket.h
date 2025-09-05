@@ -28,8 +28,6 @@ extern "C"
 #include <stdint.h>
 #include "socket.h"
 #include "../../module.h"
-#include "utils/sha1.h"
-#include "utils/base64.h"
 #include "utils/http_request.h"
 
 #define WS_OPCODE_ERROR 0
@@ -50,10 +48,6 @@ extern "C"
 #define WS_SEND_CLOSE 16
 #define WS_SEND_TYPE (WS_SEND_TXT | WS_SEND_BIN | WS_SEND_PING)
 #define WS_SEND_BROADCAST 128
-
-#ifndef WEBSOCKET_MAX_HEADER_BUF
-#define WEBSOCKET_MAX_HEADER_BUF SOCKET_MAX_DATA_SIZE
-#endif
 
 #ifndef WEBSOCKET_MAX_CHUNK
 #define WEBSOCKET_MAX_CHUNK SOCKET_MAX_DATA_SIZE
@@ -108,7 +102,7 @@ extern "C"
 	} websocket_protocol_t;
 
 	socket_if_t *websocket_start_listen(websocket_protocol_t *ws, int port);
-	int websocket_send(websocket_protocol_t *ws, uint8_t client_idx, const char *data, size_t len, uint8_t send_code);
+	int websocket_send(websocket_protocol_t *ws, uint8_t client_idx, char *data, size_t len, uint8_t send_code);
 
 #ifdef __cplusplus
 }

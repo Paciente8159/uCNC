@@ -33,7 +33,7 @@ extern "C"
 #define MAX_SOCKETS 4
 #endif
 #ifndef SOCKET_MAX_CLIENTS
-#define SOCKET_MAX_CLIENTS 5
+#define SOCKET_MAX_CLIENTS 2
 #endif
 #ifndef SOCKET_MAX_DATA_SIZE
 #define SOCKET_MAX_DATA_SIZE 32
@@ -76,9 +76,9 @@ void socket_add_onidle_handler(socket_if_t* socket, socket_idle_delegate callbac
 void socket_add_onconnected_handler(socket_if_t* socket, socket_connect_delegate callback);
 void socket_add_ondisconnected_handler(socket_if_t* socket, socket_connect_delegate callback);
 // sends data to a specific socket interface to a client
-int socket_send(socket_if_t *socket, uint8_t client_idx, uint8_t* data, size_t data_len, int flags);
+int socket_send(socket_if_t *socket, uint8_t client_idx, char* data, size_t data_len, int flags);
 // sends data to a specific socket interface to all clients
-int socket_broadcast(socket_if_t *socket, uint8_t* data, size_t data_len, int flags);
+int socket_broadcast(socket_if_t *socket, char* data, size_t data_len, int flags);
 // closes a connection to a client
 void socket_free(socket_if_t* socket, uint8_t client_idx);
 // runs the loop that handles new client accpts and handles each socket/client data handling (non blocking)

@@ -116,7 +116,7 @@ void socket_add_ondisconnected_handler(socket_if_t *socket, socket_connect_deleg
 	socket->client_ondisconnected_cb = callback;
 }
 
-int socket_send(socket_if_t *socket, uint8_t client_idx, uint8_t *data, size_t data_len, int flags)
+int socket_send(socket_if_t *socket, uint8_t client_idx, char *data, size_t data_len, int flags)
 {
 	if (!socket)
 	{
@@ -132,7 +132,7 @@ int socket_send(socket_if_t *socket, uint8_t client_idx, uint8_t *data, size_t d
 	return bsd_send(client, data, data_len, flags);
 }
 
-int socket_broadcast(socket_if_t *socket, uint8_t *data, size_t data_len, int flags)
+int socket_broadcast(socket_if_t *socket, char *data, size_t data_len, int flags)
 {
 	if (!socket)
 	{
@@ -220,7 +220,9 @@ void socket_server_dotasks(void)
 			/* Poll each client for data (non-blocking) */
 			for (uint8_t c = 0; c < SOCKET_MAX_CLIENTS; c++)
 			{
+#ifdef ENABLE_SOCKET_TIMEOUTS
 				uint32_t now = mcu_millis();
+#endif
 				int fd = socket->socket_clients[c];
 				void *proto = socket->protocol;
 				if (fd >= 0)

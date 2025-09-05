@@ -42,7 +42,7 @@ typedef struct
 
 typedef struct
 {
-	const char *uri;
+	char *uri;
 	uint8_t method;								 /* HTTP_REQ_* from http_request.h */
 	http_delegate request_handler; /* called when request ready */
 	http_delegate file_handler;		 /* called on upload START/PART/END/ABORT */
@@ -75,7 +75,7 @@ typedef struct
 	http_header_kv_t hdrs[HTTP_MAX_HEADERS];
 
 	/* Selected route for this request (if matched) */
-	const http_route_t *route;
+	http_route_t *route;
 } http_client_t;
 
 /* Socket interface (single listener) */
@@ -108,7 +108,7 @@ static void reset_request_state(int client_idx)
 	clients[client_idx].route = NULL;
 }
 
-static void release_client(client_idx)
+static void release_client(int client_idx)
 {
 	if (client_idx >= 0)
 	{
@@ -126,78 +126,7 @@ static void release_client(client_idx)
 	}
 }
 
-/* naive memmem to avoid libc dep */
-static char *memmem_local(const char *h, size_t hlen, const char *n, size_t nlen)
-{
-	if (!h || !n || !nlen || hlen < nlen)
-		return NULL;
-	for (size_t i = 0; i + nlen <= hlen; i++)
-	{
-		if (h[i] == n[0] && memcmp(h + i, n, nlen) == 0)
-			return (char *)(h + i);
-	}
-	return NULL;
-}
-
-static void extract_boundary_line(const char *headers, char *dst, size_t dstsz, size_t *out_len)
-{
-	// Look for boundary=xyz in Content-Type
-	const char *p = strcasestr_local(headers, "Content-Type:");
-	*out_len = 0;
-	if (!p)
-	{
-		dst[0] = '\0';
-		return;
-	}
-	const char *eol = strstr(p, "\r\n");
-	if (!eol)
-		eol = p + strlen(p);
-	const char *b = strcasestr_local(p, "boundary=");
-	if (!b || b > eol)
-	{
-		dst[0] = '\0';
-		return;
-	}
-	b += 9;
-	// build the actual delimiter used in body: starts with --
-	snprintf(dst, dstsz, "--%.*s", (int)(eol - b), b);
-	dst[dstsz - 1] = '\0';
-	*out_len = strlen(dst);
-}
-
-static void extract_filename_from_part_headers(const char *part_hdrs, char *dst, size_t dstsz)
-{
-	const char *p = strcasestr_local(part_hdrs, "filename=\"");
-	if (p)
-	{
-		p += 10;
-		const char *q = strchr(p, '"');
-		size_t n = q ? (size_t)(q - p) : strlen(p);
-		if (n >= dstsz)
-			n = dstsz - 1;
-		memcpy(dst, p, n);
-		dst[n] = '\0';
-	}
-	else
-	{
-		snprintf(dst, dstsz, "upload.bin");
-	}
-}
-
-/* route lookup: exact match on URI and method */
-// static const http_route_t *match_route(const char *uri, uint8_t method)
-// {
-// 	for (size_t i = 0; i < route_count; i++)
-// 	{
-// 		if ((routes[i].method == HTTP_REQ_ANY || routes[i].method == method) &&
-// 				strcmp(routes[i].uri, uri) == 0)
-// 		{
-// 			return &routes[i];
-// 		}
-// 	}
-// 	return NULL;
-// }
-static bool uri_matches(const char *pattern, const char *uri)
+static bool uri_matches(char *pattern, char *uri)
 {
 	// Simple wildcard match: '*' matches any sequence
 	while (*pattern && *uri)
@@ -233,7 +162,7 @@ static bool uri_matches(const char *pattern, const char *uri)
 	return !*pattern && !*uri;
 }
 
-static const http_route_t *match_route(const char *uri, uint8_t method)
+static http_route_t *match_route(char *uri, uint8_t method)
 {
 	for (size_t i = 0; i < route_count; i++)
 	{
@@ -246,7 +175,7 @@ static const http_route_t *match_route(const char *uri, uint8_t method)
 	return NULL;
 }
 
-void http_add(const char *uri, uint8_t method, http_delegate request_handler, http_delegate file_handler)
+void http_add(char *uri, uint8_t method, http_delegate request_handler, http_delegate file_handler)
 {
 	if (route_count < HTTP_MAX_HANDLERS)
 	{
@@ -280,7 +209,7 @@ void http_request_uri(int client_idx, char *uri, size_t maxlen)
 	}
 }
 
-bool http_request_arg(int client_idx, const char *argname, char *argvalue, size_t maxlen)
+bool http_request_arg(int client_idx, char *argname, char *argvalue, size_t maxlen)
 {
 	http_client_t *c = &clients[client_idx];
 	if (!c || !argname || !argvalue || maxlen == 0)
@@ -305,7 +234,7 @@ uint8_t http_request_method(int client_idx)
 
 /* --------------- response helpers ----------------- */
 
-void http_send_header(int client_idx, const char *name, const char *data, bool first)
+void http_send_header(int client_idx, char *name, char *data, bool first)
 {
 	http_client_t *c = &clients[client_idx];
 	if (!c || !name || !data)
@@ -339,7 +268,7 @@ void http_send_header(int client_idx, const char *name, const char *data, bool f
 	}
 }
 
-void http_send(int client_idx, int code, const char *content_type, const uint8_t *data, size_t data_len)
+void http_send(int client_idx, int code, char *content_type, uint8_t *data, size_t data_len)
 {
 	http_client_t *c = &clients[client_idx];
 	if (!c || client_idx < 0)
@@ -364,15 +293,15 @@ void http_send(int client_idx, int code, const char *content_type, const uint8_t
 
 	if (!c->headers_sent)
 	{
-		int n = snprintf(buf, sizeof(buf), "HTTP/1.1 %d OK\r\n\0", code);
+		int n = snprintf(buf, sizeof(buf), "HTTP/1.1 %d OK\r\n", code);
 		socket_send(http_srv, client_idx, buf, (size_t)n, 0);
 
-		n = snprintf(buf, sizeof(buf), "Connection: %s\r\n\0", (c->keep_alive ? "keep-alive" : "close"));
+		n = snprintf(buf, sizeof(buf), "Connection: %s\r\n", (c->keep_alive ? "keep-alive" : "close"));
 		socket_send(http_srv, client_idx, buf, (size_t)n, 0);
 
 		if (content_type)
 		{
-			n = snprintf(buf, sizeof(buf), "Content-Type: %s\r\n\0", content_type);
+			n = snprintf(buf, sizeof(buf), "Content-Type: %s\r\n", content_type);
 			socket_send(http_srv, client_idx, buf, (size_t)n, 0);
 		}
 		for (size_t i = 0; i < c->hdr_count; i++)
@@ -422,7 +351,7 @@ void http_send(int client_idx, int code, const char *content_type, const uint8_t
 	}
 }
 
-bool http_send_file(int client_idx, const char *file_path, const char *content_type)
+bool http_send_file(int client_idx, char *file_path, char *content_type)
 {
 	http_client_t *c = &clients[client_idx];
 	if (!c || client_idx < 0 || !file_path)
@@ -550,7 +479,7 @@ static void handle_upload_bytes(int client_idx, char **buf, size_t *len)
 				*len -= c->upl.upload_len;
 			}
 			c->fileupl.status = HTTP_UPLOAD_PART;
-			c->fileupl.data = buffer;
+			c->fileupl.data = (uint8_t*)buffer;
 			maybe_invoke_file_handler(client_idx);
 			c->upl.upload_len -= c->fileupl.datalen;
 			*buf = &buffer[c->fileupl.datalen];
@@ -587,24 +516,23 @@ static void handle_upload_bytes(int client_idx, char **buf, size_t *len)
 
 /* --------------- socket callbacks ----------------- */
 
-static void http_on_connected(int client_idx)
+static void http_on_connected(uint8_t client_idx, void* protocol)
 {
 	client_reset(client_idx);
 }
 
-static void http_on_disconnected(int client_idx)
+static void http_on_disconnected(uint8_t client_idx, void* protocol)
 {
 	release_client(client_idx);
 }
 
-static void http_on_data(int client_idx, char *data, size_t data_len)
+static void http_on_data(uint8_t client_idx, char *data, size_t data_len, void* protocol)
 {
 	http_client_t *c = &clients[client_idx]; // get_client_slot(client_idx);
 	if (!c || data_len == 0)
 		return;
 
 	char *bytes = (char *)data;
-	size_t off = 0;
 
 	do
 	{

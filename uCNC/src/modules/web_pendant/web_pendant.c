@@ -134,7 +134,7 @@ void web_pendant_flush(void)
 		uint8_t r = 0;
 
 		BUFFER_READ(web_pendant_tx, tmp, 128, r);
-		websocket_send(&ws, 0, (uint8_t *)tmp, r, WS_SEND_TXT);
+		websocket_send(&ws, 0, (char *)tmp, r, WS_SEND_TXT);
 	}
 }
 

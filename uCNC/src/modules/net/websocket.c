@@ -23,6 +23,8 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include "websocket.h"
+#include "utils/sha1.h"
+#include "utils/base64.h"
 
 #ifndef WEBSOCKET_PORT
 #define WEBSOCKET_PORT 8080
@@ -543,7 +545,7 @@ static void ws_on_data(uint8_t client_idx, char *data, size_t data_len, void *pr
 	}
 }
 
-int websocket_send(websocket_protocol_t *ws, uint8_t client_idx, const char *data, size_t len, uint8_t send_code)
+int websocket_send(websocket_protocol_t *ws, uint8_t client_idx, char *data, size_t len, uint8_t send_code)
 {
 	bool broadcast = (send_code & WS_SEND_BROADCAST) != 0;
 	uint8_t type = send_code & WS_SEND_TYPE;
