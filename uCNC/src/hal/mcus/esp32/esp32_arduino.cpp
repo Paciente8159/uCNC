@@ -395,7 +395,7 @@ extern "C"
 	// 		return false;
 	// 	}
 
-#if defined(MCU_HAS_SOCKETS) && defined(MCU_HAS_ENDPOINTS)
+#ifdef ENABLE_SOCKETS
 
 #define MCU_FLASH_FS_LITTLE_FS 1
 #define MCU_FLASH_FS_SPIFFS 2
@@ -655,96 +655,6 @@ extern "C"
 
 #endif
 
-#if defined(ENABLE_SOCKETS) && defined(MCU_HAS_WEBSOCKETS)
-#include "WebSocketsServer.h"
-#include "../../../modules/websocket.h"
-	WebSocketsServer socket_server(WEBSOCKET_PORT);
-
-	WEAK_EVENT_HANDLER(websocket_client_connected)
-	{
-		DEFAULT_EVENT_HANDLER(websocket_client_connected);
-	}
-
-	WEAK_EVENT_HANDLER(websocket_client_disconnected)
-	{
-		DEFAULT_EVENT_HANDLER(websocket_client_disconnected);
-	}
-
-	WEAK_EVENT_HANDLER(websocket_client_receive)
-	{
-		DEFAULT_EVENT_HANDLER(websocket_client_receive);
-	}
-
-	WEAK_EVENT_HANDLER(websocket_client_error)
-	{
-		DEFAULT_EVENT_HANDLER(websocket_client_error);
-	}
-
-	void websocket_send(uint8_t clientid, uint8_t *data, size_t length, uint8_t flags)
-	{
-		switch (flags & WS_SEND_TYPE)
-		{
-		case WS_SEND_TXT:
-			if (flags & WS_SEND_BROADCAST)
-			{
-				socket_server.broadcastTXT(data, length);
-			}
-			else
-			{
-				socket_server.sendTXT(clientid, data, length);
-			}
-			break;
-		case WS_SEND_BIN:
-			if (flags & WS_SEND_BROADCAST)
-			{
-				socket_server.broadcastTXT(data, length);
-			}
-			else
-			{
-				socket_server.sendTXT(clientid, data, length);
-			}
-			break;
-		case WS_SEND_PING:
-			if (flags & WS_SEND_BROADCAST)
-			{
-				socket_server.broadcastPing(data, length);
-			}
-			else
-			{
-				socket_server.sendPing(clientid, data, length);
-			}
-			break;
-		}
-	}
-
-	void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
-	{
-		websocket_event_t event = {num, (uint32_t)socket_server.remoteIP(num), type, payload, length};
-		switch (type)
-		{
-		case WStype_DISCONNECTED:
-			EVENT_INVOKE(websocket_client_disconnected, &event);
-			break;
-		case WStype_CONNECTED:
-			EVENT_INVOKE(websocket_client_connected, &event);
-			break;
-		case WStype_ERROR:
-			EVENT_INVOKE(websocket_client_error, &event);
-			break;
-		case WStype_TEXT:
-		case WStype_BIN:
-		case WStype_FRAGMENT_TEXT_START:
-		case WStype_FRAGMENT_BIN_START:
-		case WStype_FRAGMENT:
-		case WStype_FRAGMENT_FIN:
-		case WStype_PING:
-		case WStype_PONG:
-			EVENT_INVOKE(websocket_client_receive, &event);
-			break;
-		}
-	}
-#endif
-
 #ifdef ENABLE_SOCKETS
 
 	void mcu_telnet_task(void *arg)
@@ -752,7 +662,7 @@ extern "C"
 		WiFi.begin();
 		// telnet_server.begin();
 		// telnet_server.setNoDelay(true);
-#ifdef MCU_HAS_ENDPOINTS
+#ifdef ENABLE_SOCKETS
 		FLASH_FS.begin();
 		flash_fs = {
 				.drive = 'C',
@@ -774,12 +684,7 @@ extern "C"
 #ifndef CUSTOM_OTA_ENDPOINT
 		httpUpdater.setup(&web_server, OTA_URI, update_username, update_password);
 #endif
-		web_server.begin();
 
-#ifdef MCU_HAS_WEBSOCKETS
-		socket_server.begin();
-		socket_server.onEvent(webSocketEvent);
-#endif
 		WiFi.disconnect();
 
 		if (wifi_settings.wifi_on)
@@ -818,10 +723,6 @@ extern "C"
 		{
 			if (wifi_settings.wifi_on)
 			{
-// 				web_server.handleClient();
-// #ifdef MCU_HAS_WEBSOCKETS
-// 				socket_server.loop();
-// #endif
 #if defined(ENABLE_SOCKETS) && defined(MCU_HAS_RTOS)
 				socket_server_dotasks();
 #endif
@@ -1027,33 +928,6 @@ extern "C"
 			}
 		}
 #endif
-		// #ifdef ENABLE_SOCKETS
-		// 		if (esp32_wifi_clientok())
-		// 		{
-		// 			while (server_client.available() > 0)
-		// 			{
-		// 				esp_task_wdt_reset();
-		// #ifndef DETACH_TELNET_FROM_MAIN_PROTOCOL
-		// 				uint8_t c = server_client.read();
-		// 				if (mcu_com_rx_cb(c))
-		// 				{
-		// 					if (BUFFER_FULL(telnet_rx))
-		// 					{
-		// 						STREAM_OVF(c);
-		// 					}
-
-		// 					BUFFER_ENQUEUE(telnet_rx, &c);
-		// 				}
-		// #else
-		// 				mcu_telnet_rx_cb((uint8_t)server_client.read());
-		// #endif
-		// 			}
-		// 		}
-
-		// // #ifdef MCU_HAS_WEBSOCKETS
-		// // 		socket_server.loop();
-		// // #endif
-		// #endif
 	}
 
 #ifdef MCU_HAS_I2C

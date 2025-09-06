@@ -555,7 +555,7 @@ extern "C"
 	void esp8266_wifi_init()
 	{
 		DBGMSG("Wifi assert");
-#if defined(ENABLE_SOCKETS) && defined(MCU_HAS_WEBSOCKETS)
+#ifdef ENABLE_SOCKETS
 		DBGMSG("Wifi startup");
 		WiFi.setSleepMode(WIFI_NONE_SLEEP);
 
