@@ -914,7 +914,7 @@ extern spi_port_t mcu_spi_port;
 #endif
 #endif
 
-#if defined(MCU_HAS_SOCKETS) && defined(ENABLE_SOCKETS)
+#ifdef ENABLE_SOCKETS
 	uint8_t mcu_telnet_getc(void);
 	uint8_t mcu_telnet_available(void);
 	void mcu_telnet_clear(void);

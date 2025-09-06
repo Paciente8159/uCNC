@@ -400,7 +400,7 @@ static void ws_on_data(uint8_t client_idx, char *data, size_t data_len, void *pr
 									"Connection: close\r\n"
 									"Content-Length: 0\r\n"
 									"\r\n";
-							socket_send(ws->ws_socket, client_idx, bad, sizeof(bad) - 1, 0);
+							socket_send(ws->ws_socket, client_idx, (char*)bad, sizeof(bad) - 1, 0);
 							c->status = WS_S_CLOSING;
 						}
 						return;

@@ -69,7 +69,9 @@ int bsd_socket(int domain, int type, int protocol);
 int bsd_bind(int sockfd, const struct bsd_sockaddr_in *addr, int addrlen);
 int bsd_listen(int sockfd, int backlog);
 int bsd_accept(int sockfd, struct bsd_sockaddr_in *addr, int *addrlen);
-int bsd_setsockopt(int sockfd, int level, int optname, const void *optval, int optlen);
+// optional (can be removed)
+// int bsd_setsockopt(int sockfd, int level, int optname, const void *optval, int optlen);
+// int bsd_getsockopt(int sockfd, int level, int optname, void *optval, int *optlen);
 int bsd_fcntl(int fd, int cmd, long arg);
 int bsd_recv(int sockfd, void *buf, size_t len, int flags);
 int bsd_send(int sockfd, const void *buf, size_t len, int flags);

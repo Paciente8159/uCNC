@@ -22,14 +22,34 @@
 #include "user_interface.h"
 #include <stdint.h>
 #include <stdbool.h>
+#define MCU_FLASH_FS_LITTLE_FS 1
+#define MCU_FLASH_FS_SPIFFS 2
+
+#ifndef MCU_FLASH_FS
+#define MCU_FLASH_FS MCU_FLASH_FS_LITTLE_FS
+#endif
+
+#if (MCU_FLASH_FS == MCU_FLASH_FS_LITTLE_FS)
+#include "FS.h"
+#include <LittleFS.h>
+#define FLASH_FS LittleFS
+#elif (MCU_FLASH_FS == MCU_FLASH_FS_SPIFFS)
+#include "FS.h"
+#include <SPIFFS.h>
+#define FLASH_FS SPIFFS
+#endif
 
 extern "C"
 {
 #include "../../../cnc.h"
 }
 
+#ifndef ARG_MAX_LEN
+#define ARG_MAX_LEN 32
+#endif
+
 #ifdef ENABLE_SOCKETS
-#include <ESP8266WiFi.h>
+// #include <ESP8266WiFi.h>
 // #include <ESP8266WebServer.h>
 // #include <ESP8266HTTPUpdateServer.h>
 
@@ -61,13 +81,11 @@ extern "C"
 #define WIFI_SSID_MAX_LEN 32
 #endif
 
-#define ARG_MAX_LEN WIFI_SSID_MAX_LEN
-
 // #ifndef OTA_URI
 // #define OTA_URI "/firmware"
 // #endif
 
-// ESP8266WebServer web_server(WEBSERVER_PORT);
+// ESP8266WebServer web_server(443);
 // ESP8266HTTPUpdateServer httpUpdater;
 // const char *update_path = OTA_URI;
 const char *update_username = WIFI_USER;
@@ -92,7 +110,7 @@ extern "C"
 {
 #include "../../../cnc.h"
 
-#ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
+#if defined(BOARD_HAS_CUSTOM_SYSTEM_COMMANDS) && defined(ENABLE_SOCKETS)
 	bool mcu_custom_grbl_cmd(void *args)
 	{
 		grbl_cmd_args_t *cmd_params = (grbl_cmd_args_t *)args;
@@ -105,7 +123,7 @@ extern "C"
 		{
 			if (!strcmp((const char *)&(cmd_params->cmd)[4], "ON"))
 			{
-				__ATOMIC__
+				// __ATOMIC__
 				{
 					WiFi.disconnect();
 					switch (wifi_settings.wifi_mode)
@@ -142,7 +160,7 @@ extern "C"
 
 			if (!strcmp((const char *)&(cmd_params->cmd)[4], "OFF"))
 			{
-				__ATOMIC__
+				// __ATOMIC__
 				{
 					WiFi.disconnect();
 					wifi_settings.wifi_on = 0;
@@ -349,24 +367,6 @@ extern "C"
 	}
 
 #ifdef ENABLE_SOCKETS
-
-#define MCU_FLASH_FS_LITTLE_FS 1
-#define MCU_FLASH_FS_SPIFFS 2
-
-#ifndef MCU_FLASH_FS
-#define MCU_FLASH_FS MCU_FLASH_FS_LITTLE_FS
-#endif
-
-#if (MCU_FLASH_FS == MCU_FLASH_FS_LITTLE_FS)
-#include "FS.h"
-#include <LittleFS.h>
-#define FLASH_FS LittleFS
-#elif (MCU_FLASH_FS == MCU_FLASH_FS_SPIFFS)
-#include "FS.h"
-#include <SPIFFS.h>
-#define FLASH_FS SPIFFS
-#endif
-
 /**
  * Implements the function calls for the file system C wrapper
  */
@@ -389,19 +389,20 @@ extern "C"
 		return FLASH_FS.remove(path);
 	}
 
+	static Dir current_dir;
 	bool flash_fs_next_file(fs_file_t *fp, fs_file_info_t *finfo)
 	{
-		File f = ((File *)fp->file_ptr)->openNextFile();
-		if (!f || !finfo)
+		if (current_dir.next())
 		{
 			return false;
 		}
+		fs::File tmp = current_dir.openFile("r");
 		memset(finfo->full_name, 0, sizeof(finfo->full_name));
-		strncpy(finfo->full_name, f.name(), (FS_PATH_NAME_MAX_LEN - strlen(f.name())));
-		finfo->is_dir = f.isDirectory();
-		finfo->size = f.size();
-		finfo->timestamp = f.getLastWrite();
-		f.close();
+		strncpy(finfo->full_name, tmp.name(), (FS_PATH_NAME_MAX_LEN - strlen(tmp.name())));
+		finfo->is_dir = tmp.isDirectory();
+		finfo->size = tmp.size();
+		finfo->timestamp = tmp.getLastWrite();
+		tmp.close();
 		return true;
 	}
 
@@ -449,9 +450,15 @@ extern "C"
 					fp->file_info.full_name[2] = '/';
 					strncat(fp->file_info.full_name, ((File *)fp->file_ptr)->name(), FS_PATH_NAME_MAX_LEN - 3);
 					fp->file_info.is_dir = ((File *)fp->file_ptr)->isDirectory();
+					if (fp->file_info.is_dir)
+					{
+						proto_printf("opened dir\r\n");
+						current_dir = FLASH_FS.openDir(path);
+					}
 					fp->file_info.size = ((File *)fp->file_ptr)->size();
 					fp->file_info.timestamp = (uint32_t)((File *)fp->file_ptr)->getLastWrite();
 					fp->fs_ptr = &flash_fs;
+					proto_printf("opened ok\r\n");
 					return fp;
 				}
 				fs_safe_free(fp->file_ptr);
@@ -480,7 +487,9 @@ extern "C"
 	{
 		return FLASH_FS.rmdir(path);
 	}
+#endif
 
+#ifdef ENABLE_SOCKETS
 #include "../../../modules/net/http.h"
 	// HTML form for firmware upload (simplified from ESP8266HTTPUpdateServer)
 	static const char updateForm[] PROGMEM =
@@ -597,7 +606,7 @@ extern "C"
 		}
 #endif
 
-#if defined(ENABLE_SOCKETS)
+		// #if defined(ENABLE_SOCKETS)
 		FLASH_FS.begin();
 		flash_fs = {
 				.drive = 'C',
@@ -616,10 +625,13 @@ extern "C"
 				.next = NULL};
 		fs_mount(&flash_fs);
 
+// web_server.begin();
+#ifdef ENABLE_SOCKETS
 		ota_server_start();
 #endif
+		// #endif
 
-#ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
+#if defined(BOARD_HAS_CUSTOM_SYSTEM_COMMANDS) && defined(ENABLE_SOCKETS)
 		ADD_EVENT_LISTENER(grbl_cmd, mcu_custom_grbl_cmd);
 #endif
 	}
@@ -627,6 +639,7 @@ extern "C"
 	void esp8266_wifi_dotasks(void)
 	{
 		esp8266_wifi_clientok();
+		yield();
 	}
 }
 

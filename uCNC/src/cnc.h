@@ -149,7 +149,7 @@ extern "C"
 #include "core/planner.h"
 #include "core/interpolator.h"
 #include "modules/encoder.h"
-#if defined(MCU_HAS_SOCKETS) && defined(ENABLE_SOCKETS)
+#ifdef ENABLE_SOCKETS
 #include "modules/net/socket.h"
 #include "modules/net/telnet.h"
 #endif

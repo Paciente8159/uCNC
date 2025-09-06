@@ -770,7 +770,7 @@ extern "C"
 #endif
 	}
 
-	// #if defined(MCU_HAS_SOCKETS) && defined(ENABLE_SOCKETS)
+	// #ifdef ENABLE_SOCKETS
 	// #ifndef WIFI_TX_BUFFER_SIZE
 	// #define WIFI_TX_BUFFER_SIZE 64
 	// #endif

@@ -48,7 +48,7 @@ uint8_t bt_on;
 uint16_t bt_settings_offset;
 #endif
 
-#if defined(MCU_HAS_SOCKETS) && defined(ENABLE_SOCKETS)
+#ifdef ENABLE_SOCKETS
 #include <WiFi.h>
 #include <WebServer.h>
 #include <HTTPUpdateServer.h>
@@ -136,7 +136,7 @@ bool mcu_custom_grbl_cmd(void *args)
 		}
 	}
 #endif
-#if defined(MCU_HAS_SOCKETS) && defined(ENABLE_SOCKETS)
+#ifdef ENABLE_SOCKETS
 	if (!strncmp((const char *)(cmd_params->cmd), "WIFI", 4))
 	{
 		if (!strcmp((const char *)&(cmd_params->cmd)[4], "ON"))
@@ -343,7 +343,7 @@ CREATE_EVENT_LISTENER(grbl_cmd, mcu_custom_grbl_cmd);
 
 bool rp2350_wifi_clientok(void)
 {
-#if defined(MCU_HAS_SOCKETS) && defined(ENABLE_SOCKETS)
+#ifdef ENABLE_SOCKETS
 	static uint32_t next_info = 30000;
 	static bool connected = false;
 	uint8_t str[128];
@@ -750,7 +750,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
 
 void rp2350_wifi_bt_init(void)
 {
-#if defined(MCU_HAS_SOCKETS) && defined(ENABLE_SOCKETS)
+#ifdef ENABLE_SOCKETS
 
 	wifi_settings_offset = settings_register_external_setting(sizeof(wifi_settings_t));
 	if (settings_load(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t)))
@@ -839,7 +839,7 @@ void rp2350_wifi_bt_init(void)
 #endif
 }
 
-#if defined(MCU_HAS_SOCKETS) && defined(ENABLE_SOCKETS)
+#ifdef ENABLE_SOCKETS
 #ifndef WIFI_TX_BUFFER_SIZE
 #define WIFI_TX_BUFFER_SIZE 64
 #endif
@@ -944,7 +944,7 @@ void mcu_bt_flush(void)
 
 uint8_t rp2350_wifi_bt_read(void)
 {
-#if defined(MCU_HAS_SOCKETS) && defined(ENABLE_SOCKETS)
+#ifdef ENABLE_SOCKETS
 	if (rp2350_wifi_clientok())
 	{
 		if (server_client.available() > 0)
@@ -963,7 +963,7 @@ uint8_t rp2350_wifi_bt_read(void)
 
 void rp2350_wifi_bt_process(void)
 {
-#if defined(MCU_HAS_SOCKETS) && defined(ENABLE_SOCKETS)
+#ifdef ENABLE_SOCKETS
 	if (rp2350_wifi_clientok())
 	{
 		while (server_client.available() > 0)

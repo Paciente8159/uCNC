@@ -1038,7 +1038,7 @@ if (strcmp("/", path) == 0 || strcmp(".", path) == 0) {
 		BUFFER_INIT(uint8_t, usb_tx, USB_TX_BUFFER_SIZE);
 		BUFFER_INIT(uint8_t, usb_rx, RX_BUFFER_SIZE);
 #endif
-#if defined(MCU_HAS_SOCKETS) && defined(ENABLE_SOCKETS)
+#ifdef ENABLE_SOCKETS
 #ifndef WIFI_TX_BUFFER_SIZE
 #define WIFI_TX_BUFFER_SIZE 64
 #endif

@@ -604,7 +604,7 @@ uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #endif
 #endif
 
-#if defined(MCU_HAS_SOCKETS) && defined(ENABLE_SOCKETS)
+#ifdef ENABLE_SOCKETS
 	uint8_t mcu_telnet_getc(void);
 	uint8_t mcu_telnet_available(void);
 	void mcu_telnet_clear(void);

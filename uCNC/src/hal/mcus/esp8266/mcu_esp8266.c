@@ -172,7 +172,7 @@ MCU_CALLBACK void shift_register_io_pins(void)
 	for (uint8_t i = SHIFT_REGISTER_BYTES; i != 0;)
 	{
 		i--;
-		asm volatile("": : :"memory");
+		asm volatile("" : : : "memory");
 #if (defined(SHIFT_REGISTER_USE_HW_SPI) && defined(MCU_HAS_SPI))
 		pins[i] = mcu_spi_xmit(pins[i]);
 #else
@@ -294,7 +294,7 @@ static esp8266_io_out_t FORCEINLINE out_io_pull(void)
 	return val;
 }
 
-#if defined(MCU_HAS_SOCKETS) && defined(ENABLE_SOCKETS)
+#ifdef ENABLE_SOCKETS
 extern void esp8266_wifi_init(void);
 extern void esp8266_wifi_dotasks(void);
 #endif
@@ -652,9 +652,7 @@ void mcu_init(void)
 	mcu_eeprom_init(); // Emulated EEPROM
 #endif
 
-#if defined(MCU_HAS_SOCKETS) && defined(ENABLE_SOCKETS)
 	esp8266_wifi_init();
-#endif
 
 	esp8266_step_mode = (ITP_STEP_MODE_DEFAULT | ITP_STEP_MODE_SYNC);
 
@@ -685,7 +683,7 @@ void mcu_dotasks(void)
 	// reset WDT
 	system_soft_wdt_feed();
 	mcu_uart_dotasks();
-#if defined(MCU_HAS_SOCKETS) && defined(ENABLE_SOCKETS)
+#ifdef ENABLE_SOCKETS
 	esp8266_wifi_dotasks();
 #endif
 	itp_buffer_dotasks(OUT_IO_BUFFER_MINIMAL);

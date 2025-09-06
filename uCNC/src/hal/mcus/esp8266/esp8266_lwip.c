@@ -20,7 +20,7 @@
 
 #if (MCU == MCU_ESP8266)
 
-#if defined(ENABLE_SOCKETS) && defined(MCU_HAS_SOCKETS)
+#ifdef ENABLE_SOCKETS
 
 /* bsd_socket_esp8266.c
  *
