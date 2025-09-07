@@ -49,25 +49,9 @@ extern "C"
 #endif
 
 #ifdef ENABLE_SOCKETS
-// #include <ESP8266WiFi.h>
+#include <ESP8266WiFi.h>
 // #include <ESP8266WebServer.h>
 // #include <ESP8266HTTPUpdateServer.h>
-
-#ifndef TELNET_PORT
-#define TELNET_PORT 23
-#endif
-
-#ifndef WEBSERVER_PORT
-#define WEBSERVER_PORT 80
-#endif
-
-#ifndef WEBSOCKET_PORT
-#define WEBSOCKET_PORT 8080
-#endif
-
-#ifndef WEBSOCKET_MAX_CLIENTS
-#define WEBSOCKET_MAX_CLIENTS 2
-#endif
 
 #ifndef WIFI_USER
 #define WIFI_USER "admin"
@@ -90,7 +74,6 @@ extern "C"
 // const char *update_path = OTA_URI;
 const char *update_username = WIFI_USER;
 const char *update_password = WIFI_PASS;
-#define MAX_SRV_CLIENTS 1
 // WiFiServer telnet_server(TELNET_PORT);
 // WiFiClient telnet_client;
 
@@ -392,17 +375,20 @@ extern "C"
 	static Dir current_dir;
 	bool flash_fs_next_file(fs_file_t *fp, fs_file_info_t *finfo)
 	{
-		if (current_dir.next())
+		__ATOMIC__
 		{
-			return false;
+			File f = ((File *)fp->file_ptr)->openNextFile();
+			if (!f || !finfo)
+			{
+				return false;
+			}
+			memset(finfo->full_name, 0, sizeof(finfo->full_name));
+			strncpy(finfo->full_name, f.name(), (FS_PATH_NAME_MAX_LEN - strlen(f.name())));
+			finfo->is_dir = f.isDirectory();
+			finfo->size = f.size();
+			finfo->timestamp = f.getLastWrite();
+			f.close();
 		}
-		fs::File tmp = current_dir.openFile("r");
-		memset(finfo->full_name, 0, sizeof(finfo->full_name));
-		strncpy(finfo->full_name, tmp.name(), (FS_PATH_NAME_MAX_LEN - strlen(tmp.name())));
-		finfo->is_dir = tmp.isDirectory();
-		finfo->size = tmp.size();
-		finfo->timestamp = tmp.getLastWrite();
-		tmp.close();
 		return true;
 	}
 
@@ -435,35 +421,43 @@ extern "C"
 
 	fs_file_t *flash_fs_open(const char *path, const char *mode)
 	{
-		fs_file_t *fp = (fs_file_t *)calloc(1, sizeof(fs_file_t));
-		if (fp)
+		char sanitized_mode[10];
+		memset(sanitized_mode, 0, sizeof(sanitized_mode));
+		// does not support binary format
+		for (uint8_t i = 0, j = 0; i < strlen(mode); i++)
 		{
-			fp->file_ptr = calloc(1, sizeof(File));
-			if (fp->file_ptr)
+			if (mode[i] != 'b')
 			{
-				*(static_cast<File *>(fp->file_ptr)) = FLASH_FS.open(path, mode);
-				if (*(static_cast<File *>(fp->file_ptr)))
-				{
-					memset(fp->file_info.full_name, 0, sizeof(fp->file_info.full_name));
-					fp->file_info.full_name[0] = '/';
-					fp->file_info.full_name[1] = flash_fs.drive;
-					fp->file_info.full_name[2] = '/';
-					strncat(fp->file_info.full_name, ((File *)fp->file_ptr)->name(), FS_PATH_NAME_MAX_LEN - 3);
-					fp->file_info.is_dir = ((File *)fp->file_ptr)->isDirectory();
-					if (fp->file_info.is_dir)
-					{
-						proto_printf("opened dir\r\n");
-						current_dir = FLASH_FS.openDir(path);
-					}
-					fp->file_info.size = ((File *)fp->file_ptr)->size();
-					fp->file_info.timestamp = (uint32_t)((File *)fp->file_ptr)->getLastWrite();
-					fp->fs_ptr = &flash_fs;
-					proto_printf("opened ok\r\n");
-					return fp;
-				}
-				fs_safe_free(fp->file_ptr);
+				sanitized_mode[j] = mode[i];
+				j++;
 			}
-			fs_safe_free(fp);
+		}
+		__ATOMIC__
+		{
+			fs_file_t *fp = (fs_file_t *)calloc(1, sizeof(fs_file_t));
+			if (fp)
+			{
+				fp->file_ptr = calloc(1, sizeof(File));
+				if (fp->file_ptr)
+				{
+					*(static_cast<File *>(fp->file_ptr)) = FLASH_FS.open(path, sanitized_mode);
+					if (*(static_cast<File *>(fp->file_ptr)))
+					{
+						memset(fp->file_info.full_name, 0, sizeof(fp->file_info.full_name));
+						fp->file_info.full_name[0] = '/';
+						fp->file_info.full_name[1] = flash_fs.drive;
+						fp->file_info.full_name[2] = '/';
+						strncat(fp->file_info.full_name, ((File *)fp->file_ptr)->name(), FS_PATH_NAME_MAX_LEN - 3);
+						fp->file_info.is_dir = ((File *)fp->file_ptr)->isDirectory();
+						fp->file_info.size = ((File *)fp->file_ptr)->size();
+						fp->file_info.timestamp = (uint32_t)((File *)fp->file_ptr)->getLastWrite();
+						fp->fs_ptr = &flash_fs;
+						return fp;
+					}
+					fs_safe_free(fp->file_ptr);
+				}
+				fs_safe_free(fp);
+			}
 		}
 		return NULL;
 	}
@@ -502,8 +496,9 @@ extern "C"
 	// Request handler for GET /update
 	static void ota_page_cb(int client_idx)
 	{
-		http_send_str(client_idx, 200, "text/html", (char *)updateForm);
-		http_send(client_idx, 200, "text/html", NULL, 0);
+		const char fmt[] = "text/plain";
+		http_send_str(client_idx, 200, (char *)fmt, (char *)updateForm);
+		http_send(client_idx, 200, (char *)fmt, NULL, 0);
 	}
 
 	// File upload handler for POST /update
@@ -514,7 +509,7 @@ extern "C"
 		if (up.status == HTTP_UPLOAD_START)
 		{
 			// Called once at start of upload
-			Serial.printf("Update start: %s\n", up.filename);
+			proto_printf("Update start: %s\n", up.filename);
 			uint32_t maxSketchSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
 			if (!Update.begin(maxSketchSpace, U_FLASH))
 			{
@@ -531,33 +526,36 @@ extern "C"
 		}
 		else if (up.status == HTTP_UPLOAD_END)
 		{
+			const char fmt[] = "text/plain";
 			// Called once at end of upload
 			if (Update.end(true))
 			{
-				Serial.printf("Update Success: %u bytes\n", up.datalen);
-				http_send_str(client_idx, 200, "text/plain", "Update Success! Rebooting...");
-				http_send(client_idx, 200, "text/plain", NULL, 0);
+				proto_printf("Update Success: %u bytes\r\n", up.datalen);
+				const char suc[] = "Update Success! Rebooting...";
+				http_send_str(client_idx, 200, (char *)fmt, (char *)suc);
+				http_send(client_idx, 200, (char *)fmt, NULL, 0);
 				delay(100);
 				ESP.restart();
 			}
 			else
 			{
-				Update.printError(Serial);
-				http_send_str(client_idx, 500, "text/plain", "Update Failed");
-				http_send(client_idx, 500, "text/plain", NULL, 0);
+				const char fail[] = "Update Failed";
+				http_send_str(client_idx, 500, (char *)fmt, (char *)fail);
+				http_send(client_idx, 500, (char *)fmt, NULL, 0);
 			}
 		}
 		else if (up.status == HTTP_UPLOAD_ABORT)
 		{
 			Update.end();
-			Serial.println("Update aborted");
+			proto_print("Update aborted\r\n");
 		}
 	}
 
 	void ota_server_start(void)
 	{
+		const char uri[] = "/update";
 		LOAD_MODULE(http_server);
-		http_add("/update", HTTP_REQ_ANY, ota_page_cb, ota_upload_cb);
+		http_add((char *)uri, HTTP_REQ_ANY, ota_page_cb, ota_upload_cb);
 	}
 #endif
 
@@ -627,7 +625,7 @@ extern "C"
 
 // web_server.begin();
 #ifdef ENABLE_SOCKETS
-		ota_server_start();
+		// ota_server_start();
 #endif
 		// #endif
 

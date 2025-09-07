@@ -65,10 +65,10 @@ bool http_request_arg(int client_idx, char *argname, char *argvalue, size_t maxl
 uint8_t http_request_method(int client_idx);
 
 /* Response helpers (current client context) */
-void http_send(int client_idx, int code, char *content_type, uint8_t *data, size_t data_len);
+void http_send(int client_idx, int code, char *content_type, char *data, size_t data_len);
 static inline void http_send_str(int client_idx, int code, char *content_type, char *data)
 {
-	http_send(client_idx, code, content_type, (uint8_t *)data, data ? strlen(data) : 0);
+	http_send(client_idx, code, content_type, data, data ? strlen(data) : 0);
 }
 void http_send_header(int client_idx, char *name, char *data, bool first);
 bool http_send_file(int client_idx, char *file_path, char *content_type);

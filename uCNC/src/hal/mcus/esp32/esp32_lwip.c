@@ -20,15 +20,13 @@
 
 #if (MCU == MCU_ESP32)
 
+#ifdef ENABLE_SOCKETS
+
 #include <string.h>
 #include <errno.h>
 #include <lwip/sockets.h>
 #include <lwip/netdb.h>
 #include <fcntl.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 // Helpers to convert between your BSD typedefs and lwIP
 static inline void to_sockaddr(const struct bsd_sockaddr_in* b, struct sockaddr_in* a) {
@@ -146,8 +144,5 @@ int bsd_fcntl(int fd, int cmd, long arg) {
     return r;
 }
 
-
-#ifdef __cplusplus
-}
 #endif
 #endif

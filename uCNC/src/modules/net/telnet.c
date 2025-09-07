@@ -76,7 +76,7 @@ static void telnet_data_handler(uint8_t client_idx, char *data, size_t data_len,
 	}
 }
 
-static void telnet_new_client_handler(int client, void* protocol)
+static void telnet_new_client_handler(uint8_t client, void* protocol)
 {
 	telnet_protocol_t* telnet = (telnet_protocol_t*) protocol;
 	telnet_negotiate(telnet, client);

@@ -33,7 +33,7 @@ extern "C"
 #define MAX_SOCKETS 4
 #endif
 #ifndef SOCKET_MAX_CLIENTS
-#define SOCKET_MAX_CLIENTS 2
+#define SOCKET_MAX_CLIENTS 4
 #endif
 #ifndef SOCKET_MAX_DATA_SIZE
 #define SOCKET_MAX_DATA_SIZE 32

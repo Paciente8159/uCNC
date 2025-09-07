@@ -34,9 +34,11 @@ extern "C"
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include "../../../modules/net/utils/bsd_socket.h"
+#include "../../../modules/net/socket.h"
 
 #ifndef BSD_MAX_FDS
-#define BSD_MAX_FDS 8
+#define BSD_MAX_FDS (MAX_SOCKETS * SOCKET_MAX_CLIENTS)
 #endif
 
 	typedef enum
@@ -66,6 +68,7 @@ extern "C"
 		// TX
 		const uint8_t *tx_buf; // pointer into the unsent buffer
 		size_t tx_len;				 // bytes left to send
+		int srv_fd;
 	} fd_entry_t;
 
 	static fd_entry_t g_fds[BSD_MAX_FDS];
@@ -78,6 +81,7 @@ extern "C"
 			{
 				memset(&g_fds[i], 0, sizeof(g_fds[i]));
 				g_fds[i].in_use = true;
+				g_fds[i].srv_fd = -1;
 				return i;
 			}
 		}
@@ -111,6 +115,7 @@ extern "C"
 			e->rx_closed = false;
 		}
 		memset(e, 0, sizeof(*e));
+		e->srv_fd = -1;
 	}
 
 	static err_t recv_cb(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err); // fwd decl
@@ -134,6 +139,7 @@ extern "C"
 		g_fds[cfd].rx_chain = NULL;
 		g_fds[cfd].rx_off = 0;
 		g_fds[cfd].rx_closed = false;
+		g_fds[cfd].srv_fd = srv_fd;
 
 		tcp_arg(newpcb, (void *)(intptr_t)cfd);
 		tcp_recv(newpcb, recv_cb); // <- receive path
@@ -190,7 +196,7 @@ extern "C"
 		(void)addrlen;
 		for (int i = 0; i < BSD_MAX_FDS; i++)
 		{
-			if (g_fds[i].in_use && g_fds[i].kind == FD_CLIENT && g_fds[i].ready)
+			if (g_fds[i].in_use && g_fds[i].kind == FD_CLIENT && g_fds[i].ready && g_fds[i].srv_fd == sockfd)
 			{
 				struct tcp_pcb *pcb = g_fds[i].pcb;
 				if (pcb && pcb->state == ESTABLISHED)
@@ -248,46 +254,51 @@ extern "C"
 	}
 
 	int bsd_send(int sockfd, const void *buf, size_t len, int flags)
-	{
-		(void)flags;
-		if (sockfd < 0 || sockfd >= BSD_MAX_FDS || !buf || len == 0)
-			return -1;
+{
+    (void)flags;
+    if (sockfd < 0 || sockfd >= BSD_MAX_FDS || !buf || len == 0)
+        return -1;
 
-		fd_entry_t *e = &g_fds[sockfd];
-		if (!e->in_use || e->kind != FD_CLIENT || !e->pcb)
-			return -1;
+    fd_entry_t *e = &g_fds[sockfd];
+    if (!e->in_use || e->kind != FD_CLIENT || !e->pcb)
+        return -1;
 
-		if (e->tx_len != 0)
-		{
-			// still sending previous buffer
-			return -1; // EWOULDBLOCK
-		}
+    const uint8_t *p = (const uint8_t *)buf;
+    size_t remaining = len;
 
-		u16_t space = tcp_sndbuf(e->pcb);
-		if (space == 0)
-		{
-			// can't send anything right now
-			e->tx_buf = buf;
-			e->tx_len = len;
-			return -1; // no immediate send, queued for sent_cb
-		}
+    while (remaining > 0)
+    {
+        u16_t space = tcp_sndbuf(e->pcb);
+        while (space == 0)
+        {
+            // Wait for space to become available
+            // This could be replaced with a proper blocking wait on a semaphore
+            // signaled by the tcp_sent() callback.
+            tight_loop_contents(); // RP2040 SDK idle hint
+						cyw43_arch_poll();
+            space = tcp_sndbuf(e->pcb);
+        }
 
-		size_t to_send = len;
-		if (to_send > space)
-		{
-			to_send = space;
-			// queue remainder
-			e->tx_buf = ((const uint8_t *)buf) + to_send;
-			e->tx_len = len - to_send;
-		}
+        size_t to_send = remaining;
+        if (to_send > space)
+            to_send = space;
 
-		if (tcp_write(e->pcb, buf, (u16_t)to_send, TCP_WRITE_FLAG_COPY) != ERR_OK)
-			return -1;
+        err_t err = tcp_write(e->pcb, p, (u16_t)to_send, TCP_WRITE_FLAG_COPY);
+        if (err != ERR_OK)
+            return -1;
 
-		tcp_output(e->pcb);
+        tcp_output(e->pcb);
 
-		return (int)to_send;
-	}
+        p += to_send;
+        remaining -= to_send;
+
+        // Optionally wait for ACKs to free buffer space
+        // This is where a tcp_sent() callback could signal progress
+    }
+
+    return (int)len;
+}
+
 
 	int bsd_close(int fd)
 	{

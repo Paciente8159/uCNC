@@ -60,13 +60,13 @@
 #define AF_INET 2
 #endif
 #ifndef SOCK_STREAM
-#define SOCK_STREAM     1
+#define SOCK_STREAM 1
 #endif
 #ifndef SOCK_DGRAM
-#define SOCK_DGRAM      2
+#define SOCK_DGRAM 2
 #endif
 #ifndef SOCK_RAW
-#define SOCK_RAW        3
+#define SOCK_RAW 3
 #endif
 
 typedef enum
@@ -213,10 +213,34 @@ int bsd_send(int sockfd, const void *buf, size_t len, int flags)
 {
 	if (sockfd < 0 || sockfd >= MAX_BSD_SOCKETS)
 		return -1;
-	err_t err = tcp_write(socks[sockfd].pcb, buf, len, TCP_WRITE_FLAG_COPY);
-	if (err != ERR_OK)
-		return -1;
-	tcp_output(socks[sockfd].pcb);
+	// err_t err = tcp_write(socks[sockfd].pcb, buf, len, TCP_WRITE_FLAG_COPY);
+	// if (err != ERR_OK)
+	// 	return -1;
+
+	size_t remaining = len;
+
+	while (remaining > 0)
+	{
+		u16_t space = tcp_sndbuf(socks[sockfd].pcb);
+		while (space == 0)
+		{
+			yield();
+			space = tcp_sndbuf(socks[sockfd].pcb);
+		}
+
+		size_t to_send = remaining;
+		if (to_send > space)
+			to_send = space;
+
+		err_t err = tcp_write(socks[sockfd].pcb, buf, (u16_t)to_send, TCP_WRITE_FLAG_COPY);
+		if (err != ERR_OK)
+			return -1;
+
+		tcp_output(socks[sockfd].pcb);
+
+		buf += to_send;
+		remaining -= to_send;
+	}
 	return len;
 }
 

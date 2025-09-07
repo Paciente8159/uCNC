@@ -81,8 +81,8 @@ uint16_t bt_settings_offset;
 #define OTA_URI "/firmware"
 #endif
 
-WebServer web_server(WEBSERVER_PORT);
-HTTPUpdateServer httpUpdater;
+// WebServer web_server(WEBSERVER_PORT);
+// HTTPUpdateServer httpUpdater;
 const char *update_username = WIFI_USER;
 const char *update_password = WIFI_PASS;
 #define MAX_SRV_CLIENTS 1
@@ -484,13 +484,25 @@ bool flash_fs_info(const char *path, fs_file_info_t *finfo)
 
 fs_file_t *flash_fs_open(const char *path, const char *mode)
 {
+	char sanitized_mode[10];
+	memset(sanitized_mode, 0, sizeof(sanitized_mode));
+	// does not support binary format
+	for (uint8_t i = 0, j = 0; i < strlen(mode); i++)
+	{
+		if (mode[i] != 'b')
+		{
+			sanitized_mode[j] = mode[i];
+			j++;
+		}
+	}
+
 	fs_file_t *fp = (fs_file_t *)calloc(1, sizeof(fs_file_t));
 	if (fp)
 	{
 		fp->file_ptr = calloc(1, sizeof(File));
 		if (fp->file_ptr)
 		{
-			*(static_cast<File *>(fp->file_ptr)) = FLASH_FS.open(path, mode);
+			*(static_cast<File *>(fp->file_ptr)) = FLASH_FS.open(path, sanitized_mode);
 			if (*(static_cast<File *>(fp->file_ptr)))
 			{
 				memset(fp->file_info.full_name, 0, sizeof(fp->file_info.full_name));
@@ -534,127 +546,127 @@ bool flash_fs_rmdir(const char *path)
 /**
  * Implements the function calls for the enpoints C wrapper
  */
-#include "../../../modules/endpoint.h"
-void endpoint_add(const char *uri, uint8_t method, endpoint_delegate request_handler, endpoint_delegate file_handler)
-{
-	if (!method)
-	{
-		method = HTTP_ANY;
-	}
+// #include "../../../modules/endpoint.h"
+// void endpoint_add(const char *uri, uint8_t method, endpoint_delegate request_handler, endpoint_delegate file_handler)
+// {
+// 	if (!method)
+// 	{
+// 		method = HTTP_ANY;
+// 	}
 
-	String s = String(uri);
+// 	String s = String(uri);
 
-	if (s.endsWith("*"))
-	{
-		web_server.on(UriWildcard(s.substring(0, s.length() - 1)), (HTTPMethod)method, request_handler, file_handler);
-	}
-	else
-	{
-		web_server.on(Uri(uri), (HTTPMethod)method, request_handler, file_handler);
-	}
-}
+// 	if (s.endsWith("*"))
+// 	{
+// 		web_server.on(UriWildcard(s.substring(0, s.length() - 1)), (HTTPMethod)method, request_handler, file_handler);
+// 	}
+// 	else
+// 	{
+// 		web_server.on(Uri(uri), (HTTPMethod)method, request_handler, file_handler);
+// 	}
+// }
 
-void endpoint_request_uri(char *uri, size_t maxlen)
-{
-	strncpy(uri, web_server.uri().c_str(), maxlen);
-}
+// void endpoint_request_uri(char *uri, size_t maxlen)
+// {
+// 	strncpy(uri, web_server.uri().c_str(), maxlen);
+// }
 
-int endpoint_request_hasargs(void)
-{
-	return web_server.args();
-}
+// int endpoint_request_hasargs(void)
+// {
+// 	return web_server.args();
+// }
 
-bool endpoint_request_arg(const char *argname, char *argvalue, size_t maxlen)
-{
-	if (!web_server.hasArg(String(argname)))
-	{
-		argvalue[0] = 0;
-		return false;
-	}
-	strncpy(argvalue, web_server.arg(String(argname)).c_str(), maxlen);
-	return true;
-}
+// bool endpoint_request_arg(const char *argname, char *argvalue, size_t maxlen)
+// {
+// 	if (!web_server.hasArg(String(argname)))
+// 	{
+// 		argvalue[0] = 0;
+// 		return false;
+// 	}
+// 	strncpy(argvalue, web_server.arg(String(argname)).c_str(), maxlen);
+// 	return true;
+// }
 
-void endpoint_send(int code, const char *content_type, const uint8_t *data, size_t data_len)
-{
-	static uint8_t in_chunks = 0;
-	if (!content_type)
-	{
-		in_chunks = 1;
-		web_server.setContentLength(CONTENT_LENGTH_UNKNOWN);
-	}
-	else
-	{
-		switch (in_chunks)
-		{
-		case 1:
-			in_chunks = 2;
-			__FALL_THROUGH__
-		case 0:
-			web_server.send(code, content_type, data, data_len);
-			break;
-		default:
-			if (data)
-			{
-				web_server.sendContent((char *)data, data_len);
-				in_chunks = 2;
-			}
-			else
-			{
-				web_server.sendContent("");
-				in_chunks = 0;
-			}
-			break;
-		}
-	}
-}
+// void endpoint_send(int code, const char *content_type, const uint8_t *data, size_t data_len)
+// {
+// 	static uint8_t in_chunks = 0;
+// 	if (!content_type)
+// 	{
+// 		in_chunks = 1;
+// 		web_server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+// 	}
+// 	else
+// 	{
+// 		switch (in_chunks)
+// 		{
+// 		case 1:
+// 			in_chunks = 2;
+// 			__FALL_THROUGH__
+// 		case 0:
+// 			web_server.send(code, content_type, data, data_len);
+// 			break;
+// 		default:
+// 			if (data)
+// 			{
+// 				web_server.sendContent((char *)data, data_len);
+// 				in_chunks = 2;
+// 			}
+// 			else
+// 			{
+// 				web_server.sendContent("");
+// 				in_chunks = 0;
+// 			}
+// 			break;
+// 		}
+// 	}
+// }
 
-void endpoint_send_header(const char *name, const char *data, bool first)
-{
-	web_server.sendHeader(name, data, first);
-}
+// void endpoint_send_header(const char *name, const char *data, bool first)
+// {
+// 	web_server.sendHeader(name, data, first);
+// }
 
-bool endpoint_send_file(const char *file_path, const char *content_type)
-{
-	if (FLASH_FS.exists(file_path))
-	{
-		File file = FLASH_FS.open(file_path, "r");
-		web_server.streamFile(file, content_type);
-		file.close();
-		return true;
-	}
-	return false;
-}
+// bool endpoint_send_file(const char *file_path, const char *content_type)
+// {
+// 	if (FLASH_FS.exists(file_path))
+// 	{
+// 		File file = FLASH_FS.open(file_path, "r");
+// 		web_server.streamFile(file, content_type);
+// 		file.close();
+// 		return true;
+// 	}
+// 	return false;
+// }
 
-endpoint_upload_t endpoint_file_upload_status(void)
-{
-	HTTPUpload &upload = web_server.upload();
-	endpoint_upload_t status = {.status = (uint8_t)upload.status, .data = upload.buf, .datalen = upload.currentSize};
-	return status;
-}
+// endpoint_upload_t endpoint_file_upload_status(void)
+// {
+// 	HTTPUpload &upload = web_server.upload();
+// 	endpoint_upload_t status = {.status = (uint8_t)upload.status, .data = upload.buf, .datalen = upload.currentSize};
+// 	return status;
+// }
 
-uint8_t endpoint_request_method(void)
-{
-	switch (web_server.method())
-	{
-	case HTTP_GET:
-		return ENDPOINT_GET;
-	case HTTP_POST:
-		return ENDPOINT_POST;
-	case HTTP_PUT:
-		return ENDPOINT_PUT;
-	case HTTP_DELETE:
-		return ENDPOINT_DELETE;
-	default:
-		return (ENDPOINT_OTHER | (uint8_t)web_server.method());
-	}
-}
+// uint8_t endpoint_request_method(void)
+// {
+// 	switch (web_server.method())
+// 	{
+// 	case HTTP_GET:
+// 		return ENDPOINT_GET;
+// 	case HTTP_POST:
+// 		return ENDPOINT_POST;
+// 	case HTTP_PUT:
+// 		return ENDPOINT_PUT;
+// 	case HTTP_DELETE:
+// 		return ENDPOINT_DELETE;
+// 	default:
+// 		return (ENDPOINT_OTHER | (uint8_t)web_server.method());
+// 	}
+// }
 
-void endpoint_file_upload_name(char *filename, size_t maxlen)
-{
-	HTTPUpload &upload = web_server.upload();
-	strncat(filename, upload.filename.c_str(), maxlen - strlen(filename));
-}
+// void endpoint_file_upload_name(char *filename, size_t maxlen)
+// {
+// 	HTTPUpload &upload = web_server.upload();
+// 	strncat(filename, upload.filename.c_str(), maxlen - strlen(filename));
+// }
 
 #endif
 
@@ -700,10 +712,6 @@ void rp2040_wifi_bt_init(void)
 			break;
 		}
 	}
-	// telnet_server.begin();
-	// telnet_server.setNoDelay(true);
-	LOAD_MODULE(socket_server);
-	LOAD_MODULE(telnet_server);
 
 #ifdef ENABLE_SOCKETS
 	FLASH_FS.begin();

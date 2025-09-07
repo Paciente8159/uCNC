@@ -44,25 +44,7 @@ uint16_t bt_settings_offset;
 
 #ifdef ENABLE_SOCKETS
 #include <WiFi.h>
-#include <WebServer.h>
-#include <HTTPUpdateServer.h>
 #include <Update.h>
-
-#ifndef TELNET_PORT
-#define TELNET_PORT 23
-#endif
-
-#ifndef WEBSERVER_PORT
-#define WEBSERVER_PORT 80
-#endif
-
-#ifndef WEBSOCKET_PORT
-#define WEBSOCKET_PORT 8080
-#endif
-
-#ifndef WEBSOCKET_MAX_CLIENTS
-#define WEBSOCKET_MAX_CLIENTS 2
-#endif
 
 #ifndef WIFI_USER
 #define WIFI_USER "admin"
@@ -71,19 +53,6 @@ uint16_t bt_settings_offset;
 #ifndef WIFI_PASS
 #define WIFI_PASS "pass"
 #endif
-
-#ifndef OTA_URI
-#define OTA_URI "/firmware"
-#endif
-
-WebServer web_server(WEBSERVER_PORT);
-HTTPUpdateServer httpUpdater;
-const char *update_path = OTA_URI;
-const char *update_username = WIFI_USER;
-const char *update_password = WIFI_PASS;
-#define MAX_SRV_CLIENTS 1
-// WiFiServer telnet_server(TELNET_PORT);
-WiFiClient server_client;
 
 typedef struct
 {
@@ -340,61 +309,6 @@ extern "C"
 	CREATE_EVENT_LISTENER(grbl_cmd, mcu_custom_grbl_cmd);
 #endif
 
-	// 	bool esp32_wifi_clientok(void)
-	// 	{
-	// #ifdef ENABLE_SOCKETS
-	// 		static uint32_t next_info = 30000;
-	// 		static bool connected = false;
-
-	// 		if (!wifi_settings.wifi_on)
-	// 		{
-	// 			return false;
-	// 		}
-
-	// 		if ((WiFi.status() != WL_CONNECTED))
-	// 		{
-	// 			connected = false;
-	// 			if (next_info > mcu_millis())
-	// 			{
-	// 				return false;
-	// 			}
-	// 			next_info = mcu_millis() + 30000;
-	// 			proto_info("Disconnected from WiFi");
-	// 			return false;
-	// 		}
-
-	// 		if (!connected)
-	// 		{
-	// 			connected = true;
-	// 			proto_info("Connected to WiFi");
-	// 			proto_info("SSID>%s", wifi_settings.ssid);
-	// 			proto_info("IP>%s", WiFi.localIP().toString().c_str());
-	// 		}
-
-	// 		// if (telnet_server.hasClient())
-	// 		// {
-	// 		// 	if (server_client)
-	// 		// 	{
-	// 		// 		if (server_client.connected())
-	// 		// 		{
-	// 		// 			server_client.stop();
-	// 		// 		}
-	// 		// 	}
-	// 		// 	server_client = telnet_server.available();
-	// 		// 	server_client.println("[MSG:New client connected]");
-	// 		// 	return false;
-	// 		// }
-	// 		// else if (server_client)
-	// 		// {
-	// 		// 	if (server_client.connected())
-	// 		// 	{
-	// 		// 		return true;
-	// 		// 	}
-	// 		// }
-	// #endif
-	// 		return false;
-	// 	}
-
 #ifdef ENABLE_SOCKETS
 
 #define MCU_FLASH_FS_LITTLE_FS 1
@@ -527,132 +441,78 @@ extern "C"
 	{
 		return FLASH_FS.rmdir(path);
 	}
+#endif
 
-/**
- * Implements the function calls for the enpoints C wrapper
- */
-#include "../../../modules/endpoint.h"
-	void endpoint_add(const char *uri, uint8_t method, endpoint_delegate request_handler, endpoint_delegate file_handler)
+#ifdef ENABLE_SOCKETS
+#include "../../../modules/net/http.h"
+	// HTML form for firmware upload (simplified from ESP8266HTTPUpdateServer)
+	static const char updateForm[] PROGMEM =
+			"<!DOCTYPE html><html><body>"
+			"<form method='POST' action='/update' enctype='multipart/form-data'>"
+			"Firmware:<br><input type='file' name='firmware'>"
+			"<input type='submit' value='Update'>"
+			"</form></body></html>";
+
+	// Request handler for GET /update
+	static void ota_page_cb(int client_idx)
 	{
-		if (!method)
-		{
-			method = HTTP_ANY;
-		}
-
-		String s = String(uri);
-
-		if (s.endsWith("*"))
-		{
-			web_server.on(UriWildcard(s.substring(0, s.length() - 1)), (HTTPMethod)method, request_handler, file_handler);
-		}
-		else
-		{
-			web_server.on(Uri(uri), (HTTPMethod)method, request_handler, file_handler);
-		}
+		http_send_str(client_idx, 200, "text/html", (char *)updateForm);
+		http_send(client_idx, 200, "text/html", NULL, 0);
 	}
 
-	void endpoint_request_uri(char *uri, size_t maxlen)
+	// File upload handler for POST /update
+	static void ota_upload_cb(int client_idx)
 	{
-		strncpy(uri, web_server.uri().c_str(), maxlen);
-	}
+		http_upload_t up = http_file_upload_status(client_idx);
 
-	int endpoint_request_hasargs(void)
-	{
-		return web_server.args();
-	}
-
-	bool endpoint_request_arg(const char *argname, char *argvalue, size_t maxlen)
-	{
-		if (!web_server.hasArg(String(argname)))
+		if (up.status == HTTP_UPLOAD_START)
 		{
-			argvalue[0] = 0;
-			return false;
-		}
-		strncpy(argvalue, web_server.arg(String(argname)).c_str(), maxlen);
-		return true;
-	}
-
-	void endpoint_send(int code, const char *content_type, const uint8_t *data, size_t data_len)
-	{
-		static uint8_t in_chunks = 0;
-		if (!content_type)
-		{
-			in_chunks = 1;
-			web_server.setContentLength(CONTENT_LENGTH_UNKNOWN);
-		}
-		else
-		{
-			switch (in_chunks)
+			// Called once at start of upload
+			Serial.printf("Update start: %s\n", up.filename);
+			uint32_t maxSketchSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
+			if (!Update.begin(maxSketchSpace, U_FLASH))
 			{
-			case 1:
-				in_chunks = 2;
-				__FALL_THROUGH__
-			case 0:
-				web_server.send(code, content_type, (const char *)data);
-				break;
-			default:
-				if (data)
-				{
-					web_server.sendContent((char *)data, data_len);
-					in_chunks = 2;
-				}
-				else
-				{
-					web_server.sendContent("");
-					in_chunks = 0;
-				}
-				break;
+				Update.printError(Serial);
 			}
 		}
-	}
-
-	void endpoint_send_header(const char *name, const char *data, bool first)
-	{
-		web_server.sendHeader(name, data, first);
-	}
-
-	bool endpoint_send_file(const char *file_path, const char *content_type)
-	{
-		if (FLASH_FS.exists(file_path))
+		else if (up.status == HTTP_UPLOAD_PART)
 		{
-			File file = FLASH_FS.open(file_path, "r");
-			web_server.streamFile(file, content_type);
-			file.close();
-			return true;
+			// Called for each chunk
+			if (Update.write(up.data, up.datalen) != up.datalen)
+			{
+				Update.printError(Serial);
+			}
 		}
-		return false;
-	}
-
-	endpoint_upload_t endpoint_file_upload_status(void)
-	{
-		HTTPUpload &upload = web_server.upload();
-		endpoint_upload_t status = {.status = (uint8_t)upload.status, .data = upload.buf, .datalen = upload.currentSize};
-		return status;
-	}
-
-	uint8_t endpoint_request_method(void)
-	{
-		switch (web_server.method())
+		else if (up.status == HTTP_UPLOAD_END)
 		{
-		case HTTP_GET:
-			return ENDPOINT_GET;
-		case HTTP_POST:
-			return ENDPOINT_POST;
-		case HTTP_PUT:
-			return ENDPOINT_PUT;
-		case HTTP_DELETE:
-			return ENDPOINT_DELETE;
-		default:
-			return (ENDPOINT_OTHER | (uint8_t)web_server.method());
+			// Called once at end of upload
+			if (Update.end(true))
+			{
+				proto_printf("Update Success: %u bytes\r\n", up.datalen);
+				http_send_str(client_idx, 200, "text/plain", "Update Success! Rebooting...");
+				http_send(client_idx, 200, "text/plain", NULL, 0);
+				delay(100);
+				ESP.restart();
+			}
+			else
+			{
+				// Update.printError(Serial);
+				http_send_str(client_idx, 500, "text/plain", "Update Failed");
+				http_send(client_idx, 500, "text/plain", NULL, 0);
+			}
+		}
+		else if (up.status == HTTP_UPLOAD_ABORT)
+		{
+			Update.end();
+			proto_printf("Update aborted\r\n");
 		}
 	}
 
-	void endpoint_file_upload_name(char *filename, size_t maxlen)
+	void ota_server_start(void)
 	{
-		HTTPUpload &upload = web_server.upload();
-		strncat(filename, upload.filename.c_str(), maxlen - strlen(filename));
+		// LOAD_MODULE(http_server);
+		// http_add("/update", HTTP_REQ_ANY, ota_page_cb, ota_upload_cb);
 	}
-
 #endif
 
 #ifdef ENABLE_SOCKETS
@@ -682,7 +542,7 @@ extern "C"
 		fs_mount(&flash_fs);
 #endif
 #ifndef CUSTOM_OTA_ENDPOINT
-		httpUpdater.setup(&web_server, OTA_URI, update_username, update_password);
+		ota_server_start();
 #endif
 
 		WiFi.disconnect();
@@ -714,10 +574,6 @@ extern "C"
 				break;
 			}
 		}
-
-#if defined(ENABLE_SOCKETS) && defined(MCU_HAS_RTOS)
-		LOAD_MODULE(telnet_server);
-#endif
 
 		for (;;)
 		{
@@ -769,61 +625,6 @@ extern "C"
 		ADD_EVENT_LISTENER(grbl_cmd, mcu_custom_grbl_cmd);
 #endif
 	}
-
-	// #ifdef ENABLE_SOCKETS
-	// #ifndef WIFI_TX_BUFFER_SIZE
-	// #define WIFI_TX_BUFFER_SIZE 64
-	// #endif
-	// 	DECL_BUFFER(uint8_t, telnet_rx, RX_BUFFER_SIZE);
-	// 	DECL_BUFFER(uint8_t, telnet_tx, WIFI_TX_BUFFER_SIZE);
-
-	// 	uint8_t mcu_telnet_getc(void)
-	// 	{
-	// 		uint8_t c = 0;
-	// 		BUFFER_DEQUEUE(telnet_rx, &c);
-	// 		return c;
-	// 	}
-
-	// 	uint8_t mcu_telnet_available(void)
-	// 	{
-	// 		return BUFFER_READ_AVAILABLE(telnet_rx);
-	// 	}
-
-	// 	void mcu_telnet_clear(void)
-	// 	{
-	// 		BUFFER_CLEAR(telnet_rx);
-	// 	}
-
-	// 	void mcu_telnet_putc(uint8_t c)
-	// 	{
-	// 		while (BUFFER_FULL(telnet_tx))
-	// 		{
-	// 			mcu_telnet_flush();
-	// 		}
-	// 		BUFFER_ENQUEUE(telnet_tx, &c);
-	// 	}
-
-	// 	void mcu_telnet_flush(void)
-	// 	{
-	// 		if (esp32_wifi_clientok())
-	// 		{
-	// 			while (!BUFFER_EMPTY(telnet_tx))
-	// 			{
-	// 				uint8_t tmp[WIFI_TX_BUFFER_SIZE + 1];
-	// 				memset(tmp, 0, sizeof(tmp));
-	// 				uint8_t r;
-
-	// 				BUFFER_READ(telnet_tx, tmp, WIFI_TX_BUFFER_SIZE, r);
-	// 				server_client.write(tmp, r);
-	// 			}
-	// 		}
-	// 		else
-	// 		{
-	// 			// no client (discard)
-	// 			BUFFER_CLEAR(telnet_tx);
-	// 		}
-	// 	}
-	// #endif
 
 #ifdef MCU_HAS_BLUETOOTH
 #ifndef BLUETOOTH_TX_BUFFER_SIZE
@@ -880,28 +681,6 @@ extern "C"
 		}
 	}
 #endif
-
-	// 	uint8_t esp32_wifi_bt_read(void)
-	// 	{
-	// #ifdef ENABLE_SOCKETS
-	// 		if (esp32_wifi_clientok())
-	// 		{
-	// 			if (server_client.available() > 0)
-	// 			{
-	// 				return (uint8_t)server_client.read();
-	// 			}
-	// 		}
-	// #endif
-
-	// #ifdef ENABLE_BLUETOOTH
-	// 		if (SerialBT.hasClient())
-	// 		{
-	// 			return (uint8_t)SerialBT.read();
-	// 		}
-	// #endif
-
-	// 		return (uint8_t)0;
-	// 	}
 
 	void esp32_wifi_bt_process(void)
 	{

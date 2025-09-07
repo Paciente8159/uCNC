@@ -35,6 +35,7 @@
 #define HTTP_HEADER_BUF_SIZE 1024
 #define HTTP_UPLOAD_BUF_SIZE 512
 #define HTTP_MAX_BOUNDARY_LEN 70
+#define HTTP_MAX_HEADER_LEN 128
 
 typedef struct
 {
@@ -270,13 +271,11 @@ void http_send_header(int client_idx, char *name, char *data, bool first)
 	}
 }
 
-void http_send(int client_idx, int code, char *content_type, uint8_t *data, size_t data_len)
+void http_send(int client_idx, int code, char *content_type, char *data, size_t data_len)
 {
 	http_client_t *c = &clients[client_idx];
 	if (!c || client_idx < 0)
 		return;
-
-	char buf[128];
 
 	/* Enable chunked mode when content_type == NULL (headers delayed) */
 	if (content_type == NULL)
@@ -295,6 +294,7 @@ void http_send(int client_idx, int code, char *content_type, uint8_t *data, size
 
 	if (!c->headers_sent)
 	{
+		char buf[HTTP_MAX_HEADER_LEN];
 		int n = snprintf(buf, sizeof(buf), "HTTP/1.1 %d OK\r\n", code);
 		socket_send(http_srv, client_idx, buf, (size_t)n, 0);
 
@@ -317,6 +317,7 @@ void http_send(int client_idx, int code, char *content_type, uint8_t *data, size
 
 	if (data && data_len > 0)
 	{
+		char buf[16];
 		if (c->chunked_mode)
 		{
 			int n = snprintf(buf, sizeof(buf), "%x\r\n", (unsigned int)data_len);
