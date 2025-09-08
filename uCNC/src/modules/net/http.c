@@ -295,20 +295,24 @@ void http_send(int client_idx, int code, char *content_type, char *data, size_t 
 	if (!c->headers_sent)
 	{
 		char buf[HTTP_MAX_HEADER_LEN];
-		int n = snprintf(buf, sizeof(buf), "HTTP/1.1 %d OK\r\n", code);
+		memset(buf, 0, sizeof(buf));
+		int n = str_snprintf(buf, sizeof(buf), "HTTP/1.1 %d OK\r\n", code);
 		socket_send(http_srv, client_idx, buf, (size_t)n, 0);
 
-		n = snprintf(buf, sizeof(buf), "Connection: %s\r\n", (c->keep_alive ? "keep-alive" : "close"));
+		memset(buf, 0, sizeof(buf));
+		n = str_snprintf(buf, sizeof(buf), "Connection: %s\r\n", (c->keep_alive ? "keep-alive" : "close"));
 		socket_send(http_srv, client_idx, buf, (size_t)n, 0);
 
 		if (content_type)
 		{
-			n = snprintf(buf, sizeof(buf), "Content-Type: %s\r\n", content_type);
+			memset(buf, 0, sizeof(buf));
+			n = str_snprintf(buf, sizeof(buf), "Content-Type: %s\r\n", content_type);
 			socket_send(http_srv, client_idx, buf, (size_t)n, 0);
 		}
 		for (size_t i = 0; i < c->hdr_count; i++)
 		{
-			n = snprintf(buf, sizeof(buf), "%s: %s\r\n", c->hdrs[i].name, c->hdrs[i].value);
+			memset(buf, 0, sizeof(buf));
+			n = str_snprintf(buf, sizeof(buf), "%s: %s\r\n", c->hdrs[i].name, c->hdrs[i].value);
 			socket_send(http_srv, client_idx, buf, (size_t)n, 0);
 		}
 		socket_send(http_srv, client_idx, "\r\n", 2, 0);
@@ -318,9 +322,10 @@ void http_send(int client_idx, int code, char *content_type, char *data, size_t 
 	if (data && data_len > 0)
 	{
 		char buf[16];
+		memset(buf, 0, sizeof(buf));
 		if (c->chunked_mode)
 		{
-			int n = snprintf(buf, sizeof(buf), "%x\r\n", (unsigned int)data_len);
+			int n = str_snprintf(buf, sizeof(buf), "%x\r\n", (unsigned int)data_len);
 			socket_send(http_srv, client_idx, buf, (size_t)n, 0);
 			socket_send(http_srv, client_idx, (char *)data, data_len, 0);
 			socket_send(http_srv, client_idx, "\r\n", 2, 0);

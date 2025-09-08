@@ -71,7 +71,7 @@ static size_t prt_putc(void *out, size_t maxlen, char c)
 #ifndef PRINT_FTM_MINIMAL
 size_t prt_byte(void *out, size_t maxlen, const uint8_t *data, uint8_t flags)
 {
-	bool prefix = (flags && HEX_PREFIX);
+	bool prefix = (flags & HEX_PREFIX);
 	char hexchar = (flags & HEX_UPPER) ? 'A' : 'a';
 	uint8_t size = HEX_SIZE(flags);
 	if (prefix)
