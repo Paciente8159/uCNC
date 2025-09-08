@@ -120,7 +120,9 @@ static err_t accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err)
 		tcp_abort(newpcb); // only queue one for simplicity
 		return ERR_ABRT;
 	}
+	tcp_backlog_delayed(newpcb); // Delay backlog acknowledgment
 	socks[idx].pending = newpcb;
+
 	return ERR_OK;
 }
 
@@ -179,8 +181,10 @@ int bsd_accept(int sockfd, struct bsd_sockaddr_in *addr, int *addrlen)
 		return -1;
 	memset(&socks[idx], 0, sizeof(socks[idx]));
 	socks[idx].pcb = socks[sockfd].pending;
+	tcp_backlog_accepted(socks[idx].pcb); // Finalize backlog acceptance
 	socks[idx].state = SOCK_CONNECTED;
 	socks[sockfd].pending = NULL;
+
 	tcp_arg(socks[idx].pcb, (void *)(intptr_t)idx);
 	tcp_recv(socks[idx].pcb, recv_cb);
 	if (addr && addrlen && *addrlen >= sizeof(*addr))
@@ -218,6 +222,7 @@ int bsd_send(int sockfd, const void *buf, size_t len, int flags)
 	// 	return -1;
 
 	size_t remaining = len;
+	uint8_t *p = (uint8_t *)buf;
 
 	while (remaining > 0)
 	{
@@ -232,13 +237,18 @@ int bsd_send(int sockfd, const void *buf, size_t len, int flags)
 		if (to_send > space)
 			to_send = space;
 
-		err_t err = tcp_write(socks[sockfd].pcb, buf, (u16_t)to_send, TCP_WRITE_FLAG_COPY);
+		err_t err = ERR_OK;
+		do
+		{
+			yield();
+			err = tcp_write(socks[sockfd].pcb, p, (u16_t)to_send, TCP_WRITE_FLAG_COPY);
+		} while (err != ERR_OK);
+
+		err = tcp_output(socks[sockfd].pcb);
 		if (err != ERR_OK)
 			return -1;
 
-		tcp_output(socks[sockfd].pcb);
-
-		buf += to_send;
+		p += to_send;
 		remaining -= to_send;
 	}
 	return len;
