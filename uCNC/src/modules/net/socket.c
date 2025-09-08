@@ -201,67 +201,78 @@ void socket_free(socket_if_t *socket, uint8_t client_idx)
 
 void socket_server_dotasks(void)
 {
-	for (int i = 0; i < MAX_SOCKETS; i++)
+	static uint8_t srv = 0;
+	static uint8_t clt = 0;
+	uint8_t i = srv;
+	uint8_t c = clt;
+
+	socket_if_t *socket = &raw_sockets[i];
+	char buffer[SOCKET_MAX_DATA_SIZE + 1]; // space for a null character
+
+	if (socket->socket_if >= 0)
 	{
-		socket_if_t *socket = &raw_sockets[i];
-		char buffer[SOCKET_MAX_DATA_SIZE + 1]; // space for a null character
+		/* Accept new clients if TCP */
+		int client_fd;
+		struct bsd_sockaddr_in cli_addr;
+		int cli_len = sizeof(cli_addr);
 
-		if (socket->socket_if >= 0)
+		client_fd = bsd_accept(socket->socket_if, &cli_addr, &cli_len);
+		if (client_fd >= 0)
 		{
-			/* Accept new clients if TCP */
-			int client_fd;
-			struct bsd_sockaddr_in cli_addr;
-			int cli_len = sizeof(cli_addr);
+			add_client(socket, client_fd);
+		}
 
-			client_fd = bsd_accept(socket->socket_if, &cli_addr, &cli_len);
-			if (client_fd >= 0)
+/* Poll each client for data (non-blocking) */
+#ifdef ENABLE_SOCKET_TIMEOUTS
+		uint32_t now = mcu_millis();
+#endif
+		int fd = socket->socket_clients[c];
+		void *proto = socket->protocol;
+		if (fd >= 0)
+		{
+			// memset(buffer, 0, sizeof(buffer));
+			int len = bsd_recv(fd, buffer, SOCKET_MAX_DATA_SIZE, 0);
+			buffer[len] = 0;
+			if (len > 0)
 			{
-				add_client(socket, client_fd);
+#ifdef ENABLE_SOCKET_TIMEOUTS
+				socket->client_activity[c] = now;
+#endif
+				if (socket->client_ondata_cb)
+				{
+					socket->client_ondata_cb(c, buffer, (size_t)len, proto);
+				}
+			}
+			else if (!len)
+			{
+				remove_client(socket, c);
 			}
 
-			/* Poll each client for data (non-blocking) */
-			for (uint8_t c = 0; c < SOCKET_MAX_CLIENTS; c++)
+			else
 			{
-#ifdef ENABLE_SOCKET_TIMEOUTS
-				uint32_t now = mcu_millis();
-#endif
-				int fd = socket->socket_clients[c];
-				void *proto = socket->protocol;
-				if (fd >= 0)
+				if (socket->client_onidle_cb)
 				{
-					// memset(buffer, 0, sizeof(buffer));
-					int len = bsd_recv(fd, buffer, SOCKET_MAX_DATA_SIZE, 0);
-					buffer[len] = 0;
-					if (len > 0)
-					{
 #ifdef ENABLE_SOCKET_TIMEOUTS
-						socket->client_activity[c] = now;
-#endif
-						if (socket->client_ondata_cb)
-						{
-							socket->client_ondata_cb(c, buffer, (size_t)len, proto);
-						}
-					}
-					else if (!len)
-					{
-						remove_client(socket, c);
-					}
-
-					else
-					{
-						if (socket->client_onidle_cb)
-						{
-#ifdef ENABLE_SOCKET_TIMEOUTS
-							uint32_t idle = now - socket->client_activity[c];
-							socket->client_onidle_cb(c, idle, socket->protocol);
+					uint32_t idle = now - socket->client_activity[c];
+					socket->client_onidle_cb(c, idle, socket->protocol);
 #else
-							socket->client_onidle_cb(c, 0, socket->protocol);
+					socket->client_onidle_cb(c, 0, socket->protocol);
 #endif
-						}
-					}
 				}
 			}
 		}
+	}
+
+	c++;
+	if (c >= SOCKET_MAX_CLIENTS)
+	{
+		clt = 0;
+		i++;
+		srv = (i < MAX_SOCKETS) ? i : 0;
+	}
+	else
+	{
+		clt = c;
 	}
 }
 
