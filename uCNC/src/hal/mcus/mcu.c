@@ -1005,7 +1005,7 @@ void __attribute__((weak)) mcu_io_init(void)
 #endif
 	BUFFER_INIT(uint8_t, telnet_tx, WIFI_TX_BUFFER_SIZE);
 	BUFFER_INIT(uint8_t, telnet_rx, RX_BUFFER_SIZE);
-	// telnet_sock = telnet_start_listen(&telnet_proto, 23);
+	telnet_sock = telnet_start_listen(&telnet_proto, 23);
 #endif
 #ifdef MCU_HAS_BLUETOOTH
 #ifndef BLUETOOTH_TX_BUFFER_SIZE

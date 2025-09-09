@@ -470,12 +470,15 @@ extern "C"
 			"Firmware:<br><input type='file' name='firmware'>"
 			"<input type='submit' value='Update'>"
 			"</form></body></html>";
+	const char type_html[] = "text/html";
+	const char type_text[] = "text/plain";
 
 	// Request handler for GET /update
 	static void ota_page_cb(int client_idx)
 	{
-		http_send_str(client_idx, 200, "text/html", (char *)updateForm);
-		http_send(client_idx, 200, "text/html", NULL, 0);
+
+		http_send_str(client_idx, 200, (char *)type_html, (char *)updateForm);
+		http_send(client_idx, 200, (char *)type_html, NULL, 0);
 	}
 
 	// File upload handler for POST /update
@@ -506,17 +509,19 @@ extern "C"
 			// Called once at end of upload
 			if (Update.end(true))
 			{
+				const char suc[] = "Update Success! Rebooting...";
 				proto_printf("Update Success: %u bytes\r\n", up.datalen);
-				http_send_str(client_idx, 200, "text/plain", "Update Success! Rebooting...");
-				http_send(client_idx, 200, "text/plain", NULL, 0);
+				http_send_str(client_idx, 200, (char *)type_text, (char *)suc);
+				http_send(client_idx, 200, (char *)type_text, NULL, 0);
 				delay(100);
 				ESP.restart();
 			}
 			else
 			{
 				// Update.printError(Serial);
-				http_send_str(client_idx, 500, "text/plain", "Update Failed");
-				http_send(client_idx, 500, "text/plain", NULL, 0);
+				const char fail[] = "Update Failed";
+				http_send_str(client_idx, 500, (char *)type_text, (char *)fail);
+				http_send(client_idx, 500, (char *)type_text, NULL, 0);
 			}
 		}
 		else if (up.status == HTTP_UPLOAD_ABORT)
@@ -528,8 +533,9 @@ extern "C"
 
 	void ota_server_start(void)
 	{
-		// LOAD_MODULE(http_server);
-		// http_add("/update", HTTP_REQ_ANY, ota_page_cb, ota_upload_cb);
+		LOAD_MODULE(http_server);
+		const char update_uri[] = "/update";
+		http_add((char *)update_uri, HTTP_REQ_ANY, ota_page_cb, ota_upload_cb);
 	}
 }
 #endif
@@ -682,11 +688,9 @@ extern "C"
 #endif
 
 #if defined(ENABLE_SOCKETS) && defined(USES_CUSTOM_SOCKETS)
+#include "../../../module.h"
 static void mcu_wifi_task(void *arg)
 {
-	WiFi.begin();
-	// telnet_server.begin();
-	// telnet_server.setNoDelay(true);
 #ifdef ENABLE_SOCKETS
 	FLASH_FS.begin();
 	flash_fs = {
@@ -705,12 +709,6 @@ static void mcu_wifi_task(void *arg)
 			.finfo = flash_fs_info,
 			.next = NULL};
 	fs_mount(&flash_fs);
-#endif
-	extern socket_if_t *telnet_sock;
-	extern telnet_protocol_t telnet_proto;
-	telnet_sock = telnet_start_listen(&telnet_proto, 23);
-#ifndef CUSTOM_OTA_ENDPOINT
-	ota_server_start();
 #endif
 
 	WiFi.disconnect();
@@ -745,7 +743,7 @@ static void mcu_wifi_task(void *arg)
 
 	for (;;)
 	{
-		if (wifi_settings.wifi_on)
+		if (wifi_settings.wifi_on && WiFi.isConnected())
 		{
 #if defined(ENABLE_SOCKETS) && defined(MCU_HAS_RTOS)
 			socket_server_dotasks();
@@ -817,6 +815,16 @@ extern "C"
 
 extern "C"
 {
+	void esp32_pre_init(void)
+	{
+#ifdef ENABLE_SOCKETS
+		WiFi.begin();
+#ifndef CUSTOM_OTA_ENDPOINT
+		ota_server_start();
+#endif
+#endif
+	}
+
 	void esp32_wifi_bt_init(void)
 	{
 #ifdef ENABLE_SOCKETS

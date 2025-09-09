@@ -57,6 +57,7 @@ volatile uint32_t ic74hc595_i2s_pins;
 #endif
 hw_timer_t *esp32_step_timer;
 
+void esp32_pre_init(void);
 void esp32_wifi_bt_init(void);
 void esp32_wifi_bt_flush(uint8_t *buffer);
 void esp32_wifi_bt_process(void);
@@ -592,6 +593,7 @@ void mcu_init(void)
 	gpio_install_isr_service(0);
 #endif
 
+	esp32_pre_init();
 	mcu_io_init();
 
 #ifdef MCU_HAS_UART2
