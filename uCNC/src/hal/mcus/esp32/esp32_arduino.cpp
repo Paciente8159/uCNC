@@ -69,8 +69,14 @@ wifi_settings_t wifi_settings;
 extern "C"
 {
 #include "../../../cnc.h"
+}
 
+/**
+ * Custom WiFi+BT commands
+ */
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
+extern "C"
+{
 	bool mcu_custom_grbl_cmd(void *args)
 	{
 		grbl_cmd_args_t *cmd_params = (grbl_cmd_args_t *)args;
@@ -307,8 +313,12 @@ extern "C"
 	}
 
 	CREATE_EVENT_LISTENER(grbl_cmd, mcu_custom_grbl_cmd);
+}
 #endif
 
+/**
+ * Flash File System
+ */
 #ifdef ENABLE_SOCKETS
 
 #define MCU_FLASH_FS_LITTLE_FS 1
@@ -328,6 +338,8 @@ extern "C"
 #define FLASH_FS SPIFFS
 #endif
 
+extern "C"
+{
 /**
  * Implements the function calls for the file system C wrapper
  */
@@ -441,9 +453,15 @@ extern "C"
 	{
 		return FLASH_FS.rmdir(path);
 	}
+}
 #endif
 
+/**
+ * OTA
+ */
 #ifdef ENABLE_SOCKETS
+extern "C"
+{
 #include "../../../modules/net/http.h"
 	// HTML form for firmware upload (simplified from ESP8266HTTPUpdateServer)
 	static const char updateForm[] PROGMEM =
@@ -513,123 +531,237 @@ extern "C"
 		// LOAD_MODULE(http_server);
 		// http_add("/update", HTTP_REQ_ANY, ota_page_cb, ota_upload_cb);
 	}
+}
 #endif
 
-#ifdef ENABLE_SOCKETS
+/**
+ * Custom SOCKETS
+ */
+#if defined(ENABLE_SOCKETS) && defined(USES_CUSTOM_SOCKETS)
+#include "../../../modules/net/socket.h"
 
-	void mcu_telnet_task(void *arg)
+WiFiServer servers[MAX_SOCKETS];
+WiFiClient clients[MAX_SOCKETS * SOCKET_MAX_CLIENTS];
+int servers_if[MAX_SOCKETS];
+int clients_if[MAX_SOCKETS * SOCKET_MAX_CLIENTS];
+
+extern "C"
+{
+	static int find_free_server(void)
 	{
-		WiFi.begin();
-		// telnet_server.begin();
-		// telnet_server.setNoDelay(true);
+		for (int i = 0; i < MAX_SOCKETS; i++)
+		{
+			if (!servers_if[i])
+				servers_if[i] = 1; // used
+			return i;
+		}
+		return -1;
+	}
+
+	static int find_free_client(int s)
+	{
+		for (int i = 0; i < SOCKET_MAX_CLIENTS; i++)
+		{
+			if (!clients_if[i])
+				clients_if[i] = 1; // used
+			return i;
+		}
+		return -1;
+	}
+
+	int bsd_socket(int domain, int type, int protocol)
+	{
+		int srv = find_free_server();
+		if (srv < 0)
+		{
+			return -1;
+		}
+
+		return srv;
+	}
+
+	int bsd_bind(int sockfd, const struct bsd_sockaddr_in *addr, int addrlen)
+	{
+		if (sockfd < 0 || !WiFi.isConnected())
+		{
+			return -1;
+		}
+		servers[sockfd].begin(addr->sin_port);
+		return 0;
+	}
+
+	int bsd_listen(int sockfd, int backlog)
+	{
+		if (sockfd < 0)
+		{
+			return -1;
+		}
+		return 0;
+	}
+
+	int bsd_accept(int sockfd, struct bsd_sockaddr_in *addr, int *addrlen)
+	{
+		if (sockfd < 0)
+		{
+			return -1;
+		}
+
+		if (servers[sockfd].hasClient())
+		{
+			int client_if = find_free_client(sockfd);
+			if (client_if < 0)
+			{
+				return -1;
+			}
+			clients[client_if] = servers[sockfd].accept();
+			clients_if[client_if] = 1;
+			return (client_if + MAX_SOCKETS);
+		}
+
+		return -1;
+	}
+	// optional (can be removed)
+	// int bsd_setsockopt(int sockfd, int level, int optname, const void *optval, int optlen);
+	// int bsd_getsockopt(int sockfd, int level, int optname, void *optval, int *optlen);
+	int bsd_fcntl(int sockfd, int cmd, long arg)
+	{
+		if (sockfd < 0)
+		{
+			return -1;
+		}
+		return 0;
+	}
+
+	int bsd_recv(int sockfd, void *buf, size_t len, int flags)
+	{
+		sockfd -= MAX_SOCKETS;
+
+		if (sockfd < 0)
+		{
+			return -1;
+		}
+
+		return clients[sockfd].readBytes((char *)buf, len);
+	}
+
+	int bsd_send(int sockfd, const void *buf, size_t len, int flags)
+	{
+		sockfd -= MAX_SOCKETS;
+
+		if (sockfd < 0)
+		{
+			return -1;
+		}
+
+		return clients[sockfd].write_P((char *)buf, len);
+	}
+
+	int bsd_close(int fd)
+	{
+		if (fd < 0)
+		{
+			return -1;
+		}
+		if (fd < MAX_SOCKETS)
+		{
+			servers_if[fd] = 0;
+			servers[fd].end();
+			return 0;
+		}
+		else if (fd - MAX_SOCKETS < SOCKET_MAX_CLIENTS)
+		{
+			clients_if[fd] = 0;
+			clients[fd - MAX_SOCKETS].flush();
+			clients[fd - MAX_SOCKETS].stop();
+		}
+
+		return -1;
+	}
+}
+
+#endif
+
+#if defined(ENABLE_SOCKETS) && defined(USES_CUSTOM_SOCKETS)
+static void mcu_wifi_task(void *arg)
+{
+	WiFi.begin();
+	// telnet_server.begin();
+	// telnet_server.setNoDelay(true);
 #ifdef ENABLE_SOCKETS
-		FLASH_FS.begin();
-		flash_fs = {
-				.drive = 'C',
-				.open = flash_fs_open,
-				.read = flash_fs_read,
-				.write = flash_fs_write,
-				.seek = flash_fs_seek,
-				.available = flash_fs_available,
-				.close = flash_fs_close,
-				.remove = flash_fs_remove,
-				.opendir = flash_fs_opendir,
-				.mkdir = flash_fs_mkdir,
-				.rmdir = flash_fs_rmdir,
-				.next_file = flash_fs_next_file,
-				.finfo = flash_fs_info,
-				.next = NULL};
-		fs_mount(&flash_fs);
+	FLASH_FS.begin();
+	flash_fs = {
+			.drive = 'C',
+			.open = flash_fs_open,
+			.read = flash_fs_read,
+			.write = flash_fs_write,
+			.seek = flash_fs_seek,
+			.available = flash_fs_available,
+			.close = flash_fs_close,
+			.remove = flash_fs_remove,
+			.opendir = flash_fs_opendir,
+			.mkdir = flash_fs_mkdir,
+			.rmdir = flash_fs_rmdir,
+			.next_file = flash_fs_next_file,
+			.finfo = flash_fs_info,
+			.next = NULL};
+	fs_mount(&flash_fs);
 #endif
+	extern socket_if_t *telnet_sock;
+	extern telnet_protocol_t telnet_proto;
+	telnet_sock = telnet_start_listen(&telnet_proto, 23);
 #ifndef CUSTOM_OTA_ENDPOINT
-		ota_server_start();
+	ota_server_start();
 #endif
 
-		WiFi.disconnect();
+	WiFi.disconnect();
 
+	if (wifi_settings.wifi_on)
+	{
+		switch (wifi_settings.wifi_mode)
+		{
+		case 1:
+			WiFi.mode(WIFI_STA);
+			WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
+			proto_info("Trying to connect to WiFi");
+			break;
+		case 2:
+			WiFi.mode(WIFI_AP);
+			WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
+			proto_info("AP started");
+			proto_info("SSID>" BOARD_NAME);
+			proto_info("IP>%s", WiFi.softAPIP().toString().c_str());
+			break;
+		default:
+			WiFi.mode(WIFI_AP_STA);
+			WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
+			proto_info("Trying to connect to WiFi");
+			WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
+			proto_info("AP started");
+			proto_info("SSID>" BOARD_NAME);
+			proto_info("IP>%s", WiFi.softAPIP().toString().c_str());
+			break;
+		}
+	}
+
+	for (;;)
+	{
 		if (wifi_settings.wifi_on)
 		{
-			switch (wifi_settings.wifi_mode)
-			{
-			case 1:
-				WiFi.mode(WIFI_STA);
-				WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
-				proto_info("Trying to connect to WiFi");
-				break;
-			case 2:
-				WiFi.mode(WIFI_AP);
-				WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
-				proto_info("AP started");
-				proto_info("SSID>" BOARD_NAME);
-				proto_info("IP>%s", WiFi.softAPIP().toString().c_str());
-				break;
-			default:
-				WiFi.mode(WIFI_AP_STA);
-				WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
-				proto_info("Trying to connect to WiFi");
-				WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
-				proto_info("AP started");
-				proto_info("SSID>" BOARD_NAME);
-				proto_info("IP>%s", WiFi.softAPIP().toString().c_str());
-				break;
-			}
-		}
-
-		for (;;)
-		{
-			if (wifi_settings.wifi_on)
-			{
 #if defined(ENABLE_SOCKETS) && defined(MCU_HAS_RTOS)
-				socket_server_dotasks();
+			socket_server_dotasks();
 #endif
-			}
-			taskYIELD();
 		}
+		taskYIELD();
 	}
+}
 #endif
-
-	void esp32_wifi_bt_init(void)
-	{
-#ifdef ENABLE_SOCKETS
-#ifndef ENABLE_BLUETOOTH
-		WiFi.setSleep(WIFI_PS_NONE);
-#endif
-
-		wifi_settings_offset = settings_register_external_setting(sizeof(wifi_settings_t));
-		if (settings_load(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t)))
-		{
-			wifi_settings = {0};
-			memcpy(wifi_settings.ssid, BOARD_NAME, strlen((const char *)BOARD_NAME));
-			memcpy(wifi_settings.pass, WIFI_PASS, strlen((const char *)WIFI_PASS));
-			settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
-		}
-
-		xTaskCreatePinnedToCore(mcu_telnet_task, "wifiTask", 8192, NULL, 1, NULL, CONFIG_ARDUINO_RUNNING_CORE);
-		// taskYIELD();
-
-#endif
-#ifdef ENABLE_BLUETOOTH
-		bt_settings_offset = settings_register_external_setting(1);
-		if (settings_load(bt_settings_offset, &bt_on, 1))
-		{
-			settings_erase(bt_settings_offset, (uint8_t *)&bt_on, 1);
-		}
-
-		if (bt_on)
-		{
-			SerialBT.begin(BOARD_NAME);
-		}
-#endif
-
-#ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
-		ADD_EVENT_LISTENER(grbl_cmd, mcu_custom_grbl_cmd);
-#endif
-	}
 
 #ifdef MCU_HAS_BLUETOOTH
 #ifndef BLUETOOTH_TX_BUFFER_SIZE
 #define BLUETOOTH_TX_BUFFER_SIZE 64
 #endif
+extern "C"
+{
 	DECL_BUFFER(uint8_t, bt_rx, RX_BUFFER_SIZE);
 	DECL_BUFFER(uint8_t, bt_tx, BLUETOOTH_TX_BUFFER_SIZE);
 
@@ -680,7 +812,48 @@ extern "C"
 			BUFFER_CLEAR(bt_tx);
 		}
 	}
+}
 #endif
+
+extern "C"
+{
+	void esp32_wifi_bt_init(void)
+	{
+#ifdef ENABLE_SOCKETS
+#ifndef ENABLE_BLUETOOTH
+		WiFi.setSleep(WIFI_PS_NONE);
+#endif
+
+		wifi_settings_offset = settings_register_external_setting(sizeof(wifi_settings_t));
+		if (settings_load(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t)))
+		{
+			wifi_settings = {0};
+			memcpy(wifi_settings.ssid, BOARD_NAME, strlen((const char *)BOARD_NAME));
+			memcpy(wifi_settings.pass, WIFI_PASS, strlen((const char *)WIFI_PASS));
+			settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
+		}
+
+		xTaskCreatePinnedToCore(mcu_wifi_task, "wifiTask", 8192, NULL, 1, NULL, CONFIG_ARDUINO_RUNNING_CORE);
+		// taskYIELD();
+
+#endif
+#ifdef ENABLE_BLUETOOTH
+		bt_settings_offset = settings_register_external_setting(1);
+		if (settings_load(bt_settings_offset, &bt_on, 1))
+		{
+			settings_erase(bt_settings_offset, (uint8_t *)&bt_on, 1);
+		}
+
+		if (bt_on)
+		{
+			SerialBT.begin(BOARD_NAME);
+		}
+#endif
+
+#ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
+		ADD_EVENT_LISTENER(grbl_cmd, mcu_custom_grbl_cmd);
+#endif
+	}
 
 	void esp32_wifi_bt_process(void)
 	{
@@ -708,10 +881,15 @@ extern "C"
 		}
 #endif
 	}
+}
 
+/**
+ * I2C
+ */
 #ifdef MCU_HAS_I2C
 #include <Wire.h>
-
+extern "C"
+{
 #if (I2C_ADDRESS != 0)
 	static uint8_t mcu_i2c_buffer_len;
 	static uint8_t mcu_i2c_buffer[I2C_SLAVE_BUFFER_SIZE];
@@ -758,15 +936,14 @@ extern "C"
 
 		return I2C_NOTOK;
 	}
-#endif
 }
+#endif
 
 /**
  *
  * This handles EEPROM simulation on flash memory
  *
  * **/
-
 #if !defined(RAM_ONLY_SETTINGS) && defined(USE_ARDUINO_EEPROM_LIBRARY)
 #include <EEPROM.h>
 extern "C"
@@ -805,6 +982,9 @@ extern "C"
 }
 #endif
 
+/**
+ * SPI
+ */
 #if defined(MCU_HAS_SPI) && defined(USE_ARDUINO_SPI_LIBRARY)
 #include <SPI.h>
 SPIClass *esp32spi = NULL;

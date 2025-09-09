@@ -100,22 +100,34 @@ void socket_stop_listening(socket_if_t *socket)
 
 void socket_add_ondata_handler(socket_if_t *socket, socket_data_delegate callback)
 {
-	socket->client_ondata_cb = callback;
+	if (socket)
+	{
+		socket->client_ondata_cb = callback;
+	}
 }
 
 void socket_add_onidle_handler(socket_if_t *socket, socket_idle_delegate callback)
 {
-	socket->client_onidle_cb = callback;
+	if (socket)
+	{
+		socket->client_onidle_cb = callback;
+	}
 }
 
 void socket_add_onconnected_handler(socket_if_t *socket, socket_connect_delegate callback)
 {
-	socket->client_onconnected_cb = callback;
+	if (socket)
+	{
+		socket->client_onconnected_cb = callback;
+	}
 }
 
 void socket_add_ondisconnected_handler(socket_if_t *socket, socket_connect_delegate callback)
 {
-	socket->client_ondisconnected_cb = callback;
+	if (socket)
+	{
+		socket->client_ondisconnected_cb = callback;
+	}
 }
 
 int socket_send(socket_if_t *socket, uint8_t client_idx, char *data, size_t data_len, int flags)
@@ -157,6 +169,10 @@ int socket_broadcast(socket_if_t *socket, char *data, size_t data_len, int flags
 /* Helper: add new client */
 static void add_client(socket_if_t *iface, int client_fd)
 {
+	if (!iface)
+	{
+		return;
+	}
 	for (uint8_t i = 0; i < SOCKET_MAX_CLIENTS; i++)
 	{
 		if (iface->socket_clients[i] < 0)

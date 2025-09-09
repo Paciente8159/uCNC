@@ -76,7 +76,8 @@ bool http_send_file(int client_idx, char *file_path, char *content_type);
 /* Upload helpers (polled by file_handler) */
 http_upload_t http_file_upload_status(int client_idx);
 void http_file_upload_name(int client_idx, char *filename, size_t maxlen);
-char *http_file_upload_buffer(int client_idx, size_t *len);
+// not necessary
+// char *http_file_upload_buffer(int client_idx, size_t *len);
 
 #ifdef __cplusplus
 }

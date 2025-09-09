@@ -65,10 +65,11 @@ typedef struct
 	size_t hlen;
 	char hbuf[HTTP_HEADER_BUF_SIZE];
 
+	// not necessary
 	/* Small chunk buffer surfaced to app */
-	uint8_t up_buf[HTTP_UPLOAD_BUF_SIZE];
-	size_t up_len;
-	uint8_t up_status; /* HTTP_UPLOAD_* */
+	// uint8_t up_buf[HTTP_UPLOAD_BUF_SIZE];
+	// size_t up_len;
+	// uint8_t up_status; /* HTTP_UPLOAD_* */
 
 	/* Response bookkeeping */
 	bool headers_sent;
@@ -118,7 +119,7 @@ static void release_client(int client_idx)
 		if (clients[client_idx].upl.status == REQ_UPLOAD_INIT_FINISHED)
 		{
 			/* Notify abort if we die mid-upload */
-			clients[client_idx].up_status = HTTP_UPLOAD_ABORT;
+			// clients[client_idx].up_status = HTTP_UPLOAD_ABORT;
 			if (clients[client_idx].route && clients[client_idx].route->file_handler)
 			{
 				clients[client_idx].route->file_handler(client_idx);
@@ -409,19 +410,20 @@ void http_file_upload_name(int client_idx, char *filename, size_t maxlen)
 	filename[maxlen - 1] = '\0';
 }
 
-char *http_file_upload_buffer(int client_idx, size_t *len)
-{
-	http_client_t *c = &clients[client_idx];
-	if (!c)
-	{
-		if (len)
-			*len = 0;
-		return NULL;
-	}
-	if (len)
-		*len = c->up_len;
-	return (char *)c->up_buf;
-}
+// not necessary
+// char *http_file_upload_buffer(int client_idx, size_t *len)
+// {
+// 	http_client_t *c = &clients[client_idx];
+// 	if (!c)
+// 	{
+// 		if (len)
+// 			*len = 0;
+// 		return NULL;
+// 	}
+// 	if (len)
+// 		*len = c->up_len;
+// 	return (char *)c->up_buf;
+// }
 
 /* --------------- request dispatch ----------------- */
 
