@@ -809,14 +809,16 @@ extern "C"
 		if (!path || !finfo)
 			return false;
 
-	char fpath[256];
-if (strcmp("/", path) == 0 || strcmp(".", path) == 0) {
-    strncpy(fpath, "./*", sizeof(fpath) - 1);
-    fpath[sizeof(fpath) - 1] = '\0';
-} else {
-    snprintf(fpath, sizeof(fpath), "./%s", path);
-}
-
+		char fpath[256];
+		if (strcmp("/", path) == 0 || strcmp(".", path) == 0)
+		{
+			strncpy(fpath, "./*", sizeof(fpath) - 1);
+			fpath[sizeof(fpath) - 1] = '\0';
+		}
+		else
+		{
+			snprintf(fpath, sizeof(fpath), "./%s", path);
+		}
 
 		WIN32_FIND_DATAA fd = {0};
 		HANDLE h = FindFirstFileA(fpath, &fd);
@@ -868,8 +870,8 @@ if (strcmp("/", path) == 0 || strcmp(".", path) == 0) {
 		char file[256] = ".";
 		if (strcmp("/", path))
 			strncat(file, path, sizeof(file) - 2);
-			
-		FILE* tmpfile = fopen(file, mode);
+
+		FILE *tmpfile = fopen(file, mode);
 
 		if (!flash_fs_finfo(path, &finfo))
 			return NULL;
@@ -974,6 +976,11 @@ if (strcmp("/", path) == 0 || strcmp(".", path) == 0) {
 		return false;
 	}
 
+	/**
+	 * OTA emulation
+	 */
+	void ota_server_start(void);
+
 	/* ----- MCU init and main ------------------------------------------------ */
 
 	static pthread_t thread_io;
@@ -1055,10 +1062,12 @@ if (strcmp("/", path) == 0 || strcmp(".", path) == 0) {
 
 #if defined(ENABLE_SOCKETS) && defined(MCU_HAS_SOCKETS)
 		init_winsock();
-		extern socket_if_t* telnet_sock;
+		extern socket_if_t *telnet_sock;
 		extern const telnet_protocol_t telnet_proto;
 		telnet_sock = telnet_start_listen(&telnet_proto, 23);
 #endif
+
+		ota_server_start();
 	}
 
 	int main(int argc, char **argv)
@@ -1164,6 +1173,62 @@ if (strcmp("/", path) == 0 || strcmp(".", path) == 0) {
 	}
 
 #endif
+
+/**
+ * Emulate OTA page
+ */
+#include "../../../modules/net/http.h"
+	// HTML form for firmware upload (simplified from ESP8266HTTPUpdateServer)
+	// Request handler for GET /update
+	static void ota_page_cb(int client_idx)
+	{
+		const char fmt[] = "text/html";
+		const char updateForm[] =
+				"<!DOCTYPE html><html><body>"
+				"<form method='POST' action='/update' enctype='multipart/form-data'>"
+				"Firmware:<br><input type='file' name='firmware'>"
+				"<input type='submit' value='Update'>"
+				"</form></body></html>";
+				http_send_header(client_idx, "Cache-Control", "no-cache", false);
+				http_send_header(client_idx, "Cache-Control", "max-age=300", false);
+		http_send_str(client_idx, 200, (char *)fmt, (char *)updateForm);
+		http_send(client_idx, 200, (char *)fmt, NULL, 0);
+	}
+
+	// File upload handler for POST /update
+	static void ota_upload_cb(int client_idx)
+	{
+		http_upload_t up = http_file_upload_status(client_idx);
+
+		if (up.status == HTTP_UPLOAD_START)
+		{
+			// Called once at start of upload
+			proto_printf("Update start: %s\n", up.filename);
+		}
+		else if (up.status == HTTP_UPLOAD_PART)
+		{
+			// Called for each chunk
+			proto_printf("Writing data: %lu bytes\r\n", up.datalen);
+		}
+		else if (up.status == HTTP_UPLOAD_END)
+		{
+			const char fmt[] = "text/plain";
+			proto_printf("Update Success: %u bytes\r\n", up.datalen);
+			const char suc[] = "Update Success! Rebooting...";
+			http_send_str(client_idx, 200, (char *)fmt, (char *)suc);
+			http_send(client_idx, 200, (char *)fmt, NULL, 0);
+		}
+		else if (up.status == HTTP_UPLOAD_ABORT)
+		{
+			proto_print("Update aborted\r\n");
+		}
+	}
+
+	void ota_server_start(void)
+	{
+		LOAD_MODULE(http_server);
+		http_add("/update", HTTP_REQ_ANY, ota_page_cb, ota_upload_cb);
+	}
 
 #ifdef __cplusplus
 }

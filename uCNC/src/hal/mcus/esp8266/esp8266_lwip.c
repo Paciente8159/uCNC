@@ -53,8 +53,9 @@
 #include <lwip/err.h>
 #include <lwip/mem.h>
 #include <lwip/pbuf.h>
+#include "../../../modules/net/socket.h"
 
-#define MAX_BSD_SOCKETS 8
+#define MAX_BSD_SOCKETS (MAX_SOCKETS * SOCKET_MAX_CLIENTS)
 
 #ifndef AF_INET
 #define AF_INET 2

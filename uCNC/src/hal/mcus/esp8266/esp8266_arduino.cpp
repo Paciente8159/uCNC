@@ -321,7 +321,8 @@ extern "C"
 		static uint32_t next_info = 30000;
 		static bool connected = false;
 
-		if (!wifi_settings.wifi_on)
+		// STA enabled only
+		if (!wifi_settings.wifi_on || wifi_settings.wifi_mode > 1)
 		{
 			return false;
 		}
@@ -486,17 +487,16 @@ extern "C"
 #ifdef ENABLE_SOCKETS
 #include "../../../modules/net/http.h"
 	// HTML form for firmware upload (simplified from ESP8266HTTPUpdateServer)
-	static const char updateForm[] PROGMEM =
-			"<!DOCTYPE html><html><body>"
-			"<form method='POST' action='/update' enctype='multipart/form-data'>"
-			"Firmware:<br><input type='file' name='firmware'>"
-			"<input type='submit' value='Update'>"
-			"</form></body></html>";
-
 	// Request handler for GET /update
 	static void ota_page_cb(int client_idx)
 	{
 		const char fmt[] = "text/plain";
+		const char updateForm[] =
+				"<!DOCTYPE html><html><body>"
+				"<form method='POST' action='/update' enctype='multipart/form-data'>"
+				"Firmware:<br><input type='file' name='firmware'>"
+				"<input type='submit' value='Update'>"
+				"</form></body></html>";
 		http_send_str(client_idx, 200, (char *)fmt, (char *)updateForm);
 		http_send(client_idx, 200, (char *)fmt, NULL, 0);
 	}
@@ -551,11 +551,11 @@ extern "C"
 		}
 	}
 
+	static char update_uri[] = "/update";
 	void ota_server_start(void)
 	{
-		const char uri[] = "/update";
 		LOAD_MODULE(http_server);
-		http_add((char *)uri, HTTP_REQ_ANY, ota_page_cb, ota_upload_cb);
+		http_add(update_uri, HTTP_REQ_ANY, ota_page_cb, ota_upload_cb);
 	}
 #endif
 
@@ -573,7 +573,6 @@ extern "C"
 		DBGMSG("Wifi assert");
 #ifdef ENABLE_SOCKETS
 		DBGMSG("Wifi startup");
-		WiFi.setSleepMode(WIFI_NONE_SLEEP);
 
 		wifi_settings_offset = settings_register_external_setting(sizeof(wifi_settings_t));
 		if (settings_load(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t)))
@@ -631,10 +630,6 @@ extern "C"
 				.finfo = flash_fs_info,
 				.next = NULL};
 		fs_mount(&flash_fs);
-
-		// web_server.begin();
-
-		// #endif
 
 #if defined(BOARD_HAS_CUSTOM_SYSTEM_COMMANDS) && defined(ENABLE_SOCKETS)
 		ADD_EVENT_LISTENER(grbl_cmd, mcu_custom_grbl_cmd);

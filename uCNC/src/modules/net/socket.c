@@ -248,9 +248,9 @@ void socket_server_dotasks(void)
 		{
 			// memset(buffer, 0, sizeof(buffer));
 			int len = bsd_recv(fd, buffer, SOCKET_MAX_DATA_SIZE, 0);
-			buffer[len] = 0;
 			if (len > 0)
 			{
+				buffer[len] = 0;
 #ifdef ENABLE_SOCKET_TIMEOUTS
 				socket->client_activity[c] = now;
 #endif

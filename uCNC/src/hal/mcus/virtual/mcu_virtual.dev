@@ -29,7 +29,7 @@ IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=1
 CompilerSettings=10000000a0000000001000000
-UnitCount=113
+UnitCount=112
 
 [VersionInfo]
 Major=1
@@ -1141,7 +1141,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit111]
-FileName=..\..\..\modules\web_pendant\web_pendant.c
+FileName=..\..\..\modules\net\websocket.h
 CompileCpp=0
 Folder=
 Compile=1
@@ -1151,7 +1151,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit112]
-FileName=..\..\..\modules\net\websocket.h
+FileName=..\..\..\modules\net\utils\http_request.c
 CompileCpp=0
 Folder=
 Compile=1

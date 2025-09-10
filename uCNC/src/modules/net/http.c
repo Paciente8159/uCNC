@@ -39,8 +39,8 @@
 
 typedef struct
 {
-	char name[HTTP_MAX_HEADER_NAME];
-	char value[HTTP_MAX_HEADER_VALUE];
+	char name[HTTP_MAX_HEADER_LEN];
+	char *value;
 } http_header_kv_t;
 
 typedef struct
@@ -251,23 +251,26 @@ void http_send_header(int client_idx, char *name, char *data, bool first)
 	/* append or add */
 	for (size_t i = 0; i < c->hdr_count; i++)
 	{
-		if (strcasecmp(c->hdrs[i].name, name) == 0)
+		if (strncasecmp_local(c->hdrs[i].name, name, strlen(name)) == 0)
 		{
-			size_t l = strlen(c->hdrs[i].value);
-			if (l + 2 < HTTP_MAX_HEADER_VALUE)
+			size_t l = strlen(c->hdrs[i].name);
+			if (l + 2 < HTTP_MAX_HEADER_LEN)
 			{
-				strncat(c->hdrs[i].value, ", ", HTTP_MAX_HEADER_VALUE - l - 1);
-				strncat(c->hdrs[i].value, data, HTTP_MAX_HEADER_VALUE - strlen(c->hdrs[i].value) - 1);
+				append_str(c->hdrs[i].name, ", ");
+				append_str(c->hdrs[i].name, data);
 			}
 			return;
 		}
 	}
 	if (c->hdr_count < HTTP_MAX_HEADERS)
 	{
-		strncpy(c->hdrs[c->hdr_count].name, name, HTTP_MAX_HEADER_NAME - 1);
-		c->hdrs[c->hdr_count].name[HTTP_MAX_HEADER_NAME - 1] = '\0';
-		strncpy(c->hdrs[c->hdr_count].value, data, HTTP_MAX_HEADER_VALUE - 1);
-		c->hdrs[c->hdr_count].value[HTTP_MAX_HEADER_VALUE - 1] = '\0';
+		memset(c->hdrs[c->hdr_count].name, 0, sizeof(c->hdrs[c->hdr_count].name));
+		strncpy(c->hdrs[c->hdr_count].name, name, HTTP_MAX_HEADER_LEN - 3); // must ensure space for \r\n
+		size_t l = strlen(c->hdrs[c->hdr_count].name);
+		c->hdrs[c->hdr_count].value = &c->hdrs[c->hdr_count].name[l];
+		*c->hdrs[c->hdr_count].value++=':';
+		*c->hdrs[c->hdr_count].value++=' ';
+		strncpy(c->hdrs[c->hdr_count].value, data, HTTP_MAX_HEADER_LEN - l - 3);
 		c->hdr_count++;
 	}
 }
@@ -304,6 +307,13 @@ void http_send(int client_idx, int code, char *content_type, char *data, size_t 
 		n = str_snprintf(buf, sizeof(buf), "Connection: %s\r\n", (c->keep_alive ? "keep-alive" : "close"));
 		socket_send(http_srv, client_idx, buf, (size_t)n, 0);
 
+		if (!c->chunked_mode)
+		{
+			memset(buf, 0, sizeof(buf));
+			n = str_snprintf(buf, sizeof(buf), "Content-Length: %ld\r\n", data_len);
+			socket_send(http_srv, client_idx, buf, (size_t)n, 0);
+		}
+
 		if (content_type)
 		{
 			memset(buf, 0, sizeof(buf));
@@ -312,9 +322,10 @@ void http_send(int client_idx, int code, char *content_type, char *data, size_t 
 		}
 		for (size_t i = 0; i < c->hdr_count; i++)
 		{
-			memset(buf, 0, sizeof(buf));
-			n = str_snprintf(buf, sizeof(buf), "%s: %s\r\n", c->hdrs[i].name, c->hdrs[i].value);
-			socket_send(http_srv, client_idx, buf, (size_t)n, 0);
+			// memset(buf, 0, sizeof(buf));
+			// n = str_snprintf(buf, sizeof(buf), "%s: %s\r\n", c->hdrs[i].name, c->hdrs[i].value);
+			append_str(c->hdrs[i].name, "\r\n");
+			socket_send(http_srv, client_idx, c->hdrs[i].name, (size_t)strlen(c->hdrs[i].name), 0);
 		}
 		socket_send(http_srv, client_idx, "\r\n", 2, 0);
 		c->headers_sent = true;
@@ -489,7 +500,7 @@ static void handle_upload_bytes(int client_idx, char **buf, size_t *len)
 				*len -= c->upl.upload_len;
 			}
 			c->fileupl.status = HTTP_UPLOAD_PART;
-			c->fileupl.data = (uint8_t*)buffer;
+			c->fileupl.data = (uint8_t *)buffer;
 			maybe_invoke_file_handler(client_idx);
 			c->upl.upload_len -= c->fileupl.datalen;
 			*buf = &buffer[c->fileupl.datalen];
@@ -510,13 +521,17 @@ static void handle_upload_bytes(int client_idx, char **buf, size_t *len)
 		http_request_parse_header(&c->head, buf, len);
 		if (c->head.status == REQ_HEAD_FINISHED)
 		{
-			if(c->head.name[0]==0){/*discard empty line*/}
-			else if(!strncmp(c->head.name, c->upl.boundary, strlen(c->upl.boundary))){
+			if (c->head.name[0] == 0)
+			{ /*discard empty line*/
+			}
+			else if (!strncmp(c->head.name, c->upl.boundary, strlen(c->upl.boundary)))
+			{
 				http_send_str(client_idx, 200, "text/plain; charset=UTF-8", "File uploaded successfully");
 				http_send(client_idx, 200, "text/plain; charset=UTF-8", NULL, 0);
 				reset_request_state(client_idx);
 			}
-			else{
+			else
+			{
 				http_send_str(client_idx, 413, "text/plain; charset=UTF-8", "File error");
 				http_send(client_idx, 413, "text/plain; charset=UTF-8", NULL, 0);
 			}
@@ -526,17 +541,17 @@ static void handle_upload_bytes(int client_idx, char **buf, size_t *len)
 
 /* --------------- socket callbacks ----------------- */
 
-static void http_on_connected(uint8_t client_idx, void* protocol)
+static void http_on_connected(uint8_t client_idx, void *protocol)
 {
 	client_reset(client_idx);
 }
 
-static void http_on_disconnected(uint8_t client_idx, void* protocol)
+static void http_on_disconnected(uint8_t client_idx, void *protocol)
 {
 	release_client(client_idx);
 }
 
-static void http_on_data(uint8_t client_idx, char *data, size_t data_len, void* protocol)
+static void http_on_data(uint8_t client_idx, char *data, size_t data_len, void *protocol)
 {
 	http_client_t *c = &clients[client_idx]; // get_client_slot(client_idx);
 	if (!c || data_len == 0)
