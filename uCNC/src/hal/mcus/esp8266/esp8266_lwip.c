@@ -82,8 +82,10 @@ typedef struct
 	sock_state_t state;
 	struct tcp_pcb *pcb;
 	struct tcp_pcb *pending; // For listener: first unclaimed pcb
-	void *rx_buf;
-	u16_t rx_len;
+	struct pbuf *rx_buf;
+	u16_t rx_off; // offset into rx_buf->payload
+	u32_t rx_len; // total queued unread bytes (optional)
+	bool rx_eof;	// FIN received (optional for BSD-like 0 return)
 } bsd_sock_t;
 
 static bsd_sock_t socks[MAX_BSD_SOCKETS];
@@ -104,12 +106,22 @@ static err_t recv_cb(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err)
 	int idx = (int)(intptr_t)arg;
 	if (!p)
 	{
-		tcp_close(tpcb);
-		socks[idx].state = SOCK_UNUSED;
+		// peer closed (FIN). Defer close until app drains.
+		socks[idx].rx_eof = true;
 		return ERR_OK;
 	}
-	socks[idx].rx_buf = p;
-	socks[idx].rx_len = p->tot_len;
+
+	if (socks[idx].rx_buf)
+	{
+		// Append new data to existing unread chain
+		pbuf_cat(socks[idx].rx_buf, p);
+	}
+	else
+	{
+		socks[idx].rx_buf = p;
+		socks[idx].rx_off = 0;
+	}
+	socks[idx].rx_len += p->tot_len; // optional running count
 	return ERR_OK;
 }
 
@@ -184,6 +196,10 @@ int bsd_accept(int sockfd, struct bsd_sockaddr_in *addr, int *addrlen)
 	socks[idx].pcb = socks[sockfd].pending;
 	tcp_backlog_accepted(socks[idx].pcb); // Finalize backlog acceptance
 	socks[idx].state = SOCK_CONNECTED;
+	socks[idx].rx_buf = NULL;
+	socks[idx].rx_off = 0;
+	socks[idx].rx_len = 0;
+	socks[idx].rx_eof = false;
 	socks[sockfd].pending = NULL;
 
 	tcp_arg(socks[idx].pcb, (void *)(intptr_t)idx);
@@ -203,15 +219,59 @@ int bsd_recv(int sockfd, void *buf, size_t len, int flags)
 {
 	if (sockfd < 0 || sockfd >= MAX_BSD_SOCKETS)
 		return -1;
-	if (!socks[sockfd].rx_buf)
-		return -1; // no data
+
 	struct pbuf *p = socks[sockfd].rx_buf;
-	u16_t copy_len = p->tot_len > len ? len : p->tot_len;
-	pbuf_copy_partial(p, buf, copy_len, 0);
-	pbuf_free(p);
-	socks[sockfd].rx_buf = NULL;
-	socks[sockfd].rx_len = 0;
-	return copy_len;
+	if (!p)
+	{
+		// No data buffered. If EOF previously seen, return 0 (BSD semantics).
+		if (socks[sockfd].rx_eof)
+			return 0;
+		return -1; // EWOULDBLOCK for nonblocking minimal shim
+	}
+
+	uint8_t *dst = (uint8_t *)buf;
+	size_t to_copy = len;
+	size_t copied = 0;
+	u16_t off = socks[sockfd].rx_off;
+
+	while (p && to_copy > 0)
+	{
+		u16_t avail = p->len - off;
+		u16_t take = (avail > to_copy) ? (u16_t)to_copy : avail;
+
+		memcpy(dst + copied, ((uint8_t *)p->payload) + off, take);
+		copied += take;
+		to_copy -= take;
+		off += take;
+
+		if (off == p->len)
+		{
+			// Fully consumed this pbuf: detach and free just this node
+			struct pbuf *old = p;
+			p = p->next;
+			old->next = NULL; // prevent freeing the rest of chain
+			pbuf_free(old);
+			off = 0;
+		}
+	}
+
+	socks[sockfd].rx_buf = p;
+	socks[sockfd].rx_off = off;
+	if (socks[sockfd].rx_len >= copied)
+		socks[sockfd].rx_len -= (u32_t)copied;
+
+	if (copied > 0)
+	{
+		// Inform TCP we've consumed data so the window advances
+		tcp_recved(socks[sockfd].pcb, (u16_t)copied);
+		return (int)copied;
+	}
+
+	// No bytes copied. If FIN observed and buffer empty, return 0.
+	if (!p && socks[sockfd].rx_eof)
+		return 0;
+
+	return -1; // would block
 }
 
 int bsd_send(int sockfd, const void *buf, size_t len, int flags)
@@ -245,9 +305,15 @@ int bsd_send(int sockfd, const void *buf, size_t len, int flags)
 			err = tcp_write(socks[sockfd].pcb, p, (u16_t)to_send, TCP_WRITE_FLAG_COPY);
 		} while (err != ERR_OK);
 
+		if (err != ERR_OK)
+		{
+			return -1;
+
 		err = tcp_output(socks[sockfd].pcb);
 		if (err != ERR_OK)
+		{
 			return -1;
+		}
 
 		p += to_send;
 		remaining -= to_send;
@@ -264,6 +330,11 @@ int bsd_close(int sockfd)
 		tcp_arg(socks[sockfd].pcb, NULL);
 		tcp_recv(socks[sockfd].pcb, NULL);
 		tcp_close(socks[sockfd].pcb);
+	}
+	if (socks[sockfd].rx_buf)
+	{
+		pbuf_free(socks[sockfd].rx_buf);
+		socks[sockfd].rx_buf = NULL;
 	}
 	memset(&socks[sockfd], 0, sizeof(socks[sockfd]));
 	socks[sockfd].state = SOCK_UNUSED;

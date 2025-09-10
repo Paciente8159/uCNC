@@ -490,7 +490,7 @@ extern "C"
 	// Request handler for GET /update
 	static void ota_page_cb(int client_idx)
 	{
-		const char fmt[] = "text/plain";
+		const char fmt[] = "text/html";
 		const char updateForm[] =
 				"<!DOCTYPE html><html><body>"
 				"<form method='POST' action='/update' enctype='multipart/form-data'>"
