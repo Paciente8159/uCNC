@@ -308,6 +308,7 @@ int bsd_send(int sockfd, const void *buf, size_t len, int flags)
 		if (err != ERR_OK)
 		{
 			return -1;
+		}
 
 		err = tcp_output(socks[sockfd].pcb);
 		if (err != ERR_OK)
