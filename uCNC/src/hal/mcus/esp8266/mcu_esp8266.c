@@ -295,6 +295,7 @@ static esp8266_io_out_t FORCEINLINE out_io_pull(void)
 }
 
 #ifdef ENABLE_SOCKETS
+void esp8266_pre_init(void);
 extern void esp8266_wifi_init(void);
 extern void esp8266_wifi_dotasks(void);
 #endif
@@ -645,6 +646,7 @@ extern void mcu_spi_init();
 
 void mcu_init(void)
 {
+	esp8266_pre_init();
 	mcu_io_init();
 	mcu_uart_init();
 

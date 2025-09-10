@@ -559,6 +559,15 @@ extern "C"
 	}
 #endif
 
+	void esp8266_pre_init()
+	{
+#ifdef ENABLE_SOCKETS
+		WiFi.setSleepMode(WIFI_NONE_SLEEP);
+		WiFi.begin();
+
+		ota_server_start();
+#endif
+	}
 	void esp8266_wifi_init()
 	{
 		DBGMSG("Wifi assert");
@@ -623,10 +632,8 @@ extern "C"
 				.next = NULL};
 		fs_mount(&flash_fs);
 
-// web_server.begin();
-#ifdef ENABLE_SOCKETS
-		// ota_server_start();
-#endif
+		// web_server.begin();
+
 		// #endif
 
 #if defined(BOARD_HAS_CUSTOM_SYSTEM_COMMANDS) && defined(ENABLE_SOCKETS)
