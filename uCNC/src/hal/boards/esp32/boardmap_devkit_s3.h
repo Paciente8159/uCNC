@@ -67,12 +67,12 @@ extern "C"
 #define DOUT31_BIT 38
 
 // Setup com pins
-// #define TX_BIT 43
-// #define RX_BIT 44
-// #define RX_PULLUP
+#define TX_BIT 43
+#define RX_BIT 44
+#define RX_PULLUP
 
-#define USB_DP_BIT 20
-#define USB_DM_BIT 19
+// #define USB_DP_BIT 20
+// #define USB_DM_BIT 19
 	// only uncomment this if other port other then 0 is used
 	// #define UART_PORT 0
 

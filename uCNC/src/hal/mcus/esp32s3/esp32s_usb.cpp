@@ -21,6 +21,15 @@
 #include "USBCDC.h"
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include "../../../cnc.h"
+#if (MCU == MCU_ESP32S3 || defined(ESP32S3) || defined(ESP32S2))
+
+#ifdef MCU_HAS_USB
+
 static inline void esp_usb_init(){
 	Serial.begin();
 }
@@ -44,15 +53,6 @@ static inline int esp_usb_ready(){
 static inline int esp_usb_flush(){
 	Serial.flush();
 }
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#include "../../../cnc.h"
-#if (MCU == MCU_ESP32S3 || defined(ESP32S3) || defined(ESP32S2))
-
-#ifdef MCU_HAS_USB
 
 #ifndef USB_TX_BUFFER_SIZE
 #define USB_TX_BUFFER_SIZE 64

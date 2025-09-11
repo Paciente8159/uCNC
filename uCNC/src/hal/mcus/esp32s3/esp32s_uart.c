@@ -27,6 +27,7 @@
 #endif
 DECL_BUFFER(uint8_t, uart_rx, RX_BUFFER_SIZE);
 DECL_BUFFER(uint8_t, uart_tx, UART_TX_BUFFER_SIZE);
+
 void mcu_uart_init(void)
 {
 	const uart_config_t uartconfig = {
