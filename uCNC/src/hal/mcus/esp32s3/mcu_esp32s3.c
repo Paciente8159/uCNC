@@ -609,7 +609,14 @@ void mcu_init(void)
 	mcu_usb_init();
 #endif
 
-	xTaskCreatePinnedToCore(mcu_rtc_task, "rtcTask", 2048, NULL, 7, NULL, CONFIG_ARDUINO_RUNNING_CORE);
+#if !defined(RAM_ONLY_SETTINGS)
+#ifdef USE_ARDUINO_EEPROM_LIBRARY
+	extern void esp32_eeprom_init(int size);
+#endif
+	esp32_eeprom_init(NVM_STORAGE_SIZE);
+#endif
+
+	xTaskCreatePinnedToCore(mcu_rtc_task, "rtcTask", 4096, NULL, 7, NULL, CONFIG_ARDUINO_RUNNING_CORE);
 
 	// #ifdef MCU_HAS_UART2
 	// 	// initialize UART

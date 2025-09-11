@@ -22,7 +22,11 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
-#include "../../../../cnc_config.h"
+
+extern "C"
+{
+#include "../../../cnc.h"
+}
 
 #ifndef BT_ID_MAX_LEN
 #define BT_ID_MAX_LEN 32

@@ -40,7 +40,7 @@ void mcu_uart_init(void)
 	// We won't use a buffer for sending data.
 	uart_param_config(UART_PORT, &uartconfig);
 	uart_set_pin(UART_PORT, TX_BIT, RX_BIT, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
-	uart_driver_install(UART_PORT, RX_BUFFER_SIZE, UART_TX_BUFFER_SIZE, 0, NULL, 0);
+	uart_driver_install(UART_PORT, MAX(RX_BUFFER_SIZE, (UART_FIFO_LEN + 1)), MAX(UART_TX_BUFFER_SIZE,(UART_FIFO_LEN + 1)), 0, NULL, 0);
 }
 
 void mcu_uart_dotasks(void)
@@ -125,7 +125,7 @@ void mcu_uart2_init()
 	// We won't use a buffer for sending data.
 	uart2_param_config(UART2_PORT, &uartconfig);
 	uart2_set_pin(UART2_PORT, TX2_BIT, RX2_BIT, UART2_PIN_NO_CHANGE, UART2_PIN_NO_CHANGE);
-	uart2_driver_install(UART2_PORT, RX_BUFFER_SIZE, UART2_TX_BUFFER_SIZE, 0, NULL, 0);
+	uart2_driver_install(UART2_PORT, (RX_BUFFER_SIZE * 2), (UART2_TX_BUFFER_SIZE * 2), 0, NULL, 0);
 }
 
 void mcu_uart2_dotasks()
