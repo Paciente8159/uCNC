@@ -1102,15 +1102,37 @@ static void cnc_io_dotasks(void)
 #endif
 }
 
+#ifdef ENABLE_MULTILINE_STARTUP_BLOCKS
+bool g_is_multilineblock;
+#endif
 void cnc_run_startup_blocks(void)
 {
 	for (uint8_t i = 0; i < STARTUP_BLOCKS_COUNT; i++)
 	{
+		itp_sync();
 		uint16_t address = STARTUP_BLOCK_ADDRESS_OFFSET(i);
 		if (settings_check_startup_gcode(address))
 		{
-			grbl_stream_eeprom(address);
-			cnc_parse_cmd();
+#ifdef ENABLE_MULTILINE_STARTUP_BLOCKS
+			uint8_t c = EOL;
+			do
+			{
+#endif
+				grbl_stream_eeprom(address);
+				cnc_parse_cmd();
+#ifdef ENABLE_MULTILINE_STARTUP_BLOCKS
+				do
+				{
+					c = mcu_eeprom_getc(address++);
+					if (c == '|')
+					{
+						grbl_stream_start_broadcast();
+						proto_putc('>');
+						break;
+					}
+				} while (c != EOL);
+			} while (c != EOL);
+#endif
 		}
 	}
 

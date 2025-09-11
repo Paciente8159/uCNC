@@ -6,6 +6,18 @@
 
 # Changelog
 
+## [1.12.4] - 07-08-2025
+
+### Added
+
+- added boardmap settings to use the shield v3 on Arduino Mega (#876)
+- added multiline startup blocks support (#877)
+- added sequential settings modification command with support for multivalue (array of values) (#878)
+
+### Fixed
+
+- fixed/improved stream overflow detection and handling (#875)
+
 ## [1.12.3] - 26-06-2025
 
 ### Added
@@ -1917,6 +1929,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.12.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.12.4
 [1.12.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.12.3
 [1.12.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.12.2
 [1.12.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.12.1
