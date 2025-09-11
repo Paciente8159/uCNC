@@ -307,7 +307,7 @@ static FORCEINLINE void esp32_i2s_extender_init(void)
 #else
 	itp_set_step_mode(ITP_STEP_MODE_DEFAULT);
 #endif
-	xTaskCreatePinnedToCore(esp32_i2s_stream_task, "esp32I2Supdate", 4096, NULL, 7, NULL, CONFIG_ARDUINO_RUNNING_CORE);
+	xTaskCreate(esp32_i2s_stream_task, "esp32I2Supdate", 4096, NULL, 7, NULL);
 }
 #endif
 
@@ -519,18 +519,6 @@ uint8_t mcu_softpwm_freq_config(uint16_t freq)
 }
 #endif
 
-void mcu_core0_tasks_init(void *arg)
-{
-#ifdef MCU_HAS_UART
-	// install UART driver handler
-	uart_driver_install(UART_PORT, RX_BUFFER_CAPACITY * 2, 0, 0, NULL, 0);
-#endif
-#ifdef MCU_HAS_UART2
-	// install UART driver handler
-	uart_driver_install(UART2_PORT, RX_BUFFER_CAPACITY * 2, 0, 0, NULL, 0);
-#endif
-}
-
 void mcu_rtc_task(void *arg)
 {
 	portTickType xLastWakeTimeUpload = xTaskGetTickCount();
@@ -549,17 +537,13 @@ MCU_CALLBACK void mcu_itp_isr(void *arg)
 	if (mode == ITP_STEP_MODE_REALTIME)
 #endif
 #endif
-	{
 		mcu_gen_step();
-	}
 #ifdef IC74HC595_CUSTOM_SHIFT_IO
 #if defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS)
 	if (mode == ITP_STEP_MODE_REALTIME)
 #endif
 #endif
-	{
 		mcu_gen_pwm_and_servo();
-	}
 #if defined(MCU_HAS_ONESHOT_TIMER) && defined(ENABLE_RT_SYNC_MOTIONS)
 	mcu_gen_oneshot();
 #endif
@@ -573,7 +557,6 @@ MCU_CALLBACK void mcu_itp_isr(void *arg)
 	}
 #endif
 #endif
-
 	timer_group_clr_intr_status_in_isr(ITP_TIMER_TG, ITP_TIMER_IDX);
 	/* After the alarm has been triggered
 		we need enable it again, so it is triggered the next time */
@@ -592,112 +575,117 @@ void mcu_init(void)
 {
 	mcu_io_init();
 
-// #ifdef MCU_HAS_UART2
-// 	// initialize UART
-// 	const uart_config_t uart2config = {
-// 			.baud_rate = BAUDRATE2,
-// 			.data_bits = UART_DATA_8_BITS,
-// 			.parity = UART_PARITY_DISABLE,
-// 			.stop_bits = UART_STOP_BITS_1,
-// 			.flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-// 			.source_clk = UART_SCLK_APB};
-// 	// We won't use a buffer for sending data.
-// 	uart_param_config(UART2_PORT, &uart2config);
-// 	uart_set_pin(UART2_PORT, TX2_BIT, RX2_BIT, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
-// #endif
+#ifdef MCU_HAS_UART
+	// initialize UART
+	const uart_config_t uartconfig = {
+			.baud_rate = BAUDRATE,
+			.data_bits = UART_DATA_8_BITS,
+			.parity = UART_PARITY_DISABLE,
+			.stop_bits = UART_STOP_BITS_1,
+			.flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+			.source_clk = UART_SCLK_APB};
+	// We won't use a buffer for sending data.
+	uart_param_config(UART_PORT, &uartconfig);
+	uart_set_pin(UART_PORT, TX_BIT, RX_BIT, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+	uart_driver_install(UART_PORT, RX_BUFFER_CAPACITY * 2, 0, 0, NULL, 0);
+#endif
 
-// 	// starts EEPROM before UART to enable WiFi and BT settings
-// #if !defined(RAM_ONLY_SETTINGS) && !defined(USE_ARDUINO_EEPROM_LIBRARY)
-// 	// esp32_eeprom_init(NVM_STORAGE_SIZE); // 1K Emulated EEPROM
+#ifdef MCU_HAS_UART2
+	// initialize UART
+	const uart_config_t uart2config = {
+			.baud_rate = BAUDRATE2,
+			.data_bits = UART_DATA_8_BITS,
+			.parity = UART_PARITY_DISABLE,
+			.stop_bits = UART_STOP_BITS_1,
+			.flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+			.source_clk = UART_SCLK_APB};
+	// We won't use a buffer for sending data.
+	uart_param_config(UART2_PORT, &uart2config);
+	uart_set_pin(UART2_PORT, TX2_BIT, RX2_BIT, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+	uart_driver_install(UART2_PORT, RX_BUFFER_CAPACITY * 2, 0, 0, NULL, 0);
+#endif
 
-// 	// starts nvs
-// 	mcu_eeprom.size = 0;
-// 	memset(mcu_eeprom.data, 0, NVM_STORAGE_SIZE);
-// 	if (nvs_open("eeprom", NVS_READWRITE, &mcu_eeprom.nvs_handle) == ESP_OK)
-// 	{
-// 		// determines the maximum sector size of NVS that can be read/write
-// 		nvs_get_blob(mcu_eeprom.nvs_handle, "eeprom", NULL, &mcu_eeprom.size);
-// 		if (NVM_STORAGE_SIZE > mcu_eeprom.size)
-// 		{
-// 			log_e("eeprom does not have enough space");
-// 			mcu_eeprom.size = 0;
-// 		}
+	// starts EEPROM before UART to enable WiFi and BT settings
+#if !defined(RAM_ONLY_SETTINGS) && !defined(USE_ARDUINO_EEPROM_LIBRARY)
+	// esp32_eeprom_init(NVM_STORAGE_SIZE); // 1K Emulated EEPROM
 
-// 		nvs_get_blob(mcu_eeprom.nvs_handle, "eeprom", mcu_eeprom.data, &mcu_eeprom.size);
-// 	}
-// 	else
-// 	{
-// 		log_e("eeprom failed to open");
-// 	}
-// #elif !defined(RAM_ONLY_SETTINGS)
-// 	esp32_eeprom_init(NVM_STORAGE_SIZE);
-// #endif
+	// starts nvs
+	mcu_eeprom.size = 0;
+	memset(mcu_eeprom.data, 0, NVM_STORAGE_SIZE);
+	if (nvs_open("eeprom", NVS_READWRITE, &mcu_eeprom.nvs_handle) == ESP_OK)
+	{
+		// determines the maximum sector size of NVS that can be read/write
+		nvs_get_blob(mcu_eeprom.nvs_handle, "eeprom", NULL, &mcu_eeprom.size);
+		if (NVM_STORAGE_SIZE > mcu_eeprom.size)
+		{
+			log_e("eeprom does not have enough space");
+			mcu_eeprom.size = 0;
+		}
 
-// #ifdef MCU_HAS_UART
-// 	// initialize UART
-// 	const uart_config_t uartconfig = {
-// 			.baud_rate = BAUDRATE,
-// 			.data_bits = UART_DATA_8_BITS,
-// 			.parity = UART_PARITY_DISABLE,
-// 			.stop_bits = UART_STOP_BITS_1,
-// 			.flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-// 			.source_clk = UART_SCLK_APB};
-// 	// We won't use a buffer for sending data.
-// 	uart_param_config(UART_PORT, &uartconfig);
-// 	uart_set_pin(UART_PORT, TX_BIT, RX_BIT, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
-// #endif
+		nvs_get_blob(mcu_eeprom.nvs_handle, "eeprom", mcu_eeprom.data, &mcu_eeprom.size);
+	}
+	else
+	{
+		log_e("eeprom failed to open");
+	}
+#elif !defined(RAM_ONLY_SETTINGS)
+	esp32_eeprom_init(NVM_STORAGE_SIZE);
+#endif
 
-// 	// inititialize ITP timer
-// 	timer_config_t itpconfig = {0};
-// 	itpconfig.divider = 2;
-// 	itpconfig.counter_dir = TIMER_COUNT_UP;
-// 	itpconfig.counter_en = TIMER_PAUSE;
-// 	itpconfig.intr_type = TIMER_INTR_MAX;
-// 	itpconfig.alarm_en = TIMER_ALARM_EN;
-// 	itpconfig.auto_reload = true;
-// 	timer_init(ITP_TIMER_TG, ITP_TIMER_IDX, &itpconfig);
-// 	/* Timer's counter will initially start from value below.
-// 		 Also, if auto_reload is set, this value will be automatically reload on alarm */
-// 	timer_set_counter_value(ITP_TIMER_TG, ITP_TIMER_IDX, 0x00000000ULL);
-// 	/* Configure the alarm value and the interrupt on alarm. */
-// 	timer_set_alarm_value(ITP_TIMER_TG, ITP_TIMER_IDX, (uint64_t)(getApbFrequency() / (ITP_SAMPLE_RATE * 2)));
-// 	// register PWM isr
-// 	timer_isr_register(ITP_TIMER_TG, ITP_TIMER_IDX, mcu_itp_isr, NULL, 0, NULL);
-// 	timer_enable_intr(ITP_TIMER_TG, ITP_TIMER_IDX);
-// 	timer_start(ITP_TIMER_TG, ITP_TIMER_IDX);
+	// inititialize ITP timer
+	timer_config_t itpconfig = {0};
+	itpconfig.clk_src = TIMER_SRC_CLK_APB;
+	itpconfig.divider = 2;
+	itpconfig.counter_dir = TIMER_COUNT_UP;
+	itpconfig.counter_en = TIMER_PAUSE;
+	itpconfig.intr_type = TIMER_INTR_LEVEL;
+	itpconfig.alarm_en = TIMER_ALARM_EN;
+	itpconfig.auto_reload = true;
+	timer_init(ITP_TIMER_TG, ITP_TIMER_IDX, &itpconfig);
+	/* Timer's counter will initially start from value below.
+		 Also, if auto_reload is set, this value will be automatically reload on alarm */
+	timer_set_counter_value(ITP_TIMER_TG, ITP_TIMER_IDX, 0x00000000ULL);
+	/* Configure the alarm value and the interrupt on alarm. */
+	timer_set_alarm_value(ITP_TIMER_TG, ITP_TIMER_IDX, (uint64_t)(getApbFrequency() / (ITP_SAMPLE_RATE * 2)));
+	timer_set_alarm(ITP_TIMER_TG, ITP_TIMER_IDX, TIMER_ALARM_EN);
+	// register PWM isr
+	timer_isr_register(ITP_TIMER_TG, ITP_TIMER_IDX, mcu_itp_isr, NULL, ESP_INTR_FLAG_IRAM, NULL);
+	timer_enable_intr(ITP_TIMER_TG, ITP_TIMER_IDX);
+	timer_start(ITP_TIMER_TG, ITP_TIMER_IDX);
 
-// #ifdef IC74HC595_CUSTOM_SHIFT_IO
-// 	esp32_i2s_extender_init();
-// #endif
+#ifdef IC74HC595_CUSTOM_SHIFT_IO
+	esp32_i2s_extender_init();
+#endif
 
+#ifdef MCU_HAS_SPI
 
-// #ifdef MCU_HAS_SPI
+	spi_config_t spi_conf = {0};
+#ifndef USE_ARDUINO_SPI_LIBRARY
+	spi_conf.mode = SPI_MODE;
+#else
+	mcu_spi_init();
+#endif
+	mcu_spi_config(spi_conf, SPI_FREQ);
+#endif
 
-// 	spi_config_t spi_conf = {0};
-// #ifndef USE_ARDUINO_SPI_LIBRARY
-// 	spi_conf.mode = SPI_MODE;
-// #else
-// 	mcu_spi_init();
-// #endif
-// 	mcu_spi_config(spi_conf, SPI_FREQ);
-// #endif
+#ifdef MCU_HAS_SPI2
 
-// #ifdef MCU_HAS_SPI2
+	spi_config_t spi2_conf = {0};
+#ifndef USE_ARDUINO_SPI_LIBRARY
+	spi2_conf.mode = SPI2_MODE;
+#else
+	mcu_spi2_init();
+#endif
+	mcu_spi2_config(spi2_conf, SPI2_FREQ);
+#endif
 
-// 	spi_config_t spi2_conf = {0};
-// #ifndef USE_ARDUINO_SPI_LIBRARY
-// 	spi2_conf.mode = SPI2_MODE;
-// #else
-// 	mcu_spi2_init();
-// #endif
-// 	mcu_spi2_config(spi2_conf, SPI2_FREQ);
-// #endif
-
-// #ifdef MCU_HAS_I2C
-// 	mcu_i2c_config(I2C_FREQ);
-// #endif
+#ifdef MCU_HAS_I2C
+	mcu_i2c_config(I2C_FREQ);
+#endif
 
 	esp32_usb_wifi_bt_init();
+
+	xTaskCreate(mcu_rtc_task, "rtcTask", 4096, NULL, 7, NULL);
 	mcu_enable_global_isr();
 }
 
@@ -1156,8 +1144,9 @@ void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 
 	/* Configure the alarm value and the interrupt on alarm. */
 	timer_set_alarm_value(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX, (uint64_t)timeout);
-	timer_enable_intr(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX);
+	timer_set_alarm(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX, TIMER_ALARM_EN);
 	timer_isr_register(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX, mcu_oneshot_isr, NULL, 0, NULL);
+	timer_enable_intr(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX);
 #endif
 }
 #endif

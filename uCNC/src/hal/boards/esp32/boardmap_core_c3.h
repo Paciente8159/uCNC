@@ -73,8 +73,8 @@ extern "C"
 	// only uncomment this if other port other then 0 is used
 	// #define UART_PORT 0
 
-#define USB_DP_BIT 18
-#define USB_DM_BIT 19
+// #define USB_DP_BIT 18
+// #define USB_DM_BIT 19
 
 	// Setup PWM
 #define PWM0_BIT 9 // assigns PWM0 pin
@@ -106,6 +106,8 @@ extern "C"
 // #define SERVO0_BIT 33
 #define I2C_CLK_BIT 22
 #define I2C_DATA_BIT 21
+
+#define DOUT31_BIT 13 //blink
 
 #ifdef __cplusplus
 }
