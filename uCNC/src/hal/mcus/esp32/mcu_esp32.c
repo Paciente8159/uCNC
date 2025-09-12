@@ -628,7 +628,7 @@ void mcu_init(void)
 #endif
 
 	// initialize rtc timer (currently on core 1)
-	xTaskCreatePinnedToCore(mcu_rtc_task, "rtcTask", 2048, NULL, 7, NULL, CONFIG_ARDUINO_RUNNING_CORE);
+	xTaskCreatePinnedToCore(mcu_rtc_task, "rtcTask", 8192, NULL, 7, NULL, CONFIG_ARDUINO_RUNNING_CORE);
 
 	mcu_enable_global_isr();
 }
@@ -823,15 +823,6 @@ void esp32_delay_us(uint16_t delay)
  * */
 void mcu_dotasks(void)
 {
-	// // reset WDT
-	// esp_task_wdt_reset();
-
-	// // loop through received data
-	// mcu_uart_dotasks();
-	// mcu_uart2_dotasks();
-	// mcu_usb_dotasks();
-	// mcu_wifi_dotasks();
-	// mcu_bt_dotasks();
 	mcu_uart_dotasks();
 	esp_task_wdt_reset();
 	mcu_uart2_dotasks();

@@ -17,26 +17,119 @@
 	See the	GNU General Public License for more details.
 */
 
-#if defined(ESP32)
+#if defined(ESP32S3)
 #include <Arduino.h>
+#include "USB.h"
+#include "USBCDC.h"
+#include "esp_task_wdt.h"
+
+#if !ARDUINO_USB_CDC_ON_BOOT
+USBCDC USBSerial;
+#else
+#define USBSerial Serial
+#endif
 
 extern "C"
 {
 #include "../../../cnc.h"
 
-#if defined(MCU_HAS_USB) && defined(USE_ARDUINO_CDC)
+#if defined(MCU_HAS_USB) && defined(ARDUINO_USB_CDC_ON_BOOT)
+
+#ifndef USB_TX_BUFFER_SIZE
+#define USB_TX_BUFFER_SIZE 64
+#endif
+	DECL_BUFFER(uint8_t, usb_tx, USB_TX_BUFFER_SIZE);
+	DECL_BUFFER(uint8_t, usb_rx, RX_BUFFER_SIZE);
+
+	// 	static void usbEventCallback(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
+	// 	{
+	// 		if (event_base == ARDUINO_USB_EVENTS)
+	// 		{
+	// 			arduino_usb_event_data_t *data = (arduino_usb_event_data_t *)event_data;
+	// 			switch (event_id)
+	// 			{
+	// 			case ARDUINO_USB_STARTED_EVENT:
+	// 				// Serial.println("USB PLUGGED");
+	// 				break;
+	// 			case ARDUINO_USB_STOPPED_EVENT:
+	// 				// Serial.println("USB UNPLUGGED");
+	// 				break;
+	// 			case ARDUINO_USB_SUSPEND_EVENT:
+	// 				// Serial.printf("USB SUSPENDED: remote_wakeup_en: %u\n", data->suspend.remote_wakeup_en);
+	// 				break;
+	// 			case ARDUINO_USB_RESUME_EVENT:
+	// 				// Serial.println("USB RESUMED");
+	// 				break;
+
+	// 			default:
+	// 				break;
+	// 			}
+	// 		}
+	// 		else if (event_base == ARDUINO_USB_CDC_EVENTS)
+	// 		{
+	// 			arduino_usb_cdc_event_data_t *data = (arduino_usb_cdc_event_data_t *)event_data;
+	// 			switch (event_id)
+	// 			{
+	// 			case ARDUINO_USB_CDC_CONNECTED_EVENT:
+	// 				// Serial.println("CDC CONNECTED");
+	// 				break;
+	// 			case ARDUINO_USB_CDC_DISCONNECTED_EVENT:
+	// 				// Serial.println("CDC DISCONNECTED");
+	// 				break;
+	// 			case ARDUINO_USB_CDC_LINE_STATE_EVENT:
+	// 				// Serial.printf("CDC LINE STATE: dtr: %u, rts: %u\n", data->line_state.dtr, data->line_state.rts);
+	// 				break;
+	// 			case ARDUINO_USB_CDC_LINE_CODING_EVENT:
+	// 				// Serial.printf(
+	// 				// 		"CDC LINE CODING: bit_rate: %lu, data_bits: %u, stop_bits: %u, parity: %u\n", data->line_coding.bit_rate, data->line_coding.data_bits,
+	// 				// 		data->line_coding.stop_bits, data->line_coding.parity);
+	// 				break;
+	// 			case ARDUINO_USB_CDC_RX_EVENT:
+	// 				while (USBSerial.available())
+	// 				{
+	// 					esp_task_wdt_reset();
+	// #ifndef DETACH_USB_FROM_MAIN_PROTOCOL
+	// 					uint8_t c = USBSerial.read();
+	// 					if (mcu_com_rx_cb(c))
+	// 					{
+	// 						if (BUFFER_FULL(usb_rx))
+	// 						{
+	// 							STREAM_OVF(c);
+	// 						}
+
+	// 						BUFFER_ENQUEUE(usb_rx, &c);
+	// 					}
+	// #else
+	// 					mcu_usb_rx_cb((uint8_t)USBSerial.read());
+	// #endif
+	// 				}
+	// 				break;
+	// 			case ARDUINO_USB_CDC_RX_OVERFLOW_EVENT:
+	// 				// Serial.printf("CDC RX Overflow of %d bytes", data->rx_overflow.dropped_bytes);
+	// 				break;
+
+	// 			default:
+	// 				break;
+	// 			}
+	// 		}
+	// 	}
+
 	void mcu_usb_init(void)
 	{
-		Serial.begin(BAUDRATE);
+		// USB.onEvent(usbEventCallback);
+		// USBSerial.onEvent(usbEventCallback);
+
+		USBSerial.begin();
+		USB.begin();
 	}
 
 	void mcu_usb_dotasks(void)
 	{
-		while (Serial.available())
+		while (USBSerial.available())
 		{
 			esp_task_wdt_reset();
 #ifndef DETACH_USB_FROM_MAIN_PROTOCOL
-			uint8_t c = Serial.read();
+			uint8_t c = USBSerial.read();
 			if (mcu_com_rx_cb(c))
 			{
 				if (BUFFER_FULL(usb_rx))
@@ -47,16 +140,10 @@ extern "C"
 				BUFFER_ENQUEUE(usb_rx, &c);
 			}
 #else
-			mcu_usb_rx_cb((uint8_t)SerialBT.read());
+			mcu_usb_rx_cb((uint8_t)USBSerial.read());
 #endif
 		}
 	}
-
-#ifndef USB_TX_BUFFER_SIZE
-#define USB_TX_BUFFER_SIZE 64
-#endif
-	DECL_BUFFER(uint8_t, usb_tx, USB_TX_BUFFER_SIZE);
-	DECL_BUFFER(uint8_t, usb_rx, RX_BUFFER_SIZE);
 
 	uint8_t mcu_usb_getc(void)
 	{
@@ -93,8 +180,8 @@ extern "C"
 			uint8_t r;
 
 			BUFFER_READ(usb_tx, tmp, USB_TX_BUFFER_SIZE, r);
-			Serial.write(tmp, r);
-			Serial.flush();
+			USBSerial.write(tmp, r);
+			USBSerial.flush();
 		}
 	}
 

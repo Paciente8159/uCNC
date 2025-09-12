@@ -16,7 +16,8 @@
 	See the	GNU General Public License for more details.
 */
 
-#if defined(ESP32)
+#include "../../../../cnc_config.h"
+#if defined(ESP32) && defined(ENABLE_WIFI)
 #include <Arduino.h>
 #include <WiFi.h>
 #include <WebServer.h>

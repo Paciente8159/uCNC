@@ -17,7 +17,8 @@
 	See the	GNU General Public License for more details.
 */
 
-#if defined(ESP32)
+#include "../../../../cnc_config.h"
+#if defined(ESP32) && defined(ENABLE_BLUETOOTH)
 #include <Arduino.h>
 #include "esp_task_wdt.h"
 #include <stdint.h>
@@ -47,7 +48,6 @@ extern "C"
 		uint8_t has_arg = (cmd_params->next_char == '=');
 		memset(arg, 0, sizeof(arg));
 
-#ifdef ENABLE_BLUETOOTH
 		if (!strncmp((const char *)(cmd_params->cmd), "BTH", 3))
 		{
 			if (!strcmp((const char *)&(cmd_params->cmd)[3], "ON"))
@@ -70,7 +70,7 @@ extern "C"
 				return EVENT_HANDLED;
 			}
 		}
-#endif
+
 		return EVENT_CONTINUE;
 	}
 
@@ -173,6 +173,6 @@ extern "C"
 			BUFFER_CLEAR(bt_tx);
 		}
 	}
-}
 #endif
+}
 #endif
