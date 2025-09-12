@@ -7,12 +7,6 @@
 #include "esp_timer.h"
 #include "esp_task_wdt.h"
 #include "esp_ipc.h"
-#include "driver/uart.h"
-#include "driver/timer.h"
-#include "soc/i2s_struct.h"
-#ifdef MCU_HAS_I2C
-#include "driver/i2c.h"
-#endif
 #ifdef MCU_HAS_SPI
 #include "hal/spi_types.h"
 #include "driver/spi_master.h"

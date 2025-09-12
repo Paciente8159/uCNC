@@ -25,30 +25,11 @@
 #include "driver/uart.h"
 #include "driver/timer.h"
 #include "soc/i2s_struct.h"
-#ifdef MCU_HAS_I2C
-#include "driver/i2c.h"
-#endif
-#ifdef MCU_HAS_SPI
-#include "hal/spi_types.h"
-#include "driver/spi_master.h"
-SemaphoreHandle_t spi_access_mutex = NULL;
-bool spi_dma_enabled = false;
-#ifndef SPI_DMA_BUFFER_SIZE
-#define SPI_DMA_BUFFER_SIZE 1024
-#endif
-#endif
-#ifdef MCU_HAS_SPI2
-#include "hal/spi_types.h"
-#include "driver/spi_master.h"
-bool spi2_dma_enabled = false;
-#ifndef SPI2_DMA_BUFFER_SIZE
-#define SPI2_DMA_BUFFER_SIZE 1024
-#endif
-#endif
 #include <string.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <math.h>
+#include "../esp32common/esp32_common.h"
 
 static volatile bool esp32_global_isr_enabled;
 static volatile bool mcu_itp_timer_running;
@@ -56,23 +37,6 @@ static volatile bool mcu_itp_timer_running;
 volatile uint32_t ic74hc595_i2s_pins;
 #endif
 hw_timer_t *esp32_step_timer;
-
-#include "../esp32common/esp32_common.h"
-
-#if !defined(RAM_ONLY_SETTINGS) && !defined(USE_ARDUINO_EEPROM_LIBRARY)
-#include <nvs.h>
-#include <esp_partition.h>
-// Non volatile memory
-typedef struct
-{
-	nvs_handle_t nvs_handle;
-	size_t size;
-	bool dirty;
-	uint8_t data[NVM_STORAGE_SIZE];
-} flash_eeprom_t;
-
-static flash_eeprom_t mcu_eeprom;
-#endif
 
 MCU_CALLBACK void mcu_itp_isr(void *arg);
 static MCU_CALLBACK void mcu_gen_pwm_and_servo(void);
