@@ -86,7 +86,7 @@ typedef struct
 
 static flash_eeprom_t mcu_eeprom;
 #elif !defined(RAM_ONLY_SETTINGS)
-extern void esp32_eeprom_init(int size);
+extern void mcu_eeprom_init(int size);
 #endif
 
 MCU_CALLBACK void mcu_itp_isr(void *arg);
@@ -607,7 +607,7 @@ void mcu_init(void)
 
 	// starts EEPROM before UART to enable WiFi and BT settings
 #if !defined(RAM_ONLY_SETTINGS) && !defined(USE_ARDUINO_EEPROM_LIBRARY)
-	// esp32_eeprom_init(NVM_STORAGE_SIZE); // 1K Emulated EEPROM
+	// mcu_eeprom_init(NVM_STORAGE_SIZE); // 1K Emulated EEPROM
 
 	// starts nvs
 	mcu_eeprom.size = 0;
@@ -629,7 +629,7 @@ void mcu_init(void)
 		log_e("eeprom failed to open");
 	}
 #elif !defined(RAM_ONLY_SETTINGS)
-	esp32_eeprom_init(NVM_STORAGE_SIZE);
+	mcu_eeprom_init(NVM_STORAGE_SIZE);
 #endif
 
 	// inititialize ITP timer

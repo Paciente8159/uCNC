@@ -1,10 +1,10 @@
 /*
-	Name: esp32s_uart.c
-	Description: Implements the µCNC HAL for ESP32S.
+	Name: esp32_uart.c
+	Description: Implements the µCNC uart shim for ESP32, ESP32S3 and ESP32C3.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
-	Date: 13-03-2025
+	Date: 11-09-2025
 
 	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 
 #include "../../../cnc.h"
 
-#if (MCU == MCU_ESP32S3)
+#if (ESP32)
 #include "driver/uart.h"
 
 #ifdef MCU_HAS_UART
@@ -40,7 +40,11 @@ void mcu_uart_init(void)
 	// We won't use a buffer for sending data.
 	uart_param_config(UART_PORT, &uartconfig);
 	uart_set_pin(UART_PORT, TX_BIT, RX_BIT, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
-	uart_driver_install(UART_PORT, MAX(RX_BUFFER_SIZE, (UART_FIFO_LEN + 1)), MAX(UART_TX_BUFFER_SIZE,(UART_FIFO_LEN + 1)), 0, NULL, 0);
+}
+
+void mcu_uart_start(void)
+{
+	uart_driver_install(UART_PORT, MAX((RX_BUFFER_SIZE * 2), (UART_FIFO_LEN + 1)), MAX((UART_TX_BUFFER_SIZE * 2), (UART_FIFO_LEN + 1)), 0, NULL, 0);
 }
 
 void mcu_uart_dotasks(void)
@@ -97,11 +101,24 @@ void mcu_uart_flush(void)
 	while (!BUFFER_EMPTY(uart_tx))
 	{
 		uint8_t tmp[UART_TX_BUFFER_SIZE + 1];
+		uint8_t *p = tmp;
 		memset(tmp, 0, sizeof(tmp));
 		uint8_t r;
 
 		BUFFER_READ(uart_tx, tmp, UART_TX_BUFFER_SIZE, r);
-		uart_write_bytes(UART_PORT, tmp, r);
+		while (r)
+		{
+			int sent = uart_write_bytes(UART_PORT, p, r);
+			if (sent < 0)
+			{
+				break; /*error*/
+			}
+			else
+			{
+				p += sent;
+				r -= sent;
+			}
+		}
 	}
 }
 
@@ -123,9 +140,13 @@ void mcu_uart2_init()
 			.flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
 			.source_clk = UART_SCLK_APB};
 	// We won't use a buffer for sending data.
-	uart2_param_config(UART2_PORT, &uartconfig);
-	uart2_set_pin(UART2_PORT, TX2_BIT, RX2_BIT, UART2_PIN_NO_CHANGE, UART2_PIN_NO_CHANGE);
-	uart2_driver_install(UART2_PORT, (RX_BUFFER_SIZE * 2), (UART2_TX_BUFFER_SIZE * 2), 0, NULL, 0);
+	uart_param_config(UART2_PORT, &uartconfig);
+	uart_set_pin(UART2_PORT, TX2_BIT, RX2_BIT, UART2_PIN_NO_CHANGE, UART2_PIN_NO_CHANGE);
+}
+
+void mcu_uart2_start()
+{
+	uart_driver_install(UART2_PORT, MAX((RX2_BUFFER_SIZE * 2), (UART_FIFO_LEN + 1)), MAX((UART2_TX_BUFFER_SIZE * 2), (UART_FIFO_LEN + 1)), 0, NULL, 0);
 }
 
 void mcu_uart2_dotasks()
@@ -182,11 +203,24 @@ void mcu_uart2_flush(void)
 	while (!BUFFER_EMPTY(uart2_tx))
 	{
 		uint8_t tmp[UART2_TX_BUFFER_SIZE + 1];
+		uint8_t *p = tmp;
 		memset(tmp, 0, sizeof(tmp));
 		uint8_t r;
 
 		BUFFER_READ(uart2_tx, tmp, UART2_TX_BUFFER_SIZE, r);
-		uart_write_bytes(UART2_PORT, tmp, r);
+		while (r)
+		{
+			int sent = uart_write_bytes(UART2_PORT, p, r);
+			if (sent < 0)
+			{
+				break; /*error*/
+			}
+			else
+			{
+				p += sent;
+				r -= sent;
+			}
+		}
 	}
 }
 #endif

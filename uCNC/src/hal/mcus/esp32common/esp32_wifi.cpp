@@ -16,41 +16,17 @@
 	See the	GNU General Public License for more details.
 */
 
-#if defined(ESP32) /*&& !(defined(ESP32C3) || defined(ESP32S3))*/
+#if defined(ESP32)
 #include <Arduino.h>
-#include "esp_task_wdt.h"
-#include <stdint.h>
-#include <stdbool.h>
-#include <string.h>
-
-extern "C"
-{
-#include "../../../cnc.h"
-}
-
-#ifndef BT_ID_MAX_LEN
-#define BT_ID_MAX_LEN 32
-#endif
-
-#ifndef WIFI_SSID_MAX_LEN
-#define WIFI_SSID_MAX_LEN 32
-#endif
-
-#define ARG_MAX_LEN MAX(WIFI_SSID_MAX_LEN, BT_ID_MAX_LEN)
-
-#ifdef ENABLE_BLUETOOTH
-#include <BluetoothSerial.h>
-BluetoothSerial SerialBT;
-
-uint8_t bt_on;
-uint16_t bt_settings_offset;
-#endif
-
-#ifdef ENABLE_WIFI
 #include <WiFi.h>
 #include <WebServer.h>
 #include <HTTPUpdateServer.h>
 #include <Update.h>
+#include "WebSocketsServer.h"
+#include "esp_task_wdt.h"
+#include <stdint.h>
+#include <stdbool.h>
+#include <string.h>
 
 #ifndef TELNET_PORT
 #define TELNET_PORT 23
@@ -63,6 +39,24 @@ uint16_t bt_settings_offset;
 #ifndef WEBSOCKET_PORT
 #define WEBSOCKET_PORT 8080
 #endif
+
+WebServer web_server(WEBSERVER_PORT);
+HTTPUpdateServer httpUpdater;
+WiFiServer telnet_server(TELNET_PORT);
+WiFiClient server_client;
+WebSocketsServer socket_server(WEBSOCKET_PORT);
+
+extern "C"
+{
+#include "../../../cnc.h"
+
+#if defined(ENABLE_WIFI) && defined(MCU_HAS_WIFI)
+
+#ifndef WIFI_SSID_MAX_LEN
+#define WIFI_SSID_MAX_LEN 32
+#endif
+
+#define ARG_MAX_LEN WIFI_SSID_MAX_LEN
 
 #ifndef WEBSOCKET_MAX_CLIENTS
 #define WEBSOCKET_MAX_CLIENTS 2
@@ -80,64 +74,30 @@ uint16_t bt_settings_offset;
 #define OTA_URI "/firmware"
 #endif
 
-WebServer web_server(WEBSERVER_PORT);
-HTTPUpdateServer httpUpdater;
-const char *update_path = OTA_URI;
-const char *update_username = WIFI_USER;
-const char *update_password = WIFI_PASS;
+	const char *update_path = OTA_URI;
+	const char *update_username = WIFI_USER;
+	const char *update_password = WIFI_PASS;
 #define MAX_SRV_CLIENTS 1
-WiFiServer telnet_server(TELNET_PORT);
-WiFiClient server_client;
 
-typedef struct
-{
-	uint8_t wifi_on;
-	uint8_t wifi_mode;
-	uint8_t ssid[WIFI_SSID_MAX_LEN];
-	uint8_t pass[WIFI_SSID_MAX_LEN];
-} wifi_settings_t;
+	typedef struct
+	{
+		uint8_t wifi_on;
+		uint8_t wifi_mode;
+		uint8_t ssid[WIFI_SSID_MAX_LEN];
+		uint8_t pass[WIFI_SSID_MAX_LEN];
+	} wifi_settings_t;
 
-uint16_t wifi_settings_offset;
-wifi_settings_t wifi_settings;
-#endif
-
-extern "C"
-{
-#include "../../../cnc.h"
+	uint16_t wifi_settings_offset;
+	wifi_settings_t wifi_settings;
 
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
-	bool mcu_custom_grbl_cmd(void *args)
+	bool mcu_wifi_grbl_cmd(void *args)
 	{
 		grbl_cmd_args_t *cmd_params = (grbl_cmd_args_t *)args;
 		char arg[ARG_MAX_LEN];
 		uint8_t has_arg = (cmd_params->next_char == '=');
 		memset(arg, 0, sizeof(arg));
 
-#ifdef ENABLE_BLUETOOTH
-		if (!strncmp((const char *)(cmd_params->cmd), "BTH", 3))
-		{
-			if (!strcmp((const char *)&(cmd_params->cmd)[3], "ON"))
-			{
-				SerialBT.begin(BOARD_NAME);
-				proto_info("Bluetooth enabled");
-				bt_on = 1;
-				settings_save(bt_settings_offset, &bt_on, 1);
-				*(cmd_params->error) = STATUS_OK;
-				return EVENT_HANDLED;
-			}
-
-			if (!strcmp((const char *)&(cmd_params->cmd)[3], "OFF"))
-			{
-				SerialBT.end();
-				proto_info("Bluetooth disabled");
-				bt_on = 0;
-				settings_save(bt_settings_offset, &bt_on, 1);
-				*(cmd_params->error) = STATUS_OK;
-				return EVENT_HANDLED;
-			}
-		}
-#endif
-#ifdef ENABLE_WIFI
 		if (!strncmp((const char *)(cmd_params->cmd), "WIFI", 4))
 		{
 			if (!strcmp((const char *)&(cmd_params->cmd)[4], "ON"))
@@ -337,16 +297,14 @@ extern "C"
 				return EVENT_HANDLED;
 			}
 		}
-#endif
 		return EVENT_CONTINUE;
 	}
 
-	CREATE_EVENT_LISTENER(grbl_cmd, mcu_custom_grbl_cmd);
+	CREATE_EVENT_LISTENER(grbl_cmd, mcu_wifi_grbl_cmd);
 #endif
 
-	bool esp32_wifi_clientok(void)
+	static bool esp32_wifi_clientok(void)
 	{
-#ifdef ENABLE_WIFI
 		static uint32_t next_info = 30000;
 		static bool connected = false;
 
@@ -395,11 +353,10 @@ extern "C"
 				return true;
 			}
 		}
-#endif
 		return false;
 	}
 
-#if defined(MCU_HAS_WIFI) && defined(MCU_HAS_ENDPOINTS)
+#if defined(MCU_HAS_ENDPOINTS)
 
 #define MCU_FLASH_FS_LITTLE_FS 1
 #define MCU_FLASH_FS_SPIFFS 2
@@ -659,10 +616,8 @@ extern "C"
 
 #endif
 
-#if defined(ENABLE_WIFI) && defined(MCU_HAS_WEBSOCKETS)
-#include "WebSocketsServer.h"
+#if defined(MCU_HAS_WEBSOCKETS)
 #include "../../../modules/websocket.h"
-	WebSocketsServer socket_server(WEBSOCKET_PORT);
 
 	WEAK_EVENT_HANDLER(websocket_client_connected)
 	{
@@ -749,8 +704,6 @@ extern "C"
 	}
 #endif
 
-#ifdef ENABLE_WIFI
-
 	void mcu_wifi_task(void *arg)
 	{
 		WiFi.begin();
@@ -826,14 +779,9 @@ extern "C"
 			taskYIELD();
 		}
 	}
-#endif
 
-	void esp32_usb_wifi_bt_init(void)
+	void mcu_wifi_init(void)
 	{
-#if defined(MCU_HAS_USB) && defined(USE_ARDUINO_CDC)
-		Serial.begin(BAUDRATE);
-#endif
-#ifdef ENABLE_WIFI
 #ifndef ENABLE_BLUETOOTH
 		WiFi.setSleep(WIFI_PS_NONE);
 #endif
@@ -847,79 +795,13 @@ extern "C"
 			settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
 		}
 
-		xTaskCreatePinnedToCore(mcu_wifi_task, "wifiTask", 8192, NULL, 1, NULL, CONFIG_ARDUINO_RUNNING_CORE);
-		// taskYIELD();
-
-#endif
-#ifdef ENABLE_BLUETOOTH
-		bt_settings_offset = settings_register_external_setting(1);
-		if (settings_load(bt_settings_offset, &bt_on, 1))
-		{
-			settings_erase(bt_settings_offset, (uint8_t *)&bt_on, 1);
-		}
-
-		if (bt_on)
-		{
-			SerialBT.begin(BOARD_NAME);
-		}
-#endif
-
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
-		ADD_EVENT_LISTENER(grbl_cmd, mcu_custom_grbl_cmd);
-#endif
-	}
-
-#if defined(MCU_HAS_USB) && defined(USE_ARDUINO_CDC)
-#ifndef USB_TX_BUFFER_SIZE
-#define USB_TX_BUFFER_SIZE 64
-#endif
-	DECL_BUFFER(uint8_t, usb_rx, RX_BUFFER_SIZE);
-	DECL_BUFFER(uint8_t, usb_tx, USB_TX_BUFFER_SIZE);
-
-	uint8_t mcu_usb_getc(void)
-	{
-		uint8_t c = 0;
-		BUFFER_DEQUEUE(usb_rx, &c);
-		return c;
-	}
-
-	uint8_t mcu_usb_available(void)
-	{
-		return BUFFER_READ_AVAILABLE(usb_rx);
-	}
-
-	void mcu_usb_clear(void)
-	{
-		BUFFER_CLEAR(usb_rx);
-	}
-
-	void mcu_usb_putc(uint8_t c)
-	{
-		while (BUFFER_FULL(usb_tx))
-		{
-			mcu_usb_flush();
-		}
-		BUFFER_ENQUEUE(usb_tx, &c);
-	}
-
-	void mcu_usb_flush(void)
-	{
-		while (!BUFFER_EMPTY(usb_tx))
-		{
-			uint8_t tmp[USB_TX_BUFFER_SIZE + 1];
-			memset(tmp, 0, sizeof(tmp));
-			uint8_t r;
-			int maxsend = MAX(USB_TX_BUFFER_SIZE, Serial.availableForWrite());
-			BUFFER_READ(usb_tx, tmp, MIN(255, maxsend), r);
-			Serial.write(tmp, r);
-			Serial.flush();
-		}
-
-		Serial.flush();
-	}
+		ADD_EVENT_LISTENER(grbl_cmd, mcu_wifi_grbl_cmd);
 #endif
 
-#ifdef MCU_HAS_WIFI
+		xTaskCreatePinnedToCore(mcu_wifi_task, "wifiTask", 8192, NULL, 1, NULL, CONFIG_ARDUINO_RUNNING_CORE);
+	}
+
 #ifndef WIFI_TX_BUFFER_SIZE
 #define WIFI_TX_BUFFER_SIZE 64
 #endif
@@ -972,134 +854,9 @@ extern "C"
 			BUFFER_CLEAR(wifi_tx);
 		}
 	}
-#endif
 
-#ifdef MCU_HAS_BLUETOOTH
-#ifndef BLUETOOTH_TX_BUFFER_SIZE
-#define BLUETOOTH_TX_BUFFER_SIZE 64
-#endif
-	DECL_BUFFER(uint8_t, bt_rx, RX_BUFFER_SIZE);
-	DECL_BUFFER(uint8_t, bt_tx, BLUETOOTH_TX_BUFFER_SIZE);
-
-	uint8_t mcu_bt_getc(void)
+	void mcu_wifi_dotasks(void)
 	{
-		uint8_t c = 0;
-		BUFFER_DEQUEUE(bt_rx, &c);
-		return c;
-	}
-
-	uint8_t mcu_bt_available(void)
-	{
-		return BUFFER_READ_AVAILABLE(bt_rx);
-	}
-
-	void mcu_bt_clear(void)
-	{
-		BUFFER_CLEAR(bt_rx);
-	}
-
-	void mcu_bt_putc(uint8_t c)
-	{
-		while (BUFFER_FULL(bt_tx))
-		{
-			mcu_bt_flush();
-		}
-		BUFFER_ENQUEUE(bt_tx, &c);
-	}
-
-	void mcu_bt_flush(void)
-	{
-		if (SerialBT.hasClient())
-		{
-			while (!BUFFER_EMPTY(bt_tx))
-			{
-				uint8_t tmp[BLUETOOTH_TX_BUFFER_SIZE + 1];
-				memset(tmp, 0, sizeof(tmp));
-				uint8_t r;
-
-				BUFFER_READ(bt_tx, tmp, BLUETOOTH_TX_BUFFER_SIZE, r);
-				SerialBT.write(tmp, r);
-				SerialBT.flush();
-			}
-		}
-		else
-		{
-			// no client (discard)
-			BUFFER_CLEAR(bt_tx);
-		}
-	}
-#endif
-
-	uint8_t esp32_wifi_bt_read(void)
-	{
-#ifdef ENABLE_WIFI
-		if (esp32_wifi_clientok())
-		{
-			if (server_client.available() > 0)
-			{
-				return (uint8_t)server_client.read();
-			}
-		}
-#endif
-
-#ifdef ENABLE_BLUETOOTH
-		if (SerialBT.hasClient())
-		{
-			return (uint8_t)SerialBT.read();
-		}
-#endif
-
-		return (uint8_t)0;
-	}
-
-	void esp32_usb_wifi_bt_process(void)
-	{
-#if defined(MCU_HAS_USB) && defined(USE_ARDUINO_CDC)
-		while (Serial.available())
-		{
-			esp_task_wdt_reset();
-#ifndef DETACH_USB_FROM_MAIN_PROTOCOL
-			uint8_t c = Serial.read();
-			if (mcu_com_rx_cb(c))
-			{
-				if (BUFFER_FULL(usb_rx))
-				{
-					STREAM_OVF(c);
-				}
-
-				BUFFER_ENQUEUE(usb_rx, &c);
-			}
-#else
-			mcu_usb_rx_cb((uint8_t)SerialBT.read());
-#endif
-		}
-#endif
-
-#ifdef ENABLE_BLUETOOTH
-		if (SerialBT.hasClient())
-		{
-			while (SerialBT.available() > 0)
-			{
-				esp_task_wdt_reset();
-#ifndef DETACH_BLUETOOTH_FROM_MAIN_PROTOCOL
-				uint8_t c = SerialBT.read();
-				if (mcu_com_rx_cb(c))
-				{
-					if (BUFFER_FULL(bt_rx))
-					{
-						STREAM_OVF(c);
-					}
-
-					BUFFER_ENQUEUE(bt_rx, &c);
-				}
-#else
-				mcu_bt_rx_cb((uint8_t)SerialBT.read());
-#endif
-			}
-		}
-#endif
-
-#ifdef ENABLE_WIFI
 		if (esp32_wifi_clientok())
 		{
 			while (server_client.available() > 0)
@@ -1122,206 +879,11 @@ extern "C"
 			}
 		}
 
-// #ifdef MCU_HAS_WEBSOCKETS
-// 		socket_server.loop();
-// #endif
-#endif
+		// #ifdef MCU_HAS_WEBSOCKETS
+		// 		socket_server.loop();
+		// #endif
 	}
 
-#ifdef MCU_HAS_I2C
-#include <Wire.h>
-
-#if (I2C_ADDRESS != 0)
-	static uint8_t mcu_i2c_buffer_len;
-	static uint8_t mcu_i2c_buffer[I2C_SLAVE_BUFFER_SIZE];
-	void esp32_i2c_onreceive(int len)
-	{
-		uint8_t l = I2C_REG.readBytes(mcu_i2c_buffer, len);
-		mcu_i2c_slave_cb(mcu_i2c_buffer, &l);
-		mcu_i2c_buffer_len = l;
-	}
-
-	void esp32_i2c_onrequest(void)
-	{
-		I2C_REG.write(mcu_i2c_buffer, mcu_i2c_buffer_len);
-	}
-
-#endif
-
-	void mcu_i2c_config(uint32_t frequency)
-	{
-#if (I2C_ADDRESS == 0)
-		I2C_REG.begin(I2C_DATA_BIT, I2C_CLK_BIT, frequency);
-#else
-		I2C_REG.onReceive(esp32_i2c_onreceive);
-		I2C_REG.onRequest(esp32_i2c_onrequest);
-		I2C_REG.begin(I2C_ADDRESS, I2C_DATA_BIT, I2C_CLK_BIT, frequency);
-#endif
-	}
-
-	uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool release, uint32_t ms_timeout)
-	{
-		I2C_REG.beginTransmission(address);
-		I2C_REG.write(data, datalen);
-		return (I2C_REG.endTransmission(release) == 0) ? I2C_OK : I2C_NOTOK;
-	}
-
-	uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_t ms_timeout)
-	{
-		I2C_REG.setTimeOut((uint16_t)ms_timeout);
-		if (I2C_REG.requestFrom(address, datalen) == datalen)
-		{
-			I2C_REG.readBytes(data, datalen);
-			return I2C_OK;
-		}
-
-		return I2C_NOTOK;
-	}
 #endif
 }
-
-/**
- *
- * This handles EEPROM simulation on flash memory
- *
- * **/
-
-#if !defined(RAM_ONLY_SETTINGS) && defined(USE_ARDUINO_EEPROM_LIBRARY)
-#include <EEPROM.h>
-extern "C"
-{
-	void esp32_eeprom_init(int size)
-	{
-		EEPROM.begin(size);
-	}
-
-	uint8_t mcu_eeprom_getc(uint16_t address)
-	{
-		if (NVM_STORAGE_SIZE <= address)
-		{
-			DBGMSG("EEPROM invalid address @ %u", address);
-			return 0;
-		}
-		return EEPROM.read(address);
-	}
-
-	void mcu_eeprom_putc(uint16_t address, uint8_t value)
-	{
-		if (NVM_STORAGE_SIZE <= address)
-		{
-			DBGMSG("EEPROM invalid address @ %u", address);
-		}
-		EEPROM.write(address, value);
-	}
-
-	void mcu_eeprom_flush(void)
-	{
-		if (!EEPROM.commit())
-		{
-			proto_info("EEPROM write error");
-		}
-	}
-}
-#endif
-
-#if defined(MCU_HAS_SPI) && defined(USE_ARDUINO_SPI_LIBRARY)
-#include <SPI.h>
-SPIClass *esp32spi = NULL;
-static uint8_t spi_mode = 0;
-static uint32_t spi_freq = 1000000UL;
-extern "C"
-{
-
-	void mcu_spi_init(void)
-	{
-#if (SPI_CLK_BIT == 14 || SPI_CLK_BIT == 25)
-		esp32spi = new SPIClass(HSPI);
-#else
-		esp32spi = new SPIClass(VSPI);
-#endif
-		esp32spi->begin(SPI_CLK_BIT, SPI_SDI_BIT, SPI_SDO_BIT, -1);
-	}
-
-	void mcu_spi_config(spi_config_t config, uint32_t freq)
-	{
-		spi_freq = freq;
-		spi_mode = config.mode;
-		esp32spi->setFrequency(freq);
-		esp32spi->setDataMode(config.mode);
-	}
-
-	uint8_t mcu_spi_xmit(uint8_t data)
-	{
-		return esp32spi->transfer(data);
-	}
-
-	void mcu_spi_start(spi_config_t config, uint32_t frequency)
-	{
-		esp32spi->beginTransaction(SPISettings(frequency, MSBFIRST, config.mode));
-	}
-
-	bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
-	{
-		esp32spi->transferBytes(out, in, len);
-		return false;
-	}
-
-	void mcu_spi_stop(void)
-	{
-		esp32spi->endTransaction();
-	}
-}
-
-#endif
-
-#if defined(MCU_HAS_SPI2) && defined(USE_ARDUINO_SPI_LIBRARY)
-#include <SPI.h>
-SPIClass *esp32spi2 = NULL;
-static uint8_t spi2_mode = 0;
-static uint32_t spi2_freq = 1000000UL;
-extern "C"
-{
-
-	void mcu_spi2_init(void)
-	{
-#if (SPI2_CLK_BIT == 14 || SPI2_CLK_BIT == 25)
-		esp32spi2 = new SPIClass(HSPI);
-#else
-		esp32spi2 = new SPIClass(VSPI);
-#endif
-		esp32spi2->begin(SPI2_CLK_BIT, SPI2_SDI_BIT, SPI2_SDO_BIT, -1);
-	}
-
-	void mcu_spi2_config(spi_config_t config, uint32_t freq)
-	{
-		spi2_freq = freq;
-		spi2_mode = config.mode;
-		esp32spi2->setFrequency(freq);
-		esp32spi2->setDataMode(config.mode);
-	}
-
-	uint8_t mcu_spi2_xmit(uint8_t data)
-	{
-		return esp32spi2->transfer(data);
-	}
-
-	void mcu_spi2_start(spi_config_t config, uint32_t frequency)
-	{
-		esp32spi2->beginTransaction(SPISettings(frequency, MSBFIRST, config.mode));
-	}
-
-	bool mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
-	{
-		esp32spi2->transferBytes(out, in, len);
-		return false;
-	}
-
-	void mcu_spi2_stop(void)
-	{
-		esp32spi2->endTransaction();
-	}
-}
-
-#endif
-
 #endif
