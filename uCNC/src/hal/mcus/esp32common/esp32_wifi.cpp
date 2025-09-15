@@ -705,6 +705,59 @@ extern "C"
 	}
 #endif
 
+#ifndef WIFI_TX_BUFFER_SIZE
+#define WIFI_TX_BUFFER_SIZE 64
+#endif
+	DECL_BUFFER(uint8_t, wifi_rx, RX_BUFFER_SIZE);
+	DECL_BUFFER(uint8_t, wifi_tx, WIFI_TX_BUFFER_SIZE);
+
+	uint8_t mcu_wifi_getc(void)
+	{
+		uint8_t c = 0;
+		BUFFER_DEQUEUE(wifi_rx, &c);
+		return c;
+	}
+
+	uint8_t mcu_wifi_available(void)
+	{
+		return BUFFER_READ_AVAILABLE(wifi_rx);
+	}
+
+	void mcu_wifi_clear(void)
+	{
+		BUFFER_CLEAR(wifi_rx);
+	}
+
+	void mcu_wifi_putc(uint8_t c)
+	{
+		while (BUFFER_FULL(wifi_tx))
+		{
+			mcu_wifi_flush();
+		}
+		BUFFER_ENQUEUE(wifi_tx, &c);
+	}
+
+	void mcu_wifi_flush(void)
+	{
+		if (esp32_wifi_clientok())
+		{
+			while (!BUFFER_EMPTY(wifi_tx))
+			{
+				uint8_t tmp[WIFI_TX_BUFFER_SIZE + 1];
+				memset(tmp, 0, sizeof(tmp));
+				uint8_t r;
+
+				BUFFER_READ(wifi_tx, tmp, WIFI_TX_BUFFER_SIZE, r);
+				server_client.write(tmp, r);
+			}
+		}
+		else
+		{
+			// no client (discard)
+			BUFFER_CLEAR(wifi_tx);
+		}
+	}
+
 	void mcu_wifi_task(void *arg)
 	{
 		WiFi.begin();
@@ -776,6 +829,27 @@ extern "C"
 #ifdef MCU_HAS_WEBSOCKETS
 				socket_server.loop();
 #endif
+				if (esp32_wifi_clientok())
+				{
+					while (server_client.available() > 0)
+					{
+						esp_task_wdt_reset();
+#ifndef DETACH_WIFI_FROM_MAIN_PROTOCOL
+						uint8_t c = server_client.read();
+						if (mcu_com_rx_cb(c))
+						{
+							if (BUFFER_FULL(wifi_rx))
+							{
+								STREAM_OVF(c);
+							}
+
+							BUFFER_ENQUEUE(wifi_rx, &c);
+						}
+#else
+						mcu_wifi_rx_cb((uint8_t)server_client.read());
+#endif
+					}
+				}
 			}
 			taskYIELD();
 		}
@@ -800,86 +874,11 @@ extern "C"
 		ADD_EVENT_LISTENER(grbl_cmd, mcu_wifi_grbl_cmd);
 #endif
 
-		xTaskCreatePinnedToCore(mcu_wifi_task, "wifiTask", 8192, NULL, 1, NULL, CONFIG_ARDUINO_RUNNING_CORE);
-	}
-
-#ifndef WIFI_TX_BUFFER_SIZE
-#define WIFI_TX_BUFFER_SIZE 64
-#endif
-	DECL_BUFFER(uint8_t, wifi_rx, RX_BUFFER_SIZE);
-	DECL_BUFFER(uint8_t, wifi_tx, WIFI_TX_BUFFER_SIZE);
-
-	uint8_t mcu_wifi_getc(void)
-	{
-		uint8_t c = 0;
-		BUFFER_DEQUEUE(wifi_rx, &c);
-		return c;
-	}
-
-	uint8_t mcu_wifi_available(void)
-	{
-		return BUFFER_READ_AVAILABLE(wifi_rx);
-	}
-
-	void mcu_wifi_clear(void)
-	{
-		BUFFER_CLEAR(wifi_rx);
-	}
-
-	void mcu_wifi_putc(uint8_t c)
-	{
-		while (BUFFER_FULL(wifi_tx))
-		{
-			mcu_wifi_flush();
-		}
-		BUFFER_ENQUEUE(wifi_tx, &c);
-	}
-
-	void mcu_wifi_flush(void)
-	{
-		if (esp32_wifi_clientok())
-		{
-			while (!BUFFER_EMPTY(wifi_tx))
-			{
-				uint8_t tmp[WIFI_TX_BUFFER_SIZE + 1];
-				memset(tmp, 0, sizeof(tmp));
-				uint8_t r;
-
-				BUFFER_READ(wifi_tx, tmp, WIFI_TX_BUFFER_SIZE, r);
-				server_client.write(tmp, r);
-			}
-		}
-		else
-		{
-			// no client (discard)
-			BUFFER_CLEAR(wifi_tx);
-		}
+		xTaskCreate(mcu_wifi_task, "wifiTask", 8192, NULL, 1, NULL);
 	}
 
 	void mcu_wifi_dotasks(void)
 	{
-		if (esp32_wifi_clientok())
-		{
-			while (server_client.available() > 0)
-			{
-				esp_task_wdt_reset();
-#ifndef DETACH_WIFI_FROM_MAIN_PROTOCOL
-				uint8_t c = server_client.read();
-				if (mcu_com_rx_cb(c))
-				{
-					if (BUFFER_FULL(wifi_rx))
-					{
-						STREAM_OVF(c);
-					}
-
-					BUFFER_ENQUEUE(wifi_rx, &c);
-				}
-#else
-				mcu_wifi_rx_cb((uint8_t)server_client.read());
-#endif
-			}
-		}
-
 		// #ifdef MCU_HAS_WEBSOCKETS
 		// 		socket_server.loop();
 		// #endif

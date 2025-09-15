@@ -256,7 +256,7 @@ static FORCEINLINE void esp32_i2s_extender_init(void)
 #else
 	itp_set_step_mode(ITP_STEP_MODE_DEFAULT);
 #endif
-	xTaskCreatePinnedToCore(esp32_i2s_stream_task, "esp32I2Supdate", 4096, NULL, 7, NULL, CONFIG_ARDUINO_RUNNING_CORE);
+	xTaskCreate(esp32_i2s_stream_task, "esp32I2Supdate", 4096, NULL, 7, NULL);
 }
 #endif
 
@@ -629,7 +629,7 @@ void mcu_init(void)
 #endif
 
 	// initialize rtc timer (currently on core 1)
-	xTaskCreatePinnedToCore(mcu_rtc_task, "rtcTask", 8192, NULL, 7, NULL, CONFIG_ARDUINO_RUNNING_CORE);
+	xTaskCreate(mcu_rtc_task, "rtcTask", 8192, NULL, 7, NULL);
 
 	mcu_enable_global_isr();
 }
