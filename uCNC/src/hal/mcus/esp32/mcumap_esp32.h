@@ -30,6 +30,7 @@ extern "C"
 #include "hal/gpio_ll.h"
 #include "driver/adc.h"
 #include "driver/ledc.h"
+#include "soc/i2s_struct.h"
 
 /*
 	Generates all the interface definitions.

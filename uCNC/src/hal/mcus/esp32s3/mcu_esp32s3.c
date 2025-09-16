@@ -39,8 +39,8 @@ static volatile uint32_t mcu_itp_timer_reload;
 static volatile bool mcu_itp_timer_running;
 hw_timer_t *esp32_step_timer;
 MCU_CALLBACK void mcu_itp_isr(void *arg);
-static MCU_CALLBACK void mcu_gen_pwm_and_servo(void);
-static MCU_CALLBACK void mcu_gen_step(void);
+MCU_CALLBACK void mcu_gen_pwm_and_servo(void);
+MCU_CALLBACK void mcu_gen_step(void);
 MCU_CALLBACK void mcu_gpio_isr(void *type);
 
 #if SERVOS_MASK > 0
@@ -124,7 +124,7 @@ static FORCEINLINE void servo_update(void)
 }
 #endif
 
-static MCU_CALLBACK void mcu_gen_pwm_and_servo(void)
+MCU_CALLBACK void mcu_gen_pwm_and_servo(void)
 {
 	static int16_t mcu_soft_io_counter;
 	int16_t t = mcu_soft_io_counter;
@@ -166,7 +166,7 @@ static MCU_CALLBACK void mcu_gen_pwm_and_servo(void)
 
 static volatile uint32_t mcu_itp_timer_reload;
 static volatile bool mcu_itp_timer_running;
-static MCU_CALLBACK void mcu_gen_step(void)
+MCU_CALLBACK void mcu_gen_step(void)
 {
 	static bool step_reset = true;
 	static int32_t mcu_itp_timer_counter;
