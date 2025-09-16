@@ -237,7 +237,7 @@ void mcu_i2s_extender_init(void)
 #else
 	itp_set_step_mode(ITP_STEP_MODE_DEFAULT);
 #endif
-	xTaskCreate(esp32_i2s_stream_task, "esp32I2Supdate", 4096, NULL, 7, NULL);
+	xTaskCreatePinnedToCore(esp32_i2s_stream_task, "esp32I2Supdate", 4096, NULL, 7, NULL, CONFIG_ARDUINO_RUNNING_CORE);
 }
 
 #endif

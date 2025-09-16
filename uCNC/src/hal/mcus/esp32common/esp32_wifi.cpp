@@ -823,11 +823,14 @@ extern "C"
 
 		for (;;)
 		{
+			esp_task_wdt_reset();
 			if (wifi_settings.wifi_on)
 			{
 				web_server.handleClient();
+				esp_task_wdt_reset();
 #ifdef MCU_HAS_WEBSOCKETS
 				socket_server.loop();
+				esp_task_wdt_reset();
 #endif
 				if (esp32_wifi_clientok())
 				{
@@ -874,7 +877,7 @@ extern "C"
 		ADD_EVENT_LISTENER(grbl_cmd, mcu_wifi_grbl_cmd);
 #endif
 
-		xTaskCreate(mcu_wifi_task, "wifiTask", 8192, NULL, 1, NULL);
+		xTaskCreatePinnedToCore(mcu_wifi_task, "wifiTask", 8192, NULL, 1, NULL, CONFIG_ARDUINO_RUNNING_CORE);
 	}
 
 	void mcu_wifi_dotasks(void)

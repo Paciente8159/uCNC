@@ -268,9 +268,6 @@ void mcu_core0_tasks_init(void *arg)
 	mcu_uart_start();
 	mcu_uart2_init();
 	mcu_uart2_start();
-	mcu_wifi_init();
-	mcu_bt_init();
-
 	// xTaskCreatePinnedToCore(mcu_core0_dotasks, "core0Task", 8192, NULL, 7, NULL, 0);
 }
 
@@ -362,6 +359,11 @@ void mcu_init(void)
 #endif
 
 	/**
+	 * Initialize wired communications
+	 */
+	esp_ipc_call_blocking(0, mcu_core0_tasks_init, NULL);
+
+	/**
 	 * EEPROM config
 	 */
 
@@ -378,7 +380,9 @@ void mcu_init(void)
 	// currently it's running PWM and UART on core 0
 	// Arduino Bluetooth also runs on core 0
 	// Arduino WiFi ???
-	esp_ipc_call_blocking(0, mcu_core0_tasks_init, NULL);
+
+	mcu_wifi_init();
+	mcu_bt_init();
 
 	/**
 	 * Timers config
