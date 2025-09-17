@@ -17,7 +17,7 @@
 	See the	GNU General Public License for more details.
 */
 
-#if defined(ESP32)
+#if defined(ESP32S3) || defined(ESP32C3)
 #include <Arduino.h>
 #include "USB.h"
 #include "USBCDC.h"
@@ -32,8 +32,6 @@ USBCDC USBSerial;
 extern "C"
 {
 #include "../../../cnc.h"
-
-#if defined(ESP32S3) || defined(ESP32C3)
 
 #if defined(MCU_HAS_USB) && defined(ARDUINO_USB_CDC_ON_BOOT)
 
@@ -187,7 +185,6 @@ extern "C"
 		}
 	}
 
-#endif
 #endif
 }
 #endif
