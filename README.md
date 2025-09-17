@@ -25,12 +25,11 @@ _**Jump to section**_
 * [µCNC default pinouts](https://github.com/Paciente8159/uCNC/blob/master/PINOUTS.md)
 
 
-# VERSION 1.12+ NOTES
+# VERSION 1.13+ NOTES
 
-Version 1.12 introduces the following changes:
-  - added suport for STM32H7 single core MCU family. This is support is not yet complete, as some features are missing (like analog inputs, DMA support for SPI and EEPROM emulation)
-	- complete code refactoring for ESP8266 core allowing to amke use of the new shift register to expand IO capabilities on this MCU (output and input)
-	- new shift register that now also supports 74HC165 (along with the 74HC595 previously integrated)
+Version 1.13 introduces the following changes:
+  - added initial suport for ESP32-S3 and ESP-C3 variants. This is support is not yet complete, as some features are missing (like BLE support). Other features like I2S support for custom IO shifters are still under test.
+	- new BSD/Posix Socket modules for network support. This should unify and replace all network related features across all MCU's and network interfaces (WiFi, Ethernet, etc..)
 
 # IMPORTANT NOTE
 
@@ -74,7 +73,11 @@ You can also reach me at µCNC discord channel
 
 ## Current µCNC status
 
-µCNC current major version is v1.12. You can check all the new features, changes and bug fixes in the [CHANGELOG](https://github.com/Paciente8159/uCNC/blob/master/CHANGELOG.md).
+µCNC current major version is v1.13. You can check all the new features, changes and bug fixes in the [CHANGELOG](https://github.com/Paciente8159/uCNC/blob/master/CHANGELOG.md).
+
+Version 1.13 added the following new major features.
+  - added initial suport for ESP32-S3 and ESP-C3 variants. This is support is not yet complete, as some features are missing (like BLE support). Other features like I2S support for custom IO shifters are still under test.
+	- new BSD/Posix Socket modules for network support. This should unify and replace all network related features across all MCU's and network interfaces (WiFi, Ethernet, etc..)
 
 Version 1.12 added the following new major features.
   - added suport for STM32H7 single core MCU family. This is support is not yet complete, as some features are missing (like analog inputs, DMA support for SPI and EEPROM emulation)
@@ -276,6 +279,8 @@ It can run on:
 - STM32F4 (like the Blackpill) - v1.4.x (Does not emulate EEPROM)
 - ESP8266 - v1.5.x/v1.12.x (supports wifi connection via telnet, lacks analog and input isr)
 - ESP32 - v1.5.x (supports wifi connection via telnet and bluetooth)
+- ESP32-S3 - v1.13.x (initial support, lacks BLE)
+- ESP32-C3 - v1.13.x (initial support, lacks BLE)
 - NXP LPC1768/9 - v1.5.x (eeprom emulation and analog still being developed)
 - RP2040 - v1.6.x (supports wifi connection via telnet and bluetooth)
 - RP2040 - v1.9.x (added multicore mode)

@@ -1,10 +1,10 @@
 /*
-	Name: mcumap_esp32.h
-	Description: Contains all MCU and PIN definitions for Arduino ESP32 to run µCNC.
+	Name: mcumap_esp32_c.h
+	Description: Contains all MCU and PIN definitions for Arduino ESP32-Cx to run µCNC.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
-	Date: 05-02-2022
+	Date: 10-03-2025
 
 	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
 	See the	GNU General Public License for more details.
 */
 
-#ifndef MCUMAP_ESP32_H
-#define MCUMAP_ESP32_H
+#ifndef MCUMAP_ESP32C3_H
+#define MCUMAP_ESP32C3_H
 
 #ifdef __cplusplus
 extern "C"
@@ -30,7 +30,6 @@ extern "C"
 #include "hal/gpio_ll.h"
 #include "driver/adc.h"
 #include "driver/ledc.h"
-#include "soc/i2s_struct.h"
 
 /*
 	Generates all the interface definitions.
@@ -41,11 +40,11 @@ extern "C"
 */
 
 /*
-	ESP32 Defaults
+	ESP32-C Defaults
 */
 // defines the frequency of the mcu
 #ifndef F_CPU
-#define F_CPU 240000000L
+#define F_CPU 160000000L
 #endif
 // defines the maximum and minimum step rates
 #ifndef F_STEP_MAX
@@ -1629,7 +1628,7 @@ extern "C"
 #define PROBE_INREG IN0
 #else
 #define PROBE_OUTREG OUT1
-#define PROBE_INREG IN1
+#define PROBE_INREG IN0
 #endif
 #define DIO109 109
 #define DIO109_BIT PROBE_BIT
@@ -3293,7 +3292,7 @@ extern "C"
 #define SERVO_TIMER_IDX ((SERVO_TIMER >> 1) & 0x01)
 
 #ifndef ITP_TIMER
-#define ITP_TIMER 3
+#define ITP_TIMER 0
 #endif
 #define ITP_TIMER_TG (ITP_TIMER & 0x01)
 #define ITP_TIMER_IDX ((ITP_TIMER >> 1) & 0x01)
@@ -3463,7 +3462,7 @@ extern "C"
 	extern void esp32_delay_us(uint16_t delay);
 #define mcu_delay_us(X) esp32_delay_us(X)
 
-#include "xtensa/core-macros.h"
+// #include "xtensa/core-macros.h"
 #define mcu_delay_cycles(X)                          \
 	{                                                  \
 		uint32_t x = XTHAL_GET_CCOUNT();                 \
