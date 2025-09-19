@@ -1,10 +1,10 @@
 /*
-	Name: mcu_esp32.c
-	Description: Implements the µCNC HAL for ESP32.
+	Name: mcu_esp32s.c
+	Description: Implements the µCNC HAL for ESP32S.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
-	Date: 05-02-2022
+	Date: 13-03-2025
 
 	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -18,45 +18,30 @@
 
 #include "../../../cnc.h"
 
-#if (MCU == MCU_ESP32)
+#if (MCU == MCU_ESP32S3)
 #include "esp_timer.h"
 #include "esp_task_wdt.h"
 #include "esp_ipc.h"
-#include "driver/uart.h"
 #include "driver/timer.h"
+#include "soc/i2s_struct.h"
 #include <string.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <math.h>
 #include "../esp32common/esp32_common.h"
 
-static volatile bool esp32_global_isr_enabled;
-static volatile bool mcu_itp_timer_running;
-
-hw_timer_t *esp32_step_timer;
-
-MCU_CALLBACK void mcu_itp_isr(void *arg);
-MCU_CALLBACK void mcu_gen_pwm_and_servo(void);
-MCU_CALLBACK void mcu_gen_step(void);
-MCU_CALLBACK void mcu_gpio_isr(void *type);
-
 #ifndef ITP_SAMPLE_RATE
 #define ITP_SAMPLE_RATE (F_STEP_MAX * 2)
 #endif
 
-// this function updates IO updated will run @128KHz
-/**
- *
- * This function updates IO pins
- * In here the following IO is calculated and updated
- * 	- step and dir pins (using a step aliasing similar to the bresenham)
- *  - any software PWM pins (@125KHz)
- *  - all servo pins (@125KHz)
- *
- * 	@125KHz the function should do it's calculations in under 8µs.
- *  With 3 axis running and 4 software PWM it takes less then 900ns so it should hold.
- *
- * **/
+static volatile bool esp32_global_isr_enabled;
+static volatile uint32_t mcu_itp_timer_reload;
+static volatile bool mcu_itp_timer_running;
+hw_timer_t *esp32_step_timer;
+MCU_CALLBACK void mcu_itp_isr(void *arg);
+MCU_CALLBACK void mcu_gen_pwm_and_servo(void);
+MCU_CALLBACK void mcu_gen_step(void);
+MCU_CALLBACK void mcu_gpio_isr(void *type);
 
 #if SERVOS_MASK > 0
 // also run servo pin signals
@@ -248,79 +233,16 @@ uint8_t mcu_softpwm_freq_config(uint16_t freq)
 }
 #endif
 
-void mcu_core0_dotasks(void *arg)
+void mcu_core0_wiredcoms_init(void *arg)
 {
-	// loop through received data
-	mcu_uart_dotasks();
-	esp_task_wdt_reset();
-	mcu_uart2_dotasks();
-	esp_task_wdt_reset();
-	mcu_usb_dotasks();
-	esp_task_wdt_reset();
-	mcu_wifi_dotasks();
-	esp_task_wdt_reset();
-	mcu_bt_dotasks();
-}
-
-void mcu_core0_tasks_init(void *arg)
-{
-	mcu_uart_init();
 	mcu_uart_start();
-	mcu_uart2_init();
 	mcu_uart2_start();
-	// xTaskCreatePinnedToCore(mcu_core0_dotasks, "core0Task", 8192, NULL, 7, NULL, 0);
 }
 
-#ifdef ENABLE_MAIN_LOOP_MODULES
-
-// override the rtc_tick
-// this run nothing
-// instead the event handler will run on it's own task
-OVERRIDE_EVENT_HANDLER(rtc_tick)
+void mcu_core0_wirelesscoms_init(void *arg)
 {
-	return EVENT_CONTINUE;
-}
-
-bool esp32_custom_rtc_tick_event_handler(void *args)
-{
-	DEFAULT_EVENT_HANDLER(rtc_tick);
-}
-
-void mcu_rtc_event_task(void *arg)
-{
-	for (;;)
-	{
-		esp32_custom_rtc_tick_event_handler(NULL);
-		vTaskDelay(1);
-	}
-}
-
-// // override the cnc_dotasks
-// // this run nothing
-// // instead the event handler will run on it's own task
-// OVERRIDE_EVENT_HANDLER(cnc_dotasks){
-// }
-
-// void mcu_loop_event_task(void *arg)
-// {
-// 	portTickType xLastWakeTimeUpload = xTaskGetTickCount();
-// 	for (;;)
-// 	{
-// 		void* args = NULL;
-// 		DEFAULT_EVENT_HANDLER(rtc_tick);
-// 		vTaskDelay(1);
-// 	}
-// }
-#endif
-
-void mcu_rtc_task(void *arg)
-{
-	portTickType xLastWakeTimeUpload = xTaskGetTickCount();
-	for (;;)
-	{
-		mcu_rtc_cb(mcu_millis());
-		vTaskDelayUntil(&xLastWakeTimeUpload, (1 / portTICK_RATE_MS));
-	}
+	mcu_wifi_init();
+	mcu_bt_init();
 }
 
 MCU_CALLBACK void mcu_itp_isr(void *arg)
@@ -362,6 +284,16 @@ MCU_CALLBACK void mcu_itp_isr(void *arg)
 	timer_group_enable_alarm_in_isr(ITP_TIMER_TG, ITP_TIMER_IDX);
 }
 
+void mcu_rtc_task(void *arg)
+{
+	portTickType xLastWakeTimeUpload = xTaskGetTickCount();
+	for (;;)
+	{
+		mcu_rtc_cb(mcu_millis());
+		vTaskDelayUntil(&xLastWakeTimeUpload, (1 / portTICK_RATE_MS));
+	}
+}
+
 /**
  * initializes the mcu
  * this function needs to:
@@ -400,10 +332,10 @@ void mcu_init(void)
 	mcu_i2c_config(I2C_FREQ);
 #endif
 
-	/**
-	 * Initialize wired communications
-	 */
-	esp_ipc_call_blocking(0, mcu_core0_tasks_init, NULL);
+	mcu_uart_init();
+	mcu_uart2_init();
+	mcu_usb_init();
+	esp_ipc_call_blocking(0, mcu_core0_wiredcoms_init, NULL);
 
 	/**
 	 * EEPROM config
@@ -414,17 +346,7 @@ void mcu_init(void)
 	mcu_eeprom_init(NVM_STORAGE_SIZE);
 #endif
 
-	/**
-	 * Communications config
-	 */
-
-	// launches isr tasks that will run on core 0
-	// currently it's running PWM and UART on core 0
-	// Arduino Bluetooth also runs on core 0
-	// Arduino WiFi ???
-
 	mcu_wifi_init();
-	mcu_bt_init();
 
 	/**
 	 * Timers config
@@ -450,70 +372,13 @@ void mcu_init(void)
 	timer_start(ITP_TIMER_TG, ITP_TIMER_IDX);
 
 #ifdef IC74HC595_CUSTOM_SHIFT_IO
-	mcu_i2s_extender_init();
+	// esp32_i2s_extender_init();
 #endif
 
 	// initialize rtc timer (currently on core 1)
-	xTaskCreatePinnedToCore(mcu_rtc_task, "rtcTask", 4096, NULL, 7, NULL, CONFIG_ARDUINO_RUNNING_CORE);
-#ifdef ENABLE_MAIN_LOOP_MODULES
-	xTaskCreatePinnedToCore(mcu_rtc_event_task, "rtcEventTask", 4096, NULL, 1, NULL, CONFIG_ARDUINO_RUNNING_CORE);
-	// xTaskCreatePinnedToCore(mcu_loop_event_task, "loopEventTask", 8192, NULL, 1, NULL, CONFIG_ARDUINO_RUNNING_CORE);
-#endif
-
+	xTaskCreatePinnedToCore(mcu_rtc_task, "rtcTask", 8192, NULL, 7, NULL, CONFIG_ARDUINO_RUNNING_CORE);
 	mcu_enable_global_isr();
 }
-
-/**
- * enables the pin probe mcu isr on change
- * can be defined either as a function or a macro call
- * */
-#ifndef mcu_enable_probe_isr
-void mcu_enable_probe_isr(void)
-{
-}
-#endif
-
-/**
- * disables the pin probe mcu isr on change
- * can be defined either as a function or a macro call
- * */
-#ifndef mcu_disable_probe_isr
-void mcu_disable_probe_isr(void)
-{
-}
-#endif
-
-/**
- * gets the voltage value of a built-in ADC pin
- * can be defined either as a function or a macro call
- * */
-#ifndef mcu_get_analog
-uint16_t mcu_get_analog(uint8_t channel)
-{
-	return 0;
-}
-#endif
-
-/**
- * sets the pwm value of a built-in pwm pin
- * can be defined either as a function or a macro call
- * */
-#ifndef mcu_set_pwm
-void mcu_set_pwm(uint8_t pwm, uint8_t value)
-{
-}
-#endif
-
-/**
- * gets the configured pwm value of a built-in pwm pin
- * can be defined either as a function or a macro call
- * */
-#ifndef mcu_get_pwm
-uint8_t mcu_get_pwm(uint8_t pwm)
-{
-	return 0;
-}
-#endif
 
 // ISR
 /**
@@ -659,93 +524,9 @@ void mcu_dotasks(void)
 	esp_task_wdt_reset();
 	mcu_usb_dotasks();
 	esp_task_wdt_reset();
-	mcu_wifi_dotasks();
-	esp_task_wdt_reset();
-	mcu_bt_dotasks();
-}
-
-#ifdef MCU_HAS_ONESHOT_TIMER
-
-MCU_CALLBACK void mcu_oneshot_isr(void *arg)
-{
-	timer_pause(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX);
-	timer_group_clr_intr_status_in_isr(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX);
-
-	if (mcu_timeout_cb)
-	{
-		mcu_timeout_cb();
-	}
-}
-
-/**
- * configures a single shot timeout in us
- * */
-#ifndef mcu_config_timeout
-void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
-{
-	mcu_timeout_cb = fp;
-#if defined(MCU_HAS_ONESHOT_TIMER) && defined(ENABLE_RT_SYNC_MOTIONS)
-	esp32_oneshot_reload = ((ITP_SAMPLE_RATE >> 1) / timeout);
-#elif defined(MCU_HAS_ONESHOT_TIMER)
-	timer_config_t config = {0};
-	config.divider = getApbFrequency() / 1000000UL; // 1us per count
-	config.counter_dir = TIMER_COUNT_UP;
-	config.counter_en = TIMER_PAUSE;
-	config.alarm_en = TIMER_ALARM_EN;
-	config.auto_reload = true;
-	timer_init(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX, &config);
-
-	/* Timer's counter will initially start from value below.
-		 Also, if auto_reload is set, this value will be automatically reload on alarm */
-	timer_set_counter_value(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX, 0x00000000ULL);
-
-	/* Configure the alarm value and the interrupt on alarm. */
-	timer_set_alarm_value(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX, (uint64_t)timeout);
-	timer_enable_intr(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX);
-	timer_isr_register(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX, mcu_oneshot_isr, NULL, 0, NULL);
-#endif
-}
-#endif
-
-/**
- * starts the timeout. Once hit the the respective callback is called
- * */
-#ifndef mcu_start_timeout
-MCU_CALLBACK void mcu_start_timeout()
-{
-#if defined(MCU_HAS_ONESHOT_TIMER) && defined(ENABLE_RT_SYNC_MOTIONS)
-	esp32_oneshot_counter = esp32_oneshot_reload;
-#elif defined(MCU_HAS_ONESHOT_TIMER)
-	timer_start(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX);
-#endif
-}
-#endif
-#endif
-
-/*IO functions*/
-// IO functions
-void mcu_set_servo(uint8_t servo, uint8_t value)
-{
-#if SERVOS_MASK > 0
-	mcu_servos[servo - SERVO_PINS_OFFSET] = value;
-#endif
-}
-
-/**
- * gets the pwm for a servo (50Hz with tON between 1~2ms)
- * can be defined either as a function or a macro call
- * */
-uint8_t mcu_get_servo(uint8_t servo)
-{
-#if SERVOS_MASK > 0
-	uint8_t offset = servo - SERVO_PINS_OFFSET;
-
-	if ((1U << offset) & SERVOS_MASK)
-	{
-		return mcu_servos[offset];
-	}
-#endif
-	return 0;
+	// mcu_wifi_dotasks();
+	// esp_task_wdt_reset();
+	// mcu_bt_dotasks();
 }
 
 #endif

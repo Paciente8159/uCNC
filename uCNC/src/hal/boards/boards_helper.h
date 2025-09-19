@@ -78,6 +78,14 @@ extern "C"
 #define BOARD_MKS_DLC32 5002
 #define BOARD_ESP32_SHIELD_V3 5003
 /**
+ * ESP32C3
+ */
+#define BOARD_ESP32C3_CORE 5100
+/**
+ * ESP32S3
+ */
+#define BOARD_ESP32S3_DEVKIT 5200
+/**
  * RP2040
  */
 #define BOARD_RPI_PICO 6000
@@ -161,6 +169,12 @@ extern "C"
 #define BOARDMAP "esp32/boardmap_mks_tinybee.h"
 #elif (BOARD == BOARD_ESP32_SHIELD_V3)
 #define BOARDMAP "esp32/boardmap_esp32_shield_v3.h"
+// ESP32-Cx
+#elif (BOARD == BOARD_ESP32C3_CORE)
+#define BOARDMAP "esp32/boardmap_core_c3.h"
+// ESP32-Sx
+#elif (BOARD == BOARD_ESP32S3_DEVKIT)
+#define BOARDMAP "esp32/boardmap_devkit_s3.h"
 // RP2040
 #elif (BOARD == BOARD_RPI_PICO)
 #define BOARDMAP "rp2040/boardmap_rpi_pico.h"
