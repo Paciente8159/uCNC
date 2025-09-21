@@ -4596,7 +4596,7 @@ extern "C"
 	}
 
 // #define mcu_get_input(X) gpio_get_level((gpio_num_t)__indirect__(X, BIT))
-#define mcu_get_input(X) ((X & 0x20) ? (GPIO.in1.val && (1UL << (__indirect__(X, BIT) & 0x1f))) : (GPIO.in.val && (1UL << (__indirect__(X, BIT) & 0x1f))))
+#define mcu_get_input(X) ((X & 0x20) ? (GPIO.in1.val && (1UL << (__indirect__(X, BIT) & 0x1f))) : (GPIO.in && (1UL << (__indirect__(X, BIT) & 0x1f))))
 #define mcu_get_output(X) ((X & 0x20) ? (GPIO.out1.val && (1UL << (__indirect__(X, BIT) & 0x1f))) : (GPIO.out && (1UL << (__indirect__(X, BIT) & 0x1f))))
 #define mcu_set_output(X)                                      \
 	if (X & 0x20)                                                \

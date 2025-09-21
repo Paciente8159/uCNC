@@ -382,6 +382,59 @@ void mcu_init(void)
 
 // ISR
 /**
+ * enables the pin probe mcu isr on change
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_enable_probe_isr
+void mcu_enable_probe_isr(void)
+{
+}
+#endif
+
+/**
+ * disables the pin probe mcu isr on change
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_disable_probe_isr
+void mcu_disable_probe_isr(void)
+{
+}
+#endif
+
+/**
+ * gets the voltage value of a built-in ADC pin
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_get_analog
+uint16_t mcu_get_analog(uint8_t channel)
+{
+	return 0;
+}
+#endif
+
+/**
+ * sets the pwm value of a built-in pwm pin
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_set_pwm
+void mcu_set_pwm(uint8_t pwm, uint8_t value)
+{
+}
+#endif
+
+/**
+ * gets the configured pwm value of a built-in pwm pin
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_get_pwm
+uint8_t mcu_get_pwm(uint8_t pwm)
+{
+	return 0;
+}
+#endif
+
+// ISR
+/**
  * enables global interrupts on the MCU
  * can be defined either as a function or a macro call
  * */
