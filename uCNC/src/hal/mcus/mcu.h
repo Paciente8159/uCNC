@@ -217,7 +217,7 @@ extern "C"
 #endif
 
 #ifndef mcu_softpwm_freq_config
-uint8_t mcu_softpwm_freq_config(uint16_t freq);
+	uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #endif
 
 /**
@@ -331,82 +331,85 @@ uint8_t mcu_softpwm_freq_config(uint16_t freq);
 #define mcu_nop() asm volatile("nop\n\t")
 #endif
 
+#ifndef mcu_delay_loop
 	void mcu_delay_loop(uint16_t loops);
+#endif
 
 #ifndef mcu_delay_cycles
 // set per MCU
 #ifndef MCU_CLOCKS_PER_CYCLE
-#error "MCU_CLOCKS_PER_CYCLE not defined for this MCU"
+#define MCU_CLOCKS_PER_CYCLE 1 // assume 1 clock cycle per instruction
 #endif
-#ifndef MCU_CYCLES_PER_LOOP_OVERHEAD
-#error "MCU_CYCLES_PER_LOOP_OVERHEAD not defined for this MCU"
+#ifndef MCU_CYCLES_LOOP_OVERHEAD
+#error "MCU_CYCLES_LOOP_OVERHEAD not defined for this MCU"
 #endif
 #ifndef MCU_CYCLES_PER_LOOP
 #error "MCU_CYCLES_PER_LOOP not defined for this MCU"
 #endif
-#ifndef MCU_CYCLES_PER_LOOP_OVERHEAD
-#error "MCU_CYCLES_PER_LOOP_OVERHEAD not defined for this MCU"
-#endif
 
-#define mcu_delay_cycles(X)                                                                                                                       \
-	do                                                                                                                                              \
-	{                                                                                                                                               \
-		if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) > 0)                                                                           \
-		{                                                                                                                                             \
-			mcu_delay_loop((uint16_t)((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP));                                                       \
-		}                                                                                                                                             \
-		switch ((((X - MCU_CYCLES_PER_LOOP_OVERHEAD - MCU_CYCLES_PER_LOOP) >= 0) ? ((X - MCU_CYCLES_PER_LOOP_OVERHEAD) % MCU_CYCLES_PER_LOOP) : (X))) \
-		{                                                                                                                                             \
-		case 15:                                                                                                                                      \
-			asm volatile("nop");                                                                                                                        \
-			__FALL_THROUGH__                                                                                                                            \
-		case 14:                                                                                                                                      \
-			asm volatile("nop");                                                                                                                        \
-			__FALL_THROUGH__                                                                                                                            \
-		case 13:                                                                                                                                      \
-			asm volatile("nop");                                                                                                                        \
-			__FALL_THROUGH__                                                                                                                            \
-		case 12:                                                                                                                                      \
-			asm volatile("nop");                                                                                                                        \
-			__FALL_THROUGH__                                                                                                                            \
-		case 11:                                                                                                                                      \
-			asm volatile("nop");                                                                                                                        \
-			__FALL_THROUGH__                                                                                                                            \
-		case 10:                                                                                                                                      \
-			asm volatile("nop");                                                                                                                        \
-			__FALL_THROUGH__                                                                                                                            \
-		case 9:                                                                                                                                       \
-			asm volatile("nop");                                                                                                                        \
-			__FALL_THROUGH__                                                                                                                            \
-		case 8:                                                                                                                                       \
-			asm volatile("nop");                                                                                                                        \
-			__FALL_THROUGH__                                                                                                                            \
-		case 7:                                                                                                                                       \
-			asm volatile("nop");                                                                                                                        \
-			__FALL_THROUGH__                                                                                                                            \
-		case 6:                                                                                                                                       \
-			asm volatile("nop");                                                                                                                        \
-			__FALL_THROUGH__                                                                                                                            \
-		case 5:                                                                                                                                       \
-			asm volatile("nop");                                                                                                                        \
-			__FALL_THROUGH__                                                                                                                            \
-		case 4:                                                                                                                                       \
-			asm volatile("nop");                                                                                                                        \
-			__FALL_THROUGH__                                                                                                                            \
-		case 3:                                                                                                                                       \
-			asm volatile("nop");                                                                                                                        \
-			__FALL_THROUGH__                                                                                                                            \
-		case 2:                                                                                                                                       \
-			asm volatile("nop");                                                                                                                        \
-			__FALL_THROUGH__                                                                                                                            \
-		case 1:                                                                                                                                       \
-			asm volatile("nop");                                                                                                                        \
-		}                                                                                                                                             \
+#define mcu_delay_cycles(X)                                                                                 \
+	do                                                                                                        \
+	{                                                                                                         \
+		if (X >= (MCU_CYCLES_LOOP_OVERHEAD + MCU_CYCLES_PER_LOOP)) /* runs at least one loop */                 \
+		{                                                                                                       \
+			mcu_delay_loop((uint16_t)((X - MCU_CYCLES_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP));                     \
+		}                                                                                                       \
+		switch ((X >= MCU_CYCLES_LOOP_OVERHEAD) ? ((X - MCU_CYCLES_LOOP_OVERHEAD) % MCU_CYCLES_PER_LOOP) : (X)) \
+		{                                                                                                       \
+		case 15:                                                                                                \
+			asm volatile("nop");                                                                                  \
+			__FALL_THROUGH__                                                                                      \
+		case 14:                                                                                                \
+			asm volatile("nop");                                                                                  \
+			__FALL_THROUGH__                                                                                      \
+		case 13:                                                                                                \
+			asm volatile("nop");                                                                                  \
+			__FALL_THROUGH__                                                                                      \
+		case 12:                                                                                                \
+			asm volatile("nop");                                                                                  \
+			__FALL_THROUGH__                                                                                      \
+		case 11:                                                                                                \
+			asm volatile("nop");                                                                                  \
+			__FALL_THROUGH__                                                                                      \
+		case 10:                                                                                                \
+			asm volatile("nop");                                                                                  \
+			__FALL_THROUGH__                                                                                      \
+		case 9:                                                                                                 \
+			asm volatile("nop");                                                                                  \
+			__FALL_THROUGH__                                                                                      \
+		case 8:                                                                                                 \
+			asm volatile("nop");                                                                                  \
+			__FALL_THROUGH__                                                                                      \
+		case 7:                                                                                                 \
+			asm volatile("nop");                                                                                  \
+			__FALL_THROUGH__                                                                                      \
+		case 6:                                                                                                 \
+			asm volatile("nop");                                                                                  \
+			__FALL_THROUGH__                                                                                      \
+		case 5:                                                                                                 \
+			asm volatile("nop");                                                                                  \
+			__FALL_THROUGH__                                                                                      \
+		case 4:                                                                                                 \
+			asm volatile("nop");                                                                                  \
+			__FALL_THROUGH__                                                                                      \
+		case 3:                                                                                                 \
+			asm volatile("nop");                                                                                  \
+			__FALL_THROUGH__                                                                                      \
+		case 2:                                                                                                 \
+			asm volatile("nop");                                                                                  \
+			__FALL_THROUGH__                                                                                      \
+		case 1:                                                                                                 \
+			asm volatile("nop");                                                                                  \
+		}                                                                                                       \
 	} while (0)
 #endif
 
 #ifndef mcu_delay_100ns
-#define mcu_delay_100ns() mcu_delay_cycles((F_CPU / MCU_CLOCKS_PER_CYCLE / 10000000UL))
+#define mcu_delay_100ns() mcu_delay_cycles(F_CPU / 10000000)
+#endif
+
+#ifndef mcu_delay_50ns
+#define mcu_delay_50ns() mcu_delay_cycles(F_CPU / 20000000)
 #endif
 
 /**

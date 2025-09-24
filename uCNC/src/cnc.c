@@ -224,7 +224,7 @@ uint8_t cnc_parse_cmd(void)
 
 bool cnc_dotasks(void)
 {
-
+	mcu_delay_100ns();
 	// run io basic tasks
 	cnc_io_dotasks();
 

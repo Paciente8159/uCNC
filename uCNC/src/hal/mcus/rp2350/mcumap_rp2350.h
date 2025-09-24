@@ -68,32 +68,25 @@ extern "C"
 #define rom_read_byte *
 
 // needed by software delays
-// this can be ignored since custom delay functions will be defined
-#ifndef MCU_CLOCKS_PER_CYCLE
-#define MCU_CLOCKS_PER_CYCLE 1
-#endif
+	// needed by software delays
 #ifndef MCU_CYCLES_PER_LOOP
-#define MCU_CYCLES_PER_LOOP 1
+#define MCU_CYCLES_PER_LOOP 3
 #endif
-#ifndef MCU_CYCLES_PER_LOOP_OVERHEAD
-#define MCU_CYCLES_PER_LOOP_OVERHEAD 0
+#ifndef MCU_CYCLES_LOOP_OVERHEAD
+#define MCU_CYCLES_LOOP_OVERHEAD 1
 #endif
 
-	// this next set of rules defines the internal delay macros
-	// #define F_CPU_MHZ (F_CPU / 1000000UL)
-	// #define US_TO_CYCLES(X) (X * F_CPU_MHZ)
-
-	// 	extern unsigned long ulMainGetRunTimeCounterValue();
-	/*
-	#define mcu_delay_cycles(X)                                 \
-	{                                                           \
-		uint32_t target = ulMainGetRunTimeCounterValue() + (X); 	\
-		while (target > ulMainGetRunTimeCounterValue())         	\
-			;                                                   		\
-	}
-	*/
-	// #define mcu_delay_100ns() mcu_delay_cycles(F_CPU_MHZ / 10UL)
-	// #define mcu_delay_us(X) (mcu_delay_cycles(US_TO_CYCLES(X)))
+#define mcu_delay_loop(X)                                      \
+    do {                                                       \
+        register uint32_t __cnt __asm__("r0") = (X);           \
+        __asm__ __volatile__(                                  \
+            "1: subs %0, %0, #1\n\t" /* 1 cycle */             \
+            "bne 1b\n\t"        /* 2 cycles taken, 1 not */    \
+            "nop\n\t"           /* pad exit to 3 cycles */     \
+            : "+r"(__cnt)                                     \
+            :                                                  \
+            : "cc");                                           \
+    } while (0)
 
 #ifdef RX_BUFFER_CAPACITY
 #define RX_BUFFER_CAPACITY 255

@@ -37,6 +37,7 @@ extern "C"
 // defines the frequency of the mcu
 #ifndef F_CPU
 #define F_CPU SystemCoreClock
+#warning "F_CPU not defined as a constant. Cycle/Nanoseconds delays will be take longer then expected"
 #endif
 // defines the maximum and minimum step rates
 #ifndef F_STEP_MAX
@@ -51,15 +52,26 @@ extern "C"
 #endif
 
 // needed by software delays
-#ifndef MCU_CLOCKS_PER_CYCLE
-#define MCU_CLOCKS_PER_CYCLE 1
-#endif
+// needed by software delays
 #ifndef MCU_CYCLES_PER_LOOP
-#define MCU_CYCLES_PER_LOOP 5
+#define MCU_CYCLES_PER_LOOP 3
 #endif
-#ifndef MCU_CYCLES_PER_LOOP_OVERHEAD
-#define MCU_CYCLES_PER_LOOP_OVERHEAD 13
+#ifndef MCU_CYCLES_LOOP_OVERHEAD
+#define MCU_CYCLES_LOOP_OVERHEAD 1
 #endif
+
+#define mcu_delay_loop(X)                                    \
+	do                                                         \
+	{                                                          \
+		register uint32_t __cnt __asm__("r0") = (X);             \
+		__asm__ __volatile__(                                    \
+				"1: subs %0, %0, #1\n\t" /* 1 cycle */               \
+				"bne 1b\n\t"						 /* 2 cycles taken, 1 not */ \
+				"nop\n\t"								 /* pad exit to 3 cycles */  \
+				: "+r"(__cnt)                                        \
+				:                                                    \
+				: "cc");                                             \
+	} while (0)
 
 // defines special mcu to access flash strings and arrays
 #define __rom__
@@ -1986,8 +1998,8 @@ extern "C"
 #define DIO214_PMUX SPI2_SDO_PMUX
 #define DIO214_PMUXVAL SPI2_SDO_PMUXVAL
 
-#define SPI2_DMA_TRIGSRC_RX ((SPI2_PORT<<1) + 1)
-#define SPI2_DMA_TRIGSRC_TX ((SPI2_PORT<<1) + 2)
+#define SPI2_DMA_TRIGSRC_RX ((SPI2_PORT << 1) + 1)
+#define SPI2_DMA_TRIGSRC_TX ((SPI2_PORT << 1) + 2)
 
 #define SPI2_IRQ __helper__(SERCOM, SPI2_PORT, _IRQn)
 #define SPI2_ISR __helper__(SERCOM, SPI2_PORT, _Handler)
@@ -3487,7 +3499,7 @@ extern "C"
 		__disable_irq();                   \
 	}
 #define mcu_get_global_isr() samd21_global_isr_enabled
-#define mcu_free_micros() ({ (1000UL - (SysTick->VAL * 1000UL / SysTick->LOAD)); })
+#define mcu_free_micros() ((uint32_t)((((SysTick->LOAD + 1) - SysTick->VAL) * 1000UL) / (SysTick->LOAD + 1)))
 
 #ifdef __cplusplus
 }

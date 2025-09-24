@@ -38,6 +38,7 @@ extern "C"
 // defines the frequency of the mcu
 #ifndef F_CPU
 #define F_CPU SystemCoreClock
+#warning "F_CPU not defined as a constant. Cycle/Nanoseconds delays will be take longer then expected"
 #endif
 
 // defines the maximum and minimum step rates
@@ -68,6 +69,7 @@ extern "C"
 		uint32_t t = X;         \
 		while (t > DWT->CYCCNT) \
 			;                     \
+		asm volatile("nop\n\t"); \
 	}
 
 // Helper macros
@@ -5632,7 +5634,7 @@ extern "C"
 		__disable_irq();                  \
 	}
 #define mcu_get_global_isr() stm32_global_isr_enabled
-#define mcu_free_micros() ({                                                                                                                                                                (1000UL - (SysTick->VAL * 1000UL / SysTick->LOAD)); })
+#define mcu_free_micros() ((uint32_t)((((SysTick->LOAD + 1) - SysTick->VAL) * 1000UL) / (SysTick->LOAD + 1)))
 
 #define GPIO_RESET 0xfU
 #define GPIO_OUT_PP_50MHZ 0x3U

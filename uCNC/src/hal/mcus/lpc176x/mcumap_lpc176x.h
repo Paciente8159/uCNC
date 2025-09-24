@@ -4742,7 +4742,8 @@ extern "C"
 		__disable_irq();                \
 	}
 #define mcu_get_global_isr() lpc_global_isr_enabled
-#define mcu_free_micros() ({ (1000UL - (SysTick->VAL * 1000UL / SysTick->LOAD)); })
+#define mcu_free_micros() ((uint32_t)((((SysTick->LOAD + 1) - SysTick->VAL) * 1000UL) / (SysTick->LOAD + 1)))
+
 
 #ifdef MCU_HAS_ONESHOT_TIMER
 #define mcu_start_timeout() (ONESHOT_TIMER_REG->TCR |= TIM_ENABLE)
