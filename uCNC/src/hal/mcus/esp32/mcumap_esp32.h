@@ -86,7 +86,7 @@ extern "C"
 #define mcu_delay_loop(X)                                             \
 	do                                                                  \
 	{                                                                   \
-		register unsigned start, now, target = ((X - 1) * MCU_CYCLES_PER_LOOP + 2); \
+		register unsigned start, now, target = (((X) - 1) * MCU_CYCLES_PER_LOOP + 2); \
 		asm volatile("" ::: "memory");                                    \
 		asm volatile(                                                     \
 				"rsr.ccount %0\n"					/* 2 cycles: start = ccount */      \

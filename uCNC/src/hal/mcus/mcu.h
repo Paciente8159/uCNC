@@ -404,7 +404,8 @@ extern "C"
 	} while (0)
 #endif
 
-#define mcu_delay_ns(X) mcu_delay_cycles((uint16_t)((X * (F_CPU / 1000000)) / 1000))
+#define mcu_delay_ns(X) mcu_delay_cycles((uint16_t)(((X) * ((F_CPU) / 1000000)) / 1000))
+#define mcu_delay_hz(X) mcu_delay_cycles((uint16_t)((F_CPU) / (X)))
 
 // compatibility (deprecated)
 #ifndef mcu_delay_100ns
