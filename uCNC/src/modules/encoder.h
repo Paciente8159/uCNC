@@ -27,6 +27,10 @@ extern "C"
 #include "../module.h"
 #include <stdint.h>
 
+#define ENC_TYPE_PULSE 0
+#define ENC_TYPE_I2C 1
+#define ENC_TYPE_SSI 2
+
 #define ENC0 0
 #define ENC1 1
 #define ENC2 2

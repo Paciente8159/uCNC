@@ -44,7 +44,7 @@ extern "C"
 		bool (*get_scl)(void);
 	} softi2c_port_t;
 
-#define I2C_DELAY(FREQ) CLAMP(0, ((2500000UL / FREQ) - 1), 255)
+#define I2C_DELAY(FREQ) CLAMP(0, ((500000UL / FREQ) - 1), 255)
 
 #define SOFTI2C(NAME, FREQ, SCLPIN, SDAPIN) \
 	void NAME##_scl(bool state)               \
