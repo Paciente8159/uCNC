@@ -32,6 +32,10 @@ extern "C"
 #define BOARD_NAME "Arduino UNO"
 #endif
 
+#ifndef F_CPU
+#define F_CPU 16000000UL
+#endif
+
 #define PCINT0_PORT B
 #define PCINT1_PORT C
 #define PCINT2_PORT D

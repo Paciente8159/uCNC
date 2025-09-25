@@ -347,60 +347,60 @@ extern "C"
 #error "MCU_CYCLES_PER_LOOP not defined for this MCU"
 #endif
 
-#define mcu_delay_cycles(X)                                                                                 \
-	do                                                                                                        \
-	{                                                                                                         \
-		if ((X) >= (MCU_CYCLES_LOOP_OVERHEAD + MCU_CYCLES_PER_LOOP)) /* runs at least one loop */                 \
-		{                                                                                                       \
-			mcu_delay_loop((uint16_t)(((X) - MCU_CYCLES_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP));                     \
-		}                                                                                                       \
+#define mcu_delay_cycles(X)                                                                                                             \
+	do                                                                                                                                    \
+	{                                                                                                                                     \
+		if ((X) >= (MCU_CYCLES_LOOP_OVERHEAD + MCU_CYCLES_PER_LOOP)) /* runs at least one loop */                                           \
+		{                                                                                                                                   \
+			mcu_delay_loop((uint16_t)(((X) - MCU_CYCLES_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP));                                               \
+		}                                                                                                                                   \
 		switch (((X) >= (MCU_CYCLES_LOOP_OVERHEAD + MCU_CYCLES_PER_LOOP)) ? (((X) - MCU_CYCLES_LOOP_OVERHEAD) % MCU_CYCLES_PER_LOOP) : (X)) \
-		{                                                                                                       \
-		case 15:                                                                                                \
-			asm volatile("nop");                                                                                  \
-			__FALL_THROUGH__                                                                                      \
-		case 14:                                                                                                \
-			asm volatile("nop");                                                                                  \
-			__FALL_THROUGH__                                                                                      \
-		case 13:                                                                                                \
-			asm volatile("nop");                                                                                  \
-			__FALL_THROUGH__                                                                                      \
-		case 12:                                                                                                \
-			asm volatile("nop");                                                                                  \
-			__FALL_THROUGH__                                                                                      \
-		case 11:                                                                                                \
-			asm volatile("nop");                                                                                  \
-			__FALL_THROUGH__                                                                                      \
-		case 10:                                                                                                \
-			asm volatile("nop");                                                                                  \
-			__FALL_THROUGH__                                                                                      \
-		case 9:                                                                                                 \
-			asm volatile("nop");                                                                                  \
-			__FALL_THROUGH__                                                                                      \
-		case 8:                                                                                                 \
-			asm volatile("nop");                                                                                  \
-			__FALL_THROUGH__                                                                                      \
-		case 7:                                                                                                 \
-			asm volatile("nop");                                                                                  \
-			__FALL_THROUGH__                                                                                      \
-		case 6:                                                                                                 \
-			asm volatile("nop");                                                                                  \
-			__FALL_THROUGH__                                                                                      \
-		case 5:                                                                                                 \
-			asm volatile("nop");                                                                                  \
-			__FALL_THROUGH__                                                                                      \
-		case 4:                                                                                                 \
-			asm volatile("nop");                                                                                  \
-			__FALL_THROUGH__                                                                                      \
-		case 3:                                                                                                 \
-			asm volatile("nop");                                                                                  \
-			__FALL_THROUGH__                                                                                      \
-		case 2:                                                                                                 \
-			asm volatile("nop");                                                                                  \
-			__FALL_THROUGH__                                                                                      \
-		case 1:                                                                                                 \
-			asm volatile("nop");                                                                                  \
-		}                                                                                                       \
+		{                                                                                                                                   \
+		case 15:                                                                                                                            \
+			asm volatile("nop");                                                                                                              \
+			__FALL_THROUGH__                                                                                                                  \
+		case 14:                                                                                                                            \
+			asm volatile("nop");                                                                                                              \
+			__FALL_THROUGH__                                                                                                                  \
+		case 13:                                                                                                                            \
+			asm volatile("nop");                                                                                                              \
+			__FALL_THROUGH__                                                                                                                  \
+		case 12:                                                                                                                            \
+			asm volatile("nop");                                                                                                              \
+			__FALL_THROUGH__                                                                                                                  \
+		case 11:                                                                                                                            \
+			asm volatile("nop");                                                                                                              \
+			__FALL_THROUGH__                                                                                                                  \
+		case 10:                                                                                                                            \
+			asm volatile("nop");                                                                                                              \
+			__FALL_THROUGH__                                                                                                                  \
+		case 9:                                                                                                                             \
+			asm volatile("nop");                                                                                                              \
+			__FALL_THROUGH__                                                                                                                  \
+		case 8:                                                                                                                             \
+			asm volatile("nop");                                                                                                              \
+			__FALL_THROUGH__                                                                                                                  \
+		case 7:                                                                                                                             \
+			asm volatile("nop");                                                                                                              \
+			__FALL_THROUGH__                                                                                                                  \
+		case 6:                                                                                                                             \
+			asm volatile("nop");                                                                                                              \
+			__FALL_THROUGH__                                                                                                                  \
+		case 5:                                                                                                                             \
+			asm volatile("nop");                                                                                                              \
+			__FALL_THROUGH__                                                                                                                  \
+		case 4:                                                                                                                             \
+			asm volatile("nop");                                                                                                              \
+			__FALL_THROUGH__                                                                                                                  \
+		case 3:                                                                                                                             \
+			asm volatile("nop");                                                                                                              \
+			__FALL_THROUGH__                                                                                                                  \
+		case 2:                                                                                                                             \
+			asm volatile("nop");                                                                                                              \
+			__FALL_THROUGH__                                                                                                                  \
+		case 1:                                                                                                                             \
+			asm volatile("nop");                                                                                                              \
+		}                                                                                                                                   \
 	} while (0)
 #endif
 

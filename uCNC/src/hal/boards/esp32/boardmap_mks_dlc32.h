@@ -32,6 +32,10 @@ extern "C"
 #define BOARD_NAME "MKS DLC32"
 #endif
 
+#ifndef F_CPU
+#define F_CPU 240000000UL
+#endif
+
 // Setup limit pins
 #define LIMIT_Z_BIT 34 // assigns LIMIT_Z pin
 // #define LIMIT_Z_ISR		// assigns LIMIT_Z ISR

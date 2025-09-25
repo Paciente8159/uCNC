@@ -59,15 +59,27 @@ extern "C"
 #define rom_read_byte *
 
 // needed by software delays
-#ifndef MCU_CLOCKS_PER_CYCLE
-#define MCU_CLOCKS_PER_CYCLE 1
-#endif
 #ifndef MCU_CYCLES_PER_LOOP
-#define MCU_CYCLES_PER_LOOP 1
+#define MCU_CYCLES_PER_LOOP 6
 #endif
-#ifndef MCU_CYCLES_PER_LOOP_OVERHEAD
-#define MCU_CYCLES_PER_LOOP_OVERHEAD 0
+#ifndef MCU_CYCLES_LOOP_OVERHEAD
+#define MCU_CYCLES_LOOP_OVERHEAD 3
 #endif
+
+#define mcu_delay_loop(X)                                             \
+	do                                                                  \
+	{                                                                   \
+		register unsigned start, now, target = ((X - 1) * MCU_CYCLES_PER_LOOP + 2); \
+		asm volatile("" ::: "memory");                                    \
+		asm volatile(                                                     \
+				"rsr.ccount %0\n"					/* 2 cycles: start = ccount */      \
+				"1:  rsr.ccount %1\n"			/* 2 cycles */                      \
+				"  sub      %1, %1, %0\n" /* 1 cycle  : tmp = now-start */    \
+				"  bltu     %1, %2, 1b\n" /* 3 taken / 1 not taken */         \
+				"  nop\n"                                                     \
+				: "=&a"(start), "=&a"(now)                                    \
+				: "a"(target));                                               \
+	} while (0)
 
 #ifndef MCU_CALLBACK
 #define MCU_CALLBACK IRAM_ATTR
@@ -1434,26 +1446,6 @@ extern "C"
 		*/
 	static __attribute__((always_inline, unused)) inline void __esp8266_atomic_out(uint32_t *state) { xt_wsr_ps(*state); }
 #define __ATOMIC__ for (uint32_t __restore_atomic__ __attribute__((__cleanup__(__esp8266_atomic_out))) = xt_rsil(15), __loop = 1; __loop; __loop = 0)
-
-#define cpucount()                            \
-	({                                          \
-		uint32_t r;                               \
-		asm volatile("rsr %0, ccount" : "=r"(r)); \
-		r;                                        \
-	})
-
-#define mcu_delay_cycles(X)      \
-	{                              \
-		uint32_t start = cpucount(); \
-		uint32_t end;                \
-		do                           \
-		{                            \
-			end = cpucount();          \
-		} while (X > (end - start)); \
-	}
-
-	// 	extern void esp8266_delay_us(uint16_t delay);
-	// #define mcu_delay_us(X) esp8266_delay_us(X)
 
 #if IC74HC595_COUNT > 0
 
