@@ -59,18 +59,40 @@ extern "C"
 #define rom_read_byte *
 
 // custom cycle counter
-#ifndef MCU_CLOCKS_PER_CYCLE
-#define MCU_CLOCKS_PER_CYCLE 1
+// #ifndef MCU_CLOCKS_PER_CYCLE
+// #define MCU_CLOCKS_PER_CYCLE 1
+// #endif
+
+// #define mcu_delay_cycles(X) \
+// 	{                         \
+// 		DWT->CYCCNT = 0;        \
+// 		uint32_t t = X;         \
+// 		while (t > DWT->CYCCNT) \
+// 			;                     \
+// 		asm volatile("nop\n\t"); \
+// 	}
+#ifndef MCU_CYCLES_PER_LOOP
+#define MCU_CYCLES_PER_LOOP 4
+#endif
+#ifndef MCU_CYCLES_LOOP_OVERHEAD
+#define MCU_CYCLES_LOOP_OVERHEAD 1
 #endif
 
-#define mcu_delay_cycles(X) \
-	{                         \
-		DWT->CYCCNT = 0;        \
-		uint32_t t = X;         \
-		while (t > DWT->CYCCNT) \
-			;                     \
-		asm volatile("nop\n\t"); \
-	}
+#define mcu_delay_loop(X)                              \
+	do                                                   \
+	{                                                    \
+		asm volatile("" ::: "memory");                     \
+		register uint16_t __count = (X);                   \
+		__asm__ volatile(                                  \
+				"1: sub %[cnt], %[cnt], #1\n" /* 1 cycle */    \
+				"   cmp %[cnt], #0\n"					/* 1 cycle */    \
+				"   bne 1b\n"									/* 1–2 cycles */ \
+				"   nop\n"										/* 1 cycle */    \
+				: [cnt] "+r"(__count)                          \
+				:                                              \
+				: "cc");                                       \
+		asm volatile("" ::: "memory");                     \
+	} while (0)
 
 // Helper macros
 #define __helper_ex__(left, mid, right) left##mid##right

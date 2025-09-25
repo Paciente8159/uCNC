@@ -68,25 +68,28 @@ extern "C"
 #define rom_read_byte *
 
 // needed by software delays
-// needed by software delays
 #ifndef MCU_CYCLES_PER_LOOP
-#define MCU_CYCLES_PER_LOOP 3
+#define MCU_CYCLES_PER_LOOP 4
 #endif
 #ifndef MCU_CYCLES_LOOP_OVERHEAD
 #define MCU_CYCLES_LOOP_OVERHEAD 1
 #endif
 
-#define mcu_delay_loop(X)                                      \
-    do {                                                       \
-        register uint32_t __cnt __asm__("r0") = (X);           \
-        __asm__ __volatile__(                                  \
-            "1: subs %0, %0, #1\n\t" /* 1 cycle */             \
-            "bne 1b\n\t"        /* 2 cycles taken, 1 not */    \
-            "nop\n\t"           /* pad exit to 3 cycles */     \
-            : "+r"(__cnt)                                     \
-            :                                                  \
-            : "cc");                                           \
-    } while (0)
+#define mcu_delay_loop(X)                              \
+	do                                                   \
+	{                                                    \
+		asm volatile("" ::: "memory");                     \
+		register uint16_t __count = (X);                   \
+		__asm__ volatile(                                  \
+				"1: sub %[cnt], %[cnt], #1\n" /* 1 cycle */    \
+				"   cmp %[cnt], #0\n"					/* 1 cycle */    \
+				"   bne 1b\n"									/* 1–2 cycles */ \
+				"   nop\n"										/* 1 cycle */    \
+				: [cnt] "+r"(__count)                          \
+				:                                              \
+				: "cc");                                       \
+		asm volatile("" ::: "memory");                     \
+	} while (0)
 		
 #ifdef RX_BUFFER_CAPACITY
 #define RX_BUFFER_CAPACITY 255

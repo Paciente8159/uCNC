@@ -350,11 +350,11 @@ extern "C"
 #define mcu_delay_cycles(X)                                                                                 \
 	do                                                                                                        \
 	{                                                                                                         \
-		if (X >= (MCU_CYCLES_LOOP_OVERHEAD + MCU_CYCLES_PER_LOOP)) /* runs at least one loop */                 \
+		if ((X) >= (MCU_CYCLES_LOOP_OVERHEAD + MCU_CYCLES_PER_LOOP)) /* runs at least one loop */                 \
 		{                                                                                                       \
-			mcu_delay_loop((uint16_t)((X - MCU_CYCLES_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP));                     \
+			mcu_delay_loop((uint16_t)(((X) - MCU_CYCLES_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP));                     \
 		}                                                                                                       \
-		switch ((X >= MCU_CYCLES_LOOP_OVERHEAD) ? ((X - MCU_CYCLES_LOOP_OVERHEAD) % MCU_CYCLES_PER_LOOP) : (X)) \
+		switch (((X) >= (MCU_CYCLES_LOOP_OVERHEAD + MCU_CYCLES_PER_LOOP)) ? (((X) - MCU_CYCLES_LOOP_OVERHEAD) % MCU_CYCLES_PER_LOOP) : (X)) \
 		{                                                                                                       \
 		case 15:                                                                                                \
 			asm volatile("nop");                                                                                  \
@@ -404,12 +404,11 @@ extern "C"
 	} while (0)
 #endif
 
-#ifndef mcu_delay_100ns
-#define mcu_delay_100ns() mcu_delay_cycles(F_CPU / 10000000)
-#endif
+#define mcu_delay_ns(X) mcu_delay_cycles((uint16_t)((X * (F_CPU / 1000000)) / 1000))
 
-#ifndef mcu_delay_50ns
-#define mcu_delay_50ns() mcu_delay_cycles(F_CPU / 20000000)
+// compatibility (deprecated)
+#ifndef mcu_delay_100ns
+#define mcu_delay_100ns() mcu_delay_ns(100)
 #endif
 
 /**
