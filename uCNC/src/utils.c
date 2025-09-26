@@ -40,10 +40,12 @@ bool buffer_full(ring_buffer_t *buffer)
 
 void buffer_peek(ring_buffer_t *buffer, void *ptr)
 {
-	if(!buffer_empty(buffer)){
+	if (!buffer_empty(buffer))
+	{
 		memcpy(ptr, &buffer->data[buffer->tail * buffer->elem_size], buffer->elem_size);
 	}
-	else{
+	else
+	{
 		memset(ptr, 0, buffer->elem_size);
 	}
 }
@@ -52,20 +54,16 @@ void buffer_dequeue(ring_buffer_t *buffer, void *ptr)
 {
 	if (!buffer_empty(buffer))
 	{
-		uint8_t tail;
-		__ATOMIC__
+		uint8_t tail = 0;
+		tail = buffer->tail;
+		memcpy(ptr, &buffer->data[tail * buffer->elem_size], buffer->elem_size);
+		tail++;
+		if (tail >= buffer->size)
 		{
-			tail = buffer->tail;
-			memcpy(ptr, &buffer->data[tail * buffer->elem_size], buffer->elem_size);
-			tail++;
-			if (tail >= buffer->size)
-			{
-				tail = 0;
-			}
-
-			buffer->tail = tail;
-			buffer->count--;
+			tail = 0;
 		}
+		buffer->tail = tail;
+		buffer->count--;
 	}
 }
 
@@ -73,110 +71,99 @@ void buffer_enqueue(ring_buffer_t *buffer, void *ptr)
 {
 	if (!buffer_full(buffer))
 	{
-		uint8_t head;
-		__ATOMIC__
+		uint8_t head = 0;
+		head = buffer->head;
+		memcpy(&buffer->data[head * buffer->elem_size], ptr, buffer->elem_size);
+		head++;
+		if (head >= buffer->size)
 		{
-			head = buffer->head;
-			memcpy(&buffer->data[head * buffer->elem_size], ptr, buffer->elem_size);
-			head++;
-			if (head >= buffer->size)
-			{
-				head = 0;
-			}
-			buffer->head = head;
-			buffer->count++;
+			head = 0;
 		}
+		buffer->head = head;
+		buffer->count++;
 	}
 }
 
 void buffer_write(ring_buffer_t *buffer, void *ptr, uint8_t len, uint8_t *written)
 {
-	uint8_t count, head, *p = (uint8_t *)ptr;
-	__ATOMIC__
+	uint8_t count = 0, head = 0, *p = (uint8_t *)ptr;
+	head = buffer->head;
+	count = buffer->count;
+	count = MIN(buffer->size - count, len);
+	*written = 0;
+	if (count)
 	{
-		head = buffer->head;
-		count = buffer->count;
-		count = MIN(buffer->size - count, len);
-		*written = 0;
+		uint8_t avail = (buffer->size - head);
+		if (avail < count && avail)
+		{
+			memcpy(&buffer->data[head * buffer->elem_size], ptr, avail * buffer->elem_size);
+			*written = avail;
+			count -= avail;
+			head = 0;
+		}
+		else
+		{
+			avail = 0;
+		}
 		if (count)
 		{
-			uint8_t avail = (buffer->size - head);
-			if (avail < count && avail)
+			memcpy(&buffer->data[head * buffer->elem_size], &p[avail * buffer->elem_size], count * buffer->elem_size);
+			*written += count;
+			head += count;
+			if (head == buffer->size)
 			{
-				memcpy(&buffer->data[head * buffer->elem_size], ptr, avail * buffer->elem_size);
-				*written = avail;
-				count -= avail;
 				head = 0;
 			}
-			else
-			{
-				avail = 0;
-			}
-			if (count)
-			{
-				memcpy(&buffer->data[head * buffer->elem_size], &p[avail * buffer->elem_size], count * buffer->elem_size);
-				*written += count;
-				head += count;
-				if (head == buffer->size)
-				{
-					head = 0;
-				}
-				buffer->head = head;
-				buffer->count += *written;
-			}
+			buffer->head = head;
+			buffer->count += *written;
 		}
 	}
 }
 
 void buffer_read(ring_buffer_t *buffer, void *ptr, uint8_t len, uint8_t *read)
 {
-	uint8_t count, tail, *p = (uint8_t *)ptr;
-	__ATOMIC__
+	uint8_t count = 0, tail = 0, *p = (uint8_t *)ptr;
+	tail = buffer->tail;
+	count = buffer->count;
+
+	if (count > len)
 	{
-		tail = buffer->tail;
-		count = buffer->count;
-		if (count > len)
+		count = len;
+	}
+	*read = 0;
+	if (count)
+	{
+		uint8_t avail = buffer->size - tail;
+		if (avail < count && avail)
 		{
-			count = len;
+			memcpy(ptr, &buffer->data[tail * buffer->elem_size], avail * buffer->elem_size);
+			*read = avail;
+			count -= avail;
+			tail = 0;
 		}
-		*read = 0;
+		else
+		{
+			avail = 0;
+		}
 		if (count)
 		{
-			uint8_t avail = buffer->size - tail;
-			if (avail < count && avail)
+			memcpy(&p[avail * buffer->elem_size], &buffer->data[tail * buffer->elem_size], count * buffer->elem_size);
+			*read += count;
+			tail += count;
+			if (tail == buffer->size)
 			{
-				memcpy(ptr, &buffer->data[tail * buffer->elem_size], avail * buffer->elem_size);
-				*read = avail;
-				count -= avail;
 				tail = 0;
 			}
-			else
-			{
-				avail = 0;
-			}
-			if (count)
-			{
-				memcpy(&p[avail * buffer->elem_size], &buffer->data[tail * buffer->elem_size], count * buffer->elem_size);
-				*read += count;
-				tail += count;
-				if (tail == buffer->size)
-				{
-					tail = 0;
-				}
-				buffer->tail = tail;
-				buffer->count -= *read;
-			}
+			buffer->tail = tail;
+			buffer->count -= *read;
 		}
 	}
 }
 
 void buffer_clear(ring_buffer_t *buffer)
 {
-	__ATOMIC__
-	{
-		memset(buffer->data, 0, buffer->elem_size * buffer->size);
-		buffer->tail = 0;
-		buffer->head = 0;
-		buffer->count = 0;
-	}
+	memset(buffer->data, 0, buffer->elem_size * buffer->size);
+	buffer->tail = 0;
+	buffer->head = 0;
+	buffer->count = 0;
 }

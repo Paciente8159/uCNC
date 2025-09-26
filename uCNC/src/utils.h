@@ -197,10 +197,10 @@ extern "C"
 
 // some math.h libraries do not define log of base 2
 #ifndef LN
-#define LN(x) log(x)/M_LN2
+#define LN(x) log(x) / M_LN2
 #endif
 
-#define __TIMEOUT_US__(timeout) for (uint32_t elap_us_##timeout, curr_us_##timeout = mcu_free_micros(); timeout > 0; elap_us_##timeout = mcu_free_micros() - curr_us_##timeout, timeout -= MIN(timeout, ((elap_us_##timeout < 1000) ? elap_us_##timeout : 1000 + elap_us_##timeout)), curr_us_##timeout = mcu_free_micros())
+#define __TIMEOUT_US__(timeout) for (uint32_t elapsed_us_##timeout, now_us_##timeout, curr_us_##timeout = mcu_free_micros(); timeout > 0; ({now_us_##timeout = mcu_free_micros(); now_us_##timeout += (now_us_##timeout>curr_us_##timeout) ? 0 : 1000; elapsed_us_##timeout = now_us_##timeout - curr_us_##timeout; timeout -= MIN(timeout, elapsed_us_##timeout); curr_us_##timeout = now_us_##timeout; }))
 #define __TIMEOUT_MS__(timeout)                                                          \
 	timeout = (((uint32_t)timeout) < (UINT32_MAX / 1000)) ? (timeout * 1000) : UINT32_MAX; \
 	__TIMEOUT_US__(timeout)
@@ -210,15 +210,17 @@ extern "C"
 #define FORCEINLINE __attribute__((always_inline)) inline
 #endif
 
-	static FORCEINLINE uint8_t __atomic_in(void)
+	static FORCEINLINE bool __atomic_in(bool force)
 	{
+		bool state = mcu_get_global_isr();
+		asm volatile("" ::: "memory");
 		mcu_disable_global_isr();
-		return 1;
+		return (state | force);
 	}
 
-	static FORCEINLINE void __atomic_out(uint8_t *s)
+	static FORCEINLINE void __atomic_out(bool *s)
 	{
-		if (*s != 0)
+		if (*s != false)
 		{
 			mcu_enable_global_isr();
 		}
@@ -230,10 +232,10 @@ extern "C"
 	}
 
 #ifndef __ATOMIC__
-#define __ATOMIC__ for (uint8_t __restore_atomic__ __attribute__((__cleanup__(__atomic_out))) = mcu_get_global_isr(), __AtomLock = __atomic_in(); __AtomLock; __AtomLock = 0)
+#define __ATOMIC__ for (uint8_t __restore_atomic__ __attribute__((__cleanup__(__atomic_out))) = __atomic_in(false), __AtomLock = 1; __AtomLock; __AtomLock = 0)
 #endif
 #ifndef __ATOMIC_FORCEON__
-#define __ATOMIC_FORCEON__ for (uint8_t __restore_atomic__ __attribute__((__cleanup__(__atomic_out_on))) = 1, __AtomLock = __atomic_in(); __AtomLock; __AtomLock = 0)
+#define __ATOMIC_FORCEON__ for (uint8_t __restore_atomic__ __attribute__((__cleanup__(__atomic_out_on))) = __atomic_in(false), __AtomLock = 1; __AtomLock; __AtomLock = 0)
 #endif
 
 #ifndef DECL_MUTEX
@@ -249,31 +251,33 @@ extern "C"
 	static volatile uint8_t name##_mutex_lock; \
 	MUTEX_CLEANUP(name)
 #define MUTEX_INIT(name) uint8_t __attribute__((__cleanup__(name##_mutex_cleanup))) name##_mutex_temp = 0
-#define MUTEX_RELEASE(name) if(!name##_mutex_temp /*has the lock*/) name##_mutex_lock = 0
-#define MUTEX_TAKE(name)                                                            \
-	__ATOMIC__                                                                        \
-	{                                                                                 \
-		name##_mutex_temp = name##_mutex_lock;                                          \
-		if (!name##_mutex_temp)                                                         \
-		{                                                                               \
-			name##_mutex_lock = 1;                                                        \
-		}                                                                               \
-	}                                                                                 \
+#define MUTEX_RELEASE(name)                \
+	if (!name##_mutex_temp /*has the lock*/) \
+	name##_mutex_lock = 0
+#define MUTEX_TAKE(name)                   \
+	__ATOMIC__                               \
+	{                                        \
+		name##_mutex_temp = name##_mutex_lock; \
+		if (!name##_mutex_temp)                \
+		{                                      \
+			name##_mutex_lock = 1;               \
+		}                                      \
+	}                                        \
 	if (!name##_mutex_temp /*the lock was aquired*/)
 
-#define MUTEX_WAIT(name, timeout_ms)                                                \
-	__TIMEOUT_MS__(timeout_us)                                                        \
-	{                                                                                 \
-		__ATOMIC__                                                                      \
-		{                                                                               \
-			name##_mutex_temp = name##_mutex_lock;                                        \
-			if (!name##_mutex_temp)                                                       \
-			{                                                                             \
-				name##_mutex_lock = 1;                                                      \
-				break;                                                                      \
-			}                                                                             \
-		}                                                                               \
-	}                                                                                 \
+#define MUTEX_WAIT(name, timeout_ms)         \
+	__TIMEOUT_MS__(timeout_us)                 \
+	{                                          \
+		__ATOMIC__                               \
+		{                                        \
+			name##_mutex_temp = name##_mutex_lock; \
+			if (!name##_mutex_temp)                \
+			{                                      \
+				name##_mutex_lock = 1;               \
+				break;                               \
+			}                                      \
+		}                                        \
+	}                                          \
 	if (!name##_mutex_temp && timeout_us != 0 /*the lock was aquired in time*/)
 #endif
 
@@ -297,6 +301,7 @@ extern "C"
 #ifndef USE_MACRO_BUFFER
 #ifndef USE_CUSTOM_BUFFER_IMPLEMENTATION
 #define DECL_BUFFER(type, name, size)  \
+	DECL_MUTEX(name)                     \
 	static type name##_bufferdata[size]; \
 	ring_buffer_t name = {0, 0, 0, name##_bufferdata, size, sizeof(type)}
 
@@ -317,11 +322,11 @@ extern "C"
 #define BUFFER_EMPTY(buffer) buffer_empty(&buffer)
 #define BUFFER_FULL(buffer) buffer_full(&buffer)
 #define BUFFER_PEEK(buffer, ptr) buffer_peek(&buffer, ptr)
-#define BUFFER_DEQUEUE(buffer, ptr) buffer_dequeue(&buffer, ptr)
-#define BUFFER_ENQUEUE(buffer, ptr) buffer_enqueue(&buffer, ptr)
-#define BUFFER_WRITE(buffer, ptr, len, written) buffer_write(&buffer, ptr, len, &written)
-#define BUFFER_READ(buffer, ptr, len, read) buffer_read(&buffer, ptr, len, &read)
-#define BUFFER_CLEAR(buffer) buffer_clear(&buffer)
+#define BUFFER_DEQUEUE(buffer, ptr) ({MUTEX_INIT(buffer); MUTEX_TAKE(buffer){buffer_dequeue(&buffer, ptr);}})
+#define BUFFER_ENQUEUE(buffer, ptr) ({MUTEX_INIT(buffer); MUTEX_TAKE(buffer){buffer_enqueue(&buffer, ptr);}})
+#define BUFFER_WRITE(buffer, ptr, len, written) ({MUTEX_INIT(buffer); MUTEX_TAKE(buffer){buffer_write(&buffer, ptr, len, &written);}})
+#define BUFFER_READ(buffer, ptr, len, read) ({MUTEX_INIT(buffer); MUTEX_TAKE(buffer){buffer_read(&buffer, ptr, len, &read);}})
+#define BUFFER_CLEAR(buffer) ({MUTEX_INIT(buffer); MUTEX_TAKE(buffer){buffer_clear(&buffer);}})
 #endif
 #else
 #define DECL_BUFFER(type, name, size)      \
