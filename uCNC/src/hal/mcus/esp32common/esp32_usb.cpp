@@ -45,7 +45,7 @@ extern "C"
 	{
 		if (event_base == ARDUINO_USB_EVENTS)
 		{
-			arduino_usb_event_data_t *data = (arduino_usb_event_data_t *)event_data;
+			// arduino_usb_event_data_t *data = (arduino_usb_event_data_t *)event_data;
 			switch (event_id)
 			{
 			case ARDUINO_USB_STARTED_EVENT:
@@ -67,7 +67,7 @@ extern "C"
 		}
 		else if (event_base == ARDUINO_USB_CDC_EVENTS)
 		{
-			arduino_usb_cdc_event_data_t *data = (arduino_usb_cdc_event_data_t *)event_data;
+			// arduino_usb_cdc_event_data_t *data = (arduino_usb_cdc_event_data_t *)event_data;
 			switch (event_id)
 			{
 			case ARDUINO_USB_CDC_CONNECTED_EVENT:
