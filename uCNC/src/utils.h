@@ -210,32 +210,35 @@ extern "C"
 #define FORCEINLINE __attribute__((always_inline)) inline
 #endif
 
-	static FORCEINLINE bool __atomic_in(bool force)
+	static FORCEINLINE bool __atomic_in()
 	{
 		bool state = mcu_get_global_isr();
-		asm volatile("" ::: "memory");
-		mcu_disable_global_isr();
-		return (state | force);
+		if (state) // prevent reentrancy
+			mcu_disable_global_isr();
+		return state;
 	}
 
 	static FORCEINLINE void __atomic_out(bool *s)
 	{
-		if (*s != false)
+		if (*s != false && !mcu_get_global_isr())
 		{
 			mcu_enable_global_isr();
 		}
 	}
 
-	static FORCEINLINE void __atomic_out_on(uint8_t *s)
+	static FORCEINLINE void __atomic_out_on(bool *s)
 	{
-		mcu_enable_global_isr();
+		if (!mcu_get_global_isr())
+		{
+			mcu_enable_global_isr();
+		}
 	}
 
 #ifndef __ATOMIC__
-#define __ATOMIC__ for (uint8_t __restore_atomic__ __attribute__((__cleanup__(__atomic_out))) = __atomic_in(false), __AtomLock = 1; __AtomLock; __AtomLock = 0)
+#define __ATOMIC__ for (bool __restore_atomic__ __attribute__((__cleanup__(__atomic_out))) = __atomic_in(), __AtomLock = true; __AtomLock; __AtomLock = false)
 #endif
 #ifndef __ATOMIC_FORCEON__
-#define __ATOMIC_FORCEON__ for (uint8_t __restore_atomic__ __attribute__((__cleanup__(__atomic_out_on))) = __atomic_in(false), __AtomLock = 1; __AtomLock; __AtomLock = 0)
+#define __ATOMIC_FORCEON__ for (bool __restore_atomic__ __attribute__((__cleanup__(__atomic_out_on))) = __atomic_in(), __AtomLock = true; __AtomLock; __AtomLock = false)
 #endif
 
 #ifndef DECL_MUTEX
@@ -322,11 +325,11 @@ extern "C"
 #define BUFFER_EMPTY(buffer) buffer_empty(&buffer)
 #define BUFFER_FULL(buffer) buffer_full(&buffer)
 #define BUFFER_PEEK(buffer, ptr) buffer_peek(&buffer, ptr)
-#define BUFFER_DEQUEUE(buffer, ptr) ({MUTEX_INIT(buffer); MUTEX_TAKE(buffer){buffer_dequeue(&buffer, ptr);}})
-#define BUFFER_ENQUEUE(buffer, ptr) ({MUTEX_INIT(buffer); MUTEX_TAKE(buffer){buffer_enqueue(&buffer, ptr);}})
-#define BUFFER_WRITE(buffer, ptr, len, written) ({MUTEX_INIT(buffer); MUTEX_TAKE(buffer){buffer_write(&buffer, ptr, len, &written);}})
-#define BUFFER_READ(buffer, ptr, len, read) ({MUTEX_INIT(buffer); MUTEX_TAKE(buffer){buffer_read(&buffer, ptr, len, &read);}})
-#define BUFFER_CLEAR(buffer) ({MUTEX_INIT(buffer); MUTEX_TAKE(buffer){buffer_clear(&buffer);}})
+#define BUFFER_DEQUEUE(buffer, ptr) ({MUTEX_INIT(buffer); MUTEX_TAKE(buffer){buffer_dequeue(&buffer, ptr);} })
+#define BUFFER_ENQUEUE(buffer, ptr) ({MUTEX_INIT(buffer); MUTEX_TAKE(buffer){buffer_enqueue(&buffer, ptr);} })
+#define BUFFER_WRITE(buffer, ptr, len, written) ({MUTEX_INIT(buffer); MUTEX_TAKE(buffer){buffer_write(&buffer, ptr, len, &written);} })
+#define BUFFER_READ(buffer, ptr, len, read) ({MUTEX_INIT(buffer); MUTEX_TAKE(buffer){buffer_read(&buffer, ptr, len, &read);} })
+#define BUFFER_CLEAR(buffer) ({MUTEX_INIT(buffer); MUTEX_TAKE(buffer){buffer_clear(&buffer);} })
 #endif
 #else
 #define DECL_BUFFER(type, name, size)      \

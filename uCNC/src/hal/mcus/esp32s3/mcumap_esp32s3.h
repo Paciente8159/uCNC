@@ -4665,8 +4665,8 @@ extern "C"
 	extern void esp32_delay_us(uint16_t delay);
 #define mcu_delay_us(X) esp32_delay_us(X)
 
-#define mcu_disable_global_isr ets_intr_lock
-#define mcu_enable_global_isr ets_intr_unlock
+#define mcu_disable_global_isr portDISABLE_INTERRUPTS 
+#define mcu_enable_global_isr portENABLE_INTERRUPTS
 
 #define __FREERTOS_MUTEX_TAKE__(mutex, timeout) ((xPortInIsrContext()) ? (xSemaphoreTakeFromISR(mutex, NULL)) : (xSemaphoreTake(mutex, timeout)))
 #define __FREERTOS_MUTEX_GIVE__(mutex) ((xPortInIsrContext()) ? (xSemaphoreGiveFromISR(mutex, NULL)) : (xSemaphoreGive(mutex)))
@@ -4703,9 +4703,7 @@ extern "C"
 	name##_mutex_temp = (__FREERTOS_MUTEX_TAKE__(name##_mutex_lock, (timeout_ms / portTICK_PERIOD_MS)) == pdTRUE) ? 1 : 0; \
 	if (name##_mutex_temp)
 
-#define __ATOMIC__
-#define __ATOMIC_FORCEON__
-
+	
 #ifdef __cplusplus
 }
 #endif

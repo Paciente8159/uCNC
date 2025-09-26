@@ -469,10 +469,15 @@ void mcu_disable_global_isr(void)
 // }
 bool mcu_get_global_isr(void)
 {
+	if (xPortInIsrContext())
+	{
+		return false;
+	}
+	
 	uint32_t ps;
 	__asm__ volatile("rsr.ps %0" : "=a"(ps));
 	// INTLEVEL is bits [3:0] of PS
-	return (ps & 0xF) < 2;
+	return ((ps & 0xF) < 2);
 }
 #endif
 
