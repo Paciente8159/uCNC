@@ -72,9 +72,6 @@ extern "C"
 #define rom_memcpy memcpy
 #define rom_read_byte *
 
-#define __ATOMIC__
-#define __ATOMIC_FORCEON__
-
 // needed by software delays
 #ifndef MCU_CYCLES_PER_LOOP
 #define MCU_CYCLES_PER_LOOP 6
@@ -3475,13 +3472,16 @@ extern "C"
 	extern void esp32_delay_us(uint16_t delay);
 #define mcu_delay_us(X) esp32_delay_us(X)
 
+#define mcu_disable_global_isr() 
+#define mcu_enable_global_isr()
+
 #define __FREERTOS_MUTEX_TAKE__(mutex, timeout) ((xPortInIsrContext()) ? (xSemaphoreTakeFromISR(mutex, NULL)) : (xSemaphoreTake(mutex, timeout)))
 #define __FREERTOS_MUTEX_GIVE__(mutex) ((xPortInIsrContext()) ? (xSemaphoreGiveFromISR(mutex, NULL)) : (xSemaphoreGive(mutex)))
 
 #define MUTEX_CLEANUP(name)                       \
 	static void name##_mutex_cleanup(uint8_t *m)    \
 	{                                               \
-		if (*m /*can unlock*/)                        \
+		if (*m && name##_mutex_lock != NULL)          \
 		{                                             \
 			__FREERTOS_MUTEX_GIVE__(name##_mutex_lock); \
 		}                                             \
@@ -3490,11 +3490,12 @@ extern "C"
 	static SemaphoreHandle_t name##_mutex_lock = NULL; \
 	MUTEX_CLEANUP(name)
 
-#define MUTEX_INIT(name)                         \
-	if (name##_mutex_lock == NULL)                 \
-	{                                              \
-		name##_mutex_lock = xSemaphoreCreateMutex(); \
-	}                                              \
+#define MUTEX_INIT(name)                          \
+	if (name##_mutex_lock == NULL)                  \
+	{                                               \
+		name##_mutex_lock = xSemaphoreCreateBinary(); \
+		xSemaphoreGive(name##_mutex_lock);            \
+	}                                               \
 	uint8_t __attribute__((__cleanup__(name##_mutex_cleanup))) name##_mutex_temp = 0
 #define MUTEX_RELEASE(name)                     \
 	if (name##_mutex_temp)                        \
