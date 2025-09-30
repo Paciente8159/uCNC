@@ -73,6 +73,8 @@ extern "C"
 
 #define __ATOMIC__
 #define __ATOMIC_FORCEON__
+#define mcu_disable_global_isr ets_intr_lock
+#define mcu_enable_global_isr ets_intr_unlock
 
 // needed by software delays
 #ifndef MCU_CYCLES_PER_LOOP
@@ -3480,7 +3482,7 @@ extern "C"
 #define MUTEX_CLEANUP(name)                       \
 	static void name##_mutex_cleanup(uint8_t *m)    \
 	{                                               \
-		if (*m /*can unlock*/)                        \
+		if (*m && name##_mutex_lock != NULL)          \
 		{                                             \
 			__FREERTOS_MUTEX_GIVE__(name##_mutex_lock); \
 		}                                             \
@@ -3490,10 +3492,11 @@ extern "C"
 	MUTEX_CLEANUP(name)
 
 #define MUTEX_INIT(name)                         \
-	if (name##_mutex_lock == NULL)                 \
-	{                                              \
-		name##_mutex_lock = xSemaphoreCreateMutex(); \
-	}                                              \
+	if (name##_mutex_lock == NULL)                  \
+	{                                               \
+		name##_mutex_lock = xSemaphoreCreateBinary(); \
+		xSemaphoreGive(name##_mutex_lock);            \
+	}                                               \
 	uint8_t __attribute__((__cleanup__(name##_mutex_cleanup))) name##_mutex_temp = 0
 #define MUTEX_RELEASE(name)            \
 	if (name##_mutex_temp)               \
