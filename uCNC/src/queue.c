@@ -18,27 +18,27 @@
 
 #include "cnc.h"
 
-uint8_t buffer_write_available(ring_buffer_t *buffer)
+uint8_t queue_write_available(ring_buffer_t *buffer)
 {
 	return (buffer->size - buffer->count);
 }
 
-uint8_t buffer_read_available(ring_buffer_t *buffer)
+uint8_t queue_read_available(ring_buffer_t *buffer)
 {
 	return buffer->count;
 }
 
-bool buffer_empty(ring_buffer_t *buffer)
+bool queue_empty(ring_buffer_t *buffer)
 {
-	return !buffer->count;
+	return buffer->count;
 }
 
-bool buffer_full(ring_buffer_t *buffer)
+bool queue_full(ring_buffer_t *buffer)
 {
 	return (buffer->size == buffer->count);
 }
 
-void buffer_peek(ring_buffer_t *buffer, void *ptr)
+void queue_peek(ring_buffer_t *buffer, void *ptr)
 {
 	if (!buffer_empty(buffer))
 	{
@@ -50,45 +50,55 @@ void buffer_peek(ring_buffer_t *buffer, void *ptr)
 	}
 }
 
-void buffer_dequeue(ring_buffer_t *buffer, void *ptr)
+void queue_dequeue(ring_buffer_t *buffer, void *ptr)
 {
 	if (!buffer_empty(buffer))
 	{
 		uint8_t tail = 0;
+		BUFFER_ENTER_CRITICAL(buffer);
 		tail = buffer->tail;
+		BUFFER_EXIT_CRITICAL(buffer);
 		memcpy(ptr, &buffer->data[tail * buffer->elem_size], buffer->elem_size);
 		tail++;
 		if (tail >= buffer->size)
 		{
 			tail = 0;
 		}
+		BUFFER_ENTER_CRITICAL(buffer);
 		buffer->tail = tail;
 		buffer->count--;
+		BUFFER_EXIT_CRITICAL(buffer);
 	}
 }
 
-void buffer_enqueue(ring_buffer_t *buffer, void *ptr)
+void queue_enqueue(ring_buffer_t *buffer, void *ptr)
 {
 	if (!buffer_full(buffer))
 	{
 		uint8_t head = 0;
+		BUFFER_ENTER_CRITICAL(buffer);
 		head = buffer->head;
+		BUFFER_EXIT_CRITICAL(buffer);
 		memcpy(&buffer->data[head * buffer->elem_size], ptr, buffer->elem_size);
 		head++;
 		if (head >= buffer->size)
 		{
 			head = 0;
 		}
+		BUFFER_ENTER_CRITICAL(buffer);
 		buffer->head = head;
 		buffer->count++;
+		BUFFER_EXIT_CRITICAL(buffer);
 	}
 }
 
-void buffer_write(ring_buffer_t *buffer, void *ptr, uint8_t len, uint8_t *written)
+void queue_write(ring_buffer_t *buffer, void *ptr, uint8_t len, uint8_t *written)
 {
 	uint8_t count = 0, head = 0, *p = (uint8_t *)ptr;
+	BUFFER_ENTER_CRITICAL(buffer);
 	head = buffer->head;
 	count = buffer->count;
+	BUFFER_EXIT_CRITICAL(buffer);
 	count = MIN(buffer->size - count, len);
 	*written = 0;
 	if (count)
@@ -114,17 +124,21 @@ void buffer_write(ring_buffer_t *buffer, void *ptr, uint8_t len, uint8_t *writte
 			{
 				head = 0;
 			}
+			BUFFER_ENTER_CRITICAL(buffer);
 			buffer->head = head;
 			buffer->count += *written;
+			BUFFER_EXIT_CRITICAL(buffer);
 		}
 	}
 }
 
-void buffer_read(ring_buffer_t *buffer, void *ptr, uint8_t len, uint8_t *read)
+void queue_read(ring_buffer_t *buffer, void *ptr, uint8_t len, uint8_t *read)
 {
 	uint8_t count = 0, tail = 0, *p = (uint8_t *)ptr;
+	BUFFER_ENTER_CRITICAL(buffer);
 	tail = buffer->tail;
 	count = buffer->count;
+	BUFFER_EXIT_CRITICAL(buffer);
 
 	if (count > len)
 	{
@@ -154,16 +168,20 @@ void buffer_read(ring_buffer_t *buffer, void *ptr, uint8_t len, uint8_t *read)
 			{
 				tail = 0;
 			}
+			BUFFER_ENTER_CRITICAL(buffer);
 			buffer->tail = tail;
 			buffer->count -= *read;
+			BUFFER_EXIT_CRITICAL(buffer);
 		}
 	}
 }
 
-void buffer_clear(ring_buffer_t *buffer)
+void queue_clear(ring_buffer_t *buffer)
 {
+	BUFFER_ENTER_CRITICAL(buffer);
 	memset(buffer->data, 0, buffer->elem_size * buffer->size);
 	buffer->tail = 0;
 	buffer->head = 0;
 	buffer->count = 0;
+	BUFFER_EXIT_CRITICAL(buffer);
 }
