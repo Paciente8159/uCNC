@@ -218,7 +218,7 @@ extern "C"
 #define TOUPPER(c) ((c >= 'a' && c <= 'z') ? (c - 32) : c)
 
 #include "atomic.h"
-#include "queue.h"
+#include "buffer.h"
 
 #ifdef __cplusplus
 }
