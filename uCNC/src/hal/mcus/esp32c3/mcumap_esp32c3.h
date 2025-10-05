@@ -82,20 +82,18 @@ extern "C"
 #define MCU_CYCLES_LOOP_OVERHEAD 3
 #endif
 
-#define mcu_delay_loop(X)                                             \
-	do                                                                  \
-	{                                                                   \
-		register unsigned start, now, target = (((X) - 1) * MCU_CYCLES_PER_LOOP + 2); \
-		asm volatile("" ::: "memory");                                    \
-		asm volatile(                                                     \
-				"rsr.ccount %0\n"					/* 2 cycles: start = ccount */      \
-				"1:  rsr.ccount %1\n"			/* 2 cycles */                      \
-				"  sub      %1, %1, %0\n" /* 1 cycle  : tmp = now-start */    \
-				"  bltu     %1, %2, 1b\n" /* 3 taken / 1 not taken */         \
-				"  nop\n"                                                     \
-				: "=&a"(start), "=&a"(now)                                    \
-				: "a"(target));                                               \
-	} while (0)
+#define mcu_delay_loop(X) do { \
+    register unsigned start, now, target = (((X) - 1) * MCU_CYCLES_PER_LOOP + 2); \
+    asm volatile("" ::: "memory"); \
+    asm volatile( \
+        "rdcycle %0\n"              /* start = cycle counter */ \
+        "1: rdcycle %1\n"           /* now = cycle counter */ \
+        "   sub    %1, %1, %0\n"    /* tmp = now - start */ \
+        "   bltu   %1, %2, 1b\n"    /* loop until tmp >= target */ \
+        "   nop\n" \
+        : "=&r"(start), "=&r"(now) \
+        : "r"(target)); \
+} while (0)
 
 #ifndef MCU_CALLBACK
 #define MCU_CALLBACK IRAM_ATTR
