@@ -90,7 +90,7 @@ extern "C"
 				: "cc");                                       \
 		asm volatile("" ::: "memory");                     \
 	} while (0)
-		
+
 #ifdef RX_BUFFER_CAPACITY
 #define RX_BUFFER_CAPACITY 255
 #endif
@@ -1398,6 +1398,11 @@ extern "C"
 
 #define mcu_millis() millis()
 #define mcu_micros() micros()
+
+#define mcu_enable_global_isr __enable_irq
+#define mcu_disable_global_isr __disable_irq
+#define mcu_get_global_isr() (__get_PRIMASK() == 0u)
+
 #define mcu_free_micros() ((uint32_t)((((SysTick->LOAD + 1) - SysTick->VAL) * 1000UL) / (SysTick->LOAD + 1)))
 
 #if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
@@ -1406,19 +1411,12 @@ extern "C"
 #endif
 #endif
 
-/**
- * Run code on multicore mode
- * Launches code on core 0
- * Runs communications on core 0
- * Runs CNC loop on core 1
- * **/
-#ifdef RP2040_RUN_MULTICORE
-
 #define USE_CUSTOM_BUFFER_IMPLEMENTATION
+#ifdef USE_CUSTOM_BUFFER_IMPLEMENTATION
 #include <pico/util/queue.h>
 #define DECL_BUFFER(type, name, size) \
 	static queue_t name##_bufferdata;   \
-	ring_buffer_t name = {0, 0, 0, (uint8_t *)&name##_bufferdata, size, sizeof(type)}
+	ring_buffer_t name = {0, 0, NULL, (uint8_t *)&name##_bufferdata, size, sizeof(type)}
 #define BUFFER_INIT(type, name, size) \
 	extern ring_buffer_t name;          \
 	queue_init((queue_t *)name.data, sizeof(type), size)
@@ -1444,7 +1442,15 @@ extern "C"
 	{                                                 \
 		queue_try_remove((queue_t *)buffer.data, NULL); \
 	}
+#endif
 
+/**
+ * Run code on multicore mode
+ * Launches code on core 0
+ * Runs communications on core 0
+ * Runs CNC loop on core 1
+ * **/
+#ifdef RP2040_RUN_MULTICORE
 	/**
 	 * Launch multicore
 	 * **/

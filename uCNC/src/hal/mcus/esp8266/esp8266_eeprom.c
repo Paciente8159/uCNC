@@ -72,7 +72,7 @@ static uint16_t mcu_access_flash_page(uint16_t address)
 		eeprom_status = 0;
 		eeprom_current_sector = sector;
 		// loads a new sector to memory
-		ATOMIC_BLOCK
+		ATOMIC_CODEBLOCK
 		{
 			spi_flash_read(EEPROM_FLASH_ADDR(sector, 0, 0), eeprom_data, EEPROM_DATA_SIZE);
 		}
@@ -92,7 +92,7 @@ void mcu_eeprom_init(void)
 
 #if (NVM_STORAGE_SIZE_ALIGNED > SPI_FLASH_SEC_SIZE)
 	eeprom_current_sector = 0;
-	ATOMIC_BLOCK
+	ATOMIC_CODEBLOCK
 	{
 		spi_flash_read(EEPROM_FLASH_ADDR(0, 0, 0), eeprom_ptr, EEPROM_DATA_SIZE);
 	}
@@ -105,7 +105,7 @@ void mcu_eeprom_init(void)
 		// just load the 4 first bytes
 		memset(tmp, 0xFF, 4);
 		DBGMSG("read address %lx\n", EEPROM_FLASH_ADDR(0, i, 0));
-		ATOMIC_BLOCK
+		ATOMIC_CODEBLOCK
 		{
 			spi_flash_read(EEPROM_FLASH_ADDR(0, i, 0), (uint32_t *)tmp, 4);
 		}
@@ -131,7 +131,7 @@ void mcu_eeprom_init(void)
 	}
 
 	DBGMSG("load address %lx\n", EEPROM_FLASH_ADDR(0, eeprom_current_page, 0));
-	ATOMIC_BLOCK
+	ATOMIC_CODEBLOCK
 	{
 		spi_flash_read(EEPROM_FLASH_ADDR(0, eeprom_current_page, 0), eeprom_data, EEPROM_DATA_SIZE);
 	}
@@ -211,7 +211,7 @@ void mcu_eeprom_flush(void)
 			{ // erases the sector if needed
 
 				DBGMSG("erasing sector %u\n", i);
-				ATOMIC_BLOCK
+				ATOMIC_CODEBLOCK
 				{
 					if (spi_flash_erase_sector(EEPROM_FLASH_BASE_SECTOR + i) != SPI_FLASH_RESULT_OK)
 					{
@@ -228,7 +228,7 @@ void mcu_eeprom_flush(void)
 		for (uint16_t i = 0; i < EEPROM_FLASH_SECTORS; i++)
 		{ // erases the sector if needed
 			DBGMSG("write address %lx\n", EEPROM_FLASH_ADDR(i, eeprom_current_page, 0));
-			ATOMIC_BLOCK
+			ATOMIC_CODEBLOCK
 			{
 				if (spi_flash_write(EEPROM_FLASH_ADDR(i, eeprom_current_page, 0), eeprom_data, EEPROM_DATA_SIZE) != SPI_FLASH_RESULT_OK)
 				{

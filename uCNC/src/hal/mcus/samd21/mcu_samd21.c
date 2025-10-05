@@ -42,8 +42,6 @@
 #include <tusb_ucnc.h>
 #endif
 
-volatile bool samd21_global_isr_enabled;
-
 // setups internal timers (all will run @ 8Mhz on GCLK4)
 #define MAIN_CLOCK_DIV ((uint16_t)(SystemCoreClock / F_TIMERS))
 static void mcu_setup_clocks(void)
@@ -215,7 +213,7 @@ DECL_BUFFER(uint8_t, uart_rx, RX_BUFFER_SIZE);
 
 void mcu_com_isr()
 {
-	ATOMIC_BLOCK_NORESTORE
+	ATOMIC_CODEBLOCK_NR
 	{
 		if (COM_UART->USART.INTFLAG.bit.RXC && COM_UART->USART.INTENSET.bit.RXC)
 		{
@@ -261,7 +259,7 @@ DECL_BUFFER(uint8_t, uart2_rx, RX_BUFFER_SIZE);
 
 void mcu_com2_isr()
 {
-	ATOMIC_BLOCK_NORESTORE
+	ATOMIC_CODEBLOCK_NR
 	{
 		if (COM2_UART->USART.INTFLAG.bit.RXC && COM2_UART->USART.INTENSET.bit.RXC)
 		{
@@ -659,7 +657,6 @@ void mcu_dma_config(void)
  * */
 void mcu_init(void)
 {
-	samd21_global_isr_enabled = false;
 	mcu_setup_clocks();
 	mcu_io_init();
 	mcu_usart_init();

@@ -84,7 +84,7 @@ MCU_CALLBACK void __attribute__((weak)) shift_register_io_pins(void)
 		mcu_set_output(IC74HC165_LOAD);
 #endif
 #if (IC74HC595_COUNT > 0)
-		ATOMIC_BLOCK
+		ATOMIC_CODEBLOCK
 		{
 			memcpy(pins, (const void *)ic74hc595_io_pins, IC74HC595_COUNT);
 		}

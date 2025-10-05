@@ -71,8 +71,8 @@ extern "C"
 #define rom_memcpy memcpy
 #define rom_read_byte *
 
-#define ATOMIC_BLOCK
-#define ATOMIC_BLOCK_NORESTORE
+#define ATOMIC_CODEBLOCK
+#define ATOMIC_CODEBLOCK_NR
 #define mcu_disable_global_isr ets_intr_lock
 #define mcu_enable_global_isr ets_intr_unlock
 

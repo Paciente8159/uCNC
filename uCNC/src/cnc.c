@@ -756,7 +756,7 @@ void cnc_exec_rt_commands(void)
 	if (command)
 	{
 		// clear all but report. report is handled in cnc_io_dotasks
-		ATOMIC_BLOCK
+		ATOMIC_CODEBLOCK
 		{
 			cnc_state.rt_cmd = RT_CMD_CLEAR;
 		}

@@ -82,7 +82,7 @@ void itp_update_feed(float feed)
 
 bool itp_sync_ready(void)
 {
-	ATOMIC_BLOCK
+	ATOMIC_CODEBLOCK
 	{
 		if (itp_rt_sgm)
 		{
@@ -801,7 +801,7 @@ void itp_sync_rt_position(int32_t *position)
 
 int32_t itp_get_rt_position_index(int8_t index)
 {
-	ATOMIC_BLOCK
+	ATOMIC_CODEBLOCK
 	{
 		return itp_rt_step_pos[index];
 	}
@@ -1338,7 +1338,7 @@ void itp_start(bool is_synched)
 		// check if the start is controlled by synched motion before start
 		if (!is_synched)
 		{
-			ATOMIC_BLOCK
+			ATOMIC_CODEBLOCK
 			{
 				cnc_set_exec_state(EXEC_RUN); // flags that it started running
 				mcu_start_itp_isr(itp_sgm_data[itp_sgm_data_read].timer_counter, itp_sgm_data[itp_sgm_data_read].timer_prescaller);

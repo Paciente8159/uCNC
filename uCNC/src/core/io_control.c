@@ -219,7 +219,7 @@ MCU_IO_CALLBACK void mcu_probe_changed_cb(void)
 	io_last_probe = probe;
 
 	// stores rt position
-	ATOMIC_BLOCK
+	ATOMIC_CODEBLOCK
 	{
 		parser_sync_probe();
 	}

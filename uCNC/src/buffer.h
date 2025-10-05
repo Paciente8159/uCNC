@@ -126,7 +126,7 @@ extern "C"
 		while (!BUFFER_EMPTY(buffer))                                              \
 		{                                                                          \
 			uint8_t tail;                                                            \
-			ATOMIC_BLOCK                                                               \
+			ATOMIC_CODEBLOCK                                                               \
 			{                                                                        \
 				tail = buffer.tail;                                                    \
 			}                                                                        \
@@ -136,7 +136,7 @@ extern "C"
 			{                                                                        \
 				tail = 0;                                                              \
 			}                                                                        \
-			ATOMIC_BLOCK                                                               \
+			ATOMIC_CODEBLOCK                                                               \
 			{                                                                        \
 				buffer.tail = tail;                                                    \
 				buffer.count--;                                                        \
@@ -149,7 +149,7 @@ extern "C"
 		while (!BUFFER_FULL(buffer))                                               \
 		{                                                                          \
 			uint8_t head;                                                            \
-			ATOMIC_BLOCK                                                               \
+			ATOMIC_CODEBLOCK                                                               \
 			{                                                                        \
 				head = buffer.head;                                                    \
 			}                                                                        \
@@ -159,7 +159,7 @@ extern "C"
 			{                                                                        \
 				head = 0;                                                              \
 			}                                                                        \
-			ATOMIC_BLOCK                                                               \
+			ATOMIC_CODEBLOCK                                                               \
 			{                                                                        \
 				buffer.head = head;                                                    \
 				buffer.count++;                                                        \
@@ -169,7 +169,7 @@ extern "C"
 
 #define BUFFER_WRITE(buffer, ptr, len, written) ({                                             \
 	uint8_t count, head, next;                                                                   \
-	ATOMIC_BLOCK                                                                                   \
+	ATOMIC_CODEBLOCK                                                                                   \
 	{                                                                                            \
 		next = head = buffer.head;                                                                 \
 		count = buffer.count;                                                                      \
@@ -194,7 +194,7 @@ extern "C"
 		{                                                                                          \
 			memcpy(&buffer##_bufferdata[head], &ptr[avail], count * sizeof(buffer##_bufferdata[0])); \
 			*(written) += count;                                                                     \
-			ATOMIC_BLOCK                                                                               \
+			ATOMIC_CODEBLOCK                                                                               \
 			{                                                                                        \
 				head += count;                                                                         \
 				if (head == buffer##_size)                                                             \
@@ -210,7 +210,7 @@ extern "C"
 
 #define BUFFER_READ(buffer, ptr, len, read) ({                                                 \
 	uint8_t count, tail;                                                                         \
-	ATOMIC_BLOCK                                                                                   \
+	ATOMIC_CODEBLOCK                                                                                   \
 	{                                                                                            \
 		tail = buffer.tail;                                                                        \
 		count = buffer.count;                                                                      \
@@ -238,7 +238,7 @@ extern "C"
 		{                                                                                          \
 			memcpy(&ptr[avail], &buffer##_bufferdata[tail], count * sizeof(buffer##_bufferdata[0])); \
 			*(read) += count;                                                                        \
-			ATOMIC_BLOCK                                                                               \
+			ATOMIC_CODEBLOCK                                                                               \
 			{                                                                                        \
 				tail += count;                                                                         \
 				if (tail == buffer##_size)                                                             \
@@ -254,7 +254,7 @@ extern "C"
 
 #define BUFFER_CLEAR(buffer)          \
 	{                                   \
-			ATOMIC_BLOCK{                     \
+			ATOMIC_CODEBLOCK{                     \
 					buffer##_bufferdata[0] = 0; \
 	buffer.tail = 0;                    \
 	buffer.head = 0;                    \

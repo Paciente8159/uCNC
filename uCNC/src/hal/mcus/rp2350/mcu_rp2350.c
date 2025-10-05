@@ -157,7 +157,7 @@ void mcu_enqueue_alarm(rp2350_alarm_t *a, uint32_t timeout_us)
 	a->timeout = (uint32_t)target;
 	a->next = NULL;
 
-	ATOMIC_BLOCK
+	ATOMIC_CODEBLOCK
 	{
 		rp2350_alarm_t *ptr = (rp2350_alarm_t *)mcu_alarms;
 		// is the only

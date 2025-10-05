@@ -70,7 +70,6 @@ static bool stm32_flash_modified;
  * Can count up to almost 50 days
  **/
 static volatile uint32_t mcu_runtime_ms;
-volatile bool stm32_global_isr_enabled;
 
 /**
  * The isr functions
@@ -85,7 +84,7 @@ DECL_BUFFER(uint8_t, uart_rx, RX_BUFFER_SIZE);
 
 void MCU_SERIAL_ISR(void)
 {
-	ATOMIC_BLOCK_NORESTORE
+	ATOMIC_CODEBLOCK_NR
 	{
 		if (COM_UART->ISR & USART_ISR_RXNE)
 		{
@@ -130,7 +129,7 @@ DECL_BUFFER(uint8_t, uart2_rx, RX_BUFFER_SIZE);
 
 void MCU_SERIAL2_ISR(void)
 {
-	ATOMIC_BLOCK_NORESTORE
+	ATOMIC_CODEBLOCK_NR
 	{
 		if (COM2_UART->ISR & USART_ISR_RXNE)
 		{
@@ -682,7 +681,6 @@ void mcu_init(void)
 
 	mcu_disable_probe_isr();
 	stm32_flash_current_page = -1;
-	stm32_global_isr_enabled = false;
 	mcu_enable_global_isr();
 }
 

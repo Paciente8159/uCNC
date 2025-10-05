@@ -3489,18 +3489,9 @@ extern "C"
 #endif
 #endif
 */
-	extern volatile bool samd21_global_isr_enabled;
-#define mcu_enable_global_isr()       \
-	{                                   \
-		__enable_irq();                   \
-		samd21_global_isr_enabled = true; \
-	}
-#define mcu_disable_global_isr()       \
-	{                                    \
-		samd21_global_isr_enabled = false; \
-		__disable_irq();                   \
-	}
-#define mcu_get_global_isr() samd21_global_isr_enabled
+#define mcu_enable_global_isr __enable_irq
+#define mcu_disable_global_isr __disable_irq
+#define mcu_get_global_isr() (__get_PRIMASK() == 0u)
 #define mcu_free_micros() ((uint32_t)((((SysTick->LOAD + 1) - SysTick->VAL) * 1000UL) / (SysTick->LOAD + 1)))
 
 #ifdef __cplusplus
