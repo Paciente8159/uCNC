@@ -1445,7 +1445,7 @@ extern "C"
 		// #define mcu_get_global_isr() (esp8266_global_isr != 15)
 		*/
 	static __attribute__((always_inline, unused)) inline void __esp8266_atomic_out(uint32_t *state) { xt_wsr_ps(*state); }
-#define __ATOMIC__ for (uint32_t __restore_atomic__ __attribute__((__cleanup__(__esp8266_atomic_out))) = xt_rsil(15), __loop = 1; __loop; __loop = 0)
+#define ATOMIC_BLOCK for (uint32_t __restore_atomic__ __attribute__((__cleanup__(__esp8266_atomic_out))) = xt_rsil(15), __loop = 1; __loop; __loop = 0)
 
 #if IC74HC595_COUNT > 0
 

@@ -267,7 +267,7 @@ static void FORCEINLINE out_io_push(esp8266_io_out_t val)
 	out_io_buffer[h] = val;
 	h++;
 	h = (h < OUT_IO_BUFFER_SIZE) ? h : 0;
-	__ATOMIC__
+	ATOMIC_BLOCK
 	{
 		out_io_head = h;
 	}
@@ -531,7 +531,7 @@ IRAM_ATTR void mcu_itp_isr(void)
 void itp_buffer_dotasks(uint16_t limit)
 {
 	static volatile bool running = false;
-	// __ATOMIC__
+	// ATOMIC_BLOCK
 	{
 		if (running)
 		{
@@ -574,7 +574,7 @@ void itp_buffer_dotasks(uint16_t limit)
 		}
 
 		// clear sync flag
-		// __ATOMIC__
+		// ATOMIC_BLOCK
 		{
 			esp8266_step_mode &= ~ITP_STEP_MODE_SYNC;
 		}

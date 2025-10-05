@@ -65,12 +65,17 @@ extern "C"
 	{
 		volatile buffer_index_t head;
 		volatile buffer_index_t tail;
+#ifndef USE_MACRO_BUFFER
 		buffer_index_t *flags;
 		uint8_t *data;
 		const uint8_t size;
 		const uint8_t elem_size;
+#else
+	volatile buffer_index_t count;
+#endif
 	} ring_buffer_t;
 
+#ifndef USE_MACRO_BUFFER
 	uint8_t buffer_write_available(ring_buffer_t *buffer);
 	uint8_t buffer_read_available(ring_buffer_t *buffer);
 	bool buffer_empty(ring_buffer_t *buffer);
@@ -82,7 +87,6 @@ extern "C"
 	void buffer_read(ring_buffer_t *buffer, void *ptr, uint8_t len, uint8_t *read);
 	void buffer_clear(ring_buffer_t *buffer);
 
-#ifndef USE_MACRO_BUFFER
 #ifndef USE_CUSTOM_BUFFER_IMPLEMENTATION
 #define DECL_BUFFER(type, name, size)                                                               \
 	static type name##_bufferdata[size];                                                              \
@@ -119,10 +123,10 @@ extern "C"
 
 #define BUFFER_DEQUEUE(buffer, ptr)                                            \
 	{                                                                            \
-		if (!BUFFER_EMPTY(buffer))                                                 \
+		while (!BUFFER_EMPTY(buffer))                                              \
 		{                                                                          \
 			uint8_t tail;                                                            \
-			__ATOMIC__                                                               \
+			ATOMIC_BLOCK                                                               \
 			{                                                                        \
 				tail = buffer.tail;                                                    \
 			}                                                                        \
@@ -132,7 +136,7 @@ extern "C"
 			{                                                                        \
 				tail = 0;                                                              \
 			}                                                                        \
-			__ATOMIC__                                                               \
+			ATOMIC_BLOCK                                                               \
 			{                                                                        \
 				buffer.tail = tail;                                                    \
 				buffer.count--;                                                        \
@@ -142,10 +146,10 @@ extern "C"
 
 #define BUFFER_ENQUEUE(buffer, ptr)                                            \
 	{                                                                            \
-		if (!BUFFER_FULL(buffer))                                                  \
+		while (!BUFFER_FULL(buffer))                                               \
 		{                                                                          \
 			uint8_t head;                                                            \
-			__ATOMIC__                                                               \
+			ATOMIC_BLOCK                                                               \
 			{                                                                        \
 				head = buffer.head;                                                    \
 			}                                                                        \
@@ -155,7 +159,7 @@ extern "C"
 			{                                                                        \
 				head = 0;                                                              \
 			}                                                                        \
-			__ATOMIC__                                                               \
+			ATOMIC_BLOCK                                                               \
 			{                                                                        \
 				buffer.head = head;                                                    \
 				buffer.count++;                                                        \
@@ -164,10 +168,10 @@ extern "C"
 	}
 
 #define BUFFER_WRITE(buffer, ptr, len, written) ({                                             \
-	uint8_t count, head;                                                                         \
-	__ATOMIC__                                                                                   \
+	uint8_t count, head, next;                                                                   \
+	ATOMIC_BLOCK                                                                                   \
 	{                                                                                            \
-		head = buffer.head;                                                                        \
+		next = head = buffer.head;                                                                 \
 		count = buffer.count;                                                                      \
 	}                                                                                            \
 	count = MIN(buffer##_size - count, len);                                                     \
@@ -190,7 +194,7 @@ extern "C"
 		{                                                                                          \
 			memcpy(&buffer##_bufferdata[head], &ptr[avail], count * sizeof(buffer##_bufferdata[0])); \
 			*(written) += count;                                                                     \
-			__ATOMIC__                                                                               \
+			ATOMIC_BLOCK                                                                               \
 			{                                                                                        \
 				head += count;                                                                         \
 				if (head == buffer##_size)                                                             \
@@ -206,7 +210,7 @@ extern "C"
 
 #define BUFFER_READ(buffer, ptr, len, read) ({                                                 \
 	uint8_t count, tail;                                                                         \
-	__ATOMIC__                                                                                   \
+	ATOMIC_BLOCK                                                                                   \
 	{                                                                                            \
 		tail = buffer.tail;                                                                        \
 		count = buffer.count;                                                                      \
@@ -234,7 +238,7 @@ extern "C"
 		{                                                                                          \
 			memcpy(&ptr[avail], &buffer##_bufferdata[tail], count * sizeof(buffer##_bufferdata[0])); \
 			*(read) += count;                                                                        \
-			__ATOMIC__                                                                               \
+			ATOMIC_BLOCK                                                                               \
 			{                                                                                        \
 				tail += count;                                                                         \
 				if (tail == buffer##_size)                                                             \
@@ -250,7 +254,7 @@ extern "C"
 
 #define BUFFER_CLEAR(buffer)          \
 	{                                   \
-			__ATOMIC__{                     \
+			ATOMIC_BLOCK{                     \
 					buffer##_bufferdata[0] = 0; \
 	buffer.tail = 0;                    \
 	buffer.head = 0;                    \

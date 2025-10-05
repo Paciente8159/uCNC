@@ -236,7 +236,7 @@ DECL_BUFFER(uint8_t, uart_rx, RX_BUFFER_SIZE);
 
 void MCU_COM_ISR(void)
 {
-	__ATOMIC_FORCEON__
+	ATOMIC_BLOCK_NORESTORE
 	{
 		uint32_t irqstatus = UART_GetIntId(COM_UART);
 		irqstatus &= UART_IIR_INTID_MASK;
@@ -301,7 +301,7 @@ DECL_BUFFER(uint8_t, uart2_rx, RX_BUFFER_SIZE);
 DECL_BUFFER(uint8_t, uart2_tx, UART2_TX_BUFFER_SIZE);
 void MCU_COM2_ISR(void)
 {
-	__ATOMIC_FORCEON__
+	ATOMIC_BLOCK_NORESTORE
 	{
 		uint32_t irqstatus = UART_GetIntId(COM2_UART);
 		irqstatus &= UART_IIR_INTID_MASK;

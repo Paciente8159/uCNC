@@ -57,11 +57,11 @@ extern "C"
 		}
 	}
 
-#ifndef __ATOMIC__
-#define __ATOMIC__ for (bool __restore_atomic__ __attribute__((__cleanup__(__atomic_out))) = __atomic_in(), __AtomLock = true; __AtomLock; __AtomLock = false)
+#ifndef ATOMIC_BLOCK
+#define ATOMIC_BLOCK for (bool __restore_atomic__ __attribute__((__cleanup__(__atomic_out))) = __atomic_in(), __AtomLock = true; __AtomLock; __AtomLock = false)
 #endif
-#ifndef __ATOMIC_FORCEON__
-#define __ATOMIC_FORCEON__ for (bool __restore_atomic__ __attribute__((__cleanup__(__atomic_out_on))) = __atomic_in(), __AtomLock = true; __AtomLock; __AtomLock = false)
+#ifndef ATOMIC_BLOCK_NORESTORE
+#define ATOMIC_BLOCK_NORESTORE for (bool __restore_atomic__ __attribute__((__cleanup__(__atomic_out_on))) = __atomic_in(), __AtomLock = true; __AtomLock; __AtomLock = false)
 #endif
 
 	/**
@@ -75,32 +75,32 @@ extern "C"
 	// #define ATOMIC_SUB(ptr, val) __atomic_fetch_sub((ptr), (val), __ATOMIC_ACQ_REL)
 
 #ifndef ATOMIC_LOAD_N
-#define ATOMIC_LOAD_N(T, src, mode) \
-	({T _res;__ATOMIC__ { _res = *(src); }_res; })
+#define ATOMIC_LOAD_N(src, mode) \
+	({__typeof__(*(src)) _res;ATOMIC_BLOCK { _res = *(src); }_res; })
 #endif
 #ifndef ATOMIC_STORE_N
 #define ATOMIC_STORE_N(dst, val, mode) \
-	__ATOMIC__ { *(dst) = (val); }
+	ATOMIC_BLOCK { *(dst) = (val); }
 #endif
 // fetch, compare and modify operations
 #ifndef ATOMIC_COMPARE_EXCHANGE_N
-#define ATOMIC_COMPARE_EXCHANGE_N(dst, cmp, des, sucmode, failmode) ({bool __res; __ATOMIC__{__res = (*(dst)==*(cmp)); if(__res){*(dst) = (des);}} __res; })
+#define ATOMIC_COMPARE_EXCHANGE_N(dst, cmp, des, sucmode, failmode) ({bool __res; ATOMIC_BLOCK{__res = (*(dst)==*(cmp)); if(__res){*(dst) = (des);}else{*(cmp) = *(dst);}} __res; })
 #endif
 // fetch and modify operations
 #ifndef ATOMIC_FETCH_XOR
-#define ATOMIC_FETCH_XOR(T, dst, val, mode) ({T __tmp; __ATOMIC__{__tmp = *(dst); *(dst) = __tmp ^ (val);} __tmp; })
+#define ATOMIC_FETCH_XOR(dst, val, mode) ({__typeof__(*(dst)) __tmp; ATOMIC_BLOCK{__tmp = *(dst); *(dst) = __tmp ^ (val);} __tmp; })
 #endif
 #ifndef ATOMIC_FETCH_ADD
-#define ATOMIC_FETCH_ADD(T, dst, val, mode) ({T __tmp; __ATOMIC__{__tmp = *(dst); *(dst) = __tmp + (val);} __tmp; })
+#define ATOMIC_FETCH_ADD(dst, val, mode) ({__typeof__(*(dst)) __tmp; ATOMIC_BLOCK{__tmp = *(dst); *(dst) = __tmp + (val);} __tmp; })
 #endif
 #ifndef ATOMIC_FETCH_SUB
-#define ATOMIC_FETCH_SUB(T, dst, val, mode) ({T __tmp; __ATOMIC__{__tmp = *(dst); *(dst) = __tmp - (val);} __tmp; })
+#define ATOMIC_FETCH_SUB(dst, val, mode) ({__typeof__(*(dst)) __tmp; ATOMIC_BLOCK{__tmp = *(dst); *(dst) = __tmp - (val);} __tmp; })
 #endif
 #ifndef ATOMIC_FETCH_AND
-#define ATOMIC_FETCH_AND(T, dst, val, mode) ({T __tmp; __ATOMIC__{__tmp = *(dst); *(dst) = __tmp & (val);} __tmp; })
+#define ATOMIC_FETCH_AND(dst, val, mode) ({__typeof__(*(dst)) __tmp; ATOMIC_BLOCK{__tmp = *(dst); *(dst) = __tmp & (val);} __tmp; })
 #endif
 #ifndef ATOMIC_FETCH_OR
-#define ATOMIC_FETCH_OR(T, dst, val, mode) ({T __tmp; __ATOMIC__{__tmp = *(dst); *(dst) = __tmp | (val);} __tmp; })
+#define ATOMIC_FETCH_OR(dst, val, mode) ({__typeof__(*(dst)) __tmp; ATOMIC_BLOCK{__tmp = *(dst); *(dst) = __tmp | (val);} __tmp; })
 #endif
 
 #ifndef ATOMIC_SPIN
@@ -127,7 +127,7 @@ extern "C"
 	if (!name##_mutex_temp /*has the lock*/) \
 	name = 0
 #define MUTEX_TAKE(name)      \
-	__ATOMIC__                  \
+	ATOMIC_BLOCK                  \
 	{                           \
 		name##_mutex_temp = name; \
 		if (!name##_mutex_temp)   \
@@ -140,7 +140,7 @@ extern "C"
 #define MUTEX_WAIT(name, timeout_ms) \
 	__TIMEOUT_MS__(timeout_us)         \
 	{                                  \
-		__ATOMIC__                       \
+		ATOMIC_BLOCK                       \
 		{                                \
 			name##_mutex_temp = name;      \
 			if (!name##_mutex_temp)        \

@@ -3524,14 +3524,14 @@ extern "C"
 	 * Atomic operations
 	 */
 
-#define ATOMIC_LOAD_N(type, src, mode) __atomic_load_n((src), mode)
+#define ATOMIC_LOAD_N(src, mode) __atomic_load_n((src), mode)
 #define ATOMIC_STORE_N(dst, val, mode) __atomic_store_n((dst), (val), mode)
 #define ATOMIC_COMPARE_EXCHANGE_N(dst, cmp, des, sucmode, failmode) __atomic_compare_exchange_n((dst), (cmp), (des), false, sucmode, failmode)
-#define ATOMIC_FETCH_OR(type, dst, val, mode) __atomic_fetch_or((dst), (val), mode)
-#define ATOMIC_FETCH_AND(type, dst, val, mode) __atomic_fetch_and((dst), (val), mode)
-#define ATOMIC_FETCH_ADD(type, dst, val, mode) __atomic_fetch_add((dst), (val), mode)
-#define ATOMIC_FETCH_SUB(type, dst, val, mode) __atomic_fetch_sub((dst), (val), mode)
-#define ATOMIC_FETCH_XOR(type, dst, val, mode) __atomic_fetch_xor((dst), (val), mode)
+#define ATOMIC_FETCH_OR(dst, val, mode) __atomic_fetch_or((dst), (val), mode)
+#define ATOMIC_FETCH_AND(dst, val, mode) __atomic_fetch_and((dst), (val), mode)
+#define ATOMIC_FETCH_ADD(dst, val, mode) __atomic_fetch_add((dst), (val), mode)
+#define ATOMIC_FETCH_SUB(dst, val, mode) __atomic_fetch_sub((dst), (val), mode)
+#define ATOMIC_FETCH_XOR(dst, val, mode) __atomic_fetch_xor((dst), (val), mode)
 #define ATOMIC_SPIN()      \
 	if (xPortInIsrContext()) \
 	{                        \
