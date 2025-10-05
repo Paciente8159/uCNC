@@ -68,42 +68,39 @@ extern "C"
 	 * ATOMIC operation utilities
 	 */
 	// if supported use these instead
-	// #define ATOMIC_LOAD(type, ptr) __atomic_load_n((ptr), __ATOMIC_ACQUIRE)
+	// #define ATOMIC_LOAD(T, ptr) __atomic_load_n((ptr), __ATOMIC_ACQUIRE)
 	// #define ATOMIC_STORE_N(ptr, val) __atomic_store_n((ptr), (val), __ATOMIC_RELEASE)
 	// #define ATOMIC_COMPARE_EXCHANGE_N(ptr, expected, desired) __atomic_compare_exchange_n((ptr), &(expected), (desired), false, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE)
-	// #define ATOMIC_FETCH_ADD(type, ptr, val) __atomic_fetch_add((ptr), (val), __ATOMIC_ACQ_REL)
+	// #define ATOMIC_FETCH_ADD(T, ptr, val) __atomic_fetch_add((ptr), (val), __ATOMIC_ACQ_REL)
 	// #define ATOMIC_SUB(ptr, val) __atomic_fetch_sub((ptr), (val), __ATOMIC_ACQ_REL)
 
 #ifndef ATOMIC_LOAD_N
-#define ATOMIC_LOAD_N(type, src, mode) \
-	({type _res;__ATOMIC__ { _res = (src); }_res; })
+#define ATOMIC_LOAD_N(T, src, mode) \
+	({T _res;__ATOMIC__ { _res = *(src); }_res; })
 #endif
 #ifndef ATOMIC_STORE_N
 #define ATOMIC_STORE_N(dst, val, mode) \
-	__ATOMIC__ { (dst) = (val); }
+	__ATOMIC__ { *(dst) = (val); }
 #endif
 // fetch, compare and modify operations
 #ifndef ATOMIC_COMPARE_EXCHANGE_N
-#define ATOMIC_COMPARE_EXCHANGE_N(dst, cmp, des, sucmode, failmode) ({bool __res; __ATOMIC__{__res = ((dst)==(cmp)); if(__res){(dst) = (des);}} __res; })
-#endif
-#ifndef ATOMIC_COMPARE
-#define ATOMIC_COMPARE(dst, cmp) ({bool __res; __ATOMIC__{__res = ((dst)==(cmp));} __res; })
+#define ATOMIC_COMPARE_EXCHANGE_N(dst, cmp, des, sucmode, failmode) ({bool __res; __ATOMIC__{__res = (*(dst)==*(cmp)); if(__res){*(dst) = (des);}} __res; })
 #endif
 // fetch and modify operations
 #ifndef ATOMIC_FETCH_XOR
-#define ATOMIC_FETCH_XOR(type, dst, val, mode) ({type __tmp; __ATOMIC__{__tmp = (dst); (dst) = __tmp ^ (val);} __tmp; })
+#define ATOMIC_FETCH_XOR(T, dst, val, mode) ({T __tmp; __ATOMIC__{__tmp = *(dst); *(dst) = __tmp ^ (val);} __tmp; })
 #endif
 #ifndef ATOMIC_FETCH_ADD
-#define ATOMIC_FETCH_ADD(type, dst, val, mode) ({type __tmp; __ATOMIC__{__tmp = (dst); (dst) = __tmp + (val);} __tmp; })
+#define ATOMIC_FETCH_ADD(T, dst, val, mode) ({T __tmp; __ATOMIC__{__tmp = *(dst); *(dst) = __tmp + (val);} __tmp; })
 #endif
 #ifndef ATOMIC_FETCH_SUB
-#define ATOMIC_FETCH_SUB(type, dst, val, mode) ({type __tmp; __ATOMIC__{__tmp = (dst); (dst) = __tmp - (val);} __tmp; })
+#define ATOMIC_FETCH_SUB(T, dst, val, mode) ({T __tmp; __ATOMIC__{__tmp = *(dst); *(dst) = __tmp - (val);} __tmp; })
 #endif
 #ifndef ATOMIC_FETCH_AND
-#define ATOMIC_FETCH_AND(type, dst, val, mode) ({type __tmp; __ATOMIC__{__tmp = (dst); (dst) = __tmp & (val);} __tmp; })
+#define ATOMIC_FETCH_AND(T, dst, val, mode) ({T __tmp; __ATOMIC__{__tmp = *(dst); *(dst) = __tmp & (val);} __tmp; })
 #endif
 #ifndef ATOMIC_FETCH_OR
-#define ATOMIC_FETCH_OR(type, dst, val, mode) ({type __tmp; __ATOMIC__{__tmp = (dst); (dst) = __tmp | (val);} __tmp; })
+#define ATOMIC_FETCH_OR(T, dst, val, mode) ({T __tmp; __ATOMIC__{__tmp = *(dst); *(dst) = __tmp | (val);} __tmp; })
 #endif
 
 #ifndef ATOMIC_SPIN

@@ -80,19 +80,19 @@ extern "C"
 #define MCU_CYCLES_LOOP_OVERHEAD 3
 #endif
 
-#define mcu_delay_loop(X)                                             \
-	do                                                                  \
-	{                                                                   \
+#define mcu_delay_loop(X)                                                         \
+	do                                                                              \
+	{                                                                               \
 		register unsigned start, now, target = (((X) - 1) * MCU_CYCLES_PER_LOOP + 2); \
-		asm volatile("" ::: "memory");                                    \
-		asm volatile(                                                     \
-				"rsr.ccount %0\n"					/* 2 cycles: start = ccount */      \
-				"1:  rsr.ccount %1\n"			/* 2 cycles */                      \
-				"  sub      %1, %1, %0\n" /* 1 cycle  : tmp = now-start */    \
-				"  bltu     %1, %2, 1b\n" /* 3 taken / 1 not taken */         \
-				"  nop\n"                                                     \
-				: "=&a"(start), "=&a"(now)                                    \
-				: "a"(target));                                               \
+		asm volatile("" ::: "memory");                                                \
+		asm volatile(                                                                 \
+				"rsr.ccount %0\n"					/* 2 cycles: start = ccount */                  \
+				"1:  rsr.ccount %1\n"			/* 2 cycles */                                  \
+				"  sub      %1, %1, %0\n" /* 1 cycle  : tmp = now-start */                \
+				"  bltu     %1, %2, 1b\n" /* 3 taken / 1 not taken */                     \
+				"  nop\n"                                                                 \
+				: "=&a"(start), "=&a"(now)                                                \
+				: "a"(target));                                                           \
 	} while (0)
 
 #ifndef MCU_CALLBACK
@@ -3472,10 +3472,14 @@ extern "C"
 	extern void esp32_delay_us(uint16_t delay);
 #define mcu_delay_us(X) esp32_delay_us(X)
 
-// #define mcu_disable_global_isr() portDISABLE_INTERRUPTS()
-// #define mcu_enable_global_isr() portENABLE_INTERRUPTS()
-#define mcu_disable_global_isr()
-#define mcu_enable_global_isr()
+#define mcu_disable_global_isr() \
+	if (!xPortInIsrContext())      \
+	portDISABLE_INTERRUPTS()
+#define mcu_enable_global_isr() \
+	if (!xPortInIsrContext())     \
+	portENABLE_INTERRUPTS()
+	// #define mcu_disable_global_isr()
+	// #define mcu_enable_global_isr()
 
 #define __FREERTOS_MUTEX_TAKE__(mutex, timeout) ((xPortInIsrContext()) ? (xSemaphoreTakeFromISR(mutex, NULL)) : (xSemaphoreTake(mutex, timeout)))
 #define __FREERTOS_MUTEX_GIVE__(mutex) ((xPortInIsrContext()) ? (xSemaphoreGiveFromISR(mutex, NULL)) : (xSemaphoreGive(mutex)))
@@ -3512,242 +3516,31 @@ extern "C"
 	name##_mutex_temp = (__FREERTOS_MUTEX_TAKE__(name##_mutex_lock, (timeout_ms / portTICK_PERIOD_MS)) == pdTRUE) ? 1 : 0; \
 	if (name##_mutex_temp)
 
-	/**
-	 * Atomic operations
-	 */
 #ifndef FORCEINLINE
 #define FORCEINLINE __attribute__((always_inline)) inline
 #endif
 
-// xtensa_byte_atomics.h
-#pragma once
-#include <stdint.h>
-#include <stdbool.h>
+	/**
+	 * Atomic operations
+	 */
 
-// ----- Fences (ordering) -----
-
-// Acquire: ensure subsequent loads/stores don't move before
-static __attribute__((always_inline)) inline void fence_acquire(void) {
-    __asm__ __volatile__("memw" ::: "memory");
-}
-
-// Release: ensure prior stores are visible before subsequent
-static __attribute__((always_inline)) inline void fence_release(void) {
-    __asm__ __volatile__("memw" ::: "memory");
-}
-
-// ----- 32-bit CAS primitive (aligned addresses only) -----
-
-static __attribute__((always_inline)) inline bool cas32(volatile uint32_t *addr,
-                                                       uint32_t expected,
-                                                       uint32_t desired) {
-    uint32_t old;
-    __asm__ __volatile__(
-        "wsr %2, scompare1\n"     // SCOMPARE1 = expected
-        "s32c1i %0, %1, 0\n"      // old = *addr; if(old==SCOMPARE1) *addr = desired
-        : "=&r"(old)
-        : "r"(addr), "r"(expected), "0"(desired)
-        : "memory");
-    return old == expected;
-}
-
-// ----- Byte addressing helpers -----
-
-static __attribute__((always_inline)) inline volatile uint32_t *word_base(const volatile uint8_t *p) {
-    return (volatile uint32_t *)((uintptr_t)p & ~(uintptr_t)0x3);
-}
-static __attribute__((always_inline)) inline unsigned byte_shift(const volatile uint8_t *p) {
-    return ((uintptr_t)p & 0x3u) * 8u;
-}
-static __attribute__((always_inline)) inline uint32_t byte_mask(unsigned sh) {
-    return 0xFFu << sh;
-}
-
-// ----- Byte load/store with acquire/release -----
-
-static __attribute__((always_inline)) inline uint8_t load8_acquire(const volatile uint8_t *addr) {
-    volatile uint32_t *w = word_base(addr);
-    unsigned sh = byte_shift(addr);
-    uint32_t v = *w;              // regular load
-    fence_acquire();              // upgrade to acquire
-    return (uint8_t)((v >> sh) & 0xFFu);
-}
-
-static __attribute__((always_inline)) inline void store8_release(volatile uint8_t *addr, uint8_t val) {
-    volatile uint32_t *w = word_base(addr);
-    unsigned sh = byte_shift(addr);
-    uint32_t m = byte_mask(sh);
-
-    for (;;) {
-        uint32_t oldw = *w;                       // relaxed read of the word
-        uint32_t neww = (oldw & ~m) | ((uint32_t)val << sh);
-        fence_release();                          // publish payload before the store
-        if (cas32(w, oldw, neww)) return;
-        // retry
-    }
-}
-
-// ----- Byte CAS (returns true if replaced) -----
-
-static __attribute__((always_inline)) inline bool cas8(volatile uint8_t *addr,
-                                                       uint8_t expected,
-                                                       uint8_t desired) {
-    volatile uint32_t *w = word_base(addr);
-    unsigned sh = byte_shift(addr);
-    uint32_t m = byte_mask(sh);
-
-    for (;;) {
-        uint32_t oldw = *w;
-        uint8_t oldb = (uint8_t)((oldw >> sh) & 0xFFu);
-        if (oldb != expected) return false;
-        uint32_t neww = (oldw & ~m) | ((uint32_t)desired << sh);
-        // acq_rel: read-modify-write + fencing
-        fence_release();
-        if (cas32(w, oldw, neww)) {
-            fence_acquire();
-            return true;
-        }
-        // retry on race
-    }
-}
-
-// ----- Byte RMW operations (fetch_* return previous byte) -----
-
-static __attribute__((always_inline)) inline uint8_t fetch_or8(volatile uint8_t *addr, uint8_t val) {
-    volatile uint32_t *w = word_base(addr);
-    unsigned sh = byte_shift(addr);
-    uint32_t m = byte_mask(sh);
-
-    for (;;) {
-        uint32_t oldw = *w;
-        uint8_t oldb = (uint8_t)((oldw >> sh) & 0xFFu);
-        uint8_t newb = (uint8_t)(oldb | val);
-        uint32_t neww = (oldw & ~m) | ((uint32_t)newb << sh);
-        fence_release();                  // acq_rel semantics for RMW
-        if (cas32(w, oldw, neww)) {
-            fence_acquire();
-            return oldb;
-        }
-    }
-}
-
-static __attribute__((always_inline)) inline uint8_t fetch_and8(volatile uint8_t *addr, uint8_t val) {
-    volatile uint32_t *w = word_base(addr);
-    unsigned sh = byte_shift(addr);
-    uint32_t m = byte_mask(sh);
-
-    for (;;) {
-        uint32_t oldw = *w;
-        uint8_t oldb = (uint8_t)((oldw >> sh) & 0xFFu);
-        uint8_t newb = (uint8_t)(oldb & val);
-        uint32_t neww = (oldw & ~m) | ((uint32_t)newb << sh);
-        fence_release();
-        if (cas32(w, oldw, neww)) {
-            fence_acquire();
-            return oldb;
-        }
-    }
-}
-
-static __attribute__((always_inline)) inline uint8_t fetch_xor8(volatile uint8_t *addr, uint8_t val) {
-    volatile uint32_t *w = word_base(addr);
-    unsigned sh = byte_shift(addr);
-    uint32_t m = byte_mask(sh);
-
-    for (;;) {
-        uint32_t oldw = *w;
-        uint8_t oldb = (uint8_t)((oldw >> sh) & 0xFFu);
-        uint8_t newb = (uint8_t)(oldb ^ val);
-        uint32_t neww = (oldw & ~m) | ((uint32_t)newb << sh);
-        fence_release();
-        if (cas32(w, oldw, neww)) {
-            fence_acquire();
-            return oldb;
-        }
-    }
-}
-
-static __attribute__((always_inline)) inline uint8_t fetch_add8(volatile uint8_t *addr, uint8_t val) {
-    volatile uint32_t *w = word_base(addr);
-    unsigned sh = byte_shift(addr);
-    uint32_t m = byte_mask(sh);
-
-    for (;;) {
-        uint32_t oldw = *w;
-        uint8_t oldb = (uint8_t)((oldw >> sh) & 0xFFu);
-        uint8_t newb = (uint8_t)(oldb + val);
-        uint32_t neww = (oldw & ~m) | ((uint32_t)newb << sh);
-        fence_release();
-        if (cas32(w, oldw, neww)) {
-            fence_acquire();
-            return oldb;
-        }
-    }
-}
-
-static __attribute__((always_inline)) inline uint8_t fetch_sub8(volatile uint8_t *addr, uint8_t val) {
-    volatile uint32_t *w = word_base(addr);
-    unsigned sh = byte_shift(addr);
-    uint32_t m = byte_mask(sh);
-
-    for (;;) {
-        uint32_t oldw = *w;
-        uint8_t oldb = (uint8_t)((oldw >> sh) & 0xFFu);
-        uint8_t newb = (uint8_t)(oldb - val);
-        uint32_t neww = (oldw & ~m) | ((uint32_t)newb << sh);
-        fence_release();
-        if (cas32(w, oldw, neww)) {
-            fence_acquire();
-            return oldb;
-        }
-    }
-}
-
-// ----- Public macros (byte-focused) -----
-
-// All macros below assume 'type' is 1-byte (uint8_t). They operate atomically on that byte.
-// If you pass a larger type, you will get a compile-time error via sizeof checks.
-
-#define ATOMIC_LOAD_N(type, src, mode) \
-    ( (void)sizeof(char[1 - 2*!!(sizeof(type)!=1)]), load8_acquire(&(src)) )
-
-#define ATOMIC_STORE_N(dst, val, mode) \
-    ( (void)sizeof(char[1 - 2*!!(sizeof(*( &dst ))!=1)]), store8_release(&(dst), (uint8_t)(val)) )
-
-#define ATOMIC_COMPARE_EXCHANGE_N(dst, expected, desired, sucmode, failmode) \
-    ( (void)sizeof(char[1 - 2*!!(sizeof(*( &dst ))!=1)]), cas8(&(dst), (uint8_t)(expected), (uint8_t)(desired)) )
-
-#define ATOMIC_COMPARE(dst, cmp)  ATOMIC_COMPARE_EXCHANGE_N(dst, cmp, dst, 0, 0)
-
-#define ATOMIC_FETCH_OR(type, dst, val, mode) \
-    ( (void)sizeof(char[1 - 2*!!(sizeof(type)!=1)]), fetch_or8(&(dst), (uint8_t)(val)) )
-
-#define ATOMIC_FETCH_AND(type, dst, val, mode) \
-    ( (void)sizeof(char[1 - 2*!!(sizeof(type)!=1)]), fetch_and8(&(dst), (uint8_t)(val)) )
-
-#define ATOMIC_FETCH_ADD(type, dst, val, mode) \
-    ( (void)sizeof(char[1 - 2*!!(sizeof(type)!=1)]), fetch_add8(&(dst), (uint8_t)(val)) )
-
-#define ATOMIC_FETCH_SUB(type, dst, val, mode) \
-    ( (void)sizeof(char[1 - 2*!!(sizeof(type)!=1)]), fetch_sub8(&(dst), (uint8_t)(val)) )
-
-#define ATOMIC_FETCH_XOR(type, dst, val, mode) \
-    ( (void)sizeof(char[1 - 2*!!(sizeof(type)!=1)]), fetch_xor8(&(dst), (uint8_t)(val)) )
-
-/**
- * 
- */
-/*
-#define ATOMIC_LOAD_N(type, src, mode) __atomic_load_n(&(src), mode) 
-#define ATOMIC_STORE_N(dst, val, mode) __atomic_store_n(&(dst), (val), mode)
-#define ATOMIC_COMPARE_EXCHANGE_N(dst, cmp, des, sucmode, failmode) __atomic_compare_exchange_n(&(dst), &(cmp), (des), false, sucmode, failmode)
-#define ATOMIC_COMPARE(dst, cmp) ATOMIC_COMPARE_EXCHANGE_N(dst, cmp, dst, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE)
-#define ATOMIC_FETCH_OR(type, dst, val, mode) __atomic_fetch_or(&(dst), (val), mode)
-#define ATOMIC_FETCH_AND(type, dst, val, mode) __atomic_fetch_and(&(dst), (val), mode)
-#define ATOMIC_FETCH_ADD(type, dst, val, mode) __atomic_fetch_add(&(dst), (val), mode)
-#define ATOMIC_FETCH_SUB(type, dst, val, mode) __atomic_fetch_sub(&(dst), (val), mode)
-#define ATOMIC_FETCH_XOR(type, dst, val, mode) __atomic_fetch_xor(&(dst), (val), mode)*/
-#define ATOMIC_SPIN() mcu_nop()
+#define ATOMIC_LOAD_N(type, src, mode) __atomic_load_n((src), mode)
+#define ATOMIC_STORE_N(dst, val, mode) __atomic_store_n((dst), (val), mode)
+#define ATOMIC_COMPARE_EXCHANGE_N(dst, cmp, des, sucmode, failmode) __atomic_compare_exchange_n((dst), (cmp), (des), false, sucmode, failmode)
+#define ATOMIC_FETCH_OR(type, dst, val, mode) __atomic_fetch_or((dst), (val), mode)
+#define ATOMIC_FETCH_AND(type, dst, val, mode) __atomic_fetch_and((dst), (val), mode)
+#define ATOMIC_FETCH_ADD(type, dst, val, mode) __atomic_fetch_add((dst), (val), mode)
+#define ATOMIC_FETCH_SUB(type, dst, val, mode) __atomic_fetch_sub((dst), (val), mode)
+#define ATOMIC_FETCH_XOR(type, dst, val, mode) __atomic_fetch_xor((dst), (val), mode)
+#define ATOMIC_SPIN()      \
+	if (xPortInIsrContext()) \
+	{                        \
+		portYIELD_FROM_ISR();  \
+	}                        \
+	else                     \
+	{                        \
+		portYIELD();           \
+	}
 
 #ifdef __cplusplus
 }

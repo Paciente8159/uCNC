@@ -84,20 +84,19 @@ extern "C"
 #define MCU_CYCLES_LOOP_OVERHEAD 3
 #endif
 
-#define mcu_delay_loop(X)                                             \
-	do                                                                  \
-	{                                                                   \
-		register unsigned start, now, target = (((X) - 1) * MCU_CYCLES_PER_LOOP + 2); \
-		asm volatile("" ::: "memory");                                    \
-		asm volatile(                                                     \
-				"rsr.ccount %0\n"					/* 2 cycles: start = ccount */      \
-				"1:  rsr.ccount %1\n"			/* 2 cycles */                      \
-				"  sub      %1, %1, %0\n" /* 1 cycle  : tmp = now-start */    \
-				"  bltu     %1, %2, 1b\n" /* 3 taken / 1 not taken */         \
-				"  nop\n"                                                     \
-				: "=&a"(start), "=&a"(now)                                    \
-				: "a"(target));                                               \
-	} while (0)
+#define mcu_delay_loop(X) do { \
+    register unsigned start, now, target = (((X) - 1) * MCU_CYCLES_PER_LOOP + 2); \
+    asm volatile("" ::: "memory"); \
+    asm volatile( \
+        "rdcycle %0\n"              /* start = cycle counter */ \
+        "1: rdcycle %1\n"           /* now = cycle counter */ \
+        "   sub    %1, %1, %0\n"    /* tmp = now - start */ \
+        "   bltu   %1, %2, 1b\n"    /* loop until tmp >= target */ \
+        "   nop\n" \
+        : "=&r"(start), "=&r"(now) \
+        : "r"(target)); \
+} while (0)
+
 
 #ifndef MCU_CALLBACK
 #define MCU_CALLBACK IRAM_ATTR
@@ -3491,17 +3490,17 @@ extern "C"
 	static SemaphoreHandle_t name##_mutex_lock = NULL; \
 	MUTEX_CLEANUP(name)
 
-#define MUTEX_INIT(name)                         \
+#define MUTEX_INIT(name)                          \
 	if (name##_mutex_lock == NULL)                  \
 	{                                               \
 		name##_mutex_lock = xSemaphoreCreateBinary(); \
 		xSemaphoreGive(name##_mutex_lock);            \
 	}                                               \
 	uint8_t __attribute__((__cleanup__(name##_mutex_cleanup))) name##_mutex_temp = 0
-#define MUTEX_RELEASE(name)            \
-	if (name##_mutex_temp)               \
-	{                                    \
-		name##_mutex_temp = 0;             \
+#define MUTEX_RELEASE(name)                     \
+	if (name##_mutex_temp)                        \
+	{                                             \
+		name##_mutex_temp = 0;                      \
 		__FREERTOS_MUTEX_GIVE__(name##_mutex_lock); \
 	}
 #define MUTEX_TAKE(name)                                                                             \
@@ -3511,6 +3510,23 @@ extern "C"
 	name##_mutex_temp = (__FREERTOS_MUTEX_TAKE__(name##_mutex_lock, (timeout_ms / portTICK_PERIOD_MS)) == pdTRUE) ? 1 : 0; \
 	if (name##_mutex_temp)
 
+#define ATOMIC_LOAD_N(type, src, mode) __atomic_load_n((src), mode)
+#define ATOMIC_STORE_N(dst, val, mode) __atomic_store_n((dst), (val), mode)
+#define ATOMIC_COMPARE_EXCHANGE_N(dst, cmp, des, sucmode, failmode) __atomic_compare_exchange_n((dst), (cmp), (des), false, sucmode, failmode)
+#define ATOMIC_FETCH_OR(type, dst, val, mode) __atomic_fetch_or((dst), (val), mode)
+#define ATOMIC_FETCH_AND(type, dst, val, mode) __atomic_fetch_and((dst), (val), mode)
+#define ATOMIC_FETCH_ADD(type, dst, val, mode) __atomic_fetch_add((dst), (val), mode)
+#define ATOMIC_FETCH_SUB(type, dst, val, mode) __atomic_fetch_sub((dst), (val), mode)
+#define ATOMIC_FETCH_XOR(type, dst, val, mode) __atomic_fetch_xor((dst), (val), mode)
+#define ATOMIC_SPIN()      \
+	if (xPortInIsrContext()) \
+	{                        \
+		portYIELD_FROM_ISR();  \
+	}                        \
+	else                     \
+	{                        \
+		portYIELD();           \
+	}
 #ifdef __cplusplus
 }
 #endif

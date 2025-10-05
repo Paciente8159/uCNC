@@ -19,79 +19,83 @@
 
 #include "cnc.h"
 
-static FORCEINLINE void set_flag(ring_buffer_t *b, uint8_t idx)
+static FORCEINLINE void set_flag(ring_buffer_t *b, buffer_index_t idx)
 {
-	ATOMIC_FETCH_OR(uint8_t, b->flags[idx >> 3], (uint8_t)(1u << (idx & 7)), __ATOMIC_RELEASE);
+	ATOMIC_FETCH_OR(buffer_index_t, &b->flags[idx >> buf_index_byteoffset], (buffer_index_t)((buffer_index_t)1u << (idx & buf_index_bitoffset)), __ATOMIC_RELEASE);
 }
 
-static FORCEINLINE bool test_flag(ring_buffer_t *b, uint8_t idx)
+static FORCEINLINE bool test_flag(ring_buffer_t *b, buffer_index_t idx)
 {
-	uint8_t byte = ATOMIC_LOAD_N(uint8_t, b->flags[idx >> 3], __ATOMIC_ACQUIRE);
-	return (byte & (uint8_t)(1u << (idx & 7))) != 0;
+	buffer_index_t byte = ATOMIC_LOAD_N(buffer_index_t, &b->flags[idx >> buf_index_byteoffset], __ATOMIC_ACQUIRE);
+	return (byte & (buffer_index_t)((buffer_index_t)1u << (idx & buf_index_bitoffset))) != 0;
 }
 
 // Clear can be release or relaxed; release is conservative if producers/consumers ever gate on flags.
-static FORCEINLINE void clear_flag(ring_buffer_t *b, uint8_t idx)
+static FORCEINLINE void clear_flag(ring_buffer_t *b, buffer_index_t idx)
 {
-	ATOMIC_FETCH_AND(uint8_t, b->flags[idx >> 3], (uint8_t)~(1u << (idx & 7)), __ATOMIC_RELAXED);
+	ATOMIC_FETCH_AND(buffer_index_t, &b->flags[idx >> buf_index_byteoffset], (buffer_index_t)~((buffer_index_t)1u << (idx & buf_index_bitoffset)), __ATOMIC_RELAXED);
 }
 
-static FORCEINLINE uint8_t index_wrap_around(uint8_t val, uint8_t cap)
+static FORCEINLINE buffer_index_t index_wrap_around(buffer_index_t val, buffer_index_t cap)
 {
 	return (val >= cap) ? 0 : val;
 }
 
 uint8_t buffer_write_available(ring_buffer_t *buffer)
 {
-	uint8_t head = (uint8_t)ATOMIC_LOAD_N(uint8_t, buffer->head, __ATOMIC_ACQUIRE);
-	uint8_t tail = (uint8_t)ATOMIC_LOAD_N(uint8_t, buffer->tail, __ATOMIC_ACQUIRE);
+	uint8_t head = (uint8_t)ATOMIC_LOAD_N(buffer_index_t, &buffer->head, __ATOMIC_ACQUIRE);
+	uint8_t tail = (uint8_t)ATOMIC_LOAD_N(buffer_index_t, &buffer->tail, __ATOMIC_ACQUIRE);
 	return (head >= tail) ? (buffer->size - (head - tail) - 1) : (tail - head - 1);
 }
 
 uint8_t buffer_read_available(ring_buffer_t *buffer)
 {
-	uint8_t tail = (uint8_t)ATOMIC_LOAD_N(uint8_t, buffer->tail, __ATOMIC_ACQUIRE);
-	uint8_t head = (uint8_t)ATOMIC_LOAD_N(uint8_t, buffer->head, __ATOMIC_ACQUIRE);
+	uint8_t tail = (uint8_t)ATOMIC_LOAD_N(buffer_index_t, &buffer->tail, __ATOMIC_ACQUIRE);
+	uint8_t head = (uint8_t)ATOMIC_LOAD_N(buffer_index_t, &buffer->head, __ATOMIC_ACQUIRE);
 	return (head >= tail) ? (head - tail) : (buffer->size - (tail - head));
 }
 
 bool buffer_empty(ring_buffer_t *buffer)
 {
-	return ATOMIC_COMPARE(buffer->tail, buffer->head);
+	// return ATOMIC_COMPARE_EXCHANGE_N(&buffer->tail, &buffer->head, buffer->tail, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE);
+	uint8_t tail = (uint8_t)ATOMIC_LOAD_N(buffer_index_t, &buffer->tail, __ATOMIC_ACQUIRE);
+	uint8_t head = (uint8_t)ATOMIC_LOAD_N(buffer_index_t, &buffer->head, __ATOMIC_ACQUIRE);
+	return tail == head;
 }
 
 bool buffer_full(ring_buffer_t *buffer)
 {
-	uint8_t head = (uint8_t)ATOMIC_LOAD_N(uint8_t, buffer->head, __ATOMIC_ACQUIRE);
-	head = index_wrap_around(head + 1, buffer->size);
-	return ATOMIC_COMPARE(buffer->tail, head);
+	uint8_t head = (uint8_t)ATOMIC_LOAD_N(buffer_index_t, &buffer->head, __ATOMIC_ACQUIRE);
+	uint8_t next = (uint8_t)index_wrap_around(head + 1, buffer->size);
+	uint8_t tail = (uint8_t)ATOMIC_LOAD_N(buffer_index_t, &buffer->tail, __ATOMIC_ACQUIRE);
+	return next == tail;
 }
 
 void buffer_peek(ring_buffer_t *buffer, void *ptr) {
-    uint8_t tail = ATOMIC_LOAD_N(uint8_t, buffer->tail, __ATOMIC_RELAXED);
-    uint8_t head = ATOMIC_LOAD_N(uint8_t, buffer->head, __ATOMIC_RELAXED);
+    buffer_index_t tail = ATOMIC_LOAD_N(buffer_index_t, &buffer->tail, __ATOMIC_RELAXED);
+    buffer_index_t head = ATOMIC_LOAD_N(buffer_index_t, &buffer->head, __ATOMIC_RELAXED);
     if (tail == head || !test_flag(buffer, tail)) {
         memset(ptr, 0, buffer->elem_size);
         return;
     }
-    memcpy(ptr, &buffer->data[(size_t)tail * buffer->elem_size], buffer->elem_size);
+    memcpy(ptr, &buffer->data[(size_t)tail * (size_t)buffer->elem_size], buffer->elem_size);
 }
 
 void buffer_enqueue(ring_buffer_t *buffer, void *ptr)
 {
 	for (;;)
 	{
-		uint8_t head = ATOMIC_LOAD_N(uint8_t, buffer->head, __ATOMIC_ACQUIRE);
-		uint8_t tail = ATOMIC_LOAD_N(uint8_t, buffer->tail, __ATOMIC_ACQUIRE);
+		buffer_index_t head = ATOMIC_LOAD_N(buffer_index_t, &buffer->head, __ATOMIC_ACQUIRE);
+		buffer_index_t tail = ATOMIC_LOAD_N(buffer_index_t, &buffer->tail, __ATOMIC_ACQUIRE);
 
-		uint8_t next_slot = index_wrap_around(head + 1, buffer->size);
+		buffer_index_t next_slot = index_wrap_around(head + 1, buffer->size);
 
 		if (next_slot == tail)
 		{
 			continue; // buffer full, spin
 		}
 
-		if (!ATOMIC_COMPARE_EXCHANGE_N(buffer->head, head, next_slot, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE))
+		if (!ATOMIC_COMPARE_EXCHANGE_N(&buffer->head, &head, next_slot, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE))
 		{
 			continue; // lost race, retry
 		}
@@ -109,8 +113,8 @@ void buffer_dequeue(ring_buffer_t *buffer, void *ptr)
 {
 	for (;;)
 	{
-		uint8_t head = ATOMIC_LOAD_N(uint8_t, buffer->head, __ATOMIC_ACQUIRE);
-		uint8_t tail = ATOMIC_LOAD_N(uint8_t, buffer->tail, __ATOMIC_ACQUIRE);
+		buffer_index_t head = ATOMIC_LOAD_N(buffer_index_t, &buffer->head, __ATOMIC_ACQUIRE);
+		buffer_index_t tail = ATOMIC_LOAD_N(buffer_index_t, &buffer->tail, __ATOMIC_ACQUIRE);
 
 		if (tail == head)
 		{
@@ -118,7 +122,7 @@ void buffer_dequeue(ring_buffer_t *buffer, void *ptr)
 			return; // empty
 		}
 
-		uint8_t next_avail = index_wrap_around(tail + 1, buffer->size);
+		buffer_index_t next_avail = index_wrap_around(tail + 1, buffer->size);
 
 		// Spin until producer has set ready flag
 		if (!test_flag(buffer, tail))
@@ -127,7 +131,7 @@ void buffer_dequeue(ring_buffer_t *buffer, void *ptr)
 			continue;
 		}
 
-		if (!ATOMIC_COMPARE_EXCHANGE_N(buffer->tail, tail, next_avail, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE))
+		if (!ATOMIC_COMPARE_EXCHANGE_N(&buffer->tail, &tail, next_avail, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE))
 		{
 			ATOMIC_SPIN();
 			continue; // lost race
@@ -149,12 +153,12 @@ void buffer_write(ring_buffer_t *buffer, void *ptr, uint8_t len, uint8_t *writte
 
 	for (uint8_t i = 0; i < len; i++)
 	{
-		uint8_t head, tail, next_slot;
+		buffer_index_t head, tail, next_slot;
 
 		for (;;)
 		{
-			head = ATOMIC_LOAD_N(uint8_t, buffer->head, __ATOMIC_ACQUIRE);
-			tail = ATOMIC_LOAD_N(uint8_t, buffer->tail, __ATOMIC_ACQUIRE);
+			head = ATOMIC_LOAD_N(buffer_index_t, &buffer->head, __ATOMIC_ACQUIRE);
+			tail = ATOMIC_LOAD_N(buffer_index_t, &buffer->tail, __ATOMIC_ACQUIRE);
 
 			next_slot = index_wrap_around(head + 1, buffer->size);
 
@@ -168,7 +172,7 @@ void buffer_write(ring_buffer_t *buffer, void *ptr, uint8_t len, uint8_t *writte
 				return;
 			}
 
-			if (!ATOMIC_COMPARE_EXCHANGE_N(buffer->head, head, next_slot, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE))
+			if (!ATOMIC_COMPARE_EXCHANGE_N(&buffer->head, &head, next_slot, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE))
 			{
 				continue; // lost race, retry
 			}
@@ -199,12 +203,12 @@ void buffer_read(ring_buffer_t *buffer, void *ptr, uint8_t len, uint8_t *read)
 
 	for (uint8_t i = 0; i < len; i++)
 	{
-		uint8_t head, tail, next_avail;
+		buffer_index_t head, tail, next_avail;
 
 		for (;;)
 		{
-			head = ATOMIC_LOAD_N(uint8_t, buffer->head, __ATOMIC_ACQUIRE);
-			tail = ATOMIC_LOAD_N(uint8_t, buffer->tail, __ATOMIC_ACQUIRE);
+			head = ATOMIC_LOAD_N(buffer_index_t, &buffer->head, __ATOMIC_ACQUIRE);
+			tail = ATOMIC_LOAD_N(buffer_index_t, &buffer->tail, __ATOMIC_ACQUIRE);
 
 			if (tail == head)
 			{
@@ -225,7 +229,7 @@ void buffer_read(ring_buffer_t *buffer, void *ptr, uint8_t len, uint8_t *read)
 
 			next_avail = index_wrap_around(tail + 1, buffer->size);
 
-			if (!ATOMIC_COMPARE_EXCHANGE_N(buffer->tail, tail, next_avail, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE))
+			if (!ATOMIC_COMPARE_EXCHANGE_N(&buffer->tail, &tail, next_avail, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE))
 			{
 				ATOMIC_SPIN();
 				continue; // lost race
@@ -250,14 +254,13 @@ void buffer_read(ring_buffer_t *buffer, void *ptr, uint8_t len, uint8_t *read)
 
 void buffer_clear(ring_buffer_t *buffer)
 {
-	// Reset indices
-	ATOMIC_STORE_N(buffer->head, 0, __ATOMIC_RELEASE);
-	ATOMIC_STORE_N(buffer->tail, 0, __ATOMIC_RELEASE);
+	// Require external quiescence (no concurrent producers/consumers).
+	buffer_index_t flag_elems = (buffer->size + buf_index_bitoffset) >> buf_index_byteoffset;
 
-	// Clear flags
-	uint8_t flag_bytes = (buffer->size + 7) >> 3;
-	memset(buffer->flags, 0, flag_bytes);
+	memset(buffer->flags, 0, (size_t)flag_elems * (size_t)sizeof(buffer_index_t));
+	memset(buffer->data, 0, (size_t)buffer->size * (size_t)buffer->elem_size);
 
-	// Optionally clear data (not strictly needed)
-	memset(buffer->data, 0, buffer->size * buffer->elem_size);
+	// Publish cleared state
+	ATOMIC_STORE_N(&buffer->tail, 0, __ATOMIC_RELEASE);
+	ATOMIC_STORE_N(&buffer->head, 0, __ATOMIC_RELEASE);
 }

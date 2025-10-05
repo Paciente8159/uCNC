@@ -723,10 +723,11 @@ bool mcu_get_global_isr(void)
 		return false;
 	}
 
-	uint32_t ps;
-	__asm__ volatile("rsr.ps %0" : "=a"(ps));
-	// INTLEVEL is bits [3:0] of PS
-	return ((ps & 0xF) < 2);
+	uint32_t mstatus;
+	asm volatile("csrr %0, mstatus" : "=r"(mstatus));
+
+	// MIE (Machine Interrupt Enable) is bit 3 of mstatus
+	return (mstatus & (1 << 3)) != 0;
 }
 #endif
 

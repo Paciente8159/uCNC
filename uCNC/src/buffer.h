@@ -34,16 +34,38 @@ extern "C"
 	 * RING BUFFER UTILS
 	 * **/
 
-#ifndef buf_index_t
-#define buf_index_t volatile uint8_t
+#ifndef buffer_index_t
+#define buffer_index_t uint8_t
+#ifndef __GNUC__
+#define buf_index_byteoffset 3 /*defined by log2(8 * sizeof(buffer_index_t))*/
+#endif
+#endif
+
+#ifdef __GNUC__
+#define buf_index_bits (8u * sizeof(buffer_index_t))
+#define buf_index_bitoffset (buf_index_bits - 1u)
+#define buf_index_byteoffset (__builtin_ctz(buf_index_bits))
+#else
+#if sizeof(buffer_index_t) == 1
+#define buf_index_byteoffset 3 /* log2(8)  */
+#elif sizeof(buffer_index_t) == 2
+#define buf_index_byteoffset 4 /* log2(16) */
+#elif sizeof(buffer_index_t) == 4
+#define buf_index_byteoffset 5 /* log2(32) */
+#elif sizeof(buffer_index_t) == 8
+#define buf_index_byteoffset 6 /* log2(64) */
+#endif
+#endif
+
+#ifndef buf_index_byteoffset
+#error "You need to manually define buf_index_byteoffset. This should be a value equal to log2(8 * sizeof(buffer_index_t))"
 #endif
 
 	typedef struct ring_buffer_
 	{
-		buf_index_t head;
-		buf_index_t tail;
-		// volatile uint8_t count;
-		buf_index_t *flags;
+		volatile buffer_index_t head;
+		volatile buffer_index_t tail;
+		buffer_index_t *flags;
 		uint8_t *data;
 		const uint8_t size;
 		const uint8_t elem_size;
@@ -62,9 +84,9 @@ extern "C"
 
 #ifndef USE_MACRO_BUFFER
 #ifndef USE_CUSTOM_BUFFER_IMPLEMENTATION
-#define DECL_BUFFER(type, name, size)               \
-	static type name##_bufferdata[size];              \
-	static uint8_t name##_bufferflags[((size + 7) >> 3)]; \
+#define DECL_BUFFER(type, name, size)                                                               \
+	static type name##_bufferdata[size];                                                              \
+	static buffer_index_t name##_bufferflags[((size + buf_index_bitoffset) >> buf_index_byteoffset)]; \
 	ring_buffer_t name = {0, 0, name##_bufferflags, name##_bufferdata, size, sizeof(type)}
 
 #define BUFFER_INIT(type, buffer, size)
