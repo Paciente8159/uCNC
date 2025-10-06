@@ -65,14 +65,10 @@ extern "C"
 	{
 		volatile buffer_index_t head;
 		volatile buffer_index_t tail;
-#ifndef USE_MACRO_BUFFER
 		buffer_index_t *flags;
 		uint8_t *data;
 		const uint8_t size;
 		const uint8_t elem_size;
-#else
-	volatile buffer_index_t count;
-#endif
 	} ring_buffer_t;
 
 #ifndef USE_MACRO_BUFFER
@@ -112,7 +108,12 @@ extern "C"
 	{                                    \
 		name##_size = size                 \
 	};                                   \
-	ring_buffer_t name = {0}
+	struct                               \
+	{                                    \
+		volatile uint8_t head;      \
+		volatile uint8_t tail;      \
+		volatile uint8_t count;     \
+	} name
 
 #define BUFFER_INIT(type, buffer, size)
 #define BUFFER_WRITE_AVAILABLE(buffer) (buffer##_size - buffer.count)
@@ -123,10 +124,10 @@ extern "C"
 
 #define BUFFER_DEQUEUE(buffer, ptr)                                            \
 	{                                                                            \
-		while (!BUFFER_EMPTY(buffer))                                              \
+		if (!BUFFER_EMPTY(buffer))                                                 \
 		{                                                                          \
 			uint8_t tail;                                                            \
-			ATOMIC_CODEBLOCK                                                               \
+			ATOMIC_CODEBLOCK                                                         \
 			{                                                                        \
 				tail = buffer.tail;                                                    \
 			}                                                                        \
@@ -136,7 +137,7 @@ extern "C"
 			{                                                                        \
 				tail = 0;                                                              \
 			}                                                                        \
-			ATOMIC_CODEBLOCK                                                               \
+			ATOMIC_CODEBLOCK                                                         \
 			{                                                                        \
 				buffer.tail = tail;                                                    \
 				buffer.count--;                                                        \
@@ -146,10 +147,10 @@ extern "C"
 
 #define BUFFER_ENQUEUE(buffer, ptr)                                            \
 	{                                                                            \
-		while (!BUFFER_FULL(buffer))                                               \
+		if (!BUFFER_FULL(buffer))                                                  \
 		{                                                                          \
 			uint8_t head;                                                            \
-			ATOMIC_CODEBLOCK                                                               \
+			ATOMIC_CODEBLOCK                                                         \
 			{                                                                        \
 				head = buffer.head;                                                    \
 			}                                                                        \
@@ -159,7 +160,7 @@ extern "C"
 			{                                                                        \
 				head = 0;                                                              \
 			}                                                                        \
-			ATOMIC_CODEBLOCK                                                               \
+			ATOMIC_CODEBLOCK                                                         \
 			{                                                                        \
 				buffer.head = head;                                                    \
 				buffer.count++;                                                        \
@@ -168,21 +169,21 @@ extern "C"
 	}
 
 #define BUFFER_WRITE(buffer, ptr, len, written) ({                                             \
-	uint8_t count, head, next;                                                                   \
-	ATOMIC_CODEBLOCK                                                                                   \
+	uint8_t count, head;                                                                         \
+	ATOMIC_CODEBLOCK                                                                             \
 	{                                                                                            \
-		next = head = buffer.head;                                                                 \
+		head = buffer.head;                                                                        \
 		count = buffer.count;                                                                      \
 	}                                                                                            \
 	count = MIN(buffer##_size - count, len);                                                     \
-	*(written) = 0;                                                                              \
+	(written) = 0;                                                                                 \
 	if (count)                                                                                   \
 	{                                                                                            \
 		uint8_t avail = (buffer##_size - head);                                                    \
 		if (avail < count && avail)                                                                \
 		{                                                                                          \
 			memcpy(&buffer##_bufferdata[head], ptr, avail * sizeof(buffer##_bufferdata[0]));         \
-			*(written) = avail;                                                                      \
+			(written) = avail;                                                                         \
 			count -= avail;                                                                          \
 			head = 0;                                                                                \
 		}                                                                                          \
@@ -193,8 +194,8 @@ extern "C"
 		if (count)                                                                                 \
 		{                                                                                          \
 			memcpy(&buffer##_bufferdata[head], &ptr[avail], count * sizeof(buffer##_bufferdata[0])); \
-			*(written) += count;                                                                     \
-			ATOMIC_CODEBLOCK                                                                               \
+			(written) += count;                                                                        \
+			ATOMIC_CODEBLOCK                                                                         \
 			{                                                                                        \
 				head += count;                                                                         \
 				if (head == buffer##_size)                                                             \
@@ -202,7 +203,7 @@ extern "C"
 					head = 0;                                                                            \
 				}                                                                                      \
 				buffer.head = head;                                                                    \
-				buffer.count += written;                                                               \
+				buffer.count += (written);                                                               \
 			}                                                                                        \
 		}                                                                                          \
 	}                                                                                            \
@@ -210,7 +211,7 @@ extern "C"
 
 #define BUFFER_READ(buffer, ptr, len, read) ({                                                 \
 	uint8_t count, tail;                                                                         \
-	ATOMIC_CODEBLOCK                                                                                   \
+	ATOMIC_CODEBLOCK                                                                             \
 	{                                                                                            \
 		tail = buffer.tail;                                                                        \
 		count = buffer.count;                                                                      \
@@ -219,14 +220,14 @@ extern "C"
 	{                                                                                            \
 		count = len;                                                                               \
 	}                                                                                            \
-	*(read) = 0;                                                                                 \
+	(read) = 0;                                                                                    \
 	if (count)                                                                                   \
 	{                                                                                            \
 		uint8_t avail = buffer##_size - tail;                                                      \
 		if (avail < count && avail)                                                                \
 		{                                                                                          \
 			memcpy(ptr, &buffer##_bufferdata[tail], avail * sizeof(buffer##_bufferdata[0]));         \
-			*(read) = avail;                                                                         \
+			(read) = avail;                                                                            \
 			count -= avail;                                                                          \
 			tail = 0;                                                                                \
 		}                                                                                          \
@@ -237,8 +238,8 @@ extern "C"
 		if (count)                                                                                 \
 		{                                                                                          \
 			memcpy(&ptr[avail], &buffer##_bufferdata[tail], count * sizeof(buffer##_bufferdata[0])); \
-			*(read) += count;                                                                        \
-			ATOMIC_CODEBLOCK                                                                               \
+			(read) += count;                                                                           \
+			ATOMIC_CODEBLOCK                                                                         \
 			{                                                                                        \
 				tail += count;                                                                         \
 				if (tail == buffer##_size)                                                             \
@@ -246,7 +247,7 @@ extern "C"
 					tail = 0;                                                                            \
 				}                                                                                      \
 				buffer.tail = tail;                                                                    \
-				buffer.count -= read;                                                                  \
+				buffer.count -= (read);                                                                  \
 			}                                                                                        \
 		}                                                                                          \
 	}                                                                                            \
@@ -254,13 +255,14 @@ extern "C"
 
 #define BUFFER_CLEAR(buffer)          \
 	{                                   \
-			ATOMIC_CODEBLOCK{                     \
+			ATOMIC_CODEBLOCK{               \
 					buffer##_bufferdata[0] = 0; \
 	buffer.tail = 0;                    \
 	buffer.head = 0;                    \
 	buffer.count = 0;                   \
 	}                                   \
 	}
+
 #endif
 
 #ifdef __cplusplus

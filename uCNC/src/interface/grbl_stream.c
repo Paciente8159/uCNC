@@ -371,7 +371,7 @@ uint8_t grbl_stream_available(void)
 
 uint8_t grbl_stream_write_available(void)
 {
-	return (RX_BUFFER_SIZE - grbl_stream_available());
+	return (RX_BUFFER_CAPACITY - grbl_stream_available());
 }
 
 void grbl_stream_clear(void)
