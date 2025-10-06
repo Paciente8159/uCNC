@@ -34,7 +34,7 @@ static FORCEINLINE bool test_flag(ring_buffer_t *b, buffer_index_t idx)
 // Clear can be release or relaxed; release is conservative if producers/consumers ever gate on flags.
 static FORCEINLINE void clear_flag(ring_buffer_t *b, buffer_index_t idx)
 {
-	ATOMIC_FETCH_AND(&b->flags[idx >> buf_index_byteoffset], (buffer_index_t)~((buffer_index_t)1u << (idx & buf_index_bitoffset)), __ATOMIC_RELAXED);
+	ATOMIC_FETCH_AND(&b->flags[idx >> buf_index_byteoffset], (buffer_index_t) ~((buffer_index_t)1u << (idx & buf_index_bitoffset)), __ATOMIC_RELAXED);
 }
 
 static FORCEINLINE buffer_index_t index_wrap_around(buffer_index_t val, buffer_index_t cap)
@@ -72,17 +72,19 @@ bool buffer_full(ring_buffer_t *buffer)
 	return next == tail;
 }
 
-void buffer_peek(ring_buffer_t *buffer, void *ptr) {
-    buffer_index_t tail = ATOMIC_LOAD_N(&buffer->tail, __ATOMIC_RELAXED);
-    buffer_index_t head = ATOMIC_LOAD_N(&buffer->head, __ATOMIC_RELAXED);
-    if (tail == head || !test_flag(buffer, tail)) {
-        memset(ptr, 0, buffer->elem_size);
-        return;
-    }
-    memcpy(ptr, &buffer->data[(size_t)tail * (size_t)buffer->elem_size], buffer->elem_size);
+void buffer_peek(ring_buffer_t *buffer, void *ptr)
+{
+	buffer_index_t tail = ATOMIC_LOAD_N(&buffer->tail, __ATOMIC_RELAXED);
+	buffer_index_t head = ATOMIC_LOAD_N(&buffer->head, __ATOMIC_RELAXED);
+	if (tail == head || !test_flag(buffer, tail))
+	{
+		memset(ptr, 0, buffer->elem_size);
+		return;
+	}
+	memcpy(ptr, &buffer->data[(size_t)tail * (size_t)buffer->elem_size], buffer->elem_size);
 }
 
-void buffer_enqueue(ring_buffer_t *buffer, void *ptr)
+bool buffer_try_enqueue(ring_buffer_t *buffer, void *ptr)
 {
 	for (;;)
 	{
@@ -93,7 +95,7 @@ void buffer_enqueue(ring_buffer_t *buffer, void *ptr)
 
 		if (next_slot == tail)
 		{
-			continue; // buffer full, spin
+			return false; // buffer full, exit
 		}
 
 		if (!ATOMIC_COMPARE_EXCHANGE_N(&buffer->head, &head, next_slot, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE))
@@ -106,12 +108,16 @@ void buffer_enqueue(ring_buffer_t *buffer, void *ptr)
 
 		// Publish slot as ready
 		set_flag(buffer, head);
-		return;
+		return true;
 	}
+
+	return false;
 }
 
-void buffer_dequeue(ring_buffer_t *buffer, void *ptr)
+bool buffer_try_dequeue(ring_buffer_t *buffer, void *ptr)
 {
+	memset(ptr, 0, buffer->elem_size);
+
 	for (;;)
 	{
 		buffer_index_t head = ATOMIC_LOAD_N(&buffer->head, __ATOMIC_ACQUIRE);
@@ -119,8 +125,7 @@ void buffer_dequeue(ring_buffer_t *buffer, void *ptr)
 
 		if (tail == head)
 		{
-			memset(ptr, 0, buffer->elem_size);
-			return; // empty
+			return false; // empty, leave
 		}
 
 		buffer_index_t next_avail = index_wrap_around(tail + 1, buffer->size);
@@ -143,8 +148,10 @@ void buffer_dequeue(ring_buffer_t *buffer, void *ptr)
 
 		// Clear ready flag
 		clear_flag(buffer, tail);
-		return;
+		return true;
 	}
+
+	return false;
 }
 
 void buffer_write(ring_buffer_t *buffer, void *ptr, uint8_t len, uint8_t *written)

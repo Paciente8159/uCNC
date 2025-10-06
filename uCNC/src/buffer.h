@@ -77,8 +77,8 @@ extern "C"
 	bool buffer_empty(ring_buffer_t *buffer);
 	bool buffer_full(ring_buffer_t *buffer);
 	void buffer_peek(ring_buffer_t *buffer, void *ptr);
-	void buffer_dequeue(ring_buffer_t *buffer, void *ptr);
-	void buffer_enqueue(ring_buffer_t *buffer, void *ptr);
+	bool buffer_try_dequeue(ring_buffer_t *buffer, void *ptr);
+	bool buffer_try_enqueue(ring_buffer_t *buffer, void *ptr);
 	void buffer_write(ring_buffer_t *buffer, void *ptr, uint8_t len, uint8_t *written);
 	void buffer_read(ring_buffer_t *buffer, void *ptr, uint8_t len, uint8_t *read);
 	void buffer_clear(ring_buffer_t *buffer);
@@ -95,8 +95,10 @@ extern "C"
 #define BUFFER_EMPTY(buffer) buffer_empty(&buffer)
 #define BUFFER_FULL(buffer) buffer_full(&buffer)
 #define BUFFER_PEEK(buffer, ptr) buffer_peek(&buffer, ptr)
-#define BUFFER_DEQUEUE(buffer, ptr) buffer_dequeue(&buffer, ptr)
-#define BUFFER_ENQUEUE(buffer, ptr) buffer_enqueue(&buffer, ptr)
+#define BUFFER_TRY_DEQUEUE(buffer, ptr) buffer_try_dequeue(&buffer, ptr)
+#define BUFFER_TRY_ENQUEUE(buffer, ptr) buffer_try_enqueue(&buffer, ptr)
+#define BUFFER_DEQUEUE(buffer, ptr) do{}while(!BUFFER_TRY_DEQUEUE(buffer, ptr))
+#define BUFFER_ENQUEUE(buffer, ptr) do{}while(!BUFFER_TRY_ENQUEUE(buffer, ptr))
 #define BUFFER_WRITE(buffer, ptr, len, written) buffer_write(&buffer, ptr, len, &written)
 #define BUFFER_READ(buffer, ptr, len, read) buffer_read(&buffer, ptr, len, &read)
 #define BUFFER_CLEAR(buffer) buffer_clear(&buffer);
@@ -110,9 +112,9 @@ extern "C"
 	};                                   \
 	struct                               \
 	{                                    \
-		volatile uint8_t head;      \
-		volatile uint8_t tail;      \
-		volatile uint8_t count;     \
+		volatile uint8_t head;             \
+		volatile uint8_t tail;             \
+		volatile uint8_t count;            \
 	} name
 
 #define BUFFER_INIT(type, buffer, size)
@@ -176,14 +178,14 @@ extern "C"
 		count = buffer.count;                                                                      \
 	}                                                                                            \
 	count = MIN(buffer##_size - count, len);                                                     \
-	(written) = 0;                                                                                 \
+	(written) = 0;                                                                               \
 	if (count)                                                                                   \
 	{                                                                                            \
 		uint8_t avail = (buffer##_size - head);                                                    \
 		if (avail < count && avail)                                                                \
 		{                                                                                          \
 			memcpy(&buffer##_bufferdata[head], ptr, avail * sizeof(buffer##_bufferdata[0]));         \
-			(written) = avail;                                                                         \
+			(written) = avail;                                                                       \
 			count -= avail;                                                                          \
 			head = 0;                                                                                \
 		}                                                                                          \
@@ -194,7 +196,7 @@ extern "C"
 		if (count)                                                                                 \
 		{                                                                                          \
 			memcpy(&buffer##_bufferdata[head], &ptr[avail], count * sizeof(buffer##_bufferdata[0])); \
-			(written) += count;                                                                        \
+			(written) += count;                                                                      \
 			ATOMIC_CODEBLOCK                                                                         \
 			{                                                                                        \
 				head += count;                                                                         \
@@ -203,7 +205,7 @@ extern "C"
 					head = 0;                                                                            \
 				}                                                                                      \
 				buffer.head = head;                                                                    \
-				buffer.count += (written);                                                               \
+				buffer.count += (written);                                                             \
 			}                                                                                        \
 		}                                                                                          \
 	}                                                                                            \
@@ -220,14 +222,14 @@ extern "C"
 	{                                                                                            \
 		count = len;                                                                               \
 	}                                                                                            \
-	(read) = 0;                                                                                    \
+	(read) = 0;                                                                                  \
 	if (count)                                                                                   \
 	{                                                                                            \
 		uint8_t avail = buffer##_size - tail;                                                      \
 		if (avail < count && avail)                                                                \
 		{                                                                                          \
 			memcpy(ptr, &buffer##_bufferdata[tail], avail * sizeof(buffer##_bufferdata[0]));         \
-			(read) = avail;                                                                            \
+			(read) = avail;                                                                          \
 			count -= avail;                                                                          \
 			tail = 0;                                                                                \
 		}                                                                                          \
@@ -238,7 +240,7 @@ extern "C"
 		if (count)                                                                                 \
 		{                                                                                          \
 			memcpy(&ptr[avail], &buffer##_bufferdata[tail], count * sizeof(buffer##_bufferdata[0])); \
-			(read) += count;                                                                           \
+			(read) += count;                                                                         \
 			ATOMIC_CODEBLOCK                                                                         \
 			{                                                                                        \
 				tail += count;                                                                         \
@@ -247,7 +249,7 @@ extern "C"
 					tail = 0;                                                                            \
 				}                                                                                      \
 				buffer.tail = tail;                                                                    \
-				buffer.count -= (read);                                                                  \
+				buffer.count -= (read);                                                                \
 			}                                                                                        \
 		}                                                                                          \
 	}                                                                                            \
