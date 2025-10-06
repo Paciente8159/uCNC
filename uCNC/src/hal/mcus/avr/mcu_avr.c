@@ -383,12 +383,10 @@ ISR(COM_RX_vect, ISR_BLOCK)
 	uint8_t c = COM_INREG;
 	if (mcu_com_rx_cb(c))
 	{
-		if (BUFFER_FULL(uart_rx))
+		if (!BUFFER_TRY_ENQUEUE(uart_rx, &c))
 		{
 			STREAM_OVF(c);
 		}
-
-		BUFFER_ENQUEUE(uart_rx, &c);
 	}
 #else
 	mcu_uart_rx_cb(COM_INREG);
@@ -401,13 +399,13 @@ ISR(COM_RX_vect, ISR_BLOCK)
 DECL_BUFFER(uint8_t, uart_tx, UART_TX_BUFFER_SIZE);
 ISR(COM_TX_vect, ISR_BLOCK)
 {
-	if (BUFFER_EMPTY(uart_tx))
+	uint8_t c;
+	if (!BUFFER_TRY_DEQUEUE(uart_tx, &c))
 	{
 		CLEARBIT(UCSRB_REG, UDRIE_BIT);
 		return;
 	}
-	uint8_t c;
-	BUFFER_DEQUEUE(uart_tx, &c);
+
 	COM_OUTREG = c;
 }
 
@@ -421,22 +419,18 @@ ISR(COM2_RX_vect, ISR_BLOCK)
 #if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
 	if (mcu_com_rx_cb(c))
 	{
-		if (BUFFER_FULL(uart2_rx))
+		if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
 		{
 			STREAM_OVF(c);
 		}
-
-		BUFFER_ENQUEUE(uart2_rx, &c);
 	}
 #else
 	mcu_uart2_rx_cb(c);
 #ifndef UART2_DISABLE_BUFFER
-	if (BUFFER_FULL(uart2_rx))
+	if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
 	{
 		STREAM_OVF(c);
 	}
-
-	BUFFER_ENQUEUE(uart2_rx, &c);
 #endif
 #endif
 }
@@ -448,13 +442,14 @@ DECL_BUFFER(uint8_t, uart2, UART2_TX_BUFFER_SIZE);
 ISR(COM2_TX_vect, ISR_BLOCK)
 {
 	// keeps sending chars until null is found
-	if (BUFFER_EMPTY(uart2))
+	uint8_t c;
+
+	if (!BUFFER_TRY_DEQUEUE(uart2, &c))
 	{
 		CLEARBIT(UCSRB_REG_2, UDRIE_BIT_2);
 		return;
 	}
-	uint8_t c;
-	BUFFER_DEQUEUE(uart2, &c);
+
 	COM2_OUTREG = c;
 }
 
@@ -544,7 +539,7 @@ void mcu_init(void)
 	SPSR |= SPSR_VAL;
 	SPCR = (1 << SPE) | (1 << MSTR) | (SPI_MODE << 2) | SPCR_VAL;
 #endif
- 
+
 #ifdef MCU_HAS_I2C
 	// configure as I2C master
 	mcu_i2c_config(I2C_FREQ);
@@ -606,7 +601,7 @@ uint8_t mcu_get_servo(uint8_t servo)
 uint8_t mcu_uart_getc(void)
 {
 	uint8_t c = 0;
-	BUFFER_DEQUEUE(uart_rx, &c);
+	BUFFER_TRY_DEQUEUE(uart_rx, &c);
 	return c;
 }
 
@@ -622,11 +617,10 @@ void mcu_uart_clear(void)
 
 void mcu_uart_putc(uint8_t c)
 {
-	while (BUFFER_FULL(uart_tx))
+	while (!BUFFER_TRY_ENQUEUE(uart_tx, &c))
 	{
 		mcu_uart_flush();
 	}
-	BUFFER_ENQUEUE(uart_tx, &c);
 }
 
 void mcu_uart_flush(void)
@@ -645,7 +639,7 @@ void mcu_uart_flush(void)
 uint8_t mcu_uart2_getc(void)
 {
 	uint8_t c = 0;
-	BUFFER_DEQUEUE(uart2_rx, &c);
+	BUFFER_TRY_DEQUEUE(uart2_rx, &c);
 	return c;
 }
 
@@ -661,11 +655,10 @@ void mcu_uart2_clear(void)
 
 void mcu_uart2_putc(uint8_t c)
 {
-	while (BUFFER_FULL(uart2))
+	while (!BUFFER_TRY_ENQUEUE(uart2, &c))
 	{
 		mcu_uart2_flush();
 	}
-	BUFFER_ENQUEUE(uart2, &c);
 }
 
 void mcu_uart2_flush(void)
@@ -912,7 +905,7 @@ void mcu_dotasks()
 
 // This was copied from grbl
 #ifndef EEPE
-#define EEPE EEWE	//!< EEPROM program/write enable.
+#define EEPE EEWE		//!< EEPROM program/write enable.
 #define EEMPE EEMWE //!< EEPROM master program/write enable.
 #endif
 
@@ -930,9 +923,9 @@ uint8_t mcu_eeprom_getc(uint16_t address)
 	{
 
 	} while (EECR & (1 << EEPE)); // Wait for completion of previous write.
-	EEAR = address;				  // Set EEPROM address register.
-	EECR = (1 << EERE);			  // Start EEPROM read operation.
-	return EEDR;				  // Return the byte read from EEPROM.
+	EEAR = address;			// Set EEPROM address register.
+	EECR = (1 << EERE); // Start EEPROM read operation.
+	return EEDR;				// Return the byte read from EEPROM.
 }
 
 void mcu_eeprom_putc(uint16_t address, uint8_t value)
@@ -950,9 +943,9 @@ void mcu_eeprom_putc(uint16_t address, uint8_t value)
 	{
 	} while (SPMCSR & (1 << SELFPRGEN)); // Wait for completion of SPM.
 
-	EEAR = address;				   // Set EEPROM address register.
-	EECR = (1 << EERE);			   // Start EEPROM read operation.
-	old_value = EEDR;			   // Get old EEPROM value.
+	EEAR = address;								 // Set EEPROM address register.
+	EECR = (1 << EERE);						 // Start EEPROM read operation.
+	old_value = EEDR;							 // Get old EEPROM value.
 	diff_mask = old_value ^ value; // Get bit differences.
 	// Check if any bits are changed to '1' in the new value.
 	if (diff_mask & value)
@@ -962,15 +955,15 @@ void mcu_eeprom_putc(uint16_t address, uint8_t value)
 		if (value != 0xff)
 		{
 			// Now we know that some bits need to be programmed to '0' also.
-			EEDR = value;										 // Set EEPROM data register.
+			EEDR = value;																				 // Set EEPROM data register.
 			EECR = ((1 << EEMPE) | (0 << EEPM1) | (0 << EEPM0)); // Erase+Write mode.
-			EECR |= (1 << EEPE);								 // Start Erase+Write operation.
+			EECR |= (1 << EEPE);																 // Start Erase+Write operation.
 		}
 		else
 		{
 			// Now we know that all bits should be erased.
 			EECR = ((1 << EEMPE) | (1 << EEPM0)); // Erase-only mode.
-			EECR |= (1 << EEPE);				  // Start Erase-only operation.
+			EECR |= (1 << EEPE);									// Start Erase-only operation.
 		}
 	}
 	else
@@ -980,9 +973,9 @@ void mcu_eeprom_putc(uint16_t address, uint8_t value)
 		if (diff_mask)
 		{
 			// Now we know that _some_ bits need to the programmed to '0'.
-			EEDR = value;						  // Set EEPROM data register.
+			EEDR = value;													// Set EEPROM data register.
 			EECR = ((1 << EEMPE) | (1 << EEPM1)); // Write-only mode.
-			EECR |= (1 << EEPE);				  // Start Write-only operation.
+			EECR |= (1 << EEPE);									// Start Write-only operation.
 		}
 	}
 
@@ -1062,12 +1055,13 @@ static volatile const uint8_t *spi_bulk_data_ptr_tx = 0;
 static uint8_t *spi_bulk_data_ptr_rx = 0;
 static uint16_t spi_bulk_data_len = 0;
 
-ISR(SPI_STC_vect, ISR_NOBLOCK) {
+ISR(SPI_STC_vect, ISR_NOBLOCK)
+{
 	// Read received byte
-	if(spi_bulk_data_ptr_rx != 0)
+	if (spi_bulk_data_ptr_rx != 0)
 		*spi_bulk_data_ptr_rx++ = SPDR;
 
-	if(--spi_bulk_data_len)
+	if (--spi_bulk_data_len)
 	{
 		// Transmit the next byte
 		SPDR = *spi_bulk_data_ptr_tx++;
@@ -1079,8 +1073,9 @@ ISR(SPI_STC_vect, ISR_NOBLOCK) {
 	}
 }
 
-bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t datalen) {
-	if(spi_bulk_data_ptr_tx == 0)
+bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t datalen)
+{
+	if (spi_bulk_data_ptr_tx == 0)
 	{
 		spi_bulk_data_ptr_tx = tx_data;
 		spi_bulk_data_ptr_rx = rx_data;
@@ -1090,7 +1085,7 @@ bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t da
 		SPDR = *spi_bulk_data_ptr_tx++;
 	}
 
-	if(!(SPCR & (1 << SPIE)))
+	if (!(SPCR & (1 << SPIE)))
 	{
 		spi_bulk_data_ptr_tx = 0;
 		spi_bulk_data_ptr_rx = 0;

@@ -222,12 +222,10 @@ void mcu_com_isr()
 #if !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
 			if (mcu_com_rx_cb(c))
 			{
-				if (BUFFER_FULL(uart_rx))
+				if (!BUFFER_TRY_ENQUEUE(uart_rx, &c))
 				{
 					STREAM_OVF(c);
 				}
-
-				BUFFER_ENQUEUE(uart_rx, &c);
 			}
 #else
 			mcu_uart_rx_cb(c);
@@ -236,14 +234,14 @@ void mcu_com_isr()
 		if (COM_UART->USART.INTFLAG.bit.DRE && COM_UART->USART.INTENSET.bit.DRE)
 		{
 			mcu_enable_global_isr();
-			if (BUFFER_EMPTY(uart_tx))
+			uint8_t c;
+
+			if (!BUFFER_TRY_DEQUEUE(uart_tx, &c))
 			{
 				COM_UART->USART.INTENCLR.reg = SERCOM_USART_INTENCLR_DRE;
 				return;
 			}
 
-			uint8_t c;
-			BUFFER_DEQUEUE(uart_tx, &c);
 			COM_OUTREG = c;
 		}
 	}
@@ -268,22 +266,19 @@ void mcu_com2_isr()
 #if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
 			if (mcu_com_rx_cb(c))
 			{
-				if (BUFFER_FULL(uart2_rx))
+				if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
 				{
 					STREAM_OVF(c);
 				}
-
-				BUFFER_ENQUEUE(uart2_rx, &c);
 			}
 #else
 			mcu_uart2_rx_cb(c);
 #ifndef UART2_DISABLE_BUFFER
-			if (BUFFER_FULL(uart2_rx))
+			if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
 			{
 				STREAM_OVF(c);
 			}
 
-			BUFFER_ENQUEUE(uart2_rx, &c);
 #endif
 #endif
 		}
@@ -291,13 +286,14 @@ void mcu_com2_isr()
 		{
 			// keeps sending chars until null is found
 			mcu_enable_global_isr();
-			if (BUFFER_EMPTY(uart2_tx))
+			uint8_t c;
+
+			if (!BUFFER_TRY_DEQUEUE(uart2_tx, &c))
 			{
 				COM2_UART->USART.INTENCLR.reg = SERCOM_USART_INTENCLR_DRE;
 				return;
 			}
-			uint8_t c;
-			BUFFER_DEQUEUE(uart2_tx, &c);
+
 			COM2_OUTREG = c;
 		}
 	}
@@ -618,8 +614,8 @@ void mcu_rtc_init()
 }
 
 #ifdef MCU_HAS_DMA
-static DmacDescriptor mcu_dma_descriptor_sram[DMA_CHANNEL_COUNT] __attribute__ ((aligned (16)));
-static DmacDescriptor mcu_dma_write_back_sram[DMA_CHANNEL_COUNT] __attribute__ ((aligned (16)));
+static DmacDescriptor mcu_dma_descriptor_sram[DMA_CHANNEL_COUNT] __attribute__((aligned(16)));
+static DmacDescriptor mcu_dma_write_back_sram[DMA_CHANNEL_COUNT] __attribute__((aligned(16)));
 
 void mcu_dma_config(void)
 {
@@ -859,7 +855,7 @@ DECL_BUFFER(uint8_t, usb_rx, RX_BUFFER_SIZE);
 uint8_t mcu_usb_getc(void)
 {
 	uint8_t c = 0;
-	BUFFER_DEQUEUE(usb_rx, &c);
+	BUFFER_TRY_DEQUEUE(usb_rx, &c);
 	return c;
 }
 
@@ -900,7 +896,7 @@ void mcu_usb_flush(void)
 uint8_t mcu_uart_getc(void)
 {
 	uint8_t c = 0;
-	BUFFER_DEQUEUE(uart_rx, &c);
+	BUFFER_TRY_DEQUEUE(uart_rx, &c);
 	return c;
 }
 
@@ -916,11 +912,10 @@ void mcu_uart_clear(void)
 
 void mcu_uart_putc(uint8_t c)
 {
-	while (BUFFER_FULL(uart_tx))
+	while (!BUFFER_TRY_ENQUEUE(uart_tx, &c))
 	{
 		mcu_uart_flush();
 	}
-	BUFFER_ENQUEUE(uart_tx, &c);
 }
 
 void mcu_uart_flush(void)
@@ -939,7 +934,7 @@ void mcu_uart_flush(void)
 uint8_t mcu_uart2_getc(void)
 {
 	uint8_t c = 0;
-	BUFFER_DEQUEUE(uart2_rx, &c);
+	BUFFER_TRY_DEQUEUE(uart2_rx, &c);
 	return c;
 }
 
@@ -955,11 +950,10 @@ void mcu_uart2_clear(void)
 
 void mcu_uart2_putc(uint8_t c)
 {
-	while (BUFFER_FULL(uart2_tx))
+	while (!BUFFER_TRY_ENQUEUE(uart2_tx, &c))
 	{
 		mcu_uart2_flush();
 	}
-	BUFFER_ENQUEUE(uart2_tx, &c);
 }
 
 void mcu_uart_flush(void)
@@ -1168,12 +1162,10 @@ void mcu_dotasks(void)
 #ifndef DETACH_USB_FROM_MAIN_PROTOCOL
 		if (mcu_com_rx_cb(c))
 		{
-			if (BUFFER_FULL(usb_rx))
+			if (!BUFFER_TRY_ENQUEUE(usb_rx, &c))
 			{
 				STREAM_OVF(c);
 			}
-
-			BUFFER_ENQUEUE(usb_rx, &c);
 		}
 #else
 		mcu_usb_rx_cb(c);
@@ -1264,7 +1256,7 @@ uint8_t mcu_eeprom_getc(uint16_t address)
 {
 	if (NVM_STORAGE_SIZE <= address)
 	{
-		DBGMSG("EEPROM invalid address @ %u",address);
+		DBGMSG("EEPROM invalid address @ %u", address);
 		return 0;
 	}
 	address &= (NVM_EEPROM_SIZE - 1); // keep within 1Kb address range
@@ -1284,7 +1276,7 @@ void mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
 	if (NVM_STORAGE_SIZE <= address)
 	{
-		DBGMSG("EEPROM invalid address @ %u",address);
+		DBGMSG("EEPROM invalid address @ %u", address);
 	}
 	address &= (NVM_EEPROM_SIZE - 1);
 
@@ -1399,7 +1391,7 @@ void mcu_spi_config(spi_config_t config, uint32_t frequency)
 	SPICOM->SPI.CTRLA.bit.ENABLE = 0;
 	while (SPICOM->SPI.SYNCBUSY.bit.ENABLE)
 		;
-	SPICOM->SPI.CTRLA.bit.CPHA = config.mode & 0x01;				// MODE
+	SPICOM->SPI.CTRLA.bit.CPHA = config.mode & 0x01; // MODE
 
 	SPICOM->SPI.CTRLA.bit.CPOL = (config.mode >> 1) & 0x01; // MODE
 	SPICOM->SPI.BAUD.reg = frequency;
@@ -1566,12 +1558,12 @@ bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t da
 			}
 			// Check if reception finished
 			DMAC->CHID.reg = SPI_DMA_RX_CHANNEL;
-			
+
 			if (DMAC->CHCTRLA.bit.ENABLE)
 			{
 				return true;
 			}
-			
+
 			// All transfers finished
 			spi_port_state = SPI_IDLE;
 			return false;
@@ -1634,7 +1626,7 @@ void mcu_spi2_config(spi_config_t config, uint32_t frequency)
 	SPI2COM->SPI.CTRLA.bit.ENABLE = 0;
 	while (SPI2COM->SPI.SYNCBUSY.bit.ENABLE)
 		;
-	SPI2COM->SPI.CTRLA.bit.CPHA = config.mode & 0x01;				// MODE
+	SPI2COM->SPI.CTRLA.bit.CPHA = config.mode & 0x01; // MODE
 
 	SPI2COM->SPI.CTRLA.bit.CPOL = (config.mode >> 1) & 0x01; // MODE
 	SPI2COM->SPI.BAUD.reg = frequency;
@@ -1801,12 +1793,12 @@ bool mcu_spi2_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t d
 			}
 			// Check if reception finished
 			DMAC->CHID.reg = SPI2_DMA_RX_CHANNEL;
-			
+
 			if (DMAC->CHCTRLA.bit.ENABLE)
 			{
 				return true;
 			}
-			
+
 			// All transfers finished
 			spi2_port_state = SPI_IDLE;
 			return false;
