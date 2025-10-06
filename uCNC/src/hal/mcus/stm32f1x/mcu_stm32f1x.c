@@ -898,7 +898,7 @@ uint32_t mcu_micros()
 void mcu_rtc_init()
 {
 	SysTick->CTRL = 0;
-	SysTick->LOAD = ((F_CPU / 1000) - 1);
+	SysTick->LOAD = ((SystemCoreClock / 1000) - 1);
 	SysTick->VAL = 0;
 	NVIC_SetPriority(SysTick_IRQn, 10);
 	SysTick->CTRL = 7; // Start SysTick (ABH)

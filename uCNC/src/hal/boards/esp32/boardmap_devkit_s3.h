@@ -32,6 +32,10 @@ extern "C"
 #define BOARD_NAME "CORE ESP32 S3"
 #endif
 
+#ifndef F_CPU
+#define F_CPU 240000000UL
+#endif
+
 // // Setup step pins
 #define STEP3_BIT 18 // assigns STEP3 pin
 #define STEP2_BIT 17 // assigns STEP2 pin

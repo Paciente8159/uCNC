@@ -77,15 +77,27 @@ extern "C"
 #define __ATOMIC_FORCEON__
 
 // needed by software delays
-#ifndef MCU_CLOCKS_PER_CYCLE
-#define MCU_CLOCKS_PER_CYCLE 1
-#endif
 #ifndef MCU_CYCLES_PER_LOOP
-#define MCU_CYCLES_PER_LOOP 1
+#define MCU_CYCLES_PER_LOOP 6
 #endif
-#ifndef MCU_CYCLES_PER_LOOP_OVERHEAD
-#define MCU_CYCLES_PER_LOOP_OVERHEAD 0
+#ifndef MCU_CYCLES_LOOP_OVERHEAD
+#define MCU_CYCLES_LOOP_OVERHEAD 3
 #endif
+
+#define mcu_delay_loop(X)                                                         \
+	do                                                                              \
+	{                                                                               \
+		register unsigned start, now, target = (((X) - 1) * MCU_CYCLES_PER_LOOP + 2); \
+		asm volatile("" ::: "memory");                                                \
+		asm volatile(                                                                 \
+				"rsr.ccount %0\n"					/* 2 cycles: start = ccount */                  \
+				"1:  rsr.ccount %1\n"			/* 2 cycles */                                  \
+				"  sub      %1, %1, %0\n" /* 1 cycle  : tmp = now-start */                \
+				"  bltu     %1, %2, 1b\n" /* 3 taken / 1 not taken */                     \
+				"  nop\n"                                                                 \
+				: "=&a"(start), "=&a"(now)                                                \
+				: "a"(target));                                                           \
+	} while (0)
 
 #ifndef MCU_CALLBACK
 #define MCU_CALLBACK IRAM_ATTR
@@ -4598,32 +4610,32 @@ extern "C"
 // #define mcu_get_input(X) gpio_get_level((gpio_num_t)__indirect__(X, BIT))
 #define mcu_get_input(X) ((__indirect__(X, BIT) & 0x20) ? (GPIO.in1.val && (1UL << (__indirect__(X, BIT) & 0x1f))) : (GPIO.in && (1UL << (__indirect__(X, BIT) & 0x1f))))
 #define mcu_get_output(X) ((__indirect__(X, BIT) & 0x20) ? (GPIO.out1.val && (1UL << (__indirect__(X, BIT) & 0x1f))) : (GPIO.out && (1UL << (__indirect__(X, BIT) & 0x1f))))
-#define mcu_set_output(X)                                      \
-	if (__indirect__(X, BIT) & 0x20)                                                \
-	{                                                            \
+#define mcu_set_output(X)                                        \
+	if (__indirect__(X, BIT) & 0x20)                               \
+	{                                                              \
 		GPIO.out1_w1ts.val = (1UL << (__indirect__(X, BIT) & 0x1f)); \
-	}                                                            \
-	else                                                         \
-	{                                                            \
-		GPIO.out_w1ts = (1UL << (__indirect__(X, BIT) & 0x1f));  \
+	}                                                              \
+	else                                                           \
+	{                                                              \
+		GPIO.out_w1ts = (1UL << (__indirect__(X, BIT) & 0x1f));      \
 	}
-#define mcu_clear_output(X)                                    \
-	if (__indirect__(X, BIT) & 0x20)                                                \
-	{                                                            \
+#define mcu_clear_output(X)                                      \
+	if (__indirect__(X, BIT) & 0x20)                               \
+	{                                                              \
 		GPIO.out1_w1tc.val = (1UL << (__indirect__(X, BIT) & 0x1f)); \
-	}                                                            \
-	else                                                         \
-	{                                                            \
-		GPIO.out_w1tc = (1UL << (__indirect__(X, BIT) & 0x1f));  \
+	}                                                              \
+	else                                                           \
+	{                                                              \
+		GPIO.out_w1tc = (1UL << (__indirect__(X, BIT) & 0x1f));      \
 	}
-#define mcu_toggle_output(X)                               \
-	if (__indirect__(X, BIT) & 0x20)                                            \
-	{                                                        \
+#define mcu_toggle_output(X)                                 \
+	if (__indirect__(X, BIT) & 0x20)                           \
+	{                                                          \
 		GPIO.out1.val ^= (1UL << (__indirect__(X, BIT) & 0x1f)); \
-	}                                                        \
-	else                                                     \
-	{                                                        \
-		GPIO.out ^= (1UL << (__indirect__(X, BIT) & 0x1f));  \
+	}                                                          \
+	else                                                       \
+	{                                                          \
+		GPIO.out ^= (1UL << (__indirect__(X, BIT) & 0x1f));      \
 	}
 
 #define mcu_config_pwm(X, Y)                          \
@@ -4655,14 +4667,6 @@ extern "C"
 
 	extern void esp32_delay_us(uint16_t delay);
 #define mcu_delay_us(X) esp32_delay_us(X)
-
-#include "xtensa/core-macros.h"
-#define mcu_delay_cycles(X)                          \
-	{                                                  \
-		uint32_t x = XTHAL_GET_CCOUNT();                 \
-		while (X > (((uint32_t)XTHAL_GET_CCOUNT()) - x)) \
-			;                                              \
-	}
 
 #define __FREERTOS_MUTEX_TAKE__(mutex, timeout) ((xPortInIsrContext()) ? (xSemaphoreTakeFromISR(mutex, NULL)) : (xSemaphoreTake(mutex, timeout)))
 #define __FREERTOS_MUTEX_GIVE__(mutex) ((xPortInIsrContext()) ? (xSemaphoreGiveFromISR(mutex, NULL)) : (xSemaphoreGive(mutex)))

@@ -224,7 +224,6 @@ uint8_t cnc_parse_cmd(void)
 
 bool cnc_dotasks(void)
 {
-
 	// run io basic tasks
 	cnc_io_dotasks();
 

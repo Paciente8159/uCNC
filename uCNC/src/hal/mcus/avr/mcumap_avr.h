@@ -79,15 +79,25 @@ extern "C"
 #define __SIZEOF_FLOAT__ 4
 
 // needed by software delays
-#ifndef MCU_CLOCKS_PER_CYCLE
-#define MCU_CLOCKS_PER_CYCLE 1
-#endif
 #ifndef MCU_CYCLES_PER_LOOP
 #define MCU_CYCLES_PER_LOOP 4
 #endif
-#ifndef MCU_CYCLES_PER_LOOP_OVERHEAD
-#define MCU_CYCLES_PER_LOOP_OVERHEAD 11
+#ifndef MCU_CYCLES_LOOP_OVERHEAD
+#define MCU_CYCLES_LOOP_OVERHEAD 2
 #endif
+
+#define mcu_delay_loop(X)                                              \
+	do                                                                   \
+	{                                                                    \
+		/* Entry overhead: 2 ldi = 2 cycles (usually) */                   \
+		uint16_t __count = (X);                                            \
+		__asm__ __volatile__(                                              \
+				"1: sbiw %0, 1\n\t" /* 2 cycles */                             \
+				"brne 1b\n\t"				/* 2 cycles if taken, 1 if not */          \
+				: "+w"(__count));                                              \
+		/* Exit pad: sbiw (2) + brne not taken (1) + nop (1) = 4 cycles */ \
+		mcu_nop();                                                         \
+	} while (0)
 
 // used by the parser
 // this method is faster then normal multiplication (for 32 bit for 16 and 8 bits is slightly lower)
@@ -2386,7 +2396,7 @@ extern "C"
 #define DIO211_INREG (__inreg__(RX2_PORT))
 #define DIO211_DIRREG (__dirreg__(RX2_PORT))
 #endif
-#if(defined(SPI2_CLK_PORT) && defined(SPI2_CLK_BIT))
+#if (defined(SPI2_CLK_PORT) && defined(SPI2_CLK_BIT))
 #define DIO212 212
 #define SPI2_CLK 212
 #define DIO212_PORT (SPI2_CLK_PORT)
@@ -2398,7 +2408,7 @@ extern "C"
 #define DIO212_INREG (__inreg__(SPI2_CLK_PORT))
 #define DIO212_DIRREG (__dirreg__(SPI2_CLK_PORT))
 #endif
-#if(defined(SPI2_SDI_PORT) && defined(SPI2_SDI_BIT))
+#if (defined(SPI2_SDI_PORT) && defined(SPI2_SDI_BIT))
 #define DIO213 213
 #define SPI2_SDI 213
 #define DIO213_PORT (SPI2_SDI_PORT)
@@ -2410,7 +2420,7 @@ extern "C"
 #define DIO213_INREG (__inreg__(SPI2_SDI_PORT))
 #define DIO213_DIRREG (__dirreg__(SPI2_SDI_PORT))
 #endif
-#if(defined(SPI2_SDO_PORT) && defined(SPI2_SDO_BIT))
+#if (defined(SPI2_SDO_PORT) && defined(SPI2_SDO_BIT))
 #define DIO214 214
 #define SPI2_SDO 214
 #define DIO214_PORT (SPI2_SDO_PORT)
@@ -2422,7 +2432,7 @@ extern "C"
 #define DIO214_INREG (__inreg__(SPI2_SDO_PORT))
 #define DIO214_DIRREG (__dirreg__(SPI2_SDO_PORT))
 #endif
-#if(defined(SPI2_CS_PORT) && defined(SPI2_CS_BIT))
+#if (defined(SPI2_CS_PORT) && defined(SPI2_CS_BIT))
 #define DIO215 215
 #define SPI2_CS 215
 #define DIO215_PORT (SPI2_CS_PORT)
@@ -5164,7 +5174,7 @@ extern "C"
 #define US_DELAY_TICK (F_CPU / 3000000UL)
 #define US_DELAY_TICK2 (F_CPU / 4000000UL)
 
-#define mcu_free_micros() ((1000UL * RTC_TCNT) / RTC_OCRA)
+#define mcu_free_micros() ((1000UL * (TCNT0)) / ((OCR0A) + 1))
 
 #ifdef MCU_HAS_ONESHOT_TIMER
 #define mcu_start_timeout() \

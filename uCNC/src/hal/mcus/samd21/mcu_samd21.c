@@ -45,7 +45,7 @@
 volatile bool samd21_global_isr_enabled;
 
 // setups internal timers (all will run @ 8Mhz on GCLK4)
-#define MAIN_CLOCK_DIV ((uint16_t)(F_CPU / F_TIMERS))
+#define MAIN_CLOCK_DIV ((uint16_t)(SystemCoreClock / F_TIMERS))
 static void mcu_setup_clocks(void)
 {
 	PM->CPUSEL.reg = 0;
@@ -336,7 +336,7 @@ void mcu_usart_init(void)
 	while (COM_UART->USART.SYNCBUSY.bit.CTRLB)
 		;
 
-	uint16_t baud = (uint16_t)(65536.0f * (1.0f - (((float)BAUDRATE) / (F_CPU >> 4))));
+	uint16_t baud = (uint16_t)(65536.0f * (1.0f - (((float)BAUDRATE) / (SystemCoreClock >> 4))));
 
 	COM_UART->USART.BAUD.reg = baud;
 	mcu_config_altfunc(TX);
@@ -382,7 +382,7 @@ void mcu_usart_init(void)
 	while (COM2_UART->USART.SYNCBUSY.bit.CTRLB)
 		;
 
-	uint16_t baud2 = (uint16_t)(65536.0f * (1.0f - (((float)BAUDRATE2) / (F_CPU >> 4))));
+	uint16_t baud2 = (uint16_t)(65536.0f * (1.0f - (((float)BAUDRATE2) / (SystemCoreClock >> 4))));
 
 	COM2_UART->USART.BAUD.reg = baud2;
 	mcu_config_altfunc(TX2);
@@ -613,7 +613,7 @@ void sysTickHook(void)
 void mcu_rtc_init()
 {
 	SysTick->CTRL = 0;
-	SysTick->LOAD = ((F_CPU / 1000) - 1);
+	SysTick->LOAD = ((SystemCoreClock / 1000) - 1);
 	SysTick->VAL = 0;
 	NVIC_SetPriority(SysTick_IRQn, 10);
 	SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk | SysTick_CTRL_ENABLE_Msk;
@@ -692,7 +692,7 @@ void mcu_init(void)
 	SPICOM->SPI.CTRLB.bit.RXEN = 1;
 	SPICOM->SPI.CTRLB.bit.CHSIZE = 0;
 
-	SPICOM->SPI.BAUD.reg = ((F_CPU >> 1) / SPI_FREQ) - 1;
+	SPICOM->SPI.BAUD.reg = ((SystemCoreClock >> 1) / SPI_FREQ) - 1;
 
 	mcu_config_altfunc(SPI_CLK);
 	mcu_config_altfunc(SPI_SDO);
@@ -732,7 +732,7 @@ void mcu_init(void)
 	SPI2COM->SPI.CTRLB.bit.RXEN = 1;
 	SPI2COM->SPI.CTRLB.bit.CHSIZE = 0;
 
-	SPI2COM->SPI.BAUD.reg = ((F_CPU >> 1) / SPI2_FREQ) - 1;
+	SPI2COM->SPI.BAUD.reg = ((SystemCoreClock >> 1) / SPI2_FREQ) - 1;
 
 	mcu_config_altfunc(SPI2_CLK);
 	mcu_config_altfunc(SPI2_SDO);
@@ -1398,7 +1398,7 @@ static volatile uint16_t spi_rx_length;
 
 void mcu_spi_config(spi_config_t config, uint32_t frequency)
 {
-	frequency = ((F_CPU >> 1) / frequency) - 1;
+	frequency = ((SystemCoreClock >> 1) / frequency) - 1;
 	SPICOM->SPI.CTRLA.bit.ENABLE = 0;
 	while (SPICOM->SPI.SYNCBUSY.bit.ENABLE)
 		;
@@ -1633,7 +1633,7 @@ static volatile uint16_t spi2_rx_length;
 
 void mcu_spi2_config(spi_config_t config, uint32_t frequency)
 {
-	frequency = ((F_CPU >> 1) / frequency) - 1;
+	frequency = ((SystemCoreClock >> 1) / frequency) - 1;
 	SPI2COM->SPI.CTRLA.bit.ENABLE = 0;
 	while (SPI2COM->SPI.SYNCBUSY.bit.ENABLE)
 		;
@@ -2021,7 +2021,7 @@ void mcu_i2c_config(uint32_t frequency)
 	while (I2CCOM->I2CM.SYNCBUSY.reg)
 		;
 
-	I2CCOM->I2CM.BAUD.reg = F_CPU / (2 * frequency) - 5 - (((F_CPU / 1000000) * 125) / (2 * 1000));
+	I2CCOM->I2CM.BAUD.reg = SystemCoreClock / (2 * frequency) - 5 - (((SystemCoreClock / 1000000) * 125) / (2 * 1000));
 	while (I2CCOM->I2CM.SYNCBUSY.reg)
 		;
 
