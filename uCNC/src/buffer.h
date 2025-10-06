@@ -97,8 +97,14 @@ extern "C"
 #define BUFFER_PEEK(buffer, ptr) buffer_peek(&buffer, ptr)
 #define BUFFER_TRY_DEQUEUE(buffer, ptr) buffer_try_dequeue(&buffer, ptr)
 #define BUFFER_TRY_ENQUEUE(buffer, ptr) buffer_try_enqueue(&buffer, ptr)
-#define BUFFER_DEQUEUE(buffer, ptr) do{}while(!BUFFER_TRY_DEQUEUE(buffer, ptr))
-#define BUFFER_ENQUEUE(buffer, ptr) do{}while(!BUFFER_TRY_ENQUEUE(buffer, ptr))
+#define BUFFER_DEQUEUE(buffer, ptr) \
+	do                                \
+	{                                 \
+	} while (!BUFFER_TRY_DEQUEUE(buffer, ptr))
+#define BUFFER_ENQUEUE(buffer, ptr) \
+	do                                \
+	{                                 \
+	} while (!BUFFER_TRY_ENQUEUE(buffer, ptr))
 #define BUFFER_WRITE(buffer, ptr, len, written) buffer_write(&buffer, ptr, len, &written)
 #define BUFFER_READ(buffer, ptr, len, read) buffer_read(&buffer, ptr, len, &read)
 #define BUFFER_CLEAR(buffer) buffer_clear(&buffer);
@@ -124,51 +130,59 @@ extern "C"
 #define BUFFER_FULL(buffer) (buffer.count == buffer##_size)
 #define BUFFER_PEEK(buffer) (buffer##_bufferdata[buffer.tail])
 
-#define BUFFER_DEQUEUE(buffer, ptr)                                            \
-	{                                                                            \
-		if (!BUFFER_EMPTY(buffer))                                                 \
-		{                                                                          \
-			uint8_t tail;                                                            \
-			ATOMIC_CODEBLOCK                                                         \
-			{                                                                        \
-				tail = buffer.tail;                                                    \
-			}                                                                        \
-			memcpy(ptr, &buffer##_bufferdata[tail], sizeof(buffer##_bufferdata[0])); \
-			tail++;                                                                  \
-			if (tail >= buffer##_size)                                               \
-			{                                                                        \
-				tail = 0;                                                              \
-			}                                                                        \
-			ATOMIC_CODEBLOCK                                                         \
-			{                                                                        \
-				buffer.tail = tail;                                                    \
-				buffer.count--;                                                        \
-			}                                                                        \
-		}                                                                          \
-	}
+#define BUFFER_TRY_DEQUEUE(buffer, ptr)                                      \
+	((!BUFFER_EMPTY(buffer)) ? ({                                              \
+		uint8_t tail;                                                            \
+		ATOMIC_CODEBLOCK                                                         \
+		{                                                                        \
+			tail = buffer.tail;                                                    \
+		}                                                                        \
+		memcpy(ptr, &buffer##_bufferdata[tail], sizeof(buffer##_bufferdata[0])); \
+		tail++;                                                                  \
+		if (tail >= buffer##_size)                                               \
+		{                                                                        \
+			tail = 0;                                                              \
+		}                                                                        \
+		ATOMIC_CODEBLOCK                                                         \
+		{                                                                        \
+			buffer.tail = tail;                                                    \
+			buffer.count--;                                                        \
+		}                                                                        \
+		true;                                                                    \
+	})                                                                         \
+													 : (false))
 
-#define BUFFER_ENQUEUE(buffer, ptr)                                            \
-	{                                                                            \
-		if (!BUFFER_FULL(buffer))                                                  \
-		{                                                                          \
-			uint8_t head;                                                            \
-			ATOMIC_CODEBLOCK                                                         \
-			{                                                                        \
-				head = buffer.head;                                                    \
-			}                                                                        \
-			memcpy(&buffer##_bufferdata[head], ptr, sizeof(buffer##_bufferdata[0])); \
-			head++;                                                                  \
-			if (head >= buffer##_size)                                               \
-			{                                                                        \
-				head = 0;                                                              \
-			}                                                                        \
-			ATOMIC_CODEBLOCK                                                         \
-			{                                                                        \
-				buffer.head = head;                                                    \
-				buffer.count++;                                                        \
-			}                                                                        \
-		}                                                                          \
-	}
+#define BUFFER_DEQUEUE(buffer, ptr) \
+	do                                \
+	{                                 \
+	} while (!BUFFER_TRY_DEQUEUE(buffer, ptr))
+
+#define BUFFER_TRY_ENQUEUE(buffer, ptr)                                      \
+	((!BUFFER_FULL(buffer)) ? ({                                               \
+		uint8_t head;                                                            \
+		ATOMIC_CODEBLOCK                                                         \
+		{                                                                        \
+			head = buffer.head;                                                    \
+		}                                                                        \
+		memcpy(&buffer##_bufferdata[head], ptr, sizeof(buffer##_bufferdata[0])); \
+		head++;                                                                  \
+		if (head >= buffer##_size)                                               \
+		{                                                                        \
+			head = 0;                                                              \
+		}                                                                        \
+		ATOMIC_CODEBLOCK                                                         \
+		{                                                                        \
+			buffer.head = head;                                                    \
+			buffer.count++;                                                        \
+		}                                                                        \
+		true;                                                                    \
+	})                                                                         \
+													: (false))
+
+#define BUFFER_ENQUEUE(buffer, ptr) \
+	do                                \
+	{                                 \
+	} while (!BUFFER_TRY_ENQUEUE(buffer, ptr))
 
 #define BUFFER_WRITE(buffer, ptr, len, written) ({                                             \
 	uint8_t count, head;                                                                         \
