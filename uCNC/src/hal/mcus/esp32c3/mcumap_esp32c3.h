@@ -97,7 +97,6 @@ extern "C"
         : "r"(target)); \
 } while (0)
 
-
 #ifndef MCU_CALLBACK
 #define MCU_CALLBACK IRAM_ATTR
 #endif
