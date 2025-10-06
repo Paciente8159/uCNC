@@ -6,6 +6,16 @@
 
 # Changelog
 
+## [1.13.rc] - 06-10-2025
+
+### Added
+
+- added basic core support for ESP32-S3 and ESP32-C3 MCU's (#881)
+
+### Changed
+
+- cycle loops modified to improve loop precision, based on inline assembly instructions or running free CPU cycle counters. These are CPU cycle loops that are used for very small (usually less then 2 or microseconds) (#884)
+
 ## [1.12.4] - 07-08-2025
 
 ### Added
@@ -1929,6 +1939,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.13.rx]: https://github.com/Paciente8159/uCNC/releases/tag/v1.13.rc
 [1.12.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.12.4
 [1.12.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.12.3
 [1.12.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.12.2
