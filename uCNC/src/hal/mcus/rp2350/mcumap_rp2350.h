@@ -1400,6 +1400,7 @@ extern "C"
 #define mcu_micros() micros()
 #define mcu_free_micros() micros()
 
+#include "cmsis_gcc.h"
 #define mcu_enable_global_isr __enable_irq
 #define mcu_disable_global_isr __disable_irq
 #define mcu_get_global_isr() (__get_PRIMASK() == 0u)
