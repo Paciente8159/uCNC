@@ -688,7 +688,7 @@ void mcu_dotasks(void)
 #ifdef MCU_HAS_WIFI
 	esp8266_wifi_dotasks();
 #endif
-	itp_buffer_dotasks(OUT_IO_BUFFER_MINIMAL);
+	// itp_buffer_dotasks(OUT_IO_BUFFER_MINIMAL);
 }
 
 /**
