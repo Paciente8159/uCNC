@@ -35,15 +35,12 @@ extern "C"
 	 * **/
 
 #ifndef buffer_index_t
-#define buffer_index_t uint8_t
-#ifndef __GNUC__
-#define buf_index_byteoffset 3 /*defined by log2(8 * sizeof(buffer_index_t))*/
-#endif
+#define buffer_index_t uint32_t
 #endif
 
-#ifdef __GNUC__
 #define buf_index_bits (8u * sizeof(buffer_index_t))
 #define buf_index_bitoffset (buf_index_bits - 1u)
+#ifdef __GNUC__
 #define buf_index_byteoffset (__builtin_ctz(buf_index_bits))
 #else
 #if sizeof(buffer_index_t) == 1
@@ -66,7 +63,7 @@ extern "C"
 		volatile buffer_index_t head;
 		volatile buffer_index_t tail;
 		buffer_index_t *flags;
-		uint8_t *data;
+		void *data;
 		const uint8_t size;
 		const uint8_t elem_size;
 	} ring_buffer_t;

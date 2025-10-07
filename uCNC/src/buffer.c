@@ -81,7 +81,8 @@ void buffer_peek(ring_buffer_t *buffer, void *ptr)
 		memset(ptr, 0, buffer->elem_size);
 		return;
 	}
-	memcpy(ptr, &buffer->data[(size_t)tail * (size_t)buffer->elem_size], buffer->elem_size);
+	void *src = buffer->data + ((size_t)tail * (size_t)buffer->elem_size);
+	memcpy(ptr, src, buffer->elem_size);
 }
 
 bool buffer_try_enqueue(ring_buffer_t *buffer, void *ptr)
@@ -104,7 +105,8 @@ bool buffer_try_enqueue(ring_buffer_t *buffer, void *ptr)
 		}
 
 		// Write data into slot
-		memcpy(&buffer->data[(size_t)head * (size_t)buffer->elem_size], ptr, buffer->elem_size);
+		void *dst = buffer->data + ((size_t)head * (size_t)buffer->elem_size);
+		memcpy(dst, ptr, buffer->elem_size);
 
 		// Publish slot as ready
 		set_flag(buffer, head);
@@ -144,7 +146,8 @@ bool buffer_try_dequeue(ring_buffer_t *buffer, void *ptr)
 		}
 
 		// Copy out data
-		memcpy(ptr, &buffer->data[(size_t)tail * (size_t)buffer->elem_size], buffer->elem_size);
+		void *src = buffer->data + ((size_t)tail * (size_t)buffer->elem_size);
+		memcpy(ptr, src, buffer->elem_size);
 
 		// Clear ready flag
 		clear_flag(buffer, tail);
@@ -186,9 +189,8 @@ void buffer_write(ring_buffer_t *buffer, void *ptr, uint8_t len, uint8_t *writte
 			}
 
 			// Write element
-			memcpy(&buffer->data[(size_t)head * (size_t)buffer->elem_size],
-						 &src[(size_t)i * (size_t)buffer->elem_size],
-						 buffer->elem_size);
+			void *dst = buffer->data + ((size_t)head * (size_t)buffer->elem_size);
+			memcpy(dst, &src[(size_t)i * (size_t)buffer->elem_size], buffer->elem_size);
 
 			// Publish slot
 			set_flag(buffer, head);
@@ -244,9 +246,8 @@ void buffer_read(ring_buffer_t *buffer, void *ptr, uint8_t len, uint8_t *read)
 			}
 
 			// Copy element out
-			memcpy(&dst[(size_t)i * (size_t)buffer->elem_size],
-						 &buffer->data[(size_t)tail * (size_t)buffer->elem_size],
-						 buffer->elem_size);
+			void *src = buffer->data + ((size_t)tail * (size_t)buffer->elem_size);
+			memcpy(&dst[(size_t)i * (size_t)buffer->elem_size], src, buffer->elem_size);
 
 			// Clear ready flag
 			clear_flag(buffer, tail);

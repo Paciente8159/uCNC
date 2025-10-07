@@ -3523,7 +3523,6 @@ extern "C"
 	/**
 	 * Atomic operations
 	 */
-#define buffer_index_t uint32_t
 #define ATOMIC_LOAD_N(src, mode) __atomic_load_n((src), mode)
 #define ATOMIC_STORE_N(dst, val, mode) __atomic_store_n((dst), (val), mode)
 #define ATOMIC_COMPARE_EXCHANGE_N(dst, cmp, des, sucmode, failmode) __atomic_compare_exchange_n((dst), (cmp), (des), false, sucmode, failmode)
