@@ -32,9 +32,17 @@
 #define I2S_SAMPLE_RATE (F_STEP_MAX * 2)
 #endif
 
-#define I2S_SAMPLES_PER_BUFFER (I2S_SAMPLE_RATE / 500) // number of samples per 2ms (0.002/1 = 1/500)
-#define I2S_BUFFER_COUNT 5														 // DMA buffer size 5 * 2ms = 10ms stored motions (can be adjusted but may cause to much or too little latency)
-#define I2S_SAMPLE_US (1000000UL / I2S_SAMPLE_RATE)		 // (1s/250KHz = 0.000004s = 4us)
+#define I2S_SAMPLES_PER_BUFFER ((I2S_SAMPLE_RATE / 1000) < 8 ? 8 : (I2S_SAMPLE_RATE / 1000)) // number of samples per 1ms (0.001/1 = 1/1000)
+#define I2S_BUFFER_COUNT 10																																	 // DMA buffer size 10 * 1ms = 10ms stored motions (can be adjusted but may cause to much or too little latency)
+#define I2S_SAMPLE_US (1000000UL / I2S_SAMPLE_RATE)																					 // (1s/250KHz = 0.000004s = 4us)
+
+#if I2S_BUFFER_COUNT < 2 || I2S_BUFFER_COUNT > 128
+#error "I2S_BUFFER_COUNT must be between 2 and 128"
+#endif
+
+#if I2S_SAMPLES_PER_BUFFER < 8
+#error "I2S_SAMPLES_PER_BUFFER must be >= 8"
+#endif
 
 #ifdef ITP_SAMPLE_RATE
 #undef ITP_SAMPLE_RATE
@@ -87,34 +95,15 @@ uint8_t itp_set_step_mode(uint8_t mode)
 }
 
 #if defined(ESP32S3) || defined(ESP32C3)
+static i2s_config_t i2s_config;
+static i2s_pin_config_t pin_config;
+static QueueHandle_t i2s_dma_queue;
+
 static void IRAM_ATTR esp32_i2s_stream_task(void *param)
 {
 	int8_t available_buffers = I2S_BUFFER_COUNT;
 	i2s_event_t evt;
 	portTickType xLastWakeTimeUpload = xTaskGetTickCount();
-
-	i2s_config_t i2s_config = {
-			.mode = I2S_MODE_MASTER | I2S_MODE_TX,
-			.sample_rate = I2S_SAMPLE_RATE,
-			.bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT,
-			.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
-			.communication_format = I2S_COMM_FORMAT_STAND_I2S | I2S_COMM_FORMAT_STAND_MSB,
-			.dma_buf_count = I2S_BUFFER_COUNT,
-			.dma_buf_len = I2S_SAMPLES_PER_BUFFER,
-			.use_apll = false,
-			.intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
-			.tx_desc_auto_clear = true,
-			.fixed_mclk = 0};
-
-	i2s_pin_config_t pin_config = {
-			.bck_io_num = IC74HC595_I2S_CLK,
-			.ws_io_num = IC74HC595_I2S_WS,
-			.data_out_num = IC74HC595_I2S_DATA,
-			.data_in_num = -1};
-
-	QueueHandle_t i2s_dma_queue;
-	i2s_driver_install(IC74HC595_I2S_PORT, &i2s_config, I2S_BUFFER_COUNT, &i2s_dma_queue);
-	i2s_set_pin(IC74HC595_I2S_PORT, &pin_config);
 
 	for (;;)
 	{
@@ -192,7 +181,7 @@ static void IRAM_ATTR esp32_i2s_stream_task(void *param)
 			size_t written = 0;
 			i2s_write(IC74HC595_I2S_PORT, &sample, sizeof(sample), &written, 0);
 
-			ets_delay_us(I2S_SAMPLE_US > 2 ? (I2S_SAMPLE_US - 2) : 0);
+			// ets_delay_us(I2S_SAMPLE_US > 2 ? (I2S_SAMPLE_US - 2) : 0);
 		}
 
 		vTaskDelayUntil(&xLastWakeTimeUpload, (5 / portTICK_RATE_MS));
@@ -348,12 +337,34 @@ static void IRAM_ATTR esp32_i2s_stream_task(void *param)
 
 void mcu_i2s_extender_init(void)
 {
+#if defined(ESP32S3) || defined(ESP32C3)
+	i2s_config.mode = I2S_MODE_MASTER | I2S_MODE_TX;
+	i2s_config.sample_rate = I2S_SAMPLE_RATE;
+	i2s_config.bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT;
+	i2s_config.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT;
+	i2s_config.communication_format = I2S_COMM_FORMAT_STAND_I2S | I2S_COMM_FORMAT_STAND_MSB;
+	i2s_config.dma_buf_count = I2S_BUFFER_COUNT;
+	i2s_config.dma_buf_len = I2S_SAMPLES_PER_BUFFER;
+	i2s_config.use_apll = false;
+	i2s_config.intr_alloc_flags = ESP_INTR_FLAG_LEVEL1;
+	i2s_config.tx_desc_auto_clear = true;
+	i2s_config.fixed_mclk = 0;
+
+	pin_config.bck_io_num = IC74HC595_I2S_CLK;
+	pin_config.ws_io_num = IC74HC595_I2S_WS;
+	pin_config.data_out_num = IC74HC595_I2S_DATA;
+	pin_config.data_in_num = -1;
+
+	i2s_driver_install(IC74HC595_I2S_PORT, &i2s_config, I2S_BUFFER_COUNT, &i2s_dma_queue);
+	i2s_set_pin(IC74HC595_I2S_PORT, &pin_config);
+#endif
+
 #ifdef USE_I2S_REALTIME_MODE_ONLY
 	itp_set_step_mode(ITP_STEP_MODE_REALTIME);
 #else
 	itp_set_step_mode(ITP_STEP_MODE_DEFAULT);
 #endif
-	xTaskCreatePinnedToCore(esp32_i2s_stream_task, "esp32I2Supdate", 4096, NULL, 7, NULL, CONFIG_ARDUINO_RUNNING_CORE);
+	xTaskCreatePinnedToCore(esp32_i2s_stream_task, "esp32I2Supdate", 8192, NULL, 7, NULL, CONFIG_ARDUINO_RUNNING_CORE);
 }
 
 #endif

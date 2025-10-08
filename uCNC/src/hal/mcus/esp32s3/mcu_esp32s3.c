@@ -23,6 +23,7 @@
 #include "esp_task_wdt.h"
 #include "esp_ipc.h"
 #include "driver/timer.h"
+#include "driver/i2s.h"
 #include "soc/i2s_struct.h"
 #include <string.h>
 #include <stdbool.h>
@@ -273,7 +274,10 @@ MCU_CALLBACK void mcu_itp_isr(void *arg)
 	// this prevents multiple
 	if (mode == ITP_STEP_MODE_REALTIME)
 	{
-		I2SREG.conf_single_data = __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
+		uint32_t sample = __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
+
+		size_t written = 0;
+		i2s_write(IC74HC595_I2S_PORT, &sample, sizeof(sample), &written, 0);
 	}
 #endif
 #endif
@@ -372,7 +376,7 @@ void mcu_init(void)
 	timer_start(ITP_TIMER_TG, ITP_TIMER_IDX);
 
 #ifdef IC74HC595_CUSTOM_SHIFT_IO
-	// esp32_i2s_extender_init();
+	mcu_i2s_extender_init();
 #endif
 
 	// initialize rtc timer (currently on core 1)
