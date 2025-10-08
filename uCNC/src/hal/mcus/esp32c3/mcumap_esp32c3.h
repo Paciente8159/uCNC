@@ -3325,6 +3325,7 @@ extern "C"
 #ifndef SPI_FREQ
 #define SPI_FREQ 1000000UL
 #endif
+#define SPI_INSTANCE SPI
 #endif
 
 // SPI2
@@ -3339,6 +3340,7 @@ extern "C"
 #ifndef SPI2_FREQ
 #define SPI2_FREQ 1000000UL
 #endif
+#define SPI2_INSTANCE SPI
 #endif
 
 // Helper macros

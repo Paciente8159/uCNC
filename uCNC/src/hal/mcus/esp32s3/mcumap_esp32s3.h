@@ -4510,6 +4510,7 @@ extern "C"
 #ifndef SPI_FREQ
 #define SPI_FREQ 1000000UL
 #endif
+#define SPI_INSTANCE SPI
 #endif
 
 // SPI2
@@ -4524,6 +4525,7 @@ extern "C"
 #ifndef SPI2_FREQ
 #define SPI2_FREQ 1000000UL
 #endif
+#define SPI2_INSTANCE SPI
 #endif
 
 // Helper macros
@@ -4578,16 +4580,14 @@ extern "C"
 	extern gpio_dev_t GPIO;
 
 #define mcu_config_output(X)                                       \
-	gpio_ll_iomux_in(&GPIO, __indirect__(X, BIT), SIG_GPIO_OUT_IDX); \
-	gpio_ll_iomux_out(&GPIO, __indirect__(X, BIT), 1, false);        \
-	gpio_ll_input_disable(&GPIO, __indirect__(X, BIT));              \
-	gpio_ll_output_enable(&GPIO, __indirect__(X, BIT))
+	gpio_ll_iomux_out(&GPIO, __indirect__(X, BIT), PIN_FUNC_GPIO, false);        \
+	gpio_ll_input_disable(&GPIO, (gpio_num_t)__indirect__(X, BIT));              \
+	gpio_ll_output_enable(&GPIO, (gpio_num_t)__indirect__(X, BIT))
 
 #define mcu_config_input(X)                                        \
-	gpio_ll_iomux_in(&GPIO, __indirect__(X, BIT), SIG_GPIO_OUT_IDX); \
-	gpio_ll_iomux_out(&GPIO, __indirect__(X, BIT), 1, false);        \
-	gpio_ll_output_disable(&GPIO, __indirect__(X, BIT));             \
-	gpio_ll_input_enable(&GPIO, __indirect__(X, BIT))
+	gpio_ll_iomux_out(&GPIO, __indirect__(X, BIT), PIN_FUNC_GPIO, false);        \
+	gpio_ll_output_disable(&GPIO, (gpio_num_t)__indirect__(X, BIT));             \
+	gpio_ll_input_enable(&GPIO, (gpio_num_t)__indirect__(X, BIT))
 
 #define mcu_config_analog(X)                                                      \
 	{                                                                               \
@@ -4597,8 +4597,8 @@ extern "C"
 	}
 
 #define mcu_config_pullup(X)                         \
-	gpio_ll_pulldown_dis(&GPIO, __indirect__(X, BIT)); \
-	gpio_ll_pullup_en(&GPIO, __indirect__(X, BIT))
+	gpio_ll_pulldown_dis(&GPIO, (gpio_num_t)__indirect__(X, BIT)); \
+	gpio_ll_pullup_en(&GPIO, (gpio_num_t)__indirect__(X, BIT))
 
 	extern void mcu_gpio_isr(void *);
 #define mcu_config_input_isr(X)                                                                              \
@@ -4608,8 +4608,8 @@ extern "C"
 	}
 
 // #define mcu_get_input(X) gpio_get_level((gpio_num_t)__indirect__(X, BIT))
-#define mcu_get_input(X) ((__indirect__(X, BIT) & 0x20) ? (GPIO.in1.val && (1UL << (__indirect__(X, BIT) & 0x1f))) : (GPIO.in && (1UL << (__indirect__(X, BIT) & 0x1f))))
-#define mcu_get_output(X) ((__indirect__(X, BIT) & 0x20) ? (GPIO.out1.val && (1UL << (__indirect__(X, BIT) & 0x1f))) : (GPIO.out && (1UL << (__indirect__(X, BIT) & 0x1f))))
+#define mcu_get_input(X) ((__indirect__(X, BIT) & 0x20) ? (GPIO.in1.val & (1UL << (__indirect__(X, BIT) & 0x1f))) : (GPIO.in & (1UL << (__indirect__(X, BIT) & 0x1f))))
+#define mcu_get_output(X) ((__indirect__(X, BIT) & 0x20) ? (GPIO.out1.val & (1UL << (__indirect__(X, BIT) & 0x1f))) : (GPIO.out & (1UL << (__indirect__(X, BIT) & 0x1f))))
 #define mcu_set_output(X)                                        \
 	if (__indirect__(X, BIT) & 0x20)                               \
 	{                                                              \

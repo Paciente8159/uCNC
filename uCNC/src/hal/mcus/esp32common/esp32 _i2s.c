@@ -86,6 +86,121 @@ uint8_t itp_set_step_mode(uint8_t mode)
 	return last_mode;
 }
 
+#if defined(ESP32S3) || defined(ESP32C3)
+static void IRAM_ATTR esp32_i2s_stream_task(void *param)
+{
+	int8_t available_buffers = I2S_BUFFER_COUNT;
+	i2s_event_t evt;
+	portTickType xLastWakeTimeUpload = xTaskGetTickCount();
+
+	i2s_config_t i2s_config = {
+			.mode = I2S_MODE_MASTER | I2S_MODE_TX,
+			.sample_rate = I2S_SAMPLE_RATE,
+			.bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT,
+			.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
+			.communication_format = I2S_COMM_FORMAT_STAND_I2S | I2S_COMM_FORMAT_STAND_MSB,
+			.dma_buf_count = I2S_BUFFER_COUNT,
+			.dma_buf_len = I2S_SAMPLES_PER_BUFFER,
+			.use_apll = false,
+			.intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
+			.tx_desc_auto_clear = true,
+			.fixed_mclk = 0};
+
+	i2s_pin_config_t pin_config = {
+			.bck_io_num = IC74HC595_I2S_CLK,
+			.ws_io_num = IC74HC595_I2S_WS,
+			.data_out_num = IC74HC595_I2S_DATA,
+			.data_in_num = -1};
+
+	QueueHandle_t i2s_dma_queue;
+	i2s_driver_install(IC74HC595_I2S_PORT, &i2s_config, I2S_BUFFER_COUNT, &i2s_dma_queue);
+	i2s_set_pin(IC74HC595_I2S_PORT, &pin_config);
+
+	for (;;)
+	{
+		uint32_t mode = I2S_MODE;
+
+		// Track DMA buffer usage
+		if (available_buffers < I2S_BUFFER_COUNT)
+		{
+			while (xQueueReceive(i2s_dma_queue, &evt, 0) == pdPASS)
+			{
+				if (evt.type == I2S_EVENT_TX_DONE)
+				{
+					available_buffers++;
+				}
+			}
+		}
+
+		// Handle sync mode (reset driver cleanly)
+		if (mode & ITP_STEP_MODE_SYNC)
+		{
+			while (available_buffers < I2S_BUFFER_COUNT)
+			{
+				while (xQueueReceive(i2s_dma_queue, &evt, 0) == pdPASS)
+				{
+					if (evt.type == I2S_EVENT_TX_DONE)
+					{
+						available_buffers++;
+					}
+				}
+				vTaskDelayUntil(&xLastWakeTimeUpload, (20 / portTICK_RATE_MS));
+			}
+
+			// Reinstall driver to clear state
+			i2s_driver_uninstall(IC74HC595_I2S_PORT);
+			i2s_driver_install(IC74HC595_I2S_PORT, &i2s_config, I2S_BUFFER_COUNT, &i2s_dma_queue);
+			i2s_set_pin(IC74HC595_I2S_PORT, &pin_config);
+
+			available_buffers = I2S_BUFFER_COUNT;
+			__atomic_fetch_and((uint32_t *)&i2s_mode, ~ITP_STEP_MODE_SYNC, __ATOMIC_RELAXED);
+		}
+
+		// Default buffered mode
+		while ((mode & ~ITP_STEP_MODE_SYNC) == ITP_STEP_MODE_DEFAULT && available_buffers > 0)
+		{
+			uint32_t i2s_dma_buffer[I2S_SAMPLES_PER_BUFFER];
+
+			for (uint32_t t = 0; t < I2S_SAMPLES_PER_BUFFER; t++)
+			{
+#if defined(IC74HC595_HAS_STEPS) || defined(IC74HC595_HAS_DIRS)
+				mcu_gen_step();
+#endif
+#if defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS)
+				mcu_gen_pwm_and_servo();
+#endif
+#if defined(MCU_HAS_ONESHOT_TIMER) && defined(ENABLE_RT_SYNC_MOTIONS)
+				mcu_gen_oneshot();
+#endif
+
+				i2s_dma_buffer[t] = __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
+			}
+
+			size_t written = 0;
+			i2s_write(IC74HC595_I2S_PORT, i2s_dma_buffer,
+								I2S_SAMPLES_PER_BUFFER * sizeof(uint32_t),
+								&written, portMAX_DELAY);
+
+			available_buffers--;
+		}
+
+		// Realtime mode fallback: just stream one sample at a time
+		if ((mode & ~ITP_STEP_MODE_SYNC) == ITP_STEP_MODE_REALTIME)
+		{
+			uint32_t sample = __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
+
+			size_t written = 0;
+			i2s_write(IC74HC595_I2S_PORT, &sample, sizeof(sample), &written, 0);
+
+			ets_delay_us(I2S_SAMPLE_US > 2 ? (I2S_SAMPLE_US - 2) : 0);
+		}
+
+		vTaskDelayUntil(&xLastWakeTimeUpload, (5 / portTICK_RATE_MS));
+	}
+}
+
+#else
+
 static void IRAM_ATTR esp32_i2s_stream_task(void *param)
 {
 	int8_t available_buffers = I2S_BUFFER_COUNT;
@@ -229,6 +344,7 @@ static void IRAM_ATTR esp32_i2s_stream_task(void *param)
 		vTaskDelayUntil(&xLastWakeTimeUpload, (5 / portTICK_RATE_MS));
 	}
 }
+#endif
 
 void mcu_i2s_extender_init(void)
 {

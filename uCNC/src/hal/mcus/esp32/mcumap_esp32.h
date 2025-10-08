@@ -3328,6 +3328,11 @@ extern "C"
 #ifndef SPI_FREQ
 #define SPI_FREQ 1000000UL
 #endif
+#if (SPI_CLK_BIT == 14 || SPI_CLK_BIT == 25)
+#define SPI_INSTANCE HSPI
+#else
+#define SPI_INSTANCE VSPI
+#endif
 #endif
 
 // SPI2
@@ -3341,6 +3346,11 @@ extern "C"
 #endif
 #ifndef SPI2_FREQ
 #define SPI2_FREQ 1000000UL
+#endif
+#if (SPI2_CLK_BIT == 14 || SPI2_CLK_BIT == 25)
+#define SPI2_INSTANCE HSPI
+#else
+#define SPI2_INSTANCE VSPI
 #endif
 #endif
 
