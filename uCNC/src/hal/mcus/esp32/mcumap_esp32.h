@@ -3391,7 +3391,7 @@ extern "C"
 #undef IC74HC595_COUNT
 #endif
 #define IC74HC595_COUNT 4
-#define I2SREG __helper__(I2S, IC74HC595_I2S_PORT, )
+#define I2S_PORT IC74HC595_I2S_PORT
 
 	// custom pin operations for 74HS595
 	extern volatile uint32_t ic74hc595_i2s_pins;
