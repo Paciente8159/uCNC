@@ -26,6 +26,9 @@
 #include "soc/i2s_reg.h"
 #include "driver/i2s.h"
 #include "../esp32common/esp32_common.h"
+#include "hal/i2s_hal.h"
+#include "hal/i2s_ll.h"
+#include <soc/i2s_struct.h>
 
 #ifdef IC74HC595_CUSTOM_SHIFT_IO
 #if IC74HC595_COUNT != 4
@@ -37,9 +40,6 @@
 #endif
 #ifndef I2S_PERIF
 #define I2S_PERIF __helper__(PERIPH_I2S, I2S_PORT, _MODULE)
-#endif
-#ifndef I2S_INTR_SRC
-#define I2S_INTR_SRC __helper__(ETS_I2S, I2S_PORT, _INTR_SOURCE)
 #endif
 
 #ifndef I2S_SAMPLE_RATE
@@ -92,6 +92,7 @@ static void IRAM_ATTR i2s_fifo_fill_words(void)
 		// Check FIFO full flag
 		if (I2S_REG.int_st.tx_wfull)
 		{
+			I2S_REG.int_clr.tx_wfull = 1;
 			break; // stop writing to prevent overflow
 		}
 #if defined(IC74HC595_HAS_STEPS) || defined(IC74HC595_HAS_DIRS)
@@ -103,8 +104,8 @@ static void IRAM_ATTR i2s_fifo_fill_words(void)
 #if defined(MCU_HAS_ONESHOT_TIMER) && defined(ENABLE_RT_SYNC_MOTIONS)
 		mcu_gen_oneshot();
 #endif
-		// WRITE_PERI_REG(I2S_FIFO_WR_REG(I2S_PORT), __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED));
-		WRITE_PERI_REG(I2S_OUTFIFO_PUSH_REG(I2S_PORT), __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED));
+		// WRITE_PERI_REG(I2S_FIFO_WR_REG(I2S_PORT), 0xaaaaaaaa);
+		I2S_REG.fifo_wr = 0xaaaaaaaa;//__atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
 	}
 }
 
@@ -117,15 +118,14 @@ static void IRAM_ATTR i2s_fifo_fill_words(void)
  */
 static void IRAM_ATTR i2s_tx_isr(void *arg)
 {
-	uint32_t st = I2S_REG.int_st.val;
+	uint32_t st = i2s_ll_get_intr_status(&I2S_REG);
 
 	// Default mode: periodic refill
 	if ((i2s_mode & ~ITP_STEP_MODE_SYNC) == ITP_STEP_MODE_DEFAULT)
 	{
-		if (st & I2S_TX_HUNG_INT_ST)
+		if (st & I2S_TX_PUT_DATA_INT_ST)
 		{
 			i2s_fifo_fill_words();
-			I2S_REG.int_clr.tx_hung = 1;
 		}
 	}
 
@@ -134,68 +134,72 @@ static void IRAM_ATTR i2s_tx_isr(void *arg)
 	{
 		if (st & I2S_TX_REMPTY_INT_ST)
 		{
-			I2S_REG.int_clr.tx_rempty = 1;
 			I2S_REG.conf_single_data = __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
-			I2S_REG.int_ena.tx_rempty = 0; // stop further empty interrupts
+			i2s_ll_clear_intr_status(&I2S_REG, I2S_PUT_DATA_INT_CLR);
 		}
 	}
+
+	i2s_ll_clear_intr_status(&I2S_REG, I2S_PUT_DATA_INT_CLR);
 }
 
 static intr_handle_t i2s_intr_handle = NULL;
+#ifndef I2S_INTR_SRC
+#define I2S_INTR_SRC __helper__(ETS_I2S, I2S_PORT, _INTR_SOURCE)
+#endif
 
 static void attach_i2s_isr(void)
 {
 	if (!i2s_intr_handle)
 	{
-		esp_intr_alloc(I2S_INTR_SRC, ESP_INTR_FLAG_IRAM, i2s_tx_isr, NULL, &i2s_intr_handle);
+		I2S_REG.fifo_conf.tx_data_num = I2S_REFILL_CHUNK_WORDS;
+		esp_intr_alloc_intrstatus(I2S_INTR_SRC,
+															ESP_INTR_FLAG_IRAM | ESP_INTR_FLAG_LEVEL3,
+															(uint32_t)i2s_ll_get_intr_status_reg(&I2S_REG),
+															I2S_PUT_DATA_INT_CLR_M,
+															&i2s_tx_isr,
+															NULL,
+															&i2s_intr_handle);
 	}
 }
 
 static void IRAM_ATTR i2s_tx_base_config(void)
 {
-	I2S_REG.conf.tx_start = 0;
-	I2S_REG.conf.tx_reset = 1;
-	I2S_REG.conf.tx_reset = 0;
-	I2S_REG.conf.tx_fifo_reset = 1;
-	I2S_REG.conf.tx_fifo_reset = 0;
+	// Stop and reset
+	i2s_ll_tx_stop_link(&I2S_REG);
+	i2s_ll_tx_stop(&I2S_REG);
+	i2s_ll_tx_reset(&I2S_REG);
+	i2s_ll_rx_reset(&I2S_REG);
+	i2s_ll_tx_reset_fifo(&I2S_REG);
+	i2s_ll_rx_reset_fifo(&I2S_REG);
 
-	// Disable DMA
-	I2S_REG.out_link.stop = 1;
-	I2S_REG.fifo_conf.dscr_en = 0;
+	// Disable DMA, PDM, camera/LCD
+	i2s_ll_enable_dma(&I2S_REG, false);
+#ifdef SOC_I2S_SUPPORTS_PDM_TX
+	i2s_ll_tx_enable_pdm(&I2S_REG, false);
+#endif
+	i2s_ll_enable_lcd(&I2S_REG, false);
+	i2s_ll_enable_camera(&I2S_REG, false);
 
-	// Mono 32-bit stream
-	I2S_REG.fifo_conf.tx_fifo_mod = 3;
-	I2S_REG.conf_chan.tx_chan_mod = 3;
-	I2S_REG.conf.tx_msb_shift = 0;
-	I2S_REG.conf.rx_msb_shift = 0;
-	I2S_REG.conf1.tx_stop_en = 0;
+	// 32-bit frames, mono-like usage, MSB-right placement compatible with 74HC595 stream
+	i2s_ll_tx_set_chan_mod(&I2S_REG, I2S_CHANNEL_FMT_RIGHT_LEFT);
+	i2s_ll_tx_set_sample_bit(&I2S_REG, I2S_BITS_PER_SAMPLE_32BIT, I2S_BITS_PER_SAMPLE_32BIT);
+	i2s_ll_tx_enable_mono_mode(&I2S_REG, true);
+	i2s_ll_tx_enable_msb_right(&I2S_REG, true);
+	i2s_ll_tx_enable_right_first(&I2S_REG, false);
+	i2s_ll_tx_force_enable_fifo_mod(&I2S_REG, true);
+	i2s_ll_tx_set_slave_mod(&I2S_REG, false);
+	i2s_ll_tx_set_ws_width(&I2S_REG, 0);
+	i2s_ll_tx_enable_msb_shift(&I2S_REG, false);
+#ifdef CONFIG_IDF_TARGET_ESP32
+	i2s_ll_tx_clk_set_src(&I2S_REG, I2S_CLK_D2CLK); // 80 MHz typical
+#endif
 
-	// Clear interrupts
-	I2S_REG.int_ena.val = 0;
-	I2S_REG.int_clr.val = 0xFFFFFFFF;
+	// Frame rate selection
+	i2s_ll_mclk_div_t div = {5, 0, 0}; // default 500 kHz @ 32-bit when bck_div=2
+	i2s_ll_tx_set_clk(&I2S_REG, &div);
+	i2s_ll_tx_set_bck_div_num(&I2S_REG, 2);
 
-	uint32_t f_apb = getApbFrequency(); // usually 80 MHz on ESP32 classic
-	uint32_t target_ws = I2S_SAMPLE_RATE;
-
-	// Fixed 32-bit mono
-	uint32_t bits = 32;
-
-	// Compute combined divider
-	uint32_t div_total = f_apb / (target_ws * bits);
-
-	// Split into clkm_div and bck_div
-	uint32_t clkm_div = div_total; // simplest: put all into clkm_div
-	uint32_t bck_div = 1;
-
-	// Program registers
-	I2S_REG.clkm_conf.clka_en = 0;
-	I2S_REG.clkm_conf.clk_en = 1;
-	I2S_REG.clkm_conf.clkm_div_a = 1;
-	I2S_REG.clkm_conf.clkm_div_b = 0;
-	I2S_REG.clkm_conf.clkm_div_num = clkm_div;
-
-	I2S_REG.sample_rate_conf.tx_bck_div_num = bck_div;
-	I2S_REG.sample_rate_conf.tx_bits_mod = bits - 1; // 31 for 32-bit
+	attach_i2s_isr();
 }
 
 /**
@@ -203,26 +207,8 @@ static void IRAM_ATTR i2s_tx_base_config(void)
  */
 static void IRAM_ATTR i2s_enable_periodic_isr(void)
 {
-	float f_isr = (float)I2S_SAMPLE_RATE / (float)I2S_REFILL_CHUNK_WORDS;
-	uint32_t best_shift = 0, best_timeout = 1;
-	for (uint32_t shift = 0; shift <= 7; ++shift)
-	{
-		float tickrate = 88000.0f / (float)(1u << shift);
-		uint32_t timeout = (uint32_t)((tickrate / f_isr) + 0.5f);
-		if (timeout >= 1 && timeout <= 255)
-		{
-			best_shift = shift;
-			best_timeout = timeout;
-			break;
-		}
-	}
-	I2S_REG.lc_hung_conf.fifo_timeout_shift = best_shift;
-	I2S_REG.lc_hung_conf.fifo_timeout = best_timeout;
-	I2S_REG.lc_hung_conf.fifo_timeout_ena = 1;
-	I2S_REG.int_clr.tx_hung = 1;
-	I2S_REG.int_ena.tx_hung = 1;
-
-	attach_i2s_isr();
+	i2s_ll_enable_intr(&I2S_REG, I2S_TX_PUT_DATA_INT_ENA, 1);
+	i2s_ll_clear_intr_status(&I2S_REG, I2S_PUT_DATA_INT_CLR);
 }
 
 /**
@@ -240,7 +226,7 @@ static void IRAM_ATTR i2s_enter_default_mode_glitch_free(void)
 	i2s_enable_periodic_isr();
 
 	// Start TX
-	I2S_REG.conf.tx_start = 1;
+	i2s_ll_tx_start(&I2S_REG);
 }
 
 /**
@@ -249,16 +235,10 @@ static void IRAM_ATTR i2s_enter_default_mode_glitch_free(void)
 static void IRAM_ATTR i2s_enter_realtime_mode_glitch_free(void)
 {
 	// Stop periodic refills
-	I2S_REG.int_ena.tx_hung = 0;
-	I2S_REG.int_clr.tx_hung = 1;
-
-	// Arm FIFO empty interrupt for clean handover
-	I2S_REG.int_clr.tx_rempty = 1;
-	I2S_REG.int_ena.tx_rempty = 1;
-	attach_i2s_isr();
+	i2s_ll_clear_intr_status(&I2S_REG, I2S_PUT_DATA_INT_CLR);
 
 	// Ensure TX is running so the FIFO drains
-	I2S_REG.conf.tx_start = 1;
+	i2s_ll_tx_start(&I2S_REG);
 }
 
 /**
@@ -300,19 +280,27 @@ uint8_t itp_set_step_mode(uint8_t mode)
 /**
  * Initializes I2S
  */
+
+#include <soc/gpio_periph.h>
+#include <soc/gpio_sig_map.h>
+#define BCK_OUT_IDX __helper__(I2S, I2S_PORT, O_BCK_OUT_IDX)
+#define WS_OUT_IDX __helper__(I2S, I2S_PORT, O_WS_OUT_IDX)
+#define DATA_OUT_IDX __helper__(I2S, I2S_PORT, O_DATA_OUT0_IDX)
+#define PERIPH_I2S __helper__(PERIPH_I2S, I2S_PORT, _MODULE)
 void mcu_i2s_extender_init(void)
 {
-	periph_module_enable(PERIPH_I2S0_MODULE);
+	periph_module_reset(PERIPH_I2S);
+	periph_module_enable(PERIPH_I2S);
 
 	// Route pins via GPIO matrix
 	gpio_set_direction(IC74HC595_I2S_CLK, GPIO_MODE_OUTPUT);
-	gpio_matrix_out(IC74HC595_I2S_CLK, I2S0O_BCK_OUT_IDX, false, false);
+	gpio_matrix_out(IC74HC595_I2S_CLK, BCK_OUT_IDX, false, false);
 
 	gpio_set_direction(IC74HC595_I2S_WS, GPIO_MODE_OUTPUT);
-	gpio_matrix_out(IC74HC595_I2S_WS, I2S0O_WS_OUT_IDX, false, false);
+	gpio_matrix_out(IC74HC595_I2S_WS, WS_OUT_IDX, false, false);
 
 	gpio_set_direction(IC74HC595_I2S_DATA, GPIO_MODE_OUTPUT);
-	gpio_matrix_out(IC74HC595_I2S_DATA, I2S0O_DATA_OUT0_IDX, false, false);
+	gpio_matrix_out(IC74HC595_I2S_DATA, DATA_OUT_IDX, false, false);
 
 #ifndef USE_I2S_REALTIME_MODE_ONLY
 	itp_set_step_mode(ITP_STEP_MODE_DEFAULT);
