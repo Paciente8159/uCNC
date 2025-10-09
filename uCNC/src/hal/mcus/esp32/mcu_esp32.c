@@ -24,6 +24,7 @@
 #include "esp_ipc.h"
 #include "driver/uart.h"
 #include "driver/timer.h"
+#include "soc/i2s_reg.h"
 #include <string.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -309,7 +310,7 @@ MCU_CALLBACK void mcu_itp_isr(void *arg)
 	// this prevents multiple
 	if (mode == ITP_STEP_MODE_REALTIME)
 	{
-		I2SREG.conf_single_data = __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
+		WRITE_PERI_REG(I2S_CONF_SIGLE_DATA_REG(IC74HC595_I2S_PORT), __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED));
 	}
 #endif
 #endif

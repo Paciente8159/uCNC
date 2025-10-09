@@ -274,10 +274,7 @@ MCU_CALLBACK void mcu_itp_isr(void *arg)
 	// this prevents multiple
 	if (mode == ITP_STEP_MODE_REALTIME)
 	{
-		uint32_t sample = __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
-
-		size_t written = 0;
-		i2s_write(IC74HC595_I2S_PORT, &sample, sizeof(sample), &written, 0);
+		WRITE_PERI_REG(I2S_CONF_SIGLE_DATA_REG(IC74HC595_I2S_PORT), __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED));
 	}
 #endif
 #endif
