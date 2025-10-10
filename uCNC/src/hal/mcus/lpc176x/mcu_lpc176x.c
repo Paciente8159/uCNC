@@ -42,7 +42,6 @@ extern void lpc176x_usb_write(uint8_t *ptr, uint8_t len);
  **/
 // provided by the framework
 extern volatile uint64_t _millis;
-volatile bool lpc_global_isr_enabled;
 
 // define the mcu internal servo variables
 #if SERVOS_MASK > 0
@@ -236,7 +235,7 @@ DECL_BUFFER(uint8_t, uart_rx, RX_BUFFER_SIZE);
 
 void MCU_COM_ISR(void)
 {
-	__ATOMIC_FORCEON__
+	ATOMIC_CODEBLOCK_NR
 	{
 		uint32_t irqstatus = UART_GetIntId(COM_UART);
 		irqstatus &= UART_IIR_INTID_MASK;
@@ -262,12 +261,10 @@ void MCU_COM_ISR(void)
 #if !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
 			if (mcu_com_rx_cb(c))
 			{
-				if (BUFFER_FULL(uart_rx))
+				if (!BUFFER_TRY_ENQUEUE(uart_rx, &c))
 				{
 					STREAM_OVF(c);
 				}
-
-				BUFFER_ENQUEUE(uart_rx, &c);
 			}
 
 #else
@@ -280,13 +277,14 @@ void MCU_COM_ISR(void)
 			// UART_IntConfig(COM_USART, UART_INTCFG_THRE, DISABLE);
 
 			mcu_enable_global_isr();
-			if (BUFFER_EMPTY(uart_tx))
+			uint8_t c = 0;
+
+			if (!BUFFER_TRY_DEQUEUE(uart_tx, &c))
 			{
 				COM_UART->IER &= ~UART_IER_THREINT_EN;
 				return;
 			}
-			uint8_t c = 0;
-			BUFFER_DEQUEUE(uart_tx, &c);
+
 			COM_OUTREG = c;
 		}
 	}
@@ -301,7 +299,7 @@ DECL_BUFFER(uint8_t, uart2_rx, RX_BUFFER_SIZE);
 DECL_BUFFER(uint8_t, uart2_tx, UART2_TX_BUFFER_SIZE);
 void MCU_COM2_ISR(void)
 {
-	__ATOMIC_FORCEON__
+	ATOMIC_CODEBLOCK_NR
 	{
 		uint32_t irqstatus = UART_GetIntId(COM2_UART);
 		irqstatus &= UART_IIR_INTID_MASK;
@@ -327,12 +325,10 @@ void MCU_COM2_ISR(void)
 #if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
 			if (mcu_com_rx_cb(c))
 			{
-				if (BUFFER_FULL(uart2_rx))
+				if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
 				{
 					STREAM_OVF(c);
 				}
-
-				BUFFER_ENQUEUE(uart2_rx, &c);
 			}
 #else
 			mcu_uart2_rx_cb(c);
@@ -350,13 +346,14 @@ void MCU_COM2_ISR(void)
 		if (irqstatus == UART_IIR_INTID_THRE)
 		{
 			mcu_enable_global_isr();
-			if (BUFFER_EMPTY(uart2_tx))
+			uint8_t c = 0;
+
+			if (!BUFFER_TRY_DEQUEUE(uart2_tx, &c))
 			{
 				COM2_UART->IER &= ~UART_IER_THREINT_EN;
 				return;
 			}
-			uint8_t c = 0;
-			BUFFER_DEQUEUE(uart2_tx, &c);
+
 			COM2_OUTREG = c;
 		}
 	}
@@ -477,8 +474,6 @@ void mcu_rtc_init()
 void mcu_init(void)
 {
 	mcu_clocks_init();
-
-	lpc_global_isr_enabled = false;
 
 	mcu_io_init();
 	mcu_usart_init();
@@ -620,7 +615,7 @@ uint8_t mcu_get_servo(uint8_t servo)
 uint8_t mcu_uart_getc(void)
 {
 	uint8_t c = 0;
-	BUFFER_DEQUEUE(uart_rx, &c);
+	BUFFER_TRY_DEQUEUE(uart_rx, &c);
 	return c;
 }
 
@@ -636,23 +631,23 @@ void mcu_uart_clear(void)
 
 void mcu_uart_putc(uint8_t c)
 {
-	while (BUFFER_FULL(uart_tx))
+	while (!BUFFER_TRY_ENQUEUE(uart_tx, &c))
 	{
 		mcu_uart_flush();
 	}
-	BUFFER_ENQUEUE(uart_tx, &c);
 }
 
 void mcu_uart_flush(void)
 {
 	if (!(COM_UART->IER & UART_IER_THREINT_EN)) // not ready start flushing
 	{
-		if (BUFFER_EMPTY(uart_tx))
+		uint8_t c = 0;
+
+		if (!BUFFER_TRY_DEQUEUE(uart_tx, &c))
 		{
 			return;
 		}
-		uint8_t c = 0;
-		BUFFER_DEQUEUE(uart_tx, &c);
+
 		while (!CHECKBIT(COM_UART->LSR, 5))
 			;
 		COM_OUTREG = c;
@@ -668,7 +663,7 @@ void mcu_uart_flush(void)
 uint8_t mcu_uart2_getc(void)
 {
 	uint8_t c = 0;
-	BUFFER_DEQUEUE(uart2_rx, &c);
+	BUFFER_TRY_DEQUEUE(uart2_rx, &c);
 	return c;
 }
 
@@ -684,23 +679,23 @@ void mcu_uart2_clear(void)
 
 void mcu_uart2_putc(uint8_t c)
 {
-	while (BUFFER_FULL(uart2_tx))
+	while (!BUFFER_TRY_ENQUEUE(uart2_tx, &c))
 	{
 		mcu_uart2_flush();
 	}
-	BUFFER_ENQUEUE(uart2_tx, &c);
 }
 
 void mcu_uart2_flush(void)
 {
 	if (!(COM2_UART->IER & UART_IER_THREINT_EN)) // not ready start flushing
 	{
-		if (BUFFER_EMPTY(uart2_tx))
+		uint8_t c = 0;
+
+		if (!BUFFER_TRY_DEQUEUE(uart2_tx, &c))
 		{
 			return;
 		}
-		uint8_t c = 0;
-		BUFFER_DEQUEUE(uart2_tx, &c);
+
 		while (!CHECKBIT(COM2_UART->LSR, 5))
 			;
 		COM2_OUTREG = c;
@@ -892,7 +887,7 @@ void mcu_usb_flush(void)
 	{
 		// use this of char is not 8bits
 		// uint8_t c = 0;
-		// BUFFER_DEQUEUE(usb_tx, &c);
+		// BUFFER_TRY_DEQUEUE(usb_tx, &c);
 		// lpc176x_usb_putc(c);
 
 		// bulk sending
@@ -907,18 +902,17 @@ void mcu_usb_flush(void)
 
 void mcu_usb_putc(uint8_t c)
 {
-	while (BUFFER_FULL(usb_tx))
+	while (!BUFFER_TRY_ENQUEUE(usb_tx, &c))
 	{
 		mcu_usb_flush();
 	}
-	BUFFER_ENQUEUE(usb_tx, &c);
 }
 #endif
 
 uint8_t mcu_usb_getc(void)
 {
 	uint8_t c = 0;
-	BUFFER_DEQUEUE(usb_rx, &c);
+	BUFFER_TRY_DEQUEUE(usb_rx, &c);
 	return (uint8_t)c;
 }
 
@@ -950,12 +944,10 @@ void mcu_dotasks()
 		uint8_t c = lpc176x_usb_getc();
 		if (mcu_com_rx_cb(c))
 		{
-			if (BUFFER_FULL(usb_rx))
+			if (!BUFFER_TRY_ENQUEUE(usb_rx, &c))
 			{
 				STREAM_OVF(c);
 			}
-
-			BUFFER_ENQUEUE(usb_rx, &c);
 		}
 	}
 #else
@@ -970,12 +962,10 @@ void mcu_dotasks()
 #ifndef DETACH_USB_FROM_MAIN_PROTOCOL
 		if (mcu_com_rx_cb(c))
 		{
-			if (BUFFER_FULL(usb_rx))
+			if (!BUFFER_TRY_ENQUEUE(usb_rx, &c))
 			{
 				STREAM_OVF(c);
 			}
-
-			BUFFER_ENQUEUE(usb_rx, &c);
 		}
 #else
 		mcu_usb_rx_cb(c);
