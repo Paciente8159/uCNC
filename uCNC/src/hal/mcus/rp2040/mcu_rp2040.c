@@ -415,7 +415,7 @@ uint8_t mcu_get_pwm(uint8_t pwm)
 
 // Step interpolator
 
-static uint32_t mcu_step_counter;
+// static uint32_t mcu_step_counter;
 static uint32_t mcu_step_reload;
 static void mcu_itp_isr(void)
 {

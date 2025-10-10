@@ -348,7 +348,7 @@
 
 // void esp8266_wifi_on(void)
 // {
-// 	__ATOMIC__
+// 	ATOMIC_CODEBLOCK
 // 	{
 // 		esp8266_wifi_disconnect_all(true);
 // 		esp8266_wifi_set_mode(wifi_settings.wifi_mode);

@@ -376,7 +376,7 @@ extern "C"
 	static Dir current_dir;
 	bool flash_fs_next_file(fs_file_t *fp, fs_file_info_t *finfo)
 	{
-		__ATOMIC__
+		ATOMIC_CODEBLOCK
 		{
 			File f = ((File *)fp->file_ptr)->openNextFile();
 			if (!f || !finfo)
@@ -433,7 +433,7 @@ extern "C"
 				j++;
 			}
 		}
-		__ATOMIC__
+		ATOMIC_CODEBLOCK
 		{
 			fs_file_t *fp = (fs_file_t *)calloc(1, sizeof(fs_file_t));
 			if (fp)

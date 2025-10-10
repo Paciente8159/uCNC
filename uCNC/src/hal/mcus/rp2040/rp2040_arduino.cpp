@@ -845,7 +845,7 @@ void mcu_bt_flush(void)
 	{
 		uint8_t tmp[BLUETOOTH_TX_BUFFER_SIZE + 1];
 		memset(tmp, 0, sizeof(tmp));
-		uint8_t r;
+		uint8_t r = 0;
 
 		BUFFER_READ(bt_tx, tmp, BLUETOOTH_TX_BUFFER_SIZE, r);
 		SerialBT.write(tmp, r);
