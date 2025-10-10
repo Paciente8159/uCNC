@@ -422,7 +422,7 @@ uint8_t mcu_get_pwm(uint8_t pwm)
 #ifndef mcu_set_servo
 void mcu_set_servo(uint8_t servo, uint8_t value)
 {
-	mcu_servo[servo - SERVO_PINS_OFFSET] = (((2000UL * value) >> 8) + 500); // quick aproximation should be divided by 255 but it's a faste quick approach
+	mcu_servos[servo - SERVO_PINS_OFFSET] = (((2000UL * value) >> 8) + 500); // quick aproximation should be divided by 255 but it's a faste quick approach
 }
 #endif
 
@@ -433,7 +433,7 @@ void mcu_set_servo(uint8_t servo, uint8_t value)
 #ifndef mcu_get_servo
 uint8_t mcu_get_servo(uint8_t servo)
 {
-	return (((mcu_servo[servo - SERVO_PINS_OFFSET] - 500) << 8) / 2000);
+	return (((mcu_servos[servo - SERVO_PINS_OFFSET] - 500) << 8) / 2000);
 }
 #endif
 
