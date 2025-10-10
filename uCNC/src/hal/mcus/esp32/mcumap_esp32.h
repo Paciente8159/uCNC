@@ -30,6 +30,7 @@ extern "C"
 #include "hal/gpio_ll.h"
 #include "driver/adc.h"
 #include "driver/ledc.h"
+#include "soc/i2s_struct.h"
 
 /*
 	Generates all the interface definitions.
@@ -71,19 +72,28 @@ extern "C"
 #define rom_memcpy memcpy
 #define rom_read_byte *
 
-#define __ATOMIC__
-#define __ATOMIC_FORCEON__
-
 // needed by software delays
-#ifndef MCU_CLOCKS_PER_CYCLE
-#define MCU_CLOCKS_PER_CYCLE 1
-#endif
 #ifndef MCU_CYCLES_PER_LOOP
-#define MCU_CYCLES_PER_LOOP 1
+#define MCU_CYCLES_PER_LOOP 6
 #endif
-#ifndef MCU_CYCLES_PER_LOOP_OVERHEAD
-#define MCU_CYCLES_PER_LOOP_OVERHEAD 0
+#ifndef MCU_CYCLES_LOOP_OVERHEAD
+#define MCU_CYCLES_LOOP_OVERHEAD 3
 #endif
+
+#define mcu_delay_loop(X)                                                         \
+	do                                                                              \
+	{                                                                               \
+		register unsigned start, now, target = (((X) - 1) * MCU_CYCLES_PER_LOOP + 2); \
+		asm volatile("" ::: "memory");                                                \
+		asm volatile(                                                                 \
+				"rsr.ccount %0\n"					/* 2 cycles: start = ccount */                  \
+				"1:  rsr.ccount %1\n"			/* 2 cycles */                                  \
+				"  sub      %1, %1, %0\n" /* 1 cycle  : tmp = now-start */                \
+				"  bltu     %1, %2, 1b\n" /* 3 taken / 1 not taken */                     \
+				"  nop\n"                                                                 \
+				: "=&a"(start), "=&a"(now)                                                \
+				: "a"(target));                                                           \
+	} while (0)
 
 #ifndef MCU_CALLBACK
 #define MCU_CALLBACK IRAM_ATTR
@@ -3457,13 +3467,14 @@ extern "C"
 	extern void esp32_delay_us(uint16_t delay);
 #define mcu_delay_us(X) esp32_delay_us(X)
 
-#include "xtensa/core-macros.h"
-#define mcu_delay_cycles(X)                          \
-	{                                                  \
-		uint32_t x = XTHAL_GET_CCOUNT();                 \
-		while (X > (((uint32_t)XTHAL_GET_CCOUNT()) - x)) \
-			;                                              \
-	}
+#define mcu_disable_global_isr() \
+	if (!xPortInIsrContext())      \
+	portDISABLE_INTERRUPTS()
+#define mcu_enable_global_isr() \
+	if (!xPortInIsrContext())     \
+	portENABLE_INTERRUPTS()
+	// #define mcu_disable_global_isr()
+	// #define mcu_enable_global_isr()
 
 #define __FREERTOS_MUTEX_TAKE__(mutex, timeout) ((xPortInIsrContext()) ? (xSemaphoreTakeFromISR(mutex, NULL)) : (xSemaphoreTake(mutex, timeout)))
 #define __FREERTOS_MUTEX_GIVE__(mutex) ((xPortInIsrContext()) ? (xSemaphoreGiveFromISR(mutex, NULL)) : (xSemaphoreGive(mutex)))
@@ -3471,7 +3482,7 @@ extern "C"
 #define MUTEX_CLEANUP(name)                       \
 	static void name##_mutex_cleanup(uint8_t *m)    \
 	{                                               \
-		if (*m /*can unlock*/)                        \
+		if (*m && name##_mutex_lock != NULL)          \
 		{                                             \
 			__FREERTOS_MUTEX_GIVE__(name##_mutex_lock); \
 		}                                             \
@@ -3480,24 +3491,50 @@ extern "C"
 	static SemaphoreHandle_t name##_mutex_lock = NULL; \
 	MUTEX_CLEANUP(name)
 
-#define MUTEX_INIT(name)                         \
-	if (name##_mutex_lock == NULL)                 \
-	{                                              \
-		name##_mutex_lock = xSemaphoreCreateMutex(); \
-	}                                              \
+#define MUTEX_INIT(name)                          \
+	if (name##_mutex_lock == NULL)                  \
+	{                                               \
+		name##_mutex_lock = xSemaphoreCreateBinary(); \
+		xSemaphoreGive(name##_mutex_lock);            \
+	}                                               \
 	uint8_t __attribute__((__cleanup__(name##_mutex_cleanup))) name##_mutex_temp = 0
-#define MUTEX_RELEASE(name)            \
-	if (name##_mutex_temp)               \
-	{                                    \
-		name##_mutex_temp = 0;             \
+#define MUTEX_RELEASE(name)                     \
+	if (name##_mutex_temp)                        \
+	{                                             \
+		name##_mutex_temp = 0;                      \
 		__FREERTOS_MUTEX_GIVE__(name##_mutex_lock); \
 	}
 #define MUTEX_TAKE(name)                                                                             \
 	name##_mutex_temp = (__FREERTOS_MUTEX_TAKE__(name##_mutex_lock, portMAX_DELAY) == pdTRUE) ? 1 : 0; \
 	if (name##_mutex_temp)
 #define MUTEX_WAIT(name, timeout_ms)                                                                                     \
-	name##_mutex_temp = (__FREERTOS_MUTEX_TAKE__(name##_mutex_lock, (timeout_us / portTICK_PERIOD_MS)) == pdTRUE) ? 1 : 0; \
+	name##_mutex_temp = (__FREERTOS_MUTEX_TAKE__(name##_mutex_lock, (timeout_ms / portTICK_PERIOD_MS)) == pdTRUE) ? 1 : 0; \
 	if (name##_mutex_temp)
+
+#ifndef FORCEINLINE
+#define FORCEINLINE __attribute__((always_inline)) inline
+#endif
+
+	/**
+	 * Atomic operations
+	 */
+#define ATOMIC_LOAD_N(src, mode) __atomic_load_n((src), mode)
+#define ATOMIC_STORE_N(dst, val, mode) __atomic_store_n((dst), (val), mode)
+#define ATOMIC_COMPARE_EXCHANGE_N(dst, cmp, des, sucmode, failmode) __atomic_compare_exchange_n((dst), (cmp), (des), false, sucmode, failmode)
+#define ATOMIC_FETCH_OR(dst, val, mode) __atomic_fetch_or((dst), (val), mode)
+#define ATOMIC_FETCH_AND(dst, val, mode) __atomic_fetch_and((dst), (val), mode)
+#define ATOMIC_FETCH_ADD(dst, val, mode) __atomic_fetch_add((dst), (val), mode)
+#define ATOMIC_FETCH_SUB(dst, val, mode) __atomic_fetch_sub((dst), (val), mode)
+#define ATOMIC_FETCH_XOR(dst, val, mode) __atomic_fetch_xor((dst), (val), mode)
+#define ATOMIC_SPIN()      \
+	if (xPortInIsrContext()) \
+	{                        \
+		portYIELD_FROM_ISR();  \
+	}                        \
+	else                     \
+	{                        \
+		portYIELD();           \
+	}
 
 #ifdef __cplusplus
 }

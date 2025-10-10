@@ -32,6 +32,10 @@ extern "C"
 #define BOARD_NAME "RAMBO 1.4"
 #endif
 
+#ifndef F_CPU
+#define F_CPU 16000000UL
+#endif
+
 #define AVR6
 
 #define PCINT0_PORT B

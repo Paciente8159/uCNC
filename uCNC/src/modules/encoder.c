@@ -43,7 +43,7 @@ uint16_t encoder_get_rpm(void)
 {
 	uint32_t elapsed, prev;
 
-	__ATOMIC__
+	ATOMIC_CODEBLOCK
 	{
 		elapsed = current_time;
 		prev = prev_time;
@@ -171,7 +171,7 @@ void encoders_update(uint8_t pulse, uint8_t diff)
 
 int32_t encoder_get_position(uint8_t i)
 {
-	__ATOMIC__
+	ATOMIC_CODEBLOCK
 	{
 		return encoders_pos[i];
 	}
@@ -186,7 +186,7 @@ void encoder_print_values(void)
 
 void encoder_reset_position(uint8_t i, int32_t position)
 {
-	__ATOMIC__
+	ATOMIC_CODEBLOCK
 	{
 		encoders_pos[i] = position;
 	}
@@ -194,7 +194,7 @@ void encoder_reset_position(uint8_t i, int32_t position)
 
 void encoders_reset_position(void)
 {
-	__ATOMIC__
+	ATOMIC_CODEBLOCK
 	{
 		for (uint8_t i = 0; i < ENCODERS; i++)
 		{

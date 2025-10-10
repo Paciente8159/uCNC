@@ -35,7 +35,6 @@
 #include "twi.h"
 #endif
 
-volatile uint32_t esp8266_global_isr;
 static volatile uint32_t mcu_runtime_ms;
 
 #ifndef TIMER_IO_SAMPLE_RATE
@@ -267,7 +266,7 @@ static void FORCEINLINE out_io_push(esp8266_io_out_t val)
 	out_io_buffer[h] = val;
 	h++;
 	h = (h < OUT_IO_BUFFER_SIZE) ? h : 0;
-	__ATOMIC__
+	ATOMIC_CODEBLOCK
 	{
 		out_io_head = h;
 	}
@@ -532,7 +531,7 @@ IRAM_ATTR void mcu_itp_isr(void)
 void itp_buffer_dotasks(uint16_t limit)
 {
 	static volatile bool running = false;
-	// __ATOMIC__
+	// ATOMIC_CODEBLOCK
 	{
 		if (running)
 		{
@@ -575,7 +574,7 @@ void itp_buffer_dotasks(uint16_t limit)
 		}
 
 		// clear sync flag
-		// __ATOMIC__
+		// ATOMIC_CODEBLOCK
 		{
 			esp8266_step_mode &= ~ITP_STEP_MODE_SYNC;
 		}
@@ -941,5 +940,7 @@ void mcu_start_timeout()
 }
 #endif
 #endif
+
+   // for PS register bits
 
 #endif

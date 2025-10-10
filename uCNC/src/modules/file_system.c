@@ -236,7 +236,7 @@ static uint8_t running_file_getc(void)
 {
 	uint8_t c = 0;
 #ifdef ENABLE_MAIN_LOOP_MODULES
-	BUFFER_DEQUEUE(fs_file_buffer, &c);
+	BUFFER_TRY_DEQUEUE(fs_file_buffer, &c);
 #else
 	if (fs_running_file)
 	{

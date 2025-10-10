@@ -99,7 +99,7 @@ static void debug_flush(void)
 	while (debug_tx_lines)
 	{
 		uint8_t c;
-		BUFFER_DEQUEUE(debug_tx, &c);
+		BUFFER_TRY_DEQUEUE(debug_tx, &c);
 		DEBUG_STREAM->stream_putc(c);
 		if (c == '\n')
 		{
@@ -111,7 +111,7 @@ static void debug_flush(void)
 
 static void FORCEINLINE debug_putc(char c)
 {
-	if (BUFFER_FULL(debug_tx))
+	if (!BUFFER_TRY_ENQUEUE(debug_tx, &c))
 	{
 		BUFFER_CLEAR(debug_tx);
 		rom_strcpy((char *)debug_tx_bufferdata, __romstr__("Debug buffer overflow!!\n\0"));
@@ -119,7 +119,6 @@ static void FORCEINLINE debug_putc(char c)
 		debug_tx.count = strlen((char *)debug_tx_bufferdata);
 	}
 
-	BUFFER_ENQUEUE(debug_tx, &c);
 	if (c == '\n')
 	{
 		debug_tx_lines++;
@@ -371,7 +370,7 @@ uint8_t grbl_stream_available(void)
 
 uint8_t grbl_stream_write_available(void)
 {
-	return (RX_BUFFER_SIZE - grbl_stream_available());
+	return (RX_BUFFER_CAPACITY - grbl_stream_available());
 }
 
 void grbl_stream_clear(void)

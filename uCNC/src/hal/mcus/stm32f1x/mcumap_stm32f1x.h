@@ -38,6 +38,7 @@ extern "C"
 // defines the frequency of the mcu
 #ifndef F_CPU
 #define F_CPU SystemCoreClock
+#warning "F_CPU not defined as a constant. Cycle/Nanoseconds delays will be take longer then expected"
 #endif
 
 // defines the maximum and minimum step rates
@@ -57,18 +58,28 @@ extern "C"
 #define rom_memcpy memcpy
 #define rom_read_byte *
 
-// custom cycle counter
-#ifndef MCU_CLOCKS_PER_CYCLE
-#define MCU_CLOCKS_PER_CYCLE 1
+#ifndef MCU_CYCLES_PER_LOOP
+#define MCU_CYCLES_PER_LOOP 4
+#endif
+#ifndef MCU_CYCLES_LOOP_OVERHEAD
+#define MCU_CYCLES_LOOP_OVERHEAD 1
 #endif
 
-#define mcu_delay_cycles(X) \
-	{                         \
-		DWT->CYCCNT = 0;        \
-		uint32_t t = X;         \
-		while (t > DWT->CYCCNT) \
-			;                     \
-	}
+#define mcu_delay_loop(X)                              \
+	do                                                   \
+	{                                                    \
+		asm volatile("" ::: "memory");                     \
+		register uint16_t __count = (X);                   \
+		__asm__ volatile(                                  \
+				"1: sub %[cnt], %[cnt], #1\n" /* 1 cycle */    \
+				"   cmp %[cnt], #0\n"					/* 1 cycle */    \
+				"   bne 1b\n"									/* 1–2 cycles */ \
+				"   nop\n"										/* 1 cycle */    \
+				: [cnt] "+r"(__count)                          \
+				:                                              \
+				: "cc");                                       \
+		asm volatile("" ::: "memory");                     \
+	} while (0)
 
 // Helper macros
 #define __helper_ex__(left, mid, right) left##mid##right
@@ -5620,19 +5631,11 @@ extern "C"
 #define mcu_disable_probe_isr()
 #endif
 
-	extern volatile bool stm32_global_isr_enabled;
-#define mcu_enable_global_isr()      \
-	{                                  \
-		stm32_global_isr_enabled = true; \
-		__enable_irq();                  \
-	}
-#define mcu_disable_global_isr()      \
-	{                                   \
-		stm32_global_isr_enabled = false; \
-		__disable_irq();                  \
-	}
-#define mcu_get_global_isr() stm32_global_isr_enabled
-#define mcu_free_micros() ({                                                                                                                                                                (1000UL - (SysTick->VAL * 1000UL / SysTick->LOAD)); })
+#define mcu_enable_global_isr __enable_irq
+#define mcu_disable_global_isr __disable_irq
+#define mcu_get_global_isr() (__get_PRIMASK() == 0u)
+
+#define mcu_free_micros() ((uint32_t)((((SysTick->LOAD + 1) - SysTick->VAL) * 1000UL) / (SysTick->LOAD + 1)))
 
 #define GPIO_RESET 0xfU
 #define GPIO_OUT_PP_50MHZ 0x3U

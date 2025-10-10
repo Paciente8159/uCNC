@@ -106,7 +106,7 @@ extern "C"
 		{
 			if (!strcmp((const char *)&(cmd_params->cmd)[4], "ON"))
 			{
-				// __ATOMIC__
+				ATOMIC_CODEBLOCK
 				{
 					WiFi.disconnect();
 					switch (wifi_settings.wifi_mode)
@@ -143,7 +143,7 @@ extern "C"
 
 			if (!strcmp((const char *)&(cmd_params->cmd)[4], "OFF"))
 			{
-				// __ATOMIC__
+				ATOMIC_CODEBLOCK
 				{
 					WiFi.disconnect();
 					wifi_settings.wifi_on = 0;

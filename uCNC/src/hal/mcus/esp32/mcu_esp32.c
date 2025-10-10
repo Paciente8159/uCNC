@@ -24,37 +24,15 @@
 #include "esp_ipc.h"
 #include "driver/uart.h"
 #include "driver/timer.h"
-#include "soc/i2s_struct.h"
-#ifdef MCU_HAS_I2C
-#include "driver/i2c.h"
-#endif
-#ifdef MCU_HAS_SPI
-#include "hal/spi_types.h"
-#include "driver/spi_master.h"
-SemaphoreHandle_t spi_access_mutex = NULL;
-bool spi_dma_enabled = false;
-#ifndef SPI_DMA_BUFFER_SIZE
-#define SPI_DMA_BUFFER_SIZE 1024
-#endif
-#endif
-#ifdef MCU_HAS_SPI2
-#include "hal/spi_types.h"
-#include "driver/spi_master.h"
-bool spi2_dma_enabled = false;
-#ifndef SPI2_DMA_BUFFER_SIZE
-#define SPI2_DMA_BUFFER_SIZE 1024
-#endif
-#endif
 #include <string.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <math.h>
+#include "../esp32common/esp32_common.h"
 
 static volatile bool esp32_global_isr_enabled;
 static volatile bool mcu_itp_timer_running;
-#ifdef IC74HC595_CUSTOM_SHIFT_IO
-volatile uint32_t ic74hc595_i2s_pins;
-#endif
+
 hw_timer_t *esp32_step_timer;
 
 void esp32_pre_init(void);
@@ -89,226 +67,9 @@ extern void esp32_eeprom_init(int size);
 #endif
 
 MCU_CALLBACK void mcu_itp_isr(void *arg);
-static MCU_CALLBACK void mcu_gen_pwm_and_servo(void);
-static MCU_CALLBACK void mcu_gen_step(void);
+MCU_CALLBACK void mcu_gen_pwm_and_servo(void);
+MCU_CALLBACK void mcu_gen_step(void);
 MCU_CALLBACK void mcu_gpio_isr(void *type);
-
-/**
- * IO 74HC595 expander via I2S
- * **/
-#ifdef IC74HC595_CUSTOM_SHIFT_IO
-#if IC74HC595_COUNT != 4
-#error "IC74HC595_COUNT must be 4(bytes) to use ESP32 I2S mode for IO shifting"
-#endif
-#include "driver/i2s.h"
-#include "soc/i2s_struct.h"
-
-#ifndef I2S_SAMPLE_RATE
-#define I2S_SAMPLE_RATE (F_STEP_MAX * 2)
-#endif
-#define I2S_SAMPLES_PER_BUFFER (I2S_SAMPLE_RATE / 500) // number of samples per 2ms (0.002/1 = 1/500)
-#define I2S_BUFFER_COUNT 5														 // DMA buffer size 5 * 2ms = 10ms stored motions (can be adjusted but may cause to much or too little latency)
-#define I2S_SAMPLE_US (1000000UL / I2S_SAMPLE_RATE)		 // (1s/250KHz = 0.000004s = 4us)
-
-#ifdef ITP_SAMPLE_RATE
-#undef ITP_SAMPLE_RATE
-#endif
-#define ITP_SAMPLE_RATE (I2S_SAMPLE_RATE)
-
-static volatile uint32_t i2s_mode;
-#define I2S_MODE __atomic_load_n((uint32_t *)&i2s_mode, __ATOMIC_RELAXED)
-
-// software generated oneshot for RT steps like laser PPI
-#if defined(MCU_HAS_ONESHOT_TIMER) && defined(ENABLE_RT_SYNC_MOTIONS)
-static uint32_t esp32_oneshot_counter;
-static uint32_t esp32_oneshot_reload;
-static FORCEINLINE void mcu_gen_oneshot(void)
-{
-	if (esp32_oneshot_counter)
-	{
-		esp32_oneshot_counter--;
-		if (!esp32_oneshot_counter)
-		{
-			if (mcu_timeout_cb)
-			{
-				mcu_timeout_cb();
-			}
-		}
-	}
-}
-#endif
-
-// implements the custom step mode function to switch between buffered stepping and realtime stepping
-uint8_t itp_set_step_mode(uint8_t mode)
-{
-	uint8_t last_mode = I2S_MODE;
-	if (mode)
-	{
-		itp_sync();
-#ifdef USE_I2S_REALTIME_MODE_ONLY
-		__atomic_store_n((uint32_t *)&i2s_mode, (ITP_STEP_MODE_SYNC | ITP_STEP_MODE_REALTIME), __ATOMIC_RELAXED);
-#else
-		__atomic_store_n((uint32_t *)&i2s_mode, (ITP_STEP_MODE_SYNC | mode), __ATOMIC_RELAXED);
-#endif
-		cnc_delay_ms(20);
-	}
-	return last_mode;
-}
-
-static void IRAM_ATTR esp32_i2s_stream_task(void *param)
-{
-	int8_t available_buffers = I2S_BUFFER_COUNT;
-	i2s_event_t evt;
-	portTickType xLastWakeTimeUpload = xTaskGetTickCount();
-	i2s_config_t i2s_config = {
-			.mode = I2S_MODE_MASTER | I2S_MODE_TX, // Only TX
-			.sample_rate = I2S_SAMPLE_RATE,
-			.bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT,
-			.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT, // 1-channels
-			.communication_format = I2S_COMM_FORMAT_STAND_I2S | I2S_COMM_FORMAT_STAND_MSB,
-			.dma_buf_count = I2S_BUFFER_COUNT,
-			.dma_buf_len = I2S_SAMPLES_PER_BUFFER,
-			.use_apll = false,
-			.intr_alloc_flags = ESP_INTR_FLAG_LEVEL1, // Interrupt level 1
-			.tx_desc_auto_clear = false,
-			.fixed_mclk = 0};
-
-	i2s_pin_config_t pin_config = {
-			.bck_io_num = IC74HC595_I2S_CLK,
-			.ws_io_num = IC74HC595_I2S_WS,
-			.data_out_num = IC74HC595_I2S_DATA,
-			.data_in_num = -1 // Not used
-	};
-	QueueHandle_t i2s_dma_queue;
-
-	i2s_driver_install(IC74HC595_I2S_PORT, &i2s_config, I2S_BUFFER_COUNT, &i2s_dma_queue);
-	i2s_set_pin(IC74HC595_I2S_PORT, &pin_config);
-
-	for (;;)
-	{
-		uint32_t mode = I2S_MODE;
-
-		// tracks DMA buffer usage
-		if (available_buffers < I2S_BUFFER_COUNT)
-		{
-			while (xQueueReceive(i2s_dma_queue, &evt, 0) == pdPASS)
-			{
-				if (evt.type == I2S_EVENT_TX_DONE)
-				{
-					available_buffers++;
-				}
-			}
-		}
-
-		// updates the working mode
-		if (mode & ITP_STEP_MODE_SYNC)
-		{
-			// wait for DMA to output content
-			while (available_buffers < I2S_BUFFER_COUNT)
-			{
-				// tracks DMA buffer usage
-				while (xQueueReceive(i2s_dma_queue, &evt, 0) == pdPASS)
-				{
-					if (evt.type == I2S_EVENT_TX_DONE)
-					{
-						available_buffers++;
-					}
-				}
-				vTaskDelayUntil(&xLastWakeTimeUpload, (20 / portTICK_RATE_MS));
-			}
-
-			switch (mode & ~ITP_STEP_MODE_SYNC)
-			{
-			case ITP_STEP_MODE_DEFAULT:
-				// timer_pause(ITP_TIMER_TG, ITP_TIMER_IDX);
-				// timer_disable_intr(ITP_TIMER_TG, ITP_TIMER_IDX);
-				I2SREG.conf.tx_start = 0;
-				I2SREG.conf.tx_reset = 1;
-				I2SREG.conf.tx_reset = 0;
-				I2SREG.conf.rx_fifo_reset = 1;
-				I2SREG.conf.rx_fifo_reset = 0;
-				available_buffers = I2S_BUFFER_COUNT;
-				i2s_driver_uninstall(IC74HC595_I2S_PORT);
-				i2s_driver_install(IC74HC595_I2S_PORT, &i2s_config, I2S_BUFFER_COUNT, &i2s_dma_queue);
-				i2s_set_pin(IC74HC595_I2S_PORT, &pin_config);
-				break;
-			case ITP_STEP_MODE_REALTIME:
-				I2SREG.conf.tx_start = 0;
-				I2SREG.conf.tx_reset = 1;
-				I2SREG.conf.tx_reset = 0;
-				I2SREG.conf.rx_fifo_reset = 1;
-				I2SREG.conf.rx_fifo_reset = 0;
-				available_buffers = I2S_BUFFER_COUNT;
-				// modify registers for realtime usage
-				I2SREG.out_link.stop = 1;
-				I2SREG.fifo_conf.dscr_en = 0;
-				I2SREG.conf.tx_start = 0;
-				I2SREG.int_clr.val = 0xFFFFFFFF;
-				I2SREG.clkm_conf.clka_en = 0;			 // Use PLL/2 as reference
-				I2SREG.clkm_conf.clkm_div_num = 2; // reset value of 4
-				I2SREG.clkm_conf.clkm_div_a = 1;	 // 0 at reset, what about divide by 0?
-				I2SREG.clkm_conf.clkm_div_b = 0;	 // 0 at reset
-				I2SREG.fifo_conf.tx_fifo_mod = 3;	 // 32 bits single channel data
-				I2SREG.conf_chan.tx_chan_mod = 3;	 //
-				I2SREG.sample_rate_conf.tx_bits_mod = 32;
-				I2SREG.conf.tx_msb_shift = 0;
-				I2SREG.conf.rx_msb_shift = 0;
-				I2SREG.int_ena.out_eof = 0;
-				I2SREG.int_ena.out_dscr_err = 0;
-				I2SREG.conf_single_data = __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
-				I2SREG.conf1.tx_stop_en = 0;
-				I2SREG.int_ena.val = 0;
-				I2SREG.fifo_conf.dscr_en = 1;
-				I2SREG.int_clr.val = 0xFFFFFFFF;
-				I2SREG.out_link.start = 1;
-				I2SREG.conf.tx_start = 1;
-				ets_delay_us(20);
-				break;
-			}
-
-			// clear sync flag
-			__atomic_fetch_and((uint32_t *)&i2s_mode, ~ITP_STEP_MODE_SYNC, __ATOMIC_RELAXED);
-		}
-
-		while (mode == ITP_STEP_MODE_DEFAULT && available_buffers > 0)
-		{
-			uint32_t i2s_dma_buffer[I2S_SAMPLES_PER_BUFFER];
-
-			for (uint32_t t = 0; t < I2S_SAMPLES_PER_BUFFER; t++)
-			{
-#if defined(IC74HC595_HAS_STEPS) || defined(IC74HC595_HAS_DIRS)
-				mcu_gen_step();
-#endif
-#if defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS)
-				mcu_gen_pwm_and_servo();
-#endif
-#if defined(MCU_HAS_ONESHOT_TIMER) && defined(ENABLE_RT_SYNC_MOTIONS)
-				mcu_gen_oneshot();
-#endif
-				// write to buffer
-				i2s_dma_buffer[t] = __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
-			}
-
-			uint32_t w = 0;
-
-			i2s_write(IC74HC595_I2S_PORT, &i2s_dma_buffer[0], I2S_SAMPLES_PER_BUFFER * 4, &w, portMAX_DELAY);
-			available_buffers--;
-		}
-
-		vTaskDelayUntil(&xLastWakeTimeUpload, (5 / portTICK_RATE_MS));
-	}
-}
-
-static FORCEINLINE void esp32_i2s_extender_init(void)
-{
-#ifdef USE_I2S_REALTIME_MODE_ONLY
-	itp_set_step_mode(ITP_STEP_MODE_REALTIME);
-#else
-	itp_set_step_mode(ITP_STEP_MODE_DEFAULT);
-#endif
-	xTaskCreatePinnedToCore(esp32_i2s_stream_task, "esp32I2Supdate", 4096, NULL, 7, NULL, CONFIG_ARDUINO_RUNNING_CORE);
-}
-#endif
 
 #ifndef ITP_SAMPLE_RATE
 #define ITP_SAMPLE_RATE (F_STEP_MAX * 2)
@@ -409,7 +170,7 @@ static FORCEINLINE void servo_update(void)
 }
 #endif
 
-static MCU_CALLBACK void mcu_gen_pwm_and_servo(void)
+MCU_CALLBACK void mcu_gen_pwm_and_servo(void)
 {
 	static int16_t mcu_soft_io_counter;
 	int16_t t = mcu_soft_io_counter;
@@ -451,7 +212,7 @@ static MCU_CALLBACK void mcu_gen_pwm_and_servo(void)
 
 static volatile uint32_t mcu_itp_timer_reload;
 static volatile bool mcu_itp_timer_running;
-static MCU_CALLBACK void mcu_gen_step(void)
+MCU_CALLBACK void mcu_gen_step(void)
 {
 	static bool step_reset = true;
 	static int32_t mcu_itp_timer_counter;
@@ -518,16 +279,27 @@ uint8_t mcu_softpwm_freq_config(uint16_t freq)
 }
 #endif
 
+void mcu_core0_dotasks(void *arg)
+{
+	// loop through received data
+	mcu_uart_dotasks();
+	esp_task_wdt_reset();
+	mcu_uart2_dotasks();
+	esp_task_wdt_reset();
+	mcu_usb_dotasks();
+	esp_task_wdt_reset();
+	mcu_wifi_dotasks();
+	esp_task_wdt_reset();
+	mcu_bt_dotasks();
+}
+
 void mcu_core0_tasks_init(void *arg)
 {
-#ifdef MCU_HAS_UART
-	// install UART driver handler
-	uart_driver_install(UART_PORT, RX_BUFFER_CAPACITY * 2, 0, 0, NULL, 0);
-#endif
-#ifdef MCU_HAS_UART2
-	// install UART driver handler
-	uart_driver_install(UART2_PORT, RX_BUFFER_CAPACITY * 2, 0, 0, NULL, 0);
-#endif
+	mcu_uart_init();
+	mcu_uart_start();
+	mcu_uart2_init();
+	mcu_uart2_start();
+	// xTaskCreatePinnedToCore(mcu_core0_dotasks, "core0Task", 8192, NULL, 7, NULL, 0);
 }
 
 void mcu_rtc_task(void *arg)
@@ -596,66 +368,53 @@ void mcu_init(void)
 	esp32_pre_init();
 	mcu_io_init();
 
-#ifdef MCU_HAS_UART2
-	// initialize UART
-	const uart_config_t uart2config = {
-			.baud_rate = BAUDRATE2,
-			.data_bits = UART_DATA_8_BITS,
-			.parity = UART_PARITY_DISABLE,
-			.stop_bits = UART_STOP_BITS_1,
-			.flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-			.source_clk = UART_SCLK_APB};
-	// We won't use a buffer for sending data.
-	uart_param_config(UART2_PORT, &uart2config);
-	uart_set_pin(UART2_PORT, TX2_BIT, RX2_BIT, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+#ifdef MCU_HAS_SPI
+	spi_config_t spi_conf = {0};
+	spi_conf.mode = SPI_MODE;
+	mcu_spi_init();
+	mcu_spi_config(spi_conf, SPI_FREQ);
 #endif
+
+#ifdef MCU_HAS_SPI2
+	spi_config_t spi2_conf = {0};
+	spi2_conf.mode = SPI2_MODE;
+	mcu_spi2_init();
+	mcu_spi2_config(spi2_conf, SPI2_FREQ);
+#endif
+
+#ifdef MCU_HAS_I2C
+	mcu_i2c_config(I2C_FREQ);
+#endif
+
+	/**
+	 * Initialize wired communications
+	 */
+	esp_ipc_call_blocking(0, mcu_core0_tasks_init, NULL);
+
+	/**
+	 * EEPROM config
+	 */
+
+	// starts EEPROM before UART to enable WiFi and BT settings
+#if !defined(RAM_ONLY_SETTINGS)
+	mcu_eeprom_init(NVM_STORAGE_SIZE);
+#endif
+
+	/**
+	 * Communications config
+	 */
 
 	// launches isr tasks that will run on core 0
 	// currently it's running PWM and UART on core 0
 	// Arduino Bluetooth also runs on core 0
 	// Arduino WiFi ???
-	esp_ipc_call_blocking(0, mcu_core0_tasks_init, NULL);
 
-	// starts EEPROM before UART to enable WiFi and BT settings
-#if !defined(RAM_ONLY_SETTINGS) && !defined(USE_ARDUINO_EEPROM_LIBRARY)
-	// esp32_eeprom_init(NVM_STORAGE_SIZE); // 1K Emulated EEPROM
+	mcu_wifi_init();
+	mcu_bt_init();
 
-	// starts nvs
-	mcu_eeprom.size = 0;
-	memset(mcu_eeprom.data, 0, NVM_STORAGE_SIZE);
-	if (nvs_open("eeprom", NVS_READWRITE, &mcu_eeprom.nvs_handle) == ESP_OK)
-	{
-		// determines the maximum sector size of NVS that can be read/write
-		nvs_get_blob(mcu_eeprom.nvs_handle, "eeprom", NULL, &mcu_eeprom.size);
-		if (NVM_STORAGE_SIZE > mcu_eeprom.size)
-		{
-			log_e("eeprom does not have enough space");
-			mcu_eeprom.size = 0;
-		}
-
-		nvs_get_blob(mcu_eeprom.nvs_handle, "eeprom", mcu_eeprom.data, &mcu_eeprom.size);
-	}
-	else
-	{
-		log_e("eeprom failed to open");
-	}
-#elif !defined(RAM_ONLY_SETTINGS)
-	esp32_eeprom_init(NVM_STORAGE_SIZE);
-#endif
-
-#ifdef MCU_HAS_UART
-	// initialize UART
-	const uart_config_t uartconfig = {
-			.baud_rate = BAUDRATE,
-			.data_bits = UART_DATA_8_BITS,
-			.parity = UART_PARITY_DISABLE,
-			.stop_bits = UART_STOP_BITS_1,
-			.flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-			.source_clk = UART_SCLK_APB};
-	// We won't use a buffer for sending data.
-	uart_param_config(UART_PORT, &uartconfig);
-	uart_set_pin(UART_PORT, TX_BIT, RX_BIT, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
-#endif
+	/**
+	 * Timers config
+	 */
 
 	// inititialize ITP timer
 	timer_config_t itpconfig = {0};
@@ -677,39 +436,12 @@ void mcu_init(void)
 	timer_start(ITP_TIMER_TG, ITP_TIMER_IDX);
 
 #ifdef IC74HC595_CUSTOM_SHIFT_IO
-	esp32_i2s_extender_init();
+	mcu_i2s_extender_init();
 #endif
 
 	// initialize rtc timer (currently on core 1)
-	xTaskCreatePinnedToCore(mcu_rtc_task, "rtcTask", 2048, NULL, 7, NULL, CONFIG_ARDUINO_RUNNING_CORE);
+	xTaskCreatePinnedToCore(mcu_rtc_task, "rtcTask", 8192, NULL, 7, NULL, CONFIG_ARDUINO_RUNNING_CORE);
 
-#ifdef MCU_HAS_SPI
-
-	spi_config_t spi_conf = {0};
-#ifndef USE_ARDUINO_SPI_LIBRARY
-	spi_conf.mode = SPI_MODE;
-#else
-	mcu_spi_init();
-#endif
-	mcu_spi_config(spi_conf, SPI_FREQ);
-#endif
-
-#ifdef MCU_HAS_SPI2
-
-	spi_config_t spi2_conf = {0};
-#ifndef USE_ARDUINO_SPI_LIBRARY
-	spi2_conf.mode = SPI2_MODE;
-#else
-	mcu_spi2_init();
-#endif
-	mcu_spi2_config(spi2_conf, SPI2_FREQ);
-#endif
-
-#ifdef MCU_HAS_I2C
-	mcu_i2c_config(I2C_FREQ);
-#endif
-
-	esp32_wifi_bt_init();
 	mcu_enable_global_isr();
 }
 
@@ -765,105 +497,6 @@ uint8_t mcu_get_pwm(uint8_t pwm)
 }
 #endif
 
-/*UART*/
-
-/**
- * sends a uint8_t either via uart (hardware, software or USB virtual COM port)
- * can be defined either as a function or a macro call
- * */
-#ifdef MCU_HAS_UART
-#ifndef UART_TX_BUFFER_SIZE
-#define UART_TX_BUFFER_SIZE 64
-#endif
-DECL_BUFFER(uint8_t, uart_rx, RX_BUFFER_SIZE);
-DECL_BUFFER(uint8_t, uart_tx, UART_TX_BUFFER_SIZE);
-uint8_t mcu_uart_getc(void)
-{
-	uint8_t c = 0;
-	BUFFER_DEQUEUE(uart_rx, &c);
-	return c;
-}
-
-uint8_t mcu_uart_available(void)
-{
-	return BUFFER_READ_AVAILABLE(uart_rx);
-}
-
-void mcu_uart_clear(void)
-{
-	BUFFER_CLEAR(uart_rx);
-}
-
-void mcu_uart_putc(uint8_t c)
-{
-	while (BUFFER_FULL(uart_tx))
-	{
-		mcu_uart_flush();
-	}
-	BUFFER_ENQUEUE(uart_tx, &c);
-}
-
-void mcu_uart_flush(void)
-{
-	while (!BUFFER_EMPTY(uart_tx))
-	{
-		uint8_t tmp[UART_TX_BUFFER_SIZE + 1];
-		memset(tmp, 0, sizeof(tmp));
-		uint8_t r;
-
-		BUFFER_READ(uart_tx, tmp, UART_TX_BUFFER_SIZE, r);
-		uart_write_bytes(UART_PORT, tmp, r);
-	}
-}
-#endif
-
-#ifdef MCU_HAS_UART2
-#ifndef UART2_TX_BUFFER_SIZE
-#define UART2_TX_BUFFER_SIZE 64
-#endif
-DECL_BUFFER(uint8_t, uart2_rx, RX_BUFFER_SIZE);
-DECL_BUFFER(uint8_t, uart2_tx, UART2_TX_BUFFER_SIZE);
-
-uint8_t mcu_uart2_getc(void)
-{
-	uint8_t c = 0;
-	BUFFER_DEQUEUE(uart2_rx, &c);
-	return c;
-}
-
-uint8_t mcu_uart2_available(void)
-{
-	return BUFFER_READ_AVAILABLE(uart2_rx);
-}
-
-void mcu_uart2_clear(void)
-{
-	BUFFER_CLEAR(uart2_rx);
-}
-
-void mcu_uart2_putc(uint8_t c)
-{
-	while (BUFFER_FULL(uart2_tx))
-	{
-		mcu_uart2_flush();
-	}
-	BUFFER_ENQUEUE(uart2_tx, &c);
-}
-
-void mcu_uart2_flush(void)
-{
-	while (!BUFFER_EMPTY(uart2_tx))
-	{
-		uint8_t tmp[UART2_TX_BUFFER_SIZE + 1];
-		memset(tmp, 0, sizeof(tmp));
-		uint8_t r;
-
-		BUFFER_READ(uart2_tx, tmp, UART2_TX_BUFFER_SIZE, r);
-		uart_write_bytes(UART2_PORT, tmp, r);
-	}
-}
-#endif
-
 // ISR
 /**
  * enables global interrupts on the MCU
@@ -894,9 +527,21 @@ void mcu_disable_global_isr(void)
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_get_global_isr
+// bool mcu_get_global_isr(void)
+// {
+// 	return esp32_global_isr_enabled;
+// }
 bool mcu_get_global_isr(void)
 {
-	return esp32_global_isr_enabled;
+	if (xPortInIsrContext())
+	{
+		return false;
+	}
+	
+	uint32_t ps;
+	__asm__ volatile("rsr.ps %0" : "=a"(ps));
+	// INTLEVEL is bits [3:0] of PS
+	return ((ps & 0xF) < 2);
 }
 #endif
 
@@ -1002,119 +647,16 @@ void esp32_delay_us(uint16_t delay)
  * */
 void mcu_dotasks(void)
 {
-	// reset WDT
+	mcu_uart_dotasks();
 	esp_task_wdt_reset();
-
-	// loop through received data
-	uint8_t rxdata[RX_BUFFER_SIZE];
-	int rxlen, i;
-#ifdef MCU_HAS_UART
-	rxlen = uart_read_bytes(UART_PORT, rxdata, RX_BUFFER_CAPACITY, 0);
-	for (i = 0; i < rxlen; i++)
-	{
-		uint8_t c = (uint8_t)rxdata[i];
-		if (mcu_com_rx_cb(c))
-		{
-			if (BUFFER_FULL(uart_rx))
-			{
-				STREAM_OVF(c);
-			}
-
-			BUFFER_ENQUEUE(uart_rx, &c);
-		}
-	}
-#endif
-#if defined(MCU_HAS_UART2)
-	rxlen = uart_read_bytes(UART2_PORT, rxdata, RX_BUFFER_CAPACITY, 0);
-	for (i = 0; i < rxlen; i++)
-	{
-		uint8_t c = (uint8_t)rxdata[i];
-#if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
-		if (mcu_com_rx_cb(c))
-		{
-			if (BUFFER_FULL(uart2_rx))
-			{
-				STREAM_OVF(c);
-			}
-
-			BUFFER_ENQUEUE(uart2_rx, &c);
-		}
-#else
-		mcu_uart2_rx_cb(c);
-#ifndef UART2_DISABLE_BUFFER
-		if (BUFFER_FULL(uart2_rx))
-		{
-			STREAM_OVF(c);
-		}
-
-		BUFFER_ENQUEUE(uart2_rx, &c);
-#endif
-#endif
-	}
-#endif
-
-	esp32_wifi_bt_process();
+	mcu_uart2_dotasks();
+	esp_task_wdt_reset();
+	mcu_usb_dotasks();
+	esp_task_wdt_reset();
+	mcu_wifi_dotasks();
+	esp_task_wdt_reset();
+	mcu_bt_dotasks();
 }
-
-// Non volatile memory
-/**
- * gets a byte at the given EEPROM (or other non volatile memory) address of the MCU.
- * */
-#if !defined(RAM_ONLY_SETTINGS) && !defined(USE_ARDUINO_EEPROM_LIBRARY)
-uint8_t mcu_eeprom_getc(uint16_t address)
-{
-	if (NVM_STORAGE_SIZE <= address)
-	{
-		DBGMSG("EEPROM invalid address @ %u", address);
-		return 0;
-	}
-#ifndef RAM_ONLY_SETTINGS
-	// return esp32_eeprom_read(address);
-	size_t size = mcu_eeprom.size;
-	if (size)
-	{
-		return mcu_eeprom.data[address];
-	}
-#endif
-	return 0;
-}
-
-/**
- * sets a byte at the given EEPROM (or other non volatile memory) address of the MCU.
- * */
-void mcu_eeprom_putc(uint16_t address, uint8_t value)
-{
-	if (NVM_STORAGE_SIZE <= address)
-	{
-		DBGMSG("EEPROM invalid address @ %u", address);
-	}
-#ifndef RAM_ONLY_SETTINGS
-	// esp32_eeprom_write(address, value);
-	size_t size = mcu_eeprom.size;
-	if (size)
-	{
-		mcu_eeprom.dirty |= (mcu_eeprom.data[address] != value);
-		mcu_eeprom.data[address] = value;
-	}
-#endif
-}
-
-/**
- * flushes all recorded registers into the eeprom.
- * */
-void mcu_eeprom_flush(void)
-{
-#ifndef RAM_ONLY_SETTINGS
-	// esp32_eeprom_flush();
-	// esp32_eeprom_write(address, value);
-	if (mcu_eeprom.size && mcu_eeprom.dirty)
-	{
-		nvs_set_blob(mcu_eeprom.nvs_handle, "eeprom", mcu_eeprom.data, mcu_eeprom.size);
-		nvs_commit(mcu_eeprom.nvs_handle);
-	}
-#endif
-}
-#endif
 
 #ifdef MCU_HAS_ONESHOT_TIMER
 
@@ -1170,364 +712,6 @@ MCU_CALLBACK void mcu_start_timeout()
 #elif defined(MCU_HAS_ONESHOT_TIMER)
 	timer_start(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX);
 #endif
-}
-#endif
-#endif
-
-#if (defined(MCU_HAS_SPI) && !defined(USE_ARDUINO_SPI_LIBRARY))
-
-static spi_device_handle_t mcu_spi_handle = NULL;
-
-#ifndef mcu_spi_xmit
-uint8_t mcu_spi_xmit(uint8_t data)
-{
-	uint8_t rxdata = 0xFF;
-	spi_transaction_t spi_trans = {0};
-	spi_trans.length = 8; // Number of bits NOT number of bytes.
-	spi_trans.tx_buffer = &data;
-	spi_trans.rx_buffer = &rxdata;
-
-	spi_device_transmit(mcu_spi_handle, &spi_trans);
-
-	return rxdata;
-}
-#endif
-
-#ifndef mcu_spi_config
-void mcu_spi_config(spi_config_t config, uint32_t frequency)
-{
-	mcu_spi_start(config, frequency);
-	mcu_spi_stop();
-}
-#endif
-
-#ifndef mcu_spi_start
-void mcu_spi_start(spi_config_t config, uint32_t frequency)
-{
-	if (mcu_spi_handle)
-	{
-		spi_device_acquire_bus(mcu_spi_handle, portMAX_DELAY);
-		spi_device_release_bus(mcu_spi_handle);
-		spi_bus_remove_device(mcu_spi_handle);
-		mcu_spi_handle = NULL;
-		spi_bus_free(SPI_PORT);
-	}
-
-	spi_bus_config_t spiconf = {
-			.miso_io_num = SPI_SDI_BIT,
-			.mosi_io_num = SPI_SDO_BIT,
-			.sclk_io_num = SPI_CLK_BIT,
-			.quadwp_io_num = -1,
-			.quadhd_io_num = -1,
-			.data4_io_num = -1,
-			.data5_io_num = -1,
-			.data6_io_num = -1,
-			.data7_io_num = -1,
-			.max_transfer_sz = (config.enable_dma) ? SPI_DMA_BUFFER_SIZE : SOC_SPI_MAXIMUM_BUFFER_SIZE,
-			.flags = 0,
-			.intr_flags = 0};
-	// Initialize the SPI bus
-	spi_bus_initialize(SPI_PORT, &spiconf, (config.enable_dma) ? SPI_DMA_CH_AUTO : SPI_DMA_DISABLED);
-
-	spi_device_interface_config_t mcu_spi_conf = {0};
-	mcu_spi_conf.mode = config.mode;
-	mcu_spi_conf.clock_speed_hz = frequency;
-	mcu_spi_conf.spics_io_num = -1;
-	mcu_spi_conf.queue_size = 1;
-	if (config.enable_dma)
-	{
-		mcu_spi_conf.queue_size = 1;
-		mcu_spi_conf.pre_cb = NULL;
-		mcu_spi_conf.pre_cb = NULL;
-	}
-
-	spi_dma_enabled = config.enable_dma;
-	spi_bus_add_device(SPI_PORT, &mcu_spi_conf, &mcu_spi_handle);
-	spi_device_acquire_bus(mcu_spi_handle, portMAX_DELAY);
-}
-#endif
-
-#ifndef mcu_spi_stop
-void mcu_spi_stop(void)
-{
-	spi_device_release_bus(mcu_spi_handle);
-	mcu_spi_handle = NULL;
-}
-#endif
-
-#ifndef mcu_spi_bulk_transfer
-// data buffer for normal or DMA
-static FORCEINLINE bool mcu_spi_transaction(const uint8_t *out, uint8_t *in, uint16_t len)
-{
-	static void *o = NULL;
-	static void *i = NULL;
-	static bool is_running = false;
-	static spi_transaction_t t = {0};
-
-	// start a new transmition
-	if (!is_running)
-	{
-		if (spi_dma_enabled)
-		{
-			// DMA requires 4byte aligned transfers
-			uint16_t l = (((len >> 2) + ((len & 0x03) ? 1 : 0)) << 2);
-			o = heap_caps_malloc(l, MALLOC_CAP_DMA);
-			memcpy(o, out, len);
-			if (in)
-			{
-				i = heap_caps_malloc(l, MALLOC_CAP_DMA);
-				memset(i, 0x00, l);
-			}
-		}
-		else
-		{
-			o = out;
-			if (in)
-			{
-				i = in;
-			}
-		}
-
-		t.length = len * 8; // Length in bits
-		t.tx_buffer = o;
-		t.rxlength = 0; // this deafults to length
-
-		if (in)
-		{
-			t.rx_buffer = i;
-		}
-
-		spi_device_polling_start(mcu_spi_handle, &t, portMAX_DELAY);
-		is_running = true;
-	}
-	else
-	{
-		// check transfer state
-		if (spi_device_polling_end(mcu_spi_handle, 0) == ESP_OK)
-		{
-			if (spi_dma_enabled)
-			{
-				// copy back memory from DMA
-				if (in)
-				{
-					memcpy(in, i, len);
-					heap_caps_free(i);
-				}
-				heap_caps_free(o);
-			}
-
-			is_running = false;
-			return false;
-		}
-	}
-
-	return true;
-}
-
-bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
-{
-	static uint16_t data_offset = 0;
-	uint32_t offset = data_offset;
-	uint16_t max_transfer_size = (spi_dma_enabled) ? SPI_DMA_BUFFER_SIZE : SOC_SPI_MAXIMUM_BUFFER_SIZE;
-
-	uint8_t *i = NULL;
-	if (in)
-	{
-		i = &in[offset];
-	}
-
-	if (!mcu_spi_transaction(&out[offset], i, MIN(max_transfer_size, (len - offset))))
-	{
-		offset += max_transfer_size;
-		if (offset >= len)
-		{
-			data_offset = 0;
-			return false;
-		}
-
-		data_offset = (uint16_t)offset;
-	}
-
-	return true;
-}
-#endif
-#endif
-
-#if (defined(MCU_HAS_SPI2) && !defined(USE_ARDUINO_SPI_LIBRARY))
-
-static spi_device_handle_t mcu_spi2_handle = NULL;
-
-#ifndef mcu_spi2_xmit
-uint8_t mcu_spi2_xmit(uint8_t data)
-{
-	uint8_t rxdata = 0xFF;
-	spi_transaction_t spi_trans = {0};
-	spi_trans.length = 8; // Number of bits NOT number of bytes.
-	spi_trans.tx_buffer = &data;
-	spi_trans.rx_buffer = &rxdata;
-
-	spi_device_transmit(mcu_spi2_handle, &spi_trans);
-
-	return rxdata;
-}
-#endif
-
-#ifndef mcu_spi2_config
-void mcu_spi2_config(spi_config_t config, uint32_t frequency)
-{
-	mcu_spi2_start(config, frequency);
-	mcu_spi2_stop();
-}
-#endif
-
-#ifndef mcu_spi2_start
-void mcu_spi2_start(spi_config_t config, uint32_t frequency)
-{
-	if (mcu_spi2_handle)
-	{
-		spi_device_acquire_bus(mcu_spi2_handle, portMAX_DELAY);
-		spi_device_release_bus(mcu_spi2_handle);
-		spi_bus_remove_device(mcu_spi2_handle);
-		mcu_spi2_handle = NULL;
-		spi_bus_free(SPI2_PORT);
-	}
-
-	spi_bus_config_t spiconf = {
-			.miso_io_num = SPI2_SDI_BIT,
-			.mosi_io_num = SPI2_SDO_BIT,
-			.sclk_io_num = SPI2_CLK_BIT,
-			.quadwp_io_num = -1,
-			.quadhd_io_num = -1,
-			.data4_io_num = -1,
-			.data5_io_num = -1,
-			.data6_io_num = -1,
-			.data7_io_num = -1,
-			.max_transfer_sz = (config.enable_dma) ? SPI2_DMA_BUFFER_SIZE : SOC_SPI_MAXIMUM_BUFFER_SIZE,
-			.flags = 0,
-			.intr_flags = 0};
-	// Initialize the SPI2 bus
-	spi_bus_initialize(SPI2_PORT, &spiconf, (config.enable_dma) ? SPI_DMA_CH_AUTO : SPI_DMA_DISABLED);
-
-	spi_device_interface_config_t mcu_spi_conf = {0};
-	mcu_spi_conf.mode = config.mode;
-	mcu_spi_conf.clock_speed_hz = frequency;
-	mcu_spi_conf.spics_io_num = -1;
-	mcu_spi_conf.queue_size = 1;
-	if (config.enable_dma)
-	{
-		mcu_spi_conf.queue_size = 1;
-		mcu_spi_conf.pre_cb = NULL;
-		mcu_spi_conf.pre_cb = NULL;
-	}
-
-	spi2_dma_enabled = config.enable_dma;
-	spi_bus_add_device(SPI2_PORT, &mcu_spi_conf, &mcu_spi2_handle);
-	spi_device_acquire_bus(mcu_spi2_handle, portMAX_DELAY);
-}
-#endif
-
-#ifndef mcu_spi2_stop
-void mcu_spi2_stop(void)
-{
-	spi_device_release_bus(mcu_spi2_handle);
-	mcu_spi2_handle = NULL;
-}
-#endif
-
-#ifndef mcu_spi2_bulk_transfer
-// data buffer for normal or DMA
-static FORCEINLINE bool mcu_spi2_transaction(const uint8_t *out, uint8_t *in, uint16_t len)
-{
-	static void *o = NULL;
-	static void *i = NULL;
-	static bool is_running = false;
-	static spi_transaction_t t = {0};
-
-	// start a new transmition
-	if (!is_running)
-	{
-		if (spi2_dma_enabled)
-		{
-			// DMA requires 4byte aligned transfers
-			uint16_t l = (((len >> 2) + ((len & 0x03) ? 1 : 0)) << 2);
-			o = heap_caps_malloc(l, MALLOC_CAP_DMA);
-			memcpy(o, out, len);
-			if (in)
-			{
-				i = heap_caps_malloc(l, MALLOC_CAP_DMA);
-				memset(i, 0x00, l);
-			}
-		}
-		else
-		{
-			o = out;
-			if (in)
-			{
-				i = in;
-			}
-		}
-
-		t.length = len * 8; // Length in bits
-		t.tx_buffer = o;
-		t.rxlength = 0; // this deafults to length
-
-		if (in)
-		{
-			t.rx_buffer = i;
-		}
-
-		spi_device_polling_start(mcu_spi2_handle, &t, portMAX_DELAY);
-		is_running = true;
-	}
-	else
-	{
-		// check transfer state
-		if (spi_device_polling_end(mcu_spi2_handle, 0) == ESP_OK)
-		{
-			if (spi2_dma_enabled)
-			{
-				// copy back memory from DMA
-				if (in)
-				{
-					memcpy(in, i, len);
-					heap_caps_free(i);
-				}
-				heap_caps_free(o);
-			}
-
-			is_running = false;
-			return false;
-		}
-	}
-
-	return true;
-}
-
-bool mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
-{
-	static uint16_t data_offset = 0;
-	uint32_t offset = data_offset;
-	uint16_t max_transfer_size = (spi2_dma_enabled) ? SPI2_DMA_BUFFER_SIZE : SOC_SPI_MAXIMUM_BUFFER_SIZE;
-
-	uint8_t *i = NULL;
-	if (in)
-	{
-		i = &in[offset];
-	}
-
-	if (!mcu_spi2_transaction(&out[offset], i, MIN(max_transfer_size, (len - offset))))
-	{
-		offset += max_transfer_size;
-		if (offset >= len)
-		{
-			data_offset = 0;
-			return false;
-		}
-
-		data_offset = (uint16_t)offset;
-	}
-
-	return true;
 }
 #endif
 #endif

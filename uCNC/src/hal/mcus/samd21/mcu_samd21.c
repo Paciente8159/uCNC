@@ -42,10 +42,8 @@
 #include <tusb_ucnc.h>
 #endif
 
-volatile bool samd21_global_isr_enabled;
-
 // setups internal timers (all will run @ 8Mhz on GCLK4)
-#define MAIN_CLOCK_DIV ((uint16_t)(F_CPU / F_TIMERS))
+#define MAIN_CLOCK_DIV ((uint16_t)(SystemCoreClock / F_TIMERS))
 static void mcu_setup_clocks(void)
 {
 	PM->CPUSEL.reg = 0;
@@ -215,7 +213,7 @@ DECL_BUFFER(uint8_t, uart_rx, RX_BUFFER_SIZE);
 
 void mcu_com_isr()
 {
-	__ATOMIC_FORCEON__
+	ATOMIC_CODEBLOCK_NR
 	{
 		if (COM_UART->USART.INTFLAG.bit.RXC && COM_UART->USART.INTENSET.bit.RXC)
 		{
@@ -224,12 +222,10 @@ void mcu_com_isr()
 #if !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
 			if (mcu_com_rx_cb(c))
 			{
-				if (BUFFER_FULL(uart_rx))
+				if (!BUFFER_TRY_ENQUEUE(uart_rx, &c))
 				{
 					STREAM_OVF(c);
 				}
-
-				BUFFER_ENQUEUE(uart_rx, &c);
 			}
 #else
 			mcu_uart_rx_cb(c);
@@ -238,14 +234,14 @@ void mcu_com_isr()
 		if (COM_UART->USART.INTFLAG.bit.DRE && COM_UART->USART.INTENSET.bit.DRE)
 		{
 			mcu_enable_global_isr();
-			if (BUFFER_EMPTY(uart_tx))
+			uint8_t c;
+
+			if (!BUFFER_TRY_DEQUEUE(uart_tx, &c))
 			{
 				COM_UART->USART.INTENCLR.reg = SERCOM_USART_INTENCLR_DRE;
 				return;
 			}
 
-			uint8_t c;
-			BUFFER_DEQUEUE(uart_tx, &c);
 			COM_OUTREG = c;
 		}
 	}
@@ -261,7 +257,7 @@ DECL_BUFFER(uint8_t, uart2_rx, RX_BUFFER_SIZE);
 
 void mcu_com2_isr()
 {
-	__ATOMIC_FORCEON__
+	ATOMIC_CODEBLOCK_NR
 	{
 		if (COM2_UART->USART.INTFLAG.bit.RXC && COM2_UART->USART.INTENSET.bit.RXC)
 		{
@@ -270,22 +266,19 @@ void mcu_com2_isr()
 #if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
 			if (mcu_com_rx_cb(c))
 			{
-				if (BUFFER_FULL(uart2_rx))
+				if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
 				{
 					STREAM_OVF(c);
 				}
-
-				BUFFER_ENQUEUE(uart2_rx, &c);
 			}
 #else
 			mcu_uart2_rx_cb(c);
 #ifndef UART2_DISABLE_BUFFER
-			if (BUFFER_FULL(uart2_rx))
+			if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
 			{
 				STREAM_OVF(c);
 			}
 
-			BUFFER_ENQUEUE(uart2_rx, &c);
 #endif
 #endif
 		}
@@ -293,13 +286,14 @@ void mcu_com2_isr()
 		{
 			// keeps sending chars until null is found
 			mcu_enable_global_isr();
-			if (BUFFER_EMPTY(uart2_tx))
+			uint8_t c;
+
+			if (!BUFFER_TRY_DEQUEUE(uart2_tx, &c))
 			{
 				COM2_UART->USART.INTENCLR.reg = SERCOM_USART_INTENCLR_DRE;
 				return;
 			}
-			uint8_t c;
-			BUFFER_DEQUEUE(uart2_tx, &c);
+
 			COM2_OUTREG = c;
 		}
 	}
@@ -336,7 +330,7 @@ void mcu_usart_init(void)
 	while (COM_UART->USART.SYNCBUSY.bit.CTRLB)
 		;
 
-	uint16_t baud = (uint16_t)(65536.0f * (1.0f - (((float)BAUDRATE) / (F_CPU >> 4))));
+	uint16_t baud = (uint16_t)(65536.0f * (1.0f - (((float)BAUDRATE) / (SystemCoreClock >> 4))));
 
 	COM_UART->USART.BAUD.reg = baud;
 	mcu_config_altfunc(TX);
@@ -382,7 +376,7 @@ void mcu_usart_init(void)
 	while (COM2_UART->USART.SYNCBUSY.bit.CTRLB)
 		;
 
-	uint16_t baud2 = (uint16_t)(65536.0f * (1.0f - (((float)BAUDRATE2) / (F_CPU >> 4))));
+	uint16_t baud2 = (uint16_t)(65536.0f * (1.0f - (((float)BAUDRATE2) / (SystemCoreClock >> 4))));
 
 	COM2_UART->USART.BAUD.reg = baud2;
 	mcu_config_altfunc(TX2);
@@ -613,15 +607,15 @@ void sysTickHook(void)
 void mcu_rtc_init()
 {
 	SysTick->CTRL = 0;
-	SysTick->LOAD = ((F_CPU / 1000) - 1);
+	SysTick->LOAD = ((SystemCoreClock / 1000) - 1);
 	SysTick->VAL = 0;
 	NVIC_SetPriority(SysTick_IRQn, 10);
 	SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk | SysTick_CTRL_ENABLE_Msk;
 }
 
 #ifdef MCU_HAS_DMA
-static DmacDescriptor mcu_dma_descriptor_sram[DMA_CHANNEL_COUNT] __attribute__ ((aligned (16)));
-static DmacDescriptor mcu_dma_write_back_sram[DMA_CHANNEL_COUNT] __attribute__ ((aligned (16)));
+static DmacDescriptor mcu_dma_descriptor_sram[DMA_CHANNEL_COUNT] __attribute__((aligned(16)));
+static DmacDescriptor mcu_dma_write_back_sram[DMA_CHANNEL_COUNT] __attribute__((aligned(16)));
 
 void mcu_dma_config(void)
 {
@@ -659,7 +653,6 @@ void mcu_dma_config(void)
  * */
 void mcu_init(void)
 {
-	samd21_global_isr_enabled = false;
 	mcu_setup_clocks();
 	mcu_io_init();
 	mcu_usart_init();
@@ -692,7 +685,7 @@ void mcu_init(void)
 	SPICOM->SPI.CTRLB.bit.RXEN = 1;
 	SPICOM->SPI.CTRLB.bit.CHSIZE = 0;
 
-	SPICOM->SPI.BAUD.reg = ((F_CPU >> 1) / SPI_FREQ) - 1;
+	SPICOM->SPI.BAUD.reg = ((SystemCoreClock >> 1) / SPI_FREQ) - 1;
 
 	mcu_config_altfunc(SPI_CLK);
 	mcu_config_altfunc(SPI_SDO);
@@ -732,7 +725,7 @@ void mcu_init(void)
 	SPI2COM->SPI.CTRLB.bit.RXEN = 1;
 	SPI2COM->SPI.CTRLB.bit.CHSIZE = 0;
 
-	SPI2COM->SPI.BAUD.reg = ((F_CPU >> 1) / SPI2_FREQ) - 1;
+	SPI2COM->SPI.BAUD.reg = ((SystemCoreClock >> 1) / SPI2_FREQ) - 1;
 
 	mcu_config_altfunc(SPI2_CLK);
 	mcu_config_altfunc(SPI2_SDO);
@@ -862,7 +855,7 @@ DECL_BUFFER(uint8_t, usb_rx, RX_BUFFER_SIZE);
 uint8_t mcu_usb_getc(void)
 {
 	uint8_t c = 0;
-	BUFFER_DEQUEUE(usb_rx, &c);
+	BUFFER_TRY_DEQUEUE(usb_rx, &c);
 	return c;
 }
 
@@ -903,7 +896,7 @@ void mcu_usb_flush(void)
 uint8_t mcu_uart_getc(void)
 {
 	uint8_t c = 0;
-	BUFFER_DEQUEUE(uart_rx, &c);
+	BUFFER_TRY_DEQUEUE(uart_rx, &c);
 	return c;
 }
 
@@ -919,11 +912,10 @@ void mcu_uart_clear(void)
 
 void mcu_uart_putc(uint8_t c)
 {
-	while (BUFFER_FULL(uart_tx))
+	while (!BUFFER_TRY_ENQUEUE(uart_tx, &c))
 	{
 		mcu_uart_flush();
 	}
-	BUFFER_ENQUEUE(uart_tx, &c);
 }
 
 void mcu_uart_flush(void)
@@ -942,7 +934,7 @@ void mcu_uart_flush(void)
 uint8_t mcu_uart2_getc(void)
 {
 	uint8_t c = 0;
-	BUFFER_DEQUEUE(uart2_rx, &c);
+	BUFFER_TRY_DEQUEUE(uart2_rx, &c);
 	return c;
 }
 
@@ -958,11 +950,10 @@ void mcu_uart2_clear(void)
 
 void mcu_uart2_putc(uint8_t c)
 {
-	while (BUFFER_FULL(uart2_tx))
+	while (!BUFFER_TRY_ENQUEUE(uart2_tx, &c))
 	{
 		mcu_uart2_flush();
 	}
-	BUFFER_ENQUEUE(uart2_tx, &c);
 }
 
 void mcu_uart_flush(void)
@@ -1171,12 +1162,10 @@ void mcu_dotasks(void)
 #ifndef DETACH_USB_FROM_MAIN_PROTOCOL
 		if (mcu_com_rx_cb(c))
 		{
-			if (BUFFER_FULL(usb_rx))
+			if (!BUFFER_TRY_ENQUEUE(usb_rx, &c))
 			{
 				STREAM_OVF(c);
 			}
-
-			BUFFER_ENQUEUE(usb_rx, &c);
 		}
 #else
 		mcu_usb_rx_cb(c);
@@ -1267,7 +1256,7 @@ uint8_t mcu_eeprom_getc(uint16_t address)
 {
 	if (NVM_STORAGE_SIZE <= address)
 	{
-		DBGMSG("EEPROM invalid address @ %u",address);
+		DBGMSG("EEPROM invalid address @ %u", address);
 		return 0;
 	}
 	address &= (NVM_EEPROM_SIZE - 1); // keep within 1Kb address range
@@ -1287,7 +1276,7 @@ void mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
 	if (NVM_STORAGE_SIZE <= address)
 	{
-		DBGMSG("EEPROM invalid address @ %u",address);
+		DBGMSG("EEPROM invalid address @ %u", address);
 	}
 	address &= (NVM_EEPROM_SIZE - 1);
 
@@ -1398,11 +1387,11 @@ static volatile uint16_t spi_rx_length;
 
 void mcu_spi_config(spi_config_t config, uint32_t frequency)
 {
-	frequency = ((F_CPU >> 1) / frequency) - 1;
+	frequency = ((SystemCoreClock >> 1) / frequency) - 1;
 	SPICOM->SPI.CTRLA.bit.ENABLE = 0;
 	while (SPICOM->SPI.SYNCBUSY.bit.ENABLE)
 		;
-	SPICOM->SPI.CTRLA.bit.CPHA = config.mode & 0x01;				// MODE
+	SPICOM->SPI.CTRLA.bit.CPHA = config.mode & 0x01; // MODE
 
 	SPICOM->SPI.CTRLA.bit.CPOL = (config.mode >> 1) & 0x01; // MODE
 	SPICOM->SPI.BAUD.reg = frequency;
@@ -1569,12 +1558,12 @@ bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t da
 			}
 			// Check if reception finished
 			DMAC->CHID.reg = SPI_DMA_RX_CHANNEL;
-			
+
 			if (DMAC->CHCTRLA.bit.ENABLE)
 			{
 				return true;
 			}
-			
+
 			// All transfers finished
 			spi_port_state = SPI_IDLE;
 			return false;
@@ -1633,11 +1622,11 @@ static volatile uint16_t spi2_rx_length;
 
 void mcu_spi2_config(spi_config_t config, uint32_t frequency)
 {
-	frequency = ((F_CPU >> 1) / frequency) - 1;
+	frequency = ((SystemCoreClock >> 1) / frequency) - 1;
 	SPI2COM->SPI.CTRLA.bit.ENABLE = 0;
 	while (SPI2COM->SPI.SYNCBUSY.bit.ENABLE)
 		;
-	SPI2COM->SPI.CTRLA.bit.CPHA = config.mode & 0x01;				// MODE
+	SPI2COM->SPI.CTRLA.bit.CPHA = config.mode & 0x01; // MODE
 
 	SPI2COM->SPI.CTRLA.bit.CPOL = (config.mode >> 1) & 0x01; // MODE
 	SPI2COM->SPI.BAUD.reg = frequency;
@@ -1804,12 +1793,12 @@ bool mcu_spi2_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t d
 			}
 			// Check if reception finished
 			DMAC->CHID.reg = SPI2_DMA_RX_CHANNEL;
-			
+
 			if (DMAC->CHCTRLA.bit.ENABLE)
 			{
 				return true;
 			}
-			
+
 			// All transfers finished
 			spi2_port_state = SPI_IDLE;
 			return false;
@@ -2021,7 +2010,7 @@ void mcu_i2c_config(uint32_t frequency)
 	while (I2CCOM->I2CM.SYNCBUSY.reg)
 		;
 
-	I2CCOM->I2CM.BAUD.reg = F_CPU / (2 * frequency) - 5 - (((F_CPU / 1000000) * 125) / (2 * 1000));
+	I2CCOM->I2CM.BAUD.reg = SystemCoreClock / (2 * frequency) - 5 - (((SystemCoreClock / 1000000) * 125) / (2 * 1000));
 	while (I2CCOM->I2CM.SYNCBUSY.reg)
 		;
 
