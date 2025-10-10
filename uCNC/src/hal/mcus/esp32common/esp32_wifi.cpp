@@ -34,14 +34,6 @@
 
 #define ARG_MAX_LEN MAX(WIFI_SSID_MAX_LEN, BT_ID_MAX_LEN)
 
-#ifdef ENABLE_BLUETOOTH
-#include <BluetoothSerial.h>
-BluetoothSerial SerialBT;
-
-uint8_t bt_on;
-uint16_t bt_settings_offset;
-#endif
-
 #ifdef ENABLE_SOCKETS
 #include <WiFi.h>
 #include <Update.h>
@@ -84,30 +76,6 @@ extern "C"
 		uint8_t has_arg = (cmd_params->next_char == '=');
 		memset(arg, 0, sizeof(arg));
 
-#ifdef ENABLE_BLUETOOTH
-		if (!strncmp((const char *)(cmd_params->cmd), "BTH", 3))
-		{
-			if (!strcmp((const char *)&(cmd_params->cmd)[3], "ON"))
-			{
-				SerialBT.begin(BOARD_NAME);
-				proto_info("Bluetooth enabled");
-				bt_on = 1;
-				settings_save(bt_settings_offset, &bt_on, 1);
-				*(cmd_params->error) = STATUS_OK;
-				return EVENT_HANDLED;
-			}
-
-			if (!strcmp((const char *)&(cmd_params->cmd)[3], "OFF"))
-			{
-				SerialBT.end();
-				proto_info("Bluetooth disabled");
-				bt_on = 0;
-				settings_save(bt_settings_offset, &bt_on, 1);
-				*(cmd_params->error) = STATUS_OK;
-				return EVENT_HANDLED;
-			}
-		}
-#endif
 #ifdef ENABLE_SOCKETS
 		if (!strncmp((const char *)(cmd_params->cmd), "WIFI", 4))
 		{
@@ -476,7 +444,6 @@ extern "C"
 	// Request handler for GET /update
 	static void ota_page_cb(int client_idx)
 	{
-
 		http_send_str(client_idx, 200, (char *)type_html, (char *)updateForm);
 		http_send(client_idx, 200, (char *)type_html, NULL, 0);
 	}
@@ -754,65 +721,6 @@ static void mcu_wifi_task(void *arg)
 }
 #endif
 
-#ifdef MCU_HAS_BLUETOOTH
-#ifndef BLUETOOTH_TX_BUFFER_SIZE
-#define BLUETOOTH_TX_BUFFER_SIZE 64
-#endif
-extern "C"
-{
-	DECL_BUFFER(uint8_t, bt_rx, RX_BUFFER_SIZE);
-	DECL_BUFFER(uint8_t, bt_tx, BLUETOOTH_TX_BUFFER_SIZE);
-
-	uint8_t mcu_bt_getc(void)
-	{
-		uint8_t c = 0;
-		BUFFER_DEQUEUE(bt_rx, &c);
-		return c;
-	}
-
-	uint8_t mcu_bt_available(void)
-	{
-		return BUFFER_READ_AVAILABLE(bt_rx);
-	}
-
-	void mcu_bt_clear(void)
-	{
-		BUFFER_CLEAR(bt_rx);
-	}
-
-	void mcu_bt_putc(uint8_t c)
-	{
-		while (BUFFER_FULL(bt_tx))
-		{
-			mcu_bt_flush();
-		}
-		BUFFER_ENQUEUE(bt_tx, &c);
-	}
-
-	void mcu_bt_flush(void)
-	{
-		if (SerialBT.hasClient())
-		{
-			while (!BUFFER_EMPTY(bt_tx))
-			{
-				uint8_t tmp[BLUETOOTH_TX_BUFFER_SIZE + 1];
-				memset(tmp, 0, sizeof(tmp));
-				uint8_t r;
-
-				BUFFER_READ(bt_tx, tmp, BLUETOOTH_TX_BUFFER_SIZE, r);
-				SerialBT.write(tmp, r);
-				SerialBT.flush();
-			}
-		}
-		else
-		{
-			// no client (discard)
-			BUFFER_CLEAR(bt_tx);
-		}
-	}
-}
-#endif
-
 extern "C"
 {
 	void esp32_pre_init(void)
@@ -825,7 +733,7 @@ extern "C"
 #endif
 	}
 
-	void esp32_wifi_bt_init(void)
+	void mcu_wifi_init(void)
 	{
 #ifdef ENABLE_SOCKETS
 #ifndef ENABLE_BLUETOOTH
@@ -845,49 +753,14 @@ extern "C"
 		// taskYIELD();
 
 #endif
-#ifdef ENABLE_BLUETOOTH
-		bt_settings_offset = settings_register_external_setting(1);
-		if (settings_load(bt_settings_offset, &bt_on, 1))
-		{
-			settings_erase(bt_settings_offset, (uint8_t *)&bt_on, 1);
-		}
-
-		if (bt_on)
-		{
-			SerialBT.begin(BOARD_NAME);
-		}
-#endif
 
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 		ADD_EVENT_LISTENER(grbl_cmd, mcu_custom_grbl_cmd);
 #endif
 	}
 
-	void esp32_wifi_bt_process(void)
+	void mcu_wifi_dotasks(void)
 	{
-#ifdef ENABLE_BLUETOOTH
-		if (SerialBT.hasClient())
-		{
-			while (SerialBT.available() > 0)
-			{
-				esp_task_wdt_reset();
-#ifndef DETACH_BLUETOOTH_FROM_MAIN_PROTOCOL
-				uint8_t c = SerialBT.read();
-				if (mcu_com_rx_cb(c))
-				{
-					if (BUFFER_FULL(bt_rx))
-					{
-						STREAM_OVF(c);
-					}
-
-					BUFFER_ENQUEUE(bt_rx, &c);
-				}
-#else
-				mcu_bt_rx_cb((uint8_t)SerialBT.read());
-#endif
-			}
-		}
-#endif
 	}
 }
 
