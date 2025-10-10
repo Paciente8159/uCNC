@@ -40,8 +40,8 @@ static volatile uint32_t mcu_itp_timer_reload;
 static volatile bool mcu_itp_timer_running;
 hw_timer_t *esp32_step_timer;
 MCU_CALLBACK void mcu_itp_isr(void *arg);
-MCU_CALLBACK void mcu_gen_pwm_and_servo(void);
-MCU_CALLBACK void mcu_gen_step(void);
+MCU_CALLBACK void mcu_gen_pwm_and_servo(float increm);
+MCU_CALLBACK void mcu_gen_step(int32_t increm);
 MCU_CALLBACK void mcu_gpio_isr(void *type);
 
 #if SERVOS_MASK > 0
@@ -125,10 +125,10 @@ static FORCEINLINE void servo_update(void)
 }
 #endif
 
-MCU_CALLBACK void mcu_gen_pwm_and_servo(void)
+MCU_CALLBACK void mcu_gen_pwm_and_servo(float increm)
 {
-	static int16_t mcu_soft_io_counter;
-	int16_t t = mcu_soft_io_counter;
+	static float mcu_soft_io_counter;
+	float t = mcu_soft_io_counter;
 	t--;
 	if (t <= 0)
 	{
@@ -157,7 +157,7 @@ MCU_CALLBACK void mcu_gen_pwm_and_servo(void)
 		// resets every 3ms
 		servo_tick_counter = ++counter;
 #endif
-		mcu_soft_io_counter = (int16_t)roundf((float)ITP_SAMPLE_RATE / 128000.0f);
+		mcu_soft_io_counter = t + increm;
 	}
 	else
 	{
@@ -167,7 +167,7 @@ MCU_CALLBACK void mcu_gen_pwm_and_servo(void)
 
 static volatile uint32_t mcu_itp_timer_reload;
 static volatile bool mcu_itp_timer_running;
-MCU_CALLBACK void mcu_gen_step(void)
+MCU_CALLBACK void mcu_gen_step(int32_t increm)
 {
 	static bool step_reset = true;
 	static int32_t mcu_itp_timer_counter;
@@ -178,7 +178,7 @@ MCU_CALLBACK void mcu_gen_step(void)
 		// stream mode tick
 		int32_t t = mcu_itp_timer_counter;
 		bool reset = step_reset;
-		t -= (int32_t)roundf(1000000.0f / (float)ITP_SAMPLE_RATE);
+		t -= increm;
 		if (t <= 0)
 		{
 			if (!reset)
@@ -255,7 +255,7 @@ MCU_CALLBACK void mcu_itp_isr(void *arg)
 #endif
 #endif
 	{
-		mcu_gen_step();
+		mcu_gen_step((int32_t)roundf(1000000.0f / (float)ITP_SAMPLE_RATE));
 	}
 #ifdef IC74HC595_CUSTOM_SHIFT_IO
 #if defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS)
@@ -263,10 +263,10 @@ MCU_CALLBACK void mcu_itp_isr(void *arg)
 #endif
 #endif
 	{
-		mcu_gen_pwm_and_servo();
+		mcu_gen_pwm_and_servo(((float)ITP_SAMPLE_RATE / 128000.0f));
 	}
 #if defined(MCU_HAS_ONESHOT_TIMER) && defined(ENABLE_RT_SYNC_MOTIONS)
-	mcu_gen_oneshot();
+	mcu_gen_oneshot((int32_t)roundf(1000000.0f / (float)ITP_SAMPLE_RATE));
 #endif
 #ifdef IC74HC595_CUSTOM_SHIFT_IO
 #if defined(IC74HC595_HAS_STEPS) || defined(IC74HC595_HAS_DIRS) || defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS)
@@ -582,5 +582,83 @@ void mcu_dotasks(void)
 	// esp_task_wdt_reset();
 	// mcu_bt_dotasks();
 }
+
+#ifdef MCU_HAS_ONESHOT_TIMER
+
+// software generated oneshot for RT steps like laser PPI
+#ifdef ENABLE_RT_SYNC_MOTIONS
+uint32_t esp32_oneshot_counter;
+uint32_t esp32_oneshot_reload;
+MCU_CALLBACK void mcu_gen_oneshot(int32_t increm)
+{
+	if (esp32_oneshot_counter)
+	{
+		esp32_oneshot_counter -= increm;
+		if (!esp32_oneshot_counter)
+		{
+			if (mcu_timeout_cb)
+			{
+				mcu_timeout_cb();
+			}
+		}
+	}
+}
+#endif
+
+MCU_CALLBACK void mcu_oneshot_isr(void *arg)
+{
+	timer_pause(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX);
+	timer_group_clr_intr_status_in_isr(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX);
+
+	if (mcu_timeout_cb)
+	{
+		mcu_timeout_cb();
+	}
+}
+
+/**
+ * configures a single shot timeout in us
+ * */
+#ifndef mcu_config_timeout
+void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
+{
+	mcu_timeout_cb = fp;
+#if defined(MCU_HAS_ONESHOT_TIMER) && defined(ENABLE_RT_SYNC_MOTIONS)
+	esp32_oneshot_reload = (uint32_t)(1000000.0f / (float)timeout);
+#elif defined(MCU_HAS_ONESHOT_TIMER)
+	timer_config_t config = {0};
+	config.divider = getApbFrequency() / 1000000UL;
+	config.counter_dir = TIMER_COUNT_UP;
+	config.counter_en = TIMER_PAUSE;
+	config.intr_type = TIMER_INTR_MAX;
+	config.alarm_en = TIMER_ALARM_EN;
+	config.auto_reload = true;
+	timer_init(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX, &config);
+	/* Timer's counter will initially start from value below.
+		 Also, if auto_reload is set, this value will be automatically reload on alarm */
+	timer_set_counter_value(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX, 0x00000000ULL);
+	/* Configure the alarm value and the interrupt on alarm. */
+	timer_set_alarm_value(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX, (uint64_t)timeout);
+	// register PWM isr
+	timer_isr_register(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX, mcu_oneshot_isr, NULL, 0, NULL);
+#endif
+}
+#endif
+
+/**
+ * starts the timeout. Once hit the the respective callback is called
+ * */
+#ifndef mcu_start_timeout
+MCU_CALLBACK void mcu_start_timeout()
+{
+#if defined(MCU_HAS_ONESHOT_TIMER) && defined(ENABLE_RT_SYNC_MOTIONS)
+	esp32_oneshot_counter = esp32_oneshot_reload;
+#elif defined(MCU_HAS_ONESHOT_TIMER)
+	timer_enable_intr(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX);
+	timer_start(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX);
+#endif
+}
+#endif
+#endif
 
 #endif

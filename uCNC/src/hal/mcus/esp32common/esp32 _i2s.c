@@ -53,29 +53,14 @@ volatile uint32_t ic74hc595_i2s_pins;
 volatile uint32_t i2s_mode;
 
 MCU_CALLBACK void mcu_itp_isr(void *arg);
-MCU_CALLBACK void mcu_gen_pwm_and_servo(void);
-MCU_CALLBACK void mcu_gen_step(void);
-MCU_CALLBACK void mcu_gpio_isr(void *type);
-
-// software generated oneshot for RT steps like laser PPI
-#if defined(MCU_HAS_ONESHOT_TIMER) && defined(ENABLE_RT_SYNC_MOTIONS)
-static uint32_t esp32_oneshot_counter;
-static uint32_t esp32_oneshot_reload;
-static FORCEINLINE void mcu_gen_oneshot(void)
-{
-	if (esp32_oneshot_counter)
-	{
-		esp32_oneshot_counter--;
-		if (!esp32_oneshot_counter)
-		{
-			if (mcu_timeout_cb)
-			{
-				mcu_timeout_cb();
-			}
-		}
-	}
-}
+MCU_CALLBACK void mcu_gen_pwm_and_servo(float increm);
+MCU_CALLBACK void mcu_gen_step(int32_t increm);
+#ifdef MCU_HAS_ONESHOT_TIMER
+#ifdef ENABLE_RT_SYNC_MOTIONS
+MCU_CALLBACK void mcu_gen_oneshot(int32_t increm);
 #endif
+#endif
+MCU_CALLBACK void mcu_gpio_isr(void *type);
 
 static inline void IRAM_ATTR i2s_write_single_word(uint32_t sample)
 {
@@ -96,13 +81,14 @@ static void IRAM_ATTR i2s_fifo_fill_words(void)
 			break; // stop writing to prevent overflow
 		}
 #if defined(IC74HC595_HAS_STEPS) || defined(IC74HC595_HAS_DIRS)
-		mcu_gen_step();
+		// this runs at a different step rate
+		mcu_gen_step((int32_t)roundf(1000000.0f / (float)I2S_SAMPLE_RATE));
 #endif
 #if defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS)
-		mcu_gen_pwm_and_servo();
+		mcu_gen_pwm_and_servo(((float)I2S_SAMPLE_RATE / 128000.0f));
 #endif
 #if defined(MCU_HAS_ONESHOT_TIMER) && defined(ENABLE_RT_SYNC_MOTIONS)
-		mcu_gen_oneshot();
+		mcu_gen_oneshot((int32_t)roundf(1000000.0f / (float)I2S_SAMPLE_RATE));
 #endif
 		// WRITE_PERI_REG(I2S_FIFO_WR_REG(I2S_PORT), 0xaaaaaaaa);
 		I2S_REG.fifo_wr = 0xaaaaaaaa; //__atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
@@ -119,12 +105,13 @@ static void IRAM_ATTR i2s_fifo_fill_words(void)
 static void IRAM_ATTR i2s_tx_isr(void *arg)
 {
 	uint32_t st = i2s_ll_get_intr_status(&I2S_REG);
+	uint32_t mode = __atomic_load_n((uint32_t *)&i2s_mode, __ATOMIC_ACQUIRE);
 
 	// Default mode: periodic refill
 
 	if (st & I2S_TX_PUT_DATA_INT_ST)
 	{
-		if ((i2s_mode & ~ITP_STEP_MODE_SYNC) == ITP_STEP_MODE_DEFAULT)
+		if ((mode & ~ITP_STEP_MODE_SYNC) == ITP_STEP_MODE_DEFAULT)
 		{
 			i2s_fifo_fill_words();
 		}
@@ -134,7 +121,7 @@ static void IRAM_ATTR i2s_tx_isr(void *arg)
 	// Realtime transition: when draining, detect FIFO empty and flip
 	if (st & I2S_TX_REMPTY_INT_ST)
 	{
-		if ((i2s_mode & ~ITP_STEP_MODE_SYNC) == ITP_STEP_MODE_REALTIME)
+		if ((mode & ~ITP_STEP_MODE_SYNC) == ITP_STEP_MODE_REALTIME)
 		{
 			i2s_ll_enable_intr(&I2S_REG, I2S_TX_REMPTY_INT_ENA, 0);
 			i2s_ll_tx_stop(&I2S_REG);
@@ -230,9 +217,8 @@ static void IRAM_ATTR i2s_enter_default_mode_glitch_free(void)
 	i2s_fifo_fill_words();
 
 	// pause I2S and the pulse timer
-	timer_pause(ITP_TIMER_TG, ITP_TIMER_IDX);
 	i2s_ll_tx_stop(&I2S_REG);
-	
+
 	// Enable periodic ISR (~every 32 samples)
 	i2s_enable_periodic_isr();
 
@@ -262,7 +248,6 @@ static void IRAM_ATTR i2s_enter_realtime_mode_glitch_free(void)
 
 	// Restart TX and the timer
 	i2s_ll_tx_start(&I2S_REG);
-	timer_start(ITP_TIMER_TG, ITP_TIMER_IDX);
 }
 
 /**
@@ -295,8 +280,8 @@ uint8_t itp_set_step_mode(uint8_t mode)
 		// Clear sync flag
 		__atomic_fetch_and((uint32_t *)&i2s_mode, ~ITP_STEP_MODE_SYNC, __ATOMIC_RELAXED);
 
-		// Small settle if desired (optional)
-		// cnc_delay_ms(1);
+		// Small settle
+		ets_delay_us(20);
 	}
 	return last_mode;
 }
