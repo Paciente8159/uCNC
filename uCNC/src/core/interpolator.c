@@ -212,6 +212,8 @@ void itp_init(void)
 	// initialize circular buffers
 	itp_blk_clear();
 	itp_sgm_clear();
+
+	STEP_LOGGER_INIT();
 }
 
 #if S_CURVE_ACCELERATION_LEVEL != 0
@@ -1056,6 +1058,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 		{
 			// loads a new segment
 			itp_rt_sgm = &itp_sgm_data[itp_sgm_data_read];
+			STEP_LOGGER_PRINT("%llu, %llu, %llu, %llu, %llu, %llu, %llu, %f, %u\n", STEP_LOGGER_X, STEP_LOGGER_Y, STEP_LOGGER_Z, STEP_LOGGER_A, STEP_LOGGER_B, STEP_LOGGER_C, ((uint32_t)mcu_clocks_to_freq(itp_rt_sgm->timer_counter,itp_rt_sgm->timer_prescaller)), itp_rt_sgm->feed, itp_rt_sgm->flags);
 			cnc_set_exec_state(EXEC_RUN);
 			if (itp_rt_sgm->block != NULL)
 			{

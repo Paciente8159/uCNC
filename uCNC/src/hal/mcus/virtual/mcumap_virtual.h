@@ -461,6 +461,12 @@ extern void virtual_delay_us(uint16_t delay);
 extern const tool_t spindle_pwm;
 extern const tool_t laser_ppi;
 
+extern void step_logger_init();
+extern void step_logger_print(const char *fmt, ...);
+
+#define STEP_LOGGER_INIT step_logger_init
+#define STEP_LOGGER_PRINT step_logger_print
+
 #define asm __asm__
 
 #endif

@@ -198,7 +198,7 @@ extern "C"
 				{
 					grbl_stream_overflow(c);
 					return;
-//					STREAM_OVF(c);
+					//					STREAM_OVF(c);
 				}
 				BUFFER_ENQUEUE(uart2_rx, &c);
 			}
@@ -1141,12 +1141,41 @@ extern "C"
 	void mcu_io_reset(void)
 	{
 	}
+
+	FILE *step_logger;
+	void step_logger_init()
+	{
+		step_logger = fopen("steplog.csv", "w+");
+
+		if (!step_logger)
+		{
+			printf("Step logger was not able to create new log!!\r\n");
+			return;
+		}
+		fprintf(step_logger, "X, Y, Z, A, B, C, Hz, Feed, Flags\n");
+		fflush(step_logger);
+	}
+
+	void step_logger_print(const char *fmt, ...)
+	{
+		va_list args;
+		va_start(args, fmt);
+		if (step_logger)
+		{
+			// Use vfprintf instead of fprintf
+			vfprintf(step_logger, fmt, args);
+			fflush(step_logger);
+		}
+		va_end(args);
+	}
+
 	void nvm_start_read(uint16_t address) {}
 	void nvm_start_write(uint16_t address) {}
 	uint8_t nvm_getc(uint16_t address) { return mcu_eeprom_getc(address); }
 	void nvm_putc(uint16_t address, uint8_t c) { mcu_eeprom_putc(address, c); }
 	void nvm_end_read(void) {}
 	void nvm_end_write(void) { mcu_eeprom_flush(); }
+	
 #ifdef __cplusplus
 }
 #endif

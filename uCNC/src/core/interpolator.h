@@ -120,6 +120,43 @@ extern "C"
 	DECL_HOOK(itp_rt_stepbits, uint8_t, uint8_t);
 #endif
 
+#ifndef STEP_LOGGER_INIT
+#define STEP_LOGGER_INIT()
+#endif
+#ifndef STEP_LOGGER_PRINT
+#define STEP_LOGGER_PRINT(FMT, ...)
+#endif
+#if AXIS_COUNT > 0
+#define STEP_LOGGER_X itp_rt_sgm->block->steps[AXIS_X]
+#else
+#define STEP_LOGGER_X 0
+#endif
+#if AXIS_COUNT > 1
+#define STEP_LOGGER_Y itp_rt_sgm->block->steps[AXIS_Y]
+#else
+#define STEP_LOGGER_Y 0
+#endif
+#if AXIS_COUNT > 2
+#define STEP_LOGGER_Z itp_rt_sgm->block->steps[AXIS_Z]
+#else
+#define STEP_LOGGER_Z 0
+#endif
+#if AXIS_COUNT > 3
+#define STEP_LOGGER_A itp_rt_sgm->block->steps[AXIS_A]
+#else
+#define STEP_LOGGER_A 0
+#endif
+#if AXIS_COUNT > 4
+#define STEP_LOGGER_B itp_rt_sgm->block->steps[AXIS_B]
+#else
+#define STEP_LOGGER_B 0
+#endif
+#if AXIS_COUNT > 5
+#define STEP_LOGGER_C itp_rt_sgm->block->steps[C]
+#else
+#define STEP_LOGGER_C 0
+#endif
+
 #ifdef __cplusplus
 }
 #endif
