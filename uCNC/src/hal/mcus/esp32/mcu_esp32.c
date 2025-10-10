@@ -35,6 +35,37 @@ static volatile bool mcu_itp_timer_running;
 
 hw_timer_t *esp32_step_timer;
 
+void esp32_pre_init(void);
+void esp32_wifi_bt_init(void);
+void esp32_wifi_bt_flush(uint8_t *buffer);
+void esp32_wifi_bt_process(void);
+
+#ifdef USE_ARDUINO_SPI_LIBRARY
+#ifdef MCU_HAS_SPI
+void mcu_spi_init(void);
+#endif
+#ifdef MCU_HAS_SPI2
+void mcu_spi2_init(void);
+#endif
+#endif
+
+#if !defined(RAM_ONLY_SETTINGS) && !defined(USE_ARDUINO_EEPROM_LIBRARY)
+#include <nvs.h>
+#include <esp_partition.h>
+// Non volatile memory
+typedef struct
+{
+	nvs_handle_t nvs_handle;
+	size_t size;
+	bool dirty;
+	uint8_t data[NVM_STORAGE_SIZE];
+} flash_eeprom_t;
+
+static flash_eeprom_t mcu_eeprom;
+#elif !defined(RAM_ONLY_SETTINGS)
+extern void esp32_eeprom_init(int size);
+#endif
+
 MCU_CALLBACK void mcu_itp_isr(void *arg);
 MCU_CALLBACK void mcu_gen_pwm_and_servo(void);
 MCU_CALLBACK void mcu_gen_step(void);
@@ -334,10 +365,7 @@ void mcu_init(void)
 	gpio_install_isr_service(0);
 #endif
 
-	/**
-	 * IO conficuration
-	 */
-
+	esp32_pre_init();
 	mcu_io_init();
 
 #ifdef MCU_HAS_SPI
@@ -499,9 +527,21 @@ void mcu_disable_global_isr(void)
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_get_global_isr
+// bool mcu_get_global_isr(void)
+// {
+// 	return esp32_global_isr_enabled;
+// }
 bool mcu_get_global_isr(void)
 {
-	return esp32_global_isr_enabled;
+	if (xPortInIsrContext())
+	{
+		return false;
+	}
+	
+	uint32_t ps;
+	__asm__ volatile("rsr.ps %0" : "=a"(ps));
+	// INTLEVEL is bits [3:0] of PS
+	return ((ps & 0xF) < 2);
 }
 #endif
 

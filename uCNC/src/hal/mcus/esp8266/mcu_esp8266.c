@@ -35,7 +35,6 @@
 #include "twi.h"
 #endif
 
-volatile uint32_t esp8266_global_isr;
 static volatile uint32_t mcu_runtime_ms;
 
 #ifndef TIMER_IO_SAMPLE_RATE
@@ -172,7 +171,7 @@ MCU_CALLBACK void shift_register_io_pins(void)
 	for (uint8_t i = SHIFT_REGISTER_BYTES; i != 0;)
 	{
 		i--;
-		asm volatile("": : :"memory");
+		asm volatile("" : : : "memory");
 #if (defined(SHIFT_REGISTER_USE_HW_SPI) && defined(MCU_HAS_SPI))
 		pins[i] = mcu_spi_xmit(pins[i]);
 #else
@@ -267,7 +266,7 @@ static void FORCEINLINE out_io_push(esp8266_io_out_t val)
 	out_io_buffer[h] = val;
 	h++;
 	h = (h < OUT_IO_BUFFER_SIZE) ? h : 0;
-	__ATOMIC__
+	ATOMIC_CODEBLOCK
 	{
 		out_io_head = h;
 	}
@@ -294,7 +293,8 @@ static esp8266_io_out_t FORCEINLINE out_io_pull(void)
 	return val;
 }
 
-#ifdef MCU_HAS_WIFI
+#ifdef ENABLE_SOCKETS
+void esp8266_pre_init(void);
 extern void esp8266_wifi_init(void);
 extern void esp8266_wifi_dotasks(void);
 #endif
@@ -531,7 +531,7 @@ IRAM_ATTR void mcu_itp_isr(void)
 void itp_buffer_dotasks(uint16_t limit)
 {
 	static volatile bool running = false;
-	// __ATOMIC__
+	// ATOMIC_CODEBLOCK
 	{
 		if (running)
 		{
@@ -574,7 +574,7 @@ void itp_buffer_dotasks(uint16_t limit)
 		}
 
 		// clear sync flag
-		// __ATOMIC__
+		// ATOMIC_CODEBLOCK
 		{
 			esp8266_step_mode &= ~ITP_STEP_MODE_SYNC;
 		}
@@ -645,6 +645,7 @@ extern void mcu_spi_init();
 
 void mcu_init(void)
 {
+	esp8266_pre_init();
 	mcu_io_init();
 	mcu_uart_init();
 
@@ -652,9 +653,7 @@ void mcu_init(void)
 	mcu_eeprom_init(); // Emulated EEPROM
 #endif
 
-#ifdef MCU_HAS_WIFI
 	esp8266_wifi_init();
-#endif
 
 	esp8266_step_mode = (ITP_STEP_MODE_DEFAULT | ITP_STEP_MODE_SYNC);
 
@@ -685,7 +684,7 @@ void mcu_dotasks(void)
 	// reset WDT
 	system_soft_wdt_feed();
 	mcu_uart_dotasks();
-#ifdef MCU_HAS_WIFI
+#ifdef ENABLE_SOCKETS
 	esp8266_wifi_dotasks();
 #endif
 	// itp_buffer_dotasks(OUT_IO_BUFFER_MINIMAL);
@@ -941,5 +940,7 @@ void mcu_start_timeout()
 }
 #endif
 #endif
+
+   // for PS register bits
 
 #endif

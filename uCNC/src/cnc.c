@@ -756,7 +756,7 @@ void cnc_exec_rt_commands(void)
 	if (command)
 	{
 		// clear all but report. report is handled in cnc_io_dotasks
-		__ATOMIC__
+		ATOMIC_CODEBLOCK
 		{
 			cnc_state.rt_cmd = RT_CMD_CLEAR;
 		}
@@ -1098,6 +1098,10 @@ static void cnc_io_dotasks(void)
 			stepper_timeout = mcu_millis() + g_settings.step_disable_timeout;
 		}
 	}
+#endif
+
+#if defined(ENABLE_SOCKETS) && !defined(MCU_HAS_RTOS)
+	socket_server_dotasks();
 #endif
 }
 

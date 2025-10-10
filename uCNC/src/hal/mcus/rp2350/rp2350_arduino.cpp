@@ -29,7 +29,7 @@
  *
  * **/
 
-#if (defined(MCU_HAS_WIFI) || defined(ENABLE_BLUETOOTH))
+#if (defined(MCU_HAS_SOCKETS) || defined(ENABLE_BLUETOOTH))
 
 #ifndef WIFI_SSID_MAX_LEN
 #define WIFI_SSID_MAX_LEN 32
@@ -48,7 +48,7 @@ uint8_t bt_on;
 uint16_t bt_settings_offset;
 #endif
 
-#ifdef MCU_HAS_WIFI
+#ifdef ENABLE_SOCKETS
 #include <WiFi.h>
 #include <WebServer.h>
 #include <HTTPUpdateServer.h>
@@ -136,7 +136,7 @@ bool mcu_custom_grbl_cmd(void *args)
 		}
 	}
 #endif
-#ifdef MCU_HAS_WIFI
+#ifdef ENABLE_SOCKETS
 	if (!strncmp((const char *)(cmd_params->cmd), "WIFI", 4))
 	{
 		if (!strcmp((const char *)&(cmd_params->cmd)[4], "ON"))
@@ -343,7 +343,7 @@ CREATE_EVENT_LISTENER(grbl_cmd, mcu_custom_grbl_cmd);
 
 bool rp2350_wifi_clientok(void)
 {
-#ifdef MCU_HAS_WIFI
+#ifdef ENABLE_SOCKETS
 	static uint32_t next_info = 30000;
 	static bool connected = false;
 	uint8_t str[128];
@@ -397,7 +397,7 @@ bool rp2350_wifi_clientok(void)
 	return false;
 }
 
-#if defined(MCU_HAS_WIFI) && defined(MCU_HAS_ENDPOINTS)
+#if defined(MCU_HAS_SOCKETS) && defined(MCU_HAS_ENDPOINTS)
 
 #define MCU_FLASH_FS_LITTLE_FS 1
 #define MCU_FLASH_FS_SPIFFS 2
@@ -577,18 +577,18 @@ bool endpoint_request_arg(const char *argname, char *argvalue, size_t maxlen)
 
 void endpoint_send(int code, const char *content_type, const uint8_t *data, size_t data_len)
 {
-	static uint8_t in_chuncks = 0;
+	static uint8_t in_chunks = 0;
 	if (!content_type)
 	{
-		in_chuncks = 1;
+		in_chunks = 1;
 		web_server.setContentLength(CONTENT_LENGTH_UNKNOWN);
 	}
 	else
 	{
-		switch (in_chuncks)
+		switch (in_chunks)
 		{
 		case 1:
-			in_chuncks = 2;
+			in_chunks = 2;
 			__FALL_THROUGH__
 		case 0:
 			web_server.send(code, content_type, data, data_len);
@@ -597,12 +597,12 @@ void endpoint_send(int code, const char *content_type, const uint8_t *data, size
 			if (data)
 			{
 				web_server.sendContent((char *)data, data_len);
-				in_chuncks = 2;
+				in_chunks = 2;
 			}
 			else
 			{
 				web_server.sendContent("");
-				in_chuncks = 0;
+				in_chunks = 0;
 			}
 			break;
 		}
@@ -658,7 +658,7 @@ void endpoint_file_upload_name(char *filename, size_t maxlen)
 
 #endif
 
-#if defined(MCU_HAS_WIFI) && defined(MCU_HAS_WEBSOCKETS)
+#if defined(MCU_HAS_SOCKETS) && defined(MCU_HAS_WEBSOCKETS)
 #include "WebSocketsServer.h"
 #include "../../../modules/websocket.h"
 WebSocketsServer socket_server(WEBSOCKET_PORT);
@@ -750,7 +750,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
 
 void rp2350_wifi_bt_init(void)
 {
-#ifdef MCU_HAS_WIFI
+#ifdef ENABLE_SOCKETS
 
 	wifi_settings_offset = settings_register_external_setting(sizeof(wifi_settings_t));
 	if (settings_load(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t)))
@@ -839,57 +839,56 @@ void rp2350_wifi_bt_init(void)
 #endif
 }
 
-#ifdef MCU_HAS_WIFI
+#ifdef ENABLE_SOCKETS
 #ifndef WIFI_TX_BUFFER_SIZE
 #define WIFI_TX_BUFFER_SIZE 64
 #endif
-DECL_BUFFER(uint8_t, wifi_tx, WIFI_TX_BUFFER_SIZE);
-DECL_BUFFER(uint8_t, wifi_rx, RX_BUFFER_SIZE);
+DECL_BUFFER(uint8_t, telnet_tx, WIFI_TX_BUFFER_SIZE);
+DECL_BUFFER(uint8_t, telnet_rx, RX_BUFFER_SIZE);
 
-uint8_t mcu_wifi_getc(void)
+uint8_t mcu_telnet_getc(void)
 {
 	uint8_t c = 0;
-	BUFFER_DEQUEUE(wifi_rx, &c);
+	BUFFER_TRY_DEQUEUE(wifi_rx, &c);
 	return c;
 }
 
-uint8_t mcu_wifi_available(void)
+uint8_t mcu_telnet_available(void)
 {
-	return BUFFER_READ_AVAILABLE(wifi_rx);
+	return BUFFER_READ_AVAILABLE(telnet_rx);
 }
 
-void mcu_wifi_clear(void)
+void mcu_telnet_clear(void)
 {
-	BUFFER_CLEAR(wifi_rx);
+	BUFFER_CLEAR(telnet_rx);
 }
 
-void mcu_wifi_putc(uint8_t c)
+void mcu_telnet_putc(uint8_t c)
 {
-	while (BUFFER_FULL(wifi_tx))
+	while (!BUFFER_TRY_ENQUEUE(wifi_tx, &c))
 	{
-		mcu_wifi_flush();
+		mcu_telnet_flush();
 	}
-	BUFFER_ENQUEUE(wifi_tx, &c);
 }
 
-void mcu_wifi_flush(void)
+void mcu_telnet_flush(void)
 {
 	if (rp2350_wifi_clientok())
 	{
-		while (!BUFFER_EMPTY(wifi_tx))
+		while (!BUFFER_EMPTY(telnet_tx))
 		{
 			uint8_t tmp[WIFI_TX_BUFFER_SIZE + 1];
 			memset(tmp, 0, sizeof(tmp));
 			uint8_t r;
 
-			BUFFER_READ(wifi_tx, tmp, WIFI_TX_BUFFER_SIZE, r);
+			BUFFER_READ(telnet_tx, tmp, WIFI_TX_BUFFER_SIZE, r);
 			server_client.write(tmp, r);
 		}
 	}
 	else
 	{
 		// no client (discard)
-		BUFFER_CLEAR(wifi_tx);
+		BUFFER_CLEAR(telnet_tx);
 	}
 }
 #endif
@@ -904,7 +903,7 @@ DECL_BUFFER(uint8_t, bt_rx, RX_BUFFER_SIZE);
 uint8_t mcu_bt_getc(void)
 {
 	uint8_t c = 0;
-	BUFFER_DEQUEUE(bt_rx, &c);
+	BUFFER_TRY_DEQUEUE(bt_rx, &c);
 	return c;
 }
 
@@ -920,11 +919,10 @@ void mcu_bt_clear(void)
 
 void mcu_bt_putc(uint8_t c)
 {
-	while (BUFFER_FULL(bt_tx))
+	while (!BUFFER_TRY_ENQUEUE(bt_tx, &c))
 	{
 		mcu_bt_flush();
 	}
-	BUFFER_ENQUEUE(bt_tx, &c);
 }
 
 void mcu_bt_flush(void)
@@ -944,7 +942,7 @@ void mcu_bt_flush(void)
 
 uint8_t rp2350_wifi_bt_read(void)
 {
-#ifdef MCU_HAS_WIFI
+#ifdef ENABLE_SOCKETS
 	if (rp2350_wifi_clientok())
 	{
 		if (server_client.available() > 0)
@@ -963,25 +961,23 @@ uint8_t rp2350_wifi_bt_read(void)
 
 void rp2350_wifi_bt_process(void)
 {
-#ifdef MCU_HAS_WIFI
+#ifdef ENABLE_SOCKETS
 	if (rp2350_wifi_clientok())
 	{
 		while (server_client.available() > 0)
 		{
-#ifndef DETACH_WIFI_FROM_MAIN_PROTOCOL
+#ifndef DETACH_TELNET_FROM_MAIN_PROTOCOL
 			uint8_t c = (uint8_t)server_client.read();
 			if (mcu_com_rx_cb(c))
 			{
-				if (BUFFER_FULL(wifi_rx))
+				if (!BUFFER_TRY_ENQUEUE(wifi_rx, &c);)
 				{
 					STREAM_OVF(c);
 				}
-
-				BUFFER_ENQUEUE(wifi_rx, &c);
 			}
 
 #else
-			mcu_wifi_rx_cb((uint8_t)server_client.read());
+			mcu_telnet_rx_cb((uint8_t)server_client.read());
 #endif
 		}
 	}
@@ -1002,12 +998,10 @@ void rp2350_wifi_bt_process(void)
 		uint8_t c = (uint8_t)SerialBT.read();
 		if (mcu_com_rx_cb(c))
 		{
-			if (BUFFER_FULL(bt_rx))
+			if (!BUFFER_TRY_ENQUEUE(bt_rx, &c))
 			{
 				STREAM_OVF(c);
 			}
-
-			BUFFER_ENQUEUE(bt_rx, &c);
 		}
 
 #else
@@ -1078,7 +1072,7 @@ extern "C"
 		COM2_UART.setRX(RX2_BIT);
 		COM2_UART.begin(BAUDRATE2);
 #endif
-#if (defined(MCU_HAS_WIFI) || defined(ENABLE_BLUETOOTH))
+#if (defined(MCU_HAS_SOCKETS) || defined(ENABLE_BLUETOOTH))
 		rp2350_wifi_bt_init();
 #endif
 	}
@@ -1093,7 +1087,7 @@ extern "C"
 	uint8_t mcu_usb_getc(void)
 	{
 		uint8_t c = 0;
-		BUFFER_DEQUEUE(usb_rx, &c);
+		BUFFER_TRY_DEQUEUE(usb_rx, &c);
 		return c;
 	}
 
@@ -1109,11 +1103,10 @@ extern "C"
 
 	void mcu_usb_putc(uint8_t c)
 	{
-		while (BUFFER_FULL(usb_tx))
+		while (!BUFFER_TRY_ENQUEUE(usb_tx, &c))
 		{
 			mcu_usb_flush();
 		}
-		BUFFER_ENQUEUE(usb_tx, &c);
 	}
 
 	void mcu_usb_flush(void)
@@ -1141,7 +1134,7 @@ extern "C"
 	uint8_t mcu_uart_getc(void)
 	{
 		uint8_t c = 0;
-		BUFFER_DEQUEUE(uart_rx, &c);
+		BUFFER_TRY_DEQUEUE(uart_rx, &c);
 		return c;
 	}
 
@@ -1157,11 +1150,10 @@ extern "C"
 
 	void mcu_uart_putc(uint8_t c)
 	{
-		while (BUFFER_FULL(uart_tx))
+		while (!BUFFER_TRY_ENQUEUE(uart_tx, &c))
 		{
 			mcu_uart_flush();
 		}
-		BUFFER_ENQUEUE(uart_tx, &c);
 	}
 
 	void mcu_uart_flush(void)
@@ -1189,7 +1181,7 @@ extern "C"
 	uint8_t mcu_uart2_getc(void)
 	{
 		uint8_t c = 0;
-		BUFFER_DEQUEUE(uart2_rx, &c);
+		BUFFER_TRY_DEQUEUE(uart2_rx, &c);
 		return c;
 	}
 
@@ -1205,11 +1197,10 @@ extern "C"
 
 	void mcu_uart2_putc(uint8_t c)
 	{
-		while (BUFFER_FULL(uart2_tx))
+		while (!BUFFER_TRY_ENQUEUE(uart2_tx, &c))
 		{
 			mcu_uart2_flush();
 		}
-		BUFFER_ENQUEUE(uart2_tx, &c);
 	}
 
 	void mcu_uart2_flush(void)
@@ -1236,12 +1227,10 @@ extern "C"
 			uint8_t c = (uint8_t)Serial.read();
 			if (mcu_com_rx_cb(c))
 			{
-				if (BUFFER_FULL(usb_rx))
+				if (!BUFFER_TRY_ENQUEUE(usb_rx, &c))
 				{
 					STREAM_OVF(c);
 				}
-
-				BUFFER_ENQUEUE(usb_rx, &c);
 			}
 
 #else
@@ -1257,12 +1246,10 @@ extern "C"
 			uint8_t c = (uint8_t)COM_UART.read();
 			if (mcu_com_rx_cb(c))
 			{
-				if (BUFFER_FULL(uart_rx))
+				if (!BUFFER_TRY_ENQUEUE(uart_rx, &c))
 				{
 					STREAM_OVF(c);
 				}
-
-				BUFFER_ENQUEUE(uart_rx, &c);
 			}
 #else
 			mcu_uart_rx_cb((uint8_t)COM_UART.read());
@@ -1278,29 +1265,26 @@ extern "C"
 
 			if (mcu_com_rx_cb(c))
 			{
-				if (BUFFER_FULL(uart2_rx))
+				if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
 				{
 					STREAM_OVF(c);
 				}
-
-				BUFFER_ENQUEUE(uart2_rx, &c);
 			}
 
 #else
 			mcu_uart2_rx_cb(c);
 #ifndef UART2_DISABLE_BUFFER
-			if (BUFFER_FULL(uart2_rx))
+			if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
 			{
 				STREAM_OVF(c);
 			}
 
-			BUFFER_ENQUEUE(uart2_rx, &c);
 #endif
 #endif
 		}
 #endif
 
-#if (defined(MCU_HAS_WIFI) || defined(ENABLE_BLUETOOTH))
+#if (defined(MCU_HAS_SOCKETS) || defined(ENABLE_BLUETOOTH))
 		rp2350_wifi_bt_process();
 #endif
 

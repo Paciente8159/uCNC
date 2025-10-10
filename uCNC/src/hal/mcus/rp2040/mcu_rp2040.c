@@ -23,8 +23,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-static volatile bool rp2040_global_isr_enabled;
-
 extern void rp2040_uart_init(int baud);
 extern void rp2040_uart_process(void);
 
@@ -157,7 +155,7 @@ void mcu_enqueue_alarm(rp2040_alarm_t *a, uint32_t timeout_us)
 	a->timeout = (uint32_t)target;
 	a->next = NULL;
 
-	__ATOMIC__
+	ATOMIC_CODEBLOCK
 	{
 		rp2040_alarm_t *ptr = (rp2040_alarm_t *)mcu_alarms;
 		// is the only
@@ -415,45 +413,9 @@ uint8_t mcu_get_pwm(uint8_t pwm)
 }
 #endif
 
-// ISR
-/**
- * enables global interrupts on the MCU
- * can be defined either as a function or a macro call
- * */
-#ifndef mcu_enable_global_isr
-void mcu_enable_global_isr(void)
-{
-	// ets_intr_unlock();
-	rp2040_global_isr_enabled = true;
-}
-#endif
-
-/**
- * disables global interrupts on the MCU
- * can be defined either as a function or a macro call
- * */
-#ifndef mcu_disable_global_isr
-void mcu_disable_global_isr(void)
-{
-	rp2040_global_isr_enabled = false;
-	// ets_intr_lock();
-}
-#endif
-
-/**
- * gets global interrupts state on the MCU
- * can be defined either as a function or a macro call
- * */
-#ifndef mcu_get_global_isr
-bool mcu_get_global_isr(void)
-{
-	return rp2040_global_isr_enabled;
-}
-#endif
-
 // Step interpolator
 
-static uint32_t mcu_step_counter;
+// static uint32_t mcu_step_counter;
 static uint32_t mcu_step_reload;
 static void mcu_itp_isr(void)
 {
