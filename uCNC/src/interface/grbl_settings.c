@@ -225,8 +225,7 @@ const setting_id_t __rom__ g_settings_id_table[] = {
 		{.id = 219, .memptr = &g_settings.hmap_offsets, .type = SETTING_TYPE_FLOAT | SETTING_ARRAY | SETTING_ARRCNT(H_MAPING_ARRAY_HALF_SIZE)},
 		{.id = 219 + H_MAPING_ARRAY_HALF_SIZE, .memptr = &g_settings.hmap_offsets[H_MAPING_ARRAY_HALF_SIZE], .type = SETTING_TYPE_FLOAT | SETTING_ARRAY | SETTING_ARRCNT(H_MAPING_ARRAY_HALF_SIZE)},
 #endif
-}
-;
+};
 
 #ifdef ENABLE_SETTINGS_MODULES
 // event_settings_extended_load_handler
@@ -434,19 +433,25 @@ void settings_save(uint16_t address, uint8_t *__ptr, uint16_t size)
 
 bool settings_allows_negative(setting_offset_t id)
 {
-#if TOOL_COUNT > 0
-	if (id > 80 && id <= (80 + TOOL_COUNT))
+	switch (id)
 	{
+	case 11:
 		return true;
-	}
+	default:
+#if TOOL_COUNT > 0
+		if (id > 80 && id <= (80 + TOOL_COUNT))
+		{
+			return true;
+		}
 #endif
 #ifdef ENABLE_SKEW_COMPENSATION
-	if (id >= 37 && id <= 39)
-	{
-		return true;
-	}
+		if (id >= 37 && id <= 39)
+		{
+			return true;
+		}
 #endif
-	return false;
+		return false;
+	}
 }
 
 uint8_t settings_change(setting_offset_t id, float value)
