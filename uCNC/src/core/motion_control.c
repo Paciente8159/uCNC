@@ -438,7 +438,6 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 	{
 		if (step_new_pos[i] != mc_last_step_pos[i])
 		{
-
 			if (g_settings.max_feed_rate[i] < max_feed)
 			{
 				slowest = i;
@@ -449,12 +448,12 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 
 	if (slowest)
 	{
-		max_feed = g_settings.max_feed_rate[slowest];
+		max_feed = MIN(max_feed, g_settings.max_feed_rate[slowest]);
 		if (!line_dist)
 		{
 			line_dist = target[slowest] - prev_target[slowest];
 			inv_dist = fast_flt_inv(line_dist);
-		}
+		}	
 	}
 #endif
 
