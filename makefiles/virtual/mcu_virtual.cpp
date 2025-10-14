@@ -19,6 +19,13 @@
 #if (MCU == MCU_VIRTUAL_WIN)
 
 #ifdef __cplusplus
+#include <atomic>
+using namespace std;
+#else
+#include <stdatomic.h>
+#endif
+
+#ifdef __cplusplus
 extern "C"
 {
 #endif
@@ -198,7 +205,7 @@ extern "C"
 				{
 					grbl_stream_overflow(c);
 					return;
-//					STREAM_OVF(c);
+					//					STREAM_OVF(c);
 				}
 				BUFFER_ENQUEUE(uart2_rx, &c);
 			}
@@ -610,7 +617,7 @@ extern "C"
 
 	static volatile uint32_t mcu_itp_timer_reload;
 	static volatile bool mcu_itp_timer_running;
-	static FORCEINLINE void mcu_gen_step(void)
+	static FORCEINLINE void mcu_gen_step(uint32_t steptime)
 	{
 		static bool step_reset = true;
 		static int32_t mcu_itp_timer_counter;
@@ -621,7 +628,7 @@ extern "C"
 			// stream mode tick
 			int32_t t = mcu_itp_timer_counter;
 			bool reset = step_reset;
-			t -= (int32_t)roundf(1000000.0f / (float)ITP_SAMPLE_RATE);
+			t -= steptime;
 			if (t <= 0)
 			{
 				if (!reset)
@@ -722,6 +729,16 @@ extern "C"
 	unsigned long perf_start;
 	double cyclesPerMicrosecond;
 	double cyclesPerMillisecond;
+	
+	FILE *stimuli;
+	uint64_t tickcount;
+
+#define def_printpin(X) \
+	if (stimuli)          \
+	fprintf(stimuli, "$var wire 1 %c " #X " $end\n", 33 + X)
+#define printpin(X) \
+	if (stimuli)      \
+	fprintf(stimuli, "%d%c\n", ((virtualmap.special_outputs & (1 << (X - 1))) ? 1 : 0), 33 + X)
 
 	volatile unsigned long g_cpu_freq = 0;
 
@@ -802,16 +819,18 @@ extern "C"
 
 	uint32_t mcu_micros(void)
 	{
-		LARGE_INTEGER perf_counter;
-		QueryPerformanceCounter(&perf_counter);
-		return (uint32_t)(perf_counter.QuadPart / cyclesPerMicrosecond);
+		// LARGE_INTEGER perf_counter;
+		// QueryPerformanceCounter(&perf_counter);
+		// return (uint32_t)(perf_counter.QuadPart / cyclesPerMicrosecond);
+		return (uint32_t)tickcount;
 	}
 
 	uint32_t mcu_millis(void)
 	{
-		LARGE_INTEGER perf_counter;
-		QueryPerformanceCounter(&perf_counter);
-		return (uint32_t)(perf_counter.QuadPart / cyclesPerMillisecond);
+		// LARGE_INTEGER perf_counter;
+		// QueryPerformanceCounter(&perf_counter);
+		// return (uint32_t)(perf_counter.QuadPart / cyclesPerMillisecond);
+		return (uint32_t)(tickcount/1000);
 	}
 
 	/**
@@ -835,15 +854,69 @@ extern "C"
 
 	void ticksimul(void)
 	{
-		//		long t = stopCycleCounter();
-		//		printf("Elapsed %dus\n\r", (int)((double)t / cyclesPerMicrosecond));
-		for (int i = 0; i < (int)ceil(20 * ITP_SAMPLE_RATE / 1000); i++)
+		static bool running = false;
+		bool test = false;
+		do
 		{
-			mcu_gen_step();
+			test = __atomic_load_n(&running, __ATOMIC_RELAXED);
+			if (test)
+			{
+				return;
+			}
+		} while (!__atomic_compare_exchange_n(&running, &test, true, false, __ATOMIC_RELAXED, __ATOMIC_RELAXED));
+		
+		static uint32_t prev, next_rtc = 1000;
+		float parcial = 0;
+		float timestep = ceil((float)EMULATION_MS_TICK * ITP_SAMPLE_RATE * 0.001f);
+		for (int i = 0; i < (int)timestep; i++)
+		{
+			parcial += (1000000.0f / (float)ITP_SAMPLE_RATE);
+			uint32_t partial_int = (int)parcial;
+			tickcount += partial_int;
+			parcial -= partial_int;
+
+			mcu_gen_step(partial_int);
+
+			if (prev ^ virtualmap.special_outputs)
+			{
+				prev = virtualmap.special_outputs;
+				if (stimuli)
+					fprintf(stimuli, "#%llu\n", tickcount);
+#if AXIS_COUNT > 0
+				printpin(STEP0);
+				printpin(DIR0);
+#endif
+#if AXIS_COUNT > 1
+				printpin(STEP1);
+				printpin(DIR1);
+#endif
+#if AXIS_COUNT > 2
+				printpin(STEP2);
+				printpin(DIR2);
+#endif
+#if AXIS_COUNT > 3
+				printpin(STEP3);
+				printpin(DIR3);
+#endif
+#if AXIS_COUNT > 4
+				printpin(STEP4);
+				printpin(DIR4);
+#endif
+#if AXIS_COUNT > 5
+				printpin(STEP5);
+				printpin(DIR5);
+#endif
+			}
+
+			if (tickcount >= next_rtc)
+			{
+				mcu_rtc_cb(mcu_millis());
+				next_rtc = (tickcount - (tickcount % 1000)) + 1000;
+			}
 		}
 
-		mcu_rtc_cb(mcu_millis());
 		//		startCycleCounter();
+		__atomic_store_n(&running, false, __ATOMIC_RELAXED);
 	}
 
 /**
@@ -1097,7 +1170,7 @@ extern "C"
 		virtualmap.inputs = 0;
 		virtualmap.outputs = 0;
 		g_cpu_freq = getCPUFreq();
-		start_timer(20, &ticksimul);
+		start_timer(EMULATION_MS_TICK, &ticksimul);
 		pthread_create(&thread_io, NULL, &ioserver, NULL);
 		mcu_enable_global_isr();
 		flash_fs = {
@@ -1120,6 +1193,20 @@ extern "C"
 
 	int main(int argc, char **argv)
 	{
+		stimuli = fopen("stimuli.vcd", "w+");
+		if (stimuli)
+			fprintf(stimuli, "$timescale 1us $end\n$scope module logic $end\n", tickcount);
+		def_printpin(STEP0);
+		def_printpin(DIR0);
+		def_printpin(STEP1);
+		def_printpin(DIR1);
+		def_printpin(STEP2);
+		def_printpin(DIR2);
+		def_printpin(STEP3);
+		def_printpin(DIR3);
+		if (stimuli)
+			fprintf(stimuli, "$upscope $end\n$enddefinitions $end\n\n", tickcount);
+
 		cnc_init();
 		for (;;)
 		{
