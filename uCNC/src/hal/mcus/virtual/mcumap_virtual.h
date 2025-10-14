@@ -461,6 +461,10 @@ extern void virtual_delay_us(uint16_t delay);
 extern const tool_t spindle_pwm;
 extern const tool_t laser_ppi;
 
+#define EMULATION_MS_TICK 100
+#define ENABLE_ITP_FEED_TASK
+#define ENABLE_PIN_DEBUG_EXTRA_CMD
+
 #define asm __asm__
 
 #endif
