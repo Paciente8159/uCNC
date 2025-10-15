@@ -217,7 +217,7 @@ extern "C"
 #endif
 
 #ifndef mcu_softpwm_freq_config
-	uint8_t mcu_softpwm_freq_config(uint16_t freq);
+#define mcu_softpwm_freq_config(pin, freq)
 #endif
 
 /**

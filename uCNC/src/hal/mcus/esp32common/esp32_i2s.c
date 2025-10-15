@@ -53,7 +53,8 @@ volatile uint32_t ic74hc595_i2s_pins;
 volatile uint32_t i2s_mode;
 
 MCU_CALLBACK void mcu_itp_isr(void *arg);
-MCU_CALLBACK void mcu_gen_pwm_and_servo(void);
+MCU_CALLBACK void mcu_gen_pwm(void);
+MCU_CALLBACK void mcu_gen_servo(void);
 MCU_CALLBACK void mcu_gen_step(void);
 MCU_CALLBACK void mcu_gpio_isr(void *type);
 
@@ -95,12 +96,12 @@ static void IRAM_ATTR i2s_fifo_fill_words(void)
 			i2s_ll_clear_intr_status(&I2S_REG, I2S_TX_WFULL_INT_CLR);
 			break; // stop writing to prevent overflow
 		}
-#if defined(IC74HC595_HAS_STEPS) || defined(IC74HC595_HAS_DIRS)
+
+		signal_timer.us_step = 4;
+
 		mcu_gen_step();
-#endif
-#if defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS)
-		mcu_gen_pwm_and_servo();
-#endif
+		// mcu_gen_pwm();
+		// mcu_gen_servo();
 #if defined(MCU_HAS_ONESHOT_TIMER) && defined(ENABLE_RT_SYNC_MOTIONS)
 		mcu_gen_oneshot();
 #endif
@@ -125,7 +126,7 @@ static void IRAM_ATTR i2s_tx_isr(void *arg)
 
 	if (st & I2S_TX_PUT_DATA_INT_ST)
 	{
-		if ((i2s_mode & ~ITP_STEP_MODE_SYNC) == ITP_STEP_MODE_DEFAULT)
+		if (i2s_mode & ITP_STEP_MODE_DEFAULT)
 		{
 			i2s_fifo_fill_words();
 		}
@@ -134,10 +135,16 @@ static void IRAM_ATTR i2s_tx_isr(void *arg)
 	// Realtime transition: when draining, detect FIFO empty and flip
 	if (st & I2S_TX_REMPTY_INT_ST)
 	{
-		if ((i2s_mode & ~ITP_STEP_MODE_SYNC) == ITP_STEP_MODE_REALTIME)
+		if (i2s_mode & ITP_STEP_MODE_REALTIME)
 		{
-			i2s_ll_enable_intr(&I2S_REG, I2S_TX_REMPTY_INT_ENA, 0);
+			// sets REALTIME MODE
 			i2s_ll_tx_stop(&I2S_REG);
+			i2s_ll_enable_intr(&I2S_REG, I2S_TX_REMPTY_INT_ENA, 0);
+			i2s_ll_tx_force_enable_fifo_mod(&I2S_REG, false);
+			I2S_REG.conf_single_data = __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
+			i2s_ll_tx_start(&I2S_REG);
+			timer_enable_intr(ITP_TIMER_TG, ITP_TIMER_IDX);
+			timer_start(ITP_TIMER_TG, ITP_TIMER_IDX);
 		}
 	}
 
@@ -186,7 +193,7 @@ static void IRAM_ATTR i2s_tx_base_config(void)
 
 	// 32-bit frames, mono-like usage, MSB-right placement compatible with 74HC595 stream
 	// i2s_ll_tx_set_chan_mod(&I2S_REG, 0);
-	i2s_ll_tx_set_chan_mod(&I2S_REG, I2S_CHANNEL_FMT_ONLY_RIGHT);
+	i2s_ll_tx_set_chan_mod(&I2S_REG, I2S_CHANNEL_FMT_ONLY_LEFT);
 	i2s_ll_tx_set_sample_bit(&I2S_REG, I2S_BITS_PER_SAMPLE_32BIT, I2S_BITS_PER_SAMPLE_32BIT);
 	// I2S_REG.fifo_conf.tx_fifo_mod = 3;
 	i2s_ll_tx_enable_mono_mode(&I2S_REG, true);
@@ -228,44 +235,42 @@ static void IRAM_ATTR i2s_enable_periodic_isr(void)
  */
 static void IRAM_ATTR i2s_enter_default_mode_glitch_free(void)
 {
-	// Prefill 64 words
-	i2s_fifo_fill_words();
-
 	// pause I2S and the pulse timer
 	timer_pause(ITP_TIMER_TG, ITP_TIMER_IDX);
+	timer_disable_intr(ITP_TIMER_TG, ITP_TIMER_IDX);
 	i2s_ll_tx_stop(&I2S_REG);
-	
 	// Enable periodic ISR (~every 32 samples)
-	i2s_enable_periodic_isr();
+	i2s_ll_tx_force_enable_fifo_mod(&I2S_REG, true);
 
-	// set the adequate mode (from realtime to FIFO)
-	i2s_ll_tx_set_chan_mod(&I2S_REG, 0);
+	// Prefill 64 words
+	i2s_fifo_fill_words();
+	i2s_enable_periodic_isr();
 
 	// Start TX
 	i2s_ll_tx_start(&I2S_REG);
 }
 
-/**
- * realtime mode transition
- */
-static void IRAM_ATTR i2s_enter_realtime_mode_glitch_free(void)
-{
-	// prevent the refill from happening
-	i2s_ll_enable_intr(&I2S_REG, I2S_TX_PUT_DATA_INT_ENA, 0);
+// /**
+//  * realtime mode transition
+//  */
+// static void IRAM_ATTR i2s_enter_realtime_mode_glitch_free(void)
+// {
+// 	// prevent the refill from happening
+// 	i2s_ll_enable_intr(&I2S_REG, I2S_TX_PUT_DATA_INT_ENA, 0);
 
-	// wait for the fifo to empty and the I2S stop
-	while (I2S_REG.conf.tx_start)
-	{
-		ets_delay_us(1);
-	}
+// 	// wait for the fifo to empty and the I2S stop
+// 	while (I2S_REG.conf.tx_start)
+// 	{
+// 		ets_delay_us(1);
+// 	}
 
-	i2s_ll_tx_set_chan_mod(&I2S_REG, 3);
-	I2S_REG.conf_single_data = __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
+// 	i2s_ll_tx_set_chan_mod(&I2S_REG, 3);
+// 	I2S_REG.conf_single_data = __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
 
-	// Restart TX and the timer
-	i2s_ll_tx_start(&I2S_REG);
-	timer_start(ITP_TIMER_TG, ITP_TIMER_IDX);
-}
+// 	// Restart TX and the timer
+// 	i2s_ll_tx_start(&I2S_REG);
+// 	timer_start(ITP_TIMER_TG, ITP_TIMER_IDX);
+// }
 
 /**
  * Switch mode and entre transition function
@@ -288,17 +293,13 @@ uint8_t itp_set_step_mode(uint8_t mode)
 		{
 		case ITP_STEP_MODE_DEFAULT:
 			i2s_enter_default_mode_glitch_free();
-			break;
-		case ITP_STEP_MODE_REALTIME:
-			i2s_enter_realtime_mode_glitch_free();
+			// Clear sync flag
+		__atomic_fetch_and((uint32_t *)&i2s_mode, ~ITP_STEP_MODE_SYNC, __ATOMIC_RELAXED);
 			break;
 		}
 
 		// Clear sync flag
 		__atomic_fetch_and((uint32_t *)&i2s_mode, ~ITP_STEP_MODE_SYNC, __ATOMIC_RELAXED);
-
-		// Small settle if desired (optional)
-		// cnc_delay_ms(1);
 	}
 	return last_mode;
 }
@@ -335,6 +336,8 @@ void mcu_i2s_extender_init(void)
 	itp_set_step_mode(ITP_STEP_MODE_DEFAULT);
 #else
 	itp_set_step_mode(ITP_STEP_MODE_REALTIME);
+	timer_enable_intr(ITP_TIMER_TG, ITP_TIMER_IDX);
+	timer_start(ITP_TIMER_TG, ITP_TIMER_IDX);
 #endif
 }
 

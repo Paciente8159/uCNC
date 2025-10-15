@@ -32,12 +32,12 @@
 #include "../esp32common/esp32_common.h"
 
 static volatile bool esp32_global_isr_enabled;
-static volatile bool mcu_itp_timer_running;
 
 hw_timer_t *esp32_step_timer;
 
 MCU_CALLBACK void mcu_itp_isr(void *arg);
-MCU_CALLBACK void mcu_gen_pwm_and_servo(void);
+MCU_CALLBACK void mcu_gen_pwm(void);
+MCU_CALLBACK void mcu_gen_servo(void);
 MCU_CALLBACK void mcu_gen_step(void);
 MCU_CALLBACK void mcu_gpio_isr(void *type);
 
@@ -140,80 +140,6 @@ static FORCEINLINE void servo_update(void)
 }
 #endif
 
-MCU_CALLBACK void mcu_gen_pwm_and_servo(void)
-{
-	static int16_t mcu_soft_io_counter;
-	int16_t t = mcu_soft_io_counter;
-	t--;
-	if (t <= 0)
-	{
-// updated software PWM pins
-#if defined(IC74HC595_HAS_PWMS) || defined(MCU_HAS_SOFT_PWM_TIMER)
-		io_soft_pwm_update();
-#endif
-
-		// update servo pins
-#if SERVOS_MASK > 0
-		// also run servo pin signals
-		uint32_t counter = servo_tick_counter;
-
-		// updated next servo output
-		if (!(counter & 0x7F))
-		{
-			servo_update();
-		}
-
-		// reached set tick alarm and resets all servo outputs
-		if (counter == servo_tick_alarm)
-		{
-			servo_reset();
-		}
-
-		// resets every 3ms
-		servo_tick_counter = ++counter;
-#endif
-		mcu_soft_io_counter = (int16_t)roundf((float)ITP_SAMPLE_RATE / 128000.0f);
-	}
-	else
-	{
-		mcu_soft_io_counter = t;
-	}
-}
-
-static volatile uint32_t mcu_itp_timer_reload;
-static volatile bool mcu_itp_timer_running;
-MCU_CALLBACK void mcu_gen_step(void)
-{
-	static bool step_reset = true;
-	static int32_t mcu_itp_timer_counter;
-
-	// generate steps
-	if (mcu_itp_timer_running)
-	{
-		// stream mode tick
-		int32_t t = mcu_itp_timer_counter;
-		bool reset = step_reset;
-		t -= (int32_t)roundf(1000000.0f / (float)ITP_SAMPLE_RATE);
-		if (t <= 0)
-		{
-			if (!reset)
-			{
-				mcu_step_cb();
-			}
-			else
-			{
-				mcu_step_reset_cb();
-			}
-			step_reset = !reset;
-			mcu_itp_timer_counter = mcu_itp_timer_reload + t;
-		}
-		else
-		{
-			mcu_itp_timer_counter = t;
-		}
-	}
-}
-
 MCU_CALLBACK void mcu_gpio_isr(void *type)
 {
 	// read the address and not the pointer value because we are passing a literal integer
@@ -236,18 +162,6 @@ MCU_CALLBACK void mcu_gpio_isr(void *type)
 		break;
 	}
 }
-
-#ifdef IC74HC595_HAS_PWMS
-uint8_t mcu_softpwm_freq_config(uint16_t freq)
-{
-	// keeps 8 bit resolution up to 500Hz
-	// reduces bit resolution for higher frequencies
-
-	// determines the bit resolution (7 - esp32_pwm_res);
-	uint8_t res = (uint8_t)MAX((int8_t)ceilf(LN(freq * 0.002f)), 0);
-	return res;
-}
-#endif
 
 void mcu_core0_dotasks(void *arg)
 {
@@ -286,32 +200,22 @@ MCU_CALLBACK void mcu_itp_isr(void *arg)
 {
 #ifdef IC74HC595_CUSTOM_SHIFT_IO
 	uint32_t mode = I2S_MODE;
-#if defined(IC74HC595_HAS_STEPS) || defined(IC74HC595_HAS_DIRS)
 	if (mode == ITP_STEP_MODE_REALTIME)
-#endif
-#endif
 	{
+		signal_timer.us_step = 8;
 		mcu_gen_step();
-	}
-#ifdef IC74HC595_CUSTOM_SHIFT_IO
-#if defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS)
-	if (mode == ITP_STEP_MODE_REALTIME)
-#endif
-#endif
-	{
-		mcu_gen_pwm_and_servo();
-	}
+		// mcu_gen_pwm();
+		// mcu_gen_servo();
 #if defined(MCU_HAS_ONESHOT_TIMER) && defined(ENABLE_RT_SYNC_MOTIONS)
-	mcu_gen_oneshot();
+		mcu_gen_oneshot();
 #endif
-#ifdef IC74HC595_CUSTOM_SHIFT_IO
-#if defined(IC74HC595_HAS_STEPS) || defined(IC74HC595_HAS_DIRS) || defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS)
-	// this is where the IO update happens in RT mode
-	// this prevents multiple
-	if (mode == ITP_STEP_MODE_REALTIME)
-	{
+		// signal_timer.us_step -= (int)signal_timer.us_step;
+
 		WRITE_PERI_REG(I2S_CONF_SIGLE_DATA_REG(IC74HC595_I2S_PORT), __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED));
 	}
+#else
+#if defined(MCU_HAS_ONESHOT_TIMER) && defined(ENABLE_RT_SYNC_MOTIONS)
+	mcu_gen_oneshot();
 #endif
 #endif
 
@@ -410,6 +314,8 @@ void mcu_init(void)
 
 #ifdef IC74HC595_CUSTOM_SHIFT_IO
 	mcu_i2s_extender_init();
+#else
+
 #endif
 
 	// initialize rtc timer (currently on core 1)
@@ -537,10 +443,10 @@ float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller)
 
 void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 {
-	if (!mcu_itp_timer_running)
+	if (!signal_timer.step_alarm_en)
 	{
-		mcu_itp_timer_reload = ticks * prescaller;
-		mcu_itp_timer_running = true;
+		signal_timer.itp_reload = ticks * prescaller;
+		signal_timer.step_alarm_en = true;
 	}
 	else
 	{
@@ -553,9 +459,9 @@ void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
  * */
 void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller)
 {
-	if (mcu_itp_timer_running)
+	if (signal_timer.step_alarm_en)
 	{
-		mcu_itp_timer_reload = ticks * prescaller;
+		signal_timer.itp_reload = ticks * prescaller;
 	}
 	else
 	{
@@ -568,9 +474,9 @@ void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller)
  * */
 void mcu_stop_itp_isr(void)
 {
-	if (mcu_itp_timer_running)
+	if (signal_timer.step_alarm_en)
 	{
-		mcu_itp_timer_running = false;
+		signal_timer.step_alarm_en = false;
 	}
 }
 
