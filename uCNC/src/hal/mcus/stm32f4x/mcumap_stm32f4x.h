@@ -61,16 +61,6 @@ extern "C"
 
 	// needed by software delays
 
-// #ifndef MCU_CLOCKS_PER_CYCLE
-// #define MCU_CLOCKS_PER_CYCLE 1
-// #endif
-// #define mcu_delay_cycles(X) \
-// 	{                         \
-// 		DWT->CYCCNT = 0;        \
-// 		uint32_t t = X;         \
-// 		while (t > DWT->CYCCNT) \
-// 			;                     \
-// 	}
 #ifndef MCU_CYCLES_PER_LOOP
 #define MCU_CYCLES_PER_LOOP 4
 #endif
