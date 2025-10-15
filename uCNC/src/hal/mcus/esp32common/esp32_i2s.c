@@ -105,7 +105,7 @@ static void IRAM_ATTR i2s_fifo_fill_words(void)
 		mcu_gen_oneshot();
 #endif
 		// WRITE_PERI_REG(I2S_FIFO_WR_REG(I2S_PORT), 0xaaaaaaaa);
-		I2S_REG.fifo_wr = 0xaaaaaaaa; //__atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
+		I2S_REG.fifo_wr = __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
 	}
 }
 
@@ -118,6 +118,7 @@ static void IRAM_ATTR i2s_fifo_fill_words(void)
  */
 static void IRAM_ATTR i2s_tx_isr(void *arg)
 {
+	// mcu_toggle_output(DOUT49);
 	uint32_t st = i2s_ll_get_intr_status(&I2S_REG);
 
 	// Default mode: periodic refill
@@ -128,7 +129,6 @@ static void IRAM_ATTR i2s_tx_isr(void *arg)
 		{
 			i2s_fifo_fill_words();
 		}
-		i2s_ll_clear_intr_status(&I2S_REG, I2S_TX_PUT_DATA_INT_ST);
 	}
 
 	// Realtime transition: when draining, detect FIFO empty and flip
@@ -138,9 +138,10 @@ static void IRAM_ATTR i2s_tx_isr(void *arg)
 		{
 			i2s_ll_enable_intr(&I2S_REG, I2S_TX_REMPTY_INT_ENA, 0);
 			i2s_ll_tx_stop(&I2S_REG);
-			i2s_ll_clear_intr_status(&I2S_REG, 0xFFFFFFFF);
 		}
 	}
+
+	i2s_ll_clear_intr_status(&I2S_REG, 0x0000ffff);
 }
 
 static intr_handle_t i2s_intr_handle = NULL;
@@ -184,14 +185,15 @@ static void IRAM_ATTR i2s_tx_base_config(void)
 	i2s_ll_enable_camera(&I2S_REG, false);
 
 	// 32-bit frames, mono-like usage, MSB-right placement compatible with 74HC595 stream
+	// i2s_ll_tx_set_chan_mod(&I2S_REG, 0);
 	i2s_ll_tx_set_chan_mod(&I2S_REG, I2S_CHANNEL_FMT_ONLY_RIGHT);
 	i2s_ll_tx_set_sample_bit(&I2S_REG, I2S_BITS_PER_SAMPLE_32BIT, I2S_BITS_PER_SAMPLE_32BIT);
-	i2s_ll_tx_set_chan_mod(&I2S_REG, 0);
+	// I2S_REG.fifo_conf.tx_fifo_mod = 3;
 	i2s_ll_tx_enable_mono_mode(&I2S_REG, true);
 	i2s_ll_tx_enable_msb_right(&I2S_REG, false);
 	i2s_ll_tx_enable_right_first(&I2S_REG, false);
 	i2s_ll_tx_enable_msb_shift(&I2S_REG, false);
-	i2s_ll_rx_enable_msb_shift(&I2S_REG, false);
+	// i2s_ll_rx_enable_msb_shift(&I2S_REG, false);
 	i2s_ll_tx_force_enable_fifo_mod(&I2S_REG, true);
 	i2s_ll_tx_set_slave_mod(&I2S_REG, false);
 	i2s_ll_tx_set_ws_width(&I2S_REG, 0);
@@ -200,13 +202,13 @@ static void IRAM_ATTR i2s_tx_base_config(void)
 #endif
 
 	// Frame rate selection
-	i2s_ll_mclk_div_t div = {5, 0, 0}; // default 500 kHz @ 32-bit when bck_div=2
+	i2s_ll_mclk_div_t div = {2, 32, 16}; // default 500 kHz @ 32-bit when bck_div=2
 	i2s_ll_tx_set_clk(&I2S_REG, &div);
 	i2s_ll_tx_set_bck_div_num(&I2S_REG, 2);
 
 #ifndef USE_I2S_REALTIME_MODE_ONLY
 	attach_i2s_isr();
-	i2s_ll_tx_enable_intr(&I2S_REG);
+	// i2s_ll_tx_enable_intr(&I2S_REG);
 #else
 	i2s_ll_tx_disable_intr(&I2S_REG);
 #endif
@@ -217,7 +219,7 @@ static void IRAM_ATTR i2s_tx_base_config(void)
  */
 static void IRAM_ATTR i2s_enable_periodic_isr(void)
 {
-	i2s_ll_clear_intr_status(&I2S_REG, 0xFFFFFFFF);
+	i2s_ll_clear_intr_status(&I2S_REG, 0x0000ffff);
 	i2s_ll_enable_intr(&I2S_REG, (I2S_TX_PUT_DATA_INT_ENA | I2S_TX_REMPTY_INT_ENA), 1);
 }
 
@@ -309,9 +311,10 @@ uint8_t itp_set_step_mode(uint8_t mode)
 #include <soc/gpio_sig_map.h>
 #define BCK_OUT_IDX __helper__(I2S, I2S_PORT, O_BCK_OUT_IDX)
 #define WS_OUT_IDX __helper__(I2S, I2S_PORT, O_WS_OUT_IDX)
-#define DATA_OUT_IDX __helper__(I2S, I2S_PORT, O_DATA_OUT0_IDX)
+#define DATA_OUT_IDX __helper__(I2S, I2S_PORT, O_DATA_OUT23_IDX)
 #define PERIPH_I2S __helper__(PERIPH_I2S, I2S_PORT, _MODULE)
 void mcu_i2s_extender_init(void)
+
 {
 	periph_module_reset(PERIPH_I2S);
 	periph_module_enable(PERIPH_I2S);
