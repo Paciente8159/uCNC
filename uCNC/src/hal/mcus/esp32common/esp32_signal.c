@@ -1,3 +1,21 @@
+/*
+	Name: esp32_signal.c
+	Description: Signal generation functions. Calculates several signals in a time based way.
+
+	Copyright: Copyright (c) João Martins
+	Author: João Martins
+	Date: 15-10-2025
+
+	µCNC is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+
+	µCNC is distributed WITHOUT ANY WARRANTY;
+	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	See the	GNU General Public License for more details.
+*/
+
 #include "../../../cnc.h"
 
 #if (ESP32)
@@ -52,7 +70,8 @@ MCU_CALLBACK void mcu_gen_pwm(void)
 	}
 	else
 	{
-		float pwmcycle = (float)(signal_timer.pwm_reload - t) * (255.0f / (float)signal_timer.pwm_reload);
+		uint32_t pwmcycle = (((signal_timer.pwm_reload - t)) << 8);
+		pwmcycle /= signal_timer.pwm_reload;
 		pwm_counter = (uint8_t)CLAMP(0, pwmcycle, 255);
 		elapsed_us = t;
 	}
@@ -225,6 +244,87 @@ MCU_CALLBACK void mcu_gen_pwm(void)
 #endif
 }
 
+#if SERVOS_MASK > 0
+// also run servo pin signals
+static uint32_t servo_tick_counter = 0;
+static uint32_t servo_tick_alarm = 0;
+uint8_t mcu_servos[6];
+static FORCEINLINE void servo_reset(void)
+{
+#if ASSERT_PIN(SERVO0)
+	io_clear_output(SERVO0);
+#endif
+#if ASSERT_PIN(SERVO1)
+	io_clear_output(SERVO1);
+#endif
+#if ASSERT_PIN(SERVO2)
+	io_clear_output(SERVO2);
+#endif
+#if ASSERT_PIN(SERVO3)
+	io_clear_output(SERVO3);
+#endif
+#if ASSERT_PIN(SERVO4)
+	io_clear_output(SERVO4);
+#endif
+#if ASSERT_PIN(SERVO5)
+	io_clear_output(SERVO5);
+#endif
+}
+
+#define start_servo_timeout(timeout)                      \
+	{                                                       \
+		servo_tick_alarm = servo_tick_counter + timeout + 64; \
+	}
+
+static FORCEINLINE void servo_update(void)
+{
+	static uint8_t servo_counter = 0;
+
+	switch (servo_counter)
+	{
+#if ASSERT_PIN(SERVO0)
+	case SERVO0_FRAME:
+		io_set_output(SERVO0);
+		start_servo_timeout(mcu_servos[0]);
+		break;
+#endif
+#if ASSERT_PIN(SERVO1)
+	case SERVO1_FRAME:
+		io_set_output(SERVO1);
+		start_servo_timeout(mcu_servos[1]);
+		break;
+#endif
+#if ASSERT_PIN(SERVO2)
+	case SERVO2_FRAME:
+		io_set_output(SERVO2);
+		start_servo_timeout(mcu_servos[2]);
+		break;
+#endif
+#if ASSERT_PIN(SERVO3)
+	case SERVO3_FRAME:
+		io_set_output(SERVO3);
+		start_servo_timeout(mcu_servos[3]);
+		break;
+#endif
+#if ASSERT_PIN(SERVO4)
+	case SERVO4_FRAME:
+		io_set_output(SERVO4);
+		start_servo_timeout(mcu_servos[4]);
+		break;
+#endif
+#if ASSERT_PIN(SERVO5)
+	case SERVO5_FRAME:
+		io_set_output(SERVO5);
+		start_servo_timeout(mcu_servos[5]);
+		break;
+#endif
+	}
+
+	servo_counter++;
+	servo_counter = (servo_counter != 20) ? servo_counter : 0;
+}
+#endif
+
 MCU_CALLBACK void mcu_gen_servo(void)
 {
 #if SERVOS_MASK > 0
@@ -254,7 +354,7 @@ MCU_CALLBACK void mcu_gen_servo(void)
 		// resets every 3ms
 		servo_tick_counter = ++counter;
 
-		elapsed_us = (1000 / 128) + t;
+		elapsed_us = /*(1000 / 128) =~ 8*/8 + t;
 	}
 	else
 	{

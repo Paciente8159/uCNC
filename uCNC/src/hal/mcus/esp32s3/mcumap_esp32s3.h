@@ -4565,7 +4565,7 @@ extern "C"
 #undef IC74HC595_COUNT
 #endif
 #define IC74HC595_COUNT 4
-#define I2SREG __helper__(I2S, IC74HC595_I2S_PORT, )
+#define I2S_PORT IC74HC595_I2S_PORT
 
 	// custom pin operations for 74HS595
 	extern volatile uint32_t ic74hc595_i2s_pins;
@@ -4664,6 +4664,18 @@ extern "C"
 	}
 #define mcu_get_pwm(X) ledc_get_duty(__indirect__(X, SPEEDMODE), __indirect__(X, LEDCCHANNEL))
 #define mcu_get_analog(X) (adc1_get_raw(__indirect__(X, ADC_CHANNEL)) >> (ADC_WIDTH_MAX - 2))
+
+typedef struct signal_timer_
+{
+	uint32_t current_us;
+	uint8_t us_step;
+	uint32_t itp_reload;
+	bool step_alarm_en;
+	uint32_t pwm_reload;
+} signal_timer_t;
+
+extern signal_timer_t signal_timer;
+#define mcu_softpwm_freq_config(pin, freq) ({io_config_output(pin); signal_timer.pwm_reload = (uint32_t)(1000000/freq); })
 
 	extern void esp32_delay_us(uint16_t delay);
 #define mcu_delay_us(X) esp32_delay_us(X)

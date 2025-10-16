@@ -100,8 +100,9 @@ static void IRAM_ATTR i2s_fifo_fill_words(void)
 		signal_timer.us_step = 4;
 
 		mcu_gen_step();
-		// mcu_gen_pwm();
-		// mcu_gen_servo();
+		mcu_gen_pwm();
+		mcu_gen_servo();
+
 #if defined(MCU_HAS_ONESHOT_TIMER) && defined(ENABLE_RT_SYNC_MOTIONS)
 		mcu_gen_oneshot();
 #endif
@@ -293,8 +294,6 @@ uint8_t itp_set_step_mode(uint8_t mode)
 		{
 		case ITP_STEP_MODE_DEFAULT:
 			i2s_enter_default_mode_glitch_free();
-			// Clear sync flag
-		__atomic_fetch_and((uint32_t *)&i2s_mode, ~ITP_STEP_MODE_SYNC, __ATOMIC_RELAXED);
 			break;
 		}
 
