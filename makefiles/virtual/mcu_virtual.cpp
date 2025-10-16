@@ -738,10 +738,10 @@ extern "C"
 	fprintf(stimuli, "$var wire 1 %c " #X " $end\n", 33 + X)
 #define printspecialpin(X) \
 	if (stimuli)      \
-	fprintf(stimuli, "%d%c\n", ((virtualmap.special_outputs & (1 << (X - 1))) ? 1 : 0), 33 + X)
+	{fprintf(stimuli, "%d%c\n", ((virtualmap.special_outputs & (1 << (X - 1))) ? 1 : 0), 33 + X);fflush(stimuli);}
 	#define printpin(X) \
 	if (stimuli)      \
-	fprintf(stimuli, "%d%c\n", ((virtualmap.outputs & (1 << (X - DOUT_PINS_OFFSET))) ? 1 : 0), 33 + X)
+	{fprintf(stimuli, "%d%c\n", ((virtualmap.outputs & (1 << (X - DOUT_PINS_OFFSET))) ? 1 : 0), 33 + X);fflush(stimuli);}
 
 	volatile unsigned long g_cpu_freq = 0;
 

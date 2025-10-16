@@ -35,13 +35,17 @@
 #define EMBD_FWD_INV 0
 #endif
 
+#ifndef INT_MATH_SHIFT
+#define INT_MATH_SHIFT 8
+#endif
+
 #ifndef MCU_HAS_ONESHOT
 #warning "Embroidery stepper tool requires the oneshot timer to be configured"
 #endif
 
-static float embd_steps_per_rev;
-static float embd_steps_target_us;
-static volatile float embd_steps_curr_us;
+static uint32_t embd_steps_per_rev;
+static uint32_t embd_steps_target_us;
+static volatile uint32_t embd_steps_curr_us;
 static uint32_t embd_steps_count;
 static float embd_accel;
 static int16_t previous_rpm;
@@ -55,25 +59,26 @@ static uint32_t embd_update_steps;
 
 static FORCEINLINE float update_timeout(void)
 {
-	float current_us = embd_steps_curr_us;
+	uint32_t current_us = embd_steps_curr_us;
+	uint32_t steps = embd_update_steps;
 
 	if (current_us > embd_steps_target_us)
 	{
-		uint32_t steps = embd_update_steps;
 		steps++;
 		embd_update_steps = steps;
 		// recurrence relation for constant accel
-		current_us -= (2.0f * current_us) / (4.0f * steps + 1.0f);
+		current_us -= ((uint64_t)current_us << 1) / ((steps << 2) + 1);
+		// current_us -= (uint32_t)(next >> 9);
 		if (current_us <= embd_steps_target_us)
 		{
 			current_us = embd_steps_target_us;
 		} // fix overshoot and resets counters
 	}
-	else if (current_us < embd_steps_target_us)
+	else if (current_us < embd_steps_target_us && (embd_steps_per_rev - embd_steps_count) <= steps)
 	{
-		uint32_t steps = embd_update_steps;
 		// recurrence relation for constant deaccel
-		current_us += (2.0f * current_us) / (4.0f * steps + 1.0f);
+		current_us += (current_us << 1) / ((steps << 2) + 1);
+		// current_us -= (next >> 10);
 		if (current_us >= embd_steps_target_us || !steps)
 		{
 			current_us = embd_steps_target_us;
@@ -99,15 +104,16 @@ MCU_CALLBACK void embd_isr_cb(void)
 	if (steps > embd_steps_per_rev)
 	{
 		steps = 0;
+//		mcu_toggle_output(DOUT1); /*for test purposes*/
 	}
-	float current_us = update_timeout();
+	uint32_t current_us = update_timeout();
 	embd_steps_curr_us = current_us;
 	embd_steps_count = steps;
 	if (!current_us)
 	{
 		return; // tool stopped. prevent rearm timer
 	}
-	mcu_config_timeout(&embd_isr_cb, ((uint32_t)current_us));
+	mcu_config_timeout(&embd_isr_cb, ((uint32_t)current_us >> INT_MATH_SHIFT));
 	mcu_start_timeout(); // arm the timer again
 }
 
@@ -273,7 +279,7 @@ static void startup_code(void)
 #endif
 #endif
 
-	embd_steps_per_rev = 200 * 64;
+	embd_steps_per_rev = (3200 << 1);
 	embd_accel = 5;
 }
 
@@ -300,19 +306,21 @@ static void set_speed(int16_t value)
 {
 	if (value != previous_rpm)
 	{
-		embd_steps_target_us = (value) ? (1000000.0f / (value * embd_steps_per_rev * MIN_SEC_MULT)) : 0;
+		uint32_t target_us = (value) ? (uint32_t)(1000000.0f / (value * embd_steps_per_rev * MIN_SEC_MULT)) : 0;
 
-		if ((previous_rpm == 0) || (value==0))
+		if ((previous_rpm == 0) || (value == 0))
 		{
 			float dai = fast_flt_inv(2.0f * embd_accel);
 			float fact = embd_accel * embd_steps_per_rev;
-			float min_us = (2000000.f * fast_flt_invsqrt(fact));
-			
-			if(previous_rpm==0){
-				embd_steps_curr_us = min_us;
+			uint32_t min_us = (uint32_t)(2000000.f * fast_flt_invsqrt(fact));
+
+			if (previous_rpm == 0)
+			{
+				embd_steps_curr_us = min_us << INT_MATH_SHIFT;
 			}
-			else{
-				embd_steps_target_us = min_us;
+			else
+			{
+				target_us = min_us;
 			}
 		}
 
@@ -321,16 +329,17 @@ static void set_speed(int16_t value)
 			embd_update_steps = 0;
 		}
 
+		embd_steps_target_us = (target_us << INT_MATH_SHIFT);
 		embd_stop_on_target = (value == 0);
 		previous_rpm = value;
-		mcu_config_timeout(&embd_isr_cb, embd_steps_curr_us);
+		mcu_config_timeout(&embd_isr_cb, (embd_steps_curr_us >> INT_MATH_SHIFT));
 		mcu_start_timeout();
 	}
 }
 
 static uint16_t get_speed(void)
 {
-	float rpm = (float)(embd_steps_curr_us * embd_steps_per_rev);
+	float rpm = (float)((embd_steps_curr_us >> INT_MATH_SHIFT) * embd_steps_per_rev);
 	return 60000000.0f / rpm;
 }
 
