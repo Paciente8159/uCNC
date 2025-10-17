@@ -559,8 +559,8 @@ static void startup_code(void)
 #if ASSERT_PIN(PLASMA_ON_OUTPUT)
 	io_clear_output(PLASMA_ON_OUTPUT);
 #endif
-	previous_mode = g_settings.laser_mode;
-	g_settings.laser_mode = PLASMA_THC_MODE;
+	previous_mode = g_settings.tool_mode;
+	g_settings.tool_mode = PLASMA_THC_MODE;
 }
 
 static void shutdown_code(void)
@@ -569,7 +569,7 @@ static void shutdown_code(void)
 #if ASSERT_PIN(PLASMA_ON_OUTPUT)
 	io_clear_output(PLASMA_ON_OUTPUT);
 #endif
-	g_settings.laser_mode = previous_mode;
+	g_settings.tool_mode = previous_mode;
 }
 
 static void set_speed(int16_t value)

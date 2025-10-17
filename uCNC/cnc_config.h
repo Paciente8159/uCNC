@@ -240,6 +240,13 @@ extern "C"
 //  #define ENABLE_PLASMA_THC
 
 /**
+ * 
+ * Enables Embroidery capabilities
+ * 
+ */
+// #define ENABLE_EMBROIDERY
+
+/**
  * Feed overrides increments and percentage ranges
  * */
 #define FEED_OVR_MAX 200

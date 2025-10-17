@@ -593,7 +593,7 @@ void cnc_clear_exec_state(uint8_t statemask)
 			// updated the coolant pins
 			tool_set_coolant(planner_get_coolant());
 #if (DELAY_ON_RESUME_COOLANT > 0)
-			if (!g_settings.laser_mode)
+			if (!g_settings.tool_mode)
 			{
 				if (!planner_buffer_is_empty())
 				{
@@ -605,7 +605,7 @@ void cnc_clear_exec_state(uint8_t statemask)
 			// if something goes wrong the tool can reinstate the HOLD state
 			itp_sync_spindle();
 #if (DELAY_ON_RESUME_SPINDLE > 0)
-			if (!g_settings.laser_mode && cnc_state.loop_state == LOOP_RUNNING)
+			if (!g_settings.tool_mode && cnc_state.loop_state == LOOP_RUNNING)
 			{
 				if (!planner_buffer_is_empty())
 				{

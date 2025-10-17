@@ -51,13 +51,24 @@ static float embd_accel;
 static int16_t previous_rpm;
 static bool embd_stop_on_target;
 static uint32_t embd_update_steps;
+
+#ifdef ENABLE_SETTINGS_MODULES
+#undef EMBRODERY_STEPPER_STP_PER_REVS
+#define EMBRODERY_STEPPER_STP_PER_REVS 310
+		DECL_EXTENDED_SETTING(EMBRODERY_STEPPER_STP_PER_REVS, embd_steps_per_rev, uint32_t, 1, proto_gcode_setting_line_int);
+#else
+#ifndef EMBRODERY_STEPPER_STP_PER_REVS
+#define EMBRODERY_STEPPER_STP_PER_REVS 3200 // if settings are disable set the steps per revolution directly
+#endif
+#endif
+
 /**
  *
  * Motion and interpolator related stuff
  *
  * **/
 
-static FORCEINLINE float update_timeout(void)
+static FORCEINLINE uint32_t update_timeout(void)
 {
 	uint32_t current_us = embd_steps_curr_us;
 	uint32_t steps = embd_update_steps;
@@ -76,15 +87,16 @@ static FORCEINLINE float update_timeout(void)
 		if (current_us <= embd_steps_target_us)
 		{
 			current_us = embd_steps_target_us;
+			// mcu_set_output(DOUT1);
 		} // fix overshoot and resets counters
 	}
 	else if (current_us < embd_steps_target_us && (embd_steps_per_rev - embd_steps_count) <= steps)
 	{
+		// mcu_clear_output(DOUT1);
 		uint32_t steps_mult = (steps << 2);
-		next = (uint32_t)((uint64_t)current_us  * (steps_mult + 1)) / (steps_mult - 1);// apply the reverse equation
+		next = (uint32_t)((uint64_t)current_us * (steps_mult + 1)) / (steps_mult - 1); // apply the reverse equation
 		// recurrence relation for constant deaccel
 		current_us = next;
-		// current_us -= (next >> 10);
 		if (current_us >= embd_steps_target_us || !steps)
 		{
 			current_us = embd_steps_target_us;
@@ -112,20 +124,27 @@ MCU_CALLBACK void embd_isr_cb(void)
 	{
 
 		steps = 0;
-		//		mcu_toggle_output(DOUT1); /*for test purposes*/
+		// mcu_toggle_output(DOUT1); /*for test purposes*/
 	}
 
-	// if (!(steps & 0x01))
-	{
-		current_us = update_timeout();
-		embd_steps_curr_us = current_us;
-	}
+	current_us = update_timeout();
+	embd_steps_curr_us = current_us;
+
 	embd_steps_count = steps;
 	if (!current_us)
 	{
-		return; // tool stopped. prevent rearm timer
+		if (!embd_stop_on_target)
+		{
+			return; // tool stopped. prevent rearm timer
+		}
+		mcu_config_timeout(&embd_isr_cb, ((uint32_t)embd_steps_target_us >> INT_MATH_SHIFT));
+		embd_stop_on_target = false;
 	}
-	mcu_config_timeout(&embd_isr_cb, ((uint32_t)current_us >> INT_MATH_SHIFT));
+	else
+	{
+		mcu_config_timeout(&embd_isr_cb, ((uint32_t)current_us >> INT_MATH_SHIFT));
+	}
+
 	mcu_start_timeout(); // arm the timer again
 }
 
@@ -212,7 +231,7 @@ MCU_CALLBACK void embd_isr_cb(void)
 //	case M127:
 //	case M128:
 //		// prevents command execution if mode disabled
-//		if (!(g_settings.laser_mode & (LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE)))
+//		if (!(g_settings.tool_mode & (LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE)))
 //		{
 //			*(ptr->error) = STATUS_LASER_PPI_MODE_DISABLED;
 //			return EVENT_HANDLED;
@@ -231,17 +250,17 @@ MCU_CALLBACK void embd_isr_cb(void)
 //	switch (ptr->cmd->group_extended)
 //	{
 //	case M126:
-//		g_settings.laser_mode &= ~(LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE);
+//		g_settings.tool_mode &= ~(LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE);
 //		switch ((((uint8_t)ptr->words->p)))
 //		{
 //		case 1:
-//			g_settings.laser_mode |= LASER_PPI_MODE;
+//			g_settings.tool_mode |= LASER_PPI_MODE;
 //			break;
 //		case 2:
-//			g_settings.laser_mode |= LASER_PPI_VARPOWER_MODE;
+//			g_settings.tool_mode |= LASER_PPI_VARPOWER_MODE;
 //			break;
 //		case 3:
-//			g_settings.laser_mode |= (LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE);
+//			g_settings.tool_mode |= (LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE);
 //			break;
 //		}
 //		laser_ppi_config_parameters();
@@ -291,7 +310,13 @@ static void startup_code(void)
 #endif
 #endif
 
-	embd_steps_per_rev = (3200 << 1);
+#ifdef ENABLE_TOOL_PID_CONTROLLER
+	EXTENDED_SETTING_INIT(EMBRODERY_STEPPER_STP_PER_REVS, embd_steps_per_rev);
+	settings_load(EXTENDED_SETTING_ADDRESS(EMBRODERY_STEPPER_STP_PER_REVS), (uint8_t *)embd_steps_per_rev, sizeof(embd_steps_per_rev));
+#else
+	embd_steps_per_rev = (EMBRODERY_STEPPER_STP_PER_REVS << 1);
+#endif
+
 	embd_accel = 5;
 }
 
@@ -328,17 +353,12 @@ static void set_speed(int16_t value)
 
 			if (previous_rpm == 0)
 			{
-				embd_steps_curr_us = min_us << INT_MATH_SHIFT;
+				embd_steps_curr_us = (min_us << INT_MATH_SHIFT);
 			}
 			else
 			{
 				target_us = min_us;
 			}
-		}
-
-		if (value > previous_rpm)
-		{
-			embd_update_steps = 0;
 		}
 
 		embd_steps_target_us = (target_us << INT_MATH_SHIFT);
