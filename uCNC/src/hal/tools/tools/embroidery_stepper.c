@@ -61,13 +61,17 @@ static FORCEINLINE float update_timeout(void)
 {
 	uint32_t current_us = embd_steps_curr_us;
 	uint32_t steps = embd_update_steps;
+	uint32_t next;
 
 	if (current_us > embd_steps_target_us)
 	{
 		steps++;
 		embd_update_steps = steps;
+		next = (uint32_t)((uint64_t)current_us << 1) / ((steps << 2) + 1);
+		if (next == 0)
+			next = 1;
 		// recurrence relation for constant accel
-		current_us -= ((uint64_t)current_us << 1) / ((steps << 2) + 1);
+		current_us -= next;
 		// current_us -= (uint32_t)(next >> 9);
 		if (current_us <= embd_steps_target_us)
 		{
@@ -76,8 +80,10 @@ static FORCEINLINE float update_timeout(void)
 	}
 	else if (current_us < embd_steps_target_us && (embd_steps_per_rev - embd_steps_count) <= steps)
 	{
+		uint32_t steps_mult = (steps << 2);
+		next = (uint32_t)((uint64_t)current_us  * (steps_mult + 1)) / (steps_mult - 1);// apply the reverse equation
 		// recurrence relation for constant deaccel
-		current_us += (current_us << 1) / ((steps << 2) + 1);
+		current_us = next;
 		// current_us -= (next >> 10);
 		if (current_us >= embd_steps_target_us || !steps)
 		{
@@ -100,14 +106,20 @@ MCU_CALLBACK void embd_isr_cb(void)
 	io_toggle_output(EMBD_STEP);
 #endif
 	uint32_t steps = embd_steps_count;
+	uint32_t current_us = embd_steps_curr_us;
 	steps++;
 	if (steps > embd_steps_per_rev)
 	{
+
 		steps = 0;
-//		mcu_toggle_output(DOUT1); /*for test purposes*/
+		//		mcu_toggle_output(DOUT1); /*for test purposes*/
 	}
-	uint32_t current_us = update_timeout();
-	embd_steps_curr_us = current_us;
+
+	// if (!(steps & 0x01))
+	{
+		current_us = update_timeout();
+		embd_steps_curr_us = current_us;
+	}
 	embd_steps_count = steps;
 	if (!current_us)
 	{
