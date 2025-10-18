@@ -63,6 +63,17 @@ static volatile uint8_t itp_step_lock;
 #ifdef ENABLE_RT_SYNC_MOTIONS
 // deprecated with new hooks
 // volatile int32_t itp_sync_step_counter;
+static uint8_t itp_block_mode;
+static volatile uint8_t itp_block_counter;
+void itp_set_block_mode(uint8_t mode)
+{
+	itp_block_mode = mode;
+}
+
+void itp_inc_block_id(void)
+{
+	itp_block_counter++;
+}
 
 void itp_update_feed(float feed)
 {
@@ -334,8 +345,9 @@ void itp_run(void)
 	static float partial_distance = 0;
 	static float t_acc_integrator = 0;
 	static float t_deac_integrator = 0;
-#ifdef ENABLE_EMBROIDERY
+#ifdef ENABLE_RT_SYNC_MOTIONS
 	static bool flushing_block;
+	static uint8_t block_counter;
 #endif
 #if S_CURVE_ACCELERATION_LEVEL != 0
 	static float acc_step = 0;
@@ -416,16 +428,30 @@ void itp_run(void)
 				start_is_synched = true;
 			}
 
-#ifdef ENABLE_EMBROIDERY
+#ifdef ENABLE_RT_SYNC_MOTIONS
 			flushing_block = false;
 #endif
 		}
 
-#ifdef ENABLE_EMBROIDERY
-		if (!flushing_block && cnc_get_exec_state(EXEC_RUN) && (g_settings.tool_mode & EMBROIDERY_MODE))
+#ifdef ENABLE_RT_SYNC_MOTIONS
+		uint8_t bmode = itp_block_mode;
+		if ((g_settings.tool_mode & EMBROIDERY_MODE) && bmode)
 		{
-			// previous block not finnished
-			return;
+			if (!flushing_block && block_counter == itp_block_counter)
+			{
+
+				// previous block not finnished and not signaled to continue
+				return;
+			}
+		}
+		switch (bmode)
+		{
+		case ITP_BLOCK_SINGLE:
+			block_counter = itp_block_counter;
+			break;
+		case ITP_BLOCK_BURST:
+			block_counter++;
+			break;
 		}
 		flushing_block = true;
 #endif
@@ -674,7 +700,7 @@ void itp_run(void)
 		sgm->feed = current_speed * feed_convert;
 #if TOOL_COUNT > 0
 		// calculates dynamic laser power
-		if (g_settings.tool_mode == LASER_PWM_MODE)
+		if (g_settings.tool_mode & (LASER_PWM_MODE | EMBROIDERY_MODE))
 		{
 			float top_speed_inv = fast_flt_invsqrt(itp_cur_plan_block->feed_sqr);
 			int16_t newspindle = planner_get_spindle_speed(MIN(1, current_speed * top_speed_inv));
@@ -783,7 +809,7 @@ void itp_stop(void)
 	mcu_delay_us(10);
 	io_set_steps(g_settings.step_invert_mask);
 #if TOOL_COUNT > 0
-	if (g_settings.tool_mode)
+	if (g_settings.tool_mode & LASER_PWM_MODE)
 	{
 		tool_set_speed(0);
 	}

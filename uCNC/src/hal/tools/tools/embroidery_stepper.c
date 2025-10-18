@@ -52,10 +52,11 @@ static int16_t previous_rpm;
 static bool embd_stop_on_target;
 static uint32_t embd_update_steps;
 
+#undef ENABLE_SETTINGS_MODULES
 #ifdef ENABLE_SETTINGS_MODULES
 #undef EMBRODERY_STEPPER_STP_PER_REVS
 #define EMBRODERY_STEPPER_STP_PER_REVS 310
-		DECL_EXTENDED_SETTING(EMBRODERY_STEPPER_STP_PER_REVS, embd_steps_per_rev, uint32_t, 1, proto_gcode_setting_line_int);
+DECL_EXTENDED_SETTING(EMBRODERY_STEPPER_STP_PER_REVS, &embd_steps_per_rev, uint32_t, 1, proto_gcode_setting_line_int);
 #else
 #ifndef EMBRODERY_STEPPER_STP_PER_REVS
 #define EMBRODERY_STEPPER_STP_PER_REVS 3200 // if settings are disable set the steps per revolution directly
@@ -124,7 +125,8 @@ MCU_CALLBACK void embd_isr_cb(void)
 	{
 
 		steps = 0;
-		// mcu_toggle_output(DOUT1); /*for test purposes*/
+		mcu_toggle_output(DOUT1); /*for test purposes*/
+		itp_inc_block_id();
 	}
 
 	current_us = update_timeout();
@@ -135,6 +137,7 @@ MCU_CALLBACK void embd_isr_cb(void)
 	{
 		if (!embd_stop_on_target)
 		{
+			itp_set_block_mode(ITP_BLOCK_CONTINUOUS); // switch to continuous mode
 			return; // tool stopped. prevent rearm timer
 		}
 		mcu_config_timeout(&embd_isr_cb, ((uint32_t)embd_steps_target_us >> INT_MATH_SHIFT));
@@ -310,7 +313,7 @@ static void startup_code(void)
 #endif
 #endif
 
-#ifdef ENABLE_TOOL_PID_CONTROLLER
+#ifdef ENABLE_SETTINGS_MODULES
 	EXTENDED_SETTING_INIT(EMBRODERY_STEPPER_STP_PER_REVS, embd_steps_per_rev);
 	settings_load(EXTENDED_SETTING_ADDRESS(EMBRODERY_STEPPER_STP_PER_REVS), (uint8_t *)embd_steps_per_rev, sizeof(embd_steps_per_rev));
 #else
@@ -318,6 +321,7 @@ static void startup_code(void)
 #endif
 
 	embd_accel = 5;
+	g_settings.tool_mode = EMBROIDERY_MODE;
 }
 
 static void shutdown_code(void)
@@ -329,6 +333,7 @@ static void shutdown_code(void)
 	io_set_output(LASER_PPI);
 #endif
 #endif
+	g_settings.tool_mode = UNDEF_MODE;
 }
 
 static void set_coolant(uint8_t value)
@@ -345,6 +350,7 @@ static void set_speed(int16_t value)
 	{
 		uint32_t target_us = (value) ? (uint32_t)(1000000.0f / (value * embd_steps_per_rev * MIN_SEC_MULT)) : 0;
 
+		itp_set_block_mode(ITP_BLOCK_SINGLE);
 		if ((previous_rpm == 0) || (value == 0))
 		{
 			float dai = fast_flt_inv(2.0f * embd_accel);

@@ -308,6 +308,19 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 #endif
 	}
 
+#ifdef ENABLE_EMBROIDERY
+	if ((g_settings.tool_mode & EMBROIDERY_MODE) && !block_data->spindle)
+	{
+		if(itp_sync()!= STATUS_OK)
+		{
+			return STATUS_CRITICAL_FAIL;
+		}
+		tool_set_speed(0);
+		while (tool_get_speed() && cnc_dotasks())
+			;
+	}
+#endif
+
 	uint8_t error = STATUS_OK;
 
 	// gets the previous machine position (transformed to calculate the direction vector and traveled distance)
@@ -806,10 +819,10 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 	homing_status_t homing_status __attribute__((__cleanup__(mc_home_axis_finalize))) = {axis_mask, axis_limit, STATUS_OK};
 #endif
 
-// #ifdef ENABLE_G39_H_MAPPING
-// 	// resets height map
-// 	memset(hmap_offsets, 0, sizeof(hmap_offsets));
-// #endif
+	// #ifdef ENABLE_G39_H_MAPPING
+	// 	// resets height map
+	// 	memset(hmap_offsets, 0, sizeof(hmap_offsets));
+	// #endif
 
 #ifdef ENABLE_MOTION_CONTROL_MODULES
 	EVENT_INVOKE(mc_home_axis_start, &homing_status);
@@ -1235,10 +1248,10 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 
 	// copy the new map tp the hmap array
 	memcpy(hmap_offsets, new_hmap_offsets, sizeof(new_hmap_offsets));
-	#ifdef H_MAPPING_EEPROM_STORE_ENABLED
+#ifdef H_MAPPING_EEPROM_STORE_ENABLED
 	// store the new map
 	settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
-	#endif
+#endif
 
 	// print map
 	mc_print_hmap();

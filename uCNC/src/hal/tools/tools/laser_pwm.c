@@ -49,8 +49,6 @@
 #define LASER_PWM_MIN_VALUE 2
 #endif
 
-static bool previous_mode;
-
 static void startup_code(void)
 {
 // force laser mode
@@ -58,14 +56,13 @@ static void startup_code(void)
 	io_config_pwm(LASER_PWM, LASER_FREQ);
 	io_set_pwm(LASER_PWM, 0);
 #endif
-	previous_mode = g_settings.tool_mode;
 	g_settings.tool_mode = LASER_PWM_MODE;
 }
 
 static void shutdown_code(void)
 {
 	// restore laser mode
-	g_settings.tool_mode = previous_mode;
+	g_settings.tool_mode = UNDEF_MODE;
 }
 
 static void set_speed(int16_t value)
