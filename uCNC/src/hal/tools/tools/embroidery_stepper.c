@@ -44,24 +44,40 @@
 #endif
 
 static uint32_t embd_steps_per_rev;
+static uint32_t embd_steps_needle_down;
 static uint32_t embd_steps_target_us;
 static volatile uint32_t embd_steps_curr_us;
-static uint32_t embd_steps_count;
+static volatile uint32_t embd_steps_count;
 static float embd_accel;
 static int16_t previous_rpm;
 static bool embd_stop_on_target;
 static uint32_t embd_update_steps;
+static uint32_t embd_max_steps;
+static uint32_t embd_down_steps;
 
-#undef ENABLE_SETTINGS_MODULES
 #ifdef ENABLE_SETTINGS_MODULES
 #undef EMBRODERY_STEPPER_STP_PER_REVS
 #define EMBRODERY_STEPPER_STP_PER_REVS 310
 DECL_EXTENDED_SETTING(EMBRODERY_STEPPER_STP_PER_REVS, &embd_steps_per_rev, uint32_t, 1, proto_gcode_setting_line_int);
+#define EMBRODERY_STEPPER_STP_NEEDLE_DOWN 311
+DECL_EXTENDED_SETTING(EMBRODERY_STEPPER_STP_NEEDLE_DOWN, &embd_steps_needle_down, uint32_t, 1, proto_gcode_setting_line_int);
 #else
 #ifndef EMBRODERY_STEPPER_STP_PER_REVS
 #define EMBRODERY_STEPPER_STP_PER_REVS 3200 // if settings are disable set the steps per revolution directly
 #endif
+#ifndef EMBRODERY_STEPPER_STP_NEEDLE_DOWN
+#define EMBRODERY_STEPPER_STP_NEEDLE_DOWN 2600 // if settings are disable set the steps at which the needle enters the fabric and not motion can occur directly
 #endif
+#endif
+
+bool needle_is_down()
+{
+	bool needle_down = (embd_steps_count >= embd_down_steps);
+//	if(needle_down){
+//		planner_spindle_ovr(50);
+//	}
+	return (embd_steps_count >= embd_down_steps);
+}
 
 /**
  *
@@ -120,12 +136,13 @@ MCU_CALLBACK void embd_isr_cb(void)
 #endif
 	uint32_t steps = embd_steps_count;
 	uint32_t current_us = embd_steps_curr_us;
+
 	steps++;
-	if (steps > embd_steps_per_rev)
+	if (steps > embd_max_steps)
 	{
 
 		steps = 0;
-		mcu_toggle_output(DOUT1); /*for test purposes*/
+		// mcu_toggle_output(DOUT1); /*for test purposes*/
 		itp_inc_block_id();
 	}
 
@@ -138,7 +155,7 @@ MCU_CALLBACK void embd_isr_cb(void)
 		if (!embd_stop_on_target)
 		{
 			itp_set_block_mode(ITP_BLOCK_CONTINUOUS); // switch to continuous mode
-			return; // tool stopped. prevent rearm timer
+			return;																		// tool stopped. prevent rearm timer
 		}
 		mcu_config_timeout(&embd_isr_cb, ((uint32_t)embd_steps_target_us >> INT_MATH_SHIFT));
 		embd_stop_on_target = false;
@@ -315,11 +332,21 @@ static void startup_code(void)
 
 #ifdef ENABLE_SETTINGS_MODULES
 	EXTENDED_SETTING_INIT(EMBRODERY_STEPPER_STP_PER_REVS, embd_steps_per_rev);
-	settings_load(EXTENDED_SETTING_ADDRESS(EMBRODERY_STEPPER_STP_PER_REVS), (uint8_t *)embd_steps_per_rev, sizeof(embd_steps_per_rev));
+	settings_load(EXTENDED_SETTING_ADDRESS(EMBRODERY_STEPPER_STP_PER_REVS), (uint8_t *)&embd_steps_per_rev, sizeof(embd_steps_per_rev));
+	EXTENDED_SETTING_INIT(EMBRODERY_STEPPER_STP_NEEDLE_DOWN, embd_steps_needle_down);
+	settings_load(EXTENDED_SETTING_ADDRESS(EMBRODERY_STEPPER_STP_NEEDLE_DOWN), (uint8_t *)&embd_steps_needle_down, sizeof(embd_steps_needle_down));
 #else
-	embd_steps_per_rev = (EMBRODERY_STEPPER_STP_PER_REVS << 1);
+	embd_steps_per_rev = (EMBRODERY_STEPPER_STP_PER_REVS);
+	embd_steps_needle_down = (EMBRODERY_STEPPER_STP_NEEDLE_DOWN);
 #endif
+	embd_max_steps = embd_steps_per_rev << 1;
+	embd_down_steps = embd_steps_needle_down << 1;
 
+#ifndef RT_STEP_PREVENT_CONDITION
+	itp_rt_step_prevent_cb = &needle_is_down;
+#else
+#warning "RT_STEP_PREVENT_CONDITION is set and needle down condition will not be detected!!"
+#endif
 	embd_accel = 5;
 	g_settings.tool_mode = EMBROIDERY_MODE;
 }
@@ -334,6 +361,7 @@ static void shutdown_code(void)
 #endif
 #endif
 	g_settings.tool_mode = UNDEF_MODE;
+	itp_rt_step_prevent_cb = NULL;
 }
 
 static void set_coolant(uint8_t value)
@@ -348,13 +376,13 @@ static void set_speed(int16_t value)
 {
 	if (value != previous_rpm)
 	{
-		uint32_t target_us = (value) ? (uint32_t)(1000000.0f / (value * embd_steps_per_rev * MIN_SEC_MULT)) : 0;
+		uint32_t target_us = (value) ? (uint32_t)(1000000.0f / (value * embd_max_steps * MIN_SEC_MULT)) : 0;
 
 		itp_set_block_mode(ITP_BLOCK_SINGLE);
 		if ((previous_rpm == 0) || (value == 0))
 		{
 			float dai = fast_flt_inv(2.0f * embd_accel);
-			float fact = embd_accel * embd_steps_per_rev;
+			float fact = embd_accel * embd_max_steps;
 			uint32_t min_us = (uint32_t)(2000000.f * fast_flt_invsqrt(fact));
 
 			if (previous_rpm == 0)
@@ -377,7 +405,7 @@ static void set_speed(int16_t value)
 
 static uint16_t get_speed(void)
 {
-	float rpm = (float)((embd_steps_curr_us >> INT_MATH_SHIFT) * embd_steps_per_rev);
+	float rpm = (float)((embd_steps_curr_us >> INT_MATH_SHIFT) * embd_max_steps);
 	return 60000000.0f / rpm;
 }
 

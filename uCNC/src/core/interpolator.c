@@ -935,6 +935,12 @@ MCU_CALLBACK void mcu_step_reset_cb(void)
 	io_set_steps(g_settings.step_invert_mask);
 }
 
+#ifdef ENABLE_RT_SYNC_MOTIONS
+#ifndef RT_STEP_PREVENT_CONDITION
+itp_rt_step_prevent_t itp_rt_step_prevent_cb;
+#endif
+#endif
+
 MCU_CALLBACK void mcu_step_cb(void)
 {
 	static uint8_t stepbits = 0;
@@ -944,6 +950,14 @@ MCU_CALLBACK void mcu_step_cb(void)
 	if (RT_STEP_PREVENT_CONDITION)
 	{
 		return;
+	}
+#else
+	if (itp_rt_step_prevent_cb)
+	{
+		if (itp_rt_step_prevent_cb())
+		{
+			return;
+		}
 	}
 #endif
 

@@ -114,7 +114,7 @@ extern "C"
 	 * Disabling settings safety will make the settins run in legacy more where they are simply reset to default on error without forcing the user to re-check them
 	 */
 
-	//	 #define DISABLE_SAFE_SETTINGS
+		 #define DISABLE_SAFE_SETTINGS
 
 	/**
 	 * Uncomment to enable G92 storing on non volatile memory
@@ -244,7 +244,7 @@ extern "C"
  * Enables Embroidery capabilities
  * 
  */
-// #define ENABLE_EMBROIDERY
+ #define ENABLE_EMBROIDERY
 
 /**
  * Feed overrides increments and percentage ranges
@@ -360,7 +360,7 @@ extern "C"
 	/**
 	 * enable step counting on sync motion command (needed for some Gcode extensions like G33)
 	 * */
-	// #define ENABLE_RT_SYNC_MOTIONS
+	 #define ENABLE_RT_SYNC_MOTIONS
 
 	/**
 	 * enable motion control and planner highjacking

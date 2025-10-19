@@ -265,7 +265,13 @@ extern "C"
 			getc(src);
 		}*/
 
-		fseek(src, address, SEEK_SET);
+		if(fseek(src, address, SEEK_SET)!=0){
+			fseek(src, 0, SEEK_END);
+			int sz = ftell(src);
+			for(int i=sz; i<address; i++){
+				putc((int)0, src);
+			}
+		}
 		putc((int)value, src);
 
 		fflush(src);
