@@ -4567,6 +4567,9 @@ extern "C"
 #define IC74HC595_COUNT 4
 #define I2S_PORT IC74HC595_I2S_PORT
 
+extern volatile uint32_t i2s_mode;
+#define I2S_MODE __atomic_load_n((uint32_t *)&i2s_mode, __ATOMIC_RELAXED)
+
 	// custom pin operations for 74HS595
 	extern volatile uint32_t ic74hc595_i2s_pins;
 #define ic74hc595_pin_offset(pin) (__indirect__(pin, IO_OFFSET))

@@ -18,7 +18,7 @@
 
 #include "../../../cnc.h"
 
-#if (MCU == MCU_ESP32)
+#if (CONFIG_IDF_TARGET_ESP32)
 #include "esp_timer.h"
 #include "esp_task_wdt.h"
 #include "esp_ipc.h"

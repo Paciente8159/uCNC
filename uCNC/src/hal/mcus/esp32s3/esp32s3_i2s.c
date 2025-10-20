@@ -18,18 +18,26 @@
 
 #include "../../../cnc.h"
 
-#if (CONFIG_IDF_TARGET_ESP32)
-#include "soc/i2s_struct.h"
-#include "soc/soc.h"
-#include "soc/interrupts.h"
-#include "driver/i2s.h"
-#include "soc/i2s_reg.h"
-#include "driver/i2s.h"
-#include "../esp32common/esp32_common.h"
+#if (CONFIG_IDF_TARGET_ESP32S3)
 #include "hal/i2s_hal.h"
-#include "hal/i2s_ll.h"
-#include <soc/i2s_struct.h>
+#include "hal/gdma_types.h"
+#include "driver/gpio.h"
+#include "soc/gpio_sig_map.h"
+#include "esp_heap_caps.h"
+#include <driver/periph_ctrl.h>
 #include <rom/lldesc.h>
+#include <soc/i2s_struct.h>
+#include <soc/gdma_struct.h>
+#include <soc/gdma_channel.h>
+#include "hal/i2s_ll.h"
+#include "hal/gdma_ll.h"
+#include "hal/dma_types.h"
+#include "hal/interrupt_controller_hal.h"
+#include <freertos/queue.h>
+#include "esp_intr_alloc.h"
+#include "soc/gdma_periph.h"
+#include "soc/system_reg.h"
+#include <stdatomic.h>
 
 #ifdef IC74HC595_CUSTOM_SHIFT_IO
 #if IC74HC595_COUNT != 4
@@ -42,6 +50,8 @@
 #ifndef I2S_PERIF
 #define I2S_PERIF __helper__(PERIPH_I2S, I2S_PORT, _MODULE)
 #endif
+
+#define I2S_ITR_FLAGS (GDMA_LL_EVENT_TX_DONE | GDMA_LL_EVENT_TX_TOTAL_EOF)
 
 #ifndef I2S_SAMPLE_RATE
 #define I2S_SAMPLE_RATE (500000)
@@ -57,10 +67,11 @@ typedef void (*i2s_refill_cb_t)(uint32_t *buf, size_t len);
 typedef struct
 {
 	i2s_hal_context_t ctx;
+	int gdma_channel;
 	uint32_t *buf_a;
 	uint32_t *buf_b;
-	lldesc_t desc_a;
-	lldesc_t desc_b;
+	dma_descriptor_t desc_a;
+	dma_descriptor_t desc_b;
 	i2s_refill_cb_t refill_cb;
 	intr_handle_t isr_handle;
 } i2s_hal_t;
@@ -129,14 +140,14 @@ static void IRAM_ATTR i2s_fifo_fill_words(uint32_t *buf, size_t len)
 
 static void IRAM_ATTR i2s_tx_isr(void *arg)
 {
-	uint32_t int_st = i2s_hal_get_intr_status(&i2s_hal.ctx);
+	uint32_t int_st = gdma_ll_tx_get_interrupt_status(&GDMA, i2s_hal.gdma_channel);
 	uint8_t mode = I2S_MODE;
 
 	// Stage A: DMA descriptor finished
-	if (int_st & I2S_OUT_EOF_INT_ST)
+	if (int_st & I2S_ITR_FLAGS)
 	{
-		lldesc_t *finished = NULL;
-		i2s_hal_get_out_eof_des_addr(&i2s_hal.ctx, (uint32_t *)&finished);
+		dma_descriptor_t *finished = NULL;
+		finished = (dma_descriptor_t *)gdma_ll_tx_get_eof_desc_addr(&GDMA, i2s_hal.gdma_channel);
 
 		// Normal ping-pong refill if NOT switching
 		switch (mode)
@@ -146,49 +157,27 @@ static void IRAM_ATTR i2s_tx_isr(void *arg)
 			if (finished == &i2s_hal.desc_a)
 			{
 				i2s_hal.refill_cb(i2s_hal.buf_a, DMA_BUFFER_SIZE);
-				i2s_hal.desc_a.owner = 1;
+				i2s_hal.desc_a.dw0.owner = 1;
 			}
 			else if (finished == &i2s_hal.desc_b)
 			{
 				i2s_hal.refill_cb(i2s_hal.buf_b, DMA_BUFFER_SIZE);
-				i2s_hal.desc_b.owner = 1;
+				i2s_hal.desc_b.dw0.owner = 1;
 			}
 			break;
 		case (ITP_STEP_MODE_REALTIME | ITP_STEP_MODE_SYNC):
-		mcu_set_output(DOUT49);
-			i2s_hal_stop_tx_link(&i2s_hal.ctx);
+			mcu_set_output(DOUT49);
+			gdma_ll_tx_stop(&GDMA, i2s_hal.gdma_channel);
 			__atomic_store_n((uint32_t *)&i2s_mode, ITP_STEP_MODE_REALTIME, __ATOMIC_RELAXED);
 			break;
 		case ITP_STEP_MODE_REALTIME:
 			mcu_clear_output(DOUT49);
-			I2S_REG.conf.tx_start = 0;
-			I2S_REG.conf.tx_reset = 1;
-			I2S_REG.conf.tx_reset = 0;
-			I2S_REG.conf.rx_fifo_reset = 1;
-			I2S_REG.conf.rx_fifo_reset = 0;
-			// modify registers for realtime usage
-			I2S_REG.out_link.stop = 1;
-			I2S_REG.fifo_conf.dscr_en = 0;
-			I2S_REG.conf.tx_start = 0;
-			I2S_REG.int_clr.val = 0xFFFFFFFF;
-			I2S_REG.clkm_conf.clka_en = 0;			// Use PLL/2 as reference
-			I2S_REG.clkm_conf.clkm_div_num = 2; // reset value of 4
-			I2S_REG.clkm_conf.clkm_div_a = 1;		// 0 at reset, what about divide by 0?
-			I2S_REG.clkm_conf.clkm_div_b = 0;		// 0 at reset
-			I2S_REG.fifo_conf.tx_fifo_mod = 3;	// 32 bits single channel data
-			I2S_REG.conf_chan.tx_chan_mod = 3;	//
-			I2S_REG.sample_rate_conf.tx_bits_mod = 32;
-			I2S_REG.conf.tx_msb_shift = 0;
-			I2S_REG.conf.rx_msb_shift = 0;
-			I2S_REG.int_ena.out_eof = 0;
-			I2S_REG.int_ena.out_dscr_err = 0;
-			I2S_REG.conf_single_data = __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
-			I2S_REG.conf1.tx_stop_en = 0;
-			I2S_REG.int_ena.val = 0;
-			I2S_REG.fifo_conf.dscr_en = 1;
-			I2S_REG.int_clr.val = 0xFFFFFFFF;
-			I2S_REG.out_link.start = 1;
-			I2S_REG.conf.tx_start = 1;
+			i2s_hal_stop_tx(&i2s_hal.ctx);
+			i2s_hal_reset_tx(&i2s_hal.ctx);
+			i2s_hal_reset_tx_fifo(&i2s_hal.ctx);
+			gdma_ll_tx_stop(&GDMA, i2s_hal.gdma_channel);
+
+			I2S0.conf_single_data = __atomic_load_n(&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
 			// Start TX and kick the motion timer
 			i2s_hal_start_tx(&i2s_hal.ctx);
 			timer_set_counter_value(ITP_TIMER_TG, ITP_TIMER_IDX, 0x00000000ULL);
@@ -199,7 +188,7 @@ static void IRAM_ATTR i2s_tx_isr(void *arg)
 		}
 	}
 
-	i2s_hal_clear_intr_status(&i2s_hal.ctx, int_st);
+	gdma_ll_tx_clear_interrupt_status(&GDMA, i2s_hal.gdma_channel, int_st);
 }
 
 /**
@@ -220,9 +209,10 @@ static void IRAM_ATTR i2s_enter_default_mode_glitch_free(void)
 	i2s_fifo_fill_words(i2s_hal.buf_a, DMA_BUFFER_SIZE);
 	i2s_fifo_fill_words(i2s_hal.buf_b, DMA_BUFFER_SIZE);
 	// init the addres descriptor and enable ISR
-	i2s_hal_start_tx_link(&i2s_hal.ctx, (uint32_t)&i2s_hal.desc_a);
-	i2s_hal_enable_tx_dma(&i2s_hal.ctx);
-	i2s_hal_enable_tx_intr(&i2s_hal.ctx);
+	gdma_ll_tx_reset_channel(&GDMA, i2s_hal.gdma_channel);
+	gdma_ll_tx_connect_to_periph(&GDMA, i2s_hal.gdma_channel, GDMA_TRIG_PERIPH_I2S, SOC_GDMA_TRIG_PERIPH_I2S0);
+	gdma_ll_tx_set_desc_addr(&GDMA, i2s_hal.gdma_channel, (uint32_t)&i2s_hal.desc_a);
+	gdma_ll_tx_enable_interrupt(&GDMA, i2s_hal.gdma_channel, I2S_ITR_FLAGS, true);
 
 	// Start TX
 	i2s_hal_start_tx(&i2s_hal.ctx);
@@ -266,14 +256,22 @@ uint8_t itp_set_step_mode(uint8_t mode)
 #include <soc/gpio_sig_map.h>
 #define BCK_OUT_IDX __helper__(I2S, I2S_PORT, O_BCK_OUT_IDX)
 #define WS_OUT_IDX __helper__(I2S, I2S_PORT, O_WS_OUT_IDX)
-#define DATA_OUT_IDX __helper__(I2S, I2S_PORT, O_DATA_OUT23_IDX)
+#define DATA_OUT_IDX __helper__(I2S, I2S_PORT, O_SD_OUT_IDX)
 #define PERIPH_I2S __helper__(PERIPH_I2S, I2S_PORT, _MODULE)
 #define I2S_ITR_SRC __helper__(ETS_I2S, I2S_PORT, _INTR_SOURCE)
+#define GDMA_I2S_PERIPH (SOC_GDMA_TRIG_PERIPH_I2S0 + I2S_PORT)
 
 static void i2s_tx_base_config(void)
 {
 	periph_module_reset(PERIPH_I2S);
 	periph_module_enable(PERIPH_I2S);
+
+	if (REG_GET_BIT(SYSTEM_PERIP_CLK_EN1_REG, SYSTEM_DMA_CLK_EN) == 0)
+	{
+		REG_SET_BIT(SYSTEM_PERIP_CLK_EN1_REG, SYSTEM_DMA_CLK_EN);
+		REG_SET_BIT(SYSTEM_PERIP_RST_EN1_REG, SYSTEM_DMA_RST);
+		REG_CLR_BIT(SYSTEM_PERIP_RST_EN1_REG, SYSTEM_DMA_RST);
+	}
 
 	// Route pins via GPIO matrix
 	gpio_set_direction(IC74HC595_I2S_CLK, GPIO_MODE_OUTPUT);
@@ -288,7 +286,6 @@ static void i2s_tx_base_config(void)
 	i2s_hal.ctx.dev = &I2S_REG;
 	i2s_hal.ctx.version = I2S_PORT;
 	// Stop and reset
-	i2s_hal_stop_tx_link(&i2s_hal.ctx);
 	i2s_hal_stop_tx(&i2s_hal.ctx);
 	i2s_hal_reset_tx(&i2s_hal.ctx);
 	i2s_hal_reset_rx(&i2s_hal.ctx);
@@ -316,38 +313,41 @@ static void i2s_tx_base_config(void)
 	i2s_hal_tx_clock_config(&i2s_hal.ctx, &clock);
 
 #ifndef USE_I2S_REALTIME_MODE_ONLY
-	i2s_hal_enable_tx_dma(&i2s_hal.ctx);
-	i2s_hal_enable_tx_intr(&i2s_hal.ctx);
-	i2s_hal_disable_rx_intr(&i2s_hal.ctx);
-	i2s_hal.refill_cb = i2s_fifo_fill_words;
-
-	// Allocate DMA-capable buffers
+	// Allocate GDMA TX channel
+	// Allocate DMA buffers
 	i2s_hal.buf_a = heap_caps_malloc(DMA_BUFFER_SIZE * sizeof(uint32_t), MALLOC_CAP_DMA);
 	i2s_hal.buf_b = heap_caps_malloc(DMA_BUFFER_SIZE * sizeof(uint32_t), MALLOC_CAP_DMA);
 
-	if (!i2s_hal.buf_a || !i2s_hal.buf_b)
-		return;
-
 	// Setup descriptors
-	i2s_hal.desc_a.length = DMA_BUFFER_SIZE * sizeof(uint32_t);
-	i2s_hal.desc_a.size = i2s_hal.desc_a.length;
-	i2s_hal.desc_a.owner = 1;
-	i2s_hal.desc_a.buf = (uint8_t *)i2s_hal.buf_a;
-	i2s_hal.desc_a.eof = 1;
-	i2s_hal.desc_a.qe.stqe_next = &i2s_hal.desc_b;
+	i2s_hal.desc_a.dw0.owner = 1;
+	i2s_hal.desc_a.dw0.suc_eof = 1;
+	i2s_hal.desc_a.dw0.length = DMA_BUFFER_SIZE * sizeof(uint32_t);
+	i2s_hal.desc_a.dw0.size = i2s_hal.desc_a.dw0.length;
+	i2s_hal.desc_a.buffer = (uint8_t *)i2s_hal.buf_a;
+	i2s_hal.desc_a.next = &i2s_hal.desc_b;
 
-	i2s_hal.desc_b.length = DMA_BUFFER_SIZE * sizeof(uint32_t);
-	i2s_hal.desc_b.size = i2s_hal.desc_b.length;
-	i2s_hal.desc_b.owner = 1;
-	i2s_hal.desc_b.buf = (uint8_t *)i2s_hal.buf_b;
-	i2s_hal.desc_b.eof = 1;
-	i2s_hal.desc_b.qe.stqe_next = &i2s_hal.desc_a;
+	i2s_hal.desc_b.dw0.owner = 1;
+	i2s_hal.desc_b.dw0.suc_eof = 1;
+	i2s_hal.desc_b.dw0.length = DMA_BUFFER_SIZE * sizeof(uint32_t);
+	i2s_hal.desc_b.dw0.size = i2s_hal.desc_b.dw0.length;
+	i2s_hal.desc_b.buffer = (uint8_t *)i2s_hal.buf_b;
+	i2s_hal.desc_b.next = &i2s_hal.desc_a;
 
-	i2s_hal_start_tx_link(&i2s_hal.ctx, (uint32_t)&i2s_hal.desc_a);
+	i2s_hal.refill_cb = i2s_fifo_fill_words;
+
+	// Allocate GDMA channel
+	i2s_hal.gdma_channel = 0; // pick free channel
+	gdma_ll_tx_reset_channel(&GDMA, i2s_hal.gdma_channel);
+	gdma_ll_tx_connect_to_periph(&GDMA, i2s_hal.gdma_channel, GDMA_TRIG_PERIPH_I2S, GDMA_I2S_PERIPH);
+	gdma_ll_tx_set_desc_addr(&GDMA, i2s_hal.gdma_channel, (uint32_t)&i2s_hal.desc_a);
+	gdma_ll_tx_enable_interrupt(&GDMA, i2s_hal.gdma_channel, I2S_ITR_FLAGS, true);
 
 	// Hook ISR
-	esp_intr_alloc_intrstatus(I2S_ITR_SRC, ESP_INTR_FLAG_IRAM | ESP_INTR_FLAG_LEVEL3, (uint32_t)i2s_ll_get_intr_status_reg(&I2S_REG), (I2S_OUT_EOF_INT_ST | I2S_TX_REMPTY_INT_ST),
-														i2s_tx_isr, NULL, &i2s_hal.isr_handle);
+	esp_intr_alloc(gdma_periph_signals.groups[0].pairs[i2s_hal.gdma_channel].tx_irq_id,
+								 ESP_INTR_FLAG_IRAM | ESP_INTR_FLAG_LEVEL3,
+								 i2s_tx_isr, NULL, &i2s_hal.isr_handle);
+	// esp_intr_alloc_intrstatus(I2S_ITR_SRC, ESP_INTR_FLAG_IRAM | ESP_INTR_FLAG_LEVEL3, (uint32_t)GDMA., I2S_ITR_FLAGS,
+	// 													i2s_tx_isr, NULL, &i2s_hal.isr_handle);
 #else
 	i2s_ll_tx_disable_intr(&I2S_REG);
 #endif

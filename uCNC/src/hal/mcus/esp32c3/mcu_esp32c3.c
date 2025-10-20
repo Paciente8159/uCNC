@@ -65,9 +65,6 @@ MCU_CALLBACK void mcu_gpio_isr(void *type);
 #endif
 #define ITP_SAMPLE_RATE (I2S_SAMPLE_RATE)
 
-static volatile uint32_t i2s_mode;
-#define I2S_MODE __atomic_load_n((uint32_t *)&i2s_mode, __ATOMIC_RELAXED)
-
 // software generated oneshot for RT steps like laser PPI
 #if defined(MCU_HAS_ONESHOT_TIMER) && defined(ENABLE_RT_SYNC_MOTIONS)
 static uint32_t esp32_oneshot_counter;

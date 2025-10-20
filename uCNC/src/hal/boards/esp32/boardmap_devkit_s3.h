@@ -60,12 +60,12 @@ extern "C"
 // #define CS_RES_PULLUP
 
 // // Setup limit pins
-#define LIMIT_Z_BIT 6 // assigns LIMIT_Z pin
-#define LIMIT_Z_ISR		 // assigns LIMIT_Z ISR
-#define LIMIT_Y_BIT 5	 // assigns LIMIT_Y pin
-#define LIMIT_Y_ISR		 // assigns LIMIT_Y ISR
-#define LIMIT_X_BIT 4 // assigns LIMIT_X pin
-#define LIMIT_X_ISR		 // assigns LIMIT_X ISR
+// #define LIMIT_Z_BIT 6 // assigns LIMIT_Z pin
+// #define LIMIT_Z_ISR		 // assigns LIMIT_Z ISR
+// #define LIMIT_Y_BIT 5	 // assigns LIMIT_Y pin
+// #define LIMIT_Y_ISR		 // assigns LIMIT_Y ISR
+// #define LIMIT_X_BIT 4 // assigns LIMIT_X pin
+// #define LIMIT_X_ISR		 // assigns LIMIT_X ISR
 
 // // Setup probe pin
 #define PROBE_BIT 7
@@ -112,11 +112,12 @@ extern "C"
 // #define SERVO0_BIT 33
 // #define I2C_CLK_BIT 22
 // #define I2C_DATA_BIT 21
+#define DOUT49_BIT 8
 
 #define IC74HC595_CUSTOM_SHIFT_IO // Enables custom MCU data shift transmission. In ESP32 that is via I2S
-#define IC74HC595_I2S_WS 26
-#define IC74HC595_I2S_CLK 25
-#define IC74HC595_I2S_DATA 27
+#define IC74HC595_I2S_WS 4
+#define IC74HC595_I2S_CLK 5
+#define IC74HC595_I2S_DATA 18
 // #define IC74HC595_I2S_PORT 0
 // uses 3 x 74HS595 but for I2S use this value has to be set to 4 (I2S sends data as 32-bit (4bytes))
 #define IC74HC595_COUNT 4
