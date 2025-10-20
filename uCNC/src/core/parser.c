@@ -1496,6 +1496,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 	{
 #if (defined(AXIS_X) && defined(AXIS_Y))
 	case G17:
+	itp_set_step_mode(ITP_STEP_MODE_DEFAULT);
 		a = AXIS_X;
 		b = AXIS_Y;
 		offset_a = AXIS_X;
@@ -1504,6 +1505,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 #endif
 #if (defined(AXIS_X) && defined(AXIS_Z))
 	case G18:
+	itp_set_step_mode(ITP_STEP_MODE_REALTIME);
 #ifdef ENABLE_G39_H_MAPPING
 		if (new_state->groups.height_map_active)
 		{

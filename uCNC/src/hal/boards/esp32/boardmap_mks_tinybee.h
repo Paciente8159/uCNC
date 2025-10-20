@@ -127,8 +127,8 @@ extern "C"
 // #define DIN18_BIT 14
 // #define DIN18_PULLUP
 
-#define DOUT48_BIT 14
-#define DOUT49_BIT 17
+// #define DOUT48_BIT 14
+#define DOUT49_BIT 14
 
 #ifdef __cplusplus
 }

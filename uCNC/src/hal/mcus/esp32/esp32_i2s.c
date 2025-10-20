@@ -141,6 +141,7 @@ static void IRAM_ATTR i2s_tx_isr(void *arg)
 		// Normal ping-pong refill if NOT switching
 		switch (mode)
 		{
+			mcu_clear_output(DOUT49);
 		case ITP_STEP_MODE_DEFAULT:
 			if (finished == &i2s_hal.desc_a)
 			{
@@ -154,27 +155,44 @@ static void IRAM_ATTR i2s_tx_isr(void *arg)
 			}
 			break;
 		case (ITP_STEP_MODE_REALTIME | ITP_STEP_MODE_SYNC):
-			mcu_set_output(DOUT48);
+		mcu_set_output(DOUT49);
 			i2s_hal_stop_tx_link(&i2s_hal.ctx);
-			__atomic_fetch_and((uint32_t *)&i2s_mode, ~ITP_STEP_MODE_SYNC, __ATOMIC_RELAXED);
+			__atomic_store_n((uint32_t *)&i2s_mode, ITP_STEP_MODE_REALTIME, __ATOMIC_RELAXED);
 			break;
 		case ITP_STEP_MODE_REALTIME:
-			mcu_clear_output(DOUT48);
-			i2s_hal_stop_tx(&i2s_hal.ctx);
-			i2s_hal_reset_tx(&i2s_hal.ctx);
-			i2s_hal_reset_rx(&i2s_hal.ctx);
-			i2s_hal_reset_tx_fifo(&i2s_hal.ctx);
-			i2s_hal_reset_rx_fifo(&i2s_hal.ctx);
-			i2s_hal_disable_tx_dma(&i2s_hal.ctx);
-			i2s_hal_disable_tx_intr(&i2s_hal.ctx);
-
-			// Switch to single-data path
-			i2s_ll_tx_force_enable_fifo_mod(&I2S_REG, false); // route conf_single_data path
-			// i2s_ll_tx_enable_mono_mode(&I2S_REG, false);
-			I2S_REG.conf_single_data = 0xaaaaaaaa;//__atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
-
+			mcu_clear_output(DOUT49);
+			I2S_REG.conf.tx_start = 0;
+			I2S_REG.conf.tx_reset = 1;
+			I2S_REG.conf.tx_reset = 0;
+			I2S_REG.conf.rx_fifo_reset = 1;
+			I2S_REG.conf.rx_fifo_reset = 0;
+			// modify registers for realtime usage
+			I2S_REG.out_link.stop = 1;
+			I2S_REG.fifo_conf.dscr_en = 0;
+			I2S_REG.conf.tx_start = 0;
+			I2S_REG.int_clr.val = 0xFFFFFFFF;
+			I2S_REG.clkm_conf.clka_en = 0;			// Use PLL/2 as reference
+			I2S_REG.clkm_conf.clkm_div_num = 2; // reset value of 4
+			I2S_REG.clkm_conf.clkm_div_a = 1;		// 0 at reset, what about divide by 0?
+			I2S_REG.clkm_conf.clkm_div_b = 0;		// 0 at reset
+			I2S_REG.fifo_conf.tx_fifo_mod = 3;	// 32 bits single channel data
+			I2S_REG.conf_chan.tx_chan_mod = 3;	//
+			I2S_REG.sample_rate_conf.tx_bits_mod = 32;
+			I2S_REG.conf.tx_msb_shift = 0;
+			I2S_REG.conf.rx_msb_shift = 0;
+			I2S_REG.int_ena.out_eof = 0;
+			I2S_REG.int_ena.out_dscr_err = 0;
+			I2S_REG.conf_single_data = __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
+			I2S_REG.conf1.tx_stop_en = 0;
+			I2S_REG.int_ena.val = 0;
+			I2S_REG.fifo_conf.dscr_en = 1;
+			I2S_REG.int_clr.val = 0xFFFFFFFF;
+			I2S_REG.out_link.start = 1;
+			I2S_REG.conf.tx_start = 1;
 			// Start TX and kick the motion timer
 			i2s_hal_start_tx(&i2s_hal.ctx);
+			timer_set_counter_value(ITP_TIMER_TG, ITP_TIMER_IDX, 0x00000000ULL);
+			timer_group_clr_intr_status_in_isr(ITP_TIMER_TG, ITP_TIMER_IDX);
 			timer_enable_intr(ITP_TIMER_TG, ITP_TIMER_IDX);
 			timer_start(ITP_TIMER_TG, ITP_TIMER_IDX);
 			break;
@@ -225,16 +243,17 @@ uint8_t itp_set_step_mode(uint8_t mode)
 #else
 		__atomic_store_n((uint32_t *)&i2s_mode, (ITP_STEP_MODE_SYNC | mode), __ATOMIC_RELAXED);
 #endif
-
+		mcu_toggle_output(DOUT49);
 		// Apply immediately: glitch-free path
 		switch (mode)
 		{
 		case ITP_STEP_MODE_DEFAULT:
 			i2s_enter_default_mode_glitch_free();
 			// Clear sync flag
-			__atomic_fetch_and((uint32_t *)&i2s_mode, ~ITP_STEP_MODE_SYNC, __ATOMIC_RELAXED);
+			__atomic_store_n((uint32_t *)&i2s_mode, ITP_STEP_MODE_DEFAULT, __ATOMIC_RELAXED);
 			break;
 		}
+		mcu_toggle_output(DOUT49);
 	}
 	return last_mode;
 }

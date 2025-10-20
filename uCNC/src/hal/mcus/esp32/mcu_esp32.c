@@ -106,9 +106,8 @@ MCU_CALLBACK void mcu_itp_isr(void *arg)
 	
 #ifdef IC74HC595_CUSTOM_SHIFT_IO
 	uint32_t mode = I2S_MODE;
-	if (mode == ITP_STEP_MODE_REALTIME)
+	if (mode & ITP_STEP_MODE_REALTIME)
 	{
-		mcu_toggle_output(DOUT48);
 		signal_timer.us_step = 8;
 		mcu_gen_step();
 		mcu_gen_pwm();
