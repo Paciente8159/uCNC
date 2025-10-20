@@ -103,7 +103,7 @@ static inline void IRAM_ATTR i2s_write_single_word(uint32_t sample)
  */
 static void IRAM_ATTR i2s_fifo_fill_words(uint32_t *buf, size_t len)
 {
-	for (int i = 0; i < len; ++i)
+	for (int i = 0; i < len; i++)
 	{
 		signal_timer.us_step = 4;
 
@@ -141,8 +141,8 @@ static void IRAM_ATTR i2s_tx_isr(void *arg)
 		// Normal ping-pong refill if NOT switching
 		switch (mode)
 		{
-			mcu_clear_output(DOUT49);
 		case ITP_STEP_MODE_DEFAULT:
+			mcu_clear_output(DOUT49);
 			if (finished == &i2s_hal.desc_a)
 			{
 				i2s_hal.refill_cb(i2s_hal.buf_a, DMA_BUFFER_SIZE);
