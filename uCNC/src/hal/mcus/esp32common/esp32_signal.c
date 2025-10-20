@@ -24,8 +24,8 @@ signal_timer_t signal_timer;
 
 MCU_CALLBACK void mcu_gen_step(void)
 {
-	static bool step_reset = true;
-	static int32_t elapsed_us;
+	static volatile bool step_reset = true;
+	static volatile int32_t elapsed_us;
 
 	// generate steps
 	if (signal_timer.step_alarm_en)
@@ -45,7 +45,7 @@ MCU_CALLBACK void mcu_gen_step(void)
 				mcu_step_reset_cb();
 			}
 			step_reset = !reset;
-			elapsed_us = signal_timer.itp_reload + t;
+			elapsed_us = MAX(0, signal_timer.itp_reload + t);
 		}
 		else
 		{
@@ -354,7 +354,7 @@ MCU_CALLBACK void mcu_gen_servo(void)
 		// resets every 3ms
 		servo_tick_counter = ++counter;
 
-		elapsed_us = /*(1000 / 128) =~ 8*/8 + t;
+		elapsed_us = /*(1000 / 128) =~ 8*/ 8 + t;
 	}
 	else
 	{
