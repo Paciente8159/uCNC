@@ -4483,17 +4483,43 @@ extern "C"
 #ifndef SERVO_TIMER
 #define SERVO_TIMER 1
 #endif
-#define SERVO_TIMER_TG (SERVO_TIMER & 0x01)
-#define SERVO_TIMER_IDX ((SERVO_TIMER >> 1) & 0x01)
+#if !(SERVO_TIMER & 0x02)
+#define SERVO_TIMER_TG 0
+#else
+#define SERVO_TIMER_TG 1
+#endif
+#if !(SERVO_TIMER & 0x01)
+#define SERVO_TIMER_IDX 0
+#else
+#define SERVO_TIMER_IDX 1
+#endif
 
 #ifndef ITP_TIMER
 #define ITP_TIMER 3
 #endif
-#define ITP_TIMER_TG (ITP_TIMER & 0x01)
-#define ITP_TIMER_IDX ((ITP_TIMER >> 1) & 0x01)
+#if !(ITP_TIMER & 0x02)
+#define ITP_TIMER_TG 0
+#else
+#define ITP_TIMER_TG 1
+#endif
+#if !(ITP_TIMER & 0x01)
+#define ITP_TIMER_IDX 0
+#else
+#define ITP_TIMER_IDX 1
+#endif
 
 #ifdef ONESHOT_TIMER
 #define MCU_HAS_ONESHOT_TIMER
+#if !(ONESHOT_TIMER & 0x02)
+#define ONESHOT_TIMER_TG 0
+#else
+#define ONESHOT_TIMER_TG 1
+#endif
+#if !(ONESHOT_TIMER & 0x01)
+#define ONESHOT_TIMER_IDX 0
+#else
+#define ONESHOT_TIMER_IDX 1
+#endif
 #define ONESHOT_TIMER_TG (ONESHOT_TIMER & 0x01)
 #define ONESHOT_TIMER_IDX ((ONESHOT_TIMER >> 1) & 0x01)
 #endif
