@@ -18,7 +18,7 @@
 
 #include "../../../cnc.h"
 
-#if (ESP32)
+#if (CONFIG_IDF_TARGET_ESP32 || CONFIG_IDF_TARGET_ESP32S3 || CONFIG_IDF_TARGET_ESP32C3)
 
 signal_timer_t signal_timer;
 
