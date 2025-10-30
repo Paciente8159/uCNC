@@ -39,11 +39,11 @@ static volatile bool esp32_global_isr_enabled;
 static volatile uint32_t mcu_itp_timer_reload;
 static volatile bool mcu_itp_timer_running;
 hw_timer_t *esp32_step_timer;
-MCU_CALLBACK void mcu_itp_isr(void *arg);
-MCU_CALLBACK void mcu_gen_pwm(void);
-MCU_CALLBACK void mcu_gen_servo(void);
-MCU_CALLBACK void mcu_gen_step(void);
-MCU_CALLBACK void mcu_gpio_isr(void *type);
+extern void mcu_itp_isr(void *arg);
+extern void mcu_gen_pwm(void);
+extern void mcu_gen_servo(void);
+extern void mcu_gen_step(void);
+extern void mcu_gpio_isr(void *type);
 
 MCU_CALLBACK void mcu_gpio_isr(void *type)
 {
@@ -325,10 +325,10 @@ float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller)
 
 void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 {
-	if (!mcu_itp_timer_running)
+	if (!signal_timer.step_alarm_en)
 	{
-		mcu_itp_timer_reload = ticks * prescaller;
-		mcu_itp_timer_running = true;
+		signal_timer.itp_reload = ticks * prescaller;
+		signal_timer.step_alarm_en = true;
 	}
 	else
 	{
@@ -341,9 +341,9 @@ void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
  * */
 void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller)
 {
-	if (mcu_itp_timer_running)
+	if (signal_timer.step_alarm_en)
 	{
-		mcu_itp_timer_reload = ticks * prescaller;
+		signal_timer.itp_reload = ticks * prescaller;
 	}
 	else
 	{
@@ -356,9 +356,9 @@ void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller)
  * */
 void mcu_stop_itp_isr(void)
 {
-	if (mcu_itp_timer_running)
+	if (signal_timer.step_alarm_en)
 	{
-		mcu_itp_timer_running = false;
+		signal_timer.step_alarm_en = false;
 	}
 }
 

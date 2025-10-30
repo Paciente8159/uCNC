@@ -142,7 +142,7 @@ static void IRAM_ATTR i2s_tx_isr(void *arg)
 		switch (mode)
 		{
 		case ITP_STEP_MODE_DEFAULT:
-			mcu_clear_output(DOUT49);
+			// mcu_clear_output(DOUT49);
 			if (finished == &i2s_hal.desc_a)
 			{
 				i2s_hal.refill_cb(i2s_hal.buf_a, DMA_BUFFER_SIZE);
@@ -155,12 +155,12 @@ static void IRAM_ATTR i2s_tx_isr(void *arg)
 			}
 			break;
 		case (ITP_STEP_MODE_REALTIME | ITP_STEP_MODE_SYNC):
-		mcu_set_output(DOUT49);
+		// mcu_set_output(DOUT49);
 			i2s_hal_stop_tx_link(&i2s_hal.ctx);
 			__atomic_store_n((uint32_t *)&i2s_mode, ITP_STEP_MODE_REALTIME, __ATOMIC_RELAXED);
 			break;
 		case ITP_STEP_MODE_REALTIME:
-			mcu_clear_output(DOUT49);
+			// mcu_clear_output(DOUT49);
 			I2S_REG.conf.tx_start = 0;
 			I2S_REG.conf.tx_reset = 1;
 			I2S_REG.conf.tx_reset = 0;
@@ -243,7 +243,7 @@ uint8_t itp_set_step_mode(uint8_t mode)
 #else
 		__atomic_store_n((uint32_t *)&i2s_mode, (ITP_STEP_MODE_SYNC | mode), __ATOMIC_RELAXED);
 #endif
-		mcu_toggle_output(DOUT49);
+		// mcu_toggle_output(DOUT49);
 		// Apply immediately: glitch-free path
 		switch (mode)
 		{
@@ -253,7 +253,7 @@ uint8_t itp_set_step_mode(uint8_t mode)
 			__atomic_store_n((uint32_t *)&i2s_mode, ITP_STEP_MODE_DEFAULT, __ATOMIC_RELAXED);
 			break;
 		}
-		mcu_toggle_output(DOUT49);
+		// mcu_toggle_output(DOUT49);
 	}
 	return last_mode;
 }
