@@ -82,6 +82,7 @@ void mcu_core0_wirelesscoms_init(void *arg)
 
 MCU_CALLBACK void mcu_itp_isr(void *arg)
 {
+	ESP_LOGD("itp", "loop");
 #ifdef IC74HC595_CUSTOM_SHIFT_IO
 	uint32_t mode = I2S_MODE;
 	if (mode == ITP_STEP_MODE_REALTIME)
@@ -104,8 +105,6 @@ MCU_CALLBACK void mcu_itp_isr(void *arg)
 #endif
 
 	timer_group_clr_intr_status_in_isr(ITP_TIMER_TG, ITP_TIMER_IDX);
-	/* After the alarm has been triggered
-		we need enable it again, so it is triggered the next time */
 	timer_group_enable_alarm_in_isr(ITP_TIMER_TG, ITP_TIMER_IDX);
 }
 
@@ -194,7 +193,7 @@ void mcu_init(void)
 	// register PWM isr
 	timer_isr_register(ITP_TIMER_TG, ITP_TIMER_IDX, mcu_itp_isr, NULL, 0, NULL);
 	timer_enable_intr(ITP_TIMER_TG, ITP_TIMER_IDX);
-	timer_start(ITP_TIMER_TG, ITP_TIMER_IDX);
+	// timer_start(ITP_TIMER_TG, ITP_TIMER_IDX);
 
 #ifdef IC74HC595_CUSTOM_SHIFT_IO
 	mcu_i2s_extender_init();

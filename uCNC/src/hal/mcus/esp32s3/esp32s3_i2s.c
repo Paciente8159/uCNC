@@ -76,7 +76,6 @@ typedef void (*i2s_refill_cb_t)(uint32_t *buf, size_t len);
 
 static uint32_t DMA_ATTR buf[2][DMA_BUFFER_SIZE];
 static dma_descriptor_t DMA_ATTR desc[2];
-static xQueueHandle queue;
 
 typedef struct
 {
@@ -137,10 +136,7 @@ static void IRAM_ATTR i2s_fifo_fill_words(uint32_t *buf, size_t len)
 		mcu_gen_oneshot();
 #endif
 
-		// WRITE_PERI_REG(I2S_FIFO_WR_REG(I2S_PORT), 0xaaaaaaaa);
 		*buf++ = __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
-		// uint32_t data = __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
-		// gdma_ll_tx_push_data(&GDMA, i2s_hal.gdma_channel, data);
 	}
 }
 
@@ -148,17 +144,29 @@ static void IRAM_ATTR i2s_dma_event_handler(void *arg)
 {
 	uint32_t irq = gdma_ll_tx_get_interrupt_status(&GDMA, i2s_hal.gdma_channel);
 	dma_descriptor_t *finished = (dma_descriptor_t *)gdma_ll_tx_get_eof_desc_addr(&GDMA, i2s_hal.gdma_channel);
+	uint32_t mode = I2S_MODE;
 	mcu_toggle_output(DOUT49);
 
-	memset(finished, 0, sizeof(dma_descriptor_t));
-	finished->dw0.suc_eof = 1;
-	finished->dw0.length = DMA_BUFFER_SIZE * 4;
-	finished->dw0.size = DMA_BUFFER_SIZE * 4;
-	uint32_t *buffer = ((finished == &desc[1]) ? &buf[0][0] : &buf[1][0]);
-	finished->buffer = buffer;
-	finished->next = (dma_descriptor_t *)((finished == &desc[1]) ? &desc[0] : &desc[1]);
-	i2s_fifo_fill_words(buffer, DMA_BUFFER_SIZE);
-	finished->dw0.owner = 1;
+	switch (mode)
+	{
+
+	case ITP_STEP_MODE_DEFAULT:
+	case (ITP_STEP_MODE_DEFAULT | ITP_STEP_MODE_SYNC):
+		memset(finished, 0, sizeof(dma_descriptor_t));
+		finished->dw0.suc_eof = 1;
+		finished->dw0.length = DMA_BUFFER_SIZE * sizeof(uint32_t);
+		finished->dw0.size = DMA_BUFFER_SIZE * sizeof(uint32_t);
+		uint32_t *buffer = ((finished == &desc[1]) ? &buf[0][0] : &buf[1][0]);
+		finished->buffer = buffer;
+		finished->next = (dma_descriptor_t *)((finished == &desc[1]) ? &desc[0] : &desc[1]);
+		i2s_fifo_fill_words(buffer, DMA_BUFFER_SIZE);
+		finished->dw0.owner = 1;
+		break;
+	case ITP_STEP_MODE_REALTIME:
+	case (ITP_STEP_MODE_REALTIME | ITP_STEP_MODE_SYNC):
+		I2S_REG.tx_conf.tx_stop_en = 1;
+		break;
+	}
 
 	gdma_ll_tx_clear_interrupt_status(&GDMA, i2s_hal.gdma_channel, irq);
 }
@@ -175,8 +183,8 @@ static void i2s_enter_default_mode_glitch_free(void)
 	// Reset I2S
 	gdma_ll_tx_stop(&GDMA, i2s_hal.gdma_channel);
 
-	i2s_ll_tx_reset(&I2S0);
-	i2s_ll_tx_reset_fifo(&I2S0);
+	i2s_ll_tx_reset(&I2S_REG);
+	i2s_ll_tx_reset_fifo(&I2S_REG);
 
 	// Prefill
 	// gdma_ll_tx_reset_channel(&GDMA, i2s_hal.gdma_channel);
@@ -184,14 +192,14 @@ static void i2s_enter_default_mode_glitch_free(void)
 	memset(&desc[1], 0, sizeof(dma_descriptor_t));
 	desc[0].dw0.owner = 1;
 	desc[0].dw0.suc_eof = 1;
-	desc[0].dw0.length = DMA_BUFFER_SIZE * 4;
-	desc[0].dw0.size = DMA_BUFFER_SIZE * 4;
+	desc[0].dw0.length = DMA_BUFFER_SIZE * sizeof(uint32_t);
+	desc[0].dw0.size = DMA_BUFFER_SIZE * sizeof(uint32_t);
 	desc[0].buffer = &buf[0][0];
 	desc[0].next = (dma_descriptor_t *)(&desc[1]);
 	desc[1].dw0.owner = 1;
 	desc[1].dw0.suc_eof = 1;
-	desc[1].dw0.length = DMA_BUFFER_SIZE * 4;
-	desc[1].dw0.size = DMA_BUFFER_SIZE * 4;
+	desc[1].dw0.length = DMA_BUFFER_SIZE * sizeof(uint32_t);
+	desc[1].dw0.size = DMA_BUFFER_SIZE * sizeof(uint32_t);
 	desc[1].buffer = &buf[1][0];
 	desc[1].next = (dma_descriptor_t *)(&desc[0]);
 	i2s_fifo_fill_words(buf[0], DMA_BUFFER_SIZE);
@@ -205,22 +213,16 @@ static void i2s_enter_default_mode_glitch_free(void)
 	gdma_ll_tx_clear_interrupt_status(&GDMA, i2s_hal.gdma_channel, gdma_ll_tx_get_interrupt_status(&GDMA, i2s_hal.gdma_channel));
 	gdma_ll_tx_enable_interrupt(&GDMA, i2s_hal.gdma_channel, GDMA_LL_EVENT_TX_DONE | GDMA_LL_EVENT_TX_TOTAL_EOF, true);
 
-	//    I2S0.tx_conf.tx_stop_en = 1;  // BCK and WCK are suppressed while FIFO is empty - no ll func!
+	//    I2S_REG.tx_conf.tx_stop_en = 1;  // BCK and WCK are suppressed while FIFO is empty - no ll func!
 
-	I2S0.tx_conf.tx_update = 1;
-	while (I2S0.tx_conf.tx_update)
+	I2S_REG.tx_conf.tx_update = 1;
+	while (I2S_REG.tx_conf.tx_update)
 		;
 
-	//    i2s_ll_tx_start(&I2S0); // Fails?
+	//    i2s_ll_tx_start(&I2S_REG); // Fails?
 	gdma_ll_tx_start(&GDMA, i2s_hal.gdma_channel);
 
-	I2S0.tx_conf.tx_start = 1;
-	//    I2S0.tx_conf.tx_start = 1;
-	// Wait for the first FIFO data to prevent the unintentional generation of 0 data
-	ets_delay_us(20);
-
-	I2S0.tx_conf.tx_stop_en = 1; // BCK and WCK are suppressed while FIFO is empty - no ll func!
-	ESP_LOGD("i2s", "start gdma");
+	I2S_REG.tx_conf.tx_start = 1;
 }
 
 static void i2s_enter_realtime_mode_glitch_free(void)
@@ -254,7 +256,6 @@ uint8_t itp_set_step_mode(uint8_t mode)
 #else
 		__atomic_store_n((uint32_t *)&i2s_mode, (ITP_STEP_MODE_SYNC | mode), __ATOMIC_RELAXED);
 #endif
-		mcu_toggle_output(DOUT49);
 		// Apply immediately: glitch-free path
 		switch (mode)
 		{
@@ -264,7 +265,6 @@ uint8_t itp_set_step_mode(uint8_t mode)
 			__atomic_store_n((uint32_t *)&i2s_mode, ITP_STEP_MODE_DEFAULT, __ATOMIC_RELAXED);
 			break;
 		}
-		mcu_toggle_output(DOUT49);
 	}
 	return last_mode;
 }
@@ -286,35 +286,6 @@ static int32_t allocate_dma_channel(void)
 	return -1;
 }
 
-static inline void gpio_matrix_out_check(uint8_t gpio, uint32_t signal_idx, bool out_inv, bool oen_inv)
-{
-	if (gpio != 255)
-	{
-		PIN_FUNC_SELECT(GPIO_PIN_MUX_REG[gpio], PIN_FUNC_GPIO);
-		gpio_set_direction((gpio_num_t)gpio, GPIO_MODE_OUTPUT);
-		gpio_matrix_out(gpio, signal_idx, out_inv, oen_inv);
-	}
-}
-
-static void IRAM_ATTR i2s_out_gpio_attach(uint8_t ws, uint8_t bck, uint8_t data)
-{
-	// Route the i2s pins to the appropriate GPIO
-	gpio_matrix_out_check(data, I2S0O_SD_OUT_IDX, false, false);
-	gpio_matrix_out_check(bck, I2S0O_BCK_OUT_IDX, false, false);
-	gpio_matrix_out_check(ws, I2S0O_WS_OUT_IDX, false, false);
-}
-
-void i2sOutTask(void *arg)
-{
-	for (;;)
-	{
-		signal_timer.us_step = 4;
-		ESP_LOGD("i2s", "loop");
-		mcu_gen_step();
-		vTaskDelay(500 / portTICK_PERIOD_MS);
-	}
-}
-
 static void i2s_tx_base_config(void)
 {
 
@@ -322,8 +293,8 @@ static void i2s_tx_base_config(void)
 		return;
 
 	// To make sure hardware is enabled before any hardware register operations.
-	periph_module_reset(PERIPH_I2S0_MODULE);
-	periph_module_enable(PERIPH_I2S0_MODULE);
+	periph_module_reset(PERIPH_I2S);
+	periph_module_enable(PERIPH_I2S);
 	//    periph_module_reset(PERIPH_GDMA_MODULE);
 	//    periph_module_enable(PERIPH_GDMA_MODULE);
 
@@ -335,15 +306,22 @@ static void i2s_tx_base_config(void)
 		REG_CLR_BIT(SYSTEM_PERIP_RST_EN1_REG, SYSTEM_DMA_RST);
 	}
 
-	// Route the i2s pins to the appropriate GPIO
-	i2s_out_gpio_attach(IC74HC595_I2S_WS, IC74HC595_I2S_CLK, IC74HC595_I2S_DATA);
-	// i2s_clear_o_dma_buffers(ic74hc595_i2s_pins);
-	i2s_ll_tx_stop(&I2S0);
+	// Route pins via GPIO matrix
+	gpio_set_direction(IC74HC595_I2S_CLK, GPIO_MODE_OUTPUT);
+	gpio_matrix_out(IC74HC595_I2S_CLK, BCK_OUT_IDX, false, false);
+
+	gpio_set_direction(IC74HC595_I2S_WS, GPIO_MODE_OUTPUT);
+	gpio_matrix_out(IC74HC595_I2S_WS, WS_OUT_IDX, false, false);
+
+	gpio_set_direction(IC74HC595_I2S_DATA, GPIO_MODE_OUTPUT);
+	gpio_matrix_out(IC74HC595_I2S_DATA, DATA_OUT_IDX, false, false);
+
+	i2s_ll_tx_stop(&I2S_REG);
 	gdma_ll_enable_clock(&GDMA, 1);
 	gdma_ll_tx_reset_channel(&GDMA, i2s_hal.gdma_channel);
 	gdma_ll_tx_enable_interrupt(&GDMA, i2s_hal.gdma_channel, GDMA_LL_TX_EVENT_MASK, false);
 	gdma_ll_tx_clear_interrupt_status(&GDMA, i2s_hal.gdma_channel, GDMA_LL_TX_EVENT_MASK);
-	gdma_ll_tx_connect_to_periph(&GDMA, i2s_hal.gdma_channel, GDMA_TRIG_PERIPH_I2S, SOC_GDMA_TRIG_PERIPH_I2S0);
+	gdma_ll_tx_connect_to_periph(&GDMA, i2s_hal.gdma_channel, GDMA_TRIG_PERIPH_I2S, GDMA_I2S_PERIPH);
 	gdma_ll_tx_set_eof_mode(&GDMA, i2s_hal.gdma_channel, 0);
 
 	i2s_ll_mclk_div_t clk_ = {
@@ -351,53 +329,32 @@ static void i2s_tx_base_config(void)
 		.a = 32,
 		.b = 16};
 
-	i2s_ll_tx_enable_pdm(&I2S0, false); // Enables TDM
-	i2s_ll_rx_set_active_chan_mask(&I2S0, 1);
-	i2s_ll_tx_enable_msb_shift(&I2S0, 0);
-	i2s_ll_tx_set_sample_bit(&I2S0, 32, 32); // ?
-	i2s_ll_tx_set_ws_width(&I2S0, 1);
-	I2S0.tx_timing.tx_ws_out_dm = 1;
+	i2s_ll_tx_enable_pdm(&I2S_REG, false); // Enables TDM
+	i2s_ll_tx_set_active_chan_mask(&I2S_REG, 1);
+	i2s_ll_tx_enable_msb_shift(&I2S_REG, 0);
+	i2s_ll_tx_set_sample_bit(&I2S_REG, 32, 32);
+	i2s_ll_tx_set_ws_width(&I2S_REG, 1);
+	I2S_REG.tx_timing.tx_ws_out_dm = 1;
 
 	//
 	// i2s_set_clk
 	//
-	i2s_ll_tx_set_ws_idle_pol(&I2S0, 1);
-	i2s_ll_tx_clk_set_src(&I2S0, I2S_CLK_D2CLK); // Set I2S_CLK_D2CLK as default
-	i2s_ll_mclk_use_tx_clk(&I2S0);
-	i2s_ll_tx_set_clk(&I2S0, &clk_);
-	i2s_ll_tx_enable_clock(&I2S0);
-	i2s_ll_tx_reset(&I2S0);
-	i2s_ll_tx_reset_fifo(&I2S0);
-	I2S0.tx_conf.tx_stop_en = 1;
-
-	ESP_LOGD("i2s", "address a %u", (uint32_t)&desc[0]);
-	ESP_LOGD("i2s", "address b %u", (uint32_t)&desc[1]);
-
-	// Create the task that will feed the buffer
-	// xTaskCreatePinnedToCore(i2sOutTask, "I2SOutTask", 4096, NULL, 7, NULL, ARDUINO_RUNNING_CORE);
+	i2s_ll_tx_set_ws_idle_pol(&I2S_REG, 1);
+	i2s_ll_tx_clk_set_src(&I2S_REG, I2S_CLK_D2CLK); // Set I2S_CLK_D2CLK as default
+	i2s_ll_mclk_use_tx_clk(&I2S_REG);
+	i2s_ll_tx_set_clk(&I2S_REG, &clk_);
+	i2s_ll_tx_enable_clock(&I2S_REG);
+	i2s_ll_tx_reset(&I2S_REG);
+	i2s_ll_tx_reset_fifo(&I2S_REG);
+	I2S_REG.tx_conf.tx_stop_en = 1;
 
 	// Allocate and enable the I2S DMA interrupt
-
 	esp_intr_alloc(gdma_periph_signals.groups[0].pairs[i2s_hal.gdma_channel].tx_irq_id, ESP_INTR_FLAG_IRAM, i2s_dma_event_handler, NULL, &i2s_hal.intr_handle);
-
-	ESP_LOGD("i2s", "intr_handle %u", i2s_hal.intr_handle);
 }
-
-// void i2stask(void *arg)
-// {
-// 	dma_descriptor_t *finished;
-// 	for (;;)
-// 	{
-// 		ESP_LOGD("i2s", "wait for queue");
-// 		xQueueReceive(queue, &finished, portMAX_DELAY);
-// 		i2s_fifo_fill_words(finished->buffer, DMA_BUFFER_SIZE);
-// 	}
-// }
 
 void mcu_i2s_extender_init(void)
 {
 	i2s_tx_base_config();
-	// xTaskCreatePinnedToCore(i2stask, "i2stask", 8192, NULL, 7, NULL, CONFIG_ARDUINO_RUNNING_CORE);
 
 #ifndef USE_I2S_REALTIME_MODE_ONLY
 	itp_set_step_mode(ITP_STEP_MODE_DEFAULT);
