@@ -68,6 +68,7 @@
 #endif
 
 #define DMA_BUFFER_SIZE 64
+#define DMA_BUFFER_SIZE_RT 4
 
 volatile uint32_t ic74hc595_i2s_pins;
 volatile DRAM_ATTR uint32_t i2s_mode;
@@ -122,21 +123,37 @@ static inline void IRAM_ATTR i2s_write_single_word(uint32_t sample)
 /**
  * Try to fill the buffer (saturation)
  */
-static void IRAM_ATTR i2s_fifo_fill_words(uint32_t *buf, size_t len)
-{
-	for (int i = 0; i < len; i++)
-	{
-		signal_timer.us_step = 4;
 
-		mcu_gen_step();
-		mcu_gen_pwm();
-		mcu_gen_servo();
+static FORCEINLINE uint32_t i2s_signal_loop()
+{
+	mcu_gen_step();
+	mcu_gen_pwm();
+	mcu_gen_servo();
 
 #if defined(MCU_HAS_ONESHOT_TIMER) && defined(ENABLE_RT_SYNC_MOTIONS)
-		mcu_gen_oneshot();
+	mcu_gen_oneshot();
 #endif
 
-		*buf++ = __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
+	return __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
+}
+static void IRAM_ATTR i2s_fifo_fill_words(uint32_t *buf, uint32_t mode)
+{
+	uint32_t signal;
+	switch (mode)
+	{
+	case ITP_STEP_MODE_REALTIME:
+		signal = i2s_signal_loop();
+		for (int i = 0; i < DMA_BUFFER_SIZE_RT; i++)
+		{
+			*buf++ = signal;
+		}
+		break;
+	default:
+		for (int i = 0; i < DMA_BUFFER_SIZE; i++)
+		{
+			*buf++ = i2s_signal_loop();
+		}
+		break;
 	}
 }
 
@@ -145,25 +162,30 @@ static void IRAM_ATTR i2s_dma_event_handler(void *arg)
 	uint32_t irq = gdma_ll_tx_get_interrupt_status(&GDMA, i2s_hal.gdma_channel);
 	dma_descriptor_t *finished = (dma_descriptor_t *)gdma_ll_tx_get_eof_desc_addr(&GDMA, i2s_hal.gdma_channel);
 	uint32_t mode = I2S_MODE;
-	mcu_toggle_output(DOUT49);
+	uint32_t *buffer = ((finished == &desc[0]) ? &buf[0][0] : &buf[1][0]);
+	memset(finished, 0, sizeof(dma_descriptor_t));
 
 	switch (mode)
 	{
-
 	case ITP_STEP_MODE_DEFAULT:
-	case (ITP_STEP_MODE_DEFAULT | ITP_STEP_MODE_SYNC):
-		memset(finished, 0, sizeof(dma_descriptor_t));
 		finished->dw0.suc_eof = 1;
 		finished->dw0.length = DMA_BUFFER_SIZE * sizeof(uint32_t);
 		finished->dw0.size = DMA_BUFFER_SIZE * sizeof(uint32_t);
-		uint32_t *buffer = ((finished == &desc[1]) ? &buf[0][0] : &buf[1][0]);
 		finished->buffer = buffer;
 		finished->next = (dma_descriptor_t *)((finished == &desc[1]) ? &desc[0] : &desc[1]);
-		i2s_fifo_fill_words(buffer, DMA_BUFFER_SIZE);
+		i2s_fifo_fill_words(buffer, mode);
 		finished->dw0.owner = 1;
 		break;
 	case ITP_STEP_MODE_REALTIME:
-	case (ITP_STEP_MODE_REALTIME | ITP_STEP_MODE_SYNC):
+		finished->dw0.suc_eof = 1;
+		finished->dw0.length = DMA_BUFFER_SIZE_RT * sizeof(uint32_t);
+		finished->dw0.size = DMA_BUFFER_SIZE_RT * sizeof(uint32_t);
+		finished->buffer = buffer;
+		finished->next = (dma_descriptor_t *)((finished == &desc[1]) ? &desc[0] : &desc[1]);
+		i2s_fifo_fill_words(buffer, mode);
+		finished->dw0.owner = 1;
+		break;
+	default:
 		I2S_REG.tx_conf.tx_stop_en = 1;
 		break;
 	}
@@ -174,17 +196,29 @@ static void IRAM_ATTR i2s_dma_event_handler(void *arg)
 /**
  * default mode transition
  */
-static void i2s_enter_default_mode_glitch_free(void)
+static void i2s_enter_mode_glitch_free(uint32_t mode)
 {
-	// Pause motion timer
-	timer_pause(ITP_TIMER_TG, ITP_TIMER_IDX);
-	timer_disable_intr(ITP_TIMER_TG, ITP_TIMER_IDX);
+	uint32_t len = (mode == ITP_STEP_MODE_DEFAULT) ? DMA_BUFFER_SIZE : DMA_BUFFER_SIZE_RT;
+	// wait for the gdma flush
+	while (I2S_MODE & ITP_STEP_MODE_SYNC)
+	{
+		if (I2S_REG.state.tx_idle)
+		{
+			break;
+		}
+		esp32_delay_us(1);
+	}
 
 	// Reset I2S
 	gdma_ll_tx_stop(&GDMA, i2s_hal.gdma_channel);
-
+	I2S_REG.tx_conf.tx_stop_en = 0;
 	i2s_ll_tx_reset(&I2S_REG);
 	i2s_ll_tx_reset_fifo(&I2S_REG);
+
+	signal_timer.us_step = (mode == ITP_STEP_MODE_DEFAULT) ? 4 : 16;
+
+	// switch mode
+	__atomic_store_n((uint32_t *)&i2s_mode, mode, __ATOMIC_RELAXED);
 
 	// Prefill
 	// gdma_ll_tx_reset_channel(&GDMA, i2s_hal.gdma_channel);
@@ -192,28 +226,24 @@ static void i2s_enter_default_mode_glitch_free(void)
 	memset(&desc[1], 0, sizeof(dma_descriptor_t));
 	desc[0].dw0.owner = 1;
 	desc[0].dw0.suc_eof = 1;
-	desc[0].dw0.length = DMA_BUFFER_SIZE * sizeof(uint32_t);
-	desc[0].dw0.size = DMA_BUFFER_SIZE * sizeof(uint32_t);
+	desc[0].dw0.length = len * sizeof(uint32_t);
+	desc[0].dw0.size = len * sizeof(uint32_t);
 	desc[0].buffer = &buf[0][0];
 	desc[0].next = (dma_descriptor_t *)(&desc[1]);
 	desc[1].dw0.owner = 1;
 	desc[1].dw0.suc_eof = 1;
-	desc[1].dw0.length = DMA_BUFFER_SIZE * sizeof(uint32_t);
-	desc[1].dw0.size = DMA_BUFFER_SIZE * sizeof(uint32_t);
+	desc[1].dw0.length = len * sizeof(uint32_t);
+	desc[1].dw0.size = len * sizeof(uint32_t);
 	desc[1].buffer = &buf[1][0];
 	desc[1].next = (dma_descriptor_t *)(&desc[0]);
-	i2s_fifo_fill_words(buf[0], DMA_BUFFER_SIZE);
-	i2s_fifo_fill_words(buf[1], DMA_BUFFER_SIZE);
+	i2s_fifo_fill_words(buf[0], mode);
+	i2s_fifo_fill_words(buf[1], mode);
 
 	// Start
 	gdma_ll_tx_reset_channel(&GDMA, i2s_hal.gdma_channel);
 	gdma_ll_tx_set_desc_addr(&GDMA, i2s_hal.gdma_channel, (uint32_t)(&desc[0]));
-	//    gdma_ll_tx_enable_data_burst(&GDMA, i2s_sr.dma.channel, true);
-	//    gdma_ll_tx_enable_descriptor_burst(&GDMA, i2s_sr.dma.channel, true);
 	gdma_ll_tx_clear_interrupt_status(&GDMA, i2s_hal.gdma_channel, gdma_ll_tx_get_interrupt_status(&GDMA, i2s_hal.gdma_channel));
 	gdma_ll_tx_enable_interrupt(&GDMA, i2s_hal.gdma_channel, GDMA_LL_EVENT_TX_DONE | GDMA_LL_EVENT_TX_TOTAL_EOF, true);
-
-	//    I2S_REG.tx_conf.tx_stop_en = 1;  // BCK and WCK are suppressed while FIFO is empty - no ll func!
 
 	I2S_REG.tx_conf.tx_update = 1;
 	while (I2S_REG.tx_conf.tx_update)
@@ -223,22 +253,6 @@ static void i2s_enter_default_mode_glitch_free(void)
 	gdma_ll_tx_start(&GDMA, i2s_hal.gdma_channel);
 
 	I2S_REG.tx_conf.tx_start = 1;
-}
-
-static void i2s_enter_realtime_mode_glitch_free(void)
-{
-	while (I2S_MODE & ITP_STEP_MODE_SYNC)
-	{
-		vPortYield();
-	}
-	ets_delay_us(2 * DMA_BUFFER_SIZE); // us per word * last buffer size
-	i2s_hal_stop_tx(&i2s_hal.ctx);
-	i2s_hal_reset_tx(&i2s_hal.ctx);
-	i2s_hal_reset_tx_fifo(&i2s_hal.ctx);
-	// Enter realtime
-	I2S_REG.conf_single_data = __atomic_load_n(&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
-	i2s_hal_start_tx(&i2s_hal.ctx);
-	timer_start(ITP_TIMER_TG, ITP_TIMER_IDX);
 }
 
 /**
@@ -256,15 +270,17 @@ uint8_t itp_set_step_mode(uint8_t mode)
 #else
 		__atomic_store_n((uint32_t *)&i2s_mode, (ITP_STEP_MODE_SYNC | mode), __ATOMIC_RELAXED);
 #endif
+		i2s_enter_mode_glitch_free(mode);
 		// Apply immediately: glitch-free path
-		switch (mode)
-		{
-		case ITP_STEP_MODE_DEFAULT:
-			i2s_enter_default_mode_glitch_free();
-			// Clear sync flag
-			__atomic_store_n((uint32_t *)&i2s_mode, ITP_STEP_MODE_DEFAULT, __ATOMIC_RELAXED);
-			break;
-		}
+		// switch (mode)
+		// {
+		// case ITP_STEP_MODE_DEFAULT:
+		// 	i2s_enter_default_mode_glitch_free();
+		// 	break;
+		// case ITP_STEP_MODE_REALTIME:
+		// 	i2s_enter_realtime_mode_glitch_free();
+		// 	break;
+		// }
 	}
 	return last_mode;
 }
@@ -324,29 +340,39 @@ static void i2s_tx_base_config(void)
 	gdma_ll_tx_connect_to_periph(&GDMA, i2s_hal.gdma_channel, GDMA_TRIG_PERIPH_I2S, GDMA_I2S_PERIPH);
 	gdma_ll_tx_set_eof_mode(&GDMA, i2s_hal.gdma_channel, 0);
 
-	i2s_ll_mclk_div_t clk_ = {
-		.mclk_div = 2,
-		.a = 32,
-		.b = 16};
+	i2s_hal.ctx.dev = &I2S_REG;
+	i2s_hal_config_t config = {
+		.mode = I2S_MODE_MASTER | I2S_MODE_TX,
+		.sample_rate = I2S_SAMPLE_RATE,
+		.comm_fmt = I2S_COMM_FORMAT_STAND_I2S | I2S_COMM_FORMAT_STAND_MSB,
+		.chan_fmt = I2S_CHANNEL_FMT_ALL_LEFT,
+		.sample_bits = I2S_BITS_PER_SAMPLE_32BIT,
+		.chan_bits = I2S_BITS_PER_SAMPLE_32BIT,
+		.active_chan = 1,
+		.total_chan = 2};
+
+	// i2s_hal_clock_cfg_t clk_conf;
+	// 		i2s_hal_mclk_div_decimal_cal(&clk_conf, &clock);
+	i2s_hal_config_param(&i2s_hal.ctx, &config);
+	// i2s_hal_clock_cfg_t clock = {160000000, 64000000, 32000000, 2, 2}; // 1us per word
+	i2s_hal_clock_cfg_t clock = {160000000, 160000000, 160000000, 1, 5}; // 2us per word
+	// i2s_hal_clock_cfg_t clock = {160000000, 32000000,16000000, 5, 2 }; // 2us per word also
 
 	i2s_ll_tx_enable_pdm(&I2S_REG, false); // Enables TDM
 	i2s_ll_tx_set_active_chan_mask(&I2S_REG, 1);
-	i2s_ll_tx_enable_msb_shift(&I2S_REG, 0);
-	i2s_ll_tx_set_sample_bit(&I2S_REG, 32, 32);
-	i2s_ll_tx_set_ws_width(&I2S_REG, 1);
 	I2S_REG.tx_timing.tx_ws_out_dm = 1;
 
 	//
 	// i2s_set_clk
 	//
+	// i2s_hal_tx_clock_config(&i2s_hal.ctx, &clock);
 	i2s_ll_tx_set_ws_idle_pol(&I2S_REG, 1);
 	i2s_ll_tx_clk_set_src(&I2S_REG, I2S_CLK_D2CLK); // Set I2S_CLK_D2CLK as default
 	i2s_ll_mclk_use_tx_clk(&I2S_REG);
-	i2s_ll_tx_set_clk(&I2S_REG, &clk_);
+	i2s_hal_tx_clock_config(&i2s_hal.ctx, &clock);
 	i2s_ll_tx_enable_clock(&I2S_REG);
 	i2s_ll_tx_reset(&I2S_REG);
 	i2s_ll_tx_reset_fifo(&I2S_REG);
-	I2S_REG.tx_conf.tx_stop_en = 1;
 
 	// Allocate and enable the I2S DMA interrupt
 	esp_intr_alloc(gdma_periph_signals.groups[0].pairs[i2s_hal.gdma_channel].tx_irq_id, ESP_INTR_FLAG_IRAM, i2s_dma_event_handler, NULL, &i2s_hal.intr_handle);
