@@ -176,6 +176,7 @@ void mcu_init(void)
 	 * Timers config
 	 */
 
+#ifndef IC74HC595_CUSTOM_SHIFT_IO
 	// inititialize ITP timer
 	timer_config_t itpconfig = {0};
 	itpconfig.divider = 2;
@@ -193,9 +194,8 @@ void mcu_init(void)
 	// register PWM isr
 	timer_isr_register(ITP_TIMER_TG, ITP_TIMER_IDX, mcu_itp_isr, NULL, 0, NULL);
 	timer_enable_intr(ITP_TIMER_TG, ITP_TIMER_IDX);
-	// timer_start(ITP_TIMER_TG, ITP_TIMER_IDX);
-
-#ifdef IC74HC595_CUSTOM_SHIFT_IO
+	timer_start(ITP_TIMER_TG, ITP_TIMER_IDX);
+#else
 	mcu_i2s_extender_init();
 #endif
 

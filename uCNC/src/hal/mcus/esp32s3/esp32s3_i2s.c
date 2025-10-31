@@ -119,11 +119,6 @@ static FORCEINLINE void mcu_gen_oneshot(void)
 }
 #endif
 
-static inline void IRAM_ATTR i2s_write_single_word(uint32_t sample)
-{
-	REG_WRITE(I2S_CONF_SIGLE_DATA_REG(I2S_PORT), sample);
-}
-
 /**
  * Try to fill the buffer (saturation)
  */
@@ -170,7 +165,15 @@ static void IRAM_ATTR i2s_dma_event_handler(void *arg)
 	memset(finished, 0, sizeof(dma_descriptor_t));
 	mcu_toggle_output(DOUT49);
 
-	switch (mode)
+	if (mode & ITP_STEP_MODE_SYNC)
+	{
+		if (i2s_hal.sync_counter-- == 0)
+		{
+			__atomic_fetch_and((uint32_t *)&i2s_mode, ~ITP_STEP_MODE_SYNC, __ATOMIC_RELAXED);
+		}
+	}
+
+	switch (mode & ~ITP_STEP_MODE_SYNC)
 	{
 	case ITP_STEP_MODE_DEFAULT:
 		finished->dw0.suc_eof = 1;
@@ -190,8 +193,8 @@ static void IRAM_ATTR i2s_dma_event_handler(void *arg)
 		i2s_fifo_fill_words(buffer, mode);
 		finished->dw0.owner = 1;
 		break;
-	// default:
-	// 	I2S_REG.tx_conf.tx_stop_en = 1;
+		// default:
+		// 	I2S_REG.tx_conf.tx_stop_en = 1;
 		break;
 	}
 
@@ -203,16 +206,22 @@ static void IRAM_ATTR i2s_dma_event_handler(void *arg)
  */
 static void i2s_enter_mode_glitch_free(uint32_t mode)
 {
+	if (!I2S_REG.state.tx_idle)
+	{
+		return;
+	}
+
+	i2s_hal.sync_counter = 0;
 	uint32_t len = (mode == ITP_STEP_MODE_DEFAULT) ? DMA_BUFFER_SIZE : DMA_BUFFER_SIZE_RT;
 	// wait for the gdma flush
-	while (I2S_MODE & ITP_STEP_MODE_SYNC)
-	{
-		if (I2S_REG.state.tx_idle)
-		{
-			break;
-		}
-		ets_delay_us(1);
-	}
+	// while (I2S_MODE & ITP_STEP_MODE_SYNC)
+	// {
+	// 	if (I2S_REG.state.tx_idle)
+	// 	{
+	// 		break;
+	// 	}
+	// 	ets_delay_us(1);
+	// }
 
 	// Reset I2S
 	gdma_ll_tx_stop(&GDMA, i2s_hal.gdma_channel);
@@ -269,13 +278,17 @@ uint8_t itp_set_step_mode(uint8_t mode)
 	if (mode)
 	{
 		itp_sync();
-
+		i2s_hal.sync_counter = 2;
 #ifdef USE_I2S_REALTIME_MODE_ONLY
 		__atomic_store_n((uint32_t *)&i2s_mode, (ITP_STEP_MODE_SYNC | ITP_STEP_MODE_REALTIME), __ATOMIC_RELAXED);
 #else
 		__atomic_store_n((uint32_t *)&i2s_mode, (ITP_STEP_MODE_SYNC | mode), __ATOMIC_RELAXED);
 #endif
 		i2s_enter_mode_glitch_free(mode);
+		while (i2s_hal.sync_counter)
+		{
+			ets_delay_us(1); // wait for sync
+		}
 	}
 	return last_mode;
 }
@@ -351,11 +364,11 @@ static void i2s_tx_base_config(void)
 	i2s_ll_tx_set_active_chan_mask(&I2S_REG, 1);
 	I2S_REG.tx_timing.tx_ws_out_dm = 1;
 
-	#if I2S_SAMPLE_RATE == 500000
-	i2s_ll_mclk_div_t mclk_set={.mclk_div=2, .a=32, .b=16};
-	#elif I2S_SAMPLE_RATE == 250000
-	i2s_ll_mclk_div_t mclk_set={.mclk_div=5, .a=0, .b=0};
-	#else
+#if I2S_SAMPLE_RATE == 500000
+	i2s_ll_mclk_div_t mclk_set = {.mclk_div = 2, .a = 32, .b = 16};
+#elif I2S_SAMPLE_RATE == 250000
+	i2s_ll_mclk_div_t mclk_set = {.mclk_div = 5, .a = 0, .b = 0};
+#else
 	float mult = 16000000.0f / (float)(I2S_SAMPLE_RATE * 2 * 64);
 	uint16_t div = (uint16_t)mult;
 	float rem = (mult - div);
@@ -374,7 +387,7 @@ static void i2s_tx_base_config(void)
 		mclk_set.b = 0;
 	};
 	ESP_LOGD("i2s", "clock %u, %u, %u", mclk_set.mclk_div, mclk_set.a, mclk_set.b);
-	#endif
+#endif
 
 	//
 	// i2s_set_clk
