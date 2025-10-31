@@ -68,9 +68,9 @@ extern "C"
 	// #define DOUT10_BIT 17
 
 #define IC74HC595_CUSTOM_SHIFT_IO // Enables custom MCU data shift transmission. In ESP32 that is via I2S
-#define IC74HC595_I2S_WS 8
-#define IC74HC595_I2S_CLK 9
-#define IC74HC595_I2S_DATA 10
+#define IC74HC595_I2S_WS 4
+#define IC74HC595_I2S_CLK 5
+#define IC74HC595_I2S_DATA 18
 // #define IC74HC595_I2S_PORT 0
 // uses 1 x 74HS595 but for I2S use this value has to be set to 4 (I2S sends data as 32-bit (4bytes))
 #define IC74HC595_COUNT 4
