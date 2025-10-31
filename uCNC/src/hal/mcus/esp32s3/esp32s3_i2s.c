@@ -163,7 +163,6 @@ static void IRAM_ATTR i2s_dma_event_handler(void *arg)
 	uint32_t mode = I2S_MODE;
 	uint32_t *buffer = ((finished == &desc[0]) ? &buf[0][0] : &buf[1][0]);
 	memset(finished, 0, sizeof(dma_descriptor_t));
-	mcu_toggle_output(DOUT49);
 
 	if (mode & ITP_STEP_MODE_SYNC)
 	{
@@ -193,8 +192,8 @@ static void IRAM_ATTR i2s_dma_event_handler(void *arg)
 		i2s_fifo_fill_words(buffer, mode);
 		finished->dw0.owner = 1;
 		break;
-		// default:
-		// 	I2S_REG.tx_conf.tx_stop_en = 1;
+	default:
+		I2S_REG.tx_conf.tx_stop_en = 1;
 		break;
 	}
 

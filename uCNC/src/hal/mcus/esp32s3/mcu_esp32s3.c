@@ -163,7 +163,7 @@ void mcu_init(void)
 	 */
 
 #ifndef IC74HC595_CUSTOM_SHIFT_IO
-	signal_timer.us_step = (1000000/ITP_SAMPLE_RATE);
+	signal_timer.us_step = (1000000 / (F_STEP_MAX));
 	// inititialize ITP timer
 	timer_config_t itpconfig = {0};
 	itpconfig.divider = 2;
