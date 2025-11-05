@@ -1064,7 +1064,11 @@ extern "C"
 #define DIO215_BIT (SPI2_CS_BIT)
 #endif
 
-// ISR on change inputs
+	// ISR on change inputs
+	extern void mcu_din_isr(void);
+	extern void mcu_probe_isr(void);
+	extern void mcu_limits_isr(void);
+	extern void mcu_controls_isr(void);
 #if (defined(LIMIT_X_ISR) && defined(LIMIT_X))
 #define DIO52_ISR (LIMIT_X_ISR)
 #define LIMIT_X_ISRCALLBACK mcu_limit_isr
