@@ -57,14 +57,17 @@ MCU_CALLBACK void mcu_gpio_isr(void *type);
 #define I2S_SAMPLE_RATE (F_STEP_MAX * 2)
 #endif
 #define I2S_SAMPLES_PER_BUFFER (I2S_SAMPLE_RATE / 500) // number of samples per 2ms (0.002/1 = 1/500)
-#define I2S_BUFFER_COUNT 5														 // DMA buffer size 5 * 2ms = 10ms stored motions (can be adjusted but may cause to much or too little latency)
-#define I2S_SAMPLE_US (1000000UL / I2S_SAMPLE_RATE)		 // (1s/250KHz = 0.000004s = 4us)
+#define I2S_BUFFER_COUNT 5							   // DMA buffer size 5 * 2ms = 10ms stored motions (can be adjusted but may cause to much or too little latency)
+#define I2S_SAMPLE_US (1000000UL / I2S_SAMPLE_RATE)	   // (1s/250KHz = 0.000004s = 4us)
 
 #ifdef ITP_SAMPLE_RATE
 #undef ITP_SAMPLE_RATE
 #endif
 #define ITP_SAMPLE_RATE (I2S_SAMPLE_RATE)
 
+MCU_CALLBACK void mcu_gen_pwm(void);
+MCU_CALLBACK void mcu_gen_servo(void);
+MCU_CALLBACK void mcu_gen_step(void);
 // software generated oneshot for RT steps like laser PPI
 #if defined(MCU_HAS_ONESHOT_TIMER) && defined(ENABLE_RT_SYNC_MOTIONS)
 static uint32_t esp32_oneshot_counter;
@@ -108,23 +111,23 @@ static void IRAM_ATTR esp32_i2s_stream_task(void *param)
 	i2s_event_t evt;
 	portTickType xLastWakeTimeUpload = xTaskGetTickCount();
 	i2s_config_t i2s_config = {
-			.mode = I2S_MODE_MASTER | I2S_MODE_TX, // Only TX
-			.sample_rate = I2S_SAMPLE_RATE,
-			.bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT,
-			.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT, // 1-channels
-			.communication_format = I2S_COMM_FORMAT_STAND_I2S | I2S_COMM_FORMAT_STAND_MSB,
-			.dma_buf_count = I2S_BUFFER_COUNT,
-			.dma_buf_len = I2S_SAMPLES_PER_BUFFER,
-			.use_apll = false,
-			.intr_alloc_flags = ESP_INTR_FLAG_LEVEL1, // Interrupt level 1
-			.tx_desc_auto_clear = false,
-			.fixed_mclk = 0};
+		.mode = I2S_MODE_MASTER | I2S_MODE_TX, // Only TX
+		.sample_rate = I2S_SAMPLE_RATE,
+		.bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT,
+		.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT, // 1-channels
+		.communication_format = I2S_COMM_FORMAT_STAND_I2S | I2S_COMM_FORMAT_STAND_MSB,
+		.dma_buf_count = I2S_BUFFER_COUNT,
+		.dma_buf_len = I2S_SAMPLES_PER_BUFFER,
+		.use_apll = false,
+		.intr_alloc_flags = ESP_INTR_FLAG_LEVEL1, // Interrupt level 1
+		.tx_desc_auto_clear = false,
+		.fixed_mclk = 0};
 
 	i2s_pin_config_t pin_config = {
-			.bck_io_num = IC74HC595_I2S_CLK,
-			.ws_io_num = IC74HC595_I2S_WS,
-			.data_out_num = IC74HC595_I2S_DATA,
-			.data_in_num = -1 // Not used
+		.bck_io_num = IC74HC595_I2S_CLK,
+		.ws_io_num = IC74HC595_I2S_WS,
+		.data_out_num = IC74HC595_I2S_DATA,
+		.data_in_num = -1 // Not used
 	};
 	QueueHandle_t i2s_dma_queue;
 
@@ -191,12 +194,12 @@ static void IRAM_ATTR esp32_i2s_stream_task(void *param)
 				I2SREG.fifo_conf.dscr_en = 0;
 				I2SREG.conf.tx_start = 0;
 				I2SREG.int_clr.val = 0xFFFFFFFF;
-				I2SREG.clkm_conf.clka_en = 0;			 // Use PLL/2 as reference
+				I2SREG.clkm_conf.clka_en = 0;	   // Use PLL/2 as reference
 				I2SREG.clkm_conf.clkm_div_num = 2; // reset value of 4
-				I2SREG.clkm_conf.clkm_div_a = 1;	 // 0 at reset, what about divide by 0?
-				I2SREG.clkm_conf.clkm_div_b = 0;	 // 0 at reset
-				I2SREG.fifo_conf.tx_fifo_mod = 3;	 // 32 bits single channel data
-				I2SREG.conf_chan.tx_chan_mod = 3;	 //
+				I2SREG.clkm_conf.clkm_div_a = 1;   // 0 at reset, what about divide by 0?
+				I2SREG.clkm_conf.clkm_div_b = 0;   // 0 at reset
+				I2SREG.fifo_conf.tx_fifo_mod = 3;  // 32 bits single channel data
+				I2SREG.conf_chan.tx_chan_mod = 3;  //
 				I2SREG.sample_rate_conf.tx_bits_mod = 32;
 				I2SREG.conf.tx_msb_shift = 0;
 				I2SREG.conf.rx_msb_shift = 0;
@@ -227,7 +230,8 @@ static void IRAM_ATTR esp32_i2s_stream_task(void *param)
 				mcu_gen_step();
 #endif
 #if defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS)
-				mcu_gen_pwm_and_servo();
+				mcu_gen_servo();
+				mcu_gen_step();
 #endif
 #if defined(MCU_HAS_ONESHOT_TIMER) && defined(ENABLE_RT_SYNC_MOTIONS)
 				mcu_gen_oneshot();
@@ -261,175 +265,6 @@ static FORCEINLINE void esp32_i2s_extender_init(void)
 #define ITP_SAMPLE_RATE (F_STEP_MAX * 2)
 #endif
 
-// this function updates IO updated will run @128KHz
-/**
- *
- * This function updates IO pins
- * In here the following IO is calculated and updated
- * 	- step and dir pins (using a step aliasing similar to the bresenham)
- *  - any software PWM pins (@125KHz)
- *  - all servo pins (@125KHz)
- *
- * 	@125KHz the function should do it's calculations in under 8µs.
- *  With 3 axis running and 4 software PWM it takes less then 900ns so it should hold.
- *
- * **/
-
-#if SERVOS_MASK > 0
-// also run servo pin signals
-static uint32_t servo_tick_counter = 0;
-static uint32_t servo_tick_alarm = 0;
-static uint8_t mcu_servos[6];
-static FORCEINLINE void servo_reset(void)
-{
-#if ASSERT_PIN(SERVO0)
-	io_clear_output(SERVO0);
-#endif
-#if ASSERT_PIN(SERVO1)
-	io_clear_output(SERVO1);
-#endif
-#if ASSERT_PIN(SERVO2)
-	io_clear_output(SERVO2);
-#endif
-#if ASSERT_PIN(SERVO3)
-	io_clear_output(SERVO3);
-#endif
-#if ASSERT_PIN(SERVO4)
-	io_clear_output(SERVO4);
-#endif
-#if ASSERT_PIN(SERVO5)
-	io_clear_output(SERVO5);
-#endif
-}
-
-#define start_servo_timeout(timeout)                      \
-	{                                                       \
-		servo_tick_alarm = servo_tick_counter + timeout + 64; \
-	}
-
-static FORCEINLINE void servo_update(void)
-{
-	static uint8_t servo_counter = 0;
-
-	switch (servo_counter)
-	{
-#if ASSERT_PIN(SERVO0)
-	case SERVO0_FRAME:
-		io_set_output(SERVO0);
-		start_servo_timeout(mcu_servos[0]);
-		break;
-#endif
-#if ASSERT_PIN(SERVO1)
-	case SERVO1_FRAME:
-		io_set_output(SERVO1);
-		start_servo_timeout(mcu_servos[1]);
-		break;
-#endif
-#if ASSERT_PIN(SERVO2)
-	case SERVO2_FRAME:
-		io_set_output(SERVO2);
-		start_servo_timeout(mcu_servos[2]);
-		break;
-#endif
-#if ASSERT_PIN(SERVO3)
-	case SERVO3_FRAME:
-		io_set_output(SERVO3);
-		start_servo_timeout(mcu_servos[3]);
-		break;
-#endif
-#if ASSERT_PIN(SERVO4)
-	case SERVO4_FRAME:
-		io_set_output(SERVO4);
-		start_servo_timeout(mcu_servos[4]);
-		break;
-#endif
-#if ASSERT_PIN(SERVO5)
-	case SERVO5_FRAME:
-		io_set_output(SERVO5);
-		start_servo_timeout(mcu_servos[5]);
-		break;
-#endif
-	}
-
-	servo_counter++;
-	servo_counter = (servo_counter != 20) ? servo_counter : 0;
-}
-#endif
-
-MCU_CALLBACK void mcu_gen_pwm_and_servo(void)
-{
-	static int16_t mcu_soft_io_counter;
-	int16_t t = mcu_soft_io_counter;
-	t--;
-	if (t <= 0)
-	{
-// updated software PWM pins
-#if defined(IC74HC595_HAS_PWMS) || defined(MCU_HAS_SOFT_PWM_TIMER)
-		io_soft_pwm_update();
-#endif
-
-		// update servo pins
-#if SERVOS_MASK > 0
-		// also run servo pin signals
-		uint32_t counter = servo_tick_counter;
-
-		// updated next servo output
-		if (!(counter & 0x7F))
-		{
-			servo_update();
-		}
-
-		// reached set tick alarm and resets all servo outputs
-		if (counter == servo_tick_alarm)
-		{
-			servo_reset();
-		}
-
-		// resets every 3ms
-		servo_tick_counter = ++counter;
-#endif
-		mcu_soft_io_counter = (int16_t)roundf((float)ITP_SAMPLE_RATE / 128000.0f);
-	}
-	else
-	{
-		mcu_soft_io_counter = t;
-	}
-}
-
-static volatile uint32_t mcu_itp_timer_reload;
-static volatile bool mcu_itp_timer_running;
-MCU_CALLBACK void mcu_gen_step(void)
-{
-	static bool step_reset = true;
-	static int32_t mcu_itp_timer_counter;
-
-	// generate steps
-	if (mcu_itp_timer_running)
-	{
-		// stream mode tick
-		int32_t t = mcu_itp_timer_counter;
-		bool reset = step_reset;
-		t -= (int32_t)roundf(1000000.0f / (float)ITP_SAMPLE_RATE);
-		if (t <= 0)
-		{
-			if (!reset)
-			{
-				mcu_step_cb();
-			}
-			else
-			{
-				mcu_step_reset_cb();
-			}
-			step_reset = !reset;
-			mcu_itp_timer_counter = mcu_itp_timer_reload + t;
-		}
-		else
-		{
-			mcu_itp_timer_counter = t;
-		}
-	}
-}
-
 MCU_CALLBACK void mcu_gpio_isr(void *type)
 {
 	// read the address and not the pointer value because we are passing a literal integer
@@ -452,18 +287,6 @@ MCU_CALLBACK void mcu_gpio_isr(void *type)
 		break;
 	}
 }
-
-#ifdef IC74HC595_HAS_PWMS
-uint8_t mcu_softpwm_freq_config(uint16_t freq)
-{
-	// keeps 8 bit resolution up to 500Hz
-	// reduces bit resolution for higher frequencies
-
-	// determines the bit resolution (7 - esp32_pwm_res);
-	uint8_t res = (uint8_t)MAX((int8_t)ceilf(LN(freq * 0.002f)), 0);
-	return res;
-}
-#endif
 
 void mcu_coms_dotasks(void *arg)
 {
@@ -494,6 +317,7 @@ void mcu_rtc_task(void *arg)
 
 MCU_CALLBACK void mcu_itp_isr(void *arg)
 {
+	signal_timer.us_step = (1000000/(ITP_SAMPLE_RATE));
 #ifdef IC74HC595_CUSTOM_SHIFT_IO
 	uint32_t mode = I2S_MODE;
 #if defined(IC74HC595_HAS_STEPS) || defined(IC74HC595_HAS_DIRS)
@@ -509,7 +333,8 @@ MCU_CALLBACK void mcu_itp_isr(void *arg)
 #endif
 #endif
 	{
-		mcu_gen_pwm_and_servo();
+		mcu_gen_servo();
+		mcu_gen_step();
 	}
 #if defined(MCU_HAS_ONESHOT_TIMER) && defined(ENABLE_RT_SYNC_MOTIONS)
 	mcu_gen_oneshot();
@@ -750,10 +575,10 @@ float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller)
 
 void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 {
-	if (!mcu_itp_timer_running)
+	if (!signal_timer.step_alarm_en)
 	{
-		mcu_itp_timer_reload = ticks * prescaller;
-		mcu_itp_timer_running = true;
+		signal_timer.itp_reload = ticks * prescaller;
+		signal_timer.step_alarm_en = true;
 	}
 	else
 	{
@@ -766,9 +591,9 @@ void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
  * */
 void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller)
 {
-	if (mcu_itp_timer_running)
+	if (signal_timer.step_alarm_en)
 	{
-		mcu_itp_timer_reload = ticks * prescaller;
+		signal_timer.itp_reload = ticks * prescaller;
 	}
 	else
 	{
@@ -781,9 +606,9 @@ void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller)
  * */
 void mcu_stop_itp_isr(void)
 {
-	if (mcu_itp_timer_running)
+	if (signal_timer.step_alarm_en)
 	{
-		mcu_itp_timer_running = false;
+		signal_timer.step_alarm_en = false;
 	}
 }
 
