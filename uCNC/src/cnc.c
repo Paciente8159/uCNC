@@ -918,7 +918,7 @@ void cnc_exec_rt_commands(void)
 
 void cnc_check_fault_systems(void)
 {
-	uint8_t inputs;
+	uint8_t inputs = 0;
 #ifdef CONTROLS_MASK
 	inputs = io_get_controls();
 #endif

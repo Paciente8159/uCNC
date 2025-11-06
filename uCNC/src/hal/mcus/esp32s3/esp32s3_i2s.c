@@ -230,7 +230,6 @@ static void i2s_enter_mode_glitch_free(uint32_t mode)
 		gdma_ll_tx_enable_interrupt(&GDMA, i2s_hal.gdma_channel, GDMA_LL_EVENT_TX_DONE | GDMA_LL_EVENT_TX_TOTAL_EOF, true);
 		break;
 	case ITP_STEP_MODE_REALTIME:
-		ESP_LOGD("i2s", "single");
 		I2S_REG.tx_conf.tx_stop_en = 0;
 		config.mode = I2S_MODE_MASTER | I2S_MODE_TX;
 		config.sample_rate = I2S_SAMPLE_RATE;
