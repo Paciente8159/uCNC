@@ -108,7 +108,7 @@ MCU_CALLBACK void mcu_itp_isr(void *arg)
 	uint32_t mode = I2S_MODE;
 	if (mode & ITP_STEP_MODE_REALTIME)
 	{
-		signal_timer.us_step = 8;
+		signal_timer.us_step = 4;
 		mcu_gen_step();
 		mcu_gen_pwm();
 		mcu_gen_servo();

@@ -3481,7 +3481,7 @@ extern volatile uint32_t i2s_mode;
 typedef struct signal_timer_
 {
 	uint32_t current_us;
-	uint8_t us_step;
+	volatile uint8_t us_step;
 	uint32_t itp_reload;
 	volatile bool step_alarm_en;
 	uint32_t pwm_reload;

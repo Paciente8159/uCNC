@@ -105,7 +105,7 @@ static void IRAM_ATTR i2s_fifo_fill_words(uint32_t *buf, size_t len)
 {
 	for (int i = 0; i < len; i++)
 	{
-		signal_timer.us_step = 4;
+		signal_timer.us_step = 2;
 
 		mcu_gen_step();
 		mcu_gen_pwm();
@@ -171,10 +171,10 @@ static void IRAM_ATTR i2s_tx_isr(void *arg)
 			I2S_REG.fifo_conf.dscr_en = 0;
 			I2S_REG.conf.tx_start = 0;
 			I2S_REG.int_clr.val = 0xFFFFFFFF;
-			I2S_REG.clkm_conf.clka_en = 0;			// Use PLL/2 as reference
-			I2S_REG.clkm_conf.clkm_div_num = 2; // reset value of 4
-			I2S_REG.clkm_conf.clkm_div_a = 1;		// 0 at reset, what about divide by 0?
-			I2S_REG.clkm_conf.clkm_div_b = 0;		// 0 at reset
+			// I2S_REG.clkm_conf.clka_en = 0;			// Use PLL/2 as reference
+			// I2S_REG.clkm_conf.clkm_div_num = 2; // reset value of 4
+			// I2S_REG.clkm_conf.clkm_div_a = 1;		// 0 at reset, what about divide by 0?
+			// I2S_REG.clkm_conf.clkm_div_b = 0;		// 0 at reset
 			I2S_REG.fifo_conf.tx_fifo_mod = 3;	// 32 bits single channel data
 			I2S_REG.conf_chan.tx_chan_mod = 3;	//
 			I2S_REG.sample_rate_conf.tx_bits_mod = 32;

@@ -82,13 +82,22 @@ void mcu_core0_wirelesscoms_init(void *arg)
 
 MCU_CALLBACK void mcu_itp_isr(void *arg)
 {
-	// run twice per timer isr (step up and step down at limit speed)
-	mcu_gen_step();
-	mcu_gen_pwm();
-	mcu_gen_servo();
-#if defined(MCU_HAS_ONESHOT_TIMER) && defined(ENABLE_RT_SYNC_MOTIONS)
-	mcu_gen_oneshot();
+#ifdef IC74HC595_CUSTOM_SHIFT_IO
+	if (I2S_MODE == ITP_STEP_MODE_REALTIME)
 #endif
+	{
+		signal_timer.us_step = (1000000 / (ITP_SAMPLE_RATE>>1));
+		// run twice per timer isr (step up and step down at limit speed)
+		mcu_gen_step();
+		mcu_gen_pwm();
+		mcu_gen_servo();
+#if defined(MCU_HAS_ONESHOT_TIMER) && defined(ENABLE_RT_SYNC_MOTIONS)
+		mcu_gen_oneshot();
+#endif
+#ifdef IC74HC595_CUSTOM_SHIFT_IO
+		WRITE_PERI_REG(I2S_CONF_SIGLE_DATA_REG(I2S_PORT), __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED));
+#endif
+	}
 
 	timer_group_clr_intr_status_in_isr(ITP_TIMER_TG, ITP_TIMER_IDX);
 	timer_group_enable_alarm_in_isr(ITP_TIMER_TG, ITP_TIMER_IDX);
@@ -162,8 +171,7 @@ void mcu_init(void)
 	 * Timers config
 	 */
 
-#ifndef IC74HC595_CUSTOM_SHIFT_IO
-	signal_timer.us_step = (1000000 / (F_STEP_MAX));
+	signal_timer.us_step = (1000000 / (ITP_SAMPLE_RATE>>1));
 	// inititialize ITP timer
 	timer_config_t itpconfig = {0};
 	itpconfig.divider = 2;
@@ -182,7 +190,7 @@ void mcu_init(void)
 	timer_isr_register(ITP_TIMER_TG, ITP_TIMER_IDX, mcu_itp_isr, NULL, 0, NULL);
 	timer_enable_intr(ITP_TIMER_TG, ITP_TIMER_IDX);
 	timer_start(ITP_TIMER_TG, ITP_TIMER_IDX);
-#else
+#ifdef IC74HC595_CUSTOM_SHIFT_IO
 	mcu_i2s_extender_init();
 #endif
 
