@@ -1,10 +1,10 @@
 /*
-	Name: esp32_i2s.c
+	Name: esp32c3_i2s.c
 	Description: Implements the µCNC custom ESP32 I2S IO Shifter.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
-	Date: 15-09-2025
+	Date: 07-11-2025
 
 	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 
 #include "../../../cnc.h"
 
-#if (CONFIG_IDF_TARGET_ESP32S3)
+#if (CONFIG_IDF_TARGET_ESP32C3)
 #include "driver/uart.h"
 #include "hal/i2s_hal.h"
 #include "hal/gdma_types.h"
@@ -41,13 +41,14 @@
 #include <stdatomic.h>
 #include <soc/gpio_periph.h>
 #include "esp_private/gdma.h"
+#include "driver/i2s.h"
 
-#define BCK_OUT_IDX __helper__(I2S, I2S_PORT, O_BCK_OUT_IDX)	// resolves to I2S<I2S_PORT>O_BCK_OUT_IDX
-#define WS_OUT_IDX __helper__(I2S, I2S_PORT, O_WS_OUT_IDX)		// resolves to I2S<I2S_PORT>O_WS_OUT_IDX
-#define DATA_OUT_IDX __helper__(I2S, I2S_PORT, O_SD_OUT_IDX)	// resolves to I2S<I2S_PORT>O_SD_OUT_IDX
-#define PERIPH_I2S __helper__(PERIPH_I2S, I2S_PORT, _MODULE)	// resolves to I2S<I2S_PORT>_MODULE
-#define I2S_ITR_SRC __helper__(ETS_I2S, I2S_PORT, _INTR_SOURCE) // resolves to I2S<I2S_PORT>_INTR_SOURCE
-#define GDMA_I2S_PERIPH (SOC_GDMA_TRIG_PERIPH_I2S0 + I2S_PORT)	// resolves to SOC_GDMA_TRIG_PERIPH_I2S0 or SOC_GDMA_TRIG_PERIPH_I2S1
+#define BCK_OUT_IDX I2SO_BCK_OUT_IDX
+#define WS_OUT_IDX I2SO_WS_OUT_IDX
+#define DATA_OUT_IDX I2SO_SD_OUT_IDX
+#define PERIPH_I2S PERIPH_I2S1_MODULE
+#define I2S_ITR_SRC ETS_I2S1_INTR_SOURCE
+#define GDMA_I2S_PERIPH SOC_GDMA_TRIG_PERIPH_I2S0
 
 #ifdef IC74HC595_CUSTOM_SHIFT_IO
 #if IC74HC595_COUNT != 4
@@ -56,9 +57,6 @@
 
 #ifndef I2S_REG
 #define I2S_REG __helper__(I2S, I2S_PORT, ) // resolves to I2S<I2S_PORT>
-#endif
-#ifndef I2S_PERIF
-#define I2S_PERIF __helper__(PERIPH_I2S, I2S_PORT, _MODULE) // resolves to I2S<I2S_PORT>_MODULE
 #endif
 
 #define I2S_ITR_FLAGS (GDMA_LL_EVENT_TX_DONE)
@@ -99,7 +97,7 @@ extern void mcu_gpio_isr(void *type);
 #if defined(MCU_HAS_ONESHOT_TIMER) && defined(ENABLE_RT_SYNC_MOTIONS)
 static uint32_t esp32_oneshot_counter;
 static uint32_t esp32_oneshot_reload;
-static FORCEINLINE void mcu_gen_oneshot(void)
+MCU_CALLBACK void mcu_gen_oneshot(void)
 {
 	if (esp32_oneshot_counter)
 	{
@@ -295,7 +293,7 @@ static int32_t allocate_dma_channel(void)
 
 	do
 	{
-		if (GDMA.channel[--ch].out.link.addr == 0)
+		if (GDMA.channel[--ch].out.out_link.addr == 0)
 			return ch;
 	} while (ch);
 
@@ -321,6 +319,17 @@ static void i2s_tx_base_config(void)
 		REG_SET_BIT(SYSTEM_PERIP_RST_EN1_REG, SYSTEM_DMA_RST);
 		REG_CLR_BIT(SYSTEM_PERIP_RST_EN1_REG, SYSTEM_DMA_RST);
 	}
+
+	// Route pins via GPIO matrix
+	/*possible alternative*/
+	// static const i2s_pin_config_t pin_config = {
+	// 	.mck_io_num = 0,
+	// 	.bck_io_num = IC74HC595_I2S_CLK,
+	// 	.ws_io_num = IC74HC595_I2S_WS,
+	// 	.data_out_num = IC74HC595_I2S_DATA,
+	// 	.data_in_num = I2S_PIN_NO_CHANGE};
+
+	// i2s_set_pin(I2S_PORT, &pin_config);
 
 	// Route pins via GPIO matrix
 	gpio_set_direction(IC74HC595_I2S_CLK, GPIO_MODE_OUTPUT);

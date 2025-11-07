@@ -93,9 +93,9 @@ static FORCEINLINE void mcu_gen_oneshot(void)
 }
 #endif
 
-static inline void IRAM_ATTR i2s_write_single_word(uint32_t sample)
+IRAM_ATTR void i2s_write_word(uint32_t value)
 {
-	REG_WRITE(I2S_CONF_SIGLE_DATA_REG(I2S_PORT), sample);
+	I2S_REG.conf_single_data = value;
 }
 
 /**
@@ -155,7 +155,7 @@ static void IRAM_ATTR i2s_tx_isr(void *arg)
 			}
 			break;
 		case (ITP_STEP_MODE_REALTIME | ITP_STEP_MODE_SYNC):
-		// mcu_set_output(DOUT49);
+			// mcu_set_output(DOUT49);
 			i2s_hal_stop_tx_link(&i2s_hal.ctx);
 			__atomic_store_n((uint32_t *)&i2s_mode, ITP_STEP_MODE_REALTIME, __ATOMIC_RELAXED);
 			break;
@@ -175,8 +175,8 @@ static void IRAM_ATTR i2s_tx_isr(void *arg)
 			// I2S_REG.clkm_conf.clkm_div_num = 2; // reset value of 4
 			// I2S_REG.clkm_conf.clkm_div_a = 1;		// 0 at reset, what about divide by 0?
 			// I2S_REG.clkm_conf.clkm_div_b = 0;		// 0 at reset
-			I2S_REG.fifo_conf.tx_fifo_mod = 3;	// 32 bits single channel data
-			I2S_REG.conf_chan.tx_chan_mod = 3;	//
+			I2S_REG.fifo_conf.tx_fifo_mod = 3; // 32 bits single channel data
+			I2S_REG.conf_chan.tx_chan_mod = 3; //
 			I2S_REG.sample_rate_conf.tx_bits_mod = 32;
 			I2S_REG.conf.tx_msb_shift = 0;
 			I2S_REG.conf.rx_msb_shift = 0;
@@ -297,21 +297,21 @@ static void i2s_tx_base_config(void)
 
 	// 32-bit frames, mono-like usage, MSB-right placement compatible with 74HC595 stream
 	i2s_hal_config_t config = {
-			.mode = I2S_MODE_MASTER | I2S_MODE_TX,
-			.sample_rate = I2S_SAMPLE_RATE,
-			.comm_fmt = I2S_COMM_FORMAT_STAND_I2S | I2S_COMM_FORMAT_STAND_MSB,
-			.chan_fmt = I2S_CHANNEL_FMT_ONLY_LEFT,
-			.sample_bits = I2S_BITS_PER_SAMPLE_32BIT,
-			.chan_bits = I2S_BITS_PER_SAMPLE_32BIT,
-			.active_chan = 1,
-			.total_chan = 2};
+		.mode = I2S_MODE_MASTER | I2S_MODE_TX,
+		.sample_rate = I2S_SAMPLE_RATE,
+		.comm_fmt = I2S_COMM_FORMAT_STAND_I2S | I2S_COMM_FORMAT_STAND_MSB,
+		.chan_fmt = I2S_CHANNEL_FMT_ONLY_LEFT,
+		.sample_bits = I2S_BITS_PER_SAMPLE_32BIT,
+		.chan_bits = I2S_BITS_PER_SAMPLE_32BIT,
+		.active_chan = 1,
+		.total_chan = 2};
 
 	// i2s_hal_clock_cfg_t clk_conf;
 	// 		i2s_hal_mclk_div_decimal_cal(&clk_conf, &clock);
 	i2s_hal_config_param(&i2s_hal.ctx, &config);
 	i2s_hal_clock_cfg_t clock = {160000000, 64000000, 32000000, 2, 2}; // 1us per word
-																																		 // i2s_hal_clock_cfg_t clock = {160000000, 160000000,160000000, 1, 5 }; // 2us per word
-																																		 // i2s_hal_clock_cfg_t clock = {160000000, 32000000,16000000, 5, 2 }; // 2us per word also
+																	   // i2s_hal_clock_cfg_t clock = {160000000, 160000000,160000000, 1, 5 }; // 2us per word
+																	   // i2s_hal_clock_cfg_t clock = {160000000, 32000000,16000000, 5, 2 }; // 2us per word also
 
 	i2s_hal_tx_clock_config(&i2s_hal.ctx, &clock);
 
@@ -347,7 +347,7 @@ static void i2s_tx_base_config(void)
 
 	// Hook ISR
 	esp_intr_alloc_intrstatus(I2S_ITR_SRC, ESP_INTR_FLAG_IRAM | ESP_INTR_FLAG_LEVEL3, (uint32_t)i2s_ll_get_intr_status_reg(&I2S_REG), (I2S_OUT_EOF_INT_ST | I2S_TX_REMPTY_INT_ST),
-														i2s_tx_isr, NULL, &i2s_hal.isr_handle);
+							  i2s_tx_isr, NULL, &i2s_hal.isr_handle);
 #else
 	i2s_ll_tx_disable_intr(&I2S_REG);
 #endif

@@ -36,8 +36,6 @@
 #endif
 
 static volatile bool esp32_global_isr_enabled;
-static volatile uint32_t mcu_itp_timer_reload;
-static volatile bool mcu_itp_timer_running;
 hw_timer_t *esp32_step_timer;
 extern void mcu_itp_isr(void *arg);
 extern void mcu_gen_pwm(void);
@@ -86,7 +84,7 @@ MCU_CALLBACK void mcu_itp_isr(void *arg)
 	if (I2S_MODE == ITP_STEP_MODE_REALTIME)
 #endif
 	{
-		signal_timer.us_step = (1000000 / (ITP_SAMPLE_RATE>>1));
+		signal_timer.us_step = (1000000 / (ITP_SAMPLE_RATE >> 1));
 		// run twice per timer isr (step up and step down at limit speed)
 		mcu_gen_step();
 		mcu_gen_pwm();
@@ -95,7 +93,7 @@ MCU_CALLBACK void mcu_itp_isr(void *arg)
 		mcu_gen_oneshot();
 #endif
 #ifdef IC74HC595_CUSTOM_SHIFT_IO
-		WRITE_PERI_REG(I2S_CONF_SIGLE_DATA_REG(I2S_PORT), __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED));
+		i2s_write_word(__atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED));
 #endif
 	}
 
@@ -171,7 +169,7 @@ void mcu_init(void)
 	 * Timers config
 	 */
 
-	signal_timer.us_step = (1000000 / (ITP_SAMPLE_RATE>>1));
+	signal_timer.us_step = (1000000 / (ITP_SAMPLE_RATE >> 1));
 	// inititialize ITP timer
 	timer_config_t itpconfig = {0};
 	itpconfig.divider = 2;
@@ -400,5 +398,63 @@ void mcu_dotasks(void)
 	// esp_task_wdt_reset();
 	// mcu_bt_dotasks();
 }
+
+#ifdef MCU_HAS_ONESHOT_TIMER
+
+MCU_CALLBACK void mcu_oneshot_isr(void *arg)
+{
+	timer_pause(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX);
+	timer_group_clr_intr_status_in_isr(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX);
+
+	if (mcu_timeout_cb)
+	{
+		mcu_timeout_cb();
+	}
+}
+
+/**
+ * configures a single shot timeout in us
+ * */
+#ifndef mcu_config_timeout
+void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
+{
+	mcu_timeout_cb = fp;
+#if defined(MCU_HAS_ONESHOT_TIMER) && defined(ENABLE_RT_SYNC_MOTIONS)
+	esp32_oneshot_reload = ((ITP_SAMPLE_RATE >> 1) / timeout);
+#elif defined(MCU_HAS_ONESHOT_TIMER)
+	timer_config_t config = {0};
+	config.divider = getApbFrequency() / 1000000UL; // 1us per count
+	config.counter_dir = TIMER_COUNT_UP;
+	config.counter_en = TIMER_PAUSE;
+	config.alarm_en = TIMER_ALARM_EN;
+	config.auto_reload = true;
+	timer_init(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX, &config);
+
+	/* Timer's counter will initially start from value below.
+		 Also, if auto_reload is set, this value will be automatically reload on alarm */
+	timer_set_counter_value(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX, 0x00000000ULL);
+
+	/* Configure the alarm value and the interrupt on alarm. */
+	timer_set_alarm_value(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX, (uint64_t)timeout);
+	timer_enable_intr(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX);
+	timer_isr_register(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX, mcu_oneshot_isr, NULL, 0, NULL);
+#endif
+}
+#endif
+
+/**
+ * starts the timeout. Once hit the the respective callback is called
+ * */
+#ifndef mcu_start_timeout
+MCU_CALLBACK void mcu_start_timeout()
+{
+#if defined(MCU_HAS_ONESHOT_TIMER) && defined(ENABLE_RT_SYNC_MOTIONS)
+	esp32_oneshot_counter = esp32_oneshot_reload;
+#elif defined(MCU_HAS_ONESHOT_TIMER)
+	timer_start(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX);
+#endif
+}
+#endif
+#endif
 
 #endif
