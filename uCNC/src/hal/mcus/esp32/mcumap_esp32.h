@@ -83,19 +83,19 @@ extern "C"
 #define MCU_CYCLES_LOOP_OVERHEAD 3
 #endif
 
-#define mcu_delay_loop(X)                                             \
-	do                                                                  \
-	{                                                                   \
+#define mcu_delay_loop(X)                                                         \
+	do                                                                              \
+	{                                                                               \
 		register unsigned start, now, target = (((X) - 1) * MCU_CYCLES_PER_LOOP + 2); \
-		asm volatile("" ::: "memory");                                    \
-		asm volatile(                                                     \
-				"rsr.ccount %0\n"					/* 2 cycles: start = ccount */      \
-				"1:  rsr.ccount %1\n"			/* 2 cycles */                      \
-				"  sub      %1, %1, %0\n" /* 1 cycle  : tmp = now-start */    \
-				"  bltu     %1, %2, 1b\n" /* 3 taken / 1 not taken */         \
-				"  nop\n"                                                     \
-				: "=&a"(start), "=&a"(now)                                    \
-				: "a"(target));                                               \
+		asm volatile("" ::: "memory");                                                \
+		asm volatile(                                                                 \
+				"rsr.ccount %0\n"					/* 2 cycles: start = ccount */                  \
+				"1:  rsr.ccount %1\n"			/* 2 cycles */                                  \
+				"  sub      %1, %1, %0\n" /* 1 cycle  : tmp = now-start */                \
+				"  bltu     %1, %2, 1b\n" /* 3 taken / 1 not taken */                     \
+				"  nop\n"                                                                 \
+				: "=&a"(start), "=&a"(now)                                                \
+				: "a"(target));                                                           \
 	} while (0)
 
 #ifndef MCU_CALLBACK
@@ -3354,6 +3354,11 @@ extern "C"
 #ifndef SPI_FREQ
 #define SPI_FREQ 1000000UL
 #endif
+#if (SPI_CLK_BIT == 14 || SPI_CLK_BIT == 25)
+#define SPI_INSTANCE HSPI
+#else
+#define SPI_INSTANCE VSPI
+#endif
 #endif
 
 // SPI2
@@ -3368,11 +3373,16 @@ extern "C"
 #ifndef SPI2_FREQ
 #define SPI2_FREQ 1000000UL
 #endif
+#if (SPI2_CLK_BIT == 14 || SPI2_CLK_BIT == 25)
+#define SPI2_INSTANCE HSPI
+#else
+#define SPI2_INSTANCE VSPI
+#endif
 #endif
 
 // Helper macros
-#define __helper_ex__(left, mid, right) (left##mid##right)
-#define __helper__(left, mid, right) (__helper_ex__(left, mid, right))
+#define __helper_ex__(left, mid, right) left##mid##right
+#define __helper__(left, mid, right) __helper_ex__(left, mid, right)
 #ifndef __indirect__
 #define __indirect__ex__(X, Y) DIO##X##_##Y
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
@@ -3407,7 +3417,7 @@ extern "C"
 #undef IC74HC595_COUNT
 #endif
 #define IC74HC595_COUNT 4
-#define I2SREG __helper__(I2S, IC74HC595_I2S_PORT, )
+#define I2S_PORT IC74HC595_I2S_PORT
 
 	// custom pin operations for 74HS595
 	extern volatile uint32_t ic74hc595_i2s_pins;
@@ -3417,6 +3427,10 @@ extern "C"
 #define ic74hc595_clear_pin(pin) __atomic_fetch_and((uint32_t *)&ic74hc595_i2s_pins, ~(ic74hc595_pin_mask(pin)), __ATOMIC_RELAXED)
 #define ic74hc595_toggle_pin(pin) __atomic_fetch_xor((uint32_t *)&ic74hc595_i2s_pins, ic74hc595_pin_mask(pin), __ATOMIC_RELAXED)
 #define ic74hc595_get_pin(pin) (__atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED) & ic74hc595_pin_mask(pin))
+
+extern volatile uint32_t i2s_mode;
+#define I2S_MODE __atomic_load_n((uint32_t *)&i2s_mode, __ATOMIC_RELAXED)
+
 #endif
 
 #define mcu_config_output(X)                                                      \
@@ -3489,6 +3503,18 @@ extern "C"
 		pwm.timer_sel = __indirect__(X, TIMER);           \
 		ledc_channel_config(&pwm);                        \
 	}
+
+typedef struct signal_timer_
+{
+	uint32_t current_us;
+	volatile uint8_t us_step;
+	uint32_t itp_reload;
+	volatile bool step_alarm_en;
+	uint32_t pwm_reload;
+} signal_timer_t;
+
+extern signal_timer_t signal_timer;
+#define mcu_softpwm_freq_config(pin, freq) ({io_config_output(pin); signal_timer.pwm_reload = (uint32_t)(1000000/freq); })
 
 #define mcu_set_pwm(X, Y)                                                       \
 	{                                                                             \
