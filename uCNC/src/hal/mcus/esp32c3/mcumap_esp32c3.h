@@ -3337,8 +3337,6 @@ extern "C"
 #else
 #define ONESHOT_TIMER_IDX 1
 #endif
-#define ONESHOT_TIMER_TG (ONESHOT_TIMER & 0x01)
-#define ONESHOT_TIMER_IDX ((ONESHOT_TIMER >> 1) & 0x01)
 #endif
 
 // SPI
