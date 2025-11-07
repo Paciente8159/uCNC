@@ -6,6 +6,28 @@
 
 # Changelog
 
+## [1.13.0] - 07-11-2025
+
+[@reinforce](https://github.com/reinforce)	- fix compilation errors on RP2040 and 2350 (#894) and fixed file name typo on ESP32 (#889)
+
+### Added
+
+- added support for 74HC595 custom I2S driver for ESP32-S3 and ESP32-C3 (#895)
+
+### Changed
+
+- redesigned ESP32 I2S driver for the 74HC595. It now uses the the DMA ISR instead of the built in generic driver and thread to keep the buffer fill and switch modes (#895)
+- redesigned ESP8266 outputs signal generation based on the new timer struct used on ESP32 (#895)
+
+### Fixed
+
+- fixed compilation errors on RP2040 and RP2350 (#894)
+- fixed timer configurations for ESP32 (#893)
+- fixed setting $11 (G64 factor) to accept negative values (#891)
+- fixed file name typo on ESP32 (#889)
+- implemented missing get and set servo values on RPi MCU's (#890)
+- fixed interpolation bug on ESP8266 (#887)
+
 ## [1.13.rc] - 06-10-2025
 
 ### Added
@@ -1939,7 +1961,8 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
-[1.13.rx]: https://github.com/Paciente8159/uCNC/releases/tag/v1.13.rc
+[1.13.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.13.0
+[1.13.rc]: https://github.com/Paciente8159/uCNC/releases/tag/v1.13.rc
 [1.12.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.12.4
 [1.12.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.12.3
 [1.12.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.12.2
