@@ -415,6 +415,12 @@ extern "C"
 #define LASER_PPI UNDEF_PIN
 #endif
 
+#ifdef ENABLE_EMBROIDERY
+#ifndef MCU_HAS_ONESHOT_TIMER
+#error "The current MCU does not support ONESHOT_TIMER or the ONESHOT_TIMER is not configured"
+#endif
+#endif
+
 /**
  * final pin cleaning and configuration
  **/
@@ -2415,6 +2421,13 @@ typedef uint16_t step_t;
 #endif
 #ifndef ENABLE_PARSER_MODULES
 #define ENABLE_PARSER_MODULES
+#endif
+#endif
+
+#ifdef ENABLE_EMBROIDERY
+// forces modes
+#ifndef ENABLE_RT_SYNC_MOTIONS
+#define ENABLE_RT_SYNC_MOTIONS
 #endif
 #endif
 
