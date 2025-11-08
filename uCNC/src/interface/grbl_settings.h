@@ -67,7 +67,7 @@ extern "C"
 		float homing_offset;
 		int16_t spindle_max_rpm;
 		int16_t spindle_min_rpm;
-		uint8_t laser_mode;
+		uint8_t tool_mode;
 #ifdef ENABLE_LASER_PPI
 		uint16_t laser_ppi;
 		uint16_t laser_ppi_uswidth;

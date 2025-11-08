@@ -308,6 +308,19 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 #endif
 	}
 
+#ifdef ENABLE_EMBROIDERY
+	if ((g_settings.tool_mode & EMBROIDERY_MODE) && !block_data->spindle)
+	{
+		if(itp_sync()!= STATUS_OK)
+		{
+			return STATUS_CRITICAL_FAIL;
+		}
+		tool_set_speed(0);
+		while (tool_get_speed() && cnc_dotasks())
+			;
+	}
+#endif
+
 	uint8_t error = STATUS_OK;
 
 	// gets the previous machine position (transformed to calculate the direction vector and traveled distance)
@@ -419,7 +432,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 	g_settings.acceleration[STEPPER_COUNT - 1] = FLT_MAX;
 	float ppi_max_feedrate = FLT_MAX;
 	float ppi_step_rate = g_settings.step_per_mm[STEPPER_COUNT - 1];
-	if (g_settings.laser_mode & (LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE))
+	if (g_settings.tool_mode & (LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE))
 	{
 		if (!ppi_step_rate)
 		{
@@ -438,10 +451,10 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 	{
 		laser_pulses_per_mm = ppi_step_rate;
 		// modify PPI settings according o the S value
-		if (g_settings.laser_mode & LASER_PPI_MODE)
+		if (g_settings.tool_mode & LASER_PPI_MODE)
 		{
 			float laser_ppi_scale = fast_flt_div((float)block_data->spindle, (float)g_settings.spindle_max_rpm);
-			if (g_settings.laser_mode & LASER_PPI_VARPOWER_MODE)
+			if (g_settings.tool_mode & LASER_PPI_VARPOWER_MODE)
 			{
 				float blend = g_settings.laser_ppi_mixmode_ppi;
 				laser_ppi_scale = (laser_ppi_scale * blend) + (1.0f - blend);
@@ -806,10 +819,10 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 	homing_status_t homing_status __attribute__((__cleanup__(mc_home_axis_finalize))) = {axis_mask, axis_limit, STATUS_OK};
 #endif
 
-// #ifdef ENABLE_G39_H_MAPPING
-// 	// resets height map
-// 	memset(hmap_offsets, 0, sizeof(hmap_offsets));
-// #endif
+	// #ifdef ENABLE_G39_H_MAPPING
+	// 	// resets height map
+	// 	memset(hmap_offsets, 0, sizeof(hmap_offsets));
+	// #endif
 
 #ifdef ENABLE_MOTION_CONTROL_MODULES
 	EVENT_INVOKE(mc_home_axis_start, &homing_status);
@@ -1235,10 +1248,10 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 
 	// copy the new map tp the hmap array
 	memcpy(hmap_offsets, new_hmap_offsets, sizeof(new_hmap_offsets));
-	#ifdef H_MAPPING_EEPROM_STORE_ENABLED
+#ifdef H_MAPPING_EEPROM_STORE_ENABLED
 	// store the new map
 	settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
-	#endif
+#endif
 
 	// print map
 	mc_print_hmap();

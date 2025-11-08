@@ -29,7 +29,7 @@ IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=1
 CompilerSettings=000000e0g0000000001000000
-UnitCount=96
+UnitCount=97
 
 [VersionInfo]
 Major=1
@@ -971,7 +971,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit97]
-FileName=..\..\uCNC\src\modules\m67_m68\parser_m67_m68.c
+FileName=..\..\uCNC\src\hal\tools\tools\embroidery_stepper.c
 CompileCpp=1
 Folder=
 Compile=1
