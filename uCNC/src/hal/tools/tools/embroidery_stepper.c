@@ -23,6 +23,8 @@
 #include <float.h>
 #include <math.h>
 
+#ifdef ENABLE_EMBROIDERY
+
 #ifndef EMBD_STEP
 #define EMBD_STEP DOUT0
 #endif
@@ -72,10 +74,6 @@ DECL_EXTENDED_SETTING(EMBRODERY_STEPPER_STP_NEEDLE_DOWN, &embd_steps_needle_down
 
 bool needle_is_down()
 {
-	bool needle_down = (embd_steps_count >= embd_down_steps);
-//	if(needle_down){
-//		planner_spindle_ovr(50);
-//	}
 	return (embd_steps_count >= embd_down_steps);
 }
 
@@ -154,8 +152,12 @@ MCU_CALLBACK void embd_isr_cb(void)
 	{
 		if (!embd_stop_on_target)
 		{
+#ifdef ENABLE_RT_SYNC_MOTIONS
 			itp_set_block_mode(ITP_BLOCK_CONTINUOUS); // switch to continuous mode
-			return;																		// tool stopped. prevent rearm timer
+#else
+#warning "ENABLE_RT_SYNC_MOTIONS not enabled embroidery tool will not work correctly"
+#endif
+			return; // tool stopped. prevent rearm timer
 		}
 		mcu_config_timeout(&embd_isr_cb, ((uint32_t)embd_steps_target_us >> INT_MATH_SHIFT));
 		embd_stop_on_target = false;
@@ -177,128 +179,10 @@ MCU_CALLBACK void embd_isr_cb(void)
 
 #ifdef ENABLE_PARSER_MODULES
 
-// bool laser_ppi_parser_reset(void *args)
-//{
-//	laser_ppi_config_parameters();
-//	return EVENT_CONTINUE;
-// }
-//// create event listener
-// CREATE_EVENT_LISTENER(parser_reset, laser_ppi_parser_reset);
-//
-// #define M126 EXTENDED_MCODE(126)
-// #define M127 EXTENDED_MCODE(127)
-// #define M128 EXTENDED_MCODE(128)
-//
-//// this just parses and acceps the code
-// bool laser_ppi_mcodes_parse(void *args)
-//{
-//	gcode_parse_args_t *ptr = (gcode_parse_args_t *)args;
-//	if (ptr->word == 'M')
-//	{
-//		switch (ptr->code)
-//		{
-//		case 126:
-//			if (ptr->cmd->group_extended != 0)
-//			{
-//				// there is a collision of custom gcode commands (only one per line can be processed)
-//				*(ptr->error) = STATUS_GCODE_MODAL_GROUP_VIOLATION;
-//			}
-//			else
-//			{
-//				ptr->cmd->group_extended = M126;
-//				*(ptr->error) = STATUS_OK;
-//			}
-//			return EVENT_HANDLED;
-//		case 127:
-//			if (ptr->cmd->group_extended != 0)
-//			{
-//				// there is a collision of custom gcode commands (only one per line can be processed)
-//				*(ptr->error) = STATUS_GCODE_MODAL_GROUP_VIOLATION;
-//			}
-//			else
-//			{
-//				ptr->cmd->group_extended = M127;
-//				*(ptr->error) = STATUS_OK;
-//			}
-//			return EVENT_HANDLED;
-//		case 128:
-//			if (ptr->cmd->group_extended != 0)
-//			{
-//				// there is a collision of custom gcode commands (only one per line can be processed)
-//				*(ptr->error) = STATUS_GCODE_MODAL_GROUP_VIOLATION;
-//			}
-//			else
-//			{
-//				ptr->cmd->group_extended = M128;
-//				*(ptr->error) = STATUS_OK;
-//			}
-//			return EVENT_HANDLED;
-//		}
-//	}
-//
-//	// if this is not catched by this parser, just send back the error so other extenders can process it
-//	return EVENT_CONTINUE;
-// }
-//
-// CREATE_EVENT_LISTENER(gcode_parse, laser_ppi_mcodes_parse);
-//
-//// this actually performs 2 steps in 1 (validation and execution)
-// bool laser_ppi_mcodes_exec(void *args)
-//{
-//	gcode_exec_args_t *ptr = (gcode_exec_args_t *)args;
-//	switch (ptr->cmd->group_extended)
-//	{
-//	case M127:
-//	case M128:
-//		// prevents command execution if mode disabled
-//		if (!(g_settings.tool_mode & (LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE)))
-//		{
-//			*(ptr->error) = STATUS_LASER_PPI_MODE_DISABLED;
-//			return EVENT_HANDLED;
-//		}
-//	case M126:
-//		if (CHECKFLAG(ptr->cmd->words, (GCODE_WORD_P)) != (GCODE_WORD_P))
-//		{
-//			*(ptr->error) = STATUS_GCODE_VALUE_WORD_MISSING;
-//			return EVENT_HANDLED;
-//		}
-//
-//		*(ptr->error) = STATUS_OK;
-//		break;
-//	}
-//
-//	switch (ptr->cmd->group_extended)
-//	{
-//	case M126:
-//		g_settings.tool_mode &= ~(LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE);
-//		switch ((((uint8_t)ptr->words->p)))
-//		{
-//		case 1:
-//			g_settings.tool_mode |= LASER_PPI_MODE;
-//			break;
-//		case 2:
-//			g_settings.tool_mode |= LASER_PPI_VARPOWER_MODE;
-//			break;
-//		case 3:
-//			g_settings.tool_mode |= (LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE);
-//			break;
-//		}
-//		laser_ppi_config_parameters();
-//		return EVENT_HANDLED;
-//	case M127:
-//		g_settings.laser_ppi = (uint16_t)ptr->words->p;
-//		laser_ppi_config_parameters();
-//		return EVENT_HANDLED;
-//	case M128:
-//		g_settings.laser_ppi_uswidth = (uint16_t)ptr->words->p;
-//		laser_ppi_config_parameters();
-//		return EVENT_HANDLED;
-//	}
-//
-//	return EVENT_CONTINUE;
-// }
-//
-// CREATE_EVENT_LISTENER(gcode_exec, laser_ppi_mcodes_exec);
+/**
+ * If necessary future custom M/G codes can be added here
+ */
+
 #endif
 
 DECL_MODULE(embroidery_stepper)
@@ -342,10 +226,10 @@ static void startup_code(void)
 	embd_max_steps = embd_steps_per_rev << 1;
 	embd_down_steps = embd_steps_needle_down << 1;
 
-#ifndef RT_STEP_PREVENT_CONDITION
+#if defined(RT_STEP_PREVENT_CONDITION) && defined(ENABLE_RT_SYNC_MOTIONS)
 	itp_rt_step_prevent_cb = &needle_is_down;
 #else
-#warning "RT_STEP_PREVENT_CONDITION is set and needle down condition will not be detected!!"
+#warning "RT_STEP_PREVENT_CONDITION and ENABLE_RT_SYNC_MOTIONS is not set and needle down condition will not be detected!!"
 #endif
 	embd_accel = 5;
 	g_settings.tool_mode = EMBROIDERY_MODE;
@@ -361,7 +245,11 @@ static void shutdown_code(void)
 #endif
 #endif
 	g_settings.tool_mode = UNDEF_MODE;
+#ifdef ENABLE_RT_SYNC_MOTIONS
 	itp_rt_step_prevent_cb = NULL;
+#else
+#warning "ENABLE_RT_SYNC_MOTIONS not enabled embroidery tool will not work correctly"
+#endif
 }
 
 static void set_coolant(uint8_t value)
@@ -378,7 +266,11 @@ static void set_speed(int16_t value)
 	{
 		uint32_t target_us = (value) ? (uint32_t)(1000000.0f / (value * embd_max_steps * MIN_SEC_MULT)) : 0;
 
+#ifdef ENABLE_RT_SYNC_MOTIONS
 		itp_set_block_mode(ITP_BLOCK_SINGLE);
+#else
+#warning "ENABLE_RT_SYNC_MOTIONS not enabled embroidery tool will not work correctly"
+#endif
 		if ((previous_rpm == 0) || (value == 0))
 		{
 			float dai = fast_flt_inv(2.0f * embd_accel);
@@ -410,10 +302,12 @@ static uint16_t get_speed(void)
 }
 
 const tool_t embroidery_stepper = {
-		.startup_code = &startup_code,
-		.shutdown_code = &shutdown_code,
-		.pid_update = NULL,
-		.range_speed = NULL,
-		.get_speed = &get_speed,
-		.set_speed = &set_speed,
-		.set_coolant = &set_coolant};
+	.startup_code = &startup_code,
+	.shutdown_code = &shutdown_code,
+	.pid_update = NULL,
+	.range_speed = NULL,
+	.get_speed = &get_speed,
+	.set_speed = &set_speed,
+	.set_coolant = &set_coolant};
+
+#endif

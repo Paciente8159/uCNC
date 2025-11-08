@@ -115,9 +115,9 @@ extern "C"
 #ifdef ENABLE_RT_SYNC_MOTIONS
 	// extern volatile int32_t itp_sync_step_counter;
 #define ITP_BLOCK_CONTINUOUS 0 // normal mode. Don't care about block ID. dispatch blocck as soon as available
-#define ITP_BLOCK_SINGLE 1		 // will run one single block at time.
-#define ITP_BLOCK_BURST 2			 // will run as many blocks as in queue.
-															 // #define ITP_BLOCK_READY 128
+#define ITP_BLOCK_SINGLE 1	   // will run one single block at time.
+#define ITP_BLOCK_BURST 2	   // will run as many blocks as in queue.
+							   // #define ITP_BLOCK_READY 128
 	// modifies the
 	void itp_set_block_mode(uint8_t mode);
 	void itp_inc_block_id(void);

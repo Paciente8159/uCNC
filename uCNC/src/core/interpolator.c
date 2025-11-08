@@ -699,6 +699,7 @@ void itp_run(void)
 
 		sgm->feed = current_speed * feed_convert;
 #if TOOL_COUNT > 0
+#if defined(ENABLE_LASER_PWM) || defined(ENABLE_EMBROIDERY)
 		// calculates dynamic laser power
 		if (g_settings.tool_mode & (LASER_PWM_MODE | EMBROIDERY_MODE))
 		{
@@ -713,6 +714,7 @@ void itp_run(void)
 
 			sgm->spindle = newspindle;
 		}
+#endif
 #ifdef ENABLE_LASER_PPI
 		else if (g_settings.tool_mode & (LASER_PPI_VARPOWER_MODE | LASER_PPI_MODE))
 		{
@@ -809,10 +811,12 @@ void itp_stop(void)
 	mcu_delay_us(10);
 	io_set_steps(g_settings.step_invert_mask);
 #if TOOL_COUNT > 0
+#if defined(ENABLE_LASER_PWM) || defined(ENABLE_EMBROIDERY)
 	if (g_settings.tool_mode & LASER_PWM_MODE)
 	{
 		tool_set_speed(0);
 	}
+#endif
 #endif
 
 	mcu_stop_itp_isr();
@@ -946,6 +950,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 	static uint8_t stepbits = 0;
 	static bool itp_busy = false;
 
+#ifdef ENABLE_RT_SYNC_MOTIONS
 #ifdef RT_STEP_PREVENT_CONDITION
 	if (RT_STEP_PREVENT_CONDITION)
 	{
@@ -959,6 +964,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 			return;
 		}
 	}
+#endif
 #endif
 
 	if (itp_busy) // prevents reentrancy
@@ -1177,7 +1183,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 		else
 		{
 			cnc_clear_exec_state(EXEC_RUN); // this naturally clears the RUN flag. Any other ISR stop does not clear the flag.
-			itp_stop();											// the buffer is empty. The ISR can stop
+			itp_stop();						// the buffer is empty. The ISR can stop
 			return;
 		}
 	}

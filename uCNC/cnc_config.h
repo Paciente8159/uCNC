@@ -114,7 +114,7 @@ extern "C"
 	 * Disabling settings safety will make the settins run in legacy more where they are simply reset to default on error without forcing the user to re-check them
 	 */
 
-		 #define DISABLE_SAFE_SETTINGS
+	//  #define DISABLE_SAFE_SETTINGS
 
 	/**
 	 * Uncomment to enable G92 storing on non volatile memory
@@ -128,7 +128,7 @@ extern "C"
 	 * This is useful if you don't have EEPROM/FLASH storage or the divide read/write maximum cycle count is low to prevent damage
 	 * This is also usefull if the sender provides all settings at startup/connection
 	 * */
-		//  #define RAM_ONLY_SETTINGS
+	//  #define RAM_ONLY_SETTINGS
 
 	/**
 	 * Override default configuration settings. Use _PER_AXIS parameters to
@@ -215,6 +215,14 @@ extern "C"
 // #define M7_SAME_AS_M8
 #endif
 
+
+/**
+ *
+ * Enables Laser mode
+ *
+ * **/
+#define ENABLE_LASER_PWM
+
 /**
  * Uncomment to enable laser PPI feature
  * Laser PPI requires the MCU to support ONESHOT timeout
@@ -244,7 +252,7 @@ extern "C"
  * Enables Embroidery capabilities
  * 
  */
- #define ENABLE_EMBROIDERY
+//  #define ENABLE_EMBROIDERY
 
 /**
  * Feed overrides increments and percentage ranges
@@ -360,7 +368,7 @@ extern "C"
 	/**
 	 * enable step counting on sync motion command (needed for some Gcode extensions like G33)
 	 * */
-	 #define ENABLE_RT_SYNC_MOTIONS
+	//  #define ENABLE_RT_SYNC_MOTIONS
 
 	/**
 	 * enable motion control and planner highjacking
