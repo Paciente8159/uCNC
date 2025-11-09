@@ -3298,19 +3298,43 @@ extern "C"
 #ifndef SERVO_TIMER
 #define SERVO_TIMER 1
 #endif
-#define SERVO_TIMER_TG (SERVO_TIMER & 0x01)
-#define SERVO_TIMER_IDX ((SERVO_TIMER >> 1) & 0x01)
+#if !(SERVO_TIMER & 0x02)
+#define SERVO_TIMER_TG 0
+#else
+#define SERVO_TIMER_TG 1
+#endif
+#if !(SERVO_TIMER & 0x01)
+#define SERVO_TIMER_IDX 0
+#else
+#define SERVO_TIMER_IDX 1
+#endif
 
 #ifndef ITP_TIMER
 #define ITP_TIMER 3
 #endif
-#define ITP_TIMER_TG (ITP_TIMER & 0x01)
-#define ITP_TIMER_IDX ((ITP_TIMER >> 1) & 0x01)
+#if !(ITP_TIMER & 0x02)
+#define ITP_TIMER_TG 0
+#else
+#define ITP_TIMER_TG 1
+#endif
+#if !(ITP_TIMER & 0x01)
+#define ITP_TIMER_IDX 0
+#else
+#define ITP_TIMER_IDX 1
+#endif
 
 #ifdef ONESHOT_TIMER
 #define MCU_HAS_ONESHOT_TIMER
-#define ONESHOT_TIMER_TG (ONESHOT_TIMER & 0x01)
-#define ONESHOT_TIMER_IDX ((ONESHOT_TIMER >> 1) & 0x01)
+#if !(ONESHOT_TIMER & 0x02)
+#define ONESHOT_TIMER_TG 0
+#else
+#define ONESHOT_TIMER_TG 1
+#endif
+#if !(ONESHOT_TIMER & 0x01)
+#define ONESHOT_TIMER_IDX 0
+#else
+#define ONESHOT_TIMER_IDX 1
+#endif
 #endif
 
 // SPI
@@ -3324,6 +3348,11 @@ extern "C"
 #endif
 #ifndef SPI_FREQ
 #define SPI_FREQ 1000000UL
+#endif
+#if (SPI_CLK_BIT == 14 || SPI_CLK_BIT == 25)
+#define SPI_INSTANCE HSPI
+#else
+#define SPI_INSTANCE VSPI
 #endif
 #endif
 
@@ -3339,11 +3368,16 @@ extern "C"
 #ifndef SPI2_FREQ
 #define SPI2_FREQ 1000000UL
 #endif
+#if (SPI2_CLK_BIT == 14 || SPI2_CLK_BIT == 25)
+#define SPI2_INSTANCE HSPI
+#else
+#define SPI2_INSTANCE VSPI
+#endif
 #endif
 
 // Helper macros
-#define __helper_ex__(left, mid, right) (left##mid##right)
-#define __helper__(left, mid, right) (__helper_ex__(left, mid, right))
+#define __helper_ex__(left, mid, right) left##mid##right
+#define __helper__(left, mid, right) __helper_ex__(left, mid, right)
 #ifndef __indirect__
 #define __indirect__ex__(X, Y) DIO##X##_##Y
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
@@ -3378,7 +3412,7 @@ extern "C"
 #undef IC74HC595_COUNT
 #endif
 #define IC74HC595_COUNT 4
-#define I2SREG __helper__(I2S, IC74HC595_I2S_PORT, )
+#define I2S_PORT IC74HC595_I2S_PORT
 
 	// custom pin operations for 74HS595
 	extern volatile uint32_t ic74hc595_i2s_pins;
@@ -3388,6 +3422,10 @@ extern "C"
 #define ic74hc595_clear_pin(pin) __atomic_fetch_and((uint32_t *)&ic74hc595_i2s_pins, ~(ic74hc595_pin_mask(pin)), __ATOMIC_RELAXED)
 #define ic74hc595_toggle_pin(pin) __atomic_fetch_xor((uint32_t *)&ic74hc595_i2s_pins, ic74hc595_pin_mask(pin), __ATOMIC_RELAXED)
 #define ic74hc595_get_pin(pin) (__atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED) & ic74hc595_pin_mask(pin))
+
+extern volatile uint32_t i2s_mode;
+#define I2S_MODE __atomic_load_n((uint32_t *)&i2s_mode, __ATOMIC_RELAXED)
+
 #endif
 
 #define mcu_config_output(X)                                                      \
@@ -3460,6 +3498,18 @@ extern "C"
 		pwm.timer_sel = __indirect__(X, TIMER);           \
 		ledc_channel_config(&pwm);                        \
 	}
+
+typedef struct signal_timer_
+{
+	uint32_t current_us;
+	volatile uint8_t us_step;
+	uint32_t itp_reload;
+	volatile bool step_alarm_en;
+	uint32_t pwm_reload;
+} signal_timer_t;
+
+extern signal_timer_t signal_timer;
+#define mcu_softpwm_freq_config(pin, freq) ({io_config_output(pin); signal_timer.pwm_reload = (uint32_t)(1000000/freq); })
 
 #define mcu_set_pwm(X, Y)                                                       \
 	{                                                                             \

@@ -200,7 +200,7 @@ void mcu_enqueue_alarm(rp2040_alarm_t *a, uint32_t timeout_us)
 
 #if SERVOS_MASK > 0
 
-static uint8_t mcu_servos[6];
+static uint32_t mcu_servos[6];
 static rp2040_alarm_t servo_alarm;
 #define servo_start_timeout(X) mcu_enqueue_alarm(&servo_alarm, (X))
 
@@ -410,6 +410,74 @@ void mcu_set_pwm(uint8_t pwm, uint8_t value)
 uint8_t mcu_get_pwm(uint8_t pwm)
 {
 	return 0;
+}
+#endif
+
+/**
+ * sets the pwm for a servo (50Hz with tON between 1~2ms)
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_set_servo
+void mcu_set_servo(uint8_t servo, uint8_t value)
+{
+	#if SERVOS_MASK > 0
+	mcu_servos[servo - SERVO_PINS_OFFSET] = (((2000UL * value) >> 8) + 500); // quick aproximation should be divided by 255 but it's a faste quick approach
+	#else
+	(void)servo;
+	(void)value;
+	#endif
+}
+#endif
+
+/**
+ * gets the pwm for a servo (50Hz with tON between 1~2ms)
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_get_servo
+uint8_t mcu_get_servo(uint8_t servo)
+{
+	#if SERVOS_MASK > 0
+	return (((mcu_servos[servo - SERVO_PINS_OFFSET] - 500) << 8) / 2000);
+	#else
+	(void)servo;
+	return 0;
+	#endif
+}
+#endif
+
+// ISR
+/**
+ * enables global interrupts on the MCU
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_enable_global_isr
+void mcu_enable_global_isr(void)
+{
+	// ets_intr_unlock();
+	rp2040_global_isr_enabled = true;
+}
+#endif
+
+/**
+ * disables global interrupts on the MCU
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_disable_global_isr
+void mcu_disable_global_isr(void)
+{
+	rp2040_global_isr_enabled = false;
+	// ets_intr_lock();
+}
+#endif
+
+/**
+ * gets global interrupts state on the MCU
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_get_global_isr
+bool mcu_get_global_isr(void)
+{
+	return rp2040_global_isr_enabled;
 }
 #endif
 
@@ -830,9 +898,9 @@ bool mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 			channel_config_set_dreq(&c, spi_get_dreq(spi_default, true));
 			dma_channel_configure(dma_tx, &c,
 														&spi_get_hw(SPI2_HW)->dr, // write address
-														out,										 // read address
-														len,										 // element count (each element is of size transfer_data_size)
-														false);									 // don't start yet
+														out,											// read address
+														len,											// element count (each element is of size transfer_data_size)
+														false);										// don't start yet
 
 			if (in)
 			{
@@ -846,10 +914,10 @@ bool mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 				channel_config_set_read_increment(&c, false);
 				channel_config_set_write_increment(&c, true);
 				dma_channel_configure(dma_rx, &c,
-															in,											 // write address
+															in,												// write address
 															&spi_get_hw(SPI2_HW)->dr, // read address
-															len,										 // element count (each element is of size transfer_data_size)
-															false);									 // don't start yet
+															len,											// element count (each element is of size transfer_data_size)
+															false);										// don't start yet
 
 				startmask |= (1u << dma_rx);
 			}

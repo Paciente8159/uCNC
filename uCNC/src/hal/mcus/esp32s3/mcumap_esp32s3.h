@@ -46,11 +46,11 @@ extern "C"
 */
 // defines the frequency of the mcu
 #ifndef F_CPU
-#define F_CPU 160000000L
+#define F_CPU 240000000L
 #endif
 // defines the maximum and minimum step rates
 #ifndef F_STEP_MAX
-#define F_STEP_MAX 200000UL
+#define F_STEP_MAX 125000UL
 #endif
 #ifndef F_STEP_MIN
 #define F_STEP_MIN 1
@@ -4480,19 +4480,43 @@ extern "C"
 #ifndef SERVO_TIMER
 #define SERVO_TIMER 1
 #endif
-#define SERVO_TIMER_TG (SERVO_TIMER & 0x01)
-#define SERVO_TIMER_IDX ((SERVO_TIMER >> 1) & 0x01)
+#if !(SERVO_TIMER & 0x02)
+#define SERVO_TIMER_TG 0
+#else
+#define SERVO_TIMER_TG 1
+#endif
+#if !(SERVO_TIMER & 0x01)
+#define SERVO_TIMER_IDX 0
+#else
+#define SERVO_TIMER_IDX 1
+#endif
 
 #ifndef ITP_TIMER
 #define ITP_TIMER 3
 #endif
-#define ITP_TIMER_TG (ITP_TIMER & 0x01)
-#define ITP_TIMER_IDX ((ITP_TIMER >> 1) & 0x01)
+#if !(ITP_TIMER & 0x02)
+#define ITP_TIMER_TG 0
+#else
+#define ITP_TIMER_TG 1
+#endif
+#if !(ITP_TIMER & 0x01)
+#define ITP_TIMER_IDX 0
+#else
+#define ITP_TIMER_IDX 1
+#endif
 
 #ifdef ONESHOT_TIMER
 #define MCU_HAS_ONESHOT_TIMER
-#define ONESHOT_TIMER_TG (ONESHOT_TIMER & 0x01)
-#define ONESHOT_TIMER_IDX ((ONESHOT_TIMER >> 1) & 0x01)
+#if !(ONESHOT_TIMER & 0x02)
+#define ONESHOT_TIMER_TG 0
+#else
+#define ONESHOT_TIMER_TG 1
+#endif
+#if !(ONESHOT_TIMER & 0x01)
+#define ONESHOT_TIMER_IDX 0
+#else
+#define ONESHOT_TIMER_IDX 1
+#endif
 #endif
 
 // SPI
@@ -4507,6 +4531,7 @@ extern "C"
 #ifndef SPI_FREQ
 #define SPI_FREQ 1000000UL
 #endif
+#define SPI_INSTANCE SPI
 #endif
 
 // SPI2
@@ -4521,11 +4546,12 @@ extern "C"
 #ifndef SPI2_FREQ
 #define SPI2_FREQ 1000000UL
 #endif
+#define SPI2_INSTANCE SPI
 #endif
 
 // Helper macros
-#define __helper_ex__(left, mid, right) (left##mid##right)
-#define __helper__(left, mid, right) (__helper_ex__(left, mid, right))
+#define __helper_ex__(left, mid, right) left##mid##right
+#define __helper__(left, mid, right) __helper_ex__(left, mid, right)
 #ifndef __indirect__
 #define __indirect__ex__(X, Y) DIO##X##_##Y
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
@@ -4560,7 +4586,10 @@ extern "C"
 #undef IC74HC595_COUNT
 #endif
 #define IC74HC595_COUNT 4
-#define I2SREG __helper__(I2S, IC74HC595_I2S_PORT, )
+#define I2S_PORT IC74HC595_I2S_PORT
+
+extern volatile uint32_t i2s_mode;
+#define I2S_MODE __atomic_load_n((uint32_t *)&i2s_mode, __ATOMIC_RELAXED)
 
 	// custom pin operations for 74HS595
 	extern volatile uint32_t ic74hc595_i2s_pins;
@@ -4575,16 +4604,14 @@ extern "C"
 	extern gpio_dev_t GPIO;
 
 #define mcu_config_output(X)                                       \
-	gpio_ll_iomux_in(&GPIO, __indirect__(X, BIT), SIG_GPIO_OUT_IDX); \
-	gpio_ll_iomux_out(&GPIO, __indirect__(X, BIT), 1, false);        \
-	gpio_ll_input_disable(&GPIO, __indirect__(X, BIT));              \
-	gpio_ll_output_enable(&GPIO, __indirect__(X, BIT))
+	gpio_ll_iomux_out(&GPIO, __indirect__(X, BIT), PIN_FUNC_GPIO, false);        \
+	gpio_ll_input_disable(&GPIO, (gpio_num_t)__indirect__(X, BIT));              \
+	gpio_ll_output_enable(&GPIO, (gpio_num_t)__indirect__(X, BIT))
 
 #define mcu_config_input(X)                                        \
-	gpio_ll_iomux_in(&GPIO, __indirect__(X, BIT), SIG_GPIO_OUT_IDX); \
-	gpio_ll_iomux_out(&GPIO, __indirect__(X, BIT), 1, false);        \
-	gpio_ll_output_disable(&GPIO, __indirect__(X, BIT));             \
-	gpio_ll_input_enable(&GPIO, __indirect__(X, BIT))
+	gpio_ll_iomux_out(&GPIO, __indirect__(X, BIT), PIN_FUNC_GPIO, false);        \
+	gpio_ll_output_disable(&GPIO, (gpio_num_t)__indirect__(X, BIT));             \
+	gpio_ll_input_enable(&GPIO, (gpio_num_t)__indirect__(X, BIT))
 
 #define mcu_config_analog(X)                                                      \
 	{                                                                               \
@@ -4594,8 +4621,8 @@ extern "C"
 	}
 
 #define mcu_config_pullup(X)                         \
-	gpio_ll_pulldown_dis(&GPIO, __indirect__(X, BIT)); \
-	gpio_ll_pullup_en(&GPIO, __indirect__(X, BIT))
+	gpio_ll_pulldown_dis(&GPIO, (gpio_num_t)__indirect__(X, BIT)); \
+	gpio_ll_pullup_en(&GPIO, (gpio_num_t)__indirect__(X, BIT))
 
 	extern void mcu_gpio_isr(void *);
 #define mcu_config_input_isr(X)                                                                              \
@@ -4605,8 +4632,8 @@ extern "C"
 	}
 
 // #define mcu_get_input(X) gpio_get_level((gpio_num_t)__indirect__(X, BIT))
-#define mcu_get_input(X) ((__indirect__(X, BIT) & 0x20) ? (GPIO.in1.val && (1UL << (__indirect__(X, BIT) & 0x1f))) : (GPIO.in && (1UL << (__indirect__(X, BIT) & 0x1f))))
-#define mcu_get_output(X) ((__indirect__(X, BIT) & 0x20) ? (GPIO.out1.val && (1UL << (__indirect__(X, BIT) & 0x1f))) : (GPIO.out && (1UL << (__indirect__(X, BIT) & 0x1f))))
+#define mcu_get_input(X) ((__indirect__(X, BIT) & 0x20) ? (GPIO.in1.val & (1UL << (__indirect__(X, BIT) & 0x1f))) : (GPIO.in & (1UL << (__indirect__(X, BIT) & 0x1f))))
+#define mcu_get_output(X) ((__indirect__(X, BIT) & 0x20) ? (GPIO.out1.val & (1UL << (__indirect__(X, BIT) & 0x1f))) : (GPIO.out & (1UL << (__indirect__(X, BIT) & 0x1f))))
 #define mcu_set_output(X)                                        \
 	if (__indirect__(X, BIT) & 0x20)                               \
 	{                                                              \
@@ -4661,6 +4688,18 @@ extern "C"
 	}
 #define mcu_get_pwm(X) ledc_get_duty(__indirect__(X, SPEEDMODE), __indirect__(X, LEDCCHANNEL))
 #define mcu_get_analog(X) (adc1_get_raw(__indirect__(X, ADC_CHANNEL)) >> (ADC_WIDTH_MAX - 2))
+
+typedef struct signal_timer_
+{
+	uint32_t current_us;
+	uint8_t us_step;
+	uint32_t itp_reload;
+	bool step_alarm_en;
+	uint32_t pwm_reload;
+} signal_timer_t;
+
+extern signal_timer_t signal_timer;
+#define mcu_softpwm_freq_config(pin, freq) ({io_config_output(pin); signal_timer.pwm_reload = (uint32_t)(1000000/freq); })
 
 	extern void esp32_delay_us(uint16_t delay);
 #define mcu_delay_us(X) esp32_delay_us(X)

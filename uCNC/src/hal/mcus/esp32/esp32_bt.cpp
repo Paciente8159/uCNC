@@ -18,8 +18,8 @@
 */
 
 #include "../../../../cnc_config.h"
-#if defined(ESP32) && defined(ENABLE_BLUETOOTH)
 #include <Arduino.h>
+#if CONFIG_IDF_TARGET_ESP32 && defined(ENABLE_BLUETOOTH)
 #include "esp_task_wdt.h"
 #include <stdint.h>
 #include <stdbool.h>
