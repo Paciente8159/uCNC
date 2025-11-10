@@ -83,3 +83,4 @@ windows/uCNCgui/obj/Debug/net6.0-windows/uCNCgui.GeneratedMSBuildEditorConfig.ed
 managed_components
 sdkconfig.*
 !sdkconfig.defaults
+*.vcd

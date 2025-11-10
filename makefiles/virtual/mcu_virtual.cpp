@@ -305,16 +305,16 @@ extern "C"
 			BOOL fConnected = FALSE;
 
 			hPipe = CreateNamedPipe(
-					lpszPipename,								// pipe name
-					PIPE_ACCESS_DUPLEX,					// read/write access
-					PIPE_TYPE_MESSAGE |					// message type pipe
-							PIPE_READMODE_MESSAGE | // message-read mode
-							PIPE_WAIT,							// blocking mode
-					PIPE_UNLIMITED_INSTANCES,		// max. instances
-					sizeof(VIRTUAL_MAP),				// output buffer size
-					sizeof(VIRTUAL_MAP),				// input buffer size
-					0,													// client time-out
-					NULL);											// no template file
+				lpszPipename,				// pipe name
+				PIPE_ACCESS_DUPLEX,			// read/write access
+				PIPE_TYPE_MESSAGE |			// message type pipe
+					PIPE_READMODE_MESSAGE | // message-read mode
+					PIPE_WAIT,				// blocking mode
+				PIPE_UNLIMITED_INSTANCES,	// max. instances
+				sizeof(VIRTUAL_MAP),		// output buffer size
+				sizeof(VIRTUAL_MAP),		// input buffer size
+				0,							// client time-out
+				NULL);						// no template file
 
 			if (hPipe == INVALID_HANDLE_VALUE)
 			{
@@ -339,11 +339,11 @@ extern "C"
 					memcpy(lpvMessage, (void *)&virtualmap, sizeof(VIRTUAL_MAP));
 
 					fSuccess = WriteFile(
-							hPipe,			// pipe handle
-							lpvMessage, // message
-							cbToWrite,	// message length
-							&cbWritten, // bytes written
-							NULL);			// not overlapped
+						hPipe,		// pipe handle
+						lpvMessage, // message
+						cbToWrite,	// message length
+						&cbWritten, // bytes written
+						NULL);		// not overlapped
 
 					if (!fSuccess)
 					{
@@ -354,11 +354,11 @@ extern "C"
 					// Read from the pipe.
 
 					fSuccess = ReadFile(
-							hPipe,			// pipe handle
-							lpvMessage, // buffer to receive reply
-							cbToWrite,	// size of buffer
-							&cbRead,		// number of bytes read
-							NULL);			// not overlapped
+						hPipe,		// pipe handle
+						lpvMessage, // buffer to receive reply
+						cbToWrite,	// size of buffer
+						&cbRead,	// number of bytes read
+						NULL);		// not overlapped
 
 					if (!fSuccess && GetLastError() != ERROR_MORE_DATA)
 						break;
@@ -611,7 +611,7 @@ extern "C"
 
 	static volatile uint32_t mcu_itp_timer_reload;
 	static volatile bool mcu_itp_timer_running;
-	static FORCEINLINE void mcu_gen_step(uint32_t steptime)
+	static FORCEINLINE void mcu_gen_step(void)
 	{
 		static bool step_reset = true;
 		static int32_t mcu_itp_timer_counter;
@@ -622,7 +622,7 @@ extern "C"
 			// stream mode tick
 			int32_t t = mcu_itp_timer_counter;
 			bool reset = step_reset;
-			t -= steptime;
+			t -= (int32_t)ceilf(1000000.0f / ITP_SAMPLE_RATE);
 			if (t <= 0)
 			{
 				if (!reset)
@@ -723,15 +723,15 @@ extern "C"
 	unsigned long perf_start;
 	double cyclesPerMicrosecond;
 	double cyclesPerMillisecond;
-	
+
 	FILE *stimuli;
 	uint64_t tickcount;
 
 #define def_printpin(X) \
-	if (stimuli)          \
+	if (stimuli)        \
 	fprintf(stimuli, "$var wire 1 %c " #X " $end\n", 33 + X)
 #define printpin(X) \
-	if (stimuli)      \
+	if (stimuli)    \
 	fprintf(stimuli, "%d%c\n", ((virtualmap.special_outputs & (1 << (X - 1))) ? 1 : 0), 33 + X)
 
 	volatile unsigned long g_cpu_freq = 0;
@@ -824,7 +824,7 @@ extern "C"
 		// LARGE_INTEGER perf_counter;
 		// QueryPerformanceCounter(&perf_counter);
 		// return (uint32_t)(perf_counter.QuadPart / cyclesPerMillisecond);
-		return (uint32_t)(tickcount/1000);
+		return (uint32_t)(tickcount / 1000);
 	}
 
 	/**
@@ -858,18 +858,18 @@ extern "C"
 				return;
 			}
 		} while (!__atomic_compare_exchange_n(&running, &test, true, false, __ATOMIC_RELAXED, __ATOMIC_RELAXED));
-		
 		static uint32_t prev, next_rtc = 1000;
 		float parcial = 0;
+		//		long t = stopCycleCounter();
+		//		printf("Elapsed %dus\n\r", (int)((double)t / cyclesPerMicrosecond));
 		float timestep = ceil((float)EMULATION_MS_TICK * ITP_SAMPLE_RATE * 0.001f);
 		for (int i = 0; i < (int)timestep; i++)
 		{
 			parcial += (1000000.0f / (float)ITP_SAMPLE_RATE);
-			uint32_t partial_int = (int)parcial;
-			tickcount += partial_int;
-			parcial -= partial_int;
+			tickcount += (int)parcial;
+			parcial -= (int)parcial;
 
-			mcu_gen_step(partial_int);
+			mcu_gen_step();
 
 			if (prev ^ virtualmap.special_outputs)
 			{
@@ -901,14 +901,13 @@ extern "C"
 				printpin(DIR5);
 #endif
 			}
-
-			if (tickcount >= next_rtc)
-			{
-				mcu_rtc_cb(mcu_millis());
-				next_rtc = (tickcount - (tickcount % 1000)) + 1000;
-			}
 		}
 
+		if (tickcount > next_rtc)
+		{
+			mcu_rtc_cb(mcu_millis());
+			next_rtc += 1000;
+		}
 		//		startCycleCounter();
 		__atomic_store_n(&running, false, __ATOMIC_RELAXED);
 	}
@@ -1168,20 +1167,20 @@ extern "C"
 		pthread_create(&thread_io, NULL, &ioserver, NULL);
 		mcu_enable_global_isr();
 		flash_fs = {
-				.drive = 'C',
-				.open = flash_fs_open,
-				.read = flash_fs_read,
-				.write = flash_fs_write,
-				.seek = flash_fs_seek,
-				.available = flash_fs_available,
-				.close = flash_fs_close,
-				.remove = flash_fs_remove,
-				.opendir = flash_fs_opendir,
-				.mkdir = flash_fs_mkdir,
-				.rmdir = flash_fs_rmdir,
-				.next_file = flash_fs_next_file,
-				.finfo = flash_fs_finfo,
-				.next = NULL};
+			.drive = 'C',
+			.open = flash_fs_open,
+			.read = flash_fs_read,
+			.write = flash_fs_write,
+			.seek = flash_fs_seek,
+			.available = flash_fs_available,
+			.close = flash_fs_close,
+			.remove = flash_fs_remove,
+			.opendir = flash_fs_opendir,
+			.mkdir = flash_fs_mkdir,
+			.rmdir = flash_fs_rmdir,
+			.next_file = flash_fs_next_file,
+			.finfo = flash_fs_finfo,
+			.next = NULL};
 		fs_mount(&flash_fs);
 	}
 
