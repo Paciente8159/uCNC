@@ -63,7 +63,7 @@ extern "C"
 		volatile buffer_index_t head;
 		volatile buffer_index_t tail;
 		buffer_index_t *flags;
-		void *data;
+		uint8_t *data;
 		const uint8_t size;
 		const uint8_t elem_size;
 	} ring_buffer_t;
