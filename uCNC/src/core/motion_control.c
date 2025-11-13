@@ -401,8 +401,9 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 
 #ifdef ABC_INDEP_FEED_CALC
 	if (line_dist != 0)
-	{
 #endif
+	{
+
 		// angle between motion lines
 		block_data->cos_theta = 0;
 		// calculates the linear distance traveled
@@ -428,9 +429,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 		}
 		max_feed *= inv_dist;
 		max_accel *= inv_dist;
-#ifdef ABC_INDEP_FEED_CALC
 	}
-#endif
 
 #if defined(ABC_INDEP_FEED_CALC) && (AXIS_COUNT > 3)
 	uint8_t slowest = 0;
@@ -453,7 +452,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 		{
 			line_dist = target[slowest] - prev_target[slowest];
 			inv_dist = fast_flt_inv(line_dist);
-		}	
+		}
 	}
 #endif
 
