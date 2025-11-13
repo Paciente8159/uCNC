@@ -756,7 +756,7 @@ void cnc_exec_rt_commands(void)
 	if (command)
 	{
 		// clear all but report. report is handled in cnc_io_dotasks
-		__ATOMIC__
+		ATOMIC_CODEBLOCK
 		{
 			cnc_state.rt_cmd = RT_CMD_CLEAR;
 		}
@@ -919,6 +919,7 @@ void cnc_exec_rt_commands(void)
 void cnc_check_fault_systems(void)
 {
 	uint8_t inputs = 0;
+	(void)inputs;
 #ifdef CONTROLS_MASK
 	inputs = io_get_controls();
 #endif

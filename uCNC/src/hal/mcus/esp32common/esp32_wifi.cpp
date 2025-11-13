@@ -714,7 +714,7 @@ extern "C"
 	uint8_t mcu_wifi_getc(void)
 	{
 		uint8_t c = 0;
-		BUFFER_DEQUEUE(wifi_rx, &c);
+		BUFFER_TRY_DEQUEUE(wifi_rx, &c);
 		return c;
 	}
 
@@ -730,11 +730,10 @@ extern "C"
 
 	void mcu_wifi_putc(uint8_t c)
 	{
-		while (BUFFER_FULL(wifi_tx))
+		while (!BUFFER_TRY_ENQUEUE(wifi_tx, &c))
 		{
 			mcu_wifi_flush();
 		}
-		BUFFER_ENQUEUE(wifi_tx, &c);
 	}
 
 	void mcu_wifi_flush(void)
@@ -846,7 +845,7 @@ extern "C"
 								STREAM_OVF(c);
 							}
 
-							BUFFER_ENQUEUE(wifi_rx, &c);
+							!BUFFER_TRY_ENQUEUE(wifi_rx, &c);
 						}
 #else
 						mcu_wifi_rx_cb((uint8_t)server_client.read());

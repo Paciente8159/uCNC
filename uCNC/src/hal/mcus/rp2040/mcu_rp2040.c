@@ -23,8 +23,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-static volatile bool rp2040_global_isr_enabled;
-
 extern void rp2040_uart_init(int baud);
 extern void rp2040_uart_process(void);
 
@@ -157,7 +155,7 @@ void mcu_enqueue_alarm(rp2040_alarm_t *a, uint32_t timeout_us)
 	a->timeout = (uint32_t)target;
 	a->next = NULL;
 
-	__ATOMIC__
+	ATOMIC_CODEBLOCK
 	{
 		rp2040_alarm_t *ptr = (rp2040_alarm_t *)mcu_alarms;
 		// is the only

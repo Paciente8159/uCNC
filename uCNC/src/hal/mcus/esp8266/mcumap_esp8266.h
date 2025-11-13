@@ -43,7 +43,7 @@ extern "C"
 #endif
 // defines the maximum and minimum step rates
 #ifndef F_STEP_MAX
-#define F_STEP_MAX 55000
+#define F_STEP_MAX 35000
 #endif
 #ifndef F_STEP_MIN
 #define F_STEP_MIN 1
@@ -66,19 +66,19 @@ extern "C"
 #define MCU_CYCLES_LOOP_OVERHEAD 3
 #endif
 
-#define mcu_delay_loop(X)                                                             \
-	do                                                                                \
-	{                                                                                 \
+#define mcu_delay_loop(X)                                                         \
+	do                                                                              \
+	{                                                                               \
 		register unsigned start, now, target = (((X) - 1) * MCU_CYCLES_PER_LOOP + 2); \
 		asm volatile("" ::: "memory");                                                \
 		asm volatile(                                                                 \
-			"rsr.ccount %0\n"		  /* 2 cycles: start = ccount */                  \
-			"1:  rsr.ccount %1\n"	  /* 2 cycles */                                  \
-			"  sub      %1, %1, %0\n" /* 1 cycle  : tmp = now-start */                \
-			"  bltu     %1, %2, 1b\n" /* 3 taken / 1 not taken */                     \
-			"  nop\n"                                                                 \
-			: "=&a"(start), "=&a"(now)                                                \
-			: "a"(target));                                                           \
+				"rsr.ccount %0\n"					/* 2 cycles: start = ccount */                  \
+				"1:  rsr.ccount %1\n"			/* 2 cycles */                                  \
+				"  sub      %1, %1, %0\n" /* 1 cycle  : tmp = now-start */                \
+				"  bltu     %1, %2, 1b\n" /* 3 taken / 1 not taken */                     \
+				"  nop\n"                                                                 \
+				: "=&a"(start), "=&a"(now)                                                \
+				: "a"(target));                                                           \
 	} while (0)
 
 #ifndef MCU_CALLBACK
@@ -1439,23 +1439,11 @@ extern "C"
 		return (mcu_get_input()) ? 1023 : 0;                     \
 	}
 
-	// ISR
-	extern volatile uint32_t esp8266_global_isr;
-#define mcu_enable_global_isr()
-#define mcu_disable_global_isr()
-#define mcu_get_global_isr() ({__asm__ __volatile__ ("rsr.ps %0" : "=r" (esp8266_global_isr)); ((esp8266_global_isr & 0xF) == 0); })
-	/*
-		// #define mcu_enable_global_isr()    \
-	// 	if (esp8266_global_isr != 15)    \
-	// 	{                                \
-	// 		xt_wsr_ps(esp8266_global_isr); \
-	// 		esp8266_global_isr = 15;       \
-	// 	}
-		// #define mcu_disable_global_isr() ({ esp8266_global_isr = xt_rsil(15); })
-		// #define mcu_get_global_isr() (esp8266_global_isr != 15)
-		*/
-	static __attribute__((always_inline, unused)) inline void __esp8266_atomic_out(uint32_t *state) { xt_wsr_ps(*state); }
-#define __ATOMIC__ for (uint32_t __restore_atomic__ __attribute__((__cleanup__(__esp8266_atomic_out))) = xt_rsil(15), __loop = 1; __loop; __loop = 0)
+// ISR
+#include <xtensa/corebits.h>
+#define mcu_enable_global_isr() xt_rsil(0)
+#define mcu_disable_global_isr() xt_rsil(15)
+#define mcu_get_global_isr() ({uint32_t ps; __asm__ __volatile__ ("rsr.ps %0" : "=r" (ps)); ((ps & PS_INTLEVEL_MASK) == 0); })
 
 #if IC74HC595_COUNT > 0
 

@@ -86,7 +86,7 @@ extern "C"
 	uint8_t mcu_uart_getc(void)
 	{
 		uint8_t c = 0;
-		BUFFER_DEQUEUE(uart_rx, &c);
+		BUFFER_TRY_DEQUEUE(uart_rx, &c);
 		return c;
 	}
 
@@ -102,11 +102,10 @@ extern "C"
 
 	void mcu_uart_putc(uint8_t c)
 	{
-		while (BUFFER_FULL(uart_tx))
+		while (!BUFFER_TRY_ENQUEUE(uart_tx, &c))
 		{
 			mcu_uart_flush();
 		}
-		BUFFER_ENQUEUE(uart_tx, &c);
 	}
 
 	void mcu_uart_flush(void)
@@ -132,11 +131,10 @@ extern "C"
 			uint8_t c = buff[i];
 			if (mcu_com_rx_cb(c))
 			{
-				if (BUFFER_FULL(uart_rx))
+				if (!BUFFER_TRY_ENQUEUE(uart_rx, &c))
 				{
 					STREAM_OVF(c);
 				}
-				BUFFER_ENQUEUE(uart_rx, &c);
 			}
 		}
 	}
@@ -152,7 +150,7 @@ extern "C"
 	uint8_t mcu_uart2_getc(void)
 	{
 		uint8_t c = 0;
-		BUFFER_DEQUEUE(uart2_rx, &c);
+		BUFFER_TRY_DEQUEUE(uart2_rx, &c);
 		return c;
 	}
 
@@ -168,11 +166,10 @@ extern "C"
 
 	void mcu_uart2_putc(uint8_t c)
 	{
-		while (BUFFER_FULL(uart2_tx))
+		while (!BUFFER_TRY_ENQUEUE(uart2_tx, &c))
 		{
 			mcu_uart2_flush();
 		}
-		BUFFER_ENQUEUE(uart2_tx, &c);
 	}
 
 	void mcu_uart2_flush(void)
@@ -201,13 +198,10 @@ extern "C"
 			}
 			if (mcu_com_rx_cb(c))
 			{
-				if (BUFFER_FULL(uart2_rx))
+				if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
 				{
-					grbl_stream_overflow(c);
-					return;
-					//					STREAM_OVF(c);
-				}
-				BUFFER_ENQUEUE(uart2_rx, &c);
+					STREAM_OVF(c);
+				};
 			}
 		}
 	}

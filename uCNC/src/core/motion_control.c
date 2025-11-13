@@ -409,6 +409,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 		// denormalize max feed rate for each axis
 		float denorm_param = fast_flt_div(g_settings.max_feed_rate[i], normal_vect);
 		max_feed = MIN(max_feed, denorm_param);
+		max_feed = MIN(max_feed, F_STEP_MAX);
 		denorm_param = fast_flt_div(g_settings.acceleration[i], normal_vect);
 		max_accel = MIN(max_accel, denorm_param);
 	}

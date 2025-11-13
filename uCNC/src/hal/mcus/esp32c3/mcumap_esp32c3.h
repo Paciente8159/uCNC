@@ -71,8 +71,10 @@ extern "C"
 #define rom_memcpy memcpy
 #define rom_read_byte *
 
-#define __ATOMIC__
-#define __ATOMIC_FORCEON__
+#define ATOMIC_CODEBLOCK
+#define ATOMIC_CODEBLOCK_NR
+#define mcu_disable_global_isr ets_intr_lock
+#define mcu_enable_global_isr ets_intr_unlock
 
 // needed by software delays
 #ifndef MCU_CYCLES_PER_LOOP
@@ -3518,11 +3520,11 @@ extern volatile uint32_t i2s_mode;
 #define __FREERTOS_MUTEX_TAKE__(mutex, timeout) ((xPortInIsrContext()) ? (xSemaphoreTakeFromISR(mutex, NULL)) : (xSemaphoreTake(mutex, timeout)))
 #define __FREERTOS_MUTEX_GIVE__(mutex) ((xPortInIsrContext()) ? (xSemaphoreGiveFromISR(mutex, NULL)) : (xSemaphoreGive(mutex)))
 
-#define MUTEX_CLEANUP(name)                             \
-	static void name##_mutex_cleanup(uint8_t *m)        \
-	{                                                   \
-		if (*m /*can unlock*/)                          \
-		{                                               \
+#define MUTEX_CLEANUP(name)                       \
+	static void name##_mutex_cleanup(uint8_t *m)    \
+	{                                               \
+		if (*m && name##_mutex_lock != NULL)          \
+		{                                             \
 			__FREERTOS_MUTEX_GIVE__(name##_mutex_lock); \
 		}                                               \
 	}
@@ -3530,25 +3532,43 @@ extern volatile uint32_t i2s_mode;
 	static SemaphoreHandle_t name##_mutex_lock = NULL; \
 	MUTEX_CLEANUP(name)
 
-#define MUTEX_INIT(name)                             \
-	if (name##_mutex_lock == NULL)                   \
-	{                                                \
-		name##_mutex_lock = xSemaphoreCreateMutex(); \
-	}                                                \
-	uint8_t __attribute__((__cleanup__(name##_mutex_cleanup))) name##_mutex_temp = 0
-#define MUTEX_RELEASE(name)                         \
-	if (name##_mutex_temp)                          \
+#define MUTEX_INIT(name)                          \
+	if (name##_mutex_lock == NULL)                  \
 	{                                               \
+		name##_mutex_lock = xSemaphoreCreateBinary(); \
+		xSemaphoreGive(name##_mutex_lock);            \
+	}                                               \
+	uint8_t __attribute__((__cleanup__(name##_mutex_cleanup))) name##_mutex_temp = 0
+#define MUTEX_RELEASE(name)                     \
+	if (name##_mutex_temp)                        \
+	{                                             \
 		name##_mutex_temp = 0;                      \
 		__FREERTOS_MUTEX_GIVE__(name##_mutex_lock); \
 	}
 #define MUTEX_TAKE(name)                                                                               \
 	name##_mutex_temp = (__FREERTOS_MUTEX_TAKE__(name##_mutex_lock, portMAX_DELAY) == pdTRUE) ? 1 : 0; \
 	if (name##_mutex_temp)
-#define MUTEX_WAIT(name, timeout_ms)                                                                                       \
-	name##_mutex_temp = (__FREERTOS_MUTEX_TAKE__(name##_mutex_lock, (timeout_us / portTICK_PERIOD_MS)) == pdTRUE) ? 1 : 0; \
+#define MUTEX_WAIT(name, timeout_ms)                                                                                     \
+	name##_mutex_temp = (__FREERTOS_MUTEX_TAKE__(name##_mutex_lock, (timeout_ms / portTICK_PERIOD_MS)) == pdTRUE) ? 1 : 0; \
 	if (name##_mutex_temp)
 
+#define ATOMIC_LOAD_N(src, mode) __atomic_load_n((src), mode)
+#define ATOMIC_STORE_N(dst, val, mode) __atomic_store_n((dst), (val), mode)
+#define ATOMIC_COMPARE_EXCHANGE_N(dst, cmp, des, sucmode, failmode) __atomic_compare_exchange_n((dst), (cmp), (des), false, sucmode, failmode)
+#define ATOMIC_FETCH_OR(dst, val, mode) __atomic_fetch_or((dst), (val), mode)
+#define ATOMIC_FETCH_AND(dst, val, mode) __atomic_fetch_and((dst), (val), mode)
+#define ATOMIC_FETCH_ADD(dst, val, mode) __atomic_fetch_add((dst), (val), mode)
+#define ATOMIC_FETCH_SUB(dst, val, mode) __atomic_fetch_sub((dst), (val), mode)
+#define ATOMIC_FETCH_XOR(dst, val, mode) __atomic_fetch_xor((dst), (val), mode)
+#define ATOMIC_SPIN()      \
+	if (xPortInIsrContext()) \
+	{                        \
+		portYIELD_FROM_ISR();  \
+	}                        \
+	else                     \
+	{                        \
+		portYIELD();           \
+	}
 #ifdef __cplusplus
 }
 #endif
