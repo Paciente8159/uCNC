@@ -125,6 +125,12 @@ extern "C"
 // #define DISABLE_ROTATIONAL_AXIS_LIMITS_AFTER_HOMING
 
 /**
+ * Decouple rotational axis from speed profile.
+ * If commented ABC will be treated like individual linear axis for speed profile calculations.
+ */
+// #define ABC_INDEP_FEED_CALC
+
+/**
  * Rotational axis - force relative distances
  * Enable this option if you want the rotation axis to work in relative distance mode only
  * This will mean that no matter if the machine is working in absolute (G90) or relative (G91) coordinates
