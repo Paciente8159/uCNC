@@ -4707,6 +4707,11 @@ extern signal_timer_t signal_timer;
 #define mcu_disable_global_isr()
 #define mcu_enable_global_isr()
 
+#define mcu_in_isr_context() xPortInIsrContext()
+#define cnc_yield()          \
+	if (!xPortInIsrContext()) \
+	vPortYield()
+	
 #define __FREERTOS_MUTEX_TAKE__(mutex, timeout) ((xPortInIsrContext()) ? (xSemaphoreTakeFromISR(mutex, NULL)) : (xSemaphoreTake(mutex, timeout)))
 #define __FREERTOS_MUTEX_GIVE__(mutex) ((xPortInIsrContext()) ? (xSemaphoreGiveFromISR(mutex, NULL)) : (xSemaphoreGive(mutex)))
 
@@ -4735,12 +4740,8 @@ extern signal_timer_t signal_timer;
 		name##_mutex_temp = 0;                      \
 		__FREERTOS_MUTEX_GIVE__(name##_mutex_lock); \
 	}
-#define MUTEX_TAKE(name)                                                                             \
-	name##_mutex_temp = (__FREERTOS_MUTEX_TAKE__(name##_mutex_lock, portMAX_DELAY) == pdTRUE) ? 1 : 0; \
-	if (name##_mutex_temp)
-#define MUTEX_WAIT(name, timeout_ms)                                                                                     \
-	name##_mutex_temp = (__FREERTOS_MUTEX_TAKE__(name##_mutex_lock, (timeout_ms / portTICK_PERIOD_MS)) == pdTRUE) ? 1 : 0; \
-	if (name##_mutex_temp)
+#define MUTEX_TAKE(name) (__FREERTOS_MUTEX_TAKE__(name##_mutex_lock, portMAX_DELAY) == pdTRUE)
+#define MUTEX_WAIT(name, timeout_ms) (__FREERTOS_MUTEX_TAKE__(name##_mutex_lock, (timeout_ms / portTICK_PERIOD_MS)) == pdTRUE)\
 
 #define ATOMIC_LOAD_N(src, mode) __atomic_load_n((src), mode)
 #define ATOMIC_STORE_N(dst, val, mode) __atomic_store_n((dst), (val), mode)

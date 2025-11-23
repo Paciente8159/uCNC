@@ -79,7 +79,7 @@ ISR(RTC_COMPB_vect, ISR_NOBLOCK)
 
 // gets the mcu running time in ms
 static volatile uint32_t mcu_runtime_ms;
-ISR(RTC_COMPA_vect, ISR_BLOCK)
+ISR(RTC_COMPA_vect, ISR_NOBLOCK)
 {
 #if SERVOS_MASK > 0
 	static uint8_t ms_servo_counter = 0;
@@ -152,6 +152,7 @@ ISR(RTC_COMPA_vect, ISR_BLOCK)
 	uint32_t millis = mcu_runtime_ms;
 	millis++;
 	mcu_runtime_ms = millis;
+	mcu_isr_context_enter();
 	mcu_rtc_cb(millis);
 #else
 	mcu_runtime_ms++;
@@ -160,6 +161,9 @@ ISR(RTC_COMPA_vect, ISR_BLOCK)
 
 ISR(ITP_COMPA_vect, ISR_BLOCK)
 {
+#ifdef ENABLE_RT_SYNC_MOTIONS
+	mcu_isr_context_enter();
+#endif
 	mcu_step_cb();
 }
 
@@ -183,6 +187,7 @@ ISR(INT0_vect, ISR_BLOCK) // input pin on change service routine
 	mcu_probe_changed_cb();
 #endif
 #if (PCINTA_DIN_IO_MASK & 1)
+	mcu_isr_context_enter();
 	mcu_inputs_changed_cb();
 #endif
 }
@@ -200,6 +205,7 @@ ISR(INT1_vect, ISR_BLOCK) // input pin on change service routine
 	mcu_probe_changed_cb();
 #endif
 #if (PCINTA_DIN_IO_MASK & 4)
+	mcu_isr_context_enter();
 	mcu_inputs_changed_cb();
 #endif
 }
@@ -217,6 +223,7 @@ ISR(INT2_vect, ISR_BLOCK) // input pin on change service routine
 	mcu_probe_changed_cb();
 #endif
 #if (PCINTA_DIN_IO_MASK & 16)
+	mcu_isr_context_enter();
 	mcu_inputs_changed_cb();
 #endif
 }
@@ -234,6 +241,7 @@ ISR(INT3_vect, ISR_BLOCK) // input pin on change service routine
 	mcu_probe_changed_cb();
 #endif
 #if (PCINTA_DIN_IO_MASK & 64)
+	mcu_isr_context_enter();
 	mcu_inputs_changed_cb();
 #endif
 }
@@ -251,6 +259,7 @@ ISR(INT4_vect, ISR_BLOCK) // input pin on change service routine
 	mcu_probe_changed_cb();
 #endif
 #if (PCINTB_DIN_IO_MASK & 1)
+	mcu_isr_context_enter();
 	mcu_inputs_changed_cb();
 #endif
 }
@@ -268,6 +277,7 @@ ISR(INT5_vect, ISR_BLOCK) // input pin on change service routine
 	mcu_probe_changed_cb();
 #endif
 #if (PCINTB_DIN_IO_MASK & 4)
+	mcu_isr_context_enter();
 	mcu_inputs_changed_cb();
 #endif
 }
@@ -285,6 +295,7 @@ ISR(INT6_vect, ISR_BLOCK) // input pin on change service routine
 	mcu_probe_changed_cb();
 #endif
 #if (PCINTB_DIN_IO_MASK & 16)
+	mcu_isr_context_enter();
 	mcu_inputs_changed_cb();
 #endif
 }
@@ -302,6 +313,7 @@ ISR(INT7_vect, ISR_BLOCK) // input pin on change service routine
 	mcu_probe_changed_cb();
 #endif
 #if (PCINTB_DIN_IO_MASK & 64)
+	mcu_isr_context_enter();
 	mcu_inputs_changed_cb();
 #endif
 }
@@ -322,6 +334,7 @@ ISR(PCINT0_vect, ISR_BLOCK) // input pin on change service routine
 #endif
 
 #if (PCINT0_DIN_IO_MASK != 0)
+	mcu_isr_context_enter();
 	mcu_inputs_changed_cb();
 #endif
 }
@@ -344,6 +357,7 @@ ISR(PCINT1_vect, ISR_BLOCK) // input pin on change service routine
 #endif
 
 #if (PCINT1_DIN_IO_MASK != 0)
+	mcu_isr_context_enter();
 	mcu_inputs_changed_cb();
 #endif
 }
@@ -358,17 +372,15 @@ ISR(PCINT2_vect, ISR_BLOCK) // input pin on change service routine
 #endif
 #if (PCINT2_CONTROLS_MASK != 0)
 	mcu_controls_changed_cb();
-
 #endif
 
 #if (PROBE_ISR2 != 0)
 	mcu_probe_changed_cb();
-
 #endif
 
 #if (PCINT2_DIN_IO_MASK != 0)
+	mcu_isr_context_enter();
 	mcu_inputs_changed_cb();
-
 #endif
 }
 #endif
@@ -905,7 +917,7 @@ void mcu_dotasks()
 
 // This was copied from grbl
 #ifndef EEPE
-#define EEPE EEWE		//!< EEPROM program/write enable.
+#define EEPE EEWE	//!< EEPROM program/write enable.
 #define EEMPE EEMWE //!< EEPROM master program/write enable.
 #endif
 
@@ -923,9 +935,9 @@ uint8_t mcu_eeprom_getc(uint16_t address)
 	{
 
 	} while (EECR & (1 << EEPE)); // Wait for completion of previous write.
-	EEAR = address;			// Set EEPROM address register.
+	EEAR = address;		// Set EEPROM address register.
 	EECR = (1 << EERE); // Start EEPROM read operation.
-	return EEDR;				// Return the byte read from EEPROM.
+	return EEDR;		// Return the byte read from EEPROM.
 }
 
 void mcu_eeprom_putc(uint16_t address, uint8_t value)
@@ -943,9 +955,9 @@ void mcu_eeprom_putc(uint16_t address, uint8_t value)
 	{
 	} while (SPMCSR & (1 << SELFPRGEN)); // Wait for completion of SPM.
 
-	EEAR = address;								 // Set EEPROM address register.
-	EECR = (1 << EERE);						 // Start EEPROM read operation.
-	old_value = EEDR;							 // Get old EEPROM value.
+	EEAR = address;				   // Set EEPROM address register.
+	EECR = (1 << EERE);			   // Start EEPROM read operation.
+	old_value = EEDR;			   // Get old EEPROM value.
 	diff_mask = old_value ^ value; // Get bit differences.
 	// Check if any bits are changed to '1' in the new value.
 	if (diff_mask & value)
@@ -955,15 +967,15 @@ void mcu_eeprom_putc(uint16_t address, uint8_t value)
 		if (value != 0xff)
 		{
 			// Now we know that some bits need to be programmed to '0' also.
-			EEDR = value;																				 // Set EEPROM data register.
+			EEDR = value;										 // Set EEPROM data register.
 			EECR = ((1 << EEMPE) | (0 << EEPM1) | (0 << EEPM0)); // Erase+Write mode.
-			EECR |= (1 << EEPE);																 // Start Erase+Write operation.
+			EECR |= (1 << EEPE);								 // Start Erase+Write operation.
 		}
 		else
 		{
 			// Now we know that all bits should be erased.
 			EECR = ((1 << EEMPE) | (1 << EEPM0)); // Erase-only mode.
-			EECR |= (1 << EEPE);									// Start Erase-only operation.
+			EECR |= (1 << EEPE);				  // Start Erase-only operation.
 		}
 	}
 	else
@@ -973,9 +985,9 @@ void mcu_eeprom_putc(uint16_t address, uint8_t value)
 		if (diff_mask)
 		{
 			// Now we know that _some_ bits need to the programmed to '0'.
-			EEDR = value;													// Set EEPROM data register.
+			EEDR = value;						  // Set EEPROM data register.
 			EECR = ((1 << EEMPE) | (1 << EEPM1)); // Write-only mode.
-			EECR |= (1 << EEPE);									// Start Write-only operation.
+			EECR |= (1 << EEPE);				  // Start Write-only operation.
 		}
 	}
 
@@ -1371,6 +1383,7 @@ ISR(ONESHOT_COMPA_vect, ISR_NOBLOCK)
 	ONESHOT_TIMSK = 0;
 	if (mcu_timeout_cb)
 	{
+		mcu_isr_context_enter();
 		mcu_timeout_cb();
 	}
 }

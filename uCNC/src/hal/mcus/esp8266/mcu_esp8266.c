@@ -122,7 +122,7 @@ MCU_CALLBACK void spi_shift_register_io_pins(void)
 {
 	MUTEX_INIT(shifter_running);
 
-	MUTEX_TAKE(shifter_running)
+	if(MUTEX_TAKE(shifter_running))
 	{
 #if (IC74HC165_COUNT > 0)
 		mcu_set_output_gpio(IC74HC165_LOAD);
@@ -345,6 +345,7 @@ IRAM_ATTR void mcu_controls_isr(void)
 
 IRAM_ATTR void mcu_itp_isr(void)
 {
+	mcu_isr_context_enter();
 	if (esp8266_step_mode == ITP_STEP_MODE_REALTIME)
 	{
 		signal_timer.us_step = 1000000 / (TIMER_IO_SAMPLE_RATE >> 2);
@@ -467,6 +468,7 @@ void itp_buffer_dotasks(uint16_t limit)
 IRAM_ATTR void mcu_rtc_isr(void)
 {
 	mcu_runtime_ms++;
+	mcu_isr_context_enter();
 	mcu_rtc_cb(mcu_runtime_ms);
 	itp_buffer_dotasks(OUT_IO_BUFFER_MINIMAL); // process at most 2ms of motion
 	uint32_t stamp = esp_get_cycle_count() + (ESP8266_CLOCK / 1000);

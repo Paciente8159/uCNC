@@ -29,6 +29,8 @@ extern "C"
 #include <string.h>
 #include <math.h>
 
+#define MEM_BARRIER ({ asm volatile("" ::: "memory"); })
+
 #ifndef FORCEINLINE
 #define FORCEINLINE __attribute__((always_inline)) inline
 #endif
@@ -88,19 +90,19 @@ extern "C"
 #endif
 // fetch and modify operations
 #ifndef ATOMIC_FETCH_XOR
-#define ATOMIC_FETCH_XOR(dst, val, mode) ({__typeof__(*(dst)) __tmp; ATOMIC_CODEBLOCK{__tmp = *(dst); *(dst) = __tmp ^ (val);} __tmp; })
+#define ATOMIC_FETCH_XOR(dst, val, mode) ({__typeof__(*(dst)) __tmp; ATOMIC_CODEBLOCK{__tmp = *(dst); MEM_BARRIER; *(dst) = __tmp ^ (val);} __tmp; })
 #endif
 #ifndef ATOMIC_FETCH_ADD
-#define ATOMIC_FETCH_ADD(dst, val, mode) ({__typeof__(*(dst)) __tmp; ATOMIC_CODEBLOCK{__tmp = *(dst); *(dst) = __tmp + (val);} __tmp; })
+#define ATOMIC_FETCH_ADD(dst, val, mode) ({__typeof__(*(dst)) __tmp; ATOMIC_CODEBLOCK{__tmp = *(dst); MEM_BARRIER; *(dst) = __tmp + (val);} __tmp; })
 #endif
 #ifndef ATOMIC_FETCH_SUB
-#define ATOMIC_FETCH_SUB(dst, val, mode) ({__typeof__(*(dst)) __tmp; ATOMIC_CODEBLOCK{__tmp = *(dst); *(dst) = __tmp - (val);} __tmp; })
+#define ATOMIC_FETCH_SUB(dst, val, mode) ({__typeof__(*(dst)) __tmp; ATOMIC_CODEBLOCK{__tmp = *(dst); MEM_BARRIER; *(dst) = __tmp - (val);} __tmp; })
 #endif
 #ifndef ATOMIC_FETCH_AND
-#define ATOMIC_FETCH_AND(dst, val, mode) ({__typeof__(*(dst)) __tmp; ATOMIC_CODEBLOCK{__tmp = *(dst); *(dst) = __tmp & (val);} __tmp; })
+#define ATOMIC_FETCH_AND(dst, val, mode) ({__typeof__(*(dst)) __tmp; ATOMIC_CODEBLOCK{__tmp = *(dst); MEM_BARRIER; *(dst) = __tmp & (val);} __tmp; })
 #endif
 #ifndef ATOMIC_FETCH_OR
-#define ATOMIC_FETCH_OR(dst, val, mode) ({__typeof__(*(dst)) __tmp; ATOMIC_CODEBLOCK{__tmp = *(dst); *(dst) = __tmp | (val);} __tmp; })
+#define ATOMIC_FETCH_OR(dst, val, mode) ({__typeof__(*(dst)) __tmp; ATOMIC_CODEBLOCK{__tmp = *(dst); MEM_BARRIER; *(dst) = __tmp | (val);} __tmp; })
 #endif
 #else
 #warning "ATOMIC macros only support type buffer_index_t"
@@ -118,19 +120,19 @@ extern "C"
 #endif
 // fetch and modify operations
 #ifndef ATOMIC_FETCH_XOR
-#define ATOMIC_FETCH_XOR(dst, val, mode) ({buffer_index_t __tmp; ATOMIC_CODEBLOCK{__tmp = *(dst); *(dst) = __tmp ^ (val);} __tmp; })
+#define ATOMIC_FETCH_XOR(dst, val, mode) ({buffer_index_t __tmp; ATOMIC_CODEBLOCK{__tmp = *(dst); MEM_BARRIER; *(dst) = __tmp ^ (val);} __tmp; })
 #endif
 #ifndef ATOMIC_FETCH_ADD
-#define ATOMIC_FETCH_ADD(dst, val, mode) ({buffer_index_t __tmp; ATOMIC_CODEBLOCK{__tmp = *(dst); *(dst) = __tmp + (val);} __tmp; })
+#define ATOMIC_FETCH_ADD(dst, val, mode) ({buffer_index_t __tmp; ATOMIC_CODEBLOCK{__tmp = *(dst); MEM_BARRIER; *(dst) = __tmp + (val);} __tmp; })
 #endif
 #ifndef ATOMIC_FETCH_SUB
-#define ATOMIC_FETCH_SUB(dst, val, mode) ({buffer_index_t __tmp; ATOMIC_CODEBLOCK{__tmp = *(dst); *(dst) = __tmp - (val);} __tmp; })
+#define ATOMIC_FETCH_SUB(dst, val, mode) ({buffer_index_t __tmp; ATOMIC_CODEBLOCK{__tmp = *(dst); MEM_BARRIER; *(dst) = __tmp - (val);} __tmp; })
 #endif
 #ifndef ATOMIC_FETCH_AND
-#define ATOMIC_FETCH_AND(dst, val, mode) ({buffer_index_t __tmp; ATOMIC_CODEBLOCK{__tmp = *(dst); *(dst) = __tmp & (val);} __tmp; })
+#define ATOMIC_FETCH_AND(dst, val, mode) ({buffer_index_t __tmp; ATOMIC_CODEBLOCK{__tmp = *(dst); MEM_BARRIER; *(dst) = __tmp & (val);} __tmp; })
 #endif
 #ifndef ATOMIC_FETCH_OR
-#define ATOMIC_FETCH_OR(dst, val, mode) ({buffer_index_t __tmp; ATOMIC_CODEBLOCK{__tmp = *(dst); *(dst) = __tmp | (val);} __tmp; })
+#define ATOMIC_FETCH_OR(dst, val, mode) ({buffer_index_t __tmp; ATOMIC_CODEBLOCK{__tmp = *(dst); MEM_BARRIER; *(dst) = __tmp | (val);} __tmp; })
 #endif
 #endif
 
@@ -142,46 +144,44 @@ extern "C"
 #define BUFFER_GUARD
 
 #ifndef DECL_MUTEX
-#define MUTEX_CLEANUP(name)                    \
-	static void name##_mutex_cleanup(uint8_t *m) \
+#define MUTEX_UNDEF -1
+#define MUTEX_LOCKED 1
+#define MUTEX_FREE 0
+
+#define MUTEX_CLEANUP(name)                      \
+	static void name##_mutex_cleanup(int8_t *m) \
 	{                                            \
-		if (!*m /*can unlock*/)                    \
-		{                                          \
-			name = 0;                                \
-		}                                          \
+		if (*m == MUTEX_FREE /*can unlock*/) \
+		{                                        \
+			name = MUTEX_UNDEF;                  \
+		}                                        \
 	}
-#define DECL_MUTEX(name)        \
-	static volatile uint8_t name; \
+#define DECL_MUTEX(name)          \
+	static volatile int8_t name = MUTEX_FREE; \
 	MUTEX_CLEANUP(name)
-#define MUTEX_INIT(name) uint8_t __attribute__((__cleanup__(name##_mutex_cleanup))) name##_mutex_temp = 0
-#define MUTEX_RELEASE(name)                \
-	if (!name##_mutex_temp /*has the lock*/) \
-	name = 0
-#define MUTEX_TAKE(name)      \
-	ATOMIC_CODEBLOCK                  \
-	{                           \
-		name##_mutex_temp = name; \
-		if (!name##_mutex_temp)   \
-		{                         \
-			name = 1;               \
-		}                         \
-	}                           \
-	if (!name##_mutex_temp /*the lock was aquired*/)
+#define MUTEX_INIT(name) int8_t __attribute__((__cleanup__(name##_mutex_cleanup))) name##_mutex_temp = MUTEX_UNDEF
+#define MUTEX_RELEASE(name)                                   \
+	if (name##_mutex_temp == MUTEX_FREE /*has the lock*/) \
+	{                                                         \
+		name = MUTEX_UNDEF;                                   \
+		name##_mutex_temp = MUTEX_UNDEF;                      \
+	}
+	static FORCEINLINE bool safe_mutex_lock(volatile int8_t *lock, int8_t *cleanup)
+	{
+		*cleanup = MUTEX_FREE;
+		return ATOMIC_COMPARE_EXCHANGE_N(lock, cleanup, MUTEX_LOCKED, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE);
+	}
+#define MUTEX_TAKE(name) safe_mutex_lock(&name, &name##_mutex_temp)
 
 #define MUTEX_WAIT(name, timeout_ms) \
-	__TIMEOUT_MS__(timeout_us)         \
-	{                                  \
-		ATOMIC_CODEBLOCK                       \
-		{                                \
-			name##_mutex_temp = name;      \
-			if (!name##_mutex_temp)        \
-			{                              \
-				name = 1;                    \
-				break;                       \
-			}                              \
-		}                                \
-	}                                  \
-	if (!name##_mutex_temp && timeout_us != 0 /*the lock was aquired in time*/)
+	__TIMEOUT_MS__(timeout_us)       \
+	{                                \
+		if (MUTEX_TAKE(name))        \
+		{                            \
+			break;                   \
+		}                            \
+	}                                \
+	if (name##_mutex_temp == MUTEX_FREE && timeout_us != 0 /*the lock was aquired in time*/)
 #endif
 
 #ifdef __cplusplus
