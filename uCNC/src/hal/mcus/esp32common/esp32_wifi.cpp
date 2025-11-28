@@ -17,7 +17,7 @@
 */
 
 #include "../../../../cnc_config.h"
-#if defined(ESP32) && defined(ENABLE_WIFI)
+#if (defined(ESP32) || defined(ESP32S3) || defined(ESP32C3)) && defined(ENABLE_WIFI)
 #include <Arduino.h>
 #include <WiFi.h>
 #include <WebServer.h>

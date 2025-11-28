@@ -6,6 +6,17 @@
 
 # Changelog
 
+## [1.13.1] - 28-11-2025
+
+### Added
+
+- added ABC axis speed profile decoupling option to fix incorrect speed profiles with rotational axis via `ABC_INDEP_FEED_CALC` (#892)
+
+### Fixed
+
+- fixed ESP32 PIO configuration that lead to several WiFi issues (#)
+- fixed some redefinition warings while compiling code for ESP32(#896)
+
 ## [1.13.0] - 07-11-2025
 
 [@reinforce](https://github.com/reinforce)	- fix compilation errors on RP2040 and 2350 (#894) and fixed file name typo on ESP32 (#889)
@@ -1961,6 +1972,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.13.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.13.1
 [1.13.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.13.0
 [1.13.rc]: https://github.com/Paciente8159/uCNC/releases/tag/v1.13.rc
 [1.12.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.12.4
