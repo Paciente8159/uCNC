@@ -25,27 +25,45 @@ extern "C"
 #endif
 
 #ifdef ESP32
-extern volatile uint32_t i2s_mode;
+	extern volatile uint32_t i2s_mode;
 #define I2S_MODE __atomic_load_n((uint32_t *)&i2s_mode, __ATOMIC_RELAXED)
 
-void __attribute__((weak)) mcu_uart_init(void){}
-void __attribute__((weak)) mcu_uart_start(void){}
-void __attribute__((weak)) mcu_uart_dotasks(void){}
-void __attribute__((weak)) mcu_uart2_init(void){}
-void __attribute__((weak)) mcu_uart2_start(void){}
-void __attribute__((weak)) mcu_uart2_dotasks(void){}
-void __attribute__((weak)) mcu_eeprom_init(int size){(void)size;}
-void __attribute__((weak)) mcu_spi_init(void){}
-void __attribute__((weak)) mcu_spi_config(spi_config_t config, uint32_t frequency){(void)config;(void)frequency;}
-void __attribute__((weak)) mcu_spi2_init(void){}
-void __attribute__((weak)) mcu_spi2_config(spi_config_t config, uint32_t frequency){(void)config;(void)frequency;}
-void __attribute__((weak)) mcu_usb_init(void){}
-void __attribute__((weak)) mcu_usb_dotasks(void){}
-void __attribute__((weak)) mcu_wifi_init(void){}
-void __attribute__((weak)) mcu_wifi_dotasks(void){}
-void __attribute__((weak)) mcu_bt_init(void){}
-void __attribute__((weak)) mcu_bt_dotasks(void){}
-void mcu_i2s_extender_init(void);
+	void __attribute__((weak)) mcu_uart_init(void) {}
+	void __attribute__((weak)) mcu_uart_start(void) {}
+	void __attribute__((weak)) mcu_uart_dotasks(void) {}
+	void __attribute__((weak)) mcu_uart2_init(void) {}
+	void __attribute__((weak)) mcu_uart2_start(void) {}
+	void __attribute__((weak)) mcu_uart2_dotasks(void) {}
+	void __attribute__((weak)) mcu_eeprom_init(int size) { (void)size; }
+	void __attribute__((weak)) mcu_spi_init(void) {}
+	void __attribute__((weak)) mcu_spi_config(spi_config_t config, uint32_t frequency)
+	{
+		(void)config;
+		(void)frequency;
+	}
+	void __attribute__((weak)) mcu_spi2_init(void) {}
+	void __attribute__((weak)) mcu_spi2_config(spi_config_t config, uint32_t frequency)
+	{
+		(void)config;
+		(void)frequency;
+	}
+	void __attribute__((weak)) mcu_usb_init(void) {}
+	void __attribute__((weak)) mcu_usb_dotasks(void) {}
+	void __attribute__((weak)) mcu_wifi_init(void) {}
+	void __attribute__((weak)) mcu_wifi_dotasks(void) {}
+	void __attribute__((weak)) mcu_bt_init(void) {}
+	void __attribute__((weak)) mcu_bt_dotasks(void) {}
+#ifdef IC74HC595_CUSTOM_SHIFT_IO
+	extern volatile uint32_t ic74hc595_i2s_pins;
+	void mcu_i2s_extender_init(void);
+	void i2s_write_word(uint32_t value);
+#endif
+	void mcu_gen_pwm(void);
+	void mcu_gen_servo(void);
+	void mcu_gen_step(void);
+#if defined(MCU_HAS_ONESHOT_TIMER) && defined(ENABLE_RT_SYNC_MOTIONS)
+	void mcu_gen_oneshot(void);
+#endif
 #endif
 
 #ifdef __cplusplus

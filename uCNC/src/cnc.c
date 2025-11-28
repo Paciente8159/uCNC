@@ -335,7 +335,6 @@ void cnc_restore_motion(void)
 #ifndef DISABLE_RTC_CODE
 MCU_CALLBACK void mcu_rtc_cb(uint32_t millis)
 {
-	mcu_enable_global_isr();
 	uint8_t mls = (uint8_t)(0xff & millis);
 	if ((mls & CTRL_SCHED_CHECK_MASK) == CTRL_SCHED_CHECK_VAL)
 	{
@@ -626,7 +625,7 @@ void cnc_delay_ms(uint32_t milliseconds)
 	milliseconds += mcu_millis();
 	do
 	{
-		cnc_dotasks();
+		cnc_yield();
 	} while (mcu_millis() < milliseconds);
 }
 
@@ -918,7 +917,8 @@ void cnc_exec_rt_commands(void)
 
 void cnc_check_fault_systems(void)
 {
-	uint8_t inputs;
+	uint8_t inputs = 0;
+	(void)inputs;
 #ifdef CONTROLS_MASK
 	inputs = io_get_controls();
 #endif

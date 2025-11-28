@@ -18,8 +18,8 @@
 */
 
 #include "../../../../cnc_config.h"
-#if defined(ESP32) && defined(ENABLE_BLUETOOTH)
 #include <Arduino.h>
+#if CONFIG_IDF_TARGET_ESP32 && defined(ENABLE_BLUETOOTH)
 #include "esp_task_wdt.h"
 #include <stdint.h>
 #include <stdbool.h>
@@ -45,7 +45,6 @@ extern "C"
 	{
 		grbl_cmd_args_t *cmd_params = (grbl_cmd_args_t *)args;
 		char arg[BT_ID_MAX_LEN];
-		uint8_t has_arg = (cmd_params->next_char == '=');
 		memset(arg, 0, sizeof(arg));
 
 		if (!strncmp((const char *)(cmd_params->cmd), "BTH", 3))

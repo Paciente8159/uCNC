@@ -75,7 +75,7 @@ MCU_CALLBACK void __attribute__((weak)) shift_register_io_pins(void)
 {
 	MUTEX_INIT(shifter_running);
 
-	MUTEX_TAKE(shifter_running)
+	if(MUTEX_TAKE(shifter_running))
 	{
 		uint8_t pins[SHIFT_REGISTER_BYTES];
 

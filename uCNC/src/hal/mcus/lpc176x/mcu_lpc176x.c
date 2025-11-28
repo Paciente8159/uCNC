@@ -171,10 +171,9 @@ void MCU_SERVO_ISR(void)
 
 void MCU_RTC_ISR(void)
 {
-	mcu_disable_global_isr();
 	_millis++;
+	mcu_isr_context_enter();
 	mcu_rtc_cb((uint32_t)_millis);
-	mcu_enable_global_isr();
 }
 
 void MCU_ITP_ISR(void)
@@ -188,6 +187,7 @@ void MCU_ITP_ISR(void)
 		SETBIT(ITP_TIMER_REG->IR, TIM_MR0_INT);
 		if (!resetstep)
 		{
+			mcu_isr_context_enter();
 			mcu_step_cb();
 		}
 		else
@@ -1159,7 +1159,7 @@ bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 				if (timeout < mcu_millis())
 				{
 					timeout = BULK_SPI_TIMEOUT + mcu_millis();
-					cnc_dotasks();
+					cnc_yield();
 				}
 			}
 			is_running = false;
@@ -1346,7 +1346,7 @@ bool mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 				if (timeout < mcu_millis())
 				{
 					timeout = BULK_SPI2_TIMEOUT + mcu_millis();
-					cnc_dotasks();
+					cnc_yield();
 				}
 			}
 			is_running = false;
@@ -1682,6 +1682,7 @@ void MCU_ONESHOT_ISR(void)
 {
 	if (mcu_timeout_cb)
 	{
+		mcu_isr_context_enter();
 		mcu_timeout_cb();
 	}
 

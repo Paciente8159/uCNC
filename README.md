@@ -28,8 +28,7 @@ _**Jump to section**_
 # VERSION 1.13+ NOTES
 
 Version 1.13 introduces the following changes:
-  - added initial suport for ESP32-S3 and ESP-C3 variants. This is support is not yet complete, as some features are missing (like BLE support). Other features like I2S support for custom IO shifters are still under test.
-	- new BSD/Posix Socket modules for network support. This should unify and replace all network related features across all MCU's and network interfaces (WiFi, Ethernet, etc..)
+  - added initial suport for ESP32-S3 and ESP-C3 variants. This is support is not yet complete, as some features are missing (like BLE support).
 
 # IMPORTANT NOTE
 

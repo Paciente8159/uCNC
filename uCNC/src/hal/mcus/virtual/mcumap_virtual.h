@@ -473,6 +473,8 @@ extern const tool_t laser_ppi;
 #define ATOMIC_FETCH_SUB(dst, val, mode) __atomic_fetch_sub((dst), (val), mode)
 #define ATOMIC_FETCH_XOR(dst, val, mode) __atomic_fetch_xor((dst), (val), mode)
 
+#define EMULATION_MS_TICK 100
+
 #define asm __asm__
 
 #endif

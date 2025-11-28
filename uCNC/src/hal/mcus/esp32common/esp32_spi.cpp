@@ -39,11 +39,7 @@ extern "C"
 
 	void mcu_spi_init(void)
 	{
-#if (SPI_CLK_BIT == 14 || SPI_CLK_BIT == 25)
-		esp32spi = new SPIClass(HSPI);
-#else
-		esp32spi = new SPIClass(VSPI);
-#endif
+		esp32spi = new SPIClass(SPI_INSTANCE);
 		esp32spi->begin(SPI_CLK_BIT, SPI_SDI_BIT, SPI_SDO_BIT, -1);
 	}
 
@@ -84,11 +80,7 @@ extern "C"
 
 	void mcu_spi2_init(void)
 	{
-#if (SPI2_CLK_BIT == 14 || SPI2_CLK_BIT == 25)
-		esp32spi2 = new SPIClass(HSPI);
-#else
-		esp32spi2 = new SPIClass(VSPI);
-#endif
+		esp32spi2 = new SPIClass(SPI2_INSTANCE);
 		esp32spi2->begin(SPI2_CLK_BIT, SPI2_SDI_BIT, SPI2_SDO_BIT, -1);
 	}
 

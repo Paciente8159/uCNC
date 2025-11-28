@@ -16,7 +16,8 @@
 	See the	GNU General Public License for more details.
 */
 
-#ifdef ESP32
+#include "../../../../cnc_config.h"
+#if (defined(ESP32) || defined(ESP32S3) || defined(ESP32C3)) && defined(ENABLE_WIFI)
 #include <Arduino.h>
 #include "esp_task_wdt.h"
 #include <stdint.h>

@@ -267,7 +267,10 @@ void MCU_ITP_ISR(void)
 	if ((TIMER_REG->SR & 1))
 	{
 		if (!resetstep)
+		{
+			mcu_isr_context_enter();
 			mcu_step_cb();
+		}
 		else
 			mcu_step_reset_cb();
 		resetstep = !resetstep;
@@ -307,6 +310,7 @@ static void mcu_input_isr(void)
 #if (DIN_IO_EXTIBITMASK != 0)
 	if (EXTI->PR & DIN_IO_EXTIBITMASK)
 	{
+		mcu_isr_context_enter();
 		mcu_inputs_changed_cb();
 	}
 #endif
@@ -365,7 +369,6 @@ void SysTick_IRQHandler(void)
 void osSystickHandler(void)
 #endif
 {
-	mcu_disable_global_isr();
 #if SERVOS_MASK > 0
 	static uint8_t ms_servo_counter = 0;
 	uint8_t servo_counter = ms_servo_counter;
@@ -417,8 +420,8 @@ void osSystickHandler(void)
 	uint32_t millis = mcu_runtime_ms;
 	millis++;
 	mcu_runtime_ms = millis;
+	mcu_isr_context_enter();
 	mcu_rtc_cb(millis);
-	mcu_enable_global_isr();
 }
 
 /**
@@ -1733,6 +1736,7 @@ void MCU_ONESHOT_ISR(void)
 
 		if (mcu_timeout_cb)
 		{
+			mcu_isr_context_enter();
 			mcu_timeout_cb();
 		}
 	}

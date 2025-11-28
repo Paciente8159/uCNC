@@ -125,6 +125,24 @@ __attribute__((noinline, optimize("O3"))) void mcu_delay_loop(uint16_t loops)
 }
 #endif
 
+/**
+ * ISR context autoflag
+ * This allow to signal that the current code is running in ISR context
+ * The
+ */
+#ifndef mcu_in_isr_context
+volatile uint8_t mcu_in_isr_context_counter;
+void mcu_in_isr_context_leave(uint8_t *counter)
+{
+	ATOMIC_FETCH_SUB(&mcu_in_isr_context_counter, 1, __ATOMIC_ACQ_REL);
+}
+
+bool mcu_in_isr_context(void)
+{
+	return (ATOMIC_LOAD_N(&mcu_in_isr_context_counter, __ATOMIC_ACQUIRE) != 0);
+}
+#endif
+
 void __attribute__((weak)) mcu_io_init(void)
 {
 #if ASSERT_PIN_IO(STEP0)
@@ -1155,7 +1173,7 @@ bool __attribute__((weak)) mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in
 		if (timeout < mcu_millis())
 		{
 			timeout = BULK_SPI_TIMEOUT + mcu_millis();
-			cnc_dotasks();
+			cnc_yield();
 		}
 	}
 
@@ -1195,7 +1213,7 @@ bool __attribute__((weak)) mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *i
 		if (timeout < mcu_millis())
 		{
 			timeout = BULK_SPI2_TIMEOUT + mcu_millis();
-			cnc_dotasks();
+			cnc_yield();
 		}
 	}
 
@@ -1208,13 +1226,3 @@ void __attribute__((weak)) mcu_spi2_stop(void)
 
 spi_port_t __attribute__((used)) mcu_spi2_port = {.isbusy = false, .start = mcu_spi2_start, .xmit = mcu_spi2_xmit, .bulk_xmit = mcu_spi2_bulk_transfer, .stop = mcu_spi2_stop};
 #endif
-
-uint8_t __attribute__((weak)) mcu_softpwm_freq_config(uint16_t freq)
-{
-	// keeps 8 bit resolution up to 500Hz
-	// reduces bit resolution for higher frequencies
-
-	// determines the bit resolution (7 - esp32_pwm_res);
-	uint8_t res = (uint8_t)MAX((int8_t)ceilf(LN(freq * 0.002f)), 0);
-	return res;
-}

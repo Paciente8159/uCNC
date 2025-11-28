@@ -270,7 +270,7 @@ void mcu_uart_init(void)
 #ifndef UART_PIN_SWAP
 	IOSWAP &= ~(1 << IOSWAPU0);
 #else
-	IOSWAP |= ~(1 << IOSWAPU0);
+	IOSWAP |= (1 << IOSWAPU0);
 #endif
 	USD(UART_PORT) = (ESP8266_CLOCK / BAUDRATE);
 	USC0(UART_PORT) = UART_8N1;
@@ -298,7 +298,7 @@ void mcu_uart_init(void)
 #ifndef UART2_PIN_SWAP
 	IOSWAP &= ~(1 << IOSWAPU0);
 #else
-	IOSWAP |= ~(1 << IOSWAPU0);
+	IOSWAP |= (1 << IOSWAPU0);
 #endif
 	USD(UART2_PORT) = (ESP8266_CLOCK / BAUDRATE2);
 	USC0(UART2_PORT) = UART_8N1;

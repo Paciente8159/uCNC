@@ -29,7 +29,7 @@ IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=1
 CompilerSettings=000000e0g0000000001000000
-UnitCount=96
+UnitCount=98
 
 [VersionInfo]
 Major=1
@@ -781,16 +781,6 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit81]
-FileName=..\..\uCNC\src\utils.c
-CompileCpp=1
-Folder=
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
-[Unit82]
 FileName=..\..\uCNC\src\interface\grbl_print.c
 CompileCpp=1
 Folder=
@@ -800,8 +790,18 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
+[Unit82]
+FileName=..\..\uCNC\src\interface\grbl_protocol.c
+CompileCpp=1
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
 [Unit84]
-FileName=..\..\uCNC\src\interface\grbl_settings.c
+FileName=..\..\uCNC\src\interface\grbl_stream.c
 CompileCpp=1
 Folder=
 Compile=1
@@ -811,7 +811,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit85]
-FileName=..\..\uCNC\src\interface\grbl_stream.c
+FileName=..\..\uCNC\src\interface\grbl_print.h
 Folder=
 Compile=1
 Link=1
@@ -821,7 +821,7 @@ BuildCmd=
 CompileCpp=1
 
 [Unit86]
-FileName=..\..\uCNC\src\interface\grbl_print.h
+FileName=..\..\uCNC\src\interface\grbl_protocol.h
 CompileCpp=1
 Folder=
 Compile=1
@@ -831,16 +831,6 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit89]
-FileName=..\..\uCNC\src\interface\grbl_stream.h
-CompileCpp=1
-Folder=
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
-[Unit90]
 FileName=..\..\uCNC\src\interface\serial_compatibility.h
 CompileCpp=1
 Folder=
@@ -850,7 +840,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit91]
+[Unit90]
 FileName=..\..\uCNC\src\modules\file_system.c
 CompileCpp=1
 Folder=
@@ -860,8 +850,18 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
+[Unit91]
+FileName=..\..\uCNC\src\modules\file_system.h
+CompileCpp=1
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
 [Unit93]
-FileName=..\..\uCNC\src\core\parser_expr.c
+FileName=..\..\uCNC\src\modules\ic74hc165.h
 CompileCpp=1
 Folder=
 Compile=1
@@ -871,7 +871,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit96]
-FileName=..\..\uCNC\src\modules\shift_register.h
+FileName=..\..\uCNC\src\buffer.c
 CompileCpp=1
 Folder=
 Compile=1
@@ -891,7 +891,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit87]
-FileName=..\..\uCNC\src\interface\grbl_protocol.h
+FileName=..\..\uCNC\src\interface\grbl_settings.h
 CompileCpp=1
 Folder=
 Compile=1
@@ -901,7 +901,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit88]
-FileName=..\..\uCNC\src\interface\grbl_settings.h
+FileName=..\..\uCNC\src\interface\grbl_stream.h
 CompileCpp=1
 Folder=
 Compile=1
@@ -961,7 +961,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit95]
-FileName=..\..\uCNC\src\modules\shift_register.c
+FileName=..\..\uCNC\src\modules\shift_register.h
 CompileCpp=1
 Folder=
 Compile=1
@@ -971,7 +971,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit97]
-FileName=..\..\uCNC\src\modules\m67_m68\parser_m67_m68.c
+FileName=..\..\uCNC\src\atomic.h
 CompileCpp=1
 Folder=
 Compile=1
@@ -981,7 +981,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit98]
-FileName=..\..\uCNC\src\modules\m80_m81\parser_m80_m81.c
+FileName=..\..\uCNC\src\buffer.h
 CompileCpp=1
 Folder=
 Compile=1
@@ -1001,7 +1001,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit83]
-FileName=..\..\uCNC\src\interface\grbl_protocol.c
+FileName=..\..\uCNC\src\interface\grbl_settings.c
 CompileCpp=1
 Folder=
 Compile=1
@@ -1011,7 +1011,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit92]
-FileName=..\..\uCNC\src\modules\file_system.h
+FileName=..\..\uCNC\src\core\parser_expr.c
 CompileCpp=1
 Folder=
 Compile=1
@@ -1021,7 +1021,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit94]
-FileName=..\..\uCNC\src\modules\ic74hc165.h
+FileName=..\..\uCNC\src\modules\shift_register.c
 CompileCpp=1
 Folder=
 Compile=1

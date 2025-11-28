@@ -81,7 +81,7 @@ void buffer_peek(ring_buffer_t *buffer, void *ptr)
 		memset(ptr, 0, buffer->elem_size);
 		return;
 	}
-	void *src = buffer->data + ((size_t)tail * (size_t)buffer->elem_size);
+	void *src = (void *)(buffer->data + ((size_t)tail * (size_t)buffer->elem_size));
 	memcpy(ptr, src, buffer->elem_size);
 }
 
@@ -105,7 +105,7 @@ bool buffer_try_enqueue(ring_buffer_t *buffer, void *ptr)
 		}
 
 		// Write data into slot
-		void *dst = buffer->data + ((size_t)head * (size_t)buffer->elem_size);
+		void *dst = (void *)(buffer->data + ((size_t)head * (size_t)buffer->elem_size));
 		memcpy(dst, ptr, buffer->elem_size);
 
 		// Publish slot as ready
@@ -146,7 +146,7 @@ bool buffer_try_dequeue(ring_buffer_t *buffer, void *ptr)
 		}
 
 		// Copy out data
-		void *src = buffer->data + ((size_t)tail * (size_t)buffer->elem_size);
+		void *src = (void *)(buffer->data + ((size_t)tail * (size_t)buffer->elem_size));
 		memcpy(ptr, src, buffer->elem_size);
 
 		// Clear ready flag
@@ -189,7 +189,7 @@ void buffer_write(ring_buffer_t *buffer, void *ptr, uint8_t len, uint8_t *writte
 			}
 
 			// Write element
-			void *dst = buffer->data + ((size_t)head * (size_t)buffer->elem_size);
+			void *dst = (void *)(buffer->data + ((size_t)head * (size_t)buffer->elem_size));
 			memcpy(dst, &src[(size_t)i * (size_t)buffer->elem_size], buffer->elem_size);
 
 			// Publish slot
@@ -246,7 +246,7 @@ void buffer_read(ring_buffer_t *buffer, void *ptr, uint8_t len, uint8_t *read)
 			}
 
 			// Copy element out
-			void *src = buffer->data + ((size_t)tail * (size_t)buffer->elem_size);
+			void *src = (void *)(buffer->data + ((size_t)tail * (size_t)buffer->elem_size));
 			memcpy(&dst[(size_t)i * (size_t)buffer->elem_size], src, buffer->elem_size);
 
 			// Clear ready flag
