@@ -415,6 +415,13 @@ extern "C"
 #define LASER_PPI UNDEF_PIN
 #endif
 
+#ifdef ABC_INDEP_FEED_CALC
+#ifdef ENABLE_LINACT_PLANNER
+#undef ENABLE_LINACT_PLANNER
+#warning "ENABLE_LINACT_PLANNER was disabled for ABC_INDEP_FEED_CALC"
+#endif
+#endif
+
 /**
  * final pin cleaning and configuration
  **/
