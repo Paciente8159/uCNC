@@ -14,7 +14,7 @@
 
 ### Fixed
 
-- fixed ESP32 PIO configuration that lead to several WiFi issues (#)
+- fixed ESP32 PIO configuration that lead to several WiFi issues (#899)
 - fixed some redefinition warings while compiling code for ESP32(#896)
 
 ## [1.13.0] - 07-11-2025
