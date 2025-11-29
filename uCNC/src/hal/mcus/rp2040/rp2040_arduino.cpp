@@ -23,6 +23,15 @@
 #include <string.h>
 #include "../../../cnc.h"
 
+void rp2040_core1_loop()
+{
+	rp2040.fifo.registerCore();
+	for (;;)
+	{
+		cnc_run();
+	}
+}
+
 /**
  *
  * This handles all communications via Serial USB, Serial UART and WiFi
@@ -795,20 +804,20 @@ void rp2040_wifi_bt_init(void)
 #ifdef MCU_HAS_ENDPOINTS
 	FLASH_FS.begin();
 	flash_fs = {
-			.drive = 'C',
-			.open = flash_fs_open,
-			.read = flash_fs_read,
-			.write = flash_fs_write,
-			.seek = flash_fs_seek,
-			.available = flash_fs_available,
-			.close = flash_fs_close,
-			.remove = flash_fs_remove,
-			.opendir = flash_fs_opendir,
-			.mkdir = flash_fs_mkdir,
-			.rmdir = flash_fs_rmdir,
-			.next_file = flash_fs_next_file,
-			.finfo = flash_fs_info,
-			.next = NULL};
+		.drive = 'C',
+		.open = flash_fs_open,
+		.read = flash_fs_read,
+		.write = flash_fs_write,
+		.seek = flash_fs_seek,
+		.available = flash_fs_available,
+		.close = flash_fs_close,
+		.remove = flash_fs_remove,
+		.opendir = flash_fs_opendir,
+		.mkdir = flash_fs_mkdir,
+		.rmdir = flash_fs_rmdir,
+		.next_file = flash_fs_next_file,
+		.finfo = flash_fs_info,
+		.next = NULL};
 	fs_mount(&flash_fs);
 #endif
 #ifndef CUSTOM_OTA_ENDPOINT

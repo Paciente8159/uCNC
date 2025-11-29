@@ -296,17 +296,14 @@ void rp2040_core0_loop()
 	rp2040_uart_process();
 }
 
-void setup1()
-{
-}
-
-void loop1()
-{
-	for (;;)
-	{
-		cnc_run();
-	}
-}
+// void mcu_core1_loop()
+// {
+// 	rp2040.fifo.registerCore();
+// 	for (;;)
+// 	{
+// 		cnc_run();
+// 	}
+// }
 
 /**
  * initializes the mcu
