@@ -576,7 +576,7 @@ void fs_file_json_api(int client_idx)
 		uint8_t updatepage[FS_WRITE_GZ_SIZE];
 		rom_memcpy(updatepage, fs_write_page, FS_WRITE_GZ_SIZE);
 		http_send_header(client_idx, "Content-Encoding", "gzip", true);
-		http_send(client_idx, 200, "text/html", updatepage, FS_WRITE_GZ_SIZE);
+		http_send(client_idx, 200, "text/html", (char*)updatepage, FS_WRITE_GZ_SIZE);
 		return;
 	}
 
@@ -669,7 +669,7 @@ void fs_file_json_api(int client_idx)
 				while (fs_available(file))
 				{
 					size_t content_len = fs_read(file, (uint8_t *)content, ENDPOINT_MAX_CHUNCK_LEN / sizeof(char));
-					http_send(client_idx, 200, "application/octet-stream", content, content_len);
+					http_send(client_idx, 200, "application/octet-stream", (char*)content, content_len);
 				}
 				// close the stream
 				http_send(client_idx, 200, "application/octet-stream", NULL, 0);

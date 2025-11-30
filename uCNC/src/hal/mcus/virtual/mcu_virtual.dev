@@ -9,7 +9,7 @@ Libs=
 PrivateResource=
 ResourceIncludes=
 MakeIncludes=
-Compiler=-D MCU=MCU_VIRTUAL_WIN_@@__@@_
+Compiler=-D MCU=MCU_VIRTUAL_WIN_@@_-D BOARD=BOARD_CUSTOM_@@__@@_
 CppCompiler=
 Linker=-lws2_32_@@_
 IsCpp=0

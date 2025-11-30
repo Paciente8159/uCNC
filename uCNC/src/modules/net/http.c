@@ -391,10 +391,10 @@ bool http_send_file(int client_idx, char *file_path, char *content_type)
 	http_send(client_idx, 200, NULL, NULL, 0); /* prepare chunked */
 	while ((nread = fs_read(fp, fbuf, sizeof(fbuf))) > 0)
 	{
-		http_send(client_idx, 200, content_type ? content_type : "application/octet-stream", fbuf, nread);
+		http_send(client_idx, 200, (char*)(content_type ? content_type : "application/octet-stream"), (char*)fbuf, nread);
 	}
 	fs_close(fp);
-	http_send(client_idx, 200, content_type ? content_type : "application/octet-stream", NULL, 0);
+	http_send(client_idx, 200, (char*)(content_type ? content_type : "application/octet-stream"), NULL, 0);
 	return true;
 }
 

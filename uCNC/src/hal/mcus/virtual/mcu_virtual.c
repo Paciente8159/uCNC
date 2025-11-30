@@ -34,11 +34,19 @@ extern "C"
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdatomic.h>
 #include <math.h>
 
 /* Platform includes */
 #include <conio.h>
 #include <pthread.h>
+#if defined(ENABLE_SOCKETS) && defined(MCU_HAS_SOCKETS)
+
+#include "../../../modules/endpoint.h"
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#pragma comment(lib, "ws2_32.lib")
+#endif
 #include <windows.h>
 #include <dirent.h>
 
@@ -167,8 +175,8 @@ extern "C"
 			if (!g_uart.connected)
 			{
 				HANDLE h = CreateFileA(
-						g_uart.port_name, GENERIC_READ | GENERIC_WRITE, 0, NULL,
-						OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+					g_uart.port_name, GENERIC_READ | GENERIC_WRITE, 0, NULL,
+					OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
 				if (h == INVALID_HANDLE_VALUE)
 				{
@@ -211,21 +219,17 @@ extern "C"
 	uint8_t mcu_uart_getc(void)
 	{
 		uint8_t c = 0;
-		BUFFER_DEQUEUE(uart_rx, &c);
+		BUFFER_TRY_DEQUEUE(uart_rx, &c);
 		return c;
 	}
 	uint8_t mcu_uart_available(void) { return BUFFER_READ_AVAILABLE(uart_rx); }
 	void mcu_uart_clear(void) { BUFFER_CLEAR(uart_rx); }
 	void mcu_uart_putc(uint8_t c)
 	{
-		while (BUFFER_FULL(uart_tx))
+		while (!BUFFER_TRY_ENQUEUE(uart_tx, &c))
 		{
 			mcu_uart_flush();
-			/* If still not connected, break to avoid tight loop */
-			if (!g_uart.connected)
-				break;
 		}
-		BUFFER_ENQUEUE(uart_tx, &c);
 	}
 	void mcu_uart_flush(void)
 	{
@@ -255,13 +259,9 @@ extern "C"
 			uint8_t c = (uint8_t)buff[i];
 			if (mcu_com_rx_cb(c))
 			{
-				if (BUFFER_FULL(uart_rx))
+				if (!BUFFER_TRY_ENQUEUE(uart_rx, &c))
 				{
 					STREAM_OVF(c);
-				}
-				else
-				{
-					BUFFER_ENQUEUE(uart_rx, &c);
 				}
 			}
 		}
@@ -290,11 +290,10 @@ extern "C"
 	void mcu_uart2_clear(void) { BUFFER_CLEAR(uart2_rx); }
 	void mcu_uart2_putc(uint8_t c)
 	{
-		while (BUFFER_FULL(uart2_tx))
+		while (!BUFFER_TRY_ENQUEUE(uart2_tx, &c))
 		{
 			mcu_uart2_flush();
 		}
-		BUFFER_ENQUEUE(uart2_tx, &c);
 	}
 	void mcu_uart2_flush(void)
 	{
@@ -321,13 +320,10 @@ extern "C"
 				putchar('\n');
 			if (mcu_com_rx_cb((uint8_t)c))
 			{
-				if (BUFFER_FULL(uart2_rx))
+				if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
 				{
-					extern void grbl_stream_overflow(uint8_t);
-					grbl_stream_overflow((uint8_t)c);
-					return; // matches original behavior
-				}
-				BUFFER_ENQUEUE(uart2_rx, (uint8_t *)&c);
+					STREAM_OVF(c);
+				};
 			}
 		}
 	}
@@ -411,14 +407,14 @@ extern "C"
 		{
 			BOOL fConnected = FALSE;
 			hPipe = CreateNamedPipe(
-					lpszPipename,
-					PIPE_ACCESS_DUPLEX,
-					PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT,
-					PIPE_UNLIMITED_INSTANCES,
-					sizeof(VIRTUAL_MAP),
-					sizeof(VIRTUAL_MAP),
-					0,
-					NULL);
+				lpszPipename,
+				PIPE_ACCESS_DUPLEX,
+				PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT,
+				PIPE_UNLIMITED_INSTANCES,
+				sizeof(VIRTUAL_MAP),
+				sizeof(VIRTUAL_MAP),
+				0,
+				NULL);
 
 			if (hPipe == INVALID_HANDLE_VALUE)
 			{
@@ -479,14 +475,23 @@ extern "C"
 	static uint8_t mcu_get_pin_offset(uint8_t pin)
 	{
 		if (pin >= 1 && pin <= 24)
-			return (uint8_t)(pin - 1);
-		if (pin >= 47 && pin <= 78)
-			return (uint8_t)(pin - 47);
+		{
+			return pin - 1;
+		}
+		else if (pin >= 47 && pin <= 78)
+		{
+			return pin - 47;
+		}
 		if (pin >= 100 && pin <= 113)
-			return (uint8_t)(pin - 100);
-		if (pin >= 130 && pin <= 161)
-			return (uint8_t)(pin - 130);
-		return (uint8_t)255;
+		{
+			return pin - 100;
+		}
+		else if (pin >= 130 && pin <= 161)
+		{
+			return pin - 130;
+		}
+
+		return 255;
 	}
 
 	void mcu_config_input(uint8_t pin) { (void)pin; }
@@ -603,25 +608,30 @@ extern "C"
 
 	static volatile uint32_t mcu_itp_timer_reload;
 	static volatile bool mcu_itp_timer_running;
-
 	static FORCEINLINE void mcu_gen_step(void)
 	{
 		static bool step_reset = true;
-		static int32_t mcu_itp_timer_counter = 0;
+		static int32_t mcu_itp_timer_counter;
 
+		// generate steps
 		if (mcu_itp_timer_running)
 		{
+			// stream mode tick
 			int32_t t = mcu_itp_timer_counter;
 			bool reset = step_reset;
-			t -= (int32_t)lround(1000000.0 / (double)ITP_SAMPLE_RATE);
+			t -= (int32_t)ceilf(1000000.0f / ITP_SAMPLE_RATE);
 			if (t <= 0)
 			{
 				if (!reset)
+				{
 					mcu_step_cb();
+				}
 				else
+				{
 					mcu_step_reset_cb();
+				}
 				step_reset = !reset;
-				mcu_itp_timer_counter = (int32_t)mcu_itp_timer_reload + t;
+				mcu_itp_timer_counter = mcu_itp_timer_reload + t;
 			}
 			else
 			{
@@ -630,31 +640,39 @@ extern "C"
 		}
 	}
 
+	/**
+	 * convert step rate to clock cycles
+	 * */
 	void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 	{
-		if (frequency < (float)F_STEP_MIN)
-			frequency = (float)F_STEP_MIN;
-		if (frequency > (float)F_STEP_MAX)
-			frequency = (float)F_STEP_MAX;
-		uint32_t totalticks = (uint32_t)(500000.0f / frequency); /* up-down counter */
+		frequency = CLAMP((float)F_STEP_MIN, frequency, (float)F_STEP_MAX);
+		// up and down counter (generates half the step rate at each event)
+		uint32_t totalticks = (uint32_t)((500000.0f) / frequency);
 		*prescaller = 1;
 		while (totalticks > 0xFFFF)
 		{
 			(*prescaller) <<= 1;
 			totalticks >>= 1;
 		}
+
 		*ticks = (uint16_t)totalticks;
 	}
+
 	float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller)
 	{
 		uint32_t totalticks = (uint32_t)ticks * prescaller;
-		return 500000.0f / (float)totalticks;
+		return 500000.0f / ((float)totalticks);
 	}
+
+	/**
+	 * starts the timer interrupt that generates the step pulses for the interpolator
+	 * */
+
 	void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 	{
 		if (!mcu_itp_timer_running)
 		{
-			mcu_itp_timer_reload = (uint32_t)ticks * (uint32_t)prescaller;
+			mcu_itp_timer_reload = ticks * prescaller;
 			mcu_itp_timer_running = true;
 		}
 		else
@@ -662,76 +680,114 @@ extern "C"
 			mcu_change_itp_isr(ticks, prescaller);
 		}
 	}
+
+	/**
+	 * changes the step rate of the timer interrupt that generates the step pulses for the interpolator
+	 * */
 	void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller)
 	{
 		if (mcu_itp_timer_running)
 		{
-			mcu_itp_timer_reload = (uint32_t)ticks * (uint32_t)prescaller;
+			mcu_itp_timer_reload = ticks * prescaller;
 		}
 		else
 		{
 			mcu_start_itp_isr(ticks, prescaller);
 		}
 	}
-	void mcu_stop_itp_isr(void) { mcu_itp_timer_running = false; }
+
+	/**
+	 * stops the timer interrupt that generates the step pulses for the interpolator
+	 * */
+	void mcu_stop_itp_isr(void)
+	{
+		if (mcu_itp_timer_running)
+		{
+			mcu_itp_timer_running = false;
+		}
+	}
+
 
 	/* Windows timer wheel to tick emulator */
-	static HANDLE win_timer;
-	static void (*timer_func_handler_pntr)(void) = NULL;
-	static unsigned long perf_start_ticks;
-	static double cyclesPerMicrosecond;
-	static double cyclesPerMillisecond;
+	HANDLE win_timer;
+	void (*timer_func_handler_pntr)(void);
+	unsigned long perf_start;
+	double cyclesPerMicrosecond;
+	double cyclesPerMillisecond;
+
+	FILE *stimuli;
+	uint64_t tickcount;
+
+#define def_printpin(X) \
+	if (stimuli)        \
+	fprintf(stimuli, "$var wire 1 %c " #X " $end\n", 33 + X)
+#define printpin(X) \
+	if (stimuli)    \
+	fprintf(stimuli, "%d%c\n", ((virtualmap.special_outputs & (1 << (X - 1))) ? 1 : 0), 33 + X)
+
 	volatile unsigned long g_cpu_freq = 0;
 
-	static VOID CALLBACK timer_sig_handler(void *pvoid, BYTE *pboolean)
+	VOID CALLBACK timer_sig_handler(PVOID lpParameter, BOOLEAN TimerOrWaitFired)
 	{
 		if (timer_func_handler_pntr)
 			timer_func_handler_pntr();
 	}
-	static int start_timer(int mSec, void (*timer_func_handler)(void))
+
+	int start_timer(int mSec, void (*timer_func_handler)(void))
 	{
 		timer_func_handler_pntr = timer_func_handler;
-		if (CreateTimerQueueTimer(&win_timer, NULL, (WAITORTIMERCALLBACK)timer_sig_handler,
-															NULL, mSec, mSec, WT_EXECUTEINTIMERTHREAD) == 0)
+
+		if (CreateTimerQueueTimer(&win_timer, NULL, (WAITORTIMERCALLBACK)timer_sig_handler, NULL, mSec, mSec, WT_EXECUTEINTIMERTHREAD) == 0)
 		{
 			printf("\nCreateTimerQueueTimer() error\n");
-			return 1;
+			return (1);
 		}
-		return 0;
+
+		return (0);
 	}
-	static void stop_timer(void)
+
+	void stop_timer(void)
 	{
 		DeleteTimerQueueTimer(NULL, win_timer, NULL);
 		CloseHandle(win_timer);
 	}
 
-	static unsigned long getCPUFreq(void)
+	unsigned long getCPUFreq(void)
 	{
 		LARGE_INTEGER perf_counter;
+
 		if (!QueryPerformanceFrequency(&perf_counter))
 		{
 			printf("QueryPerformanceFrequency failed!\n");
 			return 0;
 		}
+
 		cyclesPerMicrosecond = (double)perf_counter.QuadPart / 1000000.0;
 		cyclesPerMillisecond = (double)perf_counter.QuadPart / 1000.0;
-		return (unsigned long)perf_counter.QuadPart;
+
+		return perf_counter.QuadPart;
 	}
-	static unsigned long getTickCounter(void)
+
+	unsigned long getTickCounter(void)
 	{
 		LARGE_INTEGER perf_counter;
 		QueryPerformanceCounter(&perf_counter);
-		return (unsigned long)perf_counter.QuadPart;
+		return perf_counter.QuadPart;
 	}
-	static void startCycleCounter(void)
+
+	void startCycleCounter(void)
 	{
 		if (getCPUFreq() == 0)
+		{
 			return;
-		perf_start_ticks = getTickCounter();
+		}
+
+		perf_start = getTickCounter();
 	}
-	static unsigned long stopCycleCounter(void)
+
+	unsigned long stopCycleCounter(void)
 	{
-		return (getTickCounter() - perf_start_ticks);
+		return (getTickCounter() - perf_start);
 	}
 
 	void virtual_delay_us(uint16_t delay)
@@ -740,34 +796,42 @@ extern "C"
 		double elapsed = 0;
 		do
 		{
-			elapsed = ((double)(getTickCounter()) - (double)(start)) / (double)(g_cpu_freq);
-			elapsed *= 1000000.0;
-		} while (elapsed < (double)delay);
+			elapsed = ((double)(getTickCounter()) - (double)(start)) / (double)(getCPUFreq());
+			elapsed *= 1000000;
+		} while (elapsed < delay);
 	}
 
 	uint32_t mcu_micros(void)
 	{
-		LARGE_INTEGER pc;
-		QueryPerformanceCounter(&pc);
-		return (uint32_t)(pc.QuadPart / cyclesPerMicrosecond);
+		// LARGE_INTEGER perf_counter;
+		// QueryPerformanceCounter(&perf_counter);
+		// return (uint32_t)(perf_counter.QuadPart / cyclesPerMicrosecond);
+		return (uint32_t)tickcount;
 	}
+
 	uint32_t mcu_millis(void)
 	{
-		LARGE_INTEGER pc;
-		QueryPerformanceCounter(&pc);
-		return (uint32_t)(pc.QuadPart / cyclesPerMillisecond);
+		// LARGE_INTEGER perf_counter;
+		// QueryPerformanceCounter(&perf_counter);
+		// return (uint32_t)(perf_counter.QuadPart / cyclesPerMillisecond);
+		return (uint32_t)(tickcount / 1000);
 	}
 
-	/* One-shot timer API */
+	/**
+	 * configures a single shot timeout in us
+	 * */
 	static uint32_t oneshot_timeout;
 	static uint32_t oneshot_alarm;
-
 	void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 	{
 		oneshot_timeout = timeout;
 		mcu_timeout_cb = fp;
 	}
-	void mcu_start_timeout(void)
+
+	/**
+	 * starts the timeout. Once hit the the respective callback is called
+	 * */
+	void mcu_start_timeout()
 	{
 		oneshot_alarm = mcu_micros() + oneshot_timeout;
 	}
@@ -775,28 +839,72 @@ extern "C"
 	/* Periodic tick that drives stepper and RTC callbacks */
 	static void ticksimul(void)
 	{
-		/* sample rate ~20ms per timer tick; subdivide into ITP samples */
-		int chunks = (int)ceil(20.0 * (double)ITP_SAMPLE_RATE / 1000.0);
-		for (int i = 0; i < chunks; ++i)
+		static bool running = false;
+		bool test = false;
+		do
 		{
+			test = __atomic_load_n(&running, __ATOMIC_RELAXED);
+			if (test)
+			{
+				return;
+			}
+		} while (!__atomic_compare_exchange_n(&running, &test, true, false, __ATOMIC_RELAXED, __ATOMIC_RELAXED));
+		static uint32_t prev, next_rtc = 1000;
+		float parcial = 0;
+		//		long t = stopCycleCounter();
+		//		printf("Elapsed %dus\n\r", (int)((double)t / cyclesPerMicrosecond));
+		float timestep = round((float)EMULATION_MS_TICK * ITP_SAMPLE_RATE * 0.001f);
+		for (int i = 0; i < (int)timestep; i++)
+		{
+			parcial += (1000000.0f / (float)ITP_SAMPLE_RATE);
+			tickcount += (int)parcial;
+			parcial -= (int)parcial;
+
 			mcu_gen_step();
 #if defined(MCU_HAS_ONESHOT_TIMER)
 			mcu_gen_oneshot();
 #endif
-		}
 
-		/* One-shot (software) */
-		if (mcu_timeout_cb)
-		{
-			uint32_t now = mcu_micros();
-			if ((int32_t)(now - oneshot_alarm) >= 0)
+			if (prev ^ virtualmap.special_outputs)
 			{
-				mcu_timeout_cb();
-				mcu_timeout_cb = NULL;
+				prev = virtualmap.special_outputs;
+				if (stimuli)
+					fprintf(stimuli, "#%llu\n", tickcount);
+#if AXIS_COUNT > 0
+				printpin(STEP0);
+				printpin(DIR0);
+#endif
+#if AXIS_COUNT > 1
+				printpin(STEP1);
+				printpin(DIR1);
+#endif
+#if AXIS_COUNT > 2
+				printpin(STEP2);
+				printpin(DIR2);
+#endif
+#if AXIS_COUNT > 3
+				printpin(STEP3);
+				printpin(DIR3);
+#endif
+#if AXIS_COUNT > 4
+				printpin(STEP4);
+				printpin(DIR4);
+#endif
+#if AXIS_COUNT > 5
+				printpin(STEP5);
+				printpin(DIR5);
+#endif
+			}
+			
+			if (tickcount > next_rtc)
+			{
+				mcu_rtc_cb(mcu_millis());
+				next_rtc += 1000;
 			}
 		}
-
-		mcu_rtc_cb(mcu_millis());
+		
+		//		startCycleCounter();
+		__atomic_store_n(&running, false, __ATOMIC_RELAXED);
 	}
 
 /* ----- Flash filesystem shim (host FS) --------------------------------- */
@@ -987,6 +1095,24 @@ extern "C"
 
 	void mcu_init(void)
 	{
+		char cwd[1024];
+		GetCurrentDirectoryA(1024, &cwd);
+		printf("%s\n", cwd);
+
+		stimuli = fopen("stimuli.vcd", "w+");
+		if (stimuli)
+			fprintf(stimuli, "$timescale 1us $end\n$scope module logic $end\n", tickcount);
+		def_printpin(STEP0);
+		def_printpin(DIR0);
+		def_printpin(STEP1);
+		def_printpin(DIR1);
+		def_printpin(STEP2);
+		def_printpin(DIR2);
+		def_printpin(STEP3);
+		def_printpin(DIR3);
+		if (stimuli)
+			fprintf(stimuli, "$upscope $end\n$enddefinitions $end\n\n", tickcount);
+
 		startCycleCounter();
 		virtualmap.special_outputs = 0;
 		virtualmap.special_inputs = 0;
@@ -994,7 +1120,7 @@ extern "C"
 		virtualmap.outputs = 0;
 
 		g_cpu_freq = getCPUFreq();
-		start_timer(20, &ticksimul);
+		start_timer(EMULATION_MS_TICK, &ticksimul);
 		pthread_create(&thread_io, NULL, &ioserver, NULL);
 
 #ifdef MCU_HAS_UART
@@ -1100,12 +1226,6 @@ extern "C"
 	void nvm_end_write(void) { mcu_eeprom_flush(); }
 
 #if defined(ENABLE_SOCKETS) && defined(MCU_HAS_SOCKETS)
-
-#include "../../../modules/endpoint.h"
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#pragma comment(lib, "ws2_32.lib")
-
 	/* Link with Ws2_32.lib when building on Windows */
 	/* In MinGW-w64: add -lws2_32 */
 
@@ -1184,13 +1304,13 @@ extern "C"
 	{
 		const char fmt[] = "text/html";
 		const char updateForm[] =
-				"<!DOCTYPE html><html><body>"
-				"<form method='POST' action='/update' enctype='multipart/form-data'>"
-				"Firmware:<br><input type='file' name='firmware'>"
-				"<input type='submit' value='Update'>"
-				"</form></body></html>";
-				http_send_header(client_idx, "Cache-Control", "no-cache", false);
-				http_send_header(client_idx, "Cache-Control", "max-age=300", false);
+			"<!DOCTYPE html><html><body>"
+			"<form method='POST' action='/update' enctype='multipart/form-data'>"
+			"Firmware:<br><input type='file' name='firmware'>"
+			"<input type='submit' value='Update'>"
+			"</form></body></html>";
+		http_send_header(client_idx, "Cache-Control", "no-cache", false);
+		http_send_header(client_idx, "Cache-Control", "max-age=300", false);
 		http_send_str(client_idx, 200, (char *)fmt, (char *)updateForm);
 		http_send(client_idx, 200, (char *)fmt, NULL, 0);
 	}

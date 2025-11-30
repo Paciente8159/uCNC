@@ -460,6 +460,8 @@
 extern void virtual_delay_us(uint16_t delay);
 #define mcu_delay_us(X) virtual_delay_us(X)
 
+#define ENABLE_ITP_FEED_TASK //smoother STEP IO simulation
+
 #include "../../tools/tool.h"
 extern const tool_t spindle_pwm;
 extern const tool_t laser_ppi;
