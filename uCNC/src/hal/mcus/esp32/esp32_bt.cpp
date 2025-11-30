@@ -19,8 +19,10 @@
 
 #include "../../../../cnc_config.h"
 
-#if CONFIG_IDF_TARGET_ESP32 && defined(ENABLE_BLUETOOTH)
+#ifdef ESP32
 #include <Arduino.h>
+#endif
+#if CONFIG_IDF_TARGET_ESP32 && defined(ENABLE_BLUETOOTH)
 #include "esp_task_wdt.h"
 #include <stdint.h>
 #include <stdbool.h>
