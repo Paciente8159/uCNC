@@ -183,6 +183,7 @@ extern "C"
 	void cnc_store_motion(void);
 	void cnc_restore_motion(void);
 	uint8_t cnc_parse_cmd(void);
+	bool cnc_check_interlocking(void);
 
 	uint8_t cnc_get_exec_state(uint8_t statemask);
 	void cnc_set_exec_state(uint8_t statemask);
@@ -197,6 +198,12 @@ extern "C"
 	DECL_EVENT_HANDLER(rtc_tick);
 	// event_cnc_dotasks_handler
 	DECL_EVENT_HANDLER(cnc_dotasks);
+	#ifndef modules_dotasks
+	#define modules_dotasks() EVENT_INVOKE(cnc_dotasks, NULL)
+	#endif
+	#ifndef cnc_modules_dotasks
+	#define cnc_modules_dotasks() modules_dotasks()
+	#endif
 	// event_cnc_io_dotasks_handler
 	DECL_EVENT_HANDLER(cnc_io_dotasks);
 	// event_cnc_stop_handler

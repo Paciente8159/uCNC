@@ -3410,7 +3410,7 @@ extern "C"
 #define IC74HC595_COUNT 4
 #define I2S_PORT IC74HC595_I2S_PORT
 
-extern volatile uint32_t i2s_mode;
+	extern volatile uint32_t i2s_mode;
 #define I2S_MODE __atomic_load_n((uint32_t *)&i2s_mode, __ATOMIC_RELAXED)
 
 	// custom pin operations for 74HS595
@@ -3518,18 +3518,18 @@ extern volatile uint32_t i2s_mode;
 #define mcu_delay_us(X) esp32_delay_us(X)
 
 #define mcu_in_isr_context() xPortInIsrContext()
-#define cnc_yield()          \
+#define cnc_yield()           \
 	if (!xPortInIsrContext()) \
 	vPortYield()
 
 #define __FREERTOS_MUTEX_TAKE__(mutex, timeout) ((xPortInIsrContext()) ? (xSemaphoreTakeFromISR(mutex, NULL)) : (xSemaphoreTake(mutex, timeout)))
 #define __FREERTOS_MUTEX_GIVE__(mutex) ((xPortInIsrContext()) ? (xSemaphoreGiveFromISR(mutex, NULL)) : (xSemaphoreGive(mutex)))
 
-#define MUTEX_CLEANUP(name)                       \
-	static void name##_mutex_cleanup(uint8_t *m)    \
-	{                                               \
-		if (*m && name##_mutex_lock != NULL)          \
-		{                                             \
+#define MUTEX_CLEANUP(name)                             \
+	static void name##_mutex_cleanup(uint8_t *m)        \
+	{                                                   \
+		if (*m && name##_mutex_lock != NULL)            \
+		{                                               \
 			__FREERTOS_MUTEX_GIVE__(name##_mutex_lock); \
 		}                                               \
 	}
@@ -3537,16 +3537,16 @@ extern volatile uint32_t i2s_mode;
 	static SemaphoreHandle_t name##_mutex_lock = NULL; \
 	MUTEX_CLEANUP(name)
 
-#define MUTEX_INIT(name)                          \
-	if (name##_mutex_lock == NULL)                  \
-	{                                               \
+#define MUTEX_INIT(name)                              \
+	if (name##_mutex_lock == NULL)                    \
+	{                                                 \
 		name##_mutex_lock = xSemaphoreCreateBinary(); \
 		xSemaphoreGive(name##_mutex_lock);            \
-	}                                               \
+	}                                                 \
 	uint8_t __attribute__((__cleanup__(name##_mutex_cleanup))) name##_mutex_temp = 0
-#define MUTEX_RELEASE(name)                     \
-	if (name##_mutex_temp)                        \
-	{                                             \
+#define MUTEX_RELEASE(name)                         \
+	if (name##_mutex_temp)                          \
+	{                                               \
 		name##_mutex_temp = 0;                      \
 		__FREERTOS_MUTEX_GIVE__(name##_mutex_lock); \
 	}
@@ -3561,15 +3561,18 @@ extern volatile uint32_t i2s_mode;
 #define ATOMIC_FETCH_ADD(dst, val, mode) __atomic_fetch_add((dst), (val), mode)
 #define ATOMIC_FETCH_SUB(dst, val, mode) __atomic_fetch_sub((dst), (val), mode)
 #define ATOMIC_FETCH_XOR(dst, val, mode) __atomic_fetch_xor((dst), (val), mode)
-#define ATOMIC_SPIN()      \
-	if (xPortInIsrContext()) \
-	{                        \
-		portYIELD_FROM_ISR();  \
-	}                        \
-	else                     \
-	{                        \
-		portYIELD();           \
+#define ATOMIC_SPIN()         \
+	if (xPortInIsrContext())  \
+	{                         \
+		portYIELD_FROM_ISR(); \
+	}                         \
+	else                      \
+	{                         \
+		portYIELD();          \
 	}
+
+#include "../esp32common/esp32_common.h"
+
 #ifdef __cplusplus
 }
 #endif

@@ -47,7 +47,6 @@ static cnc_state_t cnc_state;
 bool cnc_status_report_lock;
 
 static void cnc_check_fault_systems(void);
-static bool cnc_check_interlocking(void);
 static void cnc_exec_rt_commands(void);
 static void cnc_io_dotasks(void);
 static void cnc_reset(void);
@@ -262,7 +261,7 @@ bool cnc_dotasks(void)
 #endif
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
-	EVENT_INVOKE(cnc_dotasks, NULL);
+	cnc_modules_dotasks();
 #endif
 
 	return !cnc_get_exec_state(EXEC_KILL);

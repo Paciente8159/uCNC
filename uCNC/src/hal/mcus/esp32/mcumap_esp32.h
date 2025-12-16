@@ -3532,7 +3532,7 @@ extern "C"
 	// #define mcu_enable_global_isr()
 
 #define mcu_in_isr_context() xPortInIsrContext()
-#define cnc_yield()          \
+#define cnc_yield()           \
 	if (!xPortInIsrContext()) \
 	vPortYield()
 
@@ -3591,6 +3591,8 @@ extern "C"
 	{                         \
 		portYIELD();          \
 	}
+
+#include "../esp32common/esp32_common.h"	
 
 #ifdef __cplusplus
 }

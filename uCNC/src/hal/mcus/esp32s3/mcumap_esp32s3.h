@@ -4761,6 +4761,8 @@ extern signal_timer_t signal_timer;
 		portYIELD();           \
 	}
 
+#include "../esp32common/esp32_common.h"
+
 #ifdef __cplusplus
 }
 #endif
