@@ -144,50 +144,22 @@ extern "C"
 #define BUFFER_GUARD
 
 #ifndef DECL_MUTEX
-#define MUTEX_UNDEF ((uint8_t)-1)
+#ifndef ATOMIC_TYPE
+#define ATOMIC_TYPE volatile uint8_t
+#endif
+
+#define MUTEX_UNDEF (-1)
 #define MUTEX_LOCKED 1
 #define MUTEX_UNLOCKED 0
 
-#ifndef ATOMIC_TYPE
-#define ATOMIC_TYPE uint8_t
-#endif
-
 // mutex
-#define DECL_MUTEX(name) volatile ATOMIC_TYPE name = MUTEX_UNDEF
-#define MUTEX_INIT(name, locked) ({int8_t name##_mutex_temp = MUTEX_UNDEF; ATOMIC_COMPARE_EXCHANGE_N(&name, &name##_mutex_temp, (locked), __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE); })
-#define MUTEX_UNLOCK(name) ({int8_t name##_mutex_temp = MUTEX_LOCKED; ATOMIC_COMPARE_EXCHANGE_N(&name, &name##_mutex_temp, MUTEX_UNLOCKED, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE); })
-	static FORCEINLINE bool safe_mutex_lock(volatile ATOMIC_TYPE *lock, uint32_t timeout)
-	{
-		// converts to us
-		if (timeout > (UINT32_MAX / 1000))
-		{
-			timeout *= 1000;
-		}
-		
-		uint32_t now = mcu_free_micros();
-		for (;;)
-		{
-			ATOMIC_TYPE expected = MUTEX_UNLOCKED;
-			if (ATOMIC_COMPARE_EXCHANGE_N(lock, &expected, MUTEX_LOCKED, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE))
-			{
-				return true;
-			}
-			if (!timeout)
-			{
-				break;
-			}
-			cnc_yield();
-			uint32_t tstamp = mcu_free_micros();
-			uint32_t elapsed = (tstamp > now) ? (tstamp - now) : (1000 - now + tstamp);
-			if (elapsed >= timeout)
-				break;
-			timeout -= elapsed;
-			now = tstamp;
-		}
+#define DECL_MUTEX(name) ATOMIC_TYPE name = MUTEX_UNDEF
+#define MUTEX_INIT(name, locked) ({ATOMIC_TYPE name##_mutex_temp = MUTEX_UNDEF; ATOMIC_COMPARE_EXCHANGE_N(&name, &name##_mutex_temp, (locked), __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE); })
+#define MUTEX_UNLOCK(name) ({ATOMIC_TYPE name##_mutex_temp = MUTEX_LOCKED; ATOMIC_COMPARE_EXCHANGE_N(&name, &name##_mutex_temp, MUTEX_UNLOCKED, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE); })
 
-		return false;
-	}
-#define MUTEX_TIMEDLOCK(name, timeout_ms) safe_mutex_lock(&name, timeout_ms)
+bool mutex_safe_lock(void *lock, uint32_t timeout);
+
+#define MUTEX_TIMEDLOCK(name, timeout_ms) mutex_safe_lock((void*)&name, timeout_ms)
 #define MUTEX_LOCK(name) MUTEX_TIMEDLOCK(name, 0xFFFFFFFF)
 #define MUTEX_TRYLOCK(name) MUTEX_TIMEDLOCK(name, 0)
 #endif
