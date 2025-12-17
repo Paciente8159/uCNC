@@ -3531,68 +3531,7 @@ extern "C"
 	// #define mcu_disable_global_isr()
 	// #define mcu_enable_global_isr()
 
-#define mcu_in_isr_context() xPortInIsrContext()
-#define cnc_yield()           \
-	if (!xPortInIsrContext()) \
-	vPortYield()
-
-#define __FREERTOS_MUTEX_TAKE__(mutex, timeout) ((xPortInIsrContext()) ? (xSemaphoreTakeFromISR(mutex, NULL)) : (xSemaphoreTake(mutex, timeout)))
-#define __FREERTOS_MUTEX_GIVE__(mutex) ((xPortInIsrContext()) ? (xSemaphoreGiveFromISR(mutex, NULL)) : (xSemaphoreGive(mutex)))
-
-#define MUTEX_CLEANUP(name)                             \
-	static void name##_mutex_cleanup(uint8_t *m)        \
-	{                                                   \
-		if (*m && name##_mutex_lock != NULL)            \
-		{                                               \
-			__FREERTOS_MUTEX_GIVE__(name##_mutex_lock); \
-		}                                               \
-	}
-#define DECL_MUTEX(name)                               \
-	static SemaphoreHandle_t name##_mutex_lock = NULL; \
-	MUTEX_CLEANUP(name)
-
-#define MUTEX_INIT(name)                              \
-	if (name##_mutex_lock == NULL)                    \
-	{                                                 \
-		name##_mutex_lock = xSemaphoreCreateBinary(); \
-		xSemaphoreGive(name##_mutex_lock);            \
-	}                                                 \
-	bool __attribute__((__cleanup__(name##_mutex_cleanup))) name##_mutex_temp = false
-#define MUTEX_RELEASE(name)                         \
-	if (name##_mutex_temp)                          \
-	{                                               \
-		name##_mutex_temp = false;                  \
-		__FREERTOS_MUTEX_GIVE__(name##_mutex_lock); \
-	}
-#define MUTEX_TAKE(name) ({name##_mutex_temp=(__FREERTOS_MUTEX_TAKE__(name##_mutex_lock, portMAX_DELAY) == pdTRUE); name##_mutex_temp; })
-#define MUTEX_WAIT(name, timeout_ms) ({(__FREERTOS_MUTEX_TAKE__(name##_mutex_lock, (timeout_ms / portTICK_PERIOD_MS)) == pdTRUE); name##_mutex_temp; })
-
-#ifndef FORCEINLINE
-#define FORCEINLINE __attribute__((always_inline)) inline
-#endif
-
-	/**
-	 * Atomic operations
-	 */
-#define ATOMIC_LOAD_N(src, mode) __atomic_load_n((src), mode)
-#define ATOMIC_STORE_N(dst, val, mode) __atomic_store_n((dst), (val), mode)
-#define ATOMIC_COMPARE_EXCHANGE_N(dst, cmp, des, sucmode, failmode) __atomic_compare_exchange_n((dst), (cmp), (des), false, sucmode, failmode)
-#define ATOMIC_FETCH_OR(dst, val, mode) __atomic_fetch_or((dst), (val), mode)
-#define ATOMIC_FETCH_AND(dst, val, mode) __atomic_fetch_and((dst), (val), mode)
-#define ATOMIC_FETCH_ADD(dst, val, mode) __atomic_fetch_add((dst), (val), mode)
-#define ATOMIC_FETCH_SUB(dst, val, mode) __atomic_fetch_sub((dst), (val), mode)
-#define ATOMIC_FETCH_XOR(dst, val, mode) __atomic_fetch_xor((dst), (val), mode)
-#define ATOMIC_SPIN()         \
-	if (xPortInIsrContext())  \
-	{                         \
-		portYIELD_FROM_ISR(); \
-	}                         \
-	else                      \
-	{                         \
-		portYIELD();          \
-	}
-
-#include "../esp32common/esp32_common.h"	
+#include "../esp32common/esp32_common.h"
 
 #ifdef __cplusplus
 }

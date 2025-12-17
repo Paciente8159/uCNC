@@ -81,19 +81,19 @@ extern "C"
 #define MCU_CYCLES_LOOP_OVERHEAD 3
 #endif
 
-#define mcu_delay_loop(X)                                                         \
-	do                                                                              \
-	{                                                                               \
+#define mcu_delay_loop(X)                                                             \
+	do                                                                                \
+	{                                                                                 \
 		register unsigned start, now, target = (((X) - 1) * MCU_CYCLES_PER_LOOP + 2); \
 		asm volatile("" ::: "memory");                                                \
 		asm volatile(                                                                 \
-				"rsr.ccount %0\n"					/* 2 cycles: start = ccount */                  \
-				"1:  rsr.ccount %1\n"			/* 2 cycles */                                  \
-				"  sub      %1, %1, %0\n" /* 1 cycle  : tmp = now-start */                \
-				"  bltu     %1, %2, 1b\n" /* 3 taken / 1 not taken */                     \
-				"  nop\n"                                                                 \
-				: "=&a"(start), "=&a"(now)                                                \
-				: "a"(target));                                                           \
+			"rsr.ccount %0\n"		  /* 2 cycles: start = ccount */                  \
+			"1:  rsr.ccount %1\n"	  /* 2 cycles */                                  \
+			"  sub      %1, %1, %0\n" /* 1 cycle  : tmp = now-start */                \
+			"  bltu     %1, %2, 1b\n" /* 3 taken / 1 not taken */                     \
+			"  nop\n"                                                                 \
+			: "=&a"(start), "=&a"(now)                                                \
+			: "a"(target));                                                           \
 	} while (0)
 
 #ifndef MCU_CALLBACK
@@ -4588,7 +4588,7 @@ extern "C"
 #define IC74HC595_COUNT 4
 #define I2S_PORT IC74HC595_I2S_PORT
 
-extern volatile uint32_t i2s_mode;
+	extern volatile uint32_t i2s_mode;
 #define I2S_MODE __atomic_load_n((uint32_t *)&i2s_mode, __ATOMIC_RELAXED)
 
 	// custom pin operations for 74HS595
@@ -4603,30 +4603,30 @@ extern volatile uint32_t i2s_mode;
 
 	extern gpio_dev_t GPIO;
 
-#define mcu_config_output(X)                                       \
-	gpio_ll_iomux_out(&GPIO, __indirect__(X, BIT), PIN_FUNC_GPIO, false);        \
-	gpio_ll_input_disable(&GPIO, (gpio_num_t)__indirect__(X, BIT));              \
+#define mcu_config_output(X)                                              \
+	gpio_ll_iomux_out(&GPIO, __indirect__(X, BIT), PIN_FUNC_GPIO, false); \
+	gpio_ll_input_disable(&GPIO, (gpio_num_t)__indirect__(X, BIT));       \
 	gpio_ll_output_enable(&GPIO, (gpio_num_t)__indirect__(X, BIT))
 
-#define mcu_config_input(X)                                        \
-	gpio_ll_iomux_out(&GPIO, __indirect__(X, BIT), PIN_FUNC_GPIO, false);        \
-	gpio_ll_output_disable(&GPIO, (gpio_num_t)__indirect__(X, BIT));             \
+#define mcu_config_input(X)                                               \
+	gpio_ll_iomux_out(&GPIO, __indirect__(X, BIT), PIN_FUNC_GPIO, false); \
+	gpio_ll_output_disable(&GPIO, (gpio_num_t)__indirect__(X, BIT));      \
 	gpio_ll_input_enable(&GPIO, (gpio_num_t)__indirect__(X, BIT))
 
-#define mcu_config_analog(X)                                                      \
-	{                                                                               \
+#define mcu_config_analog(X)                                                          \
+	{                                                                                 \
 		mcu_config_input(X);                                                          \
 		adc1_config_width(ADC_WIDTH_MAX - 1);                                         \
 		adc1_config_channel_atten(__indirect__(X, ADC_CHANNEL), (ADC_ATTEN_MAX - 1)); \
 	}
 
-#define mcu_config_pullup(X)                         \
+#define mcu_config_pullup(X)                                       \
 	gpio_ll_pulldown_dis(&GPIO, (gpio_num_t)__indirect__(X, BIT)); \
 	gpio_ll_pullup_en(&GPIO, (gpio_num_t)__indirect__(X, BIT))
 
 	extern void mcu_gpio_isr(void *);
-#define mcu_config_input_isr(X)                                                                              \
-	{                                                                                                          \
+#define mcu_config_input_isr(X)                                                                                  \
+	{                                                                                                            \
 		gpio_set_intr_type((gpio_num_t)(__indirect__(X, BIT)), GPIO_INTR_ANYEDGE);                               \
 		gpio_isr_handler_add((gpio_num_t)(__indirect__(X, BIT)), mcu_gpio_isr, (void *)__indirect__(X, ISRVAR)); \
 	}
@@ -4634,36 +4634,36 @@ extern volatile uint32_t i2s_mode;
 // #define mcu_get_input(X) gpio_get_level((gpio_num_t)__indirect__(X, BIT))
 #define mcu_get_input(X) ((__indirect__(X, BIT) & 0x20) ? (GPIO.in1.val & (1UL << (__indirect__(X, BIT) & 0x1f))) : (GPIO.in & (1UL << (__indirect__(X, BIT) & 0x1f))))
 #define mcu_get_output(X) ((__indirect__(X, BIT) & 0x20) ? (GPIO.out1.val & (1UL << (__indirect__(X, BIT) & 0x1f))) : (GPIO.out & (1UL << (__indirect__(X, BIT) & 0x1f))))
-#define mcu_set_output(X)                                        \
-	if (__indirect__(X, BIT) & 0x20)                               \
-	{                                                              \
+#define mcu_set_output(X)                                            \
+	if (__indirect__(X, BIT) & 0x20)                                 \
+	{                                                                \
 		GPIO.out1_w1ts.val = (1UL << (__indirect__(X, BIT) & 0x1f)); \
-	}                                                              \
-	else                                                           \
-	{                                                              \
+	}                                                                \
+	else                                                             \
+	{                                                                \
 		GPIO.out_w1ts = (1UL << (__indirect__(X, BIT) & 0x1f));      \
 	}
-#define mcu_clear_output(X)                                      \
-	if (__indirect__(X, BIT) & 0x20)                               \
-	{                                                              \
+#define mcu_clear_output(X)                                          \
+	if (__indirect__(X, BIT) & 0x20)                                 \
+	{                                                                \
 		GPIO.out1_w1tc.val = (1UL << (__indirect__(X, BIT) & 0x1f)); \
-	}                                                              \
-	else                                                           \
-	{                                                              \
+	}                                                                \
+	else                                                             \
+	{                                                                \
 		GPIO.out_w1tc = (1UL << (__indirect__(X, BIT) & 0x1f));      \
 	}
-#define mcu_toggle_output(X)                                 \
-	if (__indirect__(X, BIT) & 0x20)                           \
-	{                                                          \
+#define mcu_toggle_output(X)                                     \
+	if (__indirect__(X, BIT) & 0x20)                             \
+	{                                                            \
 		GPIO.out1.val ^= (1UL << (__indirect__(X, BIT) & 0x1f)); \
-	}                                                          \
-	else                                                       \
-	{                                                          \
+	}                                                            \
+	else                                                         \
+	{                                                            \
 		GPIO.out ^= (1UL << (__indirect__(X, BIT) & 0x1f));      \
 	}
 
-#define mcu_config_pwm(X, Y)                          \
-	{                                                   \
+#define mcu_config_pwm(X, Y)                              \
+	{                                                     \
 		ledc_timer_config_t pwmtimer = {0};               \
 		pwmtimer.speed_mode = __indirect__(X, SPEEDMODE); \
 		pwmtimer.timer_num = __indirect__(X, TIMER);      \
@@ -4681,24 +4681,24 @@ extern volatile uint32_t i2s_mode;
 		ledc_channel_config(&pwm);                        \
 	}
 
-#define mcu_set_pwm(X, Y)                                                       \
-	{                                                                             \
+#define mcu_set_pwm(X, Y)                                                           \
+	{                                                                               \
 		ledc_set_duty(__indirect__(X, SPEEDMODE), __indirect__(X, LEDCCHANNEL), Y); \
 		ledc_update_duty(__indirect__(X, SPEEDMODE), __indirect__(X, LEDCCHANNEL)); \
 	}
 #define mcu_get_pwm(X) ledc_get_duty(__indirect__(X, SPEEDMODE), __indirect__(X, LEDCCHANNEL))
 #define mcu_get_analog(X) (adc1_get_raw(__indirect__(X, ADC_CHANNEL)) >> (ADC_WIDTH_MAX - 2))
 
-typedef struct signal_timer_
-{
-	uint32_t current_us;
-	uint8_t us_step;
-	uint32_t itp_reload;
-	bool step_alarm_en;
-	uint32_t pwm_reload;
-} signal_timer_t;
+	typedef struct signal_timer_
+	{
+		uint32_t current_us;
+		uint8_t us_step;
+		uint32_t itp_reload;
+		bool step_alarm_en;
+		uint32_t pwm_reload;
+	} signal_timer_t;
 
-extern signal_timer_t signal_timer;
+	extern signal_timer_t signal_timer;
 #define mcu_softpwm_freq_config(pin, freq) ({io_config_output(pin); signal_timer.pwm_reload = (uint32_t)(1000000/freq); })
 
 	extern void esp32_delay_us(uint16_t delay);
@@ -4707,59 +4707,6 @@ extern signal_timer_t signal_timer;
 #define mcu_disable_global_isr()
 #define mcu_enable_global_isr()
 
-#define mcu_in_isr_context() xPortInIsrContext()
-#define cnc_yield()          \
-	if (!xPortInIsrContext()) \
-	vPortYield()
-	
-#define __FREERTOS_MUTEX_TAKE__(mutex, timeout) ((xPortInIsrContext()) ? (xSemaphoreTakeFromISR(mutex, NULL)) : (xSemaphoreTake(mutex, timeout)))
-#define __FREERTOS_MUTEX_GIVE__(mutex) ((xPortInIsrContext()) ? (xSemaphoreGiveFromISR(mutex, NULL)) : (xSemaphoreGive(mutex)))
-
-#define MUTEX_CLEANUP(name)                       \
-	static void name##_mutex_cleanup(uint8_t *m)    \
-	{                                               \
-		if (*m && name##_mutex_lock != NULL)          \
-		{                                             \
-			__FREERTOS_MUTEX_GIVE__(name##_mutex_lock); \
-		}                                             \
-	}
-#define DECL_MUTEX(name)                             \
-	static SemaphoreHandle_t name##_mutex_lock = NULL; \
-	MUTEX_CLEANUP(name)
-
-#define MUTEX_INIT(name)                          \
-	if (name##_mutex_lock == NULL)                  \
-	{                                               \
-		name##_mutex_lock = xSemaphoreCreateBinary(); \
-		xSemaphoreGive(name##_mutex_lock);            \
-	}                                               \
-	uint8_t __attribute__((__cleanup__(name##_mutex_cleanup))) name##_mutex_temp = 0
-#define MUTEX_RELEASE(name)                     \
-	if (name##_mutex_temp)                        \
-	{                                             \
-		name##_mutex_temp = 0;                      \
-		__FREERTOS_MUTEX_GIVE__(name##_mutex_lock); \
-	}
-#define MUTEX_TAKE(name) (__FREERTOS_MUTEX_TAKE__(name##_mutex_lock, portMAX_DELAY) == pdTRUE)
-#define MUTEX_WAIT(name, timeout_ms) (__FREERTOS_MUTEX_TAKE__(name##_mutex_lock, (timeout_ms / portTICK_PERIOD_MS)) == pdTRUE)\
-
-#define ATOMIC_LOAD_N(src, mode) __atomic_load_n((src), mode)
-#define ATOMIC_STORE_N(dst, val, mode) __atomic_store_n((dst), (val), mode)
-#define ATOMIC_COMPARE_EXCHANGE_N(dst, cmp, des, sucmode, failmode) __atomic_compare_exchange_n((dst), (cmp), (des), false, sucmode, failmode)
-#define ATOMIC_FETCH_OR(dst, val, mode) __atomic_fetch_or((dst), (val), mode)
-#define ATOMIC_FETCH_AND(dst, val, mode) __atomic_fetch_and((dst), (val), mode)
-#define ATOMIC_FETCH_ADD(dst, val, mode) __atomic_fetch_add((dst), (val), mode)
-#define ATOMIC_FETCH_SUB(dst, val, mode) __atomic_fetch_sub((dst), (val), mode)
-#define ATOMIC_FETCH_XOR(dst, val, mode) __atomic_fetch_xor((dst), (val), mode)
-#define ATOMIC_SPIN()      \
-	if (xPortInIsrContext()) \
-	{                        \
-		portYIELD_FROM_ISR();  \
-	}                        \
-	else                     \
-	{                        \
-		portYIELD();           \
-	}
 
 #include "../esp32common/esp32_common.h"
 

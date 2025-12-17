@@ -4,7 +4,7 @@
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
-	Date: 02/10/2019
+	Date: 16/12/2025
 
 	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -144,44 +144,52 @@ extern "C"
 #define BUFFER_GUARD
 
 #ifndef DECL_MUTEX
-#define MUTEX_UNDEF -1
+#define MUTEX_UNDEF ((uint8_t)-1)
 #define MUTEX_LOCKED 1
-#define MUTEX_FREE 0
+#define MUTEX_UNLOCKED 0
 
-#define MUTEX_CLEANUP(name)                      \
-	static void name##_mutex_cleanup(int8_t *m) \
-	{                                            \
-		if (*m == MUTEX_FREE /*can unlock*/) \
-		{                                        \
-			name = MUTEX_UNDEF;                  \
-		}                                        \
-	}
-#define DECL_MUTEX(name)          \
-	static volatile int8_t name = MUTEX_FREE; \
-	MUTEX_CLEANUP(name)
-#define MUTEX_INIT(name) int8_t __attribute__((__cleanup__(name##_mutex_cleanup))) name##_mutex_temp = MUTEX_UNDEF
-#define MUTEX_RELEASE(name)                                   \
-	if (name##_mutex_temp == MUTEX_FREE /*has the lock*/) \
-	{                                                         \
-		name = MUTEX_UNDEF;                                   \
-		name##_mutex_temp = MUTEX_UNDEF;                      \
-	}
-	static FORCEINLINE bool safe_mutex_lock(volatile int8_t *lock, int8_t *cleanup)
+#ifndef ATOMIC_TYPE
+#define ATOMIC_TYPE uint8_t
+#endif
+
+// mutex
+#define DECL_MUTEX(name) volatile ATOMIC_TYPE name = MUTEX_UNDEF
+#define MUTEX_INIT(name, locked) ({int8_t name##_mutex_temp = MUTEX_UNDEF; ATOMIC_COMPARE_EXCHANGE_N(&name, &name##_mutex_temp, (locked), __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE); })
+#define MUTEX_UNLOCK(name) ({int8_t name##_mutex_temp = MUTEX_LOCKED; ATOMIC_COMPARE_EXCHANGE_N(&name, &name##_mutex_temp, MUTEX_UNLOCKED, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE); })
+	static FORCEINLINE bool safe_mutex_lock(volatile ATOMIC_TYPE *lock, uint32_t timeout)
 	{
-		*cleanup = MUTEX_FREE;
-		return ATOMIC_COMPARE_EXCHANGE_N(lock, cleanup, MUTEX_LOCKED, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE);
-	}
-#define MUTEX_TAKE(name) safe_mutex_lock(&name, &name##_mutex_temp)
+		// converts to us
+		if (timeout > (UINT32_MAX / 1000))
+		{
+			timeout *= 1000;
+		}
+		
+		uint32_t now = mcu_free_micros();
+		for (;;)
+		{
+			ATOMIC_TYPE expected = MUTEX_UNLOCKED;
+			if (ATOMIC_COMPARE_EXCHANGE_N(lock, &expected, MUTEX_LOCKED, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE))
+			{
+				return true;
+			}
+			if (!timeout)
+			{
+				break;
+			}
+			cnc_yield();
+			uint32_t tstamp = mcu_free_micros();
+			uint32_t elapsed = (tstamp > now) ? (tstamp - now) : (1000 - now + tstamp);
+			if (elapsed >= timeout)
+				break;
+			timeout -= elapsed;
+			now = tstamp;
+		}
 
-#define MUTEX_WAIT(name, timeout_ms) \
-	__TIMEOUT_MS__(timeout_us)       \
-	{                                \
-		if (MUTEX_TAKE(name))        \
-		{                            \
-			break;                   \
-		}                            \
-	}                                \
-	if (name##_mutex_temp == MUTEX_FREE && timeout_us != 0 /*the lock was aquired in time*/)
+		return false;
+	}
+#define MUTEX_TIMEDLOCK(name, timeout_ms) safe_mutex_lock(&name, timeout_ms)
+#define MUTEX_LOCK(name) MUTEX_TIMEDLOCK(name, 0xFFFFFFFF)
+#define MUTEX_TRYLOCK(name) MUTEX_TIMEDLOCK(name, 0)
 #endif
 
 #ifdef __cplusplus

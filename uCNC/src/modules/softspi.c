@@ -15,7 +15,18 @@
 	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
+#include "../cnc.h"
 #include "softspi.h"
+
+#ifdef MCU_HAS_SPI
+static DECL_MUTEX(spi_mutex);
+#endif
+#ifdef MCU_HAS_SPI2
+static DECL_MUTEX(spi2_mutex);
+#endif
+#ifdef SOFTSPI_LOCKGUARD_ENABLED
+static DECL_MUTEX(softspi_mutex);
+#endif
 
 void softspi_config(softspi_port_t *port, spi_config_t config, uint32_t frequency)
 {
@@ -24,9 +35,7 @@ void softspi_config(softspi_port_t *port, spi_config_t config, uint32_t frequenc
 
 	if (!port)
 	{
-#ifdef MCU_HAS_SPI
-		mcu_spi_config(config, frequency);
-#endif
+		DEBUG_STR("SPI port not defined\r\n");
 		return;
 	}
 
@@ -58,11 +67,8 @@ uint8_t softspi_xmit(softspi_port_t *port, uint8_t c)
 	// if no port is defined defaults to SPI hardware if available
 	if (!port)
 	{
-#ifdef MCU_HAS_SPI
-		return mcu_spi_xmit(c);
-#else
+		DEBUG_STR("SPI port not defined\r\n");
 		return 0;
-#endif
 	}
 
 	// if port with custom method execute it
@@ -109,13 +115,8 @@ uint16_t softspi_xmit16(softspi_port_t *port, uint16_t c)
 	// if no port is defined defaults to SPI hardware if available
 	if (!port)
 	{
-#ifdef MCU_HAS_SPI
-		uint16_t res = mcu_spi_xmit((uint8_t)(c >> 8));
-		res <<= 8;
-		return (res | mcu_spi_xmit((uint8_t)(0xFF & c)));
-#else
+		DEBUG_STR("SPI port not defined\r\n");
 		return 0;
-#endif
 	}
 
 	// if port with custom method execute it
@@ -166,12 +167,7 @@ void softspi_bulk_xmit(softspi_port_t *port, const uint8_t *out, uint8_t *in, ui
 	// if no port is defined defaults to SPI hardware if available
 	if (!port)
 	{
-#ifdef MCU_HAS_SPI
-		while (mcu_spi_bulk_transfer(out, in, len))
-		{
-			cnc_yield();
-		}
-#endif
+		DEBUG_STR("SPI port not defined\r\n");
 		return;
 	}
 
@@ -205,11 +201,19 @@ void softspi_bulk_xmit(softspi_port_t *port, const uint8_t *out, uint8_t *in, ui
 
 void softspi_start(softspi_port_t *port)
 {
+#ifdef MCU_HAS_SPI
+	MUTEX_INIT(spi_mutex, MUTEX_UNLOCKED);
+#endif
+#ifdef MCU_HAS_SPI2
+	MUTEX_INIT(spi2_mutex, MUTEX_UNLOCKED);
+#endif
+#ifdef SOFTSPI_LOCKGUARD_ENABLED
+	MUTEX_INIT(softspi_mutex, MUTEX_UNLOCKED);
+#endif
+
 	if (!port)
 	{
-#ifdef MCU_HAS_SPI
-		MODULE_LOCK_ENABLE(LISTENER_HWSPI_LOCK);
-#endif
+		DEBUG_STR("SPI port not defined\r\n");
 		return;
 	}
 
@@ -217,20 +221,25 @@ void softspi_start(softspi_port_t *port)
 	// usually HW ports
 	if (port->spiport)
 	{
+#ifdef MCU_HAS_SPI
 		if (port->spiport == MCU_SPI)
 		{
-			MODULE_LOCK_ENABLE(LISTENER_HWSPI_LOCK);
+			MUTEX_LOCK(spi_mutex);
 		}
-		else
+#endif
+#ifdef MCU_HAS_SPI2
+		if (port->spiport == MCU_SPI2)
 		{
-			MODULE_LOCK_ENABLE(LISTENER_HWSPI2_LOCK);
+			MUTEX_LOCK(spi2_mutex);
 		}
+#endif
+		port->haslock = true;
 		port->spiport->start(port->spiconfig, port->spifreq);
 		return;
 	}
 
 #ifdef SOFTSPI_LOCKGUARD_ENABLED
-	MODULE_LOCK_ENABLE(LISTENER_SWSPI_LOCK);
+	MUTEX_LOCK(softspi_mutex);
 #endif
 	softspi_config(port, port->spiconfig, port->spifreq);
 }
@@ -240,26 +249,33 @@ void softspi_stop(softspi_port_t *port)
 	if (!port)
 	{
 #ifdef MCU_HAS_SPI
-		MODULE_LOCK_DISABLE(LISTENER_HWSPI_LOCK);
+		DEBUG_STR("SPI port not defined\r\n");
 #endif
 		return;
 	}
 
-	// if port with custom method execute it
-	if (port->spiport)
+	if (port->haslock)
 	{
-		port->spiport->stop();
-		if (port->spiport == MCU_SPI)
+		// if port with custom method execute it
+		if (port->spiport)
 		{
-			MODULE_LOCK_DISABLE(LISTENER_HWSPI_LOCK);
-		}
-		else
-		{
-			MODULE_LOCK_DISABLE(LISTENER_HWSPI2_LOCK);
-		}
-	}
-	// unlocks resource
-#ifdef SOFTSPI_LOCKGUARD_ENABLED
-	MODULE_LOCK_DISABLE(LISTENER_SWSPI_LOCK);
+			port->spiport->stop();
+#ifdef MCU_HAS_SPI
+			if (port->spiport == MCU_SPI)
+			{
+				MUTEX_UNLOCK(spi_mutex);
+			}
 #endif
+#ifdef MCU_HAS_SPI2
+			if (port->spiport == MCU_SPI2)
+			{
+				MUTEX_UNLOCK(spi2_mutex);
+			}
+#endif
+		}
+		// unlocks resource
+#ifdef SOFTSPI_LOCKGUARD_ENABLED
+		MUTEX_UNLOCK(softspi_mutex);
+#endif
+	}
 }

@@ -122,7 +122,7 @@ MCU_CALLBACK void spi_shift_register_io_pins(void)
 {
 	MUTEX_INIT(shifter_running);
 
-	if(MUTEX_TAKE(shifter_running))
+	if(MUTEX_TRYLOCK(shifter_running))
 	{
 #if (IC74HC165_COUNT > 0)
 		mcu_set_output_gpio(IC74HC165_LOAD);
@@ -148,6 +148,8 @@ MCU_CALLBACK void spi_shift_register_io_pins(void)
 #if (IC74HC595_COUNT > 0)
 		mcu_set_output_gpio(IC74HC595_LATCH);
 #endif
+
+		MUTEX_UNLOCK(shifter_running);
 	}
 }
 #else

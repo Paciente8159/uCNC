@@ -66,6 +66,65 @@ extern "C"
 		esp32_modules_init(); \
 	}
 
+// atomic operations
+#define mcu_in_isr_context() xPortInIsrContext()
+#define cnc_yield()           \
+	if (!xPortInIsrContext()) \
+	vPortYield()
+
+#define __FREERTOS_MUTEX_TAKE__(mutex, timeout) ((xPortInIsrContext()) ? (xSemaphoreTakeFromISR(mutex, NULL)) : (xSemaphoreTake(mutex, timeout)))
+#define __FREERTOS_MUTEX_GIVE__(mutex) ((xPortInIsrContext()) ? (xSemaphoreGiveFromISR(mutex, NULL)) : (xSemaphoreGive(mutex)))
+
+#define DECL_MUTEX(name) SemaphoreHandle_t name##_mutex_lock = NULL
+#define MUTEX_UNDEF (NULL)
+#define MUTEX_LOCKED true
+#define MUTEX_UNLOCKED false
+
+#define MUTEX_INIT(name, locked)                        \
+	if (name##_mutex_lock == MUTEX_UNDEF)               \
+	{                                                   \
+		name##_mutex_lock = xSemaphoreCreateBinary();   \
+		if ((locked))                                   \
+		{                                               \
+			__FREERTOS_MUTEX_GIVE__(name##_mutex_lock); \
+		}                                               \
+	}
+
+#define MUTEX_UNLOCK(name)                         \
+	if (name##_mutex_lock)                          \
+	{                                               \
+		__FREERTOS_MUTEX_GIVE__(name##_mutex_lock); \
+	}
+
+#define MUTEX_TIMEDLOCK(name, timeout_ms) __FREERTOS_MUTEX_TAKE__(name##_mutex_lock, timeout_ms)
+#define MUTEX_LOCK(name) MUTEX_TIMEDLOCK(name, portMAX_DELAY)
+#define MUTEX_TRYLOCK(name) MUTEX_TIMEDLOCK(name, 0)
+
+#ifndef FORCEINLINE
+#define FORCEINLINE __attribute__((always_inline)) inline
+#endif
+
+	/**
+	 * Atomic operations
+	 */
+#define ATOMIC_LOAD_N(src, mode) __atomic_load_n((src), mode)
+#define ATOMIC_STORE_N(dst, val, mode) __atomic_store_n((dst), (val), mode)
+#define ATOMIC_COMPARE_EXCHANGE_N(dst, cmp, des, sucmode, failmode) __atomic_compare_exchange_n((dst), (cmp), (des), false, sucmode, failmode)
+#define ATOMIC_FETCH_OR(dst, val, mode) __atomic_fetch_or((dst), (val), mode)
+#define ATOMIC_FETCH_AND(dst, val, mode) __atomic_fetch_and((dst), (val), mode)
+#define ATOMIC_FETCH_ADD(dst, val, mode) __atomic_fetch_add((dst), (val), mode)
+#define ATOMIC_FETCH_SUB(dst, val, mode) __atomic_fetch_sub((dst), (val), mode)
+#define ATOMIC_FETCH_XOR(dst, val, mode) __atomic_fetch_xor((dst), (val), mode)
+#define ATOMIC_SPIN()         \
+	if (xPortInIsrContext())  \
+	{                         \
+		portYIELD_FROM_ISR(); \
+	}                         \
+	else                      \
+	{                         \
+		portYIELD();          \
+	}
+
 #ifdef __cplusplus
 }
 #endif
