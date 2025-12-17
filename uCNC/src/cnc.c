@@ -624,7 +624,7 @@ void cnc_delay_ms(uint32_t milliseconds)
 	milliseconds += mcu_millis();
 	do
 	{
-		cnc_yield();
+		TASK_YIELD();
 	} while (mcu_millis() < milliseconds);
 }
 

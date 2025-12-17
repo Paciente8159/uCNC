@@ -176,7 +176,7 @@ void softspi_bulk_xmit(softspi_port_t *port, const uint8_t *out, uint8_t *in, ui
 	{
 		while (port->spiport->bulk_xmit(out, in, len))
 		{
-			cnc_yield();
+			TASK_YIELD();
 		}
 		return;
 	}
@@ -194,7 +194,7 @@ void softspi_bulk_xmit(softspi_port_t *port, const uint8_t *out, uint8_t *in, ui
 		if (timeout < mcu_millis())
 		{
 			timeout = BULK_SPI_TIMEOUT + mcu_millis();
-			cnc_yield();
+			TASK_YIELD();
 		}
 	}
 }

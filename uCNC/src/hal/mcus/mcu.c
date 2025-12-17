@@ -1090,7 +1090,7 @@ bool __attribute__((weak)) mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in
 		if (timeout < mcu_millis())
 		{
 			timeout = BULK_SPI_TIMEOUT + mcu_millis();
-			cnc_yield();
+			TASK_YIELD();
 		}
 	}
 
@@ -1136,7 +1136,7 @@ bool __attribute__((weak)) mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *i
 		if (timeout < mcu_millis())
 		{
 			timeout = BULK_SPI2_TIMEOUT + mcu_millis();
-			cnc_yield();
+			TASK_YIELD();
 		}
 	}
 

@@ -68,7 +68,7 @@ extern "C"
 
 // atomic operations
 #define mcu_in_isr_context() xPortInIsrContext()
-#define cnc_yield()           \
+#define TASK_YIELD()           \
 	if (!xPortInIsrContext()) \
 	vPortYield()
 
@@ -76,6 +76,7 @@ extern "C"
 #define __FREERTOS_MUTEX_GIVE__(mutex) ((xPortInIsrContext()) ? (xSemaphoreGiveFromISR(mutex, NULL)) : (xSemaphoreGive(mutex)))
 
 #define DECL_MUTEX(name) SemaphoreHandle_t name##_mutex_lock = NULL
+#define ATOMIC_TYPE SemaphoreHandle_t
 #define MUTEX_UNDEF (NULL)
 #define MUTEX_LOCKED true
 #define MUTEX_UNLOCKED false

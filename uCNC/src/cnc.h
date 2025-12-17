@@ -167,11 +167,6 @@ extern "C"
 	bool cnc_dotasks(void);
 	// emulates code context yield in a linear code execution
 	// this can be replaced in multicore/RTOS environments
-#ifndef cnc_yield
-#define cnc_yield()            \
-	if (!mcu_in_isr_context()) \
-	cnc_dotasks()
-#endif
 	uint8_t cnc_home(void);
 	void cnc_alarm(int8_t code);
 	bool cnc_has_alarm(void);
