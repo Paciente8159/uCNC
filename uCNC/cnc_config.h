@@ -623,9 +623,10 @@ extern "C"
 	 * 0 - disables
 	 * 1 - partially emulates the startup message and prints unused settings to improve compatibility
 	 * 2 - full emulation of the grbl startup and info messages (this also makes command $IE available to print the firmware information in extended format)
+	 * 3 - **New** drops ESTOP behaviour µCNC shutdown locking for a more similar Grbl behavior
 	 * */
 
-#define EMULATE_GRBL_STARTUP 1
+#define EMULATE_GRBL_STARTUP 2
 
 	/**
 	 *

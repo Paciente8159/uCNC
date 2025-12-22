@@ -116,7 +116,7 @@ static void FORCEINLINE debug_putc(char c)
 		BUFFER_CLEAR(debug_tx);
 		rom_strcpy((char *)debug_tx_bufferdata, __romstr__("Debug buffer overflow!!\n\0"));
 		debug_tx_lines = 1;
-		debug_tx.count = strlen((char *)debug_tx_bufferdata);
+		debug_tx.head = strlen((char *)debug_tx_bufferdata);
 	}
 
 	if (c == '\n')

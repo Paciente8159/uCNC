@@ -189,8 +189,6 @@ extern "C"
 	// generates a default delegate, event and handler hook
 	// event_cnc_reset_handler
 	DECL_EVENT_HANDLER(cnc_reset);
-	// event_rtc_tick_handler
-	DECL_EVENT_HANDLER(rtc_tick);
 	// event_cnc_dotasks_handler
 	DECL_EVENT_HANDLER(cnc_dotasks);
 	#ifndef modules_dotasks

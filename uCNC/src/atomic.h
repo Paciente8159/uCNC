@@ -84,9 +84,9 @@ extern "C"
 #define ATOMIC_STORE_N(dst, val, mode) \
 	ATOMIC_CODEBLOCK { *(dst) = (val); }
 #endif
-// fetch, compare and modify operations
+	// fetch, compare and modify operations
 #ifndef ATOMIC_COMPARE_EXCHANGE_N
-#define ATOMIC_COMPARE_EXCHANGE_N(dst, cmp, des, sucmode, failmode) ({bool __res; ATOMIC_CODEBLOCK{__res = (*(dst)==*(cmp)); if(__res){*(dst) = (des);}else{*(cmp) = *(dst);}} __res; })
+#define ATOMIC_COMPARE_EXCHANGE_N(dst, cmp, des, sucmode, failmode) ({bool __res = false; ATOMIC_CODEBLOCK{__res = (*(dst)==*(cmp)); if(__res){*(dst) = (des);}else{*(cmp) = *(dst);}} __res; })
 #endif
 // fetch and modify operations
 #ifndef ATOMIC_FETCH_XOR
