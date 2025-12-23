@@ -394,13 +394,6 @@ MCU_CALLBACK void mcu_rtc_cb(uint32_t millis)
 	itp_feed_counter = mls;
 #endif
 
-#ifdef ENABLE_MAIN_LOOP_MODULES
-	if (!cnc_get_exec_state(EXEC_ALARM))
-	{
-		EVENT_INVOKE(rtc_tick, NULL);
-	}
-#endif
-
 #if ASSERT_PIN(ACTIVITY_LED)
 	// this blinks aprox. once every 1024ms
 	if (!(millis & (0x200 - 1)))
