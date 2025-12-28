@@ -154,19 +154,19 @@ extern "C"
 #define BUFFER_GUARD
 
 #ifndef DECL_MUTEX
-#define MUTEX_UNDEF ((uint8_t)-1)
-#define MUTEX_LOCKED 1
-#define MUTEX_UNLOCKED 0
+#define BIN_SEMPH_UNDEF ((uint8_t)-1)
+#define BIN_SEMPH_LOCKED 1
+#define BIN_SEMPH_UNLOCKED 0
 
 #ifndef ATOMIC_TYPE
 #define ATOMIC_TYPE volatile uint8_t
 #endif
 
 // mutex
-#define DECL_MUTEX(name) volatile ATOMIC_TYPE name = MUTEX_UNDEF
-#define MUTEX_INIT(name, locked) ({int8_t name##_mutex_temp = MUTEX_UNDEF; ATOMIC_COMPARE_EXCHANGE_N(&name, &name##_mutex_temp, (locked), __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE); })
-#define MUTEX_UNLOCK(name) ({int8_t name##_mutex_temp = MUTEX_LOCKED; ATOMIC_COMPARE_EXCHANGE_N(&name, &name##_mutex_temp, MUTEX_UNLOCKED, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE); })
-	static FORCEINLINE bool mutex_safe_lock(ATOMIC_TYPE *lock, uint32_t timeout)
+#define DECL_MUTEX(name) volatile ATOMIC_TYPE name = BIN_SEMPH_UNDEF
+#define BIN_SEMPH_INIT(name, locked) ({int8_t name##_semph_temp = BIN_SEMPH_UNDEF; ATOMIC_COMPARE_EXCHANGE_N(&name, &name##_semph_temp, (locked), __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE); })
+#define BIN_SEMPH_UNLOCK(name) ({int8_t name##_semph_temp = BIN_SEMPH_LOCKED; ATOMIC_COMPARE_EXCHANGE_N(&name, &name##_semph_temp, BIN_SEMPH_UNLOCKED, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE); })
+	static FORCEINLINE bool semph_safe_lock(ATOMIC_TYPE *lock, uint32_t timeout)
 	{
 		// converts to us
 		if (timeout > (UINT32_MAX / 1000))
@@ -177,8 +177,8 @@ extern "C"
 		uint32_t now = mcu_free_micros();
 		for (;;)
 		{
-			ATOMIC_TYPE expected = MUTEX_UNLOCKED;
-			if (ATOMIC_COMPARE_EXCHANGE_N(lock, &expected, MUTEX_LOCKED, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE))
+			ATOMIC_TYPE expected = BIN_SEMPH_UNLOCKED;
+			if (ATOMIC_COMPARE_EXCHANGE_N(lock, &expected, BIN_SEMPH_LOCKED, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE))
 			{
 				return true;
 			}
@@ -197,9 +197,9 @@ extern "C"
 
 		return false;
 	}
-#define MUTEX_TIMEDLOCK(name, timeout_ms) mutex_safe_lock(&name, timeout_ms)
-#define MUTEX_LOCK(name) MUTEX_TIMEDLOCK(name, 0xFFFFFFFF)
-#define MUTEX_TRYLOCK(name) MUTEX_TIMEDLOCK(name, 0)
+#define BIN_SEMPH_TIMEDLOCK(name, timeout_ms) semph_safe_lock(&name, timeout_ms)
+#define BIN_SEMPH_LOCK(name) BIN_SEMPH_TIMEDLOCK(name, 0xFFFFFFFF)
+#define BIN_SEMPH_TRYLOCK(name) BIN_SEMPH_TIMEDLOCK(name, 0)
 #endif
 
 #ifdef __cplusplus

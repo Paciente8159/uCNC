@@ -19,13 +19,13 @@
 #include "softspi.h"
 
 #ifdef MCU_HAS_SPI
-static DECL_MUTEX(spi_mutex);
+static DECL_MUTEX(spi_lock);
 #endif
 #ifdef MCU_HAS_SPI2
-static DECL_MUTEX(spi2_mutex);
+static DECL_MUTEX(spi2_lock);
 #endif
 #ifdef SOFTSPI_LOCKGUARD_ENABLED
-static DECL_MUTEX(softspi_mutex);
+static DECL_MUTEX(softspi_lock);
 #endif
 
 void softspi_config(softspi_port_t *port, spi_config_t config, uint32_t frequency)
@@ -202,13 +202,13 @@ void softspi_bulk_xmit(softspi_port_t *port, const uint8_t *out, uint8_t *in, ui
 void softspi_start(softspi_port_t *port)
 {
 #ifdef MCU_HAS_SPI
-	MUTEX_INIT(spi_mutex, MUTEX_UNLOCKED);
+	BIN_SEMPH_INIT(spi_lock, BIN_SEMPH_UNLOCKED);
 #endif
 #ifdef MCU_HAS_SPI2
-	MUTEX_INIT(spi2_mutex, MUTEX_UNLOCKED);
+	BIN_SEMPH_INIT(spi2_lock, BIN_SEMPH_UNLOCKED);
 #endif
 #ifdef SOFTSPI_LOCKGUARD_ENABLED
-	MUTEX_INIT(softspi_mutex, MUTEX_UNLOCKED);
+	BIN_SEMPH_INIT(softspi_lock, BIN_SEMPH_UNLOCKED);
 #endif
 
 	if (!port)
@@ -224,13 +224,13 @@ void softspi_start(softspi_port_t *port)
 #ifdef MCU_HAS_SPI
 		if (port->spiport == MCU_SPI)
 		{
-			MUTEX_LOCK(spi_mutex);
+			BIN_SEMPH_LOCK(spi_lock);
 		}
 #endif
 #ifdef MCU_HAS_SPI2
 		if (port->spiport == MCU_SPI2)
 		{
-			MUTEX_LOCK(spi2_mutex);
+			BIN_SEMPH_LOCK(spi2_lock);
 		}
 #endif
 		port->haslock = true;
@@ -239,7 +239,7 @@ void softspi_start(softspi_port_t *port)
 	}
 
 #ifdef SOFTSPI_LOCKGUARD_ENABLED
-	MUTEX_LOCK(softspi_mutex);
+	BIN_SEMPH_LOCK(softspi_lock);
 #endif
 	softspi_config(port, port->spiconfig, port->spifreq);
 }
@@ -263,19 +263,19 @@ void softspi_stop(softspi_port_t *port)
 #ifdef MCU_HAS_SPI
 			if (port->spiport == MCU_SPI)
 			{
-				MUTEX_UNLOCK(spi_mutex);
+				BIN_SEMPH_UNLOCK(spi_lock);
 			}
 #endif
 #ifdef MCU_HAS_SPI2
 			if (port->spiport == MCU_SPI2)
 			{
-				MUTEX_UNLOCK(spi2_mutex);
+				BIN_SEMPH_UNLOCK(spi2_lock);
 			}
 #endif
 		}
 		// unlocks resource
 #ifdef SOFTSPI_LOCKGUARD_ENABLED
-		MUTEX_UNLOCK(softspi_mutex);
+		BIN_SEMPH_UNLOCK(softspi_lock);
 #endif
 	}
 }

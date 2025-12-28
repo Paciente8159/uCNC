@@ -73,9 +73,9 @@ static DECL_MUTEX(shifter_running);
 
 MCU_CALLBACK void __attribute__((weak)) shift_register_io_pins(void)
 {
-	MUTEX_INIT(shifter_running, MUTEX_UNLOCKED);
+	BIN_SEMPH_INIT(shifter_running, BIN_SEMPH_UNLOCKED);
 
-	if(MUTEX_TRYLOCK(shifter_running))
+	if(BIN_SEMPH_TRYLOCK(shifter_running))
 	{
 		uint8_t pins[SHIFT_REGISTER_BYTES];
 
@@ -151,7 +151,7 @@ MCU_CALLBACK void __attribute__((weak)) shift_register_io_pins(void)
 		mcu_set_output(IC74HC595_LATCH);
 #endif
 
-		MUTEX_UNLOCK(shifter_running);
+		BIN_SEMPH_UNLOCK(shifter_running);
 	}
 }
 #else

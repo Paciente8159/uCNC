@@ -72,34 +72,34 @@ extern "C"
 	if (!xPortInIsrContext()) \
 	vPortYield()
 
-#define __FREERTOS_MUTEX_TAKE__(mutex, timeout) ((xPortInIsrContext()) ? (xSemaphoreTakeFromISR(mutex, NULL)) : (xSemaphoreTake(mutex, timeout)))
-#define __FREERTOS_MUTEX_GIVE__(mutex) ((xPortInIsrContext()) ? (xSemaphoreGiveFromISR(mutex, NULL)) : (xSemaphoreGive(mutex)))
+#define __FREERTOS_BIN_SEMPH_TAKE__(mutex, timeout) ((xPortInIsrContext()) ? (xSemaphoreTakeFromISR(mutex, NULL)) : (xSemaphoreTake(mutex, timeout)))
+#define __FREERTOS_BIN_SEMPH_GIVE__(mutex) ((xPortInIsrContext()) ? (xSemaphoreGiveFromISR(mutex, NULL)) : (xSemaphoreGive(mutex)))
 
-#define DECL_MUTEX(name) SemaphoreHandle_t name##_mutex_lock = NULL
+#define DECL_MUTEX(name) SemaphoreHandle_t name##_semph_lock = NULL
 #define ATOMIC_TYPE SemaphoreHandle_t
-#define MUTEX_UNDEF (NULL)
-#define MUTEX_LOCKED true
-#define MUTEX_UNLOCKED false
+#define BIN_SEMPH_UNDEF (NULL)
+#define BIN_SEMPH_LOCKED true
+#define BIN_SEMPH_UNLOCKED false
 
-#define MUTEX_INIT(name, locked)                        \
-	if (name##_mutex_lock == MUTEX_UNDEF)               \
+#define BIN_SEMPH_INIT(name, locked)                        \
+	if (name##_semph_lock == BIN_SEMPH_UNDEF)               \
 	{                                                   \
-		name##_mutex_lock = xSemaphoreCreateBinary();   \
+		name##_semph_lock = xSemaphoreCreateBinary();   \
 		if ((locked))                                   \
 		{                                               \
-			__FREERTOS_MUTEX_GIVE__(name##_mutex_lock); \
+			__FREERTOS_BIN_SEMPH_GIVE__(name##_semph_lock); \
 		}                                               \
 	}
 
-#define MUTEX_UNLOCK(name)                         \
-	if (name##_mutex_lock)                          \
+#define BIN_SEMPH_UNLOCK(name)                         \
+	if (name##_semph_lock)                          \
 	{                                               \
-		__FREERTOS_MUTEX_GIVE__(name##_mutex_lock); \
+		__FREERTOS_BIN_SEMPH_GIVE__(name##_semph_lock); \
 	}
 
-#define MUTEX_TIMEDLOCK(name, timeout_ms) __FREERTOS_MUTEX_TAKE__(name##_mutex_lock, timeout_ms)
-#define MUTEX_LOCK(name) MUTEX_TIMEDLOCK(name, portMAX_DELAY)
-#define MUTEX_TRYLOCK(name) MUTEX_TIMEDLOCK(name, 0)
+#define BIN_SEMPH_TIMEDLOCK(name, timeout_ms) __FREERTOS_BIN_SEMPH_TAKE__(name##_semph_lock, timeout_ms)
+#define BIN_SEMPH_LOCK(name) BIN_SEMPH_TIMEDLOCK(name, portMAX_DELAY)
+#define BIN_SEMPH_TRYLOCK(name) BIN_SEMPH_TIMEDLOCK(name, 0)
 
 #ifndef FORCEINLINE
 #define FORCEINLINE __attribute__((always_inline)) inline

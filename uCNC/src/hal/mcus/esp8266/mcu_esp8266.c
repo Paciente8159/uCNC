@@ -120,9 +120,9 @@ DECL_MUTEX(shifter_running);
 // custom implementation of the shift register using the SPI port
 MCU_CALLBACK void spi_shift_register_io_pins(void)
 {
-	MUTEX_INIT(shifter_running);
+	BIN_SEMPH_INIT(shifter_running);
 
-	if(MUTEX_TRYLOCK(shifter_running))
+	if(BIN_SEMPH_TRYLOCK(shifter_running))
 	{
 #if (IC74HC165_COUNT > 0)
 		mcu_set_output_gpio(IC74HC165_LOAD);
@@ -149,7 +149,7 @@ MCU_CALLBACK void spi_shift_register_io_pins(void)
 		mcu_set_output_gpio(IC74HC595_LATCH);
 #endif
 
-		MUTEX_UNLOCK(shifter_running);
+		BIN_SEMPH_UNLOCK(shifter_running);
 	}
 }
 #else
