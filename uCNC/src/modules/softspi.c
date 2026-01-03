@@ -15,18 +15,7 @@
 	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
-#include "../cnc.h"
 #include "softspi.h"
-
-#ifdef MCU_HAS_SPI
-static DECL_MUTEX(spi_lock);
-#endif
-#ifdef MCU_HAS_SPI2
-static DECL_MUTEX(spi2_lock);
-#endif
-#ifdef SOFTSPI_LOCKGUARD_ENABLED
-static DECL_MUTEX(softspi_lock);
-#endif
 
 void softspi_config(softspi_port_t *port, spi_config_t config, uint32_t frequency)
 {
@@ -35,7 +24,9 @@ void softspi_config(softspi_port_t *port, spi_config_t config, uint32_t frequenc
 
 	if (!port)
 	{
-		DEBUG_STR("SPI port not defined\r\n");
+#ifdef MCU_HAS_SPI
+		mcu_spi_config(config, frequency);
+#endif
 		return;
 	}
 
@@ -67,8 +58,11 @@ uint8_t softspi_xmit(softspi_port_t *port, uint8_t c)
 	// if no port is defined defaults to SPI hardware if available
 	if (!port)
 	{
-		DEBUG_STR("SPI port not defined\r\n");
+#ifdef MCU_HAS_SPI
+		return mcu_spi_xmit(c);
+#else
 		return 0;
+#endif
 	}
 
 	// if port with custom method execute it
@@ -115,8 +109,13 @@ uint16_t softspi_xmit16(softspi_port_t *port, uint16_t c)
 	// if no port is defined defaults to SPI hardware if available
 	if (!port)
 	{
-		DEBUG_STR("SPI port not defined\r\n");
+#ifdef MCU_HAS_SPI
+		uint16_t res = mcu_spi_xmit((uint8_t)(c >> 8));
+		res <<= 8;
+		return (res | mcu_spi_xmit((uint8_t)(0xFF & c)));
+#else
 		return 0;
+#endif
 	}
 
 	// if port with custom method execute it
@@ -167,7 +166,12 @@ void softspi_bulk_xmit(softspi_port_t *port, const uint8_t *out, uint8_t *in, ui
 	// if no port is defined defaults to SPI hardware if available
 	if (!port)
 	{
-		DEBUG_STR("SPI port not defined\r\n");
+#ifdef MCU_HAS_SPI
+		while (mcu_spi_bulk_transfer(out, in, len))
+		{
+			TASK_YIELD();
+		}
+#endif
 		return;
 	}
 
@@ -201,19 +205,11 @@ void softspi_bulk_xmit(softspi_port_t *port, const uint8_t *out, uint8_t *in, ui
 
 void softspi_start(softspi_port_t *port)
 {
-#ifdef MCU_HAS_SPI
-	BIN_SEMPH_INIT(spi_lock, BIN_SEMPH_UNLOCKED);
-#endif
-#ifdef MCU_HAS_SPI2
-	BIN_SEMPH_INIT(spi2_lock, BIN_SEMPH_UNLOCKED);
-#endif
-#ifdef SOFTSPI_LOCKGUARD_ENABLED
-	BIN_SEMPH_INIT(softspi_lock, BIN_SEMPH_UNLOCKED);
-#endif
-
 	if (!port)
 	{
-		DEBUG_STR("SPI port not defined\r\n");
+#ifdef MCU_HAS_SPI
+		MODULE_LOCK_ENABLE(LISTENER_HWSPI_LOCK);
+#endif
 		return;
 	}
 
@@ -221,25 +217,20 @@ void softspi_start(softspi_port_t *port)
 	// usually HW ports
 	if (port->spiport)
 	{
-#ifdef MCU_HAS_SPI
 		if (port->spiport == MCU_SPI)
 		{
-			BIN_SEMPH_LOCK(spi_lock);
+			MODULE_LOCK_ENABLE(LISTENER_HWSPI_LOCK);
 		}
-#endif
-#ifdef MCU_HAS_SPI2
-		if (port->spiport == MCU_SPI2)
+		else
 		{
-			BIN_SEMPH_LOCK(spi2_lock);
+			MODULE_LOCK_ENABLE(LISTENER_HWSPI2_LOCK);
 		}
-#endif
-		port->haslock = true;
 		port->spiport->start(port->spiconfig, port->spifreq);
 		return;
 	}
 
 #ifdef SOFTSPI_LOCKGUARD_ENABLED
-	BIN_SEMPH_LOCK(softspi_lock);
+	MODULE_LOCK_ENABLE(LISTENER_SWSPI_LOCK);
 #endif
 	softspi_config(port, port->spiconfig, port->spifreq);
 }
@@ -249,33 +240,26 @@ void softspi_stop(softspi_port_t *port)
 	if (!port)
 	{
 #ifdef MCU_HAS_SPI
-		DEBUG_STR("SPI port not defined\r\n");
+		MODULE_LOCK_DISABLE(LISTENER_HWSPI_LOCK);
 #endif
 		return;
 	}
 
-	if (port->haslock)
+	// if port with custom method execute it
+	if (port->spiport)
 	{
-		// if port with custom method execute it
-		if (port->spiport)
+		port->spiport->stop();
+		if (port->spiport == MCU_SPI)
 		{
-			port->spiport->stop();
-#ifdef MCU_HAS_SPI
-			if (port->spiport == MCU_SPI)
-			{
-				BIN_SEMPH_UNLOCK(spi_lock);
-			}
-#endif
-#ifdef MCU_HAS_SPI2
-			if (port->spiport == MCU_SPI2)
-			{
-				BIN_SEMPH_UNLOCK(spi2_lock);
-			}
-#endif
+			MODULE_LOCK_DISABLE(LISTENER_HWSPI_LOCK);
 		}
-		// unlocks resource
-#ifdef SOFTSPI_LOCKGUARD_ENABLED
-		BIN_SEMPH_UNLOCK(softspi_lock);
-#endif
+		else if (port->spiport == MCU_SPI2)
+		{
+			MODULE_LOCK_DISABLE(LISTENER_HWSPI2_LOCK);
+		}
 	}
+	// unlocks resource
+#ifdef SOFTSPI_LOCKGUARD_ENABLED
+	MODULE_LOCK_DISABLE(LISTENER_SWSPI_LOCK);
+#endif
 }
