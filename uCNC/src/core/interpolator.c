@@ -411,6 +411,11 @@ void itp_run(void)
 			{
 				start_is_synched = true;
 			}
+
+#ifdef ENABLE_ITP_FEED_TASK
+			// force break to allow ISR to exit
+			break;
+#endif
 		}
 
 		uint32_t remaining_steps = itp_cur_plan_block->steps[itp_cur_plan_block->main_stepper];
@@ -513,6 +518,11 @@ void itp_run(void)
 					deaccel_from = 0;
 				}
 			}
+
+#ifdef ENABLE_ITP_FEED_TASK
+			// force break to allow ISR to exit
+			break;
+#endif
 		}
 
 		float speed_change;
@@ -1121,7 +1131,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 		else
 		{
 			cnc_clear_exec_state(EXEC_RUN); // this naturally clears the RUN flag. Any other ISR stop does not clear the flag.
-			itp_stop();											// the buffer is empty. The ISR can stop
+			itp_stop();						// the buffer is empty. The ISR can stop
 			return;
 		}
 	}
