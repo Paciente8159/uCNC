@@ -292,7 +292,7 @@ extern "C"
 	 * processes comment as defined in the RS274NGC
 	 * */
 
-// #define PROCESS_COMMENTS
+	// #define PROCESS_COMMENTS
 
 	/**
 	 * Enables RS274NGC canned cycles
