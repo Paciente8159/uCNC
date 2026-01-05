@@ -6,6 +6,26 @@
 
 # Changelog
 
+## [1.14.0] - XX-01-2026
+
+### Added
+
+- added new atomic primitives (similar to C11) including atomic CAS and basic semaphores (#885)
+- added ring buffer non-blocking methods (#885)
+- added ISR context aware mcu calls (#885)
+- added new Grbl compatibility level (now can be raised to level 3 - less safety strick) (#885)
+
+### Changed
+
+- modified ring buffer to be MPMC-Multi producer/Multi consumer safe (#885)
+- removed rtc_tick event (#885)
+- interpolator now runs on the RTC ISR/thread by default if ENABLE_MAIN_LOOP_MODULES is enabled(#885)
+
+### Fixed
+
+- fixed RP2040/2350 multicore (#885)
+- fixed ESP32 WiFi (#885)
+
 ## [1.13.1] - 28-11-2025
 
 ### Added

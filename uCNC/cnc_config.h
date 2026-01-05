@@ -575,7 +575,7 @@ extern "C"
 #define CTRL_SCHED_CHECK 4
 
 	/**
-	 * EXPERIMENTAL! Uncomment to enable itp step generation to run inside the RTC ISR/task.
+	 * Uncomment to enable itp step generation to run inside the RTC ISR/task.
 	 * This ensures ITP starving prevention. Usually this will be executed at the same sample
 	 * rate as the interpolator with an upper bound of 1Khz and a lower bound of 3Hz
 	 * */
