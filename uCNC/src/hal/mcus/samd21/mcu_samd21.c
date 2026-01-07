@@ -42,8 +42,6 @@
 #include <tusb_ucnc.h>
 #endif
 
-volatile bool samd21_global_isr_enabled;
-
 // setups internal timers (all will run @ 8Mhz on GCLK4)
 #define MAIN_CLOCK_DIV ((uint16_t)(SystemCoreClock / F_TIMERS))
 static void mcu_setup_clocks(void)
@@ -173,6 +171,7 @@ void EIC_Handler(void)
 #if (DIN_IO_EICMASK != 0)
 	if (EIC->INTFLAG.reg & DIN_IO_EICMASK)
 	{
+		mcu_isr_context_enter();
 		mcu_inputs_changed_cb();
 	}
 #endif
@@ -197,7 +196,10 @@ void MCU_ITP_ISR(void)
 		ITP_REG->COUNT16.INTFLAG.bit.MC0 = 1;
 #endif
 		if (!resetstep)
+		{
+			mcu_isr_context_enter();
 			mcu_step_cb();
+		}
 		else
 			mcu_step_reset_cb();
 		resetstep = !resetstep;
@@ -215,7 +217,7 @@ DECL_BUFFER(uint8_t, uart_rx, RX_BUFFER_SIZE);
 
 void mcu_com_isr()
 {
-	__ATOMIC_FORCEON__
+	ATOMIC_CODEBLOCK_NR
 	{
 		if (COM_UART->USART.INTFLAG.bit.RXC && COM_UART->USART.INTENSET.bit.RXC)
 		{
@@ -224,12 +226,10 @@ void mcu_com_isr()
 #if !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
 			if (mcu_com_rx_cb(c))
 			{
-				if (BUFFER_FULL(uart_rx))
+				if (!BUFFER_TRY_ENQUEUE(uart_rx, &c))
 				{
 					STREAM_OVF(c);
 				}
-
-				BUFFER_ENQUEUE(uart_rx, &c);
 			}
 #else
 			mcu_uart_rx_cb(c);
@@ -238,14 +238,14 @@ void mcu_com_isr()
 		if (COM_UART->USART.INTFLAG.bit.DRE && COM_UART->USART.INTENSET.bit.DRE)
 		{
 			mcu_enable_global_isr();
-			if (BUFFER_EMPTY(uart_tx))
+			uint8_t c;
+
+			if (!BUFFER_TRY_DEQUEUE(uart_tx, &c))
 			{
 				COM_UART->USART.INTENCLR.reg = SERCOM_USART_INTENCLR_DRE;
 				return;
 			}
 
-			uint8_t c;
-			BUFFER_DEQUEUE(uart_tx, &c);
 			COM_OUTREG = c;
 		}
 	}
@@ -261,7 +261,7 @@ DECL_BUFFER(uint8_t, uart2_rx, RX_BUFFER_SIZE);
 
 void mcu_com2_isr()
 {
-	__ATOMIC_FORCEON__
+	ATOMIC_CODEBLOCK_NR
 	{
 		if (COM2_UART->USART.INTFLAG.bit.RXC && COM2_UART->USART.INTENSET.bit.RXC)
 		{
@@ -270,22 +270,19 @@ void mcu_com2_isr()
 #if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
 			if (mcu_com_rx_cb(c))
 			{
-				if (BUFFER_FULL(uart2_rx))
+				if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
 				{
 					STREAM_OVF(c);
 				}
-
-				BUFFER_ENQUEUE(uart2_rx, &c);
 			}
 #else
 			mcu_uart2_rx_cb(c);
 #ifndef UART2_DISABLE_BUFFER
-			if (BUFFER_FULL(uart2_rx))
+			if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
 			{
 				STREAM_OVF(c);
 			}
 
-			BUFFER_ENQUEUE(uart2_rx, &c);
 #endif
 #endif
 		}
@@ -293,13 +290,14 @@ void mcu_com2_isr()
 		{
 			// keeps sending chars until null is found
 			mcu_enable_global_isr();
-			if (BUFFER_EMPTY(uart2_tx))
+			uint8_t c;
+
+			if (!BUFFER_TRY_DEQUEUE(uart2_tx, &c))
 			{
 				COM2_UART->USART.INTENCLR.reg = SERCOM_USART_INTENCLR_DRE;
 				return;
 			}
-			uint8_t c;
-			BUFFER_DEQUEUE(uart2_tx, &c);
+
 			COM2_OUTREG = c;
 		}
 	}
@@ -323,15 +321,15 @@ void mcu_usart_init(void)
 		;
 
 	COM_UART->USART.CTRLA.bit.MODE = 1;
-	COM_UART->USART.CTRLA.bit.SAMPR = 0;				 // 16x sample rate
-	COM_UART->USART.CTRLA.bit.FORM = 0;					 // no parity
-	COM_UART->USART.CTRLA.bit.DORD = 1;					 // LSB first
+	COM_UART->USART.CTRLA.bit.SAMPR = 0;		 // 16x sample rate
+	COM_UART->USART.CTRLA.bit.FORM = 0;			 // no parity
+	COM_UART->USART.CTRLA.bit.DORD = 1;			 // LSB first
 	COM_UART->USART.CTRLA.bit.RXPO = COM_RX_PAD; // RX on PAD3
 	COM_UART->USART.CTRLA.bit.TXPO = COM_TX_PAD; // TX on PAD2
-	COM_UART->USART.CTRLB.bit.SBMODE = 0;				 // one stop bit
-	COM_UART->USART.CTRLB.bit.CHSIZE = 0;				 // 8 bits
-	COM_UART->USART.CTRLB.bit.RXEN = 1;					 // enable receiver
-	COM_UART->USART.CTRLB.bit.TXEN = 1;					 // enable transmitter
+	COM_UART->USART.CTRLB.bit.SBMODE = 0;		 // one stop bit
+	COM_UART->USART.CTRLB.bit.CHSIZE = 0;		 // 8 bits
+	COM_UART->USART.CTRLB.bit.RXEN = 1;			 // enable receiver
+	COM_UART->USART.CTRLB.bit.TXEN = 1;			 // enable transmitter
 
 	while (COM_UART->USART.SYNCBUSY.bit.CTRLB)
 		;
@@ -369,15 +367,15 @@ void mcu_usart_init(void)
 		;
 
 	COM2_UART->USART.CTRLA.bit.MODE = 1;
-	COM2_UART->USART.CTRLA.bit.SAMPR = 0;					 // 16x sample rate
-	COM2_UART->USART.CTRLA.bit.FORM = 0;					 // no parity
-	COM2_UART->USART.CTRLA.bit.DORD = 1;					 // LSB first
+	COM2_UART->USART.CTRLA.bit.SAMPR = 0;		   // 16x sample rate
+	COM2_UART->USART.CTRLA.bit.FORM = 0;		   // no parity
+	COM2_UART->USART.CTRLA.bit.DORD = 1;		   // LSB first
 	COM2_UART->USART.CTRLA.bit.RXPO = COM2_RX_PAD; // RX on PAD3
 	COM2_UART->USART.CTRLA.bit.TXPO = COM2_TX_PAD; // TX on PAD2
-	COM2_UART->USART.CTRLB.bit.SBMODE = 0;				 // one stop bit
-	COM2_UART->USART.CTRLB.bit.CHSIZE = 0;				 // 8 bits
-	COM2_UART->USART.CTRLB.bit.RXEN = 1;					 // enable receiver
-	COM2_UART->USART.CTRLB.bit.TXEN = 1;					 // enable transmitter
+	COM2_UART->USART.CTRLB.bit.SBMODE = 0;		   // one stop bit
+	COM2_UART->USART.CTRLB.bit.CHSIZE = 0;		   // 8 bits
+	COM2_UART->USART.CTRLB.bit.RXEN = 1;		   // enable receiver
+	COM2_UART->USART.CTRLB.bit.TXEN = 1;		   // enable transmitter
 
 	while (COM2_UART->USART.SYNCBUSY.bit.CTRLB)
 		;
@@ -477,7 +475,7 @@ void servo_timer_init()
 		;
 	// enable the timer in the APB
 	SERVO_REG->CTRLA.bit.PRESCALER = (uint8_t)0x4; // prescaller /16
-	SERVO_REG->WAVE.bit.WAVEGEN = 1;							 // match compare
+	SERVO_REG->WAVE.bit.WAVEGEN = 1;			   // match compare
 	while (SERVO_REG->SYNCBUSY.bit.WAVE)
 		;
 #else
@@ -487,7 +485,7 @@ void servo_timer_init()
 		;
 	// enable the timer in the APB
 	SERVO_REG->COUNT16.CTRLA.bit.PRESCALER = (uint8_t)0x4; // prescaller /16
-	SERVO_REG->COUNT16.CTRLA.bit.WAVEGEN = 1;							 // match compare
+	SERVO_REG->COUNT16.CTRLA.bit.WAVEGEN = 1;			   // match compare
 	while (SERVO_REG->COUNT16.STATUS.bit.SYNCBUSY)
 		;
 #endif
@@ -553,7 +551,6 @@ void SysTick_Handler(void)
 void sysTickHook(void)
 #endif
 {
-	mcu_disable_global_isr();
 	// counts to 20 and reloads
 #if SERVOS_MASK > 0
 	static uint8_t ms_servo_counter = 0;
@@ -606,8 +603,8 @@ void sysTickHook(void)
 	uint32_t millis = mcu_runtime_ms;
 	millis++;
 	mcu_runtime_ms = millis;
+	mcu_isr_context_enter();
 	mcu_rtc_cb(millis);
-	mcu_enable_global_isr();
 }
 
 void mcu_rtc_init()
@@ -620,8 +617,8 @@ void mcu_rtc_init()
 }
 
 #ifdef MCU_HAS_DMA
-static DmacDescriptor mcu_dma_descriptor_sram[DMA_CHANNEL_COUNT] __attribute__ ((aligned (16)));
-static DmacDescriptor mcu_dma_write_back_sram[DMA_CHANNEL_COUNT] __attribute__ ((aligned (16)));
+static DmacDescriptor mcu_dma_descriptor_sram[DMA_CHANNEL_COUNT] __attribute__((aligned(16)));
+static DmacDescriptor mcu_dma_write_back_sram[DMA_CHANNEL_COUNT] __attribute__((aligned(16)));
 
 void mcu_dma_config(void)
 {
@@ -633,9 +630,9 @@ void mcu_dma_config(void)
 
 	// Make all memory access low priority
 	DMAC->QOSCTRL.reg =
-			DMAC_QOSCTRL_DQOS(1) |
-			DMAC_QOSCTRL_FQOS(1) |
-			DMAC_QOSCTRL_WRBQOS(1);
+		DMAC_QOSCTRL_DQOS(1) |
+		DMAC_QOSCTRL_FQOS(1) |
+		DMAC_QOSCTRL_WRBQOS(1);
 	// Use static priority level
 	DMAC->PRICTRL0.reg = DMAC_PRICTRL0_RESETVALUE;
 
@@ -659,7 +656,6 @@ void mcu_dma_config(void)
  * */
 void mcu_init(void)
 {
-	samd21_global_isr_enabled = false;
 	mcu_setup_clocks();
 	mcu_io_init();
 	mcu_usart_init();
@@ -682,8 +678,8 @@ void mcu_init(void)
 		;
 
 	SPICOM->SPI.CTRLA.bit.MODE = 3;
-	SPICOM->SPI.CTRLA.bit.DORD = 0;											 // MSB
-	SPICOM->SPI.CTRLA.bit.CPHA = SPI_MODE & 0x01;				 // MODE
+	SPICOM->SPI.CTRLA.bit.DORD = 0;						 // MSB
+	SPICOM->SPI.CTRLA.bit.CPHA = SPI_MODE & 0x01;		 // MODE
 	SPICOM->SPI.CTRLA.bit.CPOL = (SPI_MODE >> 1) & 0x01; // MODE
 	SPICOM->SPI.CTRLA.bit.FORM = 0;
 	SPICOM->SPI.CTRLA.bit.DIPO = SPI_INPAD;
@@ -722,8 +718,8 @@ void mcu_init(void)
 		;
 
 	SPI2COM->SPI.CTRLA.bit.MODE = 3;
-	SPI2COM->SPI.CTRLA.bit.DORD = 0;											 // MSB
-	SPI2COM->SPI.CTRLA.bit.CPHA = SPI2_MODE & 0x01;				 // MODE
+	SPI2COM->SPI.CTRLA.bit.DORD = 0;					   // MSB
+	SPI2COM->SPI.CTRLA.bit.CPHA = SPI2_MODE & 0x01;		   // MODE
 	SPI2COM->SPI.CTRLA.bit.CPOL = (SPI2_MODE >> 1) & 0x01; // MODE
 	SPI2COM->SPI.CTRLA.bit.FORM = 0;
 	SPI2COM->SPI.CTRLA.bit.DIPO = SPI2_INPAD;
@@ -862,7 +858,7 @@ DECL_BUFFER(uint8_t, usb_rx, RX_BUFFER_SIZE);
 uint8_t mcu_usb_getc(void)
 {
 	uint8_t c = 0;
-	BUFFER_DEQUEUE(usb_rx, &c);
+	BUFFER_TRY_DEQUEUE(usb_rx, &c);
 	return c;
 }
 
@@ -903,7 +899,7 @@ void mcu_usb_flush(void)
 uint8_t mcu_uart_getc(void)
 {
 	uint8_t c = 0;
-	BUFFER_DEQUEUE(uart_rx, &c);
+	BUFFER_TRY_DEQUEUE(uart_rx, &c);
 	return c;
 }
 
@@ -919,11 +915,10 @@ void mcu_uart_clear(void)
 
 void mcu_uart_putc(uint8_t c)
 {
-	while (BUFFER_FULL(uart_tx))
+	while (!BUFFER_TRY_ENQUEUE(uart_tx, &c))
 	{
 		mcu_uart_flush();
 	}
-	BUFFER_ENQUEUE(uart_tx, &c);
 }
 
 void mcu_uart_flush(void)
@@ -942,7 +937,7 @@ void mcu_uart_flush(void)
 uint8_t mcu_uart2_getc(void)
 {
 	uint8_t c = 0;
-	BUFFER_DEQUEUE(uart2_rx, &c);
+	BUFFER_TRY_DEQUEUE(uart2_rx, &c);
 	return c;
 }
 
@@ -958,11 +953,10 @@ void mcu_uart2_clear(void)
 
 void mcu_uart2_putc(uint8_t c)
 {
-	while (BUFFER_FULL(uart2_tx))
+	while (!BUFFER_TRY_ENQUEUE(uart2_tx, &c))
 	{
 		mcu_uart2_flush();
 	}
-	BUFFER_ENQUEUE(uart2_tx, &c);
 }
 
 void mcu_uart_flush(void)
@@ -1043,7 +1037,7 @@ void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 		;
 	// enable the timer in the APB
 	ITP_REG->CTRLA.bit.PRESCALER = (uint8_t)prescaller; // normal counter
-	ITP_REG->WAVE.bit.WAVEGEN = 1;											// match compare
+	ITP_REG->WAVE.bit.WAVEGEN = 1;						// match compare
 	while (ITP_REG->SYNCBUSY.bit.WAVE)
 		;
 	ITP_REG->CC[0].reg = ticks;
@@ -1065,7 +1059,7 @@ void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 		;
 	// enable the timer in the APB
 	ITP_REG->COUNT16.CTRLA.bit.PRESCALER = (uint8_t)prescaller; // normal counter
-	ITP_REG->COUNT16.CTRLA.bit.WAVEGEN = 1;											// match compare
+	ITP_REG->COUNT16.CTRLA.bit.WAVEGEN = 1;						// match compare
 	while (ITP_REG->COUNT16.STATUS.bit.SYNCBUSY)
 		;
 	ITP_REG->COUNT16.CC[0].reg = ticks;
@@ -1171,12 +1165,10 @@ void mcu_dotasks(void)
 #ifndef DETACH_USB_FROM_MAIN_PROTOCOL
 		if (mcu_com_rx_cb(c))
 		{
-			if (BUFFER_FULL(usb_rx))
+			if (!BUFFER_TRY_ENQUEUE(usb_rx, &c))
 			{
 				STREAM_OVF(c);
 			}
-
-			BUFFER_ENQUEUE(usb_rx, &c);
 		}
 #else
 		mcu_usb_rx_cb(c);
@@ -1267,7 +1259,7 @@ uint8_t mcu_eeprom_getc(uint16_t address)
 {
 	if (NVM_STORAGE_SIZE <= address)
 	{
-		DBGMSG("EEPROM invalid address @ %u",address);
+		DBGMSG("EEPROM invalid address @ %u", address);
 		return 0;
 	}
 	address &= (NVM_EEPROM_SIZE - 1); // keep within 1Kb address range
@@ -1287,7 +1279,7 @@ void mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
 	if (NVM_STORAGE_SIZE <= address)
 	{
-		DBGMSG("EEPROM invalid address @ %u",address);
+		DBGMSG("EEPROM invalid address @ %u", address);
 	}
 	address &= (NVM_EEPROM_SIZE - 1);
 
@@ -1402,7 +1394,7 @@ void mcu_spi_config(spi_config_t config, uint32_t frequency)
 	SPICOM->SPI.CTRLA.bit.ENABLE = 0;
 	while (SPICOM->SPI.SYNCBUSY.bit.ENABLE)
 		;
-	SPICOM->SPI.CTRLA.bit.CPHA = config.mode & 0x01;				// MODE
+	SPICOM->SPI.CTRLA.bit.CPHA = config.mode & 0x01; // MODE
 
 	SPICOM->SPI.CTRLA.bit.CPOL = (config.mode >> 1) & 0x01; // MODE
 	SPICOM->SPI.BAUD.reg = frequency;
@@ -1569,12 +1561,12 @@ bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t da
 			}
 			// Check if reception finished
 			DMAC->CHID.reg = SPI_DMA_RX_CHANNEL;
-			
+
 			if (DMAC->CHCTRLA.bit.ENABLE)
 			{
 				return true;
 			}
-			
+
 			// All transfers finished
 			spi_port_state = SPI_IDLE;
 			return false;
@@ -1637,7 +1629,7 @@ void mcu_spi2_config(spi_config_t config, uint32_t frequency)
 	SPI2COM->SPI.CTRLA.bit.ENABLE = 0;
 	while (SPI2COM->SPI.SYNCBUSY.bit.ENABLE)
 		;
-	SPI2COM->SPI.CTRLA.bit.CPHA = config.mode & 0x01;				// MODE
+	SPI2COM->SPI.CTRLA.bit.CPHA = config.mode & 0x01; // MODE
 
 	SPI2COM->SPI.CTRLA.bit.CPOL = (config.mode >> 1) & 0x01; // MODE
 	SPI2COM->SPI.BAUD.reg = frequency;
@@ -1804,12 +1796,12 @@ bool mcu_spi2_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t d
 			}
 			// Check if reception finished
 			DMAC->CHID.reg = SPI2_DMA_RX_CHANNEL;
-			
+
 			if (DMAC->CHCTRLA.bit.ENABLE)
 			{
 				return true;
 			}
-			
+
 			// All transfers finished
 			spi2_port_state = SPI_IDLE;
 			return false;
@@ -2152,6 +2144,7 @@ void MCU_ONESHOT_ISR(void)
 
 	if (mcu_timeout_cb)
 	{
+		mcu_isr_context_enter();
 		mcu_timeout_cb();
 	}
 
@@ -2175,7 +2168,7 @@ void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 		;
 	// enable the timer in the APB
 	ONESHOT_REG->CTRLA.bit.PRESCALER = (uint8_t)prescaller; // normal counter
-	ONESHOT_REG->WAVE.bit.WAVEGEN = 1;											// match compare
+	ONESHOT_REG->WAVE.bit.WAVEGEN = 1;						// match compare
 	while (ONESHOT_REG->SYNCBUSY.bit.WAVE)
 		;
 	ONESHOT_REG->CC[0].reg = ticks;
@@ -2192,7 +2185,7 @@ void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 		;
 	// enable the timer in the APB
 	ONESHOT_REG->COUNT16.CTRLA.bit.PRESCALER = (uint8_t)prescaller; // normal counter
-	ONESHOT_REG->COUNT16.CTRLA.bit.WAVEGEN = 1;											// match compare
+	ONESHOT_REG->COUNT16.CTRLA.bit.WAVEGEN = 1;						// match compare
 	while (ONESHOT_REG->COUNT16.STATUS.bit.SYNCBUSY)
 		;
 	ONESHOT_REG->COUNT16.CC[0].reg = ticks;

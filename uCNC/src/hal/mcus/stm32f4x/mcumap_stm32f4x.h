@@ -60,7 +60,6 @@ extern "C"
 #define rom_read_byte *
 
 	// needed by software delays
-
 #ifndef MCU_CYCLES_PER_LOOP
 #define MCU_CYCLES_PER_LOOP 4
 #endif
@@ -4535,18 +4534,9 @@ extern "C"
 #define mcu_disable_probe_isr()
 #endif
 
-	extern volatile bool stm32_global_isr_enabled;
-#define mcu_enable_global_isr()      \
-	{                                  \
-		__enable_irq();                  \
-		stm32_global_isr_enabled = true; \
-	}
-#define mcu_disable_global_isr()      \
-	{                                   \
-		stm32_global_isr_enabled = false; \
-		__disable_irq();                  \
-	}
-#define mcu_get_global_isr() stm32_global_isr_enabled
+#define mcu_enable_global_isr __enable_irq
+#define mcu_disable_global_isr __disable_irq
+#define mcu_get_global_isr() (__get_PRIMASK() == 0u)
 #define mcu_free_micros() ((uint32_t)((((SysTick->LOAD + 1) - SysTick->VAL) * 1000UL) / (SysTick->LOAD + 1)))
 
 #define GPIO_RESET 0x3U

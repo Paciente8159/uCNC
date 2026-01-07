@@ -75,22 +75,22 @@ extern "C"
 #define MCU_CYCLES_LOOP_OVERHEAD 1
 #endif
 
-#define mcu_delay_loop(X)                              \
-	do                                                   \
-	{                                                    \
+#define mcu_delay_loop(X)                                  \
+	do                                                     \
+	{                                                      \
 		asm volatile("" ::: "memory");                     \
 		register uint16_t __count = (X);                   \
 		__asm__ volatile(                                  \
-				"1: sub %[cnt], %[cnt], #1\n" /* 1 cycle */    \
-				"   cmp %[cnt], #0\n"					/* 1 cycle */    \
-				"   bne 1b\n"									/* 1–2 cycles */ \
-				"   nop\n"										/* 1 cycle */    \
-				: [cnt] "+r"(__count)                          \
-				:                                              \
-				: "cc");                                       \
+			"1: sub %[cnt], %[cnt], #1\n" /* 1 cycle */    \
+			"   cmp %[cnt], #0\n"		  /* 1 cycle */    \
+			"   bne 1b\n"				  /* 1–2 cycles */ \
+			"   nop\n"					  /* 1 cycle */    \
+			: [cnt] "+r"(__count)                          \
+			:                                              \
+			: "cc");                                       \
 		asm volatile("" ::: "memory");                     \
 	} while (0)
-		
+
 #ifdef RX_BUFFER_CAPACITY
 #define RX_BUFFER_CAPACITY 255
 #endif
@@ -1361,20 +1361,20 @@ extern "C"
 
 #ifndef BYTE_OPS
 #define BYTE_OPS
-#define SETBIT(x, y) ((x) |= (1UL << (y)))		/* Set bit y in byte x*/
+#define SETBIT(x, y) ((x) |= (1UL << (y)))	  /* Set bit y in byte x*/
 #define CLEARBIT(x, y) ((x) &= ~(1UL << (y))) /* Clear bit y in byte x*/
-#define CHECKBIT(x, y) ((x) & (1UL << (y)))		/* Check bit y in byte x*/
+#define CHECKBIT(x, y) ((x) & (1UL << (y)))	  /* Check bit y in byte x*/
 #define TOGGLEBIT(x, y) ((x) ^= (1UL << (y))) /* Toggle bit y in byte x*/
 
-#define SETFLAG(x, y) ((x) |= (y))		/* Set byte y in byte x*/
+#define SETFLAG(x, y) ((x) |= (y))	  /* Set byte y in byte x*/
 #define CLEARFLAG(x, y) ((x) &= ~(y)) /* Clear byte y in byte x*/
-#define CHECKFLAG(x, y) ((x) & (y))		/* Check byte y in byte x*/
+#define CHECKFLAG(x, y) ((x) & (y))	  /* Check byte y in byte x*/
 #define TOGGLEFLAG(x, y) ((x) ^= (y)) /* Toggle byte y in byte x*/
 #endif
 
 #define mcu_config_output(X) pinMode(__indirect__(X, BIT), OUTPUT)
-#define mcu_config_pwm(X, freq)            \
-	{                                        \
+#define mcu_config_pwm(X, freq)                \
+	{                                          \
 		pinMode(__indirect__(X, BIT), OUTPUT); \
 		analogWriteRange(255);                 \
 		analogWriteFreq(freq);                 \
@@ -1392,8 +1392,8 @@ extern "C"
 #define mcu_toggle_output(X) ({ sio_hw->gpio_togl = (1UL << __indirect__(X, BIT)); })
 
 	extern uint8_t rp2040_pwm[16];
-#define mcu_set_pwm(X, Y)                 \
-	{                                       \
+#define mcu_set_pwm(X, Y)                     \
+	{                                         \
 		rp2040_pwm[X - PWM_PINS_OFFSET] = Y;  \
 		analogWrite(__indirect__(X, BIT), Y); \
 	}
@@ -1402,12 +1402,59 @@ extern "C"
 
 #define mcu_millis() millis()
 #define mcu_micros() micros()
+
+#include "cmsis_gcc.h"
+#define mcu_enable_global_isr __enable_irq
+#define mcu_disable_global_isr __disable_irq
+#define mcu_get_global_isr() (__get_PRIMASK() == 0u)
+
 #define mcu_free_micros() ((uint32_t)((((SysTick->LOAD + 1) - SysTick->VAL) * 1000UL) / (SysTick->LOAD + 1)))
 
 #if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
 #ifndef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 #define BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 #endif
+#endif
+
+#define USE_CUSTOM_BUFFER_IMPLEMENTATION
+#ifdef USE_CUSTOM_BUFFER_IMPLEMENTATION
+#include <pico/util/queue.h>
+#define DECL_BUFFER(type, name, size) \
+	static queue_t name##_bufferdata; \
+	ring_buffer_t name = {0, 0, NULL, (uint8_t *)&name##_bufferdata, size, sizeof(type)}
+#define BUFFER_INIT(type, name, size) \
+	extern ring_buffer_t name;        \
+	queue_init((queue_t *)name.data, sizeof(type), size)
+#define BUFFER_WRITE_AVAILABLE(buffer) (buffer.size - queue_get_level((queue_t *)buffer.data))
+#define BUFFER_READ_AVAILABLE(buffer) (queue_get_level((queue_t *)buffer.data))
+#define BUFFER_EMPTY(buffer) queue_is_empty((queue_t *)buffer.data)
+#define BUFFER_FULL(buffer) queue_is_full((queue_t *)buffer.data)
+#define BUFFER_PEEK(buffer, ptr)                      \
+	if (!queue_try_peek((queue_t *)buffer.data, ptr)) \
+	{                                                 \
+		memset(ptr, 0, buffer.elem_size);             \
+	}
+#define BUFFER_TRY_DEQUEUE(buffer, ptr)                 \
+	if (!queue_try_remove((queue_t *)buffer.data, ptr)) \
+	{                                                   \
+		memset(ptr, 0, buffer.elem_size);               \
+	}
+#define BUFFER_DEQUEUE(buffer, ptr) \
+	do                              \
+	{                               \
+	} while (!queue_try_remove((queue_t *)buffer.data, ptr))
+#define BUFFER_TRY_ENQUEUE(buffer, ptr) queue_try_add((queue_t *)buffer.data, ptr)
+#define BUFFER_ENQUEUE(buffer, ptr) \
+	do                              \
+	{                               \
+	} while (!queue_try_add((queue_t *)buffer.data, ptr))
+#define BUFFER_WRITE(buffer, ptr, len, written) ({for(uint8_t i = 0; i<len; i++){if(!queue_try_add((queue_t*)buffer.data, &ptr[i])){break;}written++;} })
+#define BUFFER_READ(buffer, ptr, len, read) ({for(uint8_t i = 0; i<len; i++){if(!queue_try_remove((queue_t*)buffer.data, &ptr[i])){break;}read++;} })
+#define BUFFER_CLEAR(buffer)                            \
+	while (!queue_is_empty((queue_t *)buffer.data))     \
+	{                                                   \
+		queue_try_remove((queue_t *)buffer.data, NULL); \
+	}
 #endif
 
 /**
@@ -1417,43 +1464,15 @@ extern "C"
  * Runs CNC loop on core 1
  * **/
 #ifdef RP2040_RUN_MULTICORE
-
-#define USE_CUSTOM_BUFFER_IMPLEMENTATION
-#include <pico/util/queue.h>
-#define DECL_BUFFER(type, name, size) \
-	static queue_t name##_bufferdata;   \
-	ring_buffer_t name = {0, 0, 0, (uint8_t *)&name##_bufferdata, size, sizeof(type)}
-#define BUFFER_INIT(type, name, size) \
-	extern ring_buffer_t name;          \
-	queue_init((queue_t *)name.data, sizeof(type), size)
-#define BUFFER_WRITE_AVAILABLE(buffer) (buffer.size - queue_get_level((queue_t *)buffer.data))
-#define BUFFER_READ_AVAILABLE(buffer) (queue_get_level((queue_t *)buffer.data))
-#define BUFFER_EMPTY(buffer) queue_is_empty((queue_t *)buffer.data)
-#define BUFFER_FULL(buffer) queue_is_full((queue_t *)buffer.data)
-#define BUFFER_PEEK(buffer, ptr)                    \
-	if (!queue_try_peek((queue_t *)buffer.data, ptr)) \
-	{                                                 \
-		memset(ptr, 0, buffer.elem_size);               \
-	}
-#define BUFFER_DEQUEUE(buffer, ptr)                   \
-	if (!queue_try_remove((queue_t *)buffer.data, ptr)) \
-	{                                                   \
-		memset(ptr, 0, buffer.elem_size);                 \
-	}
-#define BUFFER_ENQUEUE(buffer, ptr) queue_try_add((queue_t *)buffer.data, ptr)
-#define BUFFER_WRITE(buffer, ptr, len, written) ({for(uint8_t i = 0; i<len; i++){if(!queue_try_add((queue_t*)buffer.data, &ptr[i])){break;}written++;} })
-#define BUFFER_READ(buffer, ptr, len, read) ({for(uint8_t i = 0; i<len; i++){if(!queue_try_remove((queue_t*)buffer.data, &ptr[i])){break;}read++;} })
-#define BUFFER_CLEAR(buffer)                        \
-	while (!queue_is_empty((queue_t *)buffer.data))   \
-	{                                                 \
-		queue_try_remove((queue_t *)buffer.data, NULL); \
-	}
-
 	/**
 	 * Launch multicore
 	 * **/
-	// 	extern void rp2040_core1_loop();
-	// #define ucnc_init() cnc_init();	multicore_launch_core1(rp2040_core1_loop)
+	extern void rp2040_core1_loop();
+#define ucnc_init()       \
+	cnc_init();           \
+	rp2040.fifo.begin(2); \
+	delay(1);             \
+	multicore_launch_core1(rp2040_core1_loop)
 	extern void rp2040_core0_loop();
 #define ucnc_run() rp2040_core0_loop()
 

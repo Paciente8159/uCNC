@@ -35,7 +35,6 @@
 #include "twi.h"
 #endif
 
-volatile uint32_t esp8266_global_isr;
 static volatile uint32_t mcu_runtime_ms;
 
 #ifndef TIMER_IO_SAMPLE_RATE
@@ -121,9 +120,9 @@ DECL_MUTEX(shifter_running);
 // custom implementation of the shift register using the SPI port
 MCU_CALLBACK void spi_shift_register_io_pins(void)
 {
-	MUTEX_INIT(shifter_running);
+	BIN_SEMPH_INIT(shifter_running);
 
-	MUTEX_TAKE(shifter_running)
+	if(BIN_SEMPH_TRYLOCK(shifter_running))
 	{
 #if (IC74HC165_COUNT > 0)
 		mcu_set_output_gpio(IC74HC165_LOAD);
@@ -149,6 +148,8 @@ MCU_CALLBACK void spi_shift_register_io_pins(void)
 #if (IC74HC595_COUNT > 0)
 		mcu_set_output_gpio(IC74HC595_LATCH);
 #endif
+
+		BIN_SEMPH_UNLOCK(shifter_running);
 	}
 }
 #else
@@ -267,7 +268,7 @@ static void FORCEINLINE out_io_push(esp8266_io_out_t val)
 	out_io_buffer[h] = val;
 	h++;
 	h = (h < OUT_IO_BUFFER_SIZE) ? h : 0;
-	__ATOMIC__
+	ATOMIC_CODEBLOCK
 	{
 		out_io_head = h;
 	}
@@ -346,6 +347,7 @@ IRAM_ATTR void mcu_controls_isr(void)
 
 IRAM_ATTR void mcu_itp_isr(void)
 {
+	mcu_isr_context_enter();
 	if (esp8266_step_mode == ITP_STEP_MODE_REALTIME)
 	{
 		signal_timer.us_step = 1000000 / (TIMER_IO_SAMPLE_RATE >> 2);
@@ -387,7 +389,7 @@ IRAM_ATTR void mcu_itp_isr(void)
 void itp_buffer_dotasks(uint16_t limit)
 {
 	static volatile bool running = false;
-	// __ATOMIC__
+	// ATOMIC_CODEBLOCK
 	{
 		if (running)
 		{
@@ -430,7 +432,7 @@ void itp_buffer_dotasks(uint16_t limit)
 		}
 
 		// clear sync flag
-		// __ATOMIC__
+		// ATOMIC_CODEBLOCK
 		{
 			esp8266_step_mode &= ~ITP_STEP_MODE_SYNC;
 		}
@@ -468,6 +470,7 @@ void itp_buffer_dotasks(uint16_t limit)
 IRAM_ATTR void mcu_rtc_isr(void)
 {
 	mcu_runtime_ms++;
+	mcu_isr_context_enter();
 	mcu_rtc_cb(mcu_runtime_ms);
 	itp_buffer_dotasks(OUT_IO_BUFFER_MINIMAL); // process at most 2ms of motion
 	uint32_t stamp = esp_get_cycle_count() + (ESP8266_CLOCK / 1000);
@@ -802,5 +805,7 @@ void mcu_start_timeout()
 }
 #endif
 #endif
+
+   // for PS register bits
 
 #endif

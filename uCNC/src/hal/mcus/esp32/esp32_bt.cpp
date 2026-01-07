@@ -111,12 +111,10 @@ extern "C"
 				uint8_t c = SerialBT.read();
 				if (mcu_com_rx_cb(c))
 				{
-					if (BUFFER_FULL(bt_rx))
+					if (!BUFFER_TRY_ENQUEUE(bt_rx, &c))
 					{
 						STREAM_OVF(c);
 					}
-
-					BUFFER_ENQUEUE(bt_rx, &c);
 				}
 #else
 				mcu_bt_rx_cb((uint8_t)SerialBT.read());
@@ -128,7 +126,7 @@ extern "C"
 	uint8_t mcu_bt_getc(void)
 	{
 		uint8_t c = 0;
-		BUFFER_DEQUEUE(bt_rx, &c);
+		BUFFER_TRY_DEQUEUE(bt_rx, &c);
 		return c;
 	}
 
@@ -144,11 +142,10 @@ extern "C"
 
 	void mcu_bt_putc(uint8_t c)
 	{
-		while (BUFFER_FULL(bt_tx))
+		while (!BUFFER_TRY_ENQUEUE(bt_tx, &c))
 		{
 			mcu_bt_flush();
 		}
-		BUFFER_ENQUEUE(bt_tx, &c);
 	}
 
 	void mcu_bt_flush(void)

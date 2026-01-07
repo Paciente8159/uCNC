@@ -37,6 +37,24 @@ __attribute__((noinline, optimize("O3"))) void mcu_delay_loop(uint16_t loops)
 }
 #endif
 
+/**
+ * ISR context autoflag
+ * This allow to signal that the current code is running in ISR context
+ * The
+ */
+#ifndef mcu_in_isr_context
+volatile uint8_t mcu_in_isr_context_counter;
+void mcu_in_isr_context_leave(uint8_t *counter)
+{
+	ATOMIC_FETCH_SUB(&mcu_in_isr_context_counter, 1, __ATOMIC_ACQ_REL);
+}
+
+bool mcu_in_isr_context(void)
+{
+	return (ATOMIC_LOAD_N(&mcu_in_isr_context_counter, __ATOMIC_ACQUIRE) != 0);
+}
+#endif
+
 void __attribute__((weak)) mcu_io_init(void)
 {
 #if ASSERT_PIN_IO(STEP0)
@@ -1041,6 +1059,12 @@ void __attribute__((weak)) mcu_i2c_slave_cb(uint8_t *data, uint8_t *datalen)
 #endif
 
 #if (defined(MCU_HAS_SPI))
+void __attribute__((weak)) mcu_spi_config(spi_config_t config, uint32_t frequency)
+{
+	(void)config;
+	(void)frequency;
+}
+
 void __attribute__((weak)) mcu_spi_start(spi_config_t config, uint32_t frequency)
 {
 	// reapply port settings if port is shared
@@ -1066,7 +1090,7 @@ bool __attribute__((weak)) mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in
 		if (timeout < mcu_millis())
 		{
 			timeout = BULK_SPI_TIMEOUT + mcu_millis();
-			cnc_dotasks();
+			TASK_YIELD();
 		}
 	}
 
@@ -1081,6 +1105,12 @@ spi_port_t __attribute__((used)) mcu_spi_port = {.isbusy = false, .start = mcu_s
 #endif
 
 #if (defined(MCU_HAS_SPI2))
+void __attribute__((weak)) mcu_spi2_config(spi_config_t config, uint32_t frequency)
+{
+	(void)config;
+	(void)frequency;
+}
+
 void __attribute__((weak)) mcu_spi2_start(spi_config_t config, uint32_t frequency)
 {
 	// reapply port settings if port is shared
@@ -1106,7 +1136,7 @@ bool __attribute__((weak)) mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *i
 		if (timeout < mcu_millis())
 		{
 			timeout = BULK_SPI2_TIMEOUT + mcu_millis();
-			cnc_dotasks();
+			TASK_YIELD();
 		}
 	}
 

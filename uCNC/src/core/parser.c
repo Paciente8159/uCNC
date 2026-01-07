@@ -551,7 +551,7 @@ static uint8_t parser_grbl_command(void)
 						return STATUS_INVALID_STATEMENT;
 					}
 
-					settings_save(block_address, NULL, UINT16_MAX);
+					settings_save(block_address, NULL, RX_BUFFER_CAPACITY);
 #ifdef ENABLE_MULTILINE_STARTUP_BLOCKS
 					uint16_t address = block_address;
 					uint8_t c = EOL;
@@ -621,7 +621,7 @@ static uint8_t parser_grbl_command(void)
 	default:
 		switch (grbl_cmd_str[0])
 		{
-#if EMULATE_GRBL_STARTUP == 2
+#if EMULATE_GRBL_STARTUP >= 2
 		case 'I':
 			if (grbl_cmd_str[1] == 'E' && grbl_cmd_len == 2 && c == EOL)
 			{
@@ -647,7 +647,7 @@ static uint8_t parser_grbl_command(void)
 						return GRBL_SEND_SETTINGS_RESET;
 					case '*':
 #ifndef DISABLE_SAFE_SETTINGS
-						g_settings_error = 0;
+						g_settings_error = SETTINGS_OK;
 #endif
 						settings_reset(true);
 						parser_parameters_reset();
@@ -770,7 +770,7 @@ static uint8_t parser_grbl_exec_code(uint8_t code)
 	case GRBL_PRINT_PARAM:
 		if (parser_get_float(&value) == NUMBER_OK
 #ifdef ENABLE_NAMED_PARAMETERS
-				|| parser_get_namedparam_id(&value) == NUMBER_OK
+			|| parser_get_namedparam_id(&value) == NUMBER_OK
 #endif
 		)
 		{
@@ -799,7 +799,7 @@ static uint8_t parser_grbl_exec_code(uint8_t code)
 	case GRBL_SEND_SYSTEM_INFO:
 		proto_cnc_info(false);
 		break;
-#if EMULATE_GRBL_STARTUP == 2
+#if EMULATE_GRBL_STARTUP >= 2
 	case GRBL_SEND_SYSTEM_INFO_EXTENDED:
 		proto_cnc_info(true);
 		break;
@@ -1942,9 +1942,9 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 #endif
 #ifndef DISABLE_PROBING_SUPPORT
 		case G38: // G38.2
-							// G38.3
-							// G38.4
-							// G38.5
+				  // G38.3
+				  // G38.4
+				  // G38.5
 			probe_flags = (new_state->groups.motion_mantissa > 3) ? 1 : 0;
 			probe_flags |= (new_state->groups.motion_mantissa & 0x01) ? 2 : 0;
 
@@ -2842,16 +2842,16 @@ void parser_reset(bool fullreset)
 {
 	// modified based on https://linuxcnc.org/docs/html/gcode/m-code.html#mcode:m2-m30
 
-	parser_state.groups.stopping = 0;											// resets all stopping commands (M0,M1,M2,M30,M60)
-	parser_state.groups.coord_system = G54;								// G54
-	parser_state.groups.plane = G17;											// G17
-	parser_state.groups.feed_speed_override = M48;				// M48
+	parser_state.groups.stopping = 0;					  // resets all stopping commands (M0,M1,M2,M30,M60)
+	parser_state.groups.coord_system = G54;				  // G54
+	parser_state.groups.plane = G17;					  // G17
+	parser_state.groups.feed_speed_override = M48;		  // M48
 	parser_state.groups.cutter_radius_compensation = G40; // G40
-	parser_state.groups.distance_mode = G90;							// G90
-	parser_state.groups.feedrate_mode = G94;							// G94
-	parser_state.groups.tlo_mode = G49;										// G49
+	parser_state.groups.distance_mode = G90;			  // G90
+	parser_state.groups.feedrate_mode = G94;			  // G94
+	parser_state.groups.tlo_mode = G49;					  // G49
 #if TOOL_COUNT > 0
-	parser_state.groups.coolant = M9;					// M9
+	parser_state.groups.coolant = M9;		  // M9
 	parser_state.groups.spindle_turning = M5; // M5
 	parser_state.groups.path_mode = G61;
 #endif
@@ -2976,8 +2976,9 @@ void parser_coordinate_system_save(uint8_t param, float *target)
 			memcpy(parser_parameters.coord_system_offset, target, PARSER_PARAM_SIZE);
 		}
 		break;
-	}
 #endif
+	}
+
 	parser_wco_counter = 0;
 }
 

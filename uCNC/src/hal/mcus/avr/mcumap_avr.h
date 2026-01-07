@@ -5170,6 +5170,8 @@ extern "C"
 #define mcu_enable_global_isr sei
 #define mcu_disable_global_isr cli
 #define mcu_get_global_isr() (SREG & 0x80)
+// for atomic operations
+#define buffer_index_t uint8_t
 
 #define US_DELAY_TICK (F_CPU / 3000000UL)
 #define US_DELAY_TICK2 (F_CPU / 4000000UL)

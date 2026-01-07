@@ -367,6 +367,12 @@ extern "C"
 #endif
 #endif
 
+#ifdef ENABLE_MAIN_LOOP_MODULES
+#ifndef ENABLE_ITP_FEED_TASK
+#define ENABLE_ITP_FEED_TASK
+#endif
+#endif
+
 /*laser ppi*/
 #if (TOOL_COUNT < 1)
 #undef ENABLE_LASER_PPI

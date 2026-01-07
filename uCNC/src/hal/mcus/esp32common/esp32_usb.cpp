@@ -45,7 +45,7 @@ extern "C"
 	{
 		if (event_base == ARDUINO_USB_EVENTS)
 		{
-			arduino_usb_event_data_t *data = (arduino_usb_event_data_t *)event_data;
+			// arduino_usb_event_data_t *data = (arduino_usb_event_data_t *)event_data;
 			switch (event_id)
 			{
 			case ARDUINO_USB_STARTED_EVENT:
@@ -67,7 +67,7 @@ extern "C"
 		}
 		else if (event_base == ARDUINO_USB_CDC_EVENTS)
 		{
-			arduino_usb_cdc_event_data_t *data = (arduino_usb_cdc_event_data_t *)event_data;
+			// arduino_usb_cdc_event_data_t *data = (arduino_usb_cdc_event_data_t *)event_data;
 			switch (event_id)
 			{
 			case ARDUINO_USB_CDC_CONNECTED_EVENT:
@@ -92,12 +92,10 @@ extern "C"
 					uint8_t c = USBSerial.read();
 					if (mcu_com_rx_cb(c))
 					{
-						if (BUFFER_FULL(usb_rx))
+						if (!BUFFER_TRY_ENQUEUE(usb_rx, &c))
 						{
 							STREAM_OVF(c);
 						}
-
-						BUFFER_ENQUEUE(usb_rx, &c);
 					}
 #else
 					mcu_usb_rx_cb((uint8_t)USBSerial.read());
@@ -132,12 +130,10 @@ extern "C"
 			uint8_t c = USBSerial.read();
 			if (mcu_com_rx_cb(c))
 			{
-				if (BUFFER_FULL(usb_rx))
+				if (!BUFFER_TRY_ENQUEUE(usb_rx, &c))
 				{
 					STREAM_OVF(c);
 				}
-
-				BUFFER_ENQUEUE(usb_rx, &c);
 			}
 #else
 			mcu_usb_rx_cb((uint8_t)USBSerial.read());
@@ -148,7 +144,7 @@ extern "C"
 	uint8_t mcu_usb_getc(void)
 	{
 		uint8_t c = 0;
-		BUFFER_DEQUEUE(usb_rx, &c);
+		BUFFER_TRY_DEQUEUE(usb_rx, &c);
 		return c;
 	}
 
@@ -164,11 +160,10 @@ extern "C"
 
 	void mcu_usb_putc(uint8_t c)
 	{
-		while (BUFFER_FULL(usb_tx))
+		while (!BUFFER_TRY_ENQUEUE(usb_tx, &c))
 		{
 			mcu_usb_flush();
 		}
-		BUFFER_ENQUEUE(usb_tx, &c);
 	}
 
 	void mcu_usb_flush(void)

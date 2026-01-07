@@ -29,7 +29,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <math.h>
-#include "../esp32common/esp32_common.h"
 
 static volatile bool esp32_global_isr_enabled;
 #ifdef IC74HC595_CUSTOM_SHIFT_IO
@@ -303,7 +302,16 @@ void mcu_disable_global_isr(void)
 #ifndef mcu_get_global_isr
 bool mcu_get_global_isr(void)
 {
-	return esp32_global_isr_enabled;
+	if (xPortInIsrContext())
+	{
+		return false;
+	}
+
+	uint32_t mstatus;
+	asm volatile("csrr %0, mstatus" : "=r"(mstatus));
+
+	// MIE (Machine Interrupt Enable) is bit 3 of mstatus
+	return (mstatus & (1 << 3)) != 0;
 }
 #endif
 

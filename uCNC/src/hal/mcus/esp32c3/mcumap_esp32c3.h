@@ -71,8 +71,10 @@ extern "C"
 #define rom_memcpy memcpy
 #define rom_read_byte *
 
-#define __ATOMIC__
-#define __ATOMIC_FORCEON__
+#define ATOMIC_CODEBLOCK
+#define ATOMIC_CODEBLOCK_NR
+#define mcu_disable_global_isr ets_intr_lock
+#define mcu_enable_global_isr ets_intr_unlock
 
 // needed by software delays
 #ifndef MCU_CYCLES_PER_LOOP
@@ -3312,7 +3314,7 @@ extern "C"
 #endif
 
 #ifndef ITP_TIMER
-#define ITP_TIMER 3
+#define ITP_TIMER 0
 #endif
 #if !(ITP_TIMER & 0x02)
 #define ITP_TIMER_TG 0
@@ -3408,7 +3410,7 @@ extern "C"
 #define IC74HC595_COUNT 4
 #define I2S_PORT IC74HC595_I2S_PORT
 
-extern volatile uint32_t i2s_mode;
+	extern volatile uint32_t i2s_mode;
 #define I2S_MODE __atomic_load_n((uint32_t *)&i2s_mode, __ATOMIC_RELAXED)
 
 	// custom pin operations for 74HS595
@@ -3515,39 +3517,7 @@ extern volatile uint32_t i2s_mode;
 	extern void esp32_delay_us(uint16_t delay);
 #define mcu_delay_us(X) esp32_delay_us(X)
 
-#define __FREERTOS_MUTEX_TAKE__(mutex, timeout) ((xPortInIsrContext()) ? (xSemaphoreTakeFromISR(mutex, NULL)) : (xSemaphoreTake(mutex, timeout)))
-#define __FREERTOS_MUTEX_GIVE__(mutex) ((xPortInIsrContext()) ? (xSemaphoreGiveFromISR(mutex, NULL)) : (xSemaphoreGive(mutex)))
-
-#define MUTEX_CLEANUP(name)                             \
-	static void name##_mutex_cleanup(uint8_t *m)        \
-	{                                                   \
-		if (*m /*can unlock*/)                          \
-		{                                               \
-			__FREERTOS_MUTEX_GIVE__(name##_mutex_lock); \
-		}                                               \
-	}
-#define DECL_MUTEX(name)                               \
-	static SemaphoreHandle_t name##_mutex_lock = NULL; \
-	MUTEX_CLEANUP(name)
-
-#define MUTEX_INIT(name)                             \
-	if (name##_mutex_lock == NULL)                   \
-	{                                                \
-		name##_mutex_lock = xSemaphoreCreateMutex(); \
-	}                                                \
-	uint8_t __attribute__((__cleanup__(name##_mutex_cleanup))) name##_mutex_temp = 0
-#define MUTEX_RELEASE(name)                         \
-	if (name##_mutex_temp)                          \
-	{                                               \
-		name##_mutex_temp = 0;                      \
-		__FREERTOS_MUTEX_GIVE__(name##_mutex_lock); \
-	}
-#define MUTEX_TAKE(name)                                                                               \
-	name##_mutex_temp = (__FREERTOS_MUTEX_TAKE__(name##_mutex_lock, portMAX_DELAY) == pdTRUE) ? 1 : 0; \
-	if (name##_mutex_temp)
-#define MUTEX_WAIT(name, timeout_ms)                                                                                       \
-	name##_mutex_temp = (__FREERTOS_MUTEX_TAKE__(name##_mutex_lock, (timeout_us / portTICK_PERIOD_MS)) == pdTRUE) ? 1 : 0; \
-	if (name##_mutex_temp)
+#include "../esp32common/esp32_common.h"
 
 #ifdef __cplusplus
 }

@@ -164,7 +164,11 @@ MCU_IO_CALLBACK void mcu_controls_changed_cb(void)
 	prev_controls = controls;
 
 #if ASSERT_PIN(ESTOP)
+#if EMULATE_GRBL_STARTUP > 2
+	if (CHECKFLAG((controls & changed), ESTOP_MASK))
+#else
 	if (CHECKFLAG(controls, ESTOP_MASK))
+#endif
 	{
 #ifdef ENABLE_IO_ALARM_DEBUG
 		io_alarm_controls = controls;
@@ -219,7 +223,7 @@ MCU_IO_CALLBACK void mcu_probe_changed_cb(void)
 	io_last_probe = probe;
 
 	// stores rt position
-	__ATOMIC__
+	ATOMIC_CODEBLOCK
 	{
 		parser_sync_probe();
 	}
@@ -847,8 +851,6 @@ void io_enable_steppers(uint8_t mask)
 	io_extended_pins_update();
 #endif
 }
-
-
 
 void io_set_pinvalue(uint8_t pin, uint8_t value)
 {

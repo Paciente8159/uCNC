@@ -29,7 +29,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <math.h>
-#include "../esp32common/esp32_common.h"
 
 #ifndef ITP_SAMPLE_RATE
 #define ITP_SAMPLE_RATE (F_STEP_MAX * 2)
@@ -280,9 +279,21 @@ void mcu_disable_global_isr(void)
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_get_global_isr
+// bool mcu_get_global_isr(void)
+// {
+// 	return esp32_global_isr_enabled;
+// }
 bool mcu_get_global_isr(void)
 {
-	return esp32_global_isr_enabled;
+	if (xPortInIsrContext())
+	{
+		return false;
+	}
+	
+	uint32_t ps;
+	__asm__ volatile("rsr.ps %0" : "=a"(ps));
+	// INTLEVEL is bits [3:0] of PS
+	return ((ps & 0xF) < 2);
 }
 #endif
 
