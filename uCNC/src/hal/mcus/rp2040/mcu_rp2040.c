@@ -236,7 +236,6 @@ void mcu_rtc_isr(void)
 {
 	// enqueue alarm again
 	mcu_enqueue_alarm(&rtc_alarm, 1000UL);
-	mcu_isr_context_enter();
 
 	// counts to 20 and reloads
 #if SERVOS_MASK > 0
@@ -287,7 +286,7 @@ void mcu_rtc_isr(void)
 	ms_servo_counter = (servo_counter != 20) ? servo_counter : 0;
 
 #endif
-mcu_isr_context_enter();
+	mcu_isr_context_enter();
 	mcu_rtc_cb(millis());
 }
 
@@ -422,12 +421,12 @@ uint8_t mcu_get_pwm(uint8_t pwm)
 #ifndef mcu_set_servo
 void mcu_set_servo(uint8_t servo, uint8_t value)
 {
-	#if SERVOS_MASK > 0
+#if SERVOS_MASK > 0
 	mcu_servos[servo - SERVO_PINS_OFFSET] = (((2000UL * value) >> 8) + 500); // quick aproximation should be divided by 255 but it's a faste quick approach
-	#else
+#else
 	(void)servo;
 	(void)value;
-	#endif
+#endif
 }
 #endif
 
@@ -438,12 +437,12 @@ void mcu_set_servo(uint8_t servo, uint8_t value)
 #ifndef mcu_get_servo
 uint8_t mcu_get_servo(uint8_t servo)
 {
-	#if SERVOS_MASK > 0
+#if SERVOS_MASK > 0
 	return (((mcu_servos[servo - SERVO_PINS_OFFSET] - 500) << 8) / 2000);
-	#else
+#else
 	(void)servo;
 	return 0;
-	#endif
+#endif
 }
 #endif
 
@@ -765,10 +764,10 @@ bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 			channel_config_set_transfer_data_size(&c, DMA_SIZE_8);
 			channel_config_set_dreq(&c, spi_get_dreq(spi_default, true));
 			dma_channel_configure(dma_tx, &c,
-														&spi_get_hw(SPI_HW)->dr, // write address
-														out,										 // read address
-														len,										 // element count (each element is of size transfer_data_size)
-														false);									 // don't start yet
+								  &spi_get_hw(SPI_HW)->dr, // write address
+								  out,					   // read address
+								  len,					   // element count (each element is of size transfer_data_size)
+								  false);				   // don't start yet
 
 			if (in)
 			{
@@ -782,10 +781,10 @@ bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 				channel_config_set_read_increment(&c, false);
 				channel_config_set_write_increment(&c, true);
 				dma_channel_configure(dma_rx, &c,
-															in,											 // write address
-															&spi_get_hw(SPI_HW)->dr, // read address
-															len,										 // element count (each element is of size transfer_data_size)
-															false);									 // don't start yet
+									  in,					   // write address
+									  &spi_get_hw(SPI_HW)->dr, // read address
+									  len,					   // element count (each element is of size transfer_data_size)
+									  false);				   // don't start yet
 
 				startmask |= (1u << dma_rx);
 			}
@@ -901,10 +900,10 @@ bool mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 			channel_config_set_transfer_data_size(&c, DMA_SIZE_8);
 			channel_config_set_dreq(&c, spi_get_dreq(spi_default, true));
 			dma_channel_configure(dma_tx, &c,
-														&spi_get_hw(SPI2_HW)->dr, // write address
-														out,											// read address
-														len,											// element count (each element is of size transfer_data_size)
-														false);										// don't start yet
+								  &spi_get_hw(SPI2_HW)->dr, // write address
+								  out,						// read address
+								  len,						// element count (each element is of size transfer_data_size)
+								  false);					// don't start yet
 
 			if (in)
 			{
@@ -918,10 +917,10 @@ bool mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 				channel_config_set_read_increment(&c, false);
 				channel_config_set_write_increment(&c, true);
 				dma_channel_configure(dma_rx, &c,
-															in,												// write address
-															&spi_get_hw(SPI2_HW)->dr, // read address
-															len,											// element count (each element is of size transfer_data_size)
-															false);										// don't start yet
+									  in,						// write address
+									  &spi_get_hw(SPI2_HW)->dr, // read address
+									  len,						// element count (each element is of size transfer_data_size)
+									  false);					// don't start yet
 
 				startmask |= (1u << dma_rx);
 			}

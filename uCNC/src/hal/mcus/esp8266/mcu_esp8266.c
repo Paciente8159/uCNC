@@ -471,7 +471,6 @@ IRAM_ATTR void mcu_rtc_isr(void)
 {
 	mcu_isr_context_enter();
 	mcu_runtime_ms++;
-	mcu_isr_context_enter();
 	mcu_rtc_cb(mcu_runtime_ms);
 	itp_buffer_dotasks(OUT_IO_BUFFER_MINIMAL); // process at most 2ms of motion
 	uint32_t stamp = esp_get_cycle_count() + (ESP8266_CLOCK / 1000);

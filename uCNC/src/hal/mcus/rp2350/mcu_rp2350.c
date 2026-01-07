@@ -238,7 +238,6 @@ void mcu_rtc_isr(void)
 {
 	// enqueue alarm again
 	mcu_enqueue_alarm(&rtc_alarm, 1000UL);
-	mcu_isr_context_enter();
 
 	// counts to 20 and reloads
 #if SERVOS_MASK > 0
@@ -289,7 +288,7 @@ void mcu_rtc_isr(void)
 	ms_servo_counter = (servo_counter != 20) ? servo_counter : 0;
 
 #endif
-mcu_isr_context_enter();
+	mcu_isr_context_enter();
 	mcu_rtc_cb(millis());
 }
 

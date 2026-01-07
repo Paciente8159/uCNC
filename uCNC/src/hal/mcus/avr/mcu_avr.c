@@ -81,7 +81,6 @@ ISR(RTC_COMPB_vect, ISR_NOBLOCK)
 static volatile uint32_t mcu_runtime_ms;
 ISR(RTC_COMPA_vect, ISR_NOBLOCK)
 {
-	mcu_isr_context_enter();
 #if SERVOS_MASK > 0
 	static uint8_t ms_servo_counter = 0;
 	static uint8_t servo_loops;
