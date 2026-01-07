@@ -115,9 +115,8 @@ static uint8_t softi2c_write(softi2c_port_t *port, uint8_t c, bool send_start, b
 static uint8_t softi2c_read(softi2c_port_t *port, bool with_ack, bool send_stop, uint32_t ms_timeout)
 {
 	uint8_t c = 0xFF;
-	uint8_t i = 8;
 	TASK_YIELD();
-	do
+	for (uint8_t i = 0; i < 8; i++)
 	{
 		mcu_delay_us(port->i2cdelay);
 		if (softi2c_clock_stretch(port, ms_timeout) != I2C_OK)
