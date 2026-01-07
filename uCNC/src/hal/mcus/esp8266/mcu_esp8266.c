@@ -35,7 +35,6 @@
 #include "twi.h"
 #endif
 
-volatile uint32_t esp8266_global_isr;
 static volatile uint32_t mcu_runtime_ms;
 
 #ifndef TIMER_IO_SAMPLE_RATE
@@ -121,9 +120,9 @@ DECL_MUTEX(shifter_running);
 // custom implementation of the shift register using the SPI port
 MCU_CALLBACK void spi_shift_register_io_pins(void)
 {
-	MUTEX_INIT(shifter_running);
+	BIN_SEMPH_INIT(shifter_running);
 
-	MUTEX_TAKE(shifter_running)
+	if(BIN_SEMPH_TRYLOCK(shifter_running))
 	{
 #if (IC74HC165_COUNT > 0)
 		mcu_set_output_gpio(IC74HC165_LOAD);
@@ -149,6 +148,8 @@ MCU_CALLBACK void spi_shift_register_io_pins(void)
 #if (IC74HC595_COUNT > 0)
 		mcu_set_output_gpio(IC74HC595_LATCH);
 #endif
+
+		BIN_SEMPH_UNLOCK(shifter_running);
 	}
 }
 #else
@@ -172,7 +173,7 @@ MCU_CALLBACK void shift_register_io_pins(void)
 	for (uint8_t i = SHIFT_REGISTER_BYTES; i != 0;)
 	{
 		i--;
-		asm volatile("": : :"memory");
+		asm volatile("" : : : "memory");
 #if (defined(SHIFT_REGISTER_USE_HW_SPI) && defined(MCU_HAS_SPI))
 		pins[i] = mcu_spi_xmit(pins[i]);
 #else
@@ -231,7 +232,7 @@ MCU_CALLBACK void shift_register_io_pins(void)
 #endif
 #endif
 
-#define OUT_IO_BUFFER_SIZE (TIMER_IO_SAMPLE_RATE * 10 / 1000)		// (10 / 1000) => 10ms
+#define OUT_IO_BUFFER_SIZE (TIMER_IO_SAMPLE_RATE * 10 / 1000)	// (10 / 1000) => 10ms
 #define OUT_IO_BUFFER_MINIMAL (TIMER_IO_SAMPLE_RATE * 2 / 1000) // (2 / 1000) => 2ms
 
 /**
@@ -267,7 +268,7 @@ static void FORCEINLINE out_io_push(esp8266_io_out_t val)
 	out_io_buffer[h] = val;
 	h++;
 	h = (h < OUT_IO_BUFFER_SIZE) ? h : 0;
-	__ATOMIC__
+	ATOMIC_CODEBLOCK
 	{
 		out_io_head = h;
 	}
@@ -320,159 +321,9 @@ static FORCEINLINE void mcu_gen_oneshot(void)
 }
 #endif
 
-#if SERVOS_MASK > 0
-static uint32_t servo_tick_counter = 0;
-static uint32_t servo_tick_alarm = 0;
-static uint8_t mcu_servos[6];
-static FORCEINLINE void servo_reset(void)
-{
-#if ASSERT_PIN(SERVO0)
-	io_clear_output(SERVO0);
-#endif
-#if ASSERT_PIN(SERVO1)
-	io_clear_output(SERVO1);
-#endif
-#if ASSERT_PIN(SERVO2)
-	io_clear_output(SERVO2);
-#endif
-#if ASSERT_PIN(SERVO3)
-	io_clear_output(SERVO3);
-#endif
-#if ASSERT_PIN(SERVO4)
-	io_clear_output(SERVO4);
-#endif
-#if ASSERT_PIN(SERVO5)
-	io_clear_output(SERVO5);
-#endif
-}
-
-#define start_servo_timeout(timeout)                      \
-	{                                                       \
-		servo_tick_alarm = servo_tick_counter + timeout + 64; \
-	}
-
-static FORCEINLINE void servo_update(void)
-{
-	static uint8_t servo_counter = 0;
-
-	switch (servo_counter)
-	{
-#if ASSERT_PIN(SERVO0)
-	case SERVO0_FRAME:
-		io_set_output(SERVO0);
-		start_servo_timeout(mcu_servos[0]);
-		break;
-#endif
-#if ASSERT_PIN(SERVO1)
-	case SERVO1_FRAME:
-		io_set_output(SERVO1);
-		start_servo_timeout(mcu_servos[1]);
-		break;
-#endif
-#if ASSERT_PIN(SERVO2)
-	case SERVO2_FRAME:
-		io_set_output(SERVO2);
-		start_servo_timeout(mcu_servos[2]);
-		break;
-#endif
-#if ASSERT_PIN(SERVO3)
-	case SERVO3_FRAME:
-		io_set_output(SERVO3);
-		start_servo_timeout(mcu_servos[3]);
-		break;
-#endif
-#if ASSERT_PIN(SERVO4)
-	case SERVO4_FRAME:
-		io_set_output(SERVO4);
-		start_servo_timeout(mcu_servos[4]);
-		break;
-#endif
-#if ASSERT_PIN(SERVO5)
-	case SERVO5_FRAME:
-		io_set_output(SERVO5);
-		start_servo_timeout(mcu_servos[5]);
-		break;
-#endif
-	}
-
-	servo_counter++;
-	servo_counter = (servo_counter != 20) ? servo_counter : 0;
-}
-#endif
-
-static FORCEINLINE void mcu_gen_pwm_and_servo(void)
-{
-	static int16_t mcu_soft_io_counter;
-	int16_t t = mcu_soft_io_counter;
-	t--;
-	if (t <= 0)
-	{
-// updated software PWM pins
-#if defined(IC74HC595_HAS_PWMS) || defined(MCU_HAS_SOFT_PWM_TIMER)
-		io_soft_pwm_update();
-#endif
-
-		// update servo pins
-#if SERVOS_MASK > 0
-		// also run servo pin signals
-		uint32_t counter = servo_tick_counter;
-
-		// updated next servo output
-		if (!(counter & 0x7F))
-		{
-			servo_update();
-		}
-
-		// reached set tick alarm and resets all servo outputs
-		if (counter == servo_tick_alarm)
-		{
-			servo_reset();
-		}
-
-		// resets every 3ms
-		servo_tick_counter = ++counter;
-#endif
-		mcu_soft_io_counter = (int16_t)roundf((float)TIMER_IO_SAMPLE_RATE / 128000.0f);
-	}
-	else
-	{
-		mcu_soft_io_counter = t;
-	}
-}
-
-static volatile uint32_t mcu_itp_timer_reload;
-static volatile bool mcu_itp_timer_running;
-static FORCEINLINE void mcu_gen_step(void)
-{
-	static bool step_reset = true;
-	static int32_t mcu_itp_timer_counter;
-
-	// generate steps
-	if (mcu_itp_timer_running)
-	{
-		// stream mode tick
-		int32_t t = mcu_itp_timer_counter;
-		bool reset = step_reset;
-		t -= (int32_t)roundf(1000000.0f / (float)TIMER_IO_SAMPLE_RATE);
-		if (t <= 0)
-		{
-			if (!reset)
-			{
-				mcu_step_cb();
-			}
-			else
-			{
-				mcu_step_reset_cb();
-			}
-			step_reset = !reset;
-			mcu_itp_timer_counter = mcu_itp_timer_reload + t;
-		}
-		else
-		{
-			mcu_itp_timer_counter = t;
-		}
-	}
-}
+MCU_CALLBACK void mcu_gen_pwm(void);
+MCU_CALLBACK void mcu_gen_servo(void);
+MCU_CALLBACK void mcu_gen_step(void);
 
 IRAM_ATTR void mcu_din_isr(void)
 {
@@ -496,11 +347,18 @@ IRAM_ATTR void mcu_controls_isr(void)
 
 IRAM_ATTR void mcu_itp_isr(void)
 {
+	mcu_isr_context_enter();
 	if (esp8266_step_mode == ITP_STEP_MODE_REALTIME)
 	{
+		signal_timer.us_step = 1000000 / (TIMER_IO_SAMPLE_RATE >> 2);
+
 		mcu_gen_step();
-		mcu_gen_pwm_and_servo();
+		mcu_gen_pwm();
+		mcu_gen_servo();
+
+#if defined(MCU_HAS_ONESHOT_TIMER) && defined(ENABLE_RT_SYNC_MOTIONS)
 		mcu_gen_oneshot();
+#endif
 	}
 
 	esp8266_io_out_t outputs = out_io_pull();
@@ -524,14 +382,14 @@ IRAM_ATTR void mcu_itp_isr(void)
 }
 
 #undef DBGMSG
-#define DBGMSG(fmt, ...)                                       \
+#define DBGMSG(fmt, ...)                                         \
 	prt_fmt(&mcu_uart_putc, PRINT_CALLBACK, fmt, ##__VA_ARGS__); \
 	mcu_uart_flush()
 
 void itp_buffer_dotasks(uint16_t limit)
 {
 	static volatile bool running = false;
-	// __ATOMIC__
+	// ATOMIC_CODEBLOCK
 	{
 		if (running)
 		{
@@ -574,7 +432,7 @@ void itp_buffer_dotasks(uint16_t limit)
 		}
 
 		// clear sync flag
-		// __ATOMIC__
+		// ATOMIC_CODEBLOCK
 		{
 			esp8266_step_mode &= ~ITP_STEP_MODE_SYNC;
 		}
@@ -583,9 +441,14 @@ void itp_buffer_dotasks(uint16_t limit)
 	// fill the buffer in buffered mode
 	while (mode == ITP_STEP_MODE_DEFAULT && !out_io_full() && --limit)
 	{
+		signal_timer.us_step = 1000000 / TIMER_IO_SAMPLE_RATE;
+
 		mcu_gen_step();
-		mcu_gen_pwm_and_servo();
+		mcu_gen_pwm();
+		mcu_gen_servo();
+#if defined(MCU_HAS_ONESHOT_TIMER) && defined(ENABLE_RT_SYNC_MOTIONS)
 		mcu_gen_oneshot();
+#endif
 		esp8266_io_out_t outputs;
 		outputs.io = esp8266_io_out;
 #if defined(IC74HC595_HAS_STEPS) || defined(IC74HC595_HAS_DIRS) || defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS)
@@ -608,6 +471,7 @@ IRAM_ATTR void mcu_rtc_isr(void)
 {
 	mcu_isr_context_enter();
 	mcu_runtime_ms++;
+	mcu_isr_context_enter();
 	mcu_rtc_cb(mcu_runtime_ms);
 	itp_buffer_dotasks(OUT_IO_BUFFER_MINIMAL); // process at most 2ms of motion
 	uint32_t stamp = esp_get_cycle_count() + (ESP8266_CLOCK / 1000);
@@ -689,7 +553,7 @@ void mcu_dotasks(void)
 #ifdef MCU_HAS_WIFI
 	esp8266_wifi_dotasks();
 #endif
-	itp_buffer_dotasks(OUT_IO_BUFFER_MINIMAL);
+	// itp_buffer_dotasks(OUT_IO_BUFFER_MINIMAL);
 }
 
 /**
@@ -799,10 +663,10 @@ float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller)
 
 void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 {
-	if (!mcu_itp_timer_running)
+	if (!signal_timer.step_alarm_en)
 	{
-		mcu_itp_timer_reload = ticks * prescaller;
-		mcu_itp_timer_running = true;
+		signal_timer.itp_reload = ticks * prescaller;
+		signal_timer.step_alarm_en = true;
 	}
 	else
 	{
@@ -815,9 +679,9 @@ void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
  * */
 void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller)
 {
-	if (mcu_itp_timer_running)
+	if (signal_timer.step_alarm_en)
 	{
-		mcu_itp_timer_reload = ticks * prescaller;
+		signal_timer.itp_reload = ticks * prescaller;
 	}
 	else
 	{
@@ -830,9 +694,9 @@ void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller)
  * */
 void mcu_stop_itp_isr(void)
 {
-	if (mcu_itp_timer_running)
+	if (signal_timer.step_alarm_en)
 	{
-		mcu_itp_timer_running = false;
+		signal_timer.step_alarm_en = false;
 	}
 }
 
@@ -942,5 +806,7 @@ void mcu_start_timeout()
 }
 #endif
 #endif
+
+   // for PS register bits
 
 #endif

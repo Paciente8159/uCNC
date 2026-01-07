@@ -33,7 +33,7 @@ DECL_BUFFER(uint8_t, uart_tx, UART_TX_BUFFER_SIZE);
 uint8_t mcu_uart_getc(void)
 {
 	uint8_t c = 0;
-	BUFFER_DEQUEUE(uart_rx, &c);
+	BUFFER_TRY_DEQUEUE(uart_rx, &c);
 	return c;
 }
 
@@ -49,24 +49,22 @@ void mcu_uart_clear(void)
 
 void mcu_uart_putc(uint8_t c)
 {
-	while (BUFFER_FULL(uart_tx))
+	while (!BUFFER_TRY_ENQUEUE(uart_tx, &c))
 	{
 		mcu_uart_flush();
 	}
-	BUFFER_ENQUEUE(uart_tx, &c);
 }
 
 void mcu_uart_flush(void)
 {
-	while (!BUFFER_EMPTY(uart_tx))
+	uint8_t c = 0;
+
+	while (BUFFER_TRY_DEQUEUE(uart_tx, &c))
 	{
 		while (((USS(UART_PORT) >> USTXC) & UART_TXFIFO_CNT) >= 0x7f)
 		{
 			esp_yield();
 		}
-
-		uint8_t c = 0;
-		BUFFER_DEQUEUE(uart_tx, &c);
 		USF(UART_PORT) = c;
 	}
 }
@@ -89,13 +87,11 @@ void IRAM_ATTR mcu_uart_isr(void *arg)
 			c = (uint8_t)USF(UART_PORT);
 			if (mcu_com_rx_cb(c))
 			{
-				if (BUFFER_FULL(uart_rx))
+				if (!BUFFER_TRY_ENQUEUE(uart_rx, &c))
 				{
 					USIC(UART_PORT) = usis;
 					STREAM_OVF(c);
 				}
-
-				BUFFER_ENQUEUE(uart_rx, &c);
 			}
 #else
 			mcu_uart_rx_cb((uint8_t)USF(UART_PORT));
@@ -126,12 +122,10 @@ static void mcu_uart_process()
 		uint8_t c = (uint8_t)USF(UART_PORT);
 		if (mcu_com_rx_cb(c))
 		{
-			if (BUFFER_FULL(uart_rx))
+			if (!BUFFER_TRY_ENQUEUE(uart_rx, &c))
 			{
 				STREAM_OVF(c);
 			}
-
-			BUFFER_ENQUEUE(uart_rx, &c);
 		}
 #else
 		mcu_uart_rx_cb((uint8_t)USF(UART_PORT));
@@ -150,7 +144,7 @@ DECL_BUFFER(uint8_t, uart2_tx, UART2_TX_BUFFER_SIZE);
 uint8_t mcu_uart2_getc(void)
 {
 	uint8_t c = 0;
-	BUFFER_DEQUEUE(uart2_rx, &c);
+	BUFFER_TRY_DEQUEUE(uart2_rx, &c);
 	return c;
 }
 
@@ -166,24 +160,22 @@ void mcu_uart2_clear(void)
 
 void mcu_uart2_putc(uint8_t c)
 {
-	while (BUFFER_FULL(uart2_tx))
+	while (!BUFFER_TRY_ENQUEUE(uart2_tx, &c))
 	{
 		mcu_uart2_flush();
 	}
-	BUFFER_ENQUEUE(uart2_tx, &c);
 }
 
 void mcu_uart2_flush(void)
 {
-	while (!BUFFER_EMPTY(uart2_tx))
+	uint8_t c = 0;
+	while (BUFFER_TRY_DEQUEUE(uart2_tx, &c))
 	{
 		while (((USS(UART2_PORT) >> USTXC) & UART_TXFIFO_CNT) >= 0x7f)
 		{
 			esp_yield();
 		}
 
-		uint8_t c = 0;
-		BUFFER_DEQUEUE(uart2_tx, &c);
 		USF(UART2_PORT) = c;
 	}
 }
@@ -205,13 +197,11 @@ void IRAM_ATTR mcu_uart2_isr(void *arg)
 			uint8_t c = (uint8_t)USF(UART2_PORT);
 			if (mcu_com_rx_cb(c))
 			{
-				if (BUFFER_FULL(uart2_rx))
+				if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
 				{
 					USIC(UART2_PORT) = usis;
 					STREAM_OVF(c);
 				}
-
-				BUFFER_ENQUEUE(uart2_rx, &c);
 			}
 #else
 			mcu_uart2_rx_cb((uint8_t)USF(UART2_PORT));
@@ -242,12 +232,10 @@ static void mcu_uart2_process()
 		uint8_t c = (uint8_t)USF(UART2_PORT);
 		if (mcu_com_rx_cb(c))
 		{
-			if (BUFFER_FULL(uart2_rx))
+			if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
 			{
 				STREAM_OVF(c);
 			}
-
-			BUFFER_ENQUEUE(uart2_rx, &c);
 		}
 #else
 		mcu_uart2_rx_cb((uint8_t)USF(UART2_PORT));
@@ -282,7 +270,7 @@ void mcu_uart_init(void)
 #ifndef UART_PIN_SWAP
 	IOSWAP &= ~(1 << IOSWAPU0);
 #else
-	IOSWAP |= ~(1 << IOSWAPU0);
+	IOSWAP |= (1 << IOSWAPU0);
 #endif
 	USD(UART_PORT) = (ESP8266_CLOCK / BAUDRATE);
 	USC0(UART_PORT) = UART_8N1;
@@ -310,7 +298,7 @@ void mcu_uart_init(void)
 #ifndef UART2_PIN_SWAP
 	IOSWAP &= ~(1 << IOSWAPU0);
 #else
-	IOSWAP |= ~(1 << IOSWAPU0);
+	IOSWAP |= (1 << IOSWAPU0);
 #endif
 	USD(UART2_PORT) = (ESP8266_CLOCK / BAUDRATE2);
 	USC0(UART2_PORT) = UART_8N1;

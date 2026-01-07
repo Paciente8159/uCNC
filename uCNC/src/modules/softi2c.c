@@ -38,8 +38,8 @@ static uint8_t softi2c_clock_stretch(softi2c_port_t *port, uint32_t ms_timeout)
 		{
 			return I2C_OK;
 		}
-
-		cnc_yield();
+		// if not in ISR run main loop
+		TASK_YIELD();
 	}
 
 	softi2c_stop(port);
@@ -49,6 +49,7 @@ static uint8_t softi2c_clock_stretch(softi2c_port_t *port, uint32_t ms_timeout)
 static uint8_t softi2c_write(softi2c_port_t *port, uint8_t c, bool send_start, bool send_stop, uint32_t ms_timeout)
 {
 	uint8_t ack = 0;
+	TASK_YIELD();
 	if (send_start)
 	{
 		// init
@@ -61,7 +62,8 @@ static uint8_t softi2c_write(softi2c_port_t *port, uint8_t c, bool send_start, b
 			{
 				break;
 			}
-			cnc_yield();
+			// if not in ISR run main loop
+			TASK_YIELD();
 		}
 		__TIMEOUT_ASSERT__(timeout)
 		{
@@ -112,8 +114,10 @@ static uint8_t softi2c_write(softi2c_port_t *port, uint8_t c, bool send_start, b
 
 static uint8_t softi2c_read(softi2c_port_t *port, bool with_ack, bool send_stop, uint32_t ms_timeout)
 {
-	uint8_t c = 0;
-	for (uint8_t i = 0; i < 8; i++)
+	uint8_t c = 0xFF;
+	uint8_t i = 8;
+	TASK_YIELD();
+	do
 	{
 		mcu_delay_us(port->i2cdelay);
 		if (softi2c_clock_stretch(port, ms_timeout) != I2C_OK)

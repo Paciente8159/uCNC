@@ -82,7 +82,7 @@ void itp_update_feed(float feed)
 
 bool itp_sync_ready(void)
 {
-	__ATOMIC__
+	ATOMIC_CODEBLOCK
 	{
 		if (itp_rt_sgm)
 		{
@@ -411,6 +411,11 @@ void itp_run(void)
 			{
 				start_is_synched = true;
 			}
+
+#ifdef ENABLE_ITP_FEED_TASK
+			// force break to allow ISR to exit
+			break;
+#endif
 		}
 
 		uint32_t remaining_steps = itp_cur_plan_block->steps[itp_cur_plan_block->main_stepper];
@@ -513,6 +518,11 @@ void itp_run(void)
 					deaccel_from = 0;
 				}
 			}
+
+#ifdef ENABLE_ITP_FEED_TASK
+			// force break to allow ISR to exit
+			break;
+#endif
 		}
 
 		float speed_change;
@@ -801,7 +811,7 @@ void itp_sync_rt_position(int32_t *position)
 
 int32_t itp_get_rt_position_index(int8_t index)
 {
-	__ATOMIC__
+	ATOMIC_CODEBLOCK
 	{
 		return itp_rt_step_pos[index];
 	}
@@ -1121,7 +1131,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 		else
 		{
 			cnc_clear_exec_state(EXEC_RUN); // this naturally clears the RUN flag. Any other ISR stop does not clear the flag.
-			itp_stop();											// the buffer is empty. The ISR can stop
+			itp_stop();						// the buffer is empty. The ISR can stop
 			return;
 		}
 	}
@@ -1338,7 +1348,7 @@ void itp_start(bool is_synched)
 		// check if the start is controlled by synched motion before start
 		if (!is_synched)
 		{
-			__ATOMIC__
+			ATOMIC_CODEBLOCK
 			{
 				cnc_set_exec_state(EXEC_RUN); // flags that it started running
 				mcu_start_itp_isr(itp_sgm_data[itp_sgm_data_read].timer_counter, itp_sgm_data[itp_sgm_data_read].timer_prescaller);

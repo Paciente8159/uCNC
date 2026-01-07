@@ -69,13 +69,13 @@ volatile uint8_t __attribute__((used)) ic74hc165_io_pins[IC74HC165_COUNT];
 #endif
 #ifndef SHIFT_REGISTER_CUSTOM_CALLBACK
 
-DECL_MUTEX(shifter_running);
+static DECL_MUTEX(shifter_running);
 
 MCU_CALLBACK void __attribute__((weak)) shift_register_io_pins(void)
 {
-	MUTEX_INIT(shifter_running);
+	BIN_SEMPH_INIT(shifter_running, BIN_SEMPH_UNLOCKED);
 
-	MUTEX_TAKE(shifter_running)
+	if(BIN_SEMPH_TRYLOCK(shifter_running))
 	{
 		uint8_t pins[SHIFT_REGISTER_BYTES];
 
@@ -84,7 +84,7 @@ MCU_CALLBACK void __attribute__((weak)) shift_register_io_pins(void)
 		mcu_set_output(IC74HC165_LOAD);
 #endif
 #if (IC74HC595_COUNT > 0)
-		__ATOMIC__
+		ATOMIC_CODEBLOCK
 		{
 			memcpy(pins, (const void *)ic74hc595_io_pins, IC74HC595_COUNT);
 		}
@@ -150,6 +150,8 @@ MCU_CALLBACK void __attribute__((weak)) shift_register_io_pins(void)
 #if (IC74HC595_COUNT > 0)
 		mcu_set_output(IC74HC595_LATCH);
 #endif
+
+		BIN_SEMPH_UNLOCK(shifter_running);
 	}
 }
 #else

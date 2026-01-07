@@ -164,7 +164,11 @@ MCU_IO_CALLBACK void mcu_controls_changed_cb(void)
 	prev_controls = controls;
 
 #if ASSERT_PIN(ESTOP)
+#if EMULATE_GRBL_STARTUP > 2
+	if (CHECKFLAG((controls & changed), ESTOP_MASK))
+#else
 	if (CHECKFLAG(controls, ESTOP_MASK))
+#endif
 	{
 #ifdef ENABLE_IO_ALARM_DEBUG
 		io_alarm_controls = controls;
@@ -219,7 +223,7 @@ MCU_IO_CALLBACK void mcu_probe_changed_cb(void)
 	io_last_probe = probe;
 
 	// stores rt position
-	__ATOMIC__
+	ATOMIC_CODEBLOCK
 	{
 		parser_sync_probe();
 	}
@@ -847,190 +851,6 @@ void io_enable_steppers(uint8_t mask)
 	io_extended_pins_update();
 #endif
 }
-
-#if defined(MCU_HAS_SOFT_PWM_TIMER) || defined(IC74HC595_HAS_PWMS)
-// software pwm counters
-uint8_t g_io_soft_pwm[16];
-// software pwm resolution reduction factor
-// PWM resolution in bits will be equal to (8 - g_soft_pwm_res)
-// this is determined by the mcu_softpwm_freq_config
-uint8_t g_soft_pwm_res;
-
-MCU_CALLBACK void io_soft_pwm_update(void)
-{
-	static uint8_t pwm_counter_last = 0;
-	uint8_t pwm_counter = pwm_counter_last;
-	uint8_t resolution = g_soft_pwm_res;
-	// software PWM
-	pwm_counter += (1 << resolution);
-	pwm_counter_last = pwm_counter;
-#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM0)) || (defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM0)))
-	if (pwm_counter > g_io_soft_pwm[0] || !g_io_soft_pwm[0])
-	{
-		io_clear_output(PWM0);
-	}
-	else
-	{
-		io_set_output(PWM0);
-	}
-#endif
-#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM1)) || (defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM1)))
-	if (pwm_counter > g_io_soft_pwm[1] || !g_io_soft_pwm[1])
-	{
-		io_clear_output(PWM1);
-	}
-	else
-	{
-		io_set_output(PWM1);
-	}
-#endif
-#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM2)) || (defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM2)))
-
-	if (pwm_counter > g_io_soft_pwm[2] || !g_io_soft_pwm[2])
-	{
-		io_clear_output(PWM2);
-	}
-	else
-	{
-		io_set_output(PWM2);
-	}
-#endif
-#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM3)) || (defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM3)))
-	if (pwm_counter > g_io_soft_pwm[3] || !g_io_soft_pwm[3])
-	{
-		io_clear_output(PWM3);
-	}
-	else
-	{
-		io_set_output(PWM3);
-	}
-#endif
-#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM4)) || (defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM4)))
-	if (pwm_counter > g_io_soft_pwm[4] || !g_io_soft_pwm[4])
-	{
-		io_clear_output(PWM4);
-	}
-	else
-	{
-		io_set_output(PWM4);
-	}
-#endif
-#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM5)) || (defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM5)))
-	if (pwm_counter > g_io_soft_pwm[5] || !g_io_soft_pwm[5])
-	{
-		io_clear_output(PWM5);
-	}
-	else
-	{
-		io_set_output(PWM5);
-	}
-#endif
-#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM6)) || (defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM6)))
-	if (pwm_counter > g_io_soft_pwm[6] || !g_io_soft_pwm[6])
-	{
-		io_clear_output(PWM6);
-	}
-	else
-	{
-		io_set_output(PWM6);
-	}
-#endif
-#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM7)) || (defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM7)))
-	if (pwm_counter > g_io_soft_pwm[7] || !g_io_soft_pwm[7])
-	{
-		io_clear_output(PWM7);
-	}
-	else
-	{
-		io_set_output(PWM7);
-	}
-#endif
-#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM8)) || (defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM8)))
-	if (pwm_counter > g_io_soft_pwm[8] || !g_io_soft_pwm[8])
-	{
-		io_clear_output(PWM8);
-	}
-	else
-	{
-		io_set_output(PWM8);
-	}
-#endif
-#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM9)) || (defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM9)))
-	if (pwm_counter > g_io_soft_pwm[9] || !g_io_soft_pwm[9])
-	{
-		io_clear_output(PWM9);
-	}
-	else
-	{
-		io_set_output(PWM9);
-	}
-#endif
-#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM10)) || (defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM10)))
-	if (pwm_counter > g_io_soft_pwm[10] || !g_io_soft_pwm[10])
-	{
-		io_clear_output(PWM10);
-	}
-	else
-	{
-		io_set_output(PWM10);
-	}
-#endif
-#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM11)) || (defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM11)))
-	if (pwm_counter > g_io_soft_pwm[11] || !g_io_soft_pwm[11])
-	{
-		io_clear_output(PWM11);
-	}
-	else
-	{
-		io_set_output(PWM11);
-	}
-#endif
-#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM12)) || (defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM12)))
-	if (pwm_counter > g_io_soft_pwm[12] || !g_io_soft_pwm[12])
-	{
-		io_clear_output(PWM12);
-	}
-	else
-	{
-		io_set_output(PWM12);
-	}
-#endif
-#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM13)) || (defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM13)))
-	if (pwm_counter > g_io_soft_pwm[13] || !g_io_soft_pwm[13])
-	{
-		io_clear_output(PWM13);
-	}
-	else
-	{
-		io_set_output(PWM13);
-	}
-#endif
-#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM14)) || (defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM14)))
-	if (pwm_counter > g_io_soft_pwm[14] || !g_io_soft_pwm[14])
-	{
-		io_clear_output(PWM14);
-	}
-	else
-	{
-		io_set_output(PWM14);
-	}
-#endif
-#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM15)) || (defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM15)))
-	if (pwm_counter > g_io_soft_pwm[15] || !g_io_soft_pwm[15])
-	{
-		io_clear_output(PWM15);
-	}
-	else
-	{
-		io_set_output(PWM15);
-	}
-#endif
-
-#ifdef IC74HC595_HAS_PWMS
-	io_extended_pins_update();
-#endif
-}
-#endif
 
 void io_set_pinvalue(uint8_t pin, uint8_t value)
 {
