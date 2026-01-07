@@ -3314,7 +3314,7 @@ extern "C"
 #endif
 
 #ifndef ITP_TIMER
-#define ITP_TIMER 3
+#define ITP_TIMER 0
 #endif
 #if !(ITP_TIMER & 0x02)
 #define ITP_TIMER_TG 0

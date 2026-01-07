@@ -6,7 +6,7 @@
 
 # Changelog
 
-## [1.14.0] - XX-01-2026
+## [1.14.0] - 07-01-2026
 
 ### Added
 
@@ -24,7 +24,10 @@
 ### Fixed
 
 - fixed RP2040/2350 multicore (#885)
+- fixed ITP timer prescaller calculation (#885)
+- fixed general alarm handler to prevent missing alarms that about to trigger (#885)
 - fixed ESP32 WiFi (#885)
+- fixed ESP32-C3 ITP timer (#885)
 
 ## [1.13.1] - 28-11-2025
 

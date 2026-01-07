@@ -113,7 +113,7 @@ void mcu_alarm_isr(void)
 	{
 		while (time = (uint32_t)timer_hw->timerawl, MEM_BARRIER, mcu_alarms->timeout <= time)
 		{
-			rp2040_alarm_t *alarm = (rp2040_alarm_t *)mcu_alarms;
+			rp2350_alarm_t *alarm = (rp2350_alarm_t *)mcu_alarms;
 			// advance
 			mcu_alarms = mcu_alarms->next;
 			// dequeue

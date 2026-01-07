@@ -19,7 +19,7 @@ void esp32_modules_run(void *arg)
 void esp32_modules_init(void)
 {
 #ifdef ENABLE_MAIN_LOOP_MODULES
-    xTaskCreate(esp32_modules_run, "modulesTask", 16384, NULL, tskIDLE_PRIORITY, NULL);
+    xTaskCreate(esp32_modules_run, "modulesTask", 16384, NULL, 1, NULL);
 #endif
 }
 
