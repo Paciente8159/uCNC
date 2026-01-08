@@ -865,14 +865,9 @@ extern "C"
 	{
 		static bool running = false;
 		bool test = false;
-		do
-		{
-			test = __atomic_load_n(&running, __ATOMIC_RELAXED);
-			if (test)
-			{
-				return;
-			}
-		} while (!__atomic_compare_exchange_n(&running, &test, true, false, __ATOMIC_RELAXED, __ATOMIC_RELAXED));
+		if(!__atomic_compare_exchange_n(&running, &test, true, false, __ATOMIC_RELAXED, __ATOMIC_RELAXED)){
+			return;
+		}
 
 		static uint32_t prev_special, prev, next_rtc = 1000;
 		float parcial = 0;
