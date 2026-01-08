@@ -617,7 +617,7 @@ extern "C"
 
 	static volatile uint32_t mcu_itp_timer_reload;
 	static volatile bool mcu_itp_timer_running;
-	static FORCEINLINE void mcu_gen_step(void)
+	static FORCEINLINE void mcu_gen_step(uint32_t steptime)
 	{
 		static bool step_reset = true;
 		static int32_t mcu_itp_timer_counter;
@@ -628,7 +628,8 @@ extern "C"
 			// stream mode tick
 			int32_t t = mcu_itp_timer_counter;
 			bool reset = step_reset;
-			t -= (int32_t)ceilf(1000000.0f / ITP_SAMPLE_RATE);
+//			t -= (int32_t)ceilf(1000000.0f / ITP_SAMPLE_RATE);
+			t -= steptime;
 			if (t <= 0)
 			{
 				if (!reset)
@@ -881,6 +882,7 @@ extern "C"
 		for (int i = 0; i < (int)timestep; i++)
 		{
 			parcial += (1000000.0f / (float)ITP_SAMPLE_RATE);
+			uint32_t partial_int = (uint32_t)parcial;
 			tickcount += (int)parcial;
 			parcial -= (int)parcial;
 
