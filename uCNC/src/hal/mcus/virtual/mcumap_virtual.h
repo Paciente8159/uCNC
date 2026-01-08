@@ -465,8 +465,6 @@ extern const tool_t laser_ppi;
 extern const tool_t embroidery_stepper;
 
 #define EMULATION_MS_TICK 100
-#define ENABLE_ITP_FEED_TASK
-#define ENABLE_PIN_DEBUG_EXTRA_CMD
 
 #define asm __asm__
 

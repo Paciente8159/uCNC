@@ -25,11 +25,17 @@ _**Jump to section**_
 * [µCNC default pinouts](https://github.com/Paciente8159/uCNC/blob/master/PINOUTS.md)
 
 
-# VERSION 1.13+ NOTES
+# VERSION 1.14+ NOTES
 
-Version 1.13 introduces the following changes:
-  - added initial suport for ESP32-S3 and ESP-C3 variants. This is support is not yet complete, as some features are missing (like BLE support). Other features like I2S support for custom IO shifters are still under test.
-	- new BSD/Posix Socket modules for network support. This should unify and replace all network related features across all MCU's and network interfaces (WiFi, Ethernet, etc..)
+Version 1.14 introduces the following changes:
+  - new atomic primitives (similar to C11) including atomic CAS and basic semaphores.
+  - ring buffer non-blocking methods.
+  - new Grbl compatibility level (level 3) that is even less restrctive. This should improve Grbl GUI initial connection to the controller since this does not block as much. The Emergency Stop input behavior is also modified (change state only) and does not lock out if active.
+  - new embroidary tool type support.
+  - improved support for encoders (still in development)
+
+  This is the first stage of changes to the µCNC core and modules that should improve µCNC support on Multicore/Multithread/RTOS based MCU's.
+  This will also pave the way to a generic network module support based on BSD sockets (Wifi and ethernet) that is MCU agnostic.
 
 # IMPORTANT NOTE
 
@@ -73,11 +79,17 @@ You can also reach me at µCNC discord channel
 
 ## Current µCNC status
 
-µCNC current major version is v1.13. You can check all the new features, changes and bug fixes in the [CHANGELOG](https://github.com/Paciente8159/uCNC/blob/master/CHANGELOG.md).
+µCNC current major version is v1.14. You can check all the new features, changes and bug fixes in the [CHANGELOG](https://github.com/Paciente8159/uCNC/blob/master/CHANGELOG.md).
+
+Version 1.14 added the following new major features.
+  - new atomic primitives (similar to C11) including atomic CAS and basic semaphores.
+  - ring buffer non-blocking methods.
+  - new Grbl compatibility level (level 3) that is even less restrctive. This should improve Grbl GUI initial connection to the controller since this does not block as much. The Emergency Stop input behavior is also modified (change state only) and does not lock out if active.
+  - new embroidary tool type support.
+  - improved support for encoders (still in development)
 
 Version 1.13 added the following new major features.
   - added initial suport for ESP32-S3 and ESP-C3 variants. This is support is not yet complete, as some features are missing (like BLE support). Other features like I2S support for custom IO shifters are still under test.
-	- new BSD/Posix Socket modules for network support. This should unify and replace all network related features across all MCU's and network interfaces (WiFi, Ethernet, etc..)
 
 Version 1.12 added the following new major features.
   - added suport for STM32H7 single core MCU family. This is support is not yet complete, as some features are missing (like analog inputs, DMA support for SPI and EEPROM emulation)

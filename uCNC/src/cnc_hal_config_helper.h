@@ -367,6 +367,12 @@ extern "C"
 #endif
 #endif
 
+#ifdef ENABLE_MAIN_LOOP_MODULES
+#ifndef ENABLE_ITP_FEED_TASK
+#define ENABLE_ITP_FEED_TASK
+#endif
+#endif
+
 /*laser ppi*/
 #if (TOOL_COUNT < 1)
 #undef ENABLE_LASER_PPI
@@ -418,6 +424,13 @@ extern "C"
 #ifdef ENABLE_EMBROIDERY
 #ifndef MCU_HAS_ONESHOT_TIMER
 #error "The current MCU does not support ONESHOT_TIMER or the ONESHOT_TIMER is not configured"
+#endif
+#endif
+
+#ifdef ABC_INDEP_FEED_CALC
+#ifdef ENABLE_LINACT_PLANNER
+#undef ENABLE_LINACT_PLANNER
+#warning "ENABLE_LINACT_PLANNER was disabled for ABC_INDEP_FEED_CALC"
 #endif
 #endif
 

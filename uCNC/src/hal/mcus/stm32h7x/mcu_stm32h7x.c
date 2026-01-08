@@ -85,7 +85,6 @@ static void FORCEINLINE mcu_eeprom_init(void);
  * Can count up to almost 50 days
  **/
 static volatile uint32_t mcu_runtime_ms;
-volatile bool stm32_global_isr_enabled;
 
 /**
  * The isr functions
@@ -100,7 +99,7 @@ DECL_BUFFER(uint8_t, uart_rx, RX_BUFFER_SIZE);
 
 void MCU_SERIAL_ISR(void)
 {
-	__ATOMIC_FORCEON__
+	ATOMIC_CODEBLOCK_NR
 	{
 		if (COM_UART->ISR & USART_ISR_RXNE_RXFNE)
 		{
@@ -108,12 +107,10 @@ void MCU_SERIAL_ISR(void)
 #if !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
 			if (mcu_com_rx_cb(c))
 			{
-				if (BUFFER_FULL(uart_rx))
+				if (!BUFFER_TRY_ENQUEUE(uart_rx, &c))
 				{
 					STREAM_OVF(c);
 				}
-
-				BUFFER_ENQUEUE(uart_rx, &c);
 			}
 #else
 			mcu_uart_rx_cb(c);
@@ -123,13 +120,14 @@ void MCU_SERIAL_ISR(void)
 		if ((COM_UART->ISR & USART_ISR_TXE_TXFNF) && (COM_UART->CR1 & USART_CR1_TXEIE_TXFNFIE))
 		{
 			mcu_enable_global_isr();
-			if (BUFFER_EMPTY(uart_tx))
+			uint8_t c;
+
+			if (!BUFFER_TRY_DEQUEUE(uart_tx, &c))
 			{
 				COM_UART->CR1 &= ~(USART_CR1_TXEIE_TXFNFIE);
 				return;
 			}
-			uint8_t c;
-			BUFFER_DEQUEUE(uart_tx, &c);
+
 			COM_OUTREG = c;
 		}
 	}
@@ -145,7 +143,7 @@ DECL_BUFFER(uint8_t, uart2_rx, RX_BUFFER_SIZE);
 
 void MCU_SERIAL2_ISR(void)
 {
-	__ATOMIC_FORCEON__
+	ATOMIC_CODEBLOCK_NR
 	{
 		if (COM2_UART->ISR & USART_ISR_RXNE_RXFNE)
 		{
@@ -153,22 +151,19 @@ void MCU_SERIAL2_ISR(void)
 #if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
 			if (mcu_com_rx_cb(c))
 			{
-				if (BUFFER_FULL(uart2_rx))
+				if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
 				{
 					STREAM_OVF(c);
 				}
-
-				BUFFER_ENQUEUE(uart2_rx, &c);
 			}
 #else
 			mcu_uart2_rx_cb(c);
 #ifndef UART2_DISABLE_BUFFER
-			if (BUFFER_FULL(uart2_rx))
+			if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
 			{
 				STREAM_OVF(c);
 			}
 
-			BUFFER_ENQUEUE(uart2_rx, &c);
 #endif
 #endif
 		}
@@ -176,13 +171,14 @@ void MCU_SERIAL2_ISR(void)
 		if ((COM2_UART->ISR & USART_ISR_TXE_TXFNF) && (COM2_UART->CR1 & USART_CR1_TXEIE_TXFNFIE))
 		{
 			mcu_enable_global_isr();
-			if (BUFFER_EMPTY(uart2_tx))
+			uint8_t c;
+
+			if (!BUFFER_TRY_DEQUEUE(uart2_tx, &c))
 			{
 				COM2_UART->CR1 &= ~(USART_CR1_TXEIE_TXFNFIE);
 				return;
 			}
-			uint8_t c;
-			BUFFER_DEQUEUE(uart2_tx, &c);
+
 			COM2_OUTREG = c;
 		}
 	}
@@ -271,7 +267,10 @@ void MCU_ITP_ISR(void)
 	if ((TIMER_REG->SR & 1))
 	{
 		if (!resetstep)
+		{
+			mcu_isr_context_enter();
 			mcu_step_cb();
+		}
 		else
 			mcu_step_reset_cb();
 		resetstep = !resetstep;
@@ -311,6 +310,7 @@ static void mcu_input_isr(void)
 #if (DIN_IO_EXTIBITMASK != 0)
 	if (EXTI->PR & DIN_IO_EXTIBITMASK)
 	{
+		mcu_isr_context_enter();
 		mcu_inputs_changed_cb();
 	}
 #endif
@@ -369,7 +369,6 @@ void SysTick_IRQHandler(void)
 void osSystickHandler(void)
 #endif
 {
-	mcu_disable_global_isr();
 #if SERVOS_MASK > 0
 	static uint8_t ms_servo_counter = 0;
 	uint8_t servo_counter = ms_servo_counter;
@@ -421,8 +420,8 @@ void osSystickHandler(void)
 	uint32_t millis = mcu_runtime_ms;
 	millis++;
 	mcu_runtime_ms = millis;
+	mcu_isr_context_enter();
 	mcu_rtc_cb(millis);
-	mcu_enable_global_isr();
 }
 
 /**
@@ -616,7 +615,7 @@ DECL_BUFFER(uint8_t, usb_rx, RX_BUFFER_SIZE);
 uint8_t mcu_usb_getc(void)
 {
 	uint8_t c = 0;
-	BUFFER_DEQUEUE(usb_rx, &c);
+	BUFFER_TRY_DEQUEUE(usb_rx, &c);
 	return c;
 }
 
@@ -657,7 +656,7 @@ void mcu_usb_flush(void)
 uint8_t mcu_uart_getc(void)
 {
 	uint8_t c = 0;
-	BUFFER_DEQUEUE(uart_rx, &c);
+	BUFFER_TRY_DEQUEUE(uart_rx, &c);
 	return c;
 }
 
@@ -673,11 +672,10 @@ void mcu_uart_clear(void)
 
 void mcu_uart_putc(uint8_t c)
 {
-	while (BUFFER_FULL(uart_tx))
+	while (!BUFFER_TRY_ENQUEUE(uart_tx, &c))
 	{
 		mcu_uart_flush();
 	}
-	BUFFER_ENQUEUE(uart_tx, &c);
 }
 
 void mcu_uart_flush(void)
@@ -698,7 +696,7 @@ void mcu_uart_flush(void)
 uint8_t mcu_uart2_getc(void)
 {
 	uint8_t c = 0;
-	BUFFER_DEQUEUE(uart2_rx, &c);
+	BUFFER_TRY_DEQUEUE(uart2_rx, &c);
 	return c;
 }
 
@@ -714,11 +712,10 @@ void mcu_uart2_clear(void)
 
 void mcu_uart2_putc(uint8_t c)
 {
-	while (BUFFER_FULL(uart2_tx))
+	while (!BUFFER_TRY_ENQUEUE(uart2_tx, &c))
 	{
 		mcu_uart2_flush();
 	}
-	BUFFER_ENQUEUE(uart2_tx, &c);
 }
 
 void mcu_uart2_flush(void)
@@ -760,7 +757,6 @@ void mcu_init(void)
 
 	mcu_disable_probe_isr();
 	stm32_flash_current_offset = 0;
-	stm32_global_isr_enabled = false;
 	mcu_eeprom_init();
 	mcu_enable_global_isr();
 }
@@ -893,12 +889,10 @@ void mcu_dotasks()
 #if !defined(DETACH_USB_FROM_MAIN_PROTOCOL)
 		if (mcu_com_rx_cb(c))
 		{
-			if (BUFFER_FULL(usb_rx))
+			if (!BUFFER_TRY_ENQUEUE(usb_rx, &c))
 			{
 				STREAM_OVF(c);
 			}
-
-			BUFFER_ENQUEUE(usb_rx, &c);
 		}
 #else
 		mcu_usb_rx_cb(c);
@@ -1742,6 +1736,7 @@ void MCU_ONESHOT_ISR(void)
 
 		if (mcu_timeout_cb)
 		{
+			mcu_isr_context_enter();
 			mcu_timeout_cb();
 		}
 	}

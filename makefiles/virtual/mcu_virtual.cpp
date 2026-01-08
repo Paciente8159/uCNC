@@ -86,7 +86,7 @@ extern "C"
 	uint8_t mcu_uart_getc(void)
 	{
 		uint8_t c = 0;
-		BUFFER_DEQUEUE(uart_rx, &c);
+		BUFFER_TRY_DEQUEUE(uart_rx, &c);
 		return c;
 	}
 
@@ -102,11 +102,10 @@ extern "C"
 
 	void mcu_uart_putc(uint8_t c)
 	{
-		while (BUFFER_FULL(uart_tx))
+		while (!BUFFER_TRY_ENQUEUE(uart_tx, &c))
 		{
 			mcu_uart_flush();
 		}
-		BUFFER_ENQUEUE(uart_tx, &c);
 	}
 
 	void mcu_uart_flush(void)
@@ -132,11 +131,10 @@ extern "C"
 			uint8_t c = buff[i];
 			if (mcu_com_rx_cb(c))
 			{
-				if (BUFFER_FULL(uart_rx))
+				if (!BUFFER_TRY_ENQUEUE(uart_rx, &c))
 				{
 					STREAM_OVF(c);
 				}
-				BUFFER_ENQUEUE(uart_rx, &c);
 			}
 		}
 	}
@@ -152,7 +150,7 @@ extern "C"
 	uint8_t mcu_uart2_getc(void)
 	{
 		uint8_t c = 0;
-		BUFFER_DEQUEUE(uart2_rx, &c);
+		BUFFER_TRY_DEQUEUE(uart2_rx, &c);
 		return c;
 	}
 
@@ -168,11 +166,10 @@ extern "C"
 
 	void mcu_uart2_putc(uint8_t c)
 	{
-		while (BUFFER_FULL(uart2_tx))
+		while (!BUFFER_TRY_ENQUEUE(uart2_tx, &c))
 		{
 			mcu_uart2_flush();
 		}
-		BUFFER_ENQUEUE(uart2_tx, &c);
 	}
 
 	void mcu_uart2_flush(void)
@@ -201,13 +198,10 @@ extern "C"
 			}
 			if (mcu_com_rx_cb(c))
 			{
-				if (BUFFER_FULL(uart2_rx))
+				if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
 				{
-					grbl_stream_overflow(c);
-					return;
-					//					STREAM_OVF(c);
-				}
-				BUFFER_ENQUEUE(uart2_rx, &c);
+					STREAM_OVF(c);
+				};
 			}
 		}
 	}
@@ -317,16 +311,16 @@ extern "C"
 			BOOL fConnected = FALSE;
 
 			hPipe = CreateNamedPipe(
-					lpszPipename,								// pipe name
-					PIPE_ACCESS_DUPLEX,					// read/write access
-					PIPE_TYPE_MESSAGE |					// message type pipe
-							PIPE_READMODE_MESSAGE | // message-read mode
-							PIPE_WAIT,							// blocking mode
-					PIPE_UNLIMITED_INSTANCES,		// max. instances
-					sizeof(VIRTUAL_MAP),				// output buffer size
-					sizeof(VIRTUAL_MAP),				// input buffer size
-					0,													// client time-out
-					NULL);											// no template file
+				lpszPipename,				// pipe name
+				PIPE_ACCESS_DUPLEX,			// read/write access
+				PIPE_TYPE_MESSAGE |			// message type pipe
+					PIPE_READMODE_MESSAGE | // message-read mode
+					PIPE_WAIT,				// blocking mode
+				PIPE_UNLIMITED_INSTANCES,	// max. instances
+				sizeof(VIRTUAL_MAP),		// output buffer size
+				sizeof(VIRTUAL_MAP),		// input buffer size
+				0,							// client time-out
+				NULL);						// no template file
 
 			if (hPipe == INVALID_HANDLE_VALUE)
 			{
@@ -351,11 +345,11 @@ extern "C"
 					memcpy(lpvMessage, (void *)&virtualmap, sizeof(VIRTUAL_MAP));
 
 					fSuccess = WriteFile(
-							hPipe,			// pipe handle
-							lpvMessage, // message
-							cbToWrite,	// message length
-							&cbWritten, // bytes written
-							NULL);			// not overlapped
+						hPipe,		// pipe handle
+						lpvMessage, // message
+						cbToWrite,	// message length
+						&cbWritten, // bytes written
+						NULL);		// not overlapped
 
 					if (!fSuccess)
 					{
@@ -366,11 +360,11 @@ extern "C"
 					// Read from the pipe.
 
 					fSuccess = ReadFile(
-							hPipe,			// pipe handle
-							lpvMessage, // buffer to receive reply
-							cbToWrite,	// size of buffer
-							&cbRead,		// number of bytes read
-							NULL);			// not overlapped
+						hPipe,		// pipe handle
+						lpvMessage, // buffer to receive reply
+						cbToWrite,	// size of buffer
+						&cbRead,	// number of bytes read
+						NULL);		// not overlapped
 
 					if (!fSuccess && GetLastError() != ERROR_MORE_DATA)
 						break;
@@ -623,7 +617,7 @@ extern "C"
 
 	static volatile uint32_t mcu_itp_timer_reload;
 	static volatile bool mcu_itp_timer_running;
-	static FORCEINLINE void mcu_gen_step(uint32_t steptime)
+	static FORCEINLINE void mcu_gen_step(void)
 	{
 		static bool step_reset = true;
 		static int32_t mcu_itp_timer_counter;
@@ -634,7 +628,7 @@ extern "C"
 			// stream mode tick
 			int32_t t = mcu_itp_timer_counter;
 			bool reset = step_reset;
-			t -= steptime;
+			t -= (int32_t)ceilf(1000000.0f / ITP_SAMPLE_RATE);
 			if (t <= 0)
 			{
 				if (!reset)
@@ -740,7 +734,7 @@ extern "C"
 	uint64_t tickcount;
 
 #define def_printpin(X) \
-	if (stimuli)          \
+	if (stimuli)        \
 	fprintf(stimuli, "$var wire 1 %c " #X " $end\n", 33 + X)
 #define printspecialpin(X)                                                                       \
 	if (stimuli)                                                                                   \
@@ -881,13 +875,14 @@ extern "C"
 
 		static uint32_t prev_special, prev, next_rtc = 1000;
 		float parcial = 0;
+		//		long t = stopCycleCounter();
+		//		printf("Elapsed %dus\n\r", (int)((double)t / cyclesPerMicrosecond));
 		float timestep = ceil((float)EMULATION_MS_TICK * ITP_SAMPLE_RATE * 0.001f);
 		for (int i = 0; i < (int)timestep; i++)
 		{
 			parcial += (1000000.0f / (float)ITP_SAMPLE_RATE);
-			uint32_t partial_int = (int)parcial;
-			tickcount += partial_int;
-			parcial -= partial_int;
+			tickcount += (int)parcial;
+			parcial -= (int)parcial;
 
 			mcu_gen_step(partial_int);
 #ifdef MCU_HAS_ONESHOT_TIMER
@@ -928,14 +923,13 @@ extern "C"
 				printpin(DOUT0);
 				printpin(DOUT1);
 			}
-
-			if (tickcount >= next_rtc)
-			{
-				mcu_rtc_cb(mcu_millis());
-				next_rtc = (tickcount - (tickcount % 1000)) + 1000;
-			}
 		}
 
+		if (tickcount > next_rtc)
+		{
+			mcu_rtc_cb(mcu_millis());
+			next_rtc += 1000;
+		}
 		//		startCycleCounter();
 		__atomic_store_n(&running, false, __ATOMIC_RELAXED);
 	}
@@ -1195,20 +1189,20 @@ extern "C"
 		pthread_create(&thread_io, NULL, &ioserver, NULL);
 		mcu_enable_global_isr();
 		flash_fs = {
-				.drive = 'C',
-				.open = flash_fs_open,
-				.read = flash_fs_read,
-				.write = flash_fs_write,
-				.seek = flash_fs_seek,
-				.available = flash_fs_available,
-				.close = flash_fs_close,
-				.remove = flash_fs_remove,
-				.opendir = flash_fs_opendir,
-				.mkdir = flash_fs_mkdir,
-				.rmdir = flash_fs_rmdir,
-				.next_file = flash_fs_next_file,
-				.finfo = flash_fs_finfo,
-				.next = NULL};
+			.drive = 'C',
+			.open = flash_fs_open,
+			.read = flash_fs_read,
+			.write = flash_fs_write,
+			.seek = flash_fs_seek,
+			.available = flash_fs_available,
+			.close = flash_fs_close,
+			.remove = flash_fs_remove,
+			.opendir = flash_fs_opendir,
+			.mkdir = flash_fs_mkdir,
+			.rmdir = flash_fs_rmdir,
+			.next_file = flash_fs_next_file,
+			.finfo = flash_fs_finfo,
+			.next = NULL};
 		fs_mount(&flash_fs);
 	}
 

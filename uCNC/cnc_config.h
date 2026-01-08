@@ -307,7 +307,7 @@ extern "C"
 	 * processes comment as defined in the RS274NGC
 	 * */
 
-// #define PROCESS_COMMENTS
+	// #define PROCESS_COMMENTS
 
 	/**
 	 * Enables RS274NGC canned cycles
@@ -590,7 +590,7 @@ extern "C"
 #define CTRL_SCHED_CHECK 4
 
 	/**
-	 * EXPERIMENTAL! Uncomment to enable itp step generation to run inside the RTC ISR/task.
+	 * Uncomment to enable itp step generation to run inside the RTC ISR/task.
 	 * This ensures ITP starving prevention. Usually this will be executed at the same sample
 	 * rate as the interpolator with an upper bound of 1Khz and a lower bound of 3Hz
 	 * */
@@ -638,9 +638,10 @@ extern "C"
 	 * 0 - disables
 	 * 1 - partially emulates the startup message and prints unused settings to improve compatibility
 	 * 2 - full emulation of the grbl startup and info messages (this also makes command $IE available to print the firmware information in extended format)
+	 * 3 - **New** drops ESTOP behaviour µCNC shutdown locking for a more similar Grbl behavior
 	 * */
 
-#define EMULATE_GRBL_STARTUP 1
+#define EMULATE_GRBL_STARTUP 2
 
 	/**
 	 *

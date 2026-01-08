@@ -79,7 +79,7 @@ ISR(RTC_COMPB_vect, ISR_NOBLOCK)
 
 // gets the mcu running time in ms
 static volatile uint32_t mcu_runtime_ms;
-ISR(RTC_COMPA_vect, ISR_BLOCK)
+ISR(RTC_COMPA_vect, ISR_NOBLOCK)
 {
 #if SERVOS_MASK > 0
 	static uint8_t ms_servo_counter = 0;
@@ -152,6 +152,7 @@ ISR(RTC_COMPA_vect, ISR_BLOCK)
 	uint32_t millis = mcu_runtime_ms;
 	millis++;
 	mcu_runtime_ms = millis;
+	mcu_isr_context_enter();
 	mcu_rtc_cb(millis);
 #else
 	mcu_runtime_ms++;
@@ -160,6 +161,9 @@ ISR(RTC_COMPA_vect, ISR_BLOCK)
 
 ISR(ITP_COMPA_vect, ISR_BLOCK)
 {
+#ifdef ENABLE_RT_SYNC_MOTIONS
+	mcu_isr_context_enter();
+#endif
 	mcu_step_cb();
 }
 
@@ -183,6 +187,7 @@ ISR(INT0_vect, ISR_BLOCK) // input pin on change service routine
 	mcu_probe_changed_cb();
 #endif
 #if (PCINTA_DIN_IO_MASK & 1)
+	mcu_isr_context_enter();
 	mcu_inputs_changed_cb();
 #endif
 }
@@ -200,6 +205,7 @@ ISR(INT1_vect, ISR_BLOCK) // input pin on change service routine
 	mcu_probe_changed_cb();
 #endif
 #if (PCINTA_DIN_IO_MASK & 4)
+	mcu_isr_context_enter();
 	mcu_inputs_changed_cb();
 #endif
 }
@@ -217,6 +223,7 @@ ISR(INT2_vect, ISR_BLOCK) // input pin on change service routine
 	mcu_probe_changed_cb();
 #endif
 #if (PCINTA_DIN_IO_MASK & 16)
+	mcu_isr_context_enter();
 	mcu_inputs_changed_cb();
 #endif
 }
@@ -234,6 +241,7 @@ ISR(INT3_vect, ISR_BLOCK) // input pin on change service routine
 	mcu_probe_changed_cb();
 #endif
 #if (PCINTA_DIN_IO_MASK & 64)
+	mcu_isr_context_enter();
 	mcu_inputs_changed_cb();
 #endif
 }
@@ -251,6 +259,7 @@ ISR(INT4_vect, ISR_BLOCK) // input pin on change service routine
 	mcu_probe_changed_cb();
 #endif
 #if (PCINTB_DIN_IO_MASK & 1)
+	mcu_isr_context_enter();
 	mcu_inputs_changed_cb();
 #endif
 }
@@ -268,6 +277,7 @@ ISR(INT5_vect, ISR_BLOCK) // input pin on change service routine
 	mcu_probe_changed_cb();
 #endif
 #if (PCINTB_DIN_IO_MASK & 4)
+	mcu_isr_context_enter();
 	mcu_inputs_changed_cb();
 #endif
 }
@@ -285,6 +295,7 @@ ISR(INT6_vect, ISR_BLOCK) // input pin on change service routine
 	mcu_probe_changed_cb();
 #endif
 #if (PCINTB_DIN_IO_MASK & 16)
+	mcu_isr_context_enter();
 	mcu_inputs_changed_cb();
 #endif
 }
@@ -302,6 +313,7 @@ ISR(INT7_vect, ISR_BLOCK) // input pin on change service routine
 	mcu_probe_changed_cb();
 #endif
 #if (PCINTB_DIN_IO_MASK & 64)
+	mcu_isr_context_enter();
 	mcu_inputs_changed_cb();
 #endif
 }
@@ -322,6 +334,7 @@ ISR(PCINT0_vect, ISR_BLOCK) // input pin on change service routine
 #endif
 
 #if (PCINT0_DIN_IO_MASK != 0)
+	mcu_isr_context_enter();
 	mcu_inputs_changed_cb();
 #endif
 }
@@ -344,6 +357,7 @@ ISR(PCINT1_vect, ISR_BLOCK) // input pin on change service routine
 #endif
 
 #if (PCINT1_DIN_IO_MASK != 0)
+	mcu_isr_context_enter();
 	mcu_inputs_changed_cb();
 #endif
 }
@@ -358,17 +372,15 @@ ISR(PCINT2_vect, ISR_BLOCK) // input pin on change service routine
 #endif
 #if (PCINT2_CONTROLS_MASK != 0)
 	mcu_controls_changed_cb();
-
 #endif
 
 #if (PROBE_ISR2 != 0)
 	mcu_probe_changed_cb();
-
 #endif
 
 #if (PCINT2_DIN_IO_MASK != 0)
+	mcu_isr_context_enter();
 	mcu_inputs_changed_cb();
-
 #endif
 }
 #endif
@@ -383,12 +395,10 @@ ISR(COM_RX_vect, ISR_BLOCK)
 	uint8_t c = COM_INREG;
 	if (mcu_com_rx_cb(c))
 	{
-		if (BUFFER_FULL(uart_rx))
+		if (!BUFFER_TRY_ENQUEUE(uart_rx, &c))
 		{
 			STREAM_OVF(c);
 		}
-
-		BUFFER_ENQUEUE(uart_rx, &c);
 	}
 #else
 	mcu_uart_rx_cb(COM_INREG);
@@ -401,13 +411,13 @@ ISR(COM_RX_vect, ISR_BLOCK)
 DECL_BUFFER(uint8_t, uart_tx, UART_TX_BUFFER_SIZE);
 ISR(COM_TX_vect, ISR_BLOCK)
 {
-	if (BUFFER_EMPTY(uart_tx))
+	uint8_t c;
+	if (!BUFFER_TRY_DEQUEUE(uart_tx, &c))
 	{
 		CLEARBIT(UCSRB_REG, UDRIE_BIT);
 		return;
 	}
-	uint8_t c;
-	BUFFER_DEQUEUE(uart_tx, &c);
+
 	COM_OUTREG = c;
 }
 
@@ -421,22 +431,18 @@ ISR(COM2_RX_vect, ISR_BLOCK)
 #if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
 	if (mcu_com_rx_cb(c))
 	{
-		if (BUFFER_FULL(uart2_rx))
+		if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
 		{
 			STREAM_OVF(c);
 		}
-
-		BUFFER_ENQUEUE(uart2_rx, &c);
 	}
 #else
 	mcu_uart2_rx_cb(c);
 #ifndef UART2_DISABLE_BUFFER
-	if (BUFFER_FULL(uart2_rx))
+	if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
 	{
 		STREAM_OVF(c);
 	}
-
-	BUFFER_ENQUEUE(uart2_rx, &c);
 #endif
 #endif
 }
@@ -448,13 +454,14 @@ DECL_BUFFER(uint8_t, uart2, UART2_TX_BUFFER_SIZE);
 ISR(COM2_TX_vect, ISR_BLOCK)
 {
 	// keeps sending chars until null is found
-	if (BUFFER_EMPTY(uart2))
+	uint8_t c;
+
+	if (!BUFFER_TRY_DEQUEUE(uart2, &c))
 	{
 		CLEARBIT(UCSRB_REG_2, UDRIE_BIT_2);
 		return;
 	}
-	uint8_t c;
-	BUFFER_DEQUEUE(uart2, &c);
+
 	COM2_OUTREG = c;
 }
 
@@ -544,7 +551,7 @@ void mcu_init(void)
 	SPSR |= SPSR_VAL;
 	SPCR = (1 << SPE) | (1 << MSTR) | (SPI_MODE << 2) | SPCR_VAL;
 #endif
- 
+
 #ifdef MCU_HAS_I2C
 	// configure as I2C master
 	mcu_i2c_config(I2C_FREQ);
@@ -606,7 +613,7 @@ uint8_t mcu_get_servo(uint8_t servo)
 uint8_t mcu_uart_getc(void)
 {
 	uint8_t c = 0;
-	BUFFER_DEQUEUE(uart_rx, &c);
+	BUFFER_TRY_DEQUEUE(uart_rx, &c);
 	return c;
 }
 
@@ -622,11 +629,10 @@ void mcu_uart_clear(void)
 
 void mcu_uart_putc(uint8_t c)
 {
-	while (BUFFER_FULL(uart_tx))
+	while (!BUFFER_TRY_ENQUEUE(uart_tx, &c))
 	{
 		mcu_uart_flush();
 	}
-	BUFFER_ENQUEUE(uart_tx, &c);
 }
 
 void mcu_uart_flush(void)
@@ -645,7 +651,7 @@ void mcu_uart_flush(void)
 uint8_t mcu_uart2_getc(void)
 {
 	uint8_t c = 0;
-	BUFFER_DEQUEUE(uart2_rx, &c);
+	BUFFER_TRY_DEQUEUE(uart2_rx, &c);
 	return c;
 }
 
@@ -661,11 +667,10 @@ void mcu_uart2_clear(void)
 
 void mcu_uart2_putc(uint8_t c)
 {
-	while (BUFFER_FULL(uart2))
+	while (!BUFFER_TRY_ENQUEUE(uart2, &c))
 	{
 		mcu_uart2_flush();
 	}
-	BUFFER_ENQUEUE(uart2, &c);
 }
 
 void mcu_uart2_flush(void)
@@ -930,9 +935,9 @@ uint8_t mcu_eeprom_getc(uint16_t address)
 	{
 
 	} while (EECR & (1 << EEPE)); // Wait for completion of previous write.
-	EEAR = address;				  // Set EEPROM address register.
-	EECR = (1 << EERE);			  // Start EEPROM read operation.
-	return EEDR;				  // Return the byte read from EEPROM.
+	EEAR = address;		// Set EEPROM address register.
+	EECR = (1 << EERE); // Start EEPROM read operation.
+	return EEDR;		// Return the byte read from EEPROM.
 }
 
 void mcu_eeprom_putc(uint16_t address, uint8_t value)
@@ -1062,12 +1067,13 @@ static volatile const uint8_t *spi_bulk_data_ptr_tx = 0;
 static uint8_t *spi_bulk_data_ptr_rx = 0;
 static uint16_t spi_bulk_data_len = 0;
 
-ISR(SPI_STC_vect, ISR_NOBLOCK) {
+ISR(SPI_STC_vect, ISR_NOBLOCK)
+{
 	// Read received byte
-	if(spi_bulk_data_ptr_rx != 0)
+	if (spi_bulk_data_ptr_rx != 0)
 		*spi_bulk_data_ptr_rx++ = SPDR;
 
-	if(--spi_bulk_data_len)
+	if (--spi_bulk_data_len)
 	{
 		// Transmit the next byte
 		SPDR = *spi_bulk_data_ptr_tx++;
@@ -1079,8 +1085,9 @@ ISR(SPI_STC_vect, ISR_NOBLOCK) {
 	}
 }
 
-bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t datalen) {
-	if(spi_bulk_data_ptr_tx == 0)
+bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t datalen)
+{
+	if (spi_bulk_data_ptr_tx == 0)
 	{
 		spi_bulk_data_ptr_tx = tx_data;
 		spi_bulk_data_ptr_rx = rx_data;
@@ -1090,7 +1097,7 @@ bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t da
 		SPDR = *spi_bulk_data_ptr_tx++;
 	}
 
-	if(!(SPCR & (1 << SPIE)))
+	if (!(SPCR & (1 << SPIE)))
 	{
 		spi_bulk_data_ptr_tx = 0;
 		spi_bulk_data_ptr_rx = 0;
@@ -1376,6 +1383,7 @@ ISR(ONESHOT_COMPA_vect, ISR_NOBLOCK)
 	ONESHOT_TIMSK = 0;
 	if (mcu_timeout_cb)
 	{
+		mcu_isr_context_enter();
 		mcu_timeout_cb();
 	}
 }

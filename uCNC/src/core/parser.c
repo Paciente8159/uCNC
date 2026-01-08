@@ -551,7 +551,7 @@ static uint8_t parser_grbl_command(void)
 						return STATUS_INVALID_STATEMENT;
 					}
 
-					settings_save(block_address, NULL, UINT16_MAX);
+					settings_save(block_address, NULL, RX_BUFFER_CAPACITY);
 #ifdef ENABLE_MULTILINE_STARTUP_BLOCKS
 					uint16_t address = block_address;
 					uint8_t c = EOL;
@@ -621,7 +621,7 @@ static uint8_t parser_grbl_command(void)
 	default:
 		switch (grbl_cmd_str[0])
 		{
-#if EMULATE_GRBL_STARTUP == 2
+#if EMULATE_GRBL_STARTUP >= 2
 		case 'I':
 			if (grbl_cmd_str[1] == 'E' && grbl_cmd_len == 2 && c == EOL)
 			{
@@ -647,7 +647,7 @@ static uint8_t parser_grbl_command(void)
 						return GRBL_SEND_SETTINGS_RESET;
 					case '*':
 #ifndef DISABLE_SAFE_SETTINGS
-						g_settings_error = 0;
+						g_settings_error = SETTINGS_OK;
 #endif
 						settings_reset(true);
 						parser_parameters_reset();
@@ -799,7 +799,7 @@ static uint8_t parser_grbl_exec_code(uint8_t code)
 	case GRBL_SEND_SYSTEM_INFO:
 		proto_cnc_info(false);
 		break;
-#if EMULATE_GRBL_STARTUP == 2
+#if EMULATE_GRBL_STARTUP >= 2
 	case GRBL_SEND_SYSTEM_INFO_EXTENDED:
 		proto_cnc_info(true);
 		break;
@@ -2980,8 +2980,9 @@ void parser_coordinate_system_save(uint8_t param, float *target)
 			memcpy(parser_parameters.coord_system_offset, target, PARSER_PARAM_SIZE);
 		}
 		break;
-	}
 #endif
+	}
+
 	parser_wco_counter = 0;
 }
 
