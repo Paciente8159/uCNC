@@ -262,6 +262,8 @@ static void set_coolant(uint8_t value)
 
 static void set_speed(int16_t value)
 {
+	value = ABS(value);
+
 	if (value != previous_rpm)
 	{
 		uint32_t target_us = (value) ? (uint32_t)(1000000.0f / (value * embd_max_steps * MIN_SEC_MULT)) : 0;
