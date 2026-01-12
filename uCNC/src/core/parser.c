@@ -2531,11 +2531,12 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 		{
 			return STATUS_GCODE_UNSUPPORTED_COMMAND;
 		}
-		__FALL_THROUGH__
 #ifndef DISABLE_G10_SUPPORT
+		__FALL_THROUGH__
 	case 10:
 #endif
 #ifndef DISABLE_HOME_SUPPORT
+		__FALL_THROUGH__
 	case 28:
 	case 30:
 #endif

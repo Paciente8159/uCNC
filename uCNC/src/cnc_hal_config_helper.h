@@ -2456,6 +2456,12 @@ typedef uint16_t step_t;
 #endif
 #endif
 
+#if EMULATE_GRBL_STARTUP > 2
+#ifndef DISABLE_ENDPROGRAM_LOCK
+#define DISABLE_ENDPROGRAM_LOCK
+#endif
+#endif
+
 #include "hal/io_hal.h"
 
 #ifdef __cplusplus
