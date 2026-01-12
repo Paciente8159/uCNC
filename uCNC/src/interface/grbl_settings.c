@@ -320,7 +320,9 @@ uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint16_t size)
 	// settiing address invalid
 	if (address >= NVM_STORAGE_SIZE)
 	{
+#ifndef DISABLE_SAFE_SETTINGS
 		g_settings_error |= SETTINGS_READ_ERROR;
+#endif
 		return STATUS_SETTING_DISABLED;
 	}
 
@@ -592,7 +594,7 @@ bool settings_check_startup_gcode(uint16_t address)
 	{
 		return false;
 	}
-	
+
 	grbl_stream_start_broadcast();
 	proto_putc('>');
 #ifndef RAM_ONLY_SETTINGS
