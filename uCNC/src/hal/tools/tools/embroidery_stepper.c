@@ -183,17 +183,17 @@ MCU_CALLBACK void embd_isr_cb(void)
  * If necessary future custom M/G codes can be added here
  */
 
-#endif
+// DECL_MODULE(embroidery_stepper)
+// {
+// 	// #ifdef ENABLE_PARSER_MODULES
+// 	//	ADD_EVENT_LISTENER(gcode_parse, laser_ppi_mcodes_parse);
+// 	//	ADD_EVENT_LISTENER(gcode_exec, laser_ppi_mcodes_exec);
+// 	// #else
+// 	// #warning "Parser extensions are not enabled. M126, M127 and M128 code extensions will not work."
+// 	// #endif
+// }
 
-DECL_MODULE(embroidery_stepper)
-{
-	// #ifdef ENABLE_PARSER_MODULES
-	//	ADD_EVENT_LISTENER(gcode_parse, laser_ppi_mcodes_parse);
-	//	ADD_EVENT_LISTENER(gcode_exec, laser_ppi_mcodes_exec);
-	// #else
-	// #warning "Parser extensions are not enabled. M126, M127 and M128 code extensions will not work."
-	// #endif
-}
+#endif
 
 /**
  * Now starts the actual tool functions definitions
@@ -237,12 +237,15 @@ static void startup_code(void)
 
 static void shutdown_code(void)
 {
-#if ASSERT_PIN(LASER_PPI)
-#ifndef INVERT_LASER_PPI_LOGIC
-	io_clear_output(LASER_PPI);
+#if ASSERT_PIN(EMBD_DIR)
+#if EMBD_FWD_INV == 0
+	io_clear_output(EMBD_DIR);
 #else
-	io_set_output(LASER_PPI);
+	io_set_output(EMBD_DIR);
 #endif
+#endif
+#if ASSERT_PIN(EMBD_STEP)
+	io_clear_output(EMBD_STEP);
 #endif
 	g_settings.tool_mode = UNDEF_MODE;
 #ifdef ENABLE_RT_SYNC_MOTIONS

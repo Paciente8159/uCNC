@@ -711,7 +711,7 @@ void itp_run(void)
 #if TOOL_COUNT > 0
 #if defined(ENABLE_LASER_PWM) || defined(ENABLE_EMBROIDERY)
 		// calculates dynamic laser power
-		if (g_settings.tool_mode & (LASER_PWM_MODE | EMBROIDERY_MODE))
+		if (g_settings.tool_mode & (PWM_VARPOWER_MODE | EMBROIDERY_MODE))
 		{
 			float top_speed_inv = fast_flt_invsqrt(itp_cur_plan_block->feed_sqr);
 			int16_t newspindle = planner_get_spindle_speed(MIN(1, current_speed * top_speed_inv));
@@ -726,14 +726,14 @@ void itp_run(void)
 		}
 #endif
 #ifdef ENABLE_LASER_PPI
-		else if (g_settings.tool_mode & (LASER_PPI_VARPOWER_MODE | LASER_PPI_MODE))
+		else if (g_settings.tool_mode & (PPI_VARPOWER_MODE | PPI_MODE))
 		{
 			int16_t newspindle;
-			if (g_settings.tool_mode & LASER_PPI_VARPOWER_MODE)
+			if (g_settings.tool_mode & PPI_VARPOWER_MODE)
 			{
 				float new_s = (float)ABS(planner_get_spindle_speed(1));
 				new_s /= (float)g_settings.spindle_max_rpm;
-				if (g_settings.tool_mode & LASER_PPI_MODE)
+				if (g_settings.tool_mode & PPI_MODE)
 				{
 					float blend = g_settings.laser_ppi_mixmode_uswidth;
 					new_s = (new_s * blend) + (1.0f - blend);
@@ -822,7 +822,7 @@ void itp_stop(void)
 	io_set_steps(g_settings.step_invert_mask);
 #if TOOL_COUNT > 0
 #if defined(ENABLE_LASER_PWM) || defined(ENABLE_EMBROIDERY)
-	if (g_settings.tool_mode & LASER_PWM_MODE)
+	if (g_settings.tool_mode & (PWM_VARPOWER_MODE | EMBROIDERY_MODE))
 	{
 		tool_set_speed(0);
 	}

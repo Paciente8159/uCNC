@@ -57,7 +57,7 @@ static void startup_code(void)
 	io_config_pwm(LASER_PWM, LASER_FREQ);
 	io_set_pwm(LASER_PWM, 0);
 #endif
-	g_settings.tool_mode = LASER_PWM_MODE;
+	g_settings.tool_mode = PWM_VARPOWER_MODE;
 }
 
 static void shutdown_code(void)

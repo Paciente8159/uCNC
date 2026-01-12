@@ -56,7 +56,7 @@ MCU_CALLBACK void laser_ppi_turnoff_cb(void)
 static uint16_t new_laser_ppi = 0;
 MCU_CALLBACK void laser_ppi_pulse(uint8_t new_stepbits, uint8_t flags)
 {
-	if (g_settings.tool_mode & (LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE))
+	if (g_settings.tool_mode & (PPI_MODE | PPI_VARPOWER_MODE))
 	{
 		if (new_stepbits & LASERPPI_IO_MASK)
 		{
@@ -80,7 +80,7 @@ MCU_CALLBACK void laser_ppi_pulse(uint8_t new_stepbits, uint8_t flags)
 static void laser_ppi_config_parameters(void)
 {
 	g_settings.acceleration[STEPPER_COUNT - 1] = FLT_MAX;
-	if (g_settings.tool_mode & (LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE))
+	if (g_settings.tool_mode & (PPI_MODE | PPI_VARPOWER_MODE))
 	{
 		// if previously disabled, reload default value
 		if (!g_settings.step_per_mm[STEPPER_COUNT - 1])
@@ -180,9 +180,9 @@ bool laser_ppi_mcodes_exec(void *args)
 	case M127:
 	case M128:
 		// prevents command execution if mode disabled
-		if (!(g_settings.tool_mode & (LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE)))
+		if (!(g_settings.tool_mode & (PPI_MODE | PPI_VARPOWER_MODE)))
 		{
-			*(ptr->error) = STATUS_LASER_PPI_MODE_DISABLED;
+			*(ptr->error) = STATUS_PPI_MODE_DISABLED;
 			return EVENT_HANDLED;
 		}
 	case M126:
@@ -199,17 +199,17 @@ bool laser_ppi_mcodes_exec(void *args)
 	switch (ptr->cmd->group_extended)
 	{
 	case M126:
-		g_settings.tool_mode &= ~(LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE);
+		g_settings.tool_mode &= ~(PPI_MODE | PPI_VARPOWER_MODE);
 		switch ((((uint8_t)ptr->words->p)))
 		{
 		case 1:
-			g_settings.tool_mode |= LASER_PPI_MODE;
+			g_settings.tool_mode |= PPI_MODE;
 			break;
 		case 2:
-			g_settings.tool_mode |= LASER_PPI_VARPOWER_MODE;
+			g_settings.tool_mode |= PPI_VARPOWER_MODE;
 			break;
 		case 3:
-			g_settings.tool_mode |= (LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE);
+			g_settings.tool_mode |= (PPI_MODE | PPI_VARPOWER_MODE);
 			break;
 		}
 		laser_ppi_config_parameters();
@@ -255,7 +255,7 @@ static void startup_code(void)
 	io_set_output(LASER_PPI);
 #endif
 #endif
-	g_settings.tool_mode |= LASER_PPI_MODE;
+	g_settings.tool_mode |= PPI_MODE;
 	laser_ppi_config_parameters();
 	HOOK_ATTACH_CALLBACK(itp_rt_stepbits, laser_ppi_pulse);
 }
@@ -270,7 +270,7 @@ static void shutdown_code(void)
 #endif
 #endif
 	// restore laser mode
-	g_settings.tool_mode &= ~(LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE);
+	g_settings.tool_mode &= ~(PPI_MODE | PPI_VARPOWER_MODE);
 	laser_ppi_config_parameters();
 	HOOK_RELEASE(itp_rt_stepbits);
 }
@@ -285,7 +285,7 @@ static void set_coolant(uint8_t value)
 
 static void set_speed(int16_t value)
 {
-	if (g_settings.tool_mode & (LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE))
+	if (g_settings.tool_mode & (PPI_MODE | PPI_VARPOWER_MODE))
 	{
 		new_laser_ppi = value;
 	}

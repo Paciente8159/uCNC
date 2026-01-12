@@ -1805,7 +1805,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 
 // laser disabled in nonmodal moves
 #if defined(ENABLE_LASER_PWM) || defined(ENABLE_EMBROIDERY)
-	if ((g_settings.tool_mode & (LASER_PWM_MODE | EMBROIDERY_MODE)) && new_state->groups.nonmodal)
+	if ((g_settings.tool_mode & (PWM_VARPOWER_MODE | EMBROIDERY_MODE)) && new_state->groups.nonmodal)
 	{
 		block_data.spindle = 0;
 	}
@@ -1861,7 +1861,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 // continues to send G1 at maximum feed rate
 // laser disabled in G0
 #if defined(ENABLE_LASER_PWM) || defined(ENABLE_EMBROIDERY)
-			if (g_settings.tool_mode & (LASER_PWM_MODE | EMBROIDERY_MODE))
+			if (g_settings.tool_mode & (PWM_VARPOWER_MODE | EMBROIDERY_MODE))
 			{
 				block_data.spindle = 0;
 			}
