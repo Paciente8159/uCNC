@@ -17,6 +17,7 @@ _**Jump to section**_
    * [vfd_pwm](#vfd_pwm)
    * [vfd_modbus](#vfd_modbus)
    * [plasma_thc](#plasma_thc)
+   * [embroidery_stepper](#embroidery_stepper)
 
 # Available tools in to µCNC
 
@@ -515,3 +516,52 @@ With THC enable the M3/M4 commands will do the following motions before igniting
 
 After this the motion cut executes. During this time the THC constantly monitors the arc ok signal and halts if it fails, and the up and down signals to see if it as to adjust the cutting height.
 
+## embroidery_stepper
+
+This tool controls a stepper motor that turns the needle mechanism up and down on an embroidery machine.
+This  tool synchronizes motion between the needle mechanism and the fabic jig structure to perform controlled a needle stitching.
+To perform this task, there are several requirements that are necessary.
+
+  - The MCU should have the ONESHOT timer assigned/available.
+  - Real time stepper synched motions option must be enabled
+  - A needle-in-fabric condition must exist
+
+By default the needle-in-fabric is determined by a step count value for which the motor that controls the needle mechanism is positioned in such a way the fabic jig cannot move, to prevent bending/breaking the needle.
+This can be overriden to make use of any other strategy like an input from a sensor or other.
+
+Like in the variable PWM laser mode it's possible to have the stitch mechanism running continuously (M3) or only on normal motion commands (M4) (excluding G0 rapid motion).
+The S value for the tool is translated like usual to RPM
+
+µCNC uses the ONESHOT timer to generate an independent acceleration profile for the needle wheel (heavy mass) while trying to accelerate the fabric as fast as possible (lightweigh structure) to the desired position to ensure the strich happens in the desired place.
+
+You should set the appropriate values for the number of steps required to make the wheel do a full revolution ($300).
+If using a software controlled position for the needle (position of the wheel mechanism in steps), from which fabric motion is not allowed ($301).
+**NOTE:** In this case you must ensure that the initial position of the wheel when the controller is turned on is just above the fabric after the needle leaves the fabric (this will be you step 0 position).
+
+
+These are the default µCNC pins/configurations for this tool:
+
+```
+#ifndef EMBD_STEP
+#define EMBD_STEP DOUT0
+#endif
+
+#ifndef EMBD_DIR
+#define EMBD_DIR DOUT1
+#endif
+
+// this allows to invert the direction logic for the stepper dir pin
+#ifndef EMBD_FWD_INV
+#define EMBD_FWD_INV 0
+#endif
+```
+
+It's possible to set a custom needle-in-fabric by overwriting the `RT_STEP_PREVENT_CONDITION` macro
+
+Here is an example that uses DIN19 input signal from a sensor has the condition for the needle-in-fabric
+
+```
+#define RT_STEP_PREVENT_CONDITION io_get_input(DIN19)
+```
+
+Further refinements to this tool could be added in the future, like automatic RPM reduction if the travel position cannot be achieved between stiches
