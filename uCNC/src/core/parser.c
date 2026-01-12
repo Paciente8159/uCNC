@@ -1441,7 +1441,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 	update_tools = ((parser_state.spindle != new_state->spindle) | (parser_state.groups.spindle_turning != new_state->groups.spindle_turning));
 
 	// spindle speed or direction was changed (force a safety dwell to let the spindle change speed and continue)
-	if (update_tools && !g_settings.laser_mode)
+	if (update_tools && !g_settings.tool_mode)
 	{
 		mc_update_tools(&block_data);
 #if (DELAY_ON_SPINDLE_SPEED_CHANGE > 0)
@@ -1803,11 +1803,13 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 #endif
 	}
 
-	// laser disabled in nonmodal moves
-	if (g_settings.laser_mode && new_state->groups.nonmodal)
+// laser disabled in nonmodal moves
+#if defined(ENABLE_LASER_PWM) || defined(ENABLE_EMBROIDERY)
+	if ((g_settings.tool_mode & (PWM_VARPOWER_MODE | EMBROIDERY_MODE)) && new_state->groups.nonmodal)
 	{
 		block_data.spindle = 0;
 	}
+#endif
 
 	// stores G10 or G92 command in the right address
 	switch (index)
@@ -1856,12 +1858,14 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 		case G0:
 			// rapid move
 			block_data.feed = FLT_MAX;
-			// continues to send G1 at maximum feed rate
-			// laser disabled in G0
-			if (g_settings.laser_mode)
+// continues to send G1 at maximum feed rate
+// laser disabled in G0
+#if defined(ENABLE_LASER_PWM) || defined(ENABLE_EMBROIDERY)
+			if (g_settings.tool_mode & (PWM_VARPOWER_MODE | EMBROIDERY_MODE))
 			{
 				block_data.spindle = 0;
 			}
+#endif
 			__FALL_THROUGH__
 		case G1:
 			if (block_data.feed == 0)

@@ -29,7 +29,7 @@ IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=1
 CompilerSettings=000000e0g0000000001000000
-UnitCount=98
+UnitCount=99
 
 [VersionInfo]
 Major=1
@@ -871,7 +871,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit96]
-FileName=..\..\uCNC\src\buffer.c
+FileName=..\..\uCNC\src\hal\tools\tools\embroidery_stepper.c
 CompileCpp=1
 Folder=
 Compile=1
@@ -971,7 +971,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit97]
-FileName=..\..\uCNC\src\atomic.h
+FileName=..\..\uCNC\src\buffer.c
 CompileCpp=1
 Folder=
 Compile=1
@@ -981,7 +981,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit98]
-FileName=..\..\uCNC\src\buffer.h
+FileName=..\..\uCNC\src\atomic.h
 CompileCpp=1
 Folder=
 Compile=1
@@ -991,7 +991,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit99]
-FileName=..\..\uCNC\src\modules\smoothie_clustering\smoothie_clustering.c
+FileName=..\..\uCNC\src\buffer.h
 CompileCpp=1
 Folder=
 Compile=1

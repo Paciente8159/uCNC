@@ -119,7 +119,7 @@ const settings_t __rom__ default_settings =
 		.homing_offset = DEFAULT_HOMING_OFFSET,
 		.spindle_max_rpm = DEFAULT_SPINDLE_MAX_RPM,
 		.spindle_min_rpm = DEFAULT_SPINDLE_MIN_RPM,
-		.laser_mode = 0,
+		.tool_mode = 0,
 #ifdef ENABLE_LASER_PPI
 		.laser_ppi = DEFAULT_LASER_PPI,
 		.laser_ppi_uswidth = DEFAULT_LASER_PPI_USWIDTH,
@@ -186,7 +186,7 @@ const setting_id_t __rom__ g_settings_id_table[] = {
 	{.id = 27, .memptr = &g_settings.homing_offset, .type = SETTING_TYPE_FLOAT},
 	{.id = 30, .memptr = &g_settings.spindle_max_rpm, .type = SETTING_TYPE_UINT16},
 	{.id = 31, .memptr = &g_settings.spindle_min_rpm, .type = SETTING_TYPE_UINT16},
-	{.id = 32, .memptr = &g_settings.laser_mode, .type = SETTING_TYPE_UINT8},
+	{.id = 32, .memptr = &g_settings.tool_mode, .type = SETTING_TYPE_UINT8},
 #ifdef ENABLE_LASER_PPI
 	{.id = 33, .memptr = &g_settings.step_per_mm[0], .type = SETTING_TYPE_FLOAT},
 	{.id = 34, .memptr = &g_settings.laser_ppi_uswidth, .type = SETTING_TYPE_UINT16},
