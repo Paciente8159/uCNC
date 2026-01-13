@@ -200,7 +200,7 @@ extern "C"
 #define LN(x) log(x) / M_LN2
 #endif
 
-#define __TIMEOUT_US__(timeout) for (uint32_t curr_us_##timeout, elap_us_##timeout = mcu_free_micros(); timeout > 0; curr_us_##timeout = mcu_free_micros(), elap_us_##timeout = ((curr_us_##timeout > elap_us_##timeout) ? (curr_us_##timeout - elap_us_##timeout) : (1000 - elap_us_##timeout + curr_us_##timeout)), timeout -= MIN(timeout, elap_us_##timeout), elap_us_##timeout = curr_us_##timeout)
+#define __TIMEOUT_US__(timeout) for (uint32_t elap_us_##timeout, curr_us_##timeout = mcu_free_micros(); timeout > 0; elap_us_##timeout = mcu_free_micros() - curr_us_##timeout, timeout -= MIN(timeout, ((elap_us_##timeout < 1000) ? elap_us_##timeout : 1000 + elap_us_##timeout)), curr_us_##timeout = mcu_free_micros())
 #define __TIMEOUT_MS__(timeout)                                                          \
 	timeout = (((uint32_t)timeout) < (UINT32_MAX / 1000)) ? (timeout * 1000) : UINT32_MAX; \
 	__TIMEOUT_US__(timeout)

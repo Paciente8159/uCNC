@@ -30,11 +30,6 @@ extern "C"
 #include "hal/gpio_ll.h"
 #include "driver/adc.h"
 #include "driver/ledc.h"
-#include "esp_timer.h"
-#include "esp_task_wdt.h"
-#include "esp_ipc.h"
-#include "driver/uart.h"
-#include "driver/timer.h"
 #include "soc/i2s_struct.h"
 
 /*
