@@ -131,7 +131,7 @@ uint16_t encoder_get_rpm(void)
 {
 	uint32_t elapsed, prev;
 
-	__ATOMIC__
+	ATOMIC_CODEBLOCK
 	{
 		elapsed = current_time;
 		prev = prev_time;
@@ -398,10 +398,10 @@ static int32_t encoder_get_diff_read(uint8_t i)
 }
 #endif
 
-bool encoders_dotasks(void* args)
+bool encoders_dotasks(void *args)
 {
 #ifdef ENC0_READ
-		encoders_pos[0] += encoder_get_diff_read(0);
+	encoders_pos[0] += encoder_get_diff_read(0);
 #endif
 #ifdef ENC1_READ
 	encoders_pos[1] += encoder_get_diff_read(1);
@@ -425,13 +425,13 @@ bool encoders_dotasks(void* args)
 	encoders_pos[7] += encoder_get_diff_read(7);
 #endif
 
-return EVENT_CONTINUE;
+	return EVENT_CONTINUE;
 }
 CREATE_EVENT_LISTENER_WITHLOCK(rtc_tick, encoders_dotasks, LISTENER_SWI2C_LOCK);
 
 int32_t encoder_get_position(uint8_t i)
 {
-	__ATOMIC__
+	ATOMIC_CODEBLOCK
 	{
 		return encoders_pos[i];
 	}
@@ -446,7 +446,7 @@ void encoder_print_values(void)
 
 void encoder_reset_position(uint8_t i, int32_t position)
 {
-	__ATOMIC__
+	ATOMIC_CODEBLOCK
 	{
 // reads the position to throw away last diff read
 #if defined(ENC0_READ) || defined(ENC1_READ) || defined(ENC2_READ) || defined(ENC3_READ) || defined(ENC4_READ) || defined(ENC5_READ) || defined(ENC6_READ) || defined(ENC7_READ)

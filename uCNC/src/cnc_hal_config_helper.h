@@ -585,6 +585,12 @@ extern "C"
 #endif
 #endif
 
+#ifdef ENABLE_MAIN_LOOP_MODULES
+#ifndef ENABLE_ITP_FEED_TASK
+#define ENABLE_ITP_FEED_TASK
+#endif
+#endif
+
 /*laser ppi*/
 #if (TOOL_COUNT < 1)
 #ifdef ENABLE_LASER_PPI
@@ -634,6 +640,13 @@ extern "C"
 // #endif
 #else
 #define LASER_PPI UNDEF_PIN
+#endif
+
+#ifdef ABC_INDEP_FEED_CALC
+#ifdef ENABLE_LINACT_PLANNER
+#undef ENABLE_LINACT_PLANNER
+#warning "ENABLE_LINACT_PLANNER was disabled for ABC_INDEP_FEED_CALC"
+#endif
 #endif
 
 /**

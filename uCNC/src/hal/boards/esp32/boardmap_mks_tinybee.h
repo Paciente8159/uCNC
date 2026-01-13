@@ -32,6 +32,10 @@ extern "C"
 #define BOARD_NAME "MKS Tinybee"
 #endif
 
+#ifndef F_CPU
+#define F_CPU 240000000UL
+#endif
+
 // Setup limit pins
 #define LIMIT_Z_BIT 22 // assigns LIMIT_Z pin
 // #define LIMIT_Z_ISR		// assigns LIMIT_Z ISR
@@ -120,8 +124,11 @@ extern "C"
 #define DIN17_BIT 12
 #define DIN17_PULLUP
 // enc 2
-#define DIN18_BIT 14
-#define DIN18_PULLUP
+// #define DIN18_BIT 14
+// #define DIN18_PULLUP
+
+// #define DOUT48_BIT 14
+#define DOUT49_BIT 14
 
 #ifdef __cplusplus
 }

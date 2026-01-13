@@ -46,7 +46,6 @@ __NOTE__: Not all event hooks might be listed here. To find all available event 
 | parser_get_modes | uint8_t * | ENABLE_PARSER_MODULES | Fires when $G command is issued and the active modal states array is being requested (can be used to modify the active modes with extended gcodes). Arg is a pointer to an uint8_t array with the parser motion groups current values |
 | parser_reset | NULL | ENABLE_PARSER_MODULES | Fires on parser reset |
 | cnc_reset | NULL | ENABLE_MAIN_LOOP_MODULES | Fires when µCNC resets |
-| rtc_tick | NULL | ENABLE_MAIN_LOOP_MODULES | Fires every millisecond. This code runs inside the RTC interrupt. Do not run long routines here. This is for time critical (periodic) tasks. |
 | cnc_dotasks | NULL | ENABLE_MAIN_LOOP_MODULES | Fires on the main loop running. Any repeating task should be hooked here |
 | cnc_io_dotasks | NULL | ENABLE_MAIN_LOOP_MODULES | Fires on the main IO loop running. This is similar to cnc_dotasks, the main difference is that this task will run also during delays |
 | cnc_stop | NULL | ENABLE_MAIN_LOOP_MODULES | Fires when a halt/stop condition is triggered |

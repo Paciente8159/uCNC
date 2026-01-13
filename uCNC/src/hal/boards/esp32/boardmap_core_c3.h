@@ -32,6 +32,10 @@ extern "C"
 #define BOARD_NAME "CORE ESP32 C3"
 #endif
 
+#ifndef F_CPU
+#define F_CPU 160000000UL
+#endif
+
 // SAME AS GRBL for test purposes
 // Setup step pins
 #define STEP2_BIT 2 // assigns STEP2 pin

@@ -29,7 +29,7 @@ extern "C"
 #include <stdint.h>
 #include <stdbool.h>
 
-#define SETTINGS_OK
+#define SETTINGS_OK 0
 #define SETTINGS_READ_ERROR 1
 #define SETTINGS_WRITE_ERROR 2
 

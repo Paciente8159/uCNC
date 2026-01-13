@@ -26,6 +26,7 @@
 #define LOOP_RUNNING 2
 #define LOOP_FAULT 3
 #define LOOP_REQUIRE_RESET 4
+#define LOOP_DO_RESET 5
 
 #define RTCMD_NORMAL_MASK (RT_CMD_FEED_100 | RT_CMD_FEED_INC_COARSE | RT_CMD_FEED_DEC_COARSE | RT_CMD_FEED_INC_FINE | RT_CMD_FEED_DEC_FINE)
 #define RTCMD_RAPID_MASK (RT_CMD_RAPIDFEED_100 | RT_CMD_RAPIDFEED_OVR1 | RT_CMD_RAPIDFEED_OVR2)
@@ -47,7 +48,6 @@ static cnc_state_t cnc_state;
 bool cnc_status_report_lock;
 
 static void cnc_check_fault_systems(void);
-static bool cnc_check_interlocking(void);
 static void cnc_exec_rt_commands(void);
 static void cnc_io_dotasks(void);
 static void cnc_reset(void);
@@ -58,12 +58,6 @@ static void cnc_run_startup_blocks(void);
 WEAK_EVENT_HANDLER(cnc_reset)
 {
 	DEFAULT_EVENT_HANDLER(cnc_reset);
-}
-
-// event_rtc_tick_handler
-WEAK_EVENT_HANDLER(rtc_tick)
-{
-	DEFAULT_EVENT_HANDLER(rtc_tick);
 }
 
 // event_cnc_dotasks_handler
@@ -106,15 +100,15 @@ void cnc_init(void)
 #endif
 	cnc_state.loop_state = LOOP_STARTUP_RESET;
 	// initializes all systems
-	mcu_init();																					// mcu
-	mcu_io_reset();																			// add custom logic to set pins initial state
+	mcu_init();											// mcu
+	mcu_io_reset();										// add custom logic to set pins initial state
 	io_enable_steppers(~g_settings.step_enable_invert); // disables steppers at start
-	io_disable_probe();																	// forces probe isr disabling
-	grbl_stream_init();																	// serial
-	mod_init();																					// modules
-	settings_init();																		// settings
-	itp_init();																					// interpolator
-	planner_init();																			// motion planner
+	io_disable_probe();									// forces probe isr disabling
+	grbl_stream_init();									// serial
+	mod_init();											// modules
+	settings_init();									// settings
+	itp_init();											// interpolator
+	planner_init();										// motion planner
 #if TOOL_COUNT > 0
 	tool_init();
 #endif
@@ -122,6 +116,37 @@ void cnc_init(void)
 
 void cnc_run(void)
 {
+#if EMULATE_GRBL_STARTUP > 2
+	cnc_reset();
+	if(cnc_unlock(false)!=UNLOCK_ERROR){
+		cnc_state.alarm = EXEC_ALARM_NOALARM;
+	}
+
+	cnc_state.loop_state = LOOP_RUNNING;
+	for (;;)
+	{
+		cnc_parse_cmd();
+		cnc_dotasks();
+
+		int8_t alarm = cnc_state.alarm;
+		if (alarm > EXEC_ALARM_NOALARM)
+		{
+			proto_alarm(cnc_state.alarm);
+		}
+		if (alarm < EXEC_ALARM_PROBE_FAIL_INITIAL && alarm != EXEC_ALARM_NOALARM)
+		{
+			io_enable_steppers(~g_settings.step_enable_invert);
+			cnc_check_fault_systems();
+			cnc_state.loop_state = LOOP_REQUIRE_RESET;
+			break;
+		}	
+	}
+	
+	if (cnc_state.alarm == EXEC_ALARM_SOFTRESET)
+		{
+			cnc_state.alarm = EXEC_ALARM_NOALARM;
+		}
+#else
 	// enters loop reset
 	cnc_reset();
 
@@ -168,6 +193,7 @@ void cnc_run(void)
 			break;
 		}
 	} while (cnc_state.loop_state == LOOP_REQUIRE_RESET || cnc_get_exec_state(EXEC_KILL));
+#endif
 }
 
 uint8_t cnc_parse_cmd(void)
@@ -224,7 +250,6 @@ uint8_t cnc_parse_cmd(void)
 
 bool cnc_dotasks(void)
 {
-
 	// run io basic tasks
 	cnc_io_dotasks();
 
@@ -251,9 +276,9 @@ bool cnc_dotasks(void)
 #ifndef ENABLE_ITP_FEED_TASK
 	if (!cnc_lock_itp)
 	{
-		cnc_lock_itp = true;
+		cnc_lock_itp = 1;
 		itp_run();
-		cnc_lock_itp = false;
+		cnc_lock_itp = 0;
 	}
 #endif
 
@@ -263,7 +288,7 @@ bool cnc_dotasks(void)
 #endif
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
-	EVENT_INVOKE(cnc_dotasks, NULL);
+	cnc_modules_dotasks();
 #endif
 
 	return !cnc_get_exec_state(EXEC_KILL);
@@ -336,7 +361,6 @@ void cnc_restore_motion(void)
 #ifndef DISABLE_RTC_CODE
 MCU_CALLBACK void mcu_rtc_cb(uint32_t millis)
 {
-	mcu_enable_global_isr();
 	uint8_t mls = (uint8_t)(0xff & millis);
 	if ((mls & CTRL_SCHED_CHECK_MASK) == CTRL_SCHED_CHECK_VAL)
 	{
@@ -368,13 +392,6 @@ MCU_CALLBACK void mcu_rtc_cb(uint32_t millis)
 	}
 
 	itp_feed_counter = mls;
-#endif
-
-#ifdef ENABLE_MAIN_LOOP_MODULES
-	if (!cnc_get_exec_state(EXEC_ALARM))
-	{
-		EVENT_INVOKE(rtc_tick, NULL);
-	}
 #endif
 
 #if ASSERT_PIN(ACTIVITY_LED)
@@ -465,7 +482,6 @@ uint8_t cnc_unlock(bool force)
 	// forces to clear EXEC_UNHOMED error to allow motion after limit switch trigger
 	if (force)
 	{
-
 #ifndef DISABLE_SAFE_SETTINGS
 		// on settins error prevent unlock until settings error is cleared
 		if (!(g_settings_error & SETTINGS_READ_ERROR))
@@ -538,7 +554,7 @@ void cnc_clear_exec_state(uint8_t statemask)
 #ifndef DISABLE_ALL_CONTROLS
 	uint8_t controls = io_get_controls();
 
-#if ASSERT_PIN(ESTOP)
+#if ASSERT_PIN(ESTOP) & (EMULATE_GRBL_STARTUP <= 2)
 	if (CHECKFLAG(controls, ESTOP_MASK)) // can't clear the alarm flag if ESTOP is active
 	{
 		CLEARFLAG(statemask, EXEC_KILL);
@@ -627,7 +643,7 @@ void cnc_delay_ms(uint32_t milliseconds)
 	milliseconds += mcu_millis();
 	do
 	{
-		cnc_dotasks();
+		TASK_YIELD();
 	} while (mcu_millis() < milliseconds);
 }
 
@@ -647,7 +663,9 @@ void cnc_reset(void)
 	cnc_state.feed_ovr_cmd = RT_CMD_CLEAR;
 	cnc_state.tool_ovr_cmd = RT_CMD_CLEAR;
 	cnc_state.exec_state = EXEC_RESET_LOCKED; // Activates all alarms, door and hold
+#if EMULATE_GRBL_STARTUP <= 2
 	cnc_state.alarm = EXEC_ALARM_NOALARM;
+#endif
 
 	// clear all systems
 	grbl_stream_clear();
@@ -757,7 +775,7 @@ void cnc_exec_rt_commands(void)
 	if (command)
 	{
 		// clear all but report. report is handled in cnc_io_dotasks
-		__ATOMIC__
+		ATOMIC_CODEBLOCK
 		{
 			cnc_state.rt_cmd = RT_CMD_CLEAR;
 		}
@@ -919,11 +937,12 @@ void cnc_exec_rt_commands(void)
 
 void cnc_check_fault_systems(void)
 {
-	uint8_t inputs;
+	uint8_t inputs = 0;
+	(void)inputs;
 #ifdef CONTROLS_MASK
 	inputs = io_get_controls();
 #endif
-#if ASSERT_PIN(ESTOP)
+#if ASSERT_PIN(ESTOP) & (EMULATE_GRBL_STARTUP <= 2)
 	if (CHECKFLAG(inputs, ESTOP_MASK)) // fault on emergency stop
 	{
 		proto_feedback(MSG_FEEDBACK_12);
@@ -970,7 +989,7 @@ bool cnc_check_interlocking(void)
 	// - any cnc_alarm call
 	if (cnc_get_exec_state(EXEC_KILL))
 	{
-#if ASSERT_PIN(ESTOP)
+#if ASSERT_PIN(ESTOP) & (EMULATE_GRBL_STARTUP <= 2)
 		// the emergency stop is pressed.
 		if (io_get_controls() & ESTOP_MASK)
 		{

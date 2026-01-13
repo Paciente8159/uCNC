@@ -174,7 +174,7 @@ extern "C"
 #elif EMULATE_GRBL_STARTUP == 1
 #define MSG_STARTUP_START "Grbl "
 #define MSG_STARTUP_END " [uCNC v" CNC_VERSION " '$' for help]"
-#elif EMULATE_GRBL_STARTUP == 2
+#elif EMULATE_GRBL_STARTUP >= 2
 #define MSG_STARTUP "Grbl 1.1f ['$' for help]" MSG_EOL
 #endif
 #ifndef MSG_STARTUP

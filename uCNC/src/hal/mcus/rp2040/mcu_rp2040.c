@@ -23,8 +23,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-static volatile bool rp2040_global_isr_enabled;
-
 extern void rp2040_uart_init(int baud);
 extern void rp2040_uart_process(void);
 
@@ -75,6 +73,7 @@ MCU_CALLBACK void shift_register_io_pins(void)
 
 void mcu_din_isr(void)
 {
+	mcu_isr_context_enter();
 	mcu_inputs_changed_cb();
 }
 
@@ -107,9 +106,10 @@ volatile rp2040_alarm_t *mcu_alarms;
 void mcu_alarm_isr(void)
 {
 	hw_clear_bits(&timer_hw->intr, (1U << ALARM_TIMER));
+	uint32_t time = 0;
 	if (mcu_alarms)
 	{
-		while (mcu_alarms->timeout < (uint32_t)timer_hw->timerawl)
+		while (time = (uint32_t)timer_hw->timerawl, MEM_BARRIER, mcu_alarms->timeout <= time)
 		{
 			rp2040_alarm_t *alarm = (rp2040_alarm_t *)mcu_alarms;
 			// advance
@@ -124,6 +124,7 @@ void mcu_alarm_isr(void)
 			// no more alarms
 			if (!mcu_alarms)
 			{
+				timer_hw->alarm[ALARM_TIMER] = 0xFFFFFFFF;
 				return;
 			}
 		}
@@ -157,7 +158,7 @@ void mcu_enqueue_alarm(rp2040_alarm_t *a, uint32_t timeout_us)
 	a->timeout = (uint32_t)target;
 	a->next = NULL;
 
-	__ATOMIC__
+	ATOMIC_CODEBLOCK
 	{
 		rp2040_alarm_t *ptr = (rp2040_alarm_t *)mcu_alarms;
 		// is the only
@@ -202,7 +203,7 @@ void mcu_enqueue_alarm(rp2040_alarm_t *a, uint32_t timeout_us)
 
 #if SERVOS_MASK > 0
 
-static uint8_t mcu_servos[6];
+static uint32_t mcu_servos[6];
 static rp2040_alarm_t servo_alarm;
 #define servo_start_timeout(X) mcu_enqueue_alarm(&servo_alarm, (X))
 
@@ -235,7 +236,6 @@ void mcu_rtc_isr(void)
 {
 	// enqueue alarm again
 	mcu_enqueue_alarm(&rtc_alarm, 1000UL);
-	mcu_isr_context_enter();
 
 	// counts to 20 and reloads
 #if SERVOS_MASK > 0
@@ -286,6 +286,7 @@ void mcu_rtc_isr(void)
 	ms_servo_counter = (servo_counter != 20) ? servo_counter : 0;
 
 #endif
+	mcu_isr_context_enter();
 	mcu_rtc_cb(millis());
 }
 
@@ -297,17 +298,14 @@ void rp2040_core0_loop()
 	rp2040_uart_process();
 }
 
-void setup1()
-{
-}
-
-void loop1()
-{
-	for (;;)
-	{
-		cnc_run();
-	}
-}
+// void mcu_core1_loop()
+// {
+// 	rp2040.fifo.registerCore();
+// 	for (;;)
+// 	{
+// 		cnc_run();
+// 	}
+// }
 
 /**
  * initializes the mcu
@@ -416,6 +414,38 @@ uint8_t mcu_get_pwm(uint8_t pwm)
 }
 #endif
 
+/**
+ * sets the pwm for a servo (50Hz with tON between 1~2ms)
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_set_servo
+void mcu_set_servo(uint8_t servo, uint8_t value)
+{
+#if SERVOS_MASK > 0
+	mcu_servos[servo - SERVO_PINS_OFFSET] = (((2000UL * value) >> 8) + 500); // quick aproximation should be divided by 255 but it's a faste quick approach
+#else
+	(void)servo;
+	(void)value;
+#endif
+}
+#endif
+
+/**
+ * gets the pwm for a servo (50Hz with tON between 1~2ms)
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_get_servo
+uint8_t mcu_get_servo(uint8_t servo)
+{
+#if SERVOS_MASK > 0
+	return (((mcu_servos[servo - SERVO_PINS_OFFSET] - 500) << 8) / 2000);
+#else
+	(void)servo;
+	return 0;
+#endif
+}
+#endif
+
 // ISR
 /**
  * enables global interrupts on the MCU
@@ -468,6 +498,7 @@ static void mcu_itp_isr(void)
 
 	if (!resetstep)
 	{
+		mcu_isr_context_enter();
 		mcu_step_cb();
 	}
 
@@ -488,7 +519,7 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 	frequency = CLAMP((float)F_STEP_MIN, frequency, (float)F_STEP_MAX);
 	// up and down counter (generates half the step rate at each event)
 	uint32_t totalticks = (uint32_t)((float)(1000000UL >> 1) / frequency);
-	*prescaller = 1;
+	*prescaller = 0;
 	while (totalticks > 0xFFFF)
 	{
 		(*prescaller) += 1;
@@ -617,6 +648,7 @@ static void mcu_oneshot_isr(void)
 {
 	if (mcu_timeout_cb)
 	{
+		mcu_isr_context_enter();
 		mcu_timeout_cb();
 	}
 }
@@ -732,10 +764,10 @@ bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 			channel_config_set_transfer_data_size(&c, DMA_SIZE_8);
 			channel_config_set_dreq(&c, spi_get_dreq(spi_default, true));
 			dma_channel_configure(dma_tx, &c,
-														&spi_get_hw(SPI_HW)->dr, // write address
-														out,										 // read address
-														len,										 // element count (each element is of size transfer_data_size)
-														false);									 // don't start yet
+								  &spi_get_hw(SPI_HW)->dr, // write address
+								  out,					   // read address
+								  len,					   // element count (each element is of size transfer_data_size)
+								  false);				   // don't start yet
 
 			if (in)
 			{
@@ -749,10 +781,10 @@ bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 				channel_config_set_read_increment(&c, false);
 				channel_config_set_write_increment(&c, true);
 				dma_channel_configure(dma_rx, &c,
-															in,											 // write address
-															&spi_get_hw(SPI_HW)->dr, // read address
-															len,										 // element count (each element is of size transfer_data_size)
-															false);									 // don't start yet
+									  in,					   // write address
+									  &spi_get_hw(SPI_HW)->dr, // read address
+									  len,					   // element count (each element is of size transfer_data_size)
+									  false);				   // don't start yet
 
 				startmask |= (1u << dma_rx);
 			}
@@ -786,7 +818,7 @@ bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 			if (timeout < mcu_millis())
 			{
 				timeout = BULK_SPI_TIMEOUT + mcu_millis();
-				cnc_dotasks();
+				TASK_YIELD();
 			}
 		}
 
@@ -868,10 +900,10 @@ bool mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 			channel_config_set_transfer_data_size(&c, DMA_SIZE_8);
 			channel_config_set_dreq(&c, spi_get_dreq(spi_default, true));
 			dma_channel_configure(dma_tx, &c,
-														&spi_get_hw(SPI2_HW)->dr, // write address
-														out,										 // read address
-														len,										 // element count (each element is of size transfer_data_size)
-														false);									 // don't start yet
+								  &spi_get_hw(SPI2_HW)->dr, // write address
+								  out,						// read address
+								  len,						// element count (each element is of size transfer_data_size)
+								  false);					// don't start yet
 
 			if (in)
 			{
@@ -885,10 +917,10 @@ bool mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 				channel_config_set_read_increment(&c, false);
 				channel_config_set_write_increment(&c, true);
 				dma_channel_configure(dma_rx, &c,
-															in,											 // write address
-															&spi_get_hw(SPI2_HW)->dr, // read address
-															len,										 // element count (each element is of size transfer_data_size)
-															false);									 // don't start yet
+									  in,						// write address
+									  &spi_get_hw(SPI2_HW)->dr, // read address
+									  len,						// element count (each element is of size transfer_data_size)
+									  false);					// don't start yet
 
 				startmask |= (1u << dma_rx);
 			}
@@ -922,7 +954,7 @@ bool mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 			if (timeout < mcu_millis())
 			{
 				timeout = BULK_SPI2_TIMEOUT + mcu_millis();
-				cnc_dotasks();
+				TASK_YIELD();
 			}
 		}
 

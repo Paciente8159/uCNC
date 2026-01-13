@@ -164,7 +164,7 @@ bool __attribute__((weak)) plasma_thc_probe_and_start(void)
 	// wait for cycle start
 	while (cnc_get_exec_state(EXEC_HOLD))
 	{
-		cnc_dotasks();
+		TASK_YIELD();
 	}
 
 	while (ret--)

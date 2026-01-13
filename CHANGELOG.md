@@ -6,6 +6,72 @@
 
 # Changelog
 
+## [1.14.0] - 07-01-2026
+
+### Added
+
+- added new atomic primitives (similar to C11) including atomic CAS and basic semaphores (#885)
+- added ring buffer non-blocking methods (#885)
+- added ISR context aware mcu calls (#885)
+- added new Grbl compatibility level (now can be raised to level 3 - less safety strick) (#885)
+
+### Changed
+
+- modified ring buffer to be MPMC-Multi producer/Multi consumer safe (#885)
+- removed rtc_tick event (#885)
+- interpolator now runs on the RTC ISR/thread by default if ENABLE_MAIN_LOOP_MODULES is enabled(#885)
+
+### Fixed
+
+- fixed RP2040/2350 multicore (#885)
+- fixed ITP timer prescaller calculation (#885)
+- fixed general alarm handler to prevent missing alarms that about to trigger (#885)
+- fixed ESP32 WiFi (#885)
+- fixed ESP32-C3 ITP timer (#885)
+
+## [1.13.1] - 28-11-2025
+
+### Added
+
+- added ABC axis speed profile decoupling option to fix incorrect speed profiles with rotational axis via `ABC_INDEP_FEED_CALC` (#892)
+
+### Fixed
+
+- fixed ESP32 PIO configuration that lead to several WiFi issues (#899)
+- fixed some redefinition warings while compiling code for ESP32(#896)
+
+## [1.13.0] - 07-11-2025
+
+[@reinforce](https://github.com/reinforce)	- fix compilation errors on RP2040 and 2350 (#894) and fixed file name typo on ESP32 (#889)
+
+### Added
+
+- added support for 74HC595 custom I2S driver for ESP32-S3 and ESP32-C3 (#895)
+
+### Changed
+
+- redesigned ESP32 I2S driver for the 74HC595. It now uses the the DMA ISR instead of the built in generic driver and thread to keep the buffer fill and switch modes (#895)
+- redesigned ESP8266 outputs signal generation based on the new timer struct used on ESP32 (#895)
+
+### Fixed
+
+- fixed compilation errors on RP2040 and RP2350 (#894)
+- fixed timer configurations for ESP32 (#893)
+- fixed setting $11 (G64 factor) to accept negative values (#891)
+- fixed file name typo on ESP32 (#889)
+- implemented missing get and set servo values on RPi MCU's (#890)
+- fixed interpolation bug on ESP8266 (#887)
+
+## [1.13.rc] - 06-10-2025
+
+### Added
+
+- added basic core support for ESP32-S3 and ESP32-C3 MCU's (#881)
+
+### Changed
+
+- cycle loops modified to improve loop precision, based on inline assembly instructions or running free CPU cycle counters. These are CPU cycle loops that are used for very small (usually less then 2 or microseconds) (#884)
+
 ## [1.12.4] - 07-08-2025
 
 ### Added
@@ -1929,6 +1995,9 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.13.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.13.1
+[1.13.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.13.0
+[1.13.rc]: https://github.com/Paciente8159/uCNC/releases/tag/v1.13.rc
 [1.12.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.12.4
 [1.12.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.12.3
 [1.12.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.12.2
