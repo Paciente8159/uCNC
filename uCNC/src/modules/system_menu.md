@@ -102,7 +102,7 @@ Relevant functions
   - `system_menu_get_current_item()` – retrieves the active item
   - `system_menu_action_nav_back()` – handles back navigation
 
-Menu Modes
+#### Menu Modes
 
 __Defined in system_menu.h:__
 
@@ -117,7 +117,7 @@ __Defined in system_menu.h:__
 
 These modes determine how user input is interpreted and how the screen is rendered.
 
-Menu Identifiers
+#### Menu Identifiers
 
 Also defined in system_menu.h:
 
@@ -129,7 +129,7 @@ Also defined in system_menu.h:
 
 These IDs allow the system to switch between screens using system_menu_goto().
 
-Navigation and Actions
+#### Navigation and Actions
 
 The system menu processes user actions through:
 
@@ -144,7 +144,7 @@ Navigation between screens is performed using:
   - `system_menu_goto()` – switches to a new menu or screen ID
   - `system_menu_main_open()` – opens the main menu from idle or startup
 
-Menu Items
+#### Menu Items
 
 Menu items are dynamically appended using:
 
@@ -159,7 +159,7 @@ Items can include:
   - Selectable options
   - Visibility filtering ensures only relevant items appear depending on the current context or machine state.
 
-Rendering Details
+#### Rendering Details
 
 Rendering is performed through:
 
@@ -168,7 +168,8 @@ Rendering is performed through:
 
 Only overridden callbacks are rendered; non‑overridden screens produce no output.
 
-Time‑Based Behavior
+#### Time‑Based Behavior
+
 Timing constants defined in system_menu.h include:
 
   - SYSTEM_MENU_GO_IDLE_MS – delay before returning to idle screen
@@ -178,7 +179,7 @@ Timing constants defined in system_menu.h include:
 
 These values control automatic transitions and redraw behavior.
 
-Modal Popups
+#### Modal Popups
 
 Modal popups interrupt normal menu flow and are displayed using:
 
@@ -186,7 +187,7 @@ Modal popups interrupt normal menu flow and are displayed using:
 
 Popups automatically dismiss after SYSTEM_MENU_MODAL_POPUP_MS milliseconds unless overridden.
 
-Extension Module Integration
+#### Extension Module Integration
 
 Modules can register their own menus by calling:
 
@@ -200,5 +201,3 @@ This allows:
   - Feature‑specific UI elements
 
 All added menus automatically support translation and structured rendering.
-
-
