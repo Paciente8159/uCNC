@@ -427,7 +427,7 @@ bool encoders_dotasks(void *args)
 
 	return EVENT_CONTINUE;
 }
-CREATE_EVENT_LISTENER_WITHLOCK(rtc_tick, encoders_dotasks, LISTENER_SWI2C_LOCK);
+CREATE_EVENT_LISTENER_WITHLOCK(cnc_dotasks, encoders_dotasks, LISTENER_SWI2C_LOCK);
 
 int32_t encoder_get_position(uint8_t i)
 {
@@ -529,7 +529,7 @@ DECL_MODULE(encoder)
 #endif
 	encoders_reset_position();
 
-	ADD_EVENT_LISTENER(rtc_tick, encoders_dotasks);
+	ADD_EVENT_LISTENER(cnc_dotasks, encoders_dotasks);
 }
 
 #endif
