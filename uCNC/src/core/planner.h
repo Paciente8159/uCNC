@@ -85,6 +85,7 @@ extern "C"
 	planner_block_t *planner_get_last_block(void);
 	float planner_get_block_exit_speed_sqr(void);
 	float planner_get_block_top_speed(float exit_speed_sqr);
+	uint32_t planner_get_block_remaining_steps(bool* modified);
 #if TOOL_COUNT > 0
 	int16_t planner_get_spindle_speed(float scale);
 	uint8_t planner_get_coolant(void);
@@ -113,6 +114,16 @@ extern "C"
 	void planner_store(void);
 	// restores the planner to it's previous saved state
 	void planner_restore(void);
+#endif
+
+#ifdef ENABLE_PLANNER_MODULES
+	typedef struct planner_remaining_steps_args_
+	{
+		planner_block_t *block;
+		bool *modified;
+	} planner_remaining_steps_args_t;
+	// event_planner_remaining_steps_handler
+	DECL_EVENT_HANDLER(planner_remaining_steps);
 #endif
 
 #ifdef __cplusplus

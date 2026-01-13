@@ -35,6 +35,15 @@ FORCEINLINE static uint8_t planner_buffer_prev(uint8_t index);
 FORCEINLINE static void planner_recalculate(void);
 FORCEINLINE static void planner_buffer_clear(void);
 
+#ifdef ENABLE_PLANNER_MODULES
+// event_planner_remaining_steps_handler
+// fires every time the current running planner block remaing steps is being read before a chunk of the motion is enqueued for step generation (partial/full)
+WEAK_EVENT_HANDLER(planner_remaining_steps)
+{
+	DEFAULT_EVENT_HANDLER(planner_remaining_steps);
+}
+#endif
+
 /*
 	Adds a new line to the trajectory planner
 	The planner is responsible for calculating the entry and exit speeds of the transitions
@@ -408,6 +417,16 @@ float planner_get_block_top_speed(float exit_speed_sqr)
 	// can't ever exceed rapid move speed
 	target_speed_sqr = MIN(target_speed_sqr, rapid_feed_sqr);
 	return MIN(junction_speed_sqr, target_speed_sqr);
+}
+
+uint32_t planner_get_block_remaining_steps(bool *modified)
+{
+#ifdef ENABLE_PLANNER_MODULES
+	planner_remaining_steps_args_t args = {&planner_data[planner_data_read], modified};
+	EVENT_INVOKE(planner_remaining_steps)
+#endif
+	uint8_t main_stepper = planner_data[planner_data_read].main_stepper;
+	return planner_data[planner_data_read].steps[main_stepper];
 }
 
 #if TOOL_COUNT > 0

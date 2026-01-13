@@ -157,7 +157,6 @@ extern "C"
 #define PLANNER_BUFFER_SIZE 14
 #endif
 // reduces ITP code size by avoiding some optimizations
-#undef STEP_ISR_SKIP_MAIN
 #undef STEP_ISR_SKIP_IDLE
 
 #ifndef USE_MACRO_BUFFER

@@ -377,16 +377,13 @@ void itp_run(void)
 
 			// reset dirbits
 			itp_blk_data[itp_blk_data_write].dirbits = 0;
-			step_t total_steps = itp_cur_plan_block->steps[itp_cur_plan_block->main_stepper];
+			step_t total_steps = planner_get_block_remaining_steps(&itp_needs_update);
 			itp_blk_data[itp_blk_data_write].total_steps = total_steps << 1;
 
 			feed_convert = itp_cur_plan_block->feed_conversion;
 
 #ifdef STEP_ISR_SKIP_IDLE
 			itp_blk_data[itp_blk_data_write].idle_axis = 0;
-#endif
-#ifdef STEP_ISR_SKIP_MAIN
-			itp_blk_data[itp_blk_data_write].main_stepper = itp_cur_plan_block->main_stepper;
 #endif
 			for (uint8_t i = 0; i < STEPPER_COUNT; i++)
 			{
@@ -418,7 +415,18 @@ void itp_run(void)
 #endif
 		}
 
-		uint32_t remaining_steps = itp_cur_plan_block->steps[itp_cur_plan_block->main_stepper];
+#ifdef ENABLE_PLANNER_MODULES
+		itp_planner_block_args_t args = {itp_cur_plan_block, &itp_needs_update};
+		// event_itp_planner_running_handler
+		EVENT_INVOKE(itp_planner_running, &args);
+#ifdef ENABLE_ITP_FEED_TASK
+		// force break to allow ISR to exit
+		if (itp_needs_update)
+			break;
+#endif
+#endif
+
+		uint32_t remaining_steps = planner_get_block_remaining_steps(&itp_needs_update);
 
 		sgm = &itp_sgm_data[itp_sgm_data_write];
 
@@ -1072,9 +1080,6 @@ MCU_CALLBACK void mcu_step_cb(void)
 #if (DSS_MAX_OVERSAMPLING != 0)
 				if (itp_rt_sgm->next_dss != 0)
 				{
-#ifdef STEP_ISR_SKIP_MAIN
-					itp_rt_sgm->block->main_stepper = 255; // disables direct step increment to force step calculation
-#endif
 					uint8_t dss;
 					if (itp_rt_sgm->next_dss > 0)
 					{
@@ -1157,14 +1162,6 @@ MCU_CALLBACK void mcu_step_cb(void)
 		{
 // prepares the next step bits mask
 #if (STEPPER_COUNT > 0)
-#ifdef STEP_ISR_SKIP_MAIN
-			if (itp_rt_sgm->block->main_stepper == 0)
-			{
-				new_stepbits |= LINACT0_IO_MASK;
-			}
-			else
-			{
-#endif
 #ifdef STEP_ISR_SKIP_IDLE
 				if (!(itp_rt_sgm->block->idle_axis & (1 << 0)))
 				{
@@ -1178,19 +1175,8 @@ MCU_CALLBACK void mcu_step_cb(void)
 #ifdef STEP_ISR_SKIP_IDLE
 				}
 #endif
-#ifdef STEP_ISR_SKIP_MAIN
-			}
-#endif
 #endif
 #if (STEPPER_COUNT > 1)
-#ifdef STEP_ISR_SKIP_MAIN
-			if (itp_rt_sgm->block->main_stepper == 1)
-			{
-				new_stepbits |= LINACT1_IO_MASK;
-			}
-			else
-			{
-#endif
 #ifdef STEP_ISR_SKIP_IDLE
 				if (!(itp_rt_sgm->block->idle_axis & (1 << 1)))
 				{
@@ -1204,19 +1190,8 @@ MCU_CALLBACK void mcu_step_cb(void)
 #ifdef STEP_ISR_SKIP_IDLE
 				}
 #endif
-#ifdef STEP_ISR_SKIP_MAIN
-			}
-#endif
 #endif
 #if (STEPPER_COUNT > 2)
-#ifdef STEP_ISR_SKIP_MAIN
-			if (itp_rt_sgm->block->main_stepper == 2)
-			{
-				new_stepbits |= LINACT2_IO_MASK;
-			}
-			else
-			{
-#endif
 #ifdef STEP_ISR_SKIP_IDLE
 				if (!(itp_rt_sgm->block->idle_axis & (1 << 2)))
 				{
@@ -1230,19 +1205,8 @@ MCU_CALLBACK void mcu_step_cb(void)
 #ifdef STEP_ISR_SKIP_IDLE
 				}
 #endif
-#ifdef STEP_ISR_SKIP_MAIN
-			}
-#endif
 #endif
 #if (STEPPER_COUNT > 3)
-#ifdef STEP_ISR_SKIP_MAIN
-			if (itp_rt_sgm->block->main_stepper == 3)
-			{
-				new_stepbits |= LINACT3_IO_MASK;
-			}
-			else
-			{
-#endif
 #ifdef STEP_ISR_SKIP_IDLE
 				if (!(itp_rt_sgm->block->idle_axis & (1 << 3)))
 				{
@@ -1256,19 +1220,8 @@ MCU_CALLBACK void mcu_step_cb(void)
 #ifdef STEP_ISR_SKIP_IDLE
 				}
 #endif
-#ifdef STEP_ISR_SKIP_MAIN
-			}
-#endif
 #endif
 #if (STEPPER_COUNT > 4)
-#ifdef STEP_ISR_SKIP_MAIN
-			if (itp_rt_sgm->block->main_stepper == 4)
-			{
-				new_stepbits |= LINACT4_IO_MASK;
-			}
-			else
-			{
-#endif
 #ifdef STEP_ISR_SKIP_IDLE
 				if (!(itp_rt_sgm->block->idle_axis & (1 << 4)))
 				{
@@ -1282,19 +1235,8 @@ MCU_CALLBACK void mcu_step_cb(void)
 #ifdef STEP_ISR_SKIP_IDLE
 				}
 #endif
-#ifdef STEP_ISR_SKIP_MAIN
-			}
-#endif
 #endif
 #if (STEPPER_COUNT > 5)
-#ifdef STEP_ISR_SKIP_MAIN
-			if (itp_rt_sgm->block->main_stepper == 5)
-			{
-				new_stepbits |= LINACT5_IO_MASK;
-			}
-			else
-			{
-#endif
 #ifdef STEP_ISR_SKIP_IDLE
 				if (!(itp_rt_sgm->block->idle_axis & (1 << 5)))
 				{
@@ -1307,9 +1249,6 @@ MCU_CALLBACK void mcu_step_cb(void)
 					}
 #ifdef STEP_ISR_SKIP_IDLE
 				}
-#endif
-#ifdef STEP_ISR_SKIP_MAIN
-			}
 #endif
 #endif
 
