@@ -57,10 +57,8 @@ extern "C"
 	void tool_set_speed(int16_t value);					   // this sets the tool speed. The value passed to this function is the actual IO value needed (for example a PWM value). On M5 or tool shutdown, this value is always 0.
 	void tool_set_coolant(uint8_t value);				   // this gets a maks with the coolant outputs to enable(1) or disable(0)
 	void tool_stop(void);								   // this stops the tool and coolant
-#if defined(ENABLE_ATC_HOOKS) && (TOOL_COUNT > 1)
 	DECL_HOOK(tool_atc_unmount, uint8_t);
 	DECL_HOOK(tool_atc_mount, uint8_t);
-#endif
 
 #ifdef __cplusplus
 }
