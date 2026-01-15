@@ -217,9 +217,9 @@ extern "C"
 
 
 /**
- *
- * Enables Laser mode
- *
+ * 
+ * Uncomment to enable pwm laser tool features
+ * 
  * **/
 #define ENABLE_LASER_PWM
 
@@ -242,14 +242,14 @@ extern "C"
 
 /**
  *
- * Enables Plasma THC capabilities
+ * Uncomment to enable plasma THC features
  *
  * **/
 //  #define ENABLE_PLASMA_THC
 
 /**
  * 
- * Enables Embroidery capabilities
+ * Uncomment to enable embroidery features
  * 
  */
 //  #define ENABLE_EMBROIDERY
