@@ -18,20 +18,12 @@
 #include "../cnc.h"
 #include "softi2c.h"
 
-void softi2c_delay(uint8_t loops_100ns)
-{
-	while (loops_100ns--)
-	{
-		mcu_delay_100ns();
-	}
-}
-
 static void softi2c_stop(softi2c_port_t *port)
 {
 	port->sda(false);
-	softi2c_delay(port->i2cdelay);
+	mcu_delay_us(port->i2cdelay);
 	port->scl(true);
-	softi2c_delay(port->i2cdelay);
+	mcu_delay_us(port->i2cdelay);
 	port->sda(true);
 }
 
@@ -62,6 +54,7 @@ static uint8_t softi2c_write(softi2c_port_t *port, uint8_t c, bool send_start, b
 	{
 		// init
 		port->sda(true);
+		port->scl(true);
 		uint32_t timeout = ms_timeout;
 		__TIMEOUT_MS__(timeout)
 		{
@@ -83,27 +76,27 @@ static uint8_t softi2c_write(softi2c_port_t *port, uint8_t c, bool send_start, b
 		}
 
 		port->sda(false);
-		softi2c_delay(port->i2cdelay);
+		mcu_delay_us(port->i2cdelay);
 		port->scl(false);
-		softi2c_delay(port->i2cdelay);
+		mcu_delay_us(port->i2cdelay);
 	}
 
 	for (uint8_t i = 0; i < 8; i++)
 	{
 		port->sda((c & 0x80));
-		softi2c_delay(port->i2cdelay);
+		mcu_delay_us(port->i2cdelay);
 		if (softi2c_clock_stretch(port, ms_timeout) != I2C_OK)
 		{
 			return I2C_NOTOK;
 		}
-		softi2c_delay(port->i2cdelay);
+		mcu_delay_us(port->i2cdelay);
 		port->scl(false); // write the most-significant bit
 		c <<= 1;
 	}
 
 	// read ack
 	port->sda(true);
-	softi2c_delay(port->i2cdelay);
+	mcu_delay_us(port->i2cdelay);
 	if (softi2c_clock_stretch(port, ms_timeout) != I2C_OK)
 	{
 		return I2C_NOTOK;
@@ -122,11 +115,10 @@ static uint8_t softi2c_write(softi2c_port_t *port, uint8_t c, bool send_start, b
 static uint8_t softi2c_read(softi2c_port_t *port, bool with_ack, bool send_stop, uint32_t ms_timeout)
 {
 	uint8_t c = 0xFF;
-	uint8_t i = 8;
 	TASK_YIELD();
-	do
+	for (uint8_t i = 0; i < 8; i++)
 	{
-		softi2c_delay(port->i2cdelay);
+		mcu_delay_us(port->i2cdelay);
 		if (softi2c_clock_stretch(port, ms_timeout) != I2C_OK)
 		{
 			return I2C_NOTOK;
@@ -134,16 +126,15 @@ static uint8_t softi2c_read(softi2c_port_t *port, bool with_ack, bool send_stop,
 		c <<= 1;
 		c |= (uint8_t)port->get_sda();
 		port->scl(false);
-
-	} while (!--i);
+	}
 
 	port->sda(!with_ack);
-	softi2c_delay(port->i2cdelay);
+	mcu_delay_us(port->i2cdelay);
 	if (softi2c_clock_stretch(port, ms_timeout) != I2C_OK)
 	{
 		return I2C_NOTOK;
 	}
-	softi2c_delay(port->i2cdelay);
+	mcu_delay_us(port->i2cdelay);
 	port->scl(false);
 
 	if (send_stop)
@@ -225,4 +216,5 @@ void softi2c_config(softi2c_port_t *port, uint32_t frequency)
 	}
 
 	port->i2cdelay = I2C_DELAY(frequency);
+	softi2c_stop(port);
 }

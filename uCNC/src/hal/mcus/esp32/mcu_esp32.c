@@ -221,7 +221,6 @@ void mcu_init(void)
 
 	// initialize rtc timer (currently on core 1)
 	xTaskCreatePinnedToCore(mcu_rtc_task, "rtcTask", 8192, NULL, 7, NULL, CONFIG_ARDUINO_RUNNING_CORE);
-
 	mcu_enable_global_isr();
 }
 

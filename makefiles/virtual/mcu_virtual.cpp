@@ -1233,7 +1233,7 @@ extern "C"
 
 	uint32_t mcu_free_micros(void)
 	{
-		return (uint32_t)(mcu_free_micros() % 1000);
+		return (uint32_t)(mcu_micros() % 1000);
 	}
 
 	/**

@@ -100,6 +100,7 @@ extern "C"
 #if ENCODERS > 0
 		uint8_t encoders_pulse_invert_mask;
 		uint8_t encoders_dir_invert_mask;
+		float encoders_resolution[ENCODERS];
 #endif
 #ifdef H_MAPPING_EEPROM_STORE_ENABLED
 		float hmap_x;

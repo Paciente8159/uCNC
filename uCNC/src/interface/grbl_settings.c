@@ -149,8 +149,9 @@ const settings_t __rom__ default_settings =
 #endif
 #endif
 #if ENCODERS > 0
-		.encoders_pulse_invert_mask = 0,
-		.encoders_dir_invert_mask = 0,
+				.encoders_pulse_invert_mask = 0,
+				.encoders_dir_invert_mask = 0,
+				.encoders_resolution = DEFAULT_ARRAY(ENCODERS, 1),
 #endif
 };
 
@@ -214,6 +215,9 @@ const setting_id_t __rom__ g_settings_id_table[] = {
 	{.id = 130, .memptr = &g_settings.max_distance, .type = SETTING_TYPE_FLOAT | SETTING_ARRAY | SETTING_ARRCNT(AXIS_COUNT)},
 #ifdef ENABLE_BACKLASH_COMPENSATION
 	{.id = 140, .memptr = &g_settings.backlash_steps, .type = SETTING_TYPE_UINT16 | SETTING_ARRAY | SETTING_ARRCNT(AXIS_TO_STEPPERS)},
+#endif
+#if ENCODERS
+		{.id = 150, .memptr = &g_settings.encoders_resolution, .type = SETTING_TYPE_FLOAT | SETTING_ARRAY | SETTING_ARRCNT(ENCODERS)},
 #endif
 #ifdef H_MAPPING_EEPROM_STORE_ENABLED
 #define H_MAPING_ARRAY_HALF_SIZE ((H_MAPING_GRID_FACTOR * H_MAPING_GRID_FACTOR) >> 1)

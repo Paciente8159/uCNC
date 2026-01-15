@@ -165,8 +165,6 @@ extern "C"
 	void cnc_run(void);
 	// do events returns true if all OK and false if an ABORT alarm is reached
 	bool cnc_dotasks(void);
-	// emulates code context yield in a linear code execution
-	// this can be replaced in multicore/RTOS environments
 	uint8_t cnc_home(void);
 	void cnc_alarm(int8_t code);
 	bool cnc_has_alarm(void);
