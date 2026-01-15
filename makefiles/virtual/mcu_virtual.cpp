@@ -259,7 +259,13 @@ extern "C"
 			getc(src);
 		}*/
 
-		fseek(src, address, SEEK_SET);
+		if(fseek(src, address, SEEK_SET)!=0){
+			fseek(src, 0, SEEK_END);
+			int sz = ftell(src);
+			for(int i=sz; i<address; i++){
+				putc((int)0, src);
+			}
+		}
 		putc((int)value, src);
 
 		fflush(src);
@@ -399,21 +405,21 @@ extern "C"
 
 	uint8_t mcu_get_pin_offset(uint8_t pin)
 	{
-		if (pin >= 1 && pin <= 24)
+		if (pin >= 1 && pin <= 32)
 		{
-			return pin - 1;
+			return pin - STEP0;
 		}
-		else if (pin >= 47 && pin <= 78)
+		if (pin >= PWM_PINS_OFFSET && pin <= (PWM_PINS_OFFSET + 32))
 		{
-			return pin - 47;
+			return pin - DOUT0;
 		}
-		if (pin >= 100 && pin <= 113)
+		if (pin >= LIMIT_X && pin <= CS_RES)
 		{
-			return pin - 100;
+			return pin - LIMIT_X;
 		}
-		else if (pin >= 130 && pin <= 161)
+		else if (pin >= DIN0 && pin <= DIN31)
 		{
-			return pin - 130;
+			return pin - DIN0;
 		}
 
 		return -1;
@@ -591,15 +597,15 @@ extern "C"
 #endif
 
 #if defined(MCU_HAS_ONESHOT_TIMER)
-	static uint32_t virtual_oneshot_counter;
-	static uint32_t virtual_oneshot_reload;
-	static FORCEINLINE void mcu_gen_oneshot(void)
+	static uint32_t oneshot_timeout;
+	static uint32_t oneshot_alarm;
+	static FORCEINLINE void mcu_gen_oneshot(uint32_t steptime)
 	{
-		if (virtual_oneshot_counter)
+		if (oneshot_alarm)
 		{
-			virtual_oneshot_counter--;
-			if (!virtual_oneshot_counter)
+			if (oneshot_alarm <= mcu_micros())
 			{
+				oneshot_alarm = 0;
 				if (mcu_timeout_cb)
 				{
 					mcu_timeout_cb();
@@ -611,7 +617,7 @@ extern "C"
 
 	static volatile uint32_t mcu_itp_timer_reload;
 	static volatile bool mcu_itp_timer_running;
-	static FORCEINLINE void mcu_gen_step(void)
+	static FORCEINLINE void mcu_gen_step(uint32_t steptime)
 	{
 		static bool step_reset = true;
 		static int32_t mcu_itp_timer_counter;
@@ -622,7 +628,8 @@ extern "C"
 			// stream mode tick
 			int32_t t = mcu_itp_timer_counter;
 			bool reset = step_reset;
-			t -= (int32_t)ceilf(1000000.0f / ITP_SAMPLE_RATE);
+//			t -= (int32_t)ceilf(1000000.0f / ITP_SAMPLE_RATE);
+			t -= steptime;
 			if (t <= 0)
 			{
 				if (!reset)
@@ -730,9 +737,18 @@ extern "C"
 #define def_printpin(X) \
 	if (stimuli)        \
 	fprintf(stimuli, "$var wire 1 %c " #X " $end\n", 33 + X)
-#define printpin(X) \
-	if (stimuli)    \
-	fprintf(stimuli, "%d%c\n", ((virtualmap.special_outputs & (1 << (X - 1))) ? 1 : 0), 33 + X)
+#define printspecialpin(X)                                                                       \
+	if (stimuli)                                                                                   \
+	{                                                                                              \
+		fprintf(stimuli, "%d%c\n", ((virtualmap.special_outputs & (1 << (X - 1))) ? 1 : 0), 33 + X); \
+		fflush(stimuli);                                                                             \
+	}
+#define printpin(X)                                                                                     \
+	if (stimuli)                                                                                          \
+	{                                                                                                     \
+		fprintf(stimuli, "%d%c\n", ((virtualmap.outputs & (1 << (X - DOUT_PINS_OFFSET))) ? 1 : 0), 33 + X); \
+		fflush(stimuli);                                                                                    \
+	}
 
 	volatile unsigned long g_cpu_freq = 0;
 
@@ -830,8 +846,7 @@ extern "C"
 	/**
 	 * configures a single shot timeout in us
 	 * */
-	static uint32_t oneshot_timeout;
-	static uint32_t oneshot_alarm;
+
 	void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 	{
 		oneshot_timeout = timeout;
@@ -850,15 +865,11 @@ extern "C"
 	{
 		static bool running = false;
 		bool test = false;
-		do
-		{
-			test = __atomic_load_n(&running, __ATOMIC_RELAXED);
-			if (test)
-			{
-				return;
-			}
-		} while (!__atomic_compare_exchange_n(&running, &test, true, false, __ATOMIC_RELAXED, __ATOMIC_RELAXED));
-		static uint32_t prev, next_rtc = 1000;
+		if(!__atomic_compare_exchange_n(&running, &test, true, false, __ATOMIC_RELAXED, __ATOMIC_RELAXED)){
+			return;
+		}
+
+		static uint32_t prev_special, prev, next_rtc = 1000;
 		float parcial = 0;
 		//		long t = stopCycleCounter();
 		//		printf("Elapsed %dus\n\r", (int)((double)t / cyclesPerMicrosecond));
@@ -866,40 +877,48 @@ extern "C"
 		for (int i = 0; i < (int)timestep; i++)
 		{
 			parcial += (1000000.0f / (float)ITP_SAMPLE_RATE);
+			uint32_t partial_int = (uint32_t)parcial;
 			tickcount += (int)parcial;
 			parcial -= (int)parcial;
 
-			mcu_gen_step();
+			mcu_gen_step(partial_int);
+#ifdef MCU_HAS_ONESHOT_TIMER
+			mcu_gen_oneshot(partial_int);
+#endif
 
-			if (prev ^ virtualmap.special_outputs)
+			if ((prev_special ^ virtualmap.special_outputs) || (prev ^ virtualmap.outputs))
 			{
-				prev = virtualmap.special_outputs;
+				prev_special = virtualmap.special_outputs;
+				prev = virtualmap.outputs;
 				if (stimuli)
 					fprintf(stimuli, "#%llu\n", tickcount);
 #if AXIS_COUNT > 0
-				printpin(STEP0);
-				printpin(DIR0);
+				printspecialpin(STEP0);
+				printspecialpin(DIR0);
 #endif
 #if AXIS_COUNT > 1
-				printpin(STEP1);
-				printpin(DIR1);
+				printspecialpin(STEP1);
+				printspecialpin(DIR1);
 #endif
 #if AXIS_COUNT > 2
-				printpin(STEP2);
-				printpin(DIR2);
+				printspecialpin(STEP2);
+				printspecialpin(DIR2);
 #endif
 #if AXIS_COUNT > 3
-				printpin(STEP3);
-				printpin(DIR3);
+				printspecialpin(STEP3);
+				printspecialpin(DIR3);
 #endif
 #if AXIS_COUNT > 4
-				printpin(STEP4);
-				printpin(DIR4);
+				printspecialpin(STEP4);
+				printspecialpin(DIR4);
 #endif
 #if AXIS_COUNT > 5
-				printpin(STEP5);
-				printpin(DIR5);
+				printspecialpin(STEP5);
+				printspecialpin(DIR5);
 #endif
+
+				printpin(DOUT0);
+				printpin(DOUT1);
 			}
 		}
 
@@ -1197,6 +1216,8 @@ extern "C"
 		def_printpin(DIR2);
 		def_printpin(STEP3);
 		def_printpin(DIR3);
+		def_printpin(DOUT0);
+		def_printpin(DOUT1);
 		if (stimuli)
 			fprintf(stimuli, "$upscope $end\n$enddefinitions $end\n\n", tickcount);
 
