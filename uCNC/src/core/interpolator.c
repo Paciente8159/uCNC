@@ -377,14 +377,11 @@ void itp_run(void)
 
 			// reset dirbits
 			itp_blk_data[itp_blk_data_write].dirbits = 0;
-			step_t total_steps = planner_get_block_remaining_steps(&itp_needs_update);
+			step_t total_steps = itp_cur_plan_block->steps[itp_cur_plan_block->main_stepper];
 			itp_blk_data[itp_blk_data_write].total_steps = total_steps << 1;
 
 			feed_convert = itp_cur_plan_block->feed_conversion;
 
-#ifdef STEP_ISR_SKIP_IDLE
-			itp_blk_data[itp_blk_data_write].idle_axis = 0;
-#endif
 			for (uint8_t i = 0; i < STEPPER_COUNT; i++)
 			{
 				uint8_t mask = (1 << i);
@@ -392,12 +389,6 @@ void itp_run(void)
 				itp_blk_data[itp_blk_data_write].dirbits |= itp_get_linact_dirs(itp_cur_plan_block->dirbits & mask);
 				itp_blk_data[itp_blk_data_write].errors[i] = total_steps;
 				itp_blk_data[itp_blk_data_write].steps[i] = itp_cur_plan_block->steps[i] << 1;
-#ifdef STEP_ISR_SKIP_IDLE
-				if (!itp_cur_plan_block->steps[i])
-				{
-					itp_blk_data[itp_blk_data_write].idle_axis |= mask;
-				}
-#endif
 			}
 
 			// flags block for recalculation of speeds
@@ -416,9 +407,7 @@ void itp_run(void)
 		}
 
 #ifdef ENABLE_PLANNER_MODULES
-		itp_planner_block_args_t args = {itp_cur_plan_block, &itp_needs_update};
-		// event_itp_planner_running_handler
-		EVENT_INVOKE(itp_planner_running, &args);
+		planner_itp_pre_output();
 #ifdef ENABLE_ITP_FEED_TASK
 		// force break to allow ISR to exit
 		if (itp_needs_update)
@@ -426,7 +415,7 @@ void itp_run(void)
 #endif
 #endif
 
-		uint32_t remaining_steps = planner_get_block_remaining_steps(&itp_needs_update);
+		uint32_t remaining_steps = itp_cur_plan_block->steps[itp_cur_plan_block->main_stepper];
 
 		sgm = &itp_sgm_data[itp_sgm_data_write];
 
@@ -1162,94 +1151,52 @@ MCU_CALLBACK void mcu_step_cb(void)
 		{
 // prepares the next step bits mask
 #if (STEPPER_COUNT > 0)
-#ifdef STEP_ISR_SKIP_IDLE
-				if (!(itp_rt_sgm->block->idle_axis & (1 << 0)))
-				{
-#endif
-					itp_rt_sgm->block->errors[0] += itp_rt_sgm->block->steps[0];
-					if (itp_rt_sgm->block->errors[0] > itp_rt_sgm->block->total_steps)
-					{
-						itp_rt_sgm->block->errors[0] -= itp_rt_sgm->block->total_steps;
-						new_stepbits |= LINACT0_IO_MASK;
-					}
-#ifdef STEP_ISR_SKIP_IDLE
-				}
-#endif
+			itp_rt_sgm->block->errors[0] += itp_rt_sgm->block->steps[0];
+			if (itp_rt_sgm->block->errors[0] > itp_rt_sgm->block->total_steps)
+			{
+				itp_rt_sgm->block->errors[0] -= itp_rt_sgm->block->total_steps;
+				new_stepbits |= LINACT0_IO_MASK;
+			}
 #endif
 #if (STEPPER_COUNT > 1)
-#ifdef STEP_ISR_SKIP_IDLE
-				if (!(itp_rt_sgm->block->idle_axis & (1 << 1)))
-				{
-#endif
-					itp_rt_sgm->block->errors[1] += itp_rt_sgm->block->steps[1];
-					if (itp_rt_sgm->block->errors[1] > itp_rt_sgm->block->total_steps)
-					{
-						itp_rt_sgm->block->errors[1] -= itp_rt_sgm->block->total_steps;
-						new_stepbits |= LINACT1_IO_MASK;
-					}
-#ifdef STEP_ISR_SKIP_IDLE
-				}
-#endif
+			itp_rt_sgm->block->errors[1] += itp_rt_sgm->block->steps[1];
+			if (itp_rt_sgm->block->errors[1] > itp_rt_sgm->block->total_steps)
+			{
+				itp_rt_sgm->block->errors[1] -= itp_rt_sgm->block->total_steps;
+				new_stepbits |= LINACT1_IO_MASK;
+			}
 #endif
 #if (STEPPER_COUNT > 2)
-#ifdef STEP_ISR_SKIP_IDLE
-				if (!(itp_rt_sgm->block->idle_axis & (1 << 2)))
-				{
-#endif
-					itp_rt_sgm->block->errors[2] += itp_rt_sgm->block->steps[2];
-					if (itp_rt_sgm->block->errors[2] > itp_rt_sgm->block->total_steps)
-					{
-						itp_rt_sgm->block->errors[2] -= itp_rt_sgm->block->total_steps;
-						new_stepbits |= LINACT2_IO_MASK;
-					}
-#ifdef STEP_ISR_SKIP_IDLE
-				}
-#endif
+			itp_rt_sgm->block->errors[2] += itp_rt_sgm->block->steps[2];
+			if (itp_rt_sgm->block->errors[2] > itp_rt_sgm->block->total_steps)
+			{
+				itp_rt_sgm->block->errors[2] -= itp_rt_sgm->block->total_steps;
+				new_stepbits |= LINACT2_IO_MASK;
+			}
 #endif
 #if (STEPPER_COUNT > 3)
-#ifdef STEP_ISR_SKIP_IDLE
-				if (!(itp_rt_sgm->block->idle_axis & (1 << 3)))
-				{
-#endif
-					itp_rt_sgm->block->errors[3] += itp_rt_sgm->block->steps[3];
-					if (itp_rt_sgm->block->errors[3] > itp_rt_sgm->block->total_steps)
-					{
-						itp_rt_sgm->block->errors[3] -= itp_rt_sgm->block->total_steps;
-						new_stepbits |= LINACT3_IO_MASK;
-					}
-#ifdef STEP_ISR_SKIP_IDLE
-				}
-#endif
+			itp_rt_sgm->block->errors[3] += itp_rt_sgm->block->steps[3];
+			if (itp_rt_sgm->block->errors[3] > itp_rt_sgm->block->total_steps)
+			{
+				itp_rt_sgm->block->errors[3] -= itp_rt_sgm->block->total_steps;
+				new_stepbits |= LINACT3_IO_MASK;
+			}
 #endif
 #if (STEPPER_COUNT > 4)
-#ifdef STEP_ISR_SKIP_IDLE
-				if (!(itp_rt_sgm->block->idle_axis & (1 << 4)))
-				{
-#endif
-					itp_rt_sgm->block->errors[4] += itp_rt_sgm->block->steps[4];
-					if (itp_rt_sgm->block->errors[4] > itp_rt_sgm->block->total_steps)
-					{
-						itp_rt_sgm->block->errors[4] -= itp_rt_sgm->block->total_steps;
-						new_stepbits |= LINACT4_IO_MASK;
-					}
-#ifdef STEP_ISR_SKIP_IDLE
-				}
-#endif
+			itp_rt_sgm->block->errors[4] += itp_rt_sgm->block->steps[4];
+			if (itp_rt_sgm->block->errors[4] > itp_rt_sgm->block->total_steps)
+			{
+				itp_rt_sgm->block->errors[4] -= itp_rt_sgm->block->total_steps;
+				new_stepbits |= LINACT4_IO_MASK;
+			}
 #endif
 #if (STEPPER_COUNT > 5)
-#ifdef STEP_ISR_SKIP_IDLE
-				if (!(itp_rt_sgm->block->idle_axis & (1 << 5)))
-				{
-#endif
-					itp_rt_sgm->block->errors[5] += itp_rt_sgm->block->steps[5];
-					if (itp_rt_sgm->block->errors[5] > itp_rt_sgm->block->total_steps)
-					{
-						itp_rt_sgm->block->errors[5] -= itp_rt_sgm->block->total_steps;
-						new_stepbits |= LINACT5_IO_MASK;
-					}
-#ifdef STEP_ISR_SKIP_IDLE
-				}
-#endif
+			itp_rt_sgm->block->errors[5] += itp_rt_sgm->block->steps[5];
+			if (itp_rt_sgm->block->errors[5] > itp_rt_sgm->block->total_steps)
+			{
+				itp_rt_sgm->block->errors[5] -= itp_rt_sgm->block->total_steps;
+				new_stepbits |= LINACT5_IO_MASK;
+			}
 #endif
 
 #ifdef ENABLE_RT_SYNC_MOTIONS

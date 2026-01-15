@@ -419,15 +419,15 @@ float planner_get_block_top_speed(float exit_speed_sqr)
 	return MIN(junction_speed_sqr, target_speed_sqr);
 }
 
-uint32_t planner_get_block_remaining_steps(bool *modified)
-{
 #ifdef ENABLE_PLANNER_MODULES
-	planner_remaining_steps_args_t args = {&planner_data[planner_data_read], modified};
-	EVENT_INVOKE(planner_remaining_steps)
-#endif
-	uint8_t main_stepper = planner_data[planner_data_read].main_stepper;
-	return planner_data[planner_data_read].steps[main_stepper];
+void planner_itp_pre_output(void)
+{
+	// unnecessary check (this is only called if there is a planner block in the buffer)
+	// planner_block_t* args = (planner_data_blocks != 0) ? &planner_data[planner_data_read] : NULL;
+	planner_block_t *args = &planner_data[planner_data_read];
+	EVENT_INVOKE(planner_pre_output);
 }
+#endif
 
 #if TOOL_COUNT > 0
 static uint8_t spindle_override;

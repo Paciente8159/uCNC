@@ -54,9 +54,6 @@ extern "C"
 	// this block has the necessary data to execute the Bresenham line algorithm
 	typedef struct itp_blk_
 	{
-#ifdef STEP_ISR_SKIP_IDLE
-		uint8_t idle_axis;
-#endif
 		uint8_t dirbits;
 		step_t steps[STEPPER_COUNT];
 		step_t total_steps;
