@@ -100,10 +100,21 @@ void tool_init(void)
 #endif
 }
 
+#if defined(ENABLE_ATC_HOOKS) && (TOOL_COUNT > 1)
+	CREATE_HOOK(tool_atc_unmount);
+	CREATE_HOOK(tool_atc_mount);
+#endif
+
 void tool_change(uint8_t tool)
 {
 #if TOOL_COUNT > 1
 	tool_stop();
+
+	#ifdef ENABLE_ATC_HOOKS
+	static uint8_t previous_tool = 0;
+	HOOK_INVOKE(tool_atc_unmount, previous_tool);
+	#endif
+
 	if (tool_current.shutdown_code)
 	{
 		tool_current.shutdown_code();
@@ -200,6 +211,10 @@ void tool_change(uint8_t tool)
 	{
 		tool_current.startup_code();
 	}
+
+	#ifdef ENABLE_ATC_HOOKS
+	HOOK_INVOKE(tool_atc_mount, tool);
+	#endif
 #endif
 }
 
