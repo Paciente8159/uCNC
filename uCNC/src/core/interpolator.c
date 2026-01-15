@@ -821,12 +821,12 @@ void itp_stop(void)
 	mcu_delay_us(10);
 	io_set_steps(g_settings.step_invert_mask);
 #if TOOL_COUNT > 0
-#if defined(ENABLE_LASER_PWM) || defined(ENABLE_EMBROIDERY)
-	if (g_settings.tool_mode & (PWM_VARPOWER_MODE | EMBROIDERY_MODE))
+	// stop tool (if not spindle - spindle should continue)
+	if (g_settings.tool_mode)
 	{
 		tool_set_speed(0);
 	}
-#endif
+
 #endif
 
 	mcu_stop_itp_isr();
