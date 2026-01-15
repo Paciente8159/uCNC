@@ -267,30 +267,6 @@ static void running_file_clear()
 	}
 }
 
-#ifdef ENABLE_PARSER_MODULES
-
-#ifdef ENABLE_MAIN_LOOP_MODULES
-bool running_file_loop(void *args)
-{
-	if (fs_running_file)
-	{
-		size_t r = BUFFER_WRITE_AVAILABLE(fs_file_buffer);
-		uint8_t tmp[RX_BUFFER_SIZE];
-		size_t read = fs_read(fs_running_file, tmp, r);
-		uint8_t w = 0;
-		BUFFER_WRITE(fs_file_buffer, tmp, read, w);
-		if (read < r || !fs_available(fs_running_file))
-		{
-			fs_close(fs_running_file);
-			fs_running_file = NULL;
-		}
-	}
-
-	return EVENT_CONTINUE;
-}
-CREATE_EVENT_LISTENER(cnc_dotasks, running_file_loop);
-#endif
-
 static void fs_dir_list(void)
 {
 	// if current working directory not initialized
@@ -391,6 +367,27 @@ void fs_file_print(char *params)
 	proto_print(MSG_EOL);
 }
 
+#ifdef ENABLE_MAIN_LOOP_MODULES
+bool running_file_loop(void *args)
+{
+	if (fs_running_file)
+	{
+		size_t r = BUFFER_WRITE_AVAILABLE(fs_file_buffer);
+		uint8_t tmp[RX_BUFFER_SIZE];
+		size_t read = fs_read(fs_running_file, tmp, r);
+		uint8_t w = 0;
+		BUFFER_WRITE(fs_file_buffer, tmp, read, w);
+		if (read < r || !fs_available(fs_running_file))
+		{
+			fs_close(fs_running_file);
+			fs_running_file = NULL;
+		}
+	}
+
+	return EVENT_CONTINUE;
+}
+CREATE_EVENT_LISTENER(cnc_dotasks, running_file_loop);
+
 void fs_file_run(char *params)
 {
 	char *file;
@@ -437,6 +434,10 @@ void fs_file_run(char *params)
 
 	proto_info("File read error!");
 }
+
+#endif
+
+#ifdef ENABLE_PARSER_MODULES
 
 /**
  * Handles grbl commands for the SD card
