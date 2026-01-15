@@ -1233,7 +1233,7 @@ static void system_menu_render_axis_position(uint8_t render_flags, system_menu_i
 		memset(axis, 0, sizeof(axis));
 #endif
 		int32_t steppos[STEPPER_COUNT];
-		itp_get_rt_position(steppos);
+		io_get_steps_pos(steppos);
 		kinematics_steps_to_coordinates(steppos, axis);
 		// X = 0
 		char axis_letter = *((char *)item->action_arg);

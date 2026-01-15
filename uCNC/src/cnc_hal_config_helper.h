@@ -634,10 +634,6 @@ extern "C"
 #ifndef LASER_PPI
 #define LASER_PPI UNDEF_PIN
 #endif
-// #ifdef STEP_ISR_SKIP_MAIN
-// #undef STEP_ISR_SKIP_MAIN
-// #warning "STEP_ISR_SKIP_MAIN was disabled for Laser PPI mode"
-// #endif
 #else
 #define LASER_PPI UNDEF_PIN
 #endif

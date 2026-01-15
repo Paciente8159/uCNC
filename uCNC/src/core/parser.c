@@ -358,7 +358,7 @@ bool parser_get_wco(float *axis)
 
 void parser_sync_probe(void)
 {
-	itp_get_rt_position(rt_probe_step_pos);
+	io_get_steps_pos(rt_probe_step_pos);
 }
 
 void parser_get_probe(int32_t *position)
