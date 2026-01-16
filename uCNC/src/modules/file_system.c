@@ -264,6 +264,7 @@ static void running_file_clear()
 	if (fs_running_file)
 	{
 		fs_close(fs_running_file);
+		fs_running_file = NULL;
 	}
 }
 

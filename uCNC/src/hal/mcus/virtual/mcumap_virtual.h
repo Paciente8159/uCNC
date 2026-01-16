@@ -460,9 +460,16 @@ extern void virtual_delay_us(uint16_t delay);
 #define mcu_delay_us(X) virtual_delay_us(X)
 
 #include "../../tools/tool.h"
-extern const tool_t spindle_pwm;
-extern const tool_t laser_ppi;
 extern const tool_t embroidery_stepper;
+extern const tool_t laser_ppi;
+extern const tool_t laser_pwm;
+extern const tool_t pen_servo;
+extern const tool_t plasma_thc;
+extern const tool_t spindle_besc;
+extern const tool_t spindle_pwm;
+extern const tool_t spindle_relay;
+extern const tool_t vfd_modbus;
+extern const tool_t vfd_pwm;
 
 #define EMULATION_MS_TICK 100
 

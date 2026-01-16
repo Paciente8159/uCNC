@@ -100,10 +100,27 @@ void tool_init(void)
 #endif
 }
 
-void tool_change(uint8_t tool)
+#if defined(ENABLE_ATC_HOOKS) && (TOOL_COUNT > 1)
+CREATE_HOOK(tool_atc_unmount);
+CREATE_HOOK(tool_atc_mount);
+#endif
+
+uint8_t tool_change(uint8_t tool)
 {
+	uint8_t status = STATUS_OK;
+
 #if TOOL_COUNT > 1
 	tool_stop();
+
+#ifdef ENABLE_ATC_HOOKS
+	static uint8_t previous_tool = 0;
+	HOOK_INVOKE(tool_atc_unmount, previous_tool, &status);
+	if (status != STATUS_OK)
+	{
+		return status;
+	}
+#endif
+
 	if (tool_current.shutdown_code)
 	{
 		tool_current.shutdown_code();
@@ -200,7 +217,13 @@ void tool_change(uint8_t tool)
 	{
 		tool_current.startup_code();
 	}
+
+#ifdef ENABLE_ATC_HOOKS
+	HOOK_INVOKE(tool_atc_mount, tool, &status);
 #endif
+#endif
+
+	return status;
 }
 
 void tool_set_speed(int16_t value)
