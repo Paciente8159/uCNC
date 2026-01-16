@@ -96,7 +96,7 @@ void tool_init(void)
 #ifdef FORCE_GLOBALS_TO_0
 	memset(&tool_current, 0, sizeof(tool_t));
 #endif
-	tool_change(g_settings.default_tool, STATUS_OK);
+	tool_change(g_settings.default_tool);
 #endif
 }
 
@@ -105,8 +105,10 @@ CREATE_HOOK(tool_atc_unmount);
 CREATE_HOOK(tool_atc_mount);
 #endif
 
-uint8_t tool_change(uint8_t tool, uint8_t status)
+uint8_t tool_change(uint8_t tool)
 {
+	uint8_t status = STATUS_OK;
+
 #if TOOL_COUNT > 1
 	tool_stop();
 

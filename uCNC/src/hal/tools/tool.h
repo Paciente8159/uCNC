@@ -49,7 +49,7 @@ extern "C"
 	} tool_t;
 
 	void tool_init(void);								   // initializes tool inside µCNC
-	uint8_t tool_change(uint8_t tool, uint8_t status);						   // executes a tool change µCNC. This runs the shutdown code of the current tool and then runs the startup code of the next tool
+	uint8_t tool_change(uint8_t tool);						   // executes a tool change µCNC. This runs the shutdown code of the current tool and then runs the startup code of the next tool
 	void tool_pid_update(void);							   // if tool PID option is enabled this function is called in the main loop to update the tool or make some adjustment
 	int16_t tool_get_setpoint(void);					   // return the current tool setpoint. That is the value set with S parameter in gcode
 	int16_t tool_range_speed(int16_t value, uint8_t conv); // this function converts from GCode S to tool speed and back. For example if using PWM will convert from tool speed S to a PWM value 0-255 if conv=0 or vice-versa if conv=1

@@ -1430,7 +1430,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 	{
 		itp_sync();
 		// tool 0 is the same as no tool (has stated in RS274NGC v3 - 3.7.3)
-		error = tool_change(words->t, error);
+		error = tool_change(words->t);
 		if (error)
 		{
 			return error;
