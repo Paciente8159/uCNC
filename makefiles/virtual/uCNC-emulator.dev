@@ -1040,3 +1040,13 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
+[Unit100]
+FileName=..\..\uCNC\src\modules\atc\atc.c
+CompileCpp=1
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+

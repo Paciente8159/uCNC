@@ -94,14 +94,6 @@ extern "C"
 	void system_menu_fs_render(uint8_t render_flags);
 	bool system_menu_fs_action(uint8_t action);
 
-	// usable API functions
-	void fs_cd(char *params); // changes the current working directory
-	void fs_file_print(char *params); // prints a file to the current holding stream
-	#ifdef ENABLE_MAIN_LOOP_MODULES
-	void fs_file_run(char *params); // runs a file
-	#endif
-
-
 // All non translatable strings
 // #define FS_STR_DIR_PREFIX "Directory "
 // #define FS_STR_FILE_NOT_FOUND " not found!\n"

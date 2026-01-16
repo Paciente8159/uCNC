@@ -79,7 +79,7 @@ ISR(RTC_COMPB_vect, ISR_NOBLOCK)
 
 // gets the mcu running time in ms
 static volatile uint32_t mcu_runtime_ms;
-ISR(RTC_COMPA_vect, ISR_NOBLOCK)
+ISR(RTC_COMPA_vect, ISR_BLOCK)
 {
 #if SERVOS_MASK > 0
 	static uint8_t ms_servo_counter = 0;
