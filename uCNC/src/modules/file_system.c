@@ -268,57 +268,7 @@ static void running_file_clear()
 	}
 }
 
-void fs_cd(char *params)
-{
-	fs_file_t *dir = fs_path_parse(&fs_cwd, params, "d");
-	if (dir)
-	{
-		if (dir->file_info.is_dir)
-		{
-			proto_printf("%s >", fs_cwd.full_name);
-		}
-		else
-		{
-			proto_printf("%s  is not a dir!", params);
-		}
-		fs_close(dir);
-	}
-	else /*if (strlen(fs_cwd.full_name))*/
-	{
-		proto_printf("%s dir not found!", params);
-	}
-
-	proto_print(MSG_EOL);
-}
-
-void fs_file_print(char *params)
-{
-	fs_file_t *fp = fs_path_parse(&fs_cwd, params, "r");
-	if (fp)
-	{
-		while (fs_available(fp))
-		{
-			char c = 0;
-			/* Read the data */
-			if (!fs_read(fp, (uint8_t *)&c, sizeof(char)))
-			{
-				proto_info("File read error!");
-				break;
-			}
-			proto_putc(c);
-		}
-
-		fs_close(fp);
-		proto_info("File ended");
-		return;
-	}
-	else
-	{
-		proto_info("File not found!");
-	}
-
-	proto_print(MSG_EOL);
-}
+#ifdef ENABLE_PARSER_MODULES
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
 bool running_file_loop(void *args)
@@ -340,57 +290,7 @@ bool running_file_loop(void *args)
 	return EVENT_CONTINUE;
 }
 CREATE_EVENT_LISTENER(cnc_dotasks, running_file_loop);
-
-void fs_file_run(char *params)
-{
-	char *file;
-	uint32_t startline = 1;
-	file = params;
-
-	if (params[0] == '@')
-	{
-		startline = (uint32_t)strtol(&params[1], &file, 10);
-	}
-
-	while (*file == ' ')
-	{
-		file++;
-	}
-
-	fs_file_t *fp = fs_path_parse(&fs_cwd, file, "r");
-
-	if (fp)
-	{
-		startline = MAX(1, startline);
-		proto_info("Running file from line - %lu", startline);
-#ifdef DECL_SERIAL_STREAM
-#ifdef ENABLE_MAIN_LOOP_MODULES
-		// prefill buffer
-		BUFFER_CLEAR(fs_file_buffer);
-		size_t r = BUFFER_WRITE_AVAILABLE(fs_file_buffer);
-		uint8_t tmp[RX_BUFFER_SIZE];
-		size_t read = fs_read(fs_running_file, tmp, r);
-		uint8_t w = 0;
-		BUFFER_WRITE(fs_file_buffer, tmp, read, w);
 #endif
-		// open a readonly stream
-		// the output is sent to the current holding interface
-		fs_running_file = fp;
-		serial_stream_readonly(&running_file_getc, &running_file_available, &running_file_clear);
-		while (--startline)
-		{
-			parser_discard_command();
-		}
-#endif
-		return;
-	}
-
-	proto_info("File read error!");
-}
-
-#endif
-
-#ifdef ENABLE_PARSER_MODULES
 
 static void fs_dir_list(void)
 {
@@ -440,6 +340,105 @@ static void fs_dir_list(void)
 	}
 }
 
+void fs_cd(char *params)
+{
+	fs_file_t *dir = fs_path_parse(&fs_cwd, params, "d");
+	if (dir)
+	{
+		if (dir->file_info.is_dir)
+		{
+			proto_printf("%s >", fs_cwd.full_name);
+		}
+		else
+		{
+			proto_printf("%s  is not a dir!", params);
+		}
+		fs_close(dir);
+	}
+	else if (strlen(fs_cwd.full_name))
+	{
+		proto_printf("%s dir not found!", params);
+	}
+
+	proto_print(MSG_EOL);
+}
+
+void fs_file_print(char *params)
+{
+	fs_file_t *fp = fs_path_parse(&fs_cwd, params, "r");
+	if (fp)
+	{
+		while (fs_available(fp))
+		{
+			char c = 0;
+			/* Read the data */
+			if (!fs_read(fp, (uint8_t *)&c, sizeof(char)))
+			{
+				proto_info("File read error!");
+				break;
+			}
+			proto_putc(c);
+		}
+
+		fs_close(fp);
+		proto_info("File ended");
+		return;
+	}
+	else
+	{
+		proto_info("File not found!");
+	}
+
+	proto_print(MSG_EOL);
+}
+
+void fs_file_run(char *params)
+{
+	char *file;
+	uint32_t startline = 1;
+	file = params;
+
+	if (params[0] == '@')
+	{
+		startline = (uint32_t)strtol(&params[1], &file, 10);
+	}
+
+	while (*file == ' ')
+	{
+		file++;
+	}
+
+	fs_file_t *fp = fs_path_parse(&fs_cwd, file, "r");
+
+	if (fp)
+	{
+		startline = MAX(1, startline);
+		proto_info("Running file from line - %lu", startline);
+#ifdef DECL_SERIAL_STREAM
+#ifdef ENABLE_MAIN_LOOP_MODULES
+		// prefill buffer
+		BUFFER_CLEAR(fs_file_buffer);
+		size_t r = BUFFER_WRITE_AVAILABLE(fs_file_buffer);
+		uint8_t tmp[RX_BUFFER_SIZE];
+		size_t read = fs_read(fs_running_file, tmp, r);
+		uint8_t w = 0;
+		BUFFER_WRITE(fs_file_buffer, tmp, read, w);
+#endif
+		// open a readonly stream
+		// the output is sent to the current holding interface
+		fs_running_file = fp;
+		serial_stream_readonly(&running_file_getc, &running_file_available, &running_file_clear);
+		while (--startline)
+		{
+			parser_discard_command();
+		}
+#endif
+		return;
+	}
+
+	proto_info("File read error!");
+}
+
 /**
  * Handles grbl commands for the SD card
  * */
@@ -485,7 +484,6 @@ bool fs_cmd_parser(void *args)
 		return EVENT_HANDLED;
 	}
 
-#ifdef ENABLE_MAIN_LOOP_MODULES
 	if (!strcmp("RUN", (char *)(cmd->cmd)))
 	{
 		int8_t len = parser_get_grbl_cmd_arg(params, RX_BUFFER_CAPACITY);
@@ -499,7 +497,7 @@ bool fs_cmd_parser(void *args)
 		*(cmd->error) = STATUS_OK;
 		return EVENT_HANDLED;
 	}
-#endif
+
 	return EVENT_CONTINUE;
 }
 
