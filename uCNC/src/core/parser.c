@@ -1430,7 +1430,11 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 	{
 		itp_sync();
 		// tool 0 is the same as no tool (has stated in RS274NGC v3 - 3.7.3)
-		tool_change(words->t);
+		error = tool_change(words->t, error);
+		if (error)
+		{
+			return error;
+		}
 		new_state->tool_index = new_state->groups.tool_change;
 	}
 #endif
@@ -2012,7 +2016,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 		memcpy(parser_last_pos, target, sizeof(parser_last_pos));
 	}
 
-	if (error)
+	if (error != STATUS_OK)
 	{
 		return error;
 	}

@@ -264,54 +264,7 @@ static void running_file_clear()
 	if (fs_running_file)
 	{
 		fs_close(fs_running_file);
-	}
-}
-
-static void fs_dir_list(void)
-{
-	// if current working directory not initialized
-	if (!strlen(fs_cwd.full_name))
-	{
-		proto_print("Available drives");
-		proto_print(MSG_EOL);
-		fs_t *drive = fs_default_drive;
-		while (drive)
-		{
-			proto_print("<drive>\t");
-			proto_putc('/');
-			proto_putc(drive->drive);
-			proto_print(MSG_EOL);
-			drive = drive->next;
-		}
-		return;
-	}
-
-	// current dir
-	proto_print("Index of /");
-	proto_printf("%s", fs_filename(&fs_cwd));
-	proto_print(MSG_EOL);
-
-	fs_file_t *dir = fs_opendir(fs_cwd.full_name);
-
-	if (dir)
-	{
-		fs_file_info_t finfo;
-		while (fs_next_file(dir, &finfo))
-		{
-			if (finfo.is_dir)
-			{ /* It is a directory */
-				proto_print("<dir>\t");
-			}
-			else
-			{ /* It is a file. */
-				proto_print("     \t");
-			}
-
-			proto_printf("%s", fs_filename(&finfo));
-			proto_print(MSG_EOL);
-		}
-
-		fs_close(dir);
+		fs_running_file = NULL;
 	}
 }
 
@@ -330,7 +283,7 @@ void fs_cd(char *params)
 		}
 		fs_close(dir);
 	}
-	else if (strlen(fs_cwd.full_name))
+	else /*if (strlen(fs_cwd.full_name))*/
 	{
 		proto_printf("%s dir not found!", params);
 	}
@@ -439,6 +392,54 @@ void fs_file_run(char *params)
 
 #ifdef ENABLE_PARSER_MODULES
 
+static void fs_dir_list(void)
+{
+	// if current working directory not initialized
+	if (!strlen(fs_cwd.full_name))
+	{
+		proto_print("Available drives");
+		proto_print(MSG_EOL);
+		fs_t *drive = fs_default_drive;
+		while (drive)
+		{
+			proto_print("<drive>\t");
+			proto_putc('/');
+			proto_putc(drive->drive);
+			proto_print(MSG_EOL);
+			drive = drive->next;
+		}
+		return;
+	}
+
+	// current dir
+	proto_print("Index of /");
+	proto_printf("%s", fs_filename(&fs_cwd));
+	proto_print(MSG_EOL);
+
+	fs_file_t *dir = fs_opendir(fs_cwd.full_name);
+
+	if (dir)
+	{
+		fs_file_info_t finfo;
+		while (fs_next_file(dir, &finfo))
+		{
+			if (finfo.is_dir)
+			{ /* It is a directory */
+				proto_print("<dir>\t");
+			}
+			else
+			{ /* It is a file. */
+				proto_print("     \t");
+			}
+
+			proto_printf("%s", fs_filename(&finfo));
+			proto_print(MSG_EOL);
+		}
+
+		fs_close(dir);
+	}
+}
+
 /**
  * Handles grbl commands for the SD card
  * */
@@ -484,6 +485,7 @@ bool fs_cmd_parser(void *args)
 		return EVENT_HANDLED;
 	}
 
+#ifdef ENABLE_MAIN_LOOP_MODULES
 	if (!strcmp("RUN", (char *)(cmd->cmd)))
 	{
 		int8_t len = parser_get_grbl_cmd_arg(params, RX_BUFFER_CAPACITY);
@@ -497,7 +499,7 @@ bool fs_cmd_parser(void *args)
 		*(cmd->error) = STATUS_OK;
 		return EVENT_HANDLED;
 	}
-
+#endif
 	return EVENT_CONTINUE;
 }
 

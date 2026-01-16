@@ -30,6 +30,7 @@ extern "C"
 #define ENABLE_PLASMA_THC
 #define ENABLE_EMBROIDERY
 #define ENABLE_ATC_HOOKS
+#define ENABLE_ITP_FEED_TASK
 
 #define TOOL_COUNT 10
 #define TOOL1 embroidery_stepper
