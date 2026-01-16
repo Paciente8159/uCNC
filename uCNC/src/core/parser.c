@@ -1807,13 +1807,11 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 #endif
 	}
 
-// laser disabled in nonmodal moves
-#if defined(ENABLE_LASER_PWM) || defined(ENABLE_EMBROIDERY)
-	if ((g_settings.tool_mode & (PWM_VARPOWER_MODE | EMBROIDERY_MODE)) && new_state->groups.nonmodal)
+	// tool (not spindle) disabled in nonmodal moves
+	if (g_settings.tool_mode && new_state->groups.nonmodal)
 	{
 		block_data.spindle = 0;
 	}
-#endif
 
 	// stores G10 or G92 command in the right address
 	switch (index)
@@ -1862,14 +1860,12 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 		case G0:
 			// rapid move
 			block_data.feed = FLT_MAX;
-// continues to send G1 at maximum feed rate
-// laser disabled in G0
-#if defined(ENABLE_LASER_PWM) || defined(ENABLE_EMBROIDERY)
-			if (g_settings.tool_mode & (PWM_VARPOWER_MODE | EMBROIDERY_MODE))
+			// continues to send G1 at maximum feed rate
+			// any tool (not spindle) turn of during fast motions
+			if (g_settings.tool_mode)
 			{
 				block_data.spindle = 0;
 			}
-#endif
 			__FALL_THROUGH__
 		case G1:
 			if (block_data.feed == 0)
