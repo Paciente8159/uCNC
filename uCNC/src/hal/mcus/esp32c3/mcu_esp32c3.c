@@ -177,9 +177,8 @@ void mcu_init(void)
 
 	/**
 	 * Wireless Communications config
+	 * (wifi moved to new socket initialization callback)
 	 */
-
-	mcu_wifi_init();
 	mcu_bt_init();
 
 	// initialize rtc timer (currently on core 1)
@@ -217,6 +216,12 @@ void mcu_init(void)
 	xTaskCreatePinnedToCore(mcu_rtc_task, "rtcTask", 8192, NULL, 7, NULL, CONFIG_ARDUINO_RUNNING_CORE);
 
 	mcu_enable_global_isr();
+}
+
+// initialize the wifi infraestructure
+void mcu_sockets_if_init(void)
+{
+	mcu_wifi_init();
 }
 
 /**

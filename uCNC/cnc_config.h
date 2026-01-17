@@ -36,7 +36,7 @@ extern "C"
 #endif
 
 #ifndef ENABLE_SOCKETS
-// #define ENABLE_SOCKETS
+#define ENABLE_SOCKETS
 #endif
 
 #ifndef ENABLE_BLUETOOTH
@@ -114,7 +114,7 @@ extern "C"
 	 * Disabling settings safety will make the settins run in legacy more where they are simply reset to default on error without forcing the user to re-check them
 	 */
 
-	//	 #define DISABLE_SAFE_SETTINGS
+		 #define DISABLE_SAFE_SETTINGS
 
 	/**
 	 * Uncomment to enable G92 storing on non volatile memory
@@ -128,7 +128,7 @@ extern "C"
 	 * This is useful if you don't have EEPROM/FLASH storage or the divide read/write maximum cycle count is low to prevent damage
 	 * This is also usefull if the sender provides all settings at startup/connection
 	 * */
-		//  #define RAM_ONLY_SETTINGS
+	#define RAM_ONLY_SETTINGS
 
 	/**
 	 * Override default configuration settings. Use _PER_AXIS parameters to
@@ -365,7 +365,7 @@ extern "C"
 	/**
 	 * Uncomment to enable module extensions
 	 * */
-	// #define ENABLE_MAIN_LOOP_MODULES
+	#define ENABLE_MAIN_LOOP_MODULES
 	// #define ENABLE_IO_MODULES
 	// #define ENABLE_PARSER_MODULES
 	// #define ENABLE_MOTION_CONTROL_MODULES
@@ -593,13 +593,13 @@ extern "C"
 	 * helps to reduce code size if features are not needed
 	 * */
 #ifndef DISABLE_ALL_CONTROLS
-// #define DISABLE_ALL_CONTROLS
+#define DISABLE_ALL_CONTROLS
 #endif
 #ifndef DISABLE_ALL_LIMITS
-// #define DISABLE_ALL_LIMITS
+#define DISABLE_ALL_LIMITS
 #endif
 #ifndef DISABLE_PROBE
-// #define DISABLE_PROBE
+#define DISABLE_PROBE
 #endif
 
 	/**

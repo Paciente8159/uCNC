@@ -43,14 +43,14 @@ extern "C"
 #define STEP3_PORT A // assigns STEP3 port
 
 // Setup dir pins
-#define DIR0_BIT 4	// assigns DIR0 pin
-#define DIR0_PORT A // assigns DIR0 port
-#define DIR1_BIT 5	// assigns DIR1 pin
-#define DIR1_PORT A // assigns DIR1 port
-#define DIR2_BIT 6	// assigns DIR2 pin
-#define DIR2_PORT A // assigns DIR2 port
-#define DIR3_BIT 7	// assigns DIR3 pin
-#define DIR3_PORT A // assigns DIR3 port
+// #define DIR0_BIT 4	// assigns DIR0 pin
+// #define DIR0_PORT A // assigns DIR0 port
+// #define DIR1_BIT 5	// assigns DIR1 pin
+// #define DIR1_PORT A // assigns DIR1 port
+// #define DIR2_BIT 6	// assigns DIR2 pin
+// #define DIR2_PORT A // assigns DIR2 port
+// #define DIR3_BIT 7	// assigns DIR3 pin
+// #define DIR3_PORT A // assigns DIR3 port
 
 // Setup limit pins
 #define LIMIT_X_BIT 12 // assigns LIMIT_X pin
@@ -154,12 +154,15 @@ extern "C"
 	// #define DIN7_ISR
 	// #define DIN7_PULLUP
 
-	// #define SPI_CLK_PORT A
-	// #define SPI_CLK_BIT 5
-	// #define SPI_SDI_PORT A
-	// #define SPI_SDI_BIT 6
-	// #define SPI_SDO_PORT A
-	// #define SPI_SDO_BIT 7
+	#define SPI_CLK_PORT A
+	#define SPI_CLK_BIT 5
+	#define SPI_SDI_PORT A
+	#define SPI_SDI_BIT 6
+	#define SPI_SDO_PORT A
+	#define SPI_SDO_BIT 7
+
+	#define DOUT40_PORT A
+	#define DOUT40_BIT 4
 
 	// #define SPI2_CLK_PORT B
 	// #define SPI2_CLK_BIT 13

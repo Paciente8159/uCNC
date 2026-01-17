@@ -66,6 +66,15 @@ extern "C"
 #endif
 #endif
 
+	// run modules task in a separate task
+	void esp32_modules_init(void);
+#define modules_dotasks()     \
+	RUNONCE                   \
+	{                         \
+		esp32_modules_init(); \
+		RUNONCE_COMPLETE();   \
+	}
+
 #ifdef __cplusplus
 }
 #endif

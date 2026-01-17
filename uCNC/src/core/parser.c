@@ -770,7 +770,7 @@ static uint8_t parser_grbl_exec_code(uint8_t code)
 	case GRBL_PRINT_PARAM:
 		if (parser_get_float(&value) == NUMBER_OK
 #ifdef ENABLE_NAMED_PARAMETERS
-				|| parser_get_namedparam_id(&value) == NUMBER_OK
+			|| parser_get_namedparam_id(&value) == NUMBER_OK
 #endif
 		)
 		{
@@ -1942,9 +1942,9 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 #endif
 #ifndef DISABLE_PROBING_SUPPORT
 		case G38: // G38.2
-							// G38.3
-							// G38.4
-							// G38.5
+				  // G38.3
+				  // G38.4
+				  // G38.5
 			probe_flags = (new_state->groups.motion_mantissa > 3) ? 1 : 0;
 			probe_flags |= (new_state->groups.motion_mantissa & 0x01) ? 2 : 0;
 
@@ -2531,13 +2531,16 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 		{
 			return STATUS_GCODE_UNSUPPORTED_COMMAND;
 		}
-		__FALL_THROUGH__
+
 #ifndef DISABLE_G10_SUPPORT
 	case 10:
 #endif
 #ifndef DISABLE_HOME_SUPPORT
 	case 28:
 	case 30:
+#endif
+#if !defined(DISABLE_HOME_SUPPORT) || !defined(DISABLE_G10_SUPPORT)
+		__FALL_THROUGH__
 #endif
 		if (cmd->group_0_1_useaxis)
 		{
@@ -2842,16 +2845,16 @@ void parser_reset(bool fullreset)
 {
 	// modified based on https://linuxcnc.org/docs/html/gcode/m-code.html#mcode:m2-m30
 
-	parser_state.groups.stopping = 0;											// resets all stopping commands (M0,M1,M2,M30,M60)
-	parser_state.groups.coord_system = G54;								// G54
-	parser_state.groups.plane = G17;											// G17
-	parser_state.groups.feed_speed_override = M48;				// M48
+	parser_state.groups.stopping = 0;					  // resets all stopping commands (M0,M1,M2,M30,M60)
+	parser_state.groups.coord_system = G54;				  // G54
+	parser_state.groups.plane = G17;					  // G17
+	parser_state.groups.feed_speed_override = M48;		  // M48
 	parser_state.groups.cutter_radius_compensation = G40; // G40
-	parser_state.groups.distance_mode = G90;							// G90
-	parser_state.groups.feedrate_mode = G94;							// G94
-	parser_state.groups.tlo_mode = G49;										// G49
+	parser_state.groups.distance_mode = G90;			  // G90
+	parser_state.groups.feedrate_mode = G94;			  // G94
+	parser_state.groups.tlo_mode = G49;					  // G49
 #if TOOL_COUNT > 0
-	parser_state.groups.coolant = M9;					// M9
+	parser_state.groups.coolant = M9;		  // M9
 	parser_state.groups.spindle_turning = M5; // M5
 	parser_state.groups.path_mode = G61;
 #endif
@@ -2976,8 +2979,8 @@ void parser_coordinate_system_save(uint8_t param, float *target)
 			memcpy(parser_parameters.coord_system_offset, target, PARSER_PARAM_SIZE);
 		}
 		break;
-	}
 #endif
+	}
 	parser_wco_counter = 0;
 }
 

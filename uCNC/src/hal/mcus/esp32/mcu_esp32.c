@@ -215,8 +215,6 @@ void mcu_init(void)
 	// currently it's running PWM and UART on core 0
 	// Arduino Bluetooth also runs on core 0
 	// Arduino WiFi ???
-
-	mcu_wifi_init();
 	mcu_bt_init();
 
 	/**
@@ -252,6 +250,12 @@ void mcu_init(void)
 	xTaskCreatePinnedToCore(mcu_rtc_task, "rtcTask", 8192, NULL, 7, NULL, CONFIG_ARDUINO_RUNNING_CORE);
 
 	mcu_enable_global_isr();
+}
+
+// initialize the wifi infraestructure
+void mcu_sockets_if_init(void)
+{
+	mcu_wifi_init();
 }
 
 /**

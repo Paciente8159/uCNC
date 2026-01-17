@@ -263,7 +263,6 @@ void socket_server_dotasks(void)
 			{
 				remove_client(socket, c);
 			}
-
 			else
 			{
 				if (socket->client_onidle_cb)

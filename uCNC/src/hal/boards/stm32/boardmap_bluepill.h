@@ -43,14 +43,14 @@ extern "C"
 #define STEP3_PORT A // assigns STEP3 port
 
 // Setup dir pins
-#define DIR0_BIT 4	// assigns DIR0 pin
-#define DIR0_PORT A // assigns DIR0 port
-#define DIR1_BIT 5	// assigns DIR1 pin
-#define DIR1_PORT A // assigns DIR1 port
-#define DIR2_BIT 6	// assigns DIR2 pin
-#define DIR2_PORT A // assigns DIR2 port
-#define DIR3_BIT 7	// assigns DIR3 pin
-#define DIR3_PORT A // assigns DIR3 port
+// #define DIR0_BIT 4	// assigns DIR0 pin
+// #define DIR0_PORT A // assigns DIR0 port
+// #define DIR1_BIT 5	// assigns DIR1 pin
+// #define DIR1_PORT A // assigns DIR1 port
+// #define DIR2_BIT 6	// assigns DIR2 pin
+// #define DIR2_PORT A // assigns DIR2 port
+// #define DIR3_BIT 7	// assigns DIR3 pin
+// #define DIR3_PORT A // assigns DIR3 port
 
 // Setup limit pins
 #define LIMIT_X_BIT 12 // assigns LIMIT_X pin
@@ -69,17 +69,17 @@ extern "C"
 #define LIMIT_A_ISR
 
 // Setup control input pins
-#define ESTOP_BIT 5
-#define ESTOP_PORT B
-#define FHOLD_BIT 6
-#define FHOLD_PORT B
-#define CS_RES_BIT 7
-#define CS_RES_PORT B
-#define SAFETY_DOOR_BIT 8
-#define SAFETY_DOOR_PORT B
-// Setup probe pin
-#define PROBE_BIT 9
-#define PROBE_PORT B
+// #define ESTOP_BIT 5
+// #define ESTOP_PORT B
+// #define FHOLD_BIT 6
+// #define FHOLD_PORT B
+// #define CS_RES_BIT 7
+// #define CS_RES_PORT B
+// #define SAFETY_DOOR_BIT 8
+// #define SAFETY_DOOR_PORT B
+// // Setup probe pin
+// #define PROBE_BIT 9
+// #define PROBE_PORT B
 
 // Enable controls switch interrupt
 #define ESTOP_ISR
@@ -170,6 +170,17 @@ extern "C"
 // #define SPI2_SDO_PORT B
 // #define SPI2_SDO_BIT 15
 // #define SPI2_PORT 2
+
+#define SPI_CLK_PORT A
+	#define SPI_CLK_BIT 5
+	#define SPI_SDI_PORT A
+	#define SPI_SDI_BIT 6
+	#define SPI_SDO_PORT A
+	#define SPI_SDO_BIT 7
+	#define SPI_PORT 1
+
+	#define DOUT40_PORT A
+	#define DOUT40_BIT 4
 
 #define ONESHOT_TIMER 1
 

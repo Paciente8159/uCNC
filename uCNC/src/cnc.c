@@ -106,17 +106,20 @@ void cnc_init(void)
 #endif
 	cnc_state.loop_state = LOOP_STARTUP_RESET;
 	// initializes all systems
-	mcu_init();																					// mcu
-	mcu_io_reset();																			// add custom logic to set pins initial state
+	mcu_init();											// mcu
+	mcu_io_reset();										// add custom logic to set pins initial state
 	io_enable_steppers(~g_settings.step_enable_invert); // disables steppers at start
-	io_disable_probe();																	// forces probe isr disabling
-	grbl_stream_init();																	// serial
-	mod_init();																					// modules
-	settings_init();																		// settings
-	itp_init();																					// interpolator
-	planner_init();																			// motion planner
+	io_disable_probe();									// forces probe isr disabling
+	grbl_stream_init();									// serial
+	mod_init();											// modules
+	settings_init();									// settings
+	itp_init();											// interpolator
+	planner_init();										// motion planner
 #if TOOL_COUNT > 0
 	tool_init();
+#endif
+#ifdef ENABLE_SOCKETS
+	mcu_sockets_init(); // enable the network interface and start network communications;
 #endif
 }
 
@@ -262,7 +265,7 @@ bool cnc_dotasks(void)
 #endif
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
-	EVENT_INVOKE(cnc_dotasks, NULL);
+	modules_dotasks();
 #endif
 
 	return !cnc_get_exec_state(EXEC_KILL);
@@ -1101,7 +1104,14 @@ static void cnc_io_dotasks(void)
 #endif
 
 #if defined(ENABLE_SOCKETS) && !defined(MCU_HAS_RTOS)
-	socket_server_dotasks();
+	// prevent reentrancy
+	static bool running = false;
+	if (!running)
+	{
+		running = true;
+		socket_server_dotasks();
+		running = false;
+	}
 #endif
 }
 

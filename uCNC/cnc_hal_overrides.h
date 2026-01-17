@@ -8,6 +8,8 @@ extern "C"
 {
 #endif
 
+#define BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
+
 #ifdef __cplusplus
 }
 #endif

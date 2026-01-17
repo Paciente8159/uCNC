@@ -631,8 +631,11 @@ extern "C"
 #ifdef DETACH_TELNET_FROM_MAIN_PROTOCOL
 	MCU_RX_CALLBACK void mcu_telnet_rx_cb(uint8_t c);
 #endif
-	void mcu_telnet_init(void); // must be called from mcu_init if the default mcu_init is overriden
+	void mcu_telnet_init(void);												 // initializes a telnet server
 	void mcu_telnet_onrecv(uint8_t client_idx, void *data, size_t data_len); // the callback when data is received
+
+	void mcu_sockets_init(void);	// must be called from mcu_init if the default mcu_init is overriden
+	void mcu_sockets_if_init(void); // network interface initialization (can be overriden)
 #endif
 
 #ifdef MCU_HAS_BLUETOOTH

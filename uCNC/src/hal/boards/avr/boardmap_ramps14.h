@@ -109,10 +109,13 @@ extern "C"
 #define PWM1_CHANNEL B
 #define PWM1_TIMER 2
 
-#define PWM2_BIT 4	// assigns PWM0 pin
-#define PWM2_PORT B // assigns PWM0 pin
-#define PWM2_CHANNEL A
-#define PWM2_TIMER 2
+// #define PWM2_BIT 4	// assigns PWM0 pin
+// #define PWM2_PORT B // assigns PWM0 pin
+// #define PWM2_CHANNEL A
+// #define PWM2_TIMER 2
+
+#define DOUT40_BIT 4
+#define DOUT40_PORT B
 
 // Setup generic IO Pins
 // Functionalities are set in config.h file

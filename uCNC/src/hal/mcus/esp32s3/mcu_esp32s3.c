@@ -162,9 +162,6 @@ void mcu_init(void)
 #if !defined(RAM_ONLY_SETTINGS)
 	mcu_eeprom_init(NVM_STORAGE_SIZE);
 #endif
-
-	mcu_wifi_init();
-
 	/**
 	 * Timers config
 	 */
@@ -195,6 +192,12 @@ void mcu_init(void)
 	// initialize rtc timer (currently on core 1)
 	xTaskCreatePinnedToCore(mcu_rtc_task, "rtcTask", 8192, NULL, 7, NULL, CONFIG_ARDUINO_RUNNING_CORE);
 	mcu_enable_global_isr();
+}
+
+// initialize the wifi infraestructure
+void mcu_sockets_if_init(void)
+{
+	mcu_wifi_init();
 }
 
 // ISR
