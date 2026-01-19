@@ -221,6 +221,10 @@ extern "C"
  * These hooks will only fire if a valid tool is selected.
  */
 // #define ENABLE_ATC_HOOKS
+#ifdef ENABLE_ATC_HOOKS
+// if an error occurs while executing some ATC gcode file put the machine in alarm mode and stop execution
+#define ALARM_ON_ATC_ERROR
+#endif
 
 #endif
 

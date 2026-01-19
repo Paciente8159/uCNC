@@ -156,6 +156,7 @@ extern "C"
 #define EXEC_ALARM_SPINDLE_SYNC_FAIL 12						 // failed to achieve spindle sync speed
 #define EXEC_ALARM_HARD_LIMIT_NOMOTION 13					 // hard limits were triggered without any motion (position was not lost)
 #define EXEC_ALARM_PLASMA_THC_ARC_START_FAILURE 14 // failed to start arc with plasma THC
+#define EXEC_ALARM_ATC_ERROR 15 // an error ocurrer while executing a tool change via the tool changer gcode
 
 #ifndef DISABLE_SAFE_SETTINGS
 #define EXEC_ALARM_SETTINGS_READ_ERROR -3

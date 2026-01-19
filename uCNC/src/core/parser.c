@@ -1433,6 +1433,9 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 		error = tool_change(words->t);
 		if (error)
 		{
+#if ALARM_ON_ATC_ERROR
+			cnc_alarm(EXEC_ALARM_ATC_ERROR);
+#endif
 			return error;
 		}
 		new_state->tool_index = new_state->groups.tool_change;
