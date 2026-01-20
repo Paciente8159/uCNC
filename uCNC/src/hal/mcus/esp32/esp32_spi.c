@@ -10,7 +10,7 @@
 #ifdef MCU_HAS_SPI
 #include "hal/spi_types.h"
 #include "driver/spi_master.h"
-SemaphoreHandle_t spi_access_mutex = NULL;
+SemaphoreHandle_t spi_access_lock = NULL;
 bool spi_dma_enabled = false;
 #ifndef SPI_DMA_BUFFER_SIZE
 #define SPI_DMA_BUFFER_SIZE 1024

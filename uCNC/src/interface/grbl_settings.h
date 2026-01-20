@@ -29,7 +29,7 @@ extern "C"
 #include <stdint.h>
 #include <stdbool.h>
 
-#define SETTINGS_OK
+#define SETTINGS_OK 0
 #define SETTINGS_READ_ERROR 1
 #define SETTINGS_WRITE_ERROR 2
 
@@ -67,7 +67,7 @@ extern "C"
 		float homing_offset;
 		int16_t spindle_max_rpm;
 		int16_t spindle_min_rpm;
-		uint8_t laser_mode;
+		uint8_t tool_mode;
 #ifdef ENABLE_LASER_PPI
 		uint16_t laser_ppi;
 		uint16_t laser_ppi_uswidth;
@@ -100,6 +100,7 @@ extern "C"
 #if ENCODERS > 0
 		uint8_t encoders_pulse_invert_mask;
 		uint8_t encoders_dir_invert_mask;
+		float encoders_resolution[ENCODERS];
 #endif
 #ifdef H_MAPPING_EEPROM_STORE_ENABLED
 		float hmap_x;

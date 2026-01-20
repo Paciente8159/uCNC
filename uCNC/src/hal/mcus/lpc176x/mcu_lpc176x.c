@@ -1159,7 +1159,7 @@ bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 				if (timeout < mcu_millis())
 				{
 					timeout = BULK_SPI_TIMEOUT + mcu_millis();
-					cnc_yield();
+					TASK_YIELD();
 				}
 			}
 			is_running = false;
@@ -1346,7 +1346,7 @@ bool mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 				if (timeout < mcu_millis())
 				{
 					timeout = BULK_SPI2_TIMEOUT + mcu_millis();
-					cnc_yield();
+					TASK_YIELD();
 				}
 			}
 			is_running = false;

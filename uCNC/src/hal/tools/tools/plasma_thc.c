@@ -22,6 +22,8 @@
 
 #include "../../../cnc.h"
 
+#if defined(ENABLE_PLASMA_THC)
+
 #ifndef PLASMA_UP_INPUT
 #define PLASMA_UP_INPUT DIN15
 #endif
@@ -64,14 +66,14 @@ static volatile int8_t plasma_step_error;
 
 typedef struct plasma_start_params_
 {
-	float probe_depth;		// I
-	float probe_feed;			// J
+	float probe_depth;	  // I
+	float probe_feed;	  // J
 	float retract_height; // R
-	float cut_depth;			// K
-	float cut_feed;				// F
-	float vad;						// D
-	uint16_t dwell;				// P*1000
-	uint8_t retries;			// L
+	float cut_depth;	  // K
+	float cut_feed;		  // F
+	float vad;			  // D
+	uint16_t dwell;		  // P*1000
+	uint8_t retries;	  // L
 } plasma_start_params_t;
 static plasma_start_params_t plasma_start_params;
 
@@ -164,7 +166,7 @@ bool __attribute__((weak)) plasma_thc_probe_and_start(void)
 	// wait for cycle start
 	while (cnc_get_exec_state(EXEC_HOLD))
 	{
-		cnc_yield();
+		TASK_YIELD();
 	}
 
 	while (ret--)
@@ -382,11 +384,11 @@ bool plasma_virtual_pins_exec(void *args)
 	switch (cmd)
 	{
 	case M101:
-		cmd = M62;								// on sync
+		cmd = M62;				  // on sync
 		plasma_enable_pin = true; // virtual pin
 		break;
 	case M102:
-		cmd = M63;								// off sync
+		cmd = M63;				  // off sync
 		plasma_enable_pin = true; // virtual pin
 		break;
 	}
@@ -559,8 +561,8 @@ static void startup_code(void)
 #if ASSERT_PIN(PLASMA_ON_OUTPUT)
 	io_clear_output(PLASMA_ON_OUTPUT);
 #endif
-	previous_mode = g_settings.laser_mode;
-	g_settings.laser_mode = PLASMA_THC_MODE;
+	previous_mode = g_settings.tool_mode;
+	g_settings.tool_mode = PLASMA_THC_MODE;
 }
 
 static void shutdown_code(void)
@@ -569,7 +571,7 @@ static void shutdown_code(void)
 #if ASSERT_PIN(PLASMA_ON_OUTPUT)
 	io_clear_output(PLASMA_ON_OUTPUT);
 #endif
-	g_settings.laser_mode = previous_mode;
+	g_settings.tool_mode = previous_mode;
 }
 
 static void set_speed(int16_t value)
@@ -620,12 +622,14 @@ static void set_coolant(uint8_t value)
 }
 
 const tool_t plasma_thc = {
-		.startup_code = &startup_code,
-		.shutdown_code = &shutdown_code,
-		.pid_update = &pid_update,
-		.range_speed = &range_speed,
-		.get_speed = NULL,
-		.set_speed = &set_speed,
-		.set_coolant = &set_coolant};
+	.startup_code = &startup_code,
+	.shutdown_code = &shutdown_code,
+	.pid_update = &pid_update,
+	.range_speed = &range_speed,
+	.get_speed = NULL,
+	.set_speed = &set_speed,
+	.set_coolant = &set_coolant};
+
+#endif
 
 #endif

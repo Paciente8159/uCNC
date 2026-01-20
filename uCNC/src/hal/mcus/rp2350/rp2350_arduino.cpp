@@ -23,6 +23,15 @@
 #include <string.h>
 #include "../../../cnc.h"
 
+void rp2350_core1_loop()
+{
+	rp2040.fifo.registerCore();
+	for (;;)
+	{
+		cnc_run();
+	}
+}
+
 /**
  *
  * This handles all communications via Serial USB, Serial UART and WiFi

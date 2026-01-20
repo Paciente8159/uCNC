@@ -46,7 +46,6 @@ __NOTE__: Not all event hooks might be listed here. To find all available event 
 | parser_get_modes | uint8_t * | ENABLE_PARSER_MODULES | Fires when $G command is issued and the active modal states array is being requested (can be used to modify the active modes with extended gcodes). Arg is a pointer to an uint8_t array with the parser motion groups current values |
 | parser_reset | NULL | ENABLE_PARSER_MODULES | Fires on parser reset |
 | cnc_reset | NULL | ENABLE_MAIN_LOOP_MODULES | Fires when µCNC resets |
-| rtc_tick | NULL | ENABLE_MAIN_LOOP_MODULES | Fires every millisecond. This code runs inside the RTC interrupt. Do not run long routines here. This is for time critical (periodic) tasks. |
 | cnc_dotasks | NULL | ENABLE_MAIN_LOOP_MODULES | Fires on the main loop running. Any repeating task should be hooked here |
 | cnc_io_dotasks | NULL | ENABLE_MAIN_LOOP_MODULES | Fires on the main IO loop running. This is similar to cnc_dotasks, the main difference is that this task will run also during delays |
 | cnc_stop | NULL | ENABLE_MAIN_LOOP_MODULES | Fires when a halt/stop condition is triggered |
@@ -67,6 +66,7 @@ __NOTE__: Not all event hooks might be listed here. To find all available event 
 | mc_home_axis_start | homing_status_t* | ENABLE_MOTION_CONTROL_MODULES | Fires once per axis when homing motion is starting. Pointer to homing_status_t struct with homming information |
 | mc_home_axis_finish | homing_status_t* | ENABLE_MOTION_CONTROL_MODULES | Fires once per axis when homing motion is finnished |
 | mc_line_segment | motion_data_t* | ENABLE_MOTION_CONTROL_MODULES | Fires when a line segment is about to be sent from the motion control to the planner. Arg is a pointer to a motion_data_t struct with the current motion block data |
+| planner_pre_output | planner_block_t* | ENABLE_PLANNER_MODULES | Fires right before a section of the current planner block is sent to the step generation (interpolator) ISR. It's possible to perform changes and modifications to the steps being generated with a very small delay. The delay is defined by the size of the interpolator buffer `INTERPOLATOR_BUFFER_SIZE` and the stepping sample frequency `INTERPOLATOR_FREQ`  |
 
 Each of these events exposes a delegate and and event that have the following naming convention:
 

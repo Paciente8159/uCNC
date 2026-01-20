@@ -108,9 +108,10 @@ volatile rp2350_alarm_t *mcu_alarms;
 void mcu_alarm_isr(void)
 {
 	hw_clear_bits(&timer_hw->intr, (1U << ALARM_TIMER));
+	uint32_t time = 0;
 	if (mcu_alarms)
 	{
-		while (mcu_alarms->timeout < (uint32_t)timer_hw->timerawl)
+		while (time = (uint32_t)timer_hw->timerawl, MEM_BARRIER, mcu_alarms->timeout <= time)
 		{
 			rp2350_alarm_t *alarm = (rp2350_alarm_t *)mcu_alarms;
 			// advance
@@ -125,6 +126,7 @@ void mcu_alarm_isr(void)
 			// no more alarms
 			if (!mcu_alarms)
 			{
+				timer_hw->alarm[ALARM_TIMER] = 0xFFFFFFFF;
 				return;
 			}
 		}
@@ -286,7 +288,7 @@ void mcu_rtc_isr(void)
 	ms_servo_counter = (servo_counter != 20) ? servo_counter : 0;
 
 #endif
-mcu_isr_context_enter();
+	mcu_isr_context_enter();
 	mcu_rtc_cb(millis());
 }
 
@@ -522,7 +524,7 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 	frequency = CLAMP((float)F_STEP_MIN, frequency, (float)F_STEP_MAX);
 	// up and down counter (generates half the step rate at each event)
 	uint32_t totalticks = (uint32_t)((float)(1000000UL >> 1) / frequency);
-	*prescaller = 1;
+	*prescaller = 0;
 	while (totalticks > 0xFFFF)
 	{
 		(*prescaller) += 1;
@@ -821,7 +823,7 @@ bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 			if (timeout < mcu_millis())
 			{
 				timeout = BULK_SPI_TIMEOUT + mcu_millis();
-				cnc_yield();
+				TASK_YIELD();
 			}
 		}
 
@@ -957,7 +959,7 @@ bool mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 			if (timeout < mcu_millis())
 			{
 				timeout = BULK_SPI2_TIMEOUT + mcu_millis();
-				cnc_yield();
+				TASK_YIELD();
 			}
 		}
 

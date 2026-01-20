@@ -29,7 +29,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <math.h>
-#include "../esp32common/esp32_common.h"
 
 #ifndef ITP_SAMPLE_RATE
 #define ITP_SAMPLE_RATE (F_STEP_MAX * 2)

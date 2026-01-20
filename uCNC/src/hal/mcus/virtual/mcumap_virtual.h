@@ -260,8 +260,10 @@
 #define DIO76 76
 #define DOUT30 77
 #define DIO77 77
-#define DOUT31 78
-#define DIO78 78
+#define DOUT31 UNDEF_PIN
+#define DIO78 UNDEF_PIN
+
+#define ACTIVITY_LED UNDEF_PIN
 
 #ifndef EMULATE_74HC165
 #define LIMIT_X 100
@@ -462,8 +464,16 @@ extern void virtual_delay_us(uint16_t delay);
 #define ENABLE_ITP_FEED_TASK //smoother STEP IO simulation
 
 #include "../../tools/tool.h"
-extern const tool_t spindle_pwm;
+extern const tool_t embroidery_stepper;
 extern const tool_t laser_ppi;
+extern const tool_t laser_pwm;
+extern const tool_t pen_servo;
+extern const tool_t plasma_thc;
+extern const tool_t spindle_besc;
+extern const tool_t spindle_pwm;
+extern const tool_t spindle_relay;
+extern const tool_t vfd_modbus;
+extern const tool_t vfd_pwm;
 
 #define ATOMIC_LOAD_N(src, mode) __atomic_load_n((src), mode)
 #define ATOMIC_STORE_N(dst, val, mode) __atomic_store_n((dst), (val), mode)

@@ -120,9 +120,9 @@ DECL_MUTEX(shifter_running);
 // custom implementation of the shift register using the SPI port
 MCU_CALLBACK void spi_shift_register_io_pins(void)
 {
-	MUTEX_INIT(shifter_running);
+	BIN_SEMPH_INIT(shifter_running);
 
-	if(MUTEX_TAKE(shifter_running))
+	if(BIN_SEMPH_TRYLOCK(shifter_running))
 	{
 #if (IC74HC165_COUNT > 0)
 		mcu_set_output_gpio(IC74HC165_LOAD);
@@ -148,6 +148,8 @@ MCU_CALLBACK void spi_shift_register_io_pins(void)
 #if (IC74HC595_COUNT > 0)
 		mcu_set_output_gpio(IC74HC595_LATCH);
 #endif
+
+		BIN_SEMPH_UNLOCK(shifter_running);
 	}
 }
 #else
@@ -468,8 +470,8 @@ void itp_buffer_dotasks(uint16_t limit)
 
 IRAM_ATTR void mcu_rtc_isr(void)
 {
-	mcu_runtime_ms++;
 	mcu_isr_context_enter();
+	mcu_runtime_ms++;
 	mcu_rtc_cb(mcu_runtime_ms);
 	itp_buffer_dotasks(OUT_IO_BUFFER_MINIMAL); // process at most 2ms of motion
 	uint32_t stamp = esp_get_cycle_count() + (ESP8266_CLOCK / 1000);

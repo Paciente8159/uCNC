@@ -169,13 +169,6 @@ extern "C"
 	void cnc_run(void);
 	// do events returns true if all OK and false if an ABORT alarm is reached
 	bool cnc_dotasks(void);
-	// emulates code context yield in a linear code execution
-	// this can be replaced in multicore/RTOS environments
-#ifndef cnc_yield
-#define cnc_yield()            \
-	if (!mcu_in_isr_context()) \
-	cnc_dotasks()
-#endif
 	uint8_t cnc_home(void);
 	void cnc_alarm(int8_t code);
 	bool cnc_has_alarm(void);
@@ -187,6 +180,7 @@ extern "C"
 	void cnc_store_motion(void);
 	void cnc_restore_motion(void);
 	uint8_t cnc_parse_cmd(void);
+	bool cnc_check_interlocking(void);
 
 	uint8_t cnc_get_exec_state(uint8_t statemask);
 	void cnc_set_exec_state(uint8_t statemask);
@@ -197,10 +191,14 @@ extern "C"
 	// generates a default delegate, event and handler hook
 	// event_cnc_reset_handler
 	DECL_EVENT_HANDLER(cnc_reset);
-	// event_rtc_tick_handler
-	DECL_EVENT_HANDLER(rtc_tick);
 	// event_cnc_dotasks_handler
 	DECL_EVENT_HANDLER(cnc_dotasks);
+	#ifndef modules_dotasks
+	#define modules_dotasks() EVENT_INVOKE(cnc_dotasks, NULL)
+	#endif
+	#ifndef cnc_modules_dotasks
+	#define cnc_modules_dotasks() modules_dotasks()
+	#endif
 	// event_cnc_io_dotasks_handler
 	DECL_EVENT_HANDLER(cnc_io_dotasks);
 	// event_cnc_stop_handler

@@ -6,6 +6,58 @@
 
 # Changelog
 
+## [1.15.0] - 20-01-2026
+
+### Added
+
+- added new embroidery tool mode (#) and new embroidery tool based on a stepper motor to control the needle (#897)
+- added new encoder module enhancements with support for I2C and SSI encoders (#848)
+- added new tool hooks callback to allow implementation of custom ATC (automatic tool changer) modules (#905)
+- added new planner event that allows modification of the current motion block before being sent to step generation (#904)
+
+### Changed
+
+- dropped `STEP_ISR_SKIP_MAIN` and `STEP_ISR_SKIP_IDLE` options and removed code from interpolator (#904)
+
+### Fixed
+
+- fixed system menu position reporting to match encoders position (#904)
+- fixed compilation error with option `DISABLE_SAFE_SETTINGS` (#903)
+
+## [1.14.0] - 07-01-2026
+
+### Added
+
+- added new atomic primitives (similar to C11) including atomic CAS and basic semaphores (#885)
+- added ring buffer non-blocking methods (#885)
+- added ISR context aware mcu calls (#885)
+- added new Grbl compatibility level (now can be raised to level 3 - less safety strick) (#885)
+
+### Changed
+
+- modified ring buffer to be MPMC-Multi producer/Multi consumer safe (#885)
+- removed rtc_tick event (#885)
+- interpolator now runs on the RTC ISR/thread by default if ENABLE_MAIN_LOOP_MODULES is enabled(#885)
+
+### Fixed
+
+- fixed RP2040/2350 multicore (#885)
+- fixed ITP timer prescaller calculation (#885)
+- fixed general alarm handler to prevent missing alarms that about to trigger (#885)
+- fixed ESP32 WiFi (#885)
+- fixed ESP32-C3 ITP timer (#885)
+
+## [1.13.1] - 28-11-2025
+
+### Added
+
+- added ABC axis speed profile decoupling option to fix incorrect speed profiles with rotational axis via `ABC_INDEP_FEED_CALC` (#892)
+
+### Fixed
+
+- fixed ESP32 PIO configuration that lead to several WiFi issues (#899)
+- fixed some redefinition warings while compiling code for ESP32(#896)
+
 ## [1.13.0] - 07-11-2025
 
 [@reinforce](https://github.com/reinforce)	- fix compilation errors on RP2040 and 2350 (#894) and fixed file name typo on ESP32 (#889)
@@ -1961,6 +2013,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.13.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.13.1
 [1.13.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.13.0
 [1.13.rc]: https://github.com/Paciente8159/uCNC/releases/tag/v1.13.rc
 [1.12.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.12.4

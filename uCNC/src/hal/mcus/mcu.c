@@ -1148,6 +1148,12 @@ void __attribute__((weak)) mcu_i2c_slave_cb(uint8_t *data, uint8_t *datalen)
 #endif
 
 #if (defined(MCU_HAS_SPI))
+void __attribute__((weak)) mcu_spi_config(spi_config_t config, uint32_t frequency)
+{
+	(void)config;
+	(void)frequency;
+}
+
 void __attribute__((weak)) mcu_spi_start(spi_config_t config, uint32_t frequency)
 {
 	// reapply port settings if port is shared
@@ -1173,7 +1179,7 @@ bool __attribute__((weak)) mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in
 		if (timeout < mcu_millis())
 		{
 			timeout = BULK_SPI_TIMEOUT + mcu_millis();
-			cnc_yield();
+			TASK_YIELD();
 		}
 	}
 
@@ -1188,6 +1194,12 @@ spi_port_t __attribute__((used)) mcu_spi_port = {.isbusy = false, .start = mcu_s
 #endif
 
 #if (defined(MCU_HAS_SPI2))
+void __attribute__((weak)) mcu_spi2_config(spi_config_t config, uint32_t frequency)
+{
+	(void)config;
+	(void)frequency;
+}
+
 void __attribute__((weak)) mcu_spi2_start(spi_config_t config, uint32_t frequency)
 {
 	// reapply port settings if port is shared
@@ -1213,7 +1225,7 @@ bool __attribute__((weak)) mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *i
 		if (timeout < mcu_millis())
 		{
 			timeout = BULK_SPI2_TIMEOUT + mcu_millis();
-			cnc_yield();
+			TASK_YIELD();
 		}
 	}
 

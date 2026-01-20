@@ -4,7 +4,7 @@
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
-	Date: 02/10/2019
+	Date: 16/12/2025
 
 	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -84,9 +84,9 @@ extern "C"
 #define ATOMIC_STORE_N(dst, val, mode) \
 	ATOMIC_CODEBLOCK { *(dst) = (val); }
 #endif
-// fetch, compare and modify operations
+	// fetch, compare and modify operations
 #ifndef ATOMIC_COMPARE_EXCHANGE_N
-#define ATOMIC_COMPARE_EXCHANGE_N(dst, cmp, des, sucmode, failmode) ({bool __res; ATOMIC_CODEBLOCK{__res = (*(dst)==*(cmp)); if(__res){*(dst) = (des);}else{*(cmp) = *(dst);}} __res; })
+#define ATOMIC_COMPARE_EXCHANGE_N(dst, cmp, des, sucmode, failmode) ({bool __res = false; ATOMIC_CODEBLOCK{__res = (*(dst)==*(cmp)); if(__res){*(dst) = (des);}else{*(cmp) = *(dst);}} __res; })
 #endif
 // fetch and modify operations
 #ifndef ATOMIC_FETCH_XOR
@@ -140,48 +140,66 @@ extern "C"
 #define ATOMIC_SPIN() mcu_nop()
 #endif
 
+#ifndef TASK_YIELD
+#ifndef mcu_in_isr_context
+	extern bool mcu_in_isr_context(void);
+#endif
+	extern bool cnc_dotasks(void);
+#define TASK_YIELD()           \
+	if (!mcu_in_isr_context()) \
+	cnc_dotasks()
+#endif
+
 #define BUFFER_GUARD_INIT(s)
 #define BUFFER_GUARD
 
 #ifndef DECL_MUTEX
-#define MUTEX_UNDEF -1
-#define MUTEX_LOCKED 1
-#define MUTEX_FREE 0
+#define BIN_SEMPH_UNDEF ((uint8_t)-1)
+#define BIN_SEMPH_LOCKED 1
+#define BIN_SEMPH_UNLOCKED 0
 
-#define MUTEX_CLEANUP(name)                      \
-	static void name##_mutex_cleanup(int8_t *m) \
-	{                                            \
-		if (*m == MUTEX_FREE /*can unlock*/) \
-		{                                        \
-			name = MUTEX_UNDEF;                  \
-		}                                        \
-	}
-#define DECL_MUTEX(name)          \
-	static volatile int8_t name = MUTEX_FREE; \
-	MUTEX_CLEANUP(name)
-#define MUTEX_INIT(name) int8_t __attribute__((__cleanup__(name##_mutex_cleanup))) name##_mutex_temp = MUTEX_UNDEF
-#define MUTEX_RELEASE(name)                                   \
-	if (name##_mutex_temp == MUTEX_FREE /*has the lock*/) \
-	{                                                         \
-		name = MUTEX_UNDEF;                                   \
-		name##_mutex_temp = MUTEX_UNDEF;                      \
-	}
-	static FORCEINLINE bool safe_mutex_lock(volatile int8_t *lock, int8_t *cleanup)
+#ifndef ATOMIC_TYPE
+#define ATOMIC_TYPE volatile uint8_t
+#endif
+
+// mutex
+#define DECL_MUTEX(name) volatile ATOMIC_TYPE name = BIN_SEMPH_UNDEF
+#define BIN_SEMPH_INIT(name, locked) ({int8_t name##_semph_temp = BIN_SEMPH_UNDEF; ATOMIC_COMPARE_EXCHANGE_N(&name, &name##_semph_temp, (locked), __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE); })
+#define BIN_SEMPH_UNLOCK(name) ({int8_t name##_semph_temp = BIN_SEMPH_LOCKED; ATOMIC_COMPARE_EXCHANGE_N(&name, &name##_semph_temp, BIN_SEMPH_UNLOCKED, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE); })
+	static FORCEINLINE bool semph_safe_lock(ATOMIC_TYPE *lock, uint32_t timeout)
 	{
-		*cleanup = MUTEX_FREE;
-		return ATOMIC_COMPARE_EXCHANGE_N(lock, cleanup, MUTEX_LOCKED, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE);
-	}
-#define MUTEX_TAKE(name) safe_mutex_lock(&name, &name##_mutex_temp)
+		// converts to us
+		if (timeout > (UINT32_MAX / 1000))
+		{
+			timeout *= 1000;
+		}
 
-#define MUTEX_WAIT(name, timeout_ms) \
-	__TIMEOUT_MS__(timeout_us)       \
-	{                                \
-		if (MUTEX_TAKE(name))        \
-		{                            \
-			break;                   \
-		}                            \
-	}                                \
-	if (name##_mutex_temp == MUTEX_FREE && timeout_us != 0 /*the lock was aquired in time*/)
+		uint32_t now = mcu_free_micros();
+		for (;;)
+		{
+			ATOMIC_TYPE expected = BIN_SEMPH_UNLOCKED;
+			if (ATOMIC_COMPARE_EXCHANGE_N(lock, &expected, BIN_SEMPH_LOCKED, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE))
+			{
+				return true;
+			}
+			if (!timeout)
+			{
+				break;
+			}
+			TASK_YIELD();
+			uint32_t tstamp = mcu_free_micros();
+			uint32_t elapsed = (tstamp > now) ? (tstamp - now) : (1000 - now + tstamp);
+			if (elapsed >= timeout)
+				break;
+			timeout -= elapsed;
+			now = tstamp;
+		}
+
+		return false;
+	}
+#define BIN_SEMPH_TIMEDLOCK(name, timeout_ms) semph_safe_lock(&name, timeout_ms)
+#define BIN_SEMPH_LOCK(name) BIN_SEMPH_TIMEDLOCK(name, 0xFFFFFFFF)
+#define BIN_SEMPH_TRYLOCK(name) BIN_SEMPH_TIMEDLOCK(name, 0)
 #endif
 
 #ifdef __cplusplus

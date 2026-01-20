@@ -29,7 +29,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <math.h>
-#include "../esp32common/esp32_common.h"
 
 static volatile bool esp32_global_isr_enabled;
 
@@ -250,7 +249,6 @@ void mcu_init(void)
 
 	// initialize rtc timer (currently on core 1)
 	xTaskCreatePinnedToCore(mcu_rtc_task, "rtcTask", 8192, NULL, 7, NULL, CONFIG_ARDUINO_RUNNING_CORE);
-
 	mcu_enable_global_isr();
 }
 

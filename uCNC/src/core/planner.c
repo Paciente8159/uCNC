@@ -35,6 +35,15 @@ FORCEINLINE static uint8_t planner_buffer_prev(uint8_t index);
 FORCEINLINE static void planner_recalculate(void);
 FORCEINLINE static void planner_buffer_clear(void);
 
+#ifdef ENABLE_PLANNER_MODULES
+// event_planner_pre_output_handler
+// fires every time the current running planner block remaing steps are being read and before a chunk of the motion is enqueued for step generation (partial/full)
+WEAK_EVENT_HANDLER(planner_pre_output)
+{
+	DEFAULT_EVENT_HANDLER(planner_pre_output);
+}
+#endif
+
 /*
 	Adds a new line to the trajectory planner
 	The planner is responsible for calculating the entry and exit speeds of the transitions
@@ -410,6 +419,16 @@ float planner_get_block_top_speed(float exit_speed_sqr)
 	return MIN(junction_speed_sqr, target_speed_sqr);
 }
 
+#ifdef ENABLE_PLANNER_MODULES
+void planner_itp_pre_output(void)
+{
+	// unnecessary check (this is only called if there is a planner block in the buffer)
+	// planner_block_t* args = (planner_data_blocks != 0) ? &planner_data[planner_data_read] : NULL;
+	planner_block_t *args = &planner_data[planner_data_read];
+	EVENT_INVOKE(planner_pre_output, args);
+}
+#endif
+
 #if TOOL_COUNT > 0
 static uint8_t spindle_override;
 int16_t planner_get_spindle_speed(float scale)
@@ -418,12 +437,10 @@ int16_t planner_get_spindle_speed(float scale)
 	{
 		float scaled_spindle = (float)g_planner_state.spindle_speed;
 		bool neg = (g_planner_state.state_flags.bit.spindle_running == 2);
-
-		if (g_settings.laser_mode && neg) // scales laser power only if invert is active (M4)
+		if ((g_settings.tool_mode & PWM_VARPOWER_MODE) && neg) // scales pwm power only if invert is active (M4)
 		{
 			scaled_spindle *= scale; // scale calculated in laser mode (otherwise scale is always 1)
 		}
-
 		if (planner_data[planner_data_read].planner_flags.bit.feed_override && g_planner_state.spindle_speed_override != 100)
 		{
 			scaled_spindle = 0.01f * (float)g_planner_state.spindle_speed_override * scaled_spindle;
