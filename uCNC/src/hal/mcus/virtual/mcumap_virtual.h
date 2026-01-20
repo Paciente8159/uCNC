@@ -65,7 +65,7 @@
 #define MCU_CYCLES_PER_LOOP_OVERHEAD 0
 #endif
 
-//#define MCU_HAS_UART
+#define MCU_HAS_UART
 #ifndef UART_PORT_NAME
 #define UART_PORT_NAME "\\\\.\\COM14"
 #endif

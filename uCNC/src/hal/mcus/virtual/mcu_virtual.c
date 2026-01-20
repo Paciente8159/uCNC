@@ -46,6 +46,7 @@ extern "C"
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #pragma comment(lib, "ws2_32.lib")
+int init_winsock(void);
 #endif
 #include <windows.h>
 #include <dirent.h>
@@ -226,7 +227,7 @@ extern "C"
 	void mcu_uart_clear(void) { BUFFER_CLEAR(uart_rx); }
 	void mcu_uart_putc(uint8_t c)
 	{
-		while (!BUFFER_TRY_ENQUEUE(uart_tx, &c))
+		while (!BUFFER_TRY_ENQUEUE(uart_tx, &c) && g_uart.connected)
 		{
 			mcu_uart_flush();
 		}
@@ -323,7 +324,7 @@ extern "C"
 				if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
 				{
 					STREAM_OVF(c);
-				};
+				}
 			}
 		}
 	}
@@ -352,9 +353,7 @@ extern "C"
 		{
 			if (!fseek(fp, address, SEEK_SET))
 			{
-				int v = getc(fp);
-				if (v != EOF)
-					c = (uint8_t)v;
+				c = getc(fp);
 			}
 			fclose(fp);
 		}
@@ -591,7 +590,6 @@ extern "C"
 #if defined(MCU_HAS_ONESHOT_TIMER)
 	MCU_CALLBACK mcu_timeout_delgate mcu_timeout_cb = NULL;
 	static uint32_t virtual_oneshot_counter;
-	static uint32_t virtual_oneshot_reload;
 	static FORCEINLINE void mcu_gen_oneshot(void)
 	{
 		if (virtual_oneshot_counter)
@@ -707,7 +705,6 @@ extern "C"
 		}
 	}
 
-
 	/* Windows timer wheel to tick emulator */
 	HANDLE win_timer;
 	void (*timer_func_handler_pntr)(void);
@@ -727,11 +724,17 @@ extern "C"
 
 	volatile unsigned long g_cpu_freq = 0;
 
-	VOID CALLBACK timer_sig_handler(PVOID lpParameter, BOOLEAN TimerOrWaitFired)
-	{
-		if (timer_func_handler_pntr)
-			timer_func_handler_pntr();
-	}
+	FILE *stimuli;
+	uint64_t tickcount;
+
+#define def_printpin(X) \
+	if (stimuli)        \
+	fprintf(stimuli, "$var wire 1 %c " #X " $end\n", 33 + X)
+#define printpin(X) \
+	if (stimuli)    \
+	fprintf(stimuli, "%d%c\n", ((virtualmap.special_outputs & (1 << (X - 1))) ? 1 : 0), 33 + X)
+
+	VOID CALLBACK timer_sig_handler(PVOID, BOOLEAN);
 
 	int start_timer(int mSec, void (*timer_func_handler)(void))
 	{
@@ -746,13 +749,18 @@ extern "C"
 		return (0);
 	}
 
+	VOID CALLBACK timer_sig_handler(PVOID lpParameter, BOOLEAN TimerOrWaitFired)
+	{
+		timer_func_handler_pntr();
+	}
+
 	void stop_timer(void)
 	{
 		DeleteTimerQueueTimer(NULL, win_timer, NULL);
 		CloseHandle(win_timer);
 	}
 
-	unsigned long getCPUFreq(void)
+	static unsigned long getCPUFreq(void)
 	{
 		LARGE_INTEGER perf_counter;
 
@@ -768,14 +776,14 @@ extern "C"
 		return perf_counter.QuadPart;
 	}
 
-	unsigned long getTickCounter(void)
+	static unsigned long getTickCounter(void)
 	{
 		LARGE_INTEGER perf_counter;
 		QueryPerformanceCounter(&perf_counter);
 		return perf_counter.QuadPart;
 	}
 
-	void startCycleCounter(void)
+	static void startCycleCounter(void)
 	{
 		if (getCPUFreq() == 0)
 		{
@@ -785,7 +793,7 @@ extern "C"
 		perf_start = getTickCounter();
 	}
 
-	unsigned long stopCycleCounter(void)
+	static unsigned long stopCycleCounter(void)
 	{
 		return (getTickCounter() - perf_start);
 	}
@@ -803,17 +811,17 @@ extern "C"
 
 	uint32_t mcu_micros(void)
 	{
-		// LARGE_INTEGER perf_counter;
-		// QueryPerformanceCounter(&perf_counter);
-		// return (uint32_t)(perf_counter.QuadPart / cyclesPerMicrosecond);
+		// LARGE_INTEGER pc;
+		// QueryPerformanceCounter(&pc);
+		// return (uint32_t)(pc.QuadPart / cyclesPerMicrosecond);
 		return (uint32_t)tickcount;
 	}
 
 	uint32_t mcu_millis(void)
 	{
-		// LARGE_INTEGER perf_counter;
-		// QueryPerformanceCounter(&perf_counter);
-		// return (uint32_t)(perf_counter.QuadPart / cyclesPerMillisecond);
+		// LARGE_INTEGER pc;
+		// QueryPerformanceCounter(&pc);
+		// return (uint32_t)(pc.QuadPart / cyclesPerMillisecond);
 		return (uint32_t)(tickcount / 1000);
 	}
 
@@ -837,7 +845,7 @@ extern "C"
 	}
 
 	/* Periodic tick that drives stepper and RTC callbacks */
-	static void ticksimul(void)
+	void ticksimul(void)
 	{
 		static bool running = false;
 		bool test = false;
@@ -853,7 +861,7 @@ extern "C"
 		float parcial = 0;
 		//		long t = stopCycleCounter();
 		//		printf("Elapsed %dus\n\r", (int)((double)t / cyclesPerMicrosecond));
-		float timestep = round((float)EMULATION_MS_TICK * ITP_SAMPLE_RATE * 0.001f);
+		float timestep = ceil((float)EMULATION_MS_TICK * ITP_SAMPLE_RATE * 0.001f);
 		for (int i = 0; i < (int)timestep; i++)
 		{
 			parcial += (1000000.0f / (float)ITP_SAMPLE_RATE);
@@ -861,7 +869,7 @@ extern "C"
 			parcial -= (int)parcial;
 
 			mcu_gen_step();
-#if defined(MCU_HAS_ONESHOT_TIMER)
+			#if defined(MCU_HAS_ONESHOT_TIMER)
 			mcu_gen_oneshot();
 #endif
 
@@ -1099,6 +1107,7 @@ extern "C"
 		GetCurrentDirectoryA(1024, &cwd);
 		printf("%s\n", cwd);
 
+		printf("Creating simuli file\n\r");
 		stimuli = fopen("stimuli.vcd", "w+");
 		if (stimuli)
 			fprintf(stimuli, "$timescale 1us $end\n$scope module logic $end\n", tickcount);
