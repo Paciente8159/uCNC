@@ -36,11 +36,11 @@ FORCEINLINE static void planner_recalculate(void);
 FORCEINLINE static void planner_buffer_clear(void);
 
 #ifdef ENABLE_PLANNER_MODULES
-// event_planner_remaining_steps_handler
-// fires every time the current running planner block remaing steps is being read before a chunk of the motion is enqueued for step generation (partial/full)
-WEAK_EVENT_HANDLER(planner_remaining_steps)
+// event_planner_pre_output_handler
+// fires every time the current running planner block remaing steps are being read and before a chunk of the motion is enqueued for step generation (partial/full)
+WEAK_EVENT_HANDLER(planner_pre_output)
 {
-	DEFAULT_EVENT_HANDLER(planner_remaining_steps);
+	DEFAULT_EVENT_HANDLER(planner_pre_output);
 }
 #endif
 
@@ -425,7 +425,7 @@ void planner_itp_pre_output(void)
 	// unnecessary check (this is only called if there is a planner block in the buffer)
 	// planner_block_t* args = (planner_data_blocks != 0) ? &planner_data[planner_data_read] : NULL;
 	planner_block_t *args = &planner_data[planner_data_read];
-	EVENT_INVOKE(planner_pre_output);
+	EVENT_INVOKE(planner_pre_output, args);
 }
 #endif
 
