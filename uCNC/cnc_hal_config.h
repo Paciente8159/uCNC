@@ -463,6 +463,9 @@ extern "C"
 // uncomment to update tool sync on index pulse only
 // instead of updating in every PPR
 // #define RPM_SYNC_UPDATE_ON_INDEX_ONLY
+
+// Enables stepper closed loop position correction
+// #define ENABLE_STEPPER_CLF_CORRECTION
 #endif
 #endif
 

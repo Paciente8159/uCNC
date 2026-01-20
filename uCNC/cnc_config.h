@@ -381,7 +381,7 @@ extern "C"
 	// #define DISABLE_PATH_MODES
 
 	/**
-	 * enable step counting on sync motion command (needed for some Gcode extensions like G33)
+	 * Enable hooks that run on the step generation ISR and allow to modify the steps mask and direction in realtime (needed for some Gcode extensions like G33)
 	 * */
 	//  #define ENABLE_RT_SYNC_MOTIONS
 
@@ -399,6 +399,7 @@ extern "C"
 	// #define ENABLE_IO_MODULES
 	// #define ENABLE_PARSER_MODULES
 	// #define ENABLE_MOTION_CONTROL_MODULES
+	// #define ENABLE_PLANNER_MODULES
 
 	/**
 	 * Settings extensions are enabled by default
@@ -528,17 +529,6 @@ extern "C"
 	 * */
 
 	// #define ENABLE_BACKLASH_COMPENSATION
-
-	/**
-	 * Uncomment these to enable step ISR calculation strategies (uses more
-	 * memory) STEP_ISR_SKIP_MAIN - carries the information about the main
-	 * stepper (performs a step in every ISR tick) and skips calculations
-	 * STEP_ISR_SKIP_IDLE - carries the information about the idle steppers
-	 * (performs 0 steps in the ISR tick) and skips calculations
-	 * */
-
-#define STEP_ISR_SKIP_MAIN
-#define STEP_ISR_SKIP_IDLE
 
 	/**
 	 * Sets the maximum number of step doubling loops carried by the DSS (Dynamic

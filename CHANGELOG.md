@@ -6,6 +6,24 @@
 
 # Changelog
 
+## [1.15.0] - 20-01-2026
+
+### Added
+
+- added new embroidery tool mode (#) and new embroidery tool based on a stepper motor to control the needle (#897)
+- added new encoder module enhancements with support for I2C and SSI encoders (#848)
+- added new tool hooks callback to allow implementation of custom ATC (automatic tool changer) modules (#905)
+- added new planner event that allows modification of the current motion block before being sent to step generation (#904)
+
+### Changed
+
+- dropped `STEP_ISR_SKIP_MAIN` and `STEP_ISR_SKIP_IDLE` options and removed code from interpolator (#904)
+
+### Fixed
+
+- fixed system menu position reporting to match encoders position (#904)
+- fixed compilation error with option `DISABLE_SAFE_SETTINGS` (#903)
+
 ## [1.14.0] - 07-01-2026
 
 ### Added
