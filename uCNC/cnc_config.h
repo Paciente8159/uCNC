@@ -213,6 +213,21 @@ extern "C"
 #define DELAY_ON_RESUME_COOLANT 1
 // uncomment to make M7 act as M8
 // #define M7_SAME_AS_M8
+
+#if TOOL_COUNT > 1
+/**
+ * Enable this option to active the Automatic Tool Changer hooks
+ * This provides access to 2 hook (for tool unmounting and tool mounting), that allows the creating/of custom modules to be used with an ATC tool
+ * These hooks will only fire if a valid tool is selected.
+ */
+// #define ENABLE_ATC_HOOKS
+#ifdef ENABLE_ATC_HOOKS
+// if an error occurs while executing some ATC gcode file put the machine in alarm mode and stop execution
+#define ALARM_ON_ATC_ERROR
+#endif
+
+#endif
+
 #endif
 
 

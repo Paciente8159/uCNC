@@ -60,8 +60,8 @@ extern "C"
 	void grbl_stream_init();
 
 	void grbl_stream_register(grbl_stream_t *stream);
-	bool grbl_stream_change(grbl_stream_t *stream);
-	bool grbl_stream_readonly(grbl_stream_getc_cb getc_cb, grbl_stream_available_cb available_cb, grbl_stream_clear_cb clear_cb);
+	grbl_stream_t *grbl_stream_change(grbl_stream_t *stream);
+	grbl_stream_t *grbl_stream_readonly(grbl_stream_getc_cb getc_cb, grbl_stream_available_cb available_cb, grbl_stream_clear_cb clear_cb);
 	void grbl_stream_eeprom(uint16_t address);
 
 	void grbl_stream_start_broadcast(void);
@@ -71,7 +71,7 @@ extern "C"
 	void grbl_stream_overflow_flush(void);
 
 	// marks an overflow error on a stream
-#define STREAM_OVF(c)      \
+#define STREAM_OVF(c)        \
 	grbl_stream_overflow(c); \
 	return
 
