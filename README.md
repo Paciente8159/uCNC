@@ -25,17 +25,14 @@ _**Jump to section**_
 * [µCNC default pinouts](https://github.com/Paciente8159/uCNC/blob/master/PINOUTS.md)
 
 
-# VERSION 1.14+ NOTES
+# VERSION 1.15+ NOTES
 
-Version 1.14 introduces the following changes:
-  - new atomic primitives (similar to C11) including atomic CAS and basic semaphores.
-  - ring buffer non-blocking methods.
-  - new Grbl compatibility level (level 3) that is even less restrctive. This should improve Grbl GUI initial connection to the controller since this does not block as much. The Emergency Stop input behavior is also modified (change state only) and does not lock out if active.
-  - new embroidary tool type support.
-  - improved support for encoders (still in development)
+Version 1.15 introduces the following changes:
+  - added new embroidery tool mode and new embroidery tool based on a stepper motor to control the needle. This tool mode is able to run the needle motor and the axis with different speed profiles to target specific motion needs of this type of tool.
+  - added new encoder module enhancements with support for I2C and SSI encoders 
+  - new hooks/callbacks to allow the creation and usage of custom ATC (automatic tool change) modules
+  - added new planner event to allow last minute modifications to motions blocks being sent to the step generator
 
-  This is the first stage of changes to the µCNC core and modules that should improve µCNC support on Multicore/Multithread/RTOS based MCU's.
-  This will also pave the way to a generic network module support based on BSD sockets (Wifi and ethernet) that is MCU agnostic.
 
 # IMPORTANT NOTE
 
@@ -79,7 +76,13 @@ You can also reach me at µCNC discord channel
 
 ## Current µCNC status
 
-µCNC current major version is v1.14. You can check all the new features, changes and bug fixes in the [CHANGELOG](https://github.com/Paciente8159/uCNC/blob/master/CHANGELOG.md).
+µCNC current major version is v1.15. You can check all the new features, changes and bug fixes in the [CHANGELOG](https://github.com/Paciente8159/uCNC/blob/master/CHANGELOG.md).
+
+Version 1.15 added the following new major features.
+  - added new embroidery tool mode and new embroidery tool based on a stepper motor to control the needle. This tool mode is able to run the needle motor and the axis with different speed profiles to target specific motion needs of this type of tool.
+  - added new encoder module enhancements with support for I2C and SSI encoders 
+  - new hooks/callbacks to allow the creation and usage of custom ATC (automatic tool change) modules. A new ATC module will also be made available.
+  - added new planner event to allow last minute modifications to motions blocks being sent to the step generator. 
 
 Version 1.14 added the following new major features.
   - new atomic primitives (similar to C11) including atomic CAS and basic semaphores.
