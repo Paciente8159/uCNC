@@ -1010,7 +1010,7 @@ extern "C"
 		{
 			uint8_t tmp[USB_TX_BUFFER_SIZE + 1];
 			memset(tmp, 0, sizeof(tmp));
-			uint8_t r;
+			uint8_t r = 0;
 
 			BUFFER_READ(usb_tx, tmp, USB_TX_BUFFER_SIZE, r);
 			Serial.write(tmp, r);
