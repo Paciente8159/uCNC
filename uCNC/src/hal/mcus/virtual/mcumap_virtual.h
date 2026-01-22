@@ -263,7 +263,7 @@
 #define DOUT31 UNDEF_PIN
 #define DIO78 UNDEF_PIN
 
-#define ACTIVITY_LED UNDEF_PIN
+//#define ACTIVITY_LED UNDEF_PIN
 
 #ifndef EMULATE_74HC165
 #define LIMIT_X 100
@@ -477,7 +477,7 @@ extern const tool_t vfd_pwm;
 
 #define ATOMIC_LOAD_N(src, mode) __atomic_load_n((src), mode)
 #define ATOMIC_STORE_N(dst, val, mode) __atomic_store_n((dst), (val), mode)
-#define ATOMIC_COMPARE_EXCHANGE_N(dst, cmp, des, sucmode, failmode) __atomic_compare_exchange_n((dst), (cmp), (des), false, sucmode, failmode)
+#define ATOMIC_COMPARE_EXCHANGE_N(dst, cmp, des, sucmode, failmode) __atomic_compare_exchange_n((dst), (void*)(cmp), (des), false, sucmode, failmode)
 #define ATOMIC_FETCH_OR(dst, val, mode) __atomic_fetch_or((dst), (val), mode)
 #define ATOMIC_FETCH_AND(dst, val, mode) __atomic_fetch_and((dst), (val), mode)
 #define ATOMIC_FETCH_ADD(dst, val, mode) __atomic_fetch_add((dst), (val), mode)

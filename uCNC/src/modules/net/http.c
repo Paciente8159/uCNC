@@ -481,6 +481,7 @@ static void handle_upload_bytes(int client_idx, char **buf, size_t *len)
 		c->upl.status = REQ_UPLOAD_START;
 		c->fileupl.status = HTTP_UPLOAD_START;
 		c->fileupl.filename = c->upl.upload_name;
+		c->fileupl.datalen = c->upl.upload_len;
 		maybe_invoke_file_handler(client_idx);
 	}
 

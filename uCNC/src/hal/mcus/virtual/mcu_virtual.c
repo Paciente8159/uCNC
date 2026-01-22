@@ -1328,28 +1328,32 @@ int init_winsock(void);
 	static void ota_upload_cb(int client_idx)
 	{
 		http_upload_t up = http_file_upload_status(client_idx);
+		static uint32_t received_bytes = 0;
 
 		if (up.status == HTTP_UPLOAD_START)
 		{
 			// Called once at start of upload
-			proto_printf("Update start: %s\n", up.filename);
+			printf("Update start: %s\n", up.filename);
+			received_bytes = 0;
 		}
 		else if (up.status == HTTP_UPLOAD_PART)
 		{
 			// Called for each chunk
-			proto_printf("Writing data: %lu bytes\r\n", up.datalen);
+			received_bytes += up.datalen;
+			printf("Writing data: %lu/%lu bytes\r\n", up.datalen, received_bytes);
+			
 		}
 		else if (up.status == HTTP_UPLOAD_END)
 		{
 			const char fmt[] = "text/plain";
-			proto_printf("Update Success: %u bytes\r\n", up.datalen);
+			printf("Update Success: %u bytes\r\n", up.datalen);
 			const char suc[] = "Update Success! Rebooting...";
 			http_send_str(client_idx, 200, (char *)fmt, (char *)suc);
 			http_send(client_idx, 200, (char *)fmt, NULL, 0);
 		}
 		else if (up.status == HTTP_UPLOAD_ABORT)
 		{
-			proto_print("Update aborted\r\n");
+			printf("Update aborted\r\n");
 		}
 	}
 

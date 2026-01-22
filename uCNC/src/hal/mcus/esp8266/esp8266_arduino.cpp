@@ -50,6 +50,7 @@ extern "C"
 
 #ifdef ENABLE_SOCKETS
 #include <ESP8266WiFi.h>
+// #include <Update.h>
 // #include <ESP8266WebServer.h>
 // #include <ESP8266HTTPUpdateServer.h>
 
@@ -487,18 +488,21 @@ extern "C"
 #ifdef ENABLE_SOCKETS
 #include "../../../modules/net/http.h"
 	// HTML form for firmware upload (simplified from ESP8266HTTPUpdateServer)
+	static const char updateForm[] PROGMEM =
+		"<!DOCTYPE html><html><body>"
+		"<form method='POST' action='/update' enctype='multipart/form-data'>"
+		"Firmware:<br><input type='file' name='firmware'>"
+		"<input type='submit' value='Update'>"
+		"</form></body></html>";
+	const char type_html[] = "text/html";
+	const char type_text[] = "text/plain";
+
+	// HTML form for firmware upload (simplified from ESP8266HTTPUpdateServer)
 	// Request handler for GET /update
 	static void ota_page_cb(int client_idx)
 	{
-		const char fmt[] = "text/html";
-		const char updateForm[] =
-				"<!DOCTYPE html><html><body>"
-				"<form method='POST' action='/update' enctype='multipart/form-data'>"
-				"Firmware:<br><input type='file' name='firmware'>"
-				"<input type='submit' value='Update'>"
-				"</form></body></html>";
-		http_send_str(client_idx, 200, (char *)fmt, (char *)updateForm);
-		http_send(client_idx, 200, (char *)fmt, NULL, 0);
+		http_send_str(client_idx, 200, (char *)type_html, (char *)updateForm);
+		http_send(client_idx, 200, (char *)type_html, NULL, 0);
 	}
 
 	// File upload handler for POST /update
@@ -508,6 +512,16 @@ extern "C"
 
 		if (up.status == HTTP_UPLOAD_START)
 		{
+#ifdef FLASH_FS
+			if (!FLASH_FS.begin())
+			{
+				const char fail[] = "Flash error";
+				http_send_str(client_idx, 415, (char *)type_text, (char *)fail);
+				http_send(client_idx, 415, (char *)type_text, NULL, 0);
+				return;
+			}
+#endif
+
 			// Called once at start of upload
 			proto_printf("Update start: %s\n", up.filename);
 			uint32_t maxSketchSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
@@ -526,22 +540,24 @@ extern "C"
 		}
 		else if (up.status == HTTP_UPLOAD_END)
 		{
-			const char fmt[] = "text/plain";
 			// Called once at end of upload
 			if (Update.end(true))
 			{
 				proto_printf("Update Success: %u bytes\r\n", up.datalen);
 				const char suc[] = "Update Success! Rebooting...";
-				http_send_str(client_idx, 200, (char *)fmt, (char *)suc);
-				http_send(client_idx, 200, (char *)fmt, NULL, 0);
+				http_send_str(client_idx, 200, (char *)type_text, (char *)suc);
+				http_send(client_idx, 200, (char *)type_text, NULL, 0);
+#ifdef FLASH_FS
+				FLASH_FS.end();
+#endif
 				delay(100);
 				ESP.restart();
 			}
 			else
 			{
 				const char fail[] = "Update Failed";
-				http_send_str(client_idx, 500, (char *)fmt, (char *)fail);
-				http_send(client_idx, 500, (char *)fmt, NULL, 0);
+				http_send_str(client_idx, 500, (char *)type_text, (char *)fail);
+				http_send(client_idx, 500, (char *)type_text, NULL, 0);
 			}
 		}
 		else if (up.status == HTTP_UPLOAD_ABORT)
@@ -615,20 +631,20 @@ extern "C"
 		// #if defined(ENABLE_SOCKETS)
 		FLASH_FS.begin();
 		flash_fs = {
-				.drive = 'C',
-				.open = flash_fs_open,
-				.read = flash_fs_read,
-				.write = flash_fs_write,
-				.seek = flash_fs_seek,
-				.available = flash_fs_available,
-				.close = flash_fs_close,
-				.remove = flash_fs_remove,
-				.opendir = flash_fs_opendir,
-				.mkdir = flash_fs_mkdir,
-				.rmdir = flash_fs_rmdir,
-				.next_file = flash_fs_next_file,
-				.finfo = flash_fs_info,
-				.next = NULL};
+			.drive = 'C',
+			.open = flash_fs_open,
+			.read = flash_fs_read,
+			.write = flash_fs_write,
+			.seek = flash_fs_seek,
+			.available = flash_fs_available,
+			.close = flash_fs_close,
+			.remove = flash_fs_remove,
+			.opendir = flash_fs_opendir,
+			.mkdir = flash_fs_mkdir,
+			.rmdir = flash_fs_rmdir,
+			.next_file = flash_fs_next_file,
+			.finfo = flash_fs_info,
+			.next = NULL};
 		fs_mount(&flash_fs);
 
 #if defined(BOARD_HAS_CUSTOM_SYSTEM_COMMANDS) && defined(ENABLE_SOCKETS)

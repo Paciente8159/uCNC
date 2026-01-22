@@ -434,11 +434,11 @@ extern "C"
 #include "../../../modules/net/http.h"
 	// HTML form for firmware upload (simplified from ESP8266HTTPUpdateServer)
 	static const char updateForm[] PROGMEM =
-			"<!DOCTYPE html><html><body>"
-			"<form method='POST' action='/update' enctype='multipart/form-data'>"
-			"Firmware:<br><input type='file' name='firmware'>"
-			"<input type='submit' value='Update'>"
-			"</form></body></html>";
+		"<!DOCTYPE html><html><body>"
+		"<form method='POST' action='/update' enctype='multipart/form-data'>"
+		"Firmware:<br><input type='file' name='firmware'>"
+		"<input type='submit' value='Update'>"
+		"</form></body></html>";
 	const char type_html[] = "text/html";
 	const char type_text[] = "text/plain";
 
@@ -456,6 +456,16 @@ extern "C"
 
 		if (up.status == HTTP_UPLOAD_START)
 		{
+#ifdef FLASH_FS
+			if (!FLASH_FS.begin())
+			{
+				const char fail[] = "Flash error";
+				http_send_str(client_idx, 415, (char *)type_text, (char *)fail);
+				http_send(client_idx, 415, (char *)type_text, NULL, 0);
+				return;
+			}
+#endif
+
 			// Called once at start of upload
 			Serial.printf("Update start: %s\n", up.filename);
 			uint32_t maxSketchSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
@@ -662,20 +672,20 @@ static void mcu_wifi_task(void *arg)
 #ifdef ENABLE_SOCKETS
 	FLASH_FS.begin();
 	flash_fs = {
-			.drive = 'C',
-			.open = flash_fs_open,
-			.read = flash_fs_read,
-			.write = flash_fs_write,
-			.seek = flash_fs_seek,
-			.available = flash_fs_available,
-			.close = flash_fs_close,
-			.remove = flash_fs_remove,
-			.opendir = flash_fs_opendir,
-			.mkdir = flash_fs_mkdir,
-			.rmdir = flash_fs_rmdir,
-			.next_file = flash_fs_next_file,
-			.finfo = flash_fs_info,
-			.next = NULL};
+		.drive = 'C',
+		.open = flash_fs_open,
+		.read = flash_fs_read,
+		.write = flash_fs_write,
+		.seek = flash_fs_seek,
+		.available = flash_fs_available,
+		.close = flash_fs_close,
+		.remove = flash_fs_remove,
+		.opendir = flash_fs_opendir,
+		.mkdir = flash_fs_mkdir,
+		.rmdir = flash_fs_rmdir,
+		.next_file = flash_fs_next_file,
+		.finfo = flash_fs_info,
+		.next = NULL};
 	fs_mount(&flash_fs);
 #endif
 
