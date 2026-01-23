@@ -3275,12 +3275,16 @@ extern "C"
 #if (defined(USB_DP) && defined(USB_DM))
 #define MCU_HAS_USB
 #endif
+#ifdef ENABLE_WIFI
+#ifndef ENABLE_SOCKETS
+#define ENABLE_SOCKETS
+#endif
+#endif
 #ifdef ENABLE_SOCKETS
 #ifndef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 #define BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 #endif
 #define MCU_HAS_RTOS
-#define USES_CUSTOM_SOCKETS
 #endif
 #ifdef ENABLE_BLUETOOTH
 #define MCU_HAS_BLUETOOTH

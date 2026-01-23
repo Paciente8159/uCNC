@@ -16,14 +16,17 @@
 	See the	GNU General Public License for more details.
 */
 
-#include "../../../../cnc_config.h"
-#if (defined(ESP32) || defined(ESP32S3) || defined(ESP32C3)) && defined(ENABLE_WIFI)
+#if (defined(ESP32) || defined(ESP32S3) || defined(ESP32C3))
 #include <Arduino.h>
 #include "esp_task_wdt.h"
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
-#include "../../../../cnc_config.h"
+
+extern "C"
+{
+#include "../../../cnc.h"
+}
 
 #ifndef BT_ID_MAX_LEN
 #define BT_ID_MAX_LEN 32
@@ -35,7 +38,7 @@
 
 #define ARG_MAX_LEN MAX(WIFI_SSID_MAX_LEN, BT_ID_MAX_LEN)
 
-#ifdef ENABLE_SOCKETS
+#ifdef ENABLE_WIFI
 #include <WiFi.h>
 #include <Update.h>
 
@@ -61,12 +64,6 @@ typedef struct
 
 uint16_t wifi_settings_offset;
 wifi_settings_t wifi_settings;
-#endif
-
-extern "C"
-{
-#include "../../../cnc.h"
-}
 
 /**
  * Custom WiFi+BT commands
@@ -525,7 +522,7 @@ extern "C"
 /**
  * Custom SOCKETS
  */
-#if defined(ENABLE_SOCKETS) && defined(USES_CUSTOM_SOCKETS)
+#if defined(ENABLE_SOCKETS)
 #include "../../../modules/net/socket.h"
 
 WiFiServer servers[MAX_SOCKETS];
@@ -669,11 +666,10 @@ extern "C"
 
 #endif
 
-#if defined(ENABLE_SOCKETS) && defined(USES_CUSTOM_SOCKETS)
+#if defined(ENABLE_SOCKETS)
 #include "../../../module.h"
 static void mcu_wifi_task(void *arg)
 {
-#ifdef ENABLE_SOCKETS
 	FLASH_FS.begin();
 	flash_fs = {
 		.drive = 'C',
@@ -691,7 +687,6 @@ static void mcu_wifi_task(void *arg)
 		.finfo = flash_fs_info,
 		.next = NULL};
 	fs_mount(&flash_fs);
-#endif
 
 	WiFi.disconnect();
 
@@ -736,11 +731,13 @@ static void mcu_wifi_task(void *arg)
 }
 #endif
 
+#endif
+
 extern "C"
 {
 	void esp32_pre_init(void)
 	{
-#ifdef ENABLE_SOCKETS
+#ifdef ENABLE_WIFI
 		WiFi.begin();
 #ifndef CUSTOM_OTA_ENDPOINT
 		ota_server_start();
@@ -750,7 +747,7 @@ extern "C"
 
 	void mcu_wifi_init(void)
 	{
-#ifdef ENABLE_SOCKETS
+#ifdef ENABLE_WIFI
 #ifndef ENABLE_BLUETOOTH
 		WiFi.setSleep(WIFI_PS_NONE);
 #endif

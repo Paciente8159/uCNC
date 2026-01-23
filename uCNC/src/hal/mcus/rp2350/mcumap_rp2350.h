@@ -1392,6 +1392,12 @@ extern "C"
 #define mcu_disable_global_isr __disable_irq
 #define mcu_get_global_isr() (__get_PRIMASK() == 0u)
 
+#ifdef ENABLE_WIFI
+#ifndef ENABLE_SOCKETS
+#define ENABLE_SOCKETS
+#endif
+#endif
+
 #if (defined(ENABLE_SOCKETS) || defined(ENABLE_BLUETOOTH))
 #ifndef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 #define BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
