@@ -16,7 +16,7 @@
 	See the	GNU General Public License for more details.
 */
 
-#if defined(ARDUINO_ARCH_RP2350) && defined(TARGET_RP2350)
+#if defined(ARDUINO_ARCH_RP2040) && defined(TARGET_RP2350)
 #include <stdint.h>
 #include <stdbool.h>
 #include <Arduino.h>
@@ -25,7 +25,7 @@
 
 void rp2350_core1_loop()
 {
-	rp2350.fifo.registerCore();
+	rp2040.fifo.registerCore();
 	for (;;)
 	{
 		cnc_run();
@@ -87,7 +87,7 @@ uint16_t bt_settings_offset;
 #endif
 
 #ifndef OTA_URI
-#define OTA_URI "/firmware"
+#define OTA_URI "/update"
 #endif
 
 // WebServer web_server(WEBSERVER_PORT);
@@ -508,7 +508,7 @@ extern "C"
 	// HTML form for firmware upload (simplified from ESP8266HTTPUpdateServer)
 	static const char updateForm[] PROGMEM =
 		"<!DOCTYPE html><html><body>"
-		"<form method='POST' action='/update' enctype='multipart/form-data'>"
+		"<form method='POST' action='" OTA_URI "' enctype='multipart/form-data'>"
 		"Firmware:<br><input type='file' name='firmware'>"
 		"<input type='submit' value='Update'>"
 		"</form></body></html>";
@@ -566,7 +566,7 @@ extern "C"
 				FLASH_FS.end();
 #endif
 				delay(100);
-				rp2350.reboot();
+				rp2040.reboot();
 			}
 			else
 			{
@@ -586,7 +586,7 @@ extern "C"
 	void ota_server_start(void)
 	{
 		LOAD_MODULE(http_server);
-		const char update_uri[] = "/update";
+		const char update_uri[] = OTA_URI;
 		http_add((char *)update_uri, HTTP_REQ_ANY, ota_page_cb, ota_upload_cb);
 	}
 }
@@ -792,9 +792,9 @@ extern "C"
 		}
 #else
 		// signal other core to store EEPROM
-		rp2350.fifo.push(0);
+		rp2040.fifo.push(0);
 		// wait for signal back
-		rp2350.fifo.pop();
+		rp2040.fifo.pop();
 #endif
 	}
 }
@@ -1035,14 +1035,14 @@ extern "C"
 
 #if defined(RP2350_RUN_MULTICORE) && !defined(RAM_ONLY_SETTINGS)
 		// flush pending eeprom request
-		if (rp2350.fifo.available())
+		if (rp2040.fifo.available())
 		{
-			rp2350.fifo.pop();
+			rp2040.fifo.pop();
 			if (!EEPROM.commit())
 			{
 				proto_info(" EEPROM write error");
 			}
-			rp2350.fifo.push(0);
+			rp2040.fifo.push(0);
 		}
 #endif
 	}

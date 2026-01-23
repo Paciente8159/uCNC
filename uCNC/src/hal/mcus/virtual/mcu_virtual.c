@@ -1306,6 +1306,10 @@ int init_winsock(void);
 /**
  * Emulate OTA page
  */
+#ifndef OTA_URI
+#define OTA_URI "/update"
+#endif
+
 #include "../../../modules/net/http.h"
 	// HTML form for firmware upload (simplified from ESP8266HTTPUpdateServer)
 	// Request handler for GET /update
@@ -1314,7 +1318,7 @@ int init_winsock(void);
 		const char fmt[] = "text/html";
 		const char updateForm[] =
 			"<!DOCTYPE html><html><body>"
-			"<form method='POST' action='/update' enctype='multipart/form-data'>"
+			"<form method='POST' action='" OTA_URI "' enctype='multipart/form-data'>"
 			"Firmware:<br><input type='file' name='firmware'>"
 			"<input type='submit' value='Update'>"
 			"</form></body></html>";
@@ -1360,7 +1364,7 @@ int init_winsock(void);
 	void ota_server_start(void)
 	{
 		LOAD_MODULE(http_server);
-		http_add("/update", HTTP_REQ_ANY, ota_page_cb, ota_upload_cb);
+		http_add(OTA_URI, HTTP_REQ_ANY, ota_page_cb, ota_upload_cb);
 	}
 
 #ifdef __cplusplus

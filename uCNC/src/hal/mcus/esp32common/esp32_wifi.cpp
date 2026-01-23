@@ -47,6 +47,10 @@
 #define WIFI_PASS "pass"
 #endif
 
+#ifndef OTA_URI
+#define OTA_URI "/update"
+#endif
+
 typedef struct
 {
 	uint8_t wifi_on;
@@ -435,7 +439,7 @@ extern "C"
 	// HTML form for firmware upload (simplified from ESP8266HTTPUpdateServer)
 	static const char updateForm[] PROGMEM =
 		"<!DOCTYPE html><html><body>"
-		"<form method='POST' action='/update' enctype='multipart/form-data'>"
+		"<form method='POST' action='" OTA_URI "' enctype='multipart/form-data'>"
 		"Firmware:<br><input type='file' name='firmware'>"
 		"<input type='submit' value='Update'>"
 		"</form></body></html>";

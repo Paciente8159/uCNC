@@ -87,7 +87,7 @@ uint16_t bt_settings_offset;
 #endif
 
 #ifndef OTA_URI
-#define OTA_URI "/firmware"
+#define OTA_URI "/update"
 #endif
 
 // WebServer web_server(WEBSERVER_PORT);
@@ -508,7 +508,7 @@ extern "C"
 	// HTML form for firmware upload (simplified from ESP8266HTTPUpdateServer)
 	static const char updateForm[] PROGMEM =
 		"<!DOCTYPE html><html><body>"
-		"<form method='POST' action='/update' enctype='multipart/form-data'>"
+		"<form method='POST' action='" OTA_URI "' enctype='multipart/form-data'>"
 		"Firmware:<br><input type='file' name='firmware'>"
 		"<input type='submit' value='Update'>"
 		"</form></body></html>";
@@ -586,7 +586,7 @@ extern "C"
 	void ota_server_start(void)
 	{
 		LOAD_MODULE(http_server);
-		const char update_uri[] = "/update";
+		const char update_uri[] = OTA_URI;
 		http_add((char *)update_uri, HTTP_REQ_ANY, ota_page_cb, ota_upload_cb);
 	}
 }

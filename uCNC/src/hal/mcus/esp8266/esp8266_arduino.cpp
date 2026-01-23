@@ -66,9 +66,9 @@ extern "C"
 #define WIFI_SSID_MAX_LEN 32
 #endif
 
-// #ifndef OTA_URI
-// #define OTA_URI "/firmware"
-// #endif
+#ifndef OTA_URI
+#define OTA_URI "/update"
+#endif
 
 // ESP8266WebServer web_server(443);
 // ESP8266HTTPUpdateServer httpUpdater;
@@ -490,7 +490,7 @@ extern "C"
 	// HTML form for firmware upload (simplified from ESP8266HTTPUpdateServer)
 	static const char updateForm[] PROGMEM =
 		"<!DOCTYPE html><html><body>"
-		"<form method='POST' action='/update' enctype='multipart/form-data'>"
+		"<form method='POST' action='" OTA_URI "' enctype='multipart/form-data'>"
 		"Firmware:<br><input type='file' name='firmware'>"
 		"<input type='submit' value='Update'>"
 		"</form></body></html>";
@@ -567,7 +567,7 @@ extern "C"
 		}
 	}
 
-	static char update_uri[] = "/update";
+	static char update_uri[] = OTA_URI;
 	void ota_server_start(void)
 	{
 		LOAD_MODULE(http_server);
