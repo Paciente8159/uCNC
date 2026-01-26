@@ -21,7 +21,7 @@
 
 #include "http_request.h"
 
-int strncasecmp_local(char *s1, char *s2, size_t len)
+int strncasecmp_local(const char *s1, const char *s2, size_t len)
 {
 	while (len--)
 	{
@@ -41,14 +41,14 @@ int strncasecmp_local(char *s1, char *s2, size_t len)
 	return 0;
 }
 
-char *strcasestr_local(char *haystack, char *needle)
+char *strcasestr_local(const char *haystack, const char *needle)
 {
 	if (!*needle) // Empty needle matches at start
-		return haystack;
+		return (char *)haystack;
 
-	for (char *h = haystack; *h; h++)
+	for (char *h = (char *)haystack; *h; h++)
 	{
-		char *n = needle;
+		char *n = (char *)needle;
 		char *hh = h;
 
 		// Compare until mismatch or end of needle

@@ -179,11 +179,11 @@ static http_route_t *match_route(char *uri, uint8_t method)
 	return NULL;
 }
 
-void http_add(char *uri, uint8_t method, http_delegate request_handler, http_delegate file_handler)
+void http_add(const char *uri, uint8_t method, http_delegate request_handler, http_delegate file_handler)
 {
 	if (route_count < HTTP_MAX_HANDLERS)
 	{
-		routes[route_count].uri = uri;
+		routes[route_count].uri = (char *)uri;
 		routes[route_count].method = method;
 		routes[route_count].request_handler = request_handler;
 		routes[route_count].file_handler = file_handler;
@@ -213,7 +213,7 @@ void http_request_uri(int client_idx, char *uri, size_t maxlen)
 	}
 }
 
-bool http_request_arg(int client_idx, char *argname, char *argvalue, size_t maxlen)
+bool http_request_arg(int client_idx, const char *argname, char *argvalue, size_t maxlen)
 {
 	http_client_t *c = &clients[client_idx];
 	if (!c || !argname || !argvalue || maxlen == 0)
@@ -238,7 +238,7 @@ uint8_t http_request_method(int client_idx)
 
 /* --------------- response helpers ----------------- */
 
-void http_send_header(int client_idx, char *name, char *data, bool first)
+void http_send_header(int client_idx, const char *name, const char *data, bool first)
 {
 	http_client_t *c = &clients[client_idx];
 	if (!c || !name || !data)
@@ -251,13 +251,13 @@ void http_send_header(int client_idx, char *name, char *data, bool first)
 	/* append or add */
 	for (size_t i = 0; i < c->hdr_count; i++)
 	{
-		if (strncasecmp_local(c->hdrs[i].name, name, strlen(name)) == 0)
+		if (strncasecmp_local(c->hdrs[i].name, (char *)name, strlen(name)) == 0)
 		{
 			size_t l = strlen(c->hdrs[i].name);
 			if (l + 2 < HTTP_MAX_HEADER_LEN)
 			{
-				append_str(c->hdrs[i].name, ", ");
-				append_str(c->hdrs[i].name, data);
+				append_str(c->hdrs[i].name, (char *)", ");
+				append_str(c->hdrs[i].name, (char *)data);
 			}
 			return;
 		}
@@ -275,7 +275,7 @@ void http_send_header(int client_idx, char *name, char *data, bool first)
 	}
 }
 
-void http_send(int client_idx, int code, char *content_type, char *data, size_t data_len)
+void http_send(int client_idx, int code, const char *content_type, const char *data, size_t data_len)
 {
 	http_client_t *c = &clients[client_idx];
 	if (!c || client_idx < 0)
@@ -324,10 +324,10 @@ void http_send(int client_idx, int code, char *content_type, char *data, size_t 
 		{
 			// memset(buf, 0, sizeof(buf));
 			// n = str_snprintf(buf, sizeof(buf), "%s: %s\r\n", c->hdrs[i].name, c->hdrs[i].value);
-			append_str(c->hdrs[i].name, "\r\n");
+			append_str(c->hdrs[i].name, (char *)"\r\n");
 			socket_send(http_srv, client_idx, c->hdrs[i].name, (size_t)strlen(c->hdrs[i].name), 0);
 		}
-		socket_send(http_srv, client_idx, "\r\n", 2, 0);
+		socket_send(http_srv, client_idx, (char *)"\r\n", 2, 0);
 		c->headers_sent = true;
 	}
 
@@ -340,7 +340,7 @@ void http_send(int client_idx, int code, char *content_type, char *data, size_t 
 			int n = str_snprintf(buf, sizeof(buf), "%x\r\n", (unsigned int)data_len);
 			socket_send(http_srv, client_idx, buf, (size_t)n, 0);
 			socket_send(http_srv, client_idx, (char *)data, data_len, 0);
-			socket_send(http_srv, client_idx, "\r\n", 2, 0);
+			socket_send(http_srv, client_idx, (char *)"\r\n", 2, 0);
 		}
 		else
 		{
@@ -353,7 +353,7 @@ void http_send(int client_idx, int code, char *content_type, char *data, size_t 
 	{
 		if (c->chunked_mode)
 		{
-			socket_send(http_srv, client_idx, "0\r\n\r\n", 5, 0);
+			socket_send(http_srv, client_idx, (char *)"0\r\n\r\n", 5, 0);
 		}
 
 		if (!c->keep_alive)
@@ -513,7 +513,7 @@ static void handle_upload_bytes(int client_idx, char **buf, size_t *len)
 			c->fileupl.status = HTTP_UPLOAD_END;
 			maybe_invoke_file_handler(client_idx);
 			c->upl.status = REQ_UPLOAD_FINISH;
-			append_str(c->upl.boundary, "--");
+			append_str(c->upl.boundary, (char *)"--");
 		}
 	}
 
@@ -579,7 +579,7 @@ static void http_on_data(uint8_t client_idx, char *data, size_t data_len, void *
 				http_request_parse_header(&c->head, &bytes, &data_len);
 				if (c->head.status == REQ_HEAD_FINISHED)
 				{
-					if (!strncasecmp_local("connection", c->head.name, 10))
+					if (!strncasecmp_local((char *)"connection", c->head.name, 10))
 					{
 						if (strcasestr_local(c->head.value, "keep-alive"))
 							c->keep_alive = true;

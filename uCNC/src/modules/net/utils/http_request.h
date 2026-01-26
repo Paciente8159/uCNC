@@ -117,8 +117,8 @@ typedef struct
 	bool req_complete;
 } ws_handshake_t;
 
-int strncasecmp_local(char *s1, char *s2, size_t len);
-char *strcasestr_local(char *haystack, char *needle);
+int strncasecmp_local(const char *s1, const char *s2, size_t len);
+char *strcasestr_local(const char *haystack, const char *needle);
 char *strntrim_local(char *s);
 char *find_char(char *buf, size_t len, char c);
 char *find_closest(char *buffer, size_t len, char c1, char c2);
