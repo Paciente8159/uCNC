@@ -27,7 +27,7 @@ extern "C"
 #include <stdlib.h>
 #include <stdint.h>
 
-#ifndef F_SETFL 
+#ifndef F_SETFL
 #define F_SETFL 0x800
 #endif
 #ifndef O_NONBLOCK
@@ -37,45 +37,50 @@ extern "C"
 #define AF_INET 2
 #endif
 #ifndef SOCK_STREAM
-#define SOCK_STREAM     1
+#define SOCK_STREAM 1
 #endif
 #ifndef SOCK_DGRAM
-#define SOCK_DGRAM      2
+#define SOCK_DGRAM 2
 #endif
 #ifndef SOCK_RAW
-#define SOCK_RAW        3
+#define SOCK_RAW 3
 #endif
 
-struct bsd_sockaddr_in
-{
-	uint16_t sin_family;
-	uint16_t sin_port;
-	uint32_t sin_addr;
-	unsigned char sin_zero[8];
-};
+	struct bsd_sockaddr_in
+	{
+		uint16_t sin_family;
+		uint16_t sin_port;
+		uint32_t sin_addr;
+		unsigned char sin_zero[8];
+	};
 
-static inline uint16_t bsd_htons(uint16_t x) {
-    return (uint16_t)(((x & 0x00ffu) << 8) | ((x & 0xff00u) >> 8));
-}
-static inline uint32_t bsd_htonl(uint32_t x) {
-    return ((x & 0x000000ffUL) << 24) |
-           ((x & 0x0000ff00UL) << 8)  |
-           ((x & 0x00ff0000UL) >> 8)  |
-           ((x & 0xff000000UL) >> 24);
-}
+	static inline uint16_t bsd_htons(uint16_t x)
+	{
+		return (uint16_t)(((x & 0x00ffu) << 8) | ((x & 0xff00u) >> 8));
+	}
+	static inline uint32_t bsd_htonl(uint32_t x)
+	{
+		return ((x & 0x000000ffUL) << 24) |
+			   ((x & 0x0000ff00UL) << 8) |
+			   ((x & 0x00ff0000UL) >> 8) |
+			   ((x & 0xff000000UL) >> 24);
+	}
 
-/* Socket API prototypes — These must be implemented either in the MCU of for a specific module driver to provide the TCP/IP stack interface */
-int bsd_socket(int domain, int type, int protocol);
-int bsd_bind(int sockfd, const struct bsd_sockaddr_in *addr, int addrlen);
-int bsd_listen(int sockfd, int backlog);
-int bsd_accept(int sockfd, struct bsd_sockaddr_in *addr, int *addrlen);
-// optional (can be removed)
-// int bsd_setsockopt(int sockfd, int level, int optname, const void *optval, int optlen);
-// int bsd_getsockopt(int sockfd, int level, int optname, void *optval, int *optlen);
-int bsd_fcntl(int fd, int cmd, long arg);
-int bsd_recv(int sockfd, void *buf, size_t len, int flags);
-int bsd_send(int sockfd, const void *buf, size_t len, int flags);
-int bsd_close(int fd);
+	/* Socket API prototypes — These must be implemented either in the MCU of for a specific module driver to provide the TCP/IP stack interface */
+	typedef struct socket_device_
+	{
+		int (*socket)(int domain, int type, int protocol);
+		int (*bind)(int sockfd, const struct bsd_sockaddr_in *addr, int addrlen);
+		int (*listen)(int sockfd, int backlog);
+		int (*accept)(int sockfd, struct bsd_sockaddr_in *addr, int *addrlen);
+		// optional (can be removed)
+		// int (*setsockopt)(int sockfd, int level, int optname, const void *optval, int optlen);
+		// int (*getsockopt)(int sockfd, int level, int optname, void *optval, int *optlen);
+		int (*fcntl)(int fd, int cmd, long arg);
+		int (*recv)(int sockfd, void *buf, size_t len, int flags);
+		int (*send)(int sockfd, const void *buf, size_t len, int flags);
+		int (*close)(int fd);
+	} socket_device_t;
 
 #ifdef __cplusplus
 }

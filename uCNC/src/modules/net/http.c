@@ -46,9 +46,9 @@ typedef struct
 typedef struct
 {
 	char *uri;
-	uint8_t method;								 /* HTTP_REQ_* from http_request.h */
+	uint8_t method;				   /* HTTP_REQ_* from http_request.h */
 	http_delegate request_handler; /* called when request ready */
-	http_delegate file_handler;		 /* called on upload START/PART/END/ABORT */
+	http_delegate file_handler;	   /* called on upload START/PART/END/ABORT */
 } http_route_t;
 
 /* Per-client state */
@@ -171,7 +171,7 @@ static http_route_t *match_route(char *uri, uint8_t method)
 	for (size_t i = 0; i < route_count; i++)
 	{
 		if ((routes[i].method == HTTP_REQ_ANY || routes[i].method == method) &&
-				uri_matches(routes[i].uri, uri))
+			uri_matches(routes[i].uri, uri))
 		{
 			return &routes[i];
 		}
@@ -181,6 +181,15 @@ static http_route_t *match_route(char *uri, uint8_t method)
 
 void http_add(const char *uri, uint8_t method, http_delegate request_handler, http_delegate file_handler)
 {
+	for (size_t i = 0; i < route_count; i++)
+	{
+		// check if handler already exists
+		if (!strncasecmp_local(routes[i].uri, uri, strlen(uri)) /*&& (strlen(uri)==strlen(routes[i].uri))*/ && (routes[i].method == method))
+		{
+			return;
+		}
+	}
+
 	if (route_count < HTTP_MAX_HANDLERS)
 	{
 		routes[route_count].uri = (char *)uri;
@@ -268,8 +277,8 @@ void http_send_header(int client_idx, const char *name, const char *data, bool f
 		strncpy(c->hdrs[c->hdr_count].name, name, HTTP_MAX_HEADER_LEN - 3); // must ensure space for \r\n
 		size_t l = strlen(c->hdrs[c->hdr_count].name);
 		c->hdrs[c->hdr_count].value = &c->hdrs[c->hdr_count].name[l];
-		*c->hdrs[c->hdr_count].value++=':';
-		*c->hdrs[c->hdr_count].value++=' ';
+		*c->hdrs[c->hdr_count].value++ = ':';
+		*c->hdrs[c->hdr_count].value++ = ' ';
 		strncpy(c->hdrs[c->hdr_count].value, data, HTTP_MAX_HEADER_LEN - l - 3);
 		c->hdr_count++;
 	}
@@ -391,10 +400,10 @@ bool http_send_file(int client_idx, char *file_path, char *content_type)
 	http_send(client_idx, 200, NULL, NULL, 0); /* prepare chunked */
 	while ((nread = fs_read(fp, fbuf, sizeof(fbuf))) > 0)
 	{
-		http_send(client_idx, 200, (char*)(content_type ? content_type : "application/octet-stream"), (char*)fbuf, nread);
+		http_send(client_idx, 200, (char *)(content_type ? content_type : "application/octet-stream"), (char *)fbuf, nread);
 	}
 	fs_close(fp);
-	http_send(client_idx, 200, (char*)(content_type ? content_type : "application/octet-stream"), NULL, 0);
+	http_send(client_idx, 200, (char *)(content_type ? content_type : "application/octet-stream"), NULL, 0);
 	return true;
 }
 

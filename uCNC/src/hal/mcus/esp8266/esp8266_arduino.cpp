@@ -580,7 +580,8 @@ extern "C"
 #ifdef ENABLE_SOCKETS
 		WiFi.setSleepMode(WIFI_NONE_SLEEP);
 		WiFi.begin();
-
+		extern socket_device_t wifi_socket;
+		socket_register_device(&wifi_socket);
 		ota_server_start();
 #endif
 	}

@@ -596,6 +596,12 @@ void rp2040_wifi_bt_init(void)
 {
 #ifdef ENABLE_SOCKETS
 
+	WiFi.begin();
+	extern socket_device_t wifi_socket;
+	socket_register_device(&wifi_socket);
+	ota_server_start();
+	WiFi.disconnect();
+
 	wifi_settings_offset = settings_register_external_setting(sizeof(wifi_settings_t));
 	if (settings_load(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t)))
 	{
@@ -633,8 +639,6 @@ void rp2040_wifi_bt_init(void)
 			proto_info("IP>%s", WiFi.softAPIP().toString().c_str());
 			break;
 		}
-
-		ota_server_start();
 	}
 
 #ifdef ENABLE_SOCKETS

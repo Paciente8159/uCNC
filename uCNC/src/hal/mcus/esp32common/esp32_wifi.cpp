@@ -554,7 +554,7 @@ extern "C"
 		return -1;
 	}
 
-	int bsd_socket(int domain, int type, int protocol)
+	static int bsd_socket(int domain, int type, int protocol)
 	{
 		int srv = find_free_server();
 		if (srv < 0)
@@ -565,7 +565,7 @@ extern "C"
 		return srv;
 	}
 
-	int bsd_bind(int sockfd, const struct bsd_sockaddr_in *addr, int addrlen)
+	static int bsd_bind(int sockfd, const struct bsd_sockaddr_in *addr, int addrlen)
 	{
 		if (sockfd < 0 || !WiFi.isConnected())
 		{
@@ -575,7 +575,7 @@ extern "C"
 		return 0;
 	}
 
-	int bsd_listen(int sockfd, int backlog)
+	static int bsd_listen(int sockfd, int backlog)
 	{
 		if (sockfd < 0)
 		{
@@ -584,7 +584,7 @@ extern "C"
 		return 0;
 	}
 
-	int bsd_accept(int sockfd, struct bsd_sockaddr_in *addr, int *addrlen)
+	static int bsd_accept(int sockfd, struct bsd_sockaddr_in *addr, int *addrlen)
 	{
 		if (sockfd < 0)
 		{
@@ -608,7 +608,7 @@ extern "C"
 	// optional (can be removed)
 	// int bsd_setsockopt(int sockfd, int level, int optname, const void *optval, int optlen);
 	// int bsd_getsockopt(int sockfd, int level, int optname, void *optval, int *optlen);
-	int bsd_fcntl(int sockfd, int cmd, long arg)
+	static int bsd_fcntl(int sockfd, int cmd, long arg)
 	{
 		if (sockfd < 0)
 		{
@@ -617,7 +617,7 @@ extern "C"
 		return 0;
 	}
 
-	int bsd_recv(int sockfd, void *buf, size_t len, int flags)
+	static int bsd_recv(int sockfd, void *buf, size_t len, int flags)
 	{
 		sockfd -= MAX_SOCKETS;
 
@@ -629,7 +629,7 @@ extern "C"
 		return clients[sockfd].readBytes((char *)buf, len);
 	}
 
-	int bsd_send(int sockfd, const void *buf, size_t len, int flags)
+	static int bsd_send(int sockfd, const void *buf, size_t len, int flags)
 	{
 		sockfd -= MAX_SOCKETS;
 
@@ -641,7 +641,7 @@ extern "C"
 		return clients[sockfd].write_P((char *)buf, len);
 	}
 
-	int bsd_close(int fd)
+	static int bsd_close(int fd)
 	{
 		if (fd < 0)
 		{
@@ -662,6 +662,8 @@ extern "C"
 
 		return -1;
 	}
+
+	socket_device_t wifi_socket = {.socket = bsd_socket, .bind = bsd_bind, .listen = bsd_listen, .accept = bsd_accept, .fcntl = bsd_fcntl, .recv = bsd_recv, .send = bsd_send, .close = bsd_close};
 }
 
 #endif
@@ -735,10 +737,13 @@ static void mcu_wifi_task(void *arg)
 
 extern "C"
 {
+	#include "../../../modules/net/socket.h"
 	void esp32_pre_init(void)
 	{
 #ifdef ENABLE_WIFI
 		WiFi.begin();
+		// register WiFi as the device default network device
+		socket_register_device(&wifi_socket);
 #ifndef CUSTOM_OTA_ENDPOINT
 		ota_server_start();
 #endif

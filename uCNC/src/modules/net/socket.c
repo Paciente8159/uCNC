@@ -25,6 +25,12 @@
 
 /* Global socket interfaces */
 static socket_if_t raw_sockets[MAX_SOCKETS];
+static socket_device_t *socket_device;
+
+void socket_register_device(socket_device_t *device)
+{
+	socket_device = device;
+}
 
 static int find_free_socket_if(void)
 {
@@ -42,33 +48,41 @@ socket_if_t *socket_start_listen(uint32_t ip_listen, uint16_t port, int domain, 
 	if (idx < 0)
 		return NULL;
 
-	int s = bsd_socket(domain, type, protocol);
+	if (!socket_device || !socket_device->socket)
+	{
+		return NULL;
+	}
+
+	int s = socket_device->socket(domain, type, protocol);
 	if (s < 0)
 		return NULL;
 
 	struct bsd_sockaddr_in addr;
 	memset(&addr, 0, sizeof(addr));
 	addr.sin_family = (uint16_t)domain;
-	addr.sin_port = bsd_htons(port);			// default port (can be changed by user)
+	addr.sin_port = bsd_htons(port);	  // default port (can be changed by user)
 	addr.sin_addr = bsd_htonl(ip_listen); // any address
 
-	if (bsd_bind(s, &addr, sizeof(addr)) < 0)
+	if (!socket_device->bind || socket_device->bind(s, &addr, sizeof(addr)) < 0)
 	{
-		bsd_close(s);
+		if (socket_device->close)
+			socket_device->close(s);
 		return NULL;
 	}
 
-	if (bsd_fcntl(s, F_SETFL, O_NONBLOCK) < 0)
+	if (!socket_device->fcntl || socket_device->fcntl(s, F_SETFL, O_NONBLOCK) < 0)
 	{
-		bsd_close(s);
+		if (socket_device->close)
+			socket_device->close(s);
 		return NULL;
 	}
 
 	if (type == 1 /* SOCK_STREAM */)
 	{
-		if (bsd_listen(s, SOCKET_MAX_CLIENTS) < 0)
+		if (!socket_device->listen || socket_device->listen(s, SOCKET_MAX_CLIENTS) < 0)
 		{
-			bsd_close(s);
+			if (socket_device->close)
+				socket_device->close(s);
 			return NULL;
 		}
 	}
@@ -86,7 +100,8 @@ void socket_stop_listening(socket_if_t *socket)
 		{
 			if (socket->socket_clients[i] >= 0)
 			{
-				bsd_close(socket->socket_clients[i]);
+				if (socket_device->close)
+				socket_device->close(socket->socket_clients[i]);
 				socket->socket_clients[i] = -1;
 			}
 		}
@@ -138,17 +153,17 @@ int socket_send(socket_if_t *socket, uint8_t client_idx, char *data, size_t data
 	}
 
 	int client = socket->socket_clients[client_idx];
-	if (client < 0)
+	if (client < 0 || !socket_device->send)
 	{
 		return -1;
 	}
 
-	return bsd_send(client, data, data_len, flags);
+	return socket_device->send(client, data, data_len, flags);
 }
 
 int socket_broadcast(socket_if_t *socket, char *data, size_t data_len, int flags)
 {
-	if (!socket)
+	if (!socket || !socket_device->send)
 	{
 		return -1;
 	}
@@ -157,7 +172,7 @@ int socket_broadcast(socket_if_t *socket, char *data, size_t data_len, int flags
 	{
 		if (socket->socket_clients[i] >= 0)
 		{
-			if (bsd_send(socket->socket_clients[i], data, data_len, flags) >= 0)
+			if (socket_device->send(socket->socket_clients[i], data, data_len, flags) >= 0)
 			{
 				sent++;
 			}
@@ -189,7 +204,8 @@ static void add_client(socket_if_t *iface, int client_fd)
 		}
 	}
 	/* No space — close the connection */
-	bsd_close(client_fd);
+	if (socket_device->close)
+			socket_device->close(client_fd);
 }
 
 /* Helper: remove disconnected client */
@@ -199,7 +215,8 @@ static void remove_client(socket_if_t *iface, int idx)
 	{
 		if (iface->socket_clients[idx] >= 0)
 		{
-			bsd_close(iface->socket_clients[idx]);
+			if (socket_device->close)
+			socket_device->close(iface->socket_clients[idx]);
 			if (iface->client_ondisconnected_cb)
 			{
 				iface->client_ondisconnected_cb(idx, iface->protocol);
@@ -225,14 +242,14 @@ void socket_server_dotasks(void)
 	socket_if_t *socket = &raw_sockets[i];
 	char buffer[SOCKET_MAX_DATA_SIZE + 1]; // space for a null character
 
-	if (socket->socket_if >= 0)
+	if (socket->socket_if >= 0 && socket_device->accept)
 	{
 		/* Accept new clients if TCP */
 		int client_fd;
 		struct bsd_sockaddr_in cli_addr;
 		int cli_len = sizeof(cli_addr);
 
-		client_fd = bsd_accept(socket->socket_if, &cli_addr, &cli_len);
+		client_fd = socket_device->accept(socket->socket_if, &cli_addr, &cli_len);
 		if (client_fd >= 0)
 		{
 			add_client(socket, client_fd);
@@ -244,10 +261,10 @@ void socket_server_dotasks(void)
 #endif
 		int fd = socket->socket_clients[c];
 		void *proto = socket->protocol;
-		if (fd >= 0)
+		if (fd >= 0 && socket_device->recv)
 		{
 			// memset(buffer, 0, sizeof(buffer));
-			int len = bsd_recv(fd, buffer, SOCKET_MAX_DATA_SIZE, 0);
+			int len = socket_device->recv(fd, buffer, SOCKET_MAX_DATA_SIZE, 0);
 			if (len > 0)
 			{
 				buffer[len] = 0;

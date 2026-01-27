@@ -1197,6 +1197,9 @@ int init_winsock(void);
 
 #if defined(ENABLE_SOCKETS) && defined(MCU_HAS_SOCKETS)
 		init_winsock();
+		extern socket_device_t wifi_socket;
+		socket_register_device(&wifi_socket);
+
 		extern socket_if_t *telnet_sock;
 		extern const telnet_protocol_t telnet_proto;
 		telnet_sock = telnet_start_listen(&telnet_proto, 23);
@@ -1249,33 +1252,33 @@ int init_winsock(void);
 
 	/* BSD-style wrappers mapped to Winsock functions */
 
-	int bsd_socket(int domain, int type, int protocol)
+	static int bsd_socket(int domain, int type, int protocol)
 	{
 		return (int)WSASocket(domain, type, protocol, NULL, 0, 0);
 	}
 
-	int bsd_bind(int sockfd, const struct bsd_sockaddr_in *addr, socklen_t addrlen)
+	static int bsd_bind(int sockfd, const struct bsd_sockaddr_in *addr, socklen_t addrlen)
 	{
 		return bind(sockfd, (const struct sockaddr *)addr, addrlen);
 	}
 
-	int bsd_listen(int sockfd, int backlog)
+	static int bsd_listen(int sockfd, int backlog)
 	{
 		return listen(sockfd, backlog);
 	}
 
-	int bsd_accept(int sockfd, struct bsd_sockaddr_in *addr, socklen_t *addrlen)
+	static int bsd_accept(int sockfd, struct bsd_sockaddr_in *addr, socklen_t *addrlen)
 	{
 		return accept(sockfd, (struct sockaddr *)addr, addrlen);
 	}
 
-	int bsd_setsockopt(int sockfd, int level, int optname, const void *optval, socklen_t optlen)
+	static int bsd_setsockopt(int sockfd, int level, int optname, const void *optval, socklen_t optlen)
 	{
 		return setsockopt(sockfd, level, optname, (const char *)optval, optlen);
 	}
 
 	/* Limited fcntl emulation for non-blocking mode */
-	int bsd_fcntl(int fd, int cmd, long arg)
+	static int bsd_fcntl(int fd, int cmd, long arg)
 	{
 		/* F_SETFL = 0x800; O_NONBLOCK = 0x800 in many POSIX impls */
 		if (cmd == F_SETFL)
@@ -1286,20 +1289,22 @@ int init_winsock(void);
 		return -1; /* Unsupported command */
 	}
 
-	int bsd_recv(int sockfd, void *buf, size_t len, int flags)
+	static int bsd_recv(int sockfd, void *buf, size_t len, int flags)
 	{
 		return recv(sockfd, (char *)buf, (int)len, flags);
 	}
 
-	int bsd_send(int sockfd, const void *buf, size_t len, int flags)
+	static int bsd_send(int sockfd, const void *buf, size_t len, int flags)
 	{
 		return send(sockfd, (const char *)buf, (int)len, flags);
 	}
 
-	int bsd_close(int fd)
+	static int bsd_close(int fd)
 	{
 		return closesocket(fd);
 	}
+
+	socket_device_t wifi_socket = {.socket = bsd_socket, .bind = bsd_bind, .listen = bsd_listen, .accept = bsd_accept, .fcntl = bsd_fcntl, .recv = bsd_recv, .send = bsd_send, .close = bsd_close};
 
 #endif
 

@@ -85,7 +85,7 @@ typedef struct
 	struct pbuf *rx_buf;
 	u16_t rx_off; // offset into rx_buf->payload
 	u32_t rx_len; // total queued unread bytes (optional)
-	bool rx_eof;	// FIN received (optional for BSD-like 0 return)
+	bool rx_eof;  // FIN received (optional for BSD-like 0 return)
 } bsd_sock_t;
 
 static bsd_sock_t socks[MAX_BSD_SOCKETS];
@@ -140,7 +140,7 @@ static err_t accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err)
 }
 
 // ---- BSD‑like API ----
-int bsd_socket(int domain, int type, int protocol)
+static int bsd_socket(int domain, int type, int protocol)
 {
 	if (domain != AF_INET || type != SOCK_STREAM)
 		return -1;
@@ -160,7 +160,7 @@ int bsd_socket(int domain, int type, int protocol)
 	return idx;
 }
 
-int bsd_bind(int sockfd, const struct bsd_sockaddr_in *addr, int addrlen)
+static int bsd_bind(int sockfd, const struct bsd_sockaddr_in *addr, int addrlen)
 {
 	if (sockfd < 0 || sockfd >= MAX_BSD_SOCKETS)
 		return -1;
@@ -169,7 +169,7 @@ int bsd_bind(int sockfd, const struct bsd_sockaddr_in *addr, int addrlen)
 	return tcp_bind(socks[sockfd].pcb, &ip, ntohs(addr->sin_port)) == ERR_OK ? 0 : -1;
 }
 
-int bsd_listen(int sockfd, int backlog)
+static int bsd_listen(int sockfd, int backlog)
 {
 	if (sockfd < 0 || sockfd >= MAX_BSD_SOCKETS)
 		return -1;
@@ -183,7 +183,7 @@ int bsd_listen(int sockfd, int backlog)
 	return 0;
 }
 
-int bsd_accept(int sockfd, struct bsd_sockaddr_in *addr, int *addrlen)
+static int bsd_accept(int sockfd, struct bsd_sockaddr_in *addr, int *addrlen)
 {
 	if (sockfd < 0 || sockfd >= MAX_BSD_SOCKETS)
 		return -1;
@@ -215,7 +215,7 @@ int bsd_accept(int sockfd, struct bsd_sockaddr_in *addr, int *addrlen)
 	return idx;
 }
 
-int bsd_recv(int sockfd, void *buf, size_t len, int flags)
+static int bsd_recv(int sockfd, void *buf, size_t len, int flags)
 {
 	if (sockfd < 0 || sockfd >= MAX_BSD_SOCKETS)
 		return -1;
@@ -274,7 +274,7 @@ int bsd_recv(int sockfd, void *buf, size_t len, int flags)
 	return -1; // would block
 }
 
-int bsd_send(int sockfd, const void *buf, size_t len, int flags)
+static int bsd_send(int sockfd, const void *buf, size_t len, int flags)
 {
 	if (sockfd < 0 || sockfd >= MAX_BSD_SOCKETS)
 		return -1;
@@ -322,7 +322,7 @@ int bsd_send(int sockfd, const void *buf, size_t len, int flags)
 	return len;
 }
 
-int bsd_close(int sockfd)
+static int bsd_close(int sockfd)
 {
 	if (sockfd < 0 || sockfd >= MAX_BSD_SOCKETS)
 		return -1;
@@ -342,10 +342,12 @@ int bsd_close(int sockfd)
 	return 0;
 }
 
-int bsd_fcntl(int fd, int cmd, long arg)
+static int bsd_fcntl(int fd, int cmd, long arg)
 {
 	return 0;
 }
+
+socket_device_t wifi_socket = {.socket = bsd_socket, .bind = bsd_bind, .listen = bsd_listen, .accept = bsd_accept, .fcntl = bsd_fcntl, .recv = bsd_recv, .send = bsd_send, .close = bsd_close};
 
 #endif
 #endif

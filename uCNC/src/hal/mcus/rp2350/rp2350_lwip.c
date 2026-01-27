@@ -19,7 +19,7 @@
 
 #include "../../../cnc.h"
 
-#if (MCU == MCU_RP2040)
+#if (MCU == MCU_RP2350)
 
 #ifdef __cplusplus
 extern "C"

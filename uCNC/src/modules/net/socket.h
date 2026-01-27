@@ -85,6 +85,7 @@ void socket_free(socket_if_t* socket, uint8_t client_idx);
 void socket_server_dotasks(void);
 // returns the number of active clients in a socket. if socket is NULL returns all connected clients in all sockets
 int socket_server_hasclients(socket_if_t* socket);
+void socket_register_device(socket_device_t *device);
 // initializes sockets server
 DECL_MODULE(socket_server);
 
