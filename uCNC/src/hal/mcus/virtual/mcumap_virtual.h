@@ -65,13 +65,15 @@
 #define MCU_CYCLES_PER_LOOP_OVERHEAD 0
 #endif
 
-//#define MCU_HAS_UART
+#define MCU_HAS_UART
 #ifndef UART_PORT_NAME
 #define UART_PORT_NAME "\\\\.\\COM14"
 #endif
 
 #define MCU_HAS_UART2
 
+#define ENABLE_SOCKETS
+#define MCU_HAS_SOCKETS
 // #define EMULATE_74HC595
 
 // joints step/dir pins
@@ -261,7 +263,7 @@
 #define DOUT31 UNDEF_PIN
 #define DIO78 UNDEF_PIN
 
-#define ACTIVITY_LED UNDEF_PIN
+//#define ACTIVITY_LED UNDEF_PIN
 
 #ifndef EMULATE_74HC165
 #define LIMIT_X 100
@@ -459,6 +461,8 @@
 extern void virtual_delay_us(uint16_t delay);
 #define mcu_delay_us(X) virtual_delay_us(X)
 
+#define ENABLE_ITP_FEED_TASK //smoother STEP IO simulation
+
 #include "../../tools/tool.h"
 extern const tool_t embroidery_stepper;
 extern const tool_t laser_ppi;
@@ -470,6 +474,15 @@ extern const tool_t spindle_pwm;
 extern const tool_t spindle_relay;
 extern const tool_t vfd_modbus;
 extern const tool_t vfd_pwm;
+
+#define ATOMIC_LOAD_N(src, mode) __atomic_load_n((src), mode)
+#define ATOMIC_STORE_N(dst, val, mode) __atomic_store_n((dst), (val), mode)
+#define ATOMIC_COMPARE_EXCHANGE_N(dst, cmp, des, sucmode, failmode) __atomic_compare_exchange_n((dst), (void*)(cmp), (des), false, sucmode, failmode)
+#define ATOMIC_FETCH_OR(dst, val, mode) __atomic_fetch_or((dst), (val), mode)
+#define ATOMIC_FETCH_AND(dst, val, mode) __atomic_fetch_and((dst), (val), mode)
+#define ATOMIC_FETCH_ADD(dst, val, mode) __atomic_fetch_add((dst), (val), mode)
+#define ATOMIC_FETCH_SUB(dst, val, mode) __atomic_fetch_sub((dst), (val), mode)
+#define ATOMIC_FETCH_XOR(dst, val, mode) __atomic_fetch_xor((dst), (val), mode)
 
 #define EMULATION_MS_TICK 100
 

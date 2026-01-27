@@ -622,15 +622,17 @@ extern "C"
 #endif
 #endif
 
-#ifdef MCU_HAS_WIFI
-	uint8_t mcu_wifi_getc(void);
-	uint8_t mcu_wifi_available(void);
-	void mcu_wifi_clear(void);
-	void mcu_wifi_putc(uint8_t c);
-	void mcu_wifi_flush(void);
-#ifdef DETACH_WIFI_FROM_MAIN_PROTOCOL
-	MCU_RX_CALLBACK void mcu_wifi_rx_cb(uint8_t c);
+#ifdef ENABLE_SOCKETS
+	uint8_t mcu_telnet_getc(void);
+	uint8_t mcu_telnet_available(void);
+	void mcu_telnet_clear(void);
+	void mcu_telnet_putc(uint8_t c);
+	void mcu_telnet_flush(void);
+#ifdef DETACH_TELNET_FROM_MAIN_PROTOCOL
+	MCU_RX_CALLBACK void mcu_telnet_rx_cb(uint8_t c);
 #endif
+	void mcu_telnet_init(void); // must be called from mcu_init if the default mcu_init is overriden
+	void mcu_telnet_onrecv(uint8_t client_idx, void *data, size_t data_len); // the callback when data is received
 #endif
 
 #ifdef MCU_HAS_BLUETOOTH

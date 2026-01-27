@@ -295,7 +295,8 @@ static esp8266_io_out_t FORCEINLINE out_io_pull(void)
 	return val;
 }
 
-#ifdef MCU_HAS_WIFI
+#ifdef ENABLE_SOCKETS
+void esp8266_pre_init(void);
 extern void esp8266_wifi_init(void);
 extern void esp8266_wifi_dotasks(void);
 #endif
@@ -509,6 +510,7 @@ extern void mcu_spi_init();
 
 void mcu_init(void)
 {
+	esp8266_pre_init();
 	mcu_io_init();
 	mcu_uart_init();
 
@@ -516,9 +518,7 @@ void mcu_init(void)
 	mcu_eeprom_init(); // Emulated EEPROM
 #endif
 
-#ifdef MCU_HAS_WIFI
 	esp8266_wifi_init();
-#endif
 
 	esp8266_step_mode = (ITP_STEP_MODE_DEFAULT | ITP_STEP_MODE_SYNC);
 
@@ -549,7 +549,7 @@ void mcu_dotasks(void)
 	// reset WDT
 	system_soft_wdt_feed();
 	mcu_uart_dotasks();
-#ifdef MCU_HAS_WIFI
+#ifdef ENABLE_SOCKETS
 	esp8266_wifi_dotasks();
 #endif
 	// itp_buffer_dotasks(OUT_IO_BUFFER_MINIMAL);

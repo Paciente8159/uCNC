@@ -1198,13 +1198,11 @@ extern "C"
 #define MCU_HAS_USB
 #endif
 #ifdef ENABLE_WIFI
-#define MCU_HAS_WIFI
-#ifndef DISABLE_ENDPOINTS
-#define MCU_HAS_ENDPOINTS
+#ifndef ENABLE_SOCKETS
+#define ENABLE_SOCKETS
 #endif
-#ifndef DISABLE_WEBSOCKETS
-#define MCU_HAS_WEBSOCKETS
 #endif
+#ifdef ENABLE_SOCKETS
 #ifndef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 #define BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 #endif
@@ -1410,7 +1408,7 @@ extern "C"
 
 #define mcu_free_micros() ((uint32_t)((((SysTick->LOAD + 1) - SysTick->VAL) * 1000UL) / (SysTick->LOAD + 1)))
 
-#if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
+#if (defined(ENABLE_SOCKETS) || defined(ENABLE_BLUETOOTH))
 #ifndef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 #define BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 #endif
