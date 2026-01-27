@@ -596,7 +596,7 @@ void rp2350_wifi_bt_init(void)
 {
 #ifdef ENABLE_SOCKETS
 
-	WiFi.begin();
+	WiFi.begin((char *)BOARD_NAME, (char *)WIFI_PASS);
 	extern socket_device_t wifi_socket;
 	socket_register_device(&wifi_socket);
 	ota_server_start();
