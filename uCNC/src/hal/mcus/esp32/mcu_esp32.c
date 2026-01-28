@@ -34,10 +34,7 @@ static volatile bool esp32_global_isr_enabled;
 
 hw_timer_t *esp32_step_timer;
 
-void esp32_pre_init(void);
-void esp32_wifi_bt_init(void);
-void esp32_wifi_bt_flush(uint8_t *buffer);
-void esp32_wifi_bt_process(void);
+extern void esp32_pre_init(void);
 
 #ifdef USE_ARDUINO_SPI_LIBRARY
 #ifdef MCU_HAS_SPI

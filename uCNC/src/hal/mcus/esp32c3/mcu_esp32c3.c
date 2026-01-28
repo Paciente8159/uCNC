@@ -36,6 +36,7 @@ volatile uint32_t ic74hc595_i2s_pins;
 #endif
 hw_timer_t *esp32_step_timer;
 
+extern void esp32_pre_init(void);
 MCU_CALLBACK void mcu_itp_isr(void *arg);
 MCU_CALLBACK void mcu_gpio_isr(void *type);
 
@@ -135,7 +136,7 @@ void mcu_init(void)
 	/**
 	 * IO conficuration
 	 */
-
+	esp32_pre_init();
 	mcu_io_init();
 
 #ifdef MCU_HAS_SPI

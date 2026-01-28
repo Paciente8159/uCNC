@@ -36,6 +36,7 @@
 
 static volatile bool esp32_global_isr_enabled;
 hw_timer_t *esp32_step_timer;
+extern void esp32_pre_init(void);
 extern void mcu_itp_isr(void *arg);
 extern void mcu_gen_pwm(void);
 extern void mcu_gen_servo(void);
@@ -127,7 +128,7 @@ void mcu_init(void)
 	/**
 	 * IO conficuration
 	 */
-
+	esp32_pre_init();
 	mcu_io_init();
 
 #ifdef MCU_HAS_SPI

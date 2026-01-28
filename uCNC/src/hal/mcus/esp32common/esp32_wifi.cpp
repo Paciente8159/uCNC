@@ -446,6 +446,7 @@ extern "C"
 	// Request handler for GET /update
 	static void ota_page_cb(int client_idx)
 	{
+		ESP_LOGV("WiFi", "ota page response");
 		http_send_str(client_idx, 200, (char *)type_html, (char *)updateForm);
 		http_send(client_idx, 200, (char *)type_html, NULL, 0);
 	}
@@ -454,6 +455,8 @@ extern "C"
 	static void ota_upload_cb(int client_idx)
 	{
 		http_upload_t up = http_file_upload_status(client_idx);
+
+		ESP_LOGV("WiFi", "ota file upload");
 
 		if (up.status == HTTP_UPLOAD_START)
 		{
@@ -512,6 +515,7 @@ extern "C"
 
 	void ota_server_start(void)
 	{
+		ESP_LOGV("WiFi", "start ota server");
 		LOAD_MODULE(http_server);
 		const char update_uri[] = "/update";
 		http_add((char *)update_uri, HTTP_REQ_ANY, ota_page_cb, ota_upload_cb);
@@ -524,6 +528,8 @@ extern "C"
  */
 #if defined(ENABLE_SOCKETS)
 #include "../../../modules/net/socket.h"
+#include <lwip/sockets.h>
+#include <lwip/netdb.h>
 
 WiFiServer servers[MAX_SOCKETS];
 WiFiClient clients[MAX_SOCKETS * SOCKET_MAX_CLIENTS];
@@ -543,64 +549,88 @@ extern "C"
 		return -1;
 	}
 
-	static int find_free_client(int s)
+	static void free_server_socket(int sockfd)
 	{
-		for (int i = 0; i < SOCKET_MAX_CLIENTS; i++)
+		if (servers_if[sockfd] >= 0)
 		{
-			if (!clients_if[i])
-				clients_if[i] = 1; // used
-			return i;
+			lwip_close(servers_if[sockfd]);
 		}
-		return -1;
+		servers_if[sockfd] = 0;
 	}
 
 	static int bsd_socket(int domain, int type, int protocol)
 	{
-		int srv = find_free_server();
-		if (srv < 0)
+		for (int i = 0; i < MAX_SOCKETS; i++)
 		{
-			return -1;
+			if (!servers_if[i])
+			{
+				servers_if[i] = socket(domain, type, protocol); // used
+				return i;
+			}
 		}
 
-		return srv;
+		return -1;
 	}
 
 	static int bsd_bind(int sockfd, const struct bsd_sockaddr_in *addr, int addrlen)
 	{
-		if (sockfd < 0 || !WiFi.isConnected())
+		if (servers_if[sockfd] < 0 || !WiFi.isConnected())
 		{
+			free_server_socket(sockfd);
 			return -1;
 		}
+
+		int enable = 1;
+		setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int));
 		servers[sockfd].begin(addr->sin_port);
-		return 0;
+		return bind(servers_if[sockfd], (struct sockaddr *)addr, addrlen);
 	}
 
 	static int bsd_listen(int sockfd, int backlog)
 	{
-		if (sockfd < 0)
+		if (servers_if[sockfd] < 0 || !WiFi.isConnected())
 		{
 			return -1;
 		}
-		return 0;
+		return listen(servers_if[sockfd], MAX_SOCKETS);
 	}
 
 	static int bsd_accept(int sockfd, struct bsd_sockaddr_in *addr, int *addrlen)
 	{
-		if (sockfd < 0)
+		if (servers_if[sockfd] < 0 || !WiFi.isConnected())
 		{
 			return -1;
 		}
 
-		if (servers[sockfd].hasClient())
+		for (int i = 0; i < SOCKET_MAX_CLIENTS; i++)
 		{
-			int client_if = find_free_client(sockfd);
-			if (client_if < 0)
+			if (!clients_if[i])
 			{
-				return -1;
+#ifdef ESP_IDF_VERSION_MAJOR
+				clients_if[i] = lwip_accept(servers_if[sockfd], (struct sockaddr *)addr, (socklen_t *)addrlen);
+#else
+				clients_if[i] = lwip_accept_r(servers_if[sockfd], (struct sockaddr *)addr, (socklen_t *)addrlen);
+#endif
+				if (clients_if[i] >= 0)
+				{
+					int val = 1;
+					if (setsockopt(clients_if[i], SOL_SOCKET, SO_KEEPALIVE, (char *)&val, sizeof(int)) == ESP_OK)
+					{
+						val = 1;
+						if (setsockopt(clients_if[i], IPPROTO_TCP, TCP_NODELAY, (char *)&val, sizeof(int)) == ESP_OK)
+						{
+							return i + MAX_SOCKETS;
+						}
+					}
+#ifdef ESP_IDF_VERSION_MAJOR
+					lwip_close(clients_if[i]);
+#else
+					lwip_close_r(clients_if[i]);
+#endif
+				}
+
+				clients_if[i] = 0;
 			}
-			clients[client_if] = servers[sockfd].accept();
-			clients_if[client_if] = 1;
-			return (client_if + MAX_SOCKETS);
 		}
 
 		return -1;
@@ -610,35 +640,43 @@ extern "C"
 	// int bsd_getsockopt(int sockfd, int level, int optname, void *optval, int *optlen);
 	static int bsd_fcntl(int sockfd, int cmd, long arg)
 	{
-		if (sockfd < 0)
+		if (servers_if[sockfd] < 0 || !WiFi.isConnected())
 		{
 			return -1;
 		}
-		return 0;
+		return fcntl(servers_if[sockfd], cmd, arg);
 	}
 
 	static int bsd_recv(int sockfd, void *buf, size_t len, int flags)
 	{
 		sockfd -= MAX_SOCKETS;
-
 		if (sockfd < 0)
 		{
 			return -1;
 		}
 
-		return clients[sockfd].readBytes((char *)buf, len);
+		if (clients_if[sockfd] < 0 || !WiFi.isConnected())
+		{
+			return -1;
+		}
+
+		return recv(clients[sockfd], buf, len, flags);
 	}
 
 	static int bsd_send(int sockfd, const void *buf, size_t len, int flags)
 	{
 		sockfd -= MAX_SOCKETS;
-
 		if (sockfd < 0)
 		{
 			return -1;
 		}
 
-		return clients[sockfd].write_P((char *)buf, len);
+		if (clients_if[sockfd] < 0 || !WiFi.isConnected())
+		{
+			return -1;
+		}
+
+		return send(clients[sockfd], buf, len, flags);
 	}
 
 	static int bsd_close(int fd)
@@ -647,17 +685,32 @@ extern "C"
 		{
 			return -1;
 		}
+
 		if (fd < MAX_SOCKETS)
 		{
+			if (servers_if[fd] >= 0)
+			{
+#ifdef ESP_IDF_VERSION_MAJOR
+				lwip_close(servers_if[fd]);
+#else
+				lwip_close_r(servers_if[fd]);
+#endif
+			}
 			servers_if[fd] = 0;
-			servers[fd].end();
 			return 0;
 		}
 		else if (fd - MAX_SOCKETS < SOCKET_MAX_CLIENTS)
 		{
+			fd -= MAX_SOCKETS;
+			if (clients_if[fd] >= 0)
+			{
+#ifdef ESP_IDF_VERSION_MAJOR
+				lwip_close(clients_if[fd]);
+#else
+				lwip_close_r(clients_if[fd]);
+#endif
+			}
 			clients_if[fd] = 0;
-			clients[fd - MAX_SOCKETS].flush();
-			clients[fd - MAX_SOCKETS].stop();
 		}
 
 		return -1;
@@ -670,6 +723,40 @@ extern "C"
 
 #if defined(ENABLE_SOCKETS)
 #include "../../../module.h"
+
+static bool esp32_wifi_clientok(void)
+{
+	static uint32_t next_info = 30000;
+	static bool connected = false;
+
+	if (!wifi_settings.wifi_on)
+	{
+		return false;
+	}
+
+	if ((WiFi.status() != WL_CONNECTED))
+	{
+		connected = false;
+		if (next_info > mcu_millis())
+		{
+			return false;
+		}
+		next_info = mcu_millis() + 30000;
+		proto_info("Disconnected from WiFi");
+		return false;
+	}
+
+	if (!connected)
+	{
+		connected = true;
+		proto_info("Connected to WiFi");
+		proto_info("SSID>%s", wifi_settings.ssid);
+		proto_info("IP>%s", WiFi.localIP().toString().c_str());
+	}
+
+	return true;
+}
+
 static void mcu_wifi_task(void *arg)
 {
 	FLASH_FS.begin();
@@ -722,7 +809,7 @@ static void mcu_wifi_task(void *arg)
 
 	for (;;)
 	{
-		if (wifi_settings.wifi_on && WiFi.isConnected())
+		if (esp32_wifi_clientok())
 		{
 #if defined(ENABLE_SOCKETS) && defined(MCU_HAS_RTOS)
 			socket_server_dotasks();
@@ -737,12 +824,13 @@ static void mcu_wifi_task(void *arg)
 
 extern "C"
 {
-	#include "../../../modules/net/socket.h"
+#include "../../../modules/net/socket.h"
 	void esp32_pre_init(void)
 	{
 #ifdef ENABLE_WIFI
 		WiFi.begin();
 		// register WiFi as the device default network device
+		ESP_LOGV("WiFi", "register wifi");
 		socket_register_device(&wifi_socket);
 #ifndef CUSTOM_OTA_ENDPOINT
 		ota_server_start();
