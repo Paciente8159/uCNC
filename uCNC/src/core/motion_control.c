@@ -301,25 +301,35 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 		target[AXIS_TOOL] -= target_hmap_offset;
 #endif
 
-#ifndef MODIFY_SOFT_LIMIT_TO_ERROR
+#if !defined(MODIFY_SOFT_LIMIT_TO_ERROR) || defined(ALLOW_SOFT_LIMIT_JOG_MOTION_CLAMPING)
 		if (cnc_get_exec_state(EXEC_JOG))
+#endif
 		{
-#elif !defined(ALLOW_MOTION_TO_CONTINUE)
-		itp_sync();
-		cnc_set_exec_state(EXEC_HOLD);
+#ifndef ALLOW_SOFT_LIMIT_JOG_MOTION_CLAMPING
+#ifndef IGNORE_JOG_TARGET_SOFT_LIMIT_ERROR
+			itp_sync();
+			cnc_set_exec_state(EXEC_HOLD);
 #endif
 			return STATUS_TRAVEL_EXCEEDED;
-#ifndef MODIFY_SOFT_LIMIT_TO_ERROR
-		}
-		cnc_alarm(EXEC_ALARM_SOFT_LIMIT);
-		return STATUS_OK;
 #endif
+		}
+#if !defined(MODIFY_SOFT_LIMIT_TO_ERROR) || defined(ALLOW_SOFT_LIMIT_JOG_MOTION_CLAMPING)
+		else
+#endif
+		{
+#ifndef MODIFY_SOFT_LIMIT_TO_ERROR
+			cnc_alarm(EXEC_ALARM_SOFT_LIMIT);
+			return STATUS_OK;
+#else
+			return STATUS_TRAVEL_EXCEEDED;
+#endif
+		}
 	}
 
 #ifdef ENABLE_EMBROIDERY
 	if ((g_settings.tool_mode & EMBROIDERY_MODE) && !block_data->spindle)
 	{
-		if(itp_sync()!= STATUS_OK)
+		if (itp_sync() != STATUS_OK)
 		{
 			return STATUS_CRITICAL_FAIL;
 		}
@@ -437,7 +447,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 			// denormalize max feed rate for each axis
 			float denorm_param = fast_flt_div(g_settings.max_feed_rate[i], normal_vect);
 			max_feed = MIN(max_feed, denorm_param);
-      max_feed = MIN(max_feed, F_STEP_MAX);
+			max_feed = MIN(max_feed, F_STEP_MAX);
 			denorm_param = fast_flt_div(g_settings.acceleration[i], normal_vect);
 			max_accel = MIN(max_accel, denorm_param);
 		}
