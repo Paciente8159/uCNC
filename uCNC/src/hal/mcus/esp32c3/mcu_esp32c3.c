@@ -118,6 +118,13 @@ MCU_CALLBACK void mcu_itp_isr(void *arg)
 	timer_group_enable_alarm_in_isr(ITP_TIMER_TG, ITP_TIMER_IDX);
 }
 
+extern void esp32_pre_init(void);
+void __attribute__((weak)) mcu_network_init(void)
+{
+	ESP_LOGD("network", "network init");
+	esp32_pre_init();
+}
+
 /**
  * initializes the mcu
  * this function needs to:
@@ -133,7 +140,7 @@ void mcu_init(void)
 #endif
 
 	/**
-	 * IO conficuration
+	 * IO configuration
 	 */
 
 	mcu_io_init();
@@ -179,7 +186,6 @@ void mcu_init(void)
 	 */
 
 	mcu_wifi_init();
-	mcu_bt_init();
 
 	// initialize rtc timer (currently on core 1)
 	// xTaskCreate(mcu_coms_dotasks, "comsTask", 8192, NULL, 7, NULL);

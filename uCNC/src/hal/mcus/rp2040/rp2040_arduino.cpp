@@ -38,7 +38,7 @@ void rp2040_core1_loop()
  *
  * **/
 
-#if (defined(MCU_HAS_SOCKETS) || defined(ENABLE_BLUETOOTH))
+#if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
 
 #ifndef WIFI_SSID_MAX_LEN
 #define WIFI_SSID_MAX_LEN 32
@@ -592,16 +592,24 @@ extern "C"
 }
 #endif
 
-void rp2040_wifi_bt_init(void)
+void __attribute__((weak)) mcu_network_init(void)
 {
-#ifdef ENABLE_SOCKETS
-
+#ifdef ENABLE_WIFI
 	WiFi.begin((char *)BOARD_NAME, (char *)WIFI_PASS);
 	extern socket_device_t wifi_socket;
 	socket_register_device(&wifi_socket);
 	ota_server_start();
 	WiFi.disconnect();
+#endif
+}
 
+void mcu_bt_init(void)
+{
+}
+
+void rp2040_wifi_bt_init(void)
+{
+#ifdef ENABLE_WIFI
 	wifi_settings_offset = settings_register_external_setting(sizeof(wifi_settings_t));
 	if (settings_load(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t)))
 	{
@@ -640,6 +648,7 @@ void rp2040_wifi_bt_init(void)
 			break;
 		}
 	}
+#endif
 
 #ifdef ENABLE_SOCKETS
 	FLASH_FS.begin();
@@ -661,7 +670,6 @@ void rp2040_wifi_bt_init(void)
 	fs_mount(&flash_fs);
 #endif
 
-#endif
 #ifdef ENABLE_BLUETOOTH
 	bt_settings_offset = settings_register_external_setting(1);
 	if (settings_load(bt_settings_offset, &bt_on, 1))
@@ -806,23 +814,28 @@ extern "C"
 
 extern "C"
 {
-	void rp2040_uart_init(int baud)
+	void mcu_usb_init(void)
 	{
 #ifdef MCU_HAS_USB
-		Serial.begin(baud);
+		Serial.begin(BAUDRATE);
 #endif
+	}
+
+	void mcu_uart_init(void)
+	{
 #ifdef MCU_HAS_UART
 		COM_UART.setTX(TX_BIT);
 		COM_UART.setRX(RX_BIT);
 		COM_UART.begin(BAUDRATE);
 #endif
+	}
+
+	void mcu_uart2_init(void)
+	{
 #ifdef MCU_HAS_UART2
 		COM2_UART.setTX(TX2_BIT);
 		COM2_UART.setRX(RX2_BIT);
 		COM2_UART.begin(BAUDRATE2);
-#endif
-#if (defined(MCU_HAS_SOCKETS) || defined(ENABLE_BLUETOOTH))
-		rp2040_wifi_bt_init();
 #endif
 	}
 
@@ -1033,7 +1046,7 @@ extern "C"
 		}
 #endif
 
-#if (defined(MCU_HAS_SOCKETS) || defined(ENABLE_BLUETOOTH))
+#if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
 		rp2040_wifi_bt_process();
 #endif
 

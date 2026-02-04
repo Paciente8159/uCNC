@@ -672,24 +672,6 @@ extern "C"
 #include "../../../module.h"
 static void mcu_wifi_task(void *arg)
 {
-	FLASH_FS.begin();
-	flash_fs = {
-		.drive = 'C',
-		.open = flash_fs_open,
-		.read = flash_fs_read,
-		.write = flash_fs_write,
-		.seek = flash_fs_seek,
-		.available = flash_fs_available,
-		.close = flash_fs_close,
-		.remove = flash_fs_remove,
-		.opendir = flash_fs_opendir,
-		.mkdir = flash_fs_mkdir,
-		.rmdir = flash_fs_rmdir,
-		.next_file = flash_fs_next_file,
-		.finfo = flash_fs_info,
-		.next = NULL};
-	fs_mount(&flash_fs);
-
 	WiFi.disconnect();
 
 	if (wifi_settings.wifi_on)
@@ -737,9 +719,10 @@ static void mcu_wifi_task(void *arg)
 
 extern "C"
 {
-	#include "../../../modules/net/socket.h"
+#include "../../../modules/net/socket.h"
 	void esp32_pre_init(void)
 	{
+		ESP_LOGV("preinit", "esp32 preinit");
 #ifdef ENABLE_WIFI
 		WiFi.begin();
 		// register WiFi as the device default network device
@@ -752,6 +735,26 @@ extern "C"
 
 	void mcu_wifi_init(void)
 	{
+		if (FLASH_FS.begin())
+		{
+			flash_fs = {
+				.drive = 'C',
+				.open = flash_fs_open,
+				.read = flash_fs_read,
+				.write = flash_fs_write,
+				.seek = flash_fs_seek,
+				.available = flash_fs_available,
+				.close = flash_fs_close,
+				.remove = flash_fs_remove,
+				.opendir = flash_fs_opendir,
+				.mkdir = flash_fs_mkdir,
+				.rmdir = flash_fs_rmdir,
+				.next_file = flash_fs_next_file,
+				.finfo = flash_fs_info,
+				.next = NULL};
+			fs_mount(&flash_fs);
+		}
+
 #ifdef ENABLE_WIFI
 #ifndef ENABLE_BLUETOOTH
 		WiFi.setSleep(WIFI_PS_NONE);
@@ -767,8 +770,6 @@ extern "C"
 		}
 
 		xTaskCreatePinnedToCore(mcu_wifi_task, "wifiTask", 8192, NULL, 1, NULL, CONFIG_ARDUINO_RUNNING_CORE);
-		// taskYIELD();
-
 #endif
 
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS

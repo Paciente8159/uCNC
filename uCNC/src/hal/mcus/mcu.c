@@ -38,7 +38,7 @@ MCU_CALLBACK mcu_timeout_delgate mcu_timeout_cb;
 #endif
 
 // the telnet socket pointer
-socket_if_t* telnet_sock;
+socket_if_t *telnet_sock;
 void mcu_telnet_onrecv(uint8_t client_idx, void *data, size_t data_len);
 // the telnet onrecv callback
 telnet_protocol_t telnet_proto = {.telnet_onrecv_cb = mcu_telnet_onrecv};
@@ -94,18 +94,19 @@ void mcu_telnet_clear(void)
 void mcu_telnet_flush(void)
 {
 	// if no clients just throws away the buffer
-	if (!telnet_hasclients(&telnet_proto)){
+	if (!telnet_hasclients(&telnet_proto))
+	{
 		BUFFER_CLEAR(telnet_tx);
 		return;
 	}
-		
+
 	while (!BUFFER_EMPTY(telnet_tx))
 	{
 		uint8_t tmp[TELNET_TX_BUFFER_SIZE];
 		memset(tmp, 0, sizeof(tmp));
 		uint8_t r = 0;
 		BUFFER_READ(telnet_tx, tmp, TELNET_TX_BUFFER_SIZE, r);
-		telnet_broadcast(&telnet_proto, (char*)tmp, r, 0);
+		telnet_broadcast(&telnet_proto, (char *)tmp, r, 0);
 	}
 }
 
@@ -143,7 +144,28 @@ bool mcu_in_isr_context(void)
 }
 #endif
 
-void __attribute__((weak)) mcu_io_init(void)
+// initialize protocol/coms ports
+#ifdef MCU_HAS_UART
+void __attribute__((weak)) mcu_uart_init() {}
+#endif
+
+#ifdef MCU_HAS_UART2
+void __attribute__((weak)) mcu_uart2_init() {}
+#endif
+
+#ifdef MCU_HAS_USB
+void __attribute__((weak)) mcu_usb_init(void) {}
+#endif
+
+#ifdef ENABLE_SOCKETS
+void __attribute__((weak)) mcu_network_init() {}
+#endif
+
+#ifdef MCU_HAS_BLUETOOTH
+void __attribute__((weak)) mcu_bt_init() {}
+#endif
+
+static void FORCEINLINE mcu_outputs_init(void)
 {
 #if ASSERT_PIN_IO(STEP0)
 	mcu_config_output(STEP0);
@@ -283,156 +305,10 @@ void __attribute__((weak)) mcu_io_init(void)
 #if ASSERT_PIN_IO(SERVO5)
 	mcu_config_output(SERVO5);
 #endif
-#if ASSERT_PIN_IO(DOUT0)
-	mcu_config_output(DOUT0);
-#endif
-#if ASSERT_PIN_IO(DOUT1)
-	mcu_config_output(DOUT1);
-#endif
-#if ASSERT_PIN_IO(DOUT2)
-	mcu_config_output(DOUT2);
-#endif
-#if ASSERT_PIN_IO(DOUT3)
-	mcu_config_output(DOUT3);
-#endif
-#if ASSERT_PIN_IO(DOUT4)
-	mcu_config_output(DOUT4);
-#endif
-#if ASSERT_PIN_IO(DOUT5)
-	mcu_config_output(DOUT5);
-#endif
-#if ASSERT_PIN_IO(DOUT6)
-	mcu_config_output(DOUT6);
-#endif
-#if ASSERT_PIN_IO(DOUT7)
-	mcu_config_output(DOUT7);
-#endif
-#if ASSERT_PIN_IO(DOUT8)
-	mcu_config_output(DOUT8);
-#endif
-#if ASSERT_PIN_IO(DOUT9)
-	mcu_config_output(DOUT9);
-#endif
-#if ASSERT_PIN_IO(DOUT10)
-	mcu_config_output(DOUT10);
-#endif
-#if ASSERT_PIN_IO(DOUT11)
-	mcu_config_output(DOUT11);
-#endif
-#if ASSERT_PIN_IO(DOUT12)
-	mcu_config_output(DOUT12);
-#endif
-#if ASSERT_PIN_IO(DOUT13)
-	mcu_config_output(DOUT13);
-#endif
-#if ASSERT_PIN_IO(DOUT14)
-	mcu_config_output(DOUT14);
-#endif
-#if ASSERT_PIN_IO(DOUT15)
-	mcu_config_output(DOUT15);
-#endif
-#if ASSERT_PIN_IO(DOUT16)
-	mcu_config_output(DOUT16);
-#endif
-#if ASSERT_PIN_IO(DOUT17)
-	mcu_config_output(DOUT17);
-#endif
-#if ASSERT_PIN_IO(DOUT18)
-	mcu_config_output(DOUT18);
-#endif
-#if ASSERT_PIN_IO(DOUT19)
-	mcu_config_output(DOUT19);
-#endif
-#if ASSERT_PIN_IO(DOUT20)
-	mcu_config_output(DOUT20);
-#endif
-#if ASSERT_PIN_IO(DOUT21)
-	mcu_config_output(DOUT21);
-#endif
-#if ASSERT_PIN_IO(DOUT22)
-	mcu_config_output(DOUT22);
-#endif
-#if ASSERT_PIN_IO(DOUT23)
-	mcu_config_output(DOUT23);
-#endif
-#if ASSERT_PIN_IO(DOUT24)
-	mcu_config_output(DOUT24);
-#endif
-#if ASSERT_PIN_IO(DOUT25)
-	mcu_config_output(DOUT25);
-#endif
-#if ASSERT_PIN_IO(DOUT26)
-	mcu_config_output(DOUT26);
-#endif
-#if ASSERT_PIN_IO(DOUT27)
-	mcu_config_output(DOUT27);
-#endif
-#if ASSERT_PIN_IO(DOUT28)
-	mcu_config_output(DOUT28);
-#endif
-#if ASSERT_PIN_IO(DOUT29)
-	mcu_config_output(DOUT29);
-#endif
-#if ASSERT_PIN_IO(DOUT30)
-	mcu_config_output(DOUT30);
-#endif
-#if ASSERT_PIN_IO(DOUT31)
-	mcu_config_output(DOUT31);
-#endif
-#if ASSERT_PIN_IO(DOUT32)
-	mcu_config_output(DOUT32);
-#endif
-#if ASSERT_PIN_IO(DOUT33)
-	mcu_config_output(DOUT33);
-#endif
-#if ASSERT_PIN_IO(DOUT34)
-	mcu_config_output(DOUT34);
-#endif
-#if ASSERT_PIN_IO(DOUT35)
-	mcu_config_output(DOUT35);
-#endif
-#if ASSERT_PIN_IO(DOUT36)
-	mcu_config_output(DOUT36);
-#endif
-#if ASSERT_PIN_IO(DOUT37)
-	mcu_config_output(DOUT37);
-#endif
-#if ASSERT_PIN_IO(DOUT38)
-	mcu_config_output(DOUT38);
-#endif
-#if ASSERT_PIN_IO(DOUT39)
-	mcu_config_output(DOUT39);
-#endif
-#if ASSERT_PIN_IO(DOUT40)
-	mcu_config_output(DOUT40);
-#endif
-#if ASSERT_PIN_IO(DOUT41)
-	mcu_config_output(DOUT41);
-#endif
-#if ASSERT_PIN_IO(DOUT42)
-	mcu_config_output(DOUT42);
-#endif
-#if ASSERT_PIN_IO(DOUT43)
-	mcu_config_output(DOUT43);
-#endif
-#if ASSERT_PIN_IO(DOUT44)
-	mcu_config_output(DOUT44);
-#endif
-#if ASSERT_PIN_IO(DOUT45)
-	mcu_config_output(DOUT45);
-#endif
-#if ASSERT_PIN_IO(DOUT46)
-	mcu_config_output(DOUT46);
-#endif
-#if ASSERT_PIN_IO(DOUT47)
-	mcu_config_output(DOUT47);
-#endif
-#if ASSERT_PIN_IO(DOUT48)
-	mcu_config_output(DOUT48);
-#endif
-#if ASSERT_PIN_IO(DOUT49)
-	mcu_config_output(DOUT49);
-#endif
+}
+
+static void FORCEINLINE mcu_inputs_init(void)
+{
 #if ASSERT_PIN_IO(LIMIT_X)
 	mcu_config_input(LIMIT_X);
 #ifdef LIMIT_X_PULLUP
@@ -931,27 +807,24 @@ void __attribute__((weak)) mcu_io_init(void)
 	mcu_config_pullup(DIN49);
 #endif
 #endif
-#if ASSERT_PIN_IO(TX)
-	mcu_config_output(TX);
+}
+
+static void FORCEINLINE mcu_coms_init(void)
+{
+	// initialize peripheral modules hardware communication ports
+#ifdef MCU_HAS_I2C
+#if ASSERT_PIN_IO(I2C_CLK)
+	mcu_config_input(I2C_CLK);
+	mcu_config_pullup(I2C_CLK);
 #endif
-#if ASSERT_PIN_IO(RX)
-	mcu_config_input(RX);
-#ifdef RX_PULLUP
-	mcu_config_pullup(RX);
+#if ASSERT_PIN_IO(I2C_DATA)
+	mcu_config_input(I2C_DATA);
+	mcu_config_pullup(I2C_DATA);
 #endif
+	mcu_i2c_init();
 #endif
-#if ASSERT_PIN_IO(USB_DM)
-	mcu_config_input(USB_DM);
-#ifdef USB_DM_PULLUP
-	mcu_config_pullup(USB_DM);
-#endif
-#endif
-#if ASSERT_PIN_IO(USB_DP)
-	mcu_config_input(USB_DP);
-#ifdef USB_DP_PULLUP
-	mcu_config_pullup(USB_DP);
-#endif
-#endif
+
+#ifdef MCU_HAS_SPI
 #if ASSERT_PIN_IO(SPI_CLK)
 	mcu_config_output(SPI_CLK);
 #endif
@@ -967,23 +840,10 @@ void __attribute__((weak)) mcu_io_init(void)
 #if ASSERT_PIN(SPI_CS)
 	mcu_config_output(SPI_CS);
 #endif
-#if ASSERT_PIN_IO(I2C_CLK)
-	mcu_config_input(I2C_CLK);
-	mcu_config_pullup(I2C_CLK);
+	mcu_spi_init();
 #endif
-#if ASSERT_PIN_IO(I2C_DATA)
-	mcu_config_input(I2C_DATA);
-	mcu_config_pullup(I2C_DATA);
-#endif
-#if ASSERT_PIN_IO(TX2)
-	mcu_config_output(TX2);
-#endif
-#if ASSERT_PIN_IO(RX2)
-	mcu_config_input(RX2);
-#ifdef RX2_PULLUP
-	mcu_config_pullup(RX2);
-#endif
-#endif
+
+#ifdef MCU_HAS_SPI2
 #if ASSERT_PIN_IO(SPI2_CLK)
 	mcu_config_output(SPI2_CLK);
 #endif
@@ -996,43 +856,95 @@ void __attribute__((weak)) mcu_io_init(void)
 #if ASSERT_PIN(SPI2_CS)
 	mcu_config_output(SPI2_CS);
 #endif
+	mcu_spi2_init();
+#endif
 
+	// initialize protocol/coms ports
 #ifdef MCU_HAS_UART
+#if ASSERT_PIN_IO(TX)
+	mcu_config_output(TX);
+#endif
+#if ASSERT_PIN_IO(RX)
+	mcu_config_input(RX);
+#ifdef RX_PULLUP
+	mcu_config_pullup(RX);
+#endif
+#endif
 #ifndef UART_TX_BUFFER_SIZE
 #define UART_TX_BUFFER_SIZE 64
 #endif
 	BUFFER_INIT(uint8_t, uart_tx, UART_TX_BUFFER_SIZE);
 	BUFFER_INIT(uint8_t, uart_rx, RX_BUFFER_SIZE);
+	mcu_uart_init();
 #endif
+
 #ifdef MCU_HAS_UART2
+#if ASSERT_PIN_IO(TX2)
+	mcu_config_output(TX2);
+#endif
+#if ASSERT_PIN_IO(RX2)
+	mcu_config_input(RX2);
+#ifdef RX2_PULLUP
+	mcu_config_pullup(RX2);
+#endif
+#endif
 #ifndef UART2_TX_BUFFER_SIZE
 #define UART2_TX_BUFFER_SIZE 64
 #endif
 	BUFFER_INIT(uint8_t, uart2_tx, UART2_TX_BUFFER_SIZE);
 	BUFFER_INIT(uint8_t, uart2_rx, RX_BUFFER_SIZE);
+	mcu_uart2_init();
 #endif
+
 #ifdef MCU_HAS_USB
+#if ASSERT_PIN_IO(USB_DM)
+	mcu_config_input(USB_DM);
+#ifdef USB_DM_PULLUP
+	mcu_config_pullup(USB_DM);
+#endif
+#endif
+#if ASSERT_PIN_IO(USB_DP)
+	mcu_config_input(USB_DP);
+#ifdef USB_DP_PULLUP
+	mcu_config_pullup(USB_DP);
+#endif
+#endif
 #ifndef USB_TX_BUFFER_SIZE
 #define USB_TX_BUFFER_SIZE 64
 #endif
 	BUFFER_INIT(uint8_t, usb_tx, USB_TX_BUFFER_SIZE);
 	BUFFER_INIT(uint8_t, usb_rx, RX_BUFFER_SIZE);
+	mcu_usb_init();
 #endif
+
 #ifdef ENABLE_SOCKETS
 #ifndef WIFI_TX_BUFFER_SIZE
 #define WIFI_TX_BUFFER_SIZE 64
 #endif
 	BUFFER_INIT(uint8_t, telnet_tx, WIFI_TX_BUFFER_SIZE);
 	BUFFER_INIT(uint8_t, telnet_rx, RX_BUFFER_SIZE);
+	mcu_network_init();
 	telnet_sock = telnet_start_listen(&telnet_proto, 23);
 #endif
+
 #ifdef MCU_HAS_BLUETOOTH
 #ifndef BLUETOOTH_TX_BUFFER_SIZE
 #define BLUETOOTH_TX_BUFFER_SIZE 64
 #endif
 	BUFFER_INIT(uint8_t, bt_tx, BLUETOOTH_TX_BUFFER_SIZE);
 	BUFFER_INIT(uint8_t, bt_rx, RX_BUFFER_SIZE);
+	mcu_bt_init();
 #endif
+}
+
+void __attribute__((weak)) mcu_io_init(void)
+{
+	// init outputs
+	mcu_outputs_init();
+	// init inputs
+	mcu_inputs_init();
+	// init communications
+	mcu_coms_init();
 }
 
 #ifndef mcu_io_reset

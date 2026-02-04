@@ -575,9 +575,9 @@ extern "C"
 	}
 #endif
 
-	void esp8266_pre_init()
+	void __attribute__((weak)) mcu_network_init(void)
 	{
-#ifdef ENABLE_SOCKETS
+#ifdef ENABLE_WIFI
 		WiFi.setSleepMode(WIFI_NONE_SLEEP);
 		WiFi.begin();
 		extern socket_device_t wifi_socket;
@@ -585,6 +585,7 @@ extern "C"
 		ota_server_start();
 #endif
 	}
+	
 	void esp8266_wifi_init()
 	{
 		DBGMSG("Wifi assert");

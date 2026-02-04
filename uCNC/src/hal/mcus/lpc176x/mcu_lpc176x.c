@@ -140,8 +140,8 @@ void servo_timer_init(void)
 	SERVO_TIMER_REG->IR = 0xFFFFFFFF;
 
 	SERVO_TIMER_REG->MR1 = SERVO_MIN; // minimum value for servo setup
-	SERVO_TIMER_REG->MR0 = 425;				// reset @ every 3.333ms * 6 servos = 20ms->50Hz
-	SERVO_TIMER_REG->MCR = 0x0B;			// Interrupt on MC0 and MC1 and reset on MC0
+	SERVO_TIMER_REG->MR0 = 425;		  // reset @ every 3.333ms * 6 servos = 20ms->50Hz
+	SERVO_TIMER_REG->MCR = 0x0B;	  // Interrupt on MC0 and MC1 and reset on MC0
 
 	NVIC_SetPriority(SERVO_TIMER_IRQ, 10);
 	NVIC_ClearPendingIRQ(SERVO_TIMER_IRQ);
@@ -360,7 +360,7 @@ void MCU_COM2_ISR(void)
 }
 #endif
 
-void mcu_usart_init(void)
+void mcu_uart_init(void)
 {
 #ifdef MCU_HAS_UART
 	PINSEL_CFG_Type tx = {TX_PORT, TX_BIT, UART_ALT_FUNC, PINSEL_PINMODE_PULLUP, PINSEL_PINMODE_NORMAL};
@@ -384,7 +384,10 @@ void mcu_usart_init(void)
 	NVIC_ClearPendingIRQ(COM_IRQ);
 	NVIC_EnableIRQ(COM_IRQ);
 #endif
+}
 
+void mcu_uart2_init(void)
+{
 #ifdef MCU_HAS_UART2
 	PINSEL_CFG_Type tx = {TX2_PORT, TX2_BIT, UART2_ALT_FUNC, PINSEL_PINMODE_PULLUP, PINSEL_PINMODE_NORMAL};
 	PINSEL_ConfigPin(&tx);
@@ -407,7 +410,10 @@ void mcu_usart_init(void)
 	NVIC_ClearPendingIRQ(COM2_IRQ);
 	NVIC_EnableIRQ(COM2_IRQ);
 #endif
+}
 
+void mcu_usb_init(void)
+{
 #ifdef MCU_HAS_USB
 #ifdef USE_ARDUINO_CDC
 	lpc176x_usb_init();
@@ -462,28 +468,8 @@ void mcu_rtc_init()
 }
 
 /*IO functions*/
-
-/**
- * initializes the mcu
- * this function needs to:
- *   - configure all IO pins (digital IO, PWM, Analog, etc...)
- *   - configure all interrupts
- *   - configure uart or usb
- *   - start the internal RTC
- * */
-void mcu_init(void)
+void mcu_spi_init()
 {
-	mcu_clocks_init();
-
-	mcu_io_init();
-	mcu_usart_init();
-	// SysTick is started by the framework but is not working
-	// Using timer
-	mcu_rtc_init();
-#if SERVOS_MASK > 0
-	servo_timer_init();
-#endif
-	GPDMA_Init();
 #ifdef MCU_HAS_SPI
 	// powerup DMA
 	// LPC_SC->PCONP |= CLKPWR_PCONP_PCGPDMA;
@@ -498,12 +484,16 @@ void mcu_init(void)
 	LPC_SC->SPI_PCLKSEL_REG &= ~SPI_PCLKSEL_MASK; // div clock by 4
 	uint8_t div = SPI_COUNTER_DIV(SPI_FREQ);
 	div += (div & 0x01) ? 1 : 0;
-	SPI_REG->CPSR = div;					 // internal divider
+	SPI_REG->CPSR = div;		   // internal divider
 	SPI_REG->CR0 |= SPI_MODE << 6; // clock phase
-	SPI_REG->CR0 |= 7 << 0;				 // 8 bits
-	SPI_REG->CR1 |= 1 << 1;				 // enable SSP*/
+	SPI_REG->CR0 |= 7 << 0;		   // 8 bits
+	SPI_REG->CR1 |= 1 << 1;		   // enable SSP*/
 
 #endif
+}
+
+void mcu_spi2_init()
+{
 #ifdef MCU_HAS_SPI2
 	// powerup DMA
 	// LPC_SC->PCONP |= CLKPWR_PCONP_PCGPDMA;
@@ -518,15 +508,41 @@ void mcu_init(void)
 	LPC_SC->SPI2_PCLKSEL_REG &= ~SPI2_PCLKSEL_MASK; // div clock by 4
 	uint8_t div2 = SPI2_COUNTER_DIV(SPI2_FREQ);
 	div2 += (div2 & 0x01) ? 1 : 0;
-	SPI2_REG->CPSR = div2;					 // internal divider
+	SPI2_REG->CPSR = div2;			 // internal divider
 	SPI2_REG->CR0 |= SPI2_MODE << 6; // clock phase
-	SPI2_REG->CR0 |= 7 << 0;				 // 8 bits
-	SPI2_REG->CR1 |= 1 << 1;				 // enable SSP*/
+	SPI2_REG->CR0 |= 7 << 0;		 // 8 bits
+	SPI2_REG->CR1 |= 1 << 1;		 // enable SSP*/
 
 #endif
+}
+
+void mcu_i2c_init()
+{
 #ifdef MCU_HAS_I2C
 	mcu_i2c_config(I2C_FREQ);
 #endif
+}
+
+/**
+ * initializes the mcu
+ * this function needs to:
+ *   - configure all IO pins (digital IO, PWM, Analog, etc...)
+ *   - configure all interrupts
+ *   - configure uart or usb
+ *   - start the internal RTC
+ * */
+void mcu_init(void)
+{
+	mcu_clocks_init();
+	mcu_io_init();
+	mcu_usart_init();
+	// SysTick is started by the framework but is not working
+	// Using timer
+	mcu_rtc_init();
+#if SERVOS_MASK > 0
+	servo_timer_init();
+#endif
+	GPDMA_Init();
 
 	mcu_disable_probe_isr();
 	mcu_enable_global_isr();
@@ -772,7 +788,7 @@ void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 	ITP_TIMER_REG->TC = 0;
 	ITP_TIMER_REG->PC = 0;
 	ITP_TIMER_REG->PR = 0;
-	ITP_TIMER_REG->TCR |= TIM_RESET;	// Reset Counter
+	ITP_TIMER_REG->TCR |= TIM_RESET;  // Reset Counter
 	ITP_TIMER_REG->TCR &= ~TIM_RESET; // release reset
 	ITP_TIMER_REG->EMR = 0;
 
@@ -1011,10 +1027,10 @@ void mcu_spi_config(spi_config_t config, uint32_t frequency)
 {
 	uint8_t div = SPI_COUNTER_DIV(frequency);
 	div += (div & 0x01) ? 1 : 0;
-	SPI_REG->CR1 &= ~(1 << 1);				// disable SSP
-	SPI_REG->CPSR = div;							// internal divider
+	SPI_REG->CR1 &= ~(1 << 1);		  // disable SSP
+	SPI_REG->CPSR = div;			  // internal divider
 	SPI_REG->CR0 |= config.mode << 6; // clock phase
-	SPI_REG->CR1 |= 1 << 1;						// enable SSP
+	SPI_REG->CR1 |= 1 << 1;			  // enable SSP
 	// SSP_DeInit(SPI_REG);
 
 	// SSP_CFG_Type ssp_cfg = {
@@ -1198,10 +1214,10 @@ void mcu_spi2_config(spi_config_t config, uint32_t frequency)
 {
 	uint8_t div = SPI2_COUNTER_DIV(frequency);
 	div += (div & 0x01) ? 1 : 0;
-	SPI2_REG->CR1 &= ~(1 << 1);				 // disable SSP
-	SPI2_REG->CPSR = div;							 // internal divider
+	SPI2_REG->CR1 &= ~(1 << 1);		   // disable SSP
+	SPI2_REG->CPSR = div;			   // internal divider
 	SPI2_REG->CR0 |= config.mode << 6; // clock phase
-	SPI2_REG->CR1 |= 1 << 1;					 // enable SSP
+	SPI2_REG->CR1 |= 1 << 1;		   // enable SSP
 	// SSP_DeInit(SPI2_REG);
 
 	// SSP_CFG_Type ssp_cfg = {
@@ -1704,7 +1720,7 @@ void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 	ONESHOT_TIMER_REG->TC = 0;
 	ONESHOT_TIMER_REG->PC = 0;
 	ONESHOT_TIMER_REG->PR = 0;
-	ONESHOT_TIMER_REG->TCR |= TIM_RESET;	// Reset Counter
+	ONESHOT_TIMER_REG->TCR |= TIM_RESET;  // Reset Counter
 	ONESHOT_TIMER_REG->TCR &= ~TIM_RESET; // release reset
 	ONESHOT_TIMER_REG->EMR = 0;
 

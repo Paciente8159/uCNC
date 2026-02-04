@@ -25,7 +25,7 @@
 
 static volatile bool rp2350_global_isr_enabled;
 
-extern void rp2350_uart_init(int baud);
+extern void rp2350_wifi_bt_init(void);
 extern void rp2350_uart_process(void);
 
 extern void rp2350_eeprom_init(int size);
@@ -331,7 +331,9 @@ void mcu_init(void)
 	rp2350_eeprom_init(NVM_STORAGE_SIZE); // 2K Emulated EEPROM
 #endif
 
-	rp2350_uart_init(BAUDRATE);
+#if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
+	rp2350_wifi_bt_init();
+#endif
 
 	pinMode(LED_BUILTIN, OUTPUT);
 	// init rtc, oneshot and servo alarms
@@ -426,12 +428,12 @@ uint8_t mcu_get_pwm(uint8_t pwm)
 #ifndef mcu_set_servo
 void mcu_set_servo(uint8_t servo, uint8_t value)
 {
-	#if SERVOS_MASK > 0
+#if SERVOS_MASK > 0
 	mcu_servos[servo - SERVO_PINS_OFFSET] = (((2000UL * value) >> 8) + 500); // quick aproximation should be divided by 255 but it's a faste quick approach
-	#else
+#else
 	(void)servo;
 	(void)value;
-	#endif
+#endif
 }
 #endif
 
@@ -442,12 +444,12 @@ void mcu_set_servo(uint8_t servo, uint8_t value)
 #ifndef mcu_get_servo
 uint8_t mcu_get_servo(uint8_t servo)
 {
-	#if SERVOS_MASK > 0
+#if SERVOS_MASK > 0
 	return (((mcu_servos[servo - SERVO_PINS_OFFSET] - 500) << 8) / 2000);
-	#else
+#else
 	(void)servo;
 	return 0;
-	#endif
+#endif
 }
 #endif
 
@@ -769,10 +771,10 @@ bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 			channel_config_set_transfer_data_size(&c, DMA_SIZE_8);
 			channel_config_set_dreq(&c, spi_get_dreq(spi_default, true));
 			dma_channel_configure(dma_tx, &c,
-														&spi_get_hw(SPI_HW)->dr, // write address
-														out,										 // read address
-														len,										 // element count (each element is of size transfer_data_size)
-														false);									 // don't start yet
+								  &spi_get_hw(SPI_HW)->dr, // write address
+								  out,					   // read address
+								  len,					   // element count (each element is of size transfer_data_size)
+								  false);				   // don't start yet
 
 			if (in)
 			{
@@ -786,10 +788,10 @@ bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 				channel_config_set_read_increment(&c, false);
 				channel_config_set_write_increment(&c, true);
 				dma_channel_configure(dma_rx, &c,
-															in,											 // write address
-															&spi_get_hw(SPI_HW)->dr, // read address
-															len,										 // element count (each element is of size transfer_data_size)
-															false);									 // don't start yet
+									  in,					   // write address
+									  &spi_get_hw(SPI_HW)->dr, // read address
+									  len,					   // element count (each element is of size transfer_data_size)
+									  false);				   // don't start yet
 
 				startmask |= (1u << dma_rx);
 			}
@@ -905,10 +907,10 @@ bool mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 			channel_config_set_transfer_data_size(&c, DMA_SIZE_8);
 			channel_config_set_dreq(&c, spi_get_dreq(spi_default, true));
 			dma_channel_configure(dma_tx, &c,
-														&spi_get_hw(SPI2_HW)->dr, // write address
-														out,										 // read address
-														len,										 // element count (each element is of size transfer_data_size)
-														false);									 // don't start yet
+								  &spi_get_hw(SPI2_HW)->dr, // write address
+								  out,						// read address
+								  len,						// element count (each element is of size transfer_data_size)
+								  false);					// don't start yet
 
 			if (in)
 			{
@@ -922,10 +924,10 @@ bool mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 				channel_config_set_read_increment(&c, false);
 				channel_config_set_write_increment(&c, true);
 				dma_channel_configure(dma_rx, &c,
-															in,											 // write address
-															&spi_get_hw(SPI2_HW)->dr, // read address
-															len,										 // element count (each element is of size transfer_data_size)
-															false);									 // don't start yet
+									  in,						// write address
+									  &spi_get_hw(SPI2_HW)->dr, // read address
+									  len,						// element count (each element is of size transfer_data_size)
+									  false);					// don't start yet
 
 				startmask |= (1u << dma_rx);
 			}

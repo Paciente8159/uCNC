@@ -506,7 +506,7 @@ void mcu_clocks_init()
 	AFIO->MAPR |= (2 << 24);
 }
 
-void mcu_usart_init(void)
+void mcu_usb_init(void)
 {
 #ifdef MCU_HAS_USB
 	// configure USB as Virtual COM port
@@ -528,7 +528,10 @@ void mcu_usart_init(void)
 	RCC->APB1ENR |= RCC_APB1ENR_USBEN;
 	tusb_cdc_init();
 #endif
+}
 
+void mcu_uart_init(void)
+{
 #ifdef MCU_HAS_UART
 	/*enables RCC clocks and GPIO*/
 	mcu_config_output_af(TX, GPIO_OUTALT_OD_50MHZ);
@@ -554,6 +557,36 @@ void mcu_usart_init(void)
 	NVIC_ClearPendingIRQ(COM_IRQ);
 	NVIC_EnableIRQ(COM_IRQ);
 	COM_UART->CR1 |= (USART_CR1_RE | USART_CR1_TE | USART_CR1_UE); // enable TE, RE and UART
+#endif
+}
+
+void mcu_uart2_init(void)
+{
+#ifdef MCU_HAS_UART2
+	/*enables RCC clocks and GPIO*/
+	mcu_config_output_af(TX2, GPIO_OUTALT_OD_50MHZ);
+	mcu_config_input_af(RX2);
+#ifdef COM_REMAP
+	AFIO->MAPR |= COM2_REMAP;
+#endif
+	RCC->COM2_APB |= (COM_APBEN);
+	/*setup UART*/
+	COM2_UART->CR1 = 0; // 8 bits No parity M=0 PCE=0
+	COM2_UART->CR2 = 0; // 1 stop bit STOP=00
+	COM2_UART->CR3 = 0;
+	COM2_UART->SR = 0;
+	// //115200 baudrate
+	float baudrate = ((float)(UART2_CLOCK >> 4) / ((float)BAUDRATE2));
+	uint16_t brr = (uint16_t)baudrate;
+	baudrate -= brr;
+	brr <<= 4;
+	brr += (uint16_t)roundf(16.0f * baudrate);
+	COM2_UART->BRR = brr;
+	COM2_UART->CR1 |= USART_CR1_RXNEIE; // enable RXNEIE
+	NVIC_SetPriority(COM2_IRQ, 3);
+	NVIC_ClearPendingIRQ(COM2_IRQ);
+	NVIC_EnableIRQ(COM2_IRQ);
+	COM2_UART->CR1 |= (USART_CR1_RE | USART_CR1_TE | USART_CR1_UE); // enable TE, RE and UART
 #endif
 }
 
@@ -680,18 +713,8 @@ void mcu_uart2_flush(void)
 
 #endif
 
-void mcu_init(void)
+void mcu_spi_init(void)
 {
-	mcu_clocks_init();
-	stm32_flash_current_page = -1;
-	mcu_io_init();
-	mcu_usart_init();
-	mcu_rtc_init();
-
-#if SERVOS_MASK > 0
-	servo_timer_init();
-#endif
-
 #ifdef MCU_HAS_SPI
 	SPI_ENREG |= SPI_ENVAL;
 	mcu_config_input_af(SPI_SDI);
@@ -719,7 +742,10 @@ void mcu_init(void)
 	NVIC_EnableIRQ(SPI_IRQ);
 	SPI_REG->CR1 |= SPI_CR1_SPE;
 #endif
+}
 
+void mcu_spi2_init(void)
+{
 #ifdef MCU_HAS_SPI2
 	SPI2_ENREG |= SPI2_ENVAL;
 	mcu_config_input_af(SPI2_SDI);
@@ -747,11 +773,26 @@ void mcu_init(void)
 	NVIC_EnableIRQ(SPI2_IRQ);
 	SPI2_REG->CR1 |= SPI_CR1_SPE;
 #endif
+}
 
+void mcu_i2c_init()
+{
 #ifdef MCU_HAS_I2C
+	// set max freq
 	mcu_i2c_config(I2C_FREQ);
 #endif
+}
 
+void mcu_init(void)
+{
+	mcu_clocks_init();
+	stm32_flash_current_page = -1;
+	mcu_io_init();
+	mcu_rtc_init();
+
+#if SERVOS_MASK > 0
+	servo_timer_init();
+#endif
 	mcu_disable_probe_isr();
 	mcu_enable_global_isr();
 }

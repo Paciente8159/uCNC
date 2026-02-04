@@ -71,11 +71,6 @@ void mcu_core0_wiredcoms_init(void *arg)
 	mcu_uart2_start();
 }
 
-void mcu_core0_wirelesscoms_init(void *arg)
-{
-	mcu_wifi_init();
-	mcu_bt_init();
-}
 
 MCU_CALLBACK void mcu_itp_isr(void *arg)
 {
@@ -161,8 +156,6 @@ void mcu_init(void)
 #if !defined(RAM_ONLY_SETTINGS)
 	mcu_eeprom_init(NVM_STORAGE_SIZE);
 #endif
-
-	mcu_wifi_init();
 
 	/**
 	 * Timers config

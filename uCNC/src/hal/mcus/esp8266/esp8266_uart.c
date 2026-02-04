@@ -284,7 +284,10 @@ void mcu_uart_init(void)
 	// ETS_UART_INTR_ATTACH(mcu_uart_isr, NULL);
 	// ETS_UART_INTR_ENABLE();
 #endif
+}
 
+void mcu_uart2_init(void)
+{
 #ifdef MCU_HAS_UART2
 	ETS_UART_INTR_DISABLE();
 	mcu_config_input(RX2);

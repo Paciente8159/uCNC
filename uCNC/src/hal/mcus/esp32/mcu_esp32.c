@@ -34,7 +34,6 @@ static volatile bool esp32_global_isr_enabled;
 
 hw_timer_t *esp32_step_timer;
 
-void esp32_pre_init(void);
 void esp32_wifi_bt_init(void);
 void esp32_wifi_bt_flush(uint8_t *buffer);
 void esp32_wifi_bt_process(void);
@@ -171,22 +170,7 @@ void mcu_init(void)
 	gpio_install_isr_service(0);
 #endif
 
-	esp32_pre_init();
 	mcu_io_init();
-
-#ifdef MCU_HAS_SPI
-	spi_config_t spi_conf = {0};
-	spi_conf.mode = SPI_MODE;
-	mcu_spi_init();
-	mcu_spi_config(spi_conf, SPI_FREQ);
-#endif
-
-#ifdef MCU_HAS_SPI2
-	spi_config_t spi2_conf = {0};
-	spi2_conf.mode = SPI2_MODE;
-	mcu_spi2_init();
-	mcu_spi2_config(spi2_conf, SPI2_FREQ);
-#endif
 
 #ifdef MCU_HAS_I2C
 	mcu_i2c_config(I2C_FREQ);
@@ -216,7 +200,6 @@ void mcu_init(void)
 	// Arduino WiFi ???
 
 	mcu_wifi_init();
-	mcu_bt_init();
 
 	/**
 	 * Timers config

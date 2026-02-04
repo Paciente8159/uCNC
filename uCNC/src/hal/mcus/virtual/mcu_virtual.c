@@ -40,13 +40,13 @@ extern "C"
 /* Platform includes */
 #include <conio.h>
 #include <pthread.h>
-#if defined(ENABLE_SOCKETS) && defined(MCU_HAS_SOCKETS)
+#if defined(ENABLE_SOCKETS)
 
 #include "../../../modules/endpoint.h"
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #pragma comment(lib, "ws2_32.lib")
-int init_winsock(void);
+	int init_winsock(void);
 #endif
 #include <windows.h>
 #include <dirent.h>
@@ -869,7 +869,7 @@ int init_winsock(void);
 			parcial -= (int)parcial;
 
 			mcu_gen_step();
-			#if defined(MCU_HAS_ONESHOT_TIMER)
+#if defined(MCU_HAS_ONESHOT_TIMER)
 			mcu_gen_oneshot();
 #endif
 
@@ -903,14 +903,14 @@ int init_winsock(void);
 				printpin(DIR5);
 #endif
 			}
-			
+
 			if (tickcount > next_rtc)
 			{
 				mcu_rtc_cb(mcu_millis());
 				next_rtc += 1000;
 			}
 		}
-		
+
 		//		startCycleCounter();
 		__atomic_store_n(&running, false, __ATOMIC_RELAXED);
 	}
@@ -1195,7 +1195,7 @@ int init_winsock(void);
 		BUFFER_INIT(uint8_t, bt_rx, RX_BUFFER_SIZE);
 #endif
 
-#if defined(ENABLE_SOCKETS) && defined(MCU_HAS_SOCKETS)
+#if defined(ENABLE_SOCKETS)
 		init_winsock();
 		extern socket_device_t wifi_socket;
 		socket_register_device(&wifi_socket);
@@ -1203,9 +1203,8 @@ int init_winsock(void);
 		extern socket_if_t *telnet_sock;
 		extern const telnet_protocol_t telnet_proto;
 		telnet_sock = telnet_start_listen(&telnet_proto, 23);
-#endif
-
 		ota_server_start();
+#endif
 	}
 
 	int main(int argc, char **argv)
@@ -1237,7 +1236,7 @@ int init_winsock(void);
 	void nvm_end_read(void) {}
 	void nvm_end_write(void) { mcu_eeprom_flush(); }
 
-#if defined(ENABLE_SOCKETS) && defined(MCU_HAS_SOCKETS)
+#if defined(ENABLE_SOCKETS)
 	/* Link with Ws2_32.lib when building on Windows */
 	/* In MinGW-w64: add -lws2_32 */
 
@@ -1350,7 +1349,6 @@ int init_winsock(void);
 			// Called for each chunk
 			received_bytes += up.datalen;
 			printf("Writing data: %lu/%lu bytes\r\n", up.datalen, received_bytes);
-			
 		}
 		else if (up.status == HTTP_UPLOAD_END)
 		{

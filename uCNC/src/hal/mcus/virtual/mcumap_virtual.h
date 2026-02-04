@@ -73,7 +73,6 @@
 #define MCU_HAS_UART2
 
 #define ENABLE_SOCKETS
-#define MCU_HAS_SOCKETS
 // #define EMULATE_74HC595
 
 // joints step/dir pins
