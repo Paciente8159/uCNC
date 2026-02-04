@@ -596,6 +596,7 @@ extern "C"
 	 * */
 
 #ifdef MCU_HAS_USB
+	void mcu_usb_init(void);
 	uint8_t mcu_usb_getc(void);
 	uint8_t mcu_usb_available(void);
 	void mcu_usb_clear(void);

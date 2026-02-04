@@ -1181,10 +1181,10 @@ extern "C"
 		BUFFER_INIT(uint8_t, usb_rx, RX_BUFFER_SIZE);
 #endif
 #ifdef ENABLE_SOCKETS
-#ifndef WIFI_TX_BUFFER_SIZE
-#define WIFI_TX_BUFFER_SIZE 64
+#ifndef TELNET_TX_BUFFER_SIZE
+#define TELNET_TX_BUFFER_SIZE 64
 #endif
-		BUFFER_INIT(uint8_t, telnet_tx, WIFI_TX_BUFFER_SIZE);
+		BUFFER_INIT(uint8_t, telnet_tx, TELNET_TX_BUFFER_SIZE);
 		BUFFER_INIT(uint8_t, telnet_rx, RX_BUFFER_SIZE);
 #endif
 #ifdef MCU_HAS_BLUETOOTH

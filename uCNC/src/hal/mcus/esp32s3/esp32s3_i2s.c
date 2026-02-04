@@ -378,7 +378,7 @@ static void i2s_tx_base_config(void)
 		mclk_set.a = 0;
 		mclk_set.b = 0;
 	};
-	ESP_LOGD("i2s", "clock %u, %u, %u", mclk_set.mclk_div, mclk_set.a, mclk_set.b);
+	ESP_LOGV("i2s", "clock %u, %u, %u", mclk_set.mclk_div, mclk_set.a, mclk_set.b);
 #endif
 
 	//

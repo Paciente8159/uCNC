@@ -918,10 +918,10 @@ static void FORCEINLINE mcu_coms_init(void)
 #endif
 
 #ifdef ENABLE_SOCKETS
-#ifndef WIFI_TX_BUFFER_SIZE
-#define WIFI_TX_BUFFER_SIZE 64
+#ifndef TELNET_TX_BUFFER_SIZE
+#define TELNET_TX_BUFFER_SIZE 64
 #endif
-	BUFFER_INIT(uint8_t, telnet_tx, WIFI_TX_BUFFER_SIZE);
+	BUFFER_INIT(uint8_t, telnet_tx, TELNET_TX_BUFFER_SIZE);
 	BUFFER_INIT(uint8_t, telnet_rx, RX_BUFFER_SIZE);
 	mcu_network_init();
 	telnet_sock = telnet_start_listen(&telnet_proto, 23);

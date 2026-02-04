@@ -78,7 +78,7 @@ extern "C"
 		uint8_t has_arg = (cmd_params->next_char == '=');
 		memset(arg, 0, sizeof(arg));
 
-#ifdef ENABLE_SOCKETS
+#ifdef ENABLE_WIFI
 		if (!strncmp((const char *)(cmd_params->cmd), "WIFI", 4))
 		{
 			if (!strcmp((const char *)&(cmd_params->cmd)[4], "ON"))
@@ -522,7 +522,7 @@ extern "C"
 /**
  * Custom SOCKETS
  */
-#if defined(ENABLE_SOCKETS)
+#if defined(ENABLE_WIFI)
 #include "../../../modules/net/socket.h"
 
 WiFiServer servers[MAX_SOCKETS];
@@ -567,7 +567,7 @@ extern "C"
 
 	static int bsd_bind(int sockfd, const struct bsd_sockaddr_in *addr, int addrlen)
 	{
-		if (sockfd < 0 || !WiFi.isConnected())
+		if (sockfd < 0)
 		{
 			return -1;
 		}
@@ -591,16 +591,17 @@ extern "C"
 			return -1;
 		}
 
-		if (servers[sockfd].hasClient())
+		int i = find_free_client(sockfd);
+		if (i >= 0 && clients_if[i] == 1)
 		{
-			int client_if = find_free_client(sockfd);
-			if (client_if < 0)
+			clients[i] = servers[sockfd].available();
+			if (!clients[i].connected())
 			{
+				clients_if[i] = 0;
 				return -1;
 			}
-			clients[client_if] = servers[sockfd].accept();
-			clients_if[client_if] = 1;
-			return (client_if + MAX_SOCKETS);
+			clients_if[i] = 2;
+			return (i + MAX_SOCKETS);
 		}
 
 		return -1;
@@ -624,6 +625,11 @@ extern "C"
 		if (sockfd < 0)
 		{
 			return -1;
+		}
+
+		if (!clients[sockfd].available())
+		{
+			return 0;
 		}
 
 		return clients[sockfd].readBytes((char *)buf, len);
@@ -704,13 +710,13 @@ static void mcu_wifi_task(void *arg)
 
 	for (;;)
 	{
-		if (wifi_settings.wifi_on && WiFi.isConnected())
+		if (wifi_settings.wifi_on)
 		{
 #if defined(ENABLE_SOCKETS) && defined(MCU_HAS_RTOS)
 			socket_server_dotasks();
 #endif
 		}
-		taskYIELD();
+		vTaskDelay(1);
 	}
 }
 #endif
@@ -722,7 +728,6 @@ extern "C"
 #include "../../../modules/net/socket.h"
 	void esp32_pre_init(void)
 	{
-		ESP_LOGV("preinit", "esp32 preinit");
 #ifdef ENABLE_WIFI
 		WiFi.begin();
 		// register WiFi as the device default network device
@@ -775,10 +780,6 @@ extern "C"
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 		ADD_EVENT_LISTENER(grbl_cmd, mcu_custom_grbl_cmd);
 #endif
-	}
-
-	void mcu_wifi_dotasks(void)
-	{
 	}
 }
 

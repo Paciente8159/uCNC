@@ -72,13 +72,13 @@ void mcu_coms_dotasks(void *arg)
 	for (;;)
 	{
 		mcu_uart_dotasks();
-		taskYIELD();
+		vTaskDelay(2);
 		mcu_uart2_dotasks();
-		taskYIELD();
+		vTaskDelay(2);
 		mcu_usb_dotasks();
-		taskYIELD();
+		vTaskDelay(2);
 		mcu_wifi_dotasks();
-		taskYIELD();
+		vTaskDelay(2);
 		mcu_bt_dotasks();
 	}
 }
@@ -121,7 +121,6 @@ MCU_CALLBACK void mcu_itp_isr(void *arg)
 extern void esp32_pre_init(void);
 void __attribute__((weak)) mcu_network_init(void)
 {
-	ESP_LOGD("network", "network init");
 	esp32_pre_init();
 }
 
@@ -145,32 +144,11 @@ void mcu_init(void)
 
 	mcu_io_init();
 
-#ifdef MCU_HAS_SPI
-	spi_config_t spi_conf = {0};
-	spi_conf.mode = SPI_MODE;
-	mcu_spi_init();
-	mcu_spi_config(spi_conf, SPI_FREQ);
-#endif
-
-#ifdef MCU_HAS_SPI2
-	spi_config_t spi2_conf = {0};
-	spi2_conf.mode = SPI2_MODE;
-	mcu_spi2_init();
-	mcu_spi2_config(spi2_conf, SPI2_FREQ);
-#endif
-
-#ifdef MCU_HAS_I2C
-	mcu_i2c_config(I2C_FREQ);
-#endif
-
 	/**
 	 * Wired Communications config
 	 */
-	mcu_uart_init();
 	mcu_uart_start();
-	mcu_uart2_init();
 	mcu_uart2_start();
-	mcu_usb_init();
 
 	/**
 	 * EEPROM config
