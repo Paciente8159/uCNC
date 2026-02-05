@@ -4706,6 +4706,10 @@ extern "C"
 #define mcu_disable_global_isr()
 #define mcu_enable_global_isr()
 
+//network
+#include <lwip/def.h>
+#define bsd_htonl htonl
+#define bsd_htons htons
 
 #include "../esp32common/esp32_common.h"
 

@@ -46,7 +46,7 @@ extern "C"
 #define SOCK_RAW 3
 #endif
 
-	struct bsd_sockaddr_in
+	struct __attribute__((__packed__)) bsd_sockaddr_in
 	{
 		uint16_t sin_family;
 		uint16_t sin_port;
@@ -54,17 +54,17 @@ extern "C"
 		unsigned char sin_zero[8];
 	};
 
-	static inline uint16_t bsd_htons(uint16_t x)
-	{
-		return (uint16_t)(((x & 0x00ffu) << 8) | ((x & 0xff00u) >> 8));
-	}
-	static inline uint32_t bsd_htonl(uint32_t x)
-	{
-		return ((x & 0x000000ffUL) << 24) |
-			   ((x & 0x0000ff00UL) << 8) |
-			   ((x & 0x00ff0000UL) >> 8) |
-			   ((x & 0xff000000UL) >> 24);
-	}
+/**
+ * Default is little-endian
+ * If not the macros should be replaced by a simply passing the value
+ */
+#ifndef bsd_htons
+#define bsd_htons(x)((uint16_t)(((x & 0x00ffu) << 8) | ((x & 0xff00u) >> 8)))
+#endif
+
+#ifndef bsd_htonl
+#define bsd_htonl(x)((uint32_t)(((x & 0x000000ffUL) << 24) | ((x & 0x0000ff00UL) << 8) | ((x & 0x00ff0000UL) >> 8) | ((x & 0xff000000UL) >> 24)))
+#endif
 
 	/* Socket API prototypes — These must be implemented either in the MCU of for a specific module driver to provide the TCP/IP stack interface */
 	typedef struct socket_device_

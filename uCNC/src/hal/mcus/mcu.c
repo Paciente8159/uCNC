@@ -145,25 +145,25 @@ bool mcu_in_isr_context(void)
 #endif
 
 // initialize protocol/coms ports
-#ifdef MCU_HAS_UART
-void __attribute__((weak)) mcu_uart_init() {}
-#endif
+// #ifdef MCU_HAS_UART
+// void __attribute__((weak)) mcu_uart_init() {}
+// #endif
 
-#ifdef MCU_HAS_UART2
-void __attribute__((weak)) mcu_uart2_init() {}
-#endif
+// #ifdef MCU_HAS_UART2
+// void __attribute__((weak)) mcu_uart2_init() {}
+// #endif
 
-#ifdef MCU_HAS_USB
-void __attribute__((weak)) mcu_usb_init(void) {}
-#endif
+// #ifdef MCU_HAS_USB
+// void __attribute__((weak)) mcu_usb_init(void) {}
+// #endif
 
-#ifdef ENABLE_SOCKETS
-void __attribute__((weak)) mcu_network_init() {}
-#endif
+// #ifdef ENABLE_SOCKETS
+// void __attribute__((weak)) mcu_network_init() {}
+// #endif
 
-#ifdef MCU_HAS_BLUETOOTH
-void __attribute__((weak)) mcu_bt_init() {}
-#endif
+// #ifdef MCU_HAS_BLUETOOTH
+// void __attribute__((weak)) mcu_bt_init() {}
+// #endif
 
 static void FORCEINLINE mcu_outputs_init(void)
 {

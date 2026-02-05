@@ -1100,6 +1100,22 @@ extern "C"
 	/* ----- MCU init and main ------------------------------------------------ */
 
 	static pthread_t thread_io;
+	void mcu_usb_init() {}
+	void mcu_uart_init() {}
+	void mcu_uart2_init() {}
+	void mcu_network_init()
+	{
+#if defined(ENABLE_SOCKETS)
+		init_winsock();
+		extern socket_device_t wifi_socket;
+		socket_register_device(&wifi_socket);
+
+		extern socket_if_t *telnet_sock;
+		extern const telnet_protocol_t telnet_proto;
+		telnet_sock = telnet_start_listen(&telnet_proto, 23);
+		ota_server_start();
+#endif
+	}
 
 	void mcu_init(void)
 	{
@@ -1141,24 +1157,6 @@ extern "C"
 		pthread_create(&g_uart.thread, NULL, &uart_thread_fn, NULL);
 #endif
 
-		mcu_enable_global_isr();
-
-		flash_fs.drive = 'C';
-		flash_fs.open = flash_fs_open;
-		flash_fs.read = flash_fs_read;
-		flash_fs.write = flash_fs_write;
-		flash_fs.seek = flash_fs_seek;
-		flash_fs.available = flash_fs_available;
-		flash_fs.close = flash_fs_close;
-		flash_fs.remove = flash_fs_remove;
-		flash_fs.opendir = flash_fs_opendir;
-		flash_fs.mkdir = flash_fs_mkdir;
-		flash_fs.rmdir = flash_fs_rmdir;
-		flash_fs.next_file = flash_fs_next_file;
-		flash_fs.finfo = flash_fs_finfo;
-		flash_fs.next = NULL;
-		fs_mount(&flash_fs);
-
 #ifdef MCU_HAS_UART
 #ifndef UART_TX_BUFFER_SIZE
 #define UART_TX_BUFFER_SIZE 64
@@ -1186,6 +1184,7 @@ extern "C"
 #endif
 		BUFFER_INIT(uint8_t, telnet_tx, TELNET_TX_BUFFER_SIZE);
 		BUFFER_INIT(uint8_t, telnet_rx, RX_BUFFER_SIZE);
+		mcu_network_init();
 #endif
 #ifdef MCU_HAS_BLUETOOTH
 #ifndef BLUETOOTH_TX_BUFFER_SIZE
@@ -1195,16 +1194,26 @@ extern "C"
 		BUFFER_INIT(uint8_t, bt_rx, RX_BUFFER_SIZE);
 #endif
 
-#if defined(ENABLE_SOCKETS)
-		init_winsock();
-		extern socket_device_t wifi_socket;
-		socket_register_device(&wifi_socket);
 
-		extern socket_if_t *telnet_sock;
-		extern const telnet_protocol_t telnet_proto;
-		telnet_sock = telnet_start_listen(&telnet_proto, 23);
-		ota_server_start();
-#endif
+
+		mcu_enable_global_isr();
+
+		flash_fs.drive = 'C';
+		flash_fs.open = flash_fs_open;
+		flash_fs.read = flash_fs_read;
+		flash_fs.write = flash_fs_write;
+		flash_fs.seek = flash_fs_seek;
+		flash_fs.available = flash_fs_available;
+		flash_fs.close = flash_fs_close;
+		flash_fs.remove = flash_fs_remove;
+		flash_fs.opendir = flash_fs_opendir;
+		flash_fs.mkdir = flash_fs_mkdir;
+		flash_fs.rmdir = flash_fs_rmdir;
+		flash_fs.next_file = flash_fs_next_file;
+		flash_fs.finfo = flash_fs_finfo;
+		flash_fs.next = NULL;
+		fs_mount(&flash_fs);
+		
 	}
 
 	int main(int argc, char **argv)

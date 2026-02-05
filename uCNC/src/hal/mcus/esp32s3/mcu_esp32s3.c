@@ -71,7 +71,6 @@ void mcu_core0_wiredcoms_init(void *arg)
 	mcu_uart2_start();
 }
 
-
 MCU_CALLBACK void mcu_itp_isr(void *arg)
 {
 #ifdef IC74HC595_CUSTOM_SHIFT_IO
@@ -105,6 +104,12 @@ void mcu_rtc_task(void *arg)
 	}
 }
 
+extern void esp32_pre_init(void);
+void __attribute__((weak)) mcu_network_init(void)
+{
+	esp32_pre_init();
+}
+
 /**
  * initializes the mcu
  * this function needs to:
@@ -124,28 +129,6 @@ void mcu_init(void)
 	 */
 
 	mcu_io_init();
-
-#ifdef MCU_HAS_SPI
-	spi_config_t spi_conf = {0};
-	spi_conf.mode = SPI_MODE;
-	mcu_spi_init();
-	mcu_spi_config(spi_conf, SPI_FREQ);
-#endif
-
-#ifdef MCU_HAS_SPI2
-	spi_config_t spi2_conf = {0};
-	spi2_conf.mode = SPI2_MODE;
-	mcu_spi2_init();
-	mcu_spi2_config(spi2_conf, SPI2_FREQ);
-#endif
-
-#ifdef MCU_HAS_I2C
-	mcu_i2c_config(I2C_FREQ);
-#endif
-
-	mcu_uart_init();
-	mcu_uart2_init();
-	mcu_usb_init();
 	esp_ipc_call_blocking(0, mcu_core0_wiredcoms_init, NULL);
 
 	/**
@@ -156,6 +139,12 @@ void mcu_init(void)
 #if !defined(RAM_ONLY_SETTINGS)
 	mcu_eeprom_init(NVM_STORAGE_SIZE);
 #endif
+
+	/**
+	 * Wireless Communications config
+	 */
+
+	mcu_wifi_init();
 
 	/**
 	 * Timers config
@@ -282,7 +271,7 @@ bool mcu_get_global_isr(void)
 	{
 		return false;
 	}
-	
+
 	uint32_t ps;
 	__asm__ volatile("rsr.ps %0" : "=a"(ps));
 	// INTLEVEL is bits [3:0] of PS
@@ -398,9 +387,9 @@ void mcu_dotasks(void)
 	esp_task_wdt_reset();
 	mcu_usb_dotasks();
 	esp_task_wdt_reset();
-	// mcu_wifi_dotasks();
-	// esp_task_wdt_reset();
-	// mcu_bt_dotasks();
+	mcu_wifi_dotasks();
+	esp_task_wdt_reset();
+	mcu_bt_dotasks();
 }
 
 #ifdef MCU_HAS_ONESHOT_TIMER
