@@ -22,6 +22,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
+#include <errno.h>
 
 extern "C"
 {
@@ -434,7 +435,7 @@ extern "C"
 {
 #include "../../../modules/net/http.h"
 	// HTML form for firmware upload (simplified from ESP8266HTTPUpdateServer)
-	static const char updateForm[] PROGMEM =
+	static const char updateForm[] __rom__ =
 		"<!DOCTYPE html><html><body>"
 		"<form method='POST' action='" OTA_URI "' enctype='multipart/form-data'>"
 		"Firmware:<br><input type='file' name='firmware'>"
@@ -512,9 +513,12 @@ extern "C"
 
 	void ota_server_start(void)
 	{
-		// LOAD_MODULE(http_server);
-		// const char update_uri[] = "/update";
-		// http_add((char *)update_uri, HTTP_REQ_ANY, ota_page_cb, ota_upload_cb);
+		RUNONCE
+		{
+			LOAD_MODULE(http_server);
+			http_add(OTA_URI, HTTP_REQ_ANY, ota_page_cb, ota_upload_cb);
+			RUNONCE_COMPLETE();
+		}
 	}
 }
 #endif
@@ -525,10 +529,6 @@ extern "C"
 #if defined(ENABLE_WIFI)
 #include "../../../modules/net/socket.h"
 
-// WiFiServer servers[MAX_SOCKETS];
-// WiFiClient clients[MAX_SOCKETS * SOCKET_MAX_CLIENTS];
-// int servers_if[MAX_SOCKETS];
-// int clients_if[MAX_SOCKETS * SOCKET_MAX_CLIENTS];
 typedef struct wifi_server_
 {
 	uint16_t port;
@@ -595,9 +595,10 @@ extern "C"
 			return -1;
 		}
 		uint16_t port = bsd_htons(addr->sin_port);
+		servers[sockfd].port = port;
 		servers[sockfd].server = WiFiServer(port, SOCKET_MAX_CLIENTS);
 		servers[sockfd].server.begin(port);
-		ESP_LOGV("socket", "server id %d listen on port %d", sockfd, port);
+		// ESP_LOGV("socket", "server id %d listen on port %d", sockfd, port);
 		return 0;
 	}
 
@@ -625,130 +626,71 @@ extern "C"
 			{
 				return -1;
 			}
-			ESP_LOGV("socket", "client id %d connected on port %d", servers[sockfd].clients[i].fd(), servers[sockfd].clients[i].localPort());
 			return servers[sockfd].clients[i].fd();
 		}
 
 		return -1;
 	}
-	// optional (can be removed)
-	// int bsd_setsockopt(int sockfd, int level, int optname, const void *optval, int optlen);
-	// int bsd_getsockopt(int sockfd, int level, int optname, void *optval, int *optlen);
-	static int bsd_fcntl(int sockfd, int cmd, long arg)
-	{
-		if (sockfd < 0)
-		{
-			return -1;
-		}
-		return 0;
-	}
 
 	static int bsd_recv(int sockfd, void *buf, size_t len, int flags)
 	{
-		WiFiClient* c = get_client(sockfd);
+		WiFiClient *c = get_client(sockfd);
 
-		if(!c){
+		if (!c)
+		{
 			return -1;
 		}
 
-		if(!c->connected()){
+		// ESP_LOGV("socket", "client id %d recv", c->fd());
+
+		if (!c->connected())
+		{
+			return 0;
+		}
+
+		if (!c->available())
+		{
 			return -1;
 		}
 
-		if(!c->available()){
-			return -1;
-		}
-
-		ESP_LOGV("socket", "client id %d recv has data", sockfd);
-		return c->readBytes((char *)buf, len);
-
-		// sockfd -= MAX_SOCKETS;
-
-		// ESP_LOGV("socket", "client id %d recv", sockfd);
-
-		// if (sockfd < 0)
-		// {
-		// 	return -1;
-		// }
-
-		// if (!clients[sockfd].available())
-		// {
-		// 	ESP_LOGV("socket", "client id %d recv nodata!!", sockfd);
-		// 	return -1;
-		// }
-
-		// ESP_LOGV("socket", "client id %d recv has data", sockfd);
-
-		// return clients[sockfd].readBytes((char *)buf, len);
+		return c->read((uint8_t *)buf, len);
 	}
 
 	static int bsd_send(int sockfd, const void *buf, size_t len, int flags)
 	{
-		WiFiClient* c = get_client(sockfd);
+		WiFiClient *c = get_client(sockfd);
 
-		if(!c){
+		if (!c)
+		{
 			return -1;
 		}
 
-		if(c->connected()){
+		// ESP_LOGV("socket", "client id %d send", c->fd());
+
+		if (!c->connected())
+		{
 			return -1;
 		}
 
-		if(c->availableForWrite()){
-			return 0;
-		}
-
-		ESP_LOGV("socket", "client id %d recv has data", sockfd);
-		return c->write_P((char *)buf, len);
-
-		// sockfd -= MAX_SOCKETS;
-
-		// ESP_LOGV("socket", "client id %d send", sockfd);
-
-		// if (sockfd < 0)
-		// {
-		// 	return -1;
-		// }
-
-		// if (!clients[sockfd].availableForWrite())
-		// {
-		// 	return 0;
-		// }
-
-		// return clients[sockfd].write_P((char *)buf, len);
+		return c->write((const uint8_t *)buf, len);
 	}
 
 	static int bsd_close(int fd)
 	{
-		WiFiClient* c = get_client(fd);
+		WiFiClient *c = get_client(fd);
 
-		if(!c){
+		if (!c)
+		{
 			return -1;
 		}
 
+		// ESP_LOGV("socket", "client id %d close", c->fd());
+
 		c->stop();
-
-		// if (fd < 0)
-		// {
-		// 	return -1;
-		// }
-		// if (fd < MAX_SOCKETS)
-		// {
-		// 	servers_if[fd] = 0;
-		// 	servers[fd].end();
-		// 	return 0;
-		// }
-		// else if (fd - MAX_SOCKETS < SOCKET_MAX_CLIENTS)
-		// {
-		// 	clients_if[fd] = 0;
-		// 	clients[fd - MAX_SOCKETS].flush();
-		// 	clients[fd - MAX_SOCKETS].stop();
-		// }
-
 		return 0;
 	}
 
-	socket_device_t wifi_socket = {.socket = bsd_socket, .bind = bsd_bind, .listen = bsd_listen, .accept = bsd_accept, .fcntl = bsd_fcntl, .recv = bsd_recv, .send = bsd_send, .close = bsd_close};
+	socket_device_t wifi_socket = {.socket = bsd_socket, .bind = bsd_bind, .listen = bsd_listen, .accept = bsd_accept, .recv = bsd_recv, .send = bsd_send, .close = bsd_close};
 }
 
 #endif
@@ -811,35 +753,33 @@ extern "C"
 		WiFi.begin();
 		// register WiFi as the device default network device
 		socket_register_device(&wifi_socket);
-#ifndef CUSTOM_OTA_ENDPOINT
-		ota_server_start();
-#endif
 #endif
 	}
 
 	void mcu_wifi_init(void)
 	{
-		// if (FLASH_FS.begin())
-		// {
-		// 	flash_fs = {
-		// 		.drive = 'C',
-		// 		.open = flash_fs_open,
-		// 		.read = flash_fs_read,
-		// 		.write = flash_fs_write,
-		// 		.seek = flash_fs_seek,
-		// 		.available = flash_fs_available,
-		// 		.close = flash_fs_close,
-		// 		.remove = flash_fs_remove,
-		// 		.opendir = flash_fs_opendir,
-		// 		.mkdir = flash_fs_mkdir,
-		// 		.rmdir = flash_fs_rmdir,
-		// 		.next_file = flash_fs_next_file,
-		// 		.finfo = flash_fs_info,
-		// 		.next = NULL};
-		// 	fs_mount(&flash_fs);
-		// }
+		if (FLASH_FS.begin())
+		{
+			flash_fs = {
+				.drive = 'C',
+				.open = flash_fs_open,
+				.read = flash_fs_read,
+				.write = flash_fs_write,
+				.seek = flash_fs_seek,
+				.available = flash_fs_available,
+				.close = flash_fs_close,
+				.remove = flash_fs_remove,
+				.opendir = flash_fs_opendir,
+				.mkdir = flash_fs_mkdir,
+				.rmdir = flash_fs_rmdir,
+				.next_file = flash_fs_next_file,
+				.finfo = flash_fs_info,
+				.next = NULL};
+			fs_mount(&flash_fs);
+		}
 
 #ifdef ENABLE_WIFI
+		ota_server_start();
 #ifndef ENABLE_BLUETOOTH
 		WiFi.setSleep(WIFI_PS_NONE);
 #endif

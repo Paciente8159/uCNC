@@ -342,12 +342,7 @@ static int bsd_close(int sockfd)
 	return 0;
 }
 
-static int bsd_fcntl(int fd, int cmd, long arg)
-{
-	return 0;
-}
-
-socket_device_t wifi_socket = {.socket = bsd_socket, .bind = bsd_bind, .listen = bsd_listen, .accept = bsd_accept, .fcntl = bsd_fcntl, .recv = bsd_recv, .send = bsd_send, .close = bsd_close};
+socket_device_t wifi_socket = {.socket = bsd_socket, .bind = bsd_bind, .listen = bsd_listen, .accept = bsd_accept, .recv = bsd_recv, .send = bsd_send, .close = bsd_close};
 
 #endif
 #endif

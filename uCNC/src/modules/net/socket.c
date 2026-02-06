@@ -70,13 +70,6 @@ socket_if_t *socket_start_listen(uint32_t ip_listen, uint16_t port, int domain, 
 		return NULL;
 	}
 
-	if (!socket_device->fcntl || socket_device->fcntl(s, F_SETFL, O_NONBLOCK) < 0)
-	{
-		if (socket_device->close)
-			socket_device->close(s);
-		return NULL;
-	}
-
 	if (type == 1 /* SOCK_STREAM */)
 	{
 		if (!socket_device->listen || socket_device->listen(s, SOCKET_MAX_CLIENTS) < 0)
@@ -101,7 +94,7 @@ void socket_stop_listening(socket_if_t *socket)
 			if (socket->socket_clients[i] >= 0)
 			{
 				if (socket_device->close)
-				socket_device->close(socket->socket_clients[i]);
+					socket_device->close(socket->socket_clients[i]);
 				socket->socket_clients[i] = -1;
 			}
 		}
@@ -205,7 +198,7 @@ static void add_client(socket_if_t *iface, int client_fd)
 	}
 	/* No space — close the connection */
 	if (socket_device->close)
-			socket_device->close(client_fd);
+		socket_device->close(client_fd);
 }
 
 /* Helper: remove disconnected client */
@@ -216,7 +209,7 @@ static void remove_client(socket_if_t *iface, int idx)
 		if (iface->socket_clients[idx] >= 0)
 		{
 			if (socket_device->close)
-			socket_device->close(iface->socket_clients[idx]);
+				socket_device->close(iface->socket_clients[idx]);
 			if (iface->client_ondisconnected_cb)
 			{
 				iface->client_ondisconnected_cb(idx, iface->protocol);
@@ -280,7 +273,10 @@ void socket_server_dotasks(void)
 			{
 				remove_client(socket, c);
 			}
-
+			else if (errno != EAGAIN && errno != EWOULDBLOCK)
+			{
+				remove_client(socket, c);
+			}
 			else
 			{
 				if (socket->client_onidle_cb)

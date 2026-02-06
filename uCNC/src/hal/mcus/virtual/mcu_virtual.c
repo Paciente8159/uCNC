@@ -1194,8 +1194,6 @@ extern "C"
 		BUFFER_INIT(uint8_t, bt_rx, RX_BUFFER_SIZE);
 #endif
 
-
-
 		mcu_enable_global_isr();
 
 		flash_fs.drive = 'C';
@@ -1213,7 +1211,6 @@ extern "C"
 		flash_fs.finfo = flash_fs_finfo;
 		flash_fs.next = NULL;
 		fs_mount(&flash_fs);
-		
 	}
 
 	int main(int argc, char **argv)
@@ -1267,7 +1264,13 @@ extern "C"
 
 	static int bsd_bind(int sockfd, const struct bsd_sockaddr_in *addr, socklen_t addrlen)
 	{
-		return bind(sockfd, (const struct sockaddr *)addr, addrlen);
+		if (bind(sockfd, (const struct sockaddr *)addr, addrlen) < 0)
+		{
+			return -1;
+		}
+		int mode = 1;
+
+		return ioctlsocket(sockfd, FIONBIO, &mode);
 	}
 
 	static int bsd_listen(int sockfd, int backlog)
@@ -1285,18 +1288,6 @@ extern "C"
 		return setsockopt(sockfd, level, optname, (const char *)optval, optlen);
 	}
 
-	/* Limited fcntl emulation for non-blocking mode */
-	static int bsd_fcntl(int fd, int cmd, long arg)
-	{
-		/* F_SETFL = 0x800; O_NONBLOCK = 0x800 in many POSIX impls */
-		if (cmd == F_SETFL)
-		{
-			u_long mode = (arg & O_NONBLOCK) ? 1UL : 0UL;
-			return ioctlsocket(fd, FIONBIO, &mode);
-		}
-		return -1; /* Unsupported command */
-	}
-
 	static int bsd_recv(int sockfd, void *buf, size_t len, int flags)
 	{
 		return recv(sockfd, (char *)buf, (int)len, flags);
@@ -1312,7 +1303,7 @@ extern "C"
 		return closesocket(fd);
 	}
 
-	socket_device_t wifi_socket = {.socket = bsd_socket, .bind = bsd_bind, .listen = bsd_listen, .accept = bsd_accept, .fcntl = bsd_fcntl, .recv = bsd_recv, .send = bsd_send, .close = bsd_close};
+	socket_device_t wifi_socket = {.socket = bsd_socket, .bind = bsd_bind, .listen = bsd_listen, .accept = bsd_accept, .recv = bsd_recv, .send = bsd_send, .close = bsd_close};
 
 #endif
 

@@ -506,7 +506,7 @@ extern "C"
 {
 #include "../../../modules/net/http.h"
 	// HTML form for firmware upload (simplified from ESP8266HTTPUpdateServer)
-	static const char updateForm[] PROGMEM =
+	static const char updateForm[] __rom__ =
 		"<!DOCTYPE html><html><body>"
 		"<form method='POST' action='" OTA_URI "' enctype='multipart/form-data'>"
 		"Firmware:<br><input type='file' name='firmware'>"

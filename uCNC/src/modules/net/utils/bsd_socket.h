@@ -73,10 +73,10 @@ extern "C"
 		int (*bind)(int sockfd, const struct bsd_sockaddr_in *addr, int addrlen);
 		int (*listen)(int sockfd, int backlog);
 		int (*accept)(int sockfd, struct bsd_sockaddr_in *addr, int *addrlen);
-		// optional (can be removed)
+		// optional (can be removed) (architecture dependent)
 		// int (*setsockopt)(int sockfd, int level, int optname, const void *optval, int optlen);
 		// int (*getsockopt)(int sockfd, int level, int optname, void *optval, int *optlen);
-		int (*fcntl)(int fd, int cmd, long arg);
+		// int (*fcntl)(int fd, int cmd, long arg);
 		int (*recv)(int sockfd, void *buf, size_t len, int flags);
 		int (*send)(int sockfd, const void *buf, size_t len, int flags);
 		int (*close)(int fd);

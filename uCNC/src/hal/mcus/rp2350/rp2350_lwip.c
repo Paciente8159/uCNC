@@ -166,6 +166,7 @@ extern "C"
 		if (sockfd < 0 || sockfd >= BSD_MAX_FDS)
 			return -1;
 		g_fds[sockfd].port = (uint16_t)((addr->sin_port << 8) | (addr->sin_port >> 8));
+		g_fds[sockfd].nonblock = true;
 		return 0;
 	}
 
@@ -207,18 +208,6 @@ extern "C"
 			}
 		}
 		return -1; // no client ready
-	}
-
-	static int bsd_fcntl(int fd, int cmd, long arg)
-	{
-		if (fd < 0 || fd >= BSD_MAX_FDS)
-			return -1;
-		if (cmd == F_SETFL)
-		{
-			g_fds[fd].nonblock = (arg & O_NONBLOCK);
-			return 0;
-		}
-		return -1;
 	}
 
 	static err_t sent_cb(void *arg, struct tcp_pcb *tpcb, u16_t len)
@@ -431,7 +420,7 @@ extern "C"
 		return ERR_OK;
 	}
 
-	socket_device_t wifi_socket = {.socket = bsd_socket, .bind = bsd_bind, .listen = bsd_listen, .accept = bsd_accept, .fcntl = bsd_fcntl, .recv = bsd_recv, .send = bsd_send, .close = bsd_close};
+	socket_device_t wifi_socket = {.socket = bsd_socket, .bind = bsd_bind, .listen = bsd_listen, .accept = bsd_accept, .recv = bsd_recv, .send = bsd_send, .close = bsd_close};
 
 #ifdef __cplusplus
 }
