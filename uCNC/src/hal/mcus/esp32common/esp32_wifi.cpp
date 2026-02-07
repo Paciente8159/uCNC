@@ -744,12 +744,37 @@ static void mcu_wifi_task(void *arg)
 
 #endif
 
+#ifdef USE_STATIC_IP
+#ifndef STATIC_IP_IP
+// 192.168.1.200
+#define STATIC_IP_IP 3355551936
+#endif
+#ifndef STATIC_IP_GW
+// 192.168.1.1
+#define STATIC_IP_GW 16885952
+#endif
+#ifndef STATIC_IP_SUB
+// 255.255.255.0
+#define STATIC_IP_SUB 16777215
+#endif
+
+static IPAddress local_IP((uint32_t)(STATIC_IP_IP));
+static IPAddress gateway((uint32_t)(STATIC_IP_GW));
+static IPAddress subnet((uint32_t)(STATIC_IP_SUB));
+#endif
+
 extern "C"
 {
 #include "../../../modules/net/socket.h"
 	void esp32_pre_init(void)
 	{
 #ifdef ENABLE_WIFI
+#ifdef USE_STATIC_IP
+		if (!WiFi.config(local_IP, gateway, subnet))
+		{
+			proto_info("Static IP config failed");
+		}
+#endif
 		WiFi.begin();
 		// register WiFi as the device default network device
 		socket_register_device(&wifi_socket);

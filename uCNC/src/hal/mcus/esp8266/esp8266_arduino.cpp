@@ -575,9 +575,34 @@ extern "C"
 	}
 #endif
 
+#ifdef USE_STATIC_IP
+#ifndef STATIC_IP_IP
+// 192.168.1.200
+#define STATIC_IP_IP 3355551936
+#endif
+#ifndef STATIC_IP_GW
+// 192.168.1.1
+#define STATIC_IP_GW 16885952
+#endif
+#ifndef STATIC_IP_SUB
+// 255.255.255.0
+#define STATIC_IP_SUB 16777215
+#endif
+
+	static IPAddress local_IP((uint32_t)(STATIC_IP_IP));
+	static IPAddress gateway((uint32_t)(STATIC_IP_GW));
+	static IPAddress subnet((uint32_t)(STATIC_IP_SUB));
+#endif
+
 	void __attribute__((weak)) mcu_network_init(void)
 	{
 #ifdef ENABLE_WIFI
+#ifdef USE_STATIC_IP
+		if (!WiFi.config(local_IP, gateway, subnet))
+		{
+			proto_info("Static IP config failed");
+		}
+#endif
 		WiFi.setSleepMode(WIFI_NONE_SLEEP);
 		WiFi.begin();
 		extern socket_device_t wifi_socket;
@@ -585,7 +610,7 @@ extern "C"
 		ota_server_start();
 #endif
 	}
-	
+
 	void esp8266_wifi_init()
 	{
 		DBGMSG("Wifi assert");
