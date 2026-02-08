@@ -136,7 +136,6 @@ void cnc_run(void)
 			cnc_alarm(alarm);
 		}
 
-		
 		switch (cnc_state.alarm)
 		{
 		case -EXEC_ALARM_HARD_LIMIT:
@@ -150,7 +149,7 @@ void cnc_run(void)
 			requires_reset = true;
 			break;
 		}
-	}	while (!requires_reset);
+	} while (!requires_reset);
 
 	if (cnc_state.alarm == EXEC_ALARM_SOFTRESET)
 	{
@@ -205,8 +204,10 @@ void cnc_run(void)
 		{
 			if (grbl_stream_getc() == EOL)
 			{
+#if EMULATE_GRBL_STARTUP <= 2
 				proto_feedback(MSG_FEEDBACK_1);
 				proto_error(STATUS_SYSTEM_GC_LOCK);
+#endif
 			}
 		}
 		cnc_dotasks();
