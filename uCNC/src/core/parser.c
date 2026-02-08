@@ -1956,23 +1956,22 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 			probe_flags |= (new_state->groups.motion_mantissa & 0x01) ? 2 : 0;
 
 			error = mc_probe(target, probe_flags, &block_data);
-			if (error == STATUS_PROBE_SUCCESS)
+			parser_parameters.last_probe_ok = 0;
+			switch (error)
 			{
+			case STATUS_PROBE_SUCCESS:
 				parser_parameters.last_probe_ok = 1;
+				__FALL_THROUGH__
+			case STATUS_PROBE_UNSUCCESS:
 				error = STATUS_OK;
-			}
-			else
-			{
+				// sync probe position
+				parser_update_probe_pos();
+				proto_probe_result(parser_parameters.last_probe_ok);
+				break;
+			default:
 				// failed at this position
 				parser_sync_probe();
-				parser_parameters.last_probe_ok = 0;
-			}
-			// sync probe position
-			parser_update_probe_pos();
-
-			if (error == STATUS_OK)
-			{
-				proto_probe_result(parser_parameters.last_probe_ok);
+				break;
 			}
 
 			return error;

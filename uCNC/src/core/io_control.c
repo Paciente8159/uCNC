@@ -90,6 +90,8 @@ WEAK_EVENT_HANDLER(probe_disable)
 
 MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 {
+	mcu_isr_context_enter();
+
 #ifdef DISABLE_ALL_LIMITS
 	return;
 #else
@@ -149,6 +151,8 @@ MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 
 MCU_IO_CALLBACK void mcu_controls_changed_cb(void)
 {
+	mcu_isr_context_enter();
+	
 #ifdef DISABLE_ALL_CONTROLS
 	return;
 #else
@@ -204,6 +208,8 @@ MCU_IO_CALLBACK void mcu_controls_changed_cb(void)
 
 MCU_IO_CALLBACK void mcu_probe_changed_cb(void)
 {
+	mcu_isr_context_enter();
+
 #if !ASSERT_PIN(PROBE)
 	return;
 #else
@@ -236,6 +242,8 @@ MCU_IO_CALLBACK void mcu_probe_changed_cb(void)
 
 MCU_IO_CALLBACK void mcu_inputs_changed_cb(void)
 {
+	mcu_isr_context_enter();
+
 	static volatile uint8_t prev_inputs = 0;
 	uint8_t inputs = 0;
 	uint8_t diff;

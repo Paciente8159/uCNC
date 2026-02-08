@@ -118,12 +118,14 @@ void cnc_run(void)
 {
 #if EMULATE_GRBL_STARTUP > 2
 	cnc_reset();
-	if(cnc_unlock(false)!=UNLOCK_ERROR){
+	if (cnc_unlock(false) != UNLOCK_ERROR)
+	{
 		cnc_state.alarm = EXEC_ALARM_NOALARM;
 	}
 
 	cnc_state.loop_state = LOOP_RUNNING;
-	for (;;)
+	bool requires_reset = false;
+	do
 	{
 		cnc_parse_cmd();
 		cnc_dotasks();
@@ -131,21 +133,30 @@ void cnc_run(void)
 		int8_t alarm = cnc_state.alarm;
 		if (alarm > EXEC_ALARM_NOALARM)
 		{
-			proto_alarm(cnc_state.alarm);
+			cnc_alarm(alarm);
 		}
-		if (alarm < EXEC_ALARM_PROBE_FAIL_INITIAL && alarm != EXEC_ALARM_NOALARM)
+
+		
+		switch (cnc_state.alarm)
 		{
-			io_enable_steppers(~g_settings.step_enable_invert);
-			cnc_check_fault_systems();
+		case -EXEC_ALARM_HARD_LIMIT:
+		case -EXEC_ALARM_SOFT_LIMIT:
+			proto_feedback(MSG_FEEDBACK_1);
 			cnc_state.loop_state = LOOP_REQUIRE_RESET;
+			io_enable_steppers(~g_settings.step_enable_invert);
+			__FALL_THROUGH__
+		case EXEC_ALARM_SOFTRESET:
+		case EXEC_ALARM_EMERGENCY_STOP:
+			requires_reset = true;
 			break;
-		}	
-	}
-	
-	if (cnc_state.alarm == EXEC_ALARM_SOFTRESET)
-		{
-			cnc_state.alarm = EXEC_ALARM_NOALARM;
 		}
+	}	while (!requires_reset);
+
+	if (cnc_state.alarm == EXEC_ALARM_SOFTRESET)
+	{
+		cnc_state.alarm = EXEC_ALARM_NOALARM;
+	}
+
 #else
 	// enters loop reset
 	cnc_reset();
@@ -165,16 +176,28 @@ void cnc_run(void)
 		int8_t alarm = cnc_state.alarm;
 		if (alarm > EXEC_ALARM_NOALARM)
 		{
-			proto_alarm(cnc_state.alarm);
+			cnc_alarm(alarm);
 		}
-		if (alarm < EXEC_ALARM_PROBE_FAIL_INITIAL && alarm != EXEC_ALARM_NOALARM)
+
+		bool requires_reset = false;
+		switch (cnc_state.alarm)
+		{
+		case EXEC_ALARM_SOFTRESET:
+		case EXEC_ALARM_EMERGENCY_STOP:
+		case -EXEC_ALARM_HARD_LIMIT:
+		case -EXEC_ALARM_SOFT_LIMIT:
+			requires_reset = true;
+			break;
+		}
+
+		if (requires_reset)
 		{
 			io_enable_steppers(~g_settings.step_enable_invert);
-			cnc_check_fault_systems();
 			cnc_state.loop_state = LOOP_REQUIRE_RESET;
 			break;
 		}
 	}
+#endif
 
 	do
 	{
@@ -183,7 +206,7 @@ void cnc_run(void)
 			if (grbl_stream_getc() == EOL)
 			{
 				proto_feedback(MSG_FEEDBACK_1);
-				proto_error(0);
+				proto_error(STATUS_SYSTEM_GC_LOCK);
 			}
 		}
 		cnc_dotasks();
@@ -193,7 +216,6 @@ void cnc_run(void)
 			break;
 		}
 	} while (cnc_state.loop_state == LOOP_REQUIRE_RESET || cnc_get_exec_state(EXEC_KILL));
-#endif
 }
 
 uint8_t cnc_parse_cmd(void)
@@ -361,6 +383,8 @@ void cnc_restore_motion(void)
 #ifndef DISABLE_RTC_CODE
 MCU_CALLBACK void mcu_rtc_cb(uint32_t millis)
 {
+	mcu_isr_context_enter();
+
 	uint8_t mls = (uint8_t)(0xff & millis);
 	if ((mls & CTRL_SCHED_CHECK_MASK) == CTRL_SCHED_CHECK_VAL)
 	{
@@ -436,7 +460,16 @@ void cnc_alarm(int8_t code)
 	cnc_stop();
 	if (!cnc_state.alarm || code < 0)
 	{
-		cnc_state.alarm = code;
+
+		if (!mcu_in_isr_context() && code > EXEC_ALARM_NOALARM)
+		{
+			proto_alarm(code);
+			cnc_state.alarm = -code;
+		}
+		else
+		{
+			cnc_state.alarm = code;
+		}
 #ifdef ENABLE_MAIN_LOOP_MODULES
 		if (code > 0)
 		{
@@ -458,7 +491,8 @@ uint8_t cnc_get_alarm(void)
 {
 	// force interlocking check to set alarm code in case this as not yet been set
 	cnc_check_interlocking();
-	return cnc_state.alarm;
+	int8_t alarm = cnc_state.alarm;
+	return (uint8_t)((alarm > 0) ? alarm : -alarm);
 }
 
 void cnc_stop(void)
@@ -492,6 +526,10 @@ uint8_t cnc_unlock(bool force)
 #ifndef DISABLE_SAFE_SETTINGS
 		}
 #endif
+	}
+	else
+	{
+		cnc_check_fault_systems();
 	}
 
 	// if any alarm state is still active checks system faults
@@ -964,7 +1002,7 @@ void cnc_check_fault_systems(void)
 		}
 	}
 #endif
-
+#if EMULATE_GRBL_STARTUP <= 2
 	if (cnc_get_exec_state(EXEC_KILL))
 	{
 		switch (cnc_state.alarm)
@@ -977,6 +1015,7 @@ void cnc_check_fault_systems(void)
 			break;
 		}
 	}
+#endif
 }
 
 bool cnc_check_interlocking(void)

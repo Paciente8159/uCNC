@@ -1070,7 +1070,7 @@ void proto_pins_states(void)
 #endif
 
 #define DSS_INFO "DSS" STRGIFY(DSS_MAX_OVERSAMPLING) "_" STRGIFY(DSS_CUTOFF_FREQ) ","
-#define PLANNER_INFO           \
+#define PLANNER_INFO             \
 	STRGIFY(PLANNER_BUFFER_SIZE) \
 	","
 

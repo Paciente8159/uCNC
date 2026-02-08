@@ -129,6 +129,8 @@ static FORCEINLINE uint32_t update_timeout(void)
 
 MCU_CALLBACK void embd_isr_cb(void)
 {
+	mcu_isr_context_enter();
+	
 #if ASSERT_PIN(EMBD_STEP)
 	io_toggle_output(EMBD_STEP);
 #endif

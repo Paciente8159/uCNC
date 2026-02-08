@@ -1037,7 +1037,7 @@ uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data)
 		{
 			cnc_alarm(EXEC_ALARM_PROBE_FAIL_CONTACT);
 		}
-		return STATUS_OK;
+		return STATUS_PROBE_UNSUCCESS;
 	}
 #endif
 

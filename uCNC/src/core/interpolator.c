@@ -955,6 +955,8 @@ itp_rt_step_prevent_t itp_rt_step_prevent_cb;
 
 MCU_CALLBACK void mcu_step_cb(void)
 {
+	mcu_isr_context_enter();
+	
 	static uint8_t stepbits = 0;
 	static bool itp_busy = false;
 
