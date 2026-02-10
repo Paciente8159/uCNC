@@ -140,9 +140,9 @@ void cnc_run(void)
 		{
 		case -EXEC_ALARM_HARD_LIMIT:
 		case -EXEC_ALARM_SOFT_LIMIT:
+			io_enable_steppers(~g_settings.step_enable_invert);
 			proto_feedback(MSG_FEEDBACK_1);
 			cnc_state.loop_state = LOOP_REQUIRE_RESET;
-			io_enable_steppers(~g_settings.step_enable_invert);
 			__FALL_THROUGH__
 		case EXEC_ALARM_SOFTRESET:
 		case EXEC_ALARM_EMERGENCY_STOP:
@@ -192,6 +192,7 @@ void cnc_run(void)
 		if (requires_reset)
 		{
 			io_enable_steppers(~g_settings.step_enable_invert);
+			proto_feedback(MSG_FEEDBACK_1);
 			cnc_state.loop_state = LOOP_REQUIRE_RESET;
 			break;
 		}
@@ -461,7 +462,6 @@ void cnc_alarm(int8_t code)
 	cnc_stop();
 	if (!cnc_state.alarm || code < 0)
 	{
-
 		if (!mcu_in_isr_context() && code > EXEC_ALARM_NOALARM)
 		{
 			proto_alarm(code);
@@ -490,7 +490,7 @@ bool cnc_has_alarm()
 
 uint8_t cnc_get_alarm(void)
 {
-	// force interlocking check to set alarm code in case this as not yet been set
+// force interlocking check to set alarm code in case this as not yet been set
 	cnc_check_interlocking();
 	int8_t alarm = cnc_state.alarm;
 	return (uint8_t)((alarm > 0) ? alarm : -alarm);
@@ -511,8 +511,11 @@ uint8_t cnc_unlock(bool force)
 {
 	// tries to clear alarms, door or any active hold state
 	cnc_clear_exec_state(EXEC_RESET_LOCKED);
-	// checks all interlocking again
+
+#if EMULATE_GRBL_STARTUP <= 2
+	// checks all interlocking again to check if ESTOP is still active
 	cnc_check_interlocking();
+#endif
 
 	// forces to clear EXEC_UNHOMED error to allow motion after limit switch trigger
 	if (force)
