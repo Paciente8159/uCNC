@@ -152,7 +152,7 @@ MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 MCU_IO_CALLBACK void mcu_controls_changed_cb(void)
 {
 	mcu_isr_context_enter();
-	
+
 #ifdef DISABLE_ALL_CONTROLS
 	return;
 #else
@@ -170,14 +170,19 @@ MCU_IO_CALLBACK void mcu_controls_changed_cb(void)
 #if ASSERT_PIN(ESTOP)
 #if EMULATE_GRBL_STARTUP > 2
 	if (CHECKFLAG((controls & changed), ESTOP_MASK))
+	{
+#ifdef ENABLE_IO_ALARM_DEBUG
+		io_alarm_controls = controls;
+#endif
+		cnc_call_rt_command(CMD_CODE_RESET);
 #else
 	if (CHECKFLAG(controls, ESTOP_MASK))
-#endif
 	{
 #ifdef ENABLE_IO_ALARM_DEBUG
 		io_alarm_controls = controls;
 #endif
 		cnc_alarm(EXEC_ALARM_EMERGENCY_STOP);
+#endif
 		return; // forces exit
 	}
 #endif

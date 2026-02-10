@@ -114,6 +114,30 @@ void cnc_init(void)
 #endif
 }
 
+static void cnc_wait_for_reset()
+{
+	do
+	{
+		if (grbl_stream_available())
+		{
+			if (grbl_stream_getc() == EOL)
+			{
+#if EMULATE_GRBL_STARTUP <= 2
+				proto_feedback(MSG_FEEDBACK_1);
+				proto_error(STATUS_SYSTEM_GC_LOCK);
+#endif
+			}
+		}
+		cnc_dotasks();
+		// a soft reset is pending
+		if (cnc_state.alarm == EXEC_ALARM_SOFTRESET)
+		{
+			cnc_clear_exec_state(EXEC_KILL);
+			break;
+		}
+	} while ((cnc_state.loop_state == LOOP_REQUIRE_RESET || cnc_get_exec_state(EXEC_KILL)));
+}
+
 void cnc_run(void)
 {
 #if EMULATE_GRBL_STARTUP > 2
@@ -124,8 +148,7 @@ void cnc_run(void)
 	}
 
 	cnc_state.loop_state = LOOP_RUNNING;
-	bool requires_reset = false;
-	do
+	for (;;)
 	{
 		cnc_parse_cmd();
 		cnc_dotasks();
@@ -143,19 +166,17 @@ void cnc_run(void)
 			io_enable_steppers(~g_settings.step_enable_invert);
 			proto_feedback(MSG_FEEDBACK_1);
 			cnc_state.loop_state = LOOP_REQUIRE_RESET;
-			__FALL_THROUGH__
-		case EXEC_ALARM_SOFTRESET:
 		case EXEC_ALARM_EMERGENCY_STOP:
-			requires_reset = true;
-			break;
+			cnc_wait_for_reset();
+			return;
+		case EXEC_ALARM_SOFTRESET:
+			cnc_state.alarm = EXEC_ALARM_NOALARM;
+			return;
+		case -EXEC_ALARM_ABORT_CYCLE:
+			SETFLAG(cnc_state.exec_state, EXEC_UNHOMED);
+			return;
 		}
-	} while (!requires_reset);
-
-	if (cnc_state.alarm == EXEC_ALARM_SOFTRESET)
-	{
-		cnc_state.alarm = EXEC_ALARM_NOALARM;
 	}
-
 #else
 	// enters loop reset
 	cnc_reset();
@@ -194,30 +215,12 @@ void cnc_run(void)
 			io_enable_steppers(~g_settings.step_enable_invert);
 			proto_feedback(MSG_FEEDBACK_1);
 			cnc_state.loop_state = LOOP_REQUIRE_RESET;
-			break;
+			return;
 		}
 	}
-#endif
 
-	do
-	{
-		if (grbl_stream_available())
-		{
-			if (grbl_stream_getc() == EOL)
-			{
-#if EMULATE_GRBL_STARTUP <= 2
-				proto_feedback(MSG_FEEDBACK_1);
-				proto_error(STATUS_SYSTEM_GC_LOCK);
+	cnc_wait_for_reset();
 #endif
-			}
-		}
-		cnc_dotasks();
-		// a soft reset is pending
-		if (cnc_state.alarm == EXEC_ALARM_SOFTRESET)
-		{
-			break;
-		}
-	} while (cnc_state.loop_state == LOOP_REQUIRE_RESET || cnc_get_exec_state(EXEC_KILL));
 }
 
 uint8_t cnc_parse_cmd(void)
@@ -490,7 +493,7 @@ bool cnc_has_alarm()
 
 uint8_t cnc_get_alarm(void)
 {
-// force interlocking check to set alarm code in case this as not yet been set
+	// force interlocking check to set alarm code in case this as not yet been set
 	cnc_check_interlocking();
 	int8_t alarm = cnc_state.alarm;
 	return (uint8_t)((alarm > 0) ? alarm : -alarm);
@@ -510,7 +513,7 @@ void cnc_stop(void)
 uint8_t cnc_unlock(bool force)
 {
 	// tries to clear alarms, door or any active hold state
-	cnc_clear_exec_state(EXEC_RESET_LOCKED);
+	cnc_clear_exec_state(g_settings.homing_enabled ? EXEC_RESET_LOCKED : (EXEC_RESET_LOCKED & ~EXEC_UNHOMED));
 
 #if EMULATE_GRBL_STARTUP <= 2
 	// checks all interlocking again to check if ESTOP is still active
@@ -704,7 +707,7 @@ void cnc_reset(void)
 	cnc_state.rt_cmd = RT_CMD_CLEAR;
 	cnc_state.feed_ovr_cmd = RT_CMD_CLEAR;
 	cnc_state.tool_ovr_cmd = RT_CMD_CLEAR;
-	cnc_state.exec_state = EXEC_RESET_LOCKED; // Activates all alarms, door and hold
+	cnc_state.exec_state |= g_settings.homing_enabled ? EXEC_RESET_LOCKED : (EXEC_RESET_LOCKED & ~EXEC_UNHOMED); // Activates all alarms, door and hold
 #if EMULATE_GRBL_STARTUP <= 2
 	cnc_state.alarm = EXEC_ALARM_NOALARM;
 #endif
