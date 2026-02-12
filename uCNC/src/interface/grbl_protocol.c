@@ -463,7 +463,7 @@ void proto_status(void)
 			}
 			break;
 #endif
-		case EXEC_UNHOMED:
+		case EXEC_POSITION_MAYBE_LOST:
 		case EXEC_LIMITS:
 			if (!cnc_get_exec_state(EXEC_HOMING))
 			{

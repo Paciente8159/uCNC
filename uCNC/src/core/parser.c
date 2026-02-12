@@ -2049,7 +2049,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 #endif
 		if (resetparser)
 		{
-			cnc_stop();
+			cnc_stop(true);
 			proto_feedback(MSG_FEEDBACK_8);
 		}
 	}

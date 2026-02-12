@@ -845,15 +845,15 @@ bool mc_home_motion(uint8_t axis_mask, bool is_origin_search, motion_data_t *blo
 		return false;
 	}
 	mc_line(target, block_data);
-
-	if (itp_sync() != STATUS_OK)
+	itp_sync();
+	if (cnc_get_exec_state(EXEC_HOMING_HIT) != EXEC_HOMING_HIT)
 	{
-		// Motion failed
+		// Home finding failed
 		return false;
 	}
 
 	// Flush buffers and stop motion
-	itp_stop();
+	cnc_stop(false);
 	itp_clear();
 	planner_clear();
 
@@ -923,7 +923,6 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 		// the wrong switch was activated bails
 		if (!CHECKFLAG(limits_flags, axis_limit))
 		{
-			cnc_set_exec_state(EXEC_UNHOMED);
 			cnc_alarm(EXEC_ALARM_HOMING_FAIL_APPROACH);
 			return STATUS_CRITICAL_FAIL;
 		}
@@ -947,7 +946,6 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 		limits_flags = io_get_limits();
 		if (CHECKFLAG(limits_flags, axis_limit))
 		{
-			cnc_set_exec_state(EXEC_UNHOMED);
 			cnc_alarm(EXEC_ALARM_HOMING_FAIL_PULLOFF);
 			return STATUS_CRITICAL_FAIL;
 		}

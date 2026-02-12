@@ -807,15 +807,10 @@ void itp_update(void)
 	itp_needs_update = true;
 }
 
-void itp_stop(void)
+MCU_CALLBACK void itp_stop(void)
 {
 	uint8_t state = cnc_get_exec_state(EXEC_ALLACTIVE);
-	// any stop command while running triggers an HALT alarm
-	if (state & EXEC_RUN)
-	{
-		cnc_set_exec_state(EXEC_UNHOMED);
-	}
-
+	
 	mcu_delay_us(10);
 	io_set_steps(g_settings.step_invert_mask);
 #if TOOL_COUNT > 0
@@ -828,7 +823,14 @@ void itp_stop(void)
 #endif
 
 	mcu_stop_itp_isr();
+	// any stop command while running triggers an HALT alarm
+	if (state & EXEC_RUN)
+	{
+		cnc_set_exec_state(EXEC_POSITION_MAYBE_LOST);
+	}
+
 	cnc_clear_exec_state(EXEC_RUN);
+	
 }
 
 void itp_stop_tools(void)
@@ -907,10 +909,10 @@ uint8_t itp_sync(void)
 	{
 		if (!cnc_dotasks())
 		{
-			if (cnc_get_exec_state(EXEC_HOMING_HIT) == EXEC_HOMING_HIT)
-			{
-				break;
-			}
+			// if (cnc_get_exec_state(EXEC_HOMING_HIT) == EXEC_HOMING_HIT)
+			// {
+			// 	break;
+			// }
 			return STATUS_CRITICAL_FAIL;
 		}
 	}
