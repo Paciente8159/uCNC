@@ -72,26 +72,7 @@ MCU_CALLBACK void mcu_gen_pwm(void);
 MCU_CALLBACK void mcu_gen_servo(void);
 MCU_CALLBACK void mcu_gen_step(void);
 MCU_CALLBACK void mcu_gpio_isr(void *type);
-
-// software generated oneshot for RT steps like laser PPI
-#if defined(MCU_HAS_ONESHOT_TIMER) && defined(ENABLE_RT_SYNC_MOTIONS)
-extern uint32_t esp32_oneshot_counter;
-
-MCU_CALLBACK void mcu_gen_oneshot(void)
-{
-	if (esp32_oneshot_counter)
-	{
-		esp32_oneshot_counter--;
-		if (!esp32_oneshot_counter)
-		{
-			if (mcu_timeout_cb)
-			{
-				mcu_timeout_cb();
-			}
-		}
-	}
-}
-#endif
+MCU_CALLBACK void mcu_gen_oneshot(void);
 
 IRAM_ATTR void i2s_write_word(uint32_t value)
 {
