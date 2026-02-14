@@ -305,7 +305,7 @@ ETSTimer esp8266_rtc_timer;
 #ifdef MCU_HAS_ONESHOT_TIMER
 static uint32_t esp8266_oneshot_counter;
 static uint32_t esp8266_oneshot_reload;
-MCU_CALLBACK void mcu_gen_oneshot(void)
+static FORCEINLINE void mcu_gen_oneshot(void)
 {
 	if (esp8266_oneshot_counter)
 	{
