@@ -439,6 +439,9 @@ void mcu_dotasks(void)
 
 #ifdef MCU_HAS_ONESHOT_TIMER
 
+uint32_t esp32_oneshot_counter;
+uint32_t esp32_oneshot_reload;
+
 MCU_CALLBACK void mcu_oneshot_isr(void *arg)
 {
 	timer_pause(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX);

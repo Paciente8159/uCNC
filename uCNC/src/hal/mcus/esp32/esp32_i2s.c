@@ -75,9 +75,9 @@ MCU_CALLBACK void mcu_gpio_isr(void *type);
 
 // software generated oneshot for RT steps like laser PPI
 #if defined(MCU_HAS_ONESHOT_TIMER) && defined(ENABLE_RT_SYNC_MOTIONS)
-static uint32_t esp32_oneshot_counter;
-static uint32_t esp32_oneshot_reload;
-static FORCEINLINE void mcu_gen_oneshot(void)
+extern uint32_t esp32_oneshot_counter;
+
+MCU_CALLBACK void mcu_gen_oneshot(void)
 {
 	if (esp32_oneshot_counter)
 	{
