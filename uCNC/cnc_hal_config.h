@@ -393,14 +393,16 @@ extern "C"
 */
 #define ENCODERS 0
 /**
- * To use the encoder counter 3 definitions are needed
- * ENCx_PULSE -> must be set to an input PIN with interrupt on change enabled capabilities
+ * To use the encoder counter 3 definitions are required
+ * ENCx_PULSE -> must be set to an input PIN with interrupt on change enabled capabilities (usually DIN0 to DIN7 are available)
  * ENCx_DIR -> a regular input PIN that detects the direction of the encoding step
  * ENCx_PPR -> the encoder Pulses Per Rotation value
  * Defined encoders must match the number of encoders and numeral defined above.
  * For example if ENCODERS is set to 2 it expects to find the definitions for ENC0 and ENC1. Number skipping is not allowed (example Set ENC0 and ENC2 but not ENC1)
  *
  * It's also possible to assign an encoder to a stepper motor by defining the STEPx_ENCODER and the encoder index like this
+ * Example:
+ * 
  * #define STEP0_ENCODER ENC0 //assigns encoder 0 to stepper 0
  *
  * The encoder can work as a simple counter (used in speed encoders) by setting the same HAL pin for both PULSE and DIR functions - Counter mode
@@ -408,21 +410,75 @@ extern "C"
  * For encoders to work as STEP encoders ENABLE_MAIN_LOOP_MODULES must be enabled
  *
  * Encoders counting direction can be inverted via mask setting $8
+ * 
+ * **NEW ENCODER TYPES AND OPTIONS**
+ * Multiple type of encoders are suported.
+ * By default µCNC supports Pulse/Dir encoders, I2C encoders (using emulated I2C), and SSI (using emulated SPI) encoders, and custom implemented encoders.
+ * 
+ * If the type of encoder is not defined by default a pulse/dir type will be assumed by the firmware.
+ * For I2C types PULSE will be used as a I2C CLK pin and DIR will be used as a I2C DATA pin
+ * For SSI types PULSE will be used as a SSI CLK pin and DIR will be used as a SSI MISO pin
+ * 
+ * Optionally you can define if an encoder is an absolute or incremental encoder.
+ * By default all encoders are assumed to be absolute.
+ * It's also possible to use incremental encoders.
+ * There will be some limitations with these types of encoders as the update/read rate and the rotation speed are dependent and limited.
+ * Ideally each differential read should occur between less then half a rotation of the encoder.
+ * On each differential read of an incremental encoder the absolute position will be calculated based on the previous position.
+ * To define and encoder as incremental you need to declare it using ENCx_IS_INCREMENTAL
+ * Example:
+ * 
+ * #define ENC0_IS_INCREMENTAL
+ * 
+ * It's now also possible to declare an encoder index pin that is able to trigger some sort of action (callback) once triggered
+ * For that just declare the pin that will be used to get the index state of the encoder using ENCx_INDEX
+ * Example:
+ * 
+ * #define ENC0_INDEX DIN8 // assigns µCNC DIN8 pin as the ENC0 index pin
+ * 
+ * **USING ENCODER AS RPM COUNTER**
+ * 
+ * Previously µCNC only supported a single RPM dedicated encoder. This is now modified as any encoder can be used as an RPM encoder freely
+ * 
  * */
 #if ENCODERS > 0
-#include "src/modules/encoder.h"
 
-// Counter mode
+/**
+ * Encoders definitions
+ */
+#define ENC0 0
+#define ENC1 1
+#define ENC2 2
+#define ENC3 3
+#define ENC4 4
+#define ENC5 5
+#define ENC6 6
+#define ENC7 7
+/**
+ * Encoders basic types
+ */
+#define ENC_TYPE_PULSE 0
+#define ENC_TYPE_I2C 1
+#define ENC_TYPE_SSI 2
+#define ENC_TYPE_CUSTOM 255
+
+/**
+ * Examples
+ */
+
+// // Counter mode
 // #define ENC0_PULSE DIN7
 // #define ENC0_DIR DIN7
 // #define ENC0_PPR 16384
+// optional index pin can be declared. Index pins pulse once per full rotation
+// #define ENC0_INDEX DIN8
 
 // // Encoder mode
 // #define ENC0_PULSE DOUT15
 // #define ENC0_DIR DOUT16
 // #define ENC0_PPR 16384
 
-// Encoder Type
+// // Set a different type of encoder
 // #define ENC0_TYPE ENC_TYPE_I2C
 
 // #define ENC1_PULSE DIN1
@@ -436,35 +492,10 @@ extern "C"
 // #define STEP1_ENCODER ENC1
 // #define STEP2_ENCODER ENC2
 
-// By default encoders are configured as pulse encoders
-// But encoders can also be defined as I2C or SSI encoders
-// for these types of encoders the PULSE pin is used as the clock communication pin
-// the DIR pin is used as the data pin
-// I2C or SSI encoders can share the same CLOCK pin for better optimization
-// for example to use ENC1 with I2C and ENC2 with SSI
-
-// #define ENC1_TYPE ENC_TYPE_I2C
-// #define ENC2_TYPE ENC_TYPE_SSI
-
-// Assign an encoder has an RPM encoder
+// Uncomment to allow RPM measurements using encoders
 // #define ENABLE_ENCODER_RPM
-#ifdef ENABLE_ENCODER_RPM
 
-// Assign an encoder to work as the RPM encoder
-// #define RPM_ENCODER ENC0
-
-// Optional set a second encoder pin has an encoder index
-// This assumes the index pulse occurs when pulse pin is also triggered
-// #define RPM_INDEX_INPUT DIN8
-
-// Resolution of the RPM encoder or Pulses Per Revolution
-// #define RPM_PPR 24
-
-// uncomment to update tool sync on index pulse only
-// instead of updating in every PPR
-// #define RPM_SYNC_UPDATE_ON_INDEX_ONLY
-
-// Enables stepper closed loop position correction
+// Enables stepper closed loop position correction (not developed)
 // #define ENABLE_STEPPER_CLF_CORRECTION
 #endif
 #endif

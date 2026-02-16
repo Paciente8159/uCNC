@@ -27,20 +27,7 @@ extern "C"
 #include "../module.h"
 #include <stdint.h>
 
-#define ENC_TYPE_PULSE 0
-#define ENC_TYPE_I2C 1
-#define ENC_TYPE_SSI 2
-
-#define ENC0 0
-#define ENC1 1
-#define ENC2 2
-#define ENC3 3
-#define ENC4 4
-#define ENC5 5
-#define ENC6 6
-#define ENC7 7
-
-	DECL_MODULE(encoder);
+DECL_MODULE(encoder);
 	DECL_HOOK(encoder_index, void);
 	int32_t encoder_get_position(uint8_t i);
 	void encoder_print_values(void);
