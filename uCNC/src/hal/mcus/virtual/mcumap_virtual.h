@@ -293,6 +293,7 @@
 #define CS_RES 113
 #define DIO113 113
 #define DIN0 130
+#define DIN0_ISR
 #define DIO130 130
 #define DIN1 131
 #define DIO131 131

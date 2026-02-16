@@ -25,22 +25,17 @@
 static int32_t encoders_pos[ENCODERS];
 
 #if ENCODERS > 0
-
-#if ENCODERS > 0
 #if (!ASSERT_PIN(ENC0_PULSE))
 #error "The ENC0 pulse pin is not defined"
 #endif
 #if (!ASSERT_PIN(ENC0_DIR))
 #error "The ENC0 dir pin is not defined"
 #endif
-#ifndef ENC0_PPR
-#error "The ENC0 PPR is not defined"
-#endif
 #ifndef ENC0_TYPE
 #define ENC0_TYPE ENC_TYPE_PULSE
 #endif
 #if ENC0_TYPE == ENC_TYPE_PULSE
-#define ENC0_MASK (1 << (ENC0_PULSE - DIN_PINS_OFFSET))
+#define ENC0_IO_MASK (1 << (ENC0_PULSE - DIN_PINS_OFFSET))
 #elif ENC0_TYPE == ENC_TYPE_I2C
 #ifndef ENC0_FREQ
 #define ENC0_FREQ 400000
@@ -68,14 +63,11 @@ static int32_t encoders_pos[ENCODERS];
 #if (!ASSERT_PIN(ENC1_DIR))
 #error "The ENC1 dir pin is not defined"
 #endif
-#ifndef ENC1_PPR
-#error "The ENC1 PPR is not defined"
-#endif
 #ifndef ENC1_TYPE
 #define ENC1_TYPE ENC_TYPE_PULSE
 #endif
 #if ENC1_TYPE == ENC_TYPE_PULSE
-#define ENC1_MASK (1 << (ENC1_PULSE - DIN_PINS_OFFSET))
+#define ENC1_IO_MASK (1 << (ENC1_PULSE - DIN_PINS_OFFSET))
 #elif ENC1_TYPE == ENC_TYPE_I2C
 #ifndef ENC1_FREQ
 #define ENC1_FREQ 400000
@@ -99,14 +91,11 @@ static int32_t encoders_pos[ENCODERS];
 #if (!ASSERT_PIN(ENC2_DIR))
 #error "The ENC2 dir pin is not defined"
 #endif
-#ifndef ENC2_PPR
-#error "The ENC2 PPR is not defined"
-#endif
 #ifndef ENC2_TYPE
 #define ENC2_TYPE ENC_TYPE_PULSE
 #endif
 #if ENC2_TYPE == ENC_TYPE_PULSE
-#define ENC2_MASK (1 << (ENC2_PULSE - DIN_PINS_OFFSET))
+#define ENC2_IO_MASK (1 << (ENC2_PULSE - DIN_PINS_OFFSET))
 #elif ENC2_TYPE == ENC_TYPE_I2C
 #ifndef ENC2_FREQ
 #define ENC2_FREQ 400000
@@ -130,14 +119,11 @@ static int32_t encoders_pos[ENCODERS];
 #if (!ASSERT_PIN(ENC3_DIR))
 #error "The ENC3 dir pin is not defined"
 #endif
-#ifndef ENC3_PPR
-#error "The ENC3 PPR is not defined"
-#endif
 #ifndef ENC3_TYPE
 #define ENC3_TYPE ENC_TYPE_PULSE
 #endif
 #if ENC3_TYPE == ENC_TYPE_PULSE
-#define ENC3_MASK (1 << (ENC3_PULSE - DIN_PINS_OFFSET))
+#define ENC3_IO_MASK (1 << (ENC3_PULSE - DIN_PINS_OFFSET))
 #elif ENC3_TYPE == ENC_TYPE_I2C
 #ifndef ENC3_FREQ
 #define ENC3_FREQ 400000
@@ -161,14 +147,11 @@ static int32_t encoders_pos[ENCODERS];
 #if (!ASSERT_PIN(ENC4_DIR))
 #error "The ENC4 dir pin is not defined"
 #endif
-#ifndef ENC4_PPR
-#error "The ENC4 PPR is not defined"
-#endif
 #ifndef ENC4_TYPE
 #define ENC4_TYPE ENC_TYPE_PULSE
 #endif
 #if ENC4_TYPE == ENC_TYPE_PULSE
-#define ENC4_MASK (1 << (ENC4_PULSE - DIN_PINS_OFFSET))
+#define ENC4_IO_MASK (1 << (ENC4_PULSE - DIN_PINS_OFFSET))
 #elif ENC4_TYPE == ENC_TYPE_I2C
 #ifndef ENC4_FREQ
 #define ENC4_FREQ 400000
@@ -192,14 +175,11 @@ static int32_t encoders_pos[ENCODERS];
 #if (!ASSERT_PIN(ENC5_DIR))
 #error "The ENC5 dir pin is not defined"
 #endif
-#ifndef ENC5_PPR
-#error "The ENC5 PPR is not defined"
-#endif
 #ifndef ENC5_TYPE
 #define ENC5_TYPE ENC_TYPE_PULSE
 #endif
 #if ENC5_TYPE == ENC_TYPE_PULSE
-#define ENC5_MASK (1 << (ENC5_PULSE - DIN_PINS_OFFSET))
+#define ENC5_IO_MASK (1 << (ENC5_PULSE - DIN_PINS_OFFSET))
 #elif ENC5_TYPE == ENC_TYPE_I2C
 #ifndef ENC5_FREQ
 #define ENC5_FREQ 400000
@@ -223,14 +203,11 @@ static int32_t encoders_pos[ENCODERS];
 #if (!ASSERT_PIN(ENC6_DIR))
 #error "The ENC6 dir pin is not defined"
 #endif
-#ifndef ENC6_PPR
-#error "The ENC6 PPR is not defined"
-#endif
 #ifndef ENC6_TYPE
 #define ENC6_TYPE ENC_TYPE_PULSE
 #endif
 #if ENC6_TYPE == ENC_TYPE_PULSE
-#define ENC6_MASK (1 << (ENC6_PULSE - DIN_PINS_OFFSET))
+#define ENC6_IO_MASK (1 << (ENC6_PULSE - DIN_PINS_OFFSET))
 #elif ENC6_TYPE == ENC_TYPE_I2C
 #ifndef ENC6_FREQ
 #define ENC6_FREQ 400000
@@ -254,14 +231,11 @@ static int32_t encoders_pos[ENCODERS];
 #if (!ASSERT_PIN(ENC7_DIR))
 #error "The ENC7 dir pin is not defined"
 #endif
-#ifndef ENC7_PPR
-#error "The ENC7 PPR is not defined"
-#endif
 #ifndef ENC7_TYPE
 #define ENC7_TYPE ENC_TYPE_PULSE
 #endif
 #if ENC7_TYPE == ENC_TYPE_PULSE
-#define ENC7_MASK (1 << (ENC7_PULSE - DIN_PINS_OFFSET))
+#define ENC7_IO_MASK (1 << (ENC7_PULSE - DIN_PINS_OFFSET))
 #elif ENC7_TYPE == ENC_TYPE_I2C
 #ifndef ENC7_FREQ
 #define ENC7_FREQ 400000
@@ -278,7 +252,8 @@ static int32_t encoders_pos[ENCODERS];
 #endif
 #endif
 #endif
-#endif
+
+#define ENCODERS_IO_MASK (ENC0_IO_MASK | ENC1_IO_MASK | ENC2_IO_MASK | ENC3_IO_MASK | ENC4_IO_MASK | ENC5_IO_MASK | ENC6_IO_MASK | ENC7_IO_MASK)
 
 #if ENCODERS > 0
 #if ENC0_TYPE == ENC_TYPE_I2C
@@ -368,37 +343,40 @@ uint16_t read_encoder_mt6701_ssi(softspi_port_t *port)
 
 #ifdef ENABLE_ENCODER_RPM
 
-struct typedef encoder_rpm_
+#ifndef ENCODER_MIN_RPM
+#define ENCODER_MIN_RPM 6
+#endif
+#define ENCODER_MIN_RPM_FACTOR ((60 / ENCODER_MIN_RPM) * 1000000)
+
+typedef struct encoder_rpm_
 {
 	uint16_t last_rpm;
-	uint32_t last_position;
+	int32_t last_position;
 	uint32_t last_timestamp;
-}
-encoder_rpm_t;
+} encoder_rpm_t;
 
 static encoder_rpm_t encoders_rpm[ENCODERS];
 
 uint16_t encoder_get_rpm(uint8_t i)
 {
-	uint32_t pos = (uint32_t)encoder_get_position(i);
-	uint32_t diff = (uint32_t)(pos - encoders_rpm[i].last_position);
+	int32_t pos = (uint32_t)encoder_get_position(i);
+	uint32_t diff = (uint32_t)ABS(pos - encoders_rpm[i].last_position);
 	uint32_t timestamp = mcu_micros();
 	uint32_t elapsed = (uint32_t)(timestamp - encoders_rpm[i].last_timestamp);
 
 	if (!diff) // if no motion detected
 	{
-		if (elapsed > 60000000) // at least one minute as passed
+		if (elapsed > 1000000) // at least one minute as passed
 		{
 			encoders_rpm[i].last_timestamp = timestamp;
-			encoders_rpm[i].last_rpm = 0;
-			return 0;
+			encoders_rpm[i].last_rpm >>= 1; // assume speed as dropped to half
 		}
 	}
 	else
 	{
-		if (diff >= 10 || elapsed > 12000000) // at a minimum of 5RPM start to display values or a minimum of 10 pulse counts before update
+		if (diff >= 10 || elapsed > ENCODER_MIN_RPM_FACTOR) // at a minimum of 5RPM start to display values or a minimum of 10 pulse counts before update or at least 10 pulses to calculate RPM
 		{
-			float rpm = (float)diff / (float)g_settings.encoders_ppr[i];
+			float rpm = (float)diff / (float)g_settings.encoders_resolution[i];
 			rpm *= 60000000.0f / (float)elapsed;
 			encoders_rpm[i].last_position = pos;
 			encoders_rpm[i].last_timestamp = timestamp;
@@ -415,34 +393,34 @@ uint16_t encoder_get_rpm(uint8_t i)
 /**
  * Updates pulse encoder types
  */
-#if ENCODERS_MASK
+#if (ENCODERS_IO_MASK != 0)
 
 static FORCEINLINE uint8_t encoder_read_dirs(void)
 {
 	uint8_t value = 0;
 #if ENCODERS > 0
-	value |= ((io_get_input(ENC0_DIR)) ? ENC0_MASK : 0);
+	value |= ((io_get_input(ENC0_DIR)) ? ENC0_IO_MASK : 0);
 #endif
 #if ENCODERS > 1
-	value |= ((io_get_input(ENC1_DIR)) ? ENC1_MASK : 0);
+	value |= ((io_get_input(ENC1_DIR)) ? ENC1_IO_MASK : 0);
 #endif
 #if ENCODERS > 2
-	value |= ((io_get_input(ENC2_DIR)) ? ENC2_MASK : 0);
+	value |= ((io_get_input(ENC2_DIR)) ? ENC2_IO_MASK : 0);
 #endif
 #if ENCODERS > 3
-	value |= ((io_get_input(ENC3_DIR)) ? ENC3_MASK : 0);
+	value |= ((io_get_input(ENC3_DIR)) ? ENC3_IO_MASK : 0);
 #endif
 #if ENCODERS > 4
-	value |= ((io_get_input(ENC4_DIR)) ? ENC4_MASK : 0);
+	value |= ((io_get_input(ENC4_DIR)) ? ENC4_IO_MASK : 0);
 #endif
 #if ENCODERS > 5
-	value |= ((io_get_input(ENC5_DIR)) ? ENC5_MASK : 0);
+	value |= ((io_get_input(ENC5_DIR)) ? ENC5_IO_MASK : 0);
 #endif
 #if ENCODERS > 6
-	value |= ((io_get_input(ENC6_DIR)) ? ENC6_MASK : 0);
+	value |= ((io_get_input(ENC6_DIR)) ? ENC6_IO_MASK : 0);
 #endif
 #if ENCODERS > 7
-	value |= ((io_get_input(ENC7_DIR)) ? ENC7_MASK : 0);
+	value |= ((io_get_input(ENC7_DIR)) ? ENC7_IO_MASK : 0);
 #endif
 	return value ^ g_settings.encoders_dir_invert_mask;
 }
@@ -456,9 +434,9 @@ void encoders_update(uint8_t pulse, uint8_t diff)
 
 // checks if pulse pin changed state and is logical 1
 #if ENCODERS > 0
-	if ((diff & ENC0_MASK))
+	if ((diff & ENC0_IO_MASK))
 	{
-		encoders_pos[0] += (dir & ENC0_MASK) ? 1 : -1;
+		encoders_pos[0] += (dir & ENC0_IO_MASK) ? 1 : -1;
 #ifdef ENC0_INDEX
 		if (io_get_input(ENC0_INDEX))
 		{
@@ -468,9 +446,9 @@ void encoders_update(uint8_t pulse, uint8_t diff)
 	}
 #endif
 #if ENCODERS > 1
-	if ((diff & ENC1_MASK))
+	if ((diff & ENC1_IO_MASK))
 	{
-		encoders_pos[1] += (dir & ENC1_MASK) ? 1 : -1;
+		encoders_pos[1] += (dir & ENC1_IO_MASK) ? 1 : -1;
 #ifdef ENC1_INDEX
 		if (io_get_input(ENC1_INDEX))
 		{
@@ -480,9 +458,9 @@ void encoders_update(uint8_t pulse, uint8_t diff)
 	}
 #endif
 #if ENCODERS > 2
-	if ((diff & ENC2_MASK))
+	if ((diff & ENC2_IO_MASK))
 	{
-		encoders_pos[2] += (dir & ENC2_MASK) ? 1 : -1;
+		encoders_pos[2] += (dir & ENC2_IO_MASK) ? 1 : -1;
 #ifdef ENC2_INDEX
 		if (io_get_input(ENC2_INDEX))
 		{
@@ -492,9 +470,9 @@ void encoders_update(uint8_t pulse, uint8_t diff)
 	}
 #endif
 #if ENCODERS > 3
-	if ((diff & ENC3_MASK))
+	if ((diff & ENC3_IO_MASK))
 	{
-		encoders_pos[3] += (dir & ENC3_MASK) ? 1 : -1;
+		encoders_pos[3] += (dir & ENC3_IO_MASK) ? 1 : -1;
 #ifdef ENC3_INDEX
 		if (io_get_input(ENC3_INDEX))
 		{
@@ -504,9 +482,9 @@ void encoders_update(uint8_t pulse, uint8_t diff)
 	}
 #endif
 #if ENCODERS > 4
-	if ((diff & ENC4_MASK))
+	if ((diff & ENC4_IO_MASK))
 	{
-		encoders_pos[4] += (dir & ENC4_MASK) ? 1 : -1;
+		encoders_pos[4] += (dir & ENC4_IO_MASK) ? 1 : -1;
 #ifdef ENC4_INDEX
 		if (io_get_input(ENC4_INDEX))
 		{
@@ -516,9 +494,9 @@ void encoders_update(uint8_t pulse, uint8_t diff)
 	}
 #endif
 #if ENCODERS > 5
-	if ((diff & ENC5_MASK))
+	if ((diff & ENC5_IO_MASK))
 	{
-		encoders_pos[5] += (dir & ENC5_MASK) ? 1 : -1;
+		encoders_pos[5] += (dir & ENC5_IO_MASK) ? 1 : -1;
 #ifdef ENC5_INDEX
 		if (io_get_input(ENC5_INDEX))
 		{
@@ -528,9 +506,9 @@ void encoders_update(uint8_t pulse, uint8_t diff)
 	}
 #endif
 #if ENCODERS > 6
-	if ((diff & ENC6_MASK))
+	if ((diff & ENC6_IO_MASK))
 	{
-		encoders_pos[6] += (dir & ENC6_MASK) ? 1 : -1;
+		encoders_pos[6] += (dir & ENC6_IO_MASK) ? 1 : -1;
 #ifdef ENC6_INDEX
 		if (io_get_input(ENC6_INDEX))
 		{
@@ -540,9 +518,9 @@ void encoders_update(uint8_t pulse, uint8_t diff)
 	}
 #endif
 #if ENCODERS > 7
-	if ((diff & ENC7_MASK))
+	if ((diff & ENC7_IO_MASK))
 	{
-		encoders_pos[7] += (dir & ENC7_MASK) ? 1 : -1;
+		encoders_pos[7] += (dir & ENC7_IO_MASK) ? 1 : -1;
 #ifdef ENC7_INDEX
 		if (io_get_input(ENC7_INDEX))
 		{
@@ -552,7 +530,8 @@ void encoders_update(uint8_t pulse, uint8_t diff)
 	}
 #endif
 }
-
+#else
+void encoders_update(uint8_t pulse, uint8_t diff) {}
 #endif
 
 #if defined(ENC0_READ) || defined(ENC1_READ) || defined(ENC2_READ) || defined(ENC3_READ) || defined(ENC4_READ) || defined(ENC5_READ) || defined(ENC6_READ) || defined(ENC7_READ)
@@ -634,15 +613,15 @@ static void encoder_update(uint8_t i)
 	{
 		diff = (!(g_settings.encoders_dir_invert_mask & (1 << i))) ? (encoder_read - encoder_last_read[i]) : (encoder_last_read[i] - encoder_read);
 		encoder_last_read[i] = encoder_read;
-		if (g_settings.encoders_ppr[i])
+		if (g_settings.encoders_resolution[i])
 		{
-			if (diff < -(g_settings.encoders_ppr[i] >> 1))
+			if (diff < -(g_settings.encoders_resolution[i] >> 1))
 			{
-				return (diff + g_settings.encoders_ppr[i]);
+				return (diff + g_settings.encoders_resolution[i]);
 			}
-			if (diff > (g_settings.encoders_ppr[i] >> 1))
+			if (diff > (g_settings.encoders_resolution[i] >> 1))
 			{
-				return (diff + g_settings.encoders_ppr[i]);
+				return (diff + g_settings.encoders_resolution[i]);
 			}
 		}
 		encoder_pos[i] += diff;
@@ -652,38 +631,40 @@ static void encoder_update(uint8_t i)
 		encoder_pos[i] = ENC0_READ;
 	}
 }
-#endif
 
+#ifdef ENABLE_MAIN_LOOP_MODULES
 bool encoders_dotasks(void *args)
 {
 #ifdef ENC0_READ
 	encoder_update(ENC0);
 #endif
 #ifdef ENC0_READ
-	encoder_update(1);
+	encoder_update(ENC1);
 #endif
 #ifdef ENC0_READ
-	encoder_update(2);
+	encoder_update(ENC2);
 #endif
 #ifdef ENC0_READ
-	encoder_update(3);
+	encoder_update(ENC3);
 #endif
 #ifdef ENC0_READ
-	encoder_update(4);
+	encoder_update(ENC4);
 #endif
 #ifdef ENC0_READ
-	encoder_update(5);
+	encoder_update(ENC5);
 #endif
 #ifdef ENC0_READ
-	encoder_update(6);
+	encoder_update(ENC6);
 #endif
 #ifdef ENC0_READ
-	encoder_update(7);
+	encoder_update(ENC7);
 #endif
 
 	return EVENT_CONTINUE;
 }
 CREATE_EVENT_LISTENER(cnc_io_dotasks, encoders_dotasks);
+#endif
+#endif
 
 int32_t encoder_get_position(uint8_t i)
 {
@@ -809,7 +790,13 @@ DECL_MODULE(encoder)
 #endif
 	encoders_reset_position();
 
+#if defined(ENC0_READ) || defined(ENC1_READ) || defined(ENC2_READ) || defined(ENC3_READ) || defined(ENC4_READ) || defined(ENC5_READ) || defined(ENC6_READ) || defined(ENC7_READ)
+#ifdef ENABLE_MAIN_LOOP_MODULES
 	ADD_EVENT_LISTENER(cnc_io_dotasks, encoders_dotasks);
+#else
+#warning "ENABLE_MAIN_LOOP_MODULES is not defined. Custom encoders may not get updated."
+#endif
+#endif
 }
 
 // allow custom encoder implementations

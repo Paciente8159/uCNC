@@ -27,6 +27,25 @@ extern "C"
 #include "../module.h"
 #include <stdint.h>
 
+/**
+ * Encoders definitions
+ */
+#define ENC0 0
+#define ENC1 1
+#define ENC2 2
+#define ENC3 3
+#define ENC4 4
+#define ENC5 5
+#define ENC6 6
+#define ENC7 7
+/**
+ * Encoders basic types
+ */
+#define ENC_TYPE_PULSE 0
+#define ENC_TYPE_I2C 1
+#define ENC_TYPE_SSI 2
+#define ENC_TYPE_CUSTOM 255
+
 	DECL_MODULE(encoder);
 #ifdef ENC0_INDEX
 	DECL_HOOK(enc0_index, void);
@@ -60,7 +79,6 @@ extern "C"
 	void encoders_update(uint8_t pulse, uint8_t diff);
 	uint16_t encoder_get_rpm(uint8_t i);
 	int32_t enc_custom_read(uint8_t i);
-	extern bool encoder_rpm_updated;
 
 #ifdef __cplusplus
 }

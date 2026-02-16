@@ -52,8 +52,8 @@ extern "C"
 // machine tools configurations
 #include "hal/tools/tool.h" //configures the kinematics for the cnc machine
 // final HAL configurations
-#include "../cnc_hal_config.h"			//inicializes the HAL hardcoded connections
-#include "../cnc_hal_overrides.h"		//config override file
+#include "../cnc_hal_config.h"		//inicializes the HAL hardcoded connections
+#include "../cnc_hal_overrides.h"	//config override file
 #include "modules/shift_register.h" // io extender
 
 	/**
@@ -237,38 +237,29 @@ extern "C"
 
 #if ENCODERS > 0
 
-#ifdef ENABLE_ENCODER_RPM
-#if (RPM_ENCODER < ENC0 || RPM_ENCODER > ENC7 || ENCODERS < ENCODERS)
-#error "The RPM encoder must be assign to one of the available encoders"
-#endif
-#define __encoder_mask__(X) ENC##X##_MASK
-#define encoder_mask(X) __encoder_mask__(X)
-#define RPM_ENCODER_MASK encoder_mask(RPM_ENCODER)
-#endif
-
 #ifndef ENC0_MASK
-#define ENC0_MASK 0
+#define ENC0_MASK (1 << ENC0)
 #endif
 #ifndef ENC1_MASK
-#define ENC1_MASK 0
+#define ENC1_MASK (1 << ENC1)
 #endif
 #ifndef ENC2_MASK
-#define ENC2_MASK 0
+#define ENC2_MASK (1 << ENC2)
 #endif
 #ifndef ENC3_MASK
-#define ENC3_MASK 0
+#define ENC3_MASK (1 << ENC3)
 #endif
 #ifndef ENC4_MASK
-#define ENC4_MASK 0
+#define ENC4_MASK (1 << ENC4)
 #endif
 #ifndef ENC5_MASK
-#define ENC5_MASK 0
+#define ENC5_MASK (1 << ENC5)
 #endif
 #ifndef ENC6_MASK
-#define ENC6_MASK 0
+#define ENC6_MASK (1 << ENC6)
 #endif
 #ifndef ENC7_MASK
-#define ENC7_MASK 0
+#define ENC7_MASK (1 << ENC7)
 #endif
 
 #define ENCODERS_MASK (ENC0_MASK | ENC1_MASK | ENC2_MASK | ENC3_MASK | ENC4_MASK | ENC5_MASK | ENC6_MASK | ENC7_MASK)

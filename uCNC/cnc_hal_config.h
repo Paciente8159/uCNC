@@ -442,43 +442,30 @@ extern "C"
  * 
  * */
 #if ENCODERS > 0
-
-/**
- * Encoders definitions
- */
-#define ENC0 0
-#define ENC1 1
-#define ENC2 2
-#define ENC3 3
-#define ENC4 4
-#define ENC5 5
-#define ENC6 6
-#define ENC7 7
-/**
- * Encoders basic types
- */
-#define ENC_TYPE_PULSE 0
-#define ENC_TYPE_I2C 1
-#define ENC_TYPE_SSI 2
-#define ENC_TYPE_CUSTOM 255
-
+#include "src/modules/encoder.h"
 /**
  * Examples
  */
 
-// // Counter mode
+// Counter mode
+
 // #define ENC0_PULSE DIN7
 // #define ENC0_DIR DIN7
 // the respective PPR (pulses per rotation) can be set via $15x setting
 // optional index pin can be declared. Index pins pulse once per full rotation
 // #define ENC0_INDEX DIN8
 
-// // Encoder mode
+// Encoder mode
+
+// #define ENC0_PULSE DIN0
+// #define ENC0_DIR DIN8
+
+// or a different type
+
+// #define ENC0_TYPE ENC_TYPE_I2C
+// define communication pins
 // #define ENC0_PULSE DOUT15
 // #define ENC0_DIR DOUT16
-
-// // Set a different type of encoder
-// #define ENC0_TYPE ENC_TYPE_I2C
 
 // #define ENC1_PULSE DIN1
 // #define ENC1_DIR DIN9
