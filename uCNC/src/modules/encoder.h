@@ -27,15 +27,39 @@ extern "C"
 #include "../module.h"
 #include <stdint.h>
 
-DECL_MODULE(encoder);
-	DECL_HOOK(encoder_index, void);
+	DECL_MODULE(encoder);
+#ifdef ENC0_INDEX
+	DECL_HOOK(enc0_index, void);
+#endif
+#ifdef ENC1_INDEX
+	DECL_HOOK(enc1_index, void);
+#endif
+#ifdef ENC2_INDEX
+	DECL_HOOK(enc2_index, void);
+#endif
+#ifdef ENC3_INDEX
+	DECL_HOOK(enc3_index, void);
+#endif
+#ifdef ENC4_INDEX
+	DECL_HOOK(enc4_index, void);
+#endif
+#ifdef ENC5_INDEX
+	DECL_HOOK(enc5_index, void);
+#endif
+#ifdef ENC6_INDEX
+	DECL_HOOK(enc6_index, void);
+#endif
+#ifdef ENC7_INDEX
+	DECL_HOOK(enc7_index, void);
+#endif
 	int32_t encoder_get_position(uint8_t i);
 	void encoder_print_values(void);
 	void encoder_reset_position(uint8_t i, int32_t position);
 	void encoders_reset_position(void);
 	void encoders_itp_reset_rt_position(float *origin);
 	void encoders_update(uint8_t pulse, uint8_t diff);
-	uint16_t encoder_get_rpm(void);
+	uint16_t encoder_get_rpm(uint8_t i);
+	int32_t enc_custom_read(uint8_t i);
 	extern bool encoder_rpm_updated;
 
 #ifdef __cplusplus
