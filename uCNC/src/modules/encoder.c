@@ -368,40 +368,46 @@ uint16_t read_encoder_mt6701_ssi(softspi_port_t *port)
 
 #ifdef ENABLE_ENCODER_RPM
 
-#ifndef ENCODER_RPM_MIN
-#define ENCODER_RPM_MIN 4
-#endif
-#ifndef RPM_PPR
-#define RPM_PPR 4
-#endif
+struct typedef encoder_rpm_
+{
+	uint16_t last_rpm;
+	uint32_t last_position;
+	uint32_t last_timestamp;
+}
+encoder_rpm_t;
 
-#define MAX_RPM_PULSE_INTERVAL (1000000UL / (ENCODER_RPM_MIN * RPM_PPR))
-#define RPM_CONV_CONSTANT (60000000.f / (float)RPM_PPR)
-
-static volatile uint32_t prev_time;
-static volatile uint32_t current_time;
-bool encoder_rpm_updated;
-CREATE_HOOK(encoder_index);
+static encoder_rpm_t encoders_rpm[ENCODERS];
 
 uint16_t encoder_get_rpm(uint8_t i)
 {
-	uint32_t elapsed, prev;
+	uint32_t pos = (uint32_t)encoder_get_position(i);
+	uint32_t diff = (uint32_t)(pos - encoders_rpm[i].last_position);
+	uint32_t timestamp = mcu_micros();
+	uint32_t elapsed = (uint32_t)(timestamp - encoders_rpm[i].last_timestamp);
 
-	ATOMIC_CODEBLOCK
+	if (!diff) // if no motion detected
 	{
-		elapsed = current_time;
-		prev = prev_time;
-		encoder_rpm_updated = false;
+		if (elapsed > 60000000) // at least one minute as passed
+		{
+			encoders_rpm[i].last_timestamp = timestamp;
+			encoders_rpm[i].last_rpm = 0;
+			return 0;
+		}
+	}
+	else
+	{
+		if (diff >= 10 || elapsed > 12000000) // at a minimum of 5RPM start to display values or a minimum of 10 pulse counts before update
+		{
+			float rpm = (float)diff / (float)g_settings.encoders_ppr[i];
+			rpm *= 60000000.0f / (float)elapsed;
+			encoders_rpm[i].last_position = pos;
+			encoders_rpm[i].last_timestamp = timestamp;
+			encoders_rpm[i].last_rpm = (uint16_t)lround(rpm);
+		}
 	}
 
-	if (ABS(mcu_micros() - elapsed) > MAX_RPM_PULSE_INTERVAL)
-	{
-		return 0;
-	}
-
-	elapsed -= prev;
-	float spindle = RPM_CONV_CONSTANT / (float)ABS(elapsed);
-	return (uint16_t)lroundf(spindle);
+	// none of the above conditions were matched. Return the previous RPM value
+	return encoders_rpm[i].last_rpm;
 }
 
 #endif
@@ -555,171 +561,96 @@ static void encoder_update(uint8_t i)
 {
 	int32_t encoder_read = 0;
 	int32_t diff = 0;
+	bool incremental = false;
 	switch (i)
 	{
 #ifdef ENC0_READ // enc0 has custom read
 	case ENC0:
-#ifdef ENC0_IS_INCREMENTAL // enc0 is incremental
 		encoder_read = ENC0_READ;
-		diff = (!(g_settings.encoders_dir_invert_mask & (1 << ENC0))) ? (encoder_read - encoder_last_read[ENC0]) : (encoder_last_read[ENC0] - encoder_read);
-		encoder_last_read[ENC0] = encoder_read;
-		if (diff < -(g_settings.encoders_ppr[ENC0] >> 1))
-		{
-			return (diff + g_settings.encoders_ppr[ENC0]);
-		}
-		if (diff > (g_settings.encoders_ppr[ENC0] >> 1))
-		{
-			return (diff + g_settings.encoders_ppr[ENC0]);
-		}
-		encoder_pos[ENC0] += diff;
-#else
-		encoder_pos[ENC0] = ENC0_READ;
+#ifdef ENC0_IS_INCREMENTAL
+		incremental = true;
 #endif
-		return;
+		break;
 #endif
 #ifdef ENC1_READ // enc1 has custom read
 	case ENC1:
-#ifdef ENC1_IS_INCREMENTAL // enc1 is incremental
 		encoder_read = ENC1_READ;
-		diff = (!(g_settings.encoders_dir_invert_mask & (1 << ENC1))) ? (encoder_read - encoder_last_read[ENC1]) : (encoder_last_read[ENC1] - encoder_read);
-		encoder_last_read[ENC1] = encoder_read;
-		if (diff < -(g_settings.encoders_ppr[ENC1] >> 1))
-		{
-			return (diff + g_settings.encoders_ppr[ENC1]);
-		}
-		if (diff > (g_settings.encoders_ppr[ENC1] >> 1))
-		{
-			return (diff + g_settings.encoders_ppr[ENC1]);
-		}
-		encoder_pos[ENC1] += diff;
-#else
-		encoder_pos[ENC1] = ENC1_READ;
+#ifdef ENC1_IS_INCREMENTAL
+		incremental = true;
 #endif
-		return;
+		break;
 #endif
 #ifdef ENC2_READ // enc2 has custom read
 	case ENC2:
-#ifdef ENC2_IS_INCREMENTAL // enc2 is incremental
 		encoder_read = ENC2_READ;
-		diff = (!(g_settings.encoders_dir_invert_mask & (1 << ENC2))) ? (encoder_read - encoder_last_read[ENC2]) : (encoder_last_read[ENC2] - encoder_read);
-		encoder_last_read[ENC2] = encoder_read;
-		if (diff < -(g_settings.encoders_ppr[ENC2] >> 1))
-		{
-			return (diff + g_settings.encoders_ppr[ENC2]);
-		}
-		if (diff > (g_settings.encoders_ppr[ENC2] >> 1))
-		{
-			return (diff + g_settings.encoders_ppr[ENC2]);
-		}
-		encoder_pos[ENC2] += diff;
-#else
-		encoder_pos[ENC2] = ENC2_READ;
+#ifdef ENC2_IS_INCREMENTAL
+		incremental = true;
 #endif
-		return;
+		break;
 #endif
 #ifdef ENC3_READ // enc3 has custom read
 	case ENC3:
-#ifdef ENC3_IS_INCREMENTAL // enc3 is incremental
 		encoder_read = ENC3_READ;
-		diff = (!(g_settings.encoders_dir_invert_mask & (1 << ENC3))) ? (encoder_read - encoder_last_read[ENC3]) : (encoder_last_read[ENC3] - encoder_read);
-		encoder_last_read[ENC3] = encoder_read;
-		if (diff < -(g_settings.encoders_ppr[ENC3] >> 1))
-		{
-			return (diff + g_settings.encoders_ppr[ENC3]);
-		}
-		if (diff > (g_settings.encoders_ppr[ENC3] >> 1))
-		{
-			return (diff + g_settings.encoders_ppr[ENC3]);
-		}
-		encoder_pos[ENC3] += diff;
-#else
-		encoder_pos[ENC3] = ENC3_READ;
+#ifdef ENC3_IS_INCREMENTAL
+		incremental = true;
 #endif
-		return;
+		break;
 #endif
 #ifdef ENC4_READ // enc4 has custom read
 	case ENC4:
-#ifdef ENC4_IS_INCREMENTAL // enc4 is incremental
 		encoder_read = ENC4_READ;
-		diff = (!(g_settings.encoders_dir_invert_mask & (1 << ENC4))) ? (encoder_read - encoder_last_read[ENC4]) : (encoder_last_read[ENC4] - encoder_read);
-		encoder_last_read[ENC4] = encoder_read;
-		if (diff < -(g_settings.encoders_ppr[ENC4] >> 1))
-		{
-			return (diff + g_settings.encoders_ppr[ENC4]);
-		}
-		if (diff > (g_settings.encoders_ppr[ENC4] >> 1))
-		{
-			return (diff + g_settings.encoders_ppr[ENC4]);
-		}
-		encoder_pos[ENC4] += diff;
-#else
-		encoder_pos[ENC4] = ENC4_READ;
+#ifdef ENC4_IS_INCREMENTAL
+		incremental = true;
 #endif
-		return;
+		break;
 #endif
 #ifdef ENC5_READ // enc5 has custom read
 	case ENC5:
-#ifdef ENC5_IS_INCREMENTAL // enc5 is incremental
 		encoder_read = ENC5_READ;
-		diff = (!(g_settings.encoders_dir_invert_mask & (1 << ENC5))) ? (encoder_read - encoder_last_read[ENC5]) : (encoder_last_read[ENC5] - encoder_read);
-		encoder_last_read[ENC5] = encoder_read;
-		if (diff < -(g_settings.encoders_ppr[ENC5] >> 1))
-		{
-			return (diff + g_settings.encoders_ppr[ENC5]);
-		}
-		if (diff > (g_settings.encoders_ppr[ENC5] >> 1))
-		{
-			return (diff + g_settings.encoders_ppr[ENC5]);
-		}
-		encoder_pos[ENC5] += diff;
-#else
-		encoder_pos[ENC5] = ENC5_READ;
+#ifdef ENC5_IS_INCREMENTAL
+		incremental = true;
 #endif
-		return;
+		break;
 #endif
 #ifdef ENC6_READ // enc6 has custom read
 	case ENC6:
-#ifdef ENC6_IS_INCREMENTAL // enc6 is incremental
 		encoder_read = ENC6_READ;
-		diff = (!(g_settings.encoders_dir_invert_mask & (1 << ENC6))) ? (encoder_read - encoder_last_read[ENC6]) : (encoder_last_read[ENC6] - encoder_read);
-		encoder_last_read[ENC6] = encoder_read;
-		if (diff < -(g_settings.encoders_ppr[ENC6] >> 1))
-		{
-			return (diff + g_settings.encoders_ppr[ENC6]);
-		}
-		if (diff > (g_settings.encoders_ppr[ENC6] >> 1))
-		{
-			return (diff + g_settings.encoders_ppr[ENC6]);
-		}
-		encoder_pos[ENC6] += diff;
-#else
-		encoder_pos[ENC6] = ENC6_READ;
+#ifdef ENC6_IS_INCREMENTAL
+		incremental = true;
 #endif
-		return;
+		break;
 #endif
 #ifdef ENC7_READ // enc7 has custom read
 	case ENC7:
-#ifdef ENC7_IS_INCREMENTAL // enc7 is incremental
 		encoder_read = ENC7_READ;
-		diff = (!(g_settings.encoders_dir_invert_mask & (1 << ENC7))) ? (encoder_read - encoder_last_read[ENC7]) : (encoder_last_read[ENC7] - encoder_read);
-		encoder_last_read[ENC7] = encoder_read;
-		if (diff < -(g_settings.encoders_ppr[ENC7] >> 1))
-		{
-			return (diff + g_settings.encoders_ppr[ENC7]);
-		}
-		if (diff > (g_settings.encoders_ppr[ENC7] >> 1))
-		{
-			return (diff + g_settings.encoders_ppr[ENC7]);
-		}
-		encoder_pos[ENC7] += diff;
-#else
-		encoder_pos[ENC7] = ENC7_READ;
+#ifdef ENC7_IS_INCREMENTAL
+		incremental = true;
 #endif
-		return;
+		break;
 #endif
 	}
 
-	return 0;
+	if (incremental)
+	{
+		diff = (!(g_settings.encoders_dir_invert_mask & (1 << i))) ? (encoder_read - encoder_last_read[i]) : (encoder_last_read[i] - encoder_read);
+		encoder_last_read[i] = encoder_read;
+		if (g_settings.encoders_ppr[i])
+		{
+			if (diff < -(g_settings.encoders_ppr[i] >> 1))
+			{
+				return (diff + g_settings.encoders_ppr[i]);
+			}
+			if (diff > (g_settings.encoders_ppr[i] >> 1))
+			{
+				return (diff + g_settings.encoders_ppr[i]);
+			}
+		}
+		encoder_pos[i] += diff;
+	}
+	else
+	{
+		encoder_pos[i] = ENC0_READ;
+	}
 }
 #endif
 

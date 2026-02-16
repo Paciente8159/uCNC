@@ -469,14 +469,13 @@ extern "C"
 // // Counter mode
 // #define ENC0_PULSE DIN7
 // #define ENC0_DIR DIN7
-// #define ENC0_PPR 16384
+// the respective PPR (pulses per rotation) can be set via $15x setting
 // optional index pin can be declared. Index pins pulse once per full rotation
 // #define ENC0_INDEX DIN8
 
 // // Encoder mode
 // #define ENC0_PULSE DOUT15
 // #define ENC0_DIR DOUT16
-// #define ENC0_PPR 16384
 
 // // Set a different type of encoder
 // #define ENC0_TYPE ENC_TYPE_I2C
@@ -497,7 +496,6 @@ extern "C"
 
 // Enables stepper closed loop position correction (not developed)
 // #define ENABLE_STEPPER_CLF_CORRECTION
-#endif
 #endif
 
 /**
