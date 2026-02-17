@@ -794,7 +794,7 @@ void itp_run(void)
 
 // starts the step isr if is stopped and there are segments to execute
 #ifdef ENABLE_RT_SYNC_MOTIONS
-	bool start_is_synched = (!itp_sgm_is_empty()) ? (itp_sgm_data[itp_sgm_data_read].flags && ITP_SYNC) : false;
+	bool start_is_synched = (!itp_sgm_is_empty()) ? ((itp_sgm_data[itp_sgm_data_read].flags & ITP_SYNC) != 0) : false;
 	// starts the step isr if is stopped and there are segments to execute
 	itp_start(start_is_synched);
 #else
@@ -808,15 +808,10 @@ void itp_update(void)
 	itp_needs_update = true;
 }
 
-void itp_stop(void)
+MCU_CALLBACK void itp_stop(void)
 {
 	uint8_t state = cnc_get_exec_state(EXEC_ALLACTIVE);
-	// any stop command while running triggers an HALT alarm
-	if (state & EXEC_RUN)
-	{
-		cnc_set_exec_state(EXEC_UNHOMED);
-	}
-
+	
 	mcu_delay_us(10);
 	io_set_steps(g_settings.step_invert_mask);
 #if TOOL_COUNT > 0
@@ -829,7 +824,14 @@ void itp_stop(void)
 #endif
 
 	mcu_stop_itp_isr();
+	// any stop command while running triggers an HALT alarm
+	if (state & EXEC_RUN)
+	{
+		cnc_set_exec_state(EXEC_POSITION_MAYBE_LOST);
+	}
+
 	cnc_clear_exec_state(EXEC_RUN);
+	
 }
 
 void itp_stop_tools(void)
@@ -908,10 +910,10 @@ uint8_t itp_sync(void)
 	{
 		if (!cnc_dotasks())
 		{
-			if (cnc_get_exec_state(EXEC_HOMING_HIT) == EXEC_HOMING_HIT)
-			{
-				break;
-			}
+			// if (cnc_get_exec_state(EXEC_HOMING_HIT) == EXEC_HOMING_HIT)
+			// {
+			// 	break;
+			// }
 			return STATUS_CRITICAL_FAIL;
 		}
 	}
@@ -956,6 +958,8 @@ itp_rt_step_prevent_t itp_rt_step_prevent_cb;
 
 MCU_CALLBACK void mcu_step_cb(void)
 {
+	mcu_isr_context_enter();
+	
 	static uint8_t stepbits = 0;
 	static bool itp_busy = false;
 

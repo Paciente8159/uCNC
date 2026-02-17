@@ -90,6 +90,8 @@ WEAK_EVENT_HANDLER(probe_disable)
 
 MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 {
+	mcu_isr_context_enter();
+
 #ifdef DISABLE_ALL_LIMITS
 	return;
 #else
@@ -136,7 +138,7 @@ MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 
 			itp_lock_stepper(0); // unlocks axis
 #endif
-			itp_stop();
+			cnc_stop(false);
 			cnc_set_exec_state(EXEC_LIMITS);
 #ifdef ENABLE_IO_ALARM_DEBUG
 			io_alarm_limits = limits;
@@ -149,6 +151,8 @@ MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 
 MCU_IO_CALLBACK void mcu_controls_changed_cb(void)
 {
+	mcu_isr_context_enter();
+
 #ifdef DISABLE_ALL_CONTROLS
 	return;
 #else
@@ -166,14 +170,19 @@ MCU_IO_CALLBACK void mcu_controls_changed_cb(void)
 #if ASSERT_PIN(ESTOP)
 #if EMULATE_GRBL_STARTUP > 2
 	if (CHECKFLAG((controls & changed), ESTOP_MASK))
+	{
+#ifdef ENABLE_IO_ALARM_DEBUG
+		io_alarm_controls = controls;
+#endif
+		cnc_call_rt_command(CMD_CODE_RESET);
 #else
 	if (CHECKFLAG(controls, ESTOP_MASK))
-#endif
 	{
 #ifdef ENABLE_IO_ALARM_DEBUG
 		io_alarm_controls = controls;
 #endif
 		cnc_alarm(EXEC_ALARM_EMERGENCY_STOP);
+#endif
 		return; // forces exit
 	}
 #endif
@@ -204,6 +213,8 @@ MCU_IO_CALLBACK void mcu_controls_changed_cb(void)
 
 MCU_IO_CALLBACK void mcu_probe_changed_cb(void)
 {
+	mcu_isr_context_enter();
+
 #if !ASSERT_PIN(PROBE)
 	return;
 #else
@@ -236,6 +247,8 @@ MCU_IO_CALLBACK void mcu_probe_changed_cb(void)
 
 MCU_IO_CALLBACK void mcu_inputs_changed_cb(void)
 {
+	mcu_isr_context_enter();
+
 	static volatile uint8_t prev_inputs = 0;
 	uint8_t inputs = 0;
 	uint8_t diff;

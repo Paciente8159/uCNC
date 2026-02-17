@@ -152,7 +152,6 @@ ISR(RTC_COMPA_vect, ISR_BLOCK)
 	uint32_t millis = mcu_runtime_ms;
 	millis++;
 	mcu_runtime_ms = millis;
-	mcu_isr_context_enter();
 	mcu_rtc_cb(millis);
 #else
 	mcu_runtime_ms++;
@@ -161,9 +160,6 @@ ISR(RTC_COMPA_vect, ISR_BLOCK)
 
 ISR(ITP_COMPA_vect, ISR_BLOCK)
 {
-#ifdef ENABLE_RT_SYNC_MOTIONS
-	mcu_isr_context_enter();
-#endif
 	mcu_step_cb();
 }
 
@@ -187,7 +183,6 @@ ISR(INT0_vect, ISR_BLOCK) // input pin on change service routine
 	mcu_probe_changed_cb();
 #endif
 #if (PCINTA_DIN_IO_MASK & 1)
-	mcu_isr_context_enter();
 	mcu_inputs_changed_cb();
 #endif
 }
@@ -205,7 +200,6 @@ ISR(INT1_vect, ISR_BLOCK) // input pin on change service routine
 	mcu_probe_changed_cb();
 #endif
 #if (PCINTA_DIN_IO_MASK & 4)
-	mcu_isr_context_enter();
 	mcu_inputs_changed_cb();
 #endif
 }
@@ -223,7 +217,6 @@ ISR(INT2_vect, ISR_BLOCK) // input pin on change service routine
 	mcu_probe_changed_cb();
 #endif
 #if (PCINTA_DIN_IO_MASK & 16)
-	mcu_isr_context_enter();
 	mcu_inputs_changed_cb();
 #endif
 }
@@ -241,7 +234,6 @@ ISR(INT3_vect, ISR_BLOCK) // input pin on change service routine
 	mcu_probe_changed_cb();
 #endif
 #if (PCINTA_DIN_IO_MASK & 64)
-	mcu_isr_context_enter();
 	mcu_inputs_changed_cb();
 #endif
 }
@@ -259,7 +251,6 @@ ISR(INT4_vect, ISR_BLOCK) // input pin on change service routine
 	mcu_probe_changed_cb();
 #endif
 #if (PCINTB_DIN_IO_MASK & 1)
-	mcu_isr_context_enter();
 	mcu_inputs_changed_cb();
 #endif
 }
@@ -277,7 +268,6 @@ ISR(INT5_vect, ISR_BLOCK) // input pin on change service routine
 	mcu_probe_changed_cb();
 #endif
 #if (PCINTB_DIN_IO_MASK & 4)
-	mcu_isr_context_enter();
 	mcu_inputs_changed_cb();
 #endif
 }
@@ -295,7 +285,6 @@ ISR(INT6_vect, ISR_BLOCK) // input pin on change service routine
 	mcu_probe_changed_cb();
 #endif
 #if (PCINTB_DIN_IO_MASK & 16)
-	mcu_isr_context_enter();
 	mcu_inputs_changed_cb();
 #endif
 }
@@ -313,7 +302,6 @@ ISR(INT7_vect, ISR_BLOCK) // input pin on change service routine
 	mcu_probe_changed_cb();
 #endif
 #if (PCINTB_DIN_IO_MASK & 64)
-	mcu_isr_context_enter();
 	mcu_inputs_changed_cb();
 #endif
 }
@@ -334,7 +322,6 @@ ISR(PCINT0_vect, ISR_BLOCK) // input pin on change service routine
 #endif
 
 #if (PCINT0_DIN_IO_MASK != 0)
-	mcu_isr_context_enter();
 	mcu_inputs_changed_cb();
 #endif
 }
@@ -357,7 +344,6 @@ ISR(PCINT1_vect, ISR_BLOCK) // input pin on change service routine
 #endif
 
 #if (PCINT1_DIN_IO_MASK != 0)
-	mcu_isr_context_enter();
 	mcu_inputs_changed_cb();
 #endif
 }
@@ -379,7 +365,6 @@ ISR(PCINT2_vect, ISR_BLOCK) // input pin on change service routine
 #endif
 
 #if (PCINT2_DIN_IO_MASK != 0)
-	mcu_isr_context_enter();
 	mcu_inputs_changed_cb();
 #endif
 }
@@ -1383,7 +1368,6 @@ ISR(ONESHOT_COMPA_vect, ISR_NOBLOCK)
 	ONESHOT_TIMSK = 0;
 	if (mcu_timeout_cb)
 	{
-		mcu_isr_context_enter();
 		mcu_timeout_cb();
 	}
 }
