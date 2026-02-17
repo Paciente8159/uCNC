@@ -45,6 +45,8 @@
 // turn laser off callback via ONESHOT timer
 MCU_CALLBACK void laser_ppi_turnoff_cb(void)
 {
+	mcu_isr_context_enter();
+	
 #ifndef INVERT_LASER_PPI_LOGIC
 	io_clear_output(LASER_PPI);
 #else

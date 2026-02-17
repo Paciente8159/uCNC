@@ -341,7 +341,7 @@ The only step left is to actually add the callback inside the core code to be ex
 void cnc_alarm(int8_t code)
 {
 	cnc_set_exec_state(EXEC_KILL);
-	cnc_stop();
+	cnc_stop(true);
 	cnc_state.alarm = code;
 #ifdef ENABLE_IO_ALARM_DEBUG
 	proto_print(MSG_FEEDBACK_START);

@@ -73,7 +73,6 @@ MCU_CALLBACK void shift_register_io_pins(void)
 
 void mcu_din_isr(void)
 {
-	mcu_isr_context_enter();
 	mcu_inputs_changed_cb();
 }
 
@@ -286,7 +285,6 @@ void mcu_rtc_isr(void)
 	ms_servo_counter = (servo_counter != 20) ? servo_counter : 0;
 
 #endif
-	mcu_isr_context_enter();
 	mcu_rtc_cb(millis());
 }
 
@@ -498,8 +496,7 @@ static void mcu_itp_isr(void)
 
 	if (!resetstep)
 	{
-		mcu_isr_context_enter();
-		mcu_step_cb();
+			mcu_step_cb();
 	}
 
 	else
@@ -648,8 +645,7 @@ static void mcu_oneshot_isr(void)
 {
 	if (mcu_timeout_cb)
 	{
-		mcu_isr_context_enter();
-		mcu_timeout_cb();
+			mcu_timeout_cb();
 	}
 }
 

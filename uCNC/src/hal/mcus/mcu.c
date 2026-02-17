@@ -46,6 +46,9 @@ __attribute__((noinline, optimize("O3"))) void mcu_delay_loop(uint16_t loops)
 volatile uint8_t mcu_in_isr_context_counter;
 void mcu_in_isr_context_leave(uint8_t *counter)
 {
+	if(mcu_in_isr_context_counter>1){
+		*counter = mcu_in_isr_context_counter;
+	}
 	ATOMIC_FETCH_SUB(&mcu_in_isr_context_counter, 1, __ATOMIC_ACQ_REL);
 }
 
