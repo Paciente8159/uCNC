@@ -362,7 +362,6 @@ void itp_run(void)
 #endif
 
 	itp_segment_t *sgm = NULL;
-	bool start_is_synched = false;
 
 	// creates segments and fills the buffer
 	while (!itp_sgm_is_full())
@@ -410,12 +409,6 @@ void itp_run(void)
 			// flags block for recalculation of speeds
 			itp_needs_update = true;
 
-			// checks for synched motion
-			if (itp_cur_plan_block->planner_flags.bit.synched)
-			{
-				start_is_synched = true;
-			}
-
 #ifdef ENABLE_RT_SYNC_MOTIONS
 			flushing_block = false;
 #endif
@@ -457,7 +450,7 @@ void itp_run(void)
 		}
 		flushing_block = true;
 #endif
-    
+
 		uint32_t remaining_steps = itp_cur_plan_block->steps[itp_cur_plan_block->main_stepper];
 
 		sgm = &itp_sgm_data[itp_sgm_data_write];
@@ -763,11 +756,13 @@ void itp_run(void)
 
 		itp_cur_plan_block->steps[itp_cur_plan_block->main_stepper] = remaining_steps;
 
+#ifdef ENABLE_RT_SYNC_MOTIONS
 		// checks for synched motion
 		if (itp_cur_plan_block->planner_flags.bit.synched)
 		{
 			sgm->flags |= ITP_SYNC;
 		}
+#endif
 
 		// overwrites previous values
 #ifdef ENABLE_BACKLASH_COMPENSATION
@@ -797,8 +792,14 @@ void itp_run(void)
 	tool_set_coolant(planner_get_coolant());
 #endif
 
+// starts the step isr if is stopped and there are segments to execute
+#ifdef ENABLE_RT_SYNC_MOTIONS
+	bool start_is_synched = (!itp_sgm_is_empty()) ? ((itp_sgm_data[itp_sgm_data_read].flags & ITP_SYNC) != 0) : false;
 	// starts the step isr if is stopped and there are segments to execute
 	itp_start(start_is_synched);
+#else
+	itp_start(false);
+#endif
 }
 
 void itp_update(void)
