@@ -430,12 +430,6 @@ extern "C"
  * 
  * #define ENC0_IS_INCREMENTAL
  * 
- * It's now also possible to declare an encoder index pin that is able to trigger some sort of action (callback) once triggered
- * For that just declare the pin that will be used to get the index state of the encoder using ENCx_INDEX
- * Example:
- * 
- * #define ENC0_INDEX DIN8 // assigns µCNC DIN8 pin as the ENC0 index pin
- * 
  * **USING ENCODER AS RPM COUNTER**
  * 
  * Previously µCNC only supported a single RPM dedicated encoder. This is now modified as any encoder can be used as an RPM encoder freely
@@ -452,8 +446,6 @@ extern "C"
 // #define ENC0_PULSE DIN7
 // #define ENC0_DIR DIN7
 // the respective PPR (pulses per rotation) can be set via $15x setting
-// optional index pin can be declared. Index pins pulse once per full rotation
-// #define ENC0_INDEX DIN8
 
 // Encoder mode
 

@@ -47,30 +47,6 @@ extern "C"
 #define ENC_TYPE_CUSTOM 255
 
 	DECL_MODULE(encoder);
-#ifdef ENC0_INDEX
-	DECL_HOOK(enc0_index, void);
-#endif
-#ifdef ENC1_INDEX
-	DECL_HOOK(enc1_index, void);
-#endif
-#ifdef ENC2_INDEX
-	DECL_HOOK(enc2_index, void);
-#endif
-#ifdef ENC3_INDEX
-	DECL_HOOK(enc3_index, void);
-#endif
-#ifdef ENC4_INDEX
-	DECL_HOOK(enc4_index, void);
-#endif
-#ifdef ENC5_INDEX
-	DECL_HOOK(enc5_index, void);
-#endif
-#ifdef ENC6_INDEX
-	DECL_HOOK(enc6_index, void);
-#endif
-#ifdef ENC7_INDEX
-	DECL_HOOK(enc7_index, void);
-#endif
 	int32_t encoder_get_position(uint8_t i);
 	void encoder_print_values(void);
 	void encoder_reset_position(uint8_t i, int32_t position);

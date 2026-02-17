@@ -437,96 +437,48 @@ void encoders_update(uint8_t pulse, uint8_t diff)
 	if ((diff & ENC0_IO_MASK))
 	{
 		encoders_pos[0] += (dir & ENC0_IO_MASK) ? 1 : -1;
-#ifdef ENC0_INDEX
-		if (io_get_input(ENC0_INDEX))
-		{
-			HOOK_INVOKE(enc0_index);
-		}
-#endif
 	}
 #endif
 #if ENCODERS > 1
 	if ((diff & ENC1_IO_MASK))
 	{
 		encoders_pos[1] += (dir & ENC1_IO_MASK) ? 1 : -1;
-#ifdef ENC1_INDEX
-		if (io_get_input(ENC1_INDEX))
-		{
-			HOOK_INVOKE(enc1_index);
-		}
-#endif
 	}
 #endif
 #if ENCODERS > 2
 	if ((diff & ENC2_IO_MASK))
 	{
 		encoders_pos[2] += (dir & ENC2_IO_MASK) ? 1 : -1;
-#ifdef ENC2_INDEX
-		if (io_get_input(ENC2_INDEX))
-		{
-			HOOK_INVOKE(enc2_index);
-		}
-#endif
 	}
 #endif
 #if ENCODERS > 3
 	if ((diff & ENC3_IO_MASK))
 	{
 		encoders_pos[3] += (dir & ENC3_IO_MASK) ? 1 : -1;
-#ifdef ENC3_INDEX
-		if (io_get_input(ENC3_INDEX))
-		{
-			HOOK_INVOKE(enc3_index);
-		}
-#endif
 	}
 #endif
 #if ENCODERS > 4
 	if ((diff & ENC4_IO_MASK))
 	{
 		encoders_pos[4] += (dir & ENC4_IO_MASK) ? 1 : -1;
-#ifdef ENC4_INDEX
-		if (io_get_input(ENC4_INDEX))
-		{
-			HOOK_INVOKE(enc4_index);
-		}
-#endif
 	}
 #endif
 #if ENCODERS > 5
 	if ((diff & ENC5_IO_MASK))
 	{
 		encoders_pos[5] += (dir & ENC5_IO_MASK) ? 1 : -1;
-#ifdef ENC5_INDEX
-		if (io_get_input(ENC5_INDEX))
-		{
-			HOOK_INVOKE(enc5_index);
-		}
-#endif
 	}
 #endif
 #if ENCODERS > 6
 	if ((diff & ENC6_IO_MASK))
 	{
 		encoders_pos[6] += (dir & ENC6_IO_MASK) ? 1 : -1;
-#ifdef ENC6_INDEX
-		if (io_get_input(ENC6_INDEX))
-		{
-			HOOK_INVOKE(enc6_index);
-		}
-#endif
 	}
 #endif
 #if ENCODERS > 7
 	if ((diff & ENC7_IO_MASK))
 	{
 		encoders_pos[7] += (dir & ENC7_IO_MASK) ? 1 : -1;
-#ifdef ENC7_INDEX
-		if (io_get_input(ENC7_INDEX))
-		{
-			HOOK_INVOKE(enc7_index);
-		}
-#endif
 	}
 #endif
 }
@@ -763,30 +715,6 @@ DECL_MODULE(encoder)
 #endif
 #if ENC7_TYPE == ENC_TYPE_I2C
 	softi2c_config(&enc7, ENC7_FREQ);
-#endif
-#ifdef ENC0_INDEX
-	CREATE_HOOK(enc0_index);
-#endif
-#ifdef ENC1_INDEX
-	CREATE_HOOK(enc1_index);
-#endif
-#ifdef ENC2_INDEX
-	CREATE_HOOK(enc2_index);
-#endif
-#ifdef ENC3_INDEX
-	CREATE_HOOK(enc3_index);
-#endif
-#ifdef ENC4_INDEX
-	CREATE_HOOK(enc4_index);
-#endif
-#ifdef ENC5_INDEX
-	CREATE_HOOK(enc5_index);
-#endif
-#ifdef ENC6_INDEX
-	CREATE_HOOK(enc6_index);
-#endif
-#ifdef ENC7_INDEX
-	CREATE_HOOK(enc7_index);
 #endif
 	encoders_reset_position();
 
