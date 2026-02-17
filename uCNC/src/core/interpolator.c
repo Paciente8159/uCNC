@@ -794,7 +794,7 @@ void itp_run(void)
 
 // starts the step isr if is stopped and there are segments to execute
 #ifdef ENABLE_RT_SYNC_MOTIONS
-	bool start_is_synched = (!itp_sgm_is_empty()) ? (itp_sgm_data[itp_sgm_data_read].flags && ITP_SYNC) : false;
+	bool start_is_synched = (!itp_sgm_is_empty()) ? ((itp_sgm_data[itp_sgm_data_read].flags & ITP_SYNC) != 0) : false;
 	// starts the step isr if is stopped and there are segments to execute
 	itp_start(start_is_synched);
 #else
