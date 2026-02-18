@@ -478,9 +478,6 @@ extern "C"
 // #define STEP1_ENCODER ENC1
 // #define STEP2_ENCODER ENC2
 
-// Uncomment to allow RPM measurements using encoders
-// #define ENABLE_ENCODER_RPM
-
 // Enables stepper closed loop position correction (not developed)
 // #define ENABLE_STEPPER_CLF_CORRECTION
 #endif

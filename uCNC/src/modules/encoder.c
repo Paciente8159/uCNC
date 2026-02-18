@@ -19,7 +19,7 @@
 #include "../cnc.h"
 #include "softi2c.h"
 #include "softspi.h"
-#define ENCODERS 8
+
 #if ENCODERS > 0
 
 static int32_t encoders_pos[ENCODERS];
@@ -369,8 +369,6 @@ uint16_t read_encoder_mt6701_ssi(softspi_port_t *port)
 	return (uint16_t)((data >> 10) & 0x3fff);
 }
 
-#ifdef ENABLE_ENCODER_RPM
-
 #ifndef ENCODER_MIN_RPM
 #define ENCODER_MIN_RPM 6
 #endif
@@ -416,7 +414,7 @@ uint16_t encoder_get_rpm(uint8_t i)
 	return encoders_rpm[i].last_rpm;
 }
 
-#endif
+
 
 /**
  * Updates pulse encoder types

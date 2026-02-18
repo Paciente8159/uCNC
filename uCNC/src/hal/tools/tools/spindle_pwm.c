@@ -44,12 +44,6 @@
 #endif
 #endif
 
-#ifdef SPINDLE_RPM_ENCODER
-#ifndef ENABLE_ENCODER_RPM
-#error "To use RPM encoder you must enable ENABLE_ENCODER_RPM in the HAL"
-#endif
-#endif
-
 #if defined(ENABLE_TOOL_PID_CONTROLLER) && !defined(DISABLE_SPINDLE_PWM_PID)
 #ifndef SPINDLE_PWM_PID_SAMPLE_RATE_HZ
 #define SPINDLE_PWM_PID_SAMPLE_RATE_HZ 125

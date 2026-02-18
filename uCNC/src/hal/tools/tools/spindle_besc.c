@@ -52,12 +52,6 @@
 #endif
 #define SPINDLE_BESC_RANGE (ABS((SPINDLE_BESC_HIGH - SPINDLE_BESC_LOW)))
 
-#ifdef SPINDLE_BESC_RPM_ENCODER
-#ifndef ENABLE_ENCODER_RPM
-#error "TO use RPM encoder you must enable ENABLE_ENCODER_RPM in the HAL"
-#endif
-#endif
-
 static void startup_code(void)
 {
 // do whatever routine you need to do here to arm the ESC

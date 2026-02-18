@@ -77,9 +77,7 @@ extern "C"
 	void encoders_reset_position(void);
 	void encoders_itp_reset_rt_position(float *origin);
 	void encoders_update(uint8_t pulse, uint8_t diff);
-#ifdef ENABLE_ENCODER_RPM
 	uint16_t encoder_get_rpm(uint8_t i);
-#endif
 	int32_t enc_custom_read(uint8_t i);
 
 #ifdef __cplusplus

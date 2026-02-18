@@ -184,21 +184,16 @@ If PULSE and DIR are assigned to the same pin:
 
 ---
 
-# 8. RPM Measurement (`ENABLE_ENCODER_RPM`)
+# 8. RPM Measurement
 
 Any encoder can be used as an RPM source:
-
-```c
-#define ENABLE_ENCODER_RPM
-```
-
 The firmware computes RPM using:
 
 - Position delta
 - Time delta
 - Encoder resolution
 
-This option unlocks `encoder_get_rpm` function and an the necessary RPM calculation variables for all encoders:
+`encoder_get_rpm` function can be used to get a specific encoder RPM:
 
 ```c
 // get encoder 0 RPM
@@ -241,7 +236,6 @@ for each encoder with a custom read function.
 | `ENCx_IS_INCREMENTAL` | Incremental mode | Differential updates and wrap‑around |
 | `ENCx_INDEX` | Index pin | Creates index hook and callback support |
 | `STEPx_ENCODER` | Bind encoder to stepper | Closed‑loop and homing sync |
-| `ENABLE_ENCODER_RPM` | RPM measurement | Per‑encoder RPM calculation |
 | `ENABLE_MAIN_LOOP_MODULES` | Background updates | Required for incremental encoders |
 
 ---
