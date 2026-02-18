@@ -35,7 +35,7 @@ static int32_t encoders_pos[ENCODERS];
 #define ENC0_TYPE ENC_TYPE_PULSE
 #endif
 #if ENC0_TYPE==ENC_TYPE_PULSE
-#define ENC0_MASK (1 << (ENC0_PULSE - DIN_PINS_OFFSET))
+#define ENC0_IO_MASK (1 << (ENC0_PULSE - DIN_PINS_OFFSET))
 #elif ENC0_TYPE==ENC_TYPE_I2C
 #ifndef ENC0_FREQ
 #define ENC0_FREQ 400000
@@ -67,7 +67,7 @@ static int32_t encoders_pos[ENCODERS];
 #define ENC1_TYPE ENC_TYPE_PULSE
 #endif
 #if ENC1_TYPE==ENC_TYPE_PULSE
-#define ENC1_MASK (1 << (ENC1_PULSE - DIN_PINS_OFFSET))
+#define ENC1_IO_MASK (1 << (ENC1_PULSE - DIN_PINS_OFFSET))
 #elif ENC1_TYPE==ENC_TYPE_I2C
 #ifndef ENC1_FREQ
 #define ENC1_FREQ 400000
@@ -99,7 +99,7 @@ static int32_t encoders_pos[ENCODERS];
 #define ENC2_TYPE ENC_TYPE_PULSE
 #endif
 #if ENC2_TYPE==ENC_TYPE_PULSE
-#define ENC2_MASK (1 << (ENC2_PULSE - DIN_PINS_OFFSET))
+#define ENC2_IO_MASK (1 << (ENC2_PULSE - DIN_PINS_OFFSET))
 #elif ENC2_TYPE==ENC_TYPE_I2C
 #ifndef ENC2_FREQ
 #define ENC2_FREQ 400000
@@ -131,7 +131,7 @@ static int32_t encoders_pos[ENCODERS];
 #define ENC3_TYPE ENC_TYPE_PULSE
 #endif
 #if ENC3_TYPE==ENC_TYPE_PULSE
-#define ENC3_MASK (1 << (ENC3_PULSE - DIN_PINS_OFFSET))
+#define ENC3_IO_MASK (1 << (ENC3_PULSE - DIN_PINS_OFFSET))
 #elif ENC3_TYPE==ENC_TYPE_I2C
 #ifndef ENC3_FREQ
 #define ENC3_FREQ 400000
@@ -163,7 +163,7 @@ static int32_t encoders_pos[ENCODERS];
 #define ENC4_TYPE ENC_TYPE_PULSE
 #endif
 #if ENC4_TYPE==ENC_TYPE_PULSE
-#define ENC4_MASK (1 << (ENC4_PULSE - DIN_PINS_OFFSET))
+#define ENC4_IO_MASK (1 << (ENC4_PULSE - DIN_PINS_OFFSET))
 #elif ENC4_TYPE==ENC_TYPE_I2C
 #ifndef ENC4_FREQ
 #define ENC4_FREQ 400000
@@ -195,7 +195,7 @@ static int32_t encoders_pos[ENCODERS];
 #define ENC5_TYPE ENC_TYPE_PULSE
 #endif
 #if ENC5_TYPE==ENC_TYPE_PULSE
-#define ENC5_MASK (1 << (ENC5_PULSE - DIN_PINS_OFFSET))
+#define ENC5_IO_MASK (1 << (ENC5_PULSE - DIN_PINS_OFFSET))
 #elif ENC5_TYPE==ENC_TYPE_I2C
 #ifndef ENC5_FREQ
 #define ENC5_FREQ 400000
@@ -227,7 +227,7 @@ static int32_t encoders_pos[ENCODERS];
 #define ENC6_TYPE ENC_TYPE_PULSE
 #endif
 #if ENC6_TYPE==ENC_TYPE_PULSE
-#define ENC6_MASK (1 << (ENC6_PULSE - DIN_PINS_OFFSET))
+#define ENC6_IO_MASK (1 << (ENC6_PULSE - DIN_PINS_OFFSET))
 #elif ENC6_TYPE==ENC_TYPE_I2C
 #ifndef ENC6_FREQ
 #define ENC6_FREQ 400000
@@ -259,7 +259,7 @@ static int32_t encoders_pos[ENCODERS];
 #define ENC7_TYPE ENC_TYPE_PULSE
 #endif
 #if ENC7_TYPE==ENC_TYPE_PULSE
-#define ENC7_MASK (1 << (ENC7_PULSE - DIN_PINS_OFFSET))
+#define ENC7_IO_MASK (1 << (ENC7_PULSE - DIN_PINS_OFFSET))
 #elif ENC7_TYPE==ENC_TYPE_I2C
 #ifndef ENC7_FREQ
 #define ENC7_FREQ 400000
@@ -340,6 +340,31 @@ SOFTSPI(enc7, ENC7_FREQ, 0, UNDEF_PIN, ENC7_DIR, ENC7_PULSE);
 #endif
 #endif
 
+#ifdef ENC0_INDEX
+	CREATE_HOOK(enc0_index);
+#endif
+#ifdef ENC1_INDEX
+	CREATE_HOOK(enc1_index);
+#endif
+#ifdef ENC2_INDEX
+	CREATE_HOOK(enc2_index);
+#endif
+#ifdef ENC3_INDEX
+	CREATE_HOOK(enc3_index);
+#endif
+#ifdef ENC4_INDEX
+	CREATE_HOOK(enc4_index);
+#endif
+#ifdef ENC5_INDEX
+	CREATE_HOOK(enc5_index);
+#endif
+#ifdef ENC6_INDEX
+	CREATE_HOOK(enc6_index);
+#endif
+#ifdef ENC7_INDEX
+	CREATE_HOOK(enc7_index);
+#endif
+
 /**
  * Additional read functions for other types of encoders can be added later
  * For now support for the MT6701 is added
@@ -392,7 +417,7 @@ uint16_t encoder_get_rpm(uint8_t i)
 
 	if (!diff) // if no motion detected
 	{
-		if (elapsed > 1000000) // at least one minute as passed
+		if (elapsed > 1000000) // at least one second as passed
 		{
 			encoders_rpm[i].last_timestamp = timestamp;
 			encoders_rpm[i].last_rpm >>= 1; // assume speed as dropped to half
@@ -789,30 +814,6 @@ DECL_MODULE(encoder)
 #endif
 #if ENC7_TYPE == ENC_TYPE_I2C
 	softi2c_config(&enc7, ENC7_FREQ);
-#endif
-#ifdef ENC0_INDEX
-	CREATE_HOOK(enc0_index);
-#endif
-#ifdef ENC1_INDEX
-	CREATE_HOOK(enc1_index);
-#endif
-#ifdef ENC2_INDEX
-	CREATE_HOOK(enc2_index);
-#endif
-#ifdef ENC3_INDEX
-	CREATE_HOOK(enc3_index);
-#endif
-#ifdef ENC4_INDEX
-	CREATE_HOOK(enc4_index);
-#endif
-#ifdef ENC5_INDEX
-	CREATE_HOOK(enc5_index);
-#endif
-#ifdef ENC6_INDEX
-	CREATE_HOOK(enc6_index);
-#endif
-#ifdef ENC7_INDEX
-	CREATE_HOOK(enc7_index);
 #endif
 	encoders_reset_position();
 
