@@ -388,42 +388,40 @@ extern "C"
 // Assigns an output to an blinking led (1Hz rate)
 #define ACTIVITY_LED DOUT31
 
-/*
-	Sets the number of encoders to be used (max of 8)
+/**
+ * Sets the number of encoders to be used (max of 8)
+ *  
+ * To know more about encoders please read the document under /modules/encoder.md
+ * https://github.com/Paciente8159/uCNC/blob/master/uCNC/src/modules/encoder.md
+ * 
 */
 #define ENCODERS 0
-/**
- * To use the encoder counter 3 definitions are needed
- * ENCx_PULSE -> must be set to an input PIN with interrupt on change enabled capabilities
- * ENCx_DIR -> a regular input PIN that detects the direction of the encoding step
- * ENCx_PPR -> the encoder Pulses Per Rotation value
- * Defined encoders must match the number of encoders and numeral defined above.
- * For example if ENCODERS is set to 2 it expects to find the definitions for ENC0 and ENC1. Number skipping is not allowed (example Set ENC0 and ENC2 but not ENC1)
- *
- * It's also possible to assign an encoder to a stepper motor by defining the STEPx_ENCODER and the encoder index like this
- * #define STEP0_ENCODER ENC0 //assigns encoder 0 to stepper 0
- *
- * The encoder can work as a simple counter (used in speed encoders) by setting the same HAL pin for both PULSE and DIR functions - Counter mode
- *
- * For encoders to work as STEP encoders ENABLE_MAIN_LOOP_MODULES must be enabled
- *
- * Encoders counting direction can be inverted via mask setting $8
- * */
+
 #if ENCODERS > 0
 #include "src/modules/encoder.h"
+/**
+ * Examples
+ */
 
 // Counter mode
+
 // #define ENC0_PULSE DIN7
 // #define ENC0_DIR DIN7
-// #define ENC0_PPR 16384
+// the respective PPR (pulses per rotation) can be set via $15x setting
+// optional index pin can be declared. Index pins pulse once per full rotation
+// #define ENC0_INDEX DIN8
 
-// // Encoder mode
+// Encoder mode
+
+// #define ENC0_PULSE DIN0
+// #define ENC0_DIR DIN8
+
+// or a different type
+
+// #define ENC0_TYPE ENC_TYPE_I2C
+// define communication pins
 // #define ENC0_PULSE DOUT15
 // #define ENC0_DIR DOUT16
-// #define ENC0_PPR 16384
-
-// Encoder Type
-// #define ENC0_TYPE ENC_TYPE_I2C
 
 // #define ENC1_PULSE DIN1
 // #define ENC1_DIR DIN9
@@ -436,37 +434,8 @@ extern "C"
 // #define STEP1_ENCODER ENC1
 // #define STEP2_ENCODER ENC2
 
-// By default encoders are configured as pulse encoders
-// But encoders can also be defined as I2C or SSI encoders
-// for these types of encoders the PULSE pin is used as the clock communication pin
-// the DIR pin is used as the data pin
-// I2C or SSI encoders can share the same CLOCK pin for better optimization
-// for example to use ENC1 with I2C and ENC2 with SSI
-
-// #define ENC1_TYPE ENC_TYPE_I2C
-// #define ENC2_TYPE ENC_TYPE_SSI
-
-// Assign an encoder has an RPM encoder
-// #define ENABLE_ENCODER_RPM
-#ifdef ENABLE_ENCODER_RPM
-
-// Assign an encoder to work as the RPM encoder
-// #define RPM_ENCODER ENC0
-
-// Optional set a second encoder pin has an encoder index
-// This assumes the index pulse occurs when pulse pin is also triggered
-// #define RPM_INDEX_INPUT DIN8
-
-// Resolution of the RPM encoder or Pulses Per Revolution
-// #define RPM_PPR 24
-
-// uncomment to update tool sync on index pulse only
-// instead of updating in every PPR
-// #define RPM_SYNC_UPDATE_ON_INDEX_ONLY
-
-// Enables stepper closed loop position correction
+// Enables stepper closed loop position correction (not developed)
 // #define ENABLE_STEPPER_CLF_CORRECTION
-#endif
 #endif
 
 /**
