@@ -388,16 +388,15 @@ extern "C"
 // Assigns an output to an blinking led (1Hz rate)
 #define ACTIVITY_LED DOUT31
 
-/*
-	Sets the number of encoders to be used (max of 8)
-*/
-#define ENCODERS 0
 /**
- * 
+ * Sets the number of encoders to be used (max of 8)
+ *  
  * To know more about encoders please read the document under /modules/encoder.md
  * https://github.com/Paciente8159/uCNC/blob/master/uCNC/src/modules/encoder.md
  * 
- * */
+*/
+#define ENCODERS 0
+
 #if ENCODERS > 0
 #include "src/modules/encoder.h"
 /**
