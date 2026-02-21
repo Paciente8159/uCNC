@@ -87,12 +87,31 @@ typedef struct
 
 static i2s_hal_t i2s_hal;
 
-MCU_CALLBACK void mcu_itp_isr(void *arg);
-MCU_CALLBACK void mcu_gen_pwm(void);
-MCU_CALLBACK void mcu_gen_servo(void);
-MCU_CALLBACK void mcu_gen_step(void);
-MCU_CALLBACK void mcu_gpio_isr(void *type);
-MCU_CALLBACK void mcu_gen_oneshot(void);
+extern void mcu_itp_isr(void *arg);
+extern void mcu_gen_pwm(void);
+extern void mcu_gen_servo(void);
+extern void mcu_gen_step(void);
+extern void mcu_gpio_isr(void *type);
+
+// software generated oneshot for RT steps like laser PPI
+#if defined(MCU_HAS_ONESHOT_TIMER) && defined(ENABLE_RT_SYNC_MOTIONS)
+static uint32_t esp32_oneshot_counter;
+static uint32_t esp32_oneshot_reload;
+MCU_CALLBACK void mcu_gen_oneshot(void)
+{
+	if (esp32_oneshot_counter)
+	{
+		esp32_oneshot_counter--;
+		if (!esp32_oneshot_counter)
+		{
+			if (mcu_timeout_cb)
+			{
+				mcu_timeout_cb();
+			}
+		}
+	}
+}
+#endif
 
 IRAM_ATTR void i2s_write_word(uint32_t value)
 {

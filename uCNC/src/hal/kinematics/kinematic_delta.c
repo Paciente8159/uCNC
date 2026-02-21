@@ -148,7 +148,7 @@ static void delta_calc_bounds(void)
 		axis[AXIS_Z] = middlez - sum;
 		kinematics_apply_inverse(axis, r[7]);
 		if (r[0][0] == INT32_MAX || r[1][0] == INT32_MAX || r[2][0] == INT32_MAX || r[3][0] == INT32_MAX ||
-			r[4][0] == INT32_MAX || r[5][0] == INT32_MAX || r[6][0] == INT32_MAX || r[7][0] == INT32_MAX)
+				r[4][0] == INT32_MAX || r[5][0] == INT32_MAX || r[6][0] == INT32_MAX || r[7][0] == INT32_MAX)
 		{
 			sum -= dist;
 			dist *= 0.5;
@@ -204,7 +204,7 @@ int8_t delta_calcAngleYZ(float x0, float y0, float z0, float *theta)
 	float re = g_settings.delta_forearm_length;
 	float rf = g_settings.delta_bicep_length;
 	float y1 = -delta_base_half_f_tg30; // f/2 * tg 30
-	y0 -= delta_effector_half_f_tg30;	// shift center to edge
+	y0 -= delta_effector_half_f_tg30;		// shift center to edge
 	// z = a + b*y
 	float a = fast_flt_div2((x0 * x0 + y0 * y0 + z0 * z0 + rf * rf - re * re - y1 * y1)) / z0;
 	float b = (y1 - y0) / z0;
@@ -427,25 +427,16 @@ bool kinematics_check_boundaries(float *axis)
 
 	if (axis[AXIS_X] < -xy_limit || axis[AXIS_X] > xy_limit)
 	{
-#ifdef ALLOW_SOFT_LIMIT_JOG_MOTION_CLAMPING
-		axis[AXIS_X] = CLAMP(-xy_limit, axis[AXIS_X], xy_limit);
-#endif
 		return false;
 	}
 
 	if (axis[AXIS_Y] < -xy_limit || axis[AXIS_Y] > xy_limit)
 	{
-#ifdef ALLOW_SOFT_LIMIT_JOG_MOTION_CLAMPING
-		axis[AXIS_X] = CLAMP(-xy_limit, axis[AXIS_Y], xy_limit);
-#endif
 		return false;
 	}
 
 	if (axis[AXIS_Z] < (delta_cuboid_z_min - z_offset) || axis[AXIS_Z] > (delta_cuboid_z_max - z_offset))
 	{
-#ifdef ALLOW_SOFT_LIMIT_JOG_MOTION_CLAMPING
-		axis[AXIS_Z] = CLAMP((delta_cuboid_z_min - z_offset), axis[AXIS_Z], (delta_cuboid_z_max - z_offset));
-#endif
 		return false;
 	}
 
@@ -462,9 +453,6 @@ bool kinematics_check_boundaries(float *axis)
 #endif
 			if (value > g_settings.max_distance[i] || value < 0)
 			{
-#ifdef ALLOW_SOFT_LIMIT_JOG_MOTION_CLAMPING
-				axis[i] = CLAMP(0, value, g_settings.max_distance[i]);
-#endif
 				return false;
 			}
 		}

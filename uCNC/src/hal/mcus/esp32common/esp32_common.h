@@ -53,7 +53,7 @@ extern "C"
 	void mcu_gen_pwm(void);
 	void mcu_gen_servo(void);
 	void mcu_gen_step(void);
-#if defined(MCU_HAS_ONESHOT_TIMER)
+#if defined(MCU_HAS_ONESHOT_TIMER) && defined(ENABLE_RT_SYNC_MOTIONS)
 	void mcu_gen_oneshot(void);
 #endif
 #endif

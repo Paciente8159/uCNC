@@ -160,12 +160,6 @@ bool single_axis_homing_system_cmd(void *args)
 	return EVENT_CONTINUE;
 }
 
-bool single_axis_homing_info(void *args)
-{
-	protocol_send_string(__romstr__("H"));
-	return 0;
-}
-CREATE_EVENT_LISTENER(protocol_send_cnc_info, single_axis_homing_info);
 /**
  * @brief 	Create an event listener object an attach our custom code parser handler.
  * 			in this case we are adding a listener to the 'grbl_cmd' EVENT
@@ -188,10 +182,5 @@ DECL_MODULE(single_axis_homing)
 #else
 // just a warning in case you disabled the PARSER_MODULES option on build
 #warning "Parser extensions are not enabled. Single Axis Command code extension will not work."
-#endif
-#ifdef ENABLE_SYSTEM_INFO
-	ADD_EVENT_LISTENER(protocol_send_cnc_info, single_axis_homing_info);
-#else
-	#warning "System Info not enabled. Build information not updated"
 #endif
 }

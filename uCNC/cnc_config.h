@@ -468,13 +468,10 @@ extern "C"
 
 // #define MODIFY_SOFT_LIMIT_TO_ERROR
 #ifdef MODIFY_SOFT_LIMIT_TO_ERROR
-// uncomment this to ignore the target and to continue if doing a jog motion
-// otherwise it will put the machine in hold (canceling the jog motion) until the user allows the code to continue to execute
-// #define IGNORE_JOG_TARGET_SOFT_LIMIT_ERROR
+// uncomment this to allow motion to continue
+// otherwise it will put the machine in hold until the user allows it to continue
+// #define ALLOW_MOTION_TO_CONTINUE
 #endif
-// uncomment to allow jog motions that travels beyond software limits to be clamped and continue to execute without alarm or error
-// #define ALLOW_SOFT_LIMIT_JOG_MOTION_CLAMPING
-
 
 	/**
 	 * If the type of machine supports skew and needs skew correction

@@ -765,20 +765,20 @@ extern "C"
 #ifdef MCU_HAS_ENDPOINTS
 		FLASH_FS.begin();
 		flash_fs = {
-			.drive = 'C',
-			.open = flash_fs_open,
-			.read = flash_fs_read,
-			.write = flash_fs_write,
-			.seek = flash_fs_seek,
-			.available = flash_fs_available,
-			.close = flash_fs_close,
-			.remove = flash_fs_remove,
-			.opendir = flash_fs_opendir,
-			.mkdir = flash_fs_mkdir,
-			.rmdir = flash_fs_rmdir,
-			.next_file = flash_fs_next_file,
-			.finfo = flash_fs_info,
-			.next = NULL};
+				.drive = 'C',
+				.open = flash_fs_open,
+				.read = flash_fs_read,
+				.write = flash_fs_write,
+				.seek = flash_fs_seek,
+				.available = flash_fs_available,
+				.close = flash_fs_close,
+				.remove = flash_fs_remove,
+				.opendir = flash_fs_opendir,
+				.mkdir = flash_fs_mkdir,
+				.rmdir = flash_fs_rmdir,
+				.next_file = flash_fs_next_file,
+				.finfo = flash_fs_info,
+				.next = NULL};
 		fs_mount(&flash_fs);
 #endif
 #ifndef CUSTOM_OTA_ENDPOINT
@@ -857,33 +857,8 @@ extern "C"
 		}
 	}
 
-#ifdef USE_STATIC_IP
-#ifndef STATIC_IP_IP
-// 192.168.1.200
-#define STATIC_IP_IP 3355551936
-#endif
-#ifndef STATIC_IP_GW
-// 192.168.1.1
-#define STATIC_IP_GW 16885952
-#endif
-#ifndef STATIC_IP_SUB
-// 255.255.255.0
-#define STATIC_IP_SUB 16777215
-#endif
-
-	static IPAddress local_IP((uint32_t)(STATIC_IP_IP));
-	static IPAddress gateway((uint32_t)(STATIC_IP_GW));
-	static IPAddress subnet((uint32_t)(STATIC_IP_SUB));
-#endif
-
 	void mcu_wifi_init(void)
 	{
-#ifdef USE_STATIC_IP
-		if (!WiFi.config(local_IP, gateway, subnet))
-		{
-			proto_info("Static IP config failed");
-		}
-#endif
 #ifndef ENABLE_BLUETOOTH
 		WiFi.setSleep(WIFI_PS_NONE);
 #endif
