@@ -32,7 +32,7 @@ extern "C"
 #define ENABLE_PARSER_MODULES
 #define DISABLE_SETTINGS_MODULES
 //Custom configurations
-ENABLE_LONG_HOMING_CYCLE
+#define ENABLE_LONG_HOMING_CYCL
 
 #define LOAD_MODULES_OVERRIDE() ({LOAD_MODULE(single_axis_homing);})
 

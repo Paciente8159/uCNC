@@ -654,7 +654,7 @@
     "tmc_driver": false,
     "tone_speaker": false,
     "CUSTOM_BOARDMAP_CONFIGS": "#define BOARDMAP_RAMPS14_H true\n#define AVR6 true\n#define SPI_FREQ 100000UL\n#define F_CPU 16000000UL\n",
-    "CUSTOM_HAL_CONFIGS": "ENABLE_LONG_HOMING_CYCLE",
+    "CUSTOM_HAL_CONFIGS": "#define ENABLE_LONG_HOMING_CYCLE",
     "CUSTOM_PIO_BOARD": "",
     "CUSTOM_PIO_BUILDFLAGS": "",
     "CUSTOM_PIO_CONFIGS": "",
