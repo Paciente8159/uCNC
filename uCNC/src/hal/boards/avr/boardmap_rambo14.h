@@ -38,9 +38,10 @@ extern "C"
 
 #define AVR6
 
-#define PCINT0_PORT B
-#define PCINT1_PORT J
-#define PCINT2_PORT K
+// deprecated
+// #define PCINT0_PORT B
+// #define PCINT1_PORT J
+// #define PCINT2_PORT K
 
 // SAME AS GRBL for test purposes
 // Setup step pins

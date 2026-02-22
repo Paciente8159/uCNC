@@ -86,15 +86,15 @@ extern "C"
 #define MCU_CYCLES_LOOP_OVERHEAD 2
 #endif
 
-#define mcu_delay_loop(X)                                              \
-	do                                                                   \
-	{                                                                    \
+#define mcu_delay_loop(X)                                                  \
+	do                                                                     \
+	{                                                                      \
 		/* Entry overhead: 2 ldi = 2 cycles (usually) */                   \
 		uint16_t __count = (X);                                            \
 		__asm__ __volatile__(                                              \
-				"1: sbiw %0, 1\n\t" /* 2 cycles */                             \
-				"brne 1b\n\t"				/* 2 cycles if taken, 1 if not */          \
-				: "+w"(__count));                                              \
+			"1: sbiw %0, 1\n\t" /* 2 cycles */                             \
+			"brne 1b\n\t"		/* 2 cycles if taken, 1 if not */          \
+			: "+w"(__count));                                              \
 		/* Exit pad: sbiw (2) + brne not taken (1) + nop (1) = 4 cycles */ \
 		mcu_nop();                                                         \
 	} while (0)
@@ -2448,48 +2448,22 @@ extern "C"
 // ISR on change inputs
 #if(defined(LIMIT_X_ISR) && defined(LIMIT_X))
 #define DIO100_ISR (LIMIT_X_ISR)
-#if(LIMIT_X_ISR==-1)
-#undef LIMIT_X_ISRREG
-#define LIMIT_X_ISRREG EICRA
-#define LIMIT_X_ISRA 1
-#elif(LIMIT_X_ISR==-2)
-#undef LIMIT_X_ISRREG
-#define LIMIT_X_ISRREG EICRA
-#define LIMIT_X_ISRA 4
-#elif(LIMIT_X_ISR==-3)
-#undef LIMIT_X_ISRREG
-#define LIMIT_X_ISRREG EICRA
-#define LIMIT_X_ISRA 16
-#elif(LIMIT_X_ISR==-4)
-#undef LIMIT_X_ISRREG
-#define LIMIT_X_ISRREG EICRA
-#define LIMIT_X_ISRA 64
-#elif(LIMIT_X_ISR==-5)
-#undef LIMIT_X_ISRREG
-#define LIMIT_X_ISRREG EICRA
-#define LIMIT_X_ISRB 1
-#elif(LIMIT_X_ISR==-6)
-#undef LIMIT_X_ISRREG
+#if(LIMIT_X_ISR<-4)
 #define LIMIT_X_ISRREG EICRB
-#define LIMIT_X_ISRB 4
-#elif(LIMIT_X_ISR==-7)
-#undef LIMIT_X_ISRREG
-#define LIMIT_X_ISRREG EICRB
-#define LIMIT_X_ISRB 16
-#elif(LIMIT_X_ISR==-8)
-#undef LIMIT_X_ISRREG
-#define LIMIT_X_ISRREG EICRB
-#define LIMIT_X_ISRB 64
-#elif((LIMIT_X_ISR & 0xF8)==0)
+#define LIMIT_X_ISRA (1 << ((-LIMIT_X_ISR - 5) << 1))
+#elif(LIMIT_X_ISR<0)
+#define LIMIT_X_ISRREG EICRA
+#define LIMIT_X_ISRA (1 << ((-LIMIT_X_ISR - 1) << 1))
+#elif((((LIMIT_X_ISR & 0xF8)>>3)&0x3)==0)
 #define LIMIT_X_ISRREG PCMSK0
 #define LIMIT_X_ISR0 (1 << (LIMIT_X_ISR&0x7))
-#elif((LIMIT_X_ISR & 0xF8)==1)
+#elif((((LIMIT_X_ISR & 0xF8)>>3)&0x3)==1)
 #define LIMIT_X_ISRREG PCMSK1
 #define LIMIT_X_ISR1 (1 << (LIMIT_X_ISR&0x7))
-#elif((LIMIT_X_ISR & 0xF8)==2)
+#elif((((LIMIT_X_ISR & 0xF8)>>3)&0x3)==2)
 #define LIMIT_X_ISRREG PCMSK2
 #define LIMIT_X_ISR2 (1 << (LIMIT_X_ISR&0x7))
-#elif((LIMIT_X_ISR & 0xF8)==3)
+#elif((((LIMIT_X_ISR & 0xF8)>>3)&0x3)==3)
 #define LIMIT_X_ISRREG PCMSK3
 #define LIMIT_X_ISR3 (1 << (LIMIT_X_ISR&0x7))
 #endif
@@ -2497,48 +2471,22 @@ extern "C"
 #endif
 #if(defined(LIMIT_Y_ISR) && defined(LIMIT_Y))
 #define DIO101_ISR (LIMIT_Y_ISR)
-#if(LIMIT_Y_ISR==-1)
-#undef LIMIT_Y_ISRREG
-#define LIMIT_Y_ISRREG EICRA
-#define LIMIT_Y_ISRA 1
-#elif(LIMIT_Y_ISR==-2)
-#undef LIMIT_Y_ISRREG
-#define LIMIT_Y_ISRREG EICRA
-#define LIMIT_Y_ISRA 4
-#elif(LIMIT_Y_ISR==-3)
-#undef LIMIT_Y_ISRREG
-#define LIMIT_Y_ISRREG EICRA
-#define LIMIT_Y_ISRA 16
-#elif(LIMIT_Y_ISR==-4)
-#undef LIMIT_Y_ISRREG
-#define LIMIT_Y_ISRREG EICRA
-#define LIMIT_Y_ISRA 64
-#elif(LIMIT_Y_ISR==-5)
-#undef LIMIT_Y_ISRREG
-#define LIMIT_Y_ISRREG EICRA
-#define LIMIT_Y_ISRB 1
-#elif(LIMIT_Y_ISR==-6)
-#undef LIMIT_Y_ISRREG
+#if(LIMIT_Y_ISR<-4)
 #define LIMIT_Y_ISRREG EICRB
-#define LIMIT_Y_ISRB 4
-#elif(LIMIT_Y_ISR==-7)
-#undef LIMIT_Y_ISRREG
-#define LIMIT_Y_ISRREG EICRB
-#define LIMIT_Y_ISRB 16
-#elif(LIMIT_Y_ISR==-8)
-#undef LIMIT_Y_ISRREG
-#define LIMIT_Y_ISRREG EICRB
-#define LIMIT_Y_ISRB 64
-#elif((LIMIT_Y_ISR & 0xF8)==0)
+#define LIMIT_Y_ISRA (1 << ((-LIMIT_Y_ISR - 5) << 1))
+#elif(LIMIT_Y_ISR<0)
+#define LIMIT_Y_ISRREG EICRA
+#define LIMIT_Y_ISRA (1 << ((-LIMIT_Y_ISR - 1) << 1))
+#elif((((LIMIT_Y_ISR & 0xF8)>>3)&0x3)==0)
 #define LIMIT_Y_ISRREG PCMSK0
 #define LIMIT_Y_ISR0 (1 << (LIMIT_Y_ISR&0x7))
-#elif((LIMIT_Y_ISR & 0xF8)==1)
+#elif((((LIMIT_Y_ISR & 0xF8)>>3)&0x3)==1)
 #define LIMIT_Y_ISRREG PCMSK1
 #define LIMIT_Y_ISR1 (1 << (LIMIT_Y_ISR&0x7))
-#elif((LIMIT_Y_ISR & 0xF8)==2)
+#elif((((LIMIT_Y_ISR & 0xF8)>>3)&0x3)==2)
 #define LIMIT_Y_ISRREG PCMSK2
 #define LIMIT_Y_ISR2 (1 << (LIMIT_Y_ISR&0x7))
-#elif((LIMIT_Y_ISR & 0xF8)==3)
+#elif((((LIMIT_Y_ISR & 0xF8)>>3)&0x3)==3)
 #define LIMIT_Y_ISRREG PCMSK3
 #define LIMIT_Y_ISR3 (1 << (LIMIT_Y_ISR&0x7))
 #endif
@@ -2546,48 +2494,22 @@ extern "C"
 #endif
 #if(defined(LIMIT_Z_ISR) && defined(LIMIT_Z))
 #define DIO102_ISR (LIMIT_Z_ISR)
-#if(LIMIT_Z_ISR==-1)
-#undef LIMIT_Z_ISRREG
-#define LIMIT_Z_ISRREG EICRA
-#define LIMIT_Z_ISRA 1
-#elif(LIMIT_Z_ISR==-2)
-#undef LIMIT_Z_ISRREG
-#define LIMIT_Z_ISRREG EICRA
-#define LIMIT_Z_ISRA 4
-#elif(LIMIT_Z_ISR==-3)
-#undef LIMIT_Z_ISRREG
-#define LIMIT_Z_ISRREG EICRA
-#define LIMIT_Z_ISRA 16
-#elif(LIMIT_Z_ISR==-4)
-#undef LIMIT_Z_ISRREG
-#define LIMIT_Z_ISRREG EICRA
-#define LIMIT_Z_ISRA 64
-#elif(LIMIT_Z_ISR==-5)
-#undef LIMIT_Z_ISRREG
-#define LIMIT_Z_ISRREG EICRA
-#define LIMIT_Z_ISRB 1
-#elif(LIMIT_Z_ISR==-6)
-#undef LIMIT_Z_ISRREG
+#if(LIMIT_Z_ISR<-4)
 #define LIMIT_Z_ISRREG EICRB
-#define LIMIT_Z_ISRB 4
-#elif(LIMIT_Z_ISR==-7)
-#undef LIMIT_Z_ISRREG
-#define LIMIT_Z_ISRREG EICRB
-#define LIMIT_Z_ISRB 16
-#elif(LIMIT_Z_ISR==-8)
-#undef LIMIT_Z_ISRREG
-#define LIMIT_Z_ISRREG EICRB
-#define LIMIT_Z_ISRB 64
-#elif((LIMIT_Z_ISR & 0xF8)==0)
+#define LIMIT_Z_ISRA (1 << ((-LIMIT_Z_ISR - 5) << 1))
+#elif(LIMIT_Z_ISR<0)
+#define LIMIT_Z_ISRREG EICRA
+#define LIMIT_Z_ISRA (1 << ((-LIMIT_Z_ISR - 1) << 1))
+#elif((((LIMIT_Z_ISR & 0xF8)>>3)&0x3)==0)
 #define LIMIT_Z_ISRREG PCMSK0
 #define LIMIT_Z_ISR0 (1 << (LIMIT_Z_ISR&0x7))
-#elif((LIMIT_Z_ISR & 0xF8)==1)
+#elif((((LIMIT_Z_ISR & 0xF8)>>3)&0x3)==1)
 #define LIMIT_Z_ISRREG PCMSK1
 #define LIMIT_Z_ISR1 (1 << (LIMIT_Z_ISR&0x7))
-#elif((LIMIT_Z_ISR & 0xF8)==2)
+#elif((((LIMIT_Z_ISR & 0xF8)>>3)&0x3)==2)
 #define LIMIT_Z_ISRREG PCMSK2
 #define LIMIT_Z_ISR2 (1 << (LIMIT_Z_ISR&0x7))
-#elif((LIMIT_Z_ISR & 0xF8)==3)
+#elif((((LIMIT_Z_ISR & 0xF8)>>3)&0x3)==3)
 #define LIMIT_Z_ISRREG PCMSK3
 #define LIMIT_Z_ISR3 (1 << (LIMIT_Z_ISR&0x7))
 #endif
@@ -2595,48 +2517,22 @@ extern "C"
 #endif
 #if(defined(LIMIT_X2_ISR) && defined(LIMIT_X2))
 #define DIO103_ISR (LIMIT_X2_ISR)
-#if(LIMIT_X2_ISR==-1)
-#undef LIMIT_X2_ISRREG
-#define LIMIT_X2_ISRREG EICRA
-#define LIMIT_X2_ISRA 1
-#elif(LIMIT_X2_ISR==-2)
-#undef LIMIT_X2_ISRREG
-#define LIMIT_X2_ISRREG EICRA
-#define LIMIT_X2_ISRA 4
-#elif(LIMIT_X2_ISR==-3)
-#undef LIMIT_X2_ISRREG
-#define LIMIT_X2_ISRREG EICRA
-#define LIMIT_X2_ISRA 16
-#elif(LIMIT_X2_ISR==-4)
-#undef LIMIT_X2_ISRREG
-#define LIMIT_X2_ISRREG EICRA
-#define LIMIT_X2_ISRA 64
-#elif(LIMIT_X2_ISR==-5)
-#undef LIMIT_X2_ISRREG
-#define LIMIT_X2_ISRREG EICRA
-#define LIMIT_X2_ISRB 1
-#elif(LIMIT_X2_ISR==-6)
-#undef LIMIT_X2_ISRREG
+#if(LIMIT_X2_ISR<-4)
 #define LIMIT_X2_ISRREG EICRB
-#define LIMIT_X2_ISRB 4
-#elif(LIMIT_X2_ISR==-7)
-#undef LIMIT_X2_ISRREG
-#define LIMIT_X2_ISRREG EICRB
-#define LIMIT_X2_ISRB 16
-#elif(LIMIT_X2_ISR==-8)
-#undef LIMIT_X2_ISRREG
-#define LIMIT_X2_ISRREG EICRB
-#define LIMIT_X2_ISRB 64
-#elif((LIMIT_X2_ISR & 0xF8)==0)
+#define LIMIT_X2_ISRA (1 << ((-LIMIT_X2_ISR - 5) << 1))
+#elif(LIMIT_X2_ISR<0)
+#define LIMIT_X2_ISRREG EICRA
+#define LIMIT_X2_ISRA (1 << ((-LIMIT_X2_ISR - 1) << 1))
+#elif((((LIMIT_X2_ISR & 0xF8)>>3)&0x3)==0)
 #define LIMIT_X2_ISRREG PCMSK0
 #define LIMIT_X2_ISR0 (1 << (LIMIT_X2_ISR&0x7))
-#elif((LIMIT_X2_ISR & 0xF8)==1)
+#elif((((LIMIT_X2_ISR & 0xF8)>>3)&0x3)==1)
 #define LIMIT_X2_ISRREG PCMSK1
 #define LIMIT_X2_ISR1 (1 << (LIMIT_X2_ISR&0x7))
-#elif((LIMIT_X2_ISR & 0xF8)==2)
+#elif((((LIMIT_X2_ISR & 0xF8)>>3)&0x3)==2)
 #define LIMIT_X2_ISRREG PCMSK2
 #define LIMIT_X2_ISR2 (1 << (LIMIT_X2_ISR&0x7))
-#elif((LIMIT_X2_ISR & 0xF8)==3)
+#elif((((LIMIT_X2_ISR & 0xF8)>>3)&0x3)==3)
 #define LIMIT_X2_ISRREG PCMSK3
 #define LIMIT_X2_ISR3 (1 << (LIMIT_X2_ISR&0x7))
 #endif
@@ -2644,48 +2540,22 @@ extern "C"
 #endif
 #if(defined(LIMIT_Y2_ISR) && defined(LIMIT_Y2))
 #define DIO104_ISR (LIMIT_Y2_ISR)
-#if(LIMIT_Y2_ISR==-1)
-#undef LIMIT_Y2_ISRREG
-#define LIMIT_Y2_ISRREG EICRA
-#define LIMIT_Y2_ISRA 1
-#elif(LIMIT_Y2_ISR==-2)
-#undef LIMIT_Y2_ISRREG
-#define LIMIT_Y2_ISRREG EICRA
-#define LIMIT_Y2_ISRA 4
-#elif(LIMIT_Y2_ISR==-3)
-#undef LIMIT_Y2_ISRREG
-#define LIMIT_Y2_ISRREG EICRA
-#define LIMIT_Y2_ISRA 16
-#elif(LIMIT_Y2_ISR==-4)
-#undef LIMIT_Y2_ISRREG
-#define LIMIT_Y2_ISRREG EICRA
-#define LIMIT_Y2_ISRA 64
-#elif(LIMIT_Y2_ISR==-5)
-#undef LIMIT_Y2_ISRREG
-#define LIMIT_Y2_ISRREG EICRA
-#define LIMIT_Y2_ISRB 1
-#elif(LIMIT_Y2_ISR==-6)
-#undef LIMIT_Y2_ISRREG
+#if(LIMIT_Y2_ISR<-4)
 #define LIMIT_Y2_ISRREG EICRB
-#define LIMIT_Y2_ISRB 4
-#elif(LIMIT_Y2_ISR==-7)
-#undef LIMIT_Y2_ISRREG
-#define LIMIT_Y2_ISRREG EICRB
-#define LIMIT_Y2_ISRB 16
-#elif(LIMIT_Y2_ISR==-8)
-#undef LIMIT_Y2_ISRREG
-#define LIMIT_Y2_ISRREG EICRB
-#define LIMIT_Y2_ISRB 64
-#elif((LIMIT_Y2_ISR & 0xF8)==0)
+#define LIMIT_Y2_ISRA (1 << ((-LIMIT_Y2_ISR - 5) << 1))
+#elif(LIMIT_Y2_ISR<0)
+#define LIMIT_Y2_ISRREG EICRA
+#define LIMIT_Y2_ISRA (1 << ((-LIMIT_Y2_ISR - 1) << 1))
+#elif((((LIMIT_Y2_ISR & 0xF8)>>3)&0x3)==0)
 #define LIMIT_Y2_ISRREG PCMSK0
 #define LIMIT_Y2_ISR0 (1 << (LIMIT_Y2_ISR&0x7))
-#elif((LIMIT_Y2_ISR & 0xF8)==1)
+#elif((((LIMIT_Y2_ISR & 0xF8)>>3)&0x3)==1)
 #define LIMIT_Y2_ISRREG PCMSK1
 #define LIMIT_Y2_ISR1 (1 << (LIMIT_Y2_ISR&0x7))
-#elif((LIMIT_Y2_ISR & 0xF8)==2)
+#elif((((LIMIT_Y2_ISR & 0xF8)>>3)&0x3)==2)
 #define LIMIT_Y2_ISRREG PCMSK2
 #define LIMIT_Y2_ISR2 (1 << (LIMIT_Y2_ISR&0x7))
-#elif((LIMIT_Y2_ISR & 0xF8)==3)
+#elif((((LIMIT_Y2_ISR & 0xF8)>>3)&0x3)==3)
 #define LIMIT_Y2_ISRREG PCMSK3
 #define LIMIT_Y2_ISR3 (1 << (LIMIT_Y2_ISR&0x7))
 #endif
@@ -2693,48 +2563,22 @@ extern "C"
 #endif
 #if(defined(LIMIT_Z2_ISR) && defined(LIMIT_Z2))
 #define DIO105_ISR (LIMIT_Z2_ISR)
-#if(LIMIT_Z2_ISR==-1)
-#undef LIMIT_Z2_ISRREG
-#define LIMIT_Z2_ISRREG EICRA
-#define LIMIT_Z2_ISRA 1
-#elif(LIMIT_Z2_ISR==-2)
-#undef LIMIT_Z2_ISRREG
-#define LIMIT_Z2_ISRREG EICRA
-#define LIMIT_Z2_ISRA 4
-#elif(LIMIT_Z2_ISR==-3)
-#undef LIMIT_Z2_ISRREG
-#define LIMIT_Z2_ISRREG EICRA
-#define LIMIT_Z2_ISRA 16
-#elif(LIMIT_Z2_ISR==-4)
-#undef LIMIT_Z2_ISRREG
-#define LIMIT_Z2_ISRREG EICRA
-#define LIMIT_Z2_ISRA 64
-#elif(LIMIT_Z2_ISR==-5)
-#undef LIMIT_Z2_ISRREG
-#define LIMIT_Z2_ISRREG EICRA
-#define LIMIT_Z2_ISRB 1
-#elif(LIMIT_Z2_ISR==-6)
-#undef LIMIT_Z2_ISRREG
+#if(LIMIT_Z2_ISR<-4)
 #define LIMIT_Z2_ISRREG EICRB
-#define LIMIT_Z2_ISRB 4
-#elif(LIMIT_Z2_ISR==-7)
-#undef LIMIT_Z2_ISRREG
-#define LIMIT_Z2_ISRREG EICRB
-#define LIMIT_Z2_ISRB 16
-#elif(LIMIT_Z2_ISR==-8)
-#undef LIMIT_Z2_ISRREG
-#define LIMIT_Z2_ISRREG EICRB
-#define LIMIT_Z2_ISRB 64
-#elif((LIMIT_Z2_ISR & 0xF8)==0)
+#define LIMIT_Z2_ISRA (1 << ((-LIMIT_Z2_ISR - 5) << 1))
+#elif(LIMIT_Z2_ISR<0)
+#define LIMIT_Z2_ISRREG EICRA
+#define LIMIT_Z2_ISRA (1 << ((-LIMIT_Z2_ISR - 1) << 1))
+#elif((((LIMIT_Z2_ISR & 0xF8)>>3)&0x3)==0)
 #define LIMIT_Z2_ISRREG PCMSK0
 #define LIMIT_Z2_ISR0 (1 << (LIMIT_Z2_ISR&0x7))
-#elif((LIMIT_Z2_ISR & 0xF8)==1)
+#elif((((LIMIT_Z2_ISR & 0xF8)>>3)&0x3)==1)
 #define LIMIT_Z2_ISRREG PCMSK1
 #define LIMIT_Z2_ISR1 (1 << (LIMIT_Z2_ISR&0x7))
-#elif((LIMIT_Z2_ISR & 0xF8)==2)
+#elif((((LIMIT_Z2_ISR & 0xF8)>>3)&0x3)==2)
 #define LIMIT_Z2_ISRREG PCMSK2
 #define LIMIT_Z2_ISR2 (1 << (LIMIT_Z2_ISR&0x7))
-#elif((LIMIT_Z2_ISR & 0xF8)==3)
+#elif((((LIMIT_Z2_ISR & 0xF8)>>3)&0x3)==3)
 #define LIMIT_Z2_ISRREG PCMSK3
 #define LIMIT_Z2_ISR3 (1 << (LIMIT_Z2_ISR&0x7))
 #endif
@@ -2742,48 +2586,22 @@ extern "C"
 #endif
 #if(defined(LIMIT_A_ISR) && defined(LIMIT_A))
 #define DIO106_ISR (LIMIT_A_ISR)
-#if(LIMIT_A_ISR==-1)
-#undef LIMIT_A_ISRREG
-#define LIMIT_A_ISRREG EICRA
-#define LIMIT_A_ISRA 1
-#elif(LIMIT_A_ISR==-2)
-#undef LIMIT_A_ISRREG
-#define LIMIT_A_ISRREG EICRA
-#define LIMIT_A_ISRA 4
-#elif(LIMIT_A_ISR==-3)
-#undef LIMIT_A_ISRREG
-#define LIMIT_A_ISRREG EICRA
-#define LIMIT_A_ISRA 16
-#elif(LIMIT_A_ISR==-4)
-#undef LIMIT_A_ISRREG
-#define LIMIT_A_ISRREG EICRA
-#define LIMIT_A_ISRA 64
-#elif(LIMIT_A_ISR==-5)
-#undef LIMIT_A_ISRREG
-#define LIMIT_A_ISRREG EICRA
-#define LIMIT_A_ISRB 1
-#elif(LIMIT_A_ISR==-6)
-#undef LIMIT_A_ISRREG
+#if(LIMIT_A_ISR<-4)
 #define LIMIT_A_ISRREG EICRB
-#define LIMIT_A_ISRB 4
-#elif(LIMIT_A_ISR==-7)
-#undef LIMIT_A_ISRREG
-#define LIMIT_A_ISRREG EICRB
-#define LIMIT_A_ISRB 16
-#elif(LIMIT_A_ISR==-8)
-#undef LIMIT_A_ISRREG
-#define LIMIT_A_ISRREG EICRB
-#define LIMIT_A_ISRB 64
-#elif((LIMIT_A_ISR & 0xF8)==0)
+#define LIMIT_A_ISRA (1 << ((-LIMIT_A_ISR - 5) << 1))
+#elif(LIMIT_A_ISR<0)
+#define LIMIT_A_ISRREG EICRA
+#define LIMIT_A_ISRA (1 << ((-LIMIT_A_ISR - 1) << 1))
+#elif((((LIMIT_A_ISR & 0xF8)>>3)&0x3)==0)
 #define LIMIT_A_ISRREG PCMSK0
 #define LIMIT_A_ISR0 (1 << (LIMIT_A_ISR&0x7))
-#elif((LIMIT_A_ISR & 0xF8)==1)
+#elif((((LIMIT_A_ISR & 0xF8)>>3)&0x3)==1)
 #define LIMIT_A_ISRREG PCMSK1
 #define LIMIT_A_ISR1 (1 << (LIMIT_A_ISR&0x7))
-#elif((LIMIT_A_ISR & 0xF8)==2)
+#elif((((LIMIT_A_ISR & 0xF8)>>3)&0x3)==2)
 #define LIMIT_A_ISRREG PCMSK2
 #define LIMIT_A_ISR2 (1 << (LIMIT_A_ISR&0x7))
-#elif((LIMIT_A_ISR & 0xF8)==3)
+#elif((((LIMIT_A_ISR & 0xF8)>>3)&0x3)==3)
 #define LIMIT_A_ISRREG PCMSK3
 #define LIMIT_A_ISR3 (1 << (LIMIT_A_ISR&0x7))
 #endif
@@ -2791,48 +2609,22 @@ extern "C"
 #endif
 #if(defined(LIMIT_B_ISR) && defined(LIMIT_B))
 #define DIO107_ISR (LIMIT_B_ISR)
-#if(LIMIT_B_ISR==-1)
-#undef LIMIT_B_ISRREG
-#define LIMIT_B_ISRREG EICRA
-#define LIMIT_B_ISRA 1
-#elif(LIMIT_B_ISR==-2)
-#undef LIMIT_B_ISRREG
-#define LIMIT_B_ISRREG EICRA
-#define LIMIT_B_ISRA 4
-#elif(LIMIT_B_ISR==-3)
-#undef LIMIT_B_ISRREG
-#define LIMIT_B_ISRREG EICRA
-#define LIMIT_B_ISRA 16
-#elif(LIMIT_B_ISR==-4)
-#undef LIMIT_B_ISRREG
-#define LIMIT_B_ISRREG EICRA
-#define LIMIT_B_ISRA 64
-#elif(LIMIT_B_ISR==-5)
-#undef LIMIT_B_ISRREG
-#define LIMIT_B_ISRREG EICRA
-#define LIMIT_B_ISRB 1
-#elif(LIMIT_B_ISR==-6)
-#undef LIMIT_B_ISRREG
+#if(LIMIT_B_ISR<-4)
 #define LIMIT_B_ISRREG EICRB
-#define LIMIT_B_ISRB 4
-#elif(LIMIT_B_ISR==-7)
-#undef LIMIT_B_ISRREG
-#define LIMIT_B_ISRREG EICRB
-#define LIMIT_B_ISRB 16
-#elif(LIMIT_B_ISR==-8)
-#undef LIMIT_B_ISRREG
-#define LIMIT_B_ISRREG EICRB
-#define LIMIT_B_ISRB 64
-#elif((LIMIT_B_ISR & 0xF8)==0)
+#define LIMIT_B_ISRA (1 << ((-LIMIT_B_ISR - 5) << 1))
+#elif(LIMIT_B_ISR<0)
+#define LIMIT_B_ISRREG EICRA
+#define LIMIT_B_ISRA (1 << ((-LIMIT_B_ISR - 1) << 1))
+#elif((((LIMIT_B_ISR & 0xF8)>>3)&0x3)==0)
 #define LIMIT_B_ISRREG PCMSK0
 #define LIMIT_B_ISR0 (1 << (LIMIT_B_ISR&0x7))
-#elif((LIMIT_B_ISR & 0xF8)==1)
+#elif((((LIMIT_B_ISR & 0xF8)>>3)&0x3)==1)
 #define LIMIT_B_ISRREG PCMSK1
 #define LIMIT_B_ISR1 (1 << (LIMIT_B_ISR&0x7))
-#elif((LIMIT_B_ISR & 0xF8)==2)
+#elif((((LIMIT_B_ISR & 0xF8)>>3)&0x3)==2)
 #define LIMIT_B_ISRREG PCMSK2
 #define LIMIT_B_ISR2 (1 << (LIMIT_B_ISR&0x7))
-#elif((LIMIT_B_ISR & 0xF8)==3)
+#elif((((LIMIT_B_ISR & 0xF8)>>3)&0x3)==3)
 #define LIMIT_B_ISRREG PCMSK3
 #define LIMIT_B_ISR3 (1 << (LIMIT_B_ISR&0x7))
 #endif
@@ -2840,48 +2632,22 @@ extern "C"
 #endif
 #if(defined(LIMIT_C_ISR) && defined(LIMIT_C))
 #define DIO108_ISR (LIMIT_C_ISR)
-#if(LIMIT_C_ISR==-1)
-#undef LIMIT_C_ISRREG
-#define LIMIT_C_ISRREG EICRA
-#define LIMIT_C_ISRA 1
-#elif(LIMIT_C_ISR==-2)
-#undef LIMIT_C_ISRREG
-#define LIMIT_C_ISRREG EICRA
-#define LIMIT_C_ISRA 4
-#elif(LIMIT_C_ISR==-3)
-#undef LIMIT_C_ISRREG
-#define LIMIT_C_ISRREG EICRA
-#define LIMIT_C_ISRA 16
-#elif(LIMIT_C_ISR==-4)
-#undef LIMIT_C_ISRREG
-#define LIMIT_C_ISRREG EICRA
-#define LIMIT_C_ISRA 64
-#elif(LIMIT_C_ISR==-5)
-#undef LIMIT_C_ISRREG
-#define LIMIT_C_ISRREG EICRA
-#define LIMIT_C_ISRB 1
-#elif(LIMIT_C_ISR==-6)
-#undef LIMIT_C_ISRREG
+#if(LIMIT_C_ISR<-4)
 #define LIMIT_C_ISRREG EICRB
-#define LIMIT_C_ISRB 4
-#elif(LIMIT_C_ISR==-7)
-#undef LIMIT_C_ISRREG
-#define LIMIT_C_ISRREG EICRB
-#define LIMIT_C_ISRB 16
-#elif(LIMIT_C_ISR==-8)
-#undef LIMIT_C_ISRREG
-#define LIMIT_C_ISRREG EICRB
-#define LIMIT_C_ISRB 64
-#elif((LIMIT_C_ISR & 0xF8)==0)
+#define LIMIT_C_ISRA (1 << ((-LIMIT_C_ISR - 5) << 1))
+#elif(LIMIT_C_ISR<0)
+#define LIMIT_C_ISRREG EICRA
+#define LIMIT_C_ISRA (1 << ((-LIMIT_C_ISR - 1) << 1))
+#elif((((LIMIT_C_ISR & 0xF8)>>3)&0x3)==0)
 #define LIMIT_C_ISRREG PCMSK0
 #define LIMIT_C_ISR0 (1 << (LIMIT_C_ISR&0x7))
-#elif((LIMIT_C_ISR & 0xF8)==1)
+#elif((((LIMIT_C_ISR & 0xF8)>>3)&0x3)==1)
 #define LIMIT_C_ISRREG PCMSK1
 #define LIMIT_C_ISR1 (1 << (LIMIT_C_ISR&0x7))
-#elif((LIMIT_C_ISR & 0xF8)==2)
+#elif((((LIMIT_C_ISR & 0xF8)>>3)&0x3)==2)
 #define LIMIT_C_ISRREG PCMSK2
 #define LIMIT_C_ISR2 (1 << (LIMIT_C_ISR&0x7))
-#elif((LIMIT_C_ISR & 0xF8)==3)
+#elif((((LIMIT_C_ISR & 0xF8)>>3)&0x3)==3)
 #define LIMIT_C_ISRREG PCMSK3
 #define LIMIT_C_ISR3 (1 << (LIMIT_C_ISR&0x7))
 #endif
@@ -2889,48 +2655,22 @@ extern "C"
 #endif
 #if(defined(PROBE_ISR) && defined(PROBE))
 #define DIO109_ISR (PROBE_ISR)
-#if(PROBE_ISR==-1)
-#undef PROBE_ISRREG
-#define PROBE_ISRREG EICRA
-#define PROBE_ISRA 1
-#elif(PROBE_ISR==-2)
-#undef PROBE_ISRREG
-#define PROBE_ISRREG EICRA
-#define PROBE_ISRA 4
-#elif(PROBE_ISR==-3)
-#undef PROBE_ISRREG
-#define PROBE_ISRREG EICRA
-#define PROBE_ISRA 16
-#elif(PROBE_ISR==-4)
-#undef PROBE_ISRREG
-#define PROBE_ISRREG EICRA
-#define PROBE_ISRA 64
-#elif(PROBE_ISR==-5)
-#undef PROBE_ISRREG
-#define PROBE_ISRREG EICRA
-#define PROBE_ISRB 1
-#elif(PROBE_ISR==-6)
-#undef PROBE_ISRREG
+#if(PROBE_ISR<-4)
 #define PROBE_ISRREG EICRB
-#define PROBE_ISRB 4
-#elif(PROBE_ISR==-7)
-#undef PROBE_ISRREG
-#define PROBE_ISRREG EICRB
-#define PROBE_ISRB 16
-#elif(PROBE_ISR==-8)
-#undef PROBE_ISRREG
-#define PROBE_ISRREG EICRB
-#define PROBE_ISRB 64
-#elif((PROBE_ISR & 0xF8)==0)
+#define PROBE_ISRA (1 << ((-PROBE_ISR - 5) << 1))
+#elif(PROBE_ISR<0)
+#define PROBE_ISRREG EICRA
+#define PROBE_ISRA (1 << ((-PROBE_ISR - 1) << 1))
+#elif((((PROBE_ISR & 0xF8)>>3)&0x3)==0)
 #define PROBE_ISRREG PCMSK0
 #define PROBE_ISR0 (1 << (PROBE_ISR&0x7))
-#elif((PROBE_ISR & 0xF8)==1)
+#elif((((PROBE_ISR & 0xF8)>>3)&0x3)==1)
 #define PROBE_ISRREG PCMSK1
 #define PROBE_ISR1 (1 << (PROBE_ISR&0x7))
-#elif((PROBE_ISR & 0xF8)==2)
+#elif((((PROBE_ISR & 0xF8)>>3)&0x3)==2)
 #define PROBE_ISRREG PCMSK2
 #define PROBE_ISR2 (1 << (PROBE_ISR&0x7))
-#elif((PROBE_ISR & 0xF8)==3)
+#elif((((PROBE_ISR & 0xF8)>>3)&0x3)==3)
 #define PROBE_ISRREG PCMSK3
 #define PROBE_ISR3 (1 << (PROBE_ISR&0x7))
 #endif
@@ -2938,48 +2678,22 @@ extern "C"
 #endif
 #if(defined(ESTOP_ISR) && defined(ESTOP))
 #define DIO110_ISR (ESTOP_ISR)
-#if(ESTOP_ISR==-1)
-#undef ESTOP_ISRREG
-#define ESTOP_ISRREG EICRA
-#define ESTOP_ISRA 1
-#elif(ESTOP_ISR==-2)
-#undef ESTOP_ISRREG
-#define ESTOP_ISRREG EICRA
-#define ESTOP_ISRA 4
-#elif(ESTOP_ISR==-3)
-#undef ESTOP_ISRREG
-#define ESTOP_ISRREG EICRA
-#define ESTOP_ISRA 16
-#elif(ESTOP_ISR==-4)
-#undef ESTOP_ISRREG
-#define ESTOP_ISRREG EICRA
-#define ESTOP_ISRA 64
-#elif(ESTOP_ISR==-5)
-#undef ESTOP_ISRREG
-#define ESTOP_ISRREG EICRA
-#define ESTOP_ISRB 1
-#elif(ESTOP_ISR==-6)
-#undef ESTOP_ISRREG
+#if(ESTOP_ISR<-4)
 #define ESTOP_ISRREG EICRB
-#define ESTOP_ISRB 4
-#elif(ESTOP_ISR==-7)
-#undef ESTOP_ISRREG
-#define ESTOP_ISRREG EICRB
-#define ESTOP_ISRB 16
-#elif(ESTOP_ISR==-8)
-#undef ESTOP_ISRREG
-#define ESTOP_ISRREG EICRB
-#define ESTOP_ISRB 64
-#elif((ESTOP_ISR & 0xF8)==0)
+#define ESTOP_ISRA (1 << ((-ESTOP_ISR - 5) << 1))
+#elif(ESTOP_ISR<0)
+#define ESTOP_ISRREG EICRA
+#define ESTOP_ISRA (1 << ((-ESTOP_ISR - 1) << 1))
+#elif((((ESTOP_ISR & 0xF8)>>3)&0x3)==0)
 #define ESTOP_ISRREG PCMSK0
 #define ESTOP_ISR0 (1 << (ESTOP_ISR&0x7))
-#elif((ESTOP_ISR & 0xF8)==1)
+#elif((((ESTOP_ISR & 0xF8)>>3)&0x3)==1)
 #define ESTOP_ISRREG PCMSK1
 #define ESTOP_ISR1 (1 << (ESTOP_ISR&0x7))
-#elif((ESTOP_ISR & 0xF8)==2)
+#elif((((ESTOP_ISR & 0xF8)>>3)&0x3)==2)
 #define ESTOP_ISRREG PCMSK2
 #define ESTOP_ISR2 (1 << (ESTOP_ISR&0x7))
-#elif((ESTOP_ISR & 0xF8)==3)
+#elif((((ESTOP_ISR & 0xF8)>>3)&0x3)==3)
 #define ESTOP_ISRREG PCMSK3
 #define ESTOP_ISR3 (1 << (ESTOP_ISR&0x7))
 #endif
@@ -2987,48 +2701,22 @@ extern "C"
 #endif
 #if(defined(SAFETY_DOOR_ISR) && defined(SAFETY_DOOR))
 #define DIO111_ISR (SAFETY_DOOR_ISR)
-#if(SAFETY_DOOR_ISR==-1)
-#undef SAFETY_DOOR_ISRREG
-#define SAFETY_DOOR_ISRREG EICRA
-#define SAFETY_DOOR_ISRA 1
-#elif(SAFETY_DOOR_ISR==-2)
-#undef SAFETY_DOOR_ISRREG
-#define SAFETY_DOOR_ISRREG EICRA
-#define SAFETY_DOOR_ISRA 4
-#elif(SAFETY_DOOR_ISR==-3)
-#undef SAFETY_DOOR_ISRREG
-#define SAFETY_DOOR_ISRREG EICRA
-#define SAFETY_DOOR_ISRA 16
-#elif(SAFETY_DOOR_ISR==-4)
-#undef SAFETY_DOOR_ISRREG
-#define SAFETY_DOOR_ISRREG EICRA
-#define SAFETY_DOOR_ISRA 64
-#elif(SAFETY_DOOR_ISR==-5)
-#undef SAFETY_DOOR_ISRREG
-#define SAFETY_DOOR_ISRREG EICRA
-#define SAFETY_DOOR_ISRB 1
-#elif(SAFETY_DOOR_ISR==-6)
-#undef SAFETY_DOOR_ISRREG
+#if(SAFETY_DOOR_ISR<-4)
 #define SAFETY_DOOR_ISRREG EICRB
-#define SAFETY_DOOR_ISRB 4
-#elif(SAFETY_DOOR_ISR==-7)
-#undef SAFETY_DOOR_ISRREG
-#define SAFETY_DOOR_ISRREG EICRB
-#define SAFETY_DOOR_ISRB 16
-#elif(SAFETY_DOOR_ISR==-8)
-#undef SAFETY_DOOR_ISRREG
-#define SAFETY_DOOR_ISRREG EICRB
-#define SAFETY_DOOR_ISRB 64
-#elif((SAFETY_DOOR_ISR & 0xF8)==0)
+#define SAFETY_DOOR_ISRA (1 << ((-SAFETY_DOOR_ISR - 5) << 1))
+#elif(SAFETY_DOOR_ISR<0)
+#define SAFETY_DOOR_ISRREG EICRA
+#define SAFETY_DOOR_ISRA (1 << ((-SAFETY_DOOR_ISR - 1) << 1))
+#elif((((SAFETY_DOOR_ISR & 0xF8)>>3)&0x3)==0)
 #define SAFETY_DOOR_ISRREG PCMSK0
 #define SAFETY_DOOR_ISR0 (1 << (SAFETY_DOOR_ISR&0x7))
-#elif((SAFETY_DOOR_ISR & 0xF8)==1)
+#elif((((SAFETY_DOOR_ISR & 0xF8)>>3)&0x3)==1)
 #define SAFETY_DOOR_ISRREG PCMSK1
 #define SAFETY_DOOR_ISR1 (1 << (SAFETY_DOOR_ISR&0x7))
-#elif((SAFETY_DOOR_ISR & 0xF8)==2)
+#elif((((SAFETY_DOOR_ISR & 0xF8)>>3)&0x3)==2)
 #define SAFETY_DOOR_ISRREG PCMSK2
 #define SAFETY_DOOR_ISR2 (1 << (SAFETY_DOOR_ISR&0x7))
-#elif((SAFETY_DOOR_ISR & 0xF8)==3)
+#elif((((SAFETY_DOOR_ISR & 0xF8)>>3)&0x3)==3)
 #define SAFETY_DOOR_ISRREG PCMSK3
 #define SAFETY_DOOR_ISR3 (1 << (SAFETY_DOOR_ISR&0x7))
 #endif
@@ -3036,48 +2724,22 @@ extern "C"
 #endif
 #if(defined(FHOLD_ISR) && defined(FHOLD))
 #define DIO112_ISR (FHOLD_ISR)
-#if(FHOLD_ISR==-1)
-#undef FHOLD_ISRREG
-#define FHOLD_ISRREG EICRA
-#define FHOLD_ISRA 1
-#elif(FHOLD_ISR==-2)
-#undef FHOLD_ISRREG
-#define FHOLD_ISRREG EICRA
-#define FHOLD_ISRA 4
-#elif(FHOLD_ISR==-3)
-#undef FHOLD_ISRREG
-#define FHOLD_ISRREG EICRA
-#define FHOLD_ISRA 16
-#elif(FHOLD_ISR==-4)
-#undef FHOLD_ISRREG
-#define FHOLD_ISRREG EICRA
-#define FHOLD_ISRA 64
-#elif(FHOLD_ISR==-5)
-#undef FHOLD_ISRREG
-#define FHOLD_ISRREG EICRA
-#define FHOLD_ISRB 1
-#elif(FHOLD_ISR==-6)
-#undef FHOLD_ISRREG
+#if(FHOLD_ISR<-4)
 #define FHOLD_ISRREG EICRB
-#define FHOLD_ISRB 4
-#elif(FHOLD_ISR==-7)
-#undef FHOLD_ISRREG
-#define FHOLD_ISRREG EICRB
-#define FHOLD_ISRB 16
-#elif(FHOLD_ISR==-8)
-#undef FHOLD_ISRREG
-#define FHOLD_ISRREG EICRB
-#define FHOLD_ISRB 64
-#elif((FHOLD_ISR & 0xF8)==0)
+#define FHOLD_ISRA (1 << ((-FHOLD_ISR - 5) << 1))
+#elif(FHOLD_ISR<0)
+#define FHOLD_ISRREG EICRA
+#define FHOLD_ISRA (1 << ((-FHOLD_ISR - 1) << 1))
+#elif((((FHOLD_ISR & 0xF8)>>3)&0x3)==0)
 #define FHOLD_ISRREG PCMSK0
 #define FHOLD_ISR0 (1 << (FHOLD_ISR&0x7))
-#elif((FHOLD_ISR & 0xF8)==1)
+#elif((((FHOLD_ISR & 0xF8)>>3)&0x3)==1)
 #define FHOLD_ISRREG PCMSK1
 #define FHOLD_ISR1 (1 << (FHOLD_ISR&0x7))
-#elif((FHOLD_ISR & 0xF8)==2)
+#elif((((FHOLD_ISR & 0xF8)>>3)&0x3)==2)
 #define FHOLD_ISRREG PCMSK2
 #define FHOLD_ISR2 (1 << (FHOLD_ISR&0x7))
-#elif((FHOLD_ISR & 0xF8)==3)
+#elif((((FHOLD_ISR & 0xF8)>>3)&0x3)==3)
 #define FHOLD_ISRREG PCMSK3
 #define FHOLD_ISR3 (1 << (FHOLD_ISR&0x7))
 #endif
@@ -3085,48 +2747,22 @@ extern "C"
 #endif
 #if(defined(CS_RES_ISR) && defined(CS_RES))
 #define DIO113_ISR (CS_RES_ISR)
-#if(CS_RES_ISR==-1)
-#undef CS_RES_ISRREG
-#define CS_RES_ISRREG EICRA
-#define CS_RES_ISRA 1
-#elif(CS_RES_ISR==-2)
-#undef CS_RES_ISRREG
-#define CS_RES_ISRREG EICRA
-#define CS_RES_ISRA 4
-#elif(CS_RES_ISR==-3)
-#undef CS_RES_ISRREG
-#define CS_RES_ISRREG EICRA
-#define CS_RES_ISRA 16
-#elif(CS_RES_ISR==-4)
-#undef CS_RES_ISRREG
-#define CS_RES_ISRREG EICRA
-#define CS_RES_ISRA 64
-#elif(CS_RES_ISR==-5)
-#undef CS_RES_ISRREG
-#define CS_RES_ISRREG EICRA
-#define CS_RES_ISRB 1
-#elif(CS_RES_ISR==-6)
-#undef CS_RES_ISRREG
+#if(CS_RES_ISR<-4)
 #define CS_RES_ISRREG EICRB
-#define CS_RES_ISRB 4
-#elif(CS_RES_ISR==-7)
-#undef CS_RES_ISRREG
-#define CS_RES_ISRREG EICRB
-#define CS_RES_ISRB 16
-#elif(CS_RES_ISR==-8)
-#undef CS_RES_ISRREG
-#define CS_RES_ISRREG EICRB
-#define CS_RES_ISRB 64
-#elif((CS_RES_ISR & 0xF8)==0)
+#define CS_RES_ISRA (1 << ((-CS_RES_ISR - 5) << 1))
+#elif(CS_RES_ISR<0)
+#define CS_RES_ISRREG EICRA
+#define CS_RES_ISRA (1 << ((-CS_RES_ISR - 1) << 1))
+#elif((((CS_RES_ISR & 0xF8)>>3)&0x3)==0)
 #define CS_RES_ISRREG PCMSK0
 #define CS_RES_ISR0 (1 << (CS_RES_ISR&0x7))
-#elif((CS_RES_ISR & 0xF8)==1)
+#elif((((CS_RES_ISR & 0xF8)>>3)&0x3)==1)
 #define CS_RES_ISRREG PCMSK1
 #define CS_RES_ISR1 (1 << (CS_RES_ISR&0x7))
-#elif((CS_RES_ISR & 0xF8)==2)
+#elif((((CS_RES_ISR & 0xF8)>>3)&0x3)==2)
 #define CS_RES_ISRREG PCMSK2
 #define CS_RES_ISR2 (1 << (CS_RES_ISR&0x7))
-#elif((CS_RES_ISR & 0xF8)==3)
+#elif((((CS_RES_ISR & 0xF8)>>3)&0x3)==3)
 #define CS_RES_ISRREG PCMSK3
 #define CS_RES_ISR3 (1 << (CS_RES_ISR&0x7))
 #endif
@@ -3134,48 +2770,22 @@ extern "C"
 #endif
 #if(defined(DIN0_ISR) && defined(DIN0))
 #define DIO130_ISR (DIN0_ISR)
-#if(DIN0_ISR==-1)
-#undef DIN0_ISRREG
-#define DIN0_ISRREG EICRA
-#define DIN0_ISRA 1
-#elif(DIN0_ISR==-2)
-#undef DIN0_ISRREG
-#define DIN0_ISRREG EICRA
-#define DIN0_ISRA 4
-#elif(DIN0_ISR==-3)
-#undef DIN0_ISRREG
-#define DIN0_ISRREG EICRA
-#define DIN0_ISRA 16
-#elif(DIN0_ISR==-4)
-#undef DIN0_ISRREG
-#define DIN0_ISRREG EICRA
-#define DIN0_ISRA 64
-#elif(DIN0_ISR==-5)
-#undef DIN0_ISRREG
-#define DIN0_ISRREG EICRA
-#define DIN0_ISRB 1
-#elif(DIN0_ISR==-6)
-#undef DIN0_ISRREG
+#if(DIN0_ISR<-4)
 #define DIN0_ISRREG EICRB
-#define DIN0_ISRB 4
-#elif(DIN0_ISR==-7)
-#undef DIN0_ISRREG
-#define DIN0_ISRREG EICRB
-#define DIN0_ISRB 16
-#elif(DIN0_ISR==-8)
-#undef DIN0_ISRREG
-#define DIN0_ISRREG EICRB
-#define DIN0_ISRB 64
-#elif((DIN0_ISR & 0xF8)==0)
+#define DIN0_ISRA (1 << ((-DIN0_ISR - 5) << 1))
+#elif(DIN0_ISR<0)
+#define DIN0_ISRREG EICRA
+#define DIN0_ISRA (1 << ((-DIN0_ISR - 1) << 1))
+#elif((((DIN0_ISR & 0xF8)>>3)&0x3)==0)
 #define DIN0_ISRREG PCMSK0
 #define DIN0_ISR0 (1 << (DIN0_ISR&0x7))
-#elif((DIN0_ISR & 0xF8)==1)
+#elif((((DIN0_ISR & 0xF8)>>3)&0x3)==1)
 #define DIN0_ISRREG PCMSK1
 #define DIN0_ISR1 (1 << (DIN0_ISR&0x7))
-#elif((DIN0_ISR & 0xF8)==2)
+#elif((((DIN0_ISR & 0xF8)>>3)&0x3)==2)
 #define DIN0_ISRREG PCMSK2
 #define DIN0_ISR2 (1 << (DIN0_ISR&0x7))
-#elif((DIN0_ISR & 0xF8)==3)
+#elif((((DIN0_ISR & 0xF8)>>3)&0x3)==3)
 #define DIN0_ISRREG PCMSK3
 #define DIN0_ISR3 (1 << (DIN0_ISR&0x7))
 #endif
@@ -3183,48 +2793,22 @@ extern "C"
 #endif
 #if(defined(DIN1_ISR) && defined(DIN1))
 #define DIO131_ISR (DIN1_ISR)
-#if(DIN1_ISR==-1)
-#undef DIN1_ISRREG
-#define DIN1_ISRREG EICRA
-#define DIN1_ISRA 1
-#elif(DIN1_ISR==-2)
-#undef DIN1_ISRREG
-#define DIN1_ISRREG EICRA
-#define DIN1_ISRA 4
-#elif(DIN1_ISR==-3)
-#undef DIN1_ISRREG
-#define DIN1_ISRREG EICRA
-#define DIN1_ISRA 16
-#elif(DIN1_ISR==-4)
-#undef DIN1_ISRREG
-#define DIN1_ISRREG EICRA
-#define DIN1_ISRA 64
-#elif(DIN1_ISR==-5)
-#undef DIN1_ISRREG
-#define DIN1_ISRREG EICRA
-#define DIN1_ISRB 1
-#elif(DIN1_ISR==-6)
-#undef DIN1_ISRREG
+#if(DIN1_ISR<-4)
 #define DIN1_ISRREG EICRB
-#define DIN1_ISRB 4
-#elif(DIN1_ISR==-7)
-#undef DIN1_ISRREG
-#define DIN1_ISRREG EICRB
-#define DIN1_ISRB 16
-#elif(DIN1_ISR==-8)
-#undef DIN1_ISRREG
-#define DIN1_ISRREG EICRB
-#define DIN1_ISRB 64
-#elif((DIN1_ISR & 0xF8)==0)
+#define DIN1_ISRA (1 << ((-DIN1_ISR - 5) << 1))
+#elif(DIN1_ISR<0)
+#define DIN1_ISRREG EICRA
+#define DIN1_ISRA (1 << ((-DIN1_ISR - 1) << 1))
+#elif((((DIN1_ISR & 0xF8)>>3)&0x3)==0)
 #define DIN1_ISRREG PCMSK0
 #define DIN1_ISR0 (1 << (DIN1_ISR&0x7))
-#elif((DIN1_ISR & 0xF8)==1)
+#elif((((DIN1_ISR & 0xF8)>>3)&0x3)==1)
 #define DIN1_ISRREG PCMSK1
 #define DIN1_ISR1 (1 << (DIN1_ISR&0x7))
-#elif((DIN1_ISR & 0xF8)==2)
+#elif((((DIN1_ISR & 0xF8)>>3)&0x3)==2)
 #define DIN1_ISRREG PCMSK2
 #define DIN1_ISR2 (1 << (DIN1_ISR&0x7))
-#elif((DIN1_ISR & 0xF8)==3)
+#elif((((DIN1_ISR & 0xF8)>>3)&0x3)==3)
 #define DIN1_ISRREG PCMSK3
 #define DIN1_ISR3 (1 << (DIN1_ISR&0x7))
 #endif
@@ -3232,48 +2816,22 @@ extern "C"
 #endif
 #if(defined(DIN2_ISR) && defined(DIN2))
 #define DIO132_ISR (DIN2_ISR)
-#if(DIN2_ISR==-1)
-#undef DIN2_ISRREG
-#define DIN2_ISRREG EICRA
-#define DIN2_ISRA 1
-#elif(DIN2_ISR==-2)
-#undef DIN2_ISRREG
-#define DIN2_ISRREG EICRA
-#define DIN2_ISRA 4
-#elif(DIN2_ISR==-3)
-#undef DIN2_ISRREG
-#define DIN2_ISRREG EICRA
-#define DIN2_ISRA 16
-#elif(DIN2_ISR==-4)
-#undef DIN2_ISRREG
-#define DIN2_ISRREG EICRA
-#define DIN2_ISRA 64
-#elif(DIN2_ISR==-5)
-#undef DIN2_ISRREG
-#define DIN2_ISRREG EICRA
-#define DIN2_ISRB 1
-#elif(DIN2_ISR==-6)
-#undef DIN2_ISRREG
+#if(DIN2_ISR<-4)
 #define DIN2_ISRREG EICRB
-#define DIN2_ISRB 4
-#elif(DIN2_ISR==-7)
-#undef DIN2_ISRREG
-#define DIN2_ISRREG EICRB
-#define DIN2_ISRB 16
-#elif(DIN2_ISR==-8)
-#undef DIN2_ISRREG
-#define DIN2_ISRREG EICRB
-#define DIN2_ISRB 64
-#elif((DIN2_ISR & 0xF8)==0)
+#define DIN2_ISRA (1 << ((-DIN2_ISR - 5) << 1))
+#elif(DIN2_ISR<0)
+#define DIN2_ISRREG EICRA
+#define DIN2_ISRA (1 << ((-DIN2_ISR - 1) << 1))
+#elif((((DIN2_ISR & 0xF8)>>3)&0x3)==0)
 #define DIN2_ISRREG PCMSK0
 #define DIN2_ISR0 (1 << (DIN2_ISR&0x7))
-#elif((DIN2_ISR & 0xF8)==1)
+#elif((((DIN2_ISR & 0xF8)>>3)&0x3)==1)
 #define DIN2_ISRREG PCMSK1
 #define DIN2_ISR1 (1 << (DIN2_ISR&0x7))
-#elif((DIN2_ISR & 0xF8)==2)
+#elif((((DIN2_ISR & 0xF8)>>3)&0x3)==2)
 #define DIN2_ISRREG PCMSK2
 #define DIN2_ISR2 (1 << (DIN2_ISR&0x7))
-#elif((DIN2_ISR & 0xF8)==3)
+#elif((((DIN2_ISR & 0xF8)>>3)&0x3)==3)
 #define DIN2_ISRREG PCMSK3
 #define DIN2_ISR3 (1 << (DIN2_ISR&0x7))
 #endif
@@ -3281,48 +2839,22 @@ extern "C"
 #endif
 #if(defined(DIN3_ISR) && defined(DIN3))
 #define DIO133_ISR (DIN3_ISR)
-#if(DIN3_ISR==-1)
-#undef DIN3_ISRREG
-#define DIN3_ISRREG EICRA
-#define DIN3_ISRA 1
-#elif(DIN3_ISR==-2)
-#undef DIN3_ISRREG
-#define DIN3_ISRREG EICRA
-#define DIN3_ISRA 4
-#elif(DIN3_ISR==-3)
-#undef DIN3_ISRREG
-#define DIN3_ISRREG EICRA
-#define DIN3_ISRA 16
-#elif(DIN3_ISR==-4)
-#undef DIN3_ISRREG
-#define DIN3_ISRREG EICRA
-#define DIN3_ISRA 64
-#elif(DIN3_ISR==-5)
-#undef DIN3_ISRREG
-#define DIN3_ISRREG EICRA
-#define DIN3_ISRB 1
-#elif(DIN3_ISR==-6)
-#undef DIN3_ISRREG
+#if(DIN3_ISR<-4)
 #define DIN3_ISRREG EICRB
-#define DIN3_ISRB 4
-#elif(DIN3_ISR==-7)
-#undef DIN3_ISRREG
-#define DIN3_ISRREG EICRB
-#define DIN3_ISRB 16
-#elif(DIN3_ISR==-8)
-#undef DIN3_ISRREG
-#define DIN3_ISRREG EICRB
-#define DIN3_ISRB 64
-#elif((DIN3_ISR & 0xF8)==0)
+#define DIN3_ISRA (1 << ((-DIN3_ISR - 5) << 1))
+#elif(DIN3_ISR<0)
+#define DIN3_ISRREG EICRA
+#define DIN3_ISRA (1 << ((-DIN3_ISR - 1) << 1))
+#elif((((DIN3_ISR & 0xF8)>>3)&0x3)==0)
 #define DIN3_ISRREG PCMSK0
 #define DIN3_ISR0 (1 << (DIN3_ISR&0x7))
-#elif((DIN3_ISR & 0xF8)==1)
+#elif((((DIN3_ISR & 0xF8)>>3)&0x3)==1)
 #define DIN3_ISRREG PCMSK1
 #define DIN3_ISR1 (1 << (DIN3_ISR&0x7))
-#elif((DIN3_ISR & 0xF8)==2)
+#elif((((DIN3_ISR & 0xF8)>>3)&0x3)==2)
 #define DIN3_ISRREG PCMSK2
 #define DIN3_ISR2 (1 << (DIN3_ISR&0x7))
-#elif((DIN3_ISR & 0xF8)==3)
+#elif((((DIN3_ISR & 0xF8)>>3)&0x3)==3)
 #define DIN3_ISRREG PCMSK3
 #define DIN3_ISR3 (1 << (DIN3_ISR&0x7))
 #endif
@@ -3330,48 +2862,22 @@ extern "C"
 #endif
 #if(defined(DIN4_ISR) && defined(DIN4))
 #define DIO134_ISR (DIN4_ISR)
-#if(DIN4_ISR==-1)
-#undef DIN4_ISRREG
-#define DIN4_ISRREG EICRA
-#define DIN4_ISRA 1
-#elif(DIN4_ISR==-2)
-#undef DIN4_ISRREG
-#define DIN4_ISRREG EICRA
-#define DIN4_ISRA 4
-#elif(DIN4_ISR==-3)
-#undef DIN4_ISRREG
-#define DIN4_ISRREG EICRA
-#define DIN4_ISRA 16
-#elif(DIN4_ISR==-4)
-#undef DIN4_ISRREG
-#define DIN4_ISRREG EICRA
-#define DIN4_ISRA 64
-#elif(DIN4_ISR==-5)
-#undef DIN4_ISRREG
-#define DIN4_ISRREG EICRA
-#define DIN4_ISRB 1
-#elif(DIN4_ISR==-6)
-#undef DIN4_ISRREG
+#if(DIN4_ISR<-4)
 #define DIN4_ISRREG EICRB
-#define DIN4_ISRB 4
-#elif(DIN4_ISR==-7)
-#undef DIN4_ISRREG
-#define DIN4_ISRREG EICRB
-#define DIN4_ISRB 16
-#elif(DIN4_ISR==-8)
-#undef DIN4_ISRREG
-#define DIN4_ISRREG EICRB
-#define DIN4_ISRB 64
-#elif((DIN4_ISR & 0xF8)==0)
+#define DIN4_ISRA (1 << ((-DIN4_ISR - 5) << 1))
+#elif(DIN4_ISR<0)
+#define DIN4_ISRREG EICRA
+#define DIN4_ISRA (1 << ((-DIN4_ISR - 1) << 1))
+#elif((((DIN4_ISR & 0xF8)>>3)&0x3)==0)
 #define DIN4_ISRREG PCMSK0
 #define DIN4_ISR0 (1 << (DIN4_ISR&0x7))
-#elif((DIN4_ISR & 0xF8)==1)
+#elif((((DIN4_ISR & 0xF8)>>3)&0x3)==1)
 #define DIN4_ISRREG PCMSK1
 #define DIN4_ISR1 (1 << (DIN4_ISR&0x7))
-#elif((DIN4_ISR & 0xF8)==2)
+#elif((((DIN4_ISR & 0xF8)>>3)&0x3)==2)
 #define DIN4_ISRREG PCMSK2
 #define DIN4_ISR2 (1 << (DIN4_ISR&0x7))
-#elif((DIN4_ISR & 0xF8)==3)
+#elif((((DIN4_ISR & 0xF8)>>3)&0x3)==3)
 #define DIN4_ISRREG PCMSK3
 #define DIN4_ISR3 (1 << (DIN4_ISR&0x7))
 #endif
@@ -3379,48 +2885,22 @@ extern "C"
 #endif
 #if(defined(DIN5_ISR) && defined(DIN5))
 #define DIO135_ISR (DIN5_ISR)
-#if(DIN5_ISR==-1)
-#undef DIN5_ISRREG
-#define DIN5_ISRREG EICRA
-#define DIN5_ISRA 1
-#elif(DIN5_ISR==-2)
-#undef DIN5_ISRREG
-#define DIN5_ISRREG EICRA
-#define DIN5_ISRA 4
-#elif(DIN5_ISR==-3)
-#undef DIN5_ISRREG
-#define DIN5_ISRREG EICRA
-#define DIN5_ISRA 16
-#elif(DIN5_ISR==-4)
-#undef DIN5_ISRREG
-#define DIN5_ISRREG EICRA
-#define DIN5_ISRA 64
-#elif(DIN5_ISR==-5)
-#undef DIN5_ISRREG
-#define DIN5_ISRREG EICRA
-#define DIN5_ISRB 1
-#elif(DIN5_ISR==-6)
-#undef DIN5_ISRREG
+#if(DIN5_ISR<-4)
 #define DIN5_ISRREG EICRB
-#define DIN5_ISRB 4
-#elif(DIN5_ISR==-7)
-#undef DIN5_ISRREG
-#define DIN5_ISRREG EICRB
-#define DIN5_ISRB 16
-#elif(DIN5_ISR==-8)
-#undef DIN5_ISRREG
-#define DIN5_ISRREG EICRB
-#define DIN5_ISRB 64
-#elif((DIN5_ISR & 0xF8)==0)
+#define DIN5_ISRA (1 << ((-DIN5_ISR - 5) << 1))
+#elif(DIN5_ISR<0)
+#define DIN5_ISRREG EICRA
+#define DIN5_ISRA (1 << ((-DIN5_ISR - 1) << 1))
+#elif((((DIN5_ISR & 0xF8)>>3)&0x3)==0)
 #define DIN5_ISRREG PCMSK0
 #define DIN5_ISR0 (1 << (DIN5_ISR&0x7))
-#elif((DIN5_ISR & 0xF8)==1)
+#elif((((DIN5_ISR & 0xF8)>>3)&0x3)==1)
 #define DIN5_ISRREG PCMSK1
 #define DIN5_ISR1 (1 << (DIN5_ISR&0x7))
-#elif((DIN5_ISR & 0xF8)==2)
+#elif((((DIN5_ISR & 0xF8)>>3)&0x3)==2)
 #define DIN5_ISRREG PCMSK2
 #define DIN5_ISR2 (1 << (DIN5_ISR&0x7))
-#elif((DIN5_ISR & 0xF8)==3)
+#elif((((DIN5_ISR & 0xF8)>>3)&0x3)==3)
 #define DIN5_ISRREG PCMSK3
 #define DIN5_ISR3 (1 << (DIN5_ISR&0x7))
 #endif
@@ -3428,48 +2908,22 @@ extern "C"
 #endif
 #if(defined(DIN6_ISR) && defined(DIN6))
 #define DIO136_ISR (DIN6_ISR)
-#if(DIN6_ISR==-1)
-#undef DIN6_ISRREG
-#define DIN6_ISRREG EICRA
-#define DIN6_ISRA 1
-#elif(DIN6_ISR==-2)
-#undef DIN6_ISRREG
-#define DIN6_ISRREG EICRA
-#define DIN6_ISRA 4
-#elif(DIN6_ISR==-3)
-#undef DIN6_ISRREG
-#define DIN6_ISRREG EICRA
-#define DIN6_ISRA 16
-#elif(DIN6_ISR==-4)
-#undef DIN6_ISRREG
-#define DIN6_ISRREG EICRA
-#define DIN6_ISRA 64
-#elif(DIN6_ISR==-5)
-#undef DIN6_ISRREG
-#define DIN6_ISRREG EICRA
-#define DIN6_ISRB 1
-#elif(DIN6_ISR==-6)
-#undef DIN6_ISRREG
+#if(DIN6_ISR<-4)
 #define DIN6_ISRREG EICRB
-#define DIN6_ISRB 4
-#elif(DIN6_ISR==-7)
-#undef DIN6_ISRREG
-#define DIN6_ISRREG EICRB
-#define DIN6_ISRB 16
-#elif(DIN6_ISR==-8)
-#undef DIN6_ISRREG
-#define DIN6_ISRREG EICRB
-#define DIN6_ISRB 64
-#elif((DIN6_ISR & 0xF8)==0)
+#define DIN6_ISRA (1 << ((-DIN6_ISR - 5) << 1))
+#elif(DIN6_ISR<0)
+#define DIN6_ISRREG EICRA
+#define DIN6_ISRA (1 << ((-DIN6_ISR - 1) << 1))
+#elif((((DIN6_ISR & 0xF8)>>3)&0x3)==0)
 #define DIN6_ISRREG PCMSK0
 #define DIN6_ISR0 (1 << (DIN6_ISR&0x7))
-#elif((DIN6_ISR & 0xF8)==1)
+#elif((((DIN6_ISR & 0xF8)>>3)&0x3)==1)
 #define DIN6_ISRREG PCMSK1
 #define DIN6_ISR1 (1 << (DIN6_ISR&0x7))
-#elif((DIN6_ISR & 0xF8)==2)
+#elif((((DIN6_ISR & 0xF8)>>3)&0x3)==2)
 #define DIN6_ISRREG PCMSK2
 #define DIN6_ISR2 (1 << (DIN6_ISR&0x7))
-#elif((DIN6_ISR & 0xF8)==3)
+#elif((((DIN6_ISR & 0xF8)>>3)&0x3)==3)
 #define DIN6_ISRREG PCMSK3
 #define DIN6_ISR3 (1 << (DIN6_ISR&0x7))
 #endif
@@ -3477,54 +2931,27 @@ extern "C"
 #endif
 #if(defined(DIN7_ISR) && defined(DIN7))
 #define DIO137_ISR (DIN7_ISR)
-#if(DIN7_ISR==-1)
-#undef DIN7_ISRREG
-#define DIN7_ISRREG EICRA
-#define DIN7_ISRA 1
-#elif(DIN7_ISR==-2)
-#undef DIN7_ISRREG
-#define DIN7_ISRREG EICRA
-#define DIN7_ISRA 4
-#elif(DIN7_ISR==-3)
-#undef DIN7_ISRREG
-#define DIN7_ISRREG EICRA
-#define DIN7_ISRA 16
-#elif(DIN7_ISR==-4)
-#undef DIN7_ISRREG
-#define DIN7_ISRREG EICRA
-#define DIN7_ISRA 64
-#elif(DIN7_ISR==-5)
-#undef DIN7_ISRREG
-#define DIN7_ISRREG EICRA
-#define DIN7_ISRB 1
-#elif(DIN7_ISR==-6)
-#undef DIN7_ISRREG
+#if(DIN7_ISR<-4)
 #define DIN7_ISRREG EICRB
-#define DIN7_ISRB 4
-#elif(DIN7_ISR==-7)
-#undef DIN7_ISRREG
-#define DIN7_ISRREG EICRB
-#define DIN7_ISRB 16
-#elif(DIN7_ISR==-8)
-#undef DIN7_ISRREG
-#define DIN7_ISRREG EICRB
-#define DIN7_ISRB 64
-#elif((DIN7_ISR & 0xF8)==0)
+#define DIN7_ISRA (1 << ((-DIN7_ISR - 5) << 1))
+#elif(DIN7_ISR<0)
+#define DIN7_ISRREG EICRA
+#define DIN7_ISRA (1 << ((-DIN7_ISR - 1) << 1))
+#elif((((DIN7_ISR & 0xF8)>>3)&0x3)==0)
 #define DIN7_ISRREG PCMSK0
 #define DIN7_ISR0 (1 << (DIN7_ISR&0x7))
-#elif((DIN7_ISR & 0xF8)==1)
+#elif((((DIN7_ISR & 0xF8)>>3)&0x3)==1)
 #define DIN7_ISRREG PCMSK1
 #define DIN7_ISR1 (1 << (DIN7_ISR&0x7))
-#elif((DIN7_ISR & 0xF8)==2)
+#elif((((DIN7_ISR & 0xF8)>>3)&0x3)==2)
 #define DIN7_ISRREG PCMSK2
 #define DIN7_ISR2 (1 << (DIN7_ISR&0x7))
-#elif((DIN7_ISR & 0xF8)==3)
+#elif((((DIN7_ISR & 0xF8)>>3)&0x3)==3)
 #define DIN7_ISRREG PCMSK3
 #define DIN7_ISR3 (1 << (DIN7_ISR&0x7))
 #endif
 #define DIO137_ISRREG DIN7_ISRREG
 #endif
-
 
 // ISR on change defaults
 #ifndef LIMIT_X_ISR0
@@ -4781,14 +4208,14 @@ extern "C"
 
 #ifndef BYTE_OPS
 #define BYTE_OPS
-#define SETBIT(x, y) ((x) |= (1U << (y)))		 /* Set bit y in byte x*/
+#define SETBIT(x, y) ((x) |= (1U << (y)))	 /* Set bit y in byte x*/
 #define CLEARBIT(x, y) ((x) &= ~(1U << (y))) /* Clear bit y in byte x*/
 #define CHECKBIT(x, y) ((x) & (1U << (y)))	 /* Check bit y in byte x*/
 #define TOGGLEBIT(x, y) ((x) ^= (1U << (y))) /* Toggle bit y in byte x*/
 
-#define SETFLAG(x, y) ((x) |= (y))		/* Set byte y in byte x*/
+#define SETFLAG(x, y) ((x) |= (y))	  /* Set byte y in byte x*/
 #define CLEARFLAG(x, y) ((x) &= ~(y)) /* Clear byte y in byte x*/
-#define CHECKFLAG(x, y) ((x) & (y))		/* Check byte y in byte x*/
+#define CHECKFLAG(x, y) ((x) & (y))	  /* Check byte y in byte x*/
 #define TOGGLEFLAG(x, y) ((x) ^= (y)) /* Toggle byte y in byte x*/
 #endif
 
@@ -4804,8 +4231,8 @@ extern "C"
 #define mcu_config_pullup(x) SETBIT(__indirect__(x, OUTREG), __indirect__(x, BIT))
 #define mcu_config_input_isr(x) SETFLAG(__indirect__(x, ISRREG), __indirect__(x, ISR_MASK))
 
-#define mcu_config_pwm(x, freq)                              \
-	{                                                          \
+#define mcu_config_pwm(x, freq)                                  \
+	{                                                            \
 		SETBIT(__indirect__(x, DIRREG), __indirect__(x, BIT));   \
 		CLEARBIT(__indirect__(x, OUTREG), __indirect__(x, BIT)); \
 		__indirect__(x, TMRAREG) |= __indirect__(x, MODE);       \
@@ -4813,50 +4240,50 @@ extern "C"
 		uint8_t pre = 1;                                         \
 		if (div > 1)                                             \
 		{                                                        \
-			div = ((div + 1) >> 3);                                \
-			pre++;                                                 \
+			div = ((div + 1) >> 3);                              \
+			pre++;                                               \
 		}                                                        \
 		if (__indirect__(x, TIMER) == 2)                         \
 		{                                                        \
-			if (div > 1)                                           \
-			{                                                      \
-				div = ((div + 1) >> 2);                              \
-				pre++;                                               \
-			}                                                      \
-			while (div > 1)                                        \
-			{                                                      \
-				div = ((div + 1) >> 1);                              \
-				pre++;                                               \
-			}                                                      \
+			if (div > 1)                                         \
+			{                                                    \
+				div = ((div + 1) >> 2);                          \
+				pre++;                                           \
+			}                                                    \
+			while (div > 1)                                      \
+			{                                                    \
+				div = ((div + 1) >> 1);                          \
+				pre++;                                           \
+			}                                                    \
 		}                                                        \
 		else                                                     \
 		{                                                        \
-			if (div > 1)                                           \
-			{                                                      \
-				div = ((div + 1) >> 3);                              \
-				pre++;                                               \
-			}                                                      \
-			while (div > 1)                                        \
-			{                                                      \
-				div = ((div + 1) >> 2);                              \
-				pre++;                                               \
-			}                                                      \
+			if (div > 1)                                         \
+			{                                                    \
+				div = ((div + 1) >> 3);                          \
+				pre++;                                           \
+			}                                                    \
+			while (div > 1)                                      \
+			{                                                    \
+				div = ((div + 1) >> 2);                          \
+				pre++;                                           \
+			}                                                    \
 		}                                                        \
 		__indirect__(x, TMRBREG) = pre;                          \
 		__indirect__(x, OCRREG) = 0;                             \
 	}
 
-#define mcu_set_pwm(diopin, pwmvalue)                                              \
-	{                                                                                \
-		__indirect__(diopin, OCRREG) = (uint16_t)pwmvalue;                             \
-		if (pwmvalue != 0)                                                             \
-		{                                                                              \
+#define mcu_set_pwm(diopin, pwmvalue)                                                    \
+	{                                                                                    \
+		__indirect__(diopin, OCRREG) = (uint16_t)pwmvalue;                               \
+		if (pwmvalue != 0)                                                               \
+		{                                                                                \
 			SETFLAG(__indirect__(diopin, TMRAREG), __indirect__(diopin, ENABLE_MASK));   \
-		}                                                                              \
-		else                                                                           \
-		{                                                                              \
+		}                                                                                \
+		else                                                                             \
+		{                                                                                \
 			CLEARFLAG(__indirect__(diopin, TMRAREG), __indirect__(diopin, ENABLE_MASK)); \
-		}                                                                              \
+		}                                                                                \
 	}
 #define mcu_get_pwm(diopin) (__indirect__(diopin, OCRREG))
 
@@ -4868,12 +4295,12 @@ extern "C"
 #define F_CPU 16000000UL
 #endif
 #define ADC_PRESC (_min(7, (0xff & ((uint8_t)((float)(F_CPU / 100000) / LOG2)))))
-#define mcu_get_analog(diopin)                      \
-	({                                                \
+#define mcu_get_analog(diopin)                          \
+	({                                                  \
 		ADMUX = (0x00 | __indirect__(diopin, CHANNEL)); \
 		ADCSRA = (0xC0 | ADC_PRESC);                    \
 		while (ADCSRA & 0x40)                           \
-			;                                             \
+			;                                           \
 		(0x3FF & ((ADCH << 8) | ADCL));                 \
 	})
 

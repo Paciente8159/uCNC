@@ -37,7 +37,7 @@ extern "C"
 #endif
 
 #define AVR6
-^
+
 // deprecated
 // #define PCINT0_PORT B
 // #define PCINT1_PORT J
