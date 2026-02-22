@@ -370,6 +370,27 @@ ISR(PCINT2_vect, ISR_BLOCK) // input pin on change service routine
 }
 #endif
 
+#if (PCINT3_MASK != 0)
+ISR(PCINT3_vect, ISR_BLOCK) // input pin on change service routine
+{
+#if (PCINT3_LIMITS_MASK != 0)
+	mcu_limits_changed_cb();
+
+#endif
+#if (PCINT3_CONTROLS_MASK != 0)
+	mcu_controls_changed_cb();
+#endif
+
+#if (PROBE_ISR3 != 0)
+	mcu_probe_changed_cb();
+#endif
+
+#if (PCINT3_DIN_IO_MASK != 0)
+	mcu_inputs_changed_cb();
+#endif
+}
+#endif
+
 #endif
 
 #ifdef MCU_HAS_UART

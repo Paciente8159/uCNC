@@ -37,10 +37,11 @@ extern "C"
 #endif
 
 #define AVR6
-
-#define PCINT0_PORT B
-#define PCINT1_PORT J
-#define PCINT2_PORT K
+^
+// deprecated
+// #define PCINT0_PORT B
+// #define PCINT1_PORT J
+// #define PCINT2_PORT K
 
 // Setup step pins
 #define STEP0_BIT 0	 // assigns STEP0 pin
@@ -76,10 +77,10 @@ extern "C"
 #define LIMIT_X2_ISR -5 // assigns LIMIT_X2 ISR
 #define LIMIT_Y_BIT 1		// assigns LIMIT_Y pin
 #define LIMIT_Y_PORT J	// assigns LIMIT_Y port
-#define LIMIT_Y_ISR 1		// assigns LIMIT_Y ISR
+#define LIMIT_Y_ISR 10		// assigns LIMIT_Y ISR
 #define LIMIT_Y2_BIT 0	// assigns LIMIT_Y2 pin
 #define LIMIT_Y2_PORT J // assigns LIMIT_Y2 port
-#define LIMIT_Y2_ISR 1	// assigns LIMIT_Y2 ISR
+#define LIMIT_Y2_ISR 9	// assigns LIMIT_Y2 ISR
 #define LIMIT_Z_BIT 3		// assigns LIMIT_Z pin
 #define LIMIT_Z_PORT D	// assigns LIMIT_Z port
 #define LIMIT_Z_ISR -4	// assigns LIMIT_Z ISR
@@ -187,7 +188,7 @@ extern "C"
 	// SERVO3 pin supports ISR and can be used as an encoder/counter
 	//  #define DIN0_BIT 5
 	//  #define DIN0_PORT B
-	//  #define DIN0_ISR 0
+	//  #define DIN0_ISR 5
 
 // hardware I2C
 #define I2C_CLK_BIT 0

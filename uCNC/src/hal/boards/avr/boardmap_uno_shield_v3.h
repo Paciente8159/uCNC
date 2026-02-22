@@ -45,7 +45,7 @@ extern "C"
 // Grbl 0.8 limit z
 #define LIMIT_Z_BIT 3	 // assigns LIMIT_Z pin
 #define LIMIT_Z_PORT B // assigns LIMIT_Z port
-#define LIMIT_Z_ISR 0	 // assigns LIMIT_Z ISR
+#define LIMIT_Z_ISR 3	 // assigns LIMIT_Z ISR
 
 // spindle en
 #define DOUT1_BIT 4
