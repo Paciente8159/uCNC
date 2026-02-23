@@ -45,6 +45,8 @@ extern "C"
 #define PWM0_TIMER 4
 #define DOUT2_BIT 5
 #define DOUT2_PORT H
+#define DOUT31_BIT 7
+#define DOUT31_PORT B
 #define LIMIT_X_BIT 4
 #define LIMIT_X_PORT B
 #define LIMIT_X_PULLUP
