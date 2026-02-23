@@ -14,6 +14,7 @@ extern "C"
 #define ENABLE_COOLANT
 #define TOOL1 spindle_pwm
 #define SPINDLE_PWM PWM0
+#define ENABLE_RT_LIMITS_CHECKING
 #define ESTOP_PULLUP_ENABLE
 #define SAFETY_DOOR_PULLUP_ENABLE
 #define FHOLD_PULLUP_ENABLE
@@ -32,7 +33,9 @@ extern "C"
 #define ENABLE_PARSER_MODULES
 #define DISABLE_SETTINGS_MODULES
 //Custom configurations
-#define ENABLE_LONG_HOMING_CYCL
+#define ENABLE_LONG_HOMING_CYCLE
+#define DISABLE_SAFE_SETTINGS
+#define ENABLE_RT_SYNC_MOTIONS
 
 #define LOAD_MODULES_OVERRIDE() ({LOAD_MODULE(single_axis_homing);})
 

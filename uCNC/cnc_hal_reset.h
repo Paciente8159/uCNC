@@ -63,6 +63,9 @@ extern "C"
 #undef ENABLE_ITP_FEED_TASK
 #undef ENABLE_ATC_HOOKS
 #undef ENABLE_RT_SYNC_MOTIONS
+#undef ENABLE_LONG_HOMING_CYCLE
+#undef DISABLE_SAFE_SETTINGS
+#undef ENABLE_RT_SYNC_MOTIONS
 
 #ifdef __cplusplus
 }

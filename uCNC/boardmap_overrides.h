@@ -11,7 +11,7 @@ extern "C"
 #define KINEMATIC KINEMATIC_CARTESIAN
 #define AXIS_COUNT 3
 #define BAUDRATE 115200
-#define BOARD_NAME "RAMPS 1.4"
+#define BOARD_NAME "Mega-L"
 #define PCINT0_PORT B
 #define PCINT1_PORT J
 #define PCINT2_PORT K
@@ -35,6 +35,10 @@ extern "C"
 #define DIR2_PORT C
 #define STEP0_EN_BIT 7
 #define STEP0_EN_PORT B
+#define STEP1_EN_BIT 7
+#define STEP1_EN_PORT B
+#define STEP2_EN_BIT 7
+#define STEP2_EN_PORT B
 #define PWM0_BIT 4
 #define PWM0_PORT H
 #define PWM0_CHANNEL B
@@ -44,17 +48,16 @@ extern "C"
 #define LIMIT_X_BIT 4
 #define LIMIT_X_PORT B
 #define LIMIT_X_PULLUP
-#define LIMIT_X_ISR -6
+#define LIMIT_X_ISR 0
 #define LIMIT_Y_PULLUP
-#define LIMIT_Y_ISR 1
 #define LIMIT_Z_BIT 6
 #define LIMIT_Z_PORT B
 #define LIMIT_Z_PULLUP
-#define LIMIT_Z_ISR -4
+#define LIMIT_Z_ISR 0
 #define PROBE_BIT 7
 #define PROBE_PORT K
 #define PROBE_PULLUP
-#define PROBE_ISR -3
+#define PROBE_ISR 2
 #define TX_BIT 1
 #define TX_PORT J
 #define RX_BIT 0
