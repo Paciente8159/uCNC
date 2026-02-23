@@ -1131,7 +1131,7 @@ static void cnc_io_dotasks(void)
 	if (g_settings.step_disable_timeout)
 	{
 		// is idle check the timeout
-		if (cnc_get_exec_state(EXEC_RUN | EXEC_HOLD) == EXEC_IDLE)
+		if (cnc_get_exec_state(EXEC_ALLACTIVE) == EXEC_IDLE)
 		{
 			if (stepper_timeout < mcu_millis())
 			{
