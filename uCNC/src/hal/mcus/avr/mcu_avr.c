@@ -370,6 +370,27 @@ ISR(PCINT2_vect, ISR_BLOCK) // input pin on change service routine
 }
 #endif
 
+#if (PCINT3_MASK != 0)
+ISR(PCINT3_vect, ISR_BLOCK) // input pin on change service routine
+{
+#if (PCINT3_LIMITS_MASK != 0)
+	mcu_limits_changed_cb();
+
+#endif
+#if (PCINT3_CONTROLS_MASK != 0)
+	mcu_controls_changed_cb();
+#endif
+
+#if (PROBE_ISR3 != 0)
+	mcu_probe_changed_cb();
+#endif
+
+#if (PCINT3_DIN_IO_MASK != 0)
+	mcu_inputs_changed_cb();
+#endif
+}
+#endif
+
 #endif
 
 #ifdef MCU_HAS_UART
@@ -501,23 +522,33 @@ void mcu_init(void)
 
 // enable interrupts on pin changes
 #ifndef FORCE_SOFT_POLLING
+#ifdef PCIE0
 #if ((PCINT0_LIMITS_MASK | PCINT0_CONTROLS_MASK | PROBE_ISR0 | PCINT0_DIN_IO_MASK) != 0)
 	SETBIT(PCICR, PCIE0);
 #else
 	CLEARBIT(PCICR, PCIE0);
 #endif
-#if ((PCINT1_LIMITS_MASK | PCINT1_CONTROLS_MASK | PROBE_ISR1 | PCINT1_DIN_IO_MASK) != 0)
-#ifdef AVR6
-	PCMSK1 <<= 1;
 #endif
+#ifdef PCIE1
+#if ((PCINT1_LIMITS_MASK | PCINT1_CONTROLS_MASK | PROBE_ISR1 | PCINT1_DIN_IO_MASK) != 0)
 	SETBIT(PCICR, PCIE1);
 #else
 	CLEARBIT(PCICR, PCIE1);
 #endif
+#endif
+#ifdef PCIE2
 #if ((PCINT2_LIMITS_MASK | PCINT2_CONTROLS_MASK | PROBE_ISR2 | PCINT2_DIN_IO_MASK) != 0)
 	SETBIT(PCICR, PCIE2);
 #else
 	CLEARBIT(PCICR, PCIE2);
+#endif
+#endif
+#ifdef PCIE3
+#if ((PCINT3_LIMITS_MASK | PCINT3_CONTROLS_MASK | PROBE_ISR3 | PCINT3_DIN_IO_MASK) != 0)
+	SETBIT(PCICR, PCIE3);
+#else
+	CLEARBIT(PCICR, PCIE3);
+#endif
 #endif
 #if (EIMSK_VAL != 0)
 	EIMSK = EIMSK_VAL;

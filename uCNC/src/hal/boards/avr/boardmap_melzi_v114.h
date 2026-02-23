@@ -34,9 +34,10 @@ extern "C"
 
 #define AVR6
 
-#define PCINT0_PORT A
-#define PCINT1_PORT B
-#define PCINT2_PORT C
+// deprecated
+// #define PCINT0_PORT A
+// #define PCINT1_PORT B
+// #define PCINT2_PORT C
 
 // Setup step pins
 #define STEP0_BIT 7
@@ -72,15 +73,15 @@ extern "C"
 #define LIMIT_X_BIT 2
 #define LIMIT_X_PORT C
 #define LIMIT_X_PULLUP
-#define LIMIT_X_ISR 2
+#define LIMIT_X_ISR 18
 #define LIMIT_Y_BIT 3
 #define LIMIT_Y_PORT C
 #define LIMIT_Y_PULLUP
-#define LIMIT_Y_ISR 2
+#define LIMIT_Y_ISR 19
 #define LIMIT_Z_BIT 4
 #define LIMIT_Z_PORT C
 #define LIMIT_Z_PULLUP
-#define LIMIT_Z_ISR 2
+#define LIMIT_Z_ISR 20
 
 // Setup com pins
 #define TX_BIT 1

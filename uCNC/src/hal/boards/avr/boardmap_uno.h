@@ -36,9 +36,10 @@ extern "C"
 #define F_CPU 16000000UL
 #endif
 
-#define PCINT0_PORT B
-#define PCINT1_PORT C
-#define PCINT2_PORT D
+// deprecated
+// #define PCINT0_PORT B
+// #define PCINT1_PORT C
+// #define PCINT2_PORT D
 
 // SAME AS GRBL for test purposes
 // Setup step pins
@@ -62,23 +63,23 @@ extern "C"
 // Setup limit pins
 #define LIMIT_Z_BIT 4	 // assigns LIMIT_Z pin
 #define LIMIT_Z_PORT B // assigns LIMIT_Z port
-#define LIMIT_Z_ISR 0	 // assigns LIMIT_Z ISR
+#define LIMIT_Z_ISR 4	 // assigns LIMIT_Z ISR
 											 // #define LIMIT_Y2_BIT 4 //Z and second Y limit share the pin
 											 // #define LIMIT_Y2_PORT B //Z and second Y limit share the pin
 											 // #define LIMIT_Y2_ISR 0 //Z and second Y limit share the pin
 
 #define LIMIT_Y_BIT 2	 // assigns LIMIT_Y pin
 #define LIMIT_Y_PORT B // assigns LIMIT_Y port
-#define LIMIT_Y_ISR 0	 // assigns LIMIT_Y ISR
+#define LIMIT_Y_ISR 2	 // assigns LIMIT_Y ISR
 
 #define LIMIT_X_BIT 1	 // assigns LIMIT_X pin
 #define LIMIT_X_PORT B // assigns LIMIT_X port
-#define LIMIT_X_ISR 0	 // assigns LIMIT_X ISR
+#define LIMIT_X_ISR 1	 // assigns LIMIT_X ISR
 
 // Setup probe pin
 #define PROBE_BIT 5
 #define PROBE_PORT C
-#define PROBE_ISR 1
+#define PROBE_ISR 13
 
 // Setup control input pins
 #define ESTOP_BIT 0
@@ -87,9 +88,9 @@ extern "C"
 #define ESTOP_PORT C
 #define FHOLD_PORT C
 #define CS_RES_PORT C
-#define ESTOP_ISR 1
-#define FHOLD_ISR 1
-#define CS_RES_ISR 1
+#define ESTOP_ISR 8
+#define FHOLD_ISR 9
+#define CS_RES_ISR 10
 
 // Setup com pins
 #define RX_BIT 0
@@ -129,7 +130,7 @@ extern "C"
 // // encoders
 // #define DIN0_BIT 0
 // #define DIN0_PORT C
-// #define DIN0_ISR 1
+// #define DIN0_ISR 8
 // #define DIN8_BIT 1
 // #define DIN8_PORT C
 
