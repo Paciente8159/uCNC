@@ -411,6 +411,7 @@ ISR(COM_RX_vect, ISR_BLOCK)
 #endif
 }
 
+#ifndef DISABLE_UART_TX_ISR
 #ifndef UART_TX_BUFFER_SIZE
 #define UART_TX_BUFFER_SIZE 64
 #endif
@@ -426,7 +427,7 @@ ISR(COM_TX_vect, ISR_BLOCK)
 
 	COM_OUTREG = c;
 }
-
+#endif
 #endif
 
 #if defined(MCU_HAS_UART2)
@@ -453,6 +454,7 @@ ISR(COM2_RX_vect, ISR_BLOCK)
 #endif
 }
 
+#ifndef DISABLE_UART2_TX_ISR
 #ifndef UART2_TX_BUFFER_SIZE
 #define UART2_TX_BUFFER_SIZE 64
 #endif
@@ -470,7 +472,7 @@ ISR(COM2_TX_vect, ISR_BLOCK)
 
 	COM2_OUTREG = c;
 }
-
+#endif
 #endif
 
 static void mcu_start_rtc();
@@ -645,14 +647,21 @@ void mcu_uart_clear(void)
 
 void mcu_uart_putc(uint8_t c)
 {
+#ifndef DISABLE_UART_TX_ISR
 	while (!BUFFER_TRY_ENQUEUE(uart_tx, &c))
 	{
 		mcu_uart_flush();
 	}
+#else
+	COM_OUTREG = c;
+	while (!CHECKBIT(UCSRA_REG, UDRE_BIT))
+		;
+#endif
 }
 
 void mcu_uart_flush(void)
 {
+#ifndef DISABLE_UART_TX_ISR
 	if (!CHECKBIT(UCSRB_REG, UDRIE_BIT)) // not ready start flushing
 	{
 		SETBIT(UCSRB_REG, UDRIE_BIT);
@@ -660,6 +669,7 @@ void mcu_uart_flush(void)
 		io_toggle_output(ACTIVITY_LED);
 #endif
 	}
+#endif
 }
 #endif
 
@@ -683,14 +693,21 @@ void mcu_uart2_clear(void)
 
 void mcu_uart2_putc(uint8_t c)
 {
+#ifndef DISABLE_UART2_TX_ISR
 	while (!BUFFER_TRY_ENQUEUE(uart2, &c))
 	{
 		mcu_uart2_flush();
 	}
+#else
+	COM2_OUTREG = c;
+	while (!CHECKBIT(UCSRA_REG_2, UDRE_BIT_2))
+		;
+#endif
 }
 
 void mcu_uart2_flush(void)
 {
+#ifndef DISABLE_UART2_TX_ISR
 	if (!CHECKBIT(UCSRB_REG_2, UDRIE_BIT_2)) // not ready start flushing
 	{
 		SETBIT(UCSRB_REG_2, UDRIE_BIT_2);
@@ -698,6 +715,7 @@ void mcu_uart2_flush(void)
 		io_toggle_output(ACTIVITY_LED);
 #endif
 	}
+#endif
 }
 #endif
 
