@@ -892,9 +892,9 @@ bool mc_home_motion_pulloff(uint8_t axis_mask, motion_data_t *block_data)
 	}
 	mc_line(target, block_data);
 	itp_sync();
-	if (cnc_get_exec_state(EXEC_HOMING_HIT) != EXEC_HOMING_HIT)
+	if (cnc_get_exec_state(EXEC_IDLE) != EXEC_IDLE)
 	{
-		// Home finding failed
+		// pulloff failed
 		return false;
 	}
 
@@ -906,12 +906,13 @@ bool mc_home_motion_pulloff(uint8_t axis_mask, motion_data_t *block_data)
 	// Motion completed successfully
 	return true;
 }
+
 uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 {
 	motion_data_t block_data = {0};
 	uint8_t limits_flags;
 	uint8_t restore_step_mode __attribute__((__cleanup__(mc_restore_step_mode))) = itp_set_step_mode(ITP_STEP_MODE_REALTIME);
-
+	bool pull_off=false;
 #ifdef ENABLE_MOTION_CONTROL_MODULES
 	homing_status_t homing_status __attribute__((__cleanup__(mc_home_axis_finalize))) = {axis_mask, axis_limit, STATUS_OK};
 #endif
@@ -954,6 +955,7 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 
 #ifdef ENABLE_LONG_HOMING_CYCLE
 	uint8_t homing_passes = 2;
+	pull_off=true; // pull off at fast rate at the first pass
 	while (homing_passes--)
 	{
 #endif
@@ -977,11 +979,16 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 		block_data.feed = g_settings.homing_slow_feed_rate;
 #endif
 
-#ifdef HOMING_GRBL_STYLE
-#ifdef ENABLE_LONG_HOMING_CYCLE
-		// pull off from the switch at the first pass
-#endif
-
+#ifdef ENABLE_GRBL_STYLE_HOMING // Homing to active limit switch,
+		if (pull_off)
+		{
+			block_data.feed = g_settings.homing_fast_feed_rate;
+			if (!mc_home_motion_pulloff(axis_mask, &block_data))
+			{
+				return STATUS_CRITICAL_FAIL;
+			}
+		}
+		pull_off=false;
 #else
 	// temporary inverts the limit mask to trigger ISR on switch release
 	io_invert_limits(axis_limit);

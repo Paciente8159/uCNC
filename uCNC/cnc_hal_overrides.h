@@ -36,8 +36,8 @@ extern "C"
 //Custom configurations
 #undef EMULATE_GRBL_STARTUP
 #define EMULATE_GRBL_STARTUP 3
-// #define ENABLE_LONG_HOMING_CYCLE
-#define HOMING_GRBL_STYLE
+#define ENABLE_LONG_HOMING_CYCLE
+#define ENABLE_GRBL_STYLE_HOMING
 
 #define LOAD_MODULES_OVERRIDE() ({LOAD_MODULE(single_axis_homing);})
 
