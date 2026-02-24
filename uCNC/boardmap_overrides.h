@@ -12,13 +12,10 @@ extern "C"
 #define AXIS_COUNT 3
 #define BAUDRATE 115200
 #define BOARD_NAME "Mega-L"
-#define PCINT0_PORT B
-#define PCINT1_PORT J
-#define PCINT2_PORT K
 #define UART_PORT 3
 #define ITP_TIMER 1
 #define RTC_TIMER 0
-#define ONESHOT_TIMER 4
+#define ONESHOT_TIMER 3
 #define IC74HC595_COUNT 0
 #define IC74HC165_COUNT 0
 #define STEP0_BIT 2
@@ -35,31 +32,24 @@ extern "C"
 #define DIR2_PORT C
 #define STEP0_EN_BIT 7
 #define STEP0_EN_PORT B
-#define STEP1_EN_BIT 7
-#define STEP1_EN_PORT B
-#define STEP2_EN_BIT 7
-#define STEP2_EN_PORT B
 #define PWM0_BIT 4
 #define PWM0_PORT H
 #define PWM0_CHANNEL B
 #define PWM0_TIMER 4
 #define DOUT2_BIT 5
 #define DOUT2_PORT H
-#define DOUT31_BIT 7
-#define DOUT31_PORT B
 #define LIMIT_X_BIT 4
 #define LIMIT_X_PORT B
 #define LIMIT_X_PULLUP
-#define LIMIT_X_ISR 0
-#define LIMIT_Y_PULLUP
+#define LIMIT_X_ISR 4
 #define LIMIT_Z_BIT 6
 #define LIMIT_Z_PORT B
 #define LIMIT_Z_PULLUP
-#define LIMIT_Z_ISR 0
+#define LIMIT_Z_ISR 6
 #define PROBE_BIT 7
 #define PROBE_PORT K
 #define PROBE_PULLUP
-#define PROBE_ISR 2
+#define PROBE_ISR 23
 #define TX_BIT 1
 #define TX_PORT J
 #define RX_BIT 0

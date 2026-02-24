@@ -62,7 +62,7 @@ extern "C"
  * Set when at a transition of a limit switch from inactive to the active state.
  * Cleared by reset or unlock. Not affected by the limit switch state.
  *
- * EXEC_UNHOMED
+ * EXEC_POSITION_MAYBE_LOST
  * Set when the interpolator is abruptly stopped causing the position to be lost.
  * Cleared by homing or unlock.
  *
@@ -78,12 +78,12 @@ extern "C"
 #define EXEC_JOG 4											   // Jogging in execution
 #define EXEC_HOMING 8										   // Homing in execution
 #define EXEC_DOOR 16										   // Safety door open
-#define EXEC_UNHOMED 32										   // Machine is not homed or lost position due to abrupt stop
+#define EXEC_POSITION_MAYBE_LOST 32							   // Machine is not homed or lost position due to abrupt stop
 #define EXEC_LIMITS 64										   // Limits hit
 #define EXEC_KILL 128										   // Emergency stop
 #define EXEC_HOMING_HIT (EXEC_HOMING | EXEC_LIMITS)			   // Limit switch is active during a homing motion
 #define EXEC_INTERLOCKING_FAIL (EXEC_LIMITS | EXEC_KILL)	   // Interlocking check failed
-#define EXEC_ALARM (EXEC_UNHOMED | EXEC_INTERLOCKING_FAIL)	   // System alarms
+#define EXEC_ALARM (EXEC_POSITION_MAYBE_LOST | EXEC_INTERLOCKING_FAIL)	   // System alarms
 #define EXEC_RESET_LOCKED (EXEC_ALARM | EXEC_DOOR | EXEC_HOLD) // System reset locked
 #define EXEC_GCODE_LOCKED (EXEC_ALARM | EXEC_DOOR | EXEC_JOG)  // Gcode is locked by an alarm or any special motion state
 #define EXEC_ALLACTIVE 255									   // All states
@@ -169,7 +169,7 @@ extern "C"
 	void cnc_alarm(int8_t code);
 	bool cnc_has_alarm(void);
 	uint8_t cnc_get_alarm(void);
-	void cnc_stop(void);
+	void cnc_stop(bool toolstop);
 	uint8_t cnc_unlock(bool force);
 	void cnc_delay_ms(uint32_t miliseconds);
 	void cnc_dwell_ms(uint32_t miliseconds);

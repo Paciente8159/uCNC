@@ -109,8 +109,9 @@ extern "C"
 #define STATUS_STREAM_FAILED 58
 #define STATUS_JOG_CANCELED 59
 #define STATUS_MAXIMUM_PARAMS_PER_BLOCK_EXCEEDED 60
-#define STATUS_GCODE_EXTENDED_UNSUPPORTED 254 // deprecated
-#define STATUS_CRITICAL_FAIL 255
+#define STATUS_PROBE_UNSUCCESS 61
+#define STATUS_CRITICAL_FAIL 254
+#define STATUS_NO_CMD 255
 
 // special Grbl system commands return codes
 // These are not error codes but codes to print requested reports after parsing a grbl command
@@ -138,8 +139,8 @@ extern "C"
 #define GRBL_SYSTEM_CMD_EXTENDED (GRBL_SYSTEM_CMD + 20)
 #define GRBL_SYSTEM_CMD_EXTENDED_UNSUPPORTED 253
 
-#define EXEC_ALARM_SOFTRESET -2
-#define EXEC_ALARM_EMERGENCY_STOP -1
+#define EXEC_ALARM_SOFTRESET -127
+#define EXEC_ALARM_EMERGENCY_STOP -126
 #define EXEC_ALARM_NOALARM 0
 // Grbl alarm codes. Valid values (1-255). Zero is reserved for the reset alarm.
 #define EXEC_ALARM_HARD_LIMIT 1										 // hard limits hit while in motion other then homing

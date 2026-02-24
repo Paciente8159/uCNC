@@ -13,9 +13,6 @@ extern "C"
 #undef ENABLE_WIFI
 #undef ENABLE_BLUETOOTH
 #undef BOARD_NAME
-#undef PCINT0_PORT
-#undef PCINT1_PORT
-#undef PCINT2_PORT
 #undef UART_PORT
 #undef UART2_PORT
 #undef SPI_PORT

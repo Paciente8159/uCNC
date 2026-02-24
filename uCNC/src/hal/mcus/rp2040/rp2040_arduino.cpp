@@ -757,9 +757,35 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
 }
 #endif
 
+#ifdef USE_STATIC_IP
+#ifndef STATIC_IP_IP
+// 192.168.1.200
+#define STATIC_IP_IP 3232235976
+#endif
+#ifndef STATIC_IP_GW
+// 192.168.1.1
+#define STATIC_IP_GW 3232235777
+#endif
+#ifndef STATIC_IP_SUB
+// 255.255.255.0
+#define STATIC_IP_SUB 4294967040
+#endif
+
+	static IPAddress local_IP((uint32_t)(STATIC_IP_IP));
+	static IPAddress gateway((uint32_t)(STATIC_IP_GW));
+	static IPAddress subnet((uint32_t)(STATIC_IP_SUB));
+#endif
+
 void rp2040_wifi_bt_init(void)
 {
 #ifdef MCU_HAS_WIFI
+
+#ifdef USE_STATIC_IP
+	if (!WiFi.config(local_IP, gateway, subnet))
+	{
+		proto_info("Static IP config failed");
+	}
+#endif
 
 	wifi_settings_offset = settings_register_external_setting(sizeof(wifi_settings_t));
 	if (settings_load(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t)))
