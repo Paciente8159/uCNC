@@ -654,7 +654,7 @@
     "tmc_driver": false,
     "tone_speaker": false,
     "CUSTOM_BOARDMAP_CONFIGS": "#define BOARDMAP_RAMPS14_H true\n#define AVR6 true\n#define SPI_FREQ 100000UL\n#define F_CPU 16000000UL\n",
-    "CUSTOM_HAL_CONFIGS": "#undef EMULATE_GRBL_STARTUP\n#define EMULATE_GRBL_STARTUP 3\n#define ENABLE_LONG_HOMING_CYCLE",
+    "CUSTOM_HAL_CONFIGS": "#undef EMULATE_GRBL_STARTUP\n#define EMULATE_GRBL_STARTUP 3\n#define ENABLE_LONG_HOMING_CYCLE\n#define HOMING_GRBL_STYLE\n",
     "CUSTOM_PIO_BOARD": "",
     "CUSTOM_PIO_BUILDFLAGS": "",
     "CUSTOM_PIO_CONFIGS": "",
