@@ -333,5 +333,5 @@ Future versions are in plan for:
 
 ### Building µCNC
 
-For building µCNC go ahead to the [makefiles](https://github.com/Paciente8159/uCNC/blob/master/makefiles) folder of the target MCU and follow the instructions specific to your device.
-Version 1.3.0 restructured the project so that it can easily be opened, configured, compiled and loaded via Arduino IDE environment. Just go to the [uCNC](https://github.com/Paciente8159/uCNC/blob/master/uCNC) folder and open uCNC.ino. See how to build the project for your board in the [wiki](https://github.com/Paciente8159/uCNC/wiki).
+For building µCNC go ahead to the [Wiki](https://github.com/Paciente8159/uCNC/wiki) of the target MCU and follow the instructions specific to your device.
+Version 1.3.0 restructured the project so that it can easily be opened, configured, compiled and loaded via Arduino IDE environment. Just go to the [uCNC](https://github.com/Paciente8159/uCNC/blob/master/uCNC) folder and open uCNC.ino.

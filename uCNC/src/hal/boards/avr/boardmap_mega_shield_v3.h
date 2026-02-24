@@ -38,13 +38,11 @@ extern "C"
 
 #define AVR6
 
-#define PCINT0_PORT B
-#define PCINT1_PORT J
-#define PCINT2_PORT K
+// deprecated
+// #define PCINT0_PORT B
+// #define PCINT1_PORT J
+// #define PCINT2_PORT K
 
-#define PCINT0_PORT B
-#define PCINT1_PORT J
-#define PCINT2_PORT K
 #define UART_PORT 0
 #define ONESHOT_TIMER 4
 #define IC74HC595_COUNT 0

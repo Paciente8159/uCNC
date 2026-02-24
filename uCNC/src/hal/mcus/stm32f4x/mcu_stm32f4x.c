@@ -256,8 +256,7 @@ void MCU_ITP_ISR(void)
 	{
 		if (!resetstep)
 		{
-			mcu_isr_context_enter();
-			mcu_step_cb();
+					mcu_step_cb();
 		}
 		else
 			mcu_step_reset_cb();
@@ -298,8 +297,7 @@ static void mcu_input_isr(void)
 #if (DIN_IO_EXTIBITMASK != 0)
 	if (EXTI->PR & DIN_IO_EXTIBITMASK)
 	{
-		mcu_isr_context_enter();
-		mcu_inputs_changed_cb();
+			mcu_inputs_changed_cb();
 	}
 #endif
 
@@ -408,7 +406,6 @@ void osSystickHandler(void)
 	uint32_t millis = mcu_runtime_ms;
 	millis++;
 	mcu_runtime_ms = millis;
-	mcu_isr_context_enter();
 	mcu_rtc_cb(millis);
 }
 
@@ -1891,8 +1888,7 @@ void MCU_ONESHOT_ISR(void)
 
 		if (mcu_timeout_cb)
 		{
-			mcu_isr_context_enter();
-			mcu_timeout_cb();
+					mcu_timeout_cb();
 		}
 	}
 

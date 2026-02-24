@@ -28,6 +28,7 @@ M907 command is also available with this module (similar to Marlin)
 ### encoder.c / encoder.h
 Handles encoder reading, atomic operations, and hook‑based callbacks for responsive input handling. Supports multiple types of encoders interfaces (AB input encoders, I2C encoders and SSI encoders), and custom interfaces can also be implemented. Encoders also can work as RPM meters.
 Used for jog wheels, spindle feedback, or other closed‑loop features (stepper position loop feedback for example).
+Read more about encoders [here](https://github.com/Paciente8159/uCNC/blob/master/uCNC/src/modules/encoder.md)
 
 ### endpoint.h / websocket.h
 Defines JSON API endpoints used by the communication and file‑system layers and for a websocket communication channel to control the board via ethernet/wireless.

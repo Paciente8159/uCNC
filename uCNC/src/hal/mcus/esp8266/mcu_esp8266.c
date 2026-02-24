@@ -347,7 +347,6 @@ IRAM_ATTR void mcu_controls_isr(void)
 
 IRAM_ATTR void mcu_itp_isr(void)
 {
-	mcu_isr_context_enter();
 	if (esp8266_step_mode == ITP_STEP_MODE_REALTIME)
 	{
 		signal_timer.us_step = 1000000 / (TIMER_IO_SAMPLE_RATE >> 2);
@@ -469,7 +468,6 @@ void itp_buffer_dotasks(uint16_t limit)
 
 IRAM_ATTR void mcu_rtc_isr(void)
 {
-	mcu_isr_context_enter();
 	mcu_runtime_ms++;
 	mcu_rtc_cb(mcu_runtime_ms);
 	itp_buffer_dotasks(OUT_IO_BUFFER_MINIMAL); // process at most 2ms of motion

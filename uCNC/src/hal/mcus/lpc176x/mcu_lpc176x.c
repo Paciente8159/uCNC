@@ -172,7 +172,6 @@ void MCU_SERVO_ISR(void)
 void MCU_RTC_ISR(void)
 {
 	_millis++;
-	mcu_isr_context_enter();
 	mcu_rtc_cb((uint32_t)_millis);
 }
 
@@ -187,8 +186,7 @@ void MCU_ITP_ISR(void)
 		SETBIT(ITP_TIMER_REG->IR, TIM_MR0_INT);
 		if (!resetstep)
 		{
-			mcu_isr_context_enter();
-			mcu_step_cb();
+					mcu_step_cb();
 		}
 		else
 		{
@@ -1698,8 +1696,7 @@ void MCU_ONESHOT_ISR(void)
 {
 	if (mcu_timeout_cb)
 	{
-		mcu_isr_context_enter();
-		mcu_timeout_cb();
+			mcu_timeout_cb();
 	}
 
 	NVIC_ClearPendingIRQ(ONESHOT_TIMER_IRQ);

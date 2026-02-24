@@ -294,6 +294,7 @@
 #define CS_RES 113
 #define DIO113 113
 #define DIN0 130
+#define DIN0_ISR
 #define DIO130 130
 #define DIN1 131
 #define DIO131 131
@@ -484,6 +485,16 @@ extern const tool_t vfd_pwm;
 #define ATOMIC_FETCH_XOR(dst, val, mode) __atomic_fetch_xor((dst), (val), mode)
 
 #define EMULATION_MS_TICK 100
+
+#define ATOMIC_LOAD_N(src, mode) __atomic_load_n((src), mode)
+#define ATOMIC_STORE_N(dst, val, mode) __atomic_store_n((dst), (val), mode)
+#define ATOMIC_COMPARE_EXCHANGE_N(dst, cmp, des, sucmode, failmode) __atomic_compare_exchange_n((dst), (void*)(cmp), (des), false, sucmode, failmode)
+#define ATOMIC_FETCH_OR(dst, val, mode) __atomic_fetch_or((dst), (val), mode)
+#define ATOMIC_FETCH_AND(dst, val, mode) __atomic_fetch_and((dst), (val), mode)
+#define ATOMIC_FETCH_ADD(dst, val, mode) __atomic_fetch_add((dst), (val), mode)
+#define ATOMIC_FETCH_SUB(dst, val, mode) __atomic_fetch_sub((dst), (val), mode)
+#define ATOMIC_FETCH_XOR(dst, val, mode) __atomic_fetch_xor((dst), (val), mode)
+#define ATOMIC_SPIN()
 
 #define asm __asm__
 
