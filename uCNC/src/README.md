@@ -194,7 +194,7 @@ __NOTE__: Not all simple hooks may be listed here. To find all available simple 
 
 | Event name | Argument | Enable option | Description |
 | --- | --- | --- | --- |
-| itp_rt_pre_stepbits | int*, int* | ENABLE_RT_SYNC_MOTIONS | Fires when the next computed step bits and dirs have been computed to be output. Args are a pointer the stepbit var and a pointer to a dirbit var |
+| itp_rt_pre_stepbits | int*, int* | ENABLE_RT_SYNC_MOTIONS | **DEPRECATED-DO NOT USE** Fires when the next computed step bits and dirs have been computed to be output. Args are a pointer the stepbit var and a pointer to a dirbit var |
 | itp_rt_stepbits | int, int | ENABLE_RT_SYNC_MOTIONS | Fires when the setpbits have been output to the IO. Args are the stepbit mask value and the step ISR flags value |
 | encoder_index | void | ENCODER_COUNT | Fires when the index of the specialized rpm encoder is triggered. Has no args |
 

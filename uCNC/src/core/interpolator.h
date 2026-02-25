@@ -82,6 +82,9 @@ extern "C"
 		uint8_t flags;
 	} itp_segment_t;
 
+	// this is global accessible lock that can put the whole itp ISR on hold (including next step generation)
+	extern volatile bool g_itp_isr_lock;
+
 	void itp_init(void);
 	void itp_run(void);
 	void itp_update(void);
@@ -117,9 +120,10 @@ extern "C"
 	void itp_inc_block_id(void);
 	void itp_update_feed(float feed);
 	bool itp_sync_ready(void);
-	DECL_HOOK(itp_rt_pre_stepbits, uint8_t *, uint8_t *);
+	// deprecate to make ISR leaner
+	// DECL_HOOK(itp_rt_pre_stepbits, uint8_t *, uint8_t *);
 	DECL_HOOK(itp_rt_stepbits, uint8_t, uint8_t);
-#ifndef RT_STEP_PREVENT_CONDITION
+#ifndef DISABLE_RT_STEP_PREVENT_CONDITION
 	typedef bool (*itp_rt_step_prevent_t)(void);
 	extern itp_rt_step_prevent_t itp_rt_step_prevent_cb;
 #endif

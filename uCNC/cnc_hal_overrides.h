@@ -8,6 +8,8 @@ extern "C"
 {
 #endif
 
+#define ENABLE_RT_LIMITS_CHECKING
+
 #ifdef __cplusplus
 }
 #endif
