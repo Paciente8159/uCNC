@@ -338,7 +338,7 @@ void io_invert_limits(uint8_t limitmask)
 	mcu_limits_changed_cb();
 }
 
-uint8_t io_get_limits(void)
+uint8_t io_get_raw_limits(void)
 {
 #ifdef DISABLE_ALL_LIMITS
 	return 0;
@@ -379,11 +379,6 @@ uint8_t io_get_limits(void)
 	uint8_t inv = g_settings.limits_invert_mask;
 	uint8_t result = (value ^ (inv & LIMITS_INV_MASK));
 
-	if (cnc_get_exec_state(EXEC_HOMING))
-	{
-		result ^= io_invert_limits_mask;
-	}
-
 #if (LIMITS_NORMAL_OPERATION_MASK != 0)
 	if (!cnc_get_exec_state(EXEC_HOMING))
 	{
@@ -392,6 +387,12 @@ uint8_t io_get_limits(void)
 #endif
 
 	return result;
+}
+
+uint8_t io_get_limits(void)
+{
+	uint8_t result = io_get_raw_limits();
+	return ((!cnc_get_exec_state(EXEC_HOMING)) ? (result) : (result ^ io_invert_limits_mask));
 }
 
 uint8_t io_get_controls(void)

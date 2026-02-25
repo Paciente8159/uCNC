@@ -831,8 +831,6 @@ MCU_CALLBACK void itp_stop(void)
 	{
 		cnc_set_exec_state(EXEC_POSITION_MAYBE_LOST);
 	}
-
-	cnc_clear_exec_state(EXEC_RUN);
 }
 
 void itp_stop_tools(void)
@@ -952,8 +950,9 @@ MCU_CALLBACK void mcu_step_reset_cb(void)
 
 	if (g_itp_isr_stop)
 	{
-		g_itp_isr_stop = false;
 		mcu_stop_itp_isr();
+		g_itp_isr_stop = false;
+		cnc_clear_exec_state(EXEC_RUN);
 	}
 }
 
@@ -989,9 +988,13 @@ MCU_CALLBACK void mcu_step_cb(void)
 	mcu_probe_changed_cb();
 #endif
 #ifdef ENABLE_RT_LIMITS_CHECKING
-	if (io_get_limits())
+	if (cnc_get_exec_state(EXEC_HOMING))
 	{
-		return;
+		mcu_limits_changed_cb();
+		if (cnc_get_exec_state(EXEC_LIMITS))
+		{
+			return;
+		}
 	}
 #endif
 

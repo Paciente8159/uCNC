@@ -361,9 +361,11 @@ MCU_CALLBACK void mcu_rtc_cb(uint32_t millis)
 #ifndef ENABLE_RT_PROBE_CHECKING
 		mcu_probe_changed_cb();
 #endif
-#ifndef ENABLE_RT_LIMITS_CHECKING
-		mcu_limits_changed_cb();
+#ifdef ENABLE_RT_LIMITS_CHECKING
+		if (!cnc_get_exec_state(EXEC_HOMING))
 #endif
+			mcu_limits_changed_cb();
+
 		mcu_controls_changed_cb();
 #if (DIN_ONCHANGE_MASK != 0 && ENCODERS < 1)
 		// extra call in case generic inputs are running with ISR disabled. Encoders need propper ISR to work.
@@ -1113,8 +1115,10 @@ static void cnc_io_dotasks(void)
 #if IC74HC595_COUNT > 0 || IC74HC165_COUNT > 0
 	io_extended_pins_update(); // update extended IO
 #endif
+#ifdef DISABLE_RTC_CODE
 	mcu_limits_changed_cb();
 	mcu_controls_changed_cb();
+#endif
 
 #if (DIN_ONCHANGE_MASK != 0 && ENCODERS < 1)
 	// extra call in case generic inputs are running with ISR disabled. Encoders need propper ISR to work.
