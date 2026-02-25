@@ -974,6 +974,9 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 			return STATUS_CRITICAL_FAIL;
 		}
 
+		// temporary inverts the limit mask to trigger ISR on switch release
+		io_invert_limits(axis_limit);
+
 #ifndef ENABLE_LONG_HOMING_CYCLE
 		// modify the speed to slow search speed
 		block_data.feed = g_settings.homing_slow_feed_rate;
@@ -993,20 +996,20 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 	// temporary inverts the limit mask to trigger ISR on switch release
 	io_invert_limits(axis_limit);
 
-	if (!mc_home_motion(axis_mask, false, &block_data))
-	{
-		return STATUS_CRITICAL_FAIL;
-	}
+		if (!mc_home_motion(axis_mask, false, &block_data))
+		{
+			return STATUS_CRITICAL_FAIL;
+		}
 
-	cnc_delay_ms(g_settings.debounce_ms); // adds a delay before reading io pin (debounce)
-	// resets limit mask
-	io_invert_limits(0);
-	limits_flags = io_get_limits();
-	if (CHECKFLAG(limits_flags, axis_limit))
-	{
-		cnc_alarm(EXEC_ALARM_HOMING_FAIL_PULLOFF);
-		return STATUS_CRITICAL_FAIL;
-	}
+		cnc_delay_ms(g_settings.debounce_ms); // adds a delay before reading io pin (debounce)
+		// resets limit mask
+		io_invert_limits(0);
+		limits_flags = io_get_limits();
+		if (CHECKFLAG(limits_flags, axis_limit))
+		{
+			cnc_alarm(EXEC_ALARM_HOMING_FAIL_PULLOFF);
+			return STATUS_CRITICAL_FAIL;
+		}
 #endif
 
 #ifdef ENABLE_LONG_HOMING_CYCLE
