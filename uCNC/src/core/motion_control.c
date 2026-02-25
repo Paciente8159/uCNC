@@ -889,15 +889,15 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 		return STATUS_HARDLIMITS_DISABLED;
 #endif
 	}
-
+	
 // locks limits to accept axis limit mask only or else throw error
 #ifdef ENABLE_MULTI_STEP_HOMING
 	io_lock_limits(axis_limit);
 #endif
-	io_invert_limits(0);
+
 	cnc_unlock(true);
 
-	if (cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM) || CHECKFLAG(io_get_limits(), LIMITS_MASK))
+	if (cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM) || CHECKFLAG(io_get_raw_limits(), LIMITS_MASK))
 	{
 		cnc_alarm(EXEC_ALARM_HOMING_FAIL_LIMIT_ACTIVE);
 		return STATUS_CRITICAL_FAIL;
@@ -927,9 +927,6 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 			return STATUS_CRITICAL_FAIL;
 		}
 
-		// temporary inverts the limit mask to trigger ISR on switch release
-		io_invert_limits(axis_limit);
-
 #ifndef ENABLE_LONG_HOMING_CYCLE
 		// modify the speed to slow search speed
 		block_data.feed = g_settings.homing_slow_feed_rate;
@@ -941,9 +938,8 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 		}
 
 		cnc_delay_ms(g_settings.debounce_ms); // adds a delay before reading io pin (debounce)
-		// resets limit mask
-		io_invert_limits(0);
-		limits_flags = io_get_limits();
+
+		limits_flags = io_get_raw_limits();
 		if (CHECKFLAG(limits_flags, axis_limit))
 		{
 			cnc_alarm(EXEC_ALARM_HOMING_FAIL_PULLOFF);

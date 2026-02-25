@@ -408,7 +408,6 @@ uint8_t cnc_home(void)
 #ifdef ENABLE_MULTI_STEP_HOMING
 	io_lock_limits(0);
 #endif
-	io_invert_limits(0);
 	// sync's the motion control with the real time position
 	// this flushes the homing motion before returning from error or home success
 	itp_clear();
@@ -513,6 +512,7 @@ uint8_t cnc_unlock(bool force)
 #ifndef DISABLE_SAFE_SETTINGS
 		}
 #endif
+		io_invert_limits(((!CHECKFLAG(cnc_state.exec_state, EXEC_HOMING)) ? 0 : io_get_raw_limits()));
 	}
 	else
 	{
