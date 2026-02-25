@@ -1,15 +1,47 @@
-// boardmap override dummy file
-
 #ifndef CNC_HAL_OVERRIDES_H
 #define CNC_HAL_OVERRIDES_H
-
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
+#include "cnc_hal_reset.h"
+#define ENABLE_STEPPERS_DISABLE_TIMEOUT
+#define SKEW_COMPENSATION_XY_ONLY
+#define ENABLE_LINACT_COLD_START
+#define ENABLE_S_CURVE_ACCELERATION 0
+#define STATUS_AUTOMATIC_REPORT_INTERVAL 0
+#define ENABLE_COOLANT
+#define TOOL1 spindle_pwm
+#define SPINDLE_PWM PWM0
+#define SPINDLE_PWM_COOLANT_FLOOD DOUT2
+#define ENABLE_RT_LIMITS_CHECKING
+#define ESTOP_PULLUP_ENABLE
+#define SAFETY_DOOR_PULLUP_ENABLE
+#define FHOLD_PULLUP_ENABLE
+#define CS_RES_PULLUP_ENABLE
+#define LIMIT_X_PULLUP_ENABLE
+#define LIMIT_Y_PULLUP_ENABLE
+#define LIMIT_Z_PULLUP_ENABLE
+#define LIMIT_X2_PULLUP_ENABLE
+#define LIMIT_Y2_PULLUP_ENABLE
+#define LIMIT_Z2_PULLUP_ENABLE
+#define LIMIT_A_PULLUP_ENABLE
+#define LIMIT_B_PULLUP_ENABLE
+#define LIMIT_C_PULLUP_ENABLE
+#define PROBE_PULLUP_ENABLE
+#define ENCODERS 0
+#define ENABLE_PARSER_MODULES
+#define DISABLE_SETTINGS_MODULES
+//Custom configurations
+#undef EMULATE_GRBL_STARTUP
+#define EMULATE_GRBL_STARTUP 3
+// #define ENABLE_LONG_HOMING_CYCLE
+// #define ENABLE_GRBL_STYLE_HOMING
+
+#define LOAD_MODULES_OVERRIDE() ({LOAD_MODULE(single_axis_homing);})
+
 #ifdef __cplusplus
 }
 #endif
-
 #endif
