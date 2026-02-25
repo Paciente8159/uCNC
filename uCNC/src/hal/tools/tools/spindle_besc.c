@@ -52,12 +52,6 @@
 #endif
 #define SPINDLE_BESC_RANGE (ABS((SPINDLE_BESC_HIGH - SPINDLE_BESC_LOW)))
 
-#ifdef SPINDLE_BESC_HAS_RPM_ENCODER
-#ifndef ENABLE_ENCODER_RPM
-#error "TO use RPM encoder you must enable ENABLE_ENCODER_RPM in the HAL"
-#endif
-#endif
-
 static void startup_code(void)
 {
 // do whatever routine you need to do here to arm the ESC
@@ -125,8 +119,8 @@ static void set_coolant(uint8_t value)
 
 static uint16_t get_speed(void)
 {
-#ifdef SPINDLE_BESC_HAS_RPM_ENCODER
-	return encoder_get_rpm();
+#ifdef SPINDLE_BESC_RPM_ENCODER
+	return encoder_get_rpm(SPINDLE_BESC_RPM_ENCODER);
 #else
 #if ASSERT_PIN(SPINDLE_BESC_SERVO)
 	return tool_get_setpoint();
