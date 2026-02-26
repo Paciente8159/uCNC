@@ -860,7 +860,9 @@ bool mc_home_motion(uint8_t axis_mask, bool is_origin_search, motion_data_t *blo
 	// Motion completed successfully
 	return true;
 }
-bool mc_home_motion_pulloff(uint8_t axis_mask, motion_data_t *block_data)
+
+#ifdef ENABLE_GRBL_STYLE_HOMING
+static bool mc_home_motion_pulloff(uint8_t axis_mask, motion_data_t *block_data)
 {
 	float target[AXIS_COUNT];
 
@@ -906,6 +908,7 @@ bool mc_home_motion_pulloff(uint8_t axis_mask, motion_data_t *block_data)
 	// Motion completed successfully
 	return true;
 }
+#endif
 
 uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 {
@@ -954,8 +957,10 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 	block_data.motion_mode = MOTIONCONTROL_MODE_FEED;
 
 #ifdef ENABLE_LONG_HOMING_CYCLE
-	uint8_t homing_passes = 2;
+#ifdef ENABLE_GRBL_STYLE_HOMING
 	pull_off = true; // pull off at fast rate at the first pass
+#endif
+	uint8_t homing_passes = 2;
 	while (homing_passes--)
 	{
 #endif
