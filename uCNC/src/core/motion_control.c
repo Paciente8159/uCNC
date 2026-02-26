@@ -915,7 +915,7 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 	motion_data_t block_data = {0};
 	uint8_t limits_flags;
 	uint8_t restore_step_mode __attribute__((__cleanup__(mc_restore_step_mode))) = itp_set_step_mode(ITP_STEP_MODE_REALTIME);
-	bool pull_off = false;
+
 #ifdef ENABLE_MOTION_CONTROL_MODULES
 	homing_status_t homing_status __attribute__((__cleanup__(mc_home_axis_finalize))) = {axis_mask, axis_limit, STATUS_OK};
 #endif
@@ -958,7 +958,7 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 
 #ifdef ENABLE_LONG_HOMING_CYCLE
 #ifdef ENABLE_GRBL_STYLE_HOMING
-	pull_off = true; // pull off at fast rate at the first pass
+	bool pull_off = true; // pull off at fast rate at the first pass
 #endif
 	uint8_t homing_passes = 2;
 	while (homing_passes--)
