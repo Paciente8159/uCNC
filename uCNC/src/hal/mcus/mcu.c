@@ -42,20 +42,8 @@ __attribute__((noinline, optimize("O3"))) void mcu_delay_loop(uint16_t loops)
  * This allow to signal that the current code is running in ISR context
  * The
  */
-#ifndef mcu_in_isr_context
-volatile uint8_t mcu_in_isr_context_counter;
-void mcu_in_isr_context_leave(uint8_t *counter)
-{
-	if(mcu_in_isr_context_counter>1){
-		*counter = mcu_in_isr_context_counter;
-	}
-	ATOMIC_FETCH_SUB(&mcu_in_isr_context_counter, 1, __ATOMIC_ACQ_REL);
-}
-
-bool mcu_in_isr_context(void)
-{
-	return (ATOMIC_LOAD_N(&mcu_in_isr_context_counter, __ATOMIC_ACQUIRE) != 0);
-}
+#ifndef mcu_in_isr_context_custom_impl
+volatile buffer_index_t mcu_in_isr_context_counter;
 #endif
 
 void __attribute__((weak)) mcu_io_init(void)

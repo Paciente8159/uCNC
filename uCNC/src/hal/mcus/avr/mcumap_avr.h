@@ -4427,6 +4427,10 @@ extern "C"
 #define mcu_get_global_isr() (SREG & 0x80)
 // for atomic operations
 #define buffer_index_t uint8_t
+// on AVR getting the state of the global interrupt bit should be enough
+#ifndef mcu_in_isr_context
+#define mcu_in_isr_context !mcu_get_global_isr
+#endif
 
 #define US_DELAY_TICK (F_CPU / 3000000UL)
 #define US_DELAY_TICK2 (F_CPU / 4000000UL)

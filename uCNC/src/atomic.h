@@ -34,36 +34,37 @@ extern "C"
 #ifndef FORCEINLINE
 #define FORCEINLINE __attribute__((always_inline)) inline
 #endif
-
 	static FORCEINLINE bool __atomic_in()
 	{
-		bool state = mcu_get_global_isr();
-		if (state) // prevent reentrancy
-			mcu_disable_global_isr();
-		return state;
+		mcu_disable_global_isr();
+		return true;
 	}
 
 	static FORCEINLINE void __atomic_out(bool *s)
 	{
-		if (*s != false && !mcu_get_global_isr())
+		if (!!(*s))
 		{
 			mcu_enable_global_isr();
 		}
+		else
+		{
+			mcu_disable_global_isr();
+		}
+		MEM_BARRIER;
 	}
 
 	static FORCEINLINE void __atomic_out_on(bool *s)
 	{
-		if (!mcu_get_global_isr())
-		{
-			mcu_enable_global_isr();
-		}
+		mcu_enable_global_isr();
+		MEM_BARRIER;
+		(void)s;
 	}
 
 #ifndef ATOMIC_CODEBLOCK
-#define ATOMIC_CODEBLOCK for (bool __restore_atomic__ __attribute__((__cleanup__(__atomic_out))) = __atomic_in(), __AtomLock = true; __AtomLock; __AtomLock = false)
+#define ATOMIC_CODEBLOCK for (bool __restore_atomic__ __attribute__((__cleanup__(__atomic_out))) = mcu_get_global_isr(), __AtomLock = __atomic_in(); __AtomLock; __AtomLock = false)
 #endif
 #ifndef ATOMIC_CODEBLOCK_NR
-#define ATOMIC_CODEBLOCK_NR for (bool __restore_atomic__ __attribute__((__cleanup__(__atomic_out_on))) = __atomic_in(), __AtomLock = true; __AtomLock; __AtomLock = false)
+#define ATOMIC_CODEBLOCK_NR for (bool __restore_atomic__ __attribute__((__cleanup__(__atomic_out_on))) = mcu_get_global_isr(), __AtomLock = __atomic_in(); __AtomLock; __AtomLock = false)
 #endif
 
 	/**

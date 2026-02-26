@@ -282,14 +282,26 @@ extern "C"
  * returns true if is in ISR context or false otherwise
  * */
 #ifndef mcu_in_isr_context
-	extern volatile uint8_t mcu_in_isr_context_counter;
-	bool mcu_in_isr_context(void);
-	void mcu_in_isr_context_leave(uint8_t *counter);
-#define mcu_isr_context_enter()                                         \
-	ATOMIC_FETCH_ADD(&mcu_in_isr_context_counter, 1, __ATOMIC_ACQ_REL); \
-	uint8_t isr_context __attribute__((__cleanup__(mcu_in_isr_context_leave))) = 0
+#include "../../utils.h"
+	extern volatile buffer_index_t mcu_in_isr_context_counter;
+#define mcu_in_isr_context() (ATOMIC_LOAD_N(&mcu_in_isr_context_counter, __ATOMIC_ACQUIRE) != 0)
+	static FORCEINLINE void mcu_in_isr_context_leave(buffer_index_t *c)
+	{
+		ATOMIC_FETCH_SUB(&mcu_in_isr_context_counter, 1, __ATOMIC_ACQ_REL);
+		MEM_BARRIER;
+		(void)c;
+	}
+
+	static FORCEINLINE buffer_index_t mcu_isr_context_enter_init(void)
+	{
+		buffer_index_t c = ATOMIC_FETCH_ADD(&mcu_in_isr_context_counter, 1, __ATOMIC_ACQ_REL);
+		return c;
+	}
+
+#define mcu_isr_context_enter() buffer_index_t isr_context __attribute__((__cleanup__(mcu_in_isr_context_leave))) = mcu_isr_context_enter_init()
 #else
 #define mcu_isr_context_enter()
+#define mcu_in_isr_context_custom_impl
 #endif
 
 	// Step interpolator
