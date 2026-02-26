@@ -82,9 +82,6 @@ extern "C"
 		uint8_t flags;
 	} itp_segment_t;
 
-	// this is global accessible lock that can put the whole itp ISR on hold (including next step generation)
-	extern volatile bool g_itp_isr_lock;
-
 	void itp_init(void);
 	void itp_run(void);
 	void itp_update(void);

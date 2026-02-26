@@ -61,7 +61,6 @@ static volatile uint8_t itp_step_lock;
 #endif
 
 // this is global accessible lock that can put the whole itp ISR on hold (including next step generation)
-volatile bool g_itp_isr_lock;
 static bool g_itp_isr_stop;
 
 #ifdef ENABLE_RT_SYNC_MOTIONS
@@ -965,8 +964,8 @@ itp_rt_step_prevent_t itp_rt_step_prevent_cb;
 MCU_CALLBACK void mcu_step_cb(void)
 {
 	mcu_isr_context_enter();
-
 	static uint8_t stepbits = 0;
+	static bool itp_busy = false;
 
 #ifdef ENABLE_RT_SYNC_MOTIONS
 #ifndef DISABLE_RT_STEP_PREVENT_CONDITION
@@ -977,9 +976,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 #endif
 #endif
 
-	// prevents reentrancy
-	// also can be use to temporarilly freeze the itp step generation
-	if (g_itp_isr_lock)
+	if (itp_busy) // prevents reentrancy
 	{
 		return;
 	}
@@ -1205,7 +1202,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 	}
 
 	new_stepbits = 0;
-	g_itp_isr_lock = true;
+	itp_busy = true;
 	mcu_enable_global_isr();
 
 	// steps remaining starts calc next step bits
@@ -1283,7 +1280,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 	}
 
 	mcu_disable_global_isr(); // lock isr before clearin busy flag
-	g_itp_isr_lock = false;
+	itp_busy = false;
 #ifdef ENABLE_MULTI_STEP_HOMING
 	stepbits = (new_stepbits & ~itp_step_lock);
 #else

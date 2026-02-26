@@ -1408,6 +1408,7 @@ extern "C"
 #define mcu_enable_global_isr __enable_irq
 #define mcu_disable_global_isr __disable_irq
 #define mcu_get_global_isr() (__get_PRIMASK() == 0u)
+#define mcu_in_isr_context() (__get_IPSR() != 0)
 
 #if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
 #ifndef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS

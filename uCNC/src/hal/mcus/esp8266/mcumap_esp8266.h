@@ -1444,6 +1444,7 @@ extern "C"
 #define mcu_enable_global_isr() xt_rsil(0)
 #define mcu_disable_global_isr() xt_rsil(15)
 #define mcu_get_global_isr() ({uint32_t ps; __asm__ __volatile__ ("rsr.ps %0" : "=r" (ps)); ((ps & PS_INTLEVEL_MASK) == 0); })
+#define mcu_in_isr_context() ({uint32_t ps; __asm__ __volatile__ ("rsr.ps %0" : "=r" (ps)); ((ps & PS_EXCM_MASK) == 0); })
 
 #if IC74HC595_COUNT > 0
 
