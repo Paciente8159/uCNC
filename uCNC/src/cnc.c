@@ -374,6 +374,8 @@ MCU_CALLBACK void mcu_rtc_cb(uint32_t millis)
 	}
 
 #ifdef ENABLE_ITP_FEED_TASK
+	// enabling ISR is safe as long as itp_run does not run any code that depends on mcu_in_isr_context
+	mcu_enable_global_isr();
 	static uint8_t itp_feed_counter = (uint8_t)CLAMP(1, (1000 / INTERPOLATOR_FREQ), 255);
 	mls = itp_feed_counter;
 	if (!cnc_lock_itp && !mls--)
@@ -388,6 +390,7 @@ MCU_CALLBACK void mcu_rtc_cb(uint32_t millis)
 	}
 
 	itp_feed_counter = mls;
+	mcu_disable_global_isr();
 #endif
 
 #if ASSERT_PIN(ACTIVITY_LED)
