@@ -4704,9 +4704,12 @@ extern "C"
 	extern void esp32_delay_us(uint16_t delay);
 #define mcu_delay_us(X) esp32_delay_us(X)
 
-#define mcu_disable_global_isr()
-#define mcu_enable_global_isr()
-
+#define mcu_disable_global_isr() \
+	if (!xPortInIsrContext())    \
+	portDISABLE_INTERRUPTS()
+#define mcu_enable_global_isr() \
+	if (!xPortInIsrContext())   \
+	portENABLE_INTERRUPTS()
 
 #include "../esp32common/esp32_common.h"
 
