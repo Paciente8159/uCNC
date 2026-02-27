@@ -2434,6 +2434,14 @@ typedef uint16_t step_t;
 #endif
 #endif
 
+#ifdef ENABLE_RT_SYNC_MOTIONS
+#if !defined(RT_STEP_PREVENT_CONDITION) && !defined(DISABLE_RT_STEP_PREVENT_CONDITION)
+#define RT_STEP_PREVENT_CONDITION (itp_rt_step_prevent_cb && itp_rt_step_prevent_cb())
+#elif defined(RT_STEP_PREVENT_CONDITION)
+#define RT_STEP_PREVENT_HAS_CUSTOM_CONDITION
+#endif
+#endif
+
 #include "hal/io_hal.h"
 
 #ifdef __cplusplus

@@ -60,6 +60,9 @@ static itp_segment_t *itp_rt_sgm;
 static volatile uint8_t itp_step_lock;
 #endif
 
+// this is global accessible lock that can put the whole itp ISR on hold (including next step generation)
+static bool g_itp_isr_stop;
+
 #ifdef ENABLE_RT_SYNC_MOTIONS
 // deprecated with new hooks
 // volatile int32_t itp_sync_step_counter;
@@ -104,7 +107,7 @@ bool itp_sync_ready(void)
 	return false;
 }
 
-CREATE_HOOK(itp_rt_pre_stepbits);
+// CREATE_HOOK(itp_rt_pre_stepbits);
 CREATE_HOOK(itp_rt_stepbits);
 #endif
 
@@ -811,27 +814,22 @@ void itp_update(void)
 MCU_CALLBACK void itp_stop(void)
 {
 	uint8_t state = cnc_get_exec_state(EXEC_ALLACTIVE);
-	
-	mcu_delay_us(10);
-	io_set_steps(g_settings.step_invert_mask);
+
+	g_itp_isr_stop = true;
+
 #if TOOL_COUNT > 0
 	// stop tool (if not spindle - spindle should continue)
 	if (g_settings.tool_mode)
 	{
 		tool_set_speed(0);
 	}
-
 #endif
 
-	mcu_stop_itp_isr();
 	// any stop command while running triggers an HALT alarm
 	if (state & EXEC_RUN)
 	{
 		cnc_set_exec_state(EXEC_POSITION_MAYBE_LOST);
 	}
-
-	cnc_clear_exec_state(EXEC_RUN);
-	
 }
 
 void itp_stop_tools(void)
@@ -948,10 +946,17 @@ MCU_CALLBACK void mcu_step_reset_cb(void)
 {
 	// always resets all stepper pins
 	io_set_steps(g_settings.step_invert_mask);
+
+	if (g_itp_isr_stop)
+	{
+		mcu_stop_itp_isr();
+		g_itp_isr_stop = false;
+		cnc_clear_exec_state(EXEC_RUN);
+	}
 }
 
 #ifdef ENABLE_RT_SYNC_MOTIONS
-#ifndef RT_STEP_PREVENT_CONDITION
+#ifndef DISABLE_RT_STEP_PREVENT_CONDITION
 itp_rt_step_prevent_t itp_rt_step_prevent_cb;
 #endif
 #endif
@@ -959,23 +964,14 @@ itp_rt_step_prevent_t itp_rt_step_prevent_cb;
 MCU_CALLBACK void mcu_step_cb(void)
 {
 	mcu_isr_context_enter();
-	
 	static uint8_t stepbits = 0;
 	static bool itp_busy = false;
 
 #ifdef ENABLE_RT_SYNC_MOTIONS
-#ifdef RT_STEP_PREVENT_CONDITION
+#ifndef DISABLE_RT_STEP_PREVENT_CONDITION
 	if (RT_STEP_PREVENT_CONDITION)
 	{
 		return;
-	}
-#else
-	if (itp_rt_step_prevent_cb)
-	{
-		if (itp_rt_step_prevent_cb())
-		{
-			return;
-		}
 	}
 #endif
 #endif
@@ -989,7 +985,14 @@ MCU_CALLBACK void mcu_step_cb(void)
 	mcu_probe_changed_cb();
 #endif
 #ifdef ENABLE_RT_LIMITS_CHECKING
-	mcu_limits_changed_cb();
+	if (cnc_get_exec_state(EXEC_HOMING))
+	{
+		mcu_limits_changed_cb();
+		if (cnc_get_exec_state(EXEC_LIMITS))
+		{
+			return;
+		}
+	}
 #endif
 
 	uint8_t new_stepbits = stepbits;
@@ -1198,16 +1201,6 @@ MCU_CALLBACK void mcu_step_cb(void)
 		}
 	}
 
-	/*
-	Must put this on G33 module
-	#ifdef ENABLE_RT_SYNC_MOTIONS
-		if (new_stepbits && (itp_rt_sgm->flags & ITP_SYNC))
-		{
-			itp_sync_step_counter++;
-		}
-	#endif
-	*/
-
 	new_stepbits = 0;
 	itp_busy = true;
 	mcu_enable_global_isr();
@@ -1267,18 +1260,19 @@ MCU_CALLBACK void mcu_step_cb(void)
 			}
 #endif
 
-#ifdef ENABLE_RT_SYNC_MOTIONS
-			static uint8_t last_dirs = 0;
-			if (new_stepbits)
-			{
-				HOOK_INVOKE(itp_rt_pre_stepbits, &new_stepbits, &dirs);
-				if (dirs != last_dirs)
-				{
-					last_dirs = dirs;
-					io_set_dirs(dirs);
-				}
-			}
-#endif
+			// deprecate to make ISR leaner
+			// #ifdef ENABLE_RT_SYNC_MOTIONS
+			// 			static uint8_t last_dirs = 0;
+			// 			if (new_stepbits)
+			// 			{
+			// 				HOOK_INVOKE(itp_rt_pre_stepbits, &new_stepbits, &dirs);
+			// 				if (dirs != last_dirs)
+			// 				{
+			// 					last_dirs = dirs;
+			// 					io_set_dirs(dirs);
+			// 				}
+			// 			}
+			// #endif
 		}
 
 		// no step remaining discards current segment

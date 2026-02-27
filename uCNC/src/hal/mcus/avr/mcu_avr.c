@@ -81,6 +81,10 @@ ISR(RTC_COMPB_vect, ISR_NOBLOCK)
 static volatile uint32_t mcu_runtime_ms;
 ISR(RTC_COMPA_vect, ISR_BLOCK)
 {
+	uint32_t millis = mcu_runtime_ms;
+	millis++;
+	mcu_runtime_ms = millis;
+
 #if SERVOS_MASK > 0
 	static uint8_t ms_servo_counter = 0;
 	static uint8_t servo_loops;
@@ -149,12 +153,7 @@ ISR(RTC_COMPA_vect, ISR_BLOCK)
 
 #endif
 #ifndef DISABLE_RTC_CODE
-	uint32_t millis = mcu_runtime_ms;
-	millis++;
-	mcu_runtime_ms = millis;
 	mcu_rtc_cb(millis);
-#else
-	mcu_runtime_ms++;
 #endif
 }
 

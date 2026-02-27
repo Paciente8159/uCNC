@@ -361,9 +361,11 @@ MCU_CALLBACK void mcu_rtc_cb(uint32_t millis)
 #ifndef ENABLE_RT_PROBE_CHECKING
 		mcu_probe_changed_cb();
 #endif
-#ifndef ENABLE_RT_LIMITS_CHECKING
-		mcu_limits_changed_cb();
+#ifdef ENABLE_RT_LIMITS_CHECKING
+		if (!cnc_get_exec_state(EXEC_HOMING))
 #endif
+			mcu_limits_changed_cb();
+
 		mcu_controls_changed_cb();
 #if (DIN_ONCHANGE_MASK != 0 && ENCODERS < 1)
 		// extra call in case generic inputs are running with ISR disabled. Encoders need propper ISR to work.
@@ -372,6 +374,8 @@ MCU_CALLBACK void mcu_rtc_cb(uint32_t millis)
 	}
 
 #ifdef ENABLE_ITP_FEED_TASK
+	// enabling ISR is safe as long as itp_run does not run any code that depends on mcu_in_isr_context
+	mcu_enable_global_isr();
 	static uint8_t itp_feed_counter = (uint8_t)CLAMP(1, (1000 / INTERPOLATOR_FREQ), 255);
 	mls = itp_feed_counter;
 	if (!cnc_lock_itp && !mls--)
@@ -386,6 +390,7 @@ MCU_CALLBACK void mcu_rtc_cb(uint32_t millis)
 	}
 
 	itp_feed_counter = mls;
+	mcu_disable_global_isr();
 #endif
 
 #if ASSERT_PIN(ACTIVITY_LED)
@@ -406,7 +411,6 @@ uint8_t cnc_home(void)
 #ifdef ENABLE_MULTI_STEP_HOMING
 	io_lock_limits(0);
 #endif
-	io_invert_limits(0);
 	// sync's the motion control with the real time position
 	// this flushes the homing motion before returning from error or home success
 	itp_clear();
@@ -511,6 +515,7 @@ uint8_t cnc_unlock(bool force)
 #ifndef DISABLE_SAFE_SETTINGS
 		}
 #endif
+		io_invert_limits(((!CHECKFLAG(cnc_state.exec_state, EXEC_HOMING)) ? 0 : io_get_raw_limits()));
 	}
 	else
 	{
@@ -1113,8 +1118,10 @@ static void cnc_io_dotasks(void)
 #if IC74HC595_COUNT > 0 || IC74HC165_COUNT > 0
 	io_extended_pins_update(); // update extended IO
 #endif
+#ifdef DISABLE_RTC_CODE
 	mcu_limits_changed_cb();
 	mcu_controls_changed_cb();
+#endif
 
 #if (DIN_ONCHANGE_MASK != 0 && ENCODERS < 1)
 	// extra call in case generic inputs are running with ISR disabled. Encoders need propper ISR to work.

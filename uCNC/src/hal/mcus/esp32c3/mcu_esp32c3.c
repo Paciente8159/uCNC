@@ -206,10 +206,11 @@ void mcu_init(void)
 	timer_set_alarm(ITP_TIMER_TG, ITP_TIMER_IDX, TIMER_ALARM_EN);
 	timer_isr_register(ITP_TIMER_TG, ITP_TIMER_IDX, mcu_itp_isr, NULL, ESP_INTR_FLAG_IRAM, NULL);
 	timer_enable_intr(ITP_TIMER_TG, ITP_TIMER_IDX);
-	timer_start(ITP_TIMER_TG, ITP_TIMER_IDX);
 
 #ifdef IC74HC595_CUSTOM_SHIFT_IO
 	mcu_i2s_extender_init();
+#else
+	timer_start(ITP_TIMER_TG, ITP_TIMER_IDX);
 #endif
 
 	// initialize rtc timer (currently on core 1)
