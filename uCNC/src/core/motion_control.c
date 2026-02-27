@@ -861,6 +861,55 @@ bool mc_home_motion(uint8_t axis_mask, bool is_origin_search, motion_data_t *blo
 	return true;
 }
 
+#ifdef ENABLE_GRBL_STYLE_HOMING
+static bool mc_home_motion_pulloff(uint8_t axis_mask, motion_data_t *block_data)
+{
+	float target[AXIS_COUNT];
+
+	// Sync motion control with real time positon
+	mc_sync_position();
+	mc_get_position(target);
+
+	// Set movement distance for each axis
+	for (uint8_t i = 0; i < AXIS_COUNT; i++)
+	{
+		uint8_t imask = (1 << i);
+		if (imask & axis_mask)
+		{
+			// Invert the distance if configuration says so
+			if (g_settings.homing_dir_invert_mask & axis_mask)
+			{
+				target[i] -= g_settings.homing_offset;
+			}
+			else
+			{
+				target[i] += g_settings.homing_offset;
+			}
+		}
+	}
+
+	if (cnc_unlock(true) != UNLOCK_OK)
+	{
+		return false;
+	}
+	mc_line(target, block_data);
+	itp_sync();
+	if (cnc_get_exec_state(EXEC_IDLE) != EXEC_IDLE)
+	{
+		// pulloff failed
+		return false;
+	}
+
+	// Flush buffers and stop motion
+	cnc_stop(false);
+	itp_clear();
+	planner_clear();
+
+	// Motion completed successfully
+	return true;
+}
+#endif
+
 uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 {
 	motion_data_t block_data = {0};
@@ -908,6 +957,9 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 	block_data.motion_mode = MOTIONCONTROL_MODE_FEED;
 
 #ifdef ENABLE_LONG_HOMING_CYCLE
+#ifdef ENABLE_GRBL_STYLE_HOMING
+	bool pull_off = true; // pull off at fast rate at the first pass
+#endif
 	uint8_t homing_passes = 2;
 	while (homing_passes--)
 	{
@@ -932,6 +984,17 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 		block_data.feed = g_settings.homing_slow_feed_rate;
 #endif
 
+#ifdef ENABLE_GRBL_STYLE_HOMING // Homing to active limit switch,
+		if (pull_off)
+		{
+			block_data.feed = g_settings.homing_fast_feed_rate;
+			if (!mc_home_motion_pulloff(axis_mask, &block_data))
+			{
+				return STATUS_CRITICAL_FAIL;
+			}
+		}
+		pull_off = false;
+#else
 		if (!mc_home_motion(axis_mask, false, &block_data))
 		{
 			return STATUS_CRITICAL_FAIL;
@@ -945,6 +1008,7 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 			cnc_alarm(EXEC_ALARM_HOMING_FAIL_PULLOFF);
 			return STATUS_CRITICAL_FAIL;
 		}
+#endif
 
 #ifdef ENABLE_LONG_HOMING_CYCLE
 		// do the second pass at slow speed
