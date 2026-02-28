@@ -31,14 +31,14 @@ extern "C"
 
 #ifndef BYTE_OPS
 #define BYTE_OPS
-#define SETBIT(x, y) ((x) |= (1U << (y)))		 /* Set bit y in byte x*/
+#define SETBIT(x, y) ((x) |= (1U << (y)))	 /* Set bit y in byte x*/
 #define CLEARBIT(x, y) ((x) &= ~(1U << (y))) /* Clear bit y in byte x*/
 #define CHECKBIT(x, y) ((x) & (1U << (y)))	 /* Check bit y in byte x*/
 #define TOGGLEBIT(x, y) ((x) ^= (1U << (y))) /* Toggle bit y in byte x*/
 
-#define SETFLAG(x, y) ((x) |= (y))		/* Set byte y in byte x*/
+#define SETFLAG(x, y) ((x) |= (y))	  /* Set byte y in byte x*/
 #define CLEARFLAG(x, y) ((x) &= ~(y)) /* Clear byte y in byte x*/
-#define CHECKFLAG(x, y) ((x) & (y))		/* Check byte y in byte x*/
+#define CHECKFLAG(x, y) ((x) & (y))	  /* Check byte y in byte x*/
 #define TOGGLEFLAG(x, y) ((x) ^= (y)) /* Toggle byte y in byte x*/
 #endif
 
@@ -71,84 +71,84 @@ extern "C"
 		int32_t i;
 	} flt_t;
 
-#define fast_flt_div2(x)    \
-	({                        \
-		flt_t res;              \
-		res.f = (x);            \
-		if (res.i & 0x7f800000) \
-			res.i -= 0x00800000;  \
-		else                    \
-			res.i = 0;            \
-		res.f;                  \
+#define fast_flt_div2(x)         \
+	({                           \
+		flt_t res;               \
+		res.f = (x);             \
+		if (res.i & 0x7f800000)  \
+			res.i -= 0x00800000; \
+		else                     \
+			res.i = 0;           \
+		res.f;                   \
 	})
-#define fast_flt_div4(x)    \
-	({                        \
-		flt_t res;              \
-		res.f = (x);            \
-		if (res.i & 0x7f000000) \
-			res.i -= 0x01000000;  \
-		else                    \
-			res.i = 0;            \
-		res.f;                  \
+#define fast_flt_div4(x)         \
+	({                           \
+		flt_t res;               \
+		res.f = (x);             \
+		if (res.i & 0x7f000000)  \
+			res.i -= 0x01000000; \
+		else                     \
+			res.i = 0;           \
+		res.f;                   \
 	})
-#define fast_flt_mul2(x)                    \
-	({                                        \
+#define fast_flt_mul2(x)                        \
+	({                                          \
 		flt_t res;                              \
 		res.f = (x);                            \
 		if ((res.i & 0x7f800000) != 0x7f800000) \
-			res.i += 0x00800000;                  \
+			res.i += 0x00800000;                \
 		res.f;                                  \
 	})
-#define fast_flt_mul4(x)                    \
-	({                                        \
+#define fast_flt_mul4(x)                        \
+	({                                          \
 		flt_t res;                              \
 		res.f = (x);                            \
 		if ((res.i & 0x7f000000) != 0x7f000000) \
-			res.i += 0x01000000;                  \
+			res.i += 0x01000000;                \
 		res.f;                                  \
 	})
 // Quake III based fast sqrt calculation
 // fast_flt_sqrt takes about 19 clock cycles on AVR instead of +/-482 if using normal sqrt (x25 faster). The error of this shortcut should be under 4~5%.
-#define fast_flt_sqrt(x)                   \
-	({                                       \
-		flt_t res;                             \
-		res.f = (x);                           \
-		if (res.i)                             \
+#define fast_flt_sqrt(x)                         \
+	({                                           \
+		flt_t res;                               \
+		res.f = (x);                             \
+		if (res.i)                               \
 			res.i = ((res.i >> 1) - 0xe041a9fb); \
-		res.f;                                 \
+		res.f;                                   \
 	})
 // fast_flt_invsqrt takes about 18 clock cycles on AVR instead of +/-960 if using normal 1/sqrt (x53 faster). The error of this shortcut should be under 4~5%.
-#define fast_flt_invsqrt(x)              \
-	({                                     \
+#define fast_flt_invsqrt(x)                  \
+	({                                       \
 		flt_t res;                           \
 		res.f = (x);                         \
 		res.i = (0x5f3759df - (res.i >> 1)); \
 		res.f;                               \
 	})
 // fast_flt_pow2 takes about 25 clock cycles on AVR instead of 144 if using normal pow or muliply by itself (x~5.5 faster). The error of this shortcut should be under 4~5%.
-#define fast_flt_pow2(x)                   \
-	({                                       \
-		flt_t res;                             \
-		res.f = ABS((x));                      \
-		if (res.f != 0)                        \
-		{                                      \
+#define fast_flt_pow2(x)                         \
+	({                                           \
+		flt_t res;                               \
+		res.f = ABS((x));                        \
+		if (res.f != 0)                          \
+		{                                        \
 			res.i = ((res.i << 1) + 0xc0858106); \
 			if (res.i < 0)                       \
-				res.i = 0;                         \
-		}                                      \
-		res.f;                                 \
+				res.i = 0;                       \
+		}                                        \
+		res.f;                                   \
 	})
 
-#define fast_flt_inv(x)           \
-	({                              \
+#define fast_flt_inv(x)               \
+	({                                \
 		flt_t res;                    \
 		res.f = (x);                  \
 		res.i = (0x7EF0624D - res.i); \
 		res.f;                        \
 	})
 
-#define fast_flt_div(y, x)        \
-	({                              \
+#define fast_flt_div(y, x)            \
+	({                                \
 		flt_t res;                    \
 		res.f = (x);                  \
 		res.i = (0x7EF0624D - res.i); \
@@ -201,7 +201,7 @@ extern "C"
 #endif
 
 #define __TIMEOUT_US__(timeout) for (uint32_t elap_us_##timeout, curr_us_##timeout = mcu_free_micros(); timeout > 0; elap_us_##timeout = mcu_free_micros() - curr_us_##timeout, timeout -= MIN(timeout, ((elap_us_##timeout < 1000) ? elap_us_##timeout : 1000 + elap_us_##timeout)), curr_us_##timeout = mcu_free_micros())
-#define __TIMEOUT_MS__(timeout)                                                          \
+#define __TIMEOUT_MS__(timeout)                                                            \
 	timeout = (((uint32_t)timeout) < (UINT32_MAX / 1000)) ? (timeout * 1000) : UINT32_MAX; \
 	__TIMEOUT_US__(timeout)
 #define __TIMEOUT_ASSERT__(timeout) if (timeout == 0)

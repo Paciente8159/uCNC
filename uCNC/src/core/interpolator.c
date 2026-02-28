@@ -424,11 +424,6 @@ void itp_run(void)
 
 #ifdef ENABLE_PLANNER_MODULES
 		planner_itp_pre_output();
-#ifdef ENABLE_ITP_FEED_TASK
-		// force break to allow ISR to exit
-		if (itp_needs_update)
-			break;
-#endif
 #endif
 
 #ifdef ENABLE_RT_SYNC_MOTIONS
@@ -965,7 +960,6 @@ MCU_CALLBACK void mcu_step_cb(void)
 {
 	mcu_isr_context_enter();
 	static uint8_t stepbits = 0;
-	static bool itp_busy = false;
 
 #ifdef ENABLE_RT_SYNC_MOTIONS
 #ifndef DISABLE_RT_STEP_PREVENT_CONDITION
@@ -975,11 +969,6 @@ MCU_CALLBACK void mcu_step_cb(void)
 	}
 #endif
 #endif
-
-	if (itp_busy) // prevents reentrancy
-	{
-		return;
-	}
 
 #ifdef ENABLE_RT_PROBE_CHECKING
 	mcu_probe_changed_cb();
@@ -1202,8 +1191,6 @@ MCU_CALLBACK void mcu_step_cb(void)
 	}
 
 	new_stepbits = 0;
-	itp_busy = true;
-	mcu_enable_global_isr();
 
 	// steps remaining starts calc next step bits
 	if (itp_rt_sgm->remaining_steps)
@@ -1260,27 +1247,12 @@ MCU_CALLBACK void mcu_step_cb(void)
 			}
 #endif
 
-			// deprecate to make ISR leaner
-			// #ifdef ENABLE_RT_SYNC_MOTIONS
-			// 			static uint8_t last_dirs = 0;
-			// 			if (new_stepbits)
-			// 			{
-			// 				HOOK_INVOKE(itp_rt_pre_stepbits, &new_stepbits, &dirs);
-			// 				if (dirs != last_dirs)
-			// 				{
-			// 					last_dirs = dirs;
-			// 					io_set_dirs(dirs);
-			// 				}
-			// 			}
-			// #endif
 		}
 
 		// no step remaining discards current segment
 		--itp_rt_sgm->remaining_steps;
 	}
 
-	mcu_disable_global_isr(); // lock isr before clearin busy flag
-	itp_busy = false;
 #ifdef ENABLE_MULTI_STEP_HOMING
 	stepbits = (new_stepbits & ~itp_step_lock);
 #else

@@ -81,9 +81,7 @@ ISR(RTC_COMPB_vect, ISR_NOBLOCK)
 static volatile uint32_t mcu_runtime_ms;
 ISR(RTC_COMPA_vect, ISR_BLOCK)
 {
-	uint32_t millis = mcu_runtime_ms;
-	millis++;
-	mcu_runtime_ms = millis;
+	mcu_runtime_ms++;
 
 #if SERVOS_MASK > 0
 	static uint8_t ms_servo_counter = 0;
@@ -152,14 +150,28 @@ ISR(RTC_COMPA_vect, ISR_BLOCK)
 	ms_servo_counter = (servo_counter != 20) ? servo_counter : 0;
 
 #endif
-#ifndef DISABLE_RTC_CODE
-	mcu_rtc_cb(millis);
-#endif
 }
+
+#ifndef DISABLE_RTC_CODE
+ISR(WDT_vect, ISR_BLOCK)
+{
+	MCUSR &= ~(1 << WDRF);
+	mcu_enable_global_isr();
+	mcu_rtc_cb(mcu_runtime_ms);
+	mcu_disable_global_isr();
+	MCUSR |= (1 << WDRF);
+}
+#endif
 
 ISR(ITP_COMPA_vect, ISR_BLOCK)
 {
+	ITP_TIMSK &= ~((1 << ITP_OCIEB) | (1 << ITP_OCIEA));
+	mcu_enable_global_isr();
 	mcu_step_cb();
+	mcu_disable_global_isr();
+	if (ITP_TCNT >= ITP_OCRB)
+		ITP_TCNT = (ITP_OCRB << 1);
+	ITP_TIMSK |= (1 << ITP_OCIEB) | (1 << ITP_OCIEA);
 }
 
 ISR(ITP_COMPB_vect, ISR_BLOCK)
@@ -923,6 +935,10 @@ void mcu_start_rtc()
 #else
 	RTC_TCCRB |= 6;
 #endif
+#endif
+
+#ifndef DISABLE_RTC_CODE
+	MCUSR |= (1 << WDRF); // rtc call back ticker (16ms)
 #endif
 }
 
