@@ -25,8 +25,8 @@
 
 static planner_block_t planner_data[PLANNER_BUFFER_SIZE];
 static uint8_t planner_data_write;
-static uint8_t planner_data_read;
-static uint8_t planner_data_blocks;
+static volatile uint8_t planner_data_read;
+static volatile uint8_t planner_data_blocks;
 planner_state_t g_planner_state;
 
 FORCEINLINE static void planner_add_block(void);

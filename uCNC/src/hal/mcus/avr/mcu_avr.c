@@ -83,7 +83,6 @@ static volatile uint32_t mcu_runtime_ms;
 static volatile bool step_running;
 ISR(RTC_COMPA_vect, ISR_BLOCK)
 {
-	mcu_disable_global_isr();
 	mcu_runtime_ms++;
 
 #if SERVOS_MASK > 0
@@ -190,16 +189,23 @@ ISR(ITP_COMPA_vect, ISR_BLOCK)
 	ITP_TIMSK &= ~(1 << ITP_OCIEA);
 	if (!resetstep)
 	{
-		mcu_step_cb();
-		mcu_disable_global_isr();
+		if (!step_running)
+		{
+			step_running = true;
+			mcu_step_cb();
+			mcu_disable_global_isr();
+			step_running = false;
+		}
 	}
 	else
 	{
 		mcu_step_reset_cb();
 	}
+	// this is necessary to allow minimum CPU time to run the itp_run to feed the step isr 
+	ITP_TCNT = 0;
+	MEM_BARRIER;
 	resetstep = !resetstep;
-	if (ITP_TCNT >= ITP_OCRA)
-		ITP_TCNT = ITP_OCRB;
+	MEM_BARRIER;
 	ITP_TIMSK |= (1 << ITP_OCIEA);
 }
 
@@ -446,6 +452,7 @@ ISR(COM_RX_vect, ISR_BLOCK)
 #endif
 }
 
+#ifndef ENABLE_ITP_FEED_TASK
 #ifndef UART_TX_BUFFER_SIZE
 #define UART_TX_BUFFER_SIZE 64
 #endif
@@ -462,6 +469,7 @@ ISR(COM_TX_vect, ISR_BLOCK)
 	COM_OUTREG = c;
 }
 
+#endif
 #endif
 
 #if defined(MCU_HAS_UART2)
@@ -488,6 +496,7 @@ ISR(COM2_RX_vect, ISR_BLOCK)
 #endif
 }
 
+#ifndef ENABLE_ITP_FEED_TASK
 #ifndef UART2_TX_BUFFER_SIZE
 #define UART2_TX_BUFFER_SIZE 64
 #endif
@@ -505,7 +514,7 @@ ISR(COM2_TX_vect, ISR_BLOCK)
 
 	COM2_OUTREG = c;
 }
-
+#endif
 #endif
 
 static void mcu_start_rtc();
@@ -680,14 +689,21 @@ void mcu_uart_clear(void)
 
 void mcu_uart_putc(uint8_t c)
 {
+#ifndef ENABLE_ITP_FEED_TASK
 	while (!BUFFER_TRY_ENQUEUE(uart_tx, &c))
 	{
 		mcu_uart_flush();
 	}
+#else
+	while (!(UCSRA_REG & (1 << UDRE_BIT)))
+		;
+	COM_OUTREG = c;
+#endif
 }
 
 void mcu_uart_flush(void)
 {
+#ifndef ENABLE_ITP_FEED_TASK
 	if (!CHECKBIT(UCSRB_REG, UDRIE_BIT)) // not ready start flushing
 	{
 		SETBIT(UCSRB_REG, UDRIE_BIT);
@@ -695,6 +711,7 @@ void mcu_uart_flush(void)
 		io_toggle_output(ACTIVITY_LED);
 #endif
 	}
+#endif
 }
 #endif
 
@@ -718,10 +735,16 @@ void mcu_uart2_clear(void)
 
 void mcu_uart2_putc(uint8_t c)
 {
+#ifndef ENABLE_ITP_FEED_TASK
 	while (!BUFFER_TRY_ENQUEUE(uart2, &c))
 	{
 		mcu_uart2_flush();
 	}
+#else
+	while (!(UCSRA_REG_2 & (1 << UDRE_BIT_2)))
+		;
+	COM2_OUTREG = c;
+#endif
 }
 
 void mcu_uart2_flush(void)
@@ -879,8 +902,7 @@ void mcu_start_itp_isr(uint16_t clocks_speed, uint16_t prescaller)
 	ITP_TCNT = 0;
 	// set step clock
 	ITP_OCRA = clocks_speed >> 1;
-	// sets OCR0B to half
-	// this will allways fire step_reset between pulses
+	// used as an overshoot comparator/limit
 	ITP_OCRB = clocks_speed >> 2;
 	// clears interrupt flags by writing 1's
 	ITP_TIFR = 7;
@@ -896,7 +918,7 @@ void mcu_change_itp_isr(uint16_t clocks_speed, uint16_t prescaller)
 {
 	// stops timer
 	ITP_TCCRB = 0;
-	ITP_OCRB = clocks_speed >> 2;
+	ITP_OCRB = clocks_speed >> 2; // used as an overshoot comparator/limit;
 	ITP_OCRA = clocks_speed >> 1;
 	// sets OCR0B to half
 	// this will allways fire step_reset between pulses

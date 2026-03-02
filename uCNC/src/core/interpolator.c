@@ -841,12 +841,18 @@ void itp_clear(void)
 
 void itp_get_rt_position(int32_t *position)
 {
-	memcpy(position, itp_rt_step_pos, sizeof(itp_rt_step_pos));
+	ATOMIC_CODEBLOCK
+	{
+		memcpy(position, itp_rt_step_pos, sizeof(itp_rt_step_pos));
+	}
 }
 
 void itp_sync_rt_position(int32_t *position)
 {
-	memcpy(itp_rt_step_pos, position, sizeof(itp_rt_step_pos));
+	ATOMIC_CODEBLOCK
+	{
+		memcpy(itp_rt_step_pos, position, sizeof(itp_rt_step_pos));
+	}
 }
 
 int32_t itp_get_rt_position_index(int8_t index)
@@ -1090,9 +1096,6 @@ MCU_CALLBACK void mcu_step_cb(void)
 		}
 #endif
 
-		// position updated 
-		mcu_start_step_reset_timeout();
-
 		if (itp_rt_sgm->flags & ITP_UPDATE)
 		{
 			if (itp_rt_sgm->flags & ITP_UPDATE_ISR)
@@ -1117,6 +1120,9 @@ MCU_CALLBACK void mcu_step_cb(void)
 			itp_sgm_buffer_read();
 		}
 	}
+
+	// position updated
+	mcu_start_step_reset_timeout();
 
 	// if buffer empty loads one
 	if (itp_rt_sgm == NULL)
