@@ -150,6 +150,7 @@ ISR(RTC_COMPA_vect, ISR_BLOCK)
 	}
 	servo_counter++;
 	ms_servo_counter = (servo_counter != 20) ? servo_counter : 0;
+#endif
 
 #ifndef DISABLE_RTC_CODE
 	static volatile bool rtc_running;
@@ -162,7 +163,6 @@ ISR(RTC_COMPA_vect, ISR_BLOCK)
 		mcu_disable_global_isr();
 		rtc_running = false;
 	}
-#endif
 #endif
 }
 
@@ -201,7 +201,7 @@ ISR(ITP_COMPA_vect, ISR_BLOCK)
 	{
 		mcu_step_reset_cb();
 	}
-	// this is necessary to allow minimum CPU time to run the itp_run to feed the step isr 
+	// this is necessary to allow minimum CPU time to run the itp_run to feed the step isr
 	ITP_TCNT = 0;
 	MEM_BARRIER;
 	resetstep = !resetstep;
