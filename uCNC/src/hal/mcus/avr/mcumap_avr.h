@@ -4980,7 +4980,7 @@ extern "C"
 // #define INTERPOLATOR_BUFFER_SIZE 20
 // #endif
 
-#define DISABLE_RTC_CODE
+// #define DISABLE_RTC_CODE
 
 #define mcu_start_step_reset_timeout() mcu_enable_global_isr()
 
