@@ -374,27 +374,16 @@ MCU_CALLBACK void mcu_rtc_cb(uint32_t millis)
 	}
 
 #ifdef ENABLE_ITP_FEED_TASK
-	// enabling ISR is safe as long as itp_run does not run any code that depends on mcu_in_isr_context
-	static uint8_t itp_feed_counter = (uint8_t)CLAMP(1, (1000 / INTERPOLATOR_FREQ), 255);
-	mls = itp_feed_counter;
-	if (!cnc_lock_itp && !mls--)
+	if ((cnc_state.loop_state == LOOP_RUNNING) && (cnc_state.alarm == EXEC_ALARM_NOALARM) && !cnc_get_exec_state(EXEC_INTERLOCKING_FAIL))
 	{
-		cnc_lock_itp = 1;
-		if ((cnc_state.loop_state == LOOP_RUNNING) && (cnc_state.alarm == EXEC_ALARM_NOALARM) && !cnc_get_exec_state(EXEC_INTERLOCKING_FAIL))
-		{
-			itp_run();
-		}
-		mls = (uint8_t)CLAMP(1, (1000 / INTERPOLATOR_FREQ), 255);
-		cnc_lock_itp = 0;
+		itp_run();
 	}
-
-	itp_feed_counter = mls;
 #endif
 
 #if ASSERT_PIN(ACTIVITY_LED)
 	// this blinks aprox. once every 1024ms
 	static uint32_t next_blink = 0;
-	if ((millis - next_blink) > 1000)
+	if ((next_blink - millis) > 1000)
 	{
 		io_toggle_output(ACTIVITY_LED);
 		next_blink = millis + 1000;

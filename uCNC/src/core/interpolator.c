@@ -1090,6 +1090,9 @@ MCU_CALLBACK void mcu_step_cb(void)
 		}
 #endif
 
+		// position updated 
+		mcu_start_step_reset_timeout();
+
 		if (itp_rt_sgm->flags & ITP_UPDATE)
 		{
 			if (itp_rt_sgm->flags & ITP_UPDATE_ISR)
@@ -1246,7 +1249,6 @@ MCU_CALLBACK void mcu_step_cb(void)
 				new_stepbits |= LINACT5_IO_MASK;
 			}
 #endif
-
 		}
 
 		// no step remaining discards current segment

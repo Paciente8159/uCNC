@@ -79,8 +79,11 @@ ISR(RTC_COMPB_vect, ISR_NOBLOCK)
 
 // gets the mcu running time in ms
 static volatile uint32_t mcu_runtime_ms;
+// gates the rtc long code running
+static volatile bool step_running;
 ISR(RTC_COMPA_vect, ISR_BLOCK)
 {
+	mcu_disable_global_isr();
 	mcu_runtime_ms++;
 
 #if SERVOS_MASK > 0
@@ -149,34 +152,55 @@ ISR(RTC_COMPA_vect, ISR_BLOCK)
 	servo_counter++;
 	ms_servo_counter = (servo_counter != 20) ? servo_counter : 0;
 
+#ifndef DISABLE_RTC_CODE
+	static volatile bool rtc_running;
+	if (!step_running && !rtc_running)
+	{
+		rtc_running = true;
+		mcu_enable_global_isr();
+		uint32_t millis = mcu_runtime_ms;
+		mcu_rtc_cb(millis);
+		mcu_disable_global_isr();
+		rtc_running = false;
+	}
+#endif
 #endif
 }
 
-#ifndef DISABLE_RTC_CODE
-ISR(WDT_vect, ISR_BLOCK)
-{
-	MCUSR &= ~(1 << WDRF);
-	mcu_enable_global_isr();
-	mcu_rtc_cb(mcu_runtime_ms);
-	mcu_disable_global_isr();
-	MCUSR |= (1 << WDRF);
-}
-#endif
+// for some reason this causes step to be lost in the generated signal
+// ISR(ITP_COMPB_vect, ISR_BLOCK)
+// {
+// 	ITP_TIMSK &= ~(1 << ITP_OCIEB);
+// 	step_running = true;
+// 	mcu_step_cb();
+// 	mcu_disable_global_isr();
+// 	step_running = false;
+// 	ITP_TIMSK |= (1 << ITP_OCIEB);
+// }
+
+// ISR(ITP_COMPA_vect, ISR_BLOCK)
+// {
+// 	mcu_step_reset_cb();
+// }
 
 ISR(ITP_COMPA_vect, ISR_BLOCK)
 {
-	ITP_TIMSK &= ~((1 << ITP_OCIEB) | (1 << ITP_OCIEA));
-	mcu_enable_global_isr();
-	mcu_step_cb();
-	mcu_disable_global_isr();
-	if (ITP_TCNT >= ITP_OCRB)
-		ITP_TCNT = (ITP_OCRB << 1);
-	ITP_TIMSK |= (1 << ITP_OCIEB) | (1 << ITP_OCIEA);
-}
+	static bool resetstep = false;
 
-ISR(ITP_COMPB_vect, ISR_BLOCK)
-{
-	mcu_step_reset_cb();
+	ITP_TIMSK &= ~(1 << ITP_OCIEA);
+	if (!resetstep)
+	{
+		mcu_step_cb();
+		mcu_disable_global_isr();
+	}
+	else
+	{
+		mcu_step_reset_cb();
+	}
+	resetstep = !resetstep;
+	if (ITP_TCNT >= ITP_OCRA)
+		ITP_TCNT = ITP_OCRB;
+	ITP_TIMSK |= (1 << ITP_OCIEA);
 }
 
 #ifndef FORCE_SOFT_POLLING
@@ -718,7 +742,7 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 	frequency = CLAMP((float)F_STEP_MIN, frequency, (float)F_STEP_MAX);
 
 	uint32_t clocks = (uint32_t)floorf((float)F_CPU / frequency);
-	*prescaller = (1 << 3); // CTC mode
+	*prescaller = (1 << WGM12); // CTC mode
 
 #if (ITP_TIMER == 2)
 	if (clocks <= ((1UL << 16) - 1))
@@ -854,14 +878,14 @@ void mcu_start_itp_isr(uint16_t clocks_speed, uint16_t prescaller)
 	// resets counter
 	ITP_TCNT = 0;
 	// set step clock
-	ITP_OCRA = clocks_speed;
+	ITP_OCRA = clocks_speed >> 1;
 	// sets OCR0B to half
 	// this will allways fire step_reset between pulses
-	ITP_OCRB = ITP_OCRA >> 1;
+	ITP_OCRB = clocks_speed >> 2;
 	// clears interrupt flags by writing 1's
 	ITP_TIFR = 7;
 	// enable timer interrupts on both match registers
-	ITP_TIMSK |= (1 << ITP_OCIEB) | (1 << ITP_OCIEA);
+	ITP_TIMSK |= /* (1 << ITP_OCIEB) |*/ (1 << ITP_OCIEA);
 
 	// start timer in CTC mode with the correct prescaler
 	ITP_TCCRB = (uint8_t)prescaller;
@@ -871,14 +895,14 @@ void mcu_start_itp_isr(uint16_t clocks_speed, uint16_t prescaller)
 void mcu_change_itp_isr(uint16_t clocks_speed, uint16_t prescaller)
 {
 	// stops timer
-	// ITP_TCCRB = 0;
-	ITP_OCRB = clocks_speed >> 1;
-	ITP_OCRA = clocks_speed;
+	ITP_TCCRB = 0;
+	ITP_OCRB = clocks_speed >> 2;
+	ITP_OCRA = clocks_speed >> 1;
 	// sets OCR0B to half
 	// this will allways fire step_reset between pulses
 
 	// reset timer
-	// ITP_TCNT = 0;
+	ITP_TCNT = 0;
 	// start timer in CTC mode with the correct prescaler
 	ITP_TCCRB = (uint8_t)prescaller;
 }
@@ -937,9 +961,13 @@ void mcu_start_rtc()
 #endif
 #endif
 
-#ifndef DISABLE_RTC_CODE
-	MCUSR |= (1 << WDRF); // rtc call back ticker (16ms)
-#endif
+	// #ifndef DISABLE_RTC_CODE
+	// 	mcu_disable_global_isr();
+	// 	wdt_reset();
+	// 	WDTCSR |= (1 << WDCE) | (1 << WDE);
+	// 	WDTCSR = (1 << WDIE) | WDTO_15MS;
+	// 	mcu_enable_global_isr();
+	// #endif
 }
 
 void mcu_dotasks()
