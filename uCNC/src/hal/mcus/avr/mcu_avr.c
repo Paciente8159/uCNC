@@ -167,47 +167,47 @@ ISR(RTC_COMPA_vect, ISR_BLOCK)
 }
 
 // for some reason this causes step to be lost in the generated signal
-// ISR(ITP_COMPB_vect, ISR_BLOCK)
-// {
-// 	ITP_TIMSK &= ~(1 << ITP_OCIEB);
-// 	step_running = true;
-// 	mcu_step_cb();
-// 	mcu_disable_global_isr();
-// 	step_running = false;
-// 	ITP_TIMSK |= (1 << ITP_OCIEB);
-// }
+ISR(ITP_COMPA_vect, ISR_BLOCK)
+{
+	step_running = true;
+	ITP_TIMSK &= ~(1 << ITP_OCIEA);
+	mcu_step_cb();
+	mcu_disable_global_isr();
+	ITP_TIMSK |= (1 << ITP_OCIEA);
+	step_running = false;
+}
+
+ISR(ITP_COMPB_vect, ISR_BLOCK)
+{
+	mcu_step_reset_cb();
+}
 
 // ISR(ITP_COMPA_vect, ISR_BLOCK)
 // {
-// 	mcu_step_reset_cb();
+// 	static bool resetstep = false;
+
+// 	ITP_TIMSK &= ~(1 << ITP_OCIEA);
+// 	if (!resetstep)
+// 	{
+// 		if (!step_running)
+// 		{
+// 			step_running = true;
+// 			mcu_step_cb();
+// 			mcu_disable_global_isr();
+// 			step_running = false;
+// 		}
+// 	}
+// 	else
+// 	{
+// 		mcu_step_reset_cb();
+// 	}
+// 	// this is necessary to allow minimum CPU time to run the itp_run to feed the step isr
+// 	ITP_TCNT = 0;
+// 	MEM_BARRIER;
+// 	resetstep = !resetstep;
+// 	MEM_BARRIER;
+// 	ITP_TIMSK |= (1 << ITP_OCIEA);
 // }
-
-ISR(ITP_COMPA_vect, ISR_BLOCK)
-{
-	static bool resetstep = false;
-
-	ITP_TIMSK &= ~(1 << ITP_OCIEA);
-	if (!resetstep)
-	{
-		if (!step_running)
-		{
-			step_running = true;
-			mcu_step_cb();
-			mcu_disable_global_isr();
-			step_running = false;
-		}
-	}
-	else
-	{
-		mcu_step_reset_cb();
-	}
-	// this is necessary to allow minimum CPU time to run the itp_run to feed the step isr
-	ITP_TCNT = 0;
-	MEM_BARRIER;
-	resetstep = !resetstep;
-	MEM_BARRIER;
-	ITP_TIMSK |= (1 << ITP_OCIEA);
-}
 
 #ifndef FORCE_SOFT_POLLING
 
@@ -901,13 +901,13 @@ void mcu_start_itp_isr(uint16_t clocks_speed, uint16_t prescaller)
 	// resets counter
 	ITP_TCNT = 0;
 	// set step clock
-	ITP_OCRA = clocks_speed >> 1;
+	ITP_OCRA = clocks_speed >> 0;
 	// used as an overshoot comparator/limit
-	ITP_OCRB = clocks_speed >> 2;
+	ITP_OCRB = clocks_speed >> 1;
 	// clears interrupt flags by writing 1's
 	ITP_TIFR = 7;
 	// enable timer interrupts on both match registers
-	ITP_TIMSK |= /* (1 << ITP_OCIEB) |*/ (1 << ITP_OCIEA);
+	ITP_TIMSK |= (1 << ITP_OCIEB) | (1 << ITP_OCIEA);
 
 	// start timer in CTC mode with the correct prescaler
 	ITP_TCCRB = (uint8_t)prescaller;
@@ -918,8 +918,8 @@ void mcu_change_itp_isr(uint16_t clocks_speed, uint16_t prescaller)
 {
 	// stops timer
 	ITP_TCCRB = 0;
-	ITP_OCRB = clocks_speed >> 2; // used as an overshoot comparator/limit;
-	ITP_OCRA = clocks_speed >> 1;
+	ITP_OCRB = clocks_speed >> 1; // used as an overshoot comparator/limit;
+	ITP_OCRA = clocks_speed >> 0;
 	// sets OCR0B to half
 	// this will allways fire step_reset between pulses
 
