@@ -56,9 +56,9 @@ extern "C"
 // defines the maximum and minimum step rates
 #ifndef F_STEP_MAX
 #ifndef BRESENHAM_16BIT
-#define F_STEP_MAX 20000
+#define F_STEP_MAX 23000
 #else
-#define F_STEP_MAX 23333
+#define F_STEP_MAX 25000
 #endif
 #endif
 #ifndef F_STEP_MIN
@@ -4976,15 +4976,15 @@ extern "C"
 #define ATOMIC_CODEBLOCK ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
 #define ATOMIC_CODEBLOCK_NR ATOMIC_BLOCK(ATOMIC_FORCEON)
 
-// #ifdef ENABLE_ITP_FEED_TASK
-// #define INTERPOLATOR_BUFFER_SIZE 5
-// #undef F_STEP_MAX
-// #define F_STEP_MAX 15000
-// #endif
+	// #ifdef ENABLE_ITP_FEED_TASK
+	// #define INTERPOLATOR_BUFFER_SIZE 5
+	// #undef F_STEP_MAX
+	// #define F_STEP_MAX 15000
+	// #endif
 
-// #define DISABLE_RTC_CODE
+	// #define DISABLE_RTC_CODE
 
-#define mcu_start_step_reset_timeout() mcu_enable_global_isr()
+#define mcu_start_step_reset_timeout() ITP_TCNT = 0; mcu_enable_global_isr()
 
 #ifdef __cplusplus
 }

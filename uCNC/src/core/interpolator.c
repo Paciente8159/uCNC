@@ -1006,6 +1006,9 @@ MCU_CALLBACK void mcu_step_cb(void)
 		}
 #endif
 
+		// position updated
+		mcu_start_step_reset_timeout();
+
 #ifdef ENABLE_BACKLASH_COMPENSATION
 		// resets step bit so that they don't update the rt position
 		if (itp_rt_sgm->flags & ITP_BACKLASH)
@@ -1120,9 +1123,6 @@ MCU_CALLBACK void mcu_step_cb(void)
 			itp_sgm_buffer_read();
 		}
 	}
-
-	// position updated
-	mcu_start_step_reset_timeout();
 
 	// if buffer empty loads one
 	if (itp_rt_sgm == NULL)
