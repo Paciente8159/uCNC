@@ -810,6 +810,12 @@ MCU_CALLBACK void itp_stop(void)
 {
 	uint8_t state = cnc_get_exec_state(EXEC_ALLACTIVE);
 
+	// any stop command while running triggers an HALT alarm
+	if (state & EXEC_RUN)
+	{
+		cnc_set_exec_state(EXEC_POSITION_MAYBE_LOST);
+	}
+
 	g_itp_isr_stop = true;
 
 #if TOOL_COUNT > 0
@@ -819,12 +825,6 @@ MCU_CALLBACK void itp_stop(void)
 		tool_set_speed(0);
 	}
 #endif
-
-	// any stop command while running triggers an HALT alarm
-	if (state & EXEC_RUN)
-	{
-		cnc_set_exec_state(EXEC_POSITION_MAYBE_LOST);
-	}
 }
 
 void itp_stop_tools(void)
@@ -976,20 +976,6 @@ MCU_CALLBACK void mcu_step_cb(void)
 #endif
 #endif
 
-#ifdef ENABLE_RT_PROBE_CHECKING
-	mcu_probe_changed_cb();
-#endif
-#ifdef ENABLE_RT_LIMITS_CHECKING
-	if (cnc_get_exec_state(EXEC_HOMING))
-	{
-		mcu_limits_changed_cb();
-		if (cnc_get_exec_state(EXEC_LIMITS))
-		{
-			return;
-		}
-	}
-#endif
-
 	uint8_t new_stepbits = stepbits;
 	uint8_t dirs = 0;
 
@@ -1009,93 +995,25 @@ MCU_CALLBACK void mcu_step_cb(void)
 		// position updated
 		mcu_start_step_reset_timeout();
 
+#ifdef ENABLE_RT_PROBE_CHECKING
+		mcu_probe_changed_cb();
+#endif
+#ifdef ENABLE_RT_LIMITS_CHECKING
+		if (cnc_get_exec_state(EXEC_HOMING))
+		{
+			mcu_limits_changed_cb();
+			if (cnc_get_exec_state(EXEC_LIMITS))
+			{
+				return;
+			}
+		}
+#endif
+
 #ifdef ENABLE_BACKLASH_COMPENSATION
 		// resets step bit so that they don't update the rt position
 		if (itp_rt_sgm->flags & ITP_BACKLASH)
 		{
 			new_stepbits = 0;
-		}
-#endif
-
-// updates the stepper coordinates
-#if (STEPPER_COUNT > 0)
-		if (new_stepbits & LINACT0_IO_MASK)
-		{
-			if (dirs & LINACT0_IO_MASK)
-			{
-				itp_rt_step_pos[0]--;
-			}
-			else
-			{
-				itp_rt_step_pos[0]++;
-			}
-		}
-#endif
-#if (STEPPER_COUNT > 1)
-		if (new_stepbits & LINACT1_IO_MASK)
-		{
-			if (dirs & LINACT1_IO_MASK)
-			{
-				itp_rt_step_pos[1]--;
-			}
-			else
-			{
-				itp_rt_step_pos[1]++;
-			}
-		}
-#endif
-#if (STEPPER_COUNT > 2)
-		if (new_stepbits & LINACT2_IO_MASK)
-		{
-			if (dirs & LINACT2_IO_MASK)
-			{
-				itp_rt_step_pos[2]--;
-			}
-			else
-			{
-				itp_rt_step_pos[2]++;
-			}
-		}
-#endif
-#if (STEPPER_COUNT > 3)
-		if (new_stepbits & LINACT3_IO_MASK)
-		{
-			if (dirs & LINACT3_IO_MASK)
-			{
-				itp_rt_step_pos[3]--;
-			}
-			else
-			{
-				itp_rt_step_pos[3]++;
-			}
-		}
-#endif
-
-#if (STEPPER_COUNT > 4)
-		if (new_stepbits & LINACT4_IO_MASK)
-		{
-			if (dirs & LINACT4_IO_MASK)
-			{
-				itp_rt_step_pos[4]--;
-			}
-			else
-			{
-				itp_rt_step_pos[4]++;
-			}
-		}
-#endif
-
-#if (STEPPER_COUNT > 5)
-		if (new_stepbits & LINACT5_IO_MASK)
-		{
-			if (dirs & LINACT5_IO_MASK)
-			{
-				itp_rt_step_pos[5]--;
-			}
-			else
-			{
-				itp_rt_step_pos[5]++;
-			}
 		}
 #endif
 
@@ -1132,7 +1050,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 		{
 			// loads a new segment
 			itp_rt_sgm = &itp_sgm_data[itp_sgm_data_read];
-			cnc_set_exec_state(EXEC_RUN);
+			// cnc_set_exec_state(EXEC_RUN);
 			if (itp_rt_sgm->block != NULL)
 			{
 #if (DSS_MAX_OVERSAMPLING != 0)
@@ -1213,6 +1131,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 			{
 				itp_rt_sgm->block->errors[0] -= itp_rt_sgm->block->total_steps;
 				new_stepbits |= LINACT0_IO_MASK;
+				(dirs & LINACT0_IO_MASK) ? (--itp_rt_step_pos[0]) : (++itp_rt_step_pos[0]);
 			}
 #endif
 #if (STEPPER_COUNT > 1)
@@ -1221,6 +1140,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 			{
 				itp_rt_sgm->block->errors[1] -= itp_rt_sgm->block->total_steps;
 				new_stepbits |= LINACT1_IO_MASK;
+				(dirs & LINACT1_IO_MASK) ? (--itp_rt_step_pos[1]) : (++itp_rt_step_pos[1]);
 			}
 #endif
 #if (STEPPER_COUNT > 2)
@@ -1229,6 +1149,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 			{
 				itp_rt_sgm->block->errors[2] -= itp_rt_sgm->block->total_steps;
 				new_stepbits |= LINACT2_IO_MASK;
+				(dirs & LINACT2_IO_MASK) ? (--itp_rt_step_pos[2]) : (++itp_rt_step_pos[2]);
 			}
 #endif
 #if (STEPPER_COUNT > 3)
@@ -1237,6 +1158,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 			{
 				itp_rt_sgm->block->errors[3] -= itp_rt_sgm->block->total_steps;
 				new_stepbits |= LINACT3_IO_MASK;
+				(dirs & LINACT3_IO_MASK) ? (--itp_rt_step_pos[3]) : (++itp_rt_step_pos[3]);
 			}
 #endif
 #if (STEPPER_COUNT > 4)
@@ -1245,6 +1167,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 			{
 				itp_rt_sgm->block->errors[4] -= itp_rt_sgm->block->total_steps;
 				new_stepbits |= LINACT4_IO_MASK;
+				(dirs & LINACT4_IO_MASK) ? (--itp_rt_step_pos[4]) : (++itp_rt_step_pos[4]);
 			}
 #endif
 #if (STEPPER_COUNT > 5)
@@ -1253,6 +1176,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 			{
 				itp_rt_sgm->block->errors[5] -= itp_rt_sgm->block->total_steps;
 				new_stepbits |= LINACT5_IO_MASK;
+				(dirs & LINACT5_IO_MASK) ? (--itp_rt_step_pos[5]) : (++itp_rt_step_pos[5]);
 			}
 #endif
 		}
