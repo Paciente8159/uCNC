@@ -56,9 +56,9 @@ extern "C"
 // defines the maximum and minimum step rates
 #ifndef F_STEP_MAX
 #ifndef BRESENHAM_16BIT
-#define F_STEP_MAX 30000
+#define F_STEP_MAX 20000
 #else
-#define F_STEP_MAX 40000
+#define F_STEP_MAX 23333
 #endif
 #endif
 #ifndef F_STEP_MIN

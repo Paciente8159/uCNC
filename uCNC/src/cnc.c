@@ -43,7 +43,9 @@ typedef struct
 	volatile int8_t alarm;
 } cnc_state_t;
 
+#ifndef ENABLE_ITP_FEED_TASK
 static uint8_t cnc_lock_itp;
+#endif
 static cnc_state_t cnc_state;
 bool cnc_status_report_lock;
 
@@ -355,23 +357,19 @@ MCU_CALLBACK void mcu_rtc_cb(uint32_t millis)
 {
 	mcu_isr_context_enter();
 
-	uint8_t mls = (uint8_t)(0xff & millis);
-	if ((mls & CTRL_SCHED_CHECK_MASK) == CTRL_SCHED_CHECK_VAL)
-	{
 #ifndef ENABLE_RT_PROBE_CHECKING
-		mcu_probe_changed_cb();
+	mcu_probe_changed_cb();
 #endif
 #ifdef ENABLE_RT_LIMITS_CHECKING
-		if (!cnc_get_exec_state(EXEC_HOMING))
+	if (!cnc_get_exec_state(EXEC_HOMING))
 #endif
-			mcu_limits_changed_cb();
+		mcu_limits_changed_cb();
 
-		mcu_controls_changed_cb();
+	mcu_controls_changed_cb();
 #if (DIN_ONCHANGE_MASK != 0 && ENCODERS < 1)
-		// extra call in case generic inputs are running with ISR disabled. Encoders need propper ISR to work.
-		mcu_inputs_changed_cb();
+	// extra call in case generic inputs are running with ISR disabled. Encoders need propper ISR to work.
+	mcu_inputs_changed_cb();
 #endif
-	}
 
 #ifdef ENABLE_ITP_FEED_TASK
 	if ((cnc_state.loop_state == LOOP_RUNNING) && (cnc_state.alarm == EXEC_ALARM_NOALARM) && !cnc_get_exec_state(EXEC_INTERLOCKING_FAIL))

@@ -417,7 +417,7 @@ void itp_run(void)
 #endif
 
 #ifdef ENABLE_ITP_FEED_TASK
-			// force break to allow ISR to exit
+			// force break to allow ISR to exit and release CPU to main loop
 			break;
 #endif
 		}
@@ -551,7 +551,7 @@ void itp_run(void)
 			}
 
 #ifdef ENABLE_ITP_FEED_TASK
-			// force break to allow ISR to exit
+			// force break to allow ISR to exit and release CPU to main loop
 			break;
 #endif
 		}
