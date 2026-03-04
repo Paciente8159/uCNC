@@ -807,15 +807,19 @@ void itp_update(void)
 
 MCU_CALLBACK void itp_stop(void)
 {
-	uint8_t state = cnc_get_exec_state(EXEC_ALLACTIVE);
-
-	// any stop command while running triggers an HALT alarm
-	if (state & EXEC_RUN)
+	// safer to make the stoping condition block
+	ATOMIC_CODEBLOCK
 	{
-		cnc_set_exec_state(EXEC_POSITION_MAYBE_LOST);
-	}
+		uint8_t state = cnc_get_exec_state(EXEC_ALLACTIVE);
 
-	g_itp_isr_stop = true;
+		// any stop command while running triggers an HALT alarm
+		if (state & EXEC_RUN)
+		{
+			cnc_set_exec_state(EXEC_POSITION_MAYBE_LOST);
+		}
+
+		g_itp_isr_stop = true;
+	}
 
 #if TOOL_COUNT > 0
 	// stop tool (if not spindle - spindle should continue)

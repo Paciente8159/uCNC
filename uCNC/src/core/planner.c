@@ -213,10 +213,22 @@ static void planner_add_block(void)
 	}
 
 	planner_data_write = index;
-	blocks++;
-	planner_data_blocks = blocks;
+
+	// this is not safe
+	// planner_data_blocks might have been changed in the step ISR
+	// blocks++;
+	// planner_data_blocks = blocks;
+
+	// safe version as this increments atomically
+	// do not use blocks value as it might not be the same as planner_data_blocks
+	ATOMIC_CODEBLOCK
+	{
+		planner_data_blocks++;
+	}
 }
 
+// this gets called inside the main loop and the step ISR
+// it's safe without atomic because this only runs in the main loop after the step ISR is stopped so it should be OK
 void planner_discard_block(void)
 {
 	uint8_t blocks = planner_data_blocks;
