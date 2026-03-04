@@ -977,49 +977,37 @@ MCU_CALLBACK void mcu_step_cb(void)
 
 	uint8_t new_stepbits = stepbits;
 
+	// outputs steps
+	io_toggle_steps(new_stepbits);
+	// starts the step reset timeout
+	mcu_start_step_reset_timeout();
+
+#ifdef ENABLE_RT_PROBE_CHECKING
+	// check if probe was hit on probing motions
+	mcu_probe_changed_cb();
+#endif
+#ifdef ENABLE_RT_LIMITS_CHECKING
+	// check limits on homing motions
+	// if not homing it will do regular checks elsewere
+	if (cnc_get_exec_state(EXEC_HOMING))
+	{
+		mcu_limits_changed_cb();
+		if (cnc_get_exec_state(EXEC_LIMITS))
+		{
+			return;
+		}
+	}
+#endif
+
 	if (itp_rt_sgm != NULL)
 	{
-		io_toggle_steps(new_stepbits);
-		// position updated
-		mcu_start_step_reset_timeout();
-
-		// sets step bits
 #ifdef ENABLE_RT_SYNC_MOTIONS
+		// triggers hook for RT sync motions (like laser PPI, Plasma THC and others)
 		if (new_stepbits && itp_rt_sgm)
 		{
 			HOOK_INVOKE(itp_rt_stepbits, new_stepbits, itp_rt_sgm->flags);
 		}
 #endif
-
-#ifdef ENABLE_RT_PROBE_CHECKING
-		mcu_probe_changed_cb();
-#endif
-#ifdef ENABLE_RT_LIMITS_CHECKING
-		if (cnc_get_exec_state(EXEC_HOMING))
-		{
-			mcu_limits_changed_cb();
-			if (cnc_get_exec_state(EXEC_LIMITS))
-			{
-				return;
-			}
-		}
-#endif
-
-		if (itp_rt_sgm->flags & ITP_UPDATE)
-		{
-			if (itp_rt_sgm->flags & ITP_UPDATE_ISR)
-			{
-				mcu_change_itp_isr(itp_rt_sgm->timer_counter, itp_rt_sgm->timer_prescaller);
-			}
-
-#if TOOL_COUNT > 0
-			if (itp_rt_sgm->flags & ITP_UPDATE_TOOL)
-			{
-				tool_set_speed(itp_rt_sgm->spindle);
-			}
-#endif
-			itp_rt_sgm->flags &= ~(ITP_UPDATE);
-		}
 
 		// no step remaining discards current segment
 		if (!itp_rt_sgm->remaining_steps)
@@ -1095,6 +1083,23 @@ MCU_CALLBACK void mcu_step_cb(void)
 #endif
 				// set dir pins for current
 				io_set_dirs(itp_rt_sgm->block->dirbits);
+
+				// updates the next segment speed and tool
+				if (itp_rt_sgm->flags & ITP_UPDATE)
+				{
+					if (itp_rt_sgm->flags & ITP_UPDATE_ISR)
+					{
+						mcu_change_itp_isr(itp_rt_sgm->timer_counter, itp_rt_sgm->timer_prescaller);
+					}
+
+#if TOOL_COUNT > 0
+					if (itp_rt_sgm->flags & ITP_UPDATE_TOOL)
+					{
+						tool_set_speed(itp_rt_sgm->spindle);
+					}
+#endif
+					itp_rt_sgm->flags &= ~(ITP_UPDATE);
+				}
 			}
 		}
 		else
