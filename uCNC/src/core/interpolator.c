@@ -979,6 +979,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 
 	// outputs steps
 	io_toggle_steps(new_stepbits);
+	stepbits = 0;
 	// starts the step reset timeout
 	mcu_start_step_reset_timeout();
 

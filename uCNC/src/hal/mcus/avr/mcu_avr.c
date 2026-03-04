@@ -80,7 +80,6 @@ ISR(RTC_COMPB_vect, ISR_NOBLOCK)
 // gets the mcu running time in ms
 static volatile uint32_t mcu_runtime_ms;
 // gates the rtc long code running
-static volatile bool step_running;
 ISR(RTC_COMPA_vect, ISR_BLOCK)
 {
 	mcu_runtime_ms++;
@@ -154,7 +153,7 @@ ISR(RTC_COMPA_vect, ISR_BLOCK)
 
 #ifndef DISABLE_RTC_CODE
 	static volatile bool rtc_running;
-	if (!step_running && !rtc_running)
+	if ((ITP_TIMSK & (1 << ITP_OCIEA)) && !rtc_running)
 	{
 		rtc_running = true;
 		mcu_enable_global_isr();
@@ -169,12 +168,10 @@ ISR(RTC_COMPA_vect, ISR_BLOCK)
 // for some reason this causes step to be lost in the generated signal
 ISR(ITP_COMPA_vect, ISR_BLOCK)
 {
-	step_running = true;
 	ITP_TIMSK &= ~(1 << ITP_OCIEA);
 	mcu_step_cb();
 	mcu_disable_global_isr();
 	ITP_TIMSK |= (1 << ITP_OCIEA);
-	step_running = false;
 }
 
 ISR(ITP_COMPB_vect, ISR_BLOCK)
@@ -901,14 +898,15 @@ void mcu_start_itp_isr(uint16_t clocks_speed, uint16_t prescaller)
 	// resets counter
 	ITP_TCNT = 0;
 	// set step clock
-	ITP_OCRA = clocks_speed >> 0;
-	// used as an overshoot comparator/limit
+	ITP_OCRA = clocks_speed;
+	// sets OCR0B to half
+	// this will allways fire step_reset between pulses
 	ITP_OCRB = clocks_speed >> 1;
 	// clears interrupt flags by writing 1's
 	ITP_TIFR = 7;
+	// this was previously set on the mcu_init
 	// enable timer interrupts on both match registers
-	ITP_TIMSK |= (1 << ITP_OCIEB) | (1 << ITP_OCIEA);
-
+	// ITP_TIMSK |= (1 << ITP_OCIEB) | (1 << ITP_OCIEA);
 	// start timer in CTC mode with the correct prescaler
 	ITP_TCCRB = (uint8_t)prescaller;
 }
@@ -918,13 +916,13 @@ void mcu_change_itp_isr(uint16_t clocks_speed, uint16_t prescaller)
 {
 	// stops timer
 	ITP_TCCRB = 0;
-	ITP_OCRB = clocks_speed >> 1; // used as an overshoot comparator/limit;
-	ITP_OCRA = clocks_speed >> 0;
 	// sets OCR0B to half
 	// this will allways fire step_reset between pulses
-
+	ITP_OCRB = clocks_speed >> 1;
+	ITP_OCRA = clocks_speed;
 	// reset timer
 	ITP_TCNT = 0;
+	ITP_TIFR = 7;
 	// start timer in CTC mode with the correct prescaler
 	ITP_TCCRB = (uint8_t)prescaller;
 }
@@ -932,7 +930,9 @@ void mcu_change_itp_isr(uint16_t clocks_speed, uint16_t prescaller)
 void mcu_stop_itp_isr(void)
 {
 	ITP_TCCRB = 0;
-	ITP_TIMSK &= ~((1 << ITP_OCIEB) | (1 << ITP_OCIEA));
+	ITP_TIFR = 7;
+	// do not disable the ISR Mask. this is used by the RTC timer to check if the callback can run
+	// ITP_TIMSK &= ~((1 << ITP_OCIEB) | (1 << ITP_OCIEA));
 }
 
 // gets the mcu running time in ms
@@ -950,6 +950,11 @@ uint32_t mcu_micros()
 
 void mcu_start_rtc()
 {
+	// flags the ITP ISR
+	// the ITP_TIMSK is used to gate the rtc callback execution
+	ITP_TCCRB = 0;
+	ITP_TIMSK |= ((1 << ITP_OCIEB) | (1 << ITP_OCIEA));
+
 #if (F_CPU <= 16000000UL)
 	uint8_t clocks = ((F_CPU / 1000) >> 6) - 1;
 #else
