@@ -695,7 +695,6 @@ void itp_run(void)
 		current_speed = MIN(current_speed, max_step_rate);
 		mcu_freq_to_clocks(MAX(INTERPOLATOR_FREQ, current_speed), &(sgm->timer_counter), &(sgm->timer_prescaller));
 #endif
-
 		sgm->feed = current_speed * feed_convert;
 #if TOOL_COUNT > 0
 #if defined(ENABLE_LASER_PWM) || defined(ENABLE_EMBROIDERY)
@@ -977,12 +976,12 @@ MCU_CALLBACK void mcu_step_cb(void)
 #endif
 
 	uint8_t new_stepbits = stepbits;
-	uint8_t dirs = 0;
 
 	if (itp_rt_sgm != NULL)
 	{
-		dirs = itp_rt_sgm->block->dirbits;
 		io_toggle_steps(new_stepbits);
+		// position updated
+		mcu_start_step_reset_timeout();
 
 		// sets step bits
 #ifdef ENABLE_RT_SYNC_MOTIONS
@@ -991,9 +990,6 @@ MCU_CALLBACK void mcu_step_cb(void)
 			HOOK_INVOKE(itp_rt_stepbits, new_stepbits, itp_rt_sgm->flags);
 		}
 #endif
-
-		// position updated
-		mcu_start_step_reset_timeout();
 
 #ifdef ENABLE_RT_PROBE_CHECKING
 		mcu_probe_changed_cb();
@@ -1008,6 +1004,22 @@ MCU_CALLBACK void mcu_step_cb(void)
 			}
 		}
 #endif
+
+		if (itp_rt_sgm->flags & ITP_UPDATE)
+		{
+			if (itp_rt_sgm->flags & ITP_UPDATE_ISR)
+			{
+				mcu_change_itp_isr(itp_rt_sgm->timer_counter, itp_rt_sgm->timer_prescaller);
+			}
+
+#if TOOL_COUNT > 0
+			if (itp_rt_sgm->flags & ITP_UPDATE_TOOL)
+			{
+				tool_set_speed(itp_rt_sgm->spindle);
+			}
+#endif
+			itp_rt_sgm->flags &= ~(ITP_UPDATE);
+		}
 
 		// no step remaining discards current segment
 		if (!itp_rt_sgm->remaining_steps)
@@ -1084,22 +1096,6 @@ MCU_CALLBACK void mcu_step_cb(void)
 				// set dir pins for current
 				io_set_dirs(itp_rt_sgm->block->dirbits);
 			}
-
-			if (itp_rt_sgm->flags & ITP_UPDATE)
-			{
-				if (itp_rt_sgm->flags & ITP_UPDATE_ISR)
-				{
-					mcu_change_itp_isr(itp_rt_sgm->timer_counter, itp_rt_sgm->timer_prescaller);
-				}
-
-#if TOOL_COUNT > 0
-				if (itp_rt_sgm->flags & ITP_UPDATE_TOOL)
-				{
-					tool_set_speed(itp_rt_sgm->spindle);
-				}
-#endif
-				itp_rt_sgm->flags &= ~(ITP_UPDATE);
-			}
 		}
 		else
 		{
@@ -1116,6 +1112,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 	{
 		if (itp_rt_sgm->block != NULL)
 		{
+			uint8_t dirs = itp_rt_sgm->block->dirbits;
 #ifdef ENABLE_BACKLASH_COMPENSATION
 			bool is_backlash = ((itp_rt_sgm->flags & ITP_BACKLASH) != 0);
 #endif

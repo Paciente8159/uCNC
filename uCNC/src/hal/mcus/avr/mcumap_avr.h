@@ -56,7 +56,7 @@ extern "C"
 // defines the maximum and minimum step rates
 #ifndef F_STEP_MAX
 #ifndef BRESENHAM_16BIT
-#define F_STEP_MAX 20000
+#define F_STEP_MAX 15000
 #else
 #define F_STEP_MAX 25000
 #endif
@@ -4984,7 +4984,7 @@ extern "C"
 
 	// #define DISABLE_RTC_CODE
 
-#define mcu_start_step_reset_timeout() ITP_TCNT = 0; mcu_enable_global_isr()
+#define mcu_start_step_reset_timeout() /*ITP_TCNT = 0;*/ mcu_enable_global_isr()
 
 #ifdef __cplusplus
 }
