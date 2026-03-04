@@ -1009,30 +1009,6 @@ MCU_CALLBACK void mcu_step_cb(void)
 		}
 #endif
 
-#ifdef ENABLE_BACKLASH_COMPENSATION
-		// resets step bit so that they don't update the rt position
-		if (itp_rt_sgm->flags & ITP_BACKLASH)
-		{
-			new_stepbits = 0;
-		}
-#endif
-
-		if (itp_rt_sgm->flags & ITP_UPDATE)
-		{
-			if (itp_rt_sgm->flags & ITP_UPDATE_ISR)
-			{
-				mcu_change_itp_isr(itp_rt_sgm->timer_counter, itp_rt_sgm->timer_prescaller);
-			}
-
-#if TOOL_COUNT > 0
-			if (itp_rt_sgm->flags & ITP_UPDATE_TOOL)
-			{
-				tool_set_speed(itp_rt_sgm->spindle);
-			}
-#endif
-			itp_rt_sgm->flags &= ~(ITP_UPDATE);
-		}
-
 		// no step remaining discards current segment
 		if (!itp_rt_sgm->remaining_steps)
 		{
@@ -1108,6 +1084,22 @@ MCU_CALLBACK void mcu_step_cb(void)
 				// set dir pins for current
 				io_set_dirs(itp_rt_sgm->block->dirbits);
 			}
+
+			if (itp_rt_sgm->flags & ITP_UPDATE)
+			{
+				if (itp_rt_sgm->flags & ITP_UPDATE_ISR)
+				{
+					mcu_change_itp_isr(itp_rt_sgm->timer_counter, itp_rt_sgm->timer_prescaller);
+				}
+
+#if TOOL_COUNT > 0
+				if (itp_rt_sgm->flags & ITP_UPDATE_TOOL)
+				{
+					tool_set_speed(itp_rt_sgm->spindle);
+				}
+#endif
+				itp_rt_sgm->flags &= ~(ITP_UPDATE);
+			}
 		}
 		else
 		{
@@ -1124,6 +1116,9 @@ MCU_CALLBACK void mcu_step_cb(void)
 	{
 		if (itp_rt_sgm->block != NULL)
 		{
+#ifdef ENABLE_BACKLASH_COMPENSATION
+			bool is_backlash = ((itp_rt_sgm->flags & ITP_BACKLASH) != 0);
+#endif
 // prepares the next step bits mask
 #if (STEPPER_COUNT > 0)
 			itp_rt_sgm->block->errors[0] += itp_rt_sgm->block->steps[0];
@@ -1131,7 +1126,11 @@ MCU_CALLBACK void mcu_step_cb(void)
 			{
 				itp_rt_sgm->block->errors[0] -= itp_rt_sgm->block->total_steps;
 				new_stepbits |= LINACT0_IO_MASK;
-				(dirs & LINACT0_IO_MASK) ? (--itp_rt_step_pos[0]) : (++itp_rt_step_pos[0]);
+#ifdef ENABLE_BACKLASH_COMPENSATION
+				// if backlash don't update the rt position
+				if (!is_backlash)
+#endif
+					(dirs & LINACT0_IO_MASK) ? (--itp_rt_step_pos[0]) : (++itp_rt_step_pos[0]);
 			}
 #endif
 #if (STEPPER_COUNT > 1)
@@ -1140,7 +1139,11 @@ MCU_CALLBACK void mcu_step_cb(void)
 			{
 				itp_rt_sgm->block->errors[1] -= itp_rt_sgm->block->total_steps;
 				new_stepbits |= LINACT1_IO_MASK;
-				(dirs & LINACT1_IO_MASK) ? (--itp_rt_step_pos[1]) : (++itp_rt_step_pos[1]);
+#ifdef ENABLE_BACKLASH_COMPENSATION
+				// if backlash don't update the rt position
+				if (!is_backlash)
+#endif
+					(dirs & LINACT1_IO_MASK) ? (--itp_rt_step_pos[1]) : (++itp_rt_step_pos[1]);
 			}
 #endif
 #if (STEPPER_COUNT > 2)
@@ -1149,7 +1152,11 @@ MCU_CALLBACK void mcu_step_cb(void)
 			{
 				itp_rt_sgm->block->errors[2] -= itp_rt_sgm->block->total_steps;
 				new_stepbits |= LINACT2_IO_MASK;
-				(dirs & LINACT2_IO_MASK) ? (--itp_rt_step_pos[2]) : (++itp_rt_step_pos[2]);
+#ifdef ENABLE_BACKLASH_COMPENSATION
+				// if backlash don't update the rt position
+				if (!is_backlash)
+#endif
+					(dirs & LINACT2_IO_MASK) ? (--itp_rt_step_pos[2]) : (++itp_rt_step_pos[2]);
 			}
 #endif
 #if (STEPPER_COUNT > 3)
@@ -1158,7 +1165,11 @@ MCU_CALLBACK void mcu_step_cb(void)
 			{
 				itp_rt_sgm->block->errors[3] -= itp_rt_sgm->block->total_steps;
 				new_stepbits |= LINACT3_IO_MASK;
-				(dirs & LINACT3_IO_MASK) ? (--itp_rt_step_pos[3]) : (++itp_rt_step_pos[3]);
+#ifdef ENABLE_BACKLASH_COMPENSATION
+				// if backlash don't update the rt position
+				if (!is_backlash)
+#endif
+					(dirs & LINACT3_IO_MASK) ? (--itp_rt_step_pos[3]) : (++itp_rt_step_pos[3]);
 			}
 #endif
 #if (STEPPER_COUNT > 4)
@@ -1167,7 +1178,11 @@ MCU_CALLBACK void mcu_step_cb(void)
 			{
 				itp_rt_sgm->block->errors[4] -= itp_rt_sgm->block->total_steps;
 				new_stepbits |= LINACT4_IO_MASK;
-				(dirs & LINACT4_IO_MASK) ? (--itp_rt_step_pos[4]) : (++itp_rt_step_pos[4]);
+#ifdef ENABLE_BACKLASH_COMPENSATION
+				// if backlash don't update the rt position
+				if (!is_backlash)
+#endif
+					(dirs & LINACT4_IO_MASK) ? (--itp_rt_step_pos[4]) : (++itp_rt_step_pos[4]);
 			}
 #endif
 #if (STEPPER_COUNT > 5)
@@ -1176,7 +1191,11 @@ MCU_CALLBACK void mcu_step_cb(void)
 			{
 				itp_rt_sgm->block->errors[5] -= itp_rt_sgm->block->total_steps;
 				new_stepbits |= LINACT5_IO_MASK;
-				(dirs & LINACT5_IO_MASK) ? (--itp_rt_step_pos[5]) : (++itp_rt_step_pos[5]);
+#ifdef ENABLE_BACKLASH_COMPENSATION
+				// if backlash don't update the rt position
+				if (!is_backlash)
+#endif
+					(dirs & LINACT5_IO_MASK) ? (--itp_rt_step_pos[5]) : (++itp_rt_step_pos[5]);
 			}
 #endif
 		}
