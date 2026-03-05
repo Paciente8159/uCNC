@@ -43,7 +43,9 @@ typedef struct
 	volatile int8_t alarm;
 } cnc_state_t;
 
+#ifndef ENABLE_ITP_FEED_TASK
 static uint8_t cnc_lock_itp;
+#endif
 static cnc_state_t cnc_state;
 bool cnc_status_report_lock;
 
@@ -355,49 +357,36 @@ MCU_CALLBACK void mcu_rtc_cb(uint32_t millis)
 {
 	mcu_isr_context_enter();
 
-	uint8_t mls = (uint8_t)(0xff & millis);
-	if ((mls & CTRL_SCHED_CHECK_MASK) == CTRL_SCHED_CHECK_VAL)
-	{
-#ifndef ENABLE_RT_PROBE_CHECKING
-		mcu_probe_changed_cb();
-#endif
-#ifdef ENABLE_RT_LIMITS_CHECKING
-		if (!cnc_get_exec_state(EXEC_HOMING))
-#endif
-			mcu_limits_changed_cb();
+	// NEEDS REVIEW ON AVR
 
-		mcu_controls_changed_cb();
-#if (DIN_ONCHANGE_MASK != 0 && ENCODERS < 1)
-		// extra call in case generic inputs are running with ISR disabled. Encoders need propper ISR to work.
-		mcu_inputs_changed_cb();
-#endif
-	}
+	// #ifndef ENABLE_RT_PROBE_CHECKING
+	// 	mcu_probe_changed_cb();
+	// #endif
+	// #ifdef ENABLE_RT_LIMITS_CHECKING
+	// 	if (!cnc_get_exec_state(EXEC_HOMING))
+	// #endif
+	// 		mcu_limits_changed_cb();
+
+	// 	mcu_controls_changed_cb();
+	// #if (DIN_ONCHANGE_MASK != 0 && ENCODERS < 1)
+	// 	// extra call in case generic inputs are running with ISR disabled. Encoders need propper ISR to work.
+	// 	mcu_inputs_changed_cb();
+	// #endif
 
 #ifdef ENABLE_ITP_FEED_TASK
-	// enabling ISR is safe as long as itp_run does not run any code that depends on mcu_in_isr_context
-	mcu_enable_global_isr();
-	static uint8_t itp_feed_counter = (uint8_t)CLAMP(1, (1000 / INTERPOLATOR_FREQ), 255);
-	mls = itp_feed_counter;
-	if (!cnc_lock_itp && !mls--)
+	if ((cnc_state.loop_state == LOOP_RUNNING) && (cnc_state.alarm == EXEC_ALARM_NOALARM) && !cnc_get_exec_state(EXEC_INTERLOCKING_FAIL))
 	{
-		cnc_lock_itp = 1;
-		if ((cnc_state.loop_state == LOOP_RUNNING) && (cnc_state.alarm == EXEC_ALARM_NOALARM) && !cnc_get_exec_state(EXEC_INTERLOCKING_FAIL))
-		{
-			itp_run();
-		}
-		mls = (uint8_t)CLAMP(1, (1000 / INTERPOLATOR_FREQ), 255);
-		cnc_lock_itp = 0;
+		itp_run();
 	}
-
-	itp_feed_counter = mls;
-	mcu_disable_global_isr();
 #endif
 
 #if ASSERT_PIN(ACTIVITY_LED)
 	// this blinks aprox. once every 1024ms
-	if (!(millis & (0x200 - 1)))
+	static uint32_t next_blink = 0;
+	if ((next_blink - millis) > 1000)
 	{
 		io_toggle_output(ACTIVITY_LED);
+		next_blink = millis + 1000;
 	}
 #endif
 }
@@ -1118,10 +1107,11 @@ static void cnc_io_dotasks(void)
 #if IC74HC595_COUNT > 0 || IC74HC165_COUNT > 0
 	io_extended_pins_update(); // update extended IO
 #endif
-#ifdef DISABLE_RTC_CODE
+
+	// #ifdef DISABLE_RTC_CODE
 	mcu_limits_changed_cb();
 	mcu_controls_changed_cb();
-#endif
+	// #endif
 
 #if (DIN_ONCHANGE_MASK != 0 && ENCODERS < 1)
 	// extra call in case generic inputs are running with ISR disabled. Encoders need propper ISR to work.

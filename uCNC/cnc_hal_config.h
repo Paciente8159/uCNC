@@ -383,7 +383,7 @@ extern "C"
  * Can be uses for example in sewing machines to prevent motion on needle down detection and avoid damadge to the needle
  *
  * If RT_STEP_PREVENT_CONDITION is not defined it will default to a hookable callback named itp_rt_step_prevent_cb
- * 
+ *
  * **/
 #ifdef ENABLE_RT_SYNC_MOTIONS
 // #define RT_STEP_PREVENT_CONDITION io_get_input(DIN19)
@@ -397,12 +397,14 @@ extern "C"
 
 /**
  * Sets the number of encoders to be used (max of 8)
- *  
+ *
  * To know more about encoders please read the document under /modules/encoder.md
  * https://github.com/Paciente8159/uCNC/blob/master/uCNC/src/modules/encoder.md
- * 
-*/
+ *
+ */
+#ifndef ENCODERS
 #define ENCODERS 0
+#endif
 
 #if ENCODERS > 0
 #include "src/modules/encoder.h"

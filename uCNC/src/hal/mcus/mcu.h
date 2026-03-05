@@ -303,6 +303,10 @@ extern "C"
 	 * */
 	void mcu_stop_itp_isr(void);
 
+	#ifndef mcu_start_step_reset_timeout
+	#define mcu_start_step_reset_timeout()
+	#endif
+
 /**
  * gets the MCU running time in milliseconds.
  * the time counting is controled by the internal RTC
