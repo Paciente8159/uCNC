@@ -153,7 +153,7 @@ ISR(RTC_COMPA_vect, ISR_BLOCK)
 
 #ifndef DISABLE_RTC_CODE
 	static volatile bool rtc_running;
-	if ((ITP_TIMSK & (1 << ITP_OCIEA)) && !rtc_running)
+	if (!rtc_running)
 	{
 		rtc_running = true;
 		mcu_enable_global_isr();
@@ -169,8 +169,10 @@ ISR(RTC_COMPA_vect, ISR_BLOCK)
 ISR(ITP_COMPA_vect, ISR_BLOCK)
 {
 	ITP_TIMSK &= ~(1 << ITP_OCIEA);
+	RTC_TIMSK &= ~(1 << RTC_OCIEA); // locks RTC
 	mcu_step_cb();
 	mcu_disable_global_isr();
+	RTC_TIMSK |= (1 << RTC_OCIEA); // unlocks RTC
 	ITP_TIFR = 2; // clears pending OCIEA overflow ISR (this prevents abnomal short step pulses)
 	ITP_TIMSK |= (1 << ITP_OCIEA);
 }
