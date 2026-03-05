@@ -781,9 +781,9 @@ void itp_run(void)
 		}
 		sgm->idle_steppers = idle_steppers;
 #if (DSS_MAX_OVERSAMPLING != 0)
-if(prev_dss==0)
+		if (prev_dss == 0)
 #endif
-		sgm->main_stepper = itp_cur_plan_block->main_stepper;
+			sgm->main_stepper = itp_cur_plan_block->main_stepper;
 #endif
 
 		if (remaining_steps == 0)
@@ -1330,6 +1330,9 @@ void itp_start(bool is_synched)
 			ATOMIC_CODEBLOCK
 			{
 				cnc_set_exec_state(EXEC_RUN); // flags that it started running
+#ifdef ENABLE_STEPPERS_DISABLE_TIMEOUT
+				io_enable_steppers(g_settings.step_enable_invert); // re-enable steppers for motion
+#endif
 				mcu_start_itp_isr(itp_sgm_data[itp_sgm_data_read].timer_counter, itp_sgm_data[itp_sgm_data_read].timer_prescaller);
 			}
 		}
