@@ -171,6 +171,7 @@ ISR(ITP_COMPA_vect, ISR_BLOCK)
 	ITP_TIMSK &= ~(1 << ITP_OCIEA);
 	mcu_step_cb();
 	mcu_disable_global_isr();
+	ITP_TIFR = 2; // clears pending OCIEA overflow ISR (this prevents abnomal short step pulses)
 	ITP_TIMSK |= (1 << ITP_OCIEA);
 }
 
