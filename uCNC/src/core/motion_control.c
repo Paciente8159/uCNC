@@ -957,9 +957,6 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 	}
 
 #ifdef ENABLE_LONG_HOMING_CYCLE
-#ifdef ENABLE_GRBL_STYLE_HOMING
-	bool pull_off = true; // pull off at fast rate at the first pass
-#endif
 	uint8_t homing_passes = 2;
 	while (homing_passes--)
 	{
