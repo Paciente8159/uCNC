@@ -63,6 +63,7 @@ extern "C"
 #define NVIC_SPI_IRQ_Pri 3
 #define NVIC_UART_IRQ_Pri 4
 #define NVIC_ITP_IRQ_Pri 5
+#define NVIC_ONESHOT_IRQ_Pri 6
 #define NVIC_SERVO_IRQ_Pri 6
 #define NVIC_RTC_IRQ_Pri 8
 #define NVIC_I2C_IRQ_Pri 9
