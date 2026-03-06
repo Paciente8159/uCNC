@@ -35,8 +35,8 @@ extern "C"
 #define BAUDRATE 115200
 #endif
 
-#ifndef ENABLE_WIFI
-// #define ENABLE_WIFI
+#ifndef ENABLE_SOCKETS
+// #define ENABLE_SOCKETS
 #endif
 
 #ifndef ENABLE_BLUETOOTH

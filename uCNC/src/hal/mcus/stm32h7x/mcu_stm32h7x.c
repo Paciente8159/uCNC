@@ -504,7 +504,7 @@ void mcu_clocks_init()
 	}
 }
 
-void mcu_usart_init(void)
+void mcu_usb_init(void)
 {
 #if defined(MCU_HAS_USB)
 	__HAL_RCC_GPIOA_CLK_ENABLE();
@@ -542,7 +542,10 @@ void mcu_usart_init(void)
 
 	tusb_cdc_init();
 #endif
+}
 
+void mcu_uart_init(void)
+{
 #ifdef MCU_HAS_UART
 	/*enables RCC clocks and GPIO*/
 	RCC->D2CCIP2R &= ~0x3F;
@@ -564,7 +567,10 @@ void mcu_usart_init(void)
 	NVIC_EnableIRQ(COM_IRQ);
 	COM_UART->CR1 |= (USART_CR1_RE | USART_CR1_TE | USART_CR1_UE); // enable TE, RE and UART
 #endif
+}
 
+void mcu_uart2_init(void)
+{
 #ifdef MCU_HAS_UART2
 	/*enables RCC clocks and GPIO*/
 	RCC->D2CCIP2R &= ~0x3F;
@@ -715,7 +721,6 @@ void mcu_init(void)
 	// make sure both APB1 and APB2 are running at the same clock (48MHz)
 	mcu_clocks_init();
 	mcu_io_init();
-	mcu_usart_init();
 	mcu_rtc_init();
 #if SERVOS_MASK > 0
 	servo_timer_init();

@@ -23,7 +23,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-extern void rp2040_uart_init(int baud);
+extern void rp2040_wifi_bt_init(void);
 extern void rp2040_uart_process(void);
 
 extern void rp2040_eeprom_init(int size);
@@ -305,6 +305,31 @@ void rp2040_core0_loop()
 // 	}
 // }
 
+void mcu_spi_init(void)
+{
+#ifdef MCU_HAS_SPI
+	spi_config_t spi_conf = {0};
+	spi_conf.mode = SPI_MODE;
+	mcu_spi_config(spi_conf, SPI_FREQ);
+#endif
+}
+
+void mcu_spi2_init(void)
+{
+#ifdef MCU_HAS_SPI2
+	spi_config_t spi2_conf = {0};
+	spi2_conf.mode = SPI2_MODE;
+	mcu_spi2_config(spi2_conf, SPI2_FREQ);
+#endif
+}
+
+void mcu_i2c_init(void)
+{
+#ifdef MCU_HAS_I2C
+	mcu_i2c_config(I2C_FREQ);
+#endif
+}
+
 /**
  * initializes the mcu
  * this function needs to:
@@ -324,7 +349,7 @@ void mcu_init(void)
 	rp2040_eeprom_init(NVM_STORAGE_SIZE); // 2K Emulated EEPROM
 #endif
 
-	rp2040_uart_init(BAUDRATE);
+	rp2040_wifi_bt_init();
 
 	pinMode(LED_BUILTIN, OUTPUT);
 	// init rtc, oneshot and servo alarms
@@ -334,22 +359,6 @@ void mcu_init(void)
 
 #if SERVOS_MASK > 0
 	servo_alarm.alarm_cb = &mcu_clear_servos;
-#endif
-
-#ifdef MCU_HAS_SPI
-	spi_config_t spi_conf = {0};
-	spi_conf.mode = SPI_MODE;
-	mcu_spi_config(spi_conf, SPI_FREQ);
-#endif
-
-#ifdef MCU_HAS_SPI2
-	spi_config_t spi2_conf = {0};
-	spi2_conf.mode = SPI2_MODE;
-	mcu_spi2_config(spi2_conf, SPI2_FREQ);
-#endif
-
-#ifdef MCU_HAS_I2C
-	mcu_i2c_config(I2C_FREQ);
 #endif
 
 #ifdef MCU_HAS_ONESHOT
@@ -482,7 +491,7 @@ bool mcu_get_global_isr(void)
 
 // Step interpolator
 
-static uint32_t mcu_step_counter;
+// static uint32_t mcu_step_counter;
 static uint32_t mcu_step_reload;
 static void mcu_itp_isr(void)
 {
