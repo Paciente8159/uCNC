@@ -4,6 +4,8 @@
 extern volatile uint32_t i2s_mode;
 #define I2S_MODE __atomic_load_n((uint32_t *)&i2s_mode, __ATOMIC_RELAXED)
 
+void __attribute__((weak)) mcu_uart_init(void) {}
+void __attribute__((weak)) mcu_uart2_init(void) {}
 void __attribute__((weak)) mcu_uart_start(void) {}
 void __attribute__((weak)) mcu_uart_dotasks(void) {}
 void __attribute__((weak)) mcu_uart2_start(void) {}

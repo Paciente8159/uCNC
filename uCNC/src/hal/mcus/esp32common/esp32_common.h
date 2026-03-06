@@ -29,6 +29,8 @@ extern "C"
 	extern volatile uint32_t i2s_mode;
 #define I2S_MODE __atomic_load_n((uint32_t *)&i2s_mode, __ATOMIC_RELAXED)
 
+	void mcu_uart_init(void);
+	void mcu_uart2_init(void);
 	void mcu_uart_start(void);
 	void mcu_uart_dotasks(void);
 	void mcu_uart2_start(void);

@@ -155,6 +155,12 @@ MCU_CALLBACK void mcu_itp_isr(void *arg)
 	timer_group_enable_alarm_in_isr(ITP_TIMER_TG, ITP_TIMER_IDX);
 }
 
+extern void esp32_pre_init(void);
+void __attribute__((weak)) mcu_network_init(void)
+{
+	esp32_pre_init();
+}
+
 /**
  * initializes the mcu
  * this function needs to:
