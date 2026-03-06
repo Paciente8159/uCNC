@@ -517,7 +517,7 @@ void mcu_init(void)
 {
 	mcu_clocks_init();
 	mcu_io_init();
-	mcu_usart_init();
+	mcu_uart_init();
 	// SysTick is started by the framework but is not working
 	// Using timer
 	mcu_rtc_init();
