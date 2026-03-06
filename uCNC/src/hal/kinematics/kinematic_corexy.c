@@ -159,22 +159,12 @@ uint8_t kinematics_home(void)
 	}
 #endif
 
-	cnc_unlock(true);
-	motion_data_t block_data = {0};
-	mc_get_position(target);
-
-	for (uint8_t i = AXIS_COUNT; i != 0;)
+#ifndef ENABLE_GRBL_STYLE_HOMING
+	if (!mc_home_motion_pulloff(255, true))
 	{
-		i--;
-		target[i] += ((g_settings.homing_dir_invert_mask & (1 << i)) ? -g_settings.homing_offset : g_settings.homing_offset);
+		return STATUS_CRITICAL_FAIL;
 	}
-
-	block_data.feed = g_settings.homing_fast_feed_rate;
-	block_data.spindle = 0;
-	block_data.dwell = 0;
-	// starts offset and waits to finnish
-	error = mc_line(target, &block_data);
-	itp_sync();
+#endif
 #endif
 
 #ifdef SET_ORIGIN_AT_HOME_POS

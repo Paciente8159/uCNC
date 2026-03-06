@@ -2432,6 +2432,11 @@ typedef uint16_t step_t;
 #endif
 #endif
 
+#ifdef ENABLE_GRBL_STYLE_HOMING
+// forces a long cycle
+#define ENABLE_LONG_HOMING_CYCLE
+#endif
+
 #include "hal/io_hal.h"
 
 #ifdef __cplusplus

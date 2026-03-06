@@ -131,8 +131,6 @@ uint8_t kinematics_home(void)
 	}
 #endif
 
-	cnc_unlock(true);
-
 	int32_t steps_homing[STEPPER_COUNT] = {0};
 	steps_homing[0] = g_settings.rtheta_theta_homing_angle * g_settings.step_per_mm[0] * FULL_TURN_INV;
 	steps_homing[1] = g_settings.rthera_arm_homing_distance * g_settings.step_per_mm[1] * FULL_TURN_INV;
@@ -140,20 +138,12 @@ uint8_t kinematics_home(void)
 	itp_reset_rt_position(target);
 	mc_sync_position();
 
-	motion_data_t block_data = {0};
-	mc_get_position(target);
-
-	for (uint8_t i = 0; i < AXIS_COUNT; i++)
+#ifndef ENABLE_GRBL_STYLE_HOMING
+	if (!mc_home_motion_pulloff(255, true))
 	{
-		target[i] += ((g_settings.homing_dir_invert_mask & (1 << i)) ? -g_settings.homing_offset : g_settings.homing_offset);
+		return STATUS_CRITICAL_FAIL;
 	}
-
-	block_data.feed = g_settings.homing_fast_feed_rate;
-	block_data.spindle = 0;
-	block_data.dwell = 0;
-	// starts offset and waits to finnish
-	error = mc_line(target, &block_data);
-	itp_sync();
+#endif
 #endif
 
 	return error;

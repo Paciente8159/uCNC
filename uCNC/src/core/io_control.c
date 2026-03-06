@@ -24,6 +24,7 @@
 static uint8_t io_lock_limits_mask;
 #endif
 static uint8_t io_invert_limits_mask;
+static bool io_limits_disabled;
 
 #if ASSERT_PIN(PROBE)
 static volatile bool io_last_probe;
@@ -95,6 +96,12 @@ MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 #ifdef DISABLE_ALL_LIMITS
 	return;
 #else
+
+	if (io_limits_disabled)
+	{
+		return;
+	}
+
 	static volatile uint8_t prev_limits = 0;
 	uint8_t limits = io_get_limits();
 	uint8_t limits_diff = prev_limits;
@@ -331,6 +338,15 @@ void io_lock_limits(uint8_t limitmask)
 	io_lock_limits_mask = limitmask;
 }
 #endif
+
+void io_enable_limits(void)
+{
+	io_limits_disabled = false;
+}
+void io_disable_limits(void)
+{
+	io_limits_disabled = true;
+}
 
 void io_invert_limits(uint8_t limitmask)
 {
