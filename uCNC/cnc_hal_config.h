@@ -382,20 +382,29 @@ extern "C"
  * In the example bellow if input pin DIN19 is active step ISR will stop generating steps
  * Can be uses for example in sewing machines to prevent motion on needle down detection and avoid damadge to the needle
  *
+ * If RT_STEP_PREVENT_CONDITION is not defined it will default to a hookable callback named itp_rt_step_prevent_cb
+ *
  * **/
+#ifdef ENABLE_RT_SYNC_MOTIONS
 // #define RT_STEP_PREVENT_CONDITION io_get_input(DIN19)
+
+// this option can simply disable the RT_STEP code from the ISR
+// #define DISABLE_RT_STEP_PREVENT_CONDITION
+#endif
 
 // Assigns an output to an blinking led (1Hz rate)
 #define ACTIVITY_LED DOUT31
 
 /**
  * Sets the number of encoders to be used (max of 8)
- *  
+ *
  * To know more about encoders please read the document under /modules/encoder.md
  * https://github.com/Paciente8159/uCNC/blob/master/uCNC/src/modules/encoder.md
- * 
-*/
+ *
+ */
+#ifndef ENCODERS
 #define ENCODERS 0
+#endif
 
 #if ENCODERS > 0
 #include "src/modules/encoder.h"

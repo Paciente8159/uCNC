@@ -228,8 +228,10 @@ static void startup_code(void)
 	embd_max_steps = embd_steps_per_rev << 1;
 	embd_down_steps = embd_steps_needle_down << 1;
 
-#if defined(RT_STEP_PREVENT_CONDITION) && defined(ENABLE_RT_SYNC_MOTIONS)
+#if defined(RT_STEP_PREVENT_CONDITION) && !defined(RT_STEP_PREVENT_HAS_CUSTOM_CONDITION) && defined(ENABLE_RT_SYNC_MOTIONS)
 	itp_rt_step_prevent_cb = &needle_is_down;
+#elif defined(RT_STEP_PREVENT_HAS_CUSTOM_CONDITION)
+#warning "RT_STEP_PREVENT_CONDITION has a custom detection condition and and needle down condition may not be detected!!"
 #else
 #warning "RT_STEP_PREVENT_CONDITION and ENABLE_RT_SYNC_MOTIONS is not set and needle down condition will not be detected!!"
 #endif
@@ -250,7 +252,7 @@ static void shutdown_code(void)
 	io_clear_output(EMBD_STEP);
 #endif
 	g_settings.tool_mode = UNDEF_MODE;
-#ifdef ENABLE_RT_SYNC_MOTIONS
+#if defined(RT_STEP_PREVENT_CONDITION) && !defined(RT_STEP_PREVENT_HAS_CUSTOM_CONDITION) && defined(ENABLE_RT_SYNC_MOTIONS)
 	itp_rt_step_prevent_cb = NULL;
 #else
 #warning "ENABLE_RT_SYNC_MOTIONS not enabled embroidery tool will not work correctly"

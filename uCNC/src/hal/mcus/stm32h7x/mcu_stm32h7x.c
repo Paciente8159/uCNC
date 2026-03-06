@@ -99,37 +99,33 @@ DECL_BUFFER(uint8_t, uart_rx, RX_BUFFER_SIZE);
 
 void MCU_SERIAL_ISR(void)
 {
-	ATOMIC_CODEBLOCK_NR
+	if (COM_UART->ISR & USART_ISR_RXNE_RXFNE)
 	{
-		if (COM_UART->ISR & USART_ISR_RXNE_RXFNE)
-		{
-			uint8_t c = COM_INREG;
+		uint8_t c = COM_INREG;
 #if !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
-			if (mcu_com_rx_cb(c))
-			{
-				if (!BUFFER_TRY_ENQUEUE(uart_rx, &c))
-				{
-					STREAM_OVF(c);
-				}
-			}
-#else
-			mcu_uart_rx_cb(c);
-#endif
-		}
-
-		if ((COM_UART->ISR & USART_ISR_TXE_TXFNF) && (COM_UART->CR1 & USART_CR1_TXEIE_TXFNFIE))
+		if (mcu_com_rx_cb(c))
 		{
-			mcu_enable_global_isr();
-			uint8_t c;
-
-			if (!BUFFER_TRY_DEQUEUE(uart_tx, &c))
+			if (!BUFFER_TRY_ENQUEUE(uart_rx, &c))
 			{
-				COM_UART->CR1 &= ~(USART_CR1_TXEIE_TXFNFIE);
-				return;
+				STREAM_OVF(c);
 			}
-
-			COM_OUTREG = c;
 		}
+#else
+		mcu_uart_rx_cb(c);
+#endif
+	}
+
+	if ((COM_UART->ISR & USART_ISR_TXE_TXFNF) && (COM_UART->CR1 & USART_CR1_TXEIE_TXFNFIE))
+	{
+		uint8_t c;
+
+		if (!BUFFER_TRY_DEQUEUE(uart_tx, &c))
+		{
+			COM_UART->CR1 &= ~(USART_CR1_TXEIE_TXFNFIE);
+			return;
+		}
+
+		COM_OUTREG = c;
 	}
 }
 #endif
@@ -143,44 +139,40 @@ DECL_BUFFER(uint8_t, uart2_rx, RX_BUFFER_SIZE);
 
 void MCU_SERIAL2_ISR(void)
 {
-	ATOMIC_CODEBLOCK_NR
+	if (COM2_UART->ISR & USART_ISR_RXNE_RXFNE)
 	{
-		if (COM2_UART->ISR & USART_ISR_RXNE_RXFNE)
-		{
-			uint8_t c = COM2_INREG;
+		uint8_t c = COM2_INREG;
 #if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
-			if (mcu_com_rx_cb(c))
-			{
-				if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
-				{
-					STREAM_OVF(c);
-				}
-			}
-#else
-			mcu_uart2_rx_cb(c);
-#ifndef UART2_DISABLE_BUFFER
+		if (mcu_com_rx_cb(c))
+		{
 			if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
 			{
 				STREAM_OVF(c);
 			}
-
-#endif
-#endif
 		}
-
-		if ((COM2_UART->ISR & USART_ISR_TXE_TXFNF) && (COM2_UART->CR1 & USART_CR1_TXEIE_TXFNFIE))
+#else
+		mcu_uart2_rx_cb(c);
+#ifndef UART2_DISABLE_BUFFER
+		if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
 		{
-			mcu_enable_global_isr();
-			uint8_t c;
-
-			if (!BUFFER_TRY_DEQUEUE(uart2_tx, &c))
-			{
-				COM2_UART->CR1 &= ~(USART_CR1_TXEIE_TXFNFIE);
-				return;
-			}
-
-			COM2_OUTREG = c;
+			STREAM_OVF(c);
 		}
+
+#endif
+#endif
+	}
+
+	if ((COM2_UART->ISR & USART_ISR_TXE_TXFNF) && (COM2_UART->CR1 & USART_CR1_TXEIE_TXFNFIE))
+	{
+		uint8_t c;
+
+		if (!BUFFER_TRY_DEQUEUE(uart2_tx, &c))
+		{
+			COM2_UART->CR1 &= ~(USART_CR1_TXEIE_TXFNFIE);
+			return;
+		}
+
+		COM2_OUTREG = c;
 	}
 }
 #endif
@@ -188,11 +180,8 @@ void MCU_SERIAL2_ISR(void)
 #if defined(MCU_HAS_USB) && !defined(USBD_USE_CDC)
 void OTG_FS_IRQHandler(void)
 {
-	mcu_disable_global_isr();
 	tusb_cdc_isr_handler();
 	USB_OTG_FS->GINTSTS = 0xF8F0FC0A;
-	NVIC_ClearPendingIRQ(OTG_FS_IRQn);
-	mcu_enable_global_isr();
 }
 #endif
 
@@ -238,7 +227,7 @@ void servo_timer_init(void)
 void servo_start_timeout(uint8_t val)
 {
 	SERVO_TIMER_REG->ARR = (val << 1) + 125;
-	NVIC_SetPriority(MCU_SERVO_IRQ, 10);
+	NVIC_SetPriority(MCU_SERVO_IRQ, NVIC_SERVO_IRQ_Pri);
 	NVIC_ClearPendingIRQ(MCU_SERVO_IRQ);
 	NVIC_EnableIRQ(MCU_SERVO_IRQ);
 	SERVO_TIMER_REG->DIER |= 1;
@@ -247,7 +236,6 @@ void servo_start_timeout(uint8_t val)
 
 void MCU_SERVO_ISR(void)
 {
-	mcu_enable_global_isr();
 	if ((SERVO_TIMER_REG->SR & 1))
 	{
 		mcu_clear_servos();
@@ -261,22 +249,18 @@ void MCU_SERVO_ISR(void)
 
 void MCU_ITP_ISR(void)
 {
-	mcu_disable_global_isr();
-
 	static bool resetstep = false;
 	if ((TIMER_REG->SR & 1))
 	{
 		if (!resetstep)
 		{
-					mcu_step_cb();
+			mcu_step_cb();
 		}
 		else
 			mcu_step_reset_cb();
 		resetstep = !resetstep;
 	}
 	TIMER_REG->SR = 0;
-
-	mcu_enable_global_isr();
 }
 
 #define LIMITS_EXTIBITMASK (LIMIT_X_EXTIBITMASK | LIMIT_Y_EXTIBITMASK | LIMIT_Z_EXTIBITMASK | LIMIT_X2_EXTIBITMASK | LIMIT_Y2_EXTIBITMASK | LIMIT_Z2_EXTIBITMASK | LIMIT_A_EXTIBITMASK | LIMIT_B_EXTIBITMASK | LIMIT_C_EXTIBITMASK)
@@ -287,7 +271,6 @@ void MCU_ITP_ISR(void)
 #if (ALL_EXTIBITMASK != 0)
 static void mcu_input_isr(void)
 {
-	mcu_disable_global_isr();
 #if (LIMITS_EXTIBITMASK != 0)
 	if (EXTI->PR & LIMITS_EXTIBITMASK)
 	{
@@ -309,12 +292,11 @@ static void mcu_input_isr(void)
 #if (DIN_IO_EXTIBITMASK != 0)
 	if (EXTI->PR & DIN_IO_EXTIBITMASK)
 	{
-			mcu_inputs_changed_cb();
+		mcu_inputs_changed_cb();
 	}
 #endif
 
 	EXTI->PR = ALL_EXTIBITMASK;
-	mcu_enable_global_isr();
 }
 
 #if (ALL_EXTIBITMASK & 0x0001)
@@ -554,7 +536,7 @@ void mcu_usb_init(void)
 	USB_OTG_FS->GOTGCTL |= USB_OTG_GOTGCTL_BVALOEN;
 	USB_OTG_FS->GOTGCTL |= USB_OTG_GOTGCTL_BVALOVAL;
 
-	NVIC_SetPriority(OTG_FS_IRQn, 10);
+	NVIC_SetPriority(OTG_FS_IRQn, NVIC_USB_IRQ_Pri);
 	NVIC_ClearPendingIRQ(OTG_FS_IRQn);
 	NVIC_EnableIRQ(OTG_FS_IRQn);
 
@@ -580,7 +562,7 @@ void mcu_uart_init(void)
 	uint16_t brr = (uint16_t)baudrate;
 	COM_UART->BRR = brr;
 	COM_UART->CR1 |= USART_CR1_RXNEIE_RXFNEIE; // enable RXNEIE
-	NVIC_SetPriority(COM_IRQ, 3);
+	NVIC_SetPriority(COM_IRQ, NVIC_UART_IRQ_Pri);
 	NVIC_ClearPendingIRQ(COM_IRQ);
 	NVIC_EnableIRQ(COM_IRQ);
 	COM_UART->CR1 |= (USART_CR1_RE | USART_CR1_TE | USART_CR1_UE); // enable TE, RE and UART
@@ -605,7 +587,7 @@ void mcu_uart2_init(void)
 	uint16_t brr2 = (uint16_t)baudrate2;
 	COM2_UART->BRR = brr2;
 	COM2_UART->CR1 |= USART_CR1_RXNEIE_RXFNEIE; // enable RXNEIE
-	NVIC_SetPriority(COM2_IRQ, 3);
+	NVIC_SetPriority(COM2_IRQ, NVIC_UART_IRQ_Pri);
 	NVIC_ClearPendingIRQ(COM2_IRQ);
 	NVIC_EnableIRQ(COM2_IRQ);
 	COM2_UART->CR1 |= (USART_CR1_RE | USART_CR1_TE | USART_CR1_UE); // enable TE, RE and UART
@@ -757,8 +739,8 @@ void mcu_init(void)
 	mcu_i2c_config(I2C_FREQ);
 #endif
 
-	mcu_disable_probe_isr();
 	stm32_flash_current_offset = 0;
+	mcu_disable_global_isr();
 	mcu_eeprom_init();
 	mcu_enable_global_isr();
 }
@@ -834,7 +816,7 @@ void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 	TIMER_REG->EGR |= 0x01;
 	TIMER_REG->SR &= ~0x01;
 
-	NVIC_SetPriority(MCU_ITP_IRQ, 1);
+	NVIC_SetPriority(MCU_ITP_IRQ, NVIC_ITP_IRQ_Pri);
 	NVIC_ClearPendingIRQ(MCU_ITP_IRQ);
 	NVIC_EnableIRQ(MCU_ITP_IRQ);
 
@@ -876,7 +858,7 @@ void mcu_rtc_init()
 	SysTick->CTRL = 0;
 	SysTick->LOAD = ((F_CPU / 1000) - 1);
 	SysTick->VAL = 0;
-	NVIC_SetPriority(SysTick_IRQn, 10);
+	NVIC_SetPriority(SysTick_IRQn, NVIC_RTC_IRQ_Pri);
 	SysTick->CTRL = 7; // Start SysTick (ABH clock)
 }
 
@@ -1133,7 +1115,7 @@ void mcu_spi_config(spi_config_t config, uint32_t frequency)
 	while (!(SPI_REG->CR1 & SPI_CR1_SPE))
 		;
 
-	NVIC_SetPriority(SPI_IRQ, 2);
+	NVIC_SetPriority(SPI_IRQ, NVIC_SPI_IRQ_Pri);
 	NVIC_ClearPendingIRQ(SPI_IRQ);
 	NVIC_EnableIRQ(SPI_IRQ);
 
@@ -1400,7 +1382,7 @@ void mcu_spi2_config(spi_config_t config, uint32_t frequency)
 	while (!(SPI2_REG->CR1 & SPI2_CR1_SPE))
 		;
 
-	NVIC_SetPriority(SPI2_IRQ, 2);
+	NVIC_SetPriority(SPI2_IRQ, NVIC_SPI_IRQ_Pri);
 	NVIC_ClearPendingIRQ(SPI2_IRQ);
 	NVIC_EnableIRQ(SPI2_IRQ);
 
@@ -1635,7 +1617,7 @@ void mcu_i2c_config(uint32_t frequency)
 	I2C_REG->CR1 &= ~I2C_CR1_NOSTRETCH;
 	// enable interrupts
 	I2C_REG->CR1 |= (I2C_CR1_RXIE | I2C_CR1_TXIE | I2C_CR1_ADDRIE);
-	NVIC_SetPriority(I2C_IRQ, 10);
+	NVIC_SetPriority(I2C_IRQ, NVIC_I2C_IRQ_Pri);
 	NVIC_ClearPendingIRQ(I2C_IRQ);
 	NVIC_EnableIRQ(I2C_IRQ);
 #endif
@@ -1719,7 +1701,6 @@ void I2C_ISR(void)
 	// prepare ACK for next transmition
 	index = i;
 	I2C_REG->CR1 &= ~I2C_CR1_NACKIE;
-	NVIC_ClearPendingIRQ(I2C_IRQ);
 }
 #endif
 
@@ -1738,11 +1719,9 @@ void MCU_ONESHOT_ISR(void)
 
 		if (mcu_timeout_cb)
 		{
-					mcu_timeout_cb();
+			mcu_timeout_cb();
 		}
 	}
-
-	NVIC_ClearPendingIRQ(MCU_ONESHOT_IRQ);
 }
 
 /**
@@ -1775,7 +1754,7 @@ void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 	ONESHOT_TIMER_REG->SR = 0;
 	ONESHOT_TIMER_REG->CNT = 0;
 
-	NVIC_SetPriority(MCU_ONESHOT_IRQ, 1);
+	NVIC_SetPriority(MCU_ONESHOT_IRQ, NVIC_ONESHOT_IRQ_Pri);
 	NVIC_ClearPendingIRQ(MCU_ONESHOT_IRQ);
 	NVIC_EnableIRQ(MCU_ONESHOT_IRQ);
 

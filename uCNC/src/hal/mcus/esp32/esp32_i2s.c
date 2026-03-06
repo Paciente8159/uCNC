@@ -100,6 +100,45 @@ static void IRAM_ATTR i2s_fifo_fill_words(uint32_t *buf, size_t len)
 	}
 }
 
+static void IRAM_ATTR i2s_enter_realtime_mode(void)
+{
+	// mcu_clear_output(DOUT49);
+	I2S_REG.conf.tx_start = 0;
+	I2S_REG.conf.tx_reset = 1;
+	I2S_REG.conf.tx_reset = 0;
+	I2S_REG.conf.rx_fifo_reset = 1;
+	I2S_REG.conf.rx_fifo_reset = 0;
+	// modify registers for realtime usage
+	I2S_REG.out_link.stop = 1;
+	I2S_REG.fifo_conf.dscr_en = 0;
+	I2S_REG.conf.tx_start = 0;
+	I2S_REG.int_clr.val = 0xFFFFFFFF;
+	// I2S_REG.clkm_conf.clka_en = 0;			// Use PLL/2 as reference
+	// I2S_REG.clkm_conf.clkm_div_num = 2; // reset value of 4
+	// I2S_REG.clkm_conf.clkm_div_a = 1;		// 0 at reset, what about divide by 0?
+	// I2S_REG.clkm_conf.clkm_div_b = 0;		// 0 at reset
+	I2S_REG.fifo_conf.tx_fifo_mod = 3; // 32 bits single channel data
+	I2S_REG.conf_chan.tx_chan_mod = 3; //
+	I2S_REG.sample_rate_conf.tx_bits_mod = 32;
+	I2S_REG.conf.tx_msb_shift = 0;
+	I2S_REG.conf.rx_msb_shift = 0;
+	I2S_REG.int_ena.out_eof = 0;
+	I2S_REG.int_ena.out_dscr_err = 0;
+	I2S_REG.conf_single_data = __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
+	I2S_REG.conf1.tx_stop_en = 0;
+	I2S_REG.int_ena.val = 0;
+	I2S_REG.fifo_conf.dscr_en = 1;
+	I2S_REG.int_clr.val = 0xFFFFFFFF;
+	I2S_REG.out_link.start = 1;
+	I2S_REG.conf.tx_start = 1;
+	// Start TX and kick the motion timer
+	i2s_hal_start_tx(&i2s_hal.ctx);
+	timer_set_counter_value(ITP_TIMER_TG, ITP_TIMER_IDX, 0x00000000ULL);
+	timer_group_clr_intr_status_in_isr(ITP_TIMER_TG, ITP_TIMER_IDX);
+	timer_enable_intr(ITP_TIMER_TG, ITP_TIMER_IDX);
+	timer_start(ITP_TIMER_TG, ITP_TIMER_IDX);
+}
+
 /**
  * The I2S FIFO ISR
  * This should keep the buffer saturated on default mode
@@ -141,41 +180,7 @@ static void IRAM_ATTR i2s_tx_isr(void *arg)
 			__atomic_store_n((uint32_t *)&i2s_mode, ITP_STEP_MODE_REALTIME, __ATOMIC_RELAXED);
 			break;
 		case ITP_STEP_MODE_REALTIME:
-			// mcu_clear_output(DOUT49);
-			I2S_REG.conf.tx_start = 0;
-			I2S_REG.conf.tx_reset = 1;
-			I2S_REG.conf.tx_reset = 0;
-			I2S_REG.conf.rx_fifo_reset = 1;
-			I2S_REG.conf.rx_fifo_reset = 0;
-			// modify registers for realtime usage
-			I2S_REG.out_link.stop = 1;
-			I2S_REG.fifo_conf.dscr_en = 0;
-			I2S_REG.conf.tx_start = 0;
-			I2S_REG.int_clr.val = 0xFFFFFFFF;
-			// I2S_REG.clkm_conf.clka_en = 0;			// Use PLL/2 as reference
-			// I2S_REG.clkm_conf.clkm_div_num = 2; // reset value of 4
-			// I2S_REG.clkm_conf.clkm_div_a = 1;		// 0 at reset, what about divide by 0?
-			// I2S_REG.clkm_conf.clkm_div_b = 0;		// 0 at reset
-			I2S_REG.fifo_conf.tx_fifo_mod = 3; // 32 bits single channel data
-			I2S_REG.conf_chan.tx_chan_mod = 3; //
-			I2S_REG.sample_rate_conf.tx_bits_mod = 32;
-			I2S_REG.conf.tx_msb_shift = 0;
-			I2S_REG.conf.rx_msb_shift = 0;
-			I2S_REG.int_ena.out_eof = 0;
-			I2S_REG.int_ena.out_dscr_err = 0;
-			I2S_REG.conf_single_data = __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
-			I2S_REG.conf1.tx_stop_en = 0;
-			I2S_REG.int_ena.val = 0;
-			I2S_REG.fifo_conf.dscr_en = 1;
-			I2S_REG.int_clr.val = 0xFFFFFFFF;
-			I2S_REG.out_link.start = 1;
-			I2S_REG.conf.tx_start = 1;
-			// Start TX and kick the motion timer
-			i2s_hal_start_tx(&i2s_hal.ctx);
-			timer_set_counter_value(ITP_TIMER_TG, ITP_TIMER_IDX, 0x00000000ULL);
-			timer_group_clr_intr_status_in_isr(ITP_TIMER_TG, ITP_TIMER_IDX);
-			timer_enable_intr(ITP_TIMER_TG, ITP_TIMER_IDX);
-			timer_start(ITP_TIMER_TG, ITP_TIMER_IDX);
+			i2s_enter_realtime_mode();
 			break;
 		}
 	}
@@ -220,7 +225,7 @@ uint8_t itp_set_step_mode(uint8_t mode)
 		itp_sync();
 
 #ifdef USE_I2S_REALTIME_MODE_ONLY
-		__atomic_store_n((uint32_t *)&i2s_mode, (ITP_STEP_MODE_SYNC | ITP_STEP_MODE_REALTIME), __ATOMIC_RELAXED);
+		__atomic_store_n((uint32_t *)&i2s_mode, ITP_STEP_MODE_REALTIME, __ATOMIC_RELAXED);
 #else
 		__atomic_store_n((uint32_t *)&i2s_mode, (ITP_STEP_MODE_SYNC | mode), __ATOMIC_RELAXED);
 #endif
@@ -342,8 +347,9 @@ void mcu_i2s_extender_init(void)
 	itp_set_step_mode(ITP_STEP_MODE_DEFAULT);
 #else
 	itp_set_step_mode(ITP_STEP_MODE_REALTIME);
-	timer_enable_intr(ITP_TIMER_TG, ITP_TIMER_IDX);
-	timer_start(ITP_TIMER_TG, ITP_TIMER_IDX);
+	i2s_enter_realtime_mode();
+	// timer_enable_intr(ITP_TIMER_TG, ITP_TIMER_IDX);
+	// timer_start(ITP_TIMER_TG, ITP_TIMER_IDX);
 #endif
 }
 

@@ -24,6 +24,7 @@
 static uint8_t io_lock_limits_mask;
 #endif
 static uint8_t io_invert_limits_mask;
+static bool io_limits_disabled;
 
 #if ASSERT_PIN(PROBE)
 static volatile bool io_last_probe;
@@ -95,6 +96,12 @@ MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 #ifdef DISABLE_ALL_LIMITS
 	return;
 #else
+
+	if (io_limits_disabled)
+	{
+		return;
+	}
+
 	static volatile uint8_t prev_limits = 0;
 	uint8_t limits = io_get_limits();
 	uint8_t limits_diff = prev_limits;
@@ -332,13 +339,22 @@ void io_lock_limits(uint8_t limitmask)
 }
 #endif
 
+void io_enable_limits(void)
+{
+	io_limits_disabled = false;
+}
+void io_disable_limits(void)
+{
+	io_limits_disabled = true;
+}
+
 void io_invert_limits(uint8_t limitmask)
 {
 	io_invert_limits_mask = limitmask;
 	mcu_limits_changed_cb();
 }
 
-uint8_t io_get_limits(void)
+uint8_t io_get_raw_limits(void)
 {
 #ifdef DISABLE_ALL_LIMITS
 	return 0;
@@ -379,11 +395,6 @@ uint8_t io_get_limits(void)
 	uint8_t inv = g_settings.limits_invert_mask;
 	uint8_t result = (value ^ (inv & LIMITS_INV_MASK));
 
-	if (cnc_get_exec_state(EXEC_HOMING))
-	{
-		result ^= io_invert_limits_mask;
-	}
-
 #if (LIMITS_NORMAL_OPERATION_MASK != 0)
 	if (!cnc_get_exec_state(EXEC_HOMING))
 	{
@@ -392,6 +403,12 @@ uint8_t io_get_limits(void)
 #endif
 
 	return result;
+}
+
+uint8_t io_get_limits(void)
+{
+	uint8_t result = io_get_raw_limits();
+	return ((!cnc_get_exec_state(EXEC_HOMING)) ? (result) : (result ^ io_invert_limits_mask));
 }
 
 uint8_t io_get_controls(void)

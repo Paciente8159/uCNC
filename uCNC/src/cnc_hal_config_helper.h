@@ -2084,18 +2084,8 @@ extern "C"
 #endif
 #endif
 
-#ifndef CTRL_SCHED_CHECK
-#define CTRL_SCHED_CHECK -1
-#else
-#if CTRL_SCHED_CHECK > 7
-#error CTRL_SCHED_CHECK invalid value! Max is 7
-#endif
-#define CTRL_SCHED_CHECK_MASK ((1 << (CTRL_SCHED_CHECK + 1)) - 1)
-#define CTRL_SCHED_CHECK_VAL (1 << (CTRL_SCHED_CHECK))
-#endif
-
-#ifdef DISABLE_RTC_CODE
-#undef ENABLE_ITP_FEED_TASK
+#ifdef ENABLE_ITP_FEED_TASK
+#undef DISABLE_RTC_CODE
 #endif
 
 #ifndef BRESENHAM_16BIT
@@ -2432,6 +2422,19 @@ typedef uint16_t step_t;
 #ifndef DISABLE_ENDPROGRAM_LOCK
 #define DISABLE_ENDPROGRAM_LOCK
 #endif
+#endif
+
+#ifdef ENABLE_RT_SYNC_MOTIONS
+#if !defined(RT_STEP_PREVENT_CONDITION) && !defined(DISABLE_RT_STEP_PREVENT_CONDITION)
+#define RT_STEP_PREVENT_CONDITION (itp_rt_step_prevent_cb && itp_rt_step_prevent_cb())
+#elif defined(RT_STEP_PREVENT_CONDITION)
+#define RT_STEP_PREVENT_HAS_CUSTOM_CONDITION
+#endif
+#endif
+
+#ifdef ENABLE_GRBL_STYLE_HOMING
+// forces a long cycle
+#define ENABLE_LONG_HOMING_CYCLE
 #endif
 
 #include "hal/io_hal.h"

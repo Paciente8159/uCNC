@@ -183,11 +183,9 @@ extern "C"
 #define PRINT_FTM_MINIMAL
 #endif
 
+// required to recuce code size
+#define DISABLE_ITP_STEP_GEN_OPTIMIZATIONS
 #define DISABLE_COORDINATES_SYSTEM_RAM
-
-// this will remove the isr context signaling to reduce code size
-// since in most cases it will not be used due to the lack of space
-#define mcu_in_isr_context() false
 
 #ifdef __cplusplus
 }

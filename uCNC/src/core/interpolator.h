@@ -70,6 +70,10 @@ extern "C"
 	{
 		itp_block_t *block;
 		uint16_t remaining_steps;
+#ifndef DISABLE_ITP_STEP_GEN_OPTIMIZATIONS
+		uint8_t idle_steppers;
+		uint8_t main_stepper;
+#endif
 		uint16_t timer_counter;
 		uint16_t timer_prescaller;
 #if (DSS_MAX_OVERSAMPLING != 0)
@@ -117,9 +121,10 @@ extern "C"
 	void itp_inc_block_id(void);
 	void itp_update_feed(float feed);
 	bool itp_sync_ready(void);
-	DECL_HOOK(itp_rt_pre_stepbits, uint8_t *, uint8_t *);
+	// deprecate to make ISR leaner
+	// DECL_HOOK(itp_rt_pre_stepbits, uint8_t *, uint8_t *);
 	DECL_HOOK(itp_rt_stepbits, uint8_t, uint8_t);
-#ifndef RT_STEP_PREVENT_CONDITION
+#ifndef DISABLE_RT_STEP_PREVENT_CONDITION
 	typedef bool (*itp_rt_step_prevent_t)(void);
 	extern itp_rt_step_prevent_t itp_rt_step_prevent_cb;
 #endif

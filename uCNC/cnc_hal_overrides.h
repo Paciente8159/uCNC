@@ -1,4 +1,4 @@
-// boardmap override dummy file
+// cnc_hal override dummy file
 
 #ifndef CNC_HAL_OVERRIDES_H
 #define CNC_HAL_OVERRIDES_H

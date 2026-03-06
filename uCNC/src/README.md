@@ -66,7 +66,7 @@ __NOTE__: Not all event hooks might be listed here. To find all available event 
 | mc_home_axis_start | homing_status_t* | ENABLE_MOTION_CONTROL_MODULES | Fires once per axis when homing motion is starting. Pointer to homing_status_t struct with homming information |
 | mc_home_axis_finish | homing_status_t* | ENABLE_MOTION_CONTROL_MODULES | Fires once per axis when homing motion is finnished |
 | mc_line_segment | motion_data_t* | ENABLE_MOTION_CONTROL_MODULES | Fires when a line segment is about to be sent from the motion control to the planner. Arg is a pointer to a motion_data_t struct with the current motion block data |
-| planner_pre_output | planner_block_t* | ENABLE_PLANNER_MODULES | Fires right before a section of the current planner block is sent to the step generation (interpolator) ISR. It's possible to perform changes and modifications to the steps being generated with a very small delay. The delay is defined by the size of the interpolator buffer `INTERPOLATOR_BUFFER_SIZE` and the stepping sample frequency `INTERPOLATOR_FREQ`  |
+| planner_pre_output | planner_block_t* | ENABLE_PLANNER_MODULES | **WARNING: This event must not run any code that requires to know the code context (like printing) to prevent deadlocks**Fires right before a section of the current planner block is sent to the step generation (interpolator) ISR. It's possible to perform changes and modifications to the steps being generated with a very small delay. The delay is defined by the size of the interpolator buffer `INTERPOLATOR_BUFFER_SIZE` and the stepping sample frequency `INTERPOLATOR_FREQ`  |
 
 Each of these events exposes a delegate and and event that have the following naming convention:
 
@@ -194,7 +194,7 @@ __NOTE__: Not all simple hooks may be listed here. To find all available simple 
 
 | Event name | Argument | Enable option | Description |
 | --- | --- | --- | --- |
-| itp_rt_pre_stepbits | int*, int* | ENABLE_RT_SYNC_MOTIONS | Fires when the next computed step bits and dirs have been computed to be output. Args are a pointer the stepbit var and a pointer to a dirbit var |
+| itp_rt_pre_stepbits | int*, int* | ENABLE_RT_SYNC_MOTIONS | **DEPRECATED-DO NOT USE** Fires when the next computed step bits and dirs have been computed to be output. Args are a pointer the stepbit var and a pointer to a dirbit var |
 | itp_rt_stepbits | int, int | ENABLE_RT_SYNC_MOTIONS | Fires when the setpbits have been output to the IO. Args are the stepbit mask value and the step ISR flags value |
 | encoder_index | void | ENCODER_COUNT | Fires when the index of the specialized rpm encoder is triggered. Has no args |
 

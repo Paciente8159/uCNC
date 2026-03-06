@@ -211,8 +211,8 @@ extern "C"
 #define DELAY_ON_SPINDLE_SPEED_CHANGE 1
 // define coolant delay at restart
 #define DELAY_ON_RESUME_COOLANT 1
-// uncomment to make M7 act as M8
-// #define M7_SAME_AS_M8
+	// uncomment to make M7 act as M8
+	// #define M7_SAME_AS_M8
 
 #if TOOL_COUNT > 1
 /**
@@ -230,11 +230,10 @@ extern "C"
 
 #endif
 
-
 /**
- * 
+ *
  * Uncomment to enable pwm laser tool features
- * 
+ *
  * **/
 #define ENABLE_LASER_PWM
 
@@ -263,9 +262,9 @@ extern "C"
 //  #define ENABLE_PLASMA_THC
 
 /**
- * 
+ *
  * Uncomment to enable embroidery features
- * 
+ *
  */
 //  #define ENABLE_EMBROIDERY
 
@@ -354,15 +353,15 @@ extern "C"
 #define ENABLE_O_CODES_VERBOSE
 #endif
 
-/**
- * Uncomment to prevent machine lock after end program (M2 or M30)
- */
-// #define DISABLE_ENDPROGRAM_LOCK
+	/**
+	 * Uncomment to prevent machine lock after end program (M2 or M30)
+	 */
+	// #define DISABLE_ENDPROGRAM_LOCK
 
-/**
- * Allow multiline startup blocks. Multiline startup blocks allow to add a multiple GCode command blocks using the | char as a separator
- */
-//  #define ENABLE_MULTILINE_STARTUP_BLOCKS
+	/**
+	 * Allow multiline startup blocks. Multiline startup blocks allow to add a multiple GCode command blocks using the | char as a separator
+	 */
+	//  #define ENABLE_MULTILINE_STARTUP_BLOCKS
 
 	/**
 	 * Shrink µCNC
@@ -406,7 +405,7 @@ extern "C"
 	 * Uncomment to disable this extension.
 	 * Some option might override this (like ENABLE_TOOL_PID_CONTROLLER)
 	 * */
-// #define DISABLE_SETTINGS_MODULES
+	// #define DISABLE_SETTINGS_MODULES
 
 	/**
 	 * Allow to set continuous settings as an array
@@ -442,11 +441,23 @@ extern "C"
  * Enabling this option changes the default, short homing cycle:
  *   Rapid approach -> Slow pull off
  * into a longer and potentially more precise:
- *   Rapid approach -> Rapid pull off -> Slow approach -> Slow pull off
+ *   Rapid limit find -> Rapid limit clear -> Slow 2nd limit find -> Slow limit clear
+ * 
+ * After this the pulloff offset distance is travelled for all axis
+ * 
  * This change makes the code size a bit bigger but might make your
  * homing cycle yield more accurate results.
  * */
-// #define ENABLE_LONG_HOMING_CYCLE
+//  #define ENABLE_LONG_HOMING_CYCLE
+
+/**
+ * This modifies the behavior to match Grbl homing motion. Note this will force ENABLE_LONG_HOMING_CYCLE
+ *  Rapid limit find -> Rapid pull off -> Slow 2nd limit find -> Rapid pull off
+ * 
+ *  No final pulloff offset is performed in this mode as the pulloff is performed per axis and on contact
+ * 
+ */
+//  #define ENABLE_GRBL_STYLE_HOMING
 
 /**
  *
@@ -472,9 +483,8 @@ extern "C"
 // otherwise it will put the machine in hold (canceling the jog motion) until the user allows the code to continue to execute
 // #define IGNORE_JOG_TARGET_SOFT_LIMIT_ERROR
 #endif
-// uncomment to allow jog motions that travels beyond software limits to be clamped and continue to execute without alarm or error
-// #define ALLOW_SOFT_LIMIT_JOG_MOTION_CLAMPING
-
+	// uncomment to allow jog motions that travels beyond software limits to be clamped and continue to execute without alarm or error
+	// #define ALLOW_SOFT_LIMIT_JOG_MOTION_CLAMPING
 
 	/**
 	 * If the type of machine supports skew and needs skew correction
@@ -589,20 +599,13 @@ extern "C"
 	// #define FORCE_SOFT_POLLING
 
 	/**
-	 * Runs a check for state change inside the RTC ISR/task. This is a failsafe
-	 * check monitor the pins in a regular interval. The value sets the frequency of this safety
-	 * check that is executed every 2^(CTRL_SCHED_CHECK) milliseconds. A
-	 * negative value will disable this feature. The maximum is 7
-	 * */
-
-#define CTRL_SCHED_CHECK 4
-
-	/**
 	 * Uncomment to enable itp step generation to run inside the RTC ISR/task.
-	 * This ensures ITP starving prevention. Usually this will be executed at the same sample
-	 * rate as the interpolator with an upper bound of 1Khz and a lower bound of 3Hz
+	 * This ensures ITP starving prevention and runs the planner step calculation to run
+	 * periodically without being affect by any heavy code added by any modules
+	 *
+	 * From version 1.16+ this will be enabled by default
 	 * */
-// #define ENABLE_ITP_FEED_TASK
+#define ENABLE_ITP_FEED_TASK
 
 /**
  * Uncomment to invert Emergency stop button
