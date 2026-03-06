@@ -183,6 +183,8 @@ extern "C"
 #define PRINT_FTM_MINIMAL
 #endif
 
+// required to recuce code size
+#define DISABLE_ITP_STEP_GEN_OPTIMIZATIONS
 #define DISABLE_COORDINATES_SYSTEM_RAM
 
 #ifdef __cplusplus

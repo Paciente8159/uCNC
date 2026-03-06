@@ -70,6 +70,10 @@ extern "C"
 	{
 		itp_block_t *block;
 		uint16_t remaining_steps;
+#ifndef DISABLE_ITP_STEP_GEN_OPTIMIZATIONS
+		uint8_t idle_steppers;
+		uint8_t main_stepper;
+#endif
 		uint16_t timer_counter;
 		uint16_t timer_prescaller;
 #if (DSS_MAX_OVERSAMPLING != 0)
