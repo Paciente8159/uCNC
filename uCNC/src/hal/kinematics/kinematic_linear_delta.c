@@ -175,23 +175,12 @@ uint8_t kinematics_home(void)
 	}
 #endif
 
-	// unlocks the machine to go to offset
-	cnc_unlock(true);
-	float target[AXIS_COUNT];
-	motion_data_t block_data = {0};
-	mc_get_position(target);
-
-	// pull of only on the Z axis
-	target[AXIS_Z] += ((g_settings.homing_dir_invert_mask & (1 << AXIS_Z)) ? -g_settings.homing_offset : g_settings.homing_offset);
-
-	block_data.feed = g_settings.homing_fast_feed_rate;
-	block_data.spindle = 0;
-	block_data.dwell = 0;
-	// starts offset and waits to finnish
-	error = mc_line(target, &block_data);
-	itp_sync();
-
-	memset(target, 0, sizeof(target));
+#ifndef ENABLE_GRBL_STYLE_HOMING
+	if (!mc_home_motion_pulloff((1 << AXIS_Z), true))
+	{
+		return STATUS_CRITICAL_FAIL;
+	}
+#endif
 #ifndef SET_ORIGIN_AT_HOME_POS
 	if (g_settings.homing_dir_invert_mask & (1 << AXIS_Z))
 	{

@@ -441,11 +441,23 @@ extern "C"
  * Enabling this option changes the default, short homing cycle:
  *   Rapid approach -> Slow pull off
  * into a longer and potentially more precise:
- *   Rapid approach -> Rapid pull off -> Slow approach -> Slow pull off
+ *   Rapid limit find -> Rapid limit clear -> Slow 2nd limit find -> Slow limit clear
+ * 
+ * After this the pulloff offset distance is travelled for all axis
+ * 
  * This change makes the code size a bit bigger but might make your
  * homing cycle yield more accurate results.
  * */
-// #define ENABLE_LONG_HOMING_CYCLE
+//  #define ENABLE_LONG_HOMING_CYCLE
+
+/**
+ * This modifies the behavior to match Grbl homing motion. Note this will force ENABLE_LONG_HOMING_CYCLE
+ *  Rapid limit find -> Rapid pull off -> Slow 2nd limit find -> Rapid pull off
+ * 
+ *  No final pulloff offset is performed in this mode as the pulloff is performed per axis and on contact
+ * 
+ */
+//  #define ENABLE_GRBL_STYLE_HOMING
 
 /**
  *

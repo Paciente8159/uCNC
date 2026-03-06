@@ -106,6 +106,8 @@ extern "C"
 #ifdef ENABLE_MULTI_STEP_HOMING
 	void io_lock_limits(uint8_t limitmask);
 #endif
+	void io_enable_limits(void);
+	void io_disable_limits(void);
 	void io_invert_limits(uint8_t limitmask);
 	uint8_t io_get_raw_limits(void);
 	uint8_t io_get_limits(void);
