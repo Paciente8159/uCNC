@@ -102,15 +102,16 @@ extern "C"
 #define STATUS_TMC_CMD_MISSING_ARGS 51
 #define STATUS_VFD_COMMUNICATION_FAILED 52
 #define STATUS_EXTERNAL_SETTINGS_OK 53 // deprecated
-#define STATUS_LASER_PPI_MODE_DISABLED 54
+#define STATUS_PPI_MODE_DISABLED 54
 #define STATUS_TOOL_FAILURE 55
 #define STATUS_INVALID_PLANE_SELECTED 56
 #define STATUS_HARDLIMITS_DISABLED 57
 #define STATUS_STREAM_FAILED 58
 #define STATUS_JOG_CANCELED 59
 #define STATUS_MAXIMUM_PARAMS_PER_BLOCK_EXCEEDED 60
-#define STATUS_GCODE_EXTENDED_UNSUPPORTED 254 // deprecated
-#define STATUS_CRITICAL_FAIL 255
+#define STATUS_PROBE_UNSUCCESS 61
+#define STATUS_CRITICAL_FAIL 254
+#define STATUS_NO_CMD 255
 
 // special Grbl system commands return codes
 // These are not error codes but codes to print requested reports after parsing a grbl command
@@ -138,8 +139,8 @@ extern "C"
 #define GRBL_SYSTEM_CMD_EXTENDED (GRBL_SYSTEM_CMD + 20)
 #define GRBL_SYSTEM_CMD_EXTENDED_UNSUPPORTED 253
 
-#define EXEC_ALARM_SOFTRESET -2
-#define EXEC_ALARM_EMERGENCY_STOP -1
+#define EXEC_ALARM_SOFTRESET -127
+#define EXEC_ALARM_EMERGENCY_STOP -126
 #define EXEC_ALARM_NOALARM 0
 // Grbl alarm codes. Valid values (1-255). Zero is reserved for the reset alarm.
 #define EXEC_ALARM_HARD_LIMIT 1										 // hard limits hit while in motion other then homing
@@ -156,6 +157,7 @@ extern "C"
 #define EXEC_ALARM_SPINDLE_SYNC_FAIL 12						 // failed to achieve spindle sync speed
 #define EXEC_ALARM_HARD_LIMIT_NOMOTION 13					 // hard limits were triggered without any motion (position was not lost)
 #define EXEC_ALARM_PLASMA_THC_ARC_START_FAILURE 14 // failed to start arc with plasma THC
+#define EXEC_ALARM_ATC_ERROR 15 // an error ocurrer while executing a tool change via the tool changer gcode
 
 #ifndef DISABLE_SAFE_SETTINGS
 #define EXEC_ALARM_SETTINGS_READ_ERROR -3
@@ -174,7 +176,7 @@ extern "C"
 #elif EMULATE_GRBL_STARTUP == 1
 #define MSG_STARTUP_START "Grbl "
 #define MSG_STARTUP_END " [uCNC v" CNC_VERSION " '$' for help]"
-#elif EMULATE_GRBL_STARTUP == 2
+#elif EMULATE_GRBL_STARTUP >= 2
 #define MSG_STARTUP "Grbl 1.1f ['$' for help]" MSG_EOL
 #endif
 #ifndef MSG_STARTUP
@@ -231,21 +233,21 @@ extern "C"
 #endif
 
 #if AXIS_TO_STEPPERS == 1
-#define MSG_STEPPERS "%1ld"
+#define MSG_STEPPERS "%1lld"
 #elif AXIS_TO_STEPPERS == 2
-#define MSG_STEPPERS "%2ld"
+#define MSG_STEPPERS "%2lld"
 #elif AXIS_TO_STEPPERS == 3
-#define MSG_STEPPERS "%3ld"
+#define MSG_STEPPERS "%3lld"
 #elif AXIS_TO_STEPPERS == 4
-#define MSG_STEPPERS "%4ld"
+#define MSG_STEPPERS "%4lld"
 #elif AXIS_TO_STEPPERS == 5
-#define MSG_STEPPERS "%5ld"
+#define MSG_STEPPERS "%5lld"
 #elif AXIS_TO_STEPPERS == 6
-#define MSG_STEPPERS "%6ld"
+#define MSG_STEPPERS "%6lld"
 #elif AXIS_TO_STEPPERS == 7
-#define MSG_STEPPERS "%7ld"
+#define MSG_STEPPERS "%7lld"
 #else
-#define MSG_STEPPERS "%8ld"
+#define MSG_STEPPERS "%8lld"
 #endif
 
 #define MSG_STATUS_POS "Pos:"
@@ -255,7 +257,7 @@ extern "C"
 #if TOOL_COUNT > 0
 #define MSG_STATUS_FS "|FS:"
 #else
-#define MSG_STATUS_FS "|F:%f"
+#define MSG_STATUS_FS "|F:"
 #endif
 #define MSG_STATUS_WCO "|WCO:"
 #define MSG_STATUS_OVR "|Ov:"

@@ -29,34 +29,278 @@
 #include "c_types.h"
 #include "gpio.h"
 #include "eagle_soc.h"
-#include "uart_register.h"
 #include "osapi.h"
+#include <user_interface.h>
 #ifdef MCU_HAS_I2C
 #include "twi.h"
 #endif
 
-#define UART_PARITY_EN (BIT(1))
-#define UART_PARITY_EN_M 0x00000001
-#define UART_PARITY_EN_S 1
-#define UART_PARITY (BIT(0))
-#define UART_PARITY_M 0x00000001
-#define UART_PARITY_S 0
-
-static volatile bool esp8266_global_isr_enabled;
 static volatile uint32_t mcu_runtime_ms;
 
-void esp8266_uart_init(int baud);
-void esp8266_uart_process(void);
+#ifndef TIMER_IO_SAMPLE_RATE
+#define TIMER_IO_SAMPLE_RATE (F_STEP_MAX * 2)
+#endif
 
-#ifndef RAM_ONLY_SETTINGS
-extern void esp8266_eeprom_init(int size);
+/**
+ * Buffered outputs
+ *
+ * ESP8266 is a low IO count MCU. It has only 17 GPIO pins which allows tracking with an uint32_t var
+ * It also does not have hardware PWM drivers so all PWM and Servo signals need to be generated using one of the 2 available timers, in this case the ITP timer
+ *
+ * To minimize the time spent inside the ISR all IO pins values are calculated and buffered in memory (about 10ms worth of motion)
+ * The timer ISR simply pulls one value of the buffer and updates the GPIO pins
+ *
+ * The mcu_dotasks needs to be called frequently to keep a minimal amount of data in the buffer before the timer ISR starves the buffer
+ * To ensure that this happens there is also a second call to the buffer feeding function from the RTC timer ISR that computes at least 2ms worth of motion
+ *
+ * In realtime mode the MCU switches to realtime mode and lowers the ITP step rate to a value that allows for slow stepping rates at realtime.
+ * Glitches in PWM and servos might occur but realtime motions should mainly occur when tools are off (like probing, homing, etc...)
+ *
+ * In the future one possibility that can be experimented is using an emulated encoder to perform the step counting in the ISR with simple code
+ */
+volatile uint32_t esp8266_io_out;
+#if (IC74HC595_COUNT != 0)
+#if defined(IC74HC595_HAS_STEPS) || defined(IC74HC595_HAS_DIRS) || defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS)
+volatile uint32_t ic74hc595_io_out;
+#endif
+extern volatile uint8_t ic74hc595_io_pins[IC74HC595_COUNT];
+#endif
+#if (IC74HC165_COUNT != 0)
+extern volatile uint8_t ic74hc165_io_pins[IC74HC165_COUNT];
+#endif
+
+static volatile uint8_t esp8266_step_mode;
+
+typedef struct esp8266_io_out_
+{
+	uint32_t io;
+#if defined(IC74HC595_HAS_STEPS) || defined(IC74HC595_HAS_DIRS) || defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS)
+	uint32_t ic74hc595;
+#endif
+} esp8266_io_out_t;
+
+#if (IC74HC595_COUNT >= IC74HC165_COUNT)
+#define SHIFT_REGISTER_BYTES IC74HC595_COUNT
+#else
+#define SHIFT_REGISTER_BYTES IC74HC165_COUNT
+#endif
+
+#ifndef SHIFT_REGISTER_SDO
+#define SHIFT_REGISTER_SDO DOUT8
+#endif
+
+#ifndef SHIFT_REGISTER_SDI
+#define SHIFT_REGISTER_SDI DIN8
+#endif
+
+#ifndef SHIFT_REGISTER_CLK
+#define SHIFT_REGISTER_CLK DOUT9
+#endif
+
+#ifndef IC74HC595_LATCH
+#define IC74HC595_LATCH DOUT10
+#endif
+
+#ifndef IC74HC595_LATCH
+#define IC74HC595_LATCH DOUT10
+#endif
+
+#ifndef IC74HC165_LOAD
+#define IC74HC165_LOAD DOUT11
+#endif
+
+#ifndef SHIFT_REGISTER_DELAY_CYCLES
+#define SHIFT_REGISTER_DELAY_CYCLES 0
+#endif
+
+#define shift_register_delay() mcu_delay_cycles(SHIFT_REGISTER_DELAY_CYCLES)
+
+#ifdef SHIFT_REGISTER_CUSTOM_CALLBACK
+DECL_MUTEX(shifter_running);
+// custom implementation of the shift register using the SPI port
+MCU_CALLBACK void spi_shift_register_io_pins(void)
+{
+	BIN_SEMPH_INIT(shifter_running);
+
+	if(BIN_SEMPH_TRYLOCK(shifter_running))
+	{
+#if (IC74HC165_COUNT > 0)
+		mcu_set_output_gpio(IC74HC165_LOAD);
+#endif
+#if (IC74HC595_COUNT > 0)
+		mcu_clear_output_gpio(IC74HC595_LATCH);
+#endif
+
+#if (IC74HC595_COUNT != 0) || (IC74HC165_COUNT != 0)
+#if defined(IC74HC595_HAS_STEPS) || defined(IC74HC595_HAS_DIRS) || defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS)
+		memcpy((void *)((volatile uint32_t *)(0x60000000 + (0x140))) /*SPI1W0*/, (const void *)ic74hc595_io_pins, IC74HC595_COUNT);
+#endif
+		SPI1CMD |= SPIBUSY;
+#if defined(IC74HC165_HAS_LIMITS) || defined(IC74HC165_HAS_PROBE)
+		while (SPI1CMD & SPIBUSY)
+			;
+		memcpy((void *)ic74hc165_io_pins, (const void *)((volatile uint32_t *)(0x60000000 + (0x140))), IC74HC165_COUNT); // reads the previous SPI value
+#endif
+#endif
+#if (IC74HC165_COUNT > 0)
+		mcu_clear_output_gpio(IC74HC165_LOAD);
+#endif
+#if (IC74HC595_COUNT > 0)
+		mcu_set_output_gpio(IC74HC595_LATCH);
+#endif
+
+		BIN_SEMPH_UNLOCK(shifter_running);
+	}
+}
+#else
+#if (IC74HC595_COUNT != 0) || (IC74HC165_COUNT != 0)
+// use direct gpio
+MCU_CALLBACK void shift_register_io_pins(void)
+{
+	uint8_t pins[SHIFT_REGISTER_BYTES];
+
+#if (IC74HC165_COUNT > 0)
+	memset(pins, 0, IC74HC165_COUNT);
+	mcu_set_output_gpio(IC74HC165_LOAD);
+#endif
+#if (IC74HC595_COUNT > 0)
+	memcpy(pins, (const void *)ic74hc595_io_pins, IC74HC595_COUNT);
+	mcu_clear_output_gpio(IC74HC595_LATCH);
+#endif
+	/**
+	 * shift bytes
+	 */
+	for (uint8_t i = SHIFT_REGISTER_BYTES; i != 0;)
+	{
+		i--;
+		asm volatile("" : : : "memory");
+#if (defined(SHIFT_REGISTER_USE_HW_SPI) && defined(MCU_HAS_SPI))
+		pins[i] = mcu_spi_xmit(pins[i]);
+#else
+		uint8_t pinbyte = pins[i];
+		for (uint8_t j = 0x80; j != 0; j >>= 1)
+		{
+#if (SHIFT_REGISTER_DELAY_CYCLES)
+			shift_register_delay();
+#endif
+			mcu_clear_output_gpio(SHIFT_REGISTER_CLK);
+#if (IC74HC595_COUNT > 0)
+			// write
+			if (pinbyte & j)
+			{
+				mcu_set_output_gpio(SHIFT_REGISTER_SDO);
+			}
+			else
+			{
+				mcu_clear_output_gpio(SHIFT_REGISTER_SDO);
+			}
+#endif
+// read
+#if (IC74HC165_COUNT > 0)
+			if (mcu_get_input(SHIFT_REGISTER_SDI))
+			{
+				pinbyte |= j;
+			}
+			else
+			{
+				pinbyte &= ~j;
+			}
+#endif
+			mcu_set_output_gpio(SHIFT_REGISTER_CLK);
+		}
+
+#if (IC74HC165_COUNT > 0)
+		pins[i] = pinbyte;
+#endif
+
+#if (SHIFT_REGISTER_DELAY_CYCLES)
+		shift_register_delay();
+#endif
+		mcu_set_output_gpio(SHIFT_REGISTER_CLK);
+
+#endif
+	}
+
+#if (IC74HC165_COUNT > 0)
+	memcpy((void *)ic74hc165_io_pins, (const void *)pins, IC74HC165_COUNT);
+	mcu_clear_output_gpio(IC74HC165_LOAD); // allow a new load
+#endif
+#if (IC74HC595_COUNT > 0)
+	mcu_set_output_gpio(IC74HC595_LATCH);
+#endif
+}
+#endif
+#endif
+
+#define OUT_IO_BUFFER_SIZE (TIMER_IO_SAMPLE_RATE * 10 / 1000)	// (10 / 1000) => 10ms
+#define OUT_IO_BUFFER_MINIMAL (TIMER_IO_SAMPLE_RATE * 2 / 1000) // (2 / 1000) => 2ms
+
+/**
+ * IO buffer/queue implementation
+ * Implements a simple circular buffer
+ * */
+esp8266_io_out_t out_io_buffer[OUT_IO_BUFFER_SIZE];
+static volatile uint16_t out_io_tail;
+static volatile uint16_t out_io_head;
+
+static void FORCEINLINE out_io_reset(void)
+{
+	out_io_tail = 0;
+	out_io_head = 0;
+	memset(out_io_buffer, 0, sizeof(out_io_buffer));
+}
+
+static bool FORCEINLINE out_io_full()
+{
+	uint16_t h = out_io_head + 1;
+	h = (h < OUT_IO_BUFFER_SIZE) ? h : 0;
+	return (h == out_io_tail);
+}
+
+static bool FORCEINLINE out_io_empty()
+{
+	return (out_io_head == out_io_tail);
+}
+
+static void FORCEINLINE out_io_push(esp8266_io_out_t val)
+{
+	uint16_t h = out_io_head;
+	out_io_buffer[h] = val;
+	h++;
+	h = (h < OUT_IO_BUFFER_SIZE) ? h : 0;
+	ATOMIC_CODEBLOCK
+	{
+		out_io_head = h;
+	}
+}
+
+static esp8266_io_out_t FORCEINLINE out_io_pull(void)
+{
+	uint16_t t = out_io_tail;
+	esp8266_io_out_t val = out_io_buffer[t];
+
+	if (!out_io_empty())
+	{
+		t++;
+		t = (t < OUT_IO_BUFFER_SIZE) ? t : 0;
+		out_io_tail = t;
+	}
+	else
+	{
+		val.io = esp8266_io_out;
+#if defined(IC74HC595_HAS_STEPS) || defined(IC74HC595_HAS_DIRS) || defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS)
+		val.ic74hc595 = ic74hc595_io_out;
+#endif
+	}
+	return val;
+}
+
+#ifdef MCU_HAS_WIFI
+extern void esp8266_wifi_init(void);
+extern void esp8266_wifi_dotasks(void);
 #endif
 
 ETSTimer esp8266_rtc_timer;
-
-#ifndef ITP_SAMPLE_RATE
-#define ITP_SAMPLE_RATE (F_STEP_MAX * 2)
-#endif
 
 #ifdef MCU_HAS_ONESHOT_TIMER
 static uint32_t esp8266_oneshot_counter;
@@ -77,159 +321,9 @@ static FORCEINLINE void mcu_gen_oneshot(void)
 }
 #endif
 
-#if SERVOS_MASK > 0
-static uint32_t servo_tick_counter = 0;
-static uint32_t servo_tick_alarm = 0;
-static uint8_t mcu_servos[6];
-static FORCEINLINE void servo_reset(void)
-{
-#if ASSERT_PIN(SERVO0)
-	io_clear_output(SERVO0);
-#endif
-#if ASSERT_PIN(SERVO1)
-	io_clear_output(SERVO1);
-#endif
-#if ASSERT_PIN(SERVO2)
-	io_clear_output(SERVO2);
-#endif
-#if ASSERT_PIN(SERVO3)
-	io_clear_output(SERVO3);
-#endif
-#if ASSERT_PIN(SERVO4)
-	io_clear_output(SERVO4);
-#endif
-#if ASSERT_PIN(SERVO5)
-	io_clear_output(SERVO5);
-#endif
-}
-
-#define start_servo_timeout(timeout)                      \
-	{                                                       \
-		servo_tick_alarm = servo_tick_counter + timeout + 64; \
-	}
-
-static FORCEINLINE void servo_update(void)
-{
-	static uint8_t servo_counter = 0;
-
-	switch (servo_counter)
-	{
-#if ASSERT_PIN(SERVO0)
-	case SERVO0_FRAME:
-		io_set_output(SERVO0);
-		start_servo_timeout(mcu_servos[0]);
-		break;
-#endif
-#if ASSERT_PIN(SERVO1)
-	case SERVO1_FRAME:
-		io_set_output(SERVO1);
-		start_servo_timeout(mcu_servos[1]);
-		break;
-#endif
-#if ASSERT_PIN(SERVO2)
-	case SERVO2_FRAME:
-		io_set_output(SERVO2);
-		start_servo_timeout(mcu_servos[2]);
-		break;
-#endif
-#if ASSERT_PIN(SERVO3)
-	case SERVO3_FRAME:
-		io_set_output(SERVO3);
-		start_servo_timeout(mcu_servos[3]);
-		break;
-#endif
-#if ASSERT_PIN(SERVO4)
-	case SERVO4_FRAME:
-		io_set_output(SERVO4);
-		start_servo_timeout(mcu_servos[4]);
-		break;
-#endif
-#if ASSERT_PIN(SERVO5)
-	case SERVO5_FRAME:
-		io_set_output(SERVO5);
-		start_servo_timeout(mcu_servos[5]);
-		break;
-#endif
-	}
-
-	servo_counter++;
-	servo_counter = (servo_counter != 20) ? servo_counter : 0;
-}
-#endif
-
-static FORCEINLINE void mcu_gen_pwm_and_servo(void)
-{
-	static int16_t mcu_soft_io_counter;
-	int16_t t = mcu_soft_io_counter;
-	t--;
-	if (t <= 0)
-	{
-// updated software PWM pins
-#if defined(IC74HC595_HAS_PWMS) || defined(MCU_HAS_SOFT_PWM_TIMER)
-		io_soft_pwm_update();
-#endif
-
-		// update servo pins
-#if SERVOS_MASK > 0
-		// also run servo pin signals
-		uint32_t counter = servo_tick_counter;
-
-		// updated next servo output
-		if (!(counter & 0x7F))
-		{
-			servo_update();
-		}
-
-		// reached set tick alarm and resets all servo outputs
-		if (counter == servo_tick_alarm)
-		{
-			servo_reset();
-		}
-
-		// resets every 3ms
-		servo_tick_counter = ++counter;
-#endif
-		mcu_soft_io_counter = (int16_t)roundf((float)ITP_SAMPLE_RATE / 128000.0f);
-	}
-	else
-	{
-		mcu_soft_io_counter = t;
-	}
-}
-
-static volatile uint32_t mcu_itp_timer_reload;
-static volatile bool mcu_itp_timer_running;
-static FORCEINLINE void mcu_gen_step(void)
-{
-	static bool step_reset = true;
-	static int32_t mcu_itp_timer_counter;
-
-	// generate steps
-	if (mcu_itp_timer_running)
-	{
-		// stream mode tick
-		int32_t t = mcu_itp_timer_counter;
-		bool reset = step_reset;
-		t -= (int32_t)roundf(1000000.0f / (float)ITP_SAMPLE_RATE);
-		if (t <= 0)
-		{
-			if (!reset)
-			{
-				mcu_step_cb();
-			}
-			else
-			{
-				mcu_step_reset_cb();
-			}
-			step_reset = !reset;
-			mcu_itp_timer_counter = mcu_itp_timer_reload + t;
-		}
-		else
-		{
-			mcu_itp_timer_counter = t;
-		}
-	}
-}
+MCU_CALLBACK void mcu_gen_pwm(void);
+MCU_CALLBACK void mcu_gen_servo(void);
+MCU_CALLBACK void mcu_gen_step(void);
 
 IRAM_ATTR void mcu_din_isr(void)
 {
@@ -251,67 +345,149 @@ IRAM_ATTR void mcu_controls_isr(void)
 	mcu_controls_changed_cb();
 }
 
-IRAM_ATTR void mcu_rtc_isr(void *arg)
-{
-	mcu_runtime_ms++;
-	mcu_rtc_cb(mcu_runtime_ms);
-}
-
 IRAM_ATTR void mcu_itp_isr(void)
 {
-	mcu_gen_step();
-	mcu_gen_pwm_and_servo();
-	mcu_gen_oneshot();
-#if defined(IC74HC595_HAS_STEPS) || defined(IC74HC595_HAS_DIRS) || defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS)
-	ic74hc595_shift_io_pins();
+	if (esp8266_step_mode == ITP_STEP_MODE_REALTIME)
+	{
+		signal_timer.us_step = 1000000 / (TIMER_IO_SAMPLE_RATE >> 2);
+
+		mcu_gen_step();
+		mcu_gen_pwm();
+		mcu_gen_servo();
+
+#if defined(MCU_HAS_ONESHOT_TIMER) && defined(ENABLE_RT_SYNC_MOTIONS)
+		mcu_gen_oneshot();
+#endif
+	}
+
+	esp8266_io_out_t outputs = out_io_pull();
+	GPO = (outputs.io & 0xFFFF);
+	if (outputs.io & 0x10000)
+	{
+		GP16O |= 1;
+	}
+	else
+	{
+		GP16O &= ~1;
+	}
+
+#ifdef SHIFT_REGISTER_CUSTOM_CALLBACK
+	memcpy((void *)ic74hc595_io_pins, (const void *)&(outputs.ic74hc595), IC74HC595_COUNT);
+	spi_shift_register_io_pins();
+#elif (IC74HC595_COUNT != 0) || (IC74HC165_COUNT != 0)
+	memcpy((void *)ic74hc595_io_pins, (const void *)&(outputs.ic74hc595), IC74HC595_COUNT);
+	shift_register_io_pins();
 #endif
 }
 
-// static void mcu_uart_isr(void *arg)
-// {
-// 	/*ATTENTION:*/
-// 	/*IN NON-OS VERSION SDK, DO NOT USE "ICACHE_FLASH_ATTR" FUNCTIONS IN THE WHOLE HANDLER PROCESS*/
-// 	/*ALL THE FUNCTIONS CALLED IN INTERRUPT HANDLER MUST BE DECLARED IN RAM */
-// 	/*IF NOT , POST AN EVENT AND PROCESS IN SYSTEM TASK */
-// 	if ((READ_PERI_REG(UART_INT_ST(0)) & UART_FRM_ERR_INT_ST))
-// 	{
-// 		WRITE_PERI_REG(UART_INT_CLR(0), UART_FRM_ERR_INT_CLR);
-// 	}
-// 	else if ((READ_PERI_REG(UART_INT_ST(0)) & (UART_RXFIFO_FULL_INT_ST | UART_RXFIFO_TOUT_INT_ST)))
-// 	{
-// 		// disable ISR
-// 		CLEAR_PERI_REG_MASK(UART_INT_ENA(0), UART_RXFIFO_FULL_INT_ENA | UART_RXFIFO_TOUT_INT_ENA);
-// 		WRITE_PERI_REG(UART_INT_CLR(0), (READ_PERI_REG(UART_INT_ST(0)) & (UART_RXFIFO_FULL_INT_ST | UART_RXFIFO_TOUT_INT_ST)));
-// 		uint8_t fifo_len = (READ_PERI_REG(UART_STATUS(0)) >> UART_RXFIFO_CNT_S) & UART_RXFIFO_CNT;
-// 		uint8_t c = 0;
+#undef DBGMSG
+#define DBGMSG(fmt, ...)                                         \
+	prt_fmt(&mcu_uart_putc, PRINT_CALLBACK, fmt, ##__VA_ARGS__); \
+	mcu_uart_flush()
 
-// 		for (uint8_t i = 0; i < fifo_len; i++)
-// 		{
-// 			c = READ_PERI_REG(UART_FIFO(0)) & 0xFF;
-// 			mcu_com_rx_cb(c);
-// 		}
+void itp_buffer_dotasks(uint16_t limit)
+{
+	static volatile bool running = false;
+	// ATOMIC_CODEBLOCK
+	{
+		if (running)
+		{
+			return;
+		}
+		running = true;
+	}
 
-// 		WRITE_PERI_REG(UART_INT_CLR(0), UART_RXFIFO_FULL_INT_CLR | UART_RXFIFO_TOUT_INT_CLR);
-// 		// reenable ISR
-// 		SET_PERI_REG_MASK(UART_INT_ENA(0), UART_RXFIFO_FULL_INT_ENA | UART_RXFIFO_TOUT_INT_ENA);
-// 	}
-// 	else if (UART_TXFIFO_EMPTY_INT_ST == (READ_PERI_REG(UART_INT_ST(0)) & UART_TXFIFO_EMPTY_INT_ST))
-// 	{
-// 		/* to output uart data from uart buffer directly in empty interrupt handler*/
-// 		/*instead of processing in system event, in order not to wait for current task/function to quit */
-// 		/*ATTENTION:*/
-// 		/*IN NON-OS VERSION SDK, DO NOT USE "ICACHE_FLASH_ATTR" FUNCTIONS IN THE WHOLE HANDLER PROCESS*/
-// 		/*ALL THE FUNCTIONS CALLED IN INTERRUPT HANDLER MUST BE DECLARED IN RAM */
-// 		CLEAR_PERI_REG_MASK(UART_INT_ENA(0), UART_TXFIFO_EMPTY_INT_ENA);
-// 		mcu_com_tx_cb();
-// 		// system_os_post(uart_recvTaskPrio, 1, 0);
-// 		WRITE_PERI_REG(UART_INT_CLR(0), UART_TXFIFO_EMPTY_INT_CLR);
-// 	}
-// 	else if (UART_RXFIFO_OVF_INT_ST == (READ_PERI_REG(UART_INT_ST(0)) & UART_RXFIFO_OVF_INT_ST))
-// 	{
-// 		WRITE_PERI_REG(UART_INT_CLR(0), UART_RXFIFO_OVF_INT_CLR);
-// 	}
-// }
+	uint8_t mode = esp8266_step_mode;
+	// updates the working mode
+	if (mode & ITP_STEP_MODE_SYNC)
+	{
+		// let the buffer flush out
+		if (!out_io_empty())
+		{
+			running = false;
+			return;
+		}
+
+		timer1_disable();
+		out_io_reset();
+#ifdef SHIFT_REGISTER_CUSTOM_CALLBACK
+		spi_config_t conf = {0};
+		mcu_spi_config(conf, 20000000);
+		SPI1U1 = (((SHIFT_REGISTER_BYTES * 8) - 1) << SPILMOSI) | (((SHIFT_REGISTER_BYTES * 8) - 1) << SPILMISO);
+#endif
+		timer1_isr_init();
+		timer1_attachInterrupt(mcu_itp_isr);
+
+		switch (mode & ~ITP_STEP_MODE_SYNC)
+		{
+		case ITP_STEP_MODE_DEFAULT:
+			timer1_write((APB_CLK_FREQ / TIMER_IO_SAMPLE_RATE));
+			timer1_enable(TIM_DIV1, TIM_EDGE, TIM_LOOP);
+			break;
+		case ITP_STEP_MODE_REALTIME:
+			timer1_write((APB_CLK_FREQ / (TIMER_IO_SAMPLE_RATE >> 2)));
+			timer1_enable(TIM_DIV1, TIM_EDGE, TIM_LOOP);
+			break;
+		}
+
+		// clear sync flag
+		// ATOMIC_CODEBLOCK
+		{
+			esp8266_step_mode &= ~ITP_STEP_MODE_SYNC;
+		}
+	}
+
+	// fill the buffer in buffered mode
+	while (mode == ITP_STEP_MODE_DEFAULT && !out_io_full() && --limit)
+	{
+		signal_timer.us_step = 1000000 / TIMER_IO_SAMPLE_RATE;
+
+		mcu_gen_step();
+		mcu_gen_pwm();
+		mcu_gen_servo();
+#if defined(MCU_HAS_ONESHOT_TIMER) && defined(ENABLE_RT_SYNC_MOTIONS)
+		mcu_gen_oneshot();
+#endif
+		esp8266_io_out_t outputs;
+		outputs.io = esp8266_io_out;
+#if defined(IC74HC595_HAS_STEPS) || defined(IC74HC595_HAS_DIRS) || defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS)
+		outputs.ic74hc595 = ic74hc595_io_out;
+#endif
+		out_io_push(outputs);
+	}
+
+	// static uint32_t next_print;
+	// if (next_print < mcu_millis())
+	// {
+	// 	next_print = mcu_millis() + 3000;
+	// 	DBGMSG("mode: %hd, full?: %hd, buffer: %d\n", mode, (uint8_t)out_io_full(), out_io_head);
+	// }
+
+	running = false;
+}
+
+IRAM_ATTR void mcu_rtc_isr(void)
+{
+	mcu_runtime_ms++;
+	mcu_rtc_cb(mcu_runtime_ms);
+	itp_buffer_dotasks(OUT_IO_BUFFER_MINIMAL); // process at most 2ms of motion
+	uint32_t stamp = esp_get_cycle_count() + (ESP8266_CLOCK / 1000);
+	timer0_write(stamp);
+}
+
+// modifies the step generation mode
+uint8_t itp_set_step_mode(uint8_t mode)
+{
+	uint8_t last_mode = esp8266_step_mode;
+	itp_sync();
+#ifdef USE_I2S_REALTIME_MODE_ONLY
+	esp8266_step_mode = (ITP_STEP_MODE_SYNC | ITP_STEP_MODE_REALTIME);
+#else
+	esp8266_step_mode = (ITP_STEP_MODE_SYNC | mode);
+#endif
+	cnc_delay_ms(20);
+	return last_mode;
+}
 
 /**
  * initializes the mcu
@@ -321,33 +497,60 @@ IRAM_ATTR void mcu_itp_isr(void)
  *   - configure uart or usb
  *   - start the internal RTC
  * */
+
+extern void mcu_uart_dotasks(void);
+extern void mcu_uart_init(void);
+#ifndef RAM_ONLY_SETTINGS
+extern void mcu_eeprom_init(void);
+#endif
+extern void mcu_spi_init();
+
 void mcu_init(void)
 {
 	mcu_io_init();
+	mcu_uart_init();
+
 #ifndef RAM_ONLY_SETTINGS
-	esp8266_eeprom_init(NVM_STORAGE_SIZE); // 2K Emulated EEPROM
+	mcu_eeprom_init(); // Emulated EEPROM
 #endif
 
-	esp8266_uart_init(BAUDRATE);
+#ifdef MCU_HAS_WIFI
+	esp8266_wifi_init();
+#endif
 
-	// init rtc
-	os_timer_setfn(&esp8266_rtc_timer, (os_timer_func_t *)&mcu_rtc_isr, NULL);
-	os_timer_arm(&esp8266_rtc_timer, 1, true);
-
-	// init timer1
-	timer1_isr_init();
-	timer1_attachInterrupt(mcu_itp_isr);
-	timer1_enable(TIM_DIV1, TIM_EDGE, TIM_LOOP);
-	timer1_write((APB_CLK_FREQ / ITP_SAMPLE_RATE));
+	esp8266_step_mode = (ITP_STEP_MODE_DEFAULT | ITP_STEP_MODE_SYNC);
 
 #ifdef MCU_HAS_SPI
-	esp8266_spi_init(SPI_FREQ, SPI_MODE);
+	mcu_spi_init();
 #endif
 
 #ifdef MCU_HAS_I2C
 	i2c_master_gpio_init();
 	i2c_master_init();
 #endif
+
+	// kick start the RTC
+	// the RTC will start the ITP timer
+	uint32_t stamp = esp_get_cycle_count() + (ESP8266_CLOCK / 1000);
+	timer0_isr_init();
+	timer0_attachInterrupt(mcu_rtc_isr);
+	timer0_write(stamp);
+}
+
+/**
+ * runs all internal tasks of the MCU.
+ * for the moment these are:
+ *   - if USB is enabled and MCU uses tinyUSB framework run tinyUSB tud_task
+ * */
+void mcu_dotasks(void)
+{
+	// reset WDT
+	system_soft_wdt_feed();
+	mcu_uart_dotasks();
+#ifdef MCU_HAS_WIFI
+	esp8266_wifi_dotasks();
+#endif
+	// itp_buffer_dotasks(OUT_IO_BUFFER_MINIMAL);
 }
 
 /**
@@ -426,44 +629,6 @@ uint8_t mcu_get_servo(uint8_t servo)
 	return 0;
 }
 
-// ISR
-/**
- * enables global interrupts on the MCU
- * can be defined either as a function or a macro call
- * */
-#ifndef mcu_enable_global_isr
-void mcu_enable_global_isr(void)
-{
-	// ets_intr_unlock();
-	// xt_rsil(0);
-	esp8266_global_isr_enabled = true;
-}
-#endif
-
-/**
- * disables global interrupts on the MCU
- * can be defined either as a function or a macro call
- * */
-#ifndef mcu_disable_global_isr
-void mcu_disable_global_isr(void)
-{
-	esp8266_global_isr_enabled = false;
-	// xt_rsil(15);
-	// ets_intr_lock();
-}
-#endif
-
-/**
- * gets global interrupts state on the MCU
- * can be defined either as a function or a macro call
- * */
-#ifndef mcu_get_global_isr
-bool mcu_get_global_isr(void)
-{
-	return esp8266_global_isr_enabled;
-}
-#endif
-
 // Step interpolator
 /**
  * convert step rate to clock cycles
@@ -495,10 +660,10 @@ float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller)
 
 void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 {
-	if (!mcu_itp_timer_running)
+	if (!signal_timer.step_alarm_en)
 	{
-		mcu_itp_timer_reload = ticks * prescaller;
-		mcu_itp_timer_running = true;
+		signal_timer.itp_reload = ticks * prescaller;
+		signal_timer.step_alarm_en = true;
 	}
 	else
 	{
@@ -511,9 +676,9 @@ void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
  * */
 void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller)
 {
-	if (mcu_itp_timer_running)
+	if (signal_timer.step_alarm_en)
 	{
-		mcu_itp_timer_reload = ticks * prescaller;
+		signal_timer.itp_reload = ticks * prescaller;
 	}
 	else
 	{
@@ -526,9 +691,9 @@ void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller)
  * */
 void mcu_stop_itp_isr(void)
 {
-	if (mcu_itp_timer_running)
+	if (signal_timer.step_alarm_en)
 	{
-		mcu_itp_timer_running = false;
+		signal_timer.step_alarm_en = false;
 	}
 }
 
@@ -556,18 +721,6 @@ void esp8266_delay_us(uint16_t delay)
 uint32_t mcu_free_micros()
 {
 	return (uint32_t)(system_get_time() % 1000);
-}
-
-/**
- * runs all internal tasks of the MCU.
- * for the moment these are:
- *   - if USB is enabled and MCU uses tinyUSB framework run tinyUSB tud_task
- * */
-void mcu_dotasks(void)
-{
-	// reset WDT
-	system_soft_wdt_feed();
-	esp8266_uart_process();
 }
 
 // #ifdef MCU_HAS_I2C
@@ -636,7 +789,7 @@ void mcu_dotasks(void)
 void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 {
 	mcu_timeout_cb = fp;
-	esp8266_oneshot_reload = (128000UL / timeout);
+	esp8266_oneshot_reload = (TIMER_IO_SAMPLE_RATE / timeout);
 }
 #endif
 
@@ -650,5 +803,7 @@ void mcu_start_timeout()
 }
 #endif
 #endif
+
+   // for PS register bits
 
 #endif

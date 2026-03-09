@@ -2045,7 +2045,6 @@ extern "C"
 #endif
 #endif
 
-
 #if (IC74HC595_COUNT < 0)
 #undef IC74HC595_COUNT
 #define IC74HC595_COUNT 0
@@ -2069,7 +2068,7 @@ extern "C"
 #define ic74hc595_toggle_pin(pin) ic74hc595_io_pins[(__indirect__(pin, IO_BYTEOFFSET))] ^= (__indirect__(pin, IO_BITMASK))
 #endif
 #ifndef ic74hc595_get_pin
-#define ic74hc595_get_pin(pin) (ic74hc595_io_pins[(__indirect__(pin, IO_BYTEOFFSET))] & (1 << __indirect__(pin, IO_BITMASK)))
+#define ic74hc595_get_pin(pin) (ic74hc595_io_pins[(__indirect__(pin, IO_BYTEOFFSET))] & (__indirect__(pin, IO_BITMASK)))
 #endif
 #else
 #define ic74hc595_set_pin(pin)
@@ -2078,7 +2077,28 @@ extern "C"
 #define ic74hc595_get_pin(pin) 0
 #endif
 
-	void ic74hc595_shift_io_pins(void);
+/**
+ * Backward compatibility
+ */
+#ifdef IC74HC595_DATA
+#define SHIFT_REGISTER_SDO IC74HC595_DATA
+#endif
+
+#ifdef IC74HC595_CLK
+#define SHIFT_REGISTER_CLK IC74HC595_CLK
+#endif
+
+#ifdef IC74HC595_DELAY_CYCLES
+#define SHIFT_REGISTER_DELAY_CYCLES IC74HC595_DELAY_CYCLES
+#endif
+
+#ifdef IC74HC595_CUSTOM_SHIFT_IO
+#define SHIFT_REGISTER_CUSTOM_CALLBACK
+#endif
+
+#ifdef IC74HC595_USE_HW_SPI
+#define SHIFT_REGISTER_USE_HW_SPI
+#endif
 
 #ifdef __cplusplus
 }

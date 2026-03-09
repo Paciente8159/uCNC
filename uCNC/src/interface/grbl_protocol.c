@@ -200,8 +200,8 @@ const char pin_name_204[] __rom__ = "SPI_CLK";
 const char pin_name_205[] __rom__ = "SPI_SDI";
 const char pin_name_206[] __rom__ = "SPI_SDO";
 const char pin_name_207[] __rom__ = "SPI_CS";
-const char pin_name_208[] __rom__ = "I2C_SCL";
-const char pin_name_209[] __rom__ = "I2C_SDA";
+const char pin_name_208[] __rom__ = "I2C_CLK";
+const char pin_name_209[] __rom__ = "I2C_DATA";
 const char pin_name_210[] __rom__ = "TX2";
 const char pin_name_211[] __rom__ = "RX2";
 const char pin_name_212[] __rom__ = "SPI2_CLK";
@@ -304,7 +304,7 @@ void proto_feedback_fmt(const char *fmt, ...)
 	va_start(args, fmt);
 	grbl_stream_start_broadcast();
 	proto_putc('[');
-	prt_fmtva((void*)grbl_stream_putc, PRINT_CALLBACK, fmt, &args);
+	prt_fmtva((void *)grbl_stream_putc, PRINT_CALLBACK, fmt, &args);
 	proto_print(MSG_FEEDBACK_END);
 	va_end(args);
 }
@@ -329,6 +329,9 @@ WEAK_EVENT_HANDLER(proto_status)
 static FORCEINLINE void proto_status_tail(void)
 {
 	float axis[MAX(AXIS_COUNT, 3)];
+#if AXIS_COUNT < 3
+	memset(axis, 0, sizeof(axis));
+#endif
 	if (parser_get_wco(axis))
 	{
 		proto_print(MSG_STATUS_WCO);
@@ -394,6 +397,9 @@ void proto_status(void)
 	grbl_stream_start_broadcast();
 
 	float axis[MAX(AXIS_COUNT, 3)];
+#if AXIS_COUNT < 3
+	memset(axis, 0, sizeof(axis));
+#endif
 
 	int32_t steppos[AXIS_TO_STEPPERS];
 	io_get_steps_pos(steppos);
@@ -405,7 +411,7 @@ void proto_status(void)
 	uint16_t spindle = 0;
 #endif
 	uint8_t controls = io_get_controls();
-	uint8_t limits = io_get_limits();
+	uint8_t limits = io_get_raw_limits();
 	bool probe = io_get_probe();
 	uint8_t state = cnc_get_exec_state(0xFF);
 	uint8_t filter = 0x80;
@@ -457,7 +463,7 @@ void proto_status(void)
 			}
 			break;
 #endif
-		case EXEC_UNHOMED:
+		case EXEC_POSITION_MAYBE_LOST:
 		case EXEC_LIMITS:
 			if (!cnc_get_exec_state(EXEC_HOMING))
 			{
@@ -511,8 +517,10 @@ void proto_status(void)
 	proto_ftoa_array(axis, MAX(AXIS_COUNT, 3));
 	proto_print(MSG_STATUS_FS);
 	proto_ftoa(feed);
+#if TOOL_COUNT > 0
 	proto_putc(',');
 	proto_itoa(spindle);
+#endif
 
 #ifdef GCODE_PROCESS_LINE_NUMBERS
 	proto_print(MSG_STATUS_LINE);
@@ -597,6 +605,9 @@ void proto_gcode_coordsys(void)
 {
 	protocol_busy = true;
 	float axis[MAX(AXIS_COUNT, 3)];
+#if AXIS_COUNT < 3
+	memset(axis, 0, sizeof(axis));
+#endif
 
 	for (uint8_t i = 0; i < COORD_SYS_COUNT; i++)
 	{
@@ -648,6 +659,9 @@ void proto_gcode_coordsys(void)
 void proto_probe_result(uint8_t val)
 {
 	float axis[MAX(AXIS_COUNT, 3)];
+#if AXIS_COUNT < 3
+	memset(axis, 0, sizeof(axis));
+#endif
 	parser_get_coordsys(255, axis);
 	proto_print("[PRB:");
 	proto_ftoa_array(axis, MAX(AXIS_COUNT, 3));
@@ -803,12 +817,31 @@ void proto_cnc_settings(void)
 {
 	protocol_busy = true;
 	uint8_t count = settings_count();
+#ifdef PRINT_CNC_SETTINGS_IN_ORDER
+	int16_t curr_id = -1;
+#endif
 
 	for (uint8_t i = 0; i < count; i++)
 	{
 		setting_id_t s = {0};
 		uint8_t max = 1;
+#ifdef PRINT_CNC_SETTINGS_IN_ORDER
+		uint8_t dist = 255;
+		for (uint8_t j = 0; j < count; j++)
+		{
+			setting_id_t p = {0};
+			rom_memcpy(&p, &g_settings_id_table[j], sizeof(setting_id_t));
+			if ((p.id - curr_id) > 0 && (p.id - curr_id) < dist)
+			{
+				dist = (p.id - curr_id);
+				memcpy(&s, &p, sizeof(setting_id_t));
+			}
+		}
+		curr_id = s.id;
+#else
 		rom_memcpy(&s, &g_settings_id_table[i], sizeof(setting_id_t));
+#endif
+
 		if (s.type & SETTING_ARRAY)
 		{
 			max = SETTING_ARRCNT(s.type);
@@ -819,19 +852,19 @@ void proto_cnc_settings(void)
 			uint32_t val = 0;
 			switch (SETTING_TYPE_MASK(s.type))
 			{
-			case 1:
-				val = (uint32_t)((bool *)s.memptr)[j];
+			case SETTING_TYPE_BOOL:
+				val = (uint32_t)(((bool *)s.memptr)[j]);
 				proto_gcode_setting_line_int(s.id, val);
 				break;
-			case 2:
-				val = (uint32_t) * ((uint8_t *)s.memptr);
+			case SETTING_TYPE_UINT8:
+				val = (uint32_t)(((uint8_t *)s.memptr)[j]);
 				proto_gcode_setting_line_int(s.id, val);
 				break;
-			case 3:
-				val = (uint32_t) * ((uint16_t *)s.memptr);
+			case SETTING_TYPE_UINT16:
+				val = (uint32_t)(((uint16_t *)s.memptr)[j]);
 				proto_gcode_setting_line_int(s.id, val);
 				break;
-			default:
+			default: // default is float
 				proto_gcode_setting_line_flt(s.id, ((float *)s.memptr)[j]);
 				break;
 			}
@@ -1037,7 +1070,7 @@ void proto_pins_states(void)
 #endif
 
 #define DSS_INFO "DSS" STRGIFY(DSS_MAX_OVERSAMPLING) "_" STRGIFY(DSS_CUTOFF_FREQ) ","
-#define PLANNER_INFO           \
+#define PLANNER_INFO             \
 	STRGIFY(PLANNER_BUFFER_SIZE) \
 	","
 

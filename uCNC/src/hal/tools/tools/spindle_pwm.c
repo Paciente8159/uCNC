@@ -44,12 +44,6 @@
 #endif
 #endif
 
-#ifdef SPINDLE_PWM_HAS_RPM_ENCODER
-#ifndef ENABLE_ENCODER_RPM
-#error "To use RPM encoder you must enable ENABLE_ENCODER_RPM in the HAL"
-#endif
-#endif
-
 #if defined(ENABLE_TOOL_PID_CONTROLLER) && !defined(DISABLE_SPINDLE_PWM_PID)
 #ifndef SPINDLE_PWM_PID_SAMPLE_RATE_HZ
 #define SPINDLE_PWM_PID_SAMPLE_RATE_HZ 125
@@ -125,8 +119,8 @@ static int16_t range_speed(int16_t value, uint8_t conv)
 
 static uint16_t get_speed(void)
 {
-#ifdef SPINDLE_PWM_HAS_RPM_ENCODER
-	return encoder_get_rpm();
+#ifdef SPINDLE_PWM_RPM_ENCODER
+	return encoder_get_rpm(SPINDLE_PWM_RPM_ENCODER);
 #else
 #if ASSERT_PIN(SPINDLE_PWM)
 	return tool_get_setpoint();

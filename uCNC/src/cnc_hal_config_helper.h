@@ -53,8 +53,8 @@ extern "C"
 #include "hal/tools/tool.h" //configures the kinematics for the cnc machine
 // final HAL configurations
 #include "../cnc_hal_config.h"		//inicializes the HAL hardcoded connections
-#include "../cnc_hal_overrides.h" //config override file
-#include "modules/ic74hc595.h"		// io extender
+#include "../cnc_hal_overrides.h"	//config override file
+#include "modules/shift_register.h" // io extender
 
 	/**
 	 *
@@ -237,86 +237,32 @@ extern "C"
 
 #if ENCODERS > 0
 
-#if ENCODERS > 0
-#if (!ASSERT_PIN(ENC0_PULSE))
-#error "The ENC0 pulse pin is not defined"
+#ifndef ENC0_MASK
+#define ENC0_MASK (1 << ENC0)
 #endif
-#if (!ASSERT_PIN(ENC0_DIR))
-#error "The ENC0 dir pin is not defined"
-#endif
-#define ENC0_MASK (1 << (ENC0_PULSE - DIN_PINS_OFFSET))
-#endif
-#if ENCODERS > 1
-#if (!ASSERT_PIN(ENC1_PULSE))
-#error "The ENC1 pulse pin is not defined"
-#endif
-#if (!ASSERT_PIN(ENC1_DIR))
-#error "The ENC1 dir pin is not defined"
-#endif
+#ifndef ENC1_MASK
 #define ENC1_MASK (1 << ENC1)
 #endif
-#if ENCODERS > 2
-#if (!ASSERT_PIN(ENC2_PULSE))
-#error "The ENC2 pulse pin is not defined"
-#endif
-#if (!ASSERT_PIN(ENC2_DIR))
-#error "The ENC2 dir pin is not defined"
-#endif
+#ifndef ENC2_MASK
 #define ENC2_MASK (1 << ENC2)
 #endif
-#if ENCODERS > 3
-#if (!ASSERT_PIN(ENC3_PULSE))
-#error "The ENC3 pulse pin is not defined"
-#endif
-#if (!ASSERT_PIN(ENC3_DIR))
-#error "The ENC3 dir pin is not defined"
-#endif
+#ifndef ENC3_MASK
 #define ENC3_MASK (1 << ENC3)
 #endif
-#if ENCODERS > 4
-#if (!ASSERT_PIN(ENC4_PULSE))
-#error "The ENC4 pulse pin is not defined"
-#endif
-#if (!ASSERT_PIN(ENC4_DIR))
-#error "The ENC4 dir pin is not defined"
-#endif
+#ifndef ENC4_MASK
 #define ENC4_MASK (1 << ENC4)
 #endif
-#if ENCODERS > 5
-#if (!ASSERT_PIN(ENC5_PULSE))
-#error "The ENC5 pulse pin is not defined"
-#endif
-#if (!ASSERT_PIN(ENC5_DIR))
-#error "The ENC5 dir pin is not defined"
-#endif
+#ifndef ENC5_MASK
 #define ENC5_MASK (1 << ENC5)
 #endif
-#if ENCODERS > 6
-#if (!ASSERT_PIN(ENC6_PULSE))
-#error "The ENC6 pulse pin is not defined"
-#endif
-#if (!ASSERT_PIN(ENC6_DIR))
-#error "The ENC6 dir pin is not defined"
-#endif
+#ifndef ENC6_MASK
 #define ENC6_MASK (1 << ENC6)
 #endif
-#if ENCODERS > 7
-#if (!ASSERT_PIN(ENC7_PULSE))
-#error "The ENC7 pulse pin is not defined"
-#endif
-#if (!ASSERT_PIN(ENC7_DIR))
-#error "The ENC7 dir pin is not defined"
-#endif
+#ifndef ENC7_MASK
 #define ENC7_MASK (1 << ENC7)
 #endif
-#ifdef ENABLE_ENCODER_RPM
-#if (RPM_ENCODER < ENC0 || RPM_ENCODER > ENC7 || ENCODERS < ENCODERS)
-#error "The RPM encoder must be assign to one of the available encoders"
-#endif
-#define __encoder_mask__(X) ENC##X##_MASK
-#define encoder_mask(X) __encoder_mask__(X)
-#define RPM_ENCODER_MASK encoder_mask(RPM_ENCODER)
-#endif
+
+#define ENCODERS_MASK (ENC0_MASK | ENC1_MASK | ENC2_MASK | ENC3_MASK | ENC4_MASK | ENC5_MASK | ENC6_MASK | ENC7_MASK)
 
 #ifdef STEP0_ENCODER
 #define STEP0_ENCODER_MASK (1 << STEP0_ENCODER)
@@ -353,6 +299,19 @@ extern "C"
 
 #endif
 
+#if ENCODERS > 0
+#if defined(ENC0_READ) || defined(ENC1_READ) || defined(ENC2_READ) || defined(ENC3_READ) || defined(ENC4_READ) || defined(ENC5_READ) || defined(ENC6_READ) || defined(ENC7_READ)
+#ifdef DISABLE_RTC_CODE
+#undef DISABLE_RTC_CODE
+#warning "Communication encoders removed DISABLE_RTC_CODE"
+#endif
+#ifndef ENABLE_MAIN_LOOP_MODULES
+#define ENABLE_MAIN_LOOP_MODULES
+#warning "Communication encoders added ENABLE_MAIN_LOOP_MODULES"
+#endif
+#endif
+#endif
+
 #ifndef STEPPERS_ENCODERS_MASK
 #define STEPPERS_ENCODERS_MASK 0
 #endif
@@ -364,13 +323,23 @@ extern "C"
 #ifdef STEPPER_CURR_DIGIPOT
 #ifndef ENABLE_MAIN_LOOP_MODULES
 #define ENABLE_MAIN_LOOP_MODULES
+#warning "Stepper current digipot enabled ENABLE_MAIN_LOOP_MODULES"
+#endif
+#endif
+
+#ifdef ENABLE_MAIN_LOOP_MODULES
+#ifndef ENABLE_ITP_FEED_TASK
+#define ENABLE_ITP_FEED_TASK
 #endif
 #endif
 
 /*laser ppi*/
 #if (TOOL_COUNT < 1)
+#ifdef ENABLE_LASER_PPI
 #undef ENABLE_LASER_PPI
 #undef ENABLE_PLASMA_THC
+#warning "Tool count 0. Laser PPI disabled"
+#endif
 #endif
 
 #ifdef ENABLE_LASER_PPI
@@ -407,12 +376,21 @@ extern "C"
 #ifndef LASER_PPI
 #define LASER_PPI UNDEF_PIN
 #endif
-// #ifdef STEP_ISR_SKIP_MAIN
-// #undef STEP_ISR_SKIP_MAIN
-// #warning "STEP_ISR_SKIP_MAIN was disabled for Laser PPI mode"
-// #endif
 #else
 #define LASER_PPI UNDEF_PIN
+#endif
+
+#ifdef ENABLE_EMBROIDERY
+#ifndef MCU_HAS_ONESHOT_TIMER
+#error "The current MCU does not support ONESHOT_TIMER or the ONESHOT_TIMER is not configured"
+#endif
+#endif
+
+#ifdef ABC_INDEP_FEED_CALC
+#ifdef ENABLE_LINACT_PLANNER
+#undef ENABLE_LINACT_PLANNER
+#warning "ENABLE_LINACT_PLANNER was disabled for ABC_INDEP_FEED_CALC"
+#endif
 #endif
 
 /**
@@ -1955,52 +1933,60 @@ extern "C"
 #if (!ASSERT_PIN(LIMIT_X))
 #define LIMIT_X_INV_MASK 0
 #else
-#define LIMIT_X_INV_MASK 1
+#define LIMIT_X_INV_MASK LIMIT_X_IO_MASK
 #endif
 #if (!ASSERT_PIN(LIMIT_Y))
 #define LIMIT_Y_INV_MASK 0
 #else
-#define LIMIT_Y_INV_MASK 2
+#define LIMIT_Y_INV_MASK LIMIT_Y_IO_MASK
 #endif
 #if (!ASSERT_PIN(LIMIT_Z))
 #define LIMIT_Z_INV_MASK 0
 #else
-#define LIMIT_Z_INV_MASK 4
+#define LIMIT_Z_INV_MASK LIMIT_Z_IO_MASK
 #endif
 #if (!ASSERT_PIN(LIMIT_A))
 #define LIMIT_A_INV_MASK 0
 #else
-#define LIMIT_A_INV_MASK 8
+#define LIMIT_A_INV_MASK LIMIT_A_IO_MASK
 #endif
 #if (!ASSERT_PIN(LIMIT_B))
 #define LIMIT_B_INV_MASK 0
 #else
-#define LIMIT_B_INV_MASK 16
+#define LIMIT_B_INV_MASK LIMIT_B_IO_MASK
 #endif
 #if (!ASSERT_PIN(LIMIT_C))
 #define LIMIT_C_INV_MASK 0
 #else
-#define LIMIT_C_INV_MASK 32
+#define LIMIT_C_INV_MASK LIMIT_C_IO_MASK
 #endif
 
 #if (!ASSERT_PIN(LIMIT_X2))
 #define LIMIT_X2_INV_MASK 0
 #else
-#define LIMIT_X2_INV_MASK 1
+#define LIMIT_X2_INV_MASK LIMIT_X2_IO_MASK
 #endif
 #if (!ASSERT_PIN(LIMIT_Y2))
 #define LIMIT_Y2_INV_MASK 0
 #else
-#define LIMIT_Y2_INV_MASK 2
+#define LIMIT_Y2_INV_MASK LIMIT_Y2_IO_MASK
 #endif
 #if (!ASSERT_PIN(LIMIT_Z2))
 #define LIMIT_Z2_INV_MASK 0
 #else
-#define LIMIT_Z2_INV_MASK 4
+#define LIMIT_Z2_INV_MASK LIMIT_Z2_IO_MASK
 #endif
 
-#define LIMITS_INV_MASK (LIMIT_X_INV_MASK | LIMIT_Y_INV_MASK | LIMIT_Z_INV_MASK | LIMIT_A_INV_MASK | LIMIT_B_INV_MASK | LIMIT_C_INV_MASK)
 #define LIMITS_DUAL_INV_MASK (LIMIT_X2_INV_MASK | LIMIT_Y2_INV_MASK | LIMIT_Z2_INV_MASK)
+#define LIMITS_INV_MASK (LIMIT_X_INV_MASK | LIMIT_Y_INV_MASK | LIMIT_Z_INV_MASK | LIMIT_A_INV_MASK | LIMIT_B_INV_MASK | LIMIT_C_INV_MASK | LIMITS_DUAL_INV_MASK)
+
+#ifndef LIMITS_NORMAL_OPERATION_MASK
+#ifdef DISABLE_ROTATIONAL_AXIS_LIMITS_AFTER_HOMING
+#define LIMITS_NORMAL_OPERATION_MASK (LIMIT_A_IO_MASK | LIMIT_B_IO_MASK | LIMIT_C_IO_MASK)
+#else
+#define LIMITS_NORMAL_OPERATION_MASK 0
+#endif
+#endif
 
 #if (ASSERT_PIN(DIN0) && defined(DIN0_ISR))
 #define DIN0_MASK 1
@@ -2098,18 +2084,8 @@ extern "C"
 #endif
 #endif
 
-#ifndef CTRL_SCHED_CHECK
-#define CTRL_SCHED_CHECK -1
-#else
-#if CTRL_SCHED_CHECK > 7
-#error CTRL_SCHED_CHECK invalid value! Max is 7
-#endif
-#define CTRL_SCHED_CHECK_MASK ((1 << (CTRL_SCHED_CHECK + 1)) - 1)
-#define CTRL_SCHED_CHECK_VAL (1 << (CTRL_SCHED_CHECK))
-#endif
-
-#ifdef DISABLE_RTC_CODE
-#undef ENABLE_ITP_FEED_TASK
+#ifdef ENABLE_ITP_FEED_TASK
+#undef DISABLE_RTC_CODE
 #endif
 
 #ifndef BRESENHAM_16BIT
@@ -2387,6 +2363,15 @@ typedef uint16_t step_t;
 #endif
 #endif
 
+#ifdef ENABLE_G39_H_MAPPING
+#if H_MAPING_GRID_FACTOR < 2 || H_MAPING_GRID_FACTOR > 6
+#error "H_MAPING_GRID_FACTOR must be a value between 2 and 6"
+#endif
+#define H_MAPING_ARRAY_SIZE (H_MAPING_GRID_FACTOR * H_MAPING_GRID_FACTOR)
+#else
+#undef H_MAPPING_EEPROM_STORE_ENABLED
+#endif
+
 #ifndef DISABLE_SETTINGS_MODULES
 #define ENABLE_SETTINGS_MODULES
 #endif
@@ -2398,6 +2383,13 @@ typedef uint16_t step_t;
 #endif
 #ifndef ENABLE_PARSER_MODULES
 #define ENABLE_PARSER_MODULES
+#endif
+#endif
+
+#ifdef ENABLE_EMBROIDERY
+// forces modes
+#ifndef ENABLE_RT_SYNC_MOTIONS
+#define ENABLE_RT_SYNC_MOTIONS
 #endif
 #endif
 
@@ -2424,6 +2416,25 @@ typedef uint16_t step_t;
 #ifndef ENABLE_SETTINGS_MODULES
 #define ENABLE_SETTINGS_MODULES
 #endif
+#endif
+
+#if EMULATE_GRBL_STARTUP > 2
+#ifndef DISABLE_ENDPROGRAM_LOCK
+#define DISABLE_ENDPROGRAM_LOCK
+#endif
+#endif
+
+#ifdef ENABLE_RT_SYNC_MOTIONS
+#if !defined(RT_STEP_PREVENT_CONDITION) && !defined(DISABLE_RT_STEP_PREVENT_CONDITION)
+#define RT_STEP_PREVENT_CONDITION (itp_rt_step_prevent_cb && itp_rt_step_prevent_cb())
+#elif defined(RT_STEP_PREVENT_CONDITION)
+#define RT_STEP_PREVENT_HAS_CUSTOM_CONDITION
+#endif
+#endif
+
+#ifdef ENABLE_GRBL_STYLE_HOMING
+// forces a long cycle
+#define ENABLE_LONG_HOMING_CYCLE
 #endif
 
 #include "hal/io_hal.h"

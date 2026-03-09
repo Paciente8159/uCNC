@@ -11,20 +11,35 @@
 To configure µCNC to fit your hardware you can use [µCNC config builder web tool](https://paciente8159.github.io/uCNC-config-builder/) to generate the config override files.
 Although most of the options are configurable via the web tool, some options might be missing and you might need to add them manually (regarding tools or addon modules mostly).
 
-# VERSION 1.11+ NOTES
+# Useful Links
 
-Version 1.11 come with a full refactoring of the compilation units of µCNC interface:
-  - all communications calls to output messages now are done via the proto_xxx calls in grbl_protocol.h. No more calls to serial stream directly mixed with protocol calls.
-	- self implemented subset/custom of stdio printf helpers. It's now possible to print formated messages via protocol. No need to do specific calls to print variables like numbers, strings, char, ip addresse, bytes, etc...
-	- improvements to the debug message system. Now a single call to DBGMSG macro is used. The same principle of formated messages is applied.
-	- Debug messages now have an intermediate buffer that stores the output before printing it to prevent outputing debug messages in the middle of onging protocol messages
-	- Added parsing support for O-Codes (subrotines)
-	- Initial support for RP2350 (still experimental stage).
+Some useful links with detailed information about µCNC
+_**Jump to section**_
+* [µCNC Wiki](https://github.com/Paciente8159/uCNC/wiki)
+* [µCNC config files](https://github.com/Paciente8159/uCNC/tree/master/uCNC/README.md)
+* [µCNC custom modules and events system](https://github.com/Paciente8159/uCNC/blob/master/uCNC/src/README.md)
+* [µCNC kinematics HAL](https://github.com/Paciente8159/uCNC/blob/master/uCNC/src/hal/kinematics/README.md)
+* [µCNC MCU HAL](https://github.com/Paciente8159/uCNC/blob/master/uCNC/src/hal/mcus/README.md)
+* [µCNC tool HAL](https://github.com/Paciente8159/uCNC/tree/master/uCNC/src/hal/tools/README.md)
+	* [µCNC existing tools configuration](https://github.com/Paciente8159/uCNC/blob/master/uCNC/src/hal/tools/tools/README.md)
+* [µCNC default pinouts](https://github.com/Paciente8159/uCNC/blob/master/PINOUTS.md)
+
+
+# VERSION 1.15+ NOTES
+
+Version 1.15 introduces the following changes:
+  - added new embroidery tool mode and new embroidery tool based on a stepper motor to control the needle. This tool mode is able to run the needle motor and the axis with different speed profiles to target specific motion needs of this type of tool.
+  - added new encoder module enhancements with support for I2C and SSI encoders 
+  - new hooks/callbacks to allow the creation and usage of custom ATC (automatic tool change) modules
+  - added new planner event to allow last minute modifications to motions blocks being sent to the step generator
+
 
 # IMPORTANT NOTE
 
-By default and as a safety measure µCNC control inputs (Emergency stop, Safety door, Hold, Cycle start-resume), as well as limit switches and probe, are held high by the microcontroller input weak-pull up resistors. If left unconnected or connected to normally opened switches these inputs will be in an active/triggered state and the controller may lock all motions.
-There are a few ways you can reconfigure µCNC to enable normal operation [here](https://github.com/Paciente8159/uCNC/wiki/Basic-user-guide#%C2%B5cnc-wiring).
+The default behavior for µCNC will be as described:
+
+  - All control inputs (Emergency stop, Safety door, Hold, Cycle start-resume), limit switches and probe input are held high by the MCU internal weak pull ups and will be active if left unconnected. If Emergency Stop is active the board will remain in Alarm mode and will not allow you to do much (besides querying the current board status via `?`). There are a few ways you can reconfigure µCNC to enable normal operation [here](https://github.com/Paciente8159/uCNC/wiki/Basic-user-guide#%C2%B5cnc-wiring)
+	- On first time flashing the board, or if the settings structure is modified, the board will be (and remain) in Alarm mode until a full settings reset is performed (`$RST=*`). This forces the user to acknowledge that the settings were modified and that the current parameters are known. This is a safety feature that prevents users to start using the machine with the default values of the settings accidentally (for example if using the SD card as a settings storage source and some sort of reading error occurs). You can revert this behavior to the Grbl default by enabling `DISABLE_SAFE_SETTINGS` option.
 
 Also beware that the main branch contain the latest changes, including bug fixes and some intermediate changes. Some of theses changes are very extent and can come with issues and although new PR are tested, they might have unexpected errors or behavior. If you find and issue please report. Also prefer the latest release version over the master branch.
 
@@ -46,7 +61,8 @@ You can navigate the [project wiki](https://github.com/Paciente8159/uCNC/wiki) t
 
 You can expand µCNC using via modules. The available modules are at the [µCNC-modules repository](https://github.com/Paciente8159/uCNC-modules).
 
-You can now also use [µCNC config builder web tool](https://paciente8159.github.io/uCNC-config-builder/) to generate the files needed to adapt µCNC to your board.
+A new [µCNC configuration webapp tool](https://github.com/Paciente8159/uCNC-webconfig) is now available (still in test mode) and will support version 1.12+ and allows you to generate/store your project configuration.
+For previous versions, the [old configuration webapp tool](https://paciente8159.github.io/uCNC-config-builder/) will continue to remain avaliable.
 
 You can also reach me at µCNC discord channel
 
@@ -60,7 +76,30 @@ You can also reach me at µCNC discord channel
 
 ## Current µCNC status
 
-µCNC current major version is v1.11. You can check all the new features, changes and bug fixes in the [CHANGELOG](https://github.com/Paciente8159/uCNC/blob/master/CHANGELOG.md).
+µCNC current major version is v1.15. You can check all the new features, changes and bug fixes in the [CHANGELOG](https://github.com/Paciente8159/uCNC/blob/master/CHANGELOG.md).
+
+Version 1.15 added the following new major features.
+  - added new embroidery tool mode and new embroidery tool based on a stepper motor to control the needle. This tool mode is able to run the needle motor and the axis with different speed profiles to target specific motion needs of this type of tool.
+  - added new encoder module enhancements with support for I2C and SSI encoders 
+  - new hooks/callbacks to allow the creation and usage of custom ATC (automatic tool change) modules. A new ATC module will also be made available.
+  - added new planner event to allow last minute modifications to motions blocks being sent to the step generator. 
+
+Version 1.14 added the following new major features.
+  - new atomic primitives (similar to C11) including atomic CAS and basic semaphores.
+  - ring buffer non-blocking methods.
+  - new Grbl compatibility level (level 3) that is even less restrctive. This should improve Grbl GUI initial connection to the controller since this does not block as much. The Emergency Stop input behavior is also modified (change state only) and does not lock out if active.
+  - new embroidary tool type support.
+  - improved support for encoders (still in development)
+
+Version 1.13 added the following new major features.
+  - added initial suport for ESP32-S3 and ESP-C3 variants. This is support is not yet complete, as some features are missing (like BLE support). Other features like I2S support for custom IO shifters are still under test.
+
+Version 1.12 added the following new major features.
+  - added suport for STM32H7 single core MCU family. This is support is not yet complete, as some features are missing (like analog inputs, DMA support for SPI and EEPROM emulation)
+	- complete code refactoring for ESP8266 core allowing to amke use of the new shift register to expand IO capabilities on this MCU (output and input) via SPI
+	- new shift register that now also supports 74HC165 (along with the 74HC595 previously integrated)
+	- slight refactoring of IO HAL to support the new shift register
+	- re-introduction of boards friendly names for configuration in Arduino IDE and makefiles
 
 Version 1.11 added the following new major features.
 - self implemented subset/custom of stdio printf helpers. It's now possible to print formated messages via protocol. No need to do specific calls to print variables like numbers, strings, char, ip addresse, bytes, etc...
@@ -114,7 +153,7 @@ Version 1.5 added a couple of new features.
 Version 1.4 added the following new features.
 
 - added support for STM32F4 MCU and the Blackpill boards.
-- new servo PIN type that generates a 50Hz with TOn - 1~2ms needed to control servo type motors.
+- new servo PIN type that generates a 50Hz with TOn (on phase) - 1~2ms (width) needed to control servo type motors.
 - support for delta kinematics.
 - new modular extension system based on events, delegates and listeners. It's now possible to inject code anywhere inside the core code by creating and adding code hooks that can then call and execute multiple listeners
 - added optional variable acceleration step generation (S-Curve speed profile)
@@ -253,13 +292,16 @@ It can run on:
 - STM32F1 (like the Bluepill) - v1.1.x
 - SAMD21 (Arduino Zero/M0) - v1.3.x
 - STM32F4 (like the Blackpill) - v1.4.x (Does not emulate EEPROM)
-- ESP8266 - v1.5.x (supports wifi connection via telnet, lacks analog and input isr)
+- ESP8266 - v1.5.x/v1.12.x (supports wifi connection via telnet, lacks analog and input isr)
 - ESP32 - v1.5.x (supports wifi connection via telnet and bluetooth)
+- ESP32-S3 - v1.13.x (initial support, lacks BLE)
+- ESP32-C3 - v1.13.x (initial support, lacks BLE)
 - NXP LPC1768/9 - v1.5.x (eeprom emulation and analog still being developed)
 - RP2040 - v1.6.x (supports wifi connection via telnet and bluetooth)
 - RP2040 - v1.9.x (added multicore mode)
-- RP2350 - v1.11.x (initial support)
 - STM32F0 (like the Bluepill) - v1.9.x
+- RP2350 - v1.11.x (initial support)
+- STM32H7 (single core) - v1.12.x (Still missing some features)
 - Windows PC (used for simulation/debugging only - ISR on Windows doesn't allow to use it as a real alternative)
 
 ### µCNC current supported kinematics
@@ -291,5 +333,5 @@ Future versions are in plan for:
 
 ### Building µCNC
 
-For building µCNC go ahead to the [makefiles](https://github.com/Paciente8159/uCNC/blob/master/makefiles) folder of the target MCU and follow the instructions specific to your device.
-Version 1.3.0 restructured the project so that it can easily be opened, configured, compiled and loaded via Arduino IDE environment. Just go to the [uCNC](https://github.com/Paciente8159/uCNC/blob/master/uCNC) folder and open uCNC.ino. See how to build the project for your board in the [wiki](https://github.com/Paciente8159/uCNC/wiki).
+For building µCNC go ahead to the [Wiki](https://github.com/Paciente8159/uCNC/wiki) of the target MCU and follow the instructions specific to your device.
+Version 1.3.0 restructured the project so that it can easily be opened, configured, compiled and loaded via Arduino IDE environment. Just go to the [uCNC](https://github.com/Paciente8159/uCNC/blob/master/uCNC) folder and open uCNC.ino.

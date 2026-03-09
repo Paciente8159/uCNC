@@ -67,6 +67,17 @@ extern "C"
 #define rom_memcpy memcpy
 #define rom_read_byte *
 
+// NVIC Priority levels
+#define NVIC_INPUT_IRQ_Pri 1
+#define NVIC_SPI_IRQ_Pri 3
+#define NVIC_UART_IRQ_Pri 4
+#define NVIC_ITP_IRQ_Pri 5
+#define NVIC_ONESHOT_IRQ_Pri 6
+#define NVIC_SERVO_IRQ_Pri 6
+#define NVIC_RTC_IRQ_Pri 8
+#define NVIC_I2C_IRQ_Pri 9
+#define NVIC_USB_IRQ_Pri 10
+
 #define __IM volatile const /*! Defines 'read only' structure member permissions */
 #define __IOM volatile			/*! Defines 'read / write' structure member permissions */
 
@@ -101,15 +112,28 @@ extern "C"
 #define DWT ((DWT_Type *)DWT_BASE) /*!< DWT configuration struct */
 
 // custom cycle counter
-#ifndef MCU_CLOCKS_PER_CYCLE
-#define MCU_CLOCKS_PER_CYCLE 1
+#ifndef MCU_CYCLES_PER_LOOP
+#define MCU_CYCLES_PER_LOOP 4
 #endif
-#define mcu_delay_cycles(X) \
-	{                         \
-		DWT->CYCCNT = 0;        \
-		while (X > DWT->CYCCNT) \
-			;                     \
-	}
+#ifndef MCU_CYCLES_LOOP_OVERHEAD
+#define MCU_CYCLES_LOOP_OVERHEAD 1
+#endif
+
+#define mcu_delay_loop(X)                              \
+	do                                                   \
+	{                                                    \
+		asm volatile("" ::: "memory");                     \
+		register uint16_t __count = (X);                   \
+		__asm__ volatile(                                  \
+				"1: sub %[cnt], %[cnt], #1\n" /* 1 cycle */    \
+				"   cmp %[cnt], #0\n"					/* 1 cycle */    \
+				"   bne 1b\n"									/* 1–2 cycles */ \
+				"   nop\n"										/* 1 cycle */    \
+				: [cnt] "+r"(__count)                          \
+				:                                              \
+				: "cc");                                       \
+		asm volatile("" ::: "memory");                     \
+	} while (0)
 
 // Helper macros
 #define __helper_ex__(left, mid, right) left##mid##right
@@ -4687,7 +4711,7 @@ extern "C"
 	{                                                                                \
 		SETBIT(LPC_GPIOINT->__indirect__(diopin, RISEREG), __indirect__(diopin, BIT)); \
 		SETBIT(LPC_GPIOINT->__indirect__(diopin, FALLREG), __indirect__(diopin, BIT)); \
-		NVIC_SetPriority(EINT3_IRQn, 5);                                               \
+		NVIC_SetPriority(EINT3_IRQn, NVIC_INPUT_IRQ_Pri);                                               \
 		NVIC_ClearPendingIRQ(EINT3_IRQn);                                              \
 		NVIC_EnableIRQ(EINT3_IRQn);                                                    \
 	}
@@ -4731,18 +4755,12 @@ extern "C"
 #define mcu_get_analog(diopin) (uint16_t)(((LPC_ADC->__indirect__(diopin, ADDR)) >> 2) & 0x03FF)
 
 	extern volatile bool lpc_global_isr_enabled;
-#define mcu_enable_global_isr()    \
-	{                                \
-		__enable_irq();                \
-		lpc_global_isr_enabled = true; \
-	}
-#define mcu_disable_global_isr()    \
-	{                                 \
-		lpc_global_isr_enabled = false; \
-		__disable_irq();                \
-	}
-#define mcu_get_global_isr() lpc_global_isr_enabled
-#define mcu_free_micros() ({ (1000UL - (SysTick->VAL * 1000UL / SysTick->LOAD)); })
+#define mcu_enable_global_isr __enable_irq
+#define mcu_disable_global_isr __disable_irq
+#define mcu_get_global_isr() (__get_PRIMASK() == 0u)
+#define mcu_in_isr_context() (__get_IPSR() != 0)
+#define mcu_free_micros() ((uint32_t)((((SysTick->LOAD + 1) - SysTick->VAL) * 1000UL) / (SysTick->LOAD + 1)))
+
 
 #ifdef MCU_HAS_ONESHOT_TIMER
 #define mcu_start_timeout() (ONESHOT_TIMER_REG->TCR |= TIM_ENABLE)

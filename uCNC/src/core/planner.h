@@ -115,6 +115,13 @@ extern "C"
 	void planner_restore(void);
 #endif
 
+#ifdef ENABLE_PLANNER_MODULES
+	// runs just before a chunk of steps is removed from the current planner block and sent to the step generator buffer
+	void planner_itp_pre_output(void);
+	// event_planner_pre_output_handler
+	DECL_EVENT_HANDLER(planner_pre_output);
+#endif
+
 #ifdef __cplusplus
 }
 #endif

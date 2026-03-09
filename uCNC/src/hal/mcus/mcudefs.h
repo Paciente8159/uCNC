@@ -48,6 +48,17 @@ extern "C"
 #define CFG_TUSB_MCU OPT_MCU_STM32F4
 #endif
 
+#if (MCU == MCU_STM32H7X)
+#include "stm32h7x/mcumap_stm32h7x.h"
+#define CFG_TUSB_MCU OPT_MCU_STM32H7
+// #define CFG_TUSB_OS                  OPT_OS_NONE
+// #define BOARD_DEVICE_RHPORT_SPEED    OPT_MODE_HIGH_SPEED  // 480mbps
+// #define BOARD_DEVICE_RHPORT_NUM     1
+// #define CFG_TUSB_RHPORT1_MODE       (OPT_MODE_DEVICE | OPT_MODE_HIGH_SPEED)
+// #define USBCON
+// #define USBD_USE_CDC
+#endif
+
 #if (MCU == MCU_SAMD21)
 #include "samd21/mcumap_samd21.h"
 #define CFG_TUSB_MCU OPT_MCU_SAMD21
@@ -64,6 +75,20 @@ extern "C"
 
 #if (MCU == MCU_ESP32)
 #include "esp32/mcumap_esp32.h"
+#endif
+
+#if (MCU == MCU_ESP32C3)
+#include "esp32c3/mcumap_esp32c3.h"
+#endif
+
+#if (MCU == MCU_ESP32S3)
+#include "esp32s3/mcumap_esp32s3.h"
+#ifndef CFG_TUSB_MCU
+#define CFG_TUSB_MCU OPT_MCU_ESP32S3
+#endif
+#ifndef CFG_TUSB_OS
+#define CFG_TUSB_OS OPT_OS_FREERTOS
+#endif
 #endif
 
 #if (MCU == MCU_RP2040)

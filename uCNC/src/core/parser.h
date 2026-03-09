@@ -183,10 +183,12 @@ extern "C"
 #define GCODE_XYZ_AXIS (GCODE_WORD_X | GCODE_WORD_Y | GCODE_WORD_Z)
 #define GCODE_IJK_AXIS (GCODE_WORD_I | GCODE_WORD_J | GCODE_WORD_K)
 
-#define LASER_PWM_MODE 1
-#define LASER_PPI_MODE 2
-#define LASER_PPI_VARPOWER_MODE 4
+#define UNDEF_MODE 0
+#define PWM_VARPOWER_MODE 1
+#define PPI_MODE 2
+#define PPI_VARPOWER_MODE 4
 #define PLASMA_THC_MODE 8
+#define EMBROIDERY_MODE 16
 
 #ifdef ENABLE_RS274NGC_EXPRESSIONS
 #ifndef RS274NGC_MAX_USER_VARS
@@ -328,6 +330,8 @@ extern "C"
 	uint8_t parser_get_float(float *value);
 	void parser_discard_command(void);
 	unsigned char parser_get_next_preprocessed(bool peek);
+	void parser_coordinate_system_load(uint8_t param, float *target);
+	void parser_coordinate_system_save(uint8_t param, float *target);
 #ifdef ENABLE_RS274NGC_EXPRESSIONS
 	float parser_get_parameter(uint16_t param);
 	void parser_set_parameter(uint16_t param, float value);

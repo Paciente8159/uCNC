@@ -66,7 +66,7 @@ void ic74hc595_pio_init()
 
 // disable this function
 // IO will be updated at a fixed rate
-MCU_CALLBACK void ic74hc595_shift_io_pins(void)
+MCU_CALLBACK void shift_register_io_pins(void)
 {
 	ic74hc595_program_write(pio_ic74hc595, sm_ic74hc595, *((volatile uint32_t *)&ic74hc595_io_pins[0]));
 }
@@ -107,9 +107,10 @@ volatile rp2350_alarm_t *mcu_alarms;
 void mcu_alarm_isr(void)
 {
 	hw_clear_bits(&timer_hw->intr, (1U << ALARM_TIMER));
+	uint32_t time = 0;
 	if (mcu_alarms)
 	{
-		while (mcu_alarms->timeout < (uint32_t)timer_hw->timerawl)
+		while (time = (uint32_t)timer_hw->timerawl, MEM_BARRIER, mcu_alarms->timeout <= time)
 		{
 			rp2350_alarm_t *alarm = (rp2350_alarm_t *)mcu_alarms;
 			// advance
@@ -124,6 +125,7 @@ void mcu_alarm_isr(void)
 			// no more alarms
 			if (!mcu_alarms)
 			{
+				timer_hw->alarm[ALARM_TIMER] = 0xFFFFFFFF;
 				return;
 			}
 		}
@@ -157,7 +159,7 @@ void mcu_enqueue_alarm(rp2350_alarm_t *a, uint32_t timeout_us)
 	a->timeout = (uint32_t)target;
 	a->next = NULL;
 
-	__ATOMIC__
+	ATOMIC_CODEBLOCK
 	{
 		rp2350_alarm_t *ptr = (rp2350_alarm_t *)mcu_alarms;
 		// is the only
@@ -415,6 +417,38 @@ uint8_t mcu_get_pwm(uint8_t pwm)
 }
 #endif
 
+/**
+ * sets the pwm for a servo (50Hz with tON between 1~2ms)
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_set_servo
+void mcu_set_servo(uint8_t servo, uint8_t value)
+{
+	#if SERVOS_MASK > 0
+	mcu_servos[servo - SERVO_PINS_OFFSET] = (((2000UL * value) >> 8) + 500); // quick aproximation should be divided by 255 but it's a faste quick approach
+	#else
+	(void)servo;
+	(void)value;
+	#endif
+}
+#endif
+
+/**
+ * gets the pwm for a servo (50Hz with tON between 1~2ms)
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_get_servo
+uint8_t mcu_get_servo(uint8_t servo)
+{
+	#if SERVOS_MASK > 0
+	return (((mcu_servos[servo - SERVO_PINS_OFFSET] - 500) << 8) / 2000);
+	#else
+	(void)servo;
+	return 0;
+	#endif
+}
+#endif
+
 // ISR
 /**
  * enables global interrupts on the MCU
@@ -467,7 +501,7 @@ static void mcu_itp_isr(void)
 
 	if (!resetstep)
 	{
-		mcu_step_cb();
+			mcu_step_cb();
 	}
 
 	else
@@ -487,7 +521,7 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 	frequency = CLAMP((float)F_STEP_MIN, frequency, (float)F_STEP_MAX);
 	// up and down counter (generates half the step rate at each event)
 	uint32_t totalticks = (uint32_t)((float)(1000000UL >> 1) / frequency);
-	*prescaller = 1;
+	*prescaller = 0;
 	while (totalticks > 0xFFFF)
 	{
 		(*prescaller) += 1;
@@ -616,7 +650,7 @@ static void mcu_oneshot_isr(void)
 {
 	if (mcu_timeout_cb)
 	{
-		mcu_timeout_cb();
+			mcu_timeout_cb();
 	}
 }
 
@@ -785,7 +819,7 @@ bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 			if (timeout < mcu_millis())
 			{
 				timeout = BULK_SPI_TIMEOUT + mcu_millis();
-				cnc_dotasks();
+				TASK_YIELD();
 			}
 		}
 
@@ -921,7 +955,7 @@ bool mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 			if (timeout < mcu_millis())
 			{
 				timeout = BULK_SPI2_TIMEOUT + mcu_millis();
-				cnc_dotasks();
+				TASK_YIELD();
 			}
 		}
 

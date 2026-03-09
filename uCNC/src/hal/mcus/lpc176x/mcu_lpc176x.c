@@ -42,7 +42,6 @@ extern void lpc176x_usb_write(uint8_t *ptr, uint8_t len);
  **/
 // provided by the framework
 extern volatile uint64_t _millis;
-volatile bool lpc_global_isr_enabled;
 
 // define the mcu internal servo variables
 #if SERVOS_MASK > 0
@@ -141,10 +140,10 @@ void servo_timer_init(void)
 	SERVO_TIMER_REG->IR = 0xFFFFFFFF;
 
 	SERVO_TIMER_REG->MR1 = SERVO_MIN; // minimum value for servo setup
-	SERVO_TIMER_REG->MR0 = 425;				// reset @ every 3.333ms * 6 servos = 20ms->50Hz
-	SERVO_TIMER_REG->MCR = 0x0B;			// Interrupt on MC0 and MC1 and reset on MC0
+	SERVO_TIMER_REG->MR0 = 425;		  // reset @ every 3.333ms * 6 servos = 20ms->50Hz
+	SERVO_TIMER_REG->MCR = 0x0B;	  // Interrupt on MC0 and MC1 and reset on MC0
 
-	NVIC_SetPriority(SERVO_TIMER_IRQ, 10);
+	NVIC_SetPriority(SERVO_TIMER_IRQ, NVIC_SERVO_IRQ_Pri);
 	NVIC_ClearPendingIRQ(SERVO_TIMER_IRQ);
 	NVIC_EnableIRQ(SERVO_TIMER_IRQ);
 
@@ -153,7 +152,6 @@ void servo_timer_init(void)
 
 void MCU_SERVO_ISR(void)
 {
-	mcu_disable_global_isr();
 	if (CHECKBIT(SERVO_TIMER_REG->IR, TIM_MR1_INT))
 	{
 		mcu_clear_servos();
@@ -165,24 +163,18 @@ void MCU_SERVO_ISR(void)
 		mcu_set_servos();
 		SETBIT(SERVO_TIMER_REG->IR, TIM_MR0_INT);
 	}
-	mcu_enable_global_isr();
 }
 
 #endif
 
 void MCU_RTC_ISR(void)
 {
-	mcu_disable_global_isr();
 	_millis++;
 	mcu_rtc_cb((uint32_t)_millis);
-	mcu_enable_global_isr();
 }
 
 void MCU_ITP_ISR(void)
 {
-	mcu_disable_global_isr();
-	NVIC_ClearPendingIRQ(ITP_TIMER_IRQ);
-
 	static bool resetstep = false;
 	if (CHECKBIT(ITP_TIMER_REG->IR, TIM_MR0_INT))
 	{
@@ -197,8 +189,6 @@ void MCU_ITP_ISR(void)
 		}
 		resetstep = !resetstep;
 	}
-
-	mcu_enable_global_isr();
 }
 
 void mcu_clocks_init(void)
@@ -236,59 +226,53 @@ DECL_BUFFER(uint8_t, uart_rx, RX_BUFFER_SIZE);
 
 void MCU_COM_ISR(void)
 {
-	__ATOMIC_FORCEON__
+
+	uint32_t irqstatus = UART_GetIntId(COM_UART);
+	irqstatus &= UART_IIR_INTID_MASK;
+
+	// Receive Line Status
+	if (irqstatus == UART_IIR_INTID_RLS)
 	{
-		uint32_t irqstatus = UART_GetIntId(COM_UART);
-		irqstatus &= UART_IIR_INTID_MASK;
+		uint32_t linestatus = UART_GetLineStatus(COM_UART);
 
 		// Receive Line Status
-		if (irqstatus == UART_IIR_INTID_RLS)
+		if (linestatus & (UART_LSR_OE | UART_LSR_PE | UART_LSR_FE | UART_LSR_RXFE | UART_LSR_BI))
 		{
-			uint32_t linestatus = UART_GetLineStatus(COM_UART);
+			// There are errors or break interrupt
+			// Read LSR will clear the interrupt
+			/*uint8_t dummy = */ (COM_INREG & UART_RBR_MASKBIT); // Dummy read on RX to clear interrupt, then bail out
+			return;
+		}
+	}
 
-			// Receive Line Status
-			if (linestatus & (UART_LSR_OE | UART_LSR_PE | UART_LSR_FE | UART_LSR_RXFE | UART_LSR_BI))
+	if (irqstatus == UART_IIR_INTID_RDA)
+	{
+		uint8_t c = (uint8_t)(COM_INREG & UART_RBR_MASKBIT);
+#if !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
+		if (mcu_com_rx_cb(c))
+		{
+			if (!BUFFER_TRY_ENQUEUE(uart_rx, &c))
 			{
-				// There are errors or break interrupt
-				// Read LSR will clear the interrupt
-				/*uint8_t dummy = */ (COM_INREG & UART_RBR_MASKBIT); // Dummy read on RX to clear interrupt, then bail out
-				return;
+				STREAM_OVF(c);
 			}
 		}
-
-		if (irqstatus == UART_IIR_INTID_RDA)
-		{
-			uint8_t c = (uint8_t)(COM_INREG & UART_RBR_MASKBIT);
-#if !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
-			if (mcu_com_rx_cb(c))
-			{
-				if (BUFFER_FULL(uart_rx))
-				{
-					c = OVF;
-				}
-
-				BUFFER_ENQUEUE(uart_rx, &c);
-			}
 
 #else
-			mcu_uart_rx_cb(c);
+		mcu_uart_rx_cb(c);
 #endif
-		}
+	}
 
-		if (irqstatus == UART_IIR_INTID_THRE)
+	if (irqstatus == UART_IIR_INTID_THRE)
+	{
+		uint8_t c = 0;
+
+		if (!BUFFER_TRY_DEQUEUE(uart_tx, &c))
 		{
-			// UART_IntConfig(COM_USART, UART_INTCFG_THRE, DISABLE);
-
-			mcu_enable_global_isr();
-			if (BUFFER_EMPTY(uart_tx))
-			{
-				COM_UART->IER &= ~UART_IER_THREINT_EN;
-				return;
-			}
-			uint8_t c = 0;
-			BUFFER_DEQUEUE(uart_tx, &c);
-			COM_OUTREG = c;
+			COM_UART->IER &= ~UART_IER_THREINT_EN;
+			return;
 		}
+
+		COM_OUTREG = c;
 	}
 }
 #endif
@@ -301,64 +285,59 @@ DECL_BUFFER(uint8_t, uart2_rx, RX_BUFFER_SIZE);
 DECL_BUFFER(uint8_t, uart2_tx, UART2_TX_BUFFER_SIZE);
 void MCU_COM2_ISR(void)
 {
-	__ATOMIC_FORCEON__
+	uint32_t irqstatus = UART_GetIntId(COM2_UART);
+	irqstatus &= UART_IIR_INTID_MASK;
+
+	// Receive Line Status
+	if (irqstatus == UART_IIR_INTID_RLS)
 	{
-		uint32_t irqstatus = UART_GetIntId(COM2_UART);
-		irqstatus &= UART_IIR_INTID_MASK;
+		uint32_t linestatus = UART_GetLineStatus(COM2_UART);
 
 		// Receive Line Status
-		if (irqstatus == UART_IIR_INTID_RLS)
+		if (linestatus & (UART_LSR_OE | UART_LSR_PE | UART_LSR_FE | UART_LSR_RXFE | UART_LSR_BI))
 		{
-			uint32_t linestatus = UART_GetLineStatus(COM2_UART);
-
-			// Receive Line Status
-			if (linestatus & (UART_LSR_OE | UART_LSR_PE | UART_LSR_FE | UART_LSR_RXFE | UART_LSR_BI))
-			{
-				// There are errors or break interrupt
-				// Read LSR will clear the interrupt
-				/*uint8_t dummy = */ (COM2_INREG & UART_RBR_MASKBIT); // Dummy read on RX to clear interrupt, then bail out
-				return;
-			}
+			// There are errors or break interrupt
+			// Read LSR will clear the interrupt
+			/*uint8_t dummy = */ (COM2_INREG & UART_RBR_MASKBIT); // Dummy read on RX to clear interrupt, then bail out
+			return;
 		}
+	}
 
-		if (irqstatus == UART_IIR_INTID_RDA)
-		{
-			uint8_t c = (uint8_t)(COM2_INREG & UART_RBR_MASKBIT);
+	if (irqstatus == UART_IIR_INTID_RDA)
+	{
+		uint8_t c = (uint8_t)(COM2_INREG & UART_RBR_MASKBIT);
 #if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
-			if (mcu_com_rx_cb(c))
-			{
-				if (BUFFER_FULL(uart2_rx))
-				{
-					c = OVF;
-				}
-
-				BUFFER_ENQUEUE(uart2_rx, &c);
-			}
-#else
-			mcu_uart2_rx_cb(c);
-#ifndef UART2_DISABLE_BUFFER
-			if (BUFFER_FULL(uart2_rx))
-			{
-				c = OVF;
-			}
-
-			BUFFER_ENQUEUEE(uart2_rx, &c);
-#endif
-#endif
-		}
-
-		if (irqstatus == UART_IIR_INTID_THRE)
+		if (mcu_com_rx_cb(c))
 		{
-			mcu_enable_global_isr();
-			if (BUFFER_EMPTY(uart2_tx))
+			if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
 			{
-				COM2_UART->IER &= ~UART_IER_THREINT_EN;
-				return;
+				STREAM_OVF(c);
 			}
-			uint8_t c = 0;
-			BUFFER_DEQUEUE(uart2_tx, &c);
-			COM2_OUTREG = c;
 		}
+#else
+		mcu_uart2_rx_cb(c);
+#ifndef UART2_DISABLE_BUFFER
+		if (BUFFER_FULL(uart2_rx))
+		{
+			STREAM_OVF(c);
+		}
+
+		BUFFER_ENQUEUEE(uart2_rx, &c);
+#endif
+#endif
+	}
+
+	if (irqstatus == UART_IIR_INTID_THRE)
+	{
+		uint8_t c = 0;
+
+		if (!BUFFER_TRY_DEQUEUE(uart2_tx, &c))
+		{
+			COM2_UART->IER &= ~UART_IER_THREINT_EN;
+			return;
+		}
+
+		COM2_OUTREG = c;
 	}
 }
 #endif
@@ -383,7 +362,7 @@ void mcu_usart_init(void)
 	UART_IntConfig(COM_UART, UART_INTCFG_RLS, ENABLE);
 	UART_IntConfig(COM_UART, UART_INTCFG_RBR, ENABLE);
 
-	NVIC_SetPriority(COM_IRQ, 3);
+	NVIC_SetPriority(COM_IRQ, NVIC_UART_IRQ_Pri);
 	NVIC_ClearPendingIRQ(COM_IRQ);
 	NVIC_EnableIRQ(COM_IRQ);
 #endif
@@ -406,7 +385,7 @@ void mcu_usart_init(void)
 	UART_IntConfig(COM2_UART, UART_INTCFG_RLS, ENABLE);
 	UART_IntConfig(COM2_UART, UART_INTCFG_RBR, ENABLE);
 
-	NVIC_SetPriority(COM2_IRQ, 3);
+	NVIC_SetPriority(COM2_IRQ, NVIC_UART_IRQ_Pri);
 	NVIC_ClearPendingIRQ(COM2_IRQ);
 	NVIC_EnableIRQ(COM2_IRQ);
 #endif
@@ -433,7 +412,7 @@ void mcu_usart_init(void)
 	while ((LPC_USB->USBClkSt & 0x1A) != 0x1A)
 		;
 
-	NVIC_SetPriority(USB_IRQn, 10);
+	NVIC_SetPriority(USB_IRQn, NVIC_USB_IRQ_Pri);
 	NVIC_ClearPendingIRQ(USB_IRQn);
 	NVIC_EnableIRQ(USB_IRQn);
 
@@ -478,8 +457,6 @@ void mcu_init(void)
 {
 	mcu_clocks_init();
 
-	lpc_global_isr_enabled = false;
-
 	mcu_io_init();
 	mcu_usart_init();
 	// SysTick is started by the framework but is not working
@@ -503,10 +480,10 @@ void mcu_init(void)
 	LPC_SC->SPI_PCLKSEL_REG &= ~SPI_PCLKSEL_MASK; // div clock by 4
 	uint8_t div = SPI_COUNTER_DIV(SPI_FREQ);
 	div += (div & 0x01) ? 1 : 0;
-	SPI_REG->CPSR = div;					 // internal divider
+	SPI_REG->CPSR = div;		   // internal divider
 	SPI_REG->CR0 |= SPI_MODE << 6; // clock phase
-	SPI_REG->CR0 |= 7 << 0;				 // 8 bits
-	SPI_REG->CR1 |= 1 << 1;				 // enable SSP*/
+	SPI_REG->CR0 |= 7 << 0;		   // 8 bits
+	SPI_REG->CR1 |= 1 << 1;		   // enable SSP*/
 
 #endif
 #ifdef MCU_HAS_SPI2
@@ -523,17 +500,16 @@ void mcu_init(void)
 	LPC_SC->SPI2_PCLKSEL_REG &= ~SPI2_PCLKSEL_MASK; // div clock by 4
 	uint8_t div2 = SPI2_COUNTER_DIV(SPI2_FREQ);
 	div2 += (div2 & 0x01) ? 1 : 0;
-	SPI2_REG->CPSR = div2;					 // internal divider
+	SPI2_REG->CPSR = div2;			 // internal divider
 	SPI2_REG->CR0 |= SPI2_MODE << 6; // clock phase
-	SPI2_REG->CR0 |= 7 << 0;				 // 8 bits
-	SPI2_REG->CR1 |= 1 << 1;				 // enable SSP*/
+	SPI2_REG->CR0 |= 7 << 0;		 // 8 bits
+	SPI2_REG->CR1 |= 1 << 1;		 // enable SSP*/
 
 #endif
 #ifdef MCU_HAS_I2C
 	mcu_i2c_config(I2C_FREQ);
 #endif
 
-	mcu_disable_probe_isr();
 	mcu_enable_global_isr();
 }
 
@@ -620,7 +596,7 @@ uint8_t mcu_get_servo(uint8_t servo)
 uint8_t mcu_uart_getc(void)
 {
 	uint8_t c = 0;
-	BUFFER_DEQUEUE(uart_rx, &c);
+	BUFFER_TRY_DEQUEUE(uart_rx, &c);
 	return c;
 }
 
@@ -636,23 +612,23 @@ void mcu_uart_clear(void)
 
 void mcu_uart_putc(uint8_t c)
 {
-	while (BUFFER_FULL(uart_tx))
+	while (!BUFFER_TRY_ENQUEUE(uart_tx, &c))
 	{
 		mcu_uart_flush();
 	}
-	BUFFER_ENQUEUE(uart_tx, &c);
 }
 
 void mcu_uart_flush(void)
 {
 	if (!(COM_UART->IER & UART_IER_THREINT_EN)) // not ready start flushing
 	{
-		if (BUFFER_EMPTY(uart_tx))
+		uint8_t c = 0;
+
+		if (!BUFFER_TRY_DEQUEUE(uart_tx, &c))
 		{
 			return;
 		}
-		uint8_t c = 0;
-		BUFFER_DEQUEUE(uart_tx, &c);
+
 		while (!CHECKBIT(COM_UART->LSR, 5))
 			;
 		COM_OUTREG = c;
@@ -668,7 +644,7 @@ void mcu_uart_flush(void)
 uint8_t mcu_uart2_getc(void)
 {
 	uint8_t c = 0;
-	BUFFER_DEQUEUE(uart2_rx, &c);
+	BUFFER_TRY_DEQUEUE(uart2_rx, &c);
 	return c;
 }
 
@@ -684,23 +660,23 @@ void mcu_uart2_clear(void)
 
 void mcu_uart2_putc(uint8_t c)
 {
-	while (BUFFER_FULL(uart2_tx))
+	while (!BUFFER_TRY_ENQUEUE(uart2_tx, &c))
 	{
 		mcu_uart2_flush();
 	}
-	BUFFER_ENQUEUE(uart2_tx, &c);
 }
 
 void mcu_uart2_flush(void)
 {
 	if (!(COM2_UART->IER & UART_IER_THREINT_EN)) // not ready start flushing
 	{
-		if (BUFFER_EMPTY(uart2_tx))
+		uint8_t c = 0;
+
+		if (!BUFFER_TRY_DEQUEUE(uart2_tx, &c))
 		{
 			return;
 		}
-		uint8_t c = 0;
-		BUFFER_DEQUEUE(uart2_tx, &c);
+
 		while (!CHECKBIT(COM2_UART->LSR, 5))
 			;
 		COM2_OUTREG = c;
@@ -777,7 +753,7 @@ void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 	ITP_TIMER_REG->TC = 0;
 	ITP_TIMER_REG->PC = 0;
 	ITP_TIMER_REG->PR = 0;
-	ITP_TIMER_REG->TCR |= TIM_RESET;	// Reset Counter
+	ITP_TIMER_REG->TCR |= TIM_RESET;  // Reset Counter
 	ITP_TIMER_REG->TCR &= ~TIM_RESET; // release reset
 	ITP_TIMER_REG->EMR = 0;
 
@@ -787,7 +763,7 @@ void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 	ITP_TIMER_REG->MR0 = val;
 	ITP_TIMER_REG->MCR = 0x03; // Interrupt on MC0 and MC1 and reset on MC0
 
-	NVIC_SetPriority(ITP_TIMER_IRQ, 1);
+	NVIC_SetPriority(ITP_TIMER_IRQ, NVIC_ITP_IRQ_Pri);
 	NVIC_ClearPendingIRQ(ITP_TIMER_IRQ);
 	NVIC_EnableIRQ(ITP_TIMER_IRQ);
 
@@ -854,9 +830,7 @@ DECL_BUFFER(uint8_t, usb_rx, RX_BUFFER_SIZE);
 #ifndef USE_ARDUINO_CDC
 void USB_IRQHandler(void)
 {
-	mcu_disable_global_isr();
 	tusb_cdc_isr_handler();
-	mcu_enable_global_isr();
 }
 
 void mcu_usb_putc(uint8_t c)
@@ -892,7 +866,7 @@ void mcu_usb_flush(void)
 	{
 		// use this of char is not 8bits
 		// uint8_t c = 0;
-		// BUFFER_DEQUEUE(usb_tx, &c);
+		// BUFFER_TRY_DEQUEUE(usb_tx, &c);
 		// lpc176x_usb_putc(c);
 
 		// bulk sending
@@ -907,18 +881,17 @@ void mcu_usb_flush(void)
 
 void mcu_usb_putc(uint8_t c)
 {
-	while (BUFFER_FULL(usb_tx))
+	while (!BUFFER_TRY_ENQUEUE(usb_tx, &c))
 	{
 		mcu_usb_flush();
 	}
-	BUFFER_ENQUEUE(usb_tx, &c);
 }
 #endif
 
 uint8_t mcu_usb_getc(void)
 {
 	uint8_t c = 0;
-	BUFFER_DEQUEUE(usb_rx, &c);
+	BUFFER_TRY_DEQUEUE(usb_rx, &c);
 	return (uint8_t)c;
 }
 
@@ -950,12 +923,10 @@ void mcu_dotasks()
 		uint8_t c = lpc176x_usb_getc();
 		if (mcu_com_rx_cb(c))
 		{
-			if (BUFFER_FULL(usb_rx))
+			if (!BUFFER_TRY_ENQUEUE(usb_rx, &c))
 			{
-				c = OVF;
+				STREAM_OVF(c);
 			}
-
-			BUFFER_ENQUEUE(usb_rx, &c);
 		}
 	}
 #else
@@ -970,12 +941,10 @@ void mcu_dotasks()
 #ifndef DETACH_USB_FROM_MAIN_PROTOCOL
 		if (mcu_com_rx_cb(c))
 		{
-			if (BUFFER_FULL(usb_rx))
+			if (!BUFFER_TRY_ENQUEUE(usb_rx, &c))
 			{
-				c = OVF;
+				STREAM_OVF(c);
 			}
-
-			BUFFER_ENQUEUE(usb_rx, &c);
 		}
 #else
 		mcu_usb_rx_cb(c);
@@ -1021,10 +990,10 @@ void mcu_spi_config(spi_config_t config, uint32_t frequency)
 {
 	uint8_t div = SPI_COUNTER_DIV(frequency);
 	div += (div & 0x01) ? 1 : 0;
-	SPI_REG->CR1 &= ~(1 << 1);				// disable SSP
-	SPI_REG->CPSR = div;							// internal divider
+	SPI_REG->CR1 &= ~(1 << 1);		  // disable SSP
+	SPI_REG->CPSR = div;			  // internal divider
 	SPI_REG->CR0 |= config.mode << 6; // clock phase
-	SPI_REG->CR1 |= 1 << 1;						// enable SSP
+	SPI_REG->CR1 |= 1 << 1;			  // enable SSP
 	// SSP_DeInit(SPI_REG);
 
 	// SSP_CFG_Type ssp_cfg = {
@@ -1169,7 +1138,7 @@ bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 				if (timeout < mcu_millis())
 				{
 					timeout = BULK_SPI_TIMEOUT + mcu_millis();
-					cnc_dotasks();
+					TASK_YIELD();
 				}
 			}
 			is_running = false;
@@ -1208,10 +1177,10 @@ void mcu_spi2_config(spi_config_t config, uint32_t frequency)
 {
 	uint8_t div = SPI2_COUNTER_DIV(frequency);
 	div += (div & 0x01) ? 1 : 0;
-	SPI2_REG->CR1 &= ~(1 << 1);				 // disable SSP
-	SPI2_REG->CPSR = div;							 // internal divider
+	SPI2_REG->CR1 &= ~(1 << 1);		   // disable SSP
+	SPI2_REG->CPSR = div;			   // internal divider
 	SPI2_REG->CR0 |= config.mode << 6; // clock phase
-	SPI2_REG->CR1 |= 1 << 1;					 // enable SSP
+	SPI2_REG->CR1 |= 1 << 1;		   // enable SSP
 	// SSP_DeInit(SPI2_REG);
 
 	// SSP_CFG_Type ssp_cfg = {
@@ -1356,7 +1325,7 @@ bool mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 				if (timeout < mcu_millis())
 				{
 					timeout = BULK_SPI2_TIMEOUT + mcu_millis();
-					cnc_dotasks();
+					TASK_YIELD();
 				}
 			}
 			is_running = false;
@@ -1640,7 +1609,6 @@ void I2C_ISR(void)
 			index = 0;
 			mcu_i2c_buffer[i] = 0;
 			// unlock ISR and process the info request
-			mcu_enable_global_isr();
 			mcu_i2c_slave_cb(mcu_i2c_buffer, &i);
 			datalen = MIN(i, I2C_SLAVE_BUFFER_SIZE);
 		}
@@ -1694,8 +1662,6 @@ void MCU_ONESHOT_ISR(void)
 	{
 		mcu_timeout_cb();
 	}
-
-	NVIC_ClearPendingIRQ(ONESHOT_TIMER_IRQ);
 }
 
 /**
@@ -1713,7 +1679,7 @@ void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 	ONESHOT_TIMER_REG->TC = 0;
 	ONESHOT_TIMER_REG->PC = 0;
 	ONESHOT_TIMER_REG->PR = 0;
-	ONESHOT_TIMER_REG->TCR |= TIM_RESET;	// Reset Counter
+	ONESHOT_TIMER_REG->TCR |= TIM_RESET;  // Reset Counter
 	ONESHOT_TIMER_REG->TCR &= ~TIM_RESET; // release reset
 	ONESHOT_TIMER_REG->EMR = 0;
 
@@ -1723,7 +1689,7 @@ void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 	ONESHOT_TIMER_REG->MR0 = timeout;
 	ONESHOT_TIMER_REG->MCR = 0x07; // Interrupt reset and stop on MC0
 
-	NVIC_SetPriority(ONESHOT_TIMER_IRQ, 3);
+	NVIC_SetPriority(ONESHOT_TIMER_IRQ, NVIC_ONESHOT_IRQ_Pri);
 	NVIC_ClearPendingIRQ(ONESHOT_TIMER_IRQ);
 	NVIC_EnableIRQ(ONESHOT_TIMER_IRQ);
 

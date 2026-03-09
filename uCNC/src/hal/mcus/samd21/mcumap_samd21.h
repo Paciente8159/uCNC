@@ -37,6 +37,7 @@ extern "C"
 // defines the frequency of the mcu
 #ifndef F_CPU
 #define F_CPU SystemCoreClock
+#warning "F_CPU not defined as a constant. Cycle/Nanoseconds delays will be take longer then expected"
 #endif
 // defines the maximum and minimum step rates
 #ifndef F_STEP_MAX
@@ -51,15 +52,28 @@ extern "C"
 #endif
 
 // needed by software delays
-#ifndef MCU_CLOCKS_PER_CYCLE
-#define MCU_CLOCKS_PER_CYCLE 1
-#endif
 #ifndef MCU_CYCLES_PER_LOOP
-#define MCU_CYCLES_PER_LOOP 5
+#define MCU_CYCLES_PER_LOOP 4
 #endif
-#ifndef MCU_CYCLES_PER_LOOP_OVERHEAD
-#define MCU_CYCLES_PER_LOOP_OVERHEAD 13
+#ifndef MCU_CYCLES_LOOP_OVERHEAD
+#define MCU_CYCLES_LOOP_OVERHEAD 1
 #endif
+
+#define mcu_delay_loop(X)                              \
+	do                                                   \
+	{                                                    \
+		asm volatile("" ::: "memory");                     \
+		register uint16_t __count = (X);                   \
+		__asm__ volatile(                                  \
+				"1: sub %[cnt], %[cnt], #1\n" /* 1 cycle */    \
+				"   cmp %[cnt], #0\n"					/* 1 cycle */    \
+				"   bne 1b\n"									/* 1–2 cycles */ \
+				"   nop\n"										/* 1 cycle */    \
+				: [cnt] "+r"(__count)                          \
+				:                                              \
+				: "cc");                                       \
+		asm volatile("" ::: "memory");                     \
+	} while (0)
 
 // defines special mcu to access flash strings and arrays
 #define __rom__
@@ -70,6 +84,17 @@ extern "C"
 #define rom_strncpy strncpy
 #define rom_memcpy memcpy
 #define rom_read_byte *
+
+// NVIC Priority levels
+#define NVIC_INPUT_IRQ_Pri 1
+#define NVIC_SPI_IRQ_Pri 3
+#define NVIC_UART_IRQ_Pri 4
+#define NVIC_ITP_IRQ_Pri 5
+#define NVIC_ONESHOT_IRQ_Pri 6
+#define NVIC_SERVO_IRQ_Pri 6
+#define NVIC_RTC_IRQ_Pri 8
+#define NVIC_I2C_IRQ_Pri 9
+#define NVIC_USB_IRQ_Pri 10
 
 // Helper macros
 #define __helper_ex__(left, mid, right) left##mid##right
@@ -1986,8 +2011,8 @@ extern "C"
 #define DIO214_PMUX SPI2_SDO_PMUX
 #define DIO214_PMUXVAL SPI2_SDO_PMUXVAL
 
-#define SPI2_DMA_TRIGSRC_RX ((SPI2_PORT<<1) + 1)
-#define SPI2_DMA_TRIGSRC_TX ((SPI2_PORT<<1) + 2)
+#define SPI2_DMA_TRIGSRC_RX ((SPI2_PORT << 1) + 1)
+#define SPI2_DMA_TRIGSRC_TX ((SPI2_PORT << 1) + 2)
 
 #define SPI2_IRQ __helper__(SERCOM, SPI2_PORT, _IRQn)
 #define SPI2_ISR __helper__(SERCOM, SPI2_PORT, _Handler)
@@ -3475,19 +3500,11 @@ extern "C"
 #endif
 #endif
 */
-	extern volatile bool samd21_global_isr_enabled;
-#define mcu_enable_global_isr()       \
-	{                                   \
-		__enable_irq();                   \
-		samd21_global_isr_enabled = true; \
-	}
-#define mcu_disable_global_isr()       \
-	{                                    \
-		samd21_global_isr_enabled = false; \
-		__disable_irq();                   \
-	}
-#define mcu_get_global_isr() samd21_global_isr_enabled
-#define mcu_free_micros() ({ (1000UL - (SysTick->VAL * 1000UL / SysTick->LOAD)); })
+#define mcu_enable_global_isr __enable_irq
+#define mcu_disable_global_isr __disable_irq
+#define mcu_get_global_isr() (__get_PRIMASK() == 0u)
+#define mcu_in_isr_context() (__get_IPSR() != 0)
+#define mcu_free_micros() ((uint32_t)((((SysTick->LOAD + 1) - SysTick->VAL) * 1000UL) / (SysTick->LOAD + 1)))
 
 #ifdef __cplusplus
 }

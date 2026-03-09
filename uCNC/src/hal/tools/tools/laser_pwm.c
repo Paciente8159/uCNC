@@ -22,6 +22,7 @@
 #include <stdbool.h>
 #include <math.h>
 
+#if defined(ENABLE_LASER_PWM)
 /**
  * This configures a simple spindle control with a pwm assigned to PWM0 and dir invert assigned to DOUT0
  * This spindle also has a coolant pin assigned to DOUT1
@@ -49,8 +50,6 @@
 #define LASER_PWM_MIN_VALUE 2
 #endif
 
-static bool previous_mode;
-
 static void startup_code(void)
 {
 // force laser mode
@@ -58,14 +57,13 @@ static void startup_code(void)
 	io_config_pwm(LASER_PWM, LASER_FREQ);
 	io_set_pwm(LASER_PWM, 0);
 #endif
-	previous_mode = g_settings.laser_mode;
-	g_settings.laser_mode = LASER_PWM_MODE;
+	g_settings.tool_mode = PWM_VARPOWER_MODE;
 }
 
 static void shutdown_code(void)
 {
 	// restore laser mode
-	g_settings.laser_mode = previous_mode;
+	g_settings.tool_mode = UNDEF_MODE;
 }
 
 static void set_speed(int16_t value)
@@ -114,3 +112,5 @@ const tool_t laser_pwm = {
 	.get_speed = NULL,
 	.set_speed = &set_speed,
 	.set_coolant = &set_coolant};
+
+#endif

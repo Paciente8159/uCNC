@@ -1,0 +1,1400 @@
+/*
+	Name: ic74hc165.h
+	Description: This module adds the ability to control the IC74HC165 shift register controller on µCNC.
+				 Up to 56 input generic pins can be assigned.
+
+	Copyright: Copyright (c) João Martins
+	Author: João Martins
+	Date: 12-02-2025
+
+	µCNC is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+
+	µCNC is distributed WITHOUT ANY WARRANTY;
+	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	See the	GNU General Public License for more details.
+*/
+
+#ifndef IC74HC165_H
+#define IC74HC165_H
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+#include <stdbool.h>
+#include <stdint.h>
+
+#ifndef LIMIT_X_IO_OFFSET
+#define LIMIT_X_IO_OFFSET -1
+#define DIO100_IO_OFFSET -1
+#else
+#define DIO100_IO_OFFSET LIMIT_X_IO_OFFSET
+#ifdef LIMIT_X
+#undef LIMIT_X
+#endif
+#ifdef DIO100
+#undef DIO100
+#endif
+#define LIMIT_X 100
+#define DIO100 -100
+#define LIMIT_X_IO_BYTEOFFSET (LIMIT_X_IO_OFFSET >> 3)
+#define LIMIT_X_IO_BITMASK (1 << (LIMIT_X_IO_OFFSET & 0x7))
+#define DIO100_IO_BYTEOFFSET LIMIT_X_IO_BYTEOFFSET
+#define DIO100_IO_BITMASK LIMIT_X_IO_BITMASK
+#ifndef IC74HC165_HAS_LIMITS
+#define IC74HC165_HAS_LIMITS
+#endif
+#endif
+#ifndef LIMIT_Y_IO_OFFSET
+#define LIMIT_Y_IO_OFFSET -1
+#define DIO101_IO_OFFSET -1
+#else
+#define DIO101_IO_OFFSET LIMIT_Y_IO_OFFSET
+#ifdef LIMIT_Y
+#undef LIMIT_Y
+#endif
+#ifdef DIO101
+#undef DIO101
+#endif
+#define LIMIT_Y 101
+#define DIO101 -101
+#define LIMIT_Y_IO_BYTEOFFSET (LIMIT_Y_IO_OFFSET >> 3)
+#define LIMIT_Y_IO_BITMASK (1 << (LIMIT_Y_IO_OFFSET & 0x7))
+#define DIO101_IO_BYTEOFFSET LIMIT_Y_IO_BYTEOFFSET
+#define DIO101_IO_BITMASK LIMIT_Y_IO_BITMASK
+#ifndef IC74HC165_HAS_LIMITS
+#define IC74HC165_HAS_LIMITS
+#endif
+#endif
+#ifndef LIMIT_Z_IO_OFFSET
+#define LIMIT_Z_IO_OFFSET -1
+#define DIO102_IO_OFFSET -1
+#else
+#define DIO102_IO_OFFSET LIMIT_Z_IO_OFFSET
+#ifdef LIMIT_Z
+#undef LIMIT_Z
+#endif
+#ifdef DIO102
+#undef DIO102
+#endif
+#define LIMIT_Z 102
+#define DIO102 -102
+#define LIMIT_Z_IO_BYTEOFFSET (LIMIT_Z_IO_OFFSET >> 3)
+#define LIMIT_Z_IO_BITMASK (1 << (LIMIT_Z_IO_OFFSET & 0x7))
+#define DIO102_IO_BYTEOFFSET LIMIT_Z_IO_BYTEOFFSET
+#define DIO102_IO_BITMASK LIMIT_Z_IO_BITMASK
+#ifndef IC74HC165_HAS_LIMITS
+#define IC74HC165_HAS_LIMITS
+#endif
+#endif
+#ifndef LIMIT_X2_IO_OFFSET
+#define LIMIT_X2_IO_OFFSET -1
+#define DIO103_IO_OFFSET -1
+#else
+#define DIO103_IO_OFFSET LIMIT_X2_IO_OFFSET
+#ifdef LIMIT_X2
+#undef LIMIT_X2
+#endif
+#ifdef DIO103
+#undef DIO103
+#endif
+#define LIMIT_X2 103
+#define DIO103 -103
+#define LIMIT_X2_IO_BYTEOFFSET (LIMIT_X2_IO_OFFSET >> 3)
+#define LIMIT_X2_IO_BITMASK (1 << (LIMIT_X2_IO_OFFSET & 0x7))
+#define DIO103_IO_BYTEOFFSET LIMIT_X2_IO_BYTEOFFSET
+#define DIO103_IO_BITMASK LIMIT_X2_IO_BITMASK
+#ifndef IC74HC165_HAS_LIMITS
+#define IC74HC165_HAS_LIMITS
+#endif
+#endif
+#ifndef LIMIT_Y2_IO_OFFSET
+#define LIMIT_Y2_IO_OFFSET -1
+#define DIO104_IO_OFFSET -1
+#else
+#define DIO104_IO_OFFSET LIMIT_Y2_IO_OFFSET
+#ifdef LIMIT_Y2
+#undef LIMIT_Y2
+#endif
+#ifdef DIO104
+#undef DIO104
+#endif
+#define LIMIT_Y2 104
+#define DIO104 -104
+#define LIMIT_Y2_IO_BYTEOFFSET (LIMIT_Y2_IO_OFFSET >> 3)
+#define LIMIT_Y2_IO_BITMASK (1 << (LIMIT_Y2_IO_OFFSET & 0x7))
+#define DIO104_IO_BYTEOFFSET LIMIT_Y2_IO_BYTEOFFSET
+#define DIO104_IO_BITMASK LIMIT_Y2_IO_BITMASK
+#ifndef IC74HC165_HAS_LIMITS
+#define IC74HC165_HAS_LIMITS
+#endif
+#endif
+#ifndef LIMIT_Z2_IO_OFFSET
+#define LIMIT_Z2_IO_OFFSET -1
+#define DIO105_IO_OFFSET -1
+#else
+#define DIO105_IO_OFFSET LIMIT_Z2_IO_OFFSET
+#ifdef LIMIT_Z2
+#undef LIMIT_Z2
+#endif
+#ifdef DIO105
+#undef DIO105
+#endif
+#define LIMIT_Z2 105
+#define DIO105 -105
+#define LIMIT_Z2_IO_BYTEOFFSET (LIMIT_Z2_IO_OFFSET >> 3)
+#define LIMIT_Z2_IO_BITMASK (1 << (LIMIT_Z2_IO_OFFSET & 0x7))
+#define DIO105_IO_BYTEOFFSET LIMIT_Z2_IO_BYTEOFFSET
+#define DIO105_IO_BITMASK LIMIT_Z2_IO_BITMASK
+#ifndef IC74HC165_HAS_LIMITS
+#define IC74HC165_HAS_LIMITS
+#endif
+#endif
+#ifndef LIMIT_A_IO_OFFSET
+#define LIMIT_A_IO_OFFSET -1
+#define DIO106_IO_OFFSET -1
+#else
+#define DIO106_IO_OFFSET LIMIT_A_IO_OFFSET
+#ifdef LIMIT_A
+#undef LIMIT_A
+#endif
+#ifdef DIO106
+#undef DIO106
+#endif
+#define LIMIT_A 106
+#define DIO106 -106
+#define LIMIT_A_IO_BYTEOFFSET (LIMIT_A_IO_OFFSET >> 3)
+#define LIMIT_A_IO_BITMASK (1 << (LIMIT_A_IO_OFFSET & 0x7))
+#define DIO106_IO_BYTEOFFSET LIMIT_A_IO_BYTEOFFSET
+#define DIO106_IO_BITMASK LIMIT_A_IO_BITMASK
+#ifndef IC74HC165_HAS_LIMITS
+#define IC74HC165_HAS_LIMITS
+#endif
+#endif
+#ifndef LIMIT_B_IO_OFFSET
+#define LIMIT_B_IO_OFFSET -1
+#define DIO107_IO_OFFSET -1
+#else
+#define DIO107_IO_OFFSET LIMIT_B_IO_OFFSET
+#ifdef LIMIT_B
+#undef LIMIT_B
+#endif
+#ifdef DIO107
+#undef DIO107
+#endif
+#define LIMIT_B 107
+#define DIO107 -107
+#define LIMIT_B_IO_BYTEOFFSET (LIMIT_B_IO_OFFSET >> 3)
+#define LIMIT_B_IO_BITMASK (1 << (LIMIT_B_IO_OFFSET & 0x7))
+#define DIO107_IO_BYTEOFFSET LIMIT_B_IO_BYTEOFFSET
+#define DIO107_IO_BITMASK LIMIT_B_IO_BITMASK
+#ifndef IC74HC165_HAS_LIMITS
+#define IC74HC165_HAS_LIMITS
+#endif
+#endif
+#ifndef LIMIT_C_IO_OFFSET
+#define LIMIT_C_IO_OFFSET -1
+#define DIO108_IO_OFFSET -1
+#else
+#define DIO108_IO_OFFSET LIMIT_C_IO_OFFSET
+#ifdef LIMIT_C
+#undef LIMIT_C
+#endif
+#ifdef DIO108
+#undef DIO108
+#endif
+#define LIMIT_C 108
+#define DIO108 -108
+#define LIMIT_C_IO_BYTEOFFSET (LIMIT_C_IO_OFFSET >> 3)
+#define LIMIT_C_IO_BITMASK (1 << (LIMIT_C_IO_OFFSET & 0x7))
+#define DIO108_IO_BYTEOFFSET LIMIT_C_IO_BYTEOFFSET
+#define DIO108_IO_BITMASK LIMIT_C_IO_BITMASK
+#ifndef IC74HC165_HAS_LIMITS
+#define IC74HC165_HAS_LIMITS
+#endif
+#endif
+#ifndef PROBE_IO_OFFSET
+#define PROBE_IO_OFFSET -1
+#define DIO109_IO_OFFSET -1
+#else
+#define DIO109_IO_OFFSET PROBE_IO_OFFSET
+#ifdef PROBE
+#undef PROBE
+#endif
+#ifdef DIO109
+#undef DIO109
+#endif
+#define PROBE 109
+#define DIO109 -109
+#define PROBE_IO_BYTEOFFSET (PROBE_IO_OFFSET >> 3)
+#define PROBE_IO_BITMASK (1 << (PROBE_IO_OFFSET & 0x7))
+#define DIO109_IO_BYTEOFFSET PROBE_IO_BYTEOFFSET
+#define DIO109_IO_BITMASK PROBE_IO_BITMASK
+#ifndef IC74HC165_HAS_PROBE
+#define IC74HC165_HAS_PROBE
+#endif
+#endif
+#ifndef ESTOP_IO_OFFSET
+#define ESTOP_IO_OFFSET -1
+#define DIO110_IO_OFFSET -1
+#else
+#define DIO110_IO_OFFSET ESTOP_IO_OFFSET
+#ifdef ESTOP
+#undef ESTOP
+#endif
+#ifdef DIO110
+#undef DIO110
+#endif
+#define ESTOP 110
+#define DIO110 -110
+#define ESTOP_IO_BYTEOFFSET (ESTOP_IO_OFFSET >> 3)
+#define ESTOP_IO_BITMASK (1 << (ESTOP_IO_OFFSET & 0x7))
+#define DIO110_IO_BYTEOFFSET ESTOP_IO_BYTEOFFSET
+#define DIO110_IO_BITMASK ESTOP_IO_BITMASK
+#ifndef IC74HC165_HAS_CONTROLS
+#define IC74HC165_HAS_CONTROLS
+#endif
+#endif
+#ifndef SAFETY_DOOR_IO_OFFSET
+#define SAFETY_DOOR_IO_OFFSET -1
+#define DIO111_IO_OFFSET -1
+#else
+#define DIO111_IO_OFFSET SAFETY_DOOR_IO_OFFSET
+#ifdef SAFETY_DOOR
+#undef SAFETY_DOOR
+#endif
+#ifdef DIO111
+#undef DIO111
+#endif
+#define SAFETY_DOOR 111
+#define DIO111 -111
+#define SAFETY_DOOR_IO_BYTEOFFSET (SAFETY_DOOR_IO_OFFSET >> 3)
+#define SAFETY_DOOR_IO_BITMASK (1 << (SAFETY_DOOR_IO_OFFSET & 0x7))
+#define DIO111_IO_BYTEOFFSET SAFETY_DOOR_IO_BYTEOFFSET
+#define DIO111_IO_BITMASK SAFETY_DOOR_IO_BITMASK
+#ifndef IC74HC165_HAS_CONTROLS
+#define IC74HC165_HAS_CONTROLS
+#endif
+#endif
+#ifndef FHOLD_IO_OFFSET
+#define FHOLD_IO_OFFSET -1
+#define DIO112_IO_OFFSET -1
+#else
+#define DIO112_IO_OFFSET FHOLD_IO_OFFSET
+#ifdef FHOLD
+#undef FHOLD
+#endif
+#ifdef DIO112
+#undef DIO112
+#endif
+#define FHOLD 112
+#define DIO112 -112
+#define FHOLD_IO_BYTEOFFSET (FHOLD_IO_OFFSET >> 3)
+#define FHOLD_IO_BITMASK (1 << (FHOLD_IO_OFFSET & 0x7))
+#define DIO112_IO_BYTEOFFSET FHOLD_IO_BYTEOFFSET
+#define DIO112_IO_BITMASK FHOLD_IO_BITMASK
+#ifndef IC74HC165_HAS_CONTROLS
+#define IC74HC165_HAS_CONTROLS
+#endif
+#endif
+#ifndef CS_RES_IO_OFFSET
+#define CS_RES_IO_OFFSET -1
+#define DIO113_IO_OFFSET -1
+#else
+#define DIO113_IO_OFFSET CS_RES_IO_OFFSET
+#ifdef CS_RES
+#undef CS_RES
+#endif
+#ifdef DIO113
+#undef DIO113
+#endif
+#define CS_RES 113
+#define DIO113 -113
+#define CS_RES_IO_BYTEOFFSET (CS_RES_IO_OFFSET >> 3)
+#define CS_RES_IO_BITMASK (1 << (CS_RES_IO_OFFSET & 0x7))
+#define DIO113_IO_BYTEOFFSET CS_RES_IO_BYTEOFFSET
+#define DIO113_IO_BITMASK CS_RES_IO_BITMASK
+#ifndef IC74HC165_HAS_CONTROLS
+#define IC74HC165_HAS_CONTROLS
+#endif
+#endif
+#ifndef DIN0_IO_OFFSET
+#define DIN0_IO_OFFSET -1
+#define DIO130_IO_OFFSET -1
+#else
+#define DIO130_IO_OFFSET DIN0_IO_OFFSET
+#ifdef DIN0
+#undef DIN0
+#endif
+#ifdef DIO130
+#undef DIO130
+#endif
+#define DIN0 130
+#define DIO130 -130
+#define DIN0_IO_BYTEOFFSET (DIN0_IO_OFFSET >> 3)
+#define DIN0_IO_BITMASK (1 << (DIN0_IO_OFFSET & 0x7))
+#define DIO130_IO_BYTEOFFSET DIN0_IO_BYTEOFFSET
+#define DIO130_IO_BITMASK DIN0_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN1_IO_OFFSET
+#define DIN1_IO_OFFSET -1
+#define DIO131_IO_OFFSET -1
+#else
+#define DIO131_IO_OFFSET DIN1_IO_OFFSET
+#ifdef DIN1
+#undef DIN1
+#endif
+#ifdef DIO131
+#undef DIO131
+#endif
+#define DIN1 131
+#define DIO131 -131
+#define DIN1_IO_BYTEOFFSET (DIN1_IO_OFFSET >> 3)
+#define DIN1_IO_BITMASK (1 << (DIN1_IO_OFFSET & 0x7))
+#define DIO131_IO_BYTEOFFSET DIN1_IO_BYTEOFFSET
+#define DIO131_IO_BITMASK DIN1_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN2_IO_OFFSET
+#define DIN2_IO_OFFSET -1
+#define DIO132_IO_OFFSET -1
+#else
+#define DIO132_IO_OFFSET DIN2_IO_OFFSET
+#ifdef DIN2
+#undef DIN2
+#endif
+#ifdef DIO132
+#undef DIO132
+#endif
+#define DIN2 132
+#define DIO132 -132
+#define DIN2_IO_BYTEOFFSET (DIN2_IO_OFFSET >> 3)
+#define DIN2_IO_BITMASK (1 << (DIN2_IO_OFFSET & 0x7))
+#define DIO132_IO_BYTEOFFSET DIN2_IO_BYTEOFFSET
+#define DIO132_IO_BITMASK DIN2_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN3_IO_OFFSET
+#define DIN3_IO_OFFSET -1
+#define DIO133_IO_OFFSET -1
+#else
+#define DIO133_IO_OFFSET DIN3_IO_OFFSET
+#ifdef DIN3
+#undef DIN3
+#endif
+#ifdef DIO133
+#undef DIO133
+#endif
+#define DIN3 133
+#define DIO133 -133
+#define DIN3_IO_BYTEOFFSET (DIN3_IO_OFFSET >> 3)
+#define DIN3_IO_BITMASK (1 << (DIN3_IO_OFFSET & 0x7))
+#define DIO133_IO_BYTEOFFSET DIN3_IO_BYTEOFFSET
+#define DIO133_IO_BITMASK DIN3_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN4_IO_OFFSET
+#define DIN4_IO_OFFSET -1
+#define DIO134_IO_OFFSET -1
+#else
+#define DIO134_IO_OFFSET DIN4_IO_OFFSET
+#ifdef DIN4
+#undef DIN4
+#endif
+#ifdef DIO134
+#undef DIO134
+#endif
+#define DIN4 134
+#define DIO134 -134
+#define DIN4_IO_BYTEOFFSET (DIN4_IO_OFFSET >> 3)
+#define DIN4_IO_BITMASK (1 << (DIN4_IO_OFFSET & 0x7))
+#define DIO134_IO_BYTEOFFSET DIN4_IO_BYTEOFFSET
+#define DIO134_IO_BITMASK DIN4_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN5_IO_OFFSET
+#define DIN5_IO_OFFSET -1
+#define DIO135_IO_OFFSET -1
+#else
+#define DIO135_IO_OFFSET DIN5_IO_OFFSET
+#ifdef DIN5
+#undef DIN5
+#endif
+#ifdef DIO135
+#undef DIO135
+#endif
+#define DIN5 135
+#define DIO135 -135
+#define DIN5_IO_BYTEOFFSET (DIN5_IO_OFFSET >> 3)
+#define DIN5_IO_BITMASK (1 << (DIN5_IO_OFFSET & 0x7))
+#define DIO135_IO_BYTEOFFSET DIN5_IO_BYTEOFFSET
+#define DIO135_IO_BITMASK DIN5_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN6_IO_OFFSET
+#define DIN6_IO_OFFSET -1
+#define DIO136_IO_OFFSET -1
+#else
+#define DIO136_IO_OFFSET DIN6_IO_OFFSET
+#ifdef DIN6
+#undef DIN6
+#endif
+#ifdef DIO136
+#undef DIO136
+#endif
+#define DIN6 136
+#define DIO136 -136
+#define DIN6_IO_BYTEOFFSET (DIN6_IO_OFFSET >> 3)
+#define DIN6_IO_BITMASK (1 << (DIN6_IO_OFFSET & 0x7))
+#define DIO136_IO_BYTEOFFSET DIN6_IO_BYTEOFFSET
+#define DIO136_IO_BITMASK DIN6_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN7_IO_OFFSET
+#define DIN7_IO_OFFSET -1
+#define DIO137_IO_OFFSET -1
+#else
+#define DIO137_IO_OFFSET DIN7_IO_OFFSET
+#ifdef DIN7
+#undef DIN7
+#endif
+#ifdef DIO137
+#undef DIO137
+#endif
+#define DIN7 137
+#define DIO137 -137
+#define DIN7_IO_BYTEOFFSET (DIN7_IO_OFFSET >> 3)
+#define DIN7_IO_BITMASK (1 << (DIN7_IO_OFFSET & 0x7))
+#define DIO137_IO_BYTEOFFSET DIN7_IO_BYTEOFFSET
+#define DIO137_IO_BITMASK DIN7_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN8_IO_OFFSET
+#define DIN8_IO_OFFSET -1
+#define DIO138_IO_OFFSET -1
+#else
+#define DIO138_IO_OFFSET DIN8_IO_OFFSET
+#ifdef DIN8
+#undef DIN8
+#endif
+#ifdef DIO138
+#undef DIO138
+#endif
+#define DIN8 138
+#define DIO138 -138
+#define DIN8_IO_BYTEOFFSET (DIN8_IO_OFFSET >> 3)
+#define DIN8_IO_BITMASK (1 << (DIN8_IO_OFFSET & 0x7))
+#define DIO138_IO_BYTEOFFSET DIN8_IO_BYTEOFFSET
+#define DIO138_IO_BITMASK DIN8_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN9_IO_OFFSET
+#define DIN9_IO_OFFSET -1
+#define DIO139_IO_OFFSET -1
+#else
+#define DIO139_IO_OFFSET DIN9_IO_OFFSET
+#ifdef DIN9
+#undef DIN9
+#endif
+#ifdef DIO139
+#undef DIO139
+#endif
+#define DIN9 139
+#define DIO139 -139
+#define DIN9_IO_BYTEOFFSET (DIN9_IO_OFFSET >> 3)
+#define DIN9_IO_BITMASK (1 << (DIN9_IO_OFFSET & 0x7))
+#define DIO139_IO_BYTEOFFSET DIN9_IO_BYTEOFFSET
+#define DIO139_IO_BITMASK DIN9_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN10_IO_OFFSET
+#define DIN10_IO_OFFSET -1
+#define DIO140_IO_OFFSET -1
+#else
+#define DIO140_IO_OFFSET DIN10_IO_OFFSET
+#ifdef DIN10
+#undef DIN10
+#endif
+#ifdef DIO140
+#undef DIO140
+#endif
+#define DIN10 140
+#define DIO140 -140
+#define DIN10_IO_BYTEOFFSET (DIN10_IO_OFFSET >> 3)
+#define DIN10_IO_BITMASK (1 << (DIN10_IO_OFFSET & 0x7))
+#define DIO140_IO_BYTEOFFSET DIN10_IO_BYTEOFFSET
+#define DIO140_IO_BITMASK DIN10_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN11_IO_OFFSET
+#define DIN11_IO_OFFSET -1
+#define DIO141_IO_OFFSET -1
+#else
+#define DIO141_IO_OFFSET DIN11_IO_OFFSET
+#ifdef DIN11
+#undef DIN11
+#endif
+#ifdef DIO141
+#undef DIO141
+#endif
+#define DIN11 141
+#define DIO141 -141
+#define DIN11_IO_BYTEOFFSET (DIN11_IO_OFFSET >> 3)
+#define DIN11_IO_BITMASK (1 << (DIN11_IO_OFFSET & 0x7))
+#define DIO141_IO_BYTEOFFSET DIN11_IO_BYTEOFFSET
+#define DIO141_IO_BITMASK DIN11_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN12_IO_OFFSET
+#define DIN12_IO_OFFSET -1
+#define DIO142_IO_OFFSET -1
+#else
+#define DIO142_IO_OFFSET DIN12_IO_OFFSET
+#ifdef DIN12
+#undef DIN12
+#endif
+#ifdef DIO142
+#undef DIO142
+#endif
+#define DIN12 142
+#define DIO142 -142
+#define DIN12_IO_BYTEOFFSET (DIN12_IO_OFFSET >> 3)
+#define DIN12_IO_BITMASK (1 << (DIN12_IO_OFFSET & 0x7))
+#define DIO142_IO_BYTEOFFSET DIN12_IO_BYTEOFFSET
+#define DIO142_IO_BITMASK DIN12_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN13_IO_OFFSET
+#define DIN13_IO_OFFSET -1
+#define DIO143_IO_OFFSET -1
+#else
+#define DIO143_IO_OFFSET DIN13_IO_OFFSET
+#ifdef DIN13
+#undef DIN13
+#endif
+#ifdef DIO143
+#undef DIO143
+#endif
+#define DIN13 143
+#define DIO143 -143
+#define DIN13_IO_BYTEOFFSET (DIN13_IO_OFFSET >> 3)
+#define DIN13_IO_BITMASK (1 << (DIN13_IO_OFFSET & 0x7))
+#define DIO143_IO_BYTEOFFSET DIN13_IO_BYTEOFFSET
+#define DIO143_IO_BITMASK DIN13_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN14_IO_OFFSET
+#define DIN14_IO_OFFSET -1
+#define DIO144_IO_OFFSET -1
+#else
+#define DIO144_IO_OFFSET DIN14_IO_OFFSET
+#ifdef DIN14
+#undef DIN14
+#endif
+#ifdef DIO144
+#undef DIO144
+#endif
+#define DIN14 144
+#define DIO144 -144
+#define DIN14_IO_BYTEOFFSET (DIN14_IO_OFFSET >> 3)
+#define DIN14_IO_BITMASK (1 << (DIN14_IO_OFFSET & 0x7))
+#define DIO144_IO_BYTEOFFSET DIN14_IO_BYTEOFFSET
+#define DIO144_IO_BITMASK DIN14_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN15_IO_OFFSET
+#define DIN15_IO_OFFSET -1
+#define DIO145_IO_OFFSET -1
+#else
+#define DIO145_IO_OFFSET DIN15_IO_OFFSET
+#ifdef DIN15
+#undef DIN15
+#endif
+#ifdef DIO145
+#undef DIO145
+#endif
+#define DIN15 145
+#define DIO145 -145
+#define DIN15_IO_BYTEOFFSET (DIN15_IO_OFFSET >> 3)
+#define DIN15_IO_BITMASK (1 << (DIN15_IO_OFFSET & 0x7))
+#define DIO145_IO_BYTEOFFSET DIN15_IO_BYTEOFFSET
+#define DIO145_IO_BITMASK DIN15_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN16_IO_OFFSET
+#define DIN16_IO_OFFSET -1
+#define DIO146_IO_OFFSET -1
+#else
+#define DIO146_IO_OFFSET DIN16_IO_OFFSET
+#ifdef DIN16
+#undef DIN16
+#endif
+#ifdef DIO146
+#undef DIO146
+#endif
+#define DIN16 146
+#define DIO146 -146
+#define DIN16_IO_BYTEOFFSET (DIN16_IO_OFFSET >> 3)
+#define DIN16_IO_BITMASK (1 << (DIN16_IO_OFFSET & 0x7))
+#define DIO146_IO_BYTEOFFSET DIN16_IO_BYTEOFFSET
+#define DIO146_IO_BITMASK DIN16_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN17_IO_OFFSET
+#define DIN17_IO_OFFSET -1
+#define DIO147_IO_OFFSET -1
+#else
+#define DIO147_IO_OFFSET DIN17_IO_OFFSET
+#ifdef DIN17
+#undef DIN17
+#endif
+#ifdef DIO147
+#undef DIO147
+#endif
+#define DIN17 147
+#define DIO147 -147
+#define DIN17_IO_BYTEOFFSET (DIN17_IO_OFFSET >> 3)
+#define DIN17_IO_BITMASK (1 << (DIN17_IO_OFFSET & 0x7))
+#define DIO147_IO_BYTEOFFSET DIN17_IO_BYTEOFFSET
+#define DIO147_IO_BITMASK DIN17_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN18_IO_OFFSET
+#define DIN18_IO_OFFSET -1
+#define DIO148_IO_OFFSET -1
+#else
+#define DIO148_IO_OFFSET DIN18_IO_OFFSET
+#ifdef DIN18
+#undef DIN18
+#endif
+#ifdef DIO148
+#undef DIO148
+#endif
+#define DIN18 148
+#define DIO148 -148
+#define DIN18_IO_BYTEOFFSET (DIN18_IO_OFFSET >> 3)
+#define DIN18_IO_BITMASK (1 << (DIN18_IO_OFFSET & 0x7))
+#define DIO148_IO_BYTEOFFSET DIN18_IO_BYTEOFFSET
+#define DIO148_IO_BITMASK DIN18_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN19_IO_OFFSET
+#define DIN19_IO_OFFSET -1
+#define DIO149_IO_OFFSET -1
+#else
+#define DIO149_IO_OFFSET DIN19_IO_OFFSET
+#ifdef DIN19
+#undef DIN19
+#endif
+#ifdef DIO149
+#undef DIO149
+#endif
+#define DIN19 149
+#define DIO149 -149
+#define DIN19_IO_BYTEOFFSET (DIN19_IO_OFFSET >> 3)
+#define DIN19_IO_BITMASK (1 << (DIN19_IO_OFFSET & 0x7))
+#define DIO149_IO_BYTEOFFSET DIN19_IO_BYTEOFFSET
+#define DIO149_IO_BITMASK DIN19_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN20_IO_OFFSET
+#define DIN20_IO_OFFSET -1
+#define DIO150_IO_OFFSET -1
+#else
+#define DIO150_IO_OFFSET DIN20_IO_OFFSET
+#ifdef DIN20
+#undef DIN20
+#endif
+#ifdef DIO150
+#undef DIO150
+#endif
+#define DIN20 150
+#define DIO150 -150
+#define DIN20_IO_BYTEOFFSET (DIN20_IO_OFFSET >> 3)
+#define DIN20_IO_BITMASK (1 << (DIN20_IO_OFFSET & 0x7))
+#define DIO150_IO_BYTEOFFSET DIN20_IO_BYTEOFFSET
+#define DIO150_IO_BITMASK DIN20_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN21_IO_OFFSET
+#define DIN21_IO_OFFSET -1
+#define DIO151_IO_OFFSET -1
+#else
+#define DIO151_IO_OFFSET DIN21_IO_OFFSET
+#ifdef DIN21
+#undef DIN21
+#endif
+#ifdef DIO151
+#undef DIO151
+#endif
+#define DIN21 151
+#define DIO151 -151
+#define DIN21_IO_BYTEOFFSET (DIN21_IO_OFFSET >> 3)
+#define DIN21_IO_BITMASK (1 << (DIN21_IO_OFFSET & 0x7))
+#define DIO151_IO_BYTEOFFSET DIN21_IO_BYTEOFFSET
+#define DIO151_IO_BITMASK DIN21_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN22_IO_OFFSET
+#define DIN22_IO_OFFSET -1
+#define DIO152_IO_OFFSET -1
+#else
+#define DIO152_IO_OFFSET DIN22_IO_OFFSET
+#ifdef DIN22
+#undef DIN22
+#endif
+#ifdef DIO152
+#undef DIO152
+#endif
+#define DIN22 152
+#define DIO152 -152
+#define DIN22_IO_BYTEOFFSET (DIN22_IO_OFFSET >> 3)
+#define DIN22_IO_BITMASK (1 << (DIN22_IO_OFFSET & 0x7))
+#define DIO152_IO_BYTEOFFSET DIN22_IO_BYTEOFFSET
+#define DIO152_IO_BITMASK DIN22_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN23_IO_OFFSET
+#define DIN23_IO_OFFSET -1
+#define DIO153_IO_OFFSET -1
+#else
+#define DIO153_IO_OFFSET DIN23_IO_OFFSET
+#ifdef DIN23
+#undef DIN23
+#endif
+#ifdef DIO153
+#undef DIO153
+#endif
+#define DIN23 153
+#define DIO153 -153
+#define DIN23_IO_BYTEOFFSET (DIN23_IO_OFFSET >> 3)
+#define DIN23_IO_BITMASK (1 << (DIN23_IO_OFFSET & 0x7))
+#define DIO153_IO_BYTEOFFSET DIN23_IO_BYTEOFFSET
+#define DIO153_IO_BITMASK DIN23_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN24_IO_OFFSET
+#define DIN24_IO_OFFSET -1
+#define DIO154_IO_OFFSET -1
+#else
+#define DIO154_IO_OFFSET DIN24_IO_OFFSET
+#ifdef DIN24
+#undef DIN24
+#endif
+#ifdef DIO154
+#undef DIO154
+#endif
+#define DIN24 154
+#define DIO154 -154
+#define DIN24_IO_BYTEOFFSET (DIN24_IO_OFFSET >> 3)
+#define DIN24_IO_BITMASK (1 << (DIN24_IO_OFFSET & 0x7))
+#define DIO154_IO_BYTEOFFSET DIN24_IO_BYTEOFFSET
+#define DIO154_IO_BITMASK DIN24_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN25_IO_OFFSET
+#define DIN25_IO_OFFSET -1
+#define DIO155_IO_OFFSET -1
+#else
+#define DIO155_IO_OFFSET DIN25_IO_OFFSET
+#ifdef DIN25
+#undef DIN25
+#endif
+#ifdef DIO155
+#undef DIO155
+#endif
+#define DIN25 155
+#define DIO155 -155
+#define DIN25_IO_BYTEOFFSET (DIN25_IO_OFFSET >> 3)
+#define DIN25_IO_BITMASK (1 << (DIN25_IO_OFFSET & 0x7))
+#define DIO155_IO_BYTEOFFSET DIN25_IO_BYTEOFFSET
+#define DIO155_IO_BITMASK DIN25_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN26_IO_OFFSET
+#define DIN26_IO_OFFSET -1
+#define DIO156_IO_OFFSET -1
+#else
+#define DIO156_IO_OFFSET DIN26_IO_OFFSET
+#ifdef DIN26
+#undef DIN26
+#endif
+#ifdef DIO156
+#undef DIO156
+#endif
+#define DIN26 156
+#define DIO156 -156
+#define DIN26_IO_BYTEOFFSET (DIN26_IO_OFFSET >> 3)
+#define DIN26_IO_BITMASK (1 << (DIN26_IO_OFFSET & 0x7))
+#define DIO156_IO_BYTEOFFSET DIN26_IO_BYTEOFFSET
+#define DIO156_IO_BITMASK DIN26_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN27_IO_OFFSET
+#define DIN27_IO_OFFSET -1
+#define DIO157_IO_OFFSET -1
+#else
+#define DIO157_IO_OFFSET DIN27_IO_OFFSET
+#ifdef DIN27
+#undef DIN27
+#endif
+#ifdef DIO157
+#undef DIO157
+#endif
+#define DIN27 157
+#define DIO157 -157
+#define DIN27_IO_BYTEOFFSET (DIN27_IO_OFFSET >> 3)
+#define DIN27_IO_BITMASK (1 << (DIN27_IO_OFFSET & 0x7))
+#define DIO157_IO_BYTEOFFSET DIN27_IO_BYTEOFFSET
+#define DIO157_IO_BITMASK DIN27_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN28_IO_OFFSET
+#define DIN28_IO_OFFSET -1
+#define DIO158_IO_OFFSET -1
+#else
+#define DIO158_IO_OFFSET DIN28_IO_OFFSET
+#ifdef DIN28
+#undef DIN28
+#endif
+#ifdef DIO158
+#undef DIO158
+#endif
+#define DIN28 158
+#define DIO158 -158
+#define DIN28_IO_BYTEOFFSET (DIN28_IO_OFFSET >> 3)
+#define DIN28_IO_BITMASK (1 << (DIN28_IO_OFFSET & 0x7))
+#define DIO158_IO_BYTEOFFSET DIN28_IO_BYTEOFFSET
+#define DIO158_IO_BITMASK DIN28_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN29_IO_OFFSET
+#define DIN29_IO_OFFSET -1
+#define DIO159_IO_OFFSET -1
+#else
+#define DIO159_IO_OFFSET DIN29_IO_OFFSET
+#ifdef DIN29
+#undef DIN29
+#endif
+#ifdef DIO159
+#undef DIO159
+#endif
+#define DIN29 159
+#define DIO159 -159
+#define DIN29_IO_BYTEOFFSET (DIN29_IO_OFFSET >> 3)
+#define DIN29_IO_BITMASK (1 << (DIN29_IO_OFFSET & 0x7))
+#define DIO159_IO_BYTEOFFSET DIN29_IO_BYTEOFFSET
+#define DIO159_IO_BITMASK DIN29_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN30_IO_OFFSET
+#define DIN30_IO_OFFSET -1
+#define DIO160_IO_OFFSET -1
+#else
+#define DIO160_IO_OFFSET DIN30_IO_OFFSET
+#ifdef DIN30
+#undef DIN30
+#endif
+#ifdef DIO160
+#undef DIO160
+#endif
+#define DIN30 160
+#define DIO160 -160
+#define DIN30_IO_BYTEOFFSET (DIN30_IO_OFFSET >> 3)
+#define DIN30_IO_BITMASK (1 << (DIN30_IO_OFFSET & 0x7))
+#define DIO160_IO_BYTEOFFSET DIN30_IO_BYTEOFFSET
+#define DIO160_IO_BITMASK DIN30_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN31_IO_OFFSET
+#define DIN31_IO_OFFSET -1
+#define DIO161_IO_OFFSET -1
+#else
+#define DIO161_IO_OFFSET DIN31_IO_OFFSET
+#ifdef DIN31
+#undef DIN31
+#endif
+#ifdef DIO161
+#undef DIO161
+#endif
+#define DIN31 161
+#define DIO161 -161
+#define DIN31_IO_BYTEOFFSET (DIN31_IO_OFFSET >> 3)
+#define DIN31_IO_BITMASK (1 << (DIN31_IO_OFFSET & 0x7))
+#define DIO161_IO_BYTEOFFSET DIN31_IO_BYTEOFFSET
+#define DIO161_IO_BITMASK DIN31_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN32_IO_OFFSET
+#define DIN32_IO_OFFSET -1
+#define DIO162_IO_OFFSET -1
+#else
+#define DIO162_IO_OFFSET DIN32_IO_OFFSET
+#ifdef DIN32
+#undef DIN32
+#endif
+#ifdef DIO162
+#undef DIO162
+#endif
+#define DIN32 162
+#define DIO162 -162
+#define DIN32_IO_BYTEOFFSET (DIN32_IO_OFFSET >> 3)
+#define DIN32_IO_BITMASK (1 << (DIN32_IO_OFFSET & 0x7))
+#define DIO162_IO_BYTEOFFSET DIN32_IO_BYTEOFFSET
+#define DIO162_IO_BITMASK DIN32_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN33_IO_OFFSET
+#define DIN33_IO_OFFSET -1
+#define DIO163_IO_OFFSET -1
+#else
+#define DIO163_IO_OFFSET DIN33_IO_OFFSET
+#ifdef DIN33
+#undef DIN33
+#endif
+#ifdef DIO163
+#undef DIO163
+#endif
+#define DIN33 163
+#define DIO163 -163
+#define DIN33_IO_BYTEOFFSET (DIN33_IO_OFFSET >> 3)
+#define DIN33_IO_BITMASK (1 << (DIN33_IO_OFFSET & 0x7))
+#define DIO163_IO_BYTEOFFSET DIN33_IO_BYTEOFFSET
+#define DIO163_IO_BITMASK DIN33_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN34_IO_OFFSET
+#define DIN34_IO_OFFSET -1
+#define DIO164_IO_OFFSET -1
+#else
+#define DIO164_IO_OFFSET DIN34_IO_OFFSET
+#ifdef DIN34
+#undef DIN34
+#endif
+#ifdef DIO164
+#undef DIO164
+#endif
+#define DIN34 164
+#define DIO164 -164
+#define DIN34_IO_BYTEOFFSET (DIN34_IO_OFFSET >> 3)
+#define DIN34_IO_BITMASK (1 << (DIN34_IO_OFFSET & 0x7))
+#define DIO164_IO_BYTEOFFSET DIN34_IO_BYTEOFFSET
+#define DIO164_IO_BITMASK DIN34_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN35_IO_OFFSET
+#define DIN35_IO_OFFSET -1
+#define DIO165_IO_OFFSET -1
+#else
+#define DIO165_IO_OFFSET DIN35_IO_OFFSET
+#ifdef DIN35
+#undef DIN35
+#endif
+#ifdef DIO165
+#undef DIO165
+#endif
+#define DIN35 165
+#define DIO165 -165
+#define DIN35_IO_BYTEOFFSET (DIN35_IO_OFFSET >> 3)
+#define DIN35_IO_BITMASK (1 << (DIN35_IO_OFFSET & 0x7))
+#define DIO165_IO_BYTEOFFSET DIN35_IO_BYTEOFFSET
+#define DIO165_IO_BITMASK DIN35_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN36_IO_OFFSET
+#define DIN36_IO_OFFSET -1
+#define DIO166_IO_OFFSET -1
+#else
+#define DIO166_IO_OFFSET DIN36_IO_OFFSET
+#ifdef DIN36
+#undef DIN36
+#endif
+#ifdef DIO166
+#undef DIO166
+#endif
+#define DIN36 166
+#define DIO166 -166
+#define DIN36_IO_BYTEOFFSET (DIN36_IO_OFFSET >> 3)
+#define DIN36_IO_BITMASK (1 << (DIN36_IO_OFFSET & 0x7))
+#define DIO166_IO_BYTEOFFSET DIN36_IO_BYTEOFFSET
+#define DIO166_IO_BITMASK DIN36_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN37_IO_OFFSET
+#define DIN37_IO_OFFSET -1
+#define DIO167_IO_OFFSET -1
+#else
+#define DIO167_IO_OFFSET DIN37_IO_OFFSET
+#ifdef DIN37
+#undef DIN37
+#endif
+#ifdef DIO167
+#undef DIO167
+#endif
+#define DIN37 167
+#define DIO167 -167
+#define DIN37_IO_BYTEOFFSET (DIN37_IO_OFFSET >> 3)
+#define DIN37_IO_BITMASK (1 << (DIN37_IO_OFFSET & 0x7))
+#define DIO167_IO_BYTEOFFSET DIN37_IO_BYTEOFFSET
+#define DIO167_IO_BITMASK DIN37_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN38_IO_OFFSET
+#define DIN38_IO_OFFSET -1
+#define DIO168_IO_OFFSET -1
+#else
+#define DIO168_IO_OFFSET DIN38_IO_OFFSET
+#ifdef DIN38
+#undef DIN38
+#endif
+#ifdef DIO168
+#undef DIO168
+#endif
+#define DIN38 168
+#define DIO168 -168
+#define DIN38_IO_BYTEOFFSET (DIN38_IO_OFFSET >> 3)
+#define DIN38_IO_BITMASK (1 << (DIN38_IO_OFFSET & 0x7))
+#define DIO168_IO_BYTEOFFSET DIN38_IO_BYTEOFFSET
+#define DIO168_IO_BITMASK DIN38_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN39_IO_OFFSET
+#define DIN39_IO_OFFSET -1
+#define DIO169_IO_OFFSET -1
+#else
+#define DIO169_IO_OFFSET DIN39_IO_OFFSET
+#ifdef DIN39
+#undef DIN39
+#endif
+#ifdef DIO169
+#undef DIO169
+#endif
+#define DIN39 169
+#define DIO169 -169
+#define DIN39_IO_BYTEOFFSET (DIN39_IO_OFFSET >> 3)
+#define DIN39_IO_BITMASK (1 << (DIN39_IO_OFFSET & 0x7))
+#define DIO169_IO_BYTEOFFSET DIN39_IO_BYTEOFFSET
+#define DIO169_IO_BITMASK DIN39_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN40_IO_OFFSET
+#define DIN40_IO_OFFSET -1
+#define DIO170_IO_OFFSET -1
+#else
+#define DIO170_IO_OFFSET DIN40_IO_OFFSET
+#ifdef DIN40
+#undef DIN40
+#endif
+#ifdef DIO170
+#undef DIO170
+#endif
+#define DIN40 170
+#define DIO170 -170
+#define DIN40_IO_BYTEOFFSET (DIN40_IO_OFFSET >> 3)
+#define DIN40_IO_BITMASK (1 << (DIN40_IO_OFFSET & 0x7))
+#define DIO170_IO_BYTEOFFSET DIN40_IO_BYTEOFFSET
+#define DIO170_IO_BITMASK DIN40_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN41_IO_OFFSET
+#define DIN41_IO_OFFSET -1
+#define DIO171_IO_OFFSET -1
+#else
+#define DIO171_IO_OFFSET DIN41_IO_OFFSET
+#ifdef DIN41
+#undef DIN41
+#endif
+#ifdef DIO171
+#undef DIO171
+#endif
+#define DIN41 171
+#define DIO171 -171
+#define DIN41_IO_BYTEOFFSET (DIN41_IO_OFFSET >> 3)
+#define DIN41_IO_BITMASK (1 << (DIN41_IO_OFFSET & 0x7))
+#define DIO171_IO_BYTEOFFSET DIN41_IO_BYTEOFFSET
+#define DIO171_IO_BITMASK DIN41_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN42_IO_OFFSET
+#define DIN42_IO_OFFSET -1
+#define DIO172_IO_OFFSET -1
+#else
+#define DIO172_IO_OFFSET DIN42_IO_OFFSET
+#ifdef DIN42
+#undef DIN42
+#endif
+#ifdef DIO172
+#undef DIO172
+#endif
+#define DIN42 172
+#define DIO172 -172
+#define DIN42_IO_BYTEOFFSET (DIN42_IO_OFFSET >> 3)
+#define DIN42_IO_BITMASK (1 << (DIN42_IO_OFFSET & 0x7))
+#define DIO172_IO_BYTEOFFSET DIN42_IO_BYTEOFFSET
+#define DIO172_IO_BITMASK DIN42_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN43_IO_OFFSET
+#define DIN43_IO_OFFSET -1
+#define DIO173_IO_OFFSET -1
+#else
+#define DIO173_IO_OFFSET DIN43_IO_OFFSET
+#ifdef DIN43
+#undef DIN43
+#endif
+#ifdef DIO173
+#undef DIO173
+#endif
+#define DIN43 173
+#define DIO173 -173
+#define DIN43_IO_BYTEOFFSET (DIN43_IO_OFFSET >> 3)
+#define DIN43_IO_BITMASK (1 << (DIN43_IO_OFFSET & 0x7))
+#define DIO173_IO_BYTEOFFSET DIN43_IO_BYTEOFFSET
+#define DIO173_IO_BITMASK DIN43_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN44_IO_OFFSET
+#define DIN44_IO_OFFSET -1
+#define DIO174_IO_OFFSET -1
+#else
+#define DIO174_IO_OFFSET DIN44_IO_OFFSET
+#ifdef DIN44
+#undef DIN44
+#endif
+#ifdef DIO174
+#undef DIO174
+#endif
+#define DIN44 174
+#define DIO174 -174
+#define DIN44_IO_BYTEOFFSET (DIN44_IO_OFFSET >> 3)
+#define DIN44_IO_BITMASK (1 << (DIN44_IO_OFFSET & 0x7))
+#define DIO174_IO_BYTEOFFSET DIN44_IO_BYTEOFFSET
+#define DIO174_IO_BITMASK DIN44_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN45_IO_OFFSET
+#define DIN45_IO_OFFSET -1
+#define DIO175_IO_OFFSET -1
+#else
+#define DIO175_IO_OFFSET DIN45_IO_OFFSET
+#ifdef DIN45
+#undef DIN45
+#endif
+#ifdef DIO175
+#undef DIO175
+#endif
+#define DIN45 175
+#define DIO175 -175
+#define DIN45_IO_BYTEOFFSET (DIN45_IO_OFFSET >> 3)
+#define DIN45_IO_BITMASK (1 << (DIN45_IO_OFFSET & 0x7))
+#define DIO175_IO_BYTEOFFSET DIN45_IO_BYTEOFFSET
+#define DIO175_IO_BITMASK DIN45_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN46_IO_OFFSET
+#define DIN46_IO_OFFSET -1
+#define DIO176_IO_OFFSET -1
+#else
+#define DIO176_IO_OFFSET DIN46_IO_OFFSET
+#ifdef DIN46
+#undef DIN46
+#endif
+#ifdef DIO176
+#undef DIO176
+#endif
+#define DIN46 176
+#define DIO176 -176
+#define DIN46_IO_BYTEOFFSET (DIN46_IO_OFFSET >> 3)
+#define DIN46_IO_BITMASK (1 << (DIN46_IO_OFFSET & 0x7))
+#define DIO176_IO_BYTEOFFSET DIN46_IO_BYTEOFFSET
+#define DIO176_IO_BITMASK DIN46_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN47_IO_OFFSET
+#define DIN47_IO_OFFSET -1
+#define DIO177_IO_OFFSET -1
+#else
+#define DIO177_IO_OFFSET DIN47_IO_OFFSET
+#ifdef DIN47
+#undef DIN47
+#endif
+#ifdef DIO177
+#undef DIO177
+#endif
+#define DIN47 177
+#define DIO177 -177
+#define DIN47_IO_BYTEOFFSET (DIN47_IO_OFFSET >> 3)
+#define DIN47_IO_BITMASK (1 << (DIN47_IO_OFFSET & 0x7))
+#define DIO177_IO_BYTEOFFSET DIN47_IO_BYTEOFFSET
+#define DIO177_IO_BITMASK DIN47_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN48_IO_OFFSET
+#define DIN48_IO_OFFSET -1
+#define DIO178_IO_OFFSET -1
+#else
+#define DIO178_IO_OFFSET DIN48_IO_OFFSET
+#ifdef DIN48
+#undef DIN48
+#endif
+#ifdef DIO178
+#undef DIO178
+#endif
+#define DIN48 178
+#define DIO178 -178
+#define DIN48_IO_BYTEOFFSET (DIN48_IO_OFFSET >> 3)
+#define DIN48_IO_BITMASK (1 << (DIN48_IO_OFFSET & 0x7))
+#define DIO178_IO_BYTEOFFSET DIN48_IO_BYTEOFFSET
+#define DIO178_IO_BITMASK DIN48_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+#ifndef DIN49_IO_OFFSET
+#define DIN49_IO_OFFSET -1
+#define DIO179_IO_OFFSET -1
+#else
+#define DIO179_IO_OFFSET DIN49_IO_OFFSET
+#ifdef DIN49
+#undef DIN49
+#endif
+#ifdef DIO179
+#undef DIO179
+#endif
+#define DIN49 179
+#define DIO179 -179
+#define DIN49_IO_BYTEOFFSET (DIN49_IO_OFFSET >> 3)
+#define DIN49_IO_BITMASK (1 << (DIN49_IO_OFFSET & 0x7))
+#define DIO179_IO_BYTEOFFSET DIN49_IO_BYTEOFFSET
+#define DIO179_IO_BITMASK DIN49_IO_BITMASK
+#ifndef IC74HC165_HAS_DINS
+#define IC74HC165_HAS_DINS
+#endif
+#endif
+
+#if (IC74HC165_COUNT < 0)
+#undef IC74HC165_COUNT
+#define IC74HC165_COUNT 0
+#elif (IC74HC165_COUNT > 4)
+#error "The maximum number of chained IC74HC165 is 4"
+#endif
+
+#if (IC74HC165_COUNT > 0)
+#ifndef __indirect__
+#define __indirect__ex__(X, Y) DIO##X##_##Y
+#define __indirect__(X, Y) __indirect__ex__(X, Y)
+#endif
+	extern volatile uint8_t ic74hc165_io_pins[IC74HC165_COUNT];
+#ifndef ic74hc165_get_pin
+#define ic74hc165_get_pin(pin) (ic74hc165_io_pins[(__indirect__(pin, IO_BYTEOFFSET))] & (__indirect__(pin, IO_BITMASK)))
+#endif
+#else
+#define ic74hc165_get_pin(pin) 0
+#endif
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

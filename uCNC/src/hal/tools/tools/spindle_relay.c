@@ -74,6 +74,19 @@ void set_speed(int16_t value)
 	}
 }
 
+static uint16_t get_speed(void)
+{
+#ifdef SPINDLE_RELAY_RPM_ENCODER
+	return encoder_get_rpm(SPINDLE_RELAY_RPM_ENCODER);
+#else
+#if ASSERT_PIN(SPINDLE_PWM)
+	return tool_get_setpoint();
+#else
+	return 0;
+#endif
+#endif
+}
+
 void set_coolant(uint8_t value)
 {
 #ifdef ENABLE_COOLANT
@@ -93,6 +106,6 @@ const tool_t spindle_relay = {
 	.shutdown_code = NULL,
 	.pid_update = NULL,
 	.range_speed = &range_speed,
-	.get_speed = NULL,
+	.get_speed = &get_speed,
 	.set_speed = &set_speed,
 	.set_coolant = &set_coolant};

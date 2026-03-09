@@ -79,8 +79,11 @@ ISR(RTC_COMPB_vect, ISR_NOBLOCK)
 
 // gets the mcu running time in ms
 static volatile uint32_t mcu_runtime_ms;
+// gates the rtc long code running
 ISR(RTC_COMPA_vect, ISR_BLOCK)
 {
+	mcu_runtime_ms++;
+
 #if SERVOS_MASK > 0
 	static uint8_t ms_servo_counter = 0;
 	static uint8_t servo_loops;
@@ -146,27 +149,65 @@ ISR(RTC_COMPA_vect, ISR_BLOCK)
 	}
 	servo_counter++;
 	ms_servo_counter = (servo_counter != 20) ? servo_counter : 0;
-
 #endif
+
 #ifndef DISABLE_RTC_CODE
-	uint32_t millis = mcu_runtime_ms;
-	millis++;
-	mcu_runtime_ms = millis;
-	mcu_rtc_cb(millis);
-#else
-	mcu_runtime_ms++;
+	static volatile bool rtc_running;
+	if (!rtc_running)
+	{
+		rtc_running = true;
+		mcu_enable_global_isr();
+		uint32_t millis = mcu_runtime_ms;
+		mcu_rtc_cb(millis);
+		mcu_disable_global_isr();
+		rtc_running = false;
+	}
 #endif
 }
 
+// for some reason this causes step to be lost in the generated signal
 ISR(ITP_COMPA_vect, ISR_BLOCK)
 {
+	ITP_TIMSK &= ~(1 << ITP_OCIEA);
+	RTC_TIMSK &= ~(1 << RTC_OCIEA); // locks RTC
 	mcu_step_cb();
+	mcu_disable_global_isr();
+	RTC_TIMSK |= (1 << RTC_OCIEA); // unlocks RTC
+	ITP_TIFR = 2; // clears pending OCIEA overflow ISR (this prevents abnomal short step pulses)
+	ITP_TIMSK |= (1 << ITP_OCIEA);
 }
 
 ISR(ITP_COMPB_vect, ISR_BLOCK)
 {
 	mcu_step_reset_cb();
 }
+
+// ISR(ITP_COMPA_vect, ISR_BLOCK)
+// {
+// 	static bool resetstep = false;
+
+// 	ITP_TIMSK &= ~(1 << ITP_OCIEA);
+// 	if (!resetstep)
+// 	{
+// 		if (!step_running)
+// 		{
+// 			step_running = true;
+// 			mcu_step_cb();
+// 			mcu_disable_global_isr();
+// 			step_running = false;
+// 		}
+// 	}
+// 	else
+// 	{
+// 		mcu_step_reset_cb();
+// 	}
+// 	// this is necessary to allow minimum CPU time to run the itp_run to feed the step isr
+// 	ITP_TCNT = 0;
+// 	MEM_BARRIER;
+// 	resetstep = !resetstep;
+// 	MEM_BARRIER;
+// 	ITP_TIMSK |= (1 << ITP_OCIEA);
+// }
 
 #ifndef FORCE_SOFT_POLLING
 
@@ -358,17 +399,35 @@ ISR(PCINT2_vect, ISR_BLOCK) // input pin on change service routine
 #endif
 #if (PCINT2_CONTROLS_MASK != 0)
 	mcu_controls_changed_cb();
-
 #endif
 
 #if (PROBE_ISR2 != 0)
 	mcu_probe_changed_cb();
-
 #endif
 
 #if (PCINT2_DIN_IO_MASK != 0)
 	mcu_inputs_changed_cb();
+#endif
+}
+#endif
 
+#if (PCINT3_MASK != 0)
+ISR(PCINT3_vect, ISR_BLOCK) // input pin on change service routine
+{
+#if (PCINT3_LIMITS_MASK != 0)
+	mcu_limits_changed_cb();
+
+#endif
+#if (PCINT3_CONTROLS_MASK != 0)
+	mcu_controls_changed_cb();
+#endif
+
+#if (PROBE_ISR3 != 0)
+	mcu_probe_changed_cb();
+#endif
+
+#if (PCINT3_DIN_IO_MASK != 0)
+	mcu_inputs_changed_cb();
 #endif
 }
 #endif
@@ -383,34 +442,34 @@ ISR(COM_RX_vect, ISR_BLOCK)
 	uint8_t c = COM_INREG;
 	if (mcu_com_rx_cb(c))
 	{
-		if (BUFFER_FULL(uart_rx))
+		if (!BUFFER_TRY_ENQUEUE(uart_rx, &c))
 		{
-			c = OVF;
+			STREAM_OVF(c);
 		}
-
-		BUFFER_ENQUEUE(uart_rx, &c);
 	}
 #else
 	mcu_uart_rx_cb(COM_INREG);
 #endif
 }
 
+#ifndef ENABLE_ITP_FEED_TASK
 #ifndef UART_TX_BUFFER_SIZE
 #define UART_TX_BUFFER_SIZE 64
 #endif
 DECL_BUFFER(uint8_t, uart_tx, UART_TX_BUFFER_SIZE);
 ISR(COM_TX_vect, ISR_BLOCK)
 {
-	if (BUFFER_EMPTY(uart_tx))
+	uint8_t c;
+	if (!BUFFER_TRY_DEQUEUE(uart_tx, &c))
 	{
 		CLEARBIT(UCSRB_REG, UDRIE_BIT);
 		return;
 	}
-	uint8_t c;
-	BUFFER_DEQUEUE(uart_tx, &c);
+
 	COM_OUTREG = c;
 }
 
+#endif
 #endif
 
 #if defined(MCU_HAS_UART2)
@@ -421,26 +480,23 @@ ISR(COM2_RX_vect, ISR_BLOCK)
 #if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
 	if (mcu_com_rx_cb(c))
 	{
-		if (BUFFER_FULL(uart2_rx))
+		if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
 		{
-			c = OVF;
+			STREAM_OVF(c);
 		}
-
-		BUFFER_ENQUEUE(uart2_rx, &c);
 	}
 #else
 	mcu_uart2_rx_cb(c);
 #ifndef UART2_DISABLE_BUFFER
-	if (BUFFER_FULL(uart2_rx))
+	if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
 	{
-		c = OVF;
+		STREAM_OVF(c);
 	}
-
-	BUFFER_ENQUEUE(uart2_rx, &c);
 #endif
 #endif
 }
 
+#ifndef ENABLE_ITP_FEED_TASK
 #ifndef UART2_TX_BUFFER_SIZE
 #define UART2_TX_BUFFER_SIZE 64
 #endif
@@ -448,16 +504,17 @@ DECL_BUFFER(uint8_t, uart2, UART2_TX_BUFFER_SIZE);
 ISR(COM2_TX_vect, ISR_BLOCK)
 {
 	// keeps sending chars until null is found
-	if (BUFFER_EMPTY(uart2))
+	uint8_t c;
+
+	if (!BUFFER_TRY_DEQUEUE(uart2, &c))
 	{
 		CLEARBIT(UCSRB_REG_2, UDRIE_BIT_2);
 		return;
 	}
-	uint8_t c;
-	BUFFER_DEQUEUE(uart2, &c);
+
 	COM2_OUTREG = c;
 }
-
+#endif
 #endif
 
 static void mcu_start_rtc();
@@ -509,23 +566,33 @@ void mcu_init(void)
 
 // enable interrupts on pin changes
 #ifndef FORCE_SOFT_POLLING
+#ifdef PCIE0
 #if ((PCINT0_LIMITS_MASK | PCINT0_CONTROLS_MASK | PROBE_ISR0 | PCINT0_DIN_IO_MASK) != 0)
 	SETBIT(PCICR, PCIE0);
 #else
 	CLEARBIT(PCICR, PCIE0);
 #endif
-#if ((PCINT1_LIMITS_MASK | PCINT1_CONTROLS_MASK | PROBE_ISR1 | PCINT1_DIN_IO_MASK) != 0)
-#ifdef AVR6
-	PCMSK1 <<= 1;
 #endif
+#ifdef PCIE1
+#if ((PCINT1_LIMITS_MASK | PCINT1_CONTROLS_MASK | PROBE_ISR1 | PCINT1_DIN_IO_MASK) != 0)
 	SETBIT(PCICR, PCIE1);
 #else
 	CLEARBIT(PCICR, PCIE1);
 #endif
+#endif
+#ifdef PCIE2
 #if ((PCINT2_LIMITS_MASK | PCINT2_CONTROLS_MASK | PROBE_ISR2 | PCINT2_DIN_IO_MASK) != 0)
 	SETBIT(PCICR, PCIE2);
 #else
 	CLEARBIT(PCICR, PCIE2);
+#endif
+#endif
+#ifdef PCIE3
+#if ((PCINT3_LIMITS_MASK | PCINT3_CONTROLS_MASK | PROBE_ISR3 | PCINT3_DIN_IO_MASK) != 0)
+	SETBIT(PCICR, PCIE3);
+#else
+	CLEARBIT(PCICR, PCIE3);
+#endif
 #endif
 #if (EIMSK_VAL != 0)
 	EIMSK = EIMSK_VAL;
@@ -544,7 +611,7 @@ void mcu_init(void)
 	SPSR |= SPSR_VAL;
 	SPCR = (1 << SPE) | (1 << MSTR) | (SPI_MODE << 2) | SPCR_VAL;
 #endif
- 
+
 #ifdef MCU_HAS_I2C
 	// configure as I2C master
 	mcu_i2c_config(I2C_FREQ);
@@ -606,7 +673,7 @@ uint8_t mcu_get_servo(uint8_t servo)
 uint8_t mcu_uart_getc(void)
 {
 	uint8_t c = 0;
-	BUFFER_DEQUEUE(uart_rx, &c);
+	BUFFER_TRY_DEQUEUE(uart_rx, &c);
 	return c;
 }
 
@@ -622,15 +689,21 @@ void mcu_uart_clear(void)
 
 void mcu_uart_putc(uint8_t c)
 {
-	while (BUFFER_FULL(uart_tx))
+#ifndef ENABLE_ITP_FEED_TASK
+	while (!BUFFER_TRY_ENQUEUE(uart_tx, &c))
 	{
 		mcu_uart_flush();
 	}
-	BUFFER_ENQUEUE(uart_tx, &c);
+#else
+	while (!(UCSRA_REG & (1 << UDRE_BIT)))
+		;
+	COM_OUTREG = c;
+#endif
 }
 
 void mcu_uart_flush(void)
 {
+#ifndef ENABLE_ITP_FEED_TASK
 	if (!CHECKBIT(UCSRB_REG, UDRIE_BIT)) // not ready start flushing
 	{
 		SETBIT(UCSRB_REG, UDRIE_BIT);
@@ -638,6 +711,7 @@ void mcu_uart_flush(void)
 		io_toggle_output(ACTIVITY_LED);
 #endif
 	}
+#endif
 }
 #endif
 
@@ -645,7 +719,7 @@ void mcu_uart_flush(void)
 uint8_t mcu_uart2_getc(void)
 {
 	uint8_t c = 0;
-	BUFFER_DEQUEUE(uart2_rx, &c);
+	BUFFER_TRY_DEQUEUE(uart2_rx, &c);
 	return c;
 }
 
@@ -661,11 +735,16 @@ void mcu_uart2_clear(void)
 
 void mcu_uart2_putc(uint8_t c)
 {
-	while (BUFFER_FULL(uart2))
+#ifndef ENABLE_ITP_FEED_TASK
+	while (!BUFFER_TRY_ENQUEUE(uart2, &c))
 	{
 		mcu_uart2_flush();
 	}
-	BUFFER_ENQUEUE(uart2, &c);
+#else
+	while (!(UCSRA_REG_2 & (1 << UDRE_BIT_2)))
+		;
+	COM2_OUTREG = c;
+#endif
 }
 
 void mcu_uart2_flush(void)
@@ -686,7 +765,7 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 	frequency = CLAMP((float)F_STEP_MIN, frequency, (float)F_STEP_MAX);
 
 	uint32_t clocks = (uint32_t)floorf((float)F_CPU / frequency);
-	*prescaller = (1 << 3); // CTC mode
+	*prescaller = (1 << WGM12); // CTC mode
 
 #if (ITP_TIMER == 2)
 	if (clocks <= ((1UL << 16) - 1))
@@ -825,12 +904,12 @@ void mcu_start_itp_isr(uint16_t clocks_speed, uint16_t prescaller)
 	ITP_OCRA = clocks_speed;
 	// sets OCR0B to half
 	// this will allways fire step_reset between pulses
-	ITP_OCRB = ITP_OCRA >> 1;
+	ITP_OCRB = clocks_speed >> 1;
 	// clears interrupt flags by writing 1's
 	ITP_TIFR = 7;
+	// this was previously set on the mcu_init
 	// enable timer interrupts on both match registers
-	ITP_TIMSK |= (1 << ITP_OCIEB) | (1 << ITP_OCIEA);
-
+	// ITP_TIMSK |= (1 << ITP_OCIEB) | (1 << ITP_OCIEA);
 	// start timer in CTC mode with the correct prescaler
 	ITP_TCCRB = (uint8_t)prescaller;
 }
@@ -839,14 +918,14 @@ void mcu_start_itp_isr(uint16_t clocks_speed, uint16_t prescaller)
 void mcu_change_itp_isr(uint16_t clocks_speed, uint16_t prescaller)
 {
 	// stops timer
-	// ITP_TCCRB = 0;
-	ITP_OCRB = clocks_speed >> 1;
-	ITP_OCRA = clocks_speed;
+	ITP_TCCRB = 0;
 	// sets OCR0B to half
 	// this will allways fire step_reset between pulses
-
+	ITP_OCRB = clocks_speed >> 1;
+	ITP_OCRA = clocks_speed;
 	// reset timer
-	// ITP_TCNT = 0;
+	ITP_TCNT = 0;
+	ITP_TIFR = 7;
 	// start timer in CTC mode with the correct prescaler
 	ITP_TCCRB = (uint8_t)prescaller;
 }
@@ -854,7 +933,9 @@ void mcu_change_itp_isr(uint16_t clocks_speed, uint16_t prescaller)
 void mcu_stop_itp_isr(void)
 {
 	ITP_TCCRB = 0;
-	ITP_TIMSK &= ~((1 << ITP_OCIEB) | (1 << ITP_OCIEA));
+	ITP_TIFR = 7;
+	// do not disable the ISR Mask. this is used by the RTC timer to check if the callback can run
+	// ITP_TIMSK &= ~((1 << ITP_OCIEB) | (1 << ITP_OCIEA));
 }
 
 // gets the mcu running time in ms
@@ -872,6 +953,11 @@ uint32_t mcu_micros()
 
 void mcu_start_rtc()
 {
+	// flags the ITP ISR
+	// the ITP_TIMSK is used to gate the rtc callback execution
+	ITP_TCCRB = 0;
+	ITP_TIMSK |= ((1 << ITP_OCIEB) | (1 << ITP_OCIEA));
+
 #if (F_CPU <= 16000000UL)
 	uint8_t clocks = ((F_CPU / 1000) >> 6) - 1;
 #else
@@ -904,6 +990,14 @@ void mcu_start_rtc()
 	RTC_TCCRB |= 6;
 #endif
 #endif
+
+	// #ifndef DISABLE_RTC_CODE
+	// 	mcu_disable_global_isr();
+	// 	wdt_reset();
+	// 	WDTCSR |= (1 << WDCE) | (1 << WDE);
+	// 	WDTCSR = (1 << WDIE) | WDTO_15MS;
+	// 	mcu_enable_global_isr();
+	// #endif
 }
 
 void mcu_dotasks()
@@ -930,9 +1024,9 @@ uint8_t mcu_eeprom_getc(uint16_t address)
 	{
 
 	} while (EECR & (1 << EEPE)); // Wait for completion of previous write.
-	EEAR = address;				  // Set EEPROM address register.
-	EECR = (1 << EERE);			  // Start EEPROM read operation.
-	return EEDR;				  // Return the byte read from EEPROM.
+	EEAR = address;		// Set EEPROM address register.
+	EECR = (1 << EERE); // Start EEPROM read operation.
+	return EEDR;		// Return the byte read from EEPROM.
 }
 
 void mcu_eeprom_putc(uint16_t address, uint8_t value)
@@ -1062,12 +1156,13 @@ static volatile const uint8_t *spi_bulk_data_ptr_tx = 0;
 static uint8_t *spi_bulk_data_ptr_rx = 0;
 static uint16_t spi_bulk_data_len = 0;
 
-ISR(SPI_STC_vect, ISR_NOBLOCK) {
+ISR(SPI_STC_vect, ISR_NOBLOCK)
+{
 	// Read received byte
-	if(spi_bulk_data_ptr_rx != 0)
+	if (spi_bulk_data_ptr_rx != 0)
 		*spi_bulk_data_ptr_rx++ = SPDR;
 
-	if(--spi_bulk_data_len)
+	if (--spi_bulk_data_len)
 	{
 		// Transmit the next byte
 		SPDR = *spi_bulk_data_ptr_tx++;
@@ -1079,8 +1174,9 @@ ISR(SPI_STC_vect, ISR_NOBLOCK) {
 	}
 }
 
-bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t datalen) {
-	if(spi_bulk_data_ptr_tx == 0)
+bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t datalen)
+{
+	if (spi_bulk_data_ptr_tx == 0)
 	{
 		spi_bulk_data_ptr_tx = tx_data;
 		spi_bulk_data_ptr_rx = rx_data;
@@ -1090,7 +1186,7 @@ bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t da
 		SPDR = *spi_bulk_data_ptr_tx++;
 	}
 
-	if(!(SPCR & (1 << SPIE)))
+	if (!(SPCR & (1 << SPIE)))
 	{
 		spi_bulk_data_ptr_tx = 0;
 		spi_bulk_data_ptr_rx = 0;

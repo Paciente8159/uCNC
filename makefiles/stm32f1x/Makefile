@@ -84,7 +84,7 @@ BIN = $(CP) -O binary -S
 #######################################
 # cpu
 CPU = -mcpu=cortex-m3
-BOARD ?= BLUEPILL
+BOARD ?= BOARD_BLUEPILL
 
 # fpu
 # NONE for Cortex-M0/M0+/M3
@@ -106,7 +106,7 @@ BUILD_OPTIONS ?=
 C_DEFS =  $(BUILD_OPTIONS)\
 -DSTM32F103xB \
 -DCFG_TUSB_MCU=OPT_MCU_STM32F1 \
--DBOARD=BOARD_$(BOARD)
+-DBOARD=$(BOARD)
 
 # AS includes
 AS_INCLUDES = 

@@ -70,7 +70,6 @@ static bool stm32_flash_modified;
  * Can count up to almost 50 days
  **/
 static volatile uint32_t mcu_runtime_ms;
-volatile bool stm32_global_isr_enabled;
 
 /**
  * The isr functions
@@ -85,38 +84,33 @@ DECL_BUFFER(uint8_t, uart_rx, RX_BUFFER_SIZE);
 
 void MCU_SERIAL_ISR(void)
 {
-	__ATOMIC_FORCEON__
+	if (COM_UART->ISR & USART_ISR_RXNE)
 	{
-		if (COM_UART->ISR & USART_ISR_RXNE)
-		{
-			uint8_t c = COM_INREG;
+		uint8_t c = COM_INREG;
 #if !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
-			if (mcu_com_rx_cb(c))
-			{
-				if (BUFFER_FULL(uart_rx))
-				{
-					c = OVF;
-				}
-
-				BUFFER_ENQUEUE(uart_rx, &c);
-			}
-#else
-			mcu_uart_rx_cb(c);
-#endif
-		}
-
-		if ((COM_UART->ISR & USART_ISR_TXE) && (COM_UART->CR1 & USART_CR1_TXEIE))
+		if (mcu_com_rx_cb(c))
 		{
-			mcu_enable_global_isr();
-			if (BUFFER_EMPTY(uart_tx))
+			if (!BUFFER_TRY_ENQUEUE(uart_rx, &c))
 			{
-				COM_UART->CR1 &= ~(USART_CR1_TXEIE);
-				return;
+				STREAM_OVF(c);
 			}
-			uint8_t c;
-			BUFFER_DEQUEUE(uart_tx, &c);
-			COM_OUTREG = c;
 		}
+#else
+		mcu_uart_rx_cb(c);
+#endif
+	}
+
+	if ((COM_UART->ISR & USART_ISR_TXE) && (COM_UART->CR1 & USART_CR1_TXEIE))
+	{
+		uint8_t c;
+
+		if (!BUFFER_TRY_DEQUEUE(uart_tx, &c))
+		{
+			COM_UART->CR1 &= ~(USART_CR1_TXEIE);
+			return;
+		}
+
+		COM_OUTREG = c;
 	}
 }
 #endif
@@ -130,38 +124,33 @@ DECL_BUFFER(uint8_t, uart2_rx, RX_BUFFER_SIZE);
 
 void MCU_SERIAL2_ISR(void)
 {
-	__ATOMIC_FORCEON__
+	if (COM2_UART->ISR & USART_ISR_RXNE)
 	{
-		if (COM2_UART->ISR & USART_ISR_RXNE)
-		{
-			uint8_t c = COM2_INREG;
+		uint8_t c = COM2_INREG;
 #if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
-			if (mcu_com_rx_cb(c))
-			{
-				if (BUFFER_FULL(uart2_rx))
-				{
-					c = OVF;
-				}
-
-				BUFFER_ENQUEUE(uart2_rx, &c);
-			}
-#else
-			mcu_uart2_rx_cb(c);
-#endif
-		}
-
-		if ((COM2_UART->ISR & USART_ISR_TXE) && (COM2_UART->CR1 & USART_CR1_TXEIE))
+		if (mcu_com_rx_cb(c))
 		{
-			mcu_enable_global_isr();
-			if (BUFFER_EMPTY(uart2_tx))
+			if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
 			{
-				COM2_UART->CR1 &= ~(USART_CR1_TXEIE);
-				return;
+				STREAM_OVF(c);
 			}
-			uint8_t c;
-			BUFFER_DEQUEUE(uart2_tx, &c);
-			COM2_OUTREG = c;
 		}
+#else
+		mcu_uart2_rx_cb(c);
+#endif
+	}
+
+	if ((COM2_UART->ISR & USART_ISR_TXE) && (COM2_UART->CR1 & USART_CR1_TXEIE))
+	{
+		uint8_t c;
+
+		if (!BUFFER_TRY_DEQUEUE(uart2_tx, &c))
+		{
+			COM2_UART->CR1 &= ~(USART_CR1_TXEIE);
+			return;
+		}
+
+		COM2_OUTREG = c;
 	}
 }
 #endif
@@ -169,10 +158,7 @@ void MCU_SERIAL2_ISR(void)
 #ifdef MCU_HAS_USB
 void USB_IRQHandler(void)
 {
-	mcu_disable_global_isr();
 	tusb_cdc_isr_handler();
-	NVIC_ClearPendingIRQ(USB_IRQn);
-	mcu_enable_global_isr();
 }
 #endif
 
@@ -218,7 +204,7 @@ void servo_timer_init(void)
 void servo_start_timeout(uint8_t val)
 {
 	SERVO_TIMER_REG->ARR = (val << 1) + 125;
-	NVIC_SetPriority(MCU_SERVO_IRQ, 10);
+	NVIC_SetPriority(MCU_SERVO_IRQ, NVIC_SERVO_IRQ_Pri);
 	NVIC_ClearPendingIRQ(MCU_SERVO_IRQ);
 	NVIC_EnableIRQ(MCU_SERVO_IRQ);
 	SERVO_TIMER_REG->DIER |= 1;
@@ -227,7 +213,6 @@ void servo_start_timeout(uint8_t val)
 
 void MCU_SERVO_ISR(void)
 {
-	mcu_enable_global_isr();
 	if ((SERVO_TIMER_REG->SR & 1))
 	{
 		mcu_clear_servos();
@@ -241,20 +226,18 @@ void MCU_SERVO_ISR(void)
 
 void MCU_ITP_ISR(void)
 {
-	mcu_disable_global_isr();
-
 	static bool resetstep = false;
 	if ((TIMER_REG->SR & 1))
 	{
 		if (!resetstep)
+		{
 			mcu_step_cb();
+		}
 		else
 			mcu_step_reset_cb();
 		resetstep = !resetstep;
 	}
 	TIMER_REG->SR = 0;
-
-	mcu_enable_global_isr();
 }
 
 #define LIMITS_EXTIBITMASK (LIMIT_X_EXTIBITMASK | LIMIT_Y_EXTIBITMASK | LIMIT_Z_EXTIBITMASK | LIMIT_X2_EXTIBITMASK | LIMIT_Y2_EXTIBITMASK | LIMIT_Z2_EXTIBITMASK | LIMIT_A_EXTIBITMASK | LIMIT_B_EXTIBITMASK | LIMIT_C_EXTIBITMASK)
@@ -265,7 +248,6 @@ void MCU_ITP_ISR(void)
 #if (ALL_EXTIBITMASK != 0)
 static void mcu_input_isr(void)
 {
-	mcu_disable_global_isr();
 #if (LIMITS_EXTIBITMASK != 0)
 	if (EXTI->PR & LIMITS_EXTIBITMASK)
 	{
@@ -292,7 +274,6 @@ static void mcu_input_isr(void)
 #endif
 
 	EXTI->PR = ALL_EXTIBITMASK;
-	mcu_enable_global_isr();
 }
 
 #if (ALL_EXTIBITMASK & 0x0001)
@@ -345,7 +326,6 @@ void SysTick_IRQHandler(void)
 void osSystickHandler(void)
 #endif
 {
-	mcu_disable_global_isr();
 #if SERVOS_MASK > 0
 	static uint8_t ms_servo_counter = 0;
 	uint8_t servo_counter = ms_servo_counter;
@@ -398,7 +378,6 @@ void osSystickHandler(void)
 	millis++;
 	mcu_runtime_ms = millis;
 	mcu_rtc_cb(millis);
-	mcu_enable_global_isr();
 }
 
 /**
@@ -435,7 +414,7 @@ void mcu_usart_init(void)
 	RCC->APB1ENR |= (RCC_APB1ENR_USBEN);
 	/* Disable all interrupts. */
 
-	NVIC_SetPriority(USB_IRQn, 10);
+	NVIC_SetPriority(USB_IRQn, NVIC_USB_IRQ_Pri);
 	NVIC_ClearPendingIRQ(USB_IRQn);
 	NVIC_EnableIRQ(USB_IRQn);
 
@@ -460,7 +439,7 @@ void mcu_usart_init(void)
 	brr += (uint16_t)roundf(16.0f * baudrate);
 	COM_UART->BRR = brr;
 	COM_UART->CR1 |= USART_CR1_RXNEIE; // enable RXNEIE
-	NVIC_SetPriority(COM_IRQ, 3);
+	NVIC_SetPriority(COM_IRQ, NVIC_UART_IRQ_Pri);
 	NVIC_ClearPendingIRQ(COM_IRQ);
 	NVIC_EnableIRQ(COM_IRQ);
 	COM_UART->CR1 |= (USART_CR1_RE | USART_CR1_TE | USART_CR1_UE); // enable TE, RE and UART
@@ -484,7 +463,7 @@ void mcu_usart_init(void)
 	brr2 += (uint16_t)roundf(16.0f * baudrate2);
 	COM2_UART->BRR = brr2;
 	COM2_UART->CR1 |= USART_CR1_RXNEIE; // enable RXNEIE
-	NVIC_SetPriority(COM2_IRQ, 3);
+	NVIC_SetPriority(COM2_IRQ, NVIC_UART_IRQ_Pri);
 	NVIC_ClearPendingIRQ(COM2_IRQ);
 	NVIC_EnableIRQ(COM2_IRQ);
 	COM2_UART->CR1 |= (USART_CR1_RE | USART_CR1_TE | USART_CR1_UE); // enable TE, RE and UART
@@ -497,7 +476,7 @@ DECL_BUFFER(uint8_t, usb_rx, RX_BUFFER_SIZE);
 uint8_t mcu_usb_getc(void)
 {
 	uint8_t c = 0;
-	BUFFER_DEQUEUE(usb_rx, &c);
+	BUFFER_TRY_DEQUEUE(usb_rx, &c);
 	return c;
 }
 
@@ -538,7 +517,7 @@ void mcu_usb_flush(void)
 uint8_t mcu_uart_getc(void)
 {
 	uint8_t c = 0;
-	BUFFER_DEQUEUE(uart_rx, &c);
+	BUFFER_TRY_DEQUEUE(uart_rx, &c);
 	return c;
 }
 
@@ -554,11 +533,10 @@ void mcu_uart_clear(void)
 
 void mcu_uart_putc(uint8_t c)
 {
-	while (BUFFER_FULL(uart_tx))
+	while (!BUFFER_TRY_ENQUEUE(uart_tx, &c))
 	{
 		mcu_uart_flush();
 	}
-	BUFFER_ENQUEUE(uart_tx, &c);
 }
 
 void mcu_uart_flush(void)
@@ -579,7 +557,7 @@ void mcu_uart_flush(void)
 uint8_t mcu_uart2_getc(void)
 {
 	uint8_t c = 0;
-	BUFFER_DEQUEUE(uart2_rx, &c);
+	BUFFER_TRY_DEQUEUE(uart2_rx, &c);
 	return c;
 }
 
@@ -595,11 +573,10 @@ void mcu_uart2_clear(void)
 
 void mcu_uart2_putc(uint8_t c)
 {
-	while (BUFFER_FULL(uart2_tx))
+	while (!BUFFER_TRY_ENQUEUE(uart2_tx, &c))
 	{
 		mcu_uart2_flush();
 	}
-	BUFFER_ENQUEUE(uart2_tx, &c);
 }
 
 void mcu_uart2_flush(void)
@@ -636,15 +613,15 @@ void mcu_init(void)
 	mcu_config_af(SPI_CS, SPI_CS_AFIO);
 #endif
 	// initialize the SPI configuration register
-	SPI_REG->CR1 = SPI_CR1_SSM		 // software slave management enabled
-								 | SPI_CR1_SSI	 // internal slave select
-								 | SPI_CR1_MSTR; // SPI master mode
-																 //    | (SPI_SPEED << 3) | SPI_MODE;
+	SPI_REG->CR1 = SPI_CR1_SSM	   // software slave management enabled
+				   | SPI_CR1_SSI   // internal slave select
+				   | SPI_CR1_MSTR; // SPI master mode
+								   //    | (SPI_SPEED << 3) | SPI_MODE;
 	spi_config_t spi_conf = {0};
 	spi_conf.mode = SPI_MODE;
 	mcu_spi_config(spi_conf, SPI_FREQ);
 
-	NVIC_SetPriority(SPI_IRQ, 2);
+	NVIC_SetPriority(SPI_IRQ, NVIC_SPI_IRQ_Pri);
 	NVIC_ClearPendingIRQ(SPI_IRQ);
 	NVIC_EnableIRQ(SPI_IRQ);
 
@@ -661,43 +638,26 @@ void mcu_init(void)
 	// 	mcu_config_af(SPI2_CS, SPI2_CS_AFIO);
 	// #endif
 	// initialize the SPI2 configuration register
-	SPI2_REG->CR1 = SPI_CR1_SSM			// software slave management enabled
-									| SPI_CR1_SSI		// internal slave select
-									| SPI_CR1_MSTR; // SPI2 master mode
-																	//    | (SPI2_SPEED << 3) | SPI2_MODE;
+	SPI2_REG->CR1 = SPI_CR1_SSM		// software slave management enabled
+					| SPI_CR1_SSI	// internal slave select
+					| SPI_CR1_MSTR; // SPI2 master mode
+									//    | (SPI2_SPEED << 3) | SPI2_MODE;
 	spi_config_t spi2_conf = {0};
 	spi2_conf.mode = SPI2_MODE;
 	mcu_spi2_config(spi2_conf, SPI2_FREQ);
 
-	NVIC_SetPriority(SPI2_IRQ, 2);
+	NVIC_SetPriority(SPI2_IRQ, NVIC_SPI_IRQ_Pri);
 	NVIC_ClearPendingIRQ(SPI2_IRQ);
 	NVIC_EnableIRQ(SPI2_IRQ);
 
 	SPI2_REG->CR1 |= SPI_CR1_SPE;
 #endif
 #ifdef MCU_HAS_I2C
-	RCC->APB1ENR |= I2C_APBEN;
-	mcu_config_af(I2C_CLK, I2C_CLK_AFIO);
-	mcu_config_af(I2C_DATA, I2C_DATA_AFIO);
-	mcu_config_pullup(I2C_CLK);
-	mcu_config_pullup(I2C_DATA);
-	// set opendrain
-	mcu_config_opendrain(I2C_CLK);
-	mcu_config_opendrain(I2C_DATA);
-	// reset I2C
-	I2C_REG->CR1 |= I2C_CR1_SWRST;
-	I2C_REG->CR1 &= ~I2C_CR1_SWRST;
 	// set max freq
-	I2C_REG->CR2 |= I2C_SPEEDRANGE;
-	I2C_REG->TRISE = (I2C_SPEEDRANGE + 1);
-	I2C_REG->CCR |= (I2C_FREQ <= 100000UL) ? ((I2C_SPEEDRANGE * 5) & 0x0FFF) : (((I2C_SPEEDRANGE * 5 / 6) & 0x0FFF) | I2C_CCR_FS);
-	// initialize the SPI configuration register
-	I2C_REG->CR1 |= I2C_CR1_PE;
+	mcu_i2c_config(I2C_FREQ);
 #endif
 
-	mcu_disable_probe_isr();
 	stm32_flash_current_page = -1;
-	stm32_global_isr_enabled = false;
 	mcu_enable_global_isr();
 }
 
@@ -772,7 +732,7 @@ void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 	TIMER_REG->EGR |= 0x01;
 	TIMER_REG->SR &= ~0x01;
 
-	NVIC_SetPriority(MCU_ITP_IRQ, 1);
+	NVIC_SetPriority(MCU_ITP_IRQ, NVIC_ITP_IRQ_Pri);
 	NVIC_ClearPendingIRQ(MCU_ITP_IRQ);
 	NVIC_EnableIRQ(MCU_ITP_IRQ);
 
@@ -812,9 +772,9 @@ uint32_t mcu_micros()
 void mcu_rtc_init()
 {
 	SysTick->CTRL = 0;
-	SysTick->LOAD = ((F_CPU / 1000) - 1);
+	SysTick->LOAD = ((SystemCoreClock / 1000) - 1);
 	SysTick->VAL = 0;
-	NVIC_SetPriority(SysTick_IRQn, 10);
+	NVIC_SetPriority(SysTick_IRQn, NVIC_RTC_IRQ_Pri);
 	SysTick->CTRL = 7; // Start SysTick (ABH clock)
 }
 
@@ -831,7 +791,7 @@ void mcu_dotasks()
 		{
 			if (BUFFER_FULL(usb_rx))
 			{
-				c = OVF;
+				STREAM_OVF(c);
 			}
 
 			*(BUFFER_NEXT_FREE(usb_rx)) = c;
@@ -874,7 +834,7 @@ uint8_t mcu_eeprom_getc(uint16_t address)
 {
 	if (NVM_STORAGE_SIZE <= address)
 	{
-		DBGMSG("EEPROM invalid address @ %u",address);
+		DBGMSG("EEPROM invalid address @ %u", address);
 		return 0;
 	}
 	uint16_t offset = mcu_access_flash_page(address);
@@ -883,6 +843,7 @@ uint8_t mcu_eeprom_getc(uint16_t address)
 
 static void mcu_eeprom_erase(uint16_t address)
 {
+#ifndef DISABLE_EEPROM_EMULATION
 	while (FLASH->SR & FLASH_SR_BSY)
 		; // wait while busy
 	// unlock flash if locked
@@ -891,20 +852,21 @@ static void mcu_eeprom_erase(uint16_t address)
 		FLASH->KEYR = 0x45670123;
 		FLASH->KEYR = 0xCDEF89AB;
 	}
-	FLASH->CR = 0;						 // Ensure PG bit is low
+	FLASH->CR = 0;			   // Ensure PG bit is low
 	FLASH->CR |= FLASH_CR_PER; // set the PER bit
 	FLASH->AR = (FLASH_EEPROM + address);
 	FLASH->CR |= FLASH_CR_STRT; // set the start bit
 	while (FLASH->SR & FLASH_SR_BSY)
 		; // wait while busy
 	FLASH->CR = 0;
+#endif
 }
 
 void mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
 	if (NVM_STORAGE_SIZE <= address)
 	{
-		DBGMSG("EEPROM invalid address @ %u",address);
+		DBGMSG("EEPROM invalid address @ %u", address);
 	}
 
 	uint16_t offset = mcu_access_flash_page(address);
@@ -919,6 +881,7 @@ void mcu_eeprom_putc(uint16_t address, uint8_t value)
 
 void mcu_eeprom_flush()
 {
+#ifndef DISABLE_EEPROM_EMULATION
 	if (stm32_flash_modified)
 	{
 		mcu_eeprom_erase(stm32_flash_current_page);
@@ -946,7 +909,7 @@ void mcu_eeprom_flush()
 				proto_error(42); // STATUS_SETTING_WRITE_FAIL
 			if (FLASH->SR & FLASH_SR_WRPRTERR)
 				proto_error(43); // STATUS_SETTING_PROTECTED_FAIL
-			FLASH->CR = 0;						 // Ensure PG bit is low
+			FLASH->CR = 0;		 // Ensure PG bit is low
 			FLASH->SR = 0;
 			eeprom++;
 			ptr++;
@@ -954,6 +917,7 @@ void mcu_eeprom_flush()
 		stm32_flash_modified = false;
 		// Restore interrupt flag state.*/
 	}
+#endif
 }
 
 typedef enum spi_port_state_enum
@@ -1050,7 +1014,7 @@ void SPI_ISR()
 		SPI_REG->CR2 &= ~(SPI_CR2_TXEIE | SPI_CR2_RXNEIE);
 		spi_port_state = SPI_TRANSMIT_COMPLETE;
 	}
-	NVIC_ClearPendingIRQ(SPI_IRQ);
+	// NVIC_ClearPendingIRQ(SPI_IRQ);
 }
 
 bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t datalen)
@@ -1091,7 +1055,7 @@ bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t da
 	{
 		// Wait for transfers to complete
 		if (!(DMA1->ISR >> (SPI_DMA_TX_IFR_POS + 5)) ||
-				(!(DMA1->ISR >> (SPI_DMA_RX_IFR_POS + 5)) && rx_data))
+			(!(DMA1->ISR >> (SPI_DMA_RX_IFR_POS + 5)) && rx_data))
 			return true;
 
 		// SPI hardware still transmitting the last byte
@@ -1130,9 +1094,9 @@ bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t da
 	DMA1->IFCR |= SPI_DMA_TX_IFCR_MASK;
 
 	SPI_DMA_TX_CHANNEL->CCR =
-			(0b01 << DMA_CCR_PL_Pos) | // Priority medium
-			DMA_CCR_MINC |						 // Increment memory
-			DMA_CCR_DIR;							 // Memory to peripheral
+		(0b01 << DMA_CCR_PL_Pos) | // Priority medium
+		DMA_CCR_MINC |			   // Increment memory
+		DMA_CCR_DIR;			   // Memory to peripheral
 
 	SPI_DMA_TX_CHANNEL->CPAR = (uint32_t)&SPI_REG->DR;
 	SPI_DMA_TX_CHANNEL->CMAR = (uint32_t)tx_data;
@@ -1150,8 +1114,8 @@ bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t da
 		DMA1->IFCR |= SPI_DMA_RX_IFCR_MASK;
 
 		SPI_DMA_RX_CHANNEL->CCR =
-				(0b01 << DMA_CCR_PL_Pos) | // Priority medium
-				DMA_CCR_MINC;							 // Increment memory
+			(0b01 << DMA_CCR_PL_Pos) | // Priority medium
+			DMA_CCR_MINC;			   // Increment memory
 
 		SPI_DMA_RX_CHANNEL->CPAR = (uint32_t)&SPI_REG->DR;
 		SPI_DMA_RX_CHANNEL->CMAR = (uint32_t)rx_data;
@@ -1261,7 +1225,7 @@ void SPI2_ISR()
 		SPI2_REG->CR2 &= ~(SPI_CR2_TXEIE | SPI_CR2_RXNEIE);
 		spi2_port_state = SPI_TRANSMIT_COMPLETE;
 	}
-	NVIC_ClearPendingIRQ(SPI2_IRQ);
+	// NVIC_ClearPendingIRQ(SPI2_IRQ);
 }
 
 bool mcu_spi2_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t datalen)
@@ -1302,7 +1266,7 @@ bool mcu_spi2_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t d
 	{
 		// Wait for transfers to complete
 		if (!(DMA1->ISR >> (SPI2_DMA_TX_IFR_POS + 5)) ||
-				(!(DMA1->ISR >> (SPI2_DMA_RX_IFR_POS + 5)) && rx_data))
+			(!(DMA1->ISR >> (SPI2_DMA_RX_IFR_POS + 5)) && rx_data))
 			return true;
 
 		// SPI2 hardware still transmitting the last byte
@@ -1341,9 +1305,9 @@ bool mcu_spi2_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t d
 	DMA1->IFCR |= SPI2_DMA_TX_IFCR_MASK;
 
 	SPI2_DMA_TX_CHANNEL->CCR =
-			(0b01 << DMA_CCR_PL_Pos) | // Priority medium
-			DMA_CCR_MINC |						 // Increment memory
-			DMA_CCR_DIR;							 // Memory to peripheral
+		(0b01 << DMA_CCR_PL_Pos) | // Priority medium
+		DMA_CCR_MINC |			   // Increment memory
+		DMA_CCR_DIR;			   // Memory to peripheral
 
 	SPI2_DMA_TX_CHANNEL->CPAR = (uint32_t)&SPI2_REG->DR;
 	SPI2_DMA_TX_CHANNEL->CMAR = (uint32_t)tx_data;
@@ -1361,8 +1325,8 @@ bool mcu_spi2_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t d
 		DMA1->IFCR |= SPI2_DMA_RX_IFCR_MASK;
 
 		SPI2_DMA_RX_CHANNEL->CCR =
-				(0b01 << DMA_CCR_PL_Pos) | // Priority medium
-				DMA_CCR_MINC;							 // Increment memory
+			(0b01 << DMA_CCR_PL_Pos) | // Priority medium
+			DMA_CCR_MINC;			   // Increment memory
 
 		SPI2_DMA_RX_CHANNEL->CPAR = (uint32_t)&SPI2_REG->DR;
 		SPI2_DMA_RX_CHANNEL->CMAR = (uint32_t)rx_data;
@@ -1387,174 +1351,97 @@ bool mcu_spi2_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t d
 #endif
 
 #ifdef MCU_HAS_I2C
+
 #if I2C_ADDRESS == 0
-void mcu_i2c_write_stop(bool *stop)
+#define STM_VAL2REG(val, X) (uint32_t)(((((uint32_t)val) << X##_Pos) & X##_Msk))
+
+void mcu_i2c_stop(bool *stop)
 {
-	if (*stop)
-	{
-		int32_t ms_timeout = 25;
-
-		I2C_REG->CR1 |= I2C_CR1_STOP;
-		__TIMEOUT_MS__(ms_timeout)
-		{
-			if (I2C_REG->CR1 & I2C_CR1_STOP)
-			{
-				return;
-			}
-		}
-	}
-}
-
-static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop, uint32_t ms_timeout)
-{
-	bool stop __attribute__((__cleanup__(mcu_i2c_write_stop))) = send_stop;
-	int32_t timeout = ms_timeout;
-
-	uint32_t status = send_start ? I2C_SR1_ADDR : I2C_SR1_BTF;
-	I2C_REG->SR1 &= ~I2C_SR1_AF;
-	if (send_start)
-	{
-		if ((I2C_REG->SR1 & I2C_SR1_ARLO) || ((I2C_REG->CR1 & I2C_CR1_START) && (I2C_REG->CR1 & I2C_CR1_STOP)))
-		{
-			// Save values
-			uint32_t cr2 = I2C_REG->CR2;
-			uint32_t ccr = I2C_REG->CCR;
-			uint32_t trise = I2C_REG->TRISE;
-
-			// Software reset
-			I2C_REG->CR1 |= I2C_CR1_SWRST;
-			I2C_REG->CR1 &= ~I2C_CR1_SWRST;
-
-			// Restore values
-			I2C_REG->CR2 = cr2;
-			I2C_REG->CCR = ccr;
-			I2C_REG->TRISE = trise;
-
-			// Enable
-			I2C_REG->CR1 |= I2C_CR1_PE;
-		}
-
-		// init
-		I2C_REG->CR1 |= I2C_CR1_START;
-
-		__TIMEOUT_MS__(timeout)
-		{
-			if ((I2C_REG->SR1 & I2C_SR1_SB) && (I2C_REG->SR2 & I2C_SR2_MSL) && (I2C_REG->SR2 & I2C_SR2_BUSY))
-			{
-				break;
-			}
-			if (I2C_REG->SR1 & I2C_SR1_ARLO)
-			{
-				stop = false;
-				return I2C_NOTOK;
-			}
-		}
-
-		__TIMEOUT_ASSERT__(timeout)
-		{
-			stop = true;
-			return I2C_NOTOK;
-		}
-
-		if (I2C_REG->SR1 & I2C_SR1_AF)
-		{
-			stop = true;
-			return I2C_NOTOK;
-		}
-	}
-
-	I2C_REG->DR = data;
-	timeout = ms_timeout;
-	__TIMEOUT_MS__(timeout)
-	{
-		if (I2C_REG->SR1 & status)
-		{
-			break;
-		}
-		if (I2C_REG->SR1 & I2C_SR1_AF)
-		{
-			break;
-		}
-		if (I2C_REG->SR1 & I2C_SR1_ARLO)
-		{
-			stop = false;
-			return I2C_NOTOK;
-		}
-	}
-
-	__TIMEOUT_ASSERT__(timeout)
-	{
-		stop = true;
-		return I2C_NOTOK;
-	}
-	// read SR2 to clear ADDR
-	if (send_start)
-	{
-		status = I2C_REG->SR2;
-	}
-
-	if (I2C_REG->SR1 & I2C_SR1_AF)
-	{
-		stop = true;
-		return I2C_NOTOK;
-	}
-
-	return I2C_OK;
-}
-
-static uint8_t mcu_i2c_read(uint8_t *data, bool with_ack, bool send_stop, uint32_t ms_timeout)
-{
-	*data = 0xFF;
-	bool stop __attribute__((__cleanup__(mcu_i2c_write_stop))) = send_stop;
-
-	if (!with_ack)
-	{
-		I2C_REG->CR1 &= ~I2C_CR1_ACK;
-	}
-	else
-	{
-		I2C_REG->CR1 |= I2C_CR1_ACK;
-	}
-
-	__TIMEOUT_MS__(ms_timeout)
-	{
-		if (I2C_REG->SR1 & I2C_SR1_RXNE)
-		{
-			*data = I2C_REG->DR;
-			return I2C_OK;
-		}
-	}
-
-	stop = true;
-	return I2C_NOTOK;
+	// not working (using autostop)
+	while (!(I2C_REG->ISR & I2C_ISR_TC))
+		;
+	I2C_REG->CR2 |= I2C_CR2_STOP;
+	while (!(I2C_REG->ISR & I2C_ISR_STOPF))
+		;
+	I2C_REG->ICR |= I2C_ICR_STOPCF;
+	I2C_REG->CR2 = 0x0;
+	I2C_REG->CR1 &= ~I2C_CR1_PE;
 }
 
 #ifndef mcu_i2c_send
 // master sends command to slave
 uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool release, uint32_t ms_timeout)
 {
-	if (data && datalen)
+	// bool stop __attribute__((__cleanup__(mcu_i2c_stop))) = release;
+
+	if (!data || !datalen)
 	{
-		if (mcu_i2c_write(address << 1, true, false, ms_timeout) == I2C_OK) // start, send address, write
+		return I2C_NOTOK;
+	}
+
+	/*Enable I2C*/
+	I2C_REG->CR1 |= I2C_CR1_PE;
+	/*Set slave address*/
+	I2C_REG->CR2 = (address << 1);
+	/*7-bit addressing*/
+	I2C_REG->CR2 &= ~I2C_CR2_ADD10;
+	/*Set number to transfer to length for write operation*/
+	I2C_REG->CR2 |= (datalen << I2C_CR2_NBYTES_Pos);
+	if (release)
+	{
+		I2C_REG->CR2 |= I2C_CR2_AUTOEND;
+	}
+	/*Set the mode to write mode*/
+	I2C_REG->CR2 &= ~I2C_CR2_RD_WRN;
+	/*Generate start*/
+	I2C_REG->CR2 |= I2C_CR2_START;
+	for (uint8_t i = 0; i < datalen; i++)
+	{
+		/*Check if TX buffer is empty*/
+		uint32_t t = ms_timeout;
+		__TIMEOUT_MS__(t)
 		{
-			// send data, stop
-			do
+			if ((I2C_REG->ISR & I2C_ISR_NACKF))
 			{
-				datalen--;
-				bool last = (datalen == 0);
-				if (mcu_i2c_write(*data, false, (release & last), ms_timeout) != I2C_OK)
-				{
-					return I2C_NOTOK;
-				}
-				data++;
+				// stop = true;
+				I2C_REG->CR2 |= I2C_CR2_STOP;
+				return I2C_NOTOK;
+			}
 
-			} while (datalen);
+			if ((I2C_REG->ISR & (I2C_ISR_TXE)))
+			{
+				break;
+			}
+		}
 
-			return I2C_OK;
+		__TIMEOUT_ASSERT__(t)
+		{
+			I2C_REG->CR2 |= I2C_CR2_STOP;
+			return I2C_NOTOK;
+		}
+
+		/*send memory address*/
+		I2C_REG->TXDR = data[i];
+	}
+
+	if (release)
+	{
+		uint32_t t = ms_timeout;
+		__TIMEOUT_MS__(t)
+		{
+			if ((I2C_REG->ISR & I2C_ISR_TC))
+			{
+				break;
+			}
+		}
+
+		__TIMEOUT_ASSERT__(t)
+		{
+			return I2C_NOTOK;
 		}
 	}
 
-	return I2C_NOTOK;
+	return I2C_OK;
 }
 #endif
 
@@ -1562,25 +1449,57 @@ uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool relea
 // master receive response from slave
 uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_t ms_timeout)
 {
-	if (data && datalen)
+	// bool stop __attribute__((__cleanup__(mcu_i2c_stop))) = true;
+
+	if (!data || !datalen)
 	{
-		if (mcu_i2c_write((address << 1) | 0x01, true, false, ms_timeout) == I2C_OK) // start, send address, write
+		return I2C_NOTOK;
+	}
+
+	uint32_t t = ms_timeout;
+	__TIMEOUT_MS__(t)
+	{
+		if (!(I2C_REG->ISR & I2C_ISR_BUSY))
 		{
-			do
-			{
-				datalen--;
-				bool last = (datalen == 0);
-				if (mcu_i2c_read(data, !last, last, ms_timeout) != I2C_OK)
-				{
-					return I2C_NOTOK;
-				}
-				data++;
-			} while (datalen);
-			return I2C_OK;
+			break;
 		}
 	}
 
-	return I2C_NOTOK;
+	__TIMEOUT_ASSERT__(t)
+	{
+		return I2C_NOTOK;
+	}
+
+	/*Enable I2C*/
+	I2C_REG->CR1 |= I2C_CR1_PE;
+	I2C_REG->CR2 = I2C_CR2_HEAD10R | I2C_CR2_RD_WRN | STM_VAL2REG(datalen, I2C_CR2_NBYTES) | (address << 1) | I2C_CR2_AUTOEND;
+	I2C_REG->CR2 |= I2C_CR2_START;
+	while ((I2C_REG->CR2 & I2C_CR2_START))
+		;
+	for (uint8_t i = 0; i < datalen; i++)
+	{
+		t = ms_timeout;
+		__TIMEOUT_MS__(t)
+		{
+			if (((I2C_REG->ISR & I2C_ISR_BERR)) || ((I2C_REG->ISR & I2C_ISR_ARLO)))
+			{
+				return I2C_NOTOK;
+			}
+			if ((I2C_REG->ISR & I2C_ISR_RXNE))
+			{
+				break;
+			}
+		}
+
+		__TIMEOUT_ASSERT__(t)
+		{
+			return I2C_NOTOK;
+		}
+
+		data[i] = (uint8_t)I2C_REG->RXDR;
+	}
+
+	return I2C_OK;
 }
 #endif
 #endif
@@ -1588,39 +1507,74 @@ uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_
 #ifndef mcu_i2c_config
 void mcu_i2c_config(uint32_t frequency)
 {
+	RCC->APB1ENR &= ~I2C_APBEN;
+	I2C_REG->CR1 &= ~I2C_CR1_PE;
+	RCC->APB1RSTR |= __helper__(RCC_APB1RSTR_I2C, I2C_PORT, RST);
+	RCC->APB1RSTR &= ~(__helper__(RCC_APB1RSTR_I2C, I2C_PORT, RST));
 	RCC->APB1ENR |= I2C_APBEN;
-	mcu_config_opendrain(I2C_CLK);
-	mcu_config_opendrain(I2C_DATA);
-	mcu_config_af(I2C_CLK, GPIO_AF);
-	mcu_config_af(I2C_DATA, GPIO_AF);
-#ifdef SPI_REMAP
+	mcu_config_af(I2C_CLK, I2C_CLK_AFIO);
+	mcu_config_af(I2C_DATA, I2C_DATA_AFIO);
+	mcu_config_pullup(I2C_CLK);
+	mcu_config_pullup(I2C_DATA);
+	// set opendrain
+	// mcu_config_opendrain(I2C_CLK);
+	// mcu_config_opendrain(I2C_DATA);
+#ifdef I2C_REMAP
 	AFIO->MAPR |= I2C_REMAP;
 #endif
-	// reset I2C
-	I2C_REG->CR1 |= I2C_CR1_SWRST;
-	I2C_REG->CR1 &= ~I2C_CR1_SWRST;
+	I2C_REG->CR1 &= ~(I2C_CR1_ANFOFF | I2C_CR1_DNF);
 #if I2C_ADDRESS == 0
+
+	float risetime = 8333333.3f, falltime = 8333333.3f;
+	if (frequency <= 100000UL) // standart mode (max fall time 1000ns(1Mhz) and max rise time 300ns(3,3MHZ))
+	{
+		risetime = 1000000.0f;
+		falltime = 3333333.3f;
+	}
+	else if (frequency <= 400000UL) // fast mode
+	{
+		risetime = 3333333.3f;
+		falltime = 3333333.3f;
+	}
+
 	// set max freq
-	I2C_REG->CR2 |= I2C_SPEEDRANGE;
-	I2C_REG->TRISE = (I2C_SPEEDRANGE + 1);
-	I2C_REG->CCR |= (frequency <= 100000UL) ? ((I2C_SPEEDRANGE * 5) & 0x0FFF) : (((I2C_SPEEDRANGE * 5 / 6) & 0x0FFF) | I2C_CCR_FS);
+	uint8_t presc = 0;
+	while ((HAL_RCC_GetPCLK1Freq() / (presc + 1)) > (frequency * 0xff) || (HAL_RCC_GetPCLK1Freq() / (presc + 1)) > (((uint32_t)falltime) * 0xf))
+	{
+		presc++;
+	}
+
+	float i2c_osc = ((float)HAL_RCC_GetPCLK1Freq() / (presc + 1));
+	uint8_t scll = 0, sclh = scll = (uint8_t)CLAMP(0, (i2c_osc / (frequency * 2) - 1), 0xFFFF); // half time clock up and clock down
+
+	uint8_t scldel = (uint8_t)CLAMP(0, (ceilf((float)i2c_osc / risetime) - 1), 0x0F);
+	uint8_t sdadel = (uint8_t)CLAMP(0, (ceilf((float)i2c_osc / falltime) - 1), 0x0F);
+
+	sclh -= (sclh >= sdadel) ? sdadel : 0;
+	// presc = 0; scll = 0x9; sclh=0x3; sdadel = 0x1; scldel = 0x3;
+	uint32_t tmr = (STM_VAL2REG(presc, I2C_TIMINGR_PRESC) | STM_VAL2REG(scll, I2C_TIMINGR_SCLL) | STM_VAL2REG(sclh, I2C_TIMINGR_SCLH) | STM_VAL2REG(scldel, I2C_TIMINGR_SCLDEL) | STM_VAL2REG(sdadel, I2C_TIMINGR_SDADEL));
+	I2C_REG->CR1 &= ~(I2C_CR1_ANFOFF | I2C_CR1_DNF);
+	I2C_REG->TIMINGR = tmr; // 0xB0420F13;
+	I2C_REG->CR1 &= ~(I2C_CR1_NOSTRETCH);
+	I2C_REG->CR2 = 0;
 #else
 	// set address
-	I2C_REG->OAR1 &= ~(I2C_OAR1_ADDMODE | 0x0F);
+	I2C_REG->OAR1 &= ~(I2C_OAR1_OA1MODE | 0x0F);
 	I2C_REG->OAR1 |= (I2C_ADDRESS << 1);
 	I2C_REG->OAR2 = 0;
 	I2C_REG->CR1 &= ~I2C_CR1_NOSTRETCH;
-	// enable events
-	I2C_REG->CR2 |= (I2C_CR2_ITEVTEN | I2C_CR2_ITERREN | I2C_CR2_ITBUFEN);
-	NVIC_SetPriority(I2C_IRQ, 10);
+	// enable interrupts
+	I2C_REG->CR1 |= (I2C_CR1_RXIE | I2C_CR1_TXIE | I2C_CR1_ADDRIE);
+	NVIC_SetPriority(I2C_IRQ, NVIC_I2C_IRQ_Pri);
 	NVIC_ClearPendingIRQ(I2C_IRQ);
 	NVIC_EnableIRQ(I2C_IRQ);
 #endif
 	// initialize the SPI configuration register
-	I2C_REG->CR1 |= (I2C_CR1_PE | I2C_CR1_ENGC);
+	I2C_REG->CR1 |= I2C_CR1_PE;
 #if I2C_ADDRESS != 0
+	I2C_REG->CR1 |= I2C_CR1_GCEN;
 	// prepare ACK in slave mode
-	I2C_REG->CR1 |= I2C_CR1_ACK;
+	I2C_REG->CR2 &= ~I2C_CR2_NACK;
 #endif
 }
 #endif
@@ -1637,16 +1591,13 @@ void I2C_ISR(void)
 
 	// address match or generic call
 	// Clear ISR flag by reading SR1 and SR2 registers
-	if ((I2C_REG->SR1 & I2C_SR1_ADDR))
+	if ((I2C_REG->ISR & I2C_ISR_ADDR))
 	{
 		// clear the ISR flag
-		volatile uint32_t status = I2C_REG->SR1;
-		(void)status;
-		status = I2C_REG->SR2;
-		(void)status;
+		volatile uint32_t status = I2C_REG->ISR;
 
 		// // Address matched, do necessary processing
-		if ((status & I2C_SR2_TRA) && !datalen)
+		if ((status & I2C_ISR_ADDR) && !datalen)
 		{
 			mcu_i2c_buffer[i] = 0;
 			// unlock ISR and process the info request
@@ -1657,53 +1608,48 @@ void I2C_ISR(void)
 		i = 0;
 	}
 
-	if ((I2C_REG->SR1 & I2C_SR1_RXNE))
+	if ((I2C_REG->ISR & I2C_ISR_RXNE))
 	{
-		mcu_i2c_buffer[i++] = I2C_REG->DR;
+		mcu_i2c_buffer[i++] = I2C_REG->RXDR;
 	}
 
-	if ((I2C_REG->SR1 & I2C_SR1_TXE))
+	if ((I2C_REG->ISR & I2C_ISR_TXE))
 	{
-		I2C_REG->DR = mcu_i2c_buffer[i++];
+		I2C_REG->TXDR = mcu_i2c_buffer[i++];
 		if (i > datalen)
 		{
 			// send NACK
-			I2C_REG->CR1 |= I2C_CR1_STOP;
+			I2C_REG->CR2 |= I2C_CR2_STOP;
 			datalen = 0;
 		}
 	}
 
 	// Clear ISR flag by reading SR1 and writing CR1 registers
-	if ((I2C_REG->SR1 & I2C_SR1_STOPF))
+	if ((I2C_REG->ISR & I2C_ISR_STOPF))
 	{
 		// clear the ISR flag
-		volatile uint32_t status = I2C_REG->SR1;
-		(void)status;
-		I2C_REG->CR1 |= I2C_CR1_PE;
+		I2C_REG->ICR |= I2C_ICR_STOPCF;
 		// stop transmission
 		datalen = 0;
 	}
 
 	// An error ocurred
-	if (I2C_REG->SR1 & 0XFF00)
+	if (I2C_REG->ISR & 0X3F00)
 	{
 		// prepare ACK for next transmission
 		index = 0;
 		datalen = 0;
-		I2C_REG->CR1 |= I2C_CR1_ACK;
-		I2C_REG->CR2 |= (I2C_CR2_ITEVTEN | I2C_CR2_ITERREN);
+		I2C_REG->CR1 &= ~I2C_CR1_NACKIE;
+		I2C_REG->CR1 |= (I2C_CR1_RXIE | I2C_CR1_TXIE);
 		// clear ISR flag
-		I2C_REG->SR1 = I2C_REG->SR1 & 0X00FF;
-		volatile uint32_t status = I2C_REG->SR1;
-		(void)status;
-		status = I2C_REG->SR2;
-		(void)status;
+		I2C_REG->ICR = 0X00FF;
+		volatile uint32_t status = I2C_REG->ISR;
 	}
 
 	// prepare ACK for next transmition
 	index = i;
-	I2C_REG->CR1 |= I2C_CR1_ACK;
-	NVIC_ClearPendingIRQ(I2C_IRQ);
+	I2C_REG->CR1 &= ~I2C_CR1_NACKIE;
+	// NVIC_ClearPendingIRQ(I2C_IRQ);
 }
 #endif
 
@@ -1725,7 +1671,7 @@ void MCU_ONESHOT_ISR(void)
 		}
 	}
 
-	NVIC_ClearPendingIRQ(MCU_ONESHOT_IRQ);
+	// NVIC_ClearPendingIRQ(MCU_ONESHOT_IRQ);
 }
 
 /**
@@ -1758,7 +1704,7 @@ void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 	ONESHOT_TIMER_REG->SR = 0;
 	ONESHOT_TIMER_REG->CNT = 0;
 
-	NVIC_SetPriority(MCU_ONESHOT_IRQ, 1);
+	NVIC_SetPriority(MCU_ONESHOT_IRQ, NVIC_ONESHOT_IRQ_Pri);
 	NVIC_ClearPendingIRQ(MCU_ONESHOT_IRQ);
 	NVIC_EnableIRQ(MCU_ONESHOT_IRQ);
 

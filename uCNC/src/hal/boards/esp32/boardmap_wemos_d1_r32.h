@@ -32,6 +32,10 @@ extern "C"
 #define BOARD_NAME "WEMOS D1 R32"
 #endif
 
+#ifndef F_CPU
+#define F_CPU 240000000UL
+#endif
+
 // SAME AS GRBL for test purposes
 // Setup step pins
 #define STEP2_BIT 17 // assigns STEP2 pin

@@ -32,6 +32,10 @@ extern "C"
 #define BOARD_NAME "RPi Pico"
 #endif
 
+#ifndef F_CPU
+#define F_CPU 133000000UL
+#endif
+
 // SAME AS GRBL for test purposes
 // Setup step pins
 #define STEP2_BIT 10 // assigns STEP2 pin

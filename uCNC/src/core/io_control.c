@@ -24,6 +24,7 @@
 static uint8_t io_lock_limits_mask;
 #endif
 static uint8_t io_invert_limits_mask;
+static bool io_limits_disabled;
 
 #if ASSERT_PIN(PROBE)
 static volatile bool io_last_probe;
@@ -90,9 +91,17 @@ WEAK_EVENT_HANDLER(probe_disable)
 
 MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 {
+	mcu_isr_context_enter();
+
 #ifdef DISABLE_ALL_LIMITS
 	return;
 #else
+
+	if (io_limits_disabled)
+	{
+		return;
+	}
+
 	static volatile uint8_t prev_limits = 0;
 	uint8_t limits = io_get_limits();
 	uint8_t limits_diff = prev_limits;
@@ -136,7 +145,7 @@ MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 
 			itp_lock_stepper(0); // unlocks axis
 #endif
-			itp_stop();
+			cnc_stop(false);
 			cnc_set_exec_state(EXEC_LIMITS);
 #ifdef ENABLE_IO_ALARM_DEBUG
 			io_alarm_limits = limits;
@@ -149,6 +158,8 @@ MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 
 MCU_IO_CALLBACK void mcu_controls_changed_cb(void)
 {
+	mcu_isr_context_enter();
+
 #ifdef DISABLE_ALL_CONTROLS
 	return;
 #else
@@ -164,12 +175,21 @@ MCU_IO_CALLBACK void mcu_controls_changed_cb(void)
 	prev_controls = controls;
 
 #if ASSERT_PIN(ESTOP)
+#if EMULATE_GRBL_STARTUP > 2
+	if (CHECKFLAG((controls & changed), ESTOP_MASK))
+	{
+#ifdef ENABLE_IO_ALARM_DEBUG
+		io_alarm_controls = controls;
+#endif
+		cnc_call_rt_command(CMD_CODE_RESET);
+#else
 	if (CHECKFLAG(controls, ESTOP_MASK))
 	{
 #ifdef ENABLE_IO_ALARM_DEBUG
 		io_alarm_controls = controls;
 #endif
 		cnc_alarm(EXEC_ALARM_EMERGENCY_STOP);
+#endif
 		return; // forces exit
 	}
 #endif
@@ -200,6 +220,8 @@ MCU_IO_CALLBACK void mcu_controls_changed_cb(void)
 
 MCU_IO_CALLBACK void mcu_probe_changed_cb(void)
 {
+	mcu_isr_context_enter();
+
 #if !ASSERT_PIN(PROBE)
 	return;
 #else
@@ -219,7 +241,7 @@ MCU_IO_CALLBACK void mcu_probe_changed_cb(void)
 	io_last_probe = probe;
 
 	// stores rt position
-	__ATOMIC__
+	ATOMIC_CODEBLOCK
 	{
 		parser_sync_probe();
 	}
@@ -232,9 +254,15 @@ MCU_IO_CALLBACK void mcu_probe_changed_cb(void)
 
 MCU_IO_CALLBACK void mcu_inputs_changed_cb(void)
 {
+	mcu_isr_context_enter();
+
 	static volatile uint8_t prev_inputs = 0;
 	uint8_t inputs = 0;
 	uint8_t diff;
+
+#ifdef IC74HC165_HAS_DINS
+	io_extended_pins_update();
+#endif
 
 #if (ASSERT_PIN(DIN0) && defined(DIN0_ISR))
 	if (io_get_input(DIN0))
@@ -285,14 +313,14 @@ MCU_IO_CALLBACK void mcu_inputs_changed_cb(void)
 	}
 #endif
 
-#if (ENCODERS > 0)
+#if (ENCODERS_MASK)
 	inputs ^= g_settings.encoders_pulse_invert_mask;
 #endif
 	diff = inputs ^ prev_inputs;
 
 	if (diff)
 	{
-#if (ENCODERS > 0)
+#if (ENCODERS_MASK)
 		encoders_update(inputs, diff);
 #endif
 #ifdef ENABLE_IO_MODULES
@@ -311,56 +339,76 @@ void io_lock_limits(uint8_t limitmask)
 }
 #endif
 
+void io_enable_limits(void)
+{
+	io_limits_disabled = false;
+}
+void io_disable_limits(void)
+{
+	io_limits_disabled = true;
+}
+
 void io_invert_limits(uint8_t limitmask)
 {
 	io_invert_limits_mask = limitmask;
 	mcu_limits_changed_cb();
 }
 
-uint8_t io_get_limits(void)
+uint8_t io_get_raw_limits(void)
 {
 #ifdef DISABLE_ALL_LIMITS
 	return 0;
 #endif
+#ifdef IC74HC165_HAS_LIMITS
+	io_extended_pins_update();
+#endif
 	uint8_t value = 0;
 
 #if ASSERT_PIN(LIMIT_X)
-	value |= ((io_get_input(LIMIT_X)) ? LIMIT_X_IO_MASK : 0);
+	value |= ((IO_CONDITION_LIMIT_X) ? LIMIT_X_IO_MASK : 0);
 #endif
 #if ASSERT_PIN(LIMIT_Y)
-	value |= ((io_get_input(LIMIT_Y)) ? LIMIT_Y_IO_MASK : 0);
+	value |= ((IO_CONDITION_LIMIT_Y) ? LIMIT_Y_IO_MASK : 0);
 #endif
 #if ASSERT_PIN(LIMIT_Z)
-	value |= ((io_get_input(LIMIT_Z)) ? LIMIT_Z_IO_MASK : 0);
+	value |= ((IO_CONDITION_LIMIT_Z) ? LIMIT_Z_IO_MASK : 0);
 #endif
 #if ASSERT_PIN(LIMIT_X2)
-	value |= ((io_get_input(LIMIT_X2)) ? LIMIT_X2_IO_MASK : 0);
+	value |= ((IO_CONDITION_LIMIT_X2) ? LIMIT_X2_IO_MASK : 0);
 #endif
 #if ASSERT_PIN(LIMIT_Y2)
-	value |= ((io_get_input(LIMIT_Y2)) ? LIMIT_Y2_IO_MASK : 0);
+	value |= ((IO_CONDITION_LIMIT_Y2) ? LIMIT_Y2_IO_MASK : 0);
 #endif
 #if ASSERT_PIN(LIMIT_Z2)
-	value |= ((io_get_input(LIMIT_Z2)) ? LIMIT_Z2_IO_MASK : 0);
+	value |= ((IO_CONDITION_LIMIT_Z2) ? LIMIT_Z2_IO_MASK : 0);
 #endif
 #if ASSERT_PIN(LIMIT_A)
-	value |= ((io_get_input(LIMIT_A)) ? LIMIT_A_IO_MASK : 0);
+	value |= ((IO_CONDITION_LIMIT_A) ? LIMIT_A_IO_MASK : 0);
 #endif
 #if ASSERT_PIN(LIMIT_B)
-	value |= ((io_get_input(LIMIT_B)) ? LIMIT_B_IO_MASK : 0);
+	value |= ((IO_CONDITION_LIMIT_B) ? LIMIT_B_IO_MASK : 0);
 #endif
 #if ASSERT_PIN(LIMIT_C)
-	value |= ((io_get_input(LIMIT_C)) ? LIMIT_C_IO_MASK : 0);
+	value |= ((IO_CONDITION_LIMIT_C) ? LIMIT_C_IO_MASK : 0);
 #endif
 
 	uint8_t inv = g_settings.limits_invert_mask;
 	uint8_t result = (value ^ (inv & LIMITS_INV_MASK));
 
-	if (cnc_get_exec_state(EXEC_HOMING))
+#if (LIMITS_NORMAL_OPERATION_MASK != 0)
+	if (!cnc_get_exec_state(EXEC_HOMING))
 	{
-		result ^= io_invert_limits_mask;
+		result &= ~LIMITS_NORMAL_OPERATION_MASK;
 	}
+#endif
 
 	return result;
+}
+
+uint8_t io_get_limits(void)
+{
+	uint8_t result = io_get_raw_limits();
+	return ((!cnc_get_exec_state(EXEC_HOMING)) ? (result) : (result ^ io_invert_limits_mask));
 }
 
 uint8_t io_get_controls(void)
@@ -368,29 +416,47 @@ uint8_t io_get_controls(void)
 #ifdef DISABLE_ALL_CONTROLS
 	return 0;
 #endif
+#ifdef IC74HC165_HAS_CONTROLS
+	io_extended_pins_update();
+#endif
 	uint8_t value = 0;
 #if ASSERT_PIN(ESTOP)
 #ifndef INVERT_EMERGENCY_STOP
-	value |= ((io_get_input(ESTOP)) ? ESTOP_MASK : 0);
+	value |= ((IO_CONDITION_ESTOP) ? ESTOP_MASK : 0);
 #else
-	value |= ((!io_get_input(ESTOP)) ? ESTOP_MASK : 0);
+	value |= ((!IO_CONDITION_ESTOP) ? ESTOP_MASK : 0);
 #endif
 #endif
 #if ASSERT_PIN(SAFETY_DOOR)
-	value |= ((io_get_input(SAFETY_DOOR)) ? SAFETY_DOOR_MASK : 0);
+	value |= ((IO_CONDITION_SAFETY_DOOR) ? SAFETY_DOOR_MASK : 0);
 #endif
 #if ASSERT_PIN(FHOLD)
-	value |= ((io_get_input(FHOLD)) ? FHOLD_MASK : 0);
+	value |= ((IO_CONDITION_FHOLD) ? FHOLD_MASK : 0);
 #endif
 #if ASSERT_PIN(CS_RES)
-	value |= ((io_get_input(CS_RES)) ? CS_RES_MASK : 0);
+	value |= ((IO_CONDITION_CS_RES) ? CS_RES_MASK : 0);
 #endif
 
 	return (value ^ (g_settings.control_invert_mask & CONTROLS_INV_MASK));
 }
 
+#ifdef PROBE_ENABLE_CUSTOM_CALLBACK
+typedef bool (*io_probe_get_cb)(void);
+typedef bool (*io_probe_action_cb)(void);
+io_probe_get_cb io_probe_custom_get = NULL;
+io_probe_action_cb io_probe_custom_enable = NULL;
+io_probe_action_cb io_probe_custom_disable = NULL;
+#endif
+
 void io_enable_probe(void)
 {
+#ifdef PROBE_ENABLE_CUSTOM_CALLBACK
+	if (io_probe_custom_enable)
+	{
+		io_probe_custom_enable();
+		return;
+	}
+#endif
 #if ASSERT_PIN(PROBE)
 	io_last_probe = io_get_probe();
 #ifdef ENABLE_IO_MODULES
@@ -405,6 +471,13 @@ void io_enable_probe(void)
 
 void io_disable_probe(void)
 {
+#ifdef PROBE_ENABLE_CUSTOM_CALLBACK
+	if (io_probe_custom_disable)
+	{
+		io_probe_custom_disable();
+		return;
+	}
+#endif
 #if ASSERT_PIN(PROBE)
 	io_probe_enabled = false;
 #if !defined(FORCE_SOFT_POLLING) && defined(PROBE_ISR)
@@ -418,11 +491,21 @@ void io_disable_probe(void)
 
 bool io_get_probe(void)
 {
+#ifdef PROBE_ENABLE_CUSTOM_CALLBACK
+	if (io_probe_custom_get)
+	{
+		return io_probe_custom_get();
+	}
+#endif
+
 #if !ASSERT_PIN(PROBE)
 	return false;
 #else
+#ifdef IC74HC165_HAS_PROBE
+	io_extended_pins_update();
+#endif
 #if ASSERT_PIN(PROBE)
-	bool probe = (io_get_input(PROBE) != 0);
+	bool probe = (IO_CONDITION_PROBE != 0);
 	return (!g_settings.probe_invert_mask) ? probe : !probe;
 #else
 	return false;
@@ -520,7 +603,7 @@ void io_set_steps(uint8_t mask)
 #endif
 
 #ifdef IC74HC595_HAS_STEPS
-	ic74hc595_shift_io_pins();
+	io_extended_pins_update();
 #endif
 }
 
@@ -584,7 +667,7 @@ void io_toggle_steps(uint8_t mask)
 #endif
 
 #ifdef IC74HC595_HAS_STEPS
-	ic74hc595_shift_io_pins();
+	io_extended_pins_update();
 #endif
 }
 
@@ -593,22 +676,22 @@ void io_get_steps_pos(int32_t *position)
 	itp_get_rt_position(position);
 #if STEPPERS_ENCODERS_MASK != 0
 #if (defined(STEP0_ENCODER) && AXIS_TO_STEPPERS > 0)
-	position[0] = encoder_get_position(STEP0_ENCODER);
+	position[0] = encoder_get_position(STEP0_ENCODER) * g_settings.encoders_resolution[STEP0_ENCODER];
 #endif
 #if (defined(STEP1_ENCODER) && AXIS_TO_STEPPERS > 1)
-	position[1] = encoder_get_position(STEP1_ENCODER);
+	position[1] = encoder_get_position(STEP1_ENCODER) * g_settings.encoders_resolution[STEP1_ENCODER];
 #endif
 #if (defined(STEP2_ENCODER) && AXIS_TO_STEPPERS > 2)
-	position[2] = encoder_get_position(STEP2_ENCODER);
+	position[2] = encoder_get_position(STEP2_ENCODER) * g_settings.encoders_resolution[STEP2_ENCODER];
 #endif
 #if (defined(STEP3_ENCODER) && AXIS_TO_STEPPERS > 3)
-	position[3] = encoder_get_position(STEP3_ENCODER);
+	position[3] = encoder_get_position(STEP3_ENCODER) * g_settings.encoders_resolution[STEP3_ENCODER];
 #endif
 #if (defined(STEP4_ENCODER) && AXIS_TO_STEPPERS > 4)
-	position[4] = encoder_get_position(STEP4_ENCODER);
+	position[4] = encoder_get_position(STEP4_ENCODER) * g_settings.encoders_resolution[STEP4_ENCODER];
 #endif
 #if (defined(STEP5_ENCODER) && AXIS_TO_STEPPERS > 5)
-	position[5] = encoder_get_position(STEP5_ENCODER);
+	position[5] = encoder_get_position(STEP5_ENCODER) * g_settings.encoders_resolution[STEP5_ENCODER];
 #endif
 #endif
 }
@@ -703,7 +786,7 @@ void io_set_dirs(uint8_t mask)
 #endif
 
 #ifdef IC74HC595_HAS_DIRS
-	ic74hc595_shift_io_pins();
+	io_extended_pins_update();
 #endif
 }
 
@@ -795,193 +878,9 @@ void io_enable_steppers(uint8_t mask)
 #endif
 
 #ifdef IC74HC595_HAS_STEPS_EN
-	ic74hc595_shift_io_pins();
+	io_extended_pins_update();
 #endif
 }
-
-#if defined(MCU_HAS_SOFT_PWM_TIMER) || defined(IC74HC595_HAS_PWMS)
-// software pwm counters
-uint8_t g_io_soft_pwm[16];
-// software pwm resolution reduction factor
-// PWM resolution in bits will be equal to (8 - g_soft_pwm_res)
-// this is determined by the mcu_softpwm_freq_config
-uint8_t g_soft_pwm_res;
-
-MCU_CALLBACK void io_soft_pwm_update(void)
-{
-	static uint8_t pwm_counter_last = 0;
-	uint8_t pwm_counter = pwm_counter_last;
-	uint8_t resolution = g_soft_pwm_res;
-	// software PWM
-	pwm_counter += (1 << resolution);
-	pwm_counter_last = pwm_counter;
-#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM0)) || (defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM0)))
-	if (pwm_counter > g_io_soft_pwm[0] || !g_io_soft_pwm[0])
-	{
-		io_clear_output(PWM0);
-	}
-	else
-	{
-		io_set_output(PWM0);
-	}
-#endif
-#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM1)) || (defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM1)))
-	if (pwm_counter > g_io_soft_pwm[1] || !g_io_soft_pwm[1])
-	{
-		io_clear_output(PWM1);
-	}
-	else
-	{
-		io_set_output(PWM1);
-	}
-#endif
-#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM2)) || (defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM2)))
-
-	if (pwm_counter > g_io_soft_pwm[2] || !g_io_soft_pwm[2])
-	{
-		io_clear_output(PWM2);
-	}
-	else
-	{
-		io_set_output(PWM2);
-	}
-#endif
-#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM3)) || (defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM3)))
-	if (pwm_counter > g_io_soft_pwm[3] || !g_io_soft_pwm[3])
-	{
-		io_clear_output(PWM3);
-	}
-	else
-	{
-		io_set_output(PWM3);
-	}
-#endif
-#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM4)) || (defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM4)))
-	if (pwm_counter > g_io_soft_pwm[4] || !g_io_soft_pwm[4])
-	{
-		io_clear_output(PWM4);
-	}
-	else
-	{
-		io_set_output(PWM4);
-	}
-#endif
-#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM5)) || (defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM5)))
-	if (pwm_counter > g_io_soft_pwm[5] || !g_io_soft_pwm[5])
-	{
-		io_clear_output(PWM5);
-	}
-	else
-	{
-		io_set_output(PWM5);
-	}
-#endif
-#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM6)) || (defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM6)))
-	if (pwm_counter > g_io_soft_pwm[6] || !g_io_soft_pwm[6])
-	{
-		io_clear_output(PWM6);
-	}
-	else
-	{
-		io_set_output(PWM6);
-	}
-#endif
-#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM7)) || (defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM7)))
-	if (pwm_counter > g_io_soft_pwm[7] || !g_io_soft_pwm[7])
-	{
-		io_clear_output(PWM7);
-	}
-	else
-	{
-		io_set_output(PWM7);
-	}
-#endif
-#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM8)) || (defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM8)))
-	if (pwm_counter > g_io_soft_pwm[8] || !g_io_soft_pwm[8])
-	{
-		io_clear_output(PWM8);
-	}
-	else
-	{
-		io_set_output(PWM8);
-	}
-#endif
-#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM9)) || (defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM9)))
-	if (pwm_counter > g_io_soft_pwm[9] || !g_io_soft_pwm[9])
-	{
-		io_clear_output(PWM9);
-	}
-	else
-	{
-		io_set_output(PWM9);
-	}
-#endif
-#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM10)) || (defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM10)))
-	if (pwm_counter > g_io_soft_pwm[10] || !g_io_soft_pwm[10])
-	{
-		io_clear_output(PWM10);
-	}
-	else
-	{
-		io_set_output(PWM10);
-	}
-#endif
-#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM11)) || (defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM11)))
-	if (pwm_counter > g_io_soft_pwm[11] || !g_io_soft_pwm[11])
-	{
-		io_clear_output(PWM11);
-	}
-	else
-	{
-		io_set_output(PWM11);
-	}
-#endif
-#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM12)) || (defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM12)))
-	if (pwm_counter > g_io_soft_pwm[12] || !g_io_soft_pwm[12])
-	{
-		io_clear_output(PWM12);
-	}
-	else
-	{
-		io_set_output(PWM12);
-	}
-#endif
-#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM13)) || (defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM13)))
-	if (pwm_counter > g_io_soft_pwm[13] || !g_io_soft_pwm[13])
-	{
-		io_clear_output(PWM13);
-	}
-	else
-	{
-		io_set_output(PWM13);
-	}
-#endif
-#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM14)) || (defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM14)))
-	if (pwm_counter > g_io_soft_pwm[14] || !g_io_soft_pwm[14])
-	{
-		io_clear_output(PWM14);
-	}
-	else
-	{
-		io_set_output(PWM14);
-	}
-#endif
-#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM15)) || (defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM15)))
-	if (pwm_counter > g_io_soft_pwm[15] || !g_io_soft_pwm[15])
-	{
-		io_clear_output(PWM15);
-	}
-	else
-	{
-		io_set_output(PWM15);
-	}
-#endif
-
-#ifdef IC74HC595_HAS_PWMS
-	ic74hc595_shift_io_pins();
-#endif
-}
-#endif
 
 void io_set_pinvalue(uint8_t pin, uint8_t value)
 {
@@ -1743,13 +1642,38 @@ void io_set_pinvalue(uint8_t pin, uint8_t value)
 		}
 	}
 
-#ifdef IC74HC595_HAS_DOUTS
-	ic74hc595_shift_io_pins();
-#endif
+	// this ensures the pin is updated after writing (but might lead to slow or sucessive multiple readings and make firmware slow)
+	// extended pins (when not updated by an ISR), are updated frequently in the main loop
+	// for this reason will be assumed that extended pins might not update instantly.
+	// updating handling must be treated as a per need case like done in softuart/softspi modules
+
+	// #if (IC74HC595_COUNT > 0)
+	// #if defined(IC74HC165_HAS_PWM) || defined(IC74HC165_HAS_SERVOS) || defined(IC74HC165_HAS_DOUTS)
+	// 	if (pin >= PWM_PINS_OFFSET && pin < 100)
+	// 	{
+	// 		io_extended_pins_update();
+	// 	}
+	// #endif
+	// #endif
 }
 
 int16_t io_get_pinvalue(uint8_t pin)
 {
+
+	// this ensures the pin is updated before reading (but might lead to slow or sucessive multiple readings and make firmware slow)
+	// extended pins (when not updated by an ISR), are updated frequently in the main loop
+	// for this reason will be assumed that extended pins might not update instantly
+	// updating handling must be treated as a per need case like done in softuart/softspi modules
+
+	// #if (IC74HC165_COUNT > 0)
+	// #if defined(IC74HC165_HAS_LIMITS) || defined(IC74HC165_HAS_CONTROLS) || defined(IC74HC165_HAS_PROBE)
+	// 	if (pin >= 100 && pin < ANALOG_PINS_OFFSET)
+	// 	{
+	// 		io_extended_pins_update();
+	// 	}
+	// #endif
+	// #endif
+
 	switch (pin)
 	{
 #if ASSERT_PIN(STEP0)
@@ -2155,11 +2079,7 @@ int16_t io_get_pinvalue(uint8_t pin)
 #endif
 #if ASSERT_PIN(ESTOP)
 	case ESTOP:
-#ifndef INVERT_EMERGENCY_STOP
 		return (io_get_input(ESTOP) != 0);
-#else
-		return (io_get_input(ESTOP) == 0);
-#endif
 #endif
 #if ASSERT_PIN(SAFETY_DOOR)
 	case SAFETY_DOOR:
@@ -2366,76 +2286,76 @@ int16_t io_get_pinvalue(uint8_t pin)
 		return (io_get_input(DIN31) != 0);
 #endif
 #if ASSERT_PIN(DIN32)
-    case DIN32:
-        return (io_get_input(DIN32) != 0);
+	case DIN32:
+		return (io_get_input(DIN32) != 0);
 #endif
 #if ASSERT_PIN(DIN33)
-    case DIN33:
-        return (io_get_input(DIN33) != 0);
+	case DIN33:
+		return (io_get_input(DIN33) != 0);
 #endif
 #if ASSERT_PIN(DIN34)
-    case DIN34:
-        return (io_get_input(DIN34) != 0);
+	case DIN34:
+		return (io_get_input(DIN34) != 0);
 #endif
 #if ASSERT_PIN(DIN35)
-    case DIN35:
-        return (io_get_input(DIN35) != 0);
+	case DIN35:
+		return (io_get_input(DIN35) != 0);
 #endif
 #if ASSERT_PIN(DIN36)
-    case DIN36:
-        return (io_get_input(DIN36) != 0);
+	case DIN36:
+		return (io_get_input(DIN36) != 0);
 #endif
 #if ASSERT_PIN(DIN37)
-    case DIN37:
-        return (io_get_input(DIN37) != 0);
+	case DIN37:
+		return (io_get_input(DIN37) != 0);
 #endif
 #if ASSERT_PIN(DIN38)
-    case DIN38:
-        return (io_get_input(DIN38) != 0);
+	case DIN38:
+		return (io_get_input(DIN38) != 0);
 #endif
 #if ASSERT_PIN(DIN39)
-    case DIN39:
-        return (io_get_input(DIN39) != 0);
+	case DIN39:
+		return (io_get_input(DIN39) != 0);
 #endif
 #if ASSERT_PIN(DIN40)
-    case DIN40:
-        return (io_get_input(DIN40) != 0);
+	case DIN40:
+		return (io_get_input(DIN40) != 0);
 #endif
 #if ASSERT_PIN(DIN41)
-    case DIN41:
-        return (io_get_input(DIN41) != 0);
+	case DIN41:
+		return (io_get_input(DIN41) != 0);
 #endif
 #if ASSERT_PIN(DIN42)
-    case DIN42:
-        return (io_get_input(DIN42) != 0);
+	case DIN42:
+		return (io_get_input(DIN42) != 0);
 #endif
 #if ASSERT_PIN(DIN43)
-    case DIN43:
-        return (io_get_input(DIN43) != 0);
+	case DIN43:
+		return (io_get_input(DIN43) != 0);
 #endif
 #if ASSERT_PIN(DIN44)
-    case DIN44:
-        return (io_get_input(DIN44) != 0);
+	case DIN44:
+		return (io_get_input(DIN44) != 0);
 #endif
 #if ASSERT_PIN(DIN45)
-    case DIN45:
-        return (io_get_input(DIN45) != 0);
+	case DIN45:
+		return (io_get_input(DIN45) != 0);
 #endif
 #if ASSERT_PIN(DIN46)
-    case DIN46:
-        return (io_get_input(DIN46) != 0);
+	case DIN46:
+		return (io_get_input(DIN46) != 0);
 #endif
 #if ASSERT_PIN(DIN47)
-    case DIN47:
-        return (io_get_input(DIN47) != 0);
+	case DIN47:
+		return (io_get_input(DIN47) != 0);
 #endif
 #if ASSERT_PIN(DIN48)
-    case DIN48:
-        return (io_get_input(DIN48) != 0);
+	case DIN48:
+		return (io_get_input(DIN48) != 0);
 #endif
 #if ASSERT_PIN(DIN49)
-    case DIN49:
-        return (io_get_input(DIN49) != 0);
+	case DIN49:
+		return (io_get_input(DIN49) != 0);
 #endif
 #if ASSERT_PIN(SERVO0)
 	case SERVO0:

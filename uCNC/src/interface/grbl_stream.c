@@ -29,6 +29,9 @@ static FORCEINLINE void grbl_stream_flush(void);
 #ifndef DEBUG_TX_BUFFER_SIZE
 #define DEBUG_TX_BUFFER_SIZE 250
 #endif
+#if DEBUG_TX_BUFFER_SIZE > 255
+#error "DEBUG_TX_BUFFER_SIZE cannot exceed 255"
+#endif
 DECL_BUFFER(uint8_t, debug_tx, DEBUG_TX_BUFFER_SIZE);
 static volatile uint8_t debug_tx_lines;
 #endif
@@ -96,7 +99,7 @@ static void debug_flush(void)
 	while (debug_tx_lines)
 	{
 		uint8_t c;
-		BUFFER_DEQUEUE(debug_tx, &c);
+		BUFFER_TRY_DEQUEUE(debug_tx, &c);
 		DEBUG_STREAM->stream_putc(c);
 		if (c == '\n')
 		{
@@ -108,15 +111,14 @@ static void debug_flush(void)
 
 static void FORCEINLINE debug_putc(char c)
 {
-	if (BUFFER_FULL(debug_tx))
+	if (!BUFFER_TRY_ENQUEUE(debug_tx, &c))
 	{
 		BUFFER_CLEAR(debug_tx);
 		rom_strcpy((char *)debug_tx_bufferdata, __romstr__("Debug buffer overflow!!\n\0"));
 		debug_tx_lines = 1;
-		debug_tx.count = strlen((char *)debug_tx_bufferdata);
+		debug_tx.head = strlen((char *)debug_tx_bufferdata);
 	}
 
-	BUFFER_ENQUEUE(debug_tx, &c);
 	if (c == '\n')
 	{
 		debug_tx_lines++;
@@ -154,11 +156,12 @@ void grbl_stream_register(grbl_stream_t *stream)
 }
 
 // on cleanup sets the correct stdin streams
-void stream_stdin(uint8_t *p)
+void stream_stdin(grbl_stream_t **s)
 {
-	stream_getc = current_stream->stream_getc;
-	stream_available = current_stream->stream_available;
-	stream_clear = current_stream->stream_clear;
+	current_stream = *s;
+	stream_getc = (*s)->stream_getc;
+	stream_available = (*s)->stream_available;
+	stream_clear = (*s)->stream_clear;
 }
 #endif
 
@@ -166,54 +169,64 @@ void stream_stdin(uint8_t *p)
 static bool grbl_stream_rx_busy;
 #endif
 
-bool grbl_stream_change(grbl_stream_t *stream)
+grbl_stream_t *grbl_stream_change(grbl_stream_t *stream)
 {
 #ifndef DISABLE_MULTISTREAM_SERIAL
-	uint8_t cleanup __attribute__((__cleanup__(stream_stdin))) = 0;
+	grbl_stream_t *cleanup __attribute__((__cleanup__(stream_stdin))) = default_stream;
 
 #ifdef ENABLE_MULTISTREAM_GUARD
 	if (grbl_stream_rx_busy)
 	{
-		return false;
+		return NULL;
 	}
 #endif
+	grbl_stream_t *prev = current_stream;
 	grbl_stream_peek_buffer = 0;
 	if (stream != NULL)
 	{
-		current_stream = stream;
-		return true;
+		cleanup = stream;
 	}
 
-	// starts by the prioritary and test one by one until one that as characters available is found
-	current_stream = default_stream;
+	return prev;
 #else
 	stream_getc = mcu_getc;
 	stream_available = mcu_available;
 	stream_clear = mcu_clear;
+	return NULL;
 #endif
-	return true;
 }
 
-bool grbl_stream_readonly(grbl_stream_getc_cb getc_cb, grbl_stream_available_cb available_cb, grbl_stream_clear_cb clear_cb)
+grbl_stream_t *grbl_stream_readonly(grbl_stream_getc_cb getc_cb, grbl_stream_available_cb available_cb, grbl_stream_clear_cb clear_cb)
 {
 #ifdef ENABLE_MULTISTREAM_GUARD
 	if (grbl_stream_rx_busy)
 	{
-		return false;
+		return NULL;
 	}
 #endif
 	grbl_stream_peek_buffer = 0;
 	stream_getc = getc_cb;
 	stream_available = available_cb;
 	stream_clear = clear_cb;
-	return true;
+#ifndef DISABLE_MULTISTREAM_SERIAL
+	return current_stream;
+#else
+	return NULL;
+#endif
 }
 
 static uint16_t stream_eeprom_address;
 static uint8_t stream_eeprom_getc(void)
 {
 	uint8_t c = mcu_eeprom_getc(stream_eeprom_address++);
+#ifdef ENABLE_MULTILINE_STARTUP_BLOCKS
+	if (c == '|')
+	{
+		c = EOL;
+	}
+#endif
 	grbl_stream_putc((c != EOL) ? c : ':');
+
 	return c;
 }
 
@@ -278,6 +291,51 @@ char grbl_stream_peek(void)
 	return peek;
 }
 
+uint8_t grbl_stream_overflow_count;
+void grbl_stream_overflow(uint8_t c)
+{
+	switch (c)
+	{
+	case '\n':
+	case '\r':
+	case 0:
+		grbl_stream_overflow_count++;
+		break;
+	}
+	grbl_stream_peek_buffer = OVF;
+}
+
+void grbl_stream_overflow_flush(void)
+{
+	uint8_t avail = (!!stream_available) ? stream_available() : 1;
+	while (avail && stream_getc)
+	{
+		uint8_t c = stream_getc();
+		switch (c)
+		{
+		case '\n':
+		case '\r':
+		case 0:
+			proto_error(STATUS_OVERFLOW);
+			break;
+		}
+
+		avail = (!!stream_available) ? stream_available() : 1;
+	}
+
+	if (stream_clear)
+	{
+		stream_clear();
+	}
+
+	while (grbl_stream_overflow_count--)
+	{
+		proto_error(STATUS_OVERFLOW);
+	}
+
+	grbl_stream_peek_buffer = 0;
+}
+
 uint8_t grbl_stream_available(void)
 {
 	if (stream_available == NULL)
@@ -316,7 +374,7 @@ uint8_t grbl_stream_available(void)
 
 uint8_t grbl_stream_write_available(void)
 {
-	return (RX_BUFFER_SIZE - grbl_stream_available());
+	return (RX_BUFFER_CAPACITY - grbl_stream_available());
 }
 
 void grbl_stream_clear(void)
@@ -329,6 +387,7 @@ void grbl_stream_clear(void)
 #else
 	mcu_clear();
 #endif
+	grbl_stream_peek_buffer = 0;
 }
 
 #ifndef DISABLE_MULTISTREAM_SERIAL

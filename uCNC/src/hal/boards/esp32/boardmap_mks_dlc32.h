@@ -32,6 +32,10 @@ extern "C"
 #define BOARD_NAME "MKS DLC32"
 #endif
 
+#ifndef F_CPU
+#define F_CPU 240000000UL
+#endif
+
 // Setup limit pins
 #define LIMIT_Z_BIT 34 // assigns LIMIT_Z pin
 // #define LIMIT_Z_ISR		// assigns LIMIT_Z ISR
@@ -54,7 +58,7 @@ extern "C"
 	// bitbanging 74hc595 (not used)
 	// uses 3 x 74HS595
 	// #define IC74HC595_COUNT 1
-	// #define IC74HC595_DELAY_CYCLES 0
+	// #define SHIFT_REGISTER_DELAY_CYCLES 0
 	// configure the 74HC595 modules
 	// #define DOUT8_BIT 21
 	// #define DOUT9_BIT 16

@@ -23,6 +23,15 @@
 #include <string.h>
 #include "../../../cnc.h"
 
+void rp2040_core1_loop()
+{
+	rp2040.fifo.registerCore();
+	for (;;)
+	{
+		cnc_run();
+	}
+}
+
 /**
  *
  * This handles all communications via Serial USB, Serial UART and WiFi
@@ -748,9 +757,35 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
 }
 #endif
 
+#ifdef USE_STATIC_IP
+#ifndef STATIC_IP_IP
+// 192.168.1.200
+#define STATIC_IP_IP 3232235976
+#endif
+#ifndef STATIC_IP_GW
+// 192.168.1.1
+#define STATIC_IP_GW 3232235777
+#endif
+#ifndef STATIC_IP_SUB
+// 255.255.255.0
+#define STATIC_IP_SUB 4294967040
+#endif
+
+	static IPAddress local_IP((uint32_t)(STATIC_IP_IP));
+	static IPAddress gateway((uint32_t)(STATIC_IP_GW));
+	static IPAddress subnet((uint32_t)(STATIC_IP_SUB));
+#endif
+
 void rp2040_wifi_bt_init(void)
 {
 #ifdef MCU_HAS_WIFI
+
+#ifdef USE_STATIC_IP
+	if (!WiFi.config(local_IP, gateway, subnet))
+	{
+		proto_info("Static IP config failed");
+	}
+#endif
 
 	wifi_settings_offset = settings_register_external_setting(sizeof(wifi_settings_t));
 	if (settings_load(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t)))
@@ -795,20 +830,20 @@ void rp2040_wifi_bt_init(void)
 #ifdef MCU_HAS_ENDPOINTS
 	FLASH_FS.begin();
 	flash_fs = {
-			.drive = 'C',
-			.open = flash_fs_open,
-			.read = flash_fs_read,
-			.write = flash_fs_write,
-			.seek = flash_fs_seek,
-			.available = flash_fs_available,
-			.close = flash_fs_close,
-			.remove = flash_fs_remove,
-			.opendir = flash_fs_opendir,
-			.mkdir = flash_fs_mkdir,
-			.rmdir = flash_fs_rmdir,
-			.next_file = flash_fs_next_file,
-			.finfo = flash_fs_info,
-			.next = NULL};
+		.drive = 'C',
+		.open = flash_fs_open,
+		.read = flash_fs_read,
+		.write = flash_fs_write,
+		.seek = flash_fs_seek,
+		.available = flash_fs_available,
+		.close = flash_fs_close,
+		.remove = flash_fs_remove,
+		.opendir = flash_fs_opendir,
+		.mkdir = flash_fs_mkdir,
+		.rmdir = flash_fs_rmdir,
+		.next_file = flash_fs_next_file,
+		.finfo = flash_fs_info,
+		.next = NULL};
 	fs_mount(&flash_fs);
 #endif
 #ifndef CUSTOM_OTA_ENDPOINT
@@ -849,7 +884,7 @@ DECL_BUFFER(uint8_t, wifi_rx, RX_BUFFER_SIZE);
 uint8_t mcu_wifi_getc(void)
 {
 	uint8_t c = 0;
-	BUFFER_DEQUEUE(wifi_rx, &c);
+	BUFFER_TRY_DEQUEUE(wifi_rx, &c);
 	return c;
 }
 
@@ -865,11 +900,10 @@ void mcu_wifi_clear(void)
 
 void mcu_wifi_putc(uint8_t c)
 {
-	while (BUFFER_FULL(wifi_tx))
+	while (!BUFFER_TRY_ENQUEUE(wifi_tx, &c))
 	{
 		mcu_wifi_flush();
 	}
-	BUFFER_ENQUEUE(wifi_tx, &c);
 }
 
 void mcu_wifi_flush(void)
@@ -904,7 +938,7 @@ DECL_BUFFER(uint8_t, bt_rx, RX_BUFFER_SIZE);
 uint8_t mcu_bt_getc(void)
 {
 	uint8_t c = 0;
-	BUFFER_DEQUEUE(bt_rx, &c);
+	BUFFER_TRY_DEQUEUE(bt_rx, &c);
 	return c;
 }
 
@@ -920,11 +954,10 @@ void mcu_bt_clear(void)
 
 void mcu_bt_putc(uint8_t c)
 {
-	while (BUFFER_FULL(bt_tx))
+	while (!BUFFER_TRY_ENQUEUE(bt_tx, &c))
 	{
 		mcu_bt_flush();
 	}
-	BUFFER_ENQUEUE(bt_tx, &c);
 }
 
 void mcu_bt_flush(void)
@@ -972,12 +1005,10 @@ void rp2040_wifi_bt_process(void)
 			uint8_t c = (uint8_t)server_client.read();
 			if (mcu_com_rx_cb(c))
 			{
-				if (BUFFER_FULL(wifi_rx))
+				if (!BUFFER_TRY_ENQUEUE(wifi_rx, &c))
 				{
-					c = OVF;
+					STREAM_OVF(c);
 				}
-
-				BUFFER_ENQUEUE(wifi_rx, &c);
 			}
 
 #else
@@ -1002,12 +1033,10 @@ void rp2040_wifi_bt_process(void)
 		uint8_t c = (uint8_t)SerialBT.read();
 		if (mcu_com_rx_cb(c))
 		{
-			if (BUFFER_FULL(bt_rx))
+			if (!BUFFER_TRY_ENQUEUE(bt_rx, &c))
 			{
-				c = OVF;
+				STREAM_OVF(c);
 			}
-
-			BUFFER_ENQUEUE(bt_rx, &c);
 		}
 
 #else
@@ -1093,7 +1122,7 @@ extern "C"
 	uint8_t mcu_usb_getc(void)
 	{
 		uint8_t c = 0;
-		BUFFER_DEQUEUE(usb_rx, &c);
+		BUFFER_TRY_DEQUEUE(usb_rx, &c);
 		return c;
 	}
 
@@ -1109,11 +1138,10 @@ extern "C"
 
 	void mcu_usb_putc(uint8_t c)
 	{
-		while (BUFFER_FULL(usb_tx))
+		while (!BUFFER_TRY_ENQUEUE(usb_tx, &c))
 		{
 			mcu_usb_flush();
 		}
-		BUFFER_ENQUEUE(usb_tx, &c);
 	}
 
 	void mcu_usb_flush(void)
@@ -1141,7 +1169,7 @@ extern "C"
 	uint8_t mcu_uart_getc(void)
 	{
 		uint8_t c = 0;
-		BUFFER_DEQUEUE(uart_rx, &c);
+		BUFFER_TRY_DEQUEUE(uart_rx, &c);
 		return c;
 	}
 
@@ -1157,11 +1185,10 @@ extern "C"
 
 	void mcu_uart_putc(uint8_t c)
 	{
-		while (BUFFER_FULL(uart_tx))
+		while (!BUFFER_TRY_ENQUEUE(uart_tx, &c))
 		{
 			mcu_uart_flush();
 		}
-		BUFFER_ENQUEUE(uart_tx, &c);
 	}
 
 	void mcu_uart_flush(void)
@@ -1189,7 +1216,7 @@ extern "C"
 	uint8_t mcu_uart2_getc(void)
 	{
 		uint8_t c = 0;
-		BUFFER_DEQUEUE(uart2_rx, &c);
+		BUFFER_TRY_DEQUEUE(uart2_rx, &c);
 		return c;
 	}
 
@@ -1205,11 +1232,10 @@ extern "C"
 
 	void mcu_uart2_putc(uint8_t c)
 	{
-		while (BUFFER_FULL(uart2_tx))
+		while (!BUFFER_TRY_ENQUEUE(uart2_tx, &c))
 		{
 			mcu_uart2_flush();
 		}
-		BUFFER_ENQUEUE(uart2_tx, &c);
 	}
 
 	void mcu_uart2_flush(void)
@@ -1236,12 +1262,10 @@ extern "C"
 			uint8_t c = (uint8_t)Serial.read();
 			if (mcu_com_rx_cb(c))
 			{
-				if (BUFFER_FULL(usb_rx))
+				if (!BUFFER_TRY_ENQUEUE(usb_rx, &c))
 				{
-					c = OVF;
+					STREAM_OVF(c);
 				}
-
-				BUFFER_ENQUEUE(usb_rx, &c);
 			}
 
 #else
@@ -1257,12 +1281,10 @@ extern "C"
 			uint8_t c = (uint8_t)COM_UART.read();
 			if (mcu_com_rx_cb(c))
 			{
-				if (BUFFER_FULL(uart_rx))
+				if (!BUFFER_TRY_ENQUEUE(uart_rx, &c))
 				{
-					c = OVF;
+					STREAM_OVF(c);
 				}
-
-				BUFFER_ENQUEUE(uart_rx, &c);
 			}
 #else
 			mcu_uart_rx_cb((uint8_t)COM_UART.read());
@@ -1278,23 +1300,20 @@ extern "C"
 
 			if (mcu_com_rx_cb(c))
 			{
-				if (BUFFER_FULL(uart2_rx))
+				if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
 				{
-					c = OVF;
+					STREAM_OVF(c);
 				}
-
-				BUFFER_ENQUEUE(uart2_rx, &c);
 			}
 
 #else
 			mcu_uart2_rx_cb(c);
 #ifndef UART2_DISABLE_BUFFER
-			if (BUFFER_FULL(uart2_rx))
+			if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
 			{
-				c = OVF;
+				STREAM_OVF(c);
 			}
 
-			BUFFER_ENQUEUE(uart2_rx, &c);
 #endif
 #endif
 		}

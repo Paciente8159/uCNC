@@ -85,7 +85,7 @@ BIN = $(CP) -O binary -S
 #######################################
 # cpu
 CPU = -mcpu=cortex-m4
-BOARD ?= BLACKPILL
+BOARD ?= BOARD_BLACKPILL
 
 # fpu
 # NONE for Cortex-M0/M0+/M3
@@ -107,7 +107,7 @@ BUILD_OPTIONS ?=
 C_DEFS =  $(BUILD_OPTIONS)\
 -DSTM32F401xC \
 -DCFG_TUSB_MCU=OPT_MCU_STM32F4 \
--DBOARD=BOARD_$(BOARD)
+-DBOARD=$(BOARD)
 
 # AS includes
 AS_INCLUDES = 

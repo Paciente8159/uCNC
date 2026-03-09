@@ -19,6 +19,13 @@
 #if (MCU == MCU_VIRTUAL_WIN)
 
 #ifdef __cplusplus
+#include <atomic>
+using namespace std;
+#else
+#include <stdatomic.h>
+#endif
+
+#ifdef __cplusplus
 extern "C"
 {
 #endif
@@ -79,7 +86,7 @@ extern "C"
 	uint8_t mcu_uart_getc(void)
 	{
 		uint8_t c = 0;
-		BUFFER_DEQUEUE(uart_rx, &c);
+		BUFFER_TRY_DEQUEUE(uart_rx, &c);
 		return c;
 	}
 
@@ -95,11 +102,10 @@ extern "C"
 
 	void mcu_uart_putc(uint8_t c)
 	{
-		while (BUFFER_FULL(uart_tx))
+		while (!BUFFER_TRY_ENQUEUE(uart_tx, &c))
 		{
 			mcu_uart_flush();
 		}
-		BUFFER_ENQUEUE(uart_tx, &c);
 	}
 
 	void mcu_uart_flush(void)
@@ -125,11 +131,10 @@ extern "C"
 			uint8_t c = buff[i];
 			if (mcu_com_rx_cb(c))
 			{
-				if (BUFFER_FULL(uart_rx))
+				if (!BUFFER_TRY_ENQUEUE(uart_rx, &c))
 				{
-					c = OVF;
+					STREAM_OVF(c);
 				}
-				BUFFER_ENQUEUE(uart_rx, &c);
 			}
 		}
 	}
@@ -145,7 +150,7 @@ extern "C"
 	uint8_t mcu_uart2_getc(void)
 	{
 		uint8_t c = 0;
-		BUFFER_DEQUEUE(uart2_rx, &c);
+		BUFFER_TRY_DEQUEUE(uart2_rx, &c);
 		return c;
 	}
 
@@ -161,11 +166,10 @@ extern "C"
 
 	void mcu_uart2_putc(uint8_t c)
 	{
-		while (BUFFER_FULL(uart2_tx))
+		while (!BUFFER_TRY_ENQUEUE(uart2_tx, &c))
 		{
 			mcu_uart2_flush();
 		}
-		BUFFER_ENQUEUE(uart2_tx, &c);
 	}
 
 	void mcu_uart2_flush(void)
@@ -194,11 +198,10 @@ extern "C"
 			}
 			if (mcu_com_rx_cb(c))
 			{
-				if (BUFFER_FULL(uart2_rx))
+				if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
 				{
-					c = OVF;
-				}
-				BUFFER_ENQUEUE(uart2_rx, &c);
+					STREAM_OVF(c);
+				};
 			}
 		}
 	}
@@ -256,7 +259,15 @@ extern "C"
 			getc(src);
 		}*/
 
-		fseek(src, address, SEEK_SET);
+		if (fseek(src, address, SEEK_SET) != 0)
+		{
+			fseek(src, 0, SEEK_END);
+			int sz = ftell(src);
+			for (int i = sz; i < address; i++)
+			{
+				putc((int)0, src);
+			}
+		}
 		putc((int)value, src);
 
 		fflush(src);
@@ -302,16 +313,16 @@ extern "C"
 			BOOL fConnected = FALSE;
 
 			hPipe = CreateNamedPipe(
-					lpszPipename,								// pipe name
-					PIPE_ACCESS_DUPLEX,					// read/write access
-					PIPE_TYPE_MESSAGE |					// message type pipe
-							PIPE_READMODE_MESSAGE | // message-read mode
-							PIPE_WAIT,							// blocking mode
-					PIPE_UNLIMITED_INSTANCES,		// max. instances
-					sizeof(VIRTUAL_MAP),				// output buffer size
-					sizeof(VIRTUAL_MAP),				// input buffer size
-					0,													// client time-out
-					NULL);											// no template file
+				lpszPipename,				// pipe name
+				PIPE_ACCESS_DUPLEX,			// read/write access
+				PIPE_TYPE_MESSAGE |			// message type pipe
+					PIPE_READMODE_MESSAGE | // message-read mode
+					PIPE_WAIT,				// blocking mode
+				PIPE_UNLIMITED_INSTANCES,	// max. instances
+				sizeof(VIRTUAL_MAP),		// output buffer size
+				sizeof(VIRTUAL_MAP),		// input buffer size
+				0,							// client time-out
+				NULL);						// no template file
 
 			if (hPipe == INVALID_HANDLE_VALUE)
 			{
@@ -336,11 +347,11 @@ extern "C"
 					memcpy(lpvMessage, (void *)&virtualmap, sizeof(VIRTUAL_MAP));
 
 					fSuccess = WriteFile(
-							hPipe,			// pipe handle
-							lpvMessage, // message
-							cbToWrite,	// message length
-							&cbWritten, // bytes written
-							NULL);			// not overlapped
+						hPipe,		// pipe handle
+						lpvMessage, // message
+						cbToWrite,	// message length
+						&cbWritten, // bytes written
+						NULL);		// not overlapped
 
 					if (!fSuccess)
 					{
@@ -351,11 +362,11 @@ extern "C"
 					// Read from the pipe.
 
 					fSuccess = ReadFile(
-							hPipe,			// pipe handle
-							lpvMessage, // buffer to receive reply
-							cbToWrite,	// size of buffer
-							&cbRead,		// number of bytes read
-							NULL);			// not overlapped
+						hPipe,		// pipe handle
+						lpvMessage, // buffer to receive reply
+						cbToWrite,	// size of buffer
+						&cbRead,	// number of bytes read
+						NULL);		// not overlapped
 
 					if (!fSuccess && GetLastError() != ERROR_MORE_DATA)
 						break;
@@ -396,21 +407,21 @@ extern "C"
 
 	uint8_t mcu_get_pin_offset(uint8_t pin)
 	{
-		if (pin >= 1 && pin <= 24)
+		if (pin >= 1 && pin <= 32)
 		{
-			return pin - 1;
+			return pin - STEP0;
 		}
-		else if (pin >= 47 && pin <= 78)
+		if (pin >= PWM_PINS_OFFSET && pin <= (PWM_PINS_OFFSET + 32))
 		{
-			return pin - 47;
+			return pin - DOUT0;
 		}
-		if (pin >= 100 && pin <= 113)
+		if (pin >= LIMIT_X && pin <= CS_RES)
 		{
-			return pin - 100;
+			return pin - LIMIT_X;
 		}
-		else if (pin >= 130 && pin <= 161)
+		else if (pin >= DIN0 && pin <= DIN31)
 		{
-			return pin - 130;
+			return pin - DIN0;
 		}
 
 		return -1;
@@ -588,15 +599,15 @@ extern "C"
 #endif
 
 #if defined(MCU_HAS_ONESHOT_TIMER)
-	static uint32_t virtual_oneshot_counter;
-	static uint32_t virtual_oneshot_reload;
-	static FORCEINLINE void mcu_gen_oneshot(void)
+	static uint32_t oneshot_timeout;
+	static uint32_t oneshot_alarm;
+	static FORCEINLINE void mcu_gen_oneshot(uint32_t steptime)
 	{
-		if (virtual_oneshot_counter)
+		if (oneshot_alarm)
 		{
-			virtual_oneshot_counter--;
-			if (!virtual_oneshot_counter)
+			if (oneshot_alarm <= mcu_micros())
 			{
+				oneshot_alarm = 0;
 				if (mcu_timeout_cb)
 				{
 					mcu_timeout_cb();
@@ -608,7 +619,7 @@ extern "C"
 
 	static volatile uint32_t mcu_itp_timer_reload;
 	static volatile bool mcu_itp_timer_running;
-	static FORCEINLINE void mcu_gen_step(void)
+	static FORCEINLINE void mcu_gen_step(uint32_t steptime)
 	{
 		static bool step_reset = true;
 		static int32_t mcu_itp_timer_counter;
@@ -619,7 +630,8 @@ extern "C"
 			// stream mode tick
 			int32_t t = mcu_itp_timer_counter;
 			bool reset = step_reset;
-			t -= (int32_t)roundf(1000000.0f / (float)ITP_SAMPLE_RATE);
+			//			t -= (int32_t)ceilf(1000000.0f / ITP_SAMPLE_RATE);
+			t -= steptime;
 			if (t <= 0)
 			{
 				if (!reset)
@@ -721,6 +733,25 @@ extern "C"
 	double cyclesPerMicrosecond;
 	double cyclesPerMillisecond;
 
+	FILE *stimuli;
+	uint64_t tickcount;
+
+#define def_printpin(X) \
+	if (stimuli)        \
+	fprintf(stimuli, "$var wire 1 %c " #X " $end\n", 33 + X)
+#define printspecialpin(X)                                                                           \
+	if (stimuli)                                                                                     \
+	{                                                                                                \
+		fprintf(stimuli, "%d%c\n", ((virtualmap.special_outputs & (1 << (X - 1))) ? 1 : 0), 33 + X); \
+		fflush(stimuli);                                                                             \
+	}
+#define printpin(X)                                                                                         \
+	if (stimuli)                                                                                            \
+	{                                                                                                       \
+		fprintf(stimuli, "%d%c\n", ((virtualmap.outputs & (1 << (X - DOUT_PINS_OFFSET))) ? 1 : 0), 33 + X); \
+		fflush(stimuli);                                                                                    \
+	}
+
 	volatile unsigned long g_cpu_freq = 0;
 
 	VOID CALLBACK timer_sig_handler(PVOID, BOOLEAN);
@@ -800,23 +831,24 @@ extern "C"
 
 	uint32_t mcu_micros(void)
 	{
-		LARGE_INTEGER perf_counter;
-		QueryPerformanceCounter(&perf_counter);
-		return (uint32_t)(perf_counter.QuadPart / cyclesPerMicrosecond);
+		// LARGE_INTEGER perf_counter;
+		// QueryPerformanceCounter(&perf_counter);
+		// return (uint32_t)(perf_counter.QuadPart / cyclesPerMicrosecond);
+		return (uint32_t)tickcount;
 	}
 
 	uint32_t mcu_millis(void)
 	{
-		LARGE_INTEGER perf_counter;
-		QueryPerformanceCounter(&perf_counter);
-		return (uint32_t)(perf_counter.QuadPart / cyclesPerMillisecond);
+		// LARGE_INTEGER perf_counter;
+		// QueryPerformanceCounter(&perf_counter);
+		// return (uint32_t)(perf_counter.QuadPart / cyclesPerMillisecond);
+		return (uint32_t)(tickcount / 1000);
 	}
 
 	/**
 	 * configures a single shot timeout in us
 	 * */
-	static uint32_t oneshot_timeout;
-	static uint32_t oneshot_alarm;
+
 	void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 	{
 		oneshot_timeout = timeout;
@@ -833,15 +865,74 @@ extern "C"
 
 	void ticksimul(void)
 	{
-		//		long t = stopCycleCounter();
-		//		printf("Elapsed %dus\n\r", (int)((double)t / cyclesPerMicrosecond));
-		for (int i = 0; i < (int)ceil(20 * ITP_SAMPLE_RATE / 1000); i++)
+		static bool running = false;
+		bool test = false;
+		if (!__atomic_compare_exchange_n(&running, &test, true, false, __ATOMIC_RELAXED, __ATOMIC_RELAXED))
 		{
-			mcu_gen_step();
+			return;
 		}
 
-		mcu_rtc_cb(mcu_millis());
+		static uint32_t prev_special, prev, next_rtc = 1000;
+		float parcial = 0;
+		//		long t = stopCycleCounter();
+		//		printf("Elapsed %dus\n\r", (int)((double)t / cyclesPerMicrosecond));
+		float timestep = ceil((float)EMULATION_MS_TICK * ITP_SAMPLE_RATE * 0.001f);
+		for (int i = 0; i < (int)timestep; i++)
+		{
+			parcial += (1000000.0f / (float)ITP_SAMPLE_RATE);
+			uint32_t partial_int = (uint32_t)parcial;
+			tickcount += (int)parcial;
+			parcial -= (int)parcial;
+
+			mcu_gen_step(partial_int);
+#ifdef MCU_HAS_ONESHOT_TIMER
+			mcu_gen_oneshot(partial_int);
+#endif
+
+			if ((prev_special ^ virtualmap.special_outputs) || (prev ^ virtualmap.outputs))
+			{
+				prev_special = virtualmap.special_outputs;
+				prev = virtualmap.outputs;
+				if (stimuli)
+					fprintf(stimuli, "#%llu\n", tickcount);
+#if AXIS_COUNT > 0
+				printspecialpin(STEP0);
+				printspecialpin(DIR0);
+#endif
+#if AXIS_COUNT > 1
+				printspecialpin(STEP1);
+				printspecialpin(DIR1);
+#endif
+#if AXIS_COUNT > 2
+				printspecialpin(STEP2);
+				printspecialpin(DIR2);
+#endif
+#if AXIS_COUNT > 3
+				printspecialpin(STEP3);
+				printspecialpin(DIR3);
+#endif
+#if AXIS_COUNT > 4
+				printspecialpin(STEP4);
+				printspecialpin(DIR4);
+#endif
+#if AXIS_COUNT > 5
+				printspecialpin(STEP5);
+				printspecialpin(DIR5);
+#endif
+
+				printpin(DOUT0);
+				printpin(DOUT1);
+			}
+
+			if (tickcount > next_rtc)
+			{
+				mcu_rtc_cb(mcu_millis());
+				next_rtc += 1000;
+			}
+		}
+
 		//		startCycleCounter();
+		__atomic_store_n(&running, false, __ATOMIC_RELAXED);
 	}
 
 /**
@@ -863,14 +954,15 @@ extern "C"
 			return false;
 		}
 
-		char fpath[256] = "./";
-		if (strcmp("/", path))
+		char fpath[256] = "."; // search locally
+		if (!strncmp("/", path, 1))
 		{
 			strcat(fpath, path);
 		}
 		else
 		{
-			fpath[1] = 0;
+			// fpath[1] = 0;
+			strcpy(fpath, path);
 		}
 
 		// Try to find the file or directory
@@ -923,15 +1015,19 @@ extern "C"
 	{
 		fs_file_t *fp = (fs_file_t *)calloc(1, sizeof(fs_file_t));
 		char dir[256] = ".";
-		if (strcmp("/", path))
+		if (!strncmp("/", path, 1))
 		{
 			strcat(dir, path);
+		}
+		else
+		{
+			strcpy(dir, path);
 		}
 
 		if (fp)
 		{
 			fs_file_info_t info = {0};
-			flash_fs_finfo(path, &info);
+			flash_fs_finfo(dir, &info);
 			fp->file_ptr = opendir(dir);
 			if (fp->file_ptr)
 			{
@@ -946,7 +1042,6 @@ extern "C"
 
 	fs_file_t *flash_fs_open(const char *path, const char *mode)
 	{
-
 		fs_file_info_t finfo;
 		char file[256] = ".";
 		if (strcmp("/", path))
@@ -982,8 +1077,9 @@ extern "C"
 					return flash_fs_opendir(path);
 				}
 			}
-			return NULL;
 		}
+
+		return NULL;
 	}
 
 	size_t flash_fs_read(fs_file_t *fp, uint8_t *buffer, size_t len)
@@ -1072,10 +1168,15 @@ extern "C"
 	{
 		if (fp && fp->file_ptr)
 		{
+			char path[256];
+			strcpy(path, fp->file_info.full_name);
 			struct dirent *entry = readdir((DIR *)fp->file_ptr);
 			if (entry != NULL)
 			{
-				flash_fs_finfo(entry->d_name, finfo);
+
+				strcat(path, "/");
+				strcat(path, entry->d_name);
+				flash_fs_finfo(path, finfo);
 				return true;
 			}
 		}
@@ -1095,33 +1196,50 @@ extern "C"
 		virtualmap.inputs = 0;
 		virtualmap.outputs = 0;
 		g_cpu_freq = getCPUFreq();
-		start_timer(20, &ticksimul);
+		start_timer(EMULATION_MS_TICK, &ticksimul);
 		pthread_create(&thread_io, NULL, &ioserver, NULL);
 		mcu_enable_global_isr();
 		flash_fs = {
-				.drive = 'C',
-				.open = flash_fs_open,
-				.read = flash_fs_read,
-				.write = flash_fs_write,
-				.seek = flash_fs_seek,
-				.available = flash_fs_available,
-				.close = flash_fs_close,
-				.remove = flash_fs_remove,
-				.opendir = flash_fs_opendir,
-				.mkdir = flash_fs_mkdir,
-				.rmdir = flash_fs_rmdir,
-				.next_file = flash_fs_next_file,
-				.finfo = flash_fs_finfo,
-				.next = NULL};
+			.drive = 'C',
+			.open = flash_fs_open,
+			.read = flash_fs_read,
+			.write = flash_fs_write,
+			.seek = flash_fs_seek,
+			.available = flash_fs_available,
+			.close = flash_fs_close,
+			.remove = flash_fs_remove,
+			.opendir = flash_fs_opendir,
+			.mkdir = flash_fs_mkdir,
+			.rmdir = flash_fs_rmdir,
+			.next_file = flash_fs_next_file,
+			.finfo = flash_fs_finfo,
+			.next = NULL};
 		fs_mount(&flash_fs);
 	}
 
 	int main(int argc, char **argv)
 	{
+		stimuli = fopen("stimuli.vcd", "w+");
+		if (stimuli)
+			fprintf(stimuli, "$timescale 1us $end\n$scope module logic $end\n", tickcount);
+		def_printpin(STEP0);
+		def_printpin(DIR0);
+		def_printpin(STEP1);
+		def_printpin(DIR1);
+		def_printpin(STEP2);
+		def_printpin(DIR2);
+		def_printpin(STEP3);
+		def_printpin(DIR3);
+		def_printpin(DOUT0);
+		def_printpin(DOUT1);
+		if (stimuli)
+			fprintf(stimuli, "$upscope $end\n$enddefinitions $end\n\n", tickcount);
+
 		cnc_init();
 		for (;;)
 		{
 			cnc_run();
+
 		}
 		return 0;
 	}
@@ -1130,7 +1248,7 @@ extern "C"
 
 	uint32_t mcu_free_micros(void)
 	{
-		return (uint32_t)(mcu_free_micros() % 1000);
+		return (uint32_t)(mcu_micros() % 1000);
 	}
 
 	/**

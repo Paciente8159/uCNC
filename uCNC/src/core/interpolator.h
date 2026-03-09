@@ -54,12 +54,6 @@ extern "C"
 	// this block has the necessary data to execute the Bresenham line algorithm
 	typedef struct itp_blk_
 	{
-#ifdef STEP_ISR_SKIP_MAIN
-		uint8_t main_stepper;
-#endif
-#ifdef STEP_ISR_SKIP_IDLE
-		uint8_t idle_axis;
-#endif
 		uint8_t dirbits;
 		step_t steps[STEPPER_COUNT];
 		step_t total_steps;
@@ -76,10 +70,17 @@ extern "C"
 	{
 		itp_block_t *block;
 		uint16_t remaining_steps;
+#ifndef DISABLE_ITP_STEP_GEN_OPTIMIZATIONS
+		uint8_t idle_steppers;
+		uint8_t main_stepper;
+#endif
 		uint16_t timer_counter;
 		uint16_t timer_prescaller;
 #if (DSS_MAX_OVERSAMPLING != 0)
 		int8_t next_dss;
+#ifdef ENABLE_RT_SYNC_MOTIONS
+		uint8_t dss_level;
+#endif
 #endif
 #if TOOL_COUNT > 0
 		int16_t spindle;
@@ -114,10 +115,22 @@ extern "C"
 #endif
 #ifdef ENABLE_RT_SYNC_MOTIONS
 	// extern volatile int32_t itp_sync_step_counter;
-	void itp_update_feed(float feed);
+#define ITP_BLOCK_CONTINUOUS 0 // normal mode. Don't care about block ID. dispatch blocck as soon as available
+#define ITP_BLOCK_SINGLE 1	   // will run one single block at time.
+#define ITP_BLOCK_BURST 2	   // will run as many blocks as in queue.
+							   // #define ITP_BLOCK_READY 128
+	// modifies the
+	void itp_set_block_mode(uint8_t mode);
+	void itp_inc_block_id(void);
+	void itp_update_feed(float step_frequency);
 	bool itp_sync_ready(void);
-	DECL_HOOK(itp_rt_pre_stepbits, uint8_t *, uint8_t *);
+	// deprecate to make ISR leaner
+	// DECL_HOOK(itp_rt_pre_stepbits, uint8_t *, uint8_t *);
 	DECL_HOOK(itp_rt_stepbits, uint8_t, uint8_t);
+#ifndef DISABLE_RT_STEP_PREVENT_CONDITION
+	typedef bool (*itp_rt_step_prevent_t)(void);
+	extern itp_rt_step_prevent_t itp_rt_step_prevent_cb;
+#endif
 #endif
 
 #ifdef __cplusplus

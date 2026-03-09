@@ -63,9 +63,18 @@ extern "C"
 #define LIMIT_B_PULLUP_ENABLE
 #define LIMIT_C_PULLUP_ENABLE
 
-// Uncomment to enable weak pull up resistor for probe
-// If the pin is not defined in the board this will be ignored
+/**
+ * Uncomment to enable weak pull up resistor for probe
+ * If the pin is not defined in the board this will be ignored
+ */
 // #define PROBE_PULLUP_ENABLE
+
+/**
+ * Uncomment to enable custom probing overrides
+ * This allows to create a custom probing inputs (like other inputs, software conditions, etc..)
+ * Note that $6 will have no effect on the custom probing logic
+ */
+// #define PROBE_ENABLE_CUSTOM_CALLBACK
 
 // Uncomment to enable weak pull up resistors for control pins
 // If the pin is not defined in the board this will be ignored
@@ -106,6 +115,20 @@ extern "C"
  * Uncomment this feature to enable X and Y homing simultaneously
  */
 // #define ENABLE_XY_SIMULTANEOUS_HOMING
+
+/**
+ * Rotational axis - disable limits after homing
+ * Enable this option if you want to disable the limits for rotation axis to work
+ * allowing them to rotatle freely
+ *
+ */
+// #define DISABLE_ROTATIONAL_AXIS_LIMITS_AFTER_HOMING
+
+/**
+ * Decouple rotational axis from speed profile.
+ * If commented ABC will be treated like individual linear axis for speed profile calculations.
+ */
+// #define ABC_INDEP_FEED_CALC
 
 /**
  * Rotational axis - force relative distances
@@ -359,42 +382,55 @@ extern "C"
  * In the example bellow if input pin DIN19 is active step ISR will stop generating steps
  * Can be uses for example in sewing machines to prevent motion on needle down detection and avoid damadge to the needle
  *
+ * If RT_STEP_PREVENT_CONDITION is not defined it will default to a hookable callback named itp_rt_step_prevent_cb
+ *
  * **/
+#ifdef ENABLE_RT_SYNC_MOTIONS
 // #define RT_STEP_PREVENT_CONDITION io_get_input(DIN19)
+
+// this option can simply disable the RT_STEP code from the ISR
+// #define DISABLE_RT_STEP_PREVENT_CONDITION
+#endif
 
 // Assigns an output to an blinking led (1Hz rate)
 #define ACTIVITY_LED DOUT31
 
-/*
-	Sets the number of encoders to be used (max of 8)
-*/
-#define ENCODERS 0
 /**
- * To use the encoder counter 2 definitions are needed
- * ENCx_PULSE -> must be set to an input PIN with interrupt on change enabled capabilities
- * ENCx_DIR -> a regular input PIN that detects the direction of the encoding step
- * Defined encoders must match the number of encoders and numeral defined above.
- * For example if ENCODERS is set to 2 it expects to find the definitions for ENC0 and ENC1. Number skipping is not allowed (example Set ENC0 and ENC2 but not ENC1)
+ * Sets the number of encoders to be used (max of 8)
  *
- * It's also possible to assign an encoder to a stepper motor by defining the STEPx_ENCODER and the encoder index like this
- * #define STEP0_ENCODER ENC0 //assigns encoder 0 to stepper 0
+ * To know more about encoders please read the document under /modules/encoder.md
+ * https://github.com/Paciente8159/uCNC/blob/master/uCNC/src/modules/encoder.md
  *
- * The encoder can work as a simple counter (used in speed encoders) by setting the same HAL pin for both PULSE and DIR functions - Counter mode
- *
- * For encoders to work as STEP encoders ENABLE_MAIN_LOOP_MODULES must be enabled
- *
- * Encoders counting direction can be inverted via mask setting $8
- * */
+ */
+#ifndef ENCODERS
+#define ENCODERS 0
+#endif
+
 #if ENCODERS > 0
 #include "src/modules/encoder.h"
+/**
+ * Examples
+ */
 
 // Counter mode
+
 // #define ENC0_PULSE DIN7
 // #define ENC0_DIR DIN7
+// the respective PPR (pulses per rotation) can be set via $15x setting
+// optional index pin can be declared. Index pins pulse once per full rotation
+// #define ENC0_INDEX DIN8
 
-// // Encoder mode
+// Encoder mode
+
 // #define ENC0_PULSE DIN0
 // #define ENC0_DIR DIN8
+
+// or a different type
+
+// #define ENC0_TYPE ENC_TYPE_I2C
+// define communication pins
+// #define ENC0_PULSE DOUT15
+// #define ENC0_DIR DOUT16
 
 // #define ENC1_PULSE DIN1
 // #define ENC1_DIR DIN9
@@ -407,24 +443,8 @@ extern "C"
 // #define STEP1_ENCODER ENC1
 // #define STEP2_ENCODER ENC2
 
-// Assign an encoder has an RPM encoder
-// #define ENABLE_ENCODER_RPM
-#ifdef ENABLE_ENCODER_RPM
-
-// Assign an encoder to work as the RPM encoder
-#define RPM_ENCODER ENC0
-
-// Optional set a second encoder pin has an encoder index
-// This assumes the index pulse occurs when pulse pin is also triggered
-// #define RPM_INDEX_INPUT DIN8
-
-// Resolution of the RPM encoder or Pulses Per Revolution
-#define RPM_PPR 24
-
-// uncomment to update tool sync on index pulse only
-// instead of updating in every PPR
-// #define RPM_SYNC_UPDATE_ON_INDEX_ONLY
-#endif
+// Enables stepper closed loop position correction (not developed)
+// #define ENABLE_STEPPER_CLF_CORRECTION
 #endif
 
 /**
@@ -549,12 +569,12 @@ extern "C"
 // #define SYSTEM_MENU_MAX_STR_LEN 32
 #endif
 
-/**
- * Force the IO direction to be configure before each request
- * This sets the pin direction before trying to control it
- * Some MCU like ESP32 require this option to be enabled because the IO by some SDK function calls without realizing
- */
-// #define FORCE_HAL_IO_DIRECTION_ONREQUEST
+	/**
+	 * Force the IO direction to be configure before each request
+	 * This sets the pin direction before trying to control it
+	 * Some MCU like ESP32 require this option to be enabled because the IO by some SDK function calls without realizing
+	 */
+	// #define FORCE_HAL_IO_DIRECTION_ONREQUEST
 
 #ifdef __cplusplus
 }

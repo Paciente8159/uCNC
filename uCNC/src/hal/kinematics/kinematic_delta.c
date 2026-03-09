@@ -326,6 +326,8 @@ uint8_t kinematics_home(void)
 {
 	// delta starts by invalidating the current position and considers it's at the far end of the homing position
 	float axis[AXIS_COUNT];
+	uint8_t error = STATUS_OK;
+
 	// reset home offset
 	delta_cuboid_z_home = 0;
 	// reset coordinates
@@ -335,53 +337,42 @@ uint8_t kinematics_home(void)
 	// sync interpolator to new position (motion homing syncs remaining systems)
 	itp_reset_rt_position(axis);
 
-	if (mc_home_axis(AXIS_Z_MASK, LIMITS_DELTA_MASK))
+	error = mc_home_axis(AXIS_Z_HOMING_MASK, LIMITS_DELTA_MASK);
+	if (error != STATUS_OK)
 	{
-		return KINEMATIC_HOMING_ERROR_Z;
+		return error;
 	}
 
-
 #if AXIS_A_HOMING_MASK != 0
-	if (mc_home_axis(AXIS_A_HOMING_MASK, LINACT3_LIMIT_MASK))
+	error = mc_home_axis(AXIS_A_HOMING_MASK, LINACT3_LIMIT_MASK);
+	if (error != STATUS_OK)
 	{
-		return KINEMATIC_HOMING_ERROR_A;
+		return error;
 	}
 #endif
 
 #if AXIS_B_HOMING_MASK != 0
-	if (mc_home_axis(AXIS_B_HOMING_MASK, LINACT4_LIMIT_MASK))
+	error = mc_home_axis(AXIS_B_HOMING_MASK, LINACT4_LIMIT_MASK);
+	if (error != STATUS_OK)
 	{
-		return KINEMATIC_HOMING_ERROR_B;
+		return error;
 	}
 #endif
 
 #if AXIS_C_HOMING_MASK != 0
-	if (mc_home_axis(AXIS_C_HOMING_MASK, LINACT5_LIMIT_MASK))
+	error = mc_home_axis(AXIS_C_HOMING_MASK, LINACT5_LIMIT_MASK);
+	if (error != STATUS_OK)
 	{
-		return KINEMATIC_HOMING_ERROR_C;
+		return error;
 	}
 #endif
 
-	cnc_unlock(true);
-	float target[AXIS_COUNT];
-	motion_data_t block_data = {0};
-
-	int32_t angle_steps[AXIS_COUNT];
-	delta_home_angle_to_steps(angle_steps);
-	kinematics_apply_forward(angle_steps, target);
-	// sync systems (interpolator, motion control and parser - the latest is synched ny motion control)
-	itp_reset_rt_position(target);
-	mc_sync_position();
-
-	// pull of only on the Z axis
-	target[AXIS_Z] += ((g_settings.homing_dir_invert_mask & (1 << AXIS_Z)) ? -g_settings.homing_offset : g_settings.homing_offset);
-
-	block_data.feed = g_settings.homing_fast_feed_rate;
-	block_data.spindle = 0;
-	block_data.dwell = 0;
-	// starts offset and waits to finnish
-	mc_line(target, &block_data);
-	itp_sync();
+#ifndef ENABLE_GRBL_STYLE_HOMING
+	if (!mc_home_motion_pulloff((1 << AXIS_Z), true))
+	{
+		return STATUS_CRITICAL_FAIL;
+	}
+#endif
 
 // add the internal offset to the kinematics
 #ifdef SET_ORIGIN_AT_HOME_POS
@@ -395,7 +386,7 @@ uint8_t kinematics_home(void)
 	itp_reset_rt_position(target);
 	mc_sync_position();
 
-	return STATUS_OK;
+	return error;
 }
 
 bool kinematics_check_boundaries(float *axis)
@@ -422,17 +413,47 @@ bool kinematics_check_boundaries(float *axis)
 
 	if (axis[AXIS_X] < -xy_limit || axis[AXIS_X] > xy_limit)
 	{
+#ifdef ALLOW_SOFT_LIMIT_JOG_MOTION_CLAMPING
+		axis[AXIS_X] = CLAMP(-xy_limit, axis[AXIS_X], xy_limit);
+#endif
 		return false;
 	}
 
 	if (axis[AXIS_Y] < -xy_limit || axis[AXIS_Y] > xy_limit)
 	{
+#ifdef ALLOW_SOFT_LIMIT_JOG_MOTION_CLAMPING
+		axis[AXIS_X] = CLAMP(-xy_limit, axis[AXIS_Y], xy_limit);
+#endif
 		return false;
 	}
 
 	if (axis[AXIS_Z] < (delta_cuboid_z_min - z_offset) || axis[AXIS_Z] > (delta_cuboid_z_max - z_offset))
 	{
+#ifdef ALLOW_SOFT_LIMIT_JOG_MOTION_CLAMPING
+		axis[AXIS_Z] = CLAMP((delta_cuboid_z_min - z_offset), axis[AXIS_Z], (delta_cuboid_z_max - z_offset));
+#endif
 		return false;
+	}
+
+	// remaining axis
+	for (uint8_t i = AXIS_COUNT; i != 3;)
+	{
+		i--;
+		if (g_settings.max_distance[i]) // ignore any undefined axis
+		{
+#ifdef SET_ORIGIN_AT_HOME_POS
+			float value = !(g_settings.homing_dir_invert_mask & (1 << i)) ? axis[i] : -axis[i];
+#else
+			float value = axis[i];
+#endif
+			if (value > g_settings.max_distance[i] || value < 0)
+			{
+#ifdef ALLOW_SOFT_LIMIT_JOG_MOTION_CLAMPING
+				axis[i] = CLAMP(0, value, g_settings.max_distance[i]);
+#endif
+				return false;
+			}
+		}
 	}
 
 	return true;

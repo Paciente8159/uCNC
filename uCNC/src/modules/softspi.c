@@ -27,13 +27,30 @@ void softspi_config(softspi_port_t *port, spi_config_t config, uint32_t frequenc
 #ifdef MCU_HAS_SPI
 		mcu_spi_config(config, frequency);
 #endif
+		return;
 	}
 
 	if (port->config)
 	{
 		// if port with custom method execute it
 		port->config(config, frequency);
+		return;
 	}
+
+#ifdef MCU_HAS_SPI
+	if (port->spiport == MCU_SPI)
+	{
+		mcu_spi_config(config, frequency);
+		return;
+	}
+#endif
+
+#ifdef MCU_HAS_SPI2
+	if (port->spiport == MCU_SPI2)
+	{
+		mcu_spi2_config(config, frequency);
+	}
+#endif
 }
 
 uint8_t softspi_xmit(softspi_port_t *port, uint8_t c)
@@ -152,7 +169,7 @@ void softspi_bulk_xmit(softspi_port_t *port, const uint8_t *out, uint8_t *in, ui
 #ifdef MCU_HAS_SPI
 		while (mcu_spi_bulk_transfer(out, in, len))
 		{
-			cnc_dotasks();
+			TASK_YIELD();
 		}
 #endif
 		return;
@@ -163,7 +180,7 @@ void softspi_bulk_xmit(softspi_port_t *port, const uint8_t *out, uint8_t *in, ui
 	{
 		while (port->spiport->bulk_xmit(out, in, len))
 		{
-			cnc_dotasks();
+			TASK_YIELD();
 		}
 		return;
 	}
@@ -181,7 +198,7 @@ void softspi_bulk_xmit(softspi_port_t *port, const uint8_t *out, uint8_t *in, ui
 		if (timeout < mcu_millis())
 		{
 			timeout = BULK_SPI_TIMEOUT + mcu_millis();
-			cnc_dotasks();
+			TASK_YIELD();
 		}
 	}
 }
@@ -236,7 +253,7 @@ void softspi_stop(softspi_port_t *port)
 		{
 			MODULE_LOCK_DISABLE(LISTENER_HWSPI_LOCK);
 		}
-		else
+		else if (port->spiport == MCU_SPI2)
 		{
 			MODULE_LOCK_DISABLE(LISTENER_HWSPI2_LOCK);
 		}
