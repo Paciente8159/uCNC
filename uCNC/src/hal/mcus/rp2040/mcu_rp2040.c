@@ -349,7 +349,9 @@ void mcu_init(void)
 	rp2040_eeprom_init(NVM_STORAGE_SIZE); // 2K Emulated EEPROM
 #endif
 
+#if defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH)
 	rp2040_wifi_bt_init();
+#endif
 
 	pinMode(LED_BUILTIN, OUTPUT);
 	// init rtc, oneshot and servo alarms
@@ -505,7 +507,7 @@ static void mcu_itp_isr(void)
 
 	if (!resetstep)
 	{
-			mcu_step_cb();
+		mcu_step_cb();
 	}
 
 	else
@@ -654,7 +656,7 @@ static void mcu_oneshot_isr(void)
 {
 	if (mcu_timeout_cb)
 	{
-			mcu_timeout_cb();
+		mcu_timeout_cb();
 	}
 }
 
