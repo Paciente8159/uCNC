@@ -78,6 +78,9 @@ extern "C"
 		uint16_t timer_prescaller;
 #if (DSS_MAX_OVERSAMPLING != 0)
 		int8_t next_dss;
+#ifdef ENABLE_RT_SYNC_MOTIONS
+		uint8_t dss_level;
+#endif
 #endif
 #if TOOL_COUNT > 0
 		int16_t spindle;
@@ -119,7 +122,7 @@ extern "C"
 	// modifies the
 	void itp_set_block_mode(uint8_t mode);
 	void itp_inc_block_id(void);
-	void itp_update_feed(float feed);
+	void itp_update_feed(float step_frequency);
 	bool itp_sync_ready(void);
 	// deprecate to make ISR leaner
 	// DECL_HOOK(itp_rt_pre_stepbits, uint8_t *, uint8_t *);
