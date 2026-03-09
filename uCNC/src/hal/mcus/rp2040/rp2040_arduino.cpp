@@ -608,109 +608,106 @@ static IPAddress gateway((uint32_t)(STATIC_IP_GW));
 static IPAddress subnet((uint32_t)(STATIC_IP_SUB));
 #endif
 
-extern "C"
+extern "C" void __attribute__((weak)) mcu_network_init(void)
 {
-	void __attribute__((weak)) mcu_network_init(void)
-	{
 #ifdef ENABLE_WIFI
 #ifdef USE_STATIC_IP
-		if (!WiFi.config(local_IP, gateway, subnet))
-		{
-			proto_info("Static IP config failed");
-		}
-#endif
-		WiFi.begin((char *)BOARD_NAME, (char *)WIFI_PASS);
-		extern socket_device_t wifi_socket;
-		socket_register_device(&wifi_socket);
-		ota_server_start();
-		WiFi.disconnect();
-#endif
-	}
-
-	void mcu_bt_init(void)
+	if (!WiFi.config(local_IP, gateway, subnet))
 	{
+		proto_info("Static IP config failed");
 	}
+#endif
+	WiFi.begin((char *)BOARD_NAME, (char *)WIFI_PASS);
+	extern socket_device_t wifi_socket;
+	socket_register_device(&wifi_socket);
+	ota_server_start();
+	WiFi.disconnect();
+#endif
+}
 
-	void rp2040_wifi_bt_init(void)
-	{
+extern "C" void mcu_bt_init(void)
+{
+}
+
+extern "C" void rp2040_wifi_bt_init(void)
+{
 #ifdef ENABLE_WIFI
-		wifi_settings_offset = settings_register_external_setting(sizeof(wifi_settings_t));
-		if (settings_load(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t)))
-		{
-			wifi_settings = {0};
-			memcpy(wifi_settings.ssid, BOARD_NAME, strlen((const char *)BOARD_NAME));
-			memcpy(wifi_settings.pass, WIFI_PASS, strlen((const char *)WIFI_PASS));
-			settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
-		}
+	wifi_settings_offset = settings_register_external_setting(sizeof(wifi_settings_t));
+	if (settings_load(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t)))
+	{
+		wifi_settings = {0};
+		memcpy(wifi_settings.ssid, BOARD_NAME, strlen((const char *)BOARD_NAME));
+		memcpy(wifi_settings.pass, WIFI_PASS, strlen((const char *)WIFI_PASS));
+		settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
+	}
 
-		if (wifi_settings.wifi_on)
-		{
-			uint8_t str[64];
+	if (wifi_settings.wifi_on)
+	{
+		uint8_t str[64];
 
-			switch (wifi_settings.wifi_mode)
-			{
-			case 1:
-				WiFi.mode(WIFI_STA);
-				WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
-				proto_info("Trying to connect to WiFi");
-				break;
-			case 2:
-				WiFi.mode(WIFI_AP);
-				WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
-				proto_info("AP started");
-				proto_info("SSID>" BOARD_NAME);
-				proto_info("IP>%s", WiFi.softAPIP().toString().c_str());
-				break;
-			default:
-				WiFi.mode(WIFI_AP_STA);
-				WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
-				proto_info("Trying to connect to WiFi");
-				WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
-				proto_info("AP started");
-				proto_info("SSID>" BOARD_NAME);
-				proto_info("IP>%s", WiFi.softAPIP().toString().c_str());
-				break;
-			}
+		switch (wifi_settings.wifi_mode)
+		{
+		case 1:
+			WiFi.mode(WIFI_STA);
+			WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
+			proto_info("Trying to connect to WiFi");
+			break;
+		case 2:
+			WiFi.mode(WIFI_AP);
+			WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
+			proto_info("AP started");
+			proto_info("SSID>" BOARD_NAME);
+			proto_info("IP>%s", WiFi.softAPIP().toString().c_str());
+			break;
+		default:
+			WiFi.mode(WIFI_AP_STA);
+			WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
+			proto_info("Trying to connect to WiFi");
+			WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
+			proto_info("AP started");
+			proto_info("SSID>" BOARD_NAME);
+			proto_info("IP>%s", WiFi.softAPIP().toString().c_str());
+			break;
 		}
+	}
 #endif
 
 #ifdef ENABLE_SOCKETS
-		FLASH_FS.begin();
-		flash_fs = {
-			.drive = 'C',
-			.open = flash_fs_open,
-			.read = flash_fs_read,
-			.write = flash_fs_write,
-			.seek = flash_fs_seek,
-			.available = flash_fs_available,
-			.close = flash_fs_close,
-			.remove = flash_fs_remove,
-			.opendir = flash_fs_opendir,
-			.mkdir = flash_fs_mkdir,
-			.rmdir = flash_fs_rmdir,
-			.next_file = flash_fs_next_file,
-			.finfo = flash_fs_info,
-			.next = NULL};
-		fs_mount(&flash_fs);
+	FLASH_FS.begin();
+	flash_fs = {
+		.drive = 'C',
+		.open = flash_fs_open,
+		.read = flash_fs_read,
+		.write = flash_fs_write,
+		.seek = flash_fs_seek,
+		.available = flash_fs_available,
+		.close = flash_fs_close,
+		.remove = flash_fs_remove,
+		.opendir = flash_fs_opendir,
+		.mkdir = flash_fs_mkdir,
+		.rmdir = flash_fs_rmdir,
+		.next_file = flash_fs_next_file,
+		.finfo = flash_fs_info,
+		.next = NULL};
+	fs_mount(&flash_fs);
 #endif
 
 #ifdef ENABLE_BLUETOOTH
-		bt_settings_offset = settings_register_external_setting(1);
-		if (settings_load(bt_settings_offset, &bt_on, 1))
-		{
-			settings_erase(bt_settings_offset, (uint8_t *)&bt_on, 1);
-		}
+	bt_settings_offset = settings_register_external_setting(1);
+	if (settings_load(bt_settings_offset, &bt_on, 1))
+	{
+		settings_erase(bt_settings_offset, (uint8_t *)&bt_on, 1);
+	}
 
-		if (bt_on)
-		{
-			SerialBT.begin(BAUDRATE, SERIAL_8N1);
-		}
+	if (bt_on)
+	{
+		SerialBT.begin(BAUDRATE, SERIAL_8N1);
+	}
 #endif
 
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
-		ADD_EVENT_LISTENER(grbl_cmd, mcu_custom_grbl_cmd);
+	ADD_EVENT_LISTENER(grbl_cmd, mcu_custom_grbl_cmd);
 #endif
-	}
 }
 
 #ifdef MCU_HAS_BLUETOOTH
