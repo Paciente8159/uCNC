@@ -78,15 +78,17 @@ void itp_inc_block_id(void)
 	itp_block_counter++;
 }
 
-void itp_update_feed(float feed)
+void itp_update_feed(float step_frequency)
 {
 	planner_block_t *p = planner_get_block();
-	p->feed_sqr = feed * feed;
+	p->feed_sqr = step_frequency * step_frequency;
 	itp_needs_update = true;
-	uint16_t ticks, presc;
-	mcu_freq_to_clocks(feed, &ticks, &presc);
+
 	for (uint8_t i = 0; i < INTERPOLATOR_BUFFER_SIZE; i++)
 	{
+		uint16_t ticks, presc;
+		float upfeed = step_frequency * (1 << (itp_sgm_data[i].dss_level));
+		mcu_freq_to_clocks(upfeed, &ticks, &presc);
 		itp_sgm_data[i].timer_counter = ticks;
 		itp_sgm_data[i].timer_prescaller = presc;
 		// mark for update
@@ -685,6 +687,9 @@ void itp_run(void)
 		}
 		sgm->next_dss = dss - prev_dss;
 		prev_dss = dss;
+#ifdef ENABLE_RT_SYNC_MOTIONS
+		sgm->dss_level = dss;
+#endif
 
 		// completes the segment information (step speed, steps) and updates the block
 		sgm->remaining_steps = segm_steps << dss;

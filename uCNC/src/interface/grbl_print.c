@@ -314,6 +314,11 @@ size_t prt_fmtva(void *out, size_t maxlen, const char *fmt, va_list *args)
 						li = va_arg(*args, int);
 						break;
 					}
+					if (cval && (li < 0))
+					{
+						prt_putc(out, maxlen, '-');
+						li = -li;
+					}
 					pt = &li;
 					elems = 1;
 				}
