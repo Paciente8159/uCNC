@@ -87,7 +87,7 @@ void itp_update_feed(float step_frequency)
 	for (uint8_t i = 0; i < INTERPOLATOR_BUFFER_SIZE; i++)
 	{
 		uint16_t ticks, presc;
-		float upfeed = step_frequency * 2 ^ (itp_sgm_data[i].dss_level);
+		float upfeed = step_frequency * (1 << (itp_sgm_data[i].dss_level));
 		mcu_freq_to_clocks(upfeed, &ticks, &presc);
 		itp_sgm_data[i].timer_counter = ticks;
 		itp_sgm_data[i].timer_prescaller = presc;
