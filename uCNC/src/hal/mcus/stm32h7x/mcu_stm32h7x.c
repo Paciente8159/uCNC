@@ -716,6 +716,14 @@ void mcu_uart2_flush(void)
 
 #endif
 
+void mcu_i2c_init()
+{
+#ifdef MCU_HAS_I2C
+	// set max freq
+	mcu_i2c_config(I2C_FREQ);
+#endif
+}
+
 void mcu_init(void)
 {
 	// make sure both APB1 and APB2 are running at the same clock (48MHz)

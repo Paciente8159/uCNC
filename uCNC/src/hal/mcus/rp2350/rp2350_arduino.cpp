@@ -1213,6 +1213,11 @@ extern "C"
 #endif
 	}
 
+	void mcu_i2c_init(void)
+	{
+		mcu_i2c_config(I2C_FREQ);
+	}
+
 	uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool release, uint32_t ms_timeout)
 	{
 		I2C_REG.beginTransmission(address);

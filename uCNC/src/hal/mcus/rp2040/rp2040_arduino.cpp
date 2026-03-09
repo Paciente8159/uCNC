@@ -502,93 +502,90 @@ bool flash_fs_rmdir(const char *path)
  * OTA
  */
 #ifdef ENABLE_SOCKETS
-extern "C"
-{
 #include "../../../modules/net/http.h"
-	// HTML form for firmware upload (simplified from ESP8266HTTPUpdateServer)
-	static const char updateForm[] __rom__ =
-		"<!DOCTYPE html><html><body>"
-		"<form method='POST' action='" OTA_URI "' enctype='multipart/form-data'>"
-		"Firmware:<br><input type='file' name='firmware'>"
-		"<input type='submit' value='Update'>"
-		"</form></body></html>";
-	const char type_html[] = "text/html";
-	const char type_text[] = "text/plain";
+// HTML form for firmware upload (simplified from ESP8266HTTPUpdateServer)
+static const char updateForm[] __rom__ =
+	"<!DOCTYPE html><html><body>"
+	"<form method='POST' action='" OTA_URI "' enctype='multipart/form-data'>"
+	"Firmware:<br><input type='file' name='firmware'>"
+	"<input type='submit' value='Update'>"
+	"</form></body></html>";
+const char type_html[] = "text/html";
+const char type_text[] = "text/plain";
 
-	// Request handler for GET /update
-	static void ota_page_cb(int client_idx)
+// Request handler for GET /update
+static void ota_page_cb(int client_idx)
+{
+	http_send_str(client_idx, 200, (char *)type_html, (char *)updateForm);
+	http_send(client_idx, 200, (char *)type_html, NULL, 0);
+}
+
+// File upload handler for POST /update
+static void ota_upload_cb(int client_idx)
+{
+	http_upload_t up = http_file_upload_status(client_idx);
+
+	if (up.status == HTTP_UPLOAD_START)
 	{
-		http_send_str(client_idx, 200, (char *)type_html, (char *)updateForm);
-		http_send(client_idx, 200, (char *)type_html, NULL, 0);
-	}
-
-	// File upload handler for POST /update
-	static void ota_upload_cb(int client_idx)
-	{
-		http_upload_t up = http_file_upload_status(client_idx);
-
-		if (up.status == HTTP_UPLOAD_START)
-		{
-			// Called once at start of upload
-			Serial.printf("Update start: %s\n", up.filename);
+		// Called once at start of upload
+		Serial.printf("Update start: %s\n", up.filename);
 #ifdef FLASH_FS
-			if (!FLASH_FS.begin())
-			{
-				const char fail[] = "Flash error";
-				http_send_str(client_idx, 415, (char *)type_text, (char *)fail);
-				http_send(client_idx, 415, (char *)type_text, NULL, 0);
-				return;
-			}
+		if (!FLASH_FS.begin())
+		{
+			const char fail[] = "Flash error";
+			http_send_str(client_idx, 415, (char *)type_text, (char *)fail);
+			http_send(client_idx, 415, (char *)type_text, NULL, 0);
+			return;
+		}
 #endif
-			if (!Update.begin(up.datalen, U_FLASH))
-			{
-				Update.printError(Serial);
-			}
-		}
-		else if (up.status == HTTP_UPLOAD_PART)
+		if (!Update.begin(up.datalen, U_FLASH))
 		{
-			// Called for each chunk
-			if (Update.write(up.data, up.datalen) != up.datalen)
-			{
-				Update.printError(Serial);
-			}
-		}
-		else if (up.status == HTTP_UPLOAD_END)
-		{
-			// Called once at end of upload
-			if (Update.end(true))
-			{
-				const char suc[] = "Update Success! Rebooting...";
-				proto_printf("Update Success: %u bytes\r\n", up.datalen);
-				http_send_str(client_idx, 200, (char *)type_text, (char *)suc);
-				http_send(client_idx, 200, (char *)type_text, NULL, 0);
-#ifdef FLASH_FS
-				FLASH_FS.end();
-#endif
-				delay(100);
-				rp2040.reboot();
-			}
-			else
-			{
-				// Update.printError(Serial);
-				const char fail[] = "Update Failed";
-				http_send_str(client_idx, 500, (char *)type_text, (char *)fail);
-				http_send(client_idx, 500, (char *)type_text, NULL, 0);
-			}
-		}
-		else if (up.status == HTTP_UPLOAD_ABORT)
-		{
-			Update.end();
-			proto_printf("Update aborted\r\n");
+			Update.printError(Serial);
 		}
 	}
-
-	void ota_server_start(void)
+	else if (up.status == HTTP_UPLOAD_PART)
 	{
-		LOAD_MODULE(http_server);
-		const char update_uri[] = OTA_URI;
-		http_add((char *)update_uri, HTTP_REQ_ANY, ota_page_cb, ota_upload_cb);
+		// Called for each chunk
+		if (Update.write(up.data, up.datalen) != up.datalen)
+		{
+			Update.printError(Serial);
+		}
 	}
+	else if (up.status == HTTP_UPLOAD_END)
+	{
+		// Called once at end of upload
+		if (Update.end(true))
+		{
+			const char suc[] = "Update Success! Rebooting...";
+			proto_printf("Update Success: %u bytes\r\n", up.datalen);
+			http_send_str(client_idx, 200, (char *)type_text, (char *)suc);
+			http_send(client_idx, 200, (char *)type_text, NULL, 0);
+#ifdef FLASH_FS
+			FLASH_FS.end();
+#endif
+			delay(100);
+			rp2040.reboot();
+		}
+		else
+		{
+			// Update.printError(Serial);
+			const char fail[] = "Update Failed";
+			http_send_str(client_idx, 500, (char *)type_text, (char *)fail);
+			http_send(client_idx, 500, (char *)type_text, NULL, 0);
+		}
+	}
+	else if (up.status == HTTP_UPLOAD_ABORT)
+	{
+		Update.end();
+		proto_printf("Update aborted\r\n");
+	}
+}
+
+extern "C" void ota_server_start(void)
+{
+	LOAD_MODULE(http_server);
+	const char update_uri[] = OTA_URI;
+	http_add((char *)update_uri, HTTP_REQ_ANY, ota_page_cb, ota_upload_cb);
 }
 #endif
 
@@ -611,106 +608,109 @@ static IPAddress gateway((uint32_t)(STATIC_IP_GW));
 static IPAddress subnet((uint32_t)(STATIC_IP_SUB));
 #endif
 
-void __attribute__((weak)) mcu_network_init(void)
+extern "C"
 {
+	void __attribute__((weak)) mcu_network_init(void)
+	{
 #ifdef ENABLE_WIFI
 #ifdef USE_STATIC_IP
-	if (!WiFi.config(local_IP, gateway, subnet))
-	{
-		proto_info("Static IP config failed");
-	}
-#endif
-	WiFi.begin((char *)BOARD_NAME, (char *)WIFI_PASS);
-	extern socket_device_t wifi_socket;
-	socket_register_device(&wifi_socket);
-	ota_server_start();
-	WiFi.disconnect();
-#endif
-}
-
-void mcu_bt_init(void)
-{
-}
-
-void rp2040_wifi_bt_init(void)
-{
-#ifdef ENABLE_WIFI
-	wifi_settings_offset = settings_register_external_setting(sizeof(wifi_settings_t));
-	if (settings_load(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t)))
-	{
-		wifi_settings = {0};
-		memcpy(wifi_settings.ssid, BOARD_NAME, strlen((const char *)BOARD_NAME));
-		memcpy(wifi_settings.pass, WIFI_PASS, strlen((const char *)WIFI_PASS));
-		settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
-	}
-
-	if (wifi_settings.wifi_on)
-	{
-		uint8_t str[64];
-
-		switch (wifi_settings.wifi_mode)
+		if (!WiFi.config(local_IP, gateway, subnet))
 		{
-		case 1:
-			WiFi.mode(WIFI_STA);
-			WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
-			proto_info("Trying to connect to WiFi");
-			break;
-		case 2:
-			WiFi.mode(WIFI_AP);
-			WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
-			proto_info("AP started");
-			proto_info("SSID>" BOARD_NAME);
-			proto_info("IP>%s", WiFi.softAPIP().toString().c_str());
-			break;
-		default:
-			WiFi.mode(WIFI_AP_STA);
-			WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
-			proto_info("Trying to connect to WiFi");
-			WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
-			proto_info("AP started");
-			proto_info("SSID>" BOARD_NAME);
-			proto_info("IP>%s", WiFi.softAPIP().toString().c_str());
-			break;
+			proto_info("Static IP config failed");
 		}
+#endif
+		WiFi.begin((char *)BOARD_NAME, (char *)WIFI_PASS);
+		extern socket_device_t wifi_socket;
+		socket_register_device(&wifi_socket);
+		ota_server_start();
+		WiFi.disconnect();
+#endif
 	}
+
+	void mcu_bt_init(void)
+	{
+	}
+
+	void rp2040_wifi_bt_init(void)
+	{
+#ifdef ENABLE_WIFI
+		wifi_settings_offset = settings_register_external_setting(sizeof(wifi_settings_t));
+		if (settings_load(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t)))
+		{
+			wifi_settings = {0};
+			memcpy(wifi_settings.ssid, BOARD_NAME, strlen((const char *)BOARD_NAME));
+			memcpy(wifi_settings.pass, WIFI_PASS, strlen((const char *)WIFI_PASS));
+			settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
+		}
+
+		if (wifi_settings.wifi_on)
+		{
+			uint8_t str[64];
+
+			switch (wifi_settings.wifi_mode)
+			{
+			case 1:
+				WiFi.mode(WIFI_STA);
+				WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
+				proto_info("Trying to connect to WiFi");
+				break;
+			case 2:
+				WiFi.mode(WIFI_AP);
+				WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
+				proto_info("AP started");
+				proto_info("SSID>" BOARD_NAME);
+				proto_info("IP>%s", WiFi.softAPIP().toString().c_str());
+				break;
+			default:
+				WiFi.mode(WIFI_AP_STA);
+				WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
+				proto_info("Trying to connect to WiFi");
+				WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
+				proto_info("AP started");
+				proto_info("SSID>" BOARD_NAME);
+				proto_info("IP>%s", WiFi.softAPIP().toString().c_str());
+				break;
+			}
+		}
 #endif
 
 #ifdef ENABLE_SOCKETS
-	FLASH_FS.begin();
-	flash_fs = {
-		.drive = 'C',
-		.open = flash_fs_open,
-		.read = flash_fs_read,
-		.write = flash_fs_write,
-		.seek = flash_fs_seek,
-		.available = flash_fs_available,
-		.close = flash_fs_close,
-		.remove = flash_fs_remove,
-		.opendir = flash_fs_opendir,
-		.mkdir = flash_fs_mkdir,
-		.rmdir = flash_fs_rmdir,
-		.next_file = flash_fs_next_file,
-		.finfo = flash_fs_info,
-		.next = NULL};
-	fs_mount(&flash_fs);
+		FLASH_FS.begin();
+		flash_fs = {
+			.drive = 'C',
+			.open = flash_fs_open,
+			.read = flash_fs_read,
+			.write = flash_fs_write,
+			.seek = flash_fs_seek,
+			.available = flash_fs_available,
+			.close = flash_fs_close,
+			.remove = flash_fs_remove,
+			.opendir = flash_fs_opendir,
+			.mkdir = flash_fs_mkdir,
+			.rmdir = flash_fs_rmdir,
+			.next_file = flash_fs_next_file,
+			.finfo = flash_fs_info,
+			.next = NULL};
+		fs_mount(&flash_fs);
 #endif
 
 #ifdef ENABLE_BLUETOOTH
-	bt_settings_offset = settings_register_external_setting(1);
-	if (settings_load(bt_settings_offset, &bt_on, 1))
-	{
-		settings_erase(bt_settings_offset, (uint8_t *)&bt_on, 1);
-	}
+		bt_settings_offset = settings_register_external_setting(1);
+		if (settings_load(bt_settings_offset, &bt_on, 1))
+		{
+			settings_erase(bt_settings_offset, (uint8_t *)&bt_on, 1);
+		}
 
-	if (bt_on)
-	{
-		SerialBT.begin(BAUDRATE, SERIAL_8N1);
-	}
+		if (bt_on)
+		{
+			SerialBT.begin(BAUDRATE, SERIAL_8N1);
+		}
 #endif
 
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
-	ADD_EVENT_LISTENER(grbl_cmd, mcu_custom_grbl_cmd);
+		ADD_EVENT_LISTENER(grbl_cmd, mcu_custom_grbl_cmd);
 #endif
+	}
 }
 
 #ifdef MCU_HAS_BLUETOOTH
@@ -720,42 +720,45 @@ void rp2040_wifi_bt_init(void)
 DECL_BUFFER(uint8_t, bt_tx, BLUETOOTH_TX_BUFFER_SIZE);
 DECL_BUFFER(uint8_t, bt_rx, RX_BUFFER_SIZE);
 
-uint8_t mcu_bt_getc(void)
+extern "C"
 {
-	uint8_t c = 0;
-	BUFFER_TRY_DEQUEUE(bt_rx, &c);
-	return c;
-}
-
-uint8_t mcu_bt_available(void)
-{
-	return BUFFER_READ_AVAILABLE(bt_rx);
-}
-
-void mcu_bt_clear(void)
-{
-	BUFFER_CLEAR(bt_rx);
-}
-
-void mcu_bt_putc(uint8_t c)
-{
-	while (!BUFFER_TRY_ENQUEUE(bt_tx, &c))
+	uint8_t mcu_bt_getc(void)
 	{
-		mcu_bt_flush();
+		uint8_t c = 0;
+		BUFFER_TRY_DEQUEUE(bt_rx, &c);
+		return c;
 	}
-}
 
-void mcu_bt_flush(void)
-{
-	while (!BUFFER_EMPTY(bt_tx))
+	uint8_t mcu_bt_available(void)
 	{
-		uint8_t tmp[BLUETOOTH_TX_BUFFER_SIZE + 1];
-		memset(tmp, 0, sizeof(tmp));
-		uint8_t r = 0;
+		return BUFFER_READ_AVAILABLE(bt_rx);
+	}
 
-		BUFFER_READ(bt_tx, tmp, BLUETOOTH_TX_BUFFER_SIZE, r);
-		SerialBT.write(tmp, r);
-		SerialBT.flush();
+	void mcu_bt_clear(void)
+	{
+		BUFFER_CLEAR(bt_rx);
+	}
+
+	void mcu_bt_putc(uint8_t c)
+	{
+		while (!BUFFER_TRY_ENQUEUE(bt_tx, &c))
+		{
+			mcu_bt_flush();
+		}
+	}
+
+	void mcu_bt_flush(void)
+	{
+		while (!BUFFER_EMPTY(bt_tx))
+		{
+			uint8_t tmp[BLUETOOTH_TX_BUFFER_SIZE + 1];
+			memset(tmp, 0, sizeof(tmp));
+			uint8_t r = 0;
+
+			BUFFER_READ(bt_tx, tmp, BLUETOOTH_TX_BUFFER_SIZE, r);
+			SerialBT.write(tmp, r);
+			SerialBT.flush();
+		}
 	}
 }
 #endif

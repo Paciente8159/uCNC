@@ -305,23 +305,23 @@ void rp2040_core0_loop()
 // 	}
 // }
 
-void mcu_spi_init(void)
-{
-#ifdef MCU_HAS_SPI
-	spi_config_t spi_conf = {0};
-	spi_conf.mode = SPI_MODE;
-	mcu_spi_config(spi_conf, SPI_FREQ);
-#endif
-}
+// void mcu_spi_init(void)
+// {
+// #ifdef MCU_HAS_SPI
+// 	spi_config_t spi_conf = {0};
+// 	spi_conf.mode = SPI_MODE;
+// 	mcu_spi_config(spi_conf, SPI_FREQ);
+// #endif
+// }
 
-void mcu_spi2_init(void)
-{
-#ifdef MCU_HAS_SPI2
-	spi_config_t spi2_conf = {0};
-	spi2_conf.mode = SPI2_MODE;
-	mcu_spi2_config(spi2_conf, SPI2_FREQ);
-#endif
-}
+// void mcu_spi2_init(void)
+// {
+// #ifdef MCU_HAS_SPI2
+// 	spi_config_t spi2_conf = {0};
+// 	spi2_conf.mode = SPI2_MODE;
+// 	mcu_spi2_config(spi2_conf, SPI2_FREQ);
+// #endif
+// }
 
 void mcu_i2c_init(void)
 {
