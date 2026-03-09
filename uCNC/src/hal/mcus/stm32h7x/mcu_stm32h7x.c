@@ -733,19 +733,6 @@ void mcu_init(void)
 #if SERVOS_MASK > 0
 	servo_timer_init();
 #endif
-#ifdef MCU_HAS_SPI
-	spi_config_t spi_conf = {0};
-	spi_conf.mode = SPI_MODE;
-	mcu_spi_config(spi_conf, SPI_FREQ);
-#endif
-#ifdef MCU_HAS_SPI2
-	spi_config_t spi2_conf = {0};
-	spi2_conf.mode = SPI2_MODE;
-	mcu_spi2_config(spi2_conf, SPI2_FREQ);
-#endif
-#ifdef MCU_HAS_I2C
-	mcu_i2c_config(I2C_FREQ);
-#endif
 
 	stm32_flash_current_offset = 0;
 	mcu_disable_global_isr();
@@ -1047,6 +1034,15 @@ typedef enum spi_port_state_enum
 static volatile spi_port_state_t spi_port_state = SPI_UNKNOWN;
 static bool spi_enable_dma = false;
 
+void mcu_spi_init(void)
+{
+#ifdef MCU_HAS_SPI
+	spi_config_t spi_conf = {0};
+	spi_conf.mode = SPI_MODE;
+	mcu_spi_config(spi_conf, SPI_FREQ);
+#endif
+}
+
 void mcu_spi_config(spi_config_t config, uint32_t frequency)
 {
 	uint8_t div = (frequency >= 2000000UL) ? (uint8_t)(SPI_CLOCK / frequency) : (uint8_t)(SPI_CLOCK_SLOW / frequency);
@@ -1313,6 +1309,15 @@ uint8_t mcu_spi_xmit(uint8_t c)
 #ifdef MCU_HAS_SPI2
 static volatile spi_port_state_t spi2_port_state = SPI_UNKNOWN;
 static bool spi2_enable_dma = false;
+
+void mcu_spi2_init(void)
+{
+#ifdef MCU_HAS_SPI2
+	spi_config_t spi2_conf = {0};
+	spi2_conf.mode = SPI2_MODE;
+	mcu_spi2_config(spi2_conf, SPI2_FREQ);
+#endif
+}
 
 void mcu_spi2_config(spi_config_t config, uint32_t frequency)
 {
