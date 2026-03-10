@@ -374,6 +374,12 @@ uint8_t kinematics_home(void)
 	}
 #endif
 
+	float target[AXIS_COUNT];
+	// sync systems again to the origin (interpolator, motion control and parser - the latest is synched ny motion control)
+	memset(target, 0, sizeof(target));
+	mc_sync_position();
+	mc_get_position(target);
+
 // add the internal offset to the kinematics
 #ifdef SET_ORIGIN_AT_HOME_POS
 	delta_cuboid_z_home = target[AXIS_Z];
