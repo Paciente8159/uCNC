@@ -182,6 +182,8 @@ uint8_t kinematics_home(void)
 	}
 #endif
 #ifndef SET_ORIGIN_AT_HOME_POS
+	float target[AXIS_COUNT];
+	memset(target, 0, sizeof(target));
 	if (g_settings.homing_dir_invert_mask & (1 << AXIS_Z))
 	{
 		target[AXIS_Z] = g_settings.max_distance[AXIS_Z];
