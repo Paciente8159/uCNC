@@ -496,7 +496,7 @@ bool plasma_proto_status(void *args)
 {
 	uint8_t state = plasma_thc_state;
 
-	proto_print("THC:");
+	proto_print("|THC:");
 
 	plasma_thc_extension_send_status();
 
