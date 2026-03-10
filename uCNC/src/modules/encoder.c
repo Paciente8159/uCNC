@@ -408,24 +408,25 @@ uint16_t encoder_get_rpm(uint8_t i)
 {
 	int32_t pos = 0;
 	uint32_t timestamp = 0;
+	uint32_t now;
 
 	// snapshot
 	ATOMIC_CODEBLOCK
 	{
 		pos = encoders_pos[i];
 		timestamp = encoders_tstamp[i];
+		now = mcu_millis();
 	}
 
 	int32_t last_position = encoders_rpm[i].last_position;
-
 	uint32_t diff = (uint32_t)ABS(pos - last_position);
 	uint32_t last_timestamp = encoders_rpm[i].last_timestamp;
 	uint16_t last_rpm = encoders_rpm[i].last_rpm;
-	uint32_t elapsed = (uint32_t)(timestamp - encoders_rpm[i].last_timestamp);
+	uint32_t elapsed = (uint32_t)(timestamp - last_timestamp);
 
-	if (!diff && !elapsed)
+	if (!diff || !elapsed)
 	{
-		if ((mcu_millis() - last_timestamp) < 2500)
+		if ((now - last_timestamp) < 5000)
 			return last_rpm;
 		return 0;
 	}
@@ -435,12 +436,10 @@ uint16_t encoder_get_rpm(uint8_t i)
 	encoders_rpm[i].last_position = pos;
 	encoders_rpm[i].last_timestamp = timestamp;
 	uint16_t new_rpm = (uint16_t)lroundf(rpm);
-	// 25% of previous rpm + 75% of new (rpm smoothing)
-	//	encoders_rpm[i].last_rpm = ((last_rpm + new_rpm + (new_rpm << 1)) >> 2);
 	encoders_rpm[i].last_rpm = new_rpm;
 
 	// returns the RPM
-	return last_rpm;
+	return new_rpm;
 }
 
 /**
