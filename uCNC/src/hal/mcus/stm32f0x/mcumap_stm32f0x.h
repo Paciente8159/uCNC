@@ -3973,6 +3973,9 @@ extern "C"
 #endif
 
 #ifdef MCU_HAS_UART2
+#ifndef BAUDRATE2
+#define BAUDRATE2 BAUDRATE
+#endif
 // this MCU does not work well with both TX and RX interrupt
 // this forces the sync TX method to fix communication
 #define COM2_UART __usart__(UART2_PORT)
