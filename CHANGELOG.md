@@ -8,6 +8,8 @@
 
 ## [1.16.0] - unreleased
 
+[@HuubBuis](https://github.com/HuubBuis)	- added option to mimic Grbl homing motion style via `ENABLE_GRBL_STYLE_HOMING` (#918)
+
 ### Added
 
 - added option to clamp motion beyond software limits while jogging `ALLOW_SOFT_LIMIT_JOG_MOTION_CLAMPING` (#907)
