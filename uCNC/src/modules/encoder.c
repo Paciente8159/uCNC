@@ -35,23 +35,23 @@ static uint32_t encoders_tstamp[ENCODERS][2];
 #ifndef ENC0_TYPE
 #define ENC0_TYPE ENC_TYPE_PULSE
 #endif
-#if ENC0_TYPE==ENC_TYPE_PULSE
+#if ENC0_TYPE == ENC_TYPE_PULSE
 #define ENC0_IO_MASK (1 << (ENC0_PULSE - DIN_PINS_OFFSET))
-#elif ENC0_TYPE==ENC_TYPE_I2C
+#elif ENC0_TYPE == ENC_TYPE_I2C
 #ifndef ENC0_FREQ
 #define ENC0_FREQ 400000
 #endif
 #ifndef ENC0_READ
 #define ENC0_READ read_encoder_mt6701_i2c(&enc0)
 #endif
-#elif ENC0_TYPE==ENC_TYPE_SSI
+#elif ENC0_TYPE == ENC_TYPE_SSI
 #ifndef ENC0_FREQ
 #define ENC0_FREQ 15000000
 #endif
 #ifndef ENC0_READ
 #define ENC0_READ read_encoder_mt6701_ssi(&enc0)
 #endif
-#elif ENC0_TYPE==ENC_TYPE_CUSTOM
+#elif ENC0_TYPE == ENC_TYPE_CUSTOM
 #ifndef ENC0_READ
 #define ENC0_READ enc_custom_read(ENC0)
 #endif
@@ -67,23 +67,23 @@ static uint32_t encoders_tstamp[ENCODERS][2];
 #ifndef ENC1_TYPE
 #define ENC1_TYPE ENC_TYPE_PULSE
 #endif
-#if ENC1_TYPE==ENC_TYPE_PULSE
+#if ENC1_TYPE == ENC_TYPE_PULSE
 #define ENC1_IO_MASK (1 << (ENC1_PULSE - DIN_PINS_OFFSET))
-#elif ENC1_TYPE==ENC_TYPE_I2C
+#elif ENC1_TYPE == ENC_TYPE_I2C
 #ifndef ENC1_FREQ
 #define ENC1_FREQ 400000
 #endif
 #ifndef ENC1_READ
 #define ENC1_READ read_encoder_mt6701_i2c(&enc1)
 #endif
-#elif ENC1_TYPE==ENC_TYPE_SSI
+#elif ENC1_TYPE == ENC_TYPE_SSI
 #ifndef ENC1_FREQ
 #define ENC1_FREQ 15000000
 #endif
 #ifndef ENC1_READ
 #define ENC1_READ read_encoder_mt6701_ssi(&enc1)
 #endif
-#elif ENC1_TYPE==ENC_TYPE_CUSTOM
+#elif ENC1_TYPE == ENC_TYPE_CUSTOM
 #ifndef ENC1_READ
 #define ENC1_READ enc_custom_read(ENC1)
 #endif
@@ -99,23 +99,23 @@ static uint32_t encoders_tstamp[ENCODERS][2];
 #ifndef ENC2_TYPE
 #define ENC2_TYPE ENC_TYPE_PULSE
 #endif
-#if ENC2_TYPE==ENC_TYPE_PULSE
+#if ENC2_TYPE == ENC_TYPE_PULSE
 #define ENC2_IO_MASK (1 << (ENC2_PULSE - DIN_PINS_OFFSET))
-#elif ENC2_TYPE==ENC_TYPE_I2C
+#elif ENC2_TYPE == ENC_TYPE_I2C
 #ifndef ENC2_FREQ
 #define ENC2_FREQ 400000
 #endif
 #ifndef ENC2_READ
 #define ENC2_READ read_encoder_mt6701_i2c(&enc2)
 #endif
-#elif ENC2_TYPE==ENC_TYPE_SSI
+#elif ENC2_TYPE == ENC_TYPE_SSI
 #ifndef ENC2_FREQ
 #define ENC2_FREQ 15000000
 #endif
 #ifndef ENC2_READ
 #define ENC2_READ read_encoder_mt6701_ssi(&enc2)
 #endif
-#elif ENC2_TYPE==ENC_TYPE_CUSTOM
+#elif ENC2_TYPE == ENC_TYPE_CUSTOM
 #ifndef ENC2_READ
 #define ENC2_READ enc_custom_read(ENC2)
 #endif
@@ -131,23 +131,23 @@ static uint32_t encoders_tstamp[ENCODERS][2];
 #ifndef ENC3_TYPE
 #define ENC3_TYPE ENC_TYPE_PULSE
 #endif
-#if ENC3_TYPE==ENC_TYPE_PULSE
+#if ENC3_TYPE == ENC_TYPE_PULSE
 #define ENC3_IO_MASK (1 << (ENC3_PULSE - DIN_PINS_OFFSET))
-#elif ENC3_TYPE==ENC_TYPE_I2C
+#elif ENC3_TYPE == ENC_TYPE_I2C
 #ifndef ENC3_FREQ
 #define ENC3_FREQ 400000
 #endif
 #ifndef ENC3_READ
 #define ENC3_READ read_encoder_mt6701_i2c(&enc3)
 #endif
-#elif ENC3_TYPE==ENC_TYPE_SSI
+#elif ENC3_TYPE == ENC_TYPE_SSI
 #ifndef ENC3_FREQ
 #define ENC3_FREQ 15000000
 #endif
 #ifndef ENC3_READ
 #define ENC3_READ read_encoder_mt6701_ssi(&enc3)
 #endif
-#elif ENC3_TYPE==ENC_TYPE_CUSTOM
+#elif ENC3_TYPE == ENC_TYPE_CUSTOM
 #ifndef ENC3_READ
 #define ENC3_READ enc_custom_read(ENC3)
 #endif
@@ -163,23 +163,23 @@ static uint32_t encoders_tstamp[ENCODERS][2];
 #ifndef ENC4_TYPE
 #define ENC4_TYPE ENC_TYPE_PULSE
 #endif
-#if ENC4_TYPE==ENC_TYPE_PULSE
+#if ENC4_TYPE == ENC_TYPE_PULSE
 #define ENC4_IO_MASK (1 << (ENC4_PULSE - DIN_PINS_OFFSET))
-#elif ENC4_TYPE==ENC_TYPE_I2C
+#elif ENC4_TYPE == ENC_TYPE_I2C
 #ifndef ENC4_FREQ
 #define ENC4_FREQ 400000
 #endif
 #ifndef ENC4_READ
 #define ENC4_READ read_encoder_mt6701_i2c(&enc4)
 #endif
-#elif ENC4_TYPE==ENC_TYPE_SSI
+#elif ENC4_TYPE == ENC_TYPE_SSI
 #ifndef ENC4_FREQ
 #define ENC4_FREQ 15000000
 #endif
 #ifndef ENC4_READ
 #define ENC4_READ read_encoder_mt6701_ssi(&enc4)
 #endif
-#elif ENC4_TYPE==ENC_TYPE_CUSTOM
+#elif ENC4_TYPE == ENC_TYPE_CUSTOM
 #ifndef ENC4_READ
 #define ENC4_READ enc_custom_read(ENC4)
 #endif
@@ -195,23 +195,23 @@ static uint32_t encoders_tstamp[ENCODERS][2];
 #ifndef ENC5_TYPE
 #define ENC5_TYPE ENC_TYPE_PULSE
 #endif
-#if ENC5_TYPE==ENC_TYPE_PULSE
+#if ENC5_TYPE == ENC_TYPE_PULSE
 #define ENC5_IO_MASK (1 << (ENC5_PULSE - DIN_PINS_OFFSET))
-#elif ENC5_TYPE==ENC_TYPE_I2C
+#elif ENC5_TYPE == ENC_TYPE_I2C
 #ifndef ENC5_FREQ
 #define ENC5_FREQ 400000
 #endif
 #ifndef ENC5_READ
 #define ENC5_READ read_encoder_mt6701_i2c(&enc5)
 #endif
-#elif ENC5_TYPE==ENC_TYPE_SSI
+#elif ENC5_TYPE == ENC_TYPE_SSI
 #ifndef ENC5_FREQ
 #define ENC5_FREQ 15000000
 #endif
 #ifndef ENC5_READ
 #define ENC5_READ read_encoder_mt6701_ssi(&enc5)
 #endif
-#elif ENC5_TYPE==ENC_TYPE_CUSTOM
+#elif ENC5_TYPE == ENC_TYPE_CUSTOM
 #ifndef ENC5_READ
 #define ENC5_READ enc_custom_read(ENC5)
 #endif
@@ -227,23 +227,23 @@ static uint32_t encoders_tstamp[ENCODERS][2];
 #ifndef ENC6_TYPE
 #define ENC6_TYPE ENC_TYPE_PULSE
 #endif
-#if ENC6_TYPE==ENC_TYPE_PULSE
+#if ENC6_TYPE == ENC_TYPE_PULSE
 #define ENC6_IO_MASK (1 << (ENC6_PULSE - DIN_PINS_OFFSET))
-#elif ENC6_TYPE==ENC_TYPE_I2C
+#elif ENC6_TYPE == ENC_TYPE_I2C
 #ifndef ENC6_FREQ
 #define ENC6_FREQ 400000
 #endif
 #ifndef ENC6_READ
 #define ENC6_READ read_encoder_mt6701_i2c(&enc6)
 #endif
-#elif ENC6_TYPE==ENC_TYPE_SSI
+#elif ENC6_TYPE == ENC_TYPE_SSI
 #ifndef ENC6_FREQ
 #define ENC6_FREQ 15000000
 #endif
 #ifndef ENC6_READ
 #define ENC6_READ read_encoder_mt6701_ssi(&enc6)
 #endif
-#elif ENC6_TYPE==ENC_TYPE_CUSTOM
+#elif ENC6_TYPE == ENC_TYPE_CUSTOM
 #ifndef ENC6_READ
 #define ENC6_READ enc_custom_read(ENC6)
 #endif
@@ -259,23 +259,23 @@ static uint32_t encoders_tstamp[ENCODERS][2];
 #ifndef ENC7_TYPE
 #define ENC7_TYPE ENC_TYPE_PULSE
 #endif
-#if ENC7_TYPE==ENC_TYPE_PULSE
+#if ENC7_TYPE == ENC_TYPE_PULSE
 #define ENC7_IO_MASK (1 << (ENC7_PULSE - DIN_PINS_OFFSET))
-#elif ENC7_TYPE==ENC_TYPE_I2C
+#elif ENC7_TYPE == ENC_TYPE_I2C
 #ifndef ENC7_FREQ
 #define ENC7_FREQ 400000
 #endif
 #ifndef ENC7_READ
 #define ENC7_READ read_encoder_mt6701_i2c(&enc7)
 #endif
-#elif ENC7_TYPE==ENC_TYPE_SSI
+#elif ENC7_TYPE == ENC_TYPE_SSI
 #ifndef ENC7_FREQ
 #define ENC7_FREQ 15000000
 #endif
 #ifndef ENC7_READ
 #define ENC7_READ read_encoder_mt6701_ssi(&enc7)
 #endif
-#elif ENC7_TYPE==ENC_TYPE_CUSTOM
+#elif ENC7_TYPE == ENC_TYPE_CUSTOM
 #ifndef ENC7_READ
 #define ENC7_READ enc_custom_read(ENC7)
 #endif
@@ -395,7 +395,7 @@ CREATE_HOOK(enc7_index);
  * Additional read functions for other types of encoders can be added later
  * For now support for the MT6701 is added
  */
-static uint16_t encoder_last_read[ENCODERS];
+static uint16_t encoder_last_read[ENCODERS] __attribute__((unused));
 uint16_t read_encoder_mt6701_i2c(softi2c_port_t *port)
 {
 	uint8_t reg = 0x03;
