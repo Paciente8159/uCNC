@@ -56,6 +56,15 @@ extern "C"
 	DECL_HOOK(enc6_index, void);
 	DECL_HOOK(enc7_index, void);
 
+	void enc0_pulse(void);
+	void enc1_pulse(void);
+	void enc2_pulse(void);
+	void enc3_pulse(void);
+	void enc4_pulse(void);
+	void enc5_pulse(void);
+	void enc6_pulse(void);
+	void enc7_pulse(void);
+
 	int32_t encoder_get_position(uint8_t i);
 	void encoder_print_values(void);
 	void encoder_reset_position(uint8_t i, int32_t position);
