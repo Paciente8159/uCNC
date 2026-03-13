@@ -435,6 +435,10 @@ uint32_t encoder_get_delta(uint8_t i)
 uint16_t encoder_get_rpm(uint8_t i)
 {
 	uint32_t delta = encoder_get_delta(i);
+	if (!delta)
+	{
+		return 0;
+	}
 	uint32_t rpm = 60000000UL / delta / g_settings.encoders_resolution[i];
 
 	return (uint16_t)rpm;
