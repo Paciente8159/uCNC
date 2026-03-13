@@ -391,6 +391,15 @@ CREATE_HOOK(enc6_index);
 CREATE_HOOK(enc7_index);
 #endif
 
+void __attribute__((weak)) enc0_pulse(void) {}
+void __attribute__((weak)) enc1_pulse(void) {}
+void __attribute__((weak)) enc2_pulse(void) {}
+void __attribute__((weak)) enc3_pulse(void) {}
+void __attribute__((weak)) enc4_pulse(void) {}
+void __attribute__((weak)) enc5_pulse(void) {}
+void __attribute__((weak)) enc6_pulse(void) {}
+void __attribute__((weak)) enc7_pulse(void) {}
+
 /**
  * Additional read functions for other types of encoders can be added later
  * For now support for the MT6701 is added
@@ -500,6 +509,7 @@ void encoders_update(uint8_t pulse, uint8_t diff)
 		encoders_tstamp[ENC0][1] = encoders_tstamp[ENC0][0];
 		encoders_tstamp[ENC0][0] = micros;
 #endif
+		enc0_pulse();
 #if (defined(ENC0_INDEX) && !defined(ENC0_INDEX_IO_MASK))
 		if (io_get_input(ENC0_INDEX))
 		{
@@ -524,6 +534,7 @@ void encoders_update(uint8_t pulse, uint8_t diff)
 		encoders_tstamp[ENC1][1] = encoders_tstamp[ENC1][0];
 		encoders_tstamp[ENC1][0] = micros;
 #endif
+		enc1_pulse();
 #if (defined(ENC1_INDEX) && !defined(ENC1_INDEX_IO_MASK))
 		if (io_get_input(ENC1_INDEX))
 		{
@@ -548,6 +559,7 @@ void encoders_update(uint8_t pulse, uint8_t diff)
 		encoders_tstamp[ENC2][1] = encoders_tstamp[ENC2][0];
 		encoders_tstamp[ENC2][0] = micros;
 #endif
+		enc2_pulse();
 #if (defined(ENC2_INDEX) && !defined(ENC2_INDEX_IO_MASK))
 		if (io_get_input(ENC2_INDEX))
 		{
@@ -572,6 +584,7 @@ void encoders_update(uint8_t pulse, uint8_t diff)
 		encoders_tstamp[ENC3][1] = encoders_tstamp[ENC3][0];
 		encoders_tstamp[ENC3][0] = micros;
 #endif
+		enc3_pulse();
 #if (defined(ENC3_INDEX) && !defined(ENC3_INDEX_IO_MASK))
 		if (io_get_input(ENC3_INDEX))
 		{
@@ -596,6 +609,7 @@ void encoders_update(uint8_t pulse, uint8_t diff)
 		encoders_tstamp[ENC4][1] = encoders_tstamp[ENC4][0];
 		encoders_tstamp[ENC4][0] = micros;
 #endif
+		enc4_pulse();
 #if (defined(ENC4_INDEX) && !defined(ENC4_INDEX_IO_MASK))
 		if (io_get_input(ENC4_INDEX))
 		{
@@ -620,6 +634,7 @@ void encoders_update(uint8_t pulse, uint8_t diff)
 		encoders_tstamp[ENC5][1] = encoders_tstamp[ENC5][0];
 		encoders_tstamp[ENC5][0] = micros;
 #endif
+		enc5_pulse();
 #if (defined(ENC5_INDEX) && !defined(ENC5_INDEX_IO_MASK))
 		if (io_get_input(ENC5_INDEX))
 		{
@@ -644,6 +659,7 @@ void encoders_update(uint8_t pulse, uint8_t diff)
 		encoders_tstamp[ENC6][1] = encoders_tstamp[ENC6][0];
 		encoders_tstamp[ENC6][0] = micros;
 #endif
+		enc6_pulse();
 #if (defined(ENC6_INDEX) && !defined(ENC6_INDEX_IO_MASK))
 		if (io_get_input(ENC6_INDEX))
 		{
@@ -668,6 +684,7 @@ void encoders_update(uint8_t pulse, uint8_t diff)
 		encoders_tstamp[ENC7][1] = encoders_tstamp[ENC7][0];
 		encoders_tstamp[ENC7][0] = micros;
 #endif
+		enc7_pulse();
 #if (defined(ENC7_INDEX) && !defined(ENC7_INDEX_IO_MASK))
 		if (io_get_input(ENC7_INDEX))
 		{
