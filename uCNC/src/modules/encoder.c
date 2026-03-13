@@ -23,7 +23,7 @@
 #if ENCODERS > 0
 
 static int32_t encoders_pos[ENCODERS];
-static uint32_t encoders_tstamp[ENCODERS];
+static uint32_t encoders_tstamp[ENCODERS][2];
 
 #if ENCODERS > 0
 #if (!ASSERT_PIN(ENC0_PULSE))
@@ -35,23 +35,23 @@ static uint32_t encoders_tstamp[ENCODERS];
 #ifndef ENC0_TYPE
 #define ENC0_TYPE ENC_TYPE_PULSE
 #endif
-#if ENC0_TYPE == ENC_TYPE_PULSE
+#if ENC0_TYPE==ENC_TYPE_PULSE
 #define ENC0_IO_MASK (1 << (ENC0_PULSE - DIN_PINS_OFFSET))
-#elif ENC0_TYPE == ENC_TYPE_I2C
+#elif ENC0_TYPE==ENC_TYPE_I2C
 #ifndef ENC0_FREQ
 #define ENC0_FREQ 400000
 #endif
 #ifndef ENC0_READ
 #define ENC0_READ read_encoder_mt6701_i2c(&enc0)
 #endif
-#elif ENC0_TYPE == ENC_TYPE_SSI
+#elif ENC0_TYPE==ENC_TYPE_SSI
 #ifndef ENC0_FREQ
 #define ENC0_FREQ 15000000
 #endif
 #ifndef ENC0_READ
 #define ENC0_READ read_encoder_mt6701_ssi(&enc0)
 #endif
-#elif ENC0_TYPE == ENC_TYPE_CUSTOM
+#elif ENC0_TYPE==ENC_TYPE_CUSTOM
 #ifndef ENC0_READ
 #define ENC0_READ enc_custom_read(ENC0)
 #endif
@@ -67,23 +67,23 @@ static uint32_t encoders_tstamp[ENCODERS];
 #ifndef ENC1_TYPE
 #define ENC1_TYPE ENC_TYPE_PULSE
 #endif
-#if ENC1_TYPE == ENC_TYPE_PULSE
+#if ENC1_TYPE==ENC_TYPE_PULSE
 #define ENC1_IO_MASK (1 << (ENC1_PULSE - DIN_PINS_OFFSET))
-#elif ENC1_TYPE == ENC_TYPE_I2C
+#elif ENC1_TYPE==ENC_TYPE_I2C
 #ifndef ENC1_FREQ
 #define ENC1_FREQ 400000
 #endif
 #ifndef ENC1_READ
 #define ENC1_READ read_encoder_mt6701_i2c(&enc1)
 #endif
-#elif ENC1_TYPE == ENC_TYPE_SSI
+#elif ENC1_TYPE==ENC_TYPE_SSI
 #ifndef ENC1_FREQ
 #define ENC1_FREQ 15000000
 #endif
 #ifndef ENC1_READ
 #define ENC1_READ read_encoder_mt6701_ssi(&enc1)
 #endif
-#elif ENC1_TYPE == ENC_TYPE_CUSTOM
+#elif ENC1_TYPE==ENC_TYPE_CUSTOM
 #ifndef ENC1_READ
 #define ENC1_READ enc_custom_read(ENC1)
 #endif
@@ -99,23 +99,23 @@ static uint32_t encoders_tstamp[ENCODERS];
 #ifndef ENC2_TYPE
 #define ENC2_TYPE ENC_TYPE_PULSE
 #endif
-#if ENC2_TYPE == ENC_TYPE_PULSE
+#if ENC2_TYPE==ENC_TYPE_PULSE
 #define ENC2_IO_MASK (1 << (ENC2_PULSE - DIN_PINS_OFFSET))
-#elif ENC2_TYPE == ENC_TYPE_I2C
+#elif ENC2_TYPE==ENC_TYPE_I2C
 #ifndef ENC2_FREQ
 #define ENC2_FREQ 400000
 #endif
 #ifndef ENC2_READ
 #define ENC2_READ read_encoder_mt6701_i2c(&enc2)
 #endif
-#elif ENC2_TYPE == ENC_TYPE_SSI
+#elif ENC2_TYPE==ENC_TYPE_SSI
 #ifndef ENC2_FREQ
 #define ENC2_FREQ 15000000
 #endif
 #ifndef ENC2_READ
 #define ENC2_READ read_encoder_mt6701_ssi(&enc2)
 #endif
-#elif ENC2_TYPE == ENC_TYPE_CUSTOM
+#elif ENC2_TYPE==ENC_TYPE_CUSTOM
 #ifndef ENC2_READ
 #define ENC2_READ enc_custom_read(ENC2)
 #endif
@@ -131,23 +131,23 @@ static uint32_t encoders_tstamp[ENCODERS];
 #ifndef ENC3_TYPE
 #define ENC3_TYPE ENC_TYPE_PULSE
 #endif
-#if ENC3_TYPE == ENC_TYPE_PULSE
+#if ENC3_TYPE==ENC_TYPE_PULSE
 #define ENC3_IO_MASK (1 << (ENC3_PULSE - DIN_PINS_OFFSET))
-#elif ENC3_TYPE == ENC_TYPE_I2C
+#elif ENC3_TYPE==ENC_TYPE_I2C
 #ifndef ENC3_FREQ
 #define ENC3_FREQ 400000
 #endif
 #ifndef ENC3_READ
 #define ENC3_READ read_encoder_mt6701_i2c(&enc3)
 #endif
-#elif ENC3_TYPE == ENC_TYPE_SSI
+#elif ENC3_TYPE==ENC_TYPE_SSI
 #ifndef ENC3_FREQ
 #define ENC3_FREQ 15000000
 #endif
 #ifndef ENC3_READ
 #define ENC3_READ read_encoder_mt6701_ssi(&enc3)
 #endif
-#elif ENC3_TYPE == ENC_TYPE_CUSTOM
+#elif ENC3_TYPE==ENC_TYPE_CUSTOM
 #ifndef ENC3_READ
 #define ENC3_READ enc_custom_read(ENC3)
 #endif
@@ -163,23 +163,23 @@ static uint32_t encoders_tstamp[ENCODERS];
 #ifndef ENC4_TYPE
 #define ENC4_TYPE ENC_TYPE_PULSE
 #endif
-#if ENC4_TYPE == ENC_TYPE_PULSE
+#if ENC4_TYPE==ENC_TYPE_PULSE
 #define ENC4_IO_MASK (1 << (ENC4_PULSE - DIN_PINS_OFFSET))
-#elif ENC4_TYPE == ENC_TYPE_I2C
+#elif ENC4_TYPE==ENC_TYPE_I2C
 #ifndef ENC4_FREQ
 #define ENC4_FREQ 400000
 #endif
 #ifndef ENC4_READ
 #define ENC4_READ read_encoder_mt6701_i2c(&enc4)
 #endif
-#elif ENC4_TYPE == ENC_TYPE_SSI
+#elif ENC4_TYPE==ENC_TYPE_SSI
 #ifndef ENC4_FREQ
 #define ENC4_FREQ 15000000
 #endif
 #ifndef ENC4_READ
 #define ENC4_READ read_encoder_mt6701_ssi(&enc4)
 #endif
-#elif ENC4_TYPE == ENC_TYPE_CUSTOM
+#elif ENC4_TYPE==ENC_TYPE_CUSTOM
 #ifndef ENC4_READ
 #define ENC4_READ enc_custom_read(ENC4)
 #endif
@@ -195,23 +195,23 @@ static uint32_t encoders_tstamp[ENCODERS];
 #ifndef ENC5_TYPE
 #define ENC5_TYPE ENC_TYPE_PULSE
 #endif
-#if ENC5_TYPE == ENC_TYPE_PULSE
+#if ENC5_TYPE==ENC_TYPE_PULSE
 #define ENC5_IO_MASK (1 << (ENC5_PULSE - DIN_PINS_OFFSET))
-#elif ENC5_TYPE == ENC_TYPE_I2C
+#elif ENC5_TYPE==ENC_TYPE_I2C
 #ifndef ENC5_FREQ
 #define ENC5_FREQ 400000
 #endif
 #ifndef ENC5_READ
 #define ENC5_READ read_encoder_mt6701_i2c(&enc5)
 #endif
-#elif ENC5_TYPE == ENC_TYPE_SSI
+#elif ENC5_TYPE==ENC_TYPE_SSI
 #ifndef ENC5_FREQ
 #define ENC5_FREQ 15000000
 #endif
 #ifndef ENC5_READ
 #define ENC5_READ read_encoder_mt6701_ssi(&enc5)
 #endif
-#elif ENC5_TYPE == ENC_TYPE_CUSTOM
+#elif ENC5_TYPE==ENC_TYPE_CUSTOM
 #ifndef ENC5_READ
 #define ENC5_READ enc_custom_read(ENC5)
 #endif
@@ -227,23 +227,23 @@ static uint32_t encoders_tstamp[ENCODERS];
 #ifndef ENC6_TYPE
 #define ENC6_TYPE ENC_TYPE_PULSE
 #endif
-#if ENC6_TYPE == ENC_TYPE_PULSE
+#if ENC6_TYPE==ENC_TYPE_PULSE
 #define ENC6_IO_MASK (1 << (ENC6_PULSE - DIN_PINS_OFFSET))
-#elif ENC6_TYPE == ENC_TYPE_I2C
+#elif ENC6_TYPE==ENC_TYPE_I2C
 #ifndef ENC6_FREQ
 #define ENC6_FREQ 400000
 #endif
 #ifndef ENC6_READ
 #define ENC6_READ read_encoder_mt6701_i2c(&enc6)
 #endif
-#elif ENC6_TYPE == ENC_TYPE_SSI
+#elif ENC6_TYPE==ENC_TYPE_SSI
 #ifndef ENC6_FREQ
 #define ENC6_FREQ 15000000
 #endif
 #ifndef ENC6_READ
 #define ENC6_READ read_encoder_mt6701_ssi(&enc6)
 #endif
-#elif ENC6_TYPE == ENC_TYPE_CUSTOM
+#elif ENC6_TYPE==ENC_TYPE_CUSTOM
 #ifndef ENC6_READ
 #define ENC6_READ enc_custom_read(ENC6)
 #endif
@@ -259,23 +259,23 @@ static uint32_t encoders_tstamp[ENCODERS];
 #ifndef ENC7_TYPE
 #define ENC7_TYPE ENC_TYPE_PULSE
 #endif
-#if ENC7_TYPE == ENC_TYPE_PULSE
+#if ENC7_TYPE==ENC_TYPE_PULSE
 #define ENC7_IO_MASK (1 << (ENC7_PULSE - DIN_PINS_OFFSET))
-#elif ENC7_TYPE == ENC_TYPE_I2C
+#elif ENC7_TYPE==ENC_TYPE_I2C
 #ifndef ENC7_FREQ
 #define ENC7_FREQ 400000
 #endif
 #ifndef ENC7_READ
 #define ENC7_READ read_encoder_mt6701_i2c(&enc7)
 #endif
-#elif ENC7_TYPE == ENC_TYPE_SSI
+#elif ENC7_TYPE==ENC_TYPE_SSI
 #ifndef ENC7_FREQ
 #define ENC7_FREQ 15000000
 #endif
 #ifndef ENC7_READ
 #define ENC7_READ read_encoder_mt6701_ssi(&enc7)
 #endif
-#elif ENC7_TYPE == ENC_TYPE_CUSTOM
+#elif ENC7_TYPE==ENC_TYPE_CUSTOM
 #ifndef ENC7_READ
 #define ENC7_READ enc_custom_read(ENC7)
 #endif
@@ -283,6 +283,31 @@ static uint32_t encoders_tstamp[ENCODERS];
 #endif
 
 #define ENCODERS_IO_MASK (ENC0_IO_MASK | ENC1_IO_MASK | ENC2_IO_MASK | ENC3_IO_MASK | ENC4_IO_MASK | ENC5_IO_MASK | ENC6_IO_MASK | ENC7_IO_MASK)
+
+#if ((ENC0_INDEX == DIN0 && defined(DIN0_ISR)) || (ENC0_INDEX == DIN1 && defined(DIN1_ISR)) || (ENC0_INDEX == DIN2 && defined(DIN2_ISR)) || (ENC0_INDEX == DIN3 && defined(DIN3_ISR)) || (ENC0_INDEX == DIN4 && defined(DIN4_ISR)) || (ENC0_INDEX == DIN5 && defined(DIN5_ISR)) || (ENC0_INDEX == DIN6 && defined(DIN6_ISR)) || (ENC0_INDEX == DIN7 && defined(DIN7_ISR)))
+#define ENC0_INDEX_IO_MASK (1 << (ENC0_INDEX - DIN_PINS_OFFSET))
+#endif
+#if ((ENC1_INDEX == DIN0 && defined(DIN0_ISR)) || (ENC1_INDEX == DIN1 && defined(DIN1_ISR)) || (ENC1_INDEX == DIN2 && defined(DIN2_ISR)) || (ENC1_INDEX == DIN3 && defined(DIN3_ISR)) || (ENC1_INDEX == DIN4 && defined(DIN4_ISR)) || (ENC1_INDEX == DIN5 && defined(DIN5_ISR)) || (ENC1_INDEX == DIN6 && defined(DIN6_ISR)) || (ENC1_INDEX == DIN7 && defined(DIN7_ISR)))
+#define ENC1_INDEX_IO_MASK (1 << (ENC1_INDEX - DIN_PINS_OFFSET))
+#endif
+#if ((ENC2_INDEX == DIN0 && defined(DIN0_ISR)) || (ENC2_INDEX == DIN1 && defined(DIN1_ISR)) || (ENC2_INDEX == DIN2 && defined(DIN2_ISR)) || (ENC2_INDEX == DIN3 && defined(DIN3_ISR)) || (ENC2_INDEX == DIN4 && defined(DIN4_ISR)) || (ENC2_INDEX == DIN5 && defined(DIN5_ISR)) || (ENC2_INDEX == DIN6 && defined(DIN6_ISR)) || (ENC2_INDEX == DIN7 && defined(DIN7_ISR)))
+#define ENC2_INDEX_IO_MASK (1 << (ENC2_INDEX - DIN_PINS_OFFSET))
+#endif
+#if ((ENC3_INDEX == DIN0 && defined(DIN0_ISR)) || (ENC3_INDEX == DIN1 && defined(DIN1_ISR)) || (ENC3_INDEX == DIN2 && defined(DIN2_ISR)) || (ENC3_INDEX == DIN3 && defined(DIN3_ISR)) || (ENC3_INDEX == DIN4 && defined(DIN4_ISR)) || (ENC3_INDEX == DIN5 && defined(DIN5_ISR)) || (ENC3_INDEX == DIN6 && defined(DIN6_ISR)) || (ENC3_INDEX == DIN7 && defined(DIN7_ISR)))
+#define ENC3_INDEX_IO_MASK (1 << (ENC3_INDEX - DIN_PINS_OFFSET))
+#endif
+#if ((ENC4_INDEX == DIN0 && defined(DIN0_ISR)) || (ENC4_INDEX == DIN1 && defined(DIN1_ISR)) || (ENC4_INDEX == DIN2 && defined(DIN2_ISR)) || (ENC4_INDEX == DIN3 && defined(DIN3_ISR)) || (ENC4_INDEX == DIN4 && defined(DIN4_ISR)) || (ENC4_INDEX == DIN5 && defined(DIN5_ISR)) || (ENC4_INDEX == DIN6 && defined(DIN6_ISR)) || (ENC4_INDEX == DIN7 && defined(DIN7_ISR)))
+#define ENC4_INDEX_IO_MASK (1 << (ENC4_INDEX - DIN_PINS_OFFSET))
+#endif
+#if ((ENC5_INDEX == DIN0 && defined(DIN0_ISR)) || (ENC5_INDEX == DIN1 && defined(DIN1_ISR)) || (ENC5_INDEX == DIN2 && defined(DIN2_ISR)) || (ENC5_INDEX == DIN3 && defined(DIN3_ISR)) || (ENC5_INDEX == DIN4 && defined(DIN4_ISR)) || (ENC5_INDEX == DIN5 && defined(DIN5_ISR)) || (ENC5_INDEX == DIN6 && defined(DIN6_ISR)) || (ENC5_INDEX == DIN7 && defined(DIN7_ISR)))
+#define ENC5_INDEX_IO_MASK (1 << (ENC5_INDEX - DIN_PINS_OFFSET))
+#endif
+#if ((ENC6_INDEX == DIN0 && defined(DIN0_ISR)) || (ENC6_INDEX == DIN1 && defined(DIN1_ISR)) || (ENC6_INDEX == DIN2 && defined(DIN2_ISR)) || (ENC6_INDEX == DIN3 && defined(DIN3_ISR)) || (ENC6_INDEX == DIN4 && defined(DIN4_ISR)) || (ENC6_INDEX == DIN5 && defined(DIN5_ISR)) || (ENC6_INDEX == DIN6 && defined(DIN6_ISR)) || (ENC6_INDEX == DIN7 && defined(DIN7_ISR)))
+#define ENC6_INDEX_IO_MASK (1 << (ENC6_INDEX - DIN_PINS_OFFSET))
+#endif
+#if ((ENC7_INDEX == DIN0 && defined(DIN0_ISR)) || (ENC7_INDEX == DIN1 && defined(DIN1_ISR)) || (ENC7_INDEX == DIN2 && defined(DIN2_ISR)) || (ENC7_INDEX == DIN3 && defined(DIN3_ISR)) || (ENC7_INDEX == DIN4 && defined(DIN4_ISR)) || (ENC7_INDEX == DIN5 && defined(DIN5_ISR)) || (ENC7_INDEX == DIN6 && defined(DIN6_ISR)) || (ENC7_INDEX == DIN7 && defined(DIN7_ISR)))
+#define ENC7_INDEX_IO_MASK (1 << (ENC7_INDEX - DIN_PINS_OFFSET))
+#endif
 
 #if ENCODERS > 0
 #if ENC0_TYPE == ENC_TYPE_I2C
@@ -395,51 +420,24 @@ uint16_t read_encoder_mt6701_ssi(softspi_port_t *port)
 	return (uint16_t)((data >> 10) & 0x3fff);
 }
 
-typedef struct encoder_rpm_
+uint32_t encoder_get_delta(uint8_t i)
 {
-	uint16_t last_rpm;
-	int32_t last_position;
-	uint32_t last_timestamp;
-} encoder_rpm_t;
+	uint32_t t0 = 0, t1 = 0;
+	ATOMIC_CODEBLOCK
+	{
+		t0 = encoders_tstamp[i][0]; // last timestamp
+		t1 = encoders_tstamp[i][1]; // previous timestamp
+	}
 
-static encoder_rpm_t encoders_rpm[ENCODERS];
+	return (t0 - t1);
+}
 
 uint16_t encoder_get_rpm(uint8_t i)
 {
-	int32_t pos = 0;
-	uint32_t timestamp = 0;
-	uint32_t now;
+	uint32_t delta = encoder_get_delta(i);
+	uint32_t rpm = 60000000UL / delta / g_settings.encoders_resolution[i];
 
-	// snapshot
-	ATOMIC_CODEBLOCK
-	{
-		pos = encoders_pos[i];
-		timestamp = encoders_tstamp[i];
-		now = mcu_millis();
-	}
-
-	int32_t last_position = encoders_rpm[i].last_position;
-	uint32_t diff = (uint32_t)ABS(pos - last_position);
-	uint32_t last_timestamp = encoders_rpm[i].last_timestamp;
-	uint16_t last_rpm = encoders_rpm[i].last_rpm;
-	uint32_t elapsed = (uint32_t)(timestamp - last_timestamp);
-
-	if (!diff || !elapsed)
-	{
-		if ((now - last_timestamp) < 5000)
-			return last_rpm;
-		return 0;
-	}
-
-	float rpm = (float)diff / (float)g_settings.encoders_resolution[i];
-	rpm *= 60000.0f / (float)elapsed;
-	encoders_rpm[i].last_position = pos;
-	encoders_rpm[i].last_timestamp = timestamp;
-	uint16_t new_rpm = (uint16_t)lroundf(rpm);
-	encoders_rpm[i].last_rpm = new_rpm;
-
-	// returns the RPM
-	return new_rpm;
+	return (uint16_t)rpm;
 }
 
 /**
@@ -483,146 +481,202 @@ void encoders_update(uint8_t pulse, uint8_t diff)
 	uint8_t dir = encoder_read_dirs();
 #endif
 
-	uint32_t millis = mcu_millis();
-	// leave only those active
+	uint32_t micros = mcu_micros();
+	// leave only those that transitioned from off to on
 	diff &= pulse;
 
 // checks if pulse pin changed state and is logical 1
 #if ENCODERS > 0
 	if ((diff & ENC0_IO_MASK))
 	{
-		encoders_tstamp[0] = millis;
 #if (ENC0_PULSE != ENC0_DIR)
-		encoders_pos[0] += (dir & ENC0_IO_MASK) ? 1 : -1;
+		encoders_pos[ENC0] += (dir & ENC0_IO_MASK) ? 1 : -1;
 #else
-		encoders_pos[0]++;
+		encoders_pos[ENC0]++;
+		encoders_tstamp[ENC0][1] = encoders_tstamp[ENC0][0];
+		encoders_tstamp[ENC0][0] = micros;
 #endif
-#ifdef ENC0_INDEX
+#if (defined(ENC0_INDEX) && !defined(ENC0_INDEX_IO_MASK))
 		if (io_get_input(ENC0_INDEX))
 		{
 			HOOK_INVOKE(enc0_index);
 		}
 #endif
 	}
+#if (defined(ENC0_INDEX) && defined(ENC0_INDEX_IO_MASK))
+	if ((diff & ENC0_INDEX_IO_MASK))
+	{
+		HOOK_INVOKE(enc0_index);
+	}
+#endif
 #endif
 #if ENCODERS > 1
 	if ((diff & ENC1_IO_MASK))
 	{
-		encoders_tstamp[1] = millis;
 #if (ENC1_PULSE != ENC1_DIR)
-		encoders_pos[1] += (dir & ENC1_IO_MASK) ? 1 : -1;
+		encoders_pos[ENC1] += (dir & ENC1_IO_MASK) ? 1 : -1;
 #else
-		encoders_pos[1]++;
+		encoders_pos[ENC1]++;
+		encoders_tstamp[ENC1][1] = encoders_tstamp[ENC1][0];
+		encoders_tstamp[ENC1][0] = micros;
 #endif
-#ifdef ENC1_INDEX
+#if (defined(ENC1_INDEX) && !defined(ENC1_INDEX_IO_MASK))
 		if (io_get_input(ENC1_INDEX))
 		{
 			HOOK_INVOKE(enc1_index);
 		}
 #endif
 	}
+#if (defined(ENC1_INDEX) && defined(ENC1_INDEX_IO_MASK))
+	if ((diff & ENC1_INDEX_IO_MASK))
+	{
+		HOOK_INVOKE(enc1_index);
+	}
+#endif
 #endif
 #if ENCODERS > 2
 	if ((diff & ENC2_IO_MASK))
 	{
-		encoders_tstamp[2] = millis;
 #if (ENC2_PULSE != ENC2_DIR)
-		encoders_pos[2] += (dir & ENC2_IO_MASK) ? 1 : -1;
+		encoders_pos[ENC2] += (dir & ENC2_IO_MASK) ? 1 : -1;
 #else
-		encoders_pos[2]++;
+		encoders_pos[ENC2]++;
+		encoders_tstamp[ENC2][1] = encoders_tstamp[ENC2][0];
+		encoders_tstamp[ENC2][0] = micros;
 #endif
-#ifdef ENC2_INDEX
+#if (defined(ENC2_INDEX) && !defined(ENC2_INDEX_IO_MASK))
 		if (io_get_input(ENC2_INDEX))
 		{
 			HOOK_INVOKE(enc2_index);
 		}
 #endif
 	}
+#if (defined(ENC2_INDEX) && defined(ENC2_INDEX_IO_MASK))
+	if ((diff & ENC2_INDEX_IO_MASK))
+	{
+		HOOK_INVOKE(enc2_index);
+	}
+#endif
 #endif
 #if ENCODERS > 3
 	if ((diff & ENC3_IO_MASK))
 	{
-		encoders_tstamp[3] = millis;
 #if (ENC3_PULSE != ENC3_DIR)
-		encoders_pos[3] += (dir & ENC3_IO_MASK) ? 1 : -1;
+		encoders_pos[ENC3] += (dir & ENC3_IO_MASK) ? 1 : -1;
 #else
-		encoders_pos[3]++;
+		encoders_pos[ENC3]++;
+		encoders_tstamp[ENC3][1] = encoders_tstamp[ENC3][0];
+		encoders_tstamp[ENC3][0] = micros;
 #endif
-#ifdef ENC3_INDEX
+#if (defined(ENC3_INDEX) && !defined(ENC3_INDEX_IO_MASK))
 		if (io_get_input(ENC3_INDEX))
 		{
 			HOOK_INVOKE(enc3_index);
 		}
 #endif
 	}
+#if (defined(ENC3_INDEX) && defined(ENC3_INDEX_IO_MASK))
+	if ((diff & ENC3_INDEX_IO_MASK))
+	{
+		HOOK_INVOKE(enc3_index);
+	}
+#endif
 #endif
 #if ENCODERS > 4
 	if ((diff & ENC4_IO_MASK))
 	{
-		encoders_tstamp[4] = millis;
 #if (ENC4_PULSE != ENC4_DIR)
-		encoders_pos[4] += (dir & ENC4_IO_MASK) ? 1 : -1;
+		encoders_pos[ENC4] += (dir & ENC4_IO_MASK) ? 1 : -1;
 #else
-		encoders_pos[4]++;
+		encoders_pos[ENC4]++;
+		encoders_tstamp[ENC4][1] = encoders_tstamp[ENC4][0];
+		encoders_tstamp[ENC4][0] = micros;
 #endif
-#ifdef ENC4_INDEX
+#if (defined(ENC4_INDEX) && !defined(ENC4_INDEX_IO_MASK))
 		if (io_get_input(ENC4_INDEX))
 		{
 			HOOK_INVOKE(enc4_index);
 		}
 #endif
 	}
+#if (defined(ENC4_INDEX) && defined(ENC4_INDEX_IO_MASK))
+	if ((diff & ENC4_INDEX_IO_MASK))
+	{
+		HOOK_INVOKE(enc4_index);
+	}
+#endif
 #endif
 #if ENCODERS > 5
 	if ((diff & ENC5_IO_MASK))
 	{
-		encoders_tstamp[5] = millis;
 #if (ENC5_PULSE != ENC5_DIR)
-		encoders_pos[5] += (dir & ENC5_IO_MASK) ? 1 : -1;
+		encoders_pos[ENC5] += (dir & ENC5_IO_MASK) ? 1 : -1;
 #else
-		encoders_pos[5]++;
+		encoders_pos[ENC5]++;
+		encoders_tstamp[ENC5][1] = encoders_tstamp[ENC5][0];
+		encoders_tstamp[ENC5][0] = micros;
 #endif
-#ifdef ENC5_INDEX
+#if (defined(ENC5_INDEX) && !defined(ENC5_INDEX_IO_MASK))
 		if (io_get_input(ENC5_INDEX))
 		{
 			HOOK_INVOKE(enc5_index);
 		}
 #endif
 	}
+#if (defined(ENC5_INDEX) && defined(ENC5_INDEX_IO_MASK))
+	if ((diff & ENC5_INDEX_IO_MASK))
+	{
+		HOOK_INVOKE(enc5_index);
+	}
+#endif
 #endif
 #if ENCODERS > 6
 	if ((diff & ENC6_IO_MASK))
 	{
-		encoders_tstamp[6] = millis;
 #if (ENC6_PULSE != ENC6_DIR)
-		encoders_pos[6] += (dir & ENC6_IO_MASK) ? 1 : -1;
+		encoders_pos[ENC6] += (dir & ENC6_IO_MASK) ? 1 : -1;
 #else
-		encoders_pos[6]++;
+		encoders_pos[ENC6]++;
+		encoders_tstamp[ENC6][1] = encoders_tstamp[ENC6][0];
+		encoders_tstamp[ENC6][0] = micros;
 #endif
-#ifdef ENC6_INDEX
+#if (defined(ENC6_INDEX) && !defined(ENC6_INDEX_IO_MASK))
 		if (io_get_input(ENC6_INDEX))
 		{
 			HOOK_INVOKE(enc6_index);
 		}
 #endif
 	}
+#if (defined(ENC6_INDEX) && defined(ENC6_INDEX_IO_MASK))
+	if ((diff & ENC6_INDEX_IO_MASK))
+	{
+		HOOK_INVOKE(enc6_index);
+	}
+#endif
 #endif
 #if ENCODERS > 7
 	if ((diff & ENC7_IO_MASK))
 	{
-		encoders_tstamp[7] = millis;
 #if (ENC7_PULSE != ENC7_DIR)
-		encoders_pos[7] += (dir & ENC7_IO_MASK) ? 1 : -1;
+		encoders_pos[ENC7] += (dir & ENC7_IO_MASK) ? 1 : -1;
 #else
-		encoders_pos[7]++;
+		encoders_pos[ENC7]++;
+		encoders_tstamp[ENC7][1] = encoders_tstamp[ENC7][0];
+		encoders_tstamp[ENC7][0] = micros;
 #endif
-#ifdef ENC7_INDEX
+#if (defined(ENC7_INDEX) && !defined(ENC7_INDEX_IO_MASK))
 		if (io_get_input(ENC7_INDEX))
 		{
 			HOOK_INVOKE(enc7_index);
 		}
 #endif
 	}
+#if (defined(ENC7_INDEX) && defined(ENC7_INDEX_IO_MASK))
+	if ((diff & ENC7_INDEX_IO_MASK))
+	{
+		HOOK_INVOKE(enc7_index);
+	}
+#endif
 #endif
 }
 #else
