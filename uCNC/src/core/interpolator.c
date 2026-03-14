@@ -84,16 +84,20 @@ void itp_update_feed(float step_frequency)
 	p->feed_sqr = step_frequency * step_frequency;
 	itp_needs_update = true;
 
-	for (uint8_t i = 0; i < INTERPOLATOR_BUFFER_SIZE; i++)
-	{
-		uint16_t ticks, presc;
-		float upfeed = step_frequency * (1 << (itp_sgm_data[i].dss_level));
-		mcu_freq_to_clocks(upfeed, &ticks, &presc);
-		itp_sgm_data[i].timer_counter = ticks;
-		itp_sgm_data[i].timer_prescaller = presc;
-		// mark for update
-		itp_sgm_data[i].flags |= ITP_UPDATE_ISR;
-	}
+	/**
+	 * DO NOT UPDATE STEPS ALREADY ON THE OUTPUT BUFFER
+	 */
+
+	// for (uint8_t i = 0; i < INTERPOLATOR_BUFFER_SIZE; i++)
+	// {
+	// 	uint16_t ticks, presc;
+	// 	float upfeed = step_frequency * (1 << (itp_sgm_data[i].dss_level));
+	// 	mcu_freq_to_clocks(upfeed, &ticks, &presc);
+	// 	itp_sgm_data[i].timer_counter = ticks;
+	// 	itp_sgm_data[i].timer_prescaller = presc;
+	// 	// mark for update
+	// 	itp_sgm_data[i].flags |= ITP_UPDATE_ISR;
+	// }
 }
 
 bool itp_sync_ready(void)
@@ -579,14 +583,15 @@ void itp_run(void)
 			acum += acc_step;
 			acc_step_acum = MIN(acum, 0.999f);
 			float new_speed = acc_scale * s_curve_function(acum) + acc_init_speed;
-			new_speed = (t_acc_integrator >= 0) ? (new_speed + acc_init_speed) : (acc_init_speed - new_speed);
+			new_speed = (integrator >= 0) ? (new_speed + acc_init_speed) : (acc_init_speed - new_speed);
 			speed_change = new_speed - current_speed;
 #else
 			speed_change = integrator * itp_cur_plan_block->acceleration;
 #endif
 
 			profile_steps_limit = accel_until;
-			sgm->flags = ITP_UPDATE_ISR | ITP_ACCEL;
+			sgm->flags = (ITP_UPDATE_ISR | ((integrator >= 0) ? ITP_ACCEL : ITP_DEACCEL));
+			integrator = ABS(integrator); // ensure the integrator is a positive time slice
 		}
 		else if (remaining_steps > deaccel_from)
 		{
@@ -629,7 +634,7 @@ void itp_run(void)
 		{
 			partial_distance += current_speed * integrator;
 			// computes how many steps it will perform at this speed and frame window
-			segm_steps = (uint16_t)floorf(partial_distance);
+			segm_steps = (uint16_t)MAX(0, roundf(partial_distance));
 		}
 		else
 		{

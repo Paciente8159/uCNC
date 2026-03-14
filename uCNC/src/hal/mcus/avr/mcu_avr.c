@@ -173,7 +173,7 @@ ISR(ITP_COMPA_vect, ISR_BLOCK)
 	mcu_step_cb();
 	mcu_disable_global_isr();
 	RTC_TIMSK |= (1 << RTC_OCIEA); // unlocks RTC
-	ITP_TIFR = 2; // clears pending OCIEA overflow ISR (this prevents abnomal short step pulses)
+	ITP_TIFR = 2;				   // clears pending OCIEA overflow ISR (this prevents abnomal short step pulses)
 	ITP_TIMSK |= (1 << ITP_OCIEA);
 }
 
@@ -1502,6 +1502,12 @@ void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 	uint8_t pres = (1 << 3); // CTC mode
 
 	mcu_timeout_cb = fp;
+	// stops timer
+	ONESHOT_TCCRB = 0;
+	// CTC mode
+	ONESHOT_TCCRA = 0;
+	// resets counter
+	ONESHOT_TCNT = 0;
 
 #if (ONESHOT_TIMER == 2)
 	if (clocks <= ((1UL << 8) - 1))
@@ -1538,7 +1544,10 @@ void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 		clocks >>= 10;
 		pres |= 7;
 	}
-#else
+
+	// set step clock
+	ONESHOT_OCRA = ((uint8_t)(clocks & 0xFF)) - 1;
+#elif (ONESHOT_TIMER == 0)
 	if (clocks <= ((1UL << 8) - 1))
 	{
 		pres |= 1;
@@ -1563,16 +1572,39 @@ void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 		clocks >>= 10;
 		pres |= 5;
 	}
-#endif
 
-	// stops timer
-	ONESHOT_TCCRB = 0;
-	// CTC mode
-	ONESHOT_TCCRA = 0;
-	// resets counter
-	ONESHOT_TCNT = 0;
 	// set step clock
 	ONESHOT_OCRA = ((uint8_t)(clocks & 0xFF)) - 1;
+#else
+	if (clocks <= ((1UL << 16) - 1))
+	{
+		pres |= 1;
+	}
+	else if (clocks <= ((1UL << 19) - 1))
+	{
+		clocks >>= 3;
+		pres |= 2;
+	}
+	else if (clocks <= ((1UL << 22) - 1))
+	{
+		clocks >>= 6;
+		pres |= 3;
+	}
+	else if (clocks <= ((1UL << 24) - 1))
+	{
+		clocks >>= 8;
+		pres |= 4;
+	}
+	else
+	{
+		clocks >>= 10;
+		pres |= 5;
+	}
+
+	// set step clock
+	ONESHOT_OCRA = ((uint16_t)(clocks & 0xFFFF)) - 1;
+#endif
+
 	// clears interrupt flags by writing 1's
 	ONESHOT_TIFR = 0x7;
 	// start timer in CTC mode with the correct prescaler

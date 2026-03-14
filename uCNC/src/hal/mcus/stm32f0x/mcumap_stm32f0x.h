@@ -3973,9 +3973,12 @@ extern "C"
 #endif
 
 #ifdef MCU_HAS_UART2
+#ifndef BAUDRATE2
+#define BAUDRATE2 BAUDRATE
+#endif
 // this MCU does not work well with both TX and RX interrupt
 // this forces the sync TX method to fix communication
-#define COM2_UART2 __usart__(UART2_PORT)
+#define COM2_UART __usart__(UART2_PORT)
 
 #if (UART2_PORT < 3)
 #define COM2_IRQ __helper__(USART, UART2_PORT, _IRQn)
@@ -3985,8 +3988,8 @@ extern "C"
 #define MCU_SERIAL_ISR USART3_8_IRQHandler
 #endif
 
-#define COM2_OUTREG (COM2_UART2)->TDR
-#define COM2_INREG (COM2_UART2)->RDR
+#define COM2_OUTREG (COM2_UART)->TDR
+#define COM2_INREG (COM2_UART)->RDR
 
 #if (UART2_PORT == 1 || UART2_PORT >= 6)
 #define COM2_APB APB2ENR

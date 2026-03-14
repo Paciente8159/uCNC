@@ -317,7 +317,6 @@ WEAK_EVENT_HANDLER(proto_status)
 	{
 		if (ptr->fptr != NULL)
 		{
-			proto_putc('|');
 			ptr->fptr(args);
 		}
 		ptr = ptr->next;

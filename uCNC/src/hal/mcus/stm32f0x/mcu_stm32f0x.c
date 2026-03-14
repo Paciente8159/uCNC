@@ -806,13 +806,11 @@ void mcu_dotasks()
 #if !defined(DETACH_USB_FROM_MAIN_PROTOCOL)
 		if (mcu_com_rx_cb(c))
 		{
-			if (BUFFER_FULL(usb_rx))
+			if (!BUFFER_TRY_ENQUEUE(usb_rx, &c))
 			{
+				BUFFER_CLEAR(usb_rx);
 				STREAM_OVF(c);
 			}
-
-			*(BUFFER_NEXT_FREE(usb_rx)) = c;
-			BUFFER_STORE(usb_rx);
 		}
 #else
 		mcu_usb_rx_cb(c);
