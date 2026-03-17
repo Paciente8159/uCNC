@@ -14,7 +14,7 @@
 
 - added option to clamp motion beyond software limits while jogging `ALLOW_SOFT_LIMIT_JOG_MOTION_CLAMPING` (#907)
 - added static IP configuration for Wifi capable boards (#908)
-- added method for mesuring software encoders RPM (#913)(#924)(#928)
+- added method for mesuring software encoders RPM (#913)(#924)(#928)(#933)(#934)
 - added option to mimic Grbl homing motion style via `ENABLE_GRBL_STYLE_HOMING` (#918)(#922)(#930)
 
 ### Changed
@@ -23,6 +23,7 @@
 - improved `mcu_step_cb` function and full revision of the interpolation ISR on all architectures (#919)
 - modified ISR architecture on AVR to allow better response and propper preemption with `ENABLE_ITP_FEED_TASK` enabled (#920)
 - ISR architecture revision on all ARM MCU's following #920 changes (#921)
+- improved ONESHOT timer resolution on AVR (#935)
 
 ### Fixed
 
@@ -31,7 +32,7 @@
 - fixed synchronized motions start logic (#914)
 - fixed probe report message sequence to better emulate Grbl (#909)
 - fixed stepper idle timeout condition check (#916)
-- fixed realtime motion feed modifications calculations to take DSS into account(#925)
+- fixed realtime motion feed modifications calculations (#925)(#936)
 - fixed signed interger printf function (#926)
 - fixed UART2 typo for STM32F0x and default BAUDRATE2 definition (#926)
 - fixed USB dotasks for STM32F0x (#932)
