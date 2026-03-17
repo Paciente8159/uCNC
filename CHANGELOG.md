@@ -6,7 +6,7 @@
 
 # Changelog
 
-## [1.16.0] - unreleased
+## [1.16.0] - 17-03-2026
 
 [@HuubBuis](https://github.com/HuubBuis)	- added option to mimic Grbl homing motion style via `ENABLE_GRBL_STYLE_HOMING` (#918)
 
@@ -2044,6 +2044,10 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.16.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.16.0
+[1.15.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.15.0
+[1.14.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.14.0
+[1.13.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.13.1
 [1.13.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.13.1
 [1.13.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.13.0
 [1.13.rc]: https://github.com/Paciente8159/uCNC/releases/tag/v1.13.rc
