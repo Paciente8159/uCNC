@@ -36,7 +36,7 @@
 #define rom_memcpy memcpy
 #define rom_read_byte *
 
-#define MCU_WEAK __attribute__((weak,weakref))
+#define MCU_WEAK __attribute__((weak, weakref))
 
 /* 7.18.2.1  Limits of exact-width integer types */
 #define INT8_MIN (-128)
@@ -51,7 +51,7 @@
 
 #define UINT8_MAX 255
 #define UINT16_MAX 65535
-#define UINT32_MAX 0xffffffffU					 /* 4294967295U */
+#define UINT32_MAX 0xffffffffU			 /* 4294967295U */
 #define UINT64_MAX 0xffffffffffffffffULL /* 18446744073709551615ULL */
 
 // needed by software delays
@@ -262,7 +262,7 @@
 #define DOUT31 UNDEF_PIN
 #define DIO78 UNDEF_PIN
 
-//#define ACTIVITY_LED UNDEF_PIN
+// #define ACTIVITY_LED UNDEF_PIN
 
 #ifndef EMULATE_74HC165
 #define LIMIT_X 100
@@ -448,6 +448,19 @@
 #define DIN6_ISR
 #define DIN7_ISR
 
+typedef struct virtual_map_t
+{
+	uint32_t special_outputs;
+	uint32_t outputs;
+	uint8_t pwm[16];
+	uint8_t servos[6];
+	uint32_t special_inputs;
+	uint32_t inputs;
+	uint8_t analog[16];
+} VIRTUAL_MAP;
+
+extern volatile VIRTUAL_MAP virtualmap;
+
 #define MCU_HAS_ONESHOT_TIMER
 
 #ifndef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
@@ -470,7 +483,7 @@
 extern void virtual_delay_us(uint16_t delay);
 #define mcu_delay_us(X) virtual_delay_us(X)
 
-#define ENABLE_ITP_FEED_TASK //smoother STEP IO simulation
+#define ENABLE_ITP_FEED_TASK // smoother STEP IO simulation
 
 #include "../../tools/tool.h"
 extern const tool_t embroidery_stepper;
@@ -486,7 +499,7 @@ extern const tool_t vfd_pwm;
 
 #define ATOMIC_LOAD_N(src, mode) __atomic_load_n((src), mode)
 #define ATOMIC_STORE_N(dst, val, mode) __atomic_store_n((dst), (val), mode)
-#define ATOMIC_COMPARE_EXCHANGE_N(dst, cmp, des, sucmode, failmode) __atomic_compare_exchange_n((dst), (void*)(cmp), (des), false, sucmode, failmode)
+#define ATOMIC_COMPARE_EXCHANGE_N(dst, cmp, des, sucmode, failmode) __atomic_compare_exchange_n((dst), (void *)(cmp), (des), false, sucmode, failmode)
 #define ATOMIC_FETCH_OR(dst, val, mode) __atomic_fetch_or((dst), (val), mode)
 #define ATOMIC_FETCH_AND(dst, val, mode) __atomic_fetch_and((dst), (val), mode)
 #define ATOMIC_FETCH_ADD(dst, val, mode) __atomic_fetch_add((dst), (val), mode)
@@ -497,7 +510,7 @@ extern const tool_t vfd_pwm;
 
 #define ATOMIC_LOAD_N(src, mode) __atomic_load_n((src), mode)
 #define ATOMIC_STORE_N(dst, val, mode) __atomic_store_n((dst), (val), mode)
-#define ATOMIC_COMPARE_EXCHANGE_N(dst, cmp, des, sucmode, failmode) __atomic_compare_exchange_n((dst), (void*)(cmp), (des), false, sucmode, failmode)
+#define ATOMIC_COMPARE_EXCHANGE_N(dst, cmp, des, sucmode, failmode) __atomic_compare_exchange_n((dst), (void *)(cmp), (des), false, sucmode, failmode)
 #define ATOMIC_FETCH_OR(dst, val, mode) __atomic_fetch_or((dst), (val), mode)
 #define ATOMIC_FETCH_AND(dst, val, mode) __atomic_fetch_and((dst), (val), mode)
 #define ATOMIC_FETCH_ADD(dst, val, mode) __atomic_fetch_add((dst), (val), mode)
