@@ -443,11 +443,25 @@ uint32_t encoder_get_delta(uint8_t i)
 
 uint16_t encoder_get_rpm(uint8_t i)
 {
-	uint32_t delta = encoder_get_delta(i);
-	if (!delta)
+	uint32_t t0 = 0, t1 = 0, t_now = mcu_micros();
+	ATOMIC_CODEBLOCK
 	{
+		t0 = encoders_tstamp[i][0]; // last timestamp
+		t1 = encoders_tstamp[i][1]; // previous timestamp
+	}
+
+	uint32_t delta = (t0 - t1);
+
+	if (!delta || (t_now - t0) > 60000000UL)
+	{
+		ATOMIC_CODEBLOCK
+		{
+			encoders_tstamp[i][0] = 0;
+			encoders_tstamp[i][1] = 0;
+		}
 		return 0;
 	}
+
 	uint32_t rpm = 60000000UL / delta / g_settings.encoders_resolution[i];
 
 	return (uint16_t)rpm;
