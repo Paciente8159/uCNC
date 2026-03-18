@@ -451,8 +451,9 @@ uint16_t encoder_get_rpm(uint8_t i)
 	}
 
 	uint32_t delta = (t0 - t1);
+	uint32_t max_elapsed = 60000000UL/g_settings.encoders_resolution[i];
 
-	if (!delta || (t_now - t0) > 60000000UL)
+	if (!delta || (t_now - t0) > max_elapsed)
 	{
 		ATOMIC_CODEBLOCK
 		{
