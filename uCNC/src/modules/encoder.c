@@ -22,6 +22,12 @@
 
 #if ENCODERS > 0
 
+#ifndef MIN_ENC_RPM
+#define MIN_ENC_RPM 1
+#endif
+
+#define MIN_ENC_RPM_FACTOR (60000000UL / MIN_ENC_RPM)
+
 static int32_t encoders_pos[ENCODERS];
 static uint32_t encoders_tstamp[ENCODERS][2];
 
@@ -451,7 +457,7 @@ uint16_t encoder_get_rpm(uint8_t i)
 	}
 
 	uint32_t delta = (t0 - t1);
-	uint32_t max_elapsed = 60000000UL/g_settings.encoders_resolution[i];
+	uint32_t max_elapsed = MIN_ENC_RPM_FACTOR/g_settings.encoders_resolution[i];
 
 	if (!delta || (t_now - t0) > max_elapsed)
 	{
