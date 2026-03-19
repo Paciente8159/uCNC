@@ -47,7 +47,7 @@
 #define I2S_SAMPLE_RATE (500000)
 #endif
 
-#define DMA_BUFFER_SIZE 32
+#define DMA_BUFFER_SIZE 64
 
 volatile uint32_t ic74hc595_i2s_pins;
 volatile uint32_t i2s_mode;
@@ -166,12 +166,18 @@ static void IRAM_ATTR i2s_tx_isr(void *arg)
 			if (finished == &i2s_hal.desc_a)
 			{
 				i2s_hal.refill_cb(i2s_hal.buf_a, DMA_BUFFER_SIZE);
+				i2s_hal.desc_a.size = i2s_hal.desc_a.length;
 				i2s_hal.desc_a.owner = 1;
+				i2s_hal.desc_a.eof = 1;
+				i2s_hal.desc_a.qe.stqe_next = &i2s_hal.desc_b;
 			}
 			else if (finished == &i2s_hal.desc_b)
 			{
 				i2s_hal.refill_cb(i2s_hal.buf_b, DMA_BUFFER_SIZE);
+				i2s_hal.desc_b.size = i2s_hal.desc_b.length;
 				i2s_hal.desc_b.owner = 1;
+				i2s_hal.desc_b.eof = 1;
+				i2s_hal.desc_b.qe.stqe_next = &i2s_hal.desc_a;
 			}
 			break;
 		case (ITP_STEP_MODE_REALTIME | ITP_STEP_MODE_SYNC):
