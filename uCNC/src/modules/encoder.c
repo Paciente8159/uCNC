@@ -22,6 +22,12 @@
 
 #if ENCODERS > 0
 
+#ifndef MIN_ENC_RPM
+#define MIN_ENC_RPM 1
+#endif
+
+#define MIN_ENC_RPM_FACTOR (60000000UL / MIN_ENC_RPM)
+
 static int32_t encoders_pos[ENCODERS];
 static uint32_t encoders_tstamp[ENCODERS][2];
 
@@ -443,11 +449,26 @@ uint32_t encoder_get_delta(uint8_t i)
 
 uint16_t encoder_get_rpm(uint8_t i)
 {
-	uint32_t delta = encoder_get_delta(i);
-	if (!delta)
+	uint32_t t0 = 0, t1 = 0, t_now = mcu_micros();
+	ATOMIC_CODEBLOCK
 	{
+		t0 = encoders_tstamp[i][0]; // last timestamp
+		t1 = encoders_tstamp[i][1]; // previous timestamp
+	}
+
+	uint32_t delta = (t0 - t1);
+	uint32_t max_elapsed = MIN_ENC_RPM_FACTOR/g_settings.encoders_resolution[i];
+
+	if (!delta || (t_now - t0) > max_elapsed)
+	{
+		ATOMIC_CODEBLOCK
+		{
+			encoders_tstamp[i][0] = 0;
+			encoders_tstamp[i][1] = 0;
+		}
 		return 0;
 	}
+
 	uint32_t rpm = 60000000UL / delta / g_settings.encoders_resolution[i];
 
 	return (uint16_t)rpm;
