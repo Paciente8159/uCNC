@@ -6,6 +6,14 @@
 
 # Changelog
 
+## [1.16.1] - 20-03-2026
+
+### Fixed
+
+- fixed encoder not getting to 0 RPM after first successfull reading and added option to set a minimal RPM value before stop reading valid RPM values (#939) (#942)
+- fixed ESP32 I2S glich by increasing the DMA buffer size (#941)
+- fixed cnc store/restore functions with option ENABLE_ITP_FEED_TASK (#937)
+
 ## [1.16.0] - 17-03-2026
 
 [@HuubBuis](https://github.com/HuubBuis)	- added option to mimic Grbl homing motion style via `ENABLE_GRBL_STYLE_HOMING` (#918)
@@ -2044,6 +2052,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.16.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.16.1
 [1.16.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.16.0
 [1.15.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.15.0
 [1.14.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.14.0
