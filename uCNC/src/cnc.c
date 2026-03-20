@@ -314,7 +314,9 @@ void cnc_store_motion(void)
 		cnc_clear_exec_state(EXEC_HOLD);
 	}
 
+#ifndef ENABLE_ITP_FEED_TASK
 	cnc_lock_itp = 0;
+#endif
 #endif
 }
 
@@ -347,7 +349,9 @@ void cnc_restore_motion(void)
 	{
 		cnc_clear_exec_state(EXEC_HOLD);
 	}
+#ifndef ENABLE_ITP_FEED_TASK
 	cnc_lock_itp = 0;
+#endif
 #endif
 }
 
