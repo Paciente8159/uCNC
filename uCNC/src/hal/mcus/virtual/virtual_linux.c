@@ -66,7 +66,6 @@ typedef struct serial_port_
 serial_port_t g_uart = {0};
 
 /* Forward declarations for callbacks referenced in ioserver code */
-extern VIRTUAL_MAP virtualmap;
 extern void mcu_limits_changed_cb(void);
 extern void mcu_probe_changed_cb(void);
 extern void mcu_controls_changed_cb(void);
@@ -267,7 +266,7 @@ void *ioserver(void *args)
     /* Ensure old socket removed */
     unlink(UCNCCIO_SOCKET_PATH);
 
-    server_fd = socket(AF_UNIX, SOCK_STREAM, 0);
+    server_fd = socket(AF_UNIX, 1, 0);
     if (server_fd < 0)
     {
         perror("Create socket failed");
@@ -638,7 +637,7 @@ void get_current_dir(char *cwd, size_t len)
 
 #if defined(ENABLE_SOCKETS)
 
-typedef int socklen_t;
+// typedef int socklen_t;
 
 /* socket_init: nothing to do on Linux; return 0 on success */
 int socket_init(void)

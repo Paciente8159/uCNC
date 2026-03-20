@@ -353,7 +353,7 @@ extern "C"
 #endif
 
 #if defined(MCU_HAS_ONESHOT_TIMER)
-	MCU_CALLBACK mcu_timeout_delgate mcu_timeout_cb = NULL;
+	extern MCU_CALLBACK mcu_timeout_delgate mcu_timeout_cb;
 	static uint32_t virtual_oneshot_counter;
 	static FORCEINLINE void mcu_gen_oneshot(void)
 	{

@@ -39,6 +39,7 @@
 #define MCU_WEAK __attribute__((weak, weakref))
 
 /* 7.18.2.1  Limits of exact-width integer types */
+#ifndef INT8_MIN
 #define INT8_MIN (-128)
 #define INT16_MIN (-32768)
 #define INT32_MIN (-2147483647 - 1)
@@ -53,6 +54,7 @@
 #define UINT16_MAX 65535
 #define UINT32_MAX 0xffffffffU			 /* 4294967295U */
 #define UINT64_MAX 0xffffffffffffffffULL /* 18446744073709551615ULL */
+#endif
 
 // needed by software delays
 #ifndef MCU_CLOCKS_PER_CYCLE
@@ -65,9 +67,13 @@
 #define MCU_CYCLES_PER_LOOP_OVERHEAD 0
 #endif
 
-#define MCU_HAS_UART
+// #define MCU_HAS_UART
 #ifndef UART_PORT_NAME
+#ifndef __unix__
 #define UART_PORT_NAME "\\\\.\\COM14"
+#else
+#define UART_PORT_NAME "/dev/ttyS0"
+#endif
 #endif
 
 #define MCU_HAS_UART2
@@ -519,5 +525,11 @@ extern const tool_t vfd_pwm;
 #define ATOMIC_SPIN()
 
 #define asm __asm__
+
+// #ifdef __unix__
+// // #ifndef sqrtf
+// // #define sqrtf sqrt
+// // #endif
+// #endif
 
 #endif
