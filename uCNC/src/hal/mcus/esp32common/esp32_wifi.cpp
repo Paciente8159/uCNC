@@ -16,52 +16,32 @@
 	See the	GNU General Public License for more details.
 */
 
-#include "../../../../cnc_config.h"
-#if (defined(ESP32) || defined(ESP32S3) || defined(ESP32C3)) && defined(ENABLE_WIFI)
+#if (defined(ESP32) || defined(ESP32S3) || defined(ESP32C3))
 #include <Arduino.h>
-#include <WiFi.h>
-#include <WebServer.h>
-#include <HTTPUpdateServer.h>
-#include <Update.h>
-#include "WebSocketsServer.h"
 #include "esp_task_wdt.h"
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
-
-#ifndef TELNET_PORT
-#define TELNET_PORT 23
-#endif
-
-#ifndef WEBSERVER_PORT
-#define WEBSERVER_PORT 80
-#endif
-
-#ifndef WEBSOCKET_PORT
-#define WEBSOCKET_PORT 8080
-#endif
-
-WebServer web_server(WEBSERVER_PORT);
-HTTPUpdateServer httpUpdater;
-WiFiServer telnet_server(TELNET_PORT);
-WiFiClient server_client;
-WebSocketsServer socket_server(WEBSOCKET_PORT);
+#include <errno.h>
 
 extern "C"
 {
 #include "../../../cnc.h"
+}
 
-#if defined(ENABLE_WIFI) && defined(MCU_HAS_WIFI)
+#ifndef BT_ID_MAX_LEN
+#define BT_ID_MAX_LEN 32
+#endif
 
 #ifndef WIFI_SSID_MAX_LEN
 #define WIFI_SSID_MAX_LEN 32
 #endif
 
-#define ARG_MAX_LEN WIFI_SSID_MAX_LEN
+#define ARG_MAX_LEN MAX(WIFI_SSID_MAX_LEN, BT_ID_MAX_LEN)
 
-#ifndef WEBSOCKET_MAX_CLIENTS
-#define WEBSOCKET_MAX_CLIENTS 2
-#endif
+#ifdef ENABLE_WIFI
+#include <WiFi.h>
+#include <Update.h>
 
 #ifndef WIFI_USER
 #define WIFI_USER "admin"
@@ -72,33 +52,34 @@ extern "C"
 #endif
 
 #ifndef OTA_URI
-#define OTA_URI "/firmware"
+#define OTA_URI "/update"
 #endif
 
-	const char *update_path = OTA_URI;
-	const char *update_username = WIFI_USER;
-	const char *update_password = WIFI_PASS;
-#define MAX_SRV_CLIENTS 1
+typedef struct
+{
+	uint8_t wifi_on;
+	uint8_t wifi_mode;
+	uint8_t ssid[WIFI_SSID_MAX_LEN];
+	uint8_t pass[WIFI_SSID_MAX_LEN];
+} wifi_settings_t;
 
-	typedef struct
-	{
-		uint8_t wifi_on;
-		uint8_t wifi_mode;
-		uint8_t ssid[WIFI_SSID_MAX_LEN];
-		uint8_t pass[WIFI_SSID_MAX_LEN];
-	} wifi_settings_t;
+uint16_t wifi_settings_offset;
+wifi_settings_t wifi_settings;
 
-	uint16_t wifi_settings_offset;
-	wifi_settings_t wifi_settings;
-
+/**
+ * Custom WiFi+BT commands
+ */
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
-	bool mcu_wifi_grbl_cmd(void *args)
+extern "C"
+{
+	bool mcu_custom_grbl_cmd(void *args)
 	{
 		grbl_cmd_args_t *cmd_params = (grbl_cmd_args_t *)args;
 		char arg[ARG_MAX_LEN];
 		uint8_t has_arg = (cmd_params->next_char == '=');
 		memset(arg, 0, sizeof(arg));
 
+#ifdef ENABLE_WIFI
 		if (!strncmp((const char *)(cmd_params->cmd), "WIFI", 4))
 		{
 			if (!strcmp((const char *)&(cmd_params->cmd)[4], "ON"))
@@ -298,66 +279,18 @@ extern "C"
 				return EVENT_HANDLED;
 			}
 		}
+#endif
 		return EVENT_CONTINUE;
 	}
 
-	CREATE_EVENT_LISTENER(grbl_cmd, mcu_wifi_grbl_cmd);
+	CREATE_EVENT_LISTENER(grbl_cmd, mcu_custom_grbl_cmd);
+}
 #endif
 
-	static bool esp32_wifi_clientok(void)
-	{
-		static uint32_t next_info = 30000;
-		static bool connected = false;
-
-		if (!wifi_settings.wifi_on)
-		{
-			return false;
-		}
-
-		if ((WiFi.status() != WL_CONNECTED))
-		{
-			connected = false;
-			if (next_info > mcu_millis())
-			{
-				return false;
-			}
-			next_info = mcu_millis() + 30000;
-			proto_info("Disconnected from WiFi");
-			return false;
-		}
-
-		if (!connected)
-		{
-			connected = true;
-			proto_info("Connected to WiFi");
-			proto_info("SSID>%s", wifi_settings.ssid);
-			proto_info("IP>%s", WiFi.localIP().toString().c_str());
-		}
-
-		if (telnet_server.hasClient())
-		{
-			if (server_client)
-			{
-				if (server_client.connected())
-				{
-					server_client.stop();
-				}
-			}
-			server_client = telnet_server.available();
-			server_client.println("[MSG:New client connected]");
-			return false;
-		}
-		else if (server_client)
-		{
-			if (server_client.connected())
-			{
-				return true;
-			}
-		}
-		return false;
-	}
-
-#if defined(MCU_HAS_ENDPOINTS)
+/**
+ * Flash File System
+ */
+#ifdef ENABLE_SOCKETS
 
 #define MCU_FLASH_FS_LITTLE_FS 1
 #define MCU_FLASH_FS_SPIFFS 2
@@ -376,6 +309,8 @@ extern "C"
 #define FLASH_FS SPIFFS
 #endif
 
+extern "C"
+{
 /**
  * Implements the function calls for the file system C wrapper
  */
@@ -489,373 +424,329 @@ extern "C"
 	{
 		return FLASH_FS.rmdir(path);
 	}
+}
+#endif
 
 /**
- * Implements the function calls for the enpoints C wrapper
+ * OTA
  */
-#include "../../../modules/endpoint.h"
-	void endpoint_add(const char *uri, uint8_t method, endpoint_delegate request_handler, endpoint_delegate file_handler)
+#ifdef ENABLE_SOCKETS
+extern "C"
+{
+#include "../../../modules/net/http.h"
+	// HTML form for firmware upload (simplified from ESP8266HTTPUpdateServer)
+	static const char updateForm[] __rom__ =
+		"<!DOCTYPE html><html><body>"
+		"<form method='POST' action='" OTA_URI "' enctype='multipart/form-data'>"
+		"Firmware:<br><input type='file' name='firmware'>"
+		"<input type='submit' value='Update'>"
+		"</form></body></html>";
+	const char type_html[] = "text/html";
+	const char type_text[] = "text/plain";
+
+	// Request handler for GET /update
+	static void ota_page_cb(int client_idx)
 	{
-		if (!method)
-		{
-			method = HTTP_ANY;
-		}
-
-		String s = String(uri);
-
-		if (s.endsWith("*"))
-		{
-			web_server.on(UriWildcard(s.substring(0, s.length() - 1)), (HTTPMethod)method, request_handler, file_handler);
-		}
-		else
-		{
-			web_server.on(Uri(uri), (HTTPMethod)method, request_handler, file_handler);
-		}
+		http_send_str(client_idx, 200, (char *)type_html, (char *)updateForm);
+		http_send(client_idx, 200, (char *)type_html, NULL, 0);
 	}
 
-	void endpoint_request_uri(char *uri, size_t maxlen)
+	// File upload handler for POST /update
+	static void ota_upload_cb(int client_idx)
 	{
-		strncpy(uri, web_server.uri().c_str(), maxlen);
-	}
+		http_upload_t up = http_file_upload_status(client_idx);
 
-	int endpoint_request_hasargs(void)
-	{
-		return web_server.args();
-	}
-
-	bool endpoint_request_arg(const char *argname, char *argvalue, size_t maxlen)
-	{
-		if (!web_server.hasArg(String(argname)))
+		if (up.status == HTTP_UPLOAD_START)
 		{
-			argvalue[0] = 0;
-			return false;
-		}
-		strncpy(argvalue, web_server.arg(String(argname)).c_str(), maxlen);
-		return true;
-	}
-
-	void endpoint_send(int code, const char *content_type, const uint8_t *data, size_t data_len)
-	{
-		static uint8_t in_chuncks = 0;
-		if (!content_type)
-		{
-			in_chuncks = 1;
-			web_server.setContentLength(CONTENT_LENGTH_UNKNOWN);
-		}
-		else
-		{
-			switch (in_chuncks)
+#ifdef FLASH_FS
+			if (!FLASH_FS.begin())
 			{
-			case 1:
-				in_chuncks = 2;
-				__FALL_THROUGH__
-			case 0:
-				web_server.send(code, content_type, (const char *)data);
-				break;
-			default:
-				if (data)
-				{
-					web_server.sendContent((char *)data, data_len);
-					in_chuncks = 2;
-				}
-				else
-				{
-					web_server.sendContent("");
-					in_chuncks = 0;
-				}
-				break;
+				const char fail[] = "Flash error";
+				http_send_str(client_idx, 415, (char *)type_text, (char *)fail);
+				http_send(client_idx, 415, (char *)type_text, NULL, 0);
+				return;
+			}
+#endif
+
+			// Called once at start of upload
+			ESP_LOGI("OTA", "Update start: %s\n", up.filename);
+			uint32_t maxSketchSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
+			if (!Update.begin(maxSketchSpace, U_FLASH))
+			{
+				Update.printError(Serial);
 			}
 		}
-	}
-
-	void endpoint_send_header(const char *name, const char *data, bool first)
-	{
-		web_server.sendHeader(name, data, first);
-	}
-
-	bool endpoint_send_file(const char *file_path, const char *content_type)
-	{
-		if (FLASH_FS.exists(file_path))
+		else if (up.status == HTTP_UPLOAD_PART)
 		{
-			File file = FLASH_FS.open(file_path, "r");
-			web_server.streamFile(file, content_type);
-			file.close();
-			return true;
+			// Called for each chunk
+			if (Update.write(up.data, up.datalen) != up.datalen)
+			{
+				Update.printError(Serial);
+			}
 		}
-		return false;
-	}
-
-	endpoint_upload_t endpoint_file_upload_status(void)
-	{
-		HTTPUpload &upload = web_server.upload();
-		endpoint_upload_t status = {.status = (uint8_t)upload.status, .data = upload.buf, .datalen = upload.currentSize};
-		return status;
-	}
-
-	uint8_t endpoint_request_method(void)
-	{
-		switch (web_server.method())
+		else if (up.status == HTTP_UPLOAD_END)
 		{
-		case HTTP_GET:
-			return ENDPOINT_GET;
-		case HTTP_POST:
-			return ENDPOINT_POST;
-		case HTTP_PUT:
-			return ENDPOINT_PUT;
-		case HTTP_DELETE:
-			return ENDPOINT_DELETE;
+			// Called once at end of upload
+			if (Update.end(true))
+			{
+				const char suc[] = "Update Success! Rebooting...";
+				ESP_LOGI("OTA", "Update Success: %lu bytes\r\n", up.datalen);
+				http_send_str(client_idx, 200, (char *)type_text, (char *)suc);
+				http_send(client_idx, 200, (char *)type_text, NULL, 0);
+				cnc_delay_ms(100);
+				ESP.restart();
+			}
+			else
+			{
+				// Update.printError(Serial);
+				const char fail[] = "Update Failed";
+				http_send_str(client_idx, 500, (char *)type_text, (char *)fail);
+				http_send(client_idx, 500, (char *)type_text, NULL, 0);
+				cnc_delay_ms(100);
+				ESP.restart();
+			}
+		}
+		else if (up.status == HTTP_UPLOAD_ABORT)
+		{
+			Update.end();
+			proto_printf("Update aborted\r\n");
+			cnc_delay_ms(100);
+			ESP.restart();
+		}
+	}
+
+	void ota_server_start(void)
+	{
+		RUNONCE
+		{
+			LOAD_MODULE(http_server);
+			http_add(OTA_URI, HTTP_REQ_ANY, ota_page_cb, ota_upload_cb);
+			RUNONCE_COMPLETE();
+		}
+	}
+}
+#endif
+
+/**
+ * Custom SOCKETS
+ */
+#if defined(ENABLE_WIFI)
+#include "../../../modules/net/socket.h"
+
+typedef struct wifi_server_
+{
+	uint16_t port;
+	WiFiServer server;
+	WiFiClient clients[SOCKET_MAX_CLIENTS];
+} wifi_server_t;
+
+wifi_server_t servers[MAX_SOCKETS];
+
+extern "C"
+{
+	static int find_free_server(void)
+	{
+		for (int i = 0; i < MAX_SOCKETS; i++)
+		{
+			if (!servers[i].port)
+			{
+				return i;
+			}
+		}
+		return -1;
+	}
+
+	static int find_free_client(int s)
+	{
+		for (int i = 0; i < SOCKET_MAX_CLIENTS; i++)
+		{
+			if (servers[i].clients[i].fd() == -1)
+				return i;
+		}
+		return -1;
+	}
+
+	static WiFiClient *get_client(int fd)
+	{
+		for (int i = 0; i < MAX_SOCKETS; i++)
+		{
+			for (int j = 0; j < SOCKET_MAX_CLIENTS; j++)
+			{
+				if (servers[i].clients[j].fd() == fd)
+				{
+					return &(servers[i].clients[j]);
+				}
+			}
+		}
+		return NULL;
+	}
+
+	static int bsd_socket(int domain, int type, int protocol)
+	{
+		int srv = find_free_server();
+		if (srv < 0)
+		{
+			return -1;
+		}
+
+		return srv;
+	}
+
+	static int bsd_bind(int sockfd, const struct bsd_sockaddr_in *addr, int addrlen)
+	{
+		if (sockfd < 0)
+		{
+			return -1;
+		}
+		uint16_t port = bsd_htons(addr->sin_port);
+		servers[sockfd].port = port;
+		servers[sockfd].server = WiFiServer(port, SOCKET_MAX_CLIENTS);
+		servers[sockfd].server.begin(port);
+		// ESP_LOGV("socket", "server id %d listen on port %d", sockfd, port);
+		return 0;
+	}
+
+	static int bsd_listen(int sockfd, int backlog)
+	{
+		if (sockfd < 0)
+		{
+			return -1;
+		}
+		return 0;
+	}
+
+	static int bsd_accept(int sockfd, struct bsd_sockaddr_in *addr, int *addrlen)
+	{
+		if (sockfd < 0)
+		{
+			return -1;
+		}
+
+		int i = find_free_client(sockfd);
+		if (i >= 0 && servers[sockfd].server.hasClient())
+		{
+			servers[sockfd].clients[i] = servers[sockfd].server.available();
+			if (!servers[sockfd].clients[i].connected())
+			{
+				return -1;
+			}
+			return servers[sockfd].clients[i].fd();
+		}
+
+		return -1;
+	}
+
+	static int bsd_recv(int sockfd, void *buf, size_t len, int flags)
+	{
+		WiFiClient *c = get_client(sockfd);
+
+		if (!c)
+		{
+			return -1;
+		}
+
+		// ESP_LOGV("socket", "client id %d recv", c->fd());
+
+		if (!c->connected())
+		{
+			return 0;
+		}
+
+		if (!c->available())
+		{
+			return -1;
+		}
+
+		return c->read((uint8_t *)buf, len);
+	}
+
+	static int bsd_send(int sockfd, const void *buf, size_t len, int flags)
+	{
+		WiFiClient *c = get_client(sockfd);
+
+		if (!c)
+		{
+			return -1;
+		}
+
+		// ESP_LOGV("socket", "client id %d send", c->fd());
+
+		if (!c->connected())
+		{
+			return -1;
+		}
+
+		return c->write((const uint8_t *)buf, len);
+	}
+
+	static int bsd_close(int fd)
+	{
+		WiFiClient *c = get_client(fd);
+
+		if (!c)
+		{
+			return -1;
+		}
+
+		// ESP_LOGV("socket", "client id %d close", c->fd());
+
+		c->stop();
+		return 0;
+	}
+
+	socket_device_t wifi_socket = {.socket = bsd_socket, .bind = bsd_bind, .listen = bsd_listen, .accept = bsd_accept, .recv = bsd_recv, .send = bsd_send, .close = bsd_close};
+}
+
+#endif
+
+#if defined(ENABLE_SOCKETS)
+#include "../../../module.h"
+static void mcu_wifi_task(void *arg)
+{
+	WiFi.disconnect();
+
+	if (wifi_settings.wifi_on)
+	{
+		switch (wifi_settings.wifi_mode)
+		{
+		case 1:
+			WiFi.mode(WIFI_STA);
+			WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
+			proto_info("Trying to connect to WiFi");
+			break;
+		case 2:
+			WiFi.mode(WIFI_AP);
+			WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
+			proto_info("AP started");
+			proto_info("SSID>" BOARD_NAME);
+			proto_info("IP>%s", WiFi.softAPIP().toString().c_str());
+			break;
 		default:
-			return (ENDPOINT_OTHER | (uint8_t)web_server.method());
-		}
-	}
-
-	void endpoint_file_upload_name(char *filename, size_t maxlen)
-	{
-		HTTPUpload &upload = web_server.upload();
-		strncat(filename, upload.filename.c_str(), maxlen - strlen(filename));
-	}
-
-#endif
-
-#if defined(MCU_HAS_WEBSOCKETS)
-#include "../../../modules/websocket.h"
-
-	WEAK_EVENT_HANDLER(websocket_client_connected)
-	{
-		DEFAULT_EVENT_HANDLER(websocket_client_connected);
-	}
-
-	WEAK_EVENT_HANDLER(websocket_client_disconnected)
-	{
-		DEFAULT_EVENT_HANDLER(websocket_client_disconnected);
-	}
-
-	WEAK_EVENT_HANDLER(websocket_client_receive)
-	{
-		DEFAULT_EVENT_HANDLER(websocket_client_receive);
-	}
-
-	WEAK_EVENT_HANDLER(websocket_client_error)
-	{
-		DEFAULT_EVENT_HANDLER(websocket_client_error);
-	}
-
-	void websocket_send(uint8_t clientid, uint8_t *data, size_t length, uint8_t flags)
-	{
-		switch (flags & WS_SEND_TYPE)
-		{
-		case WS_SEND_TXT:
-			if (flags & WS_SEND_BROADCAST)
-			{
-				socket_server.broadcastTXT(data, length);
-			}
-			else
-			{
-				socket_server.sendTXT(clientid, data, length);
-			}
-			break;
-		case WS_SEND_BIN:
-			if (flags & WS_SEND_BROADCAST)
-			{
-				socket_server.broadcastTXT(data, length);
-			}
-			else
-			{
-				socket_server.sendTXT(clientid, data, length);
-			}
-			break;
-		case WS_SEND_PING:
-			if (flags & WS_SEND_BROADCAST)
-			{
-				socket_server.broadcastPing(data, length);
-			}
-			else
-			{
-				socket_server.sendPing(clientid, data, length);
-			}
+			WiFi.mode(WIFI_AP_STA);
+			WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
+			proto_info("Trying to connect to WiFi");
+			WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
+			proto_info("AP started");
+			proto_info("SSID>" BOARD_NAME);
+			proto_info("IP>%s", WiFi.softAPIP().toString().c_str());
 			break;
 		}
 	}
 
-	void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
+	for (;;)
 	{
-		websocket_event_t event = {num, (uint32_t)socket_server.remoteIP(num), type, payload, length};
-		switch (type)
-		{
-		case WStype_DISCONNECTED:
-			EVENT_INVOKE(websocket_client_disconnected, &event);
-			break;
-		case WStype_CONNECTED:
-			EVENT_INVOKE(websocket_client_connected, &event);
-			break;
-		case WStype_ERROR:
-			EVENT_INVOKE(websocket_client_error, &event);
-			break;
-		case WStype_TEXT:
-		case WStype_BIN:
-		case WStype_FRAGMENT_TEXT_START:
-		case WStype_FRAGMENT_BIN_START:
-		case WStype_FRAGMENT:
-		case WStype_FRAGMENT_FIN:
-		case WStype_PING:
-		case WStype_PONG:
-			EVENT_INVOKE(websocket_client_receive, &event);
-			break;
-		}
-	}
-#endif
-
-#ifndef WIFI_TX_BUFFER_SIZE
-#define WIFI_TX_BUFFER_SIZE 64
-#endif
-	DECL_BUFFER(uint8_t, wifi_rx, RX_BUFFER_SIZE);
-	DECL_BUFFER(uint8_t, wifi_tx, WIFI_TX_BUFFER_SIZE);
-
-	uint8_t mcu_wifi_getc(void)
-	{
-		uint8_t c = 0;
-		BUFFER_TRY_DEQUEUE(wifi_rx, &c);
-		return c;
-	}
-
-	uint8_t mcu_wifi_available(void)
-	{
-		return BUFFER_READ_AVAILABLE(wifi_rx);
-	}
-
-	void mcu_wifi_clear(void)
-	{
-		BUFFER_CLEAR(wifi_rx);
-	}
-
-	void mcu_wifi_putc(uint8_t c)
-	{
-		while (!BUFFER_TRY_ENQUEUE(wifi_tx, &c))
-		{
-			mcu_wifi_flush();
-		}
-	}
-
-	void mcu_wifi_flush(void)
-	{
-		if (esp32_wifi_clientok())
-		{
-			while (!BUFFER_EMPTY(wifi_tx))
-			{
-				uint8_t tmp[WIFI_TX_BUFFER_SIZE + 1];
-				memset(tmp, 0, sizeof(tmp));
-				uint8_t r;
-
-				BUFFER_READ(wifi_tx, tmp, WIFI_TX_BUFFER_SIZE, r);
-				server_client.write(tmp, r);
-			}
-		}
-		else
-		{
-			// no client (discard)
-			BUFFER_CLEAR(wifi_tx);
-		}
-	}
-
-	void mcu_wifi_task(void *arg)
-	{
-		WiFi.begin();
-		telnet_server.begin();
-		telnet_server.setNoDelay(true);
-#ifdef MCU_HAS_ENDPOINTS
-		FLASH_FS.begin();
-		flash_fs = {
-			.drive = 'C',
-			.open = flash_fs_open,
-			.read = flash_fs_read,
-			.write = flash_fs_write,
-			.seek = flash_fs_seek,
-			.available = flash_fs_available,
-			.close = flash_fs_close,
-			.remove = flash_fs_remove,
-			.opendir = flash_fs_opendir,
-			.mkdir = flash_fs_mkdir,
-			.rmdir = flash_fs_rmdir,
-			.next_file = flash_fs_next_file,
-			.finfo = flash_fs_info,
-			.next = NULL};
-		fs_mount(&flash_fs);
-#endif
-#ifndef CUSTOM_OTA_ENDPOINT
-		httpUpdater.setup(&web_server, OTA_URI, update_username, update_password);
-#endif
-		web_server.begin();
-
-#ifdef MCU_HAS_WEBSOCKETS
-		socket_server.begin();
-		socket_server.onEvent(webSocketEvent);
-#endif
-		WiFi.disconnect();
-
 		if (wifi_settings.wifi_on)
 		{
-			switch (wifi_settings.wifi_mode)
-			{
-			case 1:
-				WiFi.mode(WIFI_STA);
-				WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
-				proto_info("Trying to connect to WiFi");
-				break;
-			case 2:
-				WiFi.mode(WIFI_AP);
-				WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
-				proto_info("AP started");
-				proto_info("SSID>" BOARD_NAME);
-				proto_info("IP>%s", WiFi.softAPIP().toString().c_str());
-				break;
-			default:
-				WiFi.mode(WIFI_AP_STA);
-				WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
-				proto_info("Trying to connect to WiFi");
-				WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
-				proto_info("AP started");
-				proto_info("SSID>" BOARD_NAME);
-				proto_info("IP>%s", WiFi.softAPIP().toString().c_str());
-				break;
-			}
-		}
-
-		for (;;)
-		{
-			esp_task_wdt_reset();
-			if (wifi_settings.wifi_on)
-			{
-				web_server.handleClient();
-				esp_task_wdt_reset();
-#ifdef MCU_HAS_WEBSOCKETS
-				socket_server.loop();
-				esp_task_wdt_reset();
+#if defined(ENABLE_SOCKETS) && defined(MCU_HAS_RTOS)
+			socket_server_dotasks();
 #endif
-				if (esp32_wifi_clientok())
-				{
-					while (server_client.available() > 0)
-					{
-						esp_task_wdt_reset();
-#ifndef DETACH_WIFI_FROM_MAIN_PROTOCOL
-						uint8_t c = server_client.read();
-						if (mcu_com_rx_cb(c))
-						{
-							if (BUFFER_FULL(wifi_rx))
-							{
-								STREAM_OVF(c);
-							}
-
-							!BUFFER_TRY_ENQUEUE(wifi_rx, &c);
-						}
-#else
-						mcu_wifi_rx_cb((uint8_t)server_client.read());
-#endif
-					}
-				}
-			}
-			taskYIELD();
 		}
+		vTaskDelay(1);
 	}
+}
+#endif
+
+#endif
 
 #ifdef USE_STATIC_IP
 #ifndef STATIC_IP_IP
@@ -871,19 +762,53 @@ extern "C"
 #define STATIC_IP_SUB 16777215
 #endif
 
-	static IPAddress local_IP((uint32_t)(STATIC_IP_IP));
-	static IPAddress gateway((uint32_t)(STATIC_IP_GW));
-	static IPAddress subnet((uint32_t)(STATIC_IP_SUB));
+static IPAddress local_IP((uint32_t)(STATIC_IP_IP));
+static IPAddress gateway((uint32_t)(STATIC_IP_GW));
+static IPAddress subnet((uint32_t)(STATIC_IP_SUB));
 #endif
 
-	void mcu_wifi_init(void)
+extern "C"
+{
+#include "../../../modules/net/socket.h"
+	void esp32_pre_init(void)
 	{
+#ifdef ENABLE_WIFI
 #ifdef USE_STATIC_IP
 		if (!WiFi.config(local_IP, gateway, subnet))
 		{
 			proto_info("Static IP config failed");
 		}
 #endif
+		WiFi.begin();
+		// register WiFi as the device default network device
+		socket_register_device(&wifi_socket);
+#endif
+	}
+
+	void mcu_wifi_init(void)
+	{
+		if (FLASH_FS.begin())
+		{
+			flash_fs = {
+				.drive = 'C',
+				.open = flash_fs_open,
+				.read = flash_fs_read,
+				.write = flash_fs_write,
+				.seek = flash_fs_seek,
+				.available = flash_fs_available,
+				.close = flash_fs_close,
+				.remove = flash_fs_remove,
+				.opendir = flash_fs_opendir,
+				.mkdir = flash_fs_mkdir,
+				.rmdir = flash_fs_rmdir,
+				.next_file = flash_fs_next_file,
+				.finfo = flash_fs_info,
+				.next = NULL};
+			fs_mount(&flash_fs);
+		}
+
+#ifdef ENABLE_WIFI
+		ota_server_start();
 #ifndef ENABLE_BLUETOOTH
 		WiFi.setSleep(WIFI_PS_NONE);
 #endif
@@ -897,20 +822,13 @@ extern "C"
 			settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
 		}
 
-#ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
-		ADD_EVENT_LISTENER(grbl_cmd, mcu_wifi_grbl_cmd);
-#endif
-
 		xTaskCreatePinnedToCore(mcu_wifi_task, "wifiTask", 8192, NULL, 1, NULL, CONFIG_ARDUINO_RUNNING_CORE);
-	}
-
-	void mcu_wifi_dotasks(void)
-	{
-		// #ifdef MCU_HAS_WEBSOCKETS
-		// 		socket_server.loop();
-		// #endif
-	}
-
 #endif
+
+#ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
+		ADD_EVENT_LISTENER(grbl_cmd, mcu_custom_grbl_cmd);
+#endif
+	}
 }
+
 #endif

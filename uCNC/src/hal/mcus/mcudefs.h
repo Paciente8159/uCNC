@@ -105,7 +105,7 @@ extern "C"
 #endif
 #endif
 
-#if (MCU == MCU_VIRTUAL_WIN)
+#if (MCU == MCU_VIRTUAL_WIN) || (MCU == MCU_VIRTUAL_LINUX)
 #include "virtual/mcumap_virtual.h"
 #endif
 

@@ -72,6 +72,13 @@ extern "C"
 
 		return I2C_NOTOK;
 	}
+
+	void mcu_i2c_init(void)
+	{
+#ifdef MCU_HAS_I2C
+		mcu_i2c_config(I2C_FREQ);
+#endif
+	}
 #endif
 }
 #endif
