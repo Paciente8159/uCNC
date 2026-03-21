@@ -474,7 +474,7 @@ static void maybe_invoke_file_handler(int client_idx)
 
 static void handle_upload_bytes(int client_idx, char **buf, size_t *len)
 {
-	static size_t accum_len = 0;
+	static size_t filelen = 0;
 	http_client_t *c = &clients[client_idx];
 	if (!c->upl.status || c->upl.boundary_len == 0 || *len == 0)
 		return;
@@ -488,51 +488,50 @@ static void handle_upload_bytes(int client_idx, char **buf, size_t *len)
 	}
 	else if (c->upl.status < REQ_UPLOAD_START)
 	{
-		accum_len = 0;
 		c->upl.status = REQ_UPLOAD_START;
 		c->fileupl.status = HTTP_UPLOAD_START;
 		c->fileupl.filename = c->upl.upload_name;
+		filelen = c->upl.upload_len;
 		c->fileupl.datalen = c->upl.upload_len;
 		maybe_invoke_file_handler(client_idx);
 	}
 
 	// Stream file data until boundary
-
 	if (c->upl.status == REQ_UPLOAD_START)
 	{
-		if ((accum_len >= c->upl.upload_len))
+		if (*len && c->upl.upload_len)
 		{
-			c->fileupl.status = HTTP_UPLOAD_END;
-			c->fileupl.datalen = accum_len;
-			maybe_invoke_file_handler(client_idx);
-			c->upl.status = REQ_UPLOAD_FINISH;
-			append_str(c->upl.boundary, (char *)"--");
-			return;
-		}
-		else if (*len && c->upl.upload_len)
-		{
-			accum_len += *len;
-			proto_info("recieved %ld", accum_len);
-			if (accum_len < c->upl.upload_len)
+			if (*len < c->upl.upload_len)
 			{
 				c->fileupl.datalen = *len;
 				*len = 0;
 			}
 			else
 			{
-				accum_len -= *len;
-				size_t remain = c->upl.upload_len - accum_len;
-				*len -= remain;
-				accum_len = c->upl.upload_len;
-				c->fileupl.datalen = remain;
+				c->fileupl.datalen = c->upl.upload_len;
+				*len -= c->upl.upload_len;
 			}
 			c->fileupl.status = HTTP_UPLOAD_PART;
 			c->fileupl.data = (uint8_t *)buffer;
 			maybe_invoke_file_handler(client_idx);
-			// c->upl.upload_len -= c->fileupl.datalen;
+			c->upl.upload_len -= c->fileupl.datalen;
 			*buf = &buffer[c->fileupl.datalen];
 			buffer = *buf;
 			return;
+		}
+		else if (!c->upl.upload_len)
+		{
+			c->fileupl.status = HTTP_UPLOAD_END;
+			c->fileupl.datalen = filelen;
+			maybe_invoke_file_handler(client_idx);
+			c->upl.status = REQ_UPLOAD_FINISH;
+			if (!c->upl.boundary_len)
+			{
+				*buf = &buffer[*len];
+				*len = 0;
+				return;
+			}
+			append_str(c->upl.boundary, (char *)"--");
 		}
 	}
 
