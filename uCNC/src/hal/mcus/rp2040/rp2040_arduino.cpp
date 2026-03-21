@@ -557,14 +557,12 @@ static void ota_upload_cb(int client_idx)
 		if (Update.end(true))
 		{
 			const char suc[] = "Update Success! Rebooting...";
-			proto_printf("Update Success: %u bytes\r\n", up.datalen);
+			proto_printf("Update Success: %lu bytes\r\n", up.datalen);
 			http_send_str(client_idx, 200, (char *)type_text, (char *)suc);
 			http_send(client_idx, 200, (char *)type_text, NULL, 0);
 #ifdef FLASH_FS
 			FLASH_FS.end();
 #endif
-			delay(100);
-			rp2040.reboot();
 		}
 		else
 		{
@@ -573,19 +571,31 @@ static void ota_upload_cb(int client_idx)
 			http_send_str(client_idx, 500, (char *)type_text, (char *)fail);
 			http_send(client_idx, 500, (char *)type_text, NULL, 0);
 		}
+
+		cnc_delay_ms(100);
+		rp2040.reboot();
 	}
 	else if (up.status == HTTP_UPLOAD_ABORT)
 	{
 		Update.end();
 		proto_printf("Update aborted\r\n");
+
+		cnc_delay_ms(100);
+		rp2040.reboot();
 	}
 }
 
 extern "C" void ota_server_start(void)
 {
-	LOAD_MODULE(http_server);
-	const char update_uri[] = OTA_URI;
-	http_add((char *)update_uri, HTTP_REQ_ANY, ota_page_cb, ota_upload_cb);
+	// LOAD_MODULE(http_server);
+	// const char update_uri[] = OTA_URI;
+	// http_add((char *)update_uri, HTTP_REQ_ANY, ota_page_cb, ota_upload_cb);
+	RUNONCE
+	{
+		LOAD_MODULE(http_server);
+		http_add(OTA_URI, HTTP_REQ_ANY, ota_page_cb, ota_upload_cb);
+		RUNONCE_COMPLETE();
+	}
 }
 #endif
 
@@ -603,19 +613,16 @@ extern "C" void ota_server_start(void)
 #define STATIC_IP_SUB 16777215
 #endif
 
-static IPAddress local_IP((uint32_t)(STATIC_IP_IP));
-static IPAddress gateway((uint32_t)(STATIC_IP_GW));
-static IPAddress subnet((uint32_t)(STATIC_IP_SUB));
+static IPAddress local_IP(STATIC_IP_IP);
+static IPAddress gateway(STATIC_IP_GW);
+static IPAddress subnet(STATIC_IP_SUB);
 #endif
 
 extern "C" void __attribute__((weak)) mcu_network_init(void)
 {
 #ifdef ENABLE_WIFI
 #ifdef USE_STATIC_IP
-	if (!WiFi.config(local_IP, gateway, subnet))
-	{
-		proto_info("Static IP config failed");
-	}
+	WiFi.config(local_IP, gateway, gateway, subnet);
 #endif
 	WiFi.begin((char *)BOARD_NAME, (char *)WIFI_PASS);
 	extern socket_device_t wifi_socket;
@@ -649,6 +656,9 @@ extern "C" void rp2040_wifi_bt_init(void)
 		{
 		case 1:
 			WiFi.mode(WIFI_STA);
+#ifdef USE_STATIC_IP
+			WiFi.config(local_IP, gateway, subnet);
+#endif
 			WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
 			proto_info("Trying to connect to WiFi");
 			break;
@@ -661,6 +671,9 @@ extern "C" void rp2040_wifi_bt_init(void)
 			break;
 		default:
 			WiFi.mode(WIFI_AP_STA);
+#ifdef USE_STATIC_IP
+			WiFi.config(local_IP, gateway, gateway, subnet);
+#endif
 			WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
 			proto_info("Trying to connect to WiFi");
 			WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);

@@ -543,7 +543,7 @@ extern "C"
 			// Called once at end of upload
 			if (Update.end(true))
 			{
-				proto_printf("Update Success: %u bytes\r\n", up.datalen);
+				proto_printf("Update Success: %lu bytes\r\n", up.datalen);
 				const char suc[] = "Update Success! Rebooting...";
 				http_send_str(client_idx, 200, (char *)type_text, (char *)suc);
 				http_send(client_idx, 200, (char *)type_text, NULL, 0);

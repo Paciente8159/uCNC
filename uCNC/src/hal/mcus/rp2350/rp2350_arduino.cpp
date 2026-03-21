@@ -559,7 +559,7 @@ extern "C"
 			if (Update.end(true))
 			{
 				const char suc[] = "Update Success! Rebooting...";
-				proto_printf("Update Success: %u bytes\r\n", up.datalen);
+				proto_printf("Update Success: %lu bytes\r\n", up.datalen);
 				http_send_str(client_idx, 200, (char *)type_text, (char *)suc);
 				http_send(client_idx, 200, (char *)type_text, NULL, 0);
 #ifdef FLASH_FS

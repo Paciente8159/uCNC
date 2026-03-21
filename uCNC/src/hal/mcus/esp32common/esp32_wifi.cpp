@@ -469,7 +469,7 @@ extern "C"
 #endif
 
 			// Called once at start of upload
-			Serial.printf("Update start: %s\n", up.filename);
+			ESP_LOGI("OTA", "Update start: %s\n", up.filename);
 			uint32_t maxSketchSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
 			if (!Update.begin(maxSketchSpace, U_FLASH))
 			{
@@ -490,10 +490,10 @@ extern "C"
 			if (Update.end(true))
 			{
 				const char suc[] = "Update Success! Rebooting...";
-				proto_printf("Update Success: %u bytes\r\n", up.datalen);
+				ESP_LOGI("OTA", "Update Success: %lu bytes\r\n", up.datalen);
 				http_send_str(client_idx, 200, (char *)type_text, (char *)suc);
 				http_send(client_idx, 200, (char *)type_text, NULL, 0);
-				delay(100);
+				cnc_delay_ms(100);
 				ESP.restart();
 			}
 			else
@@ -502,12 +502,16 @@ extern "C"
 				const char fail[] = "Update Failed";
 				http_send_str(client_idx, 500, (char *)type_text, (char *)fail);
 				http_send(client_idx, 500, (char *)type_text, NULL, 0);
+				cnc_delay_ms(100);
+				ESP.restart();
 			}
 		}
 		else if (up.status == HTTP_UPLOAD_ABORT)
 		{
 			Update.end();
 			proto_printf("Update aborted\r\n");
+			cnc_delay_ms(100);
+			ESP.restart();
 		}
 	}
 

@@ -703,6 +703,7 @@ extern "C"
 
 		mcu_enable_global_isr();
 		flash_fs_init();
+		ota_server_start();
 	}
 
 	int main(int argc, char **argv)
@@ -759,6 +760,8 @@ extern "C"
 		http_send(client_idx, 200, (char *)fmt, NULL, 0);
 	}
 
+	FILE *otafile;
+
 	// File upload handler for POST /update
 	static void ota_upload_cb(int client_idx)
 	{
@@ -767,6 +770,7 @@ extern "C"
 
 		if (up.status == HTTP_UPLOAD_START)
 		{
+			otafile = fopen(up.filename, "wb+");
 			// Called once at start of upload
 			printf("Update start: %s\n", up.filename);
 			received_bytes = 0;
@@ -774,19 +778,22 @@ extern "C"
 		else if (up.status == HTTP_UPLOAD_PART)
 		{
 			// Called for each chunk
+			fwrite(up.data, up.datalen, 1, otafile);
 			received_bytes += up.datalen;
 			printf("Writing data: %lu/%lu bytes\r\n", up.datalen, received_bytes);
 		}
 		else if (up.status == HTTP_UPLOAD_END)
 		{
+			fclose(otafile);
 			const char fmt[] = "text/plain";
-			printf("Update Success: %u bytes\r\n", up.datalen);
+			printf("Update Success: %lu bytes\r\n", received_bytes);
 			const char suc[] = "Update Success! Rebooting...";
 			http_send_str(client_idx, 200, (char *)fmt, (char *)suc);
 			http_send(client_idx, 200, (char *)fmt, NULL, 0);
 		}
 		else if (up.status == HTTP_UPLOAD_ABORT)
 		{
+			fclose(otafile);
 			printf("Update aborted\r\n");
 		}
 	}
