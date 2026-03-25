@@ -608,6 +608,7 @@ extern "C"
 	// File upload handler for POST /update
 	static void ota_upload_cb(int client_idx)
 	{
+		static uint32_t received_bytes = 0;
 		http_upload_t up = http_file_upload_status(client_idx);
 
 		if (up.status == HTTP_UPLOAD_START)
@@ -623,7 +624,8 @@ extern "C"
 #endif
 
 			// Called once at start of upload
-			ESP_LOGI("OTA", "Update start: %s\n", up.filename);
+			received_bytes = 0;
+			ESP_LOGI("OTA", "Update start: %s", up.filename);
 			uint32_t maxSketchSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
 			if (!Update.begin(maxSketchSpace, U_FLASH))
 			{
@@ -632,6 +634,8 @@ extern "C"
 		}
 		else if (up.status == HTTP_UPLOAD_PART)
 		{
+			received_bytes += up.datalen;
+			ESP_LOGD("OTA", "Recieved bytes: %ld", received_bytes);
 			// Called for each chunk
 			if (Update.write(up.data, up.datalen) != up.datalen)
 			{
@@ -644,7 +648,7 @@ extern "C"
 			if (Update.end(true))
 			{
 				const char suc[] = "Update Success! Rebooting...";
-				ESP_LOGI("OTA", "Update Success: %lu bytes\r\n", up.datalen);
+				ESP_LOGI("OTA", "Update Success: %lu bytes", up.datalen);
 				http_send_str(client_idx, 200, (char *)type_text, (char *)suc);
 				http_send(client_idx, 200, (char *)type_text, NULL, 0);
 				cnc_delay_ms(100);
