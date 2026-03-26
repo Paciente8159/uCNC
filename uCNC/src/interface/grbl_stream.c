@@ -49,8 +49,8 @@ DECL_GRBL_STREAM(uart2_grbl_stream, mcu_uart2_getc, mcu_uart2_available, mcu_uar
 #if defined(MCU_HAS_USB) && !defined(DETACH_USB_FROM_MAIN_PROTOCOL)
 DECL_GRBL_STREAM(usb_grbl_stream, mcu_usb_getc, mcu_usb_available, mcu_usb_clear, mcu_usb_putc, mcu_usb_flush);
 #endif
-#if defined(MCU_HAS_WIFI) && !defined(DETACH_WIFI_FROM_MAIN_PROTOCOL)
-DECL_GRBL_STREAM(wifi_grbl_stream, mcu_wifi_getc, mcu_wifi_available, mcu_wifi_clear, mcu_wifi_putc, mcu_wifi_flush);
+#if defined(ENABLE_SOCKETS) && !defined(DETACH_TELNET_FROM_MAIN_PROTOCOL)
+DECL_GRBL_STREAM(telnet_grbl_stream, mcu_telnet_getc, mcu_telnet_available, mcu_telnet_clear, mcu_telnet_putc, mcu_telnet_flush);
 #endif
 #if defined(MCU_HAS_BLUETOOTH) && !defined(DETACH_BLUETOOTH_FROM_MAIN_PROTOCOL)
 DECL_GRBL_STREAM(bt_grbl_stream, mcu_bt_getc, mcu_bt_available, mcu_bt_clear, mcu_bt_putc, mcu_bt_flush);
@@ -74,8 +74,8 @@ void grbl_stream_init(void)
 #if defined(MCU_HAS_USB) && !defined(DETACH_USB_FROM_MAIN_PROTOCOL)
 	grbl_stream_register(&usb_grbl_stream);
 #endif
-#if defined(MCU_HAS_WIFI) && !defined(DETACH_WIFI_FROM_MAIN_PROTOCOL)
-	grbl_stream_register(&wifi_grbl_stream);
+#if defined(ENABLE_SOCKETS) && !defined(DETACH_TELNET_FROM_MAIN_PROTOCOL)
+	grbl_stream_register(&telnet_grbl_stream);
 #endif
 #if defined(MCU_HAS_BLUETOOTH) && !defined(DETACH_BLUETOOTH_FROM_MAIN_PROTOCOL)
 	grbl_stream_register(&bt_grbl_stream);

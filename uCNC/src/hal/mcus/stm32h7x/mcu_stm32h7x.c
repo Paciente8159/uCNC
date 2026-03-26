@@ -504,7 +504,7 @@ void mcu_clocks_init()
 	}
 }
 
-void mcu_usart_init(void)
+void mcu_usb_init(void)
 {
 #if defined(MCU_HAS_USB)
 	__HAL_RCC_GPIOA_CLK_ENABLE();
@@ -542,7 +542,10 @@ void mcu_usart_init(void)
 
 	tusb_cdc_init();
 #endif
+}
 
+void mcu_uart_init(void)
+{
 #ifdef MCU_HAS_UART
 	/*enables RCC clocks and GPIO*/
 	RCC->D2CCIP2R &= ~0x3F;
@@ -564,7 +567,10 @@ void mcu_usart_init(void)
 	NVIC_EnableIRQ(COM_IRQ);
 	COM_UART->CR1 |= (USART_CR1_RE | USART_CR1_TE | USART_CR1_UE); // enable TE, RE and UART
 #endif
+}
 
+void mcu_uart2_init(void)
+{
 #ifdef MCU_HAS_UART2
 	/*enables RCC clocks and GPIO*/
 	RCC->D2CCIP2R &= ~0x3F;
@@ -710,28 +716,22 @@ void mcu_uart2_flush(void)
 
 #endif
 
+void mcu_i2c_init()
+{
+#ifdef MCU_HAS_I2C
+	// set max freq
+	mcu_i2c_config(I2C_FREQ);
+#endif
+}
+
 void mcu_init(void)
 {
 	// make sure both APB1 and APB2 are running at the same clock (48MHz)
 	mcu_clocks_init();
 	mcu_io_init();
-	mcu_usart_init();
 	mcu_rtc_init();
 #if SERVOS_MASK > 0
 	servo_timer_init();
-#endif
-#ifdef MCU_HAS_SPI
-	spi_config_t spi_conf = {0};
-	spi_conf.mode = SPI_MODE;
-	mcu_spi_config(spi_conf, SPI_FREQ);
-#endif
-#ifdef MCU_HAS_SPI2
-	spi_config_t spi2_conf = {0};
-	spi2_conf.mode = SPI2_MODE;
-	mcu_spi2_config(spi2_conf, SPI2_FREQ);
-#endif
-#ifdef MCU_HAS_I2C
-	mcu_i2c_config(I2C_FREQ);
 #endif
 
 	stm32_flash_current_offset = 0;
@@ -1034,6 +1034,15 @@ typedef enum spi_port_state_enum
 static volatile spi_port_state_t spi_port_state = SPI_UNKNOWN;
 static bool spi_enable_dma = false;
 
+void mcu_spi_init(void)
+{
+#ifdef MCU_HAS_SPI
+	spi_config_t spi_conf = {0};
+	spi_conf.mode = SPI_MODE;
+	mcu_spi_config(spi_conf, SPI_FREQ);
+#endif
+}
+
 void mcu_spi_config(spi_config_t config, uint32_t frequency)
 {
 	uint8_t div = (frequency >= 2000000UL) ? (uint8_t)(SPI_CLOCK / frequency) : (uint8_t)(SPI_CLOCK_SLOW / frequency);
@@ -1300,6 +1309,15 @@ uint8_t mcu_spi_xmit(uint8_t c)
 #ifdef MCU_HAS_SPI2
 static volatile spi_port_state_t spi2_port_state = SPI_UNKNOWN;
 static bool spi2_enable_dma = false;
+
+void mcu_spi2_init(void)
+{
+#ifdef MCU_HAS_SPI2
+	spi_config_t spi2_conf = {0};
+	spi2_conf.mode = SPI2_MODE;
+	mcu_spi2_config(spi2_conf, SPI2_FREQ);
+#endif
+}
 
 void mcu_spi2_config(spi_config_t config, uint32_t frequency)
 {

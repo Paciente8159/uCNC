@@ -50,6 +50,7 @@ extern "C"
 #define MODULE_LOCK_DISABLE(X) CLEARFLAG(g_module_lockguard, (X & ~LISTENER_RUNNING_LOCK))
 
 #define DECL_MODULE(name) void name##_init(void)
+#define DECL_WEAK_MODULE(name) void __attribute__((weak)) name##_init(void)
 #define LOAD_MODULE(name)          \
 	extern void name##_init(void); \
 	name##_init()

@@ -342,7 +342,7 @@ void MCU_COM2_ISR(void)
 }
 #endif
 
-void mcu_usart_init(void)
+void mcu_uart_init(void)
 {
 #ifdef MCU_HAS_UART
 	PINSEL_CFG_Type tx = {TX_PORT, TX_BIT, UART_ALT_FUNC, PINSEL_PINMODE_PULLUP, PINSEL_PINMODE_NORMAL};
@@ -366,7 +366,10 @@ void mcu_usart_init(void)
 	NVIC_ClearPendingIRQ(COM_IRQ);
 	NVIC_EnableIRQ(COM_IRQ);
 #endif
+}
 
+void mcu_uart2_init(void)
+{
 #ifdef MCU_HAS_UART2
 	PINSEL_CFG_Type tx = {TX2_PORT, TX2_BIT, UART2_ALT_FUNC, PINSEL_PINMODE_PULLUP, PINSEL_PINMODE_NORMAL};
 	PINSEL_ConfigPin(&tx);
@@ -389,7 +392,10 @@ void mcu_usart_init(void)
 	NVIC_ClearPendingIRQ(COM2_IRQ);
 	NVIC_EnableIRQ(COM2_IRQ);
 #endif
+}
 
+void mcu_usb_init(void)
+{
 #ifdef MCU_HAS_USB
 #ifdef USE_ARDUINO_CDC
 	lpc176x_usb_init();
@@ -444,28 +450,8 @@ void mcu_rtc_init()
 }
 
 /*IO functions*/
-
-/**
- * initializes the mcu
- * this function needs to:
- *   - configure all IO pins (digital IO, PWM, Analog, etc...)
- *   - configure all interrupts
- *   - configure uart or usb
- *   - start the internal RTC
- * */
-void mcu_init(void)
+void mcu_spi_init()
 {
-	mcu_clocks_init();
-
-	mcu_io_init();
-	mcu_usart_init();
-	// SysTick is started by the framework but is not working
-	// Using timer
-	mcu_rtc_init();
-#if SERVOS_MASK > 0
-	servo_timer_init();
-#endif
-	GPDMA_Init();
 #ifdef MCU_HAS_SPI
 	// powerup DMA
 	// LPC_SC->PCONP |= CLKPWR_PCONP_PCGPDMA;
@@ -486,6 +472,10 @@ void mcu_init(void)
 	SPI_REG->CR1 |= 1 << 1;		   // enable SSP*/
 
 #endif
+}
+
+void mcu_spi2_init()
+{
 #ifdef MCU_HAS_SPI2
 	// powerup DMA
 	// LPC_SC->PCONP |= CLKPWR_PCONP_PCGPDMA;
@@ -506,9 +496,35 @@ void mcu_init(void)
 	SPI2_REG->CR1 |= 1 << 1;		 // enable SSP*/
 
 #endif
+}
+
+void mcu_i2c_init()
+{
 #ifdef MCU_HAS_I2C
 	mcu_i2c_config(I2C_FREQ);
 #endif
+}
+
+/**
+ * initializes the mcu
+ * this function needs to:
+ *   - configure all IO pins (digital IO, PWM, Analog, etc...)
+ *   - configure all interrupts
+ *   - configure uart or usb
+ *   - start the internal RTC
+ * */
+void mcu_init(void)
+{
+	mcu_clocks_init();
+	mcu_io_init();
+	mcu_uart_init();
+	// SysTick is started by the framework but is not working
+	// Using timer
+	mcu_rtc_init();
+#if SERVOS_MASK > 0
+	servo_timer_init();
+#endif
+	GPDMA_Init();
 
 	mcu_enable_global_isr();
 }
