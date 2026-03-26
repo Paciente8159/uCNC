@@ -40,7 +40,6 @@ extern "C"
 #define ARG_MAX_LEN MAX(WIFI_SSID_MAX_LEN, BT_ID_MAX_LEN)
 
 #ifdef ENABLE_WIFI
-#include <WiFi.h>
 #include <Update.h>
 
 #ifndef WIFI_USER
@@ -66,6 +65,189 @@ typedef struct
 uint16_t wifi_settings_offset;
 wifi_settings_t wifi_settings;
 
+#include <string.h>
+#include <stdbool.h>
+#include <errno.h>
+#include "esp_wifi.h"
+#include "esp_event.h"
+#include "esp_log.h"
+#include "esp_netif.h"
+#include "lwip/sockets.h"
+#include "lwip/netdb.h"
+#include "lwip/inet.h"
+
+static esp_netif_t *netif_sta = NULL;
+static esp_netif_t *netif_ap = NULL;
+static bool wifi_initialized = false;
+
+void esp32_wifi_stop(void)
+{
+	if (!wifi_initialized)
+		return;
+
+	esp_wifi_stop();
+	esp_wifi_deinit();
+
+	if (netif_sta)
+	{
+		esp_netif_destroy(netif_sta);
+		netif_sta = NULL;
+	}
+	if (netif_ap)
+	{
+		esp_netif_destroy(netif_ap);
+		netif_ap = NULL;
+	}
+
+	wifi_initialized = false;
+}
+
+uint32_t esp32_wifi_get_ip(void)
+{
+	if (!wifi_initialized)
+		return 0;
+
+	if (wifi_settings.wifi_mode == 2) // AP only
+		return 0;
+
+	esp_netif_ip_info_t ip;
+	if (netif_sta && esp_netif_get_ip_info(netif_sta, &ip) == ESP_OK)
+		return ip.ip.addr;
+
+	return 0;
+}
+
+uint32_t esp32_wifi_ap_get_ip(void)
+{
+	if (!wifi_initialized)
+		return 0;
+
+	if (wifi_settings.wifi_mode == 1) // STA only
+		return 0;
+
+	esp_netif_ip_info_t ip;
+	if (netif_ap && esp_netif_get_ip_info(netif_ap, &ip) == ESP_OK)
+		return ip.ip.addr;
+
+	return 0;
+}
+
+void esp32_wifi_config(bool force)
+{
+	/* Always stop and re-init to avoid errors */
+	esp32_wifi_stop();
+
+	if (!force && wifi_settings.wifi_on == 0)
+	{
+		return;
+	}
+
+	ESP_ERROR_CHECK(esp_netif_init());
+
+	/* Create interfaces */
+	if (wifi_settings.wifi_mode != 2)
+	{
+		netif_sta = esp_netif_create_default_wifi_sta();
+	}
+	if (wifi_settings.wifi_mode != 1)
+	{
+		netif_ap = esp_netif_create_default_wifi_ap();
+	}
+
+	wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+	ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+
+	/* Disable power saving */
+	esp_wifi_set_ps(WIFI_PS_NONE);
+
+	wifi_config_t wifi_cfg;
+	memset(&wifi_cfg, 0, sizeof(wifi_cfg));
+
+	/* STA CONFIG */
+	if (wifi_settings.wifi_mode != 2)
+	{
+		strncpy((char *)wifi_cfg.sta.ssid, (const char *)wifi_settings.ssid, sizeof(wifi_cfg.sta.ssid));
+		strncpy((char *)wifi_cfg.sta.password, (const char *)wifi_settings.pass, sizeof(wifi_cfg.sta.password));
+		wifi_cfg.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
+		wifi_cfg.sta.pmf_cfg.capable = true;
+		wifi_cfg.sta.pmf_cfg.required = false;
+
+#ifdef USE_STATIC_IP
+		esp_netif_ip_info_t ip;
+		ip.ip.addr = STATIC_IP_IP;
+		ip.gw.addr = STATIC_IP_GW;
+		ip.netmask.addr = STATIC_IP_SUB;
+		esp_netif_dhcpc_stop(netif_sta);
+		esp_netif_set_ip_info(netif_sta, &ip);
+#endif
+	}
+
+	/* AP CONFIG */
+	if (wifi_settings.wifi_mode != 1)
+	{
+		strncpy((char *)wifi_cfg.ap.ssid, BOARD_NAME, sizeof(wifi_cfg.ap.ssid));
+		wifi_cfg.ap.ssid_len = strlen(BOARD_NAME);
+		wifi_cfg.ap.channel = 1;
+		wifi_cfg.ap.max_connection = 4;
+		wifi_cfg.ap.authmode = WIFI_AUTH_WPA_WPA2_PSK;
+		strncpy((char *)wifi_cfg.ap.password, (const char *)wifi_settings.pass, sizeof(wifi_cfg.ap.password));
+		if (strlen((const char *)wifi_settings.pass) == 0)
+			wifi_cfg.ap.authmode = WIFI_AUTH_OPEN;
+	}
+
+	/* Set mode */
+	wifi_mode_t mode = WIFI_MODE_NULL;
+	if (wifi_settings.wifi_mode == 0)
+		mode = WIFI_MODE_APSTA;
+	if (wifi_settings.wifi_mode == 1)
+		mode = WIFI_MODE_STA;
+	if (wifi_settings.wifi_mode == 2)
+		mode = WIFI_MODE_AP;
+
+	ESP_ERROR_CHECK(esp_wifi_set_mode(mode));
+
+	/* Apply configs */
+	if (wifi_settings.wifi_mode != 2)
+		ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_cfg));
+
+	if (wifi_settings.wifi_mode != 1)
+		ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_cfg));
+
+	ESP_ERROR_CHECK(esp_wifi_start());
+
+	if (wifi_settings.wifi_mode != 2)
+		esp_wifi_connect();
+
+	wifi_initialized = true;
+}
+
+uint8_t esp32_wifi_scan(void)
+{
+	uint16_t ap_count = 0;
+	wifi_ap_record_t *list = NULL;
+
+	esp_wifi_scan_start(NULL, true);
+	esp_wifi_scan_get_ap_num(&ap_count);
+
+	if (ap_count == 0)
+		return 0;
+
+	list = (wifi_ap_record_t *)calloc(ap_count, sizeof(wifi_ap_record_t));
+	esp_wifi_scan_get_ap_records(&ap_count, list);
+
+	for (uint16_t i = 0; i < ap_count; i++)
+	{
+		proto_info("%d) %s\tSignal: %d dBm",
+				   i + 1,
+				   (char *)list[i].ssid,
+				   list[i].rssi);
+	}
+
+	free(list);
+	return ap_count;
+}
+#endif
+
 /**
  * Custom WiFi+BT commands
  */
@@ -84,33 +266,9 @@ extern "C"
 		{
 			if (!strcmp((const char *)&(cmd_params->cmd)[4], "ON"))
 			{
-				WiFi.disconnect();
-				switch (wifi_settings.wifi_mode)
-				{
-				case 1:
-					WiFi.mode(WIFI_STA);
-					WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
-					proto_info("Trying to connect to WiFi");
-					break;
-				case 2:
-					WiFi.mode(WIFI_AP);
-					WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
-					proto_info("AP started");
-					proto_info("SSID>" BOARD_NAME);
-					proto_info("IP>%s", WiFi.softAPIP().toString().c_str());
-					break;
-				default:
-					WiFi.mode(WIFI_AP_STA);
-					WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
-					proto_info("Trying to connect to WiFi");
-					WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
-					proto_info("AP started");
-					proto_info("SSID>" BOARD_NAME);
-					proto_info("IP>%s", WiFi.softAPIP().toString().c_str());
-					break;
-				}
-
 				wifi_settings.wifi_on = 1;
+				esp32_wifi_config(false);
+
 				settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
 				*(cmd_params->error) = STATUS_OK;
 				return EVENT_HANDLED;
@@ -118,8 +276,8 @@ extern "C"
 
 			if (!strcmp((const char *)&(cmd_params->cmd)[4], "OFF"))
 			{
-				WiFi.disconnect();
 				wifi_settings.wifi_on = 0;
+				esp32_wifi_config(false);
 				settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
 				*(cmd_params->error) = STATUS_OK;
 				return EVENT_HANDLED;
@@ -158,7 +316,8 @@ extern "C"
 			{
 				// Serial.println("[MSG:Scanning Networks]");
 				proto_info("Scanning Networks");
-				int numSsid = WiFi.scanNetworks();
+				int numSsid = esp32_wifi_scan();
+				// int numSsid = WiFi.scanNetworks();
 				if (numSsid == -1)
 				{
 					proto_info("Failed to scan!");
@@ -168,11 +327,6 @@ extern "C"
 				// print the list of networks seen:
 				proto_info("%d available networks", numSsid);
 
-				// print the network number and name for each network found:
-				for (int netid = 0; netid < numSsid; netid++)
-				{
-					proto_info("%d) %s\tSignal:  %ddBm", netid, WiFi.SSID(netid).c_str(), WiFi.RSSI(netid));
-				}
 				*(cmd_params->error) = STATUS_OK;
 				return EVENT_HANDLED;
 			}
@@ -259,14 +413,14 @@ extern "C"
 					switch (wifi_settings.wifi_mode)
 					{
 					case 1:
-						proto_info("IP>%s", WiFi.localIP().toString().c_str());
+						proto_info("IP>%I", esp32_wifi_get_ip());
 						break;
 					case 2:
-						proto_info("IP>%s", WiFi.softAPIP().toString().c_str());
+						proto_info("IP>%I", esp32_wifi_ap_get_ip());
 						break;
 					default:
-						proto_info("STA IP>%s", WiFi.localIP().toString().c_str());
-						proto_info("AP IP>%s", WiFi.softAPIP().toString().c_str());
+						proto_info("STA IP>%I", esp32_wifi_get_ip());
+						proto_info("AP IP>%I", esp32_wifi_ap_get_ip());
 						break;
 					}
 				}
@@ -454,6 +608,7 @@ extern "C"
 	// File upload handler for POST /update
 	static void ota_upload_cb(int client_idx)
 	{
+		static uint32_t received_bytes = 0;
 		http_upload_t up = http_file_upload_status(client_idx);
 
 		if (up.status == HTTP_UPLOAD_START)
@@ -469,7 +624,8 @@ extern "C"
 #endif
 
 			// Called once at start of upload
-			ESP_LOGI("OTA", "Update start: %s\n", up.filename);
+			received_bytes = 0;
+			ESP_LOGI("OTA", "Update start: %s", up.filename);
 			uint32_t maxSketchSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
 			if (!Update.begin(maxSketchSpace, U_FLASH))
 			{
@@ -478,6 +634,8 @@ extern "C"
 		}
 		else if (up.status == HTTP_UPLOAD_PART)
 		{
+			received_bytes += up.datalen;
+			ESP_LOGD("OTA", "Recieved bytes: %ld", received_bytes);
 			// Called for each chunk
 			if (Update.write(up.data, up.datalen) != up.datalen)
 			{
@@ -490,7 +648,7 @@ extern "C"
 			if (Update.end(true))
 			{
 				const char suc[] = "Update Success! Rebooting...";
-				ESP_LOGI("OTA", "Update Success: %lu bytes\r\n", up.datalen);
+				ESP_LOGI("OTA", "Update Success: %lu bytes", up.datalen);
 				http_send_str(client_idx, 200, (char *)type_text, (char *)suc);
 				http_send(client_idx, 200, (char *)type_text, NULL, 0);
 				cnc_delay_ms(100);
@@ -532,170 +690,87 @@ extern "C"
  */
 #if defined(ENABLE_WIFI)
 #include "../../../modules/net/socket.h"
+#include <errno.h>
+#include <fcntl.h>
+#include "lwip/sockets.h"
 
-typedef struct wifi_server_
+int bsd_socket(int domain, int type, int protocol)
 {
-	uint16_t port;
-	WiFiServer server;
-	WiFiClient clients[SOCKET_MAX_CLIENTS];
-} wifi_server_t;
-
-wifi_server_t servers[MAX_SOCKETS];
-
-extern "C"
-{
-	static int find_free_server(void)
-	{
-		for (int i = 0; i < MAX_SOCKETS; i++)
-		{
-			if (!servers[i].port)
-			{
-				return i;
-			}
-		}
+	int fd = lwip_socket(domain, type, protocol);
+	if (fd < 0)
 		return -1;
-	}
 
-	static int find_free_client(int s)
-	{
-		for (int i = 0; i < SOCKET_MAX_CLIENTS; i++)
-		{
-			if (servers[i].clients[i].fd() == -1)
-				return i;
-		}
-		return -1;
-	}
-
-	static WiFiClient *get_client(int fd)
-	{
-		for (int i = 0; i < MAX_SOCKETS; i++)
-		{
-			for (int j = 0; j < SOCKET_MAX_CLIENTS; j++)
-			{
-				if (servers[i].clients[j].fd() == fd)
-				{
-					return &(servers[i].clients[j]);
-				}
-			}
-		}
-		return NULL;
-	}
-
-	static int bsd_socket(int domain, int type, int protocol)
-	{
-		int srv = find_free_server();
-		if (srv < 0)
-		{
-			return -1;
-		}
-
-		return srv;
-	}
-
-	static int bsd_bind(int sockfd, const struct bsd_sockaddr_in *addr, int addrlen)
-	{
-		if (sockfd < 0)
-		{
-			return -1;
-		}
-		uint16_t port = bsd_htons(addr->sin_port);
-		servers[sockfd].port = port;
-		servers[sockfd].server = WiFiServer(port, SOCKET_MAX_CLIENTS);
-		servers[sockfd].server.begin(port);
-		// ESP_LOGV("socket", "server id %d listen on port %d", sockfd, port);
-		return 0;
-	}
-
-	static int bsd_listen(int sockfd, int backlog)
-	{
-		if (sockfd < 0)
-		{
-			return -1;
-		}
-		return 0;
-	}
-
-	static int bsd_accept(int sockfd, struct bsd_sockaddr_in *addr, int *addrlen)
-	{
-		if (sockfd < 0)
-		{
-			return -1;
-		}
-
-		int i = find_free_client(sockfd);
-		if (i >= 0 && servers[sockfd].server.hasClient())
-		{
-			servers[sockfd].clients[i] = servers[sockfd].server.available();
-			if (!servers[sockfd].clients[i].connected())
-			{
-				return -1;
-			}
-			return servers[sockfd].clients[i].fd();
-		}
-
-		return -1;
-	}
-
-	static int bsd_recv(int sockfd, void *buf, size_t len, int flags)
-	{
-		WiFiClient *c = get_client(sockfd);
-
-		if (!c)
-		{
-			return -1;
-		}
-
-		// ESP_LOGV("socket", "client id %d recv", c->fd());
-
-		if (!c->connected())
-		{
-			return 0;
-		}
-
-		if (!c->available())
-		{
-			return -1;
-		}
-
-		return c->read((uint8_t *)buf, len);
-	}
-
-	static int bsd_send(int sockfd, const void *buf, size_t len, int flags)
-	{
-		WiFiClient *c = get_client(sockfd);
-
-		if (!c)
-		{
-			return -1;
-		}
-
-		// ESP_LOGV("socket", "client id %d send", c->fd());
-
-		if (!c->connected())
-		{
-			return -1;
-		}
-
-		return c->write((const uint8_t *)buf, len);
-	}
-
-	static int bsd_close(int fd)
-	{
-		WiFiClient *c = get_client(fd);
-
-		if (!c)
-		{
-			return -1;
-		}
-
-		// ESP_LOGV("socket", "client id %d close", c->fd());
-
-		c->stop();
-		return 0;
-	}
-
-	socket_device_t wifi_socket = {.socket = bsd_socket, .bind = bsd_bind, .listen = bsd_listen, .accept = bsd_accept, .recv = bsd_recv, .send = bsd_send, .close = bsd_close};
+	lwip_fcntl(fd, F_SETFL, O_NONBLOCK);
+	return fd;
 }
+
+int bsd_bind(int sockfd, const struct bsd_sockaddr_in *addr, int addrlen)
+{
+	struct sockaddr_in a;
+	memset(&a, 0, sizeof(a));
+	a.sin_family = AF_INET;
+	a.sin_port = addr->sin_port;
+	a.sin_addr.s_addr = addr->sin_addr;
+	return lwip_bind(sockfd, (struct sockaddr *)&a, sizeof(a));
+}
+
+int bsd_listen(int sockfd, int backlog)
+{
+	return lwip_listen(sockfd, backlog);
+}
+
+int bsd_accept(int sockfd, struct bsd_sockaddr_in *addr, int *addrlen)
+{
+	struct sockaddr_in a;
+	socklen_t len = sizeof(a);
+
+	int fd = lwip_accept(sockfd, (struct sockaddr *)&a, &len);
+	if (fd < 0)
+		return -1;
+
+	lwip_fcntl(fd, F_SETFL, O_NONBLOCK);
+
+	if (addr)
+	{
+		addr->sin_family = a.sin_family;
+		addr->sin_port = a.sin_port;
+		addr->sin_addr = a.sin_addr.s_addr;
+	}
+	if (addrlen)
+		*addrlen = sizeof(struct bsd_sockaddr_in);
+
+	return fd;
+}
+
+int bsd_recv(int sockfd, void *buf, size_t len, int flags)
+{
+	int r = lwip_recv(sockfd, buf, len, flags);
+	if (r < 0 && errno == EWOULDBLOCK)
+		return -1;
+	return r;
+}
+
+int bsd_send(int sockfd, const void *buf, size_t len, int flags)
+{
+	int r = lwip_send(sockfd, buf, len, flags);
+	if (r < 0 && errno == EWOULDBLOCK)
+		return -1;
+	return r;
+}
+
+int bsd_close(int fd)
+{
+	return lwip_close(fd);
+}
+
+socket_device_t wifi_socket = {
+	.socket = bsd_socket,
+	.bind = bsd_bind,
+	.listen = bsd_listen,
+	.accept = bsd_accept,
+	.recv = bsd_recv,
+	.send = bsd_send,
+	.close = bsd_close};
 
 #endif
 
@@ -703,35 +778,7 @@ extern "C"
 #include "../../../module.h"
 static void mcu_wifi_task(void *arg)
 {
-	WiFi.disconnect();
-
-	if (wifi_settings.wifi_on)
-	{
-		switch (wifi_settings.wifi_mode)
-		{
-		case 1:
-			WiFi.mode(WIFI_STA);
-			WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
-			proto_info("Trying to connect to WiFi");
-			break;
-		case 2:
-			WiFi.mode(WIFI_AP);
-			WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
-			proto_info("AP started");
-			proto_info("SSID>" BOARD_NAME);
-			proto_info("IP>%s", WiFi.softAPIP().toString().c_str());
-			break;
-		default:
-			WiFi.mode(WIFI_AP_STA);
-			WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
-			proto_info("Trying to connect to WiFi");
-			WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
-			proto_info("AP started");
-			proto_info("SSID>" BOARD_NAME);
-			proto_info("IP>%s", WiFi.softAPIP().toString().c_str());
-			break;
-		}
-	}
+	esp32_wifi_config(false);
 
 	for (;;)
 	{
@@ -746,40 +793,21 @@ static void mcu_wifi_task(void *arg)
 }
 #endif
 
-#endif
-
-#ifdef USE_STATIC_IP
-#ifndef STATIC_IP_IP
-// 192.168.1.200
-#define STATIC_IP_IP 3355551936
-#endif
-#ifndef STATIC_IP_GW
-// 192.168.1.1
-#define STATIC_IP_GW 16885952
-#endif
-#ifndef STATIC_IP_SUB
-// 255.255.255.0
-#define STATIC_IP_SUB 16777215
-#endif
-
-static IPAddress local_IP((uint32_t)(STATIC_IP_IP));
-static IPAddress gateway((uint32_t)(STATIC_IP_GW));
-static IPAddress subnet((uint32_t)(STATIC_IP_SUB));
-#endif
-
 extern "C"
 {
 #include "../../../modules/net/socket.h"
 	void esp32_pre_init(void)
 	{
-#ifdef ENABLE_WIFI
-#ifdef USE_STATIC_IP
-		if (!WiFi.config(local_IP, gateway, subnet))
+		static bool event_loop_created = false;
+
+		if (!event_loop_created)
 		{
-			proto_info("Static IP config failed");
+			ESP_ERROR_CHECK(esp_event_loop_create_default());
+			event_loop_created = true;
 		}
-#endif
-		WiFi.begin();
+
+#ifdef ENABLE_WIFI
+		esp32_wifi_config(true);
 		// register WiFi as the device default network device
 		socket_register_device(&wifi_socket);
 #endif
@@ -809,9 +837,6 @@ extern "C"
 
 #ifdef ENABLE_WIFI
 		ota_server_start();
-#ifndef ENABLE_BLUETOOTH
-		WiFi.setSleep(WIFI_PS_NONE);
-#endif
 
 		wifi_settings_offset = settings_register_external_setting(sizeof(wifi_settings_t));
 		if (settings_load(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t)))

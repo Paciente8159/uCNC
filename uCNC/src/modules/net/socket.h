@@ -36,7 +36,7 @@ extern "C"
 #define SOCKET_MAX_CLIENTS 4
 #endif
 #ifndef SOCKET_MAX_DATA_SIZE
-#define SOCKET_MAX_DATA_SIZE 32
+#define SOCKET_MAX_DATA_SIZE 1024
 #endif
 
 #ifndef IP_ANY
