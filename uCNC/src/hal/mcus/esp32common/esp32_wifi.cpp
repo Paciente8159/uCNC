@@ -444,8 +444,6 @@ extern "C"
 /**
  * Flash File System
  */
-#ifdef ENABLE_SOCKETS
-
 #define MCU_FLASH_FS_LITTLE_FS 1
 #define MCU_FLASH_FS_SPIFFS 2
 
@@ -579,7 +577,6 @@ extern "C"
 		return FLASH_FS.rmdir(path);
 	}
 }
-#endif
 
 /**
  * OTA
@@ -798,6 +795,7 @@ extern "C"
 #include "../../../modules/net/socket.h"
 	void esp32_pre_init(void)
 	{
+#ifdef ENABLE_WIFI
 		static bool event_loop_created = false;
 
 		if (!event_loop_created)
@@ -806,7 +804,6 @@ extern "C"
 			event_loop_created = true;
 		}
 
-#ifdef ENABLE_WIFI
 		esp32_wifi_config(true);
 		// register WiFi as the device default network device
 		socket_register_device(&wifi_socket);
