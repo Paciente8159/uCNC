@@ -3350,8 +3350,10 @@ extern "C"
 #endif
 #if (SPI_CLK_BIT == 14 || SPI_CLK_BIT == 25)
 #define SPI_INSTANCE HSPI
+#define SPI_DEV_HOST HSPI_HOST
 #else
 #define SPI_INSTANCE VSPI
+#define SPI_DEV_HOST VSPI_HOST
 #endif
 #endif
 
@@ -3369,8 +3371,10 @@ extern "C"
 #endif
 #if (SPI2_CLK_BIT == 14 || SPI2_CLK_BIT == 25)
 #define SPI2_INSTANCE HSPI
+#define SPI2_DEV_HOST HSPI_HOST
 #else
 #define SPI2_INSTANCE VSPI
+#define SPI2_DEV_HOST VSPI_HOST
 #endif
 #endif
 

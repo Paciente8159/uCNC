@@ -1051,6 +1051,12 @@ void __attribute__((weak)) mcu_i2c_slave_cb(uint8_t *data, uint8_t *datalen)
 #endif
 
 #if (defined(MCU_HAS_SPI))
+void __attribute__((weak)) mcu_spi_init(void)
+{
+	spi_config_t c = {0};
+	mcu_spi_config(c, SPI_FREQ);
+}
+
 void __attribute__((weak)) mcu_spi_config(spi_config_t config, uint32_t frequency)
 {
 	(void)config;
@@ -1097,6 +1103,12 @@ spi_port_t __attribute__((used)) mcu_spi_port = {.isbusy = false, .start = mcu_s
 #endif
 
 #if (defined(MCU_HAS_SPI2))
+void __attribute__((weak)) mcu_spi2_init(void)
+{
+	spi_config_t c = {0};
+	mcu_spi2_config(c, SPI2_FREQ);
+}
+
 void __attribute__((weak)) mcu_spi2_config(spi_config_t config, uint32_t frequency)
 {
 	(void)config;
