@@ -1400,9 +1400,9 @@ extern "C"
 #define mcu_get_pwm(X) (rp2350_pwm[X - PWM_PINS_OFFSET])
 #define mcu_get_analog(X) analogRead(__indirect__(X, BIT))
 
-#define mcu_millis() millis()
-#define mcu_micros() micros()
-#define mcu_free_micros() micros()
+#define mcu_millis() to_ms_since_boot(get_absolute_time())
+#define mcu_micros() to_us_since_boot(get_absolute_time())
+#define mcu_free_micros() ((uint32_t)((((SysTick->LOAD + 1) - SysTick->VAL) * 1000UL) / (SysTick->LOAD + 1)))
 
 #include "cmsis_gcc.h"
 #define mcu_enable_global_isr __enable_irq
