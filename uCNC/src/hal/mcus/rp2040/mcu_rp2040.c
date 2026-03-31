@@ -330,7 +330,7 @@ void mcu_init(void)
 	// init rtc, oneshot and servo alarms
 	mcu_alarms_init();
 	rtc_alarm.alarm_cb = &mcu_rtc_isr;
-	mcu_enqueue_alarm(&rtc_alarm, 500000UL);
+	mcu_enqueue_alarm(&rtc_alarm, 1000UL);
 
 #if SERVOS_MASK > 0
 	servo_alarm.alarm_cb = &mcu_clear_servos;
@@ -654,7 +654,7 @@ void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 {
 	// mcu_timeout_cb = fp;
 	oneshot_alarm.alarm_cb = &mcu_oneshot_isr;
-	rp2040_oneshot_reload = (1000000UL / timeout);
+	rp2040_oneshot_reload = timeout;
 	mcu_timeout_cb = fp;
 }
 #endif
