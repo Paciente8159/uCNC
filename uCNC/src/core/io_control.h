@@ -123,6 +123,12 @@ extern io_probe_action_cb io_probe_custom_disable;
 	void io_disable_probe(void);
 	bool io_get_probe(void);
 
+	// evaluation functions
+	MCU_IO_CALLBACK void mcu_limits_eval(void);
+	MCU_IO_CALLBACK void mcu_controls_eval(void);
+	MCU_IO_CALLBACK void mcu_probe_eval(void);
+	MCU_IO_CALLBACK void mcu_inputs_eval(void);
+
 	// outputs
 	void io_set_steps(uint8_t mask);
 	void io_toggle_steps(uint8_t mask);

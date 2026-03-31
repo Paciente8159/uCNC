@@ -1071,7 +1071,7 @@ uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data)
 		if (io_get_probe() ^ (flags & 0x01))
 		{
 #ifndef ENABLE_RT_PROBE_CHECKING
-			mcu_probe_changed_cb();
+			mcu_probe_eval();
 #endif
 			break;
 		}

@@ -1016,14 +1016,14 @@ MCU_CALLBACK void mcu_step_cb(void)
 
 #ifdef ENABLE_RT_PROBE_CHECKING
 	// check if probe was hit on probing motions
-	mcu_probe_changed_cb();
+	mcu_probe_eval();
 #endif
 #ifdef ENABLE_RT_LIMITS_CHECKING
 	// check limits on homing motions
 	// if not homing it will do regular checks elsewere
 	if (cnc_get_exec_state(EXEC_HOMING))
 	{
-		mcu_limits_changed_cb();
+		mcu_limits_eval();
 		if (cnc_get_exec_state(EXEC_LIMITS))
 		{
 			return;

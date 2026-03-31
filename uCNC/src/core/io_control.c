@@ -89,10 +89,8 @@ WEAK_EVENT_HANDLER(probe_disable)
 
 #endif
 
-MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
+MCU_IO_CALLBACK void mcu_limits_eval(void)
 {
-	mcu_isr_context_enter();
-
 #ifdef DISABLE_ALL_LIMITS
 	return;
 #else
@@ -156,10 +154,14 @@ MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 #endif
 }
 
-MCU_IO_CALLBACK void mcu_controls_changed_cb(void)
+MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 {
 	mcu_isr_context_enter();
+	mcu_limits_eval();
+}
 
+MCU_IO_CALLBACK void mcu_controls_eval(void)
+{
 #ifdef DISABLE_ALL_CONTROLS
 	return;
 #else
@@ -218,10 +220,14 @@ MCU_IO_CALLBACK void mcu_controls_changed_cb(void)
 #endif
 }
 
-MCU_IO_CALLBACK void mcu_probe_changed_cb(void)
+MCU_IO_CALLBACK void mcu_controls_changed_cb(void)
 {
 	mcu_isr_context_enter();
+	mcu_controls_eval();
+}
 
+MCU_IO_CALLBACK void mcu_probe_eval(void)
+{
 #if !ASSERT_PIN(PROBE)
 	return;
 #else
@@ -252,10 +258,14 @@ MCU_IO_CALLBACK void mcu_probe_changed_cb(void)
 #endif
 }
 
-MCU_IO_CALLBACK void mcu_inputs_changed_cb(void)
+MCU_IO_CALLBACK void mcu_probe_changed_cb(void)
 {
 	mcu_isr_context_enter();
+	mcu_probe_eval();
+}
 
+MCU_IO_CALLBACK void mcu_inputs_eval(void)
+{
 	static volatile uint8_t prev_inputs = 0;
 	uint8_t inputs = 0;
 	uint8_t diff;
@@ -332,6 +342,17 @@ MCU_IO_CALLBACK void mcu_inputs_changed_cb(void)
 	}
 }
 
+MCU_IO_CALLBACK void mcu_inputs_changed_cb(void)
+{
+	mcu_isr_context_enter();
+
+#ifdef ENABLE_INPUT_CHANGED_RTC_READ
+	extern uint8_t g_rtc_input_debounce;
+	g_rtc_input_debounce = 2; // do 2 additional read cycles via RTC loop
+#endif
+	mcu_inputs_eval();
+}
+
 #ifdef ENABLE_MULTI_STEP_HOMING
 void io_lock_limits(uint8_t limitmask)
 {
@@ -351,7 +372,7 @@ void io_disable_limits(void)
 void io_invert_limits(uint8_t limitmask)
 {
 	io_invert_limits_mask = limitmask;
-	mcu_limits_changed_cb();
+	mcu_limits_eval();
 }
 
 uint8_t io_get_raw_limits(void)

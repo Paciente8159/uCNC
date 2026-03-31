@@ -70,6 +70,13 @@ extern "C"
 // #define PROBE_PULLUP_ENABLE
 
 /**
+ * Uncomment to add 2 additional evaluation cycle in the RTC loop
+ * This might help to catch slow changing signals that might be unstable on the state transition
+ * Beware that this will impact the signal time precision, as this uses the RTC and not a dedicated timer
+ */
+// #define ENABLE_INPUT_CHANGED_RTC_READ
+
+/**
  * Uncomment to enable custom probing overrides
  * This allows to create a custom probing inputs (like other inputs, software conditions, etc..)
  * Note that $6 will have no effect on the custom probing logic

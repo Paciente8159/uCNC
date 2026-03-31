@@ -355,14 +355,28 @@ void cnc_restore_motion(void)
 #endif
 }
 
+#ifdef ENABLE_INPUT_CHANGED_RTC_READ
+uint8_t g_rtc_input_debounce;
+#ifndef DISABLE_RTC_CODE
+#warning "RTC disabled, Input debounce will not work"
+#endif
+#endif
+
 // this function is executed every millisecond
 #ifndef DISABLE_RTC_CODE
 MCU_CALLBACK void mcu_rtc_cb(uint32_t millis)
 {
 	mcu_isr_context_enter();
 
-	// NEEDS REVIEW ON AVR
-
+// NEEDS REVIEW ON AVR
+#ifdef ENABLE_INPUT_CHANGED_RTC_READ
+	uint8_t debounce_loops = g_rtc_input_debounce;
+	if (debounce_loops)
+	{
+		g_rtc_input_debounce = --debounce_loops;
+		mcu_inputs_eval();
+	}
+#endif
 	// #ifndef ENABLE_RT_PROBE_CHECKING
 	// 	mcu_probe_changed_cb();
 	// #endif
@@ -1113,13 +1127,13 @@ static void cnc_io_dotasks(void)
 #endif
 
 	// #ifdef DISABLE_RTC_CODE
-	mcu_limits_changed_cb();
-	mcu_controls_changed_cb();
+	mcu_limits_eval();
+	mcu_controls_eval();
 	// #endif
 
 #if (DIN_ONCHANGE_MASK != 0 && ENCODERS < 1)
 	// extra call in case generic inputs are running with ISR disabled. Encoders need propper ISR to work.
-	mcu_inputs_changed_cb();
+	mcu_inputs_eval();
 #endif
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
