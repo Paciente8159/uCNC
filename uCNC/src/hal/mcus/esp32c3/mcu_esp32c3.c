@@ -437,7 +437,7 @@ void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 {
 	mcu_timeout_cb = fp;
 #if defined(MCU_HAS_ONESHOT_TIMER) && defined(ENABLE_RT_SYNC_MOTIONS)
-	esp32_oneshot_reload = ((ITP_SAMPLE_RATE >> 1) / timeout);
+	esp32_oneshot_reload = (timeout / signal_timer.us_step);
 #elif defined(MCU_HAS_ONESHOT_TIMER)
 	timer_config_t config = {0};
 	config.divider = getApbFrequency() / 1000000UL; // 1us per count
