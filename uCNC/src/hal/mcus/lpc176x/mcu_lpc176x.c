@@ -167,10 +167,16 @@ void MCU_SERVO_ISR(void)
 
 #endif
 
+void PendSV_Handler(void)
+{
+	uint32_t millis = _millis;
+	mcu_rtc_cb(millis);
+}
+
 void MCU_RTC_ISR(void)
 {
 	_millis++;
-	mcu_rtc_cb((uint32_t)_millis);
+	SCB->ICSR = SCB_ICSR_PENDSVSET_Msk; // signal low priority task
 }
 
 void MCU_ITP_ISR(void)
@@ -424,21 +430,22 @@ void mcu_usart_init(void)
 
 void mcu_rtc_init()
 {
-	// TIM_Cmd(RTC_TIMER_REG, DISABLE);
-	// TIM_TIMERCFG_Type tmrconfig;
-	// TIM_ConfigStructInit(TIM_TIMER_MODE, &tmrconfig);
-	// TIM_Init(RTC_TIMER_REG, TIM_TIMER_MODE, &tmrconfig);
-	// TIM_MATCHCFG_Type tmrmatch;
-	// tmrmatch.MatchChannel = RTC_TIMER;
-	// tmrmatch.IntOnMatch = ENABLE;
-	// tmrmatch.StopOnMatch = DISABLE;
-	// tmrmatch.ResetOnMatch = ENABLE;
-	// tmrmatch.MatchValue = 1000;
-	// TIM_ConfigMatch(RTC_TIMER_REG, &tmrmatch);
-	// NVIC_SetPriority(RTC_TIMER_IRQ, 10);
-	// NVIC_ClearPendingIRQ(RTC_TIMER_IRQ);
-	// NVIC_EnableIRQ(RTC_TIMER_IRQ);
-	// TIM_Cmd(RTC_TIMER_REG, ENABLE);
+	NVIC_SetPriority(PendSV_IRQn, 0xFF); // background task
+										 // TIM_Cmd(RTC_TIMER_REG, DISABLE);
+										 // TIM_TIMERCFG_Type tmrconfig;
+										 // TIM_ConfigStructInit(TIM_TIMER_MODE, &tmrconfig);
+										 // TIM_Init(RTC_TIMER_REG, TIM_TIMER_MODE, &tmrconfig);
+										 // TIM_MATCHCFG_Type tmrmatch;
+										 // tmrmatch.MatchChannel = RTC_TIMER;
+										 // tmrmatch.IntOnMatch = ENABLE;
+										 // tmrmatch.StopOnMatch = DISABLE;
+										 // tmrmatch.ResetOnMatch = ENABLE;
+										 // tmrmatch.MatchValue = 1000;
+										 // TIM_ConfigMatch(RTC_TIMER_REG, &tmrmatch);
+										 // NVIC_SetPriority(RTC_TIMER_IRQ, 10);
+										 // NVIC_ClearPendingIRQ(RTC_TIMER_IRQ);
+										 // NVIC_EnableIRQ(RTC_TIMER_IRQ);
+										 // TIM_Cmd(RTC_TIMER_REG, ENABLE);
 
 	// Systick is initialized by the Arduino framework
 }

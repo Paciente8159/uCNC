@@ -320,6 +320,12 @@ void EXTI15_10_IRQHandler(void)
 #endif
 #endif
 
+void PendSV_Handler(void){
+	uint32_t millis = mcu_runtime_ms;
+	mcu_rtc_cb(millis);
+	NVIC_ClearPendingIRQ(PendSV_IRQn);
+}
+
 #ifndef ARDUINO_ARCH_STM32
 void SysTick_IRQHandler(void)
 #else
@@ -374,10 +380,8 @@ void osSystickHandler(void)
 	ms_servo_counter = (servo_counter != 20) ? servo_counter : 0;
 
 #endif
-	uint32_t millis = mcu_runtime_ms;
-	millis++;
-	mcu_runtime_ms = millis;
-	mcu_rtc_cb(millis);
+	mcu_runtime_ms++;
+	SCB->ICSR = SCB_ICSR_PENDSVSET_Msk; // signal low priority task
 }
 
 /**
@@ -776,6 +780,7 @@ void mcu_rtc_init()
 	SysTick->VAL = 0;
 	NVIC_SetPriority(SysTick_IRQn, NVIC_RTC_IRQ_Pri);
 	SysTick->CTRL = 7; // Start SysTick (ABH clock)
+	NVIC_SetPriority(PendSV_IRQn, 0xFF); // background task
 }
 
 void mcu_dotasks()
