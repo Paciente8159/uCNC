@@ -36,9 +36,10 @@
 #define rom_memcpy memcpy
 #define rom_read_byte *
 
-#define MCU_WEAK __attribute__((weak,weakref))
+#define MCU_WEAK __attribute__((weak, weakref))
 
 /* 7.18.2.1  Limits of exact-width integer types */
+#ifndef INT8_MIN
 #define INT8_MIN (-128)
 #define INT16_MIN (-32768)
 #define INT32_MIN (-2147483647 - 1)
@@ -51,8 +52,9 @@
 
 #define UINT8_MAX 255
 #define UINT16_MAX 65535
-#define UINT32_MAX 0xffffffffU					 /* 4294967295U */
+#define UINT32_MAX 0xffffffffU			 /* 4294967295U */
 #define UINT64_MAX 0xffffffffffffffffULL /* 18446744073709551615ULL */
+#endif
 
 // needed by software delays
 #ifndef MCU_CLOCKS_PER_CYCLE
@@ -65,13 +67,18 @@
 #define MCU_CYCLES_PER_LOOP_OVERHEAD 0
 #endif
 
-//#define MCU_HAS_UART
+// #define MCU_HAS_UART
 #ifndef UART_PORT_NAME
+#ifndef __unix__
 #define UART_PORT_NAME "\\\\.\\COM14"
+#else
+#define UART_PORT_NAME "/dev/ttyS0"
+#endif
 #endif
 
 #define MCU_HAS_UART2
 
+#define ENABLE_SOCKETS
 // #define EMULATE_74HC595
 
 // joints step/dir pins
@@ -261,7 +268,7 @@
 #define DOUT31 UNDEF_PIN
 #define DIO78 UNDEF_PIN
 
-#define ACTIVITY_LED UNDEF_PIN
+// #define ACTIVITY_LED UNDEF_PIN
 
 #ifndef EMULATE_74HC165
 #define LIMIT_X 100
@@ -447,6 +454,19 @@
 #define DIN6_ISR
 #define DIN7_ISR
 
+typedef struct virtual_map_t
+{
+	uint32_t special_outputs;
+	uint32_t outputs;
+	uint8_t pwm[16];
+	uint8_t servos[6];
+	uint32_t special_inputs;
+	uint32_t inputs;
+	uint8_t analog[16];
+} VIRTUAL_MAP;
+
+extern volatile VIRTUAL_MAP virtualmap;
+
 #define MCU_HAS_ONESHOT_TIMER
 
 #ifndef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
@@ -469,6 +489,8 @@
 extern void virtual_delay_us(uint16_t delay);
 #define mcu_delay_us(X) virtual_delay_us(X)
 
+#define ENABLE_ITP_FEED_TASK // smoother STEP IO simulation
+
 #include "../../tools/tool.h"
 extern const tool_t embroidery_stepper;
 extern const tool_t laser_ppi;
@@ -481,11 +503,20 @@ extern const tool_t spindle_relay;
 extern const tool_t vfd_modbus;
 extern const tool_t vfd_pwm;
 
+#define ATOMIC_LOAD_N(src, mode) __atomic_load_n((src), mode)
+#define ATOMIC_STORE_N(dst, val, mode) __atomic_store_n((dst), (val), mode)
+#define ATOMIC_COMPARE_EXCHANGE_N(dst, cmp, des, sucmode, failmode) __atomic_compare_exchange_n((dst), (void *)(cmp), (des), false, sucmode, failmode)
+#define ATOMIC_FETCH_OR(dst, val, mode) __atomic_fetch_or((dst), (val), mode)
+#define ATOMIC_FETCH_AND(dst, val, mode) __atomic_fetch_and((dst), (val), mode)
+#define ATOMIC_FETCH_ADD(dst, val, mode) __atomic_fetch_add((dst), (val), mode)
+#define ATOMIC_FETCH_SUB(dst, val, mode) __atomic_fetch_sub((dst), (val), mode)
+#define ATOMIC_FETCH_XOR(dst, val, mode) __atomic_fetch_xor((dst), (val), mode)
+
 #define EMULATION_MS_TICK 100
 
 #define ATOMIC_LOAD_N(src, mode) __atomic_load_n((src), mode)
 #define ATOMIC_STORE_N(dst, val, mode) __atomic_store_n((dst), (val), mode)
-#define ATOMIC_COMPARE_EXCHANGE_N(dst, cmp, des, sucmode, failmode) __atomic_compare_exchange_n((dst), (void*)(cmp), (des), false, sucmode, failmode)
+#define ATOMIC_COMPARE_EXCHANGE_N(dst, cmp, des, sucmode, failmode) __atomic_compare_exchange_n((dst), (void *)(cmp), (des), false, sucmode, failmode)
 #define ATOMIC_FETCH_OR(dst, val, mode) __atomic_fetch_or((dst), (val), mode)
 #define ATOMIC_FETCH_AND(dst, val, mode) __atomic_fetch_and((dst), (val), mode)
 #define ATOMIC_FETCH_ADD(dst, val, mode) __atomic_fetch_add((dst), (val), mode)
@@ -494,5 +525,11 @@ extern const tool_t vfd_pwm;
 #define ATOMIC_SPIN()
 
 #define asm __asm__
+
+// #ifdef __unix__
+// // #ifndef sqrtf
+// // #define sqrtf sqrt
+// // #endif
+// #endif
 
 #endif
