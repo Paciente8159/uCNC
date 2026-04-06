@@ -704,7 +704,7 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 	frequency = CLAMP((float)F_STEP_MIN, frequency, (float)F_STEP_MAX);
 
 	// up and down counter (generates half the step rate at each event)
-	uint32_t totalticks = (uint32_t)((float)(TIMER_CLOCK >> 1) / frequency);
+	uint32_t totalticks = (uint32_t)((float)(TIMER_CLOCK) / frequency);
 	*prescaller = 1;
 	while (totalticks > 0xFFFF)
 	{
@@ -718,7 +718,7 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 
 float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller)
 {
-	return ((float)TIMER_CLOCK / (float)(((uint32_t)ticks) << (prescaller + 1)));
+	return ((float)TIMER_CLOCK / (float)(((uint32_t)ticks) << (prescaller)));
 }
 
 // starts a constant rate pulse at a given frequency.
