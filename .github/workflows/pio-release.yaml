@@ -57,7 +57,6 @@ jobs:
           - AVR-CNC-Shield-V3
           - STM32F4-Blackpill-F401CC
           - STM32H7-Generic-STM32H750
-          - STM32H7-SKR3
           - STM32F4-SKR-Pro-V1_2
           - RP2040-PICO
           - ESP32-Wemos-D1-R32
