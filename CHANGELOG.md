@@ -6,6 +6,20 @@
 
 # Changelog
 
+## [1.16.2] - 07-04-2026
+
+### Changed
+
+- updated ESP32 base environment (#943)
+- improved encoder RPM return to 0 update speed (#948)
+
+### Fixed
+
+- fixed ESP32 oneshot timeout configuration (#947)
+- fixed RP2040 mcu_micros macro (#949)
+- fixed RP2040 oneshot timeout configuration (#950)
+- fixed STM32 MCU's step interpolation timeout calculations (#953)
+
 ## [1.16.1] - 20-03-2026
 
 ### Fixed
