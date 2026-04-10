@@ -51,7 +51,7 @@ static void mcu_setup_clocks(void)
 	PM->APBBSEL.reg = 0;
 	PM->APBCSEL.reg = 0;
 	PM->AHBMASK.reg |= (PM_AHBMASK_NVMCTRL);
-	PM->APBAMASK.reg |= (PM_APBAMASK_PM | PM_APBAMASK_SYSCTRL | PM_APBAMASK_GCLK | PM_APBAMASK_RTC);
+	PM->APBAMASK.reg |= (PM_APBAMASK_PM | PM_APBAMASK_SYSCTRL | PM_APBAMASK_GCLK | PM_APBAMASK_RTC | PM_APBAMASK_EIC);
 	PM->APBBMASK.reg |= (PM_APBBMASK_NVMCTRL | PM_APBBMASK_PORT | PM_APBBMASK_USB);
 	PM->APBCMASK.reg |= (PM_APBCMASK_TCC0 | PM_APBCMASK_TCC1 | PM_APBCMASK_TCC2 | PM_APBCMASK_TC3 | PM_APBCMASK_TC4 | PM_APBCMASK_TC5 | PM_APBCMASK_TC6 | PM_APBCMASK_TC7);
 	PM->APBCMASK.reg |= PM_APBCMASK_ADC;
@@ -92,8 +92,9 @@ static void mcu_setup_clocks(void)
 	while (EIC->STATUS.bit.SYNCBUSY)
 		;
 	/*all external interrupts will be on pin change with filter*/
-	EIC->CONFIG[0].reg = 0xbbbbbbbb;
-	EIC->CONFIG[1].reg = 0xbbbbbbbb;
+	EIC->CONFIG[0].reg = 0x33333333;
+	EIC->CONFIG[1].reg = 0x33333333;
+	NVIC_DisableIRQ(EIC_IRQn);
 	NVIC_SetPriority(EIC_IRQn, NVIC_INPUT_IRQ_Pri);
 	NVIC_ClearPendingIRQ(EIC_IRQn);
 	NVIC_EnableIRQ(EIC_IRQn);
@@ -149,32 +150,34 @@ static bool mcu_probe_isr_enabled;
 
 void EIC_Handler(void)
 {
+	uint32_t status = EIC->INTFLAG.reg;
+
 #if (LIMITS_EICMASK != 0)
-	if (EIC->INTFLAG.reg & LIMITS_EICMASK)
+	if (status & LIMITS_EICMASK)
 	{
 		mcu_limits_changed_cb();
 	}
 #endif
 #if (CONTROLS_EICMASK != 0)
-	if (EIC->INTFLAG.reg & CONTROLS_EICMASK)
+	if (status & CONTROLS_EICMASK)
 	{
 		mcu_controls_changed_cb();
 	}
 #endif
 #if (PROBE_EICMASK != 0)
-	if (EIC->INTFLAG.reg & PROBE_EICMASK && mcu_probe_isr_enabled)
+	if (status & PROBE_EICMASK && mcu_probe_isr_enabled)
 	{
 		mcu_probe_changed_cb();
 	}
 #endif
 #if (DIN_IO_EICMASK != 0)
-	if (EIC->INTFLAG.reg & DIN_IO_EICMASK)
+	if (status & DIN_IO_EICMASK)
 	{
 		mcu_inputs_changed_cb();
 	}
 #endif
 
-	EIC->INTFLAG.reg = SAMD21_EIC_MASK;
+	EIC->INTFLAG.reg = status;
 }
 #endif
 
