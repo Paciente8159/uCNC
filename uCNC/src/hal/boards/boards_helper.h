@@ -42,6 +42,7 @@ extern "C"
  * STM32F0
  */
 #define BOARD_BLUEPILL_F0 1200
+#define BOARD_MELLOW_FLY_D5 1201
 /**
  * STM32F1
  */
@@ -129,6 +130,8 @@ extern "C"
 // STM32F0
 #elif (BOARD == BOARD_BLUEPILL_F0)
 #define BOARDMAP "stm32/boardmap_bluepill_f0.h"
+#elif (BOARD == BOARD_MELLOW_FLY_D5)
+#define BOARDMAP "stm32/boardmap_mellow_fly_d5.h"
 // STM32F1
 #elif (BOARD == BOARD_BLUEPILL)
 #define BOARDMAP "stm32/boardmap_bluepill.h"
