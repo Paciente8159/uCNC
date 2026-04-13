@@ -192,7 +192,7 @@ void EIC_Handler(void)
 #endif
 
 #ifdef ARDUINO
-uint32_t findPin(EPortType port, uint32_t pin)
+int findPin(EPortType port, int pin)
 {
 	for (unsigned int i = 0; i < PINCOUNT_fn(); i++)
 	{

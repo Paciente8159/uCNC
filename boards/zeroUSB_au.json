@@ -1,0 +1,60 @@
+{
+  "build": {
+    "arduino": {
+        "ldscript": "flash_with_bootloader.ld"
+    },
+    "core": "arduino",
+    "cpu": "cortex-m0plus",
+    "extra_flags": "-DARDUINO_SAMD_ZERO -D__SAMD21G18AU__",
+    "f_cpu": "48000000L",
+    "hwids": [
+      [
+        "0x2341",
+        "0x804D"
+      ],
+      [
+        "0x2341",
+        "0x004D"
+      ],
+      [
+        "0x2341",
+        "0x824D"
+      ]
+    ],
+    "mcu": "samd21g18au",
+    "usb_product": "Arduino Zero",
+    "variant": "arduino_zero"
+  },
+  "debug": {
+    "jlink_device": "ATSAMD21G18",
+    "onboard_tools": [
+      "cmsis-dap"
+    ],
+    "openocd_chipname": "at91samd21g18",
+    "openocd_target": "at91samdXX",
+    "svd_path": "ATSAMD21G18A.svd"
+  },
+  "frameworks": [
+    "arduino"
+  ],
+  "name": "Arduino Zero (USB Native Port)",
+  "upload": {
+    "disable_flushing": true,
+    "maximum_ram_size": 32768,
+    "maximum_size": 262144,
+    "native_usb": true,
+    "offset_address": "0x2000",
+    "protocol": "sam-ba",
+    "protocols": [
+      "sam-ba",
+      "blackmagic",
+      "jlink",
+      "atmel-ice"
+    ],
+    "require_upload_port": true,
+    "use_1200bps_touch": true,
+    "wait_for_upload_port": true
+  },
+  "url": "https://www.arduino.cc/en/Main/ArduinoBoardZero",
+  "vendor": "Arduino"
+}
