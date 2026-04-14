@@ -4906,6 +4906,7 @@ extern "C"
 				div = ((div + 1) >> 2);                          \
 				pre++;                                           \
 			}                                                    \
+			pre |= 8;                                            \
 		}                                                        \
 		__indirect__(x, TMRBREG) = pre;                          \
 		__indirect__(x, OCRREG) = 0;                             \

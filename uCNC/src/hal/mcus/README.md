@@ -39,12 +39,13 @@ These are the fixed names used internally:
 
 #### Output pins - special
 + ```STEP#``` pin defines the step output pin that controls linear actuator driver.
-   + ```STEP0 to STEP5``` are the output pins to control the step signal up to 6 independent drivers.
-   + ```STEP6 and STEP7``` are the output pins used as shadow registers to drive dual drive linear actuators.
+   + ```STEP0 to STEP7``` are the output pins to control the step signal up to 8 independent drivers.
 + ```DIR#``` pin defines the dir output pin that controls the linear actuator driver.
-   + ```DIR0 to DIR5``` are the output pins to control the direction signal up to 6 independent drivers
+   + ```DIR0 to DIR7``` are the output pins to control the direction signal up to 6 independent drivers
 + ```STEPPER#_ENABLE``` pin defines the enable output pin that controls the linear actuator driver.
-   + ```STEPPER0_ENABLE to STEPPER5_ENABLE``` are the output pins to control the enable signal up to 6 independent drivers.
+   + ```STEPPER0_ENABLE to STEPPER7_ENABLE``` are the output pins to control the enable signal up to 6 independent drivers.
++ ```PWM#``` pin defines a pwm output pin.
+   + ```PWM0 to PWM15``` are the pwm output pins.
 + ```SERVO#``` pin defines the servo signal output pin that controls common servo motors (1-2ms tON with 20ms period).
    + ```SERVO0 to SERVO7``` are the the servo signal output pins with up to 8 independent servos.
 
@@ -73,10 +74,6 @@ These are the fixed names used internally:
 + ```SPI2_CS``` pin defines the SPI2 chip select port pin.
 
 #### Output pins - generic
-+ ```PWM#``` pin defines a pwm output pin.
-   + ```PWM0 to PWM15``` are the pwm output pins.
-+ ```SERVO#``` pin defines a pwm output pin.
-   + ```SERVO0 to SERVO5``` are the servo output pins.
 + ```DOUT#``` pin defines a generic output pin.
    + ```DOUT0 to DOUT49``` are the generic output pins.
 
