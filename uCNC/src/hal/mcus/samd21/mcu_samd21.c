@@ -188,11 +188,11 @@ void MCU_ITP_ISR(void)
 #if (ITP_TIMER < 3)
 	if (ITP_REG->INTFLAG.bit.MC0)
 	{
-		ITP_REG->INTFLAG.bit.MC0 = 1;
+		ITP_REG->INTFLAG.reg = TCC_INTFLAG_MC0;
 #else
 	if (ITP_REG->COUNT16.INTFLAG.bit.MC0)
 	{
-		ITP_REG->COUNT16.INTFLAG.bit.MC0 = 1;
+		ITP_REG->COUNT16.INTFLAG.reg = TC_INTFLAG_MC0;
 #endif
 		if (!resetstep)
 		{
@@ -216,7 +216,7 @@ void mcu_com_isr()
 
 	if (COM_UART->USART.INTFLAG.bit.RXC && COM_UART->USART.INTENSET.bit.RXC)
 	{
-		COM_UART->USART.INTFLAG.bit.RXC = 1;
+		COM_UART->USART.INTFLAG.reg = SERCOM_USART_INTFLAG_RXC;
 		uint8_t c = (0xff & COM_INREG);
 #if !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
 		if (mcu_com_rx_cb(c))
@@ -256,7 +256,7 @@ void mcu_com2_isr()
 {
 	if (COM2_UART->USART.INTFLAG.bit.RXC && COM2_UART->USART.INTENSET.bit.RXC)
 	{
-		COM2_UART->USART.INTFLAG.bit.RXC = 1;
+		COM2_UART->USART.INTFLAG.reg = SERCOM_USART_INTFLAG_RXC;
 		uint8_t c = (0xff & COM2_INREG);
 #if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
 		if (mcu_com_rx_cb(c))
@@ -510,11 +510,11 @@ void MCU_SERVO_ISR(void)
 #if (SERVO_TIMER < 3)
 	if (SERVO_REG->INTFLAG.bit.MC0)
 	{
-		SERVO_REG->INTFLAG.bit.MC0 = 1;
+		SERVO_REG->INTFLAG.reg = TCC_INTFLAG_MC0;
 #else
 	if (SERVO_REG->COUNT16.INTFLAG.bit.MC0)
 	{
-		SERVO_REG->COUNT16.INTFLAG.bit.MC0 = 1;
+		SERVO_REG->COUNT16.INTFLAG.reg = TC_INTFLAG_MC0;
 #endif
 		mcu_clear_servos();
 		NVIC_DisableIRQ(SERVO_IRQ);
@@ -2106,7 +2106,7 @@ void MCU_ONESHOT_ISR(void)
 		;
 	if (ONESHOT_REG->INTFLAG.bit.MC0)
 	{
-		ONESHOT_REG->INTFLAG.bit.MC0 = 1;
+		ONESHOT_REG->INTFLAG.reg = TCC_INTFLAG_MC0;
 #else
 	ONESHOT_REG->COUNT16.INTENSET.bit.MC0 = 0;
 	ONESHOT_REG->COUNT16.CTRLA.bit.ENABLE = 0;
@@ -2114,7 +2114,7 @@ void MCU_ONESHOT_ISR(void)
 		;
 	if (ONESHOT_REG->COUNT16.INTFLAG.bit.MC0)
 	{
-		ONESHOT_REG->COUNT16.INTFLAG.bit.MC0 = 1;
+		ONESHOT_REG->COUNT16.INTFLAG.reg = TC_INTFLAG_MC0;
 #endif
 	}
 
