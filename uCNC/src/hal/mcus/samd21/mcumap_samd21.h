@@ -3001,6 +3001,8 @@ extern "C"
 	{                                                 \
 		(__indirect__(diopin, DUTYCYCLE)) = pwmvalue; \
 	}
+	
+#define mcu_get_pwm(diopin) (uint8_t)(0xFF & (__indirect__(diopin, DUTYCYCLE)))
 
 #define mcu_get_analog(diopin)                                       \
 	{                                                                \
