@@ -2369,7 +2369,12 @@ extern "C"
 		while (timer->SYNCBUSY.reg & TCC_SYNCBUSY_MASK) \
 			;                                           \
 		timer->CTRLA.bit.PRESCALER = presc;             \
+		while (timer->SYNCBUSY.reg & TCC_SYNCBUSY_MASK) \
+			;                                           \
 		timer->WAVE.bit.WAVEGEN = 2;                    \
+		while (timer->SYNCBUSY.reg & TCC_SYNCBUSY_MASK) \
+			;                                           \
+		timer->WEXCTRL.reg = 0;                    \
 		while (timer->SYNCBUSY.reg & TCC_SYNCBUSY_MASK) \
 			;                                           \
 		timer->CC[(channel & 0x3)].reg = 0;             \
@@ -2396,14 +2401,18 @@ extern "C"
 		timer->CTRLBCLR.bit.LUPD = 1;                   \
 	} while (0)
 
-#define pwm_tc_config(timer, channel, presc)                \
+#define pwm_tc_config(timer, channel, presc)       \
 	do                                             \
 	{                                              \
 		timer->COUNT8.CTRLA.bit.ENABLE = 0;        \
 		while (timer->COUNT8.STATUS.bit.SYNCBUSY)  \
 			;                                      \
 		timer->COUNT8.CTRLA.bit.MODE = 1;          \
+		while (timer->COUNT8.STATUS.bit.SYNCBUSY)  \
+			;                                      \
 		timer->COUNT8.CTRLA.bit.PRESCALER = presc; \
+		while (timer->COUNT8.STATUS.bit.SYNCBUSY)  \
+			;                                      \
 		timer->COUNT8.CTRLA.bit.WAVEGEN = 2;       \
 		while (timer->COUNT8.STATUS.bit.SYNCBUSY)  \
 			;                                      \
@@ -2908,24 +2917,24 @@ extern "C"
 
 #define mcu_config_input_isr(diopin) (mcu_config_altfunc(diopin))
 
-#define mcu_config_pwm(diopin, freq)                                           \
-	{                                                                          \
-		SETBIT(__indirect__(diopin, GPIO).DIR.reg, __indirect__(diopin, BIT)); \
-		(__indirect__(diopin, PMUX)) = __indirect__(diopin, PMUXVAL);          \
-		__indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg = 1;  \
-		uint16_t div = ((F_TIMERS >> 8) / freq);                               \
-		uint8_t presc = 0;                                                     \
-		while (div > 1)                                                        \
-		{                                                                      \
-			uint8_t shift = (presc >= 4) ? 2 : 1;                              \
-			div = ((div + 1) >> shift);                                        \
-			presc++;                                                           \
-			if (presc == 7)                                                    \
-			{                                                                  \
-				break;                                                         \
-			}                                                                  \
-		}                                                                      \
-		pwm_t_config(__indirect__(diopin, TIMER), __indirect__(diopin, CHANNEL), presc);                                   \
+#define mcu_config_pwm(diopin, freq)                                                     \
+	{                                                                                    \
+		SETBIT(__indirect__(diopin, GPIO).DIR.reg, __indirect__(diopin, BIT));           \
+		(__indirect__(diopin, PMUX)) = __indirect__(diopin, PMUXVAL);                    \
+		__indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg = 1;            \
+		uint16_t div = ((F_TIMERS >> 8) / freq);                                         \
+		uint8_t presc = 0;                                                               \
+		while (div > 1)                                                                  \
+		{                                                                                \
+			uint8_t shift = (presc >= 4) ? 2 : 1;                                        \
+			div = ((div + 1) >> shift);                                                  \
+			presc++;                                                                     \
+			if (presc == 7)                                                              \
+			{                                                                            \
+				break;                                                                   \
+			}                                                                            \
+		}                                                                                \
+		pwm_t_config(__indirect__(diopin, TIMER), __indirect__(diopin, CHANNEL), presc); \
 	}
 
 #define mcu_get_input(diopin) (CHECKBIT(__indirect__(diopin, GPIO).IN.reg, __indirect__(diopin, BIT)))
