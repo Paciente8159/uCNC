@@ -473,7 +473,8 @@ void itp_run(void)
 			deaccel_from = remaining_steps;
 			itp_needs_update = true;
 		}
-		else if (itp_needs_update) // forces recalculation of acceleration and deacceleration profiles
+		
+		if (itp_needs_update) // forces recalculation of acceleration and deacceleration profiles
 		{
 			itp_needs_update = false;
 			float exit_speed_sqr = planner_get_block_exit_speed_sqr();
