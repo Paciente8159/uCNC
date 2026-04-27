@@ -112,12 +112,15 @@ extern "C"
 	uint8_t io_get_raw_limits(void);
 	uint8_t io_get_limits(void);
 	uint8_t io_get_controls(void);
+	void io_set_safetydoor(void);
+	void io_clear_safetydoor(void);
+	bool io_get_safetydoor(void);
 #ifdef PROBE_ENABLE_CUSTOM_CALLBACK
-typedef bool (*io_probe_get_cb)(void);
-typedef bool (*io_probe_action_cb)(void);
-extern io_probe_get_cb io_probe_custom_get;
-extern io_probe_action_cb io_probe_custom_enable;
-extern io_probe_action_cb io_probe_custom_disable;
+	typedef bool (*io_probe_get_cb)(void);
+	typedef bool (*io_probe_action_cb)(void);
+	extern io_probe_get_cb io_probe_custom_get;
+	extern io_probe_action_cb io_probe_custom_enable;
+	extern io_probe_action_cb io_probe_custom_disable;
 #endif
 	void io_enable_probe(void);
 	void io_disable_probe(void);

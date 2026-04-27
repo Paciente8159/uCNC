@@ -576,7 +576,7 @@ void planner_spindle_ovr(uint8_t value)
 
 void planner_spindle_ovr_toggle(void)
 {
-	if (cnc_get_exec_state(EXEC_HOLD | EXEC_DOOR | EXEC_RUN) == EXEC_HOLD) // only available if a TRUE hold is active
+	if (!io_get_safetydoor() && cnc_get_exec_state(EXEC_HOLD) == EXEC_HOLD && !itp_is_running()) // only available if a TRUE hold is active
 	{
 		uint8_t newstate = spindle_override ^ g_planner_state.state_flags.bit.spindle_running;
 		if (newstate)
@@ -589,7 +589,7 @@ void planner_spindle_ovr_toggle(void)
 
 void planner_spindle_ovr_reset(void)
 {
-	if (cnc_get_exec_state(EXEC_HOLD | EXEC_DOOR | EXEC_RUN) == EXEC_HOLD) // only available if a TRUE hold is active
+	if (!io_get_safetydoor() && cnc_get_exec_state(EXEC_HOLD) == EXEC_HOLD && !itp_is_running()) // only available if a TRUE hold is active
 	{
 		if (g_planner_state.state_flags.bit.spindle_running && spindle_override)
 		{

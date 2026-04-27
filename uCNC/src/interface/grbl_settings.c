@@ -416,7 +416,7 @@ void settings_save(uint16_t address, uint8_t *__ptr, uint16_t size)
 	nvm_start_write(address);
 	for (uint16_t i = 0; i < size;)
 	{
-		if (cnc_get_exec_state(EXEC_RUN))
+		if (itp_is_running())
 		{
 			cnc_dotasks(); // updates buffer before cycling
 		}

@@ -36,6 +36,37 @@ uint8_t io_alarm_limits;
 uint8_t io_alarm_controls;
 #endif
 
+#if ASSERT_PIN(SAFETY_DOOR)
+static volatile bool io_safetydoor_active;
+void io_set_safetydoor(void)
+{
+	io_safetydoor_active = true;
+}
+void io_clear_safetydoor(void)
+{
+	// only cleared if not forced by IO
+	if (!(io_get_controls() && SAFETY_DOOR_MASK))
+	{
+		io_safetydoor_active = false;
+	}
+}
+bool io_get_safetydoor(void)
+{
+	return ((io_get_controls() && SAFETY_DOOR_MASK) || io_safetydoor_active);
+}
+#else
+void io_set_safetydoor(void)
+{
+}
+void io_clear_safetydoor(void)
+{
+}
+bool io_get_safetydoor(void)
+{
+	return false;
+}
+#endif
+
 #ifdef ENABLE_IO_MODULES
 // event_input_change_handler
 WEAK_EVENT_HANDLER(input_change)
@@ -119,7 +150,7 @@ MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 		{
 #ifdef ENABLE_MULTI_STEP_HOMING
 			uint8_t limits_ref = io_lock_limits_mask;
-			if (cnc_get_exec_state((EXEC_RUN | EXEC_HOMING)) == (EXEC_RUN | EXEC_HOMING) && (limits_ref & limits))
+			if (itp_is_running() && cnc_get_exec_state(EXEC_HOMING) && (limits_ref & limits))
 			{
 				// changed limit is from the current mask
 				if ((limits_diff & limits_ref))
@@ -146,7 +177,7 @@ MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 			itp_lock_stepper(0); // unlocks axis
 #endif
 			cnc_stop(false);
-			cnc_set_exec_state(EXEC_LIMITS);
+			cnc_set_exec_state(EXEC_POSITION_MAYBE_LOST);
 #ifdef ENABLE_IO_ALARM_DEBUG
 			io_alarm_limits = limits;
 #endif
@@ -194,10 +225,11 @@ MCU_IO_CALLBACK void mcu_controls_changed_cb(void)
 	}
 #endif
 #if ASSERT_PIN(SAFETY_DOOR)
-	if (CHECKFLAG(controls, SAFETY_DOOR_MASK))
+	if (CHECKFLAG(controls, SAFETY_DOOR_MASK) || io_safetydoor_active)
 	{
 		// safety door activates hold simultaneously to start the controlled stop
-		cnc_set_exec_state(EXEC_DOOR | EXEC_HOLD);
+		io_set_safetydoor(); // activates door triggered flag
+		cnc_set_exec_state(EXEC_HOLD);
 #ifdef ENABLE_IO_ALARM_DEBUG
 		io_alarm_controls = controls;
 #endif

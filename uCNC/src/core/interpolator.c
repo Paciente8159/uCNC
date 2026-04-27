@@ -61,7 +61,10 @@ static volatile uint8_t itp_step_lock;
 #endif
 
 // this is global accessible lock that can put the whole itp ISR on hold (including next step generation)
-static bool g_itp_isr_stop;
+#define ITP_ISR_IDLE 0
+#define ITP_ISR_RUNNING 1
+#define ITP_ISR_STOPPING 2
+static volatile uint8_t itp_isr_state;
 
 #ifdef ENABLE_RT_SYNC_MOTIONS
 // deprecated with new hooks
@@ -473,7 +476,7 @@ void itp_run(void)
 			deaccel_from = remaining_steps;
 			itp_needs_update = true;
 		}
-		
+
 		if (itp_needs_update) // forces recalculation of acceleration and deacceleration profiles
 		{
 			itp_needs_update = false;
@@ -838,15 +841,13 @@ MCU_CALLBACK void itp_stop(void)
 	// safer to make the stoping condition block
 	ATOMIC_CODEBLOCK
 	{
-		uint8_t state = cnc_get_exec_state(EXEC_ALLACTIVE);
-
 		// any stop command while running triggers an HALT alarm
-		if (state & EXEC_RUN)
+		if (CHECKFLAG(itp_isr_state, ITP_ISR_RUNNING))
 		{
 			cnc_set_exec_state(EXEC_POSITION_MAYBE_LOST);
 		}
 
-		g_itp_isr_stop = true;
+		itp_isr_state = ITP_ISR_IDLE;
 	}
 
 #if TOOL_COUNT > 0
@@ -914,9 +915,9 @@ void itp_reset_rt_position(float *origin)
 float itp_get_rt_feed(void)
 {
 	float feed = 0;
-	if (!cnc_get_exec_state(EXEC_RUN))
+	if (!itp_isr_state)
 	{
-		return feed;
+		return 0;
 	}
 
 	if (!itp_sgm_is_empty())
@@ -979,11 +980,10 @@ MCU_CALLBACK void mcu_step_reset_cb(void)
 	// always resets all stepper pins
 	io_set_steps(g_settings.step_invert_mask);
 
-	if (g_itp_isr_stop)
+	if (CHECKFLAG(itp_isr_state, ITP_ISR_STOPPING))
 	{
 		mcu_stop_itp_isr();
-		g_itp_isr_stop = false;
-		cnc_clear_exec_state(EXEC_RUN);
+		itp_isr_state = ITP_ISR_IDLE;
 	}
 }
 
@@ -1059,7 +1059,6 @@ MCU_CALLBACK void mcu_step_cb(void)
 		{
 			// loads a new segment
 			itp_rt_sgm = &itp_sgm_data[itp_sgm_data_read];
-			// cnc_set_exec_state(EXEC_RUN);
 			if (itp_rt_sgm->block != NULL)
 			{
 #if (DSS_MAX_OVERSAMPLING != 0)
@@ -1137,8 +1136,8 @@ MCU_CALLBACK void mcu_step_cb(void)
 		}
 		else
 		{
-			cnc_clear_exec_state(EXEC_RUN); // this naturally clears the RUN flag. Any other ISR stop does not clear the flag.
-			itp_stop();						// the buffer is empty. The ISR can stop
+			SETFLAG(itp_isr_state, ITP_ISR_STOPPING); // this naturally clears the RUN flag. Any other ISR stop does not clear the flag.
+			itp_stop();								  // the buffer is empty. The ISR can stop
 			return;
 		}
 	}
@@ -1333,14 +1332,14 @@ MCU_CALLBACK void mcu_step_cb(void)
 void itp_start(bool is_synched)
 {
 	// starts the step isr if is stopped and there are segments to execute
-	if (!cnc_get_exec_state(EXEC_RUN | EXEC_HOLD | EXEC_ALARM) && !itp_sgm_is_empty()) // exec state is not hold or alarm and not already running
+	if (!itp_isr_state & !cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM) && !itp_sgm_is_empty()) // exec state is not hold or alarm and not already running
 	{
 		// check if the start is controlled by synched motion before start
 		if (!is_synched)
 		{
 			ATOMIC_CODEBLOCK
 			{
-				cnc_set_exec_state(EXEC_RUN); // flags that it started running
+				SETFLAG(itp_isr_state, ITP_ISR_RUNNING); // flags that it started running
 #ifdef ENABLE_STEPPERS_DISABLE_TIMEOUT
 				io_enable_steppers(g_settings.step_enable_invert); // re-enable steppers for motion
 #endif
@@ -1356,3 +1355,8 @@ itp_segment_t *itp_get_rt_segment()
 }
 
 uint8_t __attribute__((weak)) itp_set_step_mode(uint8_t mode) { return 0; }
+
+bool itp_is_running(void)
+{
+	return !!itp_isr_state;
+}

@@ -294,7 +294,7 @@ void cnc_store_motion(void)
 	// set hold and wait for motion to stop
 	uint8_t prevholdstate = cnc_get_exec_state(EXEC_HOLD);
 	cnc_set_exec_state(EXEC_HOLD);
-	while (!itp_is_empty() && cnc_get_exec_state(EXEC_RUN))
+	while (!itp_is_empty() && itp_is_running())
 	{
 		if (!cnc_dotasks())
 		{
@@ -572,6 +572,8 @@ void cnc_set_exec_state(uint8_t statemask)
 
 void cnc_clear_exec_state(uint8_t statemask)
 {
+	bool release_hold = CHECKFLAG(statemask, EXEC_HOLD);
+
 #ifndef DISABLE_ALL_CONTROLS
 	uint8_t controls = io_get_controls();
 
@@ -583,12 +585,15 @@ void cnc_clear_exec_state(uint8_t statemask)
 		return;
 	}
 #endif
+
 #if ASSERT_PIN(SAFETY_DOOR)
 	if (CHECKFLAG(controls, SAFETY_DOOR_MASK)) // can't clear the door flag if SAFETY_DOOR is active
 	{
-		CLEARFLAG(statemask, EXEC_DOOR | EXEC_HOLD);
+		io_clear_safetydoor();
+		release_hold = false;
 	}
 #endif
+
 #if ASSERT_PIN(FHOLD)
 	if (CHECKFLAG(controls, FHOLD_MASK)) // can't clear the hold flag if FHOLD is active
 	{
@@ -596,6 +601,11 @@ void cnc_clear_exec_state(uint8_t statemask)
 	}
 #endif
 #endif
+
+	if (release_hold)
+	{
+		CLEARFLAG(statemask, EXEC_HOLD);
+	}
 
 	// has a pending (not cleared by user) alarm
 	if (cnc_state.alarm || g_settings.homing_enabled)
@@ -735,14 +745,15 @@ void cnc_call_rt_command(uint8_t command)
 		SETFLAG(cnc_state.rt_cmd, RT_CMD_REPORT);
 		break;
 	case CMD_CODE_CYCLE_START:
-		if (!cnc_get_exec_state(EXEC_RUN))
+		if (!itp_is_running())
 		{
 			SETFLAG(cnc_state.rt_cmd, RT_CMD_CYCLE_START); // tries to clear hold if possible
 		}
 		break;
 #if ASSERT_PIN(SAFETY_DOOR)
 	case CMD_CODE_SAFETY_DOOR:
-		cnc_set_exec_state((EXEC_HOLD | EXEC_DOOR));
+		io_set_safetydoor();
+		cnc_set_exec_state(EXEC_HOLD);
 		break;
 #endif
 	default:
@@ -810,7 +821,7 @@ void cnc_exec_rt_commands(void)
 				return;
 			}
 
-			if (cnc_get_exec_state(EXEC_RUN))
+			if (itp_is_running())
 			{
 				cnc_alarm(EXEC_ALARM_ABORT_CYCLE);
 				return;
@@ -836,7 +847,7 @@ void cnc_exec_rt_commands(void)
 
 		if (CHECKFLAG(command, RT_CMD_CYCLE_START))
 		{
-			cnc_clear_exec_state(EXEC_HOLD | EXEC_DOOR);
+			cnc_clear_exec_state(EXEC_HOLD);
 		}
 
 		if (CHECKFLAG(command, RT_CMD_REPORT))
@@ -1050,7 +1061,7 @@ bool cnc_check_interlocking(void)
 
 #if ASSERT_PIN(SAFETY_DOOR)
 	// the safety door condition is active
-	if (cnc_get_exec_state(EXEC_DOOR))
+	if (io_get_safetydoor())
 	{
 		// door opened during a homing cycle exit with alarm
 		if (cnc_get_exec_state(EXEC_HOMING))
@@ -1058,7 +1069,7 @@ bool cnc_check_interlocking(void)
 			cnc_alarm(EXEC_ALARM_HOMING_FAIL_DOOR);
 			return false;
 		}
-		else if (cnc_get_exec_state(EXEC_RUN)) // if the machined is running
+		else if (itp_is_running()) // if the machined is running
 		{
 			// with the door opened put machine on HOLD
 			cnc_set_exec_state(EXEC_HOLD);
@@ -1071,7 +1082,7 @@ bool cnc_check_interlocking(void)
 #endif
 
 	// an hold condition is active and motion as stopped
-	if (cnc_get_exec_state(EXEC_HOLD) && !cnc_get_exec_state(EXEC_RUN))
+	if (cnc_get_exec_state(EXEC_HOLD) && !itp_is_running())
 	{
 		cnc_stop(false); // stop motion
 
@@ -1184,4 +1195,69 @@ void cnc_run_startup_blocks(void)
 
 	// reset streams
 	grbl_stream_change(NULL);
+}
+
+uint8_t cnc_get_status(void)
+{
+	if (cnc_has_alarm())
+	{
+		return EXEC_STATUS_ALARM;
+	}
+
+	if (mc_get_checkmode())
+	{
+		return EXEC_STATUS_CHECK;
+	}
+#if ASSERT_PIN(SAFETY_DOOR)
+	if (io_get_safetydoor())
+	{
+		if (CHECKFLAG(controls, SAFETY_DOOR_MASK))
+		{
+			return ((itp_is_running()) ? EXEC_STATUS_DOOR_ACTIVE_PENDING : EXEC_STATUS_DOOR_ACTIVE_PENDING);
+		}
+		else
+		{
+			return ((itp_is_running()) ? EXEC_STATUS_DOOR_PENDING : EXEC_STATUS_DOOR);
+		}
+	}
+#endif
+
+	uint8_t state = cnc_get_exec_state(EXEC_ALLACTIVE);
+
+	if (state & EXEC_POSITION_MAYBE_LOST)
+	{
+		return ((!cnc_get_exec_state(EXEC_HOMING)) ? EXEC_STATUS_ALARM : EXEC_STATUS_HOMING);
+	}
+
+	if (state & EXEC_HOLD)
+	{
+		return ((itp_is_running()) ? EXEC_STATUS_HOLD_PENDING : EXEC_STATUS_HOLD);
+	}
+
+	if (state & EXEC_HOMING)
+	{
+		return EXEC_STATUS_HOMING;
+	}
+
+	if (state & EXEC_JOG)
+	{
+		return EXEC_STATUS_JOGGING;
+	}
+
+	if (state & EXEC_DWELL)
+	{
+		return EXEC_STATUS_DWELL;
+	}
+
+	if (state & EXEC_PROBING)
+	{
+		return EXEC_STATUS_PROBING;
+	}
+
+	if (itp_is_running())
+	{
+		return EXEC_STATUS_RUNNING;
+	}
+
+	return EXEC_STATUS_IDLE;
 }

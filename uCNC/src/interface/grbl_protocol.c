@@ -412,92 +412,61 @@ void proto_status(void)
 	uint8_t controls = io_get_controls();
 	uint8_t limits = io_get_raw_limits();
 	bool probe = io_get_probe();
-	uint8_t state = cnc_get_exec_state(0xFF);
-	uint8_t filter = 0x80;
-	while (!(state & filter) && filter)
-	{
-		filter >>= 1;
-	}
-
-	state &= filter;
-
+	uint8_t state = cnc_get_status();
 	proto_putc('<');
-	if (cnc_has_alarm())
+	bool pending = false;
+
+	switch (state)
 	{
+	case EXEC_STATUS_ALARM:
 		proto_puts(MSG_STATUS_ALARM);
-	}
-	else if (mc_get_checkmode())
-	{
+		break;
+	case EXEC_STATUS_CHECK:
 		proto_puts(MSG_STATUS_CHECK);
-	}
-	else
-	{
-		switch (state)
-		{
+		break;
 #if ASSERT_PIN(SAFETY_DOOR)
-		case EXEC_DOOR:
-			proto_puts(MSG_STATUS_DOOR);
-			proto_putc(':');
-			if (CHECKFLAG(controls, SAFETY_DOOR_MASK))
-			{
-				if (cnc_get_exec_state(EXEC_RUN))
-				{
-					proto_putc('2');
-				}
-				else
-				{
-					proto_putc('1');
-				}
-			}
-			else
-			{
-				if (cnc_get_exec_state(EXEC_RUN))
-				{
-					proto_putc('3');
-				}
-				else
-				{
-					proto_putc('0');
-				}
-			}
-			break;
+	case EXEC_STATUS_DOOR_CLOSED_RESUMING:
+		proto_puts(MSG_STATUS_DOOR ": 3");
+		break;
+	case EXEC_STATUS_DOOR_HOLD_PENDING:
+		proto_puts(MSG_STATUS_DOOR ": 2");
+		break;
+	case EXEC_STATUS_DOOR_HOLD:
+		proto_puts(MSG_STATUS_DOOR ": 1");
+		break;
+	case EXEC_STATUS_DOOR_CLOSED:
+		proto_puts(MSG_STATUS_DOOR ": 0");
+		break;
 #endif
-		case EXEC_POSITION_MAYBE_LOST:
-		case EXEC_LIMITS:
-			if (!cnc_get_exec_state(EXEC_HOMING))
-			{
-				proto_puts(MSG_STATUS_ALARM);
-			}
-			else
-			{
-				proto_puts(MSG_STATUS_HOME);
-			}
-			break;
-		case EXEC_HOLD:
-			proto_puts(MSG_STATUS_HOLD);
-			proto_putc(':');
-			if (cnc_get_exec_state(EXEC_RUN))
-			{
-				proto_putc('1');
-			}
-			else
-			{
-				proto_putc('0');
-			}
-			break;
-		case EXEC_HOMING:
-			proto_puts(MSG_STATUS_HOME);
-			break;
-		case EXEC_JOG:
-			proto_puts(MSG_STATUS_JOG);
-			break;
-		case EXEC_RUN:
-			proto_puts(MSG_STATUS_RUN);
-			break;
-		default:
-			proto_puts(MSG_STATUS_IDLE);
-			break;
+	case EXEC_STATUS_HOMING:
+		proto_puts(MSG_STATUS_HOME);
+		break;
+	case EXEC_STATUS_HOLD:
+	case EXEC_STATUS_HOLD_PENDING:
+		pending = true;
+		__FALL_THROUGH__
+		proto_puts(MSG_STATUS_HOLD);
+		proto_putc(':');
+		if (pending)
+		{
+			proto_putc('1');
 		}
+		else
+		{
+			proto_putc('0');
+		}
+		break;
+	case EXEC_STATUS_JOGGING:
+		proto_puts(MSG_STATUS_JOG);
+		break;
+	case EXEC_STATUS_RUNNING:
+	case EXEC_STATUS_DWELL:
+	case EXEC_STATUS_PROBING:
+		proto_puts(MSG_STATUS_RUN);
+		break;
+	case EXEC_STATUS_IDLE:
+		proto_puts(MSG_STATUS_IDLE);
+		break;
 	}
 
 	proto_putc('|');

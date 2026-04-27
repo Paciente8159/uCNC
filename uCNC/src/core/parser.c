@@ -205,7 +205,7 @@ uint8_t parser_read_command(void)
 	{
 		is_jogging = true;
 	}
-	else if (cnc_get_exec_state(~(EXEC_RUN | EXEC_HOLD)) || cnc_has_alarm()) // if any other than idle, run or hold discards the command
+	else if (itp_is_running() || cnc_get_exec_state(~(EXEC_HOLD)) || cnc_has_alarm()) // if any other than idle, run or hold discards the command
 	{
 		parser_discard_command();
 		return STATUS_SYSTEM_GC_LOCK;
@@ -379,7 +379,7 @@ static uint8_t parser_grbl_command(void)
 	uint8_t grbl_cmd_len = 0;
 
 	// if not IDLE
-	if (cnc_get_exec_state(EXEC_RUN))
+	if (itp_is_running())
 	{
 		switch (c)
 		{
@@ -729,7 +729,7 @@ static uint8_t parser_grbl_exec_code(uint8_t code)
 		if (cnc_unlock(true) == UNLOCK_OK)
 		{
 #if ASSERT_PIN(SAFETY_DOOR)
-			if (cnc_get_exec_state(EXEC_DOOR))
+			if (io_get_safetydoor())
 			{
 				return STATUS_CHECK_DOOR;
 			}
@@ -744,8 +744,8 @@ static uint8_t parser_grbl_exec_code(uint8_t code)
 		}
 
 #if ASSERT_PIN(SAFETY_DOOR)
-		cnc_clear_exec_state(EXEC_DOOR);
-		if (cnc_get_exec_state(EXEC_DOOR))
+		cnc_clear_exec_state(EXEC_HOLD);
+		if (io_get_safetydoor())
 		{
 			return STATUS_CHECK_DOOR;
 		}

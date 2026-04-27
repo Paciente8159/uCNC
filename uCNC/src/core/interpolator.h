@@ -91,6 +91,7 @@ extern "C"
 
 	void itp_init(void);
 	void itp_run(void);
+	bool itp_is_running(void);
 	void itp_update(void);
 	void itp_stop(void);
 	void itp_stop_tools(void);

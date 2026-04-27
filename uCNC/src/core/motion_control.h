@@ -38,6 +38,14 @@ extern "C"
 #define MOTIONCONTROL_PROBE_INVERT 1
 #define MOTIONCONTROL_PROBE_NOALARM_ONFAIL 2
 
+#define MC_IDLE 0
+#define MC_RUNNING 1
+#define MC_DWELL 2
+#define MC_PROBE 4
+#define MC_FLUSHING 8
+#define MC_FLUSH_PENDING 64
+#define MC_CHECKMODE 128
+
 	typedef union
 	{
 		/* data */
@@ -96,6 +104,12 @@ extern "C"
 	bool mc_get_checkmode(void);
 	bool mc_toogle_checkmode(void);
 
+	uint8_t mc_get_state(uint8_t mask);
+
+	// imediate motions
+	void mc_stop(void);
+	void mc_stop_tools(void);
+
 	// async motions
 	uint8_t mc_line(float *target, motion_data_t *block_data);
 #ifndef DISABLE_ARC_SUPPORT
@@ -118,6 +132,8 @@ extern "C"
 	void mc_get_position(float *target);
 	void mc_sync_position(void);
 
+	// jog commands
+	uint8_t mc_jog(float *target, motion_data_t *block_data);
 	uint8_t mc_incremental_jog(float *target_offset, motion_data_t *block_data);
 
 	void mc_flush_pending_motion(void);

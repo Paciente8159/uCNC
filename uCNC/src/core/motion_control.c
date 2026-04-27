@@ -52,8 +52,9 @@
 #endif
 #endif
 
-static bool mc_flush_pending;
-static bool mc_checkmode;
+// static bool mc_flush_pending;
+// static bool mc_checkmode;
+static uint8_t mc_state;
 static int32_t mc_last_step_pos[STEPPER_COUNT];
 static float mc_last_target[AXIS_COUNT];
 // static float mc_prev_target_dir[AXIS_COUNT];
@@ -117,19 +118,39 @@ void mc_init(void)
 	memset(hmap_offsets, 0, sizeof(hmap_offsets));
 #endif
 #endif
-	mc_checkmode = false;
+	CLEARFLAG(mc_state, MC_CHECKMODE);
 	mc_sync_position();
 }
 
 bool mc_get_checkmode(void)
 {
-	return mc_checkmode;
+	return CHECKFLAG(mc_state, MC_CHECKMODE);
 }
 
 bool mc_toogle_checkmode(void)
 {
-	mc_checkmode = !mc_checkmode;
-	return mc_checkmode;
+	TOGGLEFLAG(mc_state, MC_CHECKMODE);
+	return CHECKFLAG(mc_state, MC_CHECKMODE);
+}
+
+uint8_t mc_get_state(uint8_t mask)
+{
+	uint8_t status = mc_state;
+	if (itp_is_running())
+	{
+		status |= MC_RUNNING;
+	}
+	return (status & mask);
+}
+
+void mc_stop(void)
+{
+	itp_stop();
+}
+
+void mc_stop_tools(void)
+{
+	itp_stop_tools();
 }
 
 static void FORCEINLINE mc_restore_step_mode(uint8_t *mode)
@@ -183,7 +204,7 @@ static uint8_t mc_line_segment(int32_t *step_new_pos, motion_data_t *block_data)
 		return STATUS_OK;
 	}
 
-	if (!mc_checkmode) // check mode (gcode simulation) doesn't send code to planner
+	if (!CHECKFLAG(mc_state, MC_CHECKMODE)) // check mode (gcode simulation) doesn't send code to planner
 	{
 #ifdef ENABLE_BACKLASH_COMPENSATION
 		// checks if any of the linear actuators there is a shift in direction
@@ -241,10 +262,10 @@ static uint8_t mc_line_segment(int32_t *step_new_pos, motion_data_t *block_data)
 			{
 				return STATUS_CRITICAL_FAIL;
 			}
-			mc_flushed = mc_flush_pending;
+			mc_flushed = CHECKFLAG(mc_state, MC_FLUSH_PENDING);
 		}
 
-		mc_flush_pending = false;
+		CLEARFLAG(mc_state, MC_FLUSH_PENDING);
 
 		if (mc_flushed)
 		{
@@ -761,7 +782,7 @@ uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, floa
 
 uint8_t mc_dwell(motion_data_t *block_data)
 {
-	if (!mc_checkmode) // check mode (gcode simulation) doesn't send code to planner
+	if (!CHECKFLAG(mc_state, MC_CHECKMODE)) // check mode (gcode simulation) doesn't send code to planner
 	{
 		mc_update_tools(block_data);
 		cnc_dwell_ms(block_data->dwell);
@@ -772,7 +793,7 @@ uint8_t mc_dwell(motion_data_t *block_data)
 
 uint8_t mc_pause(void)
 {
-	if (!mc_checkmode) // check mode (gcode simulation) doesn't send code to planner
+	if (!CHECKFLAG(mc_state, MC_CHECKMODE)) // check mode (gcode simulation) doesn't send code to planner
 	{
 		if (itp_sync() != STATUS_OK)
 		{
@@ -786,7 +807,7 @@ uint8_t mc_pause(void)
 uint8_t mc_update_tools(motion_data_t *block_data)
 {
 #if (TOOL_COUNT > 0)
-	if (!mc_checkmode) // check mode (gcode simulation) doesn't send code to planner
+	if (!CHECKFLAG(mc_state, MC_CHECKMODE)) // check mode (gcode simulation) doesn't send code to planner
 	{
 		if (itp_sync() != STATUS_OK)
 		{
@@ -1078,7 +1099,7 @@ uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data)
 	} while (!itp_is_empty() || !planner_buffer_is_empty());
 
 	// wait for a stop
-	while (cnc_dotasks() && cnc_get_exec_state(EXEC_RUN))
+	while (cnc_dotasks() && itp_is_running())
 		;
 	// disables the probe
 	io_disable_probe();
@@ -1123,9 +1144,8 @@ void mc_sync_position(void)
 	parser_sync_position();
 }
 
-uint8_t mc_incremental_jog(float *target_offset, motion_data_t *block_data)
+uint8_t mc_jog(float *target, motion_data_t *block_data)
 {
-	float new_target[AXIS_COUNT];
 	uint8_t state = cnc_get_exec_state(EXEC_ALLACTIVE);
 
 	if ((state & ~EXEC_JOG) || cnc_has_alarm()) // if any other than idle or jog discards the command
@@ -1134,21 +1154,11 @@ uint8_t mc_incremental_jog(float *target_offset, motion_data_t *block_data)
 	}
 
 	cnc_set_exec_state(EXEC_JOG);
-
-	// gets the previous machine position (transformed to calculate the direction vector and traveled distance)
-	memcpy(new_target, mc_last_target, sizeof(mc_last_target));
-	for (uint8_t i = AXIS_COUNT; i != 0;)
-	{
-		i--;
-		new_target[i] += target_offset[i];
-	}
-
 #if TOOL_COUNT > 0
 	block_data->motion_flags.reg = g_planner_state.state_flags.reg;
 	block_data->spindle = g_planner_state.spindle_speed;
 #endif
-
-	uint8_t error = mc_line(new_target, block_data);
+	uint8_t error = mc_line(target, block_data);
 
 	if (error == STATUS_OK)
 	{
@@ -1158,9 +1168,24 @@ uint8_t mc_incremental_jog(float *target_offset, motion_data_t *block_data)
 	return error;
 }
 
+uint8_t mc_incremental_jog(float *target_offset, motion_data_t *block_data)
+{
+	float new_target[AXIS_COUNT];
+
+	// gets the previous machine position (transformed to calculate the direction vector and traveled distance)
+	memcpy(new_target, mc_last_target, sizeof(mc_last_target));
+	for (uint8_t i = AXIS_COUNT; i != 0;)
+	{
+		i--;
+		new_target[i] += target_offset[i];
+	}
+
+	return mc_jog(new_target, block_data);
+}
+
 void mc_flush_pending_motion(void)
 {
-	mc_flush_pending = true;
+	SETFLAG(mc_state, MC_FLUSH_PENDING);
 }
 
 #ifdef ENABLE_G39_H_MAPPING
