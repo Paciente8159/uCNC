@@ -177,7 +177,7 @@ MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 			itp_lock_stepper(0); // unlocks axis
 #endif
 			cnc_stop(false);
-			cnc_set_exec_state(EXEC_POSITION_MAYBE_LOST);
+			cnc_set_exec_state(EXEC_LIMITS);
 #ifdef ENABLE_IO_ALARM_DEBUG
 			io_alarm_limits = limits;
 #endif

@@ -1224,7 +1224,7 @@ uint8_t cnc_get_status(void)
 
 	uint8_t state = cnc_get_exec_state(EXEC_ALLACTIVE);
 
-	if (state & EXEC_POSITION_MAYBE_LOST)
+	if (state & EXEC_LIMITS)
 	{
 		return ((!cnc_get_exec_state(EXEC_HOMING)) ? EXEC_STATUS_ALARM : EXEC_STATUS_HOMING);
 	}
