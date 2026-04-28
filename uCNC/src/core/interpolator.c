@@ -838,7 +838,7 @@ MCU_CALLBACK void itp_stop(void)
 	// safer to make the stoping condition block
 	ATOMIC_CODEBLOCK
 	{
-		uint8_t state = cnc_get_exec_state(EXEC_ALLACTIVE);
+		uint16_t state = cnc_get_exec_state(EXEC_ALLACTIVE);
 
 		// any stop command while running triggers an HALT alarm
 		if (state & EXEC_RUN)

@@ -763,8 +763,10 @@ uint8_t mc_dwell(motion_data_t *block_data)
 {
 	if (!mc_checkmode) // check mode (gcode simulation) doesn't send code to planner
 	{
+		cnc_set_exec_state(EXEC_DWELL);
 		mc_update_tools(block_data);
 		cnc_dwell_ms(block_data->dwell);
+		cnc_clear_exec_state(EXEC_DWELL);
 	}
 
 	return STATUS_OK;
@@ -1126,7 +1128,7 @@ void mc_sync_position(void)
 uint8_t mc_incremental_jog(float *target_offset, motion_data_t *block_data)
 {
 	float new_target[AXIS_COUNT];
-	uint8_t state = cnc_get_exec_state(EXEC_ALLACTIVE);
+	uint16_t state = cnc_get_exec_state(EXEC_ALLACTIVE);
 
 	if ((state & ~EXEC_JOG) || cnc_has_alarm()) // if any other than idle or jog discards the command
 	{

@@ -412,92 +412,96 @@ void proto_status(void)
 	uint8_t controls = io_get_controls();
 	uint8_t limits = io_get_raw_limits();
 	bool probe = io_get_probe();
-	uint8_t state = cnc_get_exec_state(0xFF);
-	uint8_t filter = 0x80;
-	while (!(state & filter) && filter)
-	{
-		filter >>= 1;
-	}
-
-	state &= filter;
-
+	uint8_t state = cnc_get_status();
 	proto_putc('<');
-	if (cnc_has_alarm())
+	bool pending = false;
+	bool door_opened = false;
+
+	switch (state)
 	{
-		proto_puts(MSG_STATUS_ALARM);
-	}
-	else if (mc_get_checkmode())
-	{
-		proto_puts(MSG_STATUS_CHECK);
-	}
-	else
-	{
-		switch (state)
-		{
-#if ASSERT_PIN(SAFETY_DOOR)
-		case EXEC_DOOR:
-			proto_puts(MSG_STATUS_DOOR);
-			proto_putc(':');
-			if (CHECKFLAG(controls, SAFETY_DOOR_MASK))
-			{
-				if (cnc_get_exec_state(EXEC_RUN))
-				{
-					proto_putc('2');
-				}
-				else
-				{
-					proto_putc('1');
-				}
-			}
-			else
-			{
-				if (cnc_get_exec_state(EXEC_RUN))
-				{
-					proto_putc('3');
-				}
-				else
-				{
-					proto_putc('0');
-				}
-			}
-			break;
+	case EXEC_STATUS_ALARM:
+#ifndef ENABLE_EXTRA_GRBL_STATES
+	case EXEC_STATUS_LOCKED:
 #endif
-		case EXEC_POSITION_MAYBE_LOST:
-		case EXEC_LIMITS:
-			if (!cnc_get_exec_state(EXEC_HOMING))
-			{
-				proto_puts(MSG_STATUS_ALARM);
-			}
-			else
-			{
-				proto_puts(MSG_STATUS_HOME);
-			}
-			break;
-		case EXEC_HOLD:
-			proto_puts(MSG_STATUS_HOLD);
-			proto_putc(':');
-			if (cnc_get_exec_state(EXEC_RUN))
-			{
-				proto_putc('1');
-			}
-			else
-			{
-				proto_putc('0');
-			}
-			break;
-		case EXEC_HOMING:
-			proto_puts(MSG_STATUS_HOME);
-			break;
-		case EXEC_JOG:
-			proto_puts(MSG_STATUS_JOG);
-			break;
-		case EXEC_RUN:
-			proto_puts(MSG_STATUS_RUN);
-			break;
-		default:
-			proto_puts(MSG_STATUS_IDLE);
-			break;
+		proto_puts(MSG_STATUS_ALARM);
+		break;
+#ifdef ENABLE_EXTRA_GRBL_STATES
+	case EXEC_STATUS_LOCKED:
+		proto_puts(MSG_STATUS_LOCKED);
+		break;
+#endif
+	case EXEC_STATUS_CHECK:
+		proto_puts(MSG_STATUS_CHECK);
+		break;
+#if ASSERT_PIN(SAFETY_DOOR)
+	case EXEC_STATUS_DOOR_OPENED_PAUSING:
+		pending = true;
+		__FALL_THROUGH__
+	case EXEC_STATUS_DOOR_OPENED:
+		proto_puts(MSG_STATUS_DOOR);
+		proto_putc(':');
+		if (pending)
+		{
+			proto_putc('2');
 		}
+		else
+		{
+			proto_putc('1');
+		}
+		break;
+	case EXEC_STATUS_DOOR_CLOSED_RESUMING:
+		pending = true;
+		__FALL_THROUGH__
+	case EXEC_STATUS_DOOR_CLOSED:
+		proto_puts(MSG_STATUS_DOOR);
+		proto_putc(':');
+		if (pending)
+		{
+			proto_putc('3');
+		}
+		else
+		{
+			proto_putc('0');
+		}
+		break;
+#endif
+	case EXEC_STATUS_HOMING:
+		proto_puts(MSG_STATUS_HOME);
+		break;
+	case EXEC_STATUS_HOLD_PENDING:
+		pending = true;
+		__FALL_THROUGH__
+	case EXEC_STATUS_HOLD:
+		proto_puts(MSG_STATUS_HOLD);
+		proto_putc(':');
+		if (pending)
+		{
+			proto_putc('1');
+		}
+		else
+		{
+			proto_putc('0');
+		}
+		break;
+	case EXEC_STATUS_JOGGING:
+		proto_puts(MSG_STATUS_JOG);
+		break;
+	case EXEC_STATUS_DWELL:
+#ifdef ENABLE_EXTRA_GRBL_STATES
+		proto_puts(MSG_STATUS_DWELL);
+		break;
+#endif
+	case EXEC_STATUS_PROBING:
+#ifdef ENABLE_EXTRA_GRBL_STATES
+		proto_puts(MSG_STATUS_PROBE);
+		break;
+#endif
+	case EXEC_STATUS_RUNNING:
+		proto_puts(MSG_STATUS_RUN);
+		break;
+	case EXEC_STATUS_IDLE:
+		proto_puts(MSG_STATUS_IDLE);
+		break;
 	}
 
 	proto_putc('|');

@@ -35,7 +35,7 @@
 typedef struct
 {
 	// uint8_t system_state;		//signals if CNC is system_state and gcode can run
-	volatile uint8_t exec_state;
+	volatile uint16_t exec_state;
 	uint8_t loop_state;
 	volatile uint8_t rt_cmd;
 	volatile uint8_t feed_ovr_cmd;
@@ -292,7 +292,7 @@ void cnc_store_motion(void)
 {
 #ifdef ENABLE_MOTION_CONTROL_PLANNER_HIJACKING
 	// set hold and wait for motion to stop
-	uint8_t prevholdstate = cnc_get_exec_state(EXEC_HOLD);
+	uint16_t prevholdstate = cnc_get_exec_state(EXEC_HOLD);
 	cnc_set_exec_state(EXEC_HOLD);
 	while (!itp_is_empty() && cnc_get_exec_state(EXEC_RUN))
 	{
@@ -324,7 +324,7 @@ void cnc_restore_motion(void)
 {
 #ifdef ENABLE_MOTION_CONTROL_PLANNER_HIJACKING
 	// set hold and wait for motion to stop
-	uint8_t prevholdstate = cnc_get_exec_state(EXEC_HOLD);
+	uint16_t prevholdstate = cnc_get_exec_state(EXEC_HOLD);
 	cnc_set_exec_state(EXEC_HOLD);
 	while (!itp_is_empty())
 	{
@@ -560,17 +560,17 @@ uint8_t cnc_unlock(bool force)
 	return UNLOCK_OK;
 }
 
-uint8_t cnc_get_exec_state(uint8_t statemask)
+uint16_t cnc_get_exec_state(uint16_t statemask)
 {
 	return CHECKFLAG(cnc_state.exec_state, statemask);
 }
 
-void cnc_set_exec_state(uint8_t statemask)
+void cnc_set_exec_state(uint16_t statemask)
 {
 	SETFLAG(cnc_state.exec_state, statemask);
 }
 
-void cnc_clear_exec_state(uint8_t statemask)
+void cnc_clear_exec_state(uint16_t statemask)
 {
 #ifndef DISABLE_ALL_CONTROLS
 	uint8_t controls = io_get_controls();
@@ -743,6 +743,9 @@ void cnc_call_rt_command(uint8_t command)
 #if ASSERT_PIN(SAFETY_DOOR)
 	case CMD_CODE_SAFETY_DOOR:
 		cnc_set_exec_state((EXEC_HOLD | EXEC_DOOR));
+#ifdef ENABLE_SAFETY_DOOR_PARKING
+		SETFLAG(cnc_state.rt_cmd, RT_CMD_DOOR_PARK);
+#endif
 		break;
 #endif
 	default:
@@ -821,6 +824,13 @@ void cnc_exec_rt_commands(void)
 			return;
 		}
 
+#ifdef ENABLE_SAFETY_DOOR_PARKING
+		if (CHECKFLAG(command, RT_CMD_DOOR_PARK))
+		{
+			cnc_park();
+		}
+#endif
+
 		if (CHECKFLAG(command, RT_CMD_JOG_CANCEL))
 		{
 			while (grbl_stream_available())
@@ -831,12 +841,22 @@ void cnc_exec_rt_commands(void)
 					proto_error(STATUS_JOG_CANCELED);
 				}
 			}
-			return;
 		}
 
 		if (CHECKFLAG(command, RT_CMD_CYCLE_START))
 		{
-			cnc_clear_exec_state(EXEC_HOLD | EXEC_DOOR);
+#ifdef ENABLE_SAFETY_DOOR_PARKING
+			bool is_door = !!cnc_get_exec_state(EXEC_DOOR);
+#endif
+			cnc_clear_exec_state(EXEC_HOLD);
+#ifdef ENABLE_SAFETY_DOOR_PARKING
+			// if door was cleared succesfully
+			if (cnc_get_exec_state(EXEC_DOOR))
+			{
+				cnc_unpark();
+			}
+#endif
+			cnc_clear_exec_state(EXEC_DOOR);
 		}
 
 		if (CHECKFLAG(command, RT_CMD_REPORT))
@@ -1074,8 +1094,20 @@ bool cnc_check_interlocking(void)
 	if (cnc_get_exec_state(EXEC_HOLD) && !cnc_get_exec_state(EXEC_RUN))
 	{
 		cnc_stop(false); // stop motion
+		bool flush_motion = false;
+		
+		if (cnc_get_exec_state(EXEC_HOMING | EXEC_JOG)) // flushes the buffers if motions was homing, jog
+		{
+			flush_motion = true;
+			cnc_clear_exec_state(EXEC_HOLD | EXEC_JOG);
+		}
+		else if (cnc_get_exec_state(EXEC_PROBING)) // if at the end of a sucessful probing
+		{
+			flush_motion = true;
+			cnc_clear_exec_state(EXEC_HOLD);
+		}
 
-		if (cnc_get_exec_state(EXEC_HOMING | EXEC_JOG)) // flushes the buffers if motions was homing or jog
+		if (flush_motion)
 		{
 			itp_clear();
 			// clears the buffer but conserves the tool data
@@ -1088,7 +1120,6 @@ bool cnc_check_interlocking(void)
 			// flush all pending commands and motions
 			mc_flush_pending_motion();
 			// homing will be cleared inside homing cycle
-			cnc_clear_exec_state(EXEC_HOLD | EXEC_JOG);
 		}
 	}
 
@@ -1184,4 +1215,76 @@ void cnc_run_startup_blocks(void)
 
 	// reset streams
 	grbl_stream_change(NULL);
+}
+
+uint8_t cnc_get_status(void)
+{
+	if (cnc_has_alarm())
+	{
+		return EXEC_STATUS_ALARM;
+	}
+
+	if (cnc_get_exec_state(EXEC_POSITION_MAYBE_LOST))
+	{
+		return ((!cnc_get_exec_state(EXEC_HOMING)) ? EXEC_STATUS_LOCKED : EXEC_STATUS_HOMING);
+	}
+
+	if (mc_get_checkmode())
+	{
+		return EXEC_STATUS_CHECK;
+	}
+
+	uint16_t state = cnc_get_exec_state(EXEC_ALLACTIVE);
+
+	if (state & EXEC_LIMITS)
+	{
+		return ((!cnc_get_exec_state(EXEC_HOMING)) ? EXEC_STATUS_ALARM : EXEC_STATUS_HOMING);
+	}
+
+#if ASSERT_PIN(SAFETY_DOOR)
+	if (state & EXEC_DOOR)
+	{
+		uint8_t controls = io_get_controls();
+		if (CHECKFLAG(controls, SAFETY_DOOR_MASK))
+		{
+			return ((state & EXEC_RUN) ? EXEC_STATUS_DOOR_OPENED_PAUSING : EXEC_STATUS_DOOR_OPENED);
+		}
+		else
+		{
+			return ((state & EXEC_RUN) ? EXEC_STATUS_DOOR_CLOSED_RESUMING : EXEC_STATUS_DOOR_CLOSED);
+		}
+	}
+#endif
+
+	if (state & EXEC_HOLD)
+	{
+		return ((state & EXEC_RUN) ? EXEC_STATUS_HOLD_PENDING : EXEC_STATUS_HOLD);
+	}
+
+	if (state & EXEC_HOMING)
+	{
+		return EXEC_STATUS_HOMING;
+	}
+
+	if (state & EXEC_JOG)
+	{
+		return EXEC_STATUS_JOGGING;
+	}
+
+	if (state & EXEC_PROBING)
+	{
+		return EXEC_STATUS_PROBING;
+	}
+
+	if ((state & EXEC_RUN))
+	{
+		return EXEC_STATUS_RUNNING;
+	}
+
+	if (state & EXEC_DWELL)
+	{
+		return EXEC_STATUS_DWELL;
+	}
+
+	return EXEC_STATUS_IDLE;
 }

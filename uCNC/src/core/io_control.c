@@ -450,6 +450,7 @@ io_probe_action_cb io_probe_custom_disable = NULL;
 
 void io_enable_probe(void)
 {
+	cnc_set_exec_state(EXEC_PROBING);
 #ifdef PROBE_ENABLE_CUSTOM_CALLBACK
 	if (io_probe_custom_enable)
 	{
@@ -471,6 +472,7 @@ void io_enable_probe(void)
 
 void io_disable_probe(void)
 {
+	cnc_clear_exec_state(EXEC_PROBING);
 #ifdef PROBE_ENABLE_CUSTOM_CALLBACK
 	if (io_probe_custom_disable)
 	{
