@@ -471,6 +471,7 @@ void itp_run(void)
 			// forces deacceleration by overriding the profile juntion points
 			accel_until = remaining_steps;
 			deaccel_from = remaining_steps;
+			t_deac_integrator = INTERPOLATOR_DELTA_T;
 			itp_needs_update = true;
 		}
 		else if (itp_needs_update) // forces recalculation of acceleration and deacceleration profiles
