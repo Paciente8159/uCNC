@@ -75,7 +75,8 @@ extern "C"
 #define EXEC_CONTROLLED_STOP (EXEC_HOLD | EXEC_CANCELING)												 // performs a controlled stop
 #define EXEC_MOTIONS (EXEC_RUN | EXEC_DWELL | EXEC_PROBING | EXEC_HOLD | EXEC_CANCELING | EXEC_RESUMING) // Any motion state
 #define EXEC_RESET_LOCKED (EXEC_ALARM | EXEC_DOOR | EXEC_MOTIONS)										 // System reset locked
-#define EXEC_GCODE_LOCKED (EXEC_ALARM | EXEC_DOOR | EXEC_JOG)											 // Gcode is locked by an alarm or any special motion state
+#define EXEC_JOG_LOCKED (EXEC_ALARM | EXEC_DOOR)														 // Jog is locked by an alarm or any special motion state
+#define EXEC_GCODE_LOCKED (EXEC_JOG_LOCKED | EXEC_JOG)													 // Gcode is locked by an alarm or any special motion state
 #define EXEC_ALLACTIVE 0xFFFF																			 // All states
 
 // unlock result codes

@@ -256,7 +256,7 @@ MCU_IO_CALLBACK void mcu_probe_changed_cb(void)
 
 	// instead of stopping the machine does a controlled stop (hold)
 	// itp_stop();
-	cnc_set_exec_state(EXEC_HOLD | EXEC_RESUMING);
+	cnc_set_exec_state(EXEC_CANCELING);
 #endif
 }
 

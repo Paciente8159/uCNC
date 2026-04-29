@@ -205,13 +205,13 @@ uint8_t parser_read_command(void)
 	{
 		is_jogging = true;
 	}
-	else if (cnc_get_exec_state(~(EXEC_RUN | EXEC_HOLD)) || cnc_has_alarm()) // if any other than idle, run or hold discards the command
+	else if (cnc_get_exec_state(EXEC_GCODE_LOCKED) || cnc_has_alarm()) // if any other than idle, run or hold discards the command
 	{
 		parser_discard_command();
 		return STATUS_SYSTEM_GC_LOCK;
 	}
 
-	if (cnc_get_exec_state(EXEC_JOG) && !is_jogging) // error if trying to do a normal move with jog active
+	if (cnc_get_exec_state(EXEC_JOG_LOCKED) && !is_jogging) // error if trying to do a normal move with jog active
 	{
 		return STATUS_SYSTEM_GC_LOCK;
 	}
@@ -2096,11 +2096,6 @@ static uint8_t parser_gcode_command(bool is_jogging)
 		return result;
 	}
 
-	if (is_jogging)
-	{
-		cnc_set_exec_state(EXEC_JOG);
-	}
-
 	// validates command
 	result = parser_validate_command(&next_state, &words, &cmd);
 	if (result != STATUS_OK)
@@ -2137,6 +2132,9 @@ static uint8_t parser_gcode_command(bool is_jogging)
 			parser_reset(false);
 		}
 #endif
+	}
+	else{
+		cnc_set_exec_state(EXEC_JOG);
 	}
 
 	return result;

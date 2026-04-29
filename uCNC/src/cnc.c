@@ -580,6 +580,7 @@ void cnc_set_exec_state(uint16_t statemask)
 	{
 		cnc_clear_exec_state(EXEC_RESUMING); // auto clears resuming
 	}
+	
 	SETFLAG(cnc_state.exec_state, statemask);
 }
 
@@ -663,14 +664,6 @@ void cnc_clear_exec_state(uint16_t statemask)
 		}
 #endif
 #endif
-	}
-
-	if (CHECKFLAG(statemask, EXEC_RUN))
-	{
-		if (cnc_get_exec_state(EXEC_CANCELING)) // auto clears
-		{
-			SETFLAG(statemask, EXEC_CANCELING);
-		}
 	}
 
 	CLEARFLAG(cnc_state.exec_state, statemask);
@@ -1098,34 +1091,19 @@ bool cnc_check_interlocking(void)
 			cnc_alarm(EXEC_ALARM_HOMING_FAIL_DOOR);
 			return false;
 		}
-		// else if (cnc_get_exec_state(EXEC_RUN)) // if the machined is running
-		// {
-		// 	// with the door opened put machine on HOLD
-		// 	cnc_set_exec_state(EXEC_HOLD);
-		// }
-		// else // if the machined is not moving stop the tool too
-		// {
-		// 	cnc_stop(true);
-		// }
 	}
 #endif
 
-	// an hold condition is active and motion as stopped
-	if (cnc_get_exec_state(EXEC_HOLD | EXEC_RUN) == EXEC_HOLD)
+	// some motion stopped
+	if (!cnc_get_exec_state(EXEC_RUN) && cnc_get_exec_state(EXEC_JOG | EXEC_HOLD | EXEC_HOMING | EXEC_PROBING))
 	{
-		bool flush_motion = false;
+		bool flush_motion = cnc_get_exec_state(EXEC_CANCELING);
 #if ASSERT_PIN(SAFETY_DOOR)
 		if (cnc_get_exec_state(EXEC_DOOR))
 			cnc_stop(true); // stop motion
 		else
 #endif
 			cnc_stop(false); // stop motion
-
-		if (cnc_get_exec_state(EXEC_HOMING | EXEC_JOG | EXEC_PROBING)) // flushes the buffers if motions was homing, jog
-		{
-			flush_motion = true;
-			cnc_clear_exec_state(EXEC_JOG | EXEC_HOLD);
-		}
 
 		if (flush_motion)
 		{
@@ -1134,15 +1112,7 @@ bool cnc_check_interlocking(void)
 			// flush all pending commands and motions
 			mc_flush_pending_motion();
 			// homing will be cleared inside homing cycle
-		}
-	}
-
-	// end of JOG
-	if (cnc_get_exec_state(EXEC_JOG | EXEC_HOLD) == EXEC_JOG)
-	{
-		if (itp_is_empty() && planner_buffer_is_empty())
-		{
-			cnc_clear_exec_state(EXEC_JOG);
+			cnc_clear_exec_state(EXEC_JOG | EXEC_HOLD | EXEC_HOMING | EXEC_CANCELING);
 		}
 	}
 
