@@ -1078,34 +1078,39 @@ bool cnc_check_interlocking(void)
 			cnc_alarm(EXEC_ALARM_HOMING_FAIL_DOOR);
 			return false;
 		}
-		else if (cnc_get_exec_state(EXEC_RUN)) // if the machined is running
-		{
-			// with the door opened put machine on HOLD
-			cnc_set_exec_state(EXEC_HOLD);
-		}
-		else // if the machined is not moving stop the tool too
-		{
-			cnc_stop(true);
-		}
+		// else if (cnc_get_exec_state(EXEC_RUN)) // if the machined is running
+		// {
+		// 	// with the door opened put machine on HOLD
+		// 	cnc_set_exec_state(EXEC_HOLD);
+		// }
+		// else // if the machined is not moving stop the tool too
+		// {
+		// 	cnc_stop(true);
+		// }
 	}
 #endif
 
 	// an hold condition is active and motion as stopped
-	if (cnc_get_exec_state(EXEC_HOLD) && !cnc_get_exec_state(EXEC_RUN))
+	if (cnc_get_exec_state(EXEC_HOLD | EXEC_RUN) == EXEC_HOLD)
 	{
-		cnc_stop(false); // stop motion
 		bool flush_motion = false;
-		
-		if (cnc_get_exec_state(EXEC_HOMING | EXEC_JOG)) // flushes the buffers if motions was homing, jog
+#if ASSERT_PIN(SAFETY_DOOR)
+		if (cnc_get_exec_state(EXEC_DOOR))
+			cnc_stop(true); // stop motion
+		else
+#endif
+			cnc_stop(false); // stop motion
+
+		if (cnc_get_exec_state(EXEC_HOMING | EXEC_JOG | EXEC_PROBING)) // flushes the buffers if motions was homing, jog
 		{
 			flush_motion = true;
 			cnc_clear_exec_state(EXEC_HOLD | EXEC_JOG);
 		}
-		else if (cnc_get_exec_state(EXEC_PROBING)) // if at the end of a sucessful probing
-		{
-			flush_motion = true;
-			cnc_clear_exec_state(EXEC_HOLD);
-		}
+		// else if (cnc_get_exec_state(EXEC_PROBING)) // if at the end of a sucessful probing
+		// {
+		// 	flush_motion = true;
+		// 	cnc_clear_exec_state(EXEC_HOLD);
+		// }
 
 		if (flush_motion)
 		{
