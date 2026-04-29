@@ -1083,8 +1083,6 @@ uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data)
 	// disables the probe
 	io_disable_probe();
 	mc_clear(true);
-	// clears hold
-	cnc_clear_exec_state(EXEC_HOLD);
 
 	// sync the position of the motion control
 	mc_sync_position();

@@ -466,7 +466,7 @@ void itp_run(void)
 		float current_speed = fast_flt_sqrt(itp_cur_plan_block->entry_feed_sqr);
 
 		// if an hold is active forces to deaccelerate
-		if (cnc_get_exec_state(EXEC_HOLD))
+		if (cnc_get_exec_state(EXEC_CONTROLLED_STOP))
 		{
 			// forces deacceleration by overriding the profile juntion points
 			accel_until = remaining_steps;
@@ -642,7 +642,7 @@ void itp_run(void)
 			// speed can't be negative
 			itp_cur_plan_block->entry_feed_sqr = 0;
 
-			if (cnc_get_exec_state(EXEC_HOLD))
+			if (cnc_get_exec_state(EXEC_CONTROLLED_STOP))
 			{
 				return;
 			}
@@ -757,7 +757,7 @@ void itp_run(void)
 #endif
 		remaining_steps -= segm_steps;
 
-		if (remaining_steps == accel_until && !cnc_get_exec_state(EXEC_HOLD)) // resets float additions error
+		if (remaining_steps == accel_until && !cnc_get_exec_state(EXEC_CONTROLLED_STOP)) // resets float additions error
 		{
 			itp_cur_plan_block->entry_feed_sqr = fast_flt_pow2(junction_speed);
 		}
@@ -1333,7 +1333,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 void itp_start(bool is_synched)
 {
 	// starts the step isr if is stopped and there are segments to execute
-	if (!cnc_get_exec_state(EXEC_RUN | EXEC_HOLD | EXEC_ALARM) && !itp_sgm_is_empty()) // exec state is not hold or alarm and not already running
+	if (!cnc_get_exec_state(EXEC_RUN | EXEC_CONTROLLED_STOP | EXEC_ALARM) && !itp_sgm_is_empty()) // exec state is not hold or alarm and not already running
 	{
 		// check if the start is controlled by synched motion before start
 		if (!is_synched)
