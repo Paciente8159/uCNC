@@ -414,8 +414,6 @@ void proto_status(void)
 	bool probe = io_get_probe();
 	uint8_t state = cnc_get_status();
 	proto_putc('<');
-	bool pending = false;
-	bool door_opened = false;
 
 	switch (state)
 	{
@@ -435,53 +433,23 @@ void proto_status(void)
 		break;
 #if ASSERT_PIN(SAFETY_DOOR)
 	case EXEC_STATUS_DOOR_OPENED_PAUSING:
-		pending = true;
-		__FALL_THROUGH__
 	case EXEC_STATUS_DOOR_OPENED:
-		proto_puts(MSG_STATUS_DOOR);
-		proto_putc(':');
-		if (pending)
-		{
-			proto_putc('2');
-		}
-		else
-		{
-			proto_putc('1');
-		}
-		break;
 	case EXEC_STATUS_DOOR_CLOSED_RESUMING:
-		pending = true;
-		__FALL_THROUGH__
 	case EXEC_STATUS_DOOR_CLOSED:
 		proto_puts(MSG_STATUS_DOOR);
 		proto_putc(':');
-		if (pending)
-		{
-			proto_putc('3');
-		}
-		else
-		{
-			proto_putc('0');
-		}
 		break;
 #endif
 	case EXEC_STATUS_HOMING:
 		proto_puts(MSG_STATUS_HOME);
 		break;
-	case EXEC_STATUS_HOLD_PENDING:
-		pending = true;
-		__FALL_THROUGH__
 	case EXEC_STATUS_HOLD:
+	case EXEC_STATUS_HOLD_PENDING:
+#ifdef ENABLE_EXTRA_GRBL_STATES
+	case EXEC_STATUS_HOLD_RESUMING:
+#endif
 		proto_puts(MSG_STATUS_HOLD);
 		proto_putc(':');
-		if (pending)
-		{
-			proto_putc('1');
-		}
-		else
-		{
-			proto_putc('0');
-		}
 		break;
 	case EXEC_STATUS_JOGGING:
 		proto_puts(MSG_STATUS_JOG);
@@ -501,6 +469,35 @@ void proto_status(void)
 		break;
 	case EXEC_STATUS_IDLE:
 		proto_puts(MSG_STATUS_IDLE);
+		break;
+	}
+
+	switch (state)
+	{
+#if ASSERT_PIN(SAFETY_DOOR)
+	case EXEC_STATUS_DOOR_OPENED_PAUSING:
+		proto_putc('2');
+		break;
+	case EXEC_STATUS_DOOR_OPENED:
+		proto_putc('1');
+		break;
+	case EXEC_STATUS_DOOR_CLOSED_RESUMING:
+		proto_putc('3');
+		break;
+	case EXEC_STATUS_DOOR_CLOSED:
+		proto_putc('0');
+		break;
+#endif
+#ifdef ENABLE_EXTRA_GRBL_STATES
+	case EXEC_STATUS_HOLD_RESUMING:
+		proto_putc('2');
+		break;
+#endif
+	case EXEC_STATUS_HOLD_PENDING:
+		proto_putc('1');
+		break;
+	case EXEC_STATUS_HOLD:
+		proto_putc('0');
 		break;
 	}
 

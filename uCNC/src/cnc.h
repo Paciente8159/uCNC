@@ -56,23 +56,25 @@ extern "C"
  * Flags and state changes
  */
 // current cnc states (multiple can be active/overlapped at the same time)
-#define EXEC_IDLE 0x0000											   // All flags cleared
-#define EXEC_RUN 0x0001												   // Motion being executed
-#define EXEC_DWELL 0x0002											   // Dwell being executed
-#define EXEC_PROBING 0x0004											   // Probing being executed
-#define EXEC_HOLD 0x0008											   // Feed hold is active
-#define EXEC_JOG 0x0010												   // Jogging in execution
-#define EXEC_HOMING 0x0020											   // Homing in execution
-#define EXEC_DOOR 0x0100											   // The safety door was opened and the parking and hold is being executed
-#define EXEC_LIMITS 0x0200											   // The limits were hit
-#define EXEC_POSITION_MAYBE_LOST 0x4000								   // Machine is not homed or lost position due to abrupt stop
-#define EXEC_KILL 0x8000											   // Emergency stop
-#define EXEC_HOMING_HIT (EXEC_HOMING | EXEC_LIMITS)					   // Limit switch is active during a homing motion
-#define EXEC_INTERLOCKING_FAIL (EXEC_LIMITS | EXEC_KILL)			   // Interlocking check failed
-#define EXEC_ALARM (EXEC_POSITION_MAYBE_LOST | EXEC_INTERLOCKING_FAIL) // System alarms
-#define EXEC_RESET_LOCKED (EXEC_ALARM | EXEC_DOOR | EXEC_HOLD)		   // System reset locked
-#define EXEC_GCODE_LOCKED (EXEC_ALARM | EXEC_DOOR | EXEC_JOG)		   // Gcode is locked by an alarm or any special motion state
-#define EXEC_ALLACTIVE 0xFFFF										   // All states
+#define EXEC_IDLE 0x0000																						 // All flags cleared
+#define EXEC_RUN 0x0001																							 // Motion being executed
+#define EXEC_DWELL 0x0002																						 // Dwell being executed
+#define EXEC_PROBING 0x0004																						 // Probing being executed
+#define EXEC_HOLD 0x0008																						 // Feed hold is active
+#define EXEC_RESUMING 0x0010																					 // Resuming from any holding condition (door, hold, etc..)
+#define EXEC_JOG 0x0020																							 // Jogging in execution
+#define EXEC_HOMING 0x0040																						 // Homing in execution
+#define EXEC_DOOR 0x0100																						 // The safety door was opened and the parking and hold is being executed
+#define EXEC_LIMITS 0x0200																						 // The limits were hit
+#define EXEC_POSITION_MAYBE_LOST 0x4000																			 // Machine is not homed or lost position due to abrupt stop
+#define EXEC_KILL 0x8000																						 // Emergency stop
+#define EXEC_HOMING_HIT (EXEC_HOMING | EXEC_LIMITS)																 // Limit switch is active during a homing motion
+#define EXEC_INTERLOCKING_FAIL (EXEC_LIMITS | EXEC_KILL)														 // Interlocking check failed
+#define EXEC_ALARM (EXEC_POSITION_MAYBE_LOST | EXEC_INTERLOCKING_FAIL)											 // System alarms
+#define EXEC_MOTIONS (EXEC_RUN | EXEC_DWELL | EXEC_PROBING | EXEC_HOLD | EXEC_RESUMING | EXEC_JOG | EXEC_HOMING) // Any motion state
+#define EXEC_RESET_LOCKED (EXEC_ALARM | EXEC_DOOR | EXEC_MOTIONS)												 // System reset locked
+#define EXEC_GCODE_LOCKED (EXEC_ALARM | EXEC_DOOR | EXEC_JOG)													 // Gcode is locked by an alarm or any special motion state
+#define EXEC_ALLACTIVE 0xFFFF																					 // All states
 
 // unlock result codes
 #define UNLOCK_OK 0

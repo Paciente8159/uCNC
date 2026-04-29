@@ -305,9 +305,7 @@ void cnc_store_motion(void)
 	planner_store();
 	mc_store();
 	// reset planner and sync systems
-	itp_clear();
-	planner_clear();
-	mc_sync_position();
+	mc_clear(false);
 	// clear the current hold state (if not set previosly)
 	if (!prevholdstate)
 	{
@@ -335,9 +333,7 @@ void cnc_restore_motion(void)
 	}
 
 	// reset planner and sync systems
-	itp_clear();
-	planner_clear();
-	mc_sync_position();
+	mc_clear(false);
 
 	// restore the motion controller, planner and parser
 	mc_restore();
@@ -406,9 +402,7 @@ uint8_t cnc_home(void)
 #endif
 	// sync's the motion control with the real time position
 	// this flushes the homing motion before returning from error or home success
-	itp_clear();
-	planner_clear();
-	mc_sync_position();
+	mc_clear(false);
 
 	// disables homing and reenables limits alarm messages
 	cnc_clear_exec_state(EXEC_HOMING);
@@ -630,15 +624,16 @@ void cnc_clear_exec_state(uint16_t statemask)
 			planner_spindle_ovr_reset();
 			// updated the coolant pins
 			tool_set_coolant(planner_get_coolant());
-#if (DELAY_ON_RESUME_COOLANT > 0)
-			if (!g_settings.tool_mode)
+			if (!planner_buffer_is_empty())
 			{
-				if (!planner_buffer_is_empty())
+				cnc_set_exec_state(EXEC_RESUMING);
+#if (DELAY_ON_RESUME_COOLANT > 0)
+				if (!g_settings.tool_mode)
 				{
 					cnc_dwell_ms(DELAY_ON_RESUME_COOLANT * 1000);
 				}
-			}
 #endif
+			}
 			// tries to sync the tool
 			// if something goes wrong the tool can reinstate the HOLD state
 			itp_sync_spindle();
@@ -690,8 +685,7 @@ void cnc_reset(void)
 
 	// clear all systems
 	grbl_stream_clear();
-	itp_clear();
-	planner_clear();
+	mc_clear(false);
 	kinematics_init();
 	parser_init();
 	mc_init();
@@ -1025,7 +1019,7 @@ void cnc_check_fault_systems(void)
 
 bool cnc_check_interlocking(void)
 {
-	// check all flags
+	// check all flags, update states and perform actions
 
 	// an existing KILL condition can be due to:
 	// - ESTOP trigger
@@ -1106,21 +1100,10 @@ bool cnc_check_interlocking(void)
 			flush_motion = true;
 			cnc_clear_exec_state(EXEC_HOLD | EXEC_JOG);
 		}
-		// else if (cnc_get_exec_state(EXEC_PROBING)) // if at the end of a sucessful probing
-		// {
-		// 	flush_motion = true;
-		// 	cnc_clear_exec_state(EXEC_HOLD);
-		// }
 
 		if (flush_motion)
 		{
-			itp_clear();
-			// clears the buffer but conserves the tool data
-			while (!planner_buffer_is_empty())
-			{
-				planner_discard_block();
-			}
-			mc_sync_position();
+			mc_clear(true);
 			parser_sync_position();
 			// flush all pending commands and motions
 			mc_flush_pending_motion();
@@ -1135,6 +1118,11 @@ bool cnc_check_interlocking(void)
 		{
 			cnc_clear_exec_state(EXEC_JOG);
 		}
+	}
+
+	if (cnc_get_exec_state(EXEC_RUN))
+	{
+		cnc_clear_exec_state(EXEC_RESUMING);
 	}
 
 	return true;
@@ -1256,14 +1244,24 @@ uint8_t cnc_get_status(void)
 		}
 		else
 		{
-			return ((state & EXEC_RUN) ? EXEC_STATUS_DOOR_CLOSED_RESUMING : EXEC_STATUS_DOOR_CLOSED);
+			return ((state & (EXEC_RUN | EXEC_RESUMING)) ? EXEC_STATUS_DOOR_CLOSED_RESUMING : EXEC_STATUS_DOOR_CLOSED);
 		}
 	}
 #endif
 
 	if (state & EXEC_HOLD)
 	{
-		return ((state & EXEC_RUN) ? EXEC_STATUS_HOLD_PENDING : EXEC_STATUS_HOLD);
+		if ((state & EXEC_RUN))
+		{
+			return EXEC_STATUS_HOLD_PENDING;
+		}
+#ifndef ENABLE_EXTRA_GRBL_STATES
+		if (state & EXEC_RESUMING)
+		{
+			return EXEC_STATUS_HOLD_RESUMING;
+		}
+#endif
+		return EXEC_STATUS_HOLD;
 	}
 
 	if (state & EXEC_HOMING)
@@ -1281,7 +1279,7 @@ uint8_t cnc_get_status(void)
 		return EXEC_STATUS_PROBING;
 	}
 
-	if ((state & EXEC_RUN))
+	if ((state & (EXEC_RUN | EXEC_RESUMING)))
 	{
 		return EXEC_STATUS_RUNNING;
 	}

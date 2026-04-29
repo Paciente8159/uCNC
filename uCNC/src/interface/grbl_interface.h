@@ -165,16 +165,17 @@ extern "C"
 #define EXEC_STATUS_DWELL 2					// status code waiting for dwell
 #define EXEC_STATUS_RUNNING 3				// status code gcode running
 #define EXEC_STATUS_JOGGING 4				// status code jogging motion
-#define EXEC_STATUS_HOLD 5					// status code holding enabled (no motion)
-#define EXEC_STATUS_HOLD_PENDING 6			// status code holding enabled (in motion)
-#define EXEC_STATUS_HOMING 7				// status code homing motion
-#define EXEC_STATUS_DOOR_CLOSED 8			// status code holding enabled (no motion) from safety door (safety door no longer active)
-#define EXEC_STATUS_DOOR_OPENED 9			// status code holding enabled (in motion) from safety door (safety door no longer active)
-#define EXEC_STATUS_DOOR_OPENED_PAUSING 10	// status code holding enabled (in motion) from safety door (safety door still active)
-#define EXEC_STATUS_DOOR_CLOSED_RESUMING 11 // status code holding enabled (in motion) from safety door (safety door still active)
-#define EXEC_STATUS_CHECK 12				// status code check mode
-#define EXEC_STATUS_LOCKED 13				// status code gcode locked
-#define EXEC_STATUS_ALARM 14				// status code alarm mode
+#define EXEC_STATUS_HOLD 10					// status code holding enabled (stopped)
+#define EXEC_STATUS_HOLD_PENDING 11			// status code holding enabled (pausing)
+#define EXEC_STATUS_HOLD_RESUMING 12		// status code holding enabled (resuming)
+#define EXEC_STATUS_HOMING 20				// status code homing motion
+#define EXEC_STATUS_DOOR_CLOSED 30			// status code holding enabled (stopped) from safety door (safety door no longer active)
+#define EXEC_STATUS_DOOR_OPENED 31			// status code holding enabled (stopped) from safety door (safety door no longer active)
+#define EXEC_STATUS_DOOR_OPENED_PAUSING 32	// status code holding enabled (pausing) from safety door (safety door still active)
+#define EXEC_STATUS_DOOR_CLOSED_RESUMING 33 // status code holding enabled (resuming) from safety door (safety door still active)
+#define EXEC_STATUS_CHECK 40				// status code check mode
+#define EXEC_STATUS_LOCKED 50				// status code gcode locked
+#define EXEC_STATUS_ALARM 60				// status code alarm mode
 
 #ifndef DISABLE_SAFE_SETTINGS
 #define EXEC_ALARM_SETTINGS_READ_ERROR -3

@@ -857,8 +857,7 @@ bool mc_home_motion(uint8_t axis_mask, bool is_origin_search, bool fast_mode)
 
 	// Flush buffers and stop motion
 	cnc_stop(false);
-	itp_clear();
-	planner_clear();
+	mc_clear(false);
 
 	// Motion completed successfully
 	return true;
@@ -910,8 +909,7 @@ bool mc_home_motion_pulloff(uint8_t axis_mask, bool fast_mode)
 
 	// Flush buffers and stop motion
 	cnc_stop(false);
-	itp_clear();
-	planner_clear();
+	mc_clear(false);
 
 	// Motion completed successfully
 	return true;
@@ -1084,12 +1082,7 @@ uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data)
 		;
 	// disables the probe
 	io_disable_probe();
-	itp_clear();
-	// clears the buffer but conserves the tool data
-	while (!planner_buffer_is_empty())
-	{
-		planner_discard_block();
-	}
+	mc_clear(true);
 	// clears hold
 	cnc_clear_exec_state(EXEC_HOLD);
 
@@ -1409,3 +1402,21 @@ void mc_restore(void)
 	memcpy(mc_last_target, mc_last_target_copy, sizeof(mc_last_target));
 }
 #endif
+
+void mc_clear(bool preserve_tool)
+{
+	itp_clear();
+	if (preserve_tool)
+	{
+		// clears the buffer but conserves the tool data
+		while (!planner_buffer_is_empty())
+		{
+			planner_discard_block();
+		}
+	}
+	else
+	{
+		planner_clear();
+	}
+	mc_sync_position();
+}
