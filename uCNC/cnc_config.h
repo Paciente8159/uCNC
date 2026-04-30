@@ -235,7 +235,7 @@ extern "C"
  * Uncomment to enable pwm laser tool features
  *
  * **/
-// #define ENABLE_LASER_PWM
+#define ENABLE_LASER_PWM
 
 /**
  * Uncomment to enable laser PPI feature
