@@ -536,7 +536,7 @@ uint8_t cnc_unlock(bool force)
 		// all other alarm flags remain active if any input is still active
 		CLEARFLAG(cnc_state.exec_state, EXEC_POSITION_MAYBE_LOST);
 		// clears all other locking flags
-		cnc_clear_exec_state(EXEC_GCODE_LOCKED | EXEC_CONTROLLED_STOP);
+		cnc_clear_exec_state(EXEC_GCODE_LOCKED | EXEC_STOPPING);
 		// signals stepper enable pins
 
 		io_set_steps(g_settings.step_invert_mask);
@@ -580,7 +580,7 @@ void cnc_set_exec_state(uint16_t statemask)
 	{
 		cnc_clear_exec_state(EXEC_RESUMING); // auto clears resuming
 	}
-	
+
 	SETFLAG(cnc_state.exec_state, statemask);
 }
 
@@ -637,13 +637,13 @@ void cnc_clear_exec_state(uint16_t statemask)
 	// if releasing from a HOLD state with and active delay in exec
 	if (CHECKFLAG(statemask, EXEC_HOLD) && cnc_get_exec_state(EXEC_HOLD))
 	{
+		cnc_set_exec_state(EXEC_RESUMING);
 #if TOOL_COUNT > 0
 		planner_spindle_ovr_reset();
 		// updated the coolant pins
 		tool_set_coolant(planner_get_coolant());
 		if (!planner_buffer_is_empty())
 		{
-			cnc_set_exec_state(EXEC_RESUMING);
 #if (DELAY_ON_RESUME_COOLANT > 0)
 			if (!g_settings.tool_mode)
 			{
@@ -1095,7 +1095,7 @@ bool cnc_check_interlocking(void)
 #endif
 
 	// some motion stopped
-	if (!cnc_get_exec_state(EXEC_RUN) && cnc_get_exec_state(EXEC_JOG | EXEC_HOLD | EXEC_HOMING | EXEC_PROBING))
+	if (!cnc_get_exec_state(EXEC_RUNNING) && cnc_get_exec_state(EXEC_SPECIAL_MOTIONS))
 	{
 		bool flush_motion = cnc_get_exec_state(EXEC_CANCELING);
 #if ASSERT_PIN(SAFETY_DOOR)
@@ -1112,7 +1112,7 @@ bool cnc_check_interlocking(void)
 			// flush all pending commands and motions
 			mc_flush_pending_motion();
 			// homing will be cleared inside homing cycle
-			cnc_clear_exec_state(EXEC_JOG | EXEC_HOLD | EXEC_HOMING | EXEC_CANCELING);
+			cnc_clear_exec_state(EXEC_SPECIAL_MOTIONS);
 		}
 	}
 
@@ -1240,10 +1240,21 @@ uint8_t cnc_get_status(void)
 		}
 		else
 		{
-			return ((state & (EXEC_RUN | EXEC_RESUMING)) ? EXEC_STATUS_DOOR_CLOSED_RESUMING : EXEC_STATUS_DOOR_CLOSED);
+			return ((state & EXEC_RUNNING) ? EXEC_STATUS_DOOR_CLOSED_RESUMING : EXEC_STATUS_DOOR_CLOSED);
 		}
 	}
 #endif
+
+	if (state & EXEC_HOMING)
+	{
+		return EXEC_STATUS_HOMING;
+	}
+
+	// always return probing (even while doing the controlled stop after probe sucess)
+	if (state & EXEC_PROBING)
+	{
+		return EXEC_STATUS_PROBING;
+	}
 
 	if (state & EXEC_HOLD)
 	{
@@ -1260,22 +1271,12 @@ uint8_t cnc_get_status(void)
 		return EXEC_STATUS_HOLD;
 	}
 
-	if (state & EXEC_HOMING)
-	{
-		return EXEC_STATUS_HOMING;
-	}
-
 	if (state & EXEC_JOG)
 	{
 		return EXEC_STATUS_JOGGING;
 	}
 
-	if (state & EXEC_PROBING)
-	{
-		return EXEC_STATUS_PROBING;
-	}
-
-	if ((state & (EXEC_RUN | EXEC_RESUMING)))
+	if (state & EXEC_RUNNING)
 	{
 		return EXEC_STATUS_RUNNING;
 	}

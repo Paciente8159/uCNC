@@ -480,7 +480,7 @@ void io_enable_probe(void)
 
 void io_disable_probe(void)
 {
-	cnc_clear_exec_state(EXEC_PROBING | EXEC_HOLD); // clear probe and pending hold to stop probing motion
+	cnc_clear_exec_state(EXEC_PROBING | EXEC_STOPPING); // clear probe and pending hold to stop probing motion
 #ifdef PROBE_ENABLE_CUSTOM_CALLBACK
 	if (io_probe_custom_disable)
 	{

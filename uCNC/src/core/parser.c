@@ -2051,6 +2051,9 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 		{
 			cnc_stop(true);
 			proto_feedback(MSG_FEEDBACK_8);
+			#ifndef DISABLE_ENDPROGRAM_LOCK
+			cnc_set_exec_state(EXEC_POSITION_MAYBE_LOST);
+			#endif
 		}
 	}
 

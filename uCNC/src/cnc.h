@@ -56,28 +56,30 @@ extern "C"
  * Flags and state changes
  */
 // current cnc states (multiple can be active/overlapped at the same time)
-#define EXEC_IDLE 0x0000																				 // All flags cleared
-#define EXEC_RUN 0x0001																					 // Motion being executed
-#define EXEC_DWELL 0x0002																				 // Dwell being executed
-#define EXEC_PROBING 0x0004																				 // Probing being executed
-#define EXEC_HOLD 0x0008																				 // User controlled stop
-#define EXEC_CANCELING 0x0010																			 // Similar to hold (controlled stop) but auto-clears (probe success, jog canceling, etc..)
-#define EXEC_RESUMING 0x0020																			 // Resuming from any holding condition (door, hold, etc..)
-#define EXEC_JOG 0x0040																					 // Jogging in execution
-#define EXEC_HOMING 0x0080																				 // Homing in execution
-#define EXEC_DOOR 0x0100																				 // The safety door was opened and the parking and hold is being executed
-#define EXEC_LIMITS 0x0200																				 // The limits were hit
-#define EXEC_POSITION_MAYBE_LOST 0x4000																	 // Machine is not homed or lost position due to abrupt stop
-#define EXEC_KILL 0x8000																				 // Emergency stop
-#define EXEC_HOMING_HIT (EXEC_HOMING | EXEC_LIMITS)														 // Limit switch is active during a homing motion
-#define EXEC_INTERLOCKING_FAIL (EXEC_LIMITS | EXEC_KILL)												 // Interlocking check failed
-#define EXEC_ALARM (EXEC_POSITION_MAYBE_LOST | EXEC_INTERLOCKING_FAIL)									 // System alarms
-#define EXEC_CONTROLLED_STOP (EXEC_HOLD | EXEC_CANCELING)												 // performs a controlled stop
-#define EXEC_MOTIONS (EXEC_RUN | EXEC_DWELL | EXEC_PROBING | EXEC_HOLD | EXEC_CANCELING | EXEC_RESUMING) // Any motion state
-#define EXEC_RESET_LOCKED (EXEC_ALARM | EXEC_DOOR | EXEC_MOTIONS)										 // System reset locked
-#define EXEC_JOG_LOCKED (EXEC_ALARM | EXEC_DOOR)														 // Jog is locked by an alarm or any special motion state
-#define EXEC_GCODE_LOCKED (EXEC_JOG_LOCKED | EXEC_JOG)													 // Gcode is locked by an alarm or any special motion state
-#define EXEC_ALLACTIVE 0xFFFF																			 // All states
+#define EXEC_IDLE 0x0000														 // All flags cleared
+#define EXEC_RUN 0x0001															 // Motion being executed
+#define EXEC_DWELL 0x0002														 // Dwell being executed
+#define EXEC_PROBING 0x0004														 // Probing being executed
+#define EXEC_HOLD 0x0008														 // User controlled stop
+#define EXEC_CANCELING 0x0010													 // Similar to hold (controlled stop) but auto-clears (probe success, jog canceling, etc..)
+#define EXEC_RESUMING 0x0020													 // Resuming from any holding condition (door, hold, etc..)
+#define EXEC_JOG 0x0040															 // Jogging in execution
+#define EXEC_HOMING 0x0080														 // Homing in execution
+#define EXEC_DOOR 0x0100														 // The safety door was opened and the parking and hold is being executed
+#define EXEC_LIMITS 0x0200														 // The limits were hit
+#define EXEC_POSITION_MAYBE_LOST 0x4000											 // Machine is not homed or lost position due to abrupt stop
+#define EXEC_KILL 0x8000														 // Emergency stop
+#define EXEC_HOMING_HIT (EXEC_HOMING | EXEC_LIMITS)								 // Limit switch is active during a homing motion
+#define EXEC_INTERLOCKING_FAIL (EXEC_LIMITS | EXEC_KILL)						 // Interlocking check failed
+#define EXEC_ALARM (EXEC_POSITION_MAYBE_LOST | EXEC_INTERLOCKING_FAIL)			 // System alarms
+#define EXEC_STOPPING (EXEC_HOLD | EXEC_CANCELING)								 // performs a controlled stop
+#define EXEC_RUNNING (EXEC_RUN | EXEC_RESUMING)									 // System running
+#define EXEC_MOTIONS (EXEC_RUNNING | EXEC_STOPPING | EXEC_DWELL | EXEC_PROBING)	 // Any motion state
+#define EXEC_SPECIAL_MOTIONS (EXEC_JOG | EXEC_HOMING | EXEC_PROBING | EXEC_DOOR) // Special motion modes
+#define EXEC_RESET_LOCKED (EXEC_ALARM | EXEC_DOOR | EXEC_MOTIONS)				 // System reset locked
+#define EXEC_JOG_LOCKED (EXEC_ALARM | EXEC_DOOR)								 // Jog is locked by an alarm or any special motion state
+#define EXEC_GCODE_LOCKED (EXEC_JOG_LOCKED | EXEC_JOG)							 // Gcode is locked by an alarm or any special motion state
+#define EXEC_ALLACTIVE 0xFFFF													 // All states
 
 // unlock result codes
 #define UNLOCK_OK 0
