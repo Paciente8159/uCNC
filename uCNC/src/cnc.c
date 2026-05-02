@@ -576,6 +576,12 @@ void cnc_set_exec_state(uint16_t statemask)
 		}
 	}
 
+	// enforce hold on door
+	if (CHECKFLAG(statemask, EXEC_DOOR))
+	{
+		SETFLAG(statemask, EXEC_HOLD);
+	}
+
 	if (CHECKFLAG(statemask, EXEC_RUN))
 	{
 		cnc_clear_exec_state(EXEC_RESUMING); // auto clears resuming
@@ -635,7 +641,7 @@ void cnc_clear_exec_state(uint16_t statemask)
 	}
 
 	// if releasing from a HOLD state with and active delay in exec
-	if (CHECKFLAG(statemask, EXEC_HOLD) && cnc_get_exec_state(EXEC_HOLD))
+	if (CHECKFLAG(statemask, EXEC_HOLD) && cnc_get_exec_state(EXEC_HOLD) && !planner_buffer_is_empty())
 	{
 		cnc_set_exec_state(EXEC_RESUMING);
 #if TOOL_COUNT > 0
@@ -1113,6 +1119,11 @@ bool cnc_check_interlocking(void)
 			mc_flush_pending_motion();
 			// homing will be cleared inside homing cycle
 			cnc_clear_exec_state(EXEC_SPECIAL_MOTIONS);
+		}
+		cnc_clear_exec_state(EXEC_CANCELING);
+		if (planner_buffer_is_empty())
+		{
+			cnc_clear_exec_state(EXEC_JOG);
 		}
 	}
 
