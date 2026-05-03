@@ -1100,7 +1100,7 @@ bool cnc_check_interlocking(void)
 	}
 #endif
 
-	// some motion stopped
+	// motion stopped
 	if (!cnc_get_exec_state(EXEC_RUNNING) && cnc_get_exec_state(EXEC_SPECIAL_MOTIONS))
 	{
 		bool flush_motion = cnc_get_exec_state(EXEC_CANCELING);
@@ -1118,7 +1118,7 @@ bool cnc_check_interlocking(void)
 			// flush all pending commands and motions
 			mc_flush_pending_motion();
 			// homing will be cleared inside homing cycle
-			cnc_clear_exec_state(EXEC_SPECIAL_MOTIONS);
+			cnc_clear_exec_state((EXEC_JOG | EXEC_HOMING | EXEC_PROBING));
 		}
 		cnc_clear_exec_state(EXEC_CANCELING);
 		if (planner_buffer_is_empty())
@@ -1245,15 +1245,20 @@ uint8_t cnc_get_status(void)
 	if (state & EXEC_DOOR)
 	{
 		uint8_t controls = io_get_controls();
-		if (CHECKFLAG(controls, SAFETY_DOOR_MASK))
+		if (state & EXEC_RUN)
 		{
-			return ((state & EXEC_RUN) ? EXEC_STATUS_DOOR_OPENED_PAUSING : EXEC_STATUS_DOOR_OPENED);
+			return EXEC_STATUS_DOOR_OPENED_PAUSING;
+		}
+		else if (CHECKFLAG(controls, SAFETY_DOOR_MASK))
+		{
+			return EXEC_STATUS_DOOR_OPENED;
 		}
 		else
 		{
 			return ((state & EXEC_RUNNING) ? EXEC_STATUS_DOOR_CLOSED_RESUMING : EXEC_STATUS_DOOR_CLOSED);
 		}
 	}
+
 #endif
 
 	if (state & EXEC_HOMING)
