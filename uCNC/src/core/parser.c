@@ -2098,6 +2098,10 @@ static uint8_t parser_gcode_command(bool is_jogging)
 		parser_discard_command();
 		return result;
 	}
+	
+	if(is_jogging){
+		cnc_set_exec_state(EXEC_JOG);
+	}
 
 	// validates command
 	result = parser_validate_command(&next_state, &words, &cmd);
@@ -2135,9 +2139,6 @@ static uint8_t parser_gcode_command(bool is_jogging)
 			parser_reset(false);
 		}
 #endif
-	}
-	else{
-		cnc_set_exec_state(EXEC_JOG);
 	}
 
 	return result;

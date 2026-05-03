@@ -72,7 +72,7 @@ extern "C"
 #define EXEC_HOMING_HIT (EXEC_HOMING | EXEC_LIMITS)								 // Limit switch is active during a homing motion
 #define EXEC_INTERLOCKING_FAIL (EXEC_LIMITS | EXEC_KILL)						 // Interlocking check failed
 #define EXEC_ALARM (EXEC_POSITION_MAYBE_LOST | EXEC_INTERLOCKING_FAIL)			 // System alarms
-#define EXEC_STOPPING (EXEC_HOLD | EXEC_CANCELING)								 // performs a controlled stop
+#define EXEC_STOPPING (EXEC_DOOR | EXEC_HOLD | EXEC_CANCELING)								 // performs a controlled stop
 #define EXEC_RUNNING (EXEC_RUN | EXEC_RESUMING)									 // System running
 #define EXEC_MOTIONS (EXEC_RUNNING | EXEC_STOPPING | EXEC_DWELL | EXEC_PROBING)	 // Any motion state
 #define EXEC_SPECIAL_MOTIONS (EXEC_JOG | EXEC_HOMING | EXEC_PROBING | EXEC_DOOR) // Special motion modes
