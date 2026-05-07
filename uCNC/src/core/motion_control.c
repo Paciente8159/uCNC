@@ -847,6 +847,7 @@ bool mc_home_motion(uint8_t axis_mask, bool is_origin_search, bool fast_mode)
 	{
 		return false;
 	}
+	
 	mc_line(target, &block_data);
 	itp_sync();
 	if (cnc_get_exec_state(EXEC_HOMING_HIT) != EXEC_HOMING_HIT)
@@ -972,7 +973,7 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 			return STATUS_CRITICAL_FAIL;
 		}
 
-		cnc_delay_ms(g_settings.debounce_ms); // adds a delay before reading io pin (debounce)
+		cnc_dwell_ms(g_settings.debounce_ms); // adds a delay before reading io pin (debounce)
 		limits_flags = io_get_limits();
 
 		// the wrong switch was activated bails
@@ -988,10 +989,10 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 		{
 			return STATUS_CRITICAL_FAIL;
 		}
-		io_enable_limits(); // temporary limits disable
 
-		cnc_delay_ms(g_settings.debounce_ms); // adds a delay before reading io pin (debounce)
-		limits_flags = io_get_raw_limits();
+		cnc_dwell_ms(g_settings.debounce_ms); // adds a delay before reading io pin (debounce)
+		io_enable_limits(); // temporary limits disable
+		limits_flags = io_get_raw_limits(); // get the raw (unfiltered values)
 
 		// all limits should be cleared
 		if (limits_flags)
