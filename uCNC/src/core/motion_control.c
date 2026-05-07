@@ -852,6 +852,7 @@ bool mc_home_motion(uint8_t axis_mask, bool is_origin_search, bool fast_mode)
 	if (cnc_get_exec_state(EXEC_HOMING_HIT) != EXEC_HOMING_HIT)
 	{
 		// Home finding failed
+		cnc_set_exec_state(EXEC_POSITION_MAYBE_LOST);
 		return false;
 	}
 
