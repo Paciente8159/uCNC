@@ -79,7 +79,7 @@ extern "C"
 #ifdef __GNUC__
 #ifndef ATOMIC_LOAD_N
 #define ATOMIC_LOAD_N(src, mode) \
-	({__typeof__(*(src)) _res;ATOMIC_CODEBLOCK { _res = *(src); }_res; })
+	({__typeof__(*(src)) _res; ATOMIC_CODEBLOCK { _res = *(src); } _res; })
 #endif
 #ifndef ATOMIC_STORE_N
 #define ATOMIC_STORE_N(dst, val, mode) \

@@ -556,7 +556,8 @@ uint8_t cnc_unlock(bool force)
 
 uint16_t cnc_get_exec_state(uint16_t statemask)
 {
-	return CHECKFLAG(cnc_state.exec_state, statemask);
+	uint16_t state = ATOMIC_LOAD_N(&cnc_state.exec_state, __ATOMIC_ACQUIRE);
+	return (state & statemask);
 }
 
 void cnc_set_exec_state(uint16_t statemask)
@@ -587,7 +588,7 @@ void cnc_set_exec_state(uint16_t statemask)
 		cnc_clear_exec_state(EXEC_RESUMING); // auto clears resuming
 	}
 
-	SETFLAG(cnc_state.exec_state, statemask);
+	ATOMIC_FETCH_OR(&cnc_state.exec_state, statemask, __ATOMIC_ACQ_REL);
 }
 
 void cnc_clear_exec_state(uint16_t statemask)
@@ -672,7 +673,7 @@ void cnc_clear_exec_state(uint16_t statemask)
 #endif
 	}
 
-	CLEARFLAG(cnc_state.exec_state, statemask);
+	ATOMIC_FETCH_AND(&cnc_state.exec_state, ~statemask, __ATOMIC_ACQ_REL);
 }
 
 // executes delay
@@ -1061,6 +1062,8 @@ bool cnc_check_interlocking(void)
 		{
 			cnc_alarm(EXEC_ALARM_ABORT_CYCLE);
 		}
+
+		cnc_stop(true);
 		return false;
 	}
 
@@ -1104,26 +1107,25 @@ bool cnc_check_interlocking(void)
 	if (!cnc_get_exec_state(EXEC_RUNNING) && cnc_get_exec_state(EXEC_SPECIAL_MOTIONS))
 	{
 		bool flush_motion = cnc_get_exec_state(EXEC_CANCELING);
+		if (flush_motion || planner_buffer_is_empty())
+		{
 #if ASSERT_PIN(SAFETY_DOOR)
-		if (cnc_get_exec_state(EXEC_DOOR))
-			cnc_stop(true); // stop motion
-		else
+			if (cnc_get_exec_state(EXEC_DOOR))
+				cnc_stop(true); // stop motion
+			else
 #endif
-			cnc_stop(false); // stop motion
+				cnc_stop(false); // stop motion
 
-		if (flush_motion)
-		{
-			mc_clear(true);
-			parser_sync_position();
-			// flush all pending commands and motions
-			mc_flush_pending_motion();
-			// homing will be cleared inside homing cycle
-			cnc_clear_exec_state((EXEC_JOG | EXEC_HOMING | EXEC_PROBING));
-		}
-		cnc_clear_exec_state(EXEC_CANCELING);
-		if (planner_buffer_is_empty())
-		{
-			cnc_clear_exec_state(EXEC_JOG);
+			if (flush_motion)
+			{
+				mc_clear(true);
+				parser_sync_position();
+				// flush all pending commands and motions
+				mc_flush_pending_motion();
+				// homing will be cleared inside homing cycle
+				cnc_clear_exec_state((EXEC_JOG | EXEC_HOMING | EXEC_PROBING));
+			}
+			cnc_clear_exec_state(EXEC_JOG | EXEC_CANCELING);
 		}
 	}
 
