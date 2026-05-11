@@ -28,9 +28,10 @@ extern "C"
 #define RT_CMD_CLEAR 0
 
 #define RT_CMD_RESET 1
-#define RT_CMD_JOG_CANCEL 2
-#define RT_CMD_CYCLE_START 4
-#define RT_CMD_REPORT 8
+#define RT_CMD_DOOR_CHANGED 2
+#define RT_CMD_JOG_CANCEL 4
+#define RT_CMD_CYCLE_START 8
+#define RT_CMD_REPORT 16
 
 // feed_ovr_cmd
 #define RT_CMD_FEED_100 1
@@ -53,40 +54,32 @@ extern "C"
 
 /**
  * Flags and state changes
- *
- * EXEC_KILL
- * Set by cnc_alarm.
- * Cleared by reset or unlock depending on the the alarm priority. Cannot be cleared if ESTOP is pressed.
- *
- * EXEC_LIMITS
- * Set when at a transition of a limit switch from inactive to the active state.
- * Cleared by reset or unlock. Not affected by the limit switch state.
- *
- * EXEC_POSITION_MAYBE_LOST
- * Set when the interpolator is abruptly stopped causing the position to be lost.
- * Cleared by homing or unlock.
- *
- * EXEC_DOOR
- * Set with when the safety door pin is active or the safety door command is called.
- * Cleared by cycle resume, unlock or reset. If the door is opened it will remain active
- *
  */
 // current cnc states (multiple can be active/overlapped at the same time)
-#define EXEC_IDLE 0											   // All flags cleared
-#define EXEC_RUN 1											   // Motions are being executed
-#define EXEC_HOLD 2											   // Feed hold is active
-#define EXEC_JOG 4											   // Jogging in execution
-#define EXEC_HOMING 8										   // Homing in execution
-#define EXEC_DOOR 16										   // Safety door open
-#define EXEC_POSITION_MAYBE_LOST 32							   // Machine is not homed or lost position due to abrupt stop
-#define EXEC_LIMITS 64										   // Limits hit
-#define EXEC_KILL 128										   // Emergency stop
-#define EXEC_HOMING_HIT (EXEC_HOMING | EXEC_LIMITS)			   // Limit switch is active during a homing motion
-#define EXEC_INTERLOCKING_FAIL (EXEC_LIMITS | EXEC_KILL)	   // Interlocking check failed
-#define EXEC_ALARM (EXEC_POSITION_MAYBE_LOST | EXEC_INTERLOCKING_FAIL)	   // System alarms
-#define EXEC_RESET_LOCKED (EXEC_ALARM | EXEC_DOOR | EXEC_HOLD) // System reset locked
-#define EXEC_GCODE_LOCKED (EXEC_ALARM | EXEC_DOOR | EXEC_JOG)  // Gcode is locked by an alarm or any special motion state
-#define EXEC_ALLACTIVE 255									   // All states
+#define EXEC_IDLE 0x0000														 // All flags cleared
+#define EXEC_RUN 0x0001															 // Motion being executed
+#define EXEC_DWELL 0x0002														 // Dwell being executed
+#define EXEC_PROBING 0x0004														 // Probing being executed
+#define EXEC_HOLD 0x0008														 // User controlled stop
+#define EXEC_CANCELING 0x0010													 // Similar to hold (controlled stop) but auto-clears (probe success, jog canceling, etc..)
+#define EXEC_RESUMING 0x0020													 // Resuming from any holding condition (door, hold, etc..)
+#define EXEC_JOG 0x0040															 // Jogging in execution
+#define EXEC_HOMING 0x0080														 // Homing in execution
+#define EXEC_DOOR 0x0100														 // The safety door was opened and the parking and hold is being executed
+#define EXEC_LIMITS 0x0200														 // The limits were hit
+#define EXEC_POSITION_MAYBE_LOST 0x4000											 // Machine is not homed or lost position due to abrupt stop
+#define EXEC_KILL 0x8000														 // Emergency stop
+#define EXEC_HOMING_HIT (EXEC_HOMING | EXEC_LIMITS)								 // Limit switch is active during a homing motion
+#define EXEC_INTERLOCKING_FAIL (EXEC_LIMITS | EXEC_KILL)						 // Interlocking check failed
+#define EXEC_ALARM (EXEC_POSITION_MAYBE_LOST | EXEC_INTERLOCKING_FAIL)			 // System alarms
+#define EXEC_STOPPING (EXEC_DOOR | EXEC_HOLD | EXEC_CANCELING)								 // performs a controlled stop
+#define EXEC_RUNNING (EXEC_RUN | EXEC_RESUMING)									 // System running
+#define EXEC_MOTIONS (EXEC_RUNNING | EXEC_STOPPING | EXEC_DWELL | EXEC_PROBING)	 // Any motion state
+#define EXEC_SPECIAL_MOTIONS (EXEC_JOG | EXEC_HOMING | EXEC_PROBING | EXEC_DOOR) // Special motion modes
+#define EXEC_RESET_LOCKED (EXEC_ALARM | EXEC_DOOR | EXEC_MOTIONS)				 // System reset locked
+#define EXEC_JOG_LOCKED (EXEC_ALARM | EXEC_DOOR)								 // Jog is locked by an alarm or any special motion state
+#define EXEC_GCODE_LOCKED (EXEC_JOG_LOCKED | EXEC_JOG)							 // Gcode is locked by an alarm or any special motion state
+#define EXEC_ALLACTIVE 0xFFFF													 // All states
 
 // unlock result codes
 #define UNLOCK_OK 0
@@ -175,13 +168,18 @@ extern "C"
 	void cnc_dwell_ms(uint32_t miliseconds);
 	void cnc_store_motion(void);
 	void cnc_restore_motion(void);
+#ifdef ENABLE_SAFETY_DOOR_PARKING
+	void cnc_park(void);
+	void cnc_unpark(void);
+#endif
 	uint8_t cnc_parse_cmd(void);
 	bool cnc_check_interlocking(void);
 
-	uint8_t cnc_get_exec_state(uint8_t statemask);
-	void cnc_set_exec_state(uint8_t statemask);
-	void cnc_clear_exec_state(uint8_t statemask);
+	uint16_t cnc_get_exec_state(uint16_t statemask);
+	void cnc_set_exec_state(uint16_t statemask);
+	void cnc_clear_exec_state(uint16_t statemask);
 	void cnc_call_rt_command(uint8_t command);
+	uint8_t cnc_get_status(void);
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
 	// generates a default delegate, event and handler hook
@@ -189,12 +187,12 @@ extern "C"
 	DECL_EVENT_HANDLER(cnc_reset);
 	// event_cnc_dotasks_handler
 	DECL_EVENT_HANDLER(cnc_dotasks);
-	#ifndef modules_dotasks
-	#define modules_dotasks() EVENT_INVOKE(cnc_dotasks, NULL)
-	#endif
-	#ifndef cnc_modules_dotasks
-	#define cnc_modules_dotasks() modules_dotasks()
-	#endif
+#ifndef modules_dotasks
+#define modules_dotasks() EVENT_INVOKE(cnc_dotasks, NULL)
+#endif
+#ifndef cnc_modules_dotasks
+#define cnc_modules_dotasks() modules_dotasks()
+#endif
 	// event_cnc_io_dotasks_handler
 	DECL_EVENT_HANDLER(cnc_io_dotasks);
 	// event_cnc_stop_handler

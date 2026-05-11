@@ -763,8 +763,10 @@ uint8_t mc_dwell(motion_data_t *block_data)
 {
 	if (!mc_checkmode) // check mode (gcode simulation) doesn't send code to planner
 	{
+		cnc_set_exec_state(EXEC_DWELL);
 		mc_update_tools(block_data);
 		cnc_dwell_ms(block_data->dwell);
+		cnc_clear_exec_state(EXEC_DWELL);
 	}
 
 	return STATUS_OK;
@@ -845,18 +847,19 @@ bool mc_home_motion(uint8_t axis_mask, bool is_origin_search, bool fast_mode)
 	{
 		return false;
 	}
+	
 	mc_line(target, &block_data);
 	itp_sync();
 	if (cnc_get_exec_state(EXEC_HOMING_HIT) != EXEC_HOMING_HIT)
 	{
 		// Home finding failed
+		cnc_set_exec_state(EXEC_POSITION_MAYBE_LOST);
 		return false;
 	}
 
 	// Flush buffers and stop motion
 	cnc_stop(false);
-	itp_clear();
-	planner_clear();
+	mc_clear(false);
 
 	// Motion completed successfully
 	return true;
@@ -908,8 +911,7 @@ bool mc_home_motion_pulloff(uint8_t axis_mask, bool fast_mode)
 
 	// Flush buffers and stop motion
 	cnc_stop(false);
-	itp_clear();
-	planner_clear();
+	mc_clear(false);
 
 	// Motion completed successfully
 	return true;
@@ -971,7 +973,7 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 			return STATUS_CRITICAL_FAIL;
 		}
 
-		cnc_delay_ms(g_settings.debounce_ms); // adds a delay before reading io pin (debounce)
+		cnc_dwell_ms(g_settings.debounce_ms); // adds a delay before reading io pin (debounce)
 		limits_flags = io_get_limits();
 
 		// the wrong switch was activated bails
@@ -987,10 +989,10 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 		{
 			return STATUS_CRITICAL_FAIL;
 		}
-		io_enable_limits(); // temporary limits disable
 
-		cnc_delay_ms(g_settings.debounce_ms); // adds a delay before reading io pin (debounce)
-		limits_flags = io_get_raw_limits();
+		cnc_dwell_ms(g_settings.debounce_ms); // adds a delay before reading io pin (debounce)
+		io_enable_limits(); // temporary limits disable
+		limits_flags = io_get_raw_limits(); // get the raw (unfiltered values)
 
 		// all limits should be cleared
 		if (limits_flags)
@@ -1082,14 +1084,7 @@ uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data)
 		;
 	// disables the probe
 	io_disable_probe();
-	itp_clear();
-	// clears the buffer but conserves the tool data
-	while (!planner_buffer_is_empty())
-	{
-		planner_discard_block();
-	}
-	// clears hold
-	cnc_clear_exec_state(EXEC_HOLD);
+	mc_clear(true);
 
 	// sync the position of the motion control
 	mc_sync_position();
@@ -1126,7 +1121,7 @@ void mc_sync_position(void)
 uint8_t mc_incremental_jog(float *target_offset, motion_data_t *block_data)
 {
 	float new_target[AXIS_COUNT];
-	uint8_t state = cnc_get_exec_state(EXEC_ALLACTIVE);
+	uint16_t state = cnc_get_exec_state(EXEC_ALLACTIVE);
 
 	if ((state & ~EXEC_JOG) || cnc_has_alarm()) // if any other than idle or jog discards the command
 	{
@@ -1407,3 +1402,21 @@ void mc_restore(void)
 	memcpy(mc_last_target, mc_last_target_copy, sizeof(mc_last_target));
 }
 #endif
+
+void mc_clear(bool preserve_tool)
+{
+	itp_clear();
+	if (preserve_tool)
+	{
+		// clears the buffer but conserves the tool data
+		while (!planner_buffer_is_empty())
+		{
+			planner_discard_block();
+		}
+	}
+	else
+	{
+		planner_clear();
+	}
+	mc_sync_position();
+}

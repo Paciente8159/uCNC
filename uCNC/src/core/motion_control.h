@@ -93,6 +93,7 @@ extern "C"
 #endif
 
 	void mc_init(void);
+	void mc_clear(bool preserve_tool);
 	bool mc_get_checkmode(void);
 	bool mc_toogle_checkmode(void);
 
