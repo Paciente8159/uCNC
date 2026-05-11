@@ -205,13 +205,13 @@ uint8_t parser_read_command(void)
 	{
 		is_jogging = true;
 	}
-	else if (cnc_get_exec_state(~(EXEC_RUN | EXEC_HOLD)) || cnc_has_alarm()) // if any other than idle, run or hold discards the command
+	else if (cnc_get_exec_state(EXEC_GCODE_LOCKED) || cnc_has_alarm()) // if any other than idle, run or hold discards the command
 	{
 		parser_discard_command();
 		return STATUS_SYSTEM_GC_LOCK;
 	}
 
-	if (cnc_get_exec_state(EXEC_JOG) && !is_jogging) // error if trying to do a normal move with jog active
+	if (cnc_get_exec_state(EXEC_JOG_LOCKED) && !is_jogging) // error if trying to do a normal move with jog active
 	{
 		return STATUS_SYSTEM_GC_LOCK;
 	}
@@ -1225,7 +1225,7 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 		}
 
 		// group 5 - feed rate mode
-		if (requires_feed && has_axis && !cmd->group_extended)
+		if (requires_feed && has_axis && !cmd->group_extended || cnc_get_exec_state(EXEC_JOG))
 		{
 			if (!CHECKFLAG(cmd->words, GCODE_WORD_F))
 			{
@@ -2051,6 +2051,9 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 		{
 			cnc_stop(true);
 			proto_feedback(MSG_FEEDBACK_8);
+			#ifndef DISABLE_ENDPROGRAM_LOCK
+			cnc_set_exec_state(EXEC_POSITION_MAYBE_LOST);
+			#endif
 		}
 	}
 
@@ -2095,9 +2098,8 @@ static uint8_t parser_gcode_command(bool is_jogging)
 		parser_discard_command();
 		return result;
 	}
-
-	if (is_jogging)
-	{
+	
+	if(is_jogging){
 		cnc_set_exec_state(EXEC_JOG);
 	}
 

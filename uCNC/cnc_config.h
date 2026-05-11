@@ -442,9 +442,9 @@ extern "C"
  *   Rapid approach -> Slow pull off
  * into a longer and potentially more precise:
  *   Rapid limit find -> Rapid limit clear -> Slow 2nd limit find -> Slow limit clear
- * 
+ *
  * After this the pulloff offset distance is travelled for all axis
- * 
+ *
  * This change makes the code size a bit bigger but might make your
  * homing cycle yield more accurate results.
  * */
@@ -453,9 +453,9 @@ extern "C"
 /**
  * This modifies the behavior to match Grbl homing motion. Note this will force ENABLE_LONG_HOMING_CYCLE
  *  Rapid limit find -> Rapid pull off -> Slow 2nd limit find -> Rapid pull off
- * 
+ *
  *  No final pulloff offset is performed in this mode as the pulloff is performed per axis and on contact
- * 
+ *
  */
 //  #define ENABLE_GRBL_STYLE_HOMING
 
@@ -490,6 +490,11 @@ extern "C"
 	 * If the type of machine supports skew and needs skew correction
 	 *  (defined in the specified kinematics_xxx.h file)
 	 * */
+
+/**
+ * Safety door configurations (in development)
+ */
+// #define ENABLE_SAFETY_DOOR_PARKING
 
 // #define ENABLE_SKEW_COMPENSATION
 #ifdef ENABLE_SKEW_COMPENSATION
@@ -653,6 +658,16 @@ extern "C"
 	 * */
 
 #define EMULATE_GRBL_STARTUP 2
+
+	/**
+	 * Enable advanced Grbl states.
+	 * This enables a couple more states in the status messages besides Alarm, Door, Hold, Check, Home, Jog, Run and Idle. These are:
+	 * Locked - when the controller in in lock state (requires $X or $H to unlock)
+	 * Dwell - when a dwell is being executed
+	 * Probe - used in probing motions and HMapping
+	 */
+
+	// #define ENABLE_EXTRA_GRBL_STATES
 
 	/**
 	 *
