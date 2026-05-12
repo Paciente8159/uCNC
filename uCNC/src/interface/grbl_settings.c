@@ -107,7 +107,7 @@ const settings_t __rom__ default_settings =
 		.arc_tolerance = DEFAULT_ARC_TOLERANCE,
 		.report_inches = DEFAULT_REPORT_INCHES,
 #if S_CURVE_ACCELERATION_LEVEL == -1
-		.s_curve_profile = 0,
+		.s_curve_profile = DEFAULT_S_CURVE_PROFILE,
 #endif
 		.soft_limits_enabled = DEFAULT_SOFT_LIMITS_ENABLED,
 		.hard_limits_enabled = DEFAULT_HARD_LIMITS_ENABLED,
@@ -123,8 +123,8 @@ const settings_t __rom__ default_settings =
 #ifdef ENABLE_LASER_PPI
 		.laser_ppi = DEFAULT_LASER_PPI,
 		.laser_ppi_uswidth = DEFAULT_LASER_PPI_USWIDTH,
-		.laser_ppi_mixmode_ppi = 0.25,
-		.laser_ppi_mixmode_uswidth = 0.75,
+		.laser_ppi_mixmode_ppi = DEFAULT_LASER_PPI_MIXED_PPI,
+		.laser_ppi_mixmode_uswidth = DEFAULT_LASER_PPI_MIXED_USWIDTH,
 #endif
 		.step_per_mm = DEFAULT_STEP_PER_MM_PER_AXIS,
 		.max_feed_rate = DEFAULT_MAX_FEED_PER_AXIS,
@@ -134,24 +134,24 @@ const settings_t __rom__ default_settings =
 #if TOOL_COUNT > 1
 		.default_tool = DEFAULT_STARTUP_TOOL,
 #endif
-		.tool_length_offset = DEFAULT_ARRAY(TOOL_COUNT, 0),
+		.tool_length_offset = DEFAULT_TOOL_LENGTH_OFFSET,
 #endif
 		KINEMATICS_VARS_DEFAULTS_INIT /*KINEMATICS DEFAULTS*/
 
 #ifdef ENABLE_BACKLASH_COMPENSATION
-			.backlash_steps = DEFAULT_ARRAY(AXIS_TO_STEPPERS, 0),
+			.backlash_steps = DEFAULT_BACKLASH_COMPENSATION,
 #endif
 #ifdef ENABLE_SKEW_COMPENSATION
-		.skew_xy_factor = 0,
+		.skew_xy_factor = DEFAULT_SKEW_XY_FACTOR,
 #ifndef SKEW_COMPENSATION_XY_ONLY
-		.skew_xz_factor = 0,
-		.skew_yz_factor = 0,
+		.skew_xz_factor = DEFAULT_SKEW_XZ_FACTOR,
+		.skew_yz_factor = DEFAULT_SKEW_YZ_FACTOR,
 #endif
 #endif
 #if ENCODERS > 0
-				.encoders_pulse_invert_mask = 0,
-				.encoders_dir_invert_mask = 0,
-				.encoders_resolution = DEFAULT_ARRAY(ENCODERS, 1),
+		.encoders_pulse_invert_mask = DEFAULT_ENCODERS_DIR_INV_MASK,
+		.encoders_dir_invert_mask = DEFAULT_ENCODERS_DIR_INV_MASK,
+		.encoders_resolution = DEFAULT_ENCODERS_RESOLUTION,
 #endif
 };
 
@@ -217,7 +217,7 @@ const setting_id_t __rom__ g_settings_id_table[] = {
 	{.id = 140, .memptr = &g_settings.backlash_steps, .type = SETTING_TYPE_UINT16 | SETTING_ARRAY | SETTING_ARRCNT(AXIS_TO_STEPPERS)},
 #endif
 #if ENCODERS
-		{.id = 150, .memptr = &g_settings.encoders_resolution, .type = SETTING_TYPE_FLOAT | SETTING_ARRAY | SETTING_ARRCNT(ENCODERS)},
+	{.id = 150, .memptr = &g_settings.encoders_resolution, .type = SETTING_TYPE_FLOAT | SETTING_ARRAY | SETTING_ARRCNT(ENCODERS)},
 #endif
 #ifdef H_MAPPING_EEPROM_STORE_ENABLED
 #define H_MAPING_ARRAY_HALF_SIZE ((H_MAPING_GRID_FACTOR * H_MAPING_GRID_FACTOR) >> 1)

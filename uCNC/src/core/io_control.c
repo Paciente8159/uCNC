@@ -146,7 +146,11 @@ MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 			itp_lock_stepper(0); // unlocks axis
 #endif
 			cnc_stop(false);
+#if EMULATE_GRBL_STARTUP <= 2
 			cnc_set_exec_state(EXEC_LIMITS);
+#else
+			cnc_set_exec_state(EXEC_LIMITS | EXEC_POSITION_MAYBE_LOST);
+#endif
 #ifdef ENABLE_IO_ALARM_DEBUG
 			io_alarm_limits = limits;
 #endif
@@ -202,6 +206,10 @@ MCU_IO_CALLBACK void mcu_controls_changed_cb(void)
 		io_alarm_controls = controls;
 #endif
 	}
+	if (CHECKFLAG(changed, SAFETY_DOOR_MASK))
+	{
+		cnc_call_rt_command(CMD_CODE_SAFETY_DOOR);
+	}
 #endif
 #if ASSERT_PIN(FHOLD)
 	if (CHECKFLAG(controls, FHOLD_MASK))
@@ -248,7 +256,7 @@ MCU_IO_CALLBACK void mcu_probe_changed_cb(void)
 
 	// instead of stopping the machine does a controlled stop (hold)
 	// itp_stop();
-	cnc_set_exec_state(EXEC_HOLD);
+	cnc_set_exec_state(EXEC_CANCELING);
 #endif
 }
 
@@ -450,6 +458,7 @@ io_probe_action_cb io_probe_custom_disable = NULL;
 
 void io_enable_probe(void)
 {
+	cnc_set_exec_state(EXEC_PROBING);
 #ifdef PROBE_ENABLE_CUSTOM_CALLBACK
 	if (io_probe_custom_enable)
 	{
@@ -471,6 +480,7 @@ void io_enable_probe(void)
 
 void io_disable_probe(void)
 {
+	cnc_clear_exec_state(EXEC_PROBING | EXEC_STOPPING); // clear probe and pending hold to stop probing motion
 #ifdef PROBE_ENABLE_CUSTOM_CALLBACK
 	if (io_probe_custom_disable)
 	{

@@ -500,13 +500,13 @@ ISR(COM2_RX_vect, ISR_BLOCK)
 #ifndef UART2_TX_BUFFER_SIZE
 #define UART2_TX_BUFFER_SIZE 64
 #endif
-DECL_BUFFER(uint8_t, uart2, UART2_TX_BUFFER_SIZE);
+DECL_BUFFER(uint8_t, uart2_tx, UART2_TX_BUFFER_SIZE);
 ISR(COM2_TX_vect, ISR_BLOCK)
 {
 	// keeps sending chars until null is found
 	uint8_t c;
 
-	if (!BUFFER_TRY_DEQUEUE(uart2, &c))
+	if (!BUFFER_TRY_DEQUEUE(uart2_tx, &c))
 	{
 		CLEARBIT(UCSRB_REG_2, UDRIE_BIT_2);
 		return;
@@ -751,7 +751,7 @@ void mcu_uart2_clear(void)
 void mcu_uart2_putc(uint8_t c)
 {
 #ifndef ENABLE_ITP_FEED_TASK
-	while (!BUFFER_TRY_ENQUEUE(uart2, &c))
+	while (!BUFFER_TRY_ENQUEUE(uart2_tx, &c))
 	{
 		mcu_uart2_flush();
 	}
@@ -764,6 +764,7 @@ void mcu_uart2_putc(uint8_t c)
 
 void mcu_uart2_flush(void)
 {
+#ifndef ENABLE_ITP_FEED_TASK
 	if (!CHECKBIT(UCSRB_REG_2, UDRIE_BIT_2)) // not ready start flushing
 	{
 		SETBIT(UCSRB_REG_2, UDRIE_BIT_2);
@@ -771,6 +772,7 @@ void mcu_uart2_flush(void)
 		io_toggle_output(ACTIVITY_LED);
 #endif
 	}
+#endif
 }
 #endif
 
