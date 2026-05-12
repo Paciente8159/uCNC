@@ -32,9 +32,6 @@ extern "C"
 #define BOARD_NAME "WEMOS D1"
 #endif
 
-#undef ENABLE_WIFI
-#define ENABLE_WIFI
-
 // SAME AS GRBL for test purposes
 // Setup step pins
 #define STEP2_BIT 4	 // assigns STEP2 pin

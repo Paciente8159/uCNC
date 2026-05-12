@@ -38,14 +38,14 @@ extern "C"
 
 // SAME AS GRBL for test purposes
 // Setup step pins
-#define STEP2_BIT 2 // assigns STEP2 pin
-#define STEP1_BIT 1 // assigns STEP1 pin
-#define STEP0_BIT 0 // assigns STEP0 pin
+#define STEP2_BIT 10 // assigns STEP2 pin
+#define STEP1_BIT 3 // assigns STEP1 pin
+#define STEP0_BIT 2 // assigns STEP0 pin
 
 // Setup dir pins
-#define DIR2_BIT 5 // assigns DIR2 pin
-#define DIR1_BIT 4 // assigns DIR1 pin
-#define DIR0_BIT 3 // assigns DIR0 pin
+#define DIR2_BIT 11 // assigns DIR2 pin
+#define DIR1_BIT 7 // assigns DIR1 pin
+#define DIR0_BIT 6 // assigns DIR0 pin
 
 // Setup control input pins
 // #define ESTOP_BIT 6
@@ -67,7 +67,7 @@ extern "C"
 // #define LIMIT_X_ISR		 // assigns LIMIT_X ISR
 
 // Setup probe pin
-#define PROBE_BIT 10
+#define PROBE_BIT 5
 #define PROBE_ISR
 
 // Setup com pins
@@ -81,19 +81,19 @@ extern "C"
 // #define USB_DM_BIT 19
 
 	// Setup PWM
-#define PWM0_BIT 9 // assigns PWM0 pin
+#define PWM0_BIT 12 // assigns PWM0 pin
 #define PWM0_TIMER 0
 #define PWM0_CHANNEL 0
 
 // Setup generic IO Pins
 // spindle dir
-#define DOUT0_BIT 8
+#define DOUT0_BIT 1
 
 // coolant
 // #define DOUT2_BIT 15
 
 // Stepper enable pin. For Grbl on Uno board a single pin is used
-#define STEP0_EN_BIT 3
+#define STEP0_EN_BIT 0
 
 	// Setup the Step Timer used has the heartbeat for µCNC
 	// Timer 1 is used by default
@@ -108,8 +108,8 @@ extern "C"
 // #define ANALOG0_ADC 2
 
 // #define SERVO0_BIT 33
-#define I2C_CLK_BIT 22
-#define I2C_DATA_BIT 21
+#define I2C_CLK_BIT 9
+#define I2C_DATA_BIT 8
 
 #define DOUT31_BIT 13 //blink
 

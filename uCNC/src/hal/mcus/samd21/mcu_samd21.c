@@ -293,7 +293,7 @@ void mcu_com2_isr()
 }
 #endif
 
-void mcu_usart_init(void)
+void mcu_uart_init(void)
 {
 #ifdef MCU_HAS_UART
 	PM->APBCMASK.reg |= PM_APBCMASK_COM;
@@ -341,6 +341,10 @@ void mcu_usart_init(void)
 		;
 
 #endif
+}
+
+void mcu_uart2_init(void)
+{
 #ifdef MCU_HAS_UART2
 	PM->APBCMASK.reg |= PM_APBCMASK_COM2;
 
@@ -387,6 +391,10 @@ void mcu_usart_init(void)
 		;
 
 #endif
+}
+
+void mcu_usb_init(void)
+{
 #ifdef MCU_HAS_USB
 	PM->AHBMASK.reg |= PM_AHBMASK_USB;
 
@@ -631,23 +639,8 @@ void mcu_dma_config(void)
 
 #endif
 
-/**
- * initializes the mcu
- * this function needs to:
- *   - configure all IO pins (digital IO, PWM, Analog, etc...)
- *   - configure all interrupts
- *   - configure uart or usb
- *   - start the internal RTC
- * */
-void mcu_init(void)
+void mcu_spi_init(void)
 {
-	mcu_setup_clocks();
-	mcu_io_init();
-	mcu_usart_init();
-	mcu_rtc_init();
-#if SERVOS_MASK > 0
-	servo_timer_init();
-#endif
 #ifdef MCU_HAS_SPI
 	PM->APBCMASK.reg |= PM_APBCMASK_SPICOM;
 
@@ -688,6 +681,10 @@ void mcu_init(void)
 		;
 
 #endif
+}
+
+void mcu_spi2_init(void)
+{
 #ifdef MCU_HAS_SPI2
 	PM->APBCMASK.reg |= PM_APBCMASK_SPI2COM;
 
@@ -728,10 +725,32 @@ void mcu_init(void)
 		;
 
 #endif
+}
 
+void mcu_i2c_init(void)
+{
 #ifdef MCU_HAS_I2C
 	mcu_i2c_config(I2C_FREQ);
 #endif
+}
+
+/**
+ * initializes the mcu
+ * this function needs to:
+ *   - configure all IO pins (digital IO, PWM, Analog, etc...)
+ *   - configure all interrupts
+ *   - configure uart or usb
+ *   - start the internal RTC
+ * */
+void mcu_init(void)
+{
+	mcu_setup_clocks();
+	mcu_io_init();
+	mcu_rtc_init();
+#if SERVOS_MASK > 0
+	servo_timer_init();
+#endif
+
 #ifdef MCU_HAS_DMA
 	mcu_dma_config();
 #endif
@@ -1224,7 +1243,7 @@ static void mcu_write_flash_page(const uint32_t destination_address, const uint8
 		}
 
 		NVM_MEMORY[((destination_address + i) / 2)] = data;
-		// Data boundaries of the eeprom in 16bit chuncks
+		// Data boundaries of the eeprom in 16bit chunks
 		i += 2;
 	}
 

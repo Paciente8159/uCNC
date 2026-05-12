@@ -3276,16 +3276,15 @@ extern "C"
 #define MCU_HAS_USB
 #endif
 #ifdef ENABLE_WIFI
-#define MCU_HAS_WIFI
-#ifndef DISABLE_ENDPOINTS
-#define MCU_HAS_ENDPOINTS
+#ifndef ENABLE_SOCKETS
+#define ENABLE_SOCKETS
 #endif
-#ifndef DISABLE_WEBSOCKETS
-#define MCU_HAS_WEBSOCKETS
 #endif
+#ifdef ENABLE_SOCKETS
 #ifndef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 #define BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 #endif
+#define MCU_HAS_RTOS
 #endif
 #ifdef ENABLE_BLUETOOTH
 #define MCU_HAS_BLUETOOTH
@@ -3351,8 +3350,10 @@ extern "C"
 #endif
 #if (SPI_CLK_BIT == 14 || SPI_CLK_BIT == 25)
 #define SPI_INSTANCE HSPI
+#define SPI_DEV_HOST HSPI_HOST
 #else
 #define SPI_INSTANCE VSPI
+#define SPI_DEV_HOST VSPI_HOST
 #endif
 #endif
 
@@ -3370,8 +3371,10 @@ extern "C"
 #endif
 #if (SPI2_CLK_BIT == 14 || SPI2_CLK_BIT == 25)
 #define SPI2_INSTANCE HSPI
+#define SPI2_DEV_HOST HSPI_HOST
 #else
 #define SPI2_INSTANCE VSPI
+#define SPI2_DEV_HOST VSPI_HOST
 #endif
 #endif
 

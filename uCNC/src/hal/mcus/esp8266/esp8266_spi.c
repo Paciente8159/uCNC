@@ -40,19 +40,19 @@ bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 	while (aligned_len)
 	{
 		volatile uint32_t *spififo = &SPI1W0;
-		uint16_t chunck = MIN(aligned_len, 64);
+		uint16_t chunk = MIN(aligned_len, 64);
 		if (!waiting)
 		{
 			while (SPI1CMD & SPIBUSY)
 				;
 			if (out)
 			{
-				memcpy((void *)spififo, out, chunck);
-				out += chunck;
+				memcpy((void *)spififo, out, chunk);
+				out += chunk;
 			}
 			else
 			{
-				memset((void *)spififo, 0xFF, chunck);
+				memset((void *)spififo, 0xFF, chunk);
 			}
 			SPI1CMD |= SPIBUSY;
 			waiting = true;
@@ -67,10 +67,10 @@ bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 
 		if (in)
 		{
-			memcpy(in, (void *)spififo, chunck);
-			in += chunck;
+			memcpy(in, (void *)spififo, chunk);
+			in += chunk;
 		}
-		aligned_len -= chunck;
+		aligned_len -= chunk;
 		remaining = aligned_len;
 	}
 
@@ -229,19 +229,19 @@ bool mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 	while (aligned_len)
 	{
 		volatile uint32_t *spififo = &SPI1W0;
-		uint16_t chunck = MIN(aligned_len, 64);
+		uint16_t chunk = MIN(aligned_len, 64);
 		if (!waiting)
 		{
 			while (SPI1CMD & SPIBUSY)
 				;
 			if (out)
 			{
-				memcpy((void *)spififo, out, chunck);
-				out += chunck;
+				memcpy((void *)spififo, out, chunk);
+				out += chunk;
 			}
 			else
 			{
-				memset((void *)spififo, 0xFF, chunck);
+				memset((void *)spififo, 0xFF, chunk);
 			}
 			SPI1CMD |= SPIBUSY;
 			waiting = true;
@@ -256,10 +256,10 @@ bool mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
 
 		if (in)
 		{
-			memcpy(in, (void *)spififo, chunck);
-			in += chunck;
+			memcpy(in, (void *)spififo, chunk);
+			in += chunk;
 		}
-		aligned_len -= chunck;
+		aligned_len -= chunk;
 		remaining = aligned_len;
 	}
 
