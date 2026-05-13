@@ -231,6 +231,12 @@ static void mcu_clear_servos(void)
 
 static rp2040_alarm_t rtc_alarm;
 
+void PendSV_Handler(void)
+{
+	mcu_rtc_cb(mcu_millis());
+	NVIC_ClearPendingIRQ(PendSV_IRQn);
+}
+
 void mcu_rtc_isr(void)
 {
 	// enqueue alarm again
@@ -285,7 +291,7 @@ void mcu_rtc_isr(void)
 	ms_servo_counter = (servo_counter != 20) ? servo_counter : 0;
 
 #endif
-	mcu_rtc_cb(millis());
+	SCB->ICSR = SCB_ICSR_PENDSVSET_Msk; // signal low priority task
 }
 
 /**
@@ -330,6 +336,7 @@ void mcu_init(void)
 	// init rtc, oneshot and servo alarms
 	mcu_alarms_init();
 	rtc_alarm.alarm_cb = &mcu_rtc_isr;
+	NVIC_SetPriority(PendSV_IRQn, 0xFF); // background task
 	mcu_enqueue_alarm(&rtc_alarm, 1000UL);
 
 #if SERVOS_MASK > 0
@@ -496,7 +503,7 @@ static void mcu_itp_isr(void)
 
 	if (!resetstep)
 	{
-			mcu_step_cb();
+		mcu_step_cb();
 	}
 
 	else
@@ -645,7 +652,7 @@ static void mcu_oneshot_isr(void)
 {
 	if (mcu_timeout_cb)
 	{
-			mcu_timeout_cb();
+		mcu_timeout_cb();
 	}
 }
 
