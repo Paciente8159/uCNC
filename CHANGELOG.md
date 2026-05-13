@@ -6,6 +6,26 @@
 
 # Changelog
 
+## [1.16.3] - 13-05-2026
+
+### Added
+
+- added mellow Fly D5 board configuration (#955)
+- new option to unlock extra status message states (Dwell, Probe, Hold:2) (#961)
+
+### Changed
+
+- added missing hard defaults configurations (#954)
+- full internal CNC state and interlocking revision (#961)
+- modified ARM RTC callback to a low priority event (#951)
+
+### Fixed
+
+- fixed SAMD21 input ISR configuration (#956)
+- fixed SAMD21 PWM TCC configurations (#958)
+- fixed HOLD recalculation bug for segmented motions (#960)
+- fixed AVR UART2 TX ISR (unhadled ISR) (#962)
+
 ## [1.16.2] - 07-04-2026
 
 ### Changed
