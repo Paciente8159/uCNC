@@ -123,7 +123,7 @@ static uint16_t get_speed(void)
 	return encoder_get_rpm(SPINDLE_PWM_RPM_ENCODER);
 #else
 #if ASSERT_PIN(SPINDLE_PWM)
-	return tool_get_setpoint();
+	return range_speed(io_get_pwm(SPINDLE_PWM), 1);
 #else
 	return 0;
 #endif
@@ -133,11 +133,13 @@ static uint16_t get_speed(void)
 #if defined(ENABLE_TOOL_PID_CONTROLLER) && !defined(DISABLE_SPINDLE_PWM_PID)
 static void pid_update(void)
 {
-	float output = tool_get_setpoint();
+	float input = get_speed();
+	float output = range_speed(io_get_pwm(SPINDLE_PWM), 1);
+	float setpoint = tool_get_setpoint();
 
 	if (output != 0)
 	{
-		if (pid_compute(&spindle_pwm_pid, &output, output, get_speed(), HZ_TO_MS(SPINDLE_PWM_PID_SAMPLE_RATE_HZ)))
+		if (pid_compute(&spindle_pwm_pid, &output, setpoint, input, HZ_TO_MS(SPINDLE_PWM_PID_SAMPLE_RATE_HZ)))
 		{
 			io_set_pwm(SPINDLE_PWM, range_speed((int16_t)output, 0));
 		}
