@@ -6,6 +6,12 @@
 
 # Changelog
 
+## [1.16.4] - 16-05-2026
+
+### Fixed
+
+- Reverted PendSV task on RP2040 since this caused the MCU to freeze (#963)
+
 ## [1.16.3] - 13-05-2026
 
 ### Added
