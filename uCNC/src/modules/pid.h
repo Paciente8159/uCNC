@@ -29,7 +29,6 @@ extern "C"
 #include <stdbool.h>
 #include <float.h>
 
-
 #define HZ_TO_MS(hz) (1000 / (hz))
 
 	typedef struct pid_data_
@@ -52,8 +51,42 @@ extern "C"
 		uint32_t last_sample;
 	} pid_data_q15_t;
 
+	typedef enum
+	{
+		PID_AT_IDLE = 0,
+		PID_AT_WAIT_STABLE,
+		PID_AT_RELAY_LOW,
+		PID_AT_RELAY_HIGH,
+		PID_AT_DONE,
+		PID_AT_ABORT
+	} pid_at_state_t;
+
+	typedef struct
+	{
+		pid_at_state_t state;
+		uint32_t start_time;
+		uint32_t last_cross_time;
+		uint32_t period_accum;
+		uint8_t period_count;
+
+		float setpoint_rpm;
+		uint8_t relay_center_pwm; // e.g. 128
+		uint8_t relay_amp_pwm;	  // e.g. 40
+
+		float max_rpm;
+		float min_rpm;
+
+		float Ku;
+		float Tu;
+
+		// results
+		float kp, ki, kd;
+	} pid_autotune_t;
+
 	bool pid_compute(pid_data_t *pid, float *output, float setpoint, float input, uint32_t sample_rate_ms);
 	bool pid_compute_q15(pid_data_q15_t *pid, int16_t *output, int16_t setpoint, int16_t input, uint32_t sample_rate_ms);
+	void pid_autotune_start(pid_autotune_t *at, float setpoint_rpm, uint8_t relay_center_pwm, uint8_t relay_amp_pwm);
+	bool pid_autotune_step(pid_autotune_t *at, float current_rpm, uint8_t *pwm_out, uint8_t cycles);
 
 #ifdef __cplusplus
 }
