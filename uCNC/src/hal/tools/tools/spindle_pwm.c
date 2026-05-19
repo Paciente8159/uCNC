@@ -133,19 +133,33 @@ static uint16_t get_speed(void)
 #if defined(ENABLE_TOOL_PID_CONTROLLER) && !defined(DISABLE_SPINDLE_PWM_PID)
 static void pid_update(void)
 {
-	float input = get_speed();
-	float output = range_speed(io_get_pwm(SPINDLE_PWM), 1);
+	// all values converted to PWM values(0 to 255)
+	float input = range_speed(get_speed(), 0);
+	float output = 0;
 	float setpoint = tool_get_setpoint();
 
-	if (output != 0)
+	if (setpoint != 0)
 	{
 		if (pid_compute(&spindle_pwm_pid, &output, setpoint, input, HZ_TO_MS(SPINDLE_PWM_PID_SAMPLE_RATE_HZ)))
 		{
+#if ASSERT_PIN(SPINDLE_PWM_DIR)
+			if ((setpoint <= 0))
+			{
+				io_clear_output(SPINDLE_PWM_DIR);
+			}
+			else
+			{
+				io_set_output(SPINDLE_PWM_DIR);
+			}
+#endif
 			io_set_pwm(SPINDLE_PWM, range_speed((int16_t)output, 0));
 		}
 	}
+	else
+	{
+		io_set_pwm(SPINDLE_PWM, 0);
+	}
 }
-
 #endif
 
 const tool_t spindle_pwm = {
@@ -158,5 +172,9 @@ const tool_t spindle_pwm = {
 #endif
 	.range_speed = &range_speed,
 	.get_speed = &get_speed,
+#if defined(ENABLE_TOOL_PID_CONTROLLER) && !defined(DISABLE_SPINDLE_PWM_PID)
+	.set_speed = NULL,
+#else
 	.set_speed = &set_speed,
+#endif
 	.set_coolant = &set_coolant};

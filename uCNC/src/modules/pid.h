@@ -39,10 +39,21 @@ extern "C"
 		float i_accum;
 		float max;
 		float min;
-		uint32_t next_sample;
+		uint32_t last_sample;
 	} pid_data_t;
 
+	typedef struct pid_data_q15_
+	{
+		int16_t k[3];
+		int16_t last_input;
+		int16_t i_accum;
+		int16_t max;
+		int16_t min;
+		uint32_t last_sample;
+	} pid_data_q15_t;
+
 	bool pid_compute(pid_data_t *pid, float *output, float setpoint, float input, uint32_t sample_rate_ms);
+	bool pid_compute_q15(pid_data_q15_t *pid, int16_t *output, int16_t setpoint, int16_t input, uint32_t sample_rate_ms);
 
 #ifdef __cplusplus
 }

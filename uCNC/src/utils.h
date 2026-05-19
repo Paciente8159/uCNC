@@ -220,6 +220,8 @@ extern "C"
 #include "atomic.h"
 #include "buffer.h"
 
+#define FLT_TO_Q15(X) ((x >= 0.999969f) ? 32767 : ((x <= -1.0f)? -32768 : ((int16_t)(x * 32768.0f))))
+
 #ifdef __cplusplus
 }
 #endif
