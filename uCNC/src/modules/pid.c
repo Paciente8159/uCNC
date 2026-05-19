@@ -30,8 +30,8 @@ void pid_autotune_start(pid_autotune_t *at, float setpoint_rpm, uint8_t relay_ce
     at->relay_center_pwm = relay_center_pwm;
     at->relay_amp_pwm = relay_amp_pwm;
     at->start_time = mcu_millis();
-    at->max_rpm = -1e9f;
-    at->min_rpm = 1e9f;
+    at->max = -1e9f;
+    at->min = 1e9f;
 }
 
 // Returns true when done, false while running
@@ -52,16 +52,16 @@ bool pid_autotune_step(pid_autotune_t *at, float current_rpm, uint8_t *pwm_out, 
         {
             at->state = PID_AT_RELAY_HIGH;
             at->last_cross_time = now;
-            at->max_rpm = -1e9f;
-            at->min_rpm = 1e9f;
+            at->max = -1e9f;
+            at->min = 1e9f;
         }
         *pwm_out = at->relay_center_pwm;
         break;
 
     case PID_AT_RELAY_HIGH:
         *pwm_out = at->relay_center_pwm + at->relay_amp_pwm;
-        if (current_rpm > at->max_rpm)
-            at->max_rpm = current_rpm;
+        if (current_rpm > at->max)
+            at->max = current_rpm;
 
         if (current_rpm > at->setpoint_rpm)
         {
@@ -79,8 +79,8 @@ bool pid_autotune_step(pid_autotune_t *at, float current_rpm, uint8_t *pwm_out, 
 
     case PID_AT_RELAY_LOW:
         *pwm_out = at->relay_center_pwm - at->relay_amp_pwm;
-        if (current_rpm < at->min_rpm)
-            at->min_rpm = current_rpm;
+        if (current_rpm < at->min)
+            at->min = current_rpm;
 
         if (current_rpm < at->setpoint_rpm)
         {
@@ -96,7 +96,7 @@ bool pid_autotune_step(pid_autotune_t *at, float current_rpm, uint8_t *pwm_out, 
             // after enough cycles, compute Ku, Tu
             if (at->period_count >= cycles)
             {
-                float A = (at->max_rpm - at->min_rpm) * 0.5f; // amplitude
+                float A = (at->max - at->min) * 0.5f; // amplitude
                 if (A <= 0.0f)
                 {
                     at->state = PID_AT_ABORT;
@@ -110,6 +110,12 @@ bool pid_autotune_step(pid_autotune_t *at, float current_rpm, uint8_t *pwm_out, 
                 float avg_period_ms = (float)at->period_accum / (float)(at->period_count - 1);
                 at->Tu = avg_period_ms * 0.001f; // seconds
 
+                if (at->Tu <= 0.0f)
+                {
+                    at->state = PID_AT_ABORT;
+                    return false;
+                }
+
                 // Ziegler–Nichols PID
                 at->kp = 0.6f * at->Ku;
                 at->ki = 1.2f * at->Ku / at->Tu;
@@ -121,8 +127,8 @@ bool pid_autotune_step(pid_autotune_t *at, float current_rpm, uint8_t *pwm_out, 
             }
 
             // prepare for next high phase
-            at->max_rpm = -1e9f;
-            at->min_rpm = 1e9f;
+            at->max = -1e9f;
+            at->min = 1e9f;
             at->state = PID_AT_RELAY_HIGH;
         }
         break;

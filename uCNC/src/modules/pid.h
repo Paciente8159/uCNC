@@ -73,8 +73,8 @@ extern "C"
 		uint8_t relay_center_pwm; // e.g. 128
 		uint8_t relay_amp_pwm;	  // e.g. 40
 
-		float max_rpm;
-		float min_rpm;
+		float max;
+		float min;
 
 		float Ku;
 		float Tu;

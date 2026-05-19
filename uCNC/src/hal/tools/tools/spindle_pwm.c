@@ -58,8 +58,7 @@ DECL_EXTENDED_SETTING(SPINDLE_PWM_PID_SETTING_ID, spindle_pwm_pid.k, float, 3, p
 #endif
 #endif
 
-static void
-startup_code(void)
+static void startup_code(void)
 {
 // force pwm mode
 #if ASSERT_PIN(SPINDLE_PWM)
@@ -72,6 +71,27 @@ startup_code(void)
 	spindle_pwm_pid.max = g_settings.spindle_max_rpm;
 	spindle_pwm_pid.min = g_settings.spindle_min_rpm;
 #endif
+	// pid_autotune_t at;
+	// io_set_pwm(SPINDLE_PWM, 127);
+	// pid_autotune_start(&at, 127, 127, 60);
+	// float input = io_get_pwm(SPINDLE_PWM);
+	// uint8_t out = 0;
+	// while (!pid_autotune_step(&at, input, &out, 6))
+	// {
+	// 	input = io_get_pwm(SPINDLE_PWM);
+	// 	io_set_pwm(SPINDLE_PWM, out);
+	// 	if (at.state == PID_AT_ABORT)
+	// 	{
+	// 		break;
+	// 	}
+	// }
+
+	// if (at.state == PID_AT_DONE)
+	// {
+	// 	spindle_pwm_pid.k[0] = at.kp;
+	// 	spindle_pwm_pid.k[1] = at.ki;
+	// 	spindle_pwm_pid.k[2] = at.kd;
+	// }
 }
 
 static void set_speed(int16_t value)
@@ -108,11 +128,11 @@ static int16_t range_speed(int16_t value, uint8_t conv)
 	// converts core tool speed to laser power (PWM)
 	if (!conv)
 	{
-		value = (int16_t)((255.0f) * (((float)value) / g_settings.spindle_max_rpm));
+		value = (int16_t)((((int32_t)value) << 8) / g_settings.spindle_max_rpm);
 	}
 	else
 	{
-		value = (int16_t)roundf((1.0f / 255.0f) * value * g_settings.spindle_max_rpm);
+		value = (int16_t)((((int32_t)value) * g_settings.spindle_max_rpm) >> 8);
 	}
 	return value;
 }
@@ -123,7 +143,7 @@ static uint16_t get_speed(void)
 	return encoder_get_rpm(SPINDLE_PWM_RPM_ENCODER);
 #else
 #if ASSERT_PIN(SPINDLE_PWM)
-	return range_speed(io_get_pwm(SPINDLE_PWM), 1);
+	return range_speed(io_get_pwm(SPINDLE_PWM), (uint8_t)1);
 #else
 	return 0;
 #endif
@@ -133,13 +153,13 @@ static uint16_t get_speed(void)
 #if defined(ENABLE_TOOL_PID_CONTROLLER) && !defined(DISABLE_SPINDLE_PWM_PID)
 static void pid_update(void)
 {
-	// all values converted to PWM values(0 to 255)
-	float input = range_speed(get_speed(), 0);
-	float output = 0;
 	float setpoint = tool_get_setpoint();
+	float output = 0;
 
 	if (setpoint != 0)
 	{
+		// all values converted to PWM values(0 to 255)
+		float input = range_speed(get_speed(), (uint8_t)0);
 		if (pid_compute(&spindle_pwm_pid, &output, setpoint, input, HZ_TO_MS(SPINDLE_PWM_PID_SAMPLE_RATE_HZ)))
 		{
 #if ASSERT_PIN(SPINDLE_PWM_DIR)
@@ -152,7 +172,7 @@ static void pid_update(void)
 				io_set_output(SPINDLE_PWM_DIR);
 			}
 #endif
-			io_set_pwm(SPINDLE_PWM, range_speed((int16_t)output, 0));
+			io_set_pwm(SPINDLE_PWM, (uint8_t)range_speed((uint16_t)output, (uint8_t)0));
 		}
 	}
 	else
