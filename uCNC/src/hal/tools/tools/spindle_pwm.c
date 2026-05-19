@@ -158,8 +158,7 @@ static void pid_update(void)
 
 	if (setpoint != 0)
 	{
-		// all values converted to PWM values(0 to 255)
-		float input = range_speed(get_speed(), (uint8_t)0);
+		float input = get_speed();
 		if (pid_compute(&spindle_pwm_pid, &output, setpoint, input, HZ_TO_MS(SPINDLE_PWM_PID_SAMPLE_RATE_HZ)))
 		{
 #if ASSERT_PIN(SPINDLE_PWM_DIR)
