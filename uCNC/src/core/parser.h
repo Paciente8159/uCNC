@@ -105,8 +105,8 @@ extern "C"
 #define M7 MIST_MASK
 #define M8 COOLANT_MASK
 #define M9 0
-#define M48 1
-#define M49 0
+#define M48 0
+#define M49 1
 
 #define EXTENDED_GCODE_BASE 0
 #define EXTENDED_MCODE_BASE 10000
@@ -238,7 +238,7 @@ extern "C"
 		uint8_t units : 1;
 		uint8_t tlo_mode : 1;
 		uint8_t return_mode : 1;
-		uint8_t feed_speed_override : 1;
+		uint8_t feed_speed_ovr_bypass : 1;
 		// 2byte or 1byte
 		uint8_t stopping : 3;
 #if TOOL_COUNT == 1

@@ -287,7 +287,7 @@ void mcu_rtc_isr(void)
 	ms_servo_counter = (servo_counter != 20) ? servo_counter : 0;
 
 #endif
-	mcu_rtc_cb(millis());
+	mcu_rtc_cb(mcu_millis());
 }
 
 /**

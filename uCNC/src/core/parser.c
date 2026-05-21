@@ -248,7 +248,7 @@ void parser_get_modes(uint8_t *modalgroups, uint16_t *feed, uint16_t *spindle)
 	modalgroups[9] = 9;
 	modalgroups[11] = 0;
 #endif
-	modalgroups[10] = 49 - parser_state.groups.feed_speed_override;
+	modalgroups[10] = 48 + parser_state.groups.feed_speed_ovr_bypass;
 #ifdef ENABLE_G39_H_MAPPING
 	modalgroups[13] = parser_state.groups.height_map_active;
 #endif
@@ -1476,7 +1476,8 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 #endif
 
 	// 9. overrides
-	block_data.motion_flags.bit.feed_override = new_state->groups.feed_speed_override ? 1 : 0;
+	update_tools |= (parser_state.groups.feed_speed_ovr_bypass != new_state->groups.feed_speed_ovr_bypass);
+	block_data.motion_flags.bit.ovr_bypass = new_state->groups.feed_speed_ovr_bypass ? 1 : 0;
 
 	// 10. dwell (or if any other nonmodal command except G53 requires a sync motion)
 	if (new_state->groups.nonmodal != 0 && new_state->groups.nonmodal != G53)
@@ -2051,9 +2052,9 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 		{
 			cnc_stop(true);
 			proto_feedback(MSG_FEEDBACK_8);
-			#ifndef DISABLE_ENDPROGRAM_LOCK
+#ifndef DISABLE_ENDPROGRAM_LOCK
 			cnc_set_exec_state(EXEC_POSITION_MAYBE_LOST);
-			#endif
+#endif
 		}
 	}
 
@@ -2098,8 +2099,9 @@ static uint8_t parser_gcode_command(bool is_jogging)
 		parser_discard_command();
 		return result;
 	}
-	
-	if(is_jogging){
+
+	if (is_jogging)
+	{
 		cnc_set_exec_state(EXEC_JOG);
 	}
 
@@ -2639,7 +2641,7 @@ static uint8_t parser_mcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 	case 48:
 	case 49:
 		new_group |= GCODE_GROUP_ENABLEOVER;
-		new_state->groups.feed_speed_override = (code == 48) ? M48 : M49;
+		new_state->groups.feed_speed_ovr_bypass = ((code == 48) ? M48 : M49);
 		break;
 #if (SERVOS_MASK != 0)
 	case 10:
@@ -2854,7 +2856,7 @@ void parser_reset(bool fullreset)
 	parser_state.groups.stopping = 0;					  // resets all stopping commands (M0,M1,M2,M30,M60)
 	parser_state.groups.coord_system = G54;				  // G54
 	parser_state.groups.plane = G17;					  // G17
-	parser_state.groups.feed_speed_override = M48;		  // M48
+	parser_state.groups.feed_speed_ovr_bypass = M48;	  // M48
 	parser_state.groups.cutter_radius_compensation = G40; // G40
 	parser_state.groups.distance_mode = G90;			  // G90
 	parser_state.groups.feedrate_mode = G94;			  // G94
@@ -3436,7 +3438,7 @@ static float parser_get_named_parameter(int param, int offset, uint8_t pos)
 		{
 		case 0: // feed override
 		case 1: // speed override
-			return (parser_state.groups.feed_speed_override == M48);
+			return (parser_state.groups.feed_speed_ovr_bypass == M48);
 		case 2: // adaptive feed (not implemented)
 			return 0;
 		case 3: // feed hold

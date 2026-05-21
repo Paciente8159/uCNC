@@ -349,7 +349,7 @@ float planner_get_block_exit_speed_sqr(void)
 	float exit_speed_sqr = planner_data[next].entry_feed_sqr;
 	float rapid_feed_sqr = planner_data[next].rapid_feed_sqr;
 
-	if (planner_data[next].planner_flags.bit.feed_override)
+	if (planner_data[next].planner_flags.bit.ovr_bypass == 0)
 	{
 		if (g_planner_state.feed_override != 100)
 		{
@@ -410,7 +410,7 @@ float planner_get_block_top_speed(float exit_speed_sqr)
 
 	float rapid_feed_sqr = planner_data[index].rapid_feed_sqr;
 	float target_speed_sqr = planner_data[index].feed_sqr;
-	if (planner_data[index].planner_flags.bit.feed_override)
+	if (planner_data[index].planner_flags.bit.ovr_bypass == 0)
 	{
 		if (g_planner_state.feed_override != 100)
 		{
@@ -453,7 +453,7 @@ int16_t planner_get_spindle_speed(float scale)
 		{
 			scaled_spindle *= scale; // scale calculated in laser mode (otherwise scale is always 1)
 		}
-		if (planner_data[planner_data_read].planner_flags.bit.feed_override && g_planner_state.spindle_speed_override != 100)
+		if ((g_planner_state.state_flags.bit.ovr_bypass == 0) && (g_planner_state.spindle_speed_override != 100))
 		{
 			scaled_spindle = 0.01f * (float)g_planner_state.spindle_speed_override * scaled_spindle;
 		}

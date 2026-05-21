@@ -44,7 +44,7 @@ extern "C"
 		uint8_t reg;
 		struct
 		{
-			uint8_t feed_override : 1;
+			uint8_t ovr_bypass : 1;
 			uint8_t optimal : 1;
 			uint8_t synched : 1;
 #if TOOL_COUNT > 0
