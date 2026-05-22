@@ -27,7 +27,9 @@
 
 // segmented motions
 #if (defined(KINEMATICS_MOTION_BY_SEGMENTS) || defined(BRESENHAM_16BIT) || defined(ENABLE_G39_H_MAPPING))
+#ifndef MOTION_SEGMENTED
 #define MOTION_SEGMENTED
+#endif
 #endif
 
 // non uniform segmented motions
@@ -84,6 +86,18 @@ FORCEINLINE static float mc_apply_hmap(float *target);
 #endif
 
 #ifdef ENABLE_MOTION_CONTROL_MODULES
+// event_mc_line_calc_segments_handler
+WEAK_EVENT_HANDLER(mc_line_calc_segments)
+{
+	DEFAULT_EVENT_HANDLER(mc_line_calc_segments);
+}
+
+// event_mc_line_segment_pre_handler
+WEAK_EVENT_HANDLER(mc_line_segment_pre)
+{
+	DEFAULT_EVENT_HANDLER(mc_line_segment_pre);
+}
+
 // event_mc_line_segment_handler
 WEAK_EVENT_HANDLER(mc_line_segment)
 {
@@ -561,6 +575,13 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 	}
 #endif
 
+// final modifier is a hookable event
+// this allows to complete control and override over the amount of segments to be produced.
+#ifdef ENABLE_MOTION_CONTROL_MODULES
+	// event_mc_line_segment_handler
+	EVENT_INVOKE(mc_line_calc_segments, &line_segments);
+#endif
+
 	if (line_segments > 1)
 	{
 		float m_inv = 1.0f / (float)line_segments;
@@ -591,6 +612,11 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 		prev_target[AXIS_TOOL] += h_offset;
 #endif
 		kinematics_coordinates_to_steps(prev_target, step_new_pos);
+#ifdef ENABLE_MOTION_CONTROL_MODULES
+		// event_mc_line_segment_handler
+		mc_line_segment_pre_args_t args = {.target = prev_target, .target_steps = step_new_pos, .block_data = block_data};
+		EVENT_INVOKE(mc_line_segment_pre, &args);
+#endif
 		error = mc_line_segment(step_new_pos, block_data);
 #ifdef ENABLE_G39_H_MAPPING
 		// unmodify target
@@ -610,6 +636,11 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 	{
 		kinematics_coordinates_to_steps(target, step_new_pos);
 	}
+#endif
+#ifdef ENABLE_MOTION_CONTROL_MODULES
+	// event_mc_line_segment_handler
+	mc_line_segment_pre_args_t args = {.target = target, .target_steps = step_new_pos, .block_data = block_data};
+	EVENT_INVOKE(mc_line_segment_pre, &args);
 #endif
 	error = mc_line_segment(step_new_pos, block_data);
 
@@ -847,7 +878,7 @@ bool mc_home_motion(uint8_t axis_mask, bool is_origin_search, bool fast_mode)
 	{
 		return false;
 	}
-	
+
 	mc_line(target, &block_data);
 	itp_sync();
 	if (cnc_get_exec_state(EXEC_HOMING_HIT) != EXEC_HOMING_HIT)
@@ -991,8 +1022,8 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 		}
 
 		cnc_dwell_ms(g_settings.debounce_ms); // adds a delay before reading io pin (debounce)
-		io_enable_limits(); // temporary limits disable
-		limits_flags = io_get_raw_limits(); // get the raw (unfiltered values)
+		io_enable_limits();					  // temporary limits disable
+		limits_flags = io_get_raw_limits();	  // get the raw (unfiltered values)
 
 		// all limits should be cleared
 		if (limits_flags)
