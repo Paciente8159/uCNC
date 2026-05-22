@@ -30,7 +30,7 @@ Version 1.8 also introduces the concept of simple hooks. These hooks are simple 
 
 ## µCNC existing events/delegates
 
-Without having to modify core code inside µCNC it is possible to listen to several already existing events. Here is a list of current events:
+Without having to modify core code inside µCNC it is possible to listen to several already existing events. Here is a list of current events (current module version number is 11605):
 
 __NOTE__: Not all event hooks might be listed here. To find all available event hooks declarations, do a search on all files (on VSCode in Windows it's Ctrl+Shift+F) of the project of `DECL_EVENT_HANDLER`. You can also search for the `EVENT_INVOKE` to see what argument is being passed to the event handler.
 

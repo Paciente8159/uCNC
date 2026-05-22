@@ -578,8 +578,9 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 // final modifier is a hookable event
 // this allows to complete control and override over the amount of segments to be produced.
 #ifdef ENABLE_MOTION_CONTROL_MODULES
+	mc_line_calc_segments_args_t mc_line_calc_segments_args = {.line_segments = line_segments, .line_dist = line_dist, .dir_vect = dir_vect, .max_steps = max_steps}
 	// event_mc_line_segment_handler
-	EVENT_INVOKE(mc_line_calc_segments, &line_segments);
+	EVENT_INVOKE(mc_line_calc_segments, &mc_line_calc_segments_args);
 #endif
 
 	if (line_segments > 1)
@@ -614,8 +615,8 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 		kinematics_coordinates_to_steps(prev_target, step_new_pos);
 #ifdef ENABLE_MOTION_CONTROL_MODULES
 		// event_mc_line_segment_handler
-		mc_line_segment_pre_args_t args = {.target = prev_target, .target_steps = step_new_pos, .block_data = block_data};
-		EVENT_INVOKE(mc_line_segment_pre, &args);
+		mc_line_segment_pre_args_t mc_line_segment_pre_args = {.target = prev_target, .target_steps = step_new_pos, .block_data = block_data};
+		EVENT_INVOKE(mc_line_segment_pre, &mc_line_segment_pre_args);
 #endif
 		error = mc_line_segment(step_new_pos, block_data);
 #ifdef ENABLE_G39_H_MAPPING
