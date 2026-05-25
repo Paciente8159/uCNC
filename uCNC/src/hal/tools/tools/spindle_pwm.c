@@ -51,12 +51,16 @@
 #define SPINDLE_PWM_PID_SETTING_ID 300
 #include <stdbool.h>
 #include "../../../modules/pid.h"
-static pid_data_t spindle_pwm_pid;
-DECL_EXTENDED_SETTING(SPINDLE_PWM_PID_SETTING_ID, spindle_pwm_pid.k, float, 3, proto_gcode_setting_line_flt);
+static pid_data_q15_t spindle_pwm_pid;
+static float spindle_pwm_pid_k[3];
+DECL_EXTENDED_SETTING(SPINDLE_PWM_PID_SETTING_ID, spindle_pwm_pid_k, float, 3, proto_gcode_setting_line_flt);
 #if (HZ_TO_MS(SPINDLE_PWM_PID_SAMPLE_RATE_HZ) == 0)
 #error "Period of SPINDLE_PWM_PID_SAMPLE_RATE_HZ is zero (not enough integer precision)"
 #endif
 #endif
+
+static uint16_t get_speed(void);
+static int16_t range_speed(int16_t value, uint8_t conv);
 
 static void startup_code(void)
 {
@@ -66,19 +70,48 @@ static void startup_code(void)
 #endif
 
 #if defined(ENABLE_TOOL_PID_CONTROLLER) && !defined(DISABLE_SPINDLE_PWM_PID)
-	EXTENDED_SETTING_INIT(SPINDLE_PWM_PID_SETTING_ID, spindle_pwm_pid.k);
-	settings_load(EXTENDED_SETTING_ADDRESS(SPINDLE_PWM_PID_SETTING_ID), (uint8_t *)spindle_pwm_pid.k, sizeof(spindle_pwm_pid.k));
+	EXTENDED_SETTING_INIT(SPINDLE_PWM_PID_SETTING_ID, spindle_pwm_pid_k);
+	settings_load(EXTENDED_SETTING_ADDRESS(SPINDLE_PWM_PID_SETTING_ID), (uint8_t *)spindle_pwm_pid_k, sizeof(spindle_pwm_pid_k));
+	spindle_pwm_pid.k[0] = FLT_TO_Q15(spindle_pwm_pid_k[0]);
+	spindle_pwm_pid.k[1] = FLT_TO_Q15(spindle_pwm_pid_k[1]);
+	spindle_pwm_pid.k[2] = FLT_TO_Q15(spindle_pwm_pid_k[2]);
 	spindle_pwm_pid.max = g_settings.spindle_max_rpm;
 	spindle_pwm_pid.min = g_settings.spindle_min_rpm;
 #endif
+//	pid_autotune_q15_t at = {0};
+//	spindle_pwm_pid.k[0] = 16384;
+//	spindle_pwm_pid.k[1] = 1024;
+//	spindle_pwm_pid.k[2] = 8192;
+//	spindle_pwm_pid.max = g_settings.spindle_max_rpm;
+//	pid_autotune_q15_start(&at, 500, 1000, 100);
+//	while (at.active)
+//	{
+//		uint16_t input = get_speed();
+//		uint32_t now = mcu_millis();
+//
+//		uint16_t out = pid_autotune_q15_step(&at, input, now);
+//			io_set_pwm(SPINDLE_PWM, (uint8_t)range_speed((uint16_t)out, (uint8_t)0));
+//
+//			if (!at.active)
+//			{
+//				spindle_pwm_pid.k[0] = at.Kp;
+//				spindle_pwm_pid.k[1] = at.Ki;
+//				spindle_pwm_pid.k[2] = at.Kd;
+//			}
+//		// else
+//		// {
+//		// 	uint16_t out = 0;
+//		// 	pid_compute_q15(&spindle_pwm_pid, &out, , input, HZ_TO_MS(SPINDLE_PWM_PID_SAMPLE_RATE_HZ));
+//		// 	io_set_pwm(SPINDLE_PWM, (uint8_t)range_speed((uint16_t)out, (uint8_t)0));
+//		// }
+//	}
 	// pid_autotune_t at;
-	// io_set_pwm(SPINDLE_PWM, 127);
-	// pid_autotune_start(&at, 127, 127, 60);
-	// float input = io_get_pwm(SPINDLE_PWM);
+	// pid_autotune_start(&at, ((g_settings.spindle_max_rpm + g_settings.spindle_min_rpm) * 0.5f), 127, 60);
+	// float input = tool_get_speed();
 	// uint8_t out = 0;
 	// while (!pid_autotune_step(&at, input, &out, 6))
 	// {
-	// 	input = io_get_pwm(SPINDLE_PWM);
+	// 	input = tool_get_speed();
 	// 	io_set_pwm(SPINDLE_PWM, out);
 	// 	if (at.state == PID_AT_ABORT)
 	// 	{
@@ -88,9 +121,9 @@ static void startup_code(void)
 
 	// if (at.state == PID_AT_DONE)
 	// {
-	// 	spindle_pwm_pid.k[0] = at.kp;
-	// 	spindle_pwm_pid.k[1] = at.ki;
-	// 	spindle_pwm_pid.k[2] = at.kd;
+	// 	spindle_pwm_pid.k[0] = FLT_TO_Q15(at.kp);
+	// 	spindle_pwm_pid.k[1] = FLT_TO_Q15(at.ki);
+	// 	spindle_pwm_pid.k[2] = FLT_TO_Q15(at.kd);
 	// }
 }
 
@@ -143,7 +176,9 @@ static uint16_t get_speed(void)
 	return encoder_get_rpm(SPINDLE_PWM_RPM_ENCODER);
 #else
 #if ASSERT_PIN(SPINDLE_PWM)
-	return range_speed(io_get_pwm(SPINDLE_PWM), (uint8_t)1);
+	int16_t linrpm = range_speed(io_get_pwm(SPINDLE_PWM), (uint8_t)1);
+	// return linrpm;
+	return (int16_t)round(((float)g_settings.spindle_max_rpm) * (pow(2.0, ((double)linrpm / (float)g_settings.spindle_max_rpm)) - 1));
 #else
 	return 0;
 #endif
@@ -153,13 +188,13 @@ static uint16_t get_speed(void)
 #if defined(ENABLE_TOOL_PID_CONTROLLER) && !defined(DISABLE_SPINDLE_PWM_PID)
 static void pid_update(void)
 {
-	float setpoint = tool_get_setpoint();
-	float output = 0;
+	int16_t setpoint = tool_get_setpoint();
+	int16_t output = 0;
 
 	if (setpoint != 0)
 	{
-		float input = get_speed();
-		if (pid_compute(&spindle_pwm_pid, &output, setpoint, input, HZ_TO_MS(SPINDLE_PWM_PID_SAMPLE_RATE_HZ)))
+		int16_t input = get_speed();
+		if (pid_compute_q15(&spindle_pwm_pid, &output, setpoint, input, HZ_TO_MS(SPINDLE_PWM_PID_SAMPLE_RATE_HZ)))
 		{
 #if ASSERT_PIN(SPINDLE_PWM_DIR)
 			if ((setpoint <= 0))

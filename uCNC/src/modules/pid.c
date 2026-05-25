@@ -21,164 +21,43 @@
 #include <stdint.h>
 #include <math.h>
 
-// Call this once to start auto-tune
-void pid_autotune_start(pid_autotune_t *at, float setpoint_rpm, uint8_t relay_center_pwm, uint8_t relay_amp_pwm)
-{
-    memset(at, 0, sizeof(*at));
-    at->state = PID_AT_WAIT_STABLE;
-    at->setpoint_rpm = setpoint_rpm;
-    at->relay_center_pwm = relay_center_pwm;
-    at->relay_amp_pwm = relay_amp_pwm;
-    at->start_time = mcu_millis();
-    at->max = -1e9f;
-    at->min = 1e9f;
-}
-
-// Returns true when done, false while running
-bool pid_autotune_step(pid_autotune_t *at, float current_rpm, uint8_t *pwm_out, uint8_t cycles)
-{
-    uint32_t now = mcu_millis();
-
-    switch (at->state)
-    {
-    case PID_AT_IDLE:
-    case PID_AT_DONE:
-    case PID_AT_ABORT:
-        return (at->state == PID_AT_DONE);
-
-    case PID_AT_WAIT_STABLE:
-        // Simple: wait some time for spindle to reach near setpoint
-        if ((now - at->start_time) > 2000)
-        {
-            at->state = PID_AT_RELAY_HIGH;
-            at->last_cross_time = now;
-            at->max = -1e9f;
-            at->min = 1e9f;
-        }
-        *pwm_out = at->relay_center_pwm;
-        break;
-
-    case PID_AT_RELAY_HIGH:
-        *pwm_out = at->relay_center_pwm + at->relay_amp_pwm;
-        if (current_rpm > at->max)
-            at->max = current_rpm;
-
-        if (current_rpm > at->setpoint_rpm)
-        {
-            // crossed above setpoint → go low
-            uint32_t now_cross = now;
-            if (at->period_count > 0)
-            {
-                at->period_accum += (now_cross - at->last_cross_time);
-            }
-            at->last_cross_time = now_cross;
-            at->period_count++;
-            at->state = PID_AT_RELAY_LOW;
-        }
-        break;
-
-    case PID_AT_RELAY_LOW:
-        *pwm_out = at->relay_center_pwm - at->relay_amp_pwm;
-        if (current_rpm < at->min)
-            at->min = current_rpm;
-
-        if (current_rpm < at->setpoint_rpm)
-        {
-            // crossed below setpoint → go high
-            uint32_t now_cross = now;
-            if (at->period_count > 0)
-            {
-                at->period_accum += (now_cross - at->last_cross_time);
-            }
-            at->last_cross_time = now_cross;
-            at->period_count++;
-
-            // after enough cycles, compute Ku, Tu
-            if (at->period_count >= cycles)
-            {
-                float A = (at->max - at->min) * 0.5f; // amplitude
-                if (A <= 0.0f)
-                {
-                    at->state = PID_AT_ABORT;
-                    *pwm_out = 0;
-                    return false;
-                }
-
-                float d = (float)at->relay_amp_pwm; // PWM amplitude
-                at->Ku = (4.0f * d) / (3.1415926f * A);
-
-                float avg_period_ms = (float)at->period_accum / (float)(at->period_count - 1);
-                at->Tu = avg_period_ms * 0.001f; // seconds
-
-                if (at->Tu <= 0.0f)
-                {
-                    at->state = PID_AT_ABORT;
-                    return false;
-                }
-
-                // Ziegler–Nichols PID
-                at->kp = 0.6f * at->Ku;
-                at->ki = 1.2f * at->Ku / at->Tu;
-                at->kd = 0.075f * at->Ku * at->Tu;
-
-                at->state = PID_AT_DONE;
-                *pwm_out = at->relay_center_pwm;
-                return true;
-            }
-
-            // prepare for next high phase
-            at->max = -1e9f;
-            at->min = 1e9f;
-            at->state = PID_AT_RELAY_HIGH;
-        }
-        break;
-    }
-
-    return false;
-}
-
 bool pid_compute(pid_data_t *pid, float *output, float setpoint, float input, uint32_t sample_rate_ms)
 {
-    uint32_t last_sample = pid->last_sample;
+        uint32_t last_sample = pid->last_sample;
     uint32_t now = mcu_millis();
 
     if ((now - last_sample) < sample_rate_ms)
-    {
         return false;
-    }
 
-    float delta_t = ((now - last_sample) * 0.001f); // convert to seconds
+    uint32_t dt_ms = (now - last_sample);
     pid->last_sample = now;
-    float pidkp = pid->k[0];
-    float pidki = pid->k[1] * delta_t;
-    float pidkd = pid->k[2] / delta_t;
+
+    float kp = pid->k[0];
+    float ki = pid->k[1];
+    float kd = pid->k[2];
 
     float error = setpoint - input;
-    float input_delta = pid->last_input - input;
-    pid->last_input = input;
 
-    pidkp *= error;
-    pidki = pid->i_accum + (pidki * error);
-    pidkd *= input_delta;
+    float P = (kp * error);
 
-    float out = (pidkp + pidki + pidkd);
-    float clamped_out = CLAMP(pid->min, out, pid->max);
+    // Integral
+    pid->i_accum += (ki * error);
+    float I = pid->i_accum;
 
-    if (out == clamped_out ||
-        (error > 0 && out < pid->min) ||
-        (error < 0 && out > pid->max))
-    {
-        pid->i_accum = pidki;
-    }
+    float D = (kd * (error - pid->last_error));
+    pid->last_error = error;
 
-    *output = clamped_out;
+    // PID sum
+    float out = P + I + D;
 
+    // Clamp
+    if (out < pid->min)
+        out = pid->min;
+    if (out > pid->max)
+        out = pid->max;
+
+    *output = out;
     return true;
-}
-
-static inline int16_t q15_mul(int16_t a, int16_t b)
-{
-    return (int16_t)(((int32_t)a * (int32_t)b) >> 15);
 }
 
 bool pid_compute_q15(pid_data_q15_t *pid, int16_t *output, int16_t setpoint, int16_t input, uint32_t sample_rate_ms)
@@ -192,37 +71,137 @@ bool pid_compute_q15(pid_data_q15_t *pid, int16_t *output, int16_t setpoint, int
     uint32_t dt_ms = (now - last_sample);
     pid->last_sample = now;
 
-    int16_t kp = pid->k[0];
-    int16_t ki = pid->k[1];
-    int16_t kd = pid->k[2];
+    int32_t kp = (int32_t)pid->k[0];
+    int32_t ki = (int32_t)pid->k[1];
+    int32_t kd = (int32_t)pid->k[2];
 
     int16_t error = setpoint - input;
+    // Normalize error to Q32
+    error = INT_TO_Q15(error, pid->max);
 
-    int16_t input_delta = pid->last_input - input;
-    pid->last_input = input;
+    int16_t P = (kp * error) >> 15;
 
-    int16_t P = q15_mul(kp, error);
+    // Integral
+    pid->i_accum += (ki * error);
+    int32_t I = pid->i_accum >> 15;
 
-    int32_t I_new = pid->i_accum + ((int32_t)q15_mul(ki, error) * (int32_t)dt_ms) / 1000;
+    int32_t D = (kd * (error - pid->last_error)) >> 15;
+    pid->last_error = error;
 
-    int32_t D = 0;
-    if (dt_ms > 0)
-    {
-        int32_t deriv = ((int32_t)input_delta * 32768) / (int32_t)dt_ms;
-        D = q15_mul(kd, (int16_t)deriv);
-    }
+    // PID sum
+    int32_t out = P + I + D;
 
-    int32_t out = (int32_t)P + (int32_t)I_new + (int32_t)D;
+    out = (out * pid->max) >> 15;
 
-    int16_t clamped_out = CLAMP(pid->min, out, pid->max);
+    // Clamp
+    if (out < pid->min)
+        out = pid->min;
+    if (out > pid->max)
+        out = pid->max;
 
-    if (out == clamped_out ||
-        (error > 0 && out < pid->min) ||
-        (error < 0 && out > pid->max))
-    {
-        pid->i_accum = I_new;
-    }
-
-    *output = clamped_out;
+    *output = (int16_t)out;
     return true;
+}
+
+bool pid_compute_q31(pid_data_q31_t *pid, int32_t *output, int32_t setpoint, int32_t input, uint32_t sample_rate_ms)
+{
+    uint32_t last_sample = pid->last_sample;
+    uint32_t now = mcu_millis();
+
+    if ((now - last_sample) < sample_rate_ms)
+        return false;
+
+    uint32_t dt_ms = (now - last_sample);
+    pid->last_sample = now;
+
+    int64_t kp = (int64_t)pid->k[0];
+    int64_t ki = (int64_t)pid->k[1];
+    int64_t kd = (int64_t)pid->k[2];
+
+    int32_t error = setpoint - input;
+    // Normalize error to Q31
+    error = INT_TO_Q31(error, pid->max);
+
+    int32_t P = (kp * error) >> 31;
+
+    // Integral
+    pid->i_accum += (ki * error);
+    int64_t I = pid->i_accum >> 31;
+
+    int64_t D = (kd * (error - pid->last_error)) >> 31;
+    pid->last_error = error;
+
+    // PID sum
+    int64_t out = P + I + D;
+
+    out = (out * pid->max) >> 31;
+
+    // Clamp
+    if (out < pid->min)
+        out = pid->min;
+    if (out > pid->max)
+        out = pid->max;
+
+    *output = (int32_t)out;
+    return true;
+}
+
+void pid_autotune_q15_start(pid_autotune_q15_t *at, uint16_t setpoint, uint16_t output_max, uint16_t relay_amp)
+{
+    at->active = 1;
+    at->high = 1;
+
+    at->setpoint = setpoint;
+    at->output_max = output_max;
+    at->relay_amp = relay_amp;
+
+    at->peak_max = -32768;
+    at->peak_min = 32767;
+
+    at->period_sum = 0;
+    at->period_count = 0;
+}
+
+uint16_t pid_autotune_q15_step(pid_autotune_q15_t *at, uint16_t input, uint32_t now_ms)
+{
+    if (!at->active)
+        return 0;
+
+    int16_t error = at->setpoint - input;
+
+    uint16_t mid = at->output_max / 2;
+    uint16_t out = at->high ? (mid + at->relay_amp) : (mid - at->relay_amp);
+
+    if (error > 0 && !at->high)
+    {
+        at->high = 1;
+        at->peak_min = input;
+        at->last_cross = now_ms;
+    }
+    else if (error < 0 && at->high)
+    {
+        at->high = 0;
+        at->peak_max = input;
+
+        uint32_t period = now_ms - at->last_cross;
+        at->period_sum += period;
+        at->period_count++;
+    }
+
+    if (at->period_count >= 6)
+    {
+        uint32_t Pu = at->period_sum / at->period_count;
+        int16_t A = (at->peak_max - at->peak_min) / 2;
+
+        // Ku = 4d / (πA)
+        int32_t Ku = (4L * at->relay_amp * 32768L) / (102944L * A);
+
+        at->Kp = (int16_t)(Ku * 0.6);
+        at->Ki = (int16_t)(Ku * 1.2 / Pu);
+        at->Kd = (int16_t)(Ku * 0.075 * Pu);
+
+        at->active = 0;
+    }
+
+    return out;
 }
