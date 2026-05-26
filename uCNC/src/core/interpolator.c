@@ -708,6 +708,16 @@ void itp_run(void)
 #endif
 		sgm->feed = current_speed * feed_convert;
 #if TOOL_COUNT > 0
+#ifdef ENABLE_LATHE
+		int16_t spindle_speed = planner_get_spindle_speed(1);
+		if ((prev_spindle != spindle_speed))
+		{
+			prev_spindle = spindle_speed;
+			sgm->flags |= ITP_UPDATE_TOOL;
+		}
+
+		sgm->spindle = spindle_speed;
+#endif
 #if defined(ENABLE_LASER_PWM) || defined(ENABLE_EMBROIDERY)
 		// calculates dynamic laser power
 		if (g_settings.tool_mode & PWM_VARPOWER_MODE)
@@ -725,7 +735,7 @@ void itp_run(void)
 		}
 #endif
 #ifdef ENABLE_LASER_PPI
-		else if (g_settings.tool_mode & (PPI_VARPOWER_MODE | PPI_MODE))
+		if (g_settings.tool_mode & (PPI_VARPOWER_MODE | PPI_MODE))
 		{
 			int16_t newspindle;
 			if (g_settings.tool_mode & PPI_VARPOWER_MODE)

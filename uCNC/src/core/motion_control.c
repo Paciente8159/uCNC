@@ -578,7 +578,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 // final modifier is a hookable event
 // this allows to complete control and override over the amount of segments to be produced.
 #ifdef ENABLE_MOTION_CONTROL_MODULES
-	mc_line_calc_segments_args_t mc_line_calc_segments_args = {.line_segments = line_segments, .line_dist = line_dist, .dir_vect = dir_vect, .max_steps = max_steps}
+	mc_line_calc_segments_args_t mc_line_calc_segments_args = {.line_segments = &line_segments, .line_dist = line_dist, .dir_vect = dir_vect, .max_steps = max_steps};
 	// event_mc_line_segment_handler
 	EVENT_INVOKE(mc_line_calc_segments, &mc_line_calc_segments_args);
 #endif

@@ -27,7 +27,18 @@
 #error "This module is not compatible with the current version of µCNC"
 #endif
 
+#ifndef G96_REFERENCE_AXIS
+#define G96_REFERENCE_AXIS AXIS_X
+#endif
+
+#ifndef G96_MIN_SEGM_SIZE
+#define G96_MIN_SEGM_SIZE 1
+#endif
+
+static uint8_t new_spindle_mode;
 static uint8_t spindle_css_mode;
+static uint16_t spindle_max_rpm;
+static float css_s_value;
 
 // this ID must be unique for each code
 #define G96 96
@@ -43,27 +54,33 @@ bool g96_g97_mc_line_segment_pre(void *args);
 CREATE_EVENT_LISTENER(gcode_parse, g96_g97_parse);
 CREATE_EVENT_LISTENER(parser_reset, g96_g97_reset);
 CREATE_EVENT_LISTENER(gcode_exec_modifier, g96_g97_modifier);
-CREATE_EVENT_LISTENER(protocol_send_gcode_modes, g96_g97_send_gcode_modes);
+CREATE_EVENT_LISTENER(proto_gcode_modes, g96_g97_send_gcode_modes);
 CREATE_EVENT_LISTENER(mc_line_calc_segments, g96_g97_mc_line_calc_segments);
 CREATE_EVENT_LISTENER(mc_line_segment_pre, g96_g97_mc_line_segment_pre);
 
 // this just parses and accepts the code
 bool g96_g97_parse(void *args)
 {
-    gcode_parse_args_t *ptr = (gcode_parse_args_t *)args;
-    if (ptr->word == 'G')
+    gcode_parse_args_t *p = (gcode_parse_args_t *)args;
+    if (p->word == 'G')
     {
         // stops event propagation
         bool ok = true;
 
-        switch (ptr->code)
+        switch (p->code)
         {
         case G96:
-            spindle_css_mode = 1;
-            break;
         case G97:
-            /* code */
-            spindle_css_mode = 0;
+            if (new_spindle_mode)
+            {
+                // multiple calls to G96/G97 on the same line
+                *(p->error) = STATUS_GCODE_MODAL_GROUP_VIOLATION;
+                return EVENT_HANDLED;
+            }
+            new_spindle_mode = p->code;
+            // stops event propagation
+            *(p->error) = STATUS_OK;
+            return EVENT_HANDLED;
             break;
         default:
             // not able to catch this G code
@@ -74,7 +91,7 @@ bool g96_g97_parse(void *args)
         if (ok)
         {
             // stops event propagation
-            *(ptr->error) = STATUS_OK;
+            *(p->error) = STATUS_OK;
             return EVENT_HANDLED;
         }
     }
@@ -85,15 +102,57 @@ bool g96_g97_parse(void *args)
 
 bool g96_g97_reset(void *args)
 {
+    new_spindle_mode = 0; // clears
     spindle_css_mode = 0; // default
+
     return EVENT_CONTINUE;
 }
 
 bool g96_g97_modifier(void *args)
 {
     // TODO
-    // store D parameter if available
-    // permanently store G96/G97 state
+    uint8_t new_mode = new_spindle_mode;
+    new_spindle_mode = 0; // clear for next line
+    if (new_mode)
+    {
+        if (itp_sync() == STATUS_OK)
+        {
+            gcode_exec_args_t *p = (gcode_exec_args_t *)args;
+
+            if (!CHECKFLAG(p->cmd->words, GCODE_WORD_S))
+            {
+                *(p->error) = STATUS_GCODE_MODAL_GROUP_VIOLATION;
+                return EVENT_HANDLED;
+            }
+
+            if (!g_planner_state.state_flags.bit.spindle_running)
+            {
+                *(p->error) = STATUS_SPINDLE_STOPPED;
+                return EVENT_HANDLED;
+            }
+
+            switch (new_mode)
+            {
+            case G96:
+                spindle_css_mode = 1;
+                if (CHECKFLAG(p->cmd->words, GCODE_WORD_D))
+                {
+                    spindle_max_rpm = CLAMP(g_settings.spindle_min_rpm, (uint16_t)trunc(p->words->d), g_settings.spindle_max_rpm);
+                }
+                else
+                {
+                    spindle_max_rpm = g_settings.spindle_max_rpm;
+                }
+                break;
+            case G97:
+                spindle_css_mode = 0; // default
+                break;
+            }
+            css_s_value = p->words->s;
+            CLEARFLAG(p->cmd->words, GCODE_WORD_S); // prevent S work processing as tool command
+        }
+    }
+
     return EVENT_CONTINUE;
 }
 
@@ -107,20 +166,49 @@ bool g96_g97_send_gcode_modes(void *args)
     }
     else
     {
-        serial_putc('6');
+        serial_putc('7');
     }
     serial_putc(' ');
     return EVENT_CONTINUE;
 }
 
-bool g96_g97_mc_line_calc_segments(void *args){
+bool g96_g97_mc_line_calc_segments(void *args)
+{
     // TODO
     // estimate the amount of line segments needed based on the distance and direction travelled
+    if (!spindle_css_mode)
+    {
+        return EVENT_CONTINUE;
+    }
+
+    mc_line_calc_segments_args_t *p = (mc_line_calc_segments_args_t *)args;
+    float axis_travel = p->line_dist * p->dir_vect[G96_REFERENCE_AXIS];
+
+    // no motion of the reference axis
+    if (axis_travel == 0)
+    {
+        return EVENT_CONTINUE;
+    }
+
+    // split the mc_line
+    uint32_t segs = (uint32_t)ceilf(axis_travel / G96_MIN_SEGM_SIZE);
+    if (segs > *(p->line_segments))
+    {
+        *(p->line_segments) = segs;
+    }
+
+    return EVENT_CONTINUE;
 }
 
-bool g96_g97_mc_line_segment_pre(void *args){
+bool g96_g97_mc_line_segment_pre(void *args)
+{
     // TODO
     // calculated the correct RPM based on the distance to the machine center
+    mc_line_segment_pre_args_t *p = (mc_line_segment_pre_args_t *)args;
+    float rpm = 500 * M_PI_INV * css_s_value / p->target[G96_REFERENCE_AXIS];
+    p->block_data->spindle = CLAMP(g_settings.spindle_min_rpm, (uint16_t)trunc(rpm), spindle_max_rpm);
+
+    return EVENT_CONTINUE;
 }
 
 #endif
@@ -130,7 +218,7 @@ DECL_MODULE(g96_g97)
 #ifdef ENABLE_PARSER_MODULES
     ADD_EVENT_LISTENER(gcode_parse, g96_g97_parse);
     ADD_EVENT_LISTENER(parser_reset, g96_g97_reset);
-    ADD_EVENT_LISTENER(protocol_send_gcode_modes, g96_g97_send_gcode_modes);
+    ADD_EVENT_LISTENER(proto_gcode_modes, g96_g97_send_gcode_modes);
     ADD_EVENT_LISTENER(gcode_exec_modifier, g96_g97_modifier);
 #else
 #error "Parser extensions are not enabled. G96-G97 code extension will not work."

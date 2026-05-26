@@ -148,7 +148,7 @@ extern "C"
 	typedef struct mc_line_segment_pre_args_
 	{
 		float *target;
-		uint32_t *target_steps;
+		int32_t *target_steps;
 		motion_data_t *block_data;
 	} mc_line_segment_pre_args_t;
 	// event_mc_line_segment_pre_handler

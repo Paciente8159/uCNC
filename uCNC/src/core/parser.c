@@ -1348,6 +1348,10 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 #ifdef ENABLE_PARSER_MODULES
 	gcode_exec_args_t args = {&error, new_state, words, cmd, target, &block_data};
 	EVENT_INVOKE(gcode_exec_modifier, &args);
+	if (error != STATUS_OK)
+	{
+		return error;
+	}
 #endif
 
 	// stoping from previous command M2 or M30 command

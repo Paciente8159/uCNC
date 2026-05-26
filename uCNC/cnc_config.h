@@ -269,6 +269,13 @@ extern "C"
 //  #define ENABLE_EMBROIDERY
 
 /**
+ *
+ * Uncomment to enable lathe features
+ *
+ */
+//  #define ENABLE_LATHE
+
+/**
  * Feed overrides increments and percentage ranges
  * */
 #define FEED_OVR_MAX 200

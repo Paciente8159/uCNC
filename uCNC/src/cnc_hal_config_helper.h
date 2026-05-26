@@ -386,6 +386,8 @@ extern "C"
 #endif
 #endif
 
+
+
 #ifdef ABC_INDEP_FEED_CALC
 #ifdef ENABLE_LINACT_PLANNER
 #undef ENABLE_LINACT_PLANNER
@@ -2390,6 +2392,13 @@ typedef uint16_t step_t;
 // forces modes
 #ifndef ENABLE_RT_SYNC_MOTIONS
 #define ENABLE_RT_SYNC_MOTIONS
+#endif
+#endif
+
+#ifdef ENABLE_LATHE
+// forces modes
+#ifndef MOTION_SEGMENTED
+#define MOTION_SEGMENTED
 #endif
 #endif
 
