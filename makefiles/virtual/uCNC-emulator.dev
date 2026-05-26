@@ -29,7 +29,7 @@ IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=1
 CompilerSettings=000000e0g0000000001000000
-UnitCount=99
+UnitCount=100
 
 [VersionInfo]
 Major=1
@@ -1041,7 +1041,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit100]
-FileName=..\..\uCNC\src\modules\atc\atc.c
+FileName=..\..\uCNC\src\modules\g96_g97\parser_g96_g97.c
 CompileCpp=1
 Folder=
 Compile=1

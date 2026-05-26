@@ -191,7 +191,7 @@ bool g96_g97_mc_line_calc_segments(void *args)
     }
 
     // split the mc_line
-    uint32_t segs = (uint32_t)ceilf(axis_travel / G96_MIN_SEGM_SIZE);
+    uint32_t segs = (uint32_t)ceilf(ABS(axis_travel) / G96_MIN_SEGM_SIZE);
     if (segs > *(p->line_segments))
     {
         *(p->line_segments) = segs;
@@ -204,9 +204,12 @@ bool g96_g97_mc_line_segment_pre(void *args)
 {
     // TODO
     // calculated the correct RPM based on the distance to the machine center
+    if (spindle_css_mode)
+    {
     mc_line_segment_pre_args_t *p = (mc_line_segment_pre_args_t *)args;
     float rpm = 500 * M_PI_INV * css_s_value / p->target[G96_REFERENCE_AXIS];
     p->block_data->spindle = CLAMP(g_settings.spindle_min_rpm, (uint16_t)trunc(rpm), spindle_max_rpm);
+}
 
     return EVENT_CONTINUE;
 }
