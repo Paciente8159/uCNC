@@ -53,7 +53,9 @@ extern "C"
 #include "hal/tools/tool.h" //configures the kinematics for the cnc machine
 // final HAL configurations
 #include "../cnc_hal_config.h"		//inicializes the HAL hardcoded connections
+#ifndef UCNC_IGNORE_HAL_OVERRIDES
 #include "../cnc_hal_overrides.h"	//config override file
+#endif
 #include "modules/shift_register.h" // io extender
 
 	/**
@@ -237,6 +239,44 @@ extern "C"
 
 #if ENCODERS > 0
 
+#ifndef ENCODER_HW_NONE
+#define ENCODER_HW_NONE 0
+#endif
+#ifndef ENCODER_HW_PCNT
+#define ENCODER_HW_PCNT 1
+#endif
+#ifndef ENCODER_HW_PIO
+#define ENCODER_HW_PIO 2
+#endif
+
+#ifndef ENC_TYPE_CUSTOM
+#define ENC_TYPE_CUSTOM 255
+#endif
+
+#if defined(ENCODER0_USE_HARDWARE_COUNTER) && !defined(ENC0_USE_HARDWARE_COUNTER)
+#define ENC0_USE_HARDWARE_COUNTER ENCODER0_USE_HARDWARE_COUNTER
+#endif
+#if defined(ENCODER0_HW_COUNTER_TYPE) && !defined(ENC0_HW_COUNTER_TYPE)
+#define ENC0_HW_COUNTER_TYPE ENCODER0_HW_COUNTER_TYPE
+#endif
+#if defined(ENC0_USE_HARDWARE_COUNTER) && ENC0_USE_HARDWARE_COUNTER && !defined(ENC0_TYPE)
+#define ENC0_TYPE ENC_TYPE_CUSTOM
+#define ENC0_IS_INCREMENTAL
+#define ENC0_NO_WRAP_CORRECTION
+#endif
+#if defined(ENCODER0_VIRTUAL_INDEX) && !defined(ENC0_VIRTUAL_INDEX)
+#define ENC0_VIRTUAL_INDEX ENCODER0_VIRTUAL_INDEX
+#endif
+#if defined(ENCODER0_VIRTUAL_INDEX_CPR) && !defined(ENC0_VIRTUAL_INDEX_CPR)
+#define ENC0_VIRTUAL_INDEX_CPR ENCODER0_VIRTUAL_INDEX_CPR
+#endif
+#if defined(ENCODER0_VIRTUAL_INDEX_OFFSET) && !defined(ENC0_VIRTUAL_INDEX_OFFSET)
+#define ENC0_VIRTUAL_INDEX_OFFSET ENCODER0_VIRTUAL_INDEX_OFFSET
+#endif
+#if defined(ENCODER0_VIRTUAL_INDEX_HYSTERESIS) && !defined(ENC0_VIRTUAL_INDEX_HYSTERESIS)
+#define ENC0_VIRTUAL_INDEX_HYSTERESIS ENCODER0_VIRTUAL_INDEX_HYSTERESIS
+#endif
+
 #ifndef ENC0_MASK
 #define ENC0_MASK (1 << ENC0)
 #endif
@@ -308,6 +348,15 @@ extern "C"
 #ifndef ENABLE_MAIN_LOOP_MODULES
 #define ENABLE_MAIN_LOOP_MODULES
 #warning "Communication encoders added ENABLE_MAIN_LOOP_MODULES"
+#endif
+#endif
+
+#if ENCODERS > 0
+#if (defined(ENC0_USE_HARDWARE_COUNTER) && ENC0_USE_HARDWARE_COUNTER) || (defined(ENC0_VIRTUAL_INDEX) && ENC0_VIRTUAL_INDEX)
+#ifndef ENABLE_MAIN_LOOP_MODULES
+#define ENABLE_MAIN_LOOP_MODULES
+#warning "Hardware/virtual encoder support added ENABLE_MAIN_LOOP_MODULES"
+#endif
 #endif
 #endif
 #endif
@@ -2388,6 +2437,19 @@ typedef uint16_t step_t;
 
 #ifdef ENABLE_EMBROIDERY
 // forces modes
+#ifndef ENABLE_RT_SYNC_MOTIONS
+#define ENABLE_RT_SYNC_MOTIONS
+#endif
+#endif
+
+#ifdef G33_ENCODER
+// G33 needs parser/main-loop hooks and realtime synchronized motion support.
+#ifndef ENABLE_PARSER_MODULES
+#define ENABLE_PARSER_MODULES
+#endif
+#ifndef ENABLE_MAIN_LOOP_MODULES
+#define ENABLE_MAIN_LOOP_MODULES
+#endif
 #ifndef ENABLE_RT_SYNC_MOTIONS
 #define ENABLE_RT_SYNC_MOTIONS
 #endif

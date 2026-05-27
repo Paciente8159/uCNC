@@ -26,6 +26,7 @@ extern "C"
 
 #include "../module.h"
 #include <stdint.h>
+#include <stdbool.h>
 
 /**
  * Encoders definitions
@@ -45,6 +46,13 @@ extern "C"
 #define ENC_TYPE_I2C 1
 #define ENC_TYPE_SSI 2
 #define ENC_TYPE_CUSTOM 255
+
+/**
+ * Hardware counter backend types
+ */
+#define ENCODER_HW_NONE 0
+#define ENCODER_HW_PCNT 1
+#define ENCODER_HW_PIO 2
 
 	DECL_MODULE(encoder);
 	DECL_HOOK(enc0_index, void);
@@ -73,6 +81,14 @@ extern "C"
 	void encoders_update(uint8_t pulse, uint8_t diff);
 	uint32_t encoder_get_delta(uint8_t i);
 	uint16_t encoder_get_rpm(uint8_t i);
+	bool encoder_get_index_stats(uint8_t i, int32_t *last, int32_t *min, int32_t *max, uint32_t *count);
+	bool encoder_get_index_live_delta(uint8_t i, int32_t *delta);
+	bool encoder_get_index_debug_line(uint8_t i, char *line, uint32_t line_len, uint32_t *seq);
+	void encoder_virtual_index_unarm(uint8_t i);
+	void encoder_virtual_index_update(uint8_t i);
+	void encoder_record_index_reference(uint8_t i, int32_t position);
+	void encoder_invoke_index(uint8_t i);
+	void enc0_virtual_index_unarm(void);
 	int32_t enc_custom_read(uint8_t i);
 
 #ifdef __cplusplus

@@ -40,8 +40,13 @@ uint8_t g_module_lockguard;
 static FORCEINLINE void load_modules(void)
 {
 // PLACE YOUR MODULES HERE
+#ifndef DISABLE_G7_G8
+	LOAD_MODULE(g7_g8);
+#endif
 #ifdef LOAD_MODULES_OVERRIDE
 	LOAD_MODULES_OVERRIDE();
+#elif defined(ENABLE_LVDS_RENDERER)
+	LOAD_MODULE(lvds_renderer);
 #endif
 }
 
@@ -59,6 +64,11 @@ void mod_init(void)
 
 #if ENCODERS > 0
 	LOAD_MODULE(encoder);
+#if defined(ENC0_USE_HARDWARE_COUNTER) && (ENC0_USE_HARDWARE_COUNTER) && (ENC0_HW_COUNTER_TYPE == ENCODER_HW_PCNT)
+	LOAD_MODULE(esp32_pcnt_encoder);
+#elif defined(ENC0_USE_HARDWARE_COUNTER) && (ENC0_USE_HARDWARE_COUNTER) && (ENC0_HW_COUNTER_TYPE == ENCODER_HW_PIO)
+	LOAD_MODULE(rp2350_pio_encoder);
+#endif
 #endif
 
 #ifdef ENABLE_LASER_PPI
@@ -76,6 +86,8 @@ void mod_init(void)
 
 	load_modules();
 }
+
+
 
 #ifdef MODULE_DEBUG_ENABLED
 bool mod_event_default_handler(mod_delegate_event_t **event, mod_delegate_event_t **last, void **args)
