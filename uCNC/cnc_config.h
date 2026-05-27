@@ -273,7 +273,7 @@ extern "C"
  * Uncomment to enable lathe features
  *
  */
-//  #define ENABLE_LATHE
+//   #define ENABLE_LATHE
 
 /**
  * Feed overrides increments and percentage ranges

@@ -300,3 +300,19 @@ void tool_pid_update(void)
 #endif
 #endif
 }
+
+static uint8_t current_tool_mode;
+uint8_t tool_get_mode(void)
+{
+	return current_tool_mode;
+}
+
+void tool_set_mode(uint8_t mode)
+{
+	current_tool_mode = mode;
+}
+
+void tool_reset_mode(void)
+{
+	current_tool_mode = g_settings.tool_mode;
+}

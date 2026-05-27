@@ -183,12 +183,12 @@ extern "C"
 #define GCODE_XYZ_AXIS (GCODE_WORD_X | GCODE_WORD_Y | GCODE_WORD_Z)
 #define GCODE_IJK_AXIS (GCODE_WORD_I | GCODE_WORD_J | GCODE_WORD_K)
 
-#define UNDEF_MODE 0
-#define PWM_VARPOWER_MODE 1
-#define PPI_MODE 2
-#define PPI_VARPOWER_MODE 4
-#define PLASMA_THC_MODE 8
-#define EMBROIDERY_MODE 16
+#define SPINDLE_MODE 0					 // if the tool is not defined it will return as spindle mode
+#define PWM_VARPOWER_MODE 1				 // PWM variable mode will scale the tool power with M4 active
+#define PPI_MODE 2						 // Enables Pulse Per Inch modulation signal
+#define PPI_VARPOWER_MODE 4				 // Will modify the PPI pulse width
+#define PLASMA_THC_MODE 8				 // Enables Plasma THC mode
+#define EMBROIDERY_MODE 16				 // Enables Embroidery mode
 
 #ifdef ENABLE_RS274NGC_EXPRESSIONS
 #ifndef RS274NGC_MAX_USER_VARS

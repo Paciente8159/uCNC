@@ -652,7 +652,7 @@ void cnc_clear_exec_state(uint16_t statemask)
 		if (!planner_buffer_is_empty())
 		{
 #if (DELAY_ON_RESUME_COOLANT > 0)
-			if (!g_settings.tool_mode)
+			if (tool_get_mode() == SPINDLE_MODE)
 			{
 				cnc_dwell_ms(DELAY_ON_RESUME_COOLANT * 1000);
 			}
@@ -662,7 +662,7 @@ void cnc_clear_exec_state(uint16_t statemask)
 		// if something goes wrong the tool can reinstate the HOLD state
 		itp_sync_spindle();
 #if (DELAY_ON_RESUME_SPINDLE > 0)
-		if (!g_settings.tool_mode && cnc_state.loop_state == LOOP_RUNNING)
+		if ((tool_get_mode() == SPINDLE_MODE) && cnc_state.loop_state == LOOP_RUNNING)
 		{
 			if (!planner_buffer_is_empty())
 			{
@@ -986,7 +986,7 @@ void cnc_exec_rt_commands(void)
 		if (update_tools)
 		{
 			itp_update();
-			if ((g_settings.tool_mode == UNDEF_MODE) || (itp_is_empty() && planner_buffer_is_empty()))
+			if ((tool_get_mode() == SPINDLE_MODE) || (itp_is_empty() && planner_buffer_is_empty()))
 			{
 				itp_sync_spindle();
 			}

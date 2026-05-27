@@ -434,7 +434,7 @@ void itp_run(void)
 
 #ifdef ENABLE_RT_SYNC_MOTIONS
 		uint8_t bmode = itp_block_mode;
-		if ((g_settings.tool_mode & EMBROIDERY_MODE) && bmode)
+		if ((tool_get_mode() & EMBROIDERY_MODE) && bmode)
 		{
 			if (!flushing_block && block_counter == itp_block_counter)
 			{
@@ -672,7 +672,7 @@ void itp_run(void)
 		uint8_t dss = 0;
 #ifdef ENABLE_PLASMA_THC
 		// plasma THC forces DSS to always be enabled at level 1 at least
-		if (g_settings.tool_mode == PLASMA_THC_MODE)
+		if (tool_get_mode() == PLASMA_THC_MODE)
 		{
 			dss_speed = fast_flt_mul2(dss_speed);
 			// clamp top speed
@@ -709,18 +709,21 @@ void itp_run(void)
 		sgm->feed = current_speed * feed_convert;
 #if TOOL_COUNT > 0
 #ifdef ENABLE_LATHE
-		int16_t spindle_speed = planner_get_spindle_speed(1);
-		if ((prev_spindle != spindle_speed))
+		if (tool_get_mode() == SPINDLE_MODE)
 		{
-			prev_spindle = spindle_speed;
-			sgm->flags |= ITP_UPDATE_TOOL;
-		}
+			int16_t spindle_speed = planner_get_spindle_speed(1);
+			if ((prev_spindle != spindle_speed))
+			{
+				prev_spindle = spindle_speed;
+				sgm->flags |= ITP_UPDATE_TOOL;
+			}
 
-		sgm->spindle = spindle_speed;
+			sgm->spindle = spindle_speed;
+		}
 #endif
 #if defined(ENABLE_LASER_PWM) || defined(ENABLE_EMBROIDERY)
 		// calculates dynamic laser power
-		if (g_settings.tool_mode & PWM_VARPOWER_MODE)
+		if (tool_get_mode() & PWM_VARPOWER_MODE)
 		{
 			float top_speed_inv = fast_flt_invsqrt(itp_cur_plan_block->feed_sqr);
 			int16_t newspindle = planner_get_spindle_speed(MIN(1, current_speed * top_speed_inv));
@@ -735,14 +738,14 @@ void itp_run(void)
 		}
 #endif
 #ifdef ENABLE_LASER_PPI
-		if (g_settings.tool_mode & (PPI_VARPOWER_MODE | PPI_MODE))
+		if (tool_get_mode() & (PPI_VARPOWER_MODE | PPI_MODE))
 		{
 			int16_t newspindle;
-			if (g_settings.tool_mode & PPI_VARPOWER_MODE)
+			if (tool_get_mode() & PPI_VARPOWER_MODE)
 			{
 				float new_s = (float)ABS(planner_get_spindle_speed(1));
 				new_s /= (float)g_settings.spindle_max_rpm;
-				if (g_settings.tool_mode & PPI_MODE)
+				if (tool_get_mode() & PPI_MODE)
 				{
 					float blend = g_settings.laser_ppi_mixmode_uswidth;
 					new_s = (new_s * blend) + (1.0f - blend);
@@ -861,7 +864,7 @@ MCU_CALLBACK void itp_stop(void)
 
 #if TOOL_COUNT > 0
 	// stop tool (if not spindle - spindle should continue)
-	if (g_settings.tool_mode)
+	if (tool_get_mode() != SPINDLE_MODE)
 	{
 		tool_set_speed(0);
 	}

@@ -338,7 +338,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 	}
 
 #ifdef ENABLE_EMBROIDERY
-	if ((g_settings.tool_mode & EMBROIDERY_MODE) && !block_data->spindle)
+	if ((tool_get_mode() & EMBROIDERY_MODE) && !block_data->spindle)
 	{
 		if (itp_sync() != STATUS_OK)
 		{
@@ -494,7 +494,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 	g_settings.acceleration[STEPPER_COUNT - 1] = FLT_MAX;
 	float ppi_max_feedrate = FLT_MAX;
 	float ppi_step_rate = g_settings.step_per_mm[STEPPER_COUNT - 1];
-	if (g_settings.tool_mode & (PPI_MODE | PPI_VARPOWER_MODE))
+	if (tool_get_mode() & (PPI_MODE | PPI_VARPOWER_MODE))
 	{
 		if (!ppi_step_rate)
 		{
@@ -513,10 +513,10 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 	{
 		laser_pulses_per_mm = ppi_step_rate;
 		// modify PPI settings according o the S value
-		if (g_settings.tool_mode & PPI_MODE)
+		if (tool_get_mode() & PPI_MODE)
 		{
 			float laser_ppi_scale = fast_flt_div((float)block_data->spindle, (float)g_settings.spindle_max_rpm);
-			if (g_settings.tool_mode & PPI_VARPOWER_MODE)
+			if (tool_get_mode() & PPI_VARPOWER_MODE)
 			{
 				float blend = g_settings.laser_ppi_mixmode_ppi;
 				laser_ppi_scale = (laser_ppi_scale * blend) + (1.0f - blend);
@@ -1005,7 +1005,9 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 			return STATUS_CRITICAL_FAIL;
 		}
 
-		cnc_dwell_ms(g_settings.debounce_ms); // adds a delay before reading io pin (debounce)
+		uint16_t debounce = g_settings.debounce_ms;
+
+		cnc_dwell_ms(debounce); // adds a delay before reading io pin (debounce)
 		limits_flags = io_get_limits();
 
 		// the wrong switch was activated bails
@@ -1022,7 +1024,7 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 			return STATUS_CRITICAL_FAIL;
 		}
 
-		cnc_dwell_ms(g_settings.debounce_ms); // adds a delay before reading io pin (debounce)
+		cnc_dwell_ms(debounce); // adds a delay before reading io pin (debounce)
 		io_enable_limits();					  // temporary limits disable
 		limits_flags = io_get_raw_limits();	  // get the raw (unfiltered values)
 
@@ -1039,7 +1041,7 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 		return STATUS_CRITICAL_FAIL;
 	}
 
-	cnc_delay_ms(g_settings.debounce_ms); // adds a delay before reading io pin (debounce)
+	cnc_delay_ms(debounce); // adds a delay before reading io pin (debounce)
 
 	limits_flags = io_get_raw_limits();
 	if (CHECKFLAG(limits_flags, axis_limit))
