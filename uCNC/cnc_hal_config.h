@@ -371,7 +371,7 @@ extern "C"
  *
  * **/
 #ifndef ENABLE_TOOL_PID_CONTROLLER
-// #define ENABLE_TOOL_PID_CONTROLLER
+#define ENABLE_TOOL_PID_CONTROLLER
 #endif
 
 /**

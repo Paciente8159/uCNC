@@ -33,8 +33,8 @@ The tool struct is like this:
 		tool_func shutdown_code;		   /*runs any custom code before the tool is unloaded*/
 		tool_func pid_update;			   /*runs de PID update code needed to keep the tool at the desired speed/power*/
 		tool_range_speed_func range_speed; /*converts core speed to tool speed*/
-		tool_get_speed_func get_speed;	   /*gets the tool speed/power (converts from tool speed to core speed)*/
-		tool_set_speed_func set_speed;	   /*sets the speed/power of the tool*/
+		tool_get_speed_func get_speed;	   /*gets the tool speed/power in RPM range (converts from PWM power to tool speed)*/
+		tool_set_speed_func set_speed;	   /*sets the speed/power of the tool in PWM range (0-255)*/
 		tool_coolant_func set_coolant;	   /*enables/disables the coolant*/
 	} tool_t;
 ```

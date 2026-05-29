@@ -253,7 +253,7 @@ int16_t tool_get_setpoint(void)
 {
 	// input value will always be positive
 #if TOOL_COUNT > 0
-	return tool_range_speed(tool_current_speed, 1);
+	return tool_range_speed(tool_current_speed, (uint8_t)1);
 #endif
 	return 0;
 }
