@@ -1,15 +1,49 @@
-// cnc_hal override dummy file
-
 #ifndef CNC_HAL_OVERRIDES_H
 #define CNC_HAL_OVERRIDES_H
-
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
+#include "cnc_hal_reset.h"
+#define SKEW_COMPENSATION_XY_ONLY
+#define ENABLE_LINACT_COLD_START
+#define ENABLE_S_CURVE_ACCELERATION 0
+#define STATUS_AUTOMATIC_REPORT_INTERVAL 0
+#define ENABLE_LASER_PWM 1
+#define TOOL1 spindle_pwm
+#define SPINDLE_PWM_RPM_ENCODER ENC0
+#define ESTOP_PULLUP_ENABLE
+#define SAFETY_DOOR_PULLUP_ENABLE
+#define FHOLD_PULLUP_ENABLE
+#define CS_RES_PULLUP_ENABLE
+#define LIMIT_X_PULLUP_ENABLE
+#define LIMIT_Y_PULLUP_ENABLE
+#define LIMIT_Z_PULLUP_ENABLE
+#define LIMIT_X2_PULLUP_ENABLE
+#define LIMIT_Y2_PULLUP_ENABLE
+#define LIMIT_Z2_PULLUP_ENABLE
+#define LIMIT_A_PULLUP_ENABLE
+#define LIMIT_B_PULLUP_ENABLE
+#define LIMIT_C_PULLUP_ENABLE
+#define PROBE_PULLUP_ENABLE
+#define ENCODERS 1
+#define ENC0_PULSE DIN0
+#define ENC0_DIR DIN0
+#define ENC0_INDEX DIN1
+#define ENABLE_MAIN_LOOP_MODULES
+#define ENABLE_IO_MODULES
+#define ENABLE_PARSER_MODULES
+#define DISABLE_SETTINGS_MODULES
+#define ENABLE_RT_SYNC_MOTIONS
+#define G33_ENCODER ENC0
+#define G33_FEEDBACK_LOOP_USE_ENC_PULSE
+//Custom configurations
+
+
+#define LOAD_MODULES_OVERRIDE() ({LOAD_MODULE(g33);})
+
 #ifdef __cplusplus
 }
 #endif
-
 #endif

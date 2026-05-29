@@ -285,16 +285,6 @@ extern "C"
 	 *
 	 *
 	 * */
-	typedef struct virtual_map_t
-	{
-		uint32_t special_outputs;
-		uint32_t outputs;
-		uint8_t pwm[16];
-		uint8_t servos[6];
-		uint32_t special_inputs;
-		uint32_t inputs;
-		uint8_t analog[16];
-	} VIRTUAL_MAP;
 
 	static volatile VIRTUAL_MAP virtualmap;
 
@@ -863,6 +853,8 @@ extern "C"
 		oneshot_alarm = mcu_micros() + oneshot_timeout;
 	}
 
+	mcu_stimul_inputs_cb mcu_stimul_inputs;
+
 	void ticksimul(void)
 	{
 		static bool running = false;
@@ -883,6 +875,9 @@ extern "C"
 			uint32_t partial_int = (uint32_t)parcial;
 			tickcount += (int)parcial;
 			parcial -= (int)parcial;
+
+			if (mcu_stimul_inputs)
+				mcu_stimul_inputs(&virtualmap, tickcount);
 
 			mcu_gen_step(partial_int);
 #ifdef MCU_HAS_ONESHOT_TIMER
@@ -1239,7 +1234,6 @@ extern "C"
 		for (;;)
 		{
 			cnc_run();
-
 		}
 		return 0;
 	}
@@ -1263,6 +1257,8 @@ extern "C"
 	void nvm_putc(uint16_t address, uint8_t c) { mcu_eeprom_putc(address, c); }
 	void nvm_end_read(void) {}
 	void nvm_end_write(void) { mcu_eeprom_flush(); }
+	void kinematics_apply_transform(float *axis) {}
+
 #ifdef __cplusplus
 }
 #endif

@@ -258,10 +258,9 @@
 #define DIO76 76
 #define DOUT30 77
 #define DIO77 77
-#define DOUT31 UNDEF_PIN
-#define DIO78 UNDEF_PIN
+#define DOUT31 78
+#define DIO78 78
 
-#define ACTIVITY_LED UNDEF_PIN
 
 #ifndef EMULATE_74HC165
 #define LIMIT_X 100
@@ -480,6 +479,20 @@ extern const tool_t spindle_pwm;
 extern const tool_t spindle_relay;
 extern const tool_t vfd_modbus;
 extern const tool_t vfd_pwm;
+
+	typedef struct virtual_map_t
+	{
+		uint32_t special_outputs;
+		uint32_t outputs;
+		uint8_t pwm[16];
+		uint8_t servos[6];
+		uint32_t special_inputs;
+		uint32_t inputs;
+		uint8_t analog[16];
+	} VIRTUAL_MAP;
+
+	typedef void (*mcu_stimul_inputs_cb)(volatile VIRTUAL_MAP *virtualmap, uint64_t micros);
+	extern mcu_stimul_inputs_cb mcu_stimul_inputs;
 
 #define EMULATION_MS_TICK 100
 
