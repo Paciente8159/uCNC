@@ -841,6 +841,7 @@ void cnc_exec_rt_commands(void)
 		if (CHECKFLAG(command, RT_CMD_DOOR_CHANGED))
 		{
 			proto_feedback(MSG_FEEDBACK_6);
+			itp_stop_tools();
 #ifdef ENABLE_SAFETY_DOOR_PARKING
 			cnc_park();
 #endif
