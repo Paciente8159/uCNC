@@ -1746,17 +1746,26 @@ extern "C"
 #endif
 
 // set default limits and step associations
-#if ASSERT_PIN(LIMIT_X) && !defined(LIMIT_X_IO_MASK)
+#ifndef LIMIT_X
+#undef LIMIT_X_IO_MASK
+#define LIMIT_X_IO_MASK STEP_UNDEF_IO_MASK
+#elif ASSERT_PIN(LIMIT_X) && !defined(LIMIT_X_IO_MASK)
 #define LIMIT_X_IO_MASK STEP0_IO_MASK
 #elif !defined(LIMIT_X_IO_MASK)
 #define LIMIT_X_IO_MASK STEP_UNDEF_IO_MASK
 #endif
-#if ASSERT_PIN(LIMIT_Y) && !defined(LIMIT_Y_IO_MASK) && (AXIS_COUNT > 1)
+#ifndef LIMIT_Y
+#undef LIMIT_Y_IO_MASK
+#define LIMIT_Y_IO_MASK STEP_UNDEF_IO_MASK
+#elif ASSERT_PIN(LIMIT_Y) && !defined(LIMIT_Y_IO_MASK) && (AXIS_COUNT > 1)
 #define LIMIT_Y_IO_MASK STEP1_IO_MASK
 #elif !defined(LIMIT_Y_IO_MASK)
 #define LIMIT_Y_IO_MASK STEP_UNDEF_IO_MASK
 #endif
-#if ASSERT_PIN(LIMIT_Z) && !defined(LIMIT_Z_IO_MASK) && (AXIS_COUNT > 2)
+#ifndef LIMIT_Z
+#undef LIMIT_Z_IO_MASK
+#define LIMIT_Z_IO_MASK STEP_UNDEF_IO_MASK
+#elif ASSERT_PIN(LIMIT_Z) && !defined(LIMIT_Z_IO_MASK) && (AXIS_COUNT > 2)
 #define LIMIT_Z_IO_MASK STEP2_IO_MASK
 #elif !defined(LIMIT_Z_IO_MASK)
 #define LIMIT_Z_IO_MASK STEP_UNDEF_IO_MASK
@@ -1776,17 +1785,26 @@ extern "C"
 #elif !defined(LIMIT_C_IO_MASK)
 #define LIMIT_C_IO_MASK STEP_UNDEF_IO_MASK
 #endif
-#if ASSERT_PIN(LIMIT_X2) && !defined(LIMIT_X2_IO_MASK)
+#ifndef LIMIT_X2
+#undef LIMIT_X2_IO_MASK
+#define LIMIT_X2_IO_MASK STEP_UNDEF_IO_MASK
+#elif ASSERT_PIN(LIMIT_X2) && !defined(LIMIT_X2_IO_MASK)
 #define LIMIT_X2_IO_MASK STEP0_IO_MASK
 #elif !defined(LIMIT_X2_IO_MASK)
 #define LIMIT_X2_IO_MASK STEP_UNDEF_IO_MASK
 #endif
-#if ASSERT_PIN(LIMIT_Y2) && !defined(LIMIT_Y2_IO_MASK)
+#ifndef LIMIT_Y2
+#undef LIMIT_Y2_IO_MASK
+#define LIMIT_Y2_IO_MASK STEP_UNDEF_IO_MASK
+#elif ASSERT_PIN(LIMIT_Y2) && !defined(LIMIT_Y2_IO_MASK)
 #define LIMIT_Y2_IO_MASK STEP1_IO_MASK
 #elif !defined(LIMIT_Y2_IO_MASK)
 #define LIMIT_Y2_IO_MASK STEP_UNDEF_IO_MASK
 #endif
-#if ASSERT_PIN(LIMIT_Z2) && !defined(LIMIT_Z2_IO_MASK)
+#ifndef LIMIT_Z2
+#undef LIMIT_Z2_IO_MASK
+#define LIMIT_Z2_IO_MASK STEP_UNDEF_IO_MASK
+#elif ASSERT_PIN(LIMIT_Z2) && !defined(LIMIT_Z2_IO_MASK)
 #define LIMIT_Z2_IO_MASK STEP2_IO_MASK
 #elif !defined(LIMIT_Z2_IO_MASK)
 #define LIMIT_Z2_IO_MASK STEP_UNDEF_IO_MASK
