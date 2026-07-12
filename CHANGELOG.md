@@ -6,6 +6,14 @@
 
 # Changelog
 
+## [1.16.5] - 03-06-2026
+
+### Fixed
+
+- Force tool stop on safety door open (#967)
+- Fixed realtime tool speed override (#965)
+- Modified override bypass logic (M48/M49) and fixed tool speed override intergration (#964)
+
 ## [1.16.4] - 16-05-2026
 
 ### Fixed

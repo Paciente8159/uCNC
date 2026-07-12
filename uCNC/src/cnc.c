@@ -595,6 +595,7 @@ void cnc_clear_exec_state(uint16_t statemask)
 {
 #ifndef DISABLE_ALL_CONTROLS
 	uint8_t controls = io_get_controls();
+	(void)controls;
 
 #if ASSERT_PIN(ESTOP) & (EMULATE_GRBL_STARTUP <= 2)
 	if (CHECKFLAG(controls, ESTOP_MASK)) // can't clear the alarm flag if ESTOP is active
@@ -841,6 +842,7 @@ void cnc_exec_rt_commands(void)
 		if (CHECKFLAG(command, RT_CMD_DOOR_CHANGED))
 		{
 			proto_feedback(MSG_FEEDBACK_6);
+			itp_stop_tools();
 #ifdef ENABLE_SAFETY_DOOR_PARKING
 			cnc_park();
 #endif

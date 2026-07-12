@@ -310,6 +310,7 @@ extern "C"
 #warning "Communication encoders added ENABLE_MAIN_LOOP_MODULES"
 #endif
 #endif
+
 #endif
 
 #ifndef STEPPERS_ENCODERS_MASK
