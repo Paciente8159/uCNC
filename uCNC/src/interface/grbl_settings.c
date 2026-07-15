@@ -299,6 +299,7 @@ void settings_init(void)
 		settings_reset(true);
 #endif
 		proto_error(STATUS_SETTING_READ_FAIL);
+		rom_memcpy(&g_settings, &default_settings, sizeof(settings_t));
 		proto_cnc_settings();
 	}
 }
