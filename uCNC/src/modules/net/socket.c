@@ -80,6 +80,7 @@ socket_if_t *socket_start_listen(uint32_t ip_listen, uint16_t port, int domain, 
 		}
 	}
 
+	memset(&raw_sockets[idx], 0, sizeof(raw_sockets[idx]));
 	raw_sockets[idx].socket_if = s;
 	memset(raw_sockets[idx].socket_clients, -1, sizeof(raw_sockets[idx].socket_clients));
 	return &raw_sockets[idx];
@@ -98,10 +99,14 @@ void socket_stop_listening(socket_if_t *socket)
 				socket->socket_clients[i] = -1;
 			}
 		}
+
+		if (socket_device->close)
+			socket_device->close(socket->socket_if);
 		socket->socket_if = -1;
 		socket->client_ondata_cb = NULL;
 		socket->client_onconnected_cb = NULL;
 		socket->client_ondisconnected_cb = NULL;
+		socket->client_onidle_cb = NULL;
 		socket->protocol = NULL;
 	}
 }
@@ -151,7 +156,19 @@ int socket_send(socket_if_t *socket, uint8_t client_idx, char *data, size_t data
 		return -1;
 	}
 
-	return socket_device->send(client, data, data_len, flags);
+	// return socket_device->send(client, data, data_len, flags);
+	int sent = 0;
+	do
+	{
+		int i = socket_device->send(client, data, data_len, flags);
+		if (i <= 0)
+			return (sent > 0) ? sent : i;
+		data = &data[i];
+		data_len -= i;
+		sent += i;
+	} while (data_len);
+
+	return sent;
 }
 
 int socket_broadcast(socket_if_t *socket, char *data, size_t data_len, int flags)
@@ -165,10 +182,8 @@ int socket_broadcast(socket_if_t *socket, char *data, size_t data_len, int flags
 	{
 		if (socket->socket_clients[i] >= 0)
 		{
-			if (socket_device->send(socket->socket_clients[i], data, data_len, flags) >= 0)
-			{
-				sent++;
-			}
+			int s = socket_send(socket, i, data, data_len, flags);
+			sent = MIN(sent, s);
 		}
 	}
 	return sent;
@@ -214,28 +229,35 @@ static void remove_client(socket_if_t *iface, int idx)
 			{
 				iface->client_ondisconnected_cb(idx, iface->protocol);
 			}
+#ifdef ENABLE_SOCKET_TIMEOUTS
+			iface->client_activity[idx] = 0;
+#endif
 			iface->socket_clients[idx] = -1;
 		}
 	}
 }
 
 // closes a connection to a client
-void socket_free(socket_if_t *socket, uint8_t client_idx)
+void socket_close(socket_if_t *socket, uint8_t client_idx)
 {
 	remove_client(socket, client_idx);
 }
 
 void socket_server_dotasks(void)
 {
+	static uint8_t srv_list = 0;
 	static uint8_t srv = 0;
 	static uint8_t clt = 0;
-	uint8_t i = srv;
+	uint8_t i = srv_list;
 	uint8_t c = clt;
+
+	if (!socket_device)
+		return;
 
 	socket_if_t *socket = &raw_sockets[i];
 	char buffer[SOCKET_MAX_DATA_SIZE + 1]; // space for a null character
 
-	if (socket->socket_if >= 0 && socket_device->accept)
+	if ((socket->socket_if >= 0) && (socket_device->accept != NULL))
 	{
 		/* Accept new clients if TCP */
 		int client_fd;
@@ -247,7 +269,15 @@ void socket_server_dotasks(void)
 		{
 			add_client(socket, client_fd);
 		}
+	}
 
+	i++;
+	srv_list = (i < MAX_SOCKETS) ? i : 0;
+
+	i = srv;
+	socket = &raw_sockets[i];
+	if ((socket->socket_if >= 0) && (socket_device->recv != NULL))
+	{
 /* Poll each client for data (non-blocking) */
 #ifdef ENABLE_SOCKET_TIMEOUTS
 		uint32_t now = mcu_millis();
@@ -273,7 +303,7 @@ void socket_server_dotasks(void)
 			{
 				remove_client(socket, c);
 			}
-			else if (!errno)
+			else
 			{
 				if (socket->client_onidle_cb)
 				{

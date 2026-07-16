@@ -368,7 +368,7 @@ void http_send(int client_idx, int code, const char *content_type, const char *d
 		if (!c->keep_alive)
 		{
 			// Close connection if not persistent
-			socket_free(http_srv, client_idx);
+			socket_close(http_srv, client_idx);
 			client_reset(client_idx); // full reset, frees slot
 		}
 		else

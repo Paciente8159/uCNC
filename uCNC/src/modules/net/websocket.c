@@ -337,7 +337,7 @@ static void ws_on_idle(uint8_t client_idx, uint32_t idle_ms, void *protocol)
 	websocket_protocol_t *ws = (websocket_protocol_t *)protocol;
 	if (ws->ws_clients[client_idx].status == WS_S_CLOSING)
 	{
-		socket_free(ws->ws_socket, client_idx);
+		socket_close(ws->ws_socket, client_idx);
 		ws_reset_client(&(ws->ws_clients[client_idx]));
 	}
 }

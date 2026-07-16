@@ -78,7 +78,7 @@ extern "C"
 		// int (*getsockopt)(int sockfd, int level, int optname, void *optval, int *optlen);
 		// int (*fcntl)(int fd, int cmd, long arg);
 		int (*recv)(int sockfd, void *buf, size_t len, int flags);
-		int (*send)(int sockfd, const void *buf, size_t len, int flags);
+		int (*send)(int sockfd, const void *buf, size_t len, int flags); /* should return len > 0, 0 if disconnect, or -1 if idle (EWOULDBLOCK or EAGAIN) */
 		int (*close)(int fd);
 	} socket_device_t;
 

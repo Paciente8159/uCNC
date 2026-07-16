@@ -80,7 +80,7 @@ int socket_send(socket_if_t *socket, uint8_t client_idx, char* data, size_t data
 // sends data to a specific socket interface to all clients
 int socket_broadcast(socket_if_t *socket, char* data, size_t data_len, int flags);
 // closes a connection to a client
-void socket_free(socket_if_t* socket, uint8_t client_idx);
+void socket_close(socket_if_t* socket, uint8_t client_idx);
 // runs the loop that handles new client accpts and handles each socket/client data handling (non blocking)
 void socket_server_dotasks(void);
 // returns the number of active clients in a socket. if socket is NULL returns all connected clients in all sockets

@@ -632,10 +632,11 @@ extern "C"
 		else if (up.status == HTTP_UPLOAD_PART)
 		{
 			received_bytes += up.datalen;
-			ESP_LOGD("OTA", "Recieved bytes: %ld", received_bytes);
+			ESP_LOGI("OTA", "Recieved bytes: %ld", received_bytes);
 			// Called for each chunk
 			if (Update.write(up.data, up.datalen) != up.datalen)
 			{
+				ESP_LOGI("OTA", "Reception error: %ld", up.datalen);
 				Update.printError(Serial);
 			}
 		}
