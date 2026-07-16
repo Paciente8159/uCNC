@@ -14,6 +14,9 @@
 	µCNC is distributed WITHOUT ANY WARRANTY;
 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
+
+	** Also see for pin assign **
+	https://github.com/makerbase-mks/MKS-Monster8/blob/main/hardware/MKS%20Monster8%20V2.0_003/MKS%20Monster8%20V2.0_003%20PIN.pdf
 */
 
 #ifndef BOARDMAP_MKS_MONSTER8_V2_H
@@ -127,8 +130,18 @@ extern "C"
 
 // Setup COM pins
 #define UART_PORT 1
+#define TX_BIT 9
+#define TX_PORT A
+#define RX_BIT 10
+#define RX_PORT A
+
 #define UART2_PORT 0
+
 #define I2C_PORT 1
+#define I2C_CLK_BIT 8
+#define I2C_CLK_PORT B
+#define I2C_DATA_BIT 9
+#define I2C_DATA_PORT B
 
 #define USB_DM_BIT 11
 #define USB_DM_PORT A
@@ -136,32 +149,40 @@ extern "C"
 #define USB_DP_PORT A
 
 // Setup PWM
-#define PWM0_BIT 1
+#define PWM0_BIT 1     // HE0 connector
 #define PWM0_PORT B
 #define PWM0_CHANNEL 4
-#define PWM0_TIMER 3
-#define PWM1_BIT 0
+#define PWM0_TIMER 3 
+#define PWM1_BIT 0     // HE1 connector
 #define PWM1_PORT B
 #define PWM1_CHANNEL 3
 #define PWM1_TIMER 3
-#define PWM2_BIT 3
+#define PWM2_BIT 3     // HE2 connector
 #define PWM2_PORT A
 #define PWM2_CHANNEL 4
 #define PWM2_TIMER 5
-#define PWM3_BIT 10
+#define PWM3_BIT 10    // H-BED connector
 #define PWM3_PORT B
 #define PWM3_CHANNEL 3
 #define PWM3_TIMER 2
 
+// digital out
+#define DOUT0_BIT 2   // FAN0 connector
+#define DOUT0_PORT A
+#define DOUT1_BIT 1   // FAN1 connector
+#define DOUT1_PORT A
+#define DOUT2_BIT 0   // FAN2 connector
+#define DOUT2_PORT A
+
 // spindle dir
 // analog input
-#define ANALOG0_BIT 0
+#define ANALOG0_BIT 0        // TB connector
 #define ANALOG0_PORT C
 #define ANALOG0_CHANNEL 10
-#define ANALOG1_BIT 1
+#define ANALOG1_BIT 1        // TH0 connector
 #define ANALOG1_PORT C
 #define ANALOG1_CHANNEL 11
-#define ANALOG2_BIT 2
+#define ANALOG2_BIT 2        // TH1 connector
 #define ANALOG2_PORT C
 #define ANALOG2_CHANNEL 12
 #define ANALOG3_CHANNEL -1
@@ -179,7 +200,7 @@ extern "C"
 #define ANALOG15_CHANNEL -1
 
 
-#define SERVO0_BIT 8
+#define SERVO0_BIT 8    // 3DTOUCH connector
 #define SERVO0_PORT A
 
 // Setup the Step Timer used has the heartbeat for µCNC
@@ -211,12 +232,6 @@ extern "C"
 #define SPI2_SDI_BIT 6
 #define SPI2_SDI_PORT A
 #define SPI2_PORT 1
-
-#define I2C_CLK_BIT 8
-#define I2C_CLK_PORT B
-#define I2C_DATA_BIT 9
-#define I2C_DATA_PORT B
-#define I2C_PORT 1
 
 #define ONESHOT_TIMER 8
 
