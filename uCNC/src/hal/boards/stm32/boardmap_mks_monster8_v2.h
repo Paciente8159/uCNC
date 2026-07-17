@@ -1,10 +1,10 @@
 /*
-	Name: boardmap_mks_robin_nano_v1_2.h
-	Description: Contains all MCU and PIN definitions for board MKS Robin Nano V1.2 to run µCNC.
+	Name: boardmap_mks_monster8_v2.h
+	Description: Contains all MCU and PIN definitions for board MKS Monster8 to run µCNC.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 04/02/2020
+	Copyright: Copyright (c) Takuo Nakano
+	Author: Takuo Nakano
+	Date: 17/07/2026
 
 	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
