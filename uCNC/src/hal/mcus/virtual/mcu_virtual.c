@@ -780,20 +780,24 @@ extern "C"
 			// Called for each chunk
 			fwrite(up.data, up.datalen, 1, otafile);
 			received_bytes += up.datalen;
-			printf("Writing data: %lu/%lu bytes\r\n", up.datalen, received_bytes);
+			printf("Writing data: %lu/%lu/%lu bytes\r\n", up.datalen, received_bytes, up.filelen);
 		}
 		else if (up.status == HTTP_UPLOAD_END)
 		{
+			fflush(otafile);
 			fclose(otafile);
+			otafile = NULL;
 			const char fmt[] = "text/plain";
-			printf("Update Success: %lu bytes\r\n", received_bytes);
+			printf("Update Success: %lu/%lu bytes\r\n", received_bytes, up.filelen);
 			const char suc[] = "Update Success! Rebooting...";
 			http_send_str(client_idx, 200, (char *)fmt, (char *)suc);
 			http_send(client_idx, 200, (char *)fmt, NULL, 0);
 		}
 		else if (up.status == HTTP_UPLOAD_ABORT)
 		{
+			fflush(otafile);
 			fclose(otafile);
+			otafile = NULL;
 			printf("Update aborted\r\n");
 		}
 	}

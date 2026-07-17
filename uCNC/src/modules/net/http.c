@@ -63,13 +63,6 @@ typedef struct
 	bool have_reqline;
 	bool have_headers;
 	size_t hlen;
-	// char hbuf[HTTP_HEADER_BUF_SIZE];
-
-	// not necessary
-	/* Small chunk buffer surfaced to app */
-	// uint8_t up_buf[HTTP_UPLOAD_BUF_SIZE];
-	// size_t up_len;
-	// uint8_t up_status; /* HTTP_UPLOAD_* */
 
 	/* Response bookkeeping */
 	bool headers_sent;
@@ -474,7 +467,6 @@ static void maybe_invoke_file_handler(int client_idx)
 
 static void handle_upload_bytes(int client_idx, char **buf, size_t *len)
 {
-	static size_t filelen = 0;
 	http_client_t *c = &clients[client_idx];
 	if (!c->upl.status || c->upl.boundary_len == 0 || *len == 0)
 		return;
@@ -491,9 +483,14 @@ static void handle_upload_bytes(int client_idx, char **buf, size_t *len)
 		c->upl.status = REQ_UPLOAD_START;
 		c->fileupl.status = HTTP_UPLOAD_START;
 		c->fileupl.filename = c->upl.upload_name;
-		filelen = c->upl.upload_len;
-		c->fileupl.datalen = c->upl.upload_len;
+		c->fileupl.filelen = c->upl.upload_len;
+		c->fileupl.datalen = 0;
 		maybe_invoke_file_handler(client_idx);
+		// check if file was aborted or not
+		if (!c->route)
+		{
+			return;
+		}
 	}
 
 	// Stream file data until boundary
@@ -514,6 +511,11 @@ static void handle_upload_bytes(int client_idx, char **buf, size_t *len)
 			c->fileupl.status = HTTP_UPLOAD_PART;
 			c->fileupl.data = (uint8_t *)buffer;
 			maybe_invoke_file_handler(client_idx);
+			// check if file was aborted or not
+			if (!c->route)
+			{
+				return;
+			}
 			c->upl.upload_len -= c->fileupl.datalen;
 			*buf = &buffer[c->fileupl.datalen];
 			buffer = *buf;
@@ -522,8 +524,8 @@ static void handle_upload_bytes(int client_idx, char **buf, size_t *len)
 		else if (!c->upl.upload_len)
 		{
 			c->fileupl.status = HTTP_UPLOAD_END;
-			c->fileupl.datalen = filelen;
-			maybe_invoke_file_handler(client_idx);
+			c->fileupl.data = NULL;
+			c->fileupl.datalen = 0;
 			c->upl.status = REQ_UPLOAD_FINISH;
 			if (!c->upl.boundary_len)
 			{
@@ -532,6 +534,12 @@ static void handle_upload_bytes(int client_idx, char **buf, size_t *len)
 				return;
 			}
 			append_str(c->upl.boundary, (char *)"--");
+			maybe_invoke_file_handler(client_idx);
+			// check if file was aborted or not
+			if (!c->route)
+			{
+				return;
+			}
 		}
 	}
 

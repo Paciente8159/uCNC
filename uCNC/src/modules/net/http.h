@@ -48,6 +48,7 @@ extern "C"
 		char *filename; /* sanitized base name */
 		uint8_t *data;	/* pointer to current chunk buffer */
 		size_t datalen; /* current chunk size */
+		size_t filelen; /* the total file size */
 	} http_upload_t;
 
 	typedef void (*http_delegate)(int client_idx);

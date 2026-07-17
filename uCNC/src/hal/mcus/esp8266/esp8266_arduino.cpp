@@ -525,9 +525,22 @@ extern "C"
 			// Called once at start of upload
 			proto_printf("Update start: %s\n", up.filename);
 			uint32_t maxSketchSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
+			if (maxSketchSpace < up.filelen)
+			{
+				ESP_LOGI("OTA", "File size of %ld exceeds available space: %ld", maxSketchSpace);
+				// Update.printError(Serial);
+				const char fail[] = "Update Failed: File too big!";
+				http_send_str(client_idx, 413, (char *)type_text, (char *)fail);
+				http_send(client_idx, 413, (char *)type_text, NULL, 0);
+				return;
+			}
 			if (!Update.begin(maxSketchSpace, U_FLASH))
 			{
 				Update.printError(Serial);
+				const char fail[] = "Update Failed: Update start failed!";
+				http_send_str(client_idx, 422, (char *)type_text, (char *)fail);
+				http_send(client_idx, 422, (char *)type_text, NULL, 0);
+				return;
 			}
 		}
 		else if (up.status == HTTP_UPLOAD_PART)
@@ -536,6 +549,10 @@ extern "C"
 			if (Update.write(up.data, up.datalen) != up.datalen)
 			{
 				Update.printError(Serial);
+				const char fail[] = "Update Failed: Update data error!";
+				http_send_str(client_idx, 500, (char *)type_text, (char *)fail);
+				http_send(client_idx, 500, (char *)type_text, NULL, 0);
+				return;
 			}
 		}
 		else if (up.status == HTTP_UPLOAD_END)
@@ -547,11 +564,6 @@ extern "C"
 				const char suc[] = "Update Success! Rebooting...";
 				http_send_str(client_idx, 200, (char *)type_text, (char *)suc);
 				http_send(client_idx, 200, (char *)type_text, NULL, 0);
-#ifdef FLASH_FS
-				FLASH_FS.end();
-#endif
-				delay(100);
-				ESP.restart();
 			}
 			else
 			{
@@ -559,6 +571,12 @@ extern "C"
 				http_send_str(client_idx, 500, (char *)type_text, (char *)fail);
 				http_send(client_idx, 500, (char *)type_text, NULL, 0);
 			}
+
+#ifdef FLASH_FS
+			FLASH_FS.end();
+#endif
+			delay(100);
+			ESP.restart();
 		}
 		else if (up.status == HTTP_UPLOAD_ABORT)
 		{

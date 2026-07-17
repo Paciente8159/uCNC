@@ -541,6 +541,10 @@ static void ota_upload_cb(int client_idx)
 		if (!Update.begin(up.datalen, U_FLASH))
 		{
 			Update.printError(Serial);
+			const char fail[] = "Update Failed: Update start failed!";
+			http_send_str(client_idx, 422, (char *)type_text, (char *)fail);
+			http_send(client_idx, 422, (char *)type_text, NULL, 0);
+			return;
 		}
 	}
 	else if (up.status == HTTP_UPLOAD_PART)
@@ -549,6 +553,10 @@ static void ota_upload_cb(int client_idx)
 		if (Update.write(up.data, up.datalen) != up.datalen)
 		{
 			Update.printError(Serial);
+			const char fail[] = "Update Failed: Update data error!";
+			http_send_str(client_idx, 500, (char *)type_text, (char *)fail);
+			http_send(client_idx, 500, (char *)type_text, NULL, 0);
+			return;
 		}
 	}
 	else if (up.status == HTTP_UPLOAD_END)
@@ -560,9 +568,6 @@ static void ota_upload_cb(int client_idx)
 			proto_printf("Update Success: %lu bytes\r\n", up.datalen);
 			http_send_str(client_idx, 200, (char *)type_text, (char *)suc);
 			http_send(client_idx, 200, (char *)type_text, NULL, 0);
-#ifdef FLASH_FS
-			FLASH_FS.end();
-#endif
 		}
 		else
 		{
@@ -572,6 +577,9 @@ static void ota_upload_cb(int client_idx)
 			http_send(client_idx, 500, (char *)type_text, NULL, 0);
 		}
 
+#ifdef FLASH_FS
+		FLASH_FS.end();
+#endif
 		cnc_delay_ms(100);
 		rp2040.reboot();
 	}
