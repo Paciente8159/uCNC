@@ -527,7 +527,7 @@ extern "C"
 			uint32_t maxSketchSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
 			if (maxSketchSpace < up.filelen)
 			{
-				ESP_LOGI("OTA", "File size of %ld exceeds available space: %ld", maxSketchSpace);
+				// ESP_LOGI("OTA", "File size of %ld exceeds available space: %ld", maxSketchSpace);
 				// Update.printError(Serial);
 				const char fail[] = "Update Failed: File too big!";
 				http_send_str(client_idx, 413, (char *)type_text, (char *)fail);
