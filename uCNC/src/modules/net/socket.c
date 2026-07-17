@@ -334,17 +334,15 @@ void socket_server_dotasks(void)
 int socket_server_hasclients(socket_if_t *socket)
 {
 	int clients = 0;
-	for (int i = 0; i < MAX_SOCKETS; i++)
+	if (socket != NULL)
 	{
-		socket_if_t *s = &raw_sockets[i];
-		if (s == socket || !socket)
-			for (int c = 0; c < SOCKET_MAX_CLIENTS; c++)
+		for (int c = 0; c < SOCKET_MAX_CLIENTS; c++)
+		{
+			if (socket->socket_clients[c] >= 0)
 			{
-				if (s->socket_clients[c] >= 0)
-				{
-					clients++;
-				}
+				clients++;
 			}
+		}
 	}
 
 	return clients;

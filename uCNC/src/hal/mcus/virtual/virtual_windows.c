@@ -562,7 +562,6 @@ extern "C"
 
     static int bsd_recv(int sockfd, void *buf, size_t len, int flags)
     {
-        // return recv(sockfd, (char *)buf, (int)len, flags);
         int bytes = recv(sockfd, (char *)buf, (int)len, flags);
         switch (errno)
         {
