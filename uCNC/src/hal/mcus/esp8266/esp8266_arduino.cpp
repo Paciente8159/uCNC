@@ -700,7 +700,7 @@ extern "C"
 	void esp8266_wifi_dotasks(void)
 	{
 		esp8266_wifi_clientok();
-		yield();
+		esp_yield();
 	}
 }
 
