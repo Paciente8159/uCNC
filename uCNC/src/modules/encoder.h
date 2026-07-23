@@ -81,7 +81,6 @@ extern "C"
 	void encoder_virtual_index_update(uint8_t i);
 	void encoder_record_index_reference(uint8_t i, int32_t position);
 	void encoder_invoke_index(uint8_t i);
-	int32_t enc_custom_read(uint8_t i);
 
 #ifdef __cplusplus
 }
