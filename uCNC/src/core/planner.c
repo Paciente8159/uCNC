@@ -302,10 +302,8 @@ static void planner_buffer_clear(void)
 void planner_init(void)
 {
 #ifdef FORCE_GLOBALS_TO_0
-#if TOOL_COUNT > 0
-	planner_state.planner_spindle = 0;
-	planner_state.coolant = 0;
-#endif
+	memset(planner_data, 0, sizeof(planner_data));
+	memset(&g_planner_state, 0, sizeof(g_planner_state));
 #endif
 	planner_buffer_clear();
 	planner_feed_ovr(100);
