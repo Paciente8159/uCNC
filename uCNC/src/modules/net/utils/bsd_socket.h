@@ -59,11 +59,11 @@ extern "C"
  * If not the macros should be replaced by a simply passing the value
  */
 #ifndef bsd_htons
-#define bsd_htons(x)((uint16_t)(((x & 0x00ffu) << 8) | ((x & 0xff00u) >> 8)))
+#define bsd_htons(x) ((uint16_t)(((x & 0x00ffu) << 8) | ((x & 0xff00u) >> 8)))
 #endif
 
 #ifndef bsd_htonl
-#define bsd_htonl(x)((uint32_t)(((x & 0x000000ffUL) << 24) | ((x & 0x0000ff00UL) << 8) | ((x & 0x00ff0000UL) >> 8) | ((x & 0xff000000UL) >> 24)))
+#define bsd_htonl(x) ((uint32_t)(((((uint32_t)x) & 0x000000ffUL) << 24) | ((((uint32_t)x) & 0x0000ff00UL) << 8) | ((((uint32_t)x) & 0x00ff0000UL) >> 8) | ((((uint32_t)x) & 0xff000000UL) >> 24)))
 #endif
 
 	/* Socket API prototypes — These must be implemented either in the MCU of for a specific module driver to provide the TCP/IP stack interface */

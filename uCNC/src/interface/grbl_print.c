@@ -176,13 +176,17 @@ size_t prt_flt(void *out, size_t maxlen, float num, uint8_t precision)
 size_t prt_ip(void *out, size_t maxlen, uint32_t ip)
 {
 	uint8_t *ptr = (uint8_t *)&ip;
-	maxlen = prt_int(out, maxlen, (int32_t)ptr[3], 0);
+	uint32_t b = (uint32_t)(ptr[0] & 0xff);
+	maxlen = prt_int(out, maxlen, b, 0);
 	maxlen = prt_putc(out, maxlen, '.');
-	maxlen = prt_int(out, maxlen, (int32_t)ptr[2], 0);
+	b = (uint32_t)(ptr[1] & 0xff);
+	maxlen = prt_int(out, maxlen, b, 0);
 	maxlen = prt_putc(out, maxlen, '.');
-	maxlen = prt_int(out, maxlen, (int32_t)ptr[1], 0);
+	b = (uint32_t)(ptr[2] & 0xff);
+	maxlen = prt_int(out, maxlen, b, 0);
 	maxlen = prt_putc(out, maxlen, '.');
-	maxlen = prt_int(out, maxlen, (int32_t)ptr[0], 0);
+	b = (uint32_t)(ptr[3] & 0xff);
+	maxlen = prt_int(out, maxlen, b, 0);
 
 	return maxlen;
 }
@@ -332,7 +336,7 @@ size_t prt_fmtva(void *out, size_t maxlen, const char *fmt, va_list *args)
 						maxlen = prt_byte(out, maxlen, (const uint8_t *)pt, (hexflags | lcount));
 						break;
 					case 'I':
-						maxlen = prt_ip(out, maxlen, li);
+						maxlen = prt_ip(out, maxlen, ((uint32_t)li));
 						break;
 					default:
 #endif
