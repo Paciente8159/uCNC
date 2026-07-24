@@ -622,7 +622,7 @@ extern "C"
 
 		extern socket_if_t *telnet_sock;
 		extern const telnet_protocol_t telnet_proto;
-		telnet_sock = telnet_start_listen(&telnet_proto, 23);
+		telnet_sock = telnet_start_listen((telnet_protocol_t *)&telnet_proto, 23);
 		ota_server_start();
 #endif
 	}
@@ -640,7 +640,7 @@ extern "C"
 		printf("Creating simuli file\n\r");
 		stimuli = fopen("stimuli.vcd", "w+");
 		if (stimuli)
-			fprintf(stimuli, "$timescale 1us $end\n$scope module logic $end\n", tickcount);
+			fprintf(stimuli, "$timescale 1us $end\n$scope module logic $end\n");
 		def_printpin(STEP0);
 		def_printpin(DIR0);
 		def_printpin(STEP1);
@@ -650,7 +650,7 @@ extern "C"
 		def_printpin(STEP3);
 		def_printpin(DIR3);
 		if (stimuli)
-			fprintf(stimuli, "$upscope $end\n$enddefinitions $end\n\n", tickcount);
+			fprintf(stimuli, "$upscope $end\n$enddefinitions $end\n\n");
 
 		virtualmap.special_outputs = 0;
 		virtualmap.special_inputs = 0;
@@ -780,7 +780,7 @@ extern "C"
 			// Called for each chunk
 			fwrite(up.data, up.datalen, 1, otafile);
 			received_bytes += up.datalen;
-			printf("Writing data: %lu/%lu/%lu bytes\r\n", up.datalen, received_bytes, up.filelen);
+			printf("Writing data: %u/%u/%u bytes\r\n", up.datalen, received_bytes, up.filelen);
 		}
 		else if (up.status == HTTP_UPLOAD_END)
 		{
@@ -788,7 +788,7 @@ extern "C"
 			fclose(otafile);
 			otafile = NULL;
 			const char fmt[] = "text/plain";
-			printf("Update Success: %lu/%lu bytes\r\n", received_bytes, up.filelen);
+			printf("Update Success: %u/%u bytes\r\n", received_bytes, up.filelen);
 			const char suc[] = "Update Success! Rebooting...";
 			http_send_str(client_idx, 200, (char *)fmt, (char *)suc);
 			http_send(client_idx, 200, (char *)fmt, NULL, 0);
