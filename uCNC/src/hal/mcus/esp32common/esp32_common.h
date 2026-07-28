@@ -68,7 +68,7 @@ extern "C"
 	if (!xPortInIsrContext()) \
 	vPortYield()
 
-#define __FREERTOS_BIN_SEMPH_TAKE__(mutex, timeout) ((xPortInIsrContext()) ? (xSemaphoreTakeFromISR(mutex, NULL)) : (xSemaphoreTake(mutex, timeout)))
+#define __FREERTOS_BIN_SEMPH_TAKE__(mutex, timeout) (((xPortInIsrContext()) ? (xSemaphoreTakeFromISR(mutex, NULL)) : (xSemaphoreTake(mutex, timeout))) == pdTRUE)
 #define __FREERTOS_BIN_SEMPH_GIVE__(mutex) ((xPortInIsrContext()) ? (xSemaphoreGiveFromISR(mutex, NULL)) : (xSemaphoreGive(mutex)))
 
 #define DECL_MUTEX(name) SemaphoreHandle_t name##_semph_lock = NULL
@@ -78,10 +78,14 @@ extern "C"
 #define BIN_SEMPH_UNLOCKED false
 
 #define BIN_SEMPH_INIT(name, locked)                        \
-	if (name##_semph_lock == BIN_SEMPH_UNDEF)               \
+	if (name##_semph_lock == NULL)                          \
 	{                                                       \
 		name##_semph_lock = xSemaphoreCreateBinary();       \
 		if ((locked))                                       \
+		{                                                   \
+			__FREERTOS_BIN_SEMPH_TAKE__(name##_semph_lock, 0); \
+		}                                                   \
+		else                                                \
 		{                                                   \
 			__FREERTOS_BIN_SEMPH_GIVE__(name##_semph_lock); \
 		}                                                   \

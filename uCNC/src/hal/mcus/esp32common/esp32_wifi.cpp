@@ -801,9 +801,7 @@ static void mcu_wifi_task(void *arg)
 	{
 		if (wifi_settings.wifi_on)
 		{
-#if defined(ENABLE_SOCKETS)
 			socket_server_dotasks();
-#endif
 		}
 		vTaskDelay(1);
 	}
@@ -864,7 +862,7 @@ extern "C"
 			settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
 		}
 
-		xTaskCreatePinnedToCore(mcu_wifi_task, "wifiTask", 8192, NULL, 1, NULL, CONFIG_ARDUINO_RUNNING_CORE);
+		xTaskCreatePinnedToCore(mcu_wifi_task, "wifiTask", 8192, NULL, 1, NULL, 0);
 #endif
 
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
