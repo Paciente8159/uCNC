@@ -160,26 +160,30 @@ extern "C"
 #define BIN_SEMPH_UNLOCKED 0
 
 #ifndef ATOMIC_TYPE
-#define ATOMIC_TYPE volatile uint8_t
+#define ATOMIC_TYPE uint8_t
 #endif
 
 // mutex
 #define DECL_MUTEX(name) volatile ATOMIC_TYPE name = BIN_SEMPH_UNDEF
-#define BIN_SEMPH_INIT(name, locked) ({int8_t name##_semph_temp = BIN_SEMPH_UNDEF; ATOMIC_COMPARE_EXCHANGE_N(&name, &name##_semph_temp, (locked), __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE); })
-#define BIN_SEMPH_UNLOCK(name) ({int8_t name##_semph_temp = BIN_SEMPH_LOCKED; ATOMIC_COMPARE_EXCHANGE_N(&name, &name##_semph_temp, BIN_SEMPH_UNLOCKED, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE); })
+#define BIN_SEMPH_INIT(name, locked) ({ATOMIC_TYPE name##_semph_temp = BIN_SEMPH_UNDEF; ATOMIC_COMPARE_EXCHANGE_N(&name, &name##_semph_temp, (locked), __ATOMIC_RELEASE, __ATOMIC_RELAXED); })
+#define BIN_SEMPH_UNLOCK(name) ({ATOMIC_TYPE name##_semph_temp = BIN_SEMPH_LOCKED; ATOMIC_COMPARE_EXCHANGE_N(&name, &name##_semph_temp, BIN_SEMPH_UNLOCKED, __ATOMIC_RELEASE, __ATOMIC_RELAXED); })
+
+	static FORCEINLINE bool semph_try_safe_lock(ATOMIC_TYPE *lock)
+	{
+		ATOMIC_TYPE expected = BIN_SEMPH_UNLOCKED;
+		return ATOMIC_COMPARE_EXCHANGE_N(lock, &expected, BIN_SEMPH_LOCKED, __ATOMIC_RELEASE, __ATOMIC_RELAXED);
+	}
+
 	static FORCEINLINE bool semph_safe_lock(ATOMIC_TYPE *lock, uint32_t timeout)
 	{
 		// converts to us
-		if (timeout > (UINT32_MAX / 1000))
-		{
+		if (timeout <= (UINT32_MAX / 1000))
 			timeout *= 1000;
-		}
 
 		uint32_t now = mcu_free_micros();
 		for (;;)
 		{
-			ATOMIC_TYPE expected = BIN_SEMPH_UNLOCKED;
-			if (ATOMIC_COMPARE_EXCHANGE_N(lock, &expected, BIN_SEMPH_LOCKED, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE))
+			if (semph_try_safe_lock(lock))
 			{
 				return true;
 			}
@@ -199,8 +203,10 @@ extern "C"
 		return false;
 	}
 #define BIN_SEMPH_TIMEDLOCK(name, timeout_ms) semph_safe_lock(&name, timeout_ms)
-#define BIN_SEMPH_LOCK(name) BIN_SEMPH_TIMEDLOCK(name, 0xFFFFFFFF)
-#define BIN_SEMPH_TRYLOCK(name) BIN_SEMPH_TIMEDLOCK(name, 0)
+#define BIN_SEMPH_LOCK(name)              \
+	while (!semph_try_safe_lock(&(name))) \
+	TASK_YIELD()
+#define BIN_SEMPH_TRYLOCK(name) semph_try_safe_lock(&(name))
 #endif
 
 #ifdef __cplusplus

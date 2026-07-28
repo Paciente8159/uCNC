@@ -801,7 +801,7 @@ static void mcu_wifi_task(void *arg)
 	{
 		if (wifi_settings.wifi_on)
 		{
-#if defined(ENABLE_SOCKETS) && defined(MCU_HAS_RTOS)
+#if defined(ENABLE_SOCKETS)
 			socket_server_dotasks();
 #endif
 		}

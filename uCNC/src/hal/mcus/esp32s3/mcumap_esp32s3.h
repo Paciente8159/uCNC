@@ -4467,6 +4467,7 @@ extern "C"
 #define BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 #endif
 #define MCU_HAS_RTOS
+#define sockets_dotasks() ({})
 #endif
 #ifdef ENABLE_BLUETOOTH
 #define MCU_HAS_BLUETOOTH
