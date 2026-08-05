@@ -503,7 +503,11 @@ extern "C"
 
 	size_t flash_fs_read(fs_file_t *fp, uint8_t *buffer, size_t len)
 	{
-		return fileptr_t(fp->file_ptr).read(buffer, len);
+		size_t min = fileptr_t(fp->file_ptr).available();
+		len = MIN(len, min);
+		if (min != 0)
+			fileptr_t(fp->file_ptr).read(buffer, len);
+		return len;
 	}
 
 	size_t flash_fs_write(fs_file_t *fp, const uint8_t *buffer, size_t len)

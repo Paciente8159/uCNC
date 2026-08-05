@@ -42,6 +42,10 @@ extern "C"
 #define FS_PATH_NAME_MAX_LEN 256
 #endif
 
+#ifndef HTTP_MAX_CHUNCK_LEN
+#define HTTP_MAX_CHUNCK_LEN SOCKET_MAX_DATA_SIZE
+#endif
+
 	typedef struct http_upload_
 	{
 		uint8_t status; /* HTTP_UPLOAD_* */
@@ -72,7 +76,7 @@ extern "C"
 		http_send(client_idx, code, content_type, data, data ? strlen(data) : 0);
 	}
 	void http_send_header(int client_idx, const char *name, const char *data, bool first);
-	bool http_send_file(int client_idx, char *file_path, char *content_type);
+	bool http_send_file(int client_idx, const char *file_path, const char *content_type);
 
 	/* Upload helpers (polled by file_handler) */
 	http_upload_t http_file_upload_status(int client_idx);

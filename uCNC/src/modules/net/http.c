@@ -177,7 +177,7 @@ void http_add(const char *uri, uint8_t method, http_delegate request_handler, ht
 	for (size_t i = 0; i < route_count; i++)
 	{
 		// check if handler already exists
-		if (!strncasecmp_local(routes[i].uri, uri, strlen(uri)) /*&& (strlen(uri)==strlen(routes[i].uri))*/ && (routes[i].method == method))
+		if (!strncasecmp_local(routes[i].uri, uri, strlen(uri)) && (strlen(uri) == strlen(routes[i].uri)) && (routes[i].method == method))
 		{
 			return;
 		}
@@ -373,7 +373,7 @@ void http_send(int client_idx, int code, const char *content_type, const char *d
 	}
 }
 
-bool http_send_file(int client_idx, char *file_path, char *content_type)
+bool http_send_file(int client_idx, const char *file_path, const char *content_type)
 {
 	http_client_t *c = &clients[client_idx];
 	if (!c || client_idx < 0 || !file_path)
