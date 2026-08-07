@@ -632,6 +632,7 @@ extern "C" void __attribute__((weak)) mcu_network_init(void)
 #ifdef USE_STATIC_IP
 	WiFi.config(local_IP, gateway, gateway, subnet);
 #endif
+	WiFi.mode(WIFI_AP);
 	WiFi.begin((char *)BOARD_NAME, (char *)WIFI_PASS);
 	extern socket_device_t wifi_socket;
 	socket_register_device(&wifi_socket);

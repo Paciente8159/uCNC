@@ -654,7 +654,7 @@ extern "C"
         return socket(domain, type, protocol);
     }
 
-    static int bsd_bind(int sockfd, const struct bsd_sockaddr_in *addr, socklen_t addrlen)
+    static int bsd_bind(int sockfd, const struct sockaddr_in_ *addr, socklen_t addrlen)
     {
         if (bind(sockfd, (const struct sockaddr *)addr, addrlen) < 0)
         {
@@ -674,7 +674,7 @@ extern "C"
         return listen(sockfd, backlog);
     }
 
-    static int bsd_accept(int sockfd, struct bsd_sockaddr_in *addr, socklen_t *addrlen)
+    static int bsd_accept(int sockfd, struct sockaddr_in_ *addr, socklen_t *addrlen)
     {
         return accept(sockfd, (struct sockaddr *)addr, addrlen);
     }

@@ -26,7 +26,7 @@ extern "C"
 
 #include <stdlib.h>
 #include <stdint.h>
-#include "utils/bsd_socket.h"
+#include "utils/socket_device.h"
 #include "../../module.h"
 
 #ifndef MAX_SOCKETS
@@ -56,8 +56,8 @@ typedef void (*socket_connect_delegate)(uint8_t client_idx, void* protocol);
 typedef void (*socket_idle_delegate)(uint8_t client_idx, uint32_t idle_ms, void* protocol);
 
 typedef struct socket_if_{
-	int socket_if;
-	int socket_clients[SOCKET_MAX_CLIENTS];
+	socket_handle_t socket_if;
+	socket_handle_t socket_clients[SOCKET_MAX_CLIENTS];
 	#ifdef ENABLE_SOCKET_TIMEOUTS
 	uint32_t client_activity[SOCKET_MAX_CLIENTS];
 	#endif
@@ -68,7 +68,7 @@ typedef struct socket_if_{
 	void* protocol;
 } socket_if_t;
 
-// creates a new socket connection and starts to listen for new clients (non blocking). Returns -1 if it fails. Otherwise returns the socket interface number (from bsd_socket)
+// creates a new socket connection and starts to listen for new clients (non blocking). Returns NULL if it fails. Otherwise returns the socket interface
 socket_if_t* socket_start_listen(uint32_t ip_listen, uint16_t port, int domain, int type, int protocol);
 void socket_stop_listening(socket_if_t* socket);
 void socket_add_ondata_handler(socket_if_t* socket, socket_data_delegate callback);
@@ -88,7 +88,8 @@ void socket_server_dotasks(void);
 #endif
 // returns the number of active clients in a socket. if socket is NULL returns all connected clients in all sockets
 int socket_server_hasclients(socket_if_t* socket);
-void socket_register_device(socket_device_t *device);
+bool socket_register_device(socket_device_t *device);
+int socket_get_clientindex(socket_if_t *socket, socket_handle_t socket_fd);
 // initializes sockets server
 DECL_MODULE(socket_server);
 
