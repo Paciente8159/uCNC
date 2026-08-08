@@ -56,17 +56,17 @@ extern "C"
 #define O_NONBLOCK 0x800
 #endif
 
-	typedef union ipv4_addr_
+	typedef union ipv4_address_
 	{
 		uint32_t ip;
 		uint8_t octets[4];
-	} ipv4_addr_t;
+	} ipv4_address_t;
 
 	typedef struct __attribute__((__packed__)) sockaddr_in_
 	{
 		uint16_t sin_family;
 		uint16_t sin_port;
-		ipv4_addr_t sin_addr;
+		ipv4_address_t sin_addr;
 		unsigned char sin_zero[8];
 	} sockaddr_in_t;
 
