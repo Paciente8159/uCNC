@@ -34,7 +34,6 @@ extern "C"
 #include <stdint.h>
 #include <stdio.h>
 #include "lwip/pbuf.h"
-#include "../../../modules/net/utils/bsd_socket.h"
 #include "../../../modules/net/socket.h"
 
 #ifndef BSD_MAX_FDS

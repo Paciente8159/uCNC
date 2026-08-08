@@ -353,6 +353,15 @@ FORCEINLINE static uint8_t itp_get_linact_dirs(uint8_t mask)
 	return 0;
 }
 
+void itp_unlock(bool *lock)
+{
+#ifdef MCU_HAS_RTOS
+	BIN_SEMPH_UNLOCK(itp_mutex);
+#else
+	itp_mutex = 0;
+#endif
+}
+
 void itp_run(void)
 {
 	// conversion vars
@@ -393,6 +402,7 @@ void itp_run(void)
 	itp_mutex = 1;
 #endif
 
+	bool release_mutex __attribute__((__cleanup__(itp_unlock), unused));
 	planner_block_t *block = itp_cur_plan_block;
 	itp_segment_t *sgm = NULL;
 
@@ -849,12 +859,6 @@ void itp_run(void)
 	itp_start(start_is_synched);
 #else
 	itp_start(false);
-#endif
-
-#ifdef MCU_HAS_RTOS
-	BIN_SEMPH_UNLOCK(itp_mutex);
-#else
-	itp_mutex = 0;
 #endif
 }
 
