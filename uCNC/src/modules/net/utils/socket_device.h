@@ -47,41 +47,6 @@ extern "C"
 #define SOCK_RAW 3
 #endif
 
-	/* constants */
-
-#ifndef F_SETFL
-#define F_SETFL 0x800
-#endif
-#ifndef O_NONBLOCK
-#define O_NONBLOCK 0x800
-#endif
-
-	typedef union ipv4_address_
-	{
-		uint32_t ip;
-		uint8_t octets[4];
-	} ipv4_address_t;
-
-	typedef struct __attribute__((__packed__)) sockaddr_in_
-	{
-		uint16_t sin_family;
-		uint16_t sin_port;
-		ipv4_address_t sin_addr;
-		unsigned char sin_zero[8];
-	} sockaddr_in_t;
-
-/**
- * Default is little-endian
- * If not the macros should be replaced by a simply passing the value
- */
-#ifndef bsd_htons
-#define bsd_htons(x) ((uint16_t)(((x & 0x00ffu) << 8) | ((x & 0xff00u) >> 8)))
-#endif
-
-#ifndef bsd_htonl
-#define bsd_htonl(x) ((uint32_t)(((((uint32_t)x) & 0x000000ffUL) << 24) | ((((uint32_t)x) & 0x0000ff00UL) << 8) | ((((uint32_t)x) & 0x00ff0000UL) >> 8) | ((((uint32_t)x) & 0xff000000UL) >> 24)))
-#endif
-
 	/* Generic socket handle. Pointer-width so it can hold both small embedded
 	   identifiers and native Windows SOCKET values without truncation. */
 	typedef uintptr_t socket_handle_t;
@@ -146,8 +111,13 @@ extern "C"
 		   disconnected event (the core handles local close notifications). */
 		int (*close)(socket_handle_t handle);
 
-		/* Non-blocking service poll. Examines the network state and generates
-		   zero or more events through the callback table. Must never block. */
+		/*
+		 * Non-blocking and bounded service poll.
+		 *
+		 * Must never wait for network activity and must not indefinitely
+		 * drain pending network work. Each invocation must perform a
+		 * bounded amount of processing before returning.
+		 */
 		void (*service)(void);
 	} socket_device_t;
 

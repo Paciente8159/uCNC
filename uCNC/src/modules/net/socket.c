@@ -36,25 +36,24 @@ static void socket_device_writable(socket_handle_t client);
 static void socket_device_disconnected(socket_handle_t client, int reason);
 
 static const socket_device_events_t socket_device_events =
-{
-	.connected = socket_device_connected,
-	.data = socket_device_data,
-	.writable = socket_device_writable,
-	.disconnected = socket_device_disconnected
-};
+	{
+		.connected = socket_device_connected,
+		.data = socket_device_data,
+		.writable = socket_device_writable,
+		.disconnected = socket_device_disconnected};
 
 bool socket_register_device(socket_device_t *device)
 {
 	if (!device)
+		return false;
+
+	if (device->init && device->init(&socket_device_events) < 0)
 	{
+		socket_device = NULL;
 		return false;
 	}
 
 	socket_device = device;
-	if (device->init)
-	{
-		return device->init(&socket_device_events) >= 0;
-	}
 	return true;
 }
 
@@ -109,29 +108,50 @@ void socket_stop_listening(socket_if_t *socket)
 		return;
 	}
 
+	/* Close all active clients */
 	for (uint8_t i = 0; i < SOCKET_MAX_CLIENTS; i++)
 	{
-		if (socket->socket_clients[i] != SOCKET_INVALID_HANDLE)
+		socket_handle_t client = socket->socket_clients[i];
+
+		if (client == SOCKET_INVALID_HANDLE)
 		{
-			if (socket_device && socket_device->close)
-				socket_device->close(socket->socket_clients[i]);
-			if (socket->client_ondisconnected_cb)
-			{
-				socket->client_ondisconnected_cb(i, socket->protocol);
-			}
+			continue;
+		}
+
+		/*
+		 * Invalidate the logical handle before calling the backend or
+		 * application callback. This prevents callbacks from attempting
+		 * to use a connection that is being closed.
+		 */
+		socket->socket_clients[i] = SOCKET_INVALID_HANDLE;
+
 #ifdef ENABLE_SOCKET_TIMEOUTS
-			socket->client_activity[i] = 0;
+		socket->client_activity[i] = 0;
 #endif
-			socket->socket_clients[i] = SOCKET_INVALID_HANDLE;
+
+		if (socket_device && socket_device->close)
+		{
+			socket_device->close(client);
+		}
+
+		if (socket->client_ondisconnected_cb)
+		{
+			socket->client_ondisconnected_cb(i, socket->protocol);
 		}
 	}
 
-	if (socket->socket_if != SOCKET_INVALID_HANDLE)
+	/* Close listener */
+	socket_handle_t listener = socket->socket_if;
+	socket->socket_if = SOCKET_INVALID_HANDLE;
+
+	if (listener != SOCKET_INVALID_HANDLE &&
+		socket_device &&
+		socket_device->close)
 	{
-		if (socket_device && socket_device->close)
-			socket_device->close(socket->socket_if);
-		socket->socket_if = SOCKET_INVALID_HANDLE;
+		socket_device->close(listener);
 	}
+
+	/* Clear interface state */
 	socket->client_ondata_cb = NULL;
 	socket->client_onconnected_cb = NULL;
 	socket->client_ondisconnected_cb = NULL;
@@ -403,22 +423,32 @@ void socket_server_dotasks(void)
 int socket_server_hasclients(socket_if_t *socket)
 {
 	int clients = 0;
-	if (socket != NULL)
+
+	if (socket)
 	{
 		for (int c = 0; c < SOCKET_MAX_CLIENTS; c++)
-		{
 			if (socket->socket_clients[c] != SOCKET_INVALID_HANDLE)
-			{
 				clients++;
-			}
-		}
+
+		return clients;
 	}
+
+	for (int i = 0; i < MAX_SOCKETS; i++)
+		for (int c = 0; c < SOCKET_MAX_CLIENTS; c++)
+			if (raw_sockets[i].socket_clients[c] != SOCKET_INVALID_HANDLE)
+				clients++;
 
 	return clients;
 }
 
 int socket_get_clientindex(socket_if_t *socket, socket_handle_t socket_fd)
 {
+	if (!socket ||
+		socket_fd == SOCKET_INVALID_HANDLE)
+	{
+		return -1;
+	}
+
 	for (int c = 0; c < SOCKET_MAX_CLIENTS; c++)
 	{
 		if (socket->socket_clients[c] == socket_fd)
@@ -426,6 +456,7 @@ int socket_get_clientindex(socket_if_t *socket, socket_handle_t socket_fd)
 			return c;
 		}
 	}
+
 	return -1;
 }
 
