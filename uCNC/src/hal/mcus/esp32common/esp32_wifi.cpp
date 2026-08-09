@@ -709,94 +709,10 @@ extern "C"
 /**
  * Custom SOCKETS
  */
-#if defined(ENABLE_WIFI)
-#include "../../../modules/net/socket.h"
-#include <errno.h>
-#include <fcntl.h>
-#include "lwip/sockets.h"
-
-int bsd_socket(int domain, int type, int protocol)
-{
-	int fd = lwip_socket(domain, type, protocol);
-	if (fd < 0)
-		return -1;
-
-	lwip_fcntl(fd, F_SETFL, O_NONBLOCK);
-	return fd;
-}
-
-int bsd_bind(int sockfd, const struct bsd_sockaddr_in *addr, int addrlen)
-{
-	struct sockaddr_in a;
-	memset(&a, 0, sizeof(a));
-	a.sin_family = AF_INET;
-	a.sin_port = addr->sin_port;
-	a.sin_addr.s_addr = addr->sin_addr;
-	return lwip_bind(sockfd, (struct sockaddr *)&a, sizeof(a));
-}
-
-int bsd_listen(int sockfd, int backlog)
-{
-	return lwip_listen(sockfd, backlog);
-}
-
-int bsd_accept(int sockfd, struct bsd_sockaddr_in *addr, int *addrlen)
-{
-	struct sockaddr_in a;
-	socklen_t len = sizeof(a);
-
-	int fd = lwip_accept(sockfd, (struct sockaddr *)&a, &len);
-	if (fd < 0)
-		return -1;
-
-	lwip_fcntl(fd, F_SETFL, O_NONBLOCK);
-
-	if (addr)
-	{
-		addr->sin_family = a.sin_family;
-		addr->sin_port = a.sin_port;
-		addr->sin_addr = a.sin_addr.s_addr;
-	}
-	if (addrlen)
-		*addrlen = sizeof(struct bsd_sockaddr_in);
-
-	return fd;
-}
-
-int bsd_recv(int sockfd, void *buf, size_t len, int flags)
-{
-	int r = lwip_recv(sockfd, buf, len, flags);
-	if (r < 0 && errno == EWOULDBLOCK)
-		return -1;
-	return r;
-}
-
-int bsd_send(int sockfd, const void *buf, size_t len, int flags)
-{
-	int r = lwip_send(sockfd, buf, len, flags);
-	if (r < 0 && errno == EWOULDBLOCK)
-		return -1;
-	return r;
-}
-
-int bsd_close(int fd)
-{
-	return lwip_close(fd);
-}
-
-socket_device_t wifi_socket = {
-	.socket = bsd_socket,
-	.bind = bsd_bind,
-	.listen = bsd_listen,
-	.accept = bsd_accept,
-	.recv = bsd_recv,
-	.send = bsd_send,
-	.close = bsd_close};
-
-#endif
-
 #if defined(ENABLE_SOCKETS)
+#include "../../../modules/net/socket.h"
 #include "../../../module.h"
+
 static void mcu_wifi_task(void *arg)
 {
 	esp32_wifi_config(false);
@@ -810,11 +726,9 @@ static void mcu_wifi_task(void *arg)
 		vTaskDelay(1);
 	}
 }
-#endif
 
 extern "C"
 {
-#include "../../../modules/net/socket.h"
 	void esp32_pre_init(void)
 	{
 #ifdef ENABLE_WIFI
@@ -827,7 +741,8 @@ extern "C"
 		}
 
 		esp32_wifi_config(true);
-		// register WiFi as the device default network device
+		// register the shared (lwip) socket device as the device default network device
+		extern socket_device_t wifi_socket;
 		socket_register_device(&wifi_socket);
 #endif
 	}
@@ -876,3 +791,5 @@ extern "C"
 }
 
 #endif
+
+#endif /* defined(ESP32) || defined(ESP32S3) || defined(ESP32C3) */

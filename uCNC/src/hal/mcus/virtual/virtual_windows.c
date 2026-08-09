@@ -26,10 +26,12 @@ extern "C"
 
 #if defined(ENABLE_SOCKETS)
 
-#include "../../../modules/endpoint.h"
+#include "../../../modules/net/socket.h"
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#ifdef _MSC_VER
 #pragma comment(lib, "ws2_32.lib")
+#endif
     int socket_init(void);
 #endif
 #include <windows.h>
@@ -520,70 +522,339 @@ extern "C"
 
     typedef int socklen_t;
 
-    /* Initialise Winsock 2.2 – call once at startup before using sockets */
+    /* Initialise Winsock 2.2 – call once at startup before using sockets.
+       Idempotent compatibility helper also called by mcu_network_init(). */
     int socket_init(void)
     {
         WSADATA wsaData;
         return WSAStartup(MAKEWORD(2, 2), &wsaData);
     }
 
-    /* BSD-style wrappers mapped to Winsock functions */
+    /* Event-driven Winsock backend for the µCNC socket device interface */
 
-    static int bsd_socket(int domain, int type, int protocol)
+#define WINDOWS_SOCKET_MAX_LISTENERS MAX_SOCKETS
+#define WINDOWS_SOCKET_MAX_CLIENTS (MAX_SOCKETS * SOCKET_MAX_CLIENTS)
+
+    typedef struct
     {
-        return (int)WSASocket(domain, type, protocol, NULL, 0, 0);
+        bool in_use;
+        SOCKET native_socket;
+    } windows_listener_t;
+
+    typedef struct
+    {
+        bool in_use;
+        bool write_blocked;
+        SOCKET native_socket;
+    } windows_client_t;
+
+    static windows_listener_t windows_listeners[WINDOWS_SOCKET_MAX_LISTENERS];
+    static windows_client_t windows_clients[WINDOWS_SOCKET_MAX_CLIENTS];
+    static const socket_device_events_t *windows_socket_events;
+    static bool windows_net_started = false;
+
+    /* Map between generic socket handles (pointer-width) and native SOCKET */
+    static SOCKET handle_to_socket(socket_handle_t handle)
+    {
+        return (SOCKET)handle;
     }
 
-    static int bsd_bind(int sockfd, const struct bsd_sockaddr_in *addr, socklen_t addrlen)
+    static socket_handle_t socket_to_handle(SOCKET socket)
     {
-        if (bind(sockfd, (const struct sockaddr *)addr, addrlen) < 0)
+        return (socket_handle_t)socket;
+    }
+
+    static int windows_socket_map_error(int err)
+    {
+        switch (err)
+        {
+        case WSAEWOULDBLOCK:
+            return SOCKET_DEVICE_WOULD_BLOCK;
+        case WSAENOBUFS:
+            return SOCKET_DEVICE_NO_MEMORY;
+        case WSAENOTSOCK:
+            return SOCKET_DEVICE_INVALID;
+        default:
+            return SOCKET_DEVICE_ERROR;
+        }
+    }
+
+    static int windows_socket_device_init(const socket_device_events_t *events)
+    {
+        if (!events)
         {
             return -1;
         }
-        u_long mode = 1;
-
-        return ioctlsocket(sockfd, FIONBIO, (u_long *)&mode);
-    }
-
-    static int bsd_listen(int sockfd, int backlog)
-    {
-        return listen(sockfd, backlog);
-    }
-
-    static int bsd_accept(int sockfd, struct bsd_sockaddr_in *addr, socklen_t *addrlen)
-    {
-        return accept(sockfd, (struct sockaddr *)addr, addrlen);
-    }
-
-    static int bsd_setsockopt(int sockfd, int level, int optname, const void *optval, socklen_t optlen)
-    {
-        return setsockopt(sockfd, level, optname, (const char *)optval, optlen);
-    }
-
-    static int bsd_recv(int sockfd, void *buf, size_t len, int flags)
-    {
-        int bytes = recv(sockfd, (char *)buf, (int)len, flags);
-        switch (errno)
+        windows_socket_events = events;
+        memset(windows_listeners, 0, sizeof(windows_listeners));
+        memset(windows_clients, 0, sizeof(windows_clients));
+        if (!windows_net_started)
         {
-        case EWOULDBLOCK:
-        case EAGAIN:
-            return -1;
+            if (socket_init() != 0)
+            {
+                return -1;
+            }
+            windows_net_started = true;
+        }
+        return 0;
+    }
+
+    static socket_handle_t windows_socket_listen(uint32_t ip_listen, uint16_t port, int domain, int type, int protocol, uint8_t backlog)
+    {
+        (void)protocol;
+        for (int i = 0; i < WINDOWS_SOCKET_MAX_LISTENERS; i++)
+        {
+            if (!windows_listeners[i].in_use)
+            {
+                SOCKET s = socket(domain, type, 0);
+                if (s == INVALID_SOCKET)
+                {
+                    return SOCKET_INVALID_HANDLE;
+                }
+
+                struct sockaddr_in addr;
+                memset(&addr, 0, sizeof(addr));
+                addr.sin_family = AF_INET;
+                addr.sin_port = htons(port);
+                addr.sin_addr.s_addr = htonl(ip_listen); /* IP_ANY == 0 preserved */
+
+                if (bind(s, (struct sockaddr *)&addr, sizeof(addr)) == SOCKET_ERROR ||
+                    listen(s, backlog) == SOCKET_ERROR)
+                {
+                    closesocket(s);
+                    return SOCKET_INVALID_HANDLE;
+                }
+
+                u_long mode = 1;
+                if (ioctlsocket(s, FIONBIO, &mode) == SOCKET_ERROR)
+                {
+                    closesocket(s);
+                    return SOCKET_INVALID_HANDLE;
+                }
+
+                windows_listeners[i].in_use = true;
+                windows_listeners[i].native_socket = s;
+                return socket_to_handle(s);
+            }
+        }
+        return SOCKET_INVALID_HANDLE;
+    }
+
+    static int windows_socket_send(socket_handle_t client, const void *data, size_t len, int flags)
+    {
+        int result = send(handle_to_socket(client), (const char *)data, (int)len, flags);
+        if (result == SOCKET_ERROR)
+        {
+            int err = WSAGetLastError();
+            if (err == WSAEWOULDBLOCK)
+            {
+                for (int i = 0; i < WINDOWS_SOCKET_MAX_CLIENTS; i++)
+                {
+                    if (windows_clients[i].in_use && windows_clients[i].native_socket == handle_to_socket(client))
+                    {
+                        windows_clients[i].write_blocked = true;
+                        break;
+                    }
+                }
+                return SOCKET_DEVICE_WOULD_BLOCK;
+            }
+            return windows_socket_map_error(err);
+        }
+        return result;
+    }
+
+    static int windows_socket_close(socket_handle_t handle)
+    {
+        SOCKET native = handle_to_socket(handle);
+        for (int i = 0; i < WINDOWS_SOCKET_MAX_LISTENERS; i++)
+        {
+            if (windows_listeners[i].in_use && windows_listeners[i].native_socket == native)
+            {
+                closesocket(native);
+                windows_listeners[i].in_use = false;
+                windows_listeners[i].native_socket = INVALID_SOCKET;
+                return 0;
+            }
+        }
+        for (int i = 0; i < WINDOWS_SOCKET_MAX_CLIENTS; i++)
+        {
+            if (windows_clients[i].in_use && windows_clients[i].native_socket == native)
+            {
+                closesocket(native);
+                windows_clients[i].in_use = false;
+                windows_clients[i].write_blocked = false;
+                windows_clients[i].native_socket = INVALID_SOCKET;
+                return 0;
+            }
+        }
+        /* Unknown handle: attempt closesocket as a last resort */
+        return closesocket(native) == SOCKET_ERROR ? SOCKET_DEVICE_ERROR : 0;
+    }
+
+    static void windows_socket_service(void)
+    {
+        if (!windows_socket_events)
+        {
+            return;
         }
 
-        return bytes;
+        fd_set readfds, writefds;
+        FD_ZERO(&readfds);
+        FD_ZERO(&writefds);
+
+        SOCKET maxfd = 0;
+        int listener_count = 0;
+        int client_count = 0;
+
+        for (int i = 0; i < WINDOWS_SOCKET_MAX_LISTENERS; i++)
+        {
+            if (windows_listeners[i].in_use)
+            {
+                FD_SET(windows_listeners[i].native_socket, &readfds);
+                maxfd = (windows_listeners[i].native_socket > maxfd) ? windows_listeners[i].native_socket : maxfd;
+                listener_count++;
+            }
+        }
+        for (int i = 0; i < WINDOWS_SOCKET_MAX_CLIENTS; i++)
+        {
+            if (windows_clients[i].in_use)
+            {
+                FD_SET(windows_clients[i].native_socket, &readfds);
+                if (windows_clients[i].write_blocked)
+                {
+                    FD_SET(windows_clients[i].native_socket, &writefds);
+                }
+                maxfd = (windows_clients[i].native_socket > maxfd) ? windows_clients[i].native_socket : maxfd;
+                client_count++;
+            }
+        }
+
+        if (!listener_count && !client_count)
+        {
+            return;
+        }
+
+        struct timeval timeout = {0, 0};
+        int ready = select((int)(maxfd + 1), &readfds, &writefds, NULL, &timeout);
+        if (ready == SOCKET_ERROR)
+        {
+            return;
+        }
+        if (ready == 0)
+        {
+            return;
+        }
+
+        /* Accept new clients on readable listeners (bounded: one per service call) */
+        for (int i = 0; i < WINDOWS_SOCKET_MAX_LISTENERS && ready > 0; i++)
+        {
+            if (windows_listeners[i].in_use && FD_ISSET(windows_listeners[i].native_socket, &readfds))
+            {
+                ready--;
+                SOCKET client = accept(windows_listeners[i].native_socket, NULL, NULL);
+                if (client == INVALID_SOCKET)
+                {
+                    continue;
+                }
+
+                /* Explicitly configure the accepted client as non-blocking
+                   (do not rely on listener inheritance) */
+                u_long mode = 1;
+                if (ioctlsocket(client, FIONBIO, &mode) == SOCKET_ERROR)
+                {
+                    closesocket(client);
+                    continue;
+                }
+
+                /* Reserve a backend client slot */
+                int slot = -1;
+                for (int c = 0; c < WINDOWS_SOCKET_MAX_CLIENTS; c++)
+                {
+                    if (!windows_clients[c].in_use)
+                    {
+                        slot = c;
+                        break;
+                    }
+                }
+                if (slot < 0)
+                {
+                    closesocket(client);
+                    continue;
+                }
+
+                windows_clients[slot].in_use = true;
+                windows_clients[slot].write_blocked = false;
+                windows_clients[slot].native_socket = client;
+
+                if (!windows_socket_events->connected(socket_to_handle(windows_listeners[i].native_socket), socket_to_handle(client)))
+                {
+                    /* µCNC has no client slot: close and discard */
+                    closesocket(client);
+                    windows_clients[slot].in_use = false;
+                    windows_clients[slot].native_socket = INVALID_SOCKET;
+                }
+            }
+        }
+
+        /* Read pending data from clients (bounded: one recv per ready client) */
+        static char srv_buffer[SOCKET_MAX_DATA_SIZE + 1];
+        for (int i = 0; i < WINDOWS_SOCKET_MAX_CLIENTS; i++)
+        {
+            if (!windows_clients[i].in_use)
+            {
+                continue;
+            }
+            socket_handle_t handle = socket_to_handle(windows_clients[i].native_socket);
+            if (FD_ISSET(windows_clients[i].native_socket, &readfds))
+            {
+                int len = recv(windows_clients[i].native_socket, srv_buffer, SOCKET_MAX_DATA_SIZE, 0);
+                if (len > 0)
+                {
+                    srv_buffer[len] = '\0';
+                    windows_socket_events->data(handle, srv_buffer, (size_t)len);
+                }
+                else if (len == 0)
+                {
+                    /* Orderly remote disconnect */
+                    closesocket(windows_clients[i].native_socket);
+                    windows_clients[i].in_use = false;
+                    windows_clients[i].write_blocked = false;
+                    windows_clients[i].native_socket = INVALID_SOCKET;
+                    windows_socket_events->disconnected(handle, 0);
+                }
+                else
+                {
+                    /* recv == SOCKET_ERROR: use WSAGetLastError(), not errno */
+                    int err = WSAGetLastError();
+                    if (err == WSAEWOULDBLOCK)
+                    {
+                        continue;
+                    }
+                    closesocket(windows_clients[i].native_socket);
+                    windows_clients[i].in_use = false;
+                    windows_clients[i].write_blocked = false;
+                    windows_clients[i].native_socket = INVALID_SOCKET;
+                    windows_socket_events->disconnected(handle, windows_socket_map_error(err));
+                }
+            }
+
+            if (windows_clients[i].in_use && windows_clients[i].write_blocked &&
+                FD_ISSET(windows_clients[i].native_socket, &writefds))
+            {
+                windows_clients[i].write_blocked = false;
+                windows_socket_events->writable(handle);
+            }
+        }
     }
 
-    static int bsd_send(int sockfd, const void *buf, size_t len, int flags)
+    socket_device_t wifi_socket =
     {
-        return send(sockfd, (const char *)buf, (int)len, flags);
-    }
-
-    static int bsd_close(int fd)
-    {
-        return closesocket(fd);
-    }
-
-    socket_device_t wifi_socket = {.socket = bsd_socket, .bind = bsd_bind, .listen = bsd_listen, .accept = bsd_accept, .recv = bsd_recv, .send = bsd_send, .close = bsd_close};
+        .init = windows_socket_device_init,
+        .listen = windows_socket_listen,
+        .send = windows_socket_send,
+        .close = windows_socket_close,
+        .service = windows_socket_service
+    };
 
 #endif
 

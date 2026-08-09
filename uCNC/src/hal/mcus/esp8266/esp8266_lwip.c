@@ -1,6 +1,6 @@
 /*
 	Name: esp8266_lwip.c
-	Description: Glue for LWIP for ESP8266.
+	Description: Event-driven lwIP TCP socket backend for the ESP8266 (µCNC socket device).
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
@@ -12,7 +12,7 @@
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
 	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
 
@@ -32,352 +32,1045 @@
 #include <errno.h>
 #include "../../../modules/net/socket.h"
 
-#define MAX_BSD_SOCKETS (MAX_SOCKETS * SOCKET_MAX_CLIENTS)
+#define MAX_BSD_SOCKETS \
+	(MAX_SOCKETS * (SOCKET_MAX_CLIENTS + 1))
 
-typedef enum {
-    SOCK_UNUSED = 0,
-    SOCK_INIT,
-    SOCK_BOUND,
-    SOCK_LISTEN,
-    SOCK_CONNECTED,
-    SOCK_CLOSING
+typedef enum
+{
+	SOCK_UNUSED = 0,
+	SOCK_BOUND,
+	SOCK_LISTEN,
+	SOCK_CONNECTED,
+	SOCK_CLOSING
 } sock_state_t;
 
-typedef struct {
-    sock_state_t state;
-    struct tcp_pcb *pcb;
-    struct tcp_pcb *pending;
-    struct pbuf *rx_buf;
-    u16_t rx_off;
-    u32_t rx_len;
-    bool rx_eof;
+typedef struct
+{
+	sock_state_t state;
+
+	/* lwIP PCB owned by this backend */
+	struct tcp_pcb *pcb;
+
+	/*
+	 * One outstanding lwIP receive pbuf chain.
+	 *
+	 * We deliberately retain at most one receive chain.
+	 * If another pbuf arrives before this one is consumed,
+	 * recv_cb() returns ERR_MEM and lwIP will retry later.
+	 */
+	struct pbuf *rx_buf;
+	u16_t rx_off;
+	u32_t rx_len;
+
+	/* Deferred µCNC events */
+	bool event_pending;
+	bool event_connected;
+	bool event_peer_closed;
+	bool event_error;
+	bool event_writable;
+
+	/* TX state */
+	bool write_blocked;
+
+	/*
+	 * Local close requested by µCNC.
+	 *
+	 * If tcp_close() temporarily returns ERR_MEM, service()
+	 * retries the graceful close later.
+	 */
+	bool local_close;
+
+	/* µCNC socket handles */
+	socket_handle_t srv_handle;
+	socket_handle_t client_handle;
+
 } bsd_sock_t;
 
 static bsd_sock_t socks[MAX_BSD_SOCKETS];
+static const socket_device_events_t *esp8266_socket_events;
+
+static void *sock_arg_from_index(int idx)
+{
+	return (void *)(intptr_t)(idx + 1);
+}
+
+static int sock_index_from_arg(void *arg)
+{
+	intptr_t value = (intptr_t)arg;
+
+	if (value <= 0 || value > MAX_BSD_SOCKETS)
+	{
+		return -1;
+	}
+
+	return (int)(value - 1);
+}
 
 static int alloc_sock(void)
 {
-    for (int i = 0; i < MAX_BSD_SOCKETS; i++)
-        if (socks[i].state == SOCK_UNUSED)
-            return i;
-    return -1;
+	for (int i = 0; i < MAX_BSD_SOCKETS; i++)
+	{
+		if (socks[i].state == SOCK_UNUSED)
+		{
+			return i;
+		}
+	}
+
+	return -1;
 }
 
 static void free_rx_chain(bsd_sock_t *s)
 {
-    if (s->rx_buf) {
-        pbuf_free(s->rx_buf);
-        s->rx_buf = NULL;
-    }
-    s->rx_len = 0;
-    s->rx_off = 0;
+	if (!s)
+	{
+		return;
+	}
+
+	if (s->rx_buf)
+	{
+		pbuf_free(s->rx_buf);
+		s->rx_buf = NULL;
+	}
+
+	s->rx_len = 0;
+	s->rx_off = 0;
+}
+
+static void reset_sock(bsd_sock_t *s)
+{
+	if (!s)
+	{
+		return;
+	}
+
+	free_rx_chain(s);
+
+	memset(s, 0, sizeof(*s));
+
+	s->state = SOCK_UNUSED;
+	s->srv_handle = SOCKET_INVALID_HANDLE;
+	s->client_handle = SOCKET_INVALID_HANDLE;
 }
 
 static void err_cb(void *arg, err_t err)
 {
-    int idx = (int)(intptr_t)arg;
-    bsd_sock_t *s = &socks[idx];
+	(void)err;
 
-    s->pcb = NULL;
-    s->rx_eof = true;
-    s->state = SOCK_CLOSING;
+	int idx = sock_index_from_arg(arg);
 
-    free_rx_chain(s);
+	if (idx < 0)
+	{
+		return;
+	}
+
+	bsd_sock_t *s = &socks[idx];
+
+	/*
+	 * lwIP has already destroyed the PCB before tcp_err()
+	 * is called.
+	 */
+	s->pcb = NULL;
+
+	/*
+	 * If µCNC already requested a local close, there is
+	 * nothing to notify upward.
+	 */
+	if (s->local_close)
+	{
+		reset_sock(s);
+		return;
+	}
+
+	free_rx_chain(s);
+
+	s->state = SOCK_CLOSING;
+	s->event_error = true;
+	s->event_pending = true;
 }
 
 static err_t sent_cb(void *arg, struct tcp_pcb *pcb, u16_t len)
 {
-    /* Nonblocking: we do not wait for tx_acked */
-    return ERR_OK;
+	(void)pcb;
+	(void)len;
+
+	int idx = sock_index_from_arg(arg);
+
+	if (idx < 0)
+	{
+		return ERR_OK;
+	}
+
+	bsd_sock_t *s = &socks[idx];
+
+	if (s->state == SOCK_UNUSED)
+	{
+		return ERR_OK;
+	}
+
+	/*
+	 * A graceful close may previously have failed with
+	 * ERR_MEM. New ACK progress may allow tcp_close()
+	 * to succeed now.
+	 */
+	if (s->local_close || s->event_peer_closed)
+	{
+		s->event_pending = true;
+	}
+
+	/*
+	 * Report TX progress only after a previous send
+	 * encountered backpressure.
+	 */
+	if (s->write_blocked)
+	{
+		s->write_blocked = false;
+		s->event_writable = true;
+		s->event_pending = true;
+	}
+
+	return ERR_OK;
 }
 
-static err_t recv_cb(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
+static err_t recv_cb(
+	void *arg,
+	struct tcp_pcb *pcb,
+	struct pbuf *p,
+	err_t err)
 {
-    int idx = (int)(intptr_t)arg;
-    bsd_sock_t *s = &socks[idx];
+	int idx = sock_index_from_arg(arg);
 
-    if (err != ERR_OK) {
-        if (p) pbuf_free(p);
-        s->rx_eof = true;
-        s->pcb = NULL;
-        s->state = SOCK_CLOSING;
-        return err;
-    }
+	if (idx < 0)
+	{
+		if (p)
+		{
+			pbuf_free(p);
+		}
 
-    if (!p) {
-        s->rx_eof = true;
-        return ERR_OK;
-    }
+		return ERR_OK;
+	}
 
-    if (s->rx_len + p->tot_len > SOCKET_MAX_DATA_SIZE) {
-        pbuf_free(p);
-        return ERR_MEM;
-    }
+	bsd_sock_t *s = &socks[idx];
 
-    if (s->rx_buf)
-        pbuf_cat(s->rx_buf, p);
-    else {
-        s->rx_buf = p;
-        s->rx_off = 0;
-    }
+	/*
+	 * µCNC has already closed this connection locally.
+	 *
+	 * If lwIP delivers data before the graceful close completes,
+	 * consume and acknowledge it without forwarding it upward.
+	 */
+	if (s->local_close)
+	{
+		if (p)
+		{
+			tcp_recved(pcb, p->tot_len);
+			pbuf_free(p);
+		}
 
-    s->rx_len += p->tot_len;
-    return ERR_OK;
+		return ERR_OK;
+	}
+
+	/*
+	 * Unexpected receive-side error.
+	 *
+	 * Fatal TCP errors normally arrive through tcp_err(), but
+	 * treat any non-OK recv error as a transport failure.
+	 */
+	if (err != ERR_OK)
+	{
+		if (p)
+		{
+			pbuf_free(p);
+		}
+
+		s->event_error = true;
+		s->event_pending = true;
+
+		return ERR_OK;
+	}
+
+	/*
+	 * p == NULL means the remote peer sent FIN.
+	 *
+	 * Do not disconnect immediately if unread RX data remains.
+	 * service() will first deliver the queued payload.
+	 */
+	if (!p)
+	{
+		s->event_peer_closed = true;
+		s->event_pending = true;
+
+		return ERR_OK;
+	}
+
+	/*
+	 * Only retain one receive chain at a time.
+	 *
+	 * Returning ERR_MEM without freeing p tells lwIP that we
+	 * cannot accept this data yet. lwIP will retry once the
+	 * receive callback is called again later.
+	 */
+	if (s->rx_buf)
+	{
+		return ERR_MEM;
+	}
+
+	u16_t total_len = p->tot_len;
+
+	/*
+	 * We need the pbuf after recv_cb() returns.
+	 *
+	 * Take our own reference, then release the reference supplied
+	 * to this receive callback. The backend's retained reference
+	 * is released later from service().
+	 */
+	pbuf_ref(p);
+
+	s->rx_buf = p;
+	s->rx_off = 0;
+	s->rx_len = total_len;
+
+	pbuf_free(p);
+
+	s->event_pending = true;
+
+	return ERR_OK;
 }
 
-static err_t accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err)
+static err_t accept_cb(
+	void *arg,
+	struct tcp_pcb *newpcb,
+	err_t err)
 {
-    int idx = (int)(intptr_t)arg;
-    bsd_sock_t *s = &socks[idx];
+	if (err != ERR_OK || !newpcb)
+	{
+		return err;
+	}
 
-    if (s->pending) {
-        tcp_abort(newpcb);
-        return ERR_ABRT;
-    }
+	int srv_idx = sock_index_from_arg(arg);
 
-    tcp_backlog_delayed(newpcb);
-    s->pending = newpcb;
-    return ERR_OK;
+	if (srv_idx < 0)
+	{
+		tcp_abort(newpcb);
+		return ERR_ABRT;
+	}
+
+	bsd_sock_t *server = &socks[srv_idx];
+
+	if (server->state != SOCK_LISTEN)
+	{
+		tcp_abort(newpcb);
+		return ERR_ABRT;
+	}
+
+	int idx = alloc_sock();
+
+	if (idx < 0)
+	{
+		/* Backend has no room for another connection */
+		tcp_abort(newpcb);
+		return ERR_ABRT;
+	}
+
+	bsd_sock_t *client = &socks[idx];
+
+	memset(client, 0, sizeof(*client));
+
+	client->state = SOCK_CONNECTED;
+	client->pcb = newpcb;
+
+	client->srv_handle = server->srv_handle;
+	client->client_handle = (socket_handle_t)idx;
+
+	client->event_connected = true;
+	client->event_pending = true;
+
+	/*
+	 * Tell lwIP that this accepted connection is being held
+	 * pending until the µCNC cooperative layer consumes it.
+	 */
+	tcp_backlog_delayed(newpcb);
+
+	/*
+	 * Install the TCP callbacks immediately so data cannot arrive
+	 * on the accepted PCB without a receive handler.
+	 */
+	tcp_arg(newpcb, sock_arg_from_index(idx));
+	tcp_err(newpcb, err_cb);
+	tcp_recv(newpcb, recv_cb);
+	tcp_sent(newpcb, sent_cb);
+
+	return ERR_OK;
 }
 
-/* ---------------- BSD API ---------------- */
+/* ---------------- µCNC socket device API ---------------- */
 
-static int bsd_socket(int domain, int type, int protocol)
+static int esp8266_socket_device_init(
+	const socket_device_events_t *events)
 {
-    if (domain != AF_INET || type != SOCK_STREAM)
-        return -1;
+	if (!events)
+	{
+		return SOCKET_DEVICE_INVALID;
+	}
 
-    int idx = alloc_sock();
-    if (idx < 0)
-        return -1;
+	esp8266_socket_events = events;
 
-    bsd_sock_t *s = &socks[idx];
-    memset(s, 0, sizeof(*s));
+	memset(socks, 0, sizeof(socks));
 
-    s->pcb = tcp_new();
-    if (!s->pcb) {
-        s->state = SOCK_UNUSED;
-        return -1;
-    }
+	for (int i = 0; i < MAX_BSD_SOCKETS; i++)
+	{
+		socks[i].state = SOCK_UNUSED;
+		socks[i].srv_handle = SOCKET_INVALID_HANDLE;
+		socks[i].client_handle = SOCKET_INVALID_HANDLE;
+	}
 
-    s->state = SOCK_INIT;
-
-    tcp_arg(s->pcb, (void *)(intptr_t)idx);
-    tcp_err(s->pcb, err_cb);
-    tcp_recv(s->pcb, recv_cb);
-    tcp_sent(s->pcb, sent_cb);
-
-    /* TCP_NODELAY + KEEPALIVE */
-    s->pcb->so_options |= SOF_KEEPALIVE;
-    tcp_nagle_disable(s->pcb);
-
-    return idx;
+	return SOCKET_DEVICE_OK;
 }
 
-static int bsd_bind(int sockfd, const struct bsd_sockaddr_in *addr, int addrlen)
+static socket_handle_t esp8266_socket_listen(
+	uint32_t ip_listen,
+	uint16_t port,
+	int domain,
+	int type,
+	int protocol,
+	uint8_t backlog)
 {
-    if (sockfd < 0 || sockfd >= MAX_BSD_SOCKETS)
-        return -1;
+	(void)protocol;
 
-    bsd_sock_t *s = &socks[sockfd];
-    if (s->state != SOCK_INIT)
-        return -1;
+	if (domain != AF_INET || type != SOCK_STREAM)
+	{
+		return SOCKET_INVALID_HANDLE;
+	}
 
-    ip_addr_t ip;
-    ip.addr = addr->sin_addr;
+	int idx = alloc_sock();
 
-    if (tcp_bind(s->pcb, &ip, ntohs(addr->sin_port)) != ERR_OK)
-        return -1;
+	if (idx < 0)
+	{
+		return SOCKET_INVALID_HANDLE;
+	}
 
-    s->state = SOCK_BOUND;
-    return 0;
+	bsd_sock_t *s = &socks[idx];
+
+	memset(s, 0, sizeof(*s));
+
+	s->state = SOCK_BOUND;
+	s->srv_handle = (socket_handle_t)idx;
+	s->client_handle = SOCKET_INVALID_HANDLE;
+
+	s->pcb = tcp_new();
+
+	if (!s->pcb)
+	{
+		reset_sock(s);
+		return SOCKET_INVALID_HANDLE;
+	}
+
+	ip_addr_t ip;
+	ip_addr_t *bind_addr;
+
+	if (ip_listen == IP_ANY)
+	{
+		bind_addr = IP_ADDR_ANY;
+	}
+	else
+	{
+		/*
+		 * µCNC passes the IP in host byte order, matching the
+		 * semantics previously used by the BSD abstraction.
+		 */
+		ip.addr = htonl(ip_listen);
+		bind_addr = &ip;
+	}
+
+	err_t err = tcp_bind(
+		s->pcb,
+		bind_addr,
+		port);
+
+	if (err != ERR_OK)
+	{
+		tcp_close(s->pcb);
+		s->pcb = NULL;
+
+		reset_sock(s);
+
+		return SOCKET_INVALID_HANDLE;
+	}
+
+	struct tcp_pcb *listener =
+		tcp_listen_with_backlog(
+			s->pcb,
+			backlog ? backlog : 1);
+
+	if (!listener)
+	{
+		tcp_close(s->pcb);
+		s->pcb = NULL;
+
+		reset_sock(s);
+
+		return SOCKET_INVALID_HANDLE;
+	}
+
+	s->pcb = listener;
+	s->state = SOCK_LISTEN;
+
+	tcp_arg(
+		listener,
+		sock_arg_from_index(idx));
+
+	tcp_accept(
+		listener,
+		accept_cb);
+
+	return (socket_handle_t)idx;
 }
 
-static int bsd_listen(int sockfd, int backlog)
+static int esp8266_socket_send(
+	socket_handle_t client,
+	const void *data,
+	size_t len,
+	int flags)
 {
-    if (sockfd < 0 || sockfd >= MAX_BSD_SOCKETS)
-        return -1;
+	(void)flags;
 
-    bsd_sock_t *s = &socks[sockfd];
-    if (s->state != SOCK_BOUND)
-        return -1;
+	if (client == SOCKET_INVALID_HANDLE ||
+		!data)
+	{
+		return SOCKET_DEVICE_INVALID;
+	}
 
-    struct tcp_pcb *lpcb = tcp_listen_with_backlog(s->pcb, backlog);
-    if (!lpcb)
-        return -1;
+	if (len == 0)
+	{
+		return 0;
+	}
 
-    s->pcb = lpcb;
-    s->state = SOCK_LISTEN;
+	int idx = (int)client;
 
-    tcp_arg(lpcb, (void *)(intptr_t)sockfd);
-    tcp_accept(lpcb, accept_cb);
-    tcp_err(lpcb, err_cb);
+	if (idx < 0 || idx >= MAX_BSD_SOCKETS)
+	{
+		return SOCKET_DEVICE_INVALID;
+	}
 
-    return 0;
+	bsd_sock_t *s = &socks[idx];
+
+	if (!s->pcb ||
+		s->state != SOCK_CONNECTED ||
+		s->local_close)
+	{
+		return SOCKET_DEVICE_CLOSED;
+	}
+
+	u16_t available = tcp_sndbuf(s->pcb);
+
+	if (available == 0)
+	{
+		s->write_blocked = true;
+
+		return SOCKET_DEVICE_WOULD_BLOCK;
+	}
+
+	u16_t chunk =
+		(len < (size_t)available)
+			? (u16_t)len
+			: available;
+
+	err_t err = tcp_write(
+		s->pcb,
+		data,
+		chunk,
+		TCP_WRITE_FLAG_COPY);
+
+	if (err == ERR_MEM)
+	{
+		s->write_blocked = true;
+
+		return SOCKET_DEVICE_WOULD_BLOCK;
+	}
+
+	if (err != ERR_OK)
+	{
+		return SOCKET_DEVICE_ERROR;
+	}
+
+	s->write_blocked = false;
+
+	/*
+	 * tcp_write() only queues the payload.
+	 * Ask lwIP to attempt transmission now.
+	 *
+	 * Even if tcp_output() cannot immediately transmit,
+	 * the bytes were successfully accepted by tcp_write(),
+	 * so chunk remains the correct return value.
+	 */
+	tcp_output(s->pcb);
+
+	return (int)chunk;
 }
 
-static int bsd_accept(int sockfd, struct bsd_sockaddr_in *addr, int *addrlen)
+static int esp8266_socket_close(
+	socket_handle_t handle)
 {
-    if (sockfd < 0 || sockfd >= MAX_BSD_SOCKETS)
-        return -1;
+	if (handle == SOCKET_INVALID_HANDLE)
+	{
+		return SOCKET_DEVICE_INVALID;
+	}
 
-    bsd_sock_t *srv = &socks[sockfd];
-    if (!srv->pending)
-        return -1;
+	int idx = (int)handle;
 
-    int idx = alloc_sock();
-    if (idx < 0)
-        return -1;
+	if (idx < 0 || idx >= MAX_BSD_SOCKETS)
+	{
+		return SOCKET_DEVICE_INVALID;
+	}
 
-    bsd_sock_t *cli = &socks[idx];
-    memset(cli, 0, sizeof(*cli));
+	bsd_sock_t *s = &socks[idx];
 
-    cli->pcb = srv->pending;
-    srv->pending = NULL;
+	if (s->state == SOCK_UNUSED)
+	{
+		return SOCKET_DEVICE_INVALID;
+	}
 
-    cli->state = SOCK_CONNECTED;
+	/*
+	 * Listener close.
+	 *
+	 * Listening PCBs do not have buffered application data,
+	 * so tcp_close() should normally succeed immediately.
+	 */
+	if (s->state == SOCK_LISTEN)
+	{
+		struct tcp_pcb *pcb = s->pcb;
 
-    tcp_arg(cli->pcb, (void *)(intptr_t)idx);
-    tcp_err(cli->pcb, err_cb);
-    tcp_recv(cli->pcb, recv_cb);
-    tcp_sent(cli->pcb, sent_cb);
+		if (pcb)
+		{
+			tcp_arg(pcb, NULL);
+			tcp_accept(pcb, NULL);
 
-    if (addr && addrlen && *addrlen >= sizeof(*addr)) {
-        memset(addr, 0, sizeof(*addr));
-        addr->sin_family = AF_INET;
-        addr->sin_port = htons(cli->pcb->remote_port);
-        addr->sin_addr = cli->pcb->remote_ip.addr;
-        *addrlen = sizeof(*addr);
-    }
+			err_t err = tcp_close(pcb);
 
-    return idx;
+			if (err != ERR_OK)
+			{
+				/*
+				 * A listener has no application data whose
+				 * delivery needs preserving, so force cleanup
+				 * if normal close unexpectedly fails.
+				 */
+				tcp_abort(pcb);
+			}
+
+			s->pcb = NULL;
+		}
+
+		reset_sock(s);
+
+		return SOCKET_DEVICE_OK;
+	}
+
+	/*
+	 * Client close requested locally.
+	 *
+	 * Do not emit a disconnected event: socket.c already
+	 * handles the local disconnect notification.
+	 */
+	s->local_close = true;
+	s->state = SOCK_CLOSING;
+
+	s->event_connected = false;
+	s->event_peer_closed = false;
+	s->event_error = false;
+	s->event_writable = false;
+	s->write_blocked = false;
+
+	free_rx_chain(s);
+
+	if (!s->pcb)
+	{
+		reset_sock(s);
+		return SOCKET_DEVICE_OK;
+	}
+
+	err_t err = tcp_close(s->pcb);
+
+	if (err == ERR_OK)
+	{
+		s->pcb = NULL;
+		reset_sock(s);
+
+		return SOCKET_DEVICE_OK;
+	}
+
+	if (err == ERR_MEM)
+	{
+		/*
+		 * lwIP cannot queue the close yet.
+		 *
+		 * Keep the PCB and retry later from service().
+		 */
+		s->event_pending = true;
+
+		return SOCKET_DEVICE_OK;
+	}
+
+	/*
+	 * Unexpected close failure.
+	 * Force the PCB down rather than leaking it.
+	 */
+	tcp_abort(s->pcb);
+	s->pcb = NULL;
+
+	reset_sock(s);
+
+	return SOCKET_DEVICE_ERROR;
 }
 
-static int bsd_recv(int sockfd, void *buf, size_t len, int flags)
+static void esp8266_socket_service(void)
 {
-    if (sockfd < 0 || sockfd >= MAX_BSD_SOCKETS)
-        return -1;
+	static char srv_buffer[SOCKET_MAX_DATA_SIZE + 1];
 
-    bsd_sock_t *s = &socks[sockfd];
+	if (!esp8266_socket_events)
+	{
+		return;
+	}
 
-    if (!s->rx_buf) {
-        if (s->rx_eof)
-            return 0;
-        errno = EWOULDBLOCK;
-        return -1;
-    }
+	for (int i = 0; i < MAX_BSD_SOCKETS; i++)
+	{
+		bsd_sock_t *s = &socks[i];
 
-    struct pbuf *p = s->rx_buf;
-    uint8_t *dst = buf;
-    size_t copied = 0;
-    size_t to_copy = len;
-    u16_t off = s->rx_off;
+		if (s->state == SOCK_UNUSED)
+		{
+			continue;
+		}
 
-    while (p && to_copy > 0) {
-        u16_t avail = p->len - off;
-        u16_t take = (avail > to_copy) ? to_copy : avail;
+		/*
+		 * ----------------------------------------------------
+		 * Locally requested graceful close
+		 * ----------------------------------------------------
+		 */
+		if (s->local_close &&
+			s->state == SOCK_CLOSING)
+		{
+			if (!s->pcb)
+			{
+				reset_sock(s);
+				continue;
+			}
 
-        memcpy(dst + copied, ((uint8_t *)p->payload) + off, take);
+			err_t err = tcp_close(s->pcb);
 
-        copied += take;
-        to_copy -= take;
-        off += take;
+			if (err == ERR_OK)
+			{
+				s->pcb = NULL;
+				reset_sock(s);
+			}
+			else if (err == ERR_MEM)
+			{
+				/*
+				 * Still waiting for lwIP TCP resources.
+				 * Retry on a later service pass.
+				 */
+				s->event_pending = true;
+			}
+			else
+			{
+				tcp_abort(s->pcb);
+				s->pcb = NULL;
 
-        if (off == p->len) {
-            struct pbuf *old = p;
-            p = p->next;
-            old->next = NULL;
-            pbuf_free(old);
-            off = 0;
-        }
-    }
+				reset_sock(s);
+			}
 
-    s->rx_buf = p;
-    s->rx_off = off;
+			continue;
+		}
 
-    if (copied >= s->rx_len)
-        s->rx_len = 0;
-    else
-        s->rx_len -= copied;
+		if (!s->event_pending)
+		{
+			continue;
+		}
 
-    if (s->pcb)
-        tcp_recved(s->pcb, copied);
+		/*
+		 * Consume this scheduling flag.
+		 *
+		 * Individual handlers below may set it again if
+		 * additional work remains.
+		 */
+		s->event_pending = false;
 
-    return copied;
-}
+		/*
+		 * ----------------------------------------------------
+		 * Fatal TCP error
+		 * ----------------------------------------------------
+		 */
+		if (s->event_error)
+		{
+			socket_handle_t handle =
+				s->client_handle;
 
-static int bsd_send(int sockfd, const void *buf, size_t len, int flags)
-{
-    if (sockfd < 0 || sockfd >= MAX_BSD_SOCKETS)
-        return -1;
+			s->event_error = false;
 
-    bsd_sock_t *s = &socks[sockfd];
-    if (!s->pcb)
-        return -1;
+			if (s->pcb)
+			{
+				/*
+				 * recv_cb() may report an error while the PCB
+				 * still exists. tcp_err(), by contrast, sets
+				 * pcb to NULL before service() sees the event.
+				 */
+				tcp_abort(s->pcb);
+				s->pcb = NULL;
+			}
 
-    size_t remaining = len;
-    const uint8_t *p = buf;
+			reset_sock(s);
 
-    while (remaining) {
-        u16_t snd = tcp_sndbuf(s->pcb);
-        if (snd == 0) {
-            errno = EWOULDBLOCK;
-            return -1;
-        }
+			if (handle != SOCKET_INVALID_HANDLE &&
+				esp8266_socket_events->disconnected)
+			{
+				esp8266_socket_events->disconnected(
+					handle,
+					SOCKET_DEVICE_ERROR);
+			}
 
-        u16_t chunk = (remaining < snd) ? remaining : snd;
+			continue;
+		}
 
-        err_t e = tcp_write(s->pcb, p, chunk, TCP_WRITE_FLAG_COPY);
-        if (e == ERR_MEM) {
-            errno = EWOULDBLOCK;
-            return -1;
-        }
-        if (e != ERR_OK)
-            return -1;
+		/*
+		 * ----------------------------------------------------
+		 * Newly accepted connection
+		 * ----------------------------------------------------
+		 */
+		if (s->event_connected)
+		{
+			s->event_connected = false;
 
-        if (tcp_output(s->pcb) != ERR_OK)
-            return -1;
+			socket_handle_t listener =
+				s->srv_handle;
 
-        remaining -= chunk;
-        p += chunk;
-    }
+			socket_handle_t client =
+				s->client_handle;
 
-    return len;
-}
+			/*
+			 * Match tcp_backlog_delayed() from accept_cb().
+			 *
+			 * The TCP connection has now been consumed by the
+			 * application/backend layer whether µCNC ultimately
+			 * accepts or rejects the logical client.
+			 */
+			if (s->pcb)
+			{
+				tcp_backlog_accepted(s->pcb);
+			}
 
-static int bsd_close(int sockfd)
-{
-    if (sockfd < 0 || sockfd >= MAX_BSD_SOCKETS)
-        return -1;
+			bool accepted = false;
 
-    bsd_sock_t *s = &socks[sockfd];
+			if (esp8266_socket_events->connected)
+			{
+				accepted =
+					esp8266_socket_events->connected(
+						listener,
+						client);
+			}
 
-    if (s->pcb) {
-        tcp_arg(s->pcb, NULL);
-        tcp_recv(s->pcb, NULL);
-        tcp_sent(s->pcb, NULL);
-        tcp_err(s->pcb, NULL);
+			if (!accepted)
+			{
+				/*
+				 * No logical µCNC client slot available.
+				 */
+				if (s->pcb)
+				{
+					tcp_arg(s->pcb, NULL);
+					tcp_recv(s->pcb, NULL);
+					tcp_sent(s->pcb, NULL);
+					tcp_err(s->pcb, NULL);
 
-        tcp_shutdown(s->pcb, 1, 1);
-        tcp_close(s->pcb);
-    }
+					tcp_abort(s->pcb);
 
-    free_rx_chain(s);
+					s->pcb = NULL;
+				}
 
-    memset(s, 0, sizeof(*s));
-    s->state = SOCK_UNUSED;
+				reset_sock(s);
+			}
 
-    return 0;
+			/*
+			 * Do not touch s after a successful connected()
+			 * event. The application callback is allowed to
+			 * immediately close the connection.
+			 */
+			continue;
+		}
+
+		/*
+		 * ----------------------------------------------------
+		 * Received TCP payload
+		 * ----------------------------------------------------
+		 */
+		if (s->rx_buf && s->rx_len)
+		{
+			size_t wanted =
+				(s->rx_len > SOCKET_MAX_DATA_SIZE)
+					? SOCKET_MAX_DATA_SIZE
+					: (size_t)s->rx_len;
+
+			u16_t copied =
+				pbuf_copy_partial(
+					s->rx_buf,
+					srv_buffer,
+					(u16_t)wanted,
+					s->rx_off);
+
+			if (copied == 0)
+			{
+				/*
+				 * Corrupt/inconsistent receive state.
+				 */
+				s->event_error = true;
+				s->event_pending = true;
+
+				continue;
+			}
+
+			s->rx_off += copied;
+			s->rx_len -= copied;
+
+			/*
+			 * Update TCP receive-window accounting before
+			 * invoking application code.
+			 *
+			 * The application callback may immediately close
+			 * the connection, so avoid touching the PCB after
+			 * dispatch whenever possible.
+			 */
+			if (s->pcb)
+			{
+				tcp_recved(
+					s->pcb,
+					copied);
+			}
+
+			if (s->rx_len == 0)
+			{
+				pbuf_free(s->rx_buf);
+
+				s->rx_buf = NULL;
+				s->rx_off = 0;
+			}
+
+			/*
+			 * More data, FIN, or writable state still needs
+			 * processing on a later service iteration.
+			 */
+			if (s->rx_buf ||
+				s->event_peer_closed ||
+				s->event_writable)
+			{
+				s->event_pending = true;
+			}
+
+			srv_buffer[copied] = '\0';
+
+			socket_handle_t handle =
+				s->client_handle;
+
+			if (esp8266_socket_events->data)
+			{
+				esp8266_socket_events->data(
+					handle,
+					srv_buffer,
+					copied);
+			}
+
+			/*
+			 * Application callback may have closed/reset s.
+			 */
+			continue;
+		}
+
+		/*
+		 * ----------------------------------------------------
+		 * Remote orderly close / FIN
+		 * ----------------------------------------------------
+		 */
+		if (s->event_peer_closed)
+		{
+			socket_handle_t handle =
+				s->client_handle;
+
+			/*
+			 * Only get here after any queued receive data has
+			 * already been delivered.
+			 */
+			err_t err = ERR_OK;
+
+			if (s->pcb)
+			{
+				err = tcp_close(s->pcb);
+			}
+
+			if (err == ERR_OK)
+			{
+				s->pcb = NULL;
+
+				reset_sock(s);
+
+				if (handle != SOCKET_INVALID_HANDLE &&
+					esp8266_socket_events->disconnected)
+				{
+					esp8266_socket_events->disconnected(
+						handle,
+						0);
+				}
+			}
+			else if (err == ERR_MEM)
+			{
+				/*
+				 * Retry graceful close later.
+				 */
+				s->event_pending = true;
+			}
+			else
+			{
+				if (s->pcb)
+				{
+					tcp_abort(s->pcb);
+					s->pcb = NULL;
+				}
+
+				reset_sock(s);
+
+				if (handle != SOCKET_INVALID_HANDLE &&
+					esp8266_socket_events->disconnected)
+				{
+					esp8266_socket_events->disconnected(
+						handle,
+						SOCKET_DEVICE_ERROR);
+				}
+			}
+
+			continue;
+		}
+
+		/*
+		 * ----------------------------------------------------
+		 * TX became writable again
+		 * ----------------------------------------------------
+		 */
+		if (s->event_writable)
+		{
+			s->event_writable = false;
+
+			socket_handle_t handle =
+				s->client_handle;
+
+			if (esp8266_socket_events->writable)
+			{
+				esp8266_socket_events->writable(
+					handle);
+			}
+
+			continue;
+		}
+	}
 }
 
 socket_device_t wifi_socket = {
-    .socket = bsd_socket,
-    .bind   = bsd_bind,
-    .listen = bsd_listen,
-    .accept = bsd_accept,
-    .recv   = bsd_recv,
-    .send   = bsd_send,
-    .close  = bsd_close
+    .init    = esp8266_socket_device_init,
+    .listen  = esp8266_socket_listen,
+    .send    = esp8266_socket_send,
+    .close   = esp8266_socket_close,
+    .service = esp8266_socket_service
 };
 
 #endif

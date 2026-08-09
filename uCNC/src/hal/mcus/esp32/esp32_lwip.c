@@ -29,14 +29,14 @@
 // #include <fcntl.h>
 
 // // Helpers to convert between your BSD typedefs and lwIP
-// static inline void to_sockaddr(const struct bsd_sockaddr_in* b, struct sockaddr_in* a) {
+// static inline void to_sockaddr(const struct sockaddr_in_* b, struct sockaddr_in* a) {
 //     memset(a, 0, sizeof(*a));
 //     a->sin_family = (sa_family_t)b->sin_family;
 //     a->sin_port   = (in_port_t)b->sin_port;        // network order
 //     a->sin_addr.s_addr = (in_addr_t)b->sin_addr;   // network order
 // }
 
-// static inline void from_sockaddr(const struct sockaddr_in* a, struct bsd_sockaddr_in* b) {
+// static inline void from_sockaddr(const struct sockaddr_in* a, struct sockaddr_in_* b) {
 //     memset(b, 0, sizeof(*b));
 //     b->sin_family = (uint16_t)a->sin_family;
 //     b->sin_port   = (uint16_t)a->sin_port;        // network order
@@ -49,7 +49,7 @@
 // }
 
 // // Bind to address (enables SO_REUSEADDR like WiFiServer)
-// int bsd_bind(int sockfd, const struct bsd_sockaddr_in *addr, int addrlen) {
+// int bsd_bind(int sockfd, const struct sockaddr_in_ *addr, int addrlen) {
 //     (void)addrlen;
 //     struct sockaddr_in sa;
 //     to_sockaddr(addr, &sa);
@@ -60,7 +60,7 @@
 // }
 
 // // Accept one client nonblocking; accepted socket is set nonblocking
-// int bsd_accept(int sockfd, struct bsd_sockaddr_in *addr, int *addrlen) {
+// int bsd_accept(int sockfd, struct sockaddr_in_ *addr, int *addrlen) {
 //     struct sockaddr_in sa;
 //     socklen_t sl = sizeof(sa);
 //     memset(&sa, 0, sizeof(sa));
@@ -88,7 +88,7 @@
 //         from_sockaddr(&sa, addr);
 //     }
 //     if (addrlen) {
-//         *addrlen = (int)sizeof(struct bsd_sockaddr_in);
+//         *addrlen = (int)sizeof(struct sockaddr_in_);
 //     }
 //     return c;
 // }
