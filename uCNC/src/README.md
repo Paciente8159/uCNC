@@ -30,7 +30,7 @@ Version 1.8 also introduces the concept of simple hooks. These hooks are simple 
 
 ## µCNC existing events/delegates
 
-Without having to modify core code inside µCNC it is possible to listen to several already existing events. Here is a list of current events:
+Without having to modify core code inside µCNC it is possible to listen to several already existing events. Here is a list of current events (current module version number is 11605):
 
 __NOTE__: Not all event hooks might be listed here. To find all available event hooks declarations, do a search on all files (on VSCode in Windows it's Ctrl+Shift+F) of the project of `DECL_EVENT_HANDLER`. You can also search for the `EVENT_INVOKE` to see what argument is being passed to the event handler.
 
@@ -66,6 +66,8 @@ __NOTE__: Not all event hooks might be listed here. To find all available event 
 | mc_home_axis_start | homing_status_t* | ENABLE_MOTION_CONTROL_MODULES | Fires once per axis when homing motion is starting. Pointer to homing_status_t struct with homming information |
 | mc_home_axis_finish | homing_status_t* | ENABLE_MOTION_CONTROL_MODULES | Fires once per axis when homing motion is finnished |
 | mc_line_segment | motion_data_t* | ENABLE_MOTION_CONTROL_MODULES | Fires when a line segment is about to be sent from the motion control to the planner. Arg is a pointer to a motion_data_t struct with the current motion block data |
+| mc_line_calc_segments | uint32_t* | ENABLE_MOTION_CONTROL_MODULES & MOTION_SEGMENTED | Allows to modify the amount of segments to be passed to the planner on a mc_line command. Arg is a pointer to an integer that defines the amount of segments to break the motion into. |
+| mc_line_segment_pre | mc_line_segment_pre_args_t* | ENABLE_MOTION_CONTROL_MODULES | Fired before a calling mc_line_segment with the data to be sent to the planner. Arg is a pointer to a mc_line_segment_pre_args_t struct with the current target coordinates, target step position and motion block data |
 | planner_pre_output | planner_block_t* | ENABLE_PLANNER_MODULES | **WARNING: This event must not run any code that requires to know the code context (like printing) to prevent deadlocks**Fires right before a section of the current planner block is sent to the step generation (interpolator) ISR. It's possible to perform changes and modifications to the steps being generated with a very small delay. The delay is defined by the size of the interpolator buffer `INTERPOLATOR_BUFFER_SIZE` and the stepping sample frequency `INTERPOLATOR_FREQ`  |
 
 Each of these events exposes a delegate and and event that have the following naming convention:

@@ -27,7 +27,9 @@
 
 // segmented motions
 #if (defined(KINEMATICS_MOTION_BY_SEGMENTS) || defined(BRESENHAM_16BIT) || defined(ENABLE_G39_H_MAPPING))
+#ifndef MOTION_SEGMENTED
 #define MOTION_SEGMENTED
+#endif
 #endif
 
 // non uniform segmented motions
@@ -84,6 +86,18 @@ FORCEINLINE static float mc_apply_hmap(float *target);
 #endif
 
 #ifdef ENABLE_MOTION_CONTROL_MODULES
+// event_mc_line_calc_segments_handler
+WEAK_EVENT_HANDLER(mc_line_calc_segments)
+{
+	DEFAULT_EVENT_HANDLER(mc_line_calc_segments);
+}
+
+// event_mc_line_segment_pre_handler
+WEAK_EVENT_HANDLER(mc_line_segment_pre)
+{
+	DEFAULT_EVENT_HANDLER(mc_line_segment_pre);
+}
+
 // event_mc_line_segment_handler
 WEAK_EVENT_HANDLER(mc_line_segment)
 {
@@ -324,7 +338,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 	}
 
 #ifdef ENABLE_EMBROIDERY
-	if ((g_settings.tool_mode & EMBROIDERY_MODE) && !block_data->spindle)
+	if ((tool_get_mode() & EMBROIDERY_MODE) && !block_data->spindle)
 	{
 		if (itp_sync() != STATUS_OK)
 		{
@@ -480,7 +494,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 	g_settings.acceleration[STEPPER_COUNT - 1] = FLT_MAX;
 	float ppi_max_feedrate = FLT_MAX;
 	float ppi_step_rate = g_settings.step_per_mm[STEPPER_COUNT - 1];
-	if (g_settings.tool_mode & (PPI_MODE | PPI_VARPOWER_MODE))
+	if (tool_get_mode() & (PPI_MODE | PPI_VARPOWER_MODE))
 	{
 		if (!ppi_step_rate)
 		{
@@ -499,10 +513,10 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 	{
 		laser_pulses_per_mm = ppi_step_rate;
 		// modify PPI settings according o the S value
-		if (g_settings.tool_mode & PPI_MODE)
+		if (tool_get_mode() & PPI_MODE)
 		{
 			float laser_ppi_scale = fast_flt_div((float)block_data->spindle, (float)g_settings.spindle_max_rpm);
-			if (g_settings.tool_mode & PPI_VARPOWER_MODE)
+			if (tool_get_mode() & PPI_VARPOWER_MODE)
 			{
 				float blend = g_settings.laser_ppi_mixmode_ppi;
 				laser_ppi_scale = (laser_ppi_scale * blend) + (1.0f - blend);
@@ -561,6 +575,14 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 	}
 #endif
 
+// final modifier is a hookable event
+// this allows to complete control and override over the amount of segments to be produced.
+#ifdef ENABLE_MOTION_CONTROL_MODULES
+	mc_line_calc_segments_args_t mc_line_calc_segments_args = {.line_segments = &line_segments, .line_dist = line_dist, .dir_vect = dir_vect, .max_steps = max_steps};
+	// event_mc_line_segment_handler
+	EVENT_INVOKE(mc_line_calc_segments, &mc_line_calc_segments_args);
+#endif
+
 	if (line_segments > 1)
 	{
 		float m_inv = 1.0f / (float)line_segments;
@@ -591,6 +613,11 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 		prev_target[AXIS_TOOL] += h_offset;
 #endif
 		kinematics_coordinates_to_steps(prev_target, step_new_pos);
+#ifdef ENABLE_MOTION_CONTROL_MODULES
+		// event_mc_line_segment_handler
+		mc_line_segment_pre_args_t mc_line_segment_pre_args = {.target = prev_target, .target_steps = step_new_pos, .block_data = block_data};
+		EVENT_INVOKE(mc_line_segment_pre, &mc_line_segment_pre_args);
+#endif
 		error = mc_line_segment(step_new_pos, block_data);
 #ifdef ENABLE_G39_H_MAPPING
 		// unmodify target
@@ -610,6 +637,11 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 	{
 		kinematics_coordinates_to_steps(target, step_new_pos);
 	}
+#endif
+#ifdef ENABLE_MOTION_CONTROL_MODULES
+	// event_mc_line_segment_handler
+	mc_line_segment_pre_args_t args = {.target = target, .target_steps = step_new_pos, .block_data = block_data};
+	EVENT_INVOKE(mc_line_segment_pre, &args);
 #endif
 	error = mc_line_segment(step_new_pos, block_data);
 
@@ -847,7 +879,7 @@ bool mc_home_motion(uint8_t axis_mask, bool is_origin_search, bool fast_mode)
 	{
 		return false;
 	}
-	
+
 	mc_line(target, &block_data);
 	itp_sync();
 	if (cnc_get_exec_state(EXEC_HOMING_HIT) != EXEC_HOMING_HIT)
@@ -973,7 +1005,9 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 			return STATUS_CRITICAL_FAIL;
 		}
 
-		cnc_dwell_ms(g_settings.debounce_ms); // adds a delay before reading io pin (debounce)
+		uint16_t debounce = g_settings.debounce_ms;
+
+		cnc_dwell_ms(debounce); // adds a delay before reading io pin (debounce)
 		limits_flags = io_get_limits();
 
 		// the wrong switch was activated bails
@@ -990,9 +1024,9 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 			return STATUS_CRITICAL_FAIL;
 		}
 
-		cnc_dwell_ms(g_settings.debounce_ms); // adds a delay before reading io pin (debounce)
-		io_enable_limits(); // temporary limits disable
-		limits_flags = io_get_raw_limits(); // get the raw (unfiltered values)
+		cnc_dwell_ms(debounce); // adds a delay before reading io pin (debounce)
+		io_enable_limits();					  // temporary limits disable
+		limits_flags = io_get_raw_limits();	  // get the raw (unfiltered values)
 
 		// all limits should be cleared
 		if (limits_flags)
@@ -1007,7 +1041,7 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 		return STATUS_CRITICAL_FAIL;
 	}
 
-	cnc_delay_ms(g_settings.debounce_ms); // adds a delay before reading io pin (debounce)
+	cnc_delay_ms(debounce); // adds a delay before reading io pin (debounce)
 
 	limits_flags = io_get_raw_limits();
 	if (CHECKFLAG(limits_flags, axis_limit))
