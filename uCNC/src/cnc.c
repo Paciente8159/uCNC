@@ -1031,6 +1031,12 @@ void cnc_check_fault_systems(void)
 		}
 	}
 #endif
+#ifndef DISABLE_SAFE_SETTINGS
+	if ((g_settings_error & SETTINGS_READ_ERROR))
+	{
+		cnc_set_exec_state(EXEC_POSITION_MAYBE_LOST);
+	}
+#endif
 }
 
 bool cnc_check_interlocking(void)
