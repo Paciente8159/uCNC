@@ -27,7 +27,7 @@ MCU_CALLBACK void mcu_gen_step(void)
 	static volatile bool step_reset = true;
 	static volatile int32_t elapsed_us;
 
-	// ESP_LOGD("signal","step %d", signal_timer.step_alarm_en);
+	// ESP_LOGV("signal","step %d", signal_timer.step_alarm_en);
 	// generate steps
 	if (signal_timer.step_alarm_en)
 	{
@@ -37,7 +37,7 @@ MCU_CALLBACK void mcu_gen_step(void)
 		t -= signal_timer.us_step;
 		if (t < 0)
 		{
-			// ESP_LOGD("signal","do step %d", reset);
+			// ESP_LOGV("signal","do step %d", reset);
 			if (!reset)
 			{
 				mcu_step_cb();

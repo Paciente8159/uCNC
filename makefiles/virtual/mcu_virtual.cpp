@@ -1185,6 +1185,11 @@ extern "C"
 	}
 
 	/**
+	 * OTA emulation
+	 */
+	void ota_server_start(void);
+
+	/**
 	 * Initialize the MCU
 	 * **/
 	pthread_t thread_io;

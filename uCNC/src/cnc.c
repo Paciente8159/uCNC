@@ -43,9 +43,6 @@ typedef struct
 	volatile int8_t alarm;
 } cnc_state_t;
 
-#ifndef ENABLE_ITP_FEED_TASK
-static uint8_t cnc_lock_itp;
-#endif
 static cnc_state_t cnc_state;
 bool cnc_status_report_lock;
 
@@ -268,12 +265,7 @@ bool cnc_dotasks(void)
 	}
 
 #ifndef ENABLE_ITP_FEED_TASK
-	if (!cnc_lock_itp)
-	{
-		cnc_lock_itp = 1;
-		itp_run();
-		cnc_lock_itp = 0;
-	}
+	itp_run();
 #endif
 
 #ifdef ENABLE_TOOL_PID_CONTROLLER
@@ -1039,6 +1031,12 @@ void cnc_check_fault_systems(void)
 		}
 	}
 #endif
+#ifndef DISABLE_SAFE_SETTINGS
+	if ((g_settings_error & SETTINGS_READ_ERROR))
+	{
+		cnc_set_exec_state(EXEC_POSITION_MAYBE_LOST);
+	}
+#endif
 }
 
 bool cnc_check_interlocking(void)
@@ -1106,7 +1104,7 @@ bool cnc_check_interlocking(void)
 #endif
 
 	// motion stopped
-	if (!cnc_get_exec_state(EXEC_RUNNING) && cnc_get_exec_state(EXEC_SPECIAL_MOTIONS))
+	if (!cnc_get_exec_state(EXEC_RUNNING) && itp_is_empty() && cnc_get_exec_state(EXEC_SPECIAL_MOTIONS))
 	{
 		bool flush_motion = cnc_get_exec_state(EXEC_CANCELING);
 		if (flush_motion || planner_buffer_is_empty())
@@ -1180,6 +1178,10 @@ static void cnc_io_dotasks(void)
 			stepper_timeout = mcu_millis() + g_settings.step_disable_timeout;
 		}
 	}
+#endif
+
+#if defined(ENABLE_SOCKETS)
+	sockets_dotasks();
 #endif
 }
 

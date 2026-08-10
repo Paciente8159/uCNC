@@ -247,6 +247,7 @@ void planner_discard_block(void)
 
 	// syncs blocks feedrates
 	planner_data[index].entry_feed_sqr = planner_data[prev_index].entry_feed_sqr;
+	memset(&planner_data[prev_index], 0, sizeof(planner_data[prev_index]));
 
 	blocks--;
 #if TOOL_COUNT > 0
