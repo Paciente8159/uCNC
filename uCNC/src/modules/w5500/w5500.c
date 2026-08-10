@@ -57,6 +57,21 @@ HARDSPI(w5500_spi, W5500_SPI_FREQ, 0, mcu_spi2_port);
 
 #define W5500_SPI_PORT (&w5500_spi)
 
+#ifdef USE_STATIC_IP
+#ifndef STATIC_IP_IP
+// 192.168.1.200
+#define STATIC_IP_IP 3355551936
+#endif
+#ifndef STATIC_IP_GW
+// 192.168.1.1
+#define STATIC_IP_GW 16885952
+#endif
+#ifndef STATIC_IP_SUB
+// 255.255.255.0
+#define STATIC_IP_SUB 16777215
+#endif
+#endif
+
 /**
  * @brief	Task extensions depend on the ENABLE_MAIN_LOOP_MODULES option
  * 			Check if this option is defined or not
@@ -88,6 +103,18 @@ bool w5500_dotasks(void *args)
 	uint8_t memsize[2][8] = {{2, 2, 2, 2, 2, 2, 2, 2}, {2, 2, 2, 2, 2, 2, 2, 2}};
 	uint8_t tmp = 0;
 
+#ifndef USE_STATIC_IP
+	wiz_NetInfo w5500_info = {.mac = {0x00, 0x08, 0xDC, 0x44, 0x55, 0x66}, .dhcp = 2};
+#else
+	ipv4_address_t ip = {STATIC_IP_IP};
+	ipv4_address_t sn = {STATIC_IP_SUB};
+	ipv4_address_t gw = {STATIC_IP_GW};
+	wiz_NetInfo w5500_info = {.mac = {0x00, 0x08, 0xDC, 0x44, 0x55, 0x66}, .dhcp = 1};
+	memcpy(&w5500_info.ip, &ip.ip, sizeof(ipv4_address_t));
+	memcpy(&w5500_info.sn, &sn.ip, sizeof(ipv4_address_t));
+	memcpy(&w5500_info.gw, &gw.ip, sizeof(ipv4_address_t));
+#endif
+
 	switch (w5500_state)
 	{
 	case W5500_UNINITIALIZED:
@@ -102,6 +129,7 @@ bool w5500_dotasks(void *args)
 		{
 			break;
 		}
+		ctlnetwork(CN_SET_NETINFO, (void *)&w5500_info);
 		socket_register_device(&wiznet5500_socket_device);
 		w5500_state = W5500_REGISTERED;
 		__FALL_THROUGH__;
@@ -189,16 +217,9 @@ void w5500_send(uint8_t *pBuf, uint16_t len)
 	softspi_stop(W5500_SPI_PORT);
 }
 
-wiz_NetInfo w5500info = {.mac = {0x00, 0x08, 0xDC, 0x44, 0x55, 0x66}, .dhcp = 2};
-
+// disable MCU network interface if available
 void mcu_network_init()
 {
-	w5500_desel();
-	spi_config_t conf = {0};
-	softspi_config(W5500_SPI_PORT, conf, W5500_SPI_FREQ);
-	reg_wizchip_cs_cbfunc(w5500_sel, w5500_desel);
-	reg_wizchip_spi_cbfunc(w5500_read, w5500_write);
-	reg_wizchip_spiburst_cbfunc(w5500_recv, w5500_send);
 }
 
 /**
@@ -212,6 +233,12 @@ void mcu_network_init()
  */
 DECL_MODULE(w5500)
 {
+	w5500_desel();
+	spi_config_t conf = {0};
+	softspi_config(W5500_SPI_PORT, conf, W5500_SPI_FREQ);
+	reg_wizchip_cs_cbfunc(w5500_sel, w5500_desel);
+	reg_wizchip_spi_cbfunc(w5500_read, w5500_write);
+	reg_wizchip_spiburst_cbfunc(w5500_recv, w5500_send);
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 	ADD_EVENT_LISTENER(grbl_cmd, w5500_custom_grbl_cmd);
 #endif

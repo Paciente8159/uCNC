@@ -51,6 +51,12 @@ extern "C"
 	   identifiers and native Windows SOCKET values without truncation. */
 	typedef uintptr_t socket_handle_t;
 
+	typedef union ipv4_address_
+	{
+		uint32_t ip;
+		uint8_t octets[4];
+	} ipv4_address_t;
+
 #define SOCKET_INVALID_HANDLE ((socket_handle_t)UINTPTR_MAX)
 
 	/* Backend result codes. Semantics must remain distinct:
