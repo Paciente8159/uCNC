@@ -30,7 +30,7 @@ Handles encoder reading, atomic operations, and hook‑based callbacks for respo
 Used for jog wheels, spindle feedback, or other closed‑loop features (stepper position loop feedback for example).
 Read more about encoders [here](https://github.com/Paciente8159/uCNC/blob/master/uCNC/src/modules/encoder.md)
 
-### endpoint.h / websocket.h
+### endpoint.h / websocket.h (depracated)
 Defines JSON API endpoints used by the communication and file‑system layers and for a websocket communication channel to control the board via ethernet/wireless.
 Forms part of the interface for external tools and UI integrations.
 

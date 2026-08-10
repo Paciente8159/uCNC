@@ -25,13 +25,12 @@ _**Jump to section**_
 * [µCNC default pinouts](https://github.com/Paciente8159/uCNC/blob/master/PINOUTS.md)
 
 
-# VERSION 1.16+ NOTES
+# VERSION 1.17+ NOTES
 
-Version 1.16 introduces the following changes:
-  - several AVR core improvements, now with better ISR pseudo priority preemption
-  - general ARM ISR priority revisions
-  - Grbl message pattern improvements to allow better compatibility with senders
-  - improvements to the encoder module
+Version 1.17 introduces the following changes:
+  - a new network library. This library delivers a simplified TCP socket, telnet and http servers that are architecture independent. To integrate any harware an BSD-type socket interface API (non POSIX) can be created to support more network hardware. ESP32, ESP8266, and RP2040 have all been migrated.
+  - motion control events that allows to tune the motion controller line segmentation for custom motions.
+  - new lathe mode (uses new motion control events) to allow dynamic calculations of the tool RPM on a linear motion.
 
 # IMPORTANT NOTE
 
@@ -75,9 +74,16 @@ You can also reach me at µCNC discord channel
 
 ## Current µCNC status
 
-µCNC current major version is v1.16. You can check all the new features, changes and bug fixes in the [CHANGELOG](https://github.com/Paciente8159/uCNC/blob/master/CHANGELOG.md).
+µCNC current major version is v1.17. You can check all the new features, changes and bug fixes in the [CHANGELOG](https://github.com/Paciente8159/uCNC/blob/master/CHANGELOG.md).
 
-Version 1.16 improved AVR, ARM for more stability and performance. Encoder module was also improved and enhanced. This allowed huge improvements to G33 parser module. A special thanks to [@HuubBuis](https://github.com/HuubBuis) for all the help and testing.
+Version 1.17 adds a couple of new features.
+  - added a new network library. This library delivers a simplified TCP socket, telnet and http servers that are architecture independent. To integrate any harware an BSD-type socket interface API (non POSIX) can be created to support more network hardware.
+  - motion control events that allows to tune the motion controller line segmentation for custom motions.
+  - new lathe mode (uses new motion control events) to allow dynamic calculations of the tool RPM on a linear motion.
+
+Version 1.16 improved AVR, ARM for more stability and performance.
+  - improved AVR, ARM for more stability and performance.
+  - encoder module was also improved and enhanced. This allowed huge improvements to G33 parser module. A special thanks to [@HuubBuis](https://github.com/HuubBuis) for all the help and testing.
 
 Version 1.15 added the following new major features.
   - added new embroidery tool mode and new embroidery tool based on a stepper motor to control the needle. This tool mode is able to run the needle motor and the axis with different speed profiles to target specific motion needs of this type of tool.
@@ -230,6 +236,7 @@ Other G/M codes available via [external modules](https://github.com/Paciente8159
   - Cubic and quadratic splines: G5/G5.1
   - Lathe radius mode: G7/G8
   - Spindle synchronized motion: G33
+  - Constant surface speed: G96/G97
   - Stepper enable/disable: M17/M18
   - General Pin Control: M42
   - Enable/disable digital output pin synched/immediately: M62/M63/M64/M65
@@ -245,6 +252,10 @@ Other G/M codes available via [external modules](https://github.com/Paciente8159
   - Set home position from current position: G28.1/G30.1
   - Play tone via PWM pin: M300
   - Trinamic driver support and config commands: M350* (set/get microsteps), M906* (set/get current), 913* (stealthchop threshold), 914* (stall sensitivity-stallGuard capable chips only), 920* (set/get register)
+  - Joystick support
+  - Single axis homing
+  - I2C EEPROM support
+  - SDIO card support (STM32 only) 
 
 **ALL custom G/M codes require at least ENABLE_PARSER_MODULES option enabled**
 
@@ -327,7 +338,6 @@ These changes are:
 
 Future versions are in plan for:
 
-- Add support for Web interface
 - Add more GCode features and hardware modules
 - Add additional kinematics
 - Add HAL for new MCU
