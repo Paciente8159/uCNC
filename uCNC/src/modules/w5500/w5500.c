@@ -41,16 +41,10 @@ SOFTSPI(w5500_spi, W5500_SPI_FREQ, 0, W5500_SPI_SDO, W5500_SPI_SDI, W5500_SPI_CL
 #ifndef W5500_SPI_CS
 #define W5500_SPI_CS SPI_CS
 #endif
-#ifndef W5500_SPI_DMA
-#define W5500_SPI_DMA true
-#endif
 HARDSPI(w5500_spi, W5500_SPI_FREQ, 0, mcu_spi_port);
 #elif (W5500_INTERFACE == W5500_HW_SPI2)
 #ifndef W5500_SPI_CS
 #define W5500_SPI_CS SPI2_CS
-#endif
-#ifndef W5500_SPI_DMA
-#define W5500_SPI_DMA true
 #endif
 HARDSPI(w5500_spi, W5500_SPI_FREQ, 0, mcu_spi2_port);
 #endif
@@ -122,15 +116,18 @@ bool w5500_dotasks(void *args)
 		{
 			w5500_state = W5500_INITIALIZED;
 		}
+		proto_printf("w5500 init\r\n");
 		__FALL_THROUGH__;
 	case W5500_INITIALIZED:
 		ctlwizchip(CW_GET_PHYLINK, (void *)&tmp);
 		if (tmp == PHY_LINK_OFF)
 		{
+			proto_printf("w5500 phy off\r\n");
 			break;
 		}
 		ctlnetwork(CN_SET_NETINFO, (void *)&w5500_info);
 		socket_register_device(&wiznet5500_socket_device);
+		proto_printf("w5500 register\r\n");
 		w5500_state = W5500_REGISTERED;
 		__FALL_THROUGH__;
 	case W5500_REGISTERED:

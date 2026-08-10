@@ -110,10 +110,10 @@ extern "C"
 #define PWM1_CHANNEL B
 #define PWM1_TIMER 2
 
-#define PWM2_BIT 4	// assigns PWM0 pin
-#define PWM2_PORT B // assigns PWM0 pin
-#define PWM2_CHANNEL A
-#define PWM2_TIMER 2
+// #define PWM2_BIT 4	// assigns PWM0 pin
+// #define PWM2_PORT B // assigns PWM0 pin
+// #define PWM2_CHANNEL A
+// #define PWM2_TIMER 2
 
 // Setup generic IO Pins
 // Functionalities are set in config.h file
@@ -210,7 +210,7 @@ extern "C"
 #define SPI_SDI_PORT B
 #define SPI_CLK_BIT 1
 #define SPI_CLK_PORT B
-#define SPI_CS_BIT 0
+#define SPI_CS_BIT 4
 #define SPI_CS_PORT B
 #define SPI_FREQ 100000UL
 // software SPI
@@ -250,6 +250,9 @@ extern "C"
 #define DIN18_BIT 6
 #define DIN18_PORT C
 #define DIN18_PULLUP
+
+#define DOUT40_PORT B
+#define DOUT40_PIN 4
 
 #define ONESHOT_TIMER 4
 
