@@ -137,6 +137,7 @@ bool w5500_dotasks(void *args)
 		ctlwizchip(CW_GET_PHYLINK, (void *)&tmp);
 		if (tmp == PHY_LINK_OFF)
 		{
+			ctlwizchip(CW_RESET_WIZCHIP, NULL);
 			w5500_state = W5500_INITIALIZED;
 		}
 		break;
@@ -151,7 +152,7 @@ bool w5500_dotasks(void *args)
  * 			in this case we are adding a listener to the 'cnc_dotasks' EVENT
  *
  */
-CREATE_EVENT_LISTENER(cnc_dotasks, w5500_dotasks);
+CREATE_EVENT_LISTENER(cnc_io_dotasks, w5500_dotasks);
 
 #endif
 
@@ -244,7 +245,7 @@ DECL_MODULE(w5500)
 #endif
 #ifdef ENABLE_MAIN_LOOP_MODULES
 	// Makes the event handler 'mycustom_task' listen to the event 'cnc_dotasks'
-	ADD_EVENT_LISTENER(cnc_dotasks, w5500_dotasks);
+	ADD_EVENT_LISTENER(cnc_io_dotasks, w5500_dotasks);
 #else
 // just a warning in case you disabled the MAIN_LOOP option on build
 #warning "Main loop extensions are not enabled. Your module will not work."
