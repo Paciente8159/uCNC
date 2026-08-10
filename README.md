@@ -28,7 +28,7 @@ _**Jump to section**_
 # VERSION 1.17+ NOTES
 
 Version 1.17 introduces the following changes:
-  - a new network library. This library delivers a simplified TCP socket, telnet and http servers that are architecture independent. To integrate any harware an BSD-type socket interface API (non POSIX) can be created to support more network hardware. ESP32, ESP8266, and RP2040 have all been migrated.
+  - a new network library. This library delivers a simplified TCP socket, telnet and http servers that are architecture independent. ESP32, ESP8266, and RP2040 have all been migrated.
   - motion control events that allows to tune the motion controller line segmentation for custom motions.
   - new lathe mode (uses new motion control events) to allow dynamic calculations of the tool RPM on a linear motion.
 
@@ -77,7 +77,7 @@ You can also reach me at µCNC discord channel
 µCNC current major version is v1.17. You can check all the new features, changes and bug fixes in the [CHANGELOG](https://github.com/Paciente8159/uCNC/blob/master/CHANGELOG.md).
 
 Version 1.17 adds a couple of new features.
-  - added a new network library. This library delivers a simplified TCP socket, telnet and http servers that are architecture independent. To integrate any harware an BSD-type socket interface API (non POSIX) can be created to support more network hardware.
+  - added a new network library. This library delivers a simplified TCP socket, telnet and http servers that are architecture independent. Additional hardware can be supported by adding the raw tcp socket API implementation.
   - motion control events that allows to tune the motion controller line segmentation for custom motions.
   - new lathe mode (uses new motion control events) to allow dynamic calculations of the tool RPM on a linear motion.
 
