@@ -501,110 +501,59 @@ bool flash_fs_rmdir(const char *path)
 /**
  * OTA
  */
-#ifdef ENABLE_SOCKETS
-#include "../../../modules/net/http.h"
-// HTML form for firmware upload (simplified from ESP8266HTTPUpdateServer)
-static const char updateForm[] __rom__ =
-	"<!DOCTYPE html><html><body>"
-	"<form method='POST' action='" OTA_URI "' enctype='multipart/form-data'>"
-	"Firmware:<br><input type='file' name='firmware'>"
-	"<input type='submit' value='Update'>"
-	"</form></body></html>";
-const char type_html[] = "text/html";
-const char type_text[] = "text/plain";
-
-// Request handler for GET /update
-static void ota_page_cb(int client_idx)
-{
-	http_send_str(client_idx, 200, (char *)type_html, (char *)updateForm);
-	http_send(client_idx, 200, (char *)type_html, NULL, 0);
-}
-
-// File upload handler for POST /update
-static void ota_upload_cb(int client_idx)
-{
-	http_upload_t up = http_file_upload_status(client_idx);
-
-	if (up.status == HTTP_UPLOAD_START)
+#ifdef MCU_HAS_FLASHUPDATE
+	extern "C"
 	{
-		// Called once at start of upload
-		Serial.printf("Update start: %s\n", up.filename);
+#include "../../../modules/flash_update.h"
+
+		size_t rpico_get_flash_size(void)
+		{
+			return (size_t)(0xEFFFFFFF);
+		}
+
+		bool rpico_flash_begin(size_t filesize)
+		{
 #ifdef FLASH_FS
-		if (!FLASH_FS.begin())
-		{
-			const char fail[] = "Flash error";
-			http_send_str(client_idx, 415, (char *)type_text, (char *)fail);
-			http_send(client_idx, 415, (char *)type_text, NULL, 0);
-			return;
-		}
+			if (!FLASH_FS.begin())
+			{
+				return false;
+			}
 #endif
-		if (!Update.begin(up.datalen, U_FLASH))
-		{
-			Update.printError(Serial);
-			const char fail[] = "Update Failed: Update start failed!";
-			http_send_str(client_idx, 422, (char *)type_text, (char *)fail);
-			http_send(client_idx, 422, (char *)type_text, NULL, 0);
-			return;
-		}
-	}
-	else if (up.status == HTTP_UPLOAD_PART)
-	{
-		// Called for each chunk
-		if (Update.write(up.data, up.datalen) != up.datalen)
-		{
-			Update.printError(Serial);
-			const char fail[] = "Update Failed: Update data error!";
-			http_send_str(client_idx, 500, (char *)type_text, (char *)fail);
-			http_send(client_idx, 500, (char *)type_text, NULL, 0);
-			return;
-		}
-	}
-	else if (up.status == HTTP_UPLOAD_END)
-	{
-		// Called once at end of upload
-		if (Update.end(true))
-		{
-			const char suc[] = "Update Success! Rebooting...";
-			proto_printf("Update Success: %lu bytes\r\n", up.datalen);
-			http_send_str(client_idx, 200, (char *)type_text, (char *)suc);
-			http_send(client_idx, 200, (char *)type_text, NULL, 0);
-		}
-		else
-		{
-			// Update.printError(Serial);
-			const char fail[] = "Update Failed";
-			http_send_str(client_idx, 500, (char *)type_text, (char *)fail);
-			http_send(client_idx, 500, (char *)type_text, NULL, 0);
+			bool res = Update.begin(filesize, U_FLASH);
+			if (!res)
+			{
+				Update.printError(Serial);
+			}
+			return res;
 		}
 
-#ifdef FLASH_FS
-		FLASH_FS.end();
-#endif
-		cnc_delay_ms(100);
-		rp2040.reboot();
-	}
-	else if (up.status == HTTP_UPLOAD_ABORT)
-	{
-		Update.end();
-		proto_printf("Update aborted\r\n");
+		bool rpico_flash_end(bool flush)
+		{
+			bool res = Update.end(flush);
+			if (!res)
+			{
+				Update.printError(Serial);
+			}
+			return res;
+		}
 
-		cnc_delay_ms(100);
-		rp2040.reboot();
-	}
-}
+		size_t rpico_flash_write(uint8_t *data, size_t len)
+		{
+			size_t res = Update.write(data, len);
+			if (!res)
+			{
+				Update.printError(Serial);
+			}
+			return res;
+		}
 
-extern "C" void ota_server_start(void)
-{
-	// LOAD_MODULE(http_server);
-	// const char update_uri[] = OTA_URI;
-	// http_add((char *)update_uri, HTTP_REQ_ANY, ota_page_cb, ota_upload_cb);
-	RUNONCE
-	{
-		LOAD_MODULE(http_server);
-		http_add(OTA_URI, HTTP_REQ_ANY, ota_page_cb, ota_upload_cb);
-		RUNONCE_COMPLETE();
+		void rpico_restart(void)
+		{
+			rp2040.reboot();
+		}
+
+		static flash_udpate_t rpico_flashupdate = {.get_flash_size = rpico_get_flash_size, .flash_begin = rpico_flash_begin, .flash_write = rpico_flash_write, .flash_end = rpico_flash_end, .device_restart = rpico_restart};
 	}
-}
 #endif
 
 #ifdef USE_STATIC_IP
@@ -636,7 +585,6 @@ extern "C" void __attribute__((weak)) mcu_network_init(void)
 	WiFi.begin((char *)BOARD_NAME, (char *)WIFI_PASS);
 	extern socket_device_t wifi_socket;
 	socket_register_device(&wifi_socket);
-	ota_server_start();
 	WiFi.disconnect();
 #endif
 }
@@ -712,6 +660,10 @@ extern "C" void rp2040_wifi_bt_init(void)
 		.finfo = flash_fs_info,
 		.next = NULL};
 	fs_mount(&flash_fs);
+#endif
+
+#ifdef MCU_HAS_FLASHUPDATE
+		flash_update_register(&rpico_flashupdate);
 #endif
 
 #ifdef ENABLE_BLUETOOTH
