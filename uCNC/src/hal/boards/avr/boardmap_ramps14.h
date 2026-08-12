@@ -176,8 +176,8 @@ extern "C"
 	// #define DIN24_PORT F
 	// #define DIN24_PULLUP
 
-#define SERVO3_BIT 5
-#define SERVO3_PORT G
+// #define SERVO3_BIT 5
+// #define SERVO3_PORT G
 #define SERVO2_BIT 3
 #define SERVO2_PORT E
 #define SERVO1_BIT 3
@@ -210,7 +210,7 @@ extern "C"
 #define SPI_SDI_PORT B
 #define SPI_CLK_BIT 1
 #define SPI_CLK_PORT B
-#define SPI_CS_BIT 4
+#define SPI_CS_BIT 0
 #define SPI_CS_PORT B
 #define SPI_FREQ 100000UL
 // software SPI
@@ -252,7 +252,10 @@ extern "C"
 #define DIN18_PULLUP
 
 #define DOUT40_PORT B
-#define DOUT40_PIN 4
+#define DOUT40_BIT 4
+#define DIN40_BIT 5
+#define DIN40_PORT G
+#define DIN40_PULLUP
 
 #define ONESHOT_TIMER 4
 

@@ -8,8 +8,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "../net/socket.h"
-#include "driver/wizchip_conf.h"
-#include "wiznet5500_socket_device.h"
+// #include "driver/wizchip_conf.h"
+// #include "wiznet5500_socket_device.h"
+#include "wiznet_ethernet.h"
 
 #define W5500_SW_SPI 0
 #define W5500_HW_SPI 1
@@ -39,7 +40,7 @@
 SOFTSPI(w5500_spi, W5500_SPI_FREQ, 0, W5500_SPI_SDO, W5500_SPI_SDI, W5500_SPI_CLK);
 #elif (W5500_INTERFACE == W5500_HW_SPI)
 #ifndef W5500_SPI_CS
-#define W5500_SPI_CS SPI_CS
+#define W5500_SPI_CS DOUT40
 #endif
 HARDSPI(w5500_spi, W5500_SPI_FREQ, 0, mcu_spi_port);
 #elif (W5500_INTERFACE == W5500_HW_SPI2)
@@ -64,6 +65,8 @@ HARDSPI(w5500_spi, W5500_SPI_FREQ, 0, mcu_spi2_port);
 // 255.255.255.0
 #define STATIC_IP_SUB 16777215
 #endif
+#else
+#error "Wiznet module requires static IP configuration"
 #endif
 
 /**
@@ -91,65 +94,66 @@ HARDSPI(w5500_spi, W5500_SPI_FREQ, 0, mcu_spi2_port);
 #define W5500_REGISTERED 2
 static uint8_t w5500_state = W5500_UNINITIALIZED;
 
-bool w5500_dotasks(void *args)
-{
+// bool w5500_dotasks(void *args)
+// {
 
-	uint8_t memsize[2][8] = {{2, 2, 2, 2, 2, 2, 2, 2}, {2, 2, 2, 2, 2, 2, 2, 2}};
-	uint8_t tmp = 0;
+// 	uint8_t memsize[2][8] = {{2, 2, 2, 2, 2, 2, 2, 2}, {2, 2, 2, 2, 2, 2, 2, 2}};
+// 	uint8_t tmp = 0;
 
-#ifndef USE_STATIC_IP
-	wiz_NetInfo w5500_info = {.mac = {0x00, 0x08, 0xDC, 0x44, 0x55, 0x66}, .dhcp = 2};
-#else
-	ipv4_address_t ip = {STATIC_IP_IP};
-	ipv4_address_t sn = {STATIC_IP_SUB};
-	ipv4_address_t gw = {STATIC_IP_GW};
-	wiz_NetInfo w5500_info = {.mac = {0x00, 0x08, 0xDC, 0x44, 0x55, 0x66}, .dhcp = 1};
-	memcpy(&w5500_info.ip, &ip.ip, sizeof(ipv4_address_t));
-	memcpy(&w5500_info.sn, &sn.ip, sizeof(ipv4_address_t));
-	memcpy(&w5500_info.gw, &gw.ip, sizeof(ipv4_address_t));
-#endif
+// #ifndef USE_STATIC_IP
+// 	wiz_NetInfo w5500_info = {.mac = {0x00, 0x08, 0xDC, 0x44, 0x55, 0x66}, .dhcp = 2};
+// #else
+// 	ipv4_address_t ip = {STATIC_IP_IP};
+// 	ipv4_address_t sn = {STATIC_IP_SUB};
+// 	ipv4_address_t gw = {STATIC_IP_GW};
+// 	wiz_NetInfo w5500_info = {.mac = {0x00, 0x08, 0xDC, 0x44, 0x55, 0x66}, .dhcp = 1};
+// 	memcpy(&w5500_info.ip, &ip.ip, sizeof(ipv4_address_t));
+// 	memcpy(&w5500_info.sn, &sn.ip, sizeof(ipv4_address_t));
+// 	memcpy(&w5500_info.gw, &gw.ip, sizeof(ipv4_address_t));
+// #endif
 
-	switch (w5500_state)
-	{
-	case W5500_UNINITIALIZED:
-		if (ctlwizchip(CW_INIT_WIZCHIP, (void *)memsize) == -1)
-		{
-			w5500_state = W5500_INITIALIZED;
-		}
-		proto_printf("w5500 init\r\n");
-		__FALL_THROUGH__;
-	case W5500_INITIALIZED:
-		ctlwizchip(CW_GET_PHYLINK, (void *)&tmp);
-		if (tmp == PHY_LINK_OFF)
-		{
-			proto_printf("w5500 phy off\r\n");
-			break;
-		}
-		ctlnetwork(CN_SET_NETINFO, (void *)&w5500_info);
-		socket_register_device(&wiznet5500_socket_device);
-		proto_printf("w5500 register\r\n");
-		w5500_state = W5500_REGISTERED;
-		__FALL_THROUGH__;
-	case W5500_REGISTERED:
-		ctlwizchip(CW_GET_PHYLINK, (void *)&tmp);
-		if (tmp == PHY_LINK_OFF)
-		{
-			ctlwizchip(CW_RESET_WIZCHIP, NULL);
-			w5500_state = W5500_INITIALIZED;
-		}
-		break;
-	}
+// 	switch (w5500_state)
+// 	{
+// 	case W5500_UNINITIALIZED:
+// 		if (ctlwizchip(CW_INIT_WIZCHIP, (void *)memsize) == -1)
+// 		{
+// 			return EVENT_CONTINUE;
+// 		}
+// 		w5500_state = W5500_INITIALIZED;
+// 		proto_printf("w5500 init\r\n");
+// 		__FALL_THROUGH__;
+// 	case W5500_INITIALIZED:
+// 		// ctlwizchip(CW_GET_PHYLINK, (void *)&tmp);
+// 		// if (tmp == PHY_LINK_OFF)
+// 		// {
+// 		// 	proto_printf("w5500 phy off\r\n");
+// 		// 	return EVENT_CONTINUE;
+// 		// }
+// 		ctlnetwork(CN_SET_NETINFO, (void *)&w5500_info);
+// 		socket_register_device(&wiznet5500_socket_device);
+// 		proto_printf("w5500 register\r\n");
+// 		w5500_state = W5500_REGISTERED;
+// 		__FALL_THROUGH__;
+// 	case W5500_REGISTERED:
+// 		ctlwizchip(CW_GET_PHYLINK, (void *)&tmp);
+// 		if (tmp == PHY_LINK_OFF)
+// 		{
+// 			ctlwizchip(CW_RESET_WIZCHIP, NULL);
+// 			w5500_state = W5500_INITIALIZED;
+// 		}
+// 		break;
+// 	}
 
-	// you must return EVENT_CONTINUE to enable other tasks to run or return EVENT_HANDLED to terminate the event handling within this callback
-	return EVENT_CONTINUE;
-}
+// 	// you must return EVENT_CONTINUE to enable other tasks to run or return EVENT_HANDLED to terminate the event handling within this callback
+// 	return EVENT_CONTINUE;
+// }
 
 /**
  * @brief 	Create an event listener object an attach our custom code parser handler.
  * 			in this case we are adding a listener to the 'cnc_dotasks' EVENT
  *
  */
-CREATE_EVENT_LISTENER(cnc_io_dotasks, w5500_dotasks);
+// CREATE_EVENT_LISTENER(cnc_io_dotasks, w5500_dotasks);
 
 #endif
 
@@ -160,18 +164,25 @@ bool w5500_custom_grbl_cmd(void *args)
 	// uint8_t has_arg = (cmd_params->next_char == '=');
 	memset(arg, 0, sizeof(arg));
 
-	if (!strcmp((const char *)&(cmd_params->cmd)[4], "IP"))
+	if (!strcmp((const char *)cmd_params->cmd, "IP"))
 	{
-		if (w5500_state > W5500_INITIALIZED)
+		// if (w5500_state > W5500_INITIALIZED)
+		// {
+		// 	wiz_NetInfo w5500_info;
+		// 	ctlnetwork(CN_GET_NETINFO, (void *)&w5500_info);
+		// 	proto_info("IP>%hu.%hu.%hu.%hu", w5500_info.ip[0], w5500_info.ip[1], w5500_info.ip[2], w5500_info.ip[3]);
+		// }
+		// else
+		// {
+		// 	proto_info("W5500 is off");
+		// }
+		ipv4_address_t ip = {0};
+		if (wiznet_is_ready())
 		{
-			wiz_NetInfo w5500_info;
-			ctlnetwork(CN_GET_NETINFO, (void *)&w5500_info);
-			proto_info("IP>%hu.%hu.%hu.%hu", w5500_info.ip[0], w5500_info.ip[1], w5500_info.ip[2], w5500_info.ip[3]);
+			ip.ip = wiznet_get_ip().ip;
 		}
-		else
-		{
-			proto_info("W5500 is off");
-		}
+
+		proto_info("IP>%hu.%hu.%hu.%hu", ip.octets[0], ip.octets[1], ip.octets[2], ip.octets[3]);
 
 		*(cmd_params->error) = STATUS_OK;
 		return EVENT_HANDLED;
@@ -231,20 +242,32 @@ void mcu_network_init()
  */
 DECL_MODULE(w5500)
 {
+	proto_info("W5500 config");
+	io_config_output(W5500_SPI_CS);
 	w5500_desel();
-	spi_config_t conf = {0};
-	softspi_config(W5500_SPI_PORT, conf, W5500_SPI_FREQ);
-	reg_wizchip_cs_cbfunc(w5500_sel, w5500_desel);
-	reg_wizchip_spi_cbfunc(w5500_read, w5500_write);
-	reg_wizchip_spiburst_cbfunc(w5500_recv, w5500_send);
-#ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
+	// spi_config_t conf = {0};
+	// softspi_config(W5500_SPI_PORT, conf, W5500_SPI_FREQ);
+	// reg_wizchip_cs_cbfunc(w5500_sel, w5500_desel);
+	// reg_wizchip_spi_cbfunc(w5500_read, w5500_write);
+	// reg_wizchip_spiburst_cbfunc(w5500_recv, w5500_send);
+	ipv4_address_t ip = {STATIC_IP_IP};
+	ipv4_address_t sn = {STATIC_IP_SUB};
+	ipv4_address_t gw = {STATIC_IP_GW};
+	uint8_t mac[6] = {0x00, 0x08, 0xDC, 0x44, 0x55, 0x66};
+	wiznet_set_mac(mac);
+	wiznet_config(ip, sn, gw);
+	W5500_SPI_PORT->spifreq = W5500_SPI_FREQ;
+	wiznet_init(W5500_SPI_PORT);
+	if (wiznet_is_ready())
+		proto_info("W5500 config done");
+#ifdef ENABLE_PARSER_MODULES
 	ADD_EVENT_LISTENER(grbl_cmd, w5500_custom_grbl_cmd);
 #endif
-#ifdef ENABLE_MAIN_LOOP_MODULES
-	// Makes the event handler 'mycustom_task' listen to the event 'cnc_dotasks'
-	ADD_EVENT_LISTENER(cnc_io_dotasks, w5500_dotasks);
-#else
-// just a warning in case you disabled the MAIN_LOOP option on build
-#warning "Main loop extensions are not enabled. Your module will not work."
-#endif
+	// #ifdef ENABLE_MAIN_LOOP_MODULES
+	// 	// Makes the event handler 'mycustom_task' listen to the event 'cnc_dotasks'
+	// 	ADD_EVENT_LISTENER(cnc_io_dotasks, w5500_dotasks);
+	// #else
+	// // just a warning in case you disabled the MAIN_LOOP option on build
+	// #warning "Main loop extensions are not enabled. Your module will not work."
+	// #endif
 }

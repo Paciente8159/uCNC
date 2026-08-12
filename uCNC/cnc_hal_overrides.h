@@ -8,6 +8,10 @@ extern "C"
 {
 #endif
 
+#define USE_STATIC_IP
+#define WIZDGB proto_printf
+#define LOAD_MODULES_OVERRIDE() ({LOAD_MODULE(w5500);})
+
 #ifdef __cplusplus
 }
 #endif

@@ -124,6 +124,14 @@ size_t prt_int(void *out, size_t maxlen, uint32_t num, uint8_t padding)
 	return maxlen;
 }
 
+#define prt_uint8(out, maxlen, num, padding)             \
+	({                                                   \
+		uint32_t tmp = 0;                                \
+		tmp = (uint32_t)(((uint8_t)num) & 0xff);                    \
+		size_t res = prt_int(out, maxlen, tmp, padding); \
+		res;                                             \
+	})
+
 size_t prt_flt(void *out, size_t maxlen, float num, uint8_t precision)
 {
 #ifndef PRINT_FTM_MINIMAL
@@ -173,20 +181,23 @@ size_t prt_flt(void *out, size_t maxlen, float num, uint8_t precision)
 }
 
 #ifndef PRINT_FTM_MINIMAL
+union ipv4_address_format_
+{
+	uint32_t ip;
+	uint8_t octects[4];
+};
+
 size_t prt_ip(void *out, size_t maxlen, uint32_t ip)
 {
-	uint8_t *ptr = (uint8_t *)&ip;
-	uint32_t b = (uint32_t)(ptr[0] & 0xff);
-	maxlen = prt_int(out, maxlen, b, 0);
+	union ipv4_address_format_ addr = {0};
+	addr.ip = ip;
+	maxlen = prt_uint8(out, maxlen, addr.octects[0], 0);
 	maxlen = prt_putc(out, maxlen, '.');
-	b = (uint32_t)(ptr[1] & 0xff);
-	maxlen = prt_int(out, maxlen, b, 0);
+	maxlen = prt_uint8(out, maxlen, addr.octects[1], 0);
 	maxlen = prt_putc(out, maxlen, '.');
-	b = (uint32_t)(ptr[2] & 0xff);
-	maxlen = prt_int(out, maxlen, b, 0);
+	maxlen = prt_uint8(out, maxlen, addr.octects[2], 0);
 	maxlen = prt_putc(out, maxlen, '.');
-	b = (uint32_t)(ptr[3] & 0xff);
-	maxlen = prt_int(out, maxlen, b, 0);
+	maxlen = prt_uint8(out, maxlen, addr.octects[3], 0);
 
 	return maxlen;
 }

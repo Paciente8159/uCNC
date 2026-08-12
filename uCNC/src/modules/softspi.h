@@ -29,6 +29,16 @@ extern "C"
 #include <stdbool.h>
 
 	/**
+	 * softspi API
+	 * On all funtions the first argument is a pointer to a softspi_port_t
+	 * if the pointer is NULL it will try to use the hardware SPI port
+	 * softspi_port_t can use one of three options
+	 * - hardware SPI port (if available)
+	 * - hardware SPI2 port (if available)
+	 * - software (bit-banged) emulated SPI por using generic IO pins
+	 */
+
+	/**
 	 * The new softspi port structure allow to create software SPI ports with different configurations.
 	 * It also allows to take advantage of the Arduino library to allow creation of new HW SPI ports.
 	 *
@@ -134,14 +144,12 @@ extern "C"
 
 #define HARDSPI(NAME, FREQ, MODE, PORT) __attribute__((used)) softspi_port_t NAME = {.spiconfig = {.mode = MODE}, .spifreq = FREQ, .spiport = &PORT, .clk = NULL, .mosi = NULL, .miso = NULL, .config = NULL};
 
-	void softspi_config(softspi_port_t *port, spi_config_t config, uint32_t frequency);
-	void softspi_start(softspi_port_t *port);
-	uint8_t softspi_xmit(softspi_port_t *port, uint8_t c);
-	uint16_t softspi_xmit16(softspi_port_t *port, uint16_t c);
-	// sends bulk transmition
-	// software emulated SPI sends data for a maximum BULK_SPI_TIMEOUT before recalling the main loop
-	void softspi_bulk_xmit(softspi_port_t *port, const uint8_t *out, uint8_t *in, uint16_t len);
-	void softspi_stop(softspi_port_t *port);
+	void softspi_config(softspi_port_t *port, spi_config_t config, uint32_t frequency); // configures the SPI port (sets the working frequency and SPI modes). If available DMA/ISR support will also be enabled.
+	void softspi_start(softspi_port_t *port); // initializes a bulk transfer (using DMA/ISR) (if available). softspi_config will be (internaly) called by this function
+	uint8_t softspi_xmit(softspi_port_t *port, uint8_t c); // writes/reads a byte
+	uint16_t softspi_xmit16(softspi_port_t *port, uint16_t c);  // writes/reads a word (2 bytes)
+	void softspi_bulk_xmit(softspi_port_t *port, const uint8_t *out, uint8_t *in, uint16_t len); // transmits data (bulk transmition). If *in is NULL it discards incoming data. software emulated SPI sends data for a maximum BULK_SPI_TIMEOUT before recalling the main loop.
+	void softspi_stop(softspi_port_t *port); // terminates a bulk transmission
 
 	// helper functions
 	static FORCEINLINE void softspi_set_mode(softspi_port_t *port, uint8_t spi_mode) { port->spiconfig.mode = spi_mode; softspi_config(port, port->spiconfig, port->spifreq);}

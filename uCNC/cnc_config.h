@@ -36,7 +36,7 @@ extern "C"
 #endif
 
 #ifndef ENABLE_SOCKETS
-#define ENABLE_SOCKETS
+// #define ENABLE_SOCKETS
 #endif
 
 #ifndef ENABLE_BLUETOOTH
@@ -401,9 +401,9 @@ extern "C"
 	/**
 	 * Uncomment to enable module extensions
 	 * */
-	#define ENABLE_MAIN_LOOP_MODULES
+	// #define ENABLE_MAIN_LOOP_MODULES
 	// #define ENABLE_IO_MODULES
-	#define ENABLE_PARSER_MODULES
+	// #define ENABLE_PARSER_MODULES
 	// #define ENABLE_MOTION_CONTROL_MODULES
 	// #define ENABLE_PLANNER_MODULES
 
