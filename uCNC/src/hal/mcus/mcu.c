@@ -38,10 +38,10 @@ MCU_CALLBACK mcu_timeout_delgate mcu_timeout_cb;
 #endif
 
 // the telnet socket pointer
-socket_if_t *telnet_sock;
+socket_if_t *mcu_telnet_sock;
 void mcu_telnet_onrecv(uint8_t client_idx, void *data, size_t data_len);
 // the telnet onrecv callback
-telnet_protocol_t telnet_proto = {.telnet_onrecv_cb = mcu_telnet_onrecv};
+telnet_protocol_t mcu_telnet_protocol = {.telnet_onrecv_cb = mcu_telnet_onrecv};
 DECL_BUFFER(uint8_t, telnet_rx, RX_BUFFER_SIZE);
 DECL_BUFFER(uint8_t, telnet_tx, TELNET_TX_BUFFER_SIZE);
 
@@ -94,7 +94,7 @@ void mcu_telnet_clear(void)
 void mcu_telnet_flush(void)
 {
 	// if no clients just throws away the buffer
-	if (!telnet_hasclients(&telnet_proto))
+	if (!telnet_hasclients(&mcu_telnet_protocol))
 	{
 		BUFFER_CLEAR(telnet_tx);
 		return;
@@ -106,7 +106,7 @@ void mcu_telnet_flush(void)
 		memset(tmp, 0, sizeof(tmp));
 		uint8_t r = 0;
 		BUFFER_READ(telnet_tx, tmp, TELNET_TX_BUFFER_SIZE, r);
-		telnet_broadcast(&telnet_proto, (char *)tmp, r, 0);
+		telnet_broadcast(&mcu_telnet_protocol, (char *)tmp, r, 0);
 	}
 }
 
@@ -914,8 +914,7 @@ static void FORCEINLINE mcu_coms_init(void)
 #endif
 	BUFFER_INIT(uint8_t, telnet_tx, TELNET_TX_BUFFER_SIZE);
 	BUFFER_INIT(uint8_t, telnet_rx, RX_BUFFER_SIZE);
-	mcu_network_init();
-	telnet_sock = telnet_start_listen(&telnet_proto, 23);
+	// mcu_network_init(); // initialize later
 #endif
 
 #ifdef MCU_HAS_BLUETOOTH

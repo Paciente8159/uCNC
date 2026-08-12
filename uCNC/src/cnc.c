@@ -104,10 +104,13 @@ void cnc_init(void)
 	io_enable_steppers(~g_settings.step_enable_invert); // disables steppers at start
 	io_disable_probe();									// forces probe isr disabling
 	grbl_stream_init();									// serial
-	mod_init();											// modules
-	settings_init();									// settings
-	itp_init();											// interpolator
-	planner_init();										// motion planner
+#ifdef ENABLE_SOCKETS
+	cnc_network_init(); // initialize network if available. All services running over sockets will be able to run after this
+#endif
+	mod_init();		 // modules
+	settings_init(); // settings
+	itp_init();		 // interpolator
+	planner_init();	 // motion planner
 #if TOOL_COUNT > 0
 	tool_init();
 #endif
@@ -1310,3 +1313,13 @@ uint8_t cnc_get_status(void)
 
 	return EXEC_STATUS_IDLE;
 }
+
+#ifdef ENABLE_SOCKETS
+void __attribute__((weak)) cnc_network_init(void)
+{
+	mcu_network_init();							  // initializes the buildin network device of the MCU if available
+	extern socket_if_t *mcu_telnet_sock;		  // telnet socket interface pointer
+	extern telnet_protocol_t mcu_telnet_protocol; // telnet protocol
+	mcu_telnet_sock = telnet_start_listen(&mcu_telnet_protocol, 23);
+}
+#endif

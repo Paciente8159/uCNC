@@ -303,9 +303,9 @@ extern "C"
 	 * */
 	void mcu_stop_itp_isr(void);
 
-	#ifndef mcu_start_step_reset_timeout
-	#define mcu_start_step_reset_timeout()
-	#endif
+#ifndef mcu_start_step_reset_timeout
+#define mcu_start_step_reset_timeout()
+#endif
 
 /**
  * gets the MCU running time in milliseconds.
@@ -621,7 +621,7 @@ extern "C"
 #endif
 
 #ifdef ENABLE_SOCKETS
-	void mcu_network_init(void);
+	void mcu_network_init(void);				  // initializes the MCU buildin network device
 	uint8_t mcu_telnet_getc(void);
 	uint8_t mcu_telnet_available(void);
 	void mcu_telnet_clear(void);
@@ -660,6 +660,7 @@ extern "C"
 #ifndef mcu_flush
 #define mcu_flush (&mcu_uart_flush)
 #endif
+
 
 /**
  * allows to determine the current running context on the MCU

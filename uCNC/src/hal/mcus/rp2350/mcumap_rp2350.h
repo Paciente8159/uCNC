@@ -1399,6 +1399,10 @@ extern "C"
 #endif
 #endif
 
+#ifndef MCU_HAS_FLASHUPDATE
+#define MCU_HAS_FLASHUPDATE
+#endif
+
 #if (defined(ENABLE_SOCKETS) || defined(ENABLE_BLUETOOTH))
 #ifndef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 #define BOARD_HAS_CUSTOM_SYSTEM_COMMANDS

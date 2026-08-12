@@ -485,111 +485,58 @@ extern "C"
 	}
 #endif
 
-#ifdef ENABLE_SOCKETS
-#include "../../../modules/net/http.h"
-	// HTML form for firmware upload (simplified from ESP8266HTTPUpdateServer)
-	static const char updateForm[] __rom__ =
-		"<!DOCTYPE html><html><body>"
-		"<form method='POST' action='" OTA_URI "' enctype='multipart/form-data'>"
-		"Firmware:<br><input type='file' name='firmware'>"
-		"<input type='submit' value='Update'>"
-		"</form></body></html>";
-	const char type_html[] = "text/html";
-	const char type_text[] = "text/plain";
-
-	// HTML form for firmware upload (simplified from ESP8266HTTPUpdateServer)
-	// Request handler for GET /update
-	static void ota_page_cb(int client_idx)
+#ifdef MCU_HAS_FLASHUPDATE
+	extern "C"
 	{
-		http_send_str(client_idx, 200, (char *)type_html, (char *)updateForm);
-		http_send(client_idx, 200, (char *)type_html, NULL, 0);
-	}
+#include "../../../modules/flash_update.h"
 
-	// File upload handler for POST /update
-	static void ota_upload_cb(int client_idx)
-	{
-		http_upload_t up = http_file_upload_status(client_idx);
+		size_t esp8266_get_flash_size(void)
+		{
+			return (size_t)((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000);
+		}
 
-		if (up.status == HTTP_UPLOAD_START)
+		bool esp8266_flash_begin(size_t filesize)
 		{
 #ifdef FLASH_FS
 			if (!FLASH_FS.begin())
 			{
-				const char fail[] = "Flash error";
-				http_send_str(client_idx, 415, (char *)type_text, (char *)fail);
-				http_send(client_idx, 415, (char *)type_text, NULL, 0);
-				return;
+				return false;
 			}
 #endif
-
-			// Called once at start of upload
-			proto_printf("Update start: %s\n", up.filename);
-			uint32_t maxSketchSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
-			if (maxSketchSpace < up.filelen)
-			{
-				// ESP_LOGI("OTA", "File size of %ld exceeds available space: %ld", maxSketchSpace);
-				// Update.printError(Serial);
-				const char fail[] = "Update Failed: File too big!";
-				http_send_str(client_idx, 413, (char *)type_text, (char *)fail);
-				http_send(client_idx, 413, (char *)type_text, NULL, 0);
-				return;
-			}
-			if (!Update.begin(maxSketchSpace, U_FLASH))
+			bool res = Update.begin(filesize, U_FLASH);
+			if (!res)
 			{
 				Update.printError(Serial);
-				const char fail[] = "Update Failed: Update start failed!";
-				http_send_str(client_idx, 422, (char *)type_text, (char *)fail);
-				http_send(client_idx, 422, (char *)type_text, NULL, 0);
-				return;
 			}
+			return res;
 		}
-		else if (up.status == HTTP_UPLOAD_PART)
+
+		bool esp8266_flash_end(bool flush)
 		{
-			// Called for each chunk
-			if (Update.write(up.data, up.datalen) != up.datalen)
+			bool res = Update.end(flush);
+			if (!res)
 			{
 				Update.printError(Serial);
-				const char fail[] = "Update Failed: Update data error!";
-				http_send_str(client_idx, 500, (char *)type_text, (char *)fail);
-				http_send(client_idx, 500, (char *)type_text, NULL, 0);
-				return;
 			}
+			return res;
 		}
-		else if (up.status == HTTP_UPLOAD_END)
-		{
-			// Called once at end of upload
-			if (Update.end(true))
-			{
-				proto_printf("Update Success: %lu bytes\r\n", up.datalen);
-				const char suc[] = "Update Success! Rebooting...";
-				http_send_str(client_idx, 200, (char *)type_text, (char *)suc);
-				http_send(client_idx, 200, (char *)type_text, NULL, 0);
-			}
-			else
-			{
-				const char fail[] = "Update Failed";
-				http_send_str(client_idx, 500, (char *)type_text, (char *)fail);
-				http_send(client_idx, 500, (char *)type_text, NULL, 0);
-			}
 
-#ifdef FLASH_FS
-			FLASH_FS.end();
-#endif
-			delay(100);
+		size_t esp8266_flash_write(uint8_t *data, size_t len)
+		{
+			size_t res = Update.write(data, len);
+			if (!res)
+			{
+				Update.printError(Serial);
+			}
+			return res;
+		}
+
+		void esp8266_restart(void)
+		{
 			ESP.restart();
 		}
-		else if (up.status == HTTP_UPLOAD_ABORT)
-		{
-			Update.end();
-			proto_print("Update aborted\r\n");
-		}
-	}
 
-	static char update_uri[] = OTA_URI;
-	void ota_server_start(void)
-	{
-		LOAD_MODULE(http_server);
-		http_add(update_uri, HTTP_REQ_ANY, ota_page_cb, ota_upload_cb);
+		static flash_udpate_t esp8266_flashupdate = {.get_flash_size = esp8266_get_flash_size, .flash_begin = esp8266_flash_begin, .flash_write = esp8266_flash_write, .flash_end = esp8266_flash_end, .device_restart = esp8266_restart};
 	}
 #endif
 
@@ -625,7 +572,6 @@ extern "C"
 		WiFi.begin();
 		extern socket_device_t wifi_socket;
 		socket_register_device(&wifi_socket);
-		ota_server_start();
 #endif
 	}
 
@@ -691,6 +637,10 @@ extern "C"
 			.finfo = flash_fs_info,
 			.next = NULL};
 		fs_mount(&flash_fs);
+
+#ifdef MCU_HAS_FLASHUPDATE
+		flash_update_register(&esp8266_flashupdate);
+#endif
 
 #if defined(BOARD_HAS_CUSTOM_SYSTEM_COMMANDS) && defined(ENABLE_SOCKETS)
 		ADD_EVENT_LISTENER(grbl_cmd, mcu_custom_grbl_cmd);

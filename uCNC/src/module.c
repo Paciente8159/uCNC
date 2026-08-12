@@ -74,6 +74,10 @@ void mod_init(void)
 	LOAD_MODULE(file_system);
 #endif
 
+#ifdef MCU_HAS_FLASHUPDATE
+	LOAD_MODULE(flash_update);
+#endif
+
 	load_modules();
 }
 
