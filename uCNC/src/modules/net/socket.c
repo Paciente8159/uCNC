@@ -31,7 +31,7 @@ static socket_if_t raw_sockets[MAX_SOCKETS];
 static socket_device_t *socket_device;
 
 static bool socket_device_connected(socket_handle_t listener, socket_handle_t client);
-static void socket_device_data(socket_handle_t client, char *data, size_t len);
+static bool socket_device_data(socket_handle_t client, char *data, size_t len);
 static void socket_device_writable(socket_handle_t client);
 static void socket_device_disconnected(socket_handle_t client, int reason);
 
@@ -263,9 +263,11 @@ static bool socket_device_connected(socket_handle_t listener, socket_handle_t cl
 
 	for (uint8_t i = 0; i < SOCKET_MAX_CLIENTS; i++)
 	{
-		if (iface->socket_clients[i] == SOCKET_INVALID_HANDLE)
+		if (iface->socket_clients[i] == SOCKET_INVALID_HANDLE &&
+			iface->clients_callbacks_status[i] == 0)
 		{
 			iface->socket_clients[i] = client;
+
 #ifdef ENABLE_SOCKET_TIMEOUTS
 			iface->client_activity[i] = mcu_millis();
 #endif
@@ -282,7 +284,7 @@ static bool socket_device_connected(socket_handle_t listener, socket_handle_t cl
 }
 
 /* Backend event sink: TCP payload is available */
-static void socket_device_data(socket_handle_t client, char *data, size_t len)
+static bool socket_device_data(socket_handle_t client, char *data, size_t len)
 {
 	socket_if_t *iface = NULL;
 	uint8_t client_idx = 0;
@@ -305,7 +307,12 @@ static void socket_device_data(socket_handle_t client, char *data, size_t len)
 	if (!found)
 	{
 		/* Unknown/stale handle; ignore */
-		return;
+		return true;
+	}
+
+	if (CHECKFLAG(iface->clients_callbacks_status[client_idx], CLIENT_ONDATA_CB_BUSY))
+	{
+		return false;
 	}
 
 #ifdef ENABLE_SOCKET_TIMEOUTS
@@ -314,8 +321,12 @@ static void socket_device_data(socket_handle_t client, char *data, size_t len)
 	data[len] = '\0';
 	if (iface->client_ondata_cb)
 	{
+		SETFLAG(iface->clients_callbacks_status[client_idx], CLIENT_ONDATA_CB_BUSY);
 		iface->client_ondata_cb(client_idx, data, len, iface->protocol);
+		CLEARFLAG(iface->clients_callbacks_status[client_idx], CLIENT_ONDATA_CB_BUSY);
 	}
+
+	return true;
 }
 
 /* Backend event sink: reserved for future TX-progress notification */
@@ -402,14 +413,16 @@ void socket_server_dotasks(void)
 	   socket_server_dotasks() call to keep the work strictly bounded */
 	socket_if_t *socket = &raw_sockets[i];
 	if (socket->socket_if != SOCKET_INVALID_HANDLE && socket->client_onidle_cb &&
-		socket->socket_clients[c] != SOCKET_INVALID_HANDLE)
+		socket->socket_clients[c] != SOCKET_INVALID_HANDLE && !CHECKFLAG(socket->clients_callbacks_status[c], CLIENT_ONIDLE_CB_BUSY))
 	{
+		SETFLAG(socket->clients_callbacks_status[c], CLIENT_ONIDLE_CB_BUSY);
 #ifdef ENABLE_SOCKET_TIMEOUTS
 		uint32_t idle = mcu_millis() - socket->client_activity[c];
 		socket->client_onidle_cb(c, idle, socket->protocol);
 #else
 		socket->client_onidle_cb(c, 0, socket->protocol);
 #endif
+		CLEARFLAG(socket->clients_callbacks_status[c], CLIENT_ONIDLE_CB_BUSY);
 	}
 
 	/* Round-robin through clients and listeners, one step per call */

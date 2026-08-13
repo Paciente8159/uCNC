@@ -52,6 +52,12 @@ static esp32_client_t esp32_clients[ESP32_MAX_CLIENTS];
 static int esp32_listeners[ESP32_MAX_LISTENERS];
 static const socket_device_events_t *esp32_socket_events;
 static bool esp32_net_started = false;
+/*
+ * The RX buffer used by service() is shared. While it is being exposed to
+ * the socket core/application, nested service calls may still process TX and
+ * socket errors, but must not accept clients or perform another RX operation.
+ */
+static bool esp32_rx_dispatching = false;
 
 static int esp32_map_errno(int err)
 {
@@ -170,6 +176,7 @@ static int esp32_socket_device_init(
 	}
 
 	esp32_socket_events = events;
+	esp32_rx_dispatching = false;
 
 	memset(
 		esp32_clients,
@@ -451,7 +458,7 @@ static void esp32_socket_service(void)
 	{
 		int fd = esp32_listeners[i];
 
-		if (fd < 0)
+		if (fd < 0 || esp32_rx_dispatching)
 		{
 			continue;
 		}
@@ -483,7 +490,11 @@ static void esp32_socket_service(void)
 			continue;
 		}
 
-		FD_SET(fd, &readfds);
+		/* Do not overwrite the shared RX buffer from a nested service call. */
+		if (!esp32_rx_dispatching)
+		{
+			FD_SET(fd, &readfds);
+		}
 		FD_SET(fd, &exceptfds);
 
 		if (esp32_clients[i].write_blocked)
@@ -702,18 +713,24 @@ static void esp32_socket_service(void)
 					fd,
 					srv_buffer,
 					SOCKET_MAX_DATA_SIZE,
-					0);
+					MSG_PEEK);
 
 			if (len > 0)
 			{
+				bool consumed = true;
+
 				srv_buffer[len] = '\0';
 
 				if (esp32_socket_events->data)
 				{
-					esp32_socket_events->data(
+					esp32_rx_dispatching = true;
+
+					consumed = esp32_socket_events->data(
 						handle,
 						srv_buffer,
 						(size_t)len);
+
+					esp32_rx_dispatching = false;
 				}
 
 				/*
@@ -724,6 +741,52 @@ static void esp32_socket_service(void)
 				if (!esp32_clients[idx].in_use ||
 					esp32_clients[idx].native_fd != fd)
 				{
+					break;
+				}
+
+				if (!consumed)
+				{
+					/*
+					 * The first receive used MSG_PEEK, so the payload is
+					 * still queued in lwIP and will be offered again during
+					 * a later service pass.
+					 */
+					break;
+				}
+
+				/*
+				 * The application accepted the complete payload. Remove
+				 * exactly those bytes from lwIP's receive queue now.
+				 */
+				ssize_t removed =
+					lwip_recv(
+						fd,
+						srv_buffer,
+						(size_t)len,
+						0);
+
+				if (removed != len)
+				{
+					/*
+					 * The application has already processed all len bytes.
+					 * Continuing after a partial removal could deliver a
+					 * suffix twice, so fail the connection instead.
+					 */
+					int reason = SOCKET_DEVICE_ERROR;
+
+					if (removed < 0)
+					{
+						reason = esp32_map_errno(errno);
+					}
+					else if (removed == 0)
+					{
+						reason = SOCKET_DEVICE_CLOSED;
+					}
+
+					esp32_disconnect_client(
+						idx,
+						reason);
+
 					break;
 				}
 			}

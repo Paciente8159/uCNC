@@ -68,57 +68,157 @@ extern "C"
 	/* Event sink supplied by the socket core to the backend. */
 	typedef struct socket_device_events_
 	{
-		/* Called when a new client connection has been established.
-		   Returns true if the socket core accepted the client, false if no
-		   client slot is available (the backend must then close/discard it). */
+		/*
+		 * Called when a client has been accepted.
+		 *
+		 * Returns false when the core cannot accept it. The backend must then close
+		 * the client without generating disconnected().
+		 */
 		bool (*connected)(socket_handle_t listener, socket_handle_t client);
 
-		/* Called when TCP payload is available. data[len] must be writable
-		   and must contain '\0'. The buffer is only valid during the callback. */
-		void (*data)(socket_handle_t client, char *data, size_t len);
+		/*
+		 * Delivers received TCP payload.
+		 *
+		 * data[len] must be writable and contain '\0'. The buffer is valid only
+		 * while this callback is executing.
+		 *
+		 * Returns true when the complete payload was consumed by the core.
+		 *
+		 * Returns false when delivery is temporarily refused because the callback
+		 * for that client is already active. In that case, the backend must:
+		 *
+		 * - not discard the payload;
+		 * - not acknowledge it as consumed;
+		 * - retain it or leave it queued in the native transport;
+		 * - offer the same bytes again during a later service pass.
+		 */
+		bool (*data)(socket_handle_t client, char *data, size_t len);
 
-		/* Called after a previous send encountered backpressure and the
-		   transport has become writable again. May be a reserved/no-op for
-		   now but must exist for TX-progress mapping (ex: lwIP tcp_sent). */
+		/*
+		 * Called after send() previously returned WOULD_BLOCK and the connection may
+		 * accept data again. This is a notification, not a guarantee that an
+		 * arbitrarily large send will succeed.
+		 */
 		void (*writable)(socket_handle_t client);
 
-		/* Called after a remote orderly close or fatal transport error.
-		   reason == 0 means an orderly remote close. The backend must have
-		   released its native transport resources before calling this. */
+		/*
+		 * Called after remote closure or a fatal transport error.
+		 *
+		 * The backend must invalidate the handle and release its native resources
+		 * before invoking this callback. reason == SOCKET_DEVICE_OK indicates an
+		 * orderly remote close.
+		 */
 		void (*disconnected)(socket_handle_t client, int reason);
 	} socket_device_events_t;
 
 	/* Event-driven backend interface. */
 	typedef struct socket_device_
 	{
-		/* Called once when the device is registered. Must store the event
-		   callback table and initialize the backend. Returns 0 on success,
-		   a negative value on failure. */
+		/*
+		 * Initializes the backend and stores the event callback table.
+		 *
+		 * The events pointer remains valid for the lifetime of the registered
+		 * device and must not be modified by the backend.
+		 *
+		 * Returns SOCKET_DEVICE_OK on success or a negative
+		 * socket_device_result_t on failure.
+		 */
 		int (*init)(const socket_device_events_t *events);
 
-		/* Performs socket + bind + configure non-blocking + listen and
-		   registers the listener in backend state. Returns a valid handle
-		   or SOCKET_INVALID_HANDLE on failure. */
-		socket_handle_t (*listen)(uint32_t ip_listen, uint16_t port, int domain, int type, int protocol, uint8_t backlog);
+		/*
+		 * Creates, binds and starts a non-blocking listener.
+		 *
+		 * Accepted clients must also be configured as non-blocking before the
+		 * backend invokes events->connected().
+		 *
+		 * If events->connected() returns false, the backend must close and
+		 * release that client without generating events->disconnected().
+		 *
+		 * Returns a stable listener handle on success or
+		 * SOCKET_INVALID_HANDLE on failure.
+		 */
+		socket_handle_t (*listen)(
+			uint32_t ip_listen,
+			uint16_t port,
+			int domain,
+			int type,
+			int protocol,
+			uint8_t backlog);
 
-		/* Strictly non-blocking single send attempt. Returns the number of
-		   bytes accepted (> 0), SOCKET_DEVICE_WOULD_BLOCK on TX backpressure
-		   or another negative socket_device_result_t on error. A partial
-		   positive send is valid. */
-		int (*send)(socket_handle_t client, const void *data, size_t len, int flags);
+		/*
+		 * Performs one strictly non-blocking send attempt.
+		 *
+		 * For len > 0:
+		 *
+		 *   > 0
+		 *       Number of bytes accepted by the transport. The result must never
+		 *       exceed len. A partial positive result is valid. Accepted means
+		 *       copied or retained by the transport, not received by the peer.
+		 *
+		 *   SOCKET_DEVICE_WOULD_BLOCK
+		 *       No bytes were accepted because of temporary TX backpressure.
+		 *       Retrying after backend servicing is valid.
+		 *
+		 *   SOCKET_DEVICE_CLOSED
+		 *       The connection is no longer usable.
+		 *
+		 *   other negative result
+		 *       A non-retryable error occurred and no bytes were accepted.
+		 *
+		 * For len == 0, returns 0 without changing the connection.
+		 *
+		 * The backend must not retain the caller's data pointer after returning.
+		 * flags are passed through where supported by the native transport.
+		 */
+		int (*send)(
+			socket_handle_t client,
+			const void *data,
+			size_t len,
+			int flags);
 
-		/* Closes a listener or client handle. Must NOT generate a
-		   disconnected event (the core handles local close notifications). */
+		/*
+		 * Closes and releases a listener or client handle.
+		 *
+		 * Local closure must not generate events->disconnected(), because the
+		 * socket core performs the local disconnection notification.
+		 *
+		 * After this function returns, the handle is stale and all subsequent
+		 * operations using it must fail.
+		 *
+		 * Returns SOCKET_DEVICE_OK on success or a negative
+		 * socket_device_result_t on failure.
+		 */
 		int (*close)(socket_handle_t handle);
 
 		/*
-		 * Non-blocking and bounded service poll.
+		 * Performs one non-blocking, bounded backend service step.
 		 *
-		 * Must never wait for network activity and must not indefinitely
-		 * drain pending network work. Each invocation must perform a
-		 * bounded amount of processing before returning.
+		 * It may invoke connected, data, writable and disconnected callbacks.
+		 * It must never wait for network activity or indefinitely drain pending
+		 * work.
+		 *
+		 * IMPORTANT:
+		 *
+		 * Application callbacks may call socket_send(). While handling TX
+		 * backpressure, socket_send() may run the µCNC task loop, which may call
+		 * service() recursively before the outer callback has returned.
+		 *
+		 * The backend must therefore tolerate nested service() calls:
+		 *
+		 * - It must not overwrite a buffer still exposed through data().
+		 * - It must not redeliver an RX callback that the core reports as busy.
+		 * - It may suppress nested RX and accept processing.
+		 * - It should continue making TX and disconnection progress where the
+		 *   architecture permits it.
+		 * - It must not hold locks across callbacks that prevent nested servicing.
+		 *
+		 * Any event callback may synchronously close the current connection.
+		 * After invoking a callback, the backend must verify that the connection
+		 * still exists and still represents the same handle before accessing its
+		 * state again.
 		 */
 		void (*service)(void);
+
 	} socket_device_t;
 
 #ifdef __cplusplus

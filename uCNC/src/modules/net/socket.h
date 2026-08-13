@@ -51,47 +51,54 @@ extern "C"
 #define SOCKET_IDLE_TIMEOUT 60
 #endif
 
-typedef void (*socket_data_delegate)(uint8_t client_idx, char* data, size_t data_len, void* protocol);
-typedef void (*socket_connect_delegate)(uint8_t client_idx, void* protocol);
-typedef void (*socket_idle_delegate)(uint8_t client_idx, uint32_t idle_ms, void* protocol);
+	typedef void (*socket_data_delegate)(uint8_t client_idx, char *data, size_t data_len, void *protocol);
+	typedef void (*socket_connect_delegate)(uint8_t client_idx, void *protocol);
+	typedef void (*socket_idle_delegate)(uint8_t client_idx, uint32_t idle_ms, void *protocol);
 
-typedef struct socket_if_{
-	socket_handle_t socket_if;
-	socket_handle_t socket_clients[SOCKET_MAX_CLIENTS];
-	#ifdef ENABLE_SOCKET_TIMEOUTS
-	uint32_t client_activity[SOCKET_MAX_CLIENTS];
-	#endif
-	socket_data_delegate client_ondata_cb;
-	socket_idle_delegate client_onidle_cb;
-	socket_connect_delegate client_onconnected_cb;
-	socket_connect_delegate client_ondisconnected_cb;
-	void* protocol;
-} socket_if_t;
+#define CLIENT_ONDATA_CB_BUSY 1
+#define CLIENT_ONIDLE_CB_BUSY 2
+#define CLIENT_ONCONNECTED_CB_BUSY 4
+#define CLIENT_ONDISCONNECTED_CB_BUSY 8
 
-// creates a new socket connection and starts to listen for new clients (non blocking). Returns NULL if it fails. Otherwise returns the socket interface
-socket_if_t* socket_start_listen(uint32_t ip_listen, uint16_t port, int domain, int type, int protocol);
-void socket_stop_listening(socket_if_t* socket);
-void socket_add_ondata_handler(socket_if_t* socket, socket_data_delegate callback);
-void socket_add_onidle_handler(socket_if_t* socket, socket_idle_delegate callback);
-void socket_add_onconnected_handler(socket_if_t* socket, socket_connect_delegate callback);
-void socket_add_ondisconnected_handler(socket_if_t* socket, socket_connect_delegate callback);
-// sends data to a specific socket interface to a client
-int socket_send(socket_if_t *socket, uint8_t client_idx, char* data, size_t data_len, int flags);
-// sends data to a specific socket interface to all clients
-int socket_broadcast(socket_if_t *socket, char* data, size_t data_len, int flags);
-// closes a connection to a client
-void socket_close(socket_if_t* socket, uint8_t client_idx);
-// runs the loop that handles new client accpts and handles each socket/client data handling (non blocking)
-void socket_server_dotasks(void);
+	typedef struct socket_if_
+	{
+		socket_handle_t socket_if;
+		socket_handle_t socket_clients[SOCKET_MAX_CLIENTS];
+#ifdef ENABLE_SOCKET_TIMEOUTS
+		uint32_t client_activity[SOCKET_MAX_CLIENTS];
+#endif
+		uint8_t clients_callbacks_status[SOCKET_MAX_CLIENTS];
+		socket_data_delegate client_ondata_cb;
+		socket_idle_delegate client_onidle_cb;
+		socket_connect_delegate client_onconnected_cb;
+		socket_connect_delegate client_ondisconnected_cb;
+		void *protocol;
+	} socket_if_t;
+
+	// creates a new socket connection and starts to listen for new clients (non blocking). Returns NULL if it fails. Otherwise returns the socket interface
+	socket_if_t *socket_start_listen(uint32_t ip_listen, uint16_t port, int domain, int type, int protocol);
+	void socket_stop_listening(socket_if_t *socket);
+	void socket_add_ondata_handler(socket_if_t *socket, socket_data_delegate callback);
+	void socket_add_onidle_handler(socket_if_t *socket, socket_idle_delegate callback);
+	void socket_add_onconnected_handler(socket_if_t *socket, socket_connect_delegate callback);
+	void socket_add_ondisconnected_handler(socket_if_t *socket, socket_connect_delegate callback);
+	// sends data to a specific socket interface to a client
+	int socket_send(socket_if_t *socket, uint8_t client_idx, char *data, size_t data_len, int flags);
+	// sends data to a specific socket interface to all clients
+	int socket_broadcast(socket_if_t *socket, char *data, size_t data_len, int flags);
+	// closes a connection to a client
+	void socket_close(socket_if_t *socket, uint8_t client_idx);
+	// runs the loop that handles new client accpts and handles each socket/client data handling (non blocking)
+	void socket_server_dotasks(void);
 #ifndef sockets_dotasks
 #define sockets_dotasks socket_server_dotasks
 #endif
-// returns the number of active clients in a socket. if socket is NULL returns all connected clients in all sockets
-int socket_server_hasclients(socket_if_t* socket);
-bool socket_register_device(socket_device_t *device);
-int socket_get_clientindex(socket_if_t *socket, socket_handle_t socket_fd);
-// initializes sockets server
-DECL_MODULE(socket_server);
+	// returns the number of active clients in a socket. if socket is NULL returns all connected clients in all sockets
+	int socket_server_hasclients(socket_if_t *socket);
+	bool socket_register_device(socket_device_t *device);
+	int socket_get_clientindex(socket_if_t *socket, socket_handle_t socket_fd);
+	// initializes sockets server
+	DECL_MODULE(socket_server);
 
 #ifdef __cplusplus
 }

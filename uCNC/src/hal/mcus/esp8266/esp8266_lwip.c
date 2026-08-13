@@ -47,6 +47,7 @@ typedef enum
 typedef struct
 {
 	sock_state_t state;
+	uint32_t generation;
 
 	/* lwIP PCB owned by this backend */
 	struct tcp_pcb *pcb;
@@ -87,7 +88,16 @@ typedef struct
 } bsd_sock_t;
 
 static bsd_sock_t socks[MAX_BSD_SOCKETS];
+static uint32_t sock_generations[MAX_BSD_SOCKETS];
 static const socket_device_events_t *esp8266_socket_events;
+
+/*
+ * service() may be entered recursively from an application callback.  RX and
+ * accept delivery are restricted to the outermost pass so rx_dispatch_buffer
+ * cannot be overwritten while data() is still using it.
+ */
+static unsigned int service_depth;
+static char rx_dispatch_buffer[SOCKET_MAX_DATA_SIZE + 1];
 
 static void *sock_arg_from_index(int idx)
 {
@@ -117,6 +127,22 @@ static int alloc_sock(void)
 	}
 
 	return -1;
+}
+
+static void init_sock(bsd_sock_t *s, int idx)
+{
+	uint32_t generation = ++sock_generations[idx];
+
+	/* Keep zero reserved for reset/unallocated entries. */
+	if (generation == 0)
+	{
+		generation = ++sock_generations[idx];
+	}
+
+	memset(s, 0, sizeof(*s));
+	s->generation = generation;
+	s->srv_handle = SOCKET_INVALID_HANDLE;
+	s->client_handle = SOCKET_INVALID_HANDLE;
 }
 
 static void free_rx_chain(bsd_sock_t *s)
@@ -150,6 +176,36 @@ static void reset_sock(bsd_sock_t *s)
 	s->state = SOCK_UNUSED;
 	s->srv_handle = SOCKET_INVALID_HANDLE;
 	s->client_handle = SOCKET_INVALID_HANDLE;
+}
+
+static bool same_client(
+	const bsd_sock_t *s,
+	uint32_t generation,
+	socket_handle_t handle,
+	const struct tcp_pcb *pcb)
+{
+	return s->state == SOCK_CONNECTED &&
+		!s->local_close &&
+		s->generation == generation &&
+		s->client_handle == handle &&
+		s->pcb == pcb;
+}
+
+static void refresh_event_pending(bsd_sock_t *s)
+{
+	if (s->state == SOCK_UNUSED)
+	{
+		s->event_pending = false;
+		return;
+	}
+
+	s->event_pending =
+		(s->local_close && s->state == SOCK_CLOSING) ||
+		s->event_error ||
+		s->event_connected ||
+		(s->rx_buf && s->rx_len) ||
+		s->event_peer_closed ||
+		s->event_writable;
 }
 
 static void err_cb(void *arg, err_t err)
@@ -372,7 +428,7 @@ static err_t accept_cb(
 
 	bsd_sock_t *client = &socks[idx];
 
-	memset(client, 0, sizeof(*client));
+	init_sock(client, idx);
 
 	client->state = SOCK_CONNECTED;
 	client->pcb = newpcb;
@@ -414,6 +470,8 @@ static int esp8266_socket_device_init(
 	esp8266_socket_events = events;
 
 	memset(socks, 0, sizeof(socks));
+	memset(sock_generations, 0, sizeof(sock_generations));
+	service_depth = 0;
 
 	for (int i = 0; i < MAX_BSD_SOCKETS; i++)
 	{
@@ -449,7 +507,7 @@ static socket_handle_t esp8266_socket_listen(
 
 	bsd_sock_t *s = &socks[idx];
 
-	memset(s, 0, sizeof(*s));
+	init_sock(s, idx);
 
 	s->state = SOCK_BOUND;
 	s->srv_handle = (socket_handle_t)idx;
@@ -722,12 +780,18 @@ static int esp8266_socket_close(
 
 static void esp8266_socket_service(void)
 {
-	static char srv_buffer[SOCKET_MAX_DATA_SIZE + 1];
-
 	if (!esp8266_socket_events)
 	{
 		return;
 	}
+
+	/*
+	 * Application callbacks can re-enter service().  Only the outermost pass
+	 * may dispatch connected() or data(); nested passes can still advance
+	 * local closes, errors, FIN handling and TX notifications.
+	 */
+	bool allow_rx_and_accept = (service_depth == 0);
+	service_depth++;
 
 	for (int i = 0; i < MAX_BSD_SOCKETS; i++)
 	{
@@ -777,6 +841,10 @@ static void esp8266_socket_service(void)
 
 			continue;
 		}
+
+		/* Derive the scheduling bit from the actual state.  This also preserves
+		 * RX/FIN work that arrived before connected() was dispatched. */
+		refresh_event_pending(s);
 
 		if (!s->event_pending)
 		{
@@ -834,6 +902,14 @@ static void esp8266_socket_service(void)
 		 */
 		if (s->event_connected)
 		{
+			if (!allow_rx_and_accept)
+			{
+				s->event_pending = true;
+				continue;
+			}
+
+			uint32_t generation = s->generation;
+			struct tcp_pcb *pcb = s->pcb;
 			s->event_connected = false;
 
 			socket_handle_t listener =
@@ -864,6 +940,14 @@ static void esp8266_socket_service(void)
 						client);
 			}
 
+			/* connected() may synchronously close/reset this slot. */
+			if (s->generation != generation ||
+				s->pcb != pcb ||
+				s->client_handle != client)
+			{
+				continue;
+			}
+
 			if (!accepted)
 			{
 				/*
@@ -883,12 +967,13 @@ static void esp8266_socket_service(void)
 
 				reset_sock(s);
 			}
+			else
+			{
+				/* Do not lose data/FIN/writable work that was already queued
+				 * while the logical connection was being accepted. */
+				refresh_event_pending(s);
+			}
 
-			/*
-			 * Do not touch s after a successful connected()
-			 * event. The application callback is allowed to
-			 * immediately close the connection.
-			 */
 			continue;
 		}
 
@@ -899,6 +984,20 @@ static void esp8266_socket_service(void)
 		 */
 		if (s->rx_buf && s->rx_len)
 		{
+			if (!allow_rx_and_accept)
+			{
+				/* The shared callback buffer is still exposed by the outer
+				 * data() call.  Keep the pbuf untouched for a later pass. */
+				s->event_pending = true;
+				continue;
+			}
+
+			uint32_t generation = s->generation;
+			socket_handle_t handle = s->client_handle;
+			struct tcp_pcb *pcb = s->pcb;
+			struct pbuf *rx_buf = s->rx_buf;
+			u16_t rx_off = s->rx_off;
+
 			size_t wanted =
 				(s->rx_len > SOCKET_MAX_DATA_SIZE)
 					? SOCKET_MAX_DATA_SIZE
@@ -907,11 +1006,11 @@ static void esp8266_socket_service(void)
 			u16_t copied =
 				pbuf_copy_partial(
 					s->rx_buf,
-					srv_buffer,
+					rx_dispatch_buffer,
 					(u16_t)wanted,
 					s->rx_off);
 
-			if (copied == 0)
+			if (copied != (u16_t)wanted)
 			{
 				/*
 				 * Corrupt/inconsistent receive state.
@@ -922,59 +1021,49 @@ static void esp8266_socket_service(void)
 				continue;
 			}
 
-			s->rx_off += copied;
-			s->rx_len -= copied;
+			rx_dispatch_buffer[copied] = '\0';
+			bool consumed = true;
 
-			/*
-			 * Update TCP receive-window accounting before
-			 * invoking application code.
-			 *
-			 * The application callback may immediately close
-			 * the connection, so avoid touching the PCB after
-			 * dispatch whenever possible.
-			 */
-			if (s->pcb)
+			if (esp8266_socket_events->data)
 			{
-				tcp_recved(
-					s->pcb,
+				consumed = esp8266_socket_events->data(
+					handle,
+					rx_dispatch_buffer,
 					copied);
 			}
+
+			/* data() may synchronously close the client or a nested service
+			 * pass may complete a fatal disconnect.  Never commit RX state to
+			 * a reset or reused slot. */
+			if (!same_client(s, generation, handle, pcb) ||
+				s->rx_buf != rx_buf ||
+				s->rx_off != rx_off)
+			{
+				continue;
+			}
+
+			if (!consumed)
+			{
+				/* New data() contract: no bytes were consumed.  Do not move the
+				 * pbuf cursor and do not enlarge lwIP's receive window.  The same
+				 * bytes will be copied and offered again on a later outer pass. */
+				s->event_pending = true;
+				continue;
+			}
+
+			/* Commit only after the core confirms complete consumption. */
+			s->rx_off += copied;
+			s->rx_len -= copied;
+			tcp_recved(s->pcb, copied);
 
 			if (s->rx_len == 0)
 			{
 				pbuf_free(s->rx_buf);
-
 				s->rx_buf = NULL;
 				s->rx_off = 0;
 			}
 
-			/*
-			 * More data, FIN, or writable state still needs
-			 * processing on a later service iteration.
-			 */
-			if (s->rx_buf ||
-				s->event_peer_closed ||
-				s->event_writable)
-			{
-				s->event_pending = true;
-			}
-
-			srv_buffer[copied] = '\0';
-
-			socket_handle_t handle =
-				s->client_handle;
-
-			if (esp8266_socket_events->data)
-			{
-				esp8266_socket_events->data(
-					handle,
-					srv_buffer,
-					copied);
-			}
-
-			/*
-			 * Application callback may have closed/reset s.
-			 */
+			refresh_event_pending(s);
 			continue;
 		}
 
@@ -1049,6 +1138,8 @@ static void esp8266_socket_service(void)
 		 */
 		if (s->event_writable)
 		{
+			uint32_t generation = s->generation;
+			struct tcp_pcb *pcb = s->pcb;
 			s->event_writable = false;
 
 			socket_handle_t handle =
@@ -1060,9 +1151,16 @@ static void esp8266_socket_service(void)
 					handle);
 			}
 
+			if (same_client(s, generation, handle, pcb))
+			{
+				refresh_event_pending(s);
+			}
+
 			continue;
 		}
 	}
+
+	service_depth--;
 }
 
 socket_device_t wifi_socket = {

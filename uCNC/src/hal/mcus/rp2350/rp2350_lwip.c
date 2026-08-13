@@ -62,6 +62,7 @@ extern "C"
 	{
 		fd_kind_t kind;
 		bool in_use;
+		uint32_t generation;
 
 		/*
 		 * Deferred events.
@@ -119,8 +120,17 @@ extern "C"
 	} fd_entry_t;
 
 	static fd_entry_t g_fds[RP2350_SOCKET_MAX_HANDLES];
+	static uint32_t g_fd_generations[RP2350_SOCKET_MAX_HANDLES];
 
 	static const socket_device_events_t *rp2350_socket_events;
+
+	/*
+	 * Application callbacks may re-enter service(). Only the outermost pass
+	 * may poll CYW43/lwIP or dispatch accept/RX events, which protects the
+	 * shared RX callback buffer from being overwritten while it is exposed.
+	 */
+	static unsigned int rp2350_service_depth;
+	static char rp2350_rx_dispatch_buffer[SOCKET_MAX_DATA_SIZE + 1];
 
 	static int fd_alloc(void)
 	{
@@ -128,10 +138,19 @@ extern "C"
 		{
 			if (!g_fds[i].in_use)
 			{
+				uint32_t generation = ++g_fd_generations[i];
+
+				/* Keep zero reserved for reset/unallocated entries. */
+				if (generation == 0)
+				{
+					generation = ++g_fd_generations[i];
+				}
+
 				memset(&g_fds[i], 0, sizeof(g_fds[i]));
 
 				g_fds[i].in_use = true;
 				g_fds[i].kind = FD_EMPTY;
+				g_fds[i].generation = generation;
 
 				g_fds[i].srv_fd = -1;
 
@@ -157,11 +176,7 @@ extern "C"
 			struct pbuf *p = e->rx_queue[e->rx_head];
 
 			e->rx_queue[e->rx_head] = NULL;
-
-			e->rx_head =
-				(uint8_t)((e->rx_head + 1) %
-						  RP2350_SOCKET_RX_QUEUE_DEPTH);
-
+			e->rx_head = (uint8_t)((e->rx_head + 1) % RP2350_SOCKET_RX_QUEUE_DEPTH);
 			e->rx_count--;
 
 			if (p)
@@ -255,6 +270,19 @@ extern "C"
 		e->srv_fd = -1;
 		e->srv_handle = SOCKET_INVALID_HANDLE;
 		e->client_handle = SOCKET_INVALID_HANDLE;
+	}
+
+	static bool fd_is_same_client(
+		const fd_entry_t *e,
+		uint32_t generation,
+		socket_handle_t handle,
+		const struct tcp_pcb *pcb)
+	{
+		return e->in_use &&
+			e->kind == FD_CLIENT &&
+			e->generation == generation &&
+			e->client_handle == handle &&
+			e->pcb == pcb;
 	}
 
 	static err_t accept_cb(
@@ -619,7 +647,7 @@ extern "C"
 		return ERR_OK;
 	}
 
-	static size_t rp2350_socket_prepare_rx(
+	static size_t rp2350_socket_copy_rx(
 		fd_entry_t *e,
 		char *buffer)
 	{
@@ -635,25 +663,16 @@ extern "C"
 
 		if (!p)
 		{
+			e->got_err = true;
+			e->error_reason = SOCKET_DEVICE_ERROR;
 			return 0;
 		}
 
 		if (e->rx_off >= p->tot_len)
 		{
-			/*
-			 * Defensive recovery: this should never normally happen.
-			 */
-			pbuf_free(p);
-
-			e->rx_queue[e->rx_head] = NULL;
-
-			e->rx_head =
-				(uint8_t)((e->rx_head + 1) %
-						  RP2350_SOCKET_RX_QUEUE_DEPTH);
-
-			e->rx_count--;
-			e->rx_off = 0;
-
+			/* Inconsistent queue state: do not silently discard data. */
+			e->got_err = true;
+			e->error_reason = SOCKET_DEVICE_ERROR;
 			return 0;
 		}
 
@@ -675,48 +694,12 @@ extern "C"
 				(u16_t)to_copy,
 				e->rx_off);
 
-		if (copied == 0)
+		if (copied != (u16_t)to_copy)
 		{
 			e->got_err = true;
 			e->error_reason = SOCKET_DEVICE_ERROR;
 
 			return 0;
-		}
-
-		e->rx_off =
-			(uint16_t)(e->rx_off + copied);
-
-		/*
-		 * Tell lwIP that these bytes have now left our RX queue.
-		 *
-		 * Do this before invoking application code so socket_close()
-		 * from inside ondata cannot invalidate the PCB underneath us.
-		 */
-		if (e->pcb)
-		{
-			tcp_recved(
-				e->pcb,
-				copied);
-		}
-
-		/*
-		 * Entire callback pbuf chain consumed.
-		 */
-		if (e->rx_off >= p->tot_len)
-		{
-			e->rx_queue[e->rx_head] = NULL;
-
-			e->rx_head =
-				(uint8_t)((e->rx_head + 1) %
-						  RP2350_SOCKET_RX_QUEUE_DEPTH);
-
-			e->rx_count--;
-			e->rx_off = 0;
-
-			/*
-			 * Release the backend-owned reference.
-			 */
-			pbuf_free(p);
 		}
 
 		buffer[copied] = '\0';
@@ -731,19 +714,20 @@ extern "C"
 			return;
 		}
 
-		/*
-		 * For pico_cyw43_arch_lwip_poll the application must
-		 * periodically drive CYW43/lwIP itself.
-		 */
-#if defined(PICO_CYW43_ARCH_POLL) && PICO_CYW43_ARCH_POLL
-		cyw43_arch_poll();
-#endif
+		bool allow_rx_and_accept = (rp2350_service_depth == 0);
+		rp2350_service_depth++;
 
 		/*
-		 * One shared dispatch buffer is sufficient because events are
-		 * delivered synchronously and sequentially from this function.
+		 * For pico_cyw43_arch_lwip_poll the application must
+		 * periodically drive CYW43/lwIP itself. Never poll recursively:
+		 * it can run raw lwIP callbacks while an RX buffer is exposed.
 		 */
-		static char rx_buffer[SOCKET_MAX_DATA_SIZE + 1];
+#if defined(PICO_CYW43_ARCH_POLL) && PICO_CYW43_ARCH_POLL
+		if (allow_rx_and_accept)
+		{
+			cyw43_arch_poll();
+		}
+#endif
 
 		/*
 		 * Bounded pass:
@@ -796,6 +780,14 @@ extern "C"
 			 */
 			if (e->accepted)
 			{
+				if (!allow_rx_and_accept)
+				{
+					continue;
+				}
+
+				uint32_t generation = e->generation;
+				struct tcp_pcb *pcb = e->pcb;
+
 				socket_handle_t listener =
 					e->srv_handle;
 
@@ -823,9 +815,11 @@ extern "C"
 					 * The connected callback returning false cannot call
 					 * application code, so this descriptor is still ours.
 					 */
-					if (i < RP2350_SOCKET_MAX_HANDLES &&
-						g_fds[i].in_use &&
-						g_fds[i].client_handle == client)
+					if (fd_is_same_client(
+							e,
+							generation,
+							client,
+							pcb))
 					{
 						fd_free(i);
 					}
@@ -843,27 +837,76 @@ extern "C"
 			 */
 			if (e->rx_count)
 			{
+				if (!allow_rx_and_accept)
+				{
+					/* The outer data() callback still owns the shared buffer. */
+					continue;
+				}
+
+				uint32_t generation = e->generation;
 				socket_handle_t client =
 					e->client_handle;
+				struct tcp_pcb *pcb = e->pcb;
+				uint8_t rx_head = e->rx_head;
+				uint16_t rx_off = e->rx_off;
+				struct pbuf *p = e->rx_queue[rx_head];
 
 				size_t len =
-					rp2350_socket_prepare_rx(
+					rp2350_socket_copy_rx(
 						e,
-						rx_buffer);
+						rp2350_rx_dispatch_buffer);
 
 				if (len > 0)
 				{
+					bool consumed = true;
+
 					if (rp2350_socket_events->data)
 					{
-						rp2350_socket_events->data(
+						consumed = rp2350_socket_events->data(
 							client,
-							rx_buffer,
+							rp2350_rx_dispatch_buffer,
 							len);
 					}
 
-					/*
-					 * ondata may close the connection.
-					 */
+					/* data() may close the client, and a nested service pass may
+					 * complete a fatal disconnect. Never commit into a reset or
+					 * reused descriptor. */
+					if (!fd_is_same_client(
+							e,
+							generation,
+							client,
+							pcb) ||
+						e->rx_count == 0 ||
+						e->rx_head != rx_head ||
+						e->rx_queue[rx_head] != p ||
+						e->rx_off != rx_off)
+					{
+						continue;
+					}
+
+					if (!consumed)
+					{
+						/* New data() contract: retain the pbuf, cursor and TCP
+						 * receive window unchanged. The same bytes are offered again
+						 * during a later outer service pass. */
+						continue;
+					}
+
+					/* Commit only after complete consumption was confirmed. */
+					e->rx_off = (uint16_t)(e->rx_off + len);
+					tcp_recved(e->pcb, (u16_t)len);
+
+					if (e->rx_off >= p->tot_len)
+					{
+						e->rx_queue[e->rx_head] = NULL;
+						e->rx_head =
+							(uint8_t)((e->rx_head + 1) %
+									  RP2350_SOCKET_RX_QUEUE_DEPTH);
+						e->rx_count--;
+						e->rx_off = 0;
+						pbuf_free(p);
+					}
+
 					continue;
 				}
 
@@ -923,6 +966,8 @@ extern "C"
 				continue;
 			}
 		}
+
+		rp2350_service_depth--;
 	}
 
 	static int rp2350_socket_device_init(
@@ -939,6 +984,13 @@ extern "C"
 			g_fds,
 			0,
 			sizeof(g_fds));
+
+		memset(
+			g_fd_generations,
+			0,
+			sizeof(g_fd_generations));
+
+		rp2350_service_depth = 0;
 
 		for (int i = 0;
 			 i < RP2350_SOCKET_MAX_HANDLES;
