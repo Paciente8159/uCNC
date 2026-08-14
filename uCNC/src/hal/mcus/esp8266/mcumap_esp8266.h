@@ -1239,6 +1239,7 @@ extern "C"
 #ifndef ENABLE_SOCKETS
 #define ENABLE_SOCKETS
 #endif
+#define sockets_dotasks() socket_server_dotasks();yield()
 #endif
 
 #if (defined(USB_DP) && defined(USB_DM))

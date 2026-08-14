@@ -303,9 +303,9 @@ extern "C"
 	 * */
 	void mcu_stop_itp_isr(void);
 
-	#ifndef mcu_start_step_reset_timeout
-	#define mcu_start_step_reset_timeout()
-	#endif
+#ifndef mcu_start_step_reset_timeout
+#define mcu_start_step_reset_timeout()
+#endif
 
 /**
  * gets the MCU running time in milliseconds.
@@ -621,6 +621,9 @@ extern "C"
 #endif
 
 #ifdef ENABLE_SOCKETS
+#include "../../modules/net/telnet.h"
+	extern socket_if_t *telnet_sock;
+	extern telnet_protocol_t telnet_proto;
 	void mcu_network_init(void);
 	uint8_t mcu_telnet_getc(void);
 	uint8_t mcu_telnet_available(void);
@@ -629,8 +632,8 @@ extern "C"
 	void mcu_telnet_flush(void);
 #ifdef DETACH_TELNET_FROM_MAIN_PROTOCOL
 	MCU_RX_CALLBACK void mcu_telnet_rx_cb(uint8_t c);
-#endif																		 // must be called from mcu_init if the default mcu_init is overriden
-	void mcu_telnet_onrecv(uint8_t client_idx, void *data, size_t data_len); // the callback when data is received
+#endif																				  // must be called from mcu_init if the default mcu_init is overriden
+	void mcu_telnet_onrecv(uint8_t client_idx, const uint8_t *data, size_t data_len); // the callback when data is received
 #endif
 
 #ifdef MCU_HAS_BLUETOOTH

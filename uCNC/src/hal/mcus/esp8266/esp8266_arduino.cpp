@@ -351,7 +351,6 @@ extern "C"
 		return false;
 	}
 
-#ifdef ENABLE_SOCKETS
 /**
  * Implements the function calls for the file system C wrapper
  */
@@ -483,7 +482,6 @@ extern "C"
 	{
 		return FLASH_FS.rmdir(path);
 	}
-#endif
 
 #ifdef ENABLE_SOCKETS
 #include "../../../modules/net/http.h"

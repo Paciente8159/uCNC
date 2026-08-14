@@ -1,55 +1,478 @@
 /*
 	Name: socket.c
-	Description: Implements a simple Raw Socket Server for µCNC.
+	Description: Allocation-free, readiness-driven TCP stream server for uCNC.
 
-	The socket core is event-driven: the platform/network backend pushes
-	connected/data/writable/disconnected events into this core through the
-	socket_device_t callback table. The core no longer polls accept()/recv().
+	The backend reports normalized readiness/lifecycle events during poll(). The
+	core records those events in fixed state and dispatches application callbacks
+	after poll() returns. RX is pulled into one shared scratch buffer, one bounded
+	chunk at a time.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 20-08-2025
+	Copyright: Copyright (c) Joao Martins
+	Author: Joao Martins
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
-
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+	uCNC is free software: you can redistribute it and/or modify it under the
+	terms of the GNU General Public License as published by the Free Software
+	Foundation, either version 3 of the License, or (at your option) any later
+	version. Please see <http://www.gnu.org/licenses/>.
 */
 
 #include "../../cnc.h"
+
 #ifdef ENABLE_SOCKETS
 
 #include "socket.h"
+
+#include <limits.h>
 #include <string.h>
 
-/* Global socket interfaces */
+#if MAX_SOCKETS > UINT8_MAX
+#error "MAX_SOCKETS must fit in the internal uint8_t listener index"
+#endif
+
+#if SOCKET_RX_BUFFER_SIZE == 0
+#error "SOCKET_RX_BUFFER_SIZE must be greater than zero"
+#endif
+
+/* Internal listener states stored in socket_if_t::state. */
+enum
+{
+	SOCKET_IF_FREE = 0,
+	SOCKET_IF_ACTIVE,
+	SOCKET_IF_STOPPING
+};
+
+/* Internal fixed-client flags. */
+enum
+{
+	SOCKET_CLIENT_IN_USE = 1U << 0,
+	SOCKET_CLIENT_CONNECT_PENDING = 1U << 1,
+	SOCKET_CLIENT_CONNECT_NOTIFIED = 1U << 2,
+	SOCKET_CLIENT_READABLE = 1U << 3,
+	SOCKET_CLIENT_WRITABLE = 1U << 4,
+	SOCKET_CLIENT_CLOSE_PENDING = 1U << 5
+};
+
+/*
+ * Internal flat client record.
+ *
+ * Native handles live here rather than in every listener x client combination.
+ * listener_idx/local_idx map the record back to the stable public client index.
+ * generation remains preserved while a record is free so its next token cannot
+ * equal a token from its previous lifetime.
+ */
+typedef struct socket_client_state_
+{
+	socket_device_handle_t handle;
+	uint16_t generation;
+	uint8_t listener_idx;
+	uint8_t local_idx;
+	uint8_t flags;
+	int close_reason;
+#ifdef ENABLE_SOCKET_TIMEOUTS
+	uint32_t activity_ms;
+#endif
+} socket_client_state_t;
+
+/* Static storage: no allocation occurs in this module. */
 static socket_if_t raw_sockets[MAX_SOCKETS];
+static socket_client_state_t socket_clients[SOCKET_MAX_CONNECTIONS];
+static uint8_t socket_rx_buffer[SOCKET_RX_BUFFER_SIZE];
 static socket_device_t *socket_device;
 
-static bool socket_device_connected(socket_handle_t listener, socket_handle_t client);
-static void socket_device_data(socket_handle_t client, char *data, size_t len);
-static void socket_device_writable(socket_handle_t client);
-static void socket_device_disconnected(socket_handle_t client, int reason);
+/* Prevent recursive poll/dispatch if application code calls dotasks(). */
+static bool socket_core_running;
 
-static const socket_device_events_t socket_device_events =
+/* Round-robin position for bounded per-client dispatch. */
+static uint16_t socket_dispatch_cursor;
+
+/* Forward declarations for the event sink given to the backend. */
+static socket_device_token_t socket_device_accepted(socket_device_handle_t listener,
+												 socket_device_handle_t client);
+static void socket_device_readable(socket_device_token_t token);
+static void socket_device_writable(socket_device_token_t token);
+static void socket_device_closed(socket_device_token_t token, int reason);
+
+static const socket_device_events_t socket_device_events = {
+	.accepted = socket_device_accepted,
+	.readable = socket_device_readable,
+	.writable = socket_device_writable,
+	.closed = socket_device_closed};
+
+/*
+ * Returns the static listener index, or -1 if socket is NULL, foreign, or free.
+ * Address comparison is used instead of subtracting potentially foreign pointers.
+ */
+static int socket_listener_index(const socket_if_t *socket)
+{
+	if (!socket)
 	{
-		.connected = socket_device_connected,
-		.data = socket_device_data,
-		.writable = socket_device_writable,
-		.disconnected = socket_device_disconnected};
+		return -1;
+	}
+
+	for (uint16_t i = 0; i < MAX_SOCKETS; ++i)
+	{
+		if (socket == &raw_sockets[i] && raw_sockets[i].state != SOCKET_IF_FREE)
+		{
+			return (int)i;
+		}
+	}
+
+	return -1;
+}
+
+/* Returns the active listener whose native handle matches, otherwise NULL. */
+static socket_if_t *socket_find_listener(socket_device_handle_t listener,
+										 uint8_t *listener_idx)
+{
+	for (uint16_t i = 0; i < MAX_SOCKETS; ++i)
+	{
+		if (raw_sockets[i].state == SOCKET_IF_ACTIVE &&
+			raw_sockets[i].listener == listener)
+		{
+			if (listener_idx)
+			{
+				*listener_idx = (uint8_t)i;
+			}
+			return &raw_sockets[i];
+		}
+	}
+
+	return NULL;
+}
+
+/* Returns a free listener slot, or NULL when the fixed pool is exhausted. */
+static socket_if_t *socket_find_free_listener(void)
+{
+	for (uint16_t i = 0; i < MAX_SOCKETS; ++i)
+	{
+		if (raw_sockets[i].state == SOCKET_IF_FREE)
+		{
+			return &raw_sockets[i];
+		}
+	}
+
+	return NULL;
+}
+
+/* Returns a free flat client record index, or SOCKET_INVALID_CLIENT_SLOT. */
+static uint16_t socket_find_free_client(void)
+{
+	for (uint16_t i = 0; i < SOCKET_MAX_CONNECTIONS; ++i)
+	{
+		if ((socket_clients[i].flags & SOCKET_CLIENT_IN_USE) == 0U)
+		{
+			return i;
+		}
+	}
+
+	return SOCKET_INVALID_CLIENT_SLOT;
+}
+
+/*
+ * Encodes a pool index and generation into a non-zero opaque token.
+ * The low 16 bits store index + 1 so token zero remains permanently invalid.
+ */
+static socket_device_token_t socket_make_token(uint16_t slot, uint16_t generation)
+{
+	return ((socket_device_token_t)generation << 16) |
+		   (socket_device_token_t)(slot + 1U);
+}
+
+/*
+ * Resolves and validates a generation-tagged token.
+ * Returns NULL for stale, malformed, free, or out-of-range tokens.
+ */
+static socket_client_state_t *socket_resolve_token(socket_device_token_t token,
+												 uint16_t *slot_out)
+{
+	uint16_t encoded_slot;
+	uint16_t slot;
+	uint16_t generation;
+	socket_client_state_t *client;
+
+	if (token == SOCKET_DEVICE_INVALID_TOKEN)
+	{
+		return NULL;
+	}
+
+	encoded_slot = (uint16_t)(token & 0xFFFFU);
+	if (encoded_slot == 0U)
+	{
+		return NULL;
+	}
+
+	slot = (uint16_t)(encoded_slot - 1U);
+	if (slot >= SOCKET_MAX_CONNECTIONS)
+	{
+		return NULL;
+	}
+
+	generation = (uint16_t)(token >> 16);
+	client = &socket_clients[slot];
+	if ((client->flags & SOCKET_CLIENT_IN_USE) == 0U ||
+		client->generation != generation)
+	{
+		return NULL;
+	}
+
+	if (slot_out)
+	{
+		*slot_out = slot;
+	}
+
+	return client;
+}
+
+/*
+ * Resolves a listener-local public client index to its flat client record.
+ * A pending-close record is returned; callers decide whether that state is valid
+ * for their operation.
+ */
+static socket_client_state_t *socket_get_client(const socket_if_t *socket,
+											 uint8_t client_idx,
+											 uint16_t *slot_out)
+{
+	uint16_t slot;
+	int listener_idx;
+	socket_client_state_t *client;
+
+	listener_idx = socket_listener_index(socket);
+	if (listener_idx < 0 || client_idx >= SOCKET_MAX_CLIENTS)
+	{
+		return NULL;
+	}
+
+	slot = socket->client_slots[client_idx];
+	if (slot == SOCKET_INVALID_CLIENT_SLOT || slot >= SOCKET_MAX_CONNECTIONS)
+	{
+		return NULL;
+	}
+
+	client = &socket_clients[slot];
+	if ((client->flags & SOCKET_CLIENT_IN_USE) == 0U ||
+		client->listener_idx != (uint8_t)listener_idx ||
+		client->local_idx != client_idx)
+	{
+		return NULL;
+	}
+
+	if (slot_out)
+	{
+		*slot_out = slot;
+	}
+
+	return client;
+}
+
+/* Returns true if any flat client record still belongs to listener_idx. */
+static bool socket_listener_has_records(uint8_t listener_idx)
+{
+	for (uint16_t i = 0; i < SOCKET_MAX_CONNECTIONS; ++i)
+	{
+		if ((socket_clients[i].flags & SOCKET_CLIENT_IN_USE) != 0U &&
+			socket_clients[i].listener_idx == listener_idx)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/*
+ * Clears a listener only after stop-listening has delivered every pending client
+ * disconnect. This preserves callback pointers and protocol context until then.
+ */
+static void socket_finalize_stopping_listener(uint8_t listener_idx)
+{
+	socket_if_t *socket;
+
+	if (listener_idx >= MAX_SOCKETS)
+	{
+		return;
+	}
+
+	socket = &raw_sockets[listener_idx];
+	if (socket->state != SOCKET_IF_STOPPING ||
+		socket_listener_has_records(listener_idx))
+	{
+		return;
+	}
+
+	socket->listener = SOCKET_DEVICE_INVALID_HANDLE;
+	for (uint8_t i = 0; i < SOCKET_MAX_CLIENTS; ++i)
+	{
+		socket->client_slots[i] = SOCKET_INVALID_CLIENT_SLOT;
+	}
+	socket->client_ondata_cb = NULL;
+	socket->client_onidle_cb = NULL;
+	socket->client_onconnected_cb = NULL;
+	socket->client_onwritable_cb = NULL;
+	socket->client_ondisconnected_cb = NULL;
+	socket->protocol = NULL;
+	socket->state = SOCKET_IF_FREE;
+}
+
+/*
+ * Releases a logical client record and listener-local mapping.
+ * generation is deliberately preserved for stale-event protection.
+ */
+static void socket_release_client(uint16_t slot)
+{
+	socket_client_state_t *client;
+	uint8_t listener_idx;
+	uint8_t local_idx;
+
+	if (slot >= SOCKET_MAX_CONNECTIONS)
+	{
+		return;
+	}
+
+	client = &socket_clients[slot];
+	listener_idx = client->listener_idx;
+	local_idx = client->local_idx;
+
+	if (listener_idx < MAX_SOCKETS && local_idx < SOCKET_MAX_CLIENTS &&
+		raw_sockets[listener_idx].client_slots[local_idx] == slot)
+	{
+		raw_sockets[listener_idx].client_slots[local_idx] =
+			SOCKET_INVALID_CLIENT_SLOT;
+	}
+
+	client->handle = SOCKET_DEVICE_INVALID_HANDLE;
+	client->listener_idx = UINT8_MAX;
+	client->local_idx = UINT8_MAX;
+	client->flags = 0U;
+	client->close_reason = SOCKET_DEVICE_INVALID;
+#ifdef ENABLE_SOCKET_TIMEOUTS
+	client->activity_ms = 0U;
+#endif
+
+	if (listener_idx < MAX_SOCKETS)
+	{
+		socket_finalize_stopping_listener(listener_idx);
+	}
+}
+
+/*
+ * Event sink: allocates a static logical client and returns its generation token.
+ * No application callback is invoked here; connection notification is deferred.
+ */
+static socket_device_token_t socket_device_accepted(socket_device_handle_t listener,
+												 socket_device_handle_t native_client)
+{
+	socket_if_t *socket;
+	socket_client_state_t *client;
+	uint8_t listener_idx;
+	uint8_t local_idx;
+	uint16_t slot;
+
+	if (native_client == SOCKET_DEVICE_INVALID_HANDLE)
+	{
+		return SOCKET_DEVICE_INVALID_TOKEN;
+	}
+
+	socket = socket_find_listener(listener, &listener_idx);
+	if (!socket)
+	{
+		return SOCKET_DEVICE_INVALID_TOKEN;
+	}
+
+	for (local_idx = 0; local_idx < SOCKET_MAX_CLIENTS; ++local_idx)
+	{
+		if (socket->client_slots[local_idx] == SOCKET_INVALID_CLIENT_SLOT)
+		{
+			break;
+		}
+	}
+
+	if (local_idx >= SOCKET_MAX_CLIENTS)
+	{
+		return SOCKET_DEVICE_INVALID_TOKEN;
+	}
+
+	slot = socket_find_free_client();
+	if (slot == SOCKET_INVALID_CLIENT_SLOT)
+	{
+		return SOCKET_DEVICE_INVALID_TOKEN;
+	}
+
+	client = &socket_clients[slot];
+	++client->generation;
+	if (client->generation == 0U)
+	{
+		++client->generation;
+	}
+
+	client->handle = native_client;
+	client->listener_idx = listener_idx;
+	client->local_idx = local_idx;
+	client->flags = SOCKET_CLIENT_IN_USE | SOCKET_CLIENT_CONNECT_PENDING;
+	client->close_reason = SOCKET_DEVICE_INVALID;
+#ifdef ENABLE_SOCKET_TIMEOUTS
+	client->activity_ms = mcu_millis();
+#endif
+
+	socket->client_slots[local_idx] = slot;
+	return socket_make_token(slot, client->generation);
+}
+
+/* Event sink: coalesces duplicate readable hints for a live generation token. */
+static void socket_device_readable(socket_device_token_t token)
+{
+	socket_client_state_t *client = socket_resolve_token(token, NULL);
+	if (client && (client->flags & SOCKET_CLIENT_CLOSE_PENDING) == 0U)
+	{
+		client->flags |= SOCKET_CLIENT_READABLE;
+	}
+}
+
+/* Event sink: coalesces duplicate writable hints for a live generation token. */
+static void socket_device_writable(socket_device_token_t token)
+{
+	socket_client_state_t *client = socket_resolve_token(token, NULL);
+	if (client && (client->flags & SOCKET_CLIENT_CLOSE_PENDING) == 0U)
+	{
+		client->flags |= SOCKET_CLIENT_WRITABLE;
+	}
+}
+
+/*
+ * Event sink: records a backend-released remote/fatal close.
+ * Late events are rejected by token generation matching.
+ */
+static void socket_device_closed(socket_device_token_t token, int reason)
+{
+	socket_client_state_t *client = socket_resolve_token(token, NULL);
+	if (!client || (client->flags & SOCKET_CLIENT_CLOSE_PENDING) != 0U)
+	{
+		return;
+	}
+
+	client->handle = SOCKET_DEVICE_INVALID_HANDLE;
+	client->flags &= (uint8_t)~(SOCKET_CLIENT_READABLE | SOCKET_CLIENT_WRITABLE);
+	client->flags |= SOCKET_CLIENT_CLOSE_PENDING;
+	client->close_reason = (reason < 0) ? reason : SOCKET_DEVICE_ERROR;
+}
 
 bool socket_register_device(socket_device_t *device)
 {
-	if (!device)
-		return false;
-
-	if (device->init && device->init(&socket_device_events) < 0)
+	if (!device || socket_device || !device->init || !device->listen ||
+		!device->recv || !device->send || !device->close || !device->poll)
 	{
-		socket_device = NULL;
+		return false;
+	}
+
+	for (uint16_t i = 0; i < MAX_SOCKETS; ++i)
+	{
+		if (raw_sockets[i].state != SOCKET_IF_FREE)
+		{
+			return false;
+		}
+	}
+
+	if (device->init(&socket_device_events) < 0)
+	{
 		return false;
 	}
 
@@ -57,426 +480,472 @@ bool socket_register_device(socket_device_t *device)
 	return true;
 }
 
-static socket_if_t *find_socket_if(socket_handle_t listener)
+socket_if_t *socket_start(uint32_t ip_listen, uint16_t port)
 {
-	for (int i = 0; i < MAX_SOCKETS; i++)
-	{
-		if (raw_sockets[i].socket_if == listener)
-			return &raw_sockets[i];
-	}
-	return NULL;
-}
+	socket_device_endpoint_t endpoint;
+	socket_device_handle_t listener;
+	socket_if_t *socket;
 
-static int find_free_socket_if(void)
-{
-	for (int i = 0; i < MAX_SOCKETS; i++)
-	{
-		if (raw_sockets[i].socket_if == SOCKET_INVALID_HANDLE)
-			return i;
-	}
-	return -1;
-}
-
-socket_if_t *socket_start_listen(uint32_t ip_listen, uint16_t port, int domain, int type, int protocol)
-{
-	int idx = find_free_socket_if();
-	if (idx < 0)
-		return NULL;
-
-	if (!socket_device || !socket_device->listen)
+	if (!socket_device || port == 0U)
 	{
 		return NULL;
 	}
 
-	socket_handle_t listener = socket_device->listen(ip_listen, port, domain, type, protocol, SOCKET_MAX_CLIENTS);
-	if (listener == SOCKET_INVALID_HANDLE)
-		return NULL;
-
-	memset(&raw_sockets[idx], 0, sizeof(raw_sockets[idx]));
-	raw_sockets[idx].socket_if = listener;
-	for (int i = 0; i < SOCKET_MAX_CLIENTS; i++)
-	{
-		raw_sockets[idx].socket_clients[i] = SOCKET_INVALID_HANDLE;
-	}
-	return &raw_sockets[idx];
-}
-
-void socket_stop_listening(socket_if_t *socket)
-{
+	socket = socket_find_free_listener();
 	if (!socket)
+	{
+		return NULL;
+	}
+
+	endpoint.address = ip_listen;
+	endpoint.port = port;
+	listener = socket_device->listen(&endpoint, SOCKET_MAX_CLIENTS);
+	if (listener == SOCKET_DEVICE_INVALID_HANDLE)
+	{
+		return NULL;
+	}
+
+	memset(socket, 0, sizeof(*socket));
+	socket->listener = listener;
+	for (uint8_t i = 0; i < SOCKET_MAX_CLIENTS; ++i)
+	{
+		socket->client_slots[i] = SOCKET_INVALID_CLIENT_SLOT;
+	}
+	socket->state = SOCKET_IF_ACTIVE;
+	return socket;
+}
+
+void socket_stop(socket_if_t *socket)
+{
+	int listener_idx = socket_listener_index(socket);
+
+	if (listener_idx < 0 || socket->state == SOCKET_IF_FREE)
 	{
 		return;
 	}
 
-	/* Close all active clients */
-	for (uint8_t i = 0; i < SOCKET_MAX_CLIENTS; i++)
+	if (socket->state == SOCKET_IF_ACTIVE)
 	{
-		socket_handle_t client = socket->socket_clients[i];
+		socket_device_handle_t listener = socket->listener;
+		socket->listener = SOCKET_DEVICE_INVALID_HANDLE;
+		socket->state = SOCKET_IF_STOPPING;
 
-		if (client == SOCKET_INVALID_HANDLE)
+		if (socket_device && listener != SOCKET_DEVICE_INVALID_HANDLE)
 		{
-			continue;
-		}
-
-		/*
-		 * Invalidate the logical handle before calling the backend or
-		 * application callback. This prevents callbacks from attempting
-		 * to use a connection that is being closed.
-		 */
-		socket->socket_clients[i] = SOCKET_INVALID_HANDLE;
-
-#ifdef ENABLE_SOCKET_TIMEOUTS
-		socket->client_activity[i] = 0;
-#endif
-
-		if (socket_device && socket_device->close)
-		{
-			socket_device->close(client);
-		}
-
-		if (socket->client_ondisconnected_cb)
-		{
-			socket->client_ondisconnected_cb(i, socket->protocol);
+			(void)socket_device->close(listener);
 		}
 	}
 
-	/* Close listener */
-	socket_handle_t listener = socket->socket_if;
-	socket->socket_if = SOCKET_INVALID_HANDLE;
-
-	if (listener != SOCKET_INVALID_HANDLE &&
-		socket_device &&
-		socket_device->close)
+	for (uint8_t i = 0; i < SOCKET_MAX_CLIENTS; ++i)
 	{
-		socket_device->close(listener);
+		if (socket->client_slots[i] != SOCKET_INVALID_CLIENT_SLOT)
+		{
+			(void)socket_close(socket, i);
+		}
 	}
 
-	/* Clear interface state */
-	socket->client_ondata_cb = NULL;
-	socket->client_onconnected_cb = NULL;
-	socket->client_ondisconnected_cb = NULL;
-	socket->client_onidle_cb = NULL;
-	socket->protocol = NULL;
+	socket_finalize_stopping_listener((uint8_t)listener_idx);
 }
 
-void socket_add_ondata_handler(socket_if_t *socket, socket_data_delegate callback)
+void socket_add_ondata_handler(socket_if_t *socket,
+								   socket_data_delegate callback)
 {
-	if (socket)
+	if (socket_listener_index(socket) >= 0)
 	{
 		socket->client_ondata_cb = callback;
 	}
 }
 
-void socket_add_onidle_handler(socket_if_t *socket, socket_idle_delegate callback)
+void socket_add_onidle_handler(socket_if_t *socket,
+								   socket_idle_delegate callback)
 {
-	if (socket)
+	if (socket_listener_index(socket) >= 0)
 	{
 		socket->client_onidle_cb = callback;
 	}
 }
 
-void socket_add_onconnected_handler(socket_if_t *socket, socket_connect_delegate callback)
+void socket_add_onconnected_handler(socket_if_t *socket,
+									  socket_connect_delegate callback)
 {
-	if (socket)
+	if (socket_listener_index(socket) >= 0)
 	{
 		socket->client_onconnected_cb = callback;
 	}
 }
 
-void socket_add_ondisconnected_handler(socket_if_t *socket, socket_connect_delegate callback)
+void socket_add_onwritable_handler(socket_if_t *socket,
+									 socket_writable_delegate callback)
 {
-	if (socket)
+	if (socket_listener_index(socket) >= 0)
+	{
+		socket->client_onwritable_cb = callback;
+	}
+}
+
+void socket_add_ondisconnected_handler(socket_if_t *socket,
+										 socket_disconnect_delegate callback)
+{
+	if (socket_listener_index(socket) >= 0)
 	{
 		socket->client_ondisconnected_cb = callback;
 	}
 }
 
-int socket_send(socket_if_t *socket, uint8_t client_idx, char *data, size_t data_len, int flags)
+void socket_set_protocol(socket_if_t *socket, void *protocol)
 {
-	if (!socket || client_idx >= SOCKET_MAX_CLIENTS || !socket_device || !socket_device->send)
+	if (socket_listener_index(socket) >= 0)
 	{
-		return SOCKET_DEVICE_INVALID;
+		socket->protocol = protocol;
 	}
-
-	socket_handle_t client = socket->socket_clients[client_idx];
-	if (client == SOCKET_INVALID_HANDLE)
-	{
-		return SOCKET_DEVICE_INVALID;
-	}
-
-	int sent = 0;
-	while (data_len)
-	{
-		int n = socket_device->send(client, data, data_len, flags);
-		if (n <= 0)
-		{
-			/* Stop immediately on backpressure or error. Never busy-wait. */
-			return (sent > 0) ? sent : n;
-		}
-		data += n;
-		data_len -= (size_t)n;
-		sent += n;
-	}
-
-	return sent;
 }
 
-int socket_broadcast(socket_if_t *socket, char *data, size_t data_len, int flags)
+void *socket_get_protocol(const socket_if_t *socket)
 {
-	if (!socket || !socket_device || !socket_device->send)
+	return socket_listener_index(socket) >= 0 ? socket->protocol : NULL;
+}
+
+int socket_send(socket_if_t *socket,
+				uint8_t client_idx,
+				const void *data,
+				size_t data_len)
+{
+	socket_client_state_t *client;
+	size_t attempt;
+	int result;
+
+	if (!socket_device || (data_len > 0U && !data))
 	{
 		return SOCKET_DEVICE_INVALID;
 	}
 
-	int result = SOCKET_DEVICE_INVALID;
-	bool have_client = false;
-	for (int i = 0; i < SOCKET_MAX_CLIENTS; i++)
+	client = socket_get_client(socket, client_idx, NULL);
+	if (!client || client->handle == SOCKET_DEVICE_INVALID_HANDLE ||
+		(client->flags & (SOCKET_CLIENT_CONNECT_NOTIFIED |
+						  SOCKET_CLIENT_CLOSE_PENDING)) != SOCKET_CLIENT_CONNECT_NOTIFIED)
 	{
-		if (socket->socket_clients[i] != SOCKET_INVALID_HANDLE)
+		return SOCKET_DEVICE_INVALID;
+	}
+
+	if (data_len == 0U)
+	{
+		return 0;
+	}
+
+	/* The public result is int, so one attempt cannot report more than INT_MAX. */
+	attempt = data_len > (size_t)INT_MAX ? (size_t)INT_MAX : data_len;
+	result = socket_device->send(client->handle, data, attempt);
+
+	if (result > 0)
+	{
+		if ((size_t)result > attempt)
 		{
-			int s = socket_send(socket, (uint8_t)i, data, data_len, flags);
-			if (!have_client)
-			{
-				/* Initialize the result from the first active client so a
-				   successful send can produce a positive result. */
-				result = s;
-				have_client = true;
-			}
-			else if (s < result)
-			{
-				result = s;
-			}
+			return SOCKET_DEVICE_ERROR;
+		}
+#ifdef ENABLE_SOCKET_TIMEOUTS
+		client->activity_ms = mcu_millis();
+#endif
+	}
+
+	return result;
+}
+
+int socket_broadcast(socket_if_t *socket,
+					 const void *data,
+					 size_t data_len,
+					 socket_broadcast_result_t *result)
+{
+	int active = 0;
+
+	if (!result || socket_listener_index(socket) < 0 ||
+		(data_len > 0U && !data))
+	{
+		return SOCKET_DEVICE_INVALID;
+	}
+
+	memset(result, 0, sizeof(*result));
+	for (uint8_t i = 0; i < SOCKET_MAX_CLIENTS; ++i)
+	{
+		uint32_t bit = (uint32_t)1U << i;
+		int sent;
+
+		if (!socket_client_is_connected(socket, i))
+		{
+			continue;
+		}
+
+		++active;
+		result->active_mask |= bit;
+		sent = socket_send(socket, i, data, data_len);
+
+		if (sent >= 0 && (size_t)sent == data_len)
+		{
+			result->complete_mask |= bit;
+		}
+		else if (sent > 0)
+		{
+			result->partial_mask |= bit;
+		}
+		else if (sent == SOCKET_DEVICE_WOULD_BLOCK)
+		{
+			result->blocked_mask |= bit;
+		}
+		else
+		{
+			result->failed_mask |= bit;
 		}
 	}
 
-	return have_client ? result : 0;
+	return active;
 }
 
-/* Backend event sink: a new client connection was established */
-static bool socket_device_connected(socket_handle_t listener, socket_handle_t client)
+int socket_close(socket_if_t *socket, uint8_t client_idx)
 {
-	socket_if_t *iface = find_socket_if(listener);
-	if (!iface || client == SOCKET_INVALID_HANDLE)
+	socket_client_state_t *client = socket_get_client(socket, client_idx, NULL);
+	socket_device_handle_t handle;
+	int result = SOCKET_DEVICE_OK;
+
+	if (!client || (client->flags & SOCKET_CLIENT_CLOSE_PENDING) != 0U)
+	{
+		return SOCKET_DEVICE_INVALID;
+	}
+
+	handle = client->handle;
+	client->handle = SOCKET_DEVICE_INVALID_HANDLE;
+	client->flags &= (uint8_t)~(SOCKET_CLIENT_READABLE | SOCKET_CLIENT_WRITABLE);
+	client->flags |= SOCKET_CLIENT_CLOSE_PENDING;
+	client->close_reason = SOCKET_DEVICE_OK;
+
+	if (socket_device && handle != SOCKET_DEVICE_INVALID_HANDLE)
+	{
+		result = socket_device->close(handle);
+	}
+
+	return result < 0 ? result : SOCKET_DEVICE_OK;
+}
+
+bool socket_client_is_connected(const socket_if_t *socket,
+									uint8_t client_idx)
+{
+	socket_client_state_t *client = socket_get_client(socket, client_idx, NULL);
+	return client && client->handle != SOCKET_DEVICE_INVALID_HANDLE &&
+		   (client->flags & (SOCKET_CLIENT_CONNECT_NOTIFIED |
+							SOCKET_CLIENT_CLOSE_PENDING)) == SOCKET_CLIENT_CONNECT_NOTIFIED;
+}
+
+/*
+ * Dispatches at most one unit of logical client work.
+ * Returns true when a pending event/RX attempt/idle callback consumed this turn.
+ */
+static bool socket_dispatch_client(uint16_t slot)
+{
+	socket_client_state_t *client;
+	socket_if_t *socket;
+	uint8_t local_idx;
+
+	if (slot >= SOCKET_MAX_CONNECTIONS)
 	{
 		return false;
 	}
 
-	for (uint8_t i = 0; i < SOCKET_MAX_CLIENTS; i++)
+	client = &socket_clients[slot];
+	if ((client->flags & SOCKET_CLIENT_IN_USE) == 0U ||
+		client->listener_idx >= MAX_SOCKETS ||
+		client->local_idx >= SOCKET_MAX_CLIENTS)
 	{
-		if (iface->socket_clients[i] == SOCKET_INVALID_HANDLE)
+		return false;
+	}
+
+	socket = &raw_sockets[client->listener_idx];
+	local_idx = client->local_idx;
+
+	/* Closure has priority and makes the public slot invalid before notification. */
+	if ((client->flags & SOCKET_CLIENT_CLOSE_PENDING) != 0U)
+	{
+		socket_disconnect_delegate callback = socket->client_ondisconnected_cb;
+		void *protocol = socket->protocol;
+		int reason = client->close_reason;
+		bool notified =
+			(client->flags & SOCKET_CLIENT_CONNECT_NOTIFIED) != 0U;
+
+		socket_release_client(slot);
+		if (notified && callback)
 		{
-			iface->socket_clients[i] = client;
-#ifdef ENABLE_SOCKET_TIMEOUTS
-			iface->client_activity[i] = mcu_millis();
-#endif
-			if (iface->client_onconnected_cb)
-			{
-				iface->client_onconnected_cb(i, iface->protocol);
-			}
+			callback(local_idx, reason, protocol);
+		}
+		return true;
+	}
+
+	/* First application-visible event for an accepted connection. */
+	if ((client->flags & SOCKET_CLIENT_CONNECT_PENDING) != 0U)
+	{
+		client->flags &= (uint8_t)~SOCKET_CLIENT_CONNECT_PENDING;
+		client->flags |= SOCKET_CLIENT_CONNECT_NOTIFIED;
+		if (socket->client_onconnected_cb)
+		{
+			socket->client_onconnected_cb(local_idx, socket->protocol);
+		}
+		return true;
+	}
+
+	/*
+	 * Pull one bounded RX chunk. Leave READABLE set after a positive read so the
+	 * next round-robin visit can continue draining; clear it on WOULD_BLOCK.
+	 */
+	if ((client->flags & SOCKET_CLIENT_READABLE) != 0U)
+	{
+		int received;
+
+		if (!socket_device || client->handle == SOCKET_DEVICE_INVALID_HANDLE)
+		{
+			client->flags &= (uint8_t)~SOCKET_CLIENT_READABLE;
 			return true;
 		}
+
+		received = socket_device->recv(client->handle,
+									 socket_rx_buffer,
+									 sizeof(socket_rx_buffer));
+		if (received > 0)
+		{
+			if ((size_t)received > sizeof(socket_rx_buffer))
+			{
+				client->handle = SOCKET_DEVICE_INVALID_HANDLE;
+				client->flags &=
+					(uint8_t)~(SOCKET_CLIENT_READABLE | SOCKET_CLIENT_WRITABLE);
+				client->flags |= SOCKET_CLIENT_CLOSE_PENDING;
+				client->close_reason = SOCKET_DEVICE_ERROR;
+				return true;
+			}
+#ifdef ENABLE_SOCKET_TIMEOUTS
+			client->activity_ms = mcu_millis();
+#endif
+			if (socket->client_ondata_cb)
+			{
+				socket->client_ondata_cb(local_idx,
+									 socket_rx_buffer,
+									 (size_t)received,
+									 socket->protocol);
+			}
+		}
+		else if (received == 0 || received == SOCKET_DEVICE_WOULD_BLOCK)
+		{
+			client->flags &= (uint8_t)~SOCKET_CLIENT_READABLE;
+		}
+		else
+		{
+			/* Contract requires backend recv() to have emitted closed() first. */
+			client->flags &= (uint8_t)~SOCKET_CLIENT_READABLE;
+			if ((client->flags & SOCKET_CLIENT_CLOSE_PENDING) == 0U)
+			{
+				/* Defensive logical cleanup for a contract-violating backend. */
+				client->handle = SOCKET_DEVICE_INVALID_HANDLE;
+				client->flags |= SOCKET_CLIENT_CLOSE_PENDING;
+				client->close_reason = received;
+			}
+		}
+		return true;
 	}
 
-	/* No logical client slot available; the backend owns rejection/cleanup */
+	/* Writable is edge-like: clear before callback; backend must re-notify later. */
+	if ((client->flags & SOCKET_CLIENT_WRITABLE) != 0U)
+	{
+		client->flags &= (uint8_t)~SOCKET_CLIENT_WRITABLE;
+		if (socket->client_onwritable_cb)
+		{
+			socket->client_onwritable_cb(local_idx, socket->protocol);
+		}
+		return true;
+	}
+
+	/* Lowest-priority cooperative per-client callback. */
+	if ((client->flags & SOCKET_CLIENT_CONNECT_NOTIFIED) != 0U &&
+		socket->client_onidle_cb)
+	{
+#ifdef ENABLE_SOCKET_TIMEOUTS
+		uint32_t idle_ms = mcu_millis() - client->activity_ms;
+		socket->client_onidle_cb(local_idx, idle_ms, socket->protocol);
+#else
+		socket->client_onidle_cb(local_idx, 0U, socket->protocol);
+#endif
+		return true;
+	}
+
 	return false;
-}
-
-/* Backend event sink: TCP payload is available */
-static void socket_device_data(socket_handle_t client, char *data, size_t len)
-{
-	socket_if_t *iface = NULL;
-	uint8_t client_idx = 0;
-	bool found = false;
-
-	for (int i = 0; i < MAX_SOCKETS && !found; i++)
-	{
-		for (uint8_t c = 0; c < SOCKET_MAX_CLIENTS; c++)
-		{
-			if (raw_sockets[i].socket_clients[c] == client)
-			{
-				iface = &raw_sockets[i];
-				client_idx = c;
-				found = true;
-				break;
-			}
-		}
-	}
-
-	if (!found)
-	{
-		/* Unknown/stale handle; ignore */
-		return;
-	}
-
-#ifdef ENABLE_SOCKET_TIMEOUTS
-	iface->client_activity[client_idx] = mcu_millis();
-#endif
-	data[len] = '\0';
-	if (iface->client_ondata_cb)
-	{
-		iface->client_ondata_cb(client_idx, data, len, iface->protocol);
-	}
-}
-
-/* Backend event sink: reserved for future TX-progress notification */
-static void socket_device_writable(socket_handle_t client)
-{
-	(void)client;
-}
-
-/* Backend event sink: remote orderly close or fatal transport error */
-static void socket_device_disconnected(socket_handle_t client, int reason)
-{
-	(void)reason;
-	for (int i = 0; i < MAX_SOCKETS; i++)
-	{
-		for (uint8_t c = 0; c < SOCKET_MAX_CLIENTS; c++)
-		{
-			if (raw_sockets[i].socket_clients[c] == client)
-			{
-				raw_sockets[i].socket_clients[c] = SOCKET_INVALID_HANDLE;
-#ifdef ENABLE_SOCKET_TIMEOUTS
-				raw_sockets[i].client_activity[c] = 0;
-#endif
-				/* Mark the client invalid before notifying so a disconnect
-				   callback cannot write to an already closed transport */
-				if (raw_sockets[i].client_ondisconnected_cb)
-				{
-					raw_sockets[i].client_ondisconnected_cb(c, raw_sockets[i].protocol);
-				}
-				return;
-			}
-		}
-	}
-}
-
-// closes a connection to a client (local explicit close)
-void socket_close(socket_if_t *socket, uint8_t client_idx)
-{
-	if (!socket || client_idx >= SOCKET_MAX_CLIENTS)
-	{
-		return;
-	}
-
-	socket_handle_t client = socket->socket_clients[client_idx];
-	if (client == SOCKET_INVALID_HANDLE)
-	{
-		return;
-	}
-
-	/* Mark the logical client invalid first so a disconnect callback cannot
-	   accidentally write to an already closed transport */
-	socket->socket_clients[client_idx] = SOCKET_INVALID_HANDLE;
-#ifdef ENABLE_SOCKET_TIMEOUTS
-	socket->client_activity[client_idx] = 0;
-#endif
-
-	if (socket_device && socket_device->close)
-	{
-		socket_device->close(client);
-	}
-
-	if (socket->client_ondisconnected_cb)
-	{
-		socket->client_ondisconnected_cb(client_idx, socket->protocol);
-	}
 }
 
 void socket_server_dotasks(void)
 {
-	static uint8_t srv_idx = 0;
-	static uint8_t clt_idx = 0;
-	const uint8_t i = srv_idx;
-	const uint8_t c = clt_idx;
-
-	if (!socket_device)
+	if (!socket_device || socket_core_running)
+	{
 		return;
-
-	if (socket_device->service)
-	{
-		/* Let the backend push connected/data/disconnected events */
-		socket_device->service();
 	}
 
-	/* Cooperative idle processing: inspect at most one logical client per
-	   socket_server_dotasks() call to keep the work strictly bounded */
-	socket_if_t *socket = &raw_sockets[i];
-	if (socket->socket_if != SOCKET_INVALID_HANDLE && socket->client_onidle_cb &&
-		socket->socket_clients[c] != SOCKET_INVALID_HANDLE)
+	socket_core_running = true;
+	socket_device->poll((uint16_t)SOCKET_DEVICE_POLL_BUDGET);
+
+	/* Find at most one client with work, starting from the round-robin cursor. */
+	for (uint16_t checked = 0; checked < SOCKET_MAX_CONNECTIONS; ++checked)
 	{
-#ifdef ENABLE_SOCKET_TIMEOUTS
-		uint32_t idle = mcu_millis() - socket->client_activity[c];
-		socket->client_onidle_cb(c, idle, socket->protocol);
-#else
-		socket->client_onidle_cb(c, 0, socket->protocol);
-#endif
-	}
-
-	/* Round-robin through clients and listeners, one step per call */
-	if (++clt_idx >= SOCKET_MAX_CLIENTS)
-	{
-		clt_idx = 0;
-		srv_idx = (uint8_t)((srv_idx + 1) < MAX_SOCKETS ? (srv_idx + 1) : 0);
-	}
-}
-
-int socket_server_hasclients(socket_if_t *socket)
-{
-	int clients = 0;
-
-	if (socket)
-	{
-		for (int c = 0; c < SOCKET_MAX_CLIENTS; c++)
-			if (socket->socket_clients[c] != SOCKET_INVALID_HANDLE)
-				clients++;
-
-		return clients;
-	}
-
-	for (int i = 0; i < MAX_SOCKETS; i++)
-		for (int c = 0; c < SOCKET_MAX_CLIENTS; c++)
-			if (raw_sockets[i].socket_clients[c] != SOCKET_INVALID_HANDLE)
-				clients++;
-
-	return clients;
-}
-
-int socket_get_clientindex(socket_if_t *socket, socket_handle_t socket_fd)
-{
-	if (!socket ||
-		socket_fd == SOCKET_INVALID_HANDLE)
-	{
-		return -1;
-	}
-
-	for (int c = 0; c < SOCKET_MAX_CLIENTS; c++)
-	{
-		if (socket->socket_clients[c] == socket_fd)
+		uint16_t slot = socket_dispatch_cursor;
+		socket_dispatch_cursor =
+			(uint16_t)((socket_dispatch_cursor + 1U) % SOCKET_MAX_CONNECTIONS);
+		if (socket_dispatch_client(slot))
 		{
-			return c;
+			break;
 		}
 	}
 
-	return -1;
+	socket_core_running = false;
+}
+
+int socket_server_hasclients(const socket_if_t *socket)
+{
+	int count = 0;
+	int listener_idx = socket ? socket_listener_index(socket) : -1;
+
+	if (socket && listener_idx < 0)
+	{
+		return 0;
+	}
+
+	for (uint16_t i = 0; i < SOCKET_MAX_CONNECTIONS; ++i)
+	{
+		if ((socket_clients[i].flags & SOCKET_CLIENT_IN_USE) != 0U &&
+			(!socket || socket_clients[i].listener_idx == (uint8_t)listener_idx))
+		{
+			++count;
+		}
+	}
+
+	return count;
 }
 
 DECL_MODULE(socket_server)
 {
 	RUNONCE
 	{
-		for (int i = 0; i < MAX_SOCKETS; i++)
+		for (uint16_t i = 0; i < MAX_SOCKETS; ++i)
 		{
-			raw_sockets[i].socket_if = SOCKET_INVALID_HANDLE;
-			for (int j = 0; j < SOCKET_MAX_CLIENTS; j++)
+			memset(&raw_sockets[i], 0, sizeof(raw_sockets[i]));
+			raw_sockets[i].listener = SOCKET_DEVICE_INVALID_HANDLE;
+			for (uint8_t j = 0; j < SOCKET_MAX_CLIENTS; ++j)
 			{
-				raw_sockets[i].socket_clients[j] = SOCKET_INVALID_HANDLE;
+				raw_sockets[i].client_slots[j] = SOCKET_INVALID_CLIENT_SLOT;
 			}
-			raw_sockets[i].client_ondata_cb = NULL;
-			raw_sockets[i].client_onidle_cb = NULL;
-			raw_sockets[i].client_onconnected_cb = NULL;
-			raw_sockets[i].client_ondisconnected_cb = NULL;
-			raw_sockets[i].protocol = NULL;
+			raw_sockets[i].state = SOCKET_IF_FREE;
 		}
+
+		for (uint16_t i = 0; i < SOCKET_MAX_CONNECTIONS; ++i)
+		{
+			memset(&socket_clients[i], 0, sizeof(socket_clients[i]));
+			socket_clients[i].handle = SOCKET_DEVICE_INVALID_HANDLE;
+			socket_clients[i].listener_idx = UINT8_MAX;
+			socket_clients[i].local_idx = UINT8_MAX;
+			socket_clients[i].close_reason = SOCKET_DEVICE_INVALID;
+		}
+
+		socket_core_running = false;
+		socket_dispatch_cursor = 0U;
 		RUNONCE_COMPLETE();
 	}
 }

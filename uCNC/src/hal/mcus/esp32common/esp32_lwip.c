@@ -1,25 +1,29 @@
 /*
 	Name: esp32_lwip.c
-	Description: Event-driven lwIP socket backend for ESP32 (µCNC socket device).
+	Description: Allocation-free ESP32/lwIP BSD-socket backend for uCNC.
 
-	This backend uses the ESP-IDF lwIP socket API (lwip_socket/lwip_bind/
-	lwip_listen/lwip_accept/lwip_recv/lwip_send/lwip_select/lwip_close) and
-	pushes connected/data/writable/disconnected events into the µCNC socket
-	core through the socket_device_t callback table. It contains no C++
-	dependencies and lives in esp32common.
+	This backend is a thin, readiness-driven adapter over the ESP-IDF lwIP BSD
+	socket API. lwIP remains responsible for TCP sequencing, retransmission,
+	flow/congestion control and connection teardown. The backend owns only fixed
+	listener/client records and never copies payload into a private RX/TX buffer.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 20-08-2025
+	All public backend functions, including poll(), must be called from the one
+	uCNC socket-owner context. ESP-IDF's BSD socket layer safely marshals work to
+	the lwIP TCP/IP FreeRTOS task; no native callback invokes the uCNC core.
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+	Static state is approximately:
+	  ESP32_MAX_LISTENERS * sizeof(int) +
+	  ESP32_MAX_CLIENTS * sizeof(esp32_client_t)
+	plus one event-table pointer and small round-robin cursors. On a 32-bit ESP32,
+	esp32_client_t is normally 12 bytes. No backend payload buffer is allocated.
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+	Copyright: Copyright (c) Joao Martins
+	Author: Joao Martins
+
+	uCNC is free software: you can redistribute it and/or modify it under the
+	terms of the GNU General Public License as published by the Free Software
+	Foundation, either version 3 of the License, or (at your option) any later
+	version. Please see <http://www.gnu.org/licenses/>.
 */
 
 #include "../../../cnc.h"
@@ -27,774 +31,831 @@
 #if (defined(ESP32) || defined(ESP32S3) || defined(ESP32C3))
 #if defined(ENABLE_SOCKETS)
 
-#include <string.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <limits.h>
+#include <string.h>
+
 #include "lwip/sockets.h"
-#include "../../../modules/net/socket.h"
 
 #ifndef ESP32_MAX_LISTENERS
 #define ESP32_MAX_LISTENERS MAX_SOCKETS
 #endif
+
+/*
+ * Use the core's independently configurable total-connection limit instead of
+ * always reserving MAX_SOCKETS * SOCKET_MAX_CLIENTS records.
+ */
 #ifndef ESP32_MAX_CLIENTS
-#define ESP32_MAX_CLIENTS (MAX_SOCKETS * SOCKET_MAX_CLIENTS)
+#define ESP32_MAX_CLIENTS SOCKET_MAX_CONNECTIONS
 #endif
 
-typedef struct
+/*
+ * ESP-IDF must also provide enough native descriptors. To make every fixed
+ * slot simultaneously usable, CONFIG_LWIP_MAX_SOCKETS must be at least the
+ * number of active listeners plus active clients. A smaller native limit is
+ * safe, but socket()/accept() will cap the reachable runtime capacity.
+ */
+
+#if ESP32_MAX_LISTENERS == 0
+#error "ESP32_MAX_LISTENERS must be greater than zero"
+#endif
+
+#if ESP32_MAX_CLIENTS == 0
+#error "ESP32_MAX_CLIENTS must be greater than zero"
+#endif
+
+enum
 {
-	bool in_use;
-	int native_fd;
-	bool write_blocked;
-	socket_handle_t srv_handle;
+	ESP32_CLIENT_IN_USE = 1U << 0,
+	/* A readable hint is outstanding in the core. */
+	ESP32_CLIENT_READ_NOTIFIED = 1U << 1,
+	/* A partial/blocked send requires one later writable transition. */
+	ESP32_CLIENT_WANT_WRITE = 1U << 2
+};
+
+typedef struct esp32_client_
+{
+	int fd;
+	socket_device_token_t token;
+	/* Zero means no deferred fatal error; otherwise a normalized result. */
+	int8_t pending_error;
+	uint8_t flags;
 } esp32_client_t;
 
-static esp32_client_t esp32_clients[ESP32_MAX_CLIENTS];
 static int esp32_listeners[ESP32_MAX_LISTENERS];
-static const socket_device_events_t *esp32_socket_events;
-static bool esp32_net_started = false;
+static esp32_client_t esp32_clients[ESP32_MAX_CLIENTS];
+static const socket_device_events_t *esp32_events;
+static uint16_t esp32_next_listener;
+static uint16_t esp32_next_client;
+static bool esp32_prefer_accept;
 
-static int esp32_map_errno(int err)
+/* EAGAIN and EWOULDBLOCK are commonly the same value, so avoid switch cases. */
+static bool esp32_errno_is_temporary(int error)
 {
-	switch (err)
+#ifdef EAGAIN
+	if (error == EAGAIN)
 	{
-	case EWOULDBLOCK:
-		return SOCKET_DEVICE_WOULD_BLOCK;
-
-	case ENOMEM:
-	case ENOBUFS:
-		return SOCKET_DEVICE_NO_MEMORY;
-
-	case EBADF:
-	case ENOTSOCK:
-		return SOCKET_DEVICE_INVALID;
-
-	case ENOTCONN:
-	case EPIPE:
-	case ECONNRESET:
-	case ECONNABORTED:
-		return SOCKET_DEVICE_CLOSED;
-
-	default:
-		return SOCKET_DEVICE_ERROR;
+		return true;
 	}
+#endif
+#ifdef EWOULDBLOCK
+	if (error == EWOULDBLOCK)
+	{
+		return true;
+	}
+#endif
+#ifdef EINTR
+	if (error == EINTR)
+	{
+		return true;
+	}
+#endif
+#ifdef EINPROGRESS
+	if (error == EINPROGRESS)
+	{
+		return true;
+	}
+#endif
+#ifdef EALREADY
+	if (error == EALREADY)
+	{
+		return true;
+	}
+#endif
+	return false;
+}
+
+/*
+ * Normalizes non-success native errors. An orderly peer FIN is not an errno;
+ * it is recognized only from recv() returning zero and maps to CLOSED there.
+ * Resets, aborts, timeouts and link failures remain distinguishable from an
+ * orderly close by mapping to ERROR.
+ */
+static int esp32_map_errno(int error)
+{
+	if (esp32_errno_is_temporary(error))
+	{
+		return SOCKET_DEVICE_WOULD_BLOCK;
+	}
+
+#ifdef ENOMEM
+	if (error == ENOMEM)
+	{
+		return SOCKET_DEVICE_NO_MEMORY;
+	}
+#endif
+#ifdef ENOBUFS
+	if (error == ENOBUFS)
+	{
+		return SOCKET_DEVICE_NO_MEMORY;
+	}
+#endif
+#ifdef EBADF
+	if (error == EBADF)
+	{
+		return SOCKET_DEVICE_INVALID;
+	}
+#endif
+#ifdef ENOTSOCK
+	if (error == ENOTSOCK)
+	{
+		return SOCKET_DEVICE_INVALID;
+	}
+#endif
+#ifdef EINVAL
+	if (error == EINVAL)
+	{
+		return SOCKET_DEVICE_INVALID;
+	}
+#endif
+
+	return SOCKET_DEVICE_ERROR;
+}
+
+/* lwIP can report temporary internal pbuf/netconn pressure as ENOMEM/ENOBUFS. */
+static bool esp32_errno_is_data_backpressure(int error)
+{
+	if (esp32_errno_is_temporary(error))
+	{
+		return true;
+	}
+#ifdef ENOMEM
+	if (error == ENOMEM)
+	{
+		return true;
+	}
+#endif
+#ifdef ENOBUFS
+	if (error == ENOBUFS)
+	{
+		return true;
+	}
+#endif
+	return false;
+}
+
+static bool esp32_fd_is_selectable(int fd)
+{
+	if (fd < 0)
+	{
+		return false;
+	}
+#ifdef FD_SETSIZE
+	if (fd >= FD_SETSIZE)
+	{
+		return false;
+	}
+#endif
+	return true;
+}
+
+static bool esp32_handle_to_fd(socket_device_handle_t handle, int *fd)
+{
+	if (!fd || handle == SOCKET_DEVICE_INVALID_HANDLE ||
+		handle > (socket_device_handle_t)INT_MAX)
+	{
+		return false;
+	}
+
+	*fd = (int)handle;
+	return *fd >= 0;
 }
 
 static bool esp32_set_nonblocking(int fd)
 {
 	int flags = fcntl(fd, F_GETFL, 0);
-
-	if (flags < 0)
-	{
-		return false;
-	}
-
-	if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0)
-	{
-		return false;
-	}
-
-	return true;
+	return flags >= 0 && fcntl(fd, F_SETFL, flags | O_NONBLOCK) == 0;
 }
 
-static int esp32_find_client(socket_handle_t handle)
+static int esp32_find_listener_fd(int fd)
 {
-	if (handle == SOCKET_INVALID_HANDLE)
+	for (uint16_t i = 0; i < ESP32_MAX_LISTENERS; ++i)
 	{
-		return -1;
-	}
-
-	int fd = (int)handle;
-
-	for (int i = 0; i < ESP32_MAX_CLIENTS; i++)
-	{
-		if (esp32_clients[i].in_use &&
-			esp32_clients[i].native_fd == fd)
+		if (esp32_listeners[i] == fd)
 		{
-			return i;
+			return (int)i;
 		}
 	}
+	return -1;
+}
 
+static int esp32_find_free_listener(void)
+{
+	for (uint16_t i = 0; i < ESP32_MAX_LISTENERS; ++i)
+	{
+		if (esp32_listeners[i] < 0)
+		{
+			return (int)i;
+		}
+	}
+	return -1;
+}
+
+static int esp32_find_client_fd(int fd)
+{
+	for (uint16_t i = 0; i < ESP32_MAX_CLIENTS; ++i)
+	{
+		if ((esp32_clients[i].flags & ESP32_CLIENT_IN_USE) != 0U &&
+			esp32_clients[i].fd == fd)
+		{
+			return (int)i;
+		}
+	}
 	return -1;
 }
 
 static int esp32_find_free_client(void)
 {
-	for (int i = 0; i < ESP32_MAX_CLIENTS; i++)
+	for (uint16_t i = 0; i < ESP32_MAX_CLIENTS; ++i)
 	{
-		if (!esp32_clients[i].in_use)
+		if ((esp32_clients[i].flags & ESP32_CLIENT_IN_USE) == 0U)
 		{
-			return i;
+			return (int)i;
 		}
 	}
-
 	return -1;
 }
 
-static void esp32_release_client(int idx, bool close_socket)
+/* Invalidate the record before native close so a reused fd cannot revive it. */
+static void esp32_release_client(int index, bool close_native)
 {
-	if (idx < 0 || idx >= ESP32_MAX_CLIENTS)
+	esp32_client_t *client;
+	int fd;
+
+	if (index < 0 || index >= (int)ESP32_MAX_CLIENTS)
 	{
 		return;
 	}
 
-	esp32_client_t *client = &esp32_clients[idx];
-
-	if (!client->in_use)
+	client = &esp32_clients[index];
+	if ((client->flags & ESP32_CLIENT_IN_USE) == 0U)
 	{
 		return;
 	}
 
-	int fd = client->native_fd;
+	fd = client->fd;
+	client->fd = -1;
+	client->token = SOCKET_DEVICE_INVALID_TOKEN;
+	client->pending_error = 0;
+	client->flags = 0U;
 
-	/*
-	 * Clear backend state before closing or notifying the core.
-	 * This protects against re-entrant application callbacks.
-	 */
-	client->in_use = false;
-	client->write_blocked = false;
-	client->native_fd = -1;
-	client->srv_handle = SOCKET_INVALID_HANDLE;
-
-	if (close_socket && fd >= 0)
+	if (close_native && fd >= 0)
 	{
-		lwip_close(fd);
+		(void)lwip_close(fd);
 	}
 }
 
-static int esp32_socket_device_init(
-	const socket_device_events_t *events)
+/*
+ * Remote/fatal close path. The native state is gone before closed() is emitted;
+ * the copied token is the last reference to this connection generation.
+ */
+static int esp32_fail_client(int index, int reason)
 {
-	if (!events)
+	socket_device_token_t token;
+
+	if (index < 0 || index >= (int)ESP32_MAX_CLIENTS ||
+		(esp32_clients[index].flags & ESP32_CLIENT_IN_USE) == 0U)
 	{
 		return SOCKET_DEVICE_INVALID;
 	}
 
-	esp32_socket_events = events;
-
-	memset(
-		esp32_clients,
-		0,
-		sizeof(esp32_clients));
-
-	for (int i = 0; i < ESP32_MAX_CLIENTS; i++)
+	if (reason >= 0 || reason == SOCKET_DEVICE_WOULD_BLOCK)
 	{
-		esp32_clients[i].in_use = false;
-		esp32_clients[i].native_fd = -1;
-		esp32_clients[i].write_blocked = false;
-		esp32_clients[i].srv_handle =
-			SOCKET_INVALID_HANDLE;
+		reason = SOCKET_DEVICE_ERROR;
 	}
 
-	for (int i = 0; i < ESP32_MAX_LISTENERS; i++)
+	token = esp32_clients[index].token;
+	esp32_release_client(index, true);
+
+	if (token != SOCKET_DEVICE_INVALID_TOKEN)
+	{
+		esp32_events->closed(token, reason);
+	}
+
+	return reason;
+}
+
+static int esp32_socket_init(const socket_device_events_t *events)
+{
+	if (!events || !events->accepted || !events->readable ||
+		!events->writable || !events->closed)
+	{
+		return SOCKET_DEVICE_INVALID;
+	}
+
+	for (uint16_t i = 0; i < ESP32_MAX_LISTENERS; ++i)
 	{
 		esp32_listeners[i] = -1;
 	}
 
-	/*
-	 * ESP-IDF/lwIP sockets require no BSD-style
-	 * global startup operation.
-	 */
+	memset(esp32_clients, 0, sizeof(esp32_clients));
+	for (uint16_t i = 0; i < ESP32_MAX_CLIENTS; ++i)
+	{
+		esp32_clients[i].fd = -1;
+		esp32_clients[i].token = SOCKET_DEVICE_INVALID_TOKEN;
+	}
+
+	esp32_next_listener = 0U;
+	esp32_next_client = 0U;
+	esp32_prefer_accept = true;
+	esp32_events = events;
+
+	/* Wi-Fi/netif startup remains owned by the existing ESP32 network module. */
 	return SOCKET_DEVICE_OK;
 }
 
-static socket_handle_t esp32_socket_listen(
-	uint32_t ip_listen,
-	uint16_t port,
-	int domain,
-	int type,
-	int protocol,
+static socket_device_handle_t esp32_socket_listen(
+	const socket_device_endpoint_t *endpoint,
 	uint8_t backlog)
 {
-	/*
-	 * This backend currently supports IPv4 TCP only.
-	 */
-	if (domain != AF_INET ||
-		type != SOCK_STREAM)
+	struct sockaddr_in address;
+	int listener_index;
+	int native_backlog;
+	int fd;
+
+	if (!endpoint || endpoint->port == 0U || !esp32_events)
 	{
-		return SOCKET_INVALID_HANDLE;
+		return SOCKET_DEVICE_INVALID_HANDLE;
 	}
 
-	int listener_slot = -1;
-
-	for (int i = 0; i < ESP32_MAX_LISTENERS; i++)
+	listener_index = esp32_find_free_listener();
+	if (listener_index < 0)
 	{
-		if (esp32_listeners[i] < 0)
+		return SOCKET_DEVICE_INVALID_HANDLE;
+	}
+
+	fd = lwip_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (!esp32_fd_is_selectable(fd))
+	{
+		if (fd >= 0)
 		{
-			listener_slot = i;
-			break;
+			(void)lwip_close(fd);
 		}
+		return SOCKET_DEVICE_INVALID_HANDLE;
 	}
 
-	if (listener_slot < 0)
-	{
-		return SOCKET_INVALID_HANDLE;
-	}
-
-	int fd = lwip_socket(
-		domain,
-		type,
-		protocol);
-
-	if (fd < 0)
-	{
-		return SOCKET_INVALID_HANDLE;
-	}
-
-	/*
-	 * The socket-device contract requires listeners
-	 * to be strictly non-blocking.
-	 */
 	if (!esp32_set_nonblocking(fd))
 	{
-		lwip_close(fd);
-		return SOCKET_INVALID_HANDLE;
+		(void)lwip_close(fd);
+		return SOCKET_DEVICE_INVALID_HANDLE;
 	}
 
-	struct sockaddr_in addr;
-	memset(&addr, 0, sizeof(addr));
-
-	addr.sin_family = AF_INET;
-	addr.sin_port = htons(port);
-	addr.sin_addr.s_addr = htonl(ip_listen);
-
-	if (lwip_bind(
-			fd,
-			(struct sockaddr *)&addr,
-			sizeof(addr)) < 0)
+#ifdef SO_REUSEADDR
+	/* Best effort: CONFIG_LWIP_SO_REUSE controls availability in ESP-IDF. */
 	{
-		lwip_close(fd);
-		return SOCKET_INVALID_HANDLE;
+		int reuse = 1;
+		(void)lwip_setsockopt(fd, SOL_SOCKET, SO_REUSEADDR,
+						   &reuse, (socklen_t)sizeof(reuse));
 	}
+#endif
 
-	int listen_backlog =
-		(backlog > 0)
-			? backlog
-			: SOCKET_MAX_CLIENTS;
+	memset(&address, 0, sizeof(address));
+	address.sin_family = AF_INET;
+	address.sin_port = htons(endpoint->port);
+	address.sin_addr.s_addr = htonl(endpoint->address);
 
-	if (lwip_listen(
-			fd,
-			listen_backlog) < 0)
+	if (lwip_bind(fd, (struct sockaddr *)&address,
+			  (socklen_t)sizeof(address)) < 0)
 	{
-		lwip_close(fd);
-		return SOCKET_INVALID_HANDLE;
+		(void)lwip_close(fd);
+		return SOCKET_DEVICE_INVALID_HANDLE;
 	}
 
-	esp32_listeners[listener_slot] = fd;
+	/* Zero maps to the smallest bounded queue, never to an unbounded request. */
+	native_backlog = backlog > 0U ? (int)backlog : 1;
+#ifdef SOMAXCONN
+	if (SOMAXCONN > 0 && native_backlog > SOMAXCONN)
+	{
+		native_backlog = SOMAXCONN;
+	}
+#endif
 
-	/*
-	 * Listener handle is the native fd.
-	 */
-	return (socket_handle_t)fd;
+	if (lwip_listen(fd, native_backlog) < 0)
+	{
+		(void)lwip_close(fd);
+		return SOCKET_DEVICE_INVALID_HANDLE;
+	}
+
+	esp32_listeners[listener_index] = fd;
+	return (socket_device_handle_t)fd;
 }
 
-static int esp32_socket_send(
-	socket_handle_t client,
-	const void *data,
-	size_t len,
-	int flags)
+static int esp32_socket_recv(socket_device_handle_t handle,
+							 void *destination,
+							 size_t capacity)
 {
-	if (client == SOCKET_INVALID_HANDLE ||
-		!data)
-	{
-		return SOCKET_DEVICE_INVALID;
-	}
+	esp32_client_t *client;
+	size_t attempt;
+	ssize_t received;
+	int index;
+	int fd;
 
-	if (len == 0)
+	if (capacity == 0U)
 	{
 		return 0;
 	}
-
-	int idx = esp32_find_client(client);
-
-	if (idx < 0)
+	if (!destination || !esp32_handle_to_fd(handle, &fd))
 	{
 		return SOCKET_DEVICE_INVALID;
 	}
 
-	esp32_client_t *entry =
-		&esp32_clients[idx];
-
-	int result = lwip_send(
-		entry->native_fd,
-		data,
-		len,
-		flags);
-
-	if (result > 0)
+	index = esp32_find_client_fd(fd);
+	if (index < 0)
 	{
-		return result;
+		return SOCKET_DEVICE_INVALID;
+	}
+	client = &esp32_clients[index];
+
+	/* The positive public result is int, even when size_t is wider. */
+	attempt = capacity > (size_t)INT_MAX ? (size_t)INT_MAX : capacity;
+	received = lwip_recv(fd, destination, attempt, 0);
+
+	if (received > 0)
+	{
+		/* Keep READ_NOTIFIED set: the core drains again after a positive read. */
+		return (int)received;
 	}
 
-	if (result == 0)
+	if (received == 0)
+	{
+		int reason = client->pending_error != 0
+					 ? (int)client->pending_error
+					 : SOCKET_DEVICE_CLOSED;
+		return esp32_fail_client(index, reason);
+	}
+
+	if (esp32_errno_is_data_backpressure(errno))
 	{
 		/*
-		 * For a non-empty TCP send this should not normally
-		 * occur. Treat it as a closed connection.
+		 * SO_ERROR may have been consumed in poll(). Drain any native buffered
+		 * payload first; once none remains, complete the deferred fatal close.
 		 */
-		return SOCKET_DEVICE_CLOSED;
-	}
+		if (client->pending_error != 0)
+		{
+			return esp32_fail_client(index, (int)client->pending_error);
+		}
 
-	int err = errno;
-
-	if (err == EWOULDBLOCK ||
-		err == EAGAIN)
-	{
-		entry->write_blocked = true;
-
+		client->flags &= (uint8_t)~ESP32_CLIENT_READ_NOTIFIED;
 		return SOCKET_DEVICE_WOULD_BLOCK;
 	}
 
-	return esp32_map_errno(err);
+	return esp32_fail_client(index, esp32_map_errno(errno));
 }
 
-static int esp32_socket_close(
-	socket_handle_t handle)
+static int esp32_socket_send(socket_device_handle_t handle,
+							 const void *source,
+							 size_t length)
 {
-	if (handle == SOCKET_INVALID_HANDLE)
+	esp32_client_t *client;
+	size_t attempt;
+	ssize_t sent;
+	int index;
+	int fd;
+	int reason;
+
+	if (length == 0U)
+	{
+		return 0;
+	}
+	if (!source || !esp32_handle_to_fd(handle, &fd))
 	{
 		return SOCKET_DEVICE_INVALID;
 	}
 
-	int fd = (int)handle;
-
-	/*
-	 * Check listener handles.
-	 *
-	 * Since both clients and listeners now use their native fd
-	 * as the generic handle, there cannot be an active client
-	 * and active listener with the same fd.
-	 */
-	for (int i = 0; i < ESP32_MAX_LISTENERS; i++)
+	index = esp32_find_client_fd(fd);
+	if (index < 0)
 	{
-		if (esp32_listeners[i] == fd)
-		{
-			esp32_listeners[i] = -1;
-			lwip_close(fd);
+		return SOCKET_DEVICE_INVALID;
+	}
+	client = &esp32_clients[index];
 
-			return SOCKET_DEVICE_OK;
-		}
+	/* A select exception is drained through recv() to preserve final RX bytes. */
+	if (client->pending_error != 0)
+	{
+		return SOCKET_DEVICE_WOULD_BLOCK;
 	}
 
-	/*
-	 * Check clients by native fd.
-	 */
-	int idx = esp32_find_client(handle);
+	attempt = length > (size_t)INT_MAX ? (size_t)INT_MAX : length;
+	sent = lwip_send(fd, source, attempt, 0);
 
-	if (idx >= 0)
+	if (sent > 0)
 	{
-		esp32_release_client(idx, true);
-
+		if ((size_t)sent < length)
+		{
+			client->flags |= ESP32_CLIENT_WANT_WRITE;
+		}
 		/*
-		 * Explicit local close does not generate
-		 * a disconnected backend event.
+		 * Do not clear an already armed WANT_WRITE after an unrelated later
+		 * send happens to complete. A previous partial/blocked attempt may still
+		 * have an application-owned suffix waiting for its writable transition.
+		 * Only poll(), when it actually emits writable(), consumes this interest.
 		 */
-		return SOCKET_DEVICE_OK;
+		return (int)sent;
+	}
+
+	if (sent < 0 && esp32_errno_is_data_backpressure(errno))
+	{
+		client->flags |= ESP32_CLIENT_WANT_WRITE;
+		return SOCKET_DEVICE_WOULD_BLOCK;
+	}
+
+	reason = sent == 0 ? SOCKET_DEVICE_ERROR : esp32_map_errno(errno);
+
+	/*
+	 * If a readable condition is already outstanding, recv() may still hold
+	 * final peer bytes. Defer the fatal close and let the core drain them first.
+	 */
+	if ((client->flags & ESP32_CLIENT_READ_NOTIFIED) != 0U)
+	{
+		client->pending_error = (int8_t)(reason < 0 ? reason : SOCKET_DEVICE_ERROR);
+		client->flags &= (uint8_t)~ESP32_CLIENT_WANT_WRITE;
+		return SOCKET_DEVICE_WOULD_BLOCK;
+	}
+
+	return esp32_fail_client(index, reason);
+}
+
+static int esp32_socket_close(socket_device_handle_t handle)
+{
+	int close_result;
+	int index;
+	int fd;
+
+	if (!esp32_handle_to_fd(handle, &fd))
+	{
+		return SOCKET_DEVICE_INVALID;
+	}
+
+	index = esp32_find_listener_fd(fd);
+	if (index >= 0)
+	{
+		/* Closing a listener does not implicitly close its accepted children. */
+		esp32_listeners[index] = -1;
+		close_result = lwip_close(fd);
+		return close_result == 0 ? SOCKET_DEVICE_OK : esp32_map_errno(errno);
+	}
+
+	index = esp32_find_client_fd(fd);
+	if (index >= 0)
+	{
+		/* Local closure invalidates first and never emits events->closed(). */
+		esp32_release_client(index, false);
+		close_result = lwip_close(fd);
+		return close_result == 0 ? SOCKET_DEVICE_OK : esp32_map_errno(errno);
 	}
 
 	return SOCKET_DEVICE_INVALID;
 }
 
-static void esp32_disconnect_client(
-	int idx,
-	int reason)
+/* Accepts at most one core-visible client and advances the listener cursor. */
+static bool esp32_poll_one_accept(const fd_set *read_set)
 {
-	if (idx < 0 ||
-		idx >= ESP32_MAX_CLIENTS ||
-		!esp32_clients[idx].in_use)
+	for (uint16_t checked = 0; checked < ESP32_MAX_LISTENERS; ++checked)
 	{
-		return;
+		uint16_t index = esp32_next_listener;
+		int listener_fd;
+		int client_fd;
+		int client_index;
+		socket_device_token_t token;
+
+		esp32_next_listener =
+			(uint16_t)((esp32_next_listener + 1U) % ESP32_MAX_LISTENERS);
+		listener_fd = esp32_listeners[index];
+		if (listener_fd < 0 || !FD_ISSET(listener_fd, read_set))
+		{
+			continue;
+		}
+
+		client_fd = lwip_accept(listener_fd, NULL, NULL);
+		if (client_fd < 0)
+		{
+			/* Readiness is only a hint; EAGAIN and resource pressure retry later. */
+			continue;
+		}
+
+		if (!esp32_fd_is_selectable(client_fd) ||
+			!esp32_set_nonblocking(client_fd))
+		{
+			(void)lwip_close(client_fd);
+			continue;
+		}
+
+		client_index = esp32_find_free_client();
+		if (client_index < 0)
+		{
+			(void)lwip_close(client_fd);
+			continue;
+		}
+
+		esp32_clients[client_index].fd = client_fd;
+		esp32_clients[client_index].token = SOCKET_DEVICE_INVALID_TOKEN;
+		esp32_clients[client_index].pending_error = 0;
+		esp32_clients[client_index].flags = ESP32_CLIENT_IN_USE;
+
+		token = esp32_events->accepted((socket_device_handle_t)listener_fd,
+									  (socket_device_handle_t)client_fd);
+		if (token == SOCKET_DEVICE_INVALID_TOKEN)
+		{
+			/* The core rejected it; backend ownership ends with no close event. */
+			esp32_release_client(client_index, true);
+		}
+		else
+		{
+			esp32_clients[client_index].token = token;
+		}
+
+		/* accepted() was invoked and therefore consumes one event-budget unit. */
+		return true;
 	}
 
-	socket_handle_t handle =
-		(socket_handle_t)esp32_clients[idx].native_fd;
-
-	/*
-	 * The backend contract says native resources must
-	 * already be released before disconnected() is called.
-	 */
-	esp32_release_client(idx, true);
-
-	if (esp32_socket_events &&
-		esp32_socket_events->disconnected)
-	{
-		esp32_socket_events->disconnected(
-			handle,
-			reason);
-	}
+	return false;
 }
 
-static void esp32_socket_service(void)
+static int esp32_socket_error(int fd)
 {
-	if (!esp32_socket_events)
+	int native_error = 0;
+	socklen_t length = (socklen_t)sizeof(native_error);
+
+	if (lwip_getsockopt(fd, SOL_SOCKET, SO_ERROR,
+						&native_error, &length) < 0)
+	{
+		native_error = errno;
+	}
+
+	if (native_error == 0)
+	{
+		return SOCKET_DEVICE_ERROR;
+	}
+	return esp32_map_errno(native_error);
+}
+
+/* Emits at most one readiness event and advances the client cursor. */
+static bool esp32_poll_one_client(const fd_set *read_set,
+								  const fd_set *write_set,
+								  const fd_set *error_set)
+{
+	for (uint16_t checked = 0; checked < ESP32_MAX_CLIENTS; ++checked)
+	{
+		uint16_t index = esp32_next_client;
+		esp32_client_t *client;
+		bool has_error;
+		bool has_read;
+
+		esp32_next_client =
+			(uint16_t)((esp32_next_client + 1U) % ESP32_MAX_CLIENTS);
+		client = &esp32_clients[index];
+		if ((client->flags & ESP32_CLIENT_IN_USE) == 0U)
+		{
+			continue;
+		}
+
+		has_error = FD_ISSET(client->fd, error_set);
+		has_read = FD_ISSET(client->fd, read_set);
+		if (has_error && client->pending_error == 0)
+		{
+			int reason = esp32_socket_error(client->fd);
+			if (reason == SOCKET_DEVICE_WOULD_BLOCK)
+			{
+				reason = SOCKET_DEVICE_ERROR;
+			}
+			client->pending_error = (int8_t)reason;
+		}
+
+		/* Error readiness is pulled through recv() so buffered final RX survives. */
+		if ((has_read || has_error) &&
+			(client->flags & ESP32_CLIENT_READ_NOTIFIED) == 0U)
+		{
+			socket_device_token_t token = client->token;
+			client->flags |= ESP32_CLIENT_READ_NOTIFIED;
+			esp32_events->readable(token);
+			return true;
+		}
+
+		if (!has_error && client->pending_error == 0 &&
+			(client->flags & ESP32_CLIENT_WANT_WRITE) != 0U &&
+			FD_ISSET(client->fd, write_set))
+		{
+			socket_device_token_t token = client->token;
+			client->flags &= (uint8_t)~ESP32_CLIENT_WANT_WRITE;
+			esp32_events->writable(token);
+			return true;
+		}
+	}
+
+	return false;
+}
+
+static void esp32_socket_poll(uint16_t budget)
+{
+	fd_set read_set;
+	fd_set write_set;
+	fd_set error_set;
+	struct timeval timeout;
+	uint16_t emitted = 0U;
+	int max_fd = -1;
+	int ready;
+
+	if (!esp32_events || budget == 0U)
 	{
 		return;
 	}
 
-	static uint8_t next_listener = 0;
-	static uint8_t next_client = 0;
+	FD_ZERO(&read_set);
+	FD_ZERO(&write_set);
+	FD_ZERO(&error_set);
 
-	fd_set readfds;
-	fd_set writefds;
-	fd_set exceptfds;
-
-	FD_ZERO(&readfds);
-	FD_ZERO(&writefds);
-	FD_ZERO(&exceptfds);
-
-	int maxfd = -1;
-	bool have_sockets = false;
-
-	/*
-	 * Build listener read set.
-	 */
-	for (int i = 0; i < ESP32_MAX_LISTENERS; i++)
+	for (uint16_t i = 0; i < ESP32_MAX_LISTENERS; ++i)
 	{
 		int fd = esp32_listeners[i];
-
 		if (fd < 0)
 		{
 			continue;
 		}
-
-		FD_SET(fd, &readfds);
-
-		if (fd > maxfd)
+		FD_SET(fd, &read_set);
+		if (fd > max_fd)
 		{
-			maxfd = fd;
+			max_fd = fd;
 		}
-
-		have_sockets = true;
 	}
 
-	/*
-	 * Build client read/write/exception sets.
-	 */
-	for (int i = 0; i < ESP32_MAX_CLIENTS; i++)
+	for (uint16_t i = 0; i < ESP32_MAX_CLIENTS; ++i)
 	{
-		if (!esp32_clients[i].in_use)
+		esp32_client_t *client = &esp32_clients[i];
+		if ((client->flags & ESP32_CLIENT_IN_USE) == 0U)
 		{
 			continue;
 		}
 
-		int fd = esp32_clients[i].native_fd;
-
-		if (fd < 0)
+		FD_SET(client->fd, &read_set);
+		FD_SET(client->fd, &error_set);
+		if ((client->flags & ESP32_CLIENT_WANT_WRITE) != 0U &&
+			client->pending_error == 0)
 		{
-			continue;
+			FD_SET(client->fd, &write_set);
 		}
-
-		FD_SET(fd, &readfds);
-		FD_SET(fd, &exceptfds);
-
-		if (esp32_clients[i].write_blocked)
+		if (client->fd > max_fd)
 		{
-			FD_SET(fd, &writefds);
+			max_fd = client->fd;
 		}
-
-		if (fd > maxfd)
-		{
-			maxfd = fd;
-		}
-
-		have_sockets = true;
 	}
 
-	if (!have_sockets || maxfd < 0)
+	if (max_fd < 0)
 	{
 		return;
 	}
 
-	/*
-	 * Zero timeout: service() must never block.
-	 */
-	struct timeval timeout;
+	/* A zero timeout is mandatory: poll() never waits for the network task. */
 	timeout.tv_sec = 0;
 	timeout.tv_usec = 0;
-
-	int ready = lwip_select(
-		maxfd + 1,
-		&readfds,
-		&writefds,
-		&exceptfds,
-		&timeout);
-
+	ready = lwip_select(max_fd + 1, &read_set, &write_set, &error_set, &timeout);
 	if (ready <= 0)
 	{
+		/* EINTR and other select-level failures are retried by a later poll(). */
 		return;
 	}
 
-	/*
-	 * Process at most one pending accept.
-	 *
-	 * Start from next_listener to avoid permanently
-	 * favoring listener zero.
-	 */
-	for (int n = 0; n < ESP32_MAX_LISTENERS; n++)
+	/* Alternate accept and client work so an accept flood cannot starve RX/TX. */
+	while (emitted < budget)
 	{
-		int listener_idx =
-			(next_listener + n) %
-			ESP32_MAX_LISTENERS;
+		bool did_emit;
 
-		int listener_fd =
-			esp32_listeners[listener_idx];
-
-		if (listener_fd < 0 ||
-			!FD_ISSET(listener_fd, &readfds))
+		if (esp32_prefer_accept)
 		{
-			continue;
-		}
-
-		int fd = lwip_accept(
-			listener_fd,
-			NULL,
-			NULL);
-
-		if (fd >= 0)
-		{
-			if (!esp32_set_nonblocking(fd))
+			did_emit = esp32_poll_one_accept(&read_set);
+			if (!did_emit)
 			{
-				lwip_close(fd);
+				did_emit = esp32_poll_one_client(&read_set, &write_set,
+											 &error_set);
 			}
-			else
+		}
+		else
+		{
+			did_emit = esp32_poll_one_client(&read_set, &write_set,
+										 &error_set);
+			if (!did_emit)
 			{
-				int slot =
-					esp32_find_free_client();
-
-				if (slot < 0)
-				{
-					lwip_close(fd);
-				}
-				else
-				{
-					esp32_clients[slot].in_use = true;
-					esp32_clients[slot].native_fd = fd;
-					esp32_clients[slot].write_blocked = false;
-					esp32_clients[slot].srv_handle =
-						(socket_handle_t)listener_fd;
-
-					/*
-					 * Client handle is also the native fd.
-					 */
-					bool accepted = true;
-
-					if (esp32_socket_events->connected)
-					{
-						accepted =
-							esp32_socket_events->connected(
-								(socket_handle_t)listener_fd,
-								(socket_handle_t)fd);
-					}
-
-					if (!accepted)
-					{
-						/*
-						 * Core has no logical client slot.
-						 * Backend owns rejection.
-						 */
-						esp32_release_client(
-							slot,
-							true);
-					}
-				}
+				did_emit = esp32_poll_one_accept(&read_set);
 			}
 		}
 
-		next_listener =
-			(uint8_t)((listener_idx + 1) %
-					  ESP32_MAX_LISTENERS);
-
-		/*
-		 * One accept maximum per service call.
-		 */
-		break;
-	}
-
-	/*
-	 * Process at most one ready client.
-	 */
-	for (int n = 0; n < ESP32_MAX_CLIENTS; n++)
-	{
-		int idx =
-			(next_client + n) %
-			ESP32_MAX_CLIENTS;
-
-		if (!esp32_clients[idx].in_use)
-		{
-			continue;
-		}
-
-		int fd =
-			esp32_clients[idx].native_fd;
-
-		if (fd < 0)
-		{
-			continue;
-		}
-
-		bool has_exception =
-			FD_ISSET(fd, &exceptfds);
-
-		bool has_read =
-			FD_ISSET(fd, &readfds);
-
-		bool has_write =
-			esp32_clients[idx].write_blocked &&
-			FD_ISSET(fd, &writefds);
-
-		if (!has_exception &&
-			!has_read &&
-			!has_write)
-		{
-			continue;
-		}
-
-		next_client =
-			(uint8_t)((idx + 1) %
-					  ESP32_MAX_CLIENTS);
-
-		socket_handle_t handle =
-			(socket_handle_t)fd;
-
-		/*
-		 * Handle socket errors before normal RX/TX readiness.
-		 */
-		if (has_exception)
-		{
-			int socket_error = 0;
-			socklen_t error_len =
-				sizeof(socket_error);
-
-			int result =
-				lwip_getsockopt(
-					fd,
-					SOL_SOCKET,
-					SO_ERROR,
-					&socket_error,
-					&error_len);
-
-			if (result < 0)
-			{
-				socket_error = errno;
-			}
-
-			int reason =
-				(socket_error != 0)
-					? esp32_map_errno(socket_error)
-					: SOCKET_DEVICE_ERROR;
-
-			esp32_disconnect_client(
-				idx,
-				reason);
-
-			break;
-		}
-
-		/*
-		 * Process one RX operation maximum.
-		 */
-		if (has_read)
-		{
-			static char srv_buffer[
-				SOCKET_MAX_DATA_SIZE + 1];
-
-			ssize_t len =
-				lwip_recv(
-					fd,
-					srv_buffer,
-					SOCKET_MAX_DATA_SIZE,
-					0);
-
-			if (len > 0)
-			{
-				srv_buffer[len] = '\0';
-
-				if (esp32_socket_events->data)
-				{
-					esp32_socket_events->data(
-						handle,
-						srv_buffer,
-						(size_t)len);
-				}
-
-				/*
-				 * data() may synchronously cause socket_close().
-				 * Do not touch this client entry unless it
-				 * still represents the same connection.
-				 */
-				if (!esp32_clients[idx].in_use ||
-					esp32_clients[idx].native_fd != fd)
-				{
-					break;
-				}
-			}
-			else if (len == 0)
-			{
-				/*
-				 * Orderly FIN from remote peer.
-				 */
-				esp32_disconnect_client(
-					idx,
-					SOCKET_DEVICE_OK);
-
-				break;
-			}
-			else
-			{
-				int err = errno;
-
-				if (err != EWOULDBLOCK &&
-					err != EAGAIN)
-				{
-					esp32_disconnect_client(
-						idx,
-						esp32_map_errno(err));
-
-					break;
-				}
-			}
-		}
-
-		/*
-		 * data() above may have closed the client.
-		 */
-		if (!esp32_clients[idx].in_use ||
-			esp32_clients[idx].native_fd != fd)
+		if (!did_emit)
 		{
 			break;
 		}
 
-		/*
-		 * Notify TX progress only after a previous
-		 * WOULD_BLOCK condition.
-		 */
-		if (has_write &&
-			esp32_clients[idx].write_blocked)
-		{
-			esp32_clients[idx].write_blocked =
-				false;
-
-			if (esp32_socket_events->writable)
-			{
-				esp32_socket_events->writable(
-					handle);
-			}
-		}
-
-		/*
-		 * One ready client maximum per service call.
-		 */
-		break;
+		++emitted;
+		esp32_prefer_accept = !esp32_prefer_accept;
 	}
 }
 
-socket_device_t wifi_socket =
-{
-	.init = esp32_socket_device_init,
+socket_device_t wifi_socket = {
+	.init = esp32_socket_init,
 	.listen = esp32_socket_listen,
+	.recv = esp32_socket_recv,
 	.send = esp32_socket_send,
 	.close = esp32_socket_close,
-	.service = esp32_socket_service
-};
+	.poll = esp32_socket_poll};
 
 #endif /* ENABLE_SOCKETS */
-#endif /* ESP32 */
+#endif /* ESP32 || ESP32S3 || ESP32C3 */

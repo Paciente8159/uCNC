@@ -28,14 +28,25 @@ extern "C"
 {
 #include "../../../cnc.h"
 #if !defined(RAM_ONLY_SETTINGS) && defined(USE_ARDUINO_EEPROM_LIBRARY)
+	static bool eeprom_initialized;
 
 	void mcu_eeprom_init(int size)
 	{
+		if (eeprom_initialized)
+		{
+			return;
+		}
 		EEPROM.begin(size);
+		eeprom_initialized = true;
 	}
 
 	uint8_t mcu_eeprom_getc(uint16_t address)
 	{
+		if (!eeprom_initialized)
+		{
+			mcu_eeprom_init(NVM_STORAGE_SIZE);
+		}
+
 		if (NVM_STORAGE_SIZE <= address)
 		{
 			DBGMSG("EEPROM invalid address @ %u", address);
@@ -46,6 +57,11 @@ extern "C"
 
 	void mcu_eeprom_putc(uint16_t address, uint8_t value)
 	{
+		if (!eeprom_initialized)
+		{
+			mcu_eeprom_init(NVM_STORAGE_SIZE);
+		}
+
 		if (NVM_STORAGE_SIZE <= address)
 		{
 			DBGMSG("EEPROM invalid address @ %u", address);
@@ -55,6 +71,11 @@ extern "C"
 
 	void mcu_eeprom_flush(void)
 	{
+		if (!eeprom_initialized)
+		{
+			mcu_eeprom_init(NVM_STORAGE_SIZE);
+		}
+
 		if (!EEPROM.commit())
 		{
 			DBGMSG("EEPROM write error");
