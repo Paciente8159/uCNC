@@ -106,6 +106,7 @@ void cnc_init(void)
 	grbl_stream_init();									// serial
 	mod_init();											// modules
 	settings_init();									// settings
+	cnc_network_init();									// initialize network and wireless coms
 	itp_init();											// interpolator
 	planner_init();										// motion planner
 #if TOOL_COUNT > 0
@@ -115,6 +116,17 @@ void cnc_init(void)
 	{
 		cnc_set_exec_state(EXEC_POSITION_MAYBE_LOST);
 	}
+}
+
+void __attribute__((weak)) cnc_network_init(void)
+{
+#ifdef ENABLE_SOCKETS
+	mcu_network_init();
+	telnet_sock = telnet_start(&telnet_proto, 23, mcu_telnet_onrecv);
+#endif
+#ifdef MCU_HAS_BLUETOOTH
+	mcu_bt_init();
+#endif
 }
 
 static void cnc_wait_for_reset()

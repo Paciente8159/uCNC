@@ -93,12 +93,12 @@ extern "C"
 #endif
 
 #ifndef DEBUG_PRELUDE
-#define DEBUG_PRELUDE "[DBG:"
+#define DEBUG_PRELUDE ">"__FILE__"@"__LINE__":"
 #endif
 
 	// not to be used directly
 	void debug_printf(const char *fmt, ...);
-#define DBGMSG(fmt, ...) debug_printf(__romstr__(DEBUG_PRELUDE fmt MSG_FEEDBACK_END), ##__VA_ARGS__)
+#define DBGMSG(fmt, ...) debug_printf(__romstr__(DEBUG_PRELUDE fmt), ##__VA_ARGS__)
 #else
 #define DBGMSG(fmt, ...)
 #endif

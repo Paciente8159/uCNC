@@ -1,19 +1,16 @@
 /*
 	Name: rp2350_lwip.c
-	Description: Implements an event-driven lwIP TCP socket backend for the RP2350 (µCNC socket device).
+	Description: Allocation-free uCNC TCP backend for the RP2350/Pico W
+	             using the lwIP raw callback API.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 25-08-2025
+	
+	Copyright: Copyright (c) Joao Martins
+	Author: Joao Martins
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
-
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+	uCNC is free software: you can redistribute it and/or modify it under the
+	terms of the GNU General Public License as published by the Free Software
+	Foundation, either version 3 of the License, or (at your option) any later
+	version. Please see <http://www.gnu.org/licenses/>.
 */
 
 #include "../../../cnc.h"
@@ -25,1188 +22,1081 @@ extern "C"
 {
 #endif
 
-#include "pico/cyw43_arch.h"
-#include "lwip/opt.h"
-#include "lwip/tcp.h"
-#include "lwip/ip_addr.h"
-#include <string.h>
+#include <limits.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
-#include <stdio.h>
+#include <string.h>
+
+#include "pico/cyw43_arch.h"
+#include "lwip/err.h"
+#include "lwip/ip_addr.h"
+#include "lwip/opt.h"
 #include "lwip/pbuf.h"
+#include "lwip/tcp.h"
+
 #include "../../../modules/net/socket.h"
 
-#ifndef RP2350_SOCKET_MAX_HANDLES
-#define RP2350_SOCKET_MAX_HANDLES \
-	(MAX_SOCKETS * (SOCKET_MAX_CLIENTS + 1))
+/* Handles encode a 16-bit generation plus a one-based backend table slot. */
+#if (MAX_SOCKETS + SOCKET_MAX_CONNECTIONS) >= UINT16_MAX
+#error "RP2350 socket listener + client count must be below 65535"
 #endif
+
+/* Client flag bits are intentionally packed into one byte. */
+#define RP2350_CLIENT_IN_USE          0x01U
+#define RP2350_CLIENT_ACCEPT_PENDING  0x02U
+#define RP2350_CLIENT_READABLE_PENDING 0x04U
+#define RP2350_CLIENT_CLOSE_PENDING   0x08U
+
+typedef struct rp2350_listener_
+{
+	struct tcp_pcb *pcb;
+	uint16_t generation;
+} rp2350_listener_t;
+
+typedef struct rp2350_client_
+{
+	struct tcp_pcb *pcb;
+	struct pbuf *rx;
+	socket_device_handle_t listener_handle;
+	socket_device_token_t token;
+	uint16_t generation;
+	uint16_t rx_offset;
+	int8_t close_reason;
+	uint8_t flags;
+} rp2350_client_t;
+
+typedef enum rp2350_event_kind_
+{
+	RP2350_EVENT_NONE = 0,
+	RP2350_EVENT_ACCEPTED,
+	RP2350_EVENT_READABLE,
+	RP2350_EVENT_CLOSED
+} rp2350_event_kind_t;
+
+static rp2350_listener_t rp2350_listeners[MAX_SOCKETS];
+static rp2350_client_t rp2350_clients[SOCKET_MAX_CONNECTIONS];
+static const socket_device_events_t *rp2350_events;
+static uint16_t rp2350_poll_cursor;
+
+/* Raw-API callbacks. lwIP invokes each one with its core protection held. */
+static err_t rp2350_accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err);
+static err_t rp2350_recv_cb(void *arg,
+						  struct tcp_pcb *tpcb,
+						  struct pbuf *p,
+						  err_t err);
+static void rp2350_err_cb(void *arg, err_t err);
+
+static uint16_t rp2350_next_generation(uint16_t generation)
+{
+	++generation;
+	return generation == 0U ? 1U : generation;
+}
+
+static socket_device_handle_t rp2350_make_handle(uint16_t native_slot,
+												  uint16_t generation)
+{
+	return ((socket_device_handle_t)generation << 16) |
+		   (socket_device_handle_t)(native_slot + 1U);
+}
+
+static bool rp2350_decode_handle(socket_device_handle_t handle,
+								 uint16_t *native_slot,
+								 uint16_t *generation)
+{
+	uint16_t encoded_slot;
+
+	if (!native_slot || !generation || handle == SOCKET_DEVICE_INVALID_HANDLE)
+	{
+		return false;
+	}
+
+	encoded_slot = (uint16_t)(handle & 0xFFFFU);
+	if (encoded_slot == 0U)
+	{
+		return false;
+	}
+
+	*native_slot = (uint16_t)(encoded_slot - 1U);
+	*generation = (uint16_t)((handle >> 16) & 0xFFFFU);
+	return *generation != 0U;
+}
+
+static socket_device_handle_t rp2350_listener_handle(size_t index,
+													  uint16_t generation)
+{
+	return rp2350_make_handle((uint16_t)index, generation);
+}
+
+static socket_device_handle_t rp2350_client_handle(size_t index,
+													uint16_t generation)
+{
+	return rp2350_make_handle((uint16_t)(MAX_SOCKETS + index), generation);
+}
+
+/* All helpers below that touch records/PCBs require lwIP core protection. */
+static rp2350_listener_t *rp2350_find_listener(socket_device_handle_t handle)
+{
+	uint16_t slot;
+	uint16_t generation;
+
+	if (!rp2350_decode_handle(handle, &slot, &generation) ||
+		slot >= MAX_SOCKETS)
+	{
+		return NULL;
+	}
+
+	if (!rp2350_listeners[slot].pcb ||
+		rp2350_listeners[slot].generation != generation)
+	{
+		return NULL;
+	}
+
+	return &rp2350_listeners[slot];
+}
+
+static rp2350_client_t *rp2350_find_client(socket_device_handle_t handle)
+{
+	uint16_t slot;
+	uint16_t generation;
+	uint16_t client_index;
+
+	if (!rp2350_decode_handle(handle, &slot, &generation) ||
+		slot < MAX_SOCKETS)
+	{
+		return NULL;
+	}
+
+	client_index = (uint16_t)(slot - MAX_SOCKETS);
+	if (client_index >= SOCKET_MAX_CONNECTIONS ||
+		(rp2350_clients[client_index].flags & RP2350_CLIENT_IN_USE) == 0U ||
+		rp2350_clients[client_index].generation != generation)
+	{
+		return NULL;
+	}
+
+	return &rp2350_clients[client_index];
+}
+
+static rp2350_listener_t *rp2350_alloc_listener(size_t *index_out)
+{
+	size_t i;
+
+	for (i = 0U; i < MAX_SOCKETS; ++i)
+	{
+		if (!rp2350_listeners[i].pcb)
+		{
+			rp2350_listeners[i].generation =
+				rp2350_next_generation(rp2350_listeners[i].generation);
+			*index_out = i;
+			return &rp2350_listeners[i];
+		}
+	}
+
+	return NULL;
+}
+
+static rp2350_client_t *rp2350_alloc_client(size_t *index_out)
+{
+	size_t i;
+
+	for (i = 0U; i < SOCKET_MAX_CONNECTIONS; ++i)
+	{
+		rp2350_client_t *client = &rp2350_clients[i];
+
+		if ((client->flags & RP2350_CLIENT_IN_USE) == 0U)
+		{
+			uint16_t generation =
+				rp2350_next_generation(client->generation);
+
+			memset(client, 0, sizeof(*client));
+			client->generation = generation;
+			client->listener_handle = SOCKET_DEVICE_INVALID_HANDLE;
+			client->token = SOCKET_DEVICE_INVALID_TOKEN;
+			client->close_reason = (int8_t)SOCKET_DEVICE_INVALID;
+			client->flags = RP2350_CLIENT_IN_USE;
+			*index_out = i;
+			return client;
+		}
+	}
+
+	return NULL;
+}
+
+static void rp2350_reset_listener(rp2350_listener_t *listener)
+{
+	uint16_t generation;
+
+	if (!listener)
+	{
+		return;
+	}
+
+	generation = listener->generation;
+	memset(listener, 0, sizeof(*listener));
+	listener->generation = generation;
+}
+
+static void rp2350_reset_client(rp2350_client_t *client)
+{
+	uint16_t generation;
+
+	if (!client)
+	{
+		return;
+	}
+
+	generation = client->generation;
+	memset(client, 0, sizeof(*client));
+	client->generation = generation;
+	client->listener_handle = SOCKET_DEVICE_INVALID_HANDLE;
+	client->token = SOCKET_DEVICE_INVALID_TOKEN;
+	client->close_reason = (int8_t)SOCKET_DEVICE_INVALID;
+}
 
 /*
- * Number of complete lwIP receive-pbuf chains that can be retained
- * per TCP client before applying backpressure with ERR_MEM.
- *
- * This only allocates pointers, not SOCKET_MAX_DATA_SIZE buffers.
+ * Detach a live client PCB from this record, then abort it. This is used only
+ * for a transport failure discovered synchronously by the backend. The record
+ * and any already-retained RX pbuf remain alive so final data can still drain.
  */
-#ifndef RP2350_SOCKET_RX_QUEUE_DEPTH
-#define RP2350_SOCKET_RX_QUEUE_DEPTH 4
+static void rp2350_abort_client_pcb(rp2350_client_t *client)
+{
+	struct tcp_pcb *pcb;
+
+	if (!client)
+	{
+		return;
+	}
+
+	pcb = client->pcb;
+	client->pcb = NULL;
+	if (!pcb)
+	{
+		return;
+	}
+
+	tcp_arg(pcb, NULL);
+	tcp_recv(pcb, NULL);
+	tcp_err(pcb, NULL);
+	tcp_abort(pcb);
+}
+
+/*
+ * Release a listener. Listener tcp_close() is synchronous in lwIP and frees the
+ * listen PCB. tcp_abort() is deliberately not used because lwIP does not permit
+ * aborting a listen PCB.
+ */
+static void rp2350_release_listener(rp2350_listener_t *listener)
+{
+	struct tcp_pcb *pcb;
+
+	if (!listener || !listener->pcb)
+	{
+		return;
+	}
+
+	pcb = listener->pcb;
+	listener->pcb = NULL;
+
+	tcp_arg(pcb, NULL);
+	tcp_accept(pcb, NULL);
+	(void)tcp_close(pcb);
+	rp2350_reset_listener(listener);
+}
+
+/*
+ * Release a client synchronously from the backend's ownership perspective.
+ * The record is invalidated before native teardown, preventing late callbacks
+ * from targeting a live token. No uCNC event is emitted here.
+ */
+static void rp2350_release_client(rp2350_client_t *client)
+{
+	struct tcp_pcb *pcb;
+	struct pbuf *rx;
+	err_t close_result;
+
+	if (!client || (client->flags & RP2350_CLIENT_IN_USE) == 0U)
+	{
+		return;
+	}
+
+	pcb = client->pcb;
+	rx = client->rx;
+
+	/* Invalidate the backend record before touching native teardown. */
+	client->flags = 0U;
+	client->pcb = NULL;
+	client->rx = NULL;
+	client->token = SOCKET_DEVICE_INVALID_TOKEN;
+
+	if (pcb)
+	{
+		tcp_arg(pcb, NULL);
+		tcp_recv(pcb, NULL);
+		tcp_err(pcb, NULL);
+
+		/*
+		 * Modern lwIP internally defers FIN enqueue on ERR_MEM and returns
+		 * ERR_OK. For older variants that can return an error here, abort is
+		 * the bounded fallback; local close must never wait for ACK/capacity.
+		 */
+		close_result = tcp_close(pcb);
+		if (close_result != ERR_OK)
+		{
+			tcp_abort(pcb);
+		}
+	}
+
+	if (rx)
+	{
+		pbuf_free(rx);
+	}
+
+	rp2350_reset_client(client);
+}
+
+/* Fatal/native state normalization. Context-specific ERR_MEM handling is separate. */
+static int rp2350_fatal_result(err_t err)
+{
+	switch (err)
+	{
+	case ERR_CLSD:
+	case ERR_CONN:
+		return SOCKET_DEVICE_CLOSED;
+
+	case ERR_ARG:
+	case ERR_VAL:
+		return SOCKET_DEVICE_INVALID;
+
+	case ERR_MEM:
+		return SOCKET_DEVICE_NO_MEMORY;
+
+	case ERR_TIMEOUT:
+	case ERR_RTE:
+	case ERR_IF:
+	case ERR_ABRT:
+	case ERR_RST:
+	case ERR_BUF:
+	case ERR_INPROGRESS:
+	case ERR_WOULDBLOCK:
+	case ERR_USE:
+	case ERR_ALREADY:
+	case ERR_ISCONN:
+	default:
+		return SOCKET_DEVICE_ERROR;
+	}
+}
+
+/* Called from raw callbacks; it never emits a uCNC event. */
+static void rp2350_mark_close(rp2350_client_t *client, int reason)
+{
+	if (!client || (client->flags & RP2350_CLIENT_IN_USE) == 0U)
+	{
+		return;
+	}
+
+	if ((client->flags & RP2350_CLIENT_CLOSE_PENDING) == 0U)
+	{
+		client->close_reason =
+			(int8_t)((reason < 0) ? reason : SOCKET_DEVICE_ERROR);
+		client->flags |= RP2350_CLIENT_CLOSE_PENDING;
+	}
+}
+
+static err_t rp2350_accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err)
+{
+	rp2350_listener_t *listener = (rp2350_listener_t *)arg;
+	rp2350_client_t *client;
+	size_t listener_index;
+	size_t client_index;
+
+	if (err != ERR_OK)
+	{
+		return err;
+	}
+
+	if (!newpcb)
+	{
+		return ERR_ARG;
+	}
+
+	if (!listener || listener->pcb == NULL)
+	{
+		tcp_abort(newpcb);
+		return ERR_ABRT;
+	}
+
+	listener_index = (size_t)(listener - rp2350_listeners);
+	if (listener_index >= MAX_SOCKETS)
+	{
+		tcp_abort(newpcb);
+		return ERR_ABRT;
+	}
+
+	client = rp2350_alloc_client(&client_index);
+	if (!client)
+	{
+		/* Fixed backend capacity exhausted: reject this native connection. */
+		tcp_abort(newpcb);
+		return ERR_ABRT;
+	}
+
+	client->pcb = newpcb;
+	client->listener_handle =
+		rp2350_listener_handle(listener_index, listener->generation);
+	client->flags |= RP2350_CLIENT_ACCEPT_PENDING;
+
+	tcp_setprio(newpcb, TCP_PRIO_NORMAL);
+	tcp_arg(newpcb, client);
+	tcp_recv(newpcb, rp2350_recv_cb);
+	tcp_err(newpcb, rp2350_err_cb);
+
+	/*
+	 * No tcp_sent()/tcp_poll() callback is installed. Native ACKs/timers update
+	 * pcb->snd_buf and queues internally; the core observes that on its next
+	 * strictly non-blocking send() attempt.
+	 */
+	return ERR_OK;
+}
+
+static err_t rp2350_recv_cb(void *arg,
+							struct tcp_pcb *tpcb,
+							struct pbuf *p,
+							err_t err)
+{
+	rp2350_client_t *client = (rp2350_client_t *)arg;
+
+	if (!client ||
+		(client->flags & RP2350_CLIENT_IN_USE) == 0U ||
+		client->pcb != tpcb)
+	{
+		if (p)
+		{
+			pbuf_free(p);
+		}
+
+		/*
+		 * A mismatched callback is stale with respect to our fixed record.
+		 * Detach its callbacks before aborting so tcp_abort() cannot deliver an
+		 * error callback through the old arg into a record that may now belong
+		 * to a newer generation.
+		 */
+		tcp_arg(tpcb, NULL);
+		tcp_recv(tpcb, NULL);
+		tcp_err(tpcb, NULL);
+		tcp_abort(tpcb);
+		return ERR_ABRT;
+	}
+
+	if (err != ERR_OK)
+	{
+		/*
+		 * An error on this callback makes the PCB unusable. Preserve any
+		 * previously retained client->rx, but discard this callback's pbuf
+		 * because we are aborting the native PCB now.
+		 */
+		if (p)
+		{
+			pbuf_free(p);
+		}
+		rp2350_mark_close(client, rp2350_fatal_result(err));
+		client->pcb = NULL;
+		tcp_arg(tpcb, NULL);
+		tcp_recv(tpcb, NULL);
+		tcp_err(tpcb, NULL);
+		tcp_abort(tpcb);
+		return ERR_ABRT;
+	}
+
+	/* p == NULL is an orderly FIN. Retained payload drains before close. */
+	if (!p)
+	{
+		rp2350_mark_close(client, SOCKET_DEVICE_CLOSED);
+		return ERR_OK;
+	}
+
+	if (p->tot_len == 0U)
+	{
+		pbuf_free(p);
+		return ERR_OK;
+	}
+
+	if (client->rx)
+	{
+		/*
+		 * Do not free or acknowledge this pbuf. Returning ERR_MEM tells lwIP
+		 * that the upper layer cannot take it yet; lwIP keeps it in native
+		 * refused_data storage and retries the receive callback later.
+		 */
+		return ERR_MEM;
+	}
+
+	/* Returning ERR_OK transfers this pbuf chain to the backend/application. */
+	client->rx = p;
+	client->rx_offset = 0U;
+	client->flags |= RP2350_CLIENT_READABLE_PENDING;
+	return ERR_OK;
+}
+
+static void rp2350_err_cb(void *arg, err_t err)
+{
+	rp2350_client_t *client = (rp2350_client_t *)arg;
+
+	if (!client || (client->flags & RP2350_CLIENT_IN_USE) == 0U)
+	{
+		return;
+	}
+
+	/*
+	 * lwIP documents that the PCB is already deallocated when tcp_err() runs.
+	 * Never dereference it here. Already-retained backend RX remains valid and
+	 * is delivered before the normalized close event.
+	 */
+	client->pcb = NULL;
+	rp2350_mark_close(client, rp2350_fatal_result(err));
+	if (client->rx)
+	{
+		client->flags |= RP2350_CLIENT_READABLE_PENDING;
+	}
+}
+
+static int rp2350_socket_init(const socket_device_events_t *events)
+{
+	if (!events || !events->accepted || !events->readable || !events->closed)
+	{
+		return SOCKET_DEVICE_INVALID;
+	}
+
+	memset(rp2350_listeners, 0, sizeof(rp2350_listeners));
+	memset(rp2350_clients, 0, sizeof(rp2350_clients));
+	rp2350_events = events;
+	rp2350_poll_cursor = 0U;
+	return SOCKET_DEVICE_OK;
+}
+
+static socket_device_handle_t rp2350_socket_listen(
+	const socket_device_endpoint_t *endpoint,
+	uint8_t backlog)
+{
+	rp2350_listener_t *listener;
+	struct tcp_pcb *pcb;
+	struct tcp_pcb *listen_pcb;
+	ip_addr_t bind_address;
+	socket_device_handle_t handle = SOCKET_DEVICE_INVALID_HANDLE;
+	size_t listener_index;
+	err_t err;
+
+	if (!endpoint || endpoint->port == 0U)
+	{
+		return SOCKET_DEVICE_INVALID_HANDLE;
+	}
+
+	/*
+	 * uCNC's listener-local client limit is the useful upper bound here. A
+	 * zero request is explicitly bounded to one pending native connection.
+	 */
+	if (backlog == 0U)
+	{
+		backlog = 1U;
+	}
+	if (backlog > SOCKET_MAX_CLIENTS)
+	{
+		backlog = SOCKET_MAX_CLIENTS;
+	}
+
+	cyw43_arch_lwip_begin();
+
+	listener = rp2350_alloc_listener(&listener_index);
+	if (!listener)
+	{
+		cyw43_arch_lwip_end();
+		return SOCKET_DEVICE_INVALID_HANDLE;
+	}
+
+	pcb = tcp_new_ip_type(IPADDR_TYPE_V4);
+	if (!pcb)
+	{
+		rp2350_reset_listener(listener);
+		cyw43_arch_lwip_end();
+		return SOCKET_DEVICE_INVALID_HANDLE;
+	}
+
+	listener->pcb = pcb;
+	tcp_setprio(pcb, TCP_PRIO_NORMAL);
+#if SO_REUSE
+	pcb->so_options |= SOF_REUSEADDR;
 #endif
 
-	typedef enum
+	if (endpoint->address == IP_ANY)
 	{
-		FD_EMPTY = 0,
-		FD_LISTENER,
-		FD_CLIENT
-	} fd_kind_t;
-
-	typedef struct
+		ip_addr_set_any(IPADDR_TYPE_V4, &bind_address);
+	}
+	else
 	{
-		fd_kind_t kind;
-		bool in_use;
+		/* endpoint->address is the uCNC host-order form 0xAABBCCDD. */
+		IP_ADDR4(&bind_address,
+				 (uint8_t)(endpoint->address >> 24),
+				 (uint8_t)(endpoint->address >> 16),
+				 (uint8_t)(endpoint->address >> 8),
+				 (uint8_t)endpoint->address);
+	}
 
-		/*
-		 * Deferred events.
-		 *
-		 * lwIP callbacks only modify these flags/state.
-		 * µCNC callbacks are invoked later from rp2350_socket_service().
-		 */
-		bool accepted;
-		bool peer_closed;
-		bool got_err;
-		bool writable_pending;
-
-		bool write_blocked;
-
-		int error_reason;
-
-		/*
-		 * lwIP PCBs.
-		 *
-		 * A listener uses listen_pcb.
-		 * A client uses pcb.
-		 */
-		struct tcp_pcb *pcb;
-		struct tcp_pcb *listen_pcb;
-
-		/*
-		 * Generic µCNC handles.
-		 */
-		socket_handle_t srv_handle;
-		socket_handle_t client_handle;
-
-		/*
-		 * Receive queue.
-		 *
-		 * Each entry is one complete pbuf chain supplied by one
-		 * tcp_recv() callback. Do NOT pbuf_chain() separate received
-		 * packets together.
-		 */
-		struct pbuf *rx_queue[RP2350_SOCKET_RX_QUEUE_DEPTH];
-
-		uint8_t rx_head;
-		uint8_t rx_tail;
-		uint8_t rx_count;
-
-		/*
-		 * Offset already consumed from rx_queue[rx_head].
-		 */
-		uint16_t rx_off;
-
-		/*
-		 * Owning listener index.
-		 */
-		int srv_fd;
-
-	} fd_entry_t;
-
-	static fd_entry_t g_fds[RP2350_SOCKET_MAX_HANDLES];
-
-	static const socket_device_events_t *rp2350_socket_events;
-
-	static int fd_alloc(void)
+	err = tcp_bind(pcb, &bind_address, endpoint->port);
+	if (err != ERR_OK)
 	{
-		for (int i = 0; i < RP2350_SOCKET_MAX_HANDLES; i++)
+		rp2350_release_listener(listener);
+		cyw43_arch_lwip_end();
+		return SOCKET_DEVICE_INVALID_HANDLE;
+	}
+
+	listen_pcb = tcp_listen_with_backlog(pcb, backlog);
+	if (!listen_pcb)
+	{
+		/* On failure the original bound PCB remains owned by the caller. */
+		rp2350_release_listener(listener);
+		cyw43_arch_lwip_end();
+		return SOCKET_DEVICE_INVALID_HANDLE;
+	}
+
+	listener->pcb = listen_pcb;
+	tcp_arg(listen_pcb, listener);
+	tcp_accept(listen_pcb, rp2350_accept_cb);
+	handle = rp2350_listener_handle(listener_index, listener->generation);
+
+	cyw43_arch_lwip_end();
+	return handle;
+}
+
+static int rp2350_socket_recv(socket_device_handle_t handle,
+								void *destination,
+								size_t capacity)
+{
+	rp2350_client_t *client;
+	struct pbuf *p;
+	uint8_t *output = (uint8_t *)destination;
+	size_t remaining;
+	size_t wanted;
+	u16_t copied;
+	socket_device_token_t close_token;
+	int close_reason;
+
+	if (capacity == 0U)
+	{
+		return 0;
+	}
+	if (!destination)
+	{
+		return SOCKET_DEVICE_INVALID;
+	}
+
+	cyw43_arch_lwip_begin();
+
+	client = rp2350_find_client(handle);
+	if (!client || client->token == SOCKET_DEVICE_INVALID_TOKEN)
+	{
+		cyw43_arch_lwip_end();
+		return SOCKET_DEVICE_INVALID;
+	}
+
+	p = client->rx;
+	if (p)
+	{
+		if (client->rx_offset >= p->tot_len)
 		{
-			if (!g_fds[i].in_use)
+			close_token = client->token;
+			close_reason = SOCKET_DEVICE_ERROR;
+			rp2350_release_client(client);
+			cyw43_arch_lwip_end();
+			rp2350_events->closed(close_token, close_reason);
+			return close_reason;
+		}
+
+		remaining = (size_t)p->tot_len - client->rx_offset;
+		wanted = capacity;
+		if (wanted > remaining)
+		{
+			wanted = remaining;
+		}
+		if (wanted > (size_t)UINT16_MAX)
+		{
+			wanted = (size_t)UINT16_MAX;
+		}
+
+		copied = pbuf_copy_partial(p,
+								   output,
+								   (u16_t)wanted,
+								   client->rx_offset);
+		if (copied == 0U)
+		{
+			close_token = client->token;
+			close_reason = SOCKET_DEVICE_ERROR;
+			rp2350_release_client(client);
+			cyw43_arch_lwip_end();
+			rp2350_events->closed(close_token, close_reason);
+			return close_reason;
+		}
+
+		client->rx_offset = (uint16_t)(client->rx_offset + copied);
+
+		if (client->pcb)
+		{
+			/* Advertise receive-window space only for bytes returned to uCNC. */
+			tcp_recved(client->pcb, copied);
+		}
+
+		if (client->rx_offset == p->tot_len)
+		{
+			client->rx = NULL;
+			client->rx_offset = 0U;
+			pbuf_free(p);
+		}
+
+		/*
+		 * Return final payload before reporting a pending FIN/fatal close.
+		 * poll() or a later recv() will emit closed() after no retained RX
+		 * remains, so the core cannot prioritize closure over this data.
+		 */
+		cyw43_arch_lwip_end();
+		return (int)copied;
+	}
+
+	if ((client->flags & RP2350_CLIENT_CLOSE_PENDING) != 0U || !client->pcb)
+	{
+		close_token = client->token;
+		close_reason =
+			(client->flags & RP2350_CLIENT_CLOSE_PENDING) != 0U
+				? (int)client->close_reason
+				: SOCKET_DEVICE_ERROR;
+		rp2350_release_client(client);
+		cyw43_arch_lwip_end();
+		rp2350_events->closed(close_token, close_reason);
+		return close_reason;
+	}
+
+	cyw43_arch_lwip_end();
+	return SOCKET_DEVICE_WOULD_BLOCK;
+}
+
+static int rp2350_socket_send(socket_device_handle_t handle,
+								const void *source,
+								size_t length)
+{
+	rp2350_client_t *client;
+	size_t attempt;
+	u16_t available;
+	err_t err;
+	socket_device_token_t close_token;
+	int close_reason;
+	bool emit_close = false;
+
+	if (length == 0U)
+	{
+		return 0;
+	}
+	if (!source)
+	{
+		return SOCKET_DEVICE_INVALID;
+	}
+
+	cyw43_arch_lwip_begin();
+
+	client = rp2350_find_client(handle);
+	if (!client || client->token == SOCKET_DEVICE_INVALID_TOKEN)
+	{
+		cyw43_arch_lwip_end();
+		return SOCKET_DEVICE_INVALID;
+	}
+
+	/*
+	 * Once native closure is known, do not enqueue new TX. If final RX is still
+	 * retained, the close event must remain deferred until that RX drains.
+	 */
+	if ((client->flags & RP2350_CLIENT_CLOSE_PENDING) != 0U || !client->pcb)
+	{
+		close_reason =
+			(client->flags & RP2350_CLIENT_CLOSE_PENDING) != 0U
+				? (int)client->close_reason
+				: SOCKET_DEVICE_ERROR;
+
+		if (client->rx)
+		{
+			cyw43_arch_lwip_end();
+			return close_reason;
+		}
+
+		close_token = client->token;
+		rp2350_release_client(client);
+		cyw43_arch_lwip_end();
+		rp2350_events->closed(close_token, close_reason);
+		return close_reason;
+	}
+
+	available = tcp_sndbuf(client->pcb);
+	if (available == 0U)
+	{
+		cyw43_arch_lwip_end();
+		return SOCKET_DEVICE_WOULD_BLOCK;
+	}
+
+	attempt = length;
+	if (attempt > (size_t)available)
+	{
+		attempt = (size_t)available;
+	}
+	if (attempt > (size_t)UINT16_MAX)
+	{
+		attempt = (size_t)UINT16_MAX;
+	}
+
+	/*
+	 * Exactly one native enqueue attempt. COPY guarantees the caller's source
+	 * pointer is not retained after this function returns.
+	 */
+	err = tcp_write(client->pcb,
+					(const uint8_t *)source,
+					(u16_t)attempt,
+					TCP_WRITE_FLAG_COPY);
+
+	if (err == ERR_MEM || err == ERR_WOULDBLOCK)
+	{
+		cyw43_arch_lwip_end();
+		return SOCKET_DEVICE_WOULD_BLOCK;
+	}
+
+	if (err != ERR_OK)
+	{
+		close_reason = rp2350_fatal_result(err);
+		close_token = client->token;
+		rp2350_mark_close(client, close_reason);
+		rp2350_abort_client_pcb(client);
+
+		if (!client->rx)
+		{
+			rp2350_release_client(client);
+			emit_close = true;
+		}
+
+		cyw43_arch_lwip_end();
+		if (emit_close)
+		{
+			rp2350_events->closed(close_token, close_reason);
+		}
+		return close_reason;
+	}
+
+	/*
+	 * tcp_write() has accepted the whole attempted prefix. tcp_output() merely
+	 * prompts immediate transmission; its failure does not undo the enqueue.
+	 * lwIP timers/ACK processing retain ownership and retry queued segments.
+	 */
+	(void)tcp_output(client->pcb);
+
+	cyw43_arch_lwip_end();
+	return (int)attempt;
+}
+
+static int rp2350_socket_close(socket_device_handle_t handle)
+{
+	rp2350_listener_t *listener;
+	rp2350_client_t *client;
+	size_t i;
+
+	cyw43_arch_lwip_begin();
+
+	listener = rp2350_find_listener(handle);
+	if (listener)
+	{
+		/*
+		 * Clients already registered with the uCNC core are closed by
+		 * socket_stop() itself. Only accept-pending clients are invisible to the
+		 * core; release those here so listener shutdown cannot orphan them.
+		 */
+		for (i = 0U; i < SOCKET_MAX_CONNECTIONS; ++i)
+		{
+			rp2350_client_t *pending = &rp2350_clients[i];
+
+			if ((pending->flags & RP2350_CLIENT_IN_USE) != 0U &&
+				pending->token == SOCKET_DEVICE_INVALID_TOKEN &&
+				pending->listener_handle == handle)
 			{
-				memset(&g_fds[i], 0, sizeof(g_fds[i]));
-
-				g_fds[i].in_use = true;
-				g_fds[i].kind = FD_EMPTY;
-
-				g_fds[i].srv_fd = -1;
-
-				g_fds[i].srv_handle = SOCKET_INVALID_HANDLE;
-				g_fds[i].client_handle = SOCKET_INVALID_HANDLE;
-
-				return i;
+				rp2350_release_client(pending);
 			}
 		}
 
-		return -1;
+		rp2350_release_listener(listener);
+		cyw43_arch_lwip_end();
+		return SOCKET_DEVICE_OK;
 	}
 
-	static void rx_queue_clear(fd_entry_t *e)
+	client = rp2350_find_client(handle);
+	if (client)
 	{
-		if (!e)
+		/* Local closure deliberately emits no events->closed() callback. */
+		rp2350_release_client(client);
+		cyw43_arch_lwip_end();
+		return SOCKET_DEVICE_OK;
+	}
+
+	cyw43_arch_lwip_end();
+	return SOCKET_DEVICE_INVALID;
+}
+
+static void rp2350_socket_poll(uint16_t budget)
+{
+	uint16_t emitted = 0U;
+
+	/*
+	 * Poll-architecture builds have no background driver/lwIP servicing.
+	 * This call is non-blocking native housekeeping and is required for ACKs,
+	 * timers, refused RX retries and TX-capacity progress. Background/RTOS
+	 * architectures service those independently.
+	 */
+#if defined(PICO_CYW43_ARCH_POLL) && PICO_CYW43_ARCH_POLL
+	cyw43_arch_poll();
+#endif
+
+	while (emitted < budget)
+	{
+		rp2350_event_kind_t event = RP2350_EVENT_NONE;
+		uint16_t selected_index = UINT16_MAX;
+		uint16_t selected_generation = 0U;
+		socket_device_handle_t client_handle = SOCKET_DEVICE_INVALID_HANDLE;
+		socket_device_handle_t listener_handle = SOCKET_DEVICE_INVALID_HANDLE;
+		socket_device_token_t token = SOCKET_DEVICE_INVALID_TOKEN;
+		int reason = SOCKET_DEVICE_INVALID;
+		uint16_t checked;
+
+		/* Snapshot at most one event in round-robin order. */
+		cyw43_arch_lwip_begin();
+		for (checked = 0U; checked < SOCKET_MAX_CONNECTIONS; ++checked)
 		{
-			return;
-		}
+			uint16_t index = rp2350_poll_cursor;
+			rp2350_client_t *candidate = &rp2350_clients[index];
 
-		while (e->rx_count)
-		{
-			struct pbuf *p = e->rx_queue[e->rx_head];
+			rp2350_poll_cursor =
+				(uint16_t)((rp2350_poll_cursor + 1U) %
+						   SOCKET_MAX_CONNECTIONS);
 
-			e->rx_queue[e->rx_head] = NULL;
-
-			e->rx_head =
-				(uint8_t)((e->rx_head + 1) %
-						  RP2350_SOCKET_RX_QUEUE_DEPTH);
-
-			e->rx_count--;
-
-			if (p)
+			if ((candidate->flags & RP2350_CLIENT_IN_USE) == 0U)
 			{
-				/*
-				 * Release the reference owned by this backend.
-				 */
-				pbuf_free(p);
+				continue;
+			}
+
+			/* Acceptance is always the first normalized event for a client. */
+			if ((candidate->flags & RP2350_CLIENT_ACCEPT_PENDING) != 0U)
+			{
+				candidate->flags &= (uint8_t)~RP2350_CLIENT_ACCEPT_PENDING;
+				event = RP2350_EVENT_ACCEPTED;
+				selected_index = index;
+				selected_generation = candidate->generation;
+				client_handle =
+					rp2350_client_handle(index, candidate->generation);
+				listener_handle = candidate->listener_handle;
+				break;
+			}
+
+			if (candidate->token == SOCKET_DEVICE_INVALID_TOKEN)
+			{
+				continue;
+			}
+
+			/* Retained final payload must be visible before closure. */
+			if (candidate->rx &&
+				(candidate->flags & RP2350_CLIENT_READABLE_PENDING) != 0U)
+			{
+				candidate->flags &=
+					(uint8_t)~RP2350_CLIENT_READABLE_PENDING;
+				event = RP2350_EVENT_READABLE;
+				token = candidate->token;
+				break;
+			}
+
+			if (!candidate->rx &&
+				(candidate->flags & RP2350_CLIENT_CLOSE_PENDING) != 0U)
+			{
+				event = RP2350_EVENT_CLOSED;
+				token = candidate->token;
+				reason = (int)candidate->close_reason;
+				rp2350_release_client(candidate);
+				break;
 			}
 		}
+		cyw43_arch_lwip_end();
 
-		e->rx_head = 0;
-		e->rx_tail = 0;
-		e->rx_count = 0;
-		e->rx_off = 0;
-	}
-
-	static void fd_free(int fd)
-	{
-		if (fd < 0 || fd >= RP2350_SOCKET_MAX_HANDLES)
+		if (event == RP2350_EVENT_NONE)
 		{
-			return;
+			break;
 		}
 
-		fd_entry_t *e = &g_fds[fd];
-
-		if (!e->in_use)
+		switch (event)
 		{
-			return;
-		}
-
-		/*
-		 * Release queued receive buffers first.
-		 */
-		rx_queue_clear(e);
-
-		/*
-		 * Close listener PCB.
-		 */
-		if (e->listen_pcb)
+		case RP2350_EVENT_ACCEPTED:
 		{
-			struct tcp_pcb *pcb = e->listen_pcb;
-
-			e->listen_pcb = NULL;
-
-			tcp_arg(pcb, NULL);
-			tcp_accept(pcb, NULL);
-
-			err_t close_err = tcp_close(pcb);
+			socket_device_token_t accepted_token =
+				rp2350_events->accepted(listener_handle, client_handle);
 
 			/*
-			 * tcp_close() may fail with ERR_MEM.
-			 *
-			 * socket_device->close() means the connection is definitely
-			 * finished, so fall back to an abort instead of leaking the PCB.
+			 * Store the token only if this is still the exact generation that
+			 * produced the event. Never hold lwIP protection while calling the
+			 * uCNC event sink.
 			 */
-			if (close_err != ERR_OK)
+			cyw43_arch_lwip_begin();
+			if (selected_index < SOCKET_MAX_CONNECTIONS)
 			{
-				tcp_abort(pcb);
+				rp2350_client_t *selected =
+					&rp2350_clients[selected_index];
+
+				if ((selected->flags & RP2350_CLIENT_IN_USE) != 0U &&
+					selected->generation == selected_generation &&
+					selected->token == SOCKET_DEVICE_INVALID_TOKEN)
+				{
+					if (accepted_token == SOCKET_DEVICE_INVALID_TOKEN)
+					{
+						/* Core rejection is a local release: no closed event. */
+						rp2350_release_client(selected);
+					}
+					else
+					{
+						selected->token = accepted_token;
+						if (selected->rx)
+						{
+							selected->flags |=
+								RP2350_CLIENT_READABLE_PENDING;
+						}
+					}
+				}
 			}
+			cyw43_arch_lwip_end();
+			break;
 		}
 
-		/*
-		 * Close client PCB.
-		 *
-		 * If tcp_err() has already executed then e->pcb will already
-		 * be NULL because lwIP freed it before invoking err_cb().
-		 */
-		if (e->pcb)
-		{
-			struct tcp_pcb *pcb = e->pcb;
+		case RP2350_EVENT_READABLE:
+			rp2350_events->readable(token);
+			break;
 
-			e->pcb = NULL;
-
-			tcp_arg(pcb, NULL);
-			tcp_recv(pcb, NULL);
-			tcp_sent(pcb, NULL);
-			tcp_poll(pcb, NULL, 0);
-			tcp_err(pcb, NULL);
-
-			err_t close_err = tcp_close(pcb);
-
-			if (close_err != ERR_OK)
-			{
-				tcp_abort(pcb);
-			}
-		}
-
-		memset(e, 0, sizeof(*e));
-
-		e->srv_fd = -1;
-		e->srv_handle = SOCKET_INVALID_HANDLE;
-		e->client_handle = SOCKET_INVALID_HANDLE;
-	}
-
-	static err_t accept_cb(
-		void *arg,
-		struct tcp_pcb *newpcb,
-		err_t err);
-
-	static err_t recv_cb(
-		void *arg,
-		struct tcp_pcb *tpcb,
-		struct pbuf *p,
-		err_t err);
-
-	static err_t sent_cb(
-		void *arg,
-		struct tcp_pcb *tpcb,
-		u16_t len);
-
-	static err_t poll_cb(
-		void *arg,
-		struct tcp_pcb *tpcb);
-
-	static void err_cb(
-		void *arg,
-		err_t err);
-
-	static int rp2350_socket_map_error(err_t err)
-	{
-		switch (err)
-		{
-		case ERR_MEM:
-			return SOCKET_DEVICE_NO_MEMORY;
-
-		case ERR_CLSD:
-			return SOCKET_DEVICE_CLOSED;
+		case RP2350_EVENT_CLOSED:
+			rp2350_events->closed(token, reason);
+			break;
 
 		default:
-			return SOCKET_DEVICE_ERROR;
+			break;
 		}
+
+		++emitted;
 	}
-
-	static err_t accept_cb(
-		void *arg,
-		struct tcp_pcb *newpcb,
-		err_t err)
-	{
-		if (err != ERR_OK)
-		{
-			return err;
-		}
-
-		if (!newpcb)
-		{
-			return ERR_ARG;
-		}
-
-		int srv_fd = (int)(intptr_t)arg;
-
-		if (srv_fd < 0 ||
-			srv_fd >= RP2350_SOCKET_MAX_HANDLES ||
-			!g_fds[srv_fd].in_use ||
-			g_fds[srv_fd].kind != FD_LISTENER)
-		{
-			/*
-			 * We are inside an lwIP callback. If tcp_abort() is called
-			 * here we must return ERR_ABRT.
-			 */
-			tcp_abort(newpcb);
-			return ERR_ABRT;
-		}
-
-		int cfd = fd_alloc();
-
-		if (cfd < 0)
-		{
-			tcp_abort(newpcb);
-			return ERR_ABRT;
-		}
-
-		fd_entry_t *e = &g_fds[cfd];
-
-		e->kind = FD_CLIENT;
-
-		e->pcb = newpcb;
-		e->listen_pcb = NULL;
-
-		e->srv_fd = srv_fd;
-
-		e->srv_handle = (socket_handle_t)srv_fd;
-		e->client_handle = (socket_handle_t)cfd;
-
-		e->accepted = true;
-
-		e->peer_closed = false;
-		e->got_err = false;
-		e->writable_pending = false;
-		e->write_blocked = false;
-
-		e->rx_head = 0;
-		e->rx_tail = 0;
-		e->rx_count = 0;
-		e->rx_off = 0;
-
-		/*
-		 * All callbacks receive our fd index through tcp_arg().
-		 */
-		tcp_arg(
-			newpcb,
-			(void *)(intptr_t)cfd);
-
-		tcp_recv(
-			newpcb,
-			recv_cb);
-
-		tcp_sent(
-			newpcb,
-			sent_cb);
-
-		tcp_err(
-			newpcb,
-			err_cb);
-
-		/*
-		 * Polling provides a fallback wakeup for TX ERR_MEM cases
-		 * where no future ACK necessarily arrives.
-		 *
-		 * Interval 1 corresponds to one lwIP coarse TCP timer tick.
-		 */
-		tcp_poll(
-			newpcb,
-			poll_cb,
-			1);
-
-		return ERR_OK;
-	}
-
-	static err_t sent_cb(
-		void *arg,
-		struct tcp_pcb *tpcb,
-		u16_t len)
-	{
-		(void)tpcb;
-		(void)len;
-
-		int fd = (int)(intptr_t)arg;
-
-		if (fd < 0 ||
-			fd >= RP2350_SOCKET_MAX_HANDLES)
-		{
-			return ERR_OK;
-		}
-
-		fd_entry_t *e = &g_fds[fd];
-
-		if (!e->in_use ||
-			e->kind != FD_CLIENT)
-		{
-			return ERR_OK;
-		}
-
-		/*
-		 * A previous socket_send() encountered backpressure.
-		 *
-		 * Only set a deferred event here. Do not call µCNC application
-		 * code from inside the lwIP callback.
-		 */
-		if (e->write_blocked)
-		{
-			e->write_blocked = false;
-			e->writable_pending = true;
-		}
-
-		return ERR_OK;
-	}
-
-	static err_t poll_cb(
-		void *arg,
-		struct tcp_pcb *tpcb)
-	{
-		(void)tpcb;
-
-		int fd = (int)(intptr_t)arg;
-
-		if (fd < 0 ||
-			fd >= RP2350_SOCKET_MAX_HANDLES)
-		{
-			return ERR_OK;
-		}
-
-		fd_entry_t *e = &g_fds[fd];
-
-		if (!e->in_use ||
-			e->kind != FD_CLIENT)
-		{
-			return ERR_OK;
-		}
-
-		/*
-		 * tcp_write() may return ERR_MEM even when there is no future
-		 * tcp_sent() callback guaranteed to wake us.
-		 *
-		 * Ask the socket core to retry when lwIP polls us.
-		 */
-		if (e->write_blocked)
-		{
-			e->write_blocked = false;
-			e->writable_pending = true;
-		}
-
-		return ERR_OK;
-	}
-
-	static void err_cb(
-		void *arg,
-		err_t err)
-	{
-		int fd = (int)(intptr_t)arg;
-
-		if (fd < 0 ||
-			fd >= RP2350_SOCKET_MAX_HANDLES)
-		{
-			return;
-		}
-
-		fd_entry_t *e = &g_fds[fd];
-
-		if (!e->in_use ||
-			e->kind != FD_CLIENT)
-		{
-			return;
-		}
-
-		/*
-		 * IMPORTANT:
-		 *
-		 * lwIP has already freed the tcp_pcb before calling tcp_err().
-		 * Never call tcp_close(), tcp_abort(), tcp_recv(), etc. on it.
-		 */
-		e->pcb = NULL;
-
-		e->error_reason =
-			rp2350_socket_map_error(err);
-
-		e->got_err = true;
-
-		e->write_blocked = false;
-		e->writable_pending = false;
-	}
-
-	static err_t recv_cb(
-		void *arg,
-		struct tcp_pcb *tpcb,
-		struct pbuf *p,
-		err_t err)
-	{
-		int fd = (int)(intptr_t)arg;
-
-		if (fd < 0 ||
-			fd >= RP2350_SOCKET_MAX_HANDLES)
-		{
-			/*
-			 * We have no valid owner for this connection anymore.
-			 *
-			 * Since we're aborting from an lwIP callback, release p and
-			 * return ERR_ABRT.
-			 */
-			if (p)
-			{
-				pbuf_free(p);
-			}
-
-			tcp_abort(tpcb);
-			return ERR_ABRT;
-		}
-
-		fd_entry_t *e = &g_fds[fd];
-
-		if (!e->in_use ||
-			e->kind != FD_CLIENT)
-		{
-			if (p)
-			{
-				pbuf_free(p);
-			}
-
-			tcp_abort(tpcb);
-			return ERR_ABRT;
-		}
-
-		/*
-		 * If lwIP passed an error, return it without freeing p.
-		 *
-		 * The tcp_recv contract says a callback returning something
-		 * other than ERR_OK/ERR_ABRT must not free the pbuf.
-		 */
-		if (err != ERR_OK)
-		{
-			e->error_reason =
-				rp2350_socket_map_error(err);
-
-			e->got_err = true;
-
-			return err;
-		}
-
-		/*
-		 * p == NULL means the peer sent FIN.
-		 *
-		 * Do not close immediately. There may still be queued receive
-		 * data waiting to be delivered to µCNC.
-		 */
-		if (!p)
-		{
-			e->peer_closed = true;
-			return ERR_OK;
-		}
-
-		/*
-		 * No payload worth queueing.
-		 */
-		if (p->tot_len == 0)
-		{
-			pbuf_free(p);
-			return ERR_OK;
-		}
-
-		/*
-		 * Queue full:
-		 *
-		 * Do NOT free p and return ERR_MEM. This tells lwIP that we
-		 * have not accepted this receive buffer yet.
-		 */
-		if (e->rx_count >= RP2350_SOCKET_RX_QUEUE_DEPTH)
-		{
-			return ERR_MEM;
-		}
-
-		/*
-		 * Take our own reference to this complete pbuf chain.
-		 *
-		 * We must then release the reference passed to the tcp_recv
-		 * callback before returning ERR_OK.
-		 */
-		pbuf_ref(p);
-
-		e->rx_queue[e->rx_tail] = p;
-
-		e->rx_tail =
-			(uint8_t)((e->rx_tail + 1) %
-					  RP2350_SOCKET_RX_QUEUE_DEPTH);
-
-		e->rx_count++;
-
-		/*
-		 * Release the callback's reference.
-		 *
-		 * Our pbuf_ref() above keeps the pbuf alive until service()
-		 * consumes it.
-		 */
-		pbuf_free(p);
-
-		return ERR_OK;
-	}
-
-	static size_t rp2350_socket_prepare_rx(
-		fd_entry_t *e,
-		char *buffer)
-	{
-		if (!e ||
-			!buffer ||
-			e->rx_count == 0)
-		{
-			return 0;
-		}
-
-		struct pbuf *p =
-			e->rx_queue[e->rx_head];
-
-		if (!p)
-		{
-			return 0;
-		}
-
-		if (e->rx_off >= p->tot_len)
-		{
-			/*
-			 * Defensive recovery: this should never normally happen.
-			 */
-			pbuf_free(p);
-
-			e->rx_queue[e->rx_head] = NULL;
-
-			e->rx_head =
-				(uint8_t)((e->rx_head + 1) %
-						  RP2350_SOCKET_RX_QUEUE_DEPTH);
-
-			e->rx_count--;
-			e->rx_off = 0;
-
-			return 0;
-		}
-
-		size_t remaining =
-			(size_t)p->tot_len -
-			(size_t)e->rx_off;
-
-		size_t to_copy = remaining;
-
-		if (to_copy > SOCKET_MAX_DATA_SIZE)
-		{
-			to_copy = SOCKET_MAX_DATA_SIZE;
-		}
-
-		u16_t copied =
-			pbuf_copy_partial(
-				p,
-				buffer,
-				(u16_t)to_copy,
-				e->rx_off);
-
-		if (copied == 0)
-		{
-			e->got_err = true;
-			e->error_reason = SOCKET_DEVICE_ERROR;
-
-			return 0;
-		}
-
-		e->rx_off =
-			(uint16_t)(e->rx_off + copied);
-
-		/*
-		 * Tell lwIP that these bytes have now left our RX queue.
-		 *
-		 * Do this before invoking application code so socket_close()
-		 * from inside ondata cannot invalidate the PCB underneath us.
-		 */
-		if (e->pcb)
-		{
-			tcp_recved(
-				e->pcb,
-				copied);
-		}
-
-		/*
-		 * Entire callback pbuf chain consumed.
-		 */
-		if (e->rx_off >= p->tot_len)
-		{
-			e->rx_queue[e->rx_head] = NULL;
-
-			e->rx_head =
-				(uint8_t)((e->rx_head + 1) %
-						  RP2350_SOCKET_RX_QUEUE_DEPTH);
-
-			e->rx_count--;
-			e->rx_off = 0;
-
-			/*
-			 * Release the backend-owned reference.
-			 */
-			pbuf_free(p);
-		}
-
-		buffer[copied] = '\0';
-
-		return (size_t)copied;
-	}
-
-	static void rp2350_socket_service(void)
-	{
-		if (!rp2350_socket_events)
-		{
-			return;
-		}
-
-		/*
-		 * For pico_cyw43_arch_lwip_poll the application must
-		 * periodically drive CYW43/lwIP itself.
-		 */
-#if defined(PICO_CYW43_ARCH_POLL) && PICO_CYW43_ARCH_POLL
-		cyw43_arch_poll();
-#endif
-
-		/*
-		 * One shared dispatch buffer is sufficient because events are
-		 * delivered synchronously and sequentially from this function.
-		 */
-		static char rx_buffer[SOCKET_MAX_DATA_SIZE + 1];
-
-		/*
-		 * Bounded pass:
-		 *
-		 * At most one µCNC socket event is emitted for each handle
-		 * during one service invocation.
-		 */
-		for (int i = 0;
-			 i < RP2350_SOCKET_MAX_HANDLES;
-			 i++)
-		{
-			fd_entry_t *e = &g_fds[i];
-
-			if (!e->in_use ||
-				e->kind != FD_CLIENT)
-			{
-				continue;
-			}
-
-			/*
-			 * Fatal error has highest priority.
-			 *
-			 * The PCB may already have been freed by lwIP.
-			 */
-			if (e->got_err)
-			{
-				socket_handle_t handle =
-					e->client_handle;
-
-				int reason =
-					e->error_reason;
-
-				e->got_err = false;
-
-				fd_free(i);
-
-				if (rp2350_socket_events->disconnected)
-				{
-					rp2350_socket_events->disconnected(
-						handle,
-						reason);
-				}
-
-				continue;
-			}
-
-			/*
-			 * Notify µCNC of the accepted connection before delivering
-			 * any data that may already have arrived.
-			 */
-			if (e->accepted)
-			{
-				socket_handle_t listener =
-					e->srv_handle;
-
-				socket_handle_t client =
-					e->client_handle;
-
-				e->accepted = false;
-
-				bool accepted = false;
-
-				if (rp2350_socket_events->connected)
-				{
-					accepted =
-						rp2350_socket_events->connected(
-							listener,
-							client);
-				}
-
-				/*
-				 * No free µCNC client slot.
-				 */
-				if (!accepted)
-				{
-					/*
-					 * The connected callback returning false cannot call
-					 * application code, so this descriptor is still ours.
-					 */
-					if (i < RP2350_SOCKET_MAX_HANDLES &&
-						g_fds[i].in_use &&
-						g_fds[i].client_handle == client)
-					{
-						fd_free(i);
-					}
-				}
-
-				/*
-				 * Do not touch e after the event callback. Application
-				 * code may have closed the socket.
-				 */
-				continue;
-			}
-
-			/*
-			 * Deliver queued RX before handling peer FIN.
-			 */
-			if (e->rx_count)
-			{
-				socket_handle_t client =
-					e->client_handle;
-
-				size_t len =
-					rp2350_socket_prepare_rx(
-						e,
-						rx_buffer);
-
-				if (len > 0)
-				{
-					if (rp2350_socket_events->data)
-					{
-						rp2350_socket_events->data(
-							client,
-							rx_buffer,
-							len);
-					}
-
-					/*
-					 * ondata may close the connection.
-					 */
-					continue;
-				}
-
-				/*
-				 * An RX processing error was raised.
-				 * Deal with it on the next service pass.
-				 */
-				if (e->got_err)
-				{
-					continue;
-				}
-			}
-
-			/*
-			 * Only report FIN after all queued payload has been delivered.
-			 */
-			if (e->peer_closed &&
-				e->rx_count == 0)
-			{
-				socket_handle_t client =
-					e->client_handle;
-
-				e->peer_closed = false;
-
-				fd_free(i);
-
-				if (rp2350_socket_events->disconnected)
-				{
-					rp2350_socket_events->disconnected(
-						client,
-						0);
-				}
-
-				continue;
-			}
-
-			/*
-			 * Deferred TX-progress notification.
-			 */
-			if (e->writable_pending)
-			{
-				socket_handle_t client =
-					e->client_handle;
-
-				e->writable_pending = false;
-
-				if (rp2350_socket_events->writable)
-				{
-					rp2350_socket_events->writable(
-						client);
-				}
-
-				/*
-				 * writable() may eventually contain application logic
-				 * which closes the connection, so don't touch e again.
-				 */
-				continue;
-			}
-		}
-	}
-
-	static int rp2350_socket_device_init(
-		const socket_device_events_t *events)
-	{
-		if (!events)
-		{
-			return SOCKET_DEVICE_INVALID;
-		}
-
-		rp2350_socket_events = events;
-
-		memset(
-			g_fds,
-			0,
-			sizeof(g_fds));
-
-		for (int i = 0;
-			 i < RP2350_SOCKET_MAX_HANDLES;
-			 i++)
-		{
-			g_fds[i].kind = FD_EMPTY;
-
-			g_fds[i].srv_fd = -1;
-
-			g_fds[i].srv_handle =
-				SOCKET_INVALID_HANDLE;
-
-			g_fds[i].client_handle =
-				SOCKET_INVALID_HANDLE;
-		}
-
-		return SOCKET_DEVICE_OK;
-	}
-
-	static socket_handle_t rp2350_socket_listen(
-		uint32_t ip_listen,
-		uint16_t port,
-		int domain,
-		int type,
-		int protocol,
-		uint8_t backlog)
-	{
-		(void)protocol;
-
-		if (domain != AF_INET ||
-			type != SOCK_STREAM)
-		{
-			return SOCKET_INVALID_HANDLE;
-		}
-
-		/*
-		 * Current RP2350 implementation only supports listening on
-		 * all local IPv4 interfaces.
-		 *
-		 * Do not silently ignore a non-zero requested bind address.
-		 */
-		if (ip_listen != IP_ANY)
-		{
-			return SOCKET_INVALID_HANDLE;
-		}
-
-		int fd = fd_alloc();
-
-		if (fd < 0)
-		{
-			return SOCKET_INVALID_HANDLE;
-		}
-
-		fd_entry_t *e = &g_fds[fd];
-
-		e->kind = FD_LISTENER;
-
-		e->srv_handle =
-			(socket_handle_t)fd;
-
-		struct tcp_pcb *pcb =
-			tcp_new_ip_type(
-				IPADDR_TYPE_V4);
-
-		if (!pcb)
-		{
-			fd_free(fd);
-			return SOCKET_INVALID_HANDLE;
-		}
-
-		/*
-		 * Store it immediately so fd_free() owns all cleanup paths.
-		 */
-		e->listen_pcb = pcb;
-
-		tcp_setprio(
-			pcb,
-			TCP_PRIO_NORMAL);
-
-		pcb->so_options |= SOF_REUSEADDR;
-
-		err_t err =
-			tcp_bind(
-				pcb,
-				IP_ANY_TYPE,
-				port);
-
-		if (err != ERR_OK)
-		{
-			fd_free(fd);
-			return SOCKET_INVALID_HANDLE;
-		}
-
-		struct tcp_pcb *listener =
-			tcp_listen_with_backlog(
-				pcb,
-				backlog ? backlog : 1);
-
-		if (!listener)
-		{
-			/*
-			 * tcp_listen_with_backlog() failed; the original PCB is
-			 * still owned by e->listen_pcb and fd_free() releases it.
-			 */
-			fd_free(fd);
-			return SOCKET_INVALID_HANDLE;
-		}
-
-		/*
-		 * tcp_listen_with_backlog() replaces the original PCB with
-		 * the listener PCB.
-		 */
-		e->listen_pcb = listener;
-
-		tcp_arg(
-			listener,
-			(void *)(intptr_t)fd);
-
-		tcp_accept(
-			listener,
-			accept_cb);
-
-		return (socket_handle_t)fd;
-	}
-
-	static int rp2350_socket_send(
-		socket_handle_t client,
-		const void *data,
-		size_t len,
-		int flags)
-	{
-		(void)flags;
-
-		if (client == SOCKET_INVALID_HANDLE ||
-			!data)
-		{
-			return SOCKET_DEVICE_INVALID;
-		}
-
-		if (len == 0)
-		{
-			return 0;
-		}
-
-		int fd = (int)client;
-
-		if (fd < 0 ||
-			fd >= RP2350_SOCKET_MAX_HANDLES)
-		{
-			return SOCKET_DEVICE_INVALID;
-		}
-
-		fd_entry_t *e = &g_fds[fd];
-
-		if (!e->in_use ||
-			e->kind != FD_CLIENT ||
-			!e->pcb)
-		{
-			return SOCKET_DEVICE_INVALID;
-		}
-
-		u16_t space =
-			tcp_sndbuf(e->pcb);
-
-		if (space == 0)
-		{
-			/*
-			 * Never wait here.
-			 */
-			e->write_blocked = true;
-
-			return SOCKET_DEVICE_WOULD_BLOCK;
-		}
-
-		size_t to_send = len;
-
-		if (to_send > (size_t)space)
-		{
-			to_send = (size_t)space;
-		}
-
-		/*
-		 * tcp_write() accepts a u16 length.
-		 * tcp_sndbuf() already constrains to_send accordingly.
-		 */
-		err_t err =
-			tcp_write(
-				e->pcb,
-				data,
-				(u16_t)to_send,
-				TCP_WRITE_FLAG_COPY);
-
-		if (err == ERR_MEM)
-		{
-			/*
-			 * Queue/buffer pressure.
-			 *
-			 * sent_cb() or poll_cb() will eventually mark this socket
-			 * writable again.
-			 */
-			e->write_blocked = true;
-
-			return SOCKET_DEVICE_WOULD_BLOCK;
-		}
-
-		if (err != ERR_OK)
-		{
-			return rp2350_socket_map_error(err);
-		}
-
-		e->write_blocked = false;
-
-		/*
-		 * If the application happened to retry successfully before a
-		 * previously queued writable event was dispatched, discard that
-		 * now-stale notification.
-		 */
-		e->writable_pending = false;
-
-		/*
-		 * Data has been accepted into lwIP's TX queue at this point.
-		 */
-		(void)tcp_output(e->pcb);
-
-		return (int)to_send;
-	}
-
-	static int rp2350_socket_close(
-		socket_handle_t handle)
-	{
-		if (handle == SOCKET_INVALID_HANDLE)
-		{
-			return SOCKET_DEVICE_INVALID;
-		}
-
-		int fd = (int)handle;
-
-		if (fd < 0 ||
-			fd >= RP2350_SOCKET_MAX_HANDLES)
-		{
-			return SOCKET_DEVICE_INVALID;
-		}
-
-		if (!g_fds[fd].in_use)
-		{
-			return SOCKET_DEVICE_INVALID;
-		}
-
-		/*
-		 * Explicit local close.
-		 *
-		 * fd_free() deliberately does not invoke the µCNC disconnected
-		 * event. The generic socket core handles local-close notification.
-		 */
-		fd_free(fd);
-
-		return SOCKET_DEVICE_OK;
-	}
-
-	socket_device_t wifi_socket =
-		{
-			.init = rp2350_socket_device_init,
-			.listen = rp2350_socket_listen,
-			.send = rp2350_socket_send,
-			.close = rp2350_socket_close,
-			.service = rp2350_socket_service};
+}
+
+/* Public backend object registered by the RP2350 network initialization. */
+socket_device_t wifi_socket = {
+	.init = rp2350_socket_init,
+	.listen = rp2350_socket_listen,
+	.recv = rp2350_socket_recv,
+	.send = rp2350_socket_send,
+	.close = rp2350_socket_close,
+	.poll = rp2350_socket_poll};
 
 #ifdef __cplusplus
 }
 #endif
-#endif
+
+#endif /* MCU == MCU_RP2350 */

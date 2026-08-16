@@ -20,6 +20,10 @@
 #include "system_menu.h"
 #include <math.h>
 
+#ifndef SYSMENDBG
+#define SYSMENDBG(...) ((void)0)
+#endif
+
 system_menu_t g_system_menu;
 
 float g_system_menu_jog_distance, g_system_menu_jog_feed;
@@ -783,7 +787,7 @@ static bool system_menu_action_jog(uint8_t action, system_menu_item_t *item)
 			while (*++ptr)
 				;
 			*ptr++ = '\r';
-			DBGMSG("%s", buffer);
+			SYSMENDBG("%s", buffer);
 			if (system_menu_send_cmd(buffer) != STATUS_OK)
 			{
 				rom_strcpy((char *)buffer, __romstr__(STR_CMD_NOTSENT));

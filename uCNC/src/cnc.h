@@ -145,6 +145,8 @@ extern "C"
 #ifdef ENABLE_SOCKETS
 #include "modules/net/socket.h"
 #include "modules/net/telnet.h"
+#include "modules/net/websocket.h"
+#include "modules/net/http.h"
 #endif
 
 	/**
@@ -159,6 +161,7 @@ extern "C"
 	extern bool cnc_status_report_lock;
 
 	void cnc_init(void);
+	void cnc_network_init(void);
 	void cnc_run(void);
 	// do events returns true if all OK and false if an ABORT alarm is reached
 	bool cnc_dotasks(void);
