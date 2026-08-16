@@ -48,8 +48,7 @@ enum
 	SOCKET_CLIENT_CONNECT_PENDING = 1U << 1,
 	SOCKET_CLIENT_CONNECT_NOTIFIED = 1U << 2,
 	SOCKET_CLIENT_READABLE = 1U << 3,
-	SOCKET_CLIENT_WRITABLE = 1U << 4,
-	SOCKET_CLIENT_CLOSE_PENDING = 1U << 5
+	SOCKET_CLIENT_CLOSE_PENDING = 1U << 4
 };
 
 /*
@@ -67,7 +66,7 @@ typedef struct socket_client_state_
 	uint8_t listener_idx;
 	uint8_t local_idx;
 	uint8_t flags;
-	int close_reason;
+	int8_t close_reason;
 #ifdef ENABLE_SOCKET_TIMEOUTS
 	uint32_t activity_ms;
 #endif
@@ -79,8 +78,11 @@ static socket_client_state_t socket_clients[SOCKET_MAX_CONNECTIONS];
 static uint8_t socket_rx_buffer[SOCKET_RX_BUFFER_SIZE];
 static socket_device_t *socket_device;
 
-/* Prevent recursive poll/dispatch if application code calls dotasks(). */
+/* Prevent recursive application dispatch if application code calls dotasks(). */
 static bool socket_core_running;
+
+/* Prevent recursive backend polling through socket_server_poll(). */
+static bool socket_device_polling;
 
 /* Round-robin position for bounded per-client dispatch. */
 static uint16_t socket_dispatch_cursor;
@@ -89,13 +91,11 @@ static uint16_t socket_dispatch_cursor;
 static socket_device_token_t socket_device_accepted(socket_device_handle_t listener,
 												 socket_device_handle_t client);
 static void socket_device_readable(socket_device_token_t token);
-static void socket_device_writable(socket_device_token_t token);
 static void socket_device_closed(socket_device_token_t token, int reason);
 
 static const socket_device_events_t socket_device_events = {
 	.accepted = socket_device_accepted,
 	.readable = socket_device_readable,
-	.writable = socket_device_writable,
 	.closed = socket_device_closed};
 
 /*
@@ -307,7 +307,6 @@ static void socket_finalize_stopping_listener(uint8_t listener_idx)
 	socket->client_ondata_cb = NULL;
 	socket->client_onidle_cb = NULL;
 	socket->client_onconnected_cb = NULL;
-	socket->client_onwritable_cb = NULL;
 	socket->client_ondisconnected_cb = NULL;
 	socket->protocol = NULL;
 	socket->state = SOCKET_IF_FREE;
@@ -427,16 +426,6 @@ static void socket_device_readable(socket_device_token_t token)
 	}
 }
 
-/* Event sink: coalesces duplicate writable hints for a live generation token. */
-static void socket_device_writable(socket_device_token_t token)
-{
-	socket_client_state_t *client = socket_resolve_token(token, NULL);
-	if (client && (client->flags & SOCKET_CLIENT_CLOSE_PENDING) == 0U)
-	{
-		client->flags |= SOCKET_CLIENT_WRITABLE;
-	}
-}
-
 /*
  * Event sink: records a backend-released remote/fatal close.
  * Late events are rejected by token generation matching.
@@ -450,16 +439,19 @@ static void socket_device_closed(socket_device_token_t token, int reason)
 	}
 
 	client->handle = SOCKET_DEVICE_INVALID_HANDLE;
-	client->flags &= (uint8_t)~(SOCKET_CLIENT_READABLE | SOCKET_CLIENT_WRITABLE);
+	client->flags &= (uint8_t)~SOCKET_CLIENT_READABLE;
 	client->flags |= SOCKET_CLIENT_CLOSE_PENDING;
-	client->close_reason = (reason < 0) ? reason : SOCKET_DEVICE_ERROR;
+	client->close_reason = (int8_t)((reason < 0 && reason >= SOCKET_DEVICE_TIMEOUT)
+								  ? reason
+								  : SOCKET_DEVICE_ERROR);
 }
 
 bool socket_register_device(socket_device_t *device)
 {
-	if (!device || socket_device || !device->init || !device->listen ||
+	if (!device /*|| socket_device*/ || !device->init || !device->listen ||
 		!device->recv || !device->send || !device->close || !device->poll)
 	{
+		proto_print("1\r\n");
 		return false;
 	}
 
@@ -467,12 +459,14 @@ bool socket_register_device(socket_device_t *device)
 	{
 		if (raw_sockets[i].state != SOCKET_IF_FREE)
 		{
+			proto_print("2\r\n");
 			return false;
 		}
 	}
 
 	if (device->init(&socket_device_events) < 0)
 	{
+		proto_print("3\r\n");
 		return false;
 	}
 
@@ -574,14 +568,6 @@ void socket_add_onconnected_handler(socket_if_t *socket,
 	}
 }
 
-void socket_add_onwritable_handler(socket_if_t *socket,
-									 socket_writable_delegate callback)
-{
-	if (socket_listener_index(socket) >= 0)
-	{
-		socket->client_onwritable_cb = callback;
-	}
-}
 
 void socket_add_ondisconnected_handler(socket_if_t *socket,
 										 socket_disconnect_delegate callback)
@@ -605,16 +591,42 @@ void *socket_get_protocol(const socket_if_t *socket)
 	return socket_listener_index(socket) >= 0 ? socket->protocol : NULL;
 }
 
+static int socket_close_client(socket_client_state_t *client, int reason)
+{
+	socket_device_handle_t handle;
+	int result = SOCKET_DEVICE_OK;
+
+	if (!client || (client->flags & SOCKET_CLIENT_CLOSE_PENDING) != 0U)
+	{
+		return SOCKET_DEVICE_INVALID;
+	}
+
+	handle = client->handle;
+	client->handle = SOCKET_DEVICE_INVALID_HANDLE;
+	client->flags &= (uint8_t)~SOCKET_CLIENT_READABLE;
+	client->flags |= SOCKET_CLIENT_CLOSE_PENDING;
+	client->close_reason = (int8_t)reason;
+
+	if (socket_device && handle != SOCKET_DEVICE_INVALID_HANDLE)
+	{
+		result = socket_device->close(handle);
+	}
+
+	return result < 0 ? result : SOCKET_DEVICE_OK;
+}
+
 int socket_send(socket_if_t *socket,
 				uint8_t client_idx,
 				const void *data,
-				size_t data_len)
+				size_t data_len,
+				bool noblock)
 {
 	socket_client_state_t *client;
-	size_t attempt;
-	int result;
+	const uint8_t *bytes = (const uint8_t *)data;
+	size_t total = 0U;
+	uint32_t start_ms = 0U;
 
-	if (!socket_device || (data_len > 0U && !data))
+	if (!socket_device || (data_len > 0U && !data) || data_len > (size_t)INT_MAX)
 	{
 		return SOCKET_DEVICE_INVALID;
 	}
@@ -632,96 +644,64 @@ int socket_send(socket_if_t *socket,
 		return 0;
 	}
 
-	/* The public result is int, so one attempt cannot report more than INT_MAX. */
-	attempt = data_len > (size_t)INT_MAX ? (size_t)INT_MAX : data_len;
-	result = socket_device->send(client->handle, data, attempt);
-
-	if (result > 0)
+	if (!noblock)
 	{
-		if ((size_t)result > attempt)
+		start_ms = mcu_millis();
+	}
+
+	while (total < data_len)
+	{
+		int result;
+		size_t remaining = data_len - total;
+
+		if (client->handle == SOCKET_DEVICE_INVALID_HANDLE ||
+			(client->flags & SOCKET_CLIENT_CLOSE_PENDING) != 0U)
 		{
-			return SOCKET_DEVICE_ERROR;
+			return client->close_reason < 0 ? client->close_reason : SOCKET_DEVICE_CLOSED;
 		}
-#ifdef ENABLE_SOCKET_TIMEOUTS
-		client->activity_ms = mcu_millis();
-#endif
-	}
 
-	return result;
-}
-
-int socket_broadcast(socket_if_t *socket,
-					 const void *data,
-					 size_t data_len,
-					 socket_broadcast_result_t *result)
-{
-	int active = 0;
-
-	if (!result || socket_listener_index(socket) < 0 ||
-		(data_len > 0U && !data))
-	{
-		return SOCKET_DEVICE_INVALID;
-	}
-
-	memset(result, 0, sizeof(*result));
-	for (uint8_t i = 0; i < SOCKET_MAX_CLIENTS; ++i)
-	{
-		uint32_t bit = (uint32_t)1U << i;
-		int sent;
-
-		if (!socket_client_is_connected(socket, i))
+		result = socket_device->send(client->handle, &bytes[total], remaining);
+		if (result > 0)
 		{
+			if ((size_t)result > remaining)
+			{
+				(void)socket_close_client(client, SOCKET_DEVICE_ERROR);
+				return SOCKET_DEVICE_ERROR;
+			}
+			total += (size_t)result;
+#ifdef ENABLE_SOCKET_TIMEOUTS
+			client->activity_ms = mcu_millis();
+#endif
 			continue;
 		}
 
-		++active;
-		result->active_mask |= bit;
-		sent = socket_send(socket, i, data, data_len);
+		if (result != SOCKET_DEVICE_WOULD_BLOCK && result != 0)
+		{
+			return result;
+		}
 
-		if (sent >= 0 && (size_t)sent == data_len)
+		if (noblock)
 		{
-			result->complete_mask |= bit;
+			return (int)total;
 		}
-		else if (sent > 0)
+
+		if ((uint32_t)(mcu_millis() - start_ms) >= (uint32_t)SOCKET_SEND_TIMEOUT_MS)
 		{
-			result->partial_mask |= bit;
+			(void)socket_close_client(client, SOCKET_DEVICE_TIMEOUT);
+			return SOCKET_DEVICE_TIMEOUT;
 		}
-		else if (sent == SOCKET_DEVICE_WOULD_BLOCK)
-		{
-			result->blocked_mask |= bit;
-		}
-		else
-		{
-			result->failed_mask |= bit;
-		}
+
+		/* Poll native state only. Application callbacks stay deferred. */
+		socket_server_poll();
 	}
 
-	return active;
+	return (int)total;
 }
 
 int socket_close(socket_if_t *socket, uint8_t client_idx)
 {
 	socket_client_state_t *client = socket_get_client(socket, client_idx, NULL);
-	socket_device_handle_t handle;
-	int result = SOCKET_DEVICE_OK;
-
-	if (!client || (client->flags & SOCKET_CLIENT_CLOSE_PENDING) != 0U)
-	{
-		return SOCKET_DEVICE_INVALID;
-	}
-
-	handle = client->handle;
-	client->handle = SOCKET_DEVICE_INVALID_HANDLE;
-	client->flags &= (uint8_t)~(SOCKET_CLIENT_READABLE | SOCKET_CLIENT_WRITABLE);
-	client->flags |= SOCKET_CLIENT_CLOSE_PENDING;
-	client->close_reason = SOCKET_DEVICE_OK;
-
-	if (socket_device && handle != SOCKET_DEVICE_INVALID_HANDLE)
-	{
-		result = socket_device->close(handle);
-	}
-
-	return result < 0 ? result : SOCKET_DEVICE_OK;
+	return socket_close_client(client, SOCKET_DEVICE_OK);
 }
 
 bool socket_client_is_connected(const socket_if_t *socket,
@@ -811,7 +791,7 @@ static bool socket_dispatch_client(uint16_t slot)
 			{
 				client->handle = SOCKET_DEVICE_INVALID_HANDLE;
 				client->flags &=
-					(uint8_t)~(SOCKET_CLIENT_READABLE | SOCKET_CLIENT_WRITABLE);
+					(uint8_t)~SOCKET_CLIENT_READABLE;
 				client->flags |= SOCKET_CLIENT_CLOSE_PENDING;
 				client->close_reason = SOCKET_DEVICE_ERROR;
 				return true;
@@ -840,22 +820,14 @@ static bool socket_dispatch_client(uint16_t slot)
 				/* Defensive logical cleanup for a contract-violating backend. */
 				client->handle = SOCKET_DEVICE_INVALID_HANDLE;
 				client->flags |= SOCKET_CLIENT_CLOSE_PENDING;
-				client->close_reason = received;
+				client->close_reason = (int8_t)((received >= SOCKET_DEVICE_TIMEOUT)
+										   ? received
+										   : SOCKET_DEVICE_ERROR);
 			}
 		}
 		return true;
 	}
 
-	/* Writable is edge-like: clear before callback; backend must re-notify later. */
-	if ((client->flags & SOCKET_CLIENT_WRITABLE) != 0U)
-	{
-		client->flags &= (uint8_t)~SOCKET_CLIENT_WRITABLE;
-		if (socket->client_onwritable_cb)
-		{
-			socket->client_onwritable_cb(local_idx, socket->protocol);
-		}
-		return true;
-	}
 
 	/* Lowest-priority cooperative per-client callback. */
 	if ((client->flags & SOCKET_CLIENT_CONNECT_NOTIFIED) != 0U &&
@@ -873,6 +845,18 @@ static bool socket_dispatch_client(uint16_t slot)
 	return false;
 }
 
+void socket_server_poll(void)
+{
+	if (!socket_device || socket_device_polling)
+	{
+		return;
+	}
+
+	socket_device_polling = true;
+	socket_device->poll((uint16_t)SOCKET_DEVICE_POLL_BUDGET);
+	socket_device_polling = false;
+}
+
 void socket_server_dotasks(void)
 {
 	if (!socket_device || socket_core_running)
@@ -881,7 +865,7 @@ void socket_server_dotasks(void)
 	}
 
 	socket_core_running = true;
-	socket_device->poll((uint16_t)SOCKET_DEVICE_POLL_BUDGET);
+	socket_server_poll();
 
 	/* Find at most one client with work, starting from the round-robin cursor. */
 	for (uint16_t checked = 0; checked < SOCKET_MAX_CONNECTIONS; ++checked)
@@ -945,6 +929,7 @@ DECL_MODULE(socket_server)
 		}
 
 		socket_core_running = false;
+		socket_device_polling = false;
 		socket_dispatch_cursor = 0U;
 		RUNONCE_COMPLETE();
 	}

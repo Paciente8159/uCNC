@@ -544,57 +544,243 @@ extern "C"
 
 /*
  * WinSock fd_set stores a fixed number of SOCKET values. readfds contains all
- * listeners and clients at once, so fail at compile time instead of letting an
- * FD_SET silently exceed its configured capacity.
+ * listeners plus clients whose readable hint is not already latched by uCNC.
+ * Fail at compile time instead of letting FD_SET silently exceed capacity.
  */
 #if (WINDOWS_SOCKET_MAX_LISTENERS + WINDOWS_SOCKET_MAX_CLIENTS) > FD_SETSIZE
 #error "Increase FD_SETSIZE or reduce MAX_SOCKETS/SOCKET_MAX_CONNECTIONS"
 #endif
 
-typedef struct windows_listener_
-{
-	SOCKET native_socket;
-	bool in_use;
-} windows_listener_t;
+/*
+ * Backend handles are generation-tagged table references, not raw SOCKET
+ * values. This prevents a stale uCNC handle from becoming valid again merely
+ * because WinSock later reuses the same native SOCKET value.
+ *
+ * The low 16 bits encode (slot << 1) | kind and the high 16 bits encode a
+ * non-zero generation. Keeping one kind bit leaves 15 bits for the slot.
+ * FD_SETSIZE is normally far smaller, but make the representation limit
+ * explicit so a custom configuration cannot silently truncate a slot.
+ */
+#if WINDOWS_SOCKET_MAX_LISTENERS > 32767U
+#error "WINDOWS_SOCKET_MAX_LISTENERS exceeds backend handle slot capacity"
+#endif
 
-typedef struct windows_client_
-{
-	SOCKET native_socket;
-	socket_device_token_t token;
-	bool in_use;
-	bool readable_notified;
-	bool want_write;
-} windows_client_t;
+#if WINDOWS_SOCKET_MAX_CLIENTS > 32767U
+#error "WINDOWS_SOCKET_MAX_CLIENTS exceeds backend handle slot capacity"
+#endif
 
-static windows_listener_t windows_listeners[WINDOWS_SOCKET_MAX_LISTENERS];
-static windows_client_t windows_clients[WINDOWS_SOCKET_MAX_CLIENTS];
-static const socket_device_events_t *windows_socket_events;
-static bool windows_net_started;
-static bool windows_accept_first;
-static uint16_t windows_listener_cursor;
-static uint16_t windows_client_cursor;
+#define WINDOWS_HANDLE_KIND_CLIENT ((uintptr_t)1U)
+#define WINDOWS_HANDLE_SLOT_SHIFT 1U
+#define WINDOWS_HANDLE_GENERATION_SHIFT 16U
+#define WINDOWS_HANDLE_LOW_MASK ((uintptr_t)0xFFFFU)
+#define WINDOWS_HANDLE_SLOT_MASK ((uintptr_t)0x7FFFU)
 
-static socket_device_handle_t windows_socket_to_handle(SOCKET native_socket)
+#define WINDOWS_CLIENT_READABLE_BYTES \
+	((WINDOWS_SOCKET_MAX_CLIENTS + 7U) / 8U)
+
+/*
+ * Structure-of-arrays storage avoids per-record alignment padding on Win64.
+ * Keeping the arrays in one aggregate also prevents linker alignment gaps
+ * between separate static objects. Native TCP payload stays entirely in
+ * WinSock buffers; there is no backend RX copy, TX queue, TX retry offset, or
+ * writable-interest state.
+ */
+typedef struct windows_socket_state_
 {
-	return (socket_device_handle_t)(uintptr_t)native_socket;
+	SOCKET listener_sockets[WINDOWS_SOCKET_MAX_LISTENERS];
+	SOCKET client_sockets[WINDOWS_SOCKET_MAX_CLIENTS];
+	const socket_device_events_t *events;
+	socket_device_token_t client_tokens[WINDOWS_SOCKET_MAX_CLIENTS];
+	uint16_t client_generations[WINDOWS_SOCKET_MAX_CLIENTS];
+	uint16_t listener_generations[WINDOWS_SOCKET_MAX_LISTENERS];
+	uint16_t listener_cursor;
+	uint16_t client_cursor;
+	uint8_t client_readable_notified[WINDOWS_CLIENT_READABLE_BYTES];
+	uint8_t flags;
+} windows_socket_state_t;
+
+#define WINDOWS_STATE_NET_STARTED (1U << 0)
+#define WINDOWS_STATE_ACCEPT_FIRST (1U << 1)
+
+static windows_socket_state_t windows_state;
+
+#define windows_listener_sockets windows_state.listener_sockets
+#define windows_client_sockets windows_state.client_sockets
+#define windows_socket_events windows_state.events
+#define windows_client_tokens windows_state.client_tokens
+#define windows_client_generations windows_state.client_generations
+#define windows_listener_generations windows_state.listener_generations
+#define windows_listener_cursor windows_state.listener_cursor
+#define windows_client_cursor windows_state.client_cursor
+#define windows_client_readable_notified windows_state.client_readable_notified
+
+static uint16_t windows_next_generation(uint16_t generation)
+{
+	++generation;
+	if (generation == 0U)
+	{
+		++generation;
+	}
+	return generation;
 }
 
-static SOCKET windows_handle_to_socket(socket_device_handle_t handle)
+static socket_device_handle_t windows_make_handle(bool client,
+										   uint16_t slot,
+										   uint16_t generation)
 {
-	return (SOCKET)(uintptr_t)handle;
-}
+	uintptr_t value = ((uintptr_t)generation << WINDOWS_HANDLE_GENERATION_SHIFT) |
+					  ((uintptr_t)slot << WINDOWS_HANDLE_SLOT_SHIFT);
 
-/* Errors that mean a later non-blocking RX/TX attempt may make progress. */
-static bool windows_socket_error_is_temporary(int error)
-{
-	return error == WSAEWOULDBLOCK || error == WSAEINPROGRESS ||
-		   error == WSAEALREADY || error == WSAENOBUFS;
+	if (client)
+	{
+		value |= WINDOWS_HANDLE_KIND_CLIENT;
+	}
+	return (socket_device_handle_t)value;
 }
 
 /*
- * Maps errors returned by recv()/send(). Reset, abort, timeout and network
- * failures are deliberately normalized to the generic fatal ERROR result;
- * only recv()==0 represents an orderly CLOSED result.
+ * Decodes only handles produced by windows_make_handle(). Re-encoding and
+ * comparing rejects malformed values and, on Win64, values with unexpected
+ * upper bits without relying on a shift as wide as uintptr_t on Win32.
+ */
+static bool windows_decode_handle(socket_device_handle_t handle,
+								  bool *client,
+								  uint16_t *slot,
+								  uint16_t *generation)
+{
+	uintptr_t value = (uintptr_t)handle;
+	uintptr_t low;
+	bool decoded_client;
+	uint16_t decoded_slot;
+	uint16_t decoded_generation;
+
+	if (handle == SOCKET_DEVICE_INVALID_HANDLE)
+	{
+		return false;
+	}
+
+	low = value & WINDOWS_HANDLE_LOW_MASK;
+	decoded_client = (low & WINDOWS_HANDLE_KIND_CLIENT) != 0U;
+	decoded_slot = (uint16_t)((low >> WINDOWS_HANDLE_SLOT_SHIFT) &
+								WINDOWS_HANDLE_SLOT_MASK);
+	decoded_generation =
+		(uint16_t)(value >> WINDOWS_HANDLE_GENERATION_SHIFT);
+
+	if (decoded_generation == 0U ||
+		windows_make_handle(decoded_client, decoded_slot,
+							decoded_generation) != handle)
+	{
+		return false;
+	}
+
+	if (client)
+	{
+		*client = decoded_client;
+	}
+	if (slot)
+	{
+		*slot = decoded_slot;
+	}
+	if (generation)
+	{
+		*generation = decoded_generation;
+	}
+	return true;
+}
+
+static int windows_resolve_client(socket_device_handle_t handle)
+{
+	bool client;
+	uint16_t slot;
+	uint16_t generation;
+
+	if (!windows_decode_handle(handle, &client, &slot, &generation) || !client ||
+		slot >= WINDOWS_SOCKET_MAX_CLIENTS ||
+		windows_client_sockets[slot] == INVALID_SOCKET ||
+		windows_client_generations[slot] != generation)
+	{
+		return -1;
+	}
+	return (int)slot;
+}
+
+static int windows_find_free_listener(void)
+{
+	uint16_t i;
+
+	for (i = 0U; i < WINDOWS_SOCKET_MAX_LISTENERS; ++i)
+	{
+		if (windows_listener_sockets[i] == INVALID_SOCKET)
+		{
+			return (int)i;
+		}
+	}
+
+	return -1;
+}
+
+static int windows_find_free_client(void)
+{
+	uint16_t i;
+
+	for (i = 0U; i < WINDOWS_SOCKET_MAX_CLIENTS; ++i)
+	{
+		if (windows_client_sockets[i] == INVALID_SOCKET)
+		{
+			return (int)i;
+		}
+	}
+
+	return -1;
+}
+
+static bool windows_client_readable_is_notified(uint16_t slot)
+{
+	uint8_t mask = (uint8_t)(1U << (slot & 7U));
+	return (windows_client_readable_notified[slot >> 3] & mask) != 0U;
+}
+
+static void windows_client_set_readable_notified(uint16_t slot, bool notified)
+{
+	uint8_t *byte = &windows_client_readable_notified[slot >> 3];
+	uint8_t mask = (uint8_t)(1U << (slot & 7U));
+
+	if (notified)
+	{
+		*byte = (uint8_t)(*byte | mask);
+	}
+	else
+	{
+		*byte = (uint8_t)(*byte & (uint8_t)~mask);
+	}
+}
+
+static void windows_reset_listener(uint16_t slot)
+{
+	windows_listener_sockets[slot] = INVALID_SOCKET;
+	/* Preserve generation so the next lifetime receives a different handle. */
+}
+
+static void windows_reset_client(uint16_t slot)
+{
+	windows_client_sockets[slot] = INVALID_SOCKET;
+	windows_client_tokens[slot] = SOCKET_DEVICE_INVALID_TOKEN;
+	windows_client_set_readable_notified(slot, false);
+	/* Preserve generation so the next lifetime receives a different handle. */
+}
+
+/* Errors for which retrying a later non-blocking RX/TX attempt is valid. */
+static bool windows_socket_error_is_temporary(int error)
+{
+	return error == WSAEWOULDBLOCK || error == WSAEINTR ||
+		   error == WSAENOBUFS;
+}
+
+/*
+ * Maps recv()/send() errors. Reset, abort, timeout and network failures are
+ * deliberately normalized to generic fatal ERROR; only recv()==0 is the
+ * orderly CLOSED path. WSAEINTR is not retried inside the backend so recv/send
+ * remain exactly one native I/O attempt per call.
  */
 static int windows_socket_map_io_error(int error)
 {
@@ -621,83 +807,6 @@ static int windows_socket_map_close_error(int error)
 			   : SOCKET_DEVICE_ERROR;
 }
 
-static int windows_find_listener(SOCKET native_socket)
-{
-	uint16_t i;
-
-	for (i = 0U; i < WINDOWS_SOCKET_MAX_LISTENERS; ++i)
-	{
-		if (windows_listeners[i].in_use &&
-			windows_listeners[i].native_socket == native_socket)
-		{
-			return (int)i;
-		}
-	}
-
-	return -1;
-}
-
-static int windows_find_client(SOCKET native_socket)
-{
-	uint16_t i;
-
-	for (i = 0U; i < WINDOWS_SOCKET_MAX_CLIENTS; ++i)
-	{
-		if (windows_clients[i].in_use &&
-			windows_clients[i].native_socket == native_socket)
-		{
-			return (int)i;
-		}
-	}
-
-	return -1;
-}
-
-static int windows_find_free_listener(void)
-{
-	uint16_t i;
-
-	for (i = 0U; i < WINDOWS_SOCKET_MAX_LISTENERS; ++i)
-	{
-		if (!windows_listeners[i].in_use)
-		{
-			return (int)i;
-		}
-	}
-
-	return -1;
-}
-
-static int windows_find_free_client(void)
-{
-	uint16_t i;
-
-	for (i = 0U; i < WINDOWS_SOCKET_MAX_CLIENTS; ++i)
-	{
-		if (!windows_clients[i].in_use)
-		{
-			return (int)i;
-		}
-	}
-
-	return -1;
-}
-
-static void windows_reset_listener(uint16_t slot)
-{
-	windows_listeners[slot].native_socket = INVALID_SOCKET;
-	windows_listeners[slot].in_use = false;
-}
-
-static void windows_reset_client(uint16_t slot)
-{
-	windows_clients[slot].native_socket = INVALID_SOCKET;
-	windows_clients[slot].token = SOCKET_DEVICE_INVALID_TOKEN;
-	windows_clients[slot].in_use = false;
-	windows_clients[slot].readable_notified = false;
-	windows_clients[slot].want_write = false;
-}
-
 /*
  * Releases a remotely/fatally closed client before notifying the core. The
  * token is copied first because reset invalidates the backend association.
@@ -705,8 +814,8 @@ static void windows_reset_client(uint16_t slot)
  */
 static int windows_fail_client(uint16_t slot, int reason)
 {
-	SOCKET native_socket = windows_clients[slot].native_socket;
-	socket_device_token_t token = windows_clients[slot].token;
+	SOCKET native_socket = windows_client_sockets[slot];
+	socket_device_token_t token = windows_client_tokens[slot];
 
 	windows_reset_client(slot);
 	(void)closesocket(native_socket);
@@ -724,7 +833,7 @@ int socket_init(void)
 	WSADATA data;
 	int result;
 
-	if (windows_net_started)
+	if ((windows_state.flags & WINDOWS_STATE_NET_STARTED) != 0U)
 	{
 		return 0;
 	}
@@ -741,7 +850,7 @@ int socket_init(void)
 		return WSAVERNOTSUPPORTED;
 	}
 
-	windows_net_started = true;
+	windows_state.flags |= WINDOWS_STATE_NET_STARTED;
 	return 0;
 }
 
@@ -749,8 +858,7 @@ static int windows_socket_device_init(const socket_device_events_t *events)
 {
 	uint16_t i;
 
-	if (!events || !events->accepted || !events->readable ||
-		!events->writable || !events->closed)
+	if (!events || !events->accepted || !events->readable || !events->closed)
 	{
 		return SOCKET_DEVICE_INVALID;
 	}
@@ -761,18 +869,22 @@ static int windows_socket_device_init(const socket_device_events_t *events)
 		return SOCKET_DEVICE_ERROR;
 	}
 
+	memset(windows_client_readable_notified, 0,
+		   sizeof(windows_client_readable_notified));
 	for (i = 0U; i < WINDOWS_SOCKET_MAX_LISTENERS; ++i)
 	{
+		windows_listener_generations[i] = 0U;
 		windows_reset_listener(i);
 	}
 	for (i = 0U; i < WINDOWS_SOCKET_MAX_CLIENTS; ++i)
 	{
+		windows_client_generations[i] = 0U;
 		windows_reset_client(i);
 	}
 
 	windows_listener_cursor = 0U;
 	windows_client_cursor = 0U;
-	windows_accept_first = true;
+	windows_state.flags = (uint8_t)(windows_state.flags | WINDOWS_STATE_ACCEPT_FIRST);
 	windows_socket_events = events;
 	return SOCKET_DEVICE_OK;
 }
@@ -784,6 +896,7 @@ static socket_device_handle_t windows_socket_listen(
 	struct sockaddr_in address;
 	SOCKET native_socket;
 	u_long nonblocking = 1UL;
+	uint16_t generation;
 	int slot;
 	int native_backlog;
 
@@ -826,20 +939,20 @@ static socket_device_handle_t windows_socket_listen(
 		return SOCKET_DEVICE_INVALID_HANDLE;
 	}
 
-	windows_listeners[slot].native_socket = native_socket;
-	windows_listeners[slot].in_use = true;
-	return windows_socket_to_handle(native_socket);
+	generation = windows_next_generation(windows_listener_generations[slot]);
+	windows_listener_generations[slot] = generation;
+	windows_listener_sockets[slot] = native_socket;
+	return windows_make_handle(false, (uint16_t)slot, generation);
 }
 
 static int windows_socket_recv(socket_device_handle_t client,
 							   void *destination,
 							   size_t capacity)
 {
-	SOCKET native_socket = windows_handle_to_socket(client);
-	int slot = windows_find_client(native_socket);
-	int attempt;
+	int slot = windows_resolve_client(client);
+	SOCKET native_socket;
+	int native_capacity;
 	int result;
-	int retries = 0;
 
 	if (slot < 0)
 	{
@@ -854,20 +967,16 @@ static int windows_socket_recv(socket_device_handle_t client,
 		return SOCKET_DEVICE_INVALID;
 	}
 
-	attempt = capacity > (size_t)INT_MAX ? INT_MAX : (int)capacity;
-	do
-	{
-		result = recv(native_socket, (char *)destination, attempt, 0);
-	}
-	while (result == SOCKET_ERROR && WSAGetLastError() == WSAEINTR &&
-		   retries++ == 0);
+	native_socket = windows_client_sockets[slot];
+	native_capacity = capacity > (size_t)INT_MAX ? INT_MAX : (int)capacity;
+	result = recv(native_socket, (char *)destination, native_capacity, 0);
 
 	if (result > 0)
 	{
 		/*
-		 * Keep readable_notified set. The core retains its readable condition
-		 * across positive reads and will call recv() again until WOULD_BLOCK or
-		 * closure, naturally preserving final-data-before-FIN ordering.
+		 * Keep the readable hint latched. The core keeps READABLE set across
+		 * positive reads and calls recv() again until WOULD_BLOCK or closure.
+		 * This naturally drains final payload before a later recv()==0 FIN.
 		 */
 		return result;
 	}
@@ -880,8 +989,8 @@ static int windows_socket_recv(socket_device_handle_t client,
 	result = windows_socket_map_io_error(WSAGetLastError());
 	if (result == SOCKET_DEVICE_WOULD_BLOCK)
 	{
-		/* A future read-ready transition must be reported again. */
-		windows_clients[slot].readable_notified = false;
+		/* A future read-ready observation must be allowed to notify again. */
+		windows_client_set_readable_notified((uint16_t)slot, false);
 		return result;
 	}
 
@@ -892,11 +1001,10 @@ static int windows_socket_send(socket_device_handle_t client,
 							   const void *source,
 							   size_t length)
 {
-	SOCKET native_socket = windows_handle_to_socket(client);
-	int slot = windows_find_client(native_socket);
-	int attempt;
+	int slot = windows_resolve_client(client);
+	SOCKET native_socket;
+	int native_length;
 	int result;
-	int retries = 0;
 
 	if (slot < 0)
 	{
@@ -911,32 +1019,29 @@ static int windows_socket_send(socket_device_handle_t client,
 		return SOCKET_DEVICE_INVALID;
 	}
 
-	attempt = length > (size_t)INT_MAX ? INT_MAX : (int)length;
-	do
-	{
-		result = send(native_socket, (const char *)source, attempt, 0);
-	}
-	while (result == SOCKET_ERROR && WSAGetLastError() == WSAEINTR &&
-		   retries++ == 0);
+	native_socket = windows_client_sockets[slot];
+	native_length = length > (size_t)INT_MAX ? INT_MAX : (int)length;
 
+	/*
+	 * Exactly one non-blocking native send attempt. WinSock copies/owns bytes
+	 * reported as sent before return, so the caller's source pointer is never
+	 * retained. No backend queue, retry offset, or writable event is needed.
+	 */
+	result = send(native_socket, (const char *)source, native_length, 0);
 	if (result > 0)
 	{
-		/* Partial acceptance arms one future writable transition. */
-		windows_clients[slot].want_write = (size_t)result < length;
 		return result;
 	}
 
 	if (result == 0)
 	{
-		/* WinSock should not return zero for a non-zero stream send. */
-		windows_clients[slot].want_write = true;
+		/* No bytes accepted for a non-zero request: temporary backpressure. */
 		return SOCKET_DEVICE_WOULD_BLOCK;
 	}
 
 	result = windows_socket_map_io_error(WSAGetLastError());
 	if (result == SOCKET_DEVICE_WOULD_BLOCK)
 	{
-		windows_clients[slot].want_write = true;
 		return result;
 	}
 
@@ -945,41 +1050,53 @@ static int windows_socket_send(socket_device_handle_t client,
 
 static int windows_socket_close(socket_device_handle_t handle)
 {
-	SOCKET native_socket = windows_handle_to_socket(handle);
-	int slot;
+	bool client;
+	uint16_t slot;
+	uint16_t generation;
+	SOCKET native_socket;
 	int result;
 	int error;
 
-	slot = windows_find_listener(native_socket);
-	if (slot >= 0)
+	if (!windows_decode_handle(handle, &client, &slot, &generation))
 	{
-		/* Invalidate first so a reused SOCKET cannot match stale backend state. */
-		windows_reset_listener((uint16_t)slot);
-		result = closesocket(native_socket);
-		if (result == 0)
-		{
-			return SOCKET_DEVICE_OK;
-		}
-		error = WSAGetLastError();
-		return windows_socket_map_close_error(error);
+		return SOCKET_DEVICE_INVALID;
 	}
 
-	slot = windows_find_client(native_socket);
-	if (slot >= 0)
+	if (!client)
 	{
+		if (slot >= WINDOWS_SOCKET_MAX_LISTENERS ||
+			windows_listener_sockets[slot] == INVALID_SOCKET ||
+			windows_listener_generations[slot] != generation)
+		{
+			return SOCKET_DEVICE_INVALID;
+		}
+
+		native_socket = windows_listener_sockets[slot];
+		/* Invalidate first so a reused native SOCKET cannot revive this handle. */
+		windows_reset_listener(slot);
+	}
+	else
+	{
+		if (slot >= WINDOWS_SOCKET_MAX_CLIENTS ||
+			windows_client_sockets[slot] == INVALID_SOCKET ||
+			windows_client_generations[slot] != generation)
+		{
+			return SOCKET_DEVICE_INVALID;
+		}
+
+		native_socket = windows_client_sockets[slot];
 		/* Local close owns no transport event; the core schedules disconnect. */
-		windows_reset_client((uint16_t)slot);
-		result = closesocket(native_socket);
-		if (result == 0)
-		{
-			return SOCKET_DEVICE_OK;
-		}
-		error = WSAGetLastError();
-		return windows_socket_map_close_error(error);
+		windows_reset_client(slot);
 	}
 
-	/* Never close an unknown value: it may be a stale, already-reused handle. */
-	return SOCKET_DEVICE_INVALID;
+	/* closesocket() is bounded with default non-lingering WinSock semantics. */
+	result = closesocket(native_socket);
+	if (result == 0)
+	{
+		return SOCKET_DEVICE_OK;
+	}
+	error = WSAGetLastError();
+	return windows_socket_map_close_error(error);
 }
 
 /* Accepts at most one native client and emits at most one accepted() event. */
@@ -998,29 +1115,32 @@ static void windows_poll_accept(const fd_set *readfds,
 	start = (uint16_t)(windows_listener_cursor % WINDOWS_SOCKET_MAX_LISTENERS);
 	for (checked = 0U; checked < WINDOWS_SOCKET_MAX_LISTENERS; ++checked)
 	{
-		uint16_t slot = (uint16_t)((start + checked) %
-								   WINDOWS_SOCKET_MAX_LISTENERS);
-		windows_listener_t *listener = &windows_listeners[slot];
+		uint16_t listener_slot =
+			(uint16_t)((start + checked) % WINDOWS_SOCKET_MAX_LISTENERS);
+		SOCKET listener_socket = windows_listener_sockets[listener_slot];
 		SOCKET client_socket;
+		socket_device_handle_t listener_handle;
+		socket_device_handle_t client_handle;
 		u_long nonblocking = 1UL;
+		uint16_t client_generation;
 		int client_slot;
 		socket_device_token_t token;
 
-		if (!listener->in_use ||
-			!FD_ISSET(listener->native_socket, readfds))
+		if (listener_socket == INVALID_SOCKET ||
+			!FD_ISSET(listener_socket, readfds))
 		{
 			continue;
 		}
 
-		windows_listener_cursor = (uint16_t)((slot + 1U) %
-										 WINDOWS_SOCKET_MAX_LISTENERS);
-		client_socket = accept(listener->native_socket, NULL, NULL);
+		windows_listener_cursor =
+			(uint16_t)((listener_slot + 1U) % WINDOWS_SOCKET_MAX_LISTENERS);
+		client_socket = accept(listener_socket, NULL, NULL);
 		if (client_socket == INVALID_SOCKET)
 		{
+			/* One native accept attempt per poll keeps work strictly bounded. */
 			return;
 		}
 
-		/* One native accept attempt per poll keeps work bounded. */
 		client_slot = windows_find_free_client();
 		if (client_slot < 0 ||
 			ioctlsocket(client_socket, FIONBIO, &nonblocking) == SOCKET_ERROR)
@@ -1029,15 +1149,18 @@ static void windows_poll_accept(const fd_set *readfds,
 			return;
 		}
 
-		windows_clients[client_slot].native_socket = client_socket;
-		windows_clients[client_slot].token = SOCKET_DEVICE_INVALID_TOKEN;
-		windows_clients[client_slot].in_use = true;
-		windows_clients[client_slot].readable_notified = false;
-		windows_clients[client_slot].want_write = false;
+		client_generation =
+			windows_next_generation(windows_client_generations[client_slot]);
+		windows_client_generations[client_slot] = client_generation;
+		windows_client_sockets[client_slot] = client_socket;
+		windows_client_tokens[client_slot] = SOCKET_DEVICE_INVALID_TOKEN;
+		windows_client_set_readable_notified((uint16_t)client_slot, false);
 
-		token = windows_socket_events->accepted(
-			windows_socket_to_handle(listener->native_socket),
-			windows_socket_to_handle(client_socket));
+		listener_handle = windows_make_handle(
+			false, listener_slot, windows_listener_generations[listener_slot]);
+		client_handle = windows_make_handle(
+			true, (uint16_t)client_slot, client_generation);
+		token = windows_socket_events->accepted(listener_handle, client_handle);
 		++(*emitted);
 
 		if (token == SOCKET_DEVICE_INVALID_TOKEN)
@@ -1048,18 +1171,21 @@ static void windows_poll_accept(const fd_set *readfds,
 			return;
 		}
 
-		/* Store the exact opaque token before any later readiness event. */
-		windows_clients[client_slot].token = token;
+		/*
+		 * No asynchronous producer exists in this backend, so the record cannot
+		 * change during accepted(). Store the exact opaque token before any later
+		 * readable/closed event can be generated.
+		 */
+		windows_client_tokens[client_slot] = token;
 		return;
 	}
 
 	/* Rotate the first listener examined even when none was ready. */
-	windows_listener_cursor = (uint16_t)((start + 1U) %
-									 WINDOWS_SOCKET_MAX_LISTENERS);
+	windows_listener_cursor =
+		(uint16_t)((start + 1U) % WINDOWS_SOCKET_MAX_LISTENERS);
 }
 
 static void windows_poll_clients(const fd_set *readfds,
-								 const fd_set *writefds,
 								 uint16_t budget,
 								 uint16_t *emitted)
 {
@@ -1077,68 +1203,46 @@ static void windows_poll_clients(const fd_set *readfds,
 		 checked < WINDOWS_SOCKET_MAX_CLIENTS && *emitted < budget;
 		 ++checked)
 	{
-		uint16_t slot = (uint16_t)((start + checked) %
-								   WINDOWS_SOCKET_MAX_CLIENTS);
-		windows_client_t *client = &windows_clients[slot];
-		SOCKET native_socket;
-		socket_device_token_t token;
+		uint16_t slot =
+			(uint16_t)((start + checked) % WINDOWS_SOCKET_MAX_CLIENTS);
+		SOCKET native_socket = windows_client_sockets[slot];
+		socket_device_token_t token = windows_client_tokens[slot];
 
-		if (!client->in_use || client->token == SOCKET_DEVICE_INVALID_TOKEN)
+		if (native_socket == INVALID_SOCKET ||
+			token == SOCKET_DEVICE_INVALID_TOKEN ||
+			windows_client_readable_is_notified(slot) ||
+			!FD_ISSET(native_socket, readfds))
 		{
 			continue;
 		}
 
-		native_socket = client->native_socket;
-		token = client->token;
-
-		if (!client->readable_notified && FD_ISSET(native_socket, readfds))
-		{
-			client->readable_notified = true;
-			windows_socket_events->readable(token);
-			++(*emitted);
-			emitted_client_event = true;
-			windows_client_cursor = (uint16_t)((slot + 1U) %
-										 WINDOWS_SOCKET_MAX_CLIENTS);
-		}
-
-		if (*emitted >= budget)
-		{
-			break;
-		}
-
 		/*
-		 * readable() only updates core state, but revalidate before a second
-		 * event so this remains safe if the sink implementation later changes.
+		 * Latch before calling the event sink. The core retains READABLE across
+		 * positive recv() results; backend recv() clears this latch only after it
+		 * actually observes WOULD_BLOCK so a later arrival can notify again.
 		 */
-		client = &windows_clients[slot];
-		if (client->in_use && client->native_socket == native_socket &&
-			client->token == token && client->want_write &&
-			FD_ISSET(native_socket, writefds))
-		{
-			/* Clear before emitting; a later partial/blocked send rearms it. */
-			client->want_write = false;
-			windows_socket_events->writable(token);
-			++(*emitted);
-			emitted_client_event = true;
-			windows_client_cursor = (uint16_t)((slot + 1U) %
-										 WINDOWS_SOCKET_MAX_CLIENTS);
-		}
+		windows_client_set_readable_notified(slot, true);
+		windows_client_cursor =
+			(uint16_t)((slot + 1U) % WINDOWS_SOCKET_MAX_CLIENTS);
+		emitted_client_event = true;
+		++(*emitted);
+		windows_socket_events->readable(token);
 	}
 
 	if (!emitted_client_event)
 	{
-		windows_client_cursor = (uint16_t)((start + 1U) %
-									   WINDOWS_SOCKET_MAX_CLIENTS);
+		windows_client_cursor =
+			(uint16_t)((start + 1U) % WINDOWS_SOCKET_MAX_CLIENTS);
 	}
 }
 
 static void windows_socket_poll(uint16_t budget)
 {
 	fd_set readfds;
-	fd_set writefds;
 	struct timeval timeout;
 	uint16_t i;
 	uint16_t emitted = 0U;
+	bool watched = false;
 	int ready;
 
 	if (!windows_socket_events || budget == 0U)
@@ -1147,57 +1251,54 @@ static void windows_socket_poll(uint16_t budget)
 	}
 
 	FD_ZERO(&readfds);
-	FD_ZERO(&writefds);
 	for (i = 0U; i < WINDOWS_SOCKET_MAX_LISTENERS; ++i)
 	{
-		if (windows_listeners[i].in_use)
+		if (windows_listener_sockets[i] != INVALID_SOCKET)
 		{
-			FD_SET(windows_listeners[i].native_socket, &readfds);
+			FD_SET(windows_listener_sockets[i], &readfds);
+			watched = true;
 		}
 	}
 	for (i = 0U; i < WINDOWS_SOCKET_MAX_CLIENTS; ++i)
 	{
-		if (!windows_clients[i].in_use)
+		if (windows_client_sockets[i] == INVALID_SOCKET ||
+			windows_client_tokens[i] == SOCKET_DEVICE_INVALID_TOKEN ||
+			windows_client_readable_is_notified(i))
 		{
 			continue;
 		}
 
-		/*
-		 * Once readable() has been emitted, the core retains that condition and
-		 * drains recv() until WOULD_BLOCK/closure. Re-adding the socket here would
-		 * only make level-triggered select() wake repeatedly for the same hint.
-		 */
-		if (!windows_clients[i].readable_notified)
-		{
-			FD_SET(windows_clients[i].native_socket, &readfds);
-		}
-		if (windows_clients[i].want_write)
-		{
-			FD_SET(windows_clients[i].native_socket, &writefds);
-		}
+		FD_SET(windows_client_sockets[i], &readfds);
+		watched = true;
+	}
+
+	/* WinSock select() requires at least one non-empty descriptor set. */
+	if (!watched)
+	{
+		return;
 	}
 
 	timeout.tv_sec = 0L;
 	timeout.tv_usec = 0L;
-	/* WinSock ignores the first select() argument. */
-	ready = select(0, &readfds, &writefds, NULL, &timeout);
+	/* WinSock ignores the first select() argument; zero timeout never blocks. */
+	ready = select(0, &readfds, NULL, NULL, &timeout);
 	if (ready == SOCKET_ERROR || ready == 0)
 	{
 		return;
 	}
 
 	/* Alternate phase order so budget==1 cannot starve clients or accepts. */
-	if (windows_accept_first)
+	if ((windows_state.flags & WINDOWS_STATE_ACCEPT_FIRST) != 0U)
 	{
 		windows_poll_accept(&readfds, budget, &emitted);
-		windows_poll_clients(&readfds, &writefds, budget, &emitted);
+		windows_poll_clients(&readfds, budget, &emitted);
 	}
 	else
 	{
-		windows_poll_clients(&readfds, &writefds, budget, &emitted);
+		windows_poll_clients(&readfds, budget, &emitted);
 		windows_poll_accept(&readfds, budget, &emitted);
 	}
-	windows_accept_first = !windows_accept_first;
+	windows_state.flags ^= WINDOWS_STATE_ACCEPT_FIRST;
 }
 
 /* Existing emulator integration symbol retained for compatibility. */
@@ -1210,6 +1311,7 @@ socket_device_t wifi_socket = {
 	.poll = windows_socket_poll};
 
 #endif /* ENABLE_SOCKETS */
+
 
 #ifdef __cplusplus
 }

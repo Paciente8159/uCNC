@@ -80,8 +80,16 @@ extern "C"
 		/* A pointer, token, handle, state, argument, or operation is invalid. */
 		SOCKET_DEVICE_INVALID = -4,
 		/* A fixed backend/core pool or queue has no free capacity. */
-		SOCKET_DEVICE_NO_MEMORY = -5
+		SOCKET_DEVICE_NO_MEMORY = -5,
+		/* A bounded core operation expired before it could complete. */
+		SOCKET_DEVICE_TIMEOUT = -6
 	} socket_device_result_t;
+
+	typedef union ipv4_address_
+	{
+		uint32_t ip;
+		uint8_t octets[4];
+	} ipv4_address_t;
 
 	/* IPv4 TCP listening endpoint. Address and port use host byte order. */
 	typedef struct socket_device_endpoint_
@@ -98,7 +106,8 @@ extern "C"
 	 * OWNER-CONTEXT RULE
 	 * ------------------
 	 * These functions may be called only from the same owner context that calls
-	 * socket_server_dotasks(), normally from inside backend->poll(). They must not
+	 * socket_server_poll()/socket_server_dotasks(), normally from inside
+	 * backend->poll(). They must not
 	 * be called directly from an ISR, a second core, or another RTOS task.
 	 *
 	 * A backend driven asynchronously must place compact native events in a
@@ -120,8 +129,8 @@ extern "C"
 		 * backend->listen(). client is a new, usable native client handle.
 		 *
 		 * On success, returns a non-zero generation-tagged token. The backend must
-		 * store that token and use it for every later readable(), writable() and
-		 * closed() event for this client.
+		 * store that token and use it for every later readable() and closed()
+		 * event for this client.
 		 *
 		 * SOCKET_DEVICE_INVALID_TOKEN means that no core listener/client slot is
 		 * available, the listener is stopping, or an argument is invalid. In that
@@ -132,7 +141,7 @@ extern "C"
 		 * remains with the backend until local close() or remote/fatal closure.
 		 */
 		socket_device_token_t (*accepted)(socket_device_handle_t listener,
-									 socket_device_handle_t client);
+										  socket_device_handle_t client);
 
 		/*
 		 * Reports that recv() may be able to return TCP payload for token.
@@ -148,15 +157,6 @@ extern "C"
 		 */
 		void (*readable)(socket_device_token_t token);
 
-		/*
-		 * Reports a transition from TX backpressure to potentially writable.
-		 *
-		 * The backend should emit this only after send() returned
-		 * SOCKET_DEVICE_WOULD_BLOCK or a partial positive result and later progress
-		 * made more TX capacity available. It is a hint; the next send() can still
-		 * accept only part of the requested data or return WOULD_BLOCK again.
-		 */
-		void (*writable)(socket_device_token_t token);
 
 		/*
 		 * Reports orderly remote closure or a fatal transport error.
@@ -287,11 +287,14 @@ extern "C"
 		 * primitive.
 		 *
 		 * Asynchronous/ISR/other-core native events must be normalized and emitted
-		 * here. accepted(), readable(), writable() and closed() may be called in any
-		 * necessary order, but no token may be used after closed().
+		 * here. accepted(), readable() and closed() may be called in any necessary
+		 * order, but no token may be used after closed(). TX readiness is deliberately
+		 * not an event: blocking core sends poll until completion, while nonblocking
+		 * callers own their retry policy.
 		 *
 		 * poll() is never called recursively by the socket core. A backend must not
-		 * call socket_server_dotasks() from inside poll() or an event sink.
+		 * call socket_server_poll() or socket_server_dotasks() from inside poll() or
+		 * an event sink.
 		 */
 		void (*poll)(uint16_t budget);
 	} socket_device_t;

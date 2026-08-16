@@ -41,28 +41,21 @@ extern "C"
 #define HTTP_MAX_CHUNCK_LEN SOCKET_MAX_DATA_SIZE
 #endif
 
-/* Maximum serialized status/header block for one response. */
-#ifndef HTTP_RESPONSE_HEADER_SIZE
-#define HTTP_RESPONSE_HEADER_SIZE 1400U
+
+/* Total compact storage for staged custom response headers per client. */
+#ifndef HTTP_CUSTOM_HEADERS_SIZE
+#define HTTP_CUSTOM_HEADERS_SIZE 256U
 #endif
 
-/*
- * Persistent TX storage per client. It must hold one maximum response header,
- * one maximum application chunk, and chunk framing. Lower
- * HTTP_MAX_CHUNCK_LEN/HTTP_RESPONSE_HEADER_SIZE together on RAM-limited builds.
- */
-#ifndef HTTP_TX_BUFFER_SIZE
-#define HTTP_TX_BUFFER_SIZE (HTTP_RESPONSE_HEADER_SIZE + HTTP_MAX_CHUNCK_LEN + 32U)
+#if HTTP_CUSTOM_HEADERS_SIZE == 0U || HTTP_CUSTOM_HEADERS_SIZE > UINT16_MAX
+#error "HTTP_CUSTOM_HEADERS_SIZE must be in [1, 65535]"
 #endif
 
-/* File bytes retained per client while a nonblocking chunk is pending. */
+/* Shared file-read chunk size used by cooperative file responses. */
 #ifndef HTTP_FILE_CHUNK_SIZE
 #define HTTP_FILE_CHUNK_SIZE 256U
 #endif
 
-#if HTTP_TX_BUFFER_SIZE < (HTTP_RESPONSE_HEADER_SIZE + HTTP_MAX_CHUNCK_LEN + 16U)
-#error "HTTP_TX_BUFFER_SIZE is too small for the configured header and payload maxima"
-#endif
 
 #if HTTP_FILE_CHUNK_SIZE == 0U || HTTP_FILE_CHUNK_SIZE > HTTP_MAX_CHUNCK_LEN
 #error "HTTP_FILE_CHUNK_SIZE must be in [1, HTTP_MAX_CHUNCK_LEN]"
@@ -136,25 +129,16 @@ bool http_send_header(int client_idx,
 					  bool first);
 
 /*
- * Atomically queues one bounded response operation in persistent client state.
+ * Sends one response operation synchronously without retaining a TX copy.
  *
- * Usage/contract:
- * - Fixed body: call with content_type/data/data_len, then call again with the
- *   same content_type and data == NULL/data_len == 0 to finish the response.
- * - Chunked body: first call with content_type == NULL and no data to prepare;
- *   then send chunks with a non-NULL content type; finish with no data.
- * - data may be NULL only when data_len is zero and data_len must not exceed
- *   HTTP_MAX_CHUNCK_LEN. Accepted data is copied before return.
- * - A complete header + chunk is queued or nothing is; this function never
- *   blocks and performs at most one socket_send attempt when no older TX waits.
- * - HTTP pipelining while a response is pending is not supported.
+ * Usage is unchanged: a fixed body is sent with one data call followed by an
+ * empty finishing call; chunked mode is selected by an initial NULL/empty call,
+ * followed by data chunks and an empty finishing call. Header lines, chunk
+ * framing and payload bytes are sent with blocking socket_send().
  *
- * Result:
- * - returns data_len for an accepted data chunk and 0 for prepare/finish;
- * - returns SOCKET_DEVICE_WOULD_BLOCK when static TX storage is occupied;
- * - returns another negative socket result for invalid/disconnected state.
- * Retry an operation only after a negative result. Once accepted, onwritable
- * owns continuation and the caller must not resend it.
+ * Returns data_len for a completed data operation, 0 for prepare/finish, or a
+ * negative socket_device_result_t on invalid state, timeout, disconnect, or
+ * transport failure. A failed partial HTTP response closes that connection.
  */
 int http_send(int client_idx,
 			  int code,
@@ -173,14 +157,10 @@ static inline int http_send_str(int client_idx,
 }
 
 /*
- * Opens a file and schedules cooperative chunked transfer from static storage.
- *
- * file_path/content_type are consumed during this call; content type is copied.
- * The file is read at most one HTTP_FILE_CHUNK_SIZE block per writable/idle
- * callback, so this function does not synchronously stream the whole file.
- * Returns true when the file was opened and transfer was scheduled. Returns
- * false on invalid state/open failure; an open failure also attempts a 404.
- * Later transport/read failure is reported only by connection closure.
+ * Opens a file and schedules cooperative chunked transfer. Response headers are
+ * sent synchronously, then at most one HTTP_FILE_CHUNK_SIZE block is read and
+ * sent per idle callback. All clients share one file-read buffer; no per-client
+ * file payload buffer or content-type copy is retained.
  */
 bool http_send_file(int client_idx,
 					const char *file_path,

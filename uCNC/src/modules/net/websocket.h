@@ -49,41 +49,22 @@ extern "C"
 #define WEBSOCKET_MAX_CHUNK SOCKET_MAX_DATA_SIZE
 #endif
 
-/*
- * Persistent bytes reserved per client for complete outgoing frames.
- *
- * The default holds one maximum application frame plus one maximum control
- * frame. This lets a PONG or CLOSE be appended while application data is
- * waiting for a writable event. Reduce WEBSOCKET_MAX_CHUNK first when RAM is
- * constrained. The server never allocates memory dynamically.
- */
-#ifndef WEBSOCKET_TX_BUFFER_SIZE
-#define WEBSOCKET_TX_BUFFER_SIZE (WEBSOCKET_MAX_CHUNK + 14U + 127U)
-#endif
-
-#if WEBSOCKET_TX_BUFFER_SIZE < 129U
-#error "WEBSOCKET_TX_BUFFER_SIZE must hold a two-byte header and 125-byte control payload"
-#endif
-
 typedef enum
 {
 	WS_S_HANDSHAKE = 0,
-	WS_S_HANDSHAKE_REPLY,
 	WS_S_OPEN,
 	WS_S_CLOSING
 } ws_status_t;
 
-typedef struct ws_client_state_
+typedef struct ws_handshake_state_
 {
-	bool active;
-	ws_status_t status;
-
-	/* Incremental HTTP Upgrade parsing. */
 	request_ctx_t req;
 	request_header_t header;
 	ws_handshake_t handshake;
+} ws_handshake_state_t;
 
-	/* Incremental WebSocket frame parsing. */
+typedef struct ws_frame_state_
+{
 	uint8_t hdr[14];
 	uint8_t hdr_have;
 	uint8_t hdr_need;
@@ -97,15 +78,21 @@ typedef struct ws_client_state_
 	uint64_t payload_rem;
 	uint8_t control_buf[125];
 	uint8_t control_len;
+} ws_frame_state_t;
 
-	/* Persistent nonblocking transmit continuation state. */
-	uint8_t tx_buffer[WEBSOCKET_TX_BUFFER_SIZE];
-	size_t tx_offset;
-	size_t tx_length;
-	bool open_after_tx;
-	bool close_after_tx;
-	bool close_notified;
+typedef struct ws_client_state_
+{
+	/* Handshake state and frame-parser state never coexist. */
+	union
+	{
+		ws_handshake_state_t hs;
+		ws_frame_state_t frame;
+	} state;
+
 	uint16_t close_code;
+	uint8_t status;
+	bool active;
+	bool close_notified;
 } ws_client_state_t;
 
 /*
@@ -124,7 +111,7 @@ typedef void (*websocket_onrecv_delegate_t)(uint8_t client_idx,
 
 /*
  * Called once after the complete HTTP 101 response has entered the transport.
- * websocket_send() may be called from this callback; it remains nonblocking.
+ * websocket_send() may be called from this callback and is synchronous.
  */
 typedef void (*websocket_onopen_delegate_t)(uint8_t client_idx);
 
@@ -164,26 +151,19 @@ socket_if_t *websocket_start_listen(websocket_protocol_t *ws, uint16_t port);
 void websocket_stop(websocket_protocol_t *ws);
 
 /*
- * Builds one complete server frame in persistent per-client storage.
+ * Sends one complete unmasked server frame without retaining a TX copy.
  *
- * Contract:
- * - exactly one of WS_SEND_TXT/BIN/PING/PONG/CLOSE must be selected;
- * - WS_SEND_BROADCAST may be ORed with that type;
- * - data may be NULL only for len == 0 and is copied before return;
- * - application payload is limited to WEBSOCKET_MAX_CHUNK;
- * - PING/PONG/CLOSE payload is limited to 125 bytes (CLOSE defaults to code
- *   1000 when fewer than two payload bytes are supplied);
- * - this is nonblocking and performs at most one socket_send per target.
+ * The small frame header is built on the stack, then header and payload are sent
+ * synchronously with blocking socket_send(). Application data therefore remains
+ * owned by the caller and is valid only for the duration of this call.
  *
- * Result:
- * - for one client, returns complete frame wire bytes accepted into its queue;
- * - for broadcast, returns the smallest accepted frame size among targets, or
- *   0 when there are no open targets;
- * - returns SOCKET_DEVICE_WOULD_BLOCK if a complete frame cannot be queued;
- * - returns another negative socket result for invalid/disconnected clients.
- * Frames are queued atomically: a negative result accepts no part of that frame.
- * A broadcast error can coexist with successful queues on other clients; do not
- * blindly resend the complete broadcast.
+ * Exactly one WS_SEND_TXT/BIN/PING/PONG/CLOSE type must be selected;
+ * WS_SEND_BROADCAST may be ORed with it. Application payload is limited to
+ * WEBSOCKET_MAX_CHUNK and control payloads to 125 bytes.
+ *
+ * Returns complete frame wire bytes on success, 0 for an empty broadcast target
+ * set, or a negative socket_device_result_t on invalid state/timeout/transport
+ * failure. A failed partial frame causes that TCP client to be closed.
  */
 int websocket_send(websocket_protocol_t *ws,
 				   uint8_t client_idx,

@@ -40,21 +40,6 @@ extern "C"
 #define TELNET_DONT 254U
 #define TELNET_IAC 255U
 
-/*
- * Static transmit storage reserved for each Telnet client.
- *
- * The buffer must be at least three bytes so an IAC negotiation reply can be
- * queued atomically. Applications may override this before including telnet.h.
- * A larger value absorbs longer application bursts at the cost of static RAM.
- */
-#ifndef TELNET_TX_BUFFER_SIZE
-#define TELNET_TX_BUFFER_SIZE 64
-#endif
-
-#if TELNET_TX_BUFFER_SIZE < 3U
-#error "TELNET_TX_BUFFER_SIZE must be at least 3"
-#endif
-
 typedef enum
 {
 	TELNET_PARSE_DATA = 0,
@@ -66,11 +51,8 @@ typedef enum
 
 typedef struct
 {
-	telnet_parse_state_t parse_state;
+	uint8_t parse_state;
 	uint8_t pending_command;
-	uint8_t tx_buffer[TELNET_TX_BUFFER_SIZE];
-	size_t tx_offset;
-	size_t tx_length;
 } telnet_client_t;
 
 typedef void (*telnet_data_callback_t)(uint8_t client_idx, const uint8_t *data, size_t data_len);
@@ -113,20 +95,11 @@ void telnet_stop(telnet_protocol_t *telnet);
 bool telnet_hasclients(const telnet_protocol_t *telnet);
 
 /*
- * Copies application bytes into one client's persistent transmit queue.
+ * Sends application bytes to one Telnet client synchronously.
  *
- * Contract:
- * - data may be NULL only when data_len is zero;
- * - the source may be transient: accepted bytes are copied before return;
- * - this function is nonblocking and performs at most one socket_send attempt;
- * - only the protocol writable callback resumes a partial backend send.
- *
- * Result:
- * - returns the number of payload bytes accepted into the queue;
- * - returns SOCKET_DEVICE_WOULD_BLOCK when the client is connected but no queue
- *   space is available;
- * - returns another negative socket error for invalid/disconnected clients.
- * A short positive result is valid; retry only the unaccepted suffix later.
+ * No protocol TX buffer is retained. Blocking socket_send() returns exactly
+ * data_len on success or a negative socket_device_result_t on invalid state,
+ * timeout, disconnect, or transport failure.
  */
 int telnet_send(telnet_protocol_t *telnet,
 				uint8_t client_idx,
@@ -134,18 +107,15 @@ int telnet_send(telnet_protocol_t *telnet,
 				size_t data_len);
 
 /*
- * Independently queues the same payload for every connected Telnet client.
- *
- * Result:
- * - returns the smallest number of payload bytes accepted by any target;
- * - returns 0 when there are no connected clients;
- * - may return SOCKET_DEVICE_WOULD_BLOCK if at least one target cannot accept a
- *   byte. Faster clients can still have accepted data, so callers must not
- *   blindly rebroadcast the complete payload after a short/blocked result.
+ * Sends the payload to every client connected when the call starts. Each pass
+ * gives every unfinished client a nonblocking socket_send() attempt and retains
+ * only a stack-local per-client offset. The backend is polled between passes.
+ * Clients still incomplete after timeout_ms are closed locally.
  */
-int telnet_broadcast(telnet_protocol_t *telnet,
-					 const void *data,
-					 size_t data_len);
+void telnet_broadcast(telnet_protocol_t *telnet,
+					  const void *data,
+					  size_t data_len,
+					  uint32_t timeout_ms);
 
 #ifdef __cplusplus
 }

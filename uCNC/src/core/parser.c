@@ -31,6 +31,10 @@
 // extended codes
 #define M10 EXTENDED_MCODE(10)
 
+#ifndef PARSERDBG
+#define PARSERDBG(...) ((void)0)
+#endif
+
 static parser_state_t parser_state;
 static parser_parameters_t parser_parameters;
 static uint8_t parser_wco_counter;
@@ -846,7 +850,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 #endif
 
 		error = parser_get_token(&word, &value);
-		DBGMSG("Parser word %c", word);
+		PARSERDBG("Parser word %c", word);
 
 		if (error)
 		{
@@ -892,7 +896,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 			{
 				return STATUS_BAD_NUMBER_FORMAT;
 			}
-			DBGMSG("Assign #%lu=%f", (uint32_t)value, assign_val);
+			PARSERDBG("Assign #%lu=%f", (uint32_t)value, assign_val);
 			if (new_state->modified_params_count >= RS274NGC_MAX_PARAMS_SET_PER_LINE)
 			{
 				return STATUS_MAXIMUM_PARAMS_PER_BLOCK_EXCEEDED;
@@ -944,7 +948,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 			break;
 		}
 
-		DBGMSG("Parser var value %f", value);
+		PARSERDBG("Parser var value %f", value);
 
 #ifdef ENABLE_PARSER_MODULES
 		if ((error == STATUS_GCODE_UNSUPPORTED_COMMAND || error == STATUS_GCODE_UNUSED_WORDS))

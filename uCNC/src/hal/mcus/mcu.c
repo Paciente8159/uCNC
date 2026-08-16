@@ -91,6 +91,10 @@ void mcu_telnet_clear(void)
 	BUFFER_CLEAR(telnet_tx);
 }
 
+#ifndef GRBL_TELNET_TIMEOUT
+#define GRBL_TELNET_TIMEOUT 2000
+#endif
+
 void mcu_telnet_flush(void)
 {
 	// if no clients just throws away the buffer
@@ -106,7 +110,7 @@ void mcu_telnet_flush(void)
 		memset(tmp, 0, sizeof(tmp));
 		uint8_t r = 0;
 		BUFFER_READ(telnet_tx, tmp, TELNET_TX_BUFFER_SIZE, r);
-		telnet_broadcast(&telnet_proto, (char *)tmp, r);
+		telnet_broadcast(&telnet_proto, (char *)tmp, r, GRBL_TELNET_TIMEOUT);
 	}
 }
 

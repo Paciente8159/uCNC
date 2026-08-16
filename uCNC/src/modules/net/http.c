@@ -30,14 +30,7 @@
 #endif
 
 #define HTTP_MAX_HANDLERS 8
-#define HTTP_MAX_HEADERS 8
 #define HTTP_MAX_HEADER_LEN 128
-#define HTTP_CONTENT_TYPE_MAX 64
-
-typedef struct
-{
-	char line[HTTP_MAX_HEADER_LEN];
-} http_header_kv_t;
 
 typedef struct
 {
@@ -58,26 +51,17 @@ typedef struct
 	/* Request parsing */
 	bool have_reqline;
 	bool have_headers;
-	size_t hlen;
 
 	/* Response bookkeeping */
 	bool headers_sent;
 	bool chunked_mode;
 	bool keep_alive;
-	bool response_end_pending;
-	size_t hdr_count;
-	http_header_kv_t hdrs[HTTP_MAX_HEADERS];
+	uint16_t hdr_len;
+	char hdrs[HTTP_CUSTOM_HEADERS_SIZE];
 
-	/* Persistent nonblocking transmit continuation state. */
-	uint8_t tx_buffer[HTTP_TX_BUFFER_SIZE];
-	size_t tx_offset;
-	size_t tx_length;
 
 	/* Cooperative file-response state. */
 	fs_file_t *response_file;
-	char response_content_type[HTTP_CONTENT_TYPE_MAX];
-	uint8_t file_buffer[HTTP_FILE_CHUNK_SIZE];
-	size_t file_buffer_len;
 
 	/* Selected route for this request (if matched) */
 	http_route_t *route;
@@ -89,9 +73,12 @@ static socket_if_t *http_srv = NULL;
 /* Client slots align with SOCKET_MAX_CLIENTS from socket.h */
 static http_client_t clients[SOCKET_MAX_CLIENTS];
 
+/* One cooperative file-read buffer shared by all clients. */
+static uint8_t http_file_buffer[HTTP_FILE_CHUNK_SIZE];
+
 /* Routes */
 static http_route_t routes[HTTP_MAX_HANDLERS];
-static size_t route_count = 0;
+static uint8_t route_count = 0U;
 
 static void client_reset(int client_idx)
 {
@@ -104,11 +91,9 @@ static void client_reset(int client_idx)
 
 static void reset_request_state(int client_idx)
 {
-	http_client_t *c;
 	if (client_idx < 0 || client_idx >= SOCKET_MAX_CLIENTS)
 		return;
-	c = &clients[client_idx];
-	/* Reset request/response metadata only after the accepted TX queue drains. */
+	/* Reset request/response metadata after a synchronous response finishes. */
 	memset(&clients[client_idx].req, 0, sizeof(clients[client_idx].req));
 	memset(&clients[client_idx].head, 0, sizeof(clients[client_idx].head));
 	memset(&clients[client_idx].upl, 0, sizeof(clients[client_idx].upl));
@@ -117,11 +102,8 @@ static void reset_request_state(int client_idx)
 	clients[client_idx].have_headers = false;
 	clients[client_idx].headers_sent = false;
 	clients[client_idx].chunked_mode = false;
-	clients[client_idx].response_end_pending = false;
-	clients[client_idx].hdr_count = 0;
+	clients[client_idx].hdr_len = 0U;
 	clients[client_idx].route = NULL;
-	c->file_buffer_len = 0U;
-	c->response_content_type[0] = '\0';
 }
 
 static void release_client(int client_idx)
@@ -180,7 +162,7 @@ static bool uri_matches(const char *pattern, const char *uri)
 
 static http_route_t *match_route(const char *uri, uint8_t method)
 {
-	for (size_t i = 0; i < route_count; i++)
+	for (uint8_t i = 0U; i < route_count; ++i)
 	{
 		if ((routes[i].method == HTTP_REQ_ANY || routes[i].method == method) &&
 			uri_matches(routes[i].uri, uri))
@@ -195,7 +177,7 @@ void http_add(const char *uri, uint8_t method, http_delegate request_handler, ht
 {
 	if (!uri || uri[0] == '\0')
 		return;
-	for (size_t i = 0; i < route_count; i++)
+	for (uint8_t i = 0U; i < route_count; ++i)
 	{
 		// check if handler already exists
 		if (!strncasecmp_local(routes[i].uri, (char *)uri, strlen(uri)) && (strlen(uri) == strlen(routes[i].uri)) && (routes[i].method == method))
@@ -283,91 +265,95 @@ static const char *http_reason_phrase(int code)
 	}
 }
 
-static bool http_append_bytes(char *output,
-							  size_t capacity,
-							  size_t *used,
-							  const char *text,
-							  size_t text_len)
+static int http_send_bytes(int client_idx, const void *data, size_t data_len)
 {
-	if (!output || !used || (!text && text_len != 0U) ||
-		*used > capacity || text_len > capacity - *used)
-		return false;
-	if (text_len != 0U)
-		memcpy(&output[*used], text, text_len);
-	*used += text_len;
-	return true;
+	int sent;
+
+	if (!http_srv || client_idx < 0 || client_idx >= SOCKET_MAX_CLIENTS)
+		return SOCKET_DEVICE_INVALID;
+	sent = socket_send(http_srv, (uint8_t)client_idx, data, data_len, false);
+	if (sent < 0 && socket_client_is_connected(http_srv, (uint8_t)client_idx))
+		(void)socket_close(http_srv, (uint8_t)client_idx);
+	return sent;
 }
 
-static bool http_append_string(char *output,
-							   size_t capacity,
-							   size_t *used,
-							   const char *text)
-{
-	return text && http_append_bytes(output, capacity, used, text, strlen(text));
-}
-
-static int http_build_headers(const http_client_t *c,
-							  int code,
-							  const char *content_type,
-							  size_t content_length,
-							  char *output,
-							  size_t capacity)
+static int http_send_headers(http_client_t *c,
+							 int client_idx,
+							 int code,
+							 const char *content_type,
+							 size_t content_length)
 {
 	char line[HTTP_MAX_HEADER_LEN];
-	size_t used = 0U;
 	int length;
+	int result;
 	size_t i;
 
+	if (!c)
+		return SOCKET_DEVICE_INVALID;
+	if (content_type && strlen(content_type) > sizeof(line) - sizeof("Content-Type: \r\n"))
+		return SOCKET_DEVICE_INVALID;
 	length = str_snprintf(line, sizeof(line), "HTTP/1.1 %d %s\r\n",
 						  code, http_reason_phrase(code));
-	if (length <= 0 || (size_t)length >= sizeof(line) ||
-		!http_append_bytes(output, capacity, &used, line, (size_t)length))
+	if (length <= 0 || (size_t)length >= sizeof(line))
 		return SOCKET_DEVICE_INVALID;
+	result = http_send_bytes(client_idx, line, (size_t)length);
+	if (result < 0)
+		return result;
+
 	length = str_snprintf(line, sizeof(line), "Connection: %s\r\n",
 						  c->keep_alive ? "keep-alive" : "close");
-	if (length <= 0 || (size_t)length >= sizeof(line) ||
-		!http_append_bytes(output, capacity, &used, line, (size_t)length))
+	if (length <= 0 || (size_t)length >= sizeof(line))
 		return SOCKET_DEVICE_INVALID;
+	result = http_send_bytes(client_idx, line, (size_t)length);
+	if (result < 0)
+		return result;
 
 	if (c->chunked_mode)
 	{
-		if (!http_append_string(output, capacity, &used,
-								"Transfer-Encoding: chunked\r\n"))
-			return SOCKET_DEVICE_INVALID;
+		static const char chunked[] = "Transfer-Encoding: chunked\r\n";
+		result = http_send_bytes(client_idx, chunked, sizeof(chunked) - 1U);
+		if (result < 0)
+			return result;
 	}
 	else
 	{
 		length = str_snprintf(line, sizeof(line), "Content-Length: %lu\r\n",
 							  (unsigned long)content_length);
-		if (length <= 0 || (size_t)length >= sizeof(line) ||
-			!http_append_bytes(output, capacity, &used, line, (size_t)length))
+		if (length <= 0 || (size_t)length >= sizeof(line))
 			return SOCKET_DEVICE_INVALID;
+		result = http_send_bytes(client_idx, line, (size_t)length);
+		if (result < 0)
+			return result;
 	}
+
 	if (content_type)
 	{
 		length = str_snprintf(line, sizeof(line), "Content-Type: %s\r\n", content_type);
-		if (length <= 0 || (size_t)length >= sizeof(line) ||
-			!http_append_bytes(output, capacity, &used, line, (size_t)length))
+		if (length <= 0 || (size_t)length >= sizeof(line))
 			return SOCKET_DEVICE_INVALID;
+		result = http_send_bytes(client_idx, line, (size_t)length);
+		if (result < 0)
+			return result;
 	}
-	for (i = 0U; i < c->hdr_count; ++i)
-	{
-		if (!http_append_string(output, capacity, &used, c->hdrs[i].line) ||
-			!http_append_string(output, capacity, &used, "\r\n"))
-			return SOCKET_DEVICE_INVALID;
-	}
-	if (!http_append_string(output, capacity, &used, "\r\n"))
-		return SOCKET_DEVICE_INVALID;
-	return used > (size_t)INT_MAX ? SOCKET_DEVICE_INVALID : (int)used;
-}
 
-static void http_compact_tx(http_client_t *c)
-{
-	if (c && c->tx_offset != 0U)
+	for (i = 0U; i < c->hdr_len;)
 	{
-		memmove(c->tx_buffer, &c->tx_buffer[c->tx_offset], c->tx_length);
-		c->tx_offset = 0U;
+		const char *header = &c->hdrs[i];
+		size_t header_len = strlen(header);
+		result = http_send_bytes(client_idx, header, header_len);
+		if (result < 0)
+			return result;
+		result = http_send_bytes(client_idx, "\r\n", 2U);
+		if (result < 0)
+			return result;
+		i += header_len + 1U;
 	}
+	result = http_send_bytes(client_idx, "\r\n", 2U);
+	if (result < 0)
+		return result;
+
+	c->headers_sent = true;
+	return SOCKET_DEVICE_OK;
 }
 
 static void http_complete_response(int client_idx)
@@ -376,52 +362,10 @@ static void http_complete_response(int client_idx)
 	if (client_idx < 0 || client_idx >= SOCKET_MAX_CLIENTS)
 		return;
 	c = &clients[client_idx];
-	if (c->tx_length != 0U || !c->response_end_pending)
-		return;
-	c->response_end_pending = false;
 	if (c->keep_alive)
 		reset_request_state(client_idx);
 	else if (http_srv)
 		(void)socket_close(http_srv, (uint8_t)client_idx);
-}
-
-/*
- * Makes exactly one nonblocking send attempt. This is the only HTTP helper
- * that calls socket_send(); every unsent suffix remains in persistent storage.
- */
-static int http_flush(int client_idx)
-{
-	http_client_t *c;
-	int sent;
-
-	if (!http_srv || client_idx < 0 || client_idx >= SOCKET_MAX_CLIENTS)
-		return SOCKET_DEVICE_INVALID;
-	c = &clients[client_idx];
-	if (c->tx_length == 0U)
-	{
-		c->tx_offset = 0U;
-		http_complete_response(client_idx);
-		return 0;
-	}
-
-	sent = socket_send(http_srv, (uint8_t)client_idx,
-					   &c->tx_buffer[c->tx_offset], c->tx_length);
-	if (sent > 0)
-	{
-		size_t consumed = (size_t)sent;
-		if (consumed > c->tx_length)
-			consumed = c->tx_length;
-		c->tx_offset += consumed;
-		c->tx_length -= consumed;
-		if (c->tx_length == 0U)
-			c->tx_offset = 0U;
-		http_complete_response(client_idx);
-	}
-	else if (sent < 0 && sent != SOCKET_DEVICE_WOULD_BLOCK)
-	{
-		(void)socket_close(http_srv, (uint8_t)client_idx);
-	}
-	return sent;
 }
 
 bool http_send_header(int client_idx, const char *name, const char *data, bool first)
@@ -429,43 +373,54 @@ bool http_send_header(int client_idx, const char *name, const char *data, bool f
 	http_client_t *c;
 	size_t name_len;
 	size_t data_len;
-	size_t i;
+	size_t offset;
 	int length;
 
 	if (client_idx < 0 || client_idx >= SOCKET_MAX_CLIENTS || !name || !data)
 		return false;
 	c = &clients[client_idx];
-	if (c->headers_sent || c->response_end_pending)
+	if (c->headers_sent)
 		return false;
 	if (first)
-		c->hdr_count = 0U;
+		c->hdr_len = 0U;
+
 	name_len = strlen(name);
 	data_len = strlen(data);
 	if (name_len == 0U || name_len >= HTTP_MAX_HEADER_LEN ||
+		data_len > HTTP_MAX_HEADER_LEN - name_len - 3U ||
 		strchr(name, '\r') || strchr(name, '\n') || strchr(name, ':') ||
 		strchr(data, '\r') || strchr(data, '\n'))
 		return false;
 
-	for (i = 0U; i < c->hdr_count; ++i)
+	/* Merge a repeated header name into its existing compact line. */
+	for (offset = 0U; offset < c->hdr_len;)
 	{
-		char *line = c->hdrs[i].line;
-		size_t line_len;
-		if (strncasecmp_local(line, (char *)name, name_len) != 0 || line[name_len] != ':')
-			continue;
-		line_len = strlen(line);
-		if (data_len + 2U >= sizeof(c->hdrs[i].line) - line_len)
-			return false;
-		memcpy(&line[line_len], ", ", 2U);
-		memcpy(&line[line_len + 2U], data, data_len + 1U);
-		return true;
+		char *line = &c->hdrs[offset];
+		size_t line_len = strlen(line);
+		if (strncasecmp_local(line, (char *)name, name_len) == 0 &&
+			line[name_len] == ':')
+		{
+			size_t extra = data_len + 2U;
+			size_t tail = offset + line_len;
+			if (extra > sizeof(c->hdrs) - c->hdr_len ||
+				line_len + extra >= HTTP_MAX_HEADER_LEN)
+				return false;
+			memmove(&c->hdrs[tail + extra], &c->hdrs[tail], c->hdr_len - tail);
+			memcpy(&c->hdrs[tail], ", ", 2U);
+			memcpy(&c->hdrs[tail + 2U], data, data_len);
+			c->hdr_len = (uint16_t)(c->hdr_len + extra);
+			return true;
+		}
+		offset += line_len + 1U;
 	}
-	if (c->hdr_count >= HTTP_MAX_HEADERS)
+
+	if (c->hdr_len >= sizeof(c->hdrs))
 		return false;
-	length = str_snprintf(c->hdrs[c->hdr_count].line,
-						  sizeof(c->hdrs[c->hdr_count].line), "%s: %s", name, data);
-	if (length <= 0 || (size_t)length >= sizeof(c->hdrs[c->hdr_count].line))
+	length = str_snprintf(&c->hdrs[c->hdr_len], sizeof(c->hdrs) - c->hdr_len,
+						  "%s: %s", name, data);
+	if (length <= 0 || (size_t)length >= sizeof(c->hdrs) - c->hdr_len)
 		return false;
-	c->hdr_count++;
+	c->hdr_len = (uint16_t)(c->hdr_len + (size_t)length + 1U);
 	return true;
 }
 
@@ -477,13 +432,9 @@ int http_send(int client_idx,
 {
 	http_client_t *c;
 	char chunk_prefix[24];
-	int header_len = 0;
-	int prefix_len = 0;
-	size_t required;
-	size_t tail;
+	int prefix_len;
+	int result;
 	bool finishing = data_len == 0U;
-	bool was_pending;
-	size_t base;
 
 	if (!http_srv || client_idx < 0 || client_idx >= SOCKET_MAX_CLIENTS ||
 		(!data && data_len != 0U) || data_len > HTTP_MAX_CHUNCK_LEN ||
@@ -492,10 +443,8 @@ int http_send(int client_idx,
 	if (!socket_client_is_connected(http_srv, (uint8_t)client_idx))
 		return SOCKET_DEVICE_CLOSED;
 	c = &clients[client_idx];
-	if (c->response_end_pending)
-		return SOCKET_DEVICE_WOULD_BLOCK;
 
-	/* The first NULL/empty call selects chunked mode without emitting bytes. */
+	/* Initial NULL/empty call selects chunked mode without emitting bytes. */
 	if (!content_type && finishing && !c->headers_sent && !c->chunked_mode)
 	{
 		c->chunked_mode = true;
@@ -504,91 +453,77 @@ int http_send(int client_idx,
 	if (!content_type)
 		c->chunked_mode = true;
 
-	was_pending = c->tx_length != 0U;
-	http_compact_tx(c);
-	base = c->tx_length;
 	if (!c->headers_sent)
 	{
-		size_t header_capacity = sizeof(c->tx_buffer) - base;
-		if (header_capacity > HTTP_RESPONSE_HEADER_SIZE)
-			header_capacity = HTTP_RESPONSE_HEADER_SIZE;
-		header_len = http_build_headers(c, code, content_type, data_len,
-									(char *)&c->tx_buffer[base],
-									header_capacity);
-		if (header_len < 0)
-			return header_len;
-	}
-	if (data_len != 0U && c->chunked_mode)
-	{
-		prefix_len = str_snprintf(chunk_prefix, sizeof(chunk_prefix), "%lx\r\n",
-								  (unsigned long)data_len);
-		if (prefix_len <= 0 || (size_t)prefix_len >= sizeof(chunk_prefix))
-			return SOCKET_DEVICE_INVALID;
+		result = http_send_headers(c, client_idx, code, content_type, data_len);
+		if (result < 0)
+			return result;
 	}
 
-	required = (size_t)header_len + (size_t)prefix_len + data_len;
-	if (data_len != 0U && c->chunked_mode)
-		required += 2U;
-	if (finishing && c->chunked_mode)
-		required += 5U;
-	if (required > sizeof(c->tx_buffer) - c->tx_length)
-		return SOCKET_DEVICE_WOULD_BLOCK;
-
-	tail = base + (size_t)header_len;
-	if (prefix_len != 0)
-	{
-		memcpy(&c->tx_buffer[tail], chunk_prefix, (size_t)prefix_len);
-		tail += (size_t)prefix_len;
-	}
 	if (data_len != 0U)
 	{
-		memcpy(&c->tx_buffer[tail], data, data_len);
-		tail += data_len;
 		if (c->chunked_mode)
 		{
-			memcpy(&c->tx_buffer[tail], "\r\n", 2U);
-			tail += 2U;
+			prefix_len = str_snprintf(chunk_prefix, sizeof(chunk_prefix), "%lx\r\n",
+								  (unsigned long)data_len);
+			if (prefix_len <= 0 || (size_t)prefix_len >= sizeof(chunk_prefix))
+				return SOCKET_DEVICE_INVALID;
+			result = http_send_bytes(client_idx, chunk_prefix, (size_t)prefix_len);
+			if (result < 0)
+				return result;
+		}
+
+		result = http_send_bytes(client_idx, data, data_len);
+		if (result < 0)
+			return result;
+		if (c->chunked_mode)
+		{
+			result = http_send_bytes(client_idx, "\r\n", 2U);
+			if (result < 0)
+				return result;
 		}
 	}
-	if (finishing && c->chunked_mode)
-	{
-		memcpy(&c->tx_buffer[tail], "0\r\n\r\n", 5U);
-		tail += 5U;
-	}
-	c->tx_length = tail;
-	if (header_len != 0)
-		c->headers_sent = true;
+
 	if (finishing)
-		c->response_end_pending = true;
-	if (!was_pending)
-		(void)http_flush(client_idx);
+	{
+		if (c->chunked_mode)
+		{
+			result = http_send_bytes(client_idx, "0\r\n\r\n", 5U);
+			if (result < 0)
+				return result;
+		}
+		http_complete_response(client_idx);
+	}
 	return (int)data_len;
 }
 
 static void http_progress_file(int client_idx)
 {
 	http_client_t *c;
-	int accepted;
+	size_t length;
 
 	if (!http_srv || client_idx < 0 || client_idx >= SOCKET_MAX_CLIENTS)
 		return;
 	c = &clients[client_idx];
-	if (!c->response_file || c->tx_length != 0U || c->response_end_pending)
+	if (!c->response_file)
 		return;
-	if (c->file_buffer_len == 0U)
-		c->file_buffer_len = fs_read(c->response_file,
-									 c->file_buffer, sizeof(c->file_buffer));
-	if (c->file_buffer_len == 0U)
+
+	length = fs_read(c->response_file, http_file_buffer, sizeof(http_file_buffer));
+	if (length == 0U)
 	{
 		fs_close(c->response_file);
 		c->response_file = NULL;
-		(void)http_send(client_idx, 200, c->response_content_type, NULL, 0U);
+		(void)http_send(client_idx, 200, NULL, NULL, 0U);
 		return;
 	}
-	accepted = http_send(client_idx, 200, c->response_content_type,
-						 c->file_buffer, c->file_buffer_len);
-	if (accepted >= 0)
-		c->file_buffer_len = 0U;
+
+	if (http_send(client_idx, 200, NULL, http_file_buffer, length) < 0)
+	{
+		fs_close(c->response_file);
+		c->response_file = NULL;
+		if (socket_client_is_connected(http_srv, (uint8_t)client_idx))
+			(void)socket_close(http_srv, (uint8_t)client_idx);
+	}
 }
 
 bool http_send_file(int client_idx, const char *file_path, const char *content_type)
@@ -600,8 +535,9 @@ bool http_send_file(int client_idx, const char *file_path, const char *content_t
 	if (!http_srv || client_idx < 0 || client_idx >= SOCKET_MAX_CLIENTS || !file_path)
 		return false;
 	c = &clients[client_idx];
-	if (c->response_file || c->headers_sent || c->response_end_pending)
+	if (c->response_file || c->headers_sent)
 		return false;
+
 	file = fs_open(file_path, "rb");
 	if (!file)
 	{
@@ -609,20 +545,14 @@ bool http_send_file(int client_idx, const char *file_path, const char *content_t
 		(void)http_send(client_idx, 404, "text/plain", NULL, 0U);
 		return false;
 	}
-	if (strlen(type) >= sizeof(c->response_content_type))
+
+	c->chunked_mode = true;
+	if (http_send_headers(c, client_idx, 200, type, 0U) < 0)
 	{
 		fs_close(file);
 		return false;
 	}
-	strcpy(c->response_content_type, type);
 	c->response_file = file;
-	c->file_buffer_len = 0U;
-	if (http_send(client_idx, 200, NULL, NULL, 0U) < 0)
-	{
-		fs_close(file);
-		c->response_file = NULL;
-		return false;
-	}
 	http_progress_file(client_idx);
 	return true;
 }
@@ -810,27 +740,12 @@ static void http_on_disconnected(uint8_t client_idx, int reason, void *protocol)
 		release_client(client_idx);
 }
 
-/*
- * Writable resumes only the exact persistent suffix previously accepted by
- * http_send(). A file is advanced only after that suffix has fully drained.
- */
-static void http_on_writable(uint8_t client_idx, void *protocol)
-{
-	(void)protocol;
-	if (client_idx >= SOCKET_MAX_CLIENTS)
-		return;
-	(void)http_flush((int)client_idx);
-	if (clients[client_idx].tx_length == 0U)
-		http_progress_file((int)client_idx);
-}
-
-/* Fully accepted file chunks may not cause a writable edge, so idle advances
- * at most one file read while no older bytes are pending. */
+/* Advance at most one cooperative file read/send per idle callback. */
 static void http_on_idle(uint8_t client_idx, uint32_t idle_ms, void *protocol)
 {
 	(void)idle_ms;
 	(void)protocol;
-	if (client_idx < SOCKET_MAX_CLIENTS && clients[client_idx].tx_length == 0U)
+	if (client_idx < SOCKET_MAX_CLIENTS && clients[client_idx].response_file)
 		http_progress_file((int)client_idx);
 }
 
@@ -846,7 +761,7 @@ static void http_on_data(uint8_t client_idx,
 		return;
 	c = &clients[client_idx];
 	/* HTTP pipelining is deliberately unsupported while a response is active. */
-	if (c->response_end_pending || c->response_file)
+	if (c->response_file)
 		return;
 	/* Request parser advances the pointer but must treat pointed RX bytes read-only. */
 	bytes = (char *)(uintptr_t)data;
@@ -925,8 +840,7 @@ DECL_MODULE(http_server)
 		socket_set_protocol(http_srv, clients);
 		socket_add_ondata_handler(http_srv, http_on_data);
 		socket_add_onconnected_handler(http_srv, http_on_connected);
-		socket_add_onwritable_handler(http_srv, http_on_writable);
-		socket_add_onidle_handler(http_srv, http_on_idle);
+			socket_add_onidle_handler(http_srv, http_on_idle);
 		socket_add_ondisconnected_handler(http_srv, http_on_disconnected);
 
 		RUNONCE_COMPLETE();

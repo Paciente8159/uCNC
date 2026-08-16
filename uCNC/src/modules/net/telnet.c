@@ -1,23 +1,14 @@
 /*
-	Copyright (c) 2026 - uCNC
+	Name: telnet.h
+	Description: Small, allocation-free, Telnet server API for uCNC.
 
-	Permission is hereby granted, free of charge, to any person obtaining a copy
-	of this software and associated documentation files (the "Software"), to deal
-	in the Software without restriction, including without limitation the rights
-	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-	copies of the Software, and to permit persons to whom the Software is
-	furnished to do so, subject to the following conditions:
+	Copyright: Copyright (c) Joao Martins
+	Author: Joao Martins
 
-	The above copyright notice and this permission notice shall be included in
-	all copies or substantial portions of the Software.
-
-	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-	SOFTWARE.
+	uCNC is free software: you can redistribute it and/or modify it under the
+	terms of the GNU General Public License as published by the Free Software
+	Foundation, either version 3 of the License, or (at your option) any later
+	version. Please see <http://www.gnu.org/licenses/>.
 */
 #include "../../cnc.h"
 #ifdef ENABLE_SOCKETS
@@ -40,128 +31,24 @@ static void telnet_client_reset(telnet_client_t *client)
 	}
 }
 
-/*
- * Makes exactly one nonblocking backend-send attempt for a client's queued
- * bytes. The unsent suffix always remains in persistent client storage.
- *
- * This is intentionally the only Telnet helper that calls socket_send().
- * It is safe to call from ordinary API code and from the writable callback;
- * it does not loop or wait for progress.
- */
-static int telnet_flush(telnet_protocol_t *telnet, uint8_t client_idx)
-{
-	telnet_client_t *client;
-	int sent;
-
-	if (!telnet || !telnet->telnet_socket || client_idx >= SOCKET_MAX_CLIENTS)
-		return SOCKET_DEVICE_INVALID;
-
-	client = &telnet->clients[client_idx];
-	if (client->tx_length == 0U)
-	{
-		client->tx_offset = 0U;
-		return 0;
-	}
-
-	sent = socket_send(telnet->telnet_socket,
-					   client_idx,
-					   &client->tx_buffer[client->tx_offset],
-					   client->tx_length);
-	if (sent > 0)
-	{
-		size_t consumed = (size_t)sent;
-		if (consumed > client->tx_length)
-			consumed = client->tx_length;
-		client->tx_offset += consumed;
-		client->tx_length -= consumed;
-		if (client->tx_length == 0U)
-			client->tx_offset = 0U;
-	}
-
-	return sent;
-}
-
-/*
- * Copies as much payload as possible into persistent storage, then gives the
- * backend one opportunity to drain it. Accepted bytes remain owned by Telnet
- * even if the backend reports a partial send or WOULD_BLOCK.
- */
-static int telnet_queue(telnet_protocol_t *telnet,
-						uint8_t client_idx,
-						const uint8_t *data,
-						size_t data_len)
-{
-	telnet_client_t *client;
-	size_t free_space;
-	size_t accepted;
-	bool was_pending;
-
-	if (!telnet || !telnet->telnet_socket || client_idx >= SOCKET_MAX_CLIENTS ||
-		(!data && data_len != 0U))
-		return SOCKET_DEVICE_INVALID;
-	if (!socket_client_is_connected(telnet->telnet_socket, client_idx))
-		return SOCKET_DEVICE_CLOSED;
-	if (data_len == 0U)
-		return 0;
-
-	client = &telnet->clients[client_idx];
-	was_pending = client->tx_length != 0U;
-	if (client->tx_offset != 0U &&
-		client->tx_offset + client->tx_length + data_len > sizeof(client->tx_buffer))
-	{
-		memmove(client->tx_buffer,
-				&client->tx_buffer[client->tx_offset],
-				client->tx_length);
-		client->tx_offset = 0U;
-	}
-
-	free_space = sizeof(client->tx_buffer) - client->tx_offset - client->tx_length;
-	accepted = data_len < free_space ? data_len : free_space;
-	if (accepted == 0U)
-		return SOCKET_DEVICE_WOULD_BLOCK;
-
-	memcpy(&client->tx_buffer[client->tx_offset + client->tx_length], data, accepted);
-	client->tx_length += accepted;
-	if (!was_pending)
-		(void)telnet_flush(telnet, client_idx);
-
-	return accepted > (size_t)INT_MAX ? INT_MAX : (int)accepted;
-}
-
-/*
- * Queues a complete three-byte Telnet negotiation response atomically. The
- * command is omitted when three bytes are not available; it is never emitted
- * partially because a truncated IAC command would corrupt the byte stream.
- */
+/* Send a complete Telnet negotiation response without retaining TX state. */
 static void telnet_refuse_option(telnet_protocol_t *telnet,
 								 uint8_t client_idx,
 								 uint8_t command,
 								 uint8_t option)
 {
-	telnet_client_t *client;
 	uint8_t reply[3];
-	size_t free_space;
 
-	if (!telnet || client_idx >= SOCKET_MAX_CLIENTS)
+	if (!telnet || !telnet->telnet_socket || client_idx >= SOCKET_MAX_CLIENTS)
 		return;
-
-	client = &telnet->clients[client_idx];
-	if (client->tx_offset != 0U &&
-		client->tx_offset + client->tx_length + sizeof(reply) > sizeof(client->tx_buffer))
-	{
-		memmove(client->tx_buffer,
-				&client->tx_buffer[client->tx_offset],
-				client->tx_length);
-		client->tx_offset = 0U;
-	}
-	free_space = sizeof(client->tx_buffer) - client->tx_offset - client->tx_length;
-	if (free_space < sizeof(reply))
-		return;
-
 	reply[0] = TELNET_IAC;
 	reply[1] = (command == TELNET_DO || command == TELNET_DONT) ? TELNET_WONT : TELNET_DONT;
 	reply[2] = option;
-	(void)telnet_queue(telnet, client_idx, reply, sizeof(reply));
+	if (socket_send(telnet->telnet_socket, client_idx, reply, sizeof(reply), false) < 0 &&
+		socket_client_is_connected(telnet->telnet_socket, client_idx))
+	{
+		(void)socket_close(telnet->telnet_socket, client_idx);
+	}
 }
 
 /*
@@ -243,16 +130,12 @@ static void telnet_on_connected(uint8_t client_idx, void *protocol)
 	if (!telnet || client_idx >= SOCKET_MAX_CLIENTS)
 		return;
 	telnet_client_reset(&telnet->clients[client_idx]);
-	(void)telnet_queue(telnet, client_idx, telnet_welcome, sizeof(telnet_welcome));
-}
-
-/*
- * A writable notification means a prior partial/blocked send may make progress.
- * It is a continuation signal, not permission to regenerate application data.
- */
-static void telnet_on_writable(uint8_t client_idx, void *protocol)
-{
-	(void)telnet_flush((telnet_protocol_t *)protocol, client_idx);
+	if (socket_send(telnet->telnet_socket, client_idx, telnet_welcome,
+					sizeof(telnet_welcome), false) < 0 &&
+		socket_client_is_connected(telnet->telnet_socket, client_idx))
+	{
+		(void)socket_close(telnet->telnet_socket, client_idx);
+	}
 }
 
 static void telnet_on_disconnected(uint8_t client_idx, int reason, void *protocol)
@@ -287,7 +170,6 @@ socket_if_t *telnet_start(telnet_protocol_t *telnet,
 	socket_set_protocol(socket, telnet);
 	socket_add_ondata_handler(socket, telnet_on_data);
 	socket_add_onconnected_handler(socket, telnet_on_connected);
-	socket_add_onwritable_handler(socket, telnet_on_writable);
 	socket_add_ondisconnected_handler(socket, telnet_on_disconnected);
 	return socket;
 }
@@ -325,30 +207,96 @@ int telnet_send(telnet_protocol_t *telnet,
 				const void *data,
 				size_t data_len)
 {
-	return telnet_queue(telnet, client_idx, (const uint8_t *)data, data_len);
+	if (!telnet || !telnet->telnet_socket)
+		return SOCKET_DEVICE_INVALID;
+	return socket_send(telnet->telnet_socket, client_idx, data, data_len, false);
 }
 
-int telnet_broadcast(telnet_protocol_t *telnet,
-					 const void *data,
-					 size_t data_len)
+void telnet_broadcast(telnet_protocol_t *telnet,
+					  const void *data,
+					  size_t data_len,
+					  uint32_t timeout_ms)
 {
-	int minimum = INT_MAX;
-	bool found = false;
+	const uint8_t *payload = (const uint8_t *)data;
+	size_t offsets[SOCKET_MAX_CLIENTS];
+	const size_t inactive = (size_t)-1;
+	uint32_t start_ms;
+	bool any_target = false;
 	uint8_t i;
 
-	if (!telnet || !telnet->telnet_socket || (!data && data_len != 0U))
-		return SOCKET_DEVICE_INVALID;
+	if (!telnet || !telnet->telnet_socket || (!data && data_len != 0U) ||
+		data_len == 0U || data_len > (size_t)INT_MAX)
+		return;
+
 	for (i = 0U; i < SOCKET_MAX_CLIENTS; ++i)
 	{
-		int accepted;
-		if (!socket_client_is_connected(telnet->telnet_socket, i))
-			continue;
-		found = true;
-		accepted = telnet_queue(telnet, i, (const uint8_t *)data, data_len);
-		if (accepted < minimum)
-			minimum = accepted;
+		if (socket_client_is_connected(telnet->telnet_socket, i))
+		{
+			offsets[i] = 0U;
+			any_target = true;
+		}
+		else
+		{
+			offsets[i] = inactive;
+		}
 	}
-	return found ? minimum : 0;
+	if (!any_target)
+		return;
+
+	start_ms = mcu_millis();
+	for (;;)
+	{
+		bool pending = false;
+
+		for (i = 0U; i < SOCKET_MAX_CLIENTS; ++i)
+		{
+			int sent;
+
+			if (offsets[i] == inactive || offsets[i] >= data_len)
+				continue;
+			if (!socket_client_is_connected(telnet->telnet_socket, i))
+			{
+				offsets[i] = inactive;
+				continue;
+			}
+
+			sent = socket_send(telnet->telnet_socket, i,
+							   &payload[offsets[i]], data_len - offsets[i], true);
+			if (sent > 0)
+			{
+				offsets[i] += (size_t)sent;
+				if (offsets[i] < data_len)
+					pending = true;
+			}
+			else if (sent == 0)
+			{
+				pending = true;
+			}
+			else
+			{
+				if (socket_client_is_connected(telnet->telnet_socket, i))
+					(void)socket_close(telnet->telnet_socket, i);
+				offsets[i] = inactive;
+			}
+		}
+
+		if (!pending)
+			return;
+		if ((uint32_t)(mcu_millis() - start_ms) >= timeout_ms)
+		{
+			for (i = 0U; i < SOCKET_MAX_CLIENTS; ++i)
+			{
+				if (offsets[i] != inactive && offsets[i] < data_len &&
+					socket_client_is_connected(telnet->telnet_socket, i))
+				{
+					(void)socket_close(telnet->telnet_socket, i);
+				}
+			}
+			return;
+		}
+
+		socket_server_poll();
+	}
 }
 
 #endif
