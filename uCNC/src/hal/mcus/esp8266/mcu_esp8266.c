@@ -466,13 +466,13 @@ void itp_buffer_dotasks(uint16_t limit)
 	running = false;
 }
 
-IRAM_ATTR void mcu_rtc_isr(void)
+IRAM_ATTR void mcu_rtc_isr(void* arg)
 {
 	mcu_runtime_ms++;
 	mcu_rtc_cb(mcu_runtime_ms);
 	itp_buffer_dotasks(OUT_IO_BUFFER_MINIMAL); // process at most 2ms of motion
-	uint32_t stamp = esp_get_cycle_count() + (ESP8266_CLOCK / 1000);
-	timer0_write(stamp);
+	// uint32_t stamp = esp_get_cycle_count() + (ESP8266_CLOCK / 1000);
+	// timer0_write(stamp);
 }
 
 // modifies the step generation mode
@@ -528,10 +528,12 @@ void mcu_init(void)
 
 	// kick start the RTC
 	// the RTC will start the ITP timer
-	uint32_t stamp = esp_get_cycle_count() + (ESP8266_CLOCK / 1000);
-	timer0_isr_init();
-	timer0_attachInterrupt(mcu_rtc_isr);
-	timer0_write(stamp);
+	// uint32_t stamp = esp_get_cycle_count() + (ESP8266_CLOCK / 1000);
+	// timer0_isr_init();
+	// timer0_attachInterrupt(mcu_rtc_isr);
+	// timer0_write(stamp);
+	os_timer_setfn(&esp8266_rtc_timer, (os_timer_func_t *)&mcu_rtc_isr, NULL);
+	os_timer_arm(&esp8266_rtc_timer, 1, true);
 }
 
 /**
