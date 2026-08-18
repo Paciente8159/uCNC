@@ -80,7 +80,9 @@
 
 #define MCU_HAS_UART2
 
+#ifndef PIO_UNIT_TESTING
 #define ENABLE_SOCKETS
+#endif
 // #define EMULATE_74HC595
 
 // joints step/dir pins

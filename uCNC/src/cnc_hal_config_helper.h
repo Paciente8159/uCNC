@@ -2447,6 +2447,10 @@ typedef uint16_t step_t;
 #define ENABLE_LONG_HOMING_CYCLE
 #endif
 
+#ifdef PIO_UNIT_TESTING
+#undef IGNORE_G0_G1_MISSING_AXIS_WORDS
+#endif
+
 #include "hal/io_hal.h"
 
 #ifdef __cplusplus
