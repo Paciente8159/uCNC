@@ -22,7 +22,7 @@
 #include "cnc.h"
 
 #define LOOP_STARTUP_RESET 0
-#define LOOP_UNLOCK 1
+#define LOOP_LOCKED 1
 #define LOOP_RUNNING 2
 #define LOOP_FAULT 3
 #define LOOP_REQUIRE_RESET 4
@@ -129,50 +129,58 @@ void __attribute__((weak)) cnc_network_init(void)
 #endif
 }
 
-static void cnc_wait_for_reset()
+static FORCEINLINE bool cnc_can_reset()
 {
-	do
+	if (grbl_stream_available())
 	{
-		if (grbl_stream_available())
+		if (grbl_stream_getc() == EOL)
 		{
-			if (grbl_stream_getc() == EOL)
-			{
 #if EMULATE_GRBL_STARTUP <= 2
-				proto_feedback(MSG_FEEDBACK_1);
-				proto_error(STATUS_SYSTEM_GC_LOCK);
+			proto_feedback(MSG_FEEDBACK_1);
+			proto_error(STATUS_SYSTEM_GC_LOCK);
 #endif
-			}
 		}
-		cnc_dotasks();
-		// a soft reset is pending
-		if (cnc_state.alarm == EXEC_ALARM_SOFTRESET)
-		{
-			cnc_clear_exec_state(EXEC_KILL);
-			break;
-		}
-	} while ((cnc_state.loop_state == LOOP_REQUIRE_RESET || cnc_get_exec_state(EXEC_KILL)));
+	}
+	cnc_dotasks();
+	// a soft reset is pending
+	if (cnc_state.alarm == EXEC_ALARM_SOFTRESET)
+	{
+		cnc_clear_exec_state(EXEC_KILL);
+		return true;
+	}
+
+	return !((cnc_state.loop_state == LOOP_REQUIRE_RESET || cnc_get_exec_state(EXEC_KILL)));
 }
 
 void cnc_run(void)
 {
-	cnc_reset();
-	if (cnc_unlock(false) != UNLOCK_ERROR)
-	{
-		cnc_state.alarm = EXEC_ALARM_NOALARM;
-	}
+	int8_t alarm = EXEC_ALARM_NOALARM;
 
-	cnc_state.loop_state = LOOP_RUNNING;
-	for (;;)
+	switch (cnc_state.loop_state)
 	{
+	case LOOP_STARTUP_RESET:
+		cnc_reset();
+		cnc_state.loop_state = LOOP_LOCKED;
+		__FALL_THROUGH__
+	case LOOP_LOCKED:
+		if (cnc_unlock(false) != UNLOCK_ERROR)
+		{
+			cnc_state.alarm = EXEC_ALARM_NOALARM;
+		}
+		cnc_state.loop_state = LOOP_RUNNING;
+		__FALL_THROUGH__
+	case LOOP_RUNNING:
+
 		cnc_parse_cmd();
 		cnc_dotasks();
 
-		int8_t alarm = cnc_state.alarm;
+		alarm = cnc_state.alarm;
 		if (alarm > EXEC_ALARM_NOALARM)
 		{
 			cnc_alarm(alarm);
 		}
-
+		__FALL_THROUGH__
+	case LOOP_REQUIRE_RESET:
 		switch (cnc_state.alarm)
 		{
 		case EXEC_ALARM_NOALARM:
@@ -184,17 +192,21 @@ void cnc_run(void)
 			cnc_state.loop_state = LOOP_REQUIRE_RESET;
 			__FALL_THROUGH__
 		case EXEC_ALARM_EMERGENCY_STOP:
-			cnc_wait_for_reset();
+			if (cnc_can_reset())
+			{
+				return;
+			}
 			__FALL_THROUGH__
 		case EXEC_ALARM_SOFTRESET:
 			cnc_state.alarm = EXEC_ALARM_NOALARM;
+			cnc_state.loop_state = LOOP_STARTUP_RESET;
 			return;
 		default:
 			if (cnc_get_exec_state(EXEC_POSITION_MAYBE_LOST))
 			{
-				return;
+				cnc_state.loop_state = LOOP_STARTUP_RESET;
 			}
-			break;
+			return;
 		}
 	}
 }
