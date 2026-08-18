@@ -90,7 +90,7 @@ void grbl_stream_init(void)
 }
 
 #ifdef ENABLE_DEBUG_STREAM
-static void debug_flush(void)
+void debug_flush(void)
 {
 	while (grbl_stream_busy())
 	{
@@ -153,6 +153,8 @@ void grbl_stream_register(grbl_stream_t *stream)
 		p->next = stream;
 		p->next->next = NULL;
 	}
+
+	stream->registered = true;
 }
 
 // on cleanup sets the correct stdin streams

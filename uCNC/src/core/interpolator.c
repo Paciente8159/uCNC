@@ -24,6 +24,12 @@
 #include <math.h>
 #include <float.h>
 
+#ifdef ENABLE_ITP_DEBUG
+#define DBGLOG DBGMSG
+#else
+#define DBGLOG(fmt, ...) ((void)0)
+#endif
+
 #ifndef INTERPOLATOR_BUFFER_SIZE
 #define INTERPOLATOR_BUFFER_SIZE 5 // number of windows in the buffer
 #endif
@@ -428,6 +434,7 @@ void itp_run(void)
 			// get the first block in the planner
 			block = planner_get_block();
 			itp_cur_plan_block = block;
+			DBGLOG("[ITP] new block main=%hu steps=%lu", block->main_stepper, (unsigned long)block->steps[block->main_stepper]);
 			// clear the data block
 			memset(&itp_blk_data[itp_blk_data_write], 0, sizeof(itp_block_t));
 #ifdef GCODE_PROCESS_LINE_NUMBERS
@@ -690,6 +697,8 @@ void itp_run(void)
 		// computes how many steps it will perform at this speed and frame window
 		partial_distance -= segm_steps;
 
+		DBGLOG("[ITP] sgm flags=%hu steps=%u remaining=%lu speed=%.3f", sgm->flags, segm_steps, (unsigned long)remaining_steps, current_speed);
+
 		// if computed steps exceed the remaining steps for the motion shortens the distance
 		if (segm_steps > (remaining_steps - profile_steps_limit))
 		{
@@ -865,6 +874,12 @@ void itp_run(void)
 	tool_set_coolant(planner_get_coolant());
 #endif
 
+#ifdef ENABLE_ITP_DEBUG
+	static uint8_t prev_sgm_write, prev_sgm_read;
+	if ((prev_sgm_write != itp_sgm_data_write) || (prev_sgm_read != itp_sgm_data_read))
+		DBGLOG("[ITP] buffer sgm=%u/%u", itp_sgm_data_write, itp_sgm_data_read);
+#endif
+
 // starts the step isr if is stopped and there are segments to execute
 #ifdef ENABLE_RT_SYNC_MOTIONS
 	bool start_is_synched = (!itp_sgm_is_empty()) ? ((itp_sgm_data[itp_sgm_data_read].flags & ITP_SYNC) != 0) : false;
@@ -1004,6 +1019,7 @@ uint8_t itp_sync(void)
 			// {
 			// 	break;
 			// }
+			DBGLOG("[ITP] sync failed");
 			return STATUS_CRITICAL_FAIL;
 		}
 	}
@@ -1044,6 +1060,7 @@ MCU_CALLBACK void mcu_step_reset_cb(void)
 		mcu_stop_itp_isr();
 		itp_isr_stop = false;
 		cnc_clear_exec_state(EXEC_RUN);
+		DBGLOG("[ITP] ISR stopped");
 	}
 }
 
@@ -1401,6 +1418,7 @@ void itp_start(bool is_synched)
 			ATOMIC_CODEBLOCK
 			{
 				cnc_set_exec_state(EXEC_RUN); // flags that it started running
+				DBGLOG("[ITP] start ISR");
 #ifdef ENABLE_STEPPERS_DISABLE_TIMEOUT
 				io_enable_steppers(g_settings.step_enable_invert); // re-enable steppers for motion
 #endif
