@@ -53,6 +53,7 @@ extern "C"
 		void (*stream_putc)(uint8_t);
 		void (*stream_flush)(void);
 		struct grbl_stream_ *next;
+		bool registered;
 	} grbl_stream_t;
 
 #define DECL_GRBL_STREAM(name, getc_cb, available_cb, clear_cb, putc_cb, flush_cb) grbl_stream_t name = {getc_cb, available_cb, clear_cb, putc_cb, flush_cb, NULL}
@@ -93,13 +94,16 @@ extern "C"
 #endif
 
 #ifndef DEBUG_PRELUDE
-#define DEBUG_PRELUDE ">"__FILE__"@"__LINE__":"
+#define DEBUG_PRELUDE ">"__FILE__"@"STRGIFY(__LINE__)":"
 #endif
 
 	// not to be used directly
 	void debug_printf(const char *fmt, ...);
-#define DBGMSG(fmt, ...) debug_printf(__romstr__(DEBUG_PRELUDE fmt), ##__VA_ARGS__)
+	void debug_flush(void);
+#define DBGMSGIF(condition, fmt, ...) do {if(DEBUG_STREAM && DEBUG_STREAM->registered && (condition)){debug_printf(__romstr__(DEBUG_PRELUDE fmt "\n"), ##__VA_ARGS__); debug_flush();}}while(0)
+#define DBGMSG(fmt, ...) DBGMSGIF(true, fmt, ##__VA_ARGS__)
 #else
+#define DBGMSGIF(condition, fmt, ...)
 #define DBGMSG(fmt, ...)
 #endif
 

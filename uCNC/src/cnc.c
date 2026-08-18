@@ -21,6 +21,12 @@
 #include <stdint.h>
 #include "cnc.h"
 
+#ifdef ENABLE_CNC_DEBUG
+#define DBGLOG DBGMSG
+#else
+#define DBGLOG(fmt, ...) ((void)0)
+#endif
+
 #define LOOP_STARTUP_RESET 0
 #define LOOP_UNLOCK 1
 #define LOOP_RUNNING 2
@@ -170,6 +176,7 @@ void cnc_run(void)
 		int8_t alarm = cnc_state.alarm;
 		if (alarm > EXEC_ALARM_NOALARM)
 		{
+			DBGLOG("[CNC] alarm raised: %hd", alarm);
 			cnc_alarm(alarm);
 		}
 
@@ -237,6 +244,7 @@ uint8_t cnc_parse_cmd(void)
 		// this catches for example a ?\n situation sent by some GUI like UGS
 		cnc_exec_rt_commands();
 		proto_error(error);
+		DBGLOG("[CNC] cmd parsed error=%hu", error);
 		if (error)
 		{
 			itp_sync();
@@ -273,6 +281,7 @@ bool cnc_dotasks(void)
 	// check security interlocking for any problem
 	if (!cnc_check_interlocking())
 	{
+		DBGLOG("[CNC] interlocking fail");
 		return !cnc_get_exec_state(EXEC_INTERLOCKING_FAIL);
 	}
 
@@ -425,6 +434,7 @@ uint8_t cnc_home(void)
 
 void cnc_alarm(int8_t code)
 {
+	DBGLOG("[CNC] alarm: %hd", code);
 	cnc_set_exec_state(EXEC_KILL);
 	cnc_stop(true);
 	if (!cnc_state.alarm || code < EXEC_ALARM_NOALARM)
@@ -526,10 +536,12 @@ uint8_t cnc_unlock(bool force)
 			}
 #endif
 			proto_feedback(MSG_FEEDBACK_2);
+			DBGLOG("[CNC] unlock locked");
 			return UNLOCK_LOCKED;
 		}
 		else
 		{
+			DBGLOG("[CNC] unlock error");
 			return UNLOCK_ERROR;
 		}
 	}
@@ -555,6 +567,7 @@ uint8_t cnc_unlock(bool force)
 		}
 	}
 
+	DBGLOG("[CNC] unlock OK");
 	return UNLOCK_OK;
 }
 
@@ -592,7 +605,16 @@ void cnc_set_exec_state(uint16_t statemask)
 		cnc_clear_exec_state(EXEC_RESUMING); // auto clears resuming
 	}
 
+#ifdef ENABLE_CNC_DEBUG
+	uint16_t prev_exec_state = cnc_state.exec_state;
+#endif
 	ATOMIC_FETCH_OR(&cnc_state.exec_state, statemask, __ATOMIC_ACQ_REL);
+#ifdef ENABLE_CNC_DEBUG
+	if (cnc_state.exec_state != prev_exec_state)
+	{
+		DBGLOG("[CNC] set mask %u exec_state: %u", statemask, cnc_state.exec_state);
+	}
+#endif
 }
 
 void cnc_clear_exec_state(uint16_t statemask)
@@ -678,7 +700,16 @@ void cnc_clear_exec_state(uint16_t statemask)
 #endif
 	}
 
+#ifdef ENABLE_CNC_DEBUG
+	uint16_t prev_exec_state = cnc_state.exec_state;
+#endif
 	ATOMIC_FETCH_AND(&cnc_state.exec_state, ~statemask, __ATOMIC_ACQ_REL);
+#ifdef ENABLE_CNC_DEBUG
+	if (cnc_state.exec_state != prev_exec_state)
+	{
+		DBGLOG("[CNC] clear mask %u exec_state: %u", statemask, cnc_state.exec_state);
+	}
+#endif
 }
 
 // executes delay
@@ -702,6 +733,7 @@ void cnc_dwell_ms(uint32_t milliseconds)
 
 void cnc_reset(void)
 {
+	DBGLOG("[CNC] reset");
 	mcu_controls_changed_cb();
 	// resets all realtime command flags
 	cnc_state.rt_cmd = RT_CMD_CLEAR;
@@ -818,6 +850,7 @@ void cnc_exec_rt_commands(void)
 
 	if (command)
 	{
+		DBGLOG("[CNC] rt_cmd: %hu", command);
 		// clear all but report. report is handled in cnc_io_dotasks
 		ATOMIC_CODEBLOCK
 		{
@@ -897,6 +930,7 @@ void cnc_exec_rt_commands(void)
 	command = cnc_state.feed_ovr_cmd; // copies realtime flags states
 	if (command)
 	{
+		DBGLOG("[CNC] feed_ovr: %hu", command);
 		cnc_state.feed_ovr_cmd = RT_CMD_CLEAR; // clears command flags
 		uint8_t ovr = g_planner_state.feed_override;
 		switch (command & RTCMD_NORMAL_MASK)
@@ -936,6 +970,7 @@ void cnc_exec_rt_commands(void)
 	command = cnc_state.tool_ovr_cmd; // copies realtime flags states
 	if (command)
 	{
+		DBGLOG("[CNC] tool_ovr: %hu", command);
 		cnc_state.tool_ovr_cmd = RT_CMD_CLEAR; // clears command flags
 #if TOOL_COUNT > 0
 		uint8_t ovr = g_planner_state.spindle_speed_override;
@@ -1202,6 +1237,7 @@ bool g_is_multilineblock;
 #endif
 void cnc_run_startup_blocks(void)
 {
+	DBGLOG("[CNC] run startup blocks");
 	for (uint8_t i = 0; i < STARTUP_BLOCKS_COUNT; i++)
 	{
 		itp_sync();
