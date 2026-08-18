@@ -108,6 +108,7 @@ typedef struct
 
 uint16_t wifi_settings_offset;
 wifi_settings_t wifi_settings;
+
 #endif
 
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
@@ -607,30 +608,14 @@ extern "C" void ota_server_start(void)
 }
 #endif
 
-#ifdef USE_STATIC_IP
-#ifndef STATIC_IP_IP
-// 192.168.1.200
-#define STATIC_IP_IP 3355551936
-#endif
-#ifndef STATIC_IP_GW
-// 192.168.1.1
-#define STATIC_IP_GW 16885952
-#endif
-#ifndef STATIC_IP_SUB
-// 255.255.255.0
-#define STATIC_IP_SUB 16777215
-#endif
-
-static IPAddress local_IP(STATIC_IP_IP);
-static IPAddress gateway(STATIC_IP_GW);
-static IPAddress subnet(STATIC_IP_SUB);
-#endif
-
 extern "C" void __attribute__((weak)) mcu_network_init(void)
 {
 #ifdef ENABLE_WIFI
 #ifdef USE_STATIC_IP
-	WiFi.config(local_IP, gateway, gateway, subnet);
+			if (!WiFi.config(IPAddress(STATIC_IP_IP), IPAddress(STATIC_IP_GW), IPAddress(STATIC_IP_SUB)))
+			{
+				proto_info("Static IP config failed");
+			}
 #endif
 	WiFi.mode(WIFI_AP);
 	WiFi.begin((char *)BOARD_NAME, (char *)WIFI_PASS);
@@ -666,7 +651,10 @@ extern "C" void rp2040_wifi_bt_init(void)
 		case 1:
 			WiFi.mode(WIFI_STA);
 #ifdef USE_STATIC_IP
-			WiFi.config(local_IP, gateway, subnet);
+			if (!WiFi.config(IPAddress(STATIC_IP_IP), IPAddress(STATIC_IP_GW), IPAddress(STATIC_IP_SUB)))
+			{
+				proto_info("Static IP config failed");
+			}
 #endif
 			WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
 			proto_info("Trying to connect to WiFi");
@@ -681,7 +669,10 @@ extern "C" void rp2040_wifi_bt_init(void)
 		default:
 			WiFi.mode(WIFI_AP_STA);
 #ifdef USE_STATIC_IP
-			WiFi.config(local_IP, gateway, gateway, subnet);
+			if (!WiFi.config(IPAddress(STATIC_IP_IP), IPAddress(STATIC_IP_GW), IPAddress(STATIC_IP_SUB)))
+			{
+				proto_info("Static IP config failed");
+			}
 #endif
 			WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
 			proto_info("Trying to connect to WiFi");
