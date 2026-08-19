@@ -8,7 +8,7 @@
 
 typedef enum
 {
-	TEST_IO_ESTOP = 0,
+	TEST_IO_ESTOP = 1,
 	TEST_IO_SAFETY_DOOR,
 	TEST_IO_FHOLD,
 	TEST_IO_CS_RES,

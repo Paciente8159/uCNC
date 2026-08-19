@@ -2449,6 +2449,7 @@ typedef uint16_t step_t;
 
 #ifdef PIO_UNIT_TESTING
 #undef IGNORE_G0_G1_MISSING_AXIS_WORDS
+#include "cnc_pio_testing.h"
 #endif
 
 #include "hal/io_hal.h"

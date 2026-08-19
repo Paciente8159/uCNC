@@ -663,6 +663,18 @@ extern "C"
 		}
 	}
 
+	#ifdef PIO_UNIT_TESTING
+	void mcu_test_clear_events(void)
+	{
+		while (current_event)
+		{
+			timed_event_t *prev = current_event;
+			current_event = current_event->next;
+			free(prev);
+		}
+	}
+	#endif
+
 	/* Periodic tick that drives stepper and RTC callbacks */
 	void ticksimul(void)
 	{
@@ -803,7 +815,8 @@ extern "C"
 		serial_init();
 #endif
 #else
-	pthread_create(&ticksim_test, NULL, &ticksimul_test, NULL);
+start_timer(EMULATION_MS_TICK, &ticksimul);
+	// pthread_create(&ticksim_test, NULL, &ticksimul_test, NULL);
 #endif
 
 #ifdef MCU_HAS_UART

@@ -537,6 +537,9 @@ extern const tool_t vfd_pwm;
 // #endif
 
 // added for unit testing and simulation
-void mcu_add_event(uint32_t delay_us, void (*callback)(void *args), void *args)
+void mcu_add_event(uint32_t delay_us, void (*callback)(void *args), void *args);
+#ifdef PIO_UNIT_TESTING
+void mcu_test_clear_events(void);
+#endif
 
 #endif
