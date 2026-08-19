@@ -544,7 +544,7 @@ static void test_fixture_alarm(void)
 
 static void test_fixture_jog(const char *case_name)
 {
-	uint8_t status = test_execute_line("$J=G91X20F600\n");
+	uint8_t status = test_execute_line("$J=G91X100F600\n");
 	TEST_ASSERT_EQUAL_UINT8_MESSAGE(STATUS_OK, status, case_name);
 }
 
@@ -701,7 +701,7 @@ void test_run_blocks(const test_block_t *blocks)
 void test_run_blocks_test(void)
 {
 	// example
-	const test_block_t t[] = {{"G0x10\n", STATUS_OK, true, EXEC_STATUS_RUNNING, 0, false, 0, (float[3]){10.0f, 0.0f, 0.0f}, NULL}};
+	const test_block_t t[] = {{"G0X10Y10\n", true, 254, 0, true, (float[3]){10.0f, 10.0f, 0.0f}, 0, false, 0, NULL, true}};
 	test_run_blocks(t);
 }
 
@@ -724,9 +724,9 @@ static void test_g0_absolute_xy(void)
 	/*-------------OR-------------- */
 
 	test_run_blocks((test_block_t[3]){
-		{"G21\n", true, 254, false, NULL, 0, false, 0, NULL, false},
-		{"G90\n", true, 254, false, NULL, 0, false, 0, NULL, false},
-		{"G0X10Y10\n", true, 254, true, (float[3]){10.0f, 10.0f, 0.0f}, 0, false, 0, NULL, true}});
+		{"G21\n", true, 254, 0, false, NULL, 0, false, 0, NULL, false},
+		{"G90\n", true, 254, 0, false, NULL, 0, false, 0, NULL, false},
+		{"G0X10Y10\n", true, 254, 0, true, (float[3]){10.0f, 10.0f, 0.0f}, 0, false, 0, NULL, true}});
 
 	test_assert_capture_has("ok");
 }
