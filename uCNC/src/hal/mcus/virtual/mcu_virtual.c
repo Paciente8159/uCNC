@@ -608,6 +608,61 @@ extern "C"
 		oneshot_alarm = mcu_micros() + oneshot_timeout;
 	}
 
+	typedef struct timed_event_
+	{
+		uint64_t stamp;
+		void (*callback)(void *args);
+		void *args;
+		struct timed_event_ *next;
+	} timed_event_t;
+
+	timed_event_t *current_event;
+
+	void mcu_add_event(uint32_t delay_us, void (*callback)(void *args), void *args)
+	{
+		timed_event_t *new = calloc(1, sizeof(timed_event_t));
+		new->stamp = tickcount + delay_us;
+		new->callback = callback;
+		new->args = args;
+
+		// Insert at head
+		if (!current_event || new->stamp < current_event->stamp)
+		{
+			new->next = current_event;
+			current_event = new;
+			return;
+		}
+
+		// Insert somewhere after head
+		timed_event_t *prev = current_event;
+		timed_event_t *next = current_event->next;
+
+		while (next && next->stamp < new->stamp)
+		{
+			prev = next;
+			next = next->next;
+		}
+
+		prev->next = new;
+		new->next = next;
+	}
+
+	void mcu_run_events()
+	{
+		if (!current_event)
+		{
+			return;
+		}
+
+		while (current_event && current_event->stamp <= tickcount)
+		{
+			current_event->callback(current_event->args);
+			timed_event_t *prev = current_event;
+			current_event = current_event->next;
+			free(prev);
+		}
+	}
+
 	/* Periodic tick that drives stepper and RTC callbacks */
 	void ticksimul(void)
 	{
@@ -629,6 +684,8 @@ extern "C"
 			parcial += (1000000.0f / (float)ITP_SAMPLE_RATE);
 			tickcount += (int)parcial;
 			parcial -= (int)parcial;
+
+			mcu_run_events();
 
 			mcu_gen_step();
 #if defined(MCU_HAS_ONESHOT_TIMER)
