@@ -663,7 +663,7 @@ extern "C"
 		}
 	}
 
-	#ifdef PIO_UNIT_TESTING
+#ifdef PIO_UNIT_TESTING
 	void mcu_test_clear_events(void)
 	{
 		while (current_event)
@@ -673,7 +673,7 @@ extern "C"
 			free(prev);
 		}
 	}
-	#endif
+#endif
 
 	/* Periodic tick that drives stepper and RTC callbacks */
 	void ticksimul(void)
@@ -698,6 +698,9 @@ extern "C"
 			parcial -= (int)parcial;
 
 			mcu_run_events();
+			mcu_limits_changed_cb();
+			mcu_probe_changed_cb();
+			mcu_controls_changed_cb();
 
 			mcu_gen_step();
 #if defined(MCU_HAS_ONESHOT_TIMER)
@@ -815,7 +818,7 @@ extern "C"
 		serial_init();
 #endif
 #else
-start_timer(EMULATION_MS_TICK, &ticksimul);
+	start_timer(EMULATION_MS_TICK, &ticksimul);
 	// pthread_create(&ticksim_test, NULL, &ticksimul_test, NULL);
 #endif
 

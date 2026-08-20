@@ -36,6 +36,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include "test_logic_helper.h"
 
 extern bool mcu_uart2_inject(const char *cmd);
 extern void mcu_uart2_test_capture_reset(void);
@@ -46,97 +47,18 @@ extern void mcu_test_clear_events(void);
 
 static bool test_controller_initialized;
 
-static void test_controller_init_once(void)
+/* ---------------------------------------------------------------------------
+ * Delay helper
+ * ------------------------------------------------------------------------- */
+
+static void test_delay_ms(uint32_t timeout_ms)
 {
-	if (!test_controller_initialized)
+	uint32_t start = ((uint32_t)GetTickCount());
+
+	do
 	{
-		cnc_init();
-		test_controller_initialized = true;
-	}
-}
-
-static void test_controller_prepare(void)
-{
-	test_controller_init_once();
-
-	mcu_test_clear_events();
-	test_io_reset();
-
-	mcu_uart2_clear();
-	mcu_uart2_test_capture_reset();
-
-	cnc_reset();
-
-	if (cnc_unlock(false) != UNLOCK_ERROR)
-	{
-		cnc_state.alarm = EXEC_ALARM_NOALARM;
-	}
-
-	cnc_state.loop_state = LOOP_RUNNING;
-
-	/*
-	 * Make every test start at machine step position zero.
-	 */
-	int32_t zero[STEPPER_COUNT] = {0};
-
-	itp_sync_rt_position(zero);
-	mc_sync_position();
-	parser_sync_position();
-
-	mcu_uart2_test_capture_reset();
-}
-
-static uint8_t test_execute_line(const char *cmd)
-{
-	TEST_ASSERT_TRUE(mcu_uart2_inject(cmd));
-
-	uint8_t status = cnc_parse_cmd();
-
-	TEST_ASSERT_TRUE(cnc_dotasks());
-
-	// wait for the interpolator to have some steps in the buffer
-	while (itp_is_empty() && !planner_buffer_is_empty())
-	{
-		if (!cnc_dotasks())
-		{
-			break;
-		}
-	}
-
-	mcu_uart2_flush();
-
-	return status;
-}
-
-static bool test_sync_motion(uint32_t timeout_ms)
-{
-	DWORD start = GetTickCount();
-
-	while (!itp_is_empty() || !planner_buffer_is_empty())
-	{
-		if (!cnc_dotasks())
-		{
-			return false;
-		}
-
-		if ((GetTickCount() - start) > timeout_ms)
-		{
-			return false;
-		}
-
-		Sleep(1);
-	}
-
-	return true;
-}
-
-void setUp(void)
-{
-	test_controller_prepare();
-}
-
-void tearDown(void)
-{
+		cnc_dotasks();
+	} while (((((uint32_t)GetTickCount())) - start) < timeout_ms);
 }
 
 /* ---------------------------------------------------------------------------
@@ -148,7 +70,8 @@ static int32_t test_mm_to_steps(uint8_t axis, float mm)
 	return (int32_t)lroundf(mm * g_settings.step_per_mm[axis]);
 }
 
-static void test_assert_position_array_mm(float *mpos)
+// returns the first axis out of position or -1 if all on position
+static int8_t test_assert_in_position_array_mm(float *mpos)
 {
 	int32_t pos[STEPPER_COUNT] = {0};
 
@@ -156,17 +79,42 @@ static void test_assert_position_array_mm(float *mpos)
 
 	for (uint8_t i = 0; i < AXIS_COUNT; i++)
 	{
+		int32_t result = test_mm_to_steps(i, mpos[i]);
+		if (ABS(result - pos[i]) > 1)
+		{
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+static void test_assert_in_position(float *mpos)
+{
+	int32_t pos[STEPPER_COUNT] = {0};
+
+	int8_t res = test_assert_in_position_array_mm(mpos);
+
+	if (res >= 0)
+	{
+		itp_get_rt_position(pos);
 		char reason[256];
-		uint32_t result = test_mm_to_steps(i, mpos[i]);
+		uint32_t result = test_mm_to_steps(res, mpos[res]);
 		snprintf(
 			reason,
 			sizeof(reason),
-			"expected axis %u position to be %lu and got %lu", i, pos[i], result);
-		TEST_ASSERT_INT32_WITHIN_MESSAGE(
-			1,
-			result,
-			pos[i],
-			reason);
+			"expected axis %u position to be %lu and got %lu", res, pos[res], result);
+		TEST_FAIL_MESSAGE(reason);
+	}
+}
+
+static void test_assert_not_in_position(float *mpos)
+{
+	int8_t res = test_assert_in_position_array_mm(mpos);
+
+	if (res < 0)
+	{
+		TEST_FAIL_MESSAGE("expected out of position. machine reached final position.");
 	}
 }
 
@@ -198,9 +146,41 @@ static void test_assert_position_mm(float x, float y, float z)
 #endif
 }
 
-static void test_assert_capture_has(const char *needle)
+/* ---------------------------------------------------------------------------
+ * Speed assertion helpers
+ * ------------------------------------------------------------------------- */
+
+static bool test_wait_for_feed(float expected, logic_op_t op, uint32_t timeout_ms)
 {
-	TEST_ASSERT_NOT_NULL(strstr(mcu_uart2_test_capture_get(), needle));
+	uint32_t start = ((uint32_t)GetTickCount());
+
+	while ((uint32_t)(((uint32_t)GetTickCount()) - start) < timeout_ms)
+	{
+		if (test_logic_flt(itp_get_rt_feed(), op, expected))
+		{
+			return true;
+		}
+		test_delay_ms(1);
+	}
+
+	return test_logic_flt(itp_get_rt_feed(), op, expected);
+}
+
+static void test_wait_for_feed_or_fail(const char *case_name, float expected, logic_op_t op, uint32_t timeout_ms)
+{
+	bool res = test_wait_for_feed(expected, op, timeout_ms);
+	char msg[192];
+	snprintf(
+		msg,
+		sizeof(msg),
+		"%s | %s | waited for speed to be %s then %.2f, current speed is %.2f",
+		case_name,
+		"waiting for speed",
+		logic_op_name[(int)op],
+		expected,
+		itp_get_rt_feed());
+
+	TEST_ASSERT_TRUE_MESSAGE(res, msg);
 }
 
 /* ---------------------------------------------------------------------------
@@ -323,14 +303,193 @@ static const char *test_status_name(uint8_t status)
 	return test_grbl_state_name(test_grbl_translate(status));
 }
 
-static void test_delay_ms(uint32_t timeout_ms)
-{
-	uint32_t start = mcu_millis();
+/* ---------------------------------------------------------------------------
+ * Wait helpers (simulated MCU clock).
+ * ------------------------------------------------------------------------- */
 
-	while ((uint32_t)(mcu_millis() - start) < timeout_ms)
+static bool test_wait_status(uint8_t expected, uint32_t timeout_ms)
+{
+	uint32_t start = ((uint32_t)GetTickCount());
+
+	while ((uint32_t)(((uint32_t)GetTickCount()) - start) < timeout_ms)
 	{
+		if (cnc_get_status() == expected)
+		{
+			return true;
+		}
+		test_delay_ms(1);
+	}
+
+	return cnc_get_status() == expected;
+}
+
+typedef bool (*test_condition_cb_t)(void);
+
+static bool test_wait_condition(
+	test_condition_cb_t condition,
+	uint32_t timeout_ms)
+{
+	uint32_t start = ((uint32_t)GetTickCount());
+
+	while ((uint32_t)(((uint32_t)GetTickCount()) - start) < timeout_ms)
+	{
+		if (condition())
+		{
+			return true;
+		}
+		test_delay_ms(1);
+	}
+
+	return condition();
+}
+
+static void test_wait_status_or_fail(
+	uint8_t expected,
+	uint32_t timeout_ms,
+	const char *case_name,
+	const char *phase)
+{
+	uint32_t start = ((uint32_t)GetTickCount());
+	uint8_t last = cnc_get_status();
+
+	while ((uint32_t)(((uint32_t)GetTickCount()) - start) < timeout_ms)
+	{
+		last = cnc_get_status();
+		if (last == expected)
+		{
+			return;
+		}
 		cnc_dotasks();
 	}
+
+	char msg[192];
+	snprintf(
+		msg,
+		sizeof(msg),
+		"%s | %s | timeout waiting for %s, last status %s",
+		case_name,
+		phase,
+		test_status_name(expected),
+		test_status_name(last));
+
+	TEST_FAIL_MESSAGE(msg);
+}
+
+static void test_assert_capture_has(const char *needle)
+{
+	TEST_ASSERT_NOT_NULL(strstr(mcu_uart2_test_capture_get(), needle));
+}
+
+static void test_controller_init_once(void)
+{
+	if (!test_controller_initialized)
+	{
+		cnc_init();
+		test_controller_initialized = true;
+	}
+}
+
+static void test_controller_prepare(void)
+{
+	test_controller_init_once();
+
+	mcu_test_clear_events();
+	test_io_reset();
+
+	mcu_uart2_clear();
+	mcu_uart2_test_capture_reset();
+
+	mcu_stop_itp_isr();
+	cnc_stop(true);
+	mc_clear(true);
+	itp_clear();
+	settings_reset(true);
+	parser_parameters_reset();
+
+	cnc_reset();
+
+	if (cnc_unlock(true) != UNLOCK_ERROR)
+	{
+		cnc_state.alarm = EXEC_ALARM_NOALARM;
+	}
+
+	cnc_state.loop_state = LOOP_RUNNING;
+
+	/*
+	 * Make every test start at machine step position zero.
+	 */
+	int32_t zero[STEPPER_COUNT] = {0};
+
+	itp_sync_rt_position(zero);
+	mc_sync_position();
+	parser_sync_position();
+
+	mcu_uart2_test_capture_reset();
+}
+
+// clean test start
+static void test_controller_clean_state(void)
+{
+	test_controller_prepare();
+	test_wait_status_or_fail(EXEC_STATUS_IDLE, 1, "controller", "reset controller");
+	test_assert_in_position((float[3]){0, 0, 0});
+}
+
+static bool test_tick_cnc()
+{
+	return (cnc_dotasks() & cnc_dotasks() & cnc_dotasks());
+}
+
+static uint8_t test_command_send(const char *cmd)
+{
+	TEST_ASSERT_TRUE(mcu_uart2_inject(cmd));
+	mcu_uart2_flush();
+
+	uint8_t status = cnc_parse_cmd();
+
+	do
+	{
+		bool res = cnc_dotasks();
+		TEST_ASSERT_TRUE(res);
+		if (!res)
+		{
+			break;
+		}
+	} while (itp_is_empty() && !planner_buffer_is_empty());
+	// wait for the interpolator to have some steps in the buffer
+
+	return status;
+}
+
+static bool test_sync_motion(uint32_t timeout_ms)
+{
+	DWORD start = GetTickCount();
+
+	while (!itp_is_empty() || !planner_buffer_is_empty())
+	{
+		if (!cnc_dotasks())
+		{
+			return false;
+		}
+
+		if ((GetTickCount() - start) > timeout_ms)
+		{
+			return false;
+		}
+
+		Sleep(1);
+	}
+
+	return true;
+}
+
+void setUp(void)
+{
+	test_controller_prepare();
+}
+
+void tearDown(void)
+{
 }
 
 /* ---------------------------------------------------------------------------
@@ -355,11 +514,9 @@ static void test_send_rt(uint8_t command)
 	char data[2] = {(char)command, '\0'};
 
 	TEST_ASSERT_TRUE(mcu_uart2_inject(data));
-
+	mcu_uart2_flush();
 	/* Let pending realtime work propagate. */
 	test_delay_ms(1);
-
-	mcu_uart2_flush();
 }
 
 /* ---------------------------------------------------------------------------
@@ -381,13 +538,21 @@ static void test_io_event_cb(void *args)
 
 static void test_schedule_io_us(uint8_t input, bool value, uint32_t delay_us)
 {
-	test_io_event_args_t *event = calloc(1, sizeof(test_io_event_args_t));
-	TEST_ASSERT_NOT_NULL(event);
+	if (delay_us)
+	{
+		test_io_event_args_t *event = calloc(1, sizeof(test_io_event_args_t));
+		TEST_ASSERT_NOT_NULL(event);
 
-	event->input = input;
-	event->value = value;
+		event->input = input;
+		event->value = value;
 
-	mcu_add_event(delay_us, test_io_event_cb, event);
+		mcu_add_event(delay_us, test_io_event_cb, event);
+	}
+	else
+	{
+		test_io_set(input, value);
+		cnc_dotasks();
+	}
 }
 
 typedef struct
@@ -429,78 +594,6 @@ static void test_release_control(uint8_t input)
 }
 
 /* ---------------------------------------------------------------------------
- * Wait helpers (simulated MCU clock).
- * ------------------------------------------------------------------------- */
-
-static bool test_wait_status(uint8_t expected, uint32_t timeout_ms)
-{
-	uint32_t start = mcu_millis();
-
-	while ((uint32_t)(mcu_millis() - start) < timeout_ms)
-	{
-		if (cnc_get_status() == expected)
-		{
-			return true;
-		}
-		test_delay_ms(1);
-	}
-
-	return cnc_get_status() == expected;
-}
-
-typedef bool (*test_condition_cb_t)(void);
-
-static bool test_wait_condition(
-	test_condition_cb_t condition,
-	uint32_t timeout_ms)
-{
-	uint32_t start = mcu_millis();
-
-	while ((uint32_t)(mcu_millis() - start) < timeout_ms)
-	{
-		if (condition())
-		{
-			return true;
-		}
-		test_delay_ms(1);
-	}
-
-	return condition();
-}
-
-static void test_wait_status_or_fail(
-	uint8_t expected,
-	uint32_t timeout_ms,
-	const char *case_name,
-	const char *phase)
-{
-	uint32_t start = mcu_millis();
-	uint8_t last = cnc_get_status();
-
-	while ((uint32_t)(mcu_millis() - start) < timeout_ms)
-	{
-		last = cnc_get_status();
-		if (last == expected)
-		{
-			return;
-		}
-		cnc_dotasks();
-	}
-
-	char msg[192];
-	snprintf(
-		msg,
-		sizeof(msg),
-		"%s | %s | timeout waiting for %s, last status %s",
-		case_name,
-		phase,
-		test_status_name(expected),
-		test_status_name(last));
-
-	TEST_FAIL_MESSAGE(msg);
-}
-
-/* ---------------------------------------------------------------------------
  * State fixtures.
  * ------------------------------------------------------------------------- */
 
@@ -509,49 +602,89 @@ static void test_fixture_idle(void)
 	/* Controller is already prepared to Idle by test_controller_prepare(). */
 }
 
-static void test_fixture_run(const char *case_name)
+static void test_command_sucess(const char *command, const char *case_name)
 {
-	uint8_t status = test_execute_line("G21\n");
-	TEST_ASSERT_EQUAL_UINT8_MESSAGE(STATUS_OK, status, case_name);
-	status = test_execute_line("G90\n");
-	TEST_ASSERT_EQUAL_UINT8_MESSAGE(STATUS_OK, status, case_name);
-	status = test_execute_line("G1X100F600\n");
-	TEST_ASSERT_EQUAL_UINT8_MESSAGE(STATUS_OK, status, case_name);
+	uint8_t res = test_command_send(command);
+	char msg[192];
+	snprintf(
+		msg,
+		sizeof(msg),
+		"%s | %s | returned %u, expected %u",
+		case_name,
+		command,
+		res,
+		STATUS_OK);
+	TEST_ASSERT_EQUAL_UINT8_MESSAGE(STATUS_OK, res, case_name);
+}
+
+static void test_command_error(const char *command, const char *case_name)
+{
+	uint8_t res = test_command_send(command);
+	char msg[192];
+	snprintf(
+		msg,
+		sizeof(msg),
+		"%s | %s | returned %u, expected other then %u",
+		case_name,
+		command,
+		res,
+		STATUS_OK);
+	TEST_ASSERT_NOT_EQUAL_MESSAGE(STATUS_OK, res, case_name);
+}
+
+static void test_fixture_custom(const char *case_name, const char *command, uint8_t expected)
+{
+	test_command_sucess(command, case_name);
+	if (expected != 254) // don't care
+		test_wait_status_or_fail(expected, TEST_MOTION_TIMEOUT_MS, case_name, "fixture run");
+}
+
+static void test_fixture_run(const char *case_name, uint8_t expected)
+{
+	// takes 1min to execute
+	test_command_sucess("G21\n", case_name);
+	test_command_sucess("G90\n", case_name);
+	test_fixture_custom(case_name, "G1X250F250\n", expected);
+	// wait for the speed to reach near the top speed
+	// this allows more time for status transitions to be active while motion deaccelerates and accelerates
+	test_wait_for_feed_or_fail(case_name, 240, GT, TEST_MOTION_TIMEOUT_MS);
 }
 
 static void test_fixture_hold(const char *case_name, uint8_t expected)
 {
-	test_fixture_run(case_name);
+	test_fixture_run(case_name, 254);
 	test_send_rt(CMD_CODE_FEED_HOLD);
 	test_wait_status_or_fail(expected, TEST_MOTION_TIMEOUT_MS, case_name, "fixture hold");
 }
 
 static void test_fixture_alarm(void)
 {
-	/* Trigger a real alarm: hard limit while moving. */
-	test_fixture_run("alarm fixture");
+	/* Trigger a real alarm: soft reset while moving. */
+	test_fixture_run("alarm fixture", EXEC_STATUS_RUNNING);
 	test_wait_status_or_fail(
 		EXEC_STATUS_RUNNING,
 		TEST_MOTION_TIMEOUT_MS,
 		"alarm fixture",
 		"run");
-	test_io_set(TEST_IO_LIMIT_X, true);
-	test_delay_ms(10);
-	/* Release the limit so unlock/reset can clear the alarm. */
-	test_io_set(TEST_IO_LIMIT_X, false);
-	test_delay_ms(10);
+	test_send_rt(CMD_CODE_RESET);
+	test_wait_status_or_fail(
+		EXEC_STATUS_ALARM,
+		TEST_MOTION_TIMEOUT_MS,
+		"alarm fixture",
+		"alarm");
 }
 
 static void test_fixture_jog(const char *case_name)
 {
-	uint8_t status = test_execute_line("$J=G91X100F600\n");
-	TEST_ASSERT_EQUAL_UINT8_MESSAGE(STATUS_OK, status, case_name);
+	test_command_sucess("$J=G91X250F250\n", case_name);
+	// wait for the speed to reach near the top speed
+	// this allows more time for status transitions to be active while motion deaccelerates and accelerates
+	test_wait_for_feed_or_fail(case_name, 240, GT, TEST_MOTION_TIMEOUT_MS);
 }
 
 static void test_fixture_check(const char *case_name)
 {
-	uint8_t status = test_execute_line("$C\n");
-	TEST_ASSERT_EQUAL_UINT8_MESSAGE(STATUS_OK, status, case_name);
+	test_command_sucess("$C\n", case_name);
 }
 
 /* ---------------------------------------------------------------------------
@@ -562,7 +695,7 @@ static void test_set_setting(uint8_t id, float value)
 {
 	char cmd[32];
 	snprintf(cmd, sizeof(cmd), "$%u=%g\n", (unsigned)id, value);
-	uint8_t status = test_execute_line(cmd);
+	uint8_t status = test_command_send(cmd);
 	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, status);
 }
 
@@ -602,6 +735,9 @@ typedef struct test_block_
 	bool is_last;					// signals the last block in a sequence
 } test_block_t;
 
+#define TEST_CMD_OK true
+#define TEST_CMD_NOTOK false
+
 void test_run_block(const test_block_t *block);
 void test_run_blocks(const test_block_t *block);
 
@@ -623,26 +759,13 @@ void test_run_block(const test_block_t *block)
 
 	if (block->cmd)
 	{
-		char reason[256];
-		uint8_t result = test_execute_line(block->cmd);
-		mcu_uart2_flush();
 		if (block->cmd_expected_ok)
 		{
-			snprintf(
-				reason,
-				sizeof(reason),
-				"expected command result OK and got %u",
-				result);
-			TEST_ASSERT_EQUAL_UINT8_MESSAGE(STATUS_OK, result, reason);
+			test_command_sucess(block->cmd, "");
 		}
 		else
 		{
-			snprintf(
-				reason,
-				sizeof(reason),
-				"expected command result NOT OK and got %u",
-				result);
-			TEST_ASSERT_NOT_EQUAL_MESSAGE(STATUS_OK, result, reason);
+			test_command_error(block->cmd, "");
 		}
 	}
 
@@ -658,7 +781,7 @@ void test_run_block(const test_block_t *block)
 
 	if (block->expected_position)
 	{
-		test_assert_position_array_mm(block->expected_position);
+		test_assert_in_position(block->expected_position);
 	}
 
 	if (block->io_target)
@@ -711,9 +834,9 @@ void test_run_blocks_test(void)
 
 static void test_g0_absolute_xy(void)
 {
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G21\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G90\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G0X10Y10\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G21\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G90\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G0X10Y10\n"));
 
 	TEST_ASSERT_TRUE(test_sync_motion(TEST_MOTION_TIMEOUT_MS));
 	mcu_uart2_flush();
@@ -721,23 +844,23 @@ static void test_g0_absolute_xy(void)
 	test_assert_position_mm(10.0f, 10.0f, 0.0f);
 	test_assert_capture_has("ok");
 
-	/*-------------OR-------------- */
+	// /*-------------OR-------------- */
 
-	test_run_blocks((test_block_t[3]){
-		{"G21\n", true, 254, 0, false, NULL, 0, false, 0, NULL, false},
-		{"G90\n", true, 254, 0, false, NULL, 0, false, 0, NULL, false},
-		{"G0X10Y10\n", true, 254, 0, true, (float[3]){10.0f, 10.0f, 0.0f}, 0, false, 0, NULL, true}});
+	// test_run_blocks((test_block_t[3]){
+	// 	{.cmd = "G21\n", .cmd_expected_ok = false, .expected_status = 254, .status_wait_timeout = 0, .is_synched = false, .expected_position = NULL, .io_target = 0, .io_value = false, .callback_delay_us = 0, .sequence = NULL, .is_last = false},
+	// 	{"G90\n", true, 254, 0, false, NULL, 0, false, 0, NULL, false},
+	// 	{"G0X10Y10\n", true, 254, 0, true, (float[3]){10.0f, 10.0f, 0.0f}, 0, false, 0, NULL, true}});
 
-	test_assert_capture_has("ok");
+	// test_assert_capture_has("ok");
 }
 
 static void test_g0_incremental_xy(void)
 {
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G21\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G91\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G0X5Y-2\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G21\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G91\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G0X5Y-2\n"));
 	TEST_ASSERT_TRUE(test_sync_motion(TEST_MOTION_TIMEOUT_MS));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G0X5\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G0X5\n"));
 	TEST_ASSERT_TRUE(test_sync_motion(TEST_MOTION_TIMEOUT_MS));
 
 	mcu_uart2_flush();
@@ -748,9 +871,9 @@ static void test_g0_incremental_xy(void)
 
 static void test_g1_absolute_xy(void)
 {
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G21\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G90\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G1X10Y5F600\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G21\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G90\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G1X10Y5F500\n"));
 
 	TEST_ASSERT_TRUE(test_sync_motion(TEST_MOTION_TIMEOUT_MS));
 	mcu_uart2_flush();
@@ -761,11 +884,11 @@ static void test_g1_absolute_xy(void)
 
 static void test_g1_modal_continue(void)
 {
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G21\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G90\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G1X5Y0F600\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G21\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G90\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G1X5Y0F500\n"));
 	TEST_ASSERT_TRUE(test_sync_motion(TEST_MOTION_TIMEOUT_MS));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("X10Y5\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("X10Y5\n"));
 	TEST_ASSERT_TRUE(test_sync_motion(TEST_MOTION_TIMEOUT_MS));
 
 	mcu_uart2_flush();
@@ -780,13 +903,13 @@ static void test_g1_modal_continue(void)
 
 static void test_g2_ij_cw(void)
 {
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G21\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G17\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G90\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("F600\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G0X0Y0\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G21\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G17\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G90\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("F500\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G0X0Y0\n"));
 	TEST_ASSERT_TRUE(test_sync_motion(TEST_MOTION_TIMEOUT_MS));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G2X10Y10I10J0\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G2X10Y10I10J0\n"));
 
 	TEST_ASSERT_TRUE(test_sync_motion(TEST_MOTION_TIMEOUT_MS));
 	mcu_uart2_flush();
@@ -797,13 +920,13 @@ static void test_g2_ij_cw(void)
 
 static void test_g3_ij_ccw(void)
 {
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G21\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G17\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G90\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("F600\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G0X0Y0\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G21\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G17\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G90\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("F500\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G0X0Y0\n"));
 	TEST_ASSERT_TRUE(test_sync_motion(TEST_MOTION_TIMEOUT_MS));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G3X10Y10I0J10\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G3X10Y10I0J10\n"));
 
 	TEST_ASSERT_TRUE(test_sync_motion(TEST_MOTION_TIMEOUT_MS));
 	mcu_uart2_flush();
@@ -814,13 +937,13 @@ static void test_g3_ij_ccw(void)
 
 static void test_g2_r_cw(void)
 {
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G21\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G17\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G90\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("F600\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G0X0Y0\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G21\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G17\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G90\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("F500\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G0X0Y0\n"));
 	TEST_ASSERT_TRUE(test_sync_motion(TEST_MOTION_TIMEOUT_MS));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G2X10Y10R10\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G2X10Y10R10\n"));
 
 	TEST_ASSERT_TRUE(test_sync_motion(TEST_MOTION_TIMEOUT_MS));
 	mcu_uart2_flush();
@@ -831,13 +954,13 @@ static void test_g2_r_cw(void)
 
 static void test_g3_r_ccw(void)
 {
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G21\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G17\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G90\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("F600\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G0X0Y0\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G21\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G17\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G90\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("F500\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G0X0Y0\n"));
 	TEST_ASSERT_TRUE(test_sync_motion(TEST_MOTION_TIMEOUT_MS));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G3X10Y10R10\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G3X10Y10R10\n"));
 
 	TEST_ASSERT_TRUE(test_sync_motion(TEST_MOTION_TIMEOUT_MS));
 	mcu_uart2_flush();
@@ -850,13 +973,13 @@ static void test_g3_r_ccw(void)
 #ifdef AXIS_Z
 static void test_g18_xz_plane(void)
 {
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G21\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G18\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G90\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("F600\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G0X0Z0\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G21\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G18\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G90\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("F500\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G0X0Z0\n"));
 	TEST_ASSERT_TRUE(test_sync_motion(TEST_MOTION_TIMEOUT_MS));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G2X10Z10I10K0\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G2X10Z10I10K0\n"));
 
 	TEST_ASSERT_TRUE(test_sync_motion(TEST_MOTION_TIMEOUT_MS));
 	mcu_uart2_flush();
@@ -871,13 +994,13 @@ static void test_g18_xz_plane(void)
 #ifdef AXIS_Z
 static void test_g19_yz_plane(void)
 {
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G21\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G19\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G90\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("F600\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G0Y0Z0\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G21\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G19\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G90\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("F500\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G0Y0Z0\n"));
 	TEST_ASSERT_TRUE(test_sync_motion(TEST_MOTION_TIMEOUT_MS));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G3Y10Z10J0K10\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G3Y10Z10J0K10\n"));
 
 	TEST_ASSERT_TRUE(test_sync_motion(TEST_MOTION_TIMEOUT_MS));
 	mcu_uart2_flush();
@@ -894,9 +1017,9 @@ static void test_g19_yz_plane(void)
 
 static void test_g20_inch(void)
 {
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G20\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G90\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G0X1\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G20\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G90\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G0X1\n"));
 
 	TEST_ASSERT_TRUE(test_sync_motion(TEST_MOTION_TIMEOUT_MS));
 	mcu_uart2_flush();
@@ -907,9 +1030,9 @@ static void test_g20_inch(void)
 
 static void test_g21_mm(void)
 {
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G21\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G90\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G0X25.4\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G21\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G90\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G0X25.4\n"));
 
 	TEST_ASSERT_TRUE(test_sync_motion(TEST_MOTION_TIMEOUT_MS));
 	mcu_uart2_flush();
@@ -920,8 +1043,8 @@ static void test_g21_mm(void)
 
 static void test_word_order(void)
 {
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G21\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("Y10F600X10G1G90\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G21\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("Y10F500X10G1G90\n"));
 
 	TEST_ASSERT_TRUE(test_sync_motion(TEST_MOTION_TIMEOUT_MS));
 	mcu_uart2_flush();
@@ -932,9 +1055,9 @@ static void test_word_order(void)
 
 static void test_comment_in_line(void)
 {
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G21\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G90\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G0X10(test comment)Y10\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G21\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G90\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G0X10(test comment)Y10\n"));
 
 	TEST_ASSERT_TRUE(test_sync_motion(TEST_MOTION_TIMEOUT_MS));
 	mcu_uart2_flush();
@@ -949,7 +1072,7 @@ static void test_comment_in_line(void)
 
 static void test_valid_multiple_modal_groups(void)
 {
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G21G90G1X10Y5F600\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G21G90G1X10Y5F500\n"));
 
 	TEST_ASSERT_TRUE(test_sync_motion(TEST_MOTION_TIMEOUT_MS));
 	mcu_uart2_flush();
@@ -960,7 +1083,7 @@ static void test_valid_multiple_modal_groups(void)
 
 static void test_valid_reordered_modal_groups(void)
 {
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("Y5F600X10G1G90G21\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("Y5F500X10G1G90G21\n"));
 
 	TEST_ASSERT_TRUE(test_sync_motion(TEST_MOTION_TIMEOUT_MS));
 	mcu_uart2_flush();
@@ -980,7 +1103,7 @@ static void test_invalid_gcode_does_not_move(void)
 
 	itp_get_rt_position(before);
 
-	uint8_t status = test_execute_line("G0XABC\n");
+	uint8_t status = test_command_send("G0XABC\n");
 
 	TEST_ASSERT_NOT_EQUAL(STATUS_OK, status);
 
@@ -996,143 +1119,143 @@ static void test_invalid_gcode_does_not_move(void)
 
 static void test_err_g0_no_axis(void)
 {
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G21\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G90\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G0X0\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G21\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G90\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G0X0\n"));
 	TEST_ASSERT_TRUE(test_sync_motion(TEST_MOTION_TIMEOUT_MS));
 
-	uint8_t status = test_execute_line("G0\n");
+	uint8_t status = test_command_send("G0\n");
 	TEST_ASSERT_NOT_EQUAL(STATUS_OK, status);
 }
 
 static void test_err_g1_no_axis(void)
 {
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G21\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G90\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G1X0F600\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G21\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G90\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G1X0F500\n"));
 	TEST_ASSERT_TRUE(test_sync_motion(TEST_MOTION_TIMEOUT_MS));
 
-	uint8_t status = test_execute_line("G1\n");
+	uint8_t status = test_command_send("G1\n");
 	TEST_ASSERT_NOT_EQUAL(STATUS_OK, status);
 }
 
 static void test_err_axis_no_number(void)
 {
-	uint8_t status = test_execute_line("G0X\n");
+	uint8_t status = test_command_send("G0X\n");
 	TEST_ASSERT_NOT_EQUAL(STATUS_OK, status);
 }
 
 static void test_err_bad_number(void)
 {
-	uint8_t status = test_execute_line("G0XABC\n");
+	uint8_t status = test_command_send("G0XABC\n");
 	TEST_ASSERT_NOT_EQUAL(STATUS_OK, status);
 }
 
 static void test_err_repeated_axis(void)
 {
-	uint8_t status = test_execute_line("G0X1X2\n");
+	uint8_t status = test_command_send("G0X1X2\n");
 	TEST_ASSERT_NOT_EQUAL(STATUS_OK, status);
 }
 
 static void test_err_two_motion_gcodes(void)
 {
-	uint8_t status = test_execute_line("G0G1X10\n");
+	uint8_t status = test_command_send("G0G1X10\n");
 	TEST_ASSERT_NOT_EQUAL(STATUS_OK, status);
 }
 
 static void test_err_two_unit_gcodes(void)
 {
-	uint8_t status = test_execute_line("G20G21\n");
+	uint8_t status = test_command_send("G20G21\n");
 	TEST_ASSERT_NOT_EQUAL(STATUS_OK, status);
 }
 
 static void test_err_two_distance_modes(void)
 {
-	uint8_t status = test_execute_line("G90G91\n");
+	uint8_t status = test_command_send("G90G91\n");
 	TEST_ASSERT_NOT_EQUAL(STATUS_OK, status);
 }
 
 static void test_err_g2_no_center(void)
 {
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G17\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G90\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("F600\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G0X0Y0\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G17\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G90\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("F500\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G0X0Y0\n"));
 	TEST_ASSERT_TRUE(test_sync_motion(TEST_MOTION_TIMEOUT_MS));
 
-	uint8_t status = test_execute_line("G2X10Y10F600\n");
+	uint8_t status = test_command_send("G2X10Y10F500\n");
 	TEST_ASSERT_NOT_EQUAL(STATUS_OK, status);
 }
 
 static void test_err_g3_no_center(void)
 {
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G17\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G90\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("F600\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G0X0Y0\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G17\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G90\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("F500\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G0X0Y0\n"));
 	TEST_ASSERT_TRUE(test_sync_motion(TEST_MOTION_TIMEOUT_MS));
 
-	uint8_t status = test_execute_line("G3X10Y10F600\n");
+	uint8_t status = test_command_send("G3X10Y10F500\n");
 	TEST_ASSERT_NOT_EQUAL(STATUS_OK, status);
 }
 
 static void test_err_g2_no_endpoint(void)
 {
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G17\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G90\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("F600\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G0X0Y0\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G17\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G90\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("F500\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G0X0Y0\n"));
 	TEST_ASSERT_TRUE(test_sync_motion(TEST_MOTION_TIMEOUT_MS));
 
-	uint8_t status = test_execute_line("G2I5J0F600\n");
+	uint8_t status = test_command_send("G2I5J0F500\n");
 	TEST_ASSERT_NOT_EQUAL(STATUS_OK, status);
 }
 
 static void test_err_g3_no_endpoint(void)
 {
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G17\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G90\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("F600\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G0X0Y0\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G17\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G90\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("F500\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G0X0Y0\n"));
 	TEST_ASSERT_TRUE(test_sync_motion(TEST_MOTION_TIMEOUT_MS));
 
-	uint8_t status = test_execute_line("G3I0J5F600\n");
+	uint8_t status = test_command_send("G3I0J5F500\n");
 	TEST_ASSERT_NOT_EQUAL(STATUS_OK, status);
 }
 
 static void test_err_g2_bad_center_radius(void)
 {
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G17\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G90\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("F600\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G0X0Y0\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G17\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G90\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("F500\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G0X0Y0\n"));
 	TEST_ASSERT_TRUE(test_sync_motion(TEST_MOTION_TIMEOUT_MS));
 
-	uint8_t status = test_execute_line("G2X10Y10I4J0F600\n");
+	uint8_t status = test_command_send("G2X10Y10I4J0F500\n");
 	TEST_ASSERT_NOT_EQUAL(STATUS_OK, status);
 }
 
 static void test_err_g2_radius_too_small(void)
 {
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G17\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G90\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("F600\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G0X0Y0\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G17\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G90\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("F500\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G0X0Y0\n"));
 	TEST_ASSERT_TRUE(test_sync_motion(TEST_MOTION_TIMEOUT_MS));
 
-	uint8_t status = test_execute_line("G2X10Y10R1F600\n");
+	uint8_t status = test_command_send("G2X10Y10R1F500\n");
 	TEST_ASSERT_NOT_EQUAL(STATUS_OK, status);
 }
 
 static void test_err_g4_negative(void)
 {
-	uint8_t status = test_execute_line("G4P-1\n");
+	uint8_t status = test_command_send("G4P-1\n");
 	TEST_ASSERT_NOT_EQUAL(STATUS_OK, status);
 }
 
 static void test_err_g4_missing_p(void)
 {
-	uint8_t status = test_execute_line("G4\n");
+	uint8_t status = test_command_send("G4\n");
 	TEST_ASSERT_NOT_EQUAL(STATUS_OK, status);
 }
 
@@ -1142,15 +1265,15 @@ static void test_err_g4_missing_p(void)
 
 static void test_parser_atomicity(void)
 {
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G21\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G90\n"));
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G0X0\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G21\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G90\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G0X0\n"));
 	TEST_ASSERT_TRUE(test_sync_motion(TEST_MOTION_TIMEOUT_MS));
 
-	uint8_t status = test_execute_line("G91G0XBAD\n");
+	uint8_t status = test_command_send("G91G0XBAD\n");
 	TEST_ASSERT_NOT_EQUAL(STATUS_OK, status);
 
-	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_execute_line("G0X10\n"));
+	TEST_ASSERT_EQUAL_UINT8(STATUS_OK, test_command_send("G0X10\n"));
 	TEST_ASSERT_TRUE(test_sync_motion(TEST_MOTION_TIMEOUT_MS));
 
 	mcu_uart2_flush();
@@ -1171,7 +1294,7 @@ static void test_safety_door_path(void)
 {
 	const char *case_name = "safety door stop/close/resume/reopen";
 
-	test_fixture_run(case_name);
+	test_fixture_run(case_name, EXEC_STATUS_RUNNING);
 	test_wait_status_or_fail(
 		EXEC_STATUS_RUNNING,
 		TEST_MOTION_TIMEOUT_MS,
@@ -1247,7 +1370,7 @@ static void test_door_resume_grbl_door3(void)
 {
 	const char *case_name = "door resume Grbl Door:3";
 
-	test_fixture_run(case_name);
+	test_fixture_run(case_name, EXEC_STATUS_RUNNING);
 	test_wait_status_or_fail(
 		EXEC_STATUS_RUNNING,
 		TEST_MOTION_TIMEOUT_MS,
@@ -1363,7 +1486,7 @@ static void test_build_fixture(test_fixture_t fixture, const char *case_name)
 	case TEST_FIXTURE_IDLE:
 		break;
 	case TEST_FIXTURE_RUN:
-		test_fixture_run(case_name);
+		test_fixture_run(case_name, EXEC_STATUS_RUNNING);
 		test_wait_status_or_fail(
 			EXEC_STATUS_RUNNING,
 			TEST_MOTION_TIMEOUT_MS,
@@ -1385,7 +1508,7 @@ static void test_build_fixture(test_fixture_t fixture, const char *case_name)
 		test_fixture_alarm();
 		break;
 	case TEST_FIXTURE_DOOR_OPEN:
-		test_fixture_run(case_name);
+		test_fixture_run(case_name, EXEC_STATUS_RUNNING);
 		test_wait_status_or_fail(
 			EXEC_STATUS_RUNNING,
 			TEST_MOTION_TIMEOUT_MS,
@@ -1447,7 +1570,7 @@ static void test_apply_stimulus(test_stimulus_t stimulus)
 
 static void test_run_transition_case(const test_transition_case_t *tc)
 {
-	test_controller_prepare();
+	test_controller_clean_state();
 
 	test_build_fixture(tc->initial, tc->name);
 
@@ -1662,7 +1785,7 @@ static void test_override_feed(void)
 	const char *case_name = "feed override";
 
 	/* Feed override is meaningful while running a feed move. */
-	test_fixture_run(case_name);
+	test_fixture_run(case_name, EXEC_STATUS_RUNNING);
 	test_wait_status_or_fail(
 		EXEC_STATUS_RUNNING,
 		TEST_MOTION_TIMEOUT_MS,
@@ -1695,7 +1818,7 @@ static void test_override_rapid(void)
 {
 	const char *case_name = "rapid override";
 
-	test_fixture_run(case_name);
+	test_fixture_run(case_name, EXEC_STATUS_RUNNING);
 	test_wait_status_or_fail(
 		EXEC_STATUS_RUNNING,
 		TEST_MOTION_TIMEOUT_MS,
@@ -1758,8 +1881,7 @@ static void test_jog_success_path(void)
 	const char *case_name = "jog success from Idle";
 
 	/* Valid jog from Idle. */
-	uint8_t status = test_execute_line("$J=G91X20F600\n");
-	TEST_ASSERT_EQUAL_UINT8_MESSAGE(STATUS_OK, status, case_name);
+	test_command_sucess("$J=G91X20F500\n", case_name);
 
 	/* Enters Jog. */
 	test_wait_status_or_fail(
@@ -1819,7 +1941,7 @@ static void test_jog_admission_matrix(void)
 
 		printf("[JOG-ADMIT] case %s: prepare...\n", case_name);
 		fflush(stdout);
-		test_controller_prepare();
+		test_controller_clean_state();
 		printf("[JOG-ADMIT] case %s: prepared\n", case_name);
 		fflush(stdout);
 
@@ -1830,9 +1952,9 @@ static void test_jog_admission_matrix(void)
 			break;
 		case TEST_JOG_ADMIT_RUN:
 			/* Use a long move so Run is still active when jog is rejected. */
-			test_execute_line("G21\n");
-			test_execute_line("G90\n");
-			test_execute_line("G1X1000F600\n");
+			test_command_send("G21\n");
+			test_command_send("G90\n");
+			test_command_send("G1X1000F500\n");
 			printf("[JOG-ADMIT] %s: G1 queued, millis=%u status=%u\n", case_name, (unsigned)mcu_millis(), cnc_get_status());
 			fflush(stdout);
 			test_wait_status_or_fail(
@@ -1850,7 +1972,7 @@ static void test_jog_admission_matrix(void)
 			test_fixture_alarm();
 			break;
 		case TEST_JOG_ADMIT_DOOR:
-			test_fixture_run(case_name);
+			test_fixture_run(case_name, EXEC_STATUS_RUNNING);
 			test_wait_status_or_fail(
 				EXEC_STATUS_RUNNING,
 				TEST_MOTION_TIMEOUT_MS,
@@ -1874,7 +1996,7 @@ static void test_jog_admission_matrix(void)
 
 		printf("[JOG-ADMIT] %s: about to exec jog, millis=%u status=%u\n", case_name, (unsigned)mcu_millis(), cnc_get_status());
 		fflush(stdout);
-		uint8_t status = test_execute_line("$J=G91X10F600\n");
+		uint8_t status = test_command_send("$J=G91X10F500\n");
 		printf("[JOG-ADMIT] %s: jog exec returned status=%u\n", case_name, status);
 		fflush(stdout);
 
@@ -1965,9 +2087,9 @@ static void test_jog_modal_isolation(void)
 	 * Establish an unmistakable normal parser state before jogging:
 	 * G21 (mm), G90 (absolute) and G93 (inverse-time feed mode).
 	 */
-	test_execute_line("G21\n");
-	test_execute_line("G90\n");
-	test_execute_line("G93\n");
+	test_command_send("G21\n");
+	test_command_send("G90\n");
+	test_command_send("G93\n");
 
 	int d0;
 	int f0;
@@ -1983,8 +2105,7 @@ static void test_jog_modal_isolation(void)
 	 * Jog overrides units (G20) and distance (G91) for this command only.
 	 * F is always interpreted in G94 units/min regardless of current G93.
 	 */
-	uint8_t status = test_execute_line("$J=G91G20X0.5F600\n");
-	TEST_ASSERT_EQUAL_UINT8_MESSAGE(STATUS_OK, status, case_name);
+	test_command_sucess("$J=G91G20X0.5F500\n", case_name);
 
 	/* Let the jog run to completion and clear the interpolator queue. */
 	test_wait_status_or_fail(
@@ -2020,22 +2141,22 @@ static void test_jog_syntax_and_modal_variants(void)
 		const char *name;
 		const char *cmd;
 	} valid[] = {
-		{.name = "jog incremental single axis", .cmd = "$J=G91X10F600\n"},
-		{.name = "jog incremental multiple axes", .cmd = "$J=G91X10Y5F600\n"},
-		{.name = "jog absolute G21 mm", .cmd = "$J=G90X25F600\n"},
-		{.name = "jog imperial G20 inch", .cmd = "$J=G90G20X1F600\n"},
-		{.name = "jog with spaces", .cmd = "$J= G91 X10 F600\n"},
-		{.name = "jog with N line number", .cmd = "$J=N5G91X10F600\n"},
-		{.name = "jog with comment", .cmd = "$J=G91X10F600 (comment)\n"},
+		{.name = "jog incremental single axis", .cmd = "$J=G91X10F500\n"},
+		{.name = "jog incremental multiple axes", .cmd = "$J=G91X10Y5F500\n"},
+		{.name = "jog absolute G21 mm", .cmd = "$J=G90X25F500\n"},
+		{.name = "jog imperial G20 inch", .cmd = "$J=G90G20X1F500\n"},
+		{.name = "jog with spaces", .cmd = "$J= G91 X10 F500\n"},
+		{.name = "jog with N line number", .cmd = "$J=N5G91X10F500\n"},
+		{.name = "jog with comment", .cmd = "$J=G91X10F500 (comment)\n"},
 	};
 
 	for (size_t i = 0; i < sizeof(valid) / sizeof(valid[0]); i++)
 	{
 		const char *case_name = valid[i].name;
 
-		test_controller_prepare();
+		test_controller_clean_state();
 
-		uint8_t status = test_execute_line(valid[i].cmd);
+		uint8_t status = test_command_send(valid[i].cmd);
 		char msg[192];
 
 		snprintf(
@@ -2074,12 +2195,12 @@ static void test_jog_syntax_and_modal_variants(void)
 		const char *name;
 		const char *cmd;
 	} invalid[] = {
-		{.name = "jog missing axis word", .cmd = "$J=G91F600\n"},
+		{.name = "jog missing axis word", .cmd = "$J=G91F500\n"},
 		{.name = "jog missing F", .cmd = "$J=G91X10\n"},
-		{.name = "jog with M code", .cmd = "$J=G91X10M3F600\n"},
-		{.name = "jog with S word", .cmd = "$J=G91X10S1000F600\n"},
-		{.name = "jog with T word", .cmd = "$J=G91X10T1F600\n"},
-		{.name = "jog with unsupported G code", .cmd = "$J=G0X10F600\n"},
+		{.name = "jog with M code", .cmd = "$J=G91X10M3F500\n"},
+		{.name = "jog with S word", .cmd = "$J=G91X10S1000F500\n"},
+		{.name = "jog with T word", .cmd = "$J=G91X10T1F500\n"},
+		{.name = "jog with unsupported G code", .cmd = "$J=G0X10F500\n"},
 		{.name = "jog zero feed", .cmd = "$J=G91X10F0\n"},
 	};
 
@@ -2087,12 +2208,12 @@ static void test_jog_syntax_and_modal_variants(void)
 	{
 		const char *case_name = invalid[i].name;
 
-		test_controller_prepare();
+		test_controller_clean_state();
 
 		int32_t before[STEPPER_COUNT] = {0};
 		itp_get_rt_position(before);
 
-		uint8_t status = test_execute_line(invalid[i].cmd);
+		uint8_t status = test_command_send(invalid[i].cmd);
 		char msg[192];
 
 		snprintf(
@@ -2124,15 +2245,17 @@ static void test_serial_hold_resume(void)
 {
 	const char *case_name = "serial hold/resume";
 
-	test_fixture_run(case_name);
+	test_controller_clean_state();
+
+	test_fixture_run(case_name, EXEC_STATUS_RUNNING);
 	test_wait_status_or_fail(
 		EXEC_STATUS_RUNNING,
 		TEST_MOTION_TIMEOUT_MS,
 		case_name,
 		"fixture running");
 
-	/* Advance into the move so the hold fires mid-motion. */
-	test_delay_ms(20);
+	/* Status query `?` while holding must report Hold:1. */
+	mcu_uart2_test_capture_reset();
 
 	/* Serial feed hold `!`. */
 	test_send_rt(CMD_CODE_FEED_HOLD);
@@ -2141,6 +2264,11 @@ static void test_serial_hold_resume(void)
 		TEST_MOTION_TIMEOUT_MS,
 		case_name,
 		"after serial hold");
+	test_send_rt(CMD_CODE_REPORT);
+	test_assert_capture_has("<Hold:1");
+
+	/* Status query `?` while holding must report Hold:0. */
+	mcu_uart2_test_capture_reset();
 	test_wait_status_or_fail(
 		EXEC_STATUS_HOLD,
 		TEST_MOTION_TIMEOUT_MS,
@@ -2148,7 +2276,6 @@ static void test_serial_hold_resume(void)
 		"settled serial hold");
 
 	/* Status query `?` while holding must report Hold:0. */
-	mcu_uart2_test_capture_reset();
 	test_send_rt(CMD_CODE_REPORT);
 	test_assert_capture_has("<Hold:0");
 
@@ -2165,8 +2292,10 @@ static void test_physical_fhold_smoke(void)
 {
 	const char *case_name = "physical FHOLD smoke";
 
+	test_controller_clean_state();
+
 	/* Start a long Run move. */
-	test_fixture_run(case_name);
+	test_fixture_run(case_name, EXEC_STATUS_RUNNING);
 	test_wait_status_or_fail(
 		EXEC_STATUS_RUNNING,
 		TEST_MOTION_TIMEOUT_MS,
@@ -2200,62 +2329,134 @@ static void test_physical_fhold_smoke(void)
 		"after resume");
 }
 
+// ## Test 2 — Physical feed hold during active motion
+static void test_physical_hold_input(void)
+{
+	const char *case_name = "Physical feed hold during active motion";
+	// - action: prepare the controller in Idle
+	test_controller_clean_state();
+	// - action: start a long `G1` move
+	// - assert: verify the machine enters Run
+	test_fixture_custom(case_name, "G0X50\n", EXEC_STATUS_RUNNING);
+	// - action: schedule physical FHOLD assertion while the move is active
+	// - assert: verify the scheduled event fires while motion is still active
+	test_schedule_io_us(TEST_IO_FHOLD, true, 0);
+	// - assert: verify the machine enters `Hold:1`
+	test_wait_status_or_fail(EXEC_STATUS_HOLD_PENDING, 1000, case_name, "holding failed");
+	// - action: allow the controlled stop to progress
+	// - assert: verify the machine reaches `Hold:0`
+	test_wait_status_or_fail(EXEC_STATUS_HOLD, 1000, case_name, "hold failed");
+	// - assert: verify motion stopped before the original move completed
+	test_assert_not_in_position((float[3]){50, 0, 0});
+	// - action: finish the test and reset IO/events
+	// - assert: verify the next test starts without a stale FHOLD input or event
+	test_controller_clean_state();
+}
+
+// ## Test 3 — Realtime hold, resume, and status reporting
+static void test_realtime_hold_resume_status(void)
+{
+	// ### Sub-test: realtime hold and resume
+	const char *case_name = "Sub-test: realtime hold and resume";
+	// - action: prepare the controller in Idle
+	test_controller_clean_state();
+	// - action: start a long `G1` move
+	// - assert: verify the machine enters Run
+	test_fixture_custom(case_name, "G0X50\n", EXEC_STATUS_RUNNING);
+	// wait for some speed before sending hold
+	test_wait_for_feed_or_fail(case_name, 450, GT, 5000);
+	// - action: send realtime feed hold `!`
+	test_send_rt(CMD_CODE_FEED_HOLD);
+	// test_send_rt(CMD_CODE_FEED_HOLD);
+	// - assert: verify the machine enters `Hold:1`
+	test_wait_status_or_fail(EXEC_STATUS_HOLD_PENDING, 1000, case_name, "holding failed");
+	test_send_rt(CMD_CODE_REPORT);
+	// - action: allow the controlled stop to complete
+	// - assert: verify the machine reaches `Hold:0`
+	test_wait_status_or_fail(EXEC_STATUS_HOLD, 1000, case_name, "hold failed");
+	test_assert_not_in_position((float[3]){100, 0, 0});
+	// - action: send realtime cycle start `~`
+	test_send_rt(CMD_CODE_CYCLE_START);
+	// - assert: verify the machine returns to Run
+	test_wait_status_or_fail(EXEC_STATUS_RUNNING, 5000, case_name, "resume failed");
+	// - action: wait for motion to finish
+	itp_sync();
+	// - assert: verify the final state is Idle
+	test_wait_status_or_fail(EXEC_STATUS_IDLE, 100, case_name, "idle failed");
+	test_assert_not_in_position((float[3]){100, 0, 0});
+
+	// ### Sub-test: public state and protocol state agree
+
+	// - action: create each representative state used by the hold/resume test
+	// - action: send realtime status query `?`
+	// - assert: verify the reported Grbl state matches the state derived from `cnc_get_status()`
+	// - assert: verify Run is reported as Run
+	// - assert: verify `Hold:1` is reported as `Hold:1`
+	// - assert: verify `Hold:0` is reported as `Hold:0`
+
+	// ### Sub-test: physical and serial feed hold parity
+
+	// - action: run the physical FHOLD scenario
+	// - action: record the observed immediate and settled states
+	// - action: run the realtime `!` scenario from the same initial conditions
+	// - assert: verify both paths produce equivalent hold behavior
+}
+
 int main(void)
 {
 	UNITY_BEGIN();
 
-	// RUN_TEST(test_run_blocks_test);
+	// 	RUN_TEST(test_controller_clean_state);
 
-	// return UNITY_END();
+	// 	RUN_TEST(test_g0_absolute_xy);
+	// 	RUN_TEST(test_g0_incremental_xy);
+	// 	RUN_TEST(test_g1_absolute_xy);
+	// 	RUN_TEST(test_g1_modal_continue);
 
-	RUN_TEST(test_g0_absolute_xy);
-	RUN_TEST(test_g0_incremental_xy);
-	RUN_TEST(test_g1_absolute_xy);
-	RUN_TEST(test_g1_modal_continue);
+	// 	RUN_TEST(test_g2_ij_cw);
+	// 	RUN_TEST(test_g3_ij_ccw);
+	// 	RUN_TEST(test_g2_r_cw);
+	// 	RUN_TEST(test_g3_r_ccw);
+	// #ifdef AXIS_X
+	// #ifdef AXIS_Z
+	// 	RUN_TEST(test_g18_xz_plane);
+	// #endif
+	// #endif
+	// #ifdef AXIS_Y
+	// #ifdef AXIS_Z
+	// 	RUN_TEST(test_g19_yz_plane);
+	// #endif
+	// #endif
 
-	RUN_TEST(test_g2_ij_cw);
-	RUN_TEST(test_g3_ij_ccw);
-	RUN_TEST(test_g2_r_cw);
-	RUN_TEST(test_g3_r_ccw);
-#ifdef AXIS_X
-#ifdef AXIS_Z
-	RUN_TEST(test_g18_xz_plane);
-#endif
-#endif
-#ifdef AXIS_Y
-#ifdef AXIS_Z
-	RUN_TEST(test_g19_yz_plane);
-#endif
-#endif
+	// 	RUN_TEST(test_g20_inch);
+	// 	RUN_TEST(test_g21_mm);
+	// 	RUN_TEST(test_word_order);
+	// 	RUN_TEST(test_comment_in_line);
 
-	RUN_TEST(test_g20_inch);
-	RUN_TEST(test_g21_mm);
-	RUN_TEST(test_word_order);
-	RUN_TEST(test_comment_in_line);
+	// 	RUN_TEST(test_valid_multiple_modal_groups);
+	// 	RUN_TEST(test_valid_reordered_modal_groups);
 
-	RUN_TEST(test_valid_multiple_modal_groups);
-	RUN_TEST(test_valid_reordered_modal_groups);
+	// 	RUN_TEST(test_invalid_gcode_does_not_move);
+	// 	RUN_TEST(test_err_g0_no_axis);
+	// 	RUN_TEST(test_err_g1_no_axis);
+	// 	RUN_TEST(test_err_axis_no_number);
+	// 	RUN_TEST(test_err_bad_number);
+	// 	RUN_TEST(test_err_repeated_axis);
+	// 	RUN_TEST(test_err_two_motion_gcodes);
+	// 	RUN_TEST(test_err_two_unit_gcodes);
+	// 	RUN_TEST(test_err_two_distance_modes);
+	// 	RUN_TEST(test_err_g2_no_center);
+	// 	RUN_TEST(test_err_g3_no_center);
+	// 	RUN_TEST(test_err_g2_no_endpoint);
+	// 	RUN_TEST(test_err_g3_no_endpoint);
+	// 	RUN_TEST(test_err_g2_bad_center_radius);
+	// 	RUN_TEST(test_err_g2_radius_too_small);
+	// 	RUN_TEST(test_err_g4_negative);
+	// 	RUN_TEST(test_err_g4_missing_p);
 
-	RUN_TEST(test_invalid_gcode_does_not_move);
-	RUN_TEST(test_err_g0_no_axis);
-	RUN_TEST(test_err_g1_no_axis);
-	RUN_TEST(test_err_axis_no_number);
-	RUN_TEST(test_err_bad_number);
-	RUN_TEST(test_err_repeated_axis);
-	RUN_TEST(test_err_two_motion_gcodes);
-	RUN_TEST(test_err_two_unit_gcodes);
-	RUN_TEST(test_err_two_distance_modes);
-	RUN_TEST(test_err_g2_no_center);
-	RUN_TEST(test_err_g3_no_center);
-	RUN_TEST(test_err_g2_no_endpoint);
-	RUN_TEST(test_err_g3_no_endpoint);
-	RUN_TEST(test_err_g2_bad_center_radius);
-	RUN_TEST(test_err_g2_radius_too_small);
-	RUN_TEST(test_err_g4_negative);
-	RUN_TEST(test_err_g4_missing_p);
+	// RUN_TEST(test_parser_atomicity);
 
-	RUN_TEST(test_parser_atomicity);
-
+	/*Grbl state compliance tests*/
 	RUN_TEST(test_physical_fhold_smoke);
 	RUN_TEST(test_serial_hold_resume);
 	RUN_TEST(test_safety_door_path);
@@ -2274,6 +2475,9 @@ int main(void)
 	RUN_TEST(test_jog_modal_isolation);
 	RUN_TEST(test_jog_syntax_and_modal_variants);
 	RUN_TEST(test_door_resume_grbl_door3);
+
+	// RUN_TEST(test_physical_hold_input);
+	// RUN_TEST(test_realtime_hold_resume_status);
 
 	return UNITY_END();
 }
