@@ -184,6 +184,162 @@ extern "C"
 
 #endif /* MCU_HAS_UART2 */
 
+#ifdef PIO_UNIT_TESTING
+
+#ifndef PIO_UNIT_TESTING_TX_BUFFER_SIZE
+#define PIO_UNIT_TESTING_TX_BUFFER_SIZE 4096
+#endif
+
+	DECL_BUFFER(uint8_t, unit_test_tx, PIO_UNIT_TESTING_TX_BUFFER_SIZE);
+	DECL_BUFFER(uint8_t, unit_test_rx, RX_BUFFER_SIZE);
+
+	uint8_t mcu_unit_test_getc(void)
+	{
+		uint8_t c = 0;
+		BUFFER_DEQUEUE(unit_test_rx, &c);
+		return c;
+	}
+	uint8_t mcu_unit_test_available(void) { return BUFFER_READ_AVAILABLE(unit_test_rx); }
+	void mcu_unit_test_clear(void) { BUFFER_CLEAR(unit_test2_rx); }
+
+	void mcu_unit_test_putc(uint8_t c)
+	{
+		while (!BUFFER_TRY_ENQUEUE(unit_test_tx, &c))
+		{
+			mcu_unit_test_flush();
+		}
+	}
+
+	void mcu_unit_test_flush(void)
+	{
+		if (BUFFER_FULL(unit_test_tx))
+			BUFFER_CLEAR(unit_test_tx);
+	}
+
+	bool mcu_unit_test_inject(const char *cmd)
+	{
+		if (!cmd)
+		{
+			return false;
+		}
+
+		while (*cmd)
+		{
+			uint8_t c = (uint8_t)*cmd++;
+
+			/*
+			 * Use the same realtime-character path as normal UART input.
+			 */
+			if (mcu_com_rx_cb(c))
+			{
+				if (!BUFFER_TRY_ENQUEUE(unit_test_rx, &c))
+				{
+					return false;
+				}
+			}
+		}
+
+		return true;
+	}
+
+	const char *mcu_unit_test_buffer(void)
+	{
+		return (const char *)unit_test_tx_bufferdata;
+	}
+
+	void mcu_unit_test_buffer_clear(void)
+	{
+		BUFFER_CLEAR(unit_test_tx);
+	}
+
+	DECL_GRBL_STREAM(unit_test_grbl_stream, mcu_unit_test_getc, mcu_unit_test_available, mcu_unit_test_clear, mcu_unit_test_putc, mcu_unit_test_flush);
+
+typedef bool (*test_io_callback_t)(void);
+
+typedef struct
+{
+	bool static_value;
+
+	bool timed_enabled;
+	bool timed_initial;
+	bool timed_final;
+	uint32_t timed_start_ms;
+	uint32_t timed_delay_ms;
+
+	test_io_callback_t callback;
+} test_io_signal_t;
+
+static test_io_signal_t g_test_io[TEST_IO_COUNT];
+
+bool test_io_condition(test_io_id_t input)
+{
+	if (input >= TEST_IO_COUNT)
+	{
+		return false;
+	}
+
+	test_io_signal_t *sig = &g_test_io[input];
+
+	if (sig->callback)
+	{
+		return sig->callback();
+	}
+
+	if (sig->timed_enabled)
+	{
+		bool elapsed =
+			(uint32_t)(mcu_millis() - sig->timed_start_ms) >=
+			sig->timed_delay_ms;
+
+		return elapsed ? sig->timed_final : sig->timed_initial;
+	}
+
+	return sig->static_value;
+}
+
+void test_io_reset(void)
+{
+	memset(g_test_io, 0, sizeof(g_test_io));
+}
+
+void test_io_set(test_io_id_t input, bool value)
+{
+	if (input < TEST_IO_COUNT)
+	{
+		g_test_io[input].static_value = value;
+		g_test_io[input].timed_enabled = false;
+		g_test_io[input].callback = NULL;
+	}
+}
+
+void test_io_set_after(test_io_id_t input,
+					   uint32_t delay_ms,
+					   bool initial_value,
+					   bool final_value)
+{
+	if (input < TEST_IO_COUNT)
+	{
+		g_test_io[input].timed_enabled = true;
+		g_test_io[input].timed_initial = initial_value;
+		g_test_io[input].timed_final = final_value;
+		g_test_io[input].timed_start_ms = mcu_millis();
+		g_test_io[input].timed_delay_ms = delay_ms;
+		g_test_io[input].callback = NULL;
+	}
+}
+
+void test_io_set_callback(test_io_id_t input,
+						  test_io_callback_t cb)
+{
+	if (input < TEST_IO_COUNT)
+	{
+		g_test_io[input].callback = cb;
+		g_test_io[input].timed_enabled = false;
+	}
+}
+
+#endif /* PIO_UNIT_TEST */
+
 	/* ----- Run periodic device tasks --------------------------------------- */
 
 	void mcu_dotasks(void)
@@ -532,6 +688,73 @@ extern "C"
 		oneshot_alarm = mcu_micros() + oneshot_timeout;
 	}
 
+	typedef struct timed_event_
+	{
+		uint64_t stamp;
+		void (*callback)(void *args);
+		void *args;
+		struct timed_event_ *next;
+	} timed_event_t;
+
+#ifdef PIO_UNIT_TESTING
+	timed_event_t *current_event;
+
+	void mcu_add_event(uint32_t delay_us, void (*callback)(void *args), void *args)
+	{
+		timed_event_t *new = calloc(1, sizeof(timed_event_t));
+		new->stamp = tickcount + delay_us;
+		new->callback = callback;
+		new->args = args;
+
+		// Insert at head
+		if (!current_event || new->stamp < current_event->stamp)
+		{
+			new->next = current_event;
+			current_event = new;
+			return;
+		}
+
+		// Insert somewhere after head
+		timed_event_t *prev = current_event;
+		timed_event_t *next = current_event->next;
+
+		while (next && next->stamp < new->stamp)
+		{
+			prev = next;
+			next = next->next;
+		}
+
+		prev->next = new;
+		new->next = next;
+	}
+
+	void mcu_run_events()
+	{
+		if (!current_event)
+		{
+			return;
+		}
+
+		while (current_event && current_event->stamp <= tickcount)
+		{
+			current_event->callback(current_event->args);
+			timed_event_t *prev = current_event;
+			current_event = current_event->next;
+			free(prev);
+		}
+	}
+
+	void mcu_test_clear_events(void)
+	{
+		while (current_event)
+		{
+			timed_event_t *prev = current_event;
+			current_event = current_event->next;
+			free(prev);
+		}
+	}
+#endif
+
 	/* Periodic tick that drives stepper and RTC callbacks */
 	void ticksimul(void)
 	{
@@ -554,6 +777,9 @@ extern "C"
 			tickcount += (int)parcial;
 			parcial -= (int)parcial;
 
+#ifdef PIO_UNIT_TESTING
+			mcu_run_events();
+#endif
 			mcu_gen_step();
 #if defined(MCU_HAS_ONESHOT_TIMER)
 			mcu_gen_oneshot();
@@ -697,11 +923,18 @@ extern "C"
 		BUFFER_INIT(uint8_t, bt_rx, RX_BUFFER_SIZE);
 #endif
 
+#ifdef PIO_UNIT_TESTING
+		BUFFER_INIT(uint8_t, unit_test_tx, PIO_UNIT_TESTING_TX_BUFFER_SIZE);
+		BUFFER_INIT(uint8_t, unit_test_rx, RX_BUFFER_SIZE);
+		grbl_stream_register(&unit_test_grbl_stream);
+#endif
+
 		mcu_enable_global_isr();
 		flash_fs_init();
 		ota_server_start();
 	}
 
+#ifndef PIO_UNIT_TESTING
 	int main(int argc, char **argv)
 	{
 		(void)argc;
@@ -713,6 +946,7 @@ extern "C"
 		}
 		return 0;
 	}
+#endif
 
 	/* HAL oddities/compat */
 	uint8_t itp_set_step_mode(uint8_t mode)
