@@ -80,7 +80,9 @@
 
 #define MCU_HAS_UART2
 
+#ifndef PIO_UNIT_TESTING
 #define ENABLE_SOCKETS
+#endif
 // #define EMULATE_74HC595
 
 // joints step/dir pins
@@ -533,5 +535,11 @@ extern const tool_t vfd_pwm;
 // // #define sqrtf sqrt
 // // #endif
 // #endif
+
+// added for unit testing and simulation
+void mcu_add_event(uint32_t delay_us, void (*callback)(void *args), void *args);
+#ifdef PIO_UNIT_TESTING
+void mcu_test_clear_events(void);
+#endif
 
 #endif

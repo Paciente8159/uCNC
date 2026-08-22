@@ -132,6 +132,28 @@ extern "C"
 	DECL_BUFFER(uint8_t, uart2_tx, UART2_TX_BUFFER_SIZE);
 	DECL_BUFFER(uint8_t, uart2_rx, RX_BUFFER_SIZE);
 
+#ifdef PIO_UNIT_TESTING
+
+#ifndef UART2_TEST_CAPTURE_SIZE
+#define UART2_TEST_CAPTURE_SIZE 4096
+#endif
+
+	static char uart2_test_capture[UART2_TEST_CAPTURE_SIZE];
+	static size_t uart2_test_capture_len;
+
+	void mcu_uart2_test_capture_reset(void)
+	{
+		uart2_test_capture_len = 0;
+		uart2_test_capture[0] = '\0';
+	}
+
+	const char *mcu_uart2_test_capture_get(void)
+	{
+		return uart2_test_capture;
+	}
+
+#endif
+
 	uint8_t mcu_uart2_getc(void)
 	{
 		uint8_t c = 0;
@@ -155,16 +177,69 @@ extern "C"
 			memset(tmp, 0, sizeof(tmp));
 			uint8_t r = 0;
 			BUFFER_READ(uart2_tx, tmp, UART2_TX_BUFFER_SIZE, r);
+
+#ifdef PIO_UNIT_TESTING
+
+			size_t available =
+				(UART2_TEST_CAPTURE_SIZE - 1) - uart2_test_capture_len;
+
+			size_t copy_len = (r < available) ? r : available;
+
+			memcpy(
+				&uart2_test_capture[uart2_test_capture_len],
+				tmp,
+				copy_len);
+
+			uart2_test_capture_len += copy_len;
+			uart2_test_capture[uart2_test_capture_len] = '\0';
+
+#else
+
 			printf("%s", tmp);
 			fflush(stdout);
+
+#endif
 		}
 	}
+
+#ifdef PIO_UNIT_TESTING
+
+	bool mcu_uart2_inject(const char *cmd)
+	{
+		if (!cmd)
+		{
+			return false;
+		}
+
+		while (*cmd)
+		{
+			uint8_t c = (uint8_t)*cmd++;
+
+			/*
+			 * Use the same realtime-character path as normal UART input.
+			 */
+			if (mcu_com_rx_cb(c))
+			{
+				if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
+				{
+					return false;
+				}
+			}
+		}
+
+		return true;
+	}
+
+#endif
 
 	/* Read console keypresses non-blockingly and echo */
 	extern int console_kbhit(void);
 	extern int console_getch(void);
 	static void mcu_uart2_process(void)
 	{
+#ifdef PIO_UNIT_TESTING
+		return;
+#else
 		if (console_kbhit())
 		{
 			int kc = console_getch();
@@ -180,6 +255,7 @@ extern "C"
 				}
 			}
 		}
+#endif
 	}
 
 #endif /* MCU_HAS_UART2 */
@@ -532,6 +608,73 @@ extern "C"
 		oneshot_alarm = mcu_micros() + oneshot_timeout;
 	}
 
+	typedef struct timed_event_
+	{
+		uint64_t stamp;
+		void (*callback)(void *args);
+		void *args;
+		struct timed_event_ *next;
+	} timed_event_t;
+
+	timed_event_t *current_event;
+
+	void mcu_add_event(uint32_t delay_us, void (*callback)(void *args), void *args)
+	{
+		timed_event_t *new = calloc(1, sizeof(timed_event_t));
+		new->stamp = tickcount + delay_us;
+		new->callback = callback;
+		new->args = args;
+
+		// Insert at head
+		if (!current_event || new->stamp < current_event->stamp)
+		{
+			new->next = current_event;
+			current_event = new;
+			return;
+		}
+
+		// Insert somewhere after head
+		timed_event_t *prev = current_event;
+		timed_event_t *next = current_event->next;
+
+		while (next && next->stamp < new->stamp)
+		{
+			prev = next;
+			next = next->next;
+		}
+
+		prev->next = new;
+		new->next = next;
+	}
+
+	void mcu_run_events()
+	{
+		if (!current_event)
+		{
+			return;
+		}
+
+		while (current_event && current_event->stamp <= tickcount)
+		{
+			current_event->callback(current_event->args);
+			timed_event_t *prev = current_event;
+			current_event = current_event->next;
+			free(prev);
+		}
+	}
+
+#ifdef PIO_UNIT_TESTING
+	void mcu_test_clear_events(void)
+	{
+		while (current_event)
+		{
+			timed_event_t *prev = current_event;
+			current_event = current_event->next;
+			free(prev);
+		}
+	}
+#endif
+
 	/* Periodic tick that drives stepper and RTC callbacks */
 	void ticksimul(void)
 	{
@@ -553,6 +696,11 @@ extern "C"
 			parcial += (1000000.0f / (float)ITP_SAMPLE_RATE);
 			tickcount += (int)parcial;
 			parcial -= (int)parcial;
+
+			mcu_run_events();
+			mcu_limits_changed_cb();
+			mcu_probe_changed_cb();
+			mcu_controls_changed_cb();
 
 			mcu_gen_step();
 #if defined(MCU_HAS_ONESHOT_TIMER)
@@ -599,6 +747,15 @@ extern "C"
 
 		//		startCycleCounter();
 		__atomic_store_n(&running, false, __ATOMIC_RELAXED);
+	}
+
+	static pthread_t ticksim_test;
+	void *ticksimul_test(void *arg)
+	{
+		for (;;)
+		{
+			ticksimul();
+		}
 	}
 
 	/**
@@ -653,11 +810,16 @@ extern "C"
 		virtualmap.inputs = 0;
 		virtualmap.outputs = 0;
 
+#ifndef PIO_UNIT_TESTING
 		start_timer(EMULATION_MS_TICK, &ticksimul);
 		pthread_create(&thread_io, NULL, &ioserver, NULL);
 
 #ifdef MCU_HAS_UART
 		serial_init();
+#endif
+#else
+	start_timer(EMULATION_MS_TICK, &ticksimul);
+	// pthread_create(&ticksim_test, NULL, &ticksimul_test, NULL);
 #endif
 
 #ifdef MCU_HAS_UART
@@ -699,8 +861,12 @@ extern "C"
 
 		mcu_enable_global_isr();
 		flash_fs_init();
+#ifndef PIO_UNIT_TESTING
 		ota_server_start();
+#endif
 	}
+
+#ifndef PIO_UNIT_TESTING
 
 	int main(int argc, char **argv)
 	{
@@ -713,6 +879,8 @@ extern "C"
 		}
 		return 0;
 	}
+
+#endif
 
 	/* HAL oddities/compat */
 	uint8_t itp_set_step_mode(uint8_t mode)
@@ -734,6 +902,7 @@ extern "C"
 /**
  * Emulate OTA page
  */
+#ifdef ENABLE_SOCKETS
 #ifndef OTA_URI
 #define OTA_URI "/update"
 #endif
@@ -803,6 +972,8 @@ extern "C"
 		LOAD_MODULE(http_server);
 		http_add(OTA_URI, HTTP_REQ_ANY, ota_page_cb, ota_upload_cb);
 	}
+
+#endif /* ENABLE_SOCKETS */
 
 #ifdef __cplusplus
 }
