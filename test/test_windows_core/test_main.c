@@ -525,7 +525,7 @@ static void test_send_rt(uint8_t command)
 
 typedef struct
 {
-	uint8_t input;
+	test_io_id_t input;
 	bool value;
 } test_io_event_args_t;
 
@@ -731,7 +731,7 @@ typedef struct test_block_
 	uint32_t status_wait_timeout;	// how much time will it wait for the expected status before failing. If 0 will test imediatly
 	bool is_synched;				// is a synched command. it will wait for the motion to finish before running the next block
 	const float *expected_position; // expected position at the end of the motion to compare. ignores this if NULL or is_synched is false
-	uint8_t io_target;				// if not 0 commands an io defined by io_target
+	test_io_id_t io_target;			// if not 0 commands an io defined by io_target
 	bool io_value;					// new value to set to the io (emulation)
 	uint32_t callback_delay_us;		// if a delay is set it will add an event to fire the sequence of inner/dependent test_block_t *sequence of tests. If set to 0 executes the sequence immediatly
 	struct test_block_ *sequence;	// sequence of inner blocks to execute in an event. note that this will run in an mcu_event so it may run in parallel to the current block
@@ -2403,6 +2403,191 @@ static void test_realtime_hold_resume_status(void)
 	// - action: record the observed immediate and settled states
 	// - action: run the realtime `!` scenario from the same initial conditions
 	// - assert: verify both paths produce equivalent hold behavior
+}
+
+// - `action: machine reset`
+void test_action_machine_reset(void)
+{
+	test_controller_clean_state();
+}
+// - `action: send line <command>`
+void test_action_send_line(const char *cmd)
+{
+	test_command_send(cmd);
+}
+// - `action: send realtime byte <byte-or-char>`
+void test_action_send_rt_byte(uint8_t byte)
+{
+	test_send_rt(byte);
+}
+// - `action: set input <input> to <state>`
+void test_action_set_input(test_io_id_t input, bool value)
+{
+	test_io_set(input, value);
+	cnc_dotasks();
+}
+// - `action: clear serial output capture`
+void test_action_clear_serial_output(void)
+{
+	mcu_uart2_test_capture_reset();
+}
+// - `action: wait for motion to complete`
+void test_action_wait_motion_complete(void)
+{
+	itp_sync();
+}
+// - `assert: wait <ms-timeout> for status <state>`
+void test_assert_wait_motion_complete(uint32_t timeout_ms, test_grbl_state_t state)
+{
+	uint8_t expected_status = 255;
+	switch (tc->expected_settled)
+	{
+	case TEST_GRBL_IDLE:
+		expected_status = EXEC_STATUS_IDLE;
+		break;
+	case TEST_GRBL_RUN:
+		expected_status = EXEC_STATUS_RUNNING;
+		break;
+	case TEST_GRBL_HOLD_0:
+		expected_status = EXEC_STATUS_HOLD;
+		break;
+	case TEST_GRBL_HOLD_1:
+		expected_status = EXEC_STATUS_HOLD_PENDING;
+		break;
+	case TEST_GRBL_JOG:
+		expected_status = EXEC_STATUS_JOGGING;
+		break;
+	case TEST_GRBL_ALARM:
+		expected_status = EXEC_STATUS_ALARM;
+		break;
+	case TEST_GRBL_LOCKED:
+		expected_status = EXEC_STATUS_LOCKED;
+		break;
+	case TEST_GRBL_CHECK:
+		expected_status = EXEC_STATUS_CHECK;
+		break;
+	case TEST_GRBL_HOME:
+		expected_status = EXEC_STATUS_HOMING;
+		break;
+	case TEST_GRBL_DOOR_0:
+		expected_status = EXEC_STATUS_DOOR_CLOSED;
+		break;
+	case TEST_GRBL_DOOR_1:
+		expected_status = EXEC_STATUS_DOOR_OPENED;
+		break;
+	case TEST_GRBL_DOOR_2:
+		expected_status = EXEC_STATUS_DOOR_OPENED_PAUSING;
+		break;
+	case TEST_GRBL_DOOR_3:
+		expected_status = EXEC_STATUS_DOOR_CLOSED_RESUMING;
+		break;
+	case TEST_GRBL_PROBE:
+		expected_status = EXEC_STATUS_PROBING;
+		break;
+	default: // don't care
+		return;
+	}
+	test_wait_status_or_fail(expected_status, timeout_ms, "", "");
+}
+// - `assert: wait <ms-timeout> for serial output <string-operator> <text>`
+void test_assert_wait_serial_ouput(uint32_t timeout_ms, logic_str_op_t op, const char *text)
+{
+	uint32_t start = ((uint32_t)GetTickCount());
+	bool last = false;
+
+	do
+	{
+		last = test_logic_str(mcu_uart2_test_capture_get(), op, text);
+		if (last)
+		{
+			break;
+		}
+		cnc_dotasks();
+	} while ((uint32_t)(((uint32_t)GetTickCount()) - start) < timeout_ms)
+
+		char msg[192];
+	snprintf(
+		msg,
+		sizeof(msg),
+		"failed to compare the serial output with operator %d to %s",
+		(int)op,
+		text);
+	TEST_ASSERT_TRUE_MESSAGE(last, msg);
+}
+// - `assert: wait <ms-timeout> for machine MPOS <axis> <numeric-operator> <value> within <tolerance>`
+void test_assert_wait_machine_mpos(uint32_t timeout_ms, uint8_t axis, logic_op_t op, float value, float tolerance)
+{
+	uint32_t start = ((uint32_t)GetTickCount());
+	bool last = false;
+
+	do
+	{
+		int32_t pos[STEPPER_COUNT] = {0};
+
+		itp_get_rt_position(pos);
+
+		last = test_logic_int(pos[axis], op, test_mm_to_steps(axis, value)) if (last)
+		{
+			break;
+		}
+		cnc_dotasks();
+	} while ((uint32_t)(((uint32_t)GetTickCount()) - start) < timeout_ms)
+
+		char msg[192];
+	snprintf(
+		msg,
+		sizeof(msg),
+		"failed to axis %d position with operator %d to %f",
+		axis,
+		(int)op,
+		value);
+	TEST_ASSERT_TRUE_MESSAGE(last, msg);
+}
+// - `assert: wait <ms-timeout> for machine feed <numeric-operator> <value>`
+void test_assert_wait_machine_feed(uint32_t timeout_ms, logic_op_t op, float value)
+{
+	bool res = test_wait_for_feed(expected, op, timeout_ms);
+	char msg[192];
+	snprintf(
+		msg,
+		sizeof(msg),
+		"%s | %s | waited for speed to be %s then %.2f, current speed is %.2f",
+		case_name,
+		"waiting for speed",
+		logic_op_name[(int)op],
+		expected,
+		itp_get_rt_feed());
+
+	TEST_ASSERT_TRUE_MESSAGE(res, msg);
+}
+// - `assert: wait <ms-timeout> for output <output> <numeric-or-enum-operator> <value>`
+void test_assert_wait_output_value(uint32_t timeout_ms, uint8_t outputpin, logic_op_t op, uint8_t value)
+{
+	TEST_ASSERT_TRUE_MESSAGE(true, msg);
+}
+// - `assert: wait <ms-timeout> for override <feed|rapid|spindle> to be <numeric-operator> <value>`
+typedef enum{
+	TEST_OVERRIDE_FEED,
+	TEST_OVERRIDE_RAPID,
+	TEST_OVERRIDE_SPINDLE
+}test_override_t;
+void test_assert_wait_override(uint32_t timeout_ms, test_override_t select, logic_op_t op, uint8_t value)
+{
+	TEST_ASSERT_TRUE_MESSAGE(true, msg);
+}
+// - `assert: wait <ms-timeout> for motion path matches arc <plane> center <coordinates|auto> radius <value> direction <CW|CCW>`
+typedef enum{
+	TEST_PLANE_G17
+	TEST_PLANE_G18
+	TEST_PLANE_G19
+}test_plane_t;
+typedef enum{
+	TEST_CW_CW,
+	TEST_CW_CCW
+}test_cw_dir_t;
+void test_assert_wait_override(uint32_t timeout_ms, test_plane_t plane, float* center, float radius, test_cw_dir_t dir)
+{
+	TEST_ASSERT_TRUE_MESSAGE(true, msg);
 }
 
 int main(void)

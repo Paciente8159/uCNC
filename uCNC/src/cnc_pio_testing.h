@@ -27,13 +27,13 @@ typedef enum
 	TEST_IO_COUNT
 } test_io_id_t;
 
-bool test_io_condition(uint8_t input);
+bool test_io_condition(test_io_id_t input);
 void test_io_reset(void);
-void test_io_set(uint8_t input, bool value);
-void test_io_set_after(uint8_t input, uint32_t delay_ms, bool initial_value, bool final_value);
+void test_io_set(test_io_id_t input, bool value);
+void test_io_set_after(test_io_id_t input, uint32_t delay_ms, bool initial_value, bool final_value);
 
 typedef bool (*test_io_callback_t)(void);
-void test_io_set_callback(uint8_t input, test_io_callback_t cb);
+void test_io_set_callback(test_io_id_t input, test_io_callback_t cb);
 
 #define IO_CONDITION_ESTOP	   test_io_condition(TEST_IO_ESTOP)
 #define IO_CONDITION_SAFETY_DOOR test_io_condition(TEST_IO_SAFETY_DOOR)

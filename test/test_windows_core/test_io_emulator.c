@@ -40,7 +40,7 @@ typedef struct
 
 static test_io_signal_t g_test_io[TEST_IO_COUNT];
 
-bool test_io_condition(uint8_t input)
+bool test_io_condition(test_io_id_t input)
 {
 	if (input >= TEST_IO_COUNT)
 	{
@@ -71,7 +71,7 @@ void test_io_reset(void)
 	memset(g_test_io, 0, sizeof(g_test_io));
 }
 
-void test_io_set(uint8_t input, bool value)
+void test_io_set(test_io_id_t input, bool value)
 {
 	if (input < TEST_IO_COUNT)
 	{
@@ -81,7 +81,7 @@ void test_io_set(uint8_t input, bool value)
 	}
 }
 
-void test_io_set_after(uint8_t input,
+void test_io_set_after(test_io_id_t input,
 					   uint32_t delay_ms,
 					   bool initial_value,
 					   bool final_value)
@@ -97,7 +97,7 @@ void test_io_set_after(uint8_t input,
 	}
 }
 
-void test_io_set_callback(uint8_t input,
+void test_io_set_callback(test_io_id_t input,
 						  test_io_callback_t cb)
 {
 	if (input < TEST_IO_COUNT)
