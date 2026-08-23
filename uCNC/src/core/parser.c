@@ -1004,7 +1004,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 
 static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
 {
-	bool requires_feed = true;
+	bool requires_feed = !CHECKFLAG(cmd->groups, GCODE_GROUP_TOOLLENGTH);
 	bool has_axis = CHECKFLAG(cmd->words, GCODE_ALL_AXIS);
 
 	// only alow groups 3, 6 and modal G53
@@ -1258,7 +1258,7 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 			{
 				if (words->f <= 0)
 				{
-					return STATUS_GCODE_UNDEFINED_FEED_RATE;
+					return STATUS_NEGATIVE_VALUE;
 				}
 			}
 		}
@@ -1271,9 +1271,9 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 	// group 8 - tool length offset
 	if ((new_state->groups.tlo_mode == G43) && CHECKFLAG(cmd->groups, GCODE_GROUP_TOOLLENGTH))
 	{
-		if (!CHECKFLAG(cmd->words, GCODE_WORD_Z))
+		if (!CHECKFLAG(cmd->words, GCODE_WORD_Z) || CHECKFLAG(cmd->words, (GCODE_ALL_AXIS & ~GCODE_WORD_Z)))
 		{
-			return STATUS_GCODE_AXIS_WORDS_EXIST;
+			return STATUS_GCODE_G43_DYNAMIC_AXIS_ERROR;
 		}
 
 		// since G43.1 (and currently G43) support and uses word Z it can't be in the same line as a MOTION group command
@@ -2422,10 +2422,11 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 		case 43:
 		case 59:
 		case 61:
+		case 90:
 		case 92:
 			break;
 		default:
-			return STATUS_GCODE_UNSUPPORTED_COMMAND;
+			return STATUS_GCODE_COMMAND_VALUE_NOT_INTEGER;
 		}
 	}
 
@@ -2464,7 +2465,7 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 
 		if (cmd->group_0_1_useaxis)
 		{
-			return STATUS_GCODE_MODAL_GROUP_VIOLATION;
+			return (cmd->groups == GCODE_GROUP_MOTION) ? STATUS_GCODE_MODAL_GROUP_VIOLATION : STATUS_GCODE_AXIS_COMMAND_CONFLICT;
 		}
 
 		if (code != 80)
@@ -2498,6 +2499,9 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 		break;
 #endif
 	case 90:
+		if (mantissa)
+			return STATUS_GCODE_UNSUPPORTED_COMMAND;
+		__FALL_THROUGH__
 	case 91:
 		new_group |= GCODE_GROUP_DISTANCE;
 		new_state->groups.distance_mode = code - 90;
@@ -2584,7 +2588,7 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 #endif
 		if (cmd->group_0_1_useaxis)
 		{
-			return STATUS_GCODE_MODAL_GROUP_VIOLATION;
+			return STATUS_GCODE_AXIS_COMMAND_CONFLICT;
 		}
 		cmd->group_0_1_useaxis = 1;
 		__FALL_THROUGH__
@@ -2624,7 +2628,7 @@ static uint8_t parser_mcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 
 	if (mantissa)
 	{
-		return STATUS_GCODE_UNSUPPORTED_COMMAND;
+		return STATUS_GCODE_COMMAND_VALUE_NOT_INTEGER;
 	}
 
 	switch (code)
@@ -2655,6 +2659,9 @@ static uint8_t parser_mcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 		break;
 #endif
 	case 7:
+#ifndef M7_SAME_AS_M8
+		return STATUS_GCODE_UNSUPPORTED_COMMAND;
+#endif
 	case 8:
 #ifdef ENABLE_COOLANT
 		cmd->groups |= GCODE_GROUP_COOLANT; // word overlapping allowed
@@ -2709,6 +2716,10 @@ static uint8_t parser_letter_word(uint8_t c, float value, uint8_t mantissa, pars
 #ifdef GCODE_PROCESS_LINE_NUMBERS
 #ifndef GCODE_COUNT_TEXT_LINES
 		// if enabled store line number
+		if (value > MAX_LINE_NUMBER)
+		{
+			return STATUS_GCODE_INVALID_LINE_NUMBER;
+		}
 		words->n = value;
 #endif
 #endif

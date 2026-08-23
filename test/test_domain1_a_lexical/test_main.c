@@ -12,7 +12,9 @@ static void test_domain1_a_lexical_and_preprocessing(void)
 		D1_CASE("D1-A-004", "G1 X1 Y2 F100", "ok\r\n"),
 		D1_CASE("D1-A-005", "G1X1(comment)F100", "ok\r\n"),
 		D1_CASE("D1-A-006", "G1X1F100;comment", "ok\r\n"),
-		// D1_CASE("D1-A-007", "/G1X1F100", "ok\r\n"), // ignore this one for now as block ignore is not implemented
+#ifdef PARSER_SUPPORTS_BLOCK_IGNORE
+		D1_CASE("D1-A-007", "/G1X1F100", "ok\r\n"), // ignore this one for now as block ignore is not implemented*/
+#endif
 		D1_CASE("D1-A-008", "G1X+1F100", "ok\r\n"),
 		D1_CASE("D1-A-009", "G1X.5F100", "ok\r\n"),
 		D1_CASE("D1-A-010", "G1X1.F100", "ok\r\n"),
@@ -26,10 +28,16 @@ static void test_domain1_a_lexical_and_preprocessing(void)
 		D1_CASE("D1-A-018", "S-1", "error:4\r\n"),
 		D1_CASE("D1-A-019", "G4P-1", "error:4\r\n"),
 		D1_CASE("D1-A-020", "T-1", "error:4\r\n"),
+#if TOOL_COUNT > 1
 		D1_CASE("D1-A-021", "T256", "error:38\r\n"),
+#endif
+#if GCODE_COUNT_TEXT_LINES
 		D1_CASE("D1-A-022", "N10000001G0", "error:27\r\n"),
-		D1_CASE("D1-A-023", "A1", "error:20\r\n"),
-		D1_CASE("D1-A-024", "G1X1F100AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "error:11\r\n")
+#endif
+#if AXIS_COUNT < 4 && !defined(IGNORE_UNDEFINED_AXIS)
+		D1_CASE("D1-A-023", "A1", "error:20\r\n")
+#endif
+		/*D1_CASE("D1-A-024", "G1X1F000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100", "error:11\r\n") // not easy to induce in uCNC since the buffer is read live*/
 	};
 	d1_run_cases(cases, D1_COUNT(cases));
 }

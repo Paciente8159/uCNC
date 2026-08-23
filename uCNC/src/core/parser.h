@@ -123,6 +123,10 @@ extern "C"
 #define GRBL_CMD_MAX_LEN 32
 #endif
 
+#ifndef MAX_LINE_NUMBER
+#define MAX_LINE_NUMBER 10000000
+#endif
+
 // group masks
 #define GCODE_GROUP_MOTION 0x0001
 #define GCODE_GROUP_PLANE 0x0002

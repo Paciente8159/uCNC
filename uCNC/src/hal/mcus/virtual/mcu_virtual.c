@@ -248,7 +248,8 @@ extern "C"
 			{
 				if (!BUFFER_TRY_ENQUEUE(unit_test_rx, &c))
 				{
-					return false;
+					grbl_stream_overflow(c);
+	return false;
 				}
 			}
 		}
@@ -849,7 +850,7 @@ void test_io_set_callback(test_io_id_t input,
 			{
 				prev = virtualmap.special_outputs;
 				if (stimuli)
-					fprintf(stimuli, "#%llu\n", tickcount);
+					fprintf(stimuli, "#%lu\n", tickcount);
 #if AXIS_COUNT > 0
 				printpin(STEP0);
 				printpin(DIR0);
