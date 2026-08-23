@@ -186,6 +186,7 @@ extern "C"
 #define GCODE_JKPLANE_AXIS (GCODE_YZPLANE_AXIS << 8)
 #define GCODE_XYZ_AXIS (GCODE_WORD_X | GCODE_WORD_Y | GCODE_WORD_Z)
 #define GCODE_IJK_AXIS (GCODE_WORD_I | GCODE_WORD_J | GCODE_WORD_K)
+#define GCODE_LPR (GCODE_WORD_L|GCODE_WORD_P|GCODE_WORD_R)
 
 #define SPINDLE_MODE 0					 // if the tool is not defined it will return as spindle mode
 #define PWM_VARPOWER_MODE 1				 // PWM variable mode will scale the tool power with M4 active

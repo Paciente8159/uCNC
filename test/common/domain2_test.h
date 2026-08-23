@@ -98,10 +98,13 @@ static __attribute__((unused)) void d2_wait_idle_timeout(uint32_t timeout_ms)
 	{
 		if (d2_query_status(&status) && !strcmp(status.state, "Idle"))
 		{
-			if (!idle_since) idle_since = mcu_millis();
-			if ((uint32_t)(mcu_millis() - idle_since) >= 20U) return;
+			if (!idle_since)
+				idle_since = mcu_millis();
+			if ((uint32_t)(mcu_millis() - idle_since) >= 20U)
+				return;
 		}
-		else idle_since = 0U;
+		else
+			idle_since = 0U;
 		sched_yield();
 	} while ((uint32_t)(mcu_millis() - start) < timeout_ms);
 	TEST_FAIL_MESSAGE("motion did not reach Idle before timeout");
@@ -171,8 +174,8 @@ static __attribute__((unused)) void d2_assert_line(const d2_trace_t *trace, d2_s
 		float py = start.y + projection * vy;
 		float pz = start.z + projection * vz;
 		float distance = sqrtf((trace->samples[i].x - px) * (trace->samples[i].x - px) +
-			(trace->samples[i].y - py) * (trace->samples[i].y - py) +
-			(trace->samples[i].z - pz) * (trace->samples[i].z - pz));
+							   (trace->samples[i].y - py) * (trace->samples[i].y - py) +
+							   (trace->samples[i].z - pz) * (trace->samples[i].z - pz));
 		TEST_ASSERT_TRUE_MESSAGE(distance <= D2_PATH_TOLERANCE, "linear interpolation departed from commanded line");
 		TEST_ASSERT_TRUE_MESSAGE(projection >= prior - 0.02f, "linear motion reversed progress");
 		TEST_ASSERT_TRUE_MESSAGE(projection >= -0.02f && projection <= 1.02f, "linear motion overshot segment");
@@ -181,7 +184,7 @@ static __attribute__((unused)) void d2_assert_line(const d2_trace_t *trace, d2_s
 }
 
 static __attribute__((unused)) void d2_assert_arc(const d2_trace_t *trace, int axis_u, int axis_v, int linear_axis,
-	float center_u, float center_v, float radius, bool clockwise, float linear_start, float linear_end)
+												  float center_u, float center_v, float radius, bool clockwise, float linear_start, float linear_end)
 {
 	float previous_angle = 0.0f;
 	float total_angle = 0.0f;
@@ -196,8 +199,10 @@ static __attribute__((unused)) void d2_assert_arc(const d2_trace_t *trace, int a
 		if (have_angle)
 		{
 			float delta = angle - previous_angle;
-			while (delta > (float)M_PI) delta -= 2.0f * (float)M_PI;
-			while (delta < -(float)M_PI) delta += 2.0f * (float)M_PI;
+			while (delta > (float)M_PI)
+				delta -= 2.0f * (float)M_PI;
+			while (delta < -(float)M_PI)
+				delta += 2.0f * (float)M_PI;
 			if (fabsf(delta) > 0.001f)
 			{
 				TEST_ASSERT_TRUE_MESSAGE(clockwise ? delta <= 0.03f : delta >= -0.03f, "arc traveled in wrong angular direction");
@@ -237,11 +242,15 @@ static void d2_tear_down(void)
 	grbl_test_stop();
 }
 
-#define D2_UNITY_MAIN(...) \
+#define D2_TEST_RUN(x) \
+	grbl_test_start();       \
+	RUN_TEST(x);       \
+	grbl_test_stop()
+#define D2_UNITY_MAIN(...)  \
 	int main(void)          \
 	{                       \
 		UNITY_BEGIN();      \
-		__VA_ARGS__;         \
+		__VA_ARGS__;        \
 		return UNITY_END(); \
 	}
 

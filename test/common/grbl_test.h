@@ -16,12 +16,16 @@
 
 static pthread_t grbl_test_thread;
 static bool grbl_test_thread_started;
+static volatile bool grbl_test_keep_running;
 static char grbl_test_transcript[GRBL_TEST_TRANSCRIPT_SIZE];
 
 static void *grbl_test_run(void *argument)
 {
 	(void)argument;
-	cnc_run();
+	do
+	{
+		cnc_run();
+	} while (grbl_test_keep_running);
 	return NULL;
 }
 
@@ -129,14 +133,43 @@ static __attribute__((unused)) void grbl_test_start(void)
 {
 	TEST_ASSERT_EQUAL_INT_MESSAGE(3, AXIS_COUNT, "Conformity fixtures require the default 3-axis build");
 	test_io_reset();
-	cnc_init();
+	static bool grbl_initialized;
+	if (!grbl_initialized)
+	{
+		cnc_init();
+		grbl_initialized = true;
+	}
 	grbl_test_clear_output();
+	// mcu_stop_itp_isr();
+	cnc_stop(true);
+	mc_clear(true);
+	itp_clear();
+	settings_reset(true);
+	parser_parameters_reset();
 
+	// cnc_reset();
+
+	// if (cnc_unlock(true) != UNLOCK_ERROR)
+	// {
+	// 	cnc_state.alarm = EXEC_ALARM_NOALARM;
+	// }
+
+	// cnc_state.loop_state = LOOP_RUNNING;
+
+	/*
+	 * Make every test start at machine step position zero.
+	 */
+	int32_t zero[STEPPER_COUNT] = {0};
+
+	itp_sync_rt_position(zero);
+	mc_sync_position();
+	parser_sync_position();
+	grbl_test_keep_running = true;
 	int result = pthread_create(&grbl_test_thread, NULL, grbl_test_run, NULL);
 	TEST_ASSERT_EQUAL_INT_MESSAGE(0, result, "Unable to start cnc_run thread");
 	grbl_test_thread_started = true;
 
-	grbl_test_assert_wait_for("Grbl ");
+	grbl_test_assert_wait_for("for help]\r\n");
 }
 
 static __attribute__((unused)) void grbl_test_stop(void)
@@ -146,6 +179,7 @@ static __attribute__((unused)) void grbl_test_stop(void)
 		return;
 	}
 
+	grbl_test_keep_running = false;
 	const char reset[] = {0x18, '\0'};
 	mcu_unit_test_inject(reset);
 	pthread_join(grbl_test_thread, NULL);
@@ -178,11 +212,11 @@ static __attribute__((unused)) void grbl_test_wait_idle(void)
 }
 
 #define GRBL_PROCESS_FIXTURE(test_function) \
-	int main(void)                         \
-	{                                      \
-		UNITY_BEGIN();                    \
-		RUN_TEST(test_function);          \
-		return UNITY_END();               \
+	int main(void)                          \
+	{                                       \
+		UNITY_BEGIN();                      \
+		RUN_TEST(test_function);            \
+		return UNITY_END();                 \
 	}
 
 #endif

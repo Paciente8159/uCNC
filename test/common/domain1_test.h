@@ -8,44 +8,8 @@ typedef struct
 	const char *id;
 	const char *command;
 	const char *expected;
+	bool ignore;
 } d1_case_t;
-
-static volatile bool d1_keep_running;
-
-static void *d1_controller_loop(void *argument)
-{
-	(void)argument;
-	do
-	{
-		cnc_run();
-	} while (d1_keep_running);
-	return NULL;
-}
-
-static void d1_suite_start(void)
-{
-	TEST_ASSERT_EQUAL_INT(3, AXIS_COUNT);
-	test_io_reset();
-	cnc_init();
-	grbl_test_clear_output();
-	d1_keep_running = true;
-	TEST_ASSERT_EQUAL_INT(0, pthread_create(&grbl_test_thread, NULL, d1_controller_loop, NULL));
-	grbl_test_thread_started = true;
-	grbl_test_assert_wait_for("for help]\r\n");
-}
-
-static void d1_suite_stop(void)
-{
-	if (!grbl_test_thread_started)
-	{
-		return;
-	}
-	d1_keep_running = false;
-	const char reset[] = {0x18, '\0'};
-	mcu_unit_test_inject(reset);
-	pthread_join(grbl_test_thread, NULL);
-	grbl_test_thread_started = false;
-}
 
 static bool d1_terminal_response_matches(const char *transcript, const char *expected)
 {
@@ -94,14 +58,8 @@ static bool d1_send_line(const char *command, const char *expected)
 	return d1_terminal_response_matches(grbl_test_transcript, expected);
 }
 
-static bool d1_reset_and_enter_check(void)
+static bool d1_enter_check(void)
 {
-	const char reset[] = {0x18, '\0'};
-	grbl_test_clear_output();
-	if (!mcu_unit_test_inject(reset) || !grbl_test_wait_for("for help]\r\n", 1000U))
-	{
-		return false;
-	}
 	if (!d1_send_line("$C", "ok\r\n") || !strstr(grbl_test_transcript, "[MSG:Enabled]\r\n"))
 	{
 		return false;
@@ -120,15 +78,6 @@ static bool d1_still_in_check(void)
 	return mcu_unit_test_inject("?") && grbl_test_wait_for(">\r\n", 1000U) && grbl_test_snapshot_contains("<Check");
 }
 
-static void d1_append_failure(char *failures, size_t capacity, const char *id, const char *reason)
-{
-	size_t used = strlen(failures);
-	if (used < capacity)
-	{
-		snprintf(failures + used, capacity - used, "%s: %s; ", id, reason);
-	}
-}
-
 static bool d1_get_modal(char *destination, size_t capacity)
 {
 	grbl_test_clear_output();
@@ -140,57 +89,51 @@ static bool d1_get_modal(char *destination, size_t capacity)
 	return true;
 }
 
-static void d1_run_cases(const d1_case_t *cases, size_t count)
+static const d1_case_t *d1_current_case;
+
+static __attribute__((unused)) void d1_run_current_case(void)
 {
-	char failures[8192] = "";
-	for (size_t i = 0; i < count; ++i)
+	char modal_before[256] = "";
+	char modal_after[256] = "";
+	bool rejection_case = !strncmp(d1_current_case->expected, "error:", 6U);
+	if (d1_current_case->ignore)
 	{
-		char modal_before[256] = "";
-		char modal_after[256] = "";
-		bool rejection_case = !strncmp(cases[i].expected, "error:", 6U);
-		if (!d1_reset_and_enter_check())
-		{
-			d1_append_failure(failures, sizeof(failures), cases[i].id, "could not establish Check state");
-			continue;
-		}
-		if (rejection_case && !d1_get_modal(modal_before, sizeof(modal_before)))
-		{
-			d1_append_failure(failures, sizeof(failures), cases[i].id, "could not capture initial modal state");
-			continue;
-		}
-		if (!d1_send_line(cases[i].command, cases[i].expected))
-		{
-			char reason[512];
-			snprintf(reason, sizeof(reason), "`%s` expected `%s`, received `%s`", cases[i].command, cases[i].expected, grbl_test_transcript);
-			d1_append_failure(failures, sizeof(failures), cases[i].id, reason);
-		}
-		if (rejection_case)
-		{
-			if (!d1_get_modal(modal_after, sizeof(modal_after)) || strcmp(modal_before, modal_after))
-			{
-				d1_append_failure(failures, sizeof(failures), cases[i].id, "rejected command altered parser modal state");
-			}
-		}
-		if (!d1_still_in_check())
-		{
-			d1_append_failure(failures, sizeof(failures), cases[i].id, "controller left Check state");
-		}
+		TEST_IGNORE_MESSAGE("Case explicitly disabled");
 	}
-	d1_suite_stop();
-	TEST_ASSERT_EQUAL_STRING_MESSAGE("", failures, "Domain 1 conformance failures");
+
+	TEST_ASSERT_TRUE_MESSAGE(d1_enter_check(), "could not establish Check state");
+	if (rejection_case)
+	{
+		TEST_ASSERT_TRUE_MESSAGE(d1_get_modal(modal_before, sizeof(modal_before)), "could not capture initial modal state");
+	}
+
+	if (!d1_send_line(d1_current_case->command, d1_current_case->expected))
+	{
+		char reason[GRBL_TEST_TRANSCRIPT_SIZE + 256U];
+		snprintf(reason, sizeof(reason), "`%s` expected `%s`, received `%s`", d1_current_case->command, d1_current_case->expected, grbl_test_transcript);
+		TEST_FAIL_MESSAGE(reason);
+	}
+
+	if (rejection_case)
+	{
+		TEST_ASSERT_TRUE_MESSAGE(d1_get_modal(modal_after, sizeof(modal_after)), "could not capture final modal state");
+		TEST_ASSERT_EQUAL_STRING_MESSAGE(modal_before, modal_after, "rejected command altered parser modal state");
+	}
+	TEST_ASSERT_TRUE_MESSAGE(d1_still_in_check(), "controller left Check state");
 }
 
-#define D1_CASE(id, command, expected) {id, command, expected}
+#define D1_CASE(id, command, expected, ignore) {id, command, expected, ignore}
 #define D1_COUNT(array) (sizeof(array) / sizeof((array)[0]))
-#define D1_FIXTURE(test_function)       \
-	int main(void)                    \
-	{                                 \
-		d1_suite_start();           \
-		UNITY_BEGIN();               \
-		RUN_TEST(test_function);     \
-		int result = UNITY_END();    \
-		d1_suite_stop();            \
-		return result;               \
+#define D1_CASE_FIXTURE(cases)                                      \
+	int main(void)                                                  \
+	{                                                               \
+		UNITY_BEGIN();                                               \
+		for (size_t i = 0; i < D1_COUNT(cases); ++i)                \
+		{                                                           \
+			d1_current_case = &(cases)[i];                           \
+			UnityDefaultTestRun(d1_run_current_case, (cases)[i].id, __LINE__); \
+		}                                                           \
+		return UNITY_END();                                         \
 	}
 
 #endif

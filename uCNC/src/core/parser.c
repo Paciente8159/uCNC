@@ -1077,13 +1077,17 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 					return STATUS_GCODE_UNSUPPORTED_COORD_SYS;
 				}
 			}
-			break;
+			__FALL_THROUGH__
 #endif
 		case G92:
 			requires_feed = false;
 			if (!has_axis)
 			{
 				return STATUS_GCODE_NO_AXIS_WORDS;
+			}
+			if ((cmd->words & (GCODE_WORD_R)))
+			{
+				return STATUS_GCODE_UNSUPPORTED_COMMAND;
 			}
 			break;
 		case G53:
@@ -1122,6 +1126,10 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 #ifndef DISABLE_ARC_SUPPORT
 		case G2:
 		case G3:
+			if (!has_axis)
+			{
+				return STATUS_GCODE_NO_AXIS_WORDS;
+			}
 			switch (new_state->groups.plane)
 			{
 			case G17:

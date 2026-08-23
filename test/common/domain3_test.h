@@ -7,42 +7,19 @@
 #define D3_TIMEOUT_MS 3000U
 #define D3_MOTION_TIMEOUT_MS 15000U
 
-static volatile bool d3_running;
-
-void setUp(void) {}
-void tearDown(void) {}
-
-static void *d3_controller(void *unused)
-{
-	(void)unused;
-	do
-	{
-		cnc_run();
-	} while (d3_running);
-	return NULL;
-}
-
 static void d3_start(void)
 {
 	TEST_ASSERT_EQUAL_INT_MESSAGE(3, AXIS_COUNT, "Domain 3 requires the default three-axis build");
-	test_io_reset();
-	cnc_init();
-	grbl_test_clear_output();
-	d3_running = true;
-	TEST_ASSERT_EQUAL_INT(0, pthread_create(&grbl_test_thread, NULL, d3_controller, NULL));
-	grbl_test_thread_started = true;
-	grbl_test_assert_wait_for("Grbl ");
+	grbl_test_start();
 }
 
 static void d3_stop(void)
 {
-	if (!grbl_test_thread_started) return;
-	d3_running = false;
-	const char reset[] = {0x18, '\0'};
-	mcu_unit_test_inject(reset);
-	pthread_join(grbl_test_thread, NULL);
-	grbl_test_thread_started = false;
+	grbl_test_stop();
 }
+
+void setUp(void) { d3_start(); }
+void tearDown(void) { d3_stop(); }
 
 static bool d3_final_line_matches(const char *text, const char *expected)
 {
@@ -176,23 +153,17 @@ static __attribute__((unused)) void d3_expect_no_serial_response(uint8_t byte, u
 #define D3_MAIN(test_function)       \
 	int main(void)                    \
 	{                                 \
-		d3_start();                   \
 		UNITY_BEGIN();                 \
 		RUN_TEST(test_function);       \
-		int result = UNITY_END();      \
-		d3_stop();                    \
-		return result;                 \
+		return UNITY_END();            \
 	}
 
 #define D3_UNITY_MAIN(...)           \
 	int main(void)                    \
 	{                                 \
-		d3_start();                   \
 		UNITY_BEGIN();                 \
 		__VA_ARGS__;                   \
-		int result = UNITY_END();      \
-		d3_stop();                    \
-		return result;                 \
+		return UNITY_END();            \
 	}
 
 #endif
