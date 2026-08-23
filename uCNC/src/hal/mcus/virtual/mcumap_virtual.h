@@ -20,6 +20,7 @@
 #define MCUMAP_VIRTUAL_H
 
 #include <stdint.h>
+#include <stddef.h>
 #define F_CPU 1000000
 #ifndef F_STEP_MAX
 #define F_STEP_MAX 40000
@@ -539,6 +540,10 @@ extern const tool_t vfd_pwm;
 bool mcu_unit_test_inject(const char *cmd);
 // gets a pointer to the unit test output stream buffer
 const char *mcu_unit_test_buffer(void);
+// copies a stable, NUL-terminated output snapshot and returns its length
+size_t mcu_unit_test_buffer_read(char *destination, size_t capacity);
+// reports whether output was dropped because the transcript filled
+bool mcu_unit_test_buffer_overflowed(void);
 // clears the unit test output stream buffer
 void mcu_unit_test_buffer_clear(void);
 
@@ -564,8 +569,11 @@ typedef enum
 } test_io_id_t;
 
 bool test_io_condition(test_io_id_t input);
+// resets all emulated IO pins
 void test_io_reset(void);
+// sets a IO emulated pin value
 void test_io_set(test_io_id_t input, bool value);
+// sets a IO emulated pin value deferred in time by <delay_ms>
 void test_io_set_after(test_io_id_t input, uint32_t delay_ms, bool initial_value, bool final_value);
 
 typedef bool (*test_io_callback_t)(void);

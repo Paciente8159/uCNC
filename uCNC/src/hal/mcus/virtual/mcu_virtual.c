@@ -190,8 +190,19 @@ extern "C"
 #define PIO_UNIT_TESTING_TX_BUFFER_SIZE 4096
 #endif
 
-	DECL_BUFFER(uint8_t, unit_test_tx, PIO_UNIT_TESTING_TX_BUFFER_SIZE);
 	DECL_BUFFER(uint8_t, unit_test_rx, RX_BUFFER_SIZE);
+
+	/*
+	 * The normal MCU ring buffer uses small embedded-target index types and is
+	 * therefore not suitable for a 4096-byte host-side transcript. Keep the
+	 * test transcript linear and protect it because Unity and cnc_run execute
+	 * on different threads.
+	 */
+	static pthread_mutex_t unit_test_tx_mutex = PTHREAD_MUTEX_INITIALIZER;
+	static char unit_test_tx_buffer[PIO_UNIT_TESTING_TX_BUFFER_SIZE];
+	static char unit_test_tx_snapshot[PIO_UNIT_TESTING_TX_BUFFER_SIZE];
+	static size_t unit_test_tx_length;
+	static bool unit_test_tx_overflow;
 
 	uint8_t mcu_unit_test_getc(void)
 	{
@@ -200,21 +211,24 @@ extern "C"
 		return c;
 	}
 	uint8_t mcu_unit_test_available(void) { return BUFFER_READ_AVAILABLE(unit_test_rx); }
-	void mcu_unit_test_clear(void) { BUFFER_CLEAR(unit_test2_rx); }
+	void mcu_unit_test_clear(void) { BUFFER_CLEAR(unit_test_rx); }
 
 	void mcu_unit_test_putc(uint8_t c)
 	{
-		while (!BUFFER_TRY_ENQUEUE(unit_test_tx, &c))
+		pthread_mutex_lock(&unit_test_tx_mutex);
+		if (unit_test_tx_length + 1U < sizeof(unit_test_tx_buffer))
 		{
-			mcu_unit_test_flush();
+			unit_test_tx_buffer[unit_test_tx_length++] = (char)c;
+			unit_test_tx_buffer[unit_test_tx_length] = '\0';
 		}
+		else
+		{
+			unit_test_tx_overflow = true;
+		}
+		pthread_mutex_unlock(&unit_test_tx_mutex);
 	}
 
-	void mcu_unit_test_flush(void)
-	{
-		if (BUFFER_FULL(unit_test_tx))
-			BUFFER_CLEAR(unit_test_tx);
-	}
+	void mcu_unit_test_flush(void) {}
 
 	bool mcu_unit_test_inject(const char *cmd)
 	{
@@ -244,12 +258,46 @@ extern "C"
 
 	const char *mcu_unit_test_buffer(void)
 	{
-		return (const char *)unit_test_tx_bufferdata;
+		pthread_mutex_lock(&unit_test_tx_mutex);
+		memcpy(unit_test_tx_snapshot, unit_test_tx_buffer, unit_test_tx_length + 1U);
+		pthread_mutex_unlock(&unit_test_tx_mutex);
+		return unit_test_tx_snapshot;
+	}
+
+	size_t mcu_unit_test_buffer_read(char *destination, size_t capacity)
+	{
+		if (!destination || !capacity)
+		{
+			return 0;
+		}
+
+		pthread_mutex_lock(&unit_test_tx_mutex);
+		size_t copied = unit_test_tx_length;
+		if (copied >= capacity)
+		{
+			copied = capacity - 1U;
+		}
+		memcpy(destination, unit_test_tx_buffer, copied);
+		destination[copied] = '\0';
+		pthread_mutex_unlock(&unit_test_tx_mutex);
+		return copied;
+	}
+
+	bool mcu_unit_test_buffer_overflowed(void)
+	{
+		pthread_mutex_lock(&unit_test_tx_mutex);
+		bool overflowed = unit_test_tx_overflow;
+		pthread_mutex_unlock(&unit_test_tx_mutex);
+		return overflowed;
 	}
 
 	void mcu_unit_test_buffer_clear(void)
 	{
-		BUFFER_CLEAR(unit_test_tx);
+		pthread_mutex_lock(&unit_test_tx_mutex);
+		unit_test_tx_length = 0;
+		unit_test_tx_buffer[0] = '\0';
+		unit_test_tx_overflow = false;
+		pthread_mutex_unlock(&unit_test_tx_mutex);
 	}
 
 	DECL_GRBL_STREAM(unit_test_grbl_stream, mcu_unit_test_getc, mcu_unit_test_available, mcu_unit_test_clear, mcu_unit_test_putc, mcu_unit_test_flush);
@@ -354,8 +402,15 @@ void test_io_set_callback(test_io_id_t input,
 
 	/* ----- EEPROM emulation (file) ----------------------------------------- */
 
+#ifdef PIO_UNIT_TESTING
+	static uint8_t unit_test_eeprom[UINT16_MAX + 1U];
+#endif
+
 	uint8_t mcu_eeprom_getc(uint16_t address)
 	{
+#ifdef PIO_UNIT_TESTING
+		return unit_test_eeprom[address];
+#else
 		FILE *fp = fopen("virtualeeprom", "rb");
 		uint8_t c = 0;
 		if (fp != NULL)
@@ -367,9 +422,13 @@ void test_io_set_callback(test_io_id_t input,
 			fclose(fp);
 		}
 		return c;
+#endif
 	}
 	void mcu_eeprom_putc(uint16_t address, uint8_t value)
 	{
+#ifdef PIO_UNIT_TESTING
+		unit_test_eeprom[address] = value;
+#else
 		FILE *src = fopen("virtualeeprom", "rb+");
 		if (!src)
 		{
@@ -385,6 +444,7 @@ void test_io_set_callback(test_io_id_t input,
 			fflush(src);
 			fclose(src);
 		}
+#endif
 	}
 	void mcu_eeprom_flush(void) {}
 
@@ -924,8 +984,8 @@ void test_io_set_callback(test_io_id_t input,
 #endif
 
 #ifdef PIO_UNIT_TESTING
-		BUFFER_INIT(uint8_t, unit_test_tx, PIO_UNIT_TESTING_TX_BUFFER_SIZE);
 		BUFFER_INIT(uint8_t, unit_test_rx, RX_BUFFER_SIZE);
+		mcu_unit_test_buffer_clear();
 		grbl_stream_register(&unit_test_grbl_stream);
 #endif
 
