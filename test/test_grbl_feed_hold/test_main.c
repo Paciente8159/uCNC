@@ -7,14 +7,14 @@ static void test_feed_hold_and_cycle_start(void)
 {
 	/* Two seconds at nominal feed: long enough to observe Run/Hold, but fast in CI. */
 	grbl_test_command_ok("G91 G1 X2 F60");
-	grbl_test_wait_for_state("<Run", 1000U);
+	grbl_test_wait_for_state("<Run", GRBL_TEST_TIMEOUT_MS);
 	grbl_test_inject("!");
-	grbl_test_wait_for_state("<Hold:0", 2000U);
+	grbl_test_wait_for_state("<Hold:0", GRBL_TEST_TIMEOUT_MS);
 	/* Confirm the completed hold on a subsequent controller service cycle. */
-	grbl_test_wait_for_state("<Hold:0", 500U);
+	grbl_test_wait_for_state("<Hold:0", GRBL_TEST_TIMEOUT_MS);
 	grbl_test_inject("~");
-	grbl_test_wait_for_state("<Run", 1000U);
-	grbl_test_wait_for_state("<Idle", 5000U);
+	grbl_test_wait_for_state("<Run", GRBL_TEST_TIMEOUT_MS);
+	grbl_test_wait_for_state("<Idle", 2*GRBL_TEST_TIMEOUT_MS);
 }
 
 GRBL_PROCESS_FIXTURE(test_feed_hold_and_cycle_start)

@@ -4,7 +4,7 @@
 #include "grbl_test.h"
 #include <stdlib.h>
 
-#define D3_TIMEOUT_MS 3000U
+#define D3_TIMEOUT_MS GRBL_TEST_TIMEOUT_MS
 #define D3_MOTION_TIMEOUT_MS 15000U
 
 static void d3_start(void)

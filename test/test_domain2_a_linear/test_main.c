@@ -8,7 +8,7 @@ static void test_reporting_and_zero_distance(void)
 	d2_sample_t before = d2_position();
 	TEST_ASSERT_EQUAL_STRING("Idle", before.state);
 	grbl_test_command_ok("G0X0Y0Z0");
-	d2_wait_idle_timeout(3000U);
+	d2_wait_idle_timeout(GRBL_TEST_TIMEOUT_MS);
 	d2_sample_t after = d2_position();
 	d2_assert_position(&after, before.x, before.y, before.z, D2_POSITION_TOLERANCE);
 }
@@ -47,7 +47,7 @@ static void test_inch_coordinates_and_modal_motion(void)
 static void test_g80_cancels_coordinate_motion(void)
 {
 	grbl_test_command_ok("G1X1F300");
-	d2_wait_idle_timeout(3000U);
+	d2_wait_idle_timeout(GRBL_TEST_TIMEOUT_MS);
 	grbl_test_command_ok("G80");
 	d2_sample_t before = d2_position();
 	grbl_test_command_error("X2");

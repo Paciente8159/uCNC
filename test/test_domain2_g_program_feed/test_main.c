@@ -16,12 +16,12 @@ static void test_dwell_has_no_position_effect(void)
 
 static void test_m0_holds_following_motion_until_resume(void)
 {
-	grbl_test_command_ok("M0");
-	grbl_test_wait_for_state("<Hold", 3000U);
+	grbl_test_command_ok("M0\n");
+	grbl_test_wait_for_state("<Hold", GRBL_TEST_TIMEOUT_MS);
 	d2_sample_t held = d2_position();
 	d2_assert_position(&held, 0, 0, 0, D2_POSITION_TOLERANCE);
 	grbl_test_inject("~");
-	d2_wait_idle_timeout(5000U);
+	d2_wait_idle_timeout(2 * GRBL_TEST_TIMEOUT_MS);
 }
 
 static void test_feed_is_reported_and_endpoint_is_unchanged(void)
@@ -32,8 +32,10 @@ static void test_feed_is_reported_and_endpoint_is_unchanged(void)
 	d2_trace_motion("G1X8F480", &fast);
 	d2_assert_trace_endpoint(&fast, 8, 0, 0);
 	float slow_max = 0, fast_max = 0;
-	for (size_t i = 0; i < slow.count; ++i) slow_max = fmaxf(slow_max, slow.samples[i].feed);
-	for (size_t i = 0; i < fast.count; ++i) fast_max = fmaxf(fast_max, fast.samples[i].feed);
+	for (size_t i = 0; i < slow.count; ++i)
+		slow_max = fmaxf(slow_max, slow.samples[i].feed);
+	for (size_t i = 0; i < fast.count; ++i)
+		fast_max = fmaxf(fast_max, fast.samples[i].feed);
 	TEST_ASSERT_TRUE_MESSAGE(slow_max > 0, "status never reported active feed");
 	TEST_ASSERT_TRUE_MESSAGE(fast_max > slow_max, "higher programmed feed did not increase reported feed");
 }

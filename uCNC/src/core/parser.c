@@ -78,7 +78,7 @@ static uint8_t parser_grbl_exec_code(uint8_t code);
 static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
 static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
 static uint8_t parser_grbl_command(void);
-FORCEINLINE static uint8_t parser_gcode_command(bool is_jogging);
+FORCEINLINE static uint8_t parser_gcode_command(parser_cmd_explicit_t *cmd);
 
 #ifdef ENABLE_RS274NGC_EXPRESSIONS
 extern char parser_backtrack;
@@ -211,10 +211,10 @@ uint8_t parser_read_command(void)
 		}
 	}
 
-	bool is_jogging = false;
+	parser_cmd_explicit_t cmd = {0};
 	if (error == GRBL_JOG_CMD)
 	{
-		is_jogging = true;
+		cmd.is_jog = 1;
 	}
 	else if (cnc_get_exec_state(EXEC_GCODE_LOCKED) || cnc_has_alarm()) // if any other than idle, run or hold discards the command
 	{
@@ -223,13 +223,13 @@ uint8_t parser_read_command(void)
 		return STATUS_SYSTEM_GC_LOCK;
 	}
 
-	if (cnc_get_exec_state(EXEC_JOG_LOCKED) && !is_jogging) // error if trying to do a normal move with jog active
+	if (cnc_get_exec_state(EXEC_JOG_LOCKED) && !cmd.is_jog) // error if trying to do a normal move with jog active
 	{
 		DBGLOG("[PARSER] jog locked");
 		return STATUS_SYSTEM_GC_LOCK;
 	}
 
-	return parser_gcode_command(is_jogging);
+	return parser_gcode_command(&cmd);
 }
 
 void parser_get_modes(uint8_t *modalgroups, uint16_t *feed, uint16_t *spindle)
@@ -2076,15 +2076,14 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 
 	if (hold && !mc_get_checkmode())
 	{
-#ifndef DISABLE_ENDPROGRAM_LOCK
 		mc_pause();
-#else
-		itp_sync();
-#endif
 		if (resetparser)
 		{
 			cnc_stop(true);
+			parser_reset(false);
 			proto_feedback(MSG_FEEDBACK_8);
+			// new state is reset
+			memcpy(new_state, &parser_state, sizeof(parser_state_t));
 #ifndef DISABLE_ENDPROGRAM_LOCK
 			cnc_set_exec_state(EXEC_POSITION_MAYBE_LOST);
 #endif
@@ -2108,18 +2107,17 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
  *
  *
  */
-static uint8_t parser_gcode_command(bool is_jogging)
+static uint8_t parser_gcode_command(parser_cmd_explicit_t *cmd)
 {
 	uint8_t result = 0;
 	// initializes new state
 	parser_state_t next_state = {0};
 	parser_words_t words = {0};
-	parser_cmd_explicit_t cmd = {0};
 	// next state will be the same as previous except for nonmodal group (is set with 0)
 	memcpy(&next_state, &parser_state, sizeof(parser_state_t));
 	next_state.groups.nonmodal = 0; // reset nonmodal
 
-	DBGLOG("[PARSER] gcode cmd (jog=%hu)", is_jogging);
+	DBGLOG("[PARSER] gcode cmd (jog=%hu)", cmd->is_jog);
 
 #ifdef ENABLE_RS274NGC_EXPRESSIONS
 	// reset modified params
@@ -2128,7 +2126,7 @@ static uint8_t parser_gcode_command(bool is_jogging)
 #endif
 
 	// fetch command
-	result = parser_fetch_command(&next_state, &words, &cmd);
+	result = parser_fetch_command(&next_state, &words, cmd);
 	if (result != STATUS_OK)
 	{
 		parser_discard_command();
@@ -2136,13 +2134,13 @@ static uint8_t parser_gcode_command(bool is_jogging)
 		return result;
 	}
 
-	if (is_jogging)
+	if (cmd->is_jog)
 	{
 		cnc_set_exec_state(EXEC_JOG);
 	}
 
 	// validates command
-	result = parser_validate_command(&next_state, &words, &cmd);
+	result = parser_validate_command(&next_state, &words, cmd);
 	if (result != STATUS_OK)
 	{
 		DBGLOG("[PARSER] validate failed: %hu", result);
@@ -2153,9 +2151,9 @@ static uint8_t parser_gcode_command(bool is_jogging)
 
 // executes command
 #ifdef ENABLE_CANNED_CYCLES
-	result = parser_exec_command_block(&next_state, &words, &cmd);
+	result = parser_exec_command_block(&next_state, &words, cmd);
 #else
-	result = parser_exec_command(&next_state, &words, &cmd);
+	result = parser_exec_command(&next_state, &words, cmd);
 #endif
 	if (result != STATUS_OK)
 	{
@@ -2164,7 +2162,7 @@ static uint8_t parser_gcode_command(bool is_jogging)
 	}
 
 	// if is jog motion state is not preserved
-	if (!is_jogging)
+	if (!cmd->is_jog)
 	{
 #ifdef ENABLE_RS274NGC_EXPRESSIONS
 		// stores the new parameters
@@ -2175,12 +2173,6 @@ static uint8_t parser_gcode_command(bool is_jogging)
 #endif
 		// if everything went ok updates the parser modal groups and position
 		memcpy(&parser_state, &next_state, sizeof(parser_state_t));
-#ifdef DISABLE_ENDPROGRAM_LOCK
-		if (next_state.groups.stopping == 3 || next_state.groups.stopping == 4)
-		{
-			parser_reset(false);
-		}
-#endif
 	}
 
 	return result;

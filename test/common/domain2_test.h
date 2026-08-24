@@ -227,7 +227,7 @@ static void d2_normalize(void)
 	grbl_test_command_ok("$20=0");
 	grbl_test_command_ok("G21G90G17G94G54G49G92.1M5M9");
 	grbl_test_command_ok("G53G0X0Y0Z0");
-	d2_wait_idle_timeout(3000U);
+	d2_wait_idle_timeout(GRBL_TEST_TIMEOUT_MS);
 }
 
 static void d2_set_up(void)
