@@ -43,7 +43,7 @@ static void test_realtime_status_has_no_ok(void)
 {
 	d3_idle();
 	grbl_test_clear_output(); d3_realtime('?'); grbl_test_assert_wait_for(">");
-	mcu_unit_test_buffer_read(grbl_test_transcript, sizeof(grbl_test_transcript));
+	grbl_test_snapshot();
 	TEST_ASSERT_NULL(strstr(grbl_test_transcript, "ok\r\n"));
 }
 

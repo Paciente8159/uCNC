@@ -34,6 +34,7 @@ extern "C"
 
 /* Platform includes */
 #include <pthread.h>
+#include <sys/time.h>
 
 	/* ----- Global ISR enable/disable --------------------------------------- */
 
@@ -187,7 +188,7 @@ extern "C"
 #ifdef PIO_UNIT_TESTING
 
 #ifndef PIO_UNIT_TESTING_TX_BUFFER_SIZE
-#define PIO_UNIT_TESTING_TX_BUFFER_SIZE 4096
+#define PIO_UNIT_TESTING_TX_BUFFER_SIZE 65536
 #endif
 
 	DECL_BUFFER(uint8_t, unit_test_rx, RX_BUFFER_SIZE);
@@ -199,9 +200,12 @@ extern "C"
 	 * on different threads.
 	 */
 	static pthread_mutex_t unit_test_tx_mutex = PTHREAD_MUTEX_INITIALIZER;
+	static pthread_cond_t unit_test_tx_changed = PTHREAD_COND_INITIALIZER;
 	static char unit_test_tx_buffer[PIO_UNIT_TESTING_TX_BUFFER_SIZE];
 	static char unit_test_tx_snapshot[PIO_UNIT_TESTING_TX_BUFFER_SIZE];
 	static size_t unit_test_tx_length;
+	static uint64_t unit_test_tx_base;
+	static uint64_t unit_test_tx_total;
 	static bool unit_test_tx_overflow;
 
 	uint8_t mcu_unit_test_getc(void)
@@ -220,12 +224,73 @@ extern "C"
 		{
 			unit_test_tx_buffer[unit_test_tx_length++] = (char)c;
 			unit_test_tx_buffer[unit_test_tx_length] = '\0';
+			unit_test_tx_total++;
 		}
 		else
 		{
 			unit_test_tx_overflow = true;
 		}
+		pthread_cond_broadcast(&unit_test_tx_changed);
 		pthread_mutex_unlock(&unit_test_tx_mutex);
+	}
+
+	uint64_t mcu_unit_test_output_cursor(void)
+	{
+		pthread_mutex_lock(&unit_test_tx_mutex);
+		uint64_t cursor = unit_test_tx_total;
+		pthread_mutex_unlock(&unit_test_tx_mutex);
+		return cursor;
+	}
+
+	bool mcu_unit_test_wait_for_output(uint64_t cursor, uint32_t timeout_ms)
+	{
+		struct timeval now;
+		gettimeofday(&now, NULL);
+		struct timespec deadline = {
+			.tv_sec = now.tv_sec + (time_t)(timeout_ms / 1000U),
+			.tv_nsec = (long)now.tv_usec * 1000L + (long)(timeout_ms % 1000U) * 1000000L};
+		if (deadline.tv_nsec >= 1000000000L)
+		{
+			deadline.tv_sec++;
+			deadline.tv_nsec -= 1000000000L;
+		}
+
+		pthread_mutex_lock(&unit_test_tx_mutex);
+		while (unit_test_tx_total <= cursor)
+		{
+			if (pthread_cond_timedwait(&unit_test_tx_changed, &unit_test_tx_mutex, &deadline))
+			{
+				break;
+			}
+		}
+		bool changed = unit_test_tx_total > cursor;
+		pthread_mutex_unlock(&unit_test_tx_mutex);
+		return changed;
+	}
+
+	size_t mcu_unit_test_buffer_read_since(uint64_t cursor, char *destination, size_t capacity)
+	{
+		if (!destination || !capacity)
+		{
+			return 0;
+		}
+
+		pthread_mutex_lock(&unit_test_tx_mutex);
+		size_t offset = 0;
+		if (cursor > unit_test_tx_base)
+		{
+			uint64_t relative = cursor - unit_test_tx_base;
+			offset = relative < unit_test_tx_length ? (size_t)relative : unit_test_tx_length;
+		}
+		size_t copied = unit_test_tx_length - offset;
+		if (copied >= capacity)
+		{
+			copied = capacity - 1U;
+		}
+		memcpy(destination, unit_test_tx_buffer + offset, copied);
+		destination[copied] = '\0';
+		pthread_mutex_unlock(&unit_test_tx_mutex);
+		return copied;
 	}
 
 	void mcu_unit_test_flush(void) {}
@@ -298,6 +363,7 @@ extern "C"
 		unit_test_tx_length = 0;
 		unit_test_tx_buffer[0] = '\0';
 		unit_test_tx_overflow = false;
+		unit_test_tx_base = unit_test_tx_total;
 		pthread_mutex_unlock(&unit_test_tx_mutex);
 	}
 
@@ -816,7 +882,79 @@ void test_io_set_callback(test_io_id_t input,
 	}
 #endif
 
-	/* Periodic tick that drives stepper and RTC callbacks */
+#ifdef PIO_UNIT_TESTING
+	static uint64_t unit_test_next_rtc = 1000U;
+	static float unit_test_partial_us;
+
+	static void mcu_unit_test_simulate_sample(uint32_t elapsed_us)
+	{
+		tickcount += elapsed_us;
+		mcu_run_events();
+		mcu_gen_step();
+#if defined(MCU_HAS_ONESHOT_TIMER)
+		mcu_gen_oneshot();
+#endif
+		while (tickcount >= unit_test_next_rtc)
+		{
+			mcu_rtc_cb(mcu_millis());
+			unit_test_next_rtc += 1000U;
+		}
+	}
+
+	void mcu_unit_test_clock_reset(void)
+	{
+		mcu_test_clear_events();
+		tickcount = 0;
+		unit_test_next_rtc = 1000U;
+		unit_test_partial_us = 0.0f;
+		oneshot_alarm = 0;
+#if defined(MCU_HAS_ONESHOT_TIMER)
+		virtual_oneshot_counter = 0;
+#endif
+	}
+
+	void mcu_unit_test_runtime_reset(void)
+	{
+		mcu_test_clear_events();
+		unit_test_next_rtc = tickcount + 1000U;
+		unit_test_partial_us = 0.0f;
+		oneshot_alarm = 0;
+#if defined(MCU_HAS_ONESHOT_TIMER)
+		virtual_oneshot_counter = 0;
+#endif
+		BUFFER_CLEAR(unit_test_rx);
+		mcu_unit_test_buffer_clear();
+		memset((void *)&virtualmap, 0, sizeof(virtualmap));
+		test_io_reset();
+	}
+
+	void mcu_unit_test_advance_time(uint32_t microseconds)
+	{
+		const float sample_us = 1000000.0f / (float)ITP_SAMPLE_RATE;
+		uint64_t target = tickcount + microseconds;
+		while (tickcount < target)
+		{
+			unit_test_partial_us += sample_us;
+			uint32_t elapsed = (uint32_t)unit_test_partial_us;
+			if (!elapsed)
+			{
+				continue;
+			}
+			unit_test_partial_us -= (float)elapsed;
+			uint64_t remaining = target - tickcount;
+			if ((uint64_t)elapsed > remaining)
+			{
+				elapsed = (uint32_t)remaining;
+			}
+			mcu_unit_test_simulate_sample(elapsed);
+		}
+	}
+
+	void ticksimul(void)
+	{
+		mcu_unit_test_advance_time(EMULATION_MS_TICK * 1000U);
+	}
+#else
 	void ticksimul(void)
 	{
 		static bool running = false;
@@ -837,46 +975,34 @@ void test_io_set_callback(test_io_id_t input,
 			parcial += (1000000.0f / (float)ITP_SAMPLE_RATE);
 			tickcount += (int)parcial;
 			parcial -= (int)parcial;
-
-#ifdef PIO_UNIT_TESTING
-			mcu_run_events();
-#endif
 			mcu_gen_step();
 #if defined(MCU_HAS_ONESHOT_TIMER)
 			mcu_gen_oneshot();
 #endif
-
 			if (prev ^ virtualmap.special_outputs)
 			{
 				prev = virtualmap.special_outputs;
 				if (stimuli)
 					fprintf(stimuli, "#%lu\n", tickcount);
 #if AXIS_COUNT > 0
-				printpin(STEP0);
-				printpin(DIR0);
+				printpin(STEP0); printpin(DIR0);
 #endif
 #if AXIS_COUNT > 1
-				printpin(STEP1);
-				printpin(DIR1);
+				printpin(STEP1); printpin(DIR1);
 #endif
 #if AXIS_COUNT > 2
-				printpin(STEP2);
-				printpin(DIR2);
+				printpin(STEP2); printpin(DIR2);
 #endif
 #if AXIS_COUNT > 3
-				printpin(STEP3);
-				printpin(DIR3);
+				printpin(STEP3); printpin(DIR3);
 #endif
 #if AXIS_COUNT > 4
-				printpin(STEP4);
-				printpin(DIR4);
+				printpin(STEP4); printpin(DIR4);
 #endif
 #if AXIS_COUNT > 5
-				printpin(STEP5);
-				printpin(DIR5);
+				printpin(STEP5); printpin(DIR5);
 #endif
 			}
-
 			if (tickcount > next_rtc)
 			{
 				mcu_rtc_cb(mcu_millis());
@@ -887,6 +1013,7 @@ void test_io_set_callback(test_io_id_t input,
 		//		startCycleCounter();
 		__atomic_store_n(&running, false, __ATOMIC_RELAXED);
 	}
+#endif
 
 	/**
 	 * OTA emulation
@@ -895,7 +1022,9 @@ void test_io_set_callback(test_io_id_t input,
 
 	/* ----- MCU init and main ------------------------------------------------ */
 
+#ifndef PIO_UNIT_TESTING
 	static pthread_t thread_io;
+#endif
 	void mcu_usb_init() {}
 	void mcu_uart_init() {}
 	void mcu_uart2_init() {}
@@ -916,6 +1045,7 @@ void test_io_set_callback(test_io_id_t input,
 
 	void mcu_init(void)
 	{
+#ifndef PIO_UNIT_TESTING
 		char cwd[1024];
 		get_current_dir(cwd, 1024);
 		printf("%s\n", cwd);
@@ -934,16 +1064,23 @@ void test_io_set_callback(test_io_id_t input,
 		def_printpin(DIR3);
 		if (stimuli)
 			fprintf(stimuli, "$upscope $end\n$enddefinitions $end\n\n");
+#else
+		stimuli = NULL;
+#endif
 
 		virtualmap.special_outputs = 0;
 		virtualmap.special_inputs = 0;
 		virtualmap.inputs = 0;
 		virtualmap.outputs = 0;
 
+#ifndef PIO_UNIT_TESTING
 		start_timer(EMULATION_MS_TICK, &ticksimul);
 		pthread_create(&thread_io, NULL, &ioserver, NULL);
+#else
+		mcu_unit_test_clock_reset();
+#endif
 
-#ifdef MCU_HAS_UART
+#if defined(MCU_HAS_UART) && !defined(PIO_UNIT_TESTING)
 		serial_init();
 #endif
 
@@ -991,8 +1128,10 @@ void test_io_set_callback(test_io_id_t input,
 #endif
 
 		mcu_enable_global_isr();
+#ifndef PIO_UNIT_TESTING
 		flash_fs_init();
 		ota_server_start();
+#endif
 	}
 
 #ifndef PIO_UNIT_TESTING

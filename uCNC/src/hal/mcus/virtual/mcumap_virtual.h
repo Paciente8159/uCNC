@@ -536,6 +536,7 @@ extern const tool_t vfd_pwm;
 // #endif
 
 #ifdef PIO_UNIT_TESTING
+uint32_t mcu_micros(void);
 // injects a new command to the unit test input stream buffer
 bool mcu_unit_test_inject(const char *cmd);
 // gets a pointer to the unit test output stream buffer
@@ -546,6 +547,20 @@ size_t mcu_unit_test_buffer_read(char *destination, size_t capacity);
 bool mcu_unit_test_buffer_overflowed(void);
 // clears the unit test output stream buffer
 void mcu_unit_test_buffer_clear(void);
+// returns an immutable position in the test output stream
+uint64_t mcu_unit_test_output_cursor(void);
+// waits in host time for output beyond cursor, without advancing virtual time
+bool mcu_unit_test_wait_for_output(uint64_t cursor, uint32_t timeout_ms);
+// copies output emitted at or after cursor into a stable, NUL-terminated buffer
+size_t mcu_unit_test_buffer_read_since(uint64_t cursor, char *destination, size_t capacity);
+// resets the deterministic Unity-test clock and discards pending timed events
+void mcu_unit_test_clock_reset(void);
+// restores virtual test-only MCU state while the controller worker is quiescent
+void mcu_unit_test_runtime_reset(void);
+// advances the deterministic Unity-test clock and executes due MCU callbacks
+void mcu_unit_test_advance_time(uint32_t microseconds);
+// schedules a callback on the deterministic Unity-test clock
+void mcu_add_event(uint32_t delay_us, void (*callback)(void *args), void *args);
 
 typedef enum
 {

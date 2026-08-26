@@ -43,7 +43,7 @@ static bool d3_command(const char *command, const char *terminal, uint32_t timeo
 	if (!mcu_unit_test_inject(line)) return false;
 	const char *wait = !strcmp(terminal, "error:") ? "error:" : terminal;
 	if (!grbl_test_wait_for(wait, timeout_ms)) return false;
-	mcu_unit_test_buffer_read(grbl_test_transcript, sizeof(grbl_test_transcript));
+	grbl_test_snapshot();
 	return d3_final_line_matches(grbl_test_transcript, terminal);
 }
 
@@ -52,7 +52,7 @@ static void d3_expect_command(const char *command, const char *terminal)
 	if (!d3_command(command, terminal, D3_TIMEOUT_MS))
 	{
 		char message[1024];
-		mcu_unit_test_buffer_read(grbl_test_transcript, sizeof(grbl_test_transcript));
+		grbl_test_snapshot();
 		snprintf(message, sizeof(message), "`%s` expected terminal `%s`, received `%s`", command, terminal, grbl_test_transcript);
 		TEST_FAIL_MESSAGE(message);
 	}
@@ -62,8 +62,16 @@ static bool d3_status(char *destination, size_t capacity)
 {
 	grbl_test_clear_output();
 	if (!mcu_unit_test_inject("?") || !grbl_test_wait_for(">", 500U)) return false;
-	mcu_unit_test_buffer_read(destination, capacity);
-	return strchr(destination, '<') && strchr(destination, '>');
+	mcu_unit_test_buffer_read_since(grbl_test_output_cursor, destination, capacity);
+	char *start = strrchr(destination, '<');
+	char *end = start ? strchr(start, '>') : NULL;
+	if (!start || !end) return false;
+	size_t length = (size_t)(end - start + 1);
+	if (length >= capacity) return false;
+	memmove(destination, start, length);
+	destination[length] = '\0';
+	mcu_unit_test_advance_time(5000U);
+	return true;
 }
 
 static bool d3_wait_state(const char *state, uint32_t timeout_ms)
@@ -145,8 +153,12 @@ static __attribute__((unused)) void d3_expect_no_serial_response(uint8_t byte, u
 	grbl_test_clear_output();
 	d3_realtime(byte);
 	uint32_t start = mcu_millis();
-	while ((uint32_t)(mcu_millis() - start) < observation_ms) sched_yield();
-	mcu_unit_test_buffer_read(grbl_test_transcript, sizeof(grbl_test_transcript));
+	while ((uint32_t)(mcu_millis() - start) < observation_ms)
+	{
+		grbl_test_step();
+		mcu_unit_test_advance_time(1000U);
+	}
+	grbl_test_snapshot();
 	TEST_ASSERT_EQUAL_STRING_MESSAGE("", grbl_test_transcript, "realtime command unexpectedly emitted a serial response");
 }
 

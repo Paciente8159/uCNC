@@ -54,7 +54,7 @@ static bool d1_send_line(const char *command, const char *expected)
 	{
 		return false;
 	}
-	mcu_unit_test_buffer_read(grbl_test_transcript, sizeof(grbl_test_transcript));
+	grbl_test_snapshot();
 	return d1_terminal_response_matches(grbl_test_transcript, expected);
 }
 
@@ -85,7 +85,7 @@ static bool d1_get_modal(char *destination, size_t capacity)
 	{
 		return false;
 	}
-	mcu_unit_test_buffer_read(destination, capacity);
+	mcu_unit_test_buffer_read_since(grbl_test_output_cursor, destination, capacity);
 	return true;
 }
 

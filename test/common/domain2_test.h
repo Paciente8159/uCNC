@@ -65,8 +65,10 @@ static __attribute__((unused)) bool d2_query_status(d2_sample_t *sample)
 	{
 		return false;
 	}
-	mcu_unit_test_buffer_read(grbl_test_transcript, sizeof(grbl_test_transcript));
-	return d2_parse_status(grbl_test_transcript, sample);
+	grbl_test_snapshot();
+	bool parsed = d2_parse_status(grbl_test_transcript, sample);
+	mcu_unit_test_advance_time(5000U);
+	return parsed;
 }
 
 static __attribute__((unused)) void d2_assert_position(const d2_sample_t *position, float x, float y, float z, float tolerance)
