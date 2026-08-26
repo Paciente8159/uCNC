@@ -48,7 +48,7 @@ static bool grbl_test_wait_for(const char *needle, uint32_t timeout_ms)
 		mcu_unit_test_advance_time(5000U);
 	} while ((uint32_t)(mcu_millis() - started) < timeout_ms);
 
-	return false;
+	return grbl_test_snapshot_contains(needle);
 }
 
 static void grbl_test_assert_wait_for(const char *needle)

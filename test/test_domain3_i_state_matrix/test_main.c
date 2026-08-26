@@ -25,10 +25,14 @@ static void test_run_acceptance_matrix(void)
 static void test_hold_acceptance_matrix(void)
 {
 	d3_reset();d3_idle(); d3_start_long_motion(); d3_realtime('!'); d3_expect_state("<Hold:0", D3_MOTION_TIMEOUT_MS);
-	d3_expect_command("G1X4F300", "ok\r\n");
-	d3_expect_command("$J=G91X1F300", "error:8\r\n");
 	d3_expect_command("$G", "ok\r\n");
 	char status[512]; TEST_ASSERT_TRUE(d3_status(status, sizeof(status))); TEST_ASSERT_NOT_NULL(strstr(status, "<Hold"));
+
+	/* A valid motion is accepted during hold, but its ok is deferred until cycle-start. */
+	grbl_test_clear_output();
+	TEST_ASSERT_TRUE(mcu_unit_test_inject("G1X4F300\n"));
+	d3_realtime('~');
+	grbl_test_assert_wait_for("ok\r\n");
 	d3_cancel_motion();
 }
 

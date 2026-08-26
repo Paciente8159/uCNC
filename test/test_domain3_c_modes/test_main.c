@@ -1,5 +1,15 @@
 #include "../common/domain3_test.h"
 
+static void assert_startup_block_reported(const char *block, const char *stage)
+{
+	if (!strstr(grbl_test_transcript, block))
+	{
+		char message[768];
+		snprintf(message, sizeof(message), "%s: expected startup report to contain `%s`, received `%s`", stage, block, grbl_test_transcript);
+		TEST_FAIL_MESSAGE(message);
+	}
+}
+
 static void test_check_mode_parses_without_execution(void)
 {
 	d3_idle();
@@ -42,11 +52,11 @@ static void test_startup_blocks_store_report_and_reject_invalid(void)
 	d3_expect_command("$N0=G21G90", "ok\r\n");
 	d3_expect_command("$N1=G17G94", "ok\r\n");
 	d3_expect_command("$N", "ok\r\n");
-	TEST_ASSERT_NOT_NULL_MESSAGE(strstr(grbl_test_transcript, "$N0=G21G90"), "Expected startup block to be $N0=G21G90");
-	TEST_ASSERT_NOT_NULL_MESSAGE(strstr(grbl_test_transcript, "$N1=G17G94"), "Expected startup block to be $N1=G17G9");
+	assert_startup_block_reported("$N0=G21G90", "during `$N` view query after both save commands returned `ok`");
+	assert_startup_block_reported("$N1=G17G94", "during `$N` view query after both save commands returned `ok`");
 	d3_expect_command("$N0=G1X1", "error:");
 	d3_expect_command("$N", "ok\r\n");
-	TEST_ASSERT_NOT_NULL_MESSAGE(strstr(grbl_test_transcript, "$N0=G21G90"), "Expected startup block to be $N0=G21G90 but got something else");
+	assert_startup_block_reported("$N0=G21G90", "during `$N` view query after invalid `$N0` replacement returned `error:`");
 }
 
 D3_UNITY_MAIN(

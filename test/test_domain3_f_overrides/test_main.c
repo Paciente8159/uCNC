@@ -2,15 +2,19 @@
 
 static int status_override(unsigned index)
 {
-	for (uint8_t attempt = 0; attempt < 20U; ++attempt)
+	uint32_t started = mcu_millis();
+	do
 	{
 		char status[512];
-		if (!d3_status(status, sizeof(status))) continue;
-		char *ov = strstr(status, "|Ov:");
-		unsigned feed = 0, rapid = 0, spindle = 0;
-		if (ov && sscanf(ov + 4, "%u,%u,%u", &feed, &rapid, &spindle) == 3)
-			return (int)(index == 0 ? feed : index == 1 ? rapid : spindle);
-	}
+		if (d3_status(status, sizeof(status)))
+		{
+			char *ov = strstr(status, "|Ov:");
+			unsigned feed = 0, rapid = 0, spindle = 0;
+			if (ov && sscanf(ov + 4, "%u,%u,%u", &feed, &rapid, &spindle) == 3)
+				return (int)(index == 0 ? feed : index == 1 ? rapid : spindle);
+		}
+		sched_yield();
+	} while ((uint32_t)(mcu_millis() - started) < D3_TIMEOUT_MS);
 	return -1;
 }
 

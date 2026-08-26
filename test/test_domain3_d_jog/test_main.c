@@ -16,6 +16,8 @@ static void test_jog_lock_cancel_and_hold(void)
 	d3_idle();
 	d3_expect_command("$J=G91X5F60", "ok\r\n"); d3_expect_state("<Jog", D3_TIMEOUT_MS);
 	d3_expect_command("G0X0", "error:9\r\n");
+	d3_expect_command("$J=G91X5F60", "ok\r\n");
+	d3_expect_state("<Jog", D3_TIMEOUT_MS);
 	d3_realtime('!'); d3_expect_state("<Idle", D3_MOTION_TIMEOUT_MS);
 	d3_expect_command("$J=G91X5F60", "ok\r\n"); d3_expect_state("<Jog", D3_TIMEOUT_MS);
 	d3_realtime(0x85); d3_expect_state("<Idle", D3_MOTION_TIMEOUT_MS);
