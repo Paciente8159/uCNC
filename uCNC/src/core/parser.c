@@ -445,7 +445,7 @@ static uint8_t parser_grbl_command(void)
 
 	// parser_state_t next_state = {0};
 	// parser_words_t words = {0};
-	// parser_cmd_explicit_t cmd = {0};
+	parser_cmd_explicit_t cmd = {0};
 
 	switch (grbl_cmd_len)
 	{
@@ -585,7 +585,7 @@ static uint8_t parser_grbl_command(void)
 						// run startup block (like Grbl)
 						grbl_stream_eeprom(block_address, true);
 						// checks the command validity
-						error = parser_run_command();
+						error = parser_gcode_command(&cmd);
 						// waits for the command to finish
 						itp_sync();
 						// error = parser_fetch_command(&next_state, &words, &cmd);
