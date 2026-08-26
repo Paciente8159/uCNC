@@ -188,7 +188,7 @@ void parser_init(void)
 	parser_reset(true);
 }
 
-uint8_t parser_read_command(void)
+static uint8_t parser_process_command(parser_cmd_explicit_t *cmd)
 {
 	uint8_t error = STATUS_OK;
 	uint8_t c = grbl_stream_peek();
@@ -211,10 +211,9 @@ uint8_t parser_read_command(void)
 		}
 	}
 
-	parser_cmd_explicit_t cmd = {0};
 	if (error == GRBL_JOG_CMD)
 	{
-		cmd.is_jog = 1;
+		cmd->is_jog = 1;
 	}
 	else if (cnc_get_exec_state(EXEC_GCODE_LOCKED) || cnc_has_alarm()) // if any other than idle, run or hold discards the command
 	{
@@ -223,13 +222,25 @@ uint8_t parser_read_command(void)
 		return STATUS_SYSTEM_GC_LOCK;
 	}
 
-	if (cnc_get_exec_state(EXEC_JOG_LOCKED) && !cmd.is_jog) // error if trying to do a normal move with jog active
+	if (cnc_get_exec_state(EXEC_JOG_LOCKED) && !cmd->is_jog) // error if trying to do a normal move with jog active
 	{
 		DBGLOG("[PARSER] jog locked");
 		return STATUS_SYSTEM_GC_LOCK;
 	}
 
-	return parser_gcode_command(&cmd);
+	return parser_gcode_command(cmd);
+}
+
+uint8_t parser_run_command(void)
+{
+	parser_cmd_explicit_t cmd = {0};
+	return parser_process_command(&cmd);
+}
+
+uint8_t parser_dry_run_command(void)
+{
+	parser_cmd_explicit_t cmd = {.dry_run = 1};
+	return parser_process_command(&cmd);
 }
 
 void parser_get_modes(uint8_t *modalgroups, uint16_t *feed, uint16_t *spindle)
@@ -432,9 +443,9 @@ static uint8_t parser_grbl_command(void)
 	uint16_t block_address = STARTUP_BLOCK0_ADDRESS_OFFSET;
 	uint8_t error = STATUS_INVALID_STATEMENT;
 
-	parser_state_t next_state = {0};
-	parser_words_t words = {0};
-	parser_cmd_explicit_t cmd = {0};
+	// parser_state_t next_state = {0};
+	// parser_words_t words = {0};
+	// parser_cmd_explicit_t cmd = {0};
 
 	switch (grbl_cmd_len)
 	{
@@ -572,10 +583,11 @@ static uint8_t parser_grbl_command(void)
 					{
 #endif
 						// run startup block
-						grbl_stream_start_broadcast();
-						grbl_stream_eeprom(block_address);
+						// grbl_stream_start_broadcast();
+						grbl_stream_eeprom(block_address, true);
 						// checks the command validity
-						error = parser_fetch_command(&next_state, &words, &cmd);
+						error = parser_dry_run_command();
+						// error = parser_fetch_command(&next_state, &words, &cmd);
 #ifdef ENABLE_MULTILINE_STARTUP_BLOCKS
 						do
 						{
@@ -598,10 +610,11 @@ static uint8_t parser_grbl_command(void)
 
 					// reset streams
 					grbl_stream_change(NULL);
+					// discard the command (test only)
 
 					if (error != STATUS_OK)
 					{
-						parser_discard_command();
+						//					parser_discard_command();
 						// the Gcode is not valid then erase the startup block
 						settings_erase(block_address, NULL, 1);
 					}
@@ -1271,6 +1284,10 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 			}
 		}
 	}
+	else
+	{
+		requires_feed = false;
+	}
 	// group 2 - plane selection (nothing to be checked)
 	// group 3 - distance mode (nothing to be checked)
 
@@ -1376,6 +1393,11 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 		return error;
 	}
 #endif
+
+	if (cmd->dry_run)
+	{
+		return STATUS_OK;
+	}
 
 	// stoping from previous command M2 or M30 command
 	if (new_state->groups.stopping && !CHECKFLAG(cmd->groups, GCODE_GROUP_STOPPING))
@@ -2161,8 +2183,8 @@ static uint8_t parser_gcode_command(parser_cmd_explicit_t *cmd)
 		return result;
 	}
 
-	// if is jog motion state is not preserved
-	if (!cmd->is_jog)
+	// if is jog motion or dry run state is not preserved
+	if (!cmd->is_jog && !cmd->dry_run)
 	{
 #ifdef ENABLE_RS274NGC_EXPRESSIONS
 		// stores the new parameters

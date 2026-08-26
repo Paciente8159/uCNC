@@ -24,7 +24,7 @@ static void test_run_acceptance_matrix(void)
 
 static void test_hold_acceptance_matrix(void)
 {
-	d3_idle(); d3_start_long_motion(); d3_realtime('!'); d3_expect_state("<Hold:0", D3_MOTION_TIMEOUT_MS);
+	d3_reset();d3_idle(); d3_start_long_motion(); d3_realtime('!'); d3_expect_state("<Hold:0", D3_MOTION_TIMEOUT_MS);
 	d3_expect_command("G1X4F300", "ok\r\n");
 	d3_expect_command("$J=G91X1F300", "error:8\r\n");
 	d3_expect_command("$G", "ok\r\n");

@@ -278,7 +278,7 @@ uint8_t cnc_parse_cmd(void)
 				exec_time = mcu_millis();
 			}
 #endif
-			error = parser_read_command();
+			error = parser_run_command();
 #ifdef ENABLE_PARSING_TIME_DEBUG
 			exec_time = mcu_millis() - exec_time;
 			proto_info("Exec time: %lu", exec_time);
@@ -1302,7 +1302,7 @@ void cnc_run_startup_blocks(void)
 			do
 			{
 #endif
-				grbl_stream_eeprom(address);
+				grbl_stream_eeprom(address, false);
 				cnc_parse_cmd();
 #ifdef ENABLE_MULTILINE_STARTUP_BLOCKS
 				do

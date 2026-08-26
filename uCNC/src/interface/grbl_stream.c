@@ -218,6 +218,7 @@ grbl_stream_t *grbl_stream_readonly(grbl_stream_getc_cb getc_cb, grbl_stream_ava
 }
 
 static uint16_t stream_eeprom_address;
+static bool stream_eeprom_muted;
 static uint8_t stream_eeprom_getc(void)
 {
 	uint8_t c = mcu_eeprom_getc(stream_eeprom_address++);
@@ -227,14 +228,16 @@ static uint8_t stream_eeprom_getc(void)
 		c = EOL;
 	}
 #endif
-	grbl_stream_putc((c != EOL) ? c : ':');
+	if (!stream_eeprom_muted)
+		grbl_stream_putc((c != EOL) ? c : ':');
 
 	return c;
 }
 
-void grbl_stream_eeprom(uint16_t address)
+void grbl_stream_eeprom(uint16_t address, bool muted)
 {
 	stream_eeprom_address = address;
+	stream_eeprom_muted = muted;
 	grbl_stream_readonly(&stream_eeprom_getc, NULL, NULL);
 }
 

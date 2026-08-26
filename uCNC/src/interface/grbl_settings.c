@@ -492,6 +492,16 @@ uint8_t settings_change(setting_offset_t id, float value)
 			}
 		}
 
+		if (id == 20 && value1 && !g_settings.homing_enabled)
+		{
+			return STATUS_SOFT_LIMIT_ERROR;
+		}
+
+		if (id == 22 && !value1)
+		{
+			g_settings.soft_limits_enabled = false;
+		}
+
 		uint8_t count = settings_count();
 		for (uint8_t i = 0; i < count; i++)
 		{

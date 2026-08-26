@@ -297,6 +297,7 @@ extern "C"
 		int16_t group_extended;
 		uint8_t group_0_1_useaxis:1;
 		uint8_t is_jog:1;
+		uint8_t dry_run:1;
 	} parser_cmd_explicit_t;
 
 	typedef struct
@@ -319,7 +320,8 @@ extern "C"
 	} parser_state_t;
 
 	void parser_init(void);
-	uint8_t parser_read_command(void);
+	uint8_t parser_run_command(void);
+	uint8_t parser_dry_run_command(void);
 	void parser_get_modes(uint8_t *modalgroups, uint16_t *feed, uint16_t *spindle);
 	void parser_get_coordsys(uint8_t system_num, float *axis);
 	bool parser_get_wco(float *axis);

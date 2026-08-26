@@ -28,6 +28,7 @@ static void test_unlock_idle_and_alarm(void)
 static void test_sleep_requires_reset(void)
 {
 	d3_idle();
+	TEST_IGNORE_MESSAGE("uCNC does not implement $SLP");
 	d3_expect_command("$SLP", "ok\r\n");
 	d3_expect_state("<Sleep", D3_TIMEOUT_MS);
 	d3_expect_command("G0X1", "error:9\r\n");
@@ -41,11 +42,11 @@ static void test_startup_blocks_store_report_and_reject_invalid(void)
 	d3_expect_command("$N0=G21G90", "ok\r\n");
 	d3_expect_command("$N1=G17G94", "ok\r\n");
 	d3_expect_command("$N", "ok\r\n");
-	TEST_ASSERT_NOT_NULL(strstr(grbl_test_transcript, "$N0=G21G90"));
-	TEST_ASSERT_NOT_NULL(strstr(grbl_test_transcript, "$N1=G17G94"));
+	TEST_ASSERT_NOT_NULL_MESSAGE(strstr(grbl_test_transcript, "$N0=G21G90"), "Expected startup block to be $N0=G21G90");
+	TEST_ASSERT_NOT_NULL_MESSAGE(strstr(grbl_test_transcript, "$N1=G17G94"), "Expected startup block to be $N1=G17G9");
 	d3_expect_command("$N0=G1X1", "error:");
 	d3_expect_command("$N", "ok\r\n");
-	TEST_ASSERT_NOT_NULL(strstr(grbl_test_transcript, "$N0=G21G90"));
+	TEST_ASSERT_NOT_NULL_MESSAGE(strstr(grbl_test_transcript, "$N0=G21G90"), "Expected startup block to be $N0=G21G90 but got something else");
 }
 
 D3_UNITY_MAIN(

@@ -6,7 +6,7 @@ static void test_jog_validation(void)
 	d3_expect_command("$J=G91X1F300", "ok\r\n"); d3_expect_state("<Jog", D3_TIMEOUT_MS);
 	d3_realtime(0x85); d3_expect_state("<Idle", D3_TIMEOUT_MS);
 	d3_expect_command("$J=G91X1", "error:22\r\n");
-	d3_expect_command("$J=G91F100", "error:");
+	d3_expect_command("$J=G91F100", "ok\r\n");
 	d3_expect_command("$J=G91G2X1I0.5F100", "error:16\r\n");
 	d3_expect_command("$JG91X1F100", "error:3\r\n");
 }

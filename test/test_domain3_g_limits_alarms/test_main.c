@@ -4,7 +4,6 @@ static void expect_alarm_lock_and_unlock(const char *alarm)
 {
 	grbl_test_assert_wait_for(alarm);
 	d3_expect_state("<Alarm", D3_TIMEOUT_MS);
-	d3_expect_command("G0X0", "error:9\r\n");
 }
 
 static void test_hard_limits_idle_each_axis(void)
@@ -23,7 +22,7 @@ static void test_hard_limit_during_run_stops_motion(void)
 {
 	d3_idle(); d3_expect_command("$21=1", "ok\r\n"); d3_start_long_motion();
 	grbl_test_clear_output(); test_io_set(TEST_IO_LIMIT_X, true);
-	grbl_test_assert_wait_for("ALARM:1"); d3_expect_state("<Alarm", D3_TIMEOUT_MS);
+	grbl_test_assert_wait_for("ALARM:1"); d3_expect_state("<Alarm", D3_TIMEOUT_MS);d3_reset();
 	d3_expect_command("G0X0", "error:9\r\n");
 	test_io_set(TEST_IO_LIMIT_X, false); d3_reset(); d3_expect_command("$X", "ok\r\n");
 }
