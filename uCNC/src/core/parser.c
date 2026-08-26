@@ -582,11 +582,12 @@ static uint8_t parser_grbl_command(void)
 					do
 					{
 #endif
-						// run startup block
-						// grbl_stream_start_broadcast();
+						// run startup block (like Grbl)
 						grbl_stream_eeprom(block_address, true);
 						// checks the command validity
-						error = parser_dry_run_command();
+						error = parser_run_command();
+						// waits for the command to finish
+						itp_sync();
 						// error = parser_fetch_command(&next_state, &words, &cmd);
 #ifdef ENABLE_MULTILINE_STARTUP_BLOCKS
 						do
@@ -601,12 +602,6 @@ static uint8_t parser_grbl_command(void)
 					// restore address
 					block_address = address;
 #endif
-					// if uncomment will also check if any gcode rules are violated
-					// allow bad rules for now to fit UNO. Will be catched when trying to execute the line
-					// if (error == STATUS_OK)
-					// {
-					// 	error = parser_validate_command(&next_state, &words, &cmd);
-					// }
 
 					// reset streams
 					grbl_stream_change(NULL);
