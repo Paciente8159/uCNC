@@ -12,30 +12,30 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Cache pip
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/pip
           key: pip-${{ runner.os }}-${{ hashFiles('**/requirements.txt') }}
           restore-keys: pip-${{ runner.os }}-
 
       - name: Cache PlatformIO
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.platformio
-          key: pio-${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+          key: pio-v2-${{ runner.os }}-${{ hashFiles('platformio.ini', 'uCNC/src/hal/boards/**/*.ini') }}
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
       - name: Install PlatformIO
         run: |
           python -m pip install --upgrade pip
-          pip install --upgrade platformio
+          pip install "platformio==6.1.18"
 
       - name: Run Linux unit tests
         run: pio test -e EMULATOR_LINUX_TEST
@@ -69,30 +69,30 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Cache pip
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/pip
           key: pip-${{ runner.os }}-${{ hashFiles('**/requirements.txt') }}
           restore-keys: pip-${{ runner.os }}-
 
       - name: Cache PlatformIO
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.platformio
-          key: pio-${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+          key: pio-v2-${{ runner.os }}-${{ hashFiles('platformio.ini', 'uCNC/src/hal/boards/**/*.ini') }}
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
       - name: Install PlatformIO
         run: |
           python -m pip install --upgrade pip
-          pip install --upgrade platformio
+          pip install "platformio==6.1.18"
 
       - name: Run PlatformIO Build
         run: pio run -e ${{ matrix.boards }}
