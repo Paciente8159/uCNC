@@ -403,11 +403,13 @@ static uint8_t parser_grbl_command(void)
 	uint8_t grbl_cmd_len = 0;
 
 	// if not IDLE
-	if (cnc_get_exec_state(EXEC_RUN))
+	if (cnc_get_exec_state(EXEC_MOTIONS | EXEC_SPECIAL_MOTIONS))
 	{
 		switch (c)
 		{
+#if (EMULATE_GRBL_STARTUP < 3)
 		case '#':
+#endif
 		case 'G':
 		case 'P':
 		case 'I':
@@ -2153,6 +2155,10 @@ static uint8_t parser_gcode_command(parser_cmd_explicit_t *cmd)
 
 	if (cmd->is_jog)
 	{
+		if (mc_get_checkmode())
+		{
+			return STATUS_IDLE_ERROR;
+		}
 		cnc_set_exec_state(EXEC_JOG);
 	}
 

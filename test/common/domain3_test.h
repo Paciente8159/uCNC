@@ -118,6 +118,7 @@ static void d3_realtime(uint8_t byte)
 static void d3_reset(void)
 {
 	grbl_test_clear_output();
+	settings_reset(true);
 	d3_realtime(0x18);
 	grbl_test_assert_wait_for("Grbl ");
 }

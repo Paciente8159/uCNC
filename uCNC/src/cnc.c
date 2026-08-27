@@ -931,7 +931,8 @@ void cnc_exec_rt_commands(void)
 #if ASSERT_PIN(SAFETY_DOOR)
 		if (CHECKFLAG(command, RT_CMD_DOOR_CHANGED))
 		{
-			proto_feedback(MSG_FEEDBACK_6);
+			if (CHECKFLAG(io_get_controls(), SAFETY_DOOR_MASK))
+				proto_feedback(MSG_FEEDBACK_6);
 			itp_stop_tools();
 #ifdef ENABLE_SAFETY_DOOR_PARKING
 			cnc_park();
