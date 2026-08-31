@@ -38,14 +38,14 @@ MCU_CALLBACK mcu_timeout_delgate mcu_timeout_cb;
 #endif
 
 // the telnet socket pointer
-socket_if_t *mcu_telnet_sock;
-void mcu_telnet_onrecv(uint8_t client_idx, void *data, size_t data_len);
+socket_if_t *telnet_sock;
+
 // the telnet onrecv callback
-telnet_protocol_t mcu_telnet_protocol = {.telnet_onrecv_cb = mcu_telnet_onrecv};
+telnet_protocol_t telnet_proto;
 DECL_BUFFER(uint8_t, telnet_rx, RX_BUFFER_SIZE);
 DECL_BUFFER(uint8_t, telnet_tx, TELNET_TX_BUFFER_SIZE);
 
-void mcu_telnet_onrecv(uint8_t client_idx, void *data, size_t data_len)
+void mcu_telnet_onrecv(uint8_t client_idx, const uint8_t *data, size_t data_len)
 {
 	uint8_t *buffer = (uint8_t *)data;
 	for (size_t i = 0; i < data_len; i++)
@@ -91,10 +91,14 @@ void mcu_telnet_clear(void)
 	BUFFER_CLEAR(telnet_tx);
 }
 
+#ifndef GRBL_TELNET_TIMEOUT
+#define GRBL_TELNET_TIMEOUT 2000
+#endif
+
 void mcu_telnet_flush(void)
 {
 	// if no clients just throws away the buffer
-	if (!telnet_hasclients(&mcu_telnet_protocol))
+	if (!telnet_hasclients(&telnet_proto))
 	{
 		BUFFER_CLEAR(telnet_tx);
 		return;
@@ -106,7 +110,7 @@ void mcu_telnet_flush(void)
 		memset(tmp, 0, sizeof(tmp));
 		uint8_t r = 0;
 		BUFFER_READ(telnet_tx, tmp, TELNET_TX_BUFFER_SIZE, r);
-		telnet_broadcast(&mcu_telnet_protocol, (char *)tmp, r, 0);
+		telnet_broadcast(&telnet_proto, (char *)tmp, r, GRBL_TELNET_TIMEOUT);
 	}
 }
 
@@ -148,11 +152,11 @@ volatile buffer_index_t mcu_in_isr_context_counter;
 // void __attribute__((weak)) mcu_usb_init(void) {}
 // #endif
 
-// #ifdef ENABLE_SOCKETS
+// #ifndef ENABLE_SOCKETS
 // void __attribute__((weak)) mcu_network_init() {}
 // #endif
 
-// #ifdef MCU_HAS_BLUETOOTH
+// #ifndef MCU_HAS_BLUETOOTH
 // void __attribute__((weak)) mcu_bt_init() {}
 // #endif
 
@@ -914,7 +918,8 @@ static void FORCEINLINE mcu_coms_init(void)
 #endif
 	BUFFER_INIT(uint8_t, telnet_tx, TELNET_TX_BUFFER_SIZE);
 	BUFFER_INIT(uint8_t, telnet_rx, RX_BUFFER_SIZE);
-	// mcu_network_init(); // initialize later
+	mcu_network_init();
+	//
 #endif
 
 #ifdef MCU_HAS_BLUETOOTH
@@ -923,7 +928,6 @@ static void FORCEINLINE mcu_coms_init(void)
 #endif
 	BUFFER_INIT(uint8_t, bt_tx, BLUETOOTH_TX_BUFFER_SIZE);
 	BUFFER_INIT(uint8_t, bt_rx, RX_BUFFER_SIZE);
-	mcu_bt_init();
 #endif
 }
 

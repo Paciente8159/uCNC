@@ -619,10 +619,6 @@ extern "C"
 		socket_init();
 		extern socket_device_t wifi_socket;
 		socket_register_device(&wifi_socket);
-
-		extern socket_if_t *telnet_sock;
-		extern const telnet_protocol_t telnet_proto;
-		telnet_sock = telnet_start_listen((telnet_protocol_t *)&telnet_proto, 23);
 		ota_server_start();
 #endif
 	}

@@ -28,8 +28,18 @@
 #include <string.h>
 #include <float.h>
 
+#ifdef ENABLE_PARSER_DEBUG
+#define DBGLOG DBGMSG
+#else
+#define DBGLOG(fmt, ...) ((void)0)
+#endif
+
 // extended codes
 #define M10 EXTENDED_MCODE(10)
+
+#ifndef PARSERDBG
+#define PARSERDBG(...) ((void)0)
+#endif
 
 static parser_state_t parser_state;
 static parser_parameters_t parser_parameters;
@@ -191,6 +201,7 @@ uint8_t parser_read_command(void)
 		{
 			if (error != GRBL_JOG_CMD)
 			{
+				DBGLOG("[PARSER] grbl cmd: %hu", error);
 				return parser_grbl_exec_code(error);
 			}
 		}
@@ -208,11 +219,13 @@ uint8_t parser_read_command(void)
 	else if (cnc_get_exec_state(EXEC_GCODE_LOCKED) || cnc_has_alarm()) // if any other than idle, run or hold discards the command
 	{
 		parser_discard_command();
+		DBGLOG("[PARSER] gcode locked, discard");
 		return STATUS_SYSTEM_GC_LOCK;
 	}
 
 	if (cnc_get_exec_state(EXEC_JOG_LOCKED) && !is_jogging) // error if trying to do a normal move with jog active
 	{
+		DBGLOG("[PARSER] jog locked");
 		return STATUS_SYSTEM_GC_LOCK;
 	}
 
@@ -846,7 +859,8 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 #endif
 
 		error = parser_get_token(&word, &value);
-		DBGMSG("Parser word %c", word);
+		PARSERDBG("Parser word %c", word);
+		DBGLOG("[PARSER] token: %c value=%.3f", word, value);
 
 		if (error)
 		{
@@ -892,7 +906,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 			{
 				return STATUS_BAD_NUMBER_FORMAT;
 			}
-			DBGMSG("Assign #%lu=%f", (uint32_t)value, assign_val);
+			PARSERDBG("Assign #%lu=%f", (uint32_t)value, assign_val);
 			if (new_state->modified_params_count >= RS274NGC_MAX_PARAMS_SET_PER_LINE)
 			{
 				return STATUS_MAXIMUM_PARAMS_PER_BLOCK_EXCEEDED;
@@ -944,7 +958,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 			break;
 		}
 
-		DBGMSG("Parser var value %f", value);
+		PARSERDBG("Parser var value %f", value);
 
 #ifdef ENABLE_PARSER_MODULES
 		if ((error == STATUS_GCODE_UNSUPPORTED_COMMAND || error == STATUS_GCODE_UNUSED_WORDS))
@@ -966,6 +980,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 #endif
 		if (error)
 		{
+			DBGLOG("[PARSER] token error: %hu", error);
 			return error;
 		}
 
@@ -1863,6 +1878,10 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 		EVENT_INVOKE(gcode_before_motion, &args);
 #endif
 
+		DBGLOG("[PARSER] motion G%hu.%hu target X=%.3f Y=%.3f feed=%.3f", new_state->groups.motion, new_state->groups.motion_mantissa, target[AXIS_X], target[AXIS_Y], block_data.feed);
+#if AXIS_COUNT > 2
+		DBGLOG("[PARSER] target Z=%.3f", target[AXIS_Z]);
+#endif
 		switch (new_state->groups.motion)
 		{
 		case G0:
@@ -1949,6 +1968,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 				}
 
 				error = mc_arc(target, center_offset_a, center_offset_b, radius, a, b, (new_state->groups.motion == 2), &block_data);
+				DBGLOG("[PARSER] arc r=%.3f center=(%.3f,%.3f) err=%hu", radius, center_offset_a, center_offset_b, error);
 			}
 			break;
 #endif
@@ -1961,6 +1981,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 			probe_flags |= (new_state->groups.motion_mantissa & 0x01) ? 2 : 0;
 
 			error = mc_probe(target, probe_flags, &block_data);
+			DBGLOG("[PARSER] probe flags=%hu err=%hu", probe_flags, error);
 			parser_parameters.last_probe_ok = 0;
 			switch (error)
 			{
@@ -2090,6 +2111,8 @@ static uint8_t parser_gcode_command(bool is_jogging)
 	memcpy(&next_state, &parser_state, sizeof(parser_state_t));
 	next_state.groups.nonmodal = 0; // reset nonmodal
 
+	DBGLOG("[PARSER] gcode cmd (jog=%hu)", is_jogging);
+
 #ifdef ENABLE_RS274NGC_EXPRESSIONS
 	// reset modified params
 	next_state.modified_params_count = 0;
@@ -2101,6 +2124,7 @@ static uint8_t parser_gcode_command(bool is_jogging)
 	if (result != STATUS_OK)
 	{
 		parser_discard_command();
+		DBGLOG("[PARSER] fetch failed: %hu", result);
 		return result;
 	}
 
@@ -2113,8 +2137,11 @@ static uint8_t parser_gcode_command(bool is_jogging)
 	result = parser_validate_command(&next_state, &words, &cmd);
 	if (result != STATUS_OK)
 	{
+		DBGLOG("[PARSER] validate failed: %hu", result);
 		return result;
 	}
+
+	DBGLOG("[PARSER] motion=%hu nonmodal=%hu feed=%.3f", next_state.groups.motion, next_state.groups.nonmodal, next_state.feedrate);
 
 // executes command
 #ifdef ENABLE_CANNED_CYCLES
@@ -2124,6 +2151,7 @@ static uint8_t parser_gcode_command(bool is_jogging)
 #endif
 	if (result != STATUS_OK)
 	{
+		DBGLOG("[PARSER] exec failed: %hu", result);
 		return result;
 	}
 
@@ -3019,6 +3047,8 @@ uint8_t parser_exec_command_block(parser_state_t *new_state, parser_words_t *wor
 		sticky_mask = 0;
 		return parser_exec_command(new_state, words, cmd);
 	}
+
+	DBGLOG("[PARSER] canned cycle G%hu", new_state->groups.motion);
 
 	if (new_state->groups.feedrate_mode == G93)
 	{

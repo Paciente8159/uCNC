@@ -1239,6 +1239,7 @@ extern "C"
 #ifndef ENABLE_SOCKETS
 #define ENABLE_SOCKETS
 #endif
+#define sockets_dotasks() socket_server_dotasks();yield()
 #endif
 
 #ifndef MCU_HAS_FLASHUPDATE
@@ -1443,9 +1444,15 @@ extern "C"
 	}
 
 // ISR
-#include <xtensa/corebits.h>
+// #include <xtensa/corebits.h>
 #define mcu_enable_global_isr() xt_rsil(0)
 #define mcu_disable_global_isr() xt_rsil(15)
+#ifndef PS_INTLEVEL_MASK
+#define PS_INTLEVEL_MASK	0x0000000F
+#endif
+#ifndef PS_EXCM_MASK
+#define PS_EXCM_MASK		0x00000010
+#endif
 #define mcu_get_global_isr() ({uint32_t ps; __asm__ __volatile__ ("rsr.ps %0" : "=r" (ps)); ((ps & PS_INTLEVEL_MASK) == 0); })
 #define mcu_in_isr_context() ({uint32_t ps; __asm__ __volatile__ ("rsr.ps %0" : "=r" (ps)); ((ps & PS_EXCM_MASK) == 0); })
 
