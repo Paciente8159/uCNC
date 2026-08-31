@@ -81,20 +81,7 @@ static esp_netif_t *netif_sta = NULL;
 static esp_netif_t *netif_ap = NULL;
 static bool wifi_initialized = false;
 
-#ifdef USE_STATIC_IP
-#ifndef STATIC_IP_IP
-// 192.168.1.200
-#define STATIC_IP_IP 3355551936
-#endif
-#ifndef STATIC_IP_GW
-// 192.168.1.1
-#define STATIC_IP_GW 16885952
-#endif
-#ifndef STATIC_IP_SUB
-// 255.255.255.0
-#define STATIC_IP_SUB 16777215
-#endif
-#endif
+
 
 extern "C" void esp32_wifi_stop(void)
 {
@@ -177,7 +164,10 @@ extern "C" void esp32_wifi_config(bool force)
 	if (wifi_settings.wifi_mode != 2)
 	{
 #ifdef USE_STATIC_IP
-		WiFi.config(IPAddress(STATIC_IP_IP), IPAddress(STATIC_IP_GW), IPAddress(STATIC_IP_SUB));
+			if (!WiFi.config(IPAddress(STATIC_IP_IP), IPAddress(STATIC_IP_GW), IPAddress(STATIC_IP_SUB)))
+			{
+				proto_info("Static IP config failed");
+			}
 #endif
 		WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
 	}

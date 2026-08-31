@@ -88,6 +88,7 @@ typedef struct
 
 uint16_t wifi_settings_offset;
 wifi_settings_t wifi_settings;
+
 #endif
 
 extern "C"
@@ -110,6 +111,12 @@ extern "C"
 				ATOMIC_CODEBLOCK
 				{
 					WiFi.disconnect();
+#ifdef USE_STATIC_IP
+					if (!WiFi.config(local_IP, gateway, subnet))
+					{
+						proto_info("Static IP config failed");
+					}
+#endif
 					switch (wifi_settings.wifi_mode)
 					{
 					case 1:
@@ -591,25 +598,6 @@ extern "C"
 	}
 #endif
 
-#ifdef USE_STATIC_IP
-#ifndef STATIC_IP_IP
-// 192.168.1.200
-#define STATIC_IP_IP 3355551936
-#endif
-#ifndef STATIC_IP_GW
-// 192.168.1.1
-#define STATIC_IP_GW 16885952
-#endif
-#ifndef STATIC_IP_SUB
-// 255.255.255.0
-#define STATIC_IP_SUB 16777215
-#endif
-
-	static IPAddress local_IP((uint32_t)(STATIC_IP_IP));
-	static IPAddress gateway((uint32_t)(STATIC_IP_GW));
-	static IPAddress subnet((uint32_t)(STATIC_IP_SUB));
-#endif
-
 	void __attribute__((weak)) mcu_network_init(void)
 	{
 #ifdef ENABLE_WIFI
@@ -644,6 +632,12 @@ extern "C"
 
 		if (wifi_settings.wifi_on)
 		{
+#ifdef USE_STATIC_IP
+			if (!WiFi.config(local_IP, gateway, subnet))
+			{
+				proto_info("Static IP config failed");
+			}
+#endif
 			switch (wifi_settings.wifi_mode)
 			{
 			case 1:
