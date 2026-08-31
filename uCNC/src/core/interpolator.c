@@ -239,9 +239,15 @@ void itp_init(void)
 #ifdef ENABLE_MULTI_STEP_HOMING
 	itp_step_lock = 0;
 #endif
+	itp_needs_update = 0;
+#if DSS_MAX_OVERSAMPLING > 0
+	prev_dss = 0;
+#endif
+	itp_isr_stop = false;
 #endif
 
 	itp_needs_update = false;
+	prev_spindle = 0;
 #ifdef MCU_HAS_RTOS
 	BIN_SEMPH_INIT(itp_mutex, BIN_SEMPH_UNLOCKED);
 #endif

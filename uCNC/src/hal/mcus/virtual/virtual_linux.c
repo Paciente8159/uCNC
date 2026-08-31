@@ -39,6 +39,9 @@ extern "C"
 #include <sys/time.h>
 #include <signal.h>
 #include <sys/select.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <limits.h>
 
 /* Provide Windows-like types so function signatures remain unchanged */
 #ifndef HANDLE
@@ -146,13 +149,25 @@ extern "C"
         if (g_uart.h < 0)
             return false;
 
-        ssize_t w = write(g_uart.h, buffer, nbChar);
-        if (w < 0)
+        size_t written = 0;
+        while (written < nbChar)
         {
+            ssize_t w = write(g_uart.h, buffer + written, nbChar - written);
+            if (w > 0)
+            {
+                written += (size_t)w;
+                continue;
+            }
+            if (w < 0 && errno == EINTR)
+                continue;
+            if (w < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
+                return false;
+
+            g_uart.connected = false;
             perror("Serial: write error");
             return false;
         }
-        return (size_t)w == nbChar;
+        return true;
     }
 
     /* UART thread: tries to open and keep serial port alive */
@@ -220,6 +235,7 @@ extern "C"
         g_uart.stop = false;
         /* Expect UART_PORT_NAME to be defined (e.g., "/dev/ttyUSB0") */
         strncpy(g_uart.port_name, UART_PORT_NAME, sizeof(g_uart.port_name) - 1);
+        g_uart.port_name[sizeof(g_uart.port_name) - 1] = '\0';
         pthread_create(&g_uart.thread, NULL, &uart_thread_fn, NULL);
     }
 
@@ -309,18 +325,32 @@ extern "C"
             {
                 /* Send current virtualmap */
                 memcpy(lpvMessage, (const void *)&virtualmap, map_size);
-                n = write(client_fd, lpvMessage, map_size);
-                if (n != (ssize_t)map_size)
+                size_t sent = 0;
+                while (sent < map_size)
                 {
-                    perror("write to socket failed");
+                    n = write(client_fd, lpvMessage + sent, map_size - sent);
+                    if (n > 0)
+                    {
+                        sent += (size_t)n;
+                        continue;
+                    }
+                    if (n < 0 && errno == EINTR)
+                        continue;
+                    if (n < 0)
+                        perror("write to socket failed");
+                    fSuccess = false;
                     break;
                 }
+                if (!fSuccess)
+                    break;
 
                 /* Read back updated map (blocking read) */
                 ssize_t total = 0;
                 while (total < (ssize_t)map_size)
                 {
                     n = read(client_fd, lpvMessage + total, map_size - total);
+                    if (n < 0 && errno == EINTR)
+                        continue;
                     if (n <= 0)
                     {
                         if (n == 0)
@@ -639,83 +669,796 @@ extern "C"
 
 #if defined(ENABLE_SOCKETS)
 
-    // typedef int socklen_t;
+#include <limits.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <string.h>
 
-    /* socket_init: nothing to do on Linux; return 0 on success */
-    int socket_init(void)
-    {
-        return 0;
-    }
+#include "../../../modules/net/socket.h"
 
-    /* BSD-style wrappers mapped to Linux functions */
+#define LINUX_SOCKET_MAX_LISTENERS MAX_SOCKETS
+#define LINUX_SOCKET_MAX_CLIENTS SOCKET_MAX_CONNECTIONS
 
-    static int bsd_socket(int domain, int type, int protocol)
-    {
-        return socket(domain, type, protocol);
-    }
+#if LINUX_SOCKET_MAX_LISTENERS == 0
+#error "LINUX_SOCKET_MAX_LISTENERS must be greater than zero"
+#endif
 
-    static int bsd_bind(int sockfd, const struct sockaddr_in_ *addr, socklen_t addrlen)
-    {
-        if (bind(sockfd, (const struct sockaddr *)addr, addrlen) < 0)
-        {
-            return -1;
-        }
-        /* set non-blocking */
-        int flags = fcntl(sockfd, F_GETFL, 0);
-        if (flags == -1)
-            return -1;
-        if (fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) == -1)
-            return -1;
-        return 0;
-    }
+#if LINUX_SOCKET_MAX_CLIENTS == 0
+#error "LINUX_SOCKET_MAX_CLIENTS must be greater than zero"
+#endif
 
-    static int bsd_listen(int sockfd, int backlog)
-    {
-        return listen(sockfd, backlog);
-    }
+/*
+ * POSIX sockets fd_set stores a fixed number of int values. readfds contains all
+ * listeners plus clients whose readable hint is not already latched by uCNC.
+ * Fail at compile time instead of letting FD_SET silently exceed capacity.
+ */
+#if (LINUX_SOCKET_MAX_LISTENERS + LINUX_SOCKET_MAX_CLIENTS) > FD_SETSIZE
+#error "Increase FD_SETSIZE or reduce MAX_SOCKETS/SOCKET_MAX_CONNECTIONS"
+#endif
 
-    static int bsd_accept(int sockfd, struct sockaddr_in_ *addr, socklen_t *addrlen)
-    {
-        return accept(sockfd, (struct sockaddr *)addr, addrlen);
-    }
+/*
+ * Backend handles are generation-tagged table references, not raw int
+ * values. This prevents a stale uCNC handle from becoming valid again merely
+ * because POSIX sockets later reuses the same native int value.
+ *
+ * The low 16 bits encode (slot << 1) | kind and the high 16 bits encode a
+ * non-zero generation. Keeping one kind bit leaves 15 bits for the slot.
+ * FD_SETSIZE is normally far smaller, but make the representation limit
+ * explicit so a custom configuration cannot silently truncate a slot.
+ */
+#if LINUX_SOCKET_MAX_LISTENERS > 32767U
+#error "LINUX_SOCKET_MAX_LISTENERS exceeds backend handle slot capacity"
+#endif
 
-    static int bsd_setsockopt(int sockfd, int level, int optname, const void *optval, socklen_t optlen)
-    {
-        return setsockopt(sockfd, level, optname, optval, optlen);
-    }
+#if LINUX_SOCKET_MAX_CLIENTS > 32767U
+#error "LINUX_SOCKET_MAX_CLIENTS exceeds backend handle slot capacity"
+#endif
 
-    static int bsd_recv(int sockfd, void *buf, size_t len, int flags)
-    {
+#define LINUX_HANDLE_KIND_CLIENT ((uintptr_t)1U)
+#define LINUX_HANDLE_SLOT_SHIFT 1U
+#define LINUX_HANDLE_GENERATION_SHIFT 16U
+#define LINUX_HANDLE_LOW_MASK ((uintptr_t)0xFFFFU)
+#define LINUX_HANDLE_SLOT_MASK ((uintptr_t)0x7FFFU)
 
-        int bytes = recv(sockfd, (char *)buf, (int)len, flags);
-        switch (errno)
-        {
-        case EWOULDBLOCK:
-        case EAGAIN:
-            return -1;
-        }
+#define LINUX_CLIENT_READABLE_BYTES \
+	((LINUX_SOCKET_MAX_CLIENTS + 7U) / 8U)
 
-        return bytes;
-    }
+/*
+ * Structure-of-arrays storage avoids per-record alignment padding on 64-bit hosts.
+ * Keeping the arrays in one aggregate also prevents linker alignment gaps
+ * between separate static objects. Native TCP payload stays entirely in
+ * POSIX sockets buffers; there is no backend RX copy, TX queue, TX retry offset, or
+ * writable-interest state.
+ */
+typedef struct linux_socket_state_
+{
+	int listener_sockets[LINUX_SOCKET_MAX_LISTENERS];
+	int client_sockets[LINUX_SOCKET_MAX_CLIENTS];
+	const socket_device_events_t *events;
+	socket_device_token_t client_tokens[LINUX_SOCKET_MAX_CLIENTS];
+	uint16_t client_generations[LINUX_SOCKET_MAX_CLIENTS];
+	uint16_t listener_generations[LINUX_SOCKET_MAX_LISTENERS];
+	uint16_t listener_cursor;
+	uint16_t client_cursor;
+	uint8_t client_readable_notified[LINUX_CLIENT_READABLE_BYTES];
+	uint8_t flags;
+} linux_socket_state_t;
 
-    static int bsd_send(int sockfd, const void *buf, size_t len, int flags)
-    {
-        return send(sockfd, buf, len, flags);
-    }
+#define LINUX_STATE_NET_STARTED (1U << 0)
+#define LINUX_STATE_ACCEPT_FIRST (1U << 1)
 
-    static int bsd_close(int fd)
-    {
-        return close(fd);
-    }
+static linux_socket_state_t linux_state;
 
-    socket_device_t wifi_socket = {
-        .socket = bsd_socket,
-        .bind = bsd_bind,
-        .listen = bsd_listen,
-        .accept = bsd_accept,
-        .recv = bsd_recv,
-        .send = bsd_send,
-        .close = bsd_close};
+#define linux_listener_sockets linux_state.listener_sockets
+#define linux_client_sockets linux_state.client_sockets
+#define linux_socket_events linux_state.events
+#define linux_client_tokens linux_state.client_tokens
+#define linux_client_generations linux_state.client_generations
+#define linux_listener_generations linux_state.listener_generations
+#define linux_listener_cursor linux_state.listener_cursor
+#define linux_client_cursor linux_state.client_cursor
+#define linux_client_readable_notified linux_state.client_readable_notified
+
+static uint16_t linux_next_generation(uint16_t generation)
+{
+	++generation;
+	if (generation == 0U)
+	{
+		++generation;
+	}
+	return generation;
+}
+
+static socket_device_handle_t linux_make_handle(bool client,
+										   uint16_t slot,
+										   uint16_t generation)
+{
+	uintptr_t value = ((uintptr_t)generation << LINUX_HANDLE_GENERATION_SHIFT) |
+					  ((uintptr_t)slot << LINUX_HANDLE_SLOT_SHIFT);
+
+	if (client)
+	{
+		value |= LINUX_HANDLE_KIND_CLIENT;
+	}
+	return (socket_device_handle_t)value;
+}
+
+/*
+ * Decodes only handles produced by linux_make_handle(). Re-encoding and
+ * comparing rejects malformed values and, on 64-bit hosts, values with unexpected
+ * upper bits without relying on a shift as wide as uintptr_t on 32-bit hosts.
+ */
+static bool linux_decode_handle(socket_device_handle_t handle,
+								  bool *client,
+								  uint16_t *slot,
+								  uint16_t *generation)
+{
+	uintptr_t value = (uintptr_t)handle;
+	uintptr_t low;
+	bool decoded_client;
+	uint16_t decoded_slot;
+	uint16_t decoded_generation;
+
+	if (handle == SOCKET_DEVICE_INVALID_HANDLE)
+	{
+		return false;
+	}
+
+	low = value & LINUX_HANDLE_LOW_MASK;
+	decoded_client = (low & LINUX_HANDLE_KIND_CLIENT) != 0U;
+	decoded_slot = (uint16_t)((low >> LINUX_HANDLE_SLOT_SHIFT) &
+								LINUX_HANDLE_SLOT_MASK);
+	decoded_generation =
+		(uint16_t)(value >> LINUX_HANDLE_GENERATION_SHIFT);
+
+	if (decoded_generation == 0U ||
+		linux_make_handle(decoded_client, decoded_slot,
+							decoded_generation) != handle)
+	{
+		return false;
+	}
+
+	if (client)
+	{
+		*client = decoded_client;
+	}
+	if (slot)
+	{
+		*slot = decoded_slot;
+	}
+	if (generation)
+	{
+		*generation = decoded_generation;
+	}
+	return true;
+}
+
+static int linux_resolve_client(socket_device_handle_t handle)
+{
+	bool client;
+	uint16_t slot;
+	uint16_t generation;
+
+	if (!linux_decode_handle(handle, &client, &slot, &generation) || !client ||
+		slot >= LINUX_SOCKET_MAX_CLIENTS ||
+		linux_client_sockets[slot] == -1 ||
+		linux_client_generations[slot] != generation)
+	{
+		return -1;
+	}
+	return (int)slot;
+}
+
+static int linux_find_free_listener(void)
+{
+	uint16_t i;
+
+	for (i = 0U; i < LINUX_SOCKET_MAX_LISTENERS; ++i)
+	{
+		if (linux_listener_sockets[i] == -1)
+		{
+			return (int)i;
+		}
+	}
+
+	return -1;
+}
+
+static int linux_find_free_client(void)
+{
+	uint16_t i;
+
+	for (i = 0U; i < LINUX_SOCKET_MAX_CLIENTS; ++i)
+	{
+		if (linux_client_sockets[i] == -1)
+		{
+			return (int)i;
+		}
+	}
+
+	return -1;
+}
+
+static bool linux_client_readable_is_notified(uint16_t slot)
+{
+	uint8_t mask = (uint8_t)(1U << (slot & 7U));
+	return (linux_client_readable_notified[slot >> 3] & mask) != 0U;
+}
+
+static void linux_client_set_readable_notified(uint16_t slot, bool notified)
+{
+	uint8_t *byte = &linux_client_readable_notified[slot >> 3];
+	uint8_t mask = (uint8_t)(1U << (slot & 7U));
+
+	if (notified)
+	{
+		*byte = (uint8_t)(*byte | mask);
+	}
+	else
+	{
+		*byte = (uint8_t)(*byte & (uint8_t)~mask);
+	}
+}
+
+static void linux_reset_listener(uint16_t slot)
+{
+	linux_listener_sockets[slot] = -1;
+	/* Preserve generation so the next lifetime receives a different handle. */
+}
+
+static void linux_reset_client(uint16_t slot)
+{
+	linux_client_sockets[slot] = -1;
+	linux_client_tokens[slot] = SOCKET_DEVICE_INVALID_TOKEN;
+	linux_client_set_readable_notified(slot, false);
+	/* Preserve generation so the next lifetime receives a different handle. */
+}
+
+/* Errors for which retrying a later non-blocking RX/TX attempt is valid. */
+static bool linux_socket_error_is_temporary(int error)
+{
+	return error == EWOULDBLOCK || error == EAGAIN || error == EINTR ||
+		   error == ENOBUFS;
+}
+
+/*
+ * Maps recv()/send() errors. Reset, abort, timeout and network failures are
+ * deliberately normalized to generic fatal ERROR; only recv()==0 is the
+ * orderly CLOSED path. EINTR is not retried inside the backend so recv/send
+ * remain exactly one native I/O attempt per call.
+ */
+static int linux_socket_map_io_error(int error)
+{
+	if (linux_socket_error_is_temporary(error))
+	{
+		return SOCKET_DEVICE_WOULD_BLOCK;
+	}
+
+	switch (error)
+	{
+	case ENOTSOCK:
+	case EINVAL:
+	case EFAULT:
+		return SOCKET_DEVICE_INVALID;
+	default:
+		return SOCKET_DEVICE_ERROR;
+	}
+}
+
+static int linux_socket_map_close_error(int error)
+{
+	return error == EBADF || error == ENOTSOCK || error == EINVAL
+			   ? SOCKET_DEVICE_INVALID
+			   : SOCKET_DEVICE_ERROR;
+}
+
+/*
+ * Releases a remotely/fatally closed client before notifying the core. The
+ * token is copied first because reset invalidates the backend association.
+ * This helper is never used for local close(), which must not emit closed().
+ */
+static int linux_fail_client(uint16_t slot, int reason)
+{
+	int native_socket = linux_client_sockets[slot];
+	socket_device_token_t token = linux_client_tokens[slot];
+
+	linux_reset_client(slot);
+	(void)close(native_socket);
+	linux_socket_events->closed(token, reason);
+	return reason;
+}
+
+/*
+ * Compatibility entry point used by the emulator network startup. POSIX
+ * sockets need no process-wide initialization.
+ */
+int socket_init(void)
+{
+	linux_state.flags |= LINUX_STATE_NET_STARTED;
+	return 0;
+}
+
+static int linux_set_nonblocking(int fd)
+{
+	int flags = fcntl(fd, F_GETFL, 0);
+	return flags < 0 ? -1 : fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+}
+
+static int linux_socket_device_init(const socket_device_events_t *events)
+{
+	uint16_t i;
+
+	if (!events || !events->accepted || !events->readable || !events->closed)
+	{
+		return SOCKET_DEVICE_INVALID;
+	}
+
+	/* Do not retain the event table unless all initialization succeeds. */
+	if (socket_init() != 0)
+	{
+		return SOCKET_DEVICE_ERROR;
+	}
+
+	memset(linux_client_readable_notified, 0,
+		   sizeof(linux_client_readable_notified));
+	for (i = 0U; i < LINUX_SOCKET_MAX_LISTENERS; ++i)
+	{
+		linux_listener_generations[i] = 0U;
+		linux_reset_listener(i);
+	}
+	for (i = 0U; i < LINUX_SOCKET_MAX_CLIENTS; ++i)
+	{
+		linux_client_generations[i] = 0U;
+		linux_reset_client(i);
+	}
+
+	linux_listener_cursor = 0U;
+	linux_client_cursor = 0U;
+	linux_state.flags = (uint8_t)(linux_state.flags | LINUX_STATE_ACCEPT_FIRST);
+	linux_socket_events = events;
+	return SOCKET_DEVICE_OK;
+}
+
+static socket_device_handle_t linux_socket_listen(
+	const socket_device_endpoint_t *endpoint,
+	uint8_t backlog)
+{
+	struct sockaddr_in address;
+	int native_socket;
+	uint16_t generation;
+	int slot;
+	int native_backlog;
+
+	if (!linux_socket_events || !endpoint || endpoint->port == 0U)
+	{
+		return SOCKET_DEVICE_INVALID_HANDLE;
+	}
+
+	slot = linux_find_free_listener();
+	if (slot < 0)
+	{
+		return SOCKET_DEVICE_INVALID_HANDLE;
+	}
+
+	native_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (native_socket == -1)
+	{
+		return SOCKET_DEVICE_INVALID_HANDLE;
+	}
+	if (native_socket >= FD_SETSIZE)
+	{
+		(void)close(native_socket);
+		return SOCKET_DEVICE_INVALID_HANDLE;
+	}
+
+	/* Configure non-blocking mode before the socket becomes externally usable. */
+	if (linux_set_nonblocking(native_socket) == -1)
+	{
+		(void)close(native_socket);
+		return SOCKET_DEVICE_INVALID_HANDLE;
+	}
+
+	memset(&address, 0, sizeof(address));
+	address.sin_family = AF_INET;
+	address.sin_port = htons(endpoint->port);
+	address.sin_addr.s_addr = htonl(endpoint->address);
+
+	/* A zero backlog is a bounded request for one pending connection. */
+	native_backlog = backlog == 0U ? 1 : (int)backlog;
+	if (bind(native_socket, (const struct sockaddr *)&address,
+			 (socklen_t)sizeof(address)) == -1 ||
+		listen(native_socket, native_backlog) == -1)
+	{
+		(void)close(native_socket);
+		return SOCKET_DEVICE_INVALID_HANDLE;
+	}
+
+	generation = linux_next_generation(linux_listener_generations[slot]);
+	linux_listener_generations[slot] = generation;
+	linux_listener_sockets[slot] = native_socket;
+	return linux_make_handle(false, (uint16_t)slot, generation);
+}
+
+static int linux_socket_recv(socket_device_handle_t client,
+							   void *destination,
+							   size_t capacity)
+{
+	int slot = linux_resolve_client(client);
+	int native_socket;
+	int native_capacity;
+	int result;
+
+	if (slot < 0)
+	{
+		return SOCKET_DEVICE_INVALID;
+	}
+	if (capacity == 0U)
+	{
+		return 0;
+	}
+	if (!destination)
+	{
+		return SOCKET_DEVICE_INVALID;
+	}
+
+	native_socket = linux_client_sockets[slot];
+	native_capacity = capacity > (size_t)INT_MAX ? INT_MAX : (int)capacity;
+	result = recv(native_socket, (char *)destination, native_capacity, 0);
+
+	if (result > 0)
+	{
+		/*
+		 * Keep the readable hint latched. The core keeps READABLE set across
+		 * positive reads and calls recv() again until WOULD_BLOCK or closure.
+		 * This naturally drains final payload before a later recv()==0 FIN.
+		 */
+		return result;
+	}
+
+	if (result == 0)
+	{
+		return linux_fail_client((uint16_t)slot, SOCKET_DEVICE_CLOSED);
+	}
+
+	result = linux_socket_map_io_error(errno);
+	if (result == SOCKET_DEVICE_WOULD_BLOCK)
+	{
+		/* A future read-ready observation must be allowed to notify again. */
+		linux_client_set_readable_notified((uint16_t)slot, false);
+		return result;
+	}
+
+	return linux_fail_client((uint16_t)slot, result);
+}
+
+static int linux_socket_send(socket_device_handle_t client,
+							   const void *source,
+							   size_t length)
+{
+	int slot = linux_resolve_client(client);
+	int native_socket;
+	int native_length;
+	int result;
+
+	if (slot < 0)
+	{
+		return SOCKET_DEVICE_INVALID;
+	}
+	if (length == 0U)
+	{
+		return 0;
+	}
+	if (!source)
+	{
+		return SOCKET_DEVICE_INVALID;
+	}
+
+	native_socket = linux_client_sockets[slot];
+	native_length = length > (size_t)INT_MAX ? INT_MAX : (int)length;
+
+	/*
+	 * Exactly one non-blocking native send attempt. POSIX sockets copies/owns bytes
+	 * reported as sent before return, so the caller's source pointer is never
+	 * retained. No backend queue, retry offset, or writable event is needed.
+	 */
+	result = send(native_socket, (const char *)source, native_length,
+#ifdef MSG_NOSIGNAL
+				  MSG_NOSIGNAL
+#else
+				  0
+#endif
+	);
+	if (result > 0)
+	{
+		return result;
+	}
+
+	if (result == 0)
+	{
+		/* No bytes accepted for a non-zero request: temporary backpressure. */
+		return SOCKET_DEVICE_WOULD_BLOCK;
+	}
+
+	result = linux_socket_map_io_error(errno);
+	if (result == SOCKET_DEVICE_WOULD_BLOCK)
+	{
+		return result;
+	}
+
+	return linux_fail_client((uint16_t)slot, result);
+}
+
+static int linux_socket_close(socket_device_handle_t handle)
+{
+	bool client;
+	uint16_t slot;
+	uint16_t generation;
+	int native_socket;
+	int result;
+	int error;
+
+	if (!linux_decode_handle(handle, &client, &slot, &generation))
+	{
+		return SOCKET_DEVICE_INVALID;
+	}
+
+	if (!client)
+	{
+		if (slot >= LINUX_SOCKET_MAX_LISTENERS ||
+			linux_listener_sockets[slot] == -1 ||
+			linux_listener_generations[slot] != generation)
+		{
+			return SOCKET_DEVICE_INVALID;
+		}
+
+		native_socket = linux_listener_sockets[slot];
+		/* Invalidate first so a reused native int cannot revive this handle. */
+		linux_reset_listener(slot);
+	}
+	else
+	{
+		if (slot >= LINUX_SOCKET_MAX_CLIENTS ||
+			linux_client_sockets[slot] == -1 ||
+			linux_client_generations[slot] != generation)
+		{
+			return SOCKET_DEVICE_INVALID;
+		}
+
+		native_socket = linux_client_sockets[slot];
+		/* Local close owns no transport event; the core schedules disconnect. */
+		linux_reset_client(slot);
+	}
+
+	/* close() is bounded with default non-lingering POSIX sockets semantics. */
+	result = close(native_socket);
+	if (result == 0)
+	{
+		return SOCKET_DEVICE_OK;
+	}
+	error = errno;
+	return linux_socket_map_close_error(error);
+}
+
+/* Accepts at most one native client and emits at most one accepted() event. */
+static void linux_poll_accept(const fd_set *readfds,
+								uint16_t budget,
+								uint16_t *emitted)
+{
+	uint16_t checked;
+	uint16_t start;
+
+	if (*emitted >= budget)
+	{
+		return;
+	}
+
+	start = (uint16_t)(linux_listener_cursor % LINUX_SOCKET_MAX_LISTENERS);
+	for (checked = 0U; checked < LINUX_SOCKET_MAX_LISTENERS; ++checked)
+	{
+		uint16_t listener_slot =
+			(uint16_t)((start + checked) % LINUX_SOCKET_MAX_LISTENERS);
+		int listener_socket = linux_listener_sockets[listener_slot];
+		int client_socket;
+		socket_device_handle_t listener_handle;
+		socket_device_handle_t client_handle;
+		uint16_t client_generation;
+		int client_slot;
+		socket_device_token_t token;
+
+		if (listener_socket == -1 ||
+			!FD_ISSET(listener_socket, readfds))
+		{
+			continue;
+		}
+
+		linux_listener_cursor =
+			(uint16_t)((listener_slot + 1U) % LINUX_SOCKET_MAX_LISTENERS);
+		client_socket = accept(listener_socket, NULL, NULL);
+		if (client_socket == -1)
+		{
+			/* One native accept attempt per poll keeps work strictly bounded. */
+			return;
+		}
+		if (client_socket >= FD_SETSIZE)
+		{
+			(void)close(client_socket);
+			return;
+		}
+
+		client_slot = linux_find_free_client();
+		if (client_slot < 0 ||
+			linux_set_nonblocking(client_socket) == -1)
+		{
+			(void)close(client_socket);
+			return;
+		}
+
+		client_generation =
+			linux_next_generation(linux_client_generations[client_slot]);
+		linux_client_generations[client_slot] = client_generation;
+		linux_client_sockets[client_slot] = client_socket;
+		linux_client_tokens[client_slot] = SOCKET_DEVICE_INVALID_TOKEN;
+		linux_client_set_readable_notified((uint16_t)client_slot, false);
+
+		listener_handle = linux_make_handle(
+			false, listener_slot, linux_listener_generations[listener_slot]);
+		client_handle = linux_make_handle(
+			true, (uint16_t)client_slot, client_generation);
+		token = linux_socket_events->accepted(listener_handle, client_handle);
+		++(*emitted);
+
+		if (token == SOCKET_DEVICE_INVALID_TOKEN)
+		{
+			/* Rejected clients never own a token and never emit closed(). */
+			linux_reset_client((uint16_t)client_slot);
+			(void)close(client_socket);
+			return;
+		}
+
+		/*
+		 * No asynchronous producer exists in this backend, so the record cannot
+		 * change during accepted(). Store the exact opaque token before any later
+		 * readable/closed event can be generated.
+		 */
+		linux_client_tokens[client_slot] = token;
+		return;
+	}
+
+	/* Rotate the first listener examined even when none was ready. */
+	linux_listener_cursor =
+		(uint16_t)((start + 1U) % LINUX_SOCKET_MAX_LISTENERS);
+}
+
+static void linux_poll_clients(const fd_set *readfds,
+								 uint16_t budget,
+								 uint16_t *emitted)
+{
+	uint16_t checked;
+	uint16_t start;
+	bool emitted_client_event = false;
+
+	if (*emitted >= budget)
+	{
+		return;
+	}
+
+	start = (uint16_t)(linux_client_cursor % LINUX_SOCKET_MAX_CLIENTS);
+	for (checked = 0U;
+		 checked < LINUX_SOCKET_MAX_CLIENTS && *emitted < budget;
+		 ++checked)
+	{
+		uint16_t slot =
+			(uint16_t)((start + checked) % LINUX_SOCKET_MAX_CLIENTS);
+		int native_socket = linux_client_sockets[slot];
+		socket_device_token_t token = linux_client_tokens[slot];
+
+		if (native_socket == -1 ||
+			token == SOCKET_DEVICE_INVALID_TOKEN ||
+			linux_client_readable_is_notified(slot) ||
+			!FD_ISSET(native_socket, readfds))
+		{
+			continue;
+		}
+
+		/*
+		 * Latch before calling the event sink. The core retains READABLE across
+		 * positive recv() results; backend recv() clears this latch only after it
+		 * actually observes WOULD_BLOCK so a later arrival can notify again.
+		 */
+		linux_client_set_readable_notified(slot, true);
+		linux_client_cursor =
+			(uint16_t)((slot + 1U) % LINUX_SOCKET_MAX_CLIENTS);
+		emitted_client_event = true;
+		++(*emitted);
+		linux_socket_events->readable(token);
+	}
+
+	if (!emitted_client_event)
+	{
+		linux_client_cursor =
+			(uint16_t)((start + 1U) % LINUX_SOCKET_MAX_CLIENTS);
+	}
+}
+
+static void linux_socket_poll(uint16_t budget)
+{
+	fd_set readfds;
+	struct timeval timeout;
+	uint16_t i;
+	uint16_t emitted = 0U;
+	bool watched = false;
+	int ready;
+	int max_fd = -1;
+
+	if (!linux_socket_events || budget == 0U)
+	{
+		return;
+	}
+
+	FD_ZERO(&readfds);
+	for (i = 0U; i < LINUX_SOCKET_MAX_LISTENERS; ++i)
+	{
+		if (linux_listener_sockets[i] != -1)
+		{
+			FD_SET(linux_listener_sockets[i], &readfds);
+			if (linux_listener_sockets[i] > max_fd)
+				max_fd = linux_listener_sockets[i];
+			watched = true;
+		}
+	}
+	for (i = 0U; i < LINUX_SOCKET_MAX_CLIENTS; ++i)
+	{
+		if (linux_client_sockets[i] == -1 ||
+			linux_client_tokens[i] == SOCKET_DEVICE_INVALID_TOKEN ||
+			linux_client_readable_is_notified(i))
+		{
+			continue;
+		}
+
+		FD_SET(linux_client_sockets[i], &readfds);
+		if (linux_client_sockets[i] > max_fd)
+			max_fd = linux_client_sockets[i];
+		watched = true;
+	}
+
+	/* POSIX sockets select() requires at least one non-empty descriptor set. */
+	if (!watched)
+	{
+		return;
+	}
+
+	timeout.tv_sec = 0L;
+	timeout.tv_usec = 0L;
+	/* POSIX select() requires the highest descriptor plus one. */
+	ready = select(max_fd + 1, &readfds, NULL, NULL, &timeout);
+	if (ready < 0 || ready == 0)
+	{
+		return;
+	}
+
+	/* Alternate phase order so budget==1 cannot starve clients or accepts. */
+	if ((linux_state.flags & LINUX_STATE_ACCEPT_FIRST) != 0U)
+	{
+		linux_poll_accept(&readfds, budget, &emitted);
+		linux_poll_clients(&readfds, budget, &emitted);
+	}
+	else
+	{
+		linux_poll_clients(&readfds, budget, &emitted);
+		linux_poll_accept(&readfds, budget, &emitted);
+	}
+	linux_state.flags ^= LINUX_STATE_ACCEPT_FIRST;
+}
+
+/* Existing emulator integration symbol retained for compatibility. */
+socket_device_t wifi_socket = {
+	.init = linux_socket_device_init,
+	.listen = linux_socket_listen,
+	.recv = linux_socket_recv,
+	.send = linux_socket_send,
+	.close = linux_socket_close,
+	.poll = linux_socket_poll};
 
 #endif /* ENABLE_SOCKETS */
 

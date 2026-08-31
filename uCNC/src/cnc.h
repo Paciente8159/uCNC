@@ -163,6 +163,14 @@ extern "C"
 	void cnc_init(void);
 	void cnc_network_init(void);
 	void cnc_run(void);
+#ifdef PIO_UNIT_TESTING
+	/*
+	 * Deterministic host-test driver. The test owns the call sequence, so no
+	 * controller thread or endless main loop is needed.
+	 */
+	void cnc_unit_test_start(void);
+	bool cnc_unit_test_run_once(void);
+#endif
 	// do events returns true if all OK and false if an ABORT alarm is reached
 	bool cnc_dotasks(void);
 	uint8_t cnc_home(void);

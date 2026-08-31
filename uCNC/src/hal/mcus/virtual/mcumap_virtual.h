@@ -20,6 +20,7 @@
 #define MCUMAP_VIRTUAL_H
 
 #include <stdint.h>
+#include <stddef.h>
 #define F_CPU 1000000
 #ifndef F_STEP_MAX
 #define F_STEP_MAX 40000
@@ -533,5 +534,81 @@ extern const tool_t vfd_pwm;
 // // #define sqrtf sqrt
 // // #endif
 // #endif
+
+#ifdef PIO_UNIT_TESTING
+uint32_t mcu_micros(void);
+// injects a new command to the unit test input stream buffer
+bool mcu_unit_test_inject(const char *cmd);
+// gets a pointer to the unit test output stream buffer
+const char *mcu_unit_test_buffer(void);
+// copies a stable, NUL-terminated output snapshot and returns its length
+size_t mcu_unit_test_buffer_read(char *destination, size_t capacity);
+// reports whether output was dropped because the transcript filled
+bool mcu_unit_test_buffer_overflowed(void);
+// clears the unit test output stream buffer
+void mcu_unit_test_buffer_clear(void);
+// returns an immutable position in the test output stream
+uint64_t mcu_unit_test_output_cursor(void);
+// waits in host time for output beyond cursor, without advancing virtual time
+bool mcu_unit_test_wait_for_output(uint64_t cursor, uint32_t timeout_ms);
+// copies output emitted at or after cursor into a stable, NUL-terminated buffer
+size_t mcu_unit_test_buffer_read_since(uint64_t cursor, char *destination, size_t capacity);
+// resets the deterministic Unity-test clock and discards pending timed events
+void mcu_unit_test_clock_reset(void);
+// restores virtual test-only MCU state while the controller worker is quiescent
+void mcu_unit_test_runtime_reset(void);
+// advances the deterministic Unity-test clock and executes due MCU callbacks
+void mcu_unit_test_advance_time(uint32_t microseconds);
+// schedules a callback on the deterministic Unity-test clock
+void mcu_add_event(uint32_t delay_us, void (*callback)(void *args), void *args);
+
+typedef enum
+{
+	TEST_IO_ESTOP = 1,
+	TEST_IO_SAFETY_DOOR,
+	TEST_IO_FHOLD,
+	TEST_IO_CS_RES,
+	TEST_IO_PROBE,
+
+	TEST_IO_LIMIT_X,
+	TEST_IO_LIMIT_X2,
+	TEST_IO_LIMIT_Y,
+	TEST_IO_LIMIT_Y2,
+	TEST_IO_LIMIT_Z,
+	TEST_IO_LIMIT_Z2,
+	TEST_IO_LIMIT_A,
+	TEST_IO_LIMIT_B,
+	TEST_IO_LIMIT_C,
+
+	TEST_IO_COUNT
+} test_io_id_t;
+
+bool test_io_condition(test_io_id_t input);
+// resets all emulated IO pins
+void test_io_reset(void);
+// sets a IO emulated pin value
+void test_io_set(test_io_id_t input, bool value);
+// sets a IO emulated pin value deferred in time by <delay_ms>
+void test_io_set_after(test_io_id_t input, uint32_t delay_ms, bool initial_value, bool final_value);
+
+typedef bool (*test_io_callback_t)(void);
+void test_io_set_callback(test_io_id_t input, test_io_callback_t cb);
+
+#define IO_CONDITION_ESTOP	   test_io_condition(TEST_IO_ESTOP)
+#define IO_CONDITION_SAFETY_DOOR test_io_condition(TEST_IO_SAFETY_DOOR)
+#define IO_CONDITION_FHOLD	   test_io_condition(TEST_IO_FHOLD)
+#define IO_CONDITION_CS_RES	   test_io_condition(TEST_IO_CS_RES)
+#define IO_CONDITION_PROBE	   test_io_condition(TEST_IO_PROBE)
+
+#define IO_CONDITION_LIMIT_X	 test_io_condition(TEST_IO_LIMIT_X)
+#define IO_CONDITION_LIMIT_X2	test_io_condition(TEST_IO_LIMIT_X2)
+#define IO_CONDITION_LIMIT_Y	 test_io_condition(TEST_IO_LIMIT_Y)
+#define IO_CONDITION_LIMIT_Y2	test_io_condition(TEST_IO_LIMIT_Y2)
+#define IO_CONDITION_LIMIT_Z	 test_io_condition(TEST_IO_LIMIT_Z)
+#define IO_CONDITION_LIMIT_Z2	test_io_condition(TEST_IO_LIMIT_Z2)
+#define IO_CONDITION_LIMIT_A	 test_io_condition(TEST_IO_LIMIT_A)
+#define IO_CONDITION_LIMIT_B	 test_io_condition(TEST_IO_LIMIT_B)
+#define IO_CONDITION_LIMIT_C	 test_io_condition(TEST_IO_LIMIT_C)
+#endif
 
 #endif
