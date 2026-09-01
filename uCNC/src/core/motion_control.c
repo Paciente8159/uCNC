@@ -1013,21 +1013,23 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 #endif
 
 #ifdef ENABLE_LONG_HOMING_CYCLE
-		if (!mc_home_motion(axis_mask, true, (homing_passes != 0)))
+		bool homing_failed = !mc_home_motion(axis_mask, true, (homing_passes != 0));
 #else
-	if (!mc_home_motion(axis_mask, true, true))
+	bool homing_failed = !mc_home_motion(axis_mask, true, true);
 #endif
-		{
-			return STATUS_CRITICAL_FAIL;
-		}
-
 		uint16_t debounce = g_settings.debounce_ms;
 
 		cnc_dwell_ms(debounce); // adds a delay before reading io pin (debounce)
 		limits_flags = io_get_limits();
 
+		// if (CHECKFLAG(io_get_controls(), SAFETY_DOOR_MASK))
+		// {
+		// 	cnc_alarm(EXEC_ALARM_HOMING_FAIL_DOOR);
+		// 	return STATUS_CRITICAL_FAIL;
+		// }
+
 		// the wrong switch was activated bails
-		if (!CHECKFLAG(limits_flags, axis_limit))
+		if (homing_failed || !CHECKFLAG(limits_flags, axis_limit))
 		{
 			cnc_alarm(EXEC_ALARM_HOMING_FAIL_APPROACH);
 			return STATUS_CRITICAL_FAIL;
@@ -1040,9 +1042,9 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 			return STATUS_CRITICAL_FAIL;
 		}
 
-		cnc_dwell_ms(debounce); // adds a delay before reading io pin (debounce)
-		io_enable_limits();					  // temporary limits disable
-		limits_flags = io_get_raw_limits();	  // get the raw (unfiltered values)
+		cnc_dwell_ms(debounce);				// adds a delay before reading io pin (debounce)
+		io_enable_limits();					// temporary limits disable
+		limits_flags = io_get_raw_limits(); // get the raw (unfiltered values)
 
 		// all limits should be cleared
 		if (limits_flags)

@@ -206,6 +206,51 @@ void cnc_run(void)
 	}
 }
 
+#ifdef PIO_UNIT_TESTING
+void cnc_unit_test_start(void)
+{
+	cnc_reset();
+	if (cnc_unlock(false) != UNLOCK_ERROR)
+	{
+		cnc_state.alarm = EXEC_ALARM_NOALARM;
+	}
+	cnc_state.loop_state = LOOP_RUNNING;
+}
+
+bool cnc_unit_test_run_once(void)
+{
+	cnc_parse_cmd();
+	cnc_dotasks();
+
+	int8_t alarm = cnc_state.alarm;
+	if (alarm > EXEC_ALARM_NOALARM)
+	{
+		DBGLOG("[CNC] alarm raised: %hd", alarm);
+		cnc_alarm(alarm);
+	}
+
+	switch (cnc_state.alarm)
+	{
+	case EXEC_ALARM_NOALARM:
+		return true;
+	case -EXEC_ALARM_HARD_LIMIT:
+	case -EXEC_ALARM_SOFT_LIMIT:
+		io_enable_steppers(~g_settings.step_enable_invert);
+		proto_feedback(MSG_FEEDBACK_1);
+		cnc_state.loop_state = LOOP_REQUIRE_RESET;
+		return true;
+	case EXEC_ALARM_EMERGENCY_STOP:
+		cnc_state.loop_state = LOOP_REQUIRE_RESET;
+		return true;
+	case EXEC_ALARM_SOFTRESET:
+		cnc_state.alarm = EXEC_ALARM_NOALARM;
+		return false;
+	default:
+		return !cnc_get_exec_state(EXEC_POSITION_MAYBE_LOST);
+	}
+}
+#endif
+
 uint8_t cnc_parse_cmd(void)
 {
 #ifdef ENABLE_PARSING_TIME_DEBUG
@@ -233,7 +278,7 @@ uint8_t cnc_parse_cmd(void)
 				exec_time = mcu_millis();
 			}
 #endif
-			error = parser_read_command();
+			error = parser_run_command();
 #ifdef ENABLE_PARSING_TIME_DEBUG
 			exec_time = mcu_millis() - exec_time;
 			proto_info("Exec time: %lu", exec_time);
@@ -261,6 +306,14 @@ uint8_t cnc_parse_cmd(void)
 
 bool cnc_dotasks(void)
 {
+#ifdef PIO_UNIT_TESTING
+	/*
+	 * A deterministic test has no host timer thread. Advancing here also lets
+	 * parser/planner loops that yield through cnc_dotasks() make progress while
+	 * the Unity thread remains the sole owner of controller execution.
+	 */
+	mcu_unit_test_advance_time(1000U);
+#endif
 	// run io basic tasks
 	cnc_io_dotasks();
 
@@ -878,7 +931,8 @@ void cnc_exec_rt_commands(void)
 #if ASSERT_PIN(SAFETY_DOOR)
 		if (CHECKFLAG(command, RT_CMD_DOOR_CHANGED))
 		{
-			proto_feedback(MSG_FEEDBACK_6);
+			if (CHECKFLAG(io_get_controls(), SAFETY_DOOR_MASK))
+				proto_feedback(MSG_FEEDBACK_6);
 			itp_stop_tools();
 #ifdef ENABLE_SAFETY_DOOR_PARKING
 			cnc_park();
@@ -1249,7 +1303,7 @@ void cnc_run_startup_blocks(void)
 			do
 			{
 #endif
-				grbl_stream_eeprom(address);
+				grbl_stream_eeprom(address, false);
 				cnc_parse_cmd();
 #ifdef ENABLE_MULTILINE_STARTUP_BLOCKS
 				do
