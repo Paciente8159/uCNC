@@ -29,7 +29,7 @@ IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=1
 CompilerSettings=10000000a0000000001000000
-UnitCount=114
+UnitCount=116
 
 [VersionInfo]
 Major=1
@@ -1191,7 +1191,17 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit115]
-FileName=virtual_windows.c
+FileName=..\..\..\modules\flash_update.c
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit116]
+FileName=..\..\..\modules\flash_update.h
 CompileCpp=0
 Folder=
 Compile=1

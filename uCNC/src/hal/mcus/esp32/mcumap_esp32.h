@@ -3281,11 +3281,10 @@ extern "C"
 #endif
 #endif
 
+#ifdef ENABLE_SOCKETS
 #ifndef MCU_HAS_FLASHUPDATE
 #define MCU_HAS_FLASHUPDATE
 #endif
-
-#ifdef ENABLE_SOCKETS
 #ifndef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 #define BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 #endif
