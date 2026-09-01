@@ -83,7 +83,7 @@ void mod_init(void)
 
 #ifdef ENABLE_SETTINGS_MODULES
 	// force extended settings loading event
-	// by setting the destination to NULL it will not reload g_settings again;
+	// by setting the destination to NULL it will not reload g_settings again to avoid re-reading this area again
 	settings_load(SETTINGS_ADDRESS_OFFSET, NULL, 0);
 #endif
 }

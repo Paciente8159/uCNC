@@ -96,7 +96,7 @@ static void flash_update_upload_cb(int client_idx)
     else if (up.status == HTTP_UPLOAD_END)
     {
         // Called once at end of upload
-        if (!flash_upd->flash_end || flash_upd->flash_end(true))
+        if (!flash_upd->flash_end || !flash_upd->flash_end(true))
         {
             const char fail[] = "Update Failed";
             http_send_str(client_idx, 500, (char *)type_text, (char *)fail);

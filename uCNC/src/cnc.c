@@ -111,7 +111,18 @@ void cnc_init(void)
 	io_disable_probe();									// forces probe isr disabling
 	grbl_stream_init();									// serial
 	settings_init();									// settings initial load
+	/**
+	 * Network initialization happens after stream registration
+	 * This will allow wired streams to be able to start sending info out (needed for debug streams)
+	 * Also if network uses extended NVM settings these should be initialized manually
+	 * LwIP and/or TCP stack is initialized here before net dependent modules register any listeners
+	 * Telnet server is initialized here
+	 */
 	cnc_network_init();									// initialize network and wireless coms
+	/**
+	 * Remaining tcp socket based servers are initialized here
+	 * Also any setting extension are registered and loaded here
+	 */
 	mod_init();											// initialize modules
 	itp_init();											// interpolator
 	planner_init();										// motion planner
