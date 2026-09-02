@@ -23,6 +23,7 @@
 
 - fixed STM32 PIO build issues due to deleted/erased versions of certain framework packets (#989)
 - fixed ESP8266 wifi random crash due to WiFi task starving (#984)
+- several parser/error report fixes based on the unity tests results (#988)
 
 
 ## [1.16.6] - 23-07-2026
