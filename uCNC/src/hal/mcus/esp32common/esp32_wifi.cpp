@@ -41,6 +41,7 @@ extern "C"
 
 #ifdef ENABLE_WIFI
 #include <Update.h>
+#include <WiFi.h>
 
 #ifndef WIFI_USER
 #define WIFI_USER "admin"
@@ -80,143 +81,177 @@ static esp_netif_t *netif_sta = NULL;
 static esp_netif_t *netif_ap = NULL;
 static bool wifi_initialized = false;
 
-void esp32_wifi_stop(void)
+
+
+extern "C" void esp32_wifi_stop(void)
 {
 	if (!wifi_initialized)
 		return;
 
-	esp_wifi_stop();
-	esp_wifi_deinit();
+	// esp_wifi_stop();
+	// esp_wifi_deinit();
 
-	if (netif_sta)
-	{
-		esp_netif_destroy(netif_sta);
-		netif_sta = NULL;
-	}
-	if (netif_ap)
-	{
-		esp_netif_destroy(netif_ap);
-		netif_ap = NULL;
-	}
+	// if (netif_sta)
+	// {
+	// 	esp_netif_destroy(netif_sta);
+	// 	netif_sta = NULL;
+	// }
+	// if (netif_ap)
+	// {
+	// 	esp_netif_destroy(netif_ap);
+	// 	netif_ap = NULL;
+	// }
+	WiFi.disconnect();
 
 	wifi_initialized = false;
 }
 
-uint32_t esp32_wifi_get_ip(void)
+extern "C" uint32_t esp32_wifi_get_ip(void)
 {
 	if (!wifi_initialized)
 		return 0;
 
-	if (wifi_settings.wifi_mode == 2) // AP only
-		return 0;
+	// if (wifi_settings.wifi_mode == 2) // AP only
+	// 	return 0;
 
-	esp_netif_ip_info_t ip;
-	if (netif_sta && esp_netif_get_ip_info(netif_sta, &ip) == ESP_OK)
-		return ip.ip.addr;
+	// esp_netif_ip_info_t ip;
+	// if (netif_sta && esp_netif_get_ip_info(netif_sta, &ip) == ESP_OK)
+	// 	return ip.ip.addr;
+	IPAddress ip = WiFi.localIP();
+	uint32_t * ptr = (uint32_t *)&ip;
+	return *ptr;
 
 	return 0;
 }
 
-uint32_t esp32_wifi_ap_get_ip(void)
+extern "C" uint32_t esp32_wifi_ap_get_ip(void)
 {
 	if (!wifi_initialized)
 		return 0;
 
-	if (wifi_settings.wifi_mode == 1) // STA only
-		return 0;
+	// if (wifi_settings.wifi_mode == 1) // STA only
+	// 	return 0;
 
-	esp_netif_ip_info_t ip;
-	if (netif_ap && esp_netif_get_ip_info(netif_ap, &ip) == ESP_OK)
-		return ip.ip.addr;
+	// esp_netif_ip_info_t ip;
+	// if (netif_ap && esp_netif_get_ip_info(netif_ap, &ip) == ESP_OK)
+	// 	return ip.ip.addr;
+
+	IPAddress ip = WiFi.softAPIP();
+	uint32_t * ptr = (uint32_t *)&ip;
+	return *ptr;
 
 	return 0;
 }
 
-void esp32_wifi_config(bool force)
+extern "C" void esp32_wifi_config(bool force)
 {
 	/* Always stop and re-init to avoid errors */
 	esp32_wifi_stop();
 
-	if (!force && wifi_settings.wifi_on == 0)
+	if (force)
+	{
+		WiFi.mode(WIFI_AP);
+		WiFi.begin();
+		WiFi.disconnect();
+		return;
+	}
+
+	if (wifi_settings.wifi_on == 0)
 	{
 		return;
 	}
 
-	ESP_ERROR_CHECK(esp_netif_init());
-
-	/* Create interfaces */
 	if (wifi_settings.wifi_mode != 2)
 	{
-		netif_sta = esp_netif_create_default_wifi_sta();
-	}
-	if (wifi_settings.wifi_mode != 1)
-	{
-		netif_ap = esp_netif_create_default_wifi_ap();
-	}
-
-	wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-	ESP_ERROR_CHECK(esp_wifi_init(&cfg));
-
-	/* Disable power saving */
-	esp_wifi_set_ps(WIFI_PS_NONE);
-
-	wifi_config_t wifi_cfg;
-	memset(&wifi_cfg, 0, sizeof(wifi_cfg));
-
-	/* STA CONFIG */
-	if (wifi_settings.wifi_mode != 2)
-	{
-		strncpy((char *)wifi_cfg.sta.ssid, (const char *)wifi_settings.ssid, sizeof(wifi_cfg.sta.ssid));
-		strncpy((char *)wifi_cfg.sta.password, (const char *)wifi_settings.pass, sizeof(wifi_cfg.sta.password));
-		wifi_cfg.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
-		wifi_cfg.sta.pmf_cfg.capable = true;
-		wifi_cfg.sta.pmf_cfg.required = false;
-
 #ifdef USE_STATIC_IP
-		esp_netif_ip_info_t ip;
-		ip.ip.addr = STATIC_IP_IP;
-		ip.gw.addr = STATIC_IP_GW;
-		ip.netmask.addr = STATIC_IP_SUB;
-		esp_netif_dhcpc_stop(netif_sta);
-		esp_netif_set_ip_info(netif_sta, &ip);
+			if (!WiFi.config(IPAddress(STATIC_IP_IP), IPAddress(STATIC_IP_GW), IPAddress(STATIC_IP_SUB)))
+			{
+				proto_info("Static IP config failed");
+			}
 #endif
+		WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
 	}
 
-	/* AP CONFIG */
 	if (wifi_settings.wifi_mode != 1)
 	{
-		strncpy((char *)wifi_cfg.ap.ssid, BOARD_NAME, sizeof(wifi_cfg.ap.ssid));
-		wifi_cfg.ap.ssid_len = strlen(BOARD_NAME);
-		wifi_cfg.ap.channel = 1;
-		wifi_cfg.ap.max_connection = 4;
-		wifi_cfg.ap.authmode = WIFI_AUTH_WPA_WPA2_PSK;
-		strncpy((char *)wifi_cfg.ap.password, (const char *)wifi_settings.pass, sizeof(wifi_cfg.ap.password));
-		if (strlen((const char *)wifi_settings.pass) == 0)
-			wifi_cfg.ap.authmode = WIFI_AUTH_OPEN;
+		WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
 	}
 
-	/* Set mode */
-	wifi_mode_t mode = WIFI_MODE_NULL;
-	if (wifi_settings.wifi_mode == 0)
-		mode = WIFI_MODE_APSTA;
-	if (wifi_settings.wifi_mode == 1)
-		mode = WIFI_MODE_STA;
-	if (wifi_settings.wifi_mode == 2)
-		mode = WIFI_MODE_AP;
+	// 	ESP_ERROR_CHECK(esp_netif_init());
 
-	ESP_ERROR_CHECK(esp_wifi_set_mode(mode));
+	// 	/* Create interfaces */
+	// 	if (wifi_settings.wifi_mode != 2)
+	// 	{
+	// 		netif_sta = esp_netif_create_default_wifi_sta();
+	// 	}
+	// 	if (wifi_settings.wifi_mode != 1)
+	// 	{
+	// 		netif_ap = esp_netif_create_default_wifi_ap();
+	// 	}
 
-	/* Apply configs */
-	if (wifi_settings.wifi_mode != 2)
-		ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_cfg));
+	// 	wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+	// 	ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 
-	if (wifi_settings.wifi_mode != 1)
-		ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_cfg));
+	// 	/* Disable power saving */
+	// 	esp_wifi_set_ps(WIFI_PS_NONE);
 
-	ESP_ERROR_CHECK(esp_wifi_start());
+	// 	wifi_config_t wifi_cfg;
+	// 	memset(&wifi_cfg, 0, sizeof(wifi_cfg));
 
-	if (wifi_settings.wifi_mode != 2)
-		esp_wifi_connect();
+	// 	/* STA CONFIG */
+	// 	if (wifi_settings.wifi_mode != 2)
+	// 	{
+	// 		strncpy((char *)wifi_cfg.sta.ssid, (const char *)wifi_settings.ssid, sizeof(wifi_cfg.sta.ssid));
+	// 		strncpy((char *)wifi_cfg.sta.password, (const char *)wifi_settings.pass, sizeof(wifi_cfg.sta.password));
+	// 		wifi_cfg.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
+	// 		wifi_cfg.sta.pmf_cfg.capable = true;
+	// 		wifi_cfg.sta.pmf_cfg.required = false;
+
+	// #ifdef USE_STATIC_IP
+	// 		esp_netif_ip_info_t ip;
+	// 		ip.ip.addr = STATIC_IP_IP;
+	// 		ip.gw.addr = STATIC_IP_GW;
+	// 		ip.netmask.addr = STATIC_IP_SUB;
+	// 		esp_netif_dhcpc_stop(netif_sta);
+	// 		esp_netif_set_ip_info(netif_sta, &ip);
+	// #endif
+	// 	}
+
+	// 	/* AP CONFIG */
+	// 	if (wifi_settings.wifi_mode != 1)
+	// 	{
+	// 		strncpy((char *)wifi_cfg.ap.ssid, BOARD_NAME, sizeof(wifi_cfg.ap.ssid));
+	// 		wifi_cfg.ap.ssid_len = strlen(BOARD_NAME);
+	// 		wifi_cfg.ap.channel = 1;
+	// 		wifi_cfg.ap.max_connection = 4;
+	// 		wifi_cfg.ap.authmode = WIFI_AUTH_WPA_WPA2_PSK;
+	// 		strncpy((char *)wifi_cfg.ap.password, (const char *)wifi_settings.pass, sizeof(wifi_cfg.ap.password));
+	// 		if (strlen((const char *)wifi_settings.pass) == 0)
+	// 			wifi_cfg.ap.authmode = WIFI_AUTH_OPEN;
+	// 	}
+
+	// 	/* Set mode */
+	// 	wifi_mode_t mode = WIFI_MODE_NULL;
+	// 	if (wifi_settings.wifi_mode == 0)
+	// 		mode = WIFI_MODE_APSTA;
+	// 	if (wifi_settings.wifi_mode == 1)
+	// 		mode = WIFI_MODE_STA;
+	// 	if (wifi_settings.wifi_mode == 2)
+	// 		mode = WIFI_MODE_AP;
+
+	// 	ESP_ERROR_CHECK(esp_wifi_set_mode(mode));
+
+	// 	/* Apply configs */
+	// 	if (wifi_settings.wifi_mode != 2)
+	// 		ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_cfg));
+
+	// 	if (wifi_settings.wifi_mode != 1)
+	// 		ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_cfg));
+
+	// 	ESP_ERROR_CHECK(esp_wifi_start());
+
+	// 	if (wifi_settings.wifi_mode != 2)
+	// 		esp_wifi_connect();
 
 	wifi_initialized = true;
 }
@@ -224,26 +259,33 @@ void esp32_wifi_config(bool force)
 uint8_t esp32_wifi_scan(void)
 {
 	uint16_t ap_count = 0;
-	wifi_ap_record_t *list = NULL;
 
-	esp_wifi_scan_start(NULL, true);
-	esp_wifi_scan_get_ap_num(&ap_count);
-
-	if (ap_count == 0)
-		return 0;
-
-	list = (wifi_ap_record_t *)calloc(ap_count, sizeof(wifi_ap_record_t));
-	esp_wifi_scan_get_ap_records(&ap_count, list);
-
-	for (uint16_t i = 0; i < ap_count; i++)
+	ap_count = WiFi.scanNetworks();
+	for (int netid = 0; netid < ap_count; netid++)
 	{
-		proto_info("%d) %s\tSignal: %d dBm",
-				   i + 1,
-				   (char *)list[i].ssid,
-				   list[i].rssi);
+		proto_info("%d) %s\tSignal:  %ddBm", netid, WiFi.SSID(netid).c_str(), WiFi.RSSI(netid));
 	}
 
-	free(list);
+	// wifi_ap_record_t *list = NULL;
+
+	// esp_wifi_scan_start(NULL, true);
+	// esp_wifi_scan_get_ap_num(&ap_count);
+
+	// if (ap_count == 0)
+	// 	return 0;
+
+	// list = (wifi_ap_record_t *)calloc(ap_count, sizeof(wifi_ap_record_t));
+	// esp_wifi_scan_get_ap_records(&ap_count, list);
+
+	// for (uint16_t i = 0; i < ap_count; i++)
+	// {
+	// 	proto_info("%d) %s\tSignal: %d dBm",
+	// 			   i + 1,
+	// 			   (char *)list[i].ssid,
+	// 			   list[i].rssi);
+	// }
+
+	// free(list);
 	return ap_count;
 }
 #endif
@@ -413,14 +455,14 @@ extern "C"
 					switch (wifi_settings.wifi_mode)
 					{
 					case 1:
-						proto_info("IP>%I", esp32_wifi_get_ip());
+						proto_info("IP>%s", WiFi.localIP().toString().c_str());
 						break;
 					case 2:
-						proto_info("IP>%I", esp32_wifi_ap_get_ip());
+						proto_info("IP>%s", WiFi.softAPIP().toString().c_str());
 						break;
 					default:
-						proto_info("STA IP>%I", esp32_wifi_get_ip());
-						proto_info("AP IP>%I", esp32_wifi_ap_get_ip());
+						proto_info("STA IP>%s", WiFi.localIP().toString().c_str());
+						proto_info("AP IP>%s", WiFi.softAPIP().toString().c_str());
 						break;
 					}
 				}
@@ -644,8 +686,6 @@ extern "C"
  * Custom SOCKETS
  */
 #if defined(ENABLE_SOCKETS)
-#include "../../../modules/net/socket.h"
-#include "../../../module.h"
 
 static void mcu_wifi_task(void *arg)
 {

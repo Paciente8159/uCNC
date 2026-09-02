@@ -2447,6 +2447,22 @@ typedef uint16_t step_t;
 #define ENABLE_LONG_HOMING_CYCLE
 #endif
 
+/*static IP definitions for network interfaces*/
+#ifdef USE_STATIC_IP
+#ifndef STATIC_IP_IP
+// 192.168.1.200
+#define STATIC_IP_IP 3355551936
+#endif
+#ifndef STATIC_IP_GW
+// 192.168.1.1
+#define STATIC_IP_GW 16885952
+#endif
+#ifndef STATIC_IP_SUB
+// 255.255.255.0
+#define STATIC_IP_SUB 16777215
+#endif
+#endif
+
 #include "hal/io_hal.h"
 
 #ifdef __cplusplus

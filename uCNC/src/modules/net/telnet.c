@@ -1,124 +1,302 @@
 /*
-	Name: telnet.c
-	Description: Implements a simple Telnet Server based on BSD/POSIX Sockets for µCNC.
+	Name: telnet.h
+	Description: Small, allocation-free, Telnet server API for uCNC.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 20-08-2025
+	Copyright: Copyright (c) Joao Martins
+	Author: Joao Martins
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
-
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+	uCNC is free software: you can redistribute it and/or modify it under the
+	terms of the GNU General Public License as published by the Free Software
+	Foundation, either version 3 of the License, or (at your option) any later
+	version. Please see <http://www.gnu.org/licenses/>.
 */
-
 #include "../../cnc.h"
-#include "telnet.h"
-#include <stdio.h>
-#include <string.h>
-#include <ctype.h>
-
 #ifdef ENABLE_SOCKETS
 
-/* Send a Telnet command using the abstraction layer */
-static void telnet_send_option(telnet_protocol_t* telnet, int client_fd, uint8_t cmd, uint8_t option)
-{
-	uint8_t buf[3] = {TELNET_IAC, cmd, option};
-	socket_send(telnet->telnet_socket, client_fd, (char *)buf, sizeof(buf), 0);
-}
+#include "telnet.h"
+#include <limits.h>
+#include <string.h>
 
-static void telnet_negotiate(telnet_protocol_t* telnet, int client_fd)
-{
-	/* Refuse all options for simplicity */
-	telnet_send_option(telnet, client_fd, TELNET_WILL, 0);
-	telnet_send_option(telnet, client_fd, TELNET_WONT, 0);
-	telnet_send_option(telnet, client_fd, TELNET_DO, 0);
-	telnet_send_option(telnet, client_fd, TELNET_DONT, 0);
-}
+static const uint8_t telnet_welcome[] = {
+	TELNET_IAC, TELNET_WILL, 0x01U,
+	TELNET_IAC, TELNET_WILL, 0x03U,
+	TELNET_IAC, TELNET_WONT, 0x22U};
 
-/* Telnet payload handler */
-static void telnet_data_handler(uint8_t client_idx, char *data, size_t data_len, void* protocol)
+static void telnet_client_reset(telnet_client_t *client)
 {
-	telnet_protocol_t* telnet = (telnet_protocol_t*) protocol;
-	uint8_t *bytes = (uint8_t *)data;
-	size_t outlen = 0;
-
-	for (size_t i = 0; i < data_len;)
+	if (client)
 	{
-		if ((uint8_t)bytes[i] == TELNET_IAC)
+		memset(client, 0, sizeof(*client));
+		client->parse_state = TELNET_PARSE_DATA;
+	}
+}
+
+/* Send a complete Telnet negotiation response without retaining TX state. */
+static void telnet_refuse_option(telnet_protocol_t *telnet,
+								 uint8_t client_idx,
+								 uint8_t command,
+								 uint8_t option)
+{
+	uint8_t reply[3];
+
+	if (!telnet || !telnet->telnet_socket || client_idx >= SOCKET_MAX_CLIENTS)
+		return;
+	reply[0] = TELNET_IAC;
+	reply[1] = (command == TELNET_DO || command == TELNET_DONT) ? TELNET_WONT : TELNET_DONT;
+	reply[2] = option;
+	if (socket_send(telnet->telnet_socket, client_idx, reply, sizeof(reply), false) < 0 &&
+		socket_client_is_connected(telnet->telnet_socket, client_idx))
+	{
+		(void)socket_close(telnet->telnet_socket, client_idx);
+	}
+}
+
+/*
+ * Incremental Telnet decoder. Parser state is kept per client, so IAC commands
+ * and subnegotiation sequences may be split across arbitrary TCP callbacks.
+ * Application data is delivered as immutable one-byte spans; no RX buffer is
+ * modified in place.
+ */
+static void telnet_on_data(uint8_t client_idx,
+						   const uint8_t *data,
+						   size_t data_len,
+						   void *protocol)
+{
+	telnet_protocol_t *telnet = (telnet_protocol_t *)protocol;
+	telnet_client_t *client;
+	size_t i;
+
+	if (!telnet || client_idx >= SOCKET_MAX_CLIENTS || (!data && data_len != 0U))
+		return;
+	client = &telnet->clients[client_idx];
+
+	for (i = 0U; i < data_len; ++i)
+	{
+		uint8_t byte = data[i];
+		switch (client->parse_state)
 		{
-			if (i + 2 < data_len)
+		case TELNET_PARSE_DATA:
+			if (byte == TELNET_IAC)
+				client->parse_state = TELNET_PARSE_IAC;
+			else if (telnet->telnet_data)
+				telnet->telnet_data(client_idx, &data[i], 1U);
+			break;
+
+		case TELNET_PARSE_IAC:
+			if (byte == TELNET_IAC)
 			{
-				i += 3; // Skip IAC sequence
+				if (telnet->telnet_data)
+					telnet->telnet_data(client_idx, &data[i], 1U);
+				client->parse_state = TELNET_PARSE_DATA;
 			}
+			else if (byte == TELNET_DO || byte == TELNET_DONT ||
+					 byte == TELNET_WILL || byte == TELNET_WONT)
+			{
+				client->pending_command = byte;
+				client->parse_state = TELNET_PARSE_OPTION;
+			}
+			else if (byte == TELNET_SB)
+				client->parse_state = TELNET_PARSE_SUBNEGOTIATION;
 			else
-			{
-				break; // Incomplete IAC sequence
-			}
-		}
-		else
-		{
-			char ch = bytes[i++];
-			bytes[outlen++] = ch;
+				client->parse_state = TELNET_PARSE_DATA;
+			break;
+
+		case TELNET_PARSE_OPTION:
+			telnet_refuse_option(telnet, client_idx, client->pending_command, byte);
+			client->parse_state = TELNET_PARSE_DATA;
+			break;
+
+		case TELNET_PARSE_SUBNEGOTIATION:
+			if (byte == TELNET_IAC)
+				client->parse_state = TELNET_PARSE_SUBNEGOTIATION_IAC;
+			break;
+
+		case TELNET_PARSE_SUBNEGOTIATION_IAC:
+			client->parse_state = (byte == TELNET_SE) ? TELNET_PARSE_DATA
+													  : TELNET_PARSE_SUBNEGOTIATION;
+			break;
+
+		default:
+			client->parse_state = TELNET_PARSE_DATA;
+			break;
 		}
 	}
+}
 
-	if (outlen > 0)
+static void telnet_on_connected(uint8_t client_idx, void *protocol)
+{
+	telnet_protocol_t *telnet = (telnet_protocol_t *)protocol;
+
+	if (!telnet || client_idx >= SOCKET_MAX_CLIENTS)
+		return;
+	telnet_client_reset(&telnet->clients[client_idx]);
+	if (socket_send(telnet->telnet_socket, client_idx, telnet_welcome,
+					sizeof(telnet_welcome), false) < 0 &&
+		socket_client_is_connected(telnet->telnet_socket, client_idx))
 	{
-		// Invoke the hook with modified buffer and adjusted length
-		if(telnet && telnet->telnet_onrecv_cb){
-			telnet->telnet_onrecv_cb(client_idx, data, outlen);
-		}
+		(void)socket_close(telnet->telnet_socket, client_idx);
 	}
 }
 
-static void telnet_new_client_handler(uint8_t client, void* protocol)
+static void telnet_on_disconnected(uint8_t client_idx, int reason, void *protocol)
 {
-	telnet_protocol_t* telnet = (telnet_protocol_t*) protocol;
-	telnet_negotiate(telnet, client);
-	const char welcome[] = "uCNC Telnet\r\n> ";
-	socket_send(telnet->telnet_socket, client, (char *)welcome, sizeof(welcome) - 1, 0);
+	telnet_protocol_t *telnet = (telnet_protocol_t *)protocol;
+	(void)reason;
+
+	if (telnet && client_idx < SOCKET_MAX_CLIENTS)
+		telnet_client_reset(&telnet->clients[client_idx]);
 }
 
-int telnet_hasclients(telnet_protocol_t* telnet)
+socket_if_t *telnet_start(telnet_protocol_t *telnet,
+						  uint16_t port,
+						  telnet_data_callback_t callback)
 {
-	return socket_server_hasclients(telnet->telnet_socket);
-}
+	socket_if_t *socket;
+	uint8_t i;
 
-socket_if_t *telnet_start_listen(telnet_protocol_t *telnet_protocol, int port)
-{
-	LOAD_MODULE(socket_server);
-	socket_if_t *socket = socket_start_listen(IP_ANY, port, 2 /*AF_INET*/, 1 /*SOCK_STREAM*/, 0);
+	if (!telnet || !callback)
+		return NULL;
+
+	memset(telnet, 0, sizeof(*telnet));
+	for (i = 0U; i < SOCKET_MAX_CLIENTS; ++i)
+		telnet_client_reset(&telnet->clients[i]);
+
+	socket = socket_start(IP_ANY, port);
 	if (!socket)
 		return NULL;
 
-	socket_add_ondata_handler(socket, telnet_data_handler);
-	socket_add_onconnected_handler(socket, telnet_new_client_handler);
-
-	// binds the socket to the prototol
-	socket->protocol = telnet_protocol;
-	telnet_protocol->telnet_socket = socket;
+	telnet->telnet_socket = socket;
+	telnet->telnet_data = callback;
+	socket_set_protocol(socket, telnet);
+	socket_add_ondata_handler(socket, telnet_on_data);
+	socket_add_onconnected_handler(socket, telnet_on_connected);
+	socket_add_ondisconnected_handler(socket, telnet_on_disconnected);
 	return socket;
 }
 
-void telnet_stop(telnet_protocol_t *telnet_protocol){
-	socket_stop_listening(telnet_protocol->telnet_socket);
-	telnet_protocol->telnet_socket = NULL;
+void telnet_stop(telnet_protocol_t *telnet)
+{
+	uint8_t i;
+
+	if (!telnet)
+		return;
+	if (telnet->telnet_socket)
+		socket_stop(telnet->telnet_socket);
+	for (i = 0U; i < SOCKET_MAX_CLIENTS; ++i)
+		telnet_client_reset(&telnet->clients[i]);
+	telnet->telnet_socket = NULL;
+	telnet->telnet_data = NULL;
 }
 
-// sends data to a specific socket interface to a client
-int telnet_send(telnet_protocol_t *telnet, uint8_t client_idx, char *data, size_t data_len, int flags)
+bool telnet_hasclients(const telnet_protocol_t *telnet)
 {
-	return socket_send(telnet->telnet_socket, client_idx, data, data_len, flags);
+	uint8_t i;
+
+	if (!telnet || !telnet->telnet_socket)
+		return false;
+	for (i = 0U; i < SOCKET_MAX_CLIENTS; ++i)
+	{
+		if (socket_client_is_connected(telnet->telnet_socket, i))
+			return true;
+	}
+	return false;
 }
-// sends data to a specific socket interface to all clients
-int telnet_broadcast(telnet_protocol_t *telnet, char *data, size_t data_len, int flags)
+
+int telnet_send(telnet_protocol_t *telnet,
+				uint8_t client_idx,
+				const void *data,
+				size_t data_len)
 {
-	return socket_broadcast(telnet->telnet_socket, data, data_len, flags);
+	if (!telnet || !telnet->telnet_socket)
+		return SOCKET_DEVICE_INVALID;
+	return socket_send(telnet->telnet_socket, client_idx, data, data_len, false);
+}
+
+void telnet_broadcast(telnet_protocol_t *telnet,
+					  const void *data,
+					  size_t data_len,
+					  uint32_t timeout_ms)
+{
+	const uint8_t *payload = (const uint8_t *)data;
+	size_t offsets[SOCKET_MAX_CLIENTS];
+	const size_t inactive = (size_t)-1;
+	uint32_t start_ms;
+	bool any_target = false;
+	uint8_t i;
+
+	if (!telnet || !telnet->telnet_socket || (!data && data_len != 0U) ||
+		data_len == 0U || data_len > (size_t)INT_MAX)
+		return;
+
+	for (i = 0U; i < SOCKET_MAX_CLIENTS; ++i)
+	{
+		if (socket_client_is_connected(telnet->telnet_socket, i))
+		{
+			offsets[i] = 0U;
+			any_target = true;
+		}
+		else
+		{
+			offsets[i] = inactive;
+		}
+	}
+	if (!any_target)
+		return;
+
+	start_ms = mcu_millis();
+	for (;;)
+	{
+		bool pending = false;
+
+		for (i = 0U; i < SOCKET_MAX_CLIENTS; ++i)
+		{
+			int sent;
+
+			if (offsets[i] == inactive || offsets[i] >= data_len)
+				continue;
+			if (!socket_client_is_connected(telnet->telnet_socket, i))
+			{
+				offsets[i] = inactive;
+				continue;
+			}
+
+			sent = socket_send(telnet->telnet_socket, i,
+							   &payload[offsets[i]], data_len - offsets[i], true);
+			if (sent > 0)
+			{
+				offsets[i] += (size_t)sent;
+				if (offsets[i] < data_len)
+					pending = true;
+			}
+			else if (sent == 0)
+			{
+				pending = true;
+			}
+			else
+			{
+				if (socket_client_is_connected(telnet->telnet_socket, i))
+					(void)socket_close(telnet->telnet_socket, i);
+				offsets[i] = inactive;
+			}
+		}
+
+		if (!pending)
+			return;
+		if ((uint32_t)(mcu_millis() - start_ms) >= timeout_ms)
+		{
+			for (i = 0U; i < SOCKET_MAX_CLIENTS; ++i)
+			{
+				if (offsets[i] != inactive && offsets[i] < data_len &&
+					socket_client_is_connected(telnet->telnet_socket, i))
+				{
+					(void)socket_close(telnet->telnet_socket, i);
+				}
+			}
+			return;
+		}
+
+		socket_server_poll();
+	}
 }
 
 #endif

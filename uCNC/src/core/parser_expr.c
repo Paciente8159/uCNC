@@ -23,6 +23,12 @@
 #include <string.h>
 #include <float.h>
 
+#ifdef ENABLE_PARSER_DEBUG
+#define DBGLOG DBGMSG
+#else
+#define DBGLOG(fmt, ...) ((void)0)
+#endif
+
 /**
  *
  *
@@ -1032,6 +1038,7 @@ uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parser_cmd_e
 	 */
 	if (!STRCMP(o_cmd, "CALL"))
 	{
+		DBGLOG("[EXPR] O%u CALL", ocode_id);
 		// store user vars
 		uint8_t i_context = o_code_stack_context_index++;
 		memcpy(&o_code_stack_context_vars[i_context], g_parser_num_params, OCODE_CONTEXT_SIZE);
@@ -1080,6 +1087,7 @@ uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parser_cmd_e
 	{
 		uint8_t type = strlen(o_cmd); // If=2 ElseIf=6 Else=4
 		error = STATUS_OK;
+		DBGLOG("[EXPR] O%u %s arg=%.3f", ocode_id, o_cmd, op_arg);
 		switch (type)
 		{
 		case 2:
@@ -1148,6 +1156,7 @@ uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parser_cmd_e
 
 	if (!STRCMP(o_cmd, "RETURN") || !STRCMP(o_cmd, "ENDSUB"))
 	{
+		DBGLOG("[EXPR] O%u %s", ocode_id, o_cmd);
 		for (uint8_t index = o_code_stack_index; index != 0;)
 		{
 			index--;
@@ -1222,6 +1231,7 @@ uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parser_cmd_e
 	if (!STRCMP(o_cmd, "DO") || !STRCMP(o_cmd, "WHILE") || !STRCMP(o_cmd, "ENDWHILE"))
 	{
 		uint8_t type = strlen(o_cmd);
+		DBGLOG("[EXPR] O%u %s arg=%.3f", ocode_id, o_cmd, op_arg);
 
 		index = o_code_validate(O_CODE_OP_WHILE, ocode_id, false);
 		if (index)
@@ -1406,6 +1416,7 @@ uint8_t parser_ocode_word(uint16_t code, parser_state_t *new_state, parser_cmd_e
 	if (!STRCMP(o_cmd, "REPEAT") || !STRCMP(o_cmd, "ENDREPEAT"))
 	{
 		uint8_t type = strlen(o_cmd);
+		DBGLOG("[EXPR] O%u %s arg=%.3f", ocode_id, o_cmd, op_arg);
 
 		if (!o_code_validate(O_CODE_OP_REPEAT, ocode_id, (type == 9) ? false : true))
 		{

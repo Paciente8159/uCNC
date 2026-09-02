@@ -21,6 +21,12 @@
 #include <stdint.h>
 #include "cnc.h"
 
+#ifdef ENABLE_CNC_DEBUG
+#define DBGLOG DBGMSG
+#else
+#define DBGLOG(fmt, ...) ((void)0)
+#endif
+
 #define LOOP_STARTUP_RESET 0
 #define LOOP_UNLOCK 1
 #define LOOP_RUNNING 2
@@ -104,13 +110,21 @@ void cnc_init(void)
 	io_enable_steppers(~g_settings.step_enable_invert); // disables steppers at start
 	io_disable_probe();									// forces probe isr disabling
 	grbl_stream_init();									// serial
-#ifdef ENABLE_SOCKETS
-	cnc_network_init(); // initialize network if available. All services running over sockets will be able to run after this
-#endif
-	mod_init();		 // modules
-	settings_init(); // settings
-	itp_init();		 // interpolator
-	planner_init();	 // motion planner
+	settings_init();									// settings initial load
+	/**
+	 * Network initialization happens after stream registration
+	 * This will allow wired streams to be able to start sending info out (needed for debug streams)
+	 * Also if network uses extended NVM settings these should be initialized manually
+	 * LwIP and/or TCP stack is initialized here before net dependent modules register any listeners
+	 * Telnet server is initialized here
+	 */
+	cnc_network_init();									// initialize network and wireless coms
+	/**
+	 * Remaining tcp socket based servers are initialized here
+	 */
+	mod_init();											// initialize modules
+	itp_init();											// interpolator
+	planner_init();										// motion planner
 #if TOOL_COUNT > 0
 	tool_init();
 #endif
@@ -118,6 +132,17 @@ void cnc_init(void)
 	{
 		cnc_set_exec_state(EXEC_POSITION_MAYBE_LOST);
 	}
+}
+
+void __attribute__((weak)) cnc_network_init(void)
+{
+#ifdef ENABLE_SOCKETS
+	mcu_network_init();
+	telnet_sock = telnet_start(&telnet_proto, 23, mcu_telnet_onrecv);
+#endif
+#ifdef MCU_HAS_BLUETOOTH
+	mcu_bt_init();
+#endif
 }
 
 static void cnc_wait_for_reset()
@@ -161,6 +186,7 @@ void cnc_run(void)
 		int8_t alarm = cnc_state.alarm;
 		if (alarm > EXEC_ALARM_NOALARM)
 		{
+			DBGLOG("[CNC] alarm raised: %hd", alarm);
 			cnc_alarm(alarm);
 		}
 
@@ -190,6 +216,51 @@ void cnc_run(void)
 	}
 }
 
+#ifdef PIO_UNIT_TESTING
+void cnc_unit_test_start(void)
+{
+	cnc_reset();
+	if (cnc_unlock(false) != UNLOCK_ERROR)
+	{
+		cnc_state.alarm = EXEC_ALARM_NOALARM;
+	}
+	cnc_state.loop_state = LOOP_RUNNING;
+}
+
+bool cnc_unit_test_run_once(void)
+{
+	cnc_parse_cmd();
+	cnc_dotasks();
+
+	int8_t alarm = cnc_state.alarm;
+	if (alarm > EXEC_ALARM_NOALARM)
+	{
+		DBGLOG("[CNC] alarm raised: %hd", alarm);
+		cnc_alarm(alarm);
+	}
+
+	switch (cnc_state.alarm)
+	{
+	case EXEC_ALARM_NOALARM:
+		return true;
+	case -EXEC_ALARM_HARD_LIMIT:
+	case -EXEC_ALARM_SOFT_LIMIT:
+		io_enable_steppers(~g_settings.step_enable_invert);
+		proto_feedback(MSG_FEEDBACK_1);
+		cnc_state.loop_state = LOOP_REQUIRE_RESET;
+		return true;
+	case EXEC_ALARM_EMERGENCY_STOP:
+		cnc_state.loop_state = LOOP_REQUIRE_RESET;
+		return true;
+	case EXEC_ALARM_SOFTRESET:
+		cnc_state.alarm = EXEC_ALARM_NOALARM;
+		return false;
+	default:
+		return !cnc_get_exec_state(EXEC_POSITION_MAYBE_LOST);
+	}
+}
+#endif
+
 uint8_t cnc_parse_cmd(void)
 {
 #ifdef ENABLE_PARSING_TIME_DEBUG
@@ -217,7 +288,7 @@ uint8_t cnc_parse_cmd(void)
 				exec_time = mcu_millis();
 			}
 #endif
-			error = parser_read_command();
+			error = parser_run_command();
 #ifdef ENABLE_PARSING_TIME_DEBUG
 			exec_time = mcu_millis() - exec_time;
 			proto_info("Exec time: %lu", exec_time);
@@ -228,6 +299,7 @@ uint8_t cnc_parse_cmd(void)
 		// this catches for example a ?\n situation sent by some GUI like UGS
 		cnc_exec_rt_commands();
 		proto_error(error);
+		DBGLOG("[CNC] cmd parsed error=%hu", error);
 		if (error)
 		{
 			itp_sync();
@@ -244,6 +316,14 @@ uint8_t cnc_parse_cmd(void)
 
 bool cnc_dotasks(void)
 {
+#ifdef PIO_UNIT_TESTING
+	/*
+	 * A deterministic test has no host timer thread. Advancing here also lets
+	 * parser/planner loops that yield through cnc_dotasks() make progress while
+	 * the Unity thread remains the sole owner of controller execution.
+	 */
+	mcu_unit_test_advance_time(1000U);
+#endif
 	// run io basic tasks
 	cnc_io_dotasks();
 
@@ -264,6 +344,7 @@ bool cnc_dotasks(void)
 	// check security interlocking for any problem
 	if (!cnc_check_interlocking())
 	{
+		DBGLOG("[CNC] interlocking fail");
 		return !cnc_get_exec_state(EXEC_INTERLOCKING_FAIL);
 	}
 
@@ -416,6 +497,7 @@ uint8_t cnc_home(void)
 
 void cnc_alarm(int8_t code)
 {
+	DBGLOG("[CNC] alarm: %hd", code);
 	cnc_set_exec_state(EXEC_KILL);
 	cnc_stop(true);
 	if (!cnc_state.alarm || code < EXEC_ALARM_NOALARM)
@@ -517,10 +599,12 @@ uint8_t cnc_unlock(bool force)
 			}
 #endif
 			proto_feedback(MSG_FEEDBACK_2);
+			DBGLOG("[CNC] unlock locked");
 			return UNLOCK_LOCKED;
 		}
 		else
 		{
+			DBGLOG("[CNC] unlock error");
 			return UNLOCK_ERROR;
 		}
 	}
@@ -546,6 +630,7 @@ uint8_t cnc_unlock(bool force)
 		}
 	}
 
+	DBGLOG("[CNC] unlock OK");
 	return UNLOCK_OK;
 }
 
@@ -583,7 +668,16 @@ void cnc_set_exec_state(uint16_t statemask)
 		cnc_clear_exec_state(EXEC_RESUMING); // auto clears resuming
 	}
 
+#ifdef ENABLE_CNC_DEBUG
+	uint16_t prev_exec_state = cnc_state.exec_state;
+#endif
 	ATOMIC_FETCH_OR(&cnc_state.exec_state, statemask, __ATOMIC_ACQ_REL);
+#ifdef ENABLE_CNC_DEBUG
+	if (cnc_state.exec_state != prev_exec_state)
+	{
+		DBGLOG("[CNC] set mask %u exec_state: %u", statemask, cnc_state.exec_state);
+	}
+#endif
 }
 
 void cnc_clear_exec_state(uint16_t statemask)
@@ -669,7 +763,16 @@ void cnc_clear_exec_state(uint16_t statemask)
 #endif
 	}
 
+#ifdef ENABLE_CNC_DEBUG
+	uint16_t prev_exec_state = cnc_state.exec_state;
+#endif
 	ATOMIC_FETCH_AND(&cnc_state.exec_state, ~statemask, __ATOMIC_ACQ_REL);
+#ifdef ENABLE_CNC_DEBUG
+	if (cnc_state.exec_state != prev_exec_state)
+	{
+		DBGLOG("[CNC] clear mask %u exec_state: %u", statemask, cnc_state.exec_state);
+	}
+#endif
 }
 
 // executes delay
@@ -693,6 +796,7 @@ void cnc_dwell_ms(uint32_t milliseconds)
 
 void cnc_reset(void)
 {
+	DBGLOG("[CNC] reset");
 	mcu_controls_changed_cb();
 	// resets all realtime command flags
 	cnc_state.rt_cmd = RT_CMD_CLEAR;
@@ -809,6 +913,7 @@ void cnc_exec_rt_commands(void)
 
 	if (command)
 	{
+		DBGLOG("[CNC] rt_cmd: %hu", command);
 		// clear all but report. report is handled in cnc_io_dotasks
 		ATOMIC_CODEBLOCK
 		{
@@ -836,7 +941,8 @@ void cnc_exec_rt_commands(void)
 #if ASSERT_PIN(SAFETY_DOOR)
 		if (CHECKFLAG(command, RT_CMD_DOOR_CHANGED))
 		{
-			proto_feedback(MSG_FEEDBACK_6);
+			if (CHECKFLAG(io_get_controls(), SAFETY_DOOR_MASK))
+				proto_feedback(MSG_FEEDBACK_6);
 			itp_stop_tools();
 #ifdef ENABLE_SAFETY_DOOR_PARKING
 			cnc_park();
@@ -888,6 +994,7 @@ void cnc_exec_rt_commands(void)
 	command = cnc_state.feed_ovr_cmd; // copies realtime flags states
 	if (command)
 	{
+		DBGLOG("[CNC] feed_ovr: %hu", command);
 		cnc_state.feed_ovr_cmd = RT_CMD_CLEAR; // clears command flags
 		uint8_t ovr = g_planner_state.feed_override;
 		switch (command & RTCMD_NORMAL_MASK)
@@ -927,6 +1034,7 @@ void cnc_exec_rt_commands(void)
 	command = cnc_state.tool_ovr_cmd; // copies realtime flags states
 	if (command)
 	{
+		DBGLOG("[CNC] tool_ovr: %hu", command);
 		cnc_state.tool_ovr_cmd = RT_CMD_CLEAR; // clears command flags
 #if TOOL_COUNT > 0
 		uint8_t ovr = g_planner_state.spindle_speed_override;
@@ -1193,6 +1301,7 @@ bool g_is_multilineblock;
 #endif
 void cnc_run_startup_blocks(void)
 {
+	DBGLOG("[CNC] run startup blocks");
 	for (uint8_t i = 0; i < STARTUP_BLOCKS_COUNT; i++)
 	{
 		itp_sync();
@@ -1204,7 +1313,7 @@ void cnc_run_startup_blocks(void)
 			do
 			{
 #endif
-				grbl_stream_eeprom(address);
+				grbl_stream_eeprom(address, false);
 				cnc_parse_cmd();
 #ifdef ENABLE_MULTILINE_STARTUP_BLOCKS
 				do

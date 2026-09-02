@@ -621,7 +621,10 @@ extern "C"
 #endif
 
 #ifdef ENABLE_SOCKETS
-	void mcu_network_init(void);				  // initializes the MCU buildin network device
+#include "../../modules/net/telnet.h"
+	extern socket_if_t *telnet_sock;
+	extern telnet_protocol_t telnet_proto;
+	void mcu_network_init(void);
 	uint8_t mcu_telnet_getc(void);
 	uint8_t mcu_telnet_available(void);
 	void mcu_telnet_clear(void);
@@ -629,8 +632,8 @@ extern "C"
 	void mcu_telnet_flush(void);
 #ifdef DETACH_TELNET_FROM_MAIN_PROTOCOL
 	MCU_RX_CALLBACK void mcu_telnet_rx_cb(uint8_t c);
-#endif																		 // must be called from mcu_init if the default mcu_init is overriden
-	void mcu_telnet_onrecv(uint8_t client_idx, void *data, size_t data_len); // the callback when data is received
+#endif																				  // must be called from mcu_init if the default mcu_init is overriden
+	void mcu_telnet_onrecv(uint8_t client_idx, const uint8_t *data, size_t data_len); // the callback when data is received
 #endif
 
 #ifdef MCU_HAS_BLUETOOTH
@@ -660,7 +663,6 @@ extern "C"
 #ifndef mcu_flush
 #define mcu_flush (&mcu_uart_flush)
 #endif
-
 
 /**
  * allows to determine the current running context on the MCU

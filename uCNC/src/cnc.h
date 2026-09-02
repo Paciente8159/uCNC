@@ -145,6 +145,8 @@ extern "C"
 #ifdef ENABLE_SOCKETS
 #include "modules/net/socket.h"
 #include "modules/net/telnet.h"
+#include "modules/net/websocket.h"
+#include "modules/net/http.h"
 #endif
 
 	/**
@@ -159,7 +161,16 @@ extern "C"
 	extern bool cnc_status_report_lock;
 
 	void cnc_init(void);
+	void cnc_network_init(void);
 	void cnc_run(void);
+#ifdef PIO_UNIT_TESTING
+	/*
+	 * Deterministic host-test driver. The test owns the call sequence, so no
+	 * controller thread or endless main loop is needed.
+	 */
+	void cnc_unit_test_start(void);
+	bool cnc_unit_test_run_once(void);
+#endif
 	// do events returns true if all OK and false if an ABORT alarm is reached
 	bool cnc_dotasks(void);
 	uint8_t cnc_home(void);
