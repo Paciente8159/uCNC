@@ -316,7 +316,7 @@ uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint16_t size)
 	{
 		rom_memcpy(&g_settings, &default_settings, sizeof(settings_t));
 	}
-	else
+	else if (__ptr)
 	{
 		size = MAX(size, 1);
 		memset(__ptr, 0, size);
@@ -341,6 +341,11 @@ uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint16_t size)
 #ifdef ENABLE_SETTINGS_MODULES
 	bool extended_load __attribute__((__cleanup__(EVENT_HANDLER_NAME(settings_extended_load)))) = is_machine_settings;
 #endif
+
+	if (!__ptr)
+	{
+		return 0;
+	}
 
 	nvm_start_read(address);
 	for (uint16_t i = 0; i < size;)
@@ -490,6 +495,16 @@ uint8_t settings_change(setting_offset_t id, float value)
 			{
 				return STATUS_MAX_STEP_RATE_EXCEEDED;
 			}
+		}
+
+		if (id == 20 && value1 && !g_settings.homing_enabled)
+		{
+			return STATUS_SOFT_LIMIT_ERROR;
+		}
+
+		if (id == 22 && !value1)
+		{
+			g_settings.soft_limits_enabled = false;
 		}
 
 		uint8_t count = settings_count();

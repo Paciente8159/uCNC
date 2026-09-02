@@ -34,6 +34,7 @@ extern "C"
 
 /* Platform includes */
 #include <pthread.h>
+#include <sys/time.h>
 
 	/* ----- Global ISR enable/disable --------------------------------------- */
 
@@ -184,6 +185,276 @@ extern "C"
 
 #endif /* MCU_HAS_UART2 */
 
+#ifdef PIO_UNIT_TESTING
+
+#ifndef PIO_UNIT_TESTING_TX_BUFFER_SIZE
+#define PIO_UNIT_TESTING_TX_BUFFER_SIZE 65536
+#endif
+
+	DECL_BUFFER(uint8_t, unit_test_rx, RX_BUFFER_SIZE);
+
+	/*
+	 * The normal MCU ring buffer uses small embedded-target index types and is
+	 * therefore not suitable for a 4096-byte host-side transcript. Keep the
+	 * test transcript linear and protect it because Unity and cnc_run execute
+	 * on different threads.
+	 */
+	static pthread_mutex_t unit_test_tx_mutex = PTHREAD_MUTEX_INITIALIZER;
+	static pthread_cond_t unit_test_tx_changed = PTHREAD_COND_INITIALIZER;
+	static char unit_test_tx_buffer[PIO_UNIT_TESTING_TX_BUFFER_SIZE];
+	static char unit_test_tx_snapshot[PIO_UNIT_TESTING_TX_BUFFER_SIZE];
+	static size_t unit_test_tx_length;
+	static uint64_t unit_test_tx_base;
+	static uint64_t unit_test_tx_total;
+	static bool unit_test_tx_overflow;
+
+	uint8_t mcu_unit_test_getc(void)
+	{
+		uint8_t c = 0;
+		BUFFER_DEQUEUE(unit_test_rx, &c);
+		return c;
+	}
+	uint8_t mcu_unit_test_available(void) { return BUFFER_READ_AVAILABLE(unit_test_rx); }
+	void mcu_unit_test_clear(void) { BUFFER_CLEAR(unit_test_rx); }
+
+	void mcu_unit_test_putc(uint8_t c)
+	{
+		pthread_mutex_lock(&unit_test_tx_mutex);
+		if (unit_test_tx_length + 1U < sizeof(unit_test_tx_buffer))
+		{
+			unit_test_tx_buffer[unit_test_tx_length++] = (char)c;
+			unit_test_tx_buffer[unit_test_tx_length] = '\0';
+			unit_test_tx_total++;
+		}
+		else
+		{
+			unit_test_tx_overflow = true;
+		}
+		pthread_cond_broadcast(&unit_test_tx_changed);
+		pthread_mutex_unlock(&unit_test_tx_mutex);
+	}
+
+	uint64_t mcu_unit_test_output_cursor(void)
+	{
+		pthread_mutex_lock(&unit_test_tx_mutex);
+		uint64_t cursor = unit_test_tx_total;
+		pthread_mutex_unlock(&unit_test_tx_mutex);
+		return cursor;
+	}
+
+	bool mcu_unit_test_wait_for_output(uint64_t cursor, uint32_t timeout_ms)
+	{
+		struct timeval now;
+		gettimeofday(&now, NULL);
+		struct timespec deadline = {
+			.tv_sec = now.tv_sec + (time_t)(timeout_ms / 1000U),
+			.tv_nsec = (long)now.tv_usec * 1000L + (long)(timeout_ms % 1000U) * 1000000L};
+		if (deadline.tv_nsec >= 1000000000L)
+		{
+			deadline.tv_sec++;
+			deadline.tv_nsec -= 1000000000L;
+		}
+
+		pthread_mutex_lock(&unit_test_tx_mutex);
+		while (unit_test_tx_total <= cursor)
+		{
+			if (pthread_cond_timedwait(&unit_test_tx_changed, &unit_test_tx_mutex, &deadline))
+			{
+				break;
+			}
+		}
+		bool changed = unit_test_tx_total > cursor;
+		pthread_mutex_unlock(&unit_test_tx_mutex);
+		return changed;
+	}
+
+	size_t mcu_unit_test_buffer_read_since(uint64_t cursor, char *destination, size_t capacity)
+	{
+		if (!destination || !capacity)
+		{
+			return 0;
+		}
+
+		pthread_mutex_lock(&unit_test_tx_mutex);
+		size_t offset = 0;
+		if (cursor > unit_test_tx_base)
+		{
+			uint64_t relative = cursor - unit_test_tx_base;
+			offset = relative < unit_test_tx_length ? (size_t)relative : unit_test_tx_length;
+		}
+		size_t copied = unit_test_tx_length - offset;
+		if (copied >= capacity)
+		{
+			copied = capacity - 1U;
+		}
+		memcpy(destination, unit_test_tx_buffer + offset, copied);
+		destination[copied] = '\0';
+		pthread_mutex_unlock(&unit_test_tx_mutex);
+		return copied;
+	}
+
+	void mcu_unit_test_flush(void) {}
+
+	bool mcu_unit_test_inject(const char *cmd)
+	{
+		if (!cmd)
+		{
+			return false;
+		}
+
+		while (*cmd)
+		{
+			uint8_t c = (uint8_t)*cmd++;
+
+			/*
+			 * Use the same realtime-character path as normal UART input.
+			 */
+			if (mcu_com_rx_cb(c))
+			{
+				if (!BUFFER_TRY_ENQUEUE(unit_test_rx, &c))
+				{
+					grbl_stream_overflow(c);
+					return false;
+				}
+			}
+		}
+
+		return true;
+	}
+
+	const char *mcu_unit_test_buffer(void)
+	{
+		pthread_mutex_lock(&unit_test_tx_mutex);
+		memcpy(unit_test_tx_snapshot, unit_test_tx_buffer, unit_test_tx_length + 1U);
+		pthread_mutex_unlock(&unit_test_tx_mutex);
+		return unit_test_tx_snapshot;
+	}
+
+	size_t mcu_unit_test_buffer_read(char *destination, size_t capacity)
+	{
+		if (!destination || !capacity)
+		{
+			return 0;
+		}
+
+		pthread_mutex_lock(&unit_test_tx_mutex);
+		size_t copied = unit_test_tx_length;
+		if (copied >= capacity)
+		{
+			copied = capacity - 1U;
+		}
+		memcpy(destination, unit_test_tx_buffer, copied);
+		destination[copied] = '\0';
+		pthread_mutex_unlock(&unit_test_tx_mutex);
+		return copied;
+	}
+
+	bool mcu_unit_test_buffer_overflowed(void)
+	{
+		pthread_mutex_lock(&unit_test_tx_mutex);
+		bool overflowed = unit_test_tx_overflow;
+		pthread_mutex_unlock(&unit_test_tx_mutex);
+		return overflowed;
+	}
+
+	void mcu_unit_test_buffer_clear(void)
+	{
+		pthread_mutex_lock(&unit_test_tx_mutex);
+		unit_test_tx_length = 0;
+		unit_test_tx_buffer[0] = '\0';
+		unit_test_tx_overflow = false;
+		unit_test_tx_base = unit_test_tx_total;
+		pthread_mutex_unlock(&unit_test_tx_mutex);
+	}
+
+	DECL_GRBL_STREAM(unit_test_grbl_stream, mcu_unit_test_getc, mcu_unit_test_available, mcu_unit_test_clear, mcu_unit_test_putc, mcu_unit_test_flush);
+
+	typedef bool (*test_io_callback_t)(void);
+
+	typedef struct
+	{
+		bool static_value;
+
+		bool timed_enabled;
+		bool timed_initial;
+		bool timed_final;
+		uint32_t timed_start_ms;
+		uint32_t timed_delay_ms;
+
+		test_io_callback_t callback;
+	} test_io_signal_t;
+
+	static test_io_signal_t g_test_io[TEST_IO_COUNT];
+
+	bool test_io_condition(test_io_id_t input)
+	{
+		if (input >= TEST_IO_COUNT)
+		{
+			return false;
+		}
+
+		test_io_signal_t *sig = &g_test_io[input];
+
+		if (sig->callback)
+		{
+			return sig->callback();
+		}
+
+		if (sig->timed_enabled)
+		{
+			bool elapsed =
+				(uint32_t)(mcu_millis() - sig->timed_start_ms) >=
+				sig->timed_delay_ms;
+
+			return elapsed ? sig->timed_final : sig->timed_initial;
+		}
+
+		return sig->static_value;
+	}
+
+	void test_io_reset(void)
+	{
+		memset(g_test_io, 0, sizeof(g_test_io));
+	}
+
+	void test_io_set(test_io_id_t input, bool value)
+	{
+		if (input < TEST_IO_COUNT)
+		{
+			g_test_io[input].static_value = value;
+			g_test_io[input].timed_enabled = false;
+			g_test_io[input].callback = NULL;
+		}
+	}
+
+	void test_io_set_after(test_io_id_t input,
+						   uint32_t delay_ms,
+						   bool initial_value,
+						   bool final_value)
+	{
+		if (input < TEST_IO_COUNT)
+		{
+			g_test_io[input].timed_enabled = true;
+			g_test_io[input].timed_initial = initial_value;
+			g_test_io[input].timed_final = final_value;
+			g_test_io[input].timed_start_ms = mcu_millis();
+			g_test_io[input].timed_delay_ms = delay_ms;
+			g_test_io[input].callback = NULL;
+		}
+	}
+
+	void test_io_set_callback(test_io_id_t input,
+							  test_io_callback_t cb)
+	{
+		if (input < TEST_IO_COUNT)
+		{
+			g_test_io[input].callback = cb;
+			g_test_io[input].timed_enabled = false;
+		}
+	}
+
+#endif /* PIO_UNIT_TEST */
+
 	/* ----- Run periodic device tasks --------------------------------------- */
 
 	void mcu_dotasks(void)
@@ -198,37 +469,49 @@ extern "C"
 
 	/* ----- EEPROM emulation (file) ----------------------------------------- */
 
+#ifdef PIO_UNIT_TESTING
+	static uint8_t unit_test_eeprom[UINT16_MAX + 1U];
+#endif
+
 	uint8_t mcu_eeprom_getc(uint16_t address)
 	{
-		FILE *fp = fopen("virtualeeprom", "rb");
-		uint8_t c = 0;
-		if (fp != NULL)
+#ifdef PIO_UNIT_TESTING
+		return unit_test_eeprom[address];
+#else
+	FILE *fp = fopen("virtualeeprom", "rb");
+	uint8_t c = 0;
+	if (fp != NULL)
+	{
+		if (!fseek(fp, address, SEEK_SET))
 		{
-			if (!fseek(fp, address, SEEK_SET))
-			{
-				c = getc(fp);
-			}
-			fclose(fp);
+			c = getc(fp);
 		}
-		return c;
+		fclose(fp);
+	}
+	return c;
+#endif
 	}
 	void mcu_eeprom_putc(uint16_t address, uint8_t value)
 	{
-		FILE *src = fopen("virtualeeprom", "rb+");
-		if (!src)
-		{
-			FILE *dest = fopen("virtualeeprom", "wb");
-			if (dest)
-				fclose(dest);
-			src = fopen("virtualeeprom", "rb+");
-		}
-		if (src)
-		{
-			fseek(src, address, SEEK_SET);
-			putc((int)value, src);
-			fflush(src);
-			fclose(src);
-		}
+#ifdef PIO_UNIT_TESTING
+		unit_test_eeprom[address] = value;
+#else
+	FILE *src = fopen("virtualeeprom", "rb+");
+	if (!src)
+	{
+		FILE *dest = fopen("virtualeeprom", "wb");
+		if (dest)
+			fclose(dest);
+		src = fopen("virtualeeprom", "rb+");
+	}
+	if (src)
+	{
+		fseek(src, address, SEEK_SET);
+		putc((int)value, src);
+		fflush(src);
+		fclose(src);
+	}
+#endif
 	}
 	void mcu_eeprom_flush(void) {}
 
@@ -532,86 +815,257 @@ extern "C"
 		oneshot_alarm = mcu_micros() + oneshot_timeout;
 	}
 
-	/* Periodic tick that drives stepper and RTC callbacks */
-	void ticksimul(void)
+	typedef struct timed_event_
 	{
-		static bool running = false;
-		bool test = false;
-		do
+		uint64_t stamp;
+		void (*callback)(void *args);
+		void *args;
+		struct timed_event_ *next;
+	} timed_event_t;
+
+#ifdef PIO_UNIT_TESTING
+	timed_event_t *current_event;
+
+	void mcu_add_event(uint32_t delay_us, void (*callback)(void *args), void *args)
+	{
+		timed_event_t *new = calloc(1, sizeof(timed_event_t));
+		new->stamp = tickcount + delay_us;
+		new->callback = callback;
+		new->args = args;
+
+		// Insert at head
+		if (!current_event || new->stamp < current_event->stamp)
 		{
-			test = __atomic_load_n(&running, __ATOMIC_RELAXED);
-			if (test)
-			{
-				return;
-			}
-		} while (!__atomic_compare_exchange_n(&running, &test, true, false, __ATOMIC_RELAXED, __ATOMIC_RELAXED));
-		static uint32_t prev, next_rtc = 1000;
-		float parcial = 0;
-		float timestep = ceil((float)EMULATION_MS_TICK * ITP_SAMPLE_RATE * 0.001f);
-		for (int i = 0; i < (int)timestep; i++)
-		{
-			parcial += (1000000.0f / (float)ITP_SAMPLE_RATE);
-			tickcount += (int)parcial;
-			parcial -= (int)parcial;
-
-			mcu_gen_step();
-#if defined(MCU_HAS_ONESHOT_TIMER)
-			mcu_gen_oneshot();
-#endif
-
-			if (prev ^ virtualmap.special_outputs)
-			{
-				prev = virtualmap.special_outputs;
-				if (stimuli)
-					fprintf(stimuli, "#%llu\n", tickcount);
-#if AXIS_COUNT > 0
-				printpin(STEP0);
-				printpin(DIR0);
-#endif
-#if AXIS_COUNT > 1
-				printpin(STEP1);
-				printpin(DIR1);
-#endif
-#if AXIS_COUNT > 2
-				printpin(STEP2);
-				printpin(DIR2);
-#endif
-#if AXIS_COUNT > 3
-				printpin(STEP3);
-				printpin(DIR3);
-#endif
-#if AXIS_COUNT > 4
-				printpin(STEP4);
-				printpin(DIR4);
-#endif
-#if AXIS_COUNT > 5
-				printpin(STEP5);
-				printpin(DIR5);
-#endif
-			}
-
-			if (tickcount > next_rtc)
-			{
-				mcu_rtc_cb(mcu_millis());
-				next_rtc += 1000;
-			}
+			new->next = current_event;
+			current_event = new;
+			return;
 		}
 
-		//		startCycleCounter();
-		__atomic_store_n(&running, false, __ATOMIC_RELAXED);
+		// Insert somewhere after head
+		timed_event_t *prev = current_event;
+		timed_event_t *next = current_event->next;
+
+		while (next && next->stamp < new->stamp)
+		{
+			prev = next;
+			next = next->next;
+		}
+
+		prev->next = new;
+		new->next = next;
 	}
 
-	/**
-	 * OTA emulation
-	 */
-	void ota_server_start(void);
+	void mcu_run_events()
+	{
+		if (!current_event)
+		{
+			return;
+		}
+
+		while (current_event && current_event->stamp <= tickcount)
+		{
+			current_event->callback(current_event->args);
+			timed_event_t *prev = current_event;
+			current_event = current_event->next;
+			free(prev);
+		}
+	}
+
+	void mcu_test_clear_events(void)
+	{
+		while (current_event)
+		{
+			timed_event_t *prev = current_event;
+			current_event = current_event->next;
+			free(prev);
+		}
+	}
+#endif
+
+#ifdef PIO_UNIT_TESTING
+	static uint64_t unit_test_next_rtc = 1000U;
+	static float unit_test_partial_us;
+
+	static void mcu_unit_test_simulate_sample(uint32_t elapsed_us)
+	{
+		tickcount += elapsed_us;
+		mcu_run_events();
+		mcu_gen_step();
+#if defined(MCU_HAS_ONESHOT_TIMER)
+		mcu_gen_oneshot();
+#endif
+		while (tickcount >= unit_test_next_rtc)
+		{
+			mcu_rtc_cb(mcu_millis());
+			unit_test_next_rtc += 1000U;
+		}
+	}
+
+	void mcu_unit_test_clock_reset(void)
+	{
+		mcu_test_clear_events();
+		tickcount = 0;
+		unit_test_next_rtc = 1000U;
+		unit_test_partial_us = 0.0f;
+		oneshot_alarm = 0;
+#if defined(MCU_HAS_ONESHOT_TIMER)
+		virtual_oneshot_counter = 0;
+#endif
+	}
+
+	void mcu_unit_test_runtime_reset(void)
+	{
+		mcu_test_clear_events();
+		unit_test_next_rtc = tickcount + 1000U;
+		unit_test_partial_us = 0.0f;
+		oneshot_alarm = 0;
+#if defined(MCU_HAS_ONESHOT_TIMER)
+		virtual_oneshot_counter = 0;
+#endif
+		BUFFER_CLEAR(unit_test_rx);
+		mcu_unit_test_buffer_clear();
+		memset((void *)&virtualmap, 0, sizeof(virtualmap));
+		test_io_reset();
+	}
+
+	void mcu_unit_test_advance_time(uint32_t microseconds)
+	{
+		const float sample_us = 1000000.0f / (float)ITP_SAMPLE_RATE;
+		uint64_t target = tickcount + microseconds;
+		while (tickcount < target)
+		{
+			unit_test_partial_us += sample_us;
+			uint32_t elapsed = (uint32_t)unit_test_partial_us;
+			if (!elapsed)
+			{
+				continue;
+			}
+			unit_test_partial_us -= (float)elapsed;
+			uint64_t remaining = target - tickcount;
+			if ((uint64_t)elapsed > remaining)
+			{
+				elapsed = (uint32_t)remaining;
+			}
+			mcu_unit_test_simulate_sample(elapsed);
+		}
+	}
+
+	void ticksimul(void)
+	{
+		mcu_unit_test_advance_time(EMULATION_MS_TICK * 1000U);
+	}
+#else
+void ticksimul(void)
+{
+	static bool running = false;
+	bool test = false;
+	do
+	{
+		test = __atomic_load_n(&running, __ATOMIC_RELAXED);
+		if (test)
+		{
+			return;
+		}
+	} while (!__atomic_compare_exchange_n(&running, &test, true, false, __ATOMIC_RELAXED, __ATOMIC_RELAXED));
+	static uint32_t prev, next_rtc = 1000;
+	float parcial = 0;
+	float timestep = ceil((float)EMULATION_MS_TICK * ITP_SAMPLE_RATE * 0.001f);
+	for (int i = 0; i < (int)timestep; i++)
+	{
+		parcial += (1000000.0f / (float)ITP_SAMPLE_RATE);
+		tickcount += (int)parcial;
+		parcial -= (int)parcial;
+		mcu_gen_step();
+#if defined(MCU_HAS_ONESHOT_TIMER)
+		mcu_gen_oneshot();
+#endif
+		if (prev ^ virtualmap.special_outputs)
+		{
+			prev = virtualmap.special_outputs;
+			if (stimuli)
+				fprintf(stimuli, "#%lu\n", tickcount);
+#if AXIS_COUNT > 0
+			printpin(STEP0);
+			printpin(DIR0);
+#endif
+#if AXIS_COUNT > 1
+			printpin(STEP1);
+			printpin(DIR1);
+#endif
+#if AXIS_COUNT > 2
+			printpin(STEP2);
+			printpin(DIR2);
+#endif
+#if AXIS_COUNT > 3
+			printpin(STEP3);
+			printpin(DIR3);
+#endif
+#if AXIS_COUNT > 4
+			printpin(STEP4);
+			printpin(DIR4);
+#endif
+#if AXIS_COUNT > 5
+			printpin(STEP5);
+			printpin(DIR5);
+#endif
+		}
+		if (tickcount > next_rtc)
+		{
+			mcu_rtc_cb(mcu_millis());
+			next_rtc += 1000;
+		}
+	}
+
+	//		startCycleCounter();
+	__atomic_store_n(&running, false, __ATOMIC_RELAXED);
+}
+#endif
+
+/**
+ * OTA emulation
+ */
+// void ota_server_start(void);
+#include "../../../modules/flash_update.h"
+	FILE *otafile;
+
+	size_t virtual_get_flash_size() { return 1000000; /*just to allow the upload*/ }
+
+	bool virtual_flash_begin(size_t filesize)
+	{
+		otafile = fopen("firmware_file", "wb+");
+		return (otafile != NULL);
+	}
+
+	size_t virtual_flash_write(uint8_t *data, size_t len)
+	{
+		return fwrite(data, len, 1, otafile);
+	}
+
+	bool virtual_flash_end(bool flush)
+	{
+		if (!otafile)
+			return false;
+		if (flush)
+			fflush(otafile);
+		fclose(otafile);
+		otafile = NULL;
+		return true;
+	}
+
+	void virtual_restart() {}
+
+	static flash_udpate_t virtual_flashupdate = {.get_flash_size = virtual_get_flash_size, .flash_begin = virtual_flash_begin, .flash_write = virtual_flash_write, .flash_end = virtual_flash_end, .device_restart = virtual_restart};
 
 	/* ----- MCU init and main ------------------------------------------------ */
 
+#ifndef PIO_UNIT_TESTING
 	static pthread_t thread_io;
+#endif
 	void mcu_usb_init() {}
 	void mcu_uart_init() {}
 	void mcu_uart2_init() {}
+	// emulate flash update
+
 	void mcu_network_init()
 	{
 #if defined(ENABLE_SOCKETS)
@@ -619,7 +1073,8 @@ extern "C"
 		socket_init();
 		extern socket_device_t wifi_socket;
 		socket_register_device(&wifi_socket);
-		ota_server_start();
+		// ota_server_start();
+		flash_update_register(&virtual_flashupdate);
 #endif
 	}
 
@@ -629,6 +1084,7 @@ extern "C"
 
 	void mcu_init(void)
 	{
+#ifndef PIO_UNIT_TESTING
 		char cwd[1024];
 		get_current_dir(cwd, 1024);
 		printf("%s\n", cwd);
@@ -647,16 +1103,23 @@ extern "C"
 		def_printpin(DIR3);
 		if (stimuli)
 			fprintf(stimuli, "$upscope $end\n$enddefinitions $end\n\n");
+#else
+	stimuli = NULL;
+#endif
 
 		virtualmap.special_outputs = 0;
 		virtualmap.special_inputs = 0;
 		virtualmap.inputs = 0;
 		virtualmap.outputs = 0;
 
+#ifndef PIO_UNIT_TESTING
 		start_timer(EMULATION_MS_TICK, &ticksimul);
 		pthread_create(&thread_io, NULL, &ioserver, NULL);
+#else
+	mcu_unit_test_clock_reset();
+#endif
 
-#ifdef MCU_HAS_UART
+#if defined(MCU_HAS_UART) && !defined(PIO_UNIT_TESTING)
 		serial_init();
 #endif
 
@@ -697,11 +1160,21 @@ extern "C"
 		BUFFER_INIT(uint8_t, bt_rx, RX_BUFFER_SIZE);
 #endif
 
+#ifdef PIO_UNIT_TESTING
+		BUFFER_INIT(uint8_t, unit_test_rx, RX_BUFFER_SIZE);
+		mcu_unit_test_buffer_clear();
+		grbl_stream_register(&unit_test_grbl_stream);
+#endif
+
 		mcu_enable_global_isr();
+#ifndef PIO_UNIT_TESTING
 		flash_fs_init();
-		ota_server_start();
+		// ota_server_start();
+		flash_update_register(&virtual_flashupdate);
+#endif
 	}
 
+#ifndef PIO_UNIT_TESTING
 	int main(int argc, char **argv)
 	{
 		(void)argc;
@@ -713,6 +1186,7 @@ extern "C"
 		}
 		return 0;
 	}
+#endif
 
 	/* HAL oddities/compat */
 	uint8_t itp_set_step_mode(uint8_t mode)
@@ -731,78 +1205,78 @@ extern "C"
 	void nvm_end_read(void) {}
 	void nvm_end_write(void) { mcu_eeprom_flush(); }
 
-/**
- * Emulate OTA page
- */
-#ifndef OTA_URI
-#define OTA_URI "/update"
-#endif
+	/**
+	 * Emulate OTA page
+	 */
+	// #ifndef OTA_URI
+	// #define OTA_URI "/update"
+	// #endif
 
-#include "../../../modules/net/http.h"
-	// HTML form for firmware upload (simplified from ESP8266HTTPUpdateServer)
-	// Request handler for GET /update
-	static void ota_page_cb(int client_idx)
-	{
-		const char fmt[] = "text/html";
-		const char updateForm[] =
-			"<!DOCTYPE html><html><body>"
-			"<form method='POST' action='" OTA_URI "' enctype='multipart/form-data'>"
-			"Firmware:<br><input type='file' name='firmware'>"
-			"<input type='submit' value='Update'>"
-			"</form></body></html>";
-		http_send_header(client_idx, "Cache-Control", "no-cache", false);
-		http_send_header(client_idx, "Cache-Control", "max-age=300", false);
-		http_send_str(client_idx, 200, (char *)fmt, (char *)updateForm);
-		http_send(client_idx, 200, (char *)fmt, NULL, 0);
-	}
+	// #include "../../../modules/net/http.h"
+	// 	// HTML form for firmware upload (simplified from ESP8266HTTPUpdateServer)
+	// 	// Request handler for GET /update
+	// 	static void ota_page_cb(int client_idx)
+	// 	{
+	// 		const char fmt[] = "text/html";
+	// 		const char updateForm[] =
+	// 			"<!DOCTYPE html><html><body>"
+	// 			"<form method='POST' action='" OTA_URI "' enctype='multipart/form-data'>"
+	// 			"Firmware:<br><input type='file' name='firmware'>"
+	// 			"<input type='submit' value='Update'>"
+	// 			"</form></body></html>";
+	// 		http_send_header(client_idx, "Cache-Control", "no-cache", false);
+	// 		http_send_header(client_idx, "Cache-Control", "max-age=300", false);
+	// 		http_send_str(client_idx, 200, (char *)fmt, (char *)updateForm);
+	// 		http_send(client_idx, 200, (char *)fmt, NULL, 0);
+	// 	}
 
-	FILE *otafile;
+	// 	FILE *otafile;
 
-	// File upload handler for POST /update
-	static void ota_upload_cb(int client_idx)
-	{
-		http_upload_t up = http_file_upload_status(client_idx);
-		static uint32_t received_bytes = 0;
+	// 	// File upload handler for POST /update
+	// 	static void ota_upload_cb(int client_idx)
+	// 	{
+	// 		http_upload_t up = http_file_upload_status(client_idx);
+	// 		static uint32_t received_bytes = 0;
 
-		if (up.status == HTTP_UPLOAD_START)
-		{
-			otafile = fopen(up.filename, "wb+");
-			// Called once at start of upload
-			printf("Update start: %s\n", up.filename);
-			received_bytes = 0;
-		}
-		else if (up.status == HTTP_UPLOAD_PART)
-		{
-			// Called for each chunk
-			fwrite(up.data, up.datalen, 1, otafile);
-			received_bytes += up.datalen;
-			printf("Writing data: %u/%u/%u bytes\r\n", up.datalen, received_bytes, up.filelen);
-		}
-		else if (up.status == HTTP_UPLOAD_END)
-		{
-			fflush(otafile);
-			fclose(otafile);
-			otafile = NULL;
-			const char fmt[] = "text/plain";
-			printf("Update Success: %u/%u bytes\r\n", received_bytes, up.filelen);
-			const char suc[] = "Update Success! Rebooting...";
-			http_send_str(client_idx, 200, (char *)fmt, (char *)suc);
-			http_send(client_idx, 200, (char *)fmt, NULL, 0);
-		}
-		else if (up.status == HTTP_UPLOAD_ABORT)
-		{
-			fflush(otafile);
-			fclose(otafile);
-			otafile = NULL;
-			printf("Update aborted\r\n");
-		}
-	}
+	// 		if (up.status == HTTP_UPLOAD_START)
+	// 		{
+	// 			otafile = fopen(up.filename, "wb+");
+	// 			// Called once at start of upload
+	// 			printf("Update start: %s\n", up.filename);
+	// 			received_bytes = 0;
+	// 		}
+	// 		else if (up.status == HTTP_UPLOAD_PART)
+	// 		{
+	// 			// Called for each chunk
+	// 			fwrite(up.data, up.datalen, 1, otafile);
+	// 			received_bytes += up.datalen;
+	// 			printf("Writing data: %u/%u/%u bytes\r\n", up.datalen, received_bytes, up.filelen);
+	// 		}
+	// 		else if (up.status == HTTP_UPLOAD_END)
+	// 		{
+	// 			fflush(otafile);
+	// 			fclose(otafile);
+	// 			otafile = NULL;
+	// 			const char fmt[] = "text/plain";
+	// 			printf("Update Success: %u/%u bytes\r\n", received_bytes, up.filelen);
+	// 			const char suc[] = "Update Success! Rebooting...";
+	// 			http_send_str(client_idx, 200, (char *)fmt, (char *)suc);
+	// 			http_send(client_idx, 200, (char *)fmt, NULL, 0);
+	// 		}
+	// 		else if (up.status == HTTP_UPLOAD_ABORT)
+	// 		{
+	// 			fflush(otafile);
+	// 			fclose(otafile);
+	// 			otafile = NULL;
+	// 			printf("Update aborted\r\n");
+	// 		}
+	// 	}
 
-	void ota_server_start(void)
-	{
-		LOAD_MODULE(http_server);
-		http_add(OTA_URI, HTTP_REQ_ANY, ota_page_cb, ota_upload_cb);
-	}
+	// 	void ota_server_start(void)
+	// 	{
+	// 		LOAD_MODULE(http_server);
+	// 		http_add(OTA_URI, HTTP_REQ_ANY, ota_page_cb, ota_upload_cb);
+	// 	}
 
 #ifdef __cplusplus
 }

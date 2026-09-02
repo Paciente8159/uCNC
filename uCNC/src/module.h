@@ -27,8 +27,7 @@ extern "C"
 
 #include <stdint.h>
 #include <stdbool.h>
-
-#define UCNC_MODULE_VERSION 11700
+#include "cnc_build.h"
 
 #define EVENT_CONTINUE false
 #define EVENT_HANDLED true

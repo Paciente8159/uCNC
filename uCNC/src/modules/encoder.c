@@ -194,7 +194,7 @@ static uint16_t encoders_rpm[ENCODERS];
 #define ENC0_FREQ 400000
 #endif
 #ifndef ENC0_READ
-#define ENC0_READ read_encoder_mt6701_i2c(&enc0)
+#define ENC0_READ() read_encoder_mt6701_i2c(&enc0)
 #endif
 #elif ENC0_TYPE == ENC_TYPE_SSI
 #define ENC0_IO_MASK 0
@@ -202,12 +202,13 @@ static uint16_t encoders_rpm[ENCODERS];
 #define ENC0_FREQ 15000000
 #endif
 #ifndef ENC0_READ
-#define ENC0_READ read_encoder_mt6701_ssi(&enc0)
+#define ENC0_READ() read_encoder_mt6701_ssi(&enc0)
 #endif
 #elif ENC0_TYPE == ENC_TYPE_CUSTOM
 #define ENC0_IO_MASK 0
 #ifndef ENC0_READ
-#define ENC0_READ enc_custom_read(ENC0)
+extern int32_t enc_custom_read_enc0(void); // custom encoder read callback will be defined in by a user/custom module
+#define ENC0_READ() enc_custom_read_enc0()
 #endif
 #endif
 #endif
@@ -228,18 +229,19 @@ static uint16_t encoders_rpm[ENCODERS];
 #define ENC1_FREQ 400000
 #endif
 #ifndef ENC1_READ
-#define ENC1_READ read_encoder_mt6701_i2c(&enc1)
+#define ENC1_READ() read_encoder_mt6701_i2c(&enc1)
 #endif
 #elif ENC1_TYPE == ENC_TYPE_SSI
 #ifndef ENC1_FREQ
 #define ENC1_FREQ 15000000
 #endif
 #ifndef ENC1_READ
-#define ENC1_READ read_encoder_mt6701_ssi(&enc1)
+#define ENC1_READ() read_encoder_mt6701_ssi(&enc1)
 #endif
 #elif ENC1_TYPE == ENC_TYPE_CUSTOM
 #ifndef ENC1_READ
-#define ENC1_READ enc_custom_read(ENC1)
+extern int32_t enc_custom_read_enc1(void); // custom encoder read callback will be defined in by a user/custom module
+#define ENC1_READ() enc_custom_read_enc1()
 #endif
 #endif
 #endif
@@ -260,18 +262,19 @@ static uint16_t encoders_rpm[ENCODERS];
 #define ENC2_FREQ 400000
 #endif
 #ifndef ENC2_READ
-#define ENC2_READ read_encoder_mt6701_i2c(&enc2)
+#define ENC2_READ() read_encoder_mt6701_i2c(&enc2)
 #endif
 #elif ENC2_TYPE == ENC_TYPE_SSI
 #ifndef ENC2_FREQ
 #define ENC2_FREQ 15000000
 #endif
 #ifndef ENC2_READ
-#define ENC2_READ read_encoder_mt6701_ssi(&enc2)
+#define ENC2_READ() read_encoder_mt6701_ssi(&enc2)
 #endif
 #elif ENC2_TYPE == ENC_TYPE_CUSTOM
 #ifndef ENC2_READ
-#define ENC2_READ enc_custom_read(ENC2)
+extern int32_t enc_custom_read_enc2(void); // custom encoder read callback will be defined in by a user/custom module
+#define ENC2_READ() enc_custom_read_enc2()
 #endif
 #endif
 #endif
@@ -292,18 +295,19 @@ static uint16_t encoders_rpm[ENCODERS];
 #define ENC3_FREQ 400000
 #endif
 #ifndef ENC3_READ
-#define ENC3_READ read_encoder_mt6701_i2c(&enc3)
+#define ENC3_READ() read_encoder_mt6701_i2c(&enc3)
 #endif
 #elif ENC3_TYPE == ENC_TYPE_SSI
 #ifndef ENC3_FREQ
 #define ENC3_FREQ 15000000
 #endif
 #ifndef ENC3_READ
-#define ENC3_READ read_encoder_mt6701_ssi(&enc3)
+#define ENC3_READ() read_encoder_mt6701_ssi(&enc3)
 #endif
 #elif ENC3_TYPE == ENC_TYPE_CUSTOM
 #ifndef ENC3_READ
-#define ENC3_READ enc_custom_read(ENC3)
+extern int32_t enc_custom_read_enc3(void); // custom encoder read callback will be defined in by a user/custom module
+#define ENC3_READ() enc_custom_read_enc3()
 #endif
 #endif
 #endif
@@ -324,18 +328,19 @@ static uint16_t encoders_rpm[ENCODERS];
 #define ENC4_FREQ 400000
 #endif
 #ifndef ENC4_READ
-#define ENC4_READ read_encoder_mt6701_i2c(&enc4)
+#define ENC4_READ() read_encoder_mt6701_i2c(&enc4)
 #endif
 #elif ENC4_TYPE == ENC_TYPE_SSI
 #ifndef ENC4_FREQ
 #define ENC4_FREQ 15000000
 #endif
 #ifndef ENC4_READ
-#define ENC4_READ read_encoder_mt6701_ssi(&enc4)
+#define ENC4_READ() read_encoder_mt6701_ssi(&enc4)
 #endif
 #elif ENC4_TYPE == ENC_TYPE_CUSTOM
 #ifndef ENC4_READ
-#define ENC4_READ enc_custom_read(ENC4)
+extern int32_t enc_custom_read_enc4(void); // custom encoder read callback will be defined in by a user/custom module
+#define ENC4_READ() enc_custom_read_enc4()
 #endif
 #endif
 #endif
@@ -356,18 +361,19 @@ static uint16_t encoders_rpm[ENCODERS];
 #define ENC5_FREQ 400000
 #endif
 #ifndef ENC5_READ
-#define ENC5_READ read_encoder_mt6701_i2c(&enc5)
+#define ENC5_READ() read_encoder_mt6701_i2c(&enc5)
 #endif
 #elif ENC5_TYPE == ENC_TYPE_SSI
 #ifndef ENC5_FREQ
 #define ENC5_FREQ 15000000
 #endif
 #ifndef ENC5_READ
-#define ENC5_READ read_encoder_mt6701_ssi(&enc5)
+#define ENC5_READ() read_encoder_mt6701_ssi(&enc5)
 #endif
 #elif ENC5_TYPE == ENC_TYPE_CUSTOM
 #ifndef ENC5_READ
-#define ENC5_READ enc_custom_read(ENC5)
+extern int32_t enc_custom_read_enc5(void); // custom encoder read callback will be defined in by a user/custom module
+#define ENC5_READ() enc_custom_read_enc5()
 #endif
 #endif
 #endif
@@ -388,18 +394,19 @@ static uint16_t encoders_rpm[ENCODERS];
 #define ENC6_FREQ 400000
 #endif
 #ifndef ENC6_READ
-#define ENC6_READ read_encoder_mt6701_i2c(&enc6)
+#define ENC6_READ() read_encoder_mt6701_i2c(&enc6)
 #endif
 #elif ENC6_TYPE == ENC_TYPE_SSI
 #ifndef ENC6_FREQ
 #define ENC6_FREQ 15000000
 #endif
 #ifndef ENC6_READ
-#define ENC6_READ read_encoder_mt6701_ssi(&enc6)
+#define ENC6_READ() read_encoder_mt6701_ssi(&enc6)
 #endif
 #elif ENC6_TYPE == ENC_TYPE_CUSTOM
 #ifndef ENC6_READ
-#define ENC6_READ enc_custom_read(ENC6)
+extern int32_t enc_custom_read_enc6(void); // custom encoder read callback will be defined in by a user/custom module
+#define ENC6_READ() enc_custom_read_enc6()
 #endif
 #endif
 #endif
@@ -420,18 +427,19 @@ static uint16_t encoders_rpm[ENCODERS];
 #define ENC7_FREQ 400000
 #endif
 #ifndef ENC7_READ
-#define ENC7_READ read_encoder_mt6701_i2c(&enc7)
+#define ENC7_READ() read_encoder_mt6701_i2c(&enc7)
 #endif
 #elif ENC7_TYPE == ENC_TYPE_SSI
 #ifndef ENC7_FREQ
 #define ENC7_FREQ 15000000
 #endif
 #ifndef ENC7_READ
-#define ENC7_READ read_encoder_mt6701_ssi(&enc7)
+#define ENC7_READ() read_encoder_mt6701_ssi(&enc7)
 #endif
 #elif ENC7_TYPE == ENC_TYPE_CUSTOM
 #ifndef ENC7_READ
-#define ENC7_READ enc_custom_read(ENC7)
+extern int32_t enc_custom_read_enc7(void); // custom encoder read callback will be defined in by a user/custom module
+#define ENC7_READ() enc_custom_read_enc7()
 #endif
 #endif
 #endif
@@ -662,42 +670,42 @@ static void encoder_set_position_from_current_read(uint8_t i, int32_t position)
 	{
 #ifdef ENC0_READ
 	case ENC0:
-		encoder_read = ENC0_READ;
+		encoder_read = ENC0_READ();
 		break;
 #endif
 #ifdef ENC1_READ
 	case ENC1:
-		encoder_read = ENC1_READ;
+		encoder_read = ENC1_READ();
 		break;
 #endif
 #ifdef ENC2_READ
 	case ENC2:
-		encoder_read = ENC2_READ;
+		encoder_read = ENC2_READ();
 		break;
 #endif
 #ifdef ENC3_READ
 	case ENC3:
-		encoder_read = ENC3_READ;
+		encoder_read = ENC3_READ();
 		break;
 #endif
 #ifdef ENC4_READ
 	case ENC4:
-		encoder_read = ENC4_READ;
+		encoder_read = ENC4_READ();
 		break;
 #endif
 #ifdef ENC5_READ
 	case ENC5:
-		encoder_read = ENC5_READ;
+		encoder_read = ENC5_READ();
 		break;
 #endif
 #ifdef ENC6_READ
 	case ENC6:
-		encoder_read = ENC6_READ;
+		encoder_read = ENC6_READ();
 		break;
 #endif
 #ifdef ENC7_READ
 	case ENC7:
-		encoder_read = ENC7_READ;
+		encoder_read = ENC7_READ();
 		break;
 #endif
 	default:
@@ -1487,7 +1495,7 @@ void encoders_update(uint8_t pulse, uint8_t diff)
 		encoders_tstamp[ENC0][1] = encoders_tstamp[ENC0][0];
 		encoders_tstamp[ENC0][0] = micros;
 #endif
-		enc0_pulse();
+		ENC0_PULSE_EVENT();
 #if (defined(ENC0_INDEX) && !ENC0_VIRTUAL_INDEX_ONLY && (ENC0_INDEX_IO_MASK == 0))
 		if (io_get_input(ENC0_INDEX))
 		{
@@ -1512,7 +1520,7 @@ void encoders_update(uint8_t pulse, uint8_t diff)
 		encoders_tstamp[ENC1][1] = encoders_tstamp[ENC1][0];
 		encoders_tstamp[ENC1][0] = micros;
 #endif
-		enc1_pulse();
+		ENC1_PULSE_EVENT();
 #if (defined(ENC1_INDEX) && !ENC1_VIRTUAL_INDEX_ONLY && (ENC1_INDEX_IO_MASK == 0))
 		if (io_get_input(ENC1_INDEX))
 		{
@@ -1537,7 +1545,7 @@ void encoders_update(uint8_t pulse, uint8_t diff)
 		encoders_tstamp[ENC2][1] = encoders_tstamp[ENC2][0];
 		encoders_tstamp[ENC2][0] = micros;
 #endif
-		enc2_pulse();
+		ENC2_PULSE_EVENT();
 #if (defined(ENC2_INDEX) && !ENC2_VIRTUAL_INDEX_ONLY && (ENC2_INDEX_IO_MASK == 0))
 		if (io_get_input(ENC2_INDEX))
 		{
@@ -1562,7 +1570,7 @@ void encoders_update(uint8_t pulse, uint8_t diff)
 		encoders_tstamp[ENC3][1] = encoders_tstamp[ENC3][0];
 		encoders_tstamp[ENC3][0] = micros;
 #endif
-		enc3_pulse();
+		ENC3_PULSE_EVENT();
 #if (defined(ENC3_INDEX) && !ENC3_VIRTUAL_INDEX_ONLY && (ENC3_INDEX_IO_MASK == 0))
 		if (io_get_input(ENC3_INDEX))
 		{
@@ -1587,7 +1595,7 @@ void encoders_update(uint8_t pulse, uint8_t diff)
 		encoders_tstamp[ENC4][1] = encoders_tstamp[ENC4][0];
 		encoders_tstamp[ENC4][0] = micros;
 #endif
-		enc4_pulse();
+		ENC4_PULSE_EVENT();
 #if (defined(ENC4_INDEX) && !ENC4_VIRTUAL_INDEX_ONLY && (ENC4_INDEX_IO_MASK == 0))
 		if (io_get_input(ENC4_INDEX))
 		{
@@ -1612,7 +1620,7 @@ void encoders_update(uint8_t pulse, uint8_t diff)
 		encoders_tstamp[ENC5][1] = encoders_tstamp[ENC5][0];
 		encoders_tstamp[ENC5][0] = micros;
 #endif
-		enc5_pulse();
+		ENC5_PULSE_EVENT();
 #if (defined(ENC5_INDEX) && !ENC5_VIRTUAL_INDEX_ONLY && (ENC5_INDEX_IO_MASK == 0))
 		if (io_get_input(ENC5_INDEX))
 		{
@@ -1637,7 +1645,7 @@ void encoders_update(uint8_t pulse, uint8_t diff)
 		encoders_tstamp[ENC6][1] = encoders_tstamp[ENC6][0];
 		encoders_tstamp[ENC6][0] = micros;
 #endif
-		enc6_pulse();
+		ENC6_PULSE_EVENT();
 #if (defined(ENC6_INDEX) && !ENC6_VIRTUAL_INDEX_ONLY && (ENC6_INDEX_IO_MASK == 0))
 		if (io_get_input(ENC6_INDEX))
 		{
@@ -1662,7 +1670,7 @@ void encoders_update(uint8_t pulse, uint8_t diff)
 		encoders_tstamp[ENC7][1] = encoders_tstamp[ENC7][0];
 		encoders_tstamp[ENC7][0] = micros;
 #endif
-		enc7_pulse();
+		ENC7_PULSE_EVENT();
 #if (defined(ENC7_INDEX) && !ENC7_VIRTUAL_INDEX_ONLY && (ENC7_INDEX_IO_MASK == 0))
 		if (io_get_input(ENC7_INDEX))
 		{
@@ -1801,7 +1809,7 @@ static void encoder_update(uint8_t i)
 	{
 #ifdef ENC0_READ // enc0 has custom read
 	case ENC0:
-		encoder_read = ENC0_READ;
+		encoder_read = ENC0_READ();
 #ifdef ENC0_IS_INCREMENTAL
 		incremental = true;
 #endif
@@ -1809,7 +1817,7 @@ static void encoder_update(uint8_t i)
 #endif
 #ifdef ENC1_READ // enc1 has custom read
 	case ENC1:
-		encoder_read = ENC1_READ;
+		encoder_read = ENC1_READ();
 #ifdef ENC1_IS_INCREMENTAL
 		incremental = true;
 #endif
@@ -1817,7 +1825,7 @@ static void encoder_update(uint8_t i)
 #endif
 #ifdef ENC2_READ // enc2 has custom read
 	case ENC2:
-		encoder_read = ENC2_READ;
+		encoder_read = ENC2_READ();
 #ifdef ENC2_IS_INCREMENTAL
 		incremental = true;
 #endif
@@ -1825,7 +1833,7 @@ static void encoder_update(uint8_t i)
 #endif
 #ifdef ENC3_READ // enc3 has custom read
 	case ENC3:
-		encoder_read = ENC3_READ;
+		encoder_read = ENC3_READ();
 #ifdef ENC3_IS_INCREMENTAL
 		incremental = true;
 #endif
@@ -1833,7 +1841,7 @@ static void encoder_update(uint8_t i)
 #endif
 #ifdef ENC4_READ // enc4 has custom read
 	case ENC4:
-		encoder_read = ENC4_READ;
+		encoder_read = ENC4_READ();
 #ifdef ENC4_IS_INCREMENTAL
 		incremental = true;
 #endif
@@ -1841,7 +1849,7 @@ static void encoder_update(uint8_t i)
 #endif
 #ifdef ENC5_READ // enc5 has custom read
 	case ENC5:
-		encoder_read = ENC5_READ;
+		encoder_read = ENC5_READ();
 #ifdef ENC5_IS_INCREMENTAL
 		incremental = true;
 #endif
@@ -1849,7 +1857,7 @@ static void encoder_update(uint8_t i)
 #endif
 #ifdef ENC6_READ // enc6 has custom read
 	case ENC6:
-		encoder_read = ENC6_READ;
+		encoder_read = ENC6_READ();
 #ifdef ENC6_IS_INCREMENTAL
 		incremental = true;
 #endif
@@ -1857,7 +1865,7 @@ static void encoder_update(uint8_t i)
 #endif
 #ifdef ENC7_READ // enc7 has custom read
 	case ENC7:
-		encoder_read = ENC7_READ;
+		encoder_read = ENC7_READ();
 #ifdef ENC7_IS_INCREMENTAL
 		incremental = true;
 #endif
@@ -2110,8 +2118,5 @@ DECL_MODULE(encoder)
 #endif
 #endif
 }
-
-// allow custom encoder implementations
-int32_t __attribute__((weak)) enc_custom_read(uint8_t i) { return 0; }
 
 #endif
