@@ -57,13 +57,13 @@ static void startup_code(void)
 	io_config_pwm(LASER_PWM, LASER_FREQ);
 	io_set_pwm(LASER_PWM, 0);
 #endif
-	g_settings.tool_mode = PWM_VARPOWER_MODE;
+	tool_set_mode(PWM_VARPOWER_MODE);
 }
 
 static void shutdown_code(void)
 {
 	// restore laser mode
-	g_settings.tool_mode = UNDEF_MODE;
+	tool_reset_mode();
 }
 
 static void set_speed(int16_t value)

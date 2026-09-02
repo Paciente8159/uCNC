@@ -123,6 +123,10 @@ extern "C"
 #define GRBL_CMD_MAX_LEN 32
 #endif
 
+#ifndef MAX_LINE_NUMBER
+#define MAX_LINE_NUMBER 10000000
+#endif
+
 // group masks
 #define GCODE_GROUP_MOTION 0x0001
 #define GCODE_GROUP_PLANE 0x0002
@@ -182,13 +186,14 @@ extern "C"
 #define GCODE_JKPLANE_AXIS (GCODE_YZPLANE_AXIS << 8)
 #define GCODE_XYZ_AXIS (GCODE_WORD_X | GCODE_WORD_Y | GCODE_WORD_Z)
 #define GCODE_IJK_AXIS (GCODE_WORD_I | GCODE_WORD_J | GCODE_WORD_K)
+#define GCODE_LPR (GCODE_WORD_L|GCODE_WORD_P|GCODE_WORD_R)
 
-#define UNDEF_MODE 0
-#define PWM_VARPOWER_MODE 1
-#define PPI_MODE 2
-#define PPI_VARPOWER_MODE 4
-#define PLASMA_THC_MODE 8
-#define EMBROIDERY_MODE 16
+#define SPINDLE_MODE 0					 // if the tool is not defined it will return as spindle mode
+#define PWM_VARPOWER_MODE 1				 // PWM variable mode will scale the tool power with M4 active
+#define PPI_MODE 2						 // Enables Pulse Per Inch modulation signal
+#define PPI_VARPOWER_MODE 4				 // Will modify the PPI pulse width
+#define PLASMA_THC_MODE 8				 // Enables Plasma THC mode
+#define EMBROIDERY_MODE 16				 // Enables Embroidery mode
 
 #ifdef ENABLE_RS274NGC_EXPRESSIONS
 #ifndef RS274NGC_MAX_USER_VARS
@@ -290,7 +295,9 @@ extern "C"
 		uint16_t groups;
 		uint16_t words;
 		int16_t group_extended;
-		uint8_t group_0_1_useaxis;
+		uint8_t group_0_1_useaxis:1;
+		uint8_t is_jog:1;
+		uint8_t dry_run:1;
 	} parser_cmd_explicit_t;
 
 	typedef struct
@@ -313,7 +320,8 @@ extern "C"
 	} parser_state_t;
 
 	void parser_init(void);
-	uint8_t parser_read_command(void);
+	uint8_t parser_run_command(void);
+	uint8_t parser_dry_run_command(void);
 	void parser_get_modes(uint8_t *modalgroups, uint16_t *feed, uint16_t *spindle);
 	void parser_get_coordsys(uint8_t system_num, float *axis);
 	bool parser_get_wco(float *axis);

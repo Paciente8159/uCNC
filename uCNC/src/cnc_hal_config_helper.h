@@ -387,6 +387,8 @@ extern "C"
 #endif
 #endif
 
+
+
 #ifdef ABC_INDEP_FEED_CALC
 #ifdef ENABLE_LINACT_PLANNER
 #undef ENABLE_LINACT_PLANNER
@@ -2394,6 +2396,13 @@ typedef uint16_t step_t;
 #endif
 #endif
 
+#ifdef ENABLE_LATHE
+// forces modes
+#ifndef MOTION_SEGMENTED
+#define MOTION_SEGMENTED
+#endif
+#endif
+
 #ifdef ENABLE_PLASMA_THC
 // forces modes
 #ifndef ENABLE_TOOL_PID_CONTROLLER
@@ -2436,6 +2445,22 @@ typedef uint16_t step_t;
 #ifdef ENABLE_GRBL_STYLE_HOMING
 // forces a long cycle
 #define ENABLE_LONG_HOMING_CYCLE
+#endif
+
+/*static IP definitions for network interfaces*/
+#ifdef USE_STATIC_IP
+#ifndef STATIC_IP_IP
+// 192.168.1.200
+#define STATIC_IP_IP 3355551936
+#endif
+#ifndef STATIC_IP_GW
+// 192.168.1.1
+#define STATIC_IP_GW 16885952
+#endif
+#ifndef STATIC_IP_SUB
+// 255.255.255.0
+#define STATIC_IP_SUB 16777215
+#endif
 #endif
 
 #include "hal/io_hal.h"

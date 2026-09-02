@@ -23,6 +23,12 @@
 #include <math.h>
 #include <float.h>
 
+#ifdef ENABLE_PLANNER_DEBUG
+#define DBGLOG DBGMSG
+#else
+#define DBGLOG(fmt, ...) ((void)0)
+#endif
+
 static planner_block_t planner_data[PLANNER_BUFFER_SIZE];
 static uint8_t planner_data_write;
 static volatile uint8_t planner_data_read;
@@ -188,6 +194,7 @@ void planner_add_line(motion_data_t *block_data)
 
 	// advances the buffer
 	planner_add_block();
+	DBGLOG("[PLANNER] block added idx=%hu blocks=%hu cos_theta=%.3f entry_max=%.3f", index, planner_data_blocks, cos_theta, planner_data[index].entry_max_feed_sqr);
 }
 
 /*
@@ -247,6 +254,7 @@ void planner_discard_block(void)
 
 	// syncs blocks feedrates
 	planner_data[index].entry_feed_sqr = planner_data[prev_index].entry_feed_sqr;
+	memset(&planner_data[prev_index], 0, sizeof(planner_data[prev_index]));
 
 	blocks--;
 #if TOOL_COUNT > 0
@@ -259,6 +267,7 @@ void planner_discard_block(void)
 
 	planner_data_blocks = blocks;
 	planner_data_read = index;
+	DBGLOG("[PLANNER] block discarded read=%hu blocks=%hu", index, blocks);
 }
 
 static uint8_t planner_buffer_next(uint8_t index)
@@ -447,7 +456,7 @@ int16_t planner_get_spindle_speed(float scale)
 	{
 		float scaled_spindle = (float)g_planner_state.spindle_speed;
 		bool neg = (g_planner_state.state_flags.bit.spindle_running == 2);
-		if ((g_settings.tool_mode & PWM_VARPOWER_MODE) && neg) // scales pwm power only if invert is active (M4)
+		if ((tool_get_mode() & PWM_VARPOWER_MODE) && neg) // scales pwm power only if invert is active (M4)
 		{
 			scaled_spindle *= scale; // scale calculated in laser mode (otherwise scale is always 1)
 		}
@@ -470,6 +479,8 @@ static void planner_recalculate(void)
 	uint8_t last = planner_data_write;
 	uint8_t first = planner_data_read;
 	uint8_t block = last;
+
+	DBGLOG("[PLANNER] recalc first=%hu last=%hu blocks=%hu", first, last, planner_data_blocks);
 
 	// starts in the last added block
 	// calculates the maximum entry speed of the block so that it can do a full stop in the end

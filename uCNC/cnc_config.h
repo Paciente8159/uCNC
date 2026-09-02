@@ -35,8 +35,8 @@ extern "C"
 #define BAUDRATE 115200
 #endif
 
-#ifndef ENABLE_WIFI
-// #define ENABLE_WIFI
+#ifndef ENABLE_SOCKETS
+// #define ENABLE_SOCKETS
 #endif
 
 #ifndef ENABLE_BLUETOOTH
@@ -267,6 +267,13 @@ extern "C"
  *
  */
 //  #define ENABLE_EMBROIDERY
+
+/**
+ *
+ * Uncomment to enable lathe features
+ *
+ */
+//   #define ENABLE_LATHE
 
 /**
  * Feed overrides increments and percentage ranges
@@ -654,10 +661,12 @@ extern "C"
 	 * 0 - disables
 	 * 1 - partially emulates the startup message and prints unused settings to improve compatibility
 	 * 2 - full emulation of the grbl startup and info messages (this also makes command $IE available to print the firmware information in extended format)
-	 * 3 - **New** drops ESTOP behaviour µCNC shutdown locking for a more similar Grbl behavior
+	 * 3 - **New** drops ESTOP behaviour µCNC shutdown locking for a more similar Grbl behavior. $# parsing while in motion will also be blocked with error:8 like Grbl i
 	 * */
 
+#ifndef EMULATE_GRBL_STARTUP
 #define EMULATE_GRBL_STARTUP 2
+#endif
 
 	/**
 	 * Enable advanced Grbl states.

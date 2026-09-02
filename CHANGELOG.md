@@ -6,6 +6,21 @@
 
 # Changelog
 
+## [1.16.6] - 23-07-2026
+
+[@nakanotakuo](https://github.com/nakanotakuo)	- added MKS Monster8 V2 board configuration (#976) and fixes (#971)(#974) and (#975)
+
+### Added
+
+- added MKS Monster8 V2 board configuration (#976)
+
+### Fixed
+
+- Fixed AVR limits ISR mapping (#971)
+- Fixed IO control conditional filter assertion (#973)
+- Fixed planner compilation with FORCE_GLOBALS_TO_0 (#974)
+- Forced default settings values to be loaded on EEPROM read fail (#975)
+
 ## [1.16.5] - 03-06-2026
 
 ### Fixed

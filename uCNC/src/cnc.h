@@ -72,7 +72,7 @@ extern "C"
 #define EXEC_HOMING_HIT (EXEC_HOMING | EXEC_LIMITS)								 // Limit switch is active during a homing motion
 #define EXEC_INTERLOCKING_FAIL (EXEC_LIMITS | EXEC_KILL)						 // Interlocking check failed
 #define EXEC_ALARM (EXEC_POSITION_MAYBE_LOST | EXEC_INTERLOCKING_FAIL)			 // System alarms
-#define EXEC_STOPPING (EXEC_DOOR | EXEC_HOLD | EXEC_CANCELING)								 // performs a controlled stop
+#define EXEC_STOPPING (EXEC_DOOR | EXEC_HOLD | EXEC_CANCELING)					 // performs a controlled stop
 #define EXEC_RUNNING (EXEC_RUN | EXEC_RESUMING)									 // System running
 #define EXEC_MOTIONS (EXEC_RUNNING | EXEC_STOPPING | EXEC_DWELL | EXEC_PROBING)	 // Any motion state
 #define EXEC_SPECIAL_MOTIONS (EXEC_JOG | EXEC_HOMING | EXEC_PROBING | EXEC_DOOR) // Special motion modes
@@ -142,6 +142,12 @@ extern "C"
 #include "core/planner.h"
 #include "core/interpolator.h"
 #include "modules/encoder.h"
+#ifdef ENABLE_SOCKETS
+#include "modules/net/socket.h"
+#include "modules/net/telnet.h"
+#include "modules/net/websocket.h"
+#include "modules/net/http.h"
+#endif
 
 	/**
 	 *
@@ -155,7 +161,16 @@ extern "C"
 	extern bool cnc_status_report_lock;
 
 	void cnc_init(void);
+	void cnc_network_init(void);
 	void cnc_run(void);
+#ifdef PIO_UNIT_TESTING
+	/*
+	 * Deterministic host-test driver. The test owns the call sequence, so no
+	 * controller thread or endless main loop is needed.
+	 */
+	void cnc_unit_test_start(void);
+	bool cnc_unit_test_run_once(void);
+#endif
 	// do events returns true if all OK and false if an ABORT alarm is reached
 	bool cnc_dotasks(void);
 	uint8_t cnc_home(void);
@@ -180,6 +195,9 @@ extern "C"
 	void cnc_clear_exec_state(uint16_t statemask);
 	void cnc_call_rt_command(uint8_t command);
 	uint8_t cnc_get_status(void);
+#ifdef ENABLE_SOCKETS
+	void cnc_network_init(void); //initializes the network interface
+#endif
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
 	// generates a default delegate, event and handler hook
