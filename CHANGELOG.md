@@ -6,6 +6,25 @@
 
 # Changelog
 
+## [1.17.0] - 02-09-2026
+
+### Added
+
+- new network TCP socket based API. This new API provides a common Telnet/WebSocket/Http and raw socket implementation exposing an hardware API backend that can be implemented using LwIP/BSD/other network libraries. (#923) (#982) (#984) (#983)
+- added new unity tests suite to perform some compliance Grbl protocol checkings. These unity tests are also executed on commits and PR merging checks (#988)
+- new motion segmentation strategies an new Lathe motion mode to allow iter-dependent axis/spindle non-linear motions (#966)
+
+### Changed
+
+- reworked initialization calls to align Debug streams, settings loading, network initialization and server listeners startup (#980)
+- minor changes to the encoder module to allow hardware independency on all encoders (#977)
+
+### Fixed
+
+- fixed STM32 PIO build issues due to deleted/erased versions of certain framework packets (#989)
+- fixed ESP8266 wifi random crash due to WiFi task starving (#984)
+
+
 ## [1.16.6] - 23-07-2026
 
 [@nakanotakuo](https://github.com/nakanotakuo)	- added MKS Monster8 V2 board configuration (#976) and fixes (#971)(#974) and (#975)
@@ -2115,6 +2134,12 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.17.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.17.0
+[1.16.6]: https://github.com/Paciente8159/uCNC/releases/tag/v1.16.6
+[1.16.5]: https://github.com/Paciente8159/uCNC/releases/tag/v1.16.5
+[1.16.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.16.4
+[1.16.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.16.3
+[1.16.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.16.2
 [1.16.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.16.1
 [1.16.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.16.0
 [1.15.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.15.0
