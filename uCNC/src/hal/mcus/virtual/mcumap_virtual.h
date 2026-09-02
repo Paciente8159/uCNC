@@ -478,6 +478,11 @@ extern volatile VIRTUAL_MAP virtualmap;
 #ifndef ENABLE_PARSER_MODULES
 #define ENABLE_PARSER_MODULES
 #endif
+
+#ifndef MCU_HAS_FLASHUPDATE
+#define MCU_HAS_FLASHUPDATE
+#endif
+
 #define DISABLE_SYSTEM_MENU
 #define freefile_ptr(x)
 

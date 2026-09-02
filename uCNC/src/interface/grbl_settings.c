@@ -316,7 +316,7 @@ uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint16_t size)
 	{
 		rom_memcpy(&g_settings, &default_settings, sizeof(settings_t));
 	}
-	else
+	else if (__ptr)
 	{
 		size = MAX(size, 1);
 		memset(__ptr, 0, size);
@@ -341,6 +341,11 @@ uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint16_t size)
 #ifdef ENABLE_SETTINGS_MODULES
 	bool extended_load __attribute__((__cleanup__(EVENT_HANDLER_NAME(settings_extended_load)))) = is_machine_settings;
 #endif
+
+	if (!__ptr)
+	{
+		return 0;
+	}
 
 	nvm_start_read(address);
 	for (uint16_t i = 0; i < size;)
