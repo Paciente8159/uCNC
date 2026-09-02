@@ -121,7 +121,6 @@ void cnc_init(void)
 	cnc_network_init();									// initialize network and wireless coms
 	/**
 	 * Remaining tcp socket based servers are initialized here
-	 * Also any setting extension are registered and loaded here
 	 */
 	mod_init();											// initialize modules
 	itp_init();											// interpolator

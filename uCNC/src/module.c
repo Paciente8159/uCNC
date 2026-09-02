@@ -81,11 +81,15 @@ void mod_init(void)
 
 	load_modules();
 
-#ifdef ENABLE_SETTINGS_MODULES
-	// force extended settings loading event
-	// by setting the destination to NULL it will not reload g_settings again to avoid re-reading this area again
-	settings_load(SETTINGS_ADDRESS_OFFSET, NULL, 0);
-#endif
+	/**
+	 * not needed as EXTENDED_SETTING_INIT preloads the extended setting
+	 *  */
+
+	// #ifdef ENABLE_SETTINGS_MODULES
+	// 	// force extended settings loading event
+	// 	// by setting the destination to NULL it will not reload g_settings again to avoid re-reading this area again
+	// 	settings_load(SETTINGS_ADDRESS_OFFSET, NULL, 0);
+	// #endif
 }
 
 #ifdef MODULE_DEBUG_ENABLED
