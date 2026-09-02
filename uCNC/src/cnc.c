@@ -1422,13 +1422,3 @@ uint8_t cnc_get_status(void)
 
 	return EXEC_STATUS_IDLE;
 }
-
-#ifdef ENABLE_SOCKETS
-void __attribute__((weak)) cnc_network_init(void)
-{
-	mcu_network_init();							  // initializes the buildin network device of the MCU if available
-	extern socket_if_t *mcu_telnet_sock;		  // telnet socket interface pointer
-	extern telnet_protocol_t mcu_telnet_protocol; // telnet protocol
-	mcu_telnet_sock = telnet_start_listen(&mcu_telnet_protocol, 23);
-}
-#endif

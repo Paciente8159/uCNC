@@ -281,7 +281,7 @@ static bool wiz_socket_command(uint8_t socket_number, uint8_t command)
             return true;
         }
     }
-    WIZDGB("WIZnet: socket %u command 0x%02X timed out, CR=0x%02X\n",
+    WIZDGB("WIZnet: socket %u command 0x%X timed out, CR=0x%X\n",
            (unsigned int)socket_number, (unsigned int)command,
            (unsigned int)wiz_read8(address));
     return false;
@@ -300,7 +300,7 @@ static bool wiz_soft_reset(uint8_t chip)
         }
         wiz_delay_ms(1U);
     }
-    WIZDGB("WIZnet: W%u soft reset timed out, MR=0x%02X\n",
+    WIZDGB("WIZnet: W%u soft reset timed out, MR=0x%X\n",
            (unsigned int)chip, (unsigned int)wiz_read8(WIZ_MR));
     return false;
 }
@@ -414,7 +414,7 @@ void wiznet_set_mac(const uint8_t *mac)
 {
     if (mac != NULL) {
         memcpy(configured_mac, mac, sizeof(configured_mac));
-        WIZDGB("WIZnet: MAC set to %02X:%02X:%02X:%02X:%02X:%02X\n",
+        WIZDGB("WIZnet: MAC set to %X:%X:%X:%X:%X:%X\n",
                (unsigned int)configured_mac[0],
                (unsigned int)configured_mac[1],
                (unsigned int)configured_mac[2],
@@ -507,7 +507,7 @@ void wiznet_init(softspi_port_t *spiport)
     {
         wiz_channel_base = 0x4000U;
         wiz_socket_count = 8U;
-        WIZDGB("WIZnet: detected W5200, PHY=%s (PSTATUS=0x%02X)\n",
+        WIZDGB("WIZnet: detected W5200, PHY=%s (PSTATUS=0x%X)\n",
                ((wiz_read8(WIZ_PHY_STATUS_W5200) & 0x20U) != 0U) ? "UP" : "DOWN",
                (unsigned int)wiz_read8(WIZ_PHY_STATUS_W5200));
     }
@@ -515,7 +515,7 @@ void wiznet_init(softspi_port_t *spiport)
     {
         wiz_channel_base = 0x1000U;
         wiz_socket_count = 8U;
-        WIZDGB("WIZnet: detected W5500, PHY=%s (PHYCFGR=0x%02X)\n",
+        WIZDGB("WIZnet: detected W5500, PHY=%s (PHYCFGR=0x%X)\n",
                ((wiz_read8(WIZ_PHY_CONFIG_W5500) & 0x01U) != 0U) ? "UP" : "DOWN",
                (unsigned int)wiz_read8(WIZ_PHY_CONFIG_W5500));
     }
@@ -573,7 +573,7 @@ void wiznet_init(softspi_port_t *spiport)
     wiz_read(WIZ_GAR, readback_gateway, sizeof(readback_gateway));
     wiz_read(WIZ_SUBR, readback_mask, sizeof(readback_mask));
     wiz_read(WIZ_SIPR, readback_ip, sizeof(readback_ip));
-    WIZDGB("WIZnet: register readback MAC %02X:%02X:%02X:%02X:%02X:%02X\n",
+    WIZDGB("WIZnet: register readback MAC %X:%X:%X:%X:%X:%X\n",
            (unsigned int)readback_mac[0], (unsigned int)readback_mac[1],
            (unsigned int)readback_mac[2], (unsigned int)readback_mac[3],
            (unsigned int)readback_mac[4], (unsigned int)readback_mac[5]);
@@ -640,7 +640,7 @@ void wiznet_hw_socket_clear_interrupt(uint8_t socket_number, uint8_t mask)
 void wiznet_hw_socket_close(uint8_t socket_number)
 {
     if (hardware_ready && socket_number < wiz_socket_count) {
-        WIZDGB("WIZnet: socket %u closing (status=0x%02X)\n",
+        WIZDGB("WIZnet: socket %u closing (status=0x%X)\n",
                (unsigned int)socket_number,
                (unsigned int)wiznet_hw_socket_status(socket_number));
         if (!wiz_socket_command(socket_number, WIZ_SOCK_CLOSE)) {
@@ -669,7 +669,7 @@ bool wiznet_hw_socket_open_tcp_server(uint8_t socket_number, uint16_t port)
     wiz_write16(wiz_socket_register(socket_number, WIZ_SN_PORT), port);
     if (!wiz_socket_command(socket_number, WIZ_SOCK_OPEN) ||
         wiznet_hw_socket_status(socket_number) != WIZ_SNSR_INIT) {
-        WIZDGB("WIZnet: ERROR - socket %u failed to enter INIT, status=0x%02X\n",
+        WIZDGB("WIZnet: ERROR - socket %u failed to enter INIT, status=0x%X\n",
                (unsigned int)socket_number,
                (unsigned int)wiznet_hw_socket_status(socket_number));
         wiznet_hw_socket_close(socket_number);
@@ -681,7 +681,7 @@ bool wiznet_hw_socket_open_tcp_server(uint8_t socket_number, uint16_t port)
         wiznet_hw_socket_close(socket_number);
         return false;
     }
-    WIZDGB("WIZnet: socket %u listening, status=0x%02X\n",
+    WIZDGB("WIZnet: socket %u listening, status=0x%X\n",
            (unsigned int)socket_number,
            (unsigned int)wiznet_hw_socket_status(socket_number));
     return true;
@@ -727,6 +727,15 @@ int wiznet_hw_socket_send(uint8_t socket_number, const uint8_t *data,
     return (int)accepted;
 }
 
+uint16_t wiznet_hw_socket_available(uint8_t socket_number)
+{
+    if (!hardware_ready || socket_number >= wiz_socket_count) {
+        return 0U;
+    }
+    return wiz_stable_read16(
+        wiz_socket_register(socket_number, WIZ_SN_RX_RSR));
+}
+
 int wiznet_hw_socket_receive(uint8_t socket_number, uint8_t *data,
                              size_t capacity)
 {
@@ -739,8 +748,7 @@ int wiznet_hw_socket_receive(uint8_t socket_number, uint8_t *data,
         return 0;
     }
 
-    available = wiz_stable_read16(
-        wiz_socket_register(socket_number, WIZ_SN_RX_RSR));
+    available = wiznet_hw_socket_available(socket_number);
     if (available == 0U) {
         return 0;
     }

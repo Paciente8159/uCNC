@@ -253,9 +253,9 @@ extern "C"
 
 #define DOUT40_PORT B
 #define DOUT40_BIT 4
-#define DIN40_BIT 5
-#define DIN40_PORT G
-#define DIN40_PULLUP
+#define DIN41_BIT 5
+#define DIN41_PORT G
+#define DIN41_PULLUP
 
 #define ONESHOT_TIMER 4
 

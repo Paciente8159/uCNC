@@ -49,13 +49,14 @@ ipv4_address_t wiznet_get_ip(void);
 void wiznet_init(softspi_port_t * spiport);
 
 /* No wiznet_dotasks() call is required. socket_server_dotasks() invokes the
- * registered backend's bounded service callback. */
+ * registered backend's bounded poll callback. */
 
 bool wiznet_is_ready(void);
 
 /* Internal hardware API shared with wiznet_lwip.c. */
 uint8_t wiznet_hw_socket_count(void);
 uint8_t wiznet_hw_socket_status(uint8_t socket_number);
+uint16_t wiznet_hw_socket_available(uint8_t socket_number);
 uint8_t wiznet_hw_socket_interrupt(uint8_t socket_number);
 void wiznet_hw_socket_clear_interrupt(uint8_t socket_number, uint8_t mask);
 bool wiznet_hw_socket_open_tcp_server(uint8_t socket_number, uint16_t port);
