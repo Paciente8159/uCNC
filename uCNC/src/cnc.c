@@ -1337,14 +1337,18 @@ void cnc_run_startup_blocks(void)
 
 uint8_t cnc_get_status(void)
 {
+	uint16_t state;
+
 	if (cnc_has_alarm())
 	{
 		return EXEC_STATUS_ALARM;
 	}
 
-	if (cnc_get_exec_state(EXEC_POSITION_MAYBE_LOST))
+	state = cnc_get_exec_state(EXEC_ALLACTIVE);
+
+	if (state & EXEC_POSITION_MAYBE_LOST)
 	{
-		return ((!cnc_get_exec_state(EXEC_HOMING)) ? EXEC_STATUS_LOCKED : EXEC_STATUS_HOMING);
+		return ((state & EXEC_HOMING) ? EXEC_STATUS_HOMING : EXEC_STATUS_LOCKED);
 	}
 
 	if (mc_get_checkmode())
@@ -1352,11 +1356,9 @@ uint8_t cnc_get_status(void)
 		return EXEC_STATUS_CHECK;
 	}
 
-	uint16_t state = cnc_get_exec_state(EXEC_ALLACTIVE);
-
 	if (state & EXEC_LIMITS)
 	{
-		return ((!cnc_get_exec_state(EXEC_HOMING)) ? EXEC_STATUS_ALARM : EXEC_STATUS_HOMING);
+		return ((state & EXEC_HOMING) ? EXEC_STATUS_HOMING : EXEC_STATUS_ALARM);
 	}
 
 #if ASSERT_PIN(SAFETY_DOOR)

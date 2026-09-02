@@ -106,9 +106,8 @@ size_t prt_int(void *out, size_t maxlen, uint32_t num, uint8_t padding)
 
 	while (num > 0)
 	{
-		uint8_t digit = num % 10;
-		num = (uint32_t)truncf((float)num * 0.1f);
-		buffer[i++] = digit;
+		buffer[i++] = num % 10;
+		num /= 10;
 	}
 
 	while (i < padding--)

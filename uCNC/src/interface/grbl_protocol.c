@@ -267,12 +267,11 @@ static void proto_ftoa_array(float *array, uint8_t count)
 	while (count--)
 	{
 		proto_ftoa(*array);
-		if (!count)
-		{
-			break;
-		}
-		proto_putc(',');
 		array++;
+		if (count)
+		{
+			proto_putc(',');
+		}
 	}
 }
 
@@ -438,6 +437,7 @@ void proto_status(void)
 	case EXEC_STATUS_DOOR_CLOSED:
 		proto_puts(MSG_STATUS_DOOR);
 		proto_putc(':');
+		proto_putc('0' + (state - EXEC_STATUS_DOOR_CLOSED));
 		break;
 #endif
 	case EXEC_STATUS_HOMING:
@@ -450,6 +450,7 @@ void proto_status(void)
 #endif
 		proto_puts(MSG_STATUS_HOLD);
 		proto_putc(':');
+		proto_putc('0' + (state - EXEC_STATUS_HOLD));
 		break;
 	case EXEC_STATUS_JOGGING:
 		proto_puts(MSG_STATUS_JOG);
@@ -469,35 +470,6 @@ void proto_status(void)
 		break;
 	case EXEC_STATUS_IDLE:
 		proto_puts(MSG_STATUS_IDLE);
-		break;
-	}
-
-	switch (state)
-	{
-#if ASSERT_PIN(SAFETY_DOOR)
-	case EXEC_STATUS_DOOR_OPENED_PAUSING:
-		proto_putc('2');
-		break;
-	case EXEC_STATUS_DOOR_OPENED:
-		proto_putc('1');
-		break;
-	case EXEC_STATUS_DOOR_CLOSED_RESUMING:
-		proto_putc('3');
-		break;
-	case EXEC_STATUS_DOOR_CLOSED:
-		proto_putc('0');
-		break;
-#endif
-#ifdef ENABLE_EXTRA_GRBL_STATES
-	case EXEC_STATUS_HOLD_RESUMING:
-		proto_putc('2');
-		break;
-#endif
-	case EXEC_STATUS_HOLD_PENDING:
-		proto_putc('1');
-		break;
-	case EXEC_STATUS_HOLD:
-		proto_putc('0');
 		break;
 	}
 

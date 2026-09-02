@@ -633,10 +633,13 @@ static uint8_t parser_grbl_command(void)
 			{
 				break;
 			}
-			if (cnc_get_exec_state(EXEC_ALLACTIVE) && !cnc_get_exec_state(EXEC_JOG)) // Jog only allowed in IDLE or JOG mode
 			{
-				parser_discard_command();
-				return STATUS_IDLE_ERROR;
+				uint16_t jogstate = cnc_get_exec_state(EXEC_ALLACTIVE);
+				if (jogstate && !(jogstate & EXEC_JOG)) // Jog only allowed in IDLE or JOG mode
+				{
+					parser_discard_command();
+					return STATUS_IDLE_ERROR;
+				}
 			}
 			return GRBL_JOG_CMD;
 		}
@@ -879,30 +882,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 		uint8_t code = (uint8_t)truncf(value);
 		// check mantissa
 		uint8_t m = (uint8_t)lroundf(((value - code) * 100.0f));
-		uint8_t mantissa = 0;
-		switch (m)
-		{
-		case 50:
-			mantissa++;
-			__FALL_THROUGH__
-		case 40:
-			mantissa++;
-			__FALL_THROUGH__
-		case 30:
-			mantissa++;
-			__FALL_THROUGH__
-		case 20:
-			mantissa++;
-			__FALL_THROUGH__
-		case 10:
-			mantissa++;
-			__FALL_THROUGH__
-		case 0:
-			break;
-		default:
-			mantissa = 255;
-			break;
-		}
+		uint8_t mantissa = ((m <= 50) && ((m % 10) == 0)) ? (m / 10) : 255;
 
 		switch (word)
 		{
@@ -1016,9 +996,10 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 {
 	bool requires_feed = !CHECKFLAG(cmd->groups, GCODE_GROUP_TOOLLENGTH);
 	bool has_axis = CHECKFLAG(cmd->words, GCODE_ALL_AXIS);
+	uint16_t jogstate = cnc_get_exec_state(EXEC_JOG);
 
 	// only alow groups 3, 6 and modal G53
-	if (cnc_get_exec_state(EXEC_JOG))
+	if (jogstate)
 	{
 		if (cmd->groups & ~(GCODE_GROUP_DISTANCE | GCODE_GROUP_UNITS | GCODE_GROUP_NONMODAL))
 		{
@@ -1258,7 +1239,7 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 		}
 
 		// group 5 - feed rate mode
-		if ((requires_feed && has_axis && !cmd->group_extended) || cnc_get_exec_state(EXEC_JOG))
+		if ((requires_feed && has_axis && !cmd->group_extended) || jogstate)
 		{
 			if (!CHECKFLAG(cmd->words, GCODE_WORD_F))
 			{
