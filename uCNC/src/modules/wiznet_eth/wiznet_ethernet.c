@@ -45,6 +45,7 @@ enum {
     WIZ_SN_RX_SIZE = 0x001E,
     WIZ_SN_TX_SIZE = 0x001F,
     WIZ_SN_TX_FSR = 0x0020,
+    WIZ_SN_TX_RD = 0x0022,
     WIZ_SN_TX_WR = 0x0024,
     WIZ_SN_RX_RSR = 0x0026,
     WIZ_SN_RX_RD = 0x0028
@@ -60,7 +61,9 @@ enum {
 
 enum {
     WIZ_SNSR_CLOSED = 0x00,
-    WIZ_SNSR_INIT = 0x13
+    WIZ_SNSR_INIT = 0x13,
+    WIZ_SNSR_ESTABLISHED = 0x17,
+    WIZ_SNSR_CLOSE_WAIT = 0x1C
 };
 
 static uint8_t wiz_chip;
@@ -253,21 +256,31 @@ static uint16_t wiz_socket_register(uint8_t socket_number, uint16_t offset)
                       ((uint16_t)socket_number * 0x0100U) + offset);
 }
 
-static uint16_t wiz_stable_read16(uint16_t address)
+/*
+ * WIZnet documents Sn_TX_FSR and Sn_RX_RSR as volatile 16-bit counters that
+ * must be read until two consecutive samples agree.  Returning an arbitrary
+ * last sample can turn an incoherent read into an out-of-bounds ring access,
+ * so failure is explicit and callers retry on a later bounded service pass.
+ */
+static bool wiz_stable_read16(uint16_t address, uint16_t *value)
 {
     uint16_t previous = wiz_read16(address);
     uint8_t attempt;
 
+    if (value == NULL) {
+        return false;
+    }
     for (attempt = 0U; attempt < WIZNET_STABLE_READ_LIMIT; ++attempt) {
         uint16_t current = wiz_read16(address);
         if (current == previous) {
-            return current;
+            *value = current;
+            return true;
         }
         previous = current;
     }
-    WIZDGB("WIZnet: unstable 16-bit register read at 0x%04X, using 0x%04X\n",
-           (unsigned int)address, (unsigned int)previous);
-    return previous;
+    WIZDGB("WIZnet: unstable 16-bit register read at 0x%04X; deferring\n",
+           (unsigned int)address);
+    return false;
 }
 
 static bool wiz_socket_command(uint8_t socket_number, uint8_t command)
@@ -487,12 +500,14 @@ void wiznet_init(softspi_port_t *spiport)
     io_config_output(WIZNET_CS);
     wiz_deselect();
 
-    WIZDGB("WIZnet: initialization started, frequency=%lu Hz\n", spiport->spifreq);
+    WIZDGB("WIZnet: initialization started%s\n",
+           spiport != NULL ? " with configured softspi port" :
+                             " with default hardware SPI");
 
     spi_config.mode = 0U;
     if (WIZNET_SPI != NULL)
     {
-        softspi_config(WIZNET_SPI, spi_config, spiport->spifreq);
+        softspi_config(WIZNET_SPI, spi_config, WIZNET_SPI->spifreq);
     }
     else
     {
@@ -594,6 +609,7 @@ void wiznet_init(softspi_port_t *spiport)
                sizeof(readback_gateway)) != 0)
     {
         WIZDGB("WIZnet: ERROR - network register readback mismatch\n");
+        return;
     }
 
     hardware_ready = true;
@@ -693,14 +709,27 @@ int wiznet_hw_socket_send(uint8_t socket_number, const uint8_t *data,
     uint16_t free_size;
     uint16_t pointer;
     uint16_t accepted;
+    uint8_t status;
 
     if (!hardware_ready || socket_number >= wiz_socket_count || data == NULL ||
         length == 0U) {
         return 0;
     }
 
-    free_size = wiz_stable_read16(
-        wiz_socket_register(socket_number, WIZ_SN_TX_FSR));
+    status = wiznet_hw_socket_status(socket_number);
+    if (status != WIZ_SNSR_ESTABLISHED && status != WIZ_SNSR_CLOSE_WAIT) {
+        return 0;
+    }
+
+    if (!wiz_stable_read16(
+            wiz_socket_register(socket_number, WIZ_SN_TX_FSR), &free_size)) {
+        return 0;
+    }
+    if (free_size > WIZNET_SOCKET_BUFFER_SIZE) {
+        WIZDGB("WIZnet: invalid socket %u TX free size %u\n",
+               (unsigned int)socket_number, (unsigned int)free_size);
+        return 0;
+    }
     if (free_size == 0U) {
         WIZDGB("WIZnet: socket %u TX would block (no free space)\n",
                (unsigned int)socket_number);
@@ -727,17 +756,84 @@ int wiznet_hw_socket_send(uint8_t socket_number, const uint8_t *data,
     return (int)accepted;
 }
 
-uint16_t wiznet_hw_socket_available(uint8_t socket_number)
+int wiznet_hw_socket_send_progress(uint8_t socket_number)
 {
+    uint8_t interrupts;
+
     if (!hardware_ready || socket_number >= wiz_socket_count) {
-        return 0U;
+        return -1;
     }
-    return wiz_stable_read16(
-        wiz_socket_register(socket_number, WIZ_SN_RX_RSR));
+
+    interrupts = wiznet_hw_socket_interrupt(socket_number);
+    if ((interrupts & 0x10U) == 0U) {
+        return 0;
+    }
+
+    /*
+     * WIZnet's current ioLibrary keeps a W5200-specific SEND workaround:
+     * after SEND_OK, Sn_TX_RD can still lag the expected end pointer and SEND
+     * must be issued again.  The vendor code stores that expected pointer in a
+     * per-socket table.  This backend permits exactly one SEND in flight and
+     * never changes Sn_TX_WR while it is pending, so the current Sn_TX_WR is
+     * the same expected end pointer and no persistent table is necessary.
+     */
+    if (wiz_chip == WIZ_CHIP_W5200) {
+        uint16_t read_pointer;
+        uint16_t write_pointer;
+
+        if (!wiz_stable_read16(
+                wiz_socket_register(socket_number, WIZ_SN_TX_RD),
+                &read_pointer) ||
+            !wiz_stable_read16(
+                wiz_socket_register(socket_number, WIZ_SN_TX_WR),
+                &write_pointer)) {
+            return WIZNET_HW_RETRY;
+        }
+        if (read_pointer != write_pointer) {
+            wiznet_hw_socket_clear_interrupt(socket_number, 0x10U);
+            if (!wiz_socket_command(socket_number, WIZ_SOCK_SEND)) {
+                return -1;
+            }
+            return 0;
+        }
+    }
+
+    wiznet_hw_socket_clear_interrupt(socket_number, 0x10U);
+    return 1;
 }
 
-int wiznet_hw_socket_receive(uint8_t socket_number, uint8_t *data,
-                             size_t capacity)
+int wiznet_hw_socket_tx_free(uint8_t socket_number)
+{
+    uint16_t free_size;
+
+    if (!hardware_ready || socket_number >= wiz_socket_count) {
+        return -1;
+    }
+    if (!wiz_stable_read16(
+            wiz_socket_register(socket_number, WIZ_SN_TX_FSR), &free_size) ||
+        free_size > WIZNET_SOCKET_BUFFER_SIZE) {
+        return WIZNET_HW_RETRY;
+    }
+    return (int)free_size;
+}
+
+int wiznet_hw_socket_rx_available(uint8_t socket_number)
+{
+    uint16_t available;
+
+    if (!hardware_ready || socket_number >= wiz_socket_count) {
+        return -1;
+    }
+    if (!wiz_stable_read16(
+            wiz_socket_register(socket_number, WIZ_SN_RX_RSR), &available) ||
+        available > WIZNET_SOCKET_BUFFER_SIZE) {
+        return WIZNET_HW_RETRY;
+    }
+    return (int)available;
+}
+
+int wiznet_hw_socket_receive_peek(uint8_t socket_number, uint8_t *data,
+                                  size_t capacity)
 {
     uint16_t available;
     uint16_t pointer;
@@ -748,7 +844,11 @@ int wiznet_hw_socket_receive(uint8_t socket_number, uint8_t *data,
         return 0;
     }
 
-    available = wiznet_hw_socket_available(socket_number);
+    if (!wiz_stable_read16(
+            wiz_socket_register(socket_number, WIZ_SN_RX_RSR), &available) ||
+        available > WIZNET_SOCKET_BUFFER_SIZE) {
+        return WIZNET_HW_RETRY;
+    }
     if (available == 0U) {
         return 0;
     }
@@ -756,15 +856,58 @@ int wiznet_hw_socket_receive(uint8_t socket_number, uint8_t *data,
     received = (capacity < available) ? (uint16_t)capacity : available;
     pointer = wiz_read16(wiz_socket_register(socket_number, WIZ_SN_RX_RD));
     wiz_ring_read(socket_number, pointer, data, received);
+
+    WIZDGB("WIZnet: socket %u peeked %u bytes (%u available)\n",
+           (unsigned int)socket_number, (unsigned int)received,
+           (unsigned int)available);
+    return (int)received;
+}
+
+int wiznet_hw_socket_receive_commit(uint8_t socket_number, size_t length)
+{
+    uint16_t pointer;
+
+    if (!hardware_ready || socket_number >= wiz_socket_count) {
+        return -1;
+    }
+    if (length == 0U) {
+        return 0;
+    }
+    if (length > (size_t)UINT16_MAX) {
+        return -1;
+    }
+
+    if (length > WIZNET_SOCKET_BUFFER_SIZE) {
+        return -1;
+    }
+
+    /* peek() already obtained a stable available count and this driver has a
+     * single cooperative consumer.  Re-reading RX_RSR here can fail merely
+     * because new data arrived, so commit exactly the bytes just copied. */
+    pointer = wiz_read16(wiz_socket_register(socket_number, WIZ_SN_RX_RD));
     wiz_write16(wiz_socket_register(socket_number, WIZ_SN_RX_RD),
-                (uint16_t)(pointer + received));
+                (uint16_t)(pointer + (uint16_t)length));
     if (!wiz_socket_command(socket_number, WIZ_SOCK_RECV)) {
         WIZDGB("WIZnet: ERROR - socket %u RECV command failed\n",
                (unsigned int)socket_number);
         return -1;
     }
-    WIZDGB("WIZnet: socket %u received %u bytes (%u were available)\n",
-           (unsigned int)socket_number, (unsigned int)received,
-           (unsigned int)available);
-    return (int)received;
+    WIZDGB("WIZnet: socket %u committed %lu RX bytes\n",
+           (unsigned int)socket_number, (unsigned long)length);
+    return 0;
+}
+
+int wiznet_hw_socket_receive(uint8_t socket_number, uint8_t *data,
+                             size_t capacity)
+{
+    int received = wiznet_hw_socket_receive_peek(socket_number, data, capacity);
+
+    if (received <= 0) {
+        return received;
+    }
+    if (wiznet_hw_socket_receive_commit(socket_number,
+                                        (size_t)received) < 0) {
+        return -1;
+    }
+    return received;
 }
