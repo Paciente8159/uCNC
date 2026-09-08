@@ -9,7 +9,7 @@ backend-authoring patterns. The keywords below distinguish the two:
   when its architecture requires it and should document the reason.
 * **Example**: an observed implementation, not a requirement.
 
-Section 4 and the expected-behavior rules in §3.2 are normative. Directory
+Section 4 and the expected-behavior rules in §3.3 are normative. Directory
 layout, section ordering, access mechanisms and implementation techniques are
 authoring guidance unless explicitly labeled **Required**.
 
@@ -110,10 +110,18 @@ Rules:
 
 * **Naming**: implementation file is always `mcu_<arch>.c`, map header always
   `mcumap_<arch>.h`, docs always `README.md`.
-* **Platform glue** (`<arch>_*.c/.cpp`) holds **optional** framework-dependent
-  code (Arduino cores, ESP-IDF, lwIP sockets), keep the core `.c` file
-  framework-agnostic whenever possible (see STM32: the H7 Arduino bridge is only
-  compiled when `USE_ARDUINO_I2C_LIBRARY`/`USE_ARDUINO_SPI_LIBRARY`).
+* **Language and dependency baseline (Required for new backends)**: backend code
+  is C99 and builds against the MCU vendor's device headers/startup code or SDK
+  without the Arduino framework whenever the vendor kit makes that possible.
+  Do not use Arduino pin numbers, board variants, `Arduino.h`, C++ objects, or
+  Arduino peripheral libraries as the backend's primary hardware abstraction.
+* **Platform glue** (`<arch>_*.c/.cpp`) is an optional, isolated adapter for a
+  facility that genuinely has no practical C99/vendor-SDK implementation.
+  Arduino-dependent glue must be behind an explicit opt-in flag, must not leak
+  Arduino types into `mcumap_<arch>.h`, `mcu_<arch>.c`, or `mcu.h`, and must
+  leave the C99/vendor-SDK build usable. Document why each such dependency is
+  necessary. A board package being readily available in Arduino is not, by
+  itself, sufficient reason to depend on it.
 * **Shared code across variants of the same family** goes in a sibling folder
   included from each mcumap (see `esp32common/`, included at the tail of every
   ESP32 mcumap). Shared files self-select with preprocessor guards
@@ -135,11 +143,12 @@ every section; missing sections are documentation debt, not evidence that the
 backend violates the MCU HAL contract.
 
 1. Target chips / boards supported by this backend.
-2. Toolchain and build recipes (bare Makefile and/or PlatformIO env names),
-   including the access tier used (§5.9) and which framework flags to pass
-   (`USE_ARDUINO_*_LIBRARY`, `ARDUINO_ARCH_*`, `TARGET_*`, ...).
+2. Toolchain and build recipes, including at least one C99/vendor-SDK build that
+   does not require Arduino when the vendor kit permits it. State the access
+   tier used (§5.9), all optional framework flags, and the reason for any
+   unavoidable Arduino or C++ dependency.
 3. Resource allocation table: timers/IRQs used (ITP/RTC/SERVO/ONESHOT), the
-   assigned interrupt priorities, and the priority ordering chosen (§3.2).
+   assigned interrupt priorities, and the priority ordering chosen (§3.3).
 4. Primary stream per supported board (UART1 vs USB-CDC, §4.4).
 5. NVM strategy chosen (§4.5) and any board-layer RAM-only opt-out.
 6. Known limitations and any deliberate deviations from this spec.
@@ -153,14 +162,58 @@ compile time should normally be macros (see §5). The following stable section
 order is recommended because it makes generated and hand-written backends easy
 to compare; it is not part of the MCU HAL ABI.
 
-### 3.1 Canonical section order
+### 3.1 MCU-family scope and board independence (Required)
+
+An MCU backend is a reusable description of an **MCU family**, not an
+implementation of the first development board used to test it. The boardmap
+selects pins, peripheral instances, and resource assignments; the mcumap must
+provide the machinery needed for other valid selections without editing the
+backend.
+
+A new backend is incomplete if it only supports the pins and routes used by its
+initial board (for example, only the Arduino UNO R4 wiring of an RA4M1). Before
+calling a backend complete, its author must inventory the target family from
+the vendor datasheet, user manual, and device headers and implement:
+
+* all canonical µCNC friendly-pin blocks in the pin-numbering table, including
+  axes, enables, PWM, servo, generic digital outputs and inputs, limits,
+  controls, analog inputs, and communications pins. Each block is conditional
+  on the boardmap's `<PIN>_PORT`/`<PIN>_BIT` or equivalent definitions, so unused
+  roles compile away. Mature mcumaps define all 192 current canonical `DIO<n>`
+  entries even though no single board uses all of them;
+* generic GPIO token expansion for every GPIO port and bit exposed by the
+  supported MCU family/package set, rather than a table of Arduino board pin
+  numbers or a switch containing only the initial board's pins;
+* every usable instance and valid pin-routing/remap choice for UART/USART, SPI,
+  I2C, ADC, PWM/timers, input interrupts, USB, and other capabilities advertised
+  by the backend. Boardmap-selected instances and routes must either resolve to
+  the correct registers/interrupts/alternate-function settings or fail at
+  compile time with a precise unsupported-combination error;
+* configurable timer, channel, IRQ, DMA, and peripheral allocation wherever the
+  hardware offers choices. Do not bake the initial board's assignments into
+  runtime code; derive them from boardmap/configuration macros;
+* family/package capability guards for real silicon differences. It is valid to
+  exclude a route that does not exist on a selected part, but not to omit a
+  documented route merely because the first board does not expose it.
+
+The backend need not create boardmaps for every possible PCB. It must make a
+new boardmap possible without changing `mcu_<arch>.c` and, except when adding
+support for a genuine new silicon variant or package capability, without
+changing `mcumap_<arch>.h`.
+
+Reviewers should test this boundary with at least one synthetic or second
+boardmap that changes GPIO ports and peripheral/timer selections. Successfully
+building only the initial development board is smoke coverage, not evidence of
+a complete mcumap.
+
+### 3.2 Canonical section order
 
 1. **Include guard + `extern "C"` wrapper** (`#ifndef MCUMAP_<ARCH>_H`...).
-2. **SDK/framework includes** — the register definitions the macros will expand
-   to (`avr/io.h`, `stm32f4xx.h`, `sam.h`, `Arduino.h + pico-sdk`, `driver/gpio.h`,
-   `lwip/...`, ...). Keep them minimal; STM32 maps include only CMSIS + the RCC
-   clock header, and disable unused HAL modules (`-D HAL_TIM_MODULE_DISABLED`...)
-   to save space.
+2. **Device/SDK includes** — the vendor register definitions the macros expand
+   to (`avr/io.h`, `stm32f4xx.h`, `sam.h`, vendor SDK headers, ...). Keep them
+   minimal; STM32 maps include only CMSIS plus the RCC clock header and disable
+   unused HAL modules (`-D HAL_TIM_MODULE_DISABLED`...) to save space. Framework
+   headers belong only in an explicitly selected adapter (§2 and §5.9).
 3. **Clock and step-rate constants**:
    ```c
    #ifndef F_CPU
@@ -204,8 +257,9 @@ to compare; it is not part of the MCU HAL ABI.
    concatenates `DIO47_BIT`. **The mcumap MUST therefore define a
    `DIO<n>_<ATTR>` token for every attribute a pin uses.** This is what converts
    `mcu_set_output(DOUT0)` into a direct register write at compile time.
-9. **The DIO pin table** (the autogenerated bulk of the file). For every friendly
-   pin the board defines, emit:
+9. **The DIO pin table** (the autogenerated bulk of the file). Emit a conditional
+   block for every canonical friendly pin, whether or not the first board uses
+   it; the boardmap definitions decide which blocks become active:
    ```c
    #if (defined(STEP0_PORT) && defined(STEP0_BIT))   /* or only _BIT (RP2040) */
    #define STEP0 1                     /* canonical number, see README table */
@@ -258,7 +312,7 @@ to compare; it is not part of the MCU HAL ABI.
       `SPI_MODE`, optional DMA channel/flag tokens, `SPI_ISR`.
     * I2C: `I2C_REG`, `I2C_ISR`, `I2C_FREQ` (default `400000UL`), `I2C_ADDRESS`,
       `I2C_APBEN`, speed-range tokens.
-    * Timer allocator (see §3.2).
+    * Timer allocator (see §3.3).
 12. **IO function macros** — the `mcu_*` "macro-or-function" surface (§4.1).
 13. **Time/ISR macros**: `mcu_enable_global_isr`, `mcu_disable_global_isr`,
     `mcu_get_global_isr`, `mcu_in_isr_context`, `mcu_free_micros` (free-running
@@ -270,7 +324,7 @@ to compare; it is not part of the MCU HAL ABI.
 15. **Tail include of family-common headers** (e.g.
     `#include "../esp32common/esp32_common.h"`).
 
-### 3.2 Timer allocation block (critical)
+### 3.3 Timer allocation block (critical)
 
 Timing behavior follows the **expected-behavior contract** (CONTEXT.md): there
 is no absolute/right way to design the timers — the design depends heavily on
@@ -381,7 +435,8 @@ Writing the IO macros — canonical shapes across all backends:
 #define mcu_get_analog(diopin) ( ... )         /* channel select + read + scale */
 ```
 
-Use `__indirect__(diopin, <ATTR>)` and the `<PIN>_*` tokens generated in §3.1-9.
+Use `__indirect__(diopin, <ATTR>)` and the `<PIN>_*` tokens generated in §3.2,
+item 9.
 The compiler sees literal peripheral addresses and bit numbers, so the whole IO
 layer costs zero runtime overhead and zero code size per pin.
 
@@ -417,7 +472,7 @@ replaces them with macros.
 | `mcu_stop_itp_isr(void)` | Stop clock; usually *leave the interrupt mask enabled* (the RTC logic uses it as a "stepping in progress" gate; see the comment in the AVR implementation). |
 | `mcu_start_step_reset_timeout()` | Optional empty macro declared near the step-interpolator API in `mcu.h`. Hook to shorten/re-arm the step pulse or re-enable interrupts right after a step event; called by the interpolator. Only AVR defines it today. |
 | `mcu_millis`, `mcu_micros`, `mcu_free_micros` | `mcu_runtime_ms` incremented by the 1 ms tick; `mcu_micros = 1000*ms + free_micros`. |
-| `MCU_ITP_ISR` | Alternating `mcu_step_cb()` / `mcu_step_reset_cb()` (see §3.2). |
+| `MCU_ITP_ISR` | Alternating `mcu_step_cb()` / `mcu_step_reset_cb()` (see §3.3). |
 | RTC/PendSV ISR | `mcu_runtime_ms++; pends low-priority task` → `mcu_rtc_cb(mcu_runtime_ms)`. |
 | `mcu_uart_init/getc/available/clear/putc/flush` + `mcu_uart2_*` | Buffers are global, `DECL_BUFFER(uint8_t, uart_rx, RX_BUFFER_SIZE)` + `DECL_BUFFER(uint8_t, uart_tx, UART_TX_BUFFER_SIZE)` and initialized in `mcu_coms_init` (`BUFFER_INIT`). RX ISR: `if (mcu_com_rx_cb(c)) BUFFER_TRY_ENQUEUE(uart_rx, &c); else STREAM_OVF(c);`. If `DETACH_UART_FROM_MAIN_PROTOCOL`, route to `mcu_uart_rx_cb(c)` instead (weak empty default in `mcu.c`). |
 | `mcu_usb_*` (if `MCU_HAS_USB`) | tinyUSB device (include `<tusb_ucnc.h>`): `mcu_usb_init → tusb_cdc_init`, USB IRQ → `tusb_cdc_isr_handler`, `mcu_dotasks → tusb_cdc_task()` + drain `tusb_cdc_read()` into `mcu_com_rx_cb`. Non-tinyUSB platforms wrap their stack (Arduino `Serial`, `USBCDC`). |
@@ -608,13 +663,24 @@ ideally preserve them to reach the same build-time efficiency and flexibility:
    `ITP_TIMER`, `NVIC_*_IRQ_Pri` must be resolvable by the preprocessor
    (hence the `#warning` if `F_CPU` is not a constant). Board overrides win over
    mcumap defaults (`#ifndef` chains).
-9. **Tiered peripheral access, bare-metal first** (the "access tier" of
-   CONTEXT.md): direct register writes where feasible (AVR, STM32, SAMD21);
-   vendor SDK drivers where the hardware requires them (timer alarms, WiFi,
-   USB stacks); Arduino/RTOS cores only behind explicit opt-in flags
-   (`USE_ARDUINO_*_LIBRARY`, `ARDUINO_ARCH_*`, `TARGET_*`). Each backend
-   documents its tier in its README; STM32 builds even disable unused HAL
-   modules (`-D HAL_TIM_MODULE_DISABLED ...`) to keep the binary lean.
+9. **Tiered peripheral access, bare-metal C99 first** (the "access tier" of
+   CONTEXT.md). For new backends this is a selection rule, not merely a size
+   preference. Use the first viable tier:
+   1. direct register access using vendor device/CMSIS headers;
+   2. the vendor's C SDK or narrowly selected C drivers when they are required
+      for complex hardware such as clocks, USB, networking, or flash;
+   3. an RTOS service when the target platform intrinsically requires it;
+   4. Arduino framework code or libraries only as a last-resort, explicitly
+      opt-in adapter.
+
+   The default backend path must remain C99. C++ is permitted only inside an
+   isolated adapter required by a C++-only dependency, with an `extern "C"`
+   boundary exposing plain C types to the backend. Framework convenience,
+   Arduino examples, or support for only one Arduino board are not sufficient
+   justification to choose tier 4. When the controller vendor supplies an SDK
+   kit capable of building the firmware, the backend must support that path
+   without Arduino. Each backend README records the chosen tier and any
+   unavoidable exceptions.
 10. **ISR code is context-aware when an RTOS is present**: `mcu_in_isr_context()`
     (`xPortInIsrContext()` on ESP32, `__get_IPSR() != 0` on ARM), atomic
     builtins (`__atomic_*`), and ISR/thread dual-mode primitives
@@ -689,10 +755,13 @@ From the MCU requirements in `README.md`, a target MCU should provide, to be a
 ## 9. New-backend template checklist (rolled up)
 
 - [ ] `src/hal/mcus/mcus.h`: `MCU_<ARCH>` id added.
-- [ ] `src/hal/mcus/<arch>/mcumap_<arch>.h` written in the §3 section order,
-      with `DIO<n>` table matching the canonical numbering and the reserved
-      `216..254` range (README.md, ADR-0001), the `__indirect__` surface,
-      `MCU_HAS_*` flags, timer allocator, IO macros.
+- [ ] `src/hal/mcus/<arch>/mcumap_<arch>.h` follows the MCU-family scope rule in
+      §3.1 and the §3.2 section order. It contains all 192 canonical `DIO<n>`
+      blocks, generic GPIO support across the supported family/package set, and
+      configurable mappings for all advertised peripheral instances/routes;
+      it is not limited to the initial board.
+- [ ] A second or synthetic boardmap changes GPIO ports plus at least one
+      UART/SPI/I2C/timer selection and builds without backend source edits.
 - [ ] `mcudefs.h` include block added.
 - [ ] `src/hal/mcus/<arch>/mcu_<arch>.c` implements every `mcu.h` entry
       (function or macro), ISRs wired to the §4.3 callbacks, feature-pruned.
@@ -702,8 +771,10 @@ From the MCU requirements in `README.md`, a target MCU should provide, to be a
 - [ ] EEPROM strategy chosen following the §4.5 decision table, honoring
       `NVM_STORAGE_SIZE` (RAM-only only as an explicit board-layer opt-out).
 - [ ] Boardmap(s) + `boards_helper.h` entry (or `-D BOARD=BOARD_CUSTOM` path).
-- [ ] Build glue: `makefiles/<arch>/Makefile` and/or PlatformIO env with
-      `-Os -ffunction-sections -fdata-sections -Wl,--gc-sections` (+arch flags).
+- [ ] Build glue includes a C99 vendor-header/SDK path without Arduino whenever
+      the vendor kit permits it, with `-Os`, `-ffunction-sections`,
+      `-fdata-sections`, and `-Wl,--gc-sections` (+arch flags). Any Arduino/C++ adapter is isolated,
+      opt-in, and justified in the backend README.
 - [ ] `README.md` following the §2.1 skeleton (toolchain/access tier,
       timers/IRQs/priorities, primary stream per board, NVM strategy,
       limitations and deviations).
