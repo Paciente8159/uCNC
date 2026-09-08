@@ -843,7 +843,10 @@ static void FORCEINLINE mcu_coms_init(void)
 	mcu_config_output(SPI2_CLK);
 #endif
 #if ASSERT_PIN_IO(SPI2_SDI)
-	mcu_config_output(SPI2_SDI);
+	mcu_config_input(SPI2_SDI);
+#ifdef SPI2_SDI_PULLUP
+	mcu_config_pullup(SPI2_SDI);
+#endif
 #endif
 #if ASSERT_PIN_IO(SPI2_SDO)
 	mcu_config_output(SPI2_SDO);
