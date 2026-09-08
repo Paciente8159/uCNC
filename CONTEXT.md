@@ -1,6 +1,6 @@
 # µCNC MCU Backend Context
 
-Terms used across the µCNC MCU backend layer (`uCNC/src/hal/mcus/`) and its governing document (`SPECS.md`). This glossary is the authoritative vocabulary; deviations in new backends or docs should be corrected to it.
+Terms used across the µCNC MCU backend layer (`uCNC/src/hal/mcus/`) and its governing document (`BACKEND_GUIDE.md`). This glossary is the authoritative vocabulary; deviations in new backends or docs should be corrected to it.
 
 ## Layers
 
@@ -9,7 +9,7 @@ The interface contract between µCNC core and the microcontroller: the `mcu_*` f
 _Avoid_: backend (see below), HAL
 
 **MCU backend**:
-The family-specific implementation of the MCU HAL for one chip family (e.g. AVR, STM32F4, RP2040): a `mcu_<arch>.c` implementation unit, a `mcumap_<arch>.h` compile-time map, optional platform glue files, and a `README.md`. Specs.md is a descriptive guideline for producing backends with similar structure and performance, not a normative contract.
+The family-specific implementation of the MCU HAL for one chip family (e.g. AVR, STM32F4, RP2040): a `mcu_<arch>.c` implementation unit, a `mcumap_<arch>.h` compile-time map, optional platform glue files, and a `README.md`. `BACKEND_GUIDE.md` defines the normative MCU HAL behavior and API rules while documenting recommended patterns for producing backends with similar structure and performance.
 _Avoid_: port, driver, HAL implementation
 
 **mcumap**:

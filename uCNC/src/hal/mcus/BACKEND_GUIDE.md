@@ -1,12 +1,17 @@
-# µCNC MCU Backend Specifications (SPECS)
+# µCNC MCU Backend Authoring Guide
 
-This document is a **descriptive guideline**: it records how the existing µCNC
-**MCU backends** are built and the design/code patterns they share, so new
-backends can be generated faster while keeping a similar structure, flexibility
-and build-time performance. It is not a normative contract; a backend may
-deviate from these patterns where its architecture requires it, as long as the
-deviation is documented in the backend `README.md` and the observable behavior
-expected by the core is preserved (see "expected-behavior contract", §3.2).
+This document combines the normative µCNC **MCU HAL contract** with recommended
+backend-authoring patterns. The keywords below distinguish the two:
+
+* **Required**: observable behavior or API/ABI compatibility that every backend
+  must preserve. A deviation is a contract change and requires an ADR.
+* **Recommended**: the common implementation or layout. A backend may deviate
+  when its architecture requires it and should document the reason.
+* **Example**: an observed implementation, not a requirement.
+
+Section 4 and the expected-behavior rules in §3.2 are normative. Directory
+layout, section ordering, access mechanisms and implementation techniques are
+authoring guidance unless explicitly labeled **Required**.
 
 Reference backends: `avr`, `stm32f0x/f1x/f4x/h7x`, `samd21`, `lpc176x`,
 `rp2040/rp2350`, `esp8266`, `esp32/esp32c3/esp32s3`, `virtual`.
@@ -75,7 +80,7 @@ Board HAL (src/hal/boards/*/boardmap_*.h)  <- maps friendly names to physical pi
 
 ### 1.2 Registration checklist for a new MCU
 
-A new backend requires **exactly** these registration points:
+A complete new backend normally uses these registration points:
 
 | # | Where | What |
 |---|---|---|
@@ -84,7 +89,7 @@ A new backend requires **exactly** these registration points:
 | 3 | `src/hal/boards/boards_helper.h` | Optional: register a `BOARD_<NAME>` and the matching `BOARDMAP` string. |
 | 4 | `src/hal/boards/<family>/boardmap_<board>.h` | New or existing board map defining pins and `#define MCU MCU_<ARCH>`. |
 | 5 | `makefiles/<arch>/Makefile` or a PlatformIO env | Build glue: toolchain, flags, `-D MCU=... -D BOARD=...`. Makefiles follow the `rwildcard` pattern (compile the whole `uCNC/` tree; see `makefiles/avr/makefile`). |
-| 6 | `src/hal/mcus/<arch>/README.md` | Document the backend following the README skeleton (§2.1). Every existing backend has one. |
+| 6 | `src/hal/mcus/<arch>/README.md` | Document the backend following the README skeleton (§2.1). This is required for new backends; older backends are being migrated incrementally. |
 
 ---
 
@@ -92,9 +97,9 @@ A new backend requires **exactly** these registration points:
 
 ```
 src/hal/mcus/<arch>/
-├── README.md              # backend notes (mandatory)
-├── mcu_<arch>.c           # the implementation TU (mandatory)
-├── mcumap_<arch>.h        # the compile-time map (mandatory)
+├── README.md              # backend notes (required for new backends)
+├── mcu_<arch>.c           # the implementation TU (normally required)
+├── mcumap_<arch>.h        # the compile-time map (required)
 ├── <arch>_*.c/.cpp        # optional: platform glue, extra drivers
 │                          #   (e.g. stm32h7x_arduino.cpp, rp2040_lwip.c,
 │                          #    esp32_spi.c, ic74hc595.pio + .pio.h)
@@ -124,8 +129,10 @@ Rules:
 
 ### 2.1 Backend README skeleton
 
-Every backend README should follow this fixed skeleton so backends stay
-comparable:
+New backend READMEs should follow this fixed skeleton so backends stay
+comparable. Existing README files predate this guide and may not yet contain
+every section; missing sections are documentation debt, not evidence that the
+backend violates the MCU HAL contract.
 
 1. Target chips / boards supported by this backend.
 2. Toolchain and build recipes (bare Makefile and/or PlatformIO env names),
@@ -141,10 +148,10 @@ comparable:
 
 ## 3. The `mcumap_<arch>.h` contract (compile-time layer)
 
-The mcumap is the heart of the backend: everything it can express as preprocessor
-macros must be expressed as macros (that is the #1 performance rule, see §5).
-Sections must appear in a stable order so code generators and reviewers can
-diff backends against each other.
+The mcumap is the heart of the backend. Stateless operations resolvable at
+compile time should normally be macros (see §5). The following stable section
+order is recommended because it makes generated and hand-written backends easy
+to compare; it is not part of the MCU HAL ABI.
 
 ### 3.1 Canonical section order
 
@@ -309,7 +316,8 @@ The step ISR must generate **two alternating events per step period**
 (`mcu_step_cb()` then `mcu_step_reset_cb()`); the RTC must produce a 1 ms tick
 and call `mcu_rtc_cb(uint32_t millis)`; `mcu_free_micros()` must keep counting
 even inside ISRs/atomic sections; **`mcu_dotasks()` MUST NOT be called from the
-RTC path** (README.md:375). Observed mechanisms that reproduce this contract:
+RTC path** (see the callback-contract section in `README.md`). Observed
+mechanisms that reproduce this contract:
 
 | Backend | Step generation | RTC 1 ms tick | Notes |
 |---|---|---|---|
@@ -383,22 +391,37 @@ The file should implement (or delegate to a macro / a weak default) the complete
 surface of `mcu.h`. Canonical inventory, with the implementation notes that make
 backends comparable:
 
+The API uses these implementation classes:
+
+| Class | Meaning | Failure mode when omitted |
+|---|---|---|
+| Required backend function | The backend must provide a definition when the matching feature is enabled. | Link failure is intentional. |
+| Replaceable macro/function | The mcumap may define a macro; otherwise a function with the same guarded name must exist. | Compile or link failure unless a default is listed. |
+| Weak default | `mcu.c` supplies fallback behavior which a backend may override with a strong symbol. | The documented fallback runs. |
+| Optional empty macro | `mcu.h` supplies a no-op because unsupported is valid behavior. | No operation. |
+| Feature-gated callback | Exists only when its `MCU_HAS_*`, `DETACH_*`, or related feature condition is true. | Not compiled. |
+
+Do not infer a weak default merely from an `#ifndef` guard. In particular,
+`mcu_spi_xmit`, `mcu_spi2_xmit`, the enabled UART/USB/I2C operations, timer
+conversion/control, and `mcu_init` are backend requirements unless the mcumap
+replaces them with macros.
+
 | Interface (mcu.h) | Notes / pattern |
 |---|---|
 | `mcu_init(void)` | Clock setup, watch-dog disarm, `mcu_io_init()`, peripheral inits (uart/usb/spi/i2c), pin-change/external-interrupt wiring, `mcu_start_rtc()`/1 ms tick, servo init, `mcu_enable_global_isr()`. |
-| `mcu_io_init`, `mcu_io_reset` | **Generic weak defaults exist in `mcu.c`** (`mcu_outputs_init`/`mcu_inputs_init`/`mcu_coms_init` walk every `ASSERT_PIN_IO(...)` pin and call `mcu_config_output/input/pwm/analog/pullup/input_isr`). Override only when the architecture needs extra work; `mcu_io_reset` is the per-board hook for custom power-up states. |
+| `mcu_io_init`, `mcu_io_reset` | **Generic weak defaults exist in `mcu.c`** (`mcu_outputs_init`/`mcu_inputs_init`/`mcu_coms_init` walk direct MCU pins selected by `ASSERT_PIN_IO(...)` and call `mcu_config_output/input/pwm/analog/pullup/input_isr`). Peripheral pins passed to `mcu_config_*` must also be direct MCU pins; extended pins are dispatched by the IO HAL. Override only when the architecture needs extra work; `mcu_io_reset` is the per-board hook for custom power-up states. |
 | `mcu_config_*`, `mcu_get/set/clear/toggle_output`, `mcu_get_input` | Macros (see §4.1). |
 | `mcu_freq_to_clocks(float, *ticks, *prescaller)` / `mcu_clocks_to_freq` | `frequency = CLAMP(F_STEP_MIN, frequency, F_STEP_MAX)`; convert Hz → ticks/prescaler with **integer shifts only** (`clocks = F_CPU/freq`, `while (clocks > 0xFFFF) { clocks >>= k; prescaller++ }`) so the encodings are cheap and match the hardware divider table. `ticks/prescaller` form an opaque pair to the core; the backend defines the encoding. |
 | `mcu_start_itp_isr(ticks, prescaller)` | Program timer channel A (=period) and B (=half period), reset counter, clear flags, enable both compare interrupts, start clock. |
 | `mcu_change_itp_isr(ticks, prescaller)` | Same minus enable/re-enable; used to change step rate mid-motion. |
-| `mcu_stop_itp_isr(void)` | Stop clock; usually *leave the interrupt mask enabled* (the RTC logic uses it as a "stepping in progress" gate, see AVR comment at `mcu_avr.c:950-956`). |
-| `mcu_start_step_reset_timeout()` | Optional macro (default empty, mcu.h:306-308). Hook to shorten/re-arm the step pulse or re-enable interrupts right after a step event; called by the interpolator (`interpolator.c:1099`). Only AVR defines it today. |
+| `mcu_stop_itp_isr(void)` | Stop clock; usually *leave the interrupt mask enabled* (the RTC logic uses it as a "stepping in progress" gate; see the comment in the AVR implementation). |
+| `mcu_start_step_reset_timeout()` | Optional empty macro declared near the step-interpolator API in `mcu.h`. Hook to shorten/re-arm the step pulse or re-enable interrupts right after a step event; called by the interpolator. Only AVR defines it today. |
 | `mcu_millis`, `mcu_micros`, `mcu_free_micros` | `mcu_runtime_ms` incremented by the 1 ms tick; `mcu_micros = 1000*ms + free_micros`. |
 | `MCU_ITP_ISR` | Alternating `mcu_step_cb()` / `mcu_step_reset_cb()` (see §3.2). |
 | RTC/PendSV ISR | `mcu_runtime_ms++; pends low-priority task` → `mcu_rtc_cb(mcu_runtime_ms)`. |
 | `mcu_uart_init/getc/available/clear/putc/flush` + `mcu_uart2_*` | Buffers are global, `DECL_BUFFER(uint8_t, uart_rx, RX_BUFFER_SIZE)` + `DECL_BUFFER(uint8_t, uart_tx, UART_TX_BUFFER_SIZE)` and initialized in `mcu_coms_init` (`BUFFER_INIT`). RX ISR: `if (mcu_com_rx_cb(c)) BUFFER_TRY_ENQUEUE(uart_rx, &c); else STREAM_OVF(c);`. If `DETACH_UART_FROM_MAIN_PROTOCOL`, route to `mcu_uart_rx_cb(c)` instead (weak empty default in `mcu.c`). |
 | `mcu_usb_*` (if `MCU_HAS_USB`) | tinyUSB device (include `<tusb_ucnc.h>`): `mcu_usb_init → tusb_cdc_init`, USB IRQ → `tusb_cdc_isr_handler`, `mcu_dotasks → tusb_cdc_task()` + drain `tusb_cdc_read()` into `mcu_com_rx_cb`. Non-tinyUSB platforms wrap their stack (Arduino `Serial`, `USBCDC`). |
-| `mcu_spi_init/config/start/stop/xmit/bulk_transfer` + `mcu_spi2_*` (if `MCU_HAS_SPI[2]`) | Generic weak defaults in `mcu.c` (including `mcu_spi_bulk_transfer` rolling over `mcu_spi_xmit` with `BULK_SPI_TIMEOUT` + `TASK_YIELD()`). Override with DMA or state-machine TX/RX when throughput matters. Provide `spi_port_t mcu_spi_port` (function-pointer struct `{isbusy, start, xmit, bulk_xmit, stop}`) — weak default exists. |
+| `mcu_spi_init/config/start/stop/xmit/bulk_transfer` + `mcu_spi2_*` (if `MCU_HAS_SPI[2]`) | `mcu.c` provides weak defaults for init/config/start/stop/bulk transfer. The byte `mcu_spi[_2]_xmit` primitive is required from the backend or mcumap. Bulk transfer rolls over that primitive with `BULK_SPI_TIMEOUT` + `TASK_YIELD()`. `mcu_spi_port`/`mcu_spi2_port` are generic, non-weak function tables `{isbusy, start, xmit, bulk_xmit, stop}` initialized by `mcu.c`; customize behavior by overriding the weak functions or macro substitution points, not by defining a second table. |
 | `mcu_i2c_init/config/send/receive` (if `MCU_HAS_I2C`) | Master API with `ms_timeout`; slave support when `MCU_SUPPORTS_I2C_SLAVE && I2C_ADDRESS != 0` calls `mcu_i2c_slave_cb` (weak default in mcu.c). |
 | `mcu_set_servo/get_servo` | Body wrapped `#if SERVOS_MASK > 0`; servo pulse train is multiplexed into a shared timer ISR with per-servo `_FRAME` compile-time `#if` pruning (AVR/STM32/SAMD21 pattern). |
 | `mcu_config_timeout/start_timeout` (if `MCU_HAS_ONESHOT_TIMER`) | `mcu_timeout_cb` delegate stored globally in `mcu.c`; ISR calls it. `MCU_ONESHOT_ISR`. |
@@ -407,11 +430,13 @@ backends comparable:
 | `mcu_dotasks(void)` | Called from `cnc_run()` (cnc.c): tinyUSB task, port polling, feeding RX into `mcu_com_rx_cb`. Empty OK on ISR-driven designs (AVR). ESP32 variants use it plus FreeRTOS background tasks. |
 | `mcu_delay_loop`, `mcu_delay_us/ns/hz/cycles` | Macro or function; cycle-counted base for sub-ms delays. |
 
-Every function must be `#ifndef`-guarded where a mcumap macro *could* replace it
-(follow the exact guards already present in `mcu.h`), and feature-gated with the
-same `MCU_HAS_*`/`SERVOS_MASK` guards used by generic code.
+Every replaceable function must be `#ifndef`-guarded where a mcumap macro could
+replace it (follow the exact guards already present in `mcu.h`), and
+feature-gated with the same `MCU_HAS_*`/`SERVOS_MASK` guards used by generic
+code. Required functions that are not substitution points do not need such a
+guard.
 
-### 4.3 The callback contract (mcu.h:88-95)
+### 4.3 The callback contract
 
 These externs are implemented by core/other TUs; the backend only *calls* them
 from ISRs/events. `MCU_CALLBACK`/`MCU_RX_CALLBACK`/`MCU_IO_CALLBACK` are
@@ -432,7 +457,8 @@ redefine.
 | `mcu_i2c_slave_cb(data, len)` | I2C slave transaction (`MCU_SUPPORTS_I2C_SLAVE`) | |
 | `mcu_uart/uart2/usb/telnet/bt_rx_cb` | Only when the matching `DETACH_<PORT>_FROM_MAIN_PROTOCOL` is defined | Weak empty defaults in mcu.c. |
 
-Design constraints enforced by the core (see README.md:326-333):
+Design constraints enforced by the core (see the MCU requirements in
+`README.md`):
 * Callbacks are **not reentrant**: the same callback must never be entered twice
   concurrently (ISR nesting on the *same* event is forbidden; *different*
   callbacks may nest, e.g. `mcu_step_reset_cb` preempting `mcu_step_cb`).
@@ -520,14 +546,19 @@ The MCU HAL evolves (recent example: "custom encoder read function hardware
 independency", PR #977). Because every mcu.h entry is both a prototype and a
 substitution point, growing the surface follows a fixed protocol:
 
-1. **Guard**: wrap the new entry in `mcu.h` inside `#ifndef <name>` so any
-   backend may replace it with a macro without breaking existing definitions.
-2. **Prototype**: declare it inside the guard.
-3. **Weak default**: add `__attribute__((weak))` behavior in `mcu.c` so
-   backends that do not implement it still link.
-4. Ship the three changes in the same commit as the first user of the entry.
-5. Surface modifications are **contract changes**: they require an ADR
-   (`docs/adr/`) and a SPECS.md diff in the same PR.
+1. **Classify the entry** using the API classes in §4.2. Decide explicitly
+   whether unsupported behavior is valid.
+2. **Guard replaceable entries**: wrap a macro/function substitution point in
+   `mcu.h` inside `#ifndef <name>`.
+3. **Prototype**: declare the function inside the guard, or unconditionally for
+   a required non-replaceable function.
+4. **Default only when safe**: add a weak implementation in `mcu.c` for an
+   optional capability with a meaningful fallback. Use an empty macro only when
+   a no-op is valid. For mandatory hardware behavior, deliberately omit a
+   default so incomplete backends fail at link time.
+5. Ship the interface and its first user together.
+6. Surface modifications are **contract changes**: they require an ADR
+   (`docs/adr/`) and a `BACKEND_GUIDE.md` diff in the same PR.
 
 Backend-private helpers that are not meant to be overridable stay OUT of mcu.h
 (e.g. STM32F1's `mcu_config_output_af`, the ESP32 `mcu_gen_*` family): they are
@@ -536,7 +567,7 @@ file-local or mcumap-local and follow the backend's own naming.
 > Known retro-fits: `mcu_config_analog` and `mcu_config_input_isr` were called
 > from generic init (`mcu.c`, `io_hal.h`) without guards, prototypes or
 > defaults — they are now part of the guarded surface with weak defaults.
-> `mcu_start_step_reset_timeout()` (mcu.h:306-308) is an optional step-pulse
+> `mcu_start_step_reset_timeout()` is an optional step-pulse
 > hook called by the interpolator; only AVR implements it today.
 
 ---
@@ -558,10 +589,13 @@ ideally preserve them to reach the same build-time efficiency and flexibility:
    Generic code in `mcu.c` already does this per-pin — the backend must expose
    the macros that make it work (`mcu_config_*`, `mcu_set/clear/toggle_output`,
    ...), including for pins the backend itself doesn't know about.
-4. **Weak defaults in `mcu.c`, strong overrides in the backend**: `mcu_io_init`,
-   `mcu_io_reset`, `mcu_eeprom_*`, `mcu_spi*`, `mcu_*_rx_cb`, `mcu_i2c_slave_cb`,
-   `mcu_delay_loop`, `mcu_com_rx_cb` all have `__attribute__((weak))` versions,
-   so a backend only writes what the hardware actually needs.
+4. **Weak defaults in `mcu.c`, strong overrides in the backend**:
+   `mcu_io_init`, `mcu_io_reset`, `mcu_config_analog`,
+   `mcu_config_input_isr`, `mcu_eeprom_*`, most `mcu_spi*` operations (but not
+   `mcu_spi[_2]_xmit`), detached `mcu_*_rx_cb` hooks, and
+   `mcu_i2c_slave_cb` have weak versions. `mcu_delay_loop`, `mcu_com_rx_cb`, and
+   the SPI port tables are strong generic symbols. Required hardware operations
+   intentionally have no fallback.
 5. **Integer math in ISRs.** All hot paths (`mcu_freq_to_clocks`,
    accumulator steppers, PWM scaling) use integer arithmetic and shifts;
    floating point appears only at configuration time.
@@ -640,8 +674,8 @@ Backends are consumed by both Makefiles and PlatformIO. Conventions:
 
 ## 8. Minimum hardware requirements (gate for a new backend)
 
-From README.md:317-324 — a target MCU should provide, to be a *complete*
-backend:
+From the MCU requirements in `README.md`, a target MCU should provide, to be a
+*complete* backend:
 
 * at least 2 hardware timers (ITP + RTC; 1 is possible with limitations);
 * at least one communications port (UART/USB/...);
@@ -673,8 +707,8 @@ backend:
 - [ ] `README.md` following the §2.1 skeleton (toolchain/access tier,
       timers/IRQs/priorities, primary stream per board, NVM strategy,
       limitations and deviations).
-- [ ] Any mcu.h surface addition shipped with guard + prototype + weak default
-      (§4.7); contract changes also carry an ADR.
+- [ ] Any `mcu.h` surface addition classified and shipped according to §4.7;
+      contract changes also carry an ADR.
 - [ ] Optional: custom shift provider for IC74HC595 (§4.6); mcumap regenerated
       via `docs/mcumap_gen.xlsx` generator to stay consistent with other
       backends.

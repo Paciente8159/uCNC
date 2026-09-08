@@ -37,6 +37,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install "platformio==6.1.18"
 
+      - name: Validate MCU pin contract
+        run: python tests/check_mcu_pin_contract.py
+
       - name: Run Linux unit tests
         run: pio test -e EMULATOR_LINUX_TEST
 
