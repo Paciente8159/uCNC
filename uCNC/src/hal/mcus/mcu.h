@@ -113,6 +113,22 @@ extern "C"
 #endif
 
 /**
+ * configs a pin as an analog input channel
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_config_analog
+	void mcu_config_analog(uint8_t pin);
+#endif
+
+/**
+ * configs a pin with interrupt on change enabled
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_config_input_isr
+	void mcu_config_input_isr(uint8_t pin);
+#endif
+
+/**
  * config a pin in output mode
  * can be defined either as a function or a macro call
  * */

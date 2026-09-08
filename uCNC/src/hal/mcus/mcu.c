@@ -947,6 +947,20 @@ void __attribute__((weak)) mcu_io_reset(void)
 }
 #endif
 
+#if !defined(mcu_config_analog)
+void __attribute__((weak)) mcu_config_analog(uint8_t pin)
+{
+	(void)pin;
+}
+#endif
+
+#if !defined(mcu_config_input_isr)
+void __attribute__((weak)) mcu_config_input_isr(uint8_t pin)
+{
+	(void)pin;
+}
+#endif
+
 // Non volatile memory
 /**
  * gets a byte at the given EEPROM (or other non volatile memory) address of the MCU.
