@@ -844,6 +844,9 @@ static void FORCEINLINE mcu_coms_init(void)
 #endif
 #if ASSERT_PIN_IO(SPI2_SDI)
 	mcu_config_input(SPI2_SDI);
+#ifdef SPI2_SDI_PULLUP
+	mcu_config_pullup(SPI2_SDI);
+#endif
 #endif
 #if ASSERT_PIN_IO(SPI2_SDO)
 	mcu_config_output(SPI2_SDO);
@@ -953,7 +956,6 @@ void __attribute__((weak)) mcu_config_analog(uint8_t pin)
 	(void)pin;
 }
 #endif
-
 #if !defined(mcu_config_input_isr)
 void __attribute__((weak)) mcu_config_input_isr(uint8_t pin)
 {
