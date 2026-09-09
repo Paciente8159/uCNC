@@ -1,0 +1,121 @@
+Processing RA4-UNO-R4 (framework: arduino; platform: platformio/renesas-ra@1.9.0; board: uno_r4_minima)
+--------------------------------------------------------------------------------
+Verbose mode can be enabled via `-v, --verbose` option
+CONFIGURATION: https://docs.platformio.org/page/boards/renesas-ra/uno_r4_minima.html
+PLATFORM: Renesas RA (1.9.0) > Arduino Uno R4 Minima
+HARDWARE: RA4M1 48MHz, 32KB RAM, 256KB Flash
+DEBUG: Current (cmsis-dap) External (cmsis-dap, jlink)
+PACKAGES: 
+ - framework-arduinorenesas-uno @ 1.6.0 
+ - tool-dfuutil-arduino @ 1.11.0 
+ - toolchain-gccarmnoneeabi @ 1.70201.0 (7.2.1)
+Converting uCNC.ino
+LDF: Library Dependency Finder -> https://bit.ly/configure-pio-ldf
+LDF Modes: Finder ~ chain, Compatibility ~ soft
+Found 22 compatible libraries
+Scanning dependencies...
+Dependency Graph
+|-- EEPROM @ 1.0
+|-- Wire
+|-- SPI
+Building in release mode
+Compiling .pio\build\RA4-UNO-R4\src\src\buffer.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\cnc.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\core\interpolator.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\core\io_control.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\core\motion_control.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\core\parser.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\core\parser_expr.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\core\planner.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\kinematics\kinematic.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\kinematics\kinematic_cartesian.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\kinematics\kinematic_corexy.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\kinematics\kinematic_delta.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\kinematics\kinematic_dummy.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\kinematics\kinematic_linear_delta.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\kinematics\kinematic_rtheta.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\kinematics\kinematic_scara.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\avr\mcu_avr.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\esp32\esp32_bt.cpp.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\esp32\esp32_eeprom.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\esp32\esp32_i2s.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\esp32\esp32_spi.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\esp32\mcu_esp32.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\esp32c3\esp32c3_i2s.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\esp32c3\mcu_esp32c3.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\esp32common\esp32_common.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\esp32common\esp32_eeprom.cpp.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\esp32common\esp32_i2c.cpp.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\esp32common\esp32_lwip.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\esp32common\esp32_signal.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\esp32common\esp32_spi.cpp.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\esp32common\esp32_task.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\esp32common\esp32_uart.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\esp32common\esp32_usb.cpp.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\esp32common\esp32_wifi.cpp.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\esp32s3\esp32s3_i2s.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\esp32s3\mcu_esp32s3.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\esp8266\esp8266_arduino.cpp.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\esp8266\esp8266_eeprom.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\esp8266\esp8266_flash.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\esp8266\esp8266_lwip.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\esp8266\esp8266_signal.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\esp8266\esp8266_spi.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\esp8266\esp8266_uart.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\esp8266\esp8266_wifi.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\esp8266\mcu_esp8266.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\lpc176x\lpc176x_arduino.cpp.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\lpc176x\mcu_lpc176x.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\mcu.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\ra4\mcu_ra4.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\rp2040\mcu_rp2040.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\rp2040\rp2040_arduino.cpp.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\rp2040\rp2040_lwip.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\rp2350\mcu_rp2350.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\rp2350\rp2350_arduino.cpp.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\rp2350\rp2350_lwip.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\samd21\mcu_samd21.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\stm32f0x\mcu_stm32f0x.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\stm32f1x\mcu_stm32f1x.c.o
+uCNC\src\hal\mcus\ra4\mcu_ra4.c:106:13: error: static declaration of 'mcu_uart_init' follows non-static declaration
+ static void mcu_uart_init(void)
+             ^~~~~~~~~~~~~
+In file included from uCNC\src\hal\mcus\ra4\../../../hal/boards/../mcus/mcudefs.h:125:0,
+                 from uCNC\src\hal\mcus\ra4\../../../hal/boards/boarddefs.h:45,
+                 from uCNC\src\hal\mcus\ra4\../../../cnc_hal_config_helper.h:49,
+                 from uCNC\src\hal\mcus\ra4\../../../cnc.h:128,
+                 from uCNC\src\hal\mcus\ra4\mcu_ra4.c:20:
+uCNC\src\hal\mcus\ra4\../../../hal/boards/../mcus/mcu.h:616:7: note: previous declaration of 'mcu_uart_init' was here
+  void mcu_uart_init(void);
+       ^~~~~~~~~~~~~
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\stm32f4x\mcu_stm32f4x.c.o
+uCNC\src\hal\mcus\ra4\mcu_ra4.c: In function 'mcu_init':
+uCNC\src\hal\mcus\ra4\mcu_ra4.c:272:17: error: 'SystemCoreClock' undeclared (first use in this function)
+  SysTick_Config(SystemCoreClock / 1000);
+                 ^~~~~~~~~~~~~~~
+uCNC\src\hal\mcus\ra4\mcu_ra4.c:272:17: note: each undeclared identifier is reported only once for each function it appears in
+uCNC\src\hal\mcus\ra4\mcu_ra4.c: At top level:
+uCNC\src\hal\mcus\ra4\mcu_ra4.c:348:6: error: conflicting types for 'mcu_clocks_to_freq'
+ void mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller, float *frequency)
+      ^~~~~~~~~~~~~~~~~~
+In file included from uCNC\src\hal\mcus\ra4\../../../hal/boards/../mcus/mcudefs.h:125:0,
+                 from uCNC\src\hal\mcus\ra4\../../../hal/boards/boarddefs.h:45,
+                 from uCNC\src\hal\mcus\ra4\../../../cnc_hal_config_helper.h:49,
+                 from uCNC\src\hal\mcus\ra4\../../../cnc.h:128,
+                 from uCNC\src\hal\mcus\ra4\mcu_ra4.c:20:
+uCNC\src\hal\mcus\ra4\../../../hal/boards/../mcus/mcu.h:305:8: note: previous declaration of 'mcu_clocks_to_freq' was here
+  float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller);
+        ^~~~~~~~~~~~~~~~~~
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\stm32f4x\stm32f4x.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\stm32h7x\mcu_stm32h7x.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\stm32h7x\stm32h7x_arduino.cpp.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\virtual\mcu_virtual.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\virtual\virtual_linux.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\virtual\virtual_windows.c.o
+*** [.pio\build\RA4-UNO-R4\src\src\hal\mcus\ra4\mcu_ra4.c.o] Error 1
+========================== [FAILED] Took 4.85 seconds ==========================
+
+Environment    Status    Duration
+-------------  --------  ------------
+RA4-UNO-R4     FAILED    00:00:04.850
+==================== 1 failed, 0 succeeded in 00:00:04.850 ====================

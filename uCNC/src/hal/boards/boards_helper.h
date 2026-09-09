@@ -97,6 +97,10 @@ extern "C"
  */
 #define BOARD_RPI_PICO2 6100
 /**
+ * RA4M1
+ */
+#define BOARD_UNO_R4 7000
+/**
  * Windows/Linux
  */
 #define BOARD_VIRTUAL 99999
@@ -190,6 +194,9 @@ extern "C"
 // RP2350
 #elif (BOARD == BOARD_RPI_PICO2)
 #define BOARDMAP "rp2350/boardmap_rpi_pico2.h"
+// RA4M1
+#elif (BOARD == BOARD_UNO_R4)
+#define BOARDMAP "ra4/boardmap_uno_r4.h"
 // CUSTOM
 #elif (BOARD == BOARD_CUSTOM) || (BOARD == BOARD_UNDEFINED)
 #define BOARDMAP "../../../boardmap_overrides.h"

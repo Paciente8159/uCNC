@@ -1,0 +1,36 @@
+Processing RA4-UNO-R4 (framework: arduino; platform: platformio/renesas-ra@1.9.0; board: uno_r4_minima)
+--------------------------------------------------------------------------------
+Verbose mode can be enabled via `-v, --verbose` option
+CONFIGURATION: https://docs.platformio.org/page/boards/renesas-ra/uno_r4_minima.html
+PLATFORM: Renesas RA (1.9.0) > Arduino Uno R4 Minima
+HARDWARE: RA4M1 48MHz, 32KB RAM, 256KB Flash
+DEBUG: Current (cmsis-dap) External (cmsis-dap, jlink)
+PACKAGES: 
+ - framework-arduinorenesas-uno @ 1.6.0 
+ - tool-dfuutil-arduino @ 1.11.0 
+ - toolchain-gccarmnoneeabi @ 1.70201.0 (7.2.1)
+Converting uCNC.ino
+LDF: Library Dependency Finder -> https://bit.ly/configure-pio-ldf
+LDF Modes: Finder ~ chain, Compatibility ~ soft
+Found 22 compatible libraries
+Scanning dependencies...
+Dependency Graph
+|-- EEPROM @ 1.0
+|-- Wire
+|-- SPI
+Building in release mode
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\ra4\mcu_ra4.c.o
+Compiling .pio\build\RA4-UNO-R4\src\uCNC.ino.cpp.o
+Linking .pio\build\RA4-UNO-R4\firmware.elf
+.pio\build\RA4-UNO-R4\src\src\hal\mcus\ra4\mcu_ra4.c.o: In function `mcu_uart_available':
+mcu_ra4.c:(.text.mcu_uart_available+0xa): undefined reference to `BUFFER_GETDATA'
+.pio\build\RA4-UNO-R4\src\src\hal\mcus\ra4\mcu_ra4.c.o: In function `mcu_uart_flush':
+mcu_ra4.c:(.text.mcu_uart_flush+0xc): undefined reference to `BUFFER_GETDATA'
+collect2.exe: error: ld returned 1 exit status
+*** [.pio\build\RA4-UNO-R4\firmware.elf] Error 1
+========================= [FAILED] Took 10.40 seconds =========================
+
+Environment    Status    Duration
+-------------  --------  ------------
+RA4-UNO-R4     FAILED    00:00:10.401
+==================== 1 failed, 0 succeeded in 00:00:10.401 ====================

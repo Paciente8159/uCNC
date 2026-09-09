@@ -1,0 +1,181 @@
+Processing RA4-UNO-R4 (framework: arduino; platform: platformio/renesas-ra@1.9.0; board: uno_r4_minima)
+--------------------------------------------------------------------------------
+Verbose mode can be enabled via `-v, --verbose` option
+CONFIGURATION: https://docs.platformio.org/page/boards/renesas-ra/uno_r4_minima.html
+PLATFORM: Renesas RA (1.9.0) > Arduino Uno R4 Minima
+HARDWARE: RA4M1 48MHz, 32KB RAM, 256KB Flash
+DEBUG: Current (cmsis-dap) External (cmsis-dap, jlink)
+PACKAGES: 
+ - framework-arduinorenesas-uno @ 1.6.0 
+ - tool-dfuutil-arduino @ 1.11.0 
+ - toolchain-gccarmnoneeabi @ 1.70201.0 (7.2.1)
+Converting uCNC.ino
+LDF: Library Dependency Finder -> https://bit.ly/configure-pio-ldf
+LDF Modes: Finder ~ chain, Compatibility ~ soft
+Found 22 compatible libraries
+Scanning dependencies...
+Dependency Graph
+|-- EEPROM @ 1.0
+|-- Wire
+|-- SPI
+Building in release mode
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\mcus\ra4\mcu_ra4.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\tools\tool.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\tools\tools\embroidery_stepper.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\tools\tools\laser_ppi.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\tools\tools\laser_pwm.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\tools\tools\pen_servo.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\tools\tools\plasma_thc.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\tools\tools\spindle_besc.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\tools\tools\spindle_pwm.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\tools\tools\spindle_relay.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\tools\tools\vfd_modbus.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\hal\tools\tools\vfd_pwm.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\interface\grbl_print.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\interface\grbl_protocol.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\interface\grbl_settings.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\interface\grbl_stream.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\module.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\modules\digimstep.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\modules\digipot.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\modules\encoder.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\modules\file_system.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\modules\flash_update.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\modules\modbus.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\modules\net\http.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\modules\net\socket.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\modules\net\telnet.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\modules\net\utils\http_request.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\modules\net\websocket.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\modules\pid.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\modules\shift_register.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\modules\softi2c.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\modules\softspi.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\modules\softuart.c.o
+Compiling .pio\build\RA4-UNO-R4\src\src\modules\system_menu.c.o
+Compiling .pio\build\RA4-UNO-R4\src\uCNC.ino.cpp.o
+Compiling .pio\build\RA4-UNO-R4\libd9d\Storage\Dir.cpp.o
+Compiling .pio\build\RA4-UNO-R4\libd9d\Storage\File.cpp.o
+Compiling .pio\build\RA4-UNO-R4\libd9d\Storage\FileBase.cpp.o
+Compiling .pio\build\RA4-UNO-R4\libd9d\Storage\FileHandle.cpp.o
+Compiling .pio\build\RA4-UNO-R4\libd9d\Storage\FilePath.cpp.o
+Compiling .pio\build\RA4-UNO-R4\libd9d\Storage\FileSystem.cpp.o
+Compiling .pio\build\RA4-UNO-R4\libd9d\Storage\FileSystemHandle.cpp.o
+Compiling .pio\build\RA4-UNO-R4\libd9d\Storage\storage_common.cpp.o
+Compiling .pio\build\RA4-UNO-R4\libd9d\Storage\storage_retarget.cpp.o
+Compiling .pio\build\RA4-UNO-R4\lib5de\BlockDevices\BlockDevice.cpp.o
+Compiling .pio\build\RA4-UNO-R4\lib5de\BlockDevices\BufferedBlockDevice.cpp.o
+Compiling .pio\build\RA4-UNO-R4\lib5de\BlockDevices\ChainingBlockDevice.cpp.o
+Compiling .pio\build\RA4-UNO-R4\lib5de\BlockDevices\CodeFlashBlockDevice.cpp.o
+Compiling .pio\build\RA4-UNO-R4\lib5de\BlockDevices\DataFlashBlockDevice.cpp.o
+Compiling .pio\build\RA4-UNO-R4\lib5de\BlockDevices\ExhaustibleBlockDevice.cpp.o
+Compiling .pio\build\RA4-UNO-R4\lib5de\BlockDevices\FlashSimBlockDevice.cpp.o
+Compiling .pio\build\RA4-UNO-R4\lib5de\BlockDevices\HeapBlockDevice.cpp.o
+Compiling .pio\build\RA4-UNO-R4\lib5de\BlockDevices\MBRBlockDevice.cpp.o
+Compiling .pio\build\RA4-UNO-R4\lib5de\BlockDevices\ObservingBlockDevice.cpp.o
+Compiling .pio\build\RA4-UNO-R4\lib5de\BlockDevices\QSPIFlashBlockDevice.cpp.o
+Compiling .pio\build\RA4-UNO-R4\lib5de\BlockDevices\ReadOnlyBlockDevice.cpp.o
+Compiling .pio\build\RA4-UNO-R4\lib5de\BlockDevices\SDCardBlockDevice.cpp.o
+Compiling .pio\build\RA4-UNO-R4\lib5de\BlockDevices\SlicingBlockDevice.cpp.o
+Archiving .pio\build\RA4-UNO-R4\libd9d\libStorage.a
+Compiling .pio\build\RA4-UNO-R4\lib5de\BlockDevices\virtualEEPROM.cpp.o
+Compiling .pio\build\RA4-UNO-R4\lib80e\Wire\Wire.cpp.o
+Indexing .pio\build\RA4-UNO-R4\libd9d\libStorage.a
+Compiling .pio\build\RA4-UNO-R4\libcfa\SPI\SPI.cpp.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduinoVariant\tmp_gen_c_files\common_data.c.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduinoVariant\tmp_gen_c_files\main.c.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduinoVariant\tmp_gen_c_files\pin_data.c.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduinoVariant\variant.cpp.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\FspTimer.cpp.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\IRQManager.cpp.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\Interrupts.cpp.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\Serial.cpp.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\SerialObj1.cpp.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\SerialObj2.cpp.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\SerialObj3.cpp.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\Tone.cpp.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\WMath.cpp.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\analog.cpp.o
+Archiving .pio\build\RA4-UNO-R4\lib5de\libBlockDevices.a
+Archiving .pio\build\RA4-UNO-R4\lib80e\libWire.a
+Indexing .pio\build\RA4-UNO-R4\lib80e\libWire.a
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\api\CanMsg.cpp.o
+Archiving .pio\build\RA4-UNO-R4\libFrameworkArduinoVariant.a
+Indexing .pio\build\RA4-UNO-R4\lib5de\libBlockDevices.a
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\api\CanMsgRingbuffer.cpp.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\api\Common.cpp.o
+Indexing .pio\build\RA4-UNO-R4\libFrameworkArduinoVariant.a
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\api\IPAddress.cpp.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\api\PluggableUSB.cpp.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\api\Print.cpp.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\api\Stream.cpp.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\api\String.cpp.o
+Archiving .pio\build\RA4-UNO-R4\libcfa\libSPI.a
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\boot.cpp.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\cm_backtrace\cm_backtrace.c.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\cm_backtrace\fault_handler\gcc\cmb_fault.S.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\cortex_handlers.c.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\dac.cpp.o
+Indexing .pio\build\RA4-UNO-R4\libcfa\libSPI.a
+<command-line>:0:0: warning: "F_CPU" redefined
+<command-line>:0:0: note: this is the location of the previous definition
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\digital.cpp.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\itoa.c.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\main.cpp.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\pinDefinitions.cpp.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\pulse.cpp.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\pwm.cpp.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\shift.cpp.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\time.cpp.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\tinyusb\class\audio\audio_device.c.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\tinyusb\class\bth\bth_device.c.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\tinyusb\class\cdc\cdc_device.c.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\tinyusb\class\cdc\cdc_host.c.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\tinyusb\class\cdc\cdc_rndis_host.c.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\tinyusb\class\dfu\dfu_device.c.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\tinyusb\class\dfu\dfu_rt_device.c.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\tinyusb\class\hid\hid_device.c.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\tinyusb\class\hid\hid_host.c.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\tinyusb\class\midi\midi_device.c.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\tinyusb\class\msc\msc_device.c.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\tinyusb\class\msc\msc_host.c.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\tinyusb\class\net\ecm_rndis_device.c.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\tinyusb\class\net\ncm_device.c.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\tinyusb\class\usbtmc\usbtmc_device.c.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\tinyusb\class\vendor\vendor_device.c.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\tinyusb\class\vendor\vendor_host.c.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\tinyusb\class\video\video_device.c.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\tinyusb\common\tusb_fifo.c.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\tinyusb\device\usbd.c.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\tinyusb\device\usbd_control.c.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\tinyusb\host\hub.c.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\tinyusb\host\usbh.c.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\tinyusb\rusb2\dcd_rusb2.c.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\tinyusb\rusb2\hcd_rusb2.c.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\tinyusb\rusb2\rusb2_common.c.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\tinyusb\tusb.c.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\usb\SerialUSB.cpp.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\usb\USB.cpp.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\variant_helper.cpp.o
+Compiling .pio\build\RA4-UNO-R4\FrameworkArduino\vector_table.c.o
+Archiving .pio\build\RA4-UNO-R4\libFrameworkArduino.a
+Indexing .pio\build\RA4-UNO-R4\libFrameworkArduino.a
+Linking .pio\build\RA4-UNO-R4\firmware.elf
+.pio\build\RA4-UNO-R4\src\src\hal\mcus\ra4\mcu_ra4.c.o: In function `mcu_uart_available':
+mcu_ra4.c:(.text.mcu_uart_available+0xa): undefined reference to `BUFFER_GETDATA'
+.pio\build\RA4-UNO-R4\src\src\hal\mcus\ra4\mcu_ra4.c.o: In function `mcu_uart_flush':
+mcu_ra4.c:(.text.mcu_uart_flush+0xc): undefined reference to `BUFFER_GETDATA'
+.pio\build\RA4-UNO-R4\src\src\hal\mcus\ra4\mcu_ra4.c.o: In function `SysTick_Handler':
+mcu_ra4.c:(.text.SysTick_Handler+0xc): undefined reference to `mcu_runtime_ms'
+.pio\build\RA4-UNO-R4\src\src\hal\mcus\ra4\mcu_ra4.c.o: In function `mcu_init':
+mcu_ra4.c:(.text.mcu_init+0x74): undefined reference to `SysTick_Config'
+.pio\build\RA4-UNO-R4\src\src\hal\mcus\ra4\mcu_ra4.c.o: In function `mcu_millis':
+mcu_ra4.c:(.text.mcu_millis+0x8): undefined reference to `mcu_runtime_ms'
+collect2.exe: error: ld returned 1 exit status
+*** [.pio\build\RA4-UNO-R4\firmware.elf] Error 1
+========================= [FAILED] Took 11.72 seconds =========================
+
+Environment    Status    Duration
+-------------  --------  ------------
+RA4-UNO-R4     FAILED    00:00:11.724
+==================== 1 failed, 0 succeeded in 00:00:11.724 ====================

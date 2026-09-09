@@ -1,0 +1,48 @@
+Processing RA4-UNO-R4 (framework: arduino; platform: platformio/renesas-ra@1.9.0; board: uno_r4_minima)
+--------------------------------------------------------------------------------
+Verbose mode can be enabled via `-v, --verbose` option
+CONFIGURATION: https://docs.platformio.org/page/boards/renesas-ra/uno_r4_minima.html
+PLATFORM: Renesas RA (1.9.0) > Arduino Uno R4 Minima
+HARDWARE: RA4M1 48MHz, 32KB RAM, 256KB Flash
+DEBUG: Current (cmsis-dap) External (cmsis-dap, jlink)
+PACKAGES: 
+ - framework-arduinorenesas-uno @ 1.6.0 
+ - tool-dfuutil-arduino @ 1.11.0 
+ - toolchain-gccarmnoneeabi @ 1.70201.0 (7.2.1)
+Converting uCNC.ino
+LDF: Library Dependency Finder -> https://bit.ly/configure-pio-ldf
+LDF Modes: Finder ~ chain, Compatibility ~ soft
+Found 22 compatible libraries
+Scanning dependencies...
+Dependency Graph
+|-- EEPROM @ 1.0
+|-- Wire
+|-- SPI
+Building in release mode
+Compiling .pio\build\RA4-UNO-R4\src\uCNC.ino.cpp.o
+Linking .pio\build\RA4-UNO-R4\firmware.elf
+.pio\build\RA4-UNO-R4\src\src\cnc.c.o: In function `cnc_dotasks':
+cnc.c:(.text.cnc_dotasks+0x2): undefined reference to `mcu_dotasks'
+.pio\build\RA4-UNO-R4\src\src\cnc.c.o: In function `cnc_delay_ms':
+cnc.c:(.text.cnc_delay_ms+0x4): undefined reference to `mcu_millis'
+cnc.c:(.text.cnc_delay_ms+0x14): undefined reference to `mcu_millis'
+.pio\build\RA4-UNO-R4\src\src\cnc.c.o: In function `cnc_dwell_ms':
+cnc.c:(.text.cnc_dwell_ms+0x4): undefined reference to `mcu_millis'
+cnc.c:(.text.cnc_dwell_ms+0xa): undefined reference to `mcu_millis'
+.pio\build\RA4-UNO-R4\src\src\cnc.c.o: In function `cnc_init':
+cnc.c:(.text.cnc_init+0xa): undefined reference to `mcu_init'
+.pio\build\RA4-UNO-R4\src\src\hal\tools\tools\spindle_pwm.c.o: In function `set_speed':
+spindle_pwm.c:(.text.set_speed+0x12): undefined reference to `mcu_set_pwm'
+.pio\build\RA4-UNO-R4\src\src\interface\grbl_stream.c.o:(.data.uart_grbl_stream+0x0): undefined reference to `mcu_uart_getc'
+.pio\build\RA4-UNO-R4\src\src\interface\grbl_stream.c.o:(.data.uart_grbl_stream+0x4): undefined reference to `mcu_uart_available'
+.pio\build\RA4-UNO-R4\src\src\interface\grbl_stream.c.o:(.data.uart_grbl_stream+0x8): undefined reference to `mcu_uart_clear'
+.pio\build\RA4-UNO-R4\src\src\interface\grbl_stream.c.o:(.data.uart_grbl_stream+0xc): undefined reference to `mcu_uart_putc'
+.pio\build\RA4-UNO-R4\src\src\interface\grbl_stream.c.o:(.data.uart_grbl_stream+0x10): undefined reference to `mcu_uart_flush'
+collect2.exe: error: ld returned 1 exit status
+*** [.pio\build\RA4-UNO-R4\firmware.elf] Error 1
+========================== [FAILED] Took 3.20 seconds ==========================
+
+Environment    Status    Duration
+-------------  --------  ------------
+RA4-UNO-R4     FAILED    00:00:03.201
+==================== 1 failed, 0 succeeded in 00:00:03.201 ====================
