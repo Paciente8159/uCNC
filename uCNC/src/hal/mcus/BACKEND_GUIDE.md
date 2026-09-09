@@ -17,7 +17,7 @@ Reference backends: `avr`, `stm32f0x/f1x/f4x/h7x`, `samd21`, `lpc176x`,
 `rp2040/rp2350`, `esp8266`, `esp32/esp32c3/esp32s3`, `virtual`.
 
 It is written for backend authors and code generators. The companion document
-[`README.md`](README.md) (same folder) is the user-facing guide and contains the
+[`README.md`](README.md) (same folder as BACKEND_GUIDE.md) is the user-facing guide and contains the
 canonical pin numbering table; this spec references it as the single source of
 truth for pin numbers. Terminology is pinned in `CONTEXT.md` (repo root);
 contract-level decisions live in `docs/adr/`.
