@@ -9,7 +9,8 @@ backend-authoring patterns. The keywords below distinguish the two:
   when its architecture requires it and should document the reason.
 * **Example**: an observed implementation, not a requirement.
 
-Section 4 and the expected-behavior rules in §3.3 are normative. Directory
+Section 4's API/behavior rules and the expected-behavior rules in §3.3 are
+normative; implementation examples in those sections remain examples. Directory
 layout, section ordering, access mechanisms and implementation techniques are
 authoring guidance unless explicitly labeled **Required**.
 
@@ -21,6 +22,37 @@ It is written for backend authors and code generators. The companion document
 canonical pin numbering table; this spec references it as the single source of
 truth for pin numbers. Terminology is pinned in `CONTEXT.md` (repo root);
 contract-level decisions live in `docs/adr/`.
+
+Existing code is evidence of implementation techniques, not proof that every
+backend meets every authoring recommendation. In particular, the C99/vendor-SDK
+baseline below is a requirement for **new** backends, not a description of all
+current build environments. See §10.1 for the source comparison and limitations.
+
+### Authoring workflow
+
+1. **Define the initial support scope.** List supported parts, packages,
+   SDK/device-header versions and build paths. Inventory GPIO, mux routes,
+   peripheral instances, timer clocks, IRQ sharing, DMA and flash geometry
+   from vendor sources. Record document revision/table or header symbol for
+   each hardware fact. Completion: a capability matrix with explicit supported,
+   absent, not-yet-implemented and uninvestigated entries for the current scope.
+   One chip or a known compatible chip set is a valid starting point; a survey
+   of the entire family is not a prerequisite.
+2. **Choose implementation boundaries.** Use §2.2 to separate board choices,
+   silicon facts, generated aliases and runtime ownership. Select reference
+   code per subsystem using §10.1. Completion: a file/dependency plan and a
+   resource allocation table covering every enabled peripheral.
+3. **Prove the vertical slice.** Register the backend, build the minimal board,
+   and bring up GPIO, the clock/tick, one stream and step generation. Completion:
+   a linked image and measured signals on the first board.
+4. **Parameterize and generate.** Implement the current support scope,
+   validate selections (§3.4), then generate the full canonical alias surface
+   (§3.5). Completion: alternate board selections require configuration changes
+   only within the implemented scope, and unsupported selections produce useful
+   diagnostics. Broader chip/instance/route support can be added incrementally.
+5. **Validate and report.** Apply §7, recording commands, configurations,
+   results and hardware measurements. Completion: each supported feature has
+   evidence at the appropriate level; untested combinations remain identified.
 
 ---
 
@@ -47,7 +79,7 @@ Board HAL (src/hal/boards/*/boardmap_*.h)  <- maps friendly names to physical pi
   the physical location of each pin. For each defined pin it must provide at
   least `<PIN>_BIT` (and `<PIN>_PORT` for port-based MCUs). It also selects the
   MCU: `#define MCU MCU_<ARCH>`.
-* The **MCU HAL** (what this spec describes) is two files:
+* The **MCU backend** has two entry files, with optional supporting modules:
   * `mcumap_<arch>.h` — compile-time glue: pin aliases, register access macros,
     feature flags, macro implementations of `mcu_*` calls.
   * `mcu_<arch>.c` — runtime code: ISRs, peripherals init, functions whose
@@ -57,7 +89,7 @@ Board HAL (src/hal/boards/*/boardmap_*.h)  <- maps friendly names to physical pi
 
 ### 1.1 Configuration flow (how `MCU` is selected and processed)
 
-1. Build system passes `-D MCU=MCU_<ARCH>` (and optionally `-D BOARD=BOARD_<NAME>`,
+1. Build system may pass `-D MCU=MCU_<ARCH>` (and `-D BOARD=BOARD_<NAME>`,
    `-D BOARDMAP="path"`), e.g. `-D MCU=MCU_STM32F1X`.
 2. `src/cnc_hal_config_helper.h:30-37` defines the pin assert helpers used
    everywhere by the IO HAL:
@@ -69,14 +101,18 @@ Board HAL (src/hal/boards/*/boardmap_*.h)  <- maps friendly names to physical pi
    #define ASSERT_PIN_EXTENDED(X) (EVAL_DIO(X) < 0)   /* extender pin (negative)  */
    ```
 3. `src/hal/boards/boarddefs.h` includes the selected `BOARDMAP`, which defines
-   the friendly pins and `#define MCU MCU_<ARCH>`.
+   the friendly pins and normally `#define MCU MCU_<ARCH>`. It then includes
+   `uCNC/boardmap_overrides.h` and `pin_mapping_helper.h` before the mcumap.
+   Resolve capability flags from these final pin selections, not earlier defaults.
 4. `boarddefs.h` then includes `src/hal/mcus/mcudefs.h`, which includes
    `mcus.h` (MCU id list) and then the matching `mcumap_<arch>.h`, and finally
    `mcu.h` (the interface contract). See `mcudefs.h:27-124`.
-5. Every `mcu_<arch>.c` file in the tree is compiled (makefiles use a recursive
-   `rwildcard` over `*.c`; PlatformIO uses `src_dir=uCNC`), and self-selects with
+5. Builds commonly collect `mcu_<arch>.c` files across the tree (makefiles use a
+   recursive `rwildcard` over `*.c`; PlatformIO uses `src_dir=uCNC`). Files self-select with
    `#if (MCU == MCU_<ARCH>)` at the top. This is what allows all backends to live
-   in the same tree with zero build-system bookkeeping per backend.
+   in the same tree. Source filters can exclude backends (see the Linux virtual
+   environment); startup, SDK sources, linker scripts and adapters still need
+   explicit build integration.
 
 ### 1.2 Registration checklist for a new MCU
 
@@ -115,6 +151,9 @@ Rules:
   without the Arduino framework whenever the vendor kit makes that possible.
   Do not use Arduino pin numbers, board variants, `Arduino.h`, C++ objects, or
   Arduino peripheral libraries as the backend's primary hardware abstraction.
+  Prefer operation without an RTOS whenever practical. A vendor SDK is not
+  automatically a bare-metal implementation: inspect its execution model and
+  transitive dependencies using §5.9.
 * **Platform glue** (`<arch>_*.c/.cpp`) is an optional, isolated adapter for a
   facility that genuinely has no practical C99/vendor-SDK implementation.
   Arduino-dependent glue must be behind an explicit opt-in flag, must not leak
@@ -142,16 +181,73 @@ comparable. Existing README files predate this guide and may not yet contain
 every section; missing sections are documentation debt, not evidence that the
 backend violates the MCU HAL contract.
 
-1. Target chips / boards supported by this backend.
+1. Target chips/packages and tested boards, capability matrix and vendor-source
+   provenance. Distinguish implemented, compile-tested and hardware-tested support.
 2. Toolchain and build recipes, including at least one C99/vendor-SDK build that
    does not require Arduino when the vendor kit permits it. State the access
    tier used (§5.9), all optional framework flags, and the reason for any
    unavoidable Arduino or C++ dependency.
 3. Resource allocation table: timers/IRQs used (ITP/RTC/SERVO/ONESHOT), the
    assigned interrupt priorities, and the priority ordering chosen (§3.3).
+   For SDK/framework/RTOS dependencies, include the execution-flow ownership
+   record described in §5.9, including callback contexts and scheduling effects.
 4. Primary stream per supported board (UART1 vs USB-CDC, §4.4).
 5. NVM strategy chosen (§4.5) and any board-layer RAM-only opt-out.
-6. Known limitations and any deliberate deviations from this spec.
+6. Known limitations and any deliberate deviations from this spec, generation
+   inputs/recipe (§3.5), and validation matrix/results (§7).
+
+### 2.2 Strategic layout: share mechanisms, isolate silicon differences
+
+Keep `mcumap_<arch>.h` as the compile-time entry point and `mcu_<arch>.c` as
+the runtime entry point. Small backends can keep the implementation there;
+split files when a subsystem has its own state, dependency or hardware variant.
+The following responsibilities matter more than a prescribed file count:
+
+| Responsibility | Owner | Inputs → outputs |
+|---|---|---|
+| PCB wiring and policy | Boardmap / board overrides | Physical pins, oscillator, peripheral/timer choices, reserved resources and optional features |
+| Silicon capabilities | Backend-private part/package definitions | Device selection → available ports, register banks, instances, mux routes, IRQs, memory geometry |
+| Configuration resolution | Mcumap or private included header | Final board choices + capabilities → validated register/clock/IRQ/channel tokens |
+| Canonical pin aliases | Generated mcumap section or private header | Friendly-pin definitions → canonical IDs and every consumed `DIO<n>_<ATTR>` |
+| Peripheral behavior | Runtime C modules | Resolved tokens → init, transfers, ISR dispatch and MCU HAL operations |
+| Optional platform services | Guarded adapter modules | SDK/framework API → plain C boundary for USB, networking, storage or startup |
+
+For a larger family, optional names such as `<arch>_caps.h`,
+`<arch>_routes.h`, `<arch>_pins.h`, `<arch>_timers.c` and `<arch>_nvm.c`
+make these boundaries visible. These are proposed private files, not existing
+HAL APIs. Include capabilities before resolving board selections; validate
+before exposing feature flags to generic code. Keep includes acyclic. Every
+runtime state object, ISR vector and exported function has exactly one owner;
+private headers contain declarations, not duplicate storage definitions.
+
+Choose a family boundary around a compatible peripheral programming model.
+Within STM32F1xx, differences in available ports, peripheral instances, timers
+and routes belong in selection/capability macros where the register model is
+compatible. The AVR backend similarly accommodates ATmega328P, ATmega1280 and
+ATmega2560 through device definitions and resource selection. STM32F1 and
+STM32F4 remain separate backends: their deeper programming-model differences
+should not be forced into one driver through increasingly complex macros.
+
+Put compatible variations in explicit capability/route mappings or small private
+helpers. A new chip may initially need additional mappings and local exceptions;
+that is normal incremental development. Separate runtime implementations where
+register semantics or initialization sequences differ substantially (also seen
+in SAMD21 TC/TCC handling). Shared vendor or CPU names alone do not establish
+the right reuse boundary.
+
+`esp32common/` demonstrates sharing signal generation, UART and task services
+while keeping target I2S drivers separate. RP2040/RP2350 demonstrate similar
+alarm/PIO algorithms maintained in separate directories; they are candidates
+for careful reuse, not evidence that all register banks, GPIO ranges, SDK
+assumptions or interrupt primitives are interchangeable.
+
+Keep board names out of runtime driver branches. Use compile-time selection
+and narrow private helpers for fixed hardware choices; a runtime table is
+appropriate only when selection actually happens at runtime. Retain generated
+pin repetitions as data-derived output rather than hand-maintained copies of
+driver logic. Guard platform-specific includes as well as implementations so
+an unrelated target does not need that SDK installed. Confirm build flags select
+exactly one implementation when a native driver and adapter implement the same API.
 
 ---
 
@@ -162,49 +258,50 @@ compile time should normally be macros (see §5). The following stable section
 order is recommended because it makes generated and hand-written backends easy
 to compare; it is not part of the MCU HAL ABI.
 
-### 3.1 MCU-family scope and board independence (Required)
+### 3.1 Design for family expansion; implement support incrementally
 
-An MCU backend is a reusable description of an **MCU family**, not an
-implementation of the first development board used to test it. The boardmap
-selects pins, peripheral instances, and resource assignments; the mcumap must
-provide the machinery needed for other valid selections without editing the
-backend.
+A new backend may support one chip or a small range of known compatible chips.
+It need not cover every port, timer, peripheral instance or route on that chip
+or across the family in its first version. Broader support requires further
+datasheet/header inspection and validation, often over several development
+iterations. Document what works now and what remains unsupported or unknown.
 
-A new backend is incomplete if it only supports the pins and routes used by its
-initial board (for example, only the Arduino UNO R4 wiring of an RA4M1). Before
-calling a backend complete, its author must inventory the target family from
-the vendor datasheet, user manual, and device headers and implement:
+The design objective is to make that expansion local and predictable. Use these
+patterns from the beginning, even when only one selection is implemented:
 
-* all canonical µCNC friendly-pin blocks in the pin-numbering table, including
-  axes, enables, PWM, servo, generic digital outputs and inputs, limits,
-  controls, analog inputs, and communications pins. Each block is conditional
-  on the boardmap's `<PIN>_PORT`/`<PIN>_BIT` or equivalent definitions, so unused
-  roles compile away. Mature mcumaps define all 192 current canonical `DIO<n>`
-  entries even though no single board uses all of them;
-* generic GPIO token expansion for every GPIO port and bit exposed by the
-  supported MCU family/package set, rather than a table of Arduino board pin
-  numbers or a switch containing only the initial board's pins;
-* every usable instance and valid pin-routing/remap choice for UART/USART, SPI,
-  I2C, ADC, PWM/timers, input interrupts, USB, and other capabilities advertised
-  by the backend. Boardmap-selected instances and routes must either resolve to
-  the correct registers/interrupts/alternate-function settings or fail at
-  compile time with a precise unsupported-combination error;
-* configurable timer, channel, IRQ, DMA, and peripheral allocation wherever the
-  hardware offers choices. Do not bake the initial board's assignments into
-  runtime code; derive them from boardmap/configuration macros;
-* family/package capability guards for real silicon differences. It is valid to
-  exclude a route that does not exist on a selected part, but not to omit a
-  documented route merely because the first board does not expose it.
+* Keep PCB wiring and resource choices in the boardmap/configuration layer.
+  Resolve them into backend tokens instead of repeating the first board's
+  literal registers, pins and IRQ names throughout runtime code.
+* Use two-stage token expansion for regular register naming, plus explicit
+  mappings for exceptions. GPIO port/bit selection, UART instance selection,
+  timer/channel selection and IRQ naming should have identifiable resolution
+  points. A selector with one currently supported value is a valid first step.
+* Expose peripheral resources as configurable selections where the programming
+  model allows it. For example, an AVR UART driver should consume resolved
+  data/status/control/baud/IRQ tokens so UART0, UART1 and later instances can
+  reuse the transfer logic when supported. Apply the same principle to SPI,
+  I2C and timers; verify each instance's actual register semantics before reuse.
+* Guard device-specific resources and report unsupported selections clearly.
+  A documented route can remain unimplemented initially; distinguish that from
+  hardware absence. Adding its mapping later should not require redesigning
+  the driver or duplicating it for another board.
+* Generate the canonical friendly-pin alias blocks independently of the first
+  board's wiring. These are a mechanical µCNC interface surface, not a claim
+  that all physical pins or peripheral routes have been implemented. The 13
+  hardware maps currently contain all 192 canonical `DIO<n>` definitions;
+  board selections activate the applicable blocks.
 
-The backend need not create boardmaps for every possible PCB. It must make a
-new boardmap possible without changing `mcu_<arch>.c` and, except when adding
-support for a genuine new silicon variant or package capability, without
-changing `mcumap_<arch>.h`.
+Within already implemented capabilities, a new board should need configuration
+changes only. Extending chip, instance or route support may legitimately change
+the mcumap and, when necessary, local runtime handling. Review whether the
+existing structure makes that extension straightforward, rather than requiring
+all future combinations to work without source edits today.
 
-Reviewers should test this boundary with at least one synthetic or second
-boardmap that changes GPIO ports and peripheral/timer selections. Successfully
-building only the initial development board is smoke coverage, not evidence of
-a complete mcumap.
+A second or synthetic boardmap is a useful check of this separation when
+alternate selections are available. For an initial single-selection backend,
+review the macro expansion and driver boundary and document the remaining
+coverage. Completion is judged against the current implementation scope and
+MCU HAL behavior; exhaustive family coverage is not an acceptance gate.
 
 ### 3.2 Canonical section order
 
@@ -229,7 +326,9 @@ a complete mcumap.
    `MCU_CLOCKS_PER_CYCLE` (default 1), `MCU_CYCLES_LOOP_OVERHEAD` and
    `MCU_CYCLES_PER_LOOP` (**#error if missing** in mcu.h). Optionally define a
    custom `mcu_delay_loop(X)` (see AVR inline asm `sbiw/brne`, STM32 `mcu_delay_loop`,
-   ESP32 `rsr.ccount`, SAMD21 DWT). A `mcu_nop()` may be provided too.
+   architecture-specific assembly loops). Check the actual CPU instruction set
+   and available counters; a delay mechanism from another ARM core or ESP32
+   variant is not automatically portable. A `mcu_nop()` may be provided too.
 5. **NVIC/IRQ priority table** (ARM backends): `NVIC_INPUT_IRQ_Pri`,
    `NVIC_ITP_IRQ_Pri`, `NVIC_RTC_IRQ_Pri`, `NVIC_SERVO_IRQ_Pri`,
    `NVIC_ONESHOT_IRQ_Pri`, `NVIC_USB_IRQ_Pri`, ... (see `mcumap_stm32f1x.h:62-70`).
@@ -244,15 +343,18 @@ a complete mcumap.
 7. **Byte/bit operations** (`SETBIT`, `CLEARBIT`, `CHECKBIT`, `TOGGLEBIT`,
    `SETFLAG`, `CLEARFLAG`, `CHECKFLAG`, `TOGGLEFLAG`) — provide or reuse the core
    definitions.
-8. **Token-pasting helpers** — mandatory, used by every macro below:
+8. **Token-pasting helpers** — common implementation pattern:
    ```c
-   #define __helper_ex__(left, mid, right) (left##mid##right)
-   #define __helper__(left, mid, right)    (__helper_ex__(left, mid, right))
+   #define __helper_ex__(left, mid, right) left##mid##right
+   #define __helper__(left, mid, right)    __helper_ex__(left, mid, right)
    #ifndef __indirect__
    #define __indirect__ex__(X, Y) DIO##X##_##Y
    #define __indirect__(X, Y)    __indirect__ex__(X, Y)
    #endif
    ```
+   Helpers used to form ISR names must yield bare identifiers. Parenthesize
+   expressions at their use sites; wrapping a pasted identifier in parentheses
+   prevents using it in some declarations or further token-pasting operations.
    Semantics: `__indirect__(DOUT0, BIT)` first resolves `DOUT0` → `47`, then
    concatenates `DIO47_BIT`. **The mcumap MUST therefore define a
    `DIO<n>_<ATTR>` token for every attribute a pin uses.** This is what converts
@@ -264,7 +366,6 @@ a complete mcumap.
    #if (defined(STEP0_PORT) && defined(STEP0_BIT))   /* or only _BIT (RP2040) */
    #define STEP0 1                     /* canonical number, see README table */
    #define DIO1 1
-   #define STEP0_BIT (STEP0_BIT)       /* passthrough where *_BIT is already the value */
    #define DIO1_BIT (STEP0_BIT)        /* + every other DIO<n>_<ATTR> alias */
    #define STEP0_OUTREG (__outreg__(STEP0_PORT))   /* register + bit tokens */
    ...
@@ -288,9 +389,10 @@ a complete mcumap.
    * PWM pins additionally get timer/channel tokens (`PWM0_TIMER`, `PWM0_CHANNEL`,
      `PWM0_CCR`, `PWM0_MODE`, `PWM0_PRESCALLER`, clock/enable register macros);
      ANALOG pins get `ANALOG0_CHANNEL`/ADC prescaller tokens.
-   * The table is long and mechanical: existing headers are **generated from
-     `docs/mcumap_gen.xlsx`** (see the "Autogenerated macros" comments). Reuse
-     that generator for new backends.
+   * Preserve board-provided definitions such as `STEP0_BIT`; define aliases
+     from them, never redefine them in terms of themselves. The table is long
+     and mechanical; `docs/mcumap_gen.xlsx` is the existing generation aid.
+     Follow §3.5 rather than assuming the workbook proves a new target's routes.
 10. **Feature flags, derived from pin/peripheral definitions** (all `#ifndef`-
     friendly, usually computed):
     ```c
@@ -341,9 +443,11 @@ for at least:
 | SERVO | `SERVO_*` | 50 Hz servo pulse train (compile-time pruned by `SERVOS_MASK > 0`). |
 | ONESHOT | `ONESHOT_*` | Optional single-shot timeout → `MCU_HAS_ONESHOT_TIMER`. |
 
-The allocator produces, from a plain number, the peripheral pointer, the clock
+On register-based targets the allocator commonly produces the peripheral pointer, clock
 enable bit, the clock source and the **IRQ handler name** via token pasting
 (so a single `mcu_<arch>.c` works for any timer choice made by the board):
+
+Illustrative STM32-style tokens (not a portable timer allocator):
 
 ```c
 #ifndef ITP_TIMER
@@ -356,11 +460,16 @@ enable bit, the clock source and the **IRQ handler name** via token pasting
 #define ITP_TIMER_CLOCK HAL_RCC_GetPCLK1Freq()
 ```
 
+Resolve the actual timer input clock, bus enable register, counter width and
+shared vector for the selected part. A peripheral bus clock is not necessarily
+the timer kernel clock; derive prescaler/multiplier behavior from the clock
+tree and initialization. The abbreviated example above omits that resolution.
+
 Special cases handled in the same block:
 * shared IRQ lines (e.g. `TIM1_UP_TIM10_IRQHandler`, `TIM6_DAC_IRQHandler`,
   `USART3_8_IRQHandler`) — map by timer number with `#if` chains;
 * different register families (SAMD21: `TCCn` vs `TCn` chosen by `ITP_TIMER < 3`);
-* no hardware timers (RP2040: hardware **alarm** timers with
+* free-running hardware timer with alarm comparators (RP2040, with
   `irq_set_exclusive_handler(ITP_TIMER_IRQ, mcu_itp_isr)`); RP2040 reuses the
   same alarm pool for RTC/SERVO/ONESHOT via a sorted alarm list;
 * RTOS timers or background tasks (ESP32: ESP-IDF timer group + FreeRTOS task);
@@ -375,13 +484,13 @@ mechanisms that reproduce this contract:
 
 | Backend | Step generation | RTC 1 ms tick | Notes |
 |---|---|---|---|
-| AVR | Timer compare: OCR A = period, OCR B = half period | Same timer, compare A | RTC ISR also multiplexes servo pulses; defines `mcu_start_step_reset_timeout()` |
+| AVR | ITP timer compare A/B for step/reset | Separate `RTC_TIMER`, compare A (default timer 0; ITP default timer 1) | RTC also multiplexes servo pulses; defines `mcu_start_step_reset_timeout()` |
 | STM32 F1/F4/F0/H7 | Single timer ISR, `PSC/ARR` halving + `resetstep` toggle | SysTick increments `mcu_runtime_ms`, pends low-priority `PendSV_Handler` | NVIC priority table in the mcumap |
 | SAMD21 | TC/TCC compare + toggle | SysTick → PendSV | TCC vs TC selected by timer index |
 | LPC176X | `LPC_TIMx` compare | SysTick → PendSV | Needs framework clock |
 | RP2040/RP2350 | Hardware alarm slot, ISR re-arms + toggles | Alarm re-enqueued each 1 ms | One alarm pool shared with servo/oneshot |
-| ESP32 S3/C3 | Timer-group ISR, accumulator at `ITP_SAMPLE_RATE = F_STEP_MAX * 2` | FreeRTOS task (`mcu_rtc_task`) + `esp_system_get_time()` | `mcu_gen_step/pwm/servo` run in the ISR |
-| ESP8266 | `timer1` ISR + **buffered IO** (`out_io_buffer`, ~10 ms precomputed) | `os_timer` 1 ms | Deliberately different design forced by timer scarcity — still satisfies the contract |
+| ESP32 / S3 / C3 | Timer-group / buffered signal scheduling with shared `esp32common/esp32_signal.c` | FreeRTOS task (`mcu_rtc_task`) + `esp_system_get_time()` | Inspect the selected direct/buffered path and target I2S driver together |
+| ESP8266 | `timer1` ISR + **buffered IO** (`out_io_buffer`) | `os_timer` 1 ms | Analyze callback scheduling separately from physical output latency |
 | Virtual | Software tick `mcu_gen_step()` at `2×F_STEP_MAX` | `tickcount` sampling | Deterministic under `PIO_UNIT_TESTING` |
 
 Recommended interrupt priority topology (where priorities are programmable,
@@ -390,13 +499,80 @@ servo/oneshot, then comms (UART/USB). Follow the `NVIC_*_IRQ_Pri` table pattern
 (`mcumap_stm32f1x.h:62-70`) and document the assigned values in the backend
 README (§2.1).
 
+### 3.4 Configuration resolution and resource validation
+
+Treat three facts separately: the silicon **has** a peripheral, the backend
+**implements** it, and this board **enables** a valid instance/route. Advertise
+`MCU_HAS_*` only for the resulting usable configuration. An explicit request
+for an unavailable or unimplemented route should fail with a diagnostic;
+an unrequested optional feature should compile away. Silicon capability data
+belongs to the backend's private definitions, not new public feature flags.
+
+Resolve each selection as a tuple: `(part, package, instance, signal, pin,
+mux/remap, channel/pad, clock, IRQ, DMA request)`. Validate combinations, not
+just individual integer ranges. Register existence does not prove a pin is
+bonded out, output-capable or routable to the chosen instance. GPIO matrices
+still have restrictions. ADC channel numbers, timer channels and UART pads are
+not interchangeable with GPIO bit numbers.
+
+Maintain a resource table covering ITP, RTC, servo, oneshot, PWM, communications,
+DMA, PIO/I2S and SDK-owned resources. Check at least:
+
+* timer/channel collisions, including PWM outputs sharing a frequency/prescaler;
+* UART/SPI/I2C selecting the same configurable serial block (e.g. SERCOM);
+* shared interrupt vectors: one dispatcher services the enabled pending sources;
+* input interrupt routing collisions (e.g. two ports competing for an EXTI line);
+* DMA channels/requests and memory accessibility; cache maintenance/alignment
+  where required by the selected device and SDK;
+* GPIO bank width, valid bit shifts, input-only pins, boot/debug/flash reservations;
+* flash/bootloader/NVM region overlap, erase units and minimum program width.
+
+Intentional sharing needs an ownership and scheduling rule; equal resource
+numbers alone do not prove a conflict or safe sharing. Diagnostic text should
+name the conflicting board selections and permitted alternatives. Defaults
+belong behind `#ifndef` and must pass the same validation as explicit choices.
+
+### 3.5 Reproducible generation
+
+Generate mechanical aliases and route/capability tables from reviewed data;
+keep peripheral algorithms and ISR state machines in hand-reviewed templates
+or runtime modules. A text generator and schema are a recommended improvement,
+not tools already supplied by this guide. The existing workbook is a starting
+point; record the sheet/template and extraction procedure if using it.
+
+Keep three inputs distinct: the canonical µCNC pin list (README numbering
+table), silicon facts with vendor-source provenance, and board selections.
+Board selections activate generated blocks; they must not limit which friendly
+pin blocks the generator emits. A generation record should contain:
+
+* input paths/revisions and generator/template version;
+* target part/package/SDK scope and documented unsupported capabilities;
+* exact invocation or workbook procedure, output paths and generated boundaries;
+* expected alias attributes per role (GPIO, PWM, ADC, interrupt, communications).
+
+Before accepting output, check canonical name/number equality (including gaps),
+duplicate definitions, every consumed `DIO<n>_<ATTR>`, balanced feature guards,
+and preservation of board overrides. The 192-block count is a useful check but
+cannot detect swapped aliases or incorrect register routes. Preprocess and
+compile representative consumers through `cnc.h`/`io_hal.h`, including unused
+and extended pins, with the target headers. Merely including the map may leave
+broken token-pasting expansions untested. Regenerate twice and require an
+unchanged second output. Fix generation inputs/templates rather than editing
+generated blocks independently.
+
+For code generation, missing hardware facts are unresolved work: identify the
+missing route or register evidence and keep that support claim incomplete.
+Never infer register names, IRQ vectors or mux values by renaming another
+backend. Validate one representative expansion per peripheral class before
+emitting thousands of repetitions.
+
 ---
 
 ## 4. The `mcu_<arch>.c` contract (runtime layer)
 
 ### 4.1 The "macro-or-function" duality (the #1 performance rule)
 
-`mcu.h` declares every IO/time operation inside `#ifndef` guards:
+`mcu.h` declares replaceable IO/time operations inside `#ifndef` guards:
 
 ```c
 #ifndef mcu_set_output
@@ -405,17 +581,17 @@ void mcu_set_output(uint8_t pin);
 ```
 
 Consequences, by design:
-1. If the mcumap defines `mcu_set_output` as a macro (register write), the
-   guard suppresses the prototype **and** any function definition, so the call
-   site compiles to a single store — no function call, no `switch` on pin.
+1. If the mcumap defines `mcu_set_output` as a macro, the header guard suppresses
+   the prototype. Matching guards around fallback definitions suppress those
+   definitions too. A direct register-write expansion can remove function calls
+   and pin switches; the header guard alone does not guard another source file.
 2. If the mcumap does **not** define it, a real C function must exist somewhere
    (the backend, or a weak default in `mcu.c`).
-3. This is why IO (and `mcu_enable/disable_global_isr`, `mcu_get_analog`,
-   `mcu_config_pwm`, `mcu_get/set_pwm`, probe ISR, `mcu_millis`, ...) is
-   *macro-first* in every existing backend, and only falls back to functions for
-   stateful things (servo, eeprom, streams).
+3. A macro may expand to a register operation, an inline helper, or an SDK
+   function. Macro substitution alone does not guarantee one instruction or
+   zero runtime dispatch; inspect optimized output for timing-critical paths.
 
-Writing the IO macros — canonical shapes across all backends:
+Writing the IO macros — illustrative STM32F1-style register shapes:
 
 ```c
 /* direct register write via token pasting */
@@ -437,8 +613,11 @@ Writing the IO macros — canonical shapes across all backends:
 
 Use `__indirect__(diopin, <ATTR>)` and the `<PIN>_*` tokens generated in §3.2,
 item 9.
-The compiler sees literal peripheral addresses and bit numbers, so the whole IO
-layer costs zero runtime overhead and zero code size per pin.
+With literal addresses and bit numbers, the compiler can remove pin lookup
+overhead; the actual loads/stores still cost instructions and code size. Use
+the target's atomic set/clear registers where available. Read-modify-write
+toggle operations need protection if another execution context writes the same
+port. Register names such as `BRR` are not portable across all STM32 devices.
 
 ### 4.2 Canonical function and ISR inventory of `mcu_<arch>.c`
 
@@ -466,22 +645,22 @@ replaces them with macros.
 | `mcu_init(void)` | Clock setup, watch-dog disarm, `mcu_io_init()`, peripheral inits (uart/usb/spi/i2c), pin-change/external-interrupt wiring, `mcu_start_rtc()`/1 ms tick, servo init, `mcu_enable_global_isr()`. |
 | `mcu_io_init`, `mcu_io_reset` | **Generic weak defaults exist in `mcu.c`** (`mcu_outputs_init`/`mcu_inputs_init`/`mcu_coms_init` walk direct MCU pins selected by `ASSERT_PIN_IO(...)` and call `mcu_config_output/input/pwm/analog/pullup/input_isr`). Peripheral pins passed to `mcu_config_*` must also be direct MCU pins; extended pins are dispatched by the IO HAL. Override only when the architecture needs extra work; `mcu_io_reset` is the per-board hook for custom power-up states. |
 | `mcu_config_*`, `mcu_get/set/clear/toggle_output`, `mcu_get_input` | Macros (see §4.1). |
-| `mcu_freq_to_clocks(float, *ticks, *prescaller)` / `mcu_clocks_to_freq` | `frequency = CLAMP(F_STEP_MIN, frequency, F_STEP_MAX)`; convert Hz → ticks/prescaler with **integer shifts only** (`clocks = F_CPU/freq`, `while (clocks > 0xFFFF) { clocks >>= k; prescaller++ }`) so the encodings are cheap and match the hardware divider table. `ticks/prescaller` form an opaque pair to the core; the backend defines the encoding. |
-| `mcu_start_itp_isr(ticks, prescaller)` | Program timer channel A (=period) and B (=half period), reset counter, clear flags, enable both compare interrupts, start clock. |
-| `mcu_change_itp_isr(ticks, prescaller)` | Same minus enable/re-enable; used to change step rate mid-motion. |
-| `mcu_stop_itp_isr(void)` | Stop clock; usually *leave the interrupt mask enabled* (the RTC logic uses it as a "stepping in progress" gate; see the comment in the AVR implementation). |
+| `mcu_freq_to_clocks(float, *ticks, *prescaller)` / `mcu_clocks_to_freq` | Clamp to the supported step-rate range and encode/decode an opaque ticks/prescaler pair. Existing backends use floating-point division followed by integer scaling. Derive the encoding from the real clock/divider and event rate, including counter width and rounding; test the minimum/maximum rates and inverse conversion. |
+| `mcu_start_itp_isr(ticks, prescaller)` | Initialize the selected step mechanism, clear stale pending events and start step/reset scheduling. Two compare channels are an AVR example, not a requirement for alarms or accumulator designs. |
+| `mcu_change_itp_isr(ticks, prescaller)` | Change the rate during motion with defined phase/update behavior and no unintended extra step. |
+| `mcu_stop_itp_isr(void)` | Stop further step scheduling and handle pending/reset events consistently with the core. AVR deliberately retains its interrupt mask; STM32 disables the timer interrupt and NVIC line. Follow the selected mechanism's lifecycle. |
 | `mcu_start_step_reset_timeout()` | Optional empty macro declared near the step-interpolator API in `mcu.h`. Hook to shorten/re-arm the step pulse or re-enable interrupts right after a step event; called by the interpolator. Only AVR defines it today. |
 | `mcu_millis`, `mcu_micros`, `mcu_free_micros` | `mcu_runtime_ms` incremented by the 1 ms tick; `mcu_micros = 1000*ms + free_micros`. |
 | `MCU_ITP_ISR` | Alternating `mcu_step_cb()` / `mcu_step_reset_cb()` (see §3.3). |
 | RTC/PendSV ISR | `mcu_runtime_ms++; pends low-priority task` → `mcu_rtc_cb(mcu_runtime_ms)`. |
-| `mcu_uart_init/getc/available/clear/putc/flush` + `mcu_uart2_*` | Buffers are global, `DECL_BUFFER(uint8_t, uart_rx, RX_BUFFER_SIZE)` + `DECL_BUFFER(uint8_t, uart_tx, UART_TX_BUFFER_SIZE)` and initialized in `mcu_coms_init` (`BUFFER_INIT`). RX ISR: `if (mcu_com_rx_cb(c)) BUFFER_TRY_ENQUEUE(uart_rx, &c); else STREAM_OVF(c);`. If `DETACH_UART_FROM_MAIN_PROTOCOL`, route to `mcu_uart_rx_cb(c)` instead (weak empty default in `mcu.c`). |
+| `mcu_uart_init/getc/available/clear/putc/flush` + `mcu_uart2_*` | Commonly use `DECL_BUFFER` RX/TX buffers initialized before use; SDK-backed ports may delegate buffering. For attached RX: `if (mcu_com_rx_cb(c)) { if (!BUFFER_TRY_ENQUEUE(uart_rx, &c)) { STREAM_OVF(c); } }`. A `false` protocol callback result means a consumed realtime byte, not overflow. Detached RX calls `mcu_uart_rx_cb(c)` instead. |
 | `mcu_usb_*` (if `MCU_HAS_USB`) | tinyUSB device (include `<tusb_ucnc.h>`): `mcu_usb_init → tusb_cdc_init`, USB IRQ → `tusb_cdc_isr_handler`, `mcu_dotasks → tusb_cdc_task()` + drain `tusb_cdc_read()` into `mcu_com_rx_cb`. Non-tinyUSB platforms wrap their stack (Arduino `Serial`, `USBCDC`). |
 | `mcu_spi_init/config/start/stop/xmit/bulk_transfer` + `mcu_spi2_*` (if `MCU_HAS_SPI[2]`) | `mcu.c` provides weak defaults for init/config/start/stop/bulk transfer. The byte `mcu_spi[_2]_xmit` primitive is required from the backend or mcumap. Bulk transfer rolls over that primitive with `BULK_SPI_TIMEOUT` + `TASK_YIELD()`. `mcu_spi_port`/`mcu_spi2_port` are generic, non-weak function tables `{isbusy, start, xmit, bulk_xmit, stop}` initialized by `mcu.c`; customize behavior by overriding the weak functions or macro substitution points, not by defining a second table. |
 | `mcu_i2c_init/config/send/receive` (if `MCU_HAS_I2C`) | Master API with `ms_timeout`; slave support when `MCU_SUPPORTS_I2C_SLAVE && I2C_ADDRESS != 0` calls `mcu_i2c_slave_cb` (weak default in mcu.c). |
 | `mcu_set_servo/get_servo` | Body wrapped `#if SERVOS_MASK > 0`; servo pulse train is multiplexed into a shared timer ISR with per-servo `_FRAME` compile-time `#if` pruning (AVR/STM32/SAMD21 pattern). |
 | `mcu_config_timeout/start_timeout` (if `MCU_HAS_ONESHOT_TIMER`) | `mcu_timeout_cb` delegate stored globally in `mcu.c`; ISR calls it. `MCU_ONESHOT_ISR`. |
 | Input-change ISRs | Per-port/per-line handlers routing to `mcu_limits_changed_cb`, `mcu_controls_changed_cb`, `mcu_probe_changed_cb`, `mcu_inputs_changed_cb`, pruned at compile time by pin bit-masks (AVR `PCINTA_LIMITS_MASK & ...`, STM32 `ALL_EXTIBITMASK`). When ISR-less, the soft-polling path (`FORCE_SOFT_POLLING`) feeds the same callbacks from IO processing. |
-| `mcu_eeprom_getc/putc/flush` | Weak non-volatile stubs in `mcu.c`; real backends override with one of the strategies in §4.5. All honor `NVM_STORAGE_SIZE` (default `0x400`). |
+| `mcu_eeprom_getc/putc/flush` | Weak stubs in `mcu.c` provide no persistence. Implement storage or explicitly document the opt-out in §4.5; validate the configured address space against real capacity. |
 | `mcu_dotasks(void)` | Called from `cnc_run()` (cnc.c): tinyUSB task, port polling, feeding RX into `mcu_com_rx_cb`. Empty OK on ISR-driven designs (AVR). ESP32 variants use it plus FreeRTOS background tasks. |
 | `mcu_delay_loop`, `mcu_delay_us/ns/hz/cycles` | Macro or function; cycle-counted base for sub-ms delays. |
 
@@ -525,13 +704,13 @@ Design constraints enforced by the core (see the MCU requirements in
 
 ### 4.4 Communication streams and the primary stream
 
-Each enabled port is exposed as a stream with a fixed shape: `mcu_<port>_init`,
-`mcu_<port>_getc`, `mcu_<port>_available`, `mcu_<port>_clear`,
-`mcu_<port>_putc`, `mcu_<port>_flush`, gated by the matching `MCU_HAS_<PORT>`
-flag (`MCU_HAS_UART`, `MCU_HAS_UART2`, `MCU_HAS_USB`, `MCU_HAS_BLUETOOTH`, and
-`ENABLE_SOCKETS` for the telnet stream). TX/RX ring buffers are declared with
-`DECL_BUFFER` (`uart_rx`/`uart_tx`, `uart2_*`, `usb_*`, `bt_*`) and initialized
-in `mcu_coms_init()`.
+Enabled streams expose the `mcu_<port>_getc/available/clear/putc/flush` shape,
+gated by `MCU_HAS_UART`, `MCU_HAS_UART2`, `MCU_HAS_USB`, `MCU_HAS_BLUETOOTH`,
+or `ENABLE_SOCKETS` for telnet. Initialization entry points differ by service;
+consult `mcu.h` and the selected backend rather than synthesizing a universal
+`mcu_<port>_init` API. TX/RX buffering commonly uses `DECL_BUFFER`
+(`uart_rx`/`uart_tx`, `uart2_*`, `usb_*`, `bt_*`); SDK-backed streams may use
+their own buffers. Initialize buffering before enabling reception.
 
 * **RX path**: the ISR (or the polling loop in `mcu_dotasks`) pushes each byte
   through `mcu_com_rx_cb(c)` (which returns `false` for bytes consumed as
@@ -562,16 +741,21 @@ with one of these strategies (decision table):
 
 | Strategy | Used by | When to pick |
 |---|---|---|
-| Hardware EEPROM | AVR (`avr/eeprom.h`) | The MCU has dedicated EEPROM; simplest and cheapest. |
+| Hardware EEPROM | AVR (`EECR`/`EEAR`/`EEDR` register sequence) | The MCU has dedicated EEPROM; validate its capacity. |
 | Flash-page emulation | STM32F1/F0 (inverted-bit pages, `FLASH_CR` sequence), SAMD21 (row erase + `NVMCTRL`), ESP8266 (sector wear-levelling) | No EEPROM, flash budget allows stealing pages at the top of the image; needs a bootloader offset. |
 | NVS/Preferences blob | ESP32 (`nvs_set_blob` or Arduino `EEPROM` lib) | An RTOS/SoC NVS service exists; shadow copy + commit on flush. |
 | File-based | Virtual (`virtualeeprom` file) | Host platforms. |
-| None (RAM-only) | LPC176X baseline, STM32 with `DISABLE_EEPROM_EMULATION`, boards with `RAM_ONLY_SETTINGS` | Acceptable when no NVM exists; must be an explicit board-layer opt-out, not a silent backend default. |
+| No persistence | LPC176X baseline has no-op writes/zero reads; other paths use `DISABLE_EEPROM_EMULATION` or `RAM_ONLY_SETTINGS` | For new backends, require an explicit board-layer opt-out. No-op storage is not an in-memory EEPROM implementation. |
 
 `RAM_ONLY_SETTINGS` and `DISABLE_EEPROM_EMULATION` are **board-layer** flags
 (defined in boardmaps or build flags, e.g. `boardmap_skr3.h`), never set by the
-mcumap. On flash targets, writes are guarded with interrupts disabled and
-flushed via `mcu_eeprom_flush`, never byte-by-byte from `mcu_eeprom_putc`.
+mcumap for new backends. For flash emulation, normally buffer changes in
+`mcu_eeprom_putc` and commit in `mcu_eeprom_flush`; dedicated EEPROM may write
+directly. Use the flash controller/SDK's required synchronization, not a blanket
+interrupt-disable rule around an RTOS NVS call. Document erase/program latency,
+execution-from-flash restrictions, interrupt/other-core coordination, reserved
+linker/partition space, wear strategy and interrupted-commit behavior. Verify
+reboot persistence; RAM-only operation and weak stubs cannot establish it.
 
 ### 4.6 IO extenders: soft shift vs custom shift provider
 
@@ -629,12 +813,13 @@ file-local or mcumap-local and follow the backend's own naming.
 
 ## 5. Efficiency and flexibility rules (the "why" of every pattern)
 
-These are the properties every existing backend exhibits; a new backend should
-ideally preserve them to reach the same build-time efficiency and flexibility:
+These are authoring recommendations informed by existing backends; the access
+policy explicitly marks requirements for new backends. They are not universal
+claims about every current implementation:
 
-1. **Macros replace functions whenever the operation is stateless and
-   resolvable at compile time.** Cost: zero (no call, no switch, no RAM).
-   Prefer register writes through `__indirect__`/`__helper__` token pasting.
+1. **Resolve fixed pin operations at compile time.** Prefer register writes
+   through `__indirect__`/`__helper__` token pasting or small inline helpers.
+   This can remove lookup/call overhead; verify the generated instructions.
 2. **mcu.h `#ifndef` guards are the substitution mechanism** — never define a
    macro in the mcumap without the corresponding `#ifndef` guard in mcu.h, and
    never ship a function that shadows a macro (guarded by the same macro).
@@ -651,24 +836,31 @@ ideally preserve them to reach the same build-time efficiency and flexibility:
    `mcu_i2c_slave_cb` have weak versions. `mcu_delay_loop`, `mcu_com_rx_cb`, and
    the SPI port tables are strong generic symbols. Required hardware operations
    intentionally have no fallback.
-5. **Integer math in ISRs.** All hot paths (`mcu_freq_to_clocks`,
-   accumulator steppers, PWM scaling) use integer arithmetic and shifts;
-   floating point appears only at configuration time.
-6. **Static allocation, no malloc**: all buffers are compile-time
-   (`DECL_BUFFER`/`BUFFER_INIT`, static shadows, predefined tables). Memory
-   layout is deterministic at build time.
+5. **Bounded timing work.** Prefer integer arithmetic in the pulse-generation
+   path. Frequency conversion APIs accept floats and existing implementations
+   divide in floating point; measure their cost if called on a timing-critical
+   path. Avoid unbounded polling or SDK calls that can block in step ISRs.
+6. **Predictable allocation**: prefer static buffers for motion and ISR state.
+   Existing ESP32 DMA drivers allocate DMA-capable memory and the virtual
+   backend allocates events dynamically. Where SDK services require allocation,
+   do it outside the step path, handle failure and record lifetime/memory needs.
 7. **`FORCEINLINE` (`__attribute__((always_inline)) inline`) for hot helpers**
    (`mcu_outputs_init`, servo helpers, `mcu_gen_*`), `static` where possible.
-8. **Constants are compile-time**: `F_CPU`, `BAUDRATE`, `SPI_FREQ`, `I2C_FREQ`,
-   `ITP_TIMER`, `NVIC_*_IRQ_Pri` must be resolvable by the preprocessor
-   (hence the `#warning` if `F_CPU` is not a constant). Board overrides win over
-   mcumap defaults (`#ifndef` chains).
+8. **Separate selection from clock measurement**: resource IDs and values used
+   in `#if`/token pasting must be preprocessor constants. Clock expressions can
+   be runtime values (`SystemCoreClock`, `HAL_RCC_GetPCLK*Freq()` in STM32).
+   Use a compile-time frequency where delay expansion requires one, and verify
+   it agrees with clock initialization. Board overrides win over defaults.
 9. **Tiered peripheral access, bare-metal C99 first** (the "access tier" of
-   CONTEXT.md). For new backends this is a selection rule, not merely a size
-   preference. Use the first viable tier:
+   CONTEXT.md). For new backends this is a selection rule. The reasons include
+   performance, but also explicit ownership of execution flow: initialization,
+   interrupt entry/exit, callback dispatch and background work should be visible
+   and traceable. Prefer non-RTOS implementations whenever practical. Use the
+   first viable tier:
    1. direct register access using vendor device/CMSIS headers;
-   2. the vendor's C SDK or narrowly selected C drivers when they are required
-      for complex hardware such as clocks, USB, networking, or flash;
+   2. narrowly selected vendor C drivers or SDK facilities when required for
+      complex hardware such as clocks, USB, networking, or flash, preferring
+      synchronous or explicitly serviced non-RTOS paths;
    3. an RTOS service when the target platform intrinsically requires it;
    4. Arduino framework code or libraries only as a last-resort, explicitly
       opt-in adapter.
@@ -681,6 +873,37 @@ ideally preserve them to reach the same build-time efficiency and flexibility:
    kit capable of building the firmware, the backend must support that path
    without Arduino. Each backend README records the chosen tier and any
    unavoidable exceptions.
+
+   Inspect what a dependency executes, not just its public API or language.
+   SDKs/frameworks can install callbacks, start background services, reserve
+   timers, mask interrupts, defer events or invoke work from yield/wait paths.
+   A small C wrapper does not remove those effects. Prefer a dependency whose
+   required work can be called explicitly from backend initialization or
+   `mcu_dotasks()` over one that introduces implicit scheduling and callbacks.
+
+   RTOS integration adds scheduler and context-switch behavior to this analysis.
+   Depending on the port, it can own tick/context-switch exceptions, constrain
+   interrupt priorities and masking, and request rescheduling on ISR exit.
+   Those interactions make the execution path harder to establish; an RTOS is
+   not inherently nondeterministic, nor does every interrupt necessarily pass
+   through its scheduler. Bare-metal code likewise still requires analysis of
+   interrupt nesting, hardware stalls and shared state. The preference is for
+   the smallest execution model whose behavior the backend can account for.
+
+   When a higher-tier dependency is necessary, record:
+
+   * which startup hooks, vectors, timers and execution contexts it owns;
+   * where callbacks/events originate and whether they run in an ISR, task,
+     polling loop or deferred handler, including possible reentrancy;
+   * interrupt priority/masking constraints and any ISR-exit context switching;
+   * blocking/yield points, background work and interactions with µCNC callbacks;
+   * how the step/tick path remains bounded under that activity, with validation
+     evidence from §7 and explicit unresolved assumptions.
+
+   Keep these effects within a documented adapter boundary where feasible.
+   Code generators must not add an RTOS, callback dispatcher or background task
+   merely because a vendor example uses one. Establish the dependency's need
+   and execution model before adopting its initialization or driver code.
 10. **ISR code is context-aware when an RTOS is present**: `mcu_in_isr_context()`
     (`xPortInIsrContext()` on ESP32, `__get_IPSR() != 0` on ARM), atomic
     builtins (`__atomic_*`), and ISR/thread dual-mode primitives
@@ -721,20 +944,71 @@ Backends are consumed by both Makefiles and PlatformIO. Conventions:
 
 ## 7. Testing and simulation
 
-* The **virtual backend** (`MCU_VIRTUAL_WIN`/`MCU_VIRTUAL_LINUX`) is the
-  reference for a fully simulated MCU: software tick (`EMULATION_MS_TICK`),
-  `mcu_gen_step()` driven by `ITP_SAMPLE_RATE`, file-backed EEPROM
-  (`virtualeeprom`), named-pipe/Unix-socket IO server, VCD step stimulus, and a
-  deterministic **unit-test clock** behind `PIO_UNIT_TESTING`
-  (`mcu_unit_test_advance_time`, `mcu_unit_test_inject`, `mcu_add_event`).
-* All regression tests (`test/`) run the *whole firmware* through the virtual
-  backend with Unity. That deterministic-clock contract (`PIO_UNIT_TESTING`:
-  `mcu_unit_test_advance_time`, `mcu_unit_test_inject`, `mcu_add_event`) is
-  **only expected of host-platform backends**; a microcontroller backend does
-  not need to re-create it.
-* Hardware backends validate timing and behavior with the same core tests run
-  on-device via the serial console (or through a host-ported virtual backend
-  when one exists for the family).
+Treat compilation, core behavior and physical hardware behavior as separate
+evidence. Passing one does not establish the others.
+
+### 7.1 Compile and link matrix
+
+For a new backend, select cases applicable to the current implementation scope
+and record build commands and expected results. Expand this matrix as support
+grows; unavailable alternate chips/routes are follow-up coverage, not a demand
+to implement the whole family before accepting the initial backend:
+
+| Configuration | What it establishes |
+|---|---|
+| Minimal board with optional peripherals off | Required surface links; unused features do not pull in drivers/SDK dependencies |
+| First supported board, normal feature set | Concrete integration of startup, clock, map, drivers and linker layout |
+| Alternate/synthetic board | Different GPIO ports/banks, peripheral routes and timer selections work without backend edits |
+| Each declared silicon programming-model class | Distinct register/IRQ/clock branches compile against real device headers |
+| Enabled UART2/SPI2, ADC, PWM, servo, oneshot and DMA as supported | Optional API implementations and their resource interactions are exercised |
+| Invalid route, absent instance and resource collision | Each fails for the intended reason with a useful diagnostic |
+| Unrelated backend | Newly added translation units are correctly guarded |
+| Default native C99 path and each advertised adapter path | Provider selection, C linkage and dependencies are correct |
+
+Choose synthetic cases to exercise boundary differences, not arbitrary renamed
+pins. Cover each distinct resolver branch; exhaust small route tables in
+compile-only probes where practical. Include direct, unused and extender pins
+and the highest supported bank/bit. Synthetic maps prove compile-time
+adaptability, not physical routability. Link representative full images and
+inspect symbols/map/disassembly for duplicate vectors, unresolved weak-stub
+dependencies, flash/NVM overlap, RAM use and hot-path lookup overhead.
+
+### 7.2 Host regression
+
+The **virtual backend** supports Windows/Linux host IO and a deterministic clock
+under `PIO_UNIT_TESTING` (`mcu_unit_test_advance_time`,
+`mcu_unit_test_inject`, `mcu_add_event`). Run relevant Unity fixtures through
+the configured emulator environment; see `test/README.md` and `virtual/virtual.ini`.
+For example, from the repository root with PlatformIO on PATH:
+
+```sh
+pio test -e EMULATOR_WINDOWS_TEST
+```
+
+These fixtures rely on virtual clock/state/injection helpers. They are not an
+unchanged on-device serial test suite, and hardware backends need not implement
+those host hooks. Host regression is especially useful when changing shared
+HAL/core code; it does not validate a new MCU's registers, pin mux or interrupts.
+
+### 7.3 Hardware acceptance
+
+Use a hardware test harness or adapted protocol tests plus a logic analyzer or
+scope. Record the board, part/package, clock, firmware configuration and results:
+
+* step frequency and pulse width at low/high rates, rate changes, stop/restart,
+  pending reset handling, and direction setup/hold;
+* 1 ms tick and microsecond reads across wraparound and interrupt masking,
+  callback non-reentrancy, and worst observed jitter under communications load;
+* limit/control/probe/input callbacks, including enable/disable and shared IRQs;
+* stream RX overflow and realtime/detached routing, TX progress, peripheral
+  timeout behavior, and enabled ADC/PWM/servo/oneshot functions;
+* NVM write/flush/reboot readback and the documented interrupted-write behavior;
+* buffered-output latency and stop response, DMA/cache visibility and multicore
+  synchronization when those mechanisms are used.
+
+State which configurations were only compiled and which were measured. Report
+support for the specific implemented chips/features; a validated initial backend
+is complete for that scope without claiming exhaustive family support.
 
 ---
 
@@ -755,16 +1029,20 @@ From the MCU requirements in `README.md`, a target MCU should provide, to be a
 ## 9. New-backend template checklist (rolled up)
 
 - [ ] `src/hal/mcus/mcus.h`: `MCU_<ARCH>` id added.
-- [ ] `src/hal/mcus/<arch>/mcumap_<arch>.h` follows the MCU-family scope rule in
-      §3.1 and the §3.2 section order. It contains all 192 canonical `DIO<n>`
-      blocks, generic GPIO support across the supported family/package set, and
-      configurable mappings for all advertised peripheral instances/routes;
-      it is not limited to the initial board.
-- [ ] A second or synthetic boardmap changes GPIO ports plus at least one
-      UART/SPI/I2C/timer selection and builds without backend source edits.
+- [ ] `src/hal/mcus/<arch>/mcumap_<arch>.h` follows the expansion patterns in
+      §3.1 and uses the recommended §3.2 section order. It contains all 192 canonical `DIO<n>`
+      blocks, parameterized GPIO/peripheral mappings for the implemented scope,
+      and clear resolution points for later chip/instance/route additions.
+- [ ] Where alternate selections are implemented, a second or synthetic boardmap
+      changes GPIO/peripheral/timer selections without backend source edits;
+      otherwise review the selection boundary and record pending coverage.
+- [ ] Supported part/package/SDK matrix and source provenance recorded; layout
+      separates capabilities, board selections, generated aliases and runtime ownership (§2.2).
+- [ ] Route tuples and resource conflicts validated, including intentional
+      sharing, with negative compile cases (§3.4 and §7.1).
 - [ ] `mcudefs.h` include block added.
-- [ ] `src/hal/mcus/<arch>/mcu_<arch>.c` implements every `mcu.h` entry
-      (function or macro), ISRs wired to the §4.3 callbacks, feature-pruned.
+- [ ] Runtime modules and mcumap provide each enabled required `mcu.h` entry;
+      safe generic defaults are reused, ISRs wired to the §4.3 callbacks, feature-pruned.
 - [ ] `#ifndef` guards respected: no symbol defined twice (macro vs function).
 - [ ] Delay/cycle macros, `__rom__` family, F_CPU defaults present.
 - [ ] `mcu_dotasks()` implemented or left empty (never called from RTC).
@@ -775,17 +1053,17 @@ From the MCU requirements in `README.md`, a target MCU should provide, to be a
       the vendor kit permits it, with `-Os`, `-ffunction-sections`,
       `-fdata-sections`, and `-Wl,--gc-sections` (+arch flags). Any Arduino/C++ adapter is isolated,
       opt-in, and justified in the backend README.
+- [ ] Non-RTOS operation preferred where practical; required SDK/framework/RTOS
+      execution paths, IRQ ownership and callback contexts documented (§5.9).
 - [ ] `README.md` following the §2.1 skeleton (toolchain/access tier,
       timers/IRQs/priorities, primary stream per board, NVM strategy,
       limitations and deviations).
 - [ ] Any `mcu.h` surface addition classified and shipped according to §4.7;
       contract changes also carry an ADR.
-- [ ] Optional: custom shift provider for IC74HC595 (§4.6); mcumap regenerated
-      via `docs/mcumap_gen.xlsx` generator to stay consistent with other
-      backends.
-- [ ] Compile with `MCU=<arch>` and validate: run the `test/` suite through the
-      virtual backend on a host (host backends), or the same core tests
-      on-device via the serial console (hardware backends).
+- [ ] Reproducible generation record and alias/expansion checks (§3.5).
+- [ ] Optional: custom shift provider for IC74HC595 (§4.6).
+- [ ] Compile/link matrix, relevant host regression and hardware measurements
+      recorded separately (§7), with untested capabilities explicitly identified.
 
 ---
 
@@ -795,7 +1073,7 @@ From the MCU requirements in `README.md`, a target MCU should provide, to be a
   (weak defaults, generic IO init), `src/hal/mcus/mcudefs.h`, `mcus.h`.
 * User guide + canonical pin table: `src/hal/mcus/README.md`.
 * Reference backends: `avr/` (minimal Harvard), `stm32f1x/` (CMSIS + tinyUSB +
-  flash EEPROM), `samd21/` (bare-metal ARM, no framework), `rp2040/`
+  flash EEPROM), `samd21/` (register-based peripheral code), `rp2040/`
   (framework + PIO + alarms), `esp32/` + `esp32common/` (RTOS, shared code),
   `virtual/` (simulator + unit-test hooks).
 * Build: `makefiles/*/Makefile`, `platformio.ini`, `avr_compiler.py`,
@@ -803,3 +1081,35 @@ From the MCU requirements in `README.md`, a target MCU should provide, to be a
 * Generator: `docs/mcumap_gen.xlsx`.
 * Glossary & decisions: `CONTEXT.md` (repo root), `docs/adr/0001-pin-numbering-space.md`,
   `docs/adr/0002-tiered-peripheral-access.md`.
+
+### 10.1 Backend comparison: what to reuse and what to re-evaluate
+
+Source review, 2026-09-09: covers all 13 hardware backend entry pairs, the
+virtual entry pair, family-common code and relevant adapters/build configuration.
+This is an authoring-pattern comparison, not certification of every silicon
+route or hardware timing behavior. Paths below are relative to this guide.
+
+| Backend | Useful implementation evidence | Adaptation boundary to review |
+|---|---|---|
+| [AVR](avr/mcumap_avr.h) / [runtime](avr/mcu_avr.c) | Generated port/register aliases, Harvard ROM access, separate ITP/RTC compare handling, hardware EEPROM | Timer width/divider encodings, pin-change groups and direct EEPROM capacity; AVR interrupt-mask conventions are local |
+| [STM32F0](stm32f0x/mcumap_stm32f0x.h) / [runtime](stm32f0x/mcu_stm32f0x.c) | Register GPIO, peripheral selection, timer/SysTick separation | Device-specific alternate functions, shared vectors and Cortex-M0 delay/IRQ capabilities |
+| [STM32F1](stm32f1x/mcumap_stm32f1x.h) / [runtime](stm32f1x/mcu_stm32f1x.c) | Explicit UART/SPI/I2C remap diagnostics and timer-to-clock/IRQ mapping | AFIO remap model, timer clock derivation and flash geometry; do not transplant F1 GPIO configuration into F4/H7 |
+| [STM32F4](stm32f4x/mcumap_stm32f4x.h) / [runtime](stm32f4x/mcu_stm32f4x.c) | AF-based GPIO, DMA/peripheral mappings, separate startup and linker files | Part-specific AF/DMA routes, APB timer clocks, sectors and bootloader placement |
+| [STM32H7](stm32h7x/mcumap_stm32h7x.h) / [runtime](stm32h7x/mcu_stm32h7x.c) | H7-specific peripheral code, linker script and optional adapter | Verify clock domains, peripheral IP revisions, DMA-visible memory and cache policy; similarity to F4 is insufficient |
+| [SAMD21](samd21/mcumap_samd21.h) / [runtime](samd21/mcu_samd21.c) | SERCOM mux/pad resolution, TC/TCC branches, synchronization waits | Serial-block collisions, valid pad combinations and distinct timer register layouts; register-level code alone does not prove framework-free startup |
+| [LPC176X](lpc176x/mcumap_lpc176x.h) / [runtime](lpc176x/mcu_lpc176x.c) | PINSEL route validation, timer/SSP/DMA mappings | Framework-owned SysTick and no-op NVM implementation need explicit treatment in a new backend |
+| [RP2040](rp2040/mcumap_rp2040.h) / [runtime](rp2040/mcu_rp2040.c) | Hardware alarm scheduling, PIO extender, SDK SPI/DMA paths, multicore option | Current map includes Arduino and delegates GPIO configuration/ADC/PWM; isolate these dependencies when applying the new-backend baseline |
+| [RP2350](rp2350/mcumap_rp2350.h) / [runtime](rp2350/mcu_rp2350.c) | Related alarm/PIO design in a separate backend | Current map uses low-bank `sio_hw->gpio_*` operations and ARM IRQ primitives; this is not proof of all package GPIO banks or CPU modes |
+| [ESP8266](esp8266/mcumap_esp8266.h) / [runtime](esp8266/mcu_esp8266.c) | Buffered output with separate signal, UART, SPI, flash and networking modules | Logical writes can update a shadow before physical output; evaluate buffering, stop latency, SDK service context and framework dependencies |
+| [ESP32](esp32/mcumap_esp32.h) / [runtime](esp32/mcu_esp32.c) | Family-common services plus target-specific I2S/SPI/NVM files | DMA-capable allocations and direct/buffered IO ownership; inspect selected native/adapter providers |
+| [ESP32C3](esp32c3/mcumap_esp32c3.h) / [runtime](esp32c3/mcu_esp32c3.c) | Reuses common signal/task/UART code with its own I2S driver and timer selection | Target-specific IRQ/instruction and peripheral differences; shared SDK brand does not imply identical hardware |
+| [ESP32S3](esp32s3/mcumap_esp32s3.h) / [runtime](esp32s3/mcu_esp32s3.c) | Common services with separate GPIO/I2S/GDMA configuration | Bank selection, USB/SDK configuration and DMA request/descriptor semantics |
+| [Virtual](virtual/mcumap_virtual.h) / [runtime](virtual/mcu_virtual.c) | Common simulator with separate [Windows](virtual/virtual_windows.c) / [Linux](virtual/virtual_linux.c) services and deterministic test events | Host allocation, time and IO conventions are not MCU register templates; the map has 152 direct `DIO<n>` definitions rather than 192 |
+
+All 13 hardware maps contain 192 direct canonical `DIO<n>` definitions in this
+snapshot. That is alias-surface coverage, not proof of complete peripheral route
+coverage. [ESP32 common code](esp32common/esp32_common.h) and its guarded runtime
+modules are the clearest existing shared-family layout. The root PlatformIO
+`[env]` defaults to Arduino, and multiple maps include `Arduino.h` directly;
+reuse their hardware algorithms without assuming their dependency boundaries
+already satisfy §2's new-backend policy.
