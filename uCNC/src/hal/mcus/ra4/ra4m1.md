@@ -205,1626 +205,1573 @@ SuperFlash<sup>®</sup> is a registered trademark of Silicon Storage Technology,
 Other brands and names mentioned in this document may be the trademarks or registered trademarks of their respective holders.
 
 ## Contents
-
-Features....49
-1. Overview....50
-1.1 Function Outline....50
-1.2 Block Diagram....56
-1.3 Part Numbering....57
-1.4 Function Comparison....59
-1.5 Pin Functions....60
-1.6 Pin Assignments....64
-1.7 Pin Lists....71
-2. CPU....75
-2.1 Overview....75
-2.1.1 CPU....75
-2.1.2 Debug....75
-2.1.3 Operating Frequency....76
-2.2 MCU Implementation Options....77
-2.3 Trace Interface....77
-2.4 JTAG/SWD Interface....78
-2.5 Debug Mode....78
-2.5.1 Debug Mode Definition....78
-2.5.2 Debug Mode Effects....78
-2.5.2.1 Low power mode....78
-2.5.2.2 Reset....78
-2.6 Programmers Model....80
-2.6.1 Address Spaces....80
-2.6.2 Cortex-M4 Peripheral Address Map....80
-2.6.3 CoreSight ROM Table....81
-2.6.3.1 ROM entries....81
-2.6.3.2 CoreSight component registers....81
-2.6.4 DBGREG Module....82
-2.6.4.1 Debug Status Register (DBGSTR)....82
-2.6.4.2 Debug Stop Control Register (DBGSTOPCR)....82
-2.6.4.3 Trace Control Register (TRACECTR)....83
-2.6.4.4 DBGREG CoreSight component registers....83
-2.6.5 OCDREG Module....84
-2.6.5.1 ID Authentication Code Register (IAUTH0 to 3)....84
-2.6.5.2 MCU Status Register (MCUSTAT)....85
-2.6.5.3 MCU Control Register (MCUCTRL)....85
-2.6.5.4 OCDREG CoreSight component registers....86
-2.7 CoreSight ATB Funnel....87
-
-2.8 Flash Patch and Break Unit....87
-2.9 SysTick System Timer....87
-2.10 CoreSight Time Stamp Generator....87
-2.11 OCD Emulator Connection....87
-2.11.1 DBGEN....88
-2.11.2 Unlock ID Code....88
-2.11.3 Restrictions on Connecting an OCD Emulator....88
-2.11.3.1 Starting connection while in low power mode....88
-2.11.3.2 Changing low power mode while in OCD mode....88
-2.11.3.3 Modify the unlock ID code in OSIS....89
-2.11.3.4 Connecting sequence and JTAG/SWD authentication....89
-2.12 References....90
-3. Operating Modes....91
-3.1 Overview....91
-3.2 Operating Mode Details....91
-3.2.1 Single-Chip Mode....91
-3.2.2 SCI Boot Mode....91
-3.2.3 USB Boot Mode....91
-3.3 Operating Mode Transitions....91
-3.3.1 Operating Mode Transitions as Determined by the Mode-Setting Pin....91
-4. Address Space....92
-4.1 Overview....92
-5. Resets....93
-5.1 Overview....93
-5.2 Register Descriptions....97
-5.2.1 Reset Status Register 0 (RSTSR0)....97
-5.2.2 Reset Status Register 1 (RSTSR1)....98
-5.2.3 Reset Status Register 2 (RSTSR2)....100
-5.3 Operation....100
-5.3.1 RES Pin Reset....100
-5.3.2 Power-On Reset....101
-5.3.3 Voltage Monitor Reset....101
-5.3.4 Independent Watchdog Timer Reset....103
-5.3.5 Watchdog Timer Reset....103
-5.3.6 Software Reset....103
-5.3.7 Determination of Cold/Warm Start....103
-5.3.8 Determination of Reset Generation Source....104
-6. Option-Setting Memory....105
-6.1 Overview....105
-6.2 Register Descriptions....105
-6.2.1 Option Function Select Register 0 (OFS0)....105
-
-6.2.2 Option Function Select Register 1 (OFS1)....108
-6.2.3 MPU Registers....109
-6.2.4 Access Window Setting Control Register (AWSC)....110
-6.2.5 Access Window Setting Register (AWS)....111
-6.2.6 OCD/Serial Programmer ID Setting Register (OSIS)....112
-6.3 Setting Option-Setting Memory....113
-6.3.1 Allocation of Data in Option-Setting Memory....113
-6.3.2 Setting Data for Programming Option-Setting Memory....113
-6.4 Usage Note....114
-6.4.1 Data for Programming Reserved Areas and Reserved Bits in the Option-Setting Memory....114
-7. Low Voltage Detection (LVD)....115
-7.1 Overview....115
-7.2 Register Descriptions....117
-7.2.1 Voltage Monitor 1 Circuit Control Register 1 (LVD1CR1)....117
-7.2.2 Voltage Monitor 1 Circuit Status Register (LVD1SR)....118
-7.2.3 Voltage Monitor 2 Circuit Control Register 1 (LVD2CR1)....118
-7.2.4 Voltage Monitor 2 Circuit Status Register (LVD2SR)....119
-7.2.5 Voltage Monitor Circuit Control Register (LVCMPCR)....119
-7.2.6 Voltage Detection Level Select Register (LVDLVLR)....120
-7.2.7 Voltage Monitor 1 Circuit Control Register 0 (LVD1CR0)....120
-7.2.8 Voltage Monitor 2 Circuit Control Register 0 (LVD2CR0)....121
-7.3 VCC Input Voltage Monitor....122
-7.3.1 Monitoring $V_{det0}$ ....122
-7.3.2 Monitoring $V_{det1}$ ....122
-7.3.3 Monitoring $V_{det2}$ ....122
-7.4 Reset from Voltage Monitor 0....122
-7.5 Interrupt and Reset from Voltage Monitor 1....123
-7.6 Interrupt and Reset from Voltage Monitor 2....125
-7.7 Event Link Output....127
-7.7.1 Interrupt Handling and Event Linking....127
-8. Clock Generation Circuit....129
-8.1 Overview....129
-8.2 Register Descriptions....132
-8.2.1 System Clock Division Control Register (SCKDIVCR)....132
-8.2.2 System Clock Source Control Register (SCKSCR)....134
-8.2.3 PLL Clock Control Register 2 (PLLCCR2)....135
-8.2.4 PLL Control Register (PLLCR)....135
-8.2.5 Memory Wait Cycle Control Register (MEMWAIT)....136
-8.2.6 Main Clock Oscillator Control Register (MOSCCR)....138
-8.2.7 Sub-Clock Oscillator Control Register (SOSCCR)....139
-8.2.8 Low-Speed On-Chip Oscillator Control Register (LOCOCR)....140
-
-8.2.9 High-Speed On-Chip Oscillator Control Register (HOCOCR)....141
-8.2.10 High-Speed On-Chip Oscillator Control Register 2 (HOCOCR2)....142
-8.2.11 Middle-Speed On-Chip Oscillator Control Register (MOCOCR)....142
-8.2.12 Oscillation Stabilization Flag Register (OSCSF)....143
-8.2.13 Oscillation Stop Detection Control Register (OSTDCR)....144
-8.2.14 Oscillation Stop Detection Status Register (OSTDSR)....145
-8.2.15 Main Clock Oscillator Wait Control Register (MOSCWTCR)....146
-8.2.16 High-Speed On-Chip Oscillator Wait Control Register (HOCOWTCR)....147
-8.2.17 Main Clock Oscillator Mode Oscillation Control Register (MOMCR)....147
-8.2.18 Sub-Clock Oscillator Mode Control Register (SOMCR)....148
-8.2.19 Segment LCD Source Clock Control Register (SLCDSCKCR)....149
-8.2.20 Clock Out Control Register (CKOCR)....150
-8.2.21 LOCO User Trimming Control Register (LOCOUTCR)....151
-8.2.22 MOCO User Trimming Control Register (MOCOUTCR)....151
-8.2.23 HOCO User Trimming Control Register (HOCOUTCR)....152
-8.2.24 Trace Clock Control Register (TRCKCR)....152
-8.2.25 USB Clock Control Register (USBCKCR)....153
-8.3 Main Clock Oscillator....153
-8.3.1 Connecting a Crystal Resonator....153
-8.3.2 External Clock Input....154
-8.3.3 Notes on External Clock Input....154
-8.4 Sub-Clock Oscillator....154
-8.4.1 Connecting 32.768-kHz Crystal Resonator....154
-8.5 Oscillation Stop Detection Function....154
-8.5.1 Oscillation Stop Detection and Operation after Detection....154
-8.5.2 Oscillation Stop Detection Interrupts....156
-8.6 PLL Circuit....157
-8.7 Internal Clock....157
-8.7.1 System Clock (ICLK)....157
-8.7.2 Peripheral Module Clock (PCLKA, PCLKB, PCLKC, PCLKD)....159
-8.7.3 Flash Interface Clock (FCLK)....159
-8.7.4 USB Clock (UCLK)....159
-8.7.5 CAN Clock (CANMCLK)....159
-8.7.6 CAC Clock (CACCLK)....159
-8.7.7 RTC-Dedicated Clock (RTCSCLK, RTCLCLK)....160
-8.7.8 IWDT-Dedicated Clock (IWDTCLK)....160
-8.7.9 AGT-Dedicated Clock (AGTSCLK, AGTLCLK)....160
-8.7.10 SysTick Timer-Dedicated Clock (SYSTICCLK)....160
-8.7.11 Segment LCDC Source Clock (LCDSRCCLK)....160
-8.7.12 Clock/Buzzer Output Clock (CLKOUT)....160
-8.7.13 JTAG Clock (JTAGTCK)....160
-
-8.8 Usage Notes....160
-8.8.1 Notes on Clock Generation Circuit....160
-8.8.2 Notes on Resonator....161
-8.8.3 Notes on Board Design....161
-8.8.4 Notes on Resonator Connect Pin....161
-9. Clock Frequency Accuracy Measurement Circuit (CAC)....162
-9.1 Overview....162
-9.2 Register Descriptions....163
-9.2.1 CAC Control Register 0 (CACR0)....163
-9.2.2 CAC Control Register 1 (CACR1)....164
-9.2.3 CAC Control Register 2 (CACR2)....165
-9.2.4 CAC Interrupt Control Register (CAICR)....166
-9.2.5 CAC Status Register (CASTR)....167
-9.2.6 CAC Upper-Limit Value Setting Register (CAULVR)....168
-9.2.7 CAC Lower-Limit Value Setting Register (CALLVR)....168
-9.2.8 CAC Counter Buffer Register (CACNTBR)....168
-9.3 Operation....168
-9.3.1 Measuring Clock Frequency....168
-9.3.2 Digital Filtering of Signals on CACREF Pin....169
-9.4 Interrupt Requests....170
-9.5 Usage Note....170
-9.5.1 Module-Stop Function Setting....170
-10. Low Power Modes....171
-10.1 Overview....171
-10.2 Register Descriptions....174
-10.2.1 Standby Control Register (SBYCR)....174
-10.2.2 Module Stop Control Register A (MSTPCRA)....175
-10.2.3 Module Stop Control Register B (MSTPCRB)....175
-10.2.4 Module Stop Control Register C (MSTPCRC)....176
-10.2.5 Module Stop Control Register D (MSTPCRD)....177
-10.2.6 Operating Power Control Register (OPCCR)....178
-10.2.7 Sub Operating Power Control Register (SOPCCR)....179
-10.2.8 Snooze Control Register (SNZCR)....180
-10.2.9 Snooze End Control Register (SNZEDCR)....181
-10.2.10 Snooze Request Control Register (SNZREQCR)....182
-10.2.11 Flash Operation Control Register (FLSTOP)....183
-10.2.12 System Control OCD Control Register (SYOCDCR)....184
-10.3 Reducing Power Consumption by Switching Clock Signals....184
-10.4 Module-Stop Function....185
-10.5 Function for Lower Operating Power Consumption....185
-10.5.1 Setting Operating Power Control Mode....185
-
-10.5.2 Operating Range....187
-10.6 Sleep Mode....189
-10.6.1 Transition to Sleep Mode....189
-10.6.2 Canceling Sleep Mode....190
-10.7 Software Standby Mode....190
-10.7.1 Transition to Software Standby Mode....190
-10.7.2 Canceling Software Standby Mode....191
-10.7.3 Example of Software Standby Mode Application....192
-10.8 Snooze Mode....192
-10.8.1 Transition to Snooze Mode....192
-10.8.2 Canceling Snooze Mode....193
-10.8.3 Returning to Software Standby Mode....194
-10.8.4 Snooze Operation Example....195
-10.9 Usage Notes....199
-10.9.1 Register Access....199
-10.9.2 I/O Port States....200
-10.9.3 Module-Stop State of DMAC and DTC....200
-10.9.4 Internal Interrupt Sources....201
-10.9.5 Transition to Low Power Modes....201
-10.9.6 Timing of WFI Instruction....201
-10.9.7 Writing WDT/IWDT Registers by DMAC or DTC in Sleep Mode or Snooze Mode....201
-10.9.8 Oscillators in Snooze Mode....201
-10.9.9 Snooze Mode Entry by RXD0 Falling Edge....201
-10.9.10 Using SCI0 in Snooze Mode....201
-10.9.11 Conditions of A/D Conversion Start in Snooze Mode....201
-10.9.12 Conditions of CTSU in Snooze Mode....202
-10.9.13 ELC Event in Snooze Mode....202
-10.9.14 Module-Stop Function for ADC140....202
-10.9.15 Module-Stop Function for an Unused Circuit....202
-11. Battery Backup Function....204
-11.1 Overview....204
-11.1.1 Features of Battery Backup Function....204
-11.1.2 Battery Power Supply Switch....204
-11.1.3 VBATT Pin Low Voltage Detection....204
-11.1.4 VBATT\_R Low Voltage Detection....204
-11.1.5 Backup Registers....204
-11.1.6 VBATT Wakeup Control Function....205
-11.1.7 Time Capture Pin Detection....205
-11.2 Register Descriptions....207
-11.2.1 VBATT Control Register 1 (VBTCR1)....207
-11.2.2 VBATT Control Register 2 (VBTCR2)....208
-
-11.2.3 VBATT Status Register (VBTSR) ....208
-11.2.4 VBATT Comparator Control register (VBTCMPCR) ....209
-11.2.5 VBATT Pin Low Voltage Detect Interrupt Control Register (VBTLVDICR) ....210
-11.2.6 VBATT Backup Register (VBTBKRn) (n = 0 to 511) ....210
-11.2.7 VBATT Wakeup Control Register (VBTWCTLR) ....210
-11.2.8 VBATT Wakeup I/O 0 Output Trigger Select Register (VBTWCH0OTSR) ....211
-11.2.9 VBATT Wakeup I/O 1 Output Trigger Select Register (VBTWCH1OTSR) ....212
-11.2.10 VBATT Wakeup I/O 2 Output Trigger Select Register (VBTWCH2OTSR) ....212
-11.2.11 VBATT Input Control Register (VBTICTLR) ....213
-11.2.12 VBATT Output Control Register (VBTOCTLR) ....214
-11.2.13 VBATT Wakeup Trigger Source Enable Register (VBTWTER) ....215
-11.2.14 VBATT Wakeup Trigger Source Edge Register (VBTWEGR) ....215
-11.2.15 VBATT Wakeup Trigger Source Flag Register (VBTWFR) ....216
-11.2.16 Backup Register Access Control Register (BKRACR) ....217
-11.3 Operation ....217
-11.3.1 Battery Backup Function ....217
-11.3.2 VBATT Battery Power Supply Switch Usage ....219
-11.3.3 VBATT Pin Low Voltage Detection Procedures ....219
-11.3.4 VBATT Backup Register Usage ....220
-11.3.5 VBATT Wakeup Control Function Usage ....221
-11.4 Usage Notes ....223
-12. Register Write Protection ....224
-12.1 Overview ....224
-12.2 Register Descriptions ....224
-12.2.1 Protect Register (PRCR) ....224
-13. Interrupt Controller Unit (ICU) ....225
-13.1 Overview ....225
-13.2 Register Descriptions ....227
-13.2.1 IRQ Control Register i (IRQCRi) (i = 0 to 12, 14, 15) ....227
-13.2.2 Non-Maskable Interrupt Status Register (NMISR) ....228
-13.2.3 Non-Maskable Interrupt Enable Register (NMIER) ....231
-13.2.4 Non-Maskable Interrupt Status Clear Register (NMICLR) ....232
-13.2.5 NMI Pin Interrupt Control Register (NMICR) ....234
-13.2.6 ICU Event Link Setting Register n (IELSRn) ....235
-13.2.7 DMAC Event Link Setting Register n (DELSRn) ....236
-13.2.8 SYS Event Link Setting Register (SELSR0) ....237
-13.2.9 Wake Up Interrupt Enable Register (WUPEN) ....237
-13.3 Vector Table ....239
-13.3.1 Interrupt Vector Table ....239
-13.3.2 Event Number ....240
-13.4 Interrupt Operation ....245
-
-13.4.1 Detecting Interrupts....245
-13.4.2 Selecting Interrupt Request Destinations....246
-13.4.2.1 CPU interrupt request....246
-13.4.2.2 DTC activation....246
-13.4.2.3 DMAC activation....247
-13.4.3 Digital Filter....248
-13.4.4 External Pin Interrupts....249
-13.5 Non-Maskable Interrupt Operation....249
-13.6 Return from Low Power Mode....250
-13.6.1 Return from Sleep Mode....250
-13.6.2 Return from Software Standby Mode....250
-13.6.3 Return from Snooze mode....250
-13.7 Using the WFI instruction with Non-Maskable Interrupts....251
-13.8 Reference....251
-14. Buses....252
-14.1 Overview....252
-14.2 Description of Buses....253
-14.2.1 Main Buses....253
-14.2.2 Slave Interface....253
-14.2.3 Parallel Operation....253
-14.2.4 Restriction on Endianness....254
-14.3 Register Descriptions....254
-14.3.1 Master Bus Control Register (BUSMCNT<master>)....254
-14.3.2 Slave Bus Control Register (BUSSCNT<slave>)....255
-14.3.3 Bus Error Address Register (BUSnERRADD) (n = 1 to 4)....256
-14.3.4 Bus Error Status Register (BUSnERRSTAT) (n = 1 to 4)....256
-14.4 Bus Error Monitoring Section....257
-14.4.1 Error Type that Occurs by Bus....257
-14.4.2 Operation when a Bus Error Occurs....257
-14.4.3 Conditions Leading to Illegal Address Access Errors....258
-14.4.4 Timeout....258
-14.5 Usage Notes....258
-14.5.1 Notes on using Flash Cache....258
-14.5.2 Precaution regarding interrupt during successive bus access....258
-14.6 References....260
-15. Memory Protection Unit (MPU)....261
-15.1 Overview....261
-15.2 CPU Stack Pointer Monitor....261
-15.2.1 Protection of Registers....264
-15.2.2 Overflow/Underflow Error....264
-15.2.3 Register Descriptions....264
-
-15.2.3.1 Main Stack Pointer (MSP) Monitor Start Address Register (MSPMPUSA) ..... 265
-15.2.3.2 Main Stack Pointer (MSP) Monitor End Address Register (MSPMPUEA) ..... 265
-15.2.3.3 Process Stack Pointer (PSP) Monitor Start Address Register (PSPMPUSA) ..... 266
-15.2.3.4 Process Stack Pointer (PSP) Monitor End Address Register (PSPMPUEA) ..... 266
-15.2.3.5 Stack Pointer Monitor Operation After Detection Register (MSPMPUOAD, PSPMPUOAD) ..... 267
-15.2.3.6 Stack Pointer Monitor Access Control Register (MSPMPUCTL, PSPMPUCTL) ..... 267
-15.2.3.7 Stack Pointer Monitor Protection Register (MSPMPUPT, PSPMPUPT) ..... 268
-15.3 Arm MPU ..... 269
-15.4 Bus Master MPU ..... 269
-15.4.1 Register Descriptions ..... 270
-15.4.1.1 Group A Region n Start Address Register (MMPUSAn) (n = 0 to 15) ..... 271
-15.4.1.2 Group A Region n End Address Register (MMPUEAn) (n = 0 to 15) ..... 271
-15.4.1.3 Group A Region n Access Control Register (MMPUACAn) (n = 0 to 15) ..... 271
-15.4.1.4 Bus Master MPU Control Register (MMPUCTLA) ..... 273
-15.4.1.5 Group A Protection of Register (MMPUPTA) ..... 274
-15.4.2 Operation ..... 274
-15.4.2.1 Memory protection ..... 274
-15.4.2.2 Protecting the registers ..... 276
-15.4.2.3 Memory protection error ..... 276
-15.5 Bus Slave MPU ..... 277
-15.5.1 Register Descriptions ..... 277
-15.5.1.1 Access Control Register for Memory Bus 3 (SMPUMBIU) ..... 278
-15.5.1.2 Access Control Register for Internal Peripheral Bus 9 (SMPUFBIU) ..... 278
-15.5.1.3 Access Control Register for Memory Bus 4 (SMPUSRAM0) ..... 279
-15.5.1.4 Access Control Register for Internal Peripheral Bus 1 (SMPUP0BIU) ..... 279
-15.5.1.5 Access Control Register for Internal Peripheral Bus 3 (SMPUP2BIU) ..... 280
-15.5.1.6 Access Control Register for Internal Peripheral Bus 7 (SMPUP6BIU) ..... 281
-15.5.1.7 Slave MPU Control Register (SMPUCTL) ..... 281
-15.5.2 Functions ..... 282
-15.5.2.1 Memory protection ..... 282
-15.5.2.2 Protection of registers ..... 282
-15.5.2.3 Memory protection error ..... 282
-15.6 Security MPU ..... 282
-15.6.1 Register Descriptions (Option-Setting memory) ..... 283
-15.6.1.1 Security MPU Program Counter Start Address Register (SECMPUPCSn) (n = 0, 1) ..... 284
-15.6.1.2 Security MPU Program Counter End Address Register (SECMPUPCEn) (n = 0, 1) ..... 285
-15.6.1.3 Security MPU Region 0 Start Address Register (SECMPUS0) ..... 285
-15.6.1.4 Security MPU Region 0 End Address Register (SECMPUE0) ..... 286
-
-15.6.1.5 Security MPU Region 1 Start Address Register (SECMPUS1)....286
-15.6.1.6 Security MPU Region 1 End Address Register (SECMPUE1)....287
-15.6.1.7 Security MPU Region 2 Start Address Register (SECMPUS2)....287
-15.6.1.8 Security MPU Region 2 End Address Register (SECMPUE2)....288
-15.6.1.9 Security MPU Region 3 Start Address Register (SECMPUS3)....288
-15.6.1.10 Security MPU Region 3 End Address Register (SECMPUE3)....289
-15.6.1.11 Security MPU Access Control Register (SECMPUAC)....289
-15.6.2 Memory Protection....290
-15.6.3 Notes on Debug....291
-15.7 References....291
-6. DMA Controller (DMAC)....292
-16.1 Overview....292
-16.2 Register Descriptions....294
-16.2.1 DMA Source Address Register (DMSAR)....294
-16.2.2 DMA Destination Address Register (DMDAR)....294
-16.2.3 DMA Transfer Count Register (DMCRA)....295
-16.2.4 DMA Block Transfer Count Register (DMCRB)....296
-16.2.5 DMA Transfer Mode Register (DMTMD)....296
-16.2.6 DMA Interrupt Setting Register (DMINT)....297
-16.2.7 DMA Address Mode Register (DMAMD)....298
-16.2.8 DMA Offset Register (DMOFR)....300
-16.2.9 DMA Transfer Enable Register (DMCNT)....300
-16.2.10 DMA Software Start Register (DMREQ)....301
-16.2.11 DMA Status Register (DMSTS)....302
-16.2.12 DMAC Module Activation Register (DMAST)....303
-16.3 Operation....303
-16.3.1 Transfer Mode....303
-16.3.2 Extended Repeat Area Function....306
-16.3.3 Address Update Function Using Offset....308
-16.3.4 Activation Sources....312
-16.3.5 Operation Timing....312
-16.3.6 Execution Cycles of DMAC....313
-16.3.7 Activating DMAC....314
-16.3.8 Starting DMA Transfer....316
-16.3.9 Registers during DMA Transfer....316
-16.3.10 Channel Priority....317
-16.4 Ending DMA Transfer....317
-16.4.1 Transfer End by Completion of Specified Total Number of Transfer Operations....317
-16.4.2 Transfer End by Repeat Size End Interrupt....317
-16.4.3 Transfer End by Interrupt on Extended Repeat Area Overflow....317
-16.4.4 Precautions for the End of DMA Transfer....318
-
-16.5 Interrupts....318
-16.6 Event Link....319
-16.7 Low Power Consumption Function....319
-16.8 Usage Notes....320
-16.8.1 Access to Registers during DMA Transfer....320
-16.8.2 DMA Transfer to Reserved Areas....320
-16.8.3 Setting the DMAC Event Link Setting Register of the Interrupt Controller Unit (ICU.DELSRn)....320
-16.8.4 Suspending or Restarting DMA Activation....320
-Data Transfer Controller (DTC)....321
-17.1 Overview....321
-17.2 Register Descriptions....322
-17.2.1 DTC Mode Register A (MRA)....323
-17.2.2 DTC Mode Register B (MRB)....323
-17.2.3 DTC Transfer Source Register (SAR)....324
-17.2.4 DTC Transfer Destination Register (DAR)....325
-17.2.5 DTC Transfer Count Register A (CRA)....325
-17.2.6 DTC Transfer Count Register B (CRB)....326
-17.2.7 DTC Control Register (DTCCR)....326
-17.2.8 DTC Vector Base Register (DTCVBR)....327
-17.2.9 DTC Module Start Register (DTCST)....327
-17.2.10 DTC Status Register (DTCSTS)....328
-17.3 Activation Sources....328
-17.3.1 Allocating Transfer Information and DTC Vector Table....329
-17.4 Operation....330
-17.4.1 Transfer Information Read Skip Function....332
-17.4.2 Transfer Information Write-Back Skip Function....332
-17.4.3 Normal Transfer Mode....333
-17.4.4 Repeat Transfer Mode....334
-17.4.5 Block Transfer Mode....335
-17.4.6 Chain Transfer....336
-17.4.7 Operation Timing....337
-17.4.8 Execution Cycles of DTC....339
-17.4.9 DTC Bus Mastership Release Timing....339
-17.5 DTC Setting Procedure....339
-17.6 Examples of DTC Usage....340
-17.6.1 Normal Transfer....340
-17.6.2 Chain Transfer....341
-17.6.3 Chain Transfer when Counter = 0....343
-17.7 Interrupt Source....344
-17.8 Event Link....344
-17.9 Snooze Control Interface....344
-
-17.10 Module-Stop Function....344
-17.11 Usage Notes....345
-17.11.1 Transfer Information Start Address....345
-18. Event Link Controller (ELC)....346
-18.1 Overview....346
-18.2 Register Descriptions....347
-18.2.1 Event Link Controller Register (ELCR)....347
-18.2.2 Event Link Software Event Generation Register n (ELSEGRn) (n = 0, 1)....347
-18.2.3 Event Link Setting Register n (ELSRn) (n = 0 to 9, 12, 14 to 18)....348
-18.3 Operation....352
-18.3.1 Relation between Interrupt Handling and Event Linking....352
-18.3.2 Linking Events....352
-18.3.3 Example Procedure for Linking Events....353
-18.4 Usage Notes....354
-18.4.1 Linking DMAC or DTC Transfer End Signals as Events....354
-18.4.2 Setting Clocks....354
-18.4.3 Module-Stop Function Setting....354
-18.4.4 ELC Delay Time....354
-19. I/O Ports....355
-19.1 Overview....355
-19.2 Register Descriptions....357
-19.2.1 Port Control Register 1 (PCNTR1/PODR/PDR)....357
-19.2.2 Port Control Register 2 (PCNTR2/EIDR/PIDR)....358
-19.2.3 Port Control Register 3 (PCNTR3/PORR/POSR)....359
-19.2.4 Port Control Register 4 (PCNTR4/EORR/EOSR)....360
-19.2.5 Port mn Pin Function Select Register (PmnPFS/PmnPFS\_HA/PmnPFS\_BY) (m = 0 to 9; n = 00 to 15)....361
-19.2.6 Write-Protect Register (PWPR)....363
-19.3 Operation....363
-19.3.1 General I/O Ports....363
-19.3.2 Port Function Select....364
-19.3.3 Port Group Function for ELC....364
-19.3.3.1 Behavior when ELC\_PORT1, 2, 3, or 4 is input from ELC....364
-19.3.3.2 Behavior when event pulse is output to ELC....365
-19.4 Handling of Unused Pins....367
-19.5 Usage Notes....367
-19.5.1 Procedure for Specifying the Pin Functions....367
-19.5.2 Procedure for Using Port Group Input....367
-19.5.3 Port Output Data Register (PODR) Summary....368
-19.5.4 Notes on Using Analog Functions....368
-19.5.5 I/O Buffer Specification....368
-19.5.6 Selecting the USB\_DP and USB\_DM Pins....368
-
-19.5.7 Pull-up/Pull-down Setting for P914 and P915 using USBFS/GPIO Function....369
-19.6 Peripheral Select Settings for each Product....369
-20. Key Interrupt Function (KINT)....380
-20.1 Overview....380
-20.2 Register Descriptions....382
-20.2.1 Key Return Control Register (KRCTL)....382
-20.2.2 Key Return Flag Register (KRF)....382
-20.2.3 Key Return Mode Register (KRM)....382
-20.3 Operation....383
-20.3.1 Operation When Not Using Key Interrupt Flag (KRMD = 0)....383
-20.3.2 Operation When Using Key Interrupt Flag (KRMD = 1)....384
-20.4 Usage Note....385
-21. Port Output Enable for GPT (POEG)....386
-21.1 Overview....386
-21.2 Register Descriptions....387
-21.2.1 POEG Group n Setting Register (POEGGn) (n = A, B)....387
-21.3 Output Disable Control Operation....388
-21.3.1 Pin Input Level Detection Operation....389
-21.3.1.1 Digital filter....389
-21.3.2 Output-Disable Request from GPT....389
-21.3.3 Output-Disable Control on Detection of Stopped Oscillation....389
-21.3.4 Output-Disable Control Using Registers....389
-21.3.5 Release from Output Disable....389
-21.4 Interrupt Sources....390
-21.5 External Trigger Output to GPT....390
-21.6 Usage Notes....391
-21.6.1 Transition to Software Standby Mode....391
-21.6.2 Specifying Pins Associated with the GPT....391
-22. General PWM Timer (GPT)....392
-22.1 Overview....392
-22.2 Register Descriptions....396
-22.2.1 General PWM Timer Write-Protection Register (GTWP)....397
-22.2.2 General PWM Timer Software Start Register (GTSTR)....397
-22.2.3 General PWM Timer Software Stop Register (GTSTP)....398
-22.2.4 General PWM Timer Software Clear Register (GTCLR)....398
-22.2.5 General PWM Timer Start Source Select Register (GTSSR)....399
-22.2.6 General PWM Timer Stop Source Select Register (GTPSR)....401
-22.2.7 General PWM Timer Clear Source Select Register (GTCSR)....404
-22.2.8 General PWM Timer Up Count Source Select Register (GTUPSR)....406
-22.2.9 General PWM Timer Down Count Source Select Register (GTDNSR)....409
-22.2.10 General PWM Timer Input Capture Source Select Register A(GTICASR)....411
-
-22.2.11 General PWM Timer Input Capture Source Select Register B(GTICBSR) ....414
-22.2.12 General PWM Timer Control Register (GTCR) ....417
-22.2.13 General PWM Timer Count Direction and Duty Setting Register (GTUDDTYC) ....418
-22.2.14 General PWM Timer I/O Control Register (GTIOR) ....420
-22.2.15 General PWM Timer Interrupt Output Setting Register (GTINTAD) ....424
-22.2.16 General PWM Timer Status Register (GTST) ....425
-22.2.17 General PWM Timer Buffer Enable Register (GTBER) ....428
-22.2.18 General PWM Timer Counter (GTCNT) ....430
-22.2.19 General PWM Timer Compare Capture Register n (GTCCRn) (n = A to F)....430
-22.2.20 General PWM Timer Cycle Setting Register (GTPR)....431
-22.2.21 General PWM Timer Cycle Setting Buffer Register (GTPBR)....431
-22.2.22 General PWM Timer Dead Time Control Register (GTDTCR)....432
-22.2.23 General PWM Timer Dead Time Value Register U (GTDVU)....432
-22.2.24 Output Phase Switching Control Register (OPSCR) ....433
-2.3 Operation ....435
-22.3.1 Basic Operation ....435
-22.3.1.1 Counter operation ....435
-22.3.1.2 Waveform output by compare match ....440
-22.3.1.3 Input capture function ....443
-22.3.2 Buffer Operation ....445
-22.3.2.1 GTPR register buffer operation ....445
-22.3.2.2 Buffer operation for GTCCRA and GTCCRB ....449
-22.3.3 PWM Output Operating Mode ....453
-22.3.3.1 Saw-wave PWM mode ....453
-22.3.3.2 Saw-wave one-shot pulse mode ....456
-22.3.3.3 Triangle-wave PWM mode 1 (32-bit transfer at trough) ....459
-22.3.3.4 Triangle-wave PWM mode 2 (32-bit transfer at crest and trough) ....461
-22.3.3.5 Triangle-wave PWM mode 3 (64-bit transfer at trough) ....463
-22.3.4 Automatic Dead Time Setting Function ....465
-22.3.5 Count Direction Changing Function ....469
-22.3.6 Function of Output Duty 0% and 100% ....470
-22.3.7 Hardware Count Start/Count Stop and Clear Operation ....472
-22.3.7.1 Hardware start operation ....472
-22.3.7.2 Hardware stop operation ....473
-22.3.7.3 Hardware clear operation ....477
-22.3.8 Synchronized Operation ....479
-22.3.8.1 Synchronized operation by software ....479
-22.3.8.2 Synchronized operation by hardware ....482
-22.3.9 PWM Output Operation Examples ....484
-22.3.10 Phase Counting Function ....490
-22.3.11 Output Phase Switching (GPT\_OPS) ....497
-
-22.3.11.1 Input selection and synchronization of external input signal....499
-22.3.11.2 Input sampling....500
-22.3.11.3 Input phase decode....500
-22.3.11.4 Output selection control....500
-22.3.11.5 Output selection control (group output disable function)....502
-22.3.11.6 Event Link Controller (ELC) output....502
-22.3.11.7 GPT\_OPS start operation setting flow....503
-22.4 Interrupt Sources....503
-22.4.1 Interrupt Sources....503
-22.4.2 DMAC/DTC Activation....507
-22.5 Operations Linked by ELC....507
-22.5.1 Event Signal Output to ELC....507
-22.5.2 Event Signal Inputs from ELC....507
-22.6 Noise Filter Function....507
-22.7 Protection Function....508
-22.7.1 Write-Protection for Registers....508
-22.7.2 Disabling of Buffer Operation....508
-22.7.3 GTIOC Pin Output Negate Control....509
-22.8 Initialization Method of Output Pins....510
-22.8.1 Pin Settings after Reset....510
-22.8.2 Pin Initialization Due to Error during Operation....511
-22.9 Usage Notes....511
-22.9.1 Module-Stop Function Setting....511
-22.9.2 GTCCRn Settings during Compare Match Operation (n = A to F)....511
-22.9.3 Setting Range for GTCNT Counter....512
-22.9.4 Starting and Stopping the GTCNT Counter....512
-22.9.5 Priority Order of each Event....512
-3. Low Power Asynchronous General Purpose Timer (AGT)....514
-23.1 Overview....514
-23.2 Register Descriptions....516
-23.2.1 AGT Counter Register (AGT)....516
-23.2.2 AGT Compare Match A Register (AGTCMA)....516
-23.2.3 AGT Compare Match B Register (AGTCMB)....517
-23.2.4 AGT Control Register (AGTCR)....517
-23.2.5 AGT Mode Register 1 (AGTMR1)....519
-23.2.6 AGT Mode Register 2 (AGTMR2)....520
-23.2.7 AGT I/O Control Register (AGTIOC)....521
-23.2.8 AGT Event Pin Select Register (AGTISR)....522
-23.2.9 AGT Compare Match Function Select Register (AGTCMSR)....522
-23.2.10 AGT Pin Select Register (AGTIOSEL)....523
-23.3 Operation....523
-
-23.3.1 Reload Register and Counter Rewrite Operation....523
-23.3.2 Reload Register and Compare Register A/B Rewrite Operation....526
-23.3.3 Timer Mode....527
-23.3.4 Pulse Output Mode....527
-23.3.5 Event Counter Mode....529
-23.3.6 Pulse Width Measurement Mode....531
-23.3.7 Pulse Period Measurement Mode....532
-23.3.8 Compare Match Function....533
-23.3.9 Output Settings for Each Mode....534
-23.3.10 Standby Mode....535
-23.3.11 Interrupt Sources....536
-23.3.12 Event Signal Output to ELC....536
-23.4 Usage Notes....536
-23.4.1 Count Operation Start and Stop Control....536
-23.4.2 Access to Counter Register....537
-23.4.3 When Changing Mode....537
-23.4.4 Digital Filter....537
-23.4.5 How to Calculate Event Number, Pulse Width, and Pulse Period....537
-23.4.6 When Count is Forcibly Stopped by TSTOP Bit....537
-23.4.7 When Selecting AGT0 Underflow as the Count Source....538
-23.4.8 Reset of I/O Register....538
-23.4.9 When Selecting PCLKB, PCLKB/8, or PCLKB/2 as the Count Source....538
-23.4.10 When Selecting AGTLCLK or AGTSCLK as the Count Source....538
-23.4.11 When Switching Source Clock....538
-24. Realtime Clock (RTC)....539
-24.1 Overview....539
-24.2 Register Descriptions....541
-24.2.1 64-Hz Counter (R64CNT)....541
-24.2.2 Second Counter (RSECCNT)/Binary Counter 0 (BCNT0)....541
-24.2.3 Minute Counter (RMINCNT)/Binary Counter 1 (BCNT1)....542
-24.2.4 Hour Counter (RHRCNT)/Binary Counter 2 (BCNT2)....543
-24.2.5 Day-of-Week Counter (RWKCNT)/Binary Counter 3 (BCNT3)....544
-24.2.6 Day Counter (RDAYCNT)....545
-24.2.7 Month Counter (RMONCNT)....545
-24.2.8 Year Counter (RYRCNT)....546
-24.2.9 Second Alarm Register (RSECAR)/Binary Counter 0 Alarm Register (BCNT0AR)....546
-24.2.10 Minute Alarm Register (RMINAR)/Binary Counter 1 Alarm Register (BCNT1AR)....547
-24.2.11 Hour Alarm Register (RHRAR)/Binary Counter 2 Alarm Register (BCNT2AR)....548
-24.2.12 Day-of-Week Alarm Register (RWKAR)/Binary Counter 3 Alarm Register (BCNT3AR)....549
-
-24.2.13 Date Alarm Register (RDAYAR)/Binary Counter 0 Alarm Enable Register (BCNT0AER)....550
-24.2.14 Month Alarm Register (RMONAR)/Binary Counter 1 Alarm Enable Register (BCNT1AER)....551
-24.2.15 Year Alarm Register (RYRAR)/Binary Counter 2 Alarm Enable Register (BCNT2AER)....552
-24.2.16 Year Alarm Enable Register (RYRAREN)/Binary Counter 3 Alarm Enable Register (BCNT3AER)....553
-24.2.17 RTC Control Register 1 (RCR1)....554
-24.2.18 RTC Control Register 2 (RCR2)....555
-24.2.19 RTC Control Register 4 (RCR4)....558
-24.2.20 Frequency Register (RFRH/RFRL)....559
-24.2.21 Time Error Adjustment Register (RADJ)....560
-24.2.22 Time Capture Control Register y (RTCCRy) (y = 0 to 2)....560
-24.2.23 Second Capture Register y (RSECCPy) (y = 0 to 2)/BCNT0 Capture Register y (BCNT0CPy) (y = 0 to 2)....562
-24.2.24 Minute Capture Register y (RMINCPy) (y = 0 to 2)/BCNT1 Capture Register y (BCNT1CPy) (y = 0 to 2)....562
-24.2.25 Hour Capture Register y (RHRCPy) (y = 0 to 2)/BCNT2 Capture Register y (BCNT2CPy) (y = 0 to 2)....563
-24.2.26 Date Capture Register y (RDAYCPy) (y = 0 to 2)/BCNT3 Capture Register y (BCNT3CPy) (y = 0 to 2)....564
-24.2.27 Month Capture Register y (RMONCPy) (y = 0 to 2)....565
-24.3 Operation....565
-24.3.1 Outline of Initial Settings of Registers after Power On....565
-24.3.2 Clock and Count Mode Setting Procedure....566
-24.3.3 Setting the Time....567
-24.3.4 30-Second Adjustment....567
-24.3.5 Reading 64-Hz Counter and Time....568
-24.3.6 Alarm Function....569
-24.3.7 Procedure for Disabling Alarm Interrupt....570
-24.3.8 Time Error Adjustment Function....570
-24.3.8.1 Automatic adjustment....570
-24.3.8.2 Adjustment by software....571
-24.3.8.3 Procedure for changing the mode of adjustment....571
-24.3.8.4 Procedure for stopping adjustment....572
-24.3.8.5 Capturing the time....572
-24.4 Interrupt Sources....573
-24.5 Event Link Output....574
-24.5.1 Interrupt Handling and Event Linking....575
-24.6 Usage Notes....575
-24.6.1 Register Writing during Counting....575
-24.6.2 Use of Periodic Interrupts....575
-
-24.6.3 RTCOUT (1-Hz/64-Hz) Clock Output....576
-24.6.4 Transitions to Low Power Modes after Setting Registers....576
-24.6.5 Notes on Writing to and Reading from Registers....576
-24.6.6 Changing the Count Mode....576
-24.6.7 Initialization Procedure when the RTC is not to be Used....577
-24.6.8 When Switching Source Clock....577
-25. Watchdog Timer (WDT)....578
-25.1 Overview....578
-25.2 Register Descriptions....579
-25.2.1 WDT Refresh Register (WDTRR)....579
-25.2.2 WDT Control Register (WDTCR)....580
-25.2.3 WDT Status Register (WDTSR)....582
-25.2.4 WDT Reset Control Register (WDTRCR)....583
-25.2.5 WDT Count Stop Control Register (WDTCSTPR)....584
-25.2.6 Option Function Select Register 0 (OFS0)....584
-25.3 Operation....584
-25.3.1 Count Operation in Each Start Mode....584
-25.3.1.1 Register start mode....585
-25.3.1.2 Auto-start mode....586
-25.3.2 Controlling Writes to the WDTCR, WDTRCR, and WDTCSTPR Registers....588
-25.3.3 Refresh Operation....588
-25.3.4 Reset Output....589
-25.3.5 Interrupt Sources....589
-25.3.6 Reading the Down-Counter Value....589
-25.3.7 Associations between Option Function Select Register 0 (OFS0) and WDT Registers....590
-25.4 Link Operation by ELC....590
-25.5 Usage Notes....590
-25.5.1 ICU Event Link Setting Register n (IELSRn) Setting....590
-26. Independent Watchdog Timer (IWDT)....591
-26.1 Overview....591
-26.2 Register Descriptions....592
-26.2.1 IWDT Refresh Register (IWDTRR)....592
-26.2.2 IWDT Status Register (IWDTSR)....593
-26.2.3 Option Function Select Register 0 (OFS0)....594
-26.3 Operation....596
-26.3.1 Auto-Start Mode....596
-26.3.2 Refresh Operation....597
-26.3.3 Status Flags....598
-26.3.4 Reset Output....599
-26.3.5 Interrupt Sources....599
-
-26.3.6 Reading the Down-counter Value....599
-26.4 Link Operation by ELC....599
-26.5 Usage Notes....600
-26.5.1 Refresh Operations....600
-26.5.2 Clock Division Ratio Setting....600
-USB 2.0 Full-Speed Module (USBFS)....601
-27.1 Overview....601
-27.2 Register Descriptions....603
-27.2.1 System Configuration Control Register (SYSCFG)....603
-27.2.2 System Configuration Status Register 0 (SYSSTS0)....604
-27.2.3 Device State Control Register 0 (DVSTCTR0)....605
-27.2.4 CFIFO Port Register (CFIFO/CFIFOL)
-D0FIFO Port Register (D0FIFO/D0FIFOL)
-D1FIFO Port Register (D1FIFO/D1FIFOL)....608
-27.2.5 CFIFO Port Select Register (CFIFOSEL)
-D0FIFO Port Select Register (D0FIFOSEL)
-D1FIFO Port Select Register (D1FIFOSEL)....609
-27.2.6 CFIFO Port Control Register (CFIFOCTR)
-D0FIFO Port Control Register (D0FIFOCTR)
-D1FIFO Port Control Register (D1FIFOCTR)....613
-27.2.7 Interrupt Enable Register 0 (INTENB0)....615
-27.2.8 Interrupt Enable Register 1 (INTENB1)....616
-27.2.9 BRDY Interrupt Enable Register (BRDYENB)....617
-27.2.10 NRDY Interrupt Enable Register (NRDYENB)....618
-27.2.11 BEMP Interrupt Enable Register (BEMPENB)....619
-27.2.12 SOF Output Configuration Register (SOFCFG)....620
-27.2.13 Interrupt Status Register 0 (INTSTS0)....621
-27.2.14 Interrupt Status Register 1 (INTSTS1)....623
-27.2.15 BRDY Interrupt Status Register (BRDYSTS)....625
-27.2.16 NRDY Interrupt Status Register (NRDYSTS)....626
-27.2.17 BEMP Interrupt Status Register (BEMPSTS)....627
-27.2.18 Frame Number Register (FRMNUM)....628
-27.2.19 USB Request Type Register (USBREQ)....629
-27.2.20 USB Request Value Register (USBVAL)....630
-27.2.21 USB Request Index Register (USBINDX)....630
-27.2.22 USB Request Length Register (USBLENG)....631
-27.2.23 DCP Configuration Register (DCPCFG)....631
-27.2.24 DCP Maximum Packet Size Register (DCPMAXP)....632
-27.2.25 DCP Control Register (DCPCTR)....633
-27.2.26 Pipe Window Select Register (PIPESEL)....636
-27.2.27 Pipe Configuration Register (PIPECFG)....636
-27.2.28 Pipe Maximum Packet Size Register (PIPEMAXP)....638
-27.2.29 Pipe Cycle Control Register (PIPEPERI)....639
-
-27.2.30 PIPEn Control Registers (PIPEnCTR) (n = 1 to 9)....640
-27.2.31 PIPEn Transaction Counter Enable Register (PIPEnTRE) (n = 1 to 5)....646
-27.2.32 PIPEn Transaction Counter Register (PIPEnTRN) (n = 1 to 5)....647
-27.2.33 Device Address n Configuration Register (DEVADDn) (n = 0 to 5)....648
-27.2.34 USB Module Control Register (USBMC)....648
-27.2.35 BC Control Register 0 (USBBCCTRL0)....649
-7.3 Operation....650
-27.3.1 System Control....650
-27.3.1.1 Setting data to USBFS-related registers....650
-27.3.1.2 Selecting the controller function....650
-27.3.1.3 Controlling the USBFS data bus using resistors....650
-27.3.1.4 Example of USBFS power supply connection....651
-27.3.1.5 Example of USB external connection circuits....653
-27.3.2 Interrupt Sources....660
-27.3.3 Interrupt Descriptions....663
-27.3.3.1 BRDY interrupt....663
-27.3.3.2 NRDY interrupt....666
-27.3.3.3 BEMP interrupt....669
-27.3.3.4 Device state transition interrupt (device controller mode)....670
-27.3.3.5 Control transfer stage transition interrupt (device controller mode)....671
-27.3.3.6 Frame update interrupt....672
-27.3.3.7 VBUS interrupt....672
-27.3.3.8 Resumed interrupt....672
-27.3.3.9 OVRCR interrupt....672
-27.3.3.10 BCHG interrupt....672
-27.3.3.11 DTCH interrupt....672
-27.3.3.12 SACK interrupt....672
-27.3.3.13 SIGN interrupt....672
-27.3.3.14 ATTCH interrupt....673
-27.3.3.15 EOFERR interrupt....673
-27.3.3.16 Portable device detection interrupt....673
-27.3.4 Pipe Control....673
-27.3.4.1 Pipe control register switching procedures....674
-27.3.4.2 Transfer types....675
-27.3.4.3 Endpoint number....675
-27.3.4.4 Maximum packet size setting....675
-27.3.4.5 Transaction counter for pipes 1 to 5 in the receiving direction....675
-27.3.4.6 Response PID....676
-27.3.4.7 Data PID sequence bit....677
-27.3.4.8 Response PID = NAK function....677
-27.3.4.9 Auto response mode....677
-
-27.3.4.10 OUT-NAK mode....677
-27.3.4.11 Null auto response mode....677
-27.3.5 FIFO Buffer Memory....677
-27.3.6 FIFO Buffer Clearing....678
-27.3.7 FIFO Port Functions....679
-27.3.8 DMA Transfers (D0FIFO and D1FIFO Ports)....680
-27.3.9 Control Transfers Using DCP....680
-27.3.9.1 Control transfers in host controller mode....680
-27.3.9.2 Control transfers in device controller mode....681
-27.3.10 Bulk Transfers (Pipes 1 to 5)....682
-27.3.11 Interrupt Transfers (Pipes 6 to 9)....682
-27.3.11.1 Interval counter for interrupt transfers in host controller mode....682
-27.3.12 Isochronous Transfers (Pipes 1 and 2)....683
-27.3.12.1 Error detection in isochronous transfers....683
-27.3.12.2 DATA-PID....684
-27.3.12.3 Interval counter....684
-27.3.13 SOF Interpolation Function....690
-27.3.14 Pipe Schedule....690
-27.3.14.1 Conditions for generating transactions....690
-27.3.14.2 Transfer schedule....691
-27.3.14.3 Enabling USB communication....691
-27.3.15 Battery Charging Detection Processing....691
-27.3.15.1 Processing in device controller mode....691
-27.3.15.2 Processing when host controller is selected....693
-27.4 Usage Notes....695
-27.4.1 Settings for the Module-Stop State....695
-27.4.2 Clearing the Interrupt Status Register on Exiting Software Standby Mode....695
-27.4.3 Clearing the Interrupt Status Register after Setting Up the Port Function....695
-3. Serial Communications Interface (SCI)....696
-28.1 Overview....696
-28.2 Register Descriptions....699
-28.2.1 Receive Shift Register (RSR)....699
-28.2.2 Receive Data Register (RDR)....699
-28.2.3 Receive 9-bit Data Register (RDRHL)....700
-28.2.4 Receive FIFO Data Register H, L, HL (FRDRH, FRDRL, FRDRHL)....700
-28.2.5 Transmit Data Register (TDR)....701
-28.2.6 Transmit 9-Bit Data Register (TDRHL)....702
-28.2.7 Transmit FIFO Data Register H, L, HL (FTDRH, FTDRL, FTDRHL)....702
-28.2.8 Transmit Shift Register (TSR)....703
-28.2.9 Serial Mode Register (SMR) for Non-Smart Card Interface Mode (SCMR.SMIF = 0)....703
-
-28.2.10 Serial Mode Register for Smart Card Interface Mode (SMR\_SMCI)
-(SCMR.SMIF = 1) ....705
-28.2.11 Serial Control Register (SCR) for Non-Smart Card Interface Mode
-(SCMR.SMIF = 0) ....706
-28.2.12 Serial Control Register for Smart Card Interface Mode (SCR\_SMCI)
-(SCMR.SMIF = 1) ....708
-28.2.13 Serial Status Register (SSR) for Non-Smart Card Interface and Non-FIFO Mode
-(SCMR.SMIF = 0 and FCR.FM = 0) ....709
-28.2.14 Serial Status Register for Non-Smart Card Interface and FIFO Mode (SSR\_FIFO)
-(SCMR.SMIF = 0 and FCR.FM = 1) ....712
-28.2.15 Serial Status Register for Smart Card Interface Mode (SSR\_SMCI)
-(SCMR.SMIF = 1) ....714
-28.2.16 Smart Card Mode Register (SCMR) ....716
-28.2.17 Bit Rate Register (BRR) ....718
-28.2.18 Modulation Duty Register (MDDR) ....725
-28.2.19 Serial Extended Mode Register (SEMR) ....727
-28.2.20 Noise Filter Setting Register (SNFR) ....729
-28.2.21 I²C Mode Register 1 (SIMR1) ....729
-28.2.22 I²C Mode Register 2 (SIMR2) ....730
-28.2.23 I²C Mode Register 3 (SIMR3) ....731
-28.2.24 I²C Status Register (SISR) ....732
-28.2.25 SPI Mode Register (SPMR) ....733
-28.2.26 FIFO Control Register (FCR) ....734
-28.2.27 FIFO Data Count Register (FDR) ....736
-28.2.28 Line Status Register (LSR) ....736
-28.2.29 Compare Match Data Register (CDR) ....737
-28.2.30 Data Compare Match Control Register (DCCR) ....737
-28.2.31 Serial Port Register (SPTR) ....739
-28.3 Operation in Asynchronous Mode ....739
-28.3.1 Serial Data Transfer Format ....740
-28.3.2 Receive Data Sampling Timing and Reception Margin in Asynchronous Mode ....741
-28.3.3 Clock ....742
-28.3.4 Double-Speed Operation and Frequency of 6 Times the Bit Rate ....743
-28.3.5 CTS and RTS Functions ....743
-28.3.6 Address Match (Receive Data Match Detection) Function ....744
-28.3.7 SCI Initialization in Asynchronous Mode ....747
-28.3.8 Serial Data Transmission (Asynchronous Mode) ....748
-28.3.9 Serial Data Reception (Asynchronous Mode) ....753
-28.4 Multi-Processor Communications Function ....761
-28.4.1 Multi-Processor Serial Data Transmission ....762
-28.4.2 Multi-Processor Serial Data Reception ....765
-28.5 Operation in Clock Synchronous Mode ....770
-28.5.1 Clock ....771
-
-28.5.2 CTS and RTS Functions....771
-28.5.3 SCI Initialization in Clock Synchronous Mode....772
-28.5.4 Serial Data Transmission in Clock Synchronous Mode....774
-28.5.5 Serial Data Reception in Clock Synchronous Mode....778
-28.5.6 Simultaneous Serial Data Transmission and Reception in Clock Synchronous Mode....783
-28.6 Operation in Smart Card Interface Mode....785
-28.6.1 Sample Connection....785
-28.6.2 Data Format (Except in Block Transfer Mode)....786
-28.6.3 Block Transfer Mode....787
-28.6.4 Receive Data Sampling Timing and Reception Margin....787
-28.6.5 SCI Initialization....788
-28.6.6 Serial Data Transmission (Except in Block Transfer Mode)....790
-28.6.7 Serial Data Reception (Except in Block Transfer Mode)....792
-28.6.8 Clock Output Control....794
-28.7 Operation in Simple IIC Mode....795
-28.7.1 Generation of Start, Restart, and Stop Conditions....796
-28.7.2 Clock Synchronization....797
-28.7.3 SDA Output Delay....798
-28.7.4 SCI Initialization in Simple IIC Mode....799
-28.7.5 Operation in Master Transmission (Simple IIC Mode)....799
-28.7.6 Master Reception in Simple IIC Mode....802
-28.8 Operation in Simple SPI Mode....804
-28.8.1 States of Pins in Master and Slave Modes....805
-28.8.2 SS Function in Master Mode....805
-28.8.3 SS Function in Slave Mode....805
-28.8.4 Relationship between Clock and Transmit/Receive Data....805
-28.8.5 SCI Initialization in Simple SPI Mode....806
-28.8.6 Transmission and Reception of Serial Data in Simple SPI Mode....806
-28.9 Bit Rate Modulation Function....807
-28.10 Interrupt Sources....807
-28.10.1 Buffer Operations for SCIn\_TXI and SCIn\_RXI Interrupts (non-FIFO selected)....807
-28.10.2 Buffer Operations for SCIn\_TXI and SCIn\_RXI Interrupts (FIFO selected)....807
-28.10.3 Interrupts in Asynchronous, Clock Synchronous, and Simple SPI Modes....808
-28.10.4 Interrupts in Smart Card Interface Mode....809
-28.10.5 Interrupts in Simple IIC Mode....810
-28.11 Event Linking....810
-28.12 Address mismatch event output (SCI0\_DCUF)....811
-28.13 Noise Cancellation Function....811
-28.14 Usage Notes....812
-28.14.1 Settings for the Module-Stop State....812
-28.14.2 SCI Operations during Low Power State....812
-
-28.14.3 Break Detection and Processing....817
-28.14.4 Mark State and Production of Breaks....818
-28.14.5 Receive Error Flags and Transmit Operations in Clock Synchronous and Simple SPI Modes....818
-28.14.6 Restrictions on Clock Synchronous Transmission in Clock Synchronous Mode and Simple SPI Mode....818
-28.14.7 Restrictions on Using DMAC or DTC....819
-28.14.8 Notes on Starting Transfer....820
-28.14.9 External Clock Input in Clock Synchronous Mode and Simple SPI Mode....820
-28.14.10 Limitations on Simple SPI Mode....820
-28.14.11 Notes on Transmit Enable bit (SCR.TE)....821
-28.14.12 Note on Stopping Reception When Using the RTS Function in Asynchronous Mode....821
-9. I²C Bus Interface (IIC)....822
-29.1 Overview....822
-29.2 Register Descriptions....825
-29.2.1 I²C Bus Control Register 1 (ICCR1)....825
-29.2.2 I²C Bus Control Register 2 (ICCR2)....827
-29.2.3 I²C Bus Mode Register 1 (ICMR1)....830
-29.2.4 I²C Bus Mode Register 2 (ICMR2)....831
-29.2.5 I²C Bus Mode Register 3 (ICMR3)....832
-29.2.6 I²C Bus Function Enable Register (ICFER)....834
-29.2.7 I²C Bus Status Enable Register (ICSER)....835
-29.2.8 I²C Bus Interrupt Enable Register (ICIER)....836
-29.2.9 I²C Bus Status Register 1 (ICSR1)....837
-29.2.10 I²C Bus Status Register 2 (ICSR2)....839
-29.2.11 I²C Bus Wakeup Unit Register (ICWUR)....843
-29.2.12 I²C Bus Wakeup Unit Register 2 (ICWUR2)....844
-29.2.13 Slave Address Register Ly (SARLy) (y = 0 to 2)....845
-29.2.14 Slave Address Register Uy (SARUy) (y = 0 to 2)....845
-29.2.15 I²C Bus Bit Rate Low-Level Register (ICBRL)....846
-29.2.16 I²C Bus Bit Rate High-Level Register (ICBRH)....847
-29.2.17 I²C Bus Transmit Data Register (ICDRT)....848
-29.2.18 I²C Bus Receive Data Register (ICDRR)....848
-29.2.19 I²C Bus Shift Register (ICDRS)....849
-29.3 Operation....849
-29.3.1 Communication Data Format....849
-29.3.2 Initial Settings....850
-29.3.3 Master Transmit Operation....851
-29.3.4 Master Receive Operation....855
-29.3.5 Slave Transmit Operation....860
-29.3.6 Slave Receive Operation....863
-
-29.4 SCL Synchronization Circuit....865
-29.5 SDA Output Delay Function....866
-29.6 Digital Noise Filter Circuits....866
-29.7 Address Match Detection....867
-29.7.1 Slave-Address Match Detection....867
-29.7.2 Detection of General Call Address....870
-29.7.3 Device ID Address Detection....870
-29.7.4 Host Address Detection....871
-29.8 Wakeup Function....872
-29.8.1 Normal Wakeup Mode 1....873
-29.8.2 Normal Wakeup Mode 2....876
-29.8.3 Command Recovery Mode/ EEP Response Mode (Special Wakeup Mode)....878
-29.8.4 Precautions for WFI Instruction Execution....881
-29.9 Automatic Low-Hold Function for SCL....881
-29.9.1 Function to Prevent Wrong Transmission of Transmit Data....881
-29.9.2 NACK Reception Transfer Suspension Function....882
-29.9.3 Function to Prevent Failure to Receive Data....883
-29.10 Master Arbitration-Lost Detection Functions....884
-29.10.1 Master Arbitration-Lost Detection (MALE Bit)....884
-29.10.2 Function to Detect Loss of Arbitration during NACK Transmission (NALE Bit)....886
-29.10.3 Slave Arbitration-Lost Detection (SALE Bit)....887
-29.11 Start, Restart, and Stop Condition Issuing Function....888
-29.11.1 Issuing a Start Condition....888
-29.11.2 Issuing a Restart Condition....888
-29.11.3 Issuing a Stop Condition....890
-29.12 Bus Hanging....891
-29.12.1 Timeout Function....891
-29.12.2 Extra SCL Clock Cycle Output Function....892
-29.12.3 IIC Reset and Internal Reset....893
-29.13 SMBus Operation....893
-29.13.1 SMBus Timeout Measurement....893
-29.13.2 Packet Error Code (PEC)....894
-29.13.3 SMBus Host Notification Protocol (Notify ARP Master Command)....895
-29.14 Interrupt Sources....895
-29.14.1 Buffer Operation for IICn\_TXI and IICn\_RXI Interrupts....896
-29.15 Register States when Issuing Each Condition....896
-29.16 Event Link Output....897
-29.16.1 Interrupt Handling and Event Linking....897
-29.17 Usage Notes....897
-29.17.1 Setting for the Module-Stop State....897
-29.17.2 Notes on Starting Transfer....897
-
-30. Controller Area Network (CAN) Module....898
-30.1 Overview....898
-30.2 Register Descriptions....900
-30.2.1 Control Register (CTLR)....900
-30.2.2 Bit Configuration Register (BCR)....903
-30.2.3 Mask Register k (MKRk) (k = 0 to 7)....905
-30.2.4 FIFO Received ID Compare Registers 0 and 1 (FIDCR0 and FIDCR1)....905
-30.2.5 Mask Invalid Register (MKIVLR)....907
-30.2.6 Mailbox Register j (MBj\_ID, MBj\_DL, MBj\_Dm, MBj\_TS) (j = 0 to 31, m = 0 to 7)....907
-30.2.7 Mailbox Interrupt Enable Register (MIER)....911
-30.2.8 Mailbox Interrupt Enable Register for FIFO Mailbox Mode (MIER\_FIFO)....912
-30.2.9 Message Control Registers for Transmit (MCTL\_TXj) (j = 0 to 31)....913
-30.2.10 Message Control Register for Receive (MCTL\_RXj) (j = 0 to 31)....915
-30.2.11 Receive FIFO Control Register (RFCR)....916
-30.2.12 Receive FIFO Pointer Control Register (RFPCR)....918
-30.2.13 Transmit FIFO Control Register (TFCR)....919
-30.2.14 Transmit FIFO Pointer Control Register (TFPCR)....920
-30.2.15 Status Register (STR)....921
-30.2.16 Mailbox Search Mode Register (MSMR)....923
-30.2.17 Mailbox Search Status Register (MSSR)....923
-30.2.18 Channel Search Support Register (CSSR)....924
-30.2.19 Acceptance Filter Support Register (AFSR)....925
-30.2.20 Error Interrupt Enable Register (EIER)....926
-30.2.21 Error Interrupt Factor Judge Register (EIFR)....927
-30.2.22 Receive Error Count Register (RECR)....929
-30.2.23 Transmit Error Count Register (TECR)....929
-30.2.24 Error Code Store Register (ECSR)....930
-30.2.25 Time Stamp Register (TSR)....931
-30.2.26 Test Control Register (TCR)....931
-30.3 Modes of Operation....933
-30.3.1 CAN Reset Mode....933
-30.3.2 CAN Halt Mode....934
-30.3.3 CAN Sleep Mode....935
-30.3.4 CAN Operation Mode (Excluding Bus-Off State)....935
-30.3.5 CAN Operation Mode (Bus-Off State)....936
-30.4 Data Transfer Rate Configuration....937
-30.4.1 Clock Setting....937
-30.4.2 Bit Time Setting....937
-30.4.3 Data Transfer Rate....937
-30.5 Mailbox and Mask Register Structure....938
-30.6 Acceptance Filtering and Masking Functions....939
-
-30.7 Reception and Transmission....941
-30.7.1 Reception....942
-30.7.2 Transmission....943
-30.8 Interrupt....944
-30.9 Usage Notes....945
-30.9.1 Setting for the Module-Stop State....945
-30.9.2 Setting for Operating Clock....945
-Serial Peripheral Interface (SPI)....946
-31.1 Overview....946
-31.2 Register Descriptions....949
-31.2.1 SPI Control Register (SPCR)....949
-31.2.2 SPI Slave Select Polarity Register (SSLP)....951
-31.2.3 SPI Pin Control Register (SPPCR)....951
-31.2.4 SPI Status Register (SPSR)....952
-31.2.5 SPI Data Register (SPDR/SPDR\_HA)....954
-31.2.6 SPI Bit Rate Register (SPBR)....956
-31.2.7 SPI Data Control Register (SPDCR)....957
-31.2.8 SPI Clock Delay Register (SPCKD)....958
-31.2.9 SPI Slave Select Negation Delay Register (SSLND)....959
-31.2.10 SPI Next-Access Delay Register (SPND)....959
-31.2.11 SPI Control Register 2 (SPCR2)....960
-31.2.12 SPI Command Register 0 (SPCMD0)....961
-31.3 Operation....962
-31.3.1 Overview of SPI Operations....962
-31.3.2 Controlling the SPI Pins....964
-31.3.3 SPI System Configuration Examples....965
-31.3.3.1 Single master and single slave with the MCU configured as a master....965
-31.3.3.2 Single master and single slave with the MCU configured as a slave....965
-31.3.3.3 Single master and multi-slave with the MCU configured as a master....966
-31.3.3.4 Single master and multi-slave with the MCU configured as a slave....967
-31.3.3.5 Multi-master and multi-slave with the MCU configured as a master....968
-31.3.3.6 Clock synchronous master/slave configuration with the MCU configured as a master....969
-31.3.3.7 Master and slave in clock synchronous mode with the MCU configured as a slave....970
-31.3.4 Data Format....970
-31.3.4.1 Operation when parity is disabled (SPCR2.SPPE = 0)....971
-31.3.4.2 When parity is enabled (SPCR2.SPPE = 1)....975
-31.3.5 Transfer Format....979
-31.3.5.1 CPHA = 0....979
-31.3.5.2 CPHA = 1....980
-31.3.6 Data Transfer Modes....981
-
-31.3.6.1 Full-duplex synchronous serial communications (SPCR.TXMD = 0)....981
-31.3.6.2 Transmit-only operations (SPCR.TXMD = 1)....982
-31.3.7 Transmit Buffer Empty and Receive Buffer Full Interrupts....982
-31.3.8 Error Detection....984
-31.3.8.1 Overrun errors....985
-31.3.8.2 Parity errors....987
-31.3.8.3 Mode fault errors....987
-31.3.8.4 Underrun errors....988
-31.3.9 Initializing the SPI....988
-31.3.9.1 Initialization by clearing the SPE bit....988
-31.3.9.2 Initialization by system reset....988
-31.3.10 SPI Operation....988
-31.3.10.1 Master mode operation....988
-31.3.10.2 Slave mode operation....994
-31.3.11 Clock Synchronous Operation....998
-31.3.11.1 Master mode operation....998
-31.3.11.2 Slave mode operation....1001
-31.3.12 Loopback Mode....1002
-31.3.13 Self-Diagnosis of Parity Bit Function....1003
-31.3.14 Interrupt Sources....1005
-31.4 Event Link Operation....1005
-31.4.1 Receive Buffer Full Event Output....1006
-31.4.2 Transmit Buffer Empty Event Output....1006
-31.4.3 Mode Fault, Underrun, Overrun, or Parity Error Event Output....1006
-31.4.4 SPI Idle Event Output....1006
-31.4.5 Transmission-Completed Event Output....1006
-31.5 Usage Notes....1007
-31.5.1 Settings for the Module-Stop State....1007
-31.5.2 Constraint on Low Power Consumption Functions....1007
-31.5.3 Constraint on Starting Transfer....1007
-31.5.4 Constraint on Mode Fault, Underrun, Overrun, or Parity Error Event Output....1007
-31.5.5 Constraint on SPRF/SPTEF Flag....1007
-Cyclic Redundancy Check (CRC) Calculator....1008
-32.1 Overview....1008
-32.2 Register Descriptions....1009
-32.2.1 CRC Control Register 0 (CRCCR0)....1009
-32.2.2 CRC Control Register 1 (CRCCR1)....1009
-32.2.3 CRC Data Input Register (CRCDIR/CRCDIR\_BY)....1010
-32.2.4 CRC Data Output Register (CRCDOR/CRCDOR\_HA/CRCDOR\_BY)....1010
-32.2.5 Snoop Address Register (CRCSAR)....1011
-32.3 Operation....1011
-
-32.3.1 Basic Operation....1011
-32.3.2 CRC Snoop....1014
-32.4 Usage Notes....1015
-32.4.1 Module-Stop State Setting....1015
-32.4.2 Notes on Transmission....1015
-Serial Sound Interface Enhanced (SSIE)....1016
-33.1 Overview....1016
-33.2 SSIE Specifications....1016
-33.3 Block Diagram....1018
-33.4 Register Descriptions....1019
-33.4.1 Control Register (SSICR)....1019
-33.4.2 Status Register (SSISR)....1028
-33.4.3 FIFO Control Register (SSIFCR)....1038
-33.4.4 FIFO Status Register (SSIFSR)....1044
-33.4.5 Transmit FIFO Data Register (SSIFTDR)....1047
-33.4.6 Receive FIFO Data Register (SSIFRDR)....1049
-33.4.7 TDM Mode Register (SSITDMR)....1051
-33.4.8 Status Control Register (SSISCR)....1055
-33.5 Communication Formats....1055
-33.5.1 I²S Format....1056
-33.5.2 Monaural Format....1057
-33.5.2.1 Short frame....1057
-33.5.2.2 Long frame....1058
-33.6 Communication Modes....1058
-33.6.1 Slave Mode Communication....1059
-33.6.2 Master Mode Communication....1059
-33.6.3 Transmission....1059
-33.6.4 Reception....1059
-33.6.5 Transmission and Reception....1059
-33.7 Operation....1059
-33.7.1 Idle State....1060
-33.7.2 Communication States....1061
-33.7.2.1 Data communication state....1062
-33.7.2.2 Padding communication....1064
-33.8 Communication Operation....1065
-33.8.1 Start Communication....1065
-33.8.2 Transmission....1067
-33.8.3 Reception....1067
-33.8.4 Transmission and Reception....1068
-33.8.5 Halt Communication....1068
-33.8.6 Error Handling....1069
-
-33.8.7 Resume Communication....1070
-33.9 Interrupts....1071
-33.9.1 SSIE0\_SSIF Interrupt....1072
-33.9.2 SSIE0\_SSITXI Interrupt....1072
-33.9.3 SSIE0\_SSIRXI Interrupt....1073
-33.10 Software Resets....1073
-33.10.1 Software Reset Procedure....1073
-33.11 Notes....1074
-33.11.1 Notes for Slave mode Communication....1074
-33.11.1.1 SSIBCK control....1074
-33.11.1.2 SSILRCK/SSIFS pin....1074
-33.11.2 Notes for Master Mode Communication....1075
-33.11.2.1 AUCKE control....1075
-33.11.2.2 LRCONT control....1075
-33.11.2.3 BCKASTP control....1075
-33.11.3 Notes for Communication Flow....1075
-33.11.3.1 When an error interrupt is generated....1075
-33.11.3.2 Transmit data empty interrupt....1076
-33.11.3.3 Receive data full interrupt....1076
-33.11.3.4 Switching transfer modes....1076
-33.11.3.5 Resume communication after halting SSIE....1076
-33.11.4 Write Access Restriction....1076
-33.11.4.1 SSICR register....1076
-33.11.4.2 SSISR register....1076
-33.11.4.3 Communication state....1077
-4. Boundary Scan....1078
-34.1 Overview....1078
-34.2 Register Descriptions....1079
-34.2.1 Instruction Register (JTIR)....1079
-34.2.2 ID Code Register (JTIDR)....1080
-34.2.3 Bypass Register (JTBPR)....1080
-34.2.4 Boundary Scan Register (JTBSR)....1080
-34.3 Operations....1081
-34.3.1 TAP Controller....1081
-34.3.2 Commands....1081
-34.4 Usage Note....1083
-5. 14-Bit A/D Converter (ADC14)....1084
-35.1 Overview....1084
-35.2 Register Descriptions....1087
-
-35.2.1 A/D Data Registers y (ADDRy), A/D Data Duplexing Register (ADDBLDR), A/D Data Duplexing Register A (ADDBLDRA), A/D Data Duplexing Register B (ADDBLDRB), A/D Temperature Sensor Data Register (ADTSDR), A/D Internal Reference Voltage Data Register (ADOCDR)....1087
-35.2.2 A/D Self-Diagnosis Data Register (ADRD)....1091
-35.2.3 A/D Control Register (ADCSR)....1093
-35.2.4 A/D Channel Select Register A0 (ADANSA0)....1096
-35.2.5 A/D Channel Select Register A1 (ADANSA1)....1097
-35.2.6 A/D Channel Select Register B0 (ADANSB0)....1097
-35.2.7 A/D Channel Select Register B1 (ADANSB1)....1098
-35.2.8 A/D-Converted Value Addition/Average Channel Select Register 0 (ADADS0)....1098
-35.2.9 A/D-Converted Value Addition/Average Channel Select Register 1 (ADADS1)....1099
-35.2.10 A/D-Converted Value Addition/Average Count Select Register (ADADC)....1100
-35.2.11 A/D Control Extended Register (ADCER)....1101
-35.2.12 A/D Conversion Start Trigger Select Register (ADSTRGR)....1102
-35.2.13 A/D Conversion Extended Input Control Register (ADEXICR)....1104
-35.2.14 A/D Sampling State Register n (ADSSTRn) (n = 00 to 14, L, T, O)....1105
-35.2.15 A/D Disconnection Detection Control Register (ADDISCR)....1106
-35.2.16 A/D Group Scan Priority Control Register (ADGSPCR)....1107
-35.2.17 A/D Compare Function Control Register (ADCMPCR)....1108
-35.2.18 A/D Compare Function Window A Channel Select Register 0 (ADCMPANSR0)....1109
-35.2.19 A/D Compare Function Window A Channel Select Register 1 (ADCMPANSR1)....1110
-35.2.20 A/D Compare Function Window A Extended Input Select Register (ADCMPANSER)....1110
-35.2.21 A/D Compare Function Window A Comparison Condition Setting Register 0 (ADCMPLR0)....1111
-35.2.22 A/D Compare Function Window A Comparison Condition Setting Register 1 (ADCMPLR1)....1113
-35.2.23 A/D Compare Function Window A Extended Input Comparison Condition Setting Register (ADCMPLER)....1113
-35.2.24 A/D Compare Function Window A Lower-Side Level Setting Register (ADCMPDR0), A/D Compare Function Window A Upper-Side Level Setting Register (ADCMPDR1), A/D Compare Function Window B Lower-Side Level Setting Register (ADWINLLB), A/D Compare Function Window B Upper-Side Level Setting Register (ADWINULB)....1114
-35.2.25 A/D Compare Function Window A Channel Status Register 0 (ADCMPSR0)....1116
-35.2.26 A/D Compare Function Window A Channel Status Register 1 (ADCMPSR1)....1116
-35.2.27 A/D Compare Function Window A Extended Input Channel Status Register (ADCMPSER)....1117
-35.2.28 A/D Compare Function Window B Channel Select Register (ADCMPBNSR)....1118
-35.2.29 A/D Compare Function Window B Status Register (ADCMPBSR)....1119
-35.2.30 A/D Compare Function Window A/B Status Monitor Register (ADWINMON)....1120
-35.2.31 A/D High-Potential/Low-Potential Reference Voltage Control Register (ADHVREFCNT)....1121
-3.3 Operation....1122
-
-35.3.1 Scanning Operation....1122
-35.3.2 Single Scan Mode....1123
-35.3.2.1 Basic operation....1123
-35.3.2.2 Channel selection and self-diagnosis....1123
-35.3.2.3 A/D conversion of temperature sensor output/internal reference voltage....1124
-35.3.2.4 A/D conversion in double trigger mode....1125
-35.3.2.5 Extended operations when double trigger mode is selected....1126
-35.3.3 Continuous Scan Mode....1127
-35.3.3.1 Basic operation....1127
-35.3.3.2 Channel selection and self-diagnosis....1128
-35.3.4 Group Scan Mode....1129
-35.3.4.1 Basic operation....1129
-35.3.4.2 A/D conversion in double trigger mode....1130
-35.3.4.3 Operation with group A priority control....1131
-35.3.5 Compare Function for Window A and Window B....1139
-35.3.5.1 Compare function....1139
-35.3.5.2 Event output of compare function....1140
-35.3.5.3 Restrictions on the compare function....1142
-35.3.6 Analog Input Sampling and Scan Conversion Time....1142
-35.3.7 Usage Example of A/D Data Register Automatic Clearing Function....1145
-35.3.8 A/D-Converted Value Addition/Average Mode....1145
-35.3.9 Disconnection Detection Assist Function....1146
-35.3.10 Starting A/D Conversion with Asynchronous Trigger....1147
-35.3.11 Starting A/D Conversion with a Synchronous Trigger from Peripheral Module....1148
-35.4 Interrupt Sources and DTC or DMAC Transfer Requests....1148
-35.4.1 Interrupt Requests....1148
-35.5 Event Link Function....1149
-35.5.1 Event Output to the ELC....1149
-35.5.2 ADC14 Operation through an Event from the ELC....1149
-35.6 Selecting Reference Voltage....1149
-35.7 A/D Conversion Procedure when Selecting Internal Reference Voltage as High-Potential Reference Voltage....1149
-35.8 Usage Notes....1150
-35.8.1 Notes on Reading Data Registers....1150
-35.8.2 Notes on Stopping A/D Conversion....1150
-35.8.3 A/D Conversion Restarting Timing and Termination Timing....1151
-35.8.4 Restrictions on Scan End Interrupt Handling....1151
-35.8.5 Settings for the Module-Stop State....1151
-35.8.6 Restrictions on Entering Low Power States....1152
-35.8.7 Error in Absolute Accuracy when Disconnection Detection Assistance is in Use....1152
-35.8.8 ADHSC Bit Rewriting Procedure....1152
-35.8.9 Notes on Operating Modes and Status Bits....1152
-
-35.8.10 Notes on Board Design....1152
-35.8.11 Notes on Noise Reduction....1153
-35.8.12 Port Setting when Using the 14-bit A/D Converter Input....1153
-35.8.13 Relationship between the ADC14, OPAMP, and ACMPLP....1153
-35.8.14 Notes on Canceling Software Standby Mode....1154
-36. 12-Bit D/A Converter (DAC12)....1155
-36.1 Overview....1155
-36.2 Register Descriptions....1156
-36.2.1 D/A Data Register 0 (DADR0)....1156
-36.2.2 D/A Control Register (DACR)....1156
-36.2.3 DADR0 Format Select Register (DADPR)....1157
-36.2.4 D/A A/D Synchronous Start Control Register (DAADSCR)....1157
-36.2.5 D/A VREF Control Register (DAVREFCR)....1158
-36.3 Operation....1158
-36.3.1 Reducing Interference between D/A and A/D Conversion....1159
-36.3.2 Notes on Using the Internal Reference Voltage as the Reference Voltage....1161
-36.4 Event Link Operation Setting Procedure....1161
-36.5 Usage Notes on Event Link Operation....1161
-36.6 Usage Notes....1162
-36.6.1 Settings for the Module-Stop Function....1162
-36.6.2 DAC12 Operation in Module-Stop State....1162
-36.6.3 DAC12 Operation in Software Standby Mode....1162
-36.6.4 Restriction on Usage when Interference Reduction between D/A and A/D Conversion is Enabled....1162
-37. Temperature Sensor (TSN)....1163
-37.1 Overview....1163
-37.2 Register Descriptions....1163
-37.2.1 Temperature Sensor Calibration Data Register H (TSCDRH)....1163
-37.2.2 Temperature Sensor Calibration Data Register L (TSCDRL)....1164
-37.3 Using the Temperature Sensor....1164
-37.3.1 Preparation for Using Temperature Sensor....1164
-37.3.2 Procedure for Using the Temperature Sensor....1165
-38. Operational Amplifier (OPAMP)....1166
-38.1 Overview....1166
-38.2 Register Descriptions....1167
-38.2.1 Operational Amplifier Mode Control Register (AMPMC)....1167
-38.2.2 Operational Amplifier Trigger Mode Control Register (AMPTRM)....1168
-38.2.3 Operational Amplifier Activation Trigger Select Register (AMPTRS)....1169
-38.2.4 Operational Amplifier Control Register (AMPC)....1169
-38.2.5 Operational Amplifier Monitor Register (AMPMON)....1170
-38.3 Operation....1171
-
-38.3.1 State Transitions....1171
-38.3.2 Operational Amplifier Control Operation....1172
-38.4 Software Trigger Mode....1175
-38.5 Activation Trigger Mode....1176
-38.6 Activation and A/D Trigger Mode....1177
-38.7 Usage Notes....1178
-39. Low-Power Analog Comparator (ACMPLP)....1179
-39.1 Overview....1179
-39.2 Register Descriptions....1182
-39.2.1 ACMPLP Mode Setting Register (COMPMDR)....1182
-39.2.2 ACMPLP Filter Control Register (COMPFIR)....1183
-39.2.3 ACMPLP Output Control Register (COMPOCR)....1183
-39.2.4 Comparator Input Select Register (COMPSEL0)....1184
-39.2.5 Comparator Reference Voltage Select Register (COMPSEL1)....1184
-39.3 Operation....1185
-39.4 Noise Filter....1187
-39.5 ACMPLP Interrupts....1188
-39.6 ELC Event Output....1189
-39.7 Interrupt Handling and ELC Linking....1189
-39.8 Comparator Pin Output....1189
-39.9 Usage Notes....1189
-39.9.1 Settings for the Module-Stop State....1189
-39.9.2 Relationship with A/D converter....1189
-40. 8-Bit D/A Converter (DAC8)....1190
-40.1 Overview....1190
-40.2 Register Descriptions....1190
-40.2.1 D/A Conversion Value Setting Register n (DACSn) (n = 0, 1)....1190
-40.2.2 D/A Converter Mode Register (DAM)....1191
-40.3 Operation....1191
-40.4 Usage Notes....1191
-40.4.1 Module-Stop State....1191
-40.4.2 Operation of the 8-bit D/A Converter in Module-Stop State....1191
-40.4.3 8-bit D/A Converter in Software Standby Mode Operation....1192
-40.4.4 When Not Using the D/A Converter....1192
-41. Capacitive Touch Sensing Unit (CTSU)....1193
-41.1 Overview....1193
-41.2 Register Descriptions....1195
-41.2.1 CTSU Control Register 0 (CTSUCR0)....1195
-41.2.2 CTSU Control Register 1 (CTSUCR1)....1196
-41.2.3 CTSU Synchronous Noise Reduction Setting Register (CTSUSDPRS)....1197
-41.2.4 CTSU Sensor Stabilization Wait Control Register (CTSUSST)....1198
-
-41.2.5 CTSU Measurement Channel Register 0 (CTSUMCH0)....1199
-41.2.6 CTSU Measurement Channel Register 1 (CTSUMCH1)....1201
-41.2.7 CTSU Channel Enable Control Register 0 (CTSUCHAC0)....1202
-41.2.8 CTSU Channel Enable Control Register 1 (CTSUCHAC1)....1202
-41.2.9 CTSU Channel Enable Control Register 2 (CTSUCHAC2)....1203
-41.2.10 CTSU Channel Enable Control Register 3 (CTSUCHAC3)....1203
-41.2.11 CTSU Channel Enable Control Register 4 (CTSUCHAC4)....1204
-41.2.12 CTSU Channel Transmit/Receive Control Register 0 (CTSUCHTRC0)....1204
-41.2.13 CTSU Channel Transmit/Receive Control Register 1 (CTSUCHTRC1)....1205
-41.2.14 CTSU Channel Transmit/Receive Control Register 2 (CTSUCHTRC2)....1205
-41.2.15 CTSU Channel Transmit/Receive Control Register 3 (CTSUCHTRC3)....1206
-41.2.16 CTSU Channel Transmit/Receive Control Register 4 (CTSUCHTRC4)....1206
-41.2.17 CTSU High-Pass Noise Reduction Control Register (CTSUDCLKC)....1207
-41.2.18 CTSU Status Register (CTSUST)....1207
-41.2.19 CTSU High-Pass Noise Reduction Spectrum Diffusion Control Register (CTSUSSC)....1209
-41.2.20 CTSU Sensor Offset Register 0 (CTSUSO0)....1210
-41.2.21 CTSU Sensor Offset Register 1 (CTSUSO1)....1210
-41.2.22 CTSU Sensor Counter (CTSUSC)....1212
-41.2.23 CTSU Reference Counter (CTSURC)....1212
-41.2.24 CTSU Error Status Register (CTSUERRS)....1213
-41.3 Operation....1214
-41.3.1 Principles of Measurement Operation....1214
-41.3.2 Measurement Modes....1216
-41.3.2.1 Initial setting flow....1217
-41.3.2.2 Status counter....1218
-41.3.2.3 Self-capacitance single scan mode operation....1219
-41.3.2.4 Self-capacitance multiscan mode operation....1221
-41.3.2.5 Mutual-capacitance full scan mode operation....1223
-41.3.3 Parameters Common to Multiple Modes....1225
-41.3.3.1 Sensor stabilization wait time and measurement time....1225
-41.3.3.2 Interrupts....1226
-41.4 Usage Notes....1227
-41.4.1 Measurement Result Data (CTSUSC and CTSURC Counters)....1227
-41.4.2 Constraints on Software Trigger....1227
-41.4.3 Constraints on External Triggers....1228
-41.4.4 Constraints on Forced Stops....1228
-41.4.5 TSCAP Pin....1228
-41.4.6 Constraints on Measurement Operation (CTSUCR0.CTSUSTRT bit = 1)....1228
-Data Operation Circuit (DOC)....1229
-42.1 Overview....1229
-
-42.2 Register Descriptions....1230
-42.2.1 DOC Control Register (DOCR)....1230
-42.2.2 DOC Data Input Register (DODIR)....1231
-42.2.3 DOC Data Setting Register (DODSR)....1231
-42.3 Operation....1231
-42.3.1 Data Comparison Mode....1231
-42.3.2 Data Addition Mode....1232
-42.3.3 Data Subtraction Mode....1232
-42.4 Interrupt Request and Output to the Event Link Controller (ELC)....1233
-42.5 Usage Notes....1233
-42.5.1 Settings for the Module-Stop State....1233
-43. SRAM....1234
-43.1 Overview....1234
-43.2 Register Descriptions....1234
-43.2.1 SRAM Parity Error Operation After Detection Register (PARIOAD)....1234
-43.2.2 SRAM Protection Register (SRAMPRCR)....1235
-43.2.3 ECC Operating Mode Control Register (ECCMODE)....1235
-43.2.4 ECC 2-Bit Error Status Register (ECC2STS)....1236
-43.2.5 ECC 1-Bit Error Information Update Enable Register (ECC1STSEN)....1236
-43.2.6 ECC 1-Bit Error Status Register (ECC1STS)....1237
-43.2.7 ECC Protection Register (ECCPRCR)....1237
-43.2.8 ECC Protection Register 2 (ECCPRCR2)....1238
-43.2.9 ECC Test Control Register (ECCETST)....1238
-43.2.10 SRAM ECC Error Operation After Detection Register (ECCOAD)....1239
-43.3 Operation....1239
-43.3.1 Low Power Consumption Function....1239
-43.3.2 ECC Function....1239
-43.3.3 ECC Error Generation....1240
-43.3.4 ECC Decoder Testing....1240
-43.3.5 Parity Calculation Function....1241
-43.3.6 SRAM Error Sources....1243
-43.3.7 Access Cycles....1244
-43.4 Usage Notes....1244
-43.4.1 Instruction Fetch from SRAM Area....1244
-43.4.2 SRAM Store Buffer....1244
-44. Flash Memory....1245
-44.1 Overview....1245
-44.2 Memory Structure....1246
-44.3 Flash Cache....1247
-44.3.1 Overview....1247
-44.4 Register Descriptions....1248
-
-44.4.1 Flash Cache Enable Register (FCACHEE)....1248
-44.4.2 Flash Cache Invalidate Register (FCACHEIV)....1249
-44.4.3 Data Flash Control Resister (DFLCTL)....1249
-44.4.4 Factory MCU Information Flash Root Table (FMIFRT)....1250
-44.4.5 Unique ID Register n (UIDRn) (n = 0 to 3)....1250
-44.4.6 Part Numbering Register n (PNRn) (n = 0 to 3)....1251
-44.4.7 MCU Version Register (MCUVER)....1251
-44.5 Operation....1251
-44.5.1 Notice to use Flash Cache....1252
-44.6 Operating Modes Associated with the Flash Memory....1252
-44.6.1 ID Code Protection....1252
-44.7 Overview of Functions....1253
-44.7.1 Configuration Area Bit Map....1255
-44.7.2 Startup Area Select....1255
-44.7.3 Protection by Access Window....1256
-44.8 Programming Commands....1257
-44.9 Suspend Operation....1257
-44.10 Protection....1257
-44.11 Serial Programming Mode....1257
-44.11.1 SCI Boot Mode....1258
-44.11.2 USB Boot Mode....1258
-44.12 Using a Serial Programmer....1259
-44.12.1 Serial Programming....1259
-44.12.2 Programming Environment....1259
-44.13 Self-Programming....1259
-44.13.1 Overview....1259
-44.13.2 Background Operation....1260
-44.14 Reading the Flash Memory....1260
-44.14.1 Reading the Code Flash Memory....1260
-44.14.2 Reading the Data Flash Memory....1260
-44.15 Usage Notes....1260
-44.15.1 Erase Suspended Area....1260
-44.15.2 Suspension by Erase Suspend Commands....1260
-44.15.3 Constraint on Additional Writes....1261
-44.15.4 Reset during Programming and Erasure....1261
-44.15.5 Non-Maskable Interrupt Disabled during Programming and Erasure....1261
-44.15.6 Location of Interrupt Vectors during a Programming and Erasure Operation....1261
-44.15.7 Programming and Erasure in Low-Speed Operating Mode....1261
-44.15.8 Abnormal Termination during Programming and Erasure....1261
-44.15.9 Actions Prohibited during Programming and Erasure....1261
-
-45. Segment LCD Controller (SLCDC)....1262
-45.1 Overview....1262
-45.2 Register Descriptions....1265
-45.2.1 LCD Mode Register 0 (LCDM0)....1265
-45.2.2 LCD Mode Register 1 (LCDM1)....1266
-45.2.3 LCD Clock Control Register 0 (LCDC0)....1267
-45.2.4 LCD Boost Level Control Register (VLCD)....1268
-45.3 LCD Display Data Registers....1268
-45.4 Selection of LCD Display Data Register....1271
-45.4.1 A-Pattern Area and B-pattern Area Data Display....1271
-45.4.2 Blinking Display (Alternately Displaying A-Pattern and B-Pattern Area Data)....1271
-45.5 Setting LCD Controller/Driver....1272
-45.6 Operation Stop Procedure....1276
-45.7 Supplying LCD Drive Voltages VL1, VL2, VL3, and VL4....1276
-45.7.1 External Resistance Division Method....1276
-45.7.2 Internal Voltage Boosting Method....1278
-45.7.3 Capacitor Split Method....1279
-45.8 Common and Segment Signals....1280
-45.9 Display Modes....1286
-45.9.1 Static Display Example....1286
-45.9.2 Two-Time-Slice Display Example....1289
-45.9.3 Three-Time-Slice Display Example....1292
-45.9.4 Four-Time-Slice Display Example....1296
-45.9.5 Eight-Time-Slice Display Example....1300
-46. Secure Cryptographic Engine (SCE5)....1305
-46.1 Overview....1305
-46.2 Operation....1307
-46.2.1 Encryption Engine....1307
-46.2.2 Encryption and Decryption....1308
-46.3 Usage Notes....1308
-46.3.1 Software Standby Mode....1308
-46.3.2 Settings for the Module-Stop Function....1308
-47. Internal Voltage Regulator....1309
-47.1 Overview....1309
-47.2 Operation....1309
-48. Electrical Characteristics....1310
-48.1 Absolute Maximum Ratings....1311
-48.2 DC Characteristics....1313
-48.2.1 Tj/Ta Definition....1313
-48.2.2 I/O VIH, $V_{IL}$ ....1313
-48.2.3 I/O $I_{OH}$ , $I_{OL}$ ....1315
-
-48.2.4 I/O $V_{OH}$ , $V_{OL}$ , and Other Characteristics....1317
-48.2.5 I/O Pin Output Characteristics of Low Drive Capacity....1319
-48.2.6 I/O Pin Output Characteristics of Middle Drive Capacity....1321
-48.2.7 P408, P409 I/O Pin Output Characteristics of Middle Drive Capacity....1324
-48.2.8 IIC I/O Pin Output Characteristics....1326
-48.2.9 Operating and Standby Current....1327
-48.2.10 VCC Rise and Fall Gradient and Ripple Frequency....1337
-48.3 AC Characteristics....1338
-48.3.1 Frequency....1338
-48.3.2 Clock Timing....1340
-48.3.3 Reset Timing....1344
-48.3.4 Wakeup Time....1345
-48.3.5 NMI and IRQ Noise Filter....1349
-48.3.6 I/O Ports, POEG, GPT, AGT, KINT, and ADC14 Trigger Timing....1350
-48.3.7 CAC Timing....1351
-48.3.8 SCI Timing....1352
-48.3.9 SPI Timing....1358
-48.3.10 IIC Timing....1363
-48.3.11 SSIE Timing....1365
-48.3.12 CLKOUT Timing....1367
-48.4 USB Characteristics....1368
-48.4.1 USBFS Timing....1368
-48.4.2 USB External Supply....1369
-48.5 ADC14 Characteristics....1370
-48.6 DAC12 Characteristics....1380
-48.7 TSN Characteristics....1382
-48.8 OSC Stop Detect Characteristics....1382
-48.9 POR and LVD Characteristics....1383
-48.10 VBATT Characteristics....1387
-48.11 CTSU Characteristics....1389
-48.12 Segment LCD Controller Characteristics....1390
-48.12.1 Resistance Division Method....1390
-48.12.2 Internal Voltage Boosting Method....1390
-48.12.3 Capacitor Split Method....1392
-48.13 Comparator Characteristics....1393
-48.14 OPAMP Characteristics....1394
-48.15 Flash Memory Characteristics....1395
-48.15.1 Code Flash Memory Characteristics....1395
-48.15.2 Data Flash Memory Characteristics....1396
-48.16 Boundary Scan....1397
-48.17 Joint Test Action Group (JTAG)....1398
-48.17.1 Serial Wire Debug (SWD)....1400
-
-Appendix 1. Port States in Each Processing Mode....1402
-Appendix 2. Package Dimensions....1405
-Appendix 3. I/O Registers....1415
-3.1 Peripheral Base Addresses....1415
-3.2 Access Cycles....1416
-3.3 Register Descriptions....1418
-Revision History....1446
-
+[Features](#features)
+  [1. Overview](#1-overview)
+    [1.1 Function Outline](#11-function-outline)
+    [1.2 Block Diagram](#12-block-diagram)
+    [1.3 Part Numbering](#13-part-numbering)
+    [1.4 Function Comparison](#14-function-comparison)
+    [1.5 Pin Functions](#15-pin-functions)
+    [1.6 Pin Assignments](#16-pin-assignments)
+    [1.7 Pin Lists](#17-pin-lists)
+  [2. CPU](#2-cpu)
+    [2.1 Overview](#21-overview)
+      [2.1.1 CPU](#211-cpu)
+      [2.1.2 Debug](#212-debug)
+      [2.1.3 Operating Frequency](#213-operating-frequency)
+    [2.2 MCU Implementation Options](#22-mcu-implementation-options)
+    [2.3 Trace Interface](#23-trace-interface)
+    [2.4 JTAG/SWD Interface](#24-jtagswd-interface)
+    [2.5 Debug Mode](#25-debug-mode)
+      [2.5.1 Debug Mode Definition](#251-debug-mode-definition)
+      [2.5.2 Debug Mode Effects](#252-debug-mode-effects)
+        [2.5.2.1 Low power mode](#2521-low-power-mode)
+        [2.5.2.2 Reset](#2522-reset)
+    [2.6 Programmers Model](#26-programmers-model)
+      [2.6.1 Address Spaces](#261-address-spaces)
+      [2.6.2 Cortex-M4 Peripheral Address Map](#262-cortex-m4-peripheral-address-map)
+      [2.6.3 CoreSight ROM Table](#263-coresight-rom-table)
+        [2.6.3.1 ROM entries](#2631-rom-entries)
+        [2.6.3.2 CoreSight component registers](#2632-coresight-component-registers)
+      [2.6.4 DBGREG Module](#264-dbgreg-module)
+        [2.6.4.1 Debug Status Register (DBGSTR)](#2641-debug-status-register-dbgstr)
+        [2.6.4.2 Debug Stop Control Register (DBGSTOPCR)](#2642-debug-stop-control-register-dbgstopcr)
+        [2.6.4.3 Trace Control Register (TRACECTR)](#2643-trace-control-register-tracectr)
+        [2.6.4.4 DBGREG CoreSight component registers](#2644-dbgreg-coresight-component-registers)
+      [2.6.5 OCDREG Module](#265-ocdreg-module)
+        [2.6.5.1 ID Authentication Code Register (IAUTH0 to 3)](#2651-id-authentication-code-register-iauth0-to-3)
+        [2.6.5.2 MCU Status Register (MCUSTAT)](#2652-mcu-status-register-mcustat)
+        [2.6.5.3 MCU Control Register (MCUCTRL)](#2653-mcu-control-register-mcuctrl)
+        [2.6.5.4 OCDREG CoreSight component registers](#2654-ocdreg-coresight-component-registers)
+    [2.7 CoreSight ATB Funnel](#27-coresight-atb-funnel)
+    [2.8 Flash Patch and Break Unit](#28-flash-patch-and-break-unit)
+    [2.9 SysTick System Timer](#29-systick-system-timer)
+    [2.10 CoreSight Time Stamp Generator](#210-coresight-time-stamp-generator)
+    [2.11 OCD Emulator Connection](#211-ocd-emulator-connection)
+      [2.11.1 DBGEN](#2111-dbgen)
+      [2.11.2 Unlock ID Code](#2112-unlock-id-code)
+      [2.11.3 Restrictions on Connecting an OCD Emulator](#2113-restrictions-on-connecting-an-ocd-emulator)
+        [2.11.3.1 Starting connection while in low power mode](#21131-starting-connection-while-in-low-power-mode)
+        [2.11.3.2 Changing low power mode while in OCD mode](#21132-changing-low-power-mode-while-in-ocd-mode)
+        [2.11.3.3 Modify the unlock ID code in OSIS](#21133-modify-the-unlock-id-code-in-osis)
+        [2.11.3.4 Connecting sequence and JTAG/SWD authentication](#21134-connecting-sequence-and-jtagswd-authentication)
+    [2.12 References](#212-references)
+  [3. Operating Modes](#3-operating-modes)
+    [3.1 Overview](#31-overview)
+    [3.2 Operating Mode Details](#32-operating-mode-details)
+      [3.2.1 Single-Chip Mode](#321-single-chip-mode)
+      [3.2.2 SCI Boot Mode](#322-sci-boot-mode)
+      [3.2.3 USB Boot Mode](#323-usb-boot-mode)
+    [3.3 Operating Mode Transitions](#33-operating-mode-transitions)
+      [3.3.1 Operating Mode Transitions as Determined by the Mode-Setting Pin](#331-operating-mode-transitions-as-determined-by-the-mode-setting-pin)
+  [4. Address Space](#4-address-space)
+    [4.1 Overview](#41-overview)
+  [5. Resets](#5-resets)
+    [5.1 Overview](#51-overview)
+    [5.2 Register Descriptions](#52-register-descriptions)
+      [5.2.1 Reset Status Register 0 (RSTSR0)](#521-reset-status-register-0-rstsr0)
+      [5.2.2 Reset Status Register 1 (RSTSR1)](#522-reset-status-register-1-rstsr1)
+      [5.2.3 Reset Status Register 2 (RSTSR2)](#523-reset-status-register-2-rstsr2)
+    [5.3 Operation](#53-operation)
+      [5.3.1 RES Pin Reset](#531-res-pin-reset)
+      [5.3.2 Power-On Reset](#532-power-on-reset)
+      [5.3.3 Voltage Monitor Reset](#533-voltage-monitor-reset)
+      [5.3.4 Independent Watchdog Timer Reset](#534-independent-watchdog-timer-reset)
+      [5.3.5 Watchdog Timer Reset](#535-watchdog-timer-reset)
+      [5.3.6 Software Reset](#536-software-reset)
+      [5.3.7 Determination of Cold/Warm Start](#537-determination-of-coldwarm-start)
+      [5.3.8 Determination of Reset Generation Source](#538-determination-of-reset-generation-source)
+  [6. Option-Setting Memory](#6-option-setting-memory)
+    [6.1 Overview](#61-overview)
+    [6.2 Register Descriptions](#62-register-descriptions)
+      [6.2.1 Option Function Select Register 0 (OFS0)](#621-option-function-select-register-0-ofs0)
+      [6.2.2 Option Function Select Register 1 (OFS1)](#622-option-function-select-register-1-ofs1)
+      [6.2.3 MPU Registers](#623-mpu-registers)
+      [6.2.4 Access Window Setting Control Register (AWSC)](#624-access-window-setting-control-register-awsc)
+      [6.2.5 Access Window Setting Register (AWS)](#625-access-window-setting-register-aws)
+      [6.2.6 OCD/Serial Programmer ID Setting Register (OSIS)](#626-ocdserial-programmer-id-setting-register-osis)
+    [6.3 Setting Option-Setting Memory](#63-setting-option-setting-memory)
+      [6.3.1 Allocation of Data in Option-Setting Memory](#631-allocation-of-data-in-option-setting-memory)
+      [6.3.2 Setting Data for Programming Option-Setting Memory](#632-setting-data-for-programming-option-setting-memory)
+    [6.4 Usage Note](#64-usage-note)
+      [6.4.1 Data for Programming Reserved Areas and Reserved Bits in the Option-Setting Memory](#641-data-for-programming-reserved-areas-and-reserved-bits-in-the-option-setting-memory)
+  [7. Low Voltage Detection (LVD)](#7-low-voltage-detection-lvd)
+    [7.1 Overview](#71-overview)
+    [7.2 Register Descriptions](#72-register-descriptions)
+      [7.2.1 Voltage Monitor 1 Circuit Control Register 1 (LVD1CR1)](#721-voltage-monitor-1-circuit-control-register-1-lvd1cr1)
+      [7.2.2 Voltage Monitor 1 Circuit Status Register (LVD1SR)](#722-voltage-monitor-1-circuit-status-register-lvd1sr)
+      [7.2.3 Voltage Monitor 2 Circuit Control Register 1 (LVD2CR1)](#723-voltage-monitor-2-circuit-control-register-1-lvd2cr1)
+      [7.2.4 Voltage Monitor 2 Circuit Status Register (LVD2SR)](#724-voltage-monitor-2-circuit-status-register-lvd2sr)
+      [7.2.5 Voltage Monitor Circuit Control Register (LVCMPCR)](#725-voltage-monitor-circuit-control-register-lvcmpcr)
+      [7.2.6 Voltage Detection Level Select Register (LVDLVLR)](#726-voltage-detection-level-select-register-lvdlvlr)
+      [7.2.7 Voltage Monitor 1 Circuit Control Register 0 (LVD1CR0)](#727-voltage-monitor-1-circuit-control-register-0-lvd1cr0)
+      [7.2.8 Voltage Monitor 2 Circuit Control Register 0 (LVD2CR0)](#728-voltage-monitor-2-circuit-control-register-0-lvd2cr0)
+    [7.3 VCC Input Voltage Monitor](#73-vcc-input-voltage-monitor)
+      [7.3.1 Monitoring $V_{det0}$](#731-monitoring-v_det0)
+      [7.3.2 Monitoring $V_{det1}$](#732-monitoring-v_det1)
+      [7.3.3 Monitoring $V_{det2}$](#733-monitoring-v_det2)
+    [7.4 Reset from Voltage Monitor 0](#74-reset-from-voltage-monitor-0)
+    [7.5 Interrupt and Reset from Voltage Monitor 1](#75-interrupt-and-reset-from-voltage-monitor-1)
+    [7.6 Interrupt and Reset from Voltage Monitor 2](#76-interrupt-and-reset-from-voltage-monitor-2)
+    [7.7 Event Link Output](#77-event-link-output)
+      [7.7.1 Interrupt Handling and Event Linking](#771-interrupt-handling-and-event-linking)
+  [8. Clock Generation Circuit](#8-clock-generation-circuit)
+    [8.1 Overview](#81-overview)
+    [8.2 Register Descriptions](#82-register-descriptions)
+      [8.2.1 System Clock Division Control Register (SCKDIVCR)](#821-system-clock-division-control-register-sckdivcr)
+      [8.2.2 System Clock Source Control Register (SCKSCR)](#822-system-clock-source-control-register-sckscr)
+      [8.2.3 PLL Clock Control Register 2 (PLLCCR2)](#823-pll-clock-control-register-2-pllccr2)
+      [8.2.4 PLL Control Register (PLLCR)](#824-pll-control-register-pllcr)
+      [8.2.5 Memory Wait Cycle Control Register (MEMWAIT)](#825-memory-wait-cycle-control-register-memwait)
+      [8.2.6 Main Clock Oscillator Control Register (MOSCCR)](#826-main-clock-oscillator-control-register-mosccr)
+      [8.2.7 Sub-Clock Oscillator Control Register (SOSCCR)](#827-sub-clock-oscillator-control-register-sosccr)
+      [8.2.8 Low-Speed On-Chip Oscillator Control Register (LOCOCR)](#828-low-speed-on-chip-oscillator-control-register-lococr)
+      [8.2.9 High-Speed On-Chip Oscillator Control Register (HOCOCR)](#829-high-speed-on-chip-oscillator-control-register-hococr)
+      [8.2.10 High-Speed On-Chip Oscillator Control Register 2 (HOCOCR2)](#8210-high-speed-on-chip-oscillator-control-register-2-hococr2)
+      [8.2.11 Middle-Speed On-Chip Oscillator Control Register (MOCOCR)](#8211-middle-speed-on-chip-oscillator-control-register-mococr)
+      [8.2.12 Oscillation Stabilization Flag Register (OSCSF)](#8212-oscillation-stabilization-flag-register-oscsf)
+      [8.2.13 Oscillation Stop Detection Control Register (OSTDCR)](#8213-oscillation-stop-detection-control-register-ostdcr)
+      [8.2.14 Oscillation Stop Detection Status Register (OSTDSR)](#8214-oscillation-stop-detection-status-register-ostdsr)
+      [8.2.15 Main Clock Oscillator Wait Control Register (MOSCWTCR)](#8215-main-clock-oscillator-wait-control-register-moscwtcr)
+      [8.2.16 High-Speed On-Chip Oscillator Wait Control Register (HOCOWTCR)](#8216-high-speed-on-chip-oscillator-wait-control-register-hocowtcr)
+      [8.2.17 Main Clock Oscillator Mode Oscillation Control Register (MOMCR)](#8217-main-clock-oscillator-mode-oscillation-control-register-momcr)
+      [8.2.18 Sub-Clock Oscillator Mode Control Register (SOMCR)](#8218-sub-clock-oscillator-mode-control-register-somcr)
+      [8.2.19 Segment LCD Source Clock Control Register (SLCDSCKCR)](#8219-segment-lcd-source-clock-control-register-slcdsckcr)
+      [8.2.20 Clock Out Control Register (CKOCR)](#8220-clock-out-control-register-ckocr)
+      [8.2.21 LOCO User Trimming Control Register (LOCOUTCR)](#8221-loco-user-trimming-control-register-locoutcr)
+      [8.2.22 MOCO User Trimming Control Register (MOCOUTCR)](#8222-moco-user-trimming-control-register-mocoutcr)
+      [8.2.23 HOCO User Trimming Control Register (HOCOUTCR)](#8223-hoco-user-trimming-control-register-hocoutcr)
+      [8.2.24 Trace Clock Control Register (TRCKCR)](#8224-trace-clock-control-register-trckcr)
+      [8.2.25 USB Clock Control Register (USBCKCR)](#8225-usb-clock-control-register-usbckcr)
+    [8.3 Main Clock Oscillator](#83-main-clock-oscillator)
+      [8.3.1 Connecting a Crystal Resonator](#831-connecting-a-crystal-resonator)
+      [8.3.2 External Clock Input](#832-external-clock-input)
+      [8.3.3 Notes on External Clock Input](#833-notes-on-external-clock-input)
+    [8.4 Sub-Clock Oscillator](#84-sub-clock-oscillator)
+      [8.4.1 Connecting 32.768-kHz Crystal Resonator](#841-connecting-32768-khz-crystal-resonator)
+    [8.5 Oscillation Stop Detection Function](#85-oscillation-stop-detection-function)
+      [8.5.1 Oscillation Stop Detection and Operation after Detection](#851-oscillation-stop-detection-and-operation-after-detection)
+      [8.5.2 Oscillation Stop Detection Interrupts](#852-oscillation-stop-detection-interrupts)
+    [8.6 PLL Circuit](#86-pll-circuit)
+    [8.7 Internal Clock](#87-internal-clock)
+      [8.7.1 System Clock (ICLK)](#871-system-clock-iclk)
+      [8.7.2 Peripheral Module Clock (PCLKA, PCLKB, PCLKC, PCLKD)](#872-peripheral-module-clock-pclka-pclkb-pclkc-pclkd)
+      [8.7.3 Flash Interface Clock (FCLK)](#873-flash-interface-clock-fclk)
+      [8.7.4 USB Clock (UCLK)](#874-usb-clock-uclk)
+      [8.7.5 CAN Clock (CANMCLK)](#875-can-clock-canmclk)
+      [8.7.6 CAC Clock (CACCLK)](#876-cac-clock-cacclk)
+      [8.7.7 RTC-Dedicated Clock (RTCSCLK, RTCLCLK)](#877-rtc-dedicated-clock-rtcsclk-rtclclk)
+      [8.7.8 IWDT-Dedicated Clock (IWDTCLK)](#878-iwdt-dedicated-clock-iwdtclk)
+      [8.7.9 AGT-Dedicated Clock (AGTSCLK, AGTLCLK)](#879-agt-dedicated-clock-agtsclk-agtlclk)
+      [8.7.10 SysTick Timer-Dedicated Clock (SYSTICCLK)](#8710-systick-timer-dedicated-clock-systicclk)
+      [8.7.11 Segment LCDC Source Clock (LCDSRCCLK)](#8711-segment-lcdc-source-clock-lcdsrcclk)
+      [8.7.12 Clock/Buzzer Output Clock (CLKOUT)](#8712-clockbuzzer-output-clock-clkout)
+      [8.7.13 JTAG Clock (JTAGTCK)](#8713-jtag-clock-jtagtck)
+    [8.8 Usage Notes](#88-usage-notes)
+      [8.8.1 Notes on Clock Generation Circuit](#881-notes-on-clock-generation-circuit)
+      [8.8.2 Notes on Resonator](#882-notes-on-resonator)
+      [8.8.3 Notes on Board Design](#883-notes-on-board-design)
+      [8.8.4 Notes on Resonator Connect Pin](#884-notes-on-resonator-connect-pin)
+  [9. Clock Frequency Accuracy Measurement Circuit (CAC)](#9-clock-frequency-accuracy-measurement-circuit-cac)
+    [9.1 Overview](#91-overview)
+    [9.2 Register Descriptions](#92-register-descriptions)
+      [9.2.1 CAC Control Register 0 (CACR0)](#921-cac-control-register-0-cacr0)
+      [9.2.2 CAC Control Register 1 (CACR1)](#922-cac-control-register-1-cacr1)
+      [9.2.3 CAC Control Register 2 (CACR2)](#923-cac-control-register-2-cacr2)
+      [9.2.4 CAC Interrupt Control Register (CAICR)](#924-cac-interrupt-control-register-caicr)
+      [9.2.5 CAC Status Register (CASTR)](#925-cac-status-register-castr)
+      [9.2.6 CAC Upper-Limit Value Setting Register (CAULVR)](#926-cac-upper-limit-value-setting-register-caulvr)
+      [9.2.7 CAC Lower-Limit Value Setting Register (CALLVR)](#927-cac-lower-limit-value-setting-register-callvr)
+      [9.2.8 CAC Counter Buffer Register (CACNTBR)](#928-cac-counter-buffer-register-cacntbr)
+    [9.3 Operation](#93-operation)
+      [9.3.1 Measuring Clock Frequency](#931-measuring-clock-frequency)
+      [9.3.2 Digital Filtering of Signals on CACREF Pin](#932-digital-filtering-of-signals-on-cacref-pin)
+    [9.4 Interrupt Requests](#94-interrupt-requests)
+    [9.5 Usage Note](#95-usage-note)
+      [9.5.1 Module-Stop Function Setting](#951-module-stop-function-setting)
+  [10. Low Power Modes](#10-low-power-modes)
+    [10.1 Overview](#101-overview)
+    [10.2 Register Descriptions](#102-register-descriptions)
+      [10.2.1 Standby Control Register (SBYCR)](#1021-standby-control-register-sbycr)
+      [10.2.2 Module Stop Control Register A (MSTPCRA)](#1022-module-stop-control-register-a-mstpcra)
+      [10.2.3 Module Stop Control Register B (MSTPCRB)](#1023-module-stop-control-register-b-mstpcrb)
+      [10.2.4 Module Stop Control Register C (MSTPCRC)](#1024-module-stop-control-register-c-mstpcrc)
+      [10.2.5 Module Stop Control Register D (MSTPCRD)](#1025-module-stop-control-register-d-mstpcrd)
+      [10.2.6 Operating Power Control Register (OPCCR)](#1026-operating-power-control-register-opccr)
+      [10.2.7 Sub Operating Power Control Register (SOPCCR)](#1027-sub-operating-power-control-register-sopccr)
+      [10.2.8 Snooze Control Register (SNZCR)](#1028-snooze-control-register-snzcr)
+      [10.2.9 Snooze End Control Register (SNZEDCR)](#1029-snooze-end-control-register-snzedcr)
+      [10.2.10 Snooze Request Control Register (SNZREQCR)](#10210-snooze-request-control-register-snzreqcr)
+      [10.2.11 Flash Operation Control Register (FLSTOP)](#10211-flash-operation-control-register-flstop)
+      [10.2.12 System Control OCD Control Register (SYOCDCR)](#10212-system-control-ocd-control-register-syocdcr)
+    [10.3 Reducing Power Consumption by Switching Clock Signals](#103-reducing-power-consumption-by-switching-clock-signals)
+    [10.4 Module-Stop Function](#104-module-stop-function)
+    [10.5 Function for Lower Operating Power Consumption](#105-function-for-lower-operating-power-consumption)
+      [10.5.1 Setting Operating Power Control Mode](#1051-setting-operating-power-control-mode)
+      [10.5.2 Operating Range](#1052-operating-range)
+    [10.6 Sleep Mode](#106-sleep-mode)
+      [10.6.1 Transition to Sleep Mode](#1061-transition-to-sleep-mode)
+      [10.6.2 Canceling Sleep Mode](#1062-canceling-sleep-mode)
+    [10.7 Software Standby Mode](#107-software-standby-mode)
+      [10.7.1 Transition to Software Standby Mode](#1071-transition-to-software-standby-mode)
+      [10.7.2 Canceling Software Standby Mode](#1072-canceling-software-standby-mode)
+      [10.7.3 Example of Software Standby Mode Application](#1073-example-of-software-standby-mode-application)
+    [10.8 Snooze Mode](#108-snooze-mode)
+      [10.8.1 Transition to Snooze Mode](#1081-transition-to-snooze-mode)
+      [10.8.2 Canceling Snooze Mode](#1082-canceling-snooze-mode)
+      [10.8.3 Returning to Software Standby Mode](#1083-returning-to-software-standby-mode)
+      [10.8.4 Snooze Operation Example](#1084-snooze-operation-example)
+    [10.9 Usage Notes](#109-usage-notes)
+      [10.9.1 Register Access](#1091-register-access)
+      [10.9.2 I/O Port States](#1092-io-port-states)
+      [10.9.3 Module-Stop State of DMAC and DTC](#1093-module-stop-state-of-dmac-and-dtc)
+      [10.9.4 Internal Interrupt Sources](#1094-internal-interrupt-sources)
+      [10.9.5 Transition to Low Power Modes](#1095-transition-to-low-power-modes)
+      [10.9.6 Timing of WFI Instruction](#1096-timing-of-wfi-instruction)
+      [10.9.7 Writing WDT/IWDT Registers by DMAC or DTC in Sleep Mode or Snooze Mode](#1097-writing-wdtiwdt-registers-by-dmac-or-dtc-in-sleep-mode-or-snooze-mode)
+      [10.9.8 Oscillators in Snooze Mode](#1098-oscillators-in-snooze-mode)
+      [10.9.9 Snooze Mode Entry by RXD0 Falling Edge](#1099-snooze-mode-entry-by-rxd0-falling-edge)
+      [10.9.10 Using SCI0 in Snooze Mode](#10910-using-sci0-in-snooze-mode)
+      [10.9.11 Conditions of A/D Conversion Start in Snooze Mode](#10911-conditions-of-ad-conversion-start-in-snooze-mode)
+      [10.9.12 Conditions of CTSU in Snooze Mode](#10912-conditions-of-ctsu-in-snooze-mode)
+      [10.9.13 ELC Event in Snooze Mode](#10913-elc-event-in-snooze-mode)
+      [10.9.14 Module-Stop Function for ADC140](#10914-module-stop-function-for-adc140)
+      [10.9.15 Module-Stop Function for an Unused Circuit](#10915-module-stop-function-for-an-unused-circuit)
+  [11. Battery Backup Function](#11-battery-backup-function)
+    [11.1 Overview](#111-overview)
+      [11.1.1 Features of Battery Backup Function](#1111-features-of-battery-backup-function)
+      [11.1.2 Battery Power Supply Switch](#1112-battery-power-supply-switch)
+      [11.1.3 VBATT Pin Low Voltage Detection](#1113-vbatt-pin-low-voltage-detection)
+      [11.1.4 VBATT\_R Low Voltage Detection](#1114-vbatt_r-low-voltage-detection)
+      [11.1.5 Backup Registers](#1115-backup-registers)
+      [11.1.6 VBATT Wakeup Control Function](#1116-vbatt-wakeup-control-function)
+      [11.1.7 Time Capture Pin Detection](#1117-time-capture-pin-detection)
+    [11.2 Register Descriptions](#112-register-descriptions)
+      [11.2.1 VBATT Control Register 1 (VBTCR1)](#1121-vbatt-control-register-1-vbtcr1)
+      [11.2.2 VBATT Control Register 2 (VBTCR2)](#1122-vbatt-control-register-2-vbtcr2)
+      [11.2.3 VBATT Status Register (VBTSR)](#1123-vbatt-status-register-vbtsr)
+      [11.2.4 VBATT Comparator Control register (VBTCMPCR)](#1124-vbatt-comparator-control-register-vbtcmpcr)
+      [11.2.5 VBATT Pin Low Voltage Detect Interrupt Control Register (VBTLVDICR)](#1125-vbatt-pin-low-voltage-detect-interrupt-control-register-vbtlvdicr)
+      [11.2.6 VBATT Backup Register (VBTBKRn) (n = 0 to 511)](#1126-vbatt-backup-register-vbtbkrn-n-0-to-511)
+      [11.2.7 VBATT Wakeup Control Register (VBTWCTLR)](#1127-vbatt-wakeup-control-register-vbtwctlr)
+      [11.2.8 VBATT Wakeup I/O 0 Output Trigger Select Register (VBTWCH0OTSR)](#1128-vbatt-wakeup-io-0-output-trigger-select-register-vbtwch0otsr)
+      [11.2.9 VBATT Wakeup I/O 1 Output Trigger Select Register (VBTWCH1OTSR)](#1129-vbatt-wakeup-io-1-output-trigger-select-register-vbtwch1otsr)
+      [11.2.10 VBATT Wakeup I/O 2 Output Trigger Select Register (VBTWCH2OTSR)](#11210-vbatt-wakeup-io-2-output-trigger-select-register-vbtwch2otsr)
+      [11.2.11 VBATT Input Control Register (VBTICTLR)](#11211-vbatt-input-control-register-vbtictlr)
+      [11.2.12 VBATT Output Control Register (VBTOCTLR)](#11212-vbatt-output-control-register-vbtoctlr)
+      [11.2.13 VBATT Wakeup Trigger Source Enable Register (VBTWTER)](#11213-vbatt-wakeup-trigger-source-enable-register-vbtwter)
+      [11.2.14 VBATT Wakeup Trigger Source Edge Register (VBTWEGR)](#11214-vbatt-wakeup-trigger-source-edge-register-vbtwegr)
+      [11.2.15 VBATT Wakeup Trigger Source Flag Register (VBTWFR)](#11215-vbatt-wakeup-trigger-source-flag-register-vbtwfr)
+      [11.2.16 Backup Register Access Control Register (BKRACR)](#11216-backup-register-access-control-register-bkracr)
+    [11.3 Operation](#113-operation)
+      [11.3.1 Battery Backup Function](#1131-battery-backup-function)
+      [11.3.2 VBATT Battery Power Supply Switch Usage](#1132-vbatt-battery-power-supply-switch-usage)
+      [11.3.3 VBATT Pin Low Voltage Detection Procedures](#1133-vbatt-pin-low-voltage-detection-procedures)
+      [11.3.4 VBATT Backup Register Usage](#1134-vbatt-backup-register-usage)
+      [11.3.5 VBATT Wakeup Control Function Usage](#1135-vbatt-wakeup-control-function-usage)
+    [11.4 Usage Notes](#114-usage-notes)
+  [12. Register Write Protection](#12-register-write-protection)
+    [12.1 Overview](#121-overview)
+    [12.2 Register Descriptions](#122-register-descriptions)
+      [12.2.1 Protect Register (PRCR)](#1221-protect-register-prcr)
+  [13. Interrupt Controller Unit (ICU)](#13-interrupt-controller-unit-icu)
+    [13.1 Overview](#131-overview)
+    [13.2 Register Descriptions](#132-register-descriptions)
+      [13.2.1 IRQ Control Register i (IRQCRi) (i = 0 to 12, 14, 15)](#1321-irq-control-register-i-irqcri-i-0-to-12-14-15)
+      [13.2.2 Non-Maskable Interrupt Status Register (NMISR)](#1322-non-maskable-interrupt-status-register-nmisr)
+      [13.2.3 Non-Maskable Interrupt Enable Register (NMIER)](#1323-non-maskable-interrupt-enable-register-nmier)
+      [13.2.4 Non-Maskable Interrupt Status Clear Register (NMICLR)](#1324-non-maskable-interrupt-status-clear-register-nmiclr)
+      [13.2.5 NMI Pin Interrupt Control Register (NMICR)](#1325-nmi-pin-interrupt-control-register-nmicr)
+      [13.2.6 ICU Event Link Setting Register n (IELSRn)](#1326-icu-event-link-setting-register-n-ielsrn)
+      [13.2.7 DMAC Event Link Setting Register n (DELSRn)](#1327-dmac-event-link-setting-register-n-delsrn)
+      [13.2.8 SYS Event Link Setting Register (SELSR0)](#1328-sys-event-link-setting-register-selsr0)
+      [13.2.9 Wake Up Interrupt Enable Register (WUPEN)](#1329-wake-up-interrupt-enable-register-wupen)
+    [13.3 Vector Table](#133-vector-table)
+      [13.3.1 Interrupt Vector Table](#1331-interrupt-vector-table)
+      [13.3.2 Event Number](#1332-event-number)
+    [13.4 Interrupt Operation](#134-interrupt-operation)
+      [13.4.1 Detecting Interrupts](#1341-detecting-interrupts)
+      [13.4.2 Selecting Interrupt Request Destinations](#1342-selecting-interrupt-request-destinations)
+        [13.4.2.1 CPU interrupt request](#13421-cpu-interrupt-request)
+        [13.4.2.2 DTC activation](#13422-dtc-activation)
+        [13.4.2.3 DMAC activation](#13423-dmac-activation)
+      [13.4.3 Digital Filter](#1343-digital-filter)
+      [13.4.4 External Pin Interrupts](#1344-external-pin-interrupts)
+    [13.5 Non-Maskable Interrupt Operation](#135-non-maskable-interrupt-operation)
+    [13.6 Return from Low Power Mode](#136-return-from-low-power-mode)
+      [13.6.1 Return from Sleep Mode](#1361-return-from-sleep-mode)
+      [13.6.2 Return from Software Standby Mode](#1362-return-from-software-standby-mode)
+      [13.6.3 Return from Snooze mode](#1363-return-from-snooze-mode)
+    [13.7 Using the WFI instruction with Non-Maskable Interrupts](#137-using-the-wfi-instruction-with-non-maskable-interrupts)
+    [13.8 Reference](#138-reference)
+  [14. Buses](#14-buses)
+    [14.1 Overview](#141-overview)
+    [14.2 Description of Buses](#142-description-of-buses)
+      [14.2.1 Main Buses](#1421-main-buses)
+      [14.2.2 Slave Interface](#1422-slave-interface)
+      [14.2.3 Parallel Operation](#1423-parallel-operation)
+      [14.2.4 Restriction on Endianness](#1424-restriction-on-endianness)
+    [14.3 Register Descriptions](#143-register-descriptions)
+      [14.3.1 Master Bus Control Register (BUSMCNT<master>)](#1431-master-bus-control-register-busmcntmaster)
+      [14.3.2 Slave Bus Control Register (BUSSCNT<slave>)](#1432-slave-bus-control-register-busscntslave)
+      [14.3.3 Bus Error Address Register (BUSnERRADD) (n = 1 to 4)](#1433-bus-error-address-register-busnerradd-n-1-to-4)
+      [14.3.4 Bus Error Status Register (BUSnERRSTAT) (n = 1 to 4)](#1434-bus-error-status-register-busnerrstat-n-1-to-4)
+    [14.4 Bus Error Monitoring Section](#144-bus-error-monitoring-section)
+      [14.4.1 Error Type that Occurs by Bus](#1441-error-type-that-occurs-by-bus)
+      [14.4.2 Operation when a Bus Error Occurs](#1442-operation-when-a-bus-error-occurs)
+      [14.4.3 Conditions Leading to Illegal Address Access Errors](#1443-conditions-leading-to-illegal-address-access-errors)
+      [14.4.4 Timeout](#1444-timeout)
+    [14.5 Usage Notes](#145-usage-notes)
+      [14.5.1 Notes on using Flash Cache](#1451-notes-on-using-flash-cache)
+      [14.5.2 Precaution regarding interrupt during successive bus access](#1452-precaution-regarding-interrupt-during-successive-bus-access)
+    [14.6 References](#146-references)
+  [15. Memory Protection Unit (MPU)](#15-memory-protection-unit-mpu)
+    [15.1 Overview](#151-overview)
+    [15.2 CPU Stack Pointer Monitor](#152-cpu-stack-pointer-monitor)
+      [15.2.1 Protection of Registers](#1521-protection-of-registers)
+      [15.2.2 Overflow/Underflow Error](#1522-overflowunderflow-error)
+      [15.2.3 Register Descriptions](#1523-register-descriptions)
+        [15.2.3.1 Main Stack Pointer (MSP) Monitor Start Address Register (MSPMPUSA)](#15231-main-stack-pointer-msp-monitor-start-address-register-mspmpusa)
+        [15.2.3.2 Main Stack Pointer (MSP) Monitor End Address Register (MSPMPUEA)](#15232-main-stack-pointer-msp-monitor-end-address-register-mspmpuea)
+        [15.2.3.3 Process Stack Pointer (PSP) Monitor Start Address Register (PSPMPUSA)](#15233-process-stack-pointer-psp-monitor-start-address-register-pspmpusa)
+        [15.2.3.4 Process Stack Pointer (PSP) Monitor End Address Register (PSPMPUEA)](#15234-process-stack-pointer-psp-monitor-end-address-register-pspmpuea)
+        [15.2.3.5 Stack Pointer Monitor Operation After Detection Register (MSPMPUOAD, PSPMPUOAD)](#15235-stack-pointer-monitor-operation-after-detection-register-mspmpuoad-pspmpuoad)
+        [15.2.3.6 Stack Pointer Monitor Access Control Register (MSPMPUCTL, PSPMPUCTL)](#15236-stack-pointer-monitor-access-control-register-mspmpuctl-pspmpuctl)
+        [15.2.3.7 Stack Pointer Monitor Protection Register (MSPMPUPT, PSPMPUPT)](#15237-stack-pointer-monitor-protection-register-mspmpupt-pspmpupt)
+    [15.3 Arm MPU](#153-arm-mpu)
+    [15.4 Bus Master MPU](#154-bus-master-mpu)
+      [15.4.1 Register Descriptions](#1541-register-descriptions)
+        [15.4.1.1 Group A Region n Start Address Register (MMPUSAn) (n = 0 to 15)](#15411-group-a-region-n-start-address-register-mmpusan-n-0-to-15)
+        [15.4.1.2 Group A Region n End Address Register (MMPUEAn) (n = 0 to 15)](#15412-group-a-region-n-end-address-register-mmpuean-n-0-to-15)
+        [15.4.1.3 Group A Region n Access Control Register (MMPUACAn) (n = 0 to 15)](#15413-group-a-region-n-access-control-register-mmpuacan-n-0-to-15)
+        [15.4.1.4 Bus Master MPU Control Register (MMPUCTLA)](#15414-bus-master-mpu-control-register-mmpuctla)
+        [15.4.1.5 Group A Protection of Register (MMPUPTA)](#15415-group-a-protection-of-register-mmpupta)
+      [15.4.2 Operation](#1542-operation)
+        [15.4.2.1 Memory protection](#15421-memory-protection)
+        [15.4.2.2 Protecting the registers](#15422-protecting-the-registers)
+        [15.4.2.3 Memory protection error](#15423-memory-protection-error)
+    [15.5 Bus Slave MPU](#155-bus-slave-mpu)
+      [15.5.1 Register Descriptions](#1551-register-descriptions)
+        [15.5.1.1 Access Control Register for Memory Bus 3 (SMPUMBIU)](#15511-access-control-register-for-memory-bus-3-smpumbiu)
+        [15.5.1.2 Access Control Register for Internal Peripheral Bus 9 (SMPUFBIU)](#15512-access-control-register-for-internal-peripheral-bus-9-smpufbiu)
+        [15.5.1.3 Access Control Register for Memory Bus 4 (SMPUSRAM0)](#15513-access-control-register-for-memory-bus-4-smpusram0)
+        [15.5.1.4 Access Control Register for Internal Peripheral Bus 1 (SMPUP0BIU)](#15514-access-control-register-for-internal-peripheral-bus-1-smpup0biu)
+        [15.5.1.5 Access Control Register for Internal Peripheral Bus 3 (SMPUP2BIU)](#15515-access-control-register-for-internal-peripheral-bus-3-smpup2biu)
+        [15.5.1.6 Access Control Register for Internal Peripheral Bus 7 (SMPUP6BIU)](#15516-access-control-register-for-internal-peripheral-bus-7-smpup6biu)
+        [15.5.1.7 Slave MPU Control Register (SMPUCTL)](#15517-slave-mpu-control-register-smpuctl)
+      [15.5.2 Functions](#1552-functions)
+        [15.5.2.1 Memory protection](#15521-memory-protection)
+        [15.5.2.2 Protection of registers](#15522-protection-of-registers)
+        [15.5.2.3 Memory protection error](#15523-memory-protection-error)
+    [15.6 Security MPU](#156-security-mpu)
+      [15.6.1 Register Descriptions (Option-Setting memory)](#1561-register-descriptions-option-setting-memory)
+        [15.6.1.1 Security MPU Program Counter Start Address Register (SECMPUPCSn) (n = 0, 1)](#15611-security-mpu-program-counter-start-address-register-secmpupcsn-n-0-1)
+        [15.6.1.2 Security MPU Program Counter End Address Register (SECMPUPCEn) (n = 0, 1)](#15612-security-mpu-program-counter-end-address-register-secmpupcen-n-0-1)
+        [15.6.1.3 Security MPU Region 0 Start Address Register (SECMPUS0)](#15613-security-mpu-region-0-start-address-register-secmpus0)
+        [15.6.1.4 Security MPU Region 0 End Address Register (SECMPUE0)](#15614-security-mpu-region-0-end-address-register-secmpue0)
+        [15.6.1.5 Security MPU Region 1 Start Address Register (SECMPUS1)](#15615-security-mpu-region-1-start-address-register-secmpus1)
+        [15.6.1.6 Security MPU Region 1 End Address Register (SECMPUE1)](#15616-security-mpu-region-1-end-address-register-secmpue1)
+        [15.6.1.7 Security MPU Region 2 Start Address Register (SECMPUS2)](#15617-security-mpu-region-2-start-address-register-secmpus2)
+        [15.6.1.8 Security MPU Region 2 End Address Register (SECMPUE2)](#15618-security-mpu-region-2-end-address-register-secmpue2)
+        [15.6.1.9 Security MPU Region 3 Start Address Register (SECMPUS3)](#15619-security-mpu-region-3-start-address-register-secmpus3)
+        [15.6.1.10 Security MPU Region 3 End Address Register (SECMPUE3)](#156110-security-mpu-region-3-end-address-register-secmpue3)
+        [15.6.1.11 Security MPU Access Control Register (SECMPUAC)](#156111-security-mpu-access-control-register-secmpuac)
+      [15.6.2 Memory Protection](#1562-memory-protection)
+      [15.6.3 Notes on Debug](#1563-notes-on-debug)
+    [15.7 References](#157-references)
+  [6. DMA Controller (DMAC)](#6-dma-controller-dmac)
+    [16.1 Overview](#161-overview)
+    [16.2 Register Descriptions](#162-register-descriptions)
+      [16.2.1 DMA Source Address Register (DMSAR)](#1621-dma-source-address-register-dmsar)
+      [16.2.2 DMA Destination Address Register (DMDAR)](#1622-dma-destination-address-register-dmdar)
+      [16.2.3 DMA Transfer Count Register (DMCRA)](#1623-dma-transfer-count-register-dmcra)
+      [16.2.4 DMA Block Transfer Count Register (DMCRB)](#1624-dma-block-transfer-count-register-dmcrb)
+      [16.2.5 DMA Transfer Mode Register (DMTMD)](#1625-dma-transfer-mode-register-dmtmd)
+      [16.2.6 DMA Interrupt Setting Register (DMINT)](#1626-dma-interrupt-setting-register-dmint)
+      [16.2.7 DMA Address Mode Register (DMAMD)](#1627-dma-address-mode-register-dmamd)
+      [16.2.8 DMA Offset Register (DMOFR)](#1628-dma-offset-register-dmofr)
+      [16.2.9 DMA Transfer Enable Register (DMCNT)](#1629-dma-transfer-enable-register-dmcnt)
+      [16.2.10 DMA Software Start Register (DMREQ)](#16210-dma-software-start-register-dmreq)
+      [16.2.11 DMA Status Register (DMSTS)](#16211-dma-status-register-dmsts)
+      [16.2.12 DMAC Module Activation Register (DMAST)](#16212-dmac-module-activation-register-dmast)
+    [16.3 Operation](#163-operation)
+      [16.3.1 Transfer Mode](#1631-transfer-mode)
+      [16.3.2 Extended Repeat Area Function](#1632-extended-repeat-area-function)
+      [16.3.3 Address Update Function Using Offset](#1633-address-update-function-using-offset)
+      [16.3.4 Activation Sources](#1634-activation-sources)
+      [16.3.5 Operation Timing](#1635-operation-timing)
+      [16.3.6 Execution Cycles of DMAC](#1636-execution-cycles-of-dmac)
+      [16.3.7 Activating DMAC](#1637-activating-dmac)
+      [16.3.8 Starting DMA Transfer](#1638-starting-dma-transfer)
+      [16.3.9 Registers during DMA Transfer](#1639-registers-during-dma-transfer)
+      [16.3.10 Channel Priority](#16310-channel-priority)
+    [16.4 Ending DMA Transfer](#164-ending-dma-transfer)
+      [16.4.1 Transfer End by Completion of Specified Total Number of Transfer Operations](#1641-transfer-end-by-completion-of-specified-total-number-of-transfer-operations)
+      [16.4.2 Transfer End by Repeat Size End Interrupt](#1642-transfer-end-by-repeat-size-end-interrupt)
+      [16.4.3 Transfer End by Interrupt on Extended Repeat Area Overflow](#1643-transfer-end-by-interrupt-on-extended-repeat-area-overflow)
+      [16.4.4 Precautions for the End of DMA Transfer](#1644-precautions-for-the-end-of-dma-transfer)
+    [16.5 Interrupts](#165-interrupts)
+    [16.6 Event Link](#166-event-link)
+    [16.7 Low Power Consumption Function](#167-low-power-consumption-function)
+    [16.8 Usage Notes](#168-usage-notes)
+      [16.8.1 Access to Registers during DMA Transfer](#1681-access-to-registers-during-dma-transfer)
+      [16.8.2 DMA Transfer to Reserved Areas](#1682-dma-transfer-to-reserved-areas)
+      [16.8.3 Setting the DMAC Event Link Setting Register of the Interrupt Controller Unit (ICU.DELSRn)](#1683-setting-the-dmac-event-link-setting-register-of-the-interrupt-controller-unit-icudelsrn)
+      [16.8.4 Suspending or Restarting DMA Activation](#1684-suspending-or-restarting-dma-activation)
+[Data Transfer Controller (DTC)](#data-transfer-controller-dtc)
+    [17.1 Overview](#171-overview)
+    [17.2 Register Descriptions](#172-register-descriptions)
+      [17.2.1 DTC Mode Register A (MRA)](#1721-dtc-mode-register-a-mra)
+      [17.2.2 DTC Mode Register B (MRB)](#1722-dtc-mode-register-b-mrb)
+      [17.2.3 DTC Transfer Source Register (SAR)](#1723-dtc-transfer-source-register-sar)
+      [17.2.4 DTC Transfer Destination Register (DAR)](#1724-dtc-transfer-destination-register-dar)
+      [17.2.5 DTC Transfer Count Register A (CRA)](#1725-dtc-transfer-count-register-a-cra)
+      [17.2.6 DTC Transfer Count Register B (CRB)](#1726-dtc-transfer-count-register-b-crb)
+      [17.2.7 DTC Control Register (DTCCR)](#1727-dtc-control-register-dtccr)
+      [17.2.8 DTC Vector Base Register (DTCVBR)](#1728-dtc-vector-base-register-dtcvbr)
+      [17.2.9 DTC Module Start Register (DTCST)](#1729-dtc-module-start-register-dtcst)
+      [17.2.10 DTC Status Register (DTCSTS)](#17210-dtc-status-register-dtcsts)
+    [17.3 Activation Sources](#173-activation-sources)
+      [17.3.1 Allocating Transfer Information and DTC Vector Table](#1731-allocating-transfer-information-and-dtc-vector-table)
+    [17.4 Operation](#174-operation)
+      [17.4.1 Transfer Information Read Skip Function](#1741-transfer-information-read-skip-function)
+      [17.4.2 Transfer Information Write-Back Skip Function](#1742-transfer-information-write-back-skip-function)
+      [17.4.3 Normal Transfer Mode](#1743-normal-transfer-mode)
+      [17.4.4 Repeat Transfer Mode](#1744-repeat-transfer-mode)
+      [17.4.5 Block Transfer Mode](#1745-block-transfer-mode)
+      [17.4.6 Chain Transfer](#1746-chain-transfer)
+      [17.4.7 Operation Timing](#1747-operation-timing)
+      [17.4.8 Execution Cycles of DTC](#1748-execution-cycles-of-dtc)
+      [17.4.9 DTC Bus Mastership Release Timing](#1749-dtc-bus-mastership-release-timing)
+    [17.5 DTC Setting Procedure](#175-dtc-setting-procedure)
+    [17.6 Examples of DTC Usage](#176-examples-of-dtc-usage)
+      [17.6.1 Normal Transfer](#1761-normal-transfer)
+      [17.6.2 Chain Transfer](#1762-chain-transfer)
+      [17.6.3 Chain Transfer when Counter = 0](#1763-chain-transfer-when-counter-0)
+    [17.7 Interrupt Source](#177-interrupt-source)
+    [17.8 Event Link](#178-event-link)
+    [17.9 Snooze Control Interface](#179-snooze-control-interface)
+    [17.10 Module-Stop Function](#1710-module-stop-function)
+    [17.11 Usage Notes](#1711-usage-notes)
+      [17.11.1 Transfer Information Start Address](#17111-transfer-information-start-address)
+  [18. Event Link Controller (ELC)](#18-event-link-controller-elc)
+    [18.1 Overview](#181-overview)
+    [18.2 Register Descriptions](#182-register-descriptions)
+      [18.2.1 Event Link Controller Register (ELCR)](#1821-event-link-controller-register-elcr)
+      [18.2.2 Event Link Software Event Generation Register n (ELSEGRn) (n = 0, 1)](#1822-event-link-software-event-generation-register-n-elsegrn-n-0-1)
+      [18.2.3 Event Link Setting Register n (ELSRn) (n = 0 to 9, 12, 14 to 18)](#1823-event-link-setting-register-n-elsrn-n-0-to-9-12-14-to-18)
+    [18.3 Operation](#183-operation)
+      [18.3.1 Relation between Interrupt Handling and Event Linking](#1831-relation-between-interrupt-handling-and-event-linking)
+      [18.3.2 Linking Events](#1832-linking-events)
+      [18.3.3 Example Procedure for Linking Events](#1833-example-procedure-for-linking-events)
+    [18.4 Usage Notes](#184-usage-notes)
+      [18.4.1 Linking DMAC or DTC Transfer End Signals as Events](#1841-linking-dmac-or-dtc-transfer-end-signals-as-events)
+      [18.4.2 Setting Clocks](#1842-setting-clocks)
+      [18.4.3 Module-Stop Function Setting](#1843-module-stop-function-setting)
+      [18.4.4 ELC Delay Time](#1844-elc-delay-time)
+  [19. I/O Ports](#19-io-ports)
+    [19.1 Overview](#191-overview)
+    [19.2 Register Descriptions](#192-register-descriptions)
+      [19.2.1 Port Control Register 1 (PCNTR1/PODR/PDR)](#1921-port-control-register-1-pcntr1podrpdr)
+      [19.2.2 Port Control Register 2 (PCNTR2/EIDR/PIDR)](#1922-port-control-register-2-pcntr2eidrpidr)
+      [19.2.3 Port Control Register 3 (PCNTR3/PORR/POSR)](#1923-port-control-register-3-pcntr3porrposr)
+      [19.2.4 Port Control Register 4 (PCNTR4/EORR/EOSR)](#1924-port-control-register-4-pcntr4eorreosr)
+      [19.2.5 Port mn Pin Function Select Register (PmnPFS/PmnPFS\_HA/PmnPFS\_BY) (m = 0 to 9; n = 00 to 15)](#1925-port-mn-pin-function-select-register-pmnpfspmnpfs_hapmnpfs_by-m-0-to-9-n-00-to-15)
+      [19.2.6 Write-Protect Register (PWPR)](#1926-write-protect-register-pwpr)
+    [19.3 Operation](#193-operation)
+      [19.3.1 General I/O Ports](#1931-general-io-ports)
+      [19.3.2 Port Function Select](#1932-port-function-select)
+      [19.3.3 Port Group Function for ELC](#1933-port-group-function-for-elc)
+        [19.3.3.1 Behavior when ELC\_PORT1, 2, 3, or 4 is input from ELC](#19331-behavior-when-elc_port1-2-3-or-4-is-input-from-elc)
+        [19.3.3.2 Behavior when event pulse is output to ELC](#19332-behavior-when-event-pulse-is-output-to-elc)
+    [19.4 Handling of Unused Pins](#194-handling-of-unused-pins)
+    [19.5 Usage Notes](#195-usage-notes)
+      [19.5.1 Procedure for Specifying the Pin Functions](#1951-procedure-for-specifying-the-pin-functions)
+      [19.5.2 Procedure for Using Port Group Input](#1952-procedure-for-using-port-group-input)
+      [19.5.3 Port Output Data Register (PODR) Summary](#1953-port-output-data-register-podr-summary)
+      [19.5.4 Notes on Using Analog Functions](#1954-notes-on-using-analog-functions)
+      [19.5.5 I/O Buffer Specification](#1955-io-buffer-specification)
+      [19.5.6 Selecting the USB\_DP and USB\_DM Pins](#1956-selecting-the-usb_dp-and-usb_dm-pins)
+      [19.5.7 Pull-up/Pull-down Setting for P914 and P915 using USBFS/GPIO Function](#1957-pull-uppull-down-setting-for-p914-and-p915-using-usbfsgpio-function)
+    [19.6 Peripheral Select Settings for each Product](#196-peripheral-select-settings-for-each-product)
+  [20. Key Interrupt Function (KINT)](#20-key-interrupt-function-kint)
+    [20.1 Overview](#201-overview)
+    [20.2 Register Descriptions](#202-register-descriptions)
+      [20.2.1 Key Return Control Register (KRCTL)](#2021-key-return-control-register-krctl)
+      [20.2.2 Key Return Flag Register (KRF)](#2022-key-return-flag-register-krf)
+      [20.2.3 Key Return Mode Register (KRM)](#2023-key-return-mode-register-krm)
+    [20.3 Operation](#203-operation)
+      [20.3.1 Operation When Not Using Key Interrupt Flag (KRMD = 0)](#2031-operation-when-not-using-key-interrupt-flag-krmd-0)
+      [20.3.2 Operation When Using Key Interrupt Flag (KRMD = 1)](#2032-operation-when-using-key-interrupt-flag-krmd-1)
+    [20.4 Usage Note](#204-usage-note)
+  [21. Port Output Enable for GPT (POEG)](#21-port-output-enable-for-gpt-poeg)
+    [21.1 Overview](#211-overview)
+    [21.2 Register Descriptions](#212-register-descriptions)
+      [21.2.1 POEG Group n Setting Register (POEGGn) (n = A, B)](#2121-poeg-group-n-setting-register-poeggn-n-a-b)
+    [21.3 Output Disable Control Operation](#213-output-disable-control-operation)
+      [21.3.1 Pin Input Level Detection Operation](#2131-pin-input-level-detection-operation)
+        [21.3.1.1 Digital filter](#21311-digital-filter)
+      [21.3.2 Output-Disable Request from GPT](#2132-output-disable-request-from-gpt)
+      [21.3.3 Output-Disable Control on Detection of Stopped Oscillation](#2133-output-disable-control-on-detection-of-stopped-oscillation)
+      [21.3.4 Output-Disable Control Using Registers](#2134-output-disable-control-using-registers)
+      [21.3.5 Release from Output Disable](#2135-release-from-output-disable)
+    [21.4 Interrupt Sources](#214-interrupt-sources)
+    [21.5 External Trigger Output to GPT](#215-external-trigger-output-to-gpt)
+    [21.6 Usage Notes](#216-usage-notes)
+      [21.6.1 Transition to Software Standby Mode](#2161-transition-to-software-standby-mode)
+      [21.6.2 Specifying Pins Associated with the GPT](#2162-specifying-pins-associated-with-the-gpt)
+  [22. General PWM Timer (GPT)](#22-general-pwm-timer-gpt)
+    [22.1 Overview](#221-overview)
+    [22.2 Register Descriptions](#222-register-descriptions)
+      [22.2.1 General PWM Timer Write-Protection Register (GTWP)](#2221-general-pwm-timer-write-protection-register-gtwp)
+      [22.2.2 General PWM Timer Software Start Register (GTSTR)](#2222-general-pwm-timer-software-start-register-gtstr)
+      [22.2.3 General PWM Timer Software Stop Register (GTSTP)](#2223-general-pwm-timer-software-stop-register-gtstp)
+      [22.2.4 General PWM Timer Software Clear Register (GTCLR)](#2224-general-pwm-timer-software-clear-register-gtclr)
+      [22.2.5 General PWM Timer Start Source Select Register (GTSSR)](#2225-general-pwm-timer-start-source-select-register-gtssr)
+      [22.2.6 General PWM Timer Stop Source Select Register (GTPSR)](#2226-general-pwm-timer-stop-source-select-register-gtpsr)
+      [22.2.7 General PWM Timer Clear Source Select Register (GTCSR)](#2227-general-pwm-timer-clear-source-select-register-gtcsr)
+      [22.2.8 General PWM Timer Up Count Source Select Register (GTUPSR)](#2228-general-pwm-timer-up-count-source-select-register-gtupsr)
+      [22.2.9 General PWM Timer Down Count Source Select Register (GTDNSR)](#2229-general-pwm-timer-down-count-source-select-register-gtdnsr)
+      [22.2.10 General PWM Timer Input Capture Source Select Register A(GTICASR)](#22210-general-pwm-timer-input-capture-source-select-register-agticasr)
+      [22.2.11 General PWM Timer Input Capture Source Select Register B(GTICBSR)](#22211-general-pwm-timer-input-capture-source-select-register-bgticbsr)
+      [22.2.12 General PWM Timer Control Register (GTCR)](#22212-general-pwm-timer-control-register-gtcr)
+      [22.2.13 General PWM Timer Count Direction and Duty Setting Register (GTUDDTYC)](#22213-general-pwm-timer-count-direction-and-duty-setting-register-gtuddtyc)
+      [22.2.14 General PWM Timer I/O Control Register (GTIOR)](#22214-general-pwm-timer-io-control-register-gtior)
+      [22.2.15 General PWM Timer Interrupt Output Setting Register (GTINTAD)](#22215-general-pwm-timer-interrupt-output-setting-register-gtintad)
+      [22.2.16 General PWM Timer Status Register (GTST)](#22216-general-pwm-timer-status-register-gtst)
+      [22.2.17 General PWM Timer Buffer Enable Register (GTBER)](#22217-general-pwm-timer-buffer-enable-register-gtber)
+      [22.2.18 General PWM Timer Counter (GTCNT)](#22218-general-pwm-timer-counter-gtcnt)
+      [22.2.19 General PWM Timer Compare Capture Register n (GTCCRn) (n = A to F)](#22219-general-pwm-timer-compare-capture-register-n-gtccrn-n-a-to-f)
+      [22.2.20 General PWM Timer Cycle Setting Register (GTPR)](#22220-general-pwm-timer-cycle-setting-register-gtpr)
+      [22.2.21 General PWM Timer Cycle Setting Buffer Register (GTPBR)](#22221-general-pwm-timer-cycle-setting-buffer-register-gtpbr)
+      [22.2.22 General PWM Timer Dead Time Control Register (GTDTCR)](#22222-general-pwm-timer-dead-time-control-register-gtdtcr)
+      [22.2.23 General PWM Timer Dead Time Value Register U (GTDVU)](#22223-general-pwm-timer-dead-time-value-register-u-gtdvu)
+      [22.2.24 Output Phase Switching Control Register (OPSCR)](#22224-output-phase-switching-control-register-opscr)
+    [2.3 Operation](#23-operation)
+      [22.3.1 Basic Operation](#2231-basic-operation)
+        [22.3.1.1 Counter operation](#22311-counter-operation)
+        [22.3.1.2 Waveform output by compare match](#22312-waveform-output-by-compare-match)
+        [22.3.1.3 Input capture function](#22313-input-capture-function)
+      [22.3.2 Buffer Operation](#2232-buffer-operation)
+        [22.3.2.1 GTPR register buffer operation](#22321-gtpr-register-buffer-operation)
+        [22.3.2.2 Buffer operation for GTCCRA and GTCCRB](#22322-buffer-operation-for-gtccra-and-gtccrb)
+      [22.3.3 PWM Output Operating Mode](#2233-pwm-output-operating-mode)
+        [22.3.3.1 Saw-wave PWM mode](#22331-saw-wave-pwm-mode)
+        [22.3.3.2 Saw-wave one-shot pulse mode](#22332-saw-wave-one-shot-pulse-mode)
+        [22.3.3.3 Triangle-wave PWM mode 1 (32-bit transfer at trough)](#22333-triangle-wave-pwm-mode-1-32-bit-transfer-at-trough)
+        [22.3.3.4 Triangle-wave PWM mode 2 (32-bit transfer at crest and trough)](#22334-triangle-wave-pwm-mode-2-32-bit-transfer-at-crest-and-trough)
+        [22.3.3.5 Triangle-wave PWM mode 3 (64-bit transfer at trough)](#22335-triangle-wave-pwm-mode-3-64-bit-transfer-at-trough)
+      [22.3.4 Automatic Dead Time Setting Function](#2234-automatic-dead-time-setting-function)
+      [22.3.5 Count Direction Changing Function](#2235-count-direction-changing-function)
+      [22.3.6 Function of Output Duty 0% and 100%](#2236-function-of-output-duty-0-and-100)
+      [22.3.7 Hardware Count Start/Count Stop and Clear Operation](#2237-hardware-count-startcount-stop-and-clear-operation)
+        [22.3.7.1 Hardware start operation](#22371-hardware-start-operation)
+        [22.3.7.2 Hardware stop operation](#22372-hardware-stop-operation)
+        [22.3.7.3 Hardware clear operation](#22373-hardware-clear-operation)
+      [22.3.8 Synchronized Operation](#2238-synchronized-operation)
+        [22.3.8.1 Synchronized operation by software](#22381-synchronized-operation-by-software)
+        [22.3.8.2 Synchronized operation by hardware](#22382-synchronized-operation-by-hardware)
+      [22.3.9 PWM Output Operation Examples](#2239-pwm-output-operation-examples)
+      [22.3.10 Phase Counting Function](#22310-phase-counting-function)
+      [22.3.11 Output Phase Switching (GPT\_OPS)](#22311-output-phase-switching-gpt_ops)
+        [22.3.11.1 Input selection and synchronization of external input signal](#223111-input-selection-and-synchronization-of-external-input-signal)
+        [22.3.11.2 Input sampling](#223112-input-sampling)
+        [22.3.11.3 Input phase decode](#223113-input-phase-decode)
+        [22.3.11.4 Output selection control](#223114-output-selection-control)
+        [22.3.11.5 Output selection control (group output disable function)](#223115-output-selection-control-group-output-disable-function)
+        [22.3.11.6 Event Link Controller (ELC) output](#223116-event-link-controller-elc-output)
+        [22.3.11.7 GPT\_OPS start operation setting flow](#223117-gpt_ops-start-operation-setting-flow)
+    [22.4 Interrupt Sources](#224-interrupt-sources)
+      [22.4.1 Interrupt Sources](#2241-interrupt-sources)
+      [22.4.2 DMAC/DTC Activation](#2242-dmacdtc-activation)
+    [22.5 Operations Linked by ELC](#225-operations-linked-by-elc)
+      [22.5.1 Event Signal Output to ELC](#2251-event-signal-output-to-elc)
+      [22.5.2 Event Signal Inputs from ELC](#2252-event-signal-inputs-from-elc)
+    [22.6 Noise Filter Function](#226-noise-filter-function)
+    [22.7 Protection Function](#227-protection-function)
+      [22.7.1 Write-Protection for Registers](#2271-write-protection-for-registers)
+      [22.7.2 Disabling of Buffer Operation](#2272-disabling-of-buffer-operation)
+      [22.7.3 GTIOC Pin Output Negate Control](#2273-gtioc-pin-output-negate-control)
+    [22.8 Initialization Method of Output Pins](#228-initialization-method-of-output-pins)
+      [22.8.1 Pin Settings after Reset](#2281-pin-settings-after-reset)
+      [22.8.2 Pin Initialization Due to Error during Operation](#2282-pin-initialization-due-to-error-during-operation)
+    [22.9 Usage Notes](#229-usage-notes)
+      [22.9.1 Module-Stop Function Setting](#2291-module-stop-function-setting)
+      [22.9.2 GTCCRn Settings during Compare Match Operation (n = A to F)](#2292-gtccrn-settings-during-compare-match-operation-n-a-to-f)
+      [22.9.3 Setting Range for GTCNT Counter](#2293-setting-range-for-gtcnt-counter)
+      [22.9.4 Starting and Stopping the GTCNT Counter](#2294-starting-and-stopping-the-gtcnt-counter)
+      [22.9.5 Priority Order of each Event](#2295-priority-order-of-each-event)
+  [3. Low Power Asynchronous General Purpose Timer (AGT)](#3-low-power-asynchronous-general-purpose-timer-agt)
+    [23.1 Overview](#231-overview)
+    [23.2 Register Descriptions](#232-register-descriptions)
+      [23.2.1 AGT Counter Register (AGT)](#2321-agt-counter-register-agt)
+      [23.2.2 AGT Compare Match A Register (AGTCMA)](#2322-agt-compare-match-a-register-agtcma)
+      [23.2.3 AGT Compare Match B Register (AGTCMB)](#2323-agt-compare-match-b-register-agtcmb)
+      [23.2.4 AGT Control Register (AGTCR)](#2324-agt-control-register-agtcr)
+      [23.2.5 AGT Mode Register 1 (AGTMR1)](#2325-agt-mode-register-1-agtmr1)
+      [23.2.6 AGT Mode Register 2 (AGTMR2)](#2326-agt-mode-register-2-agtmr2)
+      [23.2.7 AGT I/O Control Register (AGTIOC)](#2327-agt-io-control-register-agtioc)
+      [23.2.8 AGT Event Pin Select Register (AGTISR)](#2328-agt-event-pin-select-register-agtisr)
+      [23.2.9 AGT Compare Match Function Select Register (AGTCMSR)](#2329-agt-compare-match-function-select-register-agtcmsr)
+      [23.2.10 AGT Pin Select Register (AGTIOSEL)](#23210-agt-pin-select-register-agtiosel)
+    [23.3 Operation](#233-operation)
+      [23.3.1 Reload Register and Counter Rewrite Operation](#2331-reload-register-and-counter-rewrite-operation)
+      [23.3.2 Reload Register and Compare Register A/B Rewrite Operation](#2332-reload-register-and-compare-register-ab-rewrite-operation)
+      [23.3.3 Timer Mode](#2333-timer-mode)
+      [23.3.4 Pulse Output Mode](#2334-pulse-output-mode)
+      [23.3.5 Event Counter Mode](#2335-event-counter-mode)
+      [23.3.6 Pulse Width Measurement Mode](#2336-pulse-width-measurement-mode)
+      [23.3.7 Pulse Period Measurement Mode](#2337-pulse-period-measurement-mode)
+      [23.3.8 Compare Match Function](#2338-compare-match-function)
+      [23.3.9 Output Settings for Each Mode](#2339-output-settings-for-each-mode)
+      [23.3.10 Standby Mode](#23310-standby-mode)
+      [23.3.11 Interrupt Sources](#23311-interrupt-sources)
+      [23.3.12 Event Signal Output to ELC](#23312-event-signal-output-to-elc)
+    [23.4 Usage Notes](#234-usage-notes)
+      [23.4.1 Count Operation Start and Stop Control](#2341-count-operation-start-and-stop-control)
+      [23.4.2 Access to Counter Register](#2342-access-to-counter-register)
+      [23.4.3 When Changing Mode](#2343-when-changing-mode)
+      [23.4.4 Digital Filter](#2344-digital-filter)
+      [23.4.5 How to Calculate Event Number, Pulse Width, and Pulse Period](#2345-how-to-calculate-event-number-pulse-width-and-pulse-period)
+      [23.4.6 When Count is Forcibly Stopped by TSTOP Bit](#2346-when-count-is-forcibly-stopped-by-tstop-bit)
+      [23.4.7 When Selecting AGT0 Underflow as the Count Source](#2347-when-selecting-agt0-underflow-as-the-count-source)
+      [23.4.8 Reset of I/O Register](#2348-reset-of-io-register)
+      [23.4.9 When Selecting PCLKB, PCLKB/8, or PCLKB/2 as the Count Source](#2349-when-selecting-pclkb-pclkb8-or-pclkb2-as-the-count-source)
+      [23.4.10 When Selecting AGTLCLK or AGTSCLK as the Count Source](#23410-when-selecting-agtlclk-or-agtsclk-as-the-count-source)
+      [23.4.11 When Switching Source Clock](#23411-when-switching-source-clock)
+  [24. Realtime Clock (RTC)](#24-realtime-clock-rtc)
+    [24.1 Overview](#241-overview)
+    [24.2 Register Descriptions](#242-register-descriptions)
+      [24.2.1 64-Hz Counter (R64CNT)](#2421-64-hz-counter-r64cnt)
+      [24.2.2 Second Counter (RSECCNT)/Binary Counter 0 (BCNT0)](#2422-second-counter-rseccntbinary-counter-0-bcnt0)
+      [24.2.3 Minute Counter (RMINCNT)/Binary Counter 1 (BCNT1)](#2423-minute-counter-rmincntbinary-counter-1-bcnt1)
+      [24.2.4 Hour Counter (RHRCNT)/Binary Counter 2 (BCNT2)](#2424-hour-counter-rhrcntbinary-counter-2-bcnt2)
+      [24.2.5 Day-of-Week Counter (RWKCNT)/Binary Counter 3 (BCNT3)](#2425-day-of-week-counter-rwkcntbinary-counter-3-bcnt3)
+      [24.2.6 Day Counter (RDAYCNT)](#2426-day-counter-rdaycnt)
+      [24.2.7 Month Counter (RMONCNT)](#2427-month-counter-rmoncnt)
+      [24.2.8 Year Counter (RYRCNT)](#2428-year-counter-ryrcnt)
+      [24.2.9 Second Alarm Register (RSECAR)/Binary Counter 0 Alarm Register (BCNT0AR)](#2429-second-alarm-register-rsecarbinary-counter-0-alarm-register-bcnt0ar)
+      [24.2.10 Minute Alarm Register (RMINAR)/Binary Counter 1 Alarm Register (BCNT1AR)](#24210-minute-alarm-register-rminarbinary-counter-1-alarm-register-bcnt1ar)
+      [24.2.11 Hour Alarm Register (RHRAR)/Binary Counter 2 Alarm Register (BCNT2AR)](#24211-hour-alarm-register-rhrarbinary-counter-2-alarm-register-bcnt2ar)
+      [24.2.12 Day-of-Week Alarm Register (RWKAR)/Binary Counter 3 Alarm Register (BCNT3AR)](#24212-day-of-week-alarm-register-rwkarbinary-counter-3-alarm-register-bcnt3ar)
+      [24.2.13 Date Alarm Register (RDAYAR)/Binary Counter 0 Alarm Enable Register (BCNT0AER)](#24213-date-alarm-register-rdayarbinary-counter-0-alarm-enable-register-bcnt0aer)
+      [24.2.14 Month Alarm Register (RMONAR)/Binary Counter 1 Alarm Enable Register (BCNT1AER)](#24214-month-alarm-register-rmonarbinary-counter-1-alarm-enable-register-bcnt1aer)
+      [24.2.15 Year Alarm Register (RYRAR)/Binary Counter 2 Alarm Enable Register (BCNT2AER)](#24215-year-alarm-register-ryrarbinary-counter-2-alarm-enable-register-bcnt2aer)
+      [24.2.16 Year Alarm Enable Register (RYRAREN)/Binary Counter 3 Alarm Enable Register (BCNT3AER)](#24216-year-alarm-enable-register-ryrarenbinary-counter-3-alarm-enable-register-bcnt3aer)
+      [24.2.17 RTC Control Register 1 (RCR1)](#24217-rtc-control-register-1-rcr1)
+      [24.2.18 RTC Control Register 2 (RCR2)](#24218-rtc-control-register-2-rcr2)
+      [24.2.19 RTC Control Register 4 (RCR4)](#24219-rtc-control-register-4-rcr4)
+      [24.2.20 Frequency Register (RFRH/RFRL)](#24220-frequency-register-rfrhrfrl)
+      [24.2.21 Time Error Adjustment Register (RADJ)](#24221-time-error-adjustment-register-radj)
+      [24.2.22 Time Capture Control Register y (RTCCRy) (y = 0 to 2)](#24222-time-capture-control-register-y-rtccry-y-0-to-2)
+      [24.2.23 Second Capture Register y (RSECCPy) (y = 0 to 2)/BCNT0 Capture Register y (BCNT0CPy) (y = 0 to 2)](#24223-second-capture-register-y-rseccpy-y-0-to-2bcnt0-capture-register-y-bcnt0cpy-y-0-to-2)
+      [24.2.24 Minute Capture Register y (RMINCPy) (y = 0 to 2)/BCNT1 Capture Register y (BCNT1CPy) (y = 0 to 2)](#24224-minute-capture-register-y-rmincpy-y-0-to-2bcnt1-capture-register-y-bcnt1cpy-y-0-to-2)
+      [24.2.25 Hour Capture Register y (RHRCPy) (y = 0 to 2)/BCNT2 Capture Register y (BCNT2CPy) (y = 0 to 2)](#24225-hour-capture-register-y-rhrcpy-y-0-to-2bcnt2-capture-register-y-bcnt2cpy-y-0-to-2)
+      [24.2.26 Date Capture Register y (RDAYCPy) (y = 0 to 2)/BCNT3 Capture Register y (BCNT3CPy) (y = 0 to 2)](#24226-date-capture-register-y-rdaycpy-y-0-to-2bcnt3-capture-register-y-bcnt3cpy-y-0-to-2)
+      [24.2.27 Month Capture Register y (RMONCPy) (y = 0 to 2)](#24227-month-capture-register-y-rmoncpy-y-0-to-2)
+    [24.3 Operation](#243-operation)
+      [24.3.1 Outline of Initial Settings of Registers after Power On](#2431-outline-of-initial-settings-of-registers-after-power-on)
+      [24.3.2 Clock and Count Mode Setting Procedure](#2432-clock-and-count-mode-setting-procedure)
+      [24.3.3 Setting the Time](#2433-setting-the-time)
+      [24.3.4 30-Second Adjustment](#2434-30-second-adjustment)
+      [24.3.5 Reading 64-Hz Counter and Time](#2435-reading-64-hz-counter-and-time)
+      [24.3.6 Alarm Function](#2436-alarm-function)
+      [24.3.7 Procedure for Disabling Alarm Interrupt](#2437-procedure-for-disabling-alarm-interrupt)
+      [24.3.8 Time Error Adjustment Function](#2438-time-error-adjustment-function)
+        [24.3.8.1 Automatic adjustment](#24381-automatic-adjustment)
+        [24.3.8.2 Adjustment by software](#24382-adjustment-by-software)
+        [24.3.8.3 Procedure for changing the mode of adjustment](#24383-procedure-for-changing-the-mode-of-adjustment)
+        [24.3.8.4 Procedure for stopping adjustment](#24384-procedure-for-stopping-adjustment)
+        [24.3.8.5 Capturing the time](#24385-capturing-the-time)
+    [24.4 Interrupt Sources](#244-interrupt-sources)
+    [24.5 Event Link Output](#245-event-link-output)
+      [24.5.1 Interrupt Handling and Event Linking](#2451-interrupt-handling-and-event-linking)
+    [24.6 Usage Notes](#246-usage-notes)
+      [24.6.1 Register Writing during Counting](#2461-register-writing-during-counting)
+      [24.6.2 Use of Periodic Interrupts](#2462-use-of-periodic-interrupts)
+      [24.6.3 RTCOUT (1-Hz/64-Hz) Clock Output](#2463-rtcout-1-hz64-hz-clock-output)
+      [24.6.4 Transitions to Low Power Modes after Setting Registers](#2464-transitions-to-low-power-modes-after-setting-registers)
+      [24.6.5 Notes on Writing to and Reading from Registers](#2465-notes-on-writing-to-and-reading-from-registers)
+      [24.6.6 Changing the Count Mode](#2466-changing-the-count-mode)
+      [24.6.7 Initialization Procedure when the RTC is not to be Used](#2467-initialization-procedure-when-the-rtc-is-not-to-be-used)
+      [24.6.8 When Switching Source Clock](#2468-when-switching-source-clock)
+  [25. Watchdog Timer (WDT)](#25-watchdog-timer-wdt)
+    [25.1 Overview](#251-overview)
+    [25.2 Register Descriptions](#252-register-descriptions)
+      [25.2.1 WDT Refresh Register (WDTRR)](#2521-wdt-refresh-register-wdtrr)
+      [25.2.2 WDT Control Register (WDTCR)](#2522-wdt-control-register-wdtcr)
+      [25.2.3 WDT Status Register (WDTSR)](#2523-wdt-status-register-wdtsr)
+      [25.2.4 WDT Reset Control Register (WDTRCR)](#2524-wdt-reset-control-register-wdtrcr)
+      [25.2.5 WDT Count Stop Control Register (WDTCSTPR)](#2525-wdt-count-stop-control-register-wdtcstpr)
+      [25.2.6 Option Function Select Register 0 (OFS0)](#2526-option-function-select-register-0-ofs0)
+    [25.3 Operation](#253-operation)
+      [25.3.1 Count Operation in Each Start Mode](#2531-count-operation-in-each-start-mode)
+        [25.3.1.1 Register start mode](#25311-register-start-mode)
+        [25.3.1.2 Auto-start mode](#25312-auto-start-mode)
+      [25.3.2 Controlling Writes to the WDTCR, WDTRCR, and WDTCSTPR Registers](#2532-controlling-writes-to-the-wdtcr-wdtrcr-and-wdtcstpr-registers)
+      [25.3.3 Refresh Operation](#2533-refresh-operation)
+      [25.3.4 Reset Output](#2534-reset-output)
+      [25.3.5 Interrupt Sources](#2535-interrupt-sources)
+      [25.3.6 Reading the Down-Counter Value](#2536-reading-the-down-counter-value)
+      [25.3.7 Associations between Option Function Select Register 0 (OFS0) and WDT Registers](#2537-associations-between-option-function-select-register-0-ofs0-and-wdt-registers)
+    [25.4 Link Operation by ELC](#254-link-operation-by-elc)
+    [25.5 Usage Notes](#255-usage-notes)
+      [25.5.1 ICU Event Link Setting Register n (IELSRn) Setting](#2551-icu-event-link-setting-register-n-ielsrn-setting)
+  [26. Independent Watchdog Timer (IWDT)](#26-independent-watchdog-timer-iwdt)
+    [26.1 Overview](#261-overview)
+    [26.2 Register Descriptions](#262-register-descriptions)
+      [26.2.1 IWDT Refresh Register (IWDTRR)](#2621-iwdt-refresh-register-iwdtrr)
+      [26.2.2 IWDT Status Register (IWDTSR)](#2622-iwdt-status-register-iwdtsr)
+      [26.2.3 Option Function Select Register 0 (OFS0)](#2623-option-function-select-register-0-ofs0)
+    [26.3 Operation](#263-operation)
+      [26.3.1 Auto-Start Mode](#2631-auto-start-mode)
+      [26.3.2 Refresh Operation](#2632-refresh-operation)
+      [26.3.3 Status Flags](#2633-status-flags)
+      [26.3.4 Reset Output](#2634-reset-output)
+      [26.3.5 Interrupt Sources](#2635-interrupt-sources)
+      [26.3.6 Reading the Down-counter Value](#2636-reading-the-down-counter-value)
+    [26.4 Link Operation by ELC](#264-link-operation-by-elc)
+    [26.5 Usage Notes](#265-usage-notes)
+      [26.5.1 Refresh Operations](#2651-refresh-operations)
+      [26.5.2 Clock Division Ratio Setting](#2652-clock-division-ratio-setting)
+[USB 2.0 Full-Speed Module (USBFS)](#usb-20-full-speed-module-usbfs)
+    [27.1 Overview](#271-overview)
+    [27.2 Register Descriptions](#272-register-descriptions)
+      [27.2.1 System Configuration Control Register (SYSCFG)](#2721-system-configuration-control-register-syscfg)
+      [27.2.2 System Configuration Status Register 0 (SYSSTS0)](#2722-system-configuration-status-register-0-syssts0)
+      [27.2.3 Device State Control Register 0 (DVSTCTR0)](#2723-device-state-control-register-0-dvstctr0)
+      [27.2.4 CFIFO Port Register (CFIFO/CFIFOL) D0FIFO Port Register (D0FIFO/D0FIFOL) D1FIFO Port Register (D1FIFO/D1FIFOL)](#2724-cfifo-port-register-cfifocfifol-d0fifo-port-register-d0fifod0fifol-d1fifo-port-register-d1fifod1fifol)
+      [27.2.5 CFIFO Port Select Register (CFIFOSEL) D0FIFO Port Select Register (D0FIFOSEL) D1FIFO Port Select Register (D1FIFOSEL)](#2725-cfifo-port-select-register-cfifosel-d0fifo-port-select-register-d0fifosel-d1fifo-port-select-register-d1fifosel)
+      [27.2.6 CFIFO Port Control Register (CFIFOCTR) D0FIFO Port Control Register (D0FIFOCTR) D1FIFO Port Control Register (D1FIFOCTR)](#2726-cfifo-port-control-register-cfifoctr-d0fifo-port-control-register-d0fifoctr-d1fifo-port-control-register-d1fifoctr)
+      [27.2.7 Interrupt Enable Register 0 (INTENB0)](#2727-interrupt-enable-register-0-intenb0)
+      [27.2.8 Interrupt Enable Register 1 (INTENB1)](#2728-interrupt-enable-register-1-intenb1)
+      [27.2.9 BRDY Interrupt Enable Register (BRDYENB)](#2729-brdy-interrupt-enable-register-brdyenb)
+      [27.2.10 NRDY Interrupt Enable Register (NRDYENB)](#27210-nrdy-interrupt-enable-register-nrdyenb)
+      [27.2.11 BEMP Interrupt Enable Register (BEMPENB)](#27211-bemp-interrupt-enable-register-bempenb)
+      [27.2.12 SOF Output Configuration Register (SOFCFG)](#27212-sof-output-configuration-register-sofcfg)
+      [27.2.13 Interrupt Status Register 0 (INTSTS0)](#27213-interrupt-status-register-0-intsts0)
+      [27.2.14 Interrupt Status Register 1 (INTSTS1)](#27214-interrupt-status-register-1-intsts1)
+      [27.2.15 BRDY Interrupt Status Register (BRDYSTS)](#27215-brdy-interrupt-status-register-brdysts)
+      [27.2.16 NRDY Interrupt Status Register (NRDYSTS)](#27216-nrdy-interrupt-status-register-nrdysts)
+      [27.2.17 BEMP Interrupt Status Register (BEMPSTS)](#27217-bemp-interrupt-status-register-bempsts)
+      [27.2.18 Frame Number Register (FRMNUM)](#27218-frame-number-register-frmnum)
+      [27.2.19 USB Request Type Register (USBREQ)](#27219-usb-request-type-register-usbreq)
+      [27.2.20 USB Request Value Register (USBVAL)](#27220-usb-request-value-register-usbval)
+      [27.2.21 USB Request Index Register (USBINDX)](#27221-usb-request-index-register-usbindx)
+      [27.2.22 USB Request Length Register (USBLENG)](#27222-usb-request-length-register-usbleng)
+      [27.2.23 DCP Configuration Register (DCPCFG)](#27223-dcp-configuration-register-dcpcfg)
+      [27.2.24 DCP Maximum Packet Size Register (DCPMAXP)](#27224-dcp-maximum-packet-size-register-dcpmaxp)
+      [27.2.25 DCP Control Register (DCPCTR)](#27225-dcp-control-register-dcpctr)
+      [27.2.26 Pipe Window Select Register (PIPESEL)](#27226-pipe-window-select-register-pipesel)
+      [27.2.27 Pipe Configuration Register (PIPECFG)](#27227-pipe-configuration-register-pipecfg)
+      [27.2.28 Pipe Maximum Packet Size Register (PIPEMAXP)](#27228-pipe-maximum-packet-size-register-pipemaxp)
+      [27.2.29 Pipe Cycle Control Register (PIPEPERI)](#27229-pipe-cycle-control-register-pipeperi)
+      [27.2.30 PIPEn Control Registers (PIPEnCTR) (n = 1 to 9)](#27230-pipen-control-registers-pipenctr-n-1-to-9)
+      [27.2.31 PIPEn Transaction Counter Enable Register (PIPEnTRE) (n = 1 to 5)](#27231-pipen-transaction-counter-enable-register-pipentre-n-1-to-5)
+      [27.2.32 PIPEn Transaction Counter Register (PIPEnTRN) (n = 1 to 5)](#27232-pipen-transaction-counter-register-pipentrn-n-1-to-5)
+      [27.2.33 Device Address n Configuration Register (DEVADDn) (n = 0 to 5)](#27233-device-address-n-configuration-register-devaddn-n-0-to-5)
+      [27.2.34 USB Module Control Register (USBMC)](#27234-usb-module-control-register-usbmc)
+      [27.2.35 BC Control Register 0 (USBBCCTRL0)](#27235-bc-control-register-0-usbbcctrl0)
+    [7.3 Operation](#73-operation)
+      [27.3.1 System Control](#2731-system-control)
+        [27.3.1.1 Setting data to USBFS-related registers](#27311-setting-data-to-usbfs-related-registers)
+        [27.3.1.2 Selecting the controller function](#27312-selecting-the-controller-function)
+        [27.3.1.3 Controlling the USBFS data bus using resistors](#27313-controlling-the-usbfs-data-bus-using-resistors)
+        [27.3.1.4 Example of USBFS power supply connection](#27314-example-of-usbfs-power-supply-connection)
+        [27.3.1.5 Example of USB external connection circuits](#27315-example-of-usb-external-connection-circuits)
+      [27.3.2 Interrupt Sources](#2732-interrupt-sources)
+      [27.3.3 Interrupt Descriptions](#2733-interrupt-descriptions)
+        [27.3.3.1 BRDY interrupt](#27331-brdy-interrupt)
+        [27.3.3.2 NRDY interrupt](#27332-nrdy-interrupt)
+        [27.3.3.3 BEMP interrupt](#27333-bemp-interrupt)
+        [27.3.3.4 Device state transition interrupt (device controller mode)](#27334-device-state-transition-interrupt-device-controller-mode)
+        [27.3.3.5 Control transfer stage transition interrupt (device controller mode)](#27335-control-transfer-stage-transition-interrupt-device-controller-mode)
+        [27.3.3.6 Frame update interrupt](#27336-frame-update-interrupt)
+        [27.3.3.7 VBUS interrupt](#27337-vbus-interrupt)
+        [27.3.3.8 Resumed interrupt](#27338-resumed-interrupt)
+        [27.3.3.9 OVRCR interrupt](#27339-ovrcr-interrupt)
+        [27.3.3.10 BCHG interrupt](#273310-bchg-interrupt)
+        [27.3.3.11 DTCH interrupt](#273311-dtch-interrupt)
+        [27.3.3.12 SACK interrupt](#273312-sack-interrupt)
+        [27.3.3.13 SIGN interrupt](#273313-sign-interrupt)
+        [27.3.3.14 ATTCH interrupt](#273314-attch-interrupt)
+        [27.3.3.15 EOFERR interrupt](#273315-eoferr-interrupt)
+        [27.3.3.16 Portable device detection interrupt](#273316-portable-device-detection-interrupt)
+      [27.3.4 Pipe Control](#2734-pipe-control)
+        [27.3.4.1 Pipe control register switching procedures](#27341-pipe-control-register-switching-procedures)
+        [27.3.4.2 Transfer types](#27342-transfer-types)
+        [27.3.4.3 Endpoint number](#27343-endpoint-number)
+        [27.3.4.4 Maximum packet size setting](#27344-maximum-packet-size-setting)
+        [27.3.4.5 Transaction counter for pipes 1 to 5 in the receiving direction](#27345-transaction-counter-for-pipes-1-to-5-in-the-receiving-direction)
+        [27.3.4.6 Response PID](#27346-response-pid)
+        [27.3.4.7 Data PID sequence bit](#27347-data-pid-sequence-bit)
+        [27.3.4.8 Response PID = NAK function](#27348-response-pid-nak-function)
+        [27.3.4.9 Auto response mode](#27349-auto-response-mode)
+        [27.3.4.10 OUT-NAK mode](#273410-out-nak-mode)
+        [27.3.4.11 Null auto response mode](#273411-null-auto-response-mode)
+      [27.3.5 FIFO Buffer Memory](#2735-fifo-buffer-memory)
+      [27.3.6 FIFO Buffer Clearing](#2736-fifo-buffer-clearing)
+      [27.3.7 FIFO Port Functions](#2737-fifo-port-functions)
+      [27.3.8 DMA Transfers (D0FIFO and D1FIFO Ports)](#2738-dma-transfers-d0fifo-and-d1fifo-ports)
+      [27.3.9 Control Transfers Using DCP](#2739-control-transfers-using-dcp)
+        [27.3.9.1 Control transfers in host controller mode](#27391-control-transfers-in-host-controller-mode)
+        [27.3.9.2 Control transfers in device controller mode](#27392-control-transfers-in-device-controller-mode)
+      [27.3.10 Bulk Transfers (Pipes 1 to 5)](#27310-bulk-transfers-pipes-1-to-5)
+      [27.3.11 Interrupt Transfers (Pipes 6 to 9)](#27311-interrupt-transfers-pipes-6-to-9)
+        [27.3.11.1 Interval counter for interrupt transfers in host controller mode](#273111-interval-counter-for-interrupt-transfers-in-host-controller-mode)
+      [27.3.12 Isochronous Transfers (Pipes 1 and 2)](#27312-isochronous-transfers-pipes-1-and-2)
+        [27.3.12.1 Error detection in isochronous transfers](#273121-error-detection-in-isochronous-transfers)
+        [27.3.12.2 DATA-PID](#273122-data-pid)
+        [27.3.12.3 Interval counter](#273123-interval-counter)
+      [27.3.13 SOF Interpolation Function](#27313-sof-interpolation-function)
+      [27.3.14 Pipe Schedule](#27314-pipe-schedule)
+        [27.3.14.1 Conditions for generating transactions](#273141-conditions-for-generating-transactions)
+        [27.3.14.2 Transfer schedule](#273142-transfer-schedule)
+        [27.3.14.3 Enabling USB communication](#273143-enabling-usb-communication)
+      [27.3.15 Battery Charging Detection Processing](#27315-battery-charging-detection-processing)
+        [27.3.15.1 Processing in device controller mode](#273151-processing-in-device-controller-mode)
+        [27.3.15.2 Processing when host controller is selected](#273152-processing-when-host-controller-is-selected)
+    [27.4 Usage Notes](#274-usage-notes)
+      [27.4.1 Settings for the Module-Stop State](#2741-settings-for-the-module-stop-state)
+      [27.4.2 Clearing the Interrupt Status Register on Exiting Software Standby Mode](#2742-clearing-the-interrupt-status-register-on-exiting-software-standby-mode)
+      [27.4.3 Clearing the Interrupt Status Register after Setting Up the Port Function](#2743-clearing-the-interrupt-status-register-after-setting-up-the-port-function)
+  [3. Serial Communications Interface (SCI)](#3-serial-communications-interface-sci)
+    [28.1 Overview](#281-overview)
+    [28.2 Register Descriptions](#282-register-descriptions)
+      [28.2.1 Receive Shift Register (RSR)](#2821-receive-shift-register-rsr)
+      [28.2.2 Receive Data Register (RDR)](#2822-receive-data-register-rdr)
+      [28.2.3 Receive 9-bit Data Register (RDRHL)](#2823-receive-9-bit-data-register-rdrhl)
+      [28.2.4 Receive FIFO Data Register H, L, HL (FRDRH, FRDRL, FRDRHL)](#2824-receive-fifo-data-register-h-l-hl-frdrh-frdrl-frdrhl)
+      [28.2.5 Transmit Data Register (TDR)](#2825-transmit-data-register-tdr)
+      [28.2.6 Transmit 9-Bit Data Register (TDRHL)](#2826-transmit-9-bit-data-register-tdrhl)
+      [28.2.7 Transmit FIFO Data Register H, L, HL (FTDRH, FTDRL, FTDRHL)](#2827-transmit-fifo-data-register-h-l-hl-ftdrh-ftdrl-ftdrhl)
+      [28.2.8 Transmit Shift Register (TSR)](#2828-transmit-shift-register-tsr)
+      [28.2.9 Serial Mode Register (SMR) for Non-Smart Card Interface Mode (SCMR.SMIF = 0)](#2829-serial-mode-register-smr-for-non-smart-card-interface-mode-scmrsmif-0)
+      [28.2.10 Serial Mode Register for Smart Card Interface Mode (SMR\_SMCI) (SCMR.SMIF = 1)](#28210-serial-mode-register-for-smart-card-interface-mode-smr_smci-scmrsmif-1)
+      [28.2.11 Serial Control Register (SCR) for Non-Smart Card Interface Mode (SCMR.SMIF = 0)](#28211-serial-control-register-scr-for-non-smart-card-interface-mode-scmrsmif-0)
+      [28.2.12 Serial Control Register for Smart Card Interface Mode (SCR\_SMCI) (SCMR.SMIF = 1)](#28212-serial-control-register-for-smart-card-interface-mode-scr_smci-scmrsmif-1)
+      [28.2.13 Serial Status Register (SSR) for Non-Smart Card Interface and Non-FIFO Mode (SCMR.SMIF = 0 and FCR.FM = 0)](#28213-serial-status-register-ssr-for-non-smart-card-interface-and-non-fifo-mode-scmrsmif-0-and-fcrfm-0)
+      [28.2.14 Serial Status Register for Non-Smart Card Interface and FIFO Mode (SSR\_FIFO) (SCMR.SMIF = 0 and FCR.FM = 1)](#28214-serial-status-register-for-non-smart-card-interface-and-fifo-mode-ssr_fifo-scmrsmif-0-and-fcrfm-1)
+      [28.2.15 Serial Status Register for Smart Card Interface Mode (SSR\_SMCI) (SCMR.SMIF = 1)](#28215-serial-status-register-for-smart-card-interface-mode-ssr_smci-scmrsmif-1)
+      [28.2.16 Smart Card Mode Register (SCMR)](#28216-smart-card-mode-register-scmr)
+      [28.2.17 Bit Rate Register (BRR)](#28217-bit-rate-register-brr)
+      [28.2.18 Modulation Duty Register (MDDR)](#28218-modulation-duty-register-mddr)
+      [28.2.19 Serial Extended Mode Register (SEMR)](#28219-serial-extended-mode-register-semr)
+      [28.2.20 Noise Filter Setting Register (SNFR)](#28220-noise-filter-setting-register-snfr)
+      [28.2.21 I²C Mode Register 1 (SIMR1)](#28221-ic-mode-register-1-simr1)
+      [28.2.22 I²C Mode Register 2 (SIMR2)](#28222-ic-mode-register-2-simr2)
+      [28.2.23 I²C Mode Register 3 (SIMR3)](#28223-ic-mode-register-3-simr3)
+      [28.2.24 I²C Status Register (SISR)](#28224-ic-status-register-sisr)
+      [28.2.25 SPI Mode Register (SPMR)](#28225-spi-mode-register-spmr)
+      [28.2.26 FIFO Control Register (FCR)](#28226-fifo-control-register-fcr)
+      [28.2.27 FIFO Data Count Register (FDR)](#28227-fifo-data-count-register-fdr)
+      [28.2.28 Line Status Register (LSR)](#28228-line-status-register-lsr)
+      [28.2.29 Compare Match Data Register (CDR)](#28229-compare-match-data-register-cdr)
+      [28.2.30 Data Compare Match Control Register (DCCR)](#28230-data-compare-match-control-register-dccr)
+      [28.2.31 Serial Port Register (SPTR)](#28231-serial-port-register-sptr)
+    [28.3 Operation in Asynchronous Mode](#283-operation-in-asynchronous-mode)
+      [28.3.1 Serial Data Transfer Format](#2831-serial-data-transfer-format)
+      [28.3.2 Receive Data Sampling Timing and Reception Margin in Asynchronous Mode](#2832-receive-data-sampling-timing-and-reception-margin-in-asynchronous-mode)
+      [28.3.3 Clock](#2833-clock)
+      [28.3.4 Double-Speed Operation and Frequency of 6 Times the Bit Rate](#2834-double-speed-operation-and-frequency-of-6-times-the-bit-rate)
+      [28.3.5 CTS and RTS Functions](#2835-cts-and-rts-functions)
+      [28.3.6 Address Match (Receive Data Match Detection) Function](#2836-address-match-receive-data-match-detection-function)
+      [28.3.7 SCI Initialization in Asynchronous Mode](#2837-sci-initialization-in-asynchronous-mode)
+      [28.3.8 Serial Data Transmission (Asynchronous Mode)](#2838-serial-data-transmission-asynchronous-mode)
+      [28.3.9 Serial Data Reception (Asynchronous Mode)](#2839-serial-data-reception-asynchronous-mode)
+    [28.4 Multi-Processor Communications Function](#284-multi-processor-communications-function)
+      [28.4.1 Multi-Processor Serial Data Transmission](#2841-multi-processor-serial-data-transmission)
+      [28.4.2 Multi-Processor Serial Data Reception](#2842-multi-processor-serial-data-reception)
+    [28.5 Operation in Clock Synchronous Mode](#285-operation-in-clock-synchronous-mode)
+      [28.5.1 Clock](#2851-clock)
+      [28.5.2 CTS and RTS Functions](#2852-cts-and-rts-functions)
+      [28.5.3 SCI Initialization in Clock Synchronous Mode](#2853-sci-initialization-in-clock-synchronous-mode)
+      [28.5.4 Serial Data Transmission in Clock Synchronous Mode](#2854-serial-data-transmission-in-clock-synchronous-mode)
+      [28.5.5 Serial Data Reception in Clock Synchronous Mode](#2855-serial-data-reception-in-clock-synchronous-mode)
+      [28.5.6 Simultaneous Serial Data Transmission and Reception in Clock Synchronous Mode](#2856-simultaneous-serial-data-transmission-and-reception-in-clock-synchronous-mode)
+    [28.6 Operation in Smart Card Interface Mode](#286-operation-in-smart-card-interface-mode)
+      [28.6.1 Sample Connection](#2861-sample-connection)
+      [28.6.2 Data Format (Except in Block Transfer Mode)](#2862-data-format-except-in-block-transfer-mode)
+      [28.6.3 Block Transfer Mode](#2863-block-transfer-mode)
+      [28.6.4 Receive Data Sampling Timing and Reception Margin](#2864-receive-data-sampling-timing-and-reception-margin)
+      [28.6.5 SCI Initialization](#2865-sci-initialization)
+      [28.6.6 Serial Data Transmission (Except in Block Transfer Mode)](#2866-serial-data-transmission-except-in-block-transfer-mode)
+      [28.6.7 Serial Data Reception (Except in Block Transfer Mode)](#2867-serial-data-reception-except-in-block-transfer-mode)
+      [28.6.8 Clock Output Control](#2868-clock-output-control)
+    [28.7 Operation in Simple IIC Mode](#287-operation-in-simple-iic-mode)
+      [28.7.1 Generation of Start, Restart, and Stop Conditions](#2871-generation-of-start-restart-and-stop-conditions)
+      [28.7.2 Clock Synchronization](#2872-clock-synchronization)
+      [28.7.3 SDA Output Delay](#2873-sda-output-delay)
+      [28.7.4 SCI Initialization in Simple IIC Mode](#2874-sci-initialization-in-simple-iic-mode)
+      [28.7.5 Operation in Master Transmission (Simple IIC Mode)](#2875-operation-in-master-transmission-simple-iic-mode)
+      [28.7.6 Master Reception in Simple IIC Mode](#2876-master-reception-in-simple-iic-mode)
+    [28.8 Operation in Simple SPI Mode](#288-operation-in-simple-spi-mode)
+      [28.8.1 States of Pins in Master and Slave Modes](#2881-states-of-pins-in-master-and-slave-modes)
+      [28.8.2 SS Function in Master Mode](#2882-ss-function-in-master-mode)
+      [28.8.3 SS Function in Slave Mode](#2883-ss-function-in-slave-mode)
+      [28.8.4 Relationship between Clock and Transmit/Receive Data](#2884-relationship-between-clock-and-transmitreceive-data)
+      [28.8.5 SCI Initialization in Simple SPI Mode](#2885-sci-initialization-in-simple-spi-mode)
+      [28.8.6 Transmission and Reception of Serial Data in Simple SPI Mode](#2886-transmission-and-reception-of-serial-data-in-simple-spi-mode)
+    [28.9 Bit Rate Modulation Function](#289-bit-rate-modulation-function)
+    [28.10 Interrupt Sources](#2810-interrupt-sources)
+      [28.10.1 Buffer Operations for SCIn\_TXI and SCIn\_RXI Interrupts (non-FIFO selected)](#28101-buffer-operations-for-scin_txi-and-scin_rxi-interrupts-non-fifo-selected)
+      [28.10.2 Buffer Operations for SCIn\_TXI and SCIn\_RXI Interrupts (FIFO selected)](#28102-buffer-operations-for-scin_txi-and-scin_rxi-interrupts-fifo-selected)
+      [28.10.3 Interrupts in Asynchronous, Clock Synchronous, and Simple SPI Modes](#28103-interrupts-in-asynchronous-clock-synchronous-and-simple-spi-modes)
+      [28.10.4 Interrupts in Smart Card Interface Mode](#28104-interrupts-in-smart-card-interface-mode)
+      [28.10.5 Interrupts in Simple IIC Mode](#28105-interrupts-in-simple-iic-mode)
+    [28.11 Event Linking](#2811-event-linking)
+    [28.12 Address mismatch event output (SCI0\_DCUF)](#2812-address-mismatch-event-output-sci0_dcuf)
+    [28.13 Noise Cancellation Function](#2813-noise-cancellation-function)
+    [28.14 Usage Notes](#2814-usage-notes)
+      [28.14.1 Settings for the Module-Stop State](#28141-settings-for-the-module-stop-state)
+      [28.14.2 SCI Operations during Low Power State](#28142-sci-operations-during-low-power-state)
+      [28.14.3 Break Detection and Processing](#28143-break-detection-and-processing)
+      [28.14.4 Mark State and Production of Breaks](#28144-mark-state-and-production-of-breaks)
+      [28.14.5 Receive Error Flags and Transmit Operations in Clock Synchronous and Simple SPI Modes](#28145-receive-error-flags-and-transmit-operations-in-clock-synchronous-and-simple-spi-modes)
+      [28.14.6 Restrictions on Clock Synchronous Transmission in Clock Synchronous Mode and Simple SPI Mode](#28146-restrictions-on-clock-synchronous-transmission-in-clock-synchronous-mode-and-simple-spi-mode)
+      [28.14.7 Restrictions on Using DMAC or DTC](#28147-restrictions-on-using-dmac-or-dtc)
+      [28.14.8 Notes on Starting Transfer](#28148-notes-on-starting-transfer)
+      [28.14.9 External Clock Input in Clock Synchronous Mode and Simple SPI Mode](#28149-external-clock-input-in-clock-synchronous-mode-and-simple-spi-mode)
+      [28.14.10 Limitations on Simple SPI Mode](#281410-limitations-on-simple-spi-mode)
+      [28.14.11 Notes on Transmit Enable bit (SCR.TE)](#281411-notes-on-transmit-enable-bit-scrte)
+      [28.14.12 Note on Stopping Reception When Using the RTS Function in Asynchronous Mode](#281412-note-on-stopping-reception-when-using-the-rts-function-in-asynchronous-mode)
+  [9. I²C Bus Interface (IIC)](#9-ic-bus-interface-iic)
+    [29.1 Overview](#291-overview)
+    [29.2 Register Descriptions](#292-register-descriptions)
+      [29.2.1 I²C Bus Control Register 1 (ICCR1)](#2921-ic-bus-control-register-1-iccr1)
+      [29.2.2 I²C Bus Control Register 2 (ICCR2)](#2922-ic-bus-control-register-2-iccr2)
+      [29.2.3 I²C Bus Mode Register 1 (ICMR1)](#2923-ic-bus-mode-register-1-icmr1)
+      [29.2.4 I²C Bus Mode Register 2 (ICMR2)](#2924-ic-bus-mode-register-2-icmr2)
+      [29.2.5 I²C Bus Mode Register 3 (ICMR3)](#2925-ic-bus-mode-register-3-icmr3)
+      [29.2.6 I²C Bus Function Enable Register (ICFER)](#2926-ic-bus-function-enable-register-icfer)
+      [29.2.7 I²C Bus Status Enable Register (ICSER)](#2927-ic-bus-status-enable-register-icser)
+      [29.2.8 I²C Bus Interrupt Enable Register (ICIER)](#2928-ic-bus-interrupt-enable-register-icier)
+      [29.2.9 I²C Bus Status Register 1 (ICSR1)](#2929-ic-bus-status-register-1-icsr1)
+      [29.2.10 I²C Bus Status Register 2 (ICSR2)](#29210-ic-bus-status-register-2-icsr2)
+      [29.2.11 I²C Bus Wakeup Unit Register (ICWUR)](#29211-ic-bus-wakeup-unit-register-icwur)
+      [29.2.12 I²C Bus Wakeup Unit Register 2 (ICWUR2)](#29212-ic-bus-wakeup-unit-register-2-icwur2)
+      [29.2.13 Slave Address Register Ly (SARLy) (y = 0 to 2)](#29213-slave-address-register-ly-sarly-y-0-to-2)
+      [29.2.14 Slave Address Register Uy (SARUy) (y = 0 to 2)](#29214-slave-address-register-uy-saruy-y-0-to-2)
+      [29.2.15 I²C Bus Bit Rate Low-Level Register (ICBRL)](#29215-ic-bus-bit-rate-low-level-register-icbrl)
+      [29.2.16 I²C Bus Bit Rate High-Level Register (ICBRH)](#29216-ic-bus-bit-rate-high-level-register-icbrh)
+      [29.2.17 I²C Bus Transmit Data Register (ICDRT)](#29217-ic-bus-transmit-data-register-icdrt)
+      [29.2.18 I²C Bus Receive Data Register (ICDRR)](#29218-ic-bus-receive-data-register-icdrr)
+      [29.2.19 I²C Bus Shift Register (ICDRS)](#29219-ic-bus-shift-register-icdrs)
+    [29.3 Operation](#293-operation)
+      [29.3.1 Communication Data Format](#2931-communication-data-format)
+      [29.3.2 Initial Settings](#2932-initial-settings)
+      [29.3.3 Master Transmit Operation](#2933-master-transmit-operation)
+      [29.3.4 Master Receive Operation](#2934-master-receive-operation)
+      [29.3.5 Slave Transmit Operation](#2935-slave-transmit-operation)
+      [29.3.6 Slave Receive Operation](#2936-slave-receive-operation)
+    [29.4 SCL Synchronization Circuit](#294-scl-synchronization-circuit)
+    [29.5 SDA Output Delay Function](#295-sda-output-delay-function)
+    [29.6 Digital Noise Filter Circuits](#296-digital-noise-filter-circuits)
+    [29.7 Address Match Detection](#297-address-match-detection)
+      [29.7.1 Slave-Address Match Detection](#2971-slave-address-match-detection)
+      [29.7.2 Detection of General Call Address](#2972-detection-of-general-call-address)
+      [29.7.3 Device ID Address Detection](#2973-device-id-address-detection)
+      [29.7.4 Host Address Detection](#2974-host-address-detection)
+    [29.8 Wakeup Function](#298-wakeup-function)
+      [29.8.1 Normal Wakeup Mode 1](#2981-normal-wakeup-mode-1)
+      [29.8.2 Normal Wakeup Mode 2](#2982-normal-wakeup-mode-2)
+      [29.8.3 Command Recovery Mode/ EEP Response Mode (Special Wakeup Mode)](#2983-command-recovery-mode-eep-response-mode-special-wakeup-mode)
+      [29.8.4 Precautions for WFI Instruction Execution](#2984-precautions-for-wfi-instruction-execution)
+    [29.9 Automatic Low-Hold Function for SCL](#299-automatic-low-hold-function-for-scl)
+      [29.9.1 Function to Prevent Wrong Transmission of Transmit Data](#2991-function-to-prevent-wrong-transmission-of-transmit-data)
+      [29.9.2 NACK Reception Transfer Suspension Function](#2992-nack-reception-transfer-suspension-function)
+      [29.9.3 Function to Prevent Failure to Receive Data](#2993-function-to-prevent-failure-to-receive-data)
+    [29.10 Master Arbitration-Lost Detection Functions](#2910-master-arbitration-lost-detection-functions)
+      [29.10.1 Master Arbitration-Lost Detection (MALE Bit)](#29101-master-arbitration-lost-detection-male-bit)
+      [29.10.2 Function to Detect Loss of Arbitration during NACK Transmission (NALE Bit)](#29102-function-to-detect-loss-of-arbitration-during-nack-transmission-nale-bit)
+      [29.10.3 Slave Arbitration-Lost Detection (SALE Bit)](#29103-slave-arbitration-lost-detection-sale-bit)
+    [29.11 Start, Restart, and Stop Condition Issuing Function](#2911-start-restart-and-stop-condition-issuing-function)
+      [29.11.1 Issuing a Start Condition](#29111-issuing-a-start-condition)
+      [29.11.2 Issuing a Restart Condition](#29112-issuing-a-restart-condition)
+      [29.11.3 Issuing a Stop Condition](#29113-issuing-a-stop-condition)
+    [29.12 Bus Hanging](#2912-bus-hanging)
+      [29.12.1 Timeout Function](#29121-timeout-function)
+      [29.12.2 Extra SCL Clock Cycle Output Function](#29122-extra-scl-clock-cycle-output-function)
+      [29.12.3 IIC Reset and Internal Reset](#29123-iic-reset-and-internal-reset)
+    [29.13 SMBus Operation](#2913-smbus-operation)
+      [29.13.1 SMBus Timeout Measurement](#29131-smbus-timeout-measurement)
+      [29.13.2 Packet Error Code (PEC)](#29132-packet-error-code-pec)
+      [29.13.3 SMBus Host Notification Protocol (Notify ARP Master Command)](#29133-smbus-host-notification-protocol-notify-arp-master-command)
+    [29.14 Interrupt Sources](#2914-interrupt-sources)
+      [29.14.1 Buffer Operation for IICn\_TXI and IICn\_RXI Interrupts](#29141-buffer-operation-for-iicn_txi-and-iicn_rxi-interrupts)
+    [29.15 Register States when Issuing Each Condition](#2915-register-states-when-issuing-each-condition)
+    [29.16 Event Link Output](#2916-event-link-output)
+      [29.16.1 Interrupt Handling and Event Linking](#29161-interrupt-handling-and-event-linking)
+    [29.17 Usage Notes](#2917-usage-notes)
+      [29.17.1 Setting for the Module-Stop State](#29171-setting-for-the-module-stop-state)
+      [29.17.2 Notes on Starting Transfer](#29172-notes-on-starting-transfer)
+  [30. Controller Area Network (CAN) Module](#30-controller-area-network-can-module)
+    [30.1 Overview](#301-overview)
+    [30.2 Register Descriptions](#302-register-descriptions)
+      [30.2.1 Control Register (CTLR)](#3021-control-register-ctlr)
+      [30.2.2 Bit Configuration Register (BCR)](#3022-bit-configuration-register-bcr)
+      [30.2.3 Mask Register k (MKRk) (k = 0 to 7)](#3023-mask-register-k-mkrk-k-0-to-7)
+      [30.2.4 FIFO Received ID Compare Registers 0 and 1 (FIDCR0 and FIDCR1)](#3024-fifo-received-id-compare-registers-0-and-1-fidcr0-and-fidcr1)
+      [30.2.5 Mask Invalid Register (MKIVLR)](#3025-mask-invalid-register-mkivlr)
+      [30.2.6 Mailbox Register j (MBj\_ID, MBj\_DL, MBj\_Dm, MBj\_TS) (j = 0 to 31, m = 0 to 7)](#3026-mailbox-register-j-mbj_id-mbj_dl-mbj_dm-mbj_ts-j-0-to-31-m-0-to-7)
+      [30.2.7 Mailbox Interrupt Enable Register (MIER)](#3027-mailbox-interrupt-enable-register-mier)
+      [30.2.8 Mailbox Interrupt Enable Register for FIFO Mailbox Mode (MIER\_FIFO)](#3028-mailbox-interrupt-enable-register-for-fifo-mailbox-mode-mier_fifo)
+      [30.2.9 Message Control Registers for Transmit (MCTL\_TXj) (j = 0 to 31)](#3029-message-control-registers-for-transmit-mctl_txj-j-0-to-31)
+      [30.2.10 Message Control Register for Receive (MCTL\_RXj) (j = 0 to 31)](#30210-message-control-register-for-receive-mctl_rxj-j-0-to-31)
+      [30.2.11 Receive FIFO Control Register (RFCR)](#30211-receive-fifo-control-register-rfcr)
+      [30.2.12 Receive FIFO Pointer Control Register (RFPCR)](#30212-receive-fifo-pointer-control-register-rfpcr)
+      [30.2.13 Transmit FIFO Control Register (TFCR)](#30213-transmit-fifo-control-register-tfcr)
+      [30.2.14 Transmit FIFO Pointer Control Register (TFPCR)](#30214-transmit-fifo-pointer-control-register-tfpcr)
+      [30.2.15 Status Register (STR)](#30215-status-register-str)
+      [30.2.16 Mailbox Search Mode Register (MSMR)](#30216-mailbox-search-mode-register-msmr)
+      [30.2.17 Mailbox Search Status Register (MSSR)](#30217-mailbox-search-status-register-mssr)
+      [30.2.18 Channel Search Support Register (CSSR)](#30218-channel-search-support-register-cssr)
+      [30.2.19 Acceptance Filter Support Register (AFSR)](#30219-acceptance-filter-support-register-afsr)
+      [30.2.20 Error Interrupt Enable Register (EIER)](#30220-error-interrupt-enable-register-eier)
+      [30.2.21 Error Interrupt Factor Judge Register (EIFR)](#30221-error-interrupt-factor-judge-register-eifr)
+      [30.2.22 Receive Error Count Register (RECR)](#30222-receive-error-count-register-recr)
+      [30.2.23 Transmit Error Count Register (TECR)](#30223-transmit-error-count-register-tecr)
+      [30.2.24 Error Code Store Register (ECSR)](#30224-error-code-store-register-ecsr)
+      [30.2.25 Time Stamp Register (TSR)](#30225-time-stamp-register-tsr)
+      [30.2.26 Test Control Register (TCR)](#30226-test-control-register-tcr)
+    [30.3 Modes of Operation](#303-modes-of-operation)
+      [30.3.1 CAN Reset Mode](#3031-can-reset-mode)
+      [30.3.2 CAN Halt Mode](#3032-can-halt-mode)
+      [30.3.3 CAN Sleep Mode](#3033-can-sleep-mode)
+      [30.3.4 CAN Operation Mode (Excluding Bus-Off State)](#3034-can-operation-mode-excluding-bus-off-state)
+      [30.3.5 CAN Operation Mode (Bus-Off State)](#3035-can-operation-mode-bus-off-state)
+    [30.4 Data Transfer Rate Configuration](#304-data-transfer-rate-configuration)
+      [30.4.1 Clock Setting](#3041-clock-setting)
+      [30.4.2 Bit Time Setting](#3042-bit-time-setting)
+      [30.4.3 Data Transfer Rate](#3043-data-transfer-rate)
+    [30.5 Mailbox and Mask Register Structure](#305-mailbox-and-mask-register-structure)
+    [30.6 Acceptance Filtering and Masking Functions](#306-acceptance-filtering-and-masking-functions)
+    [30.7 Reception and Transmission](#307-reception-and-transmission)
+      [30.7.1 Reception](#3071-reception)
+      [30.7.2 Transmission](#3072-transmission)
+    [30.8 Interrupt](#308-interrupt)
+    [30.9 Usage Notes](#309-usage-notes)
+      [30.9.1 Setting for the Module-Stop State](#3091-setting-for-the-module-stop-state)
+      [30.9.2 Setting for Operating Clock](#3092-setting-for-operating-clock)
+[Serial Peripheral Interface (SPI)](#serial-peripheral-interface-spi)
+    [31.1 Overview](#311-overview)
+    [31.2 Register Descriptions](#312-register-descriptions)
+      [31.2.1 SPI Control Register (SPCR)](#3121-spi-control-register-spcr)
+      [31.2.2 SPI Slave Select Polarity Register (SSLP)](#3122-spi-slave-select-polarity-register-sslp)
+      [31.2.3 SPI Pin Control Register (SPPCR)](#3123-spi-pin-control-register-sppcr)
+      [31.2.4 SPI Status Register (SPSR)](#3124-spi-status-register-spsr)
+      [31.2.5 SPI Data Register (SPDR/SPDR\_HA)](#3125-spi-data-register-spdrspdr_ha)
+      [31.2.6 SPI Bit Rate Register (SPBR)](#3126-spi-bit-rate-register-spbr)
+      [31.2.7 SPI Data Control Register (SPDCR)](#3127-spi-data-control-register-spdcr)
+      [31.2.8 SPI Clock Delay Register (SPCKD)](#3128-spi-clock-delay-register-spckd)
+      [31.2.9 SPI Slave Select Negation Delay Register (SSLND)](#3129-spi-slave-select-negation-delay-register-sslnd)
+      [31.2.10 SPI Next-Access Delay Register (SPND)](#31210-spi-next-access-delay-register-spnd)
+      [31.2.11 SPI Control Register 2 (SPCR2)](#31211-spi-control-register-2-spcr2)
+      [31.2.12 SPI Command Register 0 (SPCMD0)](#31212-spi-command-register-0-spcmd0)
+    [31.3 Operation](#313-operation)
+      [31.3.1 Overview of SPI Operations](#3131-overview-of-spi-operations)
+      [31.3.2 Controlling the SPI Pins](#3132-controlling-the-spi-pins)
+      [31.3.3 SPI System Configuration Examples](#3133-spi-system-configuration-examples)
+        [31.3.3.1 Single master and single slave with the MCU configured as a master](#31331-single-master-and-single-slave-with-the-mcu-configured-as-a-master)
+        [31.3.3.2 Single master and single slave with the MCU configured as a slave](#31332-single-master-and-single-slave-with-the-mcu-configured-as-a-slave)
+        [31.3.3.3 Single master and multi-slave with the MCU configured as a master](#31333-single-master-and-multi-slave-with-the-mcu-configured-as-a-master)
+        [31.3.3.4 Single master and multi-slave with the MCU configured as a slave](#31334-single-master-and-multi-slave-with-the-mcu-configured-as-a-slave)
+        [31.3.3.5 Multi-master and multi-slave with the MCU configured as a master](#31335-multi-master-and-multi-slave-with-the-mcu-configured-as-a-master)
+        [31.3.3.6 Clock synchronous master/slave configuration with the MCU configured as a master](#31336-clock-synchronous-masterslave-configuration-with-the-mcu-configured-as-a-master)
+        [31.3.3.7 Master and slave in clock synchronous mode with the MCU configured as a slave](#31337-master-and-slave-in-clock-synchronous-mode-with-the-mcu-configured-as-a-slave)
+      [31.3.4 Data Format](#3134-data-format)
+        [31.3.4.1 Operation when parity is disabled (SPCR2.SPPE = 0)](#31341-operation-when-parity-is-disabled-spcr2sppe-0)
+        [31.3.4.2 When parity is enabled (SPCR2.SPPE = 1)](#31342-when-parity-is-enabled-spcr2sppe-1)
+      [31.3.5 Transfer Format](#3135-transfer-format)
+        [31.3.5.1 CPHA = 0](#31351-cpha-0)
+        [31.3.5.2 CPHA = 1](#31352-cpha-1)
+      [31.3.6 Data Transfer Modes](#3136-data-transfer-modes)
+        [31.3.6.1 Full-duplex synchronous serial communications (SPCR.TXMD = 0)](#31361-full-duplex-synchronous-serial-communications-spcrtxmd-0)
+        [31.3.6.2 Transmit-only operations (SPCR.TXMD = 1)](#31362-transmit-only-operations-spcrtxmd-1)
+      [31.3.7 Transmit Buffer Empty and Receive Buffer Full Interrupts](#3137-transmit-buffer-empty-and-receive-buffer-full-interrupts)
+      [31.3.8 Error Detection](#3138-error-detection)
+        [31.3.8.1 Overrun errors](#31381-overrun-errors)
+        [31.3.8.2 Parity errors](#31382-parity-errors)
+        [31.3.8.3 Mode fault errors](#31383-mode-fault-errors)
+        [31.3.8.4 Underrun errors](#31384-underrun-errors)
+      [31.3.9 Initializing the SPI](#3139-initializing-the-spi)
+        [31.3.9.1 Initialization by clearing the SPE bit](#31391-initialization-by-clearing-the-spe-bit)
+        [31.3.9.2 Initialization by system reset](#31392-initialization-by-system-reset)
+      [31.3.10 SPI Operation](#31310-spi-operation)
+        [31.3.10.1 Master mode operation](#313101-master-mode-operation)
+        [31.3.10.2 Slave mode operation](#313102-slave-mode-operation)
+      [31.3.11 Clock Synchronous Operation](#31311-clock-synchronous-operation)
+        [31.3.11.1 Master mode operation](#313111-master-mode-operation)
+        [31.3.11.2 Slave mode operation](#313112-slave-mode-operation)
+      [31.3.12 Loopback Mode](#31312-loopback-mode)
+      [31.3.13 Self-Diagnosis of Parity Bit Function](#31313-self-diagnosis-of-parity-bit-function)
+      [31.3.14 Interrupt Sources](#31314-interrupt-sources)
+    [31.4 Event Link Operation](#314-event-link-operation)
+      [31.4.1 Receive Buffer Full Event Output](#3141-receive-buffer-full-event-output)
+      [31.4.2 Transmit Buffer Empty Event Output](#3142-transmit-buffer-empty-event-output)
+      [31.4.3 Mode Fault, Underrun, Overrun, or Parity Error Event Output](#3143-mode-fault-underrun-overrun-or-parity-error-event-output)
+      [31.4.4 SPI Idle Event Output](#3144-spi-idle-event-output)
+      [31.4.5 Transmission-Completed Event Output](#3145-transmission-completed-event-output)
+    [31.5 Usage Notes](#315-usage-notes)
+      [31.5.1 Settings for the Module-Stop State](#3151-settings-for-the-module-stop-state)
+      [31.5.2 Constraint on Low Power Consumption Functions](#3152-constraint-on-low-power-consumption-functions)
+      [31.5.3 Constraint on Starting Transfer](#3153-constraint-on-starting-transfer)
+      [31.5.4 Constraint on Mode Fault, Underrun, Overrun, or Parity Error Event Output](#3154-constraint-on-mode-fault-underrun-overrun-or-parity-error-event-output)
+      [31.5.5 Constraint on SPRF/SPTEF Flag](#3155-constraint-on-sprfsptef-flag)
+[Cyclic Redundancy Check (CRC) Calculator](#cyclic-redundancy-check-crc-calculator)
+    [32.1 Overview](#321-overview)
+    [32.2 Register Descriptions](#322-register-descriptions)
+      [32.2.1 CRC Control Register 0 (CRCCR0)](#3221-crc-control-register-0-crccr0)
+      [32.2.2 CRC Control Register 1 (CRCCR1)](#3222-crc-control-register-1-crccr1)
+      [32.2.3 CRC Data Input Register (CRCDIR/CRCDIR\_BY)](#3223-crc-data-input-register-crcdircrcdir_by)
+      [32.2.4 CRC Data Output Register (CRCDOR/CRCDOR\_HA/CRCDOR\_BY)](#3224-crc-data-output-register-crcdorcrcdor_hacrcdor_by)
+      [32.2.5 Snoop Address Register (CRCSAR)](#3225-snoop-address-register-crcsar)
+    [32.3 Operation](#323-operation)
+      [32.3.1 Basic Operation](#3231-basic-operation)
+      [32.3.2 CRC Snoop](#3232-crc-snoop)
+    [32.4 Usage Notes](#324-usage-notes)
+      [32.4.1 Module-Stop State Setting](#3241-module-stop-state-setting)
+      [32.4.2 Notes on Transmission](#3242-notes-on-transmission)
+[Serial Sound Interface Enhanced (SSIE)](#serial-sound-interface-enhanced-ssie)
+    [33.1 Overview](#331-overview)
+    [33.2 SSIE Specifications](#332-ssie-specifications)
+    [33.3 Block Diagram](#333-block-diagram)
+    [33.4 Register Descriptions](#334-register-descriptions)
+      [33.4.1 Control Register (SSICR)](#3341-control-register-ssicr)
+      [33.4.2 Status Register (SSISR)](#3342-status-register-ssisr)
+      [33.4.3 FIFO Control Register (SSIFCR)](#3343-fifo-control-register-ssifcr)
+      [33.4.4 FIFO Status Register (SSIFSR)](#3344-fifo-status-register-ssifsr)
+      [33.4.5 Transmit FIFO Data Register (SSIFTDR)](#3345-transmit-fifo-data-register-ssiftdr)
+      [33.4.6 Receive FIFO Data Register (SSIFRDR)](#3346-receive-fifo-data-register-ssifrdr)
+      [33.4.7 TDM Mode Register (SSITDMR)](#3347-tdm-mode-register-ssitdmr)
+      [33.4.8 Status Control Register (SSISCR)](#3348-status-control-register-ssiscr)
+    [33.5 Communication Formats](#335-communication-formats)
+      [33.5.1 I²S Format](#3351-is-format)
+      [33.5.2 Monaural Format](#3352-monaural-format)
+        [33.5.2.1 Short frame](#33521-short-frame)
+        [33.5.2.2 Long frame](#33522-long-frame)
+    [33.6 Communication Modes](#336-communication-modes)
+      [33.6.1 Slave Mode Communication](#3361-slave-mode-communication)
+      [33.6.2 Master Mode Communication](#3362-master-mode-communication)
+      [33.6.3 Transmission](#3363-transmission)
+      [33.6.4 Reception](#3364-reception)
+      [33.6.5 Transmission and Reception](#3365-transmission-and-reception)
+    [33.7 Operation](#337-operation)
+      [33.7.1 Idle State](#3371-idle-state)
+      [33.7.2 Communication States](#3372-communication-states)
+        [33.7.2.1 Data communication state](#33721-data-communication-state)
+        [33.7.2.2 Padding communication](#33722-padding-communication)
+    [33.8 Communication Operation](#338-communication-operation)
+      [33.8.1 Start Communication](#3381-start-communication)
+      [33.8.2 Transmission](#3382-transmission)
+      [33.8.3 Reception](#3383-reception)
+      [33.8.4 Transmission and Reception](#3384-transmission-and-reception)
+      [33.8.5 Halt Communication](#3385-halt-communication)
+      [33.8.6 Error Handling](#3386-error-handling)
+      [33.8.7 Resume Communication](#3387-resume-communication)
+    [33.9 Interrupts](#339-interrupts)
+      [33.9.1 SSIE0\_SSIF Interrupt](#3391-ssie0_ssif-interrupt)
+      [33.9.2 SSIE0\_SSITXI Interrupt](#3392-ssie0_ssitxi-interrupt)
+      [33.9.3 SSIE0\_SSIRXI Interrupt](#3393-ssie0_ssirxi-interrupt)
+    [33.10 Software Resets](#3310-software-resets)
+      [33.10.1 Software Reset Procedure](#33101-software-reset-procedure)
+    [33.11 Notes](#3311-notes)
+      [33.11.1 Notes for Slave mode Communication](#33111-notes-for-slave-mode-communication)
+        [33.11.1.1 SSIBCK control](#331111-ssibck-control)
+        [33.11.1.2 SSILRCK/SSIFS pin](#331112-ssilrckssifs-pin)
+      [33.11.2 Notes for Master Mode Communication](#33112-notes-for-master-mode-communication)
+        [33.11.2.1 AUCKE control](#331121-aucke-control)
+        [33.11.2.2 LRCONT control](#331122-lrcont-control)
+        [33.11.2.3 BCKASTP control](#331123-bckastp-control)
+      [33.11.3 Notes for Communication Flow](#33113-notes-for-communication-flow)
+        [33.11.3.1 When an error interrupt is generated](#331131-when-an-error-interrupt-is-generated)
+        [33.11.3.2 Transmit data empty interrupt](#331132-transmit-data-empty-interrupt)
+        [33.11.3.3 Receive data full interrupt](#331133-receive-data-full-interrupt)
+        [33.11.3.4 Switching transfer modes](#331134-switching-transfer-modes)
+        [33.11.3.5 Resume communication after halting SSIE](#331135-resume-communication-after-halting-ssie)
+      [33.11.4 Write Access Restriction](#33114-write-access-restriction)
+        [33.11.4.1 SSICR register](#331141-ssicr-register)
+        [33.11.4.2 SSISR register](#331142-ssisr-register)
+        [33.11.4.3 Communication state](#331143-communication-state)
+  [4. Boundary Scan](#4-boundary-scan)
+    [34.1 Overview](#341-overview)
+    [34.2 Register Descriptions](#342-register-descriptions)
+      [34.2.1 Instruction Register (JTIR)](#3421-instruction-register-jtir)
+      [34.2.2 ID Code Register (JTIDR)](#3422-id-code-register-jtidr)
+      [34.2.3 Bypass Register (JTBPR)](#3423-bypass-register-jtbpr)
+      [34.2.4 Boundary Scan Register (JTBSR)](#3424-boundary-scan-register-jtbsr)
+    [34.3 Operations](#343-operations)
+      [34.3.1 TAP Controller](#3431-tap-controller)
+      [34.3.2 Commands](#3432-commands)
+    [34.4 Usage Note](#344-usage-note)
+  [5. 14-Bit A/D Converter (ADC14)](#5-14-bit-ad-converter-adc14)
+    [35.1 Overview](#351-overview)
+    [35.2 Register Descriptions](#352-register-descriptions)
+      [35.2.1 A/D Data Registers y (ADDRy), A/D Data Duplexing Register (ADDBLDR), A/D Data Duplexing Register A (ADDBLDRA), A/D Data Duplexing Register B (ADDBLDRB), A/D Temperature Sensor Data Register (ADTSDR), A/D Internal Reference Voltage Data Register (ADOCDR)](#3521-ad-data-registers-y-addry-ad-data-duplexing-register-addbldr-ad-data-duplexing-register-a-addbldra-ad-data-duplexing-register-b-addbldrb-ad-temperature-sensor-data-register-adtsdr-ad-internal-reference-voltage-data-register-adocdr)
+      [35.2.2 A/D Self-Diagnosis Data Register (ADRD)](#3522-ad-self-diagnosis-data-register-adrd)
+      [35.2.3 A/D Control Register (ADCSR)](#3523-ad-control-register-adcsr)
+      [35.2.4 A/D Channel Select Register A0 (ADANSA0)](#3524-ad-channel-select-register-a0-adansa0)
+      [35.2.5 A/D Channel Select Register A1 (ADANSA1)](#3525-ad-channel-select-register-a1-adansa1)
+      [35.2.6 A/D Channel Select Register B0 (ADANSB0)](#3526-ad-channel-select-register-b0-adansb0)
+      [35.2.7 A/D Channel Select Register B1 (ADANSB1)](#3527-ad-channel-select-register-b1-adansb1)
+      [35.2.8 A/D-Converted Value Addition/Average Channel Select Register 0 (ADADS0)](#3528-ad-converted-value-additionaverage-channel-select-register-0-adads0)
+      [35.2.9 A/D-Converted Value Addition/Average Channel Select Register 1 (ADADS1)](#3529-ad-converted-value-additionaverage-channel-select-register-1-adads1)
+      [35.2.10 A/D-Converted Value Addition/Average Count Select Register (ADADC)](#35210-ad-converted-value-additionaverage-count-select-register-adadc)
+      [35.2.11 A/D Control Extended Register (ADCER)](#35211-ad-control-extended-register-adcer)
+      [35.2.12 A/D Conversion Start Trigger Select Register (ADSTRGR)](#35212-ad-conversion-start-trigger-select-register-adstrgr)
+      [35.2.13 A/D Conversion Extended Input Control Register (ADEXICR)](#35213-ad-conversion-extended-input-control-register-adexicr)
+      [35.2.14 A/D Sampling State Register n (ADSSTRn) (n = 00 to 14, L, T, O)](#35214-ad-sampling-state-register-n-adsstrn-n-00-to-14-l-t-o)
+      [35.2.15 A/D Disconnection Detection Control Register (ADDISCR)](#35215-ad-disconnection-detection-control-register-addiscr)
+      [35.2.16 A/D Group Scan Priority Control Register (ADGSPCR)](#35216-ad-group-scan-priority-control-register-adgspcr)
+      [35.2.17 A/D Compare Function Control Register (ADCMPCR)](#35217-ad-compare-function-control-register-adcmpcr)
+      [35.2.18 A/D Compare Function Window A Channel Select Register 0 (ADCMPANSR0)](#35218-ad-compare-function-window-a-channel-select-register-0-adcmpansr0)
+      [35.2.19 A/D Compare Function Window A Channel Select Register 1 (ADCMPANSR1)](#35219-ad-compare-function-window-a-channel-select-register-1-adcmpansr1)
+      [35.2.20 A/D Compare Function Window A Extended Input Select Register (ADCMPANSER)](#35220-ad-compare-function-window-a-extended-input-select-register-adcmpanser)
+      [35.2.21 A/D Compare Function Window A Comparison Condition Setting Register 0 (ADCMPLR0)](#35221-ad-compare-function-window-a-comparison-condition-setting-register-0-adcmplr0)
+      [35.2.22 A/D Compare Function Window A Comparison Condition Setting Register 1 (ADCMPLR1)](#35222-ad-compare-function-window-a-comparison-condition-setting-register-1-adcmplr1)
+      [35.2.23 A/D Compare Function Window A Extended Input Comparison Condition Setting Register (ADCMPLER)](#35223-ad-compare-function-window-a-extended-input-comparison-condition-setting-register-adcmpler)
+      [35.2.24 A/D Compare Function Window A Lower-Side Level Setting Register (ADCMPDR0), A/D Compare Function Window A Upper-Side Level Setting Register (ADCMPDR1), A/D Compare Function Window B Lower-Side Level Setting Register (ADWINLLB), A/D Compare Function Window B Upper-Side Level Setting Register (ADWINULB)](#35224-ad-compare-function-window-a-lower-side-level-setting-register-adcmpdr0-ad-compare-function-window-a-upper-side-level-setting-register-adcmpdr1-ad-compare-function-window-b-lower-side-level-setting-register-adwinllb-ad-compare-function-window-b-upper-side-level-setting-register-adwinulb)
+      [35.2.25 A/D Compare Function Window A Channel Status Register 0 (ADCMPSR0)](#35225-ad-compare-function-window-a-channel-status-register-0-adcmpsr0)
+      [35.2.26 A/D Compare Function Window A Channel Status Register 1 (ADCMPSR1)](#35226-ad-compare-function-window-a-channel-status-register-1-adcmpsr1)
+      [35.2.27 A/D Compare Function Window A Extended Input Channel Status Register (ADCMPSER)](#35227-ad-compare-function-window-a-extended-input-channel-status-register-adcmpser)
+      [35.2.28 A/D Compare Function Window B Channel Select Register (ADCMPBNSR)](#35228-ad-compare-function-window-b-channel-select-register-adcmpbnsr)
+      [35.2.29 A/D Compare Function Window B Status Register (ADCMPBSR)](#35229-ad-compare-function-window-b-status-register-adcmpbsr)
+      [35.2.30 A/D Compare Function Window A/B Status Monitor Register (ADWINMON)](#35230-ad-compare-function-window-ab-status-monitor-register-adwinmon)
+      [35.2.31 A/D High-Potential/Low-Potential Reference Voltage Control Register (ADHVREFCNT)](#35231-ad-high-potentiallow-potential-reference-voltage-control-register-adhvrefcnt)
+    [3.3 Operation](#33-operation)
+      [35.3.1 Scanning Operation](#3531-scanning-operation)
+      [35.3.2 Single Scan Mode](#3532-single-scan-mode)
+        [35.3.2.1 Basic operation](#35321-basic-operation)
+        [35.3.2.2 Channel selection and self-diagnosis](#35322-channel-selection-and-self-diagnosis)
+        [35.3.2.3 A/D conversion of temperature sensor output/internal reference voltage](#35323-ad-conversion-of-temperature-sensor-outputinternal-reference-voltage)
+        [35.3.2.4 A/D conversion in double trigger mode](#35324-ad-conversion-in-double-trigger-mode)
+        [35.3.2.5 Extended operations when double trigger mode is selected](#35325-extended-operations-when-double-trigger-mode-is-selected)
+      [35.3.3 Continuous Scan Mode](#3533-continuous-scan-mode)
+        [35.3.3.1 Basic operation](#35331-basic-operation)
+        [35.3.3.2 Channel selection and self-diagnosis](#35332-channel-selection-and-self-diagnosis)
+      [35.3.4 Group Scan Mode](#3534-group-scan-mode)
+        [35.3.4.1 Basic operation](#35341-basic-operation)
+        [35.3.4.2 A/D conversion in double trigger mode](#35342-ad-conversion-in-double-trigger-mode)
+        [35.3.4.3 Operation with group A priority control](#35343-operation-with-group-a-priority-control)
+      [35.3.5 Compare Function for Window A and Window B](#3535-compare-function-for-window-a-and-window-b)
+        [35.3.5.1 Compare function](#35351-compare-function)
+        [35.3.5.2 Event output of compare function](#35352-event-output-of-compare-function)
+        [35.3.5.3 Restrictions on the compare function](#35353-restrictions-on-the-compare-function)
+      [35.3.6 Analog Input Sampling and Scan Conversion Time](#3536-analog-input-sampling-and-scan-conversion-time)
+      [35.3.7 Usage Example of A/D Data Register Automatic Clearing Function](#3537-usage-example-of-ad-data-register-automatic-clearing-function)
+      [35.3.8 A/D-Converted Value Addition/Average Mode](#3538-ad-converted-value-additionaverage-mode)
+      [35.3.9 Disconnection Detection Assist Function](#3539-disconnection-detection-assist-function)
+      [35.3.10 Starting A/D Conversion with Asynchronous Trigger](#35310-starting-ad-conversion-with-asynchronous-trigger)
+      [35.3.11 Starting A/D Conversion with a Synchronous Trigger from Peripheral Module](#35311-starting-ad-conversion-with-a-synchronous-trigger-from-peripheral-module)
+    [35.4 Interrupt Sources and DTC or DMAC Transfer Requests](#354-interrupt-sources-and-dtc-or-dmac-transfer-requests)
+      [35.4.1 Interrupt Requests](#3541-interrupt-requests)
+    [35.5 Event Link Function](#355-event-link-function)
+      [35.5.1 Event Output to the ELC](#3551-event-output-to-the-elc)
+      [35.5.2 ADC14 Operation through an Event from the ELC](#3552-adc14-operation-through-an-event-from-the-elc)
+    [35.6 Selecting Reference Voltage](#356-selecting-reference-voltage)
+    [35.7 A/D Conversion Procedure when Selecting Internal Reference Voltage as High-Potential Reference Voltage](#357-ad-conversion-procedure-when-selecting-internal-reference-voltage-as-high-potential-reference-voltage)
+    [35.8 Usage Notes](#358-usage-notes)
+      [35.8.1 Notes on Reading Data Registers](#3581-notes-on-reading-data-registers)
+      [35.8.2 Notes on Stopping A/D Conversion](#3582-notes-on-stopping-ad-conversion)
+      [35.8.3 A/D Conversion Restarting Timing and Termination Timing](#3583-ad-conversion-restarting-timing-and-termination-timing)
+      [35.8.4 Restrictions on Scan End Interrupt Handling](#3584-restrictions-on-scan-end-interrupt-handling)
+      [35.8.5 Settings for the Module-Stop State](#3585-settings-for-the-module-stop-state)
+      [35.8.6 Restrictions on Entering Low Power States](#3586-restrictions-on-entering-low-power-states)
+      [35.8.7 Error in Absolute Accuracy when Disconnection Detection Assistance is in Use](#3587-error-in-absolute-accuracy-when-disconnection-detection-assistance-is-in-use)
+      [35.8.8 ADHSC Bit Rewriting Procedure](#3588-adhsc-bit-rewriting-procedure)
+      [35.8.9 Notes on Operating Modes and Status Bits](#3589-notes-on-operating-modes-and-status-bits)
+      [35.8.10 Notes on Board Design](#35810-notes-on-board-design)
+      [35.8.11 Notes on Noise Reduction](#35811-notes-on-noise-reduction)
+      [35.8.12 Port Setting when Using the 14-bit A/D Converter Input](#35812-port-setting-when-using-the-14-bit-ad-converter-input)
+      [35.8.13 Relationship between the ADC14, OPAMP, and ACMPLP](#35813-relationship-between-the-adc14-opamp-and-acmplp)
+      [35.8.14 Notes on Canceling Software Standby Mode](#35814-notes-on-canceling-software-standby-mode)
+  [36. 12-Bit D/A Converter (DAC12)](#36-12-bit-da-converter-dac12)
+    [36.1 Overview](#361-overview)
+    [36.2 Register Descriptions](#362-register-descriptions)
+      [36.2.1 D/A Data Register 0 (DADR0)](#3621-da-data-register-0-dadr0)
+      [36.2.2 D/A Control Register (DACR)](#3622-da-control-register-dacr)
+      [36.2.3 DADR0 Format Select Register (DADPR)](#3623-dadr0-format-select-register-dadpr)
+      [36.2.4 D/A A/D Synchronous Start Control Register (DAADSCR)](#3624-da-ad-synchronous-start-control-register-daadscr)
+      [36.2.5 D/A VREF Control Register (DAVREFCR)](#3625-da-vref-control-register-davrefcr)
+    [36.3 Operation](#363-operation)
+      [36.3.1 Reducing Interference between D/A and A/D Conversion](#3631-reducing-interference-between-da-and-ad-conversion)
+      [36.3.2 Notes on Using the Internal Reference Voltage as the Reference Voltage](#3632-notes-on-using-the-internal-reference-voltage-as-the-reference-voltage)
+    [36.4 Event Link Operation Setting Procedure](#364-event-link-operation-setting-procedure)
+    [36.5 Usage Notes on Event Link Operation](#365-usage-notes-on-event-link-operation)
+    [36.6 Usage Notes](#366-usage-notes)
+      [36.6.1 Settings for the Module-Stop Function](#3661-settings-for-the-module-stop-function)
+      [36.6.2 DAC12 Operation in Module-Stop State](#3662-dac12-operation-in-module-stop-state)
+      [36.6.3 DAC12 Operation in Software Standby Mode](#3663-dac12-operation-in-software-standby-mode)
+      [36.6.4 Restriction on Usage when Interference Reduction between D/A and A/D Conversion is Enabled](#3664-restriction-on-usage-when-interference-reduction-between-da-and-ad-conversion-is-enabled)
+  [37. Temperature Sensor (TSN)](#37-temperature-sensor-tsn)
+    [37.1 Overview](#371-overview)
+    [37.2 Register Descriptions](#372-register-descriptions)
+      [37.2.1 Temperature Sensor Calibration Data Register H (TSCDRH)](#3721-temperature-sensor-calibration-data-register-h-tscdrh)
+      [37.2.2 Temperature Sensor Calibration Data Register L (TSCDRL)](#3722-temperature-sensor-calibration-data-register-l-tscdrl)
+    [37.3 Using the Temperature Sensor](#373-using-the-temperature-sensor)
+      [37.3.1 Preparation for Using Temperature Sensor](#3731-preparation-for-using-temperature-sensor)
+      [37.3.2 Procedure for Using the Temperature Sensor](#3732-procedure-for-using-the-temperature-sensor)
+  [38. Operational Amplifier (OPAMP)](#38-operational-amplifier-opamp)
+    [38.1 Overview](#381-overview)
+    [38.2 Register Descriptions](#382-register-descriptions)
+      [38.2.1 Operational Amplifier Mode Control Register (AMPMC)](#3821-operational-amplifier-mode-control-register-ampmc)
+      [38.2.2 Operational Amplifier Trigger Mode Control Register (AMPTRM)](#3822-operational-amplifier-trigger-mode-control-register-amptrm)
+      [38.2.3 Operational Amplifier Activation Trigger Select Register (AMPTRS)](#3823-operational-amplifier-activation-trigger-select-register-amptrs)
+      [38.2.4 Operational Amplifier Control Register (AMPC)](#3824-operational-amplifier-control-register-ampc)
+      [38.2.5 Operational Amplifier Monitor Register (AMPMON)](#3825-operational-amplifier-monitor-register-ampmon)
+    [38.3 Operation](#383-operation)
+      [38.3.1 State Transitions](#3831-state-transitions)
+      [38.3.2 Operational Amplifier Control Operation](#3832-operational-amplifier-control-operation)
+    [38.4 Software Trigger Mode](#384-software-trigger-mode)
+    [38.5 Activation Trigger Mode](#385-activation-trigger-mode)
+    [38.6 Activation and A/D Trigger Mode](#386-activation-and-ad-trigger-mode)
+    [38.7 Usage Notes](#387-usage-notes)
+  [39. Low-Power Analog Comparator (ACMPLP)](#39-low-power-analog-comparator-acmplp)
+    [39.1 Overview](#391-overview)
+    [39.2 Register Descriptions](#392-register-descriptions)
+      [39.2.1 ACMPLP Mode Setting Register (COMPMDR)](#3921-acmplp-mode-setting-register-compmdr)
+      [39.2.2 ACMPLP Filter Control Register (COMPFIR)](#3922-acmplp-filter-control-register-compfir)
+      [39.2.3 ACMPLP Output Control Register (COMPOCR)](#3923-acmplp-output-control-register-compocr)
+      [39.2.4 Comparator Input Select Register (COMPSEL0)](#3924-comparator-input-select-register-compsel0)
+      [39.2.5 Comparator Reference Voltage Select Register (COMPSEL1)](#3925-comparator-reference-voltage-select-register-compsel1)
+    [39.3 Operation](#393-operation)
+    [39.4 Noise Filter](#394-noise-filter)
+    [39.5 ACMPLP Interrupts](#395-acmplp-interrupts)
+    [39.6 ELC Event Output](#396-elc-event-output)
+    [39.7 Interrupt Handling and ELC Linking](#397-interrupt-handling-and-elc-linking)
+    [39.8 Comparator Pin Output](#398-comparator-pin-output)
+    [39.9 Usage Notes](#399-usage-notes)
+      [39.9.1 Settings for the Module-Stop State](#3991-settings-for-the-module-stop-state)
+      [39.9.2 Relationship with A/D converter](#3992-relationship-with-ad-converter)
+  [40. 8-Bit D/A Converter (DAC8)](#40-8-bit-da-converter-dac8)
+    [40.1 Overview](#401-overview)
+    [40.2 Register Descriptions](#402-register-descriptions)
+      [40.2.1 D/A Conversion Value Setting Register n (DACSn) (n = 0, 1)](#4021-da-conversion-value-setting-register-n-dacsn-n-0-1)
+      [40.2.2 D/A Converter Mode Register (DAM)](#4022-da-converter-mode-register-dam)
+    [40.3 Operation](#403-operation)
+    [40.4 Usage Notes](#404-usage-notes)
+      [40.4.1 Module-Stop State](#4041-module-stop-state)
+      [40.4.2 Operation of the 8-bit D/A Converter in Module-Stop State](#4042-operation-of-the-8-bit-da-converter-in-module-stop-state)
+      [40.4.3 8-bit D/A Converter in Software Standby Mode Operation](#4043-8-bit-da-converter-in-software-standby-mode-operation)
+      [40.4.4 When Not Using the D/A Converter](#4044-when-not-using-the-da-converter)
+  [41. Capacitive Touch Sensing Unit (CTSU)](#41-capacitive-touch-sensing-unit-ctsu)
+    [41.1 Overview](#411-overview)
+    [41.2 Register Descriptions](#412-register-descriptions)
+      [41.2.1 CTSU Control Register 0 (CTSUCR0)](#4121-ctsu-control-register-0-ctsucr0)
+      [41.2.2 CTSU Control Register 1 (CTSUCR1)](#4122-ctsu-control-register-1-ctsucr1)
+      [41.2.3 CTSU Synchronous Noise Reduction Setting Register (CTSUSDPRS)](#4123-ctsu-synchronous-noise-reduction-setting-register-ctsusdprs)
+      [41.2.4 CTSU Sensor Stabilization Wait Control Register (CTSUSST)](#4124-ctsu-sensor-stabilization-wait-control-register-ctsusst)
+      [41.2.5 CTSU Measurement Channel Register 0 (CTSUMCH0)](#4125-ctsu-measurement-channel-register-0-ctsumch0)
+      [41.2.6 CTSU Measurement Channel Register 1 (CTSUMCH1)](#4126-ctsu-measurement-channel-register-1-ctsumch1)
+      [41.2.7 CTSU Channel Enable Control Register 0 (CTSUCHAC0)](#4127-ctsu-channel-enable-control-register-0-ctsuchac0)
+      [41.2.8 CTSU Channel Enable Control Register 1 (CTSUCHAC1)](#4128-ctsu-channel-enable-control-register-1-ctsuchac1)
+      [41.2.9 CTSU Channel Enable Control Register 2 (CTSUCHAC2)](#4129-ctsu-channel-enable-control-register-2-ctsuchac2)
+      [41.2.10 CTSU Channel Enable Control Register 3 (CTSUCHAC3)](#41210-ctsu-channel-enable-control-register-3-ctsuchac3)
+      [41.2.11 CTSU Channel Enable Control Register 4 (CTSUCHAC4)](#41211-ctsu-channel-enable-control-register-4-ctsuchac4)
+      [41.2.12 CTSU Channel Transmit/Receive Control Register 0 (CTSUCHTRC0)](#41212-ctsu-channel-transmitreceive-control-register-0-ctsuchtrc0)
+      [41.2.13 CTSU Channel Transmit/Receive Control Register 1 (CTSUCHTRC1)](#41213-ctsu-channel-transmitreceive-control-register-1-ctsuchtrc1)
+      [41.2.14 CTSU Channel Transmit/Receive Control Register 2 (CTSUCHTRC2)](#41214-ctsu-channel-transmitreceive-control-register-2-ctsuchtrc2)
+      [41.2.15 CTSU Channel Transmit/Receive Control Register 3 (CTSUCHTRC3)](#41215-ctsu-channel-transmitreceive-control-register-3-ctsuchtrc3)
+      [41.2.16 CTSU Channel Transmit/Receive Control Register 4 (CTSUCHTRC4)](#41216-ctsu-channel-transmitreceive-control-register-4-ctsuchtrc4)
+      [41.2.17 CTSU High-Pass Noise Reduction Control Register (CTSUDCLKC)](#41217-ctsu-high-pass-noise-reduction-control-register-ctsudclkc)
+      [41.2.18 CTSU Status Register (CTSUST)](#41218-ctsu-status-register-ctsust)
+      [41.2.19 CTSU High-Pass Noise Reduction Spectrum Diffusion Control Register (CTSUSSC)](#41219-ctsu-high-pass-noise-reduction-spectrum-diffusion-control-register-ctsussc)
+      [41.2.20 CTSU Sensor Offset Register 0 (CTSUSO0)](#41220-ctsu-sensor-offset-register-0-ctsuso0)
+      [41.2.21 CTSU Sensor Offset Register 1 (CTSUSO1)](#41221-ctsu-sensor-offset-register-1-ctsuso1)
+      [41.2.22 CTSU Sensor Counter (CTSUSC)](#41222-ctsu-sensor-counter-ctsusc)
+      [41.2.23 CTSU Reference Counter (CTSURC)](#41223-ctsu-reference-counter-ctsurc)
+      [41.2.24 CTSU Error Status Register (CTSUERRS)](#41224-ctsu-error-status-register-ctsuerrs)
+    [41.3 Operation](#413-operation)
+      [41.3.1 Principles of Measurement Operation](#4131-principles-of-measurement-operation)
+      [41.3.2 Measurement Modes](#4132-measurement-modes)
+        [41.3.2.1 Initial setting flow](#41321-initial-setting-flow)
+        [41.3.2.2 Status counter](#41322-status-counter)
+        [41.3.2.3 Self-capacitance single scan mode operation](#41323-self-capacitance-single-scan-mode-operation)
+        [41.3.2.4 Self-capacitance multiscan mode operation](#41324-self-capacitance-multiscan-mode-operation)
+        [41.3.2.5 Mutual-capacitance full scan mode operation](#41325-mutual-capacitance-full-scan-mode-operation)
+      [41.3.3 Parameters Common to Multiple Modes](#4133-parameters-common-to-multiple-modes)
+        [41.3.3.1 Sensor stabilization wait time and measurement time](#41331-sensor-stabilization-wait-time-and-measurement-time)
+        [41.3.3.2 Interrupts](#41332-interrupts)
+    [41.4 Usage Notes](#414-usage-notes)
+      [41.4.1 Measurement Result Data (CTSUSC and CTSURC Counters)](#4141-measurement-result-data-ctsusc-and-ctsurc-counters)
+      [41.4.2 Constraints on Software Trigger](#4142-constraints-on-software-trigger)
+      [41.4.3 Constraints on External Triggers](#4143-constraints-on-external-triggers)
+      [41.4.4 Constraints on Forced Stops](#4144-constraints-on-forced-stops)
+      [41.4.5 TSCAP Pin](#4145-tscap-pin)
+      [41.4.6 Constraints on Measurement Operation (CTSUCR0.CTSUSTRT bit = 1)](#4146-constraints-on-measurement-operation-ctsucr0ctsustrt-bit-1)
+[Data Operation Circuit (DOC)](#data-operation-circuit-doc)
+    [42.1 Overview](#421-overview)
+    [42.2 Register Descriptions](#422-register-descriptions)
+      [42.2.1 DOC Control Register (DOCR)](#4221-doc-control-register-docr)
+      [42.2.2 DOC Data Input Register (DODIR)](#4222-doc-data-input-register-dodir)
+      [42.2.3 DOC Data Setting Register (DODSR)](#4223-doc-data-setting-register-dodsr)
+    [42.3 Operation](#423-operation)
+      [42.3.1 Data Comparison Mode](#4231-data-comparison-mode)
+      [42.3.2 Data Addition Mode](#4232-data-addition-mode)
+      [42.3.3 Data Subtraction Mode](#4233-data-subtraction-mode)
+    [42.4 Interrupt Request and Output to the Event Link Controller (ELC)](#424-interrupt-request-and-output-to-the-event-link-controller-elc)
+    [42.5 Usage Notes](#425-usage-notes)
+      [42.5.1 Settings for the Module-Stop State](#4251-settings-for-the-module-stop-state)
+  [43. SRAM](#43-sram)
+    [43.1 Overview](#431-overview)
+    [43.2 Register Descriptions](#432-register-descriptions)
+      [43.2.1 SRAM Parity Error Operation After Detection Register (PARIOAD)](#4321-sram-parity-error-operation-after-detection-register-parioad)
+      [43.2.2 SRAM Protection Register (SRAMPRCR)](#4322-sram-protection-register-sramprcr)
+      [43.2.3 ECC Operating Mode Control Register (ECCMODE)](#4323-ecc-operating-mode-control-register-eccmode)
+      [43.2.4 ECC 2-Bit Error Status Register (ECC2STS)](#4324-ecc-2-bit-error-status-register-ecc2sts)
+      [43.2.5 ECC 1-Bit Error Information Update Enable Register (ECC1STSEN)](#4325-ecc-1-bit-error-information-update-enable-register-ecc1stsen)
+      [43.2.6 ECC 1-Bit Error Status Register (ECC1STS)](#4326-ecc-1-bit-error-status-register-ecc1sts)
+      [43.2.7 ECC Protection Register (ECCPRCR)](#4327-ecc-protection-register-eccprcr)
+      [43.2.8 ECC Protection Register 2 (ECCPRCR2)](#4328-ecc-protection-register-2-eccprcr2)
+      [43.2.9 ECC Test Control Register (ECCETST)](#4329-ecc-test-control-register-eccetst)
+      [43.2.10 SRAM ECC Error Operation After Detection Register (ECCOAD)](#43210-sram-ecc-error-operation-after-detection-register-eccoad)
+    [43.3 Operation](#433-operation)
+      [43.3.1 Low Power Consumption Function](#4331-low-power-consumption-function)
+      [43.3.2 ECC Function](#4332-ecc-function)
+      [43.3.3 ECC Error Generation](#4333-ecc-error-generation)
+      [43.3.4 ECC Decoder Testing](#4334-ecc-decoder-testing)
+      [43.3.5 Parity Calculation Function](#4335-parity-calculation-function)
+      [43.3.6 SRAM Error Sources](#4336-sram-error-sources)
+      [43.3.7 Access Cycles](#4337-access-cycles)
+    [43.4 Usage Notes](#434-usage-notes)
+      [43.4.1 Instruction Fetch from SRAM Area](#4341-instruction-fetch-from-sram-area)
+      [43.4.2 SRAM Store Buffer](#4342-sram-store-buffer)
+  [44. Flash Memory](#44-flash-memory)
+    [44.1 Overview](#441-overview)
+    [44.2 Memory Structure](#442-memory-structure)
+    [44.3 Flash Cache](#443-flash-cache)
+      [44.3.1 Overview](#4431-overview)
+    [44.4 Register Descriptions](#444-register-descriptions)
+      [44.4.1 Flash Cache Enable Register (FCACHEE)](#4441-flash-cache-enable-register-fcachee)
+      [44.4.2 Flash Cache Invalidate Register (FCACHEIV)](#4442-flash-cache-invalidate-register-fcacheiv)
+      [44.4.3 Data Flash Control Resister (DFLCTL)](#4443-data-flash-control-resister-dflctl)
+      [44.4.4 Factory MCU Information Flash Root Table (FMIFRT)](#4444-factory-mcu-information-flash-root-table-fmifrt)
+      [44.4.5 Unique ID Register n (UIDRn) (n = 0 to 3)](#4445-unique-id-register-n-uidrn-n-0-to-3)
+      [44.4.6 Part Numbering Register n (PNRn) (n = 0 to 3)](#4446-part-numbering-register-n-pnrn-n-0-to-3)
+      [44.4.7 MCU Version Register (MCUVER)](#4447-mcu-version-register-mcuver)
+    [44.5 Operation](#445-operation)
+      [44.5.1 Notice to use Flash Cache](#4451-notice-to-use-flash-cache)
+    [44.6 Operating Modes Associated with the Flash Memory](#446-operating-modes-associated-with-the-flash-memory)
+      [44.6.1 ID Code Protection](#4461-id-code-protection)
+    [44.7 Overview of Functions](#447-overview-of-functions)
+      [44.7.1 Configuration Area Bit Map](#4471-configuration-area-bit-map)
+      [44.7.2 Startup Area Select](#4472-startup-area-select)
+      [44.7.3 Protection by Access Window](#4473-protection-by-access-window)
+    [44.8 Programming Commands](#448-programming-commands)
+    [44.9 Suspend Operation](#449-suspend-operation)
+    [44.10 Protection](#4410-protection)
+    [44.11 Serial Programming Mode](#4411-serial-programming-mode)
+      [44.11.1 SCI Boot Mode](#44111-sci-boot-mode)
+      [44.11.2 USB Boot Mode](#44112-usb-boot-mode)
+    [44.12 Using a Serial Programmer](#4412-using-a-serial-programmer)
+      [44.12.1 Serial Programming](#44121-serial-programming)
+      [44.12.2 Programming Environment](#44122-programming-environment)
+    [44.13 Self-Programming](#4413-self-programming)
+      [44.13.1 Overview](#44131-overview)
+      [44.13.2 Background Operation](#44132-background-operation)
+    [44.14 Reading the Flash Memory](#4414-reading-the-flash-memory)
+      [44.14.1 Reading the Code Flash Memory](#44141-reading-the-code-flash-memory)
+      [44.14.2 Reading the Data Flash Memory](#44142-reading-the-data-flash-memory)
+    [44.15 Usage Notes](#4415-usage-notes)
+      [44.15.1 Erase Suspended Area](#44151-erase-suspended-area)
+      [44.15.2 Suspension by Erase Suspend Commands](#44152-suspension-by-erase-suspend-commands)
+      [44.15.3 Constraint on Additional Writes](#44153-constraint-on-additional-writes)
+      [44.15.4 Reset during Programming and Erasure](#44154-reset-during-programming-and-erasure)
+      [44.15.5 Non-Maskable Interrupt Disabled during Programming and Erasure](#44155-non-maskable-interrupt-disabled-during-programming-and-erasure)
+      [44.15.6 Location of Interrupt Vectors during a Programming and Erasure Operation](#44156-location-of-interrupt-vectors-during-a-programming-and-erasure-operation)
+      [44.15.7 Programming and Erasure in Low-Speed Operating Mode](#44157-programming-and-erasure-in-low-speed-operating-mode)
+      [44.15.8 Abnormal Termination during Programming and Erasure](#44158-abnormal-termination-during-programming-and-erasure)
+      [44.15.9 Actions Prohibited during Programming and Erasure](#44159-actions-prohibited-during-programming-and-erasure)
+  [45. Segment LCD Controller (SLCDC)](#45-segment-lcd-controller-slcdc)
+    [45.1 Overview](#451-overview)
+    [45.2 Register Descriptions](#452-register-descriptions)
+      [45.2.1 LCD Mode Register 0 (LCDM0)](#4521-lcd-mode-register-0-lcdm0)
+      [45.2.2 LCD Mode Register 1 (LCDM1)](#4522-lcd-mode-register-1-lcdm1)
+      [45.2.3 LCD Clock Control Register 0 (LCDC0)](#4523-lcd-clock-control-register-0-lcdc0)
+      [45.2.4 LCD Boost Level Control Register (VLCD)](#4524-lcd-boost-level-control-register-vlcd)
+    [45.3 LCD Display Data Registers](#453-lcd-display-data-registers)
+    [45.4 Selection of LCD Display Data Register](#454-selection-of-lcd-display-data-register)
+      [45.4.1 A-Pattern Area and B-pattern Area Data Display](#4541-a-pattern-area-and-b-pattern-area-data-display)
+      [45.4.2 Blinking Display (Alternately Displaying A-Pattern and B-Pattern Area Data)](#4542-blinking-display-alternately-displaying-a-pattern-and-b-pattern-area-data)
+    [45.5 Setting LCD Controller/Driver](#455-setting-lcd-controllerdriver)
+    [45.6 Operation Stop Procedure](#456-operation-stop-procedure)
+    [45.7 Supplying LCD Drive Voltages VL1, VL2, VL3, and VL4](#457-supplying-lcd-drive-voltages-vl1-vl2-vl3-and-vl4)
+      [45.7.1 External Resistance Division Method](#4571-external-resistance-division-method)
+      [45.7.2 Internal Voltage Boosting Method](#4572-internal-voltage-boosting-method)
+      [45.7.3 Capacitor Split Method](#4573-capacitor-split-method)
+    [45.8 Common and Segment Signals](#458-common-and-segment-signals)
+    [45.9 Display Modes](#459-display-modes)
+      [45.9.1 Static Display Example](#4591-static-display-example)
+      [45.9.2 Two-Time-Slice Display Example](#4592-two-time-slice-display-example)
+      [45.9.3 Three-Time-Slice Display Example](#4593-three-time-slice-display-example)
+      [45.9.4 Four-Time-Slice Display Example](#4594-four-time-slice-display-example)
+      [45.9.5 Eight-Time-Slice Display Example](#4595-eight-time-slice-display-example)
+  [46. Secure Cryptographic Engine (SCE5)](#46-secure-cryptographic-engine-sce5)
+    [46.1 Overview](#461-overview)
+    [46.2 Operation](#462-operation)
+      [46.2.1 Encryption Engine](#4621-encryption-engine)
+      [46.2.2 Encryption and Decryption](#4622-encryption-and-decryption)
+    [46.3 Usage Notes](#463-usage-notes)
+      [46.3.1 Software Standby Mode](#4631-software-standby-mode)
+      [46.3.2 Settings for the Module-Stop Function](#4632-settings-for-the-module-stop-function)
+  [47. Internal Voltage Regulator](#47-internal-voltage-regulator)
+    [47.1 Overview](#471-overview)
+    [47.2 Operation](#472-operation)
+  [48. Electrical Characteristics](#48-electrical-characteristics)
+    [48.1 Absolute Maximum Ratings](#481-absolute-maximum-ratings)
+    [48.2 DC Characteristics](#482-dc-characteristics)
+      [48.2.1 Tj/Ta Definition](#4821-tjta-definition)
+      [48.2.2 I/O VIH, $V_{IL}$](#4822-io-vih-v_il)
+      [48.2.3 I/O $I_{OH}$ , $I_{OL}$](#4823-io-i_oh-i_ol)
+      [48.2.4 I/O $V_{OH}$ , $V_{OL}$ , and Other Characteristics](#4824-io-v_oh-v_ol-and-other-characteristics)
+      [48.2.5 I/O Pin Output Characteristics of Low Drive Capacity](#4825-io-pin-output-characteristics-of-low-drive-capacity)
+      [48.2.6 I/O Pin Output Characteristics of Middle Drive Capacity](#4826-io-pin-output-characteristics-of-middle-drive-capacity)
+      [48.2.7 P408, P409 I/O Pin Output Characteristics of Middle Drive Capacity](#4827-p408-p409-io-pin-output-characteristics-of-middle-drive-capacity)
+      [48.2.8 IIC I/O Pin Output Characteristics](#4828-iic-io-pin-output-characteristics)
+      [48.2.9 Operating and Standby Current](#4829-operating-and-standby-current)
+      [48.2.10 VCC Rise and Fall Gradient and Ripple Frequency](#48210-vcc-rise-and-fall-gradient-and-ripple-frequency)
+    [48.3 AC Characteristics](#483-ac-characteristics)
+      [48.3.1 Frequency](#4831-frequency)
+      [48.3.2 Clock Timing](#4832-clock-timing)
+      [48.3.3 Reset Timing](#4833-reset-timing)
+      [48.3.4 Wakeup Time](#4834-wakeup-time)
+      [48.3.5 NMI and IRQ Noise Filter](#4835-nmi-and-irq-noise-filter)
+      [48.3.6 I/O Ports, POEG, GPT, AGT, KINT, and ADC14 Trigger Timing](#4836-io-ports-poeg-gpt-agt-kint-and-adc14-trigger-timing)
+      [48.3.7 CAC Timing](#4837-cac-timing)
+      [48.3.8 SCI Timing](#4838-sci-timing)
+      [48.3.9 SPI Timing](#4839-spi-timing)
+      [48.3.10 IIC Timing](#48310-iic-timing)
+      [48.3.11 SSIE Timing](#48311-ssie-timing)
+      [48.3.12 CLKOUT Timing](#48312-clkout-timing)
+    [48.4 USB Characteristics](#484-usb-characteristics)
+      [48.4.1 USBFS Timing](#4841-usbfs-timing)
+      [48.4.2 USB External Supply](#4842-usb-external-supply)
+    [48.5 ADC14 Characteristics](#485-adc14-characteristics)
+    [48.6 DAC12 Characteristics](#486-dac12-characteristics)
+    [48.7 TSN Characteristics](#487-tsn-characteristics)
+    [48.8 OSC Stop Detect Characteristics](#488-osc-stop-detect-characteristics)
+    [48.9 POR and LVD Characteristics](#489-por-and-lvd-characteristics)
+    [48.10 VBATT Characteristics](#4810-vbatt-characteristics)
+    [48.11 CTSU Characteristics](#4811-ctsu-characteristics)
+    [48.12 Segment LCD Controller Characteristics](#4812-segment-lcd-controller-characteristics)
+      [48.12.1 Resistance Division Method](#48121-resistance-division-method)
+      [48.12.2 Internal Voltage Boosting Method](#48122-internal-voltage-boosting-method)
+      [48.12.3 Capacitor Split Method](#48123-capacitor-split-method)
+    [48.13 Comparator Characteristics](#4813-comparator-characteristics)
+    [48.14 OPAMP Characteristics](#4814-opamp-characteristics)
+    [48.15 Flash Memory Characteristics](#4815-flash-memory-characteristics)
+      [48.15.1 Code Flash Memory Characteristics](#48151-code-flash-memory-characteristics)
+      [48.15.2 Data Flash Memory Characteristics](#48152-data-flash-memory-characteristics)
+    [48.16 Boundary Scan](#4816-boundary-scan)
+    [48.17 Joint Test Action Group (JTAG)](#4817-joint-test-action-group-jtag)
+      [48.17.1 Serial Wire Debug (SWD)](#48171-serial-wire-debug-swd)
+[Appendix 1. Port States in Each Processing Mode](#appendix-1-port-states-in-each-processing-mode)
+[Appendix 2. Package Dimensions](#appendix-2-package-dimensions)
+[Appendix 3. I/O Registers](#appendix-3-io-registers)
+    [3.1 Peripheral Base Addresses](#31-peripheral-base-addresses)
+    [3.2 Access Cycles](#32-access-cycles)
+    [3.3 Register Descriptions](#33-register-descriptions)
+[Revision History](#revision-history)
 ## RA4M1 Group
 
 ## User’s Manua
