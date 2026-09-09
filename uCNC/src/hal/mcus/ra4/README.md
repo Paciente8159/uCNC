@@ -81,7 +81,7 @@ This backend targets tier 1 (direct register access) for GPIO, timers and SCI, w
 | RTC (1ms tick) | SysTick | SysTick_Handler | 8 |
 | SERVO (50Hz) | GPT162 (16-bit) | GPT2_CCMPA | 6 |
 | ONESHOT (timeout) | GPT163 (16-bit) | GPT3_CCMPA | 6 |
-| UART (primary) | SCI1 | SCI1_RXI / SCI1_TXI | 4 |
+| UART (primary) | SCI0 (UART_PORT) | SCI0_RXI / SCI0_TXI | 4 |
 
 ### Interrupt priority ordering
 
@@ -98,7 +98,7 @@ Priority order (lower number = higher priority):
 
 | Board | Stream | Peripheral | Pins |
 |-------|--------|-----------|------|
-| Arduino UNO R4 | UART | SCI1 | P101 (TX), P100 (RX) |
+| Arduino UNO R4 | UART | SCI0 | P101 (TX), P100 (RX) |
 
 ## 5. NVM strategy
 

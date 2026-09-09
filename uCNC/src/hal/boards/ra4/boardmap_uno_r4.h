@@ -90,13 +90,15 @@ extern "C"
 #define CS_RES_PORT 0 // PORT0
 #define CS_RES_ISR
 
-// Setup COM (UART) pins - SCI1 on P100(RX)/P101(TX)
+// Setup COM (UART) pins - SCI0 on P100(RX)/P101(TX) (UART_PORT defaults to 0)
 #define TX_BIT 1
 #define TX_PORT 1
 #define RX_BIT 0
 #define RX_PORT 1
 #define RX_PULLUP
-#define COM_UART 1
+// Pin mux to SCI0 (PmnPFS PSEL 00100b): P101 = TXD0, P100 = RXD0
+#define UART_TX_PSEL 0x04
+#define UART_RX_PSEL 0x04
 
 // Setup PWM (spindle)
 #define PWM0_BIT 3     // D3 (P103) - uses GPT compare output

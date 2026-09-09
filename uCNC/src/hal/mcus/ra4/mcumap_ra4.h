@@ -228,16 +228,17 @@ typedef struct
     volatile uint8_t  ACTR;       /* +0x1D: Adjustment Timing */
 } R_SCI0_Type;
 
-/* SCI base addresses (stride 0x20 per channel) */
+/* SCI base addresses (RA4M1 instantiates SCI0, SCI1, SCI2 and SCI9 only;
+ * channels 0-2 use a 0x20 stride, SCI9 sits at 0x40070120) */
 #define R_SCI0_BASE  0x40070000UL
 #define R_SCI1_BASE  0x40070020UL
 #define R_SCI2_BASE  0x40070040UL
-#define R_SCI3_BASE  0x40070060UL
+#define R_SCI9_BASE  0x40070120UL
 
 #define R_SCI0    ((R_SCI0_Type *) R_SCI0_BASE)
 #define R_SCI1    ((R_SCI0_Type *) R_SCI1_BASE)
 #define R_SCI2    ((R_SCI0_Type *) R_SCI2_BASE)
-#define R_SCI3    ((R_SCI0_Type *) R_SCI3_BASE)
+#define R_SCI9    ((R_SCI0_Type *) R_SCI9_BASE)
 
 /* R_MSTP_Type: Module Stop Control registers */
 typedef struct
@@ -251,7 +252,10 @@ typedef struct
 
 #define R_MSTP    ((R_MSTP_Type *)(0x40047000UL - 4UL))
 
+#define R_MSTP_SCI0       (1UL << 31)  /* MSTPCRB bit 31 */
 #define R_MSTP_SCI1       (1UL << 30)  /* MSTPCRB bit 30 */
+#define R_MSTP_SCI2       (1UL << 29)  /* MSTPCRB bit 29 */
+#define R_MSTP_SCI9       (1UL << 22)  /* MSTPCRB bit 22 */
 #define R_MSTP_GPT_LOWER  (1UL << 5)   /* MSTPCRD bit 5 (GPT2-7) */
 #define R_MSTP_GPT_HIGHER (1UL << 6)   /* MSTPCRD bit 6 (GPT0-1) */
 #define R_MSTP_GPT(n)     (1UL << (31 - (n))) /* MSTPCRE bit 31-n (GPT0..GPT9) */
@@ -1600,24 +1604,112 @@ typedef struct
 /* Section 11: Peripheral configuration blocks                              */
 /* ======================================================================== */
 
-/* --- UART1 (SCI1) Configuration --- */
+/* --- UART1 (SCI instance selected by UART_PORT) Configuration --- */
 #ifdef MCU_HAS_UART
-/* SCI1 IRQ numbers from RA4M1 vector table (fixed NVIC slots) */
-#define SCI1_RXI_IRQn  ((IRQn_Type)22)
-#define SCI1_TXI_IRQn  ((IRQn_Type)23)
-#define SCI1_TEI_IRQn  ((IRQn_Type)24)
-#define SCI1_ERI_IRQn  ((IRQn_Type)25)
+/* RA4M1 instantiates SCI0, SCI1, SCI2 and SCI9. Select the instance used
+ * as UART1 through UART_PORT (defaults to SCI0). */
+#ifndef UART_PORT
+#define UART_PORT 0
+#endif
+#if (UART_PORT == 0)
+#define COM_UART R_SCI0
+#elif (UART_PORT == 1)
+#define COM_UART R_SCI1
+#elif (UART_PORT == 2)
+#define COM_UART R_SCI2
+#elif (UART_PORT == 9)
+#define COM_UART R_SCI9
+#else
+#error "UART_PORT (UART1 SCI instance) must be 0, 1, 2 or 9 on RA4M1"
+#endif
+/* ISR handler names (installed by mcu_ra4.c in the RAM vector table) */
+#define MCU_SERIAL_ISR      __helper__(SCI, UART_PORT, _RXI_IRQHandler)
+#define MCU_SERIAL_TXI_ISR  __helper__(SCI, UART_PORT, _TXI_IRQHandler)
+#define MCU_SERIAL_TEI_ISR  __helper__(SCI, UART_PORT, _TEI_IRQHandler)
+#define MCU_SERIAL_ERI_ISR  __helper__(SCI, UART_PORT, _ERI_IRQHandler)
 /* Register access macros */
-#define COM_UART    R_SCI1
-#define MCU_SERIAL_ISR  SCI1_RXI_IRQHandler
 #define COM_OUTREG  (COM_UART)->TDR
 #define COM_INREG   (COM_UART)->RDR
+/* UART1 NVIC slots. RA4M1 IRQ slots are programmable through ICU.IELSRn,
+ * so the four SCI interrupt vectors (RXI/TXI/TEI/ERI) are mapped here. */
+#define SCI_RXI_IRQn  ((IRQn_Type)22)
+#define SCI_TXI_IRQn  ((IRQn_Type)23)
+#define SCI_TEI_IRQn  ((IRQn_Type)24)
+#define SCI_ERI_IRQn  ((IRQn_Type)25)
 /* Baud calculation: BRR = PCLKB / (16 * BAUDRATE) - 1, for async UART */
 #define MCU_BAUD_CALC(baud)  ((uint8_t)(((MCU_PCLKB) / (16UL * (uint32_t)(baud))) - 1UL))
 #ifndef BAUDRATE
 #define BAUDRATE 115200UL
 #endif
+/* Optional pin mux: define UART_TX_PSEL/UART_RX_PSEL (PmnPFS PSEL codes) in
+ * the boardmap to route TX/RX to the selected SCI instance. */
+#if defined(UART_TX_PSEL) && defined(UART_RX_PSEL)
+#define mcu_uart_pin_mux() \
+	do { \
+		__ra_pfs_pin__(TX).PmnPFS_b.PSEL = (UART_TX_PSEL); \
+		__ra_pfs_pin__(TX).PmnPFS_b.PMR  = 1; \
+		__ra_pfs_pin__(RX).PmnPFS_b.PSEL = (UART_RX_PSEL); \
+		__ra_pfs_pin__(RX).PmnPFS_b.PMR  = 1; \
+	} while(0)
+#elif defined(UART_TX_PSEL) || defined(UART_RX_PSEL)
+#error "UART1 pin mux needs both UART_TX_PSEL and UART_RX_PSEL"
+#else
+#define mcu_uart_pin_mux()
+#endif
 #endif /* MCU_HAS_UART */
+
+/* --- UART2 (SCI instance selected by UART2_PORT) Configuration --- */
+#ifdef MCU_HAS_UART2
+#ifndef UART2_PORT
+#define UART2_PORT 9
+#endif
+#if (UART2_PORT == 0)
+#define COM2_UART R_SCI0
+#elif (UART2_PORT == 1)
+#define COM2_UART R_SCI1
+#elif (UART2_PORT == 2)
+#define COM2_UART R_SCI2
+#elif (UART2_PORT == 9)
+#define COM2_UART R_SCI9
+#else
+#error "UART2_PORT (UART2 SCI instance) must be 0, 1, 2 or 9 on RA4M1"
+#endif
+/* UART1 and UART2 must use different SCI instances */
+#if (UART_PORT == UART2_PORT)
+#error "UART_PORT and UART2_PORT must select different SCI instances on RA4M1"
+#endif
+/* ISR handler names (installed by mcu_ra4.c in the RAM vector table) */
+#define MCU_SERIAL2_ISR     __helper__(SCI, UART2_PORT, _RXI_IRQHandler)
+#define MCU_SERIAL2_TXI_ISR __helper__(SCI, UART2_PORT, _TXI_IRQHandler)
+#define MCU_SERIAL2_TEI_ISR __helper__(SCI, UART2_PORT, _TEI_IRQHandler)
+#define MCU_SERIAL2_ERI_ISR __helper__(SCI, UART2_PORT, _ERI_IRQHandler)
+/* Register access macros */
+#define COM2_OUTREG (COM2_UART)->TDR
+#define COM2_INREG  (COM2_UART)->RDR
+/* UART2 NVIC slots (programmable through ICU.IELSRn, see UART1 block) */
+#define SCI2_RXI_IRQn  ((IRQn_Type)26)
+#define SCI2_TXI_IRQn  ((IRQn_Type)27)
+#define SCI2_TEI_IRQn  ((IRQn_Type)28)
+#define SCI2_ERI_IRQn  ((IRQn_Type)29)
+#ifndef BAUDRATE2
+#define BAUDRATE2 BAUDRATE
+#endif
+/* Optional pin mux: define UART2_TX_PSEL/UART2_RX_PSEL (PmnPFS PSEL codes)
+ * in the boardmap to route TX2/RX2 to the selected SCI instance. */
+#if defined(UART2_TX_PSEL) && defined(UART2_RX_PSEL)
+#define mcu_uart2_pin_mux() \
+	do { \
+		__ra_pfs_pin__(TX2).PmnPFS_b.PSEL = (UART2_TX_PSEL); \
+		__ra_pfs_pin__(TX2).PmnPFS_b.PMR  = 1; \
+		__ra_pfs_pin__(RX2).PmnPFS_b.PSEL = (UART2_RX_PSEL); \
+		__ra_pfs_pin__(RX2).PmnPFS_b.PMR  = 1; \
+	} while(0)
+#elif defined(UART2_TX_PSEL) || defined(UART2_RX_PSEL)
+#error "UART2 pin mux needs both UART2_TX_PSEL and UART2_RX_PSEL"
+#else
+#define mcu_uart2_pin_mux()
+#endif
+#endif /* MCU_HAS_UART2 */
 
 /* --- Timer allocation: ITP, ONESHOT, PWM --- */
 
@@ -1764,7 +1856,8 @@ typedef struct
 /* ======================================================================== */
 /* Section 14: Stream plumbing                                              */
 /* ======================================================================== */
-/* Primary stream is UART1 (SCI1) on UNO R4 Minima (P100 RX, P101 TX).     */
+/* Primary stream is UART1 on the SCI instance selected by UART_PORT
+ * (UNO R4 Minima: SCI0 on P100 RX, P101 TX).                                 */
 /* mcu_getc/mcu_putc overrides use buffered UART I/O from mcu_ra4.c.       */
 
 #ifdef __cplusplus

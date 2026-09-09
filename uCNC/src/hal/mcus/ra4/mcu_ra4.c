@@ -35,13 +35,59 @@
 #define ELC_EVENT_GPT0_OVERFLOW 93
 #define ELC_EVENT_GPT1_OVERFLOW 101
 #define ELC_EVENT_GPTn_OVERFLOW(n)  (ELC_EVENT_GPT0_OVERFLOW + ((n) * 8))
-#define ELC_EVENT_SCI1_RXI      158
-#define ELC_EVENT_SCI1_TXI      159
-#define ELC_EVENT_SCI1_TEI      160
-#define ELC_EVENT_SCI1_ERI      161
+
+/* SCI event numbers for the instance selected as UART1 (UART_PORT).
+ * RA4M1 instantiates SCI0, SCI1, SCI2 and SCI9; the ICU event numbers are
+ * not contiguous across instances, hence the explicit per-instance mapping
+ * (RXI + 1/2/3 = TXI/TEI/ERI). */
+#ifdef MCU_HAS_UART
+#if (UART_PORT == 0)
+#define MCU_SCI_RXI_EVENT 152
+#elif (UART_PORT == 1)
+#define MCU_SCI_RXI_EVENT 158
+#elif (UART_PORT == 2)
+#define MCU_SCI_RXI_EVENT 163
+#else /* UART_PORT == 9 */
+#define MCU_SCI_RXI_EVENT 168
+#endif
+#define ELC_EVENT_SCI_RXI  (MCU_SCI_RXI_EVENT)
+#define ELC_EVENT_SCI_TXI  (MCU_SCI_RXI_EVENT + 1)
+#define ELC_EVENT_SCI_TEI  (MCU_SCI_RXI_EVENT + 2)
+#define ELC_EVENT_SCI_ERI  (MCU_SCI_RXI_EVENT + 3)
+#endif /* MCU_HAS_UART */
+
+#ifdef MCU_HAS_UART2
+#if (UART2_PORT == 0)
+#define MCU_SCI2_RXI_EVENT 152
+#elif (UART2_PORT == 1)
+#define MCU_SCI2_RXI_EVENT 158
+#elif (UART2_PORT == 2)
+#define MCU_SCI2_RXI_EVENT 163
+#else /* UART2_PORT == 9 */
+#define MCU_SCI2_RXI_EVENT 168
+#endif
+#define ELC_EVENT_SCI2_RXI  (MCU_SCI2_RXI_EVENT)
+#define ELC_EVENT_SCI2_TXI  (MCU_SCI2_RXI_EVENT + 1)
+#define ELC_EVENT_SCI2_TEI  (MCU_SCI2_RXI_EVENT + 2)
+#define ELC_EVENT_SCI2_ERI  (MCU_SCI2_RXI_EVENT + 3)
+#endif /* MCU_HAS_UART2 */
+
+#if defined(MCU_HAS_UART) || defined(MCU_HAS_UART2)
+/* Release the module-stop state for a given SCI instance */
+static void mcu_sci_clock_enable(uint8_t sci)
+{
+	switch (sci)
+	{
+	case 0: R_MSTP->MSTPCRB &= ~R_MSTP_SCI0; break;
+	case 1: R_MSTP->MSTPCRB &= ~R_MSTP_SCI1; break;
+	case 2: R_MSTP->MSTPCRB &= ~R_MSTP_SCI2; break;
+	case 9: R_MSTP->MSTPCRB &= ~R_MSTP_SCI9; break;
+	}
+}
+#endif
 
 /* ======================================================================== */
-/* UART1 (SCI1) buffered I/O                                                */
+/* UART1 buffered I/O on the SCI instance selected by UART_PORT             */
 /* ======================================================================== */
 #ifdef MCU_HAS_UART
 
@@ -51,8 +97,8 @@
 DECL_BUFFER(uint8_t, uart_tx, UART_TX_BUFFER_SIZE);
 DECL_BUFFER(uint8_t, uart_rx, RX_BUFFER_SIZE);
 
-/* SCI1 UART interrupt handlers */
-void SCI1_RXI_IRQHandler(void)
+/* UART1 interrupt handlers (ISR names resolved via MCU_SERIAL*_ISR) */
+void MCU_SERIAL_ISR(void)
 {
 	uint8_t c = COM_INREG;
 #if !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
@@ -68,7 +114,7 @@ void SCI1_RXI_IRQHandler(void)
 #endif
 }
 
-void SCI1_TXI_IRQHandler(void)
+void MCU_SERIAL_TXI_ISR(void)
 {
 	uint8_t c = 0;
 	if (!BUFFER_TRY_DEQUEUE(uart_tx, &c))
@@ -80,40 +126,40 @@ void SCI1_TXI_IRQHandler(void)
 	COM_OUTREG = c;
 }
 
-void SCI1_TEI_IRQHandler(void)
+void MCU_SERIAL_TEI_ISR(void)
 {
 	/* Transmit end - no action needed in basic implementation */
 }
 
-void SCI1_ERI_IRQHandler(void)
+void MCU_SERIAL_ERI_ISR(void)
 {
 	/* Error handler - read SSR to clear error flags */
 	uint8_t ssr = COM_UART->SSR;
 	(void)ssr;
 }
 
-/* Install SCI1 UART handlers into RAM vector table */
-static void mcu_install_sci1_handlers(void)
+/* Install UART1 handlers into the RAM vector table */
+static void mcu_install_uart_handlers(void)
 {
 	uint32_t *vt = (uint32_t *)SCB->VTOR;
-	vt[16 + 22] = (uint32_t)SCI1_RXI_IRQHandler;
-	vt[16 + 23] = (uint32_t)SCI1_TXI_IRQHandler;
-	vt[16 + 24] = (uint32_t)SCI1_TEI_IRQHandler;
-	vt[16 + 25] = (uint32_t)SCI1_ERI_IRQHandler;
+	vt[16 + (uint32_t)SCI_RXI_IRQn] = (uint32_t)MCU_SERIAL_ISR;
+	vt[16 + (uint32_t)SCI_TXI_IRQn] = (uint32_t)MCU_SERIAL_TXI_ISR;
+	vt[16 + (uint32_t)SCI_TEI_IRQn] = (uint32_t)MCU_SERIAL_TEI_ISR;
+	vt[16 + (uint32_t)SCI_ERI_IRQn] = (uint32_t)MCU_SERIAL_ERI_ISR;
 }
 
-/* SCI1 UART initialization (async mode, 8N1) */
+/* UART1 initialization (async mode, 8N1) */
 void mcu_uart_init(void)
 {
 	volatile uint32_t delay;
 
-	/* Enable SCI1 module stop clock */
-	R_MSTP->MSTPCRB &= ~R_MSTP_SCI1;
+	/* Enable the selected SCI instance clock (module stop clear) */
+	mcu_sci_clock_enable(UART_PORT);
 
 	/* Small delay for clock stabilization */
 	for (delay = 0; delay < 100; delay++);
 
-	/* Configure SCI1 for async UART mode (8N1) */
+	/* Configure the SCI for async UART mode (8N1) */
 	/* SMR: 0x00 = async, 8-bit data, no parity, 1 stop bit */
 	COM_UART->SMR = 0x00;
 
@@ -134,6 +180,10 @@ void mcu_uart_init(void)
 
 	/* Clear SSR flags (write 1 to clear ORER, FER, PER) */
 	COM_UART->SSR |= (1 << 5) | (1 << 4) | (1 << 3);
+
+	/* Route TX/RX pins to the selected SCI instance (no-op when the board
+	 * does not define UART_TX_PSEL/UART_RX_PSEL) */
+	mcu_uart_pin_mux();
 }
 
 uint8_t mcu_uart_getc(void)
@@ -166,6 +216,132 @@ void mcu_uart_flush(void)
 }
 
 #endif /* MCU_HAS_UART */
+
+/* ======================================================================== */
+/* UART2 buffered I/O on the SCI instance selected by UART2_PORT            */
+/* ======================================================================== */
+#ifdef MCU_HAS_UART2
+
+#ifndef UART2_TX_BUFFER_SIZE
+#define UART2_TX_BUFFER_SIZE 64
+#endif
+DECL_BUFFER(uint8_t, uart2_tx, UART2_TX_BUFFER_SIZE);
+DECL_BUFFER(uint8_t, uart2_rx, RX_BUFFER_SIZE);
+
+/* UART2 interrupt handlers (ISR names resolved via MCU_SERIAL2*_ISR) */
+void MCU_SERIAL2_ISR(void)
+{
+	uint8_t c = COM2_INREG;
+#if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
+	if (mcu_com_rx_cb(c))
+	{
+		if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
+		{
+			STREAM_OVF(c);
+		}
+	}
+#else
+	mcu_uart2_rx_cb(c);
+#endif
+}
+
+void MCU_SERIAL2_TXI_ISR(void)
+{
+	uint8_t c = 0;
+	if (!BUFFER_TRY_DEQUEUE(uart2_tx, &c))
+	{
+		/* TX buffer empty - disable TX interrupt */
+		COM2_UART->SCR &= ~(1 << 7); /* clear TIE (bit 7 of SCR) */
+		return;
+	}
+	COM2_OUTREG = c;
+}
+
+void MCU_SERIAL2_TEI_ISR(void)
+{
+	/* Transmit end - no action needed in basic implementation */
+}
+
+void MCU_SERIAL2_ERI_ISR(void)
+{
+	/* Error handler - read SSR to clear error flags */
+	uint8_t ssr = COM2_UART->SSR;
+	(void)ssr;
+}
+
+/* Install UART2 handlers into the RAM vector table */
+static void mcu_install_uart2_handlers(void)
+{
+	uint32_t *vt = (uint32_t *)SCB->VTOR;
+	vt[16 + (uint32_t)SCI2_RXI_IRQn] = (uint32_t)MCU_SERIAL2_ISR;
+	vt[16 + (uint32_t)SCI2_TXI_IRQn] = (uint32_t)MCU_SERIAL2_TXI_ISR;
+	vt[16 + (uint32_t)SCI2_TEI_IRQn] = (uint32_t)MCU_SERIAL2_TEI_ISR;
+	vt[16 + (uint32_t)SCI2_ERI_IRQn] = (uint32_t)MCU_SERIAL2_ERI_ISR;
+}
+
+/* UART2 initialization (async mode, 8N1) */
+void mcu_uart2_init(void)
+{
+	volatile uint32_t delay;
+
+	/* Enable the selected SCI instance clock (module stop clear) */
+	mcu_sci_clock_enable(UART2_PORT);
+
+	/* Small delay for clock stabilization */
+	for (delay = 0; delay < 100; delay++);
+
+	/* Configure the SCI for async UART mode (8N1) */
+	COM2_UART->SMR = 0x00;
+	COM2_UART->SEMR = 0x00;
+	COM2_UART->SNFR = 0x00;
+
+	/* Set baud rate */
+	COM2_UART->BRR = MCU_BAUD_CALC(BAUDRATE2);
+
+	/* Wait for at least 1 bit period after BRR change */
+	for (delay = 0; delay < 1000; delay++);
+
+	/* SCR: enable TX, RX, RX interrupt (TE=bit4, RE=bit5, RIE=bit6) */
+	COM2_UART->SCR = (1 << 4) | (1 << 5) | (1 << 6);
+
+	/* Clear SSR flags (write 1 to clear ORER, FER, PER) */
+	COM2_UART->SSR |= (1 << 5) | (1 << 4) | (1 << 3);
+
+	/* Route TX2/RX2 pins to the selected SCI instance (no-op when the
+	 * board does not define UART2_TX_PSEL/UART2_RX_PSEL) */
+	mcu_uart2_pin_mux();
+}
+
+uint8_t mcu_uart2_getc(void)
+{
+	uint8_t c = 0;
+	BUFFER_DEQUEUE(uart2_rx, &c);
+	return c;
+}
+
+uint8_t mcu_uart2_available(void)
+{
+	return BUFFER_READ_AVAILABLE(uart2_rx);
+}
+
+void mcu_uart2_clear(void)
+{
+	BUFFER_CLEAR(uart2_rx);
+}
+
+void mcu_uart2_putc(uint8_t c)
+{
+	BUFFER_ENQUEUE(uart2_tx, &c);
+	/* Enable TX interrupt (TIE=bit 7 of SCR) */
+	COM2_UART->SCR |= (1 << 7);
+}
+
+void mcu_uart2_flush(void)
+{
+	while (BUFFER_READ_AVAILABLE(uart2_tx));
+}
+
+#endif /* MCU_HAS_UART2 */
 
 /* ======================================================================== */
 /* ITP (step pulse generation) via GPT0 overflow                            */
@@ -242,7 +418,10 @@ void mcu_init(void)
 	/* Install ISR handlers into RAM vector table */
 	mcu_install_itp_handler();
 #ifdef MCU_HAS_UART
-	mcu_install_sci1_handlers();
+	mcu_install_uart_handlers();
+#endif
+#ifdef MCU_HAS_UART2
+	mcu_install_uart2_handlers();
 #endif
 #ifdef MCU_HAS_ONESHOT_TIMER
 	mcu_install_oneshot_handler();
@@ -254,6 +433,20 @@ void mcu_init(void)
 #ifdef MCU_HAS_ONESHOT_TIMER
 	/* ONESHOT: Route GPT3 overflow to ONESHOT_IRQn slot */
 	ICU_IELS_SET(ONESHOT_IRQn, ELC_EVENT_GPTn_OVERFLOW(ONESHOT_TIMER));
+#endif
+#ifdef MCU_HAS_UART
+	/* UART1: route the selected SCI events to the UART1 NVIC slots */
+	ICU_IELS_SET(SCI_RXI_IRQn, ELC_EVENT_SCI_RXI);
+	ICU_IELS_SET(SCI_TXI_IRQn, ELC_EVENT_SCI_TXI);
+	ICU_IELS_SET(SCI_TEI_IRQn, ELC_EVENT_SCI_TEI);
+	ICU_IELS_SET(SCI_ERI_IRQn, ELC_EVENT_SCI_ERI);
+#endif
+#ifdef MCU_HAS_UART2
+	/* UART2: route the selected SCI events to the UART2 NVIC slots */
+	ICU_IELS_SET(SCI2_RXI_IRQn, ELC_EVENT_SCI2_RXI);
+	ICU_IELS_SET(SCI2_TXI_IRQn, ELC_EVENT_SCI2_TXI);
+	ICU_IELS_SET(SCI2_TEI_IRQn, ELC_EVENT_SCI2_TEI);
+	ICU_IELS_SET(SCI2_ERI_IRQn, ELC_EVENT_SCI2_ERI);
 #endif
 
 	/* Enable GPT clock (module stop clear) */
@@ -281,6 +474,28 @@ void mcu_init(void)
 #ifdef MCU_HAS_ONESHOT_TIMER
 	NVIC_SetPriority(ONESHOT_IRQn, NVIC_ONESHOT_IRQ_Pri);
 	NVIC_EnableIRQ(ONESHOT_IRQn);
+#endif
+#ifdef MCU_HAS_UART
+	/* Enable NVIC for UART1 interrupts */
+	NVIC_SetPriority(SCI_RXI_IRQn, NVIC_UART_IRQ_Pri);
+	NVIC_EnableIRQ(SCI_RXI_IRQn);
+	NVIC_SetPriority(SCI_TXI_IRQn, NVIC_UART_IRQ_Pri);
+	NVIC_EnableIRQ(SCI_TXI_IRQn);
+	NVIC_SetPriority(SCI_TEI_IRQn, NVIC_UART_IRQ_Pri);
+	NVIC_EnableIRQ(SCI_TEI_IRQn);
+	NVIC_SetPriority(SCI_ERI_IRQn, NVIC_UART_IRQ_Pri);
+	NVIC_EnableIRQ(SCI_ERI_IRQn);
+#endif
+#ifdef MCU_HAS_UART2
+	/* Enable NVIC for UART2 interrupts */
+	NVIC_SetPriority(SCI2_RXI_IRQn, NVIC_UART_IRQ_Pri);
+	NVIC_EnableIRQ(SCI2_RXI_IRQn);
+	NVIC_SetPriority(SCI2_TXI_IRQn, NVIC_UART_IRQ_Pri);
+	NVIC_EnableIRQ(SCI2_TXI_IRQn);
+	NVIC_SetPriority(SCI2_TEI_IRQn, NVIC_UART_IRQ_Pri);
+	NVIC_EnableIRQ(SCI2_TEI_IRQn);
+	NVIC_SetPriority(SCI2_ERI_IRQn, NVIC_UART_IRQ_Pri);
+	NVIC_EnableIRQ(SCI2_ERI_IRQn);
 #endif
 
 	/* Run IO initialization */
