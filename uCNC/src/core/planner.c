@@ -23,6 +23,12 @@
 #include <math.h>
 #include <float.h>
 
+#ifdef ENABLE_PLANNER_DEBUG
+#define DBGLOG DBGMSG
+#else
+#define DBGLOG(fmt, ...) ((void)0)
+#endif
+
 static planner_block_t planner_data[PLANNER_BUFFER_SIZE];
 static uint8_t planner_data_write;
 static volatile uint8_t planner_data_read;
@@ -188,6 +194,7 @@ void planner_add_line(motion_data_t *block_data)
 
 	// advances the buffer
 	planner_add_block();
+	DBGLOG("[PLANNER] block added idx=%hu blocks=%hu cos_theta=%.3f entry_max=%.3f", index, planner_data_blocks, cos_theta, planner_data[index].entry_max_feed_sqr);
 }
 
 /*
@@ -247,6 +254,7 @@ void planner_discard_block(void)
 
 	// syncs blocks feedrates
 	planner_data[index].entry_feed_sqr = planner_data[prev_index].entry_feed_sqr;
+	memset(&planner_data[prev_index], 0, sizeof(planner_data[prev_index]));
 
 	blocks--;
 #if TOOL_COUNT > 0
@@ -259,6 +267,7 @@ void planner_discard_block(void)
 
 	planner_data_blocks = blocks;
 	planner_data_read = index;
+	DBGLOG("[PLANNER] block discarded read=%hu blocks=%hu", index, blocks);
 }
 
 static uint8_t planner_buffer_next(uint8_t index)
@@ -302,10 +311,8 @@ static void planner_buffer_clear(void)
 void planner_init(void)
 {
 #ifdef FORCE_GLOBALS_TO_0
-#if TOOL_COUNT > 0
-	planner_state.planner_spindle = 0;
-	planner_state.coolant = 0;
-#endif
+	memset(planner_data, 0, sizeof(planner_data));
+	memset(&g_planner_state, 0, sizeof(g_planner_state));
 #endif
 	planner_buffer_clear();
 	planner_feed_ovr(100);
@@ -349,7 +356,7 @@ float planner_get_block_exit_speed_sqr(void)
 	float exit_speed_sqr = planner_data[next].entry_feed_sqr;
 	float rapid_feed_sqr = planner_data[next].rapid_feed_sqr;
 
-	if (planner_data[next].planner_flags.bit.feed_override)
+	if (planner_data[next].planner_flags.bit.ovr_bypass == 0)
 	{
 		if (g_planner_state.feed_override != 100)
 		{
@@ -410,7 +417,7 @@ float planner_get_block_top_speed(float exit_speed_sqr)
 
 	float rapid_feed_sqr = planner_data[index].rapid_feed_sqr;
 	float target_speed_sqr = planner_data[index].feed_sqr;
-	if (planner_data[index].planner_flags.bit.feed_override)
+	if (planner_data[index].planner_flags.bit.ovr_bypass == 0)
 	{
 		if (g_planner_state.feed_override != 100)
 		{
@@ -449,11 +456,11 @@ int16_t planner_get_spindle_speed(float scale)
 	{
 		float scaled_spindle = (float)g_planner_state.spindle_speed;
 		bool neg = (g_planner_state.state_flags.bit.spindle_running == 2);
-		if ((g_settings.tool_mode & PWM_VARPOWER_MODE) && neg) // scales pwm power only if invert is active (M4)
+		if ((tool_get_mode() & PWM_VARPOWER_MODE) && neg) // scales pwm power only if invert is active (M4)
 		{
 			scaled_spindle *= scale; // scale calculated in laser mode (otherwise scale is always 1)
 		}
-		if (planner_data[planner_data_read].planner_flags.bit.feed_override && g_planner_state.spindle_speed_override != 100)
+		if ((g_planner_state.state_flags.bit.ovr_bypass == 0) && (g_planner_state.spindle_speed_override != 100))
 		{
 			scaled_spindle = 0.01f * (float)g_planner_state.spindle_speed_override * scaled_spindle;
 		}
@@ -472,6 +479,8 @@ static void planner_recalculate(void)
 	uint8_t last = planner_data_write;
 	uint8_t first = planner_data_read;
 	uint8_t block = last;
+
+	DBGLOG("[PLANNER] recalc first=%hu last=%hu blocks=%hu", first, last, planner_data_blocks);
 
 	// starts in the last added block
 	// calculates the maximum entry speed of the block so that it can do a full stop in the end
@@ -576,7 +585,7 @@ void planner_spindle_ovr(uint8_t value)
 
 void planner_spindle_ovr_toggle(void)
 {
-	if (cnc_get_exec_state(EXEC_HOLD | EXEC_DOOR | EXEC_RUN) == EXEC_HOLD) // only available if a TRUE hold is active
+	if (cnc_get_exec_state(EXEC_MOTIONS | EXEC_DOOR) == EXEC_HOLD) // only available if a TRUE hold is active
 	{
 		uint8_t newstate = spindle_override ^ g_planner_state.state_flags.bit.spindle_running;
 		if (newstate)
@@ -589,7 +598,7 @@ void planner_spindle_ovr_toggle(void)
 
 void planner_spindle_ovr_reset(void)
 {
-	if (cnc_get_exec_state(EXEC_HOLD | EXEC_DOOR | EXEC_RUN) == EXEC_HOLD) // only available if a TRUE hold is active
+	if (cnc_get_exec_state(EXEC_MOTIONS | EXEC_DOOR) == EXEC_HOLD) // only available if a TRUE hold is active
 	{
 		if (g_planner_state.state_flags.bit.spindle_running && spindle_override)
 		{

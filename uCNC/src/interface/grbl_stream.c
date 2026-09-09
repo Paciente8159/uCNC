@@ -49,8 +49,8 @@ DECL_GRBL_STREAM(uart2_grbl_stream, mcu_uart2_getc, mcu_uart2_available, mcu_uar
 #if defined(MCU_HAS_USB) && !defined(DETACH_USB_FROM_MAIN_PROTOCOL)
 DECL_GRBL_STREAM(usb_grbl_stream, mcu_usb_getc, mcu_usb_available, mcu_usb_clear, mcu_usb_putc, mcu_usb_flush);
 #endif
-#if defined(MCU_HAS_WIFI) && !defined(DETACH_WIFI_FROM_MAIN_PROTOCOL)
-DECL_GRBL_STREAM(wifi_grbl_stream, mcu_wifi_getc, mcu_wifi_available, mcu_wifi_clear, mcu_wifi_putc, mcu_wifi_flush);
+#if defined(ENABLE_SOCKETS) && !defined(DETACH_TELNET_FROM_MAIN_PROTOCOL)
+DECL_GRBL_STREAM(telnet_grbl_stream, mcu_telnet_getc, mcu_telnet_available, mcu_telnet_clear, mcu_telnet_putc, mcu_telnet_flush);
 #endif
 #if defined(MCU_HAS_BLUETOOTH) && !defined(DETACH_BLUETOOTH_FROM_MAIN_PROTOCOL)
 DECL_GRBL_STREAM(bt_grbl_stream, mcu_bt_getc, mcu_bt_available, mcu_bt_clear, mcu_bt_putc, mcu_bt_flush);
@@ -74,8 +74,8 @@ void grbl_stream_init(void)
 #if defined(MCU_HAS_USB) && !defined(DETACH_USB_FROM_MAIN_PROTOCOL)
 	grbl_stream_register(&usb_grbl_stream);
 #endif
-#if defined(MCU_HAS_WIFI) && !defined(DETACH_WIFI_FROM_MAIN_PROTOCOL)
-	grbl_stream_register(&wifi_grbl_stream);
+#if defined(ENABLE_SOCKETS) && !defined(DETACH_TELNET_FROM_MAIN_PROTOCOL)
+	grbl_stream_register(&telnet_grbl_stream);
 #endif
 #if defined(MCU_HAS_BLUETOOTH) && !defined(DETACH_BLUETOOTH_FROM_MAIN_PROTOCOL)
 	grbl_stream_register(&bt_grbl_stream);
@@ -90,7 +90,7 @@ void grbl_stream_init(void)
 }
 
 #ifdef ENABLE_DEBUG_STREAM
-static void debug_flush(void)
+void debug_flush(void)
 {
 	while (grbl_stream_busy())
 	{
@@ -153,6 +153,8 @@ void grbl_stream_register(grbl_stream_t *stream)
 		p->next = stream;
 		p->next->next = NULL;
 	}
+
+	stream->registered = true;
 }
 
 // on cleanup sets the correct stdin streams
@@ -216,6 +218,7 @@ grbl_stream_t *grbl_stream_readonly(grbl_stream_getc_cb getc_cb, grbl_stream_ava
 }
 
 static uint16_t stream_eeprom_address;
+static bool stream_eeprom_muted;
 static uint8_t stream_eeprom_getc(void)
 {
 	uint8_t c = mcu_eeprom_getc(stream_eeprom_address++);
@@ -225,14 +228,16 @@ static uint8_t stream_eeprom_getc(void)
 		c = EOL;
 	}
 #endif
-	grbl_stream_putc((c != EOL) ? c : ':');
+	if (!stream_eeprom_muted)
+		grbl_stream_putc((c != EOL) ? c : ':');
 
 	return c;
 }
 
-void grbl_stream_eeprom(uint16_t address)
+void grbl_stream_eeprom(uint16_t address, bool muted)
 {
 	stream_eeprom_address = address;
+	stream_eeprom_muted = muted;
 	grbl_stream_readonly(&stream_eeprom_getc, NULL, NULL);
 }
 

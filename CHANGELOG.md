@@ -6,6 +6,75 @@
 
 # Changelog
 
+## [1.17.0] - 02-09-2026
+
+### Added
+
+- new network TCP socket based API. This new API provides a common Telnet/WebSocket/Http and raw socket implementation exposing an hardware API backend that can be implemented using LwIP/BSD/other network libraries. (#923) (#982) (#984) (#983)
+- added new unity tests suite to perform some compliance Grbl protocol checkings. These unity tests are also executed on commits and PR merging checks (#988)
+- new motion segmentation strategies an new Lathe motion mode to allow iter-dependent axis/spindle non-linear motions (#966)
+
+### Changed
+
+- reworked initialization calls to align Debug streams, settings loading, network initialization and server listeners startup (#980)
+- minor changes to the encoder module to allow hardware independency on all encoders (#977)
+
+### Fixed
+
+- fixed STM32 PIO build issues due to deleted/erased versions of certain framework packets (#989)
+- fixed ESP8266 wifi random crash due to WiFi task starving (#984)
+- several parser/error report fixes based on the unity tests results (#988)
+
+
+## [1.16.6] - 23-07-2026
+
+[@nakanotakuo](https://github.com/nakanotakuo)	- added MKS Monster8 V2 board configuration (#976) and fixes (#971)(#974) and (#975)
+
+### Added
+
+- added MKS Monster8 V2 board configuration (#976)
+
+### Fixed
+
+- Fixed AVR limits ISR mapping (#971)
+- Fixed IO control conditional filter assertion (#973)
+- Fixed planner compilation with FORCE_GLOBALS_TO_0 (#974)
+- Forced default settings values to be loaded on EEPROM read fail (#975)
+
+## [1.16.5] - 03-06-2026
+
+### Fixed
+
+- Force tool stop on safety door open (#967)
+- Fixed realtime tool speed override (#965)
+- Modified override bypass logic (M48/M49) and fixed tool speed override intergration (#964)
+
+## [1.16.4] - 16-05-2026
+
+### Fixed
+
+- Reverted PendSV task on RP2040 since this caused the MCU to freeze (#963)
+
+## [1.16.3] - 13-05-2026
+
+### Added
+
+- added mellow Fly D5 board configuration (#955)
+- new option to unlock extra status message states (Dwell, Probe, Hold:2) (#961)
+
+### Changed
+
+- added missing hard defaults configurations (#954)
+- full internal CNC state and interlocking revision (#961)
+- modified ARM RTC callback to a low priority event (#951)
+
+### Fixed
+
+- fixed SAMD21 input ISR configuration (#956)
+- fixed SAMD21 PWM TCC configurations (#958)
+- fixed HOLD recalculation bug for segmented motions (#960)
+- fixed AVR UART2 TX ISR (unhadled ISR) (#962)
+
 ## [1.16.2] - 07-04-2026
 
 ### Changed
@@ -2066,6 +2135,12 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.17.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.17.0
+[1.16.6]: https://github.com/Paciente8159/uCNC/releases/tag/v1.16.6
+[1.16.5]: https://github.com/Paciente8159/uCNC/releases/tag/v1.16.5
+[1.16.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.16.4
+[1.16.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.16.3
+[1.16.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.16.2
 [1.16.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.16.1
 [1.16.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.16.0
 [1.15.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.15.0

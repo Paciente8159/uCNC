@@ -44,7 +44,7 @@ extern "C"
 		uint8_t reg;
 		struct
 		{
-			uint8_t feed_override : 1;
+			uint8_t ovr_bypass : 1;
 			uint8_t optimal : 1;
 			uint8_t synched : 1;
 #if TOOL_COUNT > 0
@@ -93,6 +93,7 @@ extern "C"
 #endif
 
 	void mc_init(void);
+	void mc_clear(bool preserve_tool);
 	bool mc_get_checkmode(void);
 	bool mc_toogle_checkmode(void);
 
@@ -135,6 +136,23 @@ extern "C"
 #endif
 
 #ifdef ENABLE_MOTION_CONTROL_MODULES
+	typedef struct mc_line_calc_segments_args_
+	{
+		uint32_t *line_segments;
+		float line_dist;
+		float *dir_vect;
+		uint32_t max_steps;
+	} mc_line_calc_segments_args_t;
+	// event_mc_line_calc_segments_handler
+	DECL_EVENT_HANDLER(mc_line_calc_segments);
+	typedef struct mc_line_segment_pre_args_
+	{
+		float *target;
+		int32_t *target_steps;
+		motion_data_t *block_data;
+	} mc_line_segment_pre_args_t;
+	// event_mc_line_segment_pre_handler
+	DECL_EVENT_HANDLER(mc_line_segment_pre);
 	// event_mc_line_segment_handler
 	DECL_EVENT_HANDLER(mc_line_segment);
 	// event_mc_home_start

@@ -553,16 +553,13 @@ DECL_MODULE(plasma_thc)
 #endif
 }
 
-static bool previous_mode;
-
 static void startup_code(void)
 {
 // force plasma off
 #if ASSERT_PIN(PLASMA_ON_OUTPUT)
 	io_clear_output(PLASMA_ON_OUTPUT);
 #endif
-	previous_mode = g_settings.tool_mode;
-	g_settings.tool_mode = PLASMA_THC_MODE;
+	tool_set_mode(PLASMA_THC_MODE);
 }
 
 static void shutdown_code(void)
@@ -571,7 +568,7 @@ static void shutdown_code(void)
 #if ASSERT_PIN(PLASMA_ON_OUTPUT)
 	io_clear_output(PLASMA_ON_OUTPUT);
 #endif
-	g_settings.tool_mode = previous_mode;
+	tool_reset_mode();
 }
 
 static void set_speed(int16_t value)

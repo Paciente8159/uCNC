@@ -167,10 +167,16 @@ void MCU_SERVO_ISR(void)
 
 #endif
 
+void PendSV_Handler(void)
+{
+	uint32_t millis = _millis;
+	mcu_rtc_cb(millis);
+}
+
 void MCU_RTC_ISR(void)
 {
 	_millis++;
-	mcu_rtc_cb((uint32_t)_millis);
+	SCB->ICSR = SCB_ICSR_PENDSVSET_Msk; // signal low priority task
 }
 
 void MCU_ITP_ISR(void)
@@ -342,7 +348,7 @@ void MCU_COM2_ISR(void)
 }
 #endif
 
-void mcu_usart_init(void)
+void mcu_uart_init(void)
 {
 #ifdef MCU_HAS_UART
 	PINSEL_CFG_Type tx = {TX_PORT, TX_BIT, UART_ALT_FUNC, PINSEL_PINMODE_PULLUP, PINSEL_PINMODE_NORMAL};
@@ -366,7 +372,10 @@ void mcu_usart_init(void)
 	NVIC_ClearPendingIRQ(COM_IRQ);
 	NVIC_EnableIRQ(COM_IRQ);
 #endif
+}
 
+void mcu_uart2_init(void)
+{
 #ifdef MCU_HAS_UART2
 	PINSEL_CFG_Type tx = {TX2_PORT, TX2_BIT, UART2_ALT_FUNC, PINSEL_PINMODE_PULLUP, PINSEL_PINMODE_NORMAL};
 	PINSEL_ConfigPin(&tx);
@@ -389,7 +398,10 @@ void mcu_usart_init(void)
 	NVIC_ClearPendingIRQ(COM2_IRQ);
 	NVIC_EnableIRQ(COM2_IRQ);
 #endif
+}
 
+void mcu_usb_init(void)
+{
 #ifdef MCU_HAS_USB
 #ifdef USE_ARDUINO_CDC
 	lpc176x_usb_init();
@@ -424,48 +436,29 @@ void mcu_usart_init(void)
 
 void mcu_rtc_init()
 {
-	// TIM_Cmd(RTC_TIMER_REG, DISABLE);
-	// TIM_TIMERCFG_Type tmrconfig;
-	// TIM_ConfigStructInit(TIM_TIMER_MODE, &tmrconfig);
-	// TIM_Init(RTC_TIMER_REG, TIM_TIMER_MODE, &tmrconfig);
-	// TIM_MATCHCFG_Type tmrmatch;
-	// tmrmatch.MatchChannel = RTC_TIMER;
-	// tmrmatch.IntOnMatch = ENABLE;
-	// tmrmatch.StopOnMatch = DISABLE;
-	// tmrmatch.ResetOnMatch = ENABLE;
-	// tmrmatch.MatchValue = 1000;
-	// TIM_ConfigMatch(RTC_TIMER_REG, &tmrmatch);
-	// NVIC_SetPriority(RTC_TIMER_IRQ, 10);
-	// NVIC_ClearPendingIRQ(RTC_TIMER_IRQ);
-	// NVIC_EnableIRQ(RTC_TIMER_IRQ);
-	// TIM_Cmd(RTC_TIMER_REG, ENABLE);
+	NVIC_SetPriority(PendSV_IRQn, 0xFF); // background task
+										 // TIM_Cmd(RTC_TIMER_REG, DISABLE);
+										 // TIM_TIMERCFG_Type tmrconfig;
+										 // TIM_ConfigStructInit(TIM_TIMER_MODE, &tmrconfig);
+										 // TIM_Init(RTC_TIMER_REG, TIM_TIMER_MODE, &tmrconfig);
+										 // TIM_MATCHCFG_Type tmrmatch;
+										 // tmrmatch.MatchChannel = RTC_TIMER;
+										 // tmrmatch.IntOnMatch = ENABLE;
+										 // tmrmatch.StopOnMatch = DISABLE;
+										 // tmrmatch.ResetOnMatch = ENABLE;
+										 // tmrmatch.MatchValue = 1000;
+										 // TIM_ConfigMatch(RTC_TIMER_REG, &tmrmatch);
+										 // NVIC_SetPriority(RTC_TIMER_IRQ, 10);
+										 // NVIC_ClearPendingIRQ(RTC_TIMER_IRQ);
+										 // NVIC_EnableIRQ(RTC_TIMER_IRQ);
+										 // TIM_Cmd(RTC_TIMER_REG, ENABLE);
 
 	// Systick is initialized by the Arduino framework
 }
 
 /*IO functions*/
-
-/**
- * initializes the mcu
- * this function needs to:
- *   - configure all IO pins (digital IO, PWM, Analog, etc...)
- *   - configure all interrupts
- *   - configure uart or usb
- *   - start the internal RTC
- * */
-void mcu_init(void)
+void mcu_spi_init()
 {
-	mcu_clocks_init();
-
-	mcu_io_init();
-	mcu_usart_init();
-	// SysTick is started by the framework but is not working
-	// Using timer
-	mcu_rtc_init();
-#if SERVOS_MASK > 0
-	servo_timer_init();
-#endif
-	GPDMA_Init();
 #ifdef MCU_HAS_SPI
 	// powerup DMA
 	// LPC_SC->PCONP |= CLKPWR_PCONP_PCGPDMA;
@@ -486,6 +479,10 @@ void mcu_init(void)
 	SPI_REG->CR1 |= 1 << 1;		   // enable SSP*/
 
 #endif
+}
+
+void mcu_spi2_init()
+{
 #ifdef MCU_HAS_SPI2
 	// powerup DMA
 	// LPC_SC->PCONP |= CLKPWR_PCONP_PCGPDMA;
@@ -506,9 +503,35 @@ void mcu_init(void)
 	SPI2_REG->CR1 |= 1 << 1;		 // enable SSP*/
 
 #endif
+}
+
+void mcu_i2c_init()
+{
 #ifdef MCU_HAS_I2C
 	mcu_i2c_config(I2C_FREQ);
 #endif
+}
+
+/**
+ * initializes the mcu
+ * this function needs to:
+ *   - configure all IO pins (digital IO, PWM, Analog, etc...)
+ *   - configure all interrupts
+ *   - configure uart or usb
+ *   - start the internal RTC
+ * */
+void mcu_init(void)
+{
+	mcu_clocks_init();
+	mcu_io_init();
+	mcu_uart_init();
+	// SysTick is started by the framework but is not working
+	// Using timer
+	mcu_rtc_init();
+#if SERVOS_MASK > 0
+	servo_timer_init();
+#endif
+	GPDMA_Init();
 
 	mcu_enable_global_isr();
 }

@@ -320,6 +320,12 @@ void EXTI15_10_IRQHandler(void)
 #endif
 #endif
 
+void PendSV_Handler(void){
+	uint32_t millis = mcu_runtime_ms;
+	mcu_rtc_cb(millis);
+	NVIC_ClearPendingIRQ(PendSV_IRQn);
+}
+
 #ifndef ARDUINO_ARCH_STM32
 void SysTick_IRQHandler(void)
 #else
@@ -374,10 +380,8 @@ void osSystickHandler(void)
 	ms_servo_counter = (servo_counter != 20) ? servo_counter : 0;
 
 #endif
-	uint32_t millis = mcu_runtime_ms;
-	millis++;
-	mcu_runtime_ms = millis;
-	mcu_rtc_cb(millis);
+	mcu_runtime_ms++;
+	SCB->ICSR = SCB_ICSR_PENDSVSET_Msk; // signal low priority task
 }
 
 /**
@@ -403,7 +407,7 @@ void mcu_clocks_init()
 	// }
 }
 
-void mcu_usart_init(void)
+void mcu_usb_init(void)
 {
 #ifdef MCU_HAS_USB
 	// configure USB as Virtual COM port
@@ -420,7 +424,10 @@ void mcu_usart_init(void)
 
 	tusb_cdc_init();
 #endif
+}
 
+void mcu_uart_init(void)
+{
 #ifdef MCU_HAS_UART
 	/*enables RCC clocks and GPIO*/
 	RCC->COM_APB |= (COM_APBEN);
@@ -444,7 +451,10 @@ void mcu_usart_init(void)
 	NVIC_EnableIRQ(COM_IRQ);
 	COM_UART->CR1 |= (USART_CR1_RE | USART_CR1_TE | USART_CR1_UE); // enable TE, RE and UART
 #endif
+}
 
+void mcu_uart2_init(void)
+{
 #ifdef MCU_HAS_UART2
 	/*enables RCC clocks and GPIO*/
 	RCC->COM2_APB |= (COM2_APBEN);
@@ -592,16 +602,8 @@ void mcu_uart2_flush(void)
 
 #endif
 
-void mcu_init(void)
+void mcu_spi_init()
 {
-	// make sure both APB1 and APB2 are running at the same clock (48MHz)
-	mcu_clocks_init();
-	mcu_io_init();
-	mcu_usart_init();
-	mcu_rtc_init();
-#if SERVOS_MASK > 0
-	servo_timer_init();
-#endif
 #ifdef MCU_HAS_SPI
 	SPI_ENREG |= SPI_ENVAL;
 	mcu_config_af(SPI_SDI, SPI_SDI_AFIO);
@@ -627,6 +629,10 @@ void mcu_init(void)
 
 	SPI_REG->CR1 |= SPI_CR1_SPE;
 #endif
+}
+
+void mcu_spi2_init()
+{
 #ifdef MCU_HAS_SPI2
 	SPI2_ENREG |= SPI2_ENVAL;
 	mcu_config_af(SPI2_SDI, SPI2_SDI_AFIO);
@@ -652,9 +658,24 @@ void mcu_init(void)
 
 	SPI2_REG->CR1 |= SPI_CR1_SPE;
 #endif
+}
+
+void mcu_i2c_init()
+{
 #ifdef MCU_HAS_I2C
 	// set max freq
 	mcu_i2c_config(I2C_FREQ);
+#endif
+}
+
+void mcu_init(void)
+{
+	// make sure both APB1 and APB2 are running at the same clock (48MHz)
+	mcu_clocks_init();
+	mcu_io_init();
+	mcu_rtc_init();
+#if SERVOS_MASK > 0
+	servo_timer_init();
 #endif
 
 	stm32_flash_current_page = -1;
@@ -776,6 +797,7 @@ void mcu_rtc_init()
 	SysTick->VAL = 0;
 	NVIC_SetPriority(SysTick_IRQn, NVIC_RTC_IRQ_Pri);
 	SysTick->CTRL = 7; // Start SysTick (ABH clock)
+	NVIC_SetPriority(PendSV_IRQn, 0xFF); // background task
 }
 
 void mcu_dotasks()

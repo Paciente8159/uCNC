@@ -27,8 +27,7 @@ extern "C"
 
 #include <stdint.h>
 #include <stdbool.h>
-
-#define UCNC_MODULE_VERSION 11600
+#include "cnc_build.h"
 
 #define EVENT_CONTINUE false
 #define EVENT_HANDLED true
@@ -50,6 +49,7 @@ extern "C"
 #define MODULE_LOCK_DISABLE(X) CLEARFLAG(g_module_lockguard, (X & ~LISTENER_RUNNING_LOCK))
 
 #define DECL_MODULE(name) void name##_init(void)
+#define DECL_WEAK_MODULE(name) void __attribute__((weak)) name##_init(void)
 #define LOAD_MODULE(name)          \
 	extern void name##_init(void); \
 	name##_init()

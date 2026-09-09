@@ -113,6 +113,22 @@ extern "C"
 #endif
 
 /**
+ * configs a pin as an analog input channel
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_config_analog
+	void mcu_config_analog(uint8_t pin);
+#endif
+
+/**
+ * configs a pin with interrupt on change enabled
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_config_input_isr
+	void mcu_config_input_isr(uint8_t pin);
+#endif
+
+/**
  * config a pin in output mode
  * can be defined either as a function or a macro call
  * */
@@ -303,9 +319,9 @@ extern "C"
 	 * */
 	void mcu_stop_itp_isr(void);
 
-	#ifndef mcu_start_step_reset_timeout
-	#define mcu_start_step_reset_timeout()
-	#endif
+#ifndef mcu_start_step_reset_timeout
+#define mcu_start_step_reset_timeout()
+#endif
 
 /**
  * gets the MCU running time in milliseconds.
@@ -488,6 +504,8 @@ extern "C"
 	} spi_port_t;
 
 #ifdef MCU_HAS_SPI
+	void mcu_spi_init(void);
+
 #ifndef mcu_spi_xmit
 	uint8_t mcu_spi_xmit(uint8_t data);
 #endif
@@ -515,6 +533,8 @@ extern "C"
 #endif
 
 #ifdef MCU_HAS_SPI2
+	void mcu_spi2_init(void);
+
 #ifndef mcu_spi2_xmit
 	uint8_t mcu_spi2_xmit(uint8_t data);
 #endif
@@ -549,6 +569,8 @@ extern "C"
 #define I2C_NOTOK 1
 #endif
 
+	void mcu_i2c_init(void);
+
 #ifndef mcu_i2c_send
 	// master sends command to slave
 	uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool release, uint32_t ms_timeout);
@@ -579,6 +601,7 @@ extern "C"
 	 * */
 
 #ifdef MCU_HAS_USB
+	void mcu_usb_init(void);
 	uint8_t mcu_usb_getc(void);
 	uint8_t mcu_usb_available(void);
 	void mcu_usb_clear(void);
@@ -590,6 +613,7 @@ extern "C"
 #endif
 
 #ifdef MCU_HAS_UART
+	void mcu_uart_init(void);
 	uint8_t mcu_uart_getc(void);
 	uint8_t mcu_uart_available(void);
 	void mcu_uart_clear(void);
@@ -601,6 +625,7 @@ extern "C"
 #endif
 
 #ifdef MCU_HAS_UART2
+	void mcu_uart2_init(void);
 	uint8_t mcu_uart2_getc(void);
 	uint8_t mcu_uart2_available(void);
 	void mcu_uart2_clear(void);
@@ -611,18 +636,24 @@ extern "C"
 #endif
 #endif
 
-#ifdef MCU_HAS_WIFI
-	uint8_t mcu_wifi_getc(void);
-	uint8_t mcu_wifi_available(void);
-	void mcu_wifi_clear(void);
-	void mcu_wifi_putc(uint8_t c);
-	void mcu_wifi_flush(void);
-#ifdef DETACH_WIFI_FROM_MAIN_PROTOCOL
-	MCU_RX_CALLBACK void mcu_wifi_rx_cb(uint8_t c);
-#endif
+#ifdef ENABLE_SOCKETS
+#include "../../modules/net/telnet.h"
+	extern socket_if_t *telnet_sock;
+	extern telnet_protocol_t telnet_proto;
+	void mcu_network_init(void);
+	uint8_t mcu_telnet_getc(void);
+	uint8_t mcu_telnet_available(void);
+	void mcu_telnet_clear(void);
+	void mcu_telnet_putc(uint8_t c);
+	void mcu_telnet_flush(void);
+#ifdef DETACH_TELNET_FROM_MAIN_PROTOCOL
+	MCU_RX_CALLBACK void mcu_telnet_rx_cb(uint8_t c);
+#endif																				  // must be called from mcu_init if the default mcu_init is overriden
+	void mcu_telnet_onrecv(uint8_t client_idx, const uint8_t *data, size_t data_len); // the callback when data is received
 #endif
 
 #ifdef MCU_HAS_BLUETOOTH
+	void mcu_bt_init(void);
 	uint8_t mcu_bt_getc(void);
 	uint8_t mcu_bt_available(void);
 	void mcu_bt_clear(void);

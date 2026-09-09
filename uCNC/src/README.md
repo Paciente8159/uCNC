@@ -30,7 +30,7 @@ Version 1.8 also introduces the concept of simple hooks. These hooks are simple 
 
 ## µCNC existing events/delegates
 
-Without having to modify core code inside µCNC it is possible to listen to several already existing events. Here is a list of current events:
+Without having to modify core code inside µCNC it is possible to listen to several already existing events. Here is a list of current events (current module version number is 11700):
 
 __NOTE__: Not all event hooks might be listed here. To find all available event hooks declarations, do a search on all files (on VSCode in Windows it's Ctrl+Shift+F) of the project of `DECL_EVENT_HANDLER`. You can also search for the `EVENT_INVOKE` to see what argument is being passed to the event handler.
 
@@ -42,19 +42,19 @@ __NOTE__: Not all event hooks might be listed here. To find all available event 
 | gcode_before_motion | gcode_exec_args_t* | ENABLE_PARSER_MODULES | Fires before a motion group command is executed (G0, G1, G2, etc...). Arg is a pointer to a gcode_exec_args_t struct |
 | gcode_after_motion | gcode_exec_args_t* | ENABLE_PARSER_MODULES | Fires after a motion group command is executed (G0, G1, G2, etc...). Arg is a pointer to a gcode_exec_args_t struct |
 | grbl_cmd | grbl_cmd_args_t* | ENABLE_PARSER_MODULES | Fires when a custom/unknown '$' grbl type command is received. Arg is a pointer to a grbl_cmd_args_t struct |
-| parse_token | NULL | ENABLE_PARSER_MODULES | Fires when a custom/unknown token/uint8_t is received for further processing |
+| parse_token | uint8_t ** | ENABLE_PARSER_MODULES | Fires when a custom/unknown token/uint8_t is received for further processing. Arg is the address of the local word variable (a uint8_t**); store the accepted character there and return EVENT_HANDLED to accept it |
 | parser_get_modes | uint8_t * | ENABLE_PARSER_MODULES | Fires when $G command is issued and the active modal states array is being requested (can be used to modify the active modes with extended gcodes). Arg is a pointer to an uint8_t array with the parser motion groups current values |
-| parser_reset | NULL | ENABLE_PARSER_MODULES | Fires on parser reset |
+| parser_reset | parser_state_t * | ENABLE_PARSER_MODULES | Fires on parser reset. Arg is a pointer to the parser state being reset |
 | cnc_reset | NULL | ENABLE_MAIN_LOOP_MODULES | Fires when µCNC resets |
 | cnc_dotasks | NULL | ENABLE_MAIN_LOOP_MODULES | Fires on the main loop running. Any repeating task should be hooked here |
 | cnc_io_dotasks | NULL | ENABLE_MAIN_LOOP_MODULES | Fires on the main IO loop running. This is similar to cnc_dotasks, the main difference is that this task will run also during delays |
 | cnc_stop | NULL | ENABLE_MAIN_LOOP_MODULES | Fires when a halt/stop condition is triggered |
-| cnc_parse_cmd_error | NULL | ENABLE_MAIN_LOOP_MODULES | Fires when an invalid command is received |
+| cnc_parse_cmd_error | uint8_t * | ENABLE_MAIN_LOOP_MODULES | Fires when an invalid command is received. Arg is a pointer to the error code |
 | cnc_alarm | NULL | ENABLE_MAIN_LOOP_MODULES | Fires when an alarm is triggered |
 | settings_extended_change | setting_args_t* | ENABLE_SETTINGS_MODULES | Fires when a $ setting is changed. Arg is a pointer to a setting_args_t struct identifying the changed setting id and value |
-| settings_extended_load | NULL | ENABLE_SETTINGS_MODULES | Fires when the base settings ($) are loaded from memory. Arg is a pointer to a settings_args_t struct |
-| settings_extended_save | NULL | ENABLE_SETTINGS_MODULES | Fires when the base settings ($) are saved into memory. Arg is a pointer to a settings_args_t struct |
-| settings_extended_erase | NULL | ENABLE_SETTINGS_MODULES | Fires when the base settings are erased/reset ($). This will only be triggered when the base address of the settings is targeted |
+| settings_extended_load | bool * | ENABLE_SETTINGS_MODULES | Fires when the base settings ($) are loaded from memory. Arg is a pointer to a bool (is_machine_settings) |
+| settings_extended_save | bool * | ENABLE_SETTINGS_MODULES | Fires when the base settings ($) are saved into memory. Arg is a pointer to a bool (is_machine_settings) |
+| settings_extended_erase | bool * | ENABLE_SETTINGS_MODULES | Fires when the base settings are erased/reset ($). This will only be triggered when the base address of the settings is targeted. Arg is a pointer to a bool (is_machine_settings) |
 | proto_status | NULL | - | Fires when printing the status message |
 | proto_cnc_settings | NULL | ENABLE_SETTINGS_MODULES | Fires when printing settings values |
 | proto_cnc_info | NULL | ENABLE_SYSTEM_INFO | Fires when printing response to $I command |
@@ -66,6 +66,8 @@ __NOTE__: Not all event hooks might be listed here. To find all available event 
 | mc_home_axis_start | homing_status_t* | ENABLE_MOTION_CONTROL_MODULES | Fires once per axis when homing motion is starting. Pointer to homing_status_t struct with homming information |
 | mc_home_axis_finish | homing_status_t* | ENABLE_MOTION_CONTROL_MODULES | Fires once per axis when homing motion is finnished |
 | mc_line_segment | motion_data_t* | ENABLE_MOTION_CONTROL_MODULES | Fires when a line segment is about to be sent from the motion control to the planner. Arg is a pointer to a motion_data_t struct with the current motion block data |
+| mc_line_calc_segments | uint32_t* | ENABLE_MOTION_CONTROL_MODULES & MOTION_SEGMENTED | Allows to modify the amount of segments to be passed to the planner on a mc_line command. Arg is a pointer to an integer that defines the amount of segments to break the motion into. |
+| mc_line_segment_pre | mc_line_segment_pre_args_t* | ENABLE_MOTION_CONTROL_MODULES | Fired before a calling mc_line_segment with the data to be sent to the planner. Arg is a pointer to a mc_line_segment_pre_args_t struct with the current target coordinates, target step position and motion block data |
 | planner_pre_output | planner_block_t* | ENABLE_PLANNER_MODULES | **WARNING: This event must not run any code that requires to know the code context (like printing) to prevent deadlocks**Fires right before a section of the current planner block is sent to the step generation (interpolator) ISR. It's possible to perform changes and modifications to the steps being generated with a very small delay. The delay is defined by the size of the interpolator buffer `INTERPOLATOR_BUFFER_SIZE` and the stepping sample frequency `INTERPOLATOR_FREQ`  |
 
 Each of these events exposes a delegate and and event that have the following naming convention:
@@ -91,7 +93,7 @@ typedef struct gcode_parse_args_
 {
 	uint8_t word; // This is the GCode word being parsed (usually 'G' or 'M')
 	uint8_t code; // This is the GCode word argument converted to uint8_t format (example 98)
-	uint8_t error; // The parser current error code (STATUS_GCODE_EXTENDED_UNSUPPORTED)
+	uint8_t *error; // Pointer to the parser current error code (STATUS_GCODE_EXTENDED_UNSUPPORTED)
 	float value; // This is the actual GCode word argument parsed as float. Useful if code has mantissa or is bigger then 255 (example 98.1)
 	parser_state_t *new_state; // The current parser state (struct)
 	parser_words_t *words; // The current parser words argument values (struct)
@@ -108,9 +110,12 @@ gcode_exec_args_t* - Pointer to a struct of type gcode_exec_args_t. The gcode_ex
 ```
 typedef struct gcode_exec_args_
 {
+	uint8_t *error; // Pointer to the parser error code. Set *error to STATUS_OK to claim the extended code
 	parser_state_t *new_state; // The current parser state (struct)
 	parser_words_t *words; // The current parser words argument values (struct)
 	parser_cmd_explicit_t *cmd; // The current parser GCode command active words/groups
+	float *target; // The requested target position (motion group commands)
+	motion_data_t *block_data; // The motion block data (motion group commands)
 } gcode_exec_args_t;
 ```
 

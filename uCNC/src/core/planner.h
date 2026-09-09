@@ -37,7 +37,7 @@ extern "C"
 #define PLANNER_MOTION_EXACT_STOP 64
 #define PLANNER_MOTION_CONTINUOUS 128
 
-#define TOOL_STATE_COPY_FLAG_MASK 0x78
+#define TOOL_STATE_COPY_FLAG_MASK 0x79
 	typedef motion_flags_t planner_flags_t;
 
 	typedef struct planner_block_

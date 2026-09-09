@@ -35,8 +35,8 @@ extern "C"
 #define BAUDRATE 115200
 #endif
 
-#ifndef ENABLE_WIFI
-// #define ENABLE_WIFI
+#ifndef ENABLE_SOCKETS
+// #define ENABLE_SOCKETS
 #endif
 
 #ifndef ENABLE_BLUETOOTH
@@ -269,6 +269,13 @@ extern "C"
 //  #define ENABLE_EMBROIDERY
 
 /**
+ *
+ * Uncomment to enable lathe features
+ *
+ */
+//   #define ENABLE_LATHE
+
+/**
  * Feed overrides increments and percentage ranges
  * */
 #define FEED_OVR_MAX 200
@@ -442,9 +449,9 @@ extern "C"
  *   Rapid approach -> Slow pull off
  * into a longer and potentially more precise:
  *   Rapid limit find -> Rapid limit clear -> Slow 2nd limit find -> Slow limit clear
- * 
+ *
  * After this the pulloff offset distance is travelled for all axis
- * 
+ *
  * This change makes the code size a bit bigger but might make your
  * homing cycle yield more accurate results.
  * */
@@ -453,9 +460,9 @@ extern "C"
 /**
  * This modifies the behavior to match Grbl homing motion. Note this will force ENABLE_LONG_HOMING_CYCLE
  *  Rapid limit find -> Rapid pull off -> Slow 2nd limit find -> Rapid pull off
- * 
+ *
  *  No final pulloff offset is performed in this mode as the pulloff is performed per axis and on contact
- * 
+ *
  */
 //  #define ENABLE_GRBL_STYLE_HOMING
 
@@ -490,6 +497,11 @@ extern "C"
 	 * If the type of machine supports skew and needs skew correction
 	 *  (defined in the specified kinematics_xxx.h file)
 	 * */
+
+/**
+ * Safety door configurations (in development)
+ */
+// #define ENABLE_SAFETY_DOOR_PARKING
 
 // #define ENABLE_SKEW_COMPENSATION
 #ifdef ENABLE_SKEW_COMPENSATION
@@ -649,10 +661,22 @@ extern "C"
 	 * 0 - disables
 	 * 1 - partially emulates the startup message and prints unused settings to improve compatibility
 	 * 2 - full emulation of the grbl startup and info messages (this also makes command $IE available to print the firmware information in extended format)
-	 * 3 - **New** drops ESTOP behaviour µCNC shutdown locking for a more similar Grbl behavior
+	 * 3 - **New** drops ESTOP behaviour µCNC shutdown locking for a more similar Grbl behavior. $# parsing while in motion will also be blocked with error:8 like Grbl i
 	 * */
 
+#ifndef EMULATE_GRBL_STARTUP
 #define EMULATE_GRBL_STARTUP 2
+#endif
+
+	/**
+	 * Enable advanced Grbl states.
+	 * This enables a couple more states in the status messages besides Alarm, Door, Hold, Check, Home, Jog, Run and Idle. These are:
+	 * Locked - when the controller in in lock state (requires $X or $H to unlock)
+	 * Dwell - when a dwell is being executed
+	 * Probe - used in probing motions and HMapping
+	 */
+
+	// #define ENABLE_EXTRA_GRBL_STATES
 
 	/**
 	 *

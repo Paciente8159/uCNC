@@ -20,6 +20,52 @@
 
 #include "../cnc.h"
 
+/**
+ * Configurable input conditions that trigger the respective alarm conditions
+ */
+#if (ASSERT_PIN(ESTOP) && !defined(IO_CONDITION_ESTOP))
+#define IO_CONDITION_ESTOP (io_get_input(ESTOP))
+#endif
+#if (ASSERT_PIN(SAFETY_DOOR) && !defined(IO_CONDITION_SAFETY_DOOR))
+#define IO_CONDITION_SAFETY_DOOR (io_get_input(SAFETY_DOOR))
+#endif
+#if (ASSERT_PIN(FHOLD) && !defined(IO_CONDITION_FHOLD))
+#define IO_CONDITION_FHOLD (io_get_input(FHOLD))
+#endif
+#if (ASSERT_PIN(CS_RES) && !defined(IO_CONDITION_CS_RES))
+#define IO_CONDITION_CS_RES (io_get_input(CS_RES))
+#endif
+#if (ASSERT_PIN(PROBE) && !defined(IO_CONDITION_PROBE))
+#define IO_CONDITION_PROBE (io_get_input(PROBE))
+#endif
+#if (ASSERT_PIN(LIMIT_X) && !defined(IO_CONDITION_LIMIT_X))
+#define IO_CONDITION_LIMIT_X (io_get_input(LIMIT_X))
+#endif
+#if (ASSERT_PIN(LIMIT_X2) && !defined(IO_CONDITION_LIMIT_X2))
+#define IO_CONDITION_LIMIT_X2 (io_get_input(LIMIT_X2))
+#endif
+#if (ASSERT_PIN(LIMIT_Y) && !defined(IO_CONDITION_LIMIT_Y))
+#define IO_CONDITION_LIMIT_Y (io_get_input(LIMIT_Y))
+#endif
+#if (ASSERT_PIN(LIMIT_Y2) && !defined(IO_CONDITION_LIMIT_Y2))
+#define IO_CONDITION_LIMIT_Y2 (io_get_input(LIMIT_Y2))
+#endif
+#if (ASSERT_PIN(LIMIT_Z) && !defined(IO_CONDITION_LIMIT_Z))
+#define IO_CONDITION_LIMIT_Z (io_get_input(LIMIT_Z))
+#endif
+#if (ASSERT_PIN(LIMIT_Z2) && !defined(IO_CONDITION_LIMIT_Z2))
+#define IO_CONDITION_LIMIT_Z2 (io_get_input(LIMIT_Z2))
+#endif
+#if (ASSERT_PIN(LIMIT_A) && !defined(IO_CONDITION_LIMIT_A))
+#define IO_CONDITION_LIMIT_A (io_get_input(LIMIT_A))
+#endif
+#if (ASSERT_PIN(LIMIT_B) && !defined(IO_CONDITION_LIMIT_B))
+#define IO_CONDITION_LIMIT_B (io_get_input(LIMIT_B))
+#endif
+#if (ASSERT_PIN(LIMIT_C) && !defined(IO_CONDITION_LIMIT_C))
+#define IO_CONDITION_LIMIT_C (io_get_input(LIMIT_C))
+#endif
+
 #ifdef ENABLE_MULTI_STEP_HOMING
 static uint8_t io_lock_limits_mask;
 #endif
@@ -146,7 +192,11 @@ MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 			itp_lock_stepper(0); // unlocks axis
 #endif
 			cnc_stop(false);
+#if EMULATE_GRBL_STARTUP <= 2
 			cnc_set_exec_state(EXEC_LIMITS);
+#else
+			cnc_set_exec_state(EXEC_LIMITS | EXEC_POSITION_MAYBE_LOST);
+#endif
 #ifdef ENABLE_IO_ALARM_DEBUG
 			io_alarm_limits = limits;
 #endif
@@ -202,6 +252,10 @@ MCU_IO_CALLBACK void mcu_controls_changed_cb(void)
 		io_alarm_controls = controls;
 #endif
 	}
+	if (CHECKFLAG(changed, SAFETY_DOOR_MASK))
+	{
+		cnc_call_rt_command(CMD_CODE_SAFETY_DOOR);
+	}
 #endif
 #if ASSERT_PIN(FHOLD)
 	if (CHECKFLAG(controls, FHOLD_MASK))
@@ -248,7 +302,7 @@ MCU_IO_CALLBACK void mcu_probe_changed_cb(void)
 
 	// instead of stopping the machine does a controlled stop (hold)
 	// itp_stop();
-	cnc_set_exec_state(EXEC_HOLD);
+	cnc_set_exec_state(EXEC_CANCELING);
 #endif
 }
 
@@ -364,31 +418,31 @@ uint8_t io_get_raw_limits(void)
 #endif
 	uint8_t value = 0;
 
-#if ASSERT_PIN(LIMIT_X)
+#ifdef IO_CONDITION_LIMIT_X
 	value |= ((IO_CONDITION_LIMIT_X) ? LIMIT_X_IO_MASK : 0);
 #endif
-#if ASSERT_PIN(LIMIT_Y)
+#ifdef IO_CONDITION_LIMIT_Y
 	value |= ((IO_CONDITION_LIMIT_Y) ? LIMIT_Y_IO_MASK : 0);
 #endif
-#if ASSERT_PIN(LIMIT_Z)
+#ifdef IO_CONDITION_LIMIT_Z
 	value |= ((IO_CONDITION_LIMIT_Z) ? LIMIT_Z_IO_MASK : 0);
 #endif
-#if ASSERT_PIN(LIMIT_X2)
+#ifdef IO_CONDITION_LIMIT_X2
 	value |= ((IO_CONDITION_LIMIT_X2) ? LIMIT_X2_IO_MASK : 0);
 #endif
-#if ASSERT_PIN(LIMIT_Y2)
+#ifdef IO_CONDITION_LIMIT_Y2
 	value |= ((IO_CONDITION_LIMIT_Y2) ? LIMIT_Y2_IO_MASK : 0);
 #endif
-#if ASSERT_PIN(LIMIT_Z2)
+#ifdef IO_CONDITION_LIMIT_Z2
 	value |= ((IO_CONDITION_LIMIT_Z2) ? LIMIT_Z2_IO_MASK : 0);
 #endif
-#if ASSERT_PIN(LIMIT_A)
+#ifdef IO_CONDITION_LIMIT_A
 	value |= ((IO_CONDITION_LIMIT_A) ? LIMIT_A_IO_MASK : 0);
 #endif
-#if ASSERT_PIN(LIMIT_B)
+#ifdef IO_CONDITION_LIMIT_B
 	value |= ((IO_CONDITION_LIMIT_B) ? LIMIT_B_IO_MASK : 0);
 #endif
-#if ASSERT_PIN(LIMIT_C)
+#ifdef IO_CONDITION_LIMIT_C
 	value |= ((IO_CONDITION_LIMIT_C) ? LIMIT_C_IO_MASK : 0);
 #endif
 
@@ -420,20 +474,20 @@ uint8_t io_get_controls(void)
 	io_extended_pins_update();
 #endif
 	uint8_t value = 0;
-#if ASSERT_PIN(ESTOP)
+#ifdef IO_CONDITION_ESTOP
 #ifndef INVERT_EMERGENCY_STOP
 	value |= ((IO_CONDITION_ESTOP) ? ESTOP_MASK : 0);
 #else
 	value |= ((!IO_CONDITION_ESTOP) ? ESTOP_MASK : 0);
 #endif
 #endif
-#if ASSERT_PIN(SAFETY_DOOR)
+#ifdef IO_CONDITION_SAFETY_DOOR
 	value |= ((IO_CONDITION_SAFETY_DOOR) ? SAFETY_DOOR_MASK : 0);
 #endif
-#if ASSERT_PIN(FHOLD)
+#ifdef IO_CONDITION_FHOLD
 	value |= ((IO_CONDITION_FHOLD) ? FHOLD_MASK : 0);
 #endif
-#if ASSERT_PIN(CS_RES)
+#ifdef IO_CONDITION_CS_RES
 	value |= ((IO_CONDITION_CS_RES) ? CS_RES_MASK : 0);
 #endif
 
@@ -450,6 +504,7 @@ io_probe_action_cb io_probe_custom_disable = NULL;
 
 void io_enable_probe(void)
 {
+	cnc_set_exec_state(EXEC_PROBING);
 #ifdef PROBE_ENABLE_CUSTOM_CALLBACK
 	if (io_probe_custom_enable)
 	{
@@ -471,6 +526,7 @@ void io_enable_probe(void)
 
 void io_disable_probe(void)
 {
+	cnc_clear_exec_state(EXEC_PROBING | EXEC_STOPPING); // clear probe and pending hold to stop probing motion
 #ifdef PROBE_ENABLE_CUSTOM_CALLBACK
 	if (io_probe_custom_disable)
 	{
@@ -504,7 +560,7 @@ bool io_get_probe(void)
 #ifdef IC74HC165_HAS_PROBE
 	io_extended_pins_update();
 #endif
-#if ASSERT_PIN(PROBE)
+#ifdef IO_CONDITION_PROBE
 	bool probe = (IO_CONDITION_PROBE != 0);
 	return (!g_settings.probe_invert_mask) ? probe : !probe;
 #else

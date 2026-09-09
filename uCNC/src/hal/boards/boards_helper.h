@@ -53,6 +53,7 @@ extern "C"
  */
 #define BOARD_BLACKPILL 1100
 #define BOARD_MKS_ROBIN_NANO_V3_1 1101
+#define BOARD_MKS_MONSTER8_V2 1102
 #define BOARD_SKR_PRO_V1_2 1103
 #define BOARD_NUCLEO_F411RE_SHIELD_V3 1104
 #define BOARD_FYSETC_CHEETAH_V2 1105
@@ -142,6 +143,8 @@ extern "C"
 #define BOARDMAP "stm32/boardmap_blackpill.h"
 #elif (BOARD == BOARD_MKS_ROBIN_NANO_V3_1)
 #define BOARDMAP "stm32/boardmap_mks_robin_nano_v3_1.h"
+#elif (BOARD == BOARD_MKS_MONSTER8_V2)
+#define BOARDMAP "stm32/boardmap_mks_monster8_v2.h"
 #elif (BOARD == BOARD_SKR_PRO_V1_2)
 #define BOARDMAP "stm32/boardmap_srk_pro_v1_2.h"
 #define HSE_VALUE 8000000

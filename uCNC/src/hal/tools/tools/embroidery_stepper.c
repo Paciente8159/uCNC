@@ -236,7 +236,7 @@ static void startup_code(void)
 #warning "RT_STEP_PREVENT_CONDITION and ENABLE_RT_SYNC_MOTIONS is not set and needle down condition will not be detected!!"
 #endif
 	embd_accel = 5;
-	g_settings.tool_mode = EMBROIDERY_MODE;
+	tool_set_mode(EMBROIDERY_MODE);
 }
 
 static void shutdown_code(void)
@@ -251,7 +251,7 @@ static void shutdown_code(void)
 #if ASSERT_PIN(EMBD_STEP)
 	io_clear_output(EMBD_STEP);
 #endif
-	g_settings.tool_mode = UNDEF_MODE;
+	tool_reset_mode();
 #if defined(RT_STEP_PREVENT_CONDITION) && !defined(RT_STEP_PREVENT_HAS_CUSTOM_CONDITION) && defined(ENABLE_RT_SYNC_MOTIONS)
 	itp_rt_step_prevent_cb = NULL;
 #else

@@ -23,7 +23,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-extern void rp2040_uart_init(int baud);
+extern void rp2040_wifi_bt_init(void);
 extern void rp2040_uart_process(void);
 
 extern void rp2040_eeprom_init(int size);
@@ -231,6 +231,12 @@ static void mcu_clear_servos(void)
 
 static rp2040_alarm_t rtc_alarm;
 
+// void PendSV_Handler(void)
+// {
+// 	mcu_rtc_cb(mcu_millis());
+// 	NVIC_ClearPendingIRQ(PendSV_IRQn);
+// }
+
 void mcu_rtc_isr(void)
 {
 	// enqueue alarm again
@@ -285,7 +291,8 @@ void mcu_rtc_isr(void)
 	ms_servo_counter = (servo_counter != 20) ? servo_counter : 0;
 
 #endif
-	mcu_rtc_cb(millis());
+	// SCB->ICSR = SCB_ICSR_PENDSVSET_Msk; // signal low priority task
+	mcu_rtc_cb(mcu_millis());
 }
 
 /**
@@ -304,6 +311,31 @@ void rp2040_core0_loop()
 // 		cnc_run();
 // 	}
 // }
+
+// void mcu_spi_init(void)
+// {
+// #ifdef MCU_HAS_SPI
+// 	spi_config_t spi_conf = {0};
+// 	spi_conf.mode = SPI_MODE;
+// 	mcu_spi_config(spi_conf, SPI_FREQ);
+// #endif
+// }
+
+// void mcu_spi2_init(void)
+// {
+// #ifdef MCU_HAS_SPI2
+// 	spi_config_t spi2_conf = {0};
+// 	spi2_conf.mode = SPI2_MODE;
+// 	mcu_spi2_config(spi2_conf, SPI2_FREQ);
+// #endif
+// }
+
+void mcu_i2c_init(void)
+{
+#ifdef MCU_HAS_I2C
+	mcu_i2c_config(I2C_FREQ);
+#endif
+}
 
 /**
  * initializes the mcu
@@ -324,32 +356,19 @@ void mcu_init(void)
 	rp2040_eeprom_init(NVM_STORAGE_SIZE); // 2K Emulated EEPROM
 #endif
 
-	rp2040_uart_init(BAUDRATE);
+#if defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH)
+	rp2040_wifi_bt_init();
+#endif
 
 	pinMode(LED_BUILTIN, OUTPUT);
 	// init rtc, oneshot and servo alarms
 	mcu_alarms_init();
 	rtc_alarm.alarm_cb = &mcu_rtc_isr;
+	// NVIC_SetPriority(PendSV_IRQn, 0xFF); // background task
 	mcu_enqueue_alarm(&rtc_alarm, 1000UL);
 
 #if SERVOS_MASK > 0
 	servo_alarm.alarm_cb = &mcu_clear_servos;
-#endif
-
-#ifdef MCU_HAS_SPI
-	spi_config_t spi_conf = {0};
-	spi_conf.mode = SPI_MODE;
-	mcu_spi_config(spi_conf, SPI_FREQ);
-#endif
-
-#ifdef MCU_HAS_SPI2
-	spi_config_t spi2_conf = {0};
-	spi2_conf.mode = SPI2_MODE;
-	mcu_spi2_config(spi2_conf, SPI2_FREQ);
-#endif
-
-#ifdef MCU_HAS_I2C
-	mcu_i2c_config(I2C_FREQ);
 #endif
 
 #ifdef MCU_HAS_ONESHOT
@@ -482,7 +501,7 @@ bool mcu_get_global_isr(void)
 
 // Step interpolator
 
-static uint32_t mcu_step_counter;
+// static uint32_t mcu_step_counter;
 static uint32_t mcu_step_reload;
 static void mcu_itp_isr(void)
 {
@@ -496,7 +515,7 @@ static void mcu_itp_isr(void)
 
 	if (!resetstep)
 	{
-			mcu_step_cb();
+		mcu_step_cb();
 	}
 
 	else
@@ -645,7 +664,7 @@ static void mcu_oneshot_isr(void)
 {
 	if (mcu_timeout_cb)
 	{
-			mcu_timeout_cb();
+		mcu_timeout_cb();
 	}
 }
 

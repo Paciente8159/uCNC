@@ -24,10 +24,12 @@ extern "C"
 {
 #endif
 
-#define CNC_MAJOR_MINOR_VERSION "1.16"
-#define CNC_PATCH_VERSION ".2"
-
+#define CNC_MAJOR_MINOR_VERSION "1.17"
+#define CNC_PATCH_VERSION ".0"
+// CNC version for printing
 #define CNC_VERSION CNC_MAJOR_MINOR_VERSION CNC_PATCH_VERSION
+// CNC module version (numeric version of the printing version). May change as new features or functions delarations are modified
+#define UCNC_MODULE_VERSION 11700
 
 #ifdef __cplusplus
 }
