@@ -19,11 +19,13 @@
 #define GRBL_PROTOCOL_H
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include "../module.h"
 #include "grbl_print.h"
+#include "grbl_settings.h"
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -31,51 +33,51 @@ extern "C" {
 // protocol->stream callback
 // this is the base function call to output via stream
 #define proto_putc grbl_stream_putc
-#define proto_printf(fmt, ...)                                                 \
+#define proto_printf(fmt, ...) \
   grbl_stream_printf(__romstr__(fmt), ##__VA_ARGS__)
-void proto_puts(const char *str);
+  void proto_puts(const char *str);
 #define proto_print(s) proto_puts(__romstr__(s))
-void proto_error(uint8_t error);
-void proto_alarm(int8_t alarm);
-void proto_status(void);
-DECL_EVENT_HANDLER(proto_status);
-void proto_feedback_fmt(const char *fmt, ...);
+  void proto_error(uint8_t error);
+  void proto_alarm(int8_t alarm);
+  void proto_status(void);
+  DECL_EVENT_HANDLER(proto_status);
+  void proto_feedback_fmt(const char *fmt, ...);
 #define proto_feedback(__s) proto_print(MSG_FEEDBACK_START __s MSG_FEEDBACK_END)
 #define proto_info(__s, ...) proto_feedback_fmt(__romstr__(__s), ##__VA_ARGS__)
-#define proto_itoa(value)                                                      \
+#define proto_itoa(value) \
   prt_int((void *)proto_putc, PRINT_CALLBACK, (uint32_t)(value), 0)
-#define proto_ftoa(value)                                                      \
-  prt_flt((void *)proto_putc, PRINT_CALLBACK, (float)(value),                  \
+#define proto_ftoa(value)                                     \
+  prt_flt((void *)proto_putc, PRINT_CALLBACK, (float)(value), \
           ((!g_settings.report_inches) ? 3 : 5))
-void proto_probe_result(uint8_t val);
-void proto_gcode_coordsys(void);
-void proto_gcode_modes(void);
-void proto_cnc_settings(void);
-void proto_start_blocks(void);
-void proto_gcode_setting_line_int(setting_offset_t setting, uint16_t value);
-void proto_gcode_setting_line_flt(setting_offset_t setting, float value);
+  void proto_probe_result(uint8_t val);
+  void proto_gcode_coordsys(void);
+  void proto_gcode_modes(void);
+  void proto_cnc_settings(void);
+  void proto_start_blocks(void);
+  void proto_gcode_setting_line_int(setting_offset_t setting, uint16_t value);
+  void proto_gcode_setting_line_flt(setting_offset_t setting, float value);
 
 #ifdef ENABLE_PIN_DEBUG_EXTRA_CMD
-void proto_pins_states(void);
+  void proto_pins_states(void);
 #endif
 #ifdef ENABLE_SYSTEM_INFO
-void proto_cnc_info(bool extended);
-DECL_EVENT_HANDLER(proto_cnc_info);
+  void proto_cnc_info(bool extended);
+  DECL_EVENT_HANDLER(proto_cnc_info);
 #endif
 
 #ifdef ENABLE_IO_MODULES
-// event_proto_pins_states_handler
-DECL_EVENT_HANDLER(proto_pins_states);
+  // event_proto_pins_states_handler
+  DECL_EVENT_HANDLER(proto_pins_states);
 #endif
 
 #ifdef ENABLE_SETTINGS_MODULES
-// event_proto_cnc_settings_handler
-DECL_EVENT_HANDLER(proto_cnc_settings);
+  // event_proto_cnc_settings_handler
+  DECL_EVENT_HANDLER(proto_cnc_settings);
 #endif
 
 #ifdef ENABLE_PARSER_MODULES
-// event_proto_gcode_modes_handler
-DECL_EVENT_HANDLER(proto_gcode_modes);
+  // event_proto_gcode_modes_handler
+  DECL_EVENT_HANDLER(proto_gcode_modes);
 #endif
 
 // this ensures portability to version 1.10 and older
