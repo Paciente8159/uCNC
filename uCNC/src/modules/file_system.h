@@ -93,6 +93,7 @@ extern "C"
 
 // exposes functions for system menu
 #ifndef DISABLE_SYSTEM_MENU
+  typedef struct system_menu_item_ system_menu_item_t;
   void system_menu_render_fs_item(uint8_t render_flags, system_menu_item_t *item);
   bool system_menu_action_fs_item(uint8_t action, system_menu_item_t *item);
   void system_menu_fs_render(uint8_t render_flags);
