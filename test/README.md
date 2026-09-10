@@ -6,8 +6,7 @@ are made against the resulting Grbl serial transcript. Motion, spindle, probe,
 and limit fixtures additionally inspect the virtual MCU state where the serial
 protocol cannot prove a physical output transition.
 
-Each fixture directory (`test_domain*`, `test_grbl_*`, `test_controller_step`,
-and `test_virtual_mcu_clock`) is compiled and launched by PlatformIO as a
+Each `test_grbl_*` directory is compiled and launched by PlatformIO as a
 separate native Windows process. This isolates controller globals, planner
 state, timers, streams, and RAM-only settings between fixture groups.
 
@@ -35,8 +34,6 @@ C:\Users\JCEM\.platformio\penv\Scripts\pio.exe test `
 - `test_grbl_protocol`: startup, status, help, modal, coordinate, and settings reports.
 - `test_grbl_motion`: absolute, incremental, linear, and arc endpoint validation.
 - `test_grbl_spindle`: M3/M4/M5 modal behavior and virtual PWM/direction outputs.
-- `test_controller_step`: verifies the controller loop can be stepped once, processing a single injected stream command and returning.
-- `test_virtual_mcu_clock`: verifies the virtual MCU clock advances exactly and runs due scheduled events.
 
 ## Domain 2 motion conformance
 

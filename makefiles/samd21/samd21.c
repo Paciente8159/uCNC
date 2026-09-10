@@ -28,185 +28,186 @@ extern void main(void);
  * Loads data from addresses defined in linker file into RAM
  * Zero bss (statically allocated uninitialized variables)
  */
-void __Init_Data(void) {
-  unsigned long *src, *dst;
-  /* copy the data segment into ram */
-  src = &_sidata;
-  dst = &_sdata;
-  if (src != dst)
-    while (dst < &_edata)
-      *(dst++) = *(src++);
+void __Init_Data(void)
+{
+        unsigned long *src, *dst;
+        /* copy the data segment into ram */
+        src = &_sidata;
+        dst = &_sdata;
+        if (src != dst)
+                while (dst < &_edata)
+                        *(dst++) = *(src++);
 
-  /* zero the bss segment */
-  dst = &_sbss;
-  while (dst < &_ebss)
-    *(dst++) = 0;
+        /* zero the bss segment */
+        dst = &_sbss;
+        while (dst < &_ebss)
+                *(dst++) = 0;
 }
 
 /* This function is straight from the system_stm32f10x.c library file and
  * is called within the startup file:
  * 1. After each device reset the HSI is used as System clock source.
- * 2. This function assumes that an external 8MHz crystal is used to drive the
- * System clock.
+ * 2. This function assumes that an external 8MHz crystal is used to drive the System clock.
  */
-void SystemInit(void) {
-  /* Set the correct number of wait states for 48 MHz @ 3.3v */
-  NVMCTRL->CTRLB.bit.RWS = 1;
+void SystemInit(void)
+{
+        /* Set the correct number of wait states for 48 MHz @ 3.3v */
+        NVMCTRL->CTRLB.bit.RWS = 1;
 
 #ifndef MCU_HAS_USB
-  /* Crystal oscillators can take a long time to startup. This
-         waits the maximum amount of time (4 seconds). This can be
-         reduced depending on your crystal oscillator. */
-  SYSCTRL->OSC32K.reg = SYSCTRL_OSC32K_STARTUP(0x7) | SYSCTRL_OSC32K_EN32K;
+        /* Crystal oscillators can take a long time to startup. This
+               waits the maximum amount of time (4 seconds). This can be
+               reduced depending on your crystal oscillator. */
+        SYSCTRL->OSC32K.reg = SYSCTRL_OSC32K_STARTUP(0x7) | SYSCTRL_OSC32K_EN32K;
 
-  /* This has to be a separate write as per datasheet section 17.6.3 */
-  SYSCTRL->OSC32K.bit.ENABLE = 1;
+        /* This has to be a separate write as per datasheet section 17.6.3 */
+        SYSCTRL->OSC32K.bit.ENABLE = 1;
 
-  /* Wait for the external crystal to be ready */
-  while (!SYSCTRL->PCLKSR.bit.OSC32KRDY)
-    ;
+        /* Wait for the external crystal to be ready */
+        while (!SYSCTRL->PCLKSR.bit.OSC32KRDY)
+                ;
 
-  /* Configure GCLK1's divider - in this case, no division - so just divide by
-   * one */
-  GCLK->GENDIV.reg = GCLK_GENDIV_ID(1) | GCLK_GENDIV_DIV(1);
+        /* Configure GCLK1's divider - in this case, no division - so just divide by one */
+        GCLK->GENDIV.reg = GCLK_GENDIV_ID(1) | GCLK_GENDIV_DIV(1);
 
-  /* Setup GCLK1 using the external 32.768 kHz oscillator */
-  GCLK->GENCTRL.reg = GCLK_GENCTRL_ID(1) | GCLK_GENCTRL_SRC_OSC32K |
-                      /* Improve the duty cycle. */ GCLK_GENCTRL_IDC |
-                      GCLK_GENCTRL_GENEN;
+        /* Setup GCLK1 using the external 32.768 kHz oscillator */
+        GCLK->GENCTRL.reg = GCLK_GENCTRL_ID(1) | GCLK_GENCTRL_SRC_OSC32K | /* Improve the duty cycle. */ GCLK_GENCTRL_IDC | GCLK_GENCTRL_GENEN;
 
-  /* Wait for the write to complete */
-  while (GCLK->STATUS.bit.SYNCBUSY)
-    ;
+        /* Wait for the write to complete */
+        while (GCLK->STATUS.bit.SYNCBUSY)
+                ;
 
-  GCLK->CLKCTRL.reg =
-      GCLK_CLKCTRL_ID_DFLL48 | GCLK_CLKCTRL_GEN_GCLK1 | GCLK_CLKCTRL_CLKEN;
+        GCLK->CLKCTRL.reg = GCLK_CLKCTRL_ID_DFLL48 | GCLK_CLKCTRL_GEN_GCLK1 | GCLK_CLKCTRL_CLKEN;
 
-  /* This works around a quirk in the hardware (errata 1.2.1) -
-     the DFLLCTRL register must be manually reset to this value before
-     configuration. */
-  while (!SYSCTRL->PCLKSR.bit.DFLLRDY)
-    ;
-  SYSCTRL->DFLLCTRL.reg = SYSCTRL_DFLLCTRL_ENABLE;
-  while (!SYSCTRL->PCLKSR.bit.DFLLRDY)
-    ;
+        /* This works around a quirk in the hardware (errata 1.2.1) -
+           the DFLLCTRL register must be manually reset to this value before
+           configuration. */
+        while (!SYSCTRL->PCLKSR.bit.DFLLRDY)
+                ;
+        SYSCTRL->DFLLCTRL.reg = SYSCTRL_DFLLCTRL_ENABLE;
+        while (!SYSCTRL->PCLKSR.bit.DFLLRDY)
+                ;
 
-  /* Set up the multiplier. This tells the DFLL to multiply the 32.768 kHz
-     reference clock to 48 MHz */
-  SYSCTRL->DFLLMUL.reg =
-      /* This value is output frequency / reference clock frequency,
-         so 48 MHz / 32.768 kHz */
-      SYSCTRL_DFLLMUL_MUL(1465) |
-      /* The coarse and fine step are used by the DFLL to lock
-         on to the target frequency. These are set to half
-         of the maximum value. Lower values mean less overshoot,
-         whereas higher values typically result in some overshoot but
-         faster locking. */
-      SYSCTRL_DFLLMUL_FSTEP(511) | // max value: 1023
-      SYSCTRL_DFLLMUL_CSTEP(31);   // max value: 63
+        /* Set up the multiplier. This tells the DFLL to multiply the 32.768 kHz
+           reference clock to 48 MHz */
+        SYSCTRL->DFLLMUL.reg =
+            /* This value is output frequency / reference clock frequency,
+               so 48 MHz / 32.768 kHz */
+            SYSCTRL_DFLLMUL_MUL(1465) |
+            /* The coarse and fine step are used by the DFLL to lock
+               on to the target frequency. These are set to half
+               of the maximum value. Lower values mean less overshoot,
+               whereas higher values typically result in some overshoot but
+               faster locking. */
+            SYSCTRL_DFLLMUL_FSTEP(511) | // max value: 1023
+            SYSCTRL_DFLLMUL_CSTEP(31);   // max value: 63
 
-  /* Wait for the write to finish */
-  while (!SYSCTRL->PCLKSR.bit.DFLLRDY)
-    ;
+        /* Wait for the write to finish */
+        while (!SYSCTRL->PCLKSR.bit.DFLLRDY)
+                ;
 
-  /* Write the coarse and fine calibration from NVM. */
-  uint32_t coarse = ((*(uint32_t *)FUSES_DFLL48M_COARSE_CAL_ADDR) &
-                     FUSES_DFLL48M_COARSE_CAL_Msk) >>
-                    FUSES_DFLL48M_COARSE_CAL_Pos;
-  uint32_t fine = ((*(uint32_t *)FUSES_DFLL48M_FINE_CAL_ADDR) &
-                   FUSES_DFLL48M_FINE_CAL_Msk) >>
-                  FUSES_DFLL48M_FINE_CAL_Pos;
+        /* Write the coarse and fine calibration from NVM. */
+        uint32_t coarse =
+            ((*(uint32_t *)FUSES_DFLL48M_COARSE_CAL_ADDR) & FUSES_DFLL48M_COARSE_CAL_Msk) >> FUSES_DFLL48M_COARSE_CAL_Pos;
+        uint32_t fine =
+            ((*(uint32_t *)FUSES_DFLL48M_FINE_CAL_ADDR) & FUSES_DFLL48M_FINE_CAL_Msk) >> FUSES_DFLL48M_FINE_CAL_Pos;
 
-  SYSCTRL->DFLLVAL.reg =
-      SYSCTRL_DFLLVAL_COARSE(coarse) | SYSCTRL_DFLLVAL_FINE(fine);
+        SYSCTRL->DFLLVAL.reg = SYSCTRL_DFLLVAL_COARSE(coarse) | SYSCTRL_DFLLVAL_FINE(fine);
 
-  /* Wait for the write to finish */
-  while (!SYSCTRL->PCLKSR.bit.DFLLRDY)
-    ;
+        /* Wait for the write to finish */
+        while (!SYSCTRL->PCLKSR.bit.DFLLRDY)
+                ;
 
-  /* Enable the DFLL */
-  SYSCTRL->DFLLCTRL.bit.ENABLE = 1;
+        /* Enable the DFLL */
+        SYSCTRL->DFLLCTRL.bit.ENABLE = 1;
 
 #else
-  /* This works around a quirk in the hardware (errata 1.2.1) -
-the DFLLCTRL register must be manually reset to this value before
-configuration. */
-  while (!SYSCTRL->PCLKSR.bit.DFLLRDY)
-    ;
-  SYSCTRL->DFLLCTRL.reg = SYSCTRL_DFLLCTRL_ENABLE;
-  while (!SYSCTRL->PCLKSR.bit.DFLLRDY)
-    ;
+        /* This works around a quirk in the hardware (errata 1.2.1) -
+   the DFLLCTRL register must be manually reset to this value before
+   configuration. */
+        while (!SYSCTRL->PCLKSR.bit.DFLLRDY)
+                ;
+        SYSCTRL->DFLLCTRL.reg = SYSCTRL_DFLLCTRL_ENABLE;
+        while (!SYSCTRL->PCLKSR.bit.DFLLRDY)
+                ;
 
-  /* Write the coarse and fine calibration from NVM. */
-  uint32_t coarse = ((*(uint32_t *)FUSES_DFLL48M_COARSE_CAL_ADDR) &
-                     FUSES_DFLL48M_COARSE_CAL_Msk) >>
-                    FUSES_DFLL48M_COARSE_CAL_Pos;
-  uint32_t fine = ((*(uint32_t *)FUSES_DFLL48M_FINE_CAL_ADDR) &
-                   FUSES_DFLL48M_FINE_CAL_Msk) >>
-                  FUSES_DFLL48M_FINE_CAL_Pos;
+        /* Write the coarse and fine calibration from NVM. */
+        uint32_t coarse =
+            ((*(uint32_t *)FUSES_DFLL48M_COARSE_CAL_ADDR) & FUSES_DFLL48M_COARSE_CAL_Msk) >> FUSES_DFLL48M_COARSE_CAL_Pos;
+        uint32_t fine =
+            ((*(uint32_t *)FUSES_DFLL48M_FINE_CAL_ADDR) & FUSES_DFLL48M_FINE_CAL_Msk) >> FUSES_DFLL48M_FINE_CAL_Pos;
 
-  SYSCTRL->DFLLVAL.reg =
-      SYSCTRL_DFLLVAL_COARSE(coarse) | SYSCTRL_DFLLVAL_FINE(fine);
+        SYSCTRL->DFLLVAL.reg = SYSCTRL_DFLLVAL_COARSE(coarse) | SYSCTRL_DFLLVAL_FINE(fine);
 
-  /* Wait for the write to finish. */
-  while (!SYSCTRL->PCLKSR.bit.DFLLRDY) {
-  };
+        /* Wait for the write to finish. */
+        while (!SYSCTRL->PCLKSR.bit.DFLLRDY)
+        {
+        };
 
-  SYSCTRL->DFLLCTRL.reg |=
-      /* Enable USB clock recovery mode */
-      SYSCTRL_DFLLCTRL_USBCRM |
-      /* Disable chill cycle as per datasheet to speed up locking.
- This is specified in section 17.6.7.2.2, and chill cycles
- are described in section 17.6.7.2.1. */
-      SYSCTRL_DFLLCTRL_CCDIS;
+        SYSCTRL->DFLLCTRL.reg |=
+            /* Enable USB clock recovery mode */
+            SYSCTRL_DFLLCTRL_USBCRM |
+            /* Disable chill cycle as per datasheet to speed up locking.
+       This is specified in section 17.6.7.2.2, and chill cycles
+       are described in section 17.6.7.2.1. */
+            SYSCTRL_DFLLCTRL_CCDIS;
 
-  /* Configure the DFLL to multiply the 1 kHz clock to 48 MHz */
-  SYSCTRL->DFLLMUL.reg =
-      /* This value is output frequency / reference clock frequency,
- so 48 MHz / 1 kHz */
-      SYSCTRL_DFLLMUL_MUL(48000) |
-      /* The coarse and fine values can be set to their minimum
- since coarse is fixed in USB clock recovery mode and
- fine should lock on quickly. */
-      SYSCTRL_DFLLMUL_FSTEP(1) | SYSCTRL_DFLLMUL_CSTEP(1);
+        /* Configure the DFLL to multiply the 1 kHz clock to 48 MHz */
+        SYSCTRL->DFLLMUL.reg =
+            /* This value is output frequency / reference clock frequency,
+       so 48 MHz / 1 kHz */
+            SYSCTRL_DFLLMUL_MUL(48000) |
+            /* The coarse and fine values can be set to their minimum
+       since coarse is fixed in USB clock recovery mode and
+       fine should lock on quickly. */
+            SYSCTRL_DFLLMUL_FSTEP(1) |
+            SYSCTRL_DFLLMUL_CSTEP(1);
 
-  /* Closed loop mode */
-  SYSCTRL->DFLLCTRL.bit.MODE = 1;
+        /* Closed loop mode */
+        SYSCTRL->DFLLCTRL.bit.MODE = 1;
 
-  /* Enable the DFLL */
-  SYSCTRL->DFLLCTRL.bit.ENABLE = 1;
+        /* Enable the DFLL */
+        SYSCTRL->DFLLCTRL.bit.ENABLE = 1;
 
-  /* Wait for the write to complete */
-  while (!SYSCTRL->PCLKSR.bit.DFLLRDY) {
-  };
+        /* Wait for the write to complete */
+        while (!SYSCTRL->PCLKSR.bit.DFLLRDY)
+        {
+        };
 #endif
 
-  /* Setup GCLK0 using the DFLL @ 48 MHz */
-  GCLK->GENCTRL.reg = GCLK_GENCTRL_ID(0) | GCLK_GENCTRL_SRC_DFLL48M |
-                      /* Improve the duty cycle. */
-                      GCLK_GENCTRL_IDC | GCLK_GENCTRL_GENEN;
+        /* Setup GCLK0 using the DFLL @ 48 MHz */
+        GCLK->GENCTRL.reg =
+            GCLK_GENCTRL_ID(0) |
+            GCLK_GENCTRL_SRC_DFLL48M |
+            /* Improve the duty cycle. */
+            GCLK_GENCTRL_IDC |
+            GCLK_GENCTRL_GENEN;
 
-  /* Wait for the write to complete */
-  while (GCLK->STATUS.bit.SYNCBUSY) {
-  };
+        /* Wait for the write to complete */
+        while (GCLK->STATUS.bit.SYNCBUSY)
+        {
+        };
 
 #ifdef MCU_HAS_USB
-  USB->DEVICE.QOSCTRL.bit.CQOS = 2;
-  USB->DEVICE.QOSCTRL.bit.DQOS = 2;
+        USB->DEVICE.QOSCTRL.bit.CQOS = 2;
+        USB->DEVICE.QOSCTRL.bit.DQOS = 2;
 #endif
 }
 
-void Reset_Handler(void) {
-  /* Initialize data and bss */
-  __Init_Data();
-  unsigned long *pSrc = (unsigned long *)&_svtor;
-  SCB->VTOR = ((unsigned long)pSrc & SCB_VTOR_TBLOFF_Msk);
-  SystemInit();
-  while (1) {
-    main();
-  }
-  while (1) {
-  }
+void Reset_Handler(void)
+{
+        /* Initialize data and bss */
+        __Init_Data();
+        unsigned long *pSrc = (unsigned long *)&_svtor;
+        SCB->VTOR = ((unsigned long)pSrc & SCB_VTOR_TBLOFF_Msk);
+        SystemInit();
+        while (1)
+        {
+                main();
+        }
+        while (1)
+        {
+        }
 }
 
 void WEAK NMI_Handler(void);
@@ -244,8 +245,7 @@ void WEAK PTC_Handler(void);
 void WEAK I2S_Handler(void);
 
 __attribute__((section(".isr_vector"))) void (*const g_pfnVectors[])(void) = {
-    (intfunc)((
-        unsigned long *)&_estack), /* The stack pointer after relocation */
+    (intfunc)((unsigned long *)&_estack), /* The stack pointer after relocation */
     Reset_Handler,
     NMI_Handler,
     HardFault_Handler,
@@ -325,7 +325,9 @@ __attribute__((section(".isr_vector"))) void (*const g_pfnVectors[])(void) = {
 #pragma weak PTC_Handler = Default_Handler
 #pragma weak I2S_Handler = Default_Handler
 
-void Default_Handler(void) {
-  while (1) {
-  }
+void Default_Handler(void)
+{
+        while (1)
+        {
+        }
 }
