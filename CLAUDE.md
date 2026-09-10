@@ -318,6 +318,7 @@ These are aspirational principles, not strict enforcement rules. Prioritize them
 - **Names** — `snake_case` for all functions, variables, and type names; `UPPER_CASE` for macros, defines, and enum constants. Follow the existing file's naming rhythm.
 - **Brace style** — K&R style (opening brace on the same line as the statement) for functions, `if`, `for`, `while`; Allman style (brace on its own line) only where the surrounding file uses it. Match the file.
 - **Line length** — aim for 100 characters max. Longer lines are acceptable when they improve readability (e.g., long string literals, complex macro chains).
+- **clang-format** — if using clang-format, prefer `BasedOnStyle: LLVM` with the above overrides (2-space indent, no tabs, 100 column limit).
 
 **Principles:**
 
@@ -334,7 +335,8 @@ These are aspirational principles, not strict enforcement rules. Prioritize them
   - These are already tested, match the codebase style, and avoid subtle single-implementation bugs.
 - **No dynamic allocation** — never use `malloc`, `calloc`, `realloc`, `free`, or `alloca`. All memory must be statically allocated at compile time. This eliminates fragmentation, OOM crashes, and non-deterministic timing on memory-constrained MCUs.
 - **ISRs must be lean** — keep interrupt service routines minimal: set a flag, increment a counter, copy a register. Never call parser, planner, IO, or tool functions from inside an ISR. Use `ATOMIC_CODEBLOCK` for shared data that ISRs and main code both access.
-- **Main loop for non-critical work** — all non-time-critical logic (G-code parsing, planning, IO scanning, tool management, serial protocol) belongs in `cnc_run()` or its callees. Don't offload work to timer callbacks or ISRs unless the timing demand is unavoidable. — don't leave commented-out blocks, orphaned `#if 0` sections, or unused functions/variables. Delete them. If you need the code later, git history preserves it.
+- **Main loop for non-critical work** — all non-time-critical logic (G-code parsing, planning, IO scanning, tool management, serial protocol) belongs in `cnc_run()` or its callees. Don't offload work to timer callbacks or ISRs unless the timing demand is unavoidable.
+- **No dead code** — don't leave commented-out blocks, orphaned `#if 0` sections, or unused functions/variables. Delete them. If you need the code later, git history preserves it.
 - **Error paths matter** — always consider what happens when a function receives unexpected input, a sensor reads out of range, or memory is exhausted. Return a status code, set an alarm, or fail gracefully — but don't silently proceed with corrupt state.
 - **Self-documenting over comments** — prefer descriptive names that make the code speak for itself. A comment should explain *why*, not *what*. Follow the existing project pattern: minimal comments, focused on intent.
 - **Single responsibility per function** — if a function does more than its name suggests, split it. This is especially important for motion control, planner, and IO code where state interactions are subtle.
