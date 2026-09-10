@@ -19,11 +19,4 @@ _µCNC for STM32H7x can be built this way_
 
 _**Notes:** Your board should have USART and USB support options disabled. µCNC takes care of these by it's own._
 
-## Method three - Using the makefile (optimized binary alternative)
-
-1. Download and install GCC tools for ARM inside your PC. You can download the latest version of GCC tool for ARM from [here](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm/downloads).
-   * If your are compiling with this method on a Windows machine you will also need to install Make. You can download Make for Windows from [here](http://gnuwin32.sourceforge.net/packages/make.htm) and CoreUtils [here](http://gnuwin32.sourceforge.net/packages/coreutils.htm).
-2. Go to the ```uCNC folder``` and edit the board ```cnc_config.h file``` and ```cnc_hal_config.h file``` if you need to select a different ARM board or different functionalities. µCNC is configured by default to mimic ```Grbl``` pin configuration in the Arduino UNO board.
-3. Open a command console inside ```makefiles/stm32f1x``` / ```makefiles/stm32f4x``` folder and run ```make clean all```
-4. If everything went well you should have a hex file inside ```makefiles/stm32f1x/build``` / ```makefiles/stm32f4x/build```folder.
-5. Now just upload µCNC to your board using an appropriate tool and programmer.
+**Note:** There is no optimized makefile build for STM32H7x. Use PlatformIO or Arduino IDE to build for this MCU.

@@ -1,33 +1,34 @@
 /*
-	Name: mcu.h
-	Description: Contains all the function declarations necessary to interact with the MCU.
-		This provides an intenterface between the µCNC and the MCU unit used to power the µCNC.
+        Name: mcu.h
+        Description: Contains all the function declarations necessary to
+   interact with the MCU. This provides an intenterface between the µCNC and the
+   MCU unit used to power the µCNC.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 01/11/2019
+        Copyright: Copyright (c) João Martins
+        Author: João Martins
+        Date: 01/11/2019
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+        µCNC is free software: you can redistribute it and/or modify
+        it under the terms of the GNU General Public License as published by
+        the Free Software Foundation, either version 3 of the License, or
+        (at your option) any later version. Please see
+   <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+        µCNC is distributed WITHOUT ANY WARRANTY;
+        Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A
+   PARTICULAR PURPOSE. See the	GNU General Public License for more details.
 */
 
 #ifndef MCU_H
 #define MCU_H
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
-#include <string.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
 
 #ifndef MCU_CALLBACK
 #define MCU_CALLBACK
@@ -81,18 +82,20 @@ extern "C"
 #define rom_strcmp strcmp
 #endif
 
-	// the extern is not necessary
-	// this explicit declaration just serves to reeinforce the idea that these callbacks are implemented on other µCNC core code translation units
-	// these callbacks provide a transparent way for the mcu to call them when the ISR/IRQ is triggered
+// the extern is not necessary
+// this explicit declaration just serves to reeinforce the idea that these
+// callbacks are implemented on other µCNC core code translation units these
+// callbacks provide a transparent way for the mcu to call them when the ISR/IRQ
+// is triggered
 
-	MCU_CALLBACK void mcu_step_cb(void);
-	MCU_CALLBACK void mcu_step_reset_cb(void);
-	MCU_RX_CALLBACK bool mcu_com_rx_cb(uint8_t c);
-	MCU_CALLBACK void mcu_rtc_cb(uint32_t millis);
-	MCU_IO_CALLBACK void mcu_controls_changed_cb(void);
-	MCU_IO_CALLBACK void mcu_limits_changed_cb(void);
-	MCU_IO_CALLBACK void mcu_probe_changed_cb(void);
-	MCU_IO_CALLBACK void mcu_inputs_changed_cb(void);
+MCU_CALLBACK void mcu_step_cb(void);
+MCU_CALLBACK void mcu_step_reset_cb(void);
+MCU_RX_CALLBACK bool mcu_com_rx_cb(uint8_t c);
+MCU_CALLBACK void mcu_rtc_cb(uint32_t millis);
+MCU_IO_CALLBACK void mcu_controls_changed_cb(void);
+MCU_IO_CALLBACK void mcu_limits_changed_cb(void);
+MCU_IO_CALLBACK void mcu_probe_changed_cb(void);
+MCU_IO_CALLBACK void mcu_inputs_changed_cb(void);
 
 /*IO functions*/
 
@@ -101,7 +104,7 @@ extern "C"
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_config_input
-	void mcu_config_input(uint8_t pin);
+void mcu_config_input(uint8_t pin);
 #endif
 
 /**
@@ -109,7 +112,7 @@ extern "C"
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_config_pullup
-	void mcu_config_pullup(uint8_t pin);
+void mcu_config_pullup(uint8_t pin);
 #endif
 
 /**
@@ -117,7 +120,7 @@ extern "C"
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_config_analog
-	void mcu_config_analog(uint8_t pin);
+void mcu_config_analog(uint8_t pin);
 #endif
 
 /**
@@ -125,7 +128,7 @@ extern "C"
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_config_input_isr
-	void mcu_config_input_isr(uint8_t pin);
+void mcu_config_input_isr(uint8_t pin);
 #endif
 
 /**
@@ -133,7 +136,7 @@ extern "C"
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_config_output
-	void mcu_config_output(uint8_t pin);
+void mcu_config_output(uint8_t pin);
 #endif
 
 /**
@@ -141,7 +144,7 @@ extern "C"
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_get_input
-	uint8_t mcu_get_input(uint8_t pin);
+uint8_t mcu_get_input(uint8_t pin);
 #endif
 
 /**
@@ -149,7 +152,7 @@ extern "C"
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_get_output
-	uint8_t mcu_get_output(uint8_t pin);
+uint8_t mcu_get_output(uint8_t pin);
 #endif
 
 /**
@@ -157,7 +160,7 @@ extern "C"
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_set_output
-	void mcu_set_output(uint8_t pin);
+void mcu_set_output(uint8_t pin);
 #endif
 
 /**
@@ -165,7 +168,7 @@ extern "C"
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_clear_output
-	void mcu_clear_output(uint8_t pin);
+void mcu_clear_output(uint8_t pin);
 #endif
 
 /**
@@ -173,39 +176,40 @@ extern "C"
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_toggle_output
-	void mcu_toggle_output(uint8_t pin);
+void mcu_toggle_output(uint8_t pin);
 #endif
 
-	/**
-	 *
-	 * This is used has by the generic mcu functions has generic (overridable) IO initializer
-	 *
-	 * */
-	void mcu_io_init(void);
+/**
+ *
+ * This is used has by the generic mcu functions has generic (overridable) IO
+ * initializer
+ *
+ * */
+void mcu_io_init(void);
 
-	/**
-	 * This can be used to set the defaults state of IO pins on reset. (overridable)
-	 * */
+/**
+ * This can be used to set the defaults state of IO pins on reset. (overridable)
+ * */
 #ifndef mcu_io_reset
-	void mcu_io_reset(void);
+void mcu_io_reset(void);
 #endif
 
-	/**
-	 * initializes the mcu
-	 * this function needs to:
-	 *   - configure all IO pins (digital IO, PWM, Analog, etc...)
-	 *   - configure all interrupts
-	 *   - configure uart or usb
-	 *   - start the internal RTC
-	 * */
-	void mcu_init(void);
+/**
+ * initializes the mcu
+ * this function needs to:
+ *   - configure all IO pins (digital IO, PWM, Analog, etc...)
+ *   - configure all interrupts
+ *   - configure uart or usb
+ *   - start the internal RTC
+ * */
+void mcu_init(void);
 
 /**
  * enables the pin probe mcu isr on change
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_enable_probe_isr
-	void mcu_enable_probe_isr(void);
+void mcu_enable_probe_isr(void);
 #endif
 
 /**
@@ -213,7 +217,7 @@ extern "C"
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_disable_probe_isr
-	void mcu_disable_probe_isr(void);
+void mcu_disable_probe_isr(void);
 #endif
 
 /**
@@ -221,7 +225,7 @@ extern "C"
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_get_analog
-	uint16_t mcu_get_analog(uint8_t channel);
+uint16_t mcu_get_analog(uint8_t channel);
 #endif
 
 /**
@@ -229,7 +233,7 @@ extern "C"
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_config_pwm
-	void mcu_config_pwm(uint8_t pin, uint16_t freq);
+void mcu_config_pwm(uint8_t pin, uint16_t freq);
 #endif
 
 #ifndef mcu_softpwm_freq_config
@@ -241,7 +245,7 @@ extern "C"
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_set_pwm
-	void mcu_set_pwm(uint8_t pwm, uint8_t value);
+void mcu_set_pwm(uint8_t pwm, uint8_t value);
 #endif
 
 /**
@@ -249,7 +253,7 @@ extern "C"
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_get_pwm
-	uint8_t mcu_get_pwm(uint8_t pwm);
+uint8_t mcu_get_pwm(uint8_t pwm);
 #endif
 
 /**
@@ -257,7 +261,7 @@ extern "C"
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_set_servo
-	void mcu_set_servo(uint8_t servo, uint8_t value);
+void mcu_set_servo(uint8_t servo, uint8_t value);
 #endif
 
 /**
@@ -265,7 +269,7 @@ extern "C"
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_get_servo
-	uint8_t mcu_get_servo(uint8_t servo);
+uint8_t mcu_get_servo(uint8_t servo);
 #endif
 
 // ISR
@@ -274,7 +278,7 @@ extern "C"
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_enable_global_isr
-	void mcu_enable_global_isr(void);
+void mcu_enable_global_isr(void);
 #endif
 
 /**
@@ -282,7 +286,7 @@ extern "C"
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_disable_global_isr
-	void mcu_disable_global_isr(void);
+void mcu_disable_global_isr(void);
 #endif
 
 /**
@@ -290,34 +294,36 @@ extern "C"
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_get_global_isr
-	bool mcu_get_global_isr(void);
+bool mcu_get_global_isr(void);
 #endif
 
-	// Step interpolator
-	/**
-	 * convert step rate/frequency to timer ticks and prescaller
-	 * */
-	void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller);
+// Step interpolator
+/**
+ * convert step rate/frequency to timer ticks and prescaller
+ * */
+void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller);
 
-	/**
-	 * convert timer ticks and prescaller to step rate/frequency
-	 * */
-	float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller);
+/**
+ * convert timer ticks and prescaller to step rate/frequency
+ * */
+float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller);
 
-	/**
-	 * starts the timer interrupt that generates the step pulses for the interpolator
-	 * */
-	void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller);
+/**
+ * starts the timer interrupt that generates the step pulses for the
+ * interpolator
+ * */
+void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller);
 
-	/**
-	 * changes the step rate of the timer interrupt that generates the step pulses for the interpolator
-	 * */
-	void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller);
+/**
+ * changes the step rate of the timer interrupt that generates the step pulses
+ * for the interpolator
+ * */
+void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller);
 
-	/**
-	 * stops the timer interrupt that generates the step pulses for the interpolator
-	 * */
-	void mcu_stop_itp_isr(void);
+/**
+ * stops the timer interrupt that generates the step pulses for the interpolator
+ * */
+void mcu_stop_itp_isr(void);
 
 #ifndef mcu_start_step_reset_timeout
 #define mcu_start_step_reset_timeout()
@@ -328,7 +334,7 @@ extern "C"
  * the time counting is controled by the internal RTC
  * */
 #ifndef mcu_millis
-	uint32_t mcu_millis(void);
+uint32_t mcu_millis(void);
 #endif
 
 /**
@@ -336,7 +342,7 @@ extern "C"
  * the time counting is controled by the internal RTC
  * */
 #ifndef mcu_micros
-	uint32_t mcu_micros(void);
+uint32_t mcu_micros(void);
 #endif
 
 /**
@@ -344,7 +350,7 @@ extern "C"
  * this free runner is always running even during an ISR or atomic operation
  * */
 #ifndef mcu_free_micros
-	uint32_t mcu_free_micros(void);
+uint32_t mcu_free_micros(void);
 #endif
 
 #ifndef mcu_nop
@@ -352,7 +358,7 @@ extern "C"
 #endif
 
 #ifndef mcu_delay_loop
-	void mcu_delay_loop(uint16_t loops);
+void mcu_delay_loop(uint16_t loops);
 #endif
 
 #ifndef mcu_delay_cycles
@@ -367,64 +373,67 @@ extern "C"
 #error "MCU_CYCLES_PER_LOOP not defined for this MCU"
 #endif
 
-#define mcu_delay_cycles(X)                                                                                                                 \
-	do                                                                                                                                      \
-	{                                                                                                                                       \
-		if ((X) >= (MCU_CYCLES_LOOP_OVERHEAD + MCU_CYCLES_PER_LOOP)) /* runs at least one loop */                                           \
-		{                                                                                                                                   \
-			mcu_delay_loop((uint16_t)(((X) - MCU_CYCLES_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP));                                             \
-		}                                                                                                                                   \
-		switch (((X) >= (MCU_CYCLES_LOOP_OVERHEAD + MCU_CYCLES_PER_LOOP)) ? (((X) - MCU_CYCLES_LOOP_OVERHEAD) % MCU_CYCLES_PER_LOOP) : (X)) \
-		{                                                                                                                                   \
-		case 15:                                                                                                                            \
-			asm volatile("nop");                                                                                                            \
-			__FALL_THROUGH__                                                                                                                \
-		case 14:                                                                                                                            \
-			asm volatile("nop");                                                                                                            \
-			__FALL_THROUGH__                                                                                                                \
-		case 13:                                                                                                                            \
-			asm volatile("nop");                                                                                                            \
-			__FALL_THROUGH__                                                                                                                \
-		case 12:                                                                                                                            \
-			asm volatile("nop");                                                                                                            \
-			__FALL_THROUGH__                                                                                                                \
-		case 11:                                                                                                                            \
-			asm volatile("nop");                                                                                                            \
-			__FALL_THROUGH__                                                                                                                \
-		case 10:                                                                                                                            \
-			asm volatile("nop");                                                                                                            \
-			__FALL_THROUGH__                                                                                                                \
-		case 9:                                                                                                                             \
-			asm volatile("nop");                                                                                                            \
-			__FALL_THROUGH__                                                                                                                \
-		case 8:                                                                                                                             \
-			asm volatile("nop");                                                                                                            \
-			__FALL_THROUGH__                                                                                                                \
-		case 7:                                                                                                                             \
-			asm volatile("nop");                                                                                                            \
-			__FALL_THROUGH__                                                                                                                \
-		case 6:                                                                                                                             \
-			asm volatile("nop");                                                                                                            \
-			__FALL_THROUGH__                                                                                                                \
-		case 5:                                                                                                                             \
-			asm volatile("nop");                                                                                                            \
-			__FALL_THROUGH__                                                                                                                \
-		case 4:                                                                                                                             \
-			asm volatile("nop");                                                                                                            \
-			__FALL_THROUGH__                                                                                                                \
-		case 3:                                                                                                                             \
-			asm volatile("nop");                                                                                                            \
-			__FALL_THROUGH__                                                                                                                \
-		case 2:                                                                                                                             \
-			asm volatile("nop");                                                                                                            \
-			__FALL_THROUGH__                                                                                                                \
-		case 1:                                                                                                                             \
-			asm volatile("nop");                                                                                                            \
-		}                                                                                                                                   \
-	} while (0)
+#define mcu_delay_cycles(X)                                                    \
+  do {                                                                         \
+    if ((X) >= (MCU_CYCLES_LOOP_OVERHEAD +                                     \
+                MCU_CYCLES_PER_LOOP)) /* runs at least one loop */             \
+    {                                                                          \
+      mcu_delay_loop(                                                          \
+          (uint16_t)(((X) - MCU_CYCLES_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP)); \
+    }                                                                          \
+    switch (((X) >= (MCU_CYCLES_LOOP_OVERHEAD + MCU_CYCLES_PER_LOOP))          \
+                ? (((X) - MCU_CYCLES_LOOP_OVERHEAD) % MCU_CYCLES_PER_LOOP)     \
+                : (X)) {                                                       \
+    case 15:                                                                   \
+      asm volatile("nop");                                                     \
+      __FALL_THROUGH__                                                         \
+    case 14:                                                                   \
+      asm volatile("nop");                                                     \
+      __FALL_THROUGH__                                                         \
+    case 13:                                                                   \
+      asm volatile("nop");                                                     \
+      __FALL_THROUGH__                                                         \
+    case 12:                                                                   \
+      asm volatile("nop");                                                     \
+      __FALL_THROUGH__                                                         \
+    case 11:                                                                   \
+      asm volatile("nop");                                                     \
+      __FALL_THROUGH__                                                         \
+    case 10:                                                                   \
+      asm volatile("nop");                                                     \
+      __FALL_THROUGH__                                                         \
+    case 9:                                                                    \
+      asm volatile("nop");                                                     \
+      __FALL_THROUGH__                                                         \
+    case 8:                                                                    \
+      asm volatile("nop");                                                     \
+      __FALL_THROUGH__                                                         \
+    case 7:                                                                    \
+      asm volatile("nop");                                                     \
+      __FALL_THROUGH__                                                         \
+    case 6:                                                                    \
+      asm volatile("nop");                                                     \
+      __FALL_THROUGH__                                                         \
+    case 5:                                                                    \
+      asm volatile("nop");                                                     \
+      __FALL_THROUGH__                                                         \
+    case 4:                                                                    \
+      asm volatile("nop");                                                     \
+      __FALL_THROUGH__                                                         \
+    case 3:                                                                    \
+      asm volatile("nop");                                                     \
+      __FALL_THROUGH__                                                         \
+    case 2:                                                                    \
+      asm volatile("nop");                                                     \
+      __FALL_THROUGH__                                                         \
+    case 1:                                                                    \
+      asm volatile("nop");                                                     \
+    }                                                                          \
+  } while (0)
 #endif
 
-#define mcu_delay_ns(X) mcu_delay_cycles((uint16_t)(((X) * ((F_CPU) / 1000000)) / 1000))
+#define mcu_delay_ns(X)                                                        \
+  mcu_delay_cycles((uint16_t)(((X) * ((F_CPU) / 1000000)) / 1000))
 #define mcu_delay_hz(X) mcu_delay_cycles((uint16_t)((F_CPU) / (X)))
 
 // compatibility (deprecated)
@@ -437,125 +446,125 @@ extern "C"
  * the maximum allowed delay is 255 us
  * */
 #ifndef mcu_delay_us
-#define mcu_delay_us(X) mcu_delay_cycles(F_CPU / MCU_CLOCKS_PER_CYCLE / 1000000UL * X)
+#define mcu_delay_us(X)                                                        \
+  mcu_delay_cycles(F_CPU / MCU_CLOCKS_PER_CYCLE / 1000000UL * X)
 #endif
 
 #ifdef MCU_HAS_ONESHOT_TIMER
-	typedef void (*mcu_timeout_delgate)(void);
-	extern MCU_CALLBACK mcu_timeout_delgate mcu_timeout_cb;
+typedef void (*mcu_timeout_delgate)(void);
+extern MCU_CALLBACK mcu_timeout_delgate mcu_timeout_cb;
 /**
  * configures a single shot timeout in us
  * */
 #ifndef mcu_config_timeout
-	void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout);
+void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout);
 #endif
 
 /**
  * starts the timeout. Once hit the the respective callback is called
  * */
 #ifndef mcu_start_timeout
-	void mcu_start_timeout();
+void mcu_start_timeout();
 #endif
 #endif
 
-	/**
-	 * runs all internal tasks of the MCU.
-	 * for the moment these are:
-	 *   - if USB is enabled and MCU uses tinyUSB framework run tinyUSB tud_task
-	 * */
-	void mcu_dotasks(void);
+/**
+ * runs all internal tasks of the MCU.
+ * for the moment these are:
+ *   - if USB is enabled and MCU uses tinyUSB framework run tinyUSB tud_task
+ * */
+void mcu_dotasks(void);
 
-	// Non volatile memory
-	/**
-	 * gets a byte at the given EEPROM (or other non volatile memory) address of the MCU.
-	 * */
-	uint8_t mcu_eeprom_getc(uint16_t address);
+// Non volatile memory
+/**
+ * gets a byte at the given EEPROM (or other non volatile memory) address of the
+ * MCU.
+ * */
+uint8_t mcu_eeprom_getc(uint16_t address);
 
-	/**
-	 * sets a byte at the given EEPROM (or other non volatile memory) address of the MCU.
-	 * */
-	void mcu_eeprom_putc(uint16_t address, uint8_t value);
+/**
+ * sets a byte at the given EEPROM (or other non volatile memory) address of the
+ * MCU.
+ * */
+void mcu_eeprom_putc(uint16_t address, uint8_t value);
 
-	/**
-	 * flushes all recorded registers into the eeprom.
-	 * */
-	void mcu_eeprom_flush(void);
+/**
+ * flushes all recorded registers into the eeprom.
+ * */
+void mcu_eeprom_flush(void);
 
-	typedef union
-	{
-		uint8_t flags;
-		struct
-		{
-			uint8_t mode : 3;
-			uint8_t : 1; // reserved for bit order
-			uint8_t enable_dma : 1;
-			uint8_t : 3; // reserved
-		};
-	} spi_config_t;
+typedef union {
+  uint8_t flags;
+  struct {
+    uint8_t mode : 3;
+    uint8_t : 1; // reserved for bit order
+    uint8_t enable_dma : 1;
+    uint8_t : 3; // reserved
+  };
+} spi_config_t;
 
-	// hardware port function calls
-	typedef struct spi_port_
-	{
-		bool isbusy;
-		void (*start)(spi_config_t, uint32_t);
-		uint8_t (*xmit)(uint8_t);
-		bool (*bulk_xmit)(const uint8_t *, uint8_t *, uint16_t);
-		void (*stop)(void);
-	} spi_port_t;
+// hardware port function calls
+typedef struct spi_port_ {
+  bool isbusy;
+  void (*start)(spi_config_t, uint32_t);
+  uint8_t (*xmit)(uint8_t);
+  bool (*bulk_xmit)(const uint8_t *, uint8_t *, uint16_t);
+  void (*stop)(void);
+} spi_port_t;
 
 #ifdef MCU_HAS_SPI
-	void mcu_spi_init(void);
+void mcu_spi_init(void);
 
 #ifndef mcu_spi_xmit
-	uint8_t mcu_spi_xmit(uint8_t data);
+uint8_t mcu_spi_xmit(uint8_t data);
 #endif
 
 #ifndef mcu_spi_bulk_transfer
-	bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len);
+bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len);
 #endif
 
 #ifndef mcu_spi_start
-	void mcu_spi_start(spi_config_t config, uint32_t frequency);
+void mcu_spi_start(spi_config_t config, uint32_t frequency);
 #endif
 
 #ifndef mcu_spi_stop
-	void mcu_spi_stop(void);
+void mcu_spi_stop(void);
 #endif
 
 #ifndef mcu_spi_config
-	void mcu_spi_config(spi_config_t config, uint32_t frequency);
+void mcu_spi_config(spi_config_t config, uint32_t frequency);
 #endif
 
-	extern spi_port_t mcu_spi_port;
+extern spi_port_t mcu_spi_port;
 #define MCU_SPI (&mcu_spi_port)
 #else
 #define MCU_SPI NULL
 #endif
 
 #ifdef MCU_HAS_SPI2
-	void mcu_spi2_init(void);
+void mcu_spi2_init(void);
 
 #ifndef mcu_spi2_xmit
-	uint8_t mcu_spi2_xmit(uint8_t data);
+uint8_t mcu_spi2_xmit(uint8_t data);
 #endif
 
 #ifndef mcu_spi2_bulk_transfer
-	bool mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len);
+bool mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len);
 #endif
 
 #ifndef mcu_spi2_start
-	void mcu_spi2_start(spi_config_t config, uint32_t frequency);
+void mcu_spi2_start(spi_config_t config, uint32_t frequency);
 #endif
 
 #ifndef mcu_spi2_stop
-	void mcu_spi2_stop(void);
+void mcu_spi2_stop(void);
 #endif
 
 #ifndef mcu_spi2_config
-	void mcu_spi2_config(spi_config_t config, uint32_t frequency);
+void mcu_spi2_config(spi_config_t config, uint32_t frequency);
 #endif
 
-	extern spi_port_t mcu_spi2_port;
+extern spi_port_t mcu_spi2_port;
 #define MCU_SPI2 (&mcu_spi2_port)
 #else
 #define MCU_SPI2 NULL
@@ -569,15 +578,17 @@ extern "C"
 #define I2C_NOTOK 1
 #endif
 
-	void mcu_i2c_init(void);
+void mcu_i2c_init(void);
 
 #ifndef mcu_i2c_send
-	// master sends command to slave
-	uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool release, uint32_t ms_timeout);
+// master sends command to slave
+uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen,
+                     bool release, uint32_t ms_timeout);
 #endif
 #ifndef mcu_i2c_receive
-	// master receive response from slave
-	uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_t ms_timeout);
+// master receive response from slave
+uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen,
+                        uint32_t ms_timeout);
 #endif
 
 #if defined(MCU_SUPPORTS_I2C_SLAVE) && (I2C_ADDRESS != 0)
@@ -585,82 +596,83 @@ extern "C"
 #define I2C_SLAVE_BUFFER_SIZE 48
 #endif
 #ifndef mcu_i2c_slave_cb
-	MCU_IO_CALLBACK void mcu_i2c_slave_cb(uint8_t *data, uint8_t *datalen);
+MCU_IO_CALLBACK void mcu_i2c_slave_cb(uint8_t *data, uint8_t *datalen);
 #endif
 #endif
 
 #ifndef mcu_i2c_config
-	void mcu_i2c_config(uint32_t frequency);
+void mcu_i2c_config(uint32_t frequency);
 #endif
 
 #endif
 
-	/**
-	 * sends a uint8_t either via uart (hardware, software USB CDC, Wifi or BT)
-	 * can be defined either as a function or a macro call
-	 * */
+/**
+ * sends a uint8_t either via uart (hardware, software USB CDC, Wifi or BT)
+ * can be defined either as a function or a macro call
+ * */
 
 #ifdef MCU_HAS_USB
-	void mcu_usb_init(void);
-	uint8_t mcu_usb_getc(void);
-	uint8_t mcu_usb_available(void);
-	void mcu_usb_clear(void);
-	void mcu_usb_putc(uint8_t c);
-	void mcu_usb_flush(void);
+void mcu_usb_init(void);
+uint8_t mcu_usb_getc(void);
+uint8_t mcu_usb_available(void);
+void mcu_usb_clear(void);
+void mcu_usb_putc(uint8_t c);
+void mcu_usb_flush(void);
 #ifdef DETACH_USB_FROM_MAIN_PROTOCOL
-	MCU_RX_CALLBACK void mcu_usb_rx_cb(uint8_t c);
+MCU_RX_CALLBACK void mcu_usb_rx_cb(uint8_t c);
 #endif
 #endif
 
 #ifdef MCU_HAS_UART
-	void mcu_uart_init(void);
-	uint8_t mcu_uart_getc(void);
-	uint8_t mcu_uart_available(void);
-	void mcu_uart_clear(void);
-	void mcu_uart_putc(uint8_t c);
-	void mcu_uart_flush(void);
+void mcu_uart_init(void);
+uint8_t mcu_uart_getc(void);
+uint8_t mcu_uart_available(void);
+void mcu_uart_clear(void);
+void mcu_uart_putc(uint8_t c);
+void mcu_uart_flush(void);
 #ifdef DETACH_UART_FROM_MAIN_PROTOCOL
-	MCU_RX_CALLBACK void mcu_uart_rx_cb(uint8_t c);
+MCU_RX_CALLBACK void mcu_uart_rx_cb(uint8_t c);
 #endif
 #endif
 
 #ifdef MCU_HAS_UART2
-	void mcu_uart2_init(void);
-	uint8_t mcu_uart2_getc(void);
-	uint8_t mcu_uart2_available(void);
-	void mcu_uart2_clear(void);
-	void mcu_uart2_putc(uint8_t c);
-	void mcu_uart2_flush(void);
+void mcu_uart2_init(void);
+uint8_t mcu_uart2_getc(void);
+uint8_t mcu_uart2_available(void);
+void mcu_uart2_clear(void);
+void mcu_uart2_putc(uint8_t c);
+void mcu_uart2_flush(void);
 #ifdef DETACH_UART2_FROM_MAIN_PROTOCOL
-	MCU_RX_CALLBACK void mcu_uart2_rx_cb(uint8_t c);
+MCU_RX_CALLBACK void mcu_uart2_rx_cb(uint8_t c);
 #endif
 #endif
 
 #ifdef ENABLE_SOCKETS
 #include "../../modules/net/telnet.h"
-	extern socket_if_t *telnet_sock;
-	extern telnet_protocol_t telnet_proto;
-	void mcu_network_init(void);
-	uint8_t mcu_telnet_getc(void);
-	uint8_t mcu_telnet_available(void);
-	void mcu_telnet_clear(void);
-	void mcu_telnet_putc(uint8_t c);
-	void mcu_telnet_flush(void);
+extern socket_if_t *telnet_sock;
+extern telnet_protocol_t telnet_proto;
+void mcu_network_init(void);
+uint8_t mcu_telnet_getc(void);
+uint8_t mcu_telnet_available(void);
+void mcu_telnet_clear(void);
+void mcu_telnet_putc(uint8_t c);
+void mcu_telnet_flush(void);
 #ifdef DETACH_TELNET_FROM_MAIN_PROTOCOL
-	MCU_RX_CALLBACK void mcu_telnet_rx_cb(uint8_t c);
-#endif																				  // must be called from mcu_init if the default mcu_init is overriden
-	void mcu_telnet_onrecv(uint8_t client_idx, const uint8_t *data, size_t data_len); // the callback when data is received
+MCU_RX_CALLBACK void mcu_telnet_rx_cb(uint8_t c);
+#endif // must be called from mcu_init if the default mcu_init is overriden
+void mcu_telnet_onrecv(uint8_t client_idx, const uint8_t *data,
+                       size_t data_len); // the callback when data is received
 #endif
 
 #ifdef MCU_HAS_BLUETOOTH
-	void mcu_bt_init(void);
-	uint8_t mcu_bt_getc(void);
-	uint8_t mcu_bt_available(void);
-	void mcu_bt_clear(void);
-	void mcu_bt_putc(uint8_t c);
-	void mcu_bt_flush(void);
+void mcu_bt_init(void);
+uint8_t mcu_bt_getc(void);
+uint8_t mcu_bt_available(void);
+void mcu_bt_clear(void);
+void mcu_bt_putc(uint8_t c);
+void mcu_bt_flush(void);
 #ifdef DETACH_BLUETOOTH_FROM_MAIN_PROTOCOL
-	MCU_RX_CALLBACK void mcu_bt_rx_cb(uint8_t c);
+MCU_RX_CALLBACK void mcu_bt_rx_cb(uint8_t c);
 #endif
 #endif
 
@@ -686,22 +698,25 @@ extern "C"
  * */
 #ifndef mcu_in_isr_context
 #include "../../utils.h"
-	extern volatile buffer_index_t mcu_in_isr_context_counter;
-#define mcu_in_isr_context() (ATOMIC_LOAD_N(&mcu_in_isr_context_counter, __ATOMIC_ACQUIRE) != 0)
-	static FORCEINLINE void mcu_in_isr_context_leave(buffer_index_t *c)
-	{
-		ATOMIC_FETCH_SUB(&mcu_in_isr_context_counter, 1, __ATOMIC_ACQ_REL);
-		MEM_BARRIER;
-		(void)c;
-	}
+extern volatile buffer_index_t mcu_in_isr_context_counter;
+#define mcu_in_isr_context()                                                   \
+  (ATOMIC_LOAD_N(&mcu_in_isr_context_counter, __ATOMIC_ACQUIRE) != 0)
+static FORCEINLINE void mcu_in_isr_context_leave(buffer_index_t *c) {
+  ATOMIC_FETCH_SUB(&mcu_in_isr_context_counter, 1, __ATOMIC_ACQ_REL);
+  MEM_BARRIER;
+  (void)c;
+}
 
-	static FORCEINLINE buffer_index_t mcu_isr_context_enter_init(void)
-	{
-		buffer_index_t c = ATOMIC_FETCH_ADD(&mcu_in_isr_context_counter, 1, __ATOMIC_ACQ_REL);
-		return c;
-	}
+static FORCEINLINE buffer_index_t mcu_isr_context_enter_init(void) {
+  buffer_index_t c =
+      ATOMIC_FETCH_ADD(&mcu_in_isr_context_counter, 1, __ATOMIC_ACQ_REL);
+  return c;
+}
 
-#define mcu_isr_context_enter() buffer_index_t isr_context __attribute__((__cleanup__(mcu_in_isr_context_leave))) = mcu_isr_context_enter_init()
+#define mcu_isr_context_enter()                                                \
+  buffer_index_t isr_context                                                   \
+      __attribute__((__cleanup__(mcu_in_isr_context_leave))) =                 \
+          mcu_isr_context_enter_init()
 #else
 #define mcu_isr_context_enter()
 #define mcu_in_isr_context_custom_impl

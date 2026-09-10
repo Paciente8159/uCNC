@@ -1,27 +1,27 @@
 /*
-	Name: grbl_interface.h
-	Description: µCNC definitions and standard codes used by Grbl.
+        Name: grbl_interface.h
+        Description: µCNC definitions and standard codes used by Grbl.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 07/12/2019
+        Copyright: Copyright (c) João Martins
+        Author: João Martins
+        Date: 07/12/2019
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+        µCNC is free software: you can redistribute it and/or modify
+        it under the terms of the GNU General Public License as published by
+        the Free Software Foundation, either version 3 of the License, or
+        (at your option) any later version. Please see
+   <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+        µCNC is distributed WITHOUT ANY WARRANTY;
+        Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A
+   PARTICULAR PURPOSE. See the	GNU General Public License for more details.
 */
 
 #ifndef GRBL_INTERFACE_H
 #define GRBL_INTERFACE_H
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 // Defines Grbl realtime ascii codes
@@ -83,9 +83,9 @@ extern "C"
 #define STATUS_GCODE_INVALID_TARGET 33
 #define STATUS_GCODE_ARC_RADIUS_ERROR 34
 #define STATUS_GCODE_NO_OFFSETS_IN_PLANE 35
-#define STATUS_GCODE_UNUSED_WORDS 36		   //
+#define STATUS_GCODE_UNUSED_WORDS 36           //
 #define STATUS_GCODE_G43_DYNAMIC_AXIS_ERROR 37 //
-#define STATUS_GCODE_MAX_VALUE_EXCEEDED 38	   //
+#define STATUS_GCODE_MAX_VALUE_EXCEEDED 38     //
 // additional codes
 #define STATUS_BAD_COMMENT_FORMAT 39
 #define STATUS_INVALID_TOOL 40
@@ -115,7 +115,8 @@ extern "C"
 #define STATUS_NO_CMD 255
 
 // special Grbl system commands return codes
-// These are not error codes but codes to print requested reports after parsing a grbl command
+// These are not error codes but codes to print requested reports after parsing
+// a grbl command
 #define GRBL_SYSTEM_CMD 128
 #define GRBL_SEND_SYSTEM_SETTINGS (GRBL_SYSTEM_CMD + 0)
 #define GRBL_SEND_COORD_SYSTEM (GRBL_SYSTEM_CMD + 1)
@@ -144,38 +145,58 @@ extern "C"
 #define EXEC_ALARM_EMERGENCY_STOP -126
 #define EXEC_ALARM_NOALARM 0
 // Grbl alarm codes. Valid values (1-255). Zero is reserved for the reset alarm.
-#define EXEC_ALARM_HARD_LIMIT 1					   // hard limits hit while in motion other then homing
-#define EXEC_ALARM_SOFT_LIMIT 2					   // target is off bounds of the machine kinematics
-#define EXEC_ALARM_ABORT_CYCLE 3				   // an abort command was issued
-#define EXEC_ALARM_PROBE_FAIL_INITIAL 4			   // probe was already triggered and was not able to initialize probing
-#define EXEC_ALARM_PROBE_FAIL_CONTACT 5			   // probe failed to triggered before reaching the limit target
-#define EXEC_ALARM_HOMING_FAIL_RESET 6			   // homing was aborted by a reset command
-#define EXEC_ALARM_HOMING_FAIL_DOOR 7			   // door was opened during homing motion
-#define EXEC_ALARM_HOMING_FAIL_PULLOFF 8		   // homing limits failed to normalize after retract by pull-distance
-#define EXEC_ALARM_HOMING_FAIL_APPROACH 9		   // homing limits failed make initial contact
-#define EXEC_ALARM_HOMING_FAIL_DUAL_APPROACH 10	   // homing limits failed make initial contact (self squaring)
-#define EXEC_ALARM_HOMING_FAIL_LIMIT_ACTIVE 11	   // homing could not start since one of the limits was already triggered
-#define EXEC_ALARM_SPINDLE_SYNC_FAIL 12			   // failed to achieve spindle sync speed
-#define EXEC_ALARM_HARD_LIMIT_NOMOTION 13		   // hard limits were triggered without any motion (position was not lost)
-#define EXEC_ALARM_PLASMA_THC_ARC_START_FAILURE 14 // failed to start arc with plasma THC
-#define EXEC_ALARM_ATC_ERROR 15					   // an error ocurrer while executing a tool change via the tool changer gcode
+#define EXEC_ALARM_HARD_LIMIT                                                  \
+  1 // hard limits hit while in motion other then homing
+#define EXEC_ALARM_SOFT_LIMIT                                                  \
+  2 // target is off bounds of the machine kinematics
+#define EXEC_ALARM_ABORT_CYCLE 3 // an abort command was issued
+#define EXEC_ALARM_PROBE_FAIL_INITIAL                                          \
+  4 // probe was already triggered and was not able to initialize probing
+#define EXEC_ALARM_PROBE_FAIL_CONTACT                                          \
+  5 // probe failed to triggered before reaching the limit target
+#define EXEC_ALARM_HOMING_FAIL_RESET 6 // homing was aborted by a reset command
+#define EXEC_ALARM_HOMING_FAIL_DOOR 7  // door was opened during homing motion
+#define EXEC_ALARM_HOMING_FAIL_PULLOFF                                         \
+  8 // homing limits failed to normalize after retract by pull-distance
+#define EXEC_ALARM_HOMING_FAIL_APPROACH                                        \
+  9 // homing limits failed make initial contact
+#define EXEC_ALARM_HOMING_FAIL_DUAL_APPROACH                                   \
+  10 // homing limits failed make initial contact (self squaring)
+#define EXEC_ALARM_HOMING_FAIL_LIMIT_ACTIVE                                    \
+  11 // homing could not start since one of the limits was already triggered
+#define EXEC_ALARM_SPINDLE_SYNC_FAIL 12 // failed to achieve spindle sync speed
+#define EXEC_ALARM_HARD_LIMIT_NOMOTION                                         \
+  13 // hard limits were triggered without any motion (position was not lost)
+#define EXEC_ALARM_PLASMA_THC_ARC_START_FAILURE                                \
+  14 // failed to start arc with plasma THC
+#define EXEC_ALARM_ATC_ERROR                                                   \
+  15 // an error ocurrer while executing a tool change via the tool changer
+     // gcode
 
-#define EXEC_STATUS_IDLE 0					// status code idle
-#define EXEC_STATUS_PROBING 1				// status code doing probe motion
-#define EXEC_STATUS_DWELL 2					// status code waiting for dwell
-#define EXEC_STATUS_RUNNING 3				// status code gcode running
-#define EXEC_STATUS_JOGGING 4				// status code jogging motion
-#define EXEC_STATUS_HOLD 10					// status code holding enabled (stopped)
-#define EXEC_STATUS_HOLD_PENDING 11			// status code holding enabled (pausing)
-#define EXEC_STATUS_HOLD_RESUMING 12		// status code holding enabled (resuming)
-#define EXEC_STATUS_HOMING 20				// status code homing motion
-#define EXEC_STATUS_DOOR_CLOSED 30			// status code holding enabled (stopped) from safety door (safety door no longer active)
-#define EXEC_STATUS_DOOR_OPENED 31			// status code holding enabled (stopped) from safety door (safety door no longer active)
-#define EXEC_STATUS_DOOR_OPENED_PAUSING 32	// status code holding enabled (pausing) from safety door (safety door still active)
-#define EXEC_STATUS_DOOR_CLOSED_RESUMING 33 // status code holding enabled (resuming) from safety door (safety door still active)
-#define EXEC_STATUS_CHECK 40				// status code check mode
-#define EXEC_STATUS_LOCKED 50				// status code gcode locked
-#define EXEC_STATUS_ALARM 60				// status code alarm mode
+#define EXEC_STATUS_IDLE 0           // status code idle
+#define EXEC_STATUS_PROBING 1        // status code doing probe motion
+#define EXEC_STATUS_DWELL 2          // status code waiting for dwell
+#define EXEC_STATUS_RUNNING 3        // status code gcode running
+#define EXEC_STATUS_JOGGING 4        // status code jogging motion
+#define EXEC_STATUS_HOLD 10          // status code holding enabled (stopped)
+#define EXEC_STATUS_HOLD_PENDING 11  // status code holding enabled (pausing)
+#define EXEC_STATUS_HOLD_RESUMING 12 // status code holding enabled (resuming)
+#define EXEC_STATUS_HOMING 20        // status code homing motion
+#define EXEC_STATUS_DOOR_CLOSED                                                \
+  30 // status code holding enabled (stopped) from safety door (safety door no
+     // longer active)
+#define EXEC_STATUS_DOOR_OPENED                                                \
+  31 // status code holding enabled (stopped) from safety door (safety door no
+     // longer active)
+#define EXEC_STATUS_DOOR_OPENED_PAUSING                                        \
+  32 // status code holding enabled (pausing) from safety door (safety door
+     // still active)
+#define EXEC_STATUS_DOOR_CLOSED_RESUMING                                       \
+  33 // status code holding enabled (resuming) from safety door (safety door
+     // still active)
+#define EXEC_STATUS_CHECK 40  // status code check mode
+#define EXEC_STATUS_LOCKED 50 // status code gcode locked
+#define EXEC_STATUS_ALARM 60  // status code alarm mode
 
 #ifndef DISABLE_SAFE_SETTINGS
 #define EXEC_ALARM_SETTINGS_READ_ERROR -3
@@ -198,9 +219,11 @@ extern "C"
 #define MSG_STARTUP "Grbl 1.1f ['$' for help]" MSG_EOL
 #endif
 #ifndef MSG_STARTUP
-#define MSG_STARTUP MSG_STARTUP_START CNC_MAJOR_MINOR_VERSION MSG_STARTUP_END MSG_EOL
+#define MSG_STARTUP                                                            \
+  MSG_STARTUP_START CNC_MAJOR_MINOR_VERSION MSG_STARTUP_END MSG_EOL
 #endif
-#define MSG_HELP "[HLP:$$ $# $G $I $N $x=val $Nx=line $J=line $C $X $H ~ ! ? ctrl-x]" MSG_EOL
+#define MSG_HELP                                                               \
+  "[HLP:$$ $# $G $I $N $x=val $Nx=line $J=line $C $X $H ~ ! ? ctrl-x]" MSG_EOL
 
 // Non query feedback messages
 #define MSG_FEEDBACK_START "[MSG:"
@@ -289,9 +312,9 @@ extern "C"
 #define MSG_STATUS_PIN "|Pn:"
 #define MSG_STATUS_BUF "|Buf:"
 
-	// #define MSG_INT "%hd"
-	// #define MSG_FLT "%0.3f"
-	// #define MSG_FLT_IMPERIAL "%0.5f"
+// #define MSG_INT "%hd"
+// #define MSG_FLT "%0.3f"
+// #define MSG_FLT_IMPERIAL "%0.5f"
 
 #ifdef __cplusplus
 }

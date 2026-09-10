@@ -1,28 +1,28 @@
 /*
-	Name: ic74hc165.h
-	Description: This module adds the ability to control the IC74HC165 shift register controller on µCNC.
-				 Up to 56 input generic pins can be assigned.
+        Name: ic74hc165.h
+        Description: This module adds the ability to control the IC74HC165 shift
+   register controller on µCNC. Up to 56 input generic pins can be assigned.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 12-02-2025
+        Copyright: Copyright (c) João Martins
+        Author: João Martins
+        Date: 12-02-2025
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+        µCNC is free software: you can redistribute it and/or modify
+        it under the terms of the GNU General Public License as published by
+        the Free Software Foundation, either version 3 of the License, or
+        (at your option) any later version. Please see
+   <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+        µCNC is distributed WITHOUT ANY WARRANTY;
+        Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A
+   PARTICULAR PURPOSE. See the	GNU General Public License for more details.
 */
 
 #ifndef IC74HC165_H
 #define IC74HC165_H
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 #include <stdbool.h>
@@ -1385,9 +1385,11 @@ extern "C"
 #define __indirect__ex__(X, Y) DIO##X##_##Y
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
 #endif
-	extern volatile uint8_t ic74hc165_io_pins[IC74HC165_COUNT];
+extern volatile uint8_t ic74hc165_io_pins[IC74HC165_COUNT];
 #ifndef ic74hc165_get_pin
-#define ic74hc165_get_pin(pin) (ic74hc165_io_pins[(__indirect__(pin, IO_BYTEOFFSET))] & (__indirect__(pin, IO_BITMASK)))
+#define ic74hc165_get_pin(pin)                                                 \
+  (ic74hc165_io_pins[(__indirect__(pin, IO_BYTEOFFSET))] &                     \
+   (__indirect__(pin, IO_BITMASK)))
 #endif
 #else
 #define ic74hc165_get_pin(pin) 0

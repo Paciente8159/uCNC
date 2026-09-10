@@ -1,29 +1,28 @@
 /*
-	Name: websocket.h
-	Description: Small, allocation-free WebSocket server for uCNC.
+        Name: websocket.h
+        Description: Small, allocation-free WebSocket server for uCNC.
 
-	Copyright: Copyright (c) Joao Martins
-	Author: Joao Martins
+        Copyright: Copyright (c) Joao Martins
+        Author: Joao Martins
 
-	uCNC is free software: you can redistribute it and/or modify it under the
-	terms of the GNU General Public License as published by the Free Software
-	Foundation, either version 3 of the License, or (at your option) any later
-	version.
+        uCNC is free software: you can redistribute it and/or modify it under
+   the terms of the GNU General Public License as published by the Free Software
+        Foundation, either version 3 of the License, or (at your option) any
+   later version.
 */
 #ifndef WEBSOCKET_H
 #define WEBSOCKET_H
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
-#include "socket.h"
 #include "../../module.h"
+#include "socket.h"
 #include "utils/http_request.h"
 
 #define WS_OPCODE_ERROR 0U
@@ -42,57 +41,49 @@ extern "C"
 #define WS_SEND_PING 4U
 #define WS_SEND_PONG 8U
 #define WS_SEND_CLOSE 16U
-#define WS_SEND_TYPE (WS_SEND_TXT | WS_SEND_BIN | WS_SEND_PING | WS_SEND_PONG | WS_SEND_CLOSE)
+#define WS_SEND_TYPE                                                           \
+  (WS_SEND_TXT | WS_SEND_BIN | WS_SEND_PING | WS_SEND_PONG | WS_SEND_CLOSE)
 #define WS_SEND_BROADCAST 128U
 
 #ifndef WEBSOCKET_MAX_CHUNK
 #define WEBSOCKET_MAX_CHUNK SOCKET_MAX_DATA_SIZE
 #endif
 
-typedef enum
-{
-	WS_S_HANDSHAKE = 0,
-	WS_S_OPEN,
-	WS_S_CLOSING
-} ws_status_t;
+typedef enum { WS_S_HANDSHAKE = 0, WS_S_OPEN, WS_S_CLOSING } ws_status_t;
 
-typedef struct ws_handshake_state_
-{
-	request_ctx_t req;
-	request_header_t header;
-	ws_handshake_t handshake;
+typedef struct ws_handshake_state_ {
+  request_ctx_t req;
+  request_header_t header;
+  ws_handshake_t handshake;
 } ws_handshake_state_t;
 
-typedef struct ws_frame_state_
-{
-	uint8_t hdr[14];
-	uint8_t hdr_have;
-	uint8_t hdr_need;
-	uint8_t fin;
-	uint8_t frame_opcode;
-	uint8_t message_opcode;
-	uint8_t masked;
-	uint8_t mask[4];
-	uint8_t mask_i;
-	uint64_t payload_len;
-	uint64_t payload_rem;
-	uint8_t control_buf[125];
-	uint8_t control_len;
+typedef struct ws_frame_state_ {
+  uint8_t hdr[14];
+  uint8_t hdr_have;
+  uint8_t hdr_need;
+  uint8_t fin;
+  uint8_t frame_opcode;
+  uint8_t message_opcode;
+  uint8_t masked;
+  uint8_t mask[4];
+  uint8_t mask_i;
+  uint64_t payload_len;
+  uint64_t payload_rem;
+  uint8_t control_buf[125];
+  uint8_t control_len;
 } ws_frame_state_t;
 
-typedef struct ws_client_state_
-{
-	/* Handshake state and frame-parser state never coexist. */
-	union
-	{
-		ws_handshake_state_t hs;
-		ws_frame_state_t frame;
-	} state;
+typedef struct ws_client_state_ {
+  /* Handshake state and frame-parser state never coexist. */
+  union {
+    ws_handshake_state_t hs;
+    ws_frame_state_t frame;
+  } state;
 
-	uint16_t close_code;
-	uint8_t status;
-	bool active;
-	bool close_notified;
+  uint16_t close_code;
+  uint8_t status;
+  bool active;
+  bool close_notified;
 } ws_client_state_t;
 
 /*
@@ -105,9 +96,8 @@ typedef struct ws_client_state_
  * The callback must copy any bytes it needs after return.
  */
 typedef void (*websocket_onrecv_delegate_t)(uint8_t client_idx,
-												const void *data,
-												size_t data_len,
-												uint8_t flags);
+                                            const void *data, size_t data_len,
+                                            uint8_t flags);
 
 /*
  * Called once after the complete HTTP 101 response has entered the transport.
@@ -122,13 +112,12 @@ typedef void (*websocket_onopen_delegate_t)(uint8_t client_idx);
  */
 typedef void (*websocket_onclose_delegate_t)(uint8_t client_idx, uint16_t code);
 
-typedef struct websocket_protocol_
-{
-	socket_if_t *ws_socket;
-	ws_client_state_t ws_clients[SOCKET_MAX_CLIENTS];
-	websocket_onrecv_delegate_t ws_onrecv_cb;
-	websocket_onopen_delegate_t ws_onopen_cb;
-	websocket_onclose_delegate_t ws_onclose_cb;
+typedef struct websocket_protocol_ {
+  socket_if_t *ws_socket;
+  ws_client_state_t ws_clients[SOCKET_MAX_CLIENTS];
+  websocket_onrecv_delegate_t ws_onrecv_cb;
+  websocket_onopen_delegate_t ws_onopen_cb;
+  websocket_onclose_delegate_t ws_onclose_cb;
 } websocket_protocol_t;
 
 /*
@@ -153,9 +142,9 @@ void websocket_stop(websocket_protocol_t *ws);
 /*
  * Sends one complete unmasked server frame without retaining a TX copy.
  *
- * The small frame header is built on the stack, then header and payload are sent
- * synchronously with blocking socket_send(). Application data therefore remains
- * owned by the caller and is valid only for the duration of this call.
+ * The small frame header is built on the stack, then header and payload are
+ * sent synchronously with blocking socket_send(). Application data therefore
+ * remains owned by the caller and is valid only for the duration of this call.
  *
  * Exactly one WS_SEND_TXT/BIN/PING/PONG/CLOSE type must be selected;
  * WS_SEND_BROADCAST may be ORed with it. Application payload is limited to
@@ -165,11 +154,8 @@ void websocket_stop(websocket_protocol_t *ws);
  * set, or a negative socket_device_result_t on invalid state/timeout/transport
  * failure. A failed partial frame causes that TCP client to be closed.
  */
-int websocket_send(websocket_protocol_t *ws,
-				   uint8_t client_idx,
-				   const void *data,
-				   size_t len,
-				   uint8_t send_code);
+int websocket_send(websocket_protocol_t *ws, uint8_t client_idx,
+                   const void *data, size_t len, uint8_t send_code);
 
 #ifdef __cplusplus
 }

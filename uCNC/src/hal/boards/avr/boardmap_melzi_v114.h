@@ -1,27 +1,28 @@
 /*
-	Name: boardmap_melzi114.h
-	Description: Contains all MCU and PIN definitions for Arduino Melzi v1.1.4 to run µCNC.
+        Name: boardmap_melzi114.h
+        Description: Contains all MCU and PIN definitions for Arduino Melzi
+   v1.1.4 to run µCNC.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 07-09-2024
+        Copyright: Copyright (c) João Martins
+        Author: João Martins
+        Date: 07-09-2024
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+        µCNC is free software: you can redistribute it and/or modify
+        it under the terms of the GNU General Public License as published by
+        the Free Software Foundation, either version 3 of the License, or
+        (at your option) any later version. Please see
+   <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+        µCNC is distributed WITHOUT ANY WARRANTY;
+        Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A
+   PARTICULAR PURPOSE. See the	GNU General Public License for more details.
 */
 
 #ifndef BOARDMAP_MELZI_V114_H
 #define BOARDMAP_MELZI_V114_H
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 #ifndef MCU
@@ -69,7 +70,7 @@ extern "C"
 #define STEP3_EN_BIT 6
 #define STEP3_EN_PORT D
 
-	// Setup limit pins
+// Setup limit pins
 #define LIMIT_X_BIT 2
 #define LIMIT_X_PORT C
 #define LIMIT_X_PULLUP

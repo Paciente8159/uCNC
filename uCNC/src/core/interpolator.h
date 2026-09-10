@@ -1,33 +1,33 @@
 /*
-	Name: interpolator.h
-	Description: Function declarations for the stepper interpolator.
+        Name: interpolator.h
+        Description: Function declarations for the stepper interpolator.
 
-		TODO: Create an S-curve interpolator
+                TODO: Create an S-curve interpolator
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 13/10/2019
+        Copyright: Copyright (c) João Martins
+        Author: João Martins
+        Date: 13/10/2019
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+        µCNC is free software: you can redistribute it and/or modify
+        it under the terms of the GNU General Public License as published by
+        the Free Software Foundation, either version 3 of the License, or
+        (at your option) any later version. Please see
+   <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+        µCNC is distributed WITHOUT ANY WARRANTY;
+        Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A
+   PARTICULAR PURPOSE. See the	GNU General Public License for more details.
 */
 
 #ifndef INTERPOLATOR_H
 #define INTERPOLATOR_H
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 // Itp update flags
 #define ITP_NOUPDATE 0
@@ -50,86 +50,87 @@ extern "C"
 #define INTERPOLATOR_FREQ 100
 #endif
 
-	// contains data of the block being executed by the pulse routine
-	// this block has the necessary data to execute the Bresenham line algorithm
-	typedef struct itp_blk_
-	{
-		uint8_t dirbits;
-		step_t steps[STEPPER_COUNT];
-		step_t total_steps;
-		step_t errors[STEPPER_COUNT];
+// contains data of the block being executed by the pulse routine
+// this block has the necessary data to execute the Bresenham line algorithm
+typedef struct itp_blk_ {
+  uint8_t dirbits;
+  step_t steps[STEPPER_COUNT];
+  step_t total_steps;
+  step_t errors[STEPPER_COUNT];
 #ifdef GCODE_PROCESS_LINE_NUMBERS
-		uint32_t line;
+  uint32_t line;
 #endif
-	} itp_block_t;
+} itp_block_t;
 
-	// contains data of the block segment being executed by the pulse and integrator routines
-	// the segment is a fragment of the motion defined in the block
-	// this also contains the acceleration/deacceleration info
-	typedef struct pulse_sgm_
-	{
-		itp_block_t *block;
-		uint16_t remaining_steps;
+// contains data of the block segment being executed by the pulse and integrator
+// routines the segment is a fragment of the motion defined in the block this
+// also contains the acceleration/deacceleration info
+typedef struct pulse_sgm_ {
+  itp_block_t *block;
+  uint16_t remaining_steps;
 #ifndef DISABLE_ITP_STEP_GEN_OPTIMIZATIONS
-		uint8_t idle_steppers;
-		uint8_t main_stepper;
+  uint8_t idle_steppers;
+  uint8_t main_stepper;
 #endif
-		uint16_t timer_counter;
-		uint16_t timer_prescaller;
+  uint16_t timer_counter;
+  uint16_t timer_prescaller;
 #if (DSS_MAX_OVERSAMPLING != 0)
-		int8_t next_dss;
+  int8_t next_dss;
 #ifdef ENABLE_RT_SYNC_MOTIONS
-		uint8_t dss_level;
+  uint8_t dss_level;
 #endif
 #endif
 #if TOOL_COUNT > 0
-		int16_t spindle;
+  int16_t spindle;
 #endif
-		float feed;
-		uint8_t flags;
-	} itp_segment_t;
+  float feed;
+  uint8_t flags;
+} itp_segment_t;
 
-	void itp_init(void);
-	void itp_run(void);
-	void itp_update(void);
-	void itp_stop(void);
-	void itp_stop_tools(void);
-	void itp_clear(void);
-	void itp_get_rt_position(int32_t *position);
-	void itp_sync_rt_position(int32_t *position);
-	int32_t itp_get_rt_position_index(int8_t index);
-	void itp_reset_rt_position(float *origin);
-	float itp_get_rt_feed(void);
-	bool itp_is_empty(void);
-	uint8_t itp_sync(void);
-	itp_segment_t *itp_get_rt_segment();
-	uint8_t itp_set_step_mode(uint8_t mode);
+void itp_init(void);
+void itp_run(void);
+void itp_update(void);
+void itp_stop(void);
+void itp_stop_tools(void);
+void itp_clear(void);
+void itp_get_rt_position(int32_t *position);
+void itp_sync_rt_position(int32_t *position);
+int32_t itp_get_rt_position_index(int8_t index);
+void itp_reset_rt_position(float *origin);
+float itp_get_rt_feed(void);
+bool itp_is_empty(void);
+uint8_t itp_sync(void);
+itp_segment_t *itp_get_rt_segment();
+uint8_t itp_set_step_mode(uint8_t mode);
 
-	void itp_sync_spindle(void);
-	void itp_start(bool is_synched);
+void itp_sync_spindle(void);
+void itp_start(bool is_synched);
 #ifdef ENABLE_MULTI_STEP_HOMING
-	void itp_lock_stepper(uint8_t lockmask);
+void itp_lock_stepper(uint8_t lockmask);
 #endif
 #ifdef GCODE_PROCESS_LINE_NUMBERS
-	uint32_t itp_get_rt_line_number(void);
+uint32_t itp_get_rt_line_number(void);
 #endif
 #ifdef ENABLE_RT_SYNC_MOTIONS
-	// extern volatile int32_t itp_sync_step_counter;
-#define ITP_BLOCK_CONTINUOUS 0 // normal mode. Don't care about block ID. dispatch blocck as soon as available
-#define ITP_BLOCK_SINGLE 1	   // will run one single block at time.
-#define ITP_BLOCK_BURST 2	   // will run as many blocks as in queue.
-							   // #define ITP_BLOCK_READY 128
-	// modifies the
-	void itp_set_block_mode(uint8_t mode);
-	void itp_inc_block_id(void);
-	void itp_update_feed(float step_frequency);
-	bool itp_sync_ready(void);
-	// deprecate to make ISR leaner
-	// DECL_HOOK(itp_rt_pre_stepbits, uint8_t *, uint8_t *);
-	DECL_HOOK(itp_rt_stepbits, uint8_t, uint8_t);
+// extern volatile int32_t itp_sync_step_counter;
+#define ITP_BLOCK_CONTINUOUS                                                   \
+  0 // normal mode. Don't care about block ID. dispatch blocck as soon as
+    // available
+#define ITP_BLOCK_SINGLE 1 // will run one single block at time.
+#define ITP_BLOCK_BURST                                                        \
+  2 // will run as many blocks as in queue.
+    // #define ITP_BLOCK_READY 128
+// modifies the
+void itp_set_block_mode(uint8_t mode);
+void itp_inc_block_id(void);
+void itp_update_feed(float step_frequency);
+bool itp_sync_ready(void);
+// deprecate to make ISR leaner
+// DECL_HOOK(itp_rt_pre_stepbits, uint8_t *, uint8_t *);
+DECL_HOOK(itp_rt_stepbits, uint8_t, uint8_t);
 #ifndef DISABLE_RT_STEP_PREVENT_CONDITION
-	typedef bool (*itp_rt_step_prevent_t)(void);
-	extern itp_rt_step_prevent_t itp_rt_step_prevent_cb;
+typedef bool (*itp_rt_step_prevent_t)(void);
+extern itp_rt_step_prevent_t itp_rt_step_prevent_cb;
 #endif
 #endif
 

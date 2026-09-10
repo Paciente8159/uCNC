@@ -1,27 +1,28 @@
 /*
-	Name: boardmap_fysetc_cheetah_v2.h
-	Description: Contains all MCU and PIN definitions for board Fysetc Cheetah v2 to run µCNC.
+        Name: boardmap_fysetc_cheetah_v2.h
+        Description: Contains all MCU and PIN definitions for board Fysetc
+   Cheetah v2 to run µCNC.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 01-04-2025
+        Copyright: Copyright (c) João Martins
+        Author: João Martins
+        Date: 01-04-2025
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+        µCNC is free software: you can redistribute it and/or modify
+        it under the terms of the GNU General Public License as published by
+        the Free Software Foundation, either version 3 of the License, or
+        (at your option) any later version. Please see
+   <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+        µCNC is distributed WITHOUT ANY WARRANTY;
+        Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A
+   PARTICULAR PURPOSE. See the	GNU General Public License for more details.
 */
 
 #ifndef BOARDMAP_FYSETC_CHEETAH_v2
 #define BOARDMAP_FYSETC_CHEETAH_v2
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 #ifndef MCU
@@ -161,9 +162,9 @@ extern "C"
 #define SPI2_CS_BIT 12
 #define SPI2_CS_PORT B
 
-//Custom configurations
-#define RX_PULLUP 
-#define RX_PULLUP 
+// Custom configurations
+#define RX_PULLUP
+#define RX_PULLUP
 
 #ifdef __cplusplus
 }

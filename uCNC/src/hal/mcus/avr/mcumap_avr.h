@@ -1,53 +1,55 @@
 /*
-	Name: mcumap_avr.h
-	Description: Contains all MCU and PIN definitions for Arduino UNO to run µCNC.
+        Name: mcumap_avr.h
+        Description: Contains all MCU and PIN definitions for Arduino UNO to run
+   µCNC.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 04-02-2020
+        Copyright: Copyright (c) João Martins
+        Author: João Martins
+        Date: 04-02-2020
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+        µCNC is free software: you can redistribute it and/or modify
+        it under the terms of the GNU General Public License as published by
+        the Free Software Foundation, either version 3 of the License, or
+        (at your option) any later version. Please see
+   <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+        µCNC is distributed WITHOUT ANY WARRANTY;
+        Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A
+   PARTICULAR PURPOSE. See the	GNU General Public License for more details.
 */
 
 #ifndef MCUMAP_AVR_H
 #define MCUMAP_AVR_H
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 /*
-	Generates all the interface definitions.
-	This creates a middle HAL layer between the board IO pins and the AVR funtionalities
+        Generates all the interface definitions.
+        This creates a middle HAL layer between the board IO pins and the AVR
+   funtionalities
 */
 /*
-	MCU specific definitions and replacements
+        MCU specific definitions and replacements
 */
-#include <math.h>
 #include <inttypes.h>
+#include <math.h>
 
-#include <string.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <stdarg.h>
-#include <avr/io.h>
-#include <avr/wdt.h>
-#include <avr/eeprom.h>
 #include <avr/cpufunc.h>
-#include <avr/pgmspace.h>
+#include <avr/eeprom.h>
 #include <avr/interrupt.h>
+#include <avr/io.h>
+#include <avr/pgmspace.h>
+#include <avr/wdt.h>
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
 
 /*
-	AVR Defaults
+        AVR Defaults
 */
 // defines the frequency of the mcu
 #ifndef F_CPU
@@ -86,22 +88,21 @@ extern "C"
 #define MCU_CYCLES_LOOP_OVERHEAD 2
 #endif
 
-#define mcu_delay_loop(X)                                                  \
-	do                                                                     \
-	{                                                                      \
-		/* Entry overhead: 2 ldi = 2 cycles (usually) */                   \
-		uint16_t __count = (X);                                            \
-		__asm__ __volatile__(                                              \
-			"1: sbiw %0, 1\n\t" /* 2 cycles */                             \
-			"brne 1b\n\t"		/* 2 cycles if taken, 1 if not */          \
-			: "+w"(__count));                                              \
-		/* Exit pad: sbiw (2) + brne not taken (1) + nop (1) = 4 cycles */ \
-		mcu_nop();                                                         \
-	} while (0)
+#define mcu_delay_loop(X)                                                      \
+  do {                                                                         \
+    /* Entry overhead: 2 ldi = 2 cycles (usually) */                           \
+    uint16_t __count = (X);                                                    \
+    __asm__ __volatile__("1: sbiw %0, 1\n\t" /* 2 cycles */                    \
+                         "brne 1b\n\t"       /* 2 cycles if taken, 1 if not */ \
+                         : "+w"(__count));                                     \
+    /* Exit pad: sbiw (2) + brne not taken (1) + nop (1) = 4 cycles */         \
+    mcu_nop();                                                                 \
+  } while (0)
 
 // used by the parser
-// this method is faster then normal multiplication (for 32 bit for 16 and 8 bits is slightly lower)
-// overrides utils.h definition to implement this method with or without fast math option enabled
+// this method is faster then normal multiplication (for 32 bit for 16 and 8
+// bits is slightly lower) overrides utils.h definition to implement this method
+// with or without fast math option enabled
 #define fast_int_mul10(x) ((((x) << 2) + (x)) << 1)
 
 // Helper macros
@@ -3544,7 +3545,9 @@ extern "C"
 #ifndef LIMIT_X_ISRB
 #define LIMIT_X_ISRB 0
 #endif
-#define LIMIT_X_ISR_MASK (LIMIT_X_ISR0 | LIMIT_X_ISR1 | LIMIT_X_ISR2 | LIMIT_X_ISR3 | LIMIT_X_ISRA | LIMIT_X_ISRB)
+#define LIMIT_X_ISR_MASK                                                       \
+  (LIMIT_X_ISR0 | LIMIT_X_ISR1 | LIMIT_X_ISR2 | LIMIT_X_ISR3 | LIMIT_X_ISRA |  \
+   LIMIT_X_ISRB)
 #ifndef LIMIT_X_ISR_MASK
 #define LIMIT_X_ISR_MASK 0
 #endif
@@ -3571,7 +3574,9 @@ extern "C"
 #ifndef LIMIT_Y_ISRB
 #define LIMIT_Y_ISRB 0
 #endif
-#define LIMIT_Y_ISR_MASK (LIMIT_Y_ISR0 | LIMIT_Y_ISR1 | LIMIT_Y_ISR2 | LIMIT_Y_ISR3 | LIMIT_Y_ISRA | LIMIT_Y_ISRB)
+#define LIMIT_Y_ISR_MASK                                                       \
+  (LIMIT_Y_ISR0 | LIMIT_Y_ISR1 | LIMIT_Y_ISR2 | LIMIT_Y_ISR3 | LIMIT_Y_ISRA |  \
+   LIMIT_Y_ISRB)
 #ifndef LIMIT_Y_ISR_MASK
 #define LIMIT_Y_ISR_MASK 0
 #endif
@@ -3598,7 +3603,9 @@ extern "C"
 #ifndef LIMIT_Z_ISRB
 #define LIMIT_Z_ISRB 0
 #endif
-#define LIMIT_Z_ISR_MASK (LIMIT_Z_ISR0 | LIMIT_Z_ISR1 | LIMIT_Z_ISR2 | LIMIT_Z_ISR3 | LIMIT_Z_ISRA | LIMIT_Z_ISRB)
+#define LIMIT_Z_ISR_MASK                                                       \
+  (LIMIT_Z_ISR0 | LIMIT_Z_ISR1 | LIMIT_Z_ISR2 | LIMIT_Z_ISR3 | LIMIT_Z_ISRA |  \
+   LIMIT_Z_ISRB)
 #ifndef LIMIT_Z_ISR_MASK
 #define LIMIT_Z_ISR_MASK 0
 #endif
@@ -3625,7 +3632,9 @@ extern "C"
 #ifndef LIMIT_X2_ISRB
 #define LIMIT_X2_ISRB 0
 #endif
-#define LIMIT_X2_ISR_MASK (LIMIT_X2_ISR0 | LIMIT_X2_ISR1 | LIMIT_X2_ISR2 | LIMIT_X2_ISR3 | LIMIT_X2_ISRA | LIMIT_X2_ISRB)
+#define LIMIT_X2_ISR_MASK                                                      \
+  (LIMIT_X2_ISR0 | LIMIT_X2_ISR1 | LIMIT_X2_ISR2 | LIMIT_X2_ISR3 |             \
+   LIMIT_X2_ISRA | LIMIT_X2_ISRB)
 #ifndef LIMIT_X2_ISR_MASK
 #define LIMIT_X2_ISR_MASK 0
 #endif
@@ -3652,7 +3661,9 @@ extern "C"
 #ifndef LIMIT_Y2_ISRB
 #define LIMIT_Y2_ISRB 0
 #endif
-#define LIMIT_Y2_ISR_MASK (LIMIT_Y2_ISR0 | LIMIT_Y2_ISR1 | LIMIT_Y2_ISR2 | LIMIT_Y2_ISR3 | LIMIT_Y2_ISRA | LIMIT_Y2_ISRB)
+#define LIMIT_Y2_ISR_MASK                                                      \
+  (LIMIT_Y2_ISR0 | LIMIT_Y2_ISR1 | LIMIT_Y2_ISR2 | LIMIT_Y2_ISR3 |             \
+   LIMIT_Y2_ISRA | LIMIT_Y2_ISRB)
 #ifndef LIMIT_Y2_ISR_MASK
 #define LIMIT_Y2_ISR_MASK 0
 #endif
@@ -3679,7 +3690,9 @@ extern "C"
 #ifndef LIMIT_Z2_ISRB
 #define LIMIT_Z2_ISRB 0
 #endif
-#define LIMIT_Z2_ISR_MASK (LIMIT_Z2_ISR0 | LIMIT_Z2_ISR1 | LIMIT_Z2_ISR2 | LIMIT_Z2_ISR3 | LIMIT_Z2_ISRA | LIMIT_Z2_ISRB)
+#define LIMIT_Z2_ISR_MASK                                                      \
+  (LIMIT_Z2_ISR0 | LIMIT_Z2_ISR1 | LIMIT_Z2_ISR2 | LIMIT_Z2_ISR3 |             \
+   LIMIT_Z2_ISRA | LIMIT_Z2_ISRB)
 #ifndef LIMIT_Z2_ISR_MASK
 #define LIMIT_Z2_ISR_MASK 0
 #endif
@@ -3706,7 +3719,9 @@ extern "C"
 #ifndef LIMIT_A_ISRB
 #define LIMIT_A_ISRB 0
 #endif
-#define LIMIT_A_ISR_MASK (LIMIT_A_ISR0 | LIMIT_A_ISR1 | LIMIT_A_ISR2 | LIMIT_A_ISR3 | LIMIT_A_ISRA | LIMIT_A_ISRB)
+#define LIMIT_A_ISR_MASK                                                       \
+  (LIMIT_A_ISR0 | LIMIT_A_ISR1 | LIMIT_A_ISR2 | LIMIT_A_ISR3 | LIMIT_A_ISRA |  \
+   LIMIT_A_ISRB)
 #ifndef LIMIT_A_ISR_MASK
 #define LIMIT_A_ISR_MASK 0
 #endif
@@ -3733,7 +3748,9 @@ extern "C"
 #ifndef LIMIT_B_ISRB
 #define LIMIT_B_ISRB 0
 #endif
-#define LIMIT_B_ISR_MASK (LIMIT_B_ISR0 | LIMIT_B_ISR1 | LIMIT_B_ISR2 | LIMIT_B_ISR3 | LIMIT_B_ISRA | LIMIT_B_ISRB)
+#define LIMIT_B_ISR_MASK                                                       \
+  (LIMIT_B_ISR0 | LIMIT_B_ISR1 | LIMIT_B_ISR2 | LIMIT_B_ISR3 | LIMIT_B_ISRA |  \
+   LIMIT_B_ISRB)
 #ifndef LIMIT_B_ISR_MASK
 #define LIMIT_B_ISR_MASK 0
 #endif
@@ -3760,7 +3777,9 @@ extern "C"
 #ifndef LIMIT_C_ISRB
 #define LIMIT_C_ISRB 0
 #endif
-#define LIMIT_C_ISR_MASK (LIMIT_C_ISR0 | LIMIT_C_ISR1 | LIMIT_C_ISR2 | LIMIT_C_ISR3 | LIMIT_C_ISRA | LIMIT_C_ISRB)
+#define LIMIT_C_ISR_MASK                                                       \
+  (LIMIT_C_ISR0 | LIMIT_C_ISR1 | LIMIT_C_ISR2 | LIMIT_C_ISR3 | LIMIT_C_ISRA |  \
+   LIMIT_C_ISRB)
 #ifndef LIMIT_C_ISR_MASK
 #define LIMIT_C_ISR_MASK 0
 #endif
@@ -3787,7 +3806,8 @@ extern "C"
 #ifndef PROBE_ISRB
 #define PROBE_ISRB 0
 #endif
-#define PROBE_ISR_MASK (PROBE_ISR0 | PROBE_ISR1 | PROBE_ISR2 | PROBE_ISR3 | PROBE_ISRA | PROBE_ISRB)
+#define PROBE_ISR_MASK                                                         \
+  (PROBE_ISR0 | PROBE_ISR1 | PROBE_ISR2 | PROBE_ISR3 | PROBE_ISRA | PROBE_ISRB)
 #ifndef PROBE_ISR_MASK
 #define PROBE_ISR_MASK 0
 #endif
@@ -3814,7 +3834,8 @@ extern "C"
 #ifndef ESTOP_ISRB
 #define ESTOP_ISRB 0
 #endif
-#define ESTOP_ISR_MASK (ESTOP_ISR0 | ESTOP_ISR1 | ESTOP_ISR2 | ESTOP_ISR3 | ESTOP_ISRA | ESTOP_ISRB)
+#define ESTOP_ISR_MASK                                                         \
+  (ESTOP_ISR0 | ESTOP_ISR1 | ESTOP_ISR2 | ESTOP_ISR3 | ESTOP_ISRA | ESTOP_ISRB)
 #ifndef ESTOP_ISR_MASK
 #define ESTOP_ISR_MASK 0
 #endif
@@ -3841,7 +3862,9 @@ extern "C"
 #ifndef SAFETY_DOOR_ISRB
 #define SAFETY_DOOR_ISRB 0
 #endif
-#define SAFETY_DOOR_ISR_MASK (SAFETY_DOOR_ISR0 | SAFETY_DOOR_ISR1 | SAFETY_DOOR_ISR2 | SAFETY_DOOR_ISR3 | SAFETY_DOOR_ISRA | SAFETY_DOOR_ISRB)
+#define SAFETY_DOOR_ISR_MASK                                                   \
+  (SAFETY_DOOR_ISR0 | SAFETY_DOOR_ISR1 | SAFETY_DOOR_ISR2 | SAFETY_DOOR_ISR3 | \
+   SAFETY_DOOR_ISRA | SAFETY_DOOR_ISRB)
 #ifndef SAFETY_DOOR_ISR_MASK
 #define SAFETY_DOOR_ISR_MASK 0
 #endif
@@ -3868,7 +3891,8 @@ extern "C"
 #ifndef FHOLD_ISRB
 #define FHOLD_ISRB 0
 #endif
-#define FHOLD_ISR_MASK (FHOLD_ISR0 | FHOLD_ISR1 | FHOLD_ISR2 | FHOLD_ISR3 | FHOLD_ISRA | FHOLD_ISRB)
+#define FHOLD_ISR_MASK                                                         \
+  (FHOLD_ISR0 | FHOLD_ISR1 | FHOLD_ISR2 | FHOLD_ISR3 | FHOLD_ISRA | FHOLD_ISRB)
 #ifndef FHOLD_ISR_MASK
 #define FHOLD_ISR_MASK 0
 #endif
@@ -3895,7 +3919,9 @@ extern "C"
 #ifndef CS_RES_ISRB
 #define CS_RES_ISRB 0
 #endif
-#define CS_RES_ISR_MASK (CS_RES_ISR0 | CS_RES_ISR1 | CS_RES_ISR2 | CS_RES_ISR3 | CS_RES_ISRA | CS_RES_ISRB)
+#define CS_RES_ISR_MASK                                                        \
+  (CS_RES_ISR0 | CS_RES_ISR1 | CS_RES_ISR2 | CS_RES_ISR3 | CS_RES_ISRA |       \
+   CS_RES_ISRB)
 #ifndef CS_RES_ISR_MASK
 #define CS_RES_ISR_MASK 0
 #endif
@@ -3922,7 +3948,8 @@ extern "C"
 #ifndef DIN0_ISRB
 #define DIN0_ISRB 0
 #endif
-#define DIN0_ISR_MASK (DIN0_ISR0 | DIN0_ISR1 | DIN0_ISR2 | DIN0_ISR3 | DIN0_ISRA | DIN0_ISRB)
+#define DIN0_ISR_MASK                                                          \
+  (DIN0_ISR0 | DIN0_ISR1 | DIN0_ISR2 | DIN0_ISR3 | DIN0_ISRA | DIN0_ISRB)
 #ifndef DIN0_ISR_MASK
 #define DIN0_ISR_MASK 0
 #endif
@@ -3949,7 +3976,8 @@ extern "C"
 #ifndef DIN1_ISRB
 #define DIN1_ISRB 0
 #endif
-#define DIN1_ISR_MASK (DIN1_ISR0 | DIN1_ISR1 | DIN1_ISR2 | DIN1_ISR3 | DIN1_ISRA | DIN1_ISRB)
+#define DIN1_ISR_MASK                                                          \
+  (DIN1_ISR0 | DIN1_ISR1 | DIN1_ISR2 | DIN1_ISR3 | DIN1_ISRA | DIN1_ISRB)
 #ifndef DIN1_ISR_MASK
 #define DIN1_ISR_MASK 0
 #endif
@@ -3976,7 +4004,8 @@ extern "C"
 #ifndef DIN2_ISRB
 #define DIN2_ISRB 0
 #endif
-#define DIN2_ISR_MASK (DIN2_ISR0 | DIN2_ISR1 | DIN2_ISR2 | DIN2_ISR3 | DIN2_ISRA | DIN2_ISRB)
+#define DIN2_ISR_MASK                                                          \
+  (DIN2_ISR0 | DIN2_ISR1 | DIN2_ISR2 | DIN2_ISR3 | DIN2_ISRA | DIN2_ISRB)
 #ifndef DIN2_ISR_MASK
 #define DIN2_ISR_MASK 0
 #endif
@@ -4003,7 +4032,8 @@ extern "C"
 #ifndef DIN3_ISRB
 #define DIN3_ISRB 0
 #endif
-#define DIN3_ISR_MASK (DIN3_ISR0 | DIN3_ISR1 | DIN3_ISR2 | DIN3_ISR3 | DIN3_ISRA | DIN3_ISRB)
+#define DIN3_ISR_MASK                                                          \
+  (DIN3_ISR0 | DIN3_ISR1 | DIN3_ISR2 | DIN3_ISR3 | DIN3_ISRA | DIN3_ISRB)
 #ifndef DIN3_ISR_MASK
 #define DIN3_ISR_MASK 0
 #endif
@@ -4030,7 +4060,8 @@ extern "C"
 #ifndef DIN4_ISRB
 #define DIN4_ISRB 0
 #endif
-#define DIN4_ISR_MASK (DIN4_ISR0 | DIN4_ISR1 | DIN4_ISR2 | DIN4_ISR3 | DIN4_ISRA | DIN4_ISRB)
+#define DIN4_ISR_MASK                                                          \
+  (DIN4_ISR0 | DIN4_ISR1 | DIN4_ISR2 | DIN4_ISR3 | DIN4_ISRA | DIN4_ISRB)
 #ifndef DIN4_ISR_MASK
 #define DIN4_ISR_MASK 0
 #endif
@@ -4057,7 +4088,8 @@ extern "C"
 #ifndef DIN5_ISRB
 #define DIN5_ISRB 0
 #endif
-#define DIN5_ISR_MASK (DIN5_ISR0 | DIN5_ISR1 | DIN5_ISR2 | DIN5_ISR3 | DIN5_ISRA | DIN5_ISRB)
+#define DIN5_ISR_MASK                                                          \
+  (DIN5_ISR0 | DIN5_ISR1 | DIN5_ISR2 | DIN5_ISR3 | DIN5_ISRA | DIN5_ISRB)
 #ifndef DIN5_ISR_MASK
 #define DIN5_ISR_MASK 0
 #endif
@@ -4084,7 +4116,8 @@ extern "C"
 #ifndef DIN6_ISRB
 #define DIN6_ISRB 0
 #endif
-#define DIN6_ISR_MASK (DIN6_ISR0 | DIN6_ISR1 | DIN6_ISR2 | DIN6_ISR3 | DIN6_ISRA | DIN6_ISRB)
+#define DIN6_ISR_MASK                                                          \
+  (DIN6_ISR0 | DIN6_ISR1 | DIN6_ISR2 | DIN6_ISR3 | DIN6_ISRA | DIN6_ISRB)
 #ifndef DIN6_ISR_MASK
 #define DIN6_ISR_MASK 0
 #endif
@@ -4111,7 +4144,8 @@ extern "C"
 #ifndef DIN7_ISRB
 #define DIN7_ISRB 0
 #endif
-#define DIN7_ISR_MASK (DIN7_ISR0 | DIN7_ISR1 | DIN7_ISR2 | DIN7_ISR3 | DIN7_ISRA | DIN7_ISRB)
+#define DIN7_ISR_MASK                                                          \
+  (DIN7_ISR0 | DIN7_ISR1 | DIN7_ISR2 | DIN7_ISR3 | DIN7_ISRA | DIN7_ISRB)
 #ifndef DIN7_ISR_MASK
 #define DIN7_ISR_MASK 0
 #endif
@@ -4775,7 +4809,8 @@ extern "C"
 #define ITP_OCIEA __ocieareg__(ITP_TIMER)
 
 #ifndef RTC_TIMER
-// Setup the RTC Timer used by µCNC to provide an (mostly) accurate time base for all time dependent functions
+// Setup the RTC Timer used by µCNC to provide an (mostly) accurate time base
+// for all time dependent functions
 #define RTC_TIMER 0
 #endif
 #define RTC_COMPB_vect __timerbvect__(RTC_TIMER)
@@ -4806,37 +4841,77 @@ extern "C"
 #define ONESHOT_OCIEA __ocieareg__(ONESHOT_TIMER)
 #endif
 
-	// Pin interrupts input register
+// Pin interrupts input register
 
 #define PCINT0_INREG __inreg__(PCINT0_PORT)
 #define PCINT1_INREG __inreg__(PCINT1_PORT)
 #define PCINT2_INREG __inreg__(PCINT2_PORT)
 
-#define PCINTA_LIMITS_MASK (LIMIT_X_ISRA | LIMIT_Y_ISRA | LIMIT_Z_ISRA | LIMIT_X2_ISRA | LIMIT_Y2_ISRA | LIMIT_Z2_ISRA | LIMIT_A_ISRA | LIMIT_B_ISRA | LIMIT_C_ISRA)
-#define PCINTA_CONTROLS_MASK (ESTOP_ISRA | SAFETY_DOOR_ISRA | FHOLD_ISRA | CS_RES_ISRA)
-#define PCINTA_DIN_IO_MASK (DIN0_ISRA | DIN1_ISRA | DIN2_ISRA | DIN3_ISRA | DIN4_ISRA | DIN5_ISRA | DIN6_ISRA | DIN7_ISRA)
-#define PCINTB_LIMITS_MASK (LIMIT_X_ISRB | LIMIT_Y_ISRB | LIMIT_Z_ISRB | LIMIT_X2_ISRB | LIMIT_Y2_ISRB | LIMIT_Z2_ISRB | LIMIT_A_ISRB | LIMIT_B_ISRB | LIMIT_C_ISRB)
-#define PCINTB_CONTROLS_MASK (ESTOP_ISRB | SAFETY_DOOR_ISRB | FHOLD_ISRB | CS_RES_ISRB)
-#define PCINTB_DIN_IO_MASK (DIN0_ISRB | DIN1_ISRB | DIN2_ISRB | DIN3_ISRB | DIN4_ISRB | DIN5_ISRB | DIN6_ISRB | DIN7_ISRB)
-#define PCINT0_LIMITS_MASK (LIMIT_X_ISR0 | LIMIT_Y_ISR0 | LIMIT_Z_ISR0 | LIMIT_X2_ISR0 | LIMIT_Y2_ISR0 | LIMIT_Z2_ISR0 | LIMIT_A_ISR0 | LIMIT_B_ISR0 | LIMIT_C_ISR0)
-#define PCINT0_CONTROLS_MASK (ESTOP_ISR0 | SAFETY_DOOR_ISR0 | FHOLD_ISR0 | CS_RES_ISR0)
-#define PCINT0_DIN_IO_MASK (DIN0_ISR0 | DIN1_ISR0 | DIN2_ISR0 | DIN3_ISR0 | DIN4_ISR0 | DIN5_ISR0 | DIN6_ISR0 | DIN7_ISR0)
-#define PCINT1_LIMITS_MASK (LIMIT_X_ISR1 | LIMIT_Y_ISR1 | LIMIT_Z_ISR1 | LIMIT_X2_ISR1 | LIMIT_Y2_ISR1 | LIMIT_Z2_ISR1 | LIMIT_A_ISR1 | LIMIT_B_ISR1 | LIMIT_C_ISR1)
-#define PCINT1_CONTROLS_MASK (ESTOP_ISR1 | SAFETY_DOOR_ISR1 | FHOLD_ISR1 | CS_RES_ISR1)
-#define PCINT1_DIN_IO_MASK (DIN0_ISR1 | DIN1_ISR1 | DIN2_ISR1 | DIN3_ISR1 | DIN4_ISR1 | DIN5_ISR1 | DIN6_ISR1 | DIN7_ISR1)
-#define PCINT2_LIMITS_MASK (LIMIT_X_ISR2 | LIMIT_Y_ISR2 | LIMIT_Z_ISR2 | LIMIT_X2_ISR2 | LIMIT_Y2_ISR2 | LIMIT_Z2_ISR2 | LIMIT_A_ISR2 | LIMIT_B_ISR2 | LIMIT_C_ISR2)
-#define PCINT2_CONTROLS_MASK (ESTOP_ISR2 | SAFETY_DOOR_ISR2 | FHOLD_ISR2 | CS_RES_ISR2)
-#define PCINT2_DIN_IO_MASK (DIN0_ISR2 | DIN1_ISR2 | DIN2_ISR2 | DIN3_ISR2 | DIN4_ISR2 | DIN5_ISR2 | DIN6_ISR2 | DIN7_ISR2)
-#define PCINT3_LIMITS_MASK (LIMIT_X_ISR3 | LIMIT_Y_ISR3 | LIMIT_Z_ISR3 | LIMIT_X2_ISR3 | LIMIT_Y2_ISR3 | LIMIT_Z2_ISR3 | LIMIT_A_ISR3 | LIMIT_B_ISR3 | LIMIT_C_ISR3)
-#define PCINT3_CONTROLS_MASK (ESTOP_ISR3 | SAFETY_DOOR_ISR3 | FHOLD_ISR3 | CS_RES_ISR3)
-#define PCINT3_DIN_IO_MASK (DIN0_ISR3 | DIN1_ISR3 | DIN2_ISR3 | DIN3_ISR3 | DIN4_ISR3 | DIN5_ISR3 | DIN6_ISR3 | DIN7_ISR3)
-#define EIMSK_VAL (LIMIT_X_EIMSK | LIMIT_X2_EIMSK | LIMIT_Y_EIMSK | LIMIT_Y2_EIMSK | LIMIT_Z_EIMSK | LIMIT_Z2_EIMSK | LIMIT_A_EIMSK | LIMIT_B_EIMSK | LIMIT_C_EIMSK | ESTOP_EIMSK | SAFETY_DOOR_EIMSK | FHOLD_EIMSK | CS_RES_EIMSK | DIN0_EIMSK | DIN1_EIMSK | DIN2_EIMSK | DIN3_EIMSK | DIN4_EIMSK | DIN5_EIMSK | DIN6_EIMSK | DIN7_EIMSK)
+#define PCINTA_LIMITS_MASK                                                     \
+  (LIMIT_X_ISRA | LIMIT_Y_ISRA | LIMIT_Z_ISRA | LIMIT_X2_ISRA |                \
+   LIMIT_Y2_ISRA | LIMIT_Z2_ISRA | LIMIT_A_ISRA | LIMIT_B_ISRA | LIMIT_C_ISRA)
+#define PCINTA_CONTROLS_MASK                                                   \
+  (ESTOP_ISRA | SAFETY_DOOR_ISRA | FHOLD_ISRA | CS_RES_ISRA)
+#define PCINTA_DIN_IO_MASK                                                     \
+  (DIN0_ISRA | DIN1_ISRA | DIN2_ISRA | DIN3_ISRA | DIN4_ISRA | DIN5_ISRA |     \
+   DIN6_ISRA | DIN7_ISRA)
+#define PCINTB_LIMITS_MASK                                                     \
+  (LIMIT_X_ISRB | LIMIT_Y_ISRB | LIMIT_Z_ISRB | LIMIT_X2_ISRB |                \
+   LIMIT_Y2_ISRB | LIMIT_Z2_ISRB | LIMIT_A_ISRB | LIMIT_B_ISRB | LIMIT_C_ISRB)
+#define PCINTB_CONTROLS_MASK                                                   \
+  (ESTOP_ISRB | SAFETY_DOOR_ISRB | FHOLD_ISRB | CS_RES_ISRB)
+#define PCINTB_DIN_IO_MASK                                                     \
+  (DIN0_ISRB | DIN1_ISRB | DIN2_ISRB | DIN3_ISRB | DIN4_ISRB | DIN5_ISRB |     \
+   DIN6_ISRB | DIN7_ISRB)
+#define PCINT0_LIMITS_MASK                                                     \
+  (LIMIT_X_ISR0 | LIMIT_Y_ISR0 | LIMIT_Z_ISR0 | LIMIT_X2_ISR0 |                \
+   LIMIT_Y2_ISR0 | LIMIT_Z2_ISR0 | LIMIT_A_ISR0 | LIMIT_B_ISR0 | LIMIT_C_ISR0)
+#define PCINT0_CONTROLS_MASK                                                   \
+  (ESTOP_ISR0 | SAFETY_DOOR_ISR0 | FHOLD_ISR0 | CS_RES_ISR0)
+#define PCINT0_DIN_IO_MASK                                                     \
+  (DIN0_ISR0 | DIN1_ISR0 | DIN2_ISR0 | DIN3_ISR0 | DIN4_ISR0 | DIN5_ISR0 |     \
+   DIN6_ISR0 | DIN7_ISR0)
+#define PCINT1_LIMITS_MASK                                                     \
+  (LIMIT_X_ISR1 | LIMIT_Y_ISR1 | LIMIT_Z_ISR1 | LIMIT_X2_ISR1 |                \
+   LIMIT_Y2_ISR1 | LIMIT_Z2_ISR1 | LIMIT_A_ISR1 | LIMIT_B_ISR1 | LIMIT_C_ISR1)
+#define PCINT1_CONTROLS_MASK                                                   \
+  (ESTOP_ISR1 | SAFETY_DOOR_ISR1 | FHOLD_ISR1 | CS_RES_ISR1)
+#define PCINT1_DIN_IO_MASK                                                     \
+  (DIN0_ISR1 | DIN1_ISR1 | DIN2_ISR1 | DIN3_ISR1 | DIN4_ISR1 | DIN5_ISR1 |     \
+   DIN6_ISR1 | DIN7_ISR1)
+#define PCINT2_LIMITS_MASK                                                     \
+  (LIMIT_X_ISR2 | LIMIT_Y_ISR2 | LIMIT_Z_ISR2 | LIMIT_X2_ISR2 |                \
+   LIMIT_Y2_ISR2 | LIMIT_Z2_ISR2 | LIMIT_A_ISR2 | LIMIT_B_ISR2 | LIMIT_C_ISR2)
+#define PCINT2_CONTROLS_MASK                                                   \
+  (ESTOP_ISR2 | SAFETY_DOOR_ISR2 | FHOLD_ISR2 | CS_RES_ISR2)
+#define PCINT2_DIN_IO_MASK                                                     \
+  (DIN0_ISR2 | DIN1_ISR2 | DIN2_ISR2 | DIN3_ISR2 | DIN4_ISR2 | DIN5_ISR2 |     \
+   DIN6_ISR2 | DIN7_ISR2)
+#define PCINT3_LIMITS_MASK                                                     \
+  (LIMIT_X_ISR3 | LIMIT_Y_ISR3 | LIMIT_Z_ISR3 | LIMIT_X2_ISR3 |                \
+   LIMIT_Y2_ISR3 | LIMIT_Z2_ISR3 | LIMIT_A_ISR3 | LIMIT_B_ISR3 | LIMIT_C_ISR3)
+#define PCINT3_CONTROLS_MASK                                                   \
+  (ESTOP_ISR3 | SAFETY_DOOR_ISR3 | FHOLD_ISR3 | CS_RES_ISR3)
+#define PCINT3_DIN_IO_MASK                                                     \
+  (DIN0_ISR3 | DIN1_ISR3 | DIN2_ISR3 | DIN3_ISR3 | DIN4_ISR3 | DIN5_ISR3 |     \
+   DIN6_ISR3 | DIN7_ISR3)
+#define EIMSK_VAL                                                              \
+  (LIMIT_X_EIMSK | LIMIT_X2_EIMSK | LIMIT_Y_EIMSK | LIMIT_Y2_EIMSK |           \
+   LIMIT_Z_EIMSK | LIMIT_Z2_EIMSK | LIMIT_A_EIMSK | LIMIT_B_EIMSK |            \
+   LIMIT_C_EIMSK | ESTOP_EIMSK | SAFETY_DOOR_EIMSK | FHOLD_EIMSK |             \
+   CS_RES_EIMSK | DIN0_EIMSK | DIN1_EIMSK | DIN2_EIMSK | DIN3_EIMSK |          \
+   DIN4_EIMSK | DIN5_EIMSK | DIN6_EIMSK | DIN7_EIMSK)
 
-#define PCINTA_MASK (PCINTA_LIMITS_MASK | PCINTA_CONTROLS_MASK | PROBE_ISRA | PCINTA_DIN_IO_MASK)
-#define PCINTB_MASK (PCINTB_LIMITS_MASK | PCINTB_CONTROLS_MASK | PROBE_ISRB | PCINTB_DIN_IO_MASK)
-#define PCINT0_MASK (PCINT0_LIMITS_MASK | PCINT0_CONTROLS_MASK | PROBE_ISR0 | PCINT0_DIN_IO_MASK)
-#define PCINT1_MASK (PCINT1_LIMITS_MASK | PCINT1_CONTROLS_MASK | PROBE_ISR1 | PCINT1_DIN_IO_MASK)
-#define PCINT2_MASK (PCINT2_LIMITS_MASK | PCINT2_CONTROLS_MASK | PROBE_ISR2 | PCINT2_DIN_IO_MASK)
+#define PCINTA_MASK                                                            \
+  (PCINTA_LIMITS_MASK | PCINTA_CONTROLS_MASK | PROBE_ISRA | PCINTA_DIN_IO_MASK)
+#define PCINTB_MASK                                                            \
+  (PCINTB_LIMITS_MASK | PCINTB_CONTROLS_MASK | PROBE_ISRB | PCINTB_DIN_IO_MASK)
+#define PCINT0_MASK                                                            \
+  (PCINT0_LIMITS_MASK | PCINT0_CONTROLS_MASK | PROBE_ISR0 | PCINT0_DIN_IO_MASK)
+#define PCINT1_MASK                                                            \
+  (PCINT1_LIMITS_MASK | PCINT1_CONTROLS_MASK | PROBE_ISR1 | PCINT1_DIN_IO_MASK)
+#define PCINT2_MASK                                                            \
+  (PCINT2_LIMITS_MASK | PCINT2_CONTROLS_MASK | PROBE_ISR2 | PCINT2_DIN_IO_MASK)
 
 // Indirect macro access
 #ifndef __indirect__
@@ -4846,84 +4921,84 @@ extern "C"
 
 #ifndef BYTE_OPS
 #define BYTE_OPS
-#define SETBIT(x, y) ((x) |= (1U << (y)))	 /* Set bit y in byte x*/
+#define SETBIT(x, y) ((x) |= (1U << (y)))    /* Set bit y in byte x*/
 #define CLEARBIT(x, y) ((x) &= ~(1U << (y))) /* Clear bit y in byte x*/
-#define CHECKBIT(x, y) ((x) & (1U << (y)))	 /* Check bit y in byte x*/
+#define CHECKBIT(x, y) ((x) & (1U << (y)))   /* Check bit y in byte x*/
 #define TOGGLEBIT(x, y) ((x) ^= (1U << (y))) /* Toggle bit y in byte x*/
 
-#define SETFLAG(x, y) ((x) |= (y))	  /* Set byte y in byte x*/
+#define SETFLAG(x, y) ((x) |= (y))    /* Set byte y in byte x*/
 #define CLEARFLAG(x, y) ((x) &= ~(y)) /* Clear byte y in byte x*/
-#define CHECKFLAG(x, y) ((x) & (y))	  /* Check byte y in byte x*/
+#define CHECKFLAG(x, y) ((x) & (y))   /* Check byte y in byte x*/
 #define TOGGLEFLAG(x, y) ((x) ^= (y)) /* Toggle byte y in byte x*/
 #endif
 
-#define mcu_config_output(x) SETBIT(__indirect__(x, DIRREG), __indirect__(x, BIT))
-#define mcu_config_input(x) CLEARBIT(__indirect__(x, DIRREG), __indirect__(x, BIT))
+#define mcu_config_output(x)                                                   \
+  SETBIT(__indirect__(x, DIRREG), __indirect__(x, BIT))
+#define mcu_config_input(x)                                                    \
+  CLEARBIT(__indirect__(x, DIRREG), __indirect__(x, BIT))
 #define mcu_config_analog(x) mcu_config_input(x)
-#define mcu_get_input(diopin) CHECKBIT(__indirect__(diopin, INREG), __indirect__(diopin, BIT))
-#define mcu_get_output(diopin) CHECKBIT(__indirect__(diopin, OUTREG), __indirect__(diopin, BIT))
-#define mcu_set_output(diopin) SETBIT(__indirect__(diopin, OUTREG), __indirect__(diopin, BIT))
-#define mcu_clear_output(diopin) CLEARBIT(__indirect__(diopin, OUTREG), __indirect__(diopin, BIT))
-#define mcu_toggle_output(diopin) (__indirect__(diopin, INREG) = (1U << __indirect__(diopin, BIT)))
+#define mcu_get_input(diopin)                                                  \
+  CHECKBIT(__indirect__(diopin, INREG), __indirect__(diopin, BIT))
+#define mcu_get_output(diopin)                                                 \
+  CHECKBIT(__indirect__(diopin, OUTREG), __indirect__(diopin, BIT))
+#define mcu_set_output(diopin)                                                 \
+  SETBIT(__indirect__(diopin, OUTREG), __indirect__(diopin, BIT))
+#define mcu_clear_output(diopin)                                               \
+  CLEARBIT(__indirect__(diopin, OUTREG), __indirect__(diopin, BIT))
+#define mcu_toggle_output(diopin)                                              \
+  (__indirect__(diopin, INREG) = (1U << __indirect__(diopin, BIT)))
 
-#define mcu_config_pullup(x) SETBIT(__indirect__(x, OUTREG), __indirect__(x, BIT))
-#define mcu_config_input_isr(x) SETFLAG(__indirect__(x, ISRREG), __indirect__(x, ISR_MASK))
+#define mcu_config_pullup(x)                                                   \
+  SETBIT(__indirect__(x, OUTREG), __indirect__(x, BIT))
+#define mcu_config_input_isr(x)                                                \
+  SETFLAG(__indirect__(x, ISRREG), __indirect__(x, ISR_MASK))
 
-#define mcu_config_pwm(x, freq)                                  \
-	{                                                            \
-		SETBIT(__indirect__(x, DIRREG), __indirect__(x, BIT));   \
-		CLEARBIT(__indirect__(x, OUTREG), __indirect__(x, BIT)); \
-		__indirect__(x, TMRAREG) |= __indirect__(x, MODE);       \
-		uint16_t div = (F_CPU >> 8) / freq;                      \
-		uint8_t pre = 1;                                         \
-		if (div > 1)                                             \
-		{                                                        \
-			div = ((div + 1) >> 3);                              \
-			pre++;                                               \
-		}                                                        \
-		if (__indirect__(x, TIMER) == 2)                         \
-		{                                                        \
-			if (div > 1)                                         \
-			{                                                    \
-				div = ((div + 1) >> 2);                          \
-				pre++;                                           \
-			}                                                    \
-			while (div > 1)                                      \
-			{                                                    \
-				div = ((div + 1) >> 1);                          \
-				pre++;                                           \
-			}                                                    \
-		}                                                        \
-		else                                                     \
-		{                                                        \
-			if (div > 1)                                         \
-			{                                                    \
-				div = ((div + 1) >> 3);                          \
-				pre++;                                           \
-			}                                                    \
-			while (div > 1)                                      \
-			{                                                    \
-				div = ((div + 1) >> 2);                          \
-				pre++;                                           \
-			}                                                    \
-			pre |= 8;                                            \
-		}                                                        \
-		__indirect__(x, TMRBREG) = pre;                          \
-		__indirect__(x, OCRREG) = 0;                             \
-	}
+#define mcu_config_pwm(x, freq)                                                \
+  {                                                                            \
+    SETBIT(__indirect__(x, DIRREG), __indirect__(x, BIT));                     \
+    CLEARBIT(__indirect__(x, OUTREG), __indirect__(x, BIT));                   \
+    __indirect__(x, TMRAREG) |= __indirect__(x, MODE);                         \
+    uint16_t div = (F_CPU >> 8) / freq;                                        \
+    uint8_t pre = 1;                                                           \
+    if (div > 1) {                                                             \
+      div = ((div + 1) >> 3);                                                  \
+      pre++;                                                                   \
+    }                                                                          \
+    if (__indirect__(x, TIMER) == 2) {                                         \
+      if (div > 1) {                                                           \
+        div = ((div + 1) >> 2);                                                \
+        pre++;                                                                 \
+      }                                                                        \
+      while (div > 1) {                                                        \
+        div = ((div + 1) >> 1);                                                \
+        pre++;                                                                 \
+      }                                                                        \
+    } else {                                                                   \
+      if (div > 1) {                                                           \
+        div = ((div + 1) >> 3);                                                \
+        pre++;                                                                 \
+      }                                                                        \
+      while (div > 1) {                                                        \
+        div = ((div + 1) >> 2);                                                \
+        pre++;                                                                 \
+      }                                                                        \
+      pre |= 8;                                                                \
+    }                                                                          \
+    __indirect__(x, TMRBREG) = pre;                                            \
+    __indirect__(x, OCRREG) = 0;                                               \
+  }
 
-#define mcu_set_pwm(diopin, pwmvalue)                                                    \
-	{                                                                                    \
-		__indirect__(diopin, OCRREG) = (uint16_t)pwmvalue;                               \
-		if (pwmvalue != 0)                                                               \
-		{                                                                                \
-			SETFLAG(__indirect__(diopin, TMRAREG), __indirect__(diopin, ENABLE_MASK));   \
-		}                                                                                \
-		else                                                                             \
-		{                                                                                \
-			CLEARFLAG(__indirect__(diopin, TMRAREG), __indirect__(diopin, ENABLE_MASK)); \
-		}                                                                                \
-	}
+#define mcu_set_pwm(diopin, pwmvalue)                                          \
+  {                                                                            \
+    __indirect__(diopin, OCRREG) = (uint16_t)pwmvalue;                         \
+    if (pwmvalue != 0) {                                                       \
+      SETFLAG(__indirect__(diopin, TMRAREG),                                   \
+              __indirect__(diopin, ENABLE_MASK));                              \
+    } else {                                                                   \
+      CLEARFLAG(__indirect__(diopin, TMRAREG),                                 \
+                __indirect__(diopin, ENABLE_MASK));                            \
+    }                                                                          \
+  }
 #define mcu_get_pwm(diopin) (__indirect__(diopin, OCRREG))
 
 #define _min(a, b) (((a) < (b)) ? (a) : (b))
@@ -4933,15 +5008,16 @@ extern "C"
 #ifndef F_CPU
 #define F_CPU 16000000UL
 #endif
-#define ADC_PRESC (_min(7, (0xff & ((uint8_t)((float)(F_CPU / 100000) / LOG2)))))
-#define mcu_get_analog(diopin)                          \
-	({                                                  \
-		ADMUX = (0x00 | __indirect__(diopin, CHANNEL)); \
-		ADCSRA = (0xC0 | ADC_PRESC);                    \
-		while (ADCSRA & 0x40)                           \
-			;                                           \
-		(0x3FF & ((ADCH << 8) | ADCL));                 \
-	})
+#define ADC_PRESC                                                              \
+  (_min(7, (0xff & ((uint8_t)((float)(F_CPU / 100000) / LOG2)))))
+#define mcu_get_analog(diopin)                                                 \
+  ({                                                                           \
+    ADMUX = (0x00 | __indirect__(diopin, CHANNEL));                            \
+    ADCSRA = (0xC0 | ADC_PRESC);                                               \
+    while (ADCSRA & 0x40)                                                      \
+      ;                                                                        \
+    (0x3FF & ((ADCH << 8) | ADCL));                                            \
+  })
 
 #if defined(PROBE) && defined(PROBE_ISR)
 #define mcu_enable_probe_isr() (SETFLAG(PROBE_ISRREG, PROBE_ISR_MASK))
@@ -4967,23 +5043,25 @@ extern "C"
 #define mcu_free_micros() ((1000UL * (TCNT0)) / ((OCR0A) + 1))
 
 #ifdef MCU_HAS_ONESHOT_TIMER
-#define mcu_start_timeout() \
-	({ONESHOT_TCNT = 0;       \
-	ONESHOT_TIFR = 0x7;     \
-	ONESHOT_TIMSK |= (1 << ONESHOT_OCIEA); })
+#define mcu_start_timeout()                                                    \
+  ({                                                                           \
+    ONESHOT_TCNT = 0;                                                          \
+    ONESHOT_TIFR = 0x7;                                                        \
+    ONESHOT_TIMSK |= (1 << ONESHOT_OCIEA);                                     \
+  })
 #endif
 
 #include <util/atomic.h>
 #define ATOMIC_CODEBLOCK ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
 #define ATOMIC_CODEBLOCK_NR ATOMIC_BLOCK(ATOMIC_FORCEON)
 
-	// #ifdef ENABLE_ITP_FEED_TASK
-	// #define INTERPOLATOR_BUFFER_SIZE 5
-	// #undef F_STEP_MAX
-	// #define F_STEP_MAX 15000
-	// #endif
+// #ifdef ENABLE_ITP_FEED_TASK
+// #define INTERPOLATOR_BUFFER_SIZE 5
+// #undef F_STEP_MAX
+// #define F_STEP_MAX 15000
+// #endif
 
-	// #define DISABLE_RTC_CODE
+// #define DISABLE_RTC_CODE
 
 #define mcu_start_step_reset_timeout() /*ITP_TCNT = 0;*/ mcu_enable_global_isr()
 

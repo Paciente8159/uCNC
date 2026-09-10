@@ -1,41 +1,43 @@
 /*
-	Name: mcumap_esp8266.h
-	Description: Contains all MCU and PIN definitions for Arduino ESP8266 to run µCNC.
+        Name: mcumap_esp8266.h
+        Description: Contains all MCU and PIN definitions for Arduino ESP8266 to
+   run µCNC.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 05-02-2022
+        Copyright: Copyright (c) João Martins
+        Author: João Martins
+        Date: 05-02-2022
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+        µCNC is free software: you can redistribute it and/or modify
+        it under the terms of the GNU General Public License as published by
+        the Free Software Foundation, either version 3 of the License, or
+        (at your option) any later version. Please see
+   <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+        µCNC is distributed WITHOUT ANY WARRANTY;
+        Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A
+   PARTICULAR PURPOSE. See the	GNU General Public License for more details.
 */
 
 #ifndef MCUMAP_ESP8266_H
 #define MCUMAP_ESP8266_H
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 #include <Arduino.h>
 
 /*
-	Generates all the interface definitions.
-	This creates a middle HAL layer between the board IO pins and the AVR funtionalities
+        Generates all the interface definitions.
+        This creates a middle HAL layer between the board IO pins and the AVR
+   funtionalities
 */
 /*
-	MCU specific definitions and replacements
+        MCU specific definitions and replacements
 */
 
 /*
-	ESP8266 Defaults
+        ESP8266 Defaults
 */
 // defines the frequency of the mcu
 #ifndef F_CPU
@@ -66,20 +68,19 @@ extern "C"
 #define MCU_CYCLES_LOOP_OVERHEAD 3
 #endif
 
-#define mcu_delay_loop(X)                                                         \
-	do                                                                              \
-	{                                                                               \
-		register unsigned start, now, target = (((X) - 1) * MCU_CYCLES_PER_LOOP + 2); \
-		asm volatile("" ::: "memory");                                                \
-		asm volatile(                                                                 \
-				"rsr.ccount %0\n"					/* 2 cycles: start = ccount */                  \
-				"1:  rsr.ccount %1\n"			/* 2 cycles */                                  \
-				"  sub      %1, %1, %0\n" /* 1 cycle  : tmp = now-start */                \
-				"  bltu     %1, %2, 1b\n" /* 3 taken / 1 not taken */                     \
-				"  nop\n"                                                                 \
-				: "=&a"(start), "=&a"(now)                                                \
-				: "a"(target));                                                           \
-	} while (0)
+#define mcu_delay_loop(X)                                                      \
+  do {                                                                         \
+    register unsigned start, now,                                              \
+        target = (((X) - 1) * MCU_CYCLES_PER_LOOP + 2);                        \
+    asm volatile("" ::: "memory");                                             \
+    asm volatile("rsr.ccount %0\n"         /* 2 cycles: start = ccount */      \
+                 "1:  rsr.ccount %1\n"     /* 2 cycles */                      \
+                 "  sub      %1, %1, %0\n" /* 1 cycle  : tmp = now-start */    \
+                 "  bltu     %1, %2, 1b\n" /* 3 taken / 1 not taken */         \
+                 "  nop\n"                                                     \
+                 : "=&a"(start), "=&a"(now)                                    \
+                 : "a"(target));                                               \
+  } while (0)
 
 #ifndef MCU_CALLBACK
 #define MCU_CALLBACK IRAM_ATTR
@@ -102,8 +103,9 @@ extern "C"
 #define __SIZEOF_FLOAT__ 4
 
 // used by the parser
-// this method is faster then normal multiplication (for 32 bit for 16 and 8 bits is slightly lower)
-// overrides utils.h definition to implement this method with or without fast math option enabled
+// this method is faster then normal multiplication (for 32 bit for 16 and 8
+// bits is slightly lower) overrides utils.h definition to implement this method
+// with or without fast math option enabled
 #define fast_int_mul10(x) ((((x) << 2) + (x)) << 1)
 
 // PINNAMES for ESP8266
@@ -1088,11 +1090,11 @@ extern "C"
 #define DIO215_BIT (SPI2_CS_BIT)
 #endif
 
-	// ISR on change inputs
-	extern void mcu_din_isr(void);
-	extern void mcu_probe_isr(void);
-	extern void mcu_limits_isr(void);
-	extern void mcu_controls_isr(void);
+// ISR on change inputs
+extern void mcu_din_isr(void);
+extern void mcu_probe_isr(void);
+extern void mcu_limits_isr(void);
+extern void mcu_controls_isr(void);
 #if (defined(LIMIT_X_ISR) && defined(LIMIT_X))
 #define DIO100_ISR (LIMIT_X_ISR)
 #define LIMIT_X_ISRCALLBACK mcu_limit_isr
@@ -1239,7 +1241,9 @@ extern "C"
 #ifndef ENABLE_SOCKETS
 #define ENABLE_SOCKETS
 #endif
-#define sockets_dotasks() socket_server_dotasks();yield()
+#define sockets_dotasks()                                                      \
+  socket_server_dotasks();                                                     \
+  yield()
 #endif
 
 #ifndef MCU_HAS_FLASHUPDATE
@@ -1262,7 +1266,8 @@ extern "C"
 #if ((SPI_CLK_BIT == 14) && (SPI_SDO_BIT == 13) && (SPI_SDI_BIT == 12))
 #undef SPI_PORT
 #define SPI_PORT 1
-#elif ((SPI_CLK_BIT == 6) && (SPI_SDO_BIT == 8) && (SPI_SDI_BIT == 7) && (SPI_CS_BIT == 0))
+#elif ((SPI_CLK_BIT == 6) && (SPI_SDO_BIT == 8) && (SPI_SDI_BIT == 7) &&       \
+       (SPI_CS_BIT == 0))
 #undef SPI_PORT
 #define SPI_PORT 0
 #else
@@ -1282,7 +1287,8 @@ extern "C"
 #if ((SPI2_CLK_BIT == 14) && (SPI2_SDO_BIT == 13) && (SPI2_SDI_BIT == 12))
 #undef SPI2_PORT
 #define SPI2_PORT 1
-#elif ((SPI2_CLK_BIT == 6) && (SPI2_SDO_BIT == 8) && (SPI2_SDI_BIT == 7) && (SPI2_CS_BIT == 0))
+#elif ((SPI2_CLK_BIT == 6) && (SPI2_SDO_BIT == 8) && (SPI2_SDI_BIT == 7) &&    \
+       (SPI2_CS_BIT == 0))
 #undef SPI2_PORT
 #define SPI2_PORT 0
 #else
@@ -1319,163 +1325,223 @@ extern "C"
 
 #ifndef BYTE_OPS
 #define BYTE_OPS
-#define SETBIT(x, y) ((x) |= (1U << (y)))	 /* Set bit y in byte x*/
+#define SETBIT(x, y) ((x) |= (1U << (y)))    /* Set bit y in byte x*/
 #define CLEARBIT(x, y) ((x) &= ~(1U << (y))) /* Clear bit y in byte x*/
-#define CHECKBIT(x, y) ((x) & (1U << (y)))	 /* Check bit y in byte x*/
+#define CHECKBIT(x, y) ((x) & (1U << (y)))   /* Check bit y in byte x*/
 #define TOGGLEBIT(x, y) ((x) ^= (1U << (y))) /* Toggle bit y in byte x*/
 
-#define SETFLAG(x, y) ((x) |= (y))	  /* Set byte y in byte x*/
+#define SETFLAG(x, y) ((x) |= (y))    /* Set byte y in byte x*/
 #define CLEARFLAG(x, y) ((x) &= ~(y)) /* Clear byte y in byte x*/
-#define CHECKFLAG(x, y) ((x) & (y))	  /* Check byte y in byte x*/
+#define CHECKFLAG(x, y) ((x) & (y))   /* Check byte y in byte x*/
 #define TOGGLEFLAG(x, y) ((x) ^= (y)) /* Toggle byte y in byte x*/
 #endif
 
 #define MCU_HAS_SOFT_PWM_TIMER
-	extern uint8_t g_io_soft_pwm[16];
-	extern uint8_t g_soft_pwm_res;
+extern uint8_t g_io_soft_pwm[16];
+extern uint8_t g_soft_pwm_res;
 #define mcu_set_pwm(X, Y) ({ g_io_soft_pwm[X - PWM_PINS_OFFSET] = (0xFF & Y); })
 #define mcu_get_pwm(X) g_io_soft_pwm[X - PWM_PINS_OFFSET]
 
-#define mcu_config_input(X)                                                                    \
-	if (__indirect__(X, BIT) < 16)                                                             \
-	{                                                                                          \
-		GPF(__indirect__(X, BIT)) = GPFFS(GPFFS_GPIO(__indirect__(X, BIT)));                   \
-		GPEC = (1 << __indirect__(X, BIT));                                                    \
-		GPC(__indirect__(X, BIT)) = (GPC(__indirect__(X, BIT)) & (0xF << GPCI)) | (1 << GPCD); \
-	}                                                                                          \
-	if (__indirect__(X, BIT) == 16)                                                            \
-	{                                                                                          \
-		GPF16 = GP16FFS(GPFFS_GPIO(16));                                                       \
-		GPC16 = 0;                                                                             \
-		GP16E &= ~1;                                                                           \
-	}
+#define mcu_config_input(X)                                                    \
+  if (__indirect__(X, BIT) < 16) {                                             \
+    GPF(__indirect__(X, BIT)) = GPFFS(GPFFS_GPIO(__indirect__(X, BIT)));       \
+    GPEC = (1 << __indirect__(X, BIT));                                        \
+    GPC(__indirect__(X, BIT)) =                                                \
+        (GPC(__indirect__(X, BIT)) & (0xF << GPCI)) | (1 << GPCD);             \
+  }                                                                            \
+  if (__indirect__(X, BIT) == 16) {                                            \
+    GPF16 = GP16FFS(GPFFS_GPIO(16));                                           \
+    GPC16 = 0;                                                                 \
+    GP16E &= ~1;                                                               \
+  }
 
-#define mcu_config_pullup(X)                       \
-	if (__indirect__(X, BIT) < 16)                 \
-	{                                              \
-		GPF(__indirect__(X, BIT)) |= (1 << GPFPU); \
-	}
+#define mcu_config_pullup(X)                                                   \
+  if (__indirect__(X, BIT) < 16) {                                             \
+    GPF(__indirect__(X, BIT)) |= (1 << GPFPU);                                 \
+  }
 
-#define mcu_config_output(X)                                                     \
-	if (__indirect__(X, BIT) < 16)                                               \
-	{                                                                            \
-		GPF(__indirect__(X, BIT)) = GPFFS(GPFFS_GPIO(__indirect__(X, BIT)));     \
-		GPC(__indirect__(X, BIT)) = (GPC(__indirect__(X, BIT)) & (0xF << GPCI)); \
-		GPES = (1 << __indirect__(X, BIT));                                      \
-	}                                                                            \
-	if (__indirect__(X, BIT) == 16)                                              \
-	{                                                                            \
-		GPF16 = GP16FFS(GPFFS_GPIO(16));                                         \
-		GPC16 = 0;                                                               \
-		GP16E |= 1;                                                              \
-	}
+#define mcu_config_output(X)                                                   \
+  if (__indirect__(X, BIT) < 16) {                                             \
+    GPF(__indirect__(X, BIT)) = GPFFS(GPFFS_GPIO(__indirect__(X, BIT)));       \
+    GPC(__indirect__(X, BIT)) = (GPC(__indirect__(X, BIT)) & (0xF << GPCI));   \
+    GPES = (1 << __indirect__(X, BIT));                                        \
+  }                                                                            \
+  if (__indirect__(X, BIT) == 16) {                                            \
+    GPF16 = GP16FFS(GPFFS_GPIO(16));                                           \
+    GPC16 = 0;                                                                 \
+    GP16E |= 1;                                                                \
+  }
 
-#define mcu_config_output_od(X)                   \
-	if (__indirect__(X, BIT) < 16)                \
-	{                                             \
-		GPIEC = (1 << __indirect__(X, BIT));      \
-		GPC(__indirect__(X, BIT)) |= (1 << GPCD); \
-		GPES = (1 << __indirect__(X, BIT));       \
-	}
+#define mcu_config_output_od(X)                                                \
+  if (__indirect__(X, BIT) < 16) {                                             \
+    GPIEC = (1 << __indirect__(X, BIT));                                       \
+    GPC(__indirect__(X, BIT)) |= (1 << GPCD);                                  \
+    GPES = (1 << __indirect__(X, BIT));                                        \
+  }
 
-#define mcu_config_af(X, FUNC)                                              \
-	{                                                                       \
-		GPIEC = (1 << __indirect__(X, BIT));                                \
-		GPF(__indirect__(X, BIT)) = GPFFS(GPFFS_BUS(__indirect__(X, BIT))); \
-		GPES = (1 << __indirect__(X, BIT));                                 \
-		switch (FUNC)                                                       \
-		{                                                                   \
-		case SPECIAL:                                                       \
-			if (__indirect__(X, BIT) == 3)                                  \
-			{                                                               \
-				GPF(__indirect__(X, BIT)) |= (1 << GPFPU);                  \
-			}                                                               \
-			break;                                                          \
-		default:                                                            \
-			GPF(__indirect__(X, BIT)) = GPFFS((FUNC >> 4) & 0x07);          \
-			if (__indirect__(X, BIT) == 13 && FUNC == FUNCTION_4)           \
-				GPF(__indirect__(X, BIT)) |= (1 << GPFPU);                  \
-			break;                                                          \
-		}                                                                   \
-	}
+#define mcu_config_af(X, FUNC)                                                 \
+  {                                                                            \
+    GPIEC = (1 << __indirect__(X, BIT));                                       \
+    GPF(__indirect__(X, BIT)) = GPFFS(GPFFS_BUS(__indirect__(X, BIT)));        \
+    GPES = (1 << __indirect__(X, BIT));                                        \
+    switch (FUNC) {                                                            \
+    case SPECIAL:                                                              \
+      if (__indirect__(X, BIT) == 3) {                                         \
+        GPF(__indirect__(X, BIT)) |= (1 << GPFPU);                             \
+      }                                                                        \
+      break;                                                                   \
+    default:                                                                   \
+      GPF(__indirect__(X, BIT)) = GPFFS((FUNC >> 4) & 0x07);                   \
+      if (__indirect__(X, BIT) == 13 && FUNC == FUNCTION_4)                    \
+        GPF(__indirect__(X, BIT)) |= (1 << GPFPU);                             \
+      break;                                                                   \
+    }                                                                          \
+  }
 
-	typedef struct signal_timer_
-	{
-		uint32_t current_us;
-		uint8_t us_step;
-		uint32_t itp_reload;
-		bool step_alarm_en;
-		uint32_t pwm_reload;
-	} signal_timer_t;
+typedef struct signal_timer_ {
+  uint32_t current_us;
+  uint8_t us_step;
+  uint32_t itp_reload;
+  bool step_alarm_en;
+  uint32_t pwm_reload;
+} signal_timer_t;
 
-	extern signal_timer_t signal_timer;
-#define mcu_softpwm_freq_config(pin, freq) ({mcu_config_output(pin); signal_timer.pwm_reload = (uint32_t)(1000000/freq); })
-	
+extern signal_timer_t signal_timer;
+#define mcu_softpwm_freq_config(pin, freq)                                     \
+  ({                                                                           \
+    mcu_config_output(pin);                                                    \
+    signal_timer.pwm_reload = (uint32_t)(1000000 / freq);                      \
+  })
+
 #define mcu_config_pwm(X, freq) mcu_softpwm_freq_config(X, freq)
 
 #define mcu_config_analog(X) mcu_config_input(X)
 
-#define mcu_config_input_isr(X) attachInterrupt(digitalPinToInterrupt(__indirect__(X, BIT)), __indirect__(X, ISRCALLBACK), CHANGE)
+#define mcu_config_input_isr(X)                                                \
+  attachInterrupt(digitalPinToInterrupt(__indirect__(X, BIT)),                 \
+                  __indirect__(X, ISRCALLBACK), CHANGE)
 
-#define mcu_get_input(X) ((__indirect__(X, BIT) < 16) ? GPIP(__indirect__(X, BIT)) : (GP16I & 0x01))
+#define mcu_get_input(X)                                                       \
+  ((__indirect__(X, BIT) < 16) ? GPIP(__indirect__(X, BIT)) : (GP16I & 0x01))
 
 /**
- * Due to the way this core works this has some special calls to make direct output pin calls
+ * Due to the way this core works this has some special calls to make direct
+ * output pin calls
  */
-#define mcu_get_output_gpio(X) ((__indirect__(X, BIT) == 16) ? CHECKBIT(GP16O, 1) : CHECKBIT(GPO, __indirect__(X, BIT)))
-#define mcu_set_output_gpio(X) ({if(__indirect__(X, BIT)==16){SETBIT(GP16O, 1);}else{GPOS = (1<<__indirect__(X, BIT));} })
-#define mcu_clear_output_gpio(X) ({if(__indirect__(X, BIT)==16){CLEARBIT(GP16O, 1);}else{GPOC = (1<<__indirect__(X, BIT));} })
-#define mcu_toggle_output_gpio(X) ({if(__indirect__(X, BIT)==16){TOGGLEBIT(GP16O, 1);}else{TOGGLEBIT(GPO,__indirect__(X, BIT));} })
+#define mcu_get_output_gpio(X)                                                 \
+  ((__indirect__(X, BIT) == 16) ? CHECKBIT(GP16O, 1)                           \
+                                : CHECKBIT(GPO, __indirect__(X, BIT)))
+#define mcu_set_output_gpio(X)                                                 \
+  ({                                                                           \
+    if (__indirect__(X, BIT) == 16) {                                          \
+      SETBIT(GP16O, 1);                                                        \
+    } else {                                                                   \
+      GPOS = (1 << __indirect__(X, BIT));                                      \
+    }                                                                          \
+  })
+#define mcu_clear_output_gpio(X)                                               \
+  ({                                                                           \
+    if (__indirect__(X, BIT) == 16) {                                          \
+      CLEARBIT(GP16O, 1);                                                      \
+    } else {                                                                   \
+      GPOC = (1 << __indirect__(X, BIT));                                      \
+    }                                                                          \
+  })
+#define mcu_toggle_output_gpio(X)                                              \
+  ({                                                                           \
+    if (__indirect__(X, BIT) == 16) {                                          \
+      TOGGLEBIT(GP16O, 1);                                                     \
+    } else {                                                                   \
+      TOGGLEBIT(GPO, __indirect__(X, BIT));                                    \
+    }                                                                          \
+  })
 
-	extern volatile uint32_t esp8266_io_out;
-#define mcu_get_output(X) ((X < 200) ? CHECKBIT(esp8266_io_out, __indirect__(X, BIT)) : mcu_get_output_gpio(X))
-#define mcu_set_output(X) ({if(X<200) {SETBIT(esp8266_io_out, __indirect__(X, BIT));}else{mcu_set_output_gpio(X);} })
-#define mcu_clear_output(X) ({if(X<200) {CLEARBIT(esp8266_io_out, __indirect__(X, BIT));}else{mcu_clear_output_gpio(X);} })
-#define mcu_toggle_output(X) ({if(X<200) {TOGGLEBIT(esp8266_io_out, __indirect__(X, BIT));}else{mcu_toggle_output_gpio(X);} })
+extern volatile uint32_t esp8266_io_out;
+#define mcu_get_output(X)                                                      \
+  ((X < 200) ? CHECKBIT(esp8266_io_out, __indirect__(X, BIT))                  \
+             : mcu_get_output_gpio(X))
+#define mcu_set_output(X)                                                      \
+  ({                                                                           \
+    if (X < 200) {                                                             \
+      SETBIT(esp8266_io_out, __indirect__(X, BIT));                            \
+    } else {                                                                   \
+      mcu_set_output_gpio(X);                                                  \
+    }                                                                          \
+  })
+#define mcu_clear_output(X)                                                    \
+  ({                                                                           \
+    if (X < 200) {                                                             \
+      CLEARBIT(esp8266_io_out, __indirect__(X, BIT));                          \
+    } else {                                                                   \
+      mcu_clear_output_gpio(X);                                                \
+    }                                                                          \
+  })
+#define mcu_toggle_output(X)                                                   \
+  ({                                                                           \
+    if (X < 200) {                                                             \
+      TOGGLEBIT(esp8266_io_out, __indirect__(X, BIT));                         \
+    } else {                                                                   \
+      mcu_toggle_output_gpio(X);                                               \
+    }                                                                          \
+  })
 
-#define mcu_get_analog(X)                                        \
-	if (__indirect__(X, BIT) == 17 || __indirect__(X, BIT) == 0) \
-	{                                                            \
-		return system_adc_read();                                \
-	}                                                            \
-	else                                                         \
-	{                                                            \
-		return (mcu_get_input()) ? 1023 : 0;                     \
-	}
+#define mcu_get_analog(X)                                                      \
+  if (__indirect__(X, BIT) == 17 || __indirect__(X, BIT) == 0) {               \
+    return system_adc_read();                                                  \
+  } else {                                                                     \
+    return (mcu_get_input()) ? 1023 : 0;                                       \
+  }
 
 // ISR
 // #include <xtensa/corebits.h>
 #define mcu_enable_global_isr() xt_rsil(0)
 #define mcu_disable_global_isr() xt_rsil(15)
 #ifndef PS_INTLEVEL_MASK
-#define PS_INTLEVEL_MASK	0x0000000F
+#define PS_INTLEVEL_MASK 0x0000000F
 #endif
 #ifndef PS_EXCM_MASK
-#define PS_EXCM_MASK		0x00000010
+#define PS_EXCM_MASK 0x00000010
 #endif
-#define mcu_get_global_isr() ({uint32_t ps; __asm__ __volatile__ ("rsr.ps %0" : "=r" (ps)); ((ps & PS_INTLEVEL_MASK) == 0); })
-#define mcu_in_isr_context() ({uint32_t ps; __asm__ __volatile__ ("rsr.ps %0" : "=r" (ps)); ((ps & PS_EXCM_MASK) == 0); })
+#define mcu_get_global_isr()                                                   \
+  ({                                                                           \
+    uint32_t ps;                                                               \
+    __asm__ __volatile__("rsr.ps %0" : "=r"(ps));                              \
+    ((ps & PS_INTLEVEL_MASK) == 0);                                            \
+  })
+#define mcu_in_isr_context()                                                   \
+  ({                                                                           \
+    uint32_t ps;                                                               \
+    __asm__ __volatile__("rsr.ps %0" : "=r"(ps));                              \
+    ((ps & PS_EXCM_MASK) == 0);                                                \
+  })
 
 #if IC74HC595_COUNT > 0
 
 #if IC74HC595_COUNT > 4
-#error "Maximum allowed IC74HC595_COUNT is 4 with SHIFT_REGISTER_CUSTOM_CALLBACK"
+#error                                                                         \
+    "Maximum allowed IC74HC595_COUNT is 4 with SHIFT_REGISTER_CUSTOM_CALLBACK"
 #endif
 
-	// custom pin operations for 74HS595
-	extern volatile uint32_t ic74hc595_io_out;
+// custom pin operations for 74HS595
+extern volatile uint32_t ic74hc595_io_out;
 #ifdef SHIFT_REGISTER_CUSTOM_CALLBACK
 // reverses bytes
-#define ic74hc595_pin_offset(pin) (((IC74HC595_COUNT - 1 - (__indirect__(pin, IO_OFFSET) >> 3)) << 3) | (__indirect__(pin, IO_OFFSET) & 0x7))
+#define ic74hc595_pin_offset(pin)                                              \
+  (((IC74HC595_COUNT - 1 - (__indirect__(pin, IO_OFFSET) >> 3)) << 3) |        \
+   (__indirect__(pin, IO_OFFSET) & 0x7))
 #else
 #define io_extended_pins_update()
 #define ic74hc595_pin_offset(pin) (__indirect__(pin, IO_OFFSET))
 #endif
 #define ic74hc595_pin_mask(pin) (uint32_t)(1UL << ic74hc595_pin_offset(pin))
-#define ic74hc595_set_pin(pin) SETBIT(ic74hc595_io_out, ic74hc595_pin_offset(pin))
-#define ic74hc595_clear_pin(pin) CLEARBIT(ic74hc595_io_out, ic74hc595_pin_offset(pin))
-#define ic74hc595_toggle_pin(pin) TOGGLEBIT(ic74hc595_io_out, ic74hc595_pin_offset(pin))
-#define ic74hc595_get_pin(pin) CHECKBIT(ic74hc595_io_out, ic74hc595_pin_offset(pin))
+#define ic74hc595_set_pin(pin)                                                 \
+  SETBIT(ic74hc595_io_out, ic74hc595_pin_offset(pin))
+#define ic74hc595_clear_pin(pin)                                               \
+  CLEARBIT(ic74hc595_io_out, ic74hc595_pin_offset(pin))
+#define ic74hc595_toggle_pin(pin)                                              \
+  TOGGLEBIT(ic74hc595_io_out, ic74hc595_pin_offset(pin))
+#define ic74hc595_get_pin(pin)                                                 \
+  CHECKBIT(ic74hc595_io_out, ic74hc595_pin_offset(pin))
 
 #endif
 

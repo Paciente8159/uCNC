@@ -22,7 +22,7 @@ The tool struct is like this:
 
 ```
 	typedef void (*tool_func)(void);
-	typedef int16_t (*tool_range_speed_func)(int16_t);
+	typedef int16_t (*tool_range_speed_func)(int16_t, uint8_t);
 	typedef uint16_t (*tool_get_speed_func)(void);
 	typedef void (*tool_set_speed_func)(int16_t);
 	typedef void (*tool_coolant_func)(uint8_t);
@@ -41,7 +41,7 @@ The tool struct is like this:
 
 ## µCNC creating a dummy tool
 
-This is an example for creating a dummy tool. Again all current tools are inside the `src/hal/tool/tools` directory but it's not mandatory. It's just a matter of having them organized.
+This is an example for creating a dummy tool. Again all current tools are inside the `src/hal/tools/tools` directory but it's not mandatory. It's just a matter of having them organized.
 
 Add a new file .c to uCNC directory (same has uCNC.ino) and paste this code
 
