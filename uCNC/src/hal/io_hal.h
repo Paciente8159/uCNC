@@ -3,14 +3,13 @@
 #define IO_HAL_H
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
-	/*IO HAL*/
+/*IO HAL*/
 
-	/*PWM*/
-	extern uint8_t g_io_soft_pwm[16];
+/*PWM*/
+extern uint8_t g_io_soft_pwm[16];
 
 #if ASSERT_PIN_IO(STEP0)
 #define io1_config_output mcu_config_output(STEP0)
@@ -340,10 +339,10 @@ extern "C"
 #define io25_toggle_output ic74hc595_toggle_pin(PWM0)
 #define io25_get_output ic74hc595_get_pin(PWM0)
 #define io25_config_pwm(freq) mcu_softpwm_freq_config(PWM0, freq)
-#define io25_set_pwm(value)                                 \
-	{                                                         \
-		g_io_soft_pwm[PWM0 - PWM_PINS_OFFSET] = (0xFF & value); \
-	}
+#define io25_set_pwm(value)                                                    \
+  {                                                                            \
+    g_io_soft_pwm[PWM0 - PWM_PINS_OFFSET] = (0xFF & value);                    \
+  }
 #define io25_get_pwm g_io_soft_pwm[PWM0 - PWM_PINS_OFFSET]
 #endif
 #if ASSERT_PIN_IO(PWM1)
@@ -362,10 +361,10 @@ extern "C"
 #define io26_toggle_output ic74hc595_toggle_pin(PWM1)
 #define io26_get_output ic74hc595_get_pin(PWM1)
 #define io26_config_pwm(freq) mcu_softpwm_freq_config(PWM1, freq)
-#define io26_set_pwm(value)                                 \
-	{                                                         \
-		g_io_soft_pwm[PWM1 - PWM_PINS_OFFSET] = (0xFF & value); \
-	}
+#define io26_set_pwm(value)                                                    \
+  {                                                                            \
+    g_io_soft_pwm[PWM1 - PWM_PINS_OFFSET] = (0xFF & value);                    \
+  }
 #define io26_get_pwm g_io_soft_pwm[PWM1 - PWM_PINS_OFFSET]
 #endif
 #if ASSERT_PIN_IO(PWM2)
@@ -384,10 +383,10 @@ extern "C"
 #define io27_toggle_output ic74hc595_toggle_pin(PWM2)
 #define io27_get_output ic74hc595_get_pin(PWM2)
 #define io27_config_pwm(freq) mcu_softpwm_freq_config(PWM2, freq)
-#define io27_set_pwm(value)                                 \
-	{                                                         \
-		g_io_soft_pwm[PWM2 - PWM_PINS_OFFSET] = (0xFF & value); \
-	}
+#define io27_set_pwm(value)                                                    \
+  {                                                                            \
+    g_io_soft_pwm[PWM2 - PWM_PINS_OFFSET] = (0xFF & value);                    \
+  }
 #define io27_get_pwm g_io_soft_pwm[PWM2 - PWM_PINS_OFFSET]
 #endif
 #if ASSERT_PIN_IO(PWM3)
@@ -406,10 +405,10 @@ extern "C"
 #define io28_toggle_output ic74hc595_toggle_pin(PWM3)
 #define io28_get_output ic74hc595_get_pin(PWM3)
 #define io28_config_pwm(freq) mcu_softpwm_freq_config(PWM3, freq)
-#define io28_set_pwm(value)                                 \
-	{                                                         \
-		g_io_soft_pwm[PWM3 - PWM_PINS_OFFSET] = (0xFF & value); \
-	}
+#define io28_set_pwm(value)                                                    \
+  {                                                                            \
+    g_io_soft_pwm[PWM3 - PWM_PINS_OFFSET] = (0xFF & value);                    \
+  }
 #define io28_get_pwm g_io_soft_pwm[PWM3 - PWM_PINS_OFFSET]
 #endif
 #if ASSERT_PIN_IO(PWM4)
@@ -428,10 +427,10 @@ extern "C"
 #define io29_toggle_output ic74hc595_toggle_pin(PWM4)
 #define io29_get_output ic74hc595_get_pin(PWM4)
 #define io29_config_pwm(freq) mcu_softpwm_freq_config(PWM4, freq)
-#define io29_set_pwm(value)                                 \
-	{                                                         \
-		g_io_soft_pwm[PWM4 - PWM_PINS_OFFSET] = (0xFF & value); \
-	}
+#define io29_set_pwm(value)                                                    \
+  {                                                                            \
+    g_io_soft_pwm[PWM4 - PWM_PINS_OFFSET] = (0xFF & value);                    \
+  }
 #define io29_get_pwm g_io_soft_pwm[PWM4 - PWM_PINS_OFFSET]
 #endif
 #if ASSERT_PIN_IO(PWM5)
@@ -450,10 +449,10 @@ extern "C"
 #define io30_toggle_output ic74hc595_toggle_pin(PWM5)
 #define io30_get_output ic74hc595_get_pin(PWM5)
 #define io30_config_pwm(freq) mcu_softpwm_freq_config(PWM5, freq)
-#define io30_set_pwm(value)                                 \
-	{                                                         \
-		g_io_soft_pwm[PWM5 - PWM_PINS_OFFSET] = (0xFF & value); \
-	}
+#define io30_set_pwm(value)                                                    \
+  {                                                                            \
+    g_io_soft_pwm[PWM5 - PWM_PINS_OFFSET] = (0xFF & value);                    \
+  }
 #define io30_get_pwm g_io_soft_pwm[PWM5 - PWM_PINS_OFFSET]
 #endif
 #if ASSERT_PIN_IO(PWM6)
@@ -472,10 +471,10 @@ extern "C"
 #define io31_toggle_output ic74hc595_toggle_pin(PWM6)
 #define io31_get_output ic74hc595_get_pin(PWM6)
 #define io31_config_pwm(freq) mcu_softpwm_freq_config(PWM6, freq)
-#define io31_set_pwm(value)                                 \
-	{                                                         \
-		g_io_soft_pwm[PWM6 - PWM_PINS_OFFSET] = (0xFF & value); \
-	}
+#define io31_set_pwm(value)                                                    \
+  {                                                                            \
+    g_io_soft_pwm[PWM6 - PWM_PINS_OFFSET] = (0xFF & value);                    \
+  }
 #define io31_get_pwm g_io_soft_pwm[PWM6 - PWM_PINS_OFFSET]
 #endif
 #if ASSERT_PIN_IO(PWM7)
@@ -494,10 +493,10 @@ extern "C"
 #define io32_toggle_output ic74hc595_toggle_pin(PWM7)
 #define io32_get_output ic74hc595_get_pin(PWM7)
 #define io32_config_pwm(freq) mcu_softpwm_freq_config(PWM7, freq)
-#define io32_set_pwm(value)                                 \
-	{                                                         \
-		g_io_soft_pwm[PWM7 - PWM_PINS_OFFSET] = (0xFF & value); \
-	}
+#define io32_set_pwm(value)                                                    \
+  {                                                                            \
+    g_io_soft_pwm[PWM7 - PWM_PINS_OFFSET] = (0xFF & value);                    \
+  }
 #define io32_get_pwm g_io_soft_pwm[PWM7 - PWM_PINS_OFFSET]
 #endif
 #if ASSERT_PIN_IO(PWM8)
@@ -516,10 +515,10 @@ extern "C"
 #define io33_toggle_output ic74hc595_toggle_pin(PWM8)
 #define io33_get_output ic74hc595_get_pin(PWM8)
 #define io33_config_pwm(freq) mcu_softpwm_freq_config(PWM8, freq)
-#define io33_set_pwm(value)                                 \
-	{                                                         \
-		g_io_soft_pwm[PWM8 - PWM_PINS_OFFSET] = (0xFF & value); \
-	}
+#define io33_set_pwm(value)                                                    \
+  {                                                                            \
+    g_io_soft_pwm[PWM8 - PWM_PINS_OFFSET] = (0xFF & value);                    \
+  }
 #define io33_get_pwm g_io_soft_pwm[PWM8 - PWM_PINS_OFFSET]
 #endif
 #if ASSERT_PIN_IO(PWM9)
@@ -538,10 +537,10 @@ extern "C"
 #define io34_toggle_output ic74hc595_toggle_pin(PWM9)
 #define io34_get_output ic74hc595_get_pin(PWM9)
 #define io34_config_pwm(freq) mcu_softpwm_freq_config(PWM9, freq)
-#define io34_set_pwm(value)                                 \
-	{                                                         \
-		g_io_soft_pwm[PWM9 - PWM_PINS_OFFSET] = (0xFF & value); \
-	}
+#define io34_set_pwm(value)                                                    \
+  {                                                                            \
+    g_io_soft_pwm[PWM9 - PWM_PINS_OFFSET] = (0xFF & value);                    \
+  }
 #define io34_get_pwm g_io_soft_pwm[PWM9 - PWM_PINS_OFFSET]
 #endif
 #if ASSERT_PIN_IO(PWM10)
@@ -560,10 +559,10 @@ extern "C"
 #define io35_toggle_output ic74hc595_toggle_pin(PWM10)
 #define io35_get_output ic74hc595_get_pin(PWM10)
 #define io35_config_pwm(freq) mcu_softpwm_freq_config(PWM10, freq)
-#define io35_set_pwm(value)                                  \
-	{                                                          \
-		g_io_soft_pwm[PWM10 - PWM_PINS_OFFSET] = (0xFF & value); \
-	}
+#define io35_set_pwm(value)                                                    \
+  {                                                                            \
+    g_io_soft_pwm[PWM10 - PWM_PINS_OFFSET] = (0xFF & value);                   \
+  }
 #define io35_get_pwm g_io_soft_pwm[PWM10 - PWM_PINS_OFFSET]
 #endif
 #if ASSERT_PIN_IO(PWM11)
@@ -582,10 +581,10 @@ extern "C"
 #define io36_toggle_output ic74hc595_toggle_pin(PWM11)
 #define io36_get_output ic74hc595_get_pin(PWM11)
 #define io36_config_pwm(freq) mcu_softpwm_freq_config(PWM11, freq)
-#define io36_set_pwm(value)                                  \
-	{                                                          \
-		g_io_soft_pwm[PWM11 - PWM_PINS_OFFSET] = (0xFF & value); \
-	}
+#define io36_set_pwm(value)                                                    \
+  {                                                                            \
+    g_io_soft_pwm[PWM11 - PWM_PINS_OFFSET] = (0xFF & value);                   \
+  }
 #define io36_get_pwm g_io_soft_pwm[PWM11 - PWM_PINS_OFFSET]
 #endif
 #if ASSERT_PIN_IO(PWM12)
@@ -604,10 +603,10 @@ extern "C"
 #define io37_toggle_output ic74hc595_toggle_pin(PWM12)
 #define io37_get_output ic74hc595_get_pin(PWM12)
 #define io37_config_pwm(freq) mcu_softpwm_freq_config(PWM12, freq)
-#define io37_set_pwm(value)                                  \
-	{                                                          \
-		g_io_soft_pwm[PWM12 - PWM_PINS_OFFSET] = (0xFF & value); \
-	}
+#define io37_set_pwm(value)                                                    \
+  {                                                                            \
+    g_io_soft_pwm[PWM12 - PWM_PINS_OFFSET] = (0xFF & value);                   \
+  }
 #define io37_get_pwm g_io_soft_pwm[PWM12 - PWM_PINS_OFFSET]
 #endif
 #if ASSERT_PIN_IO(PWM13)
@@ -626,10 +625,10 @@ extern "C"
 #define io38_toggle_output ic74hc595_toggle_pin(PWM13)
 #define io38_get_output ic74hc595_get_pin(PWM13)
 #define io38_config_pwm(freq) mcu_softpwm_freq_config(PWM13, freq)
-#define io38_set_pwm(value)                                  \
-	{                                                          \
-		g_io_soft_pwm[PWM13 - PWM_PINS_OFFSET] = (0xFF & value); \
-	}
+#define io38_set_pwm(value)                                                    \
+  {                                                                            \
+    g_io_soft_pwm[PWM13 - PWM_PINS_OFFSET] = (0xFF & value);                   \
+  }
 #define io38_get_pwm g_io_soft_pwm[PWM13 - PWM_PINS_OFFSET]
 #endif
 #if ASSERT_PIN_IO(PWM14)
@@ -648,10 +647,10 @@ extern "C"
 #define io39_toggle_output ic74hc595_toggle_pin(PWM14)
 #define io39_get_output ic74hc595_get_pin(PWM14)
 #define io39_config_pwm(freq) mcu_softpwm_freq_config(PWM14, freq)
-#define io39_set_pwm(value)                                  \
-	{                                                          \
-		g_io_soft_pwm[PWM14 - PWM_PINS_OFFSET] = (0xFF & value); \
-	}
+#define io39_set_pwm(value)                                                    \
+  {                                                                            \
+    g_io_soft_pwm[PWM14 - PWM_PINS_OFFSET] = (0xFF & value);                   \
+  }
 #define io39_get_pwm g_io_soft_pwm[PWM14 - PWM_PINS_OFFSET]
 #endif
 #if ASSERT_PIN_IO(PWM15)
@@ -670,10 +669,10 @@ extern "C"
 #define io40_toggle_output ic74hc595_toggle_pin(PWM15)
 #define io40_get_output ic74hc595_get_pin(PWM15)
 #define io40_config_pwm(freq) mcu_softpwm_freq_config(PWM15, freq)
-#define io40_set_pwm(value)                                  \
-	{                                                          \
-		g_io_soft_pwm[PWM15 - PWM_PINS_OFFSET] = (0xFF & value); \
-	}
+#define io40_set_pwm(value)                                                    \
+  {                                                                            \
+    g_io_soft_pwm[PWM15 - PWM_PINS_OFFSET] = (0xFF & value);                   \
+  }
 #define io40_get_pwm g_io_soft_pwm[PWM15 - PWM_PINS_OFFSET]
 #endif
 #if ASSERT_PIN_IO(SERVO0)
@@ -1589,9 +1588,9 @@ extern "C"
 #if !defined(LIMIT_X_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io100_config_input mcu_config_input(LIMIT_X)
 #else
-#define io100_config_input   \
-	mcu_config_input(LIMIT_X); \
-	mcu_config_pullup(LIMIT_X)
+#define io100_config_input                                                     \
+  mcu_config_input(LIMIT_X);                                                   \
+  mcu_config_pullup(LIMIT_X)
 #endif
 #define io100_config_pullup mcu_config_pullup(LIMIT_X)
 #define io100_get_input mcu_get_input(LIMIT_X)
@@ -1611,9 +1610,9 @@ extern "C"
 #if !defined(LIMIT_Y_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io101_config_input mcu_config_input(LIMIT_Y)
 #else
-#define io101_config_input   \
-	mcu_config_input(LIMIT_Y); \
-	mcu_config_pullup(LIMIT_Y)
+#define io101_config_input                                                     \
+  mcu_config_input(LIMIT_Y);                                                   \
+  mcu_config_pullup(LIMIT_Y)
 #endif
 #define io101_config_pullup mcu_config_pullup(LIMIT_Y)
 #define io101_get_input mcu_get_input(LIMIT_Y)
@@ -1633,9 +1632,9 @@ extern "C"
 #if !defined(LIMIT_Z_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io102_config_input mcu_config_input(LIMIT_Z)
 #else
-#define io102_config_input   \
-	mcu_config_input(LIMIT_Z); \
-	mcu_config_pullup(LIMIT_Z)
+#define io102_config_input                                                     \
+  mcu_config_input(LIMIT_Z);                                                   \
+  mcu_config_pullup(LIMIT_Z)
 #endif
 #define io102_config_pullup mcu_config_pullup(LIMIT_Z)
 #define io102_get_input mcu_get_input(LIMIT_Z)
@@ -1655,9 +1654,9 @@ extern "C"
 #if !defined(LIMIT_X2_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io103_config_input mcu_config_input(LIMIT_X2)
 #else
-#define io103_config_input    \
-	mcu_config_input(LIMIT_X2); \
-	mcu_config_pullup(LIMIT_X2)
+#define io103_config_input                                                     \
+  mcu_config_input(LIMIT_X2);                                                  \
+  mcu_config_pullup(LIMIT_X2)
 #endif
 #define io103_config_pullup mcu_config_pullup(LIMIT_X2)
 #define io103_get_input mcu_get_input(LIMIT_X2)
@@ -1677,9 +1676,9 @@ extern "C"
 #if !defined(LIMIT_Y2_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io104_config_input mcu_config_input(LIMIT_Y2)
 #else
-#define io104_config_input    \
-	mcu_config_input(LIMIT_Y2); \
-	mcu_config_pullup(LIMIT_Y2)
+#define io104_config_input                                                     \
+  mcu_config_input(LIMIT_Y2);                                                  \
+  mcu_config_pullup(LIMIT_Y2)
 #endif
 #define io104_config_pullup mcu_config_pullup(LIMIT_Y2)
 #define io104_get_input mcu_get_input(LIMIT_Y2)
@@ -1699,9 +1698,9 @@ extern "C"
 #if !defined(LIMIT_Z2_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io105_config_input mcu_config_input(LIMIT_Z2)
 #else
-#define io105_config_input    \
-	mcu_config_input(LIMIT_Z2); \
-	mcu_config_pullup(LIMIT_Z2)
+#define io105_config_input                                                     \
+  mcu_config_input(LIMIT_Z2);                                                  \
+  mcu_config_pullup(LIMIT_Z2)
 #endif
 #define io105_config_pullup mcu_config_pullup(LIMIT_Z2)
 #define io105_get_input mcu_get_input(LIMIT_Z2)
@@ -1721,9 +1720,9 @@ extern "C"
 #if !defined(LIMIT_A_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io106_config_input mcu_config_input(LIMIT_A)
 #else
-#define io106_config_input   \
-	mcu_config_input(LIMIT_A); \
-	mcu_config_pullup(LIMIT_A)
+#define io106_config_input                                                     \
+  mcu_config_input(LIMIT_A);                                                   \
+  mcu_config_pullup(LIMIT_A)
 #endif
 #define io106_config_pullup mcu_config_pullup(LIMIT_A)
 #define io106_get_input mcu_get_input(LIMIT_A)
@@ -1743,9 +1742,9 @@ extern "C"
 #if !defined(LIMIT_B_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io107_config_input mcu_config_input(LIMIT_B)
 #else
-#define io107_config_input   \
-	mcu_config_input(LIMIT_B); \
-	mcu_config_pullup(LIMIT_B)
+#define io107_config_input                                                     \
+  mcu_config_input(LIMIT_B);                                                   \
+  mcu_config_pullup(LIMIT_B)
 #endif
 #define io107_config_pullup mcu_config_pullup(LIMIT_B)
 #define io107_get_input mcu_get_input(LIMIT_B)
@@ -1765,9 +1764,9 @@ extern "C"
 #if !defined(LIMIT_C_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io108_config_input mcu_config_input(LIMIT_C)
 #else
-#define io108_config_input   \
-	mcu_config_input(LIMIT_C); \
-	mcu_config_pullup(LIMIT_C)
+#define io108_config_input                                                     \
+  mcu_config_input(LIMIT_C);                                                   \
+  mcu_config_pullup(LIMIT_C)
 #endif
 #define io108_config_pullup mcu_config_pullup(LIMIT_C)
 #define io108_get_input mcu_get_input(LIMIT_C)
@@ -1787,9 +1786,9 @@ extern "C"
 #if !defined(PROBE_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io109_config_input mcu_config_input(PROBE)
 #else
-#define io109_config_input \
-	mcu_config_input(PROBE); \
-	mcu_config_pullup(PROBE)
+#define io109_config_input                                                     \
+  mcu_config_input(PROBE);                                                     \
+  mcu_config_pullup(PROBE)
 #endif
 #define io109_config_pullup mcu_config_pullup(PROBE)
 #define io109_get_input mcu_get_input(PROBE)
@@ -1809,9 +1808,9 @@ extern "C"
 #if !defined(ESTOP_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io110_config_input mcu_config_input(ESTOP)
 #else
-#define io110_config_input \
-	mcu_config_input(ESTOP); \
-	mcu_config_pullup(ESTOP)
+#define io110_config_input                                                     \
+  mcu_config_input(ESTOP);                                                     \
+  mcu_config_pullup(ESTOP)
 #endif
 #define io110_config_pullup mcu_config_pullup(ESTOP)
 #define io110_get_input mcu_get_input(ESTOP)
@@ -1831,9 +1830,9 @@ extern "C"
 #if !defined(SAFETY_DOOR_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io111_config_input mcu_config_input(SAFETY_DOOR)
 #else
-#define io111_config_input       \
-	mcu_config_input(SAFETY_DOOR); \
-	mcu_config_pullup(SAFETY_DOOR)
+#define io111_config_input                                                     \
+  mcu_config_input(SAFETY_DOOR);                                               \
+  mcu_config_pullup(SAFETY_DOOR)
 #endif
 #define io111_config_pullup mcu_config_pullup(SAFETY_DOOR)
 #define io111_get_input mcu_get_input(SAFETY_DOOR)
@@ -1853,9 +1852,9 @@ extern "C"
 #if !defined(FHOLD_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io112_config_input mcu_config_input(FHOLD)
 #else
-#define io112_config_input \
-	mcu_config_input(FHOLD); \
-	mcu_config_pullup(FHOLD)
+#define io112_config_input                                                     \
+  mcu_config_input(FHOLD);                                                     \
+  mcu_config_pullup(FHOLD)
 #endif
 #define io112_config_pullup mcu_config_pullup(FHOLD)
 #define io112_get_input mcu_get_input(FHOLD)
@@ -1875,9 +1874,9 @@ extern "C"
 #if !defined(CS_RES_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io113_config_input mcu_config_input(CS_RES)
 #else
-#define io113_config_input  \
-	mcu_config_input(CS_RES); \
-	mcu_config_pullup(CS_RES)
+#define io113_config_input                                                     \
+  mcu_config_input(CS_RES);                                                    \
+  mcu_config_pullup(CS_RES)
 #endif
 #define io113_config_pullup mcu_config_pullup(CS_RES)
 #define io113_get_input mcu_get_input(CS_RES)
@@ -2009,9 +2008,9 @@ extern "C"
 #if !defined(DIN0_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io130_config_input mcu_config_input(DIN0)
 #else
-#define io130_config_input \
-	mcu_config_input(DIN0);  \
-	mcu_config_pullup(DIN0)
+#define io130_config_input                                                     \
+  mcu_config_input(DIN0);                                                      \
+  mcu_config_pullup(DIN0)
 #endif
 #define io130_config_pullup mcu_config_pullup(DIN0)
 #define io130_get_input mcu_get_input(DIN0)
@@ -2031,9 +2030,9 @@ extern "C"
 #if !defined(DIN1_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io131_config_input mcu_config_input(DIN1)
 #else
-#define io131_config_input \
-	mcu_config_input(DIN1);  \
-	mcu_config_pullup(DIN1)
+#define io131_config_input                                                     \
+  mcu_config_input(DIN1);                                                      \
+  mcu_config_pullup(DIN1)
 #endif
 #define io131_config_pullup mcu_config_pullup(DIN1)
 #define io131_get_input mcu_get_input(DIN1)
@@ -2053,9 +2052,9 @@ extern "C"
 #if !defined(DIN2_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io132_config_input mcu_config_input(DIN2)
 #else
-#define io132_config_input \
-	mcu_config_input(DIN2);  \
-	mcu_config_pullup(DIN2)
+#define io132_config_input                                                     \
+  mcu_config_input(DIN2);                                                      \
+  mcu_config_pullup(DIN2)
 #endif
 #define io132_config_pullup mcu_config_pullup(DIN2)
 #define io132_get_input mcu_get_input(DIN2)
@@ -2075,9 +2074,9 @@ extern "C"
 #if !defined(DIN3_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io133_config_input mcu_config_input(DIN3)
 #else
-#define io133_config_input \
-	mcu_config_input(DIN3);  \
-	mcu_config_pullup(DIN3)
+#define io133_config_input                                                     \
+  mcu_config_input(DIN3);                                                      \
+  mcu_config_pullup(DIN3)
 #endif
 #define io133_config_pullup mcu_config_pullup(DIN3)
 #define io133_get_input mcu_get_input(DIN3)
@@ -2097,9 +2096,9 @@ extern "C"
 #if !defined(DIN4_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io134_config_input mcu_config_input(DIN4)
 #else
-#define io134_config_input \
-	mcu_config_input(DIN4);  \
-	mcu_config_pullup(DIN4)
+#define io134_config_input                                                     \
+  mcu_config_input(DIN4);                                                      \
+  mcu_config_pullup(DIN4)
 #endif
 #define io134_config_pullup mcu_config_pullup(DIN4)
 #define io134_get_input mcu_get_input(DIN4)
@@ -2119,9 +2118,9 @@ extern "C"
 #if !defined(DIN5_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io135_config_input mcu_config_input(DIN5)
 #else
-#define io135_config_input \
-	mcu_config_input(DIN5);  \
-	mcu_config_pullup(DIN5)
+#define io135_config_input                                                     \
+  mcu_config_input(DIN5);                                                      \
+  mcu_config_pullup(DIN5)
 #endif
 #define io135_config_pullup mcu_config_pullup(DIN5)
 #define io135_get_input mcu_get_input(DIN5)
@@ -2141,9 +2140,9 @@ extern "C"
 #if !defined(DIN6_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io136_config_input mcu_config_input(DIN6)
 #else
-#define io136_config_input \
-	mcu_config_input(DIN6);  \
-	mcu_config_pullup(DIN6)
+#define io136_config_input                                                     \
+  mcu_config_input(DIN6);                                                      \
+  mcu_config_pullup(DIN6)
 #endif
 #define io136_config_pullup mcu_config_pullup(DIN6)
 #define io136_get_input mcu_get_input(DIN6)
@@ -2163,9 +2162,9 @@ extern "C"
 #if !defined(DIN7_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io137_config_input mcu_config_input(DIN7)
 #else
-#define io137_config_input \
-	mcu_config_input(DIN7);  \
-	mcu_config_pullup(DIN7)
+#define io137_config_input                                                     \
+  mcu_config_input(DIN7);                                                      \
+  mcu_config_pullup(DIN7)
 #endif
 #define io137_config_pullup mcu_config_pullup(DIN7)
 #define io137_get_input mcu_get_input(DIN7)
@@ -2185,9 +2184,9 @@ extern "C"
 #if !defined(DIN8_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io138_config_input mcu_config_input(DIN8)
 #else
-#define io138_config_input \
-	mcu_config_input(DIN8);  \
-	mcu_config_pullup(DIN8)
+#define io138_config_input                                                     \
+  mcu_config_input(DIN8);                                                      \
+  mcu_config_pullup(DIN8)
 #endif
 #define io138_config_pullup mcu_config_pullup(DIN8)
 #define io138_get_input mcu_get_input(DIN8)
@@ -2207,9 +2206,9 @@ extern "C"
 #if !defined(DIN9_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io139_config_input mcu_config_input(DIN9)
 #else
-#define io139_config_input \
-	mcu_config_input(DIN9);  \
-	mcu_config_pullup(DIN9)
+#define io139_config_input                                                     \
+  mcu_config_input(DIN9);                                                      \
+  mcu_config_pullup(DIN9)
 #endif
 #define io139_config_pullup mcu_config_pullup(DIN9)
 #define io139_get_input mcu_get_input(DIN9)
@@ -2229,9 +2228,9 @@ extern "C"
 #if !defined(DIN10_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io140_config_input mcu_config_input(DIN10)
 #else
-#define io140_config_input \
-	mcu_config_input(DIN10); \
-	mcu_config_pullup(DIN10)
+#define io140_config_input                                                     \
+  mcu_config_input(DIN10);                                                     \
+  mcu_config_pullup(DIN10)
 #endif
 #define io140_config_pullup mcu_config_pullup(DIN10)
 #define io140_get_input mcu_get_input(DIN10)
@@ -2251,9 +2250,9 @@ extern "C"
 #if !defined(DIN11_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io141_config_input mcu_config_input(DIN11)
 #else
-#define io141_config_input \
-	mcu_config_input(DIN11); \
-	mcu_config_pullup(DIN11)
+#define io141_config_input                                                     \
+  mcu_config_input(DIN11);                                                     \
+  mcu_config_pullup(DIN11)
 #endif
 #define io141_config_pullup mcu_config_pullup(DIN11)
 #define io141_get_input mcu_get_input(DIN11)
@@ -2273,9 +2272,9 @@ extern "C"
 #if !defined(DIN12_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io142_config_input mcu_config_input(DIN12)
 #else
-#define io142_config_input \
-	mcu_config_input(DIN12); \
-	mcu_config_pullup(DIN12)
+#define io142_config_input                                                     \
+  mcu_config_input(DIN12);                                                     \
+  mcu_config_pullup(DIN12)
 #endif
 #define io142_config_pullup mcu_config_pullup(DIN12)
 #define io142_get_input mcu_get_input(DIN12)
@@ -2295,9 +2294,9 @@ extern "C"
 #if !defined(DIN13_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io143_config_input mcu_config_input(DIN13)
 #else
-#define io143_config_input \
-	mcu_config_input(DIN13); \
-	mcu_config_pullup(DIN13)
+#define io143_config_input                                                     \
+  mcu_config_input(DIN13);                                                     \
+  mcu_config_pullup(DIN13)
 #endif
 #define io143_config_pullup mcu_config_pullup(DIN13)
 #define io143_get_input mcu_get_input(DIN13)
@@ -2317,9 +2316,9 @@ extern "C"
 #if !defined(DIN14_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io144_config_input mcu_config_input(DIN14)
 #else
-#define io144_config_input \
-	mcu_config_input(DIN14); \
-	mcu_config_pullup(DIN14)
+#define io144_config_input                                                     \
+  mcu_config_input(DIN14);                                                     \
+  mcu_config_pullup(DIN14)
 #endif
 #define io144_config_pullup mcu_config_pullup(DIN14)
 #define io144_get_input mcu_get_input(DIN14)
@@ -2339,9 +2338,9 @@ extern "C"
 #if !defined(DIN15_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io145_config_input mcu_config_input(DIN15)
 #else
-#define io145_config_input \
-	mcu_config_input(DIN15); \
-	mcu_config_pullup(DIN15)
+#define io145_config_input                                                     \
+  mcu_config_input(DIN15);                                                     \
+  mcu_config_pullup(DIN15)
 #endif
 #define io145_config_pullup mcu_config_pullup(DIN15)
 #define io145_get_input mcu_get_input(DIN15)
@@ -2361,9 +2360,9 @@ extern "C"
 #if !defined(DIN16_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io146_config_input mcu_config_input(DIN16)
 #else
-#define io146_config_input \
-	mcu_config_input(DIN16); \
-	mcu_config_pullup(DIN16)
+#define io146_config_input                                                     \
+  mcu_config_input(DIN16);                                                     \
+  mcu_config_pullup(DIN16)
 #endif
 #define io146_config_pullup mcu_config_pullup(DIN16)
 #define io146_get_input mcu_get_input(DIN16)
@@ -2383,9 +2382,9 @@ extern "C"
 #if !defined(DIN17_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io147_config_input mcu_config_input(DIN17)
 #else
-#define io147_config_input \
-	mcu_config_input(DIN17); \
-	mcu_config_pullup(DIN17)
+#define io147_config_input                                                     \
+  mcu_config_input(DIN17);                                                     \
+  mcu_config_pullup(DIN17)
 #endif
 #define io147_config_pullup mcu_config_pullup(DIN17)
 #define io147_get_input mcu_get_input(DIN17)
@@ -2405,9 +2404,9 @@ extern "C"
 #if !defined(DIN18_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io148_config_input mcu_config_input(DIN18)
 #else
-#define io148_config_input \
-	mcu_config_input(DIN18); \
-	mcu_config_pullup(DIN18)
+#define io148_config_input                                                     \
+  mcu_config_input(DIN18);                                                     \
+  mcu_config_pullup(DIN18)
 #endif
 #define io148_config_pullup mcu_config_pullup(DIN18)
 #define io148_get_input mcu_get_input(DIN18)
@@ -2427,9 +2426,9 @@ extern "C"
 #if !defined(DIN19_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io149_config_input mcu_config_input(DIN19)
 #else
-#define io149_config_input \
-	mcu_config_input(DIN19); \
-	mcu_config_pullup(DIN19)
+#define io149_config_input                                                     \
+  mcu_config_input(DIN19);                                                     \
+  mcu_config_pullup(DIN19)
 #endif
 #define io149_config_pullup mcu_config_pullup(DIN19)
 #define io149_get_input mcu_get_input(DIN19)
@@ -2449,9 +2448,9 @@ extern "C"
 #if !defined(DIN20_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io150_config_input mcu_config_input(DIN20)
 #else
-#define io150_config_input \
-	mcu_config_input(DIN20); \
-	mcu_config_pullup(DIN20)
+#define io150_config_input                                                     \
+  mcu_config_input(DIN20);                                                     \
+  mcu_config_pullup(DIN20)
 #endif
 #define io150_config_pullup mcu_config_pullup(DIN20)
 #define io150_get_input mcu_get_input(DIN20)
@@ -2471,9 +2470,9 @@ extern "C"
 #if !defined(DIN21_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io151_config_input mcu_config_input(DIN21)
 #else
-#define io151_config_input \
-	mcu_config_input(DIN21); \
-	mcu_config_pullup(DIN21)
+#define io151_config_input                                                     \
+  mcu_config_input(DIN21);                                                     \
+  mcu_config_pullup(DIN21)
 #endif
 #define io151_config_pullup mcu_config_pullup(DIN21)
 #define io151_get_input mcu_get_input(DIN21)
@@ -2493,9 +2492,9 @@ extern "C"
 #if !defined(DIN22_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io152_config_input mcu_config_input(DIN22)
 #else
-#define io152_config_input \
-	mcu_config_input(DIN22); \
-	mcu_config_pullup(DIN22)
+#define io152_config_input                                                     \
+  mcu_config_input(DIN22);                                                     \
+  mcu_config_pullup(DIN22)
 #endif
 #define io152_config_pullup mcu_config_pullup(DIN22)
 #define io152_get_input mcu_get_input(DIN22)
@@ -2515,9 +2514,9 @@ extern "C"
 #if !defined(DIN23_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io153_config_input mcu_config_input(DIN23)
 #else
-#define io153_config_input \
-	mcu_config_input(DIN23); \
-	mcu_config_pullup(DIN23)
+#define io153_config_input                                                     \
+  mcu_config_input(DIN23);                                                     \
+  mcu_config_pullup(DIN23)
 #endif
 #define io153_config_pullup mcu_config_pullup(DIN23)
 #define io153_get_input mcu_get_input(DIN23)
@@ -2537,9 +2536,9 @@ extern "C"
 #if !defined(DIN24_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io154_config_input mcu_config_input(DIN24)
 #else
-#define io154_config_input \
-	mcu_config_input(DIN24); \
-	mcu_config_pullup(DIN24)
+#define io154_config_input                                                     \
+  mcu_config_input(DIN24);                                                     \
+  mcu_config_pullup(DIN24)
 #endif
 #define io154_config_pullup mcu_config_pullup(DIN24)
 #define io154_get_input mcu_get_input(DIN24)
@@ -2559,9 +2558,9 @@ extern "C"
 #if !defined(DIN25_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io155_config_input mcu_config_input(DIN25)
 #else
-#define io155_config_input \
-	mcu_config_input(DIN25); \
-	mcu_config_pullup(DIN25)
+#define io155_config_input                                                     \
+  mcu_config_input(DIN25);                                                     \
+  mcu_config_pullup(DIN25)
 #endif
 #define io155_config_pullup mcu_config_pullup(DIN25)
 #define io155_get_input mcu_get_input(DIN25)
@@ -2581,9 +2580,9 @@ extern "C"
 #if !defined(DIN26_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io156_config_input mcu_config_input(DIN26)
 #else
-#define io156_config_input \
-	mcu_config_input(DIN26); \
-	mcu_config_pullup(DIN26)
+#define io156_config_input                                                     \
+  mcu_config_input(DIN26);                                                     \
+  mcu_config_pullup(DIN26)
 #endif
 #define io156_config_pullup mcu_config_pullup(DIN26)
 #define io156_get_input mcu_get_input(DIN26)
@@ -2603,9 +2602,9 @@ extern "C"
 #if !defined(DIN27_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io157_config_input mcu_config_input(DIN27)
 #else
-#define io157_config_input \
-	mcu_config_input(DIN27); \
-	mcu_config_pullup(DIN27)
+#define io157_config_input                                                     \
+  mcu_config_input(DIN27);                                                     \
+  mcu_config_pullup(DIN27)
 #endif
 #define io157_config_pullup mcu_config_pullup(DIN27)
 #define io157_get_input mcu_get_input(DIN27)
@@ -2625,9 +2624,9 @@ extern "C"
 #if !defined(DIN28_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io158_config_input mcu_config_input(DIN28)
 #else
-#define io158_config_input \
-	mcu_config_input(DIN28); \
-	mcu_config_pullup(DIN28)
+#define io158_config_input                                                     \
+  mcu_config_input(DIN28);                                                     \
+  mcu_config_pullup(DIN28)
 #endif
 #define io158_config_pullup mcu_config_pullup(DIN28)
 #define io158_get_input mcu_get_input(DIN28)
@@ -2647,9 +2646,9 @@ extern "C"
 #if !defined(DIN29_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io159_config_input mcu_config_input(DIN29)
 #else
-#define io159_config_input \
-	mcu_config_input(DIN29); \
-	mcu_config_pullup(DIN29)
+#define io159_config_input                                                     \
+  mcu_config_input(DIN29);                                                     \
+  mcu_config_pullup(DIN29)
 #endif
 #define io159_config_pullup mcu_config_pullup(DIN29)
 #define io159_get_input mcu_get_input(DIN29)
@@ -2669,9 +2668,9 @@ extern "C"
 #if !defined(DIN30_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io160_config_input mcu_config_input(DIN30)
 #else
-#define io160_config_input \
-	mcu_config_input(DIN30); \
-	mcu_config_pullup(DIN30)
+#define io160_config_input                                                     \
+  mcu_config_input(DIN30);                                                     \
+  mcu_config_pullup(DIN30)
 #endif
 #define io160_config_pullup mcu_config_pullup(DIN30)
 #define io160_get_input mcu_get_input(DIN30)
@@ -2691,9 +2690,9 @@ extern "C"
 #if !defined(DIN31_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io161_config_input mcu_config_input(DIN31)
 #else
-#define io161_config_input \
-	mcu_config_input(DIN31); \
-	mcu_config_pullup(DIN31)
+#define io161_config_input                                                     \
+  mcu_config_input(DIN31);                                                     \
+  mcu_config_pullup(DIN31)
 #endif
 #define io161_config_pullup mcu_config_pullup(DIN31)
 #define io161_get_input mcu_get_input(DIN31)
@@ -2713,9 +2712,9 @@ extern "C"
 #if !defined(DIN32_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io162_config_input mcu_config_input(DIN32)
 #else
-#define io162_config_input \
-	mcu_config_input(DIN32); \
-	mcu_config_pullup(DIN32)
+#define io162_config_input                                                     \
+  mcu_config_input(DIN32);                                                     \
+  mcu_config_pullup(DIN32)
 #endif
 #define io162_config_pullup mcu_config_pullup(DIN32)
 #define io162_get_input mcu_get_input(DIN32)
@@ -2735,9 +2734,9 @@ extern "C"
 #if !defined(DIN33_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io163_config_input mcu_config_input(DIN33)
 #else
-#define io163_config_input \
-	mcu_config_input(DIN33); \
-	mcu_config_pullup(DIN33)
+#define io163_config_input                                                     \
+  mcu_config_input(DIN33);                                                     \
+  mcu_config_pullup(DIN33)
 #endif
 #define io163_config_pullup mcu_config_pullup(DIN33)
 #define io163_get_input mcu_get_input(DIN33)
@@ -2757,9 +2756,9 @@ extern "C"
 #if !defined(DIN34_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io164_config_input mcu_config_input(DIN34)
 #else
-#define io164_config_input \
-	mcu_config_input(DIN34); \
-	mcu_config_pullup(DIN34)
+#define io164_config_input                                                     \
+  mcu_config_input(DIN34);                                                     \
+  mcu_config_pullup(DIN34)
 #endif
 #define io164_config_pullup mcu_config_pullup(DIN34)
 #define io164_get_input mcu_get_input(DIN34)
@@ -2779,9 +2778,9 @@ extern "C"
 #if !defined(DIN35_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io165_config_input mcu_config_input(DIN35)
 #else
-#define io165_config_input \
-	mcu_config_input(DIN35); \
-	mcu_config_pullup(DIN35)
+#define io165_config_input                                                     \
+  mcu_config_input(DIN35);                                                     \
+  mcu_config_pullup(DIN35)
 #endif
 #define io165_config_pullup mcu_config_pullup(DIN35)
 #define io165_get_input mcu_get_input(DIN35)
@@ -2801,9 +2800,9 @@ extern "C"
 #if !defined(DIN36_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io166_config_input mcu_config_input(DIN36)
 #else
-#define io166_config_input \
-	mcu_config_input(DIN36); \
-	mcu_config_pullup(DIN36)
+#define io166_config_input                                                     \
+  mcu_config_input(DIN36);                                                     \
+  mcu_config_pullup(DIN36)
 #endif
 #define io166_config_pullup mcu_config_pullup(DIN36)
 #define io166_get_input mcu_get_input(DIN36)
@@ -2823,9 +2822,9 @@ extern "C"
 #if !defined(DIN37_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io167_config_input mcu_config_input(DIN37)
 #else
-#define io167_config_input \
-	mcu_config_input(DIN37); \
-	mcu_config_pullup(DIN37)
+#define io167_config_input                                                     \
+  mcu_config_input(DIN37);                                                     \
+  mcu_config_pullup(DIN37)
 #endif
 #define io167_config_pullup mcu_config_pullup(DIN37)
 #define io167_get_input mcu_get_input(DIN37)
@@ -2845,9 +2844,9 @@ extern "C"
 #if !defined(DIN38_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io168_config_input mcu_config_input(DIN38)
 #else
-#define io168_config_input \
-	mcu_config_input(DIN38); \
-	mcu_config_pullup(DIN38)
+#define io168_config_input                                                     \
+  mcu_config_input(DIN38);                                                     \
+  mcu_config_pullup(DIN38)
 #endif
 #define io168_config_pullup mcu_config_pullup(DIN38)
 #define io168_get_input mcu_get_input(DIN38)
@@ -2867,9 +2866,9 @@ extern "C"
 #if !defined(DIN39_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io169_config_input mcu_config_input(DIN39)
 #else
-#define io169_config_input \
-	mcu_config_input(DIN39); \
-	mcu_config_pullup(DIN39)
+#define io169_config_input                                                     \
+  mcu_config_input(DIN39);                                                     \
+  mcu_config_pullup(DIN39)
 #endif
 #define io169_config_pullup mcu_config_pullup(DIN39)
 #define io169_get_input mcu_get_input(DIN39)
@@ -2889,9 +2888,9 @@ extern "C"
 #if !defined(DIN40_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io170_config_input mcu_config_input(DIN40)
 #else
-#define io170_config_input \
-	mcu_config_input(DIN40); \
-	mcu_config_pullup(DIN40)
+#define io170_config_input                                                     \
+  mcu_config_input(DIN40);                                                     \
+  mcu_config_pullup(DIN40)
 #endif
 #define io170_config_pullup mcu_config_pullup(DIN40)
 #define io170_get_input mcu_get_input(DIN40)
@@ -2911,9 +2910,9 @@ extern "C"
 #if !defined(DIN41_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io171_config_input mcu_config_input(DIN41)
 #else
-#define io171_config_input \
-	mcu_config_input(DIN41); \
-	mcu_config_pullup(DIN41)
+#define io171_config_input                                                     \
+  mcu_config_input(DIN41);                                                     \
+  mcu_config_pullup(DIN41)
 #endif
 #define io171_config_pullup mcu_config_pullup(DIN41)
 #define io171_get_input mcu_get_input(DIN41)
@@ -2933,9 +2932,9 @@ extern "C"
 #if !defined(DIN42_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io172_config_input mcu_config_input(DIN42)
 #else
-#define io172_config_input \
-	mcu_config_input(DIN42); \
-	mcu_config_pullup(DIN42)
+#define io172_config_input                                                     \
+  mcu_config_input(DIN42);                                                     \
+  mcu_config_pullup(DIN42)
 #endif
 #define io172_config_pullup mcu_config_pullup(DIN42)
 #define io172_get_input mcu_get_input(DIN42)
@@ -2955,9 +2954,9 @@ extern "C"
 #if !defined(DIN43_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io173_config_input mcu_config_input(DIN43)
 #else
-#define io173_config_input \
-	mcu_config_input(DIN43); \
-	mcu_config_pullup(DIN43)
+#define io173_config_input                                                     \
+  mcu_config_input(DIN43);                                                     \
+  mcu_config_pullup(DIN43)
 #endif
 #define io173_config_pullup mcu_config_pullup(DIN43)
 #define io173_get_input mcu_get_input(DIN43)
@@ -2977,9 +2976,9 @@ extern "C"
 #if !defined(DIN44_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io174_config_input mcu_config_input(DIN44)
 #else
-#define io174_config_input \
-	mcu_config_input(DIN44); \
-	mcu_config_pullup(DIN44)
+#define io174_config_input                                                     \
+  mcu_config_input(DIN44);                                                     \
+  mcu_config_pullup(DIN44)
 #endif
 #define io174_config_pullup mcu_config_pullup(DIN44)
 #define io174_get_input mcu_get_input(DIN44)
@@ -2999,9 +2998,9 @@ extern "C"
 #if !defined(DIN45_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io175_config_input mcu_config_input(DIN45)
 #else
-#define io175_config_input \
-	mcu_config_input(DIN45); \
-	mcu_config_pullup(DIN45)
+#define io175_config_input                                                     \
+  mcu_config_input(DIN45);                                                     \
+  mcu_config_pullup(DIN45)
 #endif
 #define io175_config_pullup mcu_config_pullup(DIN45)
 #define io175_get_input mcu_get_input(DIN45)
@@ -3021,9 +3020,9 @@ extern "C"
 #if !defined(DIN46_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io176_config_input mcu_config_input(DIN46)
 #else
-#define io176_config_input \
-	mcu_config_input(DIN46); \
-	mcu_config_pullup(DIN46)
+#define io176_config_input                                                     \
+  mcu_config_input(DIN46);                                                     \
+  mcu_config_pullup(DIN46)
 #endif
 #define io176_config_pullup mcu_config_pullup(DIN46)
 #define io176_get_input mcu_get_input(DIN46)
@@ -3043,9 +3042,9 @@ extern "C"
 #if !defined(DIN47_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io177_config_input mcu_config_input(DIN47)
 #else
-#define io177_config_input \
-	mcu_config_input(DIN47); \
-	mcu_config_pullup(DIN47)
+#define io177_config_input                                                     \
+  mcu_config_input(DIN47);                                                     \
+  mcu_config_pullup(DIN47)
 #endif
 #define io177_config_pullup mcu_config_pullup(DIN47)
 #define io177_get_input mcu_get_input(DIN47)
@@ -3065,9 +3064,9 @@ extern "C"
 #if !defined(DIN48_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io178_config_input mcu_config_input(DIN48)
 #else
-#define io178_config_input \
-	mcu_config_input(DIN48); \
-	mcu_config_pullup(DIN48)
+#define io178_config_input                                                     \
+  mcu_config_input(DIN48);                                                     \
+  mcu_config_pullup(DIN48)
 #endif
 #define io178_config_pullup mcu_config_pullup(DIN48)
 #define io178_get_input mcu_get_input(DIN48)
@@ -3087,9 +3086,9 @@ extern "C"
 #if !defined(DIN49_PULLUP) && !defined(FORCE_HAL_IO_DIRECTION_ONREQUEST)
 #define io179_config_input mcu_config_input(DIN49)
 #else
-#define io179_config_input \
-	mcu_config_input(DIN49); \
-	mcu_config_pullup(DIN49)
+#define io179_config_input                                                     \
+  mcu_config_input(DIN49);                                                     \
+  mcu_config_pullup(DIN49)
 #endif
 #define io179_config_pullup mcu_config_pullup(DIN49)
 #define io179_get_input mcu_get_input(DIN49)
@@ -3146,18 +3145,20 @@ extern "C"
 #define io_hal_get_output(pin) _io_hal_get_output_(pin)
 #else
 #define io_hal_config_output(pin) _io_hal_config_output_(pin)
-#define io_hal_set_output(pin) \
-	_io_hal_config_output_(pin); \
-	_io_hal_set_output_(pin)
-#define io_hal_clear_output(pin) \
-	_io_hal_config_output_(pin);   \
-	_io_hal_clear_output_(pin)
-#define io_hal_toggle_output(pin) \
-	_io_hal_config_output_(pin);    \
-	_io_hal_toggle_output_(pin)
-#define io_hal_get_output(pin) \
-	({_io_hal_config_output_(pin); \
-	_io_hal_get_output_(pin); })
+#define io_hal_set_output(pin)                                                 \
+  _io_hal_config_output_(pin);                                                 \
+  _io_hal_set_output_(pin)
+#define io_hal_clear_output(pin)                                               \
+  _io_hal_config_output_(pin);                                                 \
+  _io_hal_clear_output_(pin)
+#define io_hal_toggle_output(pin)                                              \
+  _io_hal_config_output_(pin);                                                 \
+  _io_hal_toggle_output_(pin)
+#define io_hal_get_output(pin)                                                 \
+  ({                                                                           \
+    _io_hal_config_output_(pin);                                               \
+    _io_hal_get_output_(pin);                                                  \
+  })
 #endif
 
 /*input HAL*/
@@ -3170,7 +3171,11 @@ extern "C"
 #ifndef FORCE_HAL_IO_DIRECTION_ONREQUEST
 #define io_hal_get_input(pin) _io_hal_get_input_(pin)
 #else
-#define io_hal_get_input(pin) ({_io_hal_config_input_(pin);_io_hal_get_input_(pin); })
+#define io_hal_get_input(pin)                                                  \
+  ({                                                                           \
+    _io_hal_config_input_(pin);                                                \
+    _io_hal_get_input_(pin);                                                   \
+  })
 #endif
 
 /*pwm and servo HAL*/

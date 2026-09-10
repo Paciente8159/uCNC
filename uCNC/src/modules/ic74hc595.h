@@ -1,28 +1,29 @@
 /*
-	Name: ic74hc595.h
-	Description: This module adds the ability to control the IC74HC595 shift register controller (used for example in the MKS-DLC32 board) to µCNC.
-				 Up to 56 output pins can be assigned.
+        Name: ic74hc595.h
+        Description: This module adds the ability to control the IC74HC595 shift
+   register controller (used for example in the MKS-DLC32 board) to µCNC. Up to
+   56 output pins can be assigned.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 01/09/2022
+        Copyright: Copyright (c) João Martins
+        Author: João Martins
+        Date: 01/09/2022
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+        µCNC is free software: you can redistribute it and/or modify
+        it under the terms of the GNU General Public License as published by
+        the Free Software Foundation, either version 3 of the License, or
+        (at your option) any later version. Please see
+   <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+        µCNC is distributed WITHOUT ANY WARRANTY;
+        Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A
+   PARTICULAR PURPOSE. See the	GNU General Public License for more details.
 */
 
 #ifndef IC74HC595_H
 #define IC74HC595_H
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 #include <stdbool.h>
@@ -2057,18 +2058,26 @@ extern "C"
 #define __indirect__ex__(X, Y) DIO##X##_##Y
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
 #endif
-	extern volatile uint8_t ic74hc595_io_pins[IC74HC595_COUNT];
+extern volatile uint8_t ic74hc595_io_pins[IC74HC595_COUNT];
 #ifndef ic74hc595_set_pin
-#define ic74hc595_set_pin(pin) ic74hc595_io_pins[(__indirect__(pin, IO_BYTEOFFSET))] |= (__indirect__(pin, IO_BITMASK))
+#define ic74hc595_set_pin(pin)                                                 \
+  ic74hc595_io_pins[(__indirect__(pin, IO_BYTEOFFSET))] |=                     \
+      (__indirect__(pin, IO_BITMASK))
 #endif
 #ifndef ic74hc595_clear_pin
-#define ic74hc595_clear_pin(pin) ic74hc595_io_pins[__indirect__(pin, IO_BYTEOFFSET)] &= ~(__indirect__(pin, IO_BITMASK))
+#define ic74hc595_clear_pin(pin)                                               \
+  ic74hc595_io_pins[__indirect__(pin, IO_BYTEOFFSET)] &=                       \
+      ~(__indirect__(pin, IO_BITMASK))
 #endif
 #ifndef ic74hc595_toggle_pin
-#define ic74hc595_toggle_pin(pin) ic74hc595_io_pins[(__indirect__(pin, IO_BYTEOFFSET))] ^= (__indirect__(pin, IO_BITMASK))
+#define ic74hc595_toggle_pin(pin)                                              \
+  ic74hc595_io_pins[(__indirect__(pin, IO_BYTEOFFSET))] ^=                     \
+      (__indirect__(pin, IO_BITMASK))
 #endif
 #ifndef ic74hc595_get_pin
-#define ic74hc595_get_pin(pin) (ic74hc595_io_pins[(__indirect__(pin, IO_BYTEOFFSET))] & (__indirect__(pin, IO_BITMASK)))
+#define ic74hc595_get_pin(pin)                                                 \
+  (ic74hc595_io_pins[(__indirect__(pin, IO_BYTEOFFSET))] &                     \
+   (__indirect__(pin, IO_BITMASK)))
 #endif
 #else
 #define ic74hc595_set_pin(pin)

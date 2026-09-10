@@ -1,27 +1,27 @@
 /*
-	Name: cnc.h
-	Description: µCNC main unit.
+        Name: cnc.h
+        Description: µCNC main unit.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 17/09/2019
+        Copyright: Copyright (c) João Martins
+        Author: João Martins
+        Date: 17/09/2019
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+        µCNC is free software: you can redistribute it and/or modify
+        it under the terms of the GNU General Public License as published by
+        the Free Software Foundation, either version 3 of the License, or
+        (at your option) any later version. Please see
+   <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+        µCNC is distributed WITHOUT ANY WARRANTY;
+        Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A
+   PARTICULAR PURPOSE. See the	GNU General Public License for more details.
 */
 
 #ifndef CNC_H
 #define CNC_H
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 // rt_cmd
@@ -56,30 +56,47 @@ extern "C"
  * Flags and state changes
  */
 // current cnc states (multiple can be active/overlapped at the same time)
-#define EXEC_IDLE 0x0000														 // All flags cleared
-#define EXEC_RUN 0x0001															 // Motion being executed
-#define EXEC_DWELL 0x0002														 // Dwell being executed
-#define EXEC_PROBING 0x0004														 // Probing being executed
-#define EXEC_HOLD 0x0008														 // User controlled stop
-#define EXEC_CANCELING 0x0010													 // Similar to hold (controlled stop) but auto-clears (probe success, jog canceling, etc..)
-#define EXEC_RESUMING 0x0020													 // Resuming from any holding condition (door, hold, etc..)
-#define EXEC_JOG 0x0040															 // Jogging in execution
-#define EXEC_HOMING 0x0080														 // Homing in execution
-#define EXEC_DOOR 0x0100														 // The safety door was opened and the parking and hold is being executed
-#define EXEC_LIMITS 0x0200														 // The limits were hit
-#define EXEC_POSITION_MAYBE_LOST 0x4000											 // Machine is not homed or lost position due to abrupt stop
-#define EXEC_KILL 0x8000														 // Emergency stop
-#define EXEC_HOMING_HIT (EXEC_HOMING | EXEC_LIMITS)								 // Limit switch is active during a homing motion
-#define EXEC_INTERLOCKING_FAIL (EXEC_LIMITS | EXEC_KILL)						 // Interlocking check failed
-#define EXEC_ALARM (EXEC_POSITION_MAYBE_LOST | EXEC_INTERLOCKING_FAIL)			 // System alarms
-#define EXEC_STOPPING (EXEC_DOOR | EXEC_HOLD | EXEC_CANCELING)					 // performs a controlled stop
-#define EXEC_RUNNING (EXEC_RUN | EXEC_RESUMING)									 // System running
-#define EXEC_MOTIONS (EXEC_RUNNING | EXEC_STOPPING | EXEC_DWELL | EXEC_PROBING)	 // Any motion state
-#define EXEC_SPECIAL_MOTIONS (EXEC_JOG | EXEC_HOMING | EXEC_PROBING | EXEC_DOOR) // Special motion modes
-#define EXEC_RESET_LOCKED (EXEC_ALARM | EXEC_DOOR | EXEC_MOTIONS)				 // System reset locked
-#define EXEC_JOG_LOCKED (EXEC_ALARM | EXEC_DOOR)								 // Jog is locked by an alarm or any special motion state
-#define EXEC_GCODE_LOCKED (EXEC_JOG_LOCKED | EXEC_JOG)							 // Gcode is locked by an alarm or any special motion state
-#define EXEC_ALLACTIVE 0xFFFF													 // All states
+#define EXEC_IDLE 0x0000    // All flags cleared
+#define EXEC_RUN 0x0001     // Motion being executed
+#define EXEC_DWELL 0x0002   // Dwell being executed
+#define EXEC_PROBING 0x0004 // Probing being executed
+#define EXEC_HOLD 0x0008    // User controlled stop
+#define EXEC_CANCELING                                                         \
+  0x0010 // Similar to hold (controlled stop) but auto-clears (probe success,
+         // jog canceling, etc..)
+#define EXEC_RESUMING                                                          \
+  0x0020 // Resuming from any holding condition (door, hold, etc..)
+#define EXEC_JOG 0x0040    // Jogging in execution
+#define EXEC_HOMING 0x0080 // Homing in execution
+#define EXEC_DOOR                                                              \
+  0x0100 // The safety door was opened and the parking and hold is being
+         // executed
+#define EXEC_LIMITS 0x0200 // The limits were hit
+#define EXEC_POSITION_MAYBE_LOST                                               \
+  0x4000 // Machine is not homed or lost position due to abrupt stop
+#define EXEC_KILL 0x8000 // Emergency stop
+#define EXEC_HOMING_HIT                                                        \
+  (EXEC_HOMING | EXEC_LIMITS) // Limit switch is active during a homing motion
+#define EXEC_INTERLOCKING_FAIL                                                 \
+  (EXEC_LIMITS | EXEC_KILL) // Interlocking check failed
+#define EXEC_ALARM                                                             \
+  (EXEC_POSITION_MAYBE_LOST | EXEC_INTERLOCKING_FAIL) // System alarms
+#define EXEC_STOPPING                                                          \
+  (EXEC_DOOR | EXEC_HOLD | EXEC_CANCELING)      // performs a controlled stop
+#define EXEC_RUNNING (EXEC_RUN | EXEC_RESUMING) // System running
+#define EXEC_MOTIONS                                                           \
+  (EXEC_RUNNING | EXEC_STOPPING | EXEC_DWELL | EXEC_PROBING) // Any motion state
+#define EXEC_SPECIAL_MOTIONS                                                   \
+  (EXEC_JOG | EXEC_HOMING | EXEC_PROBING | EXEC_DOOR) // Special motion modes
+#define EXEC_RESET_LOCKED                                                      \
+  (EXEC_ALARM | EXEC_DOOR | EXEC_MOTIONS) // System reset locked
+#define EXEC_JOG_LOCKED                                                        \
+  (EXEC_ALARM |                                                                \
+   EXEC_DOOR) // Jog is locked by an alarm or any special motion state
+#define EXEC_GCODE_LOCKED                                                      \
+  (EXEC_JOG_LOCKED |                                                           \
+   EXEC_JOG) // Gcode is locked by an alarm or any special motion state
+#define EXEC_ALLACTIVE 0xFFFF // All states
 
 // unlock result codes
 #define UNLOCK_OK 0
@@ -98,14 +115,17 @@ extern "C"
  * Basic step and dir IO masks
  * STEPS DIRS and LIMITS can be combined to form MULTI AXIS/LIMITS combinations
  *
- * Usually (depends on the kinematic) STEP0 is assigned to AXIS X, STEP1 is assigned to AXIS Y, etc..
- * But STEP0 can be formed by multiple STEPPERS (for example STEPPER0, STEPPER5, STEPPER6 and STEPPER7)
+ * Usually (depends on the kinematic) STEP0 is assigned to AXIS X, STEP1 is
+ * assigned to AXIS Y, etc.. But STEP0 can be formed by multiple STEPPERS (for
+ * example STEPPER0, STEPPER5, STEPPER6 and STEPPER7)
  *
  * STEP0_MASK can then be formed by a combinations of stepper IO masks like this
  *
- * #define STEP0_MASK (STEPPER0_IO_MASK | STEPPER5_IO_MASK | STEPPER6_IO_MASK | STEPPER7_IO_MASK)
+ * #define STEP0_MASK (STEPPER0_IO_MASK | STEPPER5_IO_MASK | STEPPER6_IO_MASK |
+ * STEPPER7_IO_MASK)
  *
- * For auto-squaring LIMITS should also match this STEPx mask by merging all combined limits to form a multi-switch limit
+ * For auto-squaring LIMITS should also match this STEPx mask by merging all
+ * combined limits to form a multi-switch limit
  * **/
 #define STEP_UNDEF_IO_MASK 0
 #define STEP0_IO_MASK 1
@@ -129,96 +149,96 @@ extern "C"
 // initializes core utilities (like fast math functions)
 #include "utils.h"
 // extension modules
-#include "module.h"
-#include "interface/defaults.h"
-#include "interface/grbl_print.h"
-#include "interface/grbl_stream.h"
-#include "interface/grbl_settings.h"
-#include "interface/grbl_interface.h"
-#include "interface/grbl_protocol.h"
-#include "core/io_control.h"
-#include "core/parser.h"
-#include "core/motion_control.h"
-#include "core/planner.h"
 #include "core/interpolator.h"
+#include "core/io_control.h"
+#include "core/motion_control.h"
+#include "core/parser.h"
+#include "core/planner.h"
+#include "interface/defaults.h"
+#include "interface/grbl_interface.h"
+#include "interface/grbl_print.h"
+#include "interface/grbl_protocol.h"
+#include "interface/grbl_settings.h"
+#include "interface/grbl_stream.h"
+#include "module.h"
 #include "modules/encoder.h"
 #ifdef ENABLE_SOCKETS
+#include "modules/net/http.h"
 #include "modules/net/socket.h"
 #include "modules/net/telnet.h"
 #include "modules/net/websocket.h"
-#include "modules/net/http.h"
 #endif
 
-	/**
-	 *
-	 * From this point on the CNC controller HAL is defined
-	 *
-	 **/
+/**
+ *
+ * From this point on the CNC controller HAL is defined
+ *
+ **/
 
 #include <stdbool.h>
 #include <stdint.h>
 
-	extern bool cnc_status_report_lock;
+extern bool cnc_status_report_lock;
 
-	void cnc_init(void);
-	void cnc_network_init(void);
-	void cnc_run(void);
+void cnc_init(void);
+void cnc_network_init(void);
+void cnc_run(void);
 #ifdef PIO_UNIT_TESTING
-	/*
-	 * Deterministic host-test driver. The test owns the call sequence, so no
-	 * controller thread or endless main loop is needed.
-	 */
-	void cnc_unit_test_start(void);
-	bool cnc_unit_test_run_once(void);
+/*
+ * Deterministic host-test driver. The test owns the call sequence, so no
+ * controller thread or endless main loop is needed.
+ */
+void cnc_unit_test_start(void);
+bool cnc_unit_test_run_once(void);
 #endif
-	// do events returns true if all OK and false if an ABORT alarm is reached
-	bool cnc_dotasks(void);
-	uint8_t cnc_home(void);
-	void cnc_alarm(int8_t code);
-	bool cnc_has_alarm(void);
-	uint8_t cnc_get_alarm(void);
-	void cnc_stop(bool toolstop);
-	uint8_t cnc_unlock(bool force);
-	void cnc_delay_ms(uint32_t miliseconds);
-	void cnc_dwell_ms(uint32_t miliseconds);
-	void cnc_store_motion(void);
-	void cnc_restore_motion(void);
+// do events returns true if all OK and false if an ABORT alarm is reached
+bool cnc_dotasks(void);
+uint8_t cnc_home(void);
+void cnc_alarm(int8_t code);
+bool cnc_has_alarm(void);
+uint8_t cnc_get_alarm(void);
+void cnc_stop(bool toolstop);
+uint8_t cnc_unlock(bool force);
+void cnc_delay_ms(uint32_t miliseconds);
+void cnc_dwell_ms(uint32_t miliseconds);
+void cnc_store_motion(void);
+void cnc_restore_motion(void);
 #ifdef ENABLE_SAFETY_DOOR_PARKING
-	void cnc_park(void);
-	void cnc_unpark(void);
+void cnc_park(void);
+void cnc_unpark(void);
 #endif
-	uint8_t cnc_parse_cmd(void);
-	bool cnc_check_interlocking(void);
+uint8_t cnc_parse_cmd(void);
+bool cnc_check_interlocking(void);
 
-	uint16_t cnc_get_exec_state(uint16_t statemask);
-	void cnc_set_exec_state(uint16_t statemask);
-	void cnc_clear_exec_state(uint16_t statemask);
-	void cnc_call_rt_command(uint8_t command);
-	uint8_t cnc_get_status(void);
+uint16_t cnc_get_exec_state(uint16_t statemask);
+void cnc_set_exec_state(uint16_t statemask);
+void cnc_clear_exec_state(uint16_t statemask);
+void cnc_call_rt_command(uint8_t command);
+uint8_t cnc_get_status(void);
 #ifdef ENABLE_SOCKETS
-	void cnc_network_init(void); //initializes the network interface
+void cnc_network_init(void); // initializes the network interface
 #endif
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
-	// generates a default delegate, event and handler hook
-	// event_cnc_reset_handler
-	DECL_EVENT_HANDLER(cnc_reset);
-	// event_cnc_dotasks_handler
-	DECL_EVENT_HANDLER(cnc_dotasks);
+// generates a default delegate, event and handler hook
+// event_cnc_reset_handler
+DECL_EVENT_HANDLER(cnc_reset);
+// event_cnc_dotasks_handler
+DECL_EVENT_HANDLER(cnc_dotasks);
 #ifndef modules_dotasks
 #define modules_dotasks() EVENT_INVOKE(cnc_dotasks, NULL)
 #endif
 #ifndef cnc_modules_dotasks
 #define cnc_modules_dotasks() modules_dotasks()
 #endif
-	// event_cnc_io_dotasks_handler
-	DECL_EVENT_HANDLER(cnc_io_dotasks);
-	// event_cnc_stop_handler
-	DECL_EVENT_HANDLER(cnc_stop);
-	// event_cnc_parse_cmd_error_handler
-	DECL_EVENT_HANDLER(cnc_parse_cmd_error);
-	// event_cnc_alarm
-	DECL_EVENT_HANDLER(cnc_alarm);
+// event_cnc_io_dotasks_handler
+DECL_EVENT_HANDLER(cnc_io_dotasks);
+// event_cnc_stop_handler
+DECL_EVENT_HANDLER(cnc_stop);
+// event_cnc_parse_cmd_error_handler
+DECL_EVENT_HANDLER(cnc_parse_cmd_error);
+// event_cnc_alarm
+DECL_EVENT_HANDLER(cnc_alarm);
 #endif
 
 #ifndef ucnc_init

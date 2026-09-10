@@ -21,26 +21,26 @@ extern void main(void);
  * Loads data from addresses defined in linker file into RAM
  * Zero bss (statically allocated uninitialized variables)
  */
-void __Init_Data(void)
-{
-    unsigned long *src, *dst;
-    /* copy the data segment into ram */
-    src = &_sidata;
-    dst = &_sdata;
-    if (src != dst)
-        while (dst < &_edata)
-            *(dst++) = *(src++);
+void __Init_Data(void) {
+  unsigned long *src, *dst;
+  /* copy the data segment into ram */
+  src = &_sidata;
+  dst = &_sdata;
+  if (src != dst)
+    while (dst < &_edata)
+      *(dst++) = *(src++);
 
-    /* zero the bss segment */
-    dst = &_sbss;
-    while (dst < &_ebss)
-        *(dst++) = 0;
+  /* zero the bss segment */
+  dst = &_sbss;
+  while (dst < &_ebss)
+    *(dst++) = 0;
 }
 
 /* This function is straight from the system_stm32f10x.c library file and
  * is called within the startup file:
  * 1. After each device reset the HSI is used as System clock source.
- * 2. This function assumes that an external 8MHz crystal is used to drive the System clock.
+ * 2. This function assumes that an external 8MHz crystal is used to drive the
+ * System clock.
  */
 // void SystemInit(void)
 // {
@@ -62,7 +62,8 @@ void __Init_Data(void)
 //         ;
 //     /* Configure the Flash Latency cycles and enable prefetch buffer */
 //     FLASH->ACR = FLASH_ACR_PRFTBE | FLASH_ACR_LATENCY_2;
-//     /* Configure the System clock frequency, HCLK, PCLK2 and PCLK1 prescalers */
+//     /* Configure the System clock frequency, HCLK, PCLK2 and PCLK1 prescalers
+//     */
 //     /* HCLK = SYSCLK, PCLK2 = HCLK, PCLK1 = HCLK / 2
 //  * If crystal is 16MHz, add in PLLXTPRE flag to prescale by 2
 //  */
@@ -83,21 +84,18 @@ void __Init_Data(void)
 //         ;
 // }
 
-void Reset_Handler(void)
-{
-    /* Initialize data and bss */
-    __Init_Data();
-    unsigned long *pSrc = (unsigned long *)&_svtor;
-    SCB->VTOR = ((unsigned long)pSrc & SCB_VTOR_TBLOFF_Msk);
-    // mcu_init does this
-    //  SystemInit();
-    while (1)
-    {
-        main();
-    }
-    while (1)
-    {
-    }
+void Reset_Handler(void) {
+  /* Initialize data and bss */
+  __Init_Data();
+  unsigned long *pSrc = (unsigned long *)&_svtor;
+  SCB->VTOR = ((unsigned long)pSrc & SCB_VTOR_TBLOFF_Msk);
+  // mcu_init does this
+  //  SystemInit();
+  while (1) {
+    main();
+  }
+  while (1) {
+  }
 }
 void WEAK NMI_Handler(void);
 void WEAK HardFault_Handler(void);
@@ -170,23 +168,25 @@ void WEAK DMA2_Channel2_IRQHandler(void);
 void WEAK DMA2_Channel3_IRQHandler(void);
 void WEAK DMA2_Channel4_5_IRQHandler(void);
 
-__attribute__((used, section(".isr_vector"))) void (*const g_pfnVectors[])(void) = {
-    (intfunc)((unsigned long *)&_estack), /* The stack pointer after relocation */
-    Reset_Handler,                        /* Reset Handler */
-    NMI_Handler,                          /* NMI Handler */
-    HardFault_Handler,                    /* Hard Fault Handler */
-    MemManage_Handler,                    /* MPU Fault Handler */
-    BusFault_Handler,                     /* Bus Fault Handler */
-    UsageFault_Handler,                   /* Usage Fault Handler */
-    0,                                    /* Reserved */
-    0,                                    /* Reserved */
-    0,                                    /* Reserved */
-    0,                                    /* Reserved */
-    SVC_Handler,                          /* SVCall Handler */
-    DebugMon_Handler,                     /* Debug Monitor Handler */
-    0,                                    /* Reserved */
-    PendSV_Handler,                       /* PendSV Handler */
-    SysTick_Handler,                      /* SysTick Handler */
+__attribute__((used,
+               section(".isr_vector"))) void (*const g_pfnVectors[])(void) = {
+    (intfunc)((
+        unsigned long *)&_estack), /* The stack pointer after relocation */
+    Reset_Handler,                 /* Reset Handler */
+    NMI_Handler,                   /* NMI Handler */
+    HardFault_Handler,             /* Hard Fault Handler */
+    MemManage_Handler,             /* MPU Fault Handler */
+    BusFault_Handler,              /* Bus Fault Handler */
+    UsageFault_Handler,            /* Usage Fault Handler */
+    0,                             /* Reserved */
+    0,                             /* Reserved */
+    0,                             /* Reserved */
+    0,                             /* Reserved */
+    SVC_Handler,                   /* SVCall Handler */
+    DebugMon_Handler,              /* Debug Monitor Handler */
+    0,                             /* Reserved */
+    PendSV_Handler,                /* PendSV Handler */
+    SysTick_Handler,               /* SysTick Handler */
 
     /* External Interrupts */
     WWDG_IRQHandler,            /* Window Watchdog */
@@ -320,9 +320,7 @@ __attribute__((used, section(".isr_vector"))) void (*const g_pfnVectors[])(void)
 #pragma weak DMA2_Channel3_IRQHandler = Default_Handler
 #pragma weak DMA2_Channel4_5_IRQHandler = Default_Handler
 
-void Default_Handler(void)
-{
-    while (1)
-    {
-    }
+void Default_Handler(void) {
+  while (1) {
+  }
 }

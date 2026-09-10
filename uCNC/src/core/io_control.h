@@ -1,37 +1,37 @@
 /*
-	Name: io_control.h
-	Description: The input control unit for µCNC.
-		This is responsible to check all limit switches (both hardware and software), control switches,
-		and probe.
+        Name: io_control.h
+        Description: The input control unit for µCNC.
+                This is responsible to check all limit switches (both hardware
+   and software), control switches, and probe.
 
-		TODO:
-			-implement generic inputs
-			-implement outputs
+                TODO:
+                        -implement generic inputs
+                        -implement outputs
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 07/12/2019
+        Copyright: Copyright (c) João Martins
+        Author: João Martins
+        Date: 07/12/2019
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+        µCNC is free software: you can redistribute it and/or modify
+        it under the terms of the GNU General Public License as published by
+        the Free Software Foundation, either version 3 of the License, or
+        (at your option) any later version. Please see
+   <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+        µCNC is distributed WITHOUT ANY WARRANTY;
+        Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A
+   PARTICULAR PURPOSE. See the	GNU General Public License for more details.
 */
 
 #ifndef DIGITAL_IO_CONTROL_H
 #define DIGITAL_IO_CONTROL_H
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 /**
  * IO CONTROL<-> MCU HAL
@@ -53,19 +53,19 @@ extern "C"
 #define io_get_pwm(pin) io_hal_get_pwm(pin)
 
 #if defined(MCU_HAS_SOFT_PWM_TIMER) || defined(IC74HC595_HAS_PWMS)
-	MCU_CALLBACK void io_soft_pwm_update(void);
+MCU_CALLBACK void io_soft_pwm_update(void);
 #endif
 
 // inputs
 #ifdef ENABLE_MULTI_STEP_HOMING
-	void io_lock_limits(uint8_t limitmask);
+void io_lock_limits(uint8_t limitmask);
 #endif
-	void io_enable_limits(void);
-	void io_disable_limits(void);
-	void io_invert_limits(uint8_t limitmask);
-	uint8_t io_get_raw_limits(void);
-	uint8_t io_get_limits(void);
-	uint8_t io_get_controls(void);
+void io_enable_limits(void);
+void io_disable_limits(void);
+void io_invert_limits(uint8_t limitmask);
+uint8_t io_get_raw_limits(void);
+uint8_t io_get_limits(void);
+uint8_t io_get_controls(void);
 #ifdef PROBE_ENABLE_CUSTOM_CALLBACK
 typedef bool (*io_probe_get_cb)(void);
 typedef bool (*io_probe_action_cb)(void);
@@ -73,29 +73,29 @@ extern io_probe_get_cb io_probe_custom_get;
 extern io_probe_action_cb io_probe_custom_enable;
 extern io_probe_action_cb io_probe_custom_disable;
 #endif
-	void io_enable_probe(void);
-	void io_disable_probe(void);
-	bool io_get_probe(void);
+void io_enable_probe(void);
+void io_disable_probe(void);
+bool io_get_probe(void);
 
-	// outputs
-	void io_set_steps(uint8_t mask);
-	void io_toggle_steps(uint8_t mask);
-	void io_set_dirs(uint8_t mask);
-	void io_get_steps_pos(int32_t *position);
+// outputs
+void io_set_steps(uint8_t mask);
+void io_toggle_steps(uint8_t mask);
+void io_set_dirs(uint8_t mask);
+void io_get_steps_pos(int32_t *position);
 
-	void io_enable_steppers(uint8_t mask);
+void io_enable_steppers(uint8_t mask);
 
-	// all purpose functions
-	void io_set_pinvalue(uint8_t pin, uint8_t value);
-	int16_t io_get_pinvalue(uint8_t pin);
+// all purpose functions
+void io_set_pinvalue(uint8_t pin, uint8_t value);
+int16_t io_get_pinvalue(uint8_t pin);
 
 #ifdef ENABLE_IO_MODULES
-	// event_input_change_handler
-	DECL_EVENT_HANDLER(input_change);
-	// event_probe_enable_handler
-	DECL_EVENT_HANDLER(probe_enable);
-	// event_probe_disable_handler
-	DECL_EVENT_HANDLER(probe_disable);
+// event_input_change_handler
+DECL_EVENT_HANDLER(input_change);
+// event_probe_enable_handler
+DECL_EVENT_HANDLER(probe_enable);
+// event_probe_disable_handler
+DECL_EVENT_HANDLER(probe_disable);
 // // event_set_steps_handler
 // DECL_EVENT_HANDLER(set_steps);
 // // event_toggle_steps_handler
@@ -114,8 +114,8 @@ extern io_probe_action_cb io_probe_custom_disable;
 #endif
 
 #ifdef ENABLE_IO_ALARM_DEBUG
-	extern uint8_t io_alarm_limits;
-	extern uint8_t io_alarm_controls;
+extern uint8_t io_alarm_limits;
+extern uint8_t io_alarm_controls;
 #endif
 
 #ifdef __cplusplus

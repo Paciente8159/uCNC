@@ -1,46 +1,48 @@
 /*
-	Name: mcumap_esp32_c.h
-	Description: Contains all MCU and PIN definitions for Arduino ESP32-Cx to run µCNC.
+        Name: mcumap_esp32_c.h
+        Description: Contains all MCU and PIN definitions for Arduino ESP32-Cx
+   to run µCNC.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 10-03-2025
+        Copyright: Copyright (c) João Martins
+        Author: João Martins
+        Date: 10-03-2025
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+        µCNC is free software: you can redistribute it and/or modify
+        it under the terms of the GNU General Public License as published by
+        the Free Software Foundation, either version 3 of the License, or
+        (at your option) any later version. Please see
+   <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+        µCNC is distributed WITHOUT ANY WARRANTY;
+        Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A
+   PARTICULAR PURPOSE. See the	GNU General Public License for more details.
 */
 
 #ifndef MCUMAP_ESP32C3_H
 #define MCUMAP_ESP32C3_H
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
-#include <Arduino.h>
-#include "driver/timer.h"
-#include "driver/gpio.h"
-#include "hal/gpio_ll.h"
 #include "driver/adc.h"
+#include "driver/gpio.h"
 #include "driver/ledc.h"
+#include "driver/timer.h"
+#include "hal/gpio_ll.h"
+#include <Arduino.h>
 
 /*
-	Generates all the interface definitions.
-	This creates a middle HAL layer between the board IO pins and the AVR funtionalities
+        Generates all the interface definitions.
+        This creates a middle HAL layer between the board IO pins and the AVR
+   funtionalities
 */
 /*
-	MCU specific definitions and replacements
+        MCU specific definitions and replacements
 */
 
 /*
-	ESP32-C Defaults
+        ESP32-C Defaults
 */
 // defines the frequency of the mcu
 #ifndef F_CPU
@@ -84,20 +86,19 @@ extern "C"
 #define MCU_CYCLES_LOOP_OVERHEAD 3
 #endif
 
-#define mcu_delay_loop(X)                                                             \
-	do                                                                                \
-	{                                                                                 \
-		register unsigned start, now, target = (((X) - 1) * MCU_CYCLES_PER_LOOP + 2); \
-		asm volatile("" ::: "memory");                                                \
-		asm volatile(                                                                 \
-			"rdcycle %0\n"			 /* start = cycle counter */                      \
-			"1: rdcycle %1\n"		 /* now = cycle counter */                        \
-			"   sub    %1, %1, %0\n" /* tmp = now - start */                          \
-			"   bltu   %1, %2, 1b\n" /* loop until tmp >= target */                   \
-			"   nop\n"                                                                \
-			: "=&r"(start), "=&r"(now)                                                \
-			: "r"(target));                                                           \
-	} while (0)
+#define mcu_delay_loop(X)                                                      \
+  do {                                                                         \
+    register unsigned start, now,                                              \
+        target = (((X) - 1) * MCU_CYCLES_PER_LOOP + 2);                        \
+    asm volatile("" ::: "memory");                                             \
+    asm volatile("rdcycle %0\n"           /* start = cycle counter */          \
+                 "1: rdcycle %1\n"        /* now = cycle counter */            \
+                 "   sub    %1, %1, %0\n" /* tmp = now - start */              \
+                 "   bltu   %1, %2, 1b\n" /* loop until tmp >= target */       \
+                 "   nop\n"                                                    \
+                 : "=&r"(start), "=&r"(now)                                    \
+                 : "r"(target));                                               \
+  } while (0)
 
 #ifndef MCU_CALLBACK
 #define MCU_CALLBACK IRAM_ATTR
@@ -120,8 +121,9 @@ extern "C"
 #define __SIZEOF_FLOAT__ 4
 
 // used by the parser
-// this method is faster then normal multiplication (for 32 bit for 16 and 8 bits is slightly lower)
-// overrides utils.h definition to implement this method with or without fast math option enabled
+// this method is faster then normal multiplication (for 32 bit for 16 and 8
+// bits is slightly lower) overrides utils.h definition to implement this method
+// with or without fast math option enabled
 #define fast_int_mul10(x) ((((x) << 2) + (x)) << 1)
 
 // PINNAMES for ESP32
@@ -142,17 +144,15 @@ extern "C"
 #define PERIPHS_IO_MUX_GPIO14 (PERIPHS_IO_MUX + 0x0C)
 #define PERIPHS_IO_MUX_GPIO15 (PERIPHS_IO_MUX + 0x10)
 
-	typedef struct
-	{
-		volatile uint32_t OUT;
-		volatile uint32_t OUTSET;
-		volatile uint32_t OUTCLR;
-	} IO_OUT_TypeDef;
+typedef struct {
+  volatile uint32_t OUT;
+  volatile uint32_t OUTSET;
+  volatile uint32_t OUTCLR;
+} IO_OUT_TypeDef;
 
-	typedef struct
-	{
-		volatile uint32_t IN;
-	} IO_IN_TypeDef;
+typedef struct {
+  volatile uint32_t IN;
+} IO_IN_TypeDef;
 
 #define OUT0 ((IO_OUT_TypeDef *)GPIO_OUT_REG)
 #ifdef GPIO_OUT1_REG
@@ -3030,43 +3030,49 @@ extern "C"
 #define DIO123_ADC_CHANNEL ANALOG9_ADC_CHANNEL
 #endif
 #ifdef ANALOG10
-#define ANALOG10_ADC_CHANNEL _adc_channel_helper_(ANALOG10_CHANNEL, ANALOG10_ADC)
+#define ANALOG10_ADC_CHANNEL                                                   \
+  _adc_channel_helper_(ANALOG10_CHANNEL, ANALOG10_ADC)
 #define DIO124_CHANNEL ANALOG10_CHANNEL
 #define DIO124_ADC ANALOG10_ADC
 #define DIO124_ADC_CHANNEL ANALOG10_ADC_CHANNEL
 #endif
 #ifdef ANALOG11
-#define ANALOG11_ADC_CHANNEL _adc_channel_helper_(ANALOG11_CHANNEL, ANALOG11_ADC)
+#define ANALOG11_ADC_CHANNEL                                                   \
+  _adc_channel_helper_(ANALOG11_CHANNEL, ANALOG11_ADC)
 #define DIO125_CHANNEL ANALOG11_CHANNEL
 #define DIO125_ADC ANALOG11_ADC
 #define DIO125_ADC_CHANNEL ANALOG11_ADC_CHANNEL
 #endif
 #ifdef ANALOG12
-#define ANALOG12_ADC_CHANNEL _adc_channel_helper_(ANALOG12_CHANNEL, ANALOG12_ADC)
+#define ANALOG12_ADC_CHANNEL                                                   \
+  _adc_channel_helper_(ANALOG12_CHANNEL, ANALOG12_ADC)
 #define DIO126_CHANNEL ANALOG12_CHANNEL
 #define DIO126_ADC ANALOG12_ADC
 #define DIO126_ADC_CHANNEL ANALOG12_ADC_CHANNEL
 #endif
 #ifdef ANALOG13
-#define ANALOG13_ADC_CHANNEL _adc_channel_helper_(ANALOG13_CHANNEL, ANALOG13_ADC)
+#define ANALOG13_ADC_CHANNEL                                                   \
+  _adc_channel_helper_(ANALOG13_CHANNEL, ANALOG13_ADC)
 #define DIO127_CHANNEL ANALOG13_CHANNEL
 #define DIO127_ADC ANALOG13_ADC
 #define DIO127_ADC_CHANNEL ANALOG13_ADC_CHANNEL
 #endif
 #ifdef ANALOG14
-#define ANALOG14_ADC_CHANNEL _adc_channel_helper_(ANALOG14_CHANNEL, ANALOG14_ADC)
+#define ANALOG14_ADC_CHANNEL                                                   \
+  _adc_channel_helper_(ANALOG14_CHANNEL, ANALOG14_ADC)
 #define DIO128_CHANNEL ANALOG14_CHANNEL
 #define DIO128_ADC ANALOG14_ADC
 #define DIO128_ADC_CHANNEL ANALOG14_ADC_CHANNEL
 #endif
 #ifdef ANALOG15
-#define ANALOG15_ADC_CHANNEL _adc_channel_helper_(ANALOG15_CHANNEL, ANALOG15_ADC)
+#define ANALOG15_ADC_CHANNEL                                                   \
+  _adc_channel_helper_(ANALOG15_CHANNEL, ANALOG15_ADC)
 #define DIO129_CHANNEL ANALOG15_CHANNEL
 #define DIO129_ADC ANALOG15_ADC
 #define DIO129_ADC_CHANNEL ANALOG15_ADC_CHANNEL
 #endif
 
-	/*PWM's*/
+/*PWM's*/
 
 #ifdef PWM0_CHANNEL
 #define PWM0_LEDCCHANNEL (PWM0_CHANNEL & 0x07)
@@ -3413,111 +3419,130 @@ extern "C"
 #define IC74HC595_COUNT 4
 #define I2S_PORT IC74HC595_I2S_PORT
 
-	extern volatile uint32_t i2s_mode;
+extern volatile uint32_t i2s_mode;
 #define I2S_MODE __atomic_load_n((uint32_t *)&i2s_mode, __ATOMIC_RELAXED)
 
-	// custom pin operations for 74HS595
-	extern volatile uint32_t ic74hc595_i2s_pins;
+// custom pin operations for 74HS595
+extern volatile uint32_t ic74hc595_i2s_pins;
 #define ic74hc595_pin_offset(pin) (__indirect__(pin, IO_OFFSET))
 #define ic74hc595_pin_mask(pin) (uint32_t)(1UL << ic74hc595_pin_offset(pin))
-#define ic74hc595_set_pin(pin) __atomic_fetch_or((uint32_t *)&ic74hc595_i2s_pins, ic74hc595_pin_mask(pin), __ATOMIC_RELAXED)
-#define ic74hc595_clear_pin(pin) __atomic_fetch_and((uint32_t *)&ic74hc595_i2s_pins, ~(ic74hc595_pin_mask(pin)), __ATOMIC_RELAXED)
-#define ic74hc595_toggle_pin(pin) __atomic_fetch_xor((uint32_t *)&ic74hc595_i2s_pins, ic74hc595_pin_mask(pin), __ATOMIC_RELAXED)
-#define ic74hc595_get_pin(pin) (__atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED) & ic74hc595_pin_mask(pin))
+#define ic74hc595_set_pin(pin)                                                 \
+  __atomic_fetch_or((uint32_t *)&ic74hc595_i2s_pins, ic74hc595_pin_mask(pin),  \
+                    __ATOMIC_RELAXED)
+#define ic74hc595_clear_pin(pin)                                               \
+  __atomic_fetch_and((uint32_t *)&ic74hc595_i2s_pins,                          \
+                     ~(ic74hc595_pin_mask(pin)), __ATOMIC_RELAXED)
+#define ic74hc595_toggle_pin(pin)                                              \
+  __atomic_fetch_xor((uint32_t *)&ic74hc595_i2s_pins, ic74hc595_pin_mask(pin), \
+                     __ATOMIC_RELAXED)
+#define ic74hc595_get_pin(pin)                                                 \
+  (__atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED) &        \
+   ic74hc595_pin_mask(pin))
 #endif
 
-#define mcu_config_output(X)                                                          \
-	{                                                                                 \
-		gpio_pad_select_gpio(__indirect__(X, BIT));                                   \
-		gpio_set_direction((gpio_num_t)__indirect__(X, BIT), GPIO_MODE_INPUT_OUTPUT); \
-	}
+#define mcu_config_output(X)                                                   \
+  {                                                                            \
+    gpio_pad_select_gpio(__indirect__(X, BIT));                                \
+    gpio_set_direction((gpio_num_t)__indirect__(X, BIT),                       \
+                       GPIO_MODE_INPUT_OUTPUT);                                \
+  }
 #define mcu_config_input(X)                                                    \
-	{                                                                          \
-		gpio_pad_select_gpio(__indirect__(X, BIT));                            \
-		gpio_set_direction((gpio_num_t)__indirect__(X, BIT), GPIO_MODE_INPUT); \
-		gpio_pulldown_dis((gpio_num_t)__indirect__(X, BIT));                   \
-		gpio_pullup_dis((gpio_num_t)__indirect__(X, BIT));                     \
-	}
-#define mcu_config_analog(X)                                                          \
-	{                                                                                 \
-		mcu_config_input(X);                                                          \
-		adc1_config_width(ADC_WIDTH_MAX - 1);                                         \
-		adc1_config_channel_atten(__indirect__(X, ADC_CHANNEL), (ADC_ATTEN_MAX - 1)); \
-	}
+  {                                                                            \
+    gpio_pad_select_gpio(__indirect__(X, BIT));                                \
+    gpio_set_direction((gpio_num_t)__indirect__(X, BIT), GPIO_MODE_INPUT);     \
+    gpio_pulldown_dis((gpio_num_t)__indirect__(X, BIT));                       \
+    gpio_pullup_dis((gpio_num_t)__indirect__(X, BIT));                         \
+  }
+#define mcu_config_analog(X)                                                   \
+  {                                                                            \
+    mcu_config_input(X);                                                       \
+    adc1_config_width(ADC_WIDTH_MAX - 1);                                      \
+    adc1_config_channel_atten(__indirect__(X, ADC_CHANNEL),                    \
+                              (ADC_ATTEN_MAX - 1));                            \
+  }
 #define mcu_config_pullup(X)                                                   \
-	{                                                                          \
-		gpio_pad_select_gpio(__indirect__(X, BIT));                            \
-		gpio_set_direction((gpio_num_t)__indirect__(X, BIT), GPIO_MODE_INPUT); \
-		gpio_pulldown_dis((gpio_num_t)__indirect__(X, BIT));                   \
-		gpio_pullup_en((gpio_num_t)__indirect__(X, BIT));                      \
-	}
-	extern void mcu_gpio_isr(void *);
-#define mcu_config_input_isr(X)                                                                                  \
-	{                                                                                                            \
-		gpio_set_intr_type((gpio_num_t)(__indirect__(X, BIT)), GPIO_INTR_ANYEDGE);                               \
-		gpio_isr_handler_add((gpio_num_t)(__indirect__(X, BIT)), mcu_gpio_isr, (void *)__indirect__(X, ISRVAR)); \
-	}
+  {                                                                            \
+    gpio_pad_select_gpio(__indirect__(X, BIT));                                \
+    gpio_set_direction((gpio_num_t)__indirect__(X, BIT), GPIO_MODE_INPUT);     \
+    gpio_pulldown_dis((gpio_num_t)__indirect__(X, BIT));                       \
+    gpio_pullup_en((gpio_num_t)__indirect__(X, BIT));                          \
+  }
+extern void mcu_gpio_isr(void *);
+#define mcu_config_input_isr(X)                                                \
+  {                                                                            \
+    gpio_set_intr_type((gpio_num_t)(__indirect__(X, BIT)), GPIO_INTR_ANYEDGE); \
+    gpio_isr_handler_add((gpio_num_t)(__indirect__(X, BIT)), mcu_gpio_isr,     \
+                         (void *)__indirect__(X, ISRVAR));                     \
+  }
 
 // #define mcu_get_input(X) gpio_get_level((gpio_num_t)__indirect__(X, BIT))
-#define mcu_get_input(X)                                    \
-	({                                                      \
-		uint32_t inputs = (__indirect__(X, INREG)->IN);     \
-		((inputs >> (0x1F & __indirect__(X, BIT))) & 0x01); \
-	})
-#define mcu_get_output(X) ((__indirect__(X, OUTREG)->OUT) & (1UL << (0x1F & __indirect__(X, BIT))))
-#define mcu_set_output(X)                                                         \
-	{                                                                             \
-		__indirect__(X, OUTREG)->OUTSET = (1UL << (0x1F & __indirect__(X, BIT))); \
-	}
-#define mcu_clear_output(X)                                                       \
-	{                                                                             \
-		__indirect__(X, OUTREG)->OUTCLR = (1UL << (0x1F & __indirect__(X, BIT))); \
-	}
-#define mcu_toggle_output(X)                                                    \
-	{                                                                           \
-		__indirect__(X, OUTREG)->OUT ^= (1UL << (0x1F & __indirect__(X, BIT))); \
-	}
+#define mcu_get_input(X)                                                       \
+  ({                                                                           \
+    uint32_t inputs = (__indirect__(X, INREG)->IN);                            \
+    ((inputs >> (0x1F & __indirect__(X, BIT))) & 0x01);                        \
+  })
+#define mcu_get_output(X)                                                      \
+  ((__indirect__(X, OUTREG)->OUT) & (1UL << (0x1F & __indirect__(X, BIT))))
+#define mcu_set_output(X)                                                      \
+  {                                                                            \
+    __indirect__(X, OUTREG)->OUTSET = (1UL << (0x1F & __indirect__(X, BIT)));  \
+  }
+#define mcu_clear_output(X)                                                    \
+  {                                                                            \
+    __indirect__(X, OUTREG)->OUTCLR = (1UL << (0x1F & __indirect__(X, BIT)));  \
+  }
+#define mcu_toggle_output(X)                                                   \
+  {                                                                            \
+    __indirect__(X, OUTREG)->OUT ^= (1UL << (0x1F & __indirect__(X, BIT)));    \
+  }
 
-	typedef struct signal_timer_
-	{
-		uint32_t current_us;
-		volatile uint8_t us_step;
-		uint32_t itp_reload;
-		volatile bool step_alarm_en;
-		uint32_t pwm_reload;
-	} signal_timer_t;
+typedef struct signal_timer_ {
+  uint32_t current_us;
+  volatile uint8_t us_step;
+  uint32_t itp_reload;
+  volatile bool step_alarm_en;
+  uint32_t pwm_reload;
+} signal_timer_t;
 
-	extern signal_timer_t signal_timer;
-#define mcu_softpwm_freq_config(pin, freq) ({io_config_output(pin); signal_timer.pwm_reload = (uint32_t)(1000000/freq); })
+extern signal_timer_t signal_timer;
+#define mcu_softpwm_freq_config(pin, freq)                                     \
+  ({                                                                           \
+    io_config_output(pin);                                                     \
+    signal_timer.pwm_reload = (uint32_t)(1000000 / freq);                      \
+  })
 
-#define mcu_config_pwm(X, Y)                              \
-	{                                                     \
-		ledc_timer_config_t pwmtimer = {0};               \
-		pwmtimer.speed_mode = __indirect__(X, SPEEDMODE); \
-		pwmtimer.timer_num = __indirect__(X, TIMER);      \
-		pwmtimer.duty_resolution = LEDC_TIMER_8_BIT;      \
-		pwmtimer.freq_hz = Y;                             \
-		pwmtimer.clk_cfg = LEDC_AUTO_CLK;                 \
-		ledc_timer_config(&pwmtimer);                     \
-		ledc_channel_config_t pwm = {0};                  \
-		pwm.channel = __indirect__(X, CHANNEL);           \
-		pwm.duty = 0;                                     \
-		pwm.gpio_num = __indirect__(X, BIT);              \
-		pwm.hpoint = 0;                                   \
-		pwm.speed_mode = __indirect__(X, SPEEDMODE);      \
-		pwm.timer_sel = __indirect__(X, TIMER);           \
-		ledc_channel_config(&pwm);                        \
-	}
+#define mcu_config_pwm(X, Y)                                                   \
+  {                                                                            \
+    ledc_timer_config_t pwmtimer = {0};                                        \
+    pwmtimer.speed_mode = __indirect__(X, SPEEDMODE);                          \
+    pwmtimer.timer_num = __indirect__(X, TIMER);                               \
+    pwmtimer.duty_resolution = LEDC_TIMER_8_BIT;                               \
+    pwmtimer.freq_hz = Y;                                                      \
+    pwmtimer.clk_cfg = LEDC_AUTO_CLK;                                          \
+    ledc_timer_config(&pwmtimer);                                              \
+    ledc_channel_config_t pwm = {0};                                           \
+    pwm.channel = __indirect__(X, CHANNEL);                                    \
+    pwm.duty = 0;                                                              \
+    pwm.gpio_num = __indirect__(X, BIT);                                       \
+    pwm.hpoint = 0;                                                            \
+    pwm.speed_mode = __indirect__(X, SPEEDMODE);                               \
+    pwm.timer_sel = __indirect__(X, TIMER);                                    \
+    ledc_channel_config(&pwm);                                                 \
+  }
 
-#define mcu_set_pwm(X, Y)                                                           \
-	{                                                                               \
-		ledc_set_duty(__indirect__(X, SPEEDMODE), __indirect__(X, LEDCCHANNEL), Y); \
-		ledc_update_duty(__indirect__(X, SPEEDMODE), __indirect__(X, LEDCCHANNEL)); \
-	}
-#define mcu_get_pwm(X) ledc_get_duty(__indirect__(X, SPEEDMODE), __indirect__(X, LEDCCHANNEL))
-#define mcu_get_analog(X) (adc1_get_raw(__indirect__(X, ADC_CHANNEL)) >> (ADC_WIDTH_MAX - 2))
+#define mcu_set_pwm(X, Y)                                                      \
+  {                                                                            \
+    ledc_set_duty(__indirect__(X, SPEEDMODE), __indirect__(X, LEDCCHANNEL),    \
+                  Y);                                                          \
+    ledc_update_duty(__indirect__(X, SPEEDMODE),                               \
+                     __indirect__(X, LEDCCHANNEL));                            \
+  }
+#define mcu_get_pwm(X)                                                         \
+  ledc_get_duty(__indirect__(X, SPEEDMODE), __indirect__(X, LEDCCHANNEL))
+#define mcu_get_analog(X)                                                      \
+  (adc1_get_raw(__indirect__(X, ADC_CHANNEL)) >> (ADC_WIDTH_MAX - 2))
 
-	extern void esp32_delay_us(uint16_t delay);
+extern void esp32_delay_us(uint16_t delay);
 #define mcu_delay_us(X) esp32_delay_us(X)
 
 #include "../esp32common/esp32_common.h"

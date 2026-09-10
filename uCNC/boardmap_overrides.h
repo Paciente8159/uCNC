@@ -4,8 +4,7 @@
 #define BOARDMAP_OVERRIDES_H
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 #ifdef __cplusplus

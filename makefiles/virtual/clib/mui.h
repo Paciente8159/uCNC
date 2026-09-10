@@ -9,60 +9,63 @@
   Copyright (c) 2021, olikraus@gmail.com
   All rights reserved.
 
-  Redistribution and use in source and binary forms, with or without modification, 
-  are permitted provided that the following conditions are met:
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions are met:
 
-  * Redistributions of source code must retain the above copyright notice, this list 
-    of conditions and the following disclaimer.
-    
-  * Redistributions in binary form must reproduce the above copyright notice, this 
-    list of conditions and the following disclaimer in the documentation and/or other 
-    materials provided with the distribution.
+  * Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
 
-  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND 
-  CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, 
-  INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF 
-  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
-  DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR 
-  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, 
-  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT 
-  NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
-  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER 
-  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, 
-  STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
-  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF 
-  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.  
-  
+  * Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+  CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+  INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+  DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+  NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+  STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
   MUIF  (Monochrome User Interface Functions)
     n:  A number 0 to 9 without any quotes, e.g.: 5
     id: Exactly two characters or numbers in doubl quotes, e.g. "G5".
-    cb: A callback function with the following prototype: "uint8_t muif_cb(mui_t *ui, uint8_t msg)"
-      There are MANY predefined callback functions, see separate list
-    var: Address of a variable. 
-    text: Normal text, but special characters might be required for some callback functions, for
-      example the text might contain a list of selectable elements separated with the '|' symbol.
+    cb: A callback function with the following prototype: "uint8_t muif_cb(mui_t
+  *ui, uint8_t msg)" There are MANY predefined callback functions, see separate
+  list var: Address of a variable. text: Normal text, but special characters
+  might be required for some callback functions, for example the text might
+  contain a list of selectable elements separated with the '|' symbol.
 
   MUIF_STYLE(n,cb)
     Corresponding FDS command: MUI_STYLE(n)
-    Change the style of any other elements after MUI_STYLE(n), does not draw anything
-    
+    Change the style of any other elements after MUI_STYLE(n), does not draw
+  anything
+
   MUIF_RO(id,cb)
-    Corresponding FDS command: MUI_DATA(id, text) MUI_XY(id, x, y), MUI_XYT(id, x,y,text), MUI_XYA(id, x,y,a), MUI_XYAT(id, x,y,a,text)
-    Places a read only element on the form. 
-    The correct FDS command depends on the callback function.
-    
+    Corresponding FDS command: MUI_DATA(id, text) MUI_XY(id, x, y), MUI_XYT(id,
+  x,y,text), MUI_XYA(id, x,y,a), MUI_XYAT(id, x,y,a,text) Places a read only
+  element on the form. The correct FDS command depends on the callback function.
+
   MUIF_LABEL(cb)
     Corresponding FDS command: MUI_LABEL(x,y,text)
     Places a text at the specified position, similar to MUIF_RO
-    
+
   MUIF_GOTO(cb)
     Corresponding FDS command: MUI_GOTO(x,y,n,text)
-    Places a button at the specified position, similar to MUIF_BUTTON, but does not require an ID.
-    
+    Places a button at the specified position, similar to MUIF_BUTTON, but does
+  not require an ID.
+
   MUIF_BUTTON(id,cb)
-    Corresponding FDS command: MUI_XY(id, x, y), MUI_XYT(id, x,y,text), MUI_XYA(id, x,y,a), MUI_XYAT(id, x,y,a,text)
-    Places a selectable element on the form. 
-  
+    Corresponding FDS command: MUI_XY(id, x, y), MUI_XYT(id, x,y,text),
+  MUI_XYA(id, x,y,a), MUI_XYAT(id, x,y,a,text) Places a selectable element on
+  the form.
+
   MUIF_VARIABLE(id,var,cb)
     Corresponding FDS command: MUI_XY(id, x, y), MUI_XYA(id, x,y,a)
     Places a user input element at the specified location.
@@ -80,8 +83,7 @@
 
 #if defined(__GNUC__) && defined(__AVR__)
 #include <avr/pgmspace.h>
-#endif 
-
+#endif
 
 /*==========================================*/
 /* C++ compatible */
@@ -95,44 +97,40 @@ extern "C" {
 
 #define MUI_CHECK_EOFDS
 
-
 /*==========================================*/
 /* GNUC AVR PROGMEM interface */
 
 #ifdef __GNUC__
-#  define MUI_NOINLINE __attribute__((noinline))
+#define MUI_NOINLINE __attribute__((noinline))
 #else
-#  define MUI_NOINLINE
+#define MUI_NOINLINE
 #endif
-
 
 #if defined(__GNUC__) && defined(__AVR__)
-#  define mui_pgm_read(adr) pgm_read_byte_near(adr)
-#  define mui_pgm_wread(adr) pgm_read_word_near(adr) 
-#  define MUI_PROGMEM PROGMEM
+#define mui_pgm_read(adr) pgm_read_byte_near(adr)
+#define mui_pgm_wread(adr) pgm_read_word_near(adr)
+#define MUI_PROGMEM PROGMEM
 #endif
 
-
 #ifndef mui_pgm_read
-#  ifndef CHAR_BIT
-#  	define mui_pgm_read(adr) (*(const uint8_t *)(adr)) 
-#  else
-#	if CHAR_BIT > 8 
-#  	  define mui_pgm_read(adr) ((*(const uint8_t *)(adr)) & 0x0ff)
-#     else
-#  	  define mui_pgm_read(adr) (*(const uint8_t *)(adr)) 
-#     endif 
-#  endif
+#ifndef CHAR_BIT
+#define mui_pgm_read(adr) (*(const uint8_t *)(adr))
+#else
+#if CHAR_BIT > 8
+#define mui_pgm_read(adr) ((*(const uint8_t *)(adr)) & 0x0ff)
+#else
+#define mui_pgm_read(adr) (*(const uint8_t *)(adr))
+#endif
+#endif
 #endif
 
 #ifndef mui_pgm_wread
-#  	define mui_pgm_wread(adr) (*(const uint16_t *)(adr)) 
+#define mui_pgm_wread(adr) (*(const uint16_t *)(adr))
 #endif
 
 #ifndef MUI_PROGMEM
-#  define MUI_PROGMEM
+#define MUI_PROGMEM
 #endif
-
 
 /*=== forward declarations ===*/
 typedef struct mui_struct mui_t;
@@ -140,38 +138,35 @@ typedef const struct muif_struct muif_t;
 typedef uint8_t (*muif_cb)(mui_t *ui, uint8_t msg);
 typedef const char fds_t MUI_PROGMEM;
 
-
-
 /*=== struct declarations === */
 
-struct muif_struct
-{
+struct muif_struct {
   uint8_t id0;
   uint8_t id1;
-  uint8_t cflags;             // config flags e.g. MUIF_CFLAG_IS_CURSOR_SELECTABLE, if so, then it will not receive any cursor/touch msgs
+  uint8_t cflags; // config flags e.g. MUIF_CFLAG_IS_CURSOR_SELECTABLE, if so,
+                  // then it will not receive any cursor/touch msgs
   uint8_t extra;
-  void *data;                           // might be a pointer to a variable
-  muif_cb cb;                        // callback
+  void *data; // might be a pointer to a variable
+  muif_cb cb; // callback
 } MUI_PROGMEM;
 
-/* assumes that pointers are 16 bit so encapusalte the wread i another ifdef __AVR__ */
+/* assumes that pointers are 16 bit so encapusalte the wread i another ifdef
+ * __AVR__ */
 #if defined(__GNUC__) && defined(__AVR__)
-#  define muif_get_id0(muif) mui_pgm_read(&((muif)->id0))
-#  define muif_get_id1(muif) mui_pgm_read(&((muif)->id1))
-#  define muif_get_cflags(muif) mui_pgm_read(&((muif)->cflags))
-#  define muif_get_extra(muif) mui_pgm_read(&((muif)->extra))
-#  define muif_get_data(muif) ((void *)mui_pgm_wread(&((muif)->data)))
-#  define muif_get_cb(muif) ((muif_cb)mui_pgm_wread(&((muif)->cb)))
+#define muif_get_id0(muif) mui_pgm_read(&((muif)->id0))
+#define muif_get_id1(muif) mui_pgm_read(&((muif)->id1))
+#define muif_get_cflags(muif) mui_pgm_read(&((muif)->cflags))
+#define muif_get_extra(muif) mui_pgm_read(&((muif)->extra))
+#define muif_get_data(muif) ((void *)mui_pgm_wread(&((muif)->data)))
+#define muif_get_cb(muif) ((muif_cb)mui_pgm_wread(&((muif)->cb)))
 #else
-#  define muif_get_id0(muif) ((muif)->id0)
-#  define muif_get_id1(muif) ((muif)->id1)
-#  define muif_get_cflags(muif) ((muif)->cflags)
-#  define muif_get_extra(muif) ((muif)->extra)
-#  define muif_get_data(muif) ((muif)->data)
-#  define muif_get_cb(muif) ((muif)->cb)
+#define muif_get_id0(muif) ((muif)->id0)
+#define muif_get_id1(muif) ((muif)->id1)
+#define muif_get_cflags(muif) ((muif)->cflags)
+#define muif_get_extra(muif) ((muif)->extra)
+#define muif_get_data(muif) ((muif)->data)
+#define muif_get_cb(muif) ((muif)->cb)
 #endif
-
-
 
 #define MUIF_MSG_NONE 0
 #define MUIF_MSG_DRAW 1
@@ -181,17 +176,18 @@ struct muif_struct
 #define MUIF_MSG_CURSOR_ENTER 4
 #define MUIF_MSG_CURSOR_SELECT 5
 
-/* optional VALUE messages, ignored by the mui core, but can be used inside the field functions  */
+/* optional VALUE messages, ignored by the mui core, but can be used inside the
+ * field functions  */
 /* usually MUIF_MSG_VALUE_INCREMENT behaves like  MUIF_MSG_CURSOR_SELECT */
 #define MUIF_MSG_VALUE_INCREMENT 6
 #define MUIF_MSG_VALUE_DECREMENT 7
-
 
 #define MUIF_MSG_CURSOR_LEAVE 8
 #define MUIF_MSG_TOUCH_DOWN 9
 #define MUIF_MSG_TOUCH_UP 10
 /* MUIF_MSG_EVENT_NEXT return values: 0=not handled, 1=handled, do nothing */
-/* If MUIF_MSG_EVENT_NEXT/PREV are NOT handled by the field function, then this msg will change the field */
+/* If MUIF_MSG_EVENT_NEXT/PREV are NOT handled by the field function, then this
+ * msg will change the field */
 #define MUIF_MSG_EVENT_NEXT 11
 /* MUIF_MSG_EVENT_PREV return values: 0=not handled, 1=handled, do nothing */
 #define MUIF_MSG_EVENT_PREV 12
@@ -199,90 +195,96 @@ struct muif_struct
 /* dynamic flags */
 #define MUIF_DFLAG_IS_CURSOR_FOCUS 0x01
 #define MUIF_DFLAG_IS_TOUCH_FOCUS 0x02
-  
+
 /* config flags */
 #define MUIF_CFLAG_IS_CURSOR_SELECTABLE 0x01
 #define MUIF_CFLAG_IS_TOUCH_SELECTABLE 0x02
 #define MUIF_CFLAG_IS_EXECUTE_ON_SELECT 0x04
 
-
 /* end user MUIF entries */
-#define MUIF(id,cflags,data,cb) { id[0], id[1], cflags, 0, data, cb} 
-#define MUIF_STYLE(n,cb)  MUIF("S" #n, 0, 0, cb) 
-#define MUIF_RO(id,cb) MUIF(id,0, 0,cb)
-#define MUIF_LABEL(cb) MUIF(".L",0, 0,cb)
-#define MUIF_GOTO(cb) MUIF(".G",MUIF_CFLAG_IS_CURSOR_SELECTABLE,0,cb)
-#define MUIF_BUTTON(id,cb) MUIF(id,MUIF_CFLAG_IS_CURSOR_SELECTABLE,0,cb)
-#define MUIF_EXECUTE_ON_SELECT_BUTTON(id,cb) MUIF(id,MUIF_CFLAG_IS_CURSOR_SELECTABLE|MUIF_CFLAG_IS_EXECUTE_ON_SELECT,0,cb)
-#define MUIF_VARIABLE(id,var,cb) MUIF(id,MUIF_CFLAG_IS_CURSOR_SELECTABLE,(var),cb)
-
-
+#define MUIF(id, cflags, data, cb) {id[0], id[1], cflags, 0, data, cb}
+#define MUIF_STYLE(n, cb) MUIF("S" #n, 0, 0, cb)
+#define MUIF_RO(id, cb) MUIF(id, 0, 0, cb)
+#define MUIF_LABEL(cb) MUIF(".L", 0, 0, cb)
+#define MUIF_GOTO(cb) MUIF(".G", MUIF_CFLAG_IS_CURSOR_SELECTABLE, 0, cb)
+#define MUIF_BUTTON(id, cb) MUIF(id, MUIF_CFLAG_IS_CURSOR_SELECTABLE, 0, cb)
+#define MUIF_EXECUTE_ON_SELECT_BUTTON(id, cb)                                  \
+  MUIF(id, MUIF_CFLAG_IS_CURSOR_SELECTABLE | MUIF_CFLAG_IS_EXECUTE_ON_SELECT,  \
+       0, cb)
+#define MUIF_VARIABLE(id, var, cb)                                             \
+  MUIF(id, MUIF_CFLAG_IS_CURSOR_SELECTABLE, (var), cb)
 
 /* must be smaller than or equal to 255 */
 #define MUI_MAX_TEXT_LEN 41
 
 #define MUI_MENU_CACHE_CNT 2
 
-struct mui_struct
-{
+struct mui_struct {
   void *graphics_data;
-  fds_t *root_fds;  
-  
+  fds_t *root_fds;
+
   muif_t *muif_tlist;
   size_t muif_tcnt;
-  
-  fds_t *current_form_fds;         // the current form, NULL if the ui is not active at the moment
-  fds_t *cursor_focus_fds;           // the field which has the current cursor focus, NULL if there is no current focus
-  fds_t *touch_focus_fds;            // the field which has touch focus
 
-  fds_t *token;             // current token position
+  fds_t *current_form_fds; // the current form, NULL if the ui is not active at
+                           // the moment
+  fds_t *cursor_focus_fds; // the field which has the current cursor focus, NULL
+                           // if there is no current focus
+  fds_t *touch_focus_fds;  // the field which has touch focus
 
-  uint16_t form_scroll_total;            // reserved for MUIF, not used by mui
-  uint16_t form_scroll_top;              // reserved for MUIF, not used by mui
-  uint8_t form_scroll_visible;          // reserved for MUIF, not used by mui
-  
-  
-  //uint8_t selected_value;   // This variable is not used by the user interface but can be used by any field function
+  fds_t *token; // current token position
+
+  uint16_t form_scroll_total;  // reserved for MUIF, not used by mui
+  uint16_t form_scroll_top;    // reserved for MUIF, not used by mui
+  uint8_t form_scroll_visible; // reserved for MUIF, not used by mui
+
+  // uint8_t selected_value;   // This variable is not used by the user
+  // interface but can be used by any field function
   uint8_t tmp8;
-  
+
   /* 0: mse, 1: mud */
-  uint8_t is_mud;         // a temp variable for the MUIF function to store remember up down mode. This variable will be cleared before sending MUIF_MSG_CURSOR_ENTER
+  uint8_t is_mud; // a temp variable for the MUIF function to store remember up
+                  // down mode. This variable will be cleared before sending
+                  // MUIF_MSG_CURSOR_ENTER
   /* current field/style variables */
-  //uint8_t cursor_focus_position;        // the index of the field which has focus, can be used as last argument for mui_EnterForm
-  
-  uint8_t delimiter;    // outer delimiter of the text part of a field
-  uint8_t cmd;          // current cmd or field (e.g. U or F)
-  uint8_t id0;            // identifier of the field, manually provided or derived (G cmd has fixed id "FG")
+  // uint8_t cursor_focus_position;        // the index of the field which has
+  // focus, can be used as last argument for mui_EnterForm
+
+  uint8_t delimiter; // outer delimiter of the text part of a field
+  uint8_t cmd;       // current cmd or field (e.g. U or F)
+  uint8_t id0; // identifier of the field, manually provided or derived (G cmd
+               // has fixed id "FG")
   uint8_t id1;
-  uint8_t x;               // position of the field
+  uint8_t x; // position of the field
   uint8_t y;
   uint8_t dflags;
-  uint8_t arg;          // extra argument of the field. For example the G: form is put here
-  int len;          // length of the current command
-  fds_t *fds;             // current position, *fds = cmd
-  muif_t *uif;                   // user interface field or style for the given id0 / id1, assigned by mui_prepare_current_field()
-  char text[MUI_MAX_TEXT_LEN+1];
+  uint8_t
+      arg; // extra argument of the field. For example the G: form is put here
+  int len; // length of the current command
+  fds_t *fds;  // current position, *fds = cmd
+  muif_t *uif; // user interface field or style for the given id0 / id1,
+               // assigned by mui_prepare_current_field()
+  char text[MUI_MAX_TEXT_LEN + 1];
 
   /* target  */
   fds_t *tmp_fds;
-  fds_t *target_fds;     // used by several task functions as a return / result value
-  
+  fds_t
+      *target_fds; // used by several task functions as a return / result value
+
   /* last form and field, used by mui_SaveForm and mui_RestoreForm */
   uint8_t last_form_id;
   uint8_t last_form_cursor_focus_position;
-  fds_t *last_form_fds;           // not used by mui_RestoreForm, but can be used by field functions
-  
+  fds_t *last_form_fds; // not used by mui_RestoreForm, but can be used by field
+                        // functions
+
   /* menu cursor position backup */
   uint8_t menu_form_id[MUI_MENU_CACHE_CNT];
   uint8_t menu_form_cursor_focus_position[MUI_MENU_CACHE_CNT];
   uint8_t menu_form_last_added;
-} ;
+};
 
 #define mui_IsCursorFocus(mui) ((mui)->dflags & MUIF_DFLAG_IS_CURSOR_FOCUS)
 #define mui_IsTouchFocus(mui) ((mui)->dflags & MUIF_CFLAG_IS_TOUCH_SELECTABLE)
-
-
-
 
 /*=== form string definitions ===*/
 
@@ -555,14 +557,14 @@ struct mui_struct
 
 #define MUI_XY(id, x, y) "F" id MUI_##x MUI_##y
 /* button id must be two chars, but must be unique everywhere */
-#define MUI_XYT(id, x,y,text) "B" id MUI_##x MUI_##y  "\xff" text "\xff"
-#define MUI_XYA(id, x,y,a) "A" id MUI_##x MUI_##y  MUI_##a
-#define MUI_XYAT(id, x,y,a,text) "T" id MUI_##x MUI_##y  MUI_##a "\xff" text "\xff"
+#define MUI_XYT(id, x, y, text) "B" id MUI_##x MUI_##y "\xff" text "\xff"
+#define MUI_XYA(id, x, y, a) "A" id MUI_##x MUI_##y MUI_##a
+#define MUI_XYAT(id, x, y, a, text)                                            \
+  "T" id MUI_##x MUI_##y MUI_##a "\xff" text "\xff"
 
-#define MUI_LABEL(x,y,text) "L" MUI_##x MUI_##y "\xff" text "\xff"
-#define MUI_GOTO(x,y,n,text) "G" MUI_##x MUI_##y MUI_##n "\xff" text "\xff"
-#define MUI_goto(x,y,n,text) "g" MUI_##x MUI_##y MUI_##n "\xff" text "\xff"
-
+#define MUI_LABEL(x, y, text) "L" MUI_##x MUI_##y "\xff" text "\xff"
+#define MUI_GOTO(x, y, n, text) "G" MUI_##x MUI_##y MUI_##n "\xff" text "\xff"
+#define MUI_goto(x, y, n, text) "g" MUI_##x MUI_##y MUI_##n "\xff" text "\xff"
 
 uint8_t mui_get_fds_char(fds_t *s) MUI_NOINLINE;
 
@@ -571,37 +573,46 @@ uint8_t mui_fds_next_token(mui_t *ui) MUI_NOINLINE;
 uint8_t mui_fds_get_nth_token(mui_t *ui, uint8_t n) MUI_NOINLINE;
 uint8_t mui_fds_get_token_cnt(mui_t *ui) MUI_NOINLINE;
 
-void mui_Init(mui_t *ui, void *graphics_data, fds_t *fds, muif_t *muif_tlist, size_t muif_tcnt);
-uint8_t mui_GetCurrentCursorFocusPosition(mui_t *ui) ;
+void mui_Init(mui_t *ui, void *graphics_data, fds_t *fds, muif_t *muif_tlist,
+              size_t muif_tcnt);
+uint8_t mui_GetCurrentCursorFocusPosition(mui_t *ui);
 void mui_Draw(mui_t *ui);
-/* warning: The next function will overwrite the ui field variables like ui->arg, etc. 26 sep 2021: only ui->text is modified */
-uint8_t mui_GetSelectableFieldTextOption(mui_t *ui, fds_t *fds, uint8_t nth_token);
-/* warning: The next function will overwrite the ui field variables like ui->arg, etc 26 sep 2021: only ui->text is modified*/
+/* warning: The next function will overwrite the ui field variables like
+ * ui->arg, etc. 26 sep 2021: only ui->text is modified */
+uint8_t mui_GetSelectableFieldTextOption(mui_t *ui, fds_t *fds,
+                                         uint8_t nth_token);
+/* warning: The next function will overwrite the ui field variables like
+ * ui->arg, etc 26 sep 2021: only ui->text is modified*/
 uint8_t mui_GetSelectableFieldOptionCnt(mui_t *ui, fds_t *fds);
 void mui_EnterForm(mui_t *ui, fds_t *fds, uint8_t initial_cursor_position);
 void mui_LeaveForm(mui_t *ui);
-uint8_t mui_GotoForm(mui_t *ui, uint8_t form_id, uint8_t initial_cursor_position);
-void mui_SaveForm(mui_t *ui);     /* Save current form+cursor position. Used together with mui_RestoreForm */
-void mui_RestoreForm(mui_t *ui);        /* Restore form and cursor position, previously saved with mui_SaveForm */
-void mui_SaveCursorPosition(mui_t *ui, uint8_t cursor_position);         /* stores a cursor position for use with mui_GotoFormAutoCursorPosition */
+uint8_t mui_GotoForm(mui_t *ui, uint8_t form_id,
+                     uint8_t initial_cursor_position);
+void mui_SaveForm(mui_t *ui);    /* Save current form+cursor position. Used
+                                    together with mui_RestoreForm */
+void mui_RestoreForm(mui_t *ui); /* Restore form and cursor position, previously
+                                    saved with mui_SaveForm */
+void mui_SaveCursorPosition(
+    mui_t *ui,
+    uint8_t cursor_position); /* stores a cursor position for use with
+                                 mui_GotoFormAutoCursorPosition */
 uint8_t mui_GotoFormAutoCursorPosition(mui_t *ui, uint8_t form_id);
 
-int mui_GetCurrentFormId(mui_t *ui);    /* form id or -1 if the menu system is inactive */
+int mui_GetCurrentFormId(
+    mui_t *ui); /* form id or -1 if the menu system is inactive */
 void mui_NextField(mui_t *ui);
 void mui_PrevField(mui_t *ui);
 void mui_SendSelect(mui_t *ui);
-void mui_SendSelectWithExecuteOnSelectFieldSearch(mui_t *ui);  /* use this if MUIF_EXECUTE_ON_SELECT_BUTTON is used */
+void mui_SendSelectWithExecuteOnSelectFieldSearch(
+    mui_t *ui); /* use this if MUIF_EXECUTE_ON_SELECT_BUTTON is used */
 
 void mui_SendValueIncrement(mui_t *ui);
 void mui_SendValueDecrement(mui_t *ui);
 
-
-
-#define mui_IsFormActive(ui) ((ui)->current_form_fds != NULL) 
+#define mui_IsFormActive(ui) ((ui)->current_form_fds != NULL)
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif /* MUI_H */
-

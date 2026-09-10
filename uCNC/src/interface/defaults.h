@@ -1,98 +1,54 @@
 /*
-	Name: defaults.h
-	Description: Compile time default settings for µCNC.
+        Name: defaults.h
+        Description: Compile time default settings for µCNC.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 07/12/2019
+        Copyright: Copyright (c) João Martins
+        Author: João Martins
+        Date: 07/12/2019
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+        µCNC is free software: you can redistribute it and/or modify
+        it under the terms of the GNU General Public License as published by
+        the Free Software Foundation, either version 3 of the License, or
+        (at your option) any later version. Please see
+   <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+        µCNC is distributed WITHOUT ANY WARRANTY;
+        Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A
+   PARTICULAR PURPOSE. See the	GNU General Public License for more details.
 */
 
 #ifndef DEFAULTS_H
 #define DEFAULTS_H
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
-#define DEFAULT_ARRAY_0(y) \
-	{                        \
-	}
-#define DEFAULT_ARRAY_1(y) \
-	{                        \
-		y                      \
-	}
-#define DEFAULT_ARRAY_2(y) \
-	{                        \
-		y, y                   \
-	}
-#define DEFAULT_ARRAY_3(y) \
-	{                        \
-		y, y, y                \
-	}
-#define DEFAULT_ARRAY_4(y) \
-	{                        \
-		y, y, y, y             \
-	}
-#define DEFAULT_ARRAY_5(y) \
-	{                        \
-		y, y, y, y, y          \
-	}
-#define DEFAULT_ARRAY_6(y) \
-	{                        \
-		y, y, y, y, y, y       \
-	}
-#define DEFAULT_ARRAY_7(y) \
-	{                        \
-		y, y, y, y, y, y, y    \
-	}
-#define DEFAULT_ARRAY_8(y) \
-	{                        \
-		y, y, y, y, y, y, y, y \
-	}
-#define DEFAULT_ARRAY_9(y)    \
-	{                           \
-		y, y, y, y, y, y, y, y, y \
-	}
-#define DEFAULT_ARRAY_10(y)      \
-	{                              \
-		y, y, y, y, y, y, y, y, y, y \
-	}
-#define DEFAULT_ARRAY_11(y)         \
-	{                                 \
-		y, y, y, y, y, y, y, y, y, y, y \
-	}
-#define DEFAULT_ARRAY_12(y)            \
-	{                                    \
-		y, y, y, y, y, y, y, y, y, y, y, y \
-	}
-#define DEFAULT_ARRAY_13(y)               \
-	{                                       \
-		y, y, y, y, y, y, y, y, y, y, y, y, y \
-	}
-#define DEFAULT_ARRAY_14(y)                  \
-	{                                          \
-		y, y, y, y, y, y, y, y, y, y, y, y, y, y \
-	}
-#define DEFAULT_ARRAY_15(y)                     \
-	{                                             \
-		y, y, y, y, y, y, y, y, y, y, y, y, y, y, y \
-	}
+#define DEFAULT_ARRAY_0(y)                                                     \
+  {                                                                            \
+  }
+#define DEFAULT_ARRAY_1(y) {y}
+#define DEFAULT_ARRAY_2(y) {y, y}
+#define DEFAULT_ARRAY_3(y) {y, y, y}
+#define DEFAULT_ARRAY_4(y) {y, y, y, y}
+#define DEFAULT_ARRAY_5(y) {y, y, y, y, y}
+#define DEFAULT_ARRAY_6(y) {y, y, y, y, y, y}
+#define DEFAULT_ARRAY_7(y) {y, y, y, y, y, y, y}
+#define DEFAULT_ARRAY_8(y) {y, y, y, y, y, y, y, y}
+#define DEFAULT_ARRAY_9(y) {y, y, y, y, y, y, y, y, y}
+#define DEFAULT_ARRAY_10(y) {y, y, y, y, y, y, y, y, y, y}
+#define DEFAULT_ARRAY_11(y) {y, y, y, y, y, y, y, y, y, y, y}
+#define DEFAULT_ARRAY_12(y) {y, y, y, y, y, y, y, y, y, y, y, y}
+#define DEFAULT_ARRAY_13(y) {y, y, y, y, y, y, y, y, y, y, y, y, y}
+#define DEFAULT_ARRAY_14(y) {y, y, y, y, y, y, y, y, y, y, y, y, y, y}
+#define DEFAULT_ARRAY_15(y) {y, y, y, y, y, y, y, y, y, y, y, y, y, y, y}
 #define _DEFAULT_ARRAY(x, y) DEFAULT_ARRAY_##x(y)
 #define DEFAULT_ARRAY(x, y) _DEFAULT_ARRAY(x, y)
 
 // default step per mm
 #if (defined(DEFAULT_STEP_PER_MM) && defined(DEFAULT_STEP_PER_MM_PER_AXIS))
-#error "Use either DEFAULT_STEP_PER_MM or DEFAULT_STEP_PER_MM_PER_AXIS, not both."
+#error                                                                         \
+    "Use either DEFAULT_STEP_PER_MM or DEFAULT_STEP_PER_MM_PER_AXIS, not both."
 #endif
 
 #if (!defined(DEFAULT_STEP_PER_MM))
@@ -100,7 +56,8 @@ extern "C"
 #endif
 
 #if (!defined(DEFAULT_STEP_PER_MM_PER_AXIS))
-#define DEFAULT_STEP_PER_MM_PER_AXIS DEFAULT_ARRAY(AXIS_COUNT, DEFAULT_STEP_PER_MM)
+#define DEFAULT_STEP_PER_MM_PER_AXIS                                           \
+  DEFAULT_ARRAY(AXIS_COUNT, DEFAULT_STEP_PER_MM)
 #endif
 
 // default feed in mm/m

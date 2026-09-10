@@ -1,27 +1,28 @@
 /*
-	Name: boardmap_wemos_d1_r32.h
-	Description: Contains all MCU and PIN definitions for Arduino WeMos D1 to run µCNC.
+        Name: boardmap_wemos_d1_r32.h
+        Description: Contains all MCU and PIN definitions for Arduino WeMos D1
+   to run µCNC.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 17/06/2022
+        Copyright: Copyright (c) João Martins
+        Author: João Martins
+        Date: 17/06/2022
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+        µCNC is free software: you can redistribute it and/or modify
+        it under the terms of the GNU General Public License as published by
+        the Free Software Foundation, either version 3 of the License, or
+        (at your option) any later version. Please see
+   <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+        µCNC is distributed WITHOUT ANY WARRANTY;
+        Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A
+   PARTICULAR PURPOSE. See the	GNU General Public License for more details.
 */
 
 #ifndef BOARDMAP_WEMOS_D1_R32_H
 #define BOARDMAP_WEMOS_D1_R32_H
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 #ifndef MCU
@@ -60,11 +61,11 @@ extern "C"
 
 // Setup limit pins
 #define LIMIT_Z_BIT 19 // assigns LIMIT_Z pin
-#define LIMIT_Z_ISR		 // assigns LIMIT_Z ISR
-#define LIMIT_Y_BIT 5	 // assigns LIMIT_Y pin
-#define LIMIT_Y_ISR		 // assigns LIMIT_Y ISR
+#define LIMIT_Z_ISR    // assigns LIMIT_Z ISR
+#define LIMIT_Y_BIT 5  // assigns LIMIT_Y pin
+#define LIMIT_Y_ISR    // assigns LIMIT_Y ISR
 #define LIMIT_X_BIT 13 // assigns LIMIT_X pin
-#define LIMIT_X_ISR		 // assigns LIMIT_X ISR
+#define LIMIT_X_ISR    // assigns LIMIT_X ISR
 
 // Setup probe pin
 #define PROBE_BIT 39
@@ -74,10 +75,10 @@ extern "C"
 #define RX_BIT 3
 #define TX_BIT 1
 #define RX_PULLUP
-	// only uncomment this if other port other then 0 is used
-	// #define UART_PORT 0
+// only uncomment this if other port other then 0 is used
+// #define UART_PORT 0
 
-	// Setup PWM
+// Setup PWM
 #define PWM0_BIT 23 // assigns PWM0 pin
 #define PWM0_TIMER 0
 #define PWM0_CHANNEL 0
@@ -92,11 +93,11 @@ extern "C"
 // Stepper enable pin. For Grbl on Uno board a single pin is used
 #define STEP0_EN_BIT 12
 
-	// Setup the Step Timer used has the heartbeat for µCNC
-	// Timer 1 is used by default
-	// #define ITP_TIMER 1
+// Setup the Step Timer used has the heartbeat for µCNC
+// Timer 1 is used by default
+// #define ITP_TIMER 1
 
-	// RTC Timer on ESP32 is granteed by a FreeRTOS
+// RTC Timer on ESP32 is granteed by a FreeRTOS
 
 #define ONESHOT_TIMER 2
 

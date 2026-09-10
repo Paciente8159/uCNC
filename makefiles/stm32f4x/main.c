@@ -1,15 +1,13 @@
 #include "cnc.h"
 
 void main(void) __attribute__((noreturn));
-void main(void)
-{
-    //initializes all systems
-    cnc_init();
+void main(void) {
+  // initializes all systems
+  cnc_init();
 
-    for (;;)
-    {
-        cnc_run();
-    }
+  for (;;) {
+    cnc_run();
+  }
 
-    return -1;
+  return -1;
 }

@@ -4,8 +4,7 @@
 #define CNC_HAL_OVERRIDES_H
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 #ifdef __cplusplus

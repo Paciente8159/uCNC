@@ -1,32 +1,34 @@
 /*
-		Name: motion_control.h
-		Description: Contains the building blocks for performing motions/actions in µCNC.
+                Name: motion_control.h
+                Description: Contains the building blocks for performing
+   motions/actions in µCNC.
 
-		Copyright: Copyright (c) João Martins
-		Author: João Martins
-		Date: 19/11/2019
+                Copyright: Copyright (c) João Martins
+                Author: João Martins
+                Date: 19/11/2019
 
-		µCNC is free software: you can redistribute it and/or modify
-		it under the terms of the GNU General Public License as published by
-		the Free Software Foundation, either version 3 of the License, or
-		(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+                µCNC is free software: you can redistribute it and/or modify
+                it under the terms of the GNU General Public License as
+   published by the Free Software Foundation, either version 3 of the License,
+   or (at your option) any later version. Please see
+   <http://www.gnu.org/licenses/>
 
-		µCNC is distributed WITHOUT ANY WARRANTY;
-		Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-		See the	GNU General Public License for more details.
+                µCNC is distributed WITHOUT ANY WARRANTY;
+                Also without the implied warranty of MERCHANTABILITY or FITNESS
+   FOR A PARTICULAR PURPOSE. See the	GNU General Public License for more
+   details.
 */
 
 #ifndef MOTION_CONTROL_H
 #define MOTION_CONTROL_H
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 #include "../module.h"
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #define MOTIONCONTROL_MODE_FEED 0
 #define MOTIONCONTROL_MODE_INVERSEFEED 1
@@ -38,127 +40,124 @@ extern "C"
 #define MOTIONCONTROL_PROBE_INVERT 1
 #define MOTIONCONTROL_PROBE_NOALARM_ONFAIL 2
 
-	typedef union
-	{
-		/* data */
-		uint8_t reg;
-		struct
-		{
-			uint8_t ovr_bypass : 1;
-			uint8_t optimal : 1;
-			uint8_t synched : 1;
+typedef union {
+  /* data */
+  uint8_t reg;
+  struct {
+    uint8_t ovr_bypass : 1;
+    uint8_t optimal : 1;
+    uint8_t synched : 1;
 #if TOOL_COUNT > 0
-			uint8_t spindle_running : 2;
-			uint8_t coolant : 2;
+    uint8_t spindle_running : 2;
+    uint8_t coolant : 2;
 #else
-		uint8_t : 4; // unused
+    uint8_t : 4; // unused
 #endif
 #ifdef ENABLE_BACKLASH_COMPENSATION
-			uint8_t backlash_comp : 1;
+    uint8_t backlash_comp : 1;
 #else
-		uint8_t : 1; // unused
+    uint8_t : 1; // unused
 #endif
-		} bit;
-	} motion_flags_t;
+  } bit;
+} motion_flags_t;
 
-	typedef struct
-	{
+typedef struct {
 #ifdef GCODE_PROCESS_LINE_NUMBERS
-		uint32_t line;
+  uint32_t line;
 #endif
-		step_t steps[STEPPER_COUNT];
-		uint8_t dirbits;
+  step_t steps[STEPPER_COUNT];
+  uint8_t dirbits;
 #ifdef ENABLE_LINACT_PLANNER
-		uint32_t full_steps; // number of steps of all linear actuators
+  uint32_t full_steps; // number of steps of all linear actuators
 #endif
-		float feed;
-		float max_feed;
-		float max_accel;
-		float feed_conversion;
-		float cos_theta; // angle between current and previous motion
-		uint8_t main_stepper;
-		uint16_t spindle;
-		uint16_t dwell;
-		uint8_t motion_mode;
-		motion_flags_t motion_flags;
-	} motion_data_t;
+  float feed;
+  float max_feed;
+  float max_accel;
+  float feed_conversion;
+  float cos_theta; // angle between current and previous motion
+  uint8_t main_stepper;
+  uint16_t spindle;
+  uint16_t dwell;
+  uint8_t motion_mode;
+  motion_flags_t motion_flags;
+} motion_data_t;
 
 #ifdef ENABLE_MOTION_CONTROL_MODULES
-	typedef struct homing_status_
-	{
-		uint8_t axis;
-		uint8_t axis_limit;
-		uint8_t status;
-	} homing_status_t;
+typedef struct homing_status_ {
+  uint8_t axis;
+  uint8_t axis_limit;
+  uint8_t status;
+} homing_status_t;
 #endif
 
-	void mc_init(void);
-	void mc_clear(bool preserve_tool);
-	bool mc_get_checkmode(void);
-	bool mc_toogle_checkmode(void);
+void mc_init(void);
+void mc_clear(bool preserve_tool);
+bool mc_get_checkmode(void);
+bool mc_toogle_checkmode(void);
 
-	// async motions
-	uint8_t mc_line(float *target, motion_data_t *block_data);
+// async motions
+uint8_t mc_line(float *target, motion_data_t *block_data);
 #ifndef DISABLE_ARC_SUPPORT
-	uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, float radius, uint8_t axis_0, uint8_t axis_1, bool isclockwise, motion_data_t *block_data);
+uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b,
+               float radius, uint8_t axis_0, uint8_t axis_1, bool isclockwise,
+               motion_data_t *block_data);
 #endif
 
-	// sync motions
-	uint8_t mc_dwell(motion_data_t *block_data);
-	uint8_t mc_pause(void);
-	uint8_t mc_update_tools(motion_data_t *block_data);
+// sync motions
+uint8_t mc_dwell(motion_data_t *block_data);
+uint8_t mc_pause(void);
+uint8_t mc_update_tools(motion_data_t *block_data);
 
-	// mixed/special motions
-	bool mc_home_motion_pulloff(uint8_t axis_mask, bool fast_mode);
-	bool mc_home_motion(uint8_t axis_mask, bool is_origin_search, bool fast_mode);
-	uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit);
+// mixed/special motions
+bool mc_home_motion_pulloff(uint8_t axis_mask, bool fast_mode);
+bool mc_home_motion(uint8_t axis_mask, bool is_origin_search, bool fast_mode);
+uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit);
 #ifndef DISABLE_PROBING_SUPPORT
-	uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data);
+uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data);
 #endif
 
-	void mc_get_position(float *target);
-	void mc_sync_position(void);
+void mc_get_position(float *target);
+void mc_sync_position(void);
 
-	uint8_t mc_incremental_jog(float *target_offset, motion_data_t *block_data);
+uint8_t mc_incremental_jog(float *target_offset, motion_data_t *block_data);
 
-	void mc_flush_pending_motion(void);
+void mc_flush_pending_motion(void);
 
 #ifdef ENABLE_G39_H_MAPPING
-	uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data_t *block_data);
-	void mc_clear_hmap(void);
+uint8_t mc_build_hmap(float *target, float *offset, float retract_h,
+                      motion_data_t *block_data);
+void mc_clear_hmap(void);
 #endif
 
 #ifdef ENABLE_MOTION_CONTROL_PLANNER_HIJACKING
-	// stores the motion controller reference positions
-	void mc_store(void);
-	// restores the motion controller reference positions
-	void mc_restore(void);
+// stores the motion controller reference positions
+void mc_store(void);
+// restores the motion controller reference positions
+void mc_restore(void);
 #endif
 
 #ifdef ENABLE_MOTION_CONTROL_MODULES
-	typedef struct mc_line_calc_segments_args_
-	{
-		uint32_t *line_segments;
-		float line_dist;
-		float *dir_vect;
-		uint32_t max_steps;
-	} mc_line_calc_segments_args_t;
-	// event_mc_line_calc_segments_handler
-	DECL_EVENT_HANDLER(mc_line_calc_segments);
-	typedef struct mc_line_segment_pre_args_
-	{
-		float *target;
-		int32_t *target_steps;
-		motion_data_t *block_data;
-	} mc_line_segment_pre_args_t;
-	// event_mc_line_segment_pre_handler
-	DECL_EVENT_HANDLER(mc_line_segment_pre);
-	// event_mc_line_segment_handler
-	DECL_EVENT_HANDLER(mc_line_segment);
-	// event_mc_home_start
-	DECL_EVENT_HANDLER(mc_home_axis_start);
-	// event_mc_home_finish
-	DECL_EVENT_HANDLER(mc_home_axis_finish);
+typedef struct mc_line_calc_segments_args_ {
+  uint32_t *line_segments;
+  float line_dist;
+  float *dir_vect;
+  uint32_t max_steps;
+} mc_line_calc_segments_args_t;
+// event_mc_line_calc_segments_handler
+DECL_EVENT_HANDLER(mc_line_calc_segments);
+typedef struct mc_line_segment_pre_args_ {
+  float *target;
+  int32_t *target_steps;
+  motion_data_t *block_data;
+} mc_line_segment_pre_args_t;
+// event_mc_line_segment_pre_handler
+DECL_EVENT_HANDLER(mc_line_segment_pre);
+// event_mc_line_segment_handler
+DECL_EVENT_HANDLER(mc_line_segment);
+// event_mc_home_start
+DECL_EVENT_HANDLER(mc_home_axis_start);
+// event_mc_home_finish
+DECL_EVENT_HANDLER(mc_home_axis_finish);
 #endif
 
 #ifdef __cplusplus

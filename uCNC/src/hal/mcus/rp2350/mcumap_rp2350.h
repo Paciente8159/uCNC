@@ -1,46 +1,48 @@
 /*
-	Name: mcumap_rp2350.h
-	Description: Contains all MCU and PIN definitions for RP2350 to run µCNC.
+        Name: mcumap_rp2350.h
+        Description: Contains all MCU and PIN definitions for RP2350 to run
+   µCNC.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 16-01-2023
+        Copyright: Copyright (c) João Martins
+        Author: João Martins
+        Date: 16-01-2023
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+        µCNC is free software: you can redistribute it and/or modify
+        it under the terms of the GNU General Public License as published by
+        the Free Software Foundation, either version 3 of the License, or
+        (at your option) any later version. Please see
+   <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+        µCNC is distributed WITHOUT ANY WARRANTY;
+        Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A
+   PARTICULAR PURPOSE. See the	GNU General Public License for more details.
 */
 
 #ifndef MCUMAP_RP2350_H
 #define MCUMAP_RP2350_H
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
+#include <Arduino.h>
+#include <hardware/irq.h>
+#include <hardware/timer.h>
+#include <pico/multicore.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <Arduino.h>
-#include <hardware/timer.h>
-#include <hardware/irq.h>
-#include <pico/multicore.h>
 
 /*
-	Generates all the interface definitions.
-	This creates a middle HAL layer between the board IO pins and the AVR funtionalities
+        Generates all the interface definitions.
+        This creates a middle HAL layer between the board IO pins and the AVR
+   funtionalities
 */
 /*
-	MCU specific definitions and replacements
+        MCU specific definitions and replacements
 */
 
 /*
-	RP2350 Defaults
+        RP2350 Defaults
 */
 // defines the frequency of the mcu
 #ifndef F_CPU
@@ -75,21 +77,19 @@ extern "C"
 #define MCU_CYCLES_LOOP_OVERHEAD 1
 #endif
 
-#define mcu_delay_loop(X)                                  \
-	do                                                     \
-	{                                                      \
-		asm volatile("" ::: "memory");                     \
-		register uint16_t __count = (X);                   \
-		__asm__ volatile(                                  \
-			"1: sub %[cnt], %[cnt], #1\n" /* 1 cycle */    \
-			"   cmp %[cnt], #0\n"		  /* 1 cycle */    \
-			"   bne 1b\n"				  /* 1–2 cycles */ \
-			"   nop\n"					  /* 1 cycle */    \
-			: [cnt] "+r"(__count)                          \
-			:                                              \
-			: "cc");                                       \
-		asm volatile("" ::: "memory");                     \
-	} while (0)
+#define mcu_delay_loop(X)                                                      \
+  do {                                                                         \
+    asm volatile("" ::: "memory");                                             \
+    register uint16_t __count = (X);                                           \
+    __asm__ volatile("1: sub %[cnt], %[cnt], #1\n" /* 1 cycle */               \
+                     "   cmp %[cnt], #0\n"         /* 1 cycle */               \
+                     "   bne 1b\n"                 /* 1–2 cycles */            \
+                     "   nop\n"                    /* 1 cycle */               \
+                     : [cnt] "+r"(__count)                                     \
+                     :                                                         \
+                     : "cc");                                                  \
+    asm volatile("" ::: "memory");                                             \
+  } while (0)
 
 #ifdef RX_BUFFER_CAPACITY
 #define RX_BUFFER_CAPACITY 255
@@ -98,8 +98,9 @@ extern "C"
 #define __SIZEOF_FLOAT__ 4
 
 // used by the parser
-// this method is faster then normal multiplication (for 32 bit for 16 and 8 bits is slightly lower)
-// overrides utils.h definition to implement this method with or without fast math option enabled
+// this method is faster then normal multiplication (for 32 bit for 16 and 8
+// bits is slightly lower) overrides utils.h definition to implement this method
+// with or without fast math option enabled
 #define fast_int_mul10(x) ((((x) << 2) + (x)) << 1)
 
 // IO pins
@@ -1064,11 +1065,11 @@ extern "C"
 #define DIO215_BIT (SPI2_CS_BIT)
 #endif
 
-	// ISR on change inputs
-	extern void mcu_din_isr(void);
-	extern void mcu_probe_isr(void);
-	extern void mcu_limits_isr(void);
-	extern void mcu_controls_isr(void);
+// ISR on change inputs
+extern void mcu_din_isr(void);
+extern void mcu_probe_isr(void);
+extern void mcu_limits_isr(void);
+extern void mcu_controls_isr(void);
 #if (defined(LIMIT_X_ISR) && defined(LIMIT_X))
 #define DIO52_ISR (LIMIT_X_ISR)
 #define LIMIT_X_ISRCALLBACK mcu_limit_isr
@@ -1300,7 +1301,8 @@ extern "C"
 #error "I2C port number must be 0 or 1"
 #endif
 
-// since Arduino Pico does not allow access to pico-SDK functions low level timer functions are used
+// since Arduino Pico does not allow access to pico-SDK functions low level
+// timer functions are used
 #ifndef ITP_TIMER
 #define ITP_TIMER 1
 #endif
@@ -1343,49 +1345,53 @@ extern "C"
 
 #ifndef BYTE_OPS
 #define BYTE_OPS
-#define SETBIT(x, y) ((x) |= (1UL << (y)))	  /* Set bit y in byte x*/
+#define SETBIT(x, y) ((x) |= (1UL << (y)))    /* Set bit y in byte x*/
 #define CLEARBIT(x, y) ((x) &= ~(1UL << (y))) /* Clear bit y in byte x*/
-#define CHECKBIT(x, y) ((x) & (1UL << (y)))	  /* Check bit y in byte x*/
+#define CHECKBIT(x, y) ((x) & (1UL << (y)))   /* Check bit y in byte x*/
 #define TOGGLEBIT(x, y) ((x) ^= (1UL << (y))) /* Toggle bit y in byte x*/
 
-#define SETFLAG(x, y) ((x) |= (y))	  /* Set byte y in byte x*/
+#define SETFLAG(x, y) ((x) |= (y))    /* Set byte y in byte x*/
 #define CLEARFLAG(x, y) ((x) &= ~(y)) /* Clear byte y in byte x*/
-#define CHECKFLAG(x, y) ((x) & (y))	  /* Check byte y in byte x*/
+#define CHECKFLAG(x, y) ((x) & (y))   /* Check byte y in byte x*/
 #define TOGGLEFLAG(x, y) ((x) ^= (y)) /* Toggle byte y in byte x*/
 #endif
 
 #define mcu_config_output(X) pinMode(__indirect__(X, BIT), OUTPUT)
-#define mcu_config_pwm(X, freq)                \
-	{                                          \
-		pinMode(__indirect__(X, BIT), OUTPUT); \
-		analogWriteRange(255);                 \
-		analogWriteFreq(freq);                 \
-		analogWriteResolution(8);              \
-	}
+#define mcu_config_pwm(X, freq)                                                \
+  {                                                                            \
+    pinMode(__indirect__(X, BIT), OUTPUT);                                     \
+    analogWriteRange(255);                                                     \
+    analogWriteFreq(freq);                                                     \
+    analogWriteResolution(8);                                                  \
+  }
 #define mcu_config_input(X) pinMode(__indirect__(X, BIT), INPUT)
 #define mcu_config_analog(X) mcu_config_input(X)
 #define mcu_config_pullup(X) pinMode(__indirect__(X, BIT), INPUT_PULLUP)
-#define mcu_config_input_isr(X) attachInterrupt(digitalPinToInterrupt(__indirect__(X, BIT)), mcu_din_isr, CHANGE)
+#define mcu_config_input_isr(X)                                                \
+  attachInterrupt(digitalPinToInterrupt(__indirect__(X, BIT)), mcu_din_isr,    \
+                  CHANGE)
 
 #define mcu_get_input(X) CHECKBIT(sio_hw->gpio_in, __indirect__(X, BIT))
 #define mcu_get_output(X) CHECKBIT(sio_hw->gpio_out, __indirect__(X, BIT))
-#define mcu_set_output(X) ({ sio_hw->gpio_set = (1UL << __indirect__(X, BIT)); })
-#define mcu_clear_output(X) ({ sio_hw->gpio_clr = (1UL << __indirect__(X, BIT)); })
-#define mcu_toggle_output(X) ({ sio_hw->gpio_togl = (1UL << __indirect__(X, BIT)); })
+#define mcu_set_output(X)                                                      \
+  ({ sio_hw->gpio_set = (1UL << __indirect__(X, BIT)); })
+#define mcu_clear_output(X)                                                    \
+  ({ sio_hw->gpio_clr = (1UL << __indirect__(X, BIT)); })
+#define mcu_toggle_output(X)                                                   \
+  ({ sio_hw->gpio_togl = (1UL << __indirect__(X, BIT)); })
 
-	extern uint8_t rp2350_pwm[16];
-#define mcu_set_pwm(X, Y)                     \
-	{                                         \
-		rp2350_pwm[X - PWM_PINS_OFFSET] = Y;  \
-		analogWrite(__indirect__(X, BIT), Y); \
-	}
+extern uint8_t rp2350_pwm[16];
+#define mcu_set_pwm(X, Y)                                                      \
+  {                                                                            \
+    rp2350_pwm[X - PWM_PINS_OFFSET] = Y;                                       \
+    analogWrite(__indirect__(X, BIT), Y);                                      \
+  }
 #define mcu_get_pwm(X) (rp2350_pwm[X - PWM_PINS_OFFSET])
 #define mcu_get_analog(X) analogRead(__indirect__(X, BIT))
 
 #define mcu_millis() to_ms_since_boot(get_absolute_time())
 #define mcu_micros() to_us_since_boot(get_absolute_time())
 #define mcu_free_micros() (mcu_micros() % 1000)
-
 
 #include "cmsis_gcc.h"
 #define mcu_enable_global_isr __enable_irq
@@ -1411,42 +1417,56 @@ extern "C"
 
 #define USE_CUSTOM_BUFFER_IMPLEMENTATION
 #include <pico/util/queue.h>
-#define DECL_BUFFER(type, name, size) \
-	static queue_t name##_bufferdata; \
-	ring_buffer_t name = {0, 0, 0, (uint8_t *)&name##_bufferdata, size, sizeof(type)}
-#define BUFFER_INIT(type, name, size) \
-	extern ring_buffer_t name;        \
-	queue_init((queue_t *)name.data, sizeof(type), size)
-#define BUFFER_WRITE_AVAILABLE(buffer) (buffer.size - queue_get_level((queue_t *)buffer.data))
+#define DECL_BUFFER(type, name, size)                                          \
+  static queue_t name##_bufferdata;                                            \
+  ring_buffer_t name = {0,    0,           0, (uint8_t *)&name##_bufferdata,   \
+                        size, sizeof(type)}
+#define BUFFER_INIT(type, name, size)                                          \
+  extern ring_buffer_t name;                                                   \
+  queue_init((queue_t *)name.data, sizeof(type), size)
+#define BUFFER_WRITE_AVAILABLE(buffer)                                         \
+  (buffer.size - queue_get_level((queue_t *)buffer.data))
 #define BUFFER_READ_AVAILABLE(buffer) (queue_get_level((queue_t *)buffer.data))
 #define BUFFER_EMPTY(buffer) queue_is_empty((queue_t *)buffer.data)
 #define BUFFER_FULL(buffer) queue_is_full((queue_t *)buffer.data)
-#define BUFFER_PEEK(buffer, ptr)                      \
-	if (!queue_try_peek((queue_t *)buffer.data, ptr)) \
-	{                                                 \
-		memset(ptr, 0, buffer.elem_size);             \
-	}
-#define BUFFER_TRY_DEQUEUE(buffer, ptr)                 \
-	if (!queue_try_remove((queue_t *)buffer.data, ptr)) \
-	{                                                   \
-		memset(ptr, 0, buffer.elem_size);               \
-	}
-#define BUFFER_DEQUEUE(buffer, ptr) \
-	do                              \
-	{                               \
-	} while (!queue_try_remove((queue_t *)buffer.data, ptr))
-#define BUFFER_TRY_ENQUEUE(buffer, ptr) queue_try_add((queue_t *)buffer.data, ptr)
-#define BUFFER_ENQUEUE(buffer, ptr) \
-	do                              \
-	{                               \
-	} while (!queue_try_add((queue_t *)buffer.data, ptr))
-#define BUFFER_WRITE(buffer, ptr, len, written) ({for(uint8_t i = 0; i<len; i++){if(!queue_try_add((queue_t*)buffer.data, &ptr[i])){break;}written++;} })
-#define BUFFER_READ(buffer, ptr, len, read) ({for(uint8_t i = 0; i<len; i++){if(!queue_try_remove((queue_t*)buffer.data, &ptr[i])){break;}read++;} })
-#define BUFFER_CLEAR(buffer)                            \
-	while (!queue_is_empty((queue_t *)buffer.data))     \
-	{                                                   \
-		queue_try_remove((queue_t *)buffer.data, NULL); \
-	}
+#define BUFFER_PEEK(buffer, ptr)                                               \
+  if (!queue_try_peek((queue_t *)buffer.data, ptr)) {                          \
+    memset(ptr, 0, buffer.elem_size);                                          \
+  }
+#define BUFFER_TRY_DEQUEUE(buffer, ptr)                                        \
+  if (!queue_try_remove((queue_t *)buffer.data, ptr)) {                        \
+    memset(ptr, 0, buffer.elem_size);                                          \
+  }
+#define BUFFER_DEQUEUE(buffer, ptr)                                            \
+  do {                                                                         \
+  } while (!queue_try_remove((queue_t *)buffer.data, ptr))
+#define BUFFER_TRY_ENQUEUE(buffer, ptr)                                        \
+  queue_try_add((queue_t *)buffer.data, ptr)
+#define BUFFER_ENQUEUE(buffer, ptr)                                            \
+  do {                                                                         \
+  } while (!queue_try_add((queue_t *)buffer.data, ptr))
+#define BUFFER_WRITE(buffer, ptr, len, written)                                \
+  ({                                                                           \
+    for (uint8_t i = 0; i < len; i++) {                                        \
+      if (!queue_try_add((queue_t *)buffer.data, &ptr[i])) {                   \
+        break;                                                                 \
+      }                                                                        \
+      written++;                                                               \
+    }                                                                          \
+  })
+#define BUFFER_READ(buffer, ptr, len, read)                                    \
+  ({                                                                           \
+    for (uint8_t i = 0; i < len; i++) {                                        \
+      if (!queue_try_remove((queue_t *)buffer.data, &ptr[i])) {                \
+        break;                                                                 \
+      }                                                                        \
+      read++;                                                                  \
+    }                                                                          \
+  })
+#define BUFFER_CLEAR(buffer)                                                   \
+  while (!queue_is_empty((queue_t *)buffer.data)) {                            \
+    queue_try_remove((queue_t *)buffer.data, NULL);                            \
+  }
 
 /**
  * Run code on multicore mode
@@ -1455,17 +1475,17 @@ extern "C"
  * Runs CNC loop on core 1
  * **/
 #ifdef RP2350_RUN_MULTICORE
-	/**
-	 * Launch multicore
-	 * **/
-	extern void rp2350_core1_loop();
-#define ucnc_init()       \
-	cnc_init();           \
-	rp2040.fifo.begin(2); \
-	delay(1);             \
-	multicore_launch_core1(rp2350_core1_loop)
-	extern void rp2040_core0_loop();
-	extern void rp2350_core0_loop();
+/**
+ * Launch multicore
+ * **/
+extern void rp2350_core1_loop();
+#define ucnc_init()                                                            \
+  cnc_init();                                                                  \
+  rp2040.fifo.begin(2);                                                        \
+  delay(1);                                                                    \
+  multicore_launch_core1(rp2350_core1_loop)
+extern void rp2040_core0_loop();
+extern void rp2350_core0_loop();
 #define ucnc_run() rp2350_core0_loop()
 
 #endif
