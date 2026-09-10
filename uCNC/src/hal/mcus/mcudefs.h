@@ -107,7 +107,7 @@ extern "C"
 
 #if (MCU == MCU_RA4M1)
 #include "ra4/mcumap_ra4.h"
-// #define CFG_TUSB_MCU OPT_MCU_RA4M1
+#define CFG_TUSB_MCU OPT_MCU_RAXXX
 #endif
 
 #if (MCU == MCU_VIRTUAL_WIN) || (MCU == MCU_VIRTUAL_LINUX)

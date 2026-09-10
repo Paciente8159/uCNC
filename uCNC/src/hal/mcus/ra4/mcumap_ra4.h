@@ -1711,6 +1711,42 @@ typedef struct
 #endif
 #endif /* MCU_HAS_UART2 */
 
+/* --- USBFS (USB 2.0 Full-Speed Module) Configuration --- */
+#ifdef MCU_HAS_USB
+
+/* USBFS base address (RA4M1: 0x40090000) */
+#define USBFS_BASE      0x40090000UL
+
+/* Direct register access for USBFS peripheral (16-bit registers on 32-bit address boundary) */
+#define USBFS_SYSCFG    (*(volatile uint16_t *)(USBFS_BASE + 0x0000UL))
+#define USBFS_SYSSTS0   (*(volatile uint16_t *)(USBFS_BASE + 0x0004UL))
+#define USBFS_DVSTCTR0  (*(volatile uint16_t *)(USBFS_BASE + 0x0008UL))
+#define USBFS_CFIFO     (*(volatile uint16_t *)(USBFS_BASE + 0x0014UL))
+#define USBFS_INTENB0   (*(volatile uint16_t *)(USBFS_BASE + 0x0030UL))
+#define USBFS_INTSTS0   (*(volatile uint16_t *)(USBFS_BASE + 0x0040UL))
+
+/* SYSCFG bit definitions */
+#define USBFS_SYSCFG_USBE       (1U << 0)  /* USBFS Operation Enable */
+#define USBFS_SYSCFG_DMRPU      (1U << 3)  /* D- Pull-up */
+#define USBFS_SYSCFG_DPRPU      (1U << 4)  /* D+ Pull-up */
+#define USBFS_SYSCFG_DCFM       (1U << 6)  /* Host/Device select (0=device, 1=host) */
+#define USBFS_SYSCFG_SCKE       (1U << 11) /* Internal Clock Supply Enable */
+
+/* USB clock control register at 0x40047018 */
+#define R_USBCKCR    (*((volatile uint32_t *)(0x40047018UL)))
+#define USBCKCR_USBCLKSEL  (1U << 0)  /* UCLK source select (0=PCLKB, 1=UCLK from HOCO/LOCO) */
+
+/* Module stop clear: MSTPCRB bit 11 */
+#define USBFS_CLOCK_ENABLE()   (R_MSTP->MSTPCRB &= ~(1UL << 11))
+
+/* USBFS NVIC slot - fixed peripheral interrupt at IRQn 60 (RA4M1 FSP) */
+#define USBFS_IRQn         ((IRQn_Type)60)
+
+/* ISR handler name (installed in RAM vector table by mcu_ra4.c) */
+#define MCU_USB_ISR        USBFS_IRQHandler
+
+#endif /* MCU_HAS_USB */
+
 /* --- Timer allocation: ITP, ONESHOT, PWM --- */
 
 /* ITP timer (step pulse generation) - uses GPT counter overflow ISR */

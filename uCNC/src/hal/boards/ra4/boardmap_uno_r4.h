@@ -90,6 +90,12 @@ extern "C"
 #define CS_RES_PORT 0 // PORT0
 #define CS_RES_ISR
 
+// Setup USB pins for USB-CDC (tinyUSB) - P108 = USB_DP, P109 = USB_DM
+#define USB_DP_BIT 8
+#define USB_DP_PORT 1
+#define USB_DM_BIT 9
+#define USB_DM_PORT 1
+
 // Setup COM (UART) pins - SCI0 on P100(RX)/P101(TX) (UART_PORT defaults to 0)
 #define TX_BIT 1
 #define TX_PORT 1

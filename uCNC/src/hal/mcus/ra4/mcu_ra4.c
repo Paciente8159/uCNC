@@ -23,6 +23,10 @@
 
 #include <math.h>
 
+#ifdef MCU_HAS_USB
+#include <tusb_ucnc.h>
+#endif
+
 /* ======================================================================== */
 /* ICU register definitions (Interrupt Controller Unit)                     */
 /* ======================================================================== */
@@ -344,6 +348,94 @@ void mcu_uart2_flush(void)
 #endif /* MCU_HAS_UART2 */
 
 /* ======================================================================== */
+/* USB-CDC via tinyUSB                                                      */
+/* ======================================================================== */
+#ifdef MCU_HAS_USB
+
+void MCU_USB_ISR(void)
+{
+	tusb_cdc_isr_handler();
+}
+
+/* USB init for tinyUSB CDC-ACM device */
+void mcu_usb_init(void)
+{
+	/* Release USBFS module from stop state */
+	USBFS_CLOCK_ENABLE();
+
+	/* Enable USB clock (UCLK = 48 MHz for device mode) */
+	R_USBCKCR |= USBCKCR_USBCLKSEL;
+
+	/* Small delay for clock stabilization */
+	volatile uint32_t delay;
+	for (delay = 0; delay < 1000; delay++);
+
+	/* Configure SYSCFG for device controller mode:
+	 * - DCFM = 0 (device controller mode)
+	 * - DPRPU = 0 (D+ pull-up disabled initially; tinyUSB will enable it)
+	 * - USBE = 1 (enable USBFS operation)
+	 * - SCKE = 1 (enable internal clock supply) */
+	USBFS_SYSCFG = USBFS_SYSCFG_USBE | USBFS_SYSCFG_SCKE;
+
+	/* Enable NVIC for USB interrupt */
+	NVIC_SetPriority(USBFS_IRQn, NVIC_USB_IRQ_Pri);
+	NVIC_ClearPendingIRQ(USBFS_IRQn);
+	NVIC_EnableIRQ(USBFS_IRQn);
+
+	/* Initialize tinyUSB CDC stack */
+	tusb_cdc_init();
+}
+
+static void mcu_install_usb_handler(void)
+{
+	uint32_t *vt = (uint32_t *)SCB->VTOR;
+	vt[16 + (uint32_t)USBFS_IRQn] = (uint32_t)MCU_USB_ISR;
+}
+
+/* USB-CDC buffered I/O */
+DECL_BUFFER(uint8_t, usb_rx, RX_BUFFER_SIZE);
+
+uint8_t mcu_usb_getc(void)
+{
+	uint8_t c = 0;
+	BUFFER_TRY_DEQUEUE(usb_rx, &c);
+	return c;
+}
+
+uint8_t mcu_usb_available(void)
+{
+	return BUFFER_READ_AVAILABLE(usb_rx);
+}
+
+void mcu_usb_clear(void)
+{
+	BUFFER_CLEAR(usb_rx);
+}
+
+void mcu_usb_putc(uint8_t c)
+{
+	if (!tusb_cdc_write_available())
+	{
+		mcu_usb_flush();
+	}
+	tusb_cdc_write(c);
+}
+
+void mcu_usb_flush(void)
+{
+	tusb_cdc_flush();
+	while (!tusb_cdc_write_available())
+	{
+		if (!tusb_cdc_connected)
+		{
+			return;
+		}
+	}
+}
+
+#endif /* MCU_HAS_USB */
+
+/* ======================================================================== */
 /* ITP (step pulse generation) via GPT0 overflow                            */
 /* ======================================================================== */
 
@@ -426,6 +518,9 @@ void mcu_init(void)
 #ifdef MCU_HAS_ONESHOT_TIMER
 	mcu_install_oneshot_handler();
 #endif
+#ifdef MCU_HAS_USB
+	mcu_install_usb_handler();
+#endif
 
 	/* Configure ICU routing for GPT interrupts */
 	/* ITP: Route GPT0 overflow to ITP_IRQn slot */
@@ -461,6 +556,11 @@ void mcu_init(void)
 	/* Initialize UART */
 #ifdef MCU_HAS_UART
 	mcu_uart_init();
+#endif
+
+	/* Initialize USB-CDC */
+#ifdef MCU_HAS_USB
+	mcu_usb_init();
 #endif
 
 	/* Initialize SysTick for RTC (1ms) */
@@ -522,7 +622,25 @@ uint32_t mcu_micros(void)
 
 void mcu_dotasks(void)
 {
-	/* ISR-driven design - no polling needed */
+#ifdef MCU_HAS_USB
+	tusb_cdc_task(); /* tinyUSB device task */
+
+	while (tusb_cdc_available())
+	{
+		uint8_t c = (uint8_t)tusb_cdc_read();
+#if !defined(DETACH_USB_FROM_MAIN_PROTOCOL)
+		if (mcu_com_rx_cb(c))
+		{
+			if (!BUFFER_TRY_ENQUEUE(usb_rx, &c))
+			{
+				STREAM_OVF(c);
+			}
+		}
+#else
+		mcu_usb_rx_cb(c);
+#endif
+	}
+#endif
 }
 
 /* ======================================================================== */

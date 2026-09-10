@@ -28,7 +28,7 @@
 | Oneshot timer | Implemented (GPT163) |
 | PWM (GPT compare) | Implemented |
 | Analog input (ADC14) | Not yet implemented |
-| USB-CDC | Not yet implemented |
+| USB-CDC | Implemented (tinyUSB, USBFS device) |
 | Flash NVM (data flash) | Not yet implemented |
 | DMA | Not yet implemented |
 | SPI | Not yet implemented |
@@ -82,6 +82,7 @@ This backend targets tier 1 (direct register access) for GPIO, timers and SCI, w
 | SERVO (50Hz) | GPT162 (16-bit) | GPT2_CCMPA | 6 |
 | ONESHOT (timeout) | GPT163 (16-bit) | GPT3_CCMPA | 6 |
 | UART (primary) | SCI0 (UART_PORT) | SCI0_RXI / SCI0_TXI | 4 |
+| USB-CDC | USBFS | USBFS_USBI (IRQn 60) | 10 |
 
 ### Interrupt priority ordering
 
@@ -98,7 +99,7 @@ Priority order (lower number = higher priority):
 
 | Board | Stream | Peripheral | Pins |
 |-------|--------|-----------|------|
-| Arduino UNO R4 | UART | SCI0 | P101 (TX), P100 (RX) |
+| Arduino UNO R4 | USB-CDC (primary), UART (secondary) | USBFS (USB), SCI0 (UART) | P108/109 (USB), P101/100 (UART) |
 
 ## 5. NVM strategy
 
@@ -108,7 +109,8 @@ Data flash (8 KB at 0x40100000) is reserved for µCNC settings storage. Implemen
 
 - GPIO interrupt-on-change (input ISR) not yet implemented — uses polling fallback
 - ADC14 analog input not yet wired
-- USB-CDC not yet implemented
+- USB-CDC implemented via tinyUSB (USBFS peripheral, device controller mode, D+ pull-up on connect)
+- Primary stream preference: USB-CDC when connected, UART otherwise
 - Flash NVM persistence not yet implemented
 - DMA channels not yet allocated
 - SPI and I2C not yet implemented
