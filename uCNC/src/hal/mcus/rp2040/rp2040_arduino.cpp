@@ -19,8 +19,10 @@
 */
 
 #if defined(ARDUINO_ARCH_RP2040) && !defined(TARGET_RP2350)
-#include "../../../cnc.h"
 #include <Arduino.h>
+extern "C" {
+#include "../../../cnc.h"
+}
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
