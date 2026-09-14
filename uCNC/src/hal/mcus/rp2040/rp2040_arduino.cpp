@@ -21,14 +21,17 @@
 #include <stdbool.h>
 #include <Arduino.h>
 #include <string.h>
-#include "../../../cnc.h"
 
-void rp2040_core1_loop()
+extern "C"
 {
-	rp2040.fifo.registerCore();
-	for (;;)
+#include "../../../cnc.h"
+	void rp2040_core1_loop()
 	{
-		cnc_run();
+		rp2040.fifo.registerCore();
+		for (;;)
+		{
+			cnc_run();
+		}
 	}
 }
 
@@ -37,6 +40,10 @@ void rp2040_core1_loop()
  * This handles all communications via Serial USB, Serial UART and WiFi
  *
  * **/
+
+#ifdef MCU_HAS_FLASHUPDATE
+#include <Updater.h>
+#endif
 
 #if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
 
@@ -57,10 +64,11 @@ uint8_t bt_on;
 uint16_t bt_settings_offset;
 #endif
 
-#ifdef ENABLE_SOCKETS
+#ifdef ENABLE_WIFI
+#include <IPAddress.h>
 #include <WiFi.h>
 #include <WebServer.h>
-#include <Updater.h>
+#include <pico/cyw43_arch.h>
 
 #ifndef TELNET_PORT
 #define TELNET_PORT 23
@@ -146,7 +154,7 @@ bool mcu_custom_grbl_cmd(void *args)
 		}
 	}
 #endif
-#ifdef ENABLE_SOCKETS
+#ifdef ENABLE_WIFI
 	if (!strncmp((const char *)(cmd_params->cmd), "WIFI", 4))
 	{
 		if (!strcmp((const char *)&(cmd_params->cmd)[4], "ON"))
@@ -503,68 +511,65 @@ bool flash_fs_rmdir(const char *path)
  * OTA
  */
 #ifdef MCU_HAS_FLASHUPDATE
-	extern "C"
-	{
+extern "C"
+{
 #include "../../../modules/flash_update.h"
 
-		size_t rpico_get_flash_size(void)
-		{
-			return (size_t)(0xEFFFFFFF);
-		}
-
-		bool rpico_flash_begin(size_t filesize)
-		{
-#ifdef FLASH_FS
-			if (!FLASH_FS.begin())
-			{
-				return false;
-			}
-#endif
-			bool res = Update.begin(filesize, U_FLASH);
-			if (!res)
-			{
-				Update.printError(Serial);
-			}
-			return res;
-		}
-
-		bool rpico_flash_end(bool flush)
-		{
-			bool res = Update.end(flush);
-			if (!res)
-			{
-				Update.printError(Serial);
-			}
-			return res;
-		}
-
-		size_t rpico_flash_write(uint8_t *data, size_t len)
-		{
-			size_t res = Update.write(data, len);
-			if (!res)
-			{
-				Update.printError(Serial);
-			}
-			return res;
-		}
-
-		void rpico_restart(void)
-		{
-			rp2040.reboot();
-		}
-
-		static flash_udpate_t rpico_flashupdate = {.get_flash_size = rpico_get_flash_size, .flash_begin = rpico_flash_begin, .flash_write = rpico_flash_write, .flash_end = rpico_flash_end, .device_restart = rpico_restart};
+	size_t rpico_get_flash_size(void)
+	{
+		return (size_t)(0xEFFFFFFF);
 	}
+
+	bool rpico_flash_begin(size_t filesize)
+	{
+#ifdef FLASH_FS
+		if (!FLASH_FS.begin())
+		{
+			return false;
+		}
+#endif
+		bool res = Update.begin(filesize, U_FLASH);
+		if (!res)
+		{
+			Update.printError(Serial);
+		}
+		return res;
+	}
+
+	bool rpico_flash_end(bool flush)
+	{
+		bool res = Update.end(flush);
+		if (!res)
+		{
+			Update.printError(Serial);
+		}
+		return res;
+	}
+
+	size_t rpico_flash_write(uint8_t *data, size_t len)
+	{
+		size_t res = Update.write(data, len);
+		if (!res)
+		{
+			Update.printError(Serial);
+		}
+		return res;
+	}
+
+	void rpico_restart(void)
+	{
+		rp2040.reboot();
+	}
+
+	static flash_udpate_t rpico_flashupdate = {.get_flash_size = rpico_get_flash_size, .flash_begin = rpico_flash_begin, .flash_write = rpico_flash_write, .flash_end = rpico_flash_end, .device_restart = rpico_restart};
+}
 #endif
 
 extern "C" void __attribute__((weak)) mcu_network_init(void)
 {
 #ifdef ENABLE_WIFI
 #ifdef USE_STATIC_IP
-			if (!WiFi.config(IPAddress(STATIC_IP_IP), IPAddress(STATIC_IP_GW), IPAddress(STATIC_IP_SUB)))
-			{
-				proto_info("Static IP config failed");
-			}
+	WiFi.config(IPAddress((uint32_t)STATIC_IP_IP), IPAddress((uint32_t)STATIC_IP_GW), IPAddress((uint32_t)STATIC_IP_SUB));
 #endif
 	WiFi.mode(WIFI_AP);
 	WiFi.begin((char *)BOARD_NAME, (char *)WIFI_PASS);
@@ -599,10 +604,7 @@ extern "C" void rp2040_wifi_bt_init(void)
 		case 1:
 			WiFi.mode(WIFI_STA);
 #ifdef USE_STATIC_IP
-			if (!WiFi.config(IPAddress(STATIC_IP_IP), IPAddress(STATIC_IP_GW), IPAddress(STATIC_IP_SUB)))
-			{
-				proto_info("Static IP config failed");
-			}
+			WiFi.config(IPAddress((uint32_t)STATIC_IP_IP), IPAddress((uint32_t)STATIC_IP_GW), IPAddress((uint32_t)STATIC_IP_SUB));
 #endif
 			WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
 			proto_info("Trying to connect to WiFi");
@@ -617,10 +619,7 @@ extern "C" void rp2040_wifi_bt_init(void)
 		default:
 			WiFi.mode(WIFI_AP_STA);
 #ifdef USE_STATIC_IP
-			if (!WiFi.config(IPAddress(STATIC_IP_IP), IPAddress(STATIC_IP_GW), IPAddress(STATIC_IP_SUB)))
-			{
-				proto_info("Static IP config failed");
-			}
+			WiFi.config(IPAddress(((uint32_t)STATIC_IP_IP)), IPAddress((uint32_t)STATIC_IP_GW), IPAddress((uint32_t)STATIC_IP_SUB));
 #endif
 			WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
 			proto_info("Trying to connect to WiFi");
@@ -654,7 +653,7 @@ extern "C" void rp2040_wifi_bt_init(void)
 #endif
 
 #ifdef MCU_HAS_FLASHUPDATE
-		flash_update_register(&rpico_flashupdate);
+	flash_update_register(&rpico_flashupdate);
 #endif
 
 #ifdef ENABLE_BLUETOOTH
@@ -736,7 +735,9 @@ uint8_t rp2040_wifi_bt_read(void)
 
 void rp2040_wifi_bt_process(void)
 {
+#ifdef ENABLE_WIFI
 	cyw43_arch_poll();
+#endif
 
 #ifdef ENABLE_BLUETOOTH
 	while (SerialBT.available() > 0)
