@@ -352,10 +352,10 @@ uint8_t vfd_update(void) {
  * */
 
 static void startup_code() {
-#if ASSERT_PIN(VFD_PWM_COOLANT_FLOOD)
+#if ASSERT_PIN(VFD_COOLANT_FLOOD)
   io_config_output(VFD_COOLANT_FLOOD);
 #endif
-#if ASSERT_PIN(VFD_PWM_COOLANT_MIST)
+#if ASSERT_PIN(VFD_COOLANT_MIST)
   io_config_output(VFD_COOLANT_MIST);
 #endif
 

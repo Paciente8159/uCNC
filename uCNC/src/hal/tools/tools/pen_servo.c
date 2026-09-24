@@ -40,7 +40,9 @@
 
 static void startup_code(void) {
 #if ASSERT_PIN(PEN_SERVO)
-  io_config_output(PEN_SERVO);
+  io_config_output(PEN_SERVO); // servos pin configuration is just
+                               // setting it to output mode /* maybe
+                               // add a future io_config_servo macro */
   io_set_pwm(PEN_SERVO, PEN_SERVO_LOW);
 #endif
 }

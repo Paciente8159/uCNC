@@ -90,11 +90,7 @@ static uint16_t get_speed(void) {
 #ifdef SPINDLE_RELAY_RPM_ENCODER
   return encoder_get_rpm(SPINDLE_RELAY_RPM_ENCODER);
 #else
-#if ASSERT_PIN(SPINDLE_PWM)
   return tool_get_setpoint();
-#else
-  return 0;
-#endif
 #endif
 }
 

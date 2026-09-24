@@ -70,6 +70,9 @@ static void startup_code(void) {
   io_set_output(SPINDLE_BESC_POWER_RELAY);
 #endif
 #if ASSERT_PIN(SPINDLE_BESC_SERVO)
+  io_config_output(SPINDLE_BESC_SERVO); // servos pin configuration is just
+                                        // setting it to output mode /* maybe
+                                        // add a future io_config_servo macro */
   io_set_pwm(SPINDLE_BESC_SERVO, SPINDLE_BESC_MID);
   cnc_delay_ms(1000);
   io_set_pwm(SPINDLE_BESC_SERVO, SPINDLE_BESC_LOW);
