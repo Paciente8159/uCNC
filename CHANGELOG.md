@@ -16,7 +16,7 @@
 
 - fixed SPI pin initialization (#988)
 - fixed tool coolant pin intialization (#993)
-- fixed all generic output pin initialization (#)
+- fixed all generic output pin initialization (#996)
 - RPico Wifi fix ENABLE_WIFI and ENABLE_SOCKET mix and Flash Updater independency (#992)
 
 ## [1.17.0] - 02-09-2026
