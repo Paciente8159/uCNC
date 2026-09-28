@@ -6,6 +6,19 @@
 
 # Changelog
 
+## [1.17.1] - 28-09-2026
+
+### Changed
+
+- Added overloadable µCNC pins for RPico PIO IO extender (#994)
+
+### Fixed
+
+- fixed SPI pin initialization (#988)
+- fixed tool coolant pin intialization (#993)
+- fixed all generic output pin initialization (#996)
+- RPico Wifi fix ENABLE_WIFI and ENABLE_SOCKET mix and Flash Updater independency (#992)
+
 ## [1.17.0] - 02-09-2026
 
 ### Added
