@@ -599,6 +599,25 @@ extern "C"
 		[75] = {"DOUT28", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
 		[76] = {"DOUT29", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
 		[77] = {"DOUT30", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[78] = {"DOUT31", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[79] = {"DOUT32", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[80] = {"DOUT33", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[81] = {"DOUT34", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[82] = {"DOUT35", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[83] = {"DOUT36", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[84] = {"DOUT37", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[85] = {"DOUT38", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[86] = {"DOUT39", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[87] = {"DOUT40", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[88] = {"DOUT41", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[89] = {"DOUT42", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[90] = {"DOUT43", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[91] = {"DOUT44", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[92] = {"DOUT45", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[93] = {"DOUT46", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[94] = {"DOUT47", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[95] = {"DOUT48", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[96] = {"DOUT49", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
 		/* control inputs */
 		[100] = {"LIMIT_X", IO_GROUP_CONTROL, IO_PIN_INPUT},
 		[101] = {"LIMIT_Y", IO_GROUP_CONTROL, IO_PIN_INPUT},
@@ -664,6 +683,24 @@ extern "C"
 		[159] = {"DIN29", IO_GROUP_INPUT, IO_PIN_INPUT},
 		[160] = {"DIN30", IO_GROUP_INPUT, IO_PIN_INPUT},
 		[161] = {"DIN31", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[162] = {"DIN32", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[163] = {"DIN33", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[164] = {"DIN34", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[165] = {"DIN35", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[166] = {"DIN36", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[167] = {"DIN37", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[168] = {"DIN38", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[169] = {"DIN39", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[170] = {"DIN40", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[171] = {"DIN41", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[172] = {"DIN42", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[173] = {"DIN43", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[174] = {"DIN44", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[175] = {"DIN45", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[176] = {"DIN46", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[177] = {"DIN47", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[178] = {"DIN48", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[179] = {"DIN49", IO_GROUP_INPUT, IO_PIN_INPUT},
 		/* comms (initialized but not shown in the dashboard) */
 		[200] = {"TX", IO_GROUP_HIDDEN, IO_PIN_OUTPUT},
 		[201] = {"RX", IO_GROUP_HIDDEN, IO_PIN_INPUT},
@@ -1199,16 +1236,26 @@ void mcu_usb_init() {}
 		"<!doctype html><html><head><meta charset='utf-8'><title>uCNC IO</title>\n"
 		"<style>\n"
 		"body{font-family:sans-serif;background:#111;color:#eee;margin:1em}\n"
-		"h1{font-size:1.2em}h2{font-size:1em;border-bottom:1px solid #444;padding-top:.8em}\n"
+		"h1{font-size:1.2em}h2{font-size:1em;border-bottom:1px solid #444;margin:0 0 .4em}\n"
+		".grid{display:flex;flex-wrap:wrap;gap:1.25rem 2rem;align-items:flex-start;margin-bottom:1.25rem}\n"
+		".group{flex:1 1 14rem;min-width:14rem;max-width:24rem}\n"
+		".group.cols{display:grid;grid-template-columns:1fr 1fr;column-gap:1.5rem;flex-basis:26rem;min-width:26rem;max-width:48rem}\n"
+		".group.cols h2{grid-column:1 / -1}\n"
 		".pin{display:flex;align-items:center;gap:.6em;margin:.15em 0}\n"
 		".lab{width:7em;font-family:monospace}.led{width:.9em;height:.9em;border-radius:50%;display:inline-block;background:#333}\n"
 		".on{background:#0c0}.off{background:#500}input[type=range]{width:12em}\n"
-		"</style></head><body><h1>uCNC IO pins</h1><div id='groups'></div><script>\n"
+		"#status{display:flex;flex-wrap:wrap;gap:.25em 1.5em;font-family:monospace;font-size:.85em;background:#1a1a1a;border:1px solid #333;border-radius:4px;padding:.5em .8em;margin-bottom:1em}\n"
+		".stat{white-space:nowrap}\n"
+		"</style></head><body><h1>uCNC IO pins</h1><div id='status'></div><div id='outputs' class='grid'></div><div id='inputs' class='grid'></div><script>\n"
 		"const T=['','Step/Dir','PWM/Servo','Generic outputs','Control inputs','Generic inputs','Analog inputs'];\n"
 		"const setPin=async(pin,value)=>{await fetch('/api/input',{method:'POST',body:`{\"pin\":${pin},\"value\":${value}}`});};\n"
-		"const line=(p,k)=>{if(k==='w')return `<label class='pin'><input type='checkbox' data-pin='${p.pin}' ${p.value?'checked':''}><span class='lab'>${p.label}</span></label>`;if(k==='a')return `<div class='pin'><span class='lab'>${p.label}</span><input type='range' min='0' max='1023' value='${p.value}' data-pin='${p.pin}'><span>${p.value}</span></div>`;return `<div class='pin'><span class='led ${p.value?'on':'off'}'></span><span class='lab'>${p.label}</span><span>${p.value}</span></div>`;};\n"
-		"async function refresh(){const pins=await (await fetch('/api/state')).json();const g=[[],[],[],[],[],[],[]];for(const p of pins)if(p.group>0&&p.group<7)g[p.group].push(p);let html='';for(let i=1;i<=6;i++){if(!g[i].length)continue;html+=`<h2>${T[i]}</h2>`;for(const p of g[i])html+=line(p,p.group===4||p.group===5?'w':(p.group===6?'a':'r'));}document.getElementById('groups').innerHTML=html;document.querySelectorAll('input[type=checkbox]').forEach(e=>e.onchange=()=>setPin(e.dataset.pin,e.checked?1:0));document.querySelectorAll('input[type=range]').forEach(e=>e.onchange=()=>setPin(e.dataset.pin,e.value));}\n"
-		"refresh();setInterval(refresh,100);\n"
+		"const byGroup=pins=>{const g=[[],[],[],[],[],[],[]];for(const p of pins)if(p.group>0&&p.group<7)g[p.group].push(p);return g;};\n"
+		"const outLine=p=>`<div class='pin'><span class='led ${p.value?'on':'off'}'></span><span class='lab'>${p.label}</span><span>${p.value}</span></div>`;\n"
+		"const inLine=(p,a)=>a?`<div class='pin'><span class='lab'>${p.label}</span><input type='range' min='0' max='1023' value='0' data-pin='${p.pin}'><span class='val'>0</span></div>`:`<label class='pin'><input type='checkbox' data-pin='${p.pin}'><span class='lab'>${p.label}</span></label>`;\n"
+		"async function buildInputs(){const pins=await (await fetch('/api/state')).json();const g=byGroup(pins);let html='';for(let i=4;i<=6;i++){if(!g[i].length)continue;html+=`<section class='group${i===5?' cols':''}'><h2>${T[i]}</h2>`;for(const p of g[i])html+=inLine(p,i===6);html+='</section>';}document.getElementById('inputs').innerHTML=html;document.querySelectorAll('#inputs input[type=checkbox]').forEach(e=>e.onchange=()=>setPin(e.dataset.pin,e.checked?1:0));document.querySelectorAll('#inputs input[type=range]').forEach(e=>{e.oninput=()=>e.nextElementSibling.textContent=e.value;e.onchange=()=>setPin(e.dataset.pin,e.value);});}\n"
+		"async function refreshOutputs(){const pins=await (await fetch('/api/state')).json();const g=byGroup(pins);let html='';for(let i=1;i<=3;i++){if(!g[i].length)continue;html+=`<section class='group${i===3?' cols':''}'><h2>${T[i]}</h2>`;for(const p of g[i])html+=outLine(p);html+='</section>';}document.getElementById('outputs').innerHTML=html;}\n"
+		"async function refreshInfo(){const j=await (await fetch('/api/info')).json();const ax=j.axes.map(a=>a.name+':'+a.pos).join(' ');const st=j.steps.map(s=>s.name+':'+s.pos).join(' ');document.getElementById('status').innerHTML=`<span class='stat'>time ${j.time} us</span><span class='stat'>axes ${ax}</span><span class='stat'>steps ${st}</span>`;}\n"
+		"buildInputs();refreshOutputs();refreshInfo();setInterval(refreshOutputs,100);setInterval(refreshInfo,200);\n"
 		"</script></body></html>\n";
 
 	static void http_respond(int fd, const char *status, const char *ctype, const char *body)
@@ -1234,6 +1281,28 @@ void mcu_usb_init() {}
 			first = false;
 		}
 		snprintf(buf + n, cap - n, "]");
+	}
+
+	static void http_info_json(char *buf, size_t cap)
+	{
+		int32_t steps[STEPPER_COUNT];
+		float axes[AXIS_COUNT];
+		itp_get_rt_position(steps);
+		kinematics_steps_to_coordinates(steps, axes);
+
+		size_t n = 0;
+		n += snprintf(buf + n, cap - n, "{\"time\":%lu,\"axes\":[", (unsigned long)mcu_micros());
+		for (uint8_t i = 0; i < AXIS_COUNT; i++)
+		{
+			char name = (i < 3) ? (char)('X' + i) : (char)('A' + (i - 3));
+			n += snprintf(buf + n, cap - n, "%s{\"name\":\"%c\",\"pos\":%.3f}", i ? "," : "", name, (double)axes[i]);
+		}
+		n += snprintf(buf + n, cap - n, "],\"steps\":[");
+		for (uint8_t i = 0; i < STEPPER_COUNT; i++)
+		{
+			n += snprintf(buf + n, cap - n, "%s{\"name\":\"STEP%d\",\"pos\":%ld}", i ? "," : "", (int)i, (long)steps[i]);
+		}
+		snprintf(buf + n, cap - n, "]}");
 	}
 
 	static void http_handle_input(int fd, const char *body)
@@ -1276,6 +1345,21 @@ void mcu_usb_init() {}
 		}
 	}
 
+	static char *http_find_content_length(char *req)
+	{
+		const char needle[] = "content-length:";
+		size_t n = sizeof(needle) - 1;
+		for (char *p = req; *p; p++)
+		{
+			size_t i = 0;
+			while (i < n && p[i] && (p[i] | 0x20) == needle[i])
+				i++;
+			if (i == n)
+				return p + n;
+		}
+		return NULL;
+	}
+
 	static int http_read_request(int client, char *req, int cap)
 	{
 		int total = 0;
@@ -1295,8 +1379,8 @@ void mcu_usb_init() {}
 
 			if (need < 0)
 			{
-				char *cl = strstr(req, "Content-Length:");
-				need = cl ? atoi(cl + 15) : 0;
+				char *cl = http_find_content_length(req);
+				need = cl ? atoi(cl) : 0;
 			}
 			if (total - (int)(hend + 4 - req) >= need)
 				break;
@@ -1333,6 +1417,12 @@ void mcu_usb_init() {}
 				{
 					char *body = strstr(req, "\r\n\r\n");
 					http_handle_input(client, body ? body + 4 : "");
+				}
+				else if (strncmp(req, "GET /api/info", 13) == 0)
+				{
+					char json[2048];
+					http_info_json(json, sizeof(json));
+					http_respond(client, "200 OK", "application/json", json);
 				}
 				else if (strncmp(req, "GET ", 4) == 0)
 				{
