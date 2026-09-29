@@ -84,6 +84,11 @@
 #define ENABLE_SOCKETS
 // #define EMULATE_74HC595
 
+// HTTP IO dashboard (localhost, compile-time configurable)
+#ifndef VIRTUAL_HTTP_PORT
+#define VIRTUAL_HTTP_PORT 8888
+#endif
+
 // joints step/dir pins
 #ifndef EMULATE_74HC595
 #define STEP0 1
@@ -457,18 +462,47 @@
 #define DIN6_ISR
 #define DIN7_ISR
 
-typedef struct virtual_map_t
+/* Per-pin IO model (replaces the packed VIRTUAL_MAP) */
+typedef enum io_pin_type_
 {
-	uint32_t special_outputs;
-	uint32_t outputs;
-	uint8_t pwm[16];
-	uint8_t servos[6];
-	uint32_t special_inputs;
-	uint32_t inputs;
-	uint8_t analog[16];
-} VIRTUAL_MAP;
+	IO_PIN_UNDEF = 0, /* default */
+	IO_PIN_INPUT,
+	IO_PIN_OUTPUT,
+	IO_PIN_PWM,
+	IO_PIN_SERVO,
+	IO_PIN_ANALOG
+} io_pin_type_t;
 
-extern volatile VIRTUAL_MAP virtualmap;
+typedef struct io_pin_
+{
+	uint8_t type;   /* io_pin_type_t */
+	uint16_t value; /* input/output 0-1, pwm/servo 0-255, analog 0-1023 */
+	char vcd_char;  /* VCD log char */
+} io_pin_t;
+
+#define IO_PIN_COUNT 212
+
+extern volatile io_pin_t io_pins[IO_PIN_COUNT];
+
+typedef enum io_pin_group_
+{
+	IO_GROUP_HIDDEN = 0, /* comms pins + undefined gaps */
+	IO_GROUP_STEPDIR,    /* step/dir/enable */
+	IO_GROUP_PWM_SERVO,  /* pwm and servo */
+	IO_GROUP_OUTPUT,     /* generic outputs */
+	IO_GROUP_CONTROL,    /* limits/probe/estop/safety/fhold/csres */
+	IO_GROUP_INPUT,      /* generic inputs */
+	IO_GROUP_ANALOG      /* analog inputs */
+} io_pin_group_t;
+
+typedef struct io_pin_info_
+{
+	const char *label;
+	io_pin_group_t group;
+	io_pin_type_t default_type;
+} io_pin_info_t;
+
+extern const io_pin_info_t io_pin_info[IO_PIN_COUNT];
 
 #define MCU_HAS_ONESHOT_TIMER
 
@@ -489,7 +523,6 @@ extern volatile VIRTUAL_MAP virtualmap;
 // just to compile
 #define mcu_nop()
 #define mcu_config_pullup(diopin)
-#define mcu_config_analog(diopin)
 #define asm __asm__
 #define mcu_config_input_isr(x)
 

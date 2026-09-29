@@ -59,13 +59,13 @@ static void test_spindle_override_bytes(void)
 static void test_coolant_realtime_toggles(void)
 {
 	d3_idle();
-	uint32_t before = virtualmap.outputs;
+	uint16_t before = io_pins[DOUT2].value;
 	send_override(0xA0);
 #ifdef ENABLE_COOLANT
-	TEST_ASSERT_NOT_EQUAL(before, virtualmap.outputs);
-	send_override(0xA0); TEST_ASSERT_EQUAL(before, virtualmap.outputs);
+	TEST_ASSERT_NOT_EQUAL(before, io_pins[DOUT2].value);
+	send_override(0xA0); TEST_ASSERT_EQUAL(before, io_pins[DOUT2].value);
 #else
-	TEST_ASSERT_EQUAL(before, virtualmap.outputs);
+	TEST_ASSERT_EQUAL(before, io_pins[DOUT2].value);
 #endif
 }
 

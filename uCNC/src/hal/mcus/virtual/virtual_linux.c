@@ -268,135 +268,7 @@ extern "C"
         return ch;
     }
 
-/* ---------------- IO server (Unix domain socket as named pipe) --------- */
-
-/* Path for the Unix domain socket */
-#define UCNCCIO_SOCKET_PATH "/tmp/ucncio.sock"
-
-    void *ioserver(void *args)
-    {
-        (void)args;
-        int server_fd = -1, client_fd = -1;
-        struct sockaddr_un addr;
-        ssize_t n;
-        size_t map_size = sizeof(VIRTUAL_MAP);
-
-        /* Ensure old socket removed */
-        unlink(UCNCCIO_SOCKET_PATH);
-
-        server_fd = socket(AF_UNIX, 1, 0);
-        if (server_fd < 0)
-        {
-            perror("Create socket failed");
-            return NULL;
-        }
-
-        memset(&addr, 0, sizeof(addr));
-        addr.sun_family = AF_UNIX;
-        strncpy(addr.sun_path, UCNCCIO_SOCKET_PATH, sizeof(addr.sun_path) - 1);
-
-        if (bind(server_fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
-        {
-            perror("bind failed");
-            close(server_fd);
-            return NULL;
-        }
-
-        if (listen(server_fd, 5) < 0)
-        {
-            perror("listen failed");
-            close(server_fd);
-            return NULL;
-        }
-
-        for (;;)
-        {
-            client_fd = accept(server_fd, NULL, NULL);
-            if (client_fd < 0)
-            {
-                perror("accept failed");
-                continue;
-            }
-
-            /* Exchange VIRTUAL_MAP repeatedly until client disconnects */
-            uint8_t lpvMessage[sizeof(VIRTUAL_MAP)];
-            bool fSuccess = true;
-            while (fSuccess)
-            {
-                /* Send current virtualmap */
-                memcpy(lpvMessage, (const void *)&virtualmap, map_size);
-                size_t sent = 0;
-                while (sent < map_size)
-                {
-                    n = write(client_fd, lpvMessage + sent, map_size - sent);
-                    if (n > 0)
-                    {
-                        sent += (size_t)n;
-                        continue;
-                    }
-                    if (n < 0 && errno == EINTR)
-                        continue;
-                    if (n < 0)
-                        perror("write to socket failed");
-                    fSuccess = false;
-                    break;
-                }
-                if (!fSuccess)
-                    break;
-
-                /* Read back updated map (blocking read) */
-                ssize_t total = 0;
-                while (total < (ssize_t)map_size)
-                {
-                    n = read(client_fd, lpvMessage + total, map_size - total);
-                    if (n < 0 && errno == EINTR)
-                        continue;
-                    if (n <= 0)
-                    {
-                        if (n == 0)
-                            ; /* client closed */
-                        else
-                            perror("read from socket failed");
-                        fSuccess = false;
-                        break;
-                    }
-                    total += n;
-                }
-                if (!fSuccess)
-                    break;
-
-                VIRTUAL_MAP *ptr = (VIRTUAL_MAP *)&lpvMessage[0];
-                if (virtualmap.special_inputs != ptr->special_inputs)
-                {
-                    uint32_t diff = virtualmap.special_inputs ^ ptr->special_inputs;
-                    virtualmap.special_inputs = ptr->special_inputs;
-                    if (diff & 0x1FFUL)
-                        mcu_limits_changed_cb();
-                    if (diff & 0x200UL)
-                        mcu_probe_changed_cb();
-                    if (diff & 0x3C00UL)
-                        mcu_controls_changed_cb();
-                }
-                if (virtualmap.inputs != ptr->inputs)
-                {
-                    virtualmap.inputs = ptr->inputs;
-                    mcu_inputs_changed_cb();
-                }
-                memcpy((void *)virtualmap.analog, ptr->analog, 16);
-            }
-
-            close(client_fd);
-            client_fd = -1;
-        }
-
-        /* never reached */
-        if (server_fd >= 0)
-            close(server_fd);
-        unlink(UCNCCIO_SOCKET_PATH);
-        return NULL;
-    }
-
-    /* ---------------- Timer (POSIX timer_create) -------------------------- */
+/* ---------------- Timer (POSIX timer_create) -------------------------- */
 
     static timer_t posix_timer = (timer_t)0;
     static void (*timer_func_handler_pntr)(void) = NULL;
@@ -977,6 +849,59 @@ int socket_init(void)
 {
 	linux_state.flags |= LINUX_STATE_NET_STARTED;
 	return 0;
+}
+
+/* ----- Minimal blocking socket helpers for the HTTP IO dashboard ---------- */
+
+int virtual_http_open(uint16_t port)
+{
+	int s;
+	struct sockaddr_in addr;
+	int one = 1;
+
+	s = socket(AF_INET, SOCK_STREAM, 0);
+	if (s < 0)
+	{
+		return -1;
+	}
+
+	setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+	memset(&addr, 0, sizeof(addr));
+	addr.sin_family = AF_INET;
+	addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+	addr.sin_port = htons(port);
+
+	if (bind(s, (struct sockaddr *)&addr, sizeof(addr)) < 0 || listen(s, 5) < 0)
+	{
+		close(s);
+		return -1;
+	}
+
+	return s;
+}
+
+int virtual_http_accept(int fd)
+{
+	return accept(fd, NULL, NULL);
+}
+
+int virtual_http_recv(int fd, char *buf, int len)
+{
+	return (int)recv(fd, buf, (size_t)len, 0);
+}
+
+int virtual_http_send(int fd, const char *buf, int len)
+{
+	return (int)send(fd, buf, (size_t)len, 0);
+}
+
+void virtual_http_close(int fd)
+{
+	if (fd >= 0)
+	{
+		shutdown(fd, SHUT_WR);
+		close(fd);
+	}
 }
 
 static int linux_set_nonblocking(int fd)

@@ -44,8 +44,6 @@ extern "C"
 	void mcu_disable_global_isr(void) { global_isr_enabled = false; }
 	bool mcu_get_global_isr(void) { return global_isr_enabled; }
 
-	extern void *ioserver(void *args);
-
 	/* ----- UART (Windows COM) - non-blocking connect/service ----------------
 		 UART maps to a Windows serial port (UART_PORT_NAME). We connect and service
 		 it from a background thread. RX is polled into a ring buffer; TX drains a
@@ -515,116 +513,227 @@ extern "C"
 	}
 	void mcu_eeprom_flush(void) {}
 
-	/* ----- IO simulation (named pipe to external UI) ----------------------- */
+	/* ----- IO simulation (per-pin model) ----------------------------------- */
 
-	volatile VIRTUAL_MAP virtualmap;
+	volatile io_pin_t io_pins[IO_PIN_COUNT];
 
-	static uint8_t mcu_get_pin_offset(uint8_t pin)
+	const io_pin_info_t io_pin_info[IO_PIN_COUNT] = {
+		/* step/dir/enable */
+		[1] = {"STEP0", IO_GROUP_STEPDIR, IO_PIN_OUTPUT},
+		[2] = {"STEP1", IO_GROUP_STEPDIR, IO_PIN_OUTPUT},
+		[3] = {"STEP2", IO_GROUP_STEPDIR, IO_PIN_OUTPUT},
+		[4] = {"STEP3", IO_GROUP_STEPDIR, IO_PIN_OUTPUT},
+		[5] = {"STEP4", IO_GROUP_STEPDIR, IO_PIN_OUTPUT},
+		[6] = {"STEP5", IO_GROUP_STEPDIR, IO_PIN_OUTPUT},
+		[7] = {"STEP6", IO_GROUP_STEPDIR, IO_PIN_OUTPUT},
+		[8] = {"STEP7", IO_GROUP_STEPDIR, IO_PIN_OUTPUT},
+		[9] = {"DIR0", IO_GROUP_STEPDIR, IO_PIN_OUTPUT},
+		[10] = {"DIR1", IO_GROUP_STEPDIR, IO_PIN_OUTPUT},
+		[11] = {"DIR2", IO_GROUP_STEPDIR, IO_PIN_OUTPUT},
+		[12] = {"DIR3", IO_GROUP_STEPDIR, IO_PIN_OUTPUT},
+		[13] = {"DIR4", IO_GROUP_STEPDIR, IO_PIN_OUTPUT},
+		[14] = {"DIR5", IO_GROUP_STEPDIR, IO_PIN_OUTPUT},
+		[15] = {"DIR6", IO_GROUP_STEPDIR, IO_PIN_OUTPUT},
+		[16] = {"DIR7", IO_GROUP_STEPDIR, IO_PIN_OUTPUT},
+		[17] = {"STEP0_EN", IO_GROUP_STEPDIR, IO_PIN_OUTPUT},
+		[18] = {"STEP1_EN", IO_GROUP_STEPDIR, IO_PIN_OUTPUT},
+		[19] = {"STEP2_EN", IO_GROUP_STEPDIR, IO_PIN_OUTPUT},
+		[20] = {"STEP3_EN", IO_GROUP_STEPDIR, IO_PIN_OUTPUT},
+		[21] = {"STEP4_EN", IO_GROUP_STEPDIR, IO_PIN_OUTPUT},
+		[22] = {"STEP5_EN", IO_GROUP_STEPDIR, IO_PIN_OUTPUT},
+		[23] = {"STEP6_EN", IO_GROUP_STEPDIR, IO_PIN_OUTPUT},
+		[24] = {"STEP7_EN", IO_GROUP_STEPDIR, IO_PIN_OUTPUT},
+		/* pwm */
+		[25] = {"PWM0", IO_GROUP_PWM_SERVO, IO_PIN_PWM},
+		[26] = {"PWM1", IO_GROUP_PWM_SERVO, IO_PIN_PWM},
+		[27] = {"PWM2", IO_GROUP_PWM_SERVO, IO_PIN_PWM},
+		[28] = {"PWM3", IO_GROUP_PWM_SERVO, IO_PIN_PWM},
+		[29] = {"PWM4", IO_GROUP_PWM_SERVO, IO_PIN_PWM},
+		[30] = {"PWM5", IO_GROUP_PWM_SERVO, IO_PIN_PWM},
+		[31] = {"PWM6", IO_GROUP_PWM_SERVO, IO_PIN_PWM},
+		[32] = {"PWM7", IO_GROUP_PWM_SERVO, IO_PIN_PWM},
+		[33] = {"PWM8", IO_GROUP_PWM_SERVO, IO_PIN_PWM},
+		[34] = {"PWM9", IO_GROUP_PWM_SERVO, IO_PIN_PWM},
+		[35] = {"PWM10", IO_GROUP_PWM_SERVO, IO_PIN_PWM},
+		[36] = {"PWM11", IO_GROUP_PWM_SERVO, IO_PIN_PWM},
+		[37] = {"PWM12", IO_GROUP_PWM_SERVO, IO_PIN_PWM},
+		[38] = {"PWM13", IO_GROUP_PWM_SERVO, IO_PIN_PWM},
+		[39] = {"PWM14", IO_GROUP_PWM_SERVO, IO_PIN_PWM},
+		[40] = {"PWM15", IO_GROUP_PWM_SERVO, IO_PIN_PWM},
+		/* servo */
+		[41] = {"SERVO0", IO_GROUP_PWM_SERVO, IO_PIN_SERVO},
+		[42] = {"SERVO1", IO_GROUP_PWM_SERVO, IO_PIN_SERVO},
+		[43] = {"SERVO2", IO_GROUP_PWM_SERVO, IO_PIN_SERVO},
+		[44] = {"SERVO3", IO_GROUP_PWM_SERVO, IO_PIN_SERVO},
+		[45] = {"SERVO4", IO_GROUP_PWM_SERVO, IO_PIN_SERVO},
+		[46] = {"SERVO5", IO_GROUP_PWM_SERVO, IO_PIN_SERVO},
+		/* generic outputs */
+		[47] = {"DOUT0", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[48] = {"DOUT1", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[49] = {"DOUT2", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[50] = {"DOUT3", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[51] = {"DOUT4", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[52] = {"DOUT5", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[53] = {"DOUT6", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[54] = {"DOUT7", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[55] = {"DOUT8", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[56] = {"DOUT9", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[57] = {"DOUT10", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[58] = {"DOUT11", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[59] = {"DOUT12", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[60] = {"DOUT13", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[61] = {"DOUT14", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[62] = {"DOUT15", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[63] = {"DOUT16", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[64] = {"DOUT17", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[65] = {"DOUT18", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[66] = {"DOUT19", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[67] = {"DOUT20", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[68] = {"DOUT21", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[69] = {"DOUT22", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[70] = {"DOUT23", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[71] = {"DOUT24", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[72] = {"DOUT25", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[73] = {"DOUT26", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[74] = {"DOUT27", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[75] = {"DOUT28", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[76] = {"DOUT29", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		[77] = {"DOUT30", IO_GROUP_OUTPUT, IO_PIN_OUTPUT},
+		/* control inputs */
+		[100] = {"LIMIT_X", IO_GROUP_CONTROL, IO_PIN_INPUT},
+		[101] = {"LIMIT_Y", IO_GROUP_CONTROL, IO_PIN_INPUT},
+		[102] = {"LIMIT_Z", IO_GROUP_CONTROL, IO_PIN_INPUT},
+		[103] = {"LIMIT_X2", IO_GROUP_CONTROL, IO_PIN_INPUT},
+		[104] = {"LIMIT_Y2", IO_GROUP_CONTROL, IO_PIN_INPUT},
+		[105] = {"LIMIT_Z2", IO_GROUP_CONTROL, IO_PIN_INPUT},
+		[106] = {"LIMIT_A", IO_GROUP_CONTROL, IO_PIN_INPUT},
+		[107] = {"LIMIT_B", IO_GROUP_CONTROL, IO_PIN_INPUT},
+		[108] = {"LIMIT_C", IO_GROUP_CONTROL, IO_PIN_INPUT},
+		[109] = {"PROBE", IO_GROUP_CONTROL, IO_PIN_INPUT},
+		[110] = {"ESTOP", IO_GROUP_CONTROL, IO_PIN_INPUT},
+		[111] = {"SAFETY_DOOR", IO_GROUP_CONTROL, IO_PIN_INPUT},
+		[112] = {"FHOLD", IO_GROUP_CONTROL, IO_PIN_INPUT},
+		[113] = {"CS_RES", IO_GROUP_CONTROL, IO_PIN_INPUT},
+		/* analog inputs */
+		[114] = {"ANALOG0", IO_GROUP_ANALOG, IO_PIN_ANALOG},
+		[115] = {"ANALOG1", IO_GROUP_ANALOG, IO_PIN_ANALOG},
+		[116] = {"ANALOG2", IO_GROUP_ANALOG, IO_PIN_ANALOG},
+		[117] = {"ANALOG3", IO_GROUP_ANALOG, IO_PIN_ANALOG},
+		[118] = {"ANALOG4", IO_GROUP_ANALOG, IO_PIN_ANALOG},
+		[119] = {"ANALOG5", IO_GROUP_ANALOG, IO_PIN_ANALOG},
+		[120] = {"ANALOG6", IO_GROUP_ANALOG, IO_PIN_ANALOG},
+		[121] = {"ANALOG7", IO_GROUP_ANALOG, IO_PIN_ANALOG},
+		[122] = {"ANALOG8", IO_GROUP_ANALOG, IO_PIN_ANALOG},
+		[123] = {"ANALOG9", IO_GROUP_ANALOG, IO_PIN_ANALOG},
+		[124] = {"ANALOG10", IO_GROUP_ANALOG, IO_PIN_ANALOG},
+		[125] = {"ANALOG11", IO_GROUP_ANALOG, IO_PIN_ANALOG},
+		[126] = {"ANALOG12", IO_GROUP_ANALOG, IO_PIN_ANALOG},
+		[127] = {"ANALOG13", IO_GROUP_ANALOG, IO_PIN_ANALOG},
+		[128] = {"ANALOG14", IO_GROUP_ANALOG, IO_PIN_ANALOG},
+		[129] = {"ANALOG15", IO_GROUP_ANALOG, IO_PIN_ANALOG},
+		/* generic inputs */
+		[130] = {"DIN0", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[131] = {"DIN1", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[132] = {"DIN2", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[133] = {"DIN3", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[134] = {"DIN4", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[135] = {"DIN5", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[136] = {"DIN6", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[137] = {"DIN7", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[138] = {"DIN8", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[139] = {"DIN9", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[140] = {"DIN10", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[141] = {"DIN11", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[142] = {"DIN12", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[143] = {"DIN13", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[144] = {"DIN14", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[145] = {"DIN15", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[146] = {"DIN16", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[147] = {"DIN17", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[148] = {"DIN18", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[149] = {"DIN19", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[150] = {"DIN20", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[151] = {"DIN21", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[152] = {"DIN22", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[153] = {"DIN23", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[154] = {"DIN24", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[155] = {"DIN25", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[156] = {"DIN26", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[157] = {"DIN27", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[158] = {"DIN28", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[159] = {"DIN29", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[160] = {"DIN30", IO_GROUP_INPUT, IO_PIN_INPUT},
+		[161] = {"DIN31", IO_GROUP_INPUT, IO_PIN_INPUT},
+		/* comms (initialized but not shown in the dashboard) */
+		[200] = {"TX", IO_GROUP_HIDDEN, IO_PIN_OUTPUT},
+		[201] = {"RX", IO_GROUP_HIDDEN, IO_PIN_INPUT},
+		[202] = {"USB_DM", IO_GROUP_HIDDEN, IO_PIN_INPUT},
+		[203] = {"USB_DP", IO_GROUP_HIDDEN, IO_PIN_INPUT},
+		[204] = {"SPI_CLK", IO_GROUP_HIDDEN, IO_PIN_OUTPUT},
+		[205] = {"SPI_SDI", IO_GROUP_HIDDEN, IO_PIN_INPUT},
+		[206] = {"SPI_SDO", IO_GROUP_HIDDEN, IO_PIN_OUTPUT},
+		[207] = {"SPI_CS", IO_GROUP_HIDDEN, IO_PIN_OUTPUT},
+		[208] = {"I2C_CLK", IO_GROUP_HIDDEN, IO_PIN_OUTPUT},
+		[209] = {"I2C_DATA", IO_GROUP_HIDDEN, IO_PIN_OUTPUT},
+		[210] = {"TX2", IO_GROUP_HIDDEN, IO_PIN_OUTPUT},
+		[211] = {"RX2", IO_GROUP_HIDDEN, IO_PIN_INPUT},
+	};
+
+	static void virtual_io_pins_init(void)
 	{
-		if (pin >= 1 && pin <= 24)
+		for (uint16_t i = 0; i < IO_PIN_COUNT; i++)
 		{
-			return pin - 1;
+			io_pins[i].type = io_pin_info[i].default_type;
+			io_pins[i].value = 0;
+			io_pins[i].vcd_char = (char)(33 + i);
 		}
-		else if (pin >= 47 && pin <= 78)
-		{
-			return pin - 47;
-		}
-		if (pin >= 100 && pin <= 113)
-		{
-			return pin - 100;
-		}
-		else if (pin >= 130 && pin <= 161)
-		{
-			return pin - 130;
-		}
-
-		return 255;
 	}
 
-	void mcu_config_input(uint8_t pin) { (void)pin; }
-	void mcu_config_output(uint8_t pin) { (void)pin; }
+	#ifndef PIO_UNIT_TESTING
+	static uint32_t virtual_outputs_signature(void)
+	{
+		uint32_t sig = 0;
+		for (uint8_t b = 0; b < 24; b++)
+		{
+			if (io_pins[b + 1].value)
+				sig |= (1UL << b);
+		}
+		return sig;
+	}
+#endif
+
+	void mcu_config_input(uint8_t pin) { io_pins[pin].type = IO_PIN_INPUT; }
+	void mcu_config_output(uint8_t pin)
+	{
+		io_pins[pin].type = (pin >= SERVO0 && pin <= SERVO5) ? IO_PIN_SERVO : IO_PIN_OUTPUT;
+	}
 	void mcu_config_pwm(uint8_t pin, uint16_t freq)
 	{
-		(void)pin;
 		(void)freq;
+		io_pins[pin].type = IO_PIN_PWM;
 	}
+	void mcu_config_analog(uint8_t pin) { io_pins[pin].type = IO_PIN_ANALOG; }
 
-	uint8_t mcu_get_input(uint8_t pin)
-	{
-		uint8_t offset = mcu_get_pin_offset(pin);
-		if (offset > 31)
-			return 0;
-		if (pin >= DIN0)
-			return (virtualmap.inputs & (1UL << offset)) ? 1 : 0;
-		return (virtualmap.special_inputs & (1UL << offset)) ? 1 : 0;
-	}
+	uint8_t mcu_get_input(uint8_t pin) { return io_pins[pin].value ? 1 : 0; }
+	uint8_t mcu_get_output(uint8_t pin) { return io_pins[pin].value ? 1 : 0; }
 
-	uint8_t mcu_get_output(uint8_t pin)
-	{
-		uint8_t offset = mcu_get_pin_offset(pin);
-		if (offset > 31)
-			return 0;
-		if (pin >= DOUT0)
-			return (virtualmap.outputs & (1UL << offset)) ? 1 : 0;
-		return (virtualmap.special_outputs & (1UL << offset)) ? 1 : 0;
-	}
+	void mcu_set_output(uint8_t pin) { io_pins[pin].value = 1; }
+	void mcu_clear_output(uint8_t pin) { io_pins[pin].value = 0; }
+	void mcu_toggle_output(uint8_t pin) { io_pins[pin].value = io_pins[pin].value ? 0 : 1; }
 
-	void mcu_set_output(uint8_t pin)
-	{
-		uint8_t offset = mcu_get_pin_offset(pin);
-		if (offset > 31)
-			return;
-		if (pin >= DOUT0)
-			virtualmap.outputs |= (1UL << offset);
-		else
-			virtualmap.special_outputs |= (1UL << offset);
-	}
-	void mcu_clear_output(uint8_t pin)
-	{
-		uint8_t offset = mcu_get_pin_offset(pin);
-		if (offset > 31)
-			return;
-		if (pin >= DOUT0)
-			virtualmap.outputs &= ~(1UL << offset);
-		else
-			virtualmap.special_outputs &= ~(1UL << offset);
-	}
-	void mcu_toggle_output(uint8_t pin)
-	{
-		uint8_t offset = mcu_get_pin_offset(pin);
-		if (offset > 31)
-			return;
-		if (pin >= DOUT0)
-			virtualmap.outputs ^= (1UL << offset);
-		else
-			virtualmap.special_outputs ^= (1UL << offset);
-	}
-
-	uint16_t mcu_get_analog(uint8_t channel)
-	{
-		channel -= ANALOG0;
-		return virtualmap.analog[channel];
-	}
+	uint16_t mcu_get_analog(uint8_t channel) { return io_pins[channel].value; }
 	void mcu_set_pwm(uint8_t pwm, uint8_t value)
 	{
-		pwm -= PWM0;
-		virtualmap.pwm[pwm] = value;
+		io_pins[pwm].type = IO_PIN_PWM;
+		io_pins[pwm].value = value;
 	}
-	uint8_t mcu_get_pwm(uint8_t pwm)
-	{
-		pwm -= PWM0;
-		return virtualmap.pwm[pwm];
-	}
+	uint8_t mcu_get_pwm(uint8_t pwm) { return (uint8_t)io_pins[pwm].value; }
 	void mcu_set_servo(uint8_t servo, uint8_t v)
 	{
-		servo -= SERVO0;
-		virtualmap.servos[servo] = v;
+		io_pins[servo].type = IO_PIN_SERVO;
+		io_pins[servo].value = v;
 	}
-	uint8_t mcu_get_servo(uint8_t servo)
-	{
-		servo -= SERVO0;
-		return virtualmap.servos[servo];
-	}
+	uint8_t mcu_get_servo(uint8_t servo) { return (uint8_t)io_pins[servo].value; }
 
 	void mcu_enable_probe_isr(void) {}
 	void mcu_disable_probe_isr(void) {}
@@ -759,10 +868,10 @@ extern "C"
 
 #define def_printpin(X) \
 	if (stimuli)        \
-	fprintf(stimuli, "$var wire 1 %c " #X " $end\n", 33 + X)
+	fprintf(stimuli, "$var wire 1 %c " #X " $end\n", io_pins[X].vcd_char)
 #define printpin(X) \
 	if (stimuli)    \
-	fprintf(stimuli, "%d%c\n", ((virtualmap.special_outputs & (1 << (X - 1))) ? 1 : 0), 33 + X)
+	fprintf(stimuli, "%d%c\n", io_pins[X].value, io_pins[X].vcd_char)
 
 	volatile unsigned long g_cpu_freq = 0;
 
@@ -771,10 +880,10 @@ extern "C"
 
 #define def_printpin(X) \
 	if (stimuli)        \
-	fprintf(stimuli, "$var wire 1 %c " #X " $end\n", 33 + X)
+	fprintf(stimuli, "$var wire 1 %c " #X " $end\n", io_pins[X].vcd_char)
 #define printpin(X) \
 	if (stimuli)    \
-	fprintf(stimuli, "%d%c\n", ((virtualmap.special_outputs & (1 << (X - 1))) ? 1 : 0), 33 + X)
+	fprintf(stimuli, "%d%c\n", io_pins[X].value, io_pins[X].vcd_char)
 
 	void virtual_delay_us(uint16_t delay)
 	{
@@ -924,7 +1033,7 @@ extern "C"
 #endif
 		BUFFER_CLEAR(unit_test_rx);
 		mcu_unit_test_buffer_clear();
-		memset((void *)&virtualmap, 0, sizeof(virtualmap));
+		virtual_io_pins_init();
 		test_io_reset();
 	}
 
@@ -979,9 +1088,9 @@ void ticksimul(void)
 #if defined(MCU_HAS_ONESHOT_TIMER)
 		mcu_gen_oneshot();
 #endif
-		if (prev ^ virtualmap.special_outputs)
+		if (prev ^ virtual_outputs_signature())
 		{
-			prev = virtualmap.special_outputs;
+			prev = virtual_outputs_signature();
 			if (stimuli)
 				fprintf(stimuli, "#%lu\n", tickcount);
 #if AXIS_COUNT > 0
@@ -1058,10 +1167,7 @@ void ticksimul(void)
 
 	/* ----- MCU init and main ------------------------------------------------ */
 
-#ifndef PIO_UNIT_TESTING
-	static pthread_t thread_io;
-#endif
-	void mcu_usb_init() {}
+void mcu_usb_init() {}
 	void mcu_uart_init() {}
 	void mcu_uart2_init() {}
 	// emulate flash update
@@ -1078,12 +1184,178 @@ void ticksimul(void)
 #endif
 	}
 
+	#ifndef PIO_UNIT_TESTING
+	/* ----- HTTP IO dashboard (localhost:VIRTUAL_HTTP_PORT) ------------------ */
+
+	extern int virtual_http_open(uint16_t port);
+	extern int virtual_http_accept(int fd);
+	extern int virtual_http_recv(int fd, char *buf, int len);
+	extern int virtual_http_send(int fd, const char *buf, int len);
+	extern void virtual_http_close(int fd);
+
+	static pthread_t thread_http;
+
+	static const char http_html[] =
+		"<!doctype html><html><head><meta charset='utf-8'><title>uCNC IO</title>\n"
+		"<style>\n"
+		"body{font-family:sans-serif;background:#111;color:#eee;margin:1em}\n"
+		"h1{font-size:1.2em}h2{font-size:1em;border-bottom:1px solid #444;padding-top:.8em}\n"
+		".pin{display:flex;align-items:center;gap:.6em;margin:.15em 0}\n"
+		".lab{width:7em;font-family:monospace}.led{width:.9em;height:.9em;border-radius:50%;display:inline-block;background:#333}\n"
+		".on{background:#0c0}.off{background:#500}input[type=range]{width:12em}\n"
+		"</style></head><body><h1>uCNC IO pins</h1><div id='groups'></div><script>\n"
+		"const T=['','Step/Dir','PWM/Servo','Generic outputs','Control inputs','Generic inputs','Analog inputs'];\n"
+		"const setPin=async(pin,value)=>{await fetch('/api/input',{method:'POST',body:`{\"pin\":${pin},\"value\":${value}}`});};\n"
+		"const line=(p,k)=>{if(k==='w')return `<label class='pin'><input type='checkbox' data-pin='${p.pin}' ${p.value?'checked':''}><span class='lab'>${p.label}</span></label>`;if(k==='a')return `<div class='pin'><span class='lab'>${p.label}</span><input type='range' min='0' max='1023' value='${p.value}' data-pin='${p.pin}'><span>${p.value}</span></div>`;return `<div class='pin'><span class='led ${p.value?'on':'off'}'></span><span class='lab'>${p.label}</span><span>${p.value}</span></div>`;};\n"
+		"async function refresh(){const pins=await (await fetch('/api/state')).json();const g=[[],[],[],[],[],[],[]];for(const p of pins)if(p.group>0&&p.group<7)g[p.group].push(p);let html='';for(let i=1;i<=6;i++){if(!g[i].length)continue;html+=`<h2>${T[i]}</h2>`;for(const p of g[i])html+=line(p,p.group===4||p.group===5?'w':(p.group===6?'a':'r'));}document.getElementById('groups').innerHTML=html;document.querySelectorAll('input[type=checkbox]').forEach(e=>e.onchange=()=>setPin(e.dataset.pin,e.checked?1:0));document.querySelectorAll('input[type=range]').forEach(e=>e.onchange=()=>setPin(e.dataset.pin,e.value));}\n"
+		"refresh();setInterval(refresh,100);\n"
+		"</script></body></html>\n";
+
+	static void http_respond(int fd, const char *status, const char *ctype, const char *body)
+	{
+		char hdr[512];
+		int n = snprintf(hdr, sizeof(hdr), "HTTP/1.1 %s\r\nContent-Type: %s\r\nContent-Length: %d\r\nConnection: close\r\n\r\n", status, ctype, (int)strlen(body));
+		virtual_http_send(fd, hdr, n);
+		virtual_http_send(fd, body, (int)strlen(body));
+	}
+
+	static void http_state_json(char *buf, size_t cap)
+	{
+		size_t n = 0;
+		bool first = true;
+		n += snprintf(buf + n, cap - n, "[");
+		for (uint16_t i = 1; i < IO_PIN_COUNT; i++)
+		{
+			if (io_pin_info[i].group == IO_GROUP_HIDDEN)
+				continue;
+			n += snprintf(buf + n, cap - n, "%s{\"pin\":%u,\"label\":\"%s\",\"group\":%u,\"type\":%u,\"value\":%u}",
+						  first ? "" : ",", (unsigned)i, io_pin_info[i].label,
+						  (unsigned)io_pin_info[i].group, (unsigned)io_pins[i].type, (unsigned)io_pins[i].value);
+			first = false;
+		}
+		snprintf(buf + n, cap - n, "]");
+	}
+
+	static void http_handle_input(int fd, const char *body)
+	{
+		int pin = -1;
+		int value = -1;
+		if (sscanf(body, "{\"pin\":%d,\"value\":%d}", &pin, &value) != 2 || pin < 1 || pin >= IO_PIN_COUNT)
+		{
+			http_respond(fd, "400 Bad Request", "application/json", "{\"error\":\"bad request\"}");
+			return;
+		}
+		io_pin_group_t grp = io_pin_info[pin].group;
+		if (grp == IO_GROUP_CONTROL || grp == IO_GROUP_INPUT)
+		{
+			io_pins[pin].type = IO_PIN_INPUT;
+			io_pins[pin].value = value ? 1 : 0;
+			if (pin == PROBE)
+				mcu_probe_changed_cb();
+			else if (pin >= LIMIT_X && pin <= LIMIT_C)
+				mcu_limits_changed_cb();
+			else if (pin >= ESTOP && pin <= CS_RES)
+				mcu_controls_changed_cb();
+			else
+				mcu_inputs_changed_cb();
+			http_respond(fd, "200 OK", "application/json", "{\"ok\":true}");
+		}
+		else if (grp == IO_GROUP_ANALOG)
+		{
+			if (value < 0)
+				value = 0;
+			else if (value > 1023)
+				value = 1023;
+			io_pins[pin].type = IO_PIN_ANALOG;
+			io_pins[pin].value = (uint16_t)value;
+			http_respond(fd, "200 OK", "application/json", "{\"ok\":true}");
+		}
+		else
+		{
+			http_respond(fd, "400 Bad Request", "application/json", "{\"error\":\"not an input\"}");
+		}
+	}
+
+	static int http_read_request(int client, char *req, int cap)
+	{
+		int total = 0;
+		int need = -1; /* -1 = waiting for header terminator */
+
+		while (total < cap - 1)
+		{
+			int r = virtual_http_recv(client, req + total, cap - 1 - total);
+			if (r <= 0)
+				break;
+			total += r;
+			req[total] = 0;
+
+			char *hend = strstr(req, "\r\n\r\n");
+			if (!hend)
+				continue;
+
+			if (need < 0)
+			{
+				char *cl = strstr(req, "Content-Length:");
+				need = cl ? atoi(cl + 15) : 0;
+			}
+			if (total - (int)(hend + 4 - req) >= need)
+				break;
+		}
+		return total;
+	}
+
+	static void *httpd(void *args)
+	{
+		(void)args;
+		int server = virtual_http_open(VIRTUAL_HTTP_PORT);
+		if (server < 0)
+		{
+			printf("HTTP dashboard: failed to bind 127.0.0.1:%d\n", VIRTUAL_HTTP_PORT);
+			return NULL;
+		}
+		printf("HTTP dashboard: http://127.0.0.1:%d\n", VIRTUAL_HTTP_PORT);
+		for (;;)
+		{
+			int client = virtual_http_accept(server);
+			if (client < 0)
+				continue;
+			char req[4096];
+			int got = http_read_request(client, req, (int)sizeof(req));
+			if (got > 0)
+			{
+				if (strncmp(req, "GET /api/state", 14) == 0)
+				{
+					char json[16384];
+					http_state_json(json, sizeof(json));
+					http_respond(client, "200 OK", "application/json", json);
+				}
+				else if (strncmp(req, "POST /api/input", 15) == 0)
+				{
+					char *body = strstr(req, "\r\n\r\n");
+					http_handle_input(client, body ? body + 4 : "");
+				}
+				else if (strncmp(req, "GET ", 4) == 0)
+				{
+					http_respond(client, "200 OK", "text/html; charset=utf-8", http_html);
+				}
+				else
+				{
+					http_respond(client, "404 Not Found", "text/plain", "not found");
+				}
+			}
+			virtual_http_close(client);
+		}
+	}
+#endif
+
 	extern void get_current_dir(char *cwd, size_t len);
 	extern int start_timer(int mSec, void (*timer_func_handler)(void));
 	extern void flash_fs_init(void);
 
 	void mcu_init(void)
 	{
+		virtual_io_pins_init();
+
 #ifndef PIO_UNIT_TESTING
 		char cwd[1024];
 		get_current_dir(cwd, 1024);
@@ -1107,14 +1379,9 @@ void ticksimul(void)
 	stimuli = NULL;
 #endif
 
-		virtualmap.special_outputs = 0;
-		virtualmap.special_inputs = 0;
-		virtualmap.inputs = 0;
-		virtualmap.outputs = 0;
-
 #ifndef PIO_UNIT_TESTING
 		start_timer(EMULATION_MS_TICK, &ticksimul);
-		pthread_create(&thread_io, NULL, &ioserver, NULL);
+		pthread_create(&thread_http, NULL, &httpd, NULL);
 #else
 	mcu_unit_test_clock_reset();
 #endif
