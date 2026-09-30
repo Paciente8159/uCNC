@@ -13,23 +13,27 @@
 // --------- //
 
 #define ic74hc595_wrap_target 0
-#define ic74hc595_wrap 5
+#define ic74hc595_wrap 9
 
 static const uint16_t ic74hc595_program_instructions[] = {
 		//     .wrap_target
 		0x80a0, //  0: pull   block
 		0xe03f, //  1: set    x, 31
 		0xe000, //  2: set    pins, 0
-		0x7001, //  3: out    pins, 1         side 0
-		0x1843, //  4: jmp    x--, 3          side 1
-		0xe002, //  5: set    pins, 2
+		0xe002, //  3: set    pins, 2
+		0x7001, //  4: out    pins, 1         side 0
+		0x5001, //  5: in     pins, 1         side 0
+		0x1844, //  6: jmp    x--, 4          side 1
+		0xe000, //  7: set    pins, 0
+		0xe002, //  8: set    pins, 2
+		0x8020, //  9: push   block
 						//     .wrap
 };
 
 #if !PICO_NO_HARDWARE
 static const struct pio_program ic74hc595_program = {
 		.instructions = ic74hc595_program_instructions,
-		.length = 6,
+		.length = 10,
 		.origin = -1,
 };
 
@@ -42,30 +46,35 @@ static inline pio_sm_config ic74hc595_program_get_default_config(uint offset)
 }
 
 #include "hardware/clocks.h"
-static inline void ic74hc595_program_init(PIO pio, uint sm, uint offset, uint pin_data, uint pin_clk, uint pin_latch, uint freq)
+static inline void ic74hc595_program_init(PIO pio, uint sm, uint offset, uint pin_data, uint pin_clk, uint pin_latch, uint pin_data_in, uint freq)
 {
 	pio_sm_config c = ic74hc595_program_get_default_config(offset);
-	sm_config_set_out_pins(&c, pin_data, 1); // define one pin to respond to the out instruction
-	sm_config_set_set_pins(&c, pin_clk, 2);	 // define all pins to respond to the set instruction
-	sm_config_set_sideset_pins(&c, pin_clk); // define clock as the side set base pin (and only)
-	// Only support MSB-first in this example code (shift to left, no auto push/pull, threshold=nbits)
+	sm_config_set_out_pins(&c, pin_data, 1); // one output pin (74HC595 SER)
+	sm_config_set_set_pins(&c, pin_clk, 2);	 // two set pins: clock and latch
+	sm_config_set_sideset_pins(&c, pin_clk); // clock as the side set base pin
+	sm_config_set_in_pins(&c, pin_data_in);  // one input pin (74HC165 Q_H)
+	// MSB-first in both directions, no auto push/pull, 32-bit threshold
 	sm_config_set_out_shift(&c, false, false, 32);
-	// All pins output
+	sm_config_set_in_shift(&c, true, false, 32);
+	// data, clock and latch pins are outputs
 	pio_sm_set_consecutive_pindirs(pio, sm, pin_data, 3, true);
 	pio_gpio_init(pio, pin_data);
 	pio_gpio_init(pio, pin_clk);
 	pio_gpio_init(pio, pin_latch);
-	// We only need TX, so get an 8-deep FIFO!
-	sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_TX);
-	// SM transmits 1 bit per 8 execution cycles.
-	float div = (float)clock_get_hz(clk_sys) / (freq << 1);
+	// bidirectional: default (non joined) FIFOs -> 4 deep TX + 4 deep RX
+	// 1 bit shifted per 3 execution cycles (out + in + clock edge)
+	float div = (float)clock_get_hz(clk_sys) / (freq * 3UL);
 	sm_config_set_clkdiv(&c, div);
 	pio_sm_init(pio, sm, offset, &c);
 	pio_sm_set_enabled(pio, sm, true);
 }
-static inline void ic74hc595_program_write(PIO pio, uint sm, uint out)
+static inline void ic74hc595_program_write(PIO pio, uint sm, uint32_t out)
 {
 	pio_sm_put_blocking(pio, sm, out);
+}
+static inline uint32_t ic74hc595_program_read(PIO pio, uint sm)
+{
+	return pio_sm_get_blocking(pio, sm);
 }
 
 #endif

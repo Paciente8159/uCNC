@@ -29,6 +29,15 @@ For this you just need to enable the custom 74HC595 IO shift option and define t
 #define IC74HC595_PIO_LATCH 28 //use GPIO28 for the 74HC595 data latch
 ```
 
+The clock and latch pins must be sequential (data, clock, latch), and the PIO drives the clock and latch via a shared line using a "2 pulse latch" strategy, so the 74HC595 outputs only update on the end-of-frame latch pulse (no glitches).
+
+To also read up to 4 chained 74HC165 input ICs over the same clock and latch, define the input count and the data input pin (defaults to `IC74HC595_PIO_DATA + 3`):
+
+```
+#define IC74HC165_COUNT 4 //also read 4 chained 74HC165 (32 input pins)
+#define IC74HC595_PIO_DATA_IN 29 //use GPIO29 for the 74HC165 serial data in (Q_H)
+```
+
 By default this will drive the 74HC595 at it's maximum speed of 20MHz. You can also modify the frequency by customizing the PIO clock speed like this:
 ```
 #define IC74HC595_PIO_FREQ 10000000 //Run the 74HC595 at 10MHz

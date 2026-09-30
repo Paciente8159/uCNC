@@ -58,8 +58,19 @@ uint8_t rp2040_pwm[16];
 #endif
 #endif
 
+#if (IC74HC165_COUNT > 0)
+#ifndef IC74HC595_PIO_DATA_IN
+#ifdef IC74HC595_PIO_DATA_IN_PIN
+#define IC74HC595_PIO_DATA_IN __indirect__(IC74HC595_PIO_DATA_IN_PIN, BIT)
+#else
+#define IC74HC595_PIO_DATA_IN (IC74HC595_PIO_DATA + 3)
+#warning "IC74HC165 DATA pin was set by default to use IC74HC595 DATA pin + 3"
+#endif
+#endif
+#endif
+
 #if IC74HC595_COUNT != 4
-#error "IC74HC595_COUNT must be 4 to use ESP32 I2S mode for IO shifting"
+#error "IC74HC595_COUNT must be 4 to use PR2040 PIO mode for IO shifting"
 #endif
 
 #ifdef IC74HC595_HAS_PWMS
@@ -79,14 +90,27 @@ void ic74hc595_pio_init() {
   uint offset = pio_add_program(pio_ic74hc595, &ic74hc595_program);
   ic74hc595_program_init(pio_ic74hc595, sm_ic74hc595, offset,
                          IC74HC595_PIO_DATA, IC74HC595_PIO_CLK,
-                         IC74HC595_PIO_LATCH, IC74HC595_PIO_FREQ);
+                         IC74HC595_PIO_LATCH,
+#if (IC74HC165_COUNT > 0)
+                         IC74HC595_PIO_DATA_IN,
+#else
+                         0,
+#endif
+                         IC74HC595_PIO_FREQ);
 }
 
-// disable this function
-// IO will be updated at a fixed rate
+// IO is updated at a fixed rate (blocking)
 MCU_CALLBACK void shift_register_io_pins(void) {
-  ic74hc595_program_write(pio_ic74hc595, sm_ic74hc595,
-                          *((volatile uint32_t *)&ic74hc595_io_pins[0]));
+  uint32_t out = *((volatile uint32_t *)&ic74hc595_io_pins[0]);
+  ic74hc595_program_write(pio_ic74hc595, sm_ic74hc595, out);
+
+#if (IC74HC165_COUNT > 0)
+  uint32_t in = ic74hc595_program_read(pio_ic74hc595, sm_ic74hc595);
+  *((volatile uint32_t *)&ic74hc165_io_pins[0]) = in;
+#else
+  // drain the RX FIFO so the trailing push never stalls
+  ic74hc595_program_read(pio_ic74hc595, sm_ic74hc595);
+#endif
 }
 
 #endif
