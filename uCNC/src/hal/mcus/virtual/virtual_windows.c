@@ -201,88 +201,6 @@ extern "C"
         return _getch();
     }
 
-    /**
-     * IO named pipe
-     *
-     */
-
-    void *ioserver(void *args)
-    {
-        (void)args;
-        HANDLE hPipe;
-        BOOL fSuccess = FALSE;
-        DWORD cbRead, cbToWrite, cbWritten;
-        LPTSTR lpszPipename = TEXT("\\\\.\\pipe\\ucncio");
-
-        for (;;)
-        {
-            BOOL fConnected = FALSE;
-            hPipe = CreateNamedPipe(
-                lpszPipename,
-                PIPE_ACCESS_DUPLEX,
-                PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT,
-                PIPE_UNLIMITED_INSTANCES,
-                sizeof(VIRTUAL_MAP),
-                sizeof(VIRTUAL_MAP),
-                0,
-                NULL);
-
-            if (hPipe == INVALID_HANDLE_VALUE)
-            {
-                printf("CreateNamedPipe failed, GLE=%lu.\n", GetLastError());
-                return NULL;
-            }
-
-            fConnected = ConnectNamedPipe(hPipe, NULL) ? TRUE : (GetLastError() == ERROR_PIPE_CONNECTED);
-            if (fConnected)
-            {
-                cbToWrite = sizeof(VIRTUAL_MAP);
-                uint8_t lpvMessage[sizeof(VIRTUAL_MAP)];
-                do
-                {
-                    memcpy(lpvMessage, (const void *)&virtualmap, sizeof(VIRTUAL_MAP));
-                    fSuccess = WriteFile(hPipe, lpvMessage, cbToWrite, &cbWritten, NULL);
-                    if (!fSuccess)
-                    {
-                        printf("WriteFile to pipe failed. GLE=%lu\n", GetLastError());
-                        break;
-                    }
-
-                    fSuccess = ReadFile(hPipe, lpvMessage, cbToWrite, &cbRead, NULL);
-                    if (!fSuccess && GetLastError() != ERROR_MORE_DATA)
-                        break;
-
-                    VIRTUAL_MAP *ptr = (VIRTUAL_MAP *)&lpvMessage[0];
-                    if (virtualmap.special_inputs != ptr->special_inputs)
-                    {
-                        uint32_t diff = virtualmap.special_inputs ^ ptr->special_inputs;
-                        virtualmap.special_inputs = ptr->special_inputs;
-                        if (diff & 0x1FFUL)
-                            mcu_limits_changed_cb();
-                        if (diff & 0x200UL)
-                            mcu_probe_changed_cb();
-                        if (diff & 0x3C00UL)
-                            mcu_controls_changed_cb();
-                    }
-                    if (virtualmap.inputs != ptr->inputs)
-                    {
-                        virtualmap.inputs = ptr->inputs;
-                        mcu_inputs_changed_cb();
-                    }
-                    memcpy((void *)virtualmap.analog, ptr->analog, 16);
-                } while (fSuccess);
-
-                if (!fSuccess)
-                {
-                    printf("ReadFile from pipe failed. GLE=%lu\n", GetLastError());
-                }
-            }
-
-            CloseHandle(hPipe);
-        }
-        return NULL;
-    }
-
     HANDLE win_timer;
     void (*timer_func_handler_pntr)(void);
     unsigned long perf_start;
@@ -852,6 +770,65 @@ int socket_init(void)
 
 	windows_state.flags |= WINDOWS_STATE_NET_STARTED;
 	return 0;
+}
+
+/* ----- Minimal blocking socket helpers for the HTTP IO dashboard ---------- */
+
+int virtual_http_open(uint16_t port)
+{
+	SOCKET s;
+	struct sockaddr_in addr;
+	int one = 1;
+
+	if (socket_init() != 0)
+	{
+		return -1;
+	}
+
+	s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (s == INVALID_SOCKET)
+	{
+		return -1;
+	}
+
+	setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (const char *)&one, sizeof(one));
+	memset(&addr, 0, sizeof(addr));
+	addr.sin_family = AF_INET;
+	addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+	addr.sin_port = htons(port);
+
+	if (bind(s, (const struct sockaddr *)&addr, sizeof(addr)) == SOCKET_ERROR ||
+		listen(s, 5) == SOCKET_ERROR)
+	{
+		closesocket(s);
+		return -1;
+	}
+
+	return (int)s;
+}
+
+int virtual_http_accept(int fd)
+{
+	return (int)accept((SOCKET)fd, NULL, NULL);
+}
+
+int virtual_http_recv(int fd, char *buf, int len)
+{
+	return (int)recv((SOCKET)fd, buf, len, 0);
+}
+
+int virtual_http_send(int fd, const char *buf, int len)
+{
+	return (int)send((SOCKET)fd, buf, len, 0);
+}
+
+void virtual_http_close(int fd)
+{
+	if (fd >= 0)
+	{
+		shutdown((SOCKET)fd, SD_SEND);
+		closesocket((SOCKET)fd);
+	}
 }
 
 static int windows_socket_device_init(const socket_device_events_t *events)

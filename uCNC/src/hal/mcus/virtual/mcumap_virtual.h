@@ -84,6 +84,11 @@
 #define ENABLE_SOCKETS
 // #define EMULATE_74HC595
 
+// HTTP IO dashboard (localhost, compile-time configurable)
+#ifndef VIRTUAL_HTTP_PORT
+#define VIRTUAL_HTTP_PORT 8888
+#endif
+
 // joints step/dir pins
 #ifndef EMULATE_74HC595
 #define STEP0 1
@@ -268,8 +273,44 @@
 #define DIO76 76
 #define DOUT30 77
 #define DIO77 77
-#define DOUT31 UNDEF_PIN
-#define DIO78 UNDEF_PIN
+#define DOUT31 78
+#define DIO78 78
+#define DOUT32 79
+#define DIO79 79
+#define DOUT33 80
+#define DIO80 80
+#define DOUT34 81
+#define DIO81 81
+#define DOUT35 82
+#define DIO82 82
+#define DOUT36 83
+#define DIO83 83
+#define DOUT37 84
+#define DIO84 84
+#define DOUT38 85
+#define DIO85 85
+#define DOUT39 86
+#define DIO86 86
+#define DOUT40 87
+#define DIO87 87
+#define DOUT41 88
+#define DIO88 88
+#define DOUT42 89
+#define DIO89 89
+#define DOUT43 90
+#define DIO90 90
+#define DOUT44 91
+#define DIO91 91
+#define DOUT45 92
+#define DIO92 92
+#define DOUT46 93
+#define DIO93 93
+#define DOUT47 94
+#define DIO94 94
+#define DOUT48 95
+#define DIO95 95
+#define DOUT49 96
+#define DIO96 96
 
 // #define ACTIVITY_LED UNDEF_PIN
 
@@ -391,6 +432,42 @@
 #define DIO160 160
 #define DIN31 161
 #define DIO161 161
+#define DIN32 162
+#define DIO162 162
+#define DIN33 163
+#define DIO163 163
+#define DIN34 164
+#define DIO164 164
+#define DIN35 165
+#define DIO165 165
+#define DIN36 166
+#define DIO166 166
+#define DIN37 167
+#define DIO167 167
+#define DIN38 168
+#define DIO168 168
+#define DIN39 169
+#define DIO169 169
+#define DIN40 170
+#define DIO170 170
+#define DIN41 171
+#define DIO171 171
+#define DIN42 172
+#define DIO172 172
+#define DIN43 173
+#define DIO173 173
+#define DIN44 174
+#define DIO174 174
+#define DIN45 175
+#define DIO175 175
+#define DIN46 176
+#define DIO176 176
+#define DIN47 177
+#define DIO177 177
+#define DIN48 178
+#define DIO178 178
+#define DIN49 179
+#define DIO179 179
 #define ANALOG0 114
 #define DIO114 114
 #define ANALOG1 115
@@ -457,18 +534,47 @@
 #define DIN6_ISR
 #define DIN7_ISR
 
-typedef struct virtual_map_t
+/* Per-pin IO model (replaces the packed VIRTUAL_MAP) */
+typedef enum io_pin_type_
 {
-	uint32_t special_outputs;
-	uint32_t outputs;
-	uint8_t pwm[16];
-	uint8_t servos[6];
-	uint32_t special_inputs;
-	uint32_t inputs;
-	uint8_t analog[16];
-} VIRTUAL_MAP;
+	IO_PIN_UNDEF = 0, /* default */
+	IO_PIN_INPUT,
+	IO_PIN_OUTPUT,
+	IO_PIN_PWM,
+	IO_PIN_SERVO,
+	IO_PIN_ANALOG
+} io_pin_type_t;
 
-extern volatile VIRTUAL_MAP virtualmap;
+typedef struct io_pin_
+{
+	uint8_t type;   /* io_pin_type_t */
+	uint16_t value; /* input/output 0-1, pwm/servo 0-255, analog 0-1023 */
+	char vcd_char;  /* VCD log char */
+} io_pin_t;
+
+#define IO_PIN_COUNT 212
+
+extern volatile io_pin_t io_pins[IO_PIN_COUNT];
+
+typedef enum io_pin_group_
+{
+	IO_GROUP_HIDDEN = 0, /* comms pins + undefined gaps */
+	IO_GROUP_STEPDIR,    /* step/dir/enable */
+	IO_GROUP_PWM_SERVO,  /* pwm and servo */
+	IO_GROUP_OUTPUT,     /* generic outputs */
+	IO_GROUP_CONTROL,    /* limits/probe/estop/safety/fhold/csres */
+	IO_GROUP_INPUT,      /* generic inputs */
+	IO_GROUP_ANALOG      /* analog inputs */
+} io_pin_group_t;
+
+typedef struct io_pin_info_
+{
+	const char *label;
+	io_pin_group_t group;
+	io_pin_type_t default_type;
+} io_pin_info_t;
+
+extern const io_pin_info_t io_pin_info[IO_PIN_COUNT];
 
 #define MCU_HAS_ONESHOT_TIMER
 
@@ -489,7 +595,6 @@ extern volatile VIRTUAL_MAP virtualmap;
 // just to compile
 #define mcu_nop()
 #define mcu_config_pullup(diopin)
-#define mcu_config_analog(diopin)
 #define asm __asm__
 #define mcu_config_input_isr(x)
 

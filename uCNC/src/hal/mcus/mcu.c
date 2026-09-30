@@ -1064,7 +1064,7 @@ static void FORCEINLINE mcu_coms_init(void) {
 #endif
 }
 
-void __attribute__((weak)) mcu_io_init(void) {
+void mcu_io_init(void) {
   // init outputs
   mcu_outputs_init();
   // init inputs
