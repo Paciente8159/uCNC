@@ -1,6 +1,6 @@
 ---
 name: ucnc-hal-mcu
-description: Use when the user asks to create, modify, port, debug, or troubleshoot an MCU backend (mcumap, mcu_*.c, boardmap, timer allocation, peripheral config, pin mapping) or any code under uCNC/src/hal/mcus/.
+description: Use when the user asks to create, modify, port, debug, or troubleshoot an µCNC MCU backend (mcumap, mcu_*.c, boardmap, timer allocation, peripheral config, pin mapping) or any code under uCNC/src/hal/mcus/.
 disable-model-invocation: false
 ---
 
