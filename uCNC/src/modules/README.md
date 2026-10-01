@@ -30,9 +30,9 @@ Handles encoder reading, atomic operations, and hook‑based callbacks for respo
 Used for jog wheels, spindle feedback, or other closed‑loop features (stepper position loop feedback for example).
 Read more about encoders [here](https://github.com/Paciente8159/uCNC/blob/master/uCNC/src/modules/encoder.md)
 
-### endpoint.h / websocket.h (depracated)
-Defines JSON API endpoints used by the communication and file‑system layers and for a websocket communication channel to control the board via ethernet/wireless.
-Forms part of the interface for external tools and UI integrations.
+### net/
+Network server modules built on top of the µCNC network library. Provides a generic TCP socket server (see socket.md), a telnet server, an http server, and a websocket server.
+Forms part of the interface for external tools and UI integrations to control the board via ethernet/wireless.
 
 ### file_system.c / file_system.h
 Implements the internal file‑system layer.
@@ -46,6 +46,12 @@ Enables expansion of input pins for switches, sensors, and other digital inputs.
 ### ic74hc595.h
 Driver for the 74HC595 serial‑in parallel‑out shift register.
 Enables expansion of output pins for LEDs, relays, and other digital outputs.
+
+### shift_register.c / shift_register.h
+Generic shift register module that integrates the 74HC165/74HC595 drivers to expand generic digital inputs and outputs.
+
+### flash_update.c / flash_update.h
+Flash updater module. Registers a `flash_udpate_t` device interface (begin/write/end/restart) so the firmware can be updated in place from a file stream and the device restarted.
 
 ### modbus.c / modbus.h
 Implements Modbus communication support emulation.

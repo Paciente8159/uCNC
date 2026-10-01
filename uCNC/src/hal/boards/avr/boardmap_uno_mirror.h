@@ -1,27 +1,28 @@
 /*
-	Name: boardmap_uno_mirror.h
-	Description: Contains all MCU and PIN definitions for Arduino UNO to run µCNC in mirror mode.
+        Name: boardmap_uno_mirror.h
+        Description: Contains all MCU and PIN definitions for Arduino UNO to run
+   µCNC in mirror mode.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 04-03-2026
+        Copyright: Copyright (c) João Martins
+        Author: João Martins
+        Date: 04-03-2026
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+        µCNC is free software: you can redistribute it and/or modify
+        it under the terms of the GNU General Public License as published by
+        the Free Software Foundation, either version 3 of the License, or
+        (at your option) any later version. Please see
+   <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+        µCNC is distributed WITHOUT ANY WARRANTY;
+        Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A
+   PARTICULAR PURPOSE. See the	GNU General Public License for more details.
 */
 
 #ifndef BOARDMAP_UNO_MIRROR_H
 #define BOARDMAP_UNO_MIRROR_H
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 #ifndef MCU
@@ -36,14 +37,13 @@ extern "C"
 #define F_CPU 16000000UL
 #endif
 
-
 // SAME AS GRBL for test purposes
 // Setup step pins
-#define DIN2_BIT 4	 // assigns STEP2 pin
+#define DIN2_BIT 4  // assigns STEP2 pin
 #define DIN2_PORT D // assigns STEP2 port
-#define DIN1_BIT 3	 // assigns STEP1 pin
+#define DIN1_BIT 3  // assigns STEP1 pin
 #define DIN1_PORT D // assigns STEP1 port
-#define DIN0_BIT 2	 // assigns STEP0 pin
+#define DIN0_BIT 2  // assigns STEP0 pin
 #define DIN0_PORT D // assigns STEP0 port
 #define DIN2_ISR 20
 #define DIN1_ISR 19
@@ -53,12 +53,12 @@ extern "C"
 #define DIN0_PULLUP
 
 // Setup dir pins
-#define DIN10_BIT 7	// assigns DIR2 pin
+#define DIN10_BIT 7  // assigns DIR2 pin
 #define DIN10_PORT D // assigns DIR2 port
-#define DIN9_BIT 6	// assigns DIR1 pin
-#define DIN9_PORT D // assigns DIR1 port
-#define DIN8_BIT 5	// assigns DIR0 pin
-#define DIN8_PORT D // assigns DIR0 port
+#define DIN9_BIT 6   // assigns DIR1 pin
+#define DIN9_PORT D  // assigns DIR1 port
+#define DIN8_BIT 5   // assigns DIR0 pin
+#define DIN8_PORT D  // assigns DIR0 port
 #define DIN10_PULLUP
 #define DIN9_PULLUP
 #define DIN8_PULLUP

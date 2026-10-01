@@ -1,30 +1,31 @@
 /*
-	Name: boardmap_mks_monster8_v2.h
-	Description: Contains all MCU and PIN definitions for board MKS Monster8 to run µCNC.
+        Name: boardmap_mks_monster8_v2.h
+        Description: Contains all MCU and PIN definitions for board MKS Monster8
+   to run µCNC.
 
-	Copyright: Copyright (c) Takuo Nakano
-	Author: Takuo Nakano
-	Date: 17/07/2026
+        Copyright: Copyright (c) Takuo Nakano
+        Author: Takuo Nakano
+        Date: 17/07/2026
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+        µCNC is free software: you can redistribute it and/or modify
+        it under the terms of the GNU General Public License as published by
+        the Free Software Foundation, either version 3 of the License, or
+        (at your option) any later version. Please see
+   <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+        µCNC is distributed WITHOUT ANY WARRANTY;
+        Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A
+   PARTICULAR PURPOSE. See the	GNU General Public License for more details.
 
-	** Also see for pin assign **
-	https://github.com/makerbase-mks/MKS-Monster8/blob/main/hardware/MKS%20Monster8%20V2.0_003/MKS%20Monster8%20V2.0_003%20PIN.pdf
+        ** Also see for pin assign **
+        https://github.com/makerbase-mks/MKS-Monster8/blob/main/hardware/MKS%20Monster8%20V2.0_003/MKS%20Monster8%20V2.0_003%20PIN.pdf
 */
 
 #ifndef BOARDMAP_MKS_MONSTER8_V2_H
 #define BOARDMAP_MKS_MONSTER8_V2_H
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 #ifndef MCU
@@ -64,7 +65,6 @@ extern "C"
 #define STEP7_BIT 13
 #define STEP7_PORT D
 
-
 // Setup dir pins
 #define DIR0_BIT 13
 #define DIR0_PORT C
@@ -82,7 +82,6 @@ extern "C"
 #define DIR6_PORT C
 #define DIR7_BIT 12
 #define DIR7_PORT D
-
 
 // Stepper enable pin. For Grbl on Uno board a single pin is used
 #define STEP0_EN_BIT 15
@@ -109,9 +108,9 @@ extern "C"
 #define LIMIT_Y_BIT 15
 #define LIMIT_Y_PORT A
 #define LIMIT_Y_PULLUP
-#define LIMIT_Z_BIT 12 // use Z+ Limit SW connector
-#define LIMIT_Z_PORT B // use Z+ Limit SW connector
-#define LIMIT_Z_PULLUP // use Z+ Limit SW connector
+#define LIMIT_Z_BIT 12  // use Z+ Limit SW connector
+#define LIMIT_Z_PORT B  // use Z+ Limit SW connector
+#define LIMIT_Z_PULLUP  // use Z+ Limit SW connector
 #define LIMIT_Z2_BIT 13 // use Z- Limit SW connector
 #define LIMIT_Z2_PORT B // use Z- Limit SW connector
 #define LIMIT_Z2_PULLUP // use Z- Limit SW connector
@@ -125,7 +124,7 @@ extern "C"
 // Setup probe pin
 // use MT_DET Limit SW connector
 #define PROBE_BIT 13
-#define PROBE_PORT A 
+#define PROBE_PORT A
 #define PROBE_ISR
 
 // Setup COM pins
@@ -149,40 +148,40 @@ extern "C"
 #define USB_DP_PORT A
 
 // Setup PWM
-#define PWM0_BIT 1     // HE0 connector
+#define PWM0_BIT 1 // HE0 connector
 #define PWM0_PORT B
 #define PWM0_CHANNEL 4
-#define PWM0_TIMER 3 
-#define PWM1_BIT 0     // HE1 connector
+#define PWM0_TIMER 3
+#define PWM1_BIT 0 // HE1 connector
 #define PWM1_PORT B
 #define PWM1_CHANNEL 3
 #define PWM1_TIMER 3
-#define PWM2_BIT 3     // HE2 connector
+#define PWM2_BIT 3 // HE2 connector
 #define PWM2_PORT A
 #define PWM2_CHANNEL 4
 #define PWM2_TIMER 5
-#define PWM3_BIT 10    // H-BED connector
+#define PWM3_BIT 10 // H-BED connector
 #define PWM3_PORT B
 #define PWM3_CHANNEL 3
 #define PWM3_TIMER 2
 
 // digital out
-#define DOUT0_BIT 2   // FAN0 connector
+#define DOUT0_BIT 2 // FAN0 connector
 #define DOUT0_PORT A
-#define DOUT1_BIT 1   // FAN1 connector
+#define DOUT1_BIT 1 // FAN1 connector
 #define DOUT1_PORT A
-#define DOUT2_BIT 0   // FAN2 connector
+#define DOUT2_BIT 0 // FAN2 connector
 #define DOUT2_PORT A
 
 // spindle dir
 // analog input
-#define ANALOG0_BIT 0        // TB connector
+#define ANALOG0_BIT 0 // TB connector
 #define ANALOG0_PORT C
 #define ANALOG0_CHANNEL 10
-#define ANALOG1_BIT 1        // TH0 connector
+#define ANALOG1_BIT 1 // TH0 connector
 #define ANALOG1_PORT C
 #define ANALOG1_CHANNEL 11
-#define ANALOG2_BIT 2        // TH1 connector
+#define ANALOG2_BIT 2 // TH1 connector
 #define ANALOG2_PORT C
 #define ANALOG2_CHANNEL 12
 #define ANALOG3_CHANNEL -1
@@ -199,8 +198,7 @@ extern "C"
 #define ANALOG14_CHANNEL -1
 #define ANALOG15_CHANNEL -1
 
-
-#define SERVO0_BIT 8    // 3DTOUCH connector
+#define SERVO0_BIT 8 // 3DTOUCH connector
 #define SERVO0_PORT A
 
 // Setup the Step Timer used has the heartbeat for µCNC

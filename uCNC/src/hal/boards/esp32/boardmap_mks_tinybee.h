@@ -1,27 +1,28 @@
 /*
-	Name: boardmap_mks_tinybee.h
-	Description: Contains all MCU and PIN definitions for Arduino WeMos D1 to run µCNC.
+        Name: boardmap_mks_tinybee.h
+        Description: Contains all MCU and PIN definitions for Arduino WeMos D1
+   to run µCNC.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 11/10/2022
+        Copyright: Copyright (c) João Martins
+        Author: João Martins
+        Date: 11/10/2022
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+        µCNC is free software: you can redistribute it and/or modify
+        it under the terms of the GNU General Public License as published by
+        the Free Software Foundation, either version 3 of the License, or
+        (at your option) any later version. Please see
+   <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+        µCNC is distributed WITHOUT ANY WARRANTY;
+        Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A
+   PARTICULAR PURPOSE. See the	GNU General Public License for more details.
 */
 
 #ifndef BOARDMAP_MKS_TINYBEE_H
 #define BOARDMAP_MKS_TINYBEE_H
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 #ifndef MCU
@@ -61,12 +62,14 @@ extern "C"
 // #define DOUT10_BIT 26
 
 // Use I2S to shift data in ESP32
-#define IC74HC595_CUSTOM_SHIFT_IO // Enables custom MCU data shift transmission. In ESP32 that is via I2S
+#define IC74HC595_CUSTOM_SHIFT_IO // Enables custom MCU data shift transmission.
+                                  // In ESP32 that is via I2S
 #define IC74HC595_I2S_WS 26
 #define IC74HC595_I2S_CLK 25
 #define IC74HC595_I2S_DATA 27
 // #define IC74HC595_I2S_PORT 0
-// uses 3 x 74HS595 but for I2S use this value has to be set to 4 (I2S sends data as 32-bit (4bytes))
+// uses 3 x 74HS595 but for I2S use this value has to be set to 4 (I2S sends
+// data as 32-bit (4bytes))
 #define IC74HC595_COUNT 4
 
 #define STEP0_EN_IO_OFFSET 0
@@ -91,11 +94,11 @@ extern "C"
 #define PWM4_IO_OFFSET 20
 #define DOUT0_IO_OFFSET 22
 #define DOUT2_IO_OFFSET 23
-	// Setup the Step Timer used has the heartbeat for µCNC
-	// Timer 1 is used by default
-	// #define ITP_TIMER 1
+// Setup the Step Timer used has the heartbeat for µCNC
+// Timer 1 is used by default
+// #define ITP_TIMER 1
 
-	// RTC Timer on ESP32 is granteed by a FreeRTOS
+// RTC Timer on ESP32 is granteed by a FreeRTOS
 
 #define ONESHOT_TIMER 2
 

@@ -9,11 +9,12 @@
 // 	µCNC is free software: you can redistribute it and/or modify
 // 	it under the terms of the GNU General Public License as published by
 // 	the Free Software Foundation, either version 3 of the License, or
-// 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+// 	(at your option) any later version. Please see
+// <http://www.gnu.org/licenses/>
 
 // 	µCNC is distributed WITHOUT ANY WARRANTY;
-// 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-// 	See the	GNU General Public License for more details.
+// 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A
+// PARTICULAR PURPOSE. 	See the	GNU General Public License for more details.
 // */
 
 // #include "../../../cnc.h"
@@ -90,9 +91,9 @@
 
 // static void ensure_dhcps_ap_started(void)
 // {
-// 	// Ensure SoftAP has a sane IP and DHCP server started (192.168.4.1/24 by default)
-// 	struct ip_info ip;
-// 	if (!wifi_get_ip_info(SOFTAP_IF, &ip) || ip.ip.addr == 0)
+// 	// Ensure SoftAP has a sane IP and DHCP server started (192.168.4.1/24
+// by default) 	struct ip_info ip; 	if (!wifi_get_ip_info(SOFTAP_IF, &ip) ||
+// ip.ip.addr == 0)
 // 	{
 // 		// Set default 192.168.4.1/24
 // 		struct ip_info info;
@@ -125,17 +126,18 @@
 // {
 // 	// Disable all Wi-Fi sleep/power saving for lowest latency
 // 	wifi_set_sleep_type(NONE_SLEEP_T);
-// 	// Set mode to STA (will not disturb AP if user later enables STA+AP via set_mode)
-// 	wifi_set_opmode_current(STATION_MODE);
+// 	// Set mode to STA (will not disturb AP if user later enables STA+AP via
+// set_mode) 	wifi_set_opmode_current(STATION_MODE);
 
 // 	// Prepare station config
 // 	struct station_config conf;
 // 	os_memset(&conf, 0, sizeof(conf));
 
 // 	// SSID (max 32), password (0/open or 8..64 for WPA/WPA2 or 64 hex PSK)
-// 	// The NON-OS SDK expects up to 32 bytes in ssid, 64 in password (no need for explicit null if length is exact).
-// 	safe_strcpy((char *)conf.ssid, ssid, sizeof(conf.ssid));
-// 	safe_strcpy((char *)conf.password, pass ? pass : "", sizeof(conf.password));
+// 	// The NON-OS SDK expects up to 32 bytes in ssid, 64 in password (no
+// need for explicit null if length is exact). 	safe_strcpy((char *)conf.ssid,
+// ssid, sizeof(conf.ssid)); 	safe_strcpy((char *)conf.password, pass ? pass :
+// "", sizeof(conf.password));
 
 // 	// Apply config (current, not persistent)
 // 	wifi_station_set_config_current(&conf);
@@ -183,7 +185,8 @@
 // void esp8266_wifi_ap_init(char *ap_name, char *pass)
 // {
 // 	// Ensure AP mode enabled (will coexist if user selected STA+AP)
-// 	wifi_set_opmode_current((wifi_get_opmode() == STATION_MODE) ? STATIONAP_MODE : SOFTAP_MODE);
+// 	wifi_set_opmode_current((wifi_get_opmode() == STATION_MODE) ?
+// STATIONAP_MODE : SOFTAP_MODE);
 
 // 	struct softap_config conf;
 // 	os_memset(&conf, 0, sizeof(conf));
@@ -199,8 +202,8 @@
 // 	size_t psk_len = pass ? os_strlen(pass) : 0;
 // 	if (psk_len >= 8 && psk_len <= 64)
 // 	{
-// 		os_memcpy(conf.password, pass, (psk_len > sizeof(conf.password) ? sizeof(conf.password) : psk_len));
-// 		conf.authmode = AUTH_WPA2_PSK;
+// 		os_memcpy(conf.password, pass, (psk_len > sizeof(conf.password)
+// ? sizeof(conf.password) : psk_len)); 		conf.authmode = AUTH_WPA2_PSK;
 // 	}
 // 	else
 // 	{
@@ -259,10 +262,11 @@
 // 	struct bss_info *bss = (struct bss_info *)arg;
 // 	bss = bss->next.stqe_next; // first entry is a dummy
 
-// 	while (bss && g_scan_count < (sizeof(g_scan_results) / sizeof(scan_result_t)))
+// 	while (bss && g_scan_count < (sizeof(g_scan_results) /
+// sizeof(scan_result_t)))
 // 	{
-// 		os_strncpy(g_scan_results[g_scan_count].ssid, (char *)bss->ssid, 32);
-// 		g_scan_results[g_scan_count].ssid[32] = '\0';
+// 		os_strncpy(g_scan_results[g_scan_count].ssid, (char *)bss->ssid,
+// 32); 		g_scan_results[g_scan_count].ssid[32] = '\0';
 // 		g_scan_results[g_scan_count].rssi = bss->rssi;
 // 		g_scan_results[g_scan_count].channel = bss->channel;
 // 		g_scan_results[g_scan_count].encryption = bss->authmode;
@@ -275,9 +279,9 @@
 
 // void esp8266_wifi_scan(void)
 // {
-// 	// Ensure STA is enabled for scanning and disconnected (SDK scans on STA interface)
-// 	wifi_set_opmode_current((wifi_get_opmode() == SOFTAP_MODE) ? STATIONAP_MODE : STATION_MODE);
-// 	wifi_station_disconnect();
+// 	// Ensure STA is enabled for scanning and disconnected (SDK scans on STA
+// interface) 	wifi_set_opmode_current((wifi_get_opmode() == SOFTAP_MODE) ?
+// STATIONAP_MODE : STATION_MODE); 	wifi_station_disconnect();
 
 // 	struct scan_config cfg;
 // 	os_memset(&cfg, 0, sizeof(cfg));
@@ -304,12 +308,13 @@
 // 	proto_info("%d available networks", g_scan_count);
 // 	for (int netid = 0; netid < g_scan_count; netid++)
 // 	{
-// 		proto_info("%d) %s\tSignal:  %ddBm", netid, g_scan_results[netid].ssid, g_scan_results[netid].rssi);
+// 		proto_info("%d) %s\tSignal:  %ddBm", netid,
+// g_scan_results[netid].ssid, g_scan_results[netid].rssi);
 // 	}
 // }
 
-// // Disconnect from all Wi-Fi (STA and AP) and optionally turn off Wi-Fi hardware
-// void esp8266_wifi_disconnect_all(bool wifioff)
+// // Disconnect from all Wi-Fi (STA and AP) and optionally turn off Wi-Fi
+// hardware void esp8266_wifi_disconnect_all(bool wifioff)
 // {
 // 	// Disconnect STA
 // 	wifi_station_disconnect();
@@ -354,9 +359,8 @@
 // 		esp8266_wifi_set_mode(wifi_settings.wifi_mode);
 // 		if (wifi_settings.wifi_mode & WIFI_MODE_STA)
 // 		{
-// 			esp8266_wifi_sta_init(wifi_settings.ssid, wifi_settings.pass);
-// 			proto_info("Trying to connect to WiFi");
-// 			break;
+// 			esp8266_wifi_sta_init(wifi_settings.ssid,
+// wifi_settings.pass); 			proto_info("Trying to connect to WiFi"); 			break;
 // 		}
 // 		if (wifi_settings.wifi_mode & WIFI_MODE_AP)
 // 		{
@@ -395,7 +399,8 @@
 // 		if (!strcmp((const char *)&(cmd_params->cmd)[4], "ON"))
 // 		{
 // 			esp8266_wifi_on();
-// 			settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
+// 			settings_save(wifi_settings_offset, (uint8_t
+// *)&wifi_settings, sizeof(wifi_settings_t));
 // 			*(cmd_params->error) = STATUS_OK;
 // 			return EVENT_HANDLED;
 // 		}
@@ -403,7 +408,8 @@
 // 		if (!strcmp((const char *)&(cmd_params->cmd)[4], "OFF"))
 // 		{
 // 			esp8266_wifi_off();
-// 			settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
+// 			settings_save(wifi_settings_offset, (uint8_t
+// *)&wifi_settings, sizeof(wifi_settings_t));
 // 			*(cmd_params->error) = STATUS_OK;
 // 			return EVENT_HANDLED;
 // 		}
@@ -412,22 +418,23 @@
 // 		{
 // 			if (has_arg)
 // 			{
-// 				int8_t len = parser_get_grbl_cmd_arg(arg, ARG_MAX_LEN);
+// 				int8_t len = parser_get_grbl_cmd_arg(arg,
+// ARG_MAX_LEN);
 
 // 				if (len < 0)
 // 				{
-// 					*(cmd_params->error) = STATUS_INVALID_STATEMENT;
-// 					return EVENT_HANDLED;
+// 					*(cmd_params->error) =
+// STATUS_INVALID_STATEMENT; 					return EVENT_HANDLED;
 // 				}
 
 // 				if (len > WIFI_SSID_MAX_LEN)
 // 				{
 // 					proto_info("WiFi SSID is too long");
 // 				}
-// 				memset(wifi_settings.ssid, 0, sizeof(wifi_settings.ssid));
-// 				strcpy((char *)wifi_settings.ssid, (const char *)arg);
-// 				settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
-// 				proto_info("WiFi SSID modified");
+// 				memset(wifi_settings.ssid, 0,
+// sizeof(wifi_settings.ssid)); 				strcpy((char *)wifi_settings.ssid, (const char
+// *)arg); 				settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings,
+// sizeof(wifi_settings_t)); 				proto_info("WiFi SSID modified");
 // 			}
 // 			else
 // 			{
@@ -447,16 +454,18 @@
 
 // 		if (!strcmp((const char *)&(cmd_params->cmd)[4], "SAVE"))
 // 		{
-// 			settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
-// 			proto_info("WiFi settings saved");
+// 			settings_save(wifi_settings_offset, (uint8_t
+// *)&wifi_settings, sizeof(wifi_settings_t)); 			proto_info("WiFi settings
+// saved");
 // 			*(cmd_params->error) = STATUS_OK;
 // 			return EVENT_HANDLED;
 // 		}
 
 // 		if (!strcmp((const char *)&(cmd_params->cmd)[4], "RESET"))
 // 		{
-// 			settings_erase(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
-// 			proto_info("WiFi settings deleted");
+// 			settings_erase(wifi_settings_offset, (uint8_t
+// *)&wifi_settings, sizeof(wifi_settings_t)); 			proto_info("WiFi settings
+// deleted");
 // 			*(cmd_params->error) = STATUS_OK;
 // 			return EVENT_HANDLED;
 // 		}
@@ -465,12 +474,13 @@
 // 		{
 // 			if (has_arg)
 // 			{
-// 				int8_t len = parser_get_grbl_cmd_arg(arg, ARG_MAX_LEN);
+// 				int8_t len = parser_get_grbl_cmd_arg(arg,
+// ARG_MAX_LEN);
 
 // 				if (len < 0)
 // 				{
-// 					*(cmd_params->error) = STATUS_INVALID_STATEMENT;
-// 					return EVENT_HANDLED;
+// 					*(cmd_params->error) =
+// STATUS_INVALID_STATEMENT; 					return EVENT_HANDLED;
 // 				}
 
 // 				int mode = atoi((const char *)arg);
@@ -480,7 +490,8 @@
 // 				}
 // 				else
 // 				{
-// 					proto_info("Invalid value. OFF(0), STA(1), AP(2), STA+AP(3)");
+// 					proto_info("Invalid value. OFF(0),
+// STA(1), AP(2), STA+AP(3)");
 // 				}
 // 			}
 
@@ -503,7 +514,8 @@
 // 			return EVENT_HANDLED;
 // 		}
 
-// 		if (!strcmp((const char *)&(cmd_params->cmd)[4], "PASS") && has_arg)
+// 		if (!strcmp((const char *)&(cmd_params->cmd)[4], "PASS") &&
+// has_arg)
 // 		{
 // 			int8_t len = parser_get_grbl_cmd_arg(arg, ARG_MAX_LEN);
 
@@ -518,9 +530,9 @@
 // 				proto_info("WiFi pass is too long");
 // 				return EVENT_HANDLED;
 // 			}
-// 			memset(wifi_settings.pass, 0, sizeof(wifi_settings.pass));
-// 			strcpy((char *)wifi_settings.pass, (const char *)arg);
-// 			proto_info("WiFi password modified");
+// 			memset(wifi_settings.pass, 0,
+// sizeof(wifi_settings.pass)); 			strcpy((char *)wifi_settings.pass, (const char
+// *)arg); 			proto_info("WiFi password modified");
 // 			*(cmd_params->error) = STATUS_OK;
 // 			return EVENT_HANDLED;
 // 		}
@@ -531,12 +543,14 @@
 // 			{
 // 				if (wifi_settings.wifi_mode & WIFI_MODE_STA)
 // 				{
-// 					proto_info("STA IP>%I", esp8266_wifi_ip());
+// 					proto_info("STA IP>%I",
+// esp8266_wifi_ip());
 // 				}
 
 // 				if (wifi_settings.wifi_mode & WIFI_MODE_AP)
 // 				{
-// 					proto_info("AP IP>%s", esp8266_wifi_ap_ip());
+// 					proto_info("AP IP>%s",
+// esp8266_wifi_ap_ip());
 // 				}
 // 			}
 // 			else
@@ -560,16 +574,16 @@
 // 	switch (evt->event)
 // 	{
 // 	case EVENT_STAMODE_CONNECTED:
-// 		os_printf("STA connected to SSID %s\n", evt->event_info.connected.ssid);
-// 		break;
+// 		os_printf("STA connected to SSID %s\n",
+// evt->event_info.connected.ssid); 		break;
 
 // 	case EVENT_STAMODE_DISCONNECTED:
-// 		os_printf("STA disconnected, reason: %d\n", evt->event_info.disconnected.reason);
-// 		break;
+// 		os_printf("STA disconnected, reason: %d\n",
+// evt->event_info.disconnected.reason); 		break;
 
 // 	case EVENT_STAMODE_GOT_IP:
-// 		os_printf("Got IP: " IPSTR "\n", IP2STR(&evt->event_info.got_ip.ip));
-// 		break;
+// 		os_printf("Got IP: " IPSTR "\n",
+// IP2STR(&evt->event_info.got_ip.ip)); 		break;
 
 // 	case EVENT_SOFTAPMODE_STACONNECTED:
 // 		os_printf("Client connected to AP\n");
@@ -596,13 +610,16 @@
 // #ifdef ENABLE_SOCKETS
 // 	DBGMSG("Wifi startup");
 
-// 	wifi_settings_offset = settings_register_external_setting(sizeof(wifi_settings_t));
-// 	if (settings_load(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t)))
+// 	wifi_settings_offset =
+// settings_register_external_setting(sizeof(wifi_settings_t)); 	if
+// (settings_load(wifi_settings_offset, (uint8_t *)&wifi_settings,
+// sizeof(wifi_settings_t)))
 // 	{
 // 		memset(&wifi_settings, 0, sizeof(wifi_settings));
-// 		memcpy(wifi_settings.ssid, BOARD_NAME, strlen((const char *)BOARD_NAME));
-// 		memcpy(wifi_settings.pass, WIFI_PASS, strlen((const char *)WIFI_PASS));
-// 		settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
+// 		memcpy(wifi_settings.ssid, BOARD_NAME, strlen((const char
+// *)BOARD_NAME)); 		memcpy(wifi_settings.pass, WIFI_PASS, strlen((const char
+// *)WIFI_PASS)); 		settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings,
+// sizeof(wifi_settings_t));
 // 	}
 
 // 	wifi_set_event_handler_cb(wifi_event_cb);

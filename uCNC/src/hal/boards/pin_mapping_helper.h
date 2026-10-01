@@ -1,27 +1,27 @@
 /*
-	Name: pin_mapping_helper.h
-	Description: Allows for easier way to define pins in the boardmap file.
+        Name: pin_mapping_helper.h
+        Description: Allows for easier way to define pins in the boardmap file.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 02-08-2024
+        Copyright: Copyright (c) João Martins
+        Author: João Martins
+        Date: 02-08-2024
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+        µCNC is free software: you can redistribute it and/or modify
+        it under the terms of the GNU General Public License as published by
+        the Free Software Foundation, either version 3 of the License, or
+        (at your option) any later version. Please see
+   <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+        µCNC is distributed WITHOUT ANY WARRANTY;
+        Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A
+   PARTICULAR PURPOSE. See the	GNU General Public License for more details.
 */
 
 #ifndef PIN_MAPPING_HELPER_H
 #define PIN_MAPPING_HELPER_H
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 #define MCU_PIN_A0_BIT 0
@@ -813,612 +813,631 @@ extern "C"
 #define MCU_PIN(X, Y) _MCU_PIN_(X, Y)
 
 #if (defined(STEP0_PIN) && !(defined(STEP0_BIT) || defined(STEP0_PORT)))
-#define STEP0_BIT MCU_PIN(STEP0_PIN,BIT)
-#define STEP0_PORT MCU_PIN(STEP0_PIN,PORT)
+#define STEP0_BIT MCU_PIN(STEP0_PIN, BIT)
+#define STEP0_PORT MCU_PIN(STEP0_PIN, PORT)
 #endif
 #if (defined(STEP1_PIN) && !(defined(STEP1_BIT) || defined(STEP1_PORT)))
-#define STEP1_BIT MCU_PIN(STEP1_PIN,BIT)
-#define STEP1_PORT MCU_PIN(STEP1_PIN,PORT)
+#define STEP1_BIT MCU_PIN(STEP1_PIN, BIT)
+#define STEP1_PORT MCU_PIN(STEP1_PIN, PORT)
 #endif
 #if (defined(STEP2_PIN) && !(defined(STEP2_BIT) || defined(STEP2_PORT)))
-#define STEP2_BIT MCU_PIN(STEP2_PIN,BIT)
-#define STEP2_PORT MCU_PIN(STEP2_PIN,PORT)
+#define STEP2_BIT MCU_PIN(STEP2_PIN, BIT)
+#define STEP2_PORT MCU_PIN(STEP2_PIN, PORT)
 #endif
 #if (defined(STEP3_PIN) && !(defined(STEP3_BIT) || defined(STEP3_PORT)))
-#define STEP3_BIT MCU_PIN(STEP3_PIN,BIT)
-#define STEP3_PORT MCU_PIN(STEP3_PIN,PORT)
+#define STEP3_BIT MCU_PIN(STEP3_PIN, BIT)
+#define STEP3_PORT MCU_PIN(STEP3_PIN, PORT)
 #endif
 #if (defined(STEP4_PIN) && !(defined(STEP4_BIT) || defined(STEP4_PORT)))
-#define STEP4_BIT MCU_PIN(STEP4_PIN,BIT)
-#define STEP4_PORT MCU_PIN(STEP4_PIN,PORT)
+#define STEP4_BIT MCU_PIN(STEP4_PIN, BIT)
+#define STEP4_PORT MCU_PIN(STEP4_PIN, PORT)
 #endif
 #if (defined(STEP5_PIN) && !(defined(STEP5_BIT) || defined(STEP5_PORT)))
-#define STEP5_BIT MCU_PIN(STEP5_PIN,BIT)
-#define STEP5_PORT MCU_PIN(STEP5_PIN,PORT)
+#define STEP5_BIT MCU_PIN(STEP5_PIN, BIT)
+#define STEP5_PORT MCU_PIN(STEP5_PIN, PORT)
 #endif
 #if (defined(STEP6_PIN) && !(defined(STEP6_BIT) || defined(STEP6_PORT)))
-#define STEP6_BIT MCU_PIN(STEP6_PIN,BIT)
-#define STEP6_PORT MCU_PIN(STEP6_PIN,PORT)
+#define STEP6_BIT MCU_PIN(STEP6_PIN, BIT)
+#define STEP6_PORT MCU_PIN(STEP6_PIN, PORT)
 #endif
 #if (defined(STEP7_PIN) && !(defined(STEP7_BIT) || defined(STEP7_PORT)))
-#define STEP7_BIT MCU_PIN(STEP7_PIN,BIT)
-#define STEP7_PORT MCU_PIN(STEP7_PIN,PORT)
+#define STEP7_BIT MCU_PIN(STEP7_PIN, BIT)
+#define STEP7_PORT MCU_PIN(STEP7_PIN, PORT)
 #endif
 #if (defined(DIR0_PIN) && !(defined(DIR0_BIT) || defined(DIR0_PORT)))
-#define DIR0_BIT MCU_PIN(DIR0_PIN,BIT)
-#define DIR0_PORT MCU_PIN(DIR0_PIN,PORT)
+#define DIR0_BIT MCU_PIN(DIR0_PIN, BIT)
+#define DIR0_PORT MCU_PIN(DIR0_PIN, PORT)
 #endif
 #if (defined(DIR1_PIN) && !(defined(DIR1_BIT) || defined(DIR1_PORT)))
-#define DIR1_BIT MCU_PIN(DIR1_PIN,BIT)
-#define DIR1_PORT MCU_PIN(DIR1_PIN,PORT)
+#define DIR1_BIT MCU_PIN(DIR1_PIN, BIT)
+#define DIR1_PORT MCU_PIN(DIR1_PIN, PORT)
 #endif
 #if (defined(DIR2_PIN) && !(defined(DIR2_BIT) || defined(DIR2_PORT)))
-#define DIR2_BIT MCU_PIN(DIR2_PIN,BIT)
-#define DIR2_PORT MCU_PIN(DIR2_PIN,PORT)
+#define DIR2_BIT MCU_PIN(DIR2_PIN, BIT)
+#define DIR2_PORT MCU_PIN(DIR2_PIN, PORT)
 #endif
 #if (defined(DIR3_PIN) && !(defined(DIR3_BIT) || defined(DIR3_PORT)))
-#define DIR3_BIT MCU_PIN(DIR3_PIN,BIT)
-#define DIR3_PORT MCU_PIN(DIR3_PIN,PORT)
+#define DIR3_BIT MCU_PIN(DIR3_PIN, BIT)
+#define DIR3_PORT MCU_PIN(DIR3_PIN, PORT)
 #endif
 #if (defined(DIR4_PIN) && !(defined(DIR4_BIT) || defined(DIR4_PORT)))
-#define DIR4_BIT MCU_PIN(DIR4_PIN,BIT)
-#define DIR4_PORT MCU_PIN(DIR4_PIN,PORT)
+#define DIR4_BIT MCU_PIN(DIR4_PIN, BIT)
+#define DIR4_PORT MCU_PIN(DIR4_PIN, PORT)
 #endif
 #if (defined(DIR5_PIN) && !(defined(DIR5_BIT) || defined(DIR5_PORT)))
-#define DIR5_BIT MCU_PIN(DIR5_PIN,BIT)
-#define DIR5_PORT MCU_PIN(DIR5_PIN,PORT)
+#define DIR5_BIT MCU_PIN(DIR5_PIN, BIT)
+#define DIR5_PORT MCU_PIN(DIR5_PIN, PORT)
 #endif
 #if (defined(DIR6_PIN) && !(defined(DIR6_BIT) || defined(DIR6_PORT)))
-#define DIR6_BIT MCU_PIN(DIR6_PIN,BIT)
-#define DIR6_PORT MCU_PIN(DIR6_PIN,PORT)
+#define DIR6_BIT MCU_PIN(DIR6_PIN, BIT)
+#define DIR6_PORT MCU_PIN(DIR6_PIN, PORT)
 #endif
 #if (defined(DIR7_PIN) && !(defined(DIR7_BIT) || defined(DIR7_PORT)))
-#define DIR7_BIT MCU_PIN(DIR7_PIN,BIT)
-#define DIR7_PORT MCU_PIN(DIR7_PIN,PORT)
+#define DIR7_BIT MCU_PIN(DIR7_PIN, BIT)
+#define DIR7_PORT MCU_PIN(DIR7_PIN, PORT)
 #endif
-#if (defined(STEP0_EN_PIN) && !(defined(STEP0_EN_BIT) || defined(STEP0_EN_PORT)))
-#define STEP0_EN_BIT MCU_PIN(STEP0_EN_PIN,BIT)
-#define STEP0_EN_PORT MCU_PIN(STEP0_EN_PIN,PORT)
+#if (defined(STEP0_EN_PIN) &&                                                  \
+     !(defined(STEP0_EN_BIT) || defined(STEP0_EN_PORT)))
+#define STEP0_EN_BIT MCU_PIN(STEP0_EN_PIN, BIT)
+#define STEP0_EN_PORT MCU_PIN(STEP0_EN_PIN, PORT)
 #endif
-#if (defined(STEP1_EN_PIN) && !(defined(STEP1_EN_BIT) || defined(STEP1_EN_PORT)))
-#define STEP1_EN_BIT MCU_PIN(STEP1_EN_PIN,BIT)
-#define STEP1_EN_PORT MCU_PIN(STEP1_EN_PIN,PORT)
+#if (defined(STEP1_EN_PIN) &&                                                  \
+     !(defined(STEP1_EN_BIT) || defined(STEP1_EN_PORT)))
+#define STEP1_EN_BIT MCU_PIN(STEP1_EN_PIN, BIT)
+#define STEP1_EN_PORT MCU_PIN(STEP1_EN_PIN, PORT)
 #endif
-#if (defined(STEP2_EN_PIN) && !(defined(STEP2_EN_BIT) || defined(STEP2_EN_PORT)))
-#define STEP2_EN_BIT MCU_PIN(STEP2_EN_PIN,BIT)
-#define STEP2_EN_PORT MCU_PIN(STEP2_EN_PIN,PORT)
+#if (defined(STEP2_EN_PIN) &&                                                  \
+     !(defined(STEP2_EN_BIT) || defined(STEP2_EN_PORT)))
+#define STEP2_EN_BIT MCU_PIN(STEP2_EN_PIN, BIT)
+#define STEP2_EN_PORT MCU_PIN(STEP2_EN_PIN, PORT)
 #endif
-#if (defined(STEP3_EN_PIN) && !(defined(STEP3_EN_BIT) || defined(STEP3_EN_PORT)))
-#define STEP3_EN_BIT MCU_PIN(STEP3_EN_PIN,BIT)
-#define STEP3_EN_PORT MCU_PIN(STEP3_EN_PIN,PORT)
+#if (defined(STEP3_EN_PIN) &&                                                  \
+     !(defined(STEP3_EN_BIT) || defined(STEP3_EN_PORT)))
+#define STEP3_EN_BIT MCU_PIN(STEP3_EN_PIN, BIT)
+#define STEP3_EN_PORT MCU_PIN(STEP3_EN_PIN, PORT)
 #endif
-#if (defined(STEP4_EN_PIN) && !(defined(STEP4_EN_BIT) || defined(STEP4_EN_PORT)))
-#define STEP4_EN_BIT MCU_PIN(STEP4_EN_PIN,BIT)
-#define STEP4_EN_PORT MCU_PIN(STEP4_EN_PIN,PORT)
+#if (defined(STEP4_EN_PIN) &&                                                  \
+     !(defined(STEP4_EN_BIT) || defined(STEP4_EN_PORT)))
+#define STEP4_EN_BIT MCU_PIN(STEP4_EN_PIN, BIT)
+#define STEP4_EN_PORT MCU_PIN(STEP4_EN_PIN, PORT)
 #endif
-#if (defined(STEP5_EN_PIN) && !(defined(STEP5_EN_BIT) || defined(STEP5_EN_PORT)))
-#define STEP5_EN_BIT MCU_PIN(STEP5_EN_PIN,BIT)
-#define STEP5_EN_PORT MCU_PIN(STEP5_EN_PIN,PORT)
+#if (defined(STEP5_EN_PIN) &&                                                  \
+     !(defined(STEP5_EN_BIT) || defined(STEP5_EN_PORT)))
+#define STEP5_EN_BIT MCU_PIN(STEP5_EN_PIN, BIT)
+#define STEP5_EN_PORT MCU_PIN(STEP5_EN_PIN, PORT)
 #endif
-#if (defined(STEP6_EN_PIN) && !(defined(STEP6_EN_BIT) || defined(STEP6_EN_PORT)))
-#define STEP6_EN_BIT MCU_PIN(STEP6_EN_PIN,BIT)
-#define STEP6_EN_PORT MCU_PIN(STEP6_EN_PIN,PORT)
+#if (defined(STEP6_EN_PIN) &&                                                  \
+     !(defined(STEP6_EN_BIT) || defined(STEP6_EN_PORT)))
+#define STEP6_EN_BIT MCU_PIN(STEP6_EN_PIN, BIT)
+#define STEP6_EN_PORT MCU_PIN(STEP6_EN_PIN, PORT)
 #endif
-#if (defined(STEP7_EN_PIN) && !(defined(STEP7_EN_BIT) || defined(STEP7_EN_PORT)))
-#define STEP7_EN_BIT MCU_PIN(STEP7_EN_PIN,BIT)
-#define STEP7_EN_PORT MCU_PIN(STEP7_EN_PIN,PORT)
+#if (defined(STEP7_EN_PIN) &&                                                  \
+     !(defined(STEP7_EN_BIT) || defined(STEP7_EN_PORT)))
+#define STEP7_EN_BIT MCU_PIN(STEP7_EN_PIN, BIT)
+#define STEP7_EN_PORT MCU_PIN(STEP7_EN_PIN, PORT)
 #endif
 #if (defined(PWM0_PIN) && !(defined(PWM0_BIT) || defined(PWM0_PORT)))
-#define PWM0_BIT MCU_PIN(PWM0_PIN,BIT)
-#define PWM0_PORT MCU_PIN(PWM0_PIN,PORT)
+#define PWM0_BIT MCU_PIN(PWM0_PIN, BIT)
+#define PWM0_PORT MCU_PIN(PWM0_PIN, PORT)
 #endif
 #if (defined(PWM1_PIN) && !(defined(PWM1_BIT) || defined(PWM1_PORT)))
-#define PWM1_BIT MCU_PIN(PWM1_PIN,BIT)
-#define PWM1_PORT MCU_PIN(PWM1_PIN,PORT)
+#define PWM1_BIT MCU_PIN(PWM1_PIN, BIT)
+#define PWM1_PORT MCU_PIN(PWM1_PIN, PORT)
 #endif
 #if (defined(PWM2_PIN) && !(defined(PWM2_BIT) || defined(PWM2_PORT)))
-#define PWM2_BIT MCU_PIN(PWM2_PIN,BIT)
-#define PWM2_PORT MCU_PIN(PWM2_PIN,PORT)
+#define PWM2_BIT MCU_PIN(PWM2_PIN, BIT)
+#define PWM2_PORT MCU_PIN(PWM2_PIN, PORT)
 #endif
 #if (defined(PWM3_PIN) && !(defined(PWM3_BIT) || defined(PWM3_PORT)))
-#define PWM3_BIT MCU_PIN(PWM3_PIN,BIT)
-#define PWM3_PORT MCU_PIN(PWM3_PIN,PORT)
+#define PWM3_BIT MCU_PIN(PWM3_PIN, BIT)
+#define PWM3_PORT MCU_PIN(PWM3_PIN, PORT)
 #endif
 #if (defined(PWM4_PIN) && !(defined(PWM4_BIT) || defined(PWM4_PORT)))
-#define PWM4_BIT MCU_PIN(PWM4_PIN,BIT)
-#define PWM4_PORT MCU_PIN(PWM4_PIN,PORT)
+#define PWM4_BIT MCU_PIN(PWM4_PIN, BIT)
+#define PWM4_PORT MCU_PIN(PWM4_PIN, PORT)
 #endif
 #if (defined(PWM5_PIN) && !(defined(PWM5_BIT) || defined(PWM5_PORT)))
-#define PWM5_BIT MCU_PIN(PWM5_PIN,BIT)
-#define PWM5_PORT MCU_PIN(PWM5_PIN,PORT)
+#define PWM5_BIT MCU_PIN(PWM5_PIN, BIT)
+#define PWM5_PORT MCU_PIN(PWM5_PIN, PORT)
 #endif
 #if (defined(PWM6_PIN) && !(defined(PWM6_BIT) || defined(PWM6_PORT)))
-#define PWM6_BIT MCU_PIN(PWM6_PIN,BIT)
-#define PWM6_PORT MCU_PIN(PWM6_PIN,PORT)
+#define PWM6_BIT MCU_PIN(PWM6_PIN, BIT)
+#define PWM6_PORT MCU_PIN(PWM6_PIN, PORT)
 #endif
 #if (defined(PWM7_PIN) && !(defined(PWM7_BIT) || defined(PWM7_PORT)))
-#define PWM7_BIT MCU_PIN(PWM7_PIN,BIT)
-#define PWM7_PORT MCU_PIN(PWM7_PIN,PORT)
+#define PWM7_BIT MCU_PIN(PWM7_PIN, BIT)
+#define PWM7_PORT MCU_PIN(PWM7_PIN, PORT)
 #endif
 #if (defined(PWM8_PIN) && !(defined(PWM8_BIT) || defined(PWM8_PORT)))
-#define PWM8_BIT MCU_PIN(PWM8_PIN,BIT)
-#define PWM8_PORT MCU_PIN(PWM8_PIN,PORT)
+#define PWM8_BIT MCU_PIN(PWM8_PIN, BIT)
+#define PWM8_PORT MCU_PIN(PWM8_PIN, PORT)
 #endif
 #if (defined(PWM9_PIN) && !(defined(PWM9_BIT) || defined(PWM9_PORT)))
-#define PWM9_BIT MCU_PIN(PWM9_PIN,BIT)
-#define PWM9_PORT MCU_PIN(PWM9_PIN,PORT)
+#define PWM9_BIT MCU_PIN(PWM9_PIN, BIT)
+#define PWM9_PORT MCU_PIN(PWM9_PIN, PORT)
 #endif
 #if (defined(PWM10_PIN) && !(defined(PWM10_BIT) || defined(PWM10_PORT)))
-#define PWM10_BIT MCU_PIN(PWM10_PIN,BIT)
-#define PWM10_PORT MCU_PIN(PWM10_PIN,PORT)
+#define PWM10_BIT MCU_PIN(PWM10_PIN, BIT)
+#define PWM10_PORT MCU_PIN(PWM10_PIN, PORT)
 #endif
 #if (defined(PWM11_PIN) && !(defined(PWM11_BIT) || defined(PWM11_PORT)))
-#define PWM11_BIT MCU_PIN(PWM11_PIN,BIT)
-#define PWM11_PORT MCU_PIN(PWM11_PIN,PORT)
+#define PWM11_BIT MCU_PIN(PWM11_PIN, BIT)
+#define PWM11_PORT MCU_PIN(PWM11_PIN, PORT)
 #endif
 #if (defined(PWM12_PIN) && !(defined(PWM12_BIT) || defined(PWM12_PORT)))
-#define PWM12_BIT MCU_PIN(PWM12_PIN,BIT)
-#define PWM12_PORT MCU_PIN(PWM12_PIN,PORT)
+#define PWM12_BIT MCU_PIN(PWM12_PIN, BIT)
+#define PWM12_PORT MCU_PIN(PWM12_PIN, PORT)
 #endif
 #if (defined(PWM13_PIN) && !(defined(PWM13_BIT) || defined(PWM13_PORT)))
-#define PWM13_BIT MCU_PIN(PWM13_PIN,BIT)
-#define PWM13_PORT MCU_PIN(PWM13_PIN,PORT)
+#define PWM13_BIT MCU_PIN(PWM13_PIN, BIT)
+#define PWM13_PORT MCU_PIN(PWM13_PIN, PORT)
 #endif
 #if (defined(PWM14_PIN) && !(defined(PWM14_BIT) || defined(PWM14_PORT)))
-#define PWM14_BIT MCU_PIN(PWM14_PIN,BIT)
-#define PWM14_PORT MCU_PIN(PWM14_PIN,PORT)
+#define PWM14_BIT MCU_PIN(PWM14_PIN, BIT)
+#define PWM14_PORT MCU_PIN(PWM14_PIN, PORT)
 #endif
 #if (defined(PWM15_PIN) && !(defined(PWM15_BIT) || defined(PWM15_PORT)))
-#define PWM15_BIT MCU_PIN(PWM15_PIN,BIT)
-#define PWM15_PORT MCU_PIN(PWM15_PIN,PORT)
+#define PWM15_BIT MCU_PIN(PWM15_PIN, BIT)
+#define PWM15_PORT MCU_PIN(PWM15_PIN, PORT)
 #endif
 #if (defined(SERVO0_PIN) && !(defined(SERVO0_BIT) || defined(SERVO0_PORT)))
-#define SERVO0_BIT MCU_PIN(SERVO0_PIN,BIT)
-#define SERVO0_PORT MCU_PIN(SERVO0_PIN,PORT)
+#define SERVO0_BIT MCU_PIN(SERVO0_PIN, BIT)
+#define SERVO0_PORT MCU_PIN(SERVO0_PIN, PORT)
 #endif
 #if (defined(SERVO1_PIN) && !(defined(SERVO1_BIT) || defined(SERVO1_PORT)))
-#define SERVO1_BIT MCU_PIN(SERVO1_PIN,BIT)
-#define SERVO1_PORT MCU_PIN(SERVO1_PIN,PORT)
+#define SERVO1_BIT MCU_PIN(SERVO1_PIN, BIT)
+#define SERVO1_PORT MCU_PIN(SERVO1_PIN, PORT)
 #endif
 #if (defined(SERVO2_PIN) && !(defined(SERVO2_BIT) || defined(SERVO2_PORT)))
-#define SERVO2_BIT MCU_PIN(SERVO2_PIN,BIT)
-#define SERVO2_PORT MCU_PIN(SERVO2_PIN,PORT)
+#define SERVO2_BIT MCU_PIN(SERVO2_PIN, BIT)
+#define SERVO2_PORT MCU_PIN(SERVO2_PIN, PORT)
 #endif
 #if (defined(SERVO3_PIN) && !(defined(SERVO3_BIT) || defined(SERVO3_PORT)))
-#define SERVO3_BIT MCU_PIN(SERVO3_PIN,BIT)
-#define SERVO3_PORT MCU_PIN(SERVO3_PIN,PORT)
+#define SERVO3_BIT MCU_PIN(SERVO3_PIN, BIT)
+#define SERVO3_PORT MCU_PIN(SERVO3_PIN, PORT)
 #endif
 #if (defined(SERVO4_PIN) && !(defined(SERVO4_BIT) || defined(SERVO4_PORT)))
-#define SERVO4_BIT MCU_PIN(SERVO4_PIN,BIT)
-#define SERVO4_PORT MCU_PIN(SERVO4_PIN,PORT)
+#define SERVO4_BIT MCU_PIN(SERVO4_PIN, BIT)
+#define SERVO4_PORT MCU_PIN(SERVO4_PIN, PORT)
 #endif
 #if (defined(SERVO5_PIN) && !(defined(SERVO5_BIT) || defined(SERVO5_PORT)))
-#define SERVO5_BIT MCU_PIN(SERVO5_PIN,BIT)
-#define SERVO5_PORT MCU_PIN(SERVO5_PIN,PORT)
+#define SERVO5_BIT MCU_PIN(SERVO5_PIN, BIT)
+#define SERVO5_PORT MCU_PIN(SERVO5_PIN, PORT)
 #endif
 #if (defined(DOUT0_PIN) && !(defined(DOUT0_BIT) || defined(DOUT0_PORT)))
-#define DOUT0_BIT MCU_PIN(DOUT0_PIN,BIT)
-#define DOUT0_PORT MCU_PIN(DOUT0_PIN,PORT)
+#define DOUT0_BIT MCU_PIN(DOUT0_PIN, BIT)
+#define DOUT0_PORT MCU_PIN(DOUT0_PIN, PORT)
 #endif
 #if (defined(DOUT1_PIN) && !(defined(DOUT1_BIT) || defined(DOUT1_PORT)))
-#define DOUT1_BIT MCU_PIN(DOUT1_PIN,BIT)
-#define DOUT1_PORT MCU_PIN(DOUT1_PIN,PORT)
+#define DOUT1_BIT MCU_PIN(DOUT1_PIN, BIT)
+#define DOUT1_PORT MCU_PIN(DOUT1_PIN, PORT)
 #endif
 #if (defined(DOUT2_PIN) && !(defined(DOUT2_BIT) || defined(DOUT2_PORT)))
-#define DOUT2_BIT MCU_PIN(DOUT2_PIN,BIT)
-#define DOUT2_PORT MCU_PIN(DOUT2_PIN,PORT)
+#define DOUT2_BIT MCU_PIN(DOUT2_PIN, BIT)
+#define DOUT2_PORT MCU_PIN(DOUT2_PIN, PORT)
 #endif
 #if (defined(DOUT3_PIN) && !(defined(DOUT3_BIT) || defined(DOUT3_PORT)))
-#define DOUT3_BIT MCU_PIN(DOUT3_PIN,BIT)
-#define DOUT3_PORT MCU_PIN(DOUT3_PIN,PORT)
+#define DOUT3_BIT MCU_PIN(DOUT3_PIN, BIT)
+#define DOUT3_PORT MCU_PIN(DOUT3_PIN, PORT)
 #endif
 #if (defined(DOUT4_PIN) && !(defined(DOUT4_BIT) || defined(DOUT4_PORT)))
-#define DOUT4_BIT MCU_PIN(DOUT4_PIN,BIT)
-#define DOUT4_PORT MCU_PIN(DOUT4_PIN,PORT)
+#define DOUT4_BIT MCU_PIN(DOUT4_PIN, BIT)
+#define DOUT4_PORT MCU_PIN(DOUT4_PIN, PORT)
 #endif
 #if (defined(DOUT5_PIN) && !(defined(DOUT5_BIT) || defined(DOUT5_PORT)))
-#define DOUT5_BIT MCU_PIN(DOUT5_PIN,BIT)
-#define DOUT5_PORT MCU_PIN(DOUT5_PIN,PORT)
+#define DOUT5_BIT MCU_PIN(DOUT5_PIN, BIT)
+#define DOUT5_PORT MCU_PIN(DOUT5_PIN, PORT)
 #endif
 #if (defined(DOUT6_PIN) && !(defined(DOUT6_BIT) || defined(DOUT6_PORT)))
-#define DOUT6_BIT MCU_PIN(DOUT6_PIN,BIT)
-#define DOUT6_PORT MCU_PIN(DOUT6_PIN,PORT)
+#define DOUT6_BIT MCU_PIN(DOUT6_PIN, BIT)
+#define DOUT6_PORT MCU_PIN(DOUT6_PIN, PORT)
 #endif
 #if (defined(DOUT7_PIN) && !(defined(DOUT7_BIT) || defined(DOUT7_PORT)))
-#define DOUT7_BIT MCU_PIN(DOUT7_PIN,BIT)
-#define DOUT7_PORT MCU_PIN(DOUT7_PIN,PORT)
+#define DOUT7_BIT MCU_PIN(DOUT7_PIN, BIT)
+#define DOUT7_PORT MCU_PIN(DOUT7_PIN, PORT)
 #endif
 #if (defined(DOUT8_PIN) && !(defined(DOUT8_BIT) || defined(DOUT8_PORT)))
-#define DOUT8_BIT MCU_PIN(DOUT8_PIN,BIT)
-#define DOUT8_PORT MCU_PIN(DOUT8_PIN,PORT)
+#define DOUT8_BIT MCU_PIN(DOUT8_PIN, BIT)
+#define DOUT8_PORT MCU_PIN(DOUT8_PIN, PORT)
 #endif
 #if (defined(DOUT9_PIN) && !(defined(DOUT9_BIT) || defined(DOUT9_PORT)))
-#define DOUT9_BIT MCU_PIN(DOUT9_PIN,BIT)
-#define DOUT9_PORT MCU_PIN(DOUT9_PIN,PORT)
+#define DOUT9_BIT MCU_PIN(DOUT9_PIN, BIT)
+#define DOUT9_PORT MCU_PIN(DOUT9_PIN, PORT)
 #endif
 #if (defined(DOUT10_PIN) && !(defined(DOUT10_BIT) || defined(DOUT10_PORT)))
-#define DOUT10_BIT MCU_PIN(DOUT10_PIN,BIT)
-#define DOUT10_PORT MCU_PIN(DOUT10_PIN,PORT)
+#define DOUT10_BIT MCU_PIN(DOUT10_PIN, BIT)
+#define DOUT10_PORT MCU_PIN(DOUT10_PIN, PORT)
 #endif
 #if (defined(DOUT11_PIN) && !(defined(DOUT11_BIT) || defined(DOUT11_PORT)))
-#define DOUT11_BIT MCU_PIN(DOUT11_PIN,BIT)
-#define DOUT11_PORT MCU_PIN(DOUT11_PIN,PORT)
+#define DOUT11_BIT MCU_PIN(DOUT11_PIN, BIT)
+#define DOUT11_PORT MCU_PIN(DOUT11_PIN, PORT)
 #endif
 #if (defined(DOUT12_PIN) && !(defined(DOUT12_BIT) || defined(DOUT12_PORT)))
-#define DOUT12_BIT MCU_PIN(DOUT12_PIN,BIT)
-#define DOUT12_PORT MCU_PIN(DOUT12_PIN,PORT)
+#define DOUT12_BIT MCU_PIN(DOUT12_PIN, BIT)
+#define DOUT12_PORT MCU_PIN(DOUT12_PIN, PORT)
 #endif
 #if (defined(DOUT13_PIN) && !(defined(DOUT13_BIT) || defined(DOUT13_PORT)))
-#define DOUT13_BIT MCU_PIN(DOUT13_PIN,BIT)
-#define DOUT13_PORT MCU_PIN(DOUT13_PIN,PORT)
+#define DOUT13_BIT MCU_PIN(DOUT13_PIN, BIT)
+#define DOUT13_PORT MCU_PIN(DOUT13_PIN, PORT)
 #endif
 #if (defined(DOUT14_PIN) && !(defined(DOUT14_BIT) || defined(DOUT14_PORT)))
-#define DOUT14_BIT MCU_PIN(DOUT14_PIN,BIT)
-#define DOUT14_PORT MCU_PIN(DOUT14_PIN,PORT)
+#define DOUT14_BIT MCU_PIN(DOUT14_PIN, BIT)
+#define DOUT14_PORT MCU_PIN(DOUT14_PIN, PORT)
 #endif
 #if (defined(DOUT15_PIN) && !(defined(DOUT15_BIT) || defined(DOUT15_PORT)))
-#define DOUT15_BIT MCU_PIN(DOUT15_PIN,BIT)
-#define DOUT15_PORT MCU_PIN(DOUT15_PIN,PORT)
+#define DOUT15_BIT MCU_PIN(DOUT15_PIN, BIT)
+#define DOUT15_PORT MCU_PIN(DOUT15_PIN, PORT)
 #endif
 #if (defined(DOUT16_PIN) && !(defined(DOUT16_BIT) || defined(DOUT16_PORT)))
-#define DOUT16_BIT MCU_PIN(DOUT16_PIN,BIT)
-#define DOUT16_PORT MCU_PIN(DOUT16_PIN,PORT)
+#define DOUT16_BIT MCU_PIN(DOUT16_PIN, BIT)
+#define DOUT16_PORT MCU_PIN(DOUT16_PIN, PORT)
 #endif
 #if (defined(DOUT17_PIN) && !(defined(DOUT17_BIT) || defined(DOUT17_PORT)))
-#define DOUT17_BIT MCU_PIN(DOUT17_PIN,BIT)
-#define DOUT17_PORT MCU_PIN(DOUT17_PIN,PORT)
+#define DOUT17_BIT MCU_PIN(DOUT17_PIN, BIT)
+#define DOUT17_PORT MCU_PIN(DOUT17_PIN, PORT)
 #endif
 #if (defined(DOUT18_PIN) && !(defined(DOUT18_BIT) || defined(DOUT18_PORT)))
-#define DOUT18_BIT MCU_PIN(DOUT18_PIN,BIT)
-#define DOUT18_PORT MCU_PIN(DOUT18_PIN,PORT)
+#define DOUT18_BIT MCU_PIN(DOUT18_PIN, BIT)
+#define DOUT18_PORT MCU_PIN(DOUT18_PIN, PORT)
 #endif
 #if (defined(DOUT19_PIN) && !(defined(DOUT19_BIT) || defined(DOUT19_PORT)))
-#define DOUT19_BIT MCU_PIN(DOUT19_PIN,BIT)
-#define DOUT19_PORT MCU_PIN(DOUT19_PIN,PORT)
+#define DOUT19_BIT MCU_PIN(DOUT19_PIN, BIT)
+#define DOUT19_PORT MCU_PIN(DOUT19_PIN, PORT)
 #endif
 #if (defined(DOUT20_PIN) && !(defined(DOUT20_BIT) || defined(DOUT20_PORT)))
-#define DOUT20_BIT MCU_PIN(DOUT20_PIN,BIT)
-#define DOUT20_PORT MCU_PIN(DOUT20_PIN,PORT)
+#define DOUT20_BIT MCU_PIN(DOUT20_PIN, BIT)
+#define DOUT20_PORT MCU_PIN(DOUT20_PIN, PORT)
 #endif
 #if (defined(DOUT21_PIN) && !(defined(DOUT21_BIT) || defined(DOUT21_PORT)))
-#define DOUT21_BIT MCU_PIN(DOUT21_PIN,BIT)
-#define DOUT21_PORT MCU_PIN(DOUT21_PIN,PORT)
+#define DOUT21_BIT MCU_PIN(DOUT21_PIN, BIT)
+#define DOUT21_PORT MCU_PIN(DOUT21_PIN, PORT)
 #endif
 #if (defined(DOUT22_PIN) && !(defined(DOUT22_BIT) || defined(DOUT22_PORT)))
-#define DOUT22_BIT MCU_PIN(DOUT22_PIN,BIT)
-#define DOUT22_PORT MCU_PIN(DOUT22_PIN,PORT)
+#define DOUT22_BIT MCU_PIN(DOUT22_PIN, BIT)
+#define DOUT22_PORT MCU_PIN(DOUT22_PIN, PORT)
 #endif
 #if (defined(DOUT23_PIN) && !(defined(DOUT23_BIT) || defined(DOUT23_PORT)))
-#define DOUT23_BIT MCU_PIN(DOUT23_PIN,BIT)
-#define DOUT23_PORT MCU_PIN(DOUT23_PIN,PORT)
+#define DOUT23_BIT MCU_PIN(DOUT23_PIN, BIT)
+#define DOUT23_PORT MCU_PIN(DOUT23_PIN, PORT)
 #endif
 #if (defined(DOUT24_PIN) && !(defined(DOUT24_BIT) || defined(DOUT24_PORT)))
-#define DOUT24_BIT MCU_PIN(DOUT24_PIN,BIT)
-#define DOUT24_PORT MCU_PIN(DOUT24_PIN,PORT)
+#define DOUT24_BIT MCU_PIN(DOUT24_PIN, BIT)
+#define DOUT24_PORT MCU_PIN(DOUT24_PIN, PORT)
 #endif
 #if (defined(DOUT25_PIN) && !(defined(DOUT25_BIT) || defined(DOUT25_PORT)))
-#define DOUT25_BIT MCU_PIN(DOUT25_PIN,BIT)
-#define DOUT25_PORT MCU_PIN(DOUT25_PIN,PORT)
+#define DOUT25_BIT MCU_PIN(DOUT25_PIN, BIT)
+#define DOUT25_PORT MCU_PIN(DOUT25_PIN, PORT)
 #endif
 #if (defined(DOUT26_PIN) && !(defined(DOUT26_BIT) || defined(DOUT26_PORT)))
-#define DOUT26_BIT MCU_PIN(DOUT26_PIN,BIT)
-#define DOUT26_PORT MCU_PIN(DOUT26_PIN,PORT)
+#define DOUT26_BIT MCU_PIN(DOUT26_PIN, BIT)
+#define DOUT26_PORT MCU_PIN(DOUT26_PIN, PORT)
 #endif
 #if (defined(DOUT27_PIN) && !(defined(DOUT27_BIT) || defined(DOUT27_PORT)))
-#define DOUT27_BIT MCU_PIN(DOUT27_PIN,BIT)
-#define DOUT27_PORT MCU_PIN(DOUT27_PIN,PORT)
+#define DOUT27_BIT MCU_PIN(DOUT27_PIN, BIT)
+#define DOUT27_PORT MCU_PIN(DOUT27_PIN, PORT)
 #endif
 #if (defined(DOUT28_PIN) && !(defined(DOUT28_BIT) || defined(DOUT28_PORT)))
-#define DOUT28_BIT MCU_PIN(DOUT28_PIN,BIT)
-#define DOUT28_PORT MCU_PIN(DOUT28_PIN,PORT)
+#define DOUT28_BIT MCU_PIN(DOUT28_PIN, BIT)
+#define DOUT28_PORT MCU_PIN(DOUT28_PIN, PORT)
 #endif
 #if (defined(DOUT29_PIN) && !(defined(DOUT29_BIT) || defined(DOUT29_PORT)))
-#define DOUT29_BIT MCU_PIN(DOUT29_PIN,BIT)
-#define DOUT29_PORT MCU_PIN(DOUT29_PIN,PORT)
+#define DOUT29_BIT MCU_PIN(DOUT29_PIN, BIT)
+#define DOUT29_PORT MCU_PIN(DOUT29_PIN, PORT)
 #endif
 #if (defined(DOUT30_PIN) && !(defined(DOUT30_BIT) || defined(DOUT30_PORT)))
-#define DOUT30_BIT MCU_PIN(DOUT30_PIN,BIT)
-#define DOUT30_PORT MCU_PIN(DOUT30_PIN,PORT)
+#define DOUT30_BIT MCU_PIN(DOUT30_PIN, BIT)
+#define DOUT30_PORT MCU_PIN(DOUT30_PIN, PORT)
 #endif
 #if (defined(DOUT31_PIN) && !(defined(DOUT31_BIT) || defined(DOUT31_PORT)))
-#define DOUT31_BIT MCU_PIN(DOUT31_PIN,BIT)
-#define DOUT31_PORT MCU_PIN(DOUT31_PIN,PORT)
+#define DOUT31_BIT MCU_PIN(DOUT31_PIN, BIT)
+#define DOUT31_PORT MCU_PIN(DOUT31_PIN, PORT)
 #endif
 #if (defined(LIMIT_X_PIN) && !(defined(LIMIT_X_BIT) || defined(LIMIT_X_PORT)))
-#define LIMIT_X_BIT MCU_PIN(LIMIT_X_PIN,BIT)
-#define LIMIT_X_PORT MCU_PIN(LIMIT_X_PIN,PORT)
+#define LIMIT_X_BIT MCU_PIN(LIMIT_X_PIN, BIT)
+#define LIMIT_X_PORT MCU_PIN(LIMIT_X_PIN, PORT)
 #endif
 #if (defined(LIMIT_Y_PIN) && !(defined(LIMIT_Y_BIT) || defined(LIMIT_Y_PORT)))
-#define LIMIT_Y_BIT MCU_PIN(LIMIT_Y_PIN,BIT)
-#define LIMIT_Y_PORT MCU_PIN(LIMIT_Y_PIN,PORT)
+#define LIMIT_Y_BIT MCU_PIN(LIMIT_Y_PIN, BIT)
+#define LIMIT_Y_PORT MCU_PIN(LIMIT_Y_PIN, PORT)
 #endif
 #if (defined(LIMIT_Z_PIN) && !(defined(LIMIT_Z_BIT) || defined(LIMIT_Z_PORT)))
-#define LIMIT_Z_BIT MCU_PIN(LIMIT_Z_PIN,BIT)
-#define LIMIT_Z_PORT MCU_PIN(LIMIT_Z_PIN,PORT)
+#define LIMIT_Z_BIT MCU_PIN(LIMIT_Z_PIN, BIT)
+#define LIMIT_Z_PORT MCU_PIN(LIMIT_Z_PIN, PORT)
 #endif
-#if (defined(LIMIT_X2_PIN) && !(defined(LIMIT_X2_BIT) || defined(LIMIT_X2_PORT)))
-#define LIMIT_X2_BIT MCU_PIN(LIMIT_X2_PIN,BIT)
-#define LIMIT_X2_PORT MCU_PIN(LIMIT_X2_PIN,PORT)
+#if (defined(LIMIT_X2_PIN) &&                                                  \
+     !(defined(LIMIT_X2_BIT) || defined(LIMIT_X2_PORT)))
+#define LIMIT_X2_BIT MCU_PIN(LIMIT_X2_PIN, BIT)
+#define LIMIT_X2_PORT MCU_PIN(LIMIT_X2_PIN, PORT)
 #endif
-#if (defined(LIMIT_Y2_PIN) && !(defined(LIMIT_Y2_BIT) || defined(LIMIT_Y2_PORT)))
-#define LIMIT_Y2_BIT MCU_PIN(LIMIT_Y2_PIN,BIT)
-#define LIMIT_Y2_PORT MCU_PIN(LIMIT_Y2_PIN,PORT)
+#if (defined(LIMIT_Y2_PIN) &&                                                  \
+     !(defined(LIMIT_Y2_BIT) || defined(LIMIT_Y2_PORT)))
+#define LIMIT_Y2_BIT MCU_PIN(LIMIT_Y2_PIN, BIT)
+#define LIMIT_Y2_PORT MCU_PIN(LIMIT_Y2_PIN, PORT)
 #endif
-#if (defined(LIMIT_Z2_PIN) && !(defined(LIMIT_Z2_BIT) || defined(LIMIT_Z2_PORT)))
-#define LIMIT_Z2_BIT MCU_PIN(LIMIT_Z2_PIN,BIT)
-#define LIMIT_Z2_PORT MCU_PIN(LIMIT_Z2_PIN,PORT)
+#if (defined(LIMIT_Z2_PIN) &&                                                  \
+     !(defined(LIMIT_Z2_BIT) || defined(LIMIT_Z2_PORT)))
+#define LIMIT_Z2_BIT MCU_PIN(LIMIT_Z2_PIN, BIT)
+#define LIMIT_Z2_PORT MCU_PIN(LIMIT_Z2_PIN, PORT)
 #endif
 #if (defined(LIMIT_A_PIN) && !(defined(LIMIT_A_BIT) || defined(LIMIT_A_PORT)))
-#define LIMIT_A_BIT MCU_PIN(LIMIT_A_PIN,BIT)
-#define LIMIT_A_PORT MCU_PIN(LIMIT_A_PIN,PORT)
+#define LIMIT_A_BIT MCU_PIN(LIMIT_A_PIN, BIT)
+#define LIMIT_A_PORT MCU_PIN(LIMIT_A_PIN, PORT)
 #endif
 #if (defined(LIMIT_B_PIN) && !(defined(LIMIT_B_BIT) || defined(LIMIT_B_PORT)))
-#define LIMIT_B_BIT MCU_PIN(LIMIT_B_PIN,BIT)
-#define LIMIT_B_PORT MCU_PIN(LIMIT_B_PIN,PORT)
+#define LIMIT_B_BIT MCU_PIN(LIMIT_B_PIN, BIT)
+#define LIMIT_B_PORT MCU_PIN(LIMIT_B_PIN, PORT)
 #endif
 #if (defined(LIMIT_C_PIN) && !(defined(LIMIT_C_BIT) || defined(LIMIT_C_PORT)))
-#define LIMIT_C_BIT MCU_PIN(LIMIT_C_PIN,BIT)
-#define LIMIT_C_PORT MCU_PIN(LIMIT_C_PIN,PORT)
+#define LIMIT_C_BIT MCU_PIN(LIMIT_C_PIN, BIT)
+#define LIMIT_C_PORT MCU_PIN(LIMIT_C_PIN, PORT)
 #endif
 #if (defined(PROBE_PIN) && !(defined(PROBE_BIT) || defined(PROBE_PORT)))
-#define PROBE_BIT MCU_PIN(PROBE_PIN,BIT)
-#define PROBE_PORT MCU_PIN(PROBE_PIN,PORT)
+#define PROBE_BIT MCU_PIN(PROBE_PIN, BIT)
+#define PROBE_PORT MCU_PIN(PROBE_PIN, PORT)
 #endif
 #if (defined(ESTOP_PIN) && !(defined(ESTOP_BIT) || defined(ESTOP_PORT)))
-#define ESTOP_BIT MCU_PIN(ESTOP_PIN,BIT)
-#define ESTOP_PORT MCU_PIN(ESTOP_PIN,PORT)
+#define ESTOP_BIT MCU_PIN(ESTOP_PIN, BIT)
+#define ESTOP_PORT MCU_PIN(ESTOP_PIN, PORT)
 #endif
-#if (defined(SAFETY_DOOR_PIN) && !(defined(SAFETY_DOOR_BIT) || defined(SAFETY_DOOR_PORT)))
-#define SAFETY_DOOR_BIT MCU_PIN(SAFETY_DOOR_PIN,BIT)
-#define SAFETY_DOOR_PORT MCU_PIN(SAFETY_DOOR_PIN,PORT)
+#if (defined(SAFETY_DOOR_PIN) &&                                               \
+     !(defined(SAFETY_DOOR_BIT) || defined(SAFETY_DOOR_PORT)))
+#define SAFETY_DOOR_BIT MCU_PIN(SAFETY_DOOR_PIN, BIT)
+#define SAFETY_DOOR_PORT MCU_PIN(SAFETY_DOOR_PIN, PORT)
 #endif
 #if (defined(FHOLD_PIN) && !(defined(FHOLD_BIT) || defined(FHOLD_PORT)))
-#define FHOLD_BIT MCU_PIN(FHOLD_PIN,BIT)
-#define FHOLD_PORT MCU_PIN(FHOLD_PIN,PORT)
+#define FHOLD_BIT MCU_PIN(FHOLD_PIN, BIT)
+#define FHOLD_PORT MCU_PIN(FHOLD_PIN, PORT)
 #endif
 #if (defined(CS_RES_PIN) && !(defined(CS_RES_BIT) || defined(CS_RES_PORT)))
-#define CS_RES_BIT MCU_PIN(CS_RES_PIN,BIT)
-#define CS_RES_PORT MCU_PIN(CS_RES_PIN,PORT)
+#define CS_RES_BIT MCU_PIN(CS_RES_PIN, BIT)
+#define CS_RES_PORT MCU_PIN(CS_RES_PIN, PORT)
 #endif
 #if (defined(ANALOG0_PIN) && !(defined(ANALOG0_BIT) || defined(ANALOG0_PORT)))
-#define ANALOG0_BIT MCU_PIN(ANALOG0_PIN,BIT)
-#define ANALOG0_PORT MCU_PIN(ANALOG0_PIN,PORT)
+#define ANALOG0_BIT MCU_PIN(ANALOG0_PIN, BIT)
+#define ANALOG0_PORT MCU_PIN(ANALOG0_PIN, PORT)
 #endif
 #if (defined(ANALOG1_PIN) && !(defined(ANALOG1_BIT) || defined(ANALOG1_PORT)))
-#define ANALOG1_BIT MCU_PIN(ANALOG1_PIN,BIT)
-#define ANALOG1_PORT MCU_PIN(ANALOG1_PIN,PORT)
+#define ANALOG1_BIT MCU_PIN(ANALOG1_PIN, BIT)
+#define ANALOG1_PORT MCU_PIN(ANALOG1_PIN, PORT)
 #endif
 #if (defined(ANALOG2_PIN) && !(defined(ANALOG2_BIT) || defined(ANALOG2_PORT)))
-#define ANALOG2_BIT MCU_PIN(ANALOG2_PIN,BIT)
-#define ANALOG2_PORT MCU_PIN(ANALOG2_PIN,PORT)
+#define ANALOG2_BIT MCU_PIN(ANALOG2_PIN, BIT)
+#define ANALOG2_PORT MCU_PIN(ANALOG2_PIN, PORT)
 #endif
 #if (defined(ANALOG3_PIN) && !(defined(ANALOG3_BIT) || defined(ANALOG3_PORT)))
-#define ANALOG3_BIT MCU_PIN(ANALOG3_PIN,BIT)
-#define ANALOG3_PORT MCU_PIN(ANALOG3_PIN,PORT)
+#define ANALOG3_BIT MCU_PIN(ANALOG3_PIN, BIT)
+#define ANALOG3_PORT MCU_PIN(ANALOG3_PIN, PORT)
 #endif
 #if (defined(ANALOG4_PIN) && !(defined(ANALOG4_BIT) || defined(ANALOG4_PORT)))
-#define ANALOG4_BIT MCU_PIN(ANALOG4_PIN,BIT)
-#define ANALOG4_PORT MCU_PIN(ANALOG4_PIN,PORT)
+#define ANALOG4_BIT MCU_PIN(ANALOG4_PIN, BIT)
+#define ANALOG4_PORT MCU_PIN(ANALOG4_PIN, PORT)
 #endif
 #if (defined(ANALOG5_PIN) && !(defined(ANALOG5_BIT) || defined(ANALOG5_PORT)))
-#define ANALOG5_BIT MCU_PIN(ANALOG5_PIN,BIT)
-#define ANALOG5_PORT MCU_PIN(ANALOG5_PIN,PORT)
+#define ANALOG5_BIT MCU_PIN(ANALOG5_PIN, BIT)
+#define ANALOG5_PORT MCU_PIN(ANALOG5_PIN, PORT)
 #endif
 #if (defined(ANALOG6_PIN) && !(defined(ANALOG6_BIT) || defined(ANALOG6_PORT)))
-#define ANALOG6_BIT MCU_PIN(ANALOG6_PIN,BIT)
-#define ANALOG6_PORT MCU_PIN(ANALOG6_PIN,PORT)
+#define ANALOG6_BIT MCU_PIN(ANALOG6_PIN, BIT)
+#define ANALOG6_PORT MCU_PIN(ANALOG6_PIN, PORT)
 #endif
 #if (defined(ANALOG7_PIN) && !(defined(ANALOG7_BIT) || defined(ANALOG7_PORT)))
-#define ANALOG7_BIT MCU_PIN(ANALOG7_PIN,BIT)
-#define ANALOG7_PORT MCU_PIN(ANALOG7_PIN,PORT)
+#define ANALOG7_BIT MCU_PIN(ANALOG7_PIN, BIT)
+#define ANALOG7_PORT MCU_PIN(ANALOG7_PIN, PORT)
 #endif
 #if (defined(ANALOG8_PIN) && !(defined(ANALOG8_BIT) || defined(ANALOG8_PORT)))
-#define ANALOG8_BIT MCU_PIN(ANALOG8_PIN,BIT)
-#define ANALOG8_PORT MCU_PIN(ANALOG8_PIN,PORT)
+#define ANALOG8_BIT MCU_PIN(ANALOG8_PIN, BIT)
+#define ANALOG8_PORT MCU_PIN(ANALOG8_PIN, PORT)
 #endif
 #if (defined(ANALOG9_PIN) && !(defined(ANALOG9_BIT) || defined(ANALOG9_PORT)))
-#define ANALOG9_BIT MCU_PIN(ANALOG9_PIN,BIT)
-#define ANALOG9_PORT MCU_PIN(ANALOG9_PIN,PORT)
+#define ANALOG9_BIT MCU_PIN(ANALOG9_PIN, BIT)
+#define ANALOG9_PORT MCU_PIN(ANALOG9_PIN, PORT)
 #endif
-#if (defined(ANALOG10_PIN) && !(defined(ANALOG10_BIT) || defined(ANALOG10_PORT)))
-#define ANALOG10_BIT MCU_PIN(ANALOG10_PIN,BIT)
-#define ANALOG10_PORT MCU_PIN(ANALOG10_PIN,PORT)
+#if (defined(ANALOG10_PIN) &&                                                  \
+     !(defined(ANALOG10_BIT) || defined(ANALOG10_PORT)))
+#define ANALOG10_BIT MCU_PIN(ANALOG10_PIN, BIT)
+#define ANALOG10_PORT MCU_PIN(ANALOG10_PIN, PORT)
 #endif
-#if (defined(ANALOG11_PIN) && !(defined(ANALOG11_BIT) || defined(ANALOG11_PORT)))
-#define ANALOG11_BIT MCU_PIN(ANALOG11_PIN,BIT)
-#define ANALOG11_PORT MCU_PIN(ANALOG11_PIN,PORT)
+#if (defined(ANALOG11_PIN) &&                                                  \
+     !(defined(ANALOG11_BIT) || defined(ANALOG11_PORT)))
+#define ANALOG11_BIT MCU_PIN(ANALOG11_PIN, BIT)
+#define ANALOG11_PORT MCU_PIN(ANALOG11_PIN, PORT)
 #endif
-#if (defined(ANALOG12_PIN) && !(defined(ANALOG12_BIT) || defined(ANALOG12_PORT)))
-#define ANALOG12_BIT MCU_PIN(ANALOG12_PIN,BIT)
-#define ANALOG12_PORT MCU_PIN(ANALOG12_PIN,PORT)
+#if (defined(ANALOG12_PIN) &&                                                  \
+     !(defined(ANALOG12_BIT) || defined(ANALOG12_PORT)))
+#define ANALOG12_BIT MCU_PIN(ANALOG12_PIN, BIT)
+#define ANALOG12_PORT MCU_PIN(ANALOG12_PIN, PORT)
 #endif
-#if (defined(ANALOG13_PIN) && !(defined(ANALOG13_BIT) || defined(ANALOG13_PORT)))
-#define ANALOG13_BIT MCU_PIN(ANALOG13_PIN,BIT)
-#define ANALOG13_PORT MCU_PIN(ANALOG13_PIN,PORT)
+#if (defined(ANALOG13_PIN) &&                                                  \
+     !(defined(ANALOG13_BIT) || defined(ANALOG13_PORT)))
+#define ANALOG13_BIT MCU_PIN(ANALOG13_PIN, BIT)
+#define ANALOG13_PORT MCU_PIN(ANALOG13_PIN, PORT)
 #endif
-#if (defined(ANALOG14_PIN) && !(defined(ANALOG14_BIT) || defined(ANALOG14_PORT)))
-#define ANALOG14_BIT MCU_PIN(ANALOG14_PIN,BIT)
-#define ANALOG14_PORT MCU_PIN(ANALOG14_PIN,PORT)
+#if (defined(ANALOG14_PIN) &&                                                  \
+     !(defined(ANALOG14_BIT) || defined(ANALOG14_PORT)))
+#define ANALOG14_BIT MCU_PIN(ANALOG14_PIN, BIT)
+#define ANALOG14_PORT MCU_PIN(ANALOG14_PIN, PORT)
 #endif
-#if (defined(ANALOG15_PIN) && !(defined(ANALOG15_BIT) || defined(ANALOG15_PORT)))
-#define ANALOG15_BIT MCU_PIN(ANALOG15_PIN,BIT)
-#define ANALOG15_PORT MCU_PIN(ANALOG15_PIN,PORT)
+#if (defined(ANALOG15_PIN) &&                                                  \
+     !(defined(ANALOG15_BIT) || defined(ANALOG15_PORT)))
+#define ANALOG15_BIT MCU_PIN(ANALOG15_PIN, BIT)
+#define ANALOG15_PORT MCU_PIN(ANALOG15_PIN, PORT)
 #endif
 #if (defined(DIN0_PIN) && !(defined(DIN0_BIT) || defined(DIN0_PORT)))
-#define DIN0_BIT MCU_PIN(DIN0_PIN,BIT)
-#define DIN0_PORT MCU_PIN(DIN0_PIN,PORT)
+#define DIN0_BIT MCU_PIN(DIN0_PIN, BIT)
+#define DIN0_PORT MCU_PIN(DIN0_PIN, PORT)
 #endif
 #if (defined(DIN1_PIN) && !(defined(DIN1_BIT) || defined(DIN1_PORT)))
-#define DIN1_BIT MCU_PIN(DIN1_PIN,BIT)
-#define DIN1_PORT MCU_PIN(DIN1_PIN,PORT)
+#define DIN1_BIT MCU_PIN(DIN1_PIN, BIT)
+#define DIN1_PORT MCU_PIN(DIN1_PIN, PORT)
 #endif
 #if (defined(DIN2_PIN) && !(defined(DIN2_BIT) || defined(DIN2_PORT)))
-#define DIN2_BIT MCU_PIN(DIN2_PIN,BIT)
-#define DIN2_PORT MCU_PIN(DIN2_PIN,PORT)
+#define DIN2_BIT MCU_PIN(DIN2_PIN, BIT)
+#define DIN2_PORT MCU_PIN(DIN2_PIN, PORT)
 #endif
 #if (defined(DIN3_PIN) && !(defined(DIN3_BIT) || defined(DIN3_PORT)))
-#define DIN3_BIT MCU_PIN(DIN3_PIN,BIT)
-#define DIN3_PORT MCU_PIN(DIN3_PIN,PORT)
+#define DIN3_BIT MCU_PIN(DIN3_PIN, BIT)
+#define DIN3_PORT MCU_PIN(DIN3_PIN, PORT)
 #endif
 #if (defined(DIN4_PIN) && !(defined(DIN4_BIT) || defined(DIN4_PORT)))
-#define DIN4_BIT MCU_PIN(DIN4_PIN,BIT)
-#define DIN4_PORT MCU_PIN(DIN4_PIN,PORT)
+#define DIN4_BIT MCU_PIN(DIN4_PIN, BIT)
+#define DIN4_PORT MCU_PIN(DIN4_PIN, PORT)
 #endif
 #if (defined(DIN5_PIN) && !(defined(DIN5_BIT) || defined(DIN5_PORT)))
-#define DIN5_BIT MCU_PIN(DIN5_PIN,BIT)
-#define DIN5_PORT MCU_PIN(DIN5_PIN,PORT)
+#define DIN5_BIT MCU_PIN(DIN5_PIN, BIT)
+#define DIN5_PORT MCU_PIN(DIN5_PIN, PORT)
 #endif
 #if (defined(DIN6_PIN) && !(defined(DIN6_BIT) || defined(DIN6_PORT)))
-#define DIN6_BIT MCU_PIN(DIN6_PIN,BIT)
-#define DIN6_PORT MCU_PIN(DIN6_PIN,PORT)
+#define DIN6_BIT MCU_PIN(DIN6_PIN, BIT)
+#define DIN6_PORT MCU_PIN(DIN6_PIN, PORT)
 #endif
 #if (defined(DIN7_PIN) && !(defined(DIN7_BIT) || defined(DIN7_PORT)))
-#define DIN7_BIT MCU_PIN(DIN7_PIN,BIT)
-#define DIN7_PORT MCU_PIN(DIN7_PIN,PORT)
+#define DIN7_BIT MCU_PIN(DIN7_PIN, BIT)
+#define DIN7_PORT MCU_PIN(DIN7_PIN, PORT)
 #endif
 #if (defined(DIN8_PIN) && !(defined(DIN8_BIT) || defined(DIN8_PORT)))
-#define DIN8_BIT MCU_PIN(DIN8_PIN,BIT)
-#define DIN8_PORT MCU_PIN(DIN8_PIN,PORT)
+#define DIN8_BIT MCU_PIN(DIN8_PIN, BIT)
+#define DIN8_PORT MCU_PIN(DIN8_PIN, PORT)
 #endif
 #if (defined(DIN9_PIN) && !(defined(DIN9_BIT) || defined(DIN9_PORT)))
-#define DIN9_BIT MCU_PIN(DIN9_PIN,BIT)
-#define DIN9_PORT MCU_PIN(DIN9_PIN,PORT)
+#define DIN9_BIT MCU_PIN(DIN9_PIN, BIT)
+#define DIN9_PORT MCU_PIN(DIN9_PIN, PORT)
 #endif
 #if (defined(DIN10_PIN) && !(defined(DIN10_BIT) || defined(DIN10_PORT)))
-#define DIN10_BIT MCU_PIN(DIN10_PIN,BIT)
-#define DIN10_PORT MCU_PIN(DIN10_PIN,PORT)
+#define DIN10_BIT MCU_PIN(DIN10_PIN, BIT)
+#define DIN10_PORT MCU_PIN(DIN10_PIN, PORT)
 #endif
 #if (defined(DIN11_PIN) && !(defined(DIN11_BIT) || defined(DIN11_PORT)))
-#define DIN11_BIT MCU_PIN(DIN11_PIN,BIT)
-#define DIN11_PORT MCU_PIN(DIN11_PIN,PORT)
+#define DIN11_BIT MCU_PIN(DIN11_PIN, BIT)
+#define DIN11_PORT MCU_PIN(DIN11_PIN, PORT)
 #endif
 #if (defined(DIN12_PIN) && !(defined(DIN12_BIT) || defined(DIN12_PORT)))
-#define DIN12_BIT MCU_PIN(DIN12_PIN,BIT)
-#define DIN12_PORT MCU_PIN(DIN12_PIN,PORT)
+#define DIN12_BIT MCU_PIN(DIN12_PIN, BIT)
+#define DIN12_PORT MCU_PIN(DIN12_PIN, PORT)
 #endif
 #if (defined(DIN13_PIN) && !(defined(DIN13_BIT) || defined(DIN13_PORT)))
-#define DIN13_BIT MCU_PIN(DIN13_PIN,BIT)
-#define DIN13_PORT MCU_PIN(DIN13_PIN,PORT)
+#define DIN13_BIT MCU_PIN(DIN13_PIN, BIT)
+#define DIN13_PORT MCU_PIN(DIN13_PIN, PORT)
 #endif
 #if (defined(DIN14_PIN) && !(defined(DIN14_BIT) || defined(DIN14_PORT)))
-#define DIN14_BIT MCU_PIN(DIN14_PIN,BIT)
-#define DIN14_PORT MCU_PIN(DIN14_PIN,PORT)
+#define DIN14_BIT MCU_PIN(DIN14_PIN, BIT)
+#define DIN14_PORT MCU_PIN(DIN14_PIN, PORT)
 #endif
 #if (defined(DIN15_PIN) && !(defined(DIN15_BIT) || defined(DIN15_PORT)))
-#define DIN15_BIT MCU_PIN(DIN15_PIN,BIT)
-#define DIN15_PORT MCU_PIN(DIN15_PIN,PORT)
+#define DIN15_BIT MCU_PIN(DIN15_PIN, BIT)
+#define DIN15_PORT MCU_PIN(DIN15_PIN, PORT)
 #endif
 #if (defined(DIN16_PIN) && !(defined(DIN16_BIT) || defined(DIN16_PORT)))
-#define DIN16_BIT MCU_PIN(DIN16_PIN,BIT)
-#define DIN16_PORT MCU_PIN(DIN16_PIN,PORT)
+#define DIN16_BIT MCU_PIN(DIN16_PIN, BIT)
+#define DIN16_PORT MCU_PIN(DIN16_PIN, PORT)
 #endif
 #if (defined(DIN17_PIN) && !(defined(DIN17_BIT) || defined(DIN17_PORT)))
-#define DIN17_BIT MCU_PIN(DIN17_PIN,BIT)
-#define DIN17_PORT MCU_PIN(DIN17_PIN,PORT)
+#define DIN17_BIT MCU_PIN(DIN17_PIN, BIT)
+#define DIN17_PORT MCU_PIN(DIN17_PIN, PORT)
 #endif
 #if (defined(DIN18_PIN) && !(defined(DIN18_BIT) || defined(DIN18_PORT)))
-#define DIN18_BIT MCU_PIN(DIN18_PIN,BIT)
-#define DIN18_PORT MCU_PIN(DIN18_PIN,PORT)
+#define DIN18_BIT MCU_PIN(DIN18_PIN, BIT)
+#define DIN18_PORT MCU_PIN(DIN18_PIN, PORT)
 #endif
 #if (defined(DIN19_PIN) && !(defined(DIN19_BIT) || defined(DIN19_PORT)))
-#define DIN19_BIT MCU_PIN(DIN19_PIN,BIT)
-#define DIN19_PORT MCU_PIN(DIN19_PIN,PORT)
+#define DIN19_BIT MCU_PIN(DIN19_PIN, BIT)
+#define DIN19_PORT MCU_PIN(DIN19_PIN, PORT)
 #endif
 #if (defined(DIN20_PIN) && !(defined(DIN20_BIT) || defined(DIN20_PORT)))
-#define DIN20_BIT MCU_PIN(DIN20_PIN,BIT)
-#define DIN20_PORT MCU_PIN(DIN20_PIN,PORT)
+#define DIN20_BIT MCU_PIN(DIN20_PIN, BIT)
+#define DIN20_PORT MCU_PIN(DIN20_PIN, PORT)
 #endif
 #if (defined(DIN21_PIN) && !(defined(DIN21_BIT) || defined(DIN21_PORT)))
-#define DIN21_BIT MCU_PIN(DIN21_PIN,BIT)
-#define DIN21_PORT MCU_PIN(DIN21_PIN,PORT)
+#define DIN21_BIT MCU_PIN(DIN21_PIN, BIT)
+#define DIN21_PORT MCU_PIN(DIN21_PIN, PORT)
 #endif
 #if (defined(DIN22_PIN) && !(defined(DIN22_BIT) || defined(DIN22_PORT)))
-#define DIN22_BIT MCU_PIN(DIN22_PIN,BIT)
-#define DIN22_PORT MCU_PIN(DIN22_PIN,PORT)
+#define DIN22_BIT MCU_PIN(DIN22_PIN, BIT)
+#define DIN22_PORT MCU_PIN(DIN22_PIN, PORT)
 #endif
 #if (defined(DIN23_PIN) && !(defined(DIN23_BIT) || defined(DIN23_PORT)))
-#define DIN23_BIT MCU_PIN(DIN23_PIN,BIT)
-#define DIN23_PORT MCU_PIN(DIN23_PIN,PORT)
+#define DIN23_BIT MCU_PIN(DIN23_PIN, BIT)
+#define DIN23_PORT MCU_PIN(DIN23_PIN, PORT)
 #endif
 #if (defined(DIN24_PIN) && !(defined(DIN24_BIT) || defined(DIN24_PORT)))
-#define DIN24_BIT MCU_PIN(DIN24_PIN,BIT)
-#define DIN24_PORT MCU_PIN(DIN24_PIN,PORT)
+#define DIN24_BIT MCU_PIN(DIN24_PIN, BIT)
+#define DIN24_PORT MCU_PIN(DIN24_PIN, PORT)
 #endif
 #if (defined(DIN25_PIN) && !(defined(DIN25_BIT) || defined(DIN25_PORT)))
-#define DIN25_BIT MCU_PIN(DIN25_PIN,BIT)
-#define DIN25_PORT MCU_PIN(DIN25_PIN,PORT)
+#define DIN25_BIT MCU_PIN(DIN25_PIN, BIT)
+#define DIN25_PORT MCU_PIN(DIN25_PIN, PORT)
 #endif
 #if (defined(DIN26_PIN) && !(defined(DIN26_BIT) || defined(DIN26_PORT)))
-#define DIN26_BIT MCU_PIN(DIN26_PIN,BIT)
-#define DIN26_PORT MCU_PIN(DIN26_PIN,PORT)
+#define DIN26_BIT MCU_PIN(DIN26_PIN, BIT)
+#define DIN26_PORT MCU_PIN(DIN26_PIN, PORT)
 #endif
 #if (defined(DIN27_PIN) && !(defined(DIN27_BIT) || defined(DIN27_PORT)))
-#define DIN27_BIT MCU_PIN(DIN27_PIN,BIT)
-#define DIN27_PORT MCU_PIN(DIN27_PIN,PORT)
+#define DIN27_BIT MCU_PIN(DIN27_PIN, BIT)
+#define DIN27_PORT MCU_PIN(DIN27_PIN, PORT)
 #endif
 #if (defined(DIN28_PIN) && !(defined(DIN28_BIT) || defined(DIN28_PORT)))
-#define DIN28_BIT MCU_PIN(DIN28_PIN,BIT)
-#define DIN28_PORT MCU_PIN(DIN28_PIN,PORT)
+#define DIN28_BIT MCU_PIN(DIN28_PIN, BIT)
+#define DIN28_PORT MCU_PIN(DIN28_PIN, PORT)
 #endif
 #if (defined(DIN29_PIN) && !(defined(DIN29_BIT) || defined(DIN29_PORT)))
-#define DIN29_BIT MCU_PIN(DIN29_PIN,BIT)
-#define DIN29_PORT MCU_PIN(DIN29_PIN,PORT)
+#define DIN29_BIT MCU_PIN(DIN29_PIN, BIT)
+#define DIN29_PORT MCU_PIN(DIN29_PIN, PORT)
 #endif
 #if (defined(DIN30_PIN) && !(defined(DIN30_BIT) || defined(DIN30_PORT)))
-#define DIN30_BIT MCU_PIN(DIN30_PIN,BIT)
-#define DIN30_PORT MCU_PIN(DIN30_PIN,PORT)
+#define DIN30_BIT MCU_PIN(DIN30_PIN, BIT)
+#define DIN30_PORT MCU_PIN(DIN30_PIN, PORT)
 #endif
 #if (defined(DIN31_PIN) && !(defined(DIN31_BIT) || defined(DIN31_PORT)))
-#define DIN31_BIT MCU_PIN(DIN31_PIN,BIT)
-#define DIN31_PORT MCU_PIN(DIN31_PIN,PORT)
+#define DIN31_BIT MCU_PIN(DIN31_PIN, BIT)
+#define DIN31_PORT MCU_PIN(DIN31_PIN, PORT)
 #endif
 #if (defined(TX_PIN) && !(defined(TX_BIT) || defined(TX_PORT)))
-#define TX_BIT MCU_PIN(TX_PIN,BIT)
-#define TX_PORT MCU_PIN(TX_PIN,PORT)
+#define TX_BIT MCU_PIN(TX_PIN, BIT)
+#define TX_PORT MCU_PIN(TX_PIN, PORT)
 #endif
 #if (defined(RX_PIN) && !(defined(RX_BIT) || defined(RX_PORT)))
-#define RX_BIT MCU_PIN(RX_PIN,BIT)
-#define RX_PORT MCU_PIN(RX_PIN,PORT)
+#define RX_BIT MCU_PIN(RX_PIN, BIT)
+#define RX_PORT MCU_PIN(RX_PIN, PORT)
 #endif
 #if (defined(USB_DM_PIN) && !(defined(USB_DM_BIT) || defined(USB_DM_PORT)))
-#define USB_DM_BIT MCU_PIN(USB_DM_PIN,BIT)
-#define USB_DM_PORT MCU_PIN(USB_DM_PIN,PORT)
+#define USB_DM_BIT MCU_PIN(USB_DM_PIN, BIT)
+#define USB_DM_PORT MCU_PIN(USB_DM_PIN, PORT)
 #endif
 #if (defined(USB_DP_PIN) && !(defined(USB_DP_BIT) || defined(USB_DP_PORT)))
-#define USB_DP_BIT MCU_PIN(USB_DP_PIN,BIT)
-#define USB_DP_PORT MCU_PIN(USB_DP_PIN,PORT)
+#define USB_DP_BIT MCU_PIN(USB_DP_PIN, BIT)
+#define USB_DP_PORT MCU_PIN(USB_DP_PIN, PORT)
 #endif
 #if (defined(SPI_CLK_PIN) && !(defined(SPI_CLK_BIT) || defined(SPI_CLK_PORT)))
-#define SPI_CLK_BIT MCU_PIN(SPI_CLK_PIN,BIT)
-#define SPI_CLK_PORT MCU_PIN(SPI_CLK_PIN,PORT)
+#define SPI_CLK_BIT MCU_PIN(SPI_CLK_PIN, BIT)
+#define SPI_CLK_PORT MCU_PIN(SPI_CLK_PIN, PORT)
 #endif
 #if (defined(SPI_SDI_PIN) && !(defined(SPI_SDI_BIT) || defined(SPI_SDI_PORT)))
-#define SPI_SDI_BIT MCU_PIN(SPI_SDI_PIN,BIT)
-#define SPI_SDI_PORT MCU_PIN(SPI_SDI_PIN,PORT)
+#define SPI_SDI_BIT MCU_PIN(SPI_SDI_PIN, BIT)
+#define SPI_SDI_PORT MCU_PIN(SPI_SDI_PIN, PORT)
 #endif
 #if (defined(SPI_SDO_PIN) && !(defined(SPI_SDO_BIT) || defined(SPI_SDO_PORT)))
-#define SPI_SDO_BIT MCU_PIN(SPI_SDO_PIN,BIT)
-#define SPI_SDO_PORT MCU_PIN(SPI_SDO_PIN,PORT)
+#define SPI_SDO_BIT MCU_PIN(SPI_SDO_PIN, BIT)
+#define SPI_SDO_PORT MCU_PIN(SPI_SDO_PIN, PORT)
 #endif
 #if (defined(SPI_CS_PIN) && !(defined(SPI_CS_BIT) || defined(SPI_CS_PORT)))
-#define SPI_CS_BIT MCU_PIN(SPI_CS_PIN,BIT)
-#define SPI_CS_PORT MCU_PIN(SPI_CS_PIN,PORT)
+#define SPI_CS_BIT MCU_PIN(SPI_CS_PIN, BIT)
+#define SPI_CS_PORT MCU_PIN(SPI_CS_PIN, PORT)
 #endif
 #if (defined(I2C_CLK_PIN) && !(defined(I2C_CLK_BIT) || defined(I2C_CLK_PORT)))
-#define I2C_CLK_BIT MCU_PIN(I2C_CLK_PIN,BIT)
-#define I2C_CLK_PORT MCU_PIN(I2C_CLK_PIN,PORT)
+#define I2C_CLK_BIT MCU_PIN(I2C_CLK_PIN, BIT)
+#define I2C_CLK_PORT MCU_PIN(I2C_CLK_PIN, PORT)
 #endif
-#if (defined(I2C_DATA_PIN) && !(defined(I2C_DATA_BIT) || defined(I2C_DATA_PORT)))
-#define I2C_DATA_BIT MCU_PIN(I2C_DATA_PIN,BIT)
-#define I2C_DATA_PORT MCU_PIN(I2C_DATA_PIN,PORT)
+#if (defined(I2C_DATA_PIN) &&                                                  \
+     !(defined(I2C_DATA_BIT) || defined(I2C_DATA_PORT)))
+#define I2C_DATA_BIT MCU_PIN(I2C_DATA_PIN, BIT)
+#define I2C_DATA_PORT MCU_PIN(I2C_DATA_PIN, PORT)
 #endif
 #if (defined(TX2_PIN) && !(defined(TX2_BIT) || defined(TX2_PORT)))
-#define TX2_BIT MCU_PIN(TX2_PIN,BIT)
-#define TX2_PORT MCU_PIN(TX2_PIN,PORT)
+#define TX2_BIT MCU_PIN(TX2_PIN, BIT)
+#define TX2_PORT MCU_PIN(TX2_PIN, PORT)
 #endif
 #if (defined(RX2_PIN) && !(defined(RX2_BIT) || defined(RX2_PORT)))
-#define RX2_BIT MCU_PIN(RX2_PIN,BIT)
-#define RX2_PORT MCU_PIN(RX2_PIN,PORT)
+#define RX2_BIT MCU_PIN(RX2_PIN, BIT)
+#define RX2_PORT MCU_PIN(RX2_PIN, PORT)
 #endif
 
 #ifdef __cplusplus

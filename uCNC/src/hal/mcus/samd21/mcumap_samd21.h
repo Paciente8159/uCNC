@@ -1,35 +1,37 @@
 /*
-	Name: mcumap_stm32f10x.h
-	Description: Contains all MCU and PIN definitions for STM32F10x to run µCNC.
+        Name: mcumap_stm32f10x.h
+        Description: Contains all MCU and PIN definitions for STM32F10x to run
+   µCNC.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 04-02-2020
+        Copyright: Copyright (c) João Martins
+        Author: João Martins
+        Date: 04-02-2020
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+        µCNC is free software: you can redistribute it and/or modify
+        it under the terms of the GNU General Public License as published by
+        the Free Software Foundation, either version 3 of the License, or
+        (at your option) any later version. Please see
+   <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+        µCNC is distributed WITHOUT ANY WARRANTY;
+        Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A
+   PARTICULAR PURPOSE. See the	GNU General Public License for more details.
 */
 
 #ifndef MCUMAP_SAMD21_H
 #define MCUMAP_SAMD21_H
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 /*
-	Generates all the interface definitions.
-	This creates a middle HAL layer between the board IO pins and the AVR funtionalities
+        Generates all the interface definitions.
+        This creates a middle HAL layer between the board IO pins and the AVR
+   funtionalities
 */
 /*
-	MCU specific definitions and replacements
+        MCU specific definitions and replacements
 */
 #include "sam.h"
 #include <stdbool.h>
@@ -37,7 +39,8 @@ extern "C"
 // defines the frequency of the mcu
 #ifndef F_CPU
 #define F_CPU SystemCoreClock
-#warning "F_CPU not defined as a constant. Cycle/Nanoseconds delays will be take longer then expected"
+#warning                                                                       \
+    "F_CPU not defined as a constant. Cycle/Nanoseconds delays will be take longer then expected"
 #endif
 // defines the maximum and minimum step rates
 #ifndef F_STEP_MAX
@@ -59,21 +62,19 @@ extern "C"
 #define MCU_CYCLES_LOOP_OVERHEAD 1
 #endif
 
-#define mcu_delay_loop(X)                                  \
-	do                                                     \
-	{                                                      \
-		asm volatile("" ::: "memory");                     \
-		register uint16_t __count = (X);                   \
-		__asm__ volatile(                                  \
-			"1: sub %[cnt], %[cnt], #1\n" /* 1 cycle */    \
-			"   cmp %[cnt], #0\n"		  /* 1 cycle */    \
-			"   bne 1b\n"				  /* 1–2 cycles */ \
-			"   nop\n"					  /* 1 cycle */    \
-			: [cnt] "+r"(__count)                          \
-			:                                              \
-			: "cc");                                       \
-		asm volatile("" ::: "memory");                     \
-	} while (0)
+#define mcu_delay_loop(X)                                                      \
+  do {                                                                         \
+    asm volatile("" ::: "memory");                                             \
+    register uint16_t __count = (X);                                           \
+    __asm__ volatile("1: sub %[cnt], %[cnt], #1\n" /* 1 cycle */               \
+                     "   cmp %[cnt], #0\n"         /* 1 cycle */               \
+                     "   bne 1b\n"                 /* 1–2 cycles */            \
+                     "   nop\n"                    /* 1 cycle */               \
+                     : [cnt] "+r"(__count)                                     \
+                     :                                                         \
+                     : "cc");                                                  \
+    asm volatile("" ::: "memory");                                             \
+  } while (0)
 
 // defines special mcu to access flash strings and arrays
 #define __rom__
@@ -1659,10 +1660,11 @@ extern "C"
 #endif
 #if (defined(USB_DP) && defined(USB_DM))
 #define MCU_HAS_USB
-	extern uint32_t tud_cdc_n_write_available(uint8_t itf);
-	extern uint32_t tud_cdc_n_available(uint8_t itf);
-	extern bool tud_cdc_n_connected(uint8_t itf);
-#define usb_tx_available() (tud_cdc_n_write_available(0) || !tud_cdc_n_connected(0))
+extern uint32_t tud_cdc_n_write_available(uint8_t itf);
+extern uint32_t tud_cdc_n_available(uint8_t itf);
+extern bool tud_cdc_n_connected(uint8_t itf);
+#define usb_tx_available()                                                     \
+  (tud_cdc_n_write_available(0) || !tud_cdc_n_connected(0))
 #define usb_rx_available() tud_cdc_n_available(0)
 #endif
 
@@ -1713,14 +1715,14 @@ extern "C"
 #define _pinmuxval(X) (pinmuxval_##X)
 #define pinmuxval(X) (_pinmuxval(X))
 
-	// #define sercompad_RX_0 (0x0U)
-	// #define sercompad_RX_1 (0x1U)
-	// #define sercompad_RX_2 (0x2U)
-	// #define sercompad_RX_3 (0x3U)
-	// #define sercompad_TX_0 (0x2U)
-	// #define sercompad_TX_2 (0x1U)
-	// #define _sercompad(X, Y) (sercompad##X##_##Y)
-	// #define sercompad(X, Y) (_sercompad(X, Y))
+// #define sercompad_RX_0 (0x0U)
+// #define sercompad_RX_1 (0x1U)
+// #define sercompad_RX_2 (0x2U)
+// #define sercompad_RX_3 (0x3U)
+// #define sercompad_TX_0 (0x2U)
+// #define sercompad_TX_2 (0x1U)
+// #define _sercompad(X, Y) (sercompad##X##_##Y)
+// #define sercompad(X, Y) (_sercompad(X, Y))
 
 #define SERCOMPADRX_0_A8 0
 #define SERCOMPADRX_0_A9 1
@@ -1923,7 +1925,8 @@ extern "C"
 #define DIO211_PMUXVAL RX2_PMUXVAL
 #define COM2_UART __helper__(SERCOM, UART2_PORT, )
 #define PM_APBCMASK_COM2 __helper__(PM_APBCMASK_SERCOM, UART2_PORT, )
-#define GCLK_CLKCTRL_ID_COM2 __helper__(GCLK_CLKCTRL_ID_SERCOM, UART2_PORT, _CORE)
+#define GCLK_CLKCTRL_ID_COM2                                                   \
+  __helper__(GCLK_CLKCTRL_ID_SERCOM, UART2_PORT, _CORE)
 #define COM2_IRQ __helper__(SERCOM, UART2_PORT, _IRQn)
 #define mcu_com2_isr __helper__(SERCOM, UART2_PORT, _Handler)
 #define COM2_OUTREG (COM2_UART->USART.DATA.reg)
@@ -1947,7 +1950,8 @@ extern "C"
 
 #define SPICOM __helper__(SERCOM, SPI_PORT, )
 #define PM_APBCMASK_SPICOM __helper__(PM_APBCMASK_SERCOM, SPI_PORT, )
-#define GCLK_CLKCTRL_ID_SPICOM __helper__(GCLK_CLKCTRL_ID_SERCOM, SPI_PORT, _CORE)
+#define GCLK_CLKCTRL_ID_SPICOM                                                 \
+  __helper__(GCLK_CLKCTRL_ID_SERCOM, SPI_PORT, _CORE)
 #define SPI_DATA (SPICOM->SPI.DATA.reg)
 #define SPI_OUTPAD 0
 #define SPI_INPAD 3
@@ -1992,7 +1996,8 @@ extern "C"
 
 #define SPI2COM __helper__(SERCOM, SPI2_PORT, )
 #define PM_APBCMASK_SPI2COM __helper__(PM_APBCMASK_SERCOM, SPI2_PORT, )
-#define GCLK_CLKCTRL_ID_SPI2COM __helper__(GCLK_CLKCTRL_ID_SERCOM, SPI2_PORT, _CORE)
+#define GCLK_CLKCTRL_ID_SPI2COM                                                \
+  __helper__(GCLK_CLKCTRL_ID_SERCOM, SPI2_PORT, _CORE)
 #define SPI2_DATA (SPI2COM->SPI.DATA.reg)
 #define SPI2_OUTPAD 0
 #define SPI2_INPAD 3
@@ -2038,11 +2043,12 @@ extern "C"
 
 #define I2CCOM __helper__(SERCOM, I2C_PORT, )
 #define PM_APBCMASK_I2CCOM __helper__(PM_APBCMASK_SERCOM, I2C_PORT, )
-#define GCLK_CLKCTRL_ID_I2CCOM __helper__(GCLK_CLKCTRL_ID_SERCOM, I2C_PORT, _CORE)
+#define GCLK_CLKCTRL_ID_I2CCOM                                                 \
+  __helper__(GCLK_CLKCTRL_ID_SERCOM, I2C_PORT, _CORE)
 #define I2C_IRQ __helper__(SERCOM, I2C_PORT, _IRQn)
 #define I2C_ISR __helper__(SERCOM, I2C_PORT, _Handler)
-	// #define OUTPAD 0
-	// #define INPAD 3
+// #define OUTPAD 0
+// #define INPAD 3
 
 #define I2C_CLK_PMUX (pinmux(I2C_CLK_PORT, I2C_CLK_BIT))
 #define I2C_CLK_PMUXVAL (sercommux_pin(I2C_PORT, I2C_CLK_PORT, I2C_CLK_BIT))
@@ -2351,84 +2357,87 @@ extern "C"
 #define DIO137_ISRMASK 0
 #endif
 
-#define LIMITS_EICMASK (LIMIT_X_ISRMASK | LIMIT_Y_ISRMASK | LIMIT_Z_ISRMASK | LIMIT_X2_ISRMASK | LIMIT_Y2_ISRMASK | LIMIT_Z2_ISRMASK | LIMIT_A_ISRMASK | LIMIT_B_ISRMASK | LIMIT_C_ISRMASK)
-#define CONTROLS_EICMASK (ESTOP_ISRMASK | SAFETY_DOOR_ISRMASK | FHOLD_ISRMASK | CS_RES_ISRMASK)
+#define LIMITS_EICMASK                                                         \
+  (LIMIT_X_ISRMASK | LIMIT_Y_ISRMASK | LIMIT_Z_ISRMASK | LIMIT_X2_ISRMASK |    \
+   LIMIT_Y2_ISRMASK | LIMIT_Z2_ISRMASK | LIMIT_A_ISRMASK | LIMIT_B_ISRMASK |   \
+   LIMIT_C_ISRMASK)
+#define CONTROLS_EICMASK                                                       \
+  (ESTOP_ISRMASK | SAFETY_DOOR_ISRMASK | FHOLD_ISRMASK | CS_RES_ISRMASK)
 #define PROBE_EICMASK (PROBE_ISRMASK)
-#define DIN_IO_EICMASK (DIN0_ISRMASK | DIN1_ISRMASK | DIN2_ISRMASK | DIN3_ISRMASK | DIN4_ISRMASK | DIN5_ISRMASK | DIN6_ISRMASK | DIN7_ISRMASK)
+#define DIN_IO_EICMASK                                                         \
+  (DIN0_ISRMASK | DIN1_ISRMASK | DIN2_ISRMASK | DIN3_ISRMASK | DIN4_ISRMASK |  \
+   DIN5_ISRMASK | DIN6_ISRMASK | DIN7_ISRMASK)
 
-#define SAMD21_EIC_MASK (LIMITS_EICMASK | CONTROLS_EICMASK | PROBE_EICMASK | DIN_IO_EICMASK)
+#define SAMD21_EIC_MASK                                                        \
+  (LIMITS_EICMASK | CONTROLS_EICMASK | PROBE_EICMASK | DIN_IO_EICMASK)
 
 /*timers-unused*/
 #define gclk_clkctrl(X) (0x1A + (X >> 1))
 
 /*PWM*/
-#define pwm_tcc_config(timer, channel, presc)           \
-	do                                                  \
-	{                                                   \
-		timer->CTRLA.bit.ENABLE = 0;                    \
-		while (timer->SYNCBUSY.reg & TCC_SYNCBUSY_MASK) \
-			;                                           \
-		timer->CTRLA.bit.PRESCALER = presc;             \
-		while (timer->SYNCBUSY.reg & TCC_SYNCBUSY_MASK) \
-			;                                           \
-		timer->WAVE.bit.WAVEGEN = 2;                    \
-		while (timer->SYNCBUSY.reg & TCC_SYNCBUSY_MASK) \
-			;                                           \
-		timer->WEXCTRL.reg = 0;                    \
-		while (timer->SYNCBUSY.reg & TCC_SYNCBUSY_MASK) \
-			;                                           \
-		timer->CC[(channel & 0x3)].reg = 0;             \
-		while (timer->SYNCBUSY.reg & TCC_SYNCBUSY_MASK) \
-			;                                           \
-		timer->PER.bit.PER = 255;                       \
-		while (timer->SYNCBUSY.reg & TCC_SYNCBUSY_MASK) \
-			;                                           \
-		timer->CTRLA.bit.ENABLE = 1;                    \
-		while (timer->SYNCBUSY.reg & TCC_SYNCBUSY_MASK) \
-			;                                           \
-	} while (0)
+#define pwm_tcc_config(timer, channel, presc)                                  \
+  do {                                                                         \
+    timer->CTRLA.bit.ENABLE = 0;                                               \
+    while (timer->SYNCBUSY.reg & TCC_SYNCBUSY_MASK)                            \
+      ;                                                                        \
+    timer->CTRLA.bit.PRESCALER = presc;                                        \
+    while (timer->SYNCBUSY.reg & TCC_SYNCBUSY_MASK)                            \
+      ;                                                                        \
+    timer->WAVE.bit.WAVEGEN = 2;                                               \
+    while (timer->SYNCBUSY.reg & TCC_SYNCBUSY_MASK)                            \
+      ;                                                                        \
+    timer->WEXCTRL.reg = 0;                                                    \
+    while (timer->SYNCBUSY.reg & TCC_SYNCBUSY_MASK)                            \
+      ;                                                                        \
+    timer->CC[(channel & 0x3)].reg = 0;                                        \
+    while (timer->SYNCBUSY.reg & TCC_SYNCBUSY_MASK)                            \
+      ;                                                                        \
+    timer->PER.bit.PER = 255;                                                  \
+    while (timer->SYNCBUSY.reg & TCC_SYNCBUSY_MASK)                            \
+      ;                                                                        \
+    timer->CTRLA.bit.ENABLE = 1;                                               \
+    while (timer->SYNCBUSY.reg & TCC_SYNCBUSY_MASK)                            \
+      ;                                                                        \
+  } while (0)
 
 #define pwm_tcc_get(timer, channel) (timer->CC[(channel & 0x3)].reg)
-#define pwm_tcc_set(timer, channel, value)              \
-	do                                                  \
-	{                                                   \
-		timer->CTRLBSET.bit.LUPD = 1;                   \
-		while (timer->SYNCBUSY.reg & TCC_SYNCBUSY_MASK) \
-			;                                           \
-		timer->CCB[(channel & 0x3)].reg = value;        \
-		while (timer->SYNCBUSY.reg & TCC_SYNCBUSY_MASK) \
-			;                                           \
-		timer->CTRLBCLR.bit.LUPD = 1;                   \
-	} while (0)
+#define pwm_tcc_set(timer, channel, value)                                     \
+  do {                                                                         \
+    timer->CTRLBSET.bit.LUPD = 1;                                              \
+    while (timer->SYNCBUSY.reg & TCC_SYNCBUSY_MASK)                            \
+      ;                                                                        \
+    timer->CCB[(channel & 0x3)].reg = value;                                   \
+    while (timer->SYNCBUSY.reg & TCC_SYNCBUSY_MASK)                            \
+      ;                                                                        \
+    timer->CTRLBCLR.bit.LUPD = 1;                                              \
+  } while (0)
 
-#define pwm_tc_config(timer, channel, presc)       \
-	do                                             \
-	{                                              \
-		timer->COUNT8.CTRLA.bit.ENABLE = 0;        \
-		while (timer->COUNT8.STATUS.bit.SYNCBUSY)  \
-			;                                      \
-		timer->COUNT8.CTRLA.bit.MODE = 1;          \
-		while (timer->COUNT8.STATUS.bit.SYNCBUSY)  \
-			;                                      \
-		timer->COUNT8.CTRLA.bit.PRESCALER = presc; \
-		while (timer->COUNT8.STATUS.bit.SYNCBUSY)  \
-			;                                      \
-		timer->COUNT8.CTRLA.bit.WAVEGEN = 2;       \
-		while (timer->COUNT8.STATUS.bit.SYNCBUSY)  \
-			;                                      \
-		timer->COUNT8.PER.reg = 255;               \
-		while (timer->COUNT8.STATUS.bit.SYNCBUSY)  \
-			;                                      \
-		timer->COUNT8.CTRLA.bit.ENABLE = 1;        \
-		while (timer->COUNT8.STATUS.bit.SYNCBUSY)  \
-			;                                      \
-	} while (0)
+#define pwm_tc_config(timer, channel, presc)                                   \
+  do {                                                                         \
+    timer->COUNT8.CTRLA.bit.ENABLE = 0;                                        \
+    while (timer->COUNT8.STATUS.bit.SYNCBUSY)                                  \
+      ;                                                                        \
+    timer->COUNT8.CTRLA.bit.MODE = 1;                                          \
+    while (timer->COUNT8.STATUS.bit.SYNCBUSY)                                  \
+      ;                                                                        \
+    timer->COUNT8.CTRLA.bit.PRESCALER = presc;                                 \
+    while (timer->COUNT8.STATUS.bit.SYNCBUSY)                                  \
+      ;                                                                        \
+    timer->COUNT8.CTRLA.bit.WAVEGEN = 2;                                       \
+    while (timer->COUNT8.STATUS.bit.SYNCBUSY)                                  \
+      ;                                                                        \
+    timer->COUNT8.PER.reg = 255;                                               \
+    while (timer->COUNT8.STATUS.bit.SYNCBUSY)                                  \
+      ;                                                                        \
+    timer->COUNT8.CTRLA.bit.ENABLE = 1;                                        \
+    while (timer->COUNT8.STATUS.bit.SYNCBUSY)                                  \
+      ;                                                                        \
+  } while (0)
 #define pwm_tc_get(timer, channel) (timer->COUNT8.CC[channel].reg)
-#define pwm_tc_set(timer, channel, value)      \
-	do                                         \
-	{                                          \
-		timer->COUNT8.CC[channel].reg = value; \
-	} while (0)
+#define pwm_tc_set(timer, channel, value)                                      \
+  do {                                                                         \
+    timer->COUNT8.CC[channel].reg = value;                                     \
+  } while (0)
 
 #define _pwm_timer0 TCC0
 #define _pwm_timer1 TCC1
@@ -2895,90 +2904,98 @@ extern "C"
 #endif
 
 #define mcu_config_output(diopin)                                              \
-	{                                                                          \
-		SETBIT(__indirect__(diopin, GPIO).DIR.reg, __indirect__(diopin, BIT)); \
-		__indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg = 2;  \
-	}
-#define mcu_config_input(diopin)                                                 \
-	{                                                                            \
-		CLEARBIT(__indirect__(diopin, GPIO).DIR.reg, __indirect__(diopin, BIT)); \
-		__indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg = 2;    \
-	}
-#define mcu_config_pullup(diopin)                                                    \
-	{                                                                                \
-		SETBIT(__indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg, 2); \
-		SETBIT(__indirect__(diopin, GPIO).OUT.reg, __indirect__(diopin, BIT));       \
-	}
-#define mcu_config_altfunc(diopin)                                                   \
-	{                                                                                \
-		SETBIT(__indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg, 0); \
-		(__indirect__(diopin, PMUX)) = __indirect__(diopin, PMUXVAL);                \
-	}
+  {                                                                            \
+    SETBIT(__indirect__(diopin, GPIO).DIR.reg, __indirect__(diopin, BIT));     \
+    __indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg = 2;      \
+  }
+#define mcu_config_input(diopin)                                               \
+  {                                                                            \
+    CLEARBIT(__indirect__(diopin, GPIO).DIR.reg, __indirect__(diopin, BIT));   \
+    __indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg = 2;      \
+  }
+#define mcu_config_pullup(diopin)                                              \
+  {                                                                            \
+    SETBIT(__indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg,   \
+           2);                                                                 \
+    SETBIT(__indirect__(diopin, GPIO).OUT.reg, __indirect__(diopin, BIT));     \
+  }
+#define mcu_config_altfunc(diopin)                                             \
+  {                                                                            \
+    SETBIT(__indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg,   \
+           0);                                                                 \
+    (__indirect__(diopin, PMUX)) = __indirect__(diopin, PMUXVAL);              \
+  }
 
 #define mcu_config_input_isr(diopin) (mcu_config_altfunc(diopin))
 
-#define mcu_config_pwm(diopin, freq)                                                     \
-	{                                                                                    \
-		SETBIT(__indirect__(diopin, GPIO).DIR.reg, __indirect__(diopin, BIT));           \
-		(__indirect__(diopin, PMUX)) = __indirect__(diopin, PMUXVAL);                    \
-		__indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg = 1;            \
-		uint16_t div = ((F_TIMERS >> 8) / freq);                                         \
-		uint8_t presc = 0;                                                               \
-		while (div > 1)                                                                  \
-		{                                                                                \
-			uint8_t shift = (presc >= 4) ? 2 : 1;                                        \
-			div = ((div + 1) >> shift);                                                  \
-			presc++;                                                                     \
-			if (presc == 7)                                                              \
-			{                                                                            \
-				break;                                                                   \
-			}                                                                            \
-		}                                                                                \
-		pwm_t_config(__indirect__(diopin, TIMER), __indirect__(diopin, CHANNEL), presc); \
-	}
+#define mcu_config_pwm(diopin, freq)                                           \
+  {                                                                            \
+    SETBIT(__indirect__(diopin, GPIO).DIR.reg, __indirect__(diopin, BIT));     \
+    (__indirect__(diopin, PMUX)) = __indirect__(diopin, PMUXVAL);              \
+    __indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg = 1;      \
+    uint16_t div = ((F_TIMERS >> 8) / freq);                                   \
+    uint8_t presc = 0;                                                         \
+    while (div > 1) {                                                          \
+      uint8_t shift = (presc >= 4) ? 2 : 1;                                    \
+      div = ((div + 1) >> shift);                                              \
+      presc++;                                                                 \
+      if (presc == 7) {                                                        \
+        break;                                                                 \
+      }                                                                        \
+    }                                                                          \
+    pwm_t_config(__indirect__(diopin, TIMER), __indirect__(diopin, CHANNEL),   \
+                 presc);                                                       \
+  }
 
-#define mcu_get_input(diopin) (CHECKBIT(__indirect__(diopin, GPIO).IN.reg, __indirect__(diopin, BIT)))
-#define mcu_get_output(diopin) (CHECKBIT(__indirect__(diopin, GPIO).OUT.reg, __indirect__(diopin, BIT)))
-#define mcu_set_output(diopin) (__indirect__(diopin, GPIO).OUTSET.reg = (1UL << __indirect__(diopin, BIT)))
-#define mcu_clear_output(diopin) (__indirect__(diopin, GPIO).OUTCLR.reg = (1UL << __indirect__(diopin, BIT)))
-#define mcu_toggle_output(diopin) (__indirect__(diopin, GPIO).OUTTGL.reg = (1UL << __indirect__(diopin, BIT)))
+#define mcu_get_input(diopin)                                                  \
+  (CHECKBIT(__indirect__(diopin, GPIO).IN.reg, __indirect__(diopin, BIT)))
+#define mcu_get_output(diopin)                                                 \
+  (CHECKBIT(__indirect__(diopin, GPIO).OUT.reg, __indirect__(diopin, BIT)))
+#define mcu_set_output(diopin)                                                 \
+  (__indirect__(diopin, GPIO).OUTSET.reg = (1UL << __indirect__(diopin, BIT)))
+#define mcu_clear_output(diopin)                                               \
+  (__indirect__(diopin, GPIO).OUTCLR.reg = (1UL << __indirect__(diopin, BIT)))
+#define mcu_toggle_output(diopin)                                              \
+  (__indirect__(diopin, GPIO).OUTTGL.reg = (1UL << __indirect__(diopin, BIT)))
 
-#define mcu_set_pwm(diopin, pwmvalue) pwm_t_set(__indirect__(diopin, TIMER), __indirect__(diopin, CHANNEL), pwmvalue)
-#define mcu_get_pwm(diopin) (uint8_t)(0xFF & pwm_t_get(__indirect__(diopin, TIMER), __indirect__(diopin, CHANNEL)))
+#define mcu_set_pwm(diopin, pwmvalue)                                          \
+  pwm_t_set(__indirect__(diopin, TIMER), __indirect__(diopin, CHANNEL),        \
+            pwmvalue)
+#define mcu_get_pwm(diopin)                                                    \
+  (uint8_t)(0xFF & pwm_t_get(__indirect__(diopin, TIMER),                      \
+                             __indirect__(diopin, CHANNEL)))
 
-#define mcu_get_analog(diopin)                                       \
-	{                                                                \
-		while (ADC->STATUS.bit.SYNCBUSY)                             \
-			ADC->INTFLAG.reg = ADC_INTFLAG_RESRDY;                   \
-		;                                                            \
-		while (ADC->STATUS.bit.SYNCBUSY)                             \
-			;                                                        \
-		ADC->INPUTCTRL.bit.MUXPOS = (__indirect__(diopin, CHANNEL)); \
-		while (ADC->STATUS.bit.SYNCBUSY)                             \
-			;                                                        \
-		ADC->SWTRIG.bit.START = 1;                                   \
-		while (!(ADC->INTFLAG.bit.RESRDY))                           \
-			;                                                        \
-		ADC->RESULT.reg;                                             \
-	}
+#define mcu_get_analog(diopin)                                                 \
+  {                                                                            \
+    while (ADC->STATUS.bit.SYNCBUSY)                                           \
+      ADC->INTFLAG.reg = ADC_INTFLAG_RESRDY;                                   \
+    ;                                                                          \
+    while (ADC->STATUS.bit.SYNCBUSY)                                           \
+      ;                                                                        \
+    ADC->INPUTCTRL.bit.MUXPOS = (__indirect__(diopin, CHANNEL));               \
+    while (ADC->STATUS.bit.SYNCBUSY)                                           \
+      ;                                                                        \
+    ADC->SWTRIG.bit.START = 1;                                                 \
+    while (!(ADC->INTFLAG.bit.RESRDY))                                         \
+      ;                                                                        \
+    ADC->RESULT.reg;                                                           \
+  }
 
-#define mcu_config_analog(diopin)                                                    \
-	{                                                                                \
-		CLEARBIT(__indirect__(diopin, GPIO).DIR.reg, __indirect__(diopin, BIT));     \
-		__indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg = 0;        \
-		SETBIT(__indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg, 0); \
-		(__indirect__(diopin, PMUX)) = __indirect__(diopin, PMUXVAL);                \
-		mcu_get_analog(diopin);                                                      \
-	}
-	/*
-#define mcu_get_pwm(diopin) ((uint8_t)((((uint32_t)__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR)) * 255) / ((uint32_t)__indirect__(diopin, TIMREG)->ARR)))
-#ifdef PROBE
-#ifdef PROBE_ISR
-#define mcu_enable_probe_isr() SETBIT(EXTI->IMR, PROBE_BIT)
-#define mcu_disable_probe_isr() CLEARBIT(EXTI->IMR, PROBE_BIT)
-#else
-#define mcu_enable_probe_isr()
-#define mcu_disable_probe_isr()
+#define mcu_config_analog(diopin)                                              \
+  {                                                                            \
+    CLEARBIT(__indirect__(diopin, GPIO).DIR.reg, __indirect__(diopin, BIT));   \
+    __indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg = 0;      \
+    SETBIT(__indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg,   \
+           0);                                                                 \
+    (__indirect__(diopin, PMUX)) = __indirect__(diopin, PMUXVAL);              \
+    mcu_get_analog(diopin);                                                    \
+  }
+/*
+#define mcu_get_pwm(diopin) ((uint8_t)((((uint32_t)__indirect__(diopin,
+TIMREG)->__indirect__(diopin, CCR)) * 255) / ((uint32_t)__indirect__(diopin,
+TIMREG)->ARR))) #ifdef PROBE #ifdef PROBE_ISR #define mcu_enable_probe_isr()
+SETBIT(EXTI->IMR, PROBE_BIT) #define mcu_disable_probe_isr() CLEARBIT(EXTI->IMR,
+PROBE_BIT) #else #define mcu_enable_probe_isr() #define mcu_disable_probe_isr()
 #endif
 #endif
 */
@@ -2986,7 +3003,9 @@ extern "C"
 #define mcu_disable_global_isr __disable_irq
 #define mcu_get_global_isr() (__get_PRIMASK() == 0u)
 #define mcu_in_isr_context() (__get_IPSR() != 0)
-#define mcu_free_micros() ((uint32_t)((((SysTick->LOAD + 1) - SysTick->VAL) * 1000UL) / (SysTick->LOAD + 1)))
+#define mcu_free_micros()                                                      \
+  ((uint32_t)((((SysTick->LOAD + 1) - SysTick->VAL) * 1000UL) /                \
+              (SysTick->LOAD + 1)))
 
 #ifdef __cplusplus
 }

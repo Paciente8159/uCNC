@@ -81,6 +81,19 @@ In addition to the standard configurations you need to set the following extra s
 Settings $100 and $101 have a different meaning, they
 use revolution instead of mm.
 
+### Rotary theta (RTheta)
+
+Rotary theta (polar) kinematics is supported. It uses a rotating base (theta) and a radial arm to position the tool.
+
+In addition to the standard configurations you need to set the following extra settings:
+
+| Setting | Description |
+| --- | --- |
+| $28       | RTheta homing angle, degrees |
+| $29       | RTheta homing distance, mm |
+| $106      | RTheta theta reduction ratio |
+| $107      | RTheta arm length, mm |
+
 
 ## The kinematics HAL
 This HAL is manages the way the linear actuators and the 3D Cartesian space axis relate to each other. 
@@ -91,9 +104,9 @@ This HAL is manages the way the linear actuators and the 3D Cartesian space axis
 ### Creating the HAL for a custom kinematics
    **2/3 steps are needed:**
 
-   **1. Implement all functions defined in the kinematics.h**
+   **1. Implement all functions defined in the kinematic.h**
 
-   All functions defined by the ```kinematics.h``` must be implemented except for ```kinematics_apply_transform``` and ```kinematics_apply_reverse_transform```. These are: 
+   All functions defined by the ```kinematic.h``` must be implemented except for ```kinematics_apply_transform``` and ```kinematics_apply_reverse_transform```. These are: 
 
    ```
     /**
@@ -146,6 +159,25 @@ This HAL is manages the way the linear actuators and the 3D Cartesian space axis
 	 * @param axis Target in absolute coordinates
 	 */
 	void kinematics_apply_reverse_transform(float *axis);
+
+	/**
+	 * @brief Converts from machine absolute coordinates to step position.
+	 * This calls kinematics_apply_inverse after applying any custom geometry transformation (like skew compensation)
+	 *
+	 * @param axis Position in world coordinates
+	 * @param steps Position in steps
+	 */
+
+	void kinematics_coordinates_to_steps(float *axis, int32_t *steps);
+
+	/**
+	 * @brief Converts from step position to machine absolute coordinates.
+	 * This calls kinematics_apply_forward and then recomputes any custom geometry transformation inversion (like skew compensation)
+	 *
+	 * @param steps Position in steps
+	 * @param axis Position in world coordinates
+	 */
+	void kinematics_steps_to_coordinates(int32_t *steps, float *axis);
 
 	/**
 	 * @brief Checks if the desired target is inside sofware boundries

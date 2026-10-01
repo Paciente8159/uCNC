@@ -534,8 +534,8 @@ The S value for the tool is translated like usual to RPM
 
 µCNC uses the ONESHOT timer to generate an independent acceleration profile for the needle wheel (heavy mass) while trying to accelerate the fabric as fast as possible (lightweigh structure) to the desired position to ensure the strich happens in the desired place.
 
-You should set the appropriate values for the number of steps required to make the wheel do a full revolution ($300).
-If using a software controlled position for the needle (position of the wheel mechanism in steps), from which fabric motion is not allowed ($301).
+You should set the appropriate values for the number of steps required to make the wheel do a full revolution ($310).
+If using a software controlled position for the needle (position of the wheel mechanism in steps), from which fabric motion is not allowed ($311).
 **NOTE:** In this case you must ensure that the initial position of the wheel when the controller is turned on is just above the fabric after the needle leaves the fabric (this will be you step 0 position).
 
 

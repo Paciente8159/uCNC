@@ -326,6 +326,7 @@ Currently µCNC supports the following kinematics:
 - Linear delta robot
 - Rotary delta robot
 - Scara
+- Rotary theta (polar)
 
 ### µCNC roadmap
 

@@ -42,7 +42,7 @@ __NOTE__: Not all event hooks might be listed here. To find all available event 
 | gcode_before_motion | gcode_exec_args_t* | ENABLE_PARSER_MODULES | Fires before a motion group command is executed (G0, G1, G2, etc...). Arg is a pointer to a gcode_exec_args_t struct |
 | gcode_after_motion | gcode_exec_args_t* | ENABLE_PARSER_MODULES | Fires after a motion group command is executed (G0, G1, G2, etc...). Arg is a pointer to a gcode_exec_args_t struct |
 | grbl_cmd | grbl_cmd_args_t* | ENABLE_PARSER_MODULES | Fires when a custom/unknown '$' grbl type command is received. Arg is a pointer to a grbl_cmd_args_t struct |
-| parse_token | uint8_t ** | ENABLE_PARSER_MODULES | Fires when a custom/unknown token/uint8_t is received for further processing. Arg is the address of the local word variable (a uint8_t**); store the accepted character there and return EVENT_HANDLED to accept it |
+| parse_token | uint8_t * | ENABLE_PARSER_MODULES | Fires when a custom/unknown token/uint8_t is received for further processing. Arg is a pointer to the token string being parsed (a uint8_t*); return EVENT_HANDLED to accept it |
 | parser_get_modes | uint8_t * | ENABLE_PARSER_MODULES | Fires when $G command is issued and the active modal states array is being requested (can be used to modify the active modes with extended gcodes). Arg is a pointer to an uint8_t array with the parser motion groups current values |
 | parser_reset | parser_state_t * | ENABLE_PARSER_MODULES | Fires on parser reset. Arg is a pointer to the parser state being reset |
 | cnc_reset | NULL | ENABLE_MAIN_LOOP_MODULES | Fires when µCNC resets |
@@ -66,7 +66,7 @@ __NOTE__: Not all event hooks might be listed here. To find all available event 
 | mc_home_axis_start | homing_status_t* | ENABLE_MOTION_CONTROL_MODULES | Fires once per axis when homing motion is starting. Pointer to homing_status_t struct with homming information |
 | mc_home_axis_finish | homing_status_t* | ENABLE_MOTION_CONTROL_MODULES | Fires once per axis when homing motion is finnished |
 | mc_line_segment | motion_data_t* | ENABLE_MOTION_CONTROL_MODULES | Fires when a line segment is about to be sent from the motion control to the planner. Arg is a pointer to a motion_data_t struct with the current motion block data |
-| mc_line_calc_segments | uint32_t* | ENABLE_MOTION_CONTROL_MODULES & MOTION_SEGMENTED | Allows to modify the amount of segments to be passed to the planner on a mc_line command. Arg is a pointer to an integer that defines the amount of segments to break the motion into. |
+| mc_line_calc_segments | mc_line_calc_segments_args_t* | ENABLE_MOTION_CONTROL_MODULES | Allows to modify the amount of segments to be passed to the planner on a mc_line command. Arg is a pointer to a mc_line_calc_segments_args_t struct with the amount of segments to break the motion into, the line distance, the direction vector and the maximum number of steps |
 | mc_line_segment_pre | mc_line_segment_pre_args_t* | ENABLE_MOTION_CONTROL_MODULES | Fired before a calling mc_line_segment with the data to be sent to the planner. Arg is a pointer to a mc_line_segment_pre_args_t struct with the current target coordinates, target step position and motion block data |
 | planner_pre_output | planner_block_t* | ENABLE_PLANNER_MODULES | **WARNING: This event must not run any code that requires to know the code context (like printing) to prevent deadlocks**Fires right before a section of the current planner block is sent to the step generation (interpolator) ISR. It's possible to perform changes and modifications to the steps being generated with a very small delay. The delay is defined by the size of the interpolator buffer `INTERPOLATOR_BUFFER_SIZE` and the stepping sample frequency `INTERPOLATOR_FREQ`  |
 
@@ -199,9 +199,8 @@ __NOTE__: Not all simple hooks may be listed here. To find all available simple 
 
 | Event name | Argument | Enable option | Description |
 | --- | --- | --- | --- |
-| itp_rt_pre_stepbits | int*, int* | ENABLE_RT_SYNC_MOTIONS | **DEPRECATED-DO NOT USE** Fires when the next computed step bits and dirs have been computed to be output. Args are a pointer the stepbit var and a pointer to a dirbit var |
-| itp_rt_stepbits | int, int | ENABLE_RT_SYNC_MOTIONS | Fires when the setpbits have been output to the IO. Args are the stepbit mask value and the step ISR flags value |
-| encoder_index | void | ENCODER_COUNT | Fires when the index of the specialized rpm encoder is triggered. Has no args |
+| itp_rt_stepbits | uint8_t, uint8_t | ENABLE_RT_SYNC_MOTIONS | Fires when the setpbits have been output to the IO. Args are the stepbit mask value and the step ISR flags value |
+| enc0_index to enc7_index | void | ENCODERS | Fires when the index of the corresponding encoder is triggered. Has no args |
 
 ## modules.h and events 
 
@@ -294,21 +293,21 @@ Open uCNC.ino
 ```
 #include "src/cnc.h"
 
-int main(void)
+void setup()
 {
     //initializes all systems
-    cnc_init();
+    ucnc_init();
 
     // add the listener to cnc_dotasks
     // ADD_EVENT_LISTENER(cnc_dotasks, my_custom_code);
 
 	// or instead of calling the listener you can call the module initializer that does that task like this
 	LOAD_MODULE(my_custom_module);
+}
 
-    for (;;)
-    {
-        cnc_run();
-    }
+void loop()
+{
+    ucnc_run();
 }
 ```
 
@@ -345,23 +344,30 @@ The only step left is to actually add the callback inside the core code to be ex
 ```
 void cnc_alarm(int8_t code)
 {
+	DBGLOG("[CNC] alarm: %hd", code);
 	cnc_set_exec_state(EXEC_KILL);
 	cnc_stop(true);
-	cnc_state.alarm = code;
-#ifdef ENABLE_IO_ALARM_DEBUG
-	proto_print(MSG_FEEDBACK_START);
-	proto_print(__romstr__("LIMITS:"));
-	proto_print_int(io_alarm_limits);
-	proto_print(__romstr__("|CONTROLS:"));
-	proto_print_int(io_alarm_controls);
-	proto_print(MSG_FEEDBACK_END);
-#endif
-
-	// we add our callback here
-	// in this callback we will pass to the listeners our error code
-	// since all event callback argument is of type void* (void pointer) we send the pointer to the error code like this
-
-	EVENT_INVOKE(cnc_alarm, &code);
+	if (!cnc_state.alarm || code < EXEC_ALARM_NOALARM)
+	{
+		cnc_state.alarm = code;
+		if (code > EXEC_ALARM_NOALARM)
+		{
+			if (!mcu_in_isr_context())
+			{
+				proto_alarm(code);
+				cnc_state.alarm = -code;
+			}
+			#ifdef ENABLE_MAIN_LOOP_MODULES
+			if (code > 0)
+			{
+				// we add our callback here
+				// in this callback we will pass to the listeners our error code
+				// since all event callback argument is of type void* (void pointer)
+				EVENT_INVOKE(cnc_alarm, NULL);
+			}
+			#endif
+		}
+	}
 }
 
 ```

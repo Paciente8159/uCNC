@@ -1,21 +1,20 @@
 /*
-	Name: telnet.h
-	Description: Small, allocation-free, Telnet server API for uCNC.
+        Name: telnet.h
+        Description: Small, allocation-free, Telnet server API for uCNC.
 
-	Copyright: Copyright (c) Joao Martins
-	Author: Joao Martins
+        Copyright: Copyright (c) Joao Martins
+        Author: Joao Martins
 
-	uCNC is free software: you can redistribute it and/or modify it under the
-	terms of the GNU General Public License as published by the Free Software
-	Foundation, either version 3 of the License, or (at your option) any later
-	version. Please see <http://www.gnu.org/licenses/>.
+        uCNC is free software: you can redistribute it and/or modify it under
+   the terms of the GNU General Public License as published by the Free Software
+        Foundation, either version 3 of the License, or (at your option) any
+   later version. Please see <http://www.gnu.org/licenses/>.
 */
 #ifndef TELNET_H
 #define TELNET_H
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 #include <stddef.h>
@@ -31,28 +30,26 @@ extern "C"
 #define TELNET_DONT 254U
 #define TELNET_IAC 255U
 
-typedef enum
-{
-	TELNET_PARSE_DATA = 0,
-	TELNET_PARSE_IAC,
-	TELNET_PARSE_OPTION,
-	TELNET_PARSE_SUBNEGOTIATION,
-	TELNET_PARSE_SUBNEGOTIATION_IAC
+typedef enum {
+  TELNET_PARSE_DATA = 0,
+  TELNET_PARSE_IAC,
+  TELNET_PARSE_OPTION,
+  TELNET_PARSE_SUBNEGOTIATION,
+  TELNET_PARSE_SUBNEGOTIATION_IAC
 } telnet_parse_state_t;
 
-typedef struct
-{
-	uint8_t parse_state;
-	uint8_t pending_command;
+typedef struct {
+  uint8_t parse_state;
+  uint8_t pending_command;
 } telnet_client_t;
 
-typedef void (*telnet_data_callback_t)(uint8_t client_idx, const uint8_t *data, size_t data_len);
+typedef void (*telnet_data_callback_t)(uint8_t client_idx, const uint8_t *data,
+                                       size_t data_len);
 
-typedef struct
-{
-	socket_if_t *telnet_socket;
-	telnet_client_t clients[SOCKET_MAX_CLIENTS];
-	telnet_data_callback_t telnet_data;
+typedef struct {
+  socket_if_t *telnet_socket;
+  telnet_client_t clients[SOCKET_MAX_CLIENTS];
+  telnet_data_callback_t telnet_data;
 } telnet_protocol_t;
 
 /*
@@ -68,9 +65,8 @@ typedef struct
  * - returns NULL when an argument is invalid or the socket listener cannot be
  *   created. On failure telnet is left stopped.
  */
-socket_if_t *telnet_start(telnet_protocol_t *telnet,
-						  uint16_t port,
-						  telnet_data_callback_t callback);
+socket_if_t *telnet_start(telnet_protocol_t *telnet, uint16_t port,
+                          telnet_data_callback_t callback);
 
 /*
  * Stops accepting clients and closes all clients owned by telnet.
@@ -92,10 +88,8 @@ bool telnet_hasclients(const telnet_protocol_t *telnet);
  * data_len on success or a negative socket_device_result_t on invalid state,
  * timeout, disconnect, or transport failure.
  */
-int telnet_send(telnet_protocol_t *telnet,
-				uint8_t client_idx,
-				const void *data,
-				size_t data_len);
+int telnet_send(telnet_protocol_t *telnet, uint8_t client_idx, const void *data,
+                size_t data_len);
 
 /*
  * Sends the payload to every client connected when the call starts. Each pass
@@ -103,10 +97,8 @@ int telnet_send(telnet_protocol_t *telnet,
  * only a stack-local per-client offset. The backend is polled between passes.
  * Clients still incomplete after timeout_ms are closed locally.
  */
-void telnet_broadcast(telnet_protocol_t *telnet,
-					  const void *data,
-					  size_t data_len,
-					  uint32_t timeout_ms);
+void telnet_broadcast(telnet_protocol_t *telnet, const void *data,
+                      size_t data_len, uint32_t timeout_ms);
 
 #ifdef __cplusplus
 }

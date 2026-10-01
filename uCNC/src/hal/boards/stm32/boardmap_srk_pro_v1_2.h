@@ -1,27 +1,28 @@
 /*
-	Name: boardmap_mks_robin_nano_v1_2.h
-	Description: Contains all MCU and PIN definitions for board MKS Robin Nano V1.2 to run µCNC.
+        Name: boardmap_mks_robin_nano_v1_2.h
+        Description: Contains all MCU and PIN definitions for board MKS Robin
+   Nano V1.2 to run µCNC.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 04/02/2020
+        Copyright: Copyright (c) João Martins
+        Author: João Martins
+        Date: 04/02/2020
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+        µCNC is free software: you can redistribute it and/or modify
+        it under the terms of the GNU General Public License as published by
+        the Free Software Foundation, either version 3 of the License, or
+        (at your option) any later version. Please see
+   <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+        µCNC is distributed WITHOUT ANY WARRANTY;
+        Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A
+   PARTICULAR PURPOSE. See the	GNU General Public License for more details.
 */
 
 #ifndef BOARDMAP_SKR_PRO_V12_H
 #define BOARDMAP_SKR_PRO_V12_H
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 #ifndef MCU
@@ -47,7 +48,7 @@ extern "C"
 // #define UART_PORT 3
 
 // Setup step pins
-#define STEP0_BIT 9	 // assigns STEP0 pin
+#define STEP0_BIT 9  // assigns STEP0 pin
 #define STEP0_PORT E // assigns STEP0 port
 #define STEP1_BIT 11 // assigns STEP1 pin
 #define STEP1_PORT E // assigns STEP1 port
@@ -61,17 +62,17 @@ extern "C"
 #define STEP5_PORT D // assigns STEP5 port
 
 // Setup dir pins
-#define DIR0_BIT 1	// assigns DIR0 pin
+#define DIR0_BIT 1  // assigns DIR0 pin
 #define DIR0_PORT F // assigns DIR0 port
-#define DIR1_BIT 8	// assigns DIR1 pin
+#define DIR1_BIT 8  // assigns DIR1 pin
 #define DIR1_PORT E // assigns DIR1 port
-#define DIR2_BIT 2	// assigns DIR2 pin
+#define DIR2_BIT 2  // assigns DIR2 pin
 #define DIR2_PORT C // assigns DIR2 port
-#define DIR3_BIT 0	// assigns DIR3 pin
+#define DIR3_BIT 0  // assigns DIR3 pin
 #define DIR3_PORT A // assigns DIR3 port
-#define DIR4_BIT 7	// assigns DIR4 pin
+#define DIR4_BIT 7  // assigns DIR4 pin
 #define DIR4_PORT E // assigns DIR4 port
-#define DIR5_BIT 9	// assigns DIR5 pin
+#define DIR5_BIT 9  // assigns DIR5 pin
 #define DIR5_PORT G // assigns DIR5 port
 
 // Stepper enable pin. For Grbl on Uno board a single pin is used
@@ -89,12 +90,12 @@ extern "C"
 #define STEP5_EN_PORT F
 
 // Setup limit pins
-#define LIMIT_X_BIT 10	// assigns LIMIT_X pin
-#define LIMIT_X_PORT B	// assigns LIMIT_X port
-#define LIMIT_Y_BIT 12	// assigns LIMIT_Y pin
-#define LIMIT_Y_PORT E	// assigns LIMIT_Y port
-#define LIMIT_Z_BIT 8		// assigns LIMIT_Z pin
-#define LIMIT_Z_PORT G	// assigns LIMIT_Z port
+#define LIMIT_X_BIT 10  // assigns LIMIT_X pin
+#define LIMIT_X_PORT B  // assigns LIMIT_X port
+#define LIMIT_Y_BIT 12  // assigns LIMIT_Y pin
+#define LIMIT_Y_PORT E  // assigns LIMIT_Y port
+#define LIMIT_Z_BIT 8   // assigns LIMIT_Z pin
+#define LIMIT_Z_PORT G  // assigns LIMIT_Z port
 #define LIMIT_X2_BIT 15 // assigns LIMIT_X2 pin
 #define LIMIT_X2_PORT E // assigns LIMIT_X2 port
 #define LIMIT_Y2_BIT 10 // assigns LIMIT_Y2 pin
@@ -115,11 +116,11 @@ extern "C"
 #define PROBE_PORT G
 #define PROBE_ISR
 
-	// #define UART_PORT 3
-	// #define TX_BIT 10
-	// #define TX_PORT B
-	// #define RX_BIT 11
-	// #define RX_PORT B
+// #define UART_PORT 3
+// #define TX_BIT 10
+// #define TX_PORT B
+// #define RX_BIT 11
+// #define RX_PORT B
 
 #define USB_DM_BIT 11
 #define USB_DM_PORT A
@@ -127,7 +128,7 @@ extern "C"
 #define USB_DP_PORT A
 
 // Setup PWM
-#define PWM0_BIT 1	// assigns PWM0 pin
+#define PWM0_BIT 1  // assigns PWM0 pin
 #define PWM0_PORT B // assigns PWM0 pin
 #define PWM0_CHANNEL 4
 #define PWM0_TIMER 3

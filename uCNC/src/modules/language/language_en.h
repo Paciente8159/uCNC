@@ -2,8 +2,7 @@
 #define LANGUAGE_EN_H
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 #define STR_MAIN_MENU "Main menu"

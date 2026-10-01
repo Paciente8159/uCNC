@@ -1,27 +1,28 @@
 /*
-	Name: boardmap_core_c3.h
-	Description: Contains all MCU and PIN definitions for Core ESP32 C3 to run µCNC.
+        Name: boardmap_core_c3.h
+        Description: Contains all MCU and PIN definitions for Core ESP32 C3 to
+   run µCNC.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 10-03-2025
+        Copyright: Copyright (c) João Martins
+        Author: João Martins
+        Date: 10-03-2025
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+        µCNC is free software: you can redistribute it and/or modify
+        it under the terms of the GNU General Public License as published by
+        the Free Software Foundation, either version 3 of the License, or
+        (at your option) any later version. Please see
+   <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+        µCNC is distributed WITHOUT ANY WARRANTY;
+        Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A
+   PARTICULAR PURPOSE. See the	GNU General Public License for more details.
 */
 
 #ifndef BOARDMAP_CORE_C3_H
 #define BOARDMAP_CORE_C3_H
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 #ifndef MCU
@@ -39,13 +40,13 @@ extern "C"
 // SAME AS GRBL for test purposes
 // Setup step pins
 #define STEP2_BIT 10 // assigns STEP2 pin
-#define STEP1_BIT 3 // assigns STEP1 pin
-#define STEP0_BIT 2 // assigns STEP0 pin
+#define STEP1_BIT 3  // assigns STEP1 pin
+#define STEP0_BIT 2  // assigns STEP0 pin
 
 // Setup dir pins
 #define DIR2_BIT 11 // assigns DIR2 pin
-#define DIR1_BIT 7 // assigns DIR1 pin
-#define DIR0_BIT 6 // assigns DIR0 pin
+#define DIR1_BIT 7  // assigns DIR1 pin
+#define DIR0_BIT 6  // assigns DIR0 pin
 
 // Setup control input pins
 // #define ESTOP_BIT 6
@@ -74,13 +75,13 @@ extern "C"
 #define RX_BIT 20
 #define TX_BIT 21
 #define RX_PULLUP
-	// only uncomment this if other port other then 0 is used
-	// #define UART_PORT 0
+// only uncomment this if other port other then 0 is used
+// #define UART_PORT 0
 
 // #define USB_DP_BIT 18
 // #define USB_DM_BIT 19
 
-	// Setup PWM
+// Setup PWM
 #define PWM0_BIT 12 // assigns PWM0 pin
 #define PWM0_TIMER 0
 #define PWM0_CHANNEL 0
@@ -95,11 +96,11 @@ extern "C"
 // Stepper enable pin. For Grbl on Uno board a single pin is used
 #define STEP0_EN_BIT 0
 
-	// Setup the Step Timer used has the heartbeat for µCNC
-	// Timer 1 is used by default
-	// #define ITP_TIMER 1
+// Setup the Step Timer used has the heartbeat for µCNC
+// Timer 1 is used by default
+// #define ITP_TIMER 1
 
-	// RTC Timer on ESP32 is granteed by a FreeRTOS
+// RTC Timer on ESP32 is granteed by a FreeRTOS
 
 #define ONESHOT_TIMER 2
 
@@ -111,7 +112,7 @@ extern "C"
 #define I2C_CLK_BIT 9
 #define I2C_DATA_BIT 8
 
-#define DOUT31_BIT 13 //blink
+#define DOUT31_BIT 13 // blink
 
 #ifdef __cplusplus
 }

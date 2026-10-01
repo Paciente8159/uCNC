@@ -5,7 +5,8 @@
 //  * of the LittleFS C API (lfs.h).
 //  *
 //  * Assumptions:
-//  *  - A global mounted LittleFS instance is available as `extern lfs_t g_lfs;`
+//  *  - A global mounted LittleFS instance is available as `extern lfs_t
+//  g_lfs;`
 //  *    along with a configured/mounted lfs_config elsewhere in the program.
 //  *  - The drive path (/C/) is handled by the higher-level file_system code.
 //  *  - Timestamps are not available via the LittleFS C API; set to 0.
@@ -22,12 +23,16 @@
 // /* flash_fs.c - LittleFS C99 shim for ESP8266 internal flash
 //  *
 //  * Requires:
-//  *   - ESP8266 core flash HAL: flash_hal.h (FS_PHYS_* and flash_hal_{read,write,erase})
-//  *   - LittleFS C sources/headers available in include path: lfs.h, lfs.c, etc.
-//  *   - Your generic FS interface: file_system.h (fs_t, fs_file_t, fs_file_info_t)
+//  *   - ESP8266 core flash HAL: flash_hal.h (FS_PHYS_* and
+//  flash_hal_{read,write,erase})
+//  *   - LittleFS C sources/headers available in include path: lfs.h, lfs.c,
+//  etc.
+//  *   - Your generic FS interface: file_system.h (fs_t, fs_file_t,
+//  fs_file_info_t)
 //  *
 //  * Notes:
-//  *   - Drive prefix (/C/) is filtered by the outer file_system layer, so paths here are root-based.
+//  *   - Drive prefix (/C/) is filtered by the outer file_system layer, so
+//  paths here are root-based.
 //  *   - Timestamps are set to 0 (LittleFS attrs can be added later if needed).
 //  */
 
@@ -36,9 +41,11 @@
 // #include <stdlib.h>
 // #include <string.h>
 
-// #include "flash_hal.h"										// FS_PHYS_ADDR, FS_PHYS_SIZE, FS_PHYS_PAGE, FS_PHYS_BLOCK, flash_hal_{read,write,erase}
-// #include "../../../modules/file_system.h" // fs_t, fs_file_t, fs_file_info_t
-// #include "lfs.h"													// LittleFS C API
+// #include "flash_hal.h"
+// // FS_PHYS_ADDR, FS_PHYS_SIZE, FS_PHYS_PAGE, FS_PHYS_BLOCK,
+// flash_hal_{read,write,erase} #include "../../../modules/file_system.h" //
+// fs_t, fs_file_t, fs_file_info_t #include "lfs.h"
+// // LittleFS C API
 
 // /* ---------- Internal state ---------- */
 
@@ -73,32 +80,31 @@
 // /* ---------- Flash HAL bindings (LittleFS block device) ---------- */
 
 // static int lfs_flash_read(const struct lfs_config *c,
-// 													lfs_block_t block,
-// 													lfs_off_t off,
-// 													void *dst,
-// 													lfs_size_t size)
+// 													lfs_block_t
+// block, 													lfs_off_t off, 													void *dst, 													lfs_size_t size)
 // {
 // 	const flash_ctx_t *ctx = (const flash_ctx_t *)c->context;
 // 	uint32_t addr = ctx->start + (block * ctx->block_size) + off;
-// 	return (flash_hal_read(addr, size, (uint8_t *)dst) == FLASH_HAL_OK) ? 0 : -1;
+// 	return (flash_hal_read(addr, size, (uint8_t *)dst) == FLASH_HAL_OK) ? 0
+// : -1;
 // }
 
 // static int lfs_flash_prog(const struct lfs_config *c,
-// 													lfs_block_t block,
-// 													lfs_off_t off,
-// 													const void *buffer,
-// 													lfs_size_t size)
+// 													lfs_block_t
+// block, 													lfs_off_t off, 													const void *buffer, 													lfs_size_t size)
 // {
 // 	const flash_ctx_t *ctx = (const flash_ctx_t *)c->context;
 // 	uint32_t addr = ctx->start + (block * ctx->block_size) + off;
-// 	return (flash_hal_write(addr, size, (const uint8_t *)buffer) == FLASH_HAL_OK) ? 0 : -1;
+// 	return (flash_hal_write(addr, size, (const uint8_t *)buffer) ==
+// FLASH_HAL_OK) ? 0 : -1;
 // }
 
 // static int lfs_flash_erase(const struct lfs_config *c, lfs_block_t block)
 // {
 // 	const flash_ctx_t *ctx = (const flash_ctx_t *)c->context;
 // 	uint32_t addr = ctx->start + (block * ctx->block_size);
-// 	return (flash_hal_erase(addr, ctx->block_size) == FLASH_HAL_OK) ? 0 : -1;
+// 	return (flash_hal_erase(addr, ctx->block_size) == FLASH_HAL_OK) ? 0 :
+// -1;
 // }
 
 // static int lfs_flash_sync(const struct lfs_config *c)
@@ -112,8 +118,9 @@
 // static void flash_fs_config_init(void)
 // {
 // 	memset(&g_cfg, 0, sizeof(g_cfg));
-// 	g_ctx.start = FS_PHYS_ADDR;				/* start offset within flash address space */
-// 	g_ctx.block_size = FS_PHYS_BLOCK; /* erase block size */
+// 	g_ctx.start = FS_PHYS_ADDR;				/* start offset
+// within flash address space */ 	g_ctx.block_size = FS_PHYS_BLOCK; /* erase
+// block size */
 
 // 	g_cfg.context = &g_ctx;
 // 	g_cfg.read = lfs_flash_read;
@@ -125,9 +132,10 @@
 // 	g_cfg.prog_size = FS_PHYS_PAGE; /* must divide block_size */
 // 	g_cfg.block_size = FS_PHYS_BLOCK;
 // 	g_cfg.block_count = FS_PHYS_SIZE / FS_PHYS_BLOCK; /* total blocks */
-// 	g_cfg.cache_size = FS_PHYS_PAGE;									/* typical: page size */
-// 	g_cfg.lookahead_size = 64;												/* multiple of 8, tune as needed */
-// 	g_cfg.block_cycles = 512;													/* wear-leveling (typical) */
+// 	g_cfg.cache_size = FS_PHYS_PAGE;
+// /* typical: page size */ 	g_cfg.lookahead_size = 64;
+// /* multiple of 8, tune as needed */ 	g_cfg.block_cycles = 512;
+// /* wear-leveling (typical) */
 // }
 
 // static bool flash_fs_mount_if_needed(void)
@@ -173,18 +181,20 @@
 // 	else if (m0 == 'w')
 // 	{
 // 		flags = plus ? (LFS_O_RDWR | LFS_O_CREAT | LFS_O_TRUNC)
-// 								 : (LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC);
+// 								 : (LFS_O_WRONLY
+// | LFS_O_CREAT | LFS_O_TRUNC);
 // 	}
 // 	else if (m0 == 'a')
 // 	{
 // 		flags = plus ? (LFS_O_RDWR | LFS_O_CREAT | LFS_O_APPEND)
-// 								 : (LFS_O_WRONLY | LFS_O_CREAT | LFS_O_APPEND);
+// 								 : (LFS_O_WRONLY
+// | LFS_O_CREAT | LFS_O_APPEND);
 // 	}
 // 	return flags;
 // }
 
-// /* Recursively create intermediate directories for a path, ignoring the final filename. */
-// static void flash_fs_make_parents_if_needed(const char *path)
+// /* Recursively create intermediate directories for a path, ignoring the final
+// filename. */ static void flash_fs_make_parents_if_needed(const char *path)
 // {
 // 	if (!path)
 // 		return;
@@ -253,7 +263,8 @@
 // 	{
 // 		(void)lfs_dir_close(&g_lfs, &h->u.dir);
 // 	}
-// 	/* Memory for fp->file_ptr is freed by the outer layer (see fs_safe_free) */
+// 	/* Memory for fp->file_ptr is freed by the outer layer (see
+// fs_safe_free) */
 // }
 
 // bool flash_fs_remove(const char *path)
@@ -286,7 +297,8 @@
 // 			return false; /* end of dir */
 
 // 		/* Skip "." and ".." if present */
-// 		if ((strcmp(info.name, ".") == 0) || (strcmp(info.name, "..") == 0))
+// 		if ((strcmp(info.name, ".") == 0) || (strcmp(info.name, "..") ==
+// 0))
 // 		{
 // 			continue;
 // 		}
@@ -295,11 +307,13 @@
 // 		memset(finfo->full_name, 0, sizeof(finfo->full_name));
 // 		if (h->base_path[0] == '\0' || (strcmp(h->base_path, "/") == 0))
 // 		{
-// 			snprintf(finfo->full_name, sizeof(finfo->full_name), "/%s", info.name);
+// 			snprintf(finfo->full_name, sizeof(finfo->full_name),
+// "/%s", info.name);
 // 		}
 // 		else
 // 		{
-// 			snprintf(finfo->full_name, sizeof(finfo->full_name), "%s/%s", h->base_path, info.name);
+// 			snprintf(finfo->full_name, sizeof(finfo->full_name),
+// "%s/%s", h->base_path, info.name);
 // 		}
 
 // 		finfo->is_dir = (info.type == LFS_TYPE_DIR);
@@ -321,8 +335,8 @@
 // 	if (h->type != FLASH_HANDLE_FILE)
 // 		return 0;
 
-// 	lfs_ssize_t rc = lfs_file_read(&g_lfs, &h->u.file, buffer, (lfs_size_t)len);
-// 	return (rc < 0) ? 0 : (size_t)rc;
+// 	lfs_ssize_t rc = lfs_file_read(&g_lfs, &h->u.file, buffer,
+// (lfs_size_t)len); 	return (rc < 0) ? 0 : (size_t)rc;
 // }
 
 // size_t flash_fs_write(fs_file_t *fp, const uint8_t *buffer, size_t len)
@@ -336,8 +350,8 @@
 // 	if (h->type != FLASH_HANDLE_FILE)
 // 		return 0;
 
-// 	lfs_ssize_t rc = lfs_file_write(&g_lfs, &h->u.file, buffer, (lfs_size_t)len);
-// 	return (rc < 0) ? 0 : (size_t)rc;
+// 	lfs_ssize_t rc = lfs_file_write(&g_lfs, &h->u.file, buffer,
+// (lfs_size_t)len); 	return (rc < 0) ? 0 : (size_t)rc;
 // }
 
 // bool flash_fs_info(const char *path, fs_file_info_t *finfo)
@@ -380,8 +394,8 @@
 // 		return NULL;
 // 	}
 
-// 	/* If creating, ensure intermediate dirs exist (like Arduino wrapper does) */
-// 	if ((flags & LFS_O_CREAT) && strchr(path, '/'))
+// 	/* If creating, ensure intermediate dirs exist (like Arduino wrapper
+// does) */ 	if ((flags & LFS_O_CREAT) && strchr(path, '/'))
 // 	{
 // 		flash_fs_make_parents_if_needed(path);
 // 	}
@@ -392,19 +406,19 @@
 // 		h->type = FLASH_HANDLE_FILE;
 
 // 		/* Fill file_info */
-// 		memset(fp->file_info.full_name, 0, sizeof(fp->file_info.full_name));
-// 		strncpy(fp->file_info.full_name, path, sizeof(fp->file_info.full_name) - 1);
-// 		fp->file_info.is_dir = false;
-// 		fp->file_info.size = (uint32_t)lfs_file_size(&g_lfs, &h->u.file);
-// 		fp->file_info.timestamp = 0;
+// 		memset(fp->file_info.full_name, 0,
+// sizeof(fp->file_info.full_name)); 		strncpy(fp->file_info.full_name, path,
+// sizeof(fp->file_info.full_name) - 1); 		fp->file_info.is_dir = false;
+// 		fp->file_info.size = (uint32_t)lfs_file_size(&g_lfs,
+// &h->u.file); 		fp->file_info.timestamp = 0;
 
 // 		fp->file_ptr = h;
-// 		/* fp->fs_ptr set by caller when wiring fs_t; no need to set here */
-// 		return fp;
+// 		/* fp->fs_ptr set by caller when wiring fs_t; no need to set
+// here */ 		return fp;
 // 	}
 
-// 	/* If it's a directory, open as dir (like Arduino File can represent dirs) */
-// 	if (lfs_dir_open(&g_lfs, &h->u.dir, (*path) ? path : "/") == 0)
+// 	/* If it's a directory, open as dir (like Arduino File can represent
+// dirs) */ 	if (lfs_dir_open(&g_lfs, &h->u.dir, (*path) ? path : "/") == 0)
 // 	{
 // 		h->type = FLASH_HANDLE_DIR;
 // 		memset(h->base_path, 0, sizeof(h->base_path));
@@ -418,11 +432,10 @@
 // 		}
 
 // 		/* Populate file_info for a dir handle */
-// 		memset(fp->file_info.full_name, 0, sizeof(fp->file_info.full_name));
-// 		strncpy(fp->file_info.full_name, (*path) ? path : "/", sizeof(fp->file_info.full_name) - 1);
-// 		fp->file_info.is_dir = true;
-// 		fp->file_info.size = 0;
-// 		fp->file_info.timestamp = 0;
+// 		memset(fp->file_info.full_name, 0,
+// sizeof(fp->file_info.full_name)); 		strncpy(fp->file_info.full_name, (*path) ?
+// path : "/", sizeof(fp->file_info.full_name) - 1); 		fp->file_info.is_dir =
+// true; 		fp->file_info.size = 0; 		fp->file_info.timestamp = 0;
 
 // 		fp->file_ptr = h;
 // 		return fp;
@@ -451,8 +464,8 @@
 // 	if (h->type != FLASH_HANDLE_FILE)
 // 		return false;
 
-// 	lfs_soff_t rc = lfs_file_seek(&g_lfs, &h->u.file, (lfs_soff_t)position, LFS_SEEK_SET);
-// 	return (rc >= 0);
+// 	lfs_soff_t rc = lfs_file_seek(&g_lfs, &h->u.file, (lfs_soff_t)position,
+// LFS_SEEK_SET); 	return (rc >= 0);
 // }
 
 // bool flash_fs_mkdir(const char *path)

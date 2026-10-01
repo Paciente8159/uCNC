@@ -1,27 +1,28 @@
 /*
-	Name: boardmap_skr_v14_turbo.h
-	Description: Contains all MCU and PIN definitions for MKS Base V1.3 to run µCNC.
+        Name: boardmap_skr_v14_turbo.h
+        Description: Contains all MCU and PIN definitions for MKS Base V1.3 to
+   run µCNC.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 07/10/2022
+        Copyright: Copyright (c) João Martins
+        Author: João Martins
+        Date: 07/10/2022
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+        µCNC is free software: you can redistribute it and/or modify
+        it under the terms of the GNU General Public License as published by
+        the Free Software Foundation, either version 3 of the License, or
+        (at your option) any later version. Please see
+   <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+        µCNC is distributed WITHOUT ANY WARRANTY;
+        Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A
+   PARTICULAR PURPOSE. See the	GNU General Public License for more details.
 */
 
 #ifndef BOARDMAP_SKR_V14_TURBO_H
 #define BOARDMAP_SKR_V14_TURBO_H
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 #ifndef MCU
@@ -37,7 +38,7 @@ extern "C"
 #endif
 
 // Setup step pins
-#define STEP0_BIT 2	 // assigns STEP0 pin
+#define STEP0_BIT 2  // assigns STEP0 pin
 #define STEP0_PORT 2 // assigns STEP0 port
 #define STEP1_BIT 19 // assigns STEP1 pin
 #define STEP1_PORT 0 // assigns STEP1 port
@@ -49,7 +50,7 @@ extern "C"
 #define STEP4_PORT 1 // assigns STEP4 port
 
 // Setup dir pins
-#define DIR0_BIT 6	// assigns DIR0 pin
+#define DIR0_BIT 6  // assigns DIR0 pin
 #define DIR0_PORT 2 // assigns DIR0 port
 #define DIR1_BIT 20 // assigns DIR1 pin
 #define DIR1_PORT 0 // assigns DIR1 port
@@ -72,7 +73,7 @@ extern "C"
 #define STEP4_EN_BIT 16
 #define STEP4_EN_PORT 1
 
-	// Setup limit pins
+// Setup limit pins
 
 #define LIMIT_X_BIT 29 // assigns LIMIT_X pin
 #define LIMIT_X_PORT 1 // assigns LIMIT_X port
@@ -109,15 +110,15 @@ extern "C"
 #define USB_DP_PORT 0
 
 // // Setup PWM
-#define PWM0_BIT 5	// assigns PWM0 pin
+#define PWM0_BIT 5  // assigns PWM0 pin
 #define PWM0_PORT 2 // assigns PWM0 pin
 #define PWM0_CHANNEL 6
 
-#define PWM1_BIT 4	// assigns PWM1 pin
+#define PWM1_BIT 4  // assigns PWM1 pin
 #define PWM1_PORT 2 // assigns PWM1 pin
 #define PWM1_CHANNEL 5
 
-#define PWM2_BIT 3	// assigns PWM1 pin
+#define PWM2_BIT 3  // assigns PWM1 pin
 #define PWM2_PORT 2 // assigns PWM1 pin
 #define PWM2_CHANNEL 4
 
@@ -128,12 +129,12 @@ extern "C"
 #define DOUT31_BIT 18
 #define DOUT31_PORT 1
 
-	// Setup the Step Timer used has the heartbeat for µCNC
-	// Timer 0 is used by default
-	// #define ITP_TIMER 0
-	// Setup the SERVO Timer used by µCNC
-	// Timer 1 is set by default
-	// #define SERVO_TIMER 1
+// Setup the Step Timer used has the heartbeat for µCNC
+// Timer 0 is used by default
+// #define ITP_TIMER 0
+// Setup the SERVO Timer used by µCNC
+// Timer 1 is set by default
+// #define SERVO_TIMER 1
 
 #define SERVO3_BIT 18
 #define SERVO3_PORT 1

@@ -1,27 +1,28 @@
 /*
-	Name: boardmap_uno_shield_v3.h
-	Description: Contains all MCU and PIN definitions for Arduino UNO similar to Grbl 1.1+ to run µCNC.
+        Name: boardmap_uno_shield_v3.h
+        Description: Contains all MCU and PIN definitions for Arduino UNO
+   similar to Grbl 1.1+ to run µCNC.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 05/01/2023
+        Copyright: Copyright (c) João Martins
+        Author: João Martins
+        Date: 05/01/2023
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+        µCNC is free software: you can redistribute it and/or modify
+        it under the terms of the GNU General Public License as published by
+        the Free Software Foundation, either version 3 of the License, or
+        (at your option) any later version. Please see
+   <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+        µCNC is distributed WITHOUT ANY WARRANTY;
+        Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A
+   PARTICULAR PURPOSE. See the	GNU General Public License for more details.
 */
 
 #ifndef BOARDMAP_UNO_SHIELD_V3_H
 #define BOARDMAP_UNO_SHIELD_V3_H
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 #ifndef MCU
@@ -43,9 +44,9 @@ extern "C"
 #undef PWM0_TIMER
 
 // Grbl 0.8 limit z
-#define LIMIT_Z_BIT 3	 // assigns LIMIT_Z pin
+#define LIMIT_Z_BIT 3  // assigns LIMIT_Z pin
 #define LIMIT_Z_PORT B // assigns LIMIT_Z port
-#define LIMIT_Z_ISR 3	 // assigns LIMIT_Z ISR
+#define LIMIT_Z_ISR 3  // assigns LIMIT_Z ISR
 
 // spindle en
 #define DOUT1_BIT 4

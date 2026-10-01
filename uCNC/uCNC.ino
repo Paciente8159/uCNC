@@ -2,12 +2,12 @@
 
 void setup()
 {
-	// put your setup code here, to run once:
-	ucnc_init();
+  // put your setup code here, to run once:
+  ucnc_init();
 }
 
 void loop()
 {
-	// put your main code here, to run repeatedly:
-	ucnc_run();
+  // put your main code here, to run repeatedly:
+  ucnc_run();
 }

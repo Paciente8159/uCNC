@@ -22,7 +22,7 @@ _µCNC for AVR can be built in a several ways_
    * If your are compiling with this method on a Windows machine you will also need to install Make. You can download Make for Windows from [here](http://gnuwin32.sourceforge.net/packages/make.htm) and CoreUtils [here](http://gnuwin32.sourceforge.net/packages/coreutils.htm).
 2. Go to the ```uCNC folder``` and edit the board ```cnc_config.h file``` and ```cnc_hal_config.h file``` to fit your needs and board. µCNC is configured by default to mimic ```Grbl``` pin configuration in the Arduino UNO board.
 3. Go to the ```makefiles/avr folder```.
-   * The makefile is configured by default to compile the code for the MCU (atmega328p) and working frequency (16Mhz) in Arduino UNO board. If the chosen board has a different MCU/working frequency the makefile must be adjusted by modifying ```CPU = atmega328p``` and ```FREQ = 16000000UL```
+   * The makefile is configured by default to compile the code for the MCU (atmega328p) and working frequency (16Mhz) in Arduino UNO board. If the chosen board has a different MCU/working frequency the makefile must be adjusted by modifying ```CPU ?= atmega328p``` and ```FREQ ?= 16000000L```
 4. Open a command console inside ```makefiles/avr``` folder and run ```make clean all```
 5. If everything went well you should have a hex file inside ```makefiles/avr/build``` folder
 6. Now just upload µCNC to your board using an appropriate tool. [xLoader](http://www.hobbytronics.co.uk/download/XLoader.zip) for AVR is an easy tool to use.

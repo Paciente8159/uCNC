@@ -1,27 +1,28 @@
 /*
-	Name: cnc_hal_config_helper.h
-	Description: Compile time configurations for µCNC. This file takes care of some final configuration definitions based on the user options
+        Name: cnc_hal_config_helper.h
+        Description: Compile time configurations for µCNC. This file takes care
+   of some final configuration definitions based on the user options
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 2022-01-04
+        Copyright: Copyright (c) João Martins
+        Author: João Martins
+        Date: 2022-01-04
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+        µCNC is free software: you can redistribute it and/or modify
+        it under the terms of the GNU General Public License as published by
+        the Free Software Foundation, either version 3 of the License, or
+        (at your option) any later version. Please see
+   <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+        µCNC is distributed WITHOUT ANY WARRANTY;
+        Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A
+   PARTICULAR PURPOSE. See the	GNU General Public License for more details.
 */
 
 #ifndef CNC_HAL_CONFIG_HELPER_H
 #define CNC_HAL_CONFIG_HELPER_H
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 // undefined pin
@@ -41,8 +42,8 @@ extern "C"
 #include "cnc_build.h"
 // make the needed includes (do not change the order)
 // include lists of available option
-#include "hal/mcus/mcus.h"
 #include "hal/kinematics/kinematics.h"
+#include "hal/mcus/mcus.h"
 // user configurations
 #include "../cnc_config.h"
 // board and mcu configurations
@@ -52,15 +53,15 @@ extern "C"
 // machine tools configurations
 #include "hal/tools/tool.h" //configures the kinematics for the cnc machine
 // final HAL configurations
-#include "../cnc_hal_config.h"		//inicializes the HAL hardcoded connections
-#include "../cnc_hal_overrides.h"	//config override file
+#include "../cnc_hal_config.h"      //inicializes the HAL hardcoded connections
+#include "../cnc_hal_overrides.h"   //config override file
 #include "modules/shift_register.h" // io extender
 
-	/**
-	 *
-	 * Controls limits and probe pins
-	 *
-	 */
+/**
+ *
+ * Controls limits and probe pins
+ *
+ */
 
 #ifdef DISABLE_ALL_CONTROLS
 #ifdef ESTOP
@@ -262,7 +263,9 @@ extern "C"
 #define ENC7_MASK (1 << ENC7)
 #endif
 
-#define ENCODERS_MASK (ENC0_MASK | ENC1_MASK | ENC2_MASK | ENC3_MASK | ENC4_MASK | ENC5_MASK | ENC6_MASK | ENC7_MASK)
+#define ENCODERS_MASK                                                          \
+  (ENC0_MASK | ENC1_MASK | ENC2_MASK | ENC3_MASK | ENC4_MASK | ENC5_MASK |     \
+   ENC6_MASK | ENC7_MASK)
 
 #ifdef STEP0_ENCODER
 #define STEP0_ENCODER_MASK (1 << STEP0_ENCODER)
@@ -295,12 +298,16 @@ extern "C"
 #define STEP5_ENCODER_MASK 0
 #endif
 
-#define STEPPERS_ENCODERS_MASK (STEP0_ENCODER_MASK | STEP1_ENCODER_MASK | STEP2_ENCODER_MASK | STEP3_ENCODER_MASK | STEP4_ENCODER_MASK | STEP5_ENCODER_MASK)
+#define STEPPERS_ENCODERS_MASK                                                 \
+  (STEP0_ENCODER_MASK | STEP1_ENCODER_MASK | STEP2_ENCODER_MASK |              \
+   STEP3_ENCODER_MASK | STEP4_ENCODER_MASK | STEP5_ENCODER_MASK)
 
 #endif
 
 #if ENCODERS > 0
-#if defined(ENC0_READ) || defined(ENC1_READ) || defined(ENC2_READ) || defined(ENC3_READ) || defined(ENC4_READ) || defined(ENC5_READ) || defined(ENC6_READ) || defined(ENC7_READ)
+#if defined(ENC0_READ) || defined(ENC1_READ) || defined(ENC2_READ) ||          \
+    defined(ENC3_READ) || defined(ENC4_READ) || defined(ENC5_READ) ||          \
+    defined(ENC6_READ) || defined(ENC7_READ)
 #ifdef DISABLE_RTC_CODE
 #undef DISABLE_RTC_CODE
 #warning "Communication encoders removed DISABLE_RTC_CODE"
@@ -317,7 +324,10 @@ extern "C"
 #define STEPPERS_ENCODERS_MASK 0
 #endif
 
-#if defined(STEPPER0_HAS_MSTEP) || defined(STEPPER1_HAS_MSTEP) || defined(STEPPER2_HAS_MSTEP) || defined(STEPPER3_HAS_MSTEP) || defined(STEPPER4_HAS_MSTEP) || defined(STEPPER5_HAS_MSTEP) || defined(STEPPER6_HAS_MSTEP) || defined(STEPPER7_HAS_MSTEP)
+#if defined(STEPPER0_HAS_MSTEP) || defined(STEPPER1_HAS_MSTEP) ||              \
+    defined(STEPPER2_HAS_MSTEP) || defined(STEPPER3_HAS_MSTEP) ||              \
+    defined(STEPPER4_HAS_MSTEP) || defined(STEPPER5_HAS_MSTEP) ||              \
+    defined(STEPPER6_HAS_MSTEP) || defined(STEPPER7_HAS_MSTEP)
 #define ENABLE_DIGITAL_MSTEP
 #endif
 
@@ -345,7 +355,8 @@ extern "C"
 
 #ifdef ENABLE_LASER_PPI
 #ifndef MCU_HAS_ONESHOT_TIMER
-#error "The current MCU does not support ONESHOT_TIMER or the ONESHOT_TIMER is not configured"
+#error                                                                         \
+    "The current MCU does not support ONESHOT_TIMER or the ONESHOT_TIMER is not configured"
 #endif
 // #ifdef BRESENHAM_16BIT
 // #undef BRESENHAM_16BIT
@@ -383,11 +394,10 @@ extern "C"
 
 #ifdef ENABLE_EMBROIDERY
 #ifndef MCU_HAS_ONESHOT_TIMER
-#error "The current MCU does not support ONESHOT_TIMER or the ONESHOT_TIMER is not configured"
+#error                                                                         \
+    "The current MCU does not support ONESHOT_TIMER or the ONESHOT_TIMER is not configured"
 #endif
 #endif
-
-
 
 #ifdef ABC_INDEP_FEED_CALC
 #ifdef ENABLE_LINACT_PLANNER
@@ -1896,13 +1906,17 @@ extern "C"
 #define LINACT5_LIMIT_MASK 0
 #endif
 
-#define LIMITS_MASK (LINACT0_LIMIT_MASK | LINACT1_LIMIT_MASK | LINACT2_LIMIT_MASK | LINACT3_LIMIT_MASK | LINACT4_LIMIT_MASK | LINACT5_LIMIT_MASK)
-#define LIMITS_DELTA_MASK (LINACT0_LIMIT_MASK | LINACT1_LIMIT_MASK | LINACT2_LIMIT_MASK)
+#define LIMITS_MASK                                                            \
+  (LINACT0_LIMIT_MASK | LINACT1_LIMIT_MASK | LINACT2_LIMIT_MASK |              \
+   LINACT3_LIMIT_MASK | LINACT4_LIMIT_MASK | LINACT5_LIMIT_MASK)
+#define LIMITS_DELTA_MASK                                                      \
+  (LINACT0_LIMIT_MASK | LINACT1_LIMIT_MASK | LINACT2_LIMIT_MASK)
 
 // if the pins are undefined turn on option
 #define CONTROLS_MASK (ESTOP_MASK | FHOLD_MASK | CS_RES_MASK | SAFETY_DOOR_MASK)
 
-#if (!ASSERT_PIN(ESTOP) && !ASSERT_PIN(SAFETY_DOOR) && !ASSERT_PIN(FHOLD) && !ASSERT_PIN(CS_RES) && !defined(DISABLE_ALL_CONTROLS))
+#if (!ASSERT_PIN(ESTOP) && !ASSERT_PIN(SAFETY_DOOR) && !ASSERT_PIN(FHOLD) &&   \
+     !ASSERT_PIN(CS_RES) && !defined(DISABLE_ALL_CONTROLS))
 #define DISABLE_ALL_CONTROLS
 #endif
 
@@ -1927,9 +1941,13 @@ extern "C"
 #define CS_RES_INV_MASK 8
 #endif
 
-#define CONTROLS_INV_MASK (ESTOP_INV_MASK | SAFETY_DOOR_INV_MASK | FHOLD_INV_MASK | CS_RES_INV_MASK)
+#define CONTROLS_INV_MASK                                                      \
+  (ESTOP_INV_MASK | SAFETY_DOOR_INV_MASK | FHOLD_INV_MASK | CS_RES_INV_MASK)
 
-#if (!ASSERT_PIN(LIMIT_X) && !ASSERT_PIN(LIMIT_X2) && !ASSERT_PIN(LIMIT_Y) && !ASSERT_PIN(LIMIT_Y2) && !ASSERT_PIN(LIMIT_Z) && !ASSERT_PIN(LIMIT_Z2) && !ASSERT_PIN(LIMIT_A) && !ASSERT_PIN(LIMIT_B) && !ASSERT_PIN(LIMIT_C) && !defined(DISABLE_ALL_LIMITS))
+#if (!ASSERT_PIN(LIMIT_X) && !ASSERT_PIN(LIMIT_X2) && !ASSERT_PIN(LIMIT_Y) &&  \
+     !ASSERT_PIN(LIMIT_Y2) && !ASSERT_PIN(LIMIT_Z) && !ASSERT_PIN(LIMIT_Z2) && \
+     !ASSERT_PIN(LIMIT_A) && !ASSERT_PIN(LIMIT_B) && !ASSERT_PIN(LIMIT_C) &&   \
+     !defined(DISABLE_ALL_LIMITS))
 #define DISABLE_ALL_LIMITS
 #endif
 
@@ -1980,12 +1998,16 @@ extern "C"
 #define LIMIT_Z2_INV_MASK LIMIT_Z2_IO_MASK
 #endif
 
-#define LIMITS_DUAL_INV_MASK (LIMIT_X2_INV_MASK | LIMIT_Y2_INV_MASK | LIMIT_Z2_INV_MASK)
-#define LIMITS_INV_MASK (LIMIT_X_INV_MASK | LIMIT_Y_INV_MASK | LIMIT_Z_INV_MASK | LIMIT_A_INV_MASK | LIMIT_B_INV_MASK | LIMIT_C_INV_MASK | LIMITS_DUAL_INV_MASK)
+#define LIMITS_DUAL_INV_MASK                                                   \
+  (LIMIT_X2_INV_MASK | LIMIT_Y2_INV_MASK | LIMIT_Z2_INV_MASK)
+#define LIMITS_INV_MASK                                                        \
+  (LIMIT_X_INV_MASK | LIMIT_Y_INV_MASK | LIMIT_Z_INV_MASK | LIMIT_A_INV_MASK | \
+   LIMIT_B_INV_MASK | LIMIT_C_INV_MASK | LIMITS_DUAL_INV_MASK)
 
 #ifndef LIMITS_NORMAL_OPERATION_MASK
 #ifdef DISABLE_ROTATIONAL_AXIS_LIMITS_AFTER_HOMING
-#define LIMITS_NORMAL_OPERATION_MASK (LIMIT_A_IO_MASK | LIMIT_B_IO_MASK | LIMIT_C_IO_MASK)
+#define LIMITS_NORMAL_OPERATION_MASK                                           \
+  (LIMIT_A_IO_MASK | LIMIT_B_IO_MASK | LIMIT_C_IO_MASK)
 #else
 #define LIMITS_NORMAL_OPERATION_MASK 0
 #endif
@@ -2032,7 +2054,9 @@ extern "C"
 #define DIN7_MASK 0
 #endif
 
-#define DIN_ONCHANGE_MASK (DIN0_MASK | DIN1_MASK | DIN2_MASK | DIN3_MASK | DIN4_MASK | DIN5_MASK | DIN6_MASK | DIN7_MASK)
+#define DIN_ONCHANGE_MASK                                                      \
+  (DIN0_MASK | DIN1_MASK | DIN2_MASK | DIN3_MASK | DIN4_MASK | DIN5_MASK |     \
+   DIN6_MASK | DIN7_MASK)
 
 #if (!ASSERT_PIN(PROBE) && !defined(DISABLE_PROBE))
 #define DISABLE_PROBE
@@ -2075,7 +2099,9 @@ extern "C"
 #define SERVO5_MASK 0
 #endif
 
-#define SERVOS_MASK (SERVO0_MASK | SERVO1_MASK | SERVO2_MASK | SERVO3_MASK | SERVO4_MASK | SERVO5_MASK)
+#define SERVOS_MASK                                                            \
+  (SERVO0_MASK | SERVO1_MASK | SERVO2_MASK | SERVO3_MASK | SERVO4_MASK |       \
+   SERVO5_MASK)
 
 #ifdef BRESENHAM_16BIT
 #if (DSS_MAX_OVERSAMPLING < 0 || DSS_MAX_OVERSAMPLING > 3)
@@ -2092,7 +2118,7 @@ extern "C"
 #endif
 
 #ifndef BRESENHAM_16BIT
-	typedef uint32_t step_t;
+typedef uint32_t step_t;
 #define MAX_STEPS_PER_LINE_BITS (32 - (2 + DSS_MAX_OVERSAMPLING))
 #else
 typedef uint16_t step_t;
@@ -2145,20 +2171,24 @@ typedef uint16_t step_t;
 
 #ifdef TOOL_WAIT_FOR_SPEED_MAX_ERROR
 #if (TOOL_WAIT_FOR_SPEED_MAX_ERROR < 0 || TOOL_WAIT_FOR_SPEED_MAX_ERROR > 100)
-#error "Invalid config option TOOL_WAIT_FOR_SPEED_MAX_ERROR must be set between 0 and 100"
+#error                                                                         \
+    "Invalid config option TOOL_WAIT_FOR_SPEED_MAX_ERROR must be set between 0 and 100"
 #endif
 #endif
 
 #if (DELAY_ON_RESUME_SPINDLE < 0 || DELAY_ON_RESUME_SPINDLE > 60)
-#error "Invalid config option DELAY_ON_RESUME_SPINDLE must be set between 0 and 60"
+#error                                                                         \
+    "Invalid config option DELAY_ON_RESUME_SPINDLE must be set between 0 and 60"
 #endif
 
 #if (DELAY_ON_SPINDLE_SPEED_CHANGE < 0 || DELAY_ON_SPINDLE_SPEED_CHANGE > 60)
-#error "Invalid config option DELAY_ON_SPINDLE_SPEED_CHANGE must be set between 0 and 60"
+#error                                                                         \
+    "Invalid config option DELAY_ON_SPINDLE_SPEED_CHANGE must be set between 0 and 60"
 #endif
 
 #if (DELAY_ON_RESUME_COOLANT < 0 || DELAY_ON_RESUME_COOLANT > 60)
-#error "Invalid config option DELAY_ON_RESUME_COOLANT must be set between 0 and 60"
+#error                                                                         \
+    "Invalid config option DELAY_ON_RESUME_COOLANT must be set between 0 and 60"
 #endif
 
 #if (FEED_OVR_MAX < 100 || FEED_OVR_MAX > 250)
@@ -2170,11 +2200,13 @@ typedef uint16_t step_t;
 #endif
 
 #if (FEED_OVR_COARSE < 5 || FEED_OVR_COARSE > FEED_OVR_MIN)
-#error "Invalid config option FEED_OVR_COARSE must be set between 5 and FEED_OVR_MIN"
+#error                                                                         \
+    "Invalid config option FEED_OVR_COARSE must be set between 5 and FEED_OVR_MIN"
 #endif
 
 #if (FEED_OVR_FINE < 1 || FEED_OVR_FINE > FEED_OVR_COARSE)
-#error "Invalid config option FEED_OVR_FINE must be set between 1 and FEED_OVR_COARSE"
+#error                                                                         \
+    "Invalid config option FEED_OVR_FINE must be set between 1 and FEED_OVR_COARSE"
 #endif
 
 #if (RAPID_FEED_OVR1 < 25 || RAPID_FEED_OVR1 > 90)
@@ -2182,7 +2214,8 @@ typedef uint16_t step_t;
 #endif
 
 #if (RAPID_FEED_OVR2 < 10 || RAPID_FEED_OVR2 > RAPID_FEED_OVR1)
-#error "Invalid config option RAPID_FEED_OVR2 must be set between 10 and RAPID_FEED_OVR1"
+#error                                                                         \
+    "Invalid config option RAPID_FEED_OVR2 must be set between 10 and RAPID_FEED_OVR1"
 #endif
 
 #if (SPINDLE_OVR_MAX < 100 || SPINDLE_OVR_MAX > 250)
@@ -2194,22 +2227,29 @@ typedef uint16_t step_t;
 #endif
 
 #if (SPINDLE_OVR_COARSE < 5 || SPINDLE_OVR_COARSE > SPINDLE_OVR_MIN)
-#error "Invalid config option SPINDLE_OVR_COARSE must be set between 5 and SPINDLE_OVR_MIN"
+#error                                                                         \
+    "Invalid config option SPINDLE_OVR_COARSE must be set between 5 and SPINDLE_OVR_MIN"
 #endif
 
 #if (SPINDLE_OVR_FINE < 1 || SPINDLE_OVR_FINE > SPINDLE_OVR_COARSE)
-#error "Invalid config option SPINDLE_OVR_FINE must be set between 1 and SPINDLE_OVR_COARSE"
+#error                                                                         \
+    "Invalid config option SPINDLE_OVR_FINE must be set between 1 and SPINDLE_OVR_COARSE"
 #endif
 
-#if (STATUS_WCO_REPORT_MIN_FREQUENCY < 10 || STATUS_WCO_REPORT_MIN_FREQUENCY > 100)
-#error "Invalid config option STATUS_WCO_REPORT_MIN_FREQUENCY must be set between 10 and 100"
+#if (STATUS_WCO_REPORT_MIN_FREQUENCY < 10 ||                                   \
+     STATUS_WCO_REPORT_MIN_FREQUENCY > 100)
+#error                                                                         \
+    "Invalid config option STATUS_WCO_REPORT_MIN_FREQUENCY must be set between 10 and 100"
 #endif
 
-#if (STATUS_AUTOMATIC_REPORT_INTERVAL < 0 || STATUS_AUTOMATIC_REPORT_INTERVAL > 1000)
-#error "Invalid config option STATUS_AUTOMATIC_REPORT_INTERVAL must be set between 0 and 1000"
+#if (STATUS_AUTOMATIC_REPORT_INTERVAL < 0 ||                                   \
+     STATUS_AUTOMATIC_REPORT_INTERVAL > 1000)
+#error                                                                         \
+    "Invalid config option STATUS_AUTOMATIC_REPORT_INTERVAL must be set between 0 and 1000"
 #endif
 
-#if defined(ENABLE_AXIS_AUTOLEVEL) || defined(IS_DELTA_KINEMATICS) || defined(ENABLE_XY_SIMULTANEOUS_HOMING)
+#if defined(ENABLE_AXIS_AUTOLEVEL) || defined(IS_DELTA_KINEMATICS) ||          \
+    defined(ENABLE_XY_SIMULTANEOUS_HOMING)
 #define ENABLE_MULTI_STEP_HOMING
 #endif
 
@@ -2245,95 +2285,125 @@ typedef uint16_t step_t;
 #endif
 
 #if (LINACT0_IO_MASK & LINACT1_IO_MASK)
-#error "Linear actuator 0 and 1 have overlapped outputs and this can lead to unpredictable results"
+#error                                                                         \
+    "Linear actuator 0 and 1 have overlapped outputs and this can lead to unpredictable results"
 #endif
 #if (LINACT0_IO_MASK & LINACT2_IO_MASK)
-#error "Linear actuator 0 and 2 have overlapped outputs and this can lead to unpredictable results"
+#error                                                                         \
+    "Linear actuator 0 and 2 have overlapped outputs and this can lead to unpredictable results"
 #endif
 #if (LINACT0_IO_MASK & LINACT3_IO_MASK)
-#error "Linear actuator 0 and 3 have overlapped outputs and this can lead to unpredictable results"
+#error                                                                         \
+    "Linear actuator 0 and 3 have overlapped outputs and this can lead to unpredictable results"
 #endif
 #if (LINACT0_IO_MASK & LINACT4_IO_MASK)
-#error "Linear actuator 0 and 4 have overlapped outputs and this can lead to unpredictable results"
+#error                                                                         \
+    "Linear actuator 0 and 4 have overlapped outputs and this can lead to unpredictable results"
 #endif
 #if (LINACT0_IO_MASK & LINACT5_IO_MASK)
-#error "Linear actuator 0 and 5 have overlapped outputs and this can lead to unpredictable results"
+#error                                                                         \
+    "Linear actuator 0 and 5 have overlapped outputs and this can lead to unpredictable results"
 #endif
 #if (LINACT1_IO_MASK & LINACT2_IO_MASK)
-#error "Linear actuator 1 and 2 have overlapped outputs and this can lead to unpredictable results"
+#error                                                                         \
+    "Linear actuator 1 and 2 have overlapped outputs and this can lead to unpredictable results"
 #endif
 #if (LINACT1_IO_MASK & LINACT3_IO_MASK)
-#error "Linear actuator 1 and 3 have overlapped outputs and this can lead to unpredictable results"
+#error                                                                         \
+    "Linear actuator 1 and 3 have overlapped outputs and this can lead to unpredictable results"
 #endif
 #if (LINACT1_IO_MASK & LINACT4_IO_MASK)
-#error "Linear actuator 1 and 4 have overlapped outputs and this can lead to unpredictable results"
+#error                                                                         \
+    "Linear actuator 1 and 4 have overlapped outputs and this can lead to unpredictable results"
 #endif
 #if (LINACT1_IO_MASK & LINACT5_IO_MASK)
-#error "Linear actuator 1 and 5 have overlapped outputs and this can lead to unpredictable results"
+#error                                                                         \
+    "Linear actuator 1 and 5 have overlapped outputs and this can lead to unpredictable results"
 #endif
 #if (LINACT2_IO_MASK & LINACT3_IO_MASK)
-#error "Linear actuator 2 and 3 have overlapped outputs and this can lead to unpredictable results"
+#error                                                                         \
+    "Linear actuator 2 and 3 have overlapped outputs and this can lead to unpredictable results"
 #endif
 #if (LINACT2_IO_MASK & LINACT4_IO_MASK)
-#error "Linear actuator 2 and 4 have overlapped outputs and this can lead to unpredictable results"
+#error                                                                         \
+    "Linear actuator 2 and 4 have overlapped outputs and this can lead to unpredictable results"
 #endif
 #if (LINACT2_IO_MASK & LINACT5_IO_MASK)
-#error "Linear actuator 2 and 5 have overlapped outputs and this can lead to unpredictable results"
+#error                                                                         \
+    "Linear actuator 2 and 5 have overlapped outputs and this can lead to unpredictable results"
 #endif
 #if (LINACT3_IO_MASK & LINACT4_IO_MASK)
-#error "Linear actuator 3 and 4 have overlapped outputs and this can lead to unpredictable results"
+#error                                                                         \
+    "Linear actuator 3 and 4 have overlapped outputs and this can lead to unpredictable results"
 #endif
 #if (LINACT3_IO_MASK & LINACT5_IO_MASK)
-#error "Linear actuator 3 and 5 have overlapped outputs and this can lead to unpredictable results"
+#error                                                                         \
+    "Linear actuator 3 and 5 have overlapped outputs and this can lead to unpredictable results"
 #endif
 #if (LINACT4_IO_MASK & LINACT5_IO_MASK)
-#error "Linear actuator 4 and 5 have overlapped outputs and this can lead to unpredictable results"
+#error                                                                         \
+    "Linear actuator 4 and 5 have overlapped outputs and this can lead to unpredictable results"
 #endif
 
 #if (LINACT0_LIMIT_MASK & LINACT1_LIMIT_MASK)
-#error "Linear actuator 0 and 1 have overlapped input limits and this can lead to unpredictable results"
+#error                                                                         \
+    "Linear actuator 0 and 1 have overlapped input limits and this can lead to unpredictable results"
 #endif
 #if (LINACT0_LIMIT_MASK & LINACT2_LIMIT_MASK)
-#error "Linear actuator 0 and 2 have overlapped input limits and this can lead to unpredictable results"
+#error                                                                         \
+    "Linear actuator 0 and 2 have overlapped input limits and this can lead to unpredictable results"
 #endif
 #if (LINACT0_LIMIT_MASK & LINACT3_LIMIT_MASK)
-#error "Linear actuator 0 and 3 have overlapped input limits and this can lead to unpredictable results"
+#error                                                                         \
+    "Linear actuator 0 and 3 have overlapped input limits and this can lead to unpredictable results"
 #endif
 #if (LINACT0_LIMIT_MASK & LINACT4_LIMIT_MASK)
-#error "Linear actuator 0 and 4 have overlapped input limits and this can lead to unpredictable results"
+#error                                                                         \
+    "Linear actuator 0 and 4 have overlapped input limits and this can lead to unpredictable results"
 #endif
 #if (LINACT0_LIMIT_MASK & LINACT5_LIMIT_MASK)
-#error "Linear actuator 0 and 5 have overlapped input limits and this can lead to unpredictable results"
+#error                                                                         \
+    "Linear actuator 0 and 5 have overlapped input limits and this can lead to unpredictable results"
 #endif
 #if (LINACT1_LIMIT_MASK & LINACT2_LIMIT_MASK)
-#error "Linear actuator 1 and 2 have overlapped input limits and this can lead to unpredictable results"
+#error                                                                         \
+    "Linear actuator 1 and 2 have overlapped input limits and this can lead to unpredictable results"
 #endif
 #if (LINACT1_LIMIT_MASK & LINACT3_LIMIT_MASK)
-#error "Linear actuator 1 and 3 have overlapped input limits and this can lead to unpredictable results"
+#error                                                                         \
+    "Linear actuator 1 and 3 have overlapped input limits and this can lead to unpredictable results"
 #endif
 #if (LINACT1_LIMIT_MASK & LINACT4_LIMIT_MASK)
-#error "Linear actuator 1 and 4 have overlapped input limits and this can lead to unpredictable results"
+#error                                                                         \
+    "Linear actuator 1 and 4 have overlapped input limits and this can lead to unpredictable results"
 #endif
 #if (LINACT1_LIMIT_MASK & LINACT5_LIMIT_MASK)
-#error "Linear actuator 1 and 5 have overlapped input limits and this can lead to unpredictable results"
+#error                                                                         \
+    "Linear actuator 1 and 5 have overlapped input limits and this can lead to unpredictable results"
 #endif
 #if (LINACT2_LIMIT_MASK & LINACT3_LIMIT_MASK)
-#error "Linear actuator 2 and 3 have overlapped input limits and this can lead to unpredictable results"
+#error                                                                         \
+    "Linear actuator 2 and 3 have overlapped input limits and this can lead to unpredictable results"
 #endif
 #if (LINACT2_LIMIT_MASK & LINACT4_LIMIT_MASK)
-#error "Linear actuator 2 and 4 have overlapped input limits and this can lead to unpredictable results"
+#error                                                                         \
+    "Linear actuator 2 and 4 have overlapped input limits and this can lead to unpredictable results"
 #endif
 #if (LINACT2_LIMIT_MASK & LINACT5_LIMIT_MASK)
-#error "Linear actuator 2 and 5 have overlapped input limits and this can lead to unpredictable results"
+#error                                                                         \
+    "Linear actuator 2 and 5 have overlapped input limits and this can lead to unpredictable results"
 #endif
 #if (LINACT3_LIMIT_MASK & LINACT4_LIMIT_MASK)
-#error "Linear actuator 3 and 4 have overlapped input limits and this can lead to unpredictable results"
+#error                                                                         \
+    "Linear actuator 3 and 4 have overlapped input limits and this can lead to unpredictable results"
 #endif
 #if (LINACT3_LIMIT_MASK & LINACT5_LIMIT_MASK)
-#error "Linear actuator 3 and 5 have overlapped input limits and this can lead to unpredictable results"
+#error                                                                         \
+    "Linear actuator 3 and 5 have overlapped input limits and this can lead to unpredictable results"
 #endif
 #if (LINACT4_LIMIT_MASK & LINACT5_LIMIT_MASK)
-#error "Linear actuator 4 and 5 have overlapped input limits and this can lead to unpredictable results"
+#error                                                                         \
+    "Linear actuator 4 and 5 have overlapped input limits and this can lead to unpredictable results"
 #endif
 
 #if ((AXIS_COUNT != 2) && defined(USE_Y_AS_Z_ALIAS))
@@ -2435,8 +2505,10 @@ typedef uint16_t step_t;
 #endif
 
 #ifdef ENABLE_RT_SYNC_MOTIONS
-#if !defined(RT_STEP_PREVENT_CONDITION) && !defined(DISABLE_RT_STEP_PREVENT_CONDITION)
-#define RT_STEP_PREVENT_CONDITION (itp_rt_step_prevent_cb && itp_rt_step_prevent_cb())
+#if !defined(RT_STEP_PREVENT_CONDITION) &&                                     \
+    !defined(DISABLE_RT_STEP_PREVENT_CONDITION)
+#define RT_STEP_PREVENT_CONDITION                                              \
+  (itp_rt_step_prevent_cb && itp_rt_step_prevent_cb())
 #elif defined(RT_STEP_PREVENT_CONDITION)
 #define RT_STEP_PREVENT_HAS_CUSTOM_CONDITION
 #endif

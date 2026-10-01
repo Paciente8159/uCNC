@@ -1,27 +1,27 @@
 /*
-	Name: kinematic_linear_delta.h
-	Description: Custom kinematics definitions for delta machine
+        Name: kinematic_linear_delta.h
+        Description: Custom kinematics definitions for delta machine
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 06/02/2020
+        Copyright: Copyright (c) João Martins
+        Author: João Martins
+        Date: 06/02/2020
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+        µCNC is free software: you can redistribute it and/or modify
+        it under the terms of the GNU General Public License as published by
+        the Free Software Foundation, either version 3 of the License, or
+        (at your option) any later version. Please see
+   <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+        µCNC is distributed WITHOUT ANY WARRANTY;
+        Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A
+   PARTICULAR PURPOSE. See the	GNU General Public License for more details.
 */
 
 #ifndef KINEMATIC_LINEAR_DELTA_H
 #define KINEMATIC_LINEAR_DELTA_H
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 #define KINEMATIC_TYPE_STR "LD"
@@ -40,7 +40,8 @@ extern "C"
 #define STEPPER2_ANGLE (STEPPER0_ANGLE + 240)
 #endif
 
-// kinematic motion is done by segments to cope with non linear kinematics motion
+// kinematic motion is done by segments to cope with non linear kinematics
+// motion
 #define KINEMATICS_MOTION_BY_SEGMENTS
 // kinematics homing
 #define IS_DELTA_KINEMATICS
@@ -62,19 +63,27 @@ extern "C"
 #define DELTA_ARM_MAX_ANGLE 89
 #endif
 
-#define KINEMATICS_VARS_DECL \
-	float delta_arm_length;    \
-	float delta_armbase_radius;
+#define KINEMATICS_VARS_DECL                                                   \
+  float delta_arm_length;                                                      \
+  float delta_armbase_radius;
 
-#define KINEMATICS_VARS_DEFAULTS_INIT .delta_arm_length = DEFAULT_LIN_DELTA_ARM_LENGTH, \
-																			.delta_armbase_radius = DEFAULT_LIN_DELTA_BASE_RADIUS,
+#define KINEMATICS_VARS_DEFAULTS_INIT                                          \
+  .delta_arm_length = DEFAULT_LIN_DELTA_ARM_LENGTH,                            \
+  .delta_armbase_radius = DEFAULT_LIN_DELTA_BASE_RADIUS,
 
-#define KINEMATICS_VARS_SETTINGS_INIT {.id = 106, .memptr = &g_settings.delta_arm_length, .type = SETTING_TYPE_FLOAT}, \
-																			{.id = 107, .memptr = &g_settings.delta_armbase_radius, .type = SETTING_TYPE_FLOAT},
+#define KINEMATICS_VARS_SETTINGS_INIT                                          \
+  {.id = 106,                                                                  \
+   .memptr = &g_settings.delta_arm_length,                                     \
+   .type = SETTING_TYPE_FLOAT},                                                \
+      {.id = 107,                                                              \
+       .memptr = &g_settings.delta_armbase_radius,                             \
+       .type = SETTING_TYPE_FLOAT},
 
-#define KINEMATICS_VARS_SYSTEM_MENU_INIT                                             \
-	DECL_MENU_VAR(SYSTEM_MENU_ID_KINEMATIC_SETTINGS, s106, STR_ARM_LEN, &g_settings.delta_arm_length, VAR_TYPE_FLOAT); \
-	DECL_MENU_VAR(SYSTEM_MENU_ID_KINEMATIC_SETTINGS, s107, STR_BASE_RAD, &g_settings.delta_armbase_radius, VAR_TYPE_FLOAT);
+#define KINEMATICS_VARS_SYSTEM_MENU_INIT                                       \
+  DECL_MENU_VAR(SYSTEM_MENU_ID_KINEMATIC_SETTINGS, s106, STR_ARM_LEN,          \
+                &g_settings.delta_arm_length, VAR_TYPE_FLOAT);                 \
+  DECL_MENU_VAR(SYSTEM_MENU_ID_KINEMATIC_SETTINGS, s107, STR_BASE_RAD,         \
+                &g_settings.delta_armbase_radius, VAR_TYPE_FLOAT);
 
 #ifdef __cplusplus
 }

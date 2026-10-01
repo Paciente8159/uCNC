@@ -41,13 +41,13 @@ These are the fixed names used internally:
 + ```STEP#``` pin defines the step output pin that controls linear actuator driver.
    + ```STEP0 to STEP7``` are the output pins to control the step signal up to 8 independent drivers.
 + ```DIR#``` pin defines the dir output pin that controls the linear actuator driver.
-   + ```DIR0 to DIR7``` are the output pins to control the direction signal up to 6 independent drivers
+   + ```DIR0 to DIR7``` are the output pins to control the direction signal up to 8 independent drivers
 + ```STEPPER#_ENABLE``` pin defines the enable output pin that controls the linear actuator driver.
-   + ```STEPPER0_ENABLE to STEPPER7_ENABLE``` are the output pins to control the enable signal up to 6 independent drivers.
+   + ```STEPPER0_ENABLE to STEPPER7_ENABLE``` are the output pins to control the enable signal up to 8 independent drivers.
 + ```PWM#``` pin defines a pwm output pin.
    + ```PWM0 to PWM15``` are the pwm output pins.
 + ```SERVO#``` pin defines the servo signal output pin that controls common servo motors (1-2ms tON with 20ms period).
-   + ```SERVO0 to SERVO7``` are the the servo signal output pins with up to 8 independent servos.
+   + ```SERVO0 to SERVO5``` are the the servo signal output pins with up to 6 independent servos.
 
 #### Input pins - special
 + ```LIMIT_#``` pin defines the input pin that controls end-stop switch detection.
@@ -384,7 +384,7 @@ Also internally **AT LEAST** these macros need to be defined
 
    **3. Add the new board and mcu libraries to µCNC**
 
-   * The mcu to the `mcus.h` file and give it an ID. Add the needed libraries to load if the MCU is chosen in the `mcudefs.f` file.
+   * The mcu to the `mcus.h` file and give it an ID. Add the needed libraries to load if the MCU is chosen in the `mcudefs.h` file.
    
    **4. Create the project and build**
    From this point on you just need to create a project to run the program. This can be either a `main` file and a `makefile` and build, or using Arduino IDE to compile the project (the appropriate core/board manager must also be installed).

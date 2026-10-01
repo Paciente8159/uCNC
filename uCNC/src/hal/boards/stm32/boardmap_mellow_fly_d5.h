@@ -1,26 +1,27 @@
 /*
-	Name: boardmap_mellow_fly_d5.h
-	Description: Contains all MCU and PIN definitions for Bluepill F0 variant to run µCNC.
+        Name: boardmap_mellow_fly_d5.h
+        Description: Contains all MCU and PIN definitions for Bluepill F0
+   variant to run µCNC.
 
-	Copyright: Copyright (c) Abdul M Waraich
-	Author: Abdul M Waraich
-	Date: 08-03-2026
+        Copyright: Copyright (c) Abdul M Waraich
+        Author: Abdul M Waraich
+        Date: 08-03-2026
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+        µCNC is free software: you can redistribute it and/or modify
+        it under the terms of the GNU General Public License as published by
+        the Free Software Foundation, either version 3 of the License, or
+        (at your option) any later version. Please see
+   <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+        µCNC is distributed WITHOUT ANY WARRANTY;
+        Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A
+   PARTICULAR PURPOSE. See the	GNU General Public License for more details.
 */
 
 #ifndef BOARDMAP_MELLOW_FLY_D5_H
 #define BOARDMAP_MELLOW_FLY_D5_H
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 #ifndef MCU
@@ -34,7 +35,7 @@ extern "C"
 #define BAUDRATE2 BAUDRATE
 
 #define UART_PORT 3
-//#define UART2_PORT 3
+// #define UART2_PORT 3
 #define SPI_PORT 2
 #define I2C_PORT 1
 #define ITP_TIMER 2
@@ -74,19 +75,19 @@ extern "C"
 #define STEP4_EN_BIT 11
 #define STEP4_EN_PORT B
 
-#define DOUT31_BIT 8	//LED pin to test the board
-#define DOUT31_PORT C	//LED port to test the board 
+#define DOUT31_BIT 8  // LED pin to test the board
+#define DOUT31_PORT C // LED port to test the board
 
-//#define PWM0_BIT 8
-//#define PWM0_PORT C
-//#define PWM0_CHANNEL 3
-//#define PWM0_TIMER 3
+// #define PWM0_BIT 8
+// #define PWM0_PORT C
+// #define PWM0_CHANNEL 3
+// #define PWM0_TIMER 3
 
 #define SERVO0_BIT 7
 #define SERVO0_PORT A
 
-//#define DOUT0_BIT 13
-//#define DOUT0_PORT A
+// #define DOUT0_BIT 13
+// #define DOUT0_PORT A
 #define DOUT1_BIT 10
 #define DOUT1_PORT A
 #define DOUT2_BIT 9
@@ -132,12 +133,13 @@ extern "C"
 #define CS_RES_ISR
 */
 
-//#define DIN0_BIT 14
-//#define DIN0_PORT A
-//#define DIN0_PULLUP
-//#define DIN0_ISR
+// #define DIN0_BIT 14
+// #define DIN0_PORT A
+// #define DIN0_PULLUP
+// #define DIN0_ISR
 
-//USB pins are defined in variant_MELLOW_STM32F072.h as they are used by the USB stack and need to be defined before including the USB stack headers
+// USB pins are defined in variant_MELLOW_STM32F072.h as they are used by the
+// USB stack and need to be defined before including the USB stack headers
 #define USB_DM_BIT 11
 #define USB_DM_PORT A
 #define USB_DP_BIT 12
