@@ -66,9 +66,18 @@ DECL_EXTENDED_SETTING(VFD_PWM_PID_SETTING_ID, vfd_pwm_pid.k, float, 3,
 #endif
 
 static void startup_code(void) {
-// force pwm mode
+// force pin modes
 #if ASSERT_PIN(VFD_PWM)
   io_config_pwm(VFD_PWM, 1000);
+#endif
+#if ASSERT_PIN(VFD_PWM_DIR)
+  io_config_output(VFD_PWM_DIR);
+#endif
+#if ASSERT_PIN(VFD_PWM_COOLANT_FLOOD)
+  io_config_output(VFD_PWM_COOLANT_FLOOD);
+#endif
+#if ASSERT_PIN(VFD_PWM_COOLANT_MIST)
+  io_config_output(VFD_PWM_COOLANT_MIST);
 #endif
 
 #if defined(ENABLE_TOOL_PID_CONTROLLER) && !defined(DISABLE_VFD_PWM_PID)

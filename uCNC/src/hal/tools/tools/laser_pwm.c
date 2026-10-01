@@ -60,12 +60,10 @@ static void startup_code(void) {
   io_config_pwm(LASER_PWM, LASER_FREQ);
   io_set_pwm(LASER_PWM, 0);
 #endif
+#if ASSERT_PIN(LASER_PWM_AIR_ASSIST)
+  io_config_output(LASER_PWM_AIR_ASSIST);
+#endif
   tool_set_mode(PWM_VARPOWER_MODE);
-}
-
-static void shutdown_code(void) {
-  // restore laser mode
-  tool_reset_mode();
 }
 
 static void set_speed(int16_t value) {
@@ -104,7 +102,7 @@ static void set_coolant(uint8_t value) {
 }
 
 const tool_t laser_pwm = {.startup_code = &startup_code,
-                          .shutdown_code = &shutdown_code,
+                          .shutdown_code = NULL,
                           .pid_update = NULL,
                           .range_speed = &range_speed,
                           .get_speed = NULL,

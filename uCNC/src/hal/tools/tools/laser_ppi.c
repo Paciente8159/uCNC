@@ -236,6 +236,9 @@ static void startup_code(void) {
   io_set_output(LASER_PPI);
 #endif
 #endif
+#if ASSERT_PIN(LASER_PPI_AIR_ASSIST)
+  io_config_output(LASER_PPI_AIR_ASSIST);
+#endif
   tool_set_mode(PPI_MODE);
   laser_ppi_config_parameters();
   HOOK_ATTACH_CALLBACK(itp_rt_stepbits, laser_ppi_pulse);

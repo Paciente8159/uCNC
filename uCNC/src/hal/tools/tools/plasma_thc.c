@@ -41,6 +41,10 @@
 #define PLASMA_ON_OUTPUT DOUT0
 #endif
 
+#ifndef PLASMA_COOLANT
+#define PLASMA_COOLANT DOUT2
+#endif
+
 #ifndef PLASMA_STEPPERS_MASK
 #define PLASMA_STEPPERS_MASK (1 << 2)
 #endif
@@ -512,6 +516,7 @@ DECL_MODULE(plasma_thc) {
 static void startup_code(void) {
 // force plasma off
 #if ASSERT_PIN(PLASMA_ON_OUTPUT)
+  io_config_output(PLASMA_ON_OUTPUT);
   io_clear_output(PLASMA_ON_OUTPUT);
 #endif
   tool_set_mode(PLASMA_THC_MODE);
@@ -522,7 +527,6 @@ static void shutdown_code(void) {
 #if ASSERT_PIN(PLASMA_ON_OUTPUT)
   io_clear_output(PLASMA_ON_OUTPUT);
 #endif
-  tool_reset_mode();
 }
 
 static void set_speed(int16_t value) {
@@ -557,7 +561,7 @@ static int16_t range_speed(int16_t value, uint8_t conv) {
 static void set_coolant(uint8_t value) {
 // easy macro
 #ifdef ENABLE_COOLANT
-  SET_COOLANT(LASER_PWM_AIR_ASSIST, UNDEF_PIN, value);
+  SET_COOLANT(PLASMA_COOLANT, UNDEF_PIN, value);
 #endif
 }
 

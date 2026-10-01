@@ -122,6 +122,8 @@ uint8_t tool_change(uint8_t tool) {
     tool_current.shutdown_code();
   }
 
+  tool_reset_mode();
+
   switch (tool) {
 #ifdef TOOL1
   case 1:

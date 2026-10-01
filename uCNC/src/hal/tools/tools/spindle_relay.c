@@ -44,6 +44,22 @@
 #endif
 #endif
 
+static void startup_code(void) {
+// force pin modes
+#if ASSERT_PIN(SPINDLE_RELAY_FWD)
+  io_config_output(SPINDLE_RELAY_FWD);
+#endif
+#if ASSERT_PIN(SPINDLE_RELAY_REV)
+  io_config_output(SPINDLE_RELAY_REV);
+#endif
+#if ASSERT_PIN(SPINDLE_RELAY_COOLANT_FLOOD)
+  io_config_output(SPINDLE_RELAY_COOLANT_FLOOD);
+#endif
+#if ASSERT_PIN(SPINDLE_RELAY_COOLANT_MIST)
+  io_config_output(SPINDLE_RELAY_COOLANT_MIST);
+#endif
+}
+
 void set_speed(int16_t value) {
 
   if (value == 0) {
@@ -74,11 +90,7 @@ static uint16_t get_speed(void) {
 #ifdef SPINDLE_RELAY_RPM_ENCODER
   return encoder_get_rpm(SPINDLE_RELAY_RPM_ENCODER);
 #else
-#if ASSERT_PIN(SPINDLE_PWM)
   return tool_get_setpoint();
-#else
-  return 0;
-#endif
 #endif
 }
 
@@ -94,7 +106,7 @@ static int16_t range_speed(int16_t value, uint8_t conv) {
   return value;
 }
 
-const tool_t spindle_relay = {.startup_code = NULL,
+const tool_t spindle_relay = {.startup_code = &startup_code,
                               .shutdown_code = NULL,
                               .pid_update = NULL,
                               .range_speed = &range_speed,

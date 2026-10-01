@@ -352,6 +352,13 @@ uint8_t vfd_update(void) {
  * */
 
 static void startup_code() {
+#if ASSERT_PIN(VFD_COOLANT_FLOOD)
+  io_config_output(VFD_COOLANT_FLOOD);
+#endif
+#if ASSERT_PIN(VFD_COOLANT_MIST)
+  io_config_output(VFD_COOLANT_MIST);
+#endif
+
   // initialize soft uart tx
   vfd_uart.tx(true);
   // cnc_delay_ms(200);

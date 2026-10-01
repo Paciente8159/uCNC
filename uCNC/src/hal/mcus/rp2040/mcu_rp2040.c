@@ -40,6 +40,24 @@ uint8_t rp2040_pwm[16];
 #define IC74HC595_PIO_FREQ 20000000UL
 #endif
 
+#ifndef IC74HC595_PIO_CLK
+#ifdef IC74HC595_PIO_CLK_PIN
+#define IC74HC595_PIO_CLK __indirect__(IC74HC595_PIO_CLK_PIN, BIT)
+#endif
+#endif
+
+#ifndef IC74HC595_PIO_DATA
+#ifdef IC74HC595_PIO_DATA_PIN
+#define IC74HC595_PIO_DATA __indirect__(IC74HC595_PIO_DATA_PIN, BIT)
+#endif
+#endif
+
+#ifndef IC74HC595_PIO_LATCH
+#ifdef IC74HC595_PIO_LATCH_PIN
+#define IC74HC595_PIO_LATCH __indirect__(IC74HC595_PIO_LATCH_PIN, BIT)
+#endif
+#endif
+
 #if IC74HC595_COUNT != 4
 #error "IC74HC595_COUNT must be 4 to use ESP32 I2S mode for IO shifting"
 #endif

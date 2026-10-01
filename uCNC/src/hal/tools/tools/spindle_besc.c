@@ -57,15 +57,25 @@
 
 static void startup_code(void) {
 // do whatever routine you need to do here to arm the ESC
+// force pin modes
+#if ASSERT_PIN(SPINDLE_BESC_COOLANT_FLOOD)
+  io_config_output(SPINDLE_BESC_COOLANT_FLOOD);
+#endif
+#if ASSERT_PIN(SPINDLE_BESC_COOLANT_MIST)
+  io_config_output(SPINDLE_BESC_COOLANT_MIST);
+#endif
+
 #if ASSERT_PIN(SPINDLE_BESC_POWER_RELAY)
-#if ASSERT_PIN(SPINDLE_BESC_SERVO)
-  io_set_pwm(SPINDLE_BESC_SERVO, SPINDLE_BESC_MID);
-#endif
+  io_config_output(SPINDLE_BESC_POWER_RELAY);
   io_set_output(SPINDLE_BESC_POWER_RELAY);
-  cnc_delay_ms(1000);
-#if ASSERT_PIN(SPINDLE_BESC_SERVO)
-  io_set_pwm(SPINDLE_BESC_SERVO, SPINDLE_BESC_LOW);
 #endif
+#if ASSERT_PIN(SPINDLE_BESC_SERVO)
+  io_config_output(SPINDLE_BESC_SERVO); // servos pin configuration is just
+                                        // setting it to output mode /* maybe
+                                        // add a future io_config_servo macro */
+  io_set_pwm(SPINDLE_BESC_SERVO, SPINDLE_BESC_MID);
+  cnc_delay_ms(1000);
+  io_set_pwm(SPINDLE_BESC_SERVO, SPINDLE_BESC_LOW);
   cnc_delay_ms(2000);
 #endif
 }

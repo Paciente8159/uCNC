@@ -63,9 +63,18 @@ DECL_EXTENDED_SETTING(SPINDLE_PWM_PID_SETTING_ID, spindle_pwm_pid.k, float, 3,
 #endif
 
 static void startup_code(void) {
-// force pwm mode
+// force pin modes
 #if ASSERT_PIN(SPINDLE_PWM)
   io_config_pwm(SPINDLE_PWM, 1000);
+#endif
+#if ASSERT_PIN(SPINDLE_PWM_DIR)
+  io_config_output(SPINDLE_PWM_DIR);
+#endif
+#if ASSERT_PIN(SPINDLE_PWM_COOLANT_FLOOD)
+  io_config_output(SPINDLE_PWM_COOLANT_FLOOD);
+#endif
+#if ASSERT_PIN(SPINDLE_PWM_COOLANT_MIST)
+  io_config_output(SPINDLE_PWM_COOLANT_MIST);
 #endif
 
 #if defined(ENABLE_TOOL_PID_CONTROLLER) && !defined(DISABLE_SPINDLE_PWM_PID)

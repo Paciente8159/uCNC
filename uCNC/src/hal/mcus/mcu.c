@@ -282,6 +282,156 @@ static void FORCEINLINE mcu_outputs_init(void) {
 #if ASSERT_PIN_IO(SERVO5)
   mcu_config_output(SERVO5);
 #endif
+#if ASSERT_PIN_IO(DOUT0)
+  mcu_config_output(DOUT0);
+#endif
+#if ASSERT_PIN_IO(DOUT1)
+  mcu_config_output(DOUT1);
+#endif
+#if ASSERT_PIN_IO(DOUT2)
+  mcu_config_output(DOUT2);
+#endif
+#if ASSERT_PIN_IO(DOUT3)
+  mcu_config_output(DOUT3);
+#endif
+#if ASSERT_PIN_IO(DOUT4)
+  mcu_config_output(DOUT4);
+#endif
+#if ASSERT_PIN_IO(DOUT5)
+  mcu_config_output(DOUT5);
+#endif
+#if ASSERT_PIN_IO(DOUT6)
+  mcu_config_output(DOUT6);
+#endif
+#if ASSERT_PIN_IO(DOUT7)
+  mcu_config_output(DOUT7);
+#endif
+#if ASSERT_PIN_IO(DOUT8)
+  mcu_config_output(DOUT8);
+#endif
+#if ASSERT_PIN_IO(DOUT9)
+  mcu_config_output(DOUT9);
+#endif
+#if ASSERT_PIN_IO(DOUT10)
+  mcu_config_output(DOUT10);
+#endif
+#if ASSERT_PIN_IO(DOUT11)
+  mcu_config_output(DOUT11);
+#endif
+#if ASSERT_PIN_IO(DOUT12)
+  mcu_config_output(DOUT12);
+#endif
+#if ASSERT_PIN_IO(DOUT13)
+  mcu_config_output(DOUT13);
+#endif
+#if ASSERT_PIN_IO(DOUT14)
+  mcu_config_output(DOUT14);
+#endif
+#if ASSERT_PIN_IO(DOUT15)
+  mcu_config_output(DOUT15);
+#endif
+#if ASSERT_PIN_IO(DOUT16)
+  mcu_config_output(DOUT16);
+#endif
+#if ASSERT_PIN_IO(DOUT17)
+  mcu_config_output(DOUT17);
+#endif
+#if ASSERT_PIN_IO(DOUT18)
+  mcu_config_output(DOUT18);
+#endif
+#if ASSERT_PIN_IO(DOUT19)
+  mcu_config_output(DOUT19);
+#endif
+#if ASSERT_PIN_IO(DOUT20)
+  mcu_config_output(DOUT20);
+#endif
+#if ASSERT_PIN_IO(DOUT21)
+  mcu_config_output(DOUT21);
+#endif
+#if ASSERT_PIN_IO(DOUT22)
+  mcu_config_output(DOUT22);
+#endif
+#if ASSERT_PIN_IO(DOUT23)
+  mcu_config_output(DOUT23);
+#endif
+#if ASSERT_PIN_IO(DOUT24)
+  mcu_config_output(DOUT24);
+#endif
+#if ASSERT_PIN_IO(DOUT25)
+  mcu_config_output(DOUT25);
+#endif
+#if ASSERT_PIN_IO(DOUT26)
+  mcu_config_output(DOUT26);
+#endif
+#if ASSERT_PIN_IO(DOUT27)
+  mcu_config_output(DOUT27);
+#endif
+#if ASSERT_PIN_IO(DOUT28)
+  mcu_config_output(DOUT28);
+#endif
+#if ASSERT_PIN_IO(DOUT29)
+  mcu_config_output(DOUT29);
+#endif
+#if ASSERT_PIN_IO(DOUT30)
+  mcu_config_output(DOUT30);
+#endif
+#if ASSERT_PIN_IO(DOUT31)
+  mcu_config_output(DOUT31);
+#endif
+#if ASSERT_PIN_IO(DOUT32)
+  mcu_config_output(DOUT32);
+#endif
+#if ASSERT_PIN_IO(DOUT33)
+  mcu_config_output(DOUT33);
+#endif
+#if ASSERT_PIN_IO(DOUT34)
+  mcu_config_output(DOUT34);
+#endif
+#if ASSERT_PIN_IO(DOUT35)
+  mcu_config_output(DOUT35);
+#endif
+#if ASSERT_PIN_IO(DOUT36)
+  mcu_config_output(DOUT36);
+#endif
+#if ASSERT_PIN_IO(DOUT37)
+  mcu_config_output(DOUT37);
+#endif
+#if ASSERT_PIN_IO(DOUT38)
+  mcu_config_output(DOUT38);
+#endif
+#if ASSERT_PIN_IO(DOUT39)
+  mcu_config_output(DOUT39);
+#endif
+#if ASSERT_PIN_IO(DOUT40)
+  mcu_config_output(DOUT40);
+#endif
+#if ASSERT_PIN_IO(DOUT41)
+  mcu_config_output(DOUT41);
+#endif
+#if ASSERT_PIN_IO(DOUT42)
+  mcu_config_output(DOUT42);
+#endif
+#if ASSERT_PIN_IO(DOUT43)
+  mcu_config_output(DOUT43);
+#endif
+#if ASSERT_PIN_IO(DOUT44)
+  mcu_config_output(DOUT44);
+#endif
+#if ASSERT_PIN_IO(DOUT45)
+  mcu_config_output(DOUT45);
+#endif
+#if ASSERT_PIN_IO(DOUT46)
+  mcu_config_output(DOUT46);
+#endif
+#if ASSERT_PIN_IO(DOUT47)
+  mcu_config_output(DOUT47);
+#endif
+#if ASSERT_PIN_IO(DOUT48)
+  mcu_config_output(DOUT48);
+#endif
+#if ASSERT_PIN_IO(DOUT49)
+  mcu_config_output(DOUT49);
+#endif
 }
 
 static void FORCEINLINE mcu_inputs_init(void) {
