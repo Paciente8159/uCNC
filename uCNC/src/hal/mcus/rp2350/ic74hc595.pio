@@ -48,7 +48,7 @@ static inline void ic74hc595_program_init(PIO pio, uint sm, uint offset, uint pi
 	sm_config_set_in_pins(&c, pin_data_in);  // one input pin (74HC165 Q_H)
 	// MSB-first in both directions, no auto push/pull, 32-bit threshold
 	sm_config_set_out_shift(&c, false, false, 32);
-	sm_config_set_in_shift(&c, true, false, 32);
+	sm_config_set_in_shift(&c, false, false, 32);
 	// data, clock and latch pins are outputs
 	pio_sm_set_consecutive_pindirs(pio, sm, pin_data, 3, true);
 	pio_gpio_init(pio, pin_data);
