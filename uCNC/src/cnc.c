@@ -107,10 +107,10 @@ void cnc_init(void)
 	// initializes all systems
 	mcu_init();											// mcu
 	mcu_io_reset();										// add custom logic to set pins initial state
-	io_enable_steppers(~g_settings.step_enable_invert); // disables steppers at start
 	io_disable_probe();									// forces probe isr disabling
 	grbl_stream_init();									// serial
 	settings_init();									// settings initial load
+    io_enable_steppers(~g_settings.step_enable_invert); // disables steppers at start
 	/**
 	 * Network initialization happens after stream registration
 	 * This will allow wired streams to be able to start sending info out (needed for debug streams)
@@ -899,7 +899,11 @@ void cnc_exec_rt_commands(void)
 	bool update_tools = false;
 
 	// executes feeds override rt commands
-	uint8_t command = cnc_state.rt_cmd; // copies realtime flags states
+	uint8_t command = RT_CMD_CLEAR; // copies realtime flags states
+    ATOMIC_CODEBLOCK {
+        command = cnc_state.rt_cmd;
+        cnc_state.rt_cmd = RT_CMD_CLEAR;
+    }
 
 #if STATUS_AUTOMATIC_REPORT_INTERVAL >= 100
 	static uint32_t next_auto_report = STATUS_AUTOMATIC_REPORT_INTERVAL;
@@ -914,11 +918,7 @@ void cnc_exec_rt_commands(void)
 	if (command)
 	{
 		DBGLOG("[CNC] rt_cmd: %hu", command);
-		// clear all but report. report is handled in cnc_io_dotasks
-		ATOMIC_CODEBLOCK
-		{
-			cnc_state.rt_cmd = RT_CMD_CLEAR;
-		}
+
 		if (CHECKFLAG(command, RT_CMD_RESET))
 		{
 			if (cnc_get_exec_state(EXEC_HOMING))
