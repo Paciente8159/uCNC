@@ -19,6 +19,12 @@
 
 #include "cnc.h"
 
+#ifndef IPC_BUFFER_SIZE
+#define IPC_BUFFER_SIZE 256
+#endif
+uint8_t g_ipc_buffer[IPC_BUFFER_SIZE];
+bool g_ipc_data_available;
+
 void ipc_init(void) { /*TODO*/ }
 
 /**overridable send and receive methods - depends on the transport layer (SPI,
@@ -53,4 +59,34 @@ void ipc_exec(ipc_packet_type_t type, const void *data_out, size_t len_out,
  *
  * Only one request at time will be received and processed (no backpressure).
  */
-void ipc_dotasks(void) { /*TODO*/ }
+void ipc_dotasks(void) {
+  if (g_ipc_data_available) {
+    ipc_packet_t *ipc_data = (ipc_packet_t *)g_ipc_buffer;
+    ipc_packet_t response = {0};
+    response.type = ipc_data->type;
+    switch (ipc_data->type) {
+    case ITP_SGM_IS_FULL:
+      response.payload[0] = (itp_sgm_is_full() ? 1 : 0);
+      response.len = 1;
+      break;
+    case ITP_BLK_WRITE:
+      itp_block_t *b = &itp_blk_data[itp_blk_data_write];
+      memcpy(b, ipc_data->payload, MIN(sizeof(itp_block_t), ipc_data->len));
+      itp_blk_buffer_write(); // advance the writer
+      break;
+    case ITP_SGM_WRITE:
+      itp_block_t *b = &itp_blk_data[itp_blk_data_write];
+      itp_segment_t *s = &itp_sgm_data[itp_sgm_data_write];
+      memcpy(s, ipc_data->payload, MIN(sizeof(itp_segment_t), ipc_data->len));
+      s->block = b;           // assign the correct block address (not from the
+                              // orchestrator side but from the executor side)
+      itp_sgm_buffer_write(); // advance the writer
+      break;
+    case ITP_START:
+      itp_start(((bool *)ipc_data->payload)[0]);
+      break;
+    default:
+      break;
+    }
+  }
+}

@@ -44,12 +44,13 @@ extern "C" {
 typedef enum ipc_packet_type_ {
   ITP_SGM_IS_FULL = 0,
   ITP_BLK_WRITE,
+  ITP_SGM_WRITE,
   ITP_START
 } ipc_packet_type_t;
 
 typedef struct ipc_packet_ {
   ipc_packet_type_t type;
-  void *payload;
+  uint8_t *payload;
   size_t len;
 } ipc_packet_t;
 
