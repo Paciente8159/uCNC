@@ -2947,10 +2947,10 @@ extern "C"
 #define mcu_get_pwm(diopin) (uint8_t)(0xFF & pwm_t_get(__indirect__(diopin, TIMER), __indirect__(diopin, CHANNEL)))
 
 #define mcu_get_analog(diopin)                                       \
-	{                                                                \
+	({                                                               \
 		while (ADC->STATUS.bit.SYNCBUSY)                             \
-			ADC->INTFLAG.reg = ADC_INTFLAG_RESRDY;                   \
-		;                                                            \
+			;                                                        \
+		ADC->INTFLAG.reg = ADC_INTFLAG_RESRDY;                       \
 		while (ADC->STATUS.bit.SYNCBUSY)                             \
 			;                                                        \
 		ADC->INPUTCTRL.bit.MUXPOS = (__indirect__(diopin, CHANNEL)); \
@@ -2959,8 +2959,8 @@ extern "C"
 		ADC->SWTRIG.bit.START = 1;                                   \
 		while (!(ADC->INTFLAG.bit.RESRDY))                           \
 			;                                                        \
-		ADC->RESULT.reg;                                             \
-	}
+		(uint16_t)ADC->RESULT.reg;                                   \
+	})
 
 #define mcu_config_analog(diopin)                                                    \
 	{                                                                                \

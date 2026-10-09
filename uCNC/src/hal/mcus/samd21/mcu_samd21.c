@@ -42,7 +42,7 @@
 #include <tusb_ucnc.h>
 #endif
 
-// setups internal timers (all will run @ 8Mhz on GCLK4)
+// setups internal timers (GCLK4 runs at F_TIMERS)
 #define MAIN_CLOCK_DIV ((uint16_t)(SystemCoreClock / F_TIMERS))
 static void mcu_setup_clocks(void)
 {
@@ -230,6 +230,11 @@ void mcu_com_isr()
 		mcu_uart_rx_cb(c);
 #endif
 	}
+	if (COM_UART->USART.INTFLAG.bit.ERROR && COM_UART->USART.INTENSET.bit.ERROR)
+	{
+		// clear the combined error flag so the ISR does not re-enter on UART errors
+		COM_UART->USART.INTFLAG.reg = SERCOM_USART_INTFLAG_ERROR;
+	}
 	if (COM_UART->USART.INTFLAG.bit.DRE && COM_UART->USART.INTENSET.bit.DRE)
 	{
 		uint8_t c;
@@ -276,6 +281,11 @@ void mcu_com2_isr()
 
 #endif
 #endif
+	}
+	if (COM2_UART->USART.INTFLAG.bit.ERROR && COM2_UART->USART.INTENSET.bit.ERROR)
+	{
+		// clear the combined error flag so the ISR does not re-enter on UART errors
+		COM2_UART->USART.INTFLAG.reg = SERCOM_USART_INTFLAG_ERROR;
 	}
 	if (COM2_UART->USART.INTFLAG.bit.DRE && COM2_UART->USART.INTENSET.bit.DRE)
 	{
@@ -431,7 +441,7 @@ void USB_Handler(void)
 
 #if SERVOS_MASK > 0
 
-static uint16_t mcu_servos[6];
+static uint8_t mcu_servos[6];
 
 static FORCEINLINE void mcu_clear_servos()
 {
@@ -455,12 +465,8 @@ static FORCEINLINE void mcu_clear_servos()
 #endif
 }
 
-// timers are running from GCLCK4 @1MHz
-// servo will have prescaller of /4
-// this will yield a freq of 250KHz or 250 count per ms
-// in theory servo resolution should be 250
-// but 245 gives a closer result
-// #define SERVO_RESOLUTION (245)
+// servo timers run from GCLK4 (F_TIMERS)
+// the servo prescaler is /16, so at the default F_TIMERS (4MHz) the timer runs at 250KHz (4us per count)
 void servo_timer_init()
 {
 #if (SERVO_TIMER < 3)
@@ -526,8 +532,13 @@ void MCU_SERVO_ISR(void)
 #endif
 		mcu_clear_servos();
 		NVIC_DisableIRQ(SERVO_IRQ);
+#if (SERVO_TIMER < 3)
+		SERVO_REG->INTENCLR.bit.MC0 = 1;
+		SERVO_REG->CTRLA.bit.ENABLE = 0; // disable timer and also write protection
+#else
 		SERVO_REG->COUNT16.INTENCLR.bit.MC0 = 1;
 		SERVO_REG->COUNT16.CTRLA.bit.ENABLE = 0; // disable timer and also write protection
+#endif
 	}
 }
 #endif
@@ -768,7 +779,7 @@ void mcu_init(void)
 void mcu_set_servo(uint8_t servo, uint8_t value)
 {
 #if SERVOS_MASK > 0
-	mcu_servos[servo - SERVO_PINS_OFFSET] = (((uint16_t)value) << 1);
+	mcu_servos[servo - SERVO_PINS_OFFSET] = value;
 #endif
 }
 
@@ -780,11 +791,10 @@ uint8_t mcu_get_servo(uint8_t servo)
 {
 #if SERVOS_MASK > 0
 	uint8_t offset = servo - SERVO_PINS_OFFSET;
-	uint8_t unscaled = (uint8_t)(mcu_servos[offset] >> 1);
 
 	if ((1U << offset) & SERVOS_MASK)
 	{
-		return unscaled;
+		return mcu_servos[offset];
 	}
 #endif
 	return 0;
@@ -846,16 +856,6 @@ uint8_t mcu_get_pwm(uint8_t pwm)
 {
 	return 0;
 }
-#endif
-
-/**
- * checks if the serial hardware of the MCU is ready do send the next uint8_t
- * */
-#ifndef mcu_tx_ready
-bool mcu_tx_ready(void)
-{
-	return false;
-} // Start async send
 #endif
 
 /**
@@ -969,7 +969,7 @@ void mcu_uart2_putc(uint8_t c)
 	}
 }
 
-void mcu_uart_flush(void)
+void mcu_uart2_flush(void)
 {
 	if (!(COM2_UART->USART.INTENSET.reg & SERCOM_USART_INTENSET_DRE)) // not ready start flushing
 	{
@@ -1125,12 +1125,13 @@ void mcu_stop_itp_isr(void)
 	ITP_REG->CTRLA.bit.ENABLE = 0; // disable timer and also write protection
 	while (ITP_REG->SYNCBUSY.bit.ENABLE)
 		;
+	ITP_REG->INTENCLR.bit.MC0 = 1;
 #else
 	ITP_REG->COUNT16.CTRLA.bit.ENABLE = 0;
 	while (ITP_REG->COUNT16.STATUS.bit.SYNCBUSY)
 		;
-#endif
 	ITP_REG->COUNT16.INTENCLR.bit.MC0 = 1;
+#endif
 	NVIC_DisableIRQ(ITP_IRQ);
 }
 
@@ -1148,16 +1149,6 @@ uint32_t mcu_micros()
 {
 	return ((mcu_runtime_ms * 1000) + mcu_free_micros());
 }
-
-#ifndef mcu_delay_us
-void mcu_delay_us(uint16_t delay)
-{
-	// lpc176x_delay_us(delay);
-	uint32_t target = mcu_micros + delay;
-	while (target > mcu_micros)
-		;
-}
-#endif
 
 /**
  * runs all internal tasks of the MCU.
@@ -2122,6 +2113,22 @@ void I2C_ISR(void)
 
 #ifdef MCU_HAS_ONESHOT_TIMER
 
+// The one-shot timer is clocked from GCLK4, which runs at F_TIMERS.
+// Select the TC/TCC prescaler that yields a 1us tick so a timeout requested in
+// us maps 1:1 to timer ticks. Deriving it from F_TIMERS keeps this correct if
+// the internal timer frequency changes.
+#if (F_TIMERS > 8000000UL)
+#define MCU_ONESHOT_TIMER_PRESCALER 4 // /16
+#elif (F_TIMERS > 4000000UL)
+#define MCU_ONESHOT_TIMER_PRESCALER 3 // /8
+#elif (F_TIMERS > 2000000UL)
+#define MCU_ONESHOT_TIMER_PRESCALER 2 // /4
+#elif (F_TIMERS > 1000000UL)
+#define MCU_ONESHOT_TIMER_PRESCALER 1 // /2
+#else
+#define MCU_ONESHOT_TIMER_PRESCALER 0 // /1
+#endif
+
 void MCU_ONESHOT_ISR(void)
 {
 #if (ONESHOT_TIMER < 3)
@@ -2157,7 +2164,7 @@ void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 {
 	mcu_timeout_cb = fp;
 	uint16_t ticks = (uint16_t)(timeout - 1);
-	uint16_t prescaller = 3; // div by 8 giving one tick per us
+	uint16_t prescaller = MCU_ONESHOT_TIMER_PRESCALER; // derived from F_TIMERS giving one tick per us
 
 #if (ONESHOT_TIMER < 3)
 	// reset timer
