@@ -219,6 +219,7 @@ extern "C"
 
 #include "atomic.h"
 #include "buffer.h"
+#include "ipc.h"
 
 #ifdef __cplusplus
 }
