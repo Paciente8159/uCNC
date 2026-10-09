@@ -887,10 +887,6 @@ void mcu_usb_putc(uint8_t c)
 	if (!tusb_cdc_write_available())
 	{
 		mcu_usb_flush();
-		if (!tusb_cdc_connected)
-		{
-			return;
-		}
 	}
 	tusb_cdc_write(c);
 }
@@ -901,6 +897,10 @@ void mcu_usb_flush(void)
 	while (!tusb_cdc_write_available())
 	{
 		mcu_dotasks(); // tinyusb device task
+		if (!tusb_cdc_connected)
+		{
+			return;
+		}
 	}
 }
 #endif
@@ -1163,7 +1163,7 @@ void mcu_dotasks(void)
 	while (tusb_cdc_available())
 	{
 		uint8_t c = (uint8_t)tusb_cdc_read();
-#ifndef DETACH_USB_FROM_MAIN_PROTOCOL
+#if !defined(DETACH_USB_FROM_MAIN_PROTOCOL)
 		if (mcu_com_rx_cb(c))
 		{
 			if (!BUFFER_TRY_ENQUEUE(usb_rx, &c))
