@@ -39,8 +39,8 @@
 #define INTERPOLATOR_DELTA_T (1.0f / INTERPOLATOR_FREQ)
 // determines the size of the maximum riemann sample that can be performed
 // taking in acount the maximum allowable step rate
-#define INTERPOLATOR_DELTA_CONST_T                                             \
-  (MIN((1.0f / INTERPOLATOR_BUFFER_SIZE),                                      \
+#define INTERPOLATOR_DELTA_CONST_T        \
+  (MIN((1.0f / INTERPOLATOR_BUFFER_SIZE), \
        ((float)(0xFFFF >> DSS_MAX_OVERSAMPLING) / (float)F_STEP_MAX)))
 #define INTERPOLATOR_FREQ_CONST (1.0f / INTERPOLATOR_DELTA_CONST_T)
 
@@ -91,7 +91,8 @@ void itp_set_block_mode(uint8_t mode) { itp_block_mode = mode; }
 
 void itp_inc_block_id(void) { itp_block_counter++; }
 
-void itp_update_feed(float step_frequency) {
+void itp_update_feed(float step_frequency)
+{
   planner_block_t *p = planner_get_block();
   p->feed_sqr = step_frequency * step_frequency;
   itp_needs_update = true;
@@ -112,9 +113,12 @@ void itp_update_feed(float step_frequency) {
   // }
 }
 
-bool itp_sync_ready(void) {
-  ATOMIC_CODEBLOCK {
-    if (itp_rt_sgm) {
+bool itp_sync_ready(void)
+{
+  ATOMIC_CODEBLOCK
+  {
+    if (itp_rt_sgm)
+    {
       return ((itp_rt_sgm->flags & (ITP_SYNC | ITP_CONST)) ==
               (ITP_SYNC | ITP_CONST));
     }
@@ -139,52 +143,62 @@ static void itp_blk_clear(void);
 /*
         Interpolator segment buffer functions
 */
-static void itp_sgm_buffer_read(void) {
+static void itp_sgm_buffer_read(void)
+{
   uint8_t read;
 
   read = itp_sgm_data_read;
-  if (read == itp_sgm_data_write) {
+  if (read == itp_sgm_data_write)
+  {
     return;
   }
 
-  if (++read == INTERPOLATOR_BUFFER_SIZE) {
+  if (++read == INTERPOLATOR_BUFFER_SIZE)
+  {
     read = 0;
   }
 
   itp_sgm_data_read = read;
 }
 
-static void itp_sgm_buffer_write(void) {
+static void itp_sgm_buffer_write(void)
+{
   uint8_t write;
 
   write = itp_sgm_data_write;
 
-  if (++write == INTERPOLATOR_BUFFER_SIZE) {
+  if (++write == INTERPOLATOR_BUFFER_SIZE)
+  {
     write = 0;
   }
 
-  if (itp_sgm_data_read != write) {
+  if (itp_sgm_data_read != write)
+  {
     itp_sgm_data_write = write;
   }
 }
 
-static bool itp_sgm_is_full(void) {
+static bool itp_sgm_is_full(void)
+{
   uint8_t write, read;
 
   write = itp_sgm_data_write;
   read = itp_sgm_data_read;
 
-  if (++write == INTERPOLATOR_BUFFER_SIZE) {
+  if (++write == INTERPOLATOR_BUFFER_SIZE)
+  {
     write = 0;
   }
   return (write == read);
 }
 
-static bool itp_sgm_is_empty(void) {
+static bool itp_sgm_is_empty(void)
+{
   return (itp_sgm_data_read == itp_sgm_data_write);
 }
 
-static void itp_sgm_clear(void) {
+static void itp_sgm_clear(void)
+{
   itp_sgm_data_write = 0;
   itp_sgm_data_read = 0;
   // resets the sgm pointer and stored dss
@@ -196,33 +210,54 @@ static void itp_sgm_clear(void) {
   memset(itp_sgm_data, 0, sizeof(itp_sgm_data));
 }
 
-static void itp_blk_buffer_write(void) {
+static void itp_blk_buffer_write(void)
+{
   // curcular always. No need to control override
-  if (++itp_blk_data_write == INTERPOLATOR_BUFFER_SIZE) {
+  if (++itp_blk_data_write == INTERPOLATOR_BUFFER_SIZE)
+  {
     itp_blk_data_write = 0;
   }
 }
 
-static void itp_blk_clear(void) {
+static void itp_blk_clear(void)
+{
   itp_cur_plan_block = NULL;
   itp_blk_data_write = 0;
   memset(itp_blk_data, 0, sizeof(itp_blk_data));
 }
 
-static itp_block_t *itp_get_blk() { return &itp_blk_data[itp_blk_data_write]; }
-
-void itp_push_blk(itp_block_t *blk) {
-  (void)blk;
-  itp_blk_buffer_write();
+static itp_block_t *itp_get_blk()
+{
+  return &itp_blk_data[itp_blk_data_write];
 }
 
-void itp_push_sgm(itp_segment_t *sgm) {
+void itp_push_blk(itp_block_t *blk)
+{
+  itp_block_t *itp_blk = itp_get_blk();
+  memcpy(itp_blk, blk, sizeof(itp_block_t));
+}
+
+void itp_push_sgm(bool advance_block, itp_segment_t *sgm)
+{
+  sgm->block = itp_get_blk();
+  // pushes a new segment to the execution queue
+  if (advance_block)
+  {
+    itp_blk_buffer_write();
+    itp_cur_plan_block = NULL;
+    planner_discard_block(); // discards planner block
+#if (DSS_MAX_OVERSAMPLING != 0)
+    prev_dss = 0; // resets the DSS
+#endif
+  }
+
   (void)sgm;
   itp_sgm_buffer_write();
 }
 
 void itp_step_rate_convert(float frequency, uint16_t *ticks,
-                           uint16_t *prescaller) {
+                           uint16_t *prescaller)
+{
   mcu_freq_to_clocks(frequency, ticks, prescaller);
 }
 
@@ -230,7 +265,8 @@ void itp_step_rate_convert(float frequency, uint16_t *ticks,
         Interpolator functions
 */
 // declares functions called by the stepper ISR
-void itp_init(void) {
+void itp_init(void)
+{
 #ifdef FORCE_GLOBALS_TO_0
   // resets buffers
   memset(itp_rt_step_pos, 0, sizeof(itp_rt_step_pos));
@@ -260,7 +296,8 @@ void itp_init(void) {
 // evals the point in a s-curve function
 // receives a value between 0 and 1
 // outputs a value along a curve according to the scale
-static float s_curve_function(float pt) {
+static float s_curve_function(float pt)
+{
 #if S_CURVE_ACCELERATION_LEVEL == 5
   return 0.5 * (tanh(6 * pt - 3) + 1);
 #elif S_CURVE_ACCELERATION_LEVEL == 4
@@ -300,7 +337,8 @@ static float s_curve_function(float pt) {
 #elif S_CURVE_ACCELERATION_LEVEL == -1
   float k, pt_sqr;
   int32_t *i;
-  switch (g_settings.s_curve_profile) {
+  switch (g_settings.s_curve_profile)
+  {
   case 1:
     // from this https://en.wikipedia.org/wiki/Sigmoid_function
     pt -= 0.5f;
@@ -345,8 +383,10 @@ static float s_curve_function(float pt) {
 }
 #endif
 
-FORCEINLINE static uint8_t itp_get_linact_dirs(uint8_t mask) {
-  switch (mask) {
+FORCEINLINE static uint8_t itp_get_linact_dirs(uint8_t mask)
+{
+  switch (mask)
+  {
   case 1:
     return LINACT0_IO_MASK;
   case 2:
@@ -364,7 +404,8 @@ FORCEINLINE static uint8_t itp_get_linact_dirs(uint8_t mask) {
   return 0;
 }
 
-void itp_unlock(bool *lock) {
+void itp_unlock(bool *lock)
+{
 #ifdef MCU_HAS_RTOS
   BIN_SEMPH_UNLOCK(itp_mutex);
 #else
@@ -372,7 +413,8 @@ void itp_unlock(bool *lock) {
 #endif
 }
 
-void itp_run(void) {
+void itp_run(void)
+{
   // conversion vars
   static uint32_t accel_until = 0;
   static uint32_t deaccel_from = 0;
@@ -399,11 +441,13 @@ void itp_run(void) {
 
 #ifdef MCU_HAS_RTOS
   // access exclusive mutex
-  if (!BIN_SEMPH_TRYLOCK(itp_mutex)) {
+  if (!BIN_SEMPH_TRYLOCK(itp_mutex))
+  {
     return;
   }
 #else
-  if (itp_mutex) {
+  if (itp_mutex)
+  {
     return;
   }
   itp_mutex = 1;
@@ -414,18 +458,22 @@ void itp_run(void) {
   itp_segment_t *sgm = NULL;
 
   // creates segments and fills the buffer
-  while (!itp_is_full()) {
-    if (cnc_get_exec_state(EXEC_ALARM)) {
+  while (!itp_is_full())
+  {
+    if (cnc_get_exec_state(EXEC_ALARM))
+    {
       // on any active alarm exits
       return;
     }
 
     // no planner blocks has beed processed or last planner block was fully
     // processed
-    if (itp_cur_plan_block == NULL) {
+    if (itp_cur_plan_block == NULL)
+    {
       // planner is empty or interpolator block buffer full. Nothing to be done
       // itp block will never be full if itp segment is not full
-      if (planner_buffer_is_empty() /* || itp_blk_is_full()*/) {
+      if (planner_buffer_is_empty() /* || itp_blk_is_full()*/)
+      {
         break;
       }
 
@@ -435,25 +483,26 @@ void itp_run(void) {
       DBGLOG("[ITP] new block main=%hu steps=%lu", block->main_stepper,
              (unsigned long)block->steps[block->main_stepper]);
       // clear the data block
-      itp_block_t *itp_blk = itp_get_blk();
-      memset(itp_blk, 0, sizeof(itp_block_t));
+      itp_block_t new_itp_block = {0};
+      // memset(itp_blk, 0, sizeof(itp_block_t));
 #ifdef GCODE_PROCESS_LINE_NUMBERS
-      itp_blk->line = block->line;
+      new_itp_block.line = block->line;
 #endif
 
       // reset dirbits
-      itp_blk->dirbits = 0;
+      new_itp_block.dirbits = 0;
       step_t total_steps = block->steps[block->main_stepper];
-      itp_blk->total_steps = total_steps << 1;
+      new_itp_block.total_steps = total_steps << 1;
 
       feed_convert = block->feed_conversion;
 
-      for (uint8_t i = 0; i < STEPPER_COUNT; i++) {
+      for (uint8_t i = 0; i < STEPPER_COUNT; i++)
+      {
         uint8_t mask = (1 << i);
         // convert from motion block direction bits to LINACT bit mask
-        itp_blk->dirbits |= itp_get_linact_dirs(block->dirbits & mask);
-        itp_blk->errors[i] = total_steps;
-        itp_blk->steps[i] = block->steps[i] << 1;
+        new_itp_block.dirbits |= itp_get_linact_dirs(block->dirbits & mask);
+        new_itp_block.errors[i] = total_steps;
+        new_itp_block.steps[i] = block->steps[i] << 1;
       }
 
       // flags block for recalculation of speeds
@@ -475,14 +524,17 @@ void itp_run(void) {
 
 #ifdef ENABLE_RT_SYNC_MOTIONS
     uint8_t bmode = itp_block_mode;
-    if ((tool_get_mode() & EMBROIDERY_MODE) && bmode) {
-      if (!flushing_block && block_counter == itp_block_counter) {
+    if ((tool_get_mode() & EMBROIDERY_MODE) && bmode)
+    {
+      if (!flushing_block && block_counter == itp_block_counter)
+      {
 
         // previous block not finnished and not signaled to continue
         break;
       }
     }
-    switch (bmode) {
+    switch (bmode)
+    {
     case ITP_BLOCK_SINGLE:
       block_counter = itp_block_counter;
       break;
@@ -499,19 +551,20 @@ void itp_run(void) {
 
     // clear the data segment
     memset(sgm, 0, sizeof(itp_segment_t));
-    sgm->block = &itp_blk_data[itp_blk_data_write];
 
     float current_speed = fast_flt_sqrt(block->entry_feed_sqr);
 
     // if an hold is active forces to deaccelerate
-    if (cnc_get_exec_state(EXEC_STOPPING)) {
+    if (cnc_get_exec_state(EXEC_STOPPING))
+    {
       // forces deacceleration by overriding the profile juntion points
       accel_until = remaining_steps;
       deaccel_from = remaining_steps;
       t_deac_integrator = INTERPOLATOR_DELTA_T;
       itp_needs_update = true;
-    } else if (itp_needs_update) // forces recalculation of acceleration and
-                                 // deacceleration profiles
+    }
+    else if (itp_needs_update) // forces recalculation of acceleration and
+                               // deacceleration profiles
     {
       itp_needs_update = false;
       float exit_speed_sqr = planner_get_block_exit_speed_sqr();
@@ -522,7 +575,8 @@ void itp_run(void) {
 
       accel_until = remaining_steps;
       deaccel_from = 0;
-      if (junction_speed_sqr != block->entry_feed_sqr) {
+      if (junction_speed_sqr != block->entry_feed_sqr)
+      {
         float accel_dist =
             ABS(junction_speed_sqr - block->entry_feed_sqr) * accel_inv;
         accel_dist = fast_flt_div2(accel_dist);
@@ -535,7 +589,8 @@ void itp_run(void) {
 #endif
         t *= accel_inv;
 
-        if (t > INTERPOLATOR_DELTA_T) {
+        if (t > INTERPOLATOR_DELTA_T)
+        {
           // slice up time in an integral number of periods (half with positive
           // jerk and half with negative)
           float slices_inv = fast_flt_inv(floorf(INTERPOLATOR_FREQ * t));
@@ -543,21 +598,26 @@ void itp_run(void) {
 #if S_CURVE_ACCELERATION_LEVEL != 0
           acc_step = slices_inv;
 #endif
-          if ((junction_speed_sqr < block->entry_feed_sqr)) {
+          if ((junction_speed_sqr < block->entry_feed_sqr))
+          {
             t_acc_integrator = -t_acc_integrator;
           }
-        } else {
+        }
+        else
+        {
           accel_until = remaining_steps;
         }
       }
 
       // if entry speed already a junction speed updates it.
-      if (accel_until == remaining_steps) {
+      if (accel_until == remaining_steps)
+      {
         block->entry_feed_sqr = junction_speed_sqr;
         current_speed = junction_speed;
       }
 
-      if (junction_speed_sqr > exit_speed_sqr) {
+      if (junction_speed_sqr > exit_speed_sqr)
+      {
         float deaccel_dist = (junction_speed_sqr - exit_speed_sqr) * accel_inv;
         deaccel_dist = fast_flt_div2(deaccel_dist);
         deaccel_from = floorf(deaccel_dist);
@@ -569,19 +629,23 @@ void itp_run(void) {
 #endif
         t *= accel_inv;
 
-        if (t > INTERPOLATOR_DELTA_T) {
+        if (t > INTERPOLATOR_DELTA_T)
+        {
           // slice up time in an integral number of periods (half with positive
           // jerk and half with negative)
           float slices_inv = fast_flt_inv(floorf(INTERPOLATOR_FREQ * t));
           t_deac_integrator = t * slices_inv;
-          if (t_deac_integrator < 0.00001f) {
+          if (t_deac_integrator < 0.00001f)
+          {
             t_deac_integrator = 0.0001f;
           }
 
 #if S_CURVE_ACCELERATION_LEVEL != 0
           deac_step = slices_inv;
 #endif
-        } else {
+        }
+        else
+        {
           deaccel_from = 0;
         }
       }
@@ -596,7 +660,8 @@ void itp_run(void) {
     float profile_steps_limit;
     float integrator;
     // acceleration profile
-    if (remaining_steps > accel_until) {
+    if (remaining_steps > accel_until)
+    {
       /*
               computes the traveled distance within a fixed amount of time
               this time is the reverse integrator frequency
@@ -624,7 +689,9 @@ void itp_run(void) {
           (ITP_UPDATE_ISR | ((integrator >= 0) ? ITP_ACCEL : ITP_DEACCEL));
       integrator =
           ABS(integrator); // ensure the integrator is a positive time slice
-    } else if (remaining_steps > deaccel_from) {
+    }
+    else if (remaining_steps > deaccel_from)
+    {
       // constant speed segment
       speed_change = 0;
       profile_steps_limit = deaccel_from;
@@ -632,7 +699,9 @@ void itp_run(void) {
       sgm->flags = (remaining_steps == accel_until)
                        ? (ITP_UPDATE_ISR | ITP_CONST)
                        : ITP_CONST;
-    } else {
+    }
+    else
+    {
       integrator = t_deac_integrator;
 #if S_CURVE_ACCELERATION_LEVEL != 0
       float acum = deac_step_acum;
@@ -648,7 +717,8 @@ void itp_run(void) {
     }
 
     // update speed at the end of segment
-    if (speed_change) {
+    if (speed_change)
+    {
       block->entry_feed_sqr =
           MAX(0, fast_flt_pow2((current_speed + speed_change)));
     }
@@ -661,15 +731,19 @@ void itp_run(void) {
     speed_change = fast_flt_div2(speed_change);
     current_speed += speed_change;
 
-    if (current_speed > 0) {
+    if (current_speed > 0)
+    {
       partial_distance += current_speed * integrator;
       // computes how many steps it will perform at this speed and frame window
       segm_steps = (uint16_t)MAX(0, roundf(partial_distance));
-    } else {
+    }
+    else
+    {
       // speed can't be negative
       block->entry_feed_sqr = 0;
 
-      if (cnc_get_exec_state(EXEC_STOPPING)) {
+      if (cnc_get_exec_state(EXEC_STOPPING))
+      {
         break;
       }
 
@@ -686,7 +760,8 @@ void itp_run(void) {
 
     // if computed steps exceed the remaining steps for the motion shortens the
     // distance
-    if (segm_steps > (remaining_steps - profile_steps_limit)) {
+    if (segm_steps > (remaining_steps - profile_steps_limit))
+    {
       segm_steps = (uint16_t)(remaining_steps - profile_steps_limit);
     }
 
@@ -705,7 +780,8 @@ void itp_run(void) {
     uint8_t dss = 0;
 #ifdef ENABLE_PLASMA_THC
     // plasma THC forces DSS to always be enabled at level 1 at least
-    if (tool_get_mode() == PLASMA_THC_MODE) {
+    if (tool_get_mode() == PLASMA_THC_MODE)
+    {
       dss_speed = fast_flt_mul2(dss_speed);
       // clamp top speed
       current_speed = fast_flt_mul2(current_speed);
@@ -714,12 +790,14 @@ void itp_run(void) {
     }
 #endif
     while (dss_speed < DSS_CUTOFF_FREQ && dss < DSS_MAX_OVERSAMPLING &&
-           segm_steps) {
+           segm_steps)
+    {
       dss_speed = fast_flt_mul2(dss_speed);
       dss++;
     }
 
-    if (dss != prev_dss) {
+    if (dss != prev_dss)
+    {
       sgm->flags = ITP_UPDATE_ISR;
     }
     sgm->next_dss = dss - prev_dss;
@@ -743,9 +821,11 @@ void itp_run(void) {
     sgm->feed = current_speed * feed_convert;
 #if TOOL_COUNT > 0
 #ifdef ENABLE_LATHE
-    if (tool_get_mode() == SPINDLE_MODE) {
+    if (tool_get_mode() == SPINDLE_MODE)
+    {
       int16_t spindle_speed = planner_get_spindle_speed(1);
-      if ((prev_spindle != spindle_speed)) {
+      if ((prev_spindle != spindle_speed))
+      {
         prev_spindle = spindle_speed;
         sgm->flags |= ITP_UPDATE_TOOL;
       }
@@ -755,12 +835,14 @@ void itp_run(void) {
 #endif
 #if defined(ENABLE_LASER_PWM) || defined(ENABLE_EMBROIDERY)
     // calculates dynamic laser power
-    if (tool_get_mode() & PWM_VARPOWER_MODE) {
+    if (tool_get_mode() & PWM_VARPOWER_MODE)
+    {
       float top_speed_inv = fast_flt_invsqrt(block->feed_sqr);
       int16_t newspindle =
           planner_get_spindle_speed(MIN(1, current_speed * top_speed_inv));
 
-      if ((prev_spindle != newspindle)) {
+      if ((prev_spindle != newspindle))
+      {
         prev_spindle = newspindle;
         sgm->flags |= ITP_UPDATE_TOOL;
       }
@@ -769,24 +851,30 @@ void itp_run(void) {
     }
 #endif
 #ifdef ENABLE_LASER_PPI
-    if (tool_get_mode() & (PPI_VARPOWER_MODE | PPI_MODE)) {
+    if (tool_get_mode() & (PPI_VARPOWER_MODE | PPI_MODE))
+    {
       int16_t newspindle;
-      if (tool_get_mode() & PPI_VARPOWER_MODE) {
+      if (tool_get_mode() & PPI_VARPOWER_MODE)
+      {
         float new_s = (float)ABS(planner_get_spindle_speed(1));
         new_s /= (float)g_settings.spindle_max_rpm;
-        if (tool_get_mode() & PPI_MODE) {
+        if (tool_get_mode() & PPI_MODE)
+        {
           float blend = g_settings.laser_ppi_mixmode_uswidth;
           new_s = (new_s * blend) + (1.0f - blend);
         }
 
         newspindle = (int16_t)((float)g_settings.laser_ppi_uswidth * new_s);
         sgm->spindle = newspindle;
-      } else {
+      }
+      else
+      {
         newspindle = g_settings.laser_ppi_uswidth;
         sgm->spindle = newspindle;
       }
 
-      if ((prev_spindle != (int16_t)newspindle) && newspindle) {
+      if ((prev_spindle != (int16_t)newspindle) && newspindle)
+      {
         prev_spindle = (int16_t)newspindle;
         sgm->flags |= ITP_UPDATE_TOOL;
       }
@@ -805,14 +893,16 @@ void itp_run(void) {
 
 #ifdef ENABLE_RT_SYNC_MOTIONS
     // checks for synched motion
-    if (block->planner_flags.bit.synched) {
+    if (block->planner_flags.bit.synched)
+    {
       sgm->flags |= ITP_SYNC;
     }
 #endif
 
     // overwrites previous values
 #ifdef ENABLE_BACKLASH_COMPENSATION
-    if (block->planner_flags.bit.backlash_comp) {
+    if (block->planner_flags.bit.backlash_comp)
+    {
       sgm->flags |= ITP_BACKLASH;
     }
 #endif
@@ -820,8 +910,10 @@ void itp_run(void) {
 #ifndef DISABLE_ITP_STEP_GEN_OPTIMIZATIONS
     uint8_t idle_steppers = 0;
     sgm->main_stepper = 255;
-    for (uint8_t i = 0; i < STEPPER_COUNT; i++) {
-      if (!sgm->block->steps[i]) {
+    for (uint8_t i = 0; i < STEPPER_COUNT; i++)
+    {
+      if (!sgm->block->steps[i])
+      {
         idle_steppers |= (1 << i);
       }
     }
@@ -832,18 +924,8 @@ void itp_run(void) {
       sgm->main_stepper = block->main_stepper;
 #endif
 
-    // pushes a new segment to the execution queue
-    if ((remaining_steps == 0)) {
-      itp_push_blk(itp_get_blk());
-      itp_cur_plan_block = NULL;
-      planner_discard_block(); // discards planner block
-#if (DSS_MAX_OVERSAMPLING != 0)
-      prev_dss = 0; // resets the DSS
-#endif
-    }
-
     // finally write the segment
-    itp_push_sgm(sgm);
+    itp_push_sgm(!remaining_steps, sgm);
   }
 #if TOOL_COUNT > 0
   // updated the coolant pins
@@ -870,18 +952,22 @@ void itp_run(void) {
 #endif
 }
 
-void itp_update(void) {
+void itp_update(void)
+{
   // flags executing block for update
   itp_needs_update = true;
 }
 
-MCU_CALLBACK void itp_stop(void) {
+MCU_CALLBACK void itp_stop(void)
+{
   // safer to make the stoping condition block
-  ATOMIC_CODEBLOCK {
+  ATOMIC_CODEBLOCK
+  {
     uint16_t state = cnc_get_exec_state(EXEC_ALLACTIVE);
 
     // any stop command while running triggers an HALT alarm
-    if (state & EXEC_RUN) {
+    if (state & EXEC_RUN)
+    {
       cnc_set_exec_state(EXEC_POSITION_MAYBE_LOST);
     }
 
@@ -890,7 +976,8 @@ MCU_CALLBACK void itp_stop(void) {
 
 #if TOOL_COUNT > 0
   // stop tool (if not spindle - spindle should continue)
-  if (tool_get_mode() != SPINDLE_MODE) {
+  if (tool_get_mode() != SPINDLE_MODE)
+  {
     tool_set_speed(0);
   }
 #endif
@@ -898,7 +985,8 @@ MCU_CALLBACK void itp_stop(void) {
 
 void itp_stop_tools(void) { tool_stop(); }
 
-void itp_clear(void) {
+void itp_clear(void)
+{
 #ifdef MCU_HAS_RTOS
   // access exclusive mutex
   BIN_SEMPH_LOCK(itp_mutex);
@@ -916,26 +1004,33 @@ void itp_clear(void) {
 #endif
 }
 
-void itp_get_rt_position(int32_t *position) {
-  ATOMIC_CODEBLOCK {
+void itp_get_rt_position(int32_t *position)
+{
+  ATOMIC_CODEBLOCK
+  {
     memcpy(position, itp_rt_step_pos, sizeof(itp_rt_step_pos));
   }
 }
 
-void itp_sync_rt_position(int32_t *position) {
-  ATOMIC_CODEBLOCK {
+void itp_sync_rt_position(int32_t *position)
+{
+  ATOMIC_CODEBLOCK
+  {
     memcpy(itp_rt_step_pos, position, sizeof(itp_rt_step_pos));
   }
 }
 
-int32_t itp_get_rt_position_index(int8_t index) {
+int32_t itp_get_rt_position_index(int8_t index)
+{
   ATOMIC_CODEBLOCK { return itp_rt_step_pos[index]; }
 
   return 0;
 }
 
-void itp_reset_rt_position(float *origin) {
-  if (!g_settings.homing_enabled) {
+void itp_reset_rt_position(float *origin)
+{
+  if (!g_settings.homing_enabled)
+  {
     memset(origin, 0, (sizeof(float) * AXIS_COUNT));
   }
 
@@ -947,13 +1042,16 @@ void itp_reset_rt_position(float *origin) {
 #endif
 }
 
-float itp_get_rt_feed(void) {
+float itp_get_rt_feed(void)
+{
   float feed = 0;
-  if (!cnc_get_exec_state(EXEC_RUN)) {
+  if (!cnc_get_exec_state(EXEC_RUN))
+  {
     return feed;
   }
 
-  if (!itp_sgm_is_empty()) {
+  if (!itp_sgm_is_empty())
+  {
     feed = itp_sgm_data[itp_sgm_data_read].feed;
   }
 
@@ -964,9 +1062,12 @@ bool itp_is_empty(void) { return (itp_sgm_is_empty() && (itp_rt_sgm == NULL)); }
 
 // flushes all motions from all systems (planner or interpolator)
 // used to make a sync motion
-uint8_t itp_sync(void) {
-  while (!itp_is_empty() || !planner_buffer_is_empty()) {
-    if (!cnc_dotasks()) {
+uint8_t itp_sync(void)
+{
+  while (!itp_is_empty() || !planner_buffer_is_empty())
+  {
+    if (!cnc_dotasks())
+    {
       // if (cnc_get_exec_state(EXEC_HOMING_HIT) == EXEC_HOMING_HIT)
       // {
       // 	break;
@@ -980,7 +1081,8 @@ uint8_t itp_sync(void) {
 }
 
 // sync spindle in a stopped motion
-void itp_sync_spindle(void) {
+void itp_sync_spindle(void)
+{
 #if TOOL_COUNT > 0
   tool_set_speed(planner_get_spindle_speed(0));
 #endif
@@ -991,7 +1093,8 @@ void itp_lock_stepper(uint8_t lockmask) { itp_step_lock = lockmask; }
 #endif
 
 #ifdef GCODE_PROCESS_LINE_NUMBERS
-uint32_t itp_get_rt_line_number(void) {
+uint32_t itp_get_rt_line_number(void)
+{
   return ((itp_sgm_data[itp_sgm_data_read].block != NULL)
               ? itp_sgm_data[itp_sgm_data_read].block->line
               : 0);
@@ -999,11 +1102,13 @@ uint32_t itp_get_rt_line_number(void) {
 #endif
 
 // always fires after pulse
-MCU_CALLBACK void mcu_step_reset_cb(void) {
+MCU_CALLBACK void mcu_step_reset_cb(void)
+{
   // always resets all stepper pins
   io_set_steps(g_settings.step_invert_mask);
 
-  if (itp_isr_stop) {
+  if (itp_isr_stop)
+  {
     mcu_stop_itp_isr();
     itp_isr_stop = false;
     cnc_clear_exec_state(EXEC_RUN);
@@ -1017,13 +1122,15 @@ itp_rt_step_prevent_t itp_rt_step_prevent_cb;
 #endif
 #endif
 
-MCU_CALLBACK void mcu_step_cb(void) {
+MCU_CALLBACK void mcu_step_cb(void)
+{
   mcu_isr_context_enter();
   static uint8_t stepbits = 0;
 
 #ifdef ENABLE_RT_SYNC_MOTIONS
 #ifndef DISABLE_RT_STEP_PREVENT_CONDITION
-  if (RT_STEP_PREVENT_CONDITION) {
+  if (RT_STEP_PREVENT_CONDITION)
+  {
     return;
   }
 #endif
@@ -1044,24 +1151,29 @@ MCU_CALLBACK void mcu_step_cb(void) {
 #ifdef ENABLE_RT_LIMITS_CHECKING
   // check limits on homing motions
   // if not homing it will do regular checks elsewere
-  if (cnc_get_exec_state(EXEC_HOMING)) {
+  if (cnc_get_exec_state(EXEC_HOMING))
+  {
     mcu_limits_changed_cb();
-    if (cnc_get_exec_state(EXEC_LIMITS)) {
+    if (cnc_get_exec_state(EXEC_LIMITS))
+    {
       return;
     }
   }
 #endif
 
-  if (itp_rt_sgm != NULL) {
+  if (itp_rt_sgm != NULL)
+  {
 #ifdef ENABLE_RT_SYNC_MOTIONS
     // triggers hook for RT sync motions (like laser PPI, Plasma THC and others)
-    if (new_stepbits && itp_rt_sgm) {
+    if (new_stepbits && itp_rt_sgm)
+    {
       HOOK_INVOKE(itp_rt_stepbits, new_stepbits, itp_rt_sgm->flags);
     }
 #endif
 
     // no step remaining discards current segment
-    if (!itp_rt_sgm->remaining_steps) {
+    if (!itp_rt_sgm->remaining_steps)
+    {
       itp_rt_sgm->block = NULL;
       itp_rt_sgm = NULL;
       itp_sgm_buffer_read();
@@ -1069,17 +1181,22 @@ MCU_CALLBACK void mcu_step_cb(void) {
   }
 
   // if buffer empty loads one
-  if (itp_rt_sgm == NULL) {
+  if (itp_rt_sgm == NULL)
+  {
     // if buffer is not empty
-    if (!itp_sgm_is_empty()) {
+    if (!itp_sgm_is_empty())
+    {
       // loads a new segment
       itp_rt_sgm = &itp_sgm_data[itp_sgm_data_read];
       // cnc_set_exec_state(EXEC_RUN);
-      if (itp_rt_sgm->block != NULL) {
+      if (itp_rt_sgm->block != NULL)
+      {
 #if (DSS_MAX_OVERSAMPLING != 0)
-        if (itp_rt_sgm->next_dss != 0) {
+        if (itp_rt_sgm->next_dss != 0)
+        {
           uint8_t dss;
-          if (itp_rt_sgm->next_dss > 0) {
+          if (itp_rt_sgm->next_dss > 0)
+          {
             dss = itp_rt_sgm->next_dss;
             itp_rt_sgm->block->total_steps <<= dss;
 #if (STEPPER_COUNT > 0)
@@ -1100,7 +1217,9 @@ MCU_CALLBACK void mcu_step_cb(void) {
 #if (STEPPER_COUNT > 5)
             itp_rt_sgm->block->errors[5] <<= dss;
 #endif
-          } else {
+          }
+          else
+          {
             dss = -itp_rt_sgm->next_dss;
             itp_rt_sgm->block->total_steps >>= dss;
 #if (STEPPER_COUNT > 0)
@@ -1128,21 +1247,26 @@ MCU_CALLBACK void mcu_step_cb(void) {
         io_set_dirs(itp_rt_sgm->block->dirbits);
 
         // updates the next segment speed and tool
-        if (itp_rt_sgm->flags & ITP_UPDATE) {
-          if (itp_rt_sgm->flags & ITP_UPDATE_ISR) {
+        if (itp_rt_sgm->flags & ITP_UPDATE)
+        {
+          if (itp_rt_sgm->flags & ITP_UPDATE_ISR)
+          {
             mcu_change_itp_isr(itp_rt_sgm->timer_counter,
                                itp_rt_sgm->timer_prescaller);
           }
 
 #if TOOL_COUNT > 0
-          if (itp_rt_sgm->flags & ITP_UPDATE_TOOL) {
+          if (itp_rt_sgm->flags & ITP_UPDATE_TOOL)
+          {
             tool_set_speed(itp_rt_sgm->spindle);
           }
 #endif
           itp_rt_sgm->flags &= ~(ITP_UPDATE);
         }
       }
-    } else {
+    }
+    else
+    {
       cnc_clear_exec_state(EXEC_RUN); // this naturally clears the RUN flag. Any
                                       // other ISR stop does not clear the flag.
       itp_stop();                     // the buffer is empty. The ISR can stop
@@ -1153,8 +1277,10 @@ MCU_CALLBACK void mcu_step_cb(void) {
   new_stepbits = 0;
 
   // steps remaining starts calc next step bits
-  if (itp_rt_sgm->remaining_steps) {
-    if (itp_rt_sgm->block != NULL) {
+  if (itp_rt_sgm->remaining_steps)
+  {
+    if (itp_rt_sgm->block != NULL)
+    {
       uint8_t dirs = itp_rt_sgm->block->dirbits;
 #ifdef ENABLE_BACKLASH_COMPENSATION
       bool is_backlash = ((itp_rt_sgm->flags & ITP_BACKLASH) != 0);
@@ -1162,7 +1288,8 @@ MCU_CALLBACK void mcu_step_cb(void) {
 // prepares the next step bits mask
 #if (STEPPER_COUNT > 0)
 #ifndef DISABLE_ITP_STEP_GEN_OPTIMIZATIONS
-      if (itp_rt_sgm->main_stepper == 0) {
+      if (itp_rt_sgm->main_stepper == 0)
+      {
         new_stepbits |= LINACT0_IO_MASK;
 #ifdef ENABLE_BACKLASH_COMPENSATION
         // if backlash don't update the rt position
@@ -1170,11 +1297,13 @@ MCU_CALLBACK void mcu_step_cb(void) {
 #endif
           (dirs & LINACT0_IO_MASK) ? (--itp_rt_step_pos[0])
                                    : (++itp_rt_step_pos[0]);
-      } else if (!(itp_rt_sgm->idle_steppers & (1 << 0)))
+      }
+      else if (!(itp_rt_sgm->idle_steppers & (1 << 0)))
 #endif
       {
         itp_rt_sgm->block->errors[0] += itp_rt_sgm->block->steps[0];
-        if (itp_rt_sgm->block->errors[0] > itp_rt_sgm->block->total_steps) {
+        if (itp_rt_sgm->block->errors[0] > itp_rt_sgm->block->total_steps)
+        {
           itp_rt_sgm->block->errors[0] -= itp_rt_sgm->block->total_steps;
           new_stepbits |= LINACT0_IO_MASK;
 #ifdef ENABLE_BACKLASH_COMPENSATION
@@ -1188,7 +1317,8 @@ MCU_CALLBACK void mcu_step_cb(void) {
 #endif
 #if (STEPPER_COUNT > 1)
 #ifndef DISABLE_ITP_STEP_GEN_OPTIMIZATIONS
-      if (itp_rt_sgm->main_stepper == 1) {
+      if (itp_rt_sgm->main_stepper == 1)
+      {
         new_stepbits |= LINACT1_IO_MASK;
 #ifdef ENABLE_BACKLASH_COMPENSATION
         // if backlash don't update the rt position
@@ -1196,11 +1326,13 @@ MCU_CALLBACK void mcu_step_cb(void) {
 #endif
           (dirs & LINACT1_IO_MASK) ? (--itp_rt_step_pos[1])
                                    : (++itp_rt_step_pos[1]);
-      } else if (!(itp_rt_sgm->idle_steppers & (1 << 1)))
+      }
+      else if (!(itp_rt_sgm->idle_steppers & (1 << 1)))
 #endif
       {
         itp_rt_sgm->block->errors[1] += itp_rt_sgm->block->steps[1];
-        if (itp_rt_sgm->block->errors[1] > itp_rt_sgm->block->total_steps) {
+        if (itp_rt_sgm->block->errors[1] > itp_rt_sgm->block->total_steps)
+        {
           itp_rt_sgm->block->errors[1] -= itp_rt_sgm->block->total_steps;
           new_stepbits |= LINACT1_IO_MASK;
 #ifdef ENABLE_BACKLASH_COMPENSATION
@@ -1214,7 +1346,8 @@ MCU_CALLBACK void mcu_step_cb(void) {
 #endif
 #if (STEPPER_COUNT > 2)
 #ifndef DISABLE_ITP_STEP_GEN_OPTIMIZATIONS
-      if (itp_rt_sgm->main_stepper == 2) {
+      if (itp_rt_sgm->main_stepper == 2)
+      {
         new_stepbits |= LINACT2_IO_MASK;
 #ifdef ENABLE_BACKLASH_COMPENSATION
         // if backlash don't update the rt position
@@ -1222,11 +1355,13 @@ MCU_CALLBACK void mcu_step_cb(void) {
 #endif
           (dirs & LINACT2_IO_MASK) ? (--itp_rt_step_pos[2])
                                    : (++itp_rt_step_pos[2]);
-      } else if (!(itp_rt_sgm->idle_steppers & (1 << 2)))
+      }
+      else if (!(itp_rt_sgm->idle_steppers & (1 << 2)))
 #endif
       {
         itp_rt_sgm->block->errors[2] += itp_rt_sgm->block->steps[2];
-        if (itp_rt_sgm->block->errors[2] > itp_rt_sgm->block->total_steps) {
+        if (itp_rt_sgm->block->errors[2] > itp_rt_sgm->block->total_steps)
+        {
           itp_rt_sgm->block->errors[2] -= itp_rt_sgm->block->total_steps;
           new_stepbits |= LINACT2_IO_MASK;
 #ifdef ENABLE_BACKLASH_COMPENSATION
@@ -1240,7 +1375,8 @@ MCU_CALLBACK void mcu_step_cb(void) {
 #endif
 #if (STEPPER_COUNT > 3)
 #ifndef DISABLE_ITP_STEP_GEN_OPTIMIZATIONS
-      if (itp_rt_sgm->main_stepper == 3) {
+      if (itp_rt_sgm->main_stepper == 3)
+      {
         new_stepbits |= LINACT3_IO_MASK;
 #ifdef ENABLE_BACKLASH_COMPENSATION
         // if backlash don't update the rt position
@@ -1248,11 +1384,13 @@ MCU_CALLBACK void mcu_step_cb(void) {
 #endif
           (dirs & LINACT3_IO_MASK) ? (--itp_rt_step_pos[3])
                                    : (++itp_rt_step_pos[3]);
-      } else if (!(itp_rt_sgm->idle_steppers & (1 << 3)))
+      }
+      else if (!(itp_rt_sgm->idle_steppers & (1 << 3)))
 #endif
       {
         itp_rt_sgm->block->errors[3] += itp_rt_sgm->block->steps[3];
-        if (itp_rt_sgm->block->errors[3] > itp_rt_sgm->block->total_steps) {
+        if (itp_rt_sgm->block->errors[3] > itp_rt_sgm->block->total_steps)
+        {
           itp_rt_sgm->block->errors[3] -= itp_rt_sgm->block->total_steps;
           new_stepbits |= LINACT3_IO_MASK;
 #ifdef ENABLE_BACKLASH_COMPENSATION
@@ -1266,7 +1404,8 @@ MCU_CALLBACK void mcu_step_cb(void) {
 #endif
 #if (STEPPER_COUNT > 4)
 #ifndef DISABLE_ITP_STEP_GEN_OPTIMIZATIONS
-      if (itp_rt_sgm->main_stepper == 4) {
+      if (itp_rt_sgm->main_stepper == 4)
+      {
         new_stepbits |= LINACT4_IO_MASK;
 #ifdef ENABLE_BACKLASH_COMPENSATION
         // if backlash don't update the rt position
@@ -1274,11 +1413,13 @@ MCU_CALLBACK void mcu_step_cb(void) {
 #endif
           (dirs & LINACT4_IO_MASK) ? (--itp_rt_step_pos[4])
                                    : (++itp_rt_step_pos[4]);
-      } else if (!(itp_rt_sgm->idle_steppers & (1 << 4)))
+      }
+      else if (!(itp_rt_sgm->idle_steppers & (1 << 4)))
 #endif
       {
         itp_rt_sgm->block->errors[4] += itp_rt_sgm->block->steps[4];
-        if (itp_rt_sgm->block->errors[4] > itp_rt_sgm->block->total_steps) {
+        if (itp_rt_sgm->block->errors[4] > itp_rt_sgm->block->total_steps)
+        {
           itp_rt_sgm->block->errors[4] -= itp_rt_sgm->block->total_steps;
           new_stepbits |= LINACT4_IO_MASK;
 #ifdef ENABLE_BACKLASH_COMPENSATION
@@ -1292,7 +1433,8 @@ MCU_CALLBACK void mcu_step_cb(void) {
 #endif
 #if (STEPPER_COUNT > 5)
 #ifndef DISABLE_ITP_STEP_GEN_OPTIMIZATIONS
-      if (itp_rt_sgm->main_stepper == 5) {
+      if (itp_rt_sgm->main_stepper == 5)
+      {
         new_stepbits |= LINACT5_IO_MASK;
 #ifdef ENABLE_BACKLASH_COMPENSATION
         // if backlash don't update the rt position
@@ -1300,11 +1442,13 @@ MCU_CALLBACK void mcu_step_cb(void) {
 #endif
           (dirs & LINACT5_IO_MASK) ? (--itp_rt_step_pos[5])
                                    : (++itp_rt_step_pos[5]);
-      } else if (!(itp_rt_sgm->idle_steppers & (1 << 5)))
+      }
+      else if (!(itp_rt_sgm->idle_steppers & (1 << 5)))
 #endif
       {
         itp_rt_sgm->block->errors[5] += itp_rt_sgm->block->steps[5];
-        if (itp_rt_sgm->block->errors[5] > itp_rt_sgm->block->total_steps) {
+        if (itp_rt_sgm->block->errors[5] > itp_rt_sgm->block->total_steps)
+        {
           itp_rt_sgm->block->errors[5] -= itp_rt_sgm->block->total_steps;
           new_stepbits |= LINACT5_IO_MASK;
 #ifdef ENABLE_BACKLASH_COMPENSATION
@@ -1329,15 +1473,18 @@ MCU_CALLBACK void mcu_step_cb(void) {
 #endif
 }
 
-void itp_start(bool is_synched) {
+void itp_start(bool is_synched)
+{
   // starts the step isr if is stopped and there are segments to execute
   if (!cnc_get_exec_state(EXEC_RUN | EXEC_STOPPING | EXEC_ALARM) &&
       !itp_sgm_is_empty()) // exec state is not hold or alarm and not already
                            // running
   {
     // check if the start is controlled by synched motion before start
-    if (!is_synched) {
-      ATOMIC_CODEBLOCK {
+    if (!is_synched)
+    {
+      ATOMIC_CODEBLOCK
+      {
         cnc_set_exec_state(EXEC_RUN); // flags that it started running
         DBGLOG("[ITP] start ISR");
 #ifdef ENABLE_STEPPERS_DISABLE_TIMEOUT
@@ -1351,7 +1498,8 @@ void itp_start(bool is_synched) {
   }
 }
 
-itp_segment_t *itp_get_rt_segment() {
+itp_segment_t *itp_get_rt_segment()
+{
   return (itp_sgm_is_empty()) ? NULL : &itp_sgm_data[itp_sgm_data_read];
 }
 

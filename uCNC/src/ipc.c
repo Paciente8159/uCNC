@@ -32,7 +32,8 @@ void ipc_init(void) { /*TODO*/ }
 void __attribute__((weak)) ipc_send(ipc_packet_type_t type, const void *data,
                                     size_t len) {}
 size_t __attribute__((weak)) ipc_receive(ipc_packet_type_t type, void *data,
-                                         size_t len) {
+                                         size_t len)
+{
   return 0;
 }
 
@@ -43,9 +44,11 @@ size_t __attribute__((weak)) ipc_receive(ipc_packet_type_t type, void *data,
  *
  *  */
 void ipc_exec(ipc_packet_type_t type, const void *data_out, size_t len_out,
-              void *data_in, size_t len_in) {
+              void *data_in, size_t len_in)
+{
   ipc_send(type, data_out, len_out);
-  if (data_in) {
+  if (data_in)
+  {
     ipc_receive(type, data_in, len_in);
   }
 }
@@ -61,12 +64,15 @@ void ipc_exec(ipc_packet_type_t type, const void *data_out, size_t len_out,
  *
  * Only one request at time will be received and processed (no backpressure).
  */
-void ipc_dotasks(void) {
-  if (g_ipc_data_available) {
+void ipc_dotasks(void)
+{
+  if (g_ipc_data_available)
+  {
     ipc_packet_t *ipc_data = (ipc_packet_t *)g_ipc_buffer;
     ipc_packet_t response = {0};
     response.type = ipc_data->type;
-    switch (ipc_data->type) {
+    switch (ipc_data->type)
+    {
     case ITP_SGM_IS_FULL:
       response.payload[0] = (itp_is_full() ? 1 : 0);
       response.len = 1;
@@ -75,10 +81,11 @@ void ipc_dotasks(void) {
       itp_push_blk((itp_block_t *)ipc_data->payload); // advance the writer
       break;
     case ITP_SGM_WRITE:
-      itp_push_sgm((itp_segment_t *)ipc_data->payload); // advance the writer
+      itp_push_sgm((bool)ipc_data->payload[0], (itp_segment_t *)(&ipc_data->payload[1])); // advance the writer
       break;
     case ITP_STEP_RATE:
-      itp_step_rate_convert() break;
+      // itp_step_rate_convert();
+      break;
     case ITP_START:
       itp_start(((bool *)ipc_data->payload)[0]);
       break;
