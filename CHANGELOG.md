@@ -6,6 +6,22 @@
 
 # Changelog
 
+## [1.17.2] - 10-10-2026
+
+### Added
+
+- Added pin configuration PIO tests (#997)
+
+### Fixed
+
+- fixed ESP32 PIO build caused by PIO registry changes and errors (#998)
+- fixed stepper enable pin initialization to happen after the actual settings are loaded (#998)
+- modified real time command processing to prevent command drop/overlapping (#998)
+- fixed SAMD21 USB putc and flush functions implementation that lead to communications freezes on other streams (#999)
+- fixed SAMD21 oneshot timer that was running at half the intended speed (#999)
+- fixed servo value wrapping on values above 127 on SAMD21  (#999)
+- fixed SAMD21 PIO build caused by PIO registry changes and errors (#999)
+
 ## [1.17.1] - 28-09-2026
 
 ### Changed
@@ -2148,6 +2164,8 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.17.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.17.2
+[1.17.1]: https://github.com/Paciente8159/uCNC/releases/tag/v.1.17.1
 [1.17.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.17.0
 [1.16.6]: https://github.com/Paciente8159/uCNC/releases/tag/v1.16.6
 [1.16.5]: https://github.com/Paciente8159/uCNC/releases/tag/v1.16.5
