@@ -495,15 +495,25 @@ void itp_run(void)
       new_itp_block.total_steps = total_steps << 1;
 
       feed_convert = block->feed_conversion;
-
       for (uint8_t i = 0; i < STEPPER_COUNT; i++)
       {
         uint8_t mask = (1 << i);
         // convert from motion block direction bits to LINACT bit mask
         new_itp_block.dirbits |= itp_get_linact_dirs(block->dirbits & mask);
         new_itp_block.errors[i] = total_steps;
-        new_itp_block.steps[i] = block->steps[i] << 1;
+#ifndef DISABLE_ITP_STEP_GEN_OPTIMIZATIONS
+        if (!block->steps[i])
+        {
+          new_itp_block.idle_steppers |= (1 << i);
+        }
+        else
+#endif
+        {
+          new_itp_block.steps[i] = block->steps[i] << 1;
+        }
       }
+
+      itp_push_blk(&new_itp_block);
 
       // flags block for recalculation of speeds
       itp_needs_update = true;
@@ -908,16 +918,7 @@ void itp_run(void)
 #endif
 
 #ifndef DISABLE_ITP_STEP_GEN_OPTIMIZATIONS
-    uint8_t idle_steppers = 0;
     sgm->main_stepper = 255;
-    for (uint8_t i = 0; i < STEPPER_COUNT; i++)
-    {
-      if (!sgm->block->steps[i])
-      {
-        idle_steppers |= (1 << i);
-      }
-    }
-    sgm->idle_steppers = idle_steppers;
 #if (DSS_MAX_OVERSAMPLING != 0)
     if (prev_dss == 0)
 #endif
@@ -1298,7 +1299,7 @@ MCU_CALLBACK void mcu_step_cb(void)
           (dirs & LINACT0_IO_MASK) ? (--itp_rt_step_pos[0])
                                    : (++itp_rt_step_pos[0]);
       }
-      else if (!(itp_rt_sgm->idle_steppers & (1 << 0)))
+      else if (!(itp_rt_sgm->block->idle_steppers & (1 << 0)))
 #endif
       {
         itp_rt_sgm->block->errors[0] += itp_rt_sgm->block->steps[0];
@@ -1327,7 +1328,7 @@ MCU_CALLBACK void mcu_step_cb(void)
           (dirs & LINACT1_IO_MASK) ? (--itp_rt_step_pos[1])
                                    : (++itp_rt_step_pos[1]);
       }
-      else if (!(itp_rt_sgm->idle_steppers & (1 << 1)))
+      else if (!(itp_rt_sgm->block->idle_steppers & (1 << 1)))
 #endif
       {
         itp_rt_sgm->block->errors[1] += itp_rt_sgm->block->steps[1];
@@ -1356,7 +1357,7 @@ MCU_CALLBACK void mcu_step_cb(void)
           (dirs & LINACT2_IO_MASK) ? (--itp_rt_step_pos[2])
                                    : (++itp_rt_step_pos[2]);
       }
-      else if (!(itp_rt_sgm->idle_steppers & (1 << 2)))
+      else if (!(itp_rt_sgm->block->idle_steppers & (1 << 2)))
 #endif
       {
         itp_rt_sgm->block->errors[2] += itp_rt_sgm->block->steps[2];
@@ -1385,7 +1386,7 @@ MCU_CALLBACK void mcu_step_cb(void)
           (dirs & LINACT3_IO_MASK) ? (--itp_rt_step_pos[3])
                                    : (++itp_rt_step_pos[3]);
       }
-      else if (!(itp_rt_sgm->idle_steppers & (1 << 3)))
+      else if (!(itp_rt_sgm->block->idle_steppers & (1 << 3)))
 #endif
       {
         itp_rt_sgm->block->errors[3] += itp_rt_sgm->block->steps[3];
@@ -1414,7 +1415,7 @@ MCU_CALLBACK void mcu_step_cb(void)
           (dirs & LINACT4_IO_MASK) ? (--itp_rt_step_pos[4])
                                    : (++itp_rt_step_pos[4]);
       }
-      else if (!(itp_rt_sgm->idle_steppers & (1 << 4)))
+      else if (!(itp_rt_sgm->block->idle_steppers & (1 << 4)))
 #endif
       {
         itp_rt_sgm->block->errors[4] += itp_rt_sgm->block->steps[4];
@@ -1443,7 +1444,7 @@ MCU_CALLBACK void mcu_step_cb(void)
           (dirs & LINACT5_IO_MASK) ? (--itp_rt_step_pos[5])
                                    : (++itp_rt_step_pos[5]);
       }
-      else if (!(itp_rt_sgm->idle_steppers & (1 << 5)))
+      else if (!(itp_rt_sgm->block->idle_steppers & (1 << 5)))
 #endif
       {
         itp_rt_sgm->block->errors[5] += itp_rt_sgm->block->steps[5];
