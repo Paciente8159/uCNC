@@ -56,6 +56,26 @@ static void test_spindle_override_bytes(void)
 	send_override(0x9D); TEST_ASSERT_EQUAL(100, status_override(2));
 }
 
+static void test_overrides_reset_on_soft_reset(void)
+{
+	d3_idle();
+	send_override(0x90); TEST_ASSERT_EQUAL(100, status_override(0));
+	send_override(0x95); TEST_ASSERT_EQUAL(100, status_override(1));
+	send_override(0x99); TEST_ASSERT_EQUAL(100, status_override(2));
+
+	send_override(0x91); TEST_ASSERT_EQUAL(110, status_override(0));
+	send_override(0x96); TEST_ASSERT_EQUAL(50, status_override(1));
+	send_override(0x9A); TEST_ASSERT_EQUAL(110, status_override(2));
+
+	grbl_test_clear_output();
+	d3_realtime(0x18);
+	grbl_test_assert_wait_for("Grbl ");
+
+	TEST_ASSERT_EQUAL(100, status_override(0));
+	TEST_ASSERT_EQUAL(100, status_override(1));
+	TEST_ASSERT_EQUAL(100, status_override(2));
+}
+
 static void test_coolant_realtime_toggles(void)
 {
 	d3_idle();
@@ -73,4 +93,5 @@ D3_UNITY_MAIN(
 	RUN_TEST(test_feed_override_bytes_and_clamps);
 	RUN_TEST(test_rapid_override_bytes);
 	RUN_TEST(test_spindle_override_bytes);
+	RUN_TEST(test_overrides_reset_on_soft_reset);
 	RUN_TEST(test_coolant_realtime_toggles))
