@@ -130,12 +130,24 @@ wifi_settings_t wifi_settings;
 static bool wifi_connected = false;
 static uint32_t wifi_next_info = 0;
 
+/* fully stops WiFi (station and access point).
+   WiFi.mode(WIFI_OFF)/WiFi.disconnect() only tear down the station interface,
+   so the access point must be stopped explicitly. */
+static void rp2350_wifi_stop(void)
+{
+	WiFi.disconnect();
+	WiFi.disconnectAP();
+	WiFi.mode(WIFI_OFF);
+}
+
 /* applies the current wifi_settings (STA/AP/STA+AP) */
 static void rp2350_wifi_config(void)
 {
+	/* always stop and re-init to avoid errors when re-applying the settings */
+	rp2350_wifi_stop();
+
 	if (!wifi_settings.wifi_on)
 	{
-		WiFi.mode(WIFI_OFF);
 		return;
 	}
 
@@ -657,7 +669,7 @@ extern "C" void __attribute__((weak)) mcu_network_init(void)
 	extern socket_device_t wifi_socket;
 	socket_register_device(&wifi_socket);
 	/* the initial bring-up is only used to initialize the stack/settings, WiFi stays off until requested */
-	WiFi.mode(WIFI_OFF);
+	rp2350_wifi_stop();
 #endif
 }
 
