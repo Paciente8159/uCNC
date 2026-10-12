@@ -117,6 +117,103 @@ typedef struct
 uint16_t wifi_settings_offset;
 wifi_settings_t wifi_settings;
 
+/* wifi_settings.wifi_mode values */
+#define WIFI_SET_MODE_STA_AP 0
+#define WIFI_SET_MODE_STA 1
+#define WIFI_SET_MODE_AP 2
+
+/* interval between "Trying to connect to WiFi" messages while not connected */
+#ifndef WIFI_CONNECT_STATUS_INTERVAL
+#define WIFI_CONNECT_STATUS_INTERVAL 5000
+#endif
+
+static bool wifi_connected = false;
+static uint32_t wifi_next_info = 0;
+
+/* applies the current wifi_settings (STA/AP/STA+AP) */
+static void rp2040_wifi_config(void)
+{
+	if (!wifi_settings.wifi_on)
+	{
+		WiFi.mode(WIFI_OFF);
+		return;
+	}
+
+	wifi_connected = false;
+
+	switch (wifi_settings.wifi_mode)
+	{
+	case WIFI_SET_MODE_STA:
+		WiFi.mode(WIFI_STA);
+		break;
+	case WIFI_SET_MODE_AP:
+		WiFi.mode(WIFI_AP);
+		break;
+	default:
+		WiFi.mode(WIFI_AP_STA);
+		break;
+	}
+
+	if (wifi_settings.wifi_mode != WIFI_SET_MODE_AP)
+	{
+#ifdef USE_STATIC_IP
+		WiFi.config(IPAddress((uint32_t)STATIC_IP_IP), IPAddress((uint32_t)STATIC_IP_GW), IPAddress((uint32_t)STATIC_IP_SUB));
+#endif
+		WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
+		proto_info("Trying to connect to WiFi");
+		wifi_next_info = mcu_millis() + WIFI_CONNECT_STATUS_INTERVAL;
+	}
+
+	if (wifi_settings.wifi_mode != WIFI_SET_MODE_STA)
+	{
+		WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
+		proto_info("AP started");
+		proto_info("SSID>" BOARD_NAME);
+		proto_info("AP IP>%s", WiFi.softAPIP().toString().c_str());
+	}
+}
+
+/* periodically reports the station connection state (STA/STA+AP modes) */
+static void rp2040_wifi_net_status(void)
+{
+	if (!wifi_settings.wifi_on)
+	{
+		return;
+	}
+
+	/* AP only mode has no station to connect to */
+	if (wifi_settings.wifi_mode == WIFI_SET_MODE_AP)
+	{
+		return;
+	}
+
+	if (WiFi.status() != WL_CONNECTED)
+	{
+		if (wifi_connected)
+		{
+			wifi_connected = false;
+			proto_info("Disconnected from WiFi");
+		}
+
+		if (wifi_next_info <= mcu_millis())
+		{
+			wifi_next_info = mcu_millis() + WIFI_CONNECT_STATUS_INTERVAL;
+			proto_info("Trying to connect to WiFi");
+		}
+		return;
+	}
+
+	if (!wifi_connected)
+	{
+		wifi_connected = true;
+		proto_info("IP>%s", WiFi.localIP().toString().c_str());
+		if (wifi_settings.wifi_mode == WIFI_SET_MODE_STA_AP)
+		{
+			proto_info("AP IP>%s", WiFi.softAPIP().toString().c_str());
+		}
+	}
+}
+
 #endif
 
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
@@ -159,33 +256,8 @@ bool mcu_custom_grbl_cmd(void *args)
 	{
 		if (!strcmp((const char *)&(cmd_params->cmd)[4], "ON"))
 		{
-			WiFi.disconnect();
-			switch (wifi_settings.wifi_mode)
-			{
-			case 1:
-				WiFi.mode(WIFI_STA);
-				WiFi.begin(wifi_settings.ssid, wifi_settings.pass);
-				proto_info("Trying to connect to WiFi");
-				break;
-			case 2:
-				WiFi.mode(WIFI_AP);
-				WiFi.softAP(BOARD_NAME, wifi_settings.pass);
-				proto_info("AP started");
-				proto_info("SSID>" BOARD_NAME);
-				proto_info("IP>%s", WiFi.softAPIP().toString().c_str());
-				break;
-			default:
-				WiFi.mode(WIFI_AP_STA);
-				WiFi.begin(wifi_settings.ssid, wifi_settings.pass);
-				proto_info("Trying to connect to WiFi");
-				WiFi.softAP(BOARD_NAME, wifi_settings.pass);
-				proto_info("AP started");
-				proto_info("SSID>" BOARD_NAME);
-				proto_info("IP>%s", WiFi.softAPIP().toString().c_str());
-				break;
-			}
-
 			wifi_settings.wifi_on = 1;
+			rp2040_wifi_config();
 			settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
 			*(cmd_params->error) = STATUS_OK;
 			return EVENT_HANDLED;
@@ -193,8 +265,8 @@ bool mcu_custom_grbl_cmd(void *args)
 
 		if (!strcmp((const char *)&(cmd_params->cmd)[4], "OFF"))
 		{
-			WiFi.disconnect();
 			wifi_settings.wifi_on = 0;
+			rp2040_wifi_config();
 			settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
 			*(cmd_params->error) = STATUS_OK;
 			return EVENT_HANDLED;
@@ -331,15 +403,15 @@ bool mcu_custom_grbl_cmd(void *args)
 			{
 				switch (wifi_settings.wifi_mode)
 				{
-				case 1:
-					proto_info("STA IP>%s", WiFi.localIP().toString().c_str());
-					proto_info("AP IP>%s", WiFi.softAPIP().toString().c_str());
-					break;
-				case 2:
+				case WIFI_SET_MODE_STA:
 					proto_info("IP>%s", WiFi.localIP().toString().c_str());
 					break;
+				case WIFI_SET_MODE_AP:
+					proto_info("AP IP>%s", WiFi.softAPIP().toString().c_str());
+					break;
 				default:
-					proto_info("IP>%s", WiFi.softAPIP().toString().c_str());
+					proto_info("IP>%s", WiFi.localIP().toString().c_str());
+					proto_info("AP IP>%s", WiFi.softAPIP().toString().c_str());
 					break;
 				}
 			}
@@ -568,6 +640,15 @@ extern "C"
 extern "C" void __attribute__((weak)) mcu_network_init(void)
 {
 #ifdef ENABLE_WIFI
+	static bool wifi_boot_init = false;
+
+	/* the bring-up may be called more than once, run it only on the initial boot */
+	if (wifi_boot_init)
+	{
+		return;
+	}
+	wifi_boot_init = true;
+
 #ifdef USE_STATIC_IP
 	WiFi.config(IPAddress((uint32_t)STATIC_IP_IP), IPAddress((uint32_t)STATIC_IP_GW), IPAddress((uint32_t)STATIC_IP_SUB));
 #endif
@@ -575,7 +656,8 @@ extern "C" void __attribute__((weak)) mcu_network_init(void)
 	WiFi.begin((char *)BOARD_NAME, (char *)WIFI_PASS);
 	extern socket_device_t wifi_socket;
 	socket_register_device(&wifi_socket);
-	WiFi.disconnect();
+	/* the initial bring-up is only used to initialize the stack/settings, WiFi stays off until requested */
+	WiFi.mode(WIFI_OFF);
 #endif
 }
 
@@ -595,41 +677,7 @@ extern "C" void rp2040_wifi_bt_init(void)
 		settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
 	}
 
-	if (wifi_settings.wifi_on)
-	{
-		uint8_t str[64];
-
-		switch (wifi_settings.wifi_mode)
-		{
-		case 1:
-			WiFi.mode(WIFI_STA);
-#ifdef USE_STATIC_IP
-			WiFi.config(IPAddress((uint32_t)STATIC_IP_IP), IPAddress((uint32_t)STATIC_IP_GW), IPAddress((uint32_t)STATIC_IP_SUB));
-#endif
-			WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
-			proto_info("Trying to connect to WiFi");
-			break;
-		case 2:
-			WiFi.mode(WIFI_AP);
-			WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
-			proto_info("AP started");
-			proto_info("SSID>" BOARD_NAME);
-			proto_info("IP>%s", WiFi.softAPIP().toString().c_str());
-			break;
-		default:
-			WiFi.mode(WIFI_AP_STA);
-#ifdef USE_STATIC_IP
-			WiFi.config(IPAddress(((uint32_t)STATIC_IP_IP)), IPAddress((uint32_t)STATIC_IP_GW), IPAddress((uint32_t)STATIC_IP_SUB));
-#endif
-			WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
-			proto_info("Trying to connect to WiFi");
-			WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
-			proto_info("AP started");
-			proto_info("SSID>" BOARD_NAME);
-			proto_info("IP>%s", WiFi.softAPIP().toString().c_str());
-			break;
-		}
-	}
+	rp2040_wifi_config();
 #endif
 
 #ifdef ENABLE_SOCKETS
@@ -737,6 +785,7 @@ void rp2040_wifi_bt_process(void)
 {
 #ifdef ENABLE_WIFI
 	cyw43_arch_poll();
+	rp2040_wifi_net_status();
 #endif
 
 #ifdef ENABLE_BLUETOOTH
