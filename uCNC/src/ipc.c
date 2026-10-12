@@ -73,18 +73,22 @@ void ipc_dotasks(void)
     response.type = ipc_data->type;
     switch (ipc_data->type)
     {
-    case ITP_SGM_IS_FULL:
+    case ITP_IS_FULL:
       response.payload[0] = (itp_is_full() ? 1 : 0);
       response.len = 1;
       break;
-    case ITP_BLK_WRITE:
+    case ITP_PUSH_BLK:
       itp_push_blk((itp_block_t *)ipc_data->payload); // advance the writer
       break;
-    case ITP_SGM_WRITE:
+    case ITP_PUSH_SGM:
       itp_push_sgm((bool)ipc_data->payload[0], (itp_segment_t *)(&ipc_data->payload[1])); // advance the writer
       break;
-    case ITP_STEP_RATE:
+    case ITP_STEP_RATE_CONVERT:
       // itp_step_rate_convert();
+      break;
+    case ITP_GET_RT_POSITION:
+      itp_get_rt_position((int32_t *)response.payload);
+      response.len = (sizeof(int32_t) * STEPPER_COUNT);
       break;
     case ITP_START:
       itp_start(((bool *)ipc_data->payload)[0]);

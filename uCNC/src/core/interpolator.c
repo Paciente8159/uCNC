@@ -1015,10 +1015,24 @@ void itp_get_rt_position(int32_t *position)
 
 void itp_sync_rt_position(int32_t *position)
 {
+#if ((IPC_MODE & IPC_MULTICORE_NONRT))
+#if (IPC_MODE & IPC_MULTICORE_RT)
+  if (ipc_get_current_core() == IPC_NON_RT_CORE)
+#endif
+  {
+    ipc_exec(ITP_GET_RT_POSITION, NULL, 0, itp_rt_step_pos, sizeof(itp_rt_step_pos));
+#if (IPC_MODE & IPC_MULTICORE_RT)
+    return;
+#endif
+  }
+#endif
+
+#if ((IPC_MODE & IPC_MULTICORE_RT) || IPC_MODE == IPC_SINGLE_CORE)
   ATOMIC_CODEBLOCK
   {
     memcpy(itp_rt_step_pos, position, sizeof(itp_rt_step_pos));
   }
+#endif
 }
 
 int32_t itp_get_rt_position_index(int8_t index)
