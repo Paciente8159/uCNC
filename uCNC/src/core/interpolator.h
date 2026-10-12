@@ -65,14 +65,13 @@ extern "C"
 #ifndef DISABLE_ITP_STEP_GEN_OPTIMIZATIONS
     uint8_t idle_steppers;
 #endif
-  } itp_block_t;
+  } __attribute__((packed, aligned(1))) itp_block_t;
 
   // contains data of the block segment being executed by the pulse and
   // integrator routines the segment is a fragment of the motion defined in the
   // block this also contains the acceleration/deacceleration info
   typedef struct pulse_sgm_
   {
-    itp_block_t *block;
     uint16_t remaining_steps;
 #ifndef DISABLE_ITP_STEP_GEN_OPTIMIZATIONS
     uint8_t main_stepper;
@@ -90,7 +89,11 @@ extern "C"
 #endif
     float feed;
     uint8_t flags;
-  } itp_segment_t;
+    // kept last so that every field above has an architecture independent offset.
+    // It is never transmitted over IPC (the RT side fills it in), and its size is
+    // architecture dependent (2 bytes on AVR, 4 on 32bit MCUs)
+    itp_block_t *block;
+  } __attribute__((packed, aligned(1))) itp_segment_t;
 
   void itp_init(void);
   void itp_run(void);

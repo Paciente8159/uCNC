@@ -233,32 +233,78 @@ static itp_block_t *itp_get_blk()
 
 void itp_push_blk(itp_block_t *blk)
 {
+#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if (IPC_MODE & IPC_MULTICORE_RT)
+  if (ipc_get_current_core() == IPC_NON_RT_CORE)
+#endif
+  {
+    ipc_exec(ITP_PUSH_BLK, blk, sizeof(itp_block_t), NULL, 0);
+#if (IPC_MODE & IPC_MULTICORE_RT)
+    return;
+#endif
+  }
+#endif
+
+#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
   itp_block_t *itp_blk = itp_get_blk();
   memcpy(itp_blk, blk, sizeof(itp_block_t));
+#endif
 }
 
 void itp_push_sgm(bool advance_block, itp_segment_t *sgm)
 {
+#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if (IPC_MODE & IPC_MULTICORE_RT)
+  if (ipc_get_current_core() == IPC_NON_RT_CORE)
+#endif
+  {
+    // the trailing block pointer is architecture dependent and is filled in by
+    // the RT side, so it is left out of the transmitted payload
+    uint8_t payload[1 + offsetof(itp_segment_t, block)];
+    payload[0] = (uint8_t)advance_block;
+    memcpy(&payload[1], sgm, offsetof(itp_segment_t, block));
+    ipc_exec(ITP_PUSH_SGM, payload, sizeof(payload), NULL, 0);
+#if (IPC_MODE & IPC_MULTICORE_RT)
+    return;
+#endif
+  }
+#endif
+
+#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
   sgm->block = itp_get_blk();
   // pushes a new segment to the execution queue
   if (advance_block)
   {
     itp_blk_buffer_write();
-    itp_cur_plan_block = NULL;
-    planner_discard_block(); // discards planner block
-#if (DSS_MAX_OVERSAMPLING != 0)
-    prev_dss = 0; // resets the DSS
-#endif
   }
 
   (void)sgm;
   itp_sgm_buffer_write();
+#endif
 }
 
 void itp_step_rate_convert(float frequency, uint16_t *ticks,
                            uint16_t *prescaller)
 {
+#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if (IPC_MODE & IPC_MULTICORE_RT)
+  if (ipc_get_current_core() == IPC_NON_RT_CORE)
+#endif
+  {
+    uint16_t response[2];
+    ipc_exec(ITP_STEP_RATE_CONVERT, &frequency, sizeof(frequency), response,
+             sizeof(response));
+    *ticks = response[0];
+    *prescaller = response[1];
+#if (IPC_MODE & IPC_MULTICORE_RT)
+    return;
+#endif
+  }
+#endif
+
+#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
   mcu_freq_to_clocks(frequency, ticks, prescaller);
+#endif
 }
 
 /*
@@ -925,6 +971,15 @@ void itp_run(void)
       sgm->main_stepper = block->main_stepper;
 #endif
 
+    if (!remaining_steps)
+    {
+      itp_cur_plan_block = NULL;
+      planner_discard_block(); // discards planner block
+#if (DSS_MAX_OVERSAMPLING != 0)
+      prev_dss = 0; // resets the DSS
+#endif
+    }
+
     // finally write the segment
     itp_push_sgm(!remaining_steps, sgm);
   }
@@ -961,6 +1016,19 @@ void itp_update(void)
 
 MCU_CALLBACK void itp_stop(void)
 {
+#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if (IPC_MODE & IPC_MULTICORE_RT)
+  if (ipc_get_current_core() == IPC_NON_RT_CORE)
+#endif
+  {
+    ipc_exec(ITP_STOP, NULL, 0, NULL, 0);
+#if (IPC_MODE & IPC_MULTICORE_RT)
+    return;
+#endif
+  }
+#endif
+
+#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
   // safer to make the stoping condition block
   ATOMIC_CODEBLOCK
   {
@@ -982,12 +1050,26 @@ MCU_CALLBACK void itp_stop(void)
     tool_set_speed(0);
   }
 #endif
+#endif
 }
 
 void itp_stop_tools(void) { tool_stop(); }
 
 void itp_clear(void)
 {
+#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if (IPC_MODE & IPC_MULTICORE_RT)
+  if (ipc_get_current_core() == IPC_NON_RT_CORE)
+#endif
+  {
+    ipc_exec(ITP_CLEAR, NULL, 0, NULL, 0);
+#if (IPC_MODE & IPC_MULTICORE_RT)
+    return;
+#endif
+  }
+#endif
+
+#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
 #ifdef MCU_HAS_RTOS
   // access exclusive mutex
   BIN_SEMPH_LOCK(itp_mutex);
@@ -1003,31 +1085,47 @@ void itp_clear(void)
 #else
   itp_mutex = 0;
 #endif
+#endif
 }
 
 void itp_get_rt_position(int32_t *position)
 {
-  ATOMIC_CODEBLOCK
-  {
-    memcpy(position, itp_rt_step_pos, sizeof(itp_rt_step_pos));
-  }
-}
-
-void itp_sync_rt_position(int32_t *position)
-{
-#if ((IPC_MODE & IPC_MULTICORE_NONRT))
+#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
 #if (IPC_MODE & IPC_MULTICORE_RT)
   if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
   {
-    ipc_exec(ITP_GET_RT_POSITION, NULL, 0, itp_rt_step_pos, sizeof(itp_rt_step_pos));
+    ipc_exec(ITP_GET_RT_POSITION, NULL, 0, position, sizeof(itp_rt_step_pos));
 #if (IPC_MODE & IPC_MULTICORE_RT)
     return;
 #endif
   }
 #endif
 
-#if ((IPC_MODE & IPC_MULTICORE_RT) || IPC_MODE == IPC_SINGLE_CORE)
+#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
+  ATOMIC_CODEBLOCK
+  {
+    memcpy(position, itp_rt_step_pos, sizeof(itp_rt_step_pos));
+  }
+#endif
+}
+
+void itp_sync_rt_position(int32_t *position)
+{
+#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+
+#if (IPC_MODE & IPC_MULTICORE_RT)
+  if (ipc_get_current_core() == IPC_NON_RT_CORE)
+#endif
+  {
+    ipc_exec(ITP_SYNC_RT_POSITION, position, sizeof(itp_rt_step_pos), NULL, 0);
+#if (IPC_MODE & IPC_MULTICORE_RT)
+    return;
+#endif
+  }
+#endif
+
+#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
   ATOMIC_CODEBLOCK
   {
     memcpy(itp_rt_step_pos, position, sizeof(itp_rt_step_pos));
@@ -1044,6 +1142,19 @@ int32_t itp_get_rt_position_index(int8_t index)
 
 void itp_reset_rt_position(float *origin)
 {
+#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if (IPC_MODE & IPC_MULTICORE_RT)
+  if (ipc_get_current_core() == IPC_NON_RT_CORE)
+#endif
+  {
+    ipc_exec(ITP_RESET_RT_POSITION, origin, (sizeof(float) * AXIS_COUNT), NULL, 0);
+#if (IPC_MODE & IPC_MULTICORE_RT)
+    return;
+#endif
+  }
+#endif
+
+#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
   if (!g_settings.homing_enabled)
   {
     memset(origin, 0, (sizeof(float) * AXIS_COUNT));
@@ -1055,10 +1166,23 @@ void itp_reset_rt_position(float *origin)
 #if STEPPERS_ENCODERS_MASK != 0
   encoders_itp_reset_rt_position(origin);
 #endif
+#endif
 }
 
 float itp_get_rt_feed(void)
 {
+#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if (IPC_MODE & IPC_MULTICORE_RT)
+  if (ipc_get_current_core() == IPC_NON_RT_CORE)
+#endif
+  {
+    float feed = 0;
+    ipc_exec(ITP_GET_RT_FEED, NULL, 0, &feed, sizeof(feed));
+    return feed;
+  }
+#endif
+
+#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
   float feed = 0;
   if (!cnc_get_exec_state(EXEC_RUN))
   {
@@ -1071,6 +1195,7 @@ float itp_get_rt_feed(void)
   }
 
   return feed;
+#endif
 }
 
 bool itp_is_empty(void) { return (itp_sgm_is_empty() && (itp_rt_sgm == NULL)); }
@@ -1490,6 +1615,19 @@ MCU_CALLBACK void mcu_step_cb(void)
 
 void itp_start(bool is_synched)
 {
+#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if (IPC_MODE & IPC_MULTICORE_RT)
+  if (ipc_get_current_core() == IPC_NON_RT_CORE)
+#endif
+  {
+    ipc_exec(ITP_START, &is_synched, sizeof(is_synched), NULL, 0);
+#if (IPC_MODE & IPC_MULTICORE_RT)
+    return;
+#endif
+  }
+#endif
+
+#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
   // starts the step isr if is stopped and there are segments to execute
   if (!cnc_get_exec_state(EXEC_RUN | EXEC_STOPPING | EXEC_ALARM) &&
       !itp_sgm_is_empty()) // exec state is not hold or alarm and not already
@@ -1511,6 +1649,7 @@ void itp_start(bool is_synched)
       }
     }
   }
+#endif
 }
 
 itp_segment_t *itp_get_rt_segment()
@@ -1520,4 +1659,20 @@ itp_segment_t *itp_get_rt_segment()
 
 uint8_t __attribute__((weak)) itp_set_step_mode(uint8_t mode) { return 0; }
 
-bool itp_is_full(void) { return itp_sgm_is_full(); }
+bool itp_is_full(void)
+{
+#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if (IPC_MODE & IPC_MULTICORE_RT)
+  if (ipc_get_current_core() == IPC_NON_RT_CORE)
+#endif
+  {
+    uint8_t is_full = 0;
+    ipc_exec(ITP_IS_FULL, NULL, 0, &is_full, sizeof(is_full));
+    return (is_full != 0);
+  }
+#endif
+
+#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
+  return itp_sgm_is_full();
+#endif
+}

@@ -37,9 +37,9 @@ extern "C"
    * IPC mode flags
    * Examples:
    * AVR - IPC_SINGLE_CORE
-   * ESP32 - IPC_MULTI_CORE | IPC_SHARED_MEM
-   * RP2040/2350 - IPC_MULTI_CORE | IPC_SHARED_MEM or just IPC_MULTI_CORE | IPC_NON_RT_CORE | IPC_RT_CORE where pico/util/queue.h can be used for inter core communication instead of SPI
-   * ESP8266 - IPC_MULTI_CORE | IPC_NON_RT_CORE + AVR - IPC_MULTI_CORE | IPC_RT_CORE
+   * ESP32 - IPC_MULTICORE | IPC_SHARED_MEM
+   * RP2040/2350 - IPC_MULTICORE | IPC_SHARED_MEM or just IPC_MULTICORE where pico/util/queue.h can be used for inter core communication instead of SPI
+   * ESP8266 - IPC_MULTICORE_NONRT + AVR - IPC_MULTICORE_RT where the ESP8266 runs non RT code only and the AVR runs RT code only
    *
    */
 #define IPC_SINGLE_CORE 0                                      // single core
@@ -56,6 +56,22 @@ extern "C"
 #endif
 #ifndef IPC_RT_CORE
 #define IPC_RT_CORE 0
+#endif
+
+  /**
+   * IPC ACK handling
+   *
+   * The RT side always replies to a request and the reply starts with the
+   * echoed request packet type (this single byte is the ACK). ipc_receive()
+   * waits for that byte: while the received byte does not match the expected
+   * type it retries (up to IPC_MAX_TRIES attempts) and it aborts the wait after
+   * IPC_ACK_TIMEOUT milliseconds.
+   */
+#ifndef IPC_MAX_TRIES
+#define IPC_MAX_TRIES 8
+#endif
+#ifndef IPC_ACK_TIMEOUT
+#define IPC_ACK_TIMEOUT 50 // ms
 #endif
 
   typedef enum ipc_packet_type_
@@ -76,15 +92,21 @@ extern "C"
   typedef struct ipc_packet_
   {
     ipc_packet_type_t type;
-    uint8_t *payload;
     size_t len;
-  } ipc_packet_t;
+    uint8_t *payload;
+  } __attribute__((packed, aligned(1))) ipc_packet_t;
 
   void ipc_init(void);
   void ipc_send(ipc_packet_type_t type, const void *data, size_t len); // overridable request send (used by ipc_exec)
-  size_t ipc_receive(ipc_packet_type_t type, void *data, size_t len);  // overridable response receive (used by ipc_exec)
+  // overridable ACK/response receive (used by ipc_exec). Waits for the reply whose
+  // first byte equals type (the ACK), retrying on any other byte up to
+  // IPC_MAX_TRIES and giving up after IPC_ACK_TIMEOUT ms. On a matching ACK it
+  // copies up to len payload bytes into data (data may be NULL for a bare ACK).
+  // Returns the number of bytes received including the ACK byte (>= 1) or 0 if no
+  // ACK was received.
+  size_t ipc_receive(ipc_packet_type_t type, void *data, size_t len);
   void ipc_exec(ipc_packet_type_t type, const void *data_out, size_t len_out,
-                void *data_in, size_t len_in); // makes an ipc execution request (NonRT side to RT side)
+                void *data_in, size_t len_in); // makes an ipc execution request (NonRT side to RT side) and waits for the ACK
   void ipc_dotasks(void);                      // run IPC tasks (runs on the RT side to process requests)
   uint8_t ipc_get_current_core(void);          // gets the current core ID
 
