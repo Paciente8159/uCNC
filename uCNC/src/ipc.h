@@ -107,7 +107,15 @@ extern "C"
     // forwards these requests to the RT core, that executes them.
     CNC_GET_EXEC_STATE,
     CNC_SET_EXEC_STATE_RT,
-    CNC_CLEAR_EXEC_STATE_RT
+    CNC_CLEAR_EXEC_STATE_RT,
+    // The tool output is owned by the RT side (see tool.c). The NonRT side
+    // forwards these requests to the RT core, that executes them.
+    TOOL_SET_SPEED,
+    TOOL_SET_COOLANT,
+    TOOL_GET_SPEED,
+    // The tool mode is owned by the NonRT side and mirrored to the RT side, so
+    // the NonRT side pushes the new value to the RT core (see tool_set_mode).
+    TOOL_SET_MODE
   } ipc_packet_type_t;
 
   typedef struct ipc_packet_

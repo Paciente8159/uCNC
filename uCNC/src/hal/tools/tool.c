@@ -85,9 +85,11 @@ DECL_TOOL(TOOL15);
 DECL_TOOL(TOOL16);
 #endif
 
-void tool_init(void) {
+void tool_init(void)
+{
 #if TOOL_COUNT == 1
-  if (tool_current.startup_code) {
+  if (tool_current.startup_code)
+  {
     tool_current.startup_code();
   }
 #endif
@@ -104,7 +106,8 @@ CREATE_HOOK(tool_atc_unmount);
 CREATE_HOOK(tool_atc_mount);
 #endif
 
-uint8_t tool_change(uint8_t tool) {
+uint8_t tool_change(uint8_t tool)
+{
   uint8_t status = STATUS_OK;
 
 #if TOOL_COUNT > 1
@@ -113,18 +116,21 @@ uint8_t tool_change(uint8_t tool) {
 #ifdef ENABLE_ATC_HOOKS
   static uint8_t previous_tool = 0;
   HOOK_INVOKE(tool_atc_unmount, previous_tool, &status);
-  if (status != STATUS_OK) {
+  if (status != STATUS_OK)
+  {
     return status;
   }
 #endif
 
-  if (tool_current.shutdown_code) {
+  if (tool_current.shutdown_code)
+  {
     tool_current.shutdown_code();
   }
 
   tool_reset_mode();
 
-  switch (tool) {
+  switch (tool)
+  {
 #ifdef TOOL1
   case 1:
     memcpy(&tool_current, &TOOL1, sizeof(tool_t));
@@ -210,7 +216,8 @@ uint8_t tool_change(uint8_t tool) {
     break;
   }
 
-  if (tool_current.startup_code) {
+  if (tool_current.startup_code)
+  {
     tool_current.startup_code();
   }
 
@@ -222,26 +229,58 @@ uint8_t tool_change(uint8_t tool) {
   return status;
 }
 
-void tool_set_speed(int16_t value) {
+void tool_set_speed(int16_t value)
+{
+#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if (IPC_MODE & IPC_MULTICORE_RT)
+  if (ipc_get_current_core() == IPC_NON_RT_CORE)
+#endif
+  {
+    ipc_exec(TOOL_SET_SPEED, &value, sizeof(value), NULL, 0);
+#if (IPC_MODE & IPC_MULTICORE_RT)
+    return;
+#endif
+  }
+#endif
+
+#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
 #if TOOL_COUNT > 0
   tool_current_speed = value;
-  if (tool_current.set_speed) {
+  if (tool_current.set_speed)
+  {
     tool_current.set_speed(value);
   }
 #endif
+#endif
 }
 
-uint16_t tool_get_speed() {
+uint16_t tool_get_speed()
+{
+#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if (IPC_MODE & IPC_MULTICORE_RT)
+  if (ipc_get_current_core() == IPC_NON_RT_CORE)
+#endif
+  {
+    uint16_t value = 0;
+    ipc_exec(TOOL_GET_SPEED, NULL, 0, &value, sizeof(value));
+    return value;
+  }
+#endif
+
+#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
 #if TOOL_COUNT > 0
-  if (tool_current.get_speed) {
+  if (tool_current.get_speed)
+  {
     return tool_current.get_speed();
   }
   return tool_get_setpoint();
 #endif
   return 0;
+#endif
 }
 
-int16_t tool_get_setpoint(void) {
+int16_t tool_get_setpoint(void)
+{
   // input value will always be positive
 #if TOOL_COUNT > 0
   return tool_range_speed(tool_current_speed, 1);
@@ -249,10 +288,12 @@ int16_t tool_get_setpoint(void) {
   return 0;
 }
 
-int16_t tool_range_speed(int16_t value, uint8_t conv) {
+int16_t tool_range_speed(int16_t value, uint8_t conv)
+{
   // input value will always be positive
 #if TOOL_COUNT > 0
-  if (tool_current.range_speed) {
+  if (tool_current.range_speed)
+  {
     value = ABS(value);
     return tool_current.range_speed(value, conv);
   }
@@ -260,34 +301,68 @@ int16_t tool_range_speed(int16_t value, uint8_t conv) {
   return value;
 }
 
-void tool_set_coolant(uint8_t value) {
+void tool_set_coolant(uint8_t value)
+{
+#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if (IPC_MODE & IPC_MULTICORE_RT)
+  if (ipc_get_current_core() == IPC_NON_RT_CORE)
+#endif
+  {
+    ipc_exec(TOOL_SET_COOLANT, &value, sizeof(value), NULL, 0);
+#if (IPC_MODE & IPC_MULTICORE_RT)
+    return;
+#endif
+  }
+#endif
+
+#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
 #if TOOL_COUNT > 0
-  if (tool_current.set_coolant) {
+  if (tool_current.set_coolant)
+  {
     tool_current.set_coolant(value);
   }
 #endif
+#endif
 }
 
-void tool_stop() {
+void tool_stop()
+{
 #if TOOL_COUNT > 0
   tool_set_speed(0);
   tool_set_coolant(0);
 #endif
 }
 
-void tool_pid_update(void) {
+void tool_pid_update(void)
+{
 #ifdef ENABLE_TOOL_PID_CONTROLLER
 #if TOOL_COUNT > 0
-  if (tool_current.pid_update) {
+  if (tool_current.pid_update)
+  {
     tool_current.pid_update();
   }
 #endif
 #endif
 }
 
+// The tool mode is owned by the NonRT side. tool_set_mode updates the local copy
+// and mirrors it to the RT side, so tool_get_mode can always read the local copy
+// (the RT step ISR also reads the mode, for example to stop the tool when the
+// segment buffer drains).
 static uint8_t current_tool_mode;
 uint8_t tool_get_mode(void) { return current_tool_mode; }
 
-void tool_set_mode(uint8_t mode) { current_tool_mode = mode; }
+void tool_set_mode(uint8_t mode)
+{
+  current_tool_mode = mode;
+#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if (IPC_MODE & IPC_MULTICORE_RT)
+  if (ipc_get_current_core() == IPC_NON_RT_CORE)
+#endif
+  {
+    ipc_exec(TOOL_SET_MODE, &mode, sizeof(mode), NULL, 0);
+  }
+#endif
+}
 
-void tool_reset_mode(void) { current_tool_mode = g_settings.tool_mode; }
+void tool_reset_mode(void) { tool_set_mode(g_settings.tool_mode); }

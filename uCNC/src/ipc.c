@@ -183,6 +183,19 @@ void ipc_dotasks(void)
   case CNC_CLEAR_EXEC_STATE_RT:
     cnc_clear_exec_state_rt(*(uint16_t *)ipc_data->payload);
     break;
+  case TOOL_SET_SPEED:
+    tool_set_speed(*(int16_t *)ipc_data->payload);
+    break;
+  case TOOL_SET_COOLANT:
+    tool_set_coolant(ipc_data->payload[0]);
+    break;
+  case TOOL_GET_SPEED:
+    *(uint16_t *)response.payload = tool_get_speed();
+    response.len = sizeof(uint16_t);
+    break;
+  case TOOL_SET_MODE:
+    tool_set_mode(ipc_data->payload[0]);
+    break;
   default:
     break;
   }
