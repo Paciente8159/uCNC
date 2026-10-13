@@ -115,6 +115,7 @@ void cnc_init(void) {
    * Remaining tcp socket based servers are initialized here
    */
   mod_init(); // initialize modules
+  itp_init(); // interpolator
 #if TOOL_COUNT > 0
   tool_init();
 #endif
