@@ -124,6 +124,54 @@ void ipc_dotasks(void)
     *(float *)response.payload = itp_get_rt_feed();
     response.len = sizeof(float);
     break;
+  case IO_LOCK_LIMITS:
+#ifdef ENABLE_MULTI_STEP_HOMING
+    io_lock_limits(ipc_data->payload[0]);
+#endif
+    break;
+  case IO_ENABLE_LIMITS:
+    io_enable_limits();
+    break;
+  case IO_DISABLE_LIMITS:
+    io_disable_limits();
+    break;
+  case IO_INVERT_LIMITS:
+    io_invert_limits(ipc_data->payload[0]);
+    break;
+  case IO_GET_RAW_LIMITS:
+    response.payload[0] = io_get_raw_limits();
+    response.len = 1;
+    break;
+  case IO_GET_LIMITS:
+    response.payload[0] = io_get_limits();
+    response.len = 1;
+    break;
+  case IO_ENABLE_PROBE:
+    io_enable_probe();
+    break;
+  case IO_DISABLE_PROBE:
+    io_disable_probe();
+    break;
+  case IO_GET_PROBE:
+    response.payload[0] = (io_get_probe() ? 1 : 0);
+    response.len = 1;
+    break;
+  case IO_SET_STEPS:
+    io_set_steps(ipc_data->payload[0]);
+    break;
+  case IO_TOGGLE_STEPS:
+    io_toggle_steps(ipc_data->payload[0]);
+    break;
+  case IO_SET_DIRS:
+    io_set_dirs(ipc_data->payload[0]);
+    break;
+  case IO_GET_STEPS_POS:
+    io_get_steps_pos((int32_t *)response.payload);
+    response.len = (sizeof(int32_t) * STEPPER_COUNT);
+    break;
+  case IO_ENABLE_STEPPERS:
+    io_enable_steppers(ipc_data->payload[0]);
+    break;
   default:
     break;
   }

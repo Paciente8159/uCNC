@@ -86,7 +86,23 @@ extern "C"
     ITP_GET_RT_POSITION,
     ITP_RESET_RT_POSITION,
     ITP_SYNC_RT_POSITION,
-    ITP_GET_RT_FEED
+    ITP_GET_RT_FEED,
+    // IO functions owned by the RT side (see io_control.c). The NonRT side
+    // forwards these requests to the RT core, that executes them.
+    IO_LOCK_LIMITS,
+    IO_ENABLE_LIMITS,
+    IO_DISABLE_LIMITS,
+    IO_INVERT_LIMITS,
+    IO_GET_RAW_LIMITS,
+    IO_GET_LIMITS,
+    IO_ENABLE_PROBE,
+    IO_DISABLE_PROBE,
+    IO_GET_PROBE,
+    IO_SET_STEPS,
+    IO_TOGGLE_STEPS,
+    IO_SET_DIRS,
+    IO_GET_STEPS_POS,
+    IO_ENABLE_STEPPERS
   } ipc_packet_type_t;
 
   typedef struct ipc_packet_
@@ -108,7 +124,11 @@ extern "C"
   void ipc_exec(ipc_packet_type_t type, const void *data_out, size_t len_out,
                 void *data_in, size_t len_in); // makes an ipc execution request (NonRT side to RT side) and waits for the ACK
   void ipc_dotasks(void);                      // run IPC tasks (runs on the RT side to process requests)
-  uint8_t ipc_get_current_core(void);          // gets the current core ID
+  // gets the current core ID. Overridable: the default implementation in ipc.c
+  // returns IPC_RT_CORE. The declaration is weak too, because a weak definition
+  // only satisfies a weak reference on some toolchains (MinGW/PE); on the real
+  // targets either form works.
+  uint8_t __attribute__((weak)) ipc_get_current_core(void);
 
 #ifdef __cplusplus
 }

@@ -389,27 +389,95 @@ MCU_IO_CALLBACK void mcu_inputs_changed_cb(void)
 #ifdef ENABLE_MULTI_STEP_HOMING
 void io_lock_limits(uint8_t limitmask)
 {
+#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if (IPC_MODE & IPC_MULTICORE_RT)
+	if (ipc_get_current_core() == IPC_NON_RT_CORE)
+#endif
+	{
+		ipc_exec(IO_LOCK_LIMITS, &limitmask, sizeof(limitmask), NULL, 0);
+#if (IPC_MODE & IPC_MULTICORE_RT)
+		return;
+#endif
+	}
+#endif
+
+#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
 	io_lock_limits_mask = limitmask;
+#endif
 }
 #endif
 
 void io_enable_limits(void)
 {
+#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if (IPC_MODE & IPC_MULTICORE_RT)
+	if (ipc_get_current_core() == IPC_NON_RT_CORE)
+#endif
+	{
+		ipc_exec(IO_ENABLE_LIMITS, NULL, 0, NULL, 0);
+#if (IPC_MODE & IPC_MULTICORE_RT)
+		return;
+#endif
+	}
+#endif
+
+#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
 	io_limits_disabled = false;
+#endif
 }
 void io_disable_limits(void)
 {
+#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if (IPC_MODE & IPC_MULTICORE_RT)
+	if (ipc_get_current_core() == IPC_NON_RT_CORE)
+#endif
+	{
+		ipc_exec(IO_DISABLE_LIMITS, NULL, 0, NULL, 0);
+#if (IPC_MODE & IPC_MULTICORE_RT)
+		return;
+#endif
+	}
+#endif
+
+#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
 	io_limits_disabled = true;
+#endif
 }
 
 void io_invert_limits(uint8_t limitmask)
 {
+#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if (IPC_MODE & IPC_MULTICORE_RT)
+	if (ipc_get_current_core() == IPC_NON_RT_CORE)
+#endif
+	{
+		ipc_exec(IO_INVERT_LIMITS, &limitmask, sizeof(limitmask), NULL, 0);
+#if (IPC_MODE & IPC_MULTICORE_RT)
+		return;
+#endif
+	}
+#endif
+
+#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
 	io_invert_limits_mask = limitmask;
 	mcu_limits_changed_cb();
+#endif
 }
 
 uint8_t io_get_raw_limits(void)
 {
+#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if (IPC_MODE & IPC_MULTICORE_RT)
+	if (ipc_get_current_core() == IPC_NON_RT_CORE)
+#endif
+	{
+		uint8_t limits = 0;
+		ipc_exec(IO_GET_RAW_LIMITS, NULL, 0, &limits, sizeof(limits));
+		return limits;
+	}
+#endif
+
+#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
 #ifdef DISABLE_ALL_LIMITS
 	return 0;
 #endif
@@ -457,12 +525,26 @@ uint8_t io_get_raw_limits(void)
 #endif
 
 	return result;
+#endif
 }
 
 uint8_t io_get_limits(void)
 {
+#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if (IPC_MODE & IPC_MULTICORE_RT)
+	if (ipc_get_current_core() == IPC_NON_RT_CORE)
+#endif
+	{
+		uint8_t limits = 0;
+		ipc_exec(IO_GET_LIMITS, NULL, 0, &limits, sizeof(limits));
+		return limits;
+	}
+#endif
+
+#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
 	uint8_t result = io_get_raw_limits();
 	return ((!cnc_get_exec_state(EXEC_HOMING)) ? (result) : (result ^ io_invert_limits_mask));
+#endif
 }
 
 uint8_t io_get_controls(void)
@@ -504,6 +586,19 @@ io_probe_action_cb io_probe_custom_disable = NULL;
 
 void io_enable_probe(void)
 {
+#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if (IPC_MODE & IPC_MULTICORE_RT)
+	if (ipc_get_current_core() == IPC_NON_RT_CORE)
+#endif
+	{
+		ipc_exec(IO_ENABLE_PROBE, NULL, 0, NULL, 0);
+#if (IPC_MODE & IPC_MULTICORE_RT)
+		return;
+#endif
+	}
+#endif
+
+#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
 	cnc_set_exec_state(EXEC_PROBING);
 #ifdef PROBE_ENABLE_CUSTOM_CALLBACK
 	if (io_probe_custom_enable)
@@ -522,10 +617,24 @@ void io_enable_probe(void)
 #endif
 	io_probe_enabled = true;
 #endif
+#endif
 }
 
 void io_disable_probe(void)
 {
+#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if (IPC_MODE & IPC_MULTICORE_RT)
+	if (ipc_get_current_core() == IPC_NON_RT_CORE)
+#endif
+	{
+		ipc_exec(IO_DISABLE_PROBE, NULL, 0, NULL, 0);
+#if (IPC_MODE & IPC_MULTICORE_RT)
+		return;
+#endif
+	}
+#endif
+
+#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
 	cnc_clear_exec_state(EXEC_PROBING | EXEC_STOPPING); // clear probe and pending hold to stop probing motion
 #ifdef PROBE_ENABLE_CUSTOM_CALLBACK
 	if (io_probe_custom_disable)
@@ -543,10 +652,23 @@ void io_disable_probe(void)
 	EVENT_INVOKE(probe_disable, NULL);
 #endif
 #endif
+#endif
 }
 
 bool io_get_probe(void)
 {
+#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if (IPC_MODE & IPC_MULTICORE_RT)
+	if (ipc_get_current_core() == IPC_NON_RT_CORE)
+#endif
+	{
+		uint8_t probe = 0;
+		ipc_exec(IO_GET_PROBE, NULL, 0, &probe, sizeof(probe));
+		return (probe != 0);
+	}
+#endif
+
+#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
 #ifdef PROBE_ENABLE_CUSTOM_CALLBACK
 	if (io_probe_custom_get)
 	{
@@ -567,11 +689,25 @@ bool io_get_probe(void)
 	return false;
 #endif
 #endif
+#endif
 }
 
 // outputs
 void io_set_steps(uint8_t mask)
 {
+#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if (IPC_MODE & IPC_MULTICORE_RT)
+	if (ipc_get_current_core() == IPC_NON_RT_CORE)
+#endif
+	{
+		ipc_exec(IO_SET_STEPS, &mask, sizeof(mask), NULL, 0);
+#if (IPC_MODE & IPC_MULTICORE_RT)
+		return;
+#endif
+	}
+#endif
+
+#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
 	// #ifdef ENABLE_IO_MODULES
 	// 	EVENT_INVOKE(set_steps, &mask);
 	// #endif
@@ -661,10 +797,24 @@ void io_set_steps(uint8_t mask)
 #ifdef IC74HC595_HAS_STEPS
 	io_extended_pins_update();
 #endif
+#endif
 }
 
 void io_toggle_steps(uint8_t mask)
 {
+#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if (IPC_MODE & IPC_MULTICORE_RT)
+	if (ipc_get_current_core() == IPC_NON_RT_CORE)
+#endif
+	{
+		ipc_exec(IO_TOGGLE_STEPS, &mask, sizeof(mask), NULL, 0);
+#if (IPC_MODE & IPC_MULTICORE_RT)
+		return;
+#endif
+	}
+#endif
+
+#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
 	// #ifdef ENABLE_IO_MODULES
 	// 	EVENT_INVOKE(toggle_steps, &mask);
 	// #endif
@@ -725,10 +875,24 @@ void io_toggle_steps(uint8_t mask)
 #ifdef IC74HC595_HAS_STEPS
 	io_extended_pins_update();
 #endif
+#endif
 }
 
 void io_get_steps_pos(int32_t *position)
 {
+#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if (IPC_MODE & IPC_MULTICORE_RT)
+	if (ipc_get_current_core() == IPC_NON_RT_CORE)
+#endif
+	{
+		ipc_exec(IO_GET_STEPS_POS, NULL, 0, position, (sizeof(int32_t) * STEPPER_COUNT));
+#if (IPC_MODE & IPC_MULTICORE_RT)
+		return;
+#endif
+	}
+#endif
+
+#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
 	itp_get_rt_position(position);
 #if STEPPERS_ENCODERS_MASK != 0
 #if (defined(STEP0_ENCODER) && AXIS_TO_STEPPERS > 0)
@@ -750,10 +914,24 @@ void io_get_steps_pos(int32_t *position)
 	position[5] = encoder_get_position(STEP5_ENCODER) * g_settings.encoders_resolution[STEP5_ENCODER];
 #endif
 #endif
+#endif
 }
 
 void io_set_dirs(uint8_t mask)
 {
+#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if (IPC_MODE & IPC_MULTICORE_RT)
+	if (ipc_get_current_core() == IPC_NON_RT_CORE)
+#endif
+	{
+		ipc_exec(IO_SET_DIRS, &mask, sizeof(mask), NULL, 0);
+#if (IPC_MODE & IPC_MULTICORE_RT)
+		return;
+#endif
+	}
+#endif
+
+#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
 	mask ^= g_settings.dir_invert_mask;
 
 	// #ifdef ENABLE_IO_MODULES
@@ -844,10 +1022,24 @@ void io_set_dirs(uint8_t mask)
 #ifdef IC74HC595_HAS_DIRS
 	io_extended_pins_update();
 #endif
+#endif
 }
 
 void io_enable_steppers(uint8_t mask)
 {
+#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if (IPC_MODE & IPC_MULTICORE_RT)
+	if (ipc_get_current_core() == IPC_NON_RT_CORE)
+#endif
+	{
+		ipc_exec(IO_ENABLE_STEPPERS, &mask, sizeof(mask), NULL, 0);
+#if (IPC_MODE & IPC_MULTICORE_RT)
+		return;
+#endif
+	}
+#endif
+
+#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
 	// #ifdef ENABLE_IO_MODULES
 	// 	EVENT_INVOKE(enable_steppers, &mask);
 	// #endif
@@ -935,6 +1127,7 @@ void io_enable_steppers(uint8_t mask)
 
 #ifdef IC74HC595_HAS_STEPS_EN
 	io_extended_pins_update();
+#endif
 #endif
 }
 

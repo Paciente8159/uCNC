@@ -57,6 +57,9 @@ extern "C"
 #endif
 
 // inputs
+// The following limits/probe/steps functions are owned by the RT side. On a
+// multicore split the NonRT core forwards the call over IPC (see ipc.c) and the
+// RT core executes the implementation guarded by IPC_MODE in io_control.c.
 #ifdef ENABLE_MULTI_STEP_HOMING
 	void io_lock_limits(uint8_t limitmask);
 #endif
