@@ -102,7 +102,12 @@ extern "C"
     IO_TOGGLE_STEPS,
     IO_SET_DIRS,
     IO_GET_STEPS_POS,
-    IO_ENABLE_STEPPERS
+    IO_ENABLE_STEPPERS,
+    // cnc_state.exec_state is owned by the RT side (see cnc.c). The NonRT side
+    // forwards these requests to the RT core, that executes them.
+    CNC_GET_EXEC_STATE,
+    CNC_SET_EXEC_STATE_RT,
+    CNC_CLEAR_EXEC_STATE_RT
   } ipc_packet_type_t;
 
   typedef struct ipc_packet_

@@ -190,13 +190,12 @@ extern "C"
 	uint8_t cnc_parse_cmd(void);
 	bool cnc_check_interlocking(void);
 
-	uint16_t cnc_get_exec_state(uint16_t statemask);
+	uint16_t cnc_get_exec_state(uint16_t statemask); // owned by the RT side
 	void cnc_set_exec_state(uint16_t statemask);
+	void cnc_set_exec_state_rt(uint16_t statemask); // owned by the RT side
 	void cnc_clear_exec_state(uint16_t statemask);
-	/**
-	 * IP seam split helpers
-	 */
-	void cnc_clear_position_lost(void); // owned by the RT side
+	void cnc_clear_exec_state_rt(uint16_t statemask); // owned by the RT side
+
 	void cnc_call_rt_command(uint8_t command);
 	uint8_t cnc_get_status(void);
 #ifdef ENABLE_SOCKETS

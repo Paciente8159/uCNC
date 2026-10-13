@@ -172,6 +172,17 @@ void ipc_dotasks(void)
   case IO_ENABLE_STEPPERS:
     io_enable_steppers(ipc_data->payload[0]);
     break;
+  case CNC_GET_EXEC_STATE:
+    *(uint16_t *)response.payload =
+        cnc_get_exec_state(*(uint16_t *)ipc_data->payload);
+    response.len = sizeof(uint16_t);
+    break;
+  case CNC_SET_EXEC_STATE_RT:
+    cnc_set_exec_state_rt(*(uint16_t *)ipc_data->payload);
+    break;
+  case CNC_CLEAR_EXEC_STATE_RT:
+    cnc_clear_exec_state_rt(*(uint16_t *)ipc_data->payload);
+    break;
   default:
     break;
   }

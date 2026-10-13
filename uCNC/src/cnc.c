@@ -575,12 +575,12 @@ uint8_t cnc_unlock(bool force)
     if (!(g_settings_error & SETTINGS_READ_ERROR))
     {
 #endif
-      cnc_clear_position_lost();
+      cnc_clear_exec_state_rt(EXEC_POSITION_MAYBE_LOST);
       cnc_state.alarm = EXEC_ALARM_NOALARM;
 #ifndef DISABLE_SAFE_SETTINGS
     }
 #endif
-    io_invert_limits(((!CHECKFLAG(cnc_state.exec_state, EXEC_HOMING))
+    io_invert_limits(((!cnc_get_exec_state(EXEC_HOMING))
                           ? 0
                           : io_get_raw_limits()));
   }
@@ -617,7 +617,7 @@ uint8_t cnc_unlock(bool force)
     // limit switch is reset at user request this must be done directly because
     // cnc_clear_exec_state will check the limit switch state all other alarm
     // flags remain active if any input is still active
-    cnc_clear_position_lost();
+    cnc_clear_exec_state_rt(EXEC_POSITION_MAYBE_LOST);
     // clears all other locking flags
     cnc_clear_exec_state(EXEC_GCODE_LOCKED | EXEC_STOPPING);
     // signals stepper enable pins
@@ -638,15 +638,52 @@ uint8_t cnc_unlock(bool force)
   return UNLOCK_OK;
 }
 
-void cnc_clear_position_lost(void)
-{
-  CLEARFLAG(cnc_state.exec_state, EXEC_POSITION_MAYBE_LOST);
-}
-
 uint16_t cnc_get_exec_state(uint16_t statemask)
 {
+#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if (IPC_MODE & IPC_MULTICORE_RT)
+  if (ipc_get_current_core() == IPC_NON_RT_CORE)
+#endif
+  {
+    uint16_t state = 0;
+    ipc_exec(CNC_GET_EXEC_STATE, &statemask, sizeof(statemask), &state,
+             sizeof(state));
+    return state;
+  }
+#endif
+
+#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
   uint16_t state = ATOMIC_LOAD_N(&cnc_state.exec_state, __ATOMIC_ACQUIRE);
   return (state & statemask);
+#endif
+}
+
+void cnc_set_exec_state_rt(uint16_t statemask)
+{
+#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if (IPC_MODE & IPC_MULTICORE_RT)
+  if (ipc_get_current_core() == IPC_NON_RT_CORE)
+#endif
+  {
+    ipc_exec(CNC_SET_EXEC_STATE_RT, &statemask, sizeof(statemask), NULL, 0);
+#if (IPC_MODE & IPC_MULTICORE_RT)
+    return;
+#endif
+  }
+#endif
+
+#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
+#ifdef ENABLE_CNC_DEBUG
+  uint16_t prev_exec_state = cnc_state.exec_state;
+#endif
+  ATOMIC_FETCH_OR(&cnc_state.exec_state, statemask, __ATOMIC_ACQ_REL);
+#ifdef ENABLE_CNC_DEBUG
+  if (cnc_state.exec_state != prev_exec_state)
+  {
+    DBGLOG("[CNC] set mask %u exec_state: %u", statemask, cnc_state.exec_state);
+  }
+#endif
+#endif
 }
 
 void cnc_set_exec_state(uint16_t statemask)
@@ -654,13 +691,13 @@ void cnc_set_exec_state(uint16_t statemask)
   if (CHECKFLAG(statemask, EXEC_HOLD))
   {
     // ignore hold while performing homing (clears for replacement if jogging)
-    if (CHECKFLAG(cnc_state.exec_state, EXEC_HOMING | EXEC_JOG))
+    if (cnc_get_exec_state(EXEC_HOMING | EXEC_JOG))
     {
       CLEARFLAG(statemask, EXEC_HOLD);
     }
 
     // if jog is being executed cancel it
-    if (CHECKFLAG(cnc_state.exec_state, EXEC_JOG))
+    if (cnc_get_exec_state(EXEC_JOG))
     {
       SETFLAG(statemask, EXEC_CANCELING);
     }
@@ -677,15 +714,35 @@ void cnc_set_exec_state(uint16_t statemask)
     cnc_clear_exec_state(EXEC_RESUMING); // auto clears resuming
   }
 
+  cnc_set_exec_state_rt(statemask);
+}
+
+void cnc_clear_exec_state_rt(uint16_t statemask)
+{
+#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if (IPC_MODE & IPC_MULTICORE_RT)
+  if (ipc_get_current_core() == IPC_NON_RT_CORE)
+#endif
+  {
+    ipc_exec(CNC_CLEAR_EXEC_STATE_RT, &statemask, sizeof(statemask), NULL, 0);
+#if (IPC_MODE & IPC_MULTICORE_RT)
+    return;
+#endif
+  }
+#endif
+
+#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
 #ifdef ENABLE_CNC_DEBUG
   uint16_t prev_exec_state = cnc_state.exec_state;
 #endif
-  ATOMIC_FETCH_OR(&cnc_state.exec_state, statemask, __ATOMIC_ACQ_REL);
+  ATOMIC_FETCH_AND(&cnc_state.exec_state, ~statemask, __ATOMIC_ACQ_REL);
 #ifdef ENABLE_CNC_DEBUG
   if (cnc_state.exec_state != prev_exec_state)
   {
-    DBGLOG("[CNC] set mask %u exec_state: %u", statemask, cnc_state.exec_state);
+    DBGLOG("[CNC] clear mask %u exec_state: %u", statemask,
+           cnc_state.exec_state);
   }
+#endif
 #endif
 }
 
@@ -779,17 +836,7 @@ void cnc_clear_exec_state(uint16_t statemask)
 #endif
   }
 
-#ifdef ENABLE_CNC_DEBUG
-  uint16_t prev_exec_state = cnc_state.exec_state;
-#endif
-  ATOMIC_FETCH_AND(&cnc_state.exec_state, ~statemask, __ATOMIC_ACQ_REL);
-#ifdef ENABLE_CNC_DEBUG
-  if (cnc_state.exec_state != prev_exec_state)
-  {
-    DBGLOG("[CNC] clear mask %u exec_state: %u", statemask,
-           cnc_state.exec_state);
-  }
-#endif
+  cnc_clear_exec_state_rt(statemask);
 }
 
 // executes delay
@@ -819,9 +866,8 @@ void cnc_reset(void)
   cnc_state.rt_cmd = RT_CMD_CLEAR;
   cnc_state.feed_ovr_cmd = RT_CMD_CLEAR;
   cnc_state.tool_ovr_cmd = RT_CMD_CLEAR;
-  cnc_state.exec_state |=
-      (EXEC_RESET_LOCKED &
-       ~EXEC_POSITION_MAYBE_LOST); // Activates all alarms, door and hold
+
+  cnc_set_exec_state(EXEC_RESET_LOCKED & ~EXEC_POSITION_MAYBE_LOST); // Activates all alarms, door and hold
 #if EMULATE_GRBL_STARTUP <= 2
   cnc_state.alarm = EXEC_ALARM_NOALARM;
 #endif
