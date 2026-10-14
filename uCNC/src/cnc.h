@@ -158,8 +158,6 @@ extern "C"
 #include <stdbool.h>
 #include <stdint.h>
 
-	extern bool cnc_status_report_lock;
-
 	void cnc_init(void);
 	void cnc_network_init(void);
 	void cnc_run(void);

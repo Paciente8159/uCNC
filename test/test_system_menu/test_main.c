@@ -61,8 +61,8 @@ static void test_io_menu_step_and_dir_invert_are_bound_to_distinct_settings(void
 
 	TEST_ASSERT_NOT_NULL_MESSAGE(step, "`Step inv` item was not found in the IO settings menu");
 	TEST_ASSERT_NOT_NULL_MESSAGE(dir, "`Dir inv` item was not found in the IO settings menu");
-	TEST_ASSERT_EQUAL_PTR_MESSAGE((void *)&g_settings.step_invert_mask, step->argptr, "`Step inv` is not bound to step_invert_mask");
-	TEST_ASSERT_EQUAL_PTR_MESSAGE((void *)&g_settings.dir_invert_mask, dir->argptr, "`Dir inv` is not bound to dir_invert_mask");
+	TEST_ASSERT_EQUAL_PTR_MESSAGE((void *)&g_settings.rt.step_invert_mask, step->argptr, "`Step inv` is not bound to step_invert_mask");
+	TEST_ASSERT_EQUAL_PTR_MESSAGE((void *)&g_settings.rt.dir_invert_mask, dir->argptr, "`Dir inv` is not bound to dir_invert_mask");
 }
 
 static void test_negative_float_editing_is_gated_to_signed_settings(void)
@@ -136,8 +136,8 @@ static void test_hmap_menu_items_have_distinct_labels(void)
 static void test_encoder_pulse_invert_default_is_independent_from_dir(void)
 {
 	settings_reset(false);
-	TEST_ASSERT_EQUAL_UINT8(DEFAULT_ENCODERS_PULSE_INV_MASK, g_settings.encoders_pulse_invert_mask);
-	TEST_ASSERT_EQUAL_UINT8(DEFAULT_ENCODERS_DIR_INV_MASK, g_settings.encoders_dir_invert_mask);
+	TEST_ASSERT_EQUAL_UINT8(DEFAULT_ENCODERS_PULSE_INV_MASK, g_settings.rt.encoders_pulse_invert_mask);
+	TEST_ASSERT_EQUAL_UINT8(DEFAULT_ENCODERS_DIR_INV_MASK, g_settings.rt.encoders_dir_invert_mask);
 }
 #endif
 

@@ -58,7 +58,6 @@ typedef struct
 } cnc_state_t;
 
 static cnc_state_t cnc_state;
-bool cnc_status_report_lock;
 #if ASSERT_IPC_NONRT()
 // unrecoverable fault code (0 = none). Only a reboot clears it, so it is kept
 // out of cnc_state: cnc_reset() writes alarm and cnc_run() writes loop_state, so
@@ -98,17 +97,31 @@ WEAK_EVENT_HANDLER(cnc_parse_cmd_error)
 WEAK_EVENT_HANDLER(cnc_alarm) { DEFAULT_EVENT_HANDLER(cnc_alarm); }
 #endif
 
-void cnc_init(void)
+/**
+ * Initializes the state both sides keep a private copy of, plus the MCU itself.
+ * Runs first, on every side, on every deployment model.
+ * */
+static void cnc_init_common(void)
 {
-  // initializes cnc state
 #ifdef FORCE_GLOBALS_TO_0
   memset(&cnc_state, 0, sizeof(cnc_state_t));
-  cnc_status_report_lock = false;
 #endif
-  cnc_state.loop_state = LOOP_STARTUP_RESET;
   // initializes all systems
-  mcu_init();         // mcu
-  mcu_io_reset();     // add custom logic to set pins initial state
+  mcu_init();     // mcu
+  mcu_io_reset(); // add custom logic to set pins initial state
+}
+
+#if ASSERT_IPC_HAS_NONRT()
+/**
+ * The NonRT side owns the main loop state, the streams, the persistent settings
+ * and the network stack. The RT side owned state touched from here is only
+ * reached through the ipc seam.
+ *
+ * This has to run before the modules below, that read the settings loaded here.
+ * */
+static void cnc_init_nonrt(void)
+{
+  cnc_state.loop_state = LOOP_STARTUP_RESET;
 #if ASSERT_IPC_NONRT()
   /**
    * The NonRT side must confirm the RT side is online before anything is
@@ -134,14 +147,53 @@ void cnc_init(void)
    * here
    */
   cnc_network_init(); // initialize network and wireless coms
+}
+#endif
+
+/**
+ * Modules, interpolator and tools exist on both sides: each module declares with
+ * the ASSERT_IPC_* macros what it does on each side. So these run on every side,
+ * and only once per side.
+ * */
+static void cnc_init_modules(void)
+{
   /**
    * Remaining tcp socket based servers are initialized here
    */
   mod_init(); // initialize modules
-  itp_init(); // interpolator
+  // TEMP EXPERIMENT: itp_init(); // interpolator
 #if TOOL_COUNT > 0
   tool_init();
 #endif
+}
+
+#if ASSERT_IPC_RT()
+/**
+ * Initializes the RT side. Everything the RT side owns is already initialized by
+ * cnc_init_common() and cnc_init_modules(), so there is nothing to add yet. It
+ * exists so that a multicore build has a way to initialize the RT core on its
+ * own: today the multicore launch order only runs cnc_run() on the second core.
+ * */
+static void cnc_init_rt(void)
+{
+}
+#endif
+
+void cnc_init(void)
+{
+  cnc_init_common();
+
+#if ASSERT_IPC_HAS_NONRT()
+  cnc_init_nonrt();
+#endif
+
+  cnc_init_modules();
+
+#if ASSERT_IPC_RT()
+  cnc_init_rt();
+#endif
+
+  // the homing reference is unknown until a homing cycle runs
   if (g_settings.homing_enabled)
   {
     cnc_set_exec_state(EXEC_POSITION_MAYBE_LOST);

@@ -81,6 +81,8 @@ static DECL_MUTEX(itp_mutex);
 #else
 static volatile uint8_t itp_mutex;
 #endif
+// set by itp_init(). itp_run() must never be reached before it is set
+static bool itp_initialized;
 
 #ifdef ENABLE_RT_SYNC_MOTIONS
 // deprecated with new hooks
@@ -334,8 +336,14 @@ void itp_init(void)
 #ifdef MCU_HAS_RTOS
   BIN_SEMPH_INIT(itp_mutex, BIN_SEMPH_UNLOCKED);
 #endif
-  // initialize circular buffers
-  itp_clear();
+  /**
+   * Clear the buffers directly instead of through itp_clear(). That one is the
+   * ipc seam and would forward the request to the RT side, but each side is
+   * clearing its own copy here.
+   */
+  itp_blk_clear();
+  itp_sgm_clear();
+  itp_initialized = true;
 }
 
 #if S_CURVE_ACCELERATION_LEVEL != 0
@@ -461,6 +469,22 @@ void itp_unlock(bool *lock)
 
 void itp_run(void)
 {
+  /**
+   * itp_run() must never be reached before itp_init().
+   *
+   * On RTOS targets the mutex taken below would still be NULL and taking it
+   * faults, so the mistake is already loud there. On the other targets
+   * itp_mutex is a plain uint8_t that starts at 0 - unlocked - and every other
+   * interpolator static starts at 0 too, so a missing itp_init() is completely
+   * silent: the buffers never drain and motion just never completes. This check
+   * makes the mistake fail on every target, including the ones CI runs.
+   */
+  if (!itp_initialized)
+  {
+    DBGLOG("[ITP] itp_run called before itp_init");
+    return;
+  }
+
   // conversion vars
   static uint32_t accel_until = 0;
   static uint32_t deaccel_from = 0;

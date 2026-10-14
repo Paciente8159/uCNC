@@ -77,6 +77,24 @@ extern "C"
 #define ASSERT_IPC_NONRT() ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
 #define ASSERT_IPC_RT() ((IPC_MODE == IPC_SINGLE_CORE) || (IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)))
 
+/**
+ * Whether this build contains the NonRT side.
+ *
+ * The two macros above answer "how does this side reach the other one?", which
+ * is a transport question: on IPC_SHARED_MEM nothing has to be forwarded, so
+ * ASSERT_IPC_NONRT() is false even though the NonRT side is present.
+ *
+ * This answers "is the NonRT side in this build?", which is what per side setup
+ * code needs. The NonRT side owns the streams, the settings and the network
+ * stack and has to initialize them whenever it is present, no matter how it
+ * reaches the RT side.
+ *
+ * There is no matching macro for the RT side because ASSERT_IPC_RT() already is
+ * that test: it is true exactly when the RT body runs here - the RT side, the
+ * single core, or a shared memory build.
+ * */
+#define ASSERT_IPC_HAS_NONRT() ((IPC_MODE == IPC_SINGLE_CORE) || (IPC_MODE & IPC_MULTICORE_NONRT))
+
   /**
    * IPC ACK handling
    *
