@@ -189,10 +189,6 @@ void ipc_dotasks(void)
   case TOOL_SET_COOLANT:
     tool_set_coolant(ipc_data->payload[0]);
     break;
-  case TOOL_GET_SPEED:
-    *(uint16_t *)response.payload = tool_get_speed();
-    response.len = sizeof(uint16_t);
-    break;
   case TOOL_SET_MODE:
     tool_set_mode(ipc_data->payload[0]);
     break;

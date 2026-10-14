@@ -231,6 +231,12 @@ uint8_t tool_change(uint8_t tool)
 
 void tool_set_speed(int16_t value)
 {
+  // The speed setpoint is kept on both sides (like the tool mode), so that
+  // tool_get_speed can read it locally. The RT side owns the tool output: the
+  // NonRT side pushes the value to the RT core, that drives the hardware.
+#if TOOL_COUNT > 0
+  tool_current_speed = value;
+#endif
 #if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
 #if (IPC_MODE & IPC_MULTICORE_RT)
   if (ipc_get_current_core() == IPC_NON_RT_CORE)
@@ -245,7 +251,6 @@ void tool_set_speed(int16_t value)
 
 #if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
 #if TOOL_COUNT > 0
-  tool_current_speed = value;
   if (tool_current.set_speed)
   {
     tool_current.set_speed(value);
@@ -256,18 +261,6 @@ void tool_set_speed(int16_t value)
 
 uint16_t tool_get_speed()
 {
-#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
-#if (IPC_MODE & IPC_MULTICORE_RT)
-  if (ipc_get_current_core() == IPC_NON_RT_CORE)
-#endif
-  {
-    uint16_t value = 0;
-    ipc_exec(TOOL_GET_SPEED, NULL, 0, &value, sizeof(value));
-    return value;
-  }
-#endif
-
-#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
 #if TOOL_COUNT > 0
   if (tool_current.get_speed)
   {
@@ -276,7 +269,6 @@ uint16_t tool_get_speed()
   return tool_get_setpoint();
 #endif
   return 0;
-#endif
 }
 
 int16_t tool_get_setpoint(void)

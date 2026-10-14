@@ -112,7 +112,6 @@ extern "C"
     // forwards these requests to the RT core, that executes them.
     TOOL_SET_SPEED,
     TOOL_SET_COOLANT,
-    TOOL_GET_SPEED,
     // The tool mode is owned by the NonRT side and mirrored to the RT side, so
     // the NonRT side pushes the new value to the RT core (see tool_set_mode).
     TOOL_SET_MODE
