@@ -109,7 +109,12 @@ extern "C"
 
   typedef enum ipc_packet_type_
   {
-    ITP_IS_FULL = 1,
+    // startup handshake. The NonRT side sends this and waits for the reply
+    // carrying the echoed type (the ACK) to confirm the RT side is online and
+    // servicing requests before forwarding anything else to it.
+    IPC_PING = 0x5A,
+    // Interpolator functions
+    ITP_IS_FULL,
     ITP_PUSH_BLK,
     ITP_PUSH_SGM,
     ITP_STEP_RATE_CONVERT,
@@ -151,11 +156,7 @@ extern "C"
     // The machine settings are owned by the NonRT side and mirrored to the RT
     // side, so the NonRT side pushes the whole settings block to the RT core
     // (see settings_sync_rt).
-    SETTINGS_SYNC,
-    // startup handshake. The NonRT side sends this and waits for the reply
-    // carrying the echoed type (the ACK) to confirm the RT side is online and
-    // servicing requests before forwarding anything else to it.
-    IPC_PING
+    SETTINGS_SYNC
   } ipc_packet_type_t;
 
   typedef struct ipc_packet_

@@ -27,9 +27,9 @@ uint8_t g_ipc_buffer[IPC_BUFFER_SIZE];
 static uint8_t g_ipc_response[IPC_BUFFER_SIZE];
 bool g_ipc_data_available;
 
-// the whole machine settings block is pushed in a single message, so it must fit
-// the request buffer
-typedef char ipc_settings_block_fits[((sizeof(settings_t) + sizeof(ipc_packet_t)) <= IPC_BUFFER_SIZE) ? 1 : -1];
+// the settings the RT side reads are pushed in a single message, so that block
+// must fit the request buffer
+typedef char ipc_settings_block_fits[((sizeof(rt_settings_t) + sizeof(ipc_packet_t)) <= IPC_BUFFER_SIZE) ? 1 : -1];
 
 bool ipc_init(void)
 {
@@ -148,8 +148,15 @@ void ipc_dotasks(void)
     response.len = (sizeof(int32_t) * STEPPER_COUNT);
     break;
   case ITP_RESET_RT_POSITION:
-    itp_reset_rt_position((float *)ipc_data->payload);
+  {
+    itp_reset_rt_position_t *packet = (itp_reset_rt_position_t *)ipc_data->payload;
+#if STEPPERS_ENCODERS_MASK != 0
+    itp_set_rt_position(packet->steps, packet->origin);
+#else
+    itp_set_rt_position(packet->steps, NULL);
+#endif
     break;
+  }
   case ITP_SYNC_RT_POSITION:
     itp_sync_rt_position((int32_t *)ipc_data->payload);
     break;

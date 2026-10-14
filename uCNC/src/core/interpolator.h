@@ -95,6 +95,22 @@ extern "C"
     itp_block_t *block;
   } __attribute__((packed, aligned(1))) itp_segment_t;
 
+  /**
+   * Payload of ITP_RESET_RT_POSITION.
+   *
+   * The machine coordinates are converted to steps by the NonRT side, so that
+   * the RT side does not need step_per_mm (nor the kinematics) to reset its
+   * position. The coordinates are still sent when steppers have encoders,
+   * because the encoder positions are reset from them.
+   * */
+  typedef struct
+  {
+    int32_t steps[STEPPER_COUNT];
+#if STEPPERS_ENCODERS_MASK != 0
+    float origin[AXIS_COUNT];
+#endif
+  } __attribute__((packed, aligned(1))) itp_reset_rt_position_t;
+
   void itp_init(void);
   void itp_run(void);
   void itp_update(void);
@@ -104,7 +120,13 @@ extern "C"
   void itp_get_rt_position(int32_t *position);
   void itp_sync_rt_position(int32_t *position);
   int32_t itp_get_rt_position_index(int8_t index);
+  // resets the RT step position from a machine coordinate origin. The conversion
+  // to steps is done here (see itp_reset_rt_position_t)
   void itp_reset_rt_position(float *origin);
+  // resets the RT step position from an already converted step position. Owned by
+  // the RT side: called by itp_reset_rt_position when there is no IPC split, and
+  // by the ITP_RESET_RT_POSITION request otherwise
+  void itp_set_rt_position(int32_t *steps, float *origin);
   float itp_get_rt_feed(void);
   bool itp_is_empty(void);
   uint8_t itp_sync(void);

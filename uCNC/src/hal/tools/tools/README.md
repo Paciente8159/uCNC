@@ -407,10 +407,10 @@ Here is the example for the HUANYANG type1 that does not use 8 byte length comma
 	{                                                               \
 		6, 6, MODBUS_READ_HOLDING_REGISTERS, 0x01, 0x08, 0x00, 0x00 \
 	}
-#define VFD_IN_MULT g_settings.spindle_max_rpm
+#define VFD_IN_MULT g_settings.rt.spindle_max_rpm
 #define VFD_IN_DIV vfd_state.rpm_hz
 #define VFD_OUT_MULT vfd_state.rpm_hz
-#define VFD_OUT_DIV g_settings.spindle_max_rpm
+#define VFD_OUT_DIV g_settings.rt.spindle_max_rpm
 ```
 
 Here is the example for the YL620 that uses 8 byte length commands

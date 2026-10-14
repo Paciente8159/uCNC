@@ -33,21 +33,47 @@ extern "C"
 #define SETTINGS_READ_ERROR 1
 #define SETTINGS_WRITE_ERROR 2
 
+	/**
+	 * The subset of the machine settings the RT side reads.
+	 *
+	 * The NonRT side owns the persistent settings and pushes this block to the RT
+	 * core whenever they change (see settings_sync_rt), so it is kept contiguous
+	 * and packed to travel as a single message. Every field in here must stay
+	 * read only on the RT side, otherwise the pushed copy would go stale.
+	 * */
+	typedef struct
+	{
+		uint8_t step_invert_mask;
+		uint8_t dir_invert_mask;
+		uint8_t step_enable_invert;
+		uint8_t limits_invert_mask;
+		uint8_t control_invert_mask;
+		bool probe_invert_mask;
+		bool hard_limits_enabled;
+		int16_t spindle_max_rpm;
+		int16_t spindle_min_rpm;
+#if ENCODERS > 0
+		uint8_t encoders_pulse_invert_mask;
+		uint8_t encoders_dir_invert_mask;
+		float encoders_resolution[ENCODERS];
+#endif
+	} __attribute__((packed, aligned(1))) rt_settings_t;
+
 	typedef struct
 	{
 		uint8_t version[3];
+		/**
+		 * Everything the RT side reads, kept together so that it forms a single
+		 * continuous block that can be pushed to the RT core.
+		 * */
+		rt_settings_t rt;
+		// everything below is only used by the NonRT side
 		float max_step_rate;
 // step delay not used
 #ifdef ENABLE_STEPPERS_DISABLE_TIMEOUT
 		uint16_t step_disable_timeout;
 #endif
-		uint8_t step_invert_mask;
-		uint8_t dir_invert_mask;
-		uint8_t step_enable_invert;
-		uint8_t limits_invert_mask;
-		bool probe_invert_mask;
 		uint8_t status_report_mask;
-		uint8_t control_invert_mask;
 		// value must be set between -1.0 and 1.0 If set to 0.0 is the same as exact path mode (G61) and -1.0 is the same as exact stop mode (G61.1)
 		float g64_angle_factor;
 		// juntion deviation is automatic and always on
@@ -57,7 +83,6 @@ extern "C"
 		uint8_t s_curve_profile;
 #endif
 		bool soft_limits_enabled;
-		bool hard_limits_enabled;
 		bool homing_enabled;
 		uint16_t debounce_ms;
 		uint8_t homing_dir_invert_mask;
@@ -65,8 +90,6 @@ extern "C"
 		float homing_slow_feed_rate;
 		// debouncing not used
 		float homing_offset;
-		int16_t spindle_max_rpm;
-		int16_t spindle_min_rpm;
 		uint8_t tool_mode;
 #ifdef ENABLE_LASER_PPI
 		uint16_t laser_ppi;
@@ -96,11 +119,6 @@ extern "C"
 		float skew_xz_factor;
 		float skew_yz_factor;
 #endif
-#endif
-#if ENCODERS > 0
-		uint8_t encoders_pulse_invert_mask;
-		uint8_t encoders_dir_invert_mask;
-		float encoders_resolution[ENCODERS];
 #endif
 #ifdef H_MAPPING_EEPROM_STORE_ENABLED
 		float hmap_x;

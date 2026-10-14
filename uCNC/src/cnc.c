@@ -124,7 +124,7 @@ void cnc_init(void)
   grbl_stream_init(); // serial
   settings_init();    // settings initial load
   io_enable_steppers(
-      ~g_settings.step_enable_invert); // disables steppers at start
+      ~g_settings.rt.step_enable_invert); // disables steppers at start
   /**
    * Network initialization happens after stream registration
    * This will allow wired streams to be able to start sending info out (needed
@@ -225,7 +225,7 @@ void cnc_run(void)
       break;
     case -EXEC_ALARM_HARD_LIMIT:
     case -EXEC_ALARM_SOFT_LIMIT:
-      io_enable_steppers(~g_settings.step_enable_invert);
+      io_enable_steppers(~g_settings.rt.step_enable_invert);
       proto_feedback(MSG_FEEDBACK_1);
       cnc_state.loop_state = LOOP_REQUIRE_RESET;
       __FALL_THROUGH__
@@ -274,7 +274,7 @@ bool cnc_unit_test_run_once(void)
     return true;
   case -EXEC_ALARM_HARD_LIMIT:
   case -EXEC_ALARM_SOFT_LIMIT:
-    io_enable_steppers(~g_settings.step_enable_invert);
+    io_enable_steppers(~g_settings.rt.step_enable_invert);
     proto_feedback(MSG_FEEDBACK_1);
     cnc_state.loop_state = LOOP_REQUIRE_RESET;
     return true;
@@ -675,8 +675,8 @@ uint8_t cnc_unlock(bool force)
     cnc_clear_exec_state(EXEC_GCODE_LOCKED | EXEC_STOPPING);
     // signals stepper enable pins
 
-    io_set_steps(g_settings.step_invert_mask);
-    io_enable_steppers(g_settings.step_enable_invert);
+    io_set_steps(g_settings.rt.step_invert_mask);
+    io_enable_steppers(g_settings.rt.step_enable_invert);
     parser_reset(false); // reset parser
 
     // hard reset
@@ -849,7 +849,7 @@ void cnc_clear_exec_state(uint16_t statemask)
   limits = io_get_limits(); // can't clear the EXEC_POSITION_MAYBE_LOST is any
                             // limit is triggered
 #endif
-  if (g_settings.hard_limits_enabled &&
+  if (g_settings.rt.hard_limits_enabled &&
       limits) // if hardlimits are enabled and limits are triggered
   {
     CLEARFLAG(statemask, EXEC_POSITION_MAYBE_LOST);
@@ -1244,7 +1244,7 @@ void cnc_check_fault_systems(void)
   }
 #endif
 #if (LIMITS_MASK != 0)
-  if (g_settings.hard_limits_enabled) // fault on limits
+  if (g_settings.rt.hard_limits_enabled) // fault on limits
   {
     inputs = io_get_limits();
     if (CHECKFLAG(inputs, LIMITS_MASK))
@@ -1411,7 +1411,7 @@ static void cnc_io_dotasks(void)
       {
         io_enable_steppers(
             ~g_settings
-                 .step_enable_invert); // disables steppers after idle timeout
+                 .rt.step_enable_invert); // disables steppers after idle timeout
         stepper_timeout = UINT32_MAX;
       }
     }

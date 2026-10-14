@@ -913,7 +913,7 @@ void itp_run(void)
       if (tool_get_mode() & PPI_VARPOWER_MODE)
       {
         float new_s = (float)ABS(planner_get_spindle_speed(1));
-        new_s /= (float)g_settings.spindle_max_rpm;
+        new_s /= (float)g_settings.rt.spindle_max_rpm;
         if (tool_get_mode() & PPI_MODE)
         {
           float blend = g_settings.laser_ppi_mixmode_uswidth;
@@ -1142,30 +1142,48 @@ int32_t itp_get_rt_position_index(int8_t index)
 
 void itp_reset_rt_position(float *origin)
 {
+  int32_t steps[STEPPER_COUNT];
+
+  if (!g_settings.homing_enabled)
+  {
+    memset(origin, 0, (sizeof(float) * AXIS_COUNT));
+  }
+  // the coordinates to steps conversion is done here, on the NonRT side, so that
+  // the RT side does not need step_per_mm (nor the kinematics) to reset its
+  // position
+  kinematics_coordinates_to_steps(origin, steps);
+
 #if ASSERT_IPC_NONRT()
 #if (IPC_MODE & IPC_MULTICORE_RT)
   if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
   {
-    ipc_exec(ITP_RESET_RT_POSITION, origin, (sizeof(float) * AXIS_COUNT), NULL, 0);
+    itp_reset_rt_position_t packet;
+    memcpy(packet.steps, steps, sizeof(steps));
+#if STEPPERS_ENCODERS_MASK != 0
+    memcpy(packet.origin, origin, sizeof(packet.origin));
+#endif
+    ipc_exec(ITP_RESET_RT_POSITION, &packet, sizeof(packet), NULL, 0);
 #if (IPC_MODE & IPC_MULTICORE_RT)
     return;
 #endif
   }
 #endif
 
-#if ASSERT_IPC_RT()
-  if (!g_settings.homing_enabled)
-  {
-    memset(origin, 0, (sizeof(float) * AXIS_COUNT));
-  }
+#if !ASSERT_IPC_NONRT()
+  itp_set_rt_position(steps, origin);
+#endif
+}
 
-  // sync origin and steppers position
-  kinematics_coordinates_to_steps(origin, itp_rt_step_pos);
+void itp_set_rt_position(int32_t *steps, float *origin)
+{
+  ATOMIC_CODEBLOCK
+  {
+    memcpy(itp_rt_step_pos, steps, sizeof(itp_rt_step_pos));
+  }
 
 #if STEPPERS_ENCODERS_MASK != 0
   encoders_itp_reset_rt_position(origin);
-#endif
 #endif
 }
 
@@ -1245,7 +1263,7 @@ uint32_t itp_get_rt_line_number(void)
 MCU_CALLBACK void mcu_step_reset_cb(void)
 {
   // always resets all stepper pins
-  io_set_steps(g_settings.step_invert_mask);
+  io_set_steps(g_settings.rt.step_invert_mask);
 
   if (itp_isr_stop)
   {
@@ -1642,7 +1660,7 @@ void itp_start(bool is_synched)
         DBGLOG("[ITP] start ISR");
 #ifdef ENABLE_STEPPERS_DISABLE_TIMEOUT
         io_enable_steppers(
-            g_settings.step_enable_invert); // re-enable steppers for motion
+            g_settings.rt.step_enable_invert); // re-enable steppers for motion
 #endif
         mcu_start_itp_isr(itp_sgm_data[itp_sgm_data_read].timer_counter,
                           itp_sgm_data[itp_sgm_data_read].timer_prescaller);

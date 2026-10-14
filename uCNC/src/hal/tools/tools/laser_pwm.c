@@ -85,11 +85,11 @@ static int16_t range_speed(int16_t value, uint8_t conv) {
   if (!conv) {
     value = (int16_t)(LASER_PWM_MIN_VALUE +
                       ((255.0f - LASER_PWM_MIN_VALUE) *
-                       (((float)value) / g_settings.spindle_max_rpm)));
+                       (((float)value) / g_settings.rt.spindle_max_rpm)));
   } else {
     value = (int16_t)roundf((1.0f / (float)(255.0f - LASER_PWM_MIN_VALUE)) *
                             (value - LASER_PWM_MIN_VALUE) *
-                            g_settings.spindle_max_rpm);
+                            g_settings.rt.spindle_max_rpm);
   }
   return value;
 }

@@ -153,7 +153,7 @@ MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 	uint8_t limits_diff = prev_limits;
 	prev_limits = limits;
 
-	if (g_settings.hard_limits_enabled || cnc_get_exec_state(EXEC_HOMING))
+	if (g_settings.rt.hard_limits_enabled || cnc_get_exec_state(EXEC_HOMING))
 	{
 		limits_diff ^= limits;
 		if (!limits_diff)
@@ -368,7 +368,7 @@ MCU_IO_CALLBACK void mcu_inputs_changed_cb(void)
 #endif
 
 #if (ENCODERS_MASK)
-	inputs ^= g_settings.encoders_pulse_invert_mask;
+	inputs ^= g_settings.rt.encoders_pulse_invert_mask;
 #endif
 	diff = inputs ^ prev_inputs;
 
@@ -514,7 +514,7 @@ uint8_t io_get_raw_limits(void)
 	value |= ((IO_CONDITION_LIMIT_C) ? LIMIT_C_IO_MASK : 0);
 #endif
 
-	uint8_t inv = g_settings.limits_invert_mask;
+	uint8_t inv = g_settings.rt.limits_invert_mask;
 	uint8_t result = (value ^ (inv & LIMITS_INV_MASK));
 
 #if (LIMITS_NORMAL_OPERATION_MASK != 0)
@@ -573,7 +573,7 @@ uint8_t io_get_controls(void)
 	value |= ((IO_CONDITION_CS_RES) ? CS_RES_MASK : 0);
 #endif
 
-	return (value ^ (g_settings.control_invert_mask & CONTROLS_INV_MASK));
+	return (value ^ (g_settings.rt.control_invert_mask & CONTROLS_INV_MASK));
 }
 
 #ifdef PROBE_ENABLE_CUSTOM_CALLBACK
@@ -684,7 +684,7 @@ bool io_get_probe(void)
 #endif
 #ifdef IO_CONDITION_PROBE
 	bool probe = (IO_CONDITION_PROBE != 0);
-	return (!g_settings.probe_invert_mask) ? probe : !probe;
+	return (!g_settings.rt.probe_invert_mask) ? probe : !probe;
 #else
 	return false;
 #endif
@@ -896,22 +896,22 @@ void io_get_steps_pos(int32_t *position)
 	itp_get_rt_position(position);
 #if STEPPERS_ENCODERS_MASK != 0
 #if (defined(STEP0_ENCODER) && AXIS_TO_STEPPERS > 0)
-	position[0] = encoder_get_position(STEP0_ENCODER) * g_settings.encoders_resolution[STEP0_ENCODER];
+	position[0] = encoder_get_position(STEP0_ENCODER) * g_settings.rt.encoders_resolution[STEP0_ENCODER];
 #endif
 #if (defined(STEP1_ENCODER) && AXIS_TO_STEPPERS > 1)
-	position[1] = encoder_get_position(STEP1_ENCODER) * g_settings.encoders_resolution[STEP1_ENCODER];
+	position[1] = encoder_get_position(STEP1_ENCODER) * g_settings.rt.encoders_resolution[STEP1_ENCODER];
 #endif
 #if (defined(STEP2_ENCODER) && AXIS_TO_STEPPERS > 2)
-	position[2] = encoder_get_position(STEP2_ENCODER) * g_settings.encoders_resolution[STEP2_ENCODER];
+	position[2] = encoder_get_position(STEP2_ENCODER) * g_settings.rt.encoders_resolution[STEP2_ENCODER];
 #endif
 #if (defined(STEP3_ENCODER) && AXIS_TO_STEPPERS > 3)
-	position[3] = encoder_get_position(STEP3_ENCODER) * g_settings.encoders_resolution[STEP3_ENCODER];
+	position[3] = encoder_get_position(STEP3_ENCODER) * g_settings.rt.encoders_resolution[STEP3_ENCODER];
 #endif
 #if (defined(STEP4_ENCODER) && AXIS_TO_STEPPERS > 4)
-	position[4] = encoder_get_position(STEP4_ENCODER) * g_settings.encoders_resolution[STEP4_ENCODER];
+	position[4] = encoder_get_position(STEP4_ENCODER) * g_settings.rt.encoders_resolution[STEP4_ENCODER];
 #endif
 #if (defined(STEP5_ENCODER) && AXIS_TO_STEPPERS > 5)
-	position[5] = encoder_get_position(STEP5_ENCODER) * g_settings.encoders_resolution[STEP5_ENCODER];
+	position[5] = encoder_get_position(STEP5_ENCODER) * g_settings.rt.encoders_resolution[STEP5_ENCODER];
 #endif
 #endif
 #endif
@@ -932,7 +932,7 @@ void io_set_dirs(uint8_t mask)
 #endif
 
 #if ASSERT_IPC_RT()
-	mask ^= g_settings.dir_invert_mask;
+	mask ^= g_settings.rt.dir_invert_mask;
 
 	// #ifdef ENABLE_IO_MODULES
 	// 	EVENT_INVOKE(set_dirs, &mask);

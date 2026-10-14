@@ -81,8 +81,8 @@ static void startup_code(void) {
   EXTENDED_SETTING_INIT(SPINDLE_PWM_PID_SETTING_ID, spindle_pwm_pid.k);
   settings_load(EXTENDED_SETTING_ADDRESS(SPINDLE_PWM_PID_SETTING_ID),
                 (uint8_t *)spindle_pwm_pid.k, sizeof(spindle_pwm_pid.k));
-  spindle_pwm_pid.max = g_settings.spindle_max_rpm;
-  spindle_pwm_pid.min = g_settings.spindle_min_rpm;
+  spindle_pwm_pid.max = g_settings.rt.spindle_max_rpm;
+  spindle_pwm_pid.min = g_settings.rt.spindle_min_rpm;
 #endif
 }
 
@@ -113,10 +113,10 @@ static void set_coolant(uint8_t value) {
 static int16_t range_speed(int16_t value, uint8_t conv) {
   // converts core tool speed to laser power (PWM)
   if (!conv) {
-    value = (int16_t)((255.0f) * (((float)value) / g_settings.spindle_max_rpm));
+    value = (int16_t)((255.0f) * (((float)value) / g_settings.rt.spindle_max_rpm));
   } else {
     value =
-        (int16_t)roundf((1.0f / 255.0f) * value * g_settings.spindle_max_rpm);
+        (int16_t)roundf((1.0f / 255.0f) * value * g_settings.rt.spindle_max_rpm);
   }
   return value;
 }

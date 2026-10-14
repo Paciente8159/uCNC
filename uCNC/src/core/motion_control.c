@@ -526,7 +526,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 		// modify PPI settings according o the S value
 		if (tool_get_mode() & PPI_MODE)
 		{
-			float laser_ppi_scale = fast_flt_div((float)block_data->spindle, (float)g_settings.spindle_max_rpm);
+			float laser_ppi_scale = fast_flt_div((float)block_data->spindle, (float)g_settings.rt.spindle_max_rpm);
 			if (tool_get_mode() & PPI_VARPOWER_MODE)
 			{
 				float blend = g_settings.laser_ppi_mixmode_ppi;
@@ -984,7 +984,7 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 	homing_status.status = STATUS_CRITICAL_FAIL;
 #endif
 
-	if (!g_settings.hard_limits_enabled)
+	if (!g_settings.rt.hard_limits_enabled)
 	{
 #ifdef ALLOW_SOFTWARE_HOMING
 		return STATUS_OK;

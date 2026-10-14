@@ -126,10 +126,10 @@ static vfd_state_t vfd_state;
   {6, 6, MODBUS_READ_HOLDING_REGISTERS, 0x01, 0x11, 0x00, 0x00}
 #define VFD_STOP_CMD                                                           \
   {6, 6, MODBUS_READ_HOLDING_REGISTERS, 0x01, 0x08, 0x00, 0x00}
-#define VFD_IN_MULT g_settings.spindle_max_rpm
+#define VFD_IN_MULT g_settings.rt.spindle_max_rpm
 #define VFD_IN_DIV vfd_state.rpm_hz
 #define VFD_OUT_MULT vfd_state.rpm_hz
-#define VFD_OUT_DIV g_settings.spindle_max_rpm
+#define VFD_OUT_DIV g_settings.rt.spindle_max_rpm
 #endif
 
 #if (VFD_CONTROLLER == VFD_HUANYANG_TYPE2)
@@ -144,10 +144,10 @@ static vfd_state_t vfd_state;
   {8, 8, MODBUS_PRESET_SINGLE_REGISTER, 0x20, 0x00, 0x00, 0x02}
 #define VFD_STOP_CMD                                                           \
   {8, 8, MODBUS_PRESET_SINGLE_REGISTER, 0x20, 0x00, 0x00, 0x06}
-#define VFD_IN_MULT g_settings.spindle_max_rpm
+#define VFD_IN_MULT g_settings.rt.spindle_max_rpm
 #define VFD_IN_DIV vfd_state.rpm_hz
 #define VFD_OUT_MULT vfd_state.rpm_hz
-#define VFD_OUT_DIV g_settings.spindle_max_rpm
+#define VFD_OUT_DIV g_settings.rt.spindle_max_rpm
 #endif
 
 #if (VFD_CONTROLLER == VFD_YL620)
@@ -179,10 +179,10 @@ static vfd_state_t vfd_state;
 #define VFD_CW_CMD {8, 8, MODBUS_FORCE_SINGLE_COIL, 0x00, 0x02, 0xFF, 0x00}
 #define VFD_CCW_CMD {8, 8, MODBUS_FORCE_SINGLE_COIL, 0x00, 0x02, 0x00, 0x00}
 #define VFD_STOP_CMD {8, 8, MODBUS_FORCE_SINGLE_COIL, 0x00, 0x00, 0x00, 0x00}
-#define VFD_IN_MULT g_settings.spindle_max_rpm
+#define VFD_IN_MULT g_settings.rt.spindle_max_rpm
 #define VFD_IN_DIV vfd_state.rpm_hz
 #define VFD_OUT_MULT vfd_state.rpm_hz
-#define VFD_OUT_DIV g_settings.spindle_max_rpm
+#define VFD_OUT_DIV g_settings.rt.spindle_max_rpm
 #endif
 
 static bool modvfd_command(uint8_t *cmd, modbus_response_t *response) {

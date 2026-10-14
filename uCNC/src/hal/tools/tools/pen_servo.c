@@ -60,11 +60,11 @@ static int16_t range_speed(int16_t value, uint8_t conv) {
 
   if (!conv) {
     value = (int16_t)(((float)PEN_SERVO_RANGE) * ((float)value) /
-                          ((float)g_settings.spindle_max_rpm) +
+                          ((float)g_settings.rt.spindle_max_rpm) +
                       PEN_SERVO_LOW);
   } else {
     value = (int16_t)((((float)value) - ((float)PEN_SERVO_LOW)) *
-                      ((float)g_settings.spindle_max_rpm) /
+                      ((float)g_settings.rt.spindle_max_rpm) /
                       ((float)PEN_SERVO_RANGE));
   }
 

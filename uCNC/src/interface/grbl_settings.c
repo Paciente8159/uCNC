@@ -31,7 +31,7 @@ uint8_t g_settings_error;
 // if settings struct is changed this version should change too
 #define SETTINGS_VERSION \
 	{                    \
-		'V', '0', '7'}
+		'V', '0', '8'}
 
 settings_t g_settings;
 
@@ -96,17 +96,28 @@ static uint8_t crc7(uint8_t c, uint8_t crc)
 const settings_t __rom__ default_settings =
 	{
 		.version = SETTINGS_VERSION,
+		.rt =
+			{
+				.step_invert_mask = DEFAULT_STEP_INV_MASK,
+				.dir_invert_mask = DEFAULT_DIR_INV_MASK,
+				.step_enable_invert = DEFAULT_STEP_ENA_INV,
+				.limits_invert_mask = DEFAULT_LIMIT_INV_MASK,
+				.control_invert_mask = DEFAULT_CONTROL_INV_MASK,
+				.probe_invert_mask = DEFAULT_PROBE_INV_MASK,
+				.hard_limits_enabled = DEFAULT_HARD_LIMITS_ENABLED,
+				.spindle_max_rpm = DEFAULT_SPINDLE_MAX_RPM,
+				.spindle_min_rpm = DEFAULT_SPINDLE_MIN_RPM,
+#if ENCODERS > 0
+				.encoders_pulse_invert_mask = DEFAULT_ENCODERS_PULSE_INV_MASK,
+				.encoders_dir_invert_mask = DEFAULT_ENCODERS_DIR_INV_MASK,
+				.encoders_resolution = DEFAULT_ENCODERS_RESOLUTION,
+#endif
+			},
 		.max_step_rate = (1000000.0f / F_STEP_MAX),
 #ifdef ENABLE_STEPPERS_DISABLE_TIMEOUT
 		.step_disable_timeout = 0,
 #endif
-		.step_invert_mask = DEFAULT_STEP_INV_MASK,
-		.dir_invert_mask = DEFAULT_DIR_INV_MASK,
-		.step_enable_invert = DEFAULT_STEP_ENA_INV,
-		.limits_invert_mask = DEFAULT_LIMIT_INV_MASK,
-		.probe_invert_mask = DEFAULT_PROBE_INV_MASK,
 		.status_report_mask = DEFAULT_STATUS_MASK,
-		.control_invert_mask = DEFAULT_CONTROL_INV_MASK,
 		.g64_angle_factor = DEFAULT_G64_FACTOR,
 		.arc_tolerance = DEFAULT_ARC_TOLERANCE,
 		.report_inches = DEFAULT_REPORT_INCHES,
@@ -114,15 +125,12 @@ const settings_t __rom__ default_settings =
 		.s_curve_profile = DEFAULT_S_CURVE_PROFILE,
 #endif
 		.soft_limits_enabled = DEFAULT_SOFT_LIMITS_ENABLED,
-		.hard_limits_enabled = DEFAULT_HARD_LIMITS_ENABLED,
 		.homing_enabled = DEFAULT_HOMING_ENABLED,
 		.debounce_ms = DEFAULT_DEBOUNCE_MS,
 		.homing_dir_invert_mask = DEFAULT_HOMING_DIR_INV_MASK,
 		.homing_fast_feed_rate = DEFAULT_HOMING_FAST,
 		.homing_slow_feed_rate = DEFAULT_HOMING_SLOW,
 		.homing_offset = DEFAULT_HOMING_OFFSET,
-		.spindle_max_rpm = DEFAULT_SPINDLE_MAX_RPM,
-		.spindle_min_rpm = DEFAULT_SPINDLE_MIN_RPM,
 		.tool_mode = 0,
 #ifdef ENABLE_LASER_PPI
 		.laser_ppi = DEFAULT_LASER_PPI,
@@ -152,11 +160,6 @@ const settings_t __rom__ default_settings =
 		.skew_yz_factor = DEFAULT_SKEW_YZ_FACTOR,
 #endif
 #endif
-#if ENCODERS > 0
-		.encoders_pulse_invert_mask = DEFAULT_ENCODERS_DIR_INV_MASK,
-		.encoders_dir_invert_mask = DEFAULT_ENCODERS_DIR_INV_MASK,
-		.encoders_resolution = DEFAULT_ENCODERS_RESOLUTION,
-#endif
 };
 
 const setting_id_t __rom__ g_settings_id_table[] = {
@@ -164,15 +167,15 @@ const setting_id_t __rom__ g_settings_id_table[] = {
 #ifdef ENABLE_STEPPERS_DISABLE_TIMEOUT
 	{.id = 1, .memptr = &g_settings.step_disable_timeout, .type = SETTING_TYPE_UINT16},
 #endif
-	{.id = 2, .memptr = &g_settings.step_invert_mask, .type = SETTING_TYPE_UINT8},
-	{.id = 3, .memptr = &g_settings.dir_invert_mask, .type = SETTING_TYPE_UINT8},
-	{.id = 4, .memptr = &g_settings.step_enable_invert, .type = SETTING_TYPE_BOOL},
-	{.id = 5, .memptr = &g_settings.limits_invert_mask, .type = SETTING_TYPE_UINT8},
-	{.id = 6, .memptr = &g_settings.probe_invert_mask, .type = SETTING_TYPE_BOOL},
-	{.id = 7, .memptr = &g_settings.control_invert_mask, .type = SETTING_TYPE_UINT8},
+	{.id = 2, .memptr = &g_settings.rt.step_invert_mask, .type = SETTING_TYPE_UINT8},
+	{.id = 3, .memptr = &g_settings.rt.dir_invert_mask, .type = SETTING_TYPE_UINT8},
+	{.id = 4, .memptr = &g_settings.rt.step_enable_invert, .type = SETTING_TYPE_BOOL},
+	{.id = 5, .memptr = &g_settings.rt.limits_invert_mask, .type = SETTING_TYPE_UINT8},
+	{.id = 6, .memptr = &g_settings.rt.probe_invert_mask, .type = SETTING_TYPE_BOOL},
+	{.id = 7, .memptr = &g_settings.rt.control_invert_mask, .type = SETTING_TYPE_UINT8},
 #if ENCODERS > 0
-	{.id = 8, .memptr = &g_settings.encoders_pulse_invert_mask, .type = SETTING_TYPE_UINT8},
-	{.id = 9, .memptr = &g_settings.encoders_dir_invert_mask, .type = SETTING_TYPE_UINT8},
+	{.id = 8, .memptr = &g_settings.rt.encoders_pulse_invert_mask, .type = SETTING_TYPE_UINT8},
+	{.id = 9, .memptr = &g_settings.rt.encoders_dir_invert_mask, .type = SETTING_TYPE_UINT8},
 #endif
 	{.id = 10, .memptr = &g_settings.status_report_mask, .type = SETTING_TYPE_UINT8},
 	{.id = 11, .memptr = &g_settings.g64_angle_factor, .type = SETTING_TYPE_FLOAT},
@@ -182,15 +185,15 @@ const setting_id_t __rom__ g_settings_id_table[] = {
 	{.id = 14, .memptr = &g_settings.s_curve_profile, .type = SETTING_TYPE_UINT8},
 #endif
 	{.id = 20, .memptr = &g_settings.soft_limits_enabled, .type = SETTING_TYPE_BOOL},
-	{.id = 21, .memptr = &g_settings.hard_limits_enabled, .type = SETTING_TYPE_BOOL},
+	{.id = 21, .memptr = &g_settings.rt.hard_limits_enabled, .type = SETTING_TYPE_BOOL},
 	{.id = 22, .memptr = &g_settings.homing_enabled, .type = SETTING_TYPE_BOOL},
 	{.id = 23, .memptr = &g_settings.homing_dir_invert_mask, .type = SETTING_TYPE_UINT8},
 	{.id = 24, .memptr = &g_settings.homing_slow_feed_rate, .type = SETTING_TYPE_FLOAT},
 	{.id = 25, .memptr = &g_settings.homing_fast_feed_rate, .type = SETTING_TYPE_FLOAT},
 	{.id = 26, .memptr = &g_settings.debounce_ms, .type = SETTING_TYPE_UINT16},
 	{.id = 27, .memptr = &g_settings.homing_offset, .type = SETTING_TYPE_FLOAT},
-	{.id = 30, .memptr = &g_settings.spindle_max_rpm, .type = SETTING_TYPE_UINT16},
-	{.id = 31, .memptr = &g_settings.spindle_min_rpm, .type = SETTING_TYPE_UINT16},
+	{.id = 30, .memptr = &g_settings.rt.spindle_max_rpm, .type = SETTING_TYPE_UINT16},
+	{.id = 31, .memptr = &g_settings.rt.spindle_min_rpm, .type = SETTING_TYPE_UINT16},
 	{.id = 32, .memptr = &g_settings.tool_mode, .type = SETTING_TYPE_UINT8},
 #ifdef ENABLE_LASER_PPI
 	{.id = 33, .memptr = &g_settings.step_per_mm[0], .type = SETTING_TYPE_FLOAT},
@@ -221,7 +224,7 @@ const setting_id_t __rom__ g_settings_id_table[] = {
 	{.id = 140, .memptr = &g_settings.backlash_steps, .type = SETTING_TYPE_UINT16 | SETTING_ARRAY | SETTING_ARRCNT(AXIS_TO_STEPPERS)},
 #endif
 #if ENCODERS
-	{.id = 150, .memptr = &g_settings.encoders_resolution, .type = SETTING_TYPE_FLOAT | SETTING_ARRAY | SETTING_ARRCNT(ENCODERS)},
+	{.id = 150, .memptr = &g_settings.rt.encoders_resolution, .type = SETTING_TYPE_FLOAT | SETTING_ARRAY | SETTING_ARRCNT(ENCODERS)},
 #endif
 #ifdef H_MAPPING_EEPROM_STORE_ENABLED
 #define H_MAPING_ARRAY_HALF_SIZE ((H_MAPING_GRID_FACTOR * H_MAPING_GRID_FACTOR) >> 1)
@@ -460,10 +463,10 @@ void settings_save(uint16_t address, uint8_t *__ptr, uint16_t size)
 }
 
 /**
- * Pushes the machine settings to the RT core.
- * The RT side does not access the NVM and holds a RAM only copy of the settings
+ * Pushes the machine settings the RT side reads to the RT core.
+ * The RT side does not access the NVM and holds a RAM only copy of them
  * (RAM_ONLY_SETTINGS), so the NonRT side (that owns the persistent settings)
- * sends the whole block whenever they change.
+ * sends the RT block whenever they change.
  * */
 void settings_sync_rt(void)
 {
@@ -472,19 +475,19 @@ void settings_sync_rt(void)
 	if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
 	{
-		ipc_exec(SETTINGS_SYNC, &g_settings, sizeof(settings_t), NULL, 0);
+		ipc_exec(SETTINGS_SYNC, &g_settings.rt, sizeof(rt_settings_t), NULL, 0);
 	}
 #endif
 }
 
 /**
- * Applies a machine settings block received from the NonRT core (RT side only).
+ * Applies a settings block received from the NonRT core (RT side only).
  * */
 void settings_apply_rt(uint8_t *__ptr, uint16_t size)
 {
 	ATOMIC_CODEBLOCK
 	{
-		rom_memcpy(&g_settings, __ptr, size);
+		rom_memcpy(&g_settings.rt, __ptr, size);
 	}
 }
 

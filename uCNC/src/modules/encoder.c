@@ -820,7 +820,7 @@ uint16_t encoder_get_rpm(uint8_t i)
 	}
 
 	uint32_t delta = (t0 - t1);
-	uint32_t max_elapsed = MIN_ENC_RPM_FACTOR / g_settings.encoders_resolution[i];
+	uint32_t max_elapsed = MIN_ENC_RPM_FACTOR / g_settings.rt.encoders_resolution[i];
 	uint32_t last_elapsed = (t_now - t0);
 
 	if (!delta || (last_elapsed > max_elapsed))
@@ -838,7 +838,7 @@ uint16_t encoder_get_rpm(uint8_t i)
 		delta = last_elapsed;
 	}
 
-	uint32_t rpm = 60000000UL / delta / g_settings.encoders_resolution[i];
+	uint32_t rpm = 60000000UL / delta / g_settings.rt.encoders_resolution[i];
 
 	return (uint16_t)rpm;
 }
@@ -1180,7 +1180,7 @@ void encoder_virtual_index_update(uint8_t i)
 	cpr = encoder_virtual_index_cpr(i);
 	if (!cpr)
 	{
-		cpr = (uint32_t)g_settings.encoders_resolution[i];
+		cpr = (uint32_t)g_settings.rt.encoders_resolution[i];
 	}
 	if (!cpr)
 	{
@@ -1471,7 +1471,7 @@ static FORCEINLINE uint8_t encoder_read_dirs(void)
 #if ENCODERS > 7 && (ENC7_PULSE != ENC7_DIR)
 	value |= ((io_get_input(ENC7_DIR)) ? ENC7_IO_MASK : 0);
 #endif
-	return value ^ g_settings.encoders_dir_invert_mask;
+	return value ^ g_settings.rt.encoders_dir_invert_mask;
 }
 
 void encoders_update(uint8_t pulse, uint8_t diff)
@@ -1875,20 +1875,20 @@ static void encoder_update(uint8_t i)
 
 	if (incremental)
 	{
-		diff = (!(g_settings.encoders_dir_invert_mask & (1 << i))) ? (encoder_read - encoder_last_read[i]) : (encoder_last_read[i] - encoder_read);
+		diff = (!(g_settings.rt.encoders_dir_invert_mask & (1 << i))) ? (encoder_read - encoder_last_read[i]) : (encoder_last_read[i] - encoder_read);
 		encoder_last_read[i] = encoder_read;
 
 		bool do_wrap_correction = encoder_apply_configured_wrap(i, &diff);
 
-		if (do_wrap_correction && g_settings.encoders_resolution[i] > 0)
+		if (do_wrap_correction && g_settings.rt.encoders_resolution[i] > 0)
 		{
-			float half_res = g_settings.encoders_resolution[i] * 0.5f;
+			float half_res = g_settings.rt.encoders_resolution[i] * 0.5f;
 
 			if ((float)diff < -half_res)
-				diff += (int32_t)g_settings.encoders_resolution[i];
+				diff += (int32_t)g_settings.rt.encoders_resolution[i];
 
 			if ((float)diff > half_res)
-				diff -= (int32_t)g_settings.encoders_resolution[i];
+				diff -= (int32_t)g_settings.rt.encoders_resolution[i];
 		}
 
 		encoders_pos[i] += diff;
@@ -1904,11 +1904,11 @@ static void encoder_update(uint8_t i)
 			encoder_rpm_accum[i] += ABS(diff);
 			if (elapsed >= ENCODER_RPM_SAMPLE_US)
 			{
-				if (encoder_rpm_accum[i] && g_settings.encoders_resolution[i])
+				if (encoder_rpm_accum[i] && g_settings.rt.encoders_resolution[i])
 				{
 					uint64_t rpm = ((uint64_t)encoder_rpm_accum[i] * 60000000ULL);
 					rpm /= elapsed;
-					rpm /= g_settings.encoders_resolution[i];
+					rpm /= g_settings.rt.encoders_resolution[i];
 					encoders_rpm[i] = (uint16_t)MIN(rpm, 65535);
 				}
 				else
