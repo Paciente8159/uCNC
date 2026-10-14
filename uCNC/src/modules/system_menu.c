@@ -28,6 +28,16 @@ system_menu_t g_system_menu;
 
 float g_system_menu_jog_distance, g_system_menu_jog_feed;
 
+// floats that accept negative values use the full float range, the remaining are clamped to positive values
+static float system_menu_clamp_float(uint8_t vartype, float value)
+{
+	if (vartype == VAR_TYPE_FLOAT_SIGNED)
+	{
+		return CLAMP(-__FLT_MAX__, value, __FLT_MAX__);
+	}
+	return CLAMP(__FLT_MIN__, value, __FLT_MAX__);
+}
+
 static uint8_t system_menu_get_item_count(uint8_t menu_id);
 static bool system_menu_action_settings_cmd(uint8_t action, system_menu_item_t *item);
 static bool system_menu_action_jog(uint8_t action, system_menu_item_t *item);
@@ -150,14 +160,14 @@ DECL_MODULE(system_menu)
 	DECL_MENU_ACTION(SYSTEM_MENU_ID_SETTINGS, set_reset, STR_RESET_SETTINGS, system_menu_action_settings_cmd, CONST_VARG(2));
 
 	DECL_MENU(SYSTEM_MENU_ID_MISC_SETTINGS, SYSTEM_MENU_ID_SETTINGS, STR_OTHER);
-	DECL_MENU_VAR(SYSTEM_MENU_ID_MISC_SETTINGS, s11, STR_G64_FACT, &g_settings.g64_angle_factor, VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(SYSTEM_MENU_ID_MISC_SETTINGS, s11, STR_G64_FACT, &g_settings.g64_angle_factor, VAR_TYPE_FLOAT_SIGNED);
 	DECL_MENU_VAR(SYSTEM_MENU_ID_MISC_SETTINGS, s12, STR_ARC_TOL, &g_settings.arc_tolerance, VAR_TYPE_FLOAT);
 
 #ifdef H_MAPPING_EEPROM_STORE_ENABLED
-	DECL_MENU_VAR(SYSTEM_MENU_ID_MISC_SETTINGS, s215, STR_ARC_TOL, &g_settings.hmap_x, VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(SYSTEM_MENU_ID_MISC_SETTINGS, s216, STR_ARC_TOL, &g_settings.hmap_y, VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(SYSTEM_MENU_ID_MISC_SETTINGS, s217, STR_ARC_TOL, &g_settings.hmap_x_offset, VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(SYSTEM_MENU_ID_MISC_SETTINGS, s218, STR_ARC_TOL, &g_settings.hmap_y_offset, VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(SYSTEM_MENU_ID_MISC_SETTINGS, s215, STR_HMAP_X_START, &g_settings.hmap_x, VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(SYSTEM_MENU_ID_MISC_SETTINGS, s216, STR_HMAP_Y_START, &g_settings.hmap_y, VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(SYSTEM_MENU_ID_MISC_SETTINGS, s217, STR_HMAP_X_SIZE, &g_settings.hmap_x_offset, VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(SYSTEM_MENU_ID_MISC_SETTINGS, s218, STR_HMAP_Y_SIZE, &g_settings.hmap_y_offset, VAR_TYPE_FLOAT);
 	// TODO allow edit each offset individually
 #endif
 
@@ -239,7 +249,7 @@ DECL_MODULE(system_menu)
 	DECL_MENU_VAR(SYSTEM_MENU_ID_STEPPER_SETTINGS, s115, STR_VMAX("C"), &g_settings.max_feed_rate[5], VAR_TYPE_FLOAT);
 	DECL_MENU_VAR(SYSTEM_MENU_ID_STEPPER_SETTINGS, s125, STR_ACCEL("C"), &g_settings.acceleration[5], VAR_TYPE_FLOAT);
 	DECL_MENU_VAR(SYSTEM_MENU_ID_STEPPER_SETTINGS, s135, STR_MAX_DIST("C"), &g_settings.max_distance[5], VAR_TYPE_FLOAT);
-#ifdef ENABLE_BACKLASH_COMENSATION
+#ifdef ENABLE_BACKLASH_COMPENSATION
 	DECL_MENU_VAR(SYSTEM_MENU_ID_STEPPER_SETTINGS, s145, STR_BACKLASH("C"), &g_settings.backlash_steps[5], VAR_TYPE_UINT16);
 #endif
 #endif
@@ -247,10 +257,10 @@ DECL_MODULE(system_menu)
 #if (defined(ENABLE_SKEW_COMPENSATION) || defined(KINEMATICS_VARS_SYSTEM_MENU_INIT))
 	DECL_MENU(SYSTEM_MENU_ID_KINEMATIC_SETTINGS, SYSTEM_MENU_ID_SETTINGS, STR_KINEMATICS);
 #ifdef ENABLE_SKEW_COMPENSATION
-	DECL_MENU_VAR(SYSTEM_MENU_ID_KINEMATIC_SETTINGS, s37, STR_SKEW_FACTOR("XY"), &g_settings.skew_xy_factor, VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(SYSTEM_MENU_ID_KINEMATIC_SETTINGS, s37, STR_SKEW_FACTOR("XY"), &g_settings.skew_xy_factor, VAR_TYPE_FLOAT_SIGNED);
 #ifndef SKEW_COMPENSATION_XY_ONLY
-	DECL_MENU_VAR(SYSTEM_MENU_ID_KINEMATIC_SETTINGS, s38, STR_SKEW_FACTOR("XZ"), &g_settings.skew_xz_factor, VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(SYSTEM_MENU_ID_KINEMATIC_SETTINGS, s39, STR_SKEW_FACTOR("YZ"), &g_settings.skew_yz_factor, VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(SYSTEM_MENU_ID_KINEMATIC_SETTINGS, s38, STR_SKEW_FACTOR("XZ"), &g_settings.skew_xz_factor, VAR_TYPE_FLOAT_SIGNED);
+	DECL_MENU_VAR(SYSTEM_MENU_ID_KINEMATIC_SETTINGS, s39, STR_SKEW_FACTOR("YZ"), &g_settings.skew_yz_factor, VAR_TYPE_FLOAT_SIGNED);
 #endif
 #endif
 #ifdef KINEMATICS_VARS_SYSTEM_MENU_INIT
@@ -912,8 +922,9 @@ bool system_menu_action_edit_simple(uint8_t action, system_menu_item_t *item)
 			(*(uint32_t *)item->argptr) = CLAMP(0, (*(uint32_t *)item->argptr), 0xFFFFFFFF);
 			break;
 		case VAR_TYPE_FLOAT:
+		case VAR_TYPE_FLOAT_SIGNED:
 			(*(float *)item->argptr) += (inc) ? 1 : -1;
-			(*(float *)item->argptr) = CLAMP(__FLT_MIN__, (*(float *)item->argptr), __FLT_MAX__);
+			(*(float *)item->argptr) = system_menu_clamp_float(vartype, (*(float *)item->argptr));
 			break;
 		}
 
@@ -961,6 +972,7 @@ bool system_menu_action_edit(uint8_t action, system_menu_item_t *item)
 				modifier = (action == SYSTEM_MENU_ACTION_NEXT) ? 1 : 0;
 				break;
 			case VAR_TYPE_FLOAT:
+			case VAR_TYPE_FLOAT_SIGNED:
 				modifier = (action == SYSTEM_MENU_ACTION_NEXT) ? powf(10.0f, (currentmult - 3)) : -powf(10.0f, (currentmult - 3));
 				break;
 			default:
@@ -1000,13 +1012,21 @@ bool system_menu_action_edit(uint8_t action, system_menu_item_t *item)
 			g_system_menu.current_multiplier = 0;
 			break;
 		case VAR_TYPE_FLOAT:
-			// Modify digit
-			current_digit = (int)((*(float *)item->argptr) / powf(10.0f, (currentmult - 3))) % 10;
-			(*(float *)item->argptr) += (digit - current_digit) * powf(10.0f, (currentmult - 3));
+		case VAR_TYPE_FLOAT_SIGNED:
+		{
+			// Modify digit. Signed floats edit the digit on the magnitude to preserve the sign
+			float *value = (float *)item->argptr;
+			float scale = powf(10.0f, (currentmult - 3));
+			bool negative = (vartype == VAR_TYPE_FLOAT_SIGNED) && (*value < 0);
+			float magnitude = (negative) ? -*value : *value;
+			current_digit = ((int)(magnitude / scale)) % 10;
+			magnitude += (digit - current_digit) * scale;
+			*value = (negative) ? -magnitude : magnitude;
 			// Clamp
-			(*(float *)item->argptr) = CLAMP(__FLT_MIN__, (*(float *)item->argptr), __FLT_MAX__);
+			*value = system_menu_clamp_float(vartype, *value);
 			g_system_menu.current_multiplier = CLAMP(-1, currentmult + 1, 9);
-			break;
+		}
+		break;
 		case VAR_TYPE_INT8:
 		case VAR_TYPE_UINT8:
 			// Modify digit
@@ -1068,8 +1088,9 @@ bool system_menu_action_edit(uint8_t action, system_menu_item_t *item)
 			(*(uint32_t *)item->argptr) = CLAMP(0, (*(uint32_t *)item->argptr), 0xFFFFFFFF);
 			break;
 		case VAR_TYPE_FLOAT:
+		case VAR_TYPE_FLOAT_SIGNED:
 			(*(float *)item->argptr) += modifier;
-			(*(float *)item->argptr) = CLAMP(__FLT_MIN__, (*(float *)item->argptr), __FLT_MAX__);
+			(*(float *)item->argptr) = system_menu_clamp_float(vartype, (*(float *)item->argptr));
 			break;
 		}
 	}
@@ -1092,6 +1113,7 @@ bool system_menu_action_edit(uint8_t action, system_menu_item_t *item)
 		case VAR_TYPE_INT32:
 		case VAR_TYPE_UINT32:
 		case VAR_TYPE_FLOAT:
+		case VAR_TYPE_FLOAT_SIGNED:
 			g_system_menu.current_multiplier = CLAMP(-1, currentmult, 9);
 			break;
 		}
@@ -1214,6 +1236,7 @@ void system_menu_item_render_var_arg(uint8_t render_flags, system_menu_item_t *i
 		system_menu_int_to_str(buffer, (uint32_t)*((uint32_t *)item->argptr));
 		break;
 	case VAR_TYPE_FLOAT:
+	case VAR_TYPE_FLOAT_SIGNED:
 		system_menu_flt_to_str(buffer, *((float *)item->argptr));
 		break;
 	default:
