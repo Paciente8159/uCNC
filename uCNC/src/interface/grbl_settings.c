@@ -304,6 +304,8 @@ void settings_init(void)
 #endif
 		proto_error(STATUS_SETTING_READ_FAIL);
 		rom_memcpy(&g_settings, &default_settings, sizeof(settings_t));
+		// the failed load may have left the RT side with an invalid copy
+		settings_sync_rt();
 		proto_cnc_settings();
 	}
 }
@@ -379,6 +381,9 @@ uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint16_t size)
 
 	if (is_machine_settings)
 	{
+		// the RT side copy of the machine settings is now out of sync
+		settings_sync_rt();
+
 		const uint8_t version[3] = SETTINGS_VERSION;
 		if ((g_settings.version[0] != version[0]) || (g_settings.version[1] != version[1]) || (g_settings.version[2] != version[2]))
 		{
@@ -418,6 +423,12 @@ void settings_save(uint16_t address, uint8_t *__ptr, uint16_t size)
 		return;
 	}
 
+	if (address == SETTINGS_ADDRESS_OFFSET)
+	{
+		// the machine settings changed, so the RT side copy is synced
+		settings_sync_rt();
+	}
+
 #ifdef ENABLE_SETTINGS_MODULES
 	bool extended_save __attribute__((__cleanup__(EVENT_HANDLER_NAME(settings_extended_save)))) = (address == SETTINGS_ADDRESS_OFFSET);
 #endif
@@ -446,6 +457,35 @@ void settings_save(uint16_t address, uint8_t *__ptr, uint16_t size)
 
 	nvm_putc(address, crc);
 	nvm_end_write();
+}
+
+/**
+ * Pushes the machine settings to the RT core.
+ * The RT side does not access the NVM and holds a RAM only copy of the settings
+ * (RAM_ONLY_SETTINGS), so the NonRT side (that owns the persistent settings)
+ * sends the whole block whenever they change.
+ * */
+void settings_sync_rt(void)
+{
+#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if (IPC_MODE & IPC_MULTICORE_RT)
+	if (ipc_get_current_core() == IPC_NON_RT_CORE)
+#endif
+	{
+		ipc_exec(SETTINGS_SYNC, &g_settings, sizeof(settings_t), NULL, 0);
+	}
+#endif
+}
+
+/**
+ * Applies a machine settings block received from the NonRT core (RT side only).
+ * */
+void settings_apply_rt(uint8_t *__ptr, uint16_t size)
+{
+	ATOMIC_CODEBLOCK
+	{
+		rom_memcpy(&g_settings, __ptr, size);
+	}
 }
 
 bool settings_allows_negative(setting_offset_t id)
@@ -600,14 +640,18 @@ void settings_erase(uint16_t address, uint8_t *__ptr, uint16_t size)
 #endif
 
 #ifdef ENABLE_EXTRA_SETTINGS_CMDS
-	if (!is_machine_settings)
+	if (is_machine_settings)
 	{
+		// settings_save is skipped for the machine settings, so the RT side copy
+		// is synced directly
+		settings_sync_rt();
+	}
+	else
 #endif
+	{
 		// store the settings
 		settings_save(address, __ptr, size);
-#ifdef ENABLE_EXTRA_SETTINGS_CMDS
 	}
-#endif
 }
 
 bool settings_check_startup_gcode(uint16_t address)

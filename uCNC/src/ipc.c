@@ -27,6 +27,10 @@ uint8_t g_ipc_buffer[IPC_BUFFER_SIZE];
 static uint8_t g_ipc_response[IPC_BUFFER_SIZE];
 bool g_ipc_data_available;
 
+// the whole machine settings block is pushed in a single message, so it must fit
+// the request buffer
+typedef char ipc_settings_block_fits[((sizeof(settings_t) + sizeof(ipc_packet_t)) <= IPC_BUFFER_SIZE) ? 1 : -1];
+
 void ipc_init(void) { /*TODO*/ }
 
 /**overridable send and receive methods - depends on the transport layer (SPI,
@@ -191,6 +195,10 @@ void ipc_dotasks(void)
     break;
   case TOOL_SET_MODE:
     tool_set_mode(ipc_data->payload[0]);
+    break;
+  case SETTINGS_SYNC:
+    settings_apply_rt(ipc_data->payload,
+                      (uint16_t)MIN(ipc_data->len, sizeof(settings_t)));
     break;
   default:
     break;

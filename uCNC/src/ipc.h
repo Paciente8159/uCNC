@@ -76,7 +76,7 @@ extern "C"
 
   typedef enum ipc_packet_type_
   {
-    ITP_IS_FULL = 0,
+    ITP_IS_FULL = 1,
     ITP_PUSH_BLK,
     ITP_PUSH_SGM,
     ITP_STEP_RATE_CONVERT,
@@ -114,7 +114,11 @@ extern "C"
     TOOL_SET_COOLANT,
     // The tool mode is owned by the NonRT side and mirrored to the RT side, so
     // the NonRT side pushes the new value to the RT core (see tool_set_mode).
-    TOOL_SET_MODE
+    TOOL_SET_MODE,
+    // The machine settings are owned by the NonRT side and mirrored to the RT
+    // side, so the NonRT side pushes the whole settings block to the RT core
+    // (see settings_sync_rt).
+    SETTINGS_SYNC
   } ipc_packet_type_t;
 
   typedef struct ipc_packet_
