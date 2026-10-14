@@ -237,7 +237,7 @@ void tool_set_speed(int16_t value)
 #if TOOL_COUNT > 0
   tool_current_speed = value;
 #endif
-#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if ASSERT_IPC_NONRT()
 #if (IPC_MODE & IPC_MULTICORE_RT)
   if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
@@ -249,7 +249,7 @@ void tool_set_speed(int16_t value)
   }
 #endif
 
-#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
+#if ASSERT_IPC_RT()
 #if TOOL_COUNT > 0
   if (tool_current.set_speed)
   {
@@ -295,7 +295,7 @@ int16_t tool_range_speed(int16_t value, uint8_t conv)
 
 void tool_set_coolant(uint8_t value)
 {
-#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if ASSERT_IPC_NONRT()
 #if (IPC_MODE & IPC_MULTICORE_RT)
   if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
@@ -307,7 +307,7 @@ void tool_set_coolant(uint8_t value)
   }
 #endif
 
-#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
+#if ASSERT_IPC_RT()
 #if TOOL_COUNT > 0
   if (tool_current.set_coolant)
   {
@@ -347,7 +347,7 @@ uint8_t tool_get_mode(void) { return current_tool_mode; }
 void tool_set_mode(uint8_t mode)
 {
   current_tool_mode = mode;
-#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if ASSERT_IPC_NONRT()
 #if (IPC_MODE & IPC_MULTICORE_RT)
   if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif

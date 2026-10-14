@@ -181,6 +181,10 @@ extern "C"
 #define EXEC_ALARM_SETTINGS_READ_ERROR -3
 #endif
 
+// the NonRT side could not sync with the RT side at startup. Nothing can run
+// without it, so the machine is locked in alarm and requires a reboot.
+#define EXEC_ALARM_RT_SYNC_FAIL -4
+
 // formated messages
 #define STR_EOL "\r\n"
 #define MSG_EOL STR_EOL

@@ -58,6 +58,25 @@ extern "C"
 #define IPC_RT_CORE 0
 #endif
 
+/**
+ * Which side of the split a block of code belongs to.
+ *
+ * ASSERT_IPC_NONRT() guards the forwarding path: the NonRT side hands the
+ * command to the RT side over the IPC transport. It only applies when this build
+ * contains the NonRT side and the two sides do not share memory - with
+ * IPC_SHARED_MEM the RT side is reached directly, so there is nothing to
+ * forward.
+ *
+ * ASSERT_IPC_RT() guards the real body of a split function. That body runs
+ * locally, on the core that owns the state: the RT side, or the single core.
+ *
+ * On builds that contain both sides the runtime core is still checked with
+ * ipc_get_current_core() inside the ASSERT_IPC_NONRT() block, so that the body
+ * guarded by ASSERT_IPC_RT() is the one that runs on the RT core.
+ * */
+#define ASSERT_IPC_NONRT() ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#define ASSERT_IPC_RT() ((IPC_MODE == IPC_SINGLE_CORE) || (IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)))
+
   /**
    * IPC ACK handling
    *
@@ -72,6 +91,20 @@ extern "C"
 #endif
 #ifndef IPC_ACK_TIMEOUT
 #define IPC_ACK_TIMEOUT 50 // ms
+#endif
+
+  /**
+   * Startup handshake
+   *
+   * The NonRT side cannot do anything before the RT side is online, since every
+   * command it issues is forwarded and waits for an ACK. So it pings the RT side
+   * at startup and only gives up after this total time budget has elapsed. This
+   * is deliberately not the ACK timeout above: that one bounds a single request
+   * while the machine is running, while the RT board may take a long time to
+   * boot.
+   */
+#ifndef IPC_BOOT_TIMEOUT
+#define IPC_BOOT_TIMEOUT 5000 // ms
 #endif
 
   typedef enum ipc_packet_type_
@@ -118,7 +151,11 @@ extern "C"
     // The machine settings are owned by the NonRT side and mirrored to the RT
     // side, so the NonRT side pushes the whole settings block to the RT core
     // (see settings_sync_rt).
-    SETTINGS_SYNC
+    SETTINGS_SYNC,
+    // startup handshake. The NonRT side sends this and waits for the reply
+    // carrying the echoed type (the ACK) to confirm the RT side is online and
+    // servicing requests before forwarding anything else to it.
+    IPC_PING
   } ipc_packet_type_t;
 
   typedef struct ipc_packet_
@@ -128,7 +165,11 @@ extern "C"
     uint8_t *payload;
   } __attribute__((packed, aligned(1))) ipc_packet_t;
 
-  void ipc_init(void);
+  // confirms the RT side is online and answering before the NonRT side starts
+  // forwarding commands to it. Blocks up to IPC_BOOT_TIMEOUT ms.
+  // Returns true when the RT side acknowledged the ping, or when no handshake is
+  // needed: single core and shared memory builds, and the RT side itself.
+  bool ipc_init(void);
   void ipc_send(ipc_packet_type_t type, const void *data, size_t len); // overridable request send (used by ipc_exec)
   // overridable ACK/response receive (used by ipc_exec). Waits for the reply whose
   // first byte equals type (the ACK), retrying on any other byte up to

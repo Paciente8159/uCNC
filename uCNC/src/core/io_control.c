@@ -389,7 +389,7 @@ MCU_IO_CALLBACK void mcu_inputs_changed_cb(void)
 #ifdef ENABLE_MULTI_STEP_HOMING
 void io_lock_limits(uint8_t limitmask)
 {
-#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if ASSERT_IPC_NONRT()
 #if (IPC_MODE & IPC_MULTICORE_RT)
 	if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
@@ -401,7 +401,7 @@ void io_lock_limits(uint8_t limitmask)
 	}
 #endif
 
-#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
+#if ASSERT_IPC_RT()
 	io_lock_limits_mask = limitmask;
 #endif
 }
@@ -409,7 +409,7 @@ void io_lock_limits(uint8_t limitmask)
 
 void io_enable_limits(void)
 {
-#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if ASSERT_IPC_NONRT()
 #if (IPC_MODE & IPC_MULTICORE_RT)
 	if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
@@ -421,13 +421,13 @@ void io_enable_limits(void)
 	}
 #endif
 
-#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
+#if ASSERT_IPC_RT()
 	io_limits_disabled = false;
 #endif
 }
 void io_disable_limits(void)
 {
-#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if ASSERT_IPC_NONRT()
 #if (IPC_MODE & IPC_MULTICORE_RT)
 	if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
@@ -439,14 +439,14 @@ void io_disable_limits(void)
 	}
 #endif
 
-#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
+#if ASSERT_IPC_RT()
 	io_limits_disabled = true;
 #endif
 }
 
 void io_invert_limits(uint8_t limitmask)
 {
-#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if ASSERT_IPC_NONRT()
 #if (IPC_MODE & IPC_MULTICORE_RT)
 	if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
@@ -458,7 +458,7 @@ void io_invert_limits(uint8_t limitmask)
 	}
 #endif
 
-#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
+#if ASSERT_IPC_RT()
 	io_invert_limits_mask = limitmask;
 	mcu_limits_changed_cb();
 #endif
@@ -466,7 +466,7 @@ void io_invert_limits(uint8_t limitmask)
 
 uint8_t io_get_raw_limits(void)
 {
-#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if ASSERT_IPC_NONRT()
 #if (IPC_MODE & IPC_MULTICORE_RT)
 	if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
@@ -477,7 +477,7 @@ uint8_t io_get_raw_limits(void)
 	}
 #endif
 
-#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
+#if ASSERT_IPC_RT()
 #ifdef DISABLE_ALL_LIMITS
 	return 0;
 #endif
@@ -530,7 +530,7 @@ uint8_t io_get_raw_limits(void)
 
 uint8_t io_get_limits(void)
 {
-#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if ASSERT_IPC_NONRT()
 #if (IPC_MODE & IPC_MULTICORE_RT)
 	if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
@@ -541,7 +541,7 @@ uint8_t io_get_limits(void)
 	}
 #endif
 
-#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
+#if ASSERT_IPC_RT()
 	uint8_t result = io_get_raw_limits();
 	return ((!cnc_get_exec_state(EXEC_HOMING)) ? (result) : (result ^ io_invert_limits_mask));
 #endif
@@ -586,7 +586,7 @@ io_probe_action_cb io_probe_custom_disable = NULL;
 
 void io_enable_probe(void)
 {
-#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if ASSERT_IPC_NONRT()
 #if (IPC_MODE & IPC_MULTICORE_RT)
 	if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
@@ -598,7 +598,7 @@ void io_enable_probe(void)
 	}
 #endif
 
-#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
+#if ASSERT_IPC_RT()
 	cnc_set_exec_state(EXEC_PROBING);
 #ifdef PROBE_ENABLE_CUSTOM_CALLBACK
 	if (io_probe_custom_enable)
@@ -622,7 +622,7 @@ void io_enable_probe(void)
 
 void io_disable_probe(void)
 {
-#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if ASSERT_IPC_NONRT()
 #if (IPC_MODE & IPC_MULTICORE_RT)
 	if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
@@ -634,7 +634,7 @@ void io_disable_probe(void)
 	}
 #endif
 
-#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
+#if ASSERT_IPC_RT()
 	cnc_clear_exec_state(EXEC_PROBING | EXEC_STOPPING); // clear probe and pending hold to stop probing motion
 #ifdef PROBE_ENABLE_CUSTOM_CALLBACK
 	if (io_probe_custom_disable)
@@ -657,7 +657,7 @@ void io_disable_probe(void)
 
 bool io_get_probe(void)
 {
-#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if ASSERT_IPC_NONRT()
 #if (IPC_MODE & IPC_MULTICORE_RT)
 	if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
@@ -668,7 +668,7 @@ bool io_get_probe(void)
 	}
 #endif
 
-#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
+#if ASSERT_IPC_RT()
 #ifdef PROBE_ENABLE_CUSTOM_CALLBACK
 	if (io_probe_custom_get)
 	{
@@ -695,7 +695,7 @@ bool io_get_probe(void)
 // outputs
 void io_set_steps(uint8_t mask)
 {
-#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if ASSERT_IPC_NONRT()
 #if (IPC_MODE & IPC_MULTICORE_RT)
 	if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
@@ -707,7 +707,7 @@ void io_set_steps(uint8_t mask)
 	}
 #endif
 
-#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
+#if ASSERT_IPC_RT()
 	// #ifdef ENABLE_IO_MODULES
 	// 	EVENT_INVOKE(set_steps, &mask);
 	// #endif
@@ -802,7 +802,7 @@ void io_set_steps(uint8_t mask)
 
 void io_toggle_steps(uint8_t mask)
 {
-#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if ASSERT_IPC_NONRT()
 #if (IPC_MODE & IPC_MULTICORE_RT)
 	if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
@@ -814,7 +814,7 @@ void io_toggle_steps(uint8_t mask)
 	}
 #endif
 
-#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
+#if ASSERT_IPC_RT()
 	// #ifdef ENABLE_IO_MODULES
 	// 	EVENT_INVOKE(toggle_steps, &mask);
 	// #endif
@@ -880,7 +880,7 @@ void io_toggle_steps(uint8_t mask)
 
 void io_get_steps_pos(int32_t *position)
 {
-#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if ASSERT_IPC_NONRT()
 #if (IPC_MODE & IPC_MULTICORE_RT)
 	if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
@@ -892,7 +892,7 @@ void io_get_steps_pos(int32_t *position)
 	}
 #endif
 
-#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
+#if ASSERT_IPC_RT()
 	itp_get_rt_position(position);
 #if STEPPERS_ENCODERS_MASK != 0
 #if (defined(STEP0_ENCODER) && AXIS_TO_STEPPERS > 0)
@@ -919,7 +919,7 @@ void io_get_steps_pos(int32_t *position)
 
 void io_set_dirs(uint8_t mask)
 {
-#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if ASSERT_IPC_NONRT()
 #if (IPC_MODE & IPC_MULTICORE_RT)
 	if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
@@ -931,7 +931,7 @@ void io_set_dirs(uint8_t mask)
 	}
 #endif
 
-#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
+#if ASSERT_IPC_RT()
 	mask ^= g_settings.dir_invert_mask;
 
 	// #ifdef ENABLE_IO_MODULES
@@ -1027,7 +1027,7 @@ void io_set_dirs(uint8_t mask)
 
 void io_enable_steppers(uint8_t mask)
 {
-#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if ASSERT_IPC_NONRT()
 #if (IPC_MODE & IPC_MULTICORE_RT)
 	if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
@@ -1039,7 +1039,7 @@ void io_enable_steppers(uint8_t mask)
 	}
 #endif
 
-#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
+#if ASSERT_IPC_RT()
 	// #ifdef ENABLE_IO_MODULES
 	// 	EVENT_INVOKE(enable_steppers, &mask);
 	// #endif

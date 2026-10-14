@@ -59,12 +59,21 @@ typedef struct
 
 static cnc_state_t cnc_state;
 bool cnc_status_report_lock;
+#if ASSERT_IPC_NONRT()
+// unrecoverable fault code (0 = none). Only a reboot clears it, so it is kept
+// out of cnc_state: cnc_reset() writes alarm and cnc_run() writes loop_state, so
+// the latch needs storage that neither of them can reach.
+static int8_t cnc_fatal_fault;
+#endif
 
 static void cnc_check_fault_systems(void);
 static void cnc_exec_rt_commands(void);
 static void cnc_io_dotasks(void);
 static void cnc_reset(void);
 static void cnc_run_startup_blocks(void);
+#if ASSERT_IPC_NONRT()
+static void cnc_raise_fatal_fault(int8_t code);
+#endif
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
 // event_cnc_reset_handler
@@ -100,6 +109,17 @@ void cnc_init(void)
   // initializes all systems
   mcu_init();         // mcu
   mcu_io_reset();     // add custom logic to set pins initial state
+#if ASSERT_IPC_NONRT()
+  /**
+   * The NonRT side must confirm the RT side is online before anything is
+   * forwarded to it. This runs before io_disable_probe() because that is already
+   * the first command that has to go over IPC.
+   */
+  if (!ipc_init())
+  {
+    cnc_raise_fatal_fault(EXEC_ALARM_RT_SYNC_FAIL);
+  }
+#endif
   io_disable_probe(); // forces probe isr disabling
   grbl_stream_init(); // serial
   settings_init();    // settings initial load
@@ -171,7 +191,22 @@ void cnc_run(void)
     cnc_state.alarm = EXEC_ALARM_NOALARM;
   }
 
-  cnc_state.loop_state = LOOP_RUNNING;
+#if ASSERT_IPC_NONRT()
+  if (cnc_fatal_fault)
+  {
+    /**
+     * An unrecoverable fault. cnc_reset() and cnc_unlock() above cannot be
+     * allowed to clear it, so it is restored here on every entry and the machine
+     * stays in alarm until it is rebooted.
+     */
+    cnc_state.alarm = cnc_fatal_fault;
+    cnc_state.loop_state = LOOP_FAULT;
+  }
+  else
+#endif
+  {
+    cnc_state.loop_state = LOOP_RUNNING;
+  }
   for (;;)
   {
     cnc_parse_cmd();
@@ -531,6 +566,15 @@ bool cnc_has_alarm()
   return (cnc_get_exec_state(EXEC_KILL) ||
           (cnc_state.alarm != EXEC_ALARM_NOALARM));
 }
+#if ASSERT_IPC_NONRT()
+static void cnc_raise_fatal_fault(int8_t code)
+{
+  DBGLOG("[CNC] fatal fault: %hd", code);
+  cnc_fatal_fault = code;
+  cnc_state.loop_state = LOOP_FAULT;
+  cnc_alarm(code);
+}
+#endif
 
 uint8_t cnc_get_alarm(void)
 {
@@ -556,6 +600,15 @@ void cnc_stop(bool toolstop)
 
 uint8_t cnc_unlock(bool force)
 {
+#if ASSERT_IPC_NONRT()
+  // an unrecoverable fault is only cleared by a reboot
+  if (cnc_fatal_fault)
+  {
+    DBGLOG("[CNC] unlock blocked (fatal fault)");
+    return UNLOCK_ERROR;
+  }
+#endif
+
   // tries to clear alarms, door or any active hold state
   cnc_clear_exec_state(g_settings.homing_enabled
                            ? EXEC_RESET_LOCKED
@@ -640,7 +693,7 @@ uint8_t cnc_unlock(bool force)
 
 uint16_t cnc_get_exec_state(uint16_t statemask)
 {
-#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if ASSERT_IPC_NONRT()
 #if (IPC_MODE & IPC_MULTICORE_RT)
   if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
@@ -652,7 +705,7 @@ uint16_t cnc_get_exec_state(uint16_t statemask)
   }
 #endif
 
-#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
+#if ASSERT_IPC_RT()
   uint16_t state = ATOMIC_LOAD_N(&cnc_state.exec_state, __ATOMIC_ACQUIRE);
   return (state & statemask);
 #endif
@@ -660,7 +713,7 @@ uint16_t cnc_get_exec_state(uint16_t statemask)
 
 void cnc_set_exec_state_rt(uint16_t statemask)
 {
-#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if ASSERT_IPC_NONRT()
 #if (IPC_MODE & IPC_MULTICORE_RT)
   if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
@@ -672,7 +725,7 @@ void cnc_set_exec_state_rt(uint16_t statemask)
   }
 #endif
 
-#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
+#if ASSERT_IPC_RT()
 #ifdef ENABLE_CNC_DEBUG
   uint16_t prev_exec_state = cnc_state.exec_state;
 #endif
@@ -719,7 +772,7 @@ void cnc_set_exec_state(uint16_t statemask)
 
 void cnc_clear_exec_state_rt(uint16_t statemask)
 {
-#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if ASSERT_IPC_NONRT()
 #if (IPC_MODE & IPC_MULTICORE_RT)
   if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
@@ -731,7 +784,7 @@ void cnc_clear_exec_state_rt(uint16_t statemask)
   }
 #endif
 
-#if ((IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)) || IPC_MODE == IPC_SINGLE_CORE)
+#if ASSERT_IPC_RT()
 #ifdef ENABLE_CNC_DEBUG
   uint16_t prev_exec_state = cnc_state.exec_state;
 #endif

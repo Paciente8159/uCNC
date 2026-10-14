@@ -31,7 +31,33 @@ bool g_ipc_data_available;
 // the request buffer
 typedef char ipc_settings_block_fits[((sizeof(settings_t) + sizeof(ipc_packet_t)) <= IPC_BUFFER_SIZE) ? 1 : -1];
 
-void ipc_init(void) { /*TODO*/ }
+bool ipc_init(void)
+{
+#if ASSERT_IPC_NONRT()
+#if (IPC_MODE & IPC_MULTICORE_RT)
+  if (ipc_get_current_core() != IPC_NON_RT_CORE)
+  {
+    return true; // the RT side answers the ping, it does not send one
+  }
+#endif
+  uint32_t start = mcu_millis();
+  while ((mcu_millis() - start) < IPC_BOOT_TIMEOUT)
+  {
+    ipc_send(IPC_PING, NULL, 0);
+    if (ipc_receive(IPC_PING, NULL, 0))
+    {
+      return true;
+    }
+    // cooperate with the task loop. On the host test build this is also what
+    // advances the simulated clock, that has no timer thread of its own.
+    TASK_YIELD();
+  }
+
+  return false;
+#else
+  return true;
+#endif
+}
 
 /**overridable send and receive methods - depends on the transport layer (SPI,
  * ethernet, etc..) */
@@ -88,6 +114,9 @@ void ipc_dotasks(void)
   response.payload = g_ipc_response;
   switch (ipc_data->type)
   {
+  case IPC_PING:
+    // the reply echoes the request type, so the ACK is sent at the end
+    break;
   case ITP_IS_FULL:
     response.payload[0] = (itp_is_full() ? 1 : 0);
     response.len = 1;

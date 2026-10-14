@@ -467,7 +467,7 @@ void settings_save(uint16_t address, uint8_t *__ptr, uint16_t size)
  * */
 void settings_sync_rt(void)
 {
-#if ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
+#if ASSERT_IPC_NONRT()
 #if (IPC_MODE & IPC_MULTICORE_RT)
 	if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
