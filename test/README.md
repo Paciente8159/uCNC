@@ -71,6 +71,7 @@ state-dependent command acceptance matrix:
 - `test_grbl_inputs`: probing and hard-limit input behavior.
 - `test_grbl_jog_realtime`: jog state and realtime jog cancellation.
 - `test_grbl_feed_hold`: realtime feed hold and cycle-start/resume.
+- `test_system_menu`: unit-level checks of the system menu item bindings and the signed/unsigned float editing rules (compiled-in variants such as laser PPI, height mapping and backlash are gated by the same feature macros).
 
 The five Domain 1 fixtures execute all 142 cases from D1-A through D1-E. Every
 case begins with a soft reset and a fresh Check-mode session. Responses use

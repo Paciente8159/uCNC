@@ -97,6 +97,8 @@ extern "C"
 #define VAR_TYPE_UINT32 6
 #define VAR_TYPE_INT32 7
 #define VAR_TYPE_FLOAT 8
+// float that accepts negative values (used for settings that allow them)
+#define VAR_TYPE_FLOAT_SIGNED 9
 
 #define CONST_VARG(X) ((void *)X)
 #if (__SIZEOF_POINTER__ == 2)
