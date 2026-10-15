@@ -161,7 +161,7 @@ static void cnc_init_modules(void)
    * Remaining tcp socket based servers are initialized here
    */
   mod_init(); // initialize modules
-  // TEMP EXPERIMENT: itp_init(); // interpolator
+  itp_init(); // interpolator
 #if TOOL_COUNT > 0
   tool_init();
 #endif
