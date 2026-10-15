@@ -1449,24 +1449,36 @@ extern "C"
 	}
 
 /**
- * Run code on multicore mode
- * Launches code on core 0
- * Runs communications on core 0
- * Runs CNC loop on core 1
+ * Run code on multicore mode.
+ *
+ * Core 0 is the NonRT side and core 1 is the RT side. The Arduino-Pico core
+ * requires that only core 0 runs WiFi code in bare metal, and warns that idling
+ * core 0 kills networking and USB, so core 0 keeps the streams, the settings,
+ * the network stack and the UART/USB/WiFi pump. The step interrupt is ISR heavy
+ * work that would disturb that pump, so it belongs on core 1 with the rest of
+ * the RT side.
+ *
+ * The order matters. Core 1 is launched before cnc_init_nonrt() because the
+ * NonRT side handshakes with the RT side there (ipc_init) and core 1 is the one
+ * that answers it. cnc_init_modules() runs on core 0 only: the two cores share
+ * one module and listener list, so initializing it twice would corrupt it.
+ *
+ * ucnc_run() is left at its default (cnc_run), which picks the loop for the core
+ * it is called on.
  * **/
 #ifdef RP2350_RUN_MULTICORE
+#define IPC_MODE IPC_MULTICORE
+#define IPC_NON_RT_CORE 0
+#define IPC_RT_CORE 1
 	/**
 	 * Launch multicore
 	 * **/
 	extern void rp2350_core1_loop();
-#define ucnc_init()       \
-	cnc_init();           \
-	rp2040.fifo.begin(2); \
-	delay(1);             \
-	multicore_launch_core1(rp2350_core1_loop)
-	extern void rp2040_core0_loop();
-	extern void rp2350_core0_loop();
-#define ucnc_run() rp2350_core0_loop()
+#define ucnc_init()                            \
+	cnc_init_common();                         \
+	multicore_launch_core1(rp2350_core1_loop); \
+	cnc_init_nonrt();                          \
+	cnc_init_modules()
 
 #endif
 

@@ -45,31 +45,49 @@
    RT_CMD_SPINDLE_DEC_COARSE | RT_CMD_SPINDLE_INC_FINE | \
    RT_CMD_SPINDLE_DEC_FINE | RT_CMD_SPINDLE_TOGGLE)
 #define RTCMD_COOLANT_MASK (RT_CMD_COOL_FLD_TOGGLE | RT_CMD_COOL_MST_TOGGLE)
+/**
+ * The state, split by which side owns it. A build that holds both sides has two
+ * cores sharing one address space, so each side's code names the struct it owns
+ * rather than sharing one: the RT side owns the exec state, and the NonRT side
+ * owns the loop state, the realtime command queue and the alarm.
+ *
+ * Both are always present. The NonRT half is compiled on every build - the
+ * parser, the planner and the control callbacks are not stripped from an
+ * RT-only build - so the NonRT struct has to be there for them to link. The
+ * split is what makes the ownership visible, and it is what lets an RT-only
+ * build drop the struct once its NonRT half is compiled out too.
+ * */
 typedef struct
 {
-  // uint8_t system_state;		//signals if CNC is system_state and
-  // gcode can run
   volatile uint16_t exec_state;
+} cnc_state_rt_t;
+
+typedef struct
+{
+  // uint8_t system_state; // signals if CNC can run gcode
   uint8_t loop_state;
   volatile uint8_t rt_cmd;
   volatile uint8_t feed_ovr_cmd;
   volatile uint8_t tool_ovr_cmd;
   volatile int8_t alarm;
-} cnc_state_t;
+} cnc_state_nonrt_t;
 
-static cnc_state_t cnc_state;
+static cnc_state_rt_t cnc_state_rt;
+static cnc_state_nonrt_t cnc_state_nonrt;
 #if ASSERT_IPC_NONRT()
 // unrecoverable fault code (0 = none). Only a reboot clears it, so it is kept
-// out of cnc_state: cnc_reset() writes alarm and cnc_run() writes loop_state, so
-// the latch needs storage that neither of them can reach.
+// out of cnc_state_nonrt: cnc_reset() writes the alarm and cnc_run() writes the
+// loop state, so the latch needs storage that neither of them can reach.
 static int8_t cnc_fatal_fault;
 #endif
 
 static void cnc_check_fault_systems(void);
 static void cnc_exec_rt_commands(void);
 static void cnc_io_dotasks(void);
-static void cnc_reset(void);
 static void cnc_run_startup_blocks(void);
+#if ASSERT_IPC_HAS_NONRT()
+static void cnc_reset(void);
+#endif
 #if ASSERT_IPC_NONRT()
 static void cnc_raise_fatal_fault(int8_t code);
 #endif
@@ -101,10 +119,11 @@ WEAK_EVENT_HANDLER(cnc_alarm) { DEFAULT_EVENT_HANDLER(cnc_alarm); }
  * Initializes the state both sides keep a private copy of, plus the MCU itself.
  * Runs first, on every side, on every deployment model.
  * */
-static void cnc_init_common(void)
+void cnc_init_common(void)
 {
 #ifdef FORCE_GLOBALS_TO_0
-  memset(&cnc_state, 0, sizeof(cnc_state_t));
+  memset(&cnc_state_rt, 0, sizeof(cnc_state_rt_t));
+  memset(&cnc_state_nonrt, 0, sizeof(cnc_state_nonrt_t));
 #endif
   // initializes all systems
   mcu_init();     // mcu
@@ -119,9 +138,9 @@ static void cnc_init_common(void)
  *
  * This has to run before the modules below, that read the settings loaded here.
  * */
-static void cnc_init_nonrt(void)
+void cnc_init_nonrt(void)
 {
-  cnc_state.loop_state = LOOP_STARTUP_RESET;
+  cnc_state_nonrt.loop_state = LOOP_STARTUP_RESET;
 #if ASSERT_IPC_NONRT()
   /**
    * The NonRT side must confirm the RT side is online before anything is
@@ -154,8 +173,11 @@ static void cnc_init_nonrt(void)
  * Modules, interpolator and tools exist on both sides: each module declares with
  * the ASSERT_IPC_* macros what it does on each side. So these run on every side,
  * and only once per side.
+ *
+ * A build that holds both sides shares the module list between the cores, so
+ * there this runs once, on the core that boots first (see cnc_init_common).
  * */
-static void cnc_init_modules(void)
+void cnc_init_modules(void)
 {
   /**
    * Remaining tcp socket based servers are initialized here
@@ -172,9 +194,14 @@ static void cnc_init_modules(void)
  * Initializes the RT side. Everything the RT side owns is already initialized by
  * cnc_init_common() and cnc_init_modules(), so there is nothing to add yet. It
  * exists so that a multicore build has a way to initialize the RT core on its
- * own: today the multicore launch order only runs cnc_run() on the second core.
+ * own: today the multicore launch order runs cnc_init() on one core and
+ * cnc_run() on the other.
+ *
+ * An MCU that launches its RT core itself calls this on that core, before
+ * cnc_run_rt(), and composes its own order out of the cnc_init_* pieces instead
+ * of calling cnc_init() (see ucnc_init in the RP2040/RP2350 headers).
  * */
-static void cnc_init_rt(void)
+void cnc_init_rt(void)
 {
 }
 #endif
@@ -211,6 +238,11 @@ void __attribute__((weak)) cnc_network_init(void)
 #endif
 }
 
+#if ASSERT_IPC_HAS_NONRT()
+/**
+ * Waits for the soft reset that clears a latched alarm. It reads the stream, so
+ * it belongs to the NonRT side.
+ * */
 static void cnc_wait_for_reset()
 {
   do
@@ -227,21 +259,32 @@ static void cnc_wait_for_reset()
     }
     cnc_dotasks();
     // a soft reset is pending
-    if (cnc_state.alarm == EXEC_ALARM_SOFTRESET)
+    if (cnc_state_nonrt.alarm == EXEC_ALARM_SOFTRESET)
     {
       cnc_clear_exec_state(EXEC_KILL);
       break;
     }
-  } while ((cnc_state.loop_state == LOOP_REQUIRE_RESET ||
+  } while ((cnc_state_nonrt.loop_state == LOOP_REQUIRE_RESET ||
             cnc_get_exec_state(EXEC_KILL)));
 }
+#endif
 
-void cnc_run(void)
+#if ASSERT_IPC_HAS_NONRT()
+/**
+ * The NonRT side main loop. It owns the parser, the planner and the streams, so
+ * this is where the gcode is read and the motion is produced. It is also the
+ * loop that acts on the alarms, because the RT side only latches the exec state.
+ *
+ * The RT side cannot run this loop: cnc_parse_cmd() waits on a stream this side
+ * owns, and cnc_wait_for_reset() waits for a soft reset only this side can
+ * produce.
+ * */
+void cnc_run_nonrt(void)
 {
   cnc_reset();
   if (cnc_unlock(false) != UNLOCK_ERROR)
   {
-    cnc_state.alarm = EXEC_ALARM_NOALARM;
+    cnc_state_nonrt.alarm = EXEC_ALARM_NOALARM;
   }
 
 #if ASSERT_IPC_NONRT()
@@ -252,27 +295,27 @@ void cnc_run(void)
      * allowed to clear it, so it is restored here on every entry and the machine
      * stays in alarm until it is rebooted.
      */
-    cnc_state.alarm = cnc_fatal_fault;
-    cnc_state.loop_state = LOOP_FAULT;
+    cnc_state_nonrt.alarm = cnc_fatal_fault;
+    cnc_state_nonrt.loop_state = LOOP_FAULT;
   }
   else
 #endif
   {
-    cnc_state.loop_state = LOOP_RUNNING;
+    cnc_state_nonrt.loop_state = LOOP_RUNNING;
   }
   for (;;)
   {
     cnc_parse_cmd();
     cnc_dotasks();
 
-    int8_t alarm = cnc_state.alarm;
+    int8_t alarm = cnc_state_nonrt.alarm;
     if (alarm > EXEC_ALARM_NOALARM)
     {
       DBGLOG("[CNC] alarm raised: %hd", alarm);
       cnc_alarm(alarm);
     }
 
-    switch (cnc_state.alarm)
+    switch (cnc_state_nonrt.alarm)
     {
     case EXEC_ALARM_NOALARM:
       break;
@@ -280,13 +323,13 @@ void cnc_run(void)
     case -EXEC_ALARM_SOFT_LIMIT:
       io_enable_steppers(~g_settings.rt.step_enable_invert);
       proto_feedback(MSG_FEEDBACK_1);
-      cnc_state.loop_state = LOOP_REQUIRE_RESET;
+      cnc_state_nonrt.loop_state = LOOP_REQUIRE_RESET;
       __FALL_THROUGH__
     case EXEC_ALARM_EMERGENCY_STOP:
       cnc_wait_for_reset();
       __FALL_THROUGH__
     case EXEC_ALARM_SOFTRESET:
-      cnc_state.alarm = EXEC_ALARM_NOALARM;
+      cnc_state_nonrt.alarm = EXEC_ALARM_NOALARM;
       return;
     default:
       if (cnc_get_exec_state(EXEC_POSITION_MAYBE_LOST))
@@ -297,31 +340,93 @@ void cnc_run(void)
     }
   }
 }
+#endif
+
+#if ASSERT_IPC_RT()
+/**
+ * The RT side main loop. The RT side has no parser, no streams and no alarms to
+ * act on: it keeps the hardware it owns and the requests forwarded to it
+ * running. cnc_dotasks() only reports whether a KILL is pending, and a KILL is
+ * the NonRT side's to act on, so the loop just keeps pumping.
+ *
+ * The transport is serviced from here rather than from the millisecond tick: a
+ * reply can block on the transport, which an interrupt handler must not do, and
+ * on a build that holds both sides the tick belongs to the NonRT core (see
+ * mcu_rtc_cb).
+ *
+ * The timing critical work is not here either: the step ISR generates the
+ * pulses. This loop runs the rest of the RT hardware at its own pace.
+ * */
+void cnc_run_rt(void)
+{
+  for (;;)
+  {
+#if !defined(ENABLE_RT_PROBE_CHECKING)
+    /**
+     * The probe poll runs before the IPC pump, which can block on the
+     * transport.
+     *
+     * mc_probe() does the same poll on a single core, where this loop is not the
+     * one that runs, so this covers the builds where the probe pin belongs to a
+     * separate RT side that mc_probe() does not run on. When the step ISR checks
+     * the probe (ENABLE_RT_PROBE_CHECKING) neither is needed.
+     * */
+    mcu_probe_changed_cb();
+#endif
+
+    ipc_dotasks();
+    cnc_dotasks();
+  }
+}
+#endif
+
+/**
+ * The main loop for this build. A build that holds both sides has one loop per
+ * core, so the core picks the one it runs; every other build has a single one.
+ * */
+void cnc_run(void)
+{
+#if ASSERT_IPC_HAS_NONRT() && ASSERT_IPC_RT()
+#if (IPC_MODE & IPC_MULTICORE) == IPC_MULTICORE
+  if (ipc_get_current_core() != IPC_NON_RT_CORE)
+  {
+    cnc_run_rt();
+  }
+#endif
+  cnc_run_nonrt();
+#elif ASSERT_IPC_HAS_NONRT()
+  cnc_run_nonrt();
+#else
+  cnc_run_rt();
+#endif
+}
 
 #ifdef PIO_UNIT_TESTING
+#if ASSERT_IPC_HAS_NONRT()
 void cnc_unit_test_start(void)
 {
   cnc_reset();
   if (cnc_unlock(false) != UNLOCK_ERROR)
   {
-    cnc_state.alarm = EXEC_ALARM_NOALARM;
+    cnc_state_nonrt.alarm = EXEC_ALARM_NOALARM;
   }
-  cnc_state.loop_state = LOOP_RUNNING;
+  cnc_state_nonrt.loop_state = LOOP_RUNNING;
 }
+#endif
 
 bool cnc_unit_test_run_once(void)
 {
   cnc_parse_cmd();
   cnc_dotasks();
 
-  int8_t alarm = cnc_state.alarm;
+  int8_t alarm = cnc_state_nonrt.alarm;
   if (alarm > EXEC_ALARM_NOALARM)
   {
     DBGLOG("[CNC] alarm raised: %hd", alarm);
     cnc_alarm(alarm);
   }
 
-  switch (cnc_state.alarm)
+  switch (cnc_state_nonrt.alarm)
   {
   case EXEC_ALARM_NOALARM:
     return true;
@@ -329,13 +434,13 @@ bool cnc_unit_test_run_once(void)
   case -EXEC_ALARM_SOFT_LIMIT:
     io_enable_steppers(~g_settings.rt.step_enable_invert);
     proto_feedback(MSG_FEEDBACK_1);
-    cnc_state.loop_state = LOOP_REQUIRE_RESET;
+    cnc_state_nonrt.loop_state = LOOP_REQUIRE_RESET;
     return true;
   case EXEC_ALARM_EMERGENCY_STOP:
-    cnc_state.loop_state = LOOP_REQUIRE_RESET;
+    cnc_state_nonrt.loop_state = LOOP_REQUIRE_RESET;
     return true;
   case EXEC_ALARM_SOFTRESET:
-    cnc_state.alarm = EXEC_ALARM_NOALARM;
+    cnc_state_nonrt.alarm = EXEC_ALARM_NOALARM;
     return false;
   default:
     return !cnc_get_exec_state(EXEC_POSITION_MAYBE_LOST);
@@ -397,6 +502,25 @@ uint8_t cnc_parse_cmd(void)
   return error;
 }
 
+/**
+ * The main loop pump. Both sides run it, so each part is filtered to the side
+ * that owns the state it touches.
+ *
+ * The common parts are the IO pump and the module hook. cnc_io_dotasks()
+ * filters its own hardware, and the cnc_dotasks event has no side of its own -
+ * a module registers there when it does its work on the side that owns the
+ * state it manipulates, exactly like the cnc_io_dotasks event.
+ *
+ * Everything else is the NonRT side's: the parser, planner and interpolator are
+ * the producers, and the RT command queue, the interlocking check and the
+ * alarms all act on NonRT state (loop_state, the stream and the protocol). The
+ * RT side owns none of it, so it is compiled out on a build that has no NonRT
+ * side, and skipped by the RT core of a build that holds both.
+ *
+ * So there is no RT-only part left here: the RT side gets the RT hardware from
+ * cnc_io_dotasks() and the forwarded requests from its own tick (see
+ * mcu_rtc_cb), and this function only adds the two common parts on that side.
+ * */
 bool cnc_dotasks(void)
 {
 #ifdef PIO_UNIT_TESTING
@@ -410,34 +534,41 @@ bool cnc_dotasks(void)
   // run io basic tasks
   cnc_io_dotasks();
 
-  cnc_exec_rt_commands(); // executes all pending realtime commands
-
-  // let µCNC finnish startup/reset code
-  if (cnc_state.loop_state == LOOP_STARTUP_RESET)
+#if ASSERT_IPC_HAS_NONRT()
+#if (IPC_MODE & IPC_MULTICORE) == IPC_MULTICORE
+  if (ipc_get_current_core() == IPC_NON_RT_CORE)
+#endif
   {
-    return false;
-  }
+    cnc_exec_rt_commands(); // executes all pending realtime commands
 
-  // µCNC already in error loop. No point in sending the alarms
-  if (cnc_has_alarm() || (cnc_state.loop_state >= LOOP_FAULT))
-  {
-    return !cnc_get_exec_state(EXEC_KILL);
-  }
+    // let µCNC finnish startup/reset code
+    if (cnc_state_nonrt.loop_state == LOOP_STARTUP_RESET)
+    {
+      return false;
+    }
 
-  // check security interlocking for any problem
-  if (!cnc_check_interlocking())
-  {
-    DBGLOG("[CNC] interlocking fail");
-    return !cnc_get_exec_state(EXEC_INTERLOCKING_FAIL);
-  }
+    // µCNC already in error loop. No point in sending the alarms
+    if (cnc_has_alarm() || (cnc_state_nonrt.loop_state >= LOOP_FAULT))
+    {
+      return !cnc_get_exec_state(EXEC_KILL);
+    }
+
+    // check security interlocking for any problem
+    if (!cnc_check_interlocking())
+    {
+      DBGLOG("[CNC] interlocking fail");
+      return !cnc_get_exec_state(EXEC_INTERLOCKING_FAIL);
+    }
 
 #ifndef ENABLE_ITP_FEED_TASK
-  itp_run();
+    itp_run();
 #endif
 
 #ifdef ENABLE_TOOL_PID_CONTROLLER
-  // run the tool pid update
-  tool_pid_update();
+    // run the tool pid update
+    tool_pid_update();
+#endif
+  }
 #endif
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
@@ -531,12 +662,26 @@ MCU_CALLBACK void mcu_rtc_cb(uint32_t millis)
   // 	// extra call in case generic inputs are running with ISR disabled.
   // Encoders need propper ISR to work. 	mcu_inputs_changed_cb(); #endif
 
-#ifdef ENABLE_ITP_FEED_TASK
-  if ((cnc_state.loop_state == LOOP_RUNNING) &&
-      (cnc_state.alarm == EXEC_ALARM_NOALARM) &&
-      !cnc_get_exec_state(EXEC_INTERLOCKING_FAIL))
+  /**
+   * The interpolator feed task is NonRT work: it produces the segments the RT
+   * side consumes (see cnc_dotasks()). It runs on the core this tick is enabled
+   * on, which is the NonRT one on a build that holds both sides: the RT side has
+   * its own loop for its own work (see cnc_run_rt), and the alarm list this tick
+   * re-enqueues itself on is not safe to share between two cores.
+   * */
+#if ASSERT_IPC_HAS_NONRT()
+#if (IPC_MODE & IPC_MULTICORE_RT)
+  if (ipc_get_current_core() == IPC_NON_RT_CORE)
+#endif
   {
-    itp_run();
+#ifdef ENABLE_ITP_FEED_TASK
+    if ((cnc_state_nonrt.loop_state == LOOP_RUNNING) &&
+        (cnc_state_nonrt.alarm == EXEC_ALARM_NOALARM) &&
+        !cnc_get_exec_state(EXEC_INTERLOCKING_FAIL))
+    {
+      itp_run();
+    }
+#endif
   }
 #endif
 
@@ -584,9 +729,9 @@ void cnc_alarm(int8_t code)
   DBGLOG("[CNC] alarm: %hd", code);
   cnc_set_exec_state(EXEC_KILL);
   cnc_stop(true);
-  if (!cnc_state.alarm || code < EXEC_ALARM_NOALARM)
+  if (!cnc_state_nonrt.alarm || code < EXEC_ALARM_NOALARM)
   {
-    cnc_state.alarm = code;
+    cnc_state_nonrt.alarm = code;
     if (code > EXEC_ALARM_NOALARM)
     {
       if (code >= EXEC_ALARM_HOMING_FAIL_RESET &&
@@ -599,7 +744,7 @@ void cnc_alarm(int8_t code)
       if (!mcu_in_isr_context())
       {
         proto_alarm(code);
-        cnc_state.alarm = -code;
+        cnc_state_nonrt.alarm = -code;
       }
 #ifdef ENABLE_MAIN_LOOP_MODULES
       if (code > 0)
@@ -617,14 +762,14 @@ void cnc_alarm(int8_t code)
 bool cnc_has_alarm()
 {
   return (cnc_get_exec_state(EXEC_KILL) ||
-          (cnc_state.alarm != EXEC_ALARM_NOALARM));
+          (cnc_state_nonrt.alarm != EXEC_ALARM_NOALARM));
 }
 #if ASSERT_IPC_NONRT()
 static void cnc_raise_fatal_fault(int8_t code)
 {
   DBGLOG("[CNC] fatal fault: %hd", code);
   cnc_fatal_fault = code;
-  cnc_state.loop_state = LOOP_FAULT;
+  cnc_state_nonrt.loop_state = LOOP_FAULT;
   cnc_alarm(code);
 }
 #endif
@@ -633,7 +778,7 @@ uint8_t cnc_get_alarm(void)
 {
   // force interlocking check to set alarm code in case this as not yet been set
   cnc_check_interlocking();
-  int8_t alarm = cnc_state.alarm;
+  int8_t alarm = cnc_state_nonrt.alarm;
   return (uint8_t)((alarm > 0) ? alarm : -alarm);
 }
 
@@ -682,7 +827,7 @@ uint8_t cnc_unlock(bool force)
     {
 #endif
       cnc_clear_exec_state_rt(EXEC_POSITION_MAYBE_LOST);
-      cnc_state.alarm = EXEC_ALARM_NOALARM;
+      cnc_state_nonrt.alarm = EXEC_ALARM_NOALARM;
 #ifndef DISABLE_SAFE_SETTINGS
     }
 #endif
@@ -734,7 +879,7 @@ uint8_t cnc_unlock(bool force)
 
     // hard reset
     // if homing not enabled run startup blocks
-    if (cnc_state.loop_state < LOOP_RUNNING && !g_settings.homing_enabled)
+    if (cnc_state_nonrt.loop_state < LOOP_RUNNING && !g_settings.homing_enabled)
     {
       cnc_run_startup_blocks();
     }
@@ -759,7 +904,7 @@ uint16_t cnc_get_exec_state(uint16_t statemask)
 #endif
 
 #if ASSERT_IPC_RT()
-  uint16_t state = ATOMIC_LOAD_N(&cnc_state.exec_state, __ATOMIC_ACQUIRE);
+  uint16_t state = ATOMIC_LOAD_N(&cnc_state_rt.exec_state, __ATOMIC_ACQUIRE);
   return (state & statemask);
 #endif
 }
@@ -780,13 +925,13 @@ void cnc_set_exec_state_rt(uint16_t statemask)
 
 #if ASSERT_IPC_RT()
 #ifdef ENABLE_CNC_DEBUG
-  uint16_t prev_exec_state = cnc_state.exec_state;
+  uint16_t prev_exec_state = cnc_state_rt.exec_state;
 #endif
-  ATOMIC_FETCH_OR(&cnc_state.exec_state, statemask, __ATOMIC_ACQ_REL);
+  ATOMIC_FETCH_OR(&cnc_state_rt.exec_state, statemask, __ATOMIC_ACQ_REL);
 #ifdef ENABLE_CNC_DEBUG
-  if (cnc_state.exec_state != prev_exec_state)
+  if (cnc_state_rt.exec_state != prev_exec_state)
   {
-    DBGLOG("[CNC] set mask %u exec_state: %u", statemask, cnc_state.exec_state);
+    DBGLOG("[CNC] set mask %u exec_state: %u", statemask, cnc_state_rt.exec_state);
   }
 #endif
 #endif
@@ -839,14 +984,14 @@ void cnc_clear_exec_state_rt(uint16_t statemask)
 
 #if ASSERT_IPC_RT()
 #ifdef ENABLE_CNC_DEBUG
-  uint16_t prev_exec_state = cnc_state.exec_state;
+  uint16_t prev_exec_state = cnc_state_rt.exec_state;
 #endif
-  ATOMIC_FETCH_AND(&cnc_state.exec_state, ~statemask, __ATOMIC_ACQ_REL);
+  ATOMIC_FETCH_AND(&cnc_state_rt.exec_state, ~statemask, __ATOMIC_ACQ_REL);
 #ifdef ENABLE_CNC_DEBUG
-  if (cnc_state.exec_state != prev_exec_state)
+  if (cnc_state_rt.exec_state != prev_exec_state)
   {
     DBGLOG("[CNC] clear mask %u exec_state: %u", statemask,
-           cnc_state.exec_state);
+           cnc_state_rt.exec_state);
   }
 #endif
 #endif
@@ -884,7 +1029,7 @@ void cnc_clear_exec_state(uint16_t statemask)
 #endif
 
   // has a pending (not cleared by user) alarm
-  if (cnc_state.alarm || g_settings.homing_enabled)
+  if (cnc_state_nonrt.alarm || g_settings.homing_enabled)
   {
     CLEARFLAG(statemask, EXEC_POSITION_MAYBE_LOST);
   }
@@ -931,7 +1076,7 @@ void cnc_clear_exec_state(uint16_t statemask)
     itp_sync_spindle();
 #if (DELAY_ON_RESUME_SPINDLE > 0)
     if ((tool_get_mode() == SPINDLE_MODE) &&
-        cnc_state.loop_state == LOOP_RUNNING)
+        cnc_state_nonrt.loop_state == LOOP_RUNNING)
     {
       if (!planner_buffer_is_empty())
       {
@@ -964,18 +1109,19 @@ void cnc_dwell_ms(uint32_t milliseconds)
   } while ((mcu_millis() < milliseconds) && cnc_dotasks());
 }
 
+#if ASSERT_IPC_HAS_NONRT()
 void cnc_reset(void)
 {
   DBGLOG("[CNC] reset");
   mcu_controls_changed_cb();
   // resets all realtime command flags
-  cnc_state.rt_cmd = RT_CMD_CLEAR;
-  cnc_state.feed_ovr_cmd = RT_CMD_CLEAR;
-  cnc_state.tool_ovr_cmd = RT_CMD_CLEAR;
+  cnc_state_nonrt.rt_cmd = RT_CMD_CLEAR;
+  cnc_state_nonrt.feed_ovr_cmd = RT_CMD_CLEAR;
+  cnc_state_nonrt.tool_ovr_cmd = RT_CMD_CLEAR;
 
   cnc_set_exec_state(EXEC_RESET_LOCKED & ~EXEC_POSITION_MAYBE_LOST); // Activates all alarms, door and hold
 #if EMULATE_GRBL_STARTUP <= 2
-  cnc_state.alarm = EXEC_ALARM_NOALARM;
+  cnc_state_nonrt.alarm = EXEC_ALARM_NOALARM;
 #endif
 
   // clear all systems
@@ -994,6 +1140,7 @@ void cnc_reset(void)
   grbl_stream_start_broadcast();
   proto_print(MSG_STARTUP);
 }
+#endif
 
 void cnc_call_rt_command(uint8_t command)
 {
@@ -1006,12 +1153,12 @@ void cnc_call_rt_command(uint8_t command)
   switch (command)
   {
   case CMD_CODE_RESET:
-    SETFLAG(cnc_state.rt_cmd, RT_CMD_RESET);
+    SETFLAG(cnc_state_nonrt.rt_cmd, RT_CMD_RESET);
     break;
   case CMD_CODE_JOG_CANCEL:
     if (cnc_get_exec_state(EXEC_JOG))
     {
-      SETFLAG(cnc_state.rt_cmd, RT_CMD_JOG_CANCEL);
+      SETFLAG(cnc_state_nonrt.rt_cmd, RT_CMD_JOG_CANCEL);
       cnc_set_exec_state(EXEC_CANCELING);
     }
     break;
@@ -1019,29 +1166,29 @@ void cnc_call_rt_command(uint8_t command)
     cnc_set_exec_state(EXEC_HOLD);
     break;
   case CMD_CODE_REPORT:
-    SETFLAG(cnc_state.rt_cmd, RT_CMD_REPORT);
+    SETFLAG(cnc_state_nonrt.rt_cmd, RT_CMD_REPORT);
     break;
   case CMD_CODE_CYCLE_START:
     if (!cnc_get_exec_state(EXEC_RUN))
     {
-      SETFLAG(cnc_state.rt_cmd,
+      SETFLAG(cnc_state_nonrt.rt_cmd,
               RT_CMD_CYCLE_START); // tries to clear hold if possible
     }
     break;
 #if ASSERT_PIN(SAFETY_DOOR)
   case CMD_CODE_SAFETY_DOOR:
     cnc_set_exec_state((EXEC_HOLD | EXEC_DOOR));
-    SETFLAG(cnc_state.rt_cmd, RT_CMD_DOOR_CHANGED);
+    SETFLAG(cnc_state_nonrt.rt_cmd, RT_CMD_DOOR_CHANGED);
     break;
 #endif
   default:
     if (command >= CMD_CODE_FEED_100 && command <= CMD_CODE_RAPIDFEED_OVR2)
     {
-      cnc_state.feed_ovr_cmd = (1 << (command - CMD_CODE_FEED_100));
+      cnc_state_nonrt.feed_ovr_cmd = (1 << (command - CMD_CODE_FEED_100));
       break;
     }
 
-    tools_cmd = cnc_state.tool_ovr_cmd;
+    tools_cmd = cnc_state_nonrt.tool_ovr_cmd;
 
     if (command >= CMD_CODE_SPINDLE_100 && command <= CMD_CODE_SPINDLE_TOGGLE)
     {
@@ -1058,7 +1205,7 @@ void cnc_call_rt_command(uint8_t command)
           (RT_CMD_COOL_FLD_TOGGLE << (command - CMD_CODE_COOL_FLD_TOGGLE));
     }
 #endif
-    cnc_state.tool_ovr_cmd = tools_cmd;
+    cnc_state_nonrt.tool_ovr_cmd = tools_cmd;
   }
 }
 
@@ -1078,8 +1225,8 @@ void cnc_exec_rt_commands(void)
   uint8_t command = RT_CMD_CLEAR; // copies realtime flags states
   ATOMIC_CODEBLOCK
   {
-    command = cnc_state.rt_cmd;
-    cnc_state.rt_cmd = RT_CMD_CLEAR;
+    command = cnc_state_nonrt.rt_cmd;
+    cnc_state_nonrt.rt_cmd = RT_CMD_CLEAR;
   }
 
 #if STATUS_AUTOMATIC_REPORT_INTERVAL >= 100
@@ -1111,7 +1258,7 @@ void cnc_exec_rt_commands(void)
       }
 
       cnc_alarm(EXEC_ALARM_SOFTRESET);
-      cnc_state.loop_state = LOOP_STARTUP_RESET;
+      cnc_state_nonrt.loop_state = LOOP_STARTUP_RESET;
       return;
     }
 
@@ -1162,17 +1309,17 @@ void cnc_exec_rt_commands(void)
   }
 
   // let µCNC finnish startup/reset code
-  if (cnc_state.loop_state == LOOP_STARTUP_RESET)
+  if (cnc_state_nonrt.loop_state == LOOP_STARTUP_RESET)
   {
     return;
   }
 
   // executes feeds override rt commands
-  command = cnc_state.feed_ovr_cmd; // copies realtime flags states
+  command = cnc_state_nonrt.feed_ovr_cmd; // copies realtime flags states
   if (command)
   {
     DBGLOG("[CNC] feed_ovr: %hu", command);
-    cnc_state.feed_ovr_cmd = RT_CMD_CLEAR; // clears command flags
+    cnc_state_nonrt.feed_ovr_cmd = RT_CMD_CLEAR; // clears command flags
     uint8_t ovr = g_planner_state.feed_override;
     switch (command & RTCMD_NORMAL_MASK)
     {
@@ -1208,11 +1355,11 @@ void cnc_exec_rt_commands(void)
   }
 
   // executes tools override rt commands
-  command = cnc_state.tool_ovr_cmd; // copies realtime flags states
+  command = cnc_state_nonrt.tool_ovr_cmd; // copies realtime flags states
   if (command)
   {
     DBGLOG("[CNC] tool_ovr: %hu", command);
-    cnc_state.tool_ovr_cmd = RT_CMD_CLEAR; // clears command flags
+    cnc_state_nonrt.tool_ovr_cmd = RT_CMD_CLEAR; // clears command flags
 #if TOOL_COUNT > 0
     uint8_t ovr = g_planner_state.spindle_speed_override;
     update_tools = true;
@@ -1309,7 +1456,7 @@ void cnc_check_fault_systems(void)
 #if EMULATE_GRBL_STARTUP <= 2
   if (cnc_get_exec_state(EXEC_KILL))
   {
-    switch (cnc_state.alarm)
+    switch (cnc_state_nonrt.alarm)
     {
     case EXEC_ALARM_SOFTRESET:
     case EXEC_ALARM_NOALARM:
@@ -1429,54 +1576,95 @@ bool cnc_check_interlocking(void)
   return true;
 }
 
+/**
+ * The IO task pump. Both sides run it, so each part is filtered to the side
+ * that owns the hardware it touches.
+ *
+ * mcu_dotasks() is common because it pumps transports and each side owns its
+ * own: the streams and the sockets on the NonRT side, the IPC link on the RT
+ * side.
+ *
+ * The input callbacks are filtered by the pins they read, not by what they do
+ * with the result. Limits, probe and the generic inputs (with the encoders) are
+ * RT hardware. The control pins - emergency stop, safety door, feed hold and
+ * cycle start - drive the gcode program flow, so they stay on the NonRT side,
+ * which is why io_get_controls() has no ipc seam of its own.
+ *
+ * The module event is common: it has no side of its own, because a module
+ * registers there when it does its IO work on the side that owns the pins it
+ * manipulates.
+ * */
 static void cnc_io_dotasks(void)
 {
   // run internal mcu tasks (USB and communications)
   mcu_dotasks();
-#if IC74HC595_COUNT > 0 || IC74HC165_COUNT > 0
-  io_extended_pins_update(); // update extended IO
-#endif
-
-  // #ifdef DISABLE_RTC_CODE
-  mcu_limits_changed_cb();
-  mcu_controls_changed_cb();
-  // #endif
-
-#if (DIN_ONCHANGE_MASK != 0 && ENCODERS < 1)
-  // extra call in case generic inputs are running with ISR disabled. Encoders
-  // need propper ISR to work.
-  mcu_inputs_changed_cb();
-#endif
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
+  /**
+   * Fired on every side that runs this pump, so a module built on generic pins
+   * gets it wherever its pins are. The listener list is the build's, so a
+   * listener that only works on one side has to filter itself.
+   *
+   * This sits outside the two blocks below on purpose: on a single core, and on
+   * a build that holds both sides, both blocks run, so the event would fire
+   * twice per call.
+   * */
   EVENT_INVOKE(cnc_io_dotasks, NULL);
 #endif
 
-#ifdef ENABLE_STEPPERS_DISABLE_TIMEOUT
-  static uint32_t stepper_timeout = 0;
-
-  if (g_settings.step_disable_timeout)
+#if ASSERT_IPC_RT()
+#if (IPC_MODE & IPC_MULTICORE) == IPC_MULTICORE
+  if (ipc_get_current_core() != IPC_NON_RT_CORE)
+#endif
   {
-    // is idle check the timeout
-    if (cnc_get_exec_state(EXEC_ALLACTIVE) == EXEC_IDLE)
-    {
-      if (stepper_timeout < mcu_millis())
-      {
-        io_enable_steppers(
-            ~g_settings
-                 .rt.step_enable_invert); // disables steppers after idle timeout
-        stepper_timeout = UINT32_MAX;
-      }
-    }
-    else
-    {
-      stepper_timeout = mcu_millis() + g_settings.step_disable_timeout;
-    }
+#if IC74HC595_COUNT > 0 || IC74HC165_COUNT > 0
+    io_extended_pins_update(); // update extended IO
+#endif
+
+    mcu_limits_changed_cb();
+
+#if (DIN_ONCHANGE_MASK != 0 && ENCODERS < 1)
+    // extra call in case generic inputs are running with ISR disabled. Encoders
+    // need propper ISR to work.
+    mcu_inputs_changed_cb();
+#endif
   }
 #endif
 
+#if ASSERT_IPC_HAS_NONRT()
+#if (IPC_MODE & IPC_MULTICORE) == IPC_MULTICORE
+  if (ipc_get_current_core() == IPC_NON_RT_CORE)
+#endif
+  {
+    mcu_controls_changed_cb();
+
+#ifdef ENABLE_STEPPERS_DISABLE_TIMEOUT
+    static uint32_t stepper_timeout = 0;
+
+    if (g_settings.step_disable_timeout)
+    {
+      // is idle check the timeout
+      if (cnc_get_exec_state(EXEC_ALLACTIVE) == EXEC_IDLE)
+      {
+        if (stepper_timeout < mcu_millis())
+        {
+          io_enable_steppers(
+              ~g_settings
+                   .rt.step_enable_invert); // disables steppers after idle timeout
+          stepper_timeout = UINT32_MAX;
+        }
+      }
+      else
+      {
+        stepper_timeout = mcu_millis() + g_settings.step_disable_timeout;
+      }
+    }
+#endif
+
 #if defined(ENABLE_SOCKETS)
-  sockets_dotasks();
+    sockets_dotasks();
+#endif
+  }
 #endif
 }
 

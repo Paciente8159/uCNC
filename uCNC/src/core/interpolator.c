@@ -476,8 +476,9 @@ void itp_run(void)
    * faults, so the mistake is already loud there. On the other targets
    * itp_mutex is a plain uint8_t that starts at 0 - unlocked - and every other
    * interpolator static starts at 0 too, so a missing itp_init() is completely
-   * silent: the buffers never drain and motion just never completes. This check
-   * makes the mistake fail on every target, including the ones CI runs.
+   * silent: the buffers never drain and motion just never completes. Trap so
+   * that every target fails the way the RTOS ones already do, instead of
+   * stalling.
    */
   if (!itp_initialized)
   {

@@ -61,39 +61,31 @@ extern "C"
 /**
  * Which side of the split a block of code belongs to.
  *
- * ASSERT_IPC_NONRT() guards the forwarding path: the NonRT side hands the
- * command to the RT side over the IPC transport. It only applies when this build
- * contains the NonRT side and the two sides do not share memory - with
- * IPC_SHARED_MEM the RT side is reached directly, so there is nothing to
+ * There are three questions here, and they are not the same one.
+ *
+ * ASSERT_IPC_HAS_NONRT() asks whether this build contains the NonRT side at all.
+ * Per side setup code needs that answer: the NonRT side owns the streams, the
+ * settings and the network stack and has to initialize them whenever it is
+ * present, no matter how it reaches the RT side.
+ *
+ * ASSERT_IPC_NONRT() asks whether the NonRT side has to hand a command to the RT
+ * side over the transport. It guards the forwarding path. It is narrower than
+ * the question above, because when the two sides reach each other directly - the
+ * single core, or IPC_SHARED_MEM - the NonRT side is present but has nothing to
  * forward.
  *
- * ASSERT_IPC_RT() guards the real body of a split function. That body runs
- * locally, on the core that owns the state: the RT side, or the single core.
+ * ASSERT_IPC_RT() asks whether the real body of a split function runs here. That
+ * body runs locally, on the core that owns the state: the RT side, the single
+ * core, or a shared memory build. There is no separate "contains the RT side"
+ * macro because this already is that test.
  *
  * On builds that contain both sides the runtime core is still checked with
  * ipc_get_current_core() inside the ASSERT_IPC_NONRT() block, so that the body
  * guarded by ASSERT_IPC_RT() is the one that runs on the RT core.
  * */
+#define ASSERT_IPC_HAS_NONRT() ((IPC_MODE == IPC_SINGLE_CORE) || (IPC_MODE & (IPC_MULTICORE_NONRT | IPC_SHARED_MEM)))
 #define ASSERT_IPC_NONRT() ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
 #define ASSERT_IPC_RT() ((IPC_MODE == IPC_SINGLE_CORE) || (IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)))
-
-/**
- * Whether this build contains the NonRT side.
- *
- * The two macros above answer "how does this side reach the other one?", which
- * is a transport question: on IPC_SHARED_MEM nothing has to be forwarded, so
- * ASSERT_IPC_NONRT() is false even though the NonRT side is present.
- *
- * This answers "is the NonRT side in this build?", which is what per side setup
- * code needs. The NonRT side owns the streams, the settings and the network
- * stack and has to initialize them whenever it is present, no matter how it
- * reaches the RT side.
- *
- * There is no matching macro for the RT side because ASSERT_IPC_RT() already is
- * that test: it is true exactly when the RT body runs here - the RT side, the
- * single core, or a shared memory build.
- * */
-#define ASSERT_IPC_HAS_NONRT() ((IPC_MODE == IPC_SINGLE_CORE) || (IPC_MODE & IPC_MULTICORE_NONRT))
 
   /**
    * IPC ACK handling
@@ -125,6 +117,15 @@ extern "C"
 #define IPC_BOOT_TIMEOUT 5000 // ms
 #endif
 
+  /**
+   * Size of the request and reply buffers. A transport frames a message as its
+   * type, its length and that many payload bytes, so the payload a message can
+   * carry is this minus the packet header.
+   */
+#ifndef IPC_BUFFER_SIZE
+#define IPC_BUFFER_SIZE 256
+#endif
+
   typedef enum ipc_packet_type_
   {
     // startup handshake. The NonRT side sends this and waits for the reply
@@ -154,12 +155,17 @@ extern "C"
     IO_ENABLE_PROBE,
     IO_DISABLE_PROBE,
     IO_GET_PROBE,
+    // position (in steps) recorded by the RT side when the probe triggered.
+    // IO_GET_PROBE_POSITION reads it back, IO_SYNC_PROBE_POSITION makes the RT
+    // side capture the current position into it.
+    IO_GET_PROBE_POSITION,
+    IO_SYNC_PROBE_POSITION,
     IO_SET_STEPS,
     IO_TOGGLE_STEPS,
     IO_SET_DIRS,
     IO_GET_STEPS_POS,
     IO_ENABLE_STEPPERS,
-    // cnc_state.exec_state is owned by the RT side (see cnc.c). The NonRT side
+    // cnc_state_rt.exec_state is owned by the RT side (see cnc.c). The NonRT side
     // forwards these requests to the RT core, that executes them.
     CNC_GET_EXEC_STATE,
     CNC_SET_EXEC_STATE_RT,
@@ -184,6 +190,14 @@ extern "C"
     uint8_t *payload;
   } __attribute__((packed, aligned(1))) ipc_packet_t;
 
+  // the payload a message can carry: the buffer minus the packet header
+#define IPC_MAX_PAYLOAD (IPC_BUFFER_SIZE - sizeof(ipc_packet_t))
+
+  // the request buffer ipc_dotasks() reads. The transport fills it and sets
+  // g_ipc_data_available when a request is pending.
+  extern uint8_t g_ipc_buffer[IPC_BUFFER_SIZE];
+  extern bool g_ipc_data_available;
+
   // confirms the RT side is online and answering before the NonRT side starts
   // forwarding commands to it. Blocks up to IPC_BOOT_TIMEOUT ms.
   // Returns true when the RT side acknowledged the ping, or when no handshake is
@@ -197,6 +211,12 @@ extern "C"
   // Returns the number of bytes received including the ACK byte (>= 1) or 0 if no
   // ACK was received.
   size_t ipc_receive(ipc_packet_type_t type, void *data, size_t len);
+  // overridable. Fetches one pending request from the transport into
+  // g_ipc_buffer and sets g_ipc_data_available. The default does nothing, which
+  // is what a build without a transport needs, and what the NonRT side needs:
+  // it never receives requests, it waits for the reply inside ipc_receive.
+  // Called by ipc_dotasks before it looks at g_ipc_data_available.
+  void ipc_poll(void);
   void ipc_exec(ipc_packet_type_t type, const void *data_out, size_t len_out,
                 void *data_in, size_t len_in); // makes an ipc execution request (NonRT side to RT side) and waits for the ACK
   void ipc_dotasks(void);                      // run IPC tasks (runs on the RT side to process requests)

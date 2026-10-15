@@ -292,22 +292,225 @@ void mcu_rtc_isr(void)
 
 /**
  * Multicore code
+ *
+ * Core 0 runs the NonRT loop (ucnc_run defaults to cnc_run, which picks the loop
+ * for the calling core) and core 1 runs the RT loop. What is left here is the
+ * transport the two sides talk over.
+ *
+ * The transport is only defined for the same chip multicore build. A build that
+ * reaches its RT side over a bus (SPI, UART) leaves the weak defaults in ipc.c,
+ * which answer nothing and make the startup handshake fail loudly instead of
+ * silently running without a transport.
  * **/
-void rp2350_core0_loop()
+#ifdef RP2350_RUN_MULTICORE
+#include "pico/multicore.h"
+
+/**
+ * Inter core transport.
+ *
+ * The SIO FIFO moves 32 bit words and is 8 words deep in each direction. A
+ * message is framed as one header word followed by its payload, so the receiver
+ * can tell where one message ends and the next begins:
+ *
+ *   header:  [ len : 24 bits ][ type : 8 bits ]
+ *   payload: len bytes packed 4 to a word, padded to a whole word
+ *
+ * The type is the packet type, which doubles as the ACK: the reply echoes the
+ * type of the request it answers.
+ * **/
+#define RP2350_FIFO_HDR(len, type) ((((uint32_t)(len)) << 8) | ((uint32_t)(uint8_t)(type)))
+#define RP2350_FIFO_LEN(hdr) ((size_t)((hdr) >> 8))
+#define RP2350_FIFO_TYPE(hdr) ((ipc_packet_type_t)((hdr) & 0xFF))
+#define RP2350_FIFO_WORDS(len) (((size_t)(len) + 3) >> 2)
+
+uint8_t ipc_get_current_core(void) { return (uint8_t)get_core_num(); }
+
+/**
+ * Pushes one word, giving up instead of blocking forever. The peer may not be
+ * draining yet, and this runs on the core that also has to keep stepping, so a
+ * stalled peer must not stall the machine.
+ * **/
+static bool rp2350_fifo_push(uint32_t word)
 {
-	rp2350_uart_process();
+	uint32_t start = mcu_millis();
+	while (!multicore_fifo_wready())
+	{
+		if ((mcu_millis() - start) > IPC_ACK_TIMEOUT)
+		{
+			return false;
+		}
+		tight_loop_contents();
+	}
+
+	multicore_fifo_push_blocking(word);
+	return true;
 }
 
+void ipc_send(ipc_packet_type_t type, const void *data, size_t len)
+{
+	const uint8_t *src = (const uint8_t *)data;
+
+	if (len > IPC_MAX_PAYLOAD)
+	{
+		return;
+	}
+
+	if (!rp2350_fifo_push(RP2350_FIFO_HDR(len, type)))
+	{
+		return;
+	}
+
+	for (size_t i = 0; i < len; i += 4)
+	{
+		uint32_t word = 0;
+		for (size_t j = 0; (j < 4) && ((i + j) < len); j++)
+		{
+			word |= ((uint32_t)src[i + j]) << (8 * j);
+		}
+		if (!rp2350_fifo_push(word))
+		{
+			return;
+		}
+	}
+}
+
+size_t ipc_receive(ipc_packet_type_t type, void *data, size_t len)
+{
+	uint32_t start = mcu_millis();
+	uint8_t *dst = (uint8_t *)data;
+
+	for (uint16_t tries = 0; tries < IPC_MAX_TRIES; tries++)
+	{
+		while (!multicore_fifo_rvalid())
+		{
+			if ((mcu_millis() - start) > IPC_ACK_TIMEOUT)
+			{
+				return 0;
+			}
+			tight_loop_contents();
+		}
+
+		uint32_t hdr = multicore_fifo_pop_blocking();
+		size_t plen = RP2350_FIFO_LEN(hdr);
+		bool match = (RP2350_FIFO_TYPE(hdr) == type);
+
+		// the payload is consumed whether or not it is the message being waited
+		// for, so the stream stays framed
+		for (size_t w = 0; w < RP2350_FIFO_WORDS(plen); w++)
+		{
+			uint32_t word = multicore_fifo_pop_blocking();
+
+			if (!match || !dst)
+			{
+				continue;
+			}
+
+			for (size_t b = 0; b < 4; b++)
+			{
+				size_t idx = (w << 2) + b;
+				if ((idx < plen) && (idx < len))
+				{
+					dst[idx] = (uint8_t)(word >> (b << 3));
+				}
+			}
+		}
+
+		if (match)
+		{
+			// the ACK byte, plus the payload bytes that fit
+			return 1 + MIN(plen, len);
+		}
+	}
+
+	return 0;
+}
+
+/**
+ * Fetches one pending request into the buffer ipc_dotasks() reads.
+ *
+ * Only the RT side receives requests. The NonRT side never does: it waits for
+ * the reply to its own request inside ipc_receive, which consumes it before any
+ * poll could see it.
+ * **/
+void ipc_poll(void)
+{
+	if (ipc_get_current_core() != IPC_RT_CORE)
+	{
+		return;
+	}
+
+	// one request at a time, no backpressure
+	if (g_ipc_data_available || !multicore_fifo_rvalid())
+	{
+		return;
+	}
+
+	uint32_t hdr = multicore_fifo_pop_blocking();
+	size_t plen = RP2350_FIFO_LEN(hdr);
+
+	if (plen > IPC_MAX_PAYLOAD)
+	{
+		/**
+		 * Cannot happen with a conforming sender, which refuses to send more than
+		 * the buffer holds, so the stream is out of step. The message is dropped
+		 * instead of being written past the buffer. Only what is already in the FIFO
+		 * is drained, so a bogus length cannot stall this loop; the rest is left to
+		 * the sender's timeout.
+		 * **/
+		for (size_t w = 0; (w < RP2350_FIFO_WORDS(plen)) && multicore_fifo_rvalid(); w++)
+		{
+			multicore_fifo_pop_blocking();
+		}
+		return;
+	}
+
+	ipc_packet_t *packet = (ipc_packet_t *)g_ipc_buffer;
+	packet->type = RP2350_FIFO_TYPE(hdr);
+	packet->len = plen;
+	packet->payload = g_ipc_buffer + sizeof(ipc_packet_t);
+
+	for (size_t w = 0; w < RP2350_FIFO_WORDS(plen); w++)
+	{
+		uint32_t word = multicore_fifo_pop_blocking();
+
+		for (size_t b = 0; b < 4; b++)
+		{
+			size_t idx = (w << 2) + b;
+			if (idx < plen)
+			{
+				packet->payload[idx] = (uint8_t)(word >> (b << 3));
+			}
+		}
+	}
+
+	g_ipc_data_available = true;
+}
+
+#endif
+
+/**
+ * The RT side of the multicore build, for the Arduino-Pico second core entry.
+ * Core 0 launched this and then goes on to initialize the NonRT side, which
+ * handshakes with this core over the IPC transport (ipc_init), so this has to
+ * reach cnc_run_rt() as soon as it can: that loop answers the handshake.
+ *
+ * cnc_init_modules() is deliberately not called here. The two cores share one
+ * module and listener list, and core 0 initializes it once.
+ * **/
 void setup1()
 {
 }
 
+/**
+ * Both this and rp2350_core1_loop() lead to the same RT loop. Which one runs
+ * depends on whether the build launches core 1 itself (multicore_launch_core1,
+ * see ucnc_init in mcumap_rp2350.h) or leaves the second core to the
+ * Arduino-Pico core, which calls setup1() and loop1().
+ * **/
 void loop1()
 {
-	for (;;)
-	{
-		cnc_run();
-	}
+	cnc_init_rt();
+	cnc_run_rt();
 }
 
 /**
@@ -594,7 +797,17 @@ void mcu_stop_itp_isr(void)
  * */
 void mcu_dotasks(void)
 {
-#ifndef RP2350_RUN_MULTICORE
+#ifdef RP2350_RUN_MULTICORE
+	/**
+	 * Core 0 owns the streams, so it is the one that pumps the UART/USB/WiFi. The
+	 * RT core must not: both cores run this, and two cores driving the same
+	 * peripherals would corrupt the stream.
+	 * **/
+	if (ipc_get_current_core() == IPC_NON_RT_CORE)
+	{
+		rp2350_uart_process();
+	}
+#else
 	rp2350_uart_process();
 #endif
 }

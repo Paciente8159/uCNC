@@ -25,13 +25,19 @@
 extern "C"
 {
 #include "../../../cnc.h"
+	/**
+	 * The RT side of the multicore build. Core 0 launched this and then goes on
+	 * to initialize the NonRT side, which handshakes with this core over the IPC
+	 * transport (ipc_init), so this has to reach cnc_run_rt() as soon as it can:
+	 * that loop is what answers the handshake.
+	 *
+	 * cnc_init_modules() is deliberately not called here. The two cores share one
+	 * module and listener list, and core 0 initializes it once.
+	 * **/
 	void rp2040_core1_loop()
 	{
-		rp2040.fifo.registerCore();
-		for (;;)
-		{
-			cnc_run();
-		}
+		cnc_init_rt();
+		cnc_run_rt();
 	}
 }
 
@@ -849,17 +855,16 @@ extern "C"
 
 	void rp2040_eeprom_flush(void)
 	{
-#ifndef RP2040_RUN_MULTICORE
+		/**
+		 * The settings live on the core that also pumps the UART, so the flash
+		 * commit happens on the same core as the write. There is no handoff to
+		 * the other core: the SIO FIFO carries the IPC traffic now, and keeping
+		 * the commit here also keeps the flash write off the core that steps.
+		 * **/
 		if (!EEPROM.commit())
 		{
 			proto_info(" EEPROM write error");
 		}
-#else
-		// signal other core to store EEPROM
-		rp2040.fifo.push(0);
-		// wait for signal back
-		rp2040.fifo.pop();
-#endif
 	}
 }
 #endif
@@ -1100,19 +1105,6 @@ extern "C"
 
 #if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
 		rp2040_wifi_bt_process();
-#endif
-
-#if defined(RP2040_RUN_MULTICORE) && !defined(RAM_ONLY_SETTINGS)
-		// flush pending eeprom request
-		if (rp2040.fifo.available())
-		{
-			rp2040.fifo.pop();
-			if (!EEPROM.commit())
-			{
-				proto_info(" EEPROM write error");
-			}
-			rp2040.fifo.push(0);
-		}
 #endif
 	}
 }

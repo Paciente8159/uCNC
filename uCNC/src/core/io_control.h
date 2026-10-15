@@ -79,6 +79,10 @@ extern io_probe_action_cb io_probe_custom_disable;
 	void io_enable_probe(void);
 	void io_disable_probe(void);
 	bool io_get_probe(void);
+	// probe position (in steps) recorded by the RT side when the probe
+	// triggered. io_sync_probe_step_pos sets it to the current position.
+	void io_get_probe_step_pos(int32_t *position);
+	void io_sync_probe_step_pos(void);
 
 	// outputs
 	void io_set_steps(uint8_t mask);

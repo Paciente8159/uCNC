@@ -72,6 +72,12 @@ static uint8_t io_lock_limits_mask;
 static uint8_t io_invert_limits_mask;
 static bool io_limits_disabled;
 
+// step position where the probe last triggered (or was last synced to the
+// current position). Like the probe pin itself this is owned by the RT side,
+// that records it inside mcu_probe_changed_cb. The NonRT side reads it through
+// io_get_probe_step_pos.
+static int32_t io_probe_step_pos[STEPPER_COUNT];
+
 #if ASSERT_PIN(PROBE)
 static volatile bool io_last_probe;
 static bool io_probe_enabled;
@@ -294,10 +300,10 @@ MCU_IO_CALLBACK void mcu_probe_changed_cb(void)
 
 	io_last_probe = probe;
 
-	// stores rt position
+	// records the rt position where the probe triggered
 	ATOMIC_CODEBLOCK
 	{
-		parser_sync_probe();
+		io_get_steps_pos(io_probe_step_pos);
 	}
 
 	// instead of stopping the machine does a controlled stop (hold)
@@ -689,6 +695,44 @@ bool io_get_probe(void)
 	return false;
 #endif
 #endif
+#endif
+}
+
+void io_get_probe_step_pos(int32_t *position)
+{
+#if ASSERT_IPC_NONRT()
+#if (IPC_MODE & IPC_MULTICORE_RT)
+	if (ipc_get_current_core() == IPC_NON_RT_CORE)
+#endif
+	{
+		ipc_exec(IO_GET_PROBE_POSITION, NULL, 0, position, (sizeof(int32_t) * STEPPER_COUNT));
+#if (IPC_MODE & IPC_MULTICORE_RT)
+		return;
+#endif
+	}
+#endif
+
+#if ASSERT_IPC_RT()
+	memcpy(position, io_probe_step_pos, sizeof(io_probe_step_pos));
+#endif
+}
+
+void io_sync_probe_step_pos(void)
+{
+#if ASSERT_IPC_NONRT()
+#if (IPC_MODE & IPC_MULTICORE_RT)
+	if (ipc_get_current_core() == IPC_NON_RT_CORE)
+#endif
+	{
+		ipc_exec(IO_SYNC_PROBE_POSITION, NULL, 0, NULL, 0);
+#if (IPC_MODE & IPC_MULTICORE_RT)
+		return;
+#endif
+	}
+#endif
+
+#if ASSERT_IPC_RT()
+	io_get_steps_pos(io_probe_step_pos);
 #endif
 }
 

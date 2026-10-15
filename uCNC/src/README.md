@@ -347,7 +347,7 @@ void cnc_alarm(int8_t code)
 {
 	cnc_set_exec_state(EXEC_KILL);
 	cnc_stop(true);
-	cnc_state.alarm = code;
+	cnc_state_nonrt.alarm = code;
 #ifdef ENABLE_IO_ALARM_DEBUG
 	proto_print(MSG_FEEDBACK_START);
 	proto_print(__romstr__("LIMITS:"));

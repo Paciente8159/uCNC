@@ -1124,7 +1124,14 @@ uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data)
 		}
 		if (io_get_probe() ^ (flags & 0x01))
 		{
-#ifndef ENABLE_RT_PROBE_CHECKING
+#if !defined(ENABLE_RT_PROBE_CHECKING) && (IPC_MODE == IPC_SINGLE_CORE)
+			/**
+			 * On a single core the loop is also the RT side, so this poll is
+			 * the probe detection. On a build where the probe pin belongs to a
+			 * separate RT side the same poll runs on the RT tick instead (see
+			 * mcu_rtc_cb), because io_probe_enabled and io_last_probe are only
+			 * ever written there.
+			 * */
 			mcu_probe_changed_cb();
 #endif
 			break;

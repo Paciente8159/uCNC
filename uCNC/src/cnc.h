@@ -158,15 +158,40 @@ extern "C"
 #include <stdbool.h>
 #include <stdint.h>
 
+	/**
+	 * cnc_init() is the composition for every target that boots both sides from
+	 * one entry point. An MCU that launches its own cores composes its own order
+	 * out of these pieces instead, because the order depends on when each core
+	 * becomes able to answer the other (see ucnc_init in the RP2040/RP2350
+	 * headers).
+	 */
+	void cnc_init_common(void);
+#if ASSERT_IPC_HAS_NONRT()
+	void cnc_init_nonrt(void);
+#endif
+	void cnc_init_modules(void);
+#if ASSERT_IPC_RT()
+	void cnc_init_rt(void);
+#endif
 	void cnc_init(void);
 	void cnc_network_init(void);
+	// the main loop for this build: a build that holds both sides has one loop
+	// per core, and the calling core picks the one it runs
 	void cnc_run(void);
+#if ASSERT_IPC_HAS_NONRT()
+	void cnc_run_nonrt(void);
+#endif
+#if ASSERT_IPC_RT()
+	void cnc_run_rt(void);
+#endif
 #ifdef PIO_UNIT_TESTING
 	/*
 	 * Deterministic host-test driver. The test owns the call sequence, so no
 	 * controller thread or endless main loop is needed.
 	 */
+#if ASSERT_IPC_HAS_NONRT()
 	void cnc_unit_test_start(void);
+#endif
 	bool cnc_unit_test_run_once(void);
 #endif
 	// do events returns true if all OK and false if an ABORT alarm is reached

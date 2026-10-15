@@ -152,10 +152,10 @@ static __attribute__((unused)) void grbl_test_start(void)
 
 	// if (cnc_unlock(true) != UNLOCK_ERROR)
 	// {
-	// 	cnc_state.alarm = EXEC_ALARM_NOALARM;
+	// 	cnc_state_nonrt.alarm = EXEC_ALARM_NOALARM;
 	// }
 
-	// cnc_state.loop_state = LOOP_RUNNING;
+	// cnc_state_nonrt.loop_state = LOOP_RUNNING;
 
 	/*
 	 * Make every test start at machine step position zero.

@@ -19,9 +19,6 @@
 
 #include "cnc.h"
 
-#ifndef IPC_BUFFER_SIZE
-#define IPC_BUFFER_SIZE 256
-#endif
 uint8_t g_ipc_buffer[IPC_BUFFER_SIZE];
 // backing storage for the reply/ACK payload built by ipc_dotasks
 static uint8_t g_ipc_response[IPC_BUFFER_SIZE];
@@ -69,6 +66,8 @@ size_t __attribute__((weak)) ipc_receive(ipc_packet_type_t type, void *data,
   return 0;
 }
 
+void __attribute__((weak)) ipc_poll(void) {}
+
 uint8_t __attribute__((weak)) ipc_get_current_core(void)
 {
   return IPC_RT_CORE;
@@ -103,6 +102,9 @@ void ipc_exec(ipc_packet_type_t type, const void *data_out, size_t len_out,
  */
 void ipc_dotasks(void)
 {
+  // give the transport a chance to fetch a pending request
+  ipc_poll();
+
   if (!g_ipc_data_available)
   {
     return;
@@ -195,6 +197,13 @@ void ipc_dotasks(void)
   case IO_GET_PROBE:
     response.payload[0] = (io_get_probe() ? 1 : 0);
     response.len = 1;
+    break;
+  case IO_GET_PROBE_POSITION:
+    io_get_probe_step_pos((int32_t *)response.payload);
+    response.len = (sizeof(int32_t) * STEPPER_COUNT);
+    break;
+  case IO_SYNC_PROBE_POSITION:
+    io_sync_probe_step_pos();
     break;
   case IO_SET_STEPS:
     io_set_steps(ipc_data->payload[0]);

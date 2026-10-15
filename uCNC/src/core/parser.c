@@ -45,7 +45,6 @@ static parser_state_t parser_state;
 static parser_parameters_t parser_parameters;
 static uint8_t parser_wco_counter;
 static float g92permanentoffset[AXIS_COUNT];
-static int32_t rt_probe_step_pos[STEPPER_COUNT];
 static float parser_last_pos[AXIS_COUNT];
 
 #ifndef DISABLE_HOME_SUPPORT
@@ -181,7 +180,6 @@ void parser_init(void)
 	memset(&parser_parameters, 0, sizeof(parser_parameters_t));
 	parser_wco_counter = 0;
 	memset(g92permanentoffset, 0, sizeof(g92permanentoffset));
-	memset(rt_probe_step_pos, 0, sizeof(rt_probe_step_pos));
 #endif
 	memset(parser_last_pos, 0, sizeof(parser_last_pos));
 	parser_parameters_load();
@@ -382,17 +380,19 @@ bool parser_get_wco(float *axis)
 
 void parser_sync_probe(void)
 {
-	io_get_steps_pos(rt_probe_step_pos);
+	io_sync_probe_step_pos();
 }
 
 void parser_get_probe(int32_t *position)
 {
-	memcpy(position, rt_probe_step_pos, sizeof(rt_probe_step_pos));
+	io_get_probe_step_pos(position);
 }
 
 void parser_update_probe_pos(void)
 {
-	kinematics_steps_to_coordinates(rt_probe_step_pos, parser_parameters.last_probe_position);
+	int32_t probe_position[STEPPER_COUNT];
+	parser_get_probe(probe_position);
+	kinematics_steps_to_coordinates(probe_position, parser_parameters.last_probe_position);
 }
 
 static uint8_t parser_grbl_command(void)
