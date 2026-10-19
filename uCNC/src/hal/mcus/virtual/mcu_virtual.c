@@ -1451,27 +1451,48 @@ void mcu_usb_init() {}
 		get_current_dir(cwd, 1024);
 		printf("%s\n", cwd);
 
-		printf("Creating simuli file\n\r");
-		stimuli = fopen("stimuli.vcd", "w+");
-		if (stimuli)
-			fprintf(stimuli, "$timescale 1us $end\n$scope module logic $end\n");
-		def_printpin(STEP0);
-		def_printpin(DIR0);
-		def_printpin(STEP1);
-		def_printpin(DIR1);
-		def_printpin(STEP2);
-		def_printpin(DIR2);
-		def_printpin(STEP3);
-		def_printpin(DIR3);
-		if (stimuli)
-			fprintf(stimuli, "$upscope $end\n$enddefinitions $end\n\n");
+		/**
+		 * The pins are the RT side's, so the step trace and the IO dashboard that
+		 * show them are its to produce. A build that holds one side knows
+		 * statically whether that is it. A build that holds both sides of one
+		 * chip shares one set of pins, so there the RT core is the one that owns
+		 * them, and both would otherwise open the same trace file and bind the
+		 * same port.
+		 * */
+		bool owns_pins = true;
+#if !ASSERT_IPC_RT()
+		owns_pins = false;
+#elif ASSERT_IPC_MULTICORE()
+		owns_pins = (ipc_get_current_core() != IPC_NON_RT_CORE);
+#endif
+
+		if (owns_pins)
+		{
+			printf("Creating simuli file\n\r");
+			stimuli = fopen("stimuli.vcd", "w+");
+			if (stimuli)
+				fprintf(stimuli, "$timescale 1us $end\n$scope module logic $end\n");
+			def_printpin(STEP0);
+			def_printpin(DIR0);
+			def_printpin(STEP1);
+			def_printpin(DIR1);
+			def_printpin(STEP2);
+			def_printpin(DIR2);
+			def_printpin(STEP3);
+			def_printpin(DIR3);
+			if (stimuli)
+				fprintf(stimuli, "$upscope $end\n$enddefinitions $end\n\n");
+		}
 #else
 	stimuli = NULL;
 #endif
 
 #ifndef PIO_UNIT_TESTING
 		start_timer(EMULATION_MS_TICK, &ticksimul);
-		pthread_create(&thread_http, NULL, &httpd, NULL);
+		if (owns_pins)
+		{
+			pthread_create(&thread_http, NULL, &httpd, NULL);
+		}
 #else
 	mcu_unit_test_clock_reset();
 #endif
@@ -1532,10 +1553,26 @@ void mcu_usb_init() {}
 	}
 
 #ifndef PIO_UNIT_TESTING
+#if defined(EMULATOR_IPC_PIPES)
+	extern void emulator_ipc_configure(void);
+#endif
+
 	int main(int argc, char **argv)
 	{
 		(void)argc;
 		(void)argv;
+#if defined(EMULATOR_IPC_PIPES)
+		/**
+		 * The two process split runs the two boards case: each process is a one
+		 * sided build that owns its own hardware, exactly like the ESP8266/AVR
+		 * pair, and reaches the other side over the named pipes. So each composes
+		 * the same order any other build does - cnc_init() only calls the pieces
+		 * this side has - and the two do not have to be told apart at runtime.
+		 *
+		 * The pipe names are read once, before anything can use the transport.
+		 * */
+		emulator_ipc_configure();
+#endif
 		cnc_init();
 		for (;;)
 		{

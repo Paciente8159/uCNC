@@ -396,12 +396,12 @@ MCU_IO_CALLBACK void mcu_inputs_changed_cb(void)
 void io_lock_limits(uint8_t limitmask)
 {
 #if ASSERT_IPC_NONRT()
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
 	if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
 	{
 		ipc_exec(IO_LOCK_LIMITS, &limitmask, sizeof(limitmask), NULL, 0);
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
 		return;
 #endif
 	}
@@ -416,12 +416,12 @@ void io_lock_limits(uint8_t limitmask)
 void io_enable_limits(void)
 {
 #if ASSERT_IPC_NONRT()
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
 	if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
 	{
 		ipc_exec(IO_ENABLE_LIMITS, NULL, 0, NULL, 0);
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
 		return;
 #endif
 	}
@@ -434,12 +434,12 @@ void io_enable_limits(void)
 void io_disable_limits(void)
 {
 #if ASSERT_IPC_NONRT()
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
 	if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
 	{
 		ipc_exec(IO_DISABLE_LIMITS, NULL, 0, NULL, 0);
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
 		return;
 #endif
 	}
@@ -453,12 +453,12 @@ void io_disable_limits(void)
 void io_invert_limits(uint8_t limitmask)
 {
 #if ASSERT_IPC_NONRT()
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
 	if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
 	{
 		ipc_exec(IO_INVERT_LIMITS, &limitmask, sizeof(limitmask), NULL, 0);
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
 		return;
 #endif
 	}
@@ -473,7 +473,7 @@ void io_invert_limits(uint8_t limitmask)
 uint8_t io_get_raw_limits(void)
 {
 #if ASSERT_IPC_NONRT()
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
 	if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
 	{
@@ -537,7 +537,7 @@ uint8_t io_get_raw_limits(void)
 uint8_t io_get_limits(void)
 {
 #if ASSERT_IPC_NONRT()
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
 	if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
 	{
@@ -593,12 +593,12 @@ io_probe_action_cb io_probe_custom_disable = NULL;
 void io_enable_probe(void)
 {
 #if ASSERT_IPC_NONRT()
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
 	if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
 	{
 		ipc_exec(IO_ENABLE_PROBE, NULL, 0, NULL, 0);
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
 		return;
 #endif
 	}
@@ -629,12 +629,12 @@ void io_enable_probe(void)
 void io_disable_probe(void)
 {
 #if ASSERT_IPC_NONRT()
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
 	if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
 	{
 		ipc_exec(IO_DISABLE_PROBE, NULL, 0, NULL, 0);
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
 		return;
 #endif
 	}
@@ -664,7 +664,7 @@ void io_disable_probe(void)
 bool io_get_probe(void)
 {
 #if ASSERT_IPC_NONRT()
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
 	if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
 	{
@@ -701,12 +701,12 @@ bool io_get_probe(void)
 void io_get_probe_step_pos(int32_t *position)
 {
 #if ASSERT_IPC_NONRT()
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
 	if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
 	{
 		ipc_exec(IO_GET_PROBE_POSITION, NULL, 0, position, (sizeof(int32_t) * STEPPER_COUNT));
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
 		return;
 #endif
 	}
@@ -720,12 +720,12 @@ void io_get_probe_step_pos(int32_t *position)
 void io_sync_probe_step_pos(void)
 {
 #if ASSERT_IPC_NONRT()
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
 	if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
 	{
 		ipc_exec(IO_SYNC_PROBE_POSITION, NULL, 0, NULL, 0);
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
 		return;
 #endif
 	}
@@ -740,12 +740,12 @@ void io_sync_probe_step_pos(void)
 void io_set_steps(uint8_t mask)
 {
 #if ASSERT_IPC_NONRT()
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
 	if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
 	{
 		ipc_exec(IO_SET_STEPS, &mask, sizeof(mask), NULL, 0);
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
 		return;
 #endif
 	}
@@ -847,12 +847,12 @@ void io_set_steps(uint8_t mask)
 void io_toggle_steps(uint8_t mask)
 {
 #if ASSERT_IPC_NONRT()
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
 	if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
 	{
 		ipc_exec(IO_TOGGLE_STEPS, &mask, sizeof(mask), NULL, 0);
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
 		return;
 #endif
 	}
@@ -925,12 +925,12 @@ void io_toggle_steps(uint8_t mask)
 void io_get_steps_pos(int32_t *position)
 {
 #if ASSERT_IPC_NONRT()
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
 	if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
 	{
 		ipc_exec(IO_GET_STEPS_POS, NULL, 0, position, (sizeof(int32_t) * STEPPER_COUNT));
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
 		return;
 #endif
 	}
@@ -964,12 +964,12 @@ void io_get_steps_pos(int32_t *position)
 void io_set_dirs(uint8_t mask)
 {
 #if ASSERT_IPC_NONRT()
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
 	if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
 	{
 		ipc_exec(IO_SET_DIRS, &mask, sizeof(mask), NULL, 0);
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
 		return;
 #endif
 	}
@@ -1072,12 +1072,12 @@ void io_set_dirs(uint8_t mask)
 void io_enable_steppers(uint8_t mask)
 {
 #if ASSERT_IPC_NONRT()
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
 	if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
 	{
 		ipc_exec(IO_ENABLE_STEPPERS, &mask, sizeof(mask), NULL, 0);
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
 		return;
 #endif
 	}

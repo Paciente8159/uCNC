@@ -236,12 +236,12 @@ static itp_block_t *itp_get_blk()
 void itp_push_blk(itp_block_t *blk)
 {
 #if ASSERT_IPC_NONRT()
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
   if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
   {
     ipc_exec(ITP_PUSH_BLK, blk, sizeof(itp_block_t), NULL, 0);
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
     return;
 #endif
   }
@@ -256,7 +256,7 @@ void itp_push_blk(itp_block_t *blk)
 void itp_push_sgm(bool advance_block, itp_segment_t *sgm)
 {
 #if ASSERT_IPC_NONRT()
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
   if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
   {
@@ -266,7 +266,7 @@ void itp_push_sgm(bool advance_block, itp_segment_t *sgm)
     payload[0] = (uint8_t)advance_block;
     memcpy(&payload[1], sgm, offsetof(itp_segment_t, block));
     ipc_exec(ITP_PUSH_SGM, payload, sizeof(payload), NULL, 0);
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
     return;
 #endif
   }
@@ -279,8 +279,11 @@ void itp_push_sgm(bool advance_block, itp_segment_t *sgm)
   {
     itp_blk_buffer_write();
   }
-
+#if !ASSERT_IPC_HAS_NONRT()
+  memcpy(&itp_sgm_data[itp_sgm_data_write], sgm, sizeof(itp_segment_t));
+#else
   (void)sgm;
+#endif
   itp_sgm_buffer_write();
 #endif
 }
@@ -289,7 +292,7 @@ void itp_step_rate_convert(float frequency, uint16_t *ticks,
                            uint16_t *prescaller)
 {
 #if ASSERT_IPC_NONRT()
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
   if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
   {
@@ -298,7 +301,7 @@ void itp_step_rate_convert(float frequency, uint16_t *ticks,
              sizeof(response));
     *ticks = response[0];
     *prescaller = response[1];
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
     return;
 #endif
   }
@@ -1042,12 +1045,12 @@ void itp_update(void)
 MCU_CALLBACK void itp_stop(void)
 {
 #if ASSERT_IPC_NONRT()
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
   if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
   {
     ipc_exec(ITP_STOP, NULL, 0, NULL, 0);
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
     return;
 #endif
   }
@@ -1083,12 +1086,12 @@ void itp_stop_tools(void) { tool_stop(); }
 void itp_clear(void)
 {
 #if ASSERT_IPC_NONRT()
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
   if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
   {
     ipc_exec(ITP_CLEAR, NULL, 0, NULL, 0);
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
     return;
 #endif
   }
@@ -1116,12 +1119,12 @@ void itp_clear(void)
 void itp_get_rt_position(int32_t *position)
 {
 #if ASSERT_IPC_NONRT()
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
   if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
   {
     ipc_exec(ITP_GET_RT_POSITION, NULL, 0, position, sizeof(itp_rt_step_pos));
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
     return;
 #endif
   }
@@ -1139,12 +1142,12 @@ void itp_sync_rt_position(int32_t *position)
 {
 #if ASSERT_IPC_NONRT()
 
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
   if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
   {
     ipc_exec(ITP_SYNC_RT_POSITION, position, sizeof(itp_rt_step_pos), NULL, 0);
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
     return;
 #endif
   }
@@ -1179,7 +1182,7 @@ void itp_reset_rt_position(float *origin)
   kinematics_coordinates_to_steps(origin, steps);
 
 #if ASSERT_IPC_NONRT()
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
   if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
   {
@@ -1189,7 +1192,7 @@ void itp_reset_rt_position(float *origin)
     memcpy(packet.origin, origin, sizeof(packet.origin));
 #endif
     ipc_exec(ITP_RESET_RT_POSITION, &packet, sizeof(packet), NULL, 0);
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
     return;
 #endif
   }
@@ -1215,7 +1218,7 @@ void itp_set_rt_position(int32_t *steps, float *origin)
 float itp_get_rt_feed(void)
 {
 #if ASSERT_IPC_NONRT()
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
   if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
   {
@@ -1659,12 +1662,12 @@ MCU_CALLBACK void mcu_step_cb(void)
 void itp_start(bool is_synched)
 {
 #if ASSERT_IPC_NONRT()
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
   if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
   {
     ipc_exec(ITP_START, &is_synched, sizeof(is_synched), NULL, 0);
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
     return;
 #endif
   }
@@ -1705,7 +1708,7 @@ uint8_t __attribute__((weak)) itp_set_step_mode(uint8_t mode) { return 0; }
 bool itp_is_full(void)
 {
 #if ASSERT_IPC_NONRT()
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
   if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
   {

@@ -61,7 +61,7 @@ extern "C"
 /**
  * Which side of the split a block of code belongs to.
  *
- * There are three questions here, and they are not the same one.
+ * There are four questions here, and they are not the same one.
  *
  * ASSERT_IPC_HAS_NONRT() asks whether this build contains the NonRT side at all.
  * Per side setup code needs that answer: the NonRT side owns the streams, the
@@ -79,13 +79,17 @@ extern "C"
  * core, or a shared memory build. There is no separate "contains the RT side"
  * macro because this already is that test.
  *
- * On builds that contain both sides the runtime core is still checked with
- * ipc_get_current_core() inside the ASSERT_IPC_NONRT() block, so that the body
- * guarded by ASSERT_IPC_RT() is the one that runs on the RT core.
+ * ASSERT_IPC_MULTICORE() asks whether both sides are in this image, so that the
+ * core the code runs on is what tells them apart. Only then are the two core ids
+ * different values and only then is the runtime check worth making. The answer
+ * is a compile time constant, so a build with one side carries none of the
+ * check, and the question is named once here instead of being respelled at every
+ * seam.
  * */
 #define ASSERT_IPC_HAS_NONRT() ((IPC_MODE == IPC_SINGLE_CORE) || (IPC_MODE & (IPC_MULTICORE_NONRT | IPC_SHARED_MEM)))
 #define ASSERT_IPC_NONRT() ((IPC_MODE & IPC_MULTICORE_NONRT) && !(IPC_MODE & IPC_SHARED_MEM))
 #define ASSERT_IPC_RT() ((IPC_MODE == IPC_SINGLE_CORE) || (IPC_MODE & (IPC_MULTICORE_RT | IPC_SHARED_MEM)))
+#define ASSERT_IPC_MULTICORE() ((IPC_MODE & IPC_MULTICORE) == IPC_MULTICORE)
 
   /**
    * IPC ACK handling
@@ -220,11 +224,15 @@ extern "C"
   void ipc_exec(ipc_packet_type_t type, const void *data_out, size_t len_out,
                 void *data_in, size_t len_in); // makes an ipc execution request (NonRT side to RT side) and waits for the ACK
   void ipc_dotasks(void);                      // run IPC tasks (runs on the RT side to process requests)
-  // gets the current core ID. Overridable: the default implementation in ipc.c
-  // returns IPC_RT_CORE. The declaration is weak too, because a weak definition
-  // only satisfies a weak reference on some toolchains (MinGW/PE); on the real
-  // targets either form works.
-  uint8_t __attribute__((weak)) ipc_get_current_core(void);
+  // gets the current core ID. An MCU that has real cores provides its own and
+  // defines IPC_CURRENT_CORE_OVERRIDE; every other build gets the default in
+  // ipc.c.
+  //
+  // The override is a build flag rather than a weak symbol on purpose. With
+  // MinGW/PE a strong reference does not resolve against a weak definition, and
+  // marking this declaration weak as well leaves two weak definitions for the
+  // linker to choose between, so the override silently stops working.
+  uint8_t ipc_get_current_core(void);
 
 #ifdef __cplusplus
 }

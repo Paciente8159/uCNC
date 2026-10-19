@@ -1289,6 +1289,433 @@ socket_device_t wifi_socket = {
 
 #endif /* ENABLE_SOCKETS */
 
+#ifdef EMULATOR_IPC_PIPES
+
+	/**
+	 * Host IPC transport, over a pair of Windows named pipes.
+	 *
+	 * This is what lets the virtual MCU run the two sides of the controller as
+	 * two independent processes: each one is a one sided build, so each is a
+	 * separate board with its own hardware, and they reach each other over the
+	 * pipes the way the ESP8266/AVR pair reaches over a bus.
+	 *
+	 * Two byte mode pipes carry the traffic, one per direction:
+	 *
+	 *   <base>_req   NonRT -> RT   the requests, written by ipc_exec()
+	 *   <base>_rep   RT -> NonRT   the replies and ACKs, written by ipc_dotasks()
+	 *
+	 * The RT side is the pipe server: it creates both pipes and waits for the
+	 * peer. The NonRT side is the client and retries the open, so the two may be
+	 * started in any order. Each message is framed as a length and a type
+	 * followed by that many payload bytes; the reply echoes the type of the
+	 * request, which is the ACK.
+	 *
+	 * Which side this process runs is a build flag (IPC_MODE), so it is known at
+	 * compile time and no runtime core check is needed. The pipe names come from
+	 * UCNC_IPC_PIPE so that two runs can be kept apart.
+	 * */
+
+#ifndef EMULATOR_IPC_PIPE_BASE
+#define EMULATOR_IPC_PIPE_BASE "ucnc_ipc"
+#endif
+
+#define EMULATOR_IPC_NAME_MAX 128
+#define EMULATOR_IPC_IO_BUFFER 4096
+
+	/* the wire framing: the payload length, then the type, then the payload */
+	typedef struct emulator_ipc_header_
+	{
+		uint32_t len;
+		uint32_t type;
+	} emulator_ipc_header_t;
+
+	static HANDLE g_ipc_req = INVALID_HANDLE_VALUE;
+	static HANDLE g_ipc_rep = INVALID_HANDLE_VALUE;
+	static bool g_ipc_open_failed;
+	static char g_ipc_req_name[EMULATOR_IPC_NAME_MAX];
+	static char g_ipc_rep_name[EMULATOR_IPC_NAME_MAX];
+
+	/**
+	 * Builds the pipe names from UCNC_IPC_PIPE. Called once from main(), before
+	 * anything can use the transport.
+	 * */
+	void emulator_ipc_configure(void)
+	{
+		const char *base = getenv("UCNC_IPC_PIPE");
+
+		if ((base == NULL) || (base[0] == '\0'))
+		{
+			base = EMULATOR_IPC_PIPE_BASE;
+		}
+
+		snprintf(g_ipc_req_name, sizeof(g_ipc_req_name), "\\\\.\\pipe\\%s_req", base);
+		snprintf(g_ipc_rep_name, sizeof(g_ipc_rep_name), "\\\\.\\pipe\\%s_rep", base);
+	}
+
+	static bool emulator_ipc_write_all(HANDLE h, const void *buffer, size_t len)
+	{
+		const uint8_t *cursor = (const uint8_t *)buffer;
+
+		while (len)
+		{
+			DWORD written = 0;
+
+			if (!WriteFile(h, cursor, (DWORD)len, &written, NULL) || (written == 0))
+			{
+				return false;
+			}
+
+			cursor += written;
+			len -= written;
+		}
+
+		return true;
+	}
+
+	static bool emulator_ipc_read_all(HANDLE h, void *buffer, size_t len)
+	{
+		uint8_t *cursor = (uint8_t *)buffer;
+
+		while (len)
+		{
+			DWORD read = 0;
+
+			if (!ReadFile(h, cursor, (DWORD)len, &read, NULL) || (read == 0))
+			{
+				return false;
+			}
+
+			cursor += read;
+			len -= read;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Waits for the pipe to have something to read, without blocking past the
+	 * timeout. A byte mode pipe reports how much is buffered, not whether a whole
+	 * message is there, so this only says that the message has started.
+	 *
+	 * Only the client waits: the server is the one that produces the replies, so
+	 * it never has to.
+	 * */
+#if ASSERT_IPC_NONRT()
+	static bool emulator_ipc_wait_readable(HANDLE h, uint32_t timeout_ms)
+	{
+		uint32_t start = GetTickCount();
+
+		for (;;)
+		{
+			DWORD available = 0;
+
+			if (!PeekNamedPipe(h, NULL, 0, NULL, &available, NULL))
+			{
+				return false;
+			}
+
+			if (available)
+			{
+				return true;
+			}
+
+			if ((GetTickCount() - start) >= timeout_ms)
+			{
+				return false;
+			}
+
+			Sleep(1);
+		}
+	}
+#endif /* ASSERT_IPC_NONRT() */
+
+	static bool emulator_ipc_open(void)
+	{
+		if ((g_ipc_req != INVALID_HANDLE_VALUE) && (g_ipc_rep != INVALID_HANDLE_VALUE))
+		{
+			return true;
+		}
+
+		if (g_ipc_open_failed)
+		{
+			return false;
+		}
+
+#if ASSERT_IPC_RT()
+		/**
+		 * The RT side is the server. Both pipes are created before either is
+		 * connected, so the peer is free to connect to them in any order.
+		 * */
+		g_ipc_req = CreateNamedPipeA(
+			g_ipc_req_name, PIPE_ACCESS_INBOUND,
+			PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT, 1,
+			EMULATOR_IPC_IO_BUFFER, EMULATOR_IPC_IO_BUFFER, 0, NULL);
+		g_ipc_rep = CreateNamedPipeA(
+			g_ipc_rep_name, PIPE_ACCESS_OUTBOUND,
+			PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT, 1,
+			EMULATOR_IPC_IO_BUFFER, EMULATOR_IPC_IO_BUFFER, 0, NULL);
+
+		if ((g_ipc_req == INVALID_HANDLE_VALUE) ||
+			(g_ipc_rep == INVALID_HANDLE_VALUE))
+		{
+			g_ipc_open_failed = true;
+			return false;
+		}
+
+		/**
+		 * The peer may have connected between the create and the connect,
+		 * which makes ConnectNamedPipe fail with ERROR_PIPE_CONNECTED. That
+		 * is success.
+		 * */
+		if (!ConnectNamedPipe(g_ipc_req, NULL) &&
+			(GetLastError() != ERROR_PIPE_CONNECTED))
+		{
+			g_ipc_open_failed = true;
+			return false;
+		}
+
+		if (!ConnectNamedPipe(g_ipc_rep, NULL) &&
+			(GetLastError() != ERROR_PIPE_CONNECTED))
+		{
+			g_ipc_open_failed = true;
+			return false;
+		}
+
+		return true;
+#else
+		/**
+		 * The NonRT side is the client. It retries the open so that either
+		 * process may be started first, and gives up after the boot timeout so a
+		 * missing peer fails the handshake instead of hanging.
+		 * */
+		uint32_t start = GetTickCount();
+
+		for (;;)
+		{
+			g_ipc_req = CreateFileA(g_ipc_req_name, GENERIC_WRITE, 0, NULL,
+									OPEN_EXISTING, 0, NULL);
+
+			if (g_ipc_req != INVALID_HANDLE_VALUE)
+			{
+				break;
+			}
+
+			if ((GetTickCount() - start) >= IPC_BOOT_TIMEOUT)
+			{
+				g_ipc_open_failed = true;
+				return false;
+			}
+
+			Sleep(1);
+		}
+
+		for (;;)
+		{
+			g_ipc_rep = CreateFileA(g_ipc_rep_name, GENERIC_READ, 0, NULL,
+									OPEN_EXISTING, 0, NULL);
+
+			if (g_ipc_rep != INVALID_HANDLE_VALUE)
+			{
+				break;
+			}
+
+			if ((GetTickCount() - start) >= IPC_BOOT_TIMEOUT)
+			{
+				g_ipc_open_failed = true;
+				return false;
+			}
+
+			Sleep(1);
+		}
+
+		return true;
+#endif /* ASSERT_IPC_RT() */
+	}
+
+	void ipc_send(ipc_packet_type_t type, const void *data, size_t len)
+	{
+		if (len > IPC_MAX_PAYLOAD)
+		{
+			return;
+		}
+
+		if (!emulator_ipc_open())
+		{
+			return;
+		}
+
+		emulator_ipc_header_t header;
+		header.len = (uint32_t)len;
+		header.type = (uint32_t)(uint8_t)type;
+
+		/* each side writes on its own pipe, so the directions never interleave */
+#if ASSERT_IPC_RT()
+		HANDLE h = g_ipc_rep;
+#else
+		HANDLE h = g_ipc_req;
+#endif
+
+		if (!emulator_ipc_write_all(h, &header, sizeof(header)))
+		{
+			return;
+		}
+
+		if (len)
+		{
+			emulator_ipc_write_all(h, data, len);
+		}
+	}
+
+	size_t ipc_receive(ipc_packet_type_t type, void *data, size_t len)
+	{
+#if !ASSERT_IPC_NONRT()
+		(void)type;
+		(void)data;
+		(void)len;
+		return 0;
+#else
+		if (!emulator_ipc_open())
+		{
+			return 0;
+		}
+
+		uint8_t *dst = (uint8_t *)data;
+		uint8_t scratch[64];
+
+		for (uint16_t tries = 0; tries < IPC_MAX_TRIES; tries++)
+		{
+			if (!emulator_ipc_wait_readable(g_ipc_rep, IPC_ACK_TIMEOUT))
+			{
+				return 0;
+			}
+
+			emulator_ipc_header_t header;
+
+			if (!emulator_ipc_read_all(g_ipc_rep, &header, sizeof(header)))
+			{
+				return 0;
+			}
+
+			if (header.len > IPC_MAX_PAYLOAD)
+			{
+				/* the peer is out of step, so the stream cannot be framed */
+				return 0;
+			}
+
+			bool match = (header.type == (uint32_t)(uint8_t)type);
+			size_t consumed = 0;
+
+			/* the payload is consumed whether or not it is the message being
+			   waited for, so the stream stays framed */
+			while (consumed < header.len)
+			{
+				size_t chunk = MIN((size_t)sizeof(scratch), (size_t)header.len - consumed);
+
+				if (!emulator_ipc_read_all(g_ipc_rep, scratch, chunk))
+				{
+					return 0;
+				}
+
+				if (match && dst && (consumed < len))
+				{
+					memcpy(&dst[consumed], scratch, MIN(chunk, len - consumed));
+				}
+
+				consumed += chunk;
+			}
+
+			if (match)
+			{
+				/* the ACK byte, plus the payload bytes that fit */
+				return 1 + MIN((size_t)header.len, len);
+			}
+		}
+
+		return 0;
+#endif /* ASSERT_IPC_NONRT() */
+	}
+
+	void ipc_poll(void)
+	{
+#if !ASSERT_IPC_RT()
+		return;
+#else
+		/* one request at a time, no backpressure */
+		if (g_ipc_data_available)
+		{
+			return;
+		}
+
+		if (!emulator_ipc_open())
+		{
+			return;
+		}
+
+		DWORD available = 0;
+
+		if (!PeekNamedPipe(g_ipc_req, NULL, 0, NULL, &available, NULL))
+		{
+			return;
+		}
+
+		if (available < sizeof(emulator_ipc_header_t))
+		{
+			return;
+		}
+
+		emulator_ipc_header_t header;
+
+		if (!emulator_ipc_read_all(g_ipc_req, &header, sizeof(header)))
+		{
+			return;
+		}
+
+		if (header.len > IPC_MAX_PAYLOAD)
+		{
+			/**
+			 * Cannot happen with a conforming sender, which refuses to send more
+			 * than the buffer holds, so the stream is out of step. The message
+			 * is dropped instead of being written past the buffer, and only what
+			 * is already buffered is drained, so a bogus length cannot stall
+			 * this loop.
+			 * */
+			uint8_t scratch[64];
+
+			for (;;)
+			{
+				DWORD pending = 0;
+
+				if (!PeekNamedPipe(g_ipc_req, NULL, 0, NULL, &pending, NULL) ||
+					(pending == 0))
+				{
+					break;
+				}
+
+				if (!emulator_ipc_read_all(g_ipc_req, scratch,
+										   MIN((size_t)pending, sizeof(scratch))))
+				{
+					break;
+				}
+			}
+
+			return;
+		}
+
+		ipc_packet_t *packet = (ipc_packet_t *)g_ipc_buffer;
+		packet->type = (ipc_packet_type_t)header.type;
+		packet->len = header.len;
+		packet->payload = g_ipc_buffer + sizeof(ipc_packet_t);
+
+		if (header.len && !emulator_ipc_read_all(g_ipc_req, packet->payload, header.len))
+		{
+			return;
+		}
+
+		g_ipc_data_available = true;
+#endif /* ASSERT_IPC_RT() */
+	}
+
+#endif /* EMULATOR_IPC_PIPES */
 
 #ifdef __cplusplus
 }

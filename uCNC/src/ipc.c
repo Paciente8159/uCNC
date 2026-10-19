@@ -31,7 +31,7 @@ typedef char ipc_settings_block_fits[((sizeof(rt_settings_t) + sizeof(ipc_packet
 bool ipc_init(void)
 {
 #if ASSERT_IPC_NONRT()
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
   if (ipc_get_current_core() != IPC_NON_RT_CORE)
   {
     return true; // the RT side answers the ping, it does not send one
@@ -68,10 +68,12 @@ size_t __attribute__((weak)) ipc_receive(ipc_packet_type_t type, void *data,
 
 void __attribute__((weak)) ipc_poll(void) {}
 
-uint8_t __attribute__((weak)) ipc_get_current_core(void)
+#ifndef IPC_CURRENT_CORE_OVERRIDE
+uint8_t ipc_get_current_core(void)
 {
   return IPC_RT_CORE;
 }
+#endif
 
 /**
  * master to slave communication messages (orchestrator to executor)

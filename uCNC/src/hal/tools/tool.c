@@ -238,12 +238,12 @@ void tool_set_speed(int16_t value)
   tool_current_speed = value;
 #endif
 #if ASSERT_IPC_NONRT()
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
   if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
   {
     ipc_exec(TOOL_SET_SPEED, &value, sizeof(value), NULL, 0);
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
     return;
 #endif
   }
@@ -296,12 +296,12 @@ int16_t tool_range_speed(int16_t value, uint8_t conv)
 void tool_set_coolant(uint8_t value)
 {
 #if ASSERT_IPC_NONRT()
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
   if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
   {
     ipc_exec(TOOL_SET_COOLANT, &value, sizeof(value), NULL, 0);
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
     return;
 #endif
   }
@@ -348,7 +348,7 @@ void tool_set_mode(uint8_t mode)
 {
   current_tool_mode = mode;
 #if ASSERT_IPC_NONRT()
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
   if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
   {

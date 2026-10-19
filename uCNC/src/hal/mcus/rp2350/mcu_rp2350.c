@@ -797,19 +797,11 @@ void mcu_stop_itp_isr(void)
  * */
 void mcu_dotasks(void)
 {
-#ifdef RP2350_RUN_MULTICORE
 	/**
-	 * Core 0 owns the streams, so it is the one that pumps the UART/USB/WiFi. The
-	 * RT core must not: both cores run this, and two cores driving the same
-	 * peripherals would corrupt the stream.
+	 * Pumps the streams. Only the NonRT side calls this (see cnc_io_dotasks), so
+	 * the UART/USB is driven from a single core.
 	 * **/
-	if (ipc_get_current_core() == IPC_NON_RT_CORE)
-	{
-		rp2350_uart_process();
-	}
-#else
 	rp2350_uart_process();
-#endif
 }
 
 // Non volatile memory

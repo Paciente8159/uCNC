@@ -1470,6 +1470,7 @@ extern "C"
 #define IPC_MODE IPC_MULTICORE
 #define IPC_NON_RT_CORE 0
 #define IPC_RT_CORE 1
+#define IPC_CURRENT_CORE_OVERRIDE
 	/**
 	 * Launch multicore
 	 * **/

@@ -75,10 +75,38 @@ typedef struct
 static cnc_state_rt_t cnc_state_rt;
 static cnc_state_nonrt_t cnc_state_nonrt;
 #if ASSERT_IPC_NONRT()
+/**
+ * The RT side owns cnc_state_rt.exec_state, so on this side every read of it is
+ * a request over the transport. A pass of the loop reads it many times and the
+ * value only changes between passes, so a pass takes one snapshot of the whole
+ * word and cnc_get_exec_state() answers from that instead of asking again.
+ *
+ * The writes this side makes are applied to the snapshot as well as sent, so a
+ * read that follows a write within the same pass sees what was just asked of
+ * the RT side and not the value from before it. The one thing the snapshot
+ * cannot see is a change the RT side makes on its own, and that is what
+ * cnc_refresh_exec_state() picks up: the snapshot is at most one pass behind.
+ * */
+static uint16_t cnc_state_rt_snapshot;
+/**
+ * The snapshot means nothing until the RT side has answered for it once, and
+ * startup reads the state before the loop is entered (cnc_reset() does). So the
+ * reads that happen before the first refresh take one themselves.
+ * */
+static bool cnc_state_rt_snapshot_valid;
 // unrecoverable fault code (0 = none). Only a reboot clears it, so it is kept
 // out of cnc_state_nonrt: cnc_reset() writes the alarm and cnc_run() writes the
 // loop state, so the latch needs storage that neither of them can reach.
 static int8_t cnc_fatal_fault;
+#if defined(ENABLE_ITP_FEED_TASK)
+/**
+ * Raised by the tick and consumed by the NonRT loop, which is where the feed
+ * task is allowed to run: it blocks on the transport to the RT side, and the
+ * tick is interrupt context on the core that also runs that loop. One byte, set
+ * from an interrupt and cleared from the loop, so it is volatile.
+ * */
+static volatile bool cnc_itp_feed_pending;
+#endif
 #endif
 
 static void cnc_check_fault_systems(void);
@@ -90,6 +118,7 @@ static void cnc_reset(void);
 #endif
 #if ASSERT_IPC_NONRT()
 static void cnc_raise_fatal_fault(int8_t code);
+static void cnc_refresh_exec_state(void);
 #endif
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
@@ -118,6 +147,14 @@ WEAK_EVENT_HANDLER(cnc_alarm) { DEFAULT_EVENT_HANDLER(cnc_alarm); }
 /**
  * Initializes the state both sides keep a private copy of, plus the MCU itself.
  * Runs first, on every side, on every deployment model.
+ *
+ * The MCU is hardware, and there is one of it, so it is initialized once. On a
+ * build that holds both sides of one chip that is the side that boots first: the
+ * NonRT core, which composes this call before it launches the RT core. The other
+ * core skips it rather than configuring pins and interrupts a second time. A
+ * build that holds one side, or two sides that do not share hardware - the
+ * ESP8266/AVR pair, two emulator processes - always owns its own and initializes
+ * it here.
  * */
 void cnc_init_common(void)
 {
@@ -125,9 +162,14 @@ void cnc_init_common(void)
   memset(&cnc_state_rt, 0, sizeof(cnc_state_rt_t));
   memset(&cnc_state_nonrt, 0, sizeof(cnc_state_nonrt_t));
 #endif
-  // initializes all systems
-  mcu_init();     // mcu
-  mcu_io_reset(); // add custom logic to set pins initial state
+#if ASSERT_IPC_MULTICORE()
+  if (ipc_get_current_core() == IPC_NON_RT_CORE)
+#endif
+  {
+    // initializes all systems
+    mcu_init();     // mcu
+    mcu_io_reset(); // add custom logic to set pins initial state
+  }
 }
 
 #if ASSERT_IPC_HAS_NONRT()
@@ -387,7 +429,7 @@ void cnc_run_rt(void)
 void cnc_run(void)
 {
 #if ASSERT_IPC_HAS_NONRT() && ASSERT_IPC_RT()
-#if (IPC_MODE & IPC_MULTICORE) == IPC_MULTICORE
+#if ASSERT_IPC_MULTICORE()
   if (ipc_get_current_core() != IPC_NON_RT_CORE)
   {
     cnc_run_rt();
@@ -535,10 +577,19 @@ bool cnc_dotasks(void)
   cnc_io_dotasks();
 
 #if ASSERT_IPC_HAS_NONRT()
-#if (IPC_MODE & IPC_MULTICORE) == IPC_MULTICORE
+#if ASSERT_IPC_MULTICORE()
   if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
   {
+#if ASSERT_IPC_NONRT()
+    /**
+     * The guards below read the RT side's exec state, and so does the segment
+     * feed they let through - once per segment it produces. They are all asking
+     * the same question, so the pass asks it once here and cnc_get_exec_state()
+     * answers the rest of them from the snapshot.
+     * */
+    cnc_refresh_exec_state();
+#endif
     cnc_exec_rt_commands(); // executes all pending realtime commands
 
     // let µCNC finnish startup/reset code
@@ -562,6 +613,18 @@ bool cnc_dotasks(void)
 
 #ifndef ENABLE_ITP_FEED_TASK
     itp_run();
+#elif ASSERT_IPC_NONRT()
+    /**
+     * The feed task the tick raised, run where it is allowed to block. The
+     * startup, alarm and interlocking guards above are the ones the tick would
+     * have applied, so a request that arrives while one of them holds is
+     * serviced once the loop gets past them instead of being dropped.
+     * */
+    if (cnc_itp_feed_pending)
+    {
+      cnc_itp_feed_pending = false;
+      itp_run();
+    }
 #endif
 
 #ifdef ENABLE_TOOL_PID_CONTROLLER
@@ -668,19 +731,29 @@ MCU_CALLBACK void mcu_rtc_cb(uint32_t millis)
    * on, which is the NonRT one on a build that holds both sides: the RT side has
    * its own loop for its own work (see cnc_run_rt), and the alarm list this tick
    * re-enqueues itself on is not safe to share between two cores.
+   *
+   * The task itself is not run from here when the NonRT side has a transport to
+   * the RT side. It blocks on that transport, and this is interrupt context on
+   * the core that also runs the NonRT loop, so running it here would let it
+   * interleave a request with the one that loop is already waiting on. The tick
+   * only raises it and the loop runs it (see cnc_dotasks).
    * */
 #if ASSERT_IPC_HAS_NONRT()
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
   if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
   {
 #ifdef ENABLE_ITP_FEED_TASK
+#if ASSERT_IPC_NONRT()
+    cnc_itp_feed_pending = true;
+#else
     if ((cnc_state_nonrt.loop_state == LOOP_RUNNING) &&
         (cnc_state_nonrt.alarm == EXEC_ALARM_NOALARM) &&
         !cnc_get_exec_state(EXEC_INTERLOCKING_FAIL))
     {
       itp_run();
     }
+#endif
 #endif
   }
 #endif
@@ -889,17 +962,33 @@ uint8_t cnc_unlock(bool force)
   return UNLOCK_OK;
 }
 
+#if ASSERT_IPC_NONRT()
+/**
+ * Takes the one snapshot of the RT side's exec state a pass of the loop uses.
+ * The whole word is asked for, so that any mask cnc_get_exec_state() is later
+ * called with is already in the snapshot.
+ * */
+static void cnc_refresh_exec_state(void)
+{
+  uint16_t statemask = EXEC_ALLACTIVE;
+  ipc_exec(CNC_GET_EXEC_STATE, &statemask, sizeof(statemask),
+           &cnc_state_rt_snapshot, sizeof(cnc_state_rt_snapshot));
+  cnc_state_rt_snapshot_valid = true;
+}
+#endif
+
 uint16_t cnc_get_exec_state(uint16_t statemask)
 {
 #if ASSERT_IPC_NONRT()
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
   if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
   {
-    uint16_t state = 0;
-    ipc_exec(CNC_GET_EXEC_STATE, &statemask, sizeof(statemask), &state,
-             sizeof(state));
-    return state;
+    if (!cnc_state_rt_snapshot_valid)
+    {
+      cnc_refresh_exec_state();
+    }
+    return (cnc_state_rt_snapshot & statemask);
   }
 #endif
 
@@ -912,12 +1001,14 @@ uint16_t cnc_get_exec_state(uint16_t statemask)
 void cnc_set_exec_state_rt(uint16_t statemask)
 {
 #if ASSERT_IPC_NONRT()
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
   if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
   {
+    // the snapshot has to answer for what was just asked of the RT side
+    cnc_state_rt_snapshot |= statemask;
     ipc_exec(CNC_SET_EXEC_STATE_RT, &statemask, sizeof(statemask), NULL, 0);
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
     return;
 #endif
   }
@@ -971,12 +1062,14 @@ void cnc_set_exec_state(uint16_t statemask)
 void cnc_clear_exec_state_rt(uint16_t statemask)
 {
 #if ASSERT_IPC_NONRT()
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
   if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
   {
+    // the snapshot has to answer for what was just asked of the RT side
+    cnc_state_rt_snapshot &= (uint16_t)~statemask;
     ipc_exec(CNC_CLEAR_EXEC_STATE_RT, &statemask, sizeof(statemask), NULL, 0);
-#if (IPC_MODE & IPC_MULTICORE_RT)
+#if ASSERT_IPC_MULTICORE()
     return;
 #endif
   }
@@ -1580,9 +1673,9 @@ bool cnc_check_interlocking(void)
  * The IO task pump. Both sides run it, so each part is filtered to the side
  * that owns the hardware it touches.
  *
- * mcu_dotasks() is common because it pumps transports and each side owns its
- * own: the streams and the sockets on the NonRT side, the IPC link on the RT
- * side.
+ * mcu_dotasks() pumps the streams, so it belongs to the NonRT side: USB, UART
+ * and the sockets are that side's transports, and the RT side's link is
+ * serviced by ipc_dotasks() instead, not by the MCU transport pump.
  *
  * The input callbacks are filtered by the pins they read, not by what they do
  * with the result. Limits, probe and the generic inputs (with the encoders) are
@@ -1596,8 +1689,15 @@ bool cnc_check_interlocking(void)
  * */
 static void cnc_io_dotasks(void)
 {
-  // run internal mcu tasks (USB and communications)
-  mcu_dotasks();
+#if ASSERT_IPC_HAS_NONRT()
+#if ASSERT_IPC_MULTICORE()
+  if (ipc_get_current_core() == IPC_NON_RT_CORE)
+#endif
+  {
+    // run internal mcu tasks (USB and communications)
+    mcu_dotasks();
+  }
+#endif
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
   /**
@@ -1613,7 +1713,7 @@ static void cnc_io_dotasks(void)
 #endif
 
 #if ASSERT_IPC_RT()
-#if (IPC_MODE & IPC_MULTICORE) == IPC_MULTICORE
+#if ASSERT_IPC_MULTICORE()
   if (ipc_get_current_core() != IPC_NON_RT_CORE)
 #endif
   {
@@ -1632,7 +1732,7 @@ static void cnc_io_dotasks(void)
 #endif
 
 #if ASSERT_IPC_HAS_NONRT()
-#if (IPC_MODE & IPC_MULTICORE) == IPC_MULTICORE
+#if ASSERT_IPC_MULTICORE()
   if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
   {

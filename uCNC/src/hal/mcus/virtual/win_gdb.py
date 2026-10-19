@@ -29,7 +29,9 @@ from os.path import abspath, basename, dirname, isdir, isfile, join, normpath
 #     probed with `gdb --version`,
 #   * a gdb that can not start because a private DLL is missing (Dev-Cpp's
 #     `gdb32.exe` needs `zlib1.dll` for example) is repaired by copying the
-#     executable next to the DLLs it imports into `.pio/gdb-shim`.
+#     executable next to the DLLs it imports into `.pio/gdb-shim`; a missing
+#     `zlib1.dll` is rebuilt there from the static `libz.a` of the native
+#     toolchain, which is the only private dependency the toolchain can supply.
 #
 # 32 bit debuggers are preferred: the toolchain compiles an i686 program and
 # an *old* 64 bit gdb mishandles the WOW64 breakpoint used to stop it
@@ -201,6 +203,50 @@ def _find_dll(name, machine, dirs):
     return None
 
 
+#: The only private DLL the native toolchain can supply: its GCC is built against
+#: the static zlib it ships as `libz.a`. A gdb built against zlib (Dev-Cpp's 32
+#: bit `gdb32.exe` is) will not even load without `zlib1.dll`, and that DLL is
+#: missing from most machines, so rebuild it instead of leaving gdb unusable.
+def _rebuild_dll(name, machine, shim_dir):
+    """Rebuild a private DLL from the native toolchain, or return None."""
+    if name.lower() != "zlib1.dll":
+        return None
+    package = env.PioPlatform().get_package_dir("toolchain-gccmingw32")
+    if not package:
+        return None
+    compiler = join(package, "bin", "i686-w64-mingw32-gcc.exe")
+    library = join(package, "i686-w64-mingw32", "lib", "libz.a")
+    if not (isfile(compiler) and isfile(library)):
+        return None
+    if not isdir(shim_dir):
+        os.makedirs(shim_dir)
+    output = join(shim_dir, name)
+    if isfile(output) and _pe_machine(output) == machine:
+        return output
+    try:
+        subprocess.run(
+            [
+                compiler,
+                "-shared",
+                "-o",
+                output,
+                "-Wl,--export-all-symbols",
+                "-Wl,--whole-archive",
+                library,
+                "-Wl,--no-whole-archive",
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            timeout=120,
+            creationflags=_NO_WINDOW,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if isfile(output) and _pe_machine(output) == machine:
+        return output
+    return None
+
+
 def _copy(source, destination):
     if isfile(destination) and os.path.getsize(destination) == os.path.getsize(source):
         return
@@ -211,11 +257,14 @@ def _build_shim(path, machine):
     """Copy a gdb next to the private DLLs it imports, or return None."""
     gdb_dir = dirname(path)
     dirs = _search_dirs([gdb_dir, dirname(gdb_dir), join(dirname(gdb_dir), "bin")])
+    shim_dir = join(env.subst("$PROJECT_DIR"), ".pio", "gdb-shim")
     dlls = {}
     for name in _pe_imports(path):
         if isfile(join(gdb_dir, name)):
             continue
         found = _find_dll(name, machine, dirs)
+        if found is None:
+            found = _rebuild_dll(name, machine, shim_dir)
         if found is None:
             # a private DLL we can not provide: a shim would not help
             return None
@@ -224,7 +273,6 @@ def _build_shim(path, machine):
     if not dlls:
         return None
 
-    shim_dir = join(env.subst("$PROJECT_DIR"), ".pio", "gdb-shim")
     if not isdir(shim_dir):
         os.makedirs(shim_dir)
     # gdb.exe is a launcher for gdborig.exe on some MinGW builds
