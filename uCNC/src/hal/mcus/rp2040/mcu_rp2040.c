@@ -105,7 +105,7 @@ MCU_CALLBACK void shift_register_io_pins(void) {
   ic74hc595_program_write(pio_ic74hc595, sm_ic74hc595, out);
 
 #if (IC74HC165_COUNT > 0)
-  uint32_t in = ic74hc595_program_read(pio_ic74hc595, sm_ic74hc595);
+  uint32_t in = __builtin_bswap32(ic74hc595_program_read(pio_ic74hc595, sm_ic74hc595));
   *((volatile uint32_t *)&ic74hc165_io_pins[0]) = in;
 #else
   // drain the RX FIFO so the trailing push never stalls
