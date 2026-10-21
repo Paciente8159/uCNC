@@ -1,6 +1,6 @@
 @echo off
 rem Runs the uCNC split as two independent processes that talk over a pair of
-rem Windows named pipes (see the EMULATOR_IPC_PIPES section of virtual_windows.c).
+rem Windows named pipes (see the virtual_windows.c).
 rem
 rem The two are separate boards, not two cores of one chip: each is a one sided
 rem build with its own hardware, so the RT side produces the step trace and

@@ -53,7 +53,7 @@
 
 #define UINT8_MAX 255
 #define UINT16_MAX 65535
-#define UINT32_MAX 0xffffffffU			 /* 4294967295U */
+#define UINT32_MAX 0xffffffffU					 /* 4294967295U */
 #define UINT64_MAX 0xffffffffffffffffULL /* 18446744073709551615ULL */
 #endif
 
@@ -70,16 +70,16 @@
 
 // #define MCU_HAS_RTOS
 
-// #define MCU_HAS_UART
+#define MCU_HAS_UART
+
+#define MCU_HAS_UART2
 #ifndef UART_PORT_NAME
 #ifndef __unix__
-#define UART_PORT_NAME "\\\\.\\COM14"
+#define UART_PORT_NAME "\\\\.\\COM12"
 #else
 #define UART_PORT_NAME "/dev/ttyS0"
 #endif
 #endif
-
-#define MCU_HAS_UART2
 
 #define ENABLE_SOCKETS
 // #define EMULATE_74HC595
@@ -547,9 +547,9 @@ typedef enum io_pin_type_
 
 typedef struct io_pin_
 {
-	uint8_t type;   /* io_pin_type_t */
+	uint8_t type;		/* io_pin_type_t */
 	uint16_t value; /* input/output 0-1, pwm/servo 0-255, analog 0-1023 */
-	char vcd_char;  /* VCD log char */
+	char vcd_char;	/* VCD log char */
 } io_pin_t;
 
 #define IO_PIN_COUNT 212
@@ -559,12 +559,12 @@ extern volatile io_pin_t io_pins[IO_PIN_COUNT];
 typedef enum io_pin_group_
 {
 	IO_GROUP_HIDDEN = 0, /* comms pins + undefined gaps */
-	IO_GROUP_STEPDIR,    /* step/dir/enable */
-	IO_GROUP_PWM_SERVO,  /* pwm and servo */
-	IO_GROUP_OUTPUT,     /* generic outputs */
-	IO_GROUP_CONTROL,    /* limits/probe/estop/safety/fhold/csres */
-	IO_GROUP_INPUT,      /* generic inputs */
-	IO_GROUP_ANALOG      /* analog inputs */
+	IO_GROUP_STEPDIR,		 /* step/dir/enable */
+	IO_GROUP_PWM_SERVO,	 /* pwm and servo */
+	IO_GROUP_OUTPUT,		 /* generic outputs */
+	IO_GROUP_CONTROL,		 /* limits/probe/estop/safety/fhold/csres */
+	IO_GROUP_INPUT,			 /* generic inputs */
+	IO_GROUP_ANALOG			 /* analog inputs */
 } io_pin_group_t;
 
 typedef struct io_pin_info_
@@ -704,21 +704,21 @@ void test_io_set_after(test_io_id_t input, uint32_t delay_ms, bool initial_value
 typedef bool (*test_io_callback_t)(void);
 void test_io_set_callback(test_io_id_t input, test_io_callback_t cb);
 
-#define IO_CONDITION_ESTOP	   test_io_condition(TEST_IO_ESTOP)
+#define IO_CONDITION_ESTOP test_io_condition(TEST_IO_ESTOP)
 #define IO_CONDITION_SAFETY_DOOR test_io_condition(TEST_IO_SAFETY_DOOR)
-#define IO_CONDITION_FHOLD	   test_io_condition(TEST_IO_FHOLD)
-#define IO_CONDITION_CS_RES	   test_io_condition(TEST_IO_CS_RES)
-#define IO_CONDITION_PROBE	   test_io_condition(TEST_IO_PROBE)
+#define IO_CONDITION_FHOLD test_io_condition(TEST_IO_FHOLD)
+#define IO_CONDITION_CS_RES test_io_condition(TEST_IO_CS_RES)
+#define IO_CONDITION_PROBE test_io_condition(TEST_IO_PROBE)
 
-#define IO_CONDITION_LIMIT_X	 test_io_condition(TEST_IO_LIMIT_X)
-#define IO_CONDITION_LIMIT_X2	test_io_condition(TEST_IO_LIMIT_X2)
-#define IO_CONDITION_LIMIT_Y	 test_io_condition(TEST_IO_LIMIT_Y)
-#define IO_CONDITION_LIMIT_Y2	test_io_condition(TEST_IO_LIMIT_Y2)
-#define IO_CONDITION_LIMIT_Z	 test_io_condition(TEST_IO_LIMIT_Z)
-#define IO_CONDITION_LIMIT_Z2	test_io_condition(TEST_IO_LIMIT_Z2)
-#define IO_CONDITION_LIMIT_A	 test_io_condition(TEST_IO_LIMIT_A)
-#define IO_CONDITION_LIMIT_B	 test_io_condition(TEST_IO_LIMIT_B)
-#define IO_CONDITION_LIMIT_C	 test_io_condition(TEST_IO_LIMIT_C)
+#define IO_CONDITION_LIMIT_X test_io_condition(TEST_IO_LIMIT_X)
+#define IO_CONDITION_LIMIT_X2 test_io_condition(TEST_IO_LIMIT_X2)
+#define IO_CONDITION_LIMIT_Y test_io_condition(TEST_IO_LIMIT_Y)
+#define IO_CONDITION_LIMIT_Y2 test_io_condition(TEST_IO_LIMIT_Y2)
+#define IO_CONDITION_LIMIT_Z test_io_condition(TEST_IO_LIMIT_Z)
+#define IO_CONDITION_LIMIT_Z2 test_io_condition(TEST_IO_LIMIT_Z2)
+#define IO_CONDITION_LIMIT_A test_io_condition(TEST_IO_LIMIT_A)
+#define IO_CONDITION_LIMIT_B test_io_condition(TEST_IO_LIMIT_B)
+#define IO_CONDITION_LIMIT_C test_io_condition(TEST_IO_LIMIT_C)
 #endif
 
 #endif

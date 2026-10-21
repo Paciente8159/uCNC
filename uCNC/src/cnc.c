@@ -1006,8 +1006,7 @@ void cnc_set_exec_state_rt(uint16_t statemask)
 #endif
   {
     // the snapshot has to answer for what was just asked of the RT side
-    cnc_state_rt_snapshot |= statemask;
-    ipc_exec(CNC_SET_EXEC_STATE_RT, &statemask, sizeof(statemask), NULL, 0);
+    ipc_exec(CNC_SET_EXEC_STATE_RT, &statemask, sizeof(statemask), &cnc_state_rt_snapshot, sizeof(cnc_state_rt_snapshot));
 #if ASSERT_IPC_MULTICORE()
     return;
 #endif
@@ -1067,8 +1066,7 @@ void cnc_clear_exec_state_rt(uint16_t statemask)
 #endif
   {
     // the snapshot has to answer for what was just asked of the RT side
-    cnc_state_rt_snapshot &= (uint16_t)~statemask;
-    ipc_exec(CNC_CLEAR_EXEC_STATE_RT, &statemask, sizeof(statemask), NULL, 0);
+    ipc_exec(CNC_CLEAR_EXEC_STATE_RT, &statemask, sizeof(statemask), &cnc_state_rt_snapshot, sizeof(cnc_state_rt_snapshot));
 #if ASSERT_IPC_MULTICORE()
     return;
 #endif

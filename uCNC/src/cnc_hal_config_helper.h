@@ -56,6 +56,21 @@ extern "C"
 #include "../cnc_hal_overrides.h"	//config override file
 #include "modules/shift_register.h" // io extender
 
+/**
+ * The IPC transport over UART2 (see modules/ipc_uart2.h) needs the port to
+ * itself. Left attached, UART2 is registered as one more gcode stream (see
+ * grbl_stream.c) and that stream consumes exactly the bytes the IPC framing
+ * depends on, so the link would never see a whole frame. Asking for the
+ * transport is therefore asking for the detach, and one switch says both.
+ *
+ * This has to happen before the MCU HAL is reached, because the detach is what
+ * makes the HAL hand received bytes to mcu_uart2_rx_cb() instead of feeding
+ * them to the protocol (see hal/mcus/mcu.h and the per MCU RX interrupt).
+ * */
+#if defined(IPC_USES_UART2) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
+#define DETACH_UART2_FROM_MAIN_PROTOCOL
+#endif
+
 	/**
 	 *
 	 * Controls limits and probe pins
