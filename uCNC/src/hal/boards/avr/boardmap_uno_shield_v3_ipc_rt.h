@@ -60,6 +60,7 @@ extern "C"
 #undef DISABLE_MULTISTREAM_SERIAL
 #undef DISABLE_RTC_CODE
 #undef DISABLE_SAFE_SETTINGS
+#undef DISABLE_ITP_STEP_GEN_OPTIMIZATIONS
 
 // Setup com pins
 #define RX2_BIT 0
@@ -69,6 +70,7 @@ extern "C"
 #define RX2_PULLUP
 // only uncomment this if other port other then 0 is used
 #define UART2_PORT 0
+#define BAUDRATE2 1000000
 
 // Grbl 0.8 limit z
 #define LIMIT_Z_BIT 3	 // assigns LIMIT_Z pin

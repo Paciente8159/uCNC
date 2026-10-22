@@ -126,8 +126,6 @@ extern "C"
 
 // do all HAL configurations and sanity checks
 #include "cnc_hal_config_helper.h"
-// initializes core utilities (like fast math functions)
-#include "utils.h"
 // extension modules
 #include "module.h"
 #include "interface/defaults.h"

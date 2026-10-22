@@ -28,6 +28,7 @@ extern "C"
 #endif
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 // Itp update flags
@@ -50,6 +51,21 @@ extern "C"
 #ifndef INTERPOLATOR_FREQ
 #define INTERPOLATOR_FREQ 100
 #endif
+
+  /**
+   * Both structs below cross the IPC link as they are (see itp_push_blk and
+   * itp_push_sgm), and the two sides of a split are separate builds from
+   * different boardmaps. So a field may not be conditional on an option a
+   * boardmap is free to set: the side that left it out would shift every field
+   * after it on the other side of the link, and the frame would still be well
+   * formed, so only the values in it would be wrong.
+   *
+   * DISABLE_ITP_STEP_GEN_OPTIMIZATIONS is one of those - the UNO boardmap
+   * applies it. It decides whether the two fields it used to guard are
+   * computed and read, never whether they exist: an idle stepper has no steps
+   * to give either way, so a side skipping the optimization produces the same
+   * motion from a block the other side built with it.
+   * */
 
   // contains data of the block being executed by the pulse routine
   // this block has the necessary data to execute the Bresenham line algorithm
@@ -94,6 +110,45 @@ extern "C"
     // architecture dependent (2 bytes on AVR, 4 on 32bit MCUs)
     itp_block_t *block;
   } __attribute__((packed, aligned(1))) itp_segment_t;
+
+  /**
+   * What actually crosses the link is every field of the two structs above up to
+   * the trailing pointer, which each side fills in for itself. Spelled out from
+   * the motion configuration the two sides have to share anyway, so that a
+   * build fails if a field of that part is ever made conditional on something
+   * they are free to disagree on (see the note above the structs).
+   * */
+#ifdef GCODE_PROCESS_LINE_NUMBERS
+#define ITP_IPC_LINE_SIZE (sizeof(uint32_t))
+#else
+#define ITP_IPC_LINE_SIZE 0
+#endif
+#if (DSS_MAX_OVERSAMPLING != 0) && !defined(ENABLE_RT_SYNC_MOTIONS)
+#define ITP_IPC_DSS_SIZE (sizeof(int8_t))
+#elif (DSS_MAX_OVERSAMPLING != 0)
+#define ITP_IPC_DSS_SIZE (sizeof(int8_t) + sizeof(uint8_t))
+#else
+#define ITP_IPC_DSS_SIZE 0
+#endif
+#if TOOL_COUNT > 0
+#define ITP_IPC_SPINDLE_SIZE (sizeof(int16_t))
+#else
+#define ITP_IPC_SPINDLE_SIZE 0
+#endif
+// dirbits and idle_steppers, then steps, total_steps and errors
+#define ITP_IPC_BLOCK_SIZE                                               \
+  (sizeof(uint8_t) * 2 + (sizeof(step_t) * ((STEPPER_COUNT * 2) + 1)) + \
+   ITP_IPC_LINE_SIZE)
+// remaining_steps, timer_counter and timer_prescaller, then main_stepper,
+// next_dss, spindle, feed and flags
+#define ITP_IPC_SEGMENT_SIZE                                       \
+  (sizeof(uint16_t) * 3 + sizeof(uint8_t) * 2 + ITP_IPC_DSS_SIZE + \
+   ITP_IPC_SPINDLE_SIZE + sizeof(float))
+
+  typedef char ipc_itp_block_layout_fits
+      [(sizeof(itp_block_t) == ITP_IPC_BLOCK_SIZE) ? 1 : -1];
+  typedef char ipc_itp_segment_layout_fits
+      [(offsetof(itp_segment_t, block) == ITP_IPC_SEGMENT_SIZE) ? 1 : -1];
 
   /**
    * Payload of ITP_RESET_RT_POSITION.

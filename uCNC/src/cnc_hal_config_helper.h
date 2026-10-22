@@ -55,6 +55,8 @@ extern "C"
 #include "../cnc_hal_config.h"			//inicializes the HAL hardcoded connections
 #include "../cnc_hal_overrides.h"		//config override file
 #include "modules/shift_register.h" // io extender
+// initializes core utilities (like fast math functions)
+#include "utils.h"
 
 /**
  * The IPC transport over UART2 (see modules/ipc_uart2.h) needs the port to
@@ -69,6 +71,15 @@ extern "C"
  * */
 #if defined(IPC_USES_UART2) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
 #define DETACH_UART2_FROM_MAIN_PROTOCOL
+#endif
+
+/**
+ * With IPC active some options must be deactivated to ensure that data structures are similar accross architectures
+ * Also RTC tick events must be enabled
+ */
+#if (IPC_MODE != IPC_SINGLE_CORE)
+#undef DISABLE_RTC_CODE
+#undef DISABLE_ITP_STEP_GEN_OPTIMIZATIONS
 #endif
 
 	/**
