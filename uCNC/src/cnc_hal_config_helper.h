@@ -52,8 +52,8 @@ extern "C"
 // machine tools configurations
 #include "hal/tools/tool.h" //configures the kinematics for the cnc machine
 // final HAL configurations
-#include "../cnc_hal_config.h"		//inicializes the HAL hardcoded connections
-#include "../cnc_hal_overrides.h"	//config override file
+#include "../cnc_hal_config.h"			//inicializes the HAL hardcoded connections
+#include "../cnc_hal_overrides.h"		//config override file
 #include "modules/shift_register.h" // io extender
 
 /**
@@ -401,8 +401,6 @@ extern "C"
 #error "The current MCU does not support ONESHOT_TIMER or the ONESHOT_TIMER is not configured"
 #endif
 #endif
-
-
 
 #ifdef ABC_INDEP_FEED_CALC
 #ifdef ENABLE_LINACT_PLANNER

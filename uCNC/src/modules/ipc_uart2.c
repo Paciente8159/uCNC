@@ -34,6 +34,24 @@
 #include "ipc_uart2.h"
 
 /**
+ * Debug trace for the UART2 IPC transport. A build that wants the trace defines
+ * IPCUART2DBG(...) as a printf-like sink before this header is reached; without
+ * it the calls in ipc_uart2.c compile away. See the SETTINGSDBG pattern in
+ * grbl_settings.c.
+ * */
+// #define IPCUART2DBG(fmt, ...)                                    \
+//   do                                                             \
+//   {                                                              \
+//     if (true)                                                    \
+//     {                                                            \
+//       printf(__romstr__(DEBUG_PRELUDE fmt "\n"), ##__VA_ARGS__); \
+//     }                                                            \
+//   } while (0)
+#ifndef IPCUART2DBG
+#define IPCUART2DBG(...) ((void)0)
+#endif
+
+/**
  * The frame being rebuilt out of the byte stream, and how far it got.
  *
  * The HAL already has a receive ring, but the ring is as large as one gcode
@@ -103,10 +121,15 @@ static void ipc_uart2_check(void)
 
   if ((ipc_uart2_rx_frame[total - 1] != IPC_UART2_END) || (crc != frame_crc))
   {
+    IPCUART2DBG("ipc_uart2: reject frame type %u len %u (end 0x%02X, crc 0x%04X want 0x%04X)",
+                (unsigned)ipc_uart2_rx_frame[IPC_UART2_OFF_TYPE], (unsigned)payload,
+                (unsigned)ipc_uart2_rx_frame[total - 1], (unsigned)crc, (unsigned)frame_crc);
     ipc_uart2_reset();
     return;
   }
 
+  IPCUART2DBG("ipc_uart2: frame ok type %u len %u",
+              (unsigned)ipc_uart2_rx_frame[IPC_UART2_OFF_TYPE], (unsigned)payload);
   ipc_uart2_rx_ready = true;
 }
 
@@ -122,6 +145,7 @@ static void ipc_uart2_feed(uint8_t c)
      * sent, so anything arriving here belongs to a frame that has nowhere to
      * be kept.
      * */
+    IPCUART2DBG("ipc_uart2: byte 0x%02X dropped, frame waiting", (unsigned)c);
     return;
   }
 
@@ -137,6 +161,7 @@ static void ipc_uart2_feed(uint8_t c)
     ipc_uart2_rx_frame[0] = c;
     ipc_uart2_rx_len = 1;
     ipc_uart2_rx_total = 0;
+    IPCUART2DBG("ipc_uart2: start byte, hunting frame");
     return;
   }
 
@@ -147,6 +172,7 @@ static void ipc_uart2_feed(uint8_t c)
      * the block below does. Kept as a floor so that a frame can never be built
      * past the end of the buffer.
      * */
+    IPCUART2DBG("ipc_uart2: frame over %u bytes, assembler overflow", (unsigned)IPC_UART2_FRAME_MAX);
     ipc_uart2_reset();
     return;
   }
@@ -164,10 +190,12 @@ static void ipc_uart2_feed(uint8_t c)
 
     if (payload > IPC_MAX_PAYLOAD)
     {
+      IPCUART2DBG("ipc_uart2: payload %u over limit %u", (unsigned)payload, (unsigned)IPC_MAX_PAYLOAD);
       ipc_uart2_reset();
       return;
     }
 
+    IPCUART2DBG("ipc_uart2: header type %u payload %u", (unsigned)ipc_uart2_rx_frame[IPC_UART2_OFF_TYPE], (unsigned)payload);
     ipc_uart2_rx_total = (uint16_t)(payload + IPC_UART2_OVERHEAD);
   }
 
@@ -199,6 +227,7 @@ static void ipc_uart2_drain(void)
   if (!ipc_uart2_rx_ready && (ipc_uart2_rx_len > 0) &&
       ((uint32_t)(mcu_millis() - ipc_uart2_rx_last_byte) >= IPC_UART2_RESYNC_TIMEOUT))
   {
+    IPCUART2DBG("ipc_uart2: no byte for %u ms, frame lost, resync", (unsigned)IPC_UART2_RESYNC_TIMEOUT);
     ipc_uart2_reset();
   }
 }
@@ -218,6 +247,8 @@ void ipc_send(ipc_packet_type_t type, const void *data, size_t len)
   uint16_t payload = (uint16_t)MIN(len, (size_t)IPC_MAX_PAYLOAD);
   uint16_t crc;
   size_t i;
+
+  IPCUART2DBG("ipc_uart2: send type %u len %u", (unsigned)type, (unsigned)payload);
 
   frame[0] = IPC_UART2_START;
   frame[1] = (uint8_t)type;
@@ -272,7 +303,10 @@ size_t ipc_receive(ipc_packet_type_t type, void *data, size_t len)
 #else
   uint16_t tries = 0;
   uint32_t deadline = mcu_millis();
+#ifdef PIO_UNIT_TESTING
+  // only the build whose clock cannot move on its own needs this (see below)
   uint32_t stuck = 0;
+#endif
 
   while (tries < IPC_MAX_TRIES)
   {
@@ -292,31 +326,47 @@ size_t ipc_receive(ipc_packet_type_t type, void *data, size_t len)
 
         ipc_uart2_reset();
 
+        IPCUART2DBG("ipc_uart2: reply type %u len %u", (unsigned)type, (unsigned)payload);
+
         // the ACK byte, plus the payload bytes that fit
         return (size_t)(1 + copied);
       }
 
       // a reply to something else. It is dropped and the wait retries
+      IPCUART2DBG("ipc_uart2: unexpected reply type %u (want %u)",
+                  (unsigned)ipc_uart2_rx_frame[IPC_UART2_OFF_TYPE], (unsigned)type);
       ipc_uart2_reset();
       tries++;
       deadline = mcu_millis();
+#ifdef PIO_UNIT_TESTING
       stuck = 0;
+#endif
       continue;
     }
 
     if ((uint32_t)(mcu_millis() - deadline) >= IPC_ACK_TIMEOUT)
     {
+      IPCUART2DBG("ipc_uart2: reply timeout, retry %u", (unsigned)tries);
       tries++;
       deadline = mcu_millis();
+#ifdef PIO_UNIT_TESTING
       stuck = 0;
+#endif
       continue;
     }
 
+#ifdef PIO_UNIT_TESTING
     /**
      * Bound for a build whose clock cannot move on its own (see
-     * IPC_UART2_RX_WAIT_LIMIT). A clock that advances at all - which is every
-     * build that is not the host unit test one - clears this and leaves the
-     * timeout above in charge.
+     * IPC_UART2_RX_WAIT_LIMIT). Only the host unit test build is that build: its
+     * clock advances from cnc_dotasks(), which this wait deliberately does not
+     * run, so the timeout above could never be reached there.
+     *
+     * Every other build has a clock of its own and must not be bounded by this.
+     * A clock that advances is not one that advances on every pass: the emulator
+     * moves its clock in a single step per EMULATION_MS_TICK, so a spin count
+     * reaches any limit inside one step and the wait would give up on a reply
+     * that had arrived but had not been read yet.
      * */
     if (mcu_millis() != deadline)
     {
@@ -326,6 +376,7 @@ size_t ipc_receive(ipc_packet_type_t type, void *data, size_t len)
     {
       break;
     }
+#endif
   }
 
   return 0;
@@ -366,6 +417,7 @@ void ipc_poll(void)
     memcpy(packet->payload, &ipc_uart2_rx_frame[IPC_UART2_OFF_DATA], (size_t)payload);
   }
 
+  IPCUART2DBG("ipc_uart2: request type %u len %u", (unsigned)packet->type, (unsigned)payload);
   ipc_uart2_reset();
   g_ipc_data_available = true;
 #endif

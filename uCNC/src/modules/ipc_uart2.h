@@ -29,52 +29,52 @@ extern "C"
 #include <stddef.h>
 #include <stdint.h>
 
-  /**
-   * IPC transport over UART2.
-   *
-   * Carries the requests the NonRT side forwards and the replies the RT side
-   * returns (see ipc.h) over a plain UART. The port is taken whole: defining
-   * IPC_USES_UART2 also detaches UART2 from the main protocol, because the
-   * gcode stream would otherwise register the same port as another stream and
-   * consume the bytes the framing below depends on.
-   *
-   * Size it as a bus and not as a console. The two sides of the split are
-   * usually separate boards, so the link carries one request and one reply per
-   * forwarded call, and a payload can be as large as the settings block.
-   *
-   * THE FRAME
-   *
-   * A UART hands over a byte stream with no message boundaries, and the link
-   * runs next to the power wiring of a machine, so the frame has to rebuild
-   * the boundaries and reject whatever the line corrupted. Every message -
-   * request and reply alike - travels as:
-   *
-   *   +-------+------+--------+--------+---------------+--------+--------+-----+
-   *   | START | TYPE | LEN_LO | LEN_HI |    PAYLOAD    | CRC_LO | CRC_HI | END |
-   *   +-------+------+--------+--------+---------------+--------+--------+-----+
-   *       1      1       1        1          LEN           1        1      1
-   *
-   * START (0xAA) is the byte the receiver hunts for while it has no frame in
-   * progress. It is not counted in LEN, and it is what lets the receiver lock
-   * onto a frame again after the stream has been lost.
-   *
-   * TYPE is the ipc_packet_type_t of the message, and it doubles as the ACK:
-   * the reply repeats the type of the request.
-   *
-   * LEN is the payload length, little endian, so that the same frame layout
-   * describes every message. It is two bytes rather than one so that the field
-   * cannot silently wrap if IPC_BUFFER_SIZE is ever raised.
-   *
-   * CRC is a CRC16-CCITT (polynomial 0x1021, seeded with 0xFFFF) computed over
-   * TYPE, LEN and PAYLOAD. It is what turns a corrupted payload into a dropped
-   * frame instead of a command the RT side would carry out.
-   *
-   * END (0x55) closes the frame. With START it also catches the one case the
-   * CRC cannot see by itself: a frame whose tail never arrived, because the
-   * receiver is then still waiting for bytes that the next frame supplies.
-   * A frame that has stopped arriving is dropped after
-   * IPC_UART2_RESYNC_TIMEOUT, so a lost frame cannot swallow the one after it.
-   * */
+     /**
+      * IPC transport over UART2.
+      *
+      * Carries the requests the NonRT side forwards and the replies the RT side
+      * returns (see ipc.h) over a plain UART. The port is taken whole: defining
+      * IPC_USES_UART2 also detaches UART2 from the main protocol, because the
+      * gcode stream would otherwise register the same port as another stream and
+      * consume the bytes the framing below depends on.
+      *
+      * Size it as a bus and not as a console. The two sides of the split are
+      * usually separate boards, so the link carries one request and one reply per
+      * forwarded call, and a payload can be as large as the settings block.
+      *
+      * THE FRAME
+      *
+      * A UART hands over a byte stream with no message boundaries, and the link
+      * runs next to the power wiring of a machine, so the frame has to rebuild
+      * the boundaries and reject whatever the line corrupted. Every message -
+      * request and reply alike - travels as:
+      *
+      *   +-------+------+--------+--------+---------------+--------+--------+-----+
+      *   | START | TYPE | LEN_LO | LEN_HI |    PAYLOAD    | CRC_LO | CRC_HI | END |
+      *   +-------+------+--------+--------+---------------+--------+--------+-----+
+      *       1      1       1        1          LEN           1        1      1
+      *
+      * START (0xAA) is the byte the receiver hunts for while it has no frame in
+      * progress. It is not counted in LEN, and it is what lets the receiver lock
+      * onto a frame again after the stream has been lost.
+      *
+      * TYPE is the ipc_packet_type_t of the message, and it doubles as the ACK:
+      * the reply repeats the type of the request.
+      *
+      * LEN is the payload length, little endian, so that the same frame layout
+      * describes every message. It is two bytes rather than one so that the field
+      * cannot silently wrap if IPC_BUFFER_SIZE is ever raised.
+      *
+      * CRC is a CRC16-CCITT (polynomial 0x1021, seeded with 0xFFFF) computed over
+      * TYPE, LEN and PAYLOAD. It is what turns a corrupted payload into a dropped
+      * frame instead of a command the RT side would carry out.
+      *
+      * END (0x55) closes the frame. With START it also catches the one case the
+      * CRC cannot see by itself: a frame whose tail never arrived, because the
+      * receiver is then still waiting for bytes that the next frame supplies.
+      * A frame that has stopped arriving is dropped after
+      * IPC_UART2_RESYNC_TIMEOUT, so a lost frame cannot swallow the one after it.
+      * */
 
 #define IPC_UART2_START 0xAAu
 #define IPC_UART2_END 0x55u

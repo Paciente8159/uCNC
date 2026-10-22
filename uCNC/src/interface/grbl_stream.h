@@ -72,7 +72,7 @@ extern "C"
 	void grbl_stream_overflow_flush(void);
 
 	// marks an overflow error on a stream
-#define STREAM_OVF(c)        \
+#define STREAM_OVF(c)      \
 	grbl_stream_overflow(c); \
 	return
 
@@ -94,13 +94,21 @@ extern "C"
 #endif
 
 #ifndef DEBUG_PRELUDE
-#define DEBUG_PRELUDE ">"__FILE__"@"STRGIFY(__LINE__)":"
+#define DEBUG_PRELUDE ">" __FILE__ "@" STRGIFY(__LINE__) ":"
 #endif
 
 	// not to be used directly
 	void debug_printf(const char *fmt, ...);
 	void debug_flush(void);
-#define DBGMSGIF(condition, fmt, ...) do {if(DEBUG_STREAM && DEBUG_STREAM->registered && (condition)){debug_printf(__romstr__(DEBUG_PRELUDE fmt "\n"), ##__VA_ARGS__); debug_flush();}}while(0)
+#define DBGMSGIF(condition, fmt, ...)                                  \
+	do                                                                   \
+	{                                                                    \
+		if (DEBUG_STREAM && DEBUG_STREAM->registered && (condition))       \
+		{                                                                  \
+			debug_printf(__romstr__(DEBUG_PRELUDE fmt "\n"), ##__VA_ARGS__); \
+			debug_flush();                                                   \
+		}                                                                  \
+	} while (0)
 #define DBGMSG(fmt, ...) DBGMSGIF(true, fmt, ##__VA_ARGS__)
 #else
 #define DBGMSGIF(condition, fmt, ...)

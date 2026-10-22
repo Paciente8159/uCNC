@@ -66,6 +66,9 @@ extern "C"
 	extern bool serial_write(const uint8_t *buffer, unsigned int nbChar);
 	extern bool uart_connected(void);
 
+	/* defined below; mcu_uart2_available() polls the port through it */
+	static void mcu_uart2_process(void);
+
 	/* HAL impl: UART */
 	uint8_t mcu_uart2_getc(void)
 	{
@@ -73,7 +76,22 @@ extern "C"
 		BUFFER_TRY_DEQUEUE(uart2_rx, &c);
 		return c;
 	}
-	uint8_t mcu_uart2_available(void) { return BUFFER_READ_AVAILABLE(uart2_rx); }
+	/**
+	 * On a real MCU the RX interrupt puts the byte into uart2_rx as soon as it
+	 * arrives, so counting the buffer is all this has to do. This HAL has no such
+	 * interrupt - the port is polled - and only mcu_dotasks() used to poll it. A
+	 * caller that waits on this port without running the task loop would then
+	 * never see the reply it waits for, however long it waited: ipc_receive() in
+	 * modules/ipc_uart2.c is exactly that caller, because it deliberately does not
+	 * run cnc_dotasks() while it waits. Polling here restores the contract such a
+	 * caller assumes - asking how many bytes are available is enough to make the
+	 * bytes that already arrived available.
+	 * */
+	uint8_t mcu_uart2_available(void)
+	{
+		mcu_uart2_process();
+		return BUFFER_READ_AVAILABLE(uart2_rx);
+	}
 	void mcu_uart2_clear(void) { BUFFER_CLEAR(uart2_rx); }
 	void mcu_uart2_putc(uint8_t c)
 	{
@@ -108,12 +126,27 @@ extern "C"
 		for (int i = 0; i < count; i++)
 		{
 			uint8_t c = (uint8_t)buff[i];
-			if (mcu_com_rx_cb(c))
+#ifndef DETACH_UART2_FROM_MAIN_PROTOCOL
+			/**
+			 * The port feeds the main protocol, so it takes the ascii filter like any
+			 * other comms stream.
+			 * */
+			if (!mcu_com_rx_cb(c))
 			{
-				if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
-				{
-					STREAM_OVF(c);
-				}
+				continue;
+			}
+#else
+			/**
+			 * UART2 belongs to whoever detached it from the main protocol (see
+			 * ipc_uart2.c), so the byte has to reach the ring buffer whole. The filter
+			 * above would drop every byte that is not printable ascii, which is most of
+			 * an IPC frame - its START byte above all. Mirrors the AVR ISR in mcu_avr.c,
+			 * which buffers the byte unconditionally once UART2 is detached.
+			 * */
+#endif
+			if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
+			{
+				STREAM_OVF(c);
 			}
 		}
 	}

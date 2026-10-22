@@ -63,8 +63,13 @@ extern "C"
 			return false;
 		}
 
-		/* Mirror original WindowsSerial: 9600 8N1, DTR enabled */
-		dcbSerialParams.BaudRate = CBR_9600;
+		/**
+		 * Run the port at the rate the firmware runs it at (BAUDRATE), so that the
+		 * board on the other end of the cable agrees. UART2 is this same port, and
+		 * the IPC link over it (see ipc_uart2.c) cannot be read unless both ends
+		 * agree on the rate. 8N1, DTR enabled.
+		 * */
+		dcbSerialParams.BaudRate = BAUDRATE;
 		dcbSerialParams.ByteSize = 8;
 		dcbSerialParams.StopBits = ONESTOPBIT;
 		dcbSerialParams.Parity = NOPARITY;

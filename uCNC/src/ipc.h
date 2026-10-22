@@ -104,6 +104,16 @@ extern "C"
 #define IPC_MAX_TRIES 8
 #endif
 #ifndef IPC_ACK_TIMEOUT
+  /**
+   * One ipc_receive() may spend up to IPC_MAX_TRIES of these before it returns,
+   * so this is the cost of a single handshake attempt below, not the cost of the
+   * handshake. ipc_init() retries until its budget runs out, which only works if
+   * one attempt is a small fraction of that budget: at 2000 ms an attempt could
+   * spend 8 x 2000 = 16 s waiting, more than the whole 5 s budget, so the first
+   * ping would already be the last one and the handshake gave up on a board that
+   * was still booting. 50 ms is also several times the time a 256 byte frame
+   * takes at 115200 baud, so a live RT side always answers well inside it.
+   * */
 #define IPC_ACK_TIMEOUT 50 // ms
 #endif
 
