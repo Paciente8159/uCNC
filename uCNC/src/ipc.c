@@ -130,6 +130,15 @@ void ipc_dotasks(void)
     break;
   case ITP_PUSH_SGM:
     itp_push_sgm((bool)ipc_data->payload[0], (itp_segment_t *)(&ipc_data->payload[1])); // advance the writer
+    /**
+     * The reply reports the buffer's state once the segment is in it. The
+     * NonRT side pushes the segments and the RT side consumes them, so a
+     * buffer reported as not full here stays not full until the NonRT side
+     * adds to it: carrying the answer back saves the feed loop a request of
+     * its own to ask for it (see itp_run).
+     * */
+    response.payload[0] = (itp_is_full() ? 1 : 0);
+    response.len = 1;
     break;
   case ITP_STEP_RATE_CONVERT:
   {

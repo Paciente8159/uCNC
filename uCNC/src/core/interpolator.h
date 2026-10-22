@@ -61,10 +61,11 @@ extern "C"
    * formed, so only the values in it would be wrong.
    *
    * DISABLE_ITP_STEP_GEN_OPTIMIZATIONS is one of those - the UNO boardmap
-   * applies it. It decides whether the two fields it used to guard are
-   * computed and read, never whether they exist: an idle stepper has no steps
-   * to give either way, so a side skipping the optimization produces the same
-   * motion from a block the other side built with it.
+   * applies it, and it is worth having: it takes the work of stepping an idle
+   * stepper out of the ISR. So what keeps the two sides in step is not the
+   * fields being unconditional but the split turning the option off for both of
+   * them, which cnc_hal_config_helper.h does for any IPC_MODE other than
+   * IPC_SINGLE_CORE. The assertions below hold that in place.
    * */
 
   // contains data of the block being executed by the pulse routine
@@ -117,6 +118,11 @@ extern "C"
    * the motion configuration the two sides have to share anyway, so that a
    * build fails if a field of that part is ever made conditional on something
    * they are free to disagree on (see the note above the structs).
+   *
+   * Only a split build has a link, so only a split build has this to get wrong:
+   * the check is that the two sides agree, which is not a question a single core
+   * build has to answer. Scoped by the same test the note above relies on, so
+   * that it applies exactly where that option is turned off.
    * */
 #ifdef GCODE_PROCESS_LINE_NUMBERS
 #define ITP_IPC_LINE_SIZE (sizeof(uint32_t))
@@ -145,10 +151,12 @@ extern "C"
   (sizeof(uint16_t) * 3 + sizeof(uint8_t) * 2 + ITP_IPC_DSS_SIZE + \
    ITP_IPC_SPINDLE_SIZE + sizeof(float))
 
+#if (IPC_MODE != IPC_SINGLE_CORE)
   typedef char ipc_itp_block_layout_fits
       [(sizeof(itp_block_t) == ITP_IPC_BLOCK_SIZE) ? 1 : -1];
   typedef char ipc_itp_segment_layout_fits
       [(offsetof(itp_segment_t, block) == ITP_IPC_SEGMENT_SIZE) ? 1 : -1];
+#endif
 
   /**
    * Payload of ITP_RESET_RT_POSITION.

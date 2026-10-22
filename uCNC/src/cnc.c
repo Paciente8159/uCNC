@@ -98,15 +98,6 @@ static bool cnc_state_rt_snapshot_valid;
 // out of cnc_state_nonrt: cnc_reset() writes the alarm and cnc_run() writes the
 // loop state, so the latch needs storage that neither of them can reach.
 static int8_t cnc_fatal_fault;
-#if defined(ENABLE_ITP_FEED_TASK)
-/**
- * Raised by the tick and consumed by the NonRT loop, which is where the feed
- * task is allowed to run: it blocks on the transport to the RT side, and the
- * tick is interrupt context on the core that also runs that loop. One byte, set
- * from an interrupt and cleared from the loop, so it is volatile.
- * */
-static volatile bool cnc_itp_feed_pending;
-#endif
 #endif
 
 static void cnc_check_fault_systems(void);
@@ -615,16 +606,25 @@ bool cnc_dotasks(void)
     itp_run();
 #elif ASSERT_IPC_NONRT()
     /**
-     * The feed task the tick raised, run where it is allowed to block. The
-     * startup, alarm and interlocking guards above are the ones the tick would
-     * have applied, so a request that arrives while one of them holds is
-     * serviced once the loop gets past them instead of being dropped.
+     * The segment feed, run where it is allowed to block.
+     *
+     * It runs on every pass, and not from the tick that raises the feed task.
+     * The tick's period belongs to the platform - one millisecond on a board,
+     * EMULATION_MS_TICK on the host emulator - while the feed has to run at the
+     * interpolator's own rate: a segment is around INTERPOLATOR_DELTA_T of
+     * motion, so the RT side consumes them at roughly INTERPOLATOR_FREQ per
+     * second, and a single pass can only add the INTERPOLATOR_BUFFER_SIZE slots
+     * the buffer has. A feed paced by a tick slower than that cannot keep up
+     * and starves the RT side, which shows as the exec state flapping between
+     * Run and Idle.
+     *
+     * The startup, alarm and interlocking guards above are the ones the tick
+     * would have applied, so a request that arrives while one of them holds is
+     * serviced once the loop gets past them instead of being dropped. A pass
+     * with nothing to feed costs no transport traffic, so this does not spend
+     * the link on an idle machine (see itp_run).
      * */
-    if (cnc_itp_feed_pending)
-    {
-      cnc_itp_feed_pending = false;
-      itp_run();
-    }
+    itp_run();
 #endif
 
 #ifdef ENABLE_TOOL_PID_CONTROLLER
@@ -727,16 +727,17 @@ MCU_CALLBACK void mcu_rtc_cb(uint32_t millis)
 
   /**
    * The interpolator feed task is NonRT work: it produces the segments the RT
-   * side consumes (see cnc_dotasks()). It runs on the core this tick is enabled
-   * on, which is the NonRT one on a build that holds both sides: the RT side has
-   * its own loop for its own work (see cnc_run_rt), and the alarm list this tick
-   * re-enqueues itself on is not safe to share between two cores.
+   * side consumes.
    *
-   * The task itself is not run from here when the NonRT side has a transport to
-   * the RT side. It blocks on that transport, and this is interrupt context on
-   * the core that also runs the NonRT loop, so running it here would let it
-   * interleave a request with the one that loop is already waiting on. The tick
-   * only raises it and the loop runs it (see cnc_dotasks).
+   * A build with no transport to the RT side runs it from here, at the tick's
+   * rate, because that is the rate its guards want. A split build runs it from
+   * the loop instead, because the tick's period belongs to the platform and the
+   * feed has to run at the interpolator's own rate: the tick would starve the
+   * RT side whenever its period is slower than the buffer it fills (see
+   * cnc_dotasks). The task itself must not run from here on such a build
+   * anyway: it blocks on that transport, and this is interrupt context on the
+   * core that also runs the NonRT loop, so running it here would let it
+   * interleave a request with the one that loop is already waiting on.
    * */
 #if ASSERT_IPC_HAS_NONRT()
 #if ASSERT_IPC_MULTICORE()
@@ -744,9 +745,7 @@ MCU_CALLBACK void mcu_rtc_cb(uint32_t millis)
 #endif
   {
 #ifdef ENABLE_ITP_FEED_TASK
-#if ASSERT_IPC_NONRT()
-    cnc_itp_feed_pending = true;
-#else
+#if !ASSERT_IPC_NONRT()
     if ((cnc_state_nonrt.loop_state == LOOP_RUNNING) &&
         (cnc_state_nonrt.alarm == EXEC_ALARM_NOALARM) &&
         !cnc_get_exec_state(EXEC_INTERLOCKING_FAIL))

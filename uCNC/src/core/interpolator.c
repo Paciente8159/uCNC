@@ -84,6 +84,17 @@ static volatile uint8_t itp_mutex;
 // set by itp_init(). itp_run() must never be reached before it is set
 static bool itp_initialized;
 
+/**
+ * Whether the segment buffer is full, as the last answer said.
+ *
+ * Only the NonRT side writes the buffer and only the RT side reads it, so a
+ * buffer the RT side reported as not full stays not full until this side adds
+ * to it: the level can only fall on its own. That is what lets a push carry the
+ * answer back and save the round trip a question of its own would cost (see
+ * itp_push_sgm and itp_run).
+ * */
+static bool itp_sgm_full;
+
 #ifdef ENABLE_RT_SYNC_MOTIONS
 // deprecated with new hooks
 // volatile int32_t itp_sync_step_counter;
@@ -203,6 +214,8 @@ static void itp_sgm_clear(void)
 {
   itp_sgm_data_write = 0;
   itp_sgm_data_read = 0;
+  // an empty buffer is not a full one
+  itp_sgm_full = false;
   // resets the sgm pointer and stored dss
   itp_rt_sgm = NULL;
 #if DSS_MAX_OVERSAMPLING > 0
@@ -260,12 +273,22 @@ void itp_push_sgm(bool advance_block, itp_segment_t *sgm)
   if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
   {
-    // the trailing block pointer is architecture dependent and is filled in by
-    // the RT side, so it is left out of the transmitted payload
+    /**
+     * The trailing block pointer is architecture dependent and is filled in by
+     * the RT side, so it is left out of the transmitted payload.
+     *
+     * The reply reports whether the buffer is full once the segment is in it,
+     * which is the answer the feed loop would otherwise have to ask for with a
+     * request of its own (see itp_run). It defaults to full so that a reply
+     * that does not carry it - an RT side built before this - costs an extra
+     * pass rather than a buffer overrun.
+     * */
     uint8_t payload[1 + offsetof(itp_segment_t, block)];
+    uint8_t full = 1;
     payload[0] = (uint8_t)advance_block;
     memcpy(&payload[1], sgm, offsetof(itp_segment_t, block));
-    ipc_exec(ITP_PUSH_SGM, payload, sizeof(payload), NULL, 0);
+    ipc_exec(ITP_PUSH_SGM, payload, sizeof(payload), &full, sizeof(full));
+    itp_sgm_full = (full != 0);
 #if ASSERT_IPC_MULTICORE()
     return;
 #endif
@@ -285,6 +308,8 @@ void itp_push_sgm(bool advance_block, itp_segment_t *sgm)
   (void)sgm;
 #endif
   itp_sgm_buffer_write();
+  // the same answer the RT side sends over the transport (see above)
+  itp_sgm_full = itp_sgm_is_full();
 #endif
 }
 
@@ -531,8 +556,29 @@ void itp_run(void)
   planner_block_t *block = itp_cur_plan_block;
   itp_segment_t *sgm = NULL;
 
+  /**
+   * Nothing to feed: no block being sliced and none waiting in the planner.
+   *
+   * The buffer can still hold segments the RT side has not been told to run - a
+   * stop leaves them there - and only the RT side can start them, so the start
+   * is still asked for while the RT side is not running. That question is
+   * answered from the exec state snapshot, so a pass with nothing to feed costs
+   * no transport traffic while the machine is moving, which is what lets the
+   * feed run on every pass of the loop.
+   * */
+  if ((itp_cur_plan_block == NULL) && planner_buffer_is_empty())
+  {
+    if (!cnc_get_exec_state(EXEC_RUN))
+    {
+      itp_start(false);
+    }
+    return;
+  }
+
+  itp_sgm_full = itp_is_full();
+
   // creates segments and fills the buffer
-  while (!itp_is_full())
+  while (!itp_sgm_full)
   {
     if (cnc_get_exec_state(EXEC_ALARM))
     {
@@ -1024,16 +1070,27 @@ void itp_run(void)
 #endif
 
 // starts the step isr if is stopped and there are segments to execute
-#ifdef ENABLE_RT_SYNC_MOTIONS
-  bool start_is_synched =
-      (!itp_sgm_is_empty())
-          ? ((itp_sgm_data[itp_sgm_data_read].flags & ITP_SYNC) != 0)
-          : false;
-  // starts the step isr if is stopped and there are segments to execute
-  itp_start(start_is_synched);
-#else
-  itp_start(false);
+#if ASSERT_IPC_NONRT()
+  /**
+   * Only the RT side can start its ISR, and it does nothing when it is already
+   * running, so the request is only sent while the exec state snapshot says it
+   * is not. That is what keeps a running machine from paying a request per pass
+   * of the feed loop for a start it does not need.
+   * */
+  if (!cnc_get_exec_state(EXEC_RUN))
 #endif
+  {
+#ifdef ENABLE_RT_SYNC_MOTIONS
+    bool start_is_synched =
+        (!itp_sgm_is_empty())
+            ? ((itp_sgm_data[itp_sgm_data_read].flags & ITP_SYNC) != 0)
+            : false;
+    // starts the step isr if is stopped and there are segments to execute
+    itp_start(start_is_synched);
+#else
+    itp_start(false);
+#endif
+  }
 }
 
 void itp_update(void)
