@@ -102,17 +102,19 @@ void MCU_SERIAL_ISR(void)
 	if (COM_UART->ISR & USART_ISR_RXNE_RXFNE)
 	{
 		uint8_t c = COM_INREG;
-#if !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
+#ifdef DETACH_UART_FROM_MAIN_PROTOCOL
+		mcu_uart_rx_cb(c);
+#else
 		if (mcu_com_rx_cb(c))
+#endif
 		{
+#ifndef UART_DISABLE_BUFFER
 			if (!BUFFER_TRY_ENQUEUE(uart_rx, &c))
 			{
 				STREAM_OVF(c);
 			}
-		}
-#else
-		mcu_uart_rx_cb(c);
 #endif
+		}
 	}
 
 	if ((COM_UART->ISR & USART_ISR_TXE_TXFNF) && (COM_UART->CR1 & USART_CR1_TXEIE_TXFNFIE))
@@ -142,24 +144,19 @@ void MCU_SERIAL2_ISR(void)
 	if (COM2_UART->ISR & USART_ISR_RXNE_RXFNE)
 	{
 		uint8_t c = COM2_INREG;
-#if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
+#ifdef DETACH_UART2_FROM_MAIN_PROTOCOL
+		mcu_uart2_rx_cb(c);
+#else
 		if (mcu_com_rx_cb(c))
+#endif
 		{
+#ifndef UART2_DISABLE_BUFFER
 			if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
 			{
 				STREAM_OVF(c);
 			}
-		}
-#else
-		mcu_uart2_rx_cb(c);
-#ifndef UART2_DISABLE_BUFFER
-		if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
-		{
-			STREAM_OVF(c);
-		}
-
 #endif
-#endif
+		}
 	}
 
 	if ((COM2_UART->ISR & USART_ISR_TXE_TXFNF) && (COM2_UART->CR1 & USART_CR1_TXEIE_TXFNFIE))
@@ -859,7 +856,7 @@ void mcu_rtc_init()
 	SysTick->LOAD = ((F_CPU / 1000) - 1);
 	SysTick->VAL = 0;
 	NVIC_SetPriority(SysTick_IRQn, NVIC_RTC_IRQ_Pri);
-	SysTick->CTRL = 7;					 // Start SysTick (ABH clock)
+	SysTick->CTRL = 7;									 // Start SysTick (ABH clock)
 	NVIC_SetPriority(PendSV_IRQn, 0xFF); // background task
 }
 
@@ -871,17 +868,19 @@ void mcu_dotasks()
 	while (tusb_cdc_available())
 	{
 		uint8_t c = (uint8_t)tusb_cdc_read();
-#if !defined(DETACH_USB_FROM_MAIN_PROTOCOL)
+#ifdef DETACH_USB_FROM_MAIN_PROTOCOL
+		mcu_usb_rx_cb(c);
+#else
 		if (mcu_com_rx_cb(c))
+#endif
 		{
+#ifndef USB_DISABLE_BUFFER
 			if (!BUFFER_TRY_ENQUEUE(usb_rx, &c))
 			{
 				STREAM_OVF(c);
 			}
-		}
-#else
-		mcu_usb_rx_cb(c);
 #endif
+		}
 	}
 #endif
 }

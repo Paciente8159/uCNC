@@ -218,17 +218,19 @@ void mcu_com_isr()
 	{
 		COM_UART->USART.INTFLAG.reg = SERCOM_USART_INTFLAG_RXC;
 		uint8_t c = (0xff & COM_INREG);
-#if !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
+#ifdef DETACH_UART_FROM_MAIN_PROTOCOL
+		mcu_uart_rx_cb(c);
+#else
 		if (mcu_com_rx_cb(c))
+#endif
 		{
+#ifndef UART_DISABLE_BUFFER
 			if (!BUFFER_TRY_ENQUEUE(uart_rx, &c))
 			{
 				STREAM_OVF(c);
 			}
-		}
-#else
-		mcu_uart_rx_cb(c);
 #endif
+		}
 	}
 	if (COM_UART->USART.INTFLAG.bit.ERROR && COM_UART->USART.INTENSET.bit.ERROR)
 	{
@@ -263,24 +265,19 @@ void mcu_com2_isr()
 	{
 		COM2_UART->USART.INTFLAG.reg = SERCOM_USART_INTFLAG_RXC;
 		uint8_t c = (0xff & COM2_INREG);
-#if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
+#ifdef DETACH_UART2_FROM_MAIN_PROTOCOL
+		mcu_uart2_rx_cb(c);
+#else
 		if (mcu_com_rx_cb(c))
+#endif
 		{
+#ifndef UART2_DISABLE_BUFFER
 			if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
 			{
 				STREAM_OVF(c);
 			}
-		}
-#else
-		mcu_uart2_rx_cb(c);
-#ifndef UART2_DISABLE_BUFFER
-		if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
-		{
-			STREAM_OVF(c);
-		}
-
 #endif
-#endif
+		}
 	}
 	if (COM2_UART->USART.INTFLAG.bit.ERROR && COM2_UART->USART.INTENSET.bit.ERROR)
 	{
@@ -320,15 +317,15 @@ void mcu_uart_init(void)
 		;
 
 	COM_UART->USART.CTRLA.bit.MODE = 1;
-	COM_UART->USART.CTRLA.bit.SAMPR = 0;		 // 16x sample rate
-	COM_UART->USART.CTRLA.bit.FORM = 0;			 // no parity
-	COM_UART->USART.CTRLA.bit.DORD = 1;			 // LSB first
+	COM_UART->USART.CTRLA.bit.SAMPR = 0;				 // 16x sample rate
+	COM_UART->USART.CTRLA.bit.FORM = 0;					 // no parity
+	COM_UART->USART.CTRLA.bit.DORD = 1;					 // LSB first
 	COM_UART->USART.CTRLA.bit.RXPO = COM_RX_PAD; // RX on PAD3
 	COM_UART->USART.CTRLA.bit.TXPO = COM_TX_PAD; // TX on PAD2
-	COM_UART->USART.CTRLB.bit.SBMODE = 0;		 // one stop bit
-	COM_UART->USART.CTRLB.bit.CHSIZE = 0;		 // 8 bits
-	COM_UART->USART.CTRLB.bit.RXEN = 1;			 // enable receiver
-	COM_UART->USART.CTRLB.bit.TXEN = 1;			 // enable transmitter
+	COM_UART->USART.CTRLB.bit.SBMODE = 0;				 // one stop bit
+	COM_UART->USART.CTRLB.bit.CHSIZE = 0;				 // 8 bits
+	COM_UART->USART.CTRLB.bit.RXEN = 1;					 // enable receiver
+	COM_UART->USART.CTRLB.bit.TXEN = 1;					 // enable transmitter
 
 	while (COM_UART->USART.SYNCBUSY.bit.CTRLB)
 		;
@@ -370,15 +367,15 @@ void mcu_uart2_init(void)
 		;
 
 	COM2_UART->USART.CTRLA.bit.MODE = 1;
-	COM2_UART->USART.CTRLA.bit.SAMPR = 0;		   // 16x sample rate
-	COM2_UART->USART.CTRLA.bit.FORM = 0;		   // no parity
-	COM2_UART->USART.CTRLA.bit.DORD = 1;		   // LSB first
+	COM2_UART->USART.CTRLA.bit.SAMPR = 0;					 // 16x sample rate
+	COM2_UART->USART.CTRLA.bit.FORM = 0;					 // no parity
+	COM2_UART->USART.CTRLA.bit.DORD = 1;					 // LSB first
 	COM2_UART->USART.CTRLA.bit.RXPO = COM2_RX_PAD; // RX on PAD3
 	COM2_UART->USART.CTRLA.bit.TXPO = COM2_TX_PAD; // TX on PAD2
-	COM2_UART->USART.CTRLB.bit.SBMODE = 0;		   // one stop bit
-	COM2_UART->USART.CTRLB.bit.CHSIZE = 0;		   // 8 bits
-	COM2_UART->USART.CTRLB.bit.RXEN = 1;		   // enable receiver
-	COM2_UART->USART.CTRLB.bit.TXEN = 1;		   // enable transmitter
+	COM2_UART->USART.CTRLB.bit.SBMODE = 0;				 // one stop bit
+	COM2_UART->USART.CTRLB.bit.CHSIZE = 0;				 // 8 bits
+	COM2_UART->USART.CTRLB.bit.RXEN = 1;					 // enable receiver
+	COM2_UART->USART.CTRLB.bit.TXEN = 1;					 // enable transmitter
 
 	while (COM2_UART->USART.SYNCBUSY.bit.CTRLB)
 		;
@@ -476,7 +473,7 @@ void servo_timer_init()
 		;
 	// enable the timer in the APB
 	SERVO_REG->CTRLA.bit.PRESCALER = (uint8_t)0x4; // prescaller /16
-	SERVO_REG->WAVE.bit.WAVEGEN = 1;			   // match compare
+	SERVO_REG->WAVE.bit.WAVEGEN = 1;							 // match compare
 	while (SERVO_REG->SYNCBUSY.bit.WAVE)
 		;
 #else
@@ -486,7 +483,7 @@ void servo_timer_init()
 		;
 	// enable the timer in the APB
 	SERVO_REG->COUNT16.CTRLA.bit.PRESCALER = (uint8_t)0x4; // prescaller /16
-	SERVO_REG->COUNT16.CTRLA.bit.WAVEGEN = 1;			   // match compare
+	SERVO_REG->COUNT16.CTRLA.bit.WAVEGEN = 1;							 // match compare
 	while (SERVO_REG->COUNT16.STATUS.bit.SYNCBUSY)
 		;
 #endif
@@ -640,9 +637,9 @@ void mcu_dma_config(void)
 
 	// Make all memory access low priority
 	DMAC->QOSCTRL.reg =
-		DMAC_QOSCTRL_DQOS(1) |
-		DMAC_QOSCTRL_FQOS(1) |
-		DMAC_QOSCTRL_WRBQOS(1);
+			DMAC_QOSCTRL_DQOS(1) |
+			DMAC_QOSCTRL_FQOS(1) |
+			DMAC_QOSCTRL_WRBQOS(1);
 	// Use static priority level
 	DMAC->PRICTRL0.reg = DMAC_PRICTRL0_RESETVALUE;
 
@@ -673,8 +670,8 @@ void mcu_spi_init(void)
 		;
 
 	SPICOM->SPI.CTRLA.bit.MODE = 3;
-	SPICOM->SPI.CTRLA.bit.DORD = 0;						 // MSB
-	SPICOM->SPI.CTRLA.bit.CPHA = SPI_MODE & 0x01;		 // MODE
+	SPICOM->SPI.CTRLA.bit.DORD = 0;											 // MSB
+	SPICOM->SPI.CTRLA.bit.CPHA = SPI_MODE & 0x01;				 // MODE
 	SPICOM->SPI.CTRLA.bit.CPOL = (SPI_MODE >> 1) & 0x01; // MODE
 	SPICOM->SPI.CTRLA.bit.FORM = 0;
 	SPICOM->SPI.CTRLA.bit.DIPO = SPI_INPAD;
@@ -717,8 +714,8 @@ void mcu_spi2_init(void)
 		;
 
 	SPI2COM->SPI.CTRLA.bit.MODE = 3;
-	SPI2COM->SPI.CTRLA.bit.DORD = 0;					   // MSB
-	SPI2COM->SPI.CTRLA.bit.CPHA = SPI2_MODE & 0x01;		   // MODE
+	SPI2COM->SPI.CTRLA.bit.DORD = 0;											 // MSB
+	SPI2COM->SPI.CTRLA.bit.CPHA = SPI2_MODE & 0x01;				 // MODE
 	SPI2COM->SPI.CTRLA.bit.CPOL = (SPI2_MODE >> 1) & 0x01; // MODE
 	SPI2COM->SPI.CTRLA.bit.FORM = 0;
 	SPI2COM->SPI.CTRLA.bit.DIPO = SPI2_INPAD;
@@ -1047,7 +1044,7 @@ void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 		;
 	// enable the timer in the APB
 	ITP_REG->CTRLA.bit.PRESCALER = (uint8_t)prescaller; // normal counter
-	ITP_REG->WAVE.bit.WAVEGEN = 1;						// match compare
+	ITP_REG->WAVE.bit.WAVEGEN = 1;											// match compare
 	while (ITP_REG->SYNCBUSY.bit.WAVE)
 		;
 	ITP_REG->CC[0].reg = ticks;
@@ -1069,7 +1066,7 @@ void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 		;
 	// enable the timer in the APB
 	ITP_REG->COUNT16.CTRLA.bit.PRESCALER = (uint8_t)prescaller; // normal counter
-	ITP_REG->COUNT16.CTRLA.bit.WAVEGEN = 1;						// match compare
+	ITP_REG->COUNT16.CTRLA.bit.WAVEGEN = 1;											// match compare
 	while (ITP_REG->COUNT16.STATUS.bit.SYNCBUSY)
 		;
 	ITP_REG->COUNT16.CC[0].reg = ticks;
@@ -1163,17 +1160,19 @@ void mcu_dotasks(void)
 	while (tusb_cdc_available())
 	{
 		uint8_t c = (uint8_t)tusb_cdc_read();
-#if !defined(DETACH_USB_FROM_MAIN_PROTOCOL)
+#ifdef DETACH_USB_FROM_MAIN_PROTOCOL
+		mcu_usb_rx_cb(c);
+#else
 		if (mcu_com_rx_cb(c))
+#endif
 		{
+#ifndef USB_DISABLE_BUFFER
 			if (!BUFFER_TRY_ENQUEUE(usb_rx, &c))
 			{
 				STREAM_OVF(c);
 			}
-		}
-#else
-		mcu_usb_rx_cb(c);
 #endif
+		}
 	}
 #endif
 }
@@ -2173,7 +2172,7 @@ void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 		;
 	// enable the timer in the APB
 	ONESHOT_REG->CTRLA.bit.PRESCALER = (uint8_t)prescaller; // normal counter
-	ONESHOT_REG->WAVE.bit.WAVEGEN = 1;						// match compare
+	ONESHOT_REG->WAVE.bit.WAVEGEN = 1;											// match compare
 	while (ONESHOT_REG->SYNCBUSY.bit.WAVE)
 		;
 	ONESHOT_REG->CC[0].reg = ticks;
@@ -2190,7 +2189,7 @@ void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 		;
 	// enable the timer in the APB
 	ONESHOT_REG->COUNT16.CTRLA.bit.PRESCALER = (uint8_t)prescaller; // normal counter
-	ONESHOT_REG->COUNT16.CTRLA.bit.WAVEGEN = 1;						// match compare
+	ONESHOT_REG->COUNT16.CTRLA.bit.WAVEGEN = 1;											// match compare
 	while (ONESHOT_REG->COUNT16.STATUS.bit.SYNCBUSY)
 		;
 	ONESHOT_REG->COUNT16.CC[0].reg = ticks;

@@ -90,17 +90,19 @@ void MCU_SERIAL_ISR(void)
 	if (COM_UART->SR & USART_SR_RXNE)
 	{
 		uint8_t c = COM_INREG;
-#if !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
+#ifdef DETACH_UART_FROM_MAIN_PROTOCOL
+		mcu_uart_rx_cb(c);
+#else
 		if (mcu_com_rx_cb(c))
+#endif
 		{
+#ifndef UART_DISABLE_BUFFER
 			if (!BUFFER_TRY_ENQUEUE(uart_rx, &c))
 			{
 				STREAM_OVF(c);
 			}
-		}
-#else
-		mcu_uart_rx_cb(c);
 #endif
+		}
 	}
 
 	if ((COM_UART->SR & USART_SR_TXE) && (COM_UART->CR1 & USART_CR1_TXEIE))
@@ -130,24 +132,19 @@ void MCU_SERIAL2_ISR(void)
 	if (COM2_UART->SR & USART_SR_RXNE)
 	{
 		uint8_t c = COM2_INREG;
-#if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
+#ifdef DETACH_UART2_FROM_MAIN_PROTOCOL
+		mcu_uart2_rx_cb(c);
+#else
 		if (mcu_com_rx_cb(c))
+#endif
 		{
+#ifndef UART2_DISABLE_BUFFER
 			if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
 			{
 				STREAM_OVF(c);
 			}
-		}
-#else
-		mcu_uart2_rx_cb(c);
-#ifndef UART2_DISABLE_BUFFER
-		if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
-		{
-			STREAM_OVF(c);
-		}
-
 #endif
-#endif
+		}
 	}
 
 	if ((COM2_UART->SR & USART_SR_TXE) && (COM2_UART->CR1 & USART_CR1_TXEIE))
@@ -715,10 +712,10 @@ void mcu_spi_init(void)
 	// 	mcu_config_af(SPI_CS, SPI_CS_AFIO);
 	// #endif
 	// initialize the SPI configuration register
-	SPI_REG->CR1 = SPI_CR1_SSM	   // software slave management enabled
-				   | SPI_CR1_SSI   // internal slave select
-				   | SPI_CR1_MSTR; // SPI master mode
-								   //    | (SPI_SPEED << 3) | SPI_MODE;
+	SPI_REG->CR1 = SPI_CR1_SSM		 // software slave management enabled
+								 | SPI_CR1_SSI	 // internal slave select
+								 | SPI_CR1_MSTR; // SPI master mode
+																 //    | (SPI_SPEED << 3) | SPI_MODE;
 	spi_config_t spi_conf = {0};
 	spi_conf.mode = SPI_MODE;
 	mcu_spi_config(spi_conf, SPI_FREQ);
@@ -744,10 +741,10 @@ void mcu_spi2_init(void)
 	// 	mcu_config_af(SPI2_CS, SPI2_CS_AFIO);
 	// #endif
 	// initialize the SPI2 configuration register
-	SPI2_REG->CR1 = SPI_CR1_SSM		// software slave management enabled
-					| SPI_CR1_SSI	// internal slave select
-					| SPI_CR1_MSTR; // SPI2 master mode
-									//    | (SPI2_SPEED << 3) | SPI2_MODE;
+	SPI2_REG->CR1 = SPI_CR1_SSM			// software slave management enabled
+									| SPI_CR1_SSI		// internal slave select
+									| SPI_CR1_MSTR; // SPI2 master mode
+																	//    | (SPI2_SPEED << 3) | SPI2_MODE;
 	spi_config_t spi2_conf = {0};
 	spi2_conf.mode = SPI2_MODE;
 	mcu_spi2_config(spi2_conf, SPI2_FREQ);
@@ -915,7 +912,7 @@ void mcu_rtc_init()
 	SysTick->LOAD = ((F_CPU / 1000) - 1);
 	SysTick->VAL = 0;
 	NVIC_SetPriority(SysTick_IRQn, NVIC_RTC_IRQ_Pri);
-	SysTick->CTRL = 7;					 // Start SysTick (ABH clock)
+	SysTick->CTRL = 7;									 // Start SysTick (ABH clock)
 	NVIC_SetPriority(PendSV_IRQn, 0xFF); // background task
 }
 
@@ -927,18 +924,19 @@ void mcu_dotasks()
 	while (tusb_cdc_available())
 	{
 		uint8_t c = (uint8_t)tusb_cdc_read();
-#if !defined(DETACH_USB_FROM_MAIN_PROTOCOL)
+#ifdef DETACH_USB_FROM_MAIN_PROTOCOL
+		mcu_usb_rx_cb(c);
+#else
 		if (mcu_com_rx_cb(c))
+#endif
 		{
+#ifndef USB_DISABLE_BUFFER
 			if (!BUFFER_TRY_ENQUEUE(usb_rx, &c))
 			{
-				BUFFER_CLEAR(usb_rx);
 				STREAM_OVF(c);
 			}
-		}
-#else
-		mcu_usb_rx_cb(c);
 #endif
+		}
 	}
 #endif
 }
@@ -1005,9 +1003,9 @@ static void mcu_eeprom_erase(void)
 		FLASH->KEYR = 0x45670123;
 		FLASH->KEYR = 0xCDEF89AB;
 	}
-	FLASH->CR = 0;																				// Ensure PG bit is low
+	FLASH->CR = 0;																																							// Ensure PG bit is low
 	FLASH->CR |= FLASH_CR_SER | (((FLASH_SECTORS - 1) << FLASH_CR_SNB_Pos) & FLASH_CR_MER_Msk); // set the SER bit
-	FLASH->CR |= FLASH_CR_STRT;																	// set the start bit
+	FLASH->CR |= FLASH_CR_STRT;																																	// set the start bit
 	while (FLASH->SR & FLASH_SR_BSY)
 		; // wait while busy
 	FLASH->CR = 0;
@@ -1230,7 +1228,7 @@ bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t da
 	{
 		// Wait for transfers to complete
 		if (!(SPI_DMA_TX_ISR >> (SPI_DMA_TX_IFR_POS + 5)) ||
-			(!(SPI_DMA_RX_ISR >> (SPI_DMA_RX_IFR_POS + 5)) && rx_data))
+				(!(SPI_DMA_RX_ISR >> (SPI_DMA_RX_IFR_POS + 5)) && rx_data))
 			return true;
 
 		// SPI hardware still transmitting the last byte
@@ -1265,10 +1263,10 @@ bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t da
 	SPI_DMA_TX_IFCR |= SPI_DMA_TX_IFCR_MASK;
 
 	SPI_DMA_TX_STREAM->CR =
-		(SPI_DMA_TX_CHANNEL << DMA_SxCR_CHSEL_Pos) | // Select correct channel
-		(0b01 << DMA_SxCR_PL_Pos) |					 // Set priority to medium
-		DMA_SxCR_MINC |								 // Increment memory
-		(0b01 << DMA_SxCR_DIR_Pos);					 // Memory to peripheral transfer direction
+			(SPI_DMA_TX_CHANNEL << DMA_SxCR_CHSEL_Pos) | // Select correct channel
+			(0b01 << DMA_SxCR_PL_Pos) |									 // Set priority to medium
+			DMA_SxCR_MINC |															 // Increment memory
+			(0b01 << DMA_SxCR_DIR_Pos);									 // Memory to peripheral transfer direction
 
 	SPI_DMA_TX_STREAM->PAR = (uint32_t)&SPI_REG->DR;
 	SPI_DMA_TX_STREAM->M0AR = (uint32_t)tx_data;
@@ -1288,10 +1286,10 @@ bool mcu_spi_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t da
 		SPI_DMA_RX_IFCR |= SPI_DMA_RX_IFCR_MASK;
 
 		SPI_DMA_RX_STREAM->CR =
-			(SPI_DMA_RX_CHANNEL << DMA_SxCR_CHSEL_Pos) | // Select correct channel
-			(0b01 << DMA_SxCR_PL_Pos) |					 // Set priority to medium
-			DMA_SxCR_MINC |								 // Increment memory
-			(0b00 << DMA_SxCR_DIR_Pos);					 // Peripheral to memory transfer direction
+				(SPI_DMA_RX_CHANNEL << DMA_SxCR_CHSEL_Pos) | // Select correct channel
+				(0b01 << DMA_SxCR_PL_Pos) |									 // Set priority to medium
+				DMA_SxCR_MINC |															 // Increment memory
+				(0b00 << DMA_SxCR_DIR_Pos);									 // Peripheral to memory transfer direction
 
 		SPI_DMA_RX_STREAM->PAR = (uint32_t)&SPI_REG->DR;
 		SPI_DMA_RX_STREAM->M0AR = (uint32_t)rx_data;
@@ -1451,7 +1449,7 @@ bool mcu_spi2_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t d
 	{
 		// Wait for transfers to complete
 		if (!(SPI2_DMA_TX_ISR >> (SPI2_DMA_TX_IFR_POS + 5)) ||
-			(!(SPI2_DMA_RX_ISR >> (SPI2_DMA_RX_IFR_POS + 5)) && rx_data))
+				(!(SPI2_DMA_RX_ISR >> (SPI2_DMA_RX_IFR_POS + 5)) && rx_data))
 			return true;
 
 		// SPI2 hardware still transmitting the last byte
@@ -1486,10 +1484,10 @@ bool mcu_spi2_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t d
 	SPI2_DMA_TX_IFCR |= SPI2_DMA_TX_IFCR_MASK;
 
 	SPI2_DMA_TX_STREAM->CR =
-		(SPI2_DMA_TX_CHANNEL << DMA_SxCR_CHSEL_Pos) | // Select correct channel
-		(0b01 << DMA_SxCR_PL_Pos) |					  // Set priority to medium
-		DMA_SxCR_MINC |								  // Increment memory
-		(0b01 << DMA_SxCR_DIR_Pos);					  // Memory to peripheral transfer direction
+			(SPI2_DMA_TX_CHANNEL << DMA_SxCR_CHSEL_Pos) | // Select correct channel
+			(0b01 << DMA_SxCR_PL_Pos) |										// Set priority to medium
+			DMA_SxCR_MINC |																// Increment memory
+			(0b01 << DMA_SxCR_DIR_Pos);										// Memory to peripheral transfer direction
 
 	SPI2_DMA_TX_STREAM->PAR = (uint32_t)&SPI2_REG->DR;
 	SPI2_DMA_TX_STREAM->M0AR = (uint32_t)tx_data;
@@ -1509,10 +1507,10 @@ bool mcu_spi2_bulk_transfer(const uint8_t *tx_data, uint8_t *rx_data, uint16_t d
 		SPI2_DMA_RX_IFCR |= SPI2_DMA_RX_IFCR_MASK;
 
 		SPI2_DMA_RX_STREAM->CR =
-			(SPI2_DMA_RX_CHANNEL << DMA_SxCR_CHSEL_Pos) | // Select correct channel
-			(0b01 << DMA_SxCR_PL_Pos) |					  // Set priority to medium
-			DMA_SxCR_MINC |								  // Increment memory
-			(0b00 << DMA_SxCR_DIR_Pos);					  // Peripheral to memory transfer direction
+				(SPI2_DMA_RX_CHANNEL << DMA_SxCR_CHSEL_Pos) | // Select correct channel
+				(0b01 << DMA_SxCR_PL_Pos) |										// Set priority to medium
+				DMA_SxCR_MINC |																// Increment memory
+				(0b00 << DMA_SxCR_DIR_Pos);										// Peripheral to memory transfer direction
 
 		SPI2_DMA_RX_STREAM->PAR = (uint32_t)&SPI2_REG->DR;
 		SPI2_DMA_RX_STREAM->M0AR = (uint32_t)rx_data;

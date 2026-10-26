@@ -88,18 +88,20 @@ extern "C"
 				while (USBSerial.available())
 				{
 					esp_task_wdt_reset();
-#ifndef DETACH_USB_FROM_MAIN_PROTOCOL
 					uint8_t c = USBSerial.read();
+#ifdef DETACH_USB_FROM_MAIN_PROTOCOL
+					mcu_usb_rx_cb(c);
+#else
 					if (mcu_com_rx_cb(c))
+#endif
 					{
+#ifndef USB_DISABLE_BUFFER
 						if (!BUFFER_TRY_ENQUEUE(usb_rx, &c))
 						{
 							STREAM_OVF(c);
 						}
-					}
-#else
-					mcu_usb_rx_cb((uint8_t)USBSerial.read());
 #endif
+					}
 				}
 				break;
 			case ARDUINO_USB_CDC_RX_OVERFLOW_EVENT:
@@ -126,18 +128,20 @@ extern "C"
 		while (USBSerial.available())
 		{
 			esp_task_wdt_reset();
-#ifndef DETACH_USB_FROM_MAIN_PROTOCOL
 			uint8_t c = USBSerial.read();
+#ifdef DETACH_USB_FROM_MAIN_PROTOCOL
+			mcu_usb_rx_cb(c);
+#else
 			if (mcu_com_rx_cb(c))
+#endif
 			{
+#ifndef USB_DISABLE_BUFFER
 				if (!BUFFER_TRY_ENQUEUE(usb_rx, &c))
 				{
 					STREAM_OVF(c);
 				}
-			}
-#else
-			mcu_usb_rx_cb((uint8_t)USBSerial.read());
 #endif
+			}
 		}
 	}
 

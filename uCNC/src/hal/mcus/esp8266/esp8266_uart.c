@@ -118,18 +118,20 @@ static void mcu_uart_process()
 		{
 			break;
 		}
-#ifndef DETACH_UART_FROM_MAIN_PROTOCOL
 		uint8_t c = (uint8_t)USF(UART_PORT);
+#ifdef DETACH_UART_FROM_MAIN_PROTOCOL
+		mcu_uart_rx_cb(c);
+#else
 		if (mcu_com_rx_cb(c))
+#endif
 		{
+#ifndef UART_DISABLE_BUFFER
 			if (!BUFFER_TRY_ENQUEUE(uart_rx, &c))
 			{
 				STREAM_OVF(c);
 			}
-		}
-#else
-		mcu_uart_rx_cb((uint8_t)USF(UART_PORT));
 #endif
+		}
 	}
 #endif
 }
@@ -193,19 +195,21 @@ void IRAM_ATTR mcu_uart2_isr(void *arg)
 		while ((USS(UART2_PORT) >> USRXC) & 0xFF)
 		{
 			// system_soft_wdt_feed();
-#ifndef DETACH_UART2_FROM_MAIN_PROTOCOL
 			uint8_t c = (uint8_t)USF(UART2_PORT);
+#ifdef DETACH_UART2_FROM_MAIN_PROTOCOL
+			mcu_uart2_rx_cb(c);
+#else
 			if (mcu_com_rx_cb(c))
+#endif
 			{
+#ifndef UART2_DISABLE_BUFFER
 				if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
 				{
 					USIC(UART2_PORT) = usis;
 					STREAM_OVF(c);
 				}
-			}
-#else
-			mcu_uart2_rx_cb((uint8_t)USF(UART2_PORT));
 #endif
+			}
 		}
 	}
 
@@ -228,18 +232,20 @@ static void mcu_uart2_process()
 		{
 			break;
 		}
-#ifndef DETACH_UART2_FROM_MAIN_PROTOCOL
 		uint8_t c = (uint8_t)USF(UART2_PORT);
+#ifdef DETACH_UART2_FROM_MAIN_PROTOCOL
+		mcu_uart2_rx_cb(c);
+#else
 		if (mcu_com_rx_cb(c))
+#endif
 		{
+#ifndef UART2_DISABLE_BUFFER
 			if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
 			{
 				STREAM_OVF(c);
 			}
-		}
-#else
-		mcu_uart2_rx_cb((uint8_t)USF(UART2_PORT));
 #endif
+		}
 	}
 #endif
 }

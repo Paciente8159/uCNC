@@ -173,7 +173,7 @@ ISR(ITP_COMPA_vect, ISR_BLOCK)
 	mcu_step_cb();
 	mcu_disable_global_isr();
 	RTC_TIMSK |= (1 << RTC_OCIEA); // unlocks RTC
-	ITP_TIFR = 2;				   // clears pending OCIEA overflow ISR (this prevents abnomal short step pulses)
+	ITP_TIFR = 2;									 // clears pending OCIEA overflow ISR (this prevents abnomal short step pulses)
 	ITP_TIMSK |= (1 << ITP_OCIEA);
 }
 
@@ -438,18 +438,20 @@ ISR(PCINT3_vect, ISR_BLOCK) // input pin on change service routine
 DECL_BUFFER(uint8_t, uart_rx, RX_BUFFER_SIZE);
 ISR(COM_RX_vect, ISR_BLOCK)
 {
-#if !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
 	uint8_t c = COM_INREG;
+#ifdef DETACH_UART_FROM_MAIN_PROTOCOL
+	mcu_uart_rx_cb(c);
+#else
 	if (mcu_com_rx_cb(c))
+#endif
 	{
+#ifndef UART_DISABLE_BUFFER
 		if (!BUFFER_TRY_ENQUEUE(uart_rx, &c))
 		{
 			STREAM_OVF(c);
 		}
-	}
-#else
-	mcu_uart_rx_cb(COM_INREG);
 #endif
+	}
 }
 
 #ifndef ENABLE_ITP_FEED_TASK
@@ -477,23 +479,19 @@ DECL_BUFFER(uint8_t, uart2_rx, RX_BUFFER_SIZE);
 ISR(COM2_RX_vect, ISR_BLOCK)
 {
 	uint8_t c = COM2_INREG;
-#if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
+#ifdef DETACH_UART2_FROM_MAIN_PROTOCOL
+	mcu_uart2_rx_cb(c);
+#else
 	if (mcu_com_rx_cb(c))
+#endif
 	{
+#ifndef UART2_DISABLE_BUFFER
 		if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
 		{
 			STREAM_OVF(c);
 		}
-	}
-#else
-	mcu_uart2_rx_cb(c);
-#ifndef UART2_DISABLE_BUFFER
-	if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
-	{
-		STREAM_OVF(c);
-	}
 #endif
-#endif
+	}
 }
 
 #ifndef ENABLE_ITP_FEED_TASK
@@ -1023,7 +1021,7 @@ void mcu_dotasks()
 
 // This was copied from grbl
 #ifndef EEPE
-#define EEPE EEWE	//!< EEPROM program/write enable.
+#define EEPE EEWE		//!< EEPROM program/write enable.
 #define EEMPE EEMWE //!< EEPROM master program/write enable.
 #endif
 
@@ -1041,9 +1039,9 @@ uint8_t mcu_eeprom_getc(uint16_t address)
 	{
 
 	} while (EECR & (1 << EEPE)); // Wait for completion of previous write.
-	EEAR = address;		// Set EEPROM address register.
+	EEAR = address;			// Set EEPROM address register.
 	EECR = (1 << EERE); // Start EEPROM read operation.
-	return EEDR;		// Return the byte read from EEPROM.
+	return EEDR;				// Return the byte read from EEPROM.
 }
 
 void mcu_eeprom_putc(uint16_t address, uint8_t value)
@@ -1061,9 +1059,9 @@ void mcu_eeprom_putc(uint16_t address, uint8_t value)
 	{
 	} while (SPMCSR & (1 << SELFPRGEN)); // Wait for completion of SPM.
 
-	EEAR = address;				   // Set EEPROM address register.
-	EECR = (1 << EERE);			   // Start EEPROM read operation.
-	old_value = EEDR;			   // Get old EEPROM value.
+	EEAR = address;								 // Set EEPROM address register.
+	EECR = (1 << EERE);						 // Start EEPROM read operation.
+	old_value = EEDR;							 // Get old EEPROM value.
 	diff_mask = old_value ^ value; // Get bit differences.
 	// Check if any bits are changed to '1' in the new value.
 	if (diff_mask & value)
@@ -1073,15 +1071,15 @@ void mcu_eeprom_putc(uint16_t address, uint8_t value)
 		if (value != 0xff)
 		{
 			// Now we know that some bits need to be programmed to '0' also.
-			EEDR = value;										 // Set EEPROM data register.
+			EEDR = value;																				 // Set EEPROM data register.
 			EECR = ((1 << EEMPE) | (0 << EEPM1) | (0 << EEPM0)); // Erase+Write mode.
-			EECR |= (1 << EEPE);								 // Start Erase+Write operation.
+			EECR |= (1 << EEPE);																 // Start Erase+Write operation.
 		}
 		else
 		{
 			// Now we know that all bits should be erased.
 			EECR = ((1 << EEMPE) | (1 << EEPM0)); // Erase-only mode.
-			EECR |= (1 << EEPE);				  // Start Erase-only operation.
+			EECR |= (1 << EEPE);									// Start Erase-only operation.
 		}
 	}
 	else
@@ -1091,9 +1089,9 @@ void mcu_eeprom_putc(uint16_t address, uint8_t value)
 		if (diff_mask)
 		{
 			// Now we know that _some_ bits need to the programmed to '0'.
-			EEDR = value;						  // Set EEPROM data register.
+			EEDR = value;													// Set EEPROM data register.
 			EECR = ((1 << EEMPE) | (1 << EEPM1)); // Write-only mode.
-			EECR |= (1 << EEPE);				  // Start Write-only operation.
+			EECR |= (1 << EEPE);									// Start Write-only operation.
 		}
 	}
 

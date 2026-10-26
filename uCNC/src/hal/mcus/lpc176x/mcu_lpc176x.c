@@ -140,8 +140,8 @@ void servo_timer_init(void)
 	SERVO_TIMER_REG->IR = 0xFFFFFFFF;
 
 	SERVO_TIMER_REG->MR1 = SERVO_MIN; // minimum value for servo setup
-	SERVO_TIMER_REG->MR0 = 425;		  // reset @ every 3.333ms * 6 servos = 20ms->50Hz
-	SERVO_TIMER_REG->MCR = 0x0B;	  // Interrupt on MC0 and MC1 and reset on MC0
+	SERVO_TIMER_REG->MR0 = 425;				// reset @ every 3.333ms * 6 servos = 20ms->50Hz
+	SERVO_TIMER_REG->MCR = 0x0B;			// Interrupt on MC0 and MC1 and reset on MC0
 
 	NVIC_SetPriority(SERVO_TIMER_IRQ, NVIC_SERVO_IRQ_Pri);
 	NVIC_ClearPendingIRQ(SERVO_TIMER_IRQ);
@@ -254,18 +254,19 @@ void MCU_COM_ISR(void)
 	if (irqstatus == UART_IIR_INTID_RDA)
 	{
 		uint8_t c = (uint8_t)(COM_INREG & UART_RBR_MASKBIT);
-#if !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
+#ifdef DETACH_UART_FROM_MAIN_PROTOCOL
+		mcu_uart_rx_cb(c);
+#else
 		if (mcu_com_rx_cb(c))
+#endif
 		{
+#ifndef UART_DISABLE_BUFFER
 			if (!BUFFER_TRY_ENQUEUE(uart_rx, &c))
 			{
 				STREAM_OVF(c);
 			}
-		}
-
-#else
-		mcu_uart_rx_cb(c);
 #endif
+		}
 	}
 
 	if (irqstatus == UART_IIR_INTID_THRE)
@@ -312,39 +313,34 @@ void MCU_COM2_ISR(void)
 	if (irqstatus == UART_IIR_INTID_RDA)
 	{
 		uint8_t c = (uint8_t)(COM2_INREG & UART_RBR_MASKBIT);
-#if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
+#ifdef DETACH_UART2_FROM_MAIN_PROTOCOL
+		mcu_uart2_rx_cb(c);
+#else
 		if (mcu_com_rx_cb(c))
+#endif
 		{
+#ifndef UART2_DISABLE_BUFFER
 			if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
 			{
 				STREAM_OVF(c);
 			}
-		}
-#else
-		mcu_uart2_rx_cb(c);
-#ifndef UART2_DISABLE_BUFFER
-		if (BUFFER_FULL(uart2_rx))
-		{
-			STREAM_OVF(c);
-		}
-
-		BUFFER_ENQUEUEE(uart2_rx, &c);
 #endif
-#endif
+		}
 	}
+}
 
-	if (irqstatus == UART_IIR_INTID_THRE)
+if (irqstatus == UART_IIR_INTID_THRE)
+{
+	uint8_t c = 0;
+
+	if (!BUFFER_TRY_DEQUEUE(uart2_tx, &c))
 	{
-		uint8_t c = 0;
-
-		if (!BUFFER_TRY_DEQUEUE(uart2_tx, &c))
-		{
-			COM2_UART->IER &= ~UART_IER_THREINT_EN;
-			return;
-		}
-
-		COM2_OUTREG = c;
+		COM2_UART->IER &= ~UART_IER_THREINT_EN;
+		return;
 	}
+
+	COM2_OUTREG = c;
+}
 }
 #endif
 
@@ -437,21 +433,21 @@ void mcu_usb_init(void)
 void mcu_rtc_init()
 {
 	NVIC_SetPriority(PendSV_IRQn, 0xFF); // background task
-										 // TIM_Cmd(RTC_TIMER_REG, DISABLE);
-										 // TIM_TIMERCFG_Type tmrconfig;
-										 // TIM_ConfigStructInit(TIM_TIMER_MODE, &tmrconfig);
-										 // TIM_Init(RTC_TIMER_REG, TIM_TIMER_MODE, &tmrconfig);
-										 // TIM_MATCHCFG_Type tmrmatch;
-										 // tmrmatch.MatchChannel = RTC_TIMER;
-										 // tmrmatch.IntOnMatch = ENABLE;
-										 // tmrmatch.StopOnMatch = DISABLE;
-										 // tmrmatch.ResetOnMatch = ENABLE;
-										 // tmrmatch.MatchValue = 1000;
-										 // TIM_ConfigMatch(RTC_TIMER_REG, &tmrmatch);
-										 // NVIC_SetPriority(RTC_TIMER_IRQ, 10);
-										 // NVIC_ClearPendingIRQ(RTC_TIMER_IRQ);
-										 // NVIC_EnableIRQ(RTC_TIMER_IRQ);
-										 // TIM_Cmd(RTC_TIMER_REG, ENABLE);
+																			 // TIM_Cmd(RTC_TIMER_REG, DISABLE);
+																			 // TIM_TIMERCFG_Type tmrconfig;
+																			 // TIM_ConfigStructInit(TIM_TIMER_MODE, &tmrconfig);
+																			 // TIM_Init(RTC_TIMER_REG, TIM_TIMER_MODE, &tmrconfig);
+																			 // TIM_MATCHCFG_Type tmrmatch;
+																			 // tmrmatch.MatchChannel = RTC_TIMER;
+																			 // tmrmatch.IntOnMatch = ENABLE;
+																			 // tmrmatch.StopOnMatch = DISABLE;
+																			 // tmrmatch.ResetOnMatch = ENABLE;
+																			 // tmrmatch.MatchValue = 1000;
+																			 // TIM_ConfigMatch(RTC_TIMER_REG, &tmrmatch);
+																			 // NVIC_SetPriority(RTC_TIMER_IRQ, 10);
+																			 // NVIC_ClearPendingIRQ(RTC_TIMER_IRQ);
+																			 // NVIC_EnableIRQ(RTC_TIMER_IRQ);
+																			 // TIM_Cmd(RTC_TIMER_REG, ENABLE);
 
 	// Systick is initialized by the Arduino framework
 }
@@ -473,10 +469,10 @@ void mcu_spi_init()
 	LPC_SC->SPI_PCLKSEL_REG &= ~SPI_PCLKSEL_MASK; // div clock by 4
 	uint8_t div = SPI_COUNTER_DIV(SPI_FREQ);
 	div += (div & 0x01) ? 1 : 0;
-	SPI_REG->CPSR = div;		   // internal divider
+	SPI_REG->CPSR = div;					 // internal divider
 	SPI_REG->CR0 |= SPI_MODE << 6; // clock phase
-	SPI_REG->CR0 |= 7 << 0;		   // 8 bits
-	SPI_REG->CR1 |= 1 << 1;		   // enable SSP*/
+	SPI_REG->CR0 |= 7 << 0;				 // 8 bits
+	SPI_REG->CR1 |= 1 << 1;				 // enable SSP*/
 
 #endif
 }
@@ -497,10 +493,10 @@ void mcu_spi2_init()
 	LPC_SC->SPI2_PCLKSEL_REG &= ~SPI2_PCLKSEL_MASK; // div clock by 4
 	uint8_t div2 = SPI2_COUNTER_DIV(SPI2_FREQ);
 	div2 += (div2 & 0x01) ? 1 : 0;
-	SPI2_REG->CPSR = div2;			 // internal divider
+	SPI2_REG->CPSR = div2;					 // internal divider
 	SPI2_REG->CR0 |= SPI2_MODE << 6; // clock phase
-	SPI2_REG->CR0 |= 7 << 0;		 // 8 bits
-	SPI2_REG->CR1 |= 1 << 1;		 // enable SSP*/
+	SPI2_REG->CR0 |= 7 << 0;				 // 8 bits
+	SPI2_REG->CR1 |= 1 << 1;				 // enable SSP*/
 
 #endif
 }
@@ -776,7 +772,7 @@ void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 	ITP_TIMER_REG->TC = 0;
 	ITP_TIMER_REG->PC = 0;
 	ITP_TIMER_REG->PR = 0;
-	ITP_TIMER_REG->TCR |= TIM_RESET;  // Reset Counter
+	ITP_TIMER_REG->TCR |= TIM_RESET;	// Reset Counter
 	ITP_TIMER_REG->TCR &= ~TIM_RESET; // release reset
 	ITP_TIMER_REG->EMR = 0;
 
@@ -940,38 +936,42 @@ void mcu_dotasks()
 #ifdef MCU_HAS_USB
 #ifdef USE_ARDUINO_CDC
 	lpc176x_usb_dotasks();
-#ifndef DETACH_USB_FROM_MAIN_PROTOCOL
 	while (lpc176x_usb_available())
 	{
 		uint8_t c = lpc176x_usb_getc();
+#ifdef DETACH_USB_FROM_MAIN_PROTOCOL
+		mcu_usb_rx_cb(c);
+#else
 		if (mcu_com_rx_cb(c))
+#endif
 		{
+#ifndef USB_DISABLE_BUFFER
 			if (!BUFFER_TRY_ENQUEUE(usb_rx, &c))
 			{
 				STREAM_OVF(c);
 			}
+#endif
 		}
 	}
-#else
-	mcu_usb_rx_cb(c);
-#endif
 #else
 	tusb_cdc_task(); // tinyusb device task
 
 	while (tusb_cdc_available())
 	{
 		uint8_t c = (uint8_t)tusb_cdc_read();
-#ifndef DETACH_USB_FROM_MAIN_PROTOCOL
+#ifdef DETACH_USB_FROM_MAIN_PROTOCOL
+		mcu_usb_rx_cb(c);
+#else
 		if (mcu_com_rx_cb(c))
+#endif
 		{
+#ifndef USB_DISABLE_BUFFER
 			if (!BUFFER_TRY_ENQUEUE(usb_rx, &c))
 			{
 				STREAM_OVF(c);
 			}
-		}
-#else
-		mcu_usb_rx_cb(c);
 #endif
+		}
 	}
 #endif
 #endif
@@ -1013,10 +1013,10 @@ void mcu_spi_config(spi_config_t config, uint32_t frequency)
 {
 	uint8_t div = SPI_COUNTER_DIV(frequency);
 	div += (div & 0x01) ? 1 : 0;
-	SPI_REG->CR1 &= ~(1 << 1);		  // disable SSP
-	SPI_REG->CPSR = div;			  // internal divider
+	SPI_REG->CR1 &= ~(1 << 1);				// disable SSP
+	SPI_REG->CPSR = div;							// internal divider
 	SPI_REG->CR0 |= config.mode << 6; // clock phase
-	SPI_REG->CR1 |= 1 << 1;			  // enable SSP
+	SPI_REG->CR1 |= 1 << 1;						// enable SSP
 	// SSP_DeInit(SPI_REG);
 
 	// SSP_CFG_Type ssp_cfg = {
@@ -1200,10 +1200,10 @@ void mcu_spi2_config(spi_config_t config, uint32_t frequency)
 {
 	uint8_t div = SPI2_COUNTER_DIV(frequency);
 	div += (div & 0x01) ? 1 : 0;
-	SPI2_REG->CR1 &= ~(1 << 1);		   // disable SSP
-	SPI2_REG->CPSR = div;			   // internal divider
+	SPI2_REG->CR1 &= ~(1 << 1);				 // disable SSP
+	SPI2_REG->CPSR = div;							 // internal divider
 	SPI2_REG->CR0 |= config.mode << 6; // clock phase
-	SPI2_REG->CR1 |= 1 << 1;		   // enable SSP
+	SPI2_REG->CR1 |= 1 << 1;					 // enable SSP
 	// SSP_DeInit(SPI2_REG);
 
 	// SSP_CFG_Type ssp_cfg = {
@@ -1702,7 +1702,7 @@ void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 	ONESHOT_TIMER_REG->TC = 0;
 	ONESHOT_TIMER_REG->PC = 0;
 	ONESHOT_TIMER_REG->PR = 0;
-	ONESHOT_TIMER_REG->TCR |= TIM_RESET;  // Reset Counter
+	ONESHOT_TIMER_REG->TCR |= TIM_RESET;	// Reset Counter
 	ONESHOT_TIMER_REG->TCR &= ~TIM_RESET; // release reset
 	ONESHOT_TIMER_REG->EMR = 0;
 

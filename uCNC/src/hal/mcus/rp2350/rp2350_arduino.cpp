@@ -137,8 +137,8 @@ static bool wifi_connected = false;
 static uint32_t wifi_next_info = 0;
 
 /* fully stops WiFi (station and access point).
-   WiFi.mode(WIFI_OFF)/WiFi.disconnect() only tear down the station interface,
-   so the access point must be stopped explicitly. */
+	 WiFi.mode(WIFI_OFF)/WiFi.disconnect() only tear down the station interface,
+	 so the access point must be stopped explicitly. */
 static void rp2350_wifi_stop(void)
 {
 	WiFi.disconnect();
@@ -701,20 +701,20 @@ extern "C" void rp2350_wifi_bt_init(void)
 #ifdef ENABLE_SOCKETS
 	FLASH_FS.begin();
 	flash_fs = {
-		.drive = 'C',
-		.open = flash_fs_open,
-		.read = flash_fs_read,
-		.write = flash_fs_write,
-		.seek = flash_fs_seek,
-		.available = flash_fs_available,
-		.close = flash_fs_close,
-		.remove = flash_fs_remove,
-		.opendir = flash_fs_opendir,
-		.mkdir = flash_fs_mkdir,
-		.rmdir = flash_fs_rmdir,
-		.next_file = flash_fs_next_file,
-		.finfo = flash_fs_info,
-		.next = NULL};
+			.drive = 'C',
+			.open = flash_fs_open,
+			.read = flash_fs_read,
+			.write = flash_fs_write,
+			.seek = flash_fs_seek,
+			.available = flash_fs_available,
+			.close = flash_fs_close,
+			.remove = flash_fs_remove,
+			.opendir = flash_fs_opendir,
+			.mkdir = flash_fs_mkdir,
+			.rmdir = flash_fs_rmdir,
+			.next_file = flash_fs_next_file,
+			.finfo = flash_fs_info,
+			.next = NULL};
 	fs_mount(&flash_fs);
 #endif
 
@@ -1039,37 +1039,39 @@ extern "C"
 #ifdef MCU_HAS_USB
 		while (Serial.available() > 0)
 		{
-#ifndef DETACH_USB_FROM_MAIN_PROTOCOL
 			uint8_t c = (uint8_t)Serial.read();
+#ifdef DETACH_USB_FROM_MAIN_PROTOCOL
+			mcu_usb_rx_cb(c);
+#else
 			if (mcu_com_rx_cb(c))
+#endif
 			{
+#ifndef USB_DISABLE_BUFFER
 				if (!BUFFER_TRY_ENQUEUE(usb_rx, &c))
 				{
 					STREAM_OVF(c);
 				}
-			}
-
-#else
-			mcu_usb_rx_cb((uint8_t)Serial.read());
 #endif
+			}
 		}
 #endif
 
 #ifdef MCU_HAS_UART
 		while (COM_UART.available() > 0)
 		{
-#ifndef DETACH_UART_FROM_MAIN_PROTOCOL
-			uint8_t c = (uint8_t)COM_UART.read();
+#ifdef DETACH_UART_FROM_MAIN_PROTOCOL
+			mcu_uart_rx_cb(c);
+#else
 			if (mcu_com_rx_cb(c))
+#endif
 			{
+#ifndef UART_DISABLE_BUFFER
 				if (!BUFFER_TRY_ENQUEUE(uart_rx, &c))
 				{
 					STREAM_OVF(c);
 				}
-			}
-#else
-			mcu_uart_rx_cb((uint8_t)COM_UART.read());
 #endif
+			}
 		}
 #endif
 
@@ -1077,26 +1079,19 @@ extern "C"
 		while (COM2_UART.available() > 0)
 		{
 			uint8_t c = (uint8_t)COM2_UART.read();
-#ifndef DETACH_UART2_FROM_MAIN_PROTOCOL
-
+#ifdef DETACH_UART2_FROM_MAIN_PROTOCOL
+			mcu_uart2_rx_cb(c);
+#else
 			if (mcu_com_rx_cb(c))
+#endif
 			{
+#ifndef UART2_DISABLE_BUFFER
 				if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
 				{
 					STREAM_OVF(c);
 				}
-			}
-
-#else
-			mcu_uart2_rx_cb(c);
-#ifndef UART2_DISABLE_BUFFER
-			if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
-			{
-				STREAM_OVF(c);
-			}
-
 #endif
-#endif
+			}
 		}
 #endif
 
