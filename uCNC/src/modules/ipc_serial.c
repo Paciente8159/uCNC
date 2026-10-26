@@ -50,7 +50,7 @@
 #define ipc_serial_putc mcu_uart2_putc
 #define ipc_serial_flush mcu_uart2_flush
 #ifndef MCU_HAS_UART2
-#error "IPC_SERIAL_UART requires UART2 port to be defined"
+#error "IPC_SERIAL_UART2 requires UART2 port to be defined"
 #endif
 #ifndef DETACH_UART2_FROM_MAIN_PROTOCOL
 #error "IPC_SERIAL_UART2 requires DETACH_UART2_FROM_MAIN_PROTOCOL"
@@ -61,7 +61,7 @@
 #define ipc_serial_putc mcu_usb_putc
 #define ipc_serial_flush mcu_usb_flush
 #ifndef MCU_HAS_USB
-#error "IPC_SERIAL_UART requires USB port to be defined"
+#error "IPC_SERIAL_USB requires USB port to be defined"
 #endif
 #ifndef DETACH_USB_FROM_MAIN_PROTOCOL
 #error "IPC_SERIAL_USB requires DETACH_USB_FROM_MAIN_PROTOCOL"

@@ -66,7 +66,7 @@ extern "C"
 		/**
 		 * Run the port at the rate the firmware runs it at (BAUDRATE), so that the
 		 * board on the other end of the cable agrees. UART2 is this same port, and
-		 * the IPC link over it (see ipc_uart2.c) cannot be read unless both ends
+		 * the IPC link over it (see ipc_serial.c) cannot be read unless both ends
 		 * agree on the rate. 8N1, DTR enabled.
 		 * */
 		dcbSerialParams.BaudRate = BAUDRATE;
@@ -1303,7 +1303,7 @@ extern "C"
 	 * two independent processes: each one is a one sided build, so each is a
 	 * separate board with its own hardware, and they reach each other over the
 	 * pipes the way the ESP8266/AVR pair reaches over a bus. It is the host
-	 * counterpart of the UART2 transport in modules/ipc_uart2.c, and the two are
+	 * counterpart of the SERIAL transport in modules/ipc_serial.c, and the two are
 	 * picked apart by IPC_USES_NAMED_PIPES against IPC_USES_SERIAL, so only one
 	 * of them ever defines the transport overrides in ipc.h.
 	 *
