@@ -92,30 +92,39 @@ extern "C"
 #define ASSERT_IPC_MULTICORE() ((IPC_MODE & IPC_MULTICORE) == IPC_MULTICORE)
 
   /**
-   * IPC ACK handling
+   * IPC request/reply matching
    *
-   * The RT side always replies to a request and the reply starts with the
-   * echoed request packet type (this single byte is the ACK). ipc_receive()
-   * waits for that byte: while the received byte does not match the expected
-   * type it retries (up to IPC_MAX_TRIES attempts) and it aborts the wait after
-   * IPC_ACK_TIMEOUT milliseconds.
+   * Every message carries a sequence number and a reply status. A reply is
+   * matched by both type and sequence, so a delayed reply to an older request
+   * cannot be taken as the answer to a newer one. The RT side caches the last
+   * reply; if the same sequence arrives again because the NonRT side retried,
+   * the cached reply is sent back without executing the request twice.
+   *
+   * ipc_receive() waits one IPC_ACK_TIMEOUT for a matching reply. ipc_exec()
+   * owns the retry policy: it resends the same sequence up to IPC_MAX_TRIES
+   * times, so a lost request or reply is recovered without duplicating work.
    */
 #ifndef IPC_MAX_TRIES
 #define IPC_MAX_TRIES 8
 #endif
 #ifndef IPC_ACK_TIMEOUT
   /**
-   * One ipc_receive() may spend up to IPC_MAX_TRIES of these before it returns,
-   * so this is the cost of a single handshake attempt below, not the cost of the
-   * handshake. ipc_init() retries until its budget runs out, which only works if
-   * one attempt is a small fraction of that budget: at 2000 ms an attempt could
-   * spend 8 x 2000 = 16 s waiting, more than the whole 5 s budget, so the first
-   * ping would already be the last one and the handshake gave up on a board that
-   * was still booting. 50 ms is also several times the time a 256 byte frame
-   * takes at 115200 baud, so a live RT side always answers well inside it.
+   * 50 ms is several times the time a 256 byte frame takes at 115200 baud, so a
+   * live RT side always answers well inside it.
    * */
 #define IPC_ACK_TIMEOUT 50 // ms
 #endif
+
+  // Reply status. Positive means the request was accepted and executed.
+  // Negative values identify why it was not.
+#define IPC_STATUS_OK 1
+#define IPC_STATUS_ERROR -1
+#define IPC_STATUS_TIMEOUT -2
+#define IPC_STATUS_OVERSIZE -3
+#define IPC_STATUS_IO -4
+#define IPC_STATUS_BAD_REPLY -5
+#define IPC_STATUS_BUSY -6
+#define IPC_STATUS_INVALID -7
 
   /**
    * Startup handshake
@@ -205,6 +214,8 @@ extern "C"
   typedef struct ipc_packet_
   {
     ipc_packet_type_t type;
+    uint8_t seq;
+    int8_t status;
     size_t len;
     uint8_t *payload;
   } __attribute__((packed, aligned(1))) ipc_packet_t;
@@ -222,23 +233,30 @@ extern "C"
   // Returns true when the RT side acknowledged the ping, or when no handshake is
   // needed: single core and shared memory builds, and the RT side itself.
   bool ipc_init(void);
-  void ipc_send(ipc_packet_type_t type, const void *data, size_t len); // overridable request send (used by ipc_exec)
-  // overridable ACK/response receive (used by ipc_exec). Waits for the reply whose
-  // first byte equals type (the ACK), retrying on any other byte up to
-  // IPC_MAX_TRIES and giving up after IPC_ACK_TIMEOUT ms. On a matching ACK it
-  // copies up to len payload bytes into data (data may be NULL for a bare ACK).
-  // Returns the number of bytes received including the ACK byte (>= 1) or 0 if no
-  // ACK was received.
-  size_t ipc_receive(ipc_packet_type_t type, void *data, size_t len);
+  // Sends one complete packet. Returns IPC_STATUS_OK on success, or a negative
+  // status if the payload does not fit or the transport failed.
+  int8_t ipc_send(const ipc_packet_t *packet);
+  // Waits for the reply that matches packet->type and packet->seq, copies up to
+  // packet->len payload bytes into packet->payload, and returns the reply status.
+  // Returns IPC_STATUS_TIMEOUT if no matching reply arrives in IPC_ACK_TIMEOUT,
+  // or IPC_STATUS_BAD_REPLY if a frame is malformed.
+  int8_t ipc_receive(ipc_packet_t *packet);
   // overridable. Fetches one pending request from the transport into
   // g_ipc_buffer and sets g_ipc_data_available. The default does nothing, which
   // is what a build without a transport needs, and what the NonRT side needs:
   // it never receives requests, it waits for the reply inside ipc_receive.
   // Called by ipc_dotasks before it looks at g_ipc_data_available.
   void ipc_poll(void);
-  void ipc_exec(ipc_packet_type_t type, const void *data_out, size_t len_out,
-                void *data_in, size_t len_in); // makes an ipc execution request (NonRT side to RT side) and waits for the ACK
-  void ipc_dotasks(void);                      // run IPC tasks (runs on the RT side to process requests)
+  // Makes a request and waits for the reply. Returns the reply status:
+  // IPC_STATUS_OK when the RT side accepted and executed it, a negative error
+  // code otherwise.
+  int8_t ipc_exec(ipc_packet_type_t type, const void *data_out, size_t len_out,
+                  void *data_in, size_t len_in);
+  void ipc_dotasks(void); // run IPC tasks (runs on the RT side to process requests)
+  // true after a request timed out or the transport failed. The NonRT loop
+  // turns this into a safe alarm instead of silently using stale state.
+  bool ipc_has_fault(void);
+  void ipc_clear_fault(void);
   // gets the current core ID. An MCU that has real cores provides its own and
   // defines IPC_CURRENT_CORE_OVERRIDE; every other build gets the default in
   // ipc.c.

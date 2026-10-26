@@ -24,6 +24,24 @@ uint8_t g_ipc_buffer[IPC_BUFFER_SIZE];
 static uint8_t g_ipc_response[IPC_BUFFER_SIZE];
 bool g_ipc_data_available;
 
+/**
+ * The last request sequence executed on the RT side, and the reply it produced.
+ * A retransmission repeats the same sequence, so the cached reply is sent back
+ * instead of running a non-idempotent command twice.
+ * */
+typedef struct
+{
+  bool valid;
+  ipc_packet_type_t type;
+  uint8_t seq;
+  int8_t status;
+  uint16_t len;
+  uint8_t payload[IPC_MAX_PAYLOAD];
+} ipc_reply_cache_t;
+
+static ipc_reply_cache_t g_ipc_last_reply;
+static volatile bool g_ipc_fault;
+
 // the settings the RT side reads are pushed in a single message, so that block
 // must fit the request buffer
 typedef char ipc_settings_block_fits[((sizeof(rt_settings_t) + sizeof(ipc_packet_t)) <= IPC_BUFFER_SIZE) ? 1 : -1];
@@ -37,12 +55,16 @@ bool ipc_init(void)
     return true; // the RT side answers the ping, it does not send one
   }
 #endif
+  ipc_packet_t ping = {0};
+  ping.type = IPC_PING;
+  ping.seq = 0;
+  ping.status = 0;
   uint32_t start = mcu_millis();
   while ((mcu_millis() - start) < IPC_BOOT_TIMEOUT)
   {
-    ipc_send(IPC_PING, NULL, 0);
-    if (ipc_receive(IPC_PING, NULL, 0))
+    if (ipc_send(&ping) == IPC_STATUS_OK && ipc_receive(&ping) == IPC_STATUS_OK)
     {
+      ipc_clear_fault();
       return true;
     }
     // cooperate with the task loop. On the host test build this is also what
@@ -58,15 +80,28 @@ bool ipc_init(void)
 
 /**overridable send and receive methods - depends on the transport layer (SPI,
  * ethernet, etc..) */
-void __attribute__((weak)) ipc_send(ipc_packet_type_t type, const void *data,
-                                    size_t len) {}
-size_t __attribute__((weak)) ipc_receive(ipc_packet_type_t type, void *data,
-                                         size_t len)
+int8_t __attribute__((weak)) ipc_send(const ipc_packet_t *packet)
 {
-  return 0;
+  (void)packet;
+  return IPC_STATUS_IO;
+}
+int8_t __attribute__((weak)) ipc_receive(ipc_packet_t *packet)
+{
+  (void)packet;
+  return IPC_STATUS_IO;
 }
 
 void __attribute__((weak)) ipc_poll(void) {}
+
+bool ipc_has_fault(void)
+{
+  return g_ipc_fault;
+}
+
+void ipc_clear_fault(void)
+{
+  g_ipc_fault = false;
+}
 
 #ifndef IPC_CURRENT_CORE_OVERRIDE
 uint8_t ipc_get_current_core(void)
@@ -83,12 +118,55 @@ uint8_t ipc_get_current_core(void)
  * The slave always replies, so the ACK is always waited for, even when the
  * request carries no response payload (data_in is NULL).
  *
+ * The same sequence is reused when a request is resent, so the RT side can send
+ * its cached reply instead of executing the command twice.
  *  */
-void ipc_exec(ipc_packet_type_t type, const void *data_out, size_t len_out,
-              void *data_in, size_t len_in)
+int8_t ipc_exec(ipc_packet_type_t type, const void *data_out, size_t len_out,
+                void *data_in, size_t len_in)
 {
-  ipc_send(type, data_out, len_out);
-  ipc_receive(type, data_in, len_in);
+#if ASSERT_IPC_NONRT()
+  static uint8_t next_seq;
+  ipc_packet_t request = {0};
+  ipc_packet_t reply = {0};
+
+  request.type = type;
+  request.seq = (uint8_t)++next_seq;
+  request.status = 0;
+  request.len = len_out;
+  request.payload = (uint8_t *)data_out;
+
+  reply.type = type;
+  reply.seq = request.seq;
+  reply.status = IPC_STATUS_TIMEOUT;
+  reply.len = len_in;
+  reply.payload = (uint8_t *)data_in;
+
+  for (uint16_t tries = 0; tries < IPC_MAX_TRIES; tries++)
+  {
+    int8_t status = ipc_send(&request);
+    if (status != IPC_STATUS_OK)
+    {
+      g_ipc_fault = true;
+      return status;
+    }
+
+    status = ipc_receive(&reply);
+    if (status != IPC_STATUS_TIMEOUT && status != IPC_STATUS_IO && status != IPC_STATUS_BAD_REPLY)
+    {
+      return status;
+    }
+  }
+
+  g_ipc_fault = true;
+  return IPC_STATUS_TIMEOUT;
+#else
+  (void)type;
+  (void)data_out;
+  (void)len_out;
+  (void)data_in;
+  (void)len_in;
+  return IPC_STATUS_OK;
+#endif
 }
 
 /**
@@ -113,8 +191,29 @@ void ipc_dotasks(void)
   }
 
   ipc_packet_t *ipc_data = (ipc_packet_t *)g_ipc_buffer;
+
+  /**
+   * A retried request repeats its sequence. The command has already run, so
+   * send the cached reply instead of executing it again.
+   * */
+  if (g_ipc_last_reply.valid && (ipc_data->seq == g_ipc_last_reply.seq) &&
+      (ipc_data->type == g_ipc_last_reply.type))
+  {
+    ipc_packet_t cached = {0};
+    cached.type = g_ipc_last_reply.type;
+    cached.seq = g_ipc_last_reply.seq;
+    cached.status = g_ipc_last_reply.status;
+    cached.len = g_ipc_last_reply.len;
+    cached.payload = g_ipc_last_reply.payload;
+    ipc_send(&cached);
+    g_ipc_data_available = false;
+    return;
+  }
+
   ipc_packet_t response = {0};
   response.type = ipc_data->type;
+  response.seq = ipc_data->seq;
+  response.status = IPC_STATUS_OK;
   response.payload = g_ipc_response;
   switch (ipc_data->type)
   {
@@ -270,11 +369,24 @@ void ipc_dotasks(void)
                       (uint16_t)MIN(ipc_data->len, sizeof(settings_t)));
     break;
   default:
+    response.status = IPC_STATUS_ERROR;
     break;
   }
 
-  // always reply. The master waits for the ACK even when the command has no
+  // always reply. The master waits for the reply even when the command has no
   // response payload.
-  ipc_send(response.type, response.payload, response.len);
+  ipc_send(&response);
+
+  // remember the reply so a retransmitted request is answered, not re-executed
+  g_ipc_last_reply.valid = true;
+  g_ipc_last_reply.type = response.type;
+  g_ipc_last_reply.seq = response.seq;
+  g_ipc_last_reply.status = response.status;
+  g_ipc_last_reply.len = (uint16_t)MIN(response.len, (size_t)IPC_MAX_PAYLOAD);
+  if (g_ipc_last_reply.len)
+  {
+    memcpy(g_ipc_last_reply.payload, response.payload, g_ipc_last_reply.len);
+  }
+
   g_ipc_data_available = false;
 }

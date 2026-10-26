@@ -307,15 +307,16 @@ void mcu_rtc_isr(void) {
  * message is framed as one header word followed by its payload, so the receiver
  * can tell where one message ends and the next begins:
  *
- *   header:  [ len : 24 bits ][ type : 8 bits ]
+ *   header:  [ len : 16 bits ][ type : 8 bits ][ seq : 8 bits ]
+ *   status:  [ status : 8 bits ]
  *   payload: len bytes packed 4 to a word, padded to a whole word
  *
- * The type is the packet type, which doubles as the ACK: the reply echoes the
- * type of the request it answers.
+ * The reply echoes both the type and the sequence of the request it answers.
  * **/
-#define RP2040_FIFO_HDR(len, type) ((((uint32_t)(len)) << 8) | ((uint32_t)(uint8_t)(type)))
-#define RP2040_FIFO_LEN(hdr) ((size_t)((hdr) >> 8))
-#define RP2040_FIFO_TYPE(hdr) ((ipc_packet_type_t)((hdr) & 0xFF))
+#define RP2040_FIFO_HDR(len, type, seq) ((((uint32_t)(len)) << 16) | ((uint32_t)(uint8_t)(type) << 8) | ((uint32_t)(uint8_t)(seq)))
+#define RP2040_FIFO_LEN(hdr) ((size_t)((hdr) >> 16))
+#define RP2040_FIFO_TYPE(hdr) ((ipc_packet_type_t)(((hdr) >> 8) & 0xFF))
+#define RP2040_FIFO_SEQ(hdr) ((uint8_t)((hdr) & 0xFF))
 #define RP2040_FIFO_WORDS(len) (((size_t)(len) + 3) >> 2)
 
 uint8_t ipc_get_current_core(void) { return (uint8_t)get_core_num(); }
@@ -338,43 +339,51 @@ static bool rp2040_fifo_push(uint32_t word) {
   return true;
 }
 
-void ipc_send(ipc_packet_type_t type, const void *data, size_t len) {
-  const uint8_t *src = (const uint8_t *)data;
-
-  if (len > IPC_MAX_PAYLOAD) {
-    return;
+int8_t ipc_send(const ipc_packet_t *packet) {
+  if (!packet || (packet->len > IPC_MAX_PAYLOAD)) {
+    return IPC_STATUS_OVERSIZE;
   }
 
-  if (!rp2040_fifo_push(RP2040_FIFO_HDR(len, type))) {
-    return;
+  const uint8_t *src = packet->payload;
+
+  if (!rp2040_fifo_push(RP2040_FIFO_HDR(packet->len, packet->type, packet->seq))) {
+    return IPC_STATUS_IO;
   }
 
-  for (size_t i = 0; i < len; i += 4) {
+  if (!rp2040_fifo_push((uint32_t)(uint8_t)packet->status)) {
+    return IPC_STATUS_IO;
+  }
+
+  for (size_t i = 0; i < packet->len; i += 4) {
     uint32_t word = 0;
-    for (size_t j = 0; (j < 4) && ((i + j) < len); j++) {
+    for (size_t j = 0; (j < 4) && ((i + j) < packet->len); j++) {
       word |= ((uint32_t)src[i + j]) << (8 * j);
     }
     if (!rp2040_fifo_push(word)) {
-      return;
+      return IPC_STATUS_IO;
     }
   }
+
+  return IPC_STATUS_OK;
 }
 
-size_t ipc_receive(ipc_packet_type_t type, void *data, size_t len) {
+int8_t ipc_receive(ipc_packet_t *packet) {
   uint32_t start = mcu_millis();
-  uint8_t *dst = (uint8_t *)data;
+  uint8_t *dst = packet->payload;
 
-  for (uint16_t tries = 0; tries < IPC_MAX_TRIES; tries++) {
+  for (;;) {
     while (!multicore_fifo_rvalid()) {
       if ((mcu_millis() - start) > IPC_ACK_TIMEOUT) {
-        return 0;
+        return IPC_STATUS_TIMEOUT;
       }
       tight_loop_contents();
     }
 
     uint32_t hdr = multicore_fifo_pop_blocking();
     size_t plen = RP2040_FIFO_LEN(hdr);
-    bool match = (RP2040_FIFO_TYPE(hdr) == type);
+    int8_t status = (int8_t)(uint8_t)multicore_fifo_pop_blocking();
+    bool match = (RP2040_FIFO_TYPE(hdr) == packet->type) &&
+                 (RP2040_FIFO_SEQ(hdr) == packet->seq);
 
     // the payload is consumed whether or not it is the message being waited
     // for, so the stream stays framed
@@ -387,19 +396,17 @@ size_t ipc_receive(ipc_packet_type_t type, void *data, size_t len) {
 
       for (size_t b = 0; b < 4; b++) {
         size_t idx = (w << 2) + b;
-        if ((idx < plen) && (idx < len)) {
+        if ((idx < plen) && (idx < packet->len)) {
           dst[idx] = (uint8_t)(word >> (b << 3));
         }
       }
     }
 
     if (match) {
-      // the ACK byte, plus the payload bytes that fit
-      return 1 + MIN(plen, len);
+      packet->status = status;
+      return status;
     }
   }
-
-  return 0;
 }
 
 /**
@@ -421,6 +428,7 @@ void ipc_poll(void) {
 
   uint32_t hdr = multicore_fifo_pop_blocking();
   size_t plen = RP2040_FIFO_LEN(hdr);
+  int8_t status = (int8_t)(uint8_t)multicore_fifo_pop_blocking();
 
   if (plen > IPC_MAX_PAYLOAD) {
     /**
@@ -438,6 +446,8 @@ void ipc_poll(void) {
 
   ipc_packet_t *packet = (ipc_packet_t *)g_ipc_buffer;
   packet->type = RP2040_FIFO_TYPE(hdr);
+  packet->seq = RP2040_FIFO_SEQ(hdr);
+  packet->status = status;
   packet->len = plen;
   packet->payload = g_ipc_buffer + sizeof(ipc_packet_t);
 

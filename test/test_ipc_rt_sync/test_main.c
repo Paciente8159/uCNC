@@ -17,21 +17,18 @@
 static bool test_rt_answers;
 
 /* overrides the weak ipc_send() of ipc.c */
-void ipc_send(ipc_packet_type_t type, const void *data, size_t len)
+int8_t ipc_send(const ipc_packet_t *packet)
 {
-	(void)type;
-	(void)data;
-	(void)len;
+	(void)packet;
+	return IPC_STATUS_OK;
 }
 
-/* overrides the weak ipc_receive() of ipc.c. A reply always starts with the
- * echoed request type, so one byte is a valid ACK for any request. */
-size_t ipc_receive(ipc_packet_type_t type, void *data, size_t len)
+/* overrides the weak ipc_receive() of ipc.c. The reply echoes the request type
+ * and sequence, so the handshake can match it. */
+int8_t ipc_receive(ipc_packet_t *packet)
 {
-	(void)type;
-	(void)data;
-	(void)len;
-	return test_rt_answers ? 1 : 0;
+	(void)packet;
+	return test_rt_answers ? IPC_STATUS_OK : IPC_STATUS_TIMEOUT;
 }
 
 void setUp(void)

@@ -49,25 +49,30 @@ extern "C"
       * the boundaries and reject whatever the line corrupted. Every message -
       * request and reply alike - travels as:
       *
-      *   +-------+------+--------+--------+---------------+--------+--------+-----+
-      *   | START | TYPE | LEN_LO | LEN_HI |    PAYLOAD    | CRC_LO | CRC_HI | END |
-      *   +-------+------+--------+--------+---------------+--------+--------+-----+
-      *       1      1       1        1          LEN           1        1      1
+      *   +-------+------+------+--------+--------+--------+---------------+--------+--------+-----+
+      *   | START | TYPE | SEQ  | STATUS | LEN_LO | LEN_HI |    PAYLOAD    | CRC_LO | CRC_HI | END |
+      *   +-------+------+------+--------+--------+--------+---------------+--------+--------+-----+
+      *       1      1      1       1        1        1          LEN           1        1      1
       *
       * START (0xAA) is the byte the receiver hunts for while it has no frame in
       * progress. It is not counted in LEN, and it is what lets the receiver lock
       * onto a frame again after the stream has been lost.
       *
-      * TYPE is the ipc_packet_type_t of the message, and it doubles as the ACK:
-      * the reply repeats the type of the request.
+      * TYPE is the ipc_packet_type_t of the message.
+      *
+      * SEQ identifies the request. The reply echoes the same value, so a delayed
+      * reply to an older request cannot be mistaken for the current one.
+      *
+      * STATUS is the reply status: positive means accepted and executed, a
+      * negative value is an error code. A request carries zero here.
       *
       * LEN is the payload length, little endian, so that the same frame layout
       * describes every message. It is two bytes rather than one so that the field
       * cannot silently wrap if IPC_BUFFER_SIZE is ever raised.
       *
       * CRC is a CRC16-CCITT (polynomial 0x1021, seeded with 0xFFFF) computed over
-      * TYPE, LEN and PAYLOAD. It is what turns a corrupted payload into a dropped
-      * frame instead of a command the RT side would carry out.
+      * TYPE, SEQ, STATUS, LEN and PAYLOAD. It is what turns a corrupted payload
+      * into a dropped frame instead of a command the RT side would carry out.
       *
       * END (0x55) closes the frame. With START it also catches the one case the
       * CRC cannot see by itself: a frame whose tail never arrived, because the
@@ -79,15 +84,17 @@ extern "C"
 #define IPC_SERIAL_START 0xAAu
 #define IPC_SERIAL_END 0x55u
 
-// START, TYPE, LEN_LO, LEN_HI
-#define IPC_SERIAL_HDR_SIZE 4u
+// START, TYPE, SEQ, STATUS, LEN_LO, LEN_HI
+#define IPC_SERIAL_HDR_SIZE 6u
 // CRC_LO, CRC_HI, END
 #define IPC_SERIAL_TAIL_SIZE 3u
 #define IPC_SERIAL_OVERHEAD (IPC_SERIAL_HDR_SIZE + IPC_SERIAL_TAIL_SIZE)
 
 // field offsets inside a frame
 #define IPC_SERIAL_OFF_TYPE 1u
-#define IPC_SERIAL_OFF_LEN 2u
+#define IPC_SERIAL_OFF_SEQ 2u
+#define IPC_SERIAL_OFF_STATUS 3u
+#define IPC_SERIAL_OFF_LEN 4u
 #define IPC_SERIAL_OFF_DATA IPC_SERIAL_HDR_SIZE
 
 // CRC16-CCITT, as required by the frame layout above

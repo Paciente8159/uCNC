@@ -1330,11 +1330,14 @@ extern "C"
 #define EMULATOR_IPC_NAME_MAX 128
 #define EMULATOR_IPC_IO_BUFFER 4096
 
-	/* the wire framing: the payload length, then the type, then the payload */
+	/* the wire framing: the payload length, the type, the sequence and status,
+		 then the payload */
 	typedef struct emulator_ipc_header_
 	{
 		uint32_t len;
 		uint32_t type;
+		uint32_t seq;
+		int32_t status;
 	} emulator_ipc_header_t;
 
 	static HANDLE g_ipc_req = INVALID_HANDLE_VALUE;
@@ -1540,21 +1543,23 @@ extern "C"
 #endif /* ASSERT_IPC_RT() */
 	}
 
-	void ipc_send(ipc_packet_type_t type, const void *data, size_t len)
+	int8_t ipc_send(const ipc_packet_t *packet)
 	{
-		if (len > IPC_MAX_PAYLOAD)
+		if (!packet || (packet->len > IPC_MAX_PAYLOAD))
 		{
-			return;
+			return IPC_STATUS_OVERSIZE;
 		}
 
 		if (!emulator_ipc_open())
 		{
-			return;
+			return IPC_STATUS_IO;
 		}
 
 		emulator_ipc_header_t header;
-		header.len = (uint32_t)len;
-		header.type = (uint32_t)(uint8_t)type;
+		header.len = (uint32_t)packet->len;
+		header.type = (uint32_t)(uint8_t)packet->type;
+		header.seq = packet->seq;
+		header.status = packet->status;
 
 		/* each side writes on its own pipe, so the directions never interleave */
 #if ASSERT_IPC_RT()
@@ -1565,52 +1570,53 @@ extern "C"
 
 		if (!emulator_ipc_write_all(h, &header, sizeof(header)))
 		{
-			return;
+			return IPC_STATUS_IO;
 		}
 
-		if (len)
+		if (packet->len && !emulator_ipc_write_all(h, packet->payload, packet->len))
 		{
-			emulator_ipc_write_all(h, data, len);
+			return IPC_STATUS_IO;
 		}
+
+		return IPC_STATUS_OK;
 	}
 
-	size_t ipc_receive(ipc_packet_type_t type, void *data, size_t len)
+	int8_t ipc_receive(ipc_packet_t *packet)
 	{
 #if !ASSERT_IPC_NONRT()
-		(void)type;
-		(void)data;
-		(void)len;
-		return 0;
+		(void)packet;
+		return IPC_STATUS_OK;
 #else
 		if (!emulator_ipc_open())
 		{
-			return 0;
+			return IPC_STATUS_IO;
 		}
 
-		uint8_t *dst = (uint8_t *)data;
+		uint8_t *dst = packet->payload;
 		uint8_t scratch[64];
 
-		for (uint16_t tries = 0; tries < IPC_MAX_TRIES; tries++)
+		for (;;)
 		{
 			if (!emulator_ipc_wait_readable(g_ipc_rep, IPC_ACK_TIMEOUT))
 			{
-				return 0;
+				return IPC_STATUS_TIMEOUT;
 			}
 
 			emulator_ipc_header_t header;
 
 			if (!emulator_ipc_read_all(g_ipc_rep, &header, sizeof(header)))
 			{
-				return 0;
+				return IPC_STATUS_IO;
 			}
 
 			if (header.len > IPC_MAX_PAYLOAD)
 			{
 				/* the peer is out of step, so the stream cannot be framed */
-				return 0;
+				return IPC_STATUS_BAD_REPLY;
 			}
 
-			bool match = (header.type == (uint32_t)(uint8_t)type);
+			bool match = (header.type == (uint32_t)(uint8_t)packet->type) &&
+									 (header.seq == packet->seq);
 			size_t consumed = 0;
 
 			/* the payload is consumed whether or not it is the message being
@@ -1621,12 +1627,12 @@ extern "C"
 
 				if (!emulator_ipc_read_all(g_ipc_rep, scratch, chunk))
 				{
-					return 0;
+					return IPC_STATUS_IO;
 				}
 
-				if (match && dst && (consumed < len))
+				if (match && dst && (consumed < packet->len))
 				{
-					memcpy(&dst[consumed], scratch, MIN(chunk, len - consumed));
+					memcpy(&dst[consumed], scratch, MIN(chunk, packet->len - consumed));
 				}
 
 				consumed += chunk;
@@ -1634,12 +1640,10 @@ extern "C"
 
 			if (match)
 			{
-				/* the ACK byte, plus the payload bytes that fit */
-				return 1 + MIN((size_t)header.len, len);
+				packet->status = (int8_t)header.status;
+				return packet->status;
 			}
 		}
-
-		return 0;
 #endif /* ASSERT_IPC_NONRT() */
 	}
 
@@ -1711,6 +1715,8 @@ extern "C"
 
 		ipc_packet_t *packet = (ipc_packet_t *)g_ipc_buffer;
 		packet->type = (ipc_packet_type_t)header.type;
+		packet->seq = (uint8_t)header.seq;
+		packet->status = (int8_t)header.status;
 		packet->len = header.len;
 		packet->payload = g_ipc_buffer + sizeof(ipc_packet_t);
 

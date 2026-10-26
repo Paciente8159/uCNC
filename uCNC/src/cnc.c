@@ -35,6 +35,9 @@
 #define LOOP_REQUIRE_RESET 4
 #define LOOP_DO_RESET 5
 
+#define CNC_STOP_PENDING 1
+#define CNC_STOP_TOOLS_PENDING 2
+
 #define RTCMD_NORMAL_MASK                                              \
   (RT_CMD_FEED_100 | RT_CMD_FEED_INC_COARSE | RT_CMD_FEED_DEC_COARSE | \
    RT_CMD_FEED_INC_FINE | RT_CMD_FEED_DEC_FINE)
@@ -70,6 +73,15 @@ typedef struct
   volatile uint8_t feed_ovr_cmd;
   volatile uint8_t tool_ovr_cmd;
   volatile int8_t alarm;
+#if ASSERT_IPC_NONRT()
+  /**
+   * State changes a control ISR asks for. They are applied from the non-ISR
+   * loop, because the IPC transport can block and must not run in an interrupt.
+   * */
+  volatile uint16_t rt_state_set_pending;
+  volatile uint16_t rt_state_clear_pending;
+  volatile uint8_t stop_pending;
+#endif
 } cnc_state_nonrt_t;
 
 static cnc_state_rt_t cnc_state_rt;
@@ -110,6 +122,7 @@ static void cnc_reset(void);
 #if ASSERT_IPC_NONRT()
 static void cnc_raise_fatal_fault(int8_t code);
 static void cnc_refresh_exec_state(void);
+static void cnc_flush_pending_rt_commands(void);
 #endif
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
@@ -573,6 +586,12 @@ bool cnc_dotasks(void)
 #endif
   {
 #if ASSERT_IPC_NONRT()
+    cnc_flush_pending_rt_commands();
+    if (ipc_has_fault())
+    {
+      cnc_raise_fatal_fault(EXEC_ALARM_RT_SYNC_FAIL);
+      return false;
+    }
     /**
      * The guards below read the RT side's exec state, and so does the segment
      * feed they let through - once per segment it produces. They are all asking
@@ -856,6 +875,18 @@ uint8_t cnc_get_alarm(void)
 
 void cnc_stop(bool toolstop)
 {
+#if ASSERT_IPC_NONRT()
+  if (mcu_in_isr_context())
+  {
+    ATOMIC_FETCH_OR(&cnc_state_nonrt.stop_pending, CNC_STOP_PENDING, __ATOMIC_ACQ_REL);
+    if (toolstop)
+    {
+      ATOMIC_FETCH_OR(&cnc_state_nonrt.stop_pending, CNC_STOP_TOOLS_PENDING, __ATOMIC_ACQ_REL);
+    }
+    return;
+  }
+#endif
+
   itp_stop();
   if (toolstop)
   {
@@ -974,6 +1005,46 @@ static void cnc_refresh_exec_state(void)
            &cnc_state_rt_snapshot, sizeof(cnc_state_rt_snapshot));
   cnc_state_rt_snapshot_valid = true;
 }
+
+/**
+ * Applies the state changes an ISR recorded. Called from the non-ISR loop,
+ * before the pass takes its exec-state snapshot.
+ * */
+static void cnc_flush_pending_rt_commands(void)
+{
+  uint8_t stop = 0;
+  uint16_t setmask = 0;
+  uint16_t clearmask = 0;
+
+  ATOMIC_CODEBLOCK
+  {
+    stop = cnc_state_nonrt.stop_pending;
+    cnc_state_nonrt.stop_pending = 0;
+  }
+
+  if (stop)
+  {
+    cnc_stop((stop & CNC_STOP_TOOLS_PENDING) != 0);
+  }
+
+  ATOMIC_CODEBLOCK
+  {
+    setmask = cnc_state_nonrt.rt_state_set_pending;
+    clearmask = cnc_state_nonrt.rt_state_clear_pending;
+    cnc_state_nonrt.rt_state_set_pending = 0;
+    cnc_state_nonrt.rt_state_clear_pending = 0;
+  }
+
+  if (setmask)
+  {
+    cnc_set_exec_state_rt(setmask);
+  }
+
+  if (clearmask)
+  {
+    cnc_clear_exec_state_rt(clearmask);
+  }
+}
 #endif
 
 uint16_t cnc_get_exec_state(uint16_t statemask)
@@ -983,7 +1054,7 @@ uint16_t cnc_get_exec_state(uint16_t statemask)
   if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
   {
-    if (!cnc_state_rt_snapshot_valid)
+    if (!cnc_state_rt_snapshot_valid && !mcu_in_isr_context())
     {
       cnc_refresh_exec_state();
     }
@@ -1004,6 +1075,16 @@ void cnc_set_exec_state_rt(uint16_t statemask)
   if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
   {
+    /**
+     * The transport can block, so an interrupt only records the change. The
+     * non-ISR loop applies it before it takes the next state snapshot.
+     * */
+    if (mcu_in_isr_context())
+    {
+      ATOMIC_FETCH_OR(&cnc_state_nonrt.rt_state_set_pending, statemask, __ATOMIC_ACQ_REL);
+      return;
+    }
+
     // the snapshot has to answer for what was just asked of the RT side
     ipc_exec(CNC_SET_EXEC_STATE_RT, &statemask, sizeof(statemask), &cnc_state_rt_snapshot, sizeof(cnc_state_rt_snapshot));
 #if ASSERT_IPC_MULTICORE()
@@ -1064,6 +1145,12 @@ void cnc_clear_exec_state_rt(uint16_t statemask)
   if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
   {
+    if (mcu_in_isr_context())
+    {
+      ATOMIC_FETCH_OR(&cnc_state_nonrt.rt_state_clear_pending, statemask, __ATOMIC_ACQ_REL);
+      return;
+    }
+
     // the snapshot has to answer for what was just asked of the RT side
     ipc_exec(CNC_CLEAR_EXEC_STATE_RT, &statemask, sizeof(statemask), &cnc_state_rt_snapshot, sizeof(cnc_state_rt_snapshot));
 #if ASSERT_IPC_MULTICORE()

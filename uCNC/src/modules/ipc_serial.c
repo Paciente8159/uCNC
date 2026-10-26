@@ -262,32 +262,43 @@ static void ipc_serial_drain(void)
 }
 
 /**
- * Sends one message as a frame.
+ * Sends one packet as a frame.
  *
  * The payload is streamed straight out of the caller's buffer, so nothing here
  * depends on how large a payload is; the header and the trailer are the only
- * bytes this function has to hold, and they are smaller than a frame. The
- * length is clamped to what this side's frame layout can describe, and the CRC
- * is computed over the clamped length so that the two always agree.
+ * bytes this function has to hold, and they are smaller than a frame. An
+ * oversized payload is rejected instead of being truncated, so a partial
+ * settings or motion block can never look like a valid frame.
  * */
-void ipc_send(ipc_packet_type_t type, const void *data, size_t len)
+int8_t ipc_send(const ipc_packet_t *packet)
 {
   uint8_t frame[IPC_SERIAL_HDR_SIZE + IPC_SERIAL_TAIL_SIZE];
-  uint16_t payload = (uint16_t)MIN(len, (size_t)IPC_MAX_PAYLOAD);
+  uint16_t payload;
   uint16_t crc;
   size_t i;
 
-  IPCSERIALDBG("ipc_serial: send type %u len %u", (unsigned)type, (unsigned)payload);
+  if (!packet || (packet->len > IPC_MAX_PAYLOAD))
+  {
+    return IPC_STATUS_OVERSIZE;
+  }
+
+  payload = (uint16_t)packet->len;
+
+  IPCSERIALDBG("ipc_serial: send type %u seq %u status %d len %u",
+               (unsigned)packet->type, (unsigned)packet->seq,
+               (int)packet->status, (unsigned)payload);
 
   frame[0] = IPC_SERIAL_START;
-  frame[1] = (uint8_t)type;
-  frame[2] = (uint8_t)(payload & 0xFF);
-  frame[3] = (uint8_t)(payload >> 8);
+  frame[1] = (uint8_t)packet->type;
+  frame[2] = packet->seq;
+  frame[3] = (uint8_t)packet->status;
+  frame[4] = (uint8_t)(payload & 0xFF);
+  frame[5] = (uint8_t)(payload >> 8);
 
   crc = ipc_serial_crc16(IPC_SERIAL_CRC_INIT, &frame[IPC_SERIAL_OFF_TYPE], (size_t)(IPC_SERIAL_OFF_DATA - 1u));
   if (payload)
   {
-    crc = ipc_serial_crc16(crc, data, (size_t)payload);
+    crc = ipc_serial_crc16(crc, packet->payload, (size_t)payload);
   }
 
   frame[IPC_SERIAL_HDR_SIZE] = (uint8_t)(crc & 0xFF);
@@ -301,7 +312,7 @@ void ipc_send(ipc_packet_type_t type, const void *data, size_t len)
 
   for (i = 0; i < (size_t)payload; i++)
   {
-    ipc_serial_putc(((const uint8_t *)data)[i]);
+    ipc_serial_putc(((const uint8_t *)packet->payload)[i]);
   }
 
   for (i = IPC_SERIAL_HDR_SIZE; i < (IPC_SERIAL_HDR_SIZE + IPC_SERIAL_TAIL_SIZE); i++)
@@ -312,61 +323,62 @@ void ipc_send(ipc_packet_type_t type, const void *data, size_t len)
   // hands the frame over, so the caller only waits for the reply once all of it
   // is out
   ipc_serial_flush();
+  return IPC_STATUS_OK;
 }
 
 /**
  * Waits for the reply to a request, and gives up after IPC_ACK_TIMEOUT.
  *
- * The reply carries the type of the request, which is the ACK: a frame whose
- * type does not match is a stale reply, so it is dropped and the wait goes on.
- * Only the side that forwards requests waits for one; the RT side only answers,
- * so this is empty there.
+ * The reply is matched by both type and sequence. A frame whose type or
+ * sequence does not match is stale and is dropped, so a delayed reply to an
+ * older request cannot be mistaken for this one. Only the side that forwards
+ * requests waits for one; the RT side only answers, so this is empty there.
  * */
-size_t ipc_receive(ipc_packet_type_t type, void *data, size_t len)
+int8_t ipc_receive(ipc_packet_t *packet)
 {
 #if !ASSERT_IPC_NONRT()
-  (void)type;
-  (void)data;
-  (void)len;
-  return 0;
+  (void)packet;
+  return IPC_STATUS_OK;
 #else
-  uint16_t tries = 0;
   uint32_t deadline = mcu_millis();
 #ifdef PIO_UNIT_TESTING
   // only the build whose clock cannot move on its own needs this (see below)
   uint32_t stuck = 0;
 #endif
 
-  while (tries < IPC_MAX_TRIES)
+  for (;;)
   {
     ipc_serial_drain();
 
     if (ipc_serial_rx_ready)
     {
-      if (ipc_serial_rx_frame[IPC_SERIAL_OFF_TYPE] == (uint8_t)type)
+      if ((ipc_serial_rx_frame[IPC_SERIAL_OFF_TYPE] == (uint8_t)packet->type) &&
+          (ipc_serial_rx_frame[IPC_SERIAL_OFF_SEQ] == packet->seq))
       {
         uint16_t payload = ipc_serial_frame_len();
-        uint16_t copied = (uint16_t)MIN((size_t)payload, len);
+        uint16_t copied = (uint16_t)MIN((size_t)payload, packet->len);
 
-        if (data && copied)
+        if (packet->payload && copied)
         {
-          memcpy(data, &ipc_serial_rx_frame[IPC_SERIAL_OFF_DATA], (size_t)copied);
+          memcpy(packet->payload, &ipc_serial_rx_frame[IPC_SERIAL_OFF_DATA], (size_t)copied);
         }
 
+        packet->status = (int8_t)ipc_serial_rx_frame[IPC_SERIAL_OFF_STATUS];
         ipc_serial_reset();
 
-        IPCSERIALDBG("ipc_serial: reply type %u len %u", (unsigned)type, (unsigned)payload);
+        IPCSERIALDBG("ipc_serial: reply type %u seq %u status %d len %u",
+                     (unsigned)packet->type, (unsigned)packet->seq,
+                     (int)packet->status, (unsigned)payload);
 
-        // the ACK byte, plus the payload bytes that fit
-        return (size_t)(1 + copied);
+        return packet->status;
       }
 
-      // a reply to something else. It is dropped and the wait retries
-      IPCSERIALDBG("ipc_serial: unexpected reply type %u (want %u)",
-                   (unsigned)ipc_serial_rx_frame[IPC_SERIAL_OFF_TYPE], (unsigned)type);
+      // a reply to something else. It is dropped and the wait goes on
+      IPCSERIALDBG("ipc_serial: unexpected reply type %u seq %u (want %u/%u)",
+                   (unsigned)ipc_serial_rx_frame[IPC_SERIAL_OFF_TYPE],
+                   (unsigned)ipc_serial_rx_frame[IPC_SERIAL_OFF_SEQ],
+                   (unsigned)packet->type, (unsigned)packet->seq);
       ipc_serial_reset();
-      tries++;
-      deadline = mcu_millis();
 #ifdef PIO_UNIT_TESTING
       stuck = 0;
 #endif
@@ -375,13 +387,8 @@ size_t ipc_receive(ipc_packet_type_t type, void *data, size_t len)
 
     if ((uint32_t)(mcu_millis() - deadline) >= IPC_ACK_TIMEOUT)
     {
-      IPCSERIALDBG("ipc_serial: reply timeout, retry %u", (unsigned)tries);
-      tries++;
-      deadline = mcu_millis();
-#ifdef PIO_UNIT_TESTING
-      stuck = 0;
-#endif
-      continue;
+      IPCSERIALDBG("ipc_serial: reply timeout");
+      return IPC_STATUS_TIMEOUT;
     }
 
 #ifdef PIO_UNIT_TESTING
@@ -403,12 +410,10 @@ size_t ipc_receive(ipc_packet_type_t type, void *data, size_t len)
     }
     else if (++stuck >= IPC_SERIAL_RX_WAIT_LIMIT)
     {
-      break;
+      return IPC_STATUS_TIMEOUT;
     }
 #endif
   }
-
-  return 0;
 #endif
 }
 
@@ -438,6 +443,8 @@ void ipc_poll(void)
   uint16_t payload = ipc_serial_frame_len();
 
   packet->type = (ipc_packet_type_t)ipc_serial_rx_frame[IPC_SERIAL_OFF_TYPE];
+  packet->seq = ipc_serial_rx_frame[IPC_SERIAL_OFF_SEQ];
+  packet->status = (int8_t)ipc_serial_rx_frame[IPC_SERIAL_OFF_STATUS];
   packet->len = payload;
   packet->payload = g_ipc_buffer + sizeof(ipc_packet_t);
 
@@ -446,7 +453,8 @@ void ipc_poll(void)
     memcpy(packet->payload, &ipc_serial_rx_frame[IPC_SERIAL_OFF_DATA], (size_t)payload);
   }
 
-  IPCSERIALDBG("ipc_serial: request type %u len %u", (unsigned)packet->type, (unsigned)payload);
+  IPCSERIALDBG("ipc_serial: request type %u seq %u len %u", (unsigned)packet->type,
+               (unsigned)packet->seq, (unsigned)payload);
   ipc_serial_reset();
   g_ipc_data_available = true;
 #endif
