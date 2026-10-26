@@ -65,14 +65,17 @@ extern "C"
  * depends on, so the link would never see a whole frame. Asking for the
  * transport is therefore asking for the detach, and one switch says both.
  * */
-#if defined(IPC_USES_SERIAL) && (IPC_SERIAL_PORT == IPC_SERIAL_UART) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
+#if defined(IPC_USES_SERIAL)
+#include "modules/ipc_serial.h"
+#if (IPC_SERIAL_PORT == IPC_SERIAL_UART) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
 #define DETACH_UART_FROM_MAIN_PROTOCOL
 #endif
-#if defined(IPC_USES_SERIAL) && (IPC_SERIAL_PORT == IPC_SERIAL_UART2) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
+#if (IPC_SERIAL_PORT == IPC_SERIAL_UART2) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
 #define DETACH_UART2_FROM_MAIN_PROTOCOL
 #endif
-#if defined(IPC_USES_SERIAL) && (IPC_SERIAL_PORT == IPC_SERIAL_USB) && !defined(DETACH_USB_FROM_MAIN_PROTOCOL)
+#if (IPC_SERIAL_PORT == IPC_SERIAL_USB) && !defined(DETACH_USB_FROM_MAIN_PROTOCOL)
 #define DETACH_USB_FROM_MAIN_PROTOCOL
+#endif
 #endif
 
 /**
