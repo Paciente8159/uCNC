@@ -1594,8 +1594,8 @@ void ticksimul(void)
  * asking for the split and naming no transport, and naming the pipe transport
  * in a build that is not an emulator IPC one.
  * */
-#if ((IPC_MODE != IPC_SINGLE_CORE)) && !defined(IPC_USES_NAMED_PIPES) && !defined(IPC_USES_UART2)
-#error "An emulator IPC build needs a transport: define IPC_USES_NAMED_PIPES or IPC_USES_UART2"
+#if ((IPC_MODE != IPC_SINGLE_CORE)) && !defined(IPC_USES_NAMED_PIPES) && !defined(IPC_USES_SERIAL)
+#error "An emulator IPC build needs a transport: define IPC_USES_NAMED_PIPES or IPC_USES_SERIAL"
 #endif
 #if defined(IPC_USES_NAMED_PIPES) && (IPC_MODE == IPC_SINGLE_CORE)
 #error "IPC_USES_NAMED_PIPES is the emulator transport and needs IPC_MODE other then SINGLE_CORE"

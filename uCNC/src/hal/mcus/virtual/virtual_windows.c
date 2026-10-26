@@ -1304,7 +1304,7 @@ extern "C"
 	 * separate board with its own hardware, and they reach each other over the
 	 * pipes the way the ESP8266/AVR pair reaches over a bus. It is the host
 	 * counterpart of the UART2 transport in modules/ipc_uart2.c, and the two are
-	 * picked apart by IPC_USES_NAMED_PIPES against IPC_USES_UART2, so only one
+	 * picked apart by IPC_USES_NAMED_PIPES against IPC_USES_SERIAL, so only one
 	 * of them ever defines the transport overrides in ipc.h.
 	 *
 	 * Two byte mode pipes carry the traffic, one per direction:

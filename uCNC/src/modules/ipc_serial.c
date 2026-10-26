@@ -47,7 +47,7 @@
 #define ipc_serial_putc mcu_uart2_putc
 #define ipc_serial_flush mcu_uart2_flush
 #ifndef DETACH_UART2_FROM_MAIN_PROTOCOL
-#error "IPC_SERIAL_UART requires DETACH_UART2_FROM_MAIN_PROTOCOL"
+#error "IPC_SERIAL_UART2 requires DETACH_UART2_FROM_MAIN_PROTOCOL"
 #endif
 #elif (IPC_SERIAL_PORT == IPC_SERIAL_USB)
 #define ipc_serial_available mcu_usb_available
@@ -55,7 +55,7 @@
 #define ipc_serial_putc mcu_usb_putc
 #define ipc_serial_flush mcu_usb_flush
 #ifndef DETACH_USB_FROM_MAIN_PROTOCOL
-#error "IPC_SERIAL_UART requires DETACH_USB_FROM_MAIN_PROTOCOL"
+#error "IPC_SERIAL_USB requires DETACH_USB_FROM_MAIN_PROTOCOL"
 #endif
 #else
 #error "Invalid IPC_SERIAL_PORT value"

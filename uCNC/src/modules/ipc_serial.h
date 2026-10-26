@@ -34,7 +34,7 @@ extern "C"
       *
       * Carries the requests the NonRT side forwards and the replies the RT side
       * returns (see ipc.h) over a plain UART. The port is taken whole: defining
-      * IPC_USES_UART2 also detaches SERIAL from the main protocol, because the
+      * IPC_USES_SERIAL also detaches SERIAL from the main protocol, because the
       * gcode stream would otherwise register the same port as another stream and
       * consume the bytes the framing below depends on.
       *
@@ -126,9 +126,9 @@ extern "C"
 /**
  * Choose a serial port to be used as the IPC bridge
  */
-#define IPC_SERIAL_UART 0
-#define IPC_SERIAL_UART2 1
-#define IPC_SERIAL_USB 2
+#define IPC_SERIAL_UART 1
+#define IPC_SERIAL_UART2 2
+#define IPC_SERIAL_USB 3
 
 #ifdef __cplusplus
 }
