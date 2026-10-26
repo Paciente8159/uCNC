@@ -82,7 +82,8 @@ extern "C"
 #define DOUT1_PORT B
 
 #define IPC_MODE IPC_MULTICORE_RT
-#define IPC_USES_UART2
+#define IPC_USES_SERIAL
+#define IPC_SERIAL_PORT IPC_SERIAL_UART2
 
 #ifdef __cplusplus
 }

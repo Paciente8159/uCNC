@@ -1059,6 +1059,7 @@ extern "C"
 #ifdef MCU_HAS_UART
 		while (COM_UART.available() > 0)
 		{
+			uint8_t c = (uint8_t)COM_UART.read();
 #ifdef DETACH_UART_FROM_MAIN_PROTOCOL
 			mcu_uart_rx_cb(c);
 #else

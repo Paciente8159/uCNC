@@ -1,6 +1,6 @@
 /*
         Name: ipc_uart2.h
-        Description: IPC transport over UART2 for µCNC.
+        Description: IPC transport over SERIAL for µCNC.
 
         Copyright: Copyright (c) João Martins
         Author: João Martins
@@ -17,8 +17,8 @@
    PARTICULAR PURPOSE. See the	GNU General Public License for more details.
 */
 
-#ifndef IPC_UART2_H
-#define IPC_UART2_H
+#ifndef IPC_SERIAL_H
+#define IPC_SERIAL_H
 
 #ifdef __cplusplus
 extern "C"
@@ -30,11 +30,11 @@ extern "C"
 #include <stdint.h>
 
      /**
-      * IPC transport over UART2.
+      * IPC transport over SERIAL.
       *
       * Carries the requests the NonRT side forwards and the replies the RT side
       * returns (see ipc.h) over a plain UART. The port is taken whole: defining
-      * IPC_USES_UART2 also detaches UART2 from the main protocol, because the
+      * IPC_USES_UART2 also detaches SERIAL from the main protocol, because the
       * gcode stream would otherwise register the same port as another stream and
       * consume the bytes the framing below depends on.
       *
@@ -73,31 +73,31 @@ extern "C"
       * CRC cannot see by itself: a frame whose tail never arrived, because the
       * receiver is then still waiting for bytes that the next frame supplies.
       * A frame that has stopped arriving is dropped after
-      * IPC_UART2_RESYNC_TIMEOUT, so a lost frame cannot swallow the one after it.
+      * IPC_SERIAL_RESYNC_TIMEOUT, so a lost frame cannot swallow the one after it.
       * */
 
-#define IPC_UART2_START 0xAAu
-#define IPC_UART2_END 0x55u
+#define IPC_SERIAL_START 0xAAu
+#define IPC_SERIAL_END 0x55u
 
 // START, TYPE, LEN_LO, LEN_HI
-#define IPC_UART2_HDR_SIZE 4u
+#define IPC_SERIAL_HDR_SIZE 4u
 // CRC_LO, CRC_HI, END
-#define IPC_UART2_TAIL_SIZE 3u
-#define IPC_UART2_OVERHEAD (IPC_UART2_HDR_SIZE + IPC_UART2_TAIL_SIZE)
+#define IPC_SERIAL_TAIL_SIZE 3u
+#define IPC_SERIAL_OVERHEAD (IPC_SERIAL_HDR_SIZE + IPC_SERIAL_TAIL_SIZE)
 
 // field offsets inside a frame
-#define IPC_UART2_OFF_TYPE 1u
-#define IPC_UART2_OFF_LEN 2u
-#define IPC_UART2_OFF_DATA IPC_UART2_HDR_SIZE
+#define IPC_SERIAL_OFF_TYPE 1u
+#define IPC_SERIAL_OFF_LEN 2u
+#define IPC_SERIAL_OFF_DATA IPC_SERIAL_HDR_SIZE
 
 // CRC16-CCITT, as required by the frame layout above
-#define IPC_UART2_CRC_INIT 0xFFFFu
-#define IPC_UART2_CRC_POLY 0x1021u
+#define IPC_SERIAL_CRC_INIT 0xFFFFu
+#define IPC_SERIAL_CRC_POLY 0x1021u
 
 // the largest frame either side has to hold. A payload over IPC_MAX_PAYLOAD is
 // rejected as soon as its length is known, so the assembler never has to be
 // larger than this even if the peer is built with a wider buffer.
-#define IPC_UART2_FRAME_MAX (IPC_MAX_PAYLOAD + IPC_UART2_OVERHEAD)
+#define IPC_SERIAL_FRAME_MAX (IPC_MAX_PAYLOAD + IPC_SERIAL_OVERHEAD)
 
 /**
  * How long a frame in progress may stay without a byte before it is dropped.
@@ -106,8 +106,8 @@ extern "C"
  * a frame at the slowest baud rate the link is used with; at 115200 baud a
  * byte takes under 90us, and a 256 byte frame takes under 23ms in total.
  * */
-#ifndef IPC_UART2_RESYNC_TIMEOUT
-#define IPC_UART2_RESYNC_TIMEOUT 5 // ms
+#ifndef IPC_SERIAL_RESYNC_TIMEOUT
+#define IPC_SERIAL_RESYNC_TIMEOUT 5 // ms
 #endif
 
 /**
@@ -119,9 +119,16 @@ extern "C"
  * cnc_dotasks(), which this wait does not run. Without this bound a peer that
  * never answers would spin there forever rather than timing out.
  * */
-#ifndef IPC_UART2_RX_WAIT_LIMIT
-#define IPC_UART2_RX_WAIT_LIMIT 1000000u
+#ifndef IPC_SERIAL_RX_WAIT_LIMIT
+#define IPC_SERIAL_RX_WAIT_LIMIT 1000000u
 #endif
+
+/**
+ * Choose a serial port to be used as the IPC bridge
+ */
+#define IPC_SERIAL_UART 0
+#define IPC_SERIAL_UART2 1
+#define IPC_SERIAL_USB 2
 
 #ifdef __cplusplus
 }

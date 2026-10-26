@@ -1,6 +1,6 @@
 /*
-        Name: ipc_uart2.c
-        Description: IPC transport over UART2 for µCNC.
+        Name: ipc_serial.c
+        Description: IPC transport over SERIAL for µCNC.
 
         Copyright: Copyright (c) João Martins
         Author: João Martins
@@ -20,35 +20,55 @@
 #include "../cnc.h"
 
 /**
- * Asking for this transport without a UART2 to run it on would leave the weak
+ * Asking for this transport without a SERIAL to run it on would leave the weak
  * no-op transport in ipc.c in place, so every forwarded request would silently
  * go nowhere and ipc_init() would just take IPC_BOOT_TIMEOUT to fail. Trap it
  * at build time instead.
  * */
-#if defined(IPC_USES_UART2) && !defined(MCU_HAS_UART2)
-#error "IPC_USES_UART2 needs a MCU that has UART2 (MCU_HAS_UART2)"
+#if defined(IPC_USES_SERIAL) && !defined(IPC_SERIAL_PORT)
+#error "IPC_USES_SERIAL needs a MCU serial port to be assigned"
 #endif
 
-#if defined(IPC_USES_UART2) && defined(MCU_HAS_UART2)
+#if defined(IPC_USES_SERIAL) && defined(IPC_SERIAL_PORT)
 
-#include "ipc_uart2.h"
+#include "ipc_serial.h"
+
+#if (IPC_SERIAL_PORT == IPC_SERIAL_UART)
+#define ipc_serial_available mcu_uart_available
+#define ipc_serial_getc mcu_uart_getc
+#define ipc_serial_putc mcu_uart_putc
+#define ipc_serial_flush mcu_uart_flush
+#ifndef DETACH_UART_FROM_MAIN_PROTOCOL
+#error "IPC_SERIAL_UART requires DETACH_UART_FROM_MAIN_PROTOCOL"
+#endif
+#elif (IPC_SERIAL_PORT == IPC_SERIAL_UART2)
+#define ipc_serial_available mcu_uart2_available
+#define ipc_serial_getc mcu_uart2_getc
+#define ipc_serial_putc mcu_uart2_putc
+#define ipc_serial_flush mcu_uart2_flush
+#ifndef DETACH_UART2_FROM_MAIN_PROTOCOL
+#error "IPC_SERIAL_UART requires DETACH_UART2_FROM_MAIN_PROTOCOL"
+#endif
+#elif (IPC_SERIAL_PORT == IPC_SERIAL_USB)
+#define ipc_serial_available mcu_usb_available
+#define ipc_serial_getc mcu_usb_getc
+#define ipc_serial_putc mcu_usb_putc
+#define ipc_serial_flush mcu_usb_flush
+#ifndef DETACH_USB_FROM_MAIN_PROTOCOL
+#error "IPC_SERIAL_UART requires DETACH_USB_FROM_MAIN_PROTOCOL"
+#endif
+#else
+#error "Invalid IPC_SERIAL_PORT value"
+#endif
 
 /**
- * Debug trace for the UART2 IPC transport. A build that wants the trace defines
- * IPCUART2DBG(...) as a printf-like sink before this header is reached; without
- * it the calls in ipc_uart2.c compile away. See the SETTINGSDBG pattern in
+ * Debug trace for the SERIAL IPC transport. A build that wants the trace defines
+ * IPCSERIALDBG(...) as a printf-like sink before this header is reached; without
+ * it the calls in ipc_serial.c compile away. See the SETTINGSDBG pattern in
  * grbl_settings.c.
  * */
-// #define IPCUART2DBG(fmt, ...)                                    \
-//   do                                                             \
-//   {                                                              \
-//     if (true)                                                    \
-//     {                                                            \
-//       printf(__romstr__(DEBUG_PRELUDE fmt "\n"), ##__VA_ARGS__); \
-//     }                                                            \
-//   } while (0)
-#ifndef IPCUART2DBG
-#define IPCUART2DBG(...) ((void)0)
+#ifndef IPCSERIALDBG
+#define IPCSERIALDBG(...) ((void)0)
 #endif
 
 /**
@@ -57,21 +77,21 @@
  * The HAL already has a receive ring, but the ring is as large as one gcode
  * line (RX_BUFFER_SIZE) and a frame can be larger than that, so the frame is
  * assembled here instead: the ring only has to cover the time between two
- * calls to ipc_uart2_drain(), and this buffer has to cover a whole message.
+ * calls to ipc_serial_drain(), and this buffer has to cover a whole message.
  * */
-static uint8_t ipc_uart2_rx_frame[IPC_UART2_FRAME_MAX];
-static uint16_t ipc_uart2_rx_len;   // bytes of the frame stored so far
-static uint16_t ipc_uart2_rx_total; // whole frame length, 0 until LEN is in
-static bool ipc_uart2_rx_ready;     // a checked frame is waiting to be handed over
-static uint32_t ipc_uart2_rx_last_byte;
+static uint8_t ipc_serial_rx_frame[IPC_SERIAL_FRAME_MAX];
+static uint16_t ipc_serial_rx_len;   // bytes of the frame stored so far
+static uint16_t ipc_serial_rx_total; // whole frame length, 0 until LEN is in
+static bool ipc_serial_rx_ready;     // a checked frame is waiting to be handed over
+static uint32_t ipc_serial_rx_last_byte;
 
 /**
  * CRC16-CCITT over a block of bytes, in the shape the frame layout asks for
- * (see ipc_uart2.h). Feeding it the frame header first and the payload after
+ * (see ipc_serial.h). Feeding it the frame header first and the payload after
  * gives the same value as one pass over both, so a sender that streams the
  * payload never has to hold the whole frame.
  * */
-static uint16_t ipc_uart2_crc16(uint16_t crc, const void *data, size_t len)
+static uint16_t ipc_serial_crc16(uint16_t crc, const void *data, size_t len)
 {
   const uint8_t *bytes = (const uint8_t *)data;
 
@@ -81,7 +101,7 @@ static uint16_t ipc_uart2_crc16(uint16_t crc, const void *data, size_t len)
 
     for (uint8_t bit = 0; bit < 8; bit++)
     {
-      crc = (uint16_t)((crc & 0x8000u) ? ((crc << 1) ^ IPC_UART2_CRC_POLY) : ((uint16_t)(crc << 1)));
+      crc = (uint16_t)((crc & 0x8000u) ? ((crc << 1) ^ IPC_SERIAL_CRC_POLY) : ((uint16_t)(crc << 1)));
     }
   }
 
@@ -89,18 +109,18 @@ static uint16_t ipc_uart2_crc16(uint16_t crc, const void *data, size_t len)
 }
 
 // the payload length a frame in the assembler declares
-static uint16_t ipc_uart2_frame_len(void)
+static uint16_t ipc_serial_frame_len(void)
 {
-  return (uint16_t)((uint16_t)ipc_uart2_rx_frame[IPC_UART2_OFF_LEN] |
-                    ((uint16_t)ipc_uart2_rx_frame[IPC_UART2_OFF_LEN + 1] << 8));
+  return (uint16_t)((uint16_t)ipc_serial_rx_frame[IPC_SERIAL_OFF_LEN] |
+                    ((uint16_t)ipc_serial_rx_frame[IPC_SERIAL_OFF_LEN + 1] << 8));
 }
 
 // drops whatever the assembler holds, so the next byte starts a new frame
-static void ipc_uart2_reset(void)
+static void ipc_serial_reset(void)
 {
-  ipc_uart2_rx_len = 0;
-  ipc_uart2_rx_total = 0;
-  ipc_uart2_rx_ready = false;
+  ipc_serial_rx_len = 0;
+  ipc_serial_rx_total = 0;
+  ipc_serial_rx_ready = false;
 }
 
 /**
@@ -109,34 +129,34 @@ static void ipc_uart2_reset(void)
  * and the CRC has to match what the frame carries, or the frame is dropped and
  * never reaches the caller.
  * */
-static void ipc_uart2_check(void)
+static void ipc_serial_check(void)
 {
-  uint16_t payload = ipc_uart2_frame_len();
-  uint16_t total = ipc_uart2_rx_total;
+  uint16_t payload = ipc_serial_frame_len();
+  uint16_t total = ipc_serial_rx_total;
   // TYPE, LEN and PAYLOAD, which is everything between START and the CRC
-  uint16_t crc = ipc_uart2_crc16(IPC_UART2_CRC_INIT, &ipc_uart2_rx_frame[IPC_UART2_OFF_TYPE],
-                                 (size_t)((IPC_UART2_OFF_DATA - 1u) + payload));
-  uint16_t frame_crc = (uint16_t)((uint16_t)ipc_uart2_rx_frame[total - 3] |
-                                  ((uint16_t)ipc_uart2_rx_frame[total - 2] << 8));
+  uint16_t crc = ipc_serial_crc16(IPC_SERIAL_CRC_INIT, &ipc_serial_rx_frame[IPC_SERIAL_OFF_TYPE],
+                                  (size_t)((IPC_SERIAL_OFF_DATA - 1u) + payload));
+  uint16_t frame_crc = (uint16_t)((uint16_t)ipc_serial_rx_frame[total - 3] |
+                                  ((uint16_t)ipc_serial_rx_frame[total - 2] << 8));
 
-  if ((ipc_uart2_rx_frame[total - 1] != IPC_UART2_END) || (crc != frame_crc))
+  if ((ipc_serial_rx_frame[total - 1] != IPC_SERIAL_END) || (crc != frame_crc))
   {
-    IPCUART2DBG("ipc_uart2: reject frame type %u len %u (end 0x%02X, crc 0x%04X want 0x%04X)",
-                (unsigned)ipc_uart2_rx_frame[IPC_UART2_OFF_TYPE], (unsigned)payload,
-                (unsigned)ipc_uart2_rx_frame[total - 1], (unsigned)crc, (unsigned)frame_crc);
-    ipc_uart2_reset();
+    IPCSERIALDBG("ipc_serial: reject frame type %u len %u (end 0x%02X, crc 0x%04X want 0x%04X)",
+                 (unsigned)ipc_serial_rx_frame[IPC_SERIAL_OFF_TYPE], (unsigned)payload,
+                 (unsigned)ipc_serial_rx_frame[total - 1], (unsigned)crc, (unsigned)frame_crc);
+    ipc_serial_reset();
     return;
   }
 
-  IPCUART2DBG("ipc_uart2: frame ok type %u len %u",
-              (unsigned)ipc_uart2_rx_frame[IPC_UART2_OFF_TYPE], (unsigned)payload);
-  ipc_uart2_rx_ready = true;
+  IPCSERIALDBG("ipc_serial: frame ok type %u len %u",
+               (unsigned)ipc_serial_rx_frame[IPC_SERIAL_OFF_TYPE], (unsigned)payload);
+  ipc_serial_rx_ready = true;
 }
 
 // takes one byte of the stream into the frame being rebuilt
-static void ipc_uart2_feed(uint8_t c)
+static void ipc_serial_feed(uint8_t c)
 {
-  if (ipc_uart2_rx_ready)
+  if (ipc_serial_rx_ready)
   {
     /**
      * A checked frame is still waiting to be handed over, so there is nowhere
@@ -145,63 +165,63 @@ static void ipc_uart2_feed(uint8_t c)
      * sent, so anything arriving here belongs to a frame that has nowhere to
      * be kept.
      * */
-    IPCUART2DBG("ipc_uart2: byte 0x%02X dropped, frame waiting", (unsigned)c);
+    IPCSERIALDBG("ipc_serial: byte 0x%02X dropped, frame waiting", (unsigned)c);
     return;
   }
 
-  if (ipc_uart2_rx_len == 0)
+  if (ipc_serial_rx_len == 0)
   {
     // hunting for the start. Everything before it is line noise or the tail of
     // a frame that was already lost
-    if (c != IPC_UART2_START)
+    if (c != IPC_SERIAL_START)
     {
       return;
     }
 
-    ipc_uart2_rx_frame[0] = c;
-    ipc_uart2_rx_len = 1;
-    ipc_uart2_rx_total = 0;
-    IPCUART2DBG("ipc_uart2: start byte, hunting frame");
+    ipc_serial_rx_frame[0] = c;
+    ipc_serial_rx_len = 1;
+    ipc_serial_rx_total = 0;
+    IPCSERIALDBG("ipc_serial: start byte, hunting frame");
     return;
   }
 
-  if (ipc_uart2_rx_len >= IPC_UART2_FRAME_MAX)
+  if (ipc_serial_rx_len >= IPC_SERIAL_FRAME_MAX)
   {
     /**
      * Unreachable while LEN is checked as soon as it is known, which is what
      * the block below does. Kept as a floor so that a frame can never be built
      * past the end of the buffer.
      * */
-    IPCUART2DBG("ipc_uart2: frame over %u bytes, assembler overflow", (unsigned)IPC_UART2_FRAME_MAX);
-    ipc_uart2_reset();
+    IPCSERIALDBG("ipc_serial: frame over %u bytes, assembler overflow", (unsigned)IPC_SERIAL_FRAME_MAX);
+    ipc_serial_reset();
     return;
   }
 
-  ipc_uart2_rx_frame[ipc_uart2_rx_len++] = c;
+  ipc_serial_rx_frame[ipc_serial_rx_len++] = c;
 
-  if (ipc_uart2_rx_len == IPC_UART2_OFF_DATA)
+  if (ipc_serial_rx_len == IPC_SERIAL_OFF_DATA)
   {
     /**
      * The header is complete, so the length of the whole frame is known and can
      * be refused before another byte of it is stored. A peer built with a wider
      * buffer than this one would otherwise run the assembler past its end.
      * */
-    uint16_t payload = ipc_uart2_frame_len();
+    uint16_t payload = ipc_serial_frame_len();
 
     if (payload > IPC_MAX_PAYLOAD)
     {
-      IPCUART2DBG("ipc_uart2: payload %u over limit %u", (unsigned)payload, (unsigned)IPC_MAX_PAYLOAD);
-      ipc_uart2_reset();
+      IPCSERIALDBG("ipc_serial: payload %u over limit %u", (unsigned)payload, (unsigned)IPC_MAX_PAYLOAD);
+      ipc_serial_reset();
       return;
     }
 
-    IPCUART2DBG("ipc_uart2: header type %u payload %u", (unsigned)ipc_uart2_rx_frame[IPC_UART2_OFF_TYPE], (unsigned)payload);
-    ipc_uart2_rx_total = (uint16_t)(payload + IPC_UART2_OVERHEAD);
+    IPCSERIALDBG("ipc_serial: header type %u payload %u", (unsigned)ipc_serial_rx_frame[IPC_SERIAL_OFF_TYPE], (unsigned)payload);
+    ipc_serial_rx_total = (uint16_t)(payload + IPC_SERIAL_OVERHEAD);
   }
 
-  if ((ipc_uart2_rx_total != 0) && (ipc_uart2_rx_len == ipc_uart2_rx_total))
+  if ((ipc_serial_rx_total != 0) && (ipc_serial_rx_len == ipc_serial_rx_total))
   {
-    ipc_uart2_check();
+    ipc_serial_check();
   }
 }
 
@@ -212,23 +232,23 @@ static void ipc_uart2_feed(uint8_t c)
  * The resync is the important part. A frame the line ate leaves the assembler
  * waiting for bytes that never come, and the next frame then supplies them: the
  * wait would swallow that frame whole before the byte count came out and the
- * check failed. A gap longer than IPC_UART2_RESYNC_TIMEOUT cannot happen inside
+ * check failed. A gap longer than IPC_SERIAL_RESYNC_TIMEOUT cannot happen inside
  * a frame - the sender emits one back to back - so it means the frame is gone
  * and the assembler has to start over.
  * */
-static void ipc_uart2_drain(void)
+static void ipc_serial_drain(void)
 {
-  while (mcu_uart2_available())
+  while (ipc_serial_available())
   {
-    ipc_uart2_rx_last_byte = mcu_millis();
-    ipc_uart2_feed(mcu_uart2_getc());
+    ipc_serial_rx_last_byte = mcu_millis();
+    ipc_serial_feed(ipc_serial_getc());
   }
 
-  if (!ipc_uart2_rx_ready && (ipc_uart2_rx_len > 0) &&
-      ((uint32_t)(mcu_millis() - ipc_uart2_rx_last_byte) >= IPC_UART2_RESYNC_TIMEOUT))
+  if (!ipc_serial_rx_ready && (ipc_serial_rx_len > 0) &&
+      ((uint32_t)(mcu_millis() - ipc_serial_rx_last_byte) >= IPC_SERIAL_RESYNC_TIMEOUT))
   {
-    IPCUART2DBG("ipc_uart2: no byte for %u ms, frame lost, resync", (unsigned)IPC_UART2_RESYNC_TIMEOUT);
-    ipc_uart2_reset();
+    IPCSERIALDBG("ipc_serial: no byte for %u ms, frame lost, resync", (unsigned)IPC_SERIAL_RESYNC_TIMEOUT);
+    ipc_serial_reset();
   }
 }
 
@@ -243,46 +263,46 @@ static void ipc_uart2_drain(void)
  * */
 void ipc_send(ipc_packet_type_t type, const void *data, size_t len)
 {
-  uint8_t frame[IPC_UART2_HDR_SIZE + IPC_UART2_TAIL_SIZE];
+  uint8_t frame[IPC_SERIAL_HDR_SIZE + IPC_SERIAL_TAIL_SIZE];
   uint16_t payload = (uint16_t)MIN(len, (size_t)IPC_MAX_PAYLOAD);
   uint16_t crc;
   size_t i;
 
-  IPCUART2DBG("ipc_uart2: send type %u len %u", (unsigned)type, (unsigned)payload);
+  IPCSERIALDBG("ipc_serial: send type %u len %u", (unsigned)type, (unsigned)payload);
 
-  frame[0] = IPC_UART2_START;
+  frame[0] = IPC_SERIAL_START;
   frame[1] = (uint8_t)type;
   frame[2] = (uint8_t)(payload & 0xFF);
   frame[3] = (uint8_t)(payload >> 8);
 
-  crc = ipc_uart2_crc16(IPC_UART2_CRC_INIT, &frame[IPC_UART2_OFF_TYPE], (size_t)(IPC_UART2_OFF_DATA - 1u));
+  crc = ipc_serial_crc16(IPC_SERIAL_CRC_INIT, &frame[IPC_SERIAL_OFF_TYPE], (size_t)(IPC_SERIAL_OFF_DATA - 1u));
   if (payload)
   {
-    crc = ipc_uart2_crc16(crc, data, (size_t)payload);
+    crc = ipc_serial_crc16(crc, data, (size_t)payload);
   }
 
-  frame[IPC_UART2_HDR_SIZE] = (uint8_t)(crc & 0xFF);
-  frame[IPC_UART2_HDR_SIZE + 1] = (uint8_t)(crc >> 8);
-  frame[IPC_UART2_HDR_SIZE + 2] = IPC_UART2_END;
+  frame[IPC_SERIAL_HDR_SIZE] = (uint8_t)(crc & 0xFF);
+  frame[IPC_SERIAL_HDR_SIZE + 1] = (uint8_t)(crc >> 8);
+  frame[IPC_SERIAL_HDR_SIZE + 2] = IPC_SERIAL_END;
 
-  for (i = 0; i < IPC_UART2_HDR_SIZE; i++)
+  for (i = 0; i < IPC_SERIAL_HDR_SIZE; i++)
   {
-    mcu_uart2_putc(frame[i]);
+    ipc_serial_putc(frame[i]);
   }
 
   for (i = 0; i < (size_t)payload; i++)
   {
-    mcu_uart2_putc(((const uint8_t *)data)[i]);
+    ipc_serial_putc(((const uint8_t *)data)[i]);
   }
 
-  for (i = IPC_UART2_HDR_SIZE; i < (IPC_UART2_HDR_SIZE + IPC_UART2_TAIL_SIZE); i++)
+  for (i = IPC_SERIAL_HDR_SIZE; i < (IPC_SERIAL_HDR_SIZE + IPC_SERIAL_TAIL_SIZE); i++)
   {
-    mcu_uart2_putc(frame[i]);
+    ipc_serial_putc(frame[i]);
   }
 
   // hands the frame over, so the caller only waits for the reply once all of it
   // is out
-  mcu_uart2_flush();
+  ipc_serial_flush();
 }
 
 /**
@@ -310,32 +330,32 @@ size_t ipc_receive(ipc_packet_type_t type, void *data, size_t len)
 
   while (tries < IPC_MAX_TRIES)
   {
-    ipc_uart2_drain();
+    ipc_serial_drain();
 
-    if (ipc_uart2_rx_ready)
+    if (ipc_serial_rx_ready)
     {
-      if (ipc_uart2_rx_frame[IPC_UART2_OFF_TYPE] == (uint8_t)type)
+      if (ipc_serial_rx_frame[IPC_SERIAL_OFF_TYPE] == (uint8_t)type)
       {
-        uint16_t payload = ipc_uart2_frame_len();
+        uint16_t payload = ipc_serial_frame_len();
         uint16_t copied = (uint16_t)MIN((size_t)payload, len);
 
         if (data && copied)
         {
-          memcpy(data, &ipc_uart2_rx_frame[IPC_UART2_OFF_DATA], (size_t)copied);
+          memcpy(data, &ipc_serial_rx_frame[IPC_SERIAL_OFF_DATA], (size_t)copied);
         }
 
-        ipc_uart2_reset();
+        ipc_serial_reset();
 
-        IPCUART2DBG("ipc_uart2: reply type %u len %u", (unsigned)type, (unsigned)payload);
+        IPCSERIALDBG("ipc_serial: reply type %u len %u", (unsigned)type, (unsigned)payload);
 
         // the ACK byte, plus the payload bytes that fit
         return (size_t)(1 + copied);
       }
 
       // a reply to something else. It is dropped and the wait retries
-      IPCUART2DBG("ipc_uart2: unexpected reply type %u (want %u)",
-                  (unsigned)ipc_uart2_rx_frame[IPC_UART2_OFF_TYPE], (unsigned)type);
-      ipc_uart2_reset();
+      IPCSERIALDBG("ipc_serial: unexpected reply type %u (want %u)",
+                   (unsigned)ipc_serial_rx_frame[IPC_SERIAL_OFF_TYPE], (unsigned)type);
+      ipc_serial_reset();
       tries++;
       deadline = mcu_millis();
 #ifdef PIO_UNIT_TESTING
@@ -346,7 +366,7 @@ size_t ipc_receive(ipc_packet_type_t type, void *data, size_t len)
 
     if ((uint32_t)(mcu_millis() - deadline) >= IPC_ACK_TIMEOUT)
     {
-      IPCUART2DBG("ipc_uart2: reply timeout, retry %u", (unsigned)tries);
+      IPCSERIALDBG("ipc_serial: reply timeout, retry %u", (unsigned)tries);
       tries++;
       deadline = mcu_millis();
 #ifdef PIO_UNIT_TESTING
@@ -358,7 +378,7 @@ size_t ipc_receive(ipc_packet_type_t type, void *data, size_t len)
 #ifdef PIO_UNIT_TESTING
     /**
      * Bound for a build whose clock cannot move on its own (see
-     * IPC_UART2_RX_WAIT_LIMIT). Only the host unit test build is that build: its
+     * IPC_SERIAL_RX_WAIT_LIMIT). Only the host unit test build is that build: its
      * clock advances from cnc_dotasks(), which this wait deliberately does not
      * run, so the timeout above could never be reached there.
      *
@@ -372,7 +392,7 @@ size_t ipc_receive(ipc_packet_type_t type, void *data, size_t len)
     {
       stuck = 0;
     }
-    else if (++stuck >= IPC_UART2_RX_WAIT_LIMIT)
+    else if (++stuck >= IPC_SERIAL_RX_WAIT_LIMIT)
     {
       break;
     }
@@ -398,29 +418,29 @@ void ipc_poll(void)
     return;
   }
 
-  ipc_uart2_drain();
+  ipc_serial_drain();
 
-  if (!ipc_uart2_rx_ready)
+  if (!ipc_serial_rx_ready)
   {
     return;
   }
 
   ipc_packet_t *packet = (ipc_packet_t *)g_ipc_buffer;
-  uint16_t payload = ipc_uart2_frame_len();
+  uint16_t payload = ipc_serial_frame_len();
 
-  packet->type = (ipc_packet_type_t)ipc_uart2_rx_frame[IPC_UART2_OFF_TYPE];
+  packet->type = (ipc_packet_type_t)ipc_serial_rx_frame[IPC_SERIAL_OFF_TYPE];
   packet->len = payload;
   packet->payload = g_ipc_buffer + sizeof(ipc_packet_t);
 
   if (payload)
   {
-    memcpy(packet->payload, &ipc_uart2_rx_frame[IPC_UART2_OFF_DATA], (size_t)payload);
+    memcpy(packet->payload, &ipc_serial_rx_frame[IPC_SERIAL_OFF_DATA], (size_t)payload);
   }
 
-  IPCUART2DBG("ipc_uart2: request type %u len %u", (unsigned)packet->type, (unsigned)payload);
-  ipc_uart2_reset();
+  IPCSERIALDBG("ipc_serial: request type %u len %u", (unsigned)packet->type, (unsigned)payload);
+  ipc_serial_reset();
   g_ipc_data_available = true;
 #endif
 }
 
-#endif /* IPC_USES_UART2 && MCU_HAS_UART2 */
+#endif /* IPC_USES_SERIAL */

@@ -634,22 +634,6 @@ extern "C"
 #ifdef DETACH_UART2_FROM_MAIN_PROTOCOL
 	MCU_RX_CALLBACK void mcu_uart2_rx_cb(uint8_t c);
 #endif
-	static void mcu_uart2_rx_dotasks(uint8_t c)
-	{
-#if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
-		if (mcu_com_rx_cb(c))
-#else
-		mcu_uart2_rx_cb(c);
-#endif
-		{
-#ifndef UART2_DISABLE_BUFFER
-			if (!BUFFER_TRY_ENQUEUE(uart2_rx, &c))
-			{
-				STREAM_OVF(c);
-			}
-#endif
-		}
-	}
 #endif
 
 #ifdef ENABLE_SOCKETS
