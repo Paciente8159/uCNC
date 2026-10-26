@@ -1,5 +1,5 @@
 /*
-        Name: ipc_uart2.h
+        Name: ipc_serial.h
         Description: IPC transport over SERIAL for µCNC.
 
         Copyright: Copyright (c) João Martins
