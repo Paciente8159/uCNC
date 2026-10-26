@@ -232,6 +232,13 @@ void ipc_dotasks(void)
   case IO_ENABLE_STEPPERS:
     io_enable_steppers(ipc_data->payload[0]);
     break;
+  case IO_SET_PINVALUE:
+    io_set_pinvalue(ipc_data->payload[0], ipc_data->payload[1]);
+    break;
+  case IO_GET_PINVALUE:
+    *(int16_t *)response.payload = io_get_pinvalue(ipc_data->payload[0]);
+    response.len = sizeof(int16_t);
+    break;
   case CNC_GET_EXEC_STATE:
     *(uint16_t *)response.payload =
         cnc_get_exec_state(*(uint16_t *)ipc_data->payload);

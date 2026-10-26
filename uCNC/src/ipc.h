@@ -179,6 +179,11 @@ extern "C"
     IO_SET_DIRS,
     IO_GET_STEPS_POS,
     IO_ENABLE_STEPPERS,
+    // generic pin value access owned by the RT side. IO_SET_PINVALUE carries the
+    // pin and the new value in its payload. IO_GET_PINVALUE carries the pin and
+    // replies with the current value (see io_set_pinvalue and io_get_pinvalue).
+    IO_SET_PINVALUE,
+    IO_GET_PINVALUE,
     // cnc_state_rt.exec_state is owned by the RT side (see cnc.c). The NonRT side
     // forwards these requests to the RT core, that executes them.
     CNC_GET_EXEC_STATE,

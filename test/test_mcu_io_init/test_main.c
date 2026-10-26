@@ -56,12 +56,16 @@ static io_pin_type_t expected_mcu_io_init_type(uint16_t pin)
 	/* unconfigured gap between DIN49 (179) and TX (200) */
 	if (pin >= 180 && pin <= 199)
 		return IO_PIN_UNDEF;
-	/* hidden comms pins: only UART2 is enabled in the virtual build */
+	/* hidden comms pins: UART and UART2 are enabled in the virtual build */
+	if (pin == 200)
+		return IO_PIN_OUTPUT; /* TX */
+	if (pin == 201)
+		return IO_PIN_INPUT; /* RX */
 	if (pin == 210)
 		return IO_PIN_OUTPUT; /* TX2 */
 	if (pin == 211)
 		return IO_PIN_INPUT; /* RX2 */
-	return IO_PIN_UNDEF;      /* TX/RX/USB/SPI/I2C peripherals disabled */
+	return IO_PIN_UNDEF;      /* USB/SPI/I2C peripherals disabled */
 }
 
 static void test_mcu_io_init_configures_all_pins(void)

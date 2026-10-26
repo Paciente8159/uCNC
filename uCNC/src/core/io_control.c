@@ -1177,6 +1177,20 @@ void io_enable_steppers(uint8_t mask)
 
 void io_set_pinvalue(uint8_t pin, uint8_t value)
 {
+#if ASSERT_IPC_NONRT()
+#if ASSERT_IPC_MULTICORE()
+	if (ipc_get_current_core() == IPC_NON_RT_CORE)
+#endif
+	{
+		uint8_t packet[2] = {pin, value};
+		ipc_exec(IO_SET_PINVALUE, packet, sizeof(packet), NULL, 0);
+#if ASSERT_IPC_MULTICORE()
+		return;
+#endif
+	}
+#endif
+
+#if ASSERT_IPC_RT()
 	// #ifdef ENABLE_IO_MODULES
 	// 	set_output_args_t output_arg = {.pin = pin, .state = state};
 	// 	EVENT_INVOKE(set_output, &output_arg);
@@ -1948,10 +1962,23 @@ void io_set_pinvalue(uint8_t pin, uint8_t value)
 	// 	}
 	// #endif
 	// #endif
+#endif
 }
 
 int16_t io_get_pinvalue(uint8_t pin)
 {
+#if ASSERT_IPC_NONRT()
+#if ASSERT_IPC_MULTICORE()
+	if (ipc_get_current_core() == IPC_NON_RT_CORE)
+#endif
+	{
+		int16_t value = -1;
+		ipc_exec(IO_GET_PINVALUE, &pin, sizeof(pin), &value, sizeof(value));
+		return value;
+	}
+#endif
+
+#if ASSERT_IPC_RT()
 
 	// this ensures the pin is updated before reading (but might lead to slow or sucessive multiple readings and make firmware slow)
 	// extended pins (when not updated by an ISR), are updated frequently in the main loop
@@ -2684,4 +2711,5 @@ int16_t io_get_pinvalue(uint8_t pin)
 #endif
 	}
 	return -1;
+#endif
 }
