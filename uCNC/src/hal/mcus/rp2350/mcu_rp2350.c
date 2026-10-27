@@ -382,6 +382,27 @@ int8_t ipc_send(const ipc_packet_t *packet)
 	return IPC_STATUS_OK;
 }
 
+/**
+ * Pops one word, giving up instead of blocking forever. The peer may stall part
+ * way through a frame, and this runs on the core that also has to keep
+ * stepping, so a truncated message must not hang the receiver. The deadline is
+ * the whole wait, so a peer that dribbles words cannot stretch it.
+ * **/
+static bool rp2350_fifo_pop(uint32_t *word, uint32_t start)
+{
+	while (!multicore_fifo_rvalid())
+	{
+		if ((mcu_millis() - start) > IPC_ACK_TIMEOUT)
+		{
+			return false;
+		}
+		tight_loop_contents();
+	}
+
+	*word = multicore_fifo_pop_blocking();
+	return true;
+}
+
 int8_t ipc_receive(ipc_packet_t *packet)
 {
 	uint32_t start = mcu_millis();
@@ -389,26 +410,54 @@ int8_t ipc_receive(ipc_packet_t *packet)
 
 	for (;;)
 	{
-		while (!multicore_fifo_rvalid())
+		uint32_t hdr;
+
+		if (!rp2350_fifo_pop(&hdr, start))
 		{
-			if ((mcu_millis() - start) > IPC_ACK_TIMEOUT)
-			{
-				return IPC_STATUS_TIMEOUT;
-			}
-			tight_loop_contents();
+			return IPC_STATUS_TIMEOUT;
 		}
 
-		uint32_t hdr = multicore_fifo_pop_blocking();
 		size_t plen = RP2350_FIFO_LEN(hdr);
-		int8_t status = (int8_t)(uint8_t)multicore_fifo_pop_blocking();
 		bool match = (RP2350_FIFO_TYPE(hdr) == packet->type) &&
-								 (RP2350_FIFO_SEQ(hdr) == packet->seq);
+							 (RP2350_FIFO_SEQ(hdr) == packet->seq);
+
+		uint32_t status_word;
+
+		if (!rp2350_fifo_pop(&status_word, start))
+		{
+			// the frame started but never finished, so the stream is out of step
+			return IPC_STATUS_BAD_REPLY;
+		}
+
+		int8_t status = (int8_t)(uint8_t)status_word;
+
+		if (plen > IPC_MAX_PAYLOAD)
+		{
+			/**
+			 * Cannot happen with a conforming sender, which refuses to send more
+			 * than the buffer holds, so the stream is out of step. The message is
+			 * dropped instead of being written past the buffer. Only what is already
+			 * in the FIFO is drained, so a bogus length cannot stall this loop; the
+			 * rest is left to the sender's timeout.
+			 * **/
+			for (size_t w = 0; (w < RP2350_FIFO_WORDS(plen)) && multicore_fifo_rvalid(); w++)
+			{
+				multicore_fifo_pop_blocking();
+			}
+			return IPC_STATUS_BAD_REPLY;
+		}
 
 		// the payload is consumed whether or not it is the message being waited
 		// for, so the stream stays framed
 		for (size_t w = 0; w < RP2350_FIFO_WORDS(plen); w++)
 		{
-			uint32_t word = multicore_fifo_pop_blocking();
+			uint32_t word;
+
+			if (!rp2350_fifo_pop(&word, start))
+			{
+				// truncated frame, so the stream cannot be framed anymore
+				return IPC_STATUS_BAD_REPLY;
+			}
 
 			if (!match || !dst)
 			{
@@ -453,9 +502,24 @@ void ipc_poll(void)
 		return;
 	}
 
-	uint32_t hdr = multicore_fifo_pop_blocking();
+	uint32_t start = mcu_millis();
+	uint32_t hdr;
+
+	if (!rp2350_fifo_pop(&hdr, start))
+	{
+		return;
+	}
+
 	size_t plen = RP2350_FIFO_LEN(hdr);
-	int8_t status = (int8_t)(uint8_t)multicore_fifo_pop_blocking();
+	uint32_t status_word;
+
+	if (!rp2350_fifo_pop(&status_word, start))
+	{
+		// the frame started but never finished, so the stream is out of step
+		return;
+	}
+
+	int8_t status = (int8_t)(uint8_t)status_word;
 
 	if (plen > IPC_MAX_PAYLOAD)
 	{
@@ -482,7 +546,13 @@ void ipc_poll(void)
 
 	for (size_t w = 0; w < RP2350_FIFO_WORDS(plen); w++)
 	{
-		uint32_t word = multicore_fifo_pop_blocking();
+		uint32_t word;
+
+		if (!rp2350_fifo_pop(&word, start))
+		{
+			// truncated frame, so the stream cannot be framed anymore
+			return;
+		}
 
 		for (size_t b = 0; b < 4; b++)
 		{

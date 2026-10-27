@@ -239,7 +239,10 @@ extern "C"
   // Waits for the reply that matches packet->type and packet->seq, copies up to
   // packet->len payload bytes into packet->payload, and returns the reply status.
   // Returns IPC_STATUS_TIMEOUT if no matching reply arrives in IPC_ACK_TIMEOUT,
-  // or IPC_STATUS_BAD_REPLY if a frame is malformed.
+  // or IPC_STATUS_BAD_REPLY if a frame is malformed: a declared payload longer
+  // than IPC_MAX_PAYLOAD, or a frame that stops arriving part way through. A
+  // transport that can drop a bad frame and resynchronize the stream (the byte
+  // stream) keeps waiting instead, so there it surfaces as a timeout.
   int8_t ipc_receive(ipc_packet_t *packet);
   // overridable. Fetches one pending request from the transport into
   // g_ipc_buffer and sets g_ipc_data_available. The default does nothing, which
