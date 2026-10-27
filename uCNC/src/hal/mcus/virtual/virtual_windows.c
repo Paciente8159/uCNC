@@ -161,7 +161,8 @@ extern "C"
 				g_uart.h = h;
 				g_uart.connected = true;
 				/* No startup Sleep here; non-blocking startup */
-				// printf("Serial: connected to %s\n", g_uart.port_name);
+				printf("Serial: connected to %s @ %u baud\n", g_uart.port_name, (unsigned)BAUDRATE);
+				fflush(stdout);
 			}
 			else
 			{
@@ -1718,7 +1719,7 @@ extern "C"
 		packet->seq = (uint8_t)header.seq;
 		packet->status = (int8_t)header.status;
 		packet->len = header.len;
-		packet->payload = g_ipc_buffer + sizeof(ipc_packet_t);
+		packet->payload = g_ipc_buffer + IPC_PAYLOAD_OFFSET;
 
 		if (header.len && !emulator_ipc_read_all(g_ipc_req, packet->payload, header.len))
 		{

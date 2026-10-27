@@ -1757,9 +1757,10 @@ bool cnc_check_interlocking(void)
  * The IO task pump. Both sides run it, so each part is filtered to the side
  * that owns the hardware it touches.
  *
- * mcu_dotasks() pumps the streams, so it belongs to the NonRT side: USB, UART
- * and the sockets are that side's transports, and the RT side's link is
- * serviced by ipc_dotasks() instead, not by the MCU transport pump.
+ * mcu_dotasks() pumps the HAL ports. On a build that holds both sides that is
+ * the NonRT core's job, but a build that only holds the RT side still owns the
+ * port its IPC transport runs on, and that port is fed by this pump. Without it
+ * the HAL receive queue is never filled and the port is never serviced at all.
  *
  * The input callbacks are filtered by the pins they read, not by what they do
  * with the result. Limits, probe and the generic inputs (with the encoders) are
@@ -1773,7 +1774,10 @@ bool cnc_check_interlocking(void)
  * */
 static void cnc_io_dotasks(void)
 {
-#if ASSERT_IPC_HAS_NONRT()
+#if !ASSERT_IPC_HAS_NONRT()
+  // an RT only side has no NonRT core to pump the port it owns
+  mcu_dotasks();
+#else
 #if ASSERT_IPC_MULTICORE()
   if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif

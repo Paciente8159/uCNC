@@ -76,6 +76,16 @@
  * it the calls in ipc_serial.c compile away. See the SETTINGSDBG pattern in
  * grbl_settings.c.
  * */
+#if defined(IPC_SERIAL_DEBUG) && !defined(IPCSERIALDBG)
+#include <stdio.h>
+#define IPCSERIALDBG(...)      \
+  do                           \
+  {                            \
+    printf(__VA_ARGS__);       \
+    printf("\n");              \
+    fflush(stdout);            \
+  } while (0)
+#endif
 #ifndef IPCSERIALDBG
 #define IPCSERIALDBG(...) ((void)0)
 #endif
@@ -446,7 +456,7 @@ void ipc_poll(void)
   packet->seq = ipc_serial_rx_frame[IPC_SERIAL_OFF_SEQ];
   packet->status = (int8_t)ipc_serial_rx_frame[IPC_SERIAL_OFF_STATUS];
   packet->len = payload;
-  packet->payload = g_ipc_buffer + sizeof(ipc_packet_t);
+  packet->payload = g_ipc_buffer + IPC_PAYLOAD_OFFSET;
 
   if (payload)
   {

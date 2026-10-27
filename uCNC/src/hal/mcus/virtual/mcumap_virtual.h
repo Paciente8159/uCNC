@@ -75,7 +75,7 @@
 #define MCU_HAS_UART2
 #ifndef UART_PORT_NAME
 #ifndef __unix__
-#define UART_PORT_NAME "\\\\.\\COM12"
+#define UART_PORT_NAME "\\\\.\\COM14"
 #else
 #define UART_PORT_NAME "/dev/ttyS0"
 #endif

@@ -1482,7 +1482,10 @@ void ticksimul(void)
 #ifndef PIO_UNIT_TESTING
 		char cwd[1024];
 		get_current_dir(cwd, 1024);
-		printf("%s\n", cwd);
+		printf("uCNC emulator: working directory %s\n", cwd);
+#ifdef MCU_HAS_UART2
+		printf("uCNC emulator: serial %s @ %u baud\n", UART_PORT_NAME, (unsigned)BAUDRATE);
+#endif
 
 		/**
 		 * The pins are the RT side's, so the step trace and the IO dashboard that
@@ -1609,6 +1612,8 @@ void ticksimul(void)
 	{
 		(void)argc;
 		(void)argv;
+		setvbuf(stdout, NULL, _IONBF, 0);
+		printf("uCNC emulator: starting (IPC_MODE=%d)\n", (int)IPC_MODE);
 #if ((IPC_MODE != IPC_SINGLE_CORE)) && defined(IPC_USES_NAMED_PIPES)
 		/**
 		 * The two process split runs the two boards case: each process is a one

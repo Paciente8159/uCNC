@@ -211,6 +211,20 @@ extern "C"
     SETTINGS_SYNC
   } ipc_packet_type_t;
 
+  /**
+   * The in-memory packet. It is never transferred as a whole: every transport
+   * frames type/seq/status/len and the payload bytes itself (the byte layout in
+   * ipc_serial.h, the pipe header in virtual_windows.c, the FIFO word packing in
+   * mcu_rp2040.c), so the member order and the padding a compiler inserts do not
+   * have to match on the two sides. Nothing serializes this struct.
+   *
+   * What does have to hold is that the payload region right after it stays
+   * aligned: the handlers cast it to uint16_t, int32_t and float, and Cortex-M0+
+   * takes a HardFault on an unaligned access. A packed layout broke that by
+   * putting the payload at offset 11. Without packed, sizeof() is always a
+   * multiple of the struct alignment, so the payload lands aligned; the offset
+   * below makes that explicit instead of leaving it to the compiler's padding.
+   * */
   typedef struct ipc_packet_
   {
     ipc_packet_type_t type;
@@ -218,14 +232,36 @@ extern "C"
     int8_t status;
     size_t len;
     uint8_t *payload;
-  } __attribute__((packed, aligned(1))) ipc_packet_t;
+  } ipc_packet_t;
 
-  // the payload a message can carry: the buffer minus the packet header
-#define IPC_MAX_PAYLOAD (IPC_BUFFER_SIZE - sizeof(ipc_packet_t))
+  /**
+   * Where the payload starts inside the transport's buffer, rounded up so that
+   * it is aligned whatever the compiler made of the header above (the enum, the
+   * size_t and the pointer are all target dependent). Every transport uses this
+   * instead of sizeof(ipc_packet_t) so the alignment does not rest on how a
+   * given compiler padded the struct.
+   * */
+#define IPC_PAYLOAD_OFFSET (((sizeof(ipc_packet_t) + 7u) & ~(size_t)7u))
+  typedef char ipc_packet_payload_aligned[(IPC_PAYLOAD_OFFSET % 8) == 0 ? 1 : -1];
+
+  /**
+   * The header is at most this wide on any target this runs on (8 on AVR, 16 on
+   * the 32bit targets, 24 with 64bit pointers). Reserving the same for all of
+   * them keeps the capacity a constant of the protocol instead of a value that
+   * moves with the pointer width, which is what lets two builds made by
+   * different compilers agree on how large a message may be.
+   * */
+#define IPC_PACKET_HEADER_MAX 24
+  typedef char ipc_packet_header_fits[(IPC_PAYLOAD_OFFSET <= IPC_PACKET_HEADER_MAX) ? 1 : -1];
+
+  // the payload a message can carry: the buffer minus the reserved header
+#define IPC_MAX_PAYLOAD (IPC_BUFFER_SIZE - IPC_PACKET_HEADER_MAX)
 
   // the request buffer ipc_dotasks() reads. The transport fills it and sets
-  // g_ipc_data_available when a request is pending.
-  extern uint8_t g_ipc_buffer[IPC_BUFFER_SIZE];
+  // g_ipc_data_available when a request is pending. Aligned so that the payload
+  // right after the header is aligned too: the handlers cast it to uint16_t,
+  // int32_t and float, and Cortex-M0+ faults on those when unaligned.
+  extern uint8_t g_ipc_buffer[IPC_BUFFER_SIZE] __attribute__((aligned(8)));
   extern bool g_ipc_data_available;
 
   // confirms the RT side is online and answering before the NonRT side starts

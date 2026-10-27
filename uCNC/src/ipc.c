@@ -19,9 +19,9 @@
 
 #include "cnc.h"
 
-uint8_t g_ipc_buffer[IPC_BUFFER_SIZE];
+uint8_t g_ipc_buffer[IPC_BUFFER_SIZE] __attribute__((aligned(8)));
 // backing storage for the reply/ACK payload built by ipc_dotasks
-static uint8_t g_ipc_response[IPC_BUFFER_SIZE];
+static uint8_t g_ipc_response[IPC_BUFFER_SIZE] __attribute__((aligned(8)));
 bool g_ipc_data_available;
 
 /**
@@ -44,7 +44,7 @@ static volatile bool g_ipc_fault;
 
 // the settings the RT side reads are pushed in a single message, so that block
 // must fit the request buffer
-typedef char ipc_settings_block_fits[((sizeof(rt_settings_t) + sizeof(ipc_packet_t)) <= IPC_BUFFER_SIZE) ? 1 : -1];
+typedef char ipc_settings_block_fits[(sizeof(rt_settings_t) <= IPC_MAX_PAYLOAD) ? 1 : -1];
 
 bool ipc_init(void)
 {

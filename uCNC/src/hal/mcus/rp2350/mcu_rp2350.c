@@ -542,7 +542,7 @@ void ipc_poll(void)
 	packet->seq = RP2350_FIFO_SEQ(hdr);
 	packet->status = status;
 	packet->len = plen;
-	packet->payload = g_ipc_buffer + sizeof(ipc_packet_t);
+	packet->payload = g_ipc_buffer + IPC_PAYLOAD_OFFSET;
 
 	for (size_t w = 0; w < RP2350_FIFO_WORDS(plen); w++)
 	{
@@ -879,8 +879,10 @@ void mcu_stop_itp_isr(void)
 void mcu_dotasks(void)
 {
 	/**
-	 * Pumps the streams. Only the NonRT side calls this (see cnc_io_dotasks), so
-	 * the UART/USB is driven from a single core.
+	 * Pumps the streams. A build that holds both sides calls this from the NonRT
+	 * core only (see cnc_io_dotasks), so the UART/USB is driven from a single
+	 * core. A build that holds only the RT side calls it there instead, because
+	 * that side owns the port its IPC transport runs on.
 	 * **/
 	rp2350_uart_process();
 }
