@@ -1177,20 +1177,6 @@ void io_enable_steppers(uint8_t mask)
 
 void io_set_pinvalue(uint8_t pin, uint8_t value)
 {
-#if ASSERT_IPC_NONRT()
-#if ASSERT_IPC_MULTICORE()
-	if (ipc_get_current_core() == IPC_NON_RT_CORE)
-#endif
-	{
-		uint8_t packet[2] = {pin, value};
-		ipc_exec(IO_SET_PINVALUE, packet, sizeof(packet), NULL, 0);
-#if ASSERT_IPC_MULTICORE()
-		return;
-#endif
-	}
-#endif
-
-#if ASSERT_IPC_RT()
 	// #ifdef ENABLE_IO_MODULES
 	// 	set_output_args_t output_arg = {.pin = pin, .state = state};
 	// 	EVENT_INVOKE(set_output, &output_arg);
@@ -1202,372 +1188,372 @@ void io_set_pinvalue(uint8_t pin, uint8_t value)
 #if ASSERT_PIN(PWM0)
 		case PWM0:
 			io_set_pwm(PWM0, value);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(PWM1)
 		case PWM1:
 			io_set_pwm(PWM1, value);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(PWM2)
 		case PWM2:
 			io_set_pwm(PWM2, value);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(PWM3)
 		case PWM3:
 			io_set_pwm(PWM3, value);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(PWM4)
 		case PWM4:
 			io_set_pwm(PWM4, value);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(PWM5)
 		case PWM5:
 			io_set_pwm(PWM5, value);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(PWM6)
 		case PWM6:
 			io_set_pwm(PWM6, value);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(PWM7)
 		case PWM7:
 			io_set_pwm(PWM7, value);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(PWM8)
 		case PWM8:
 			io_set_pwm(PWM8, value);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(PWM9)
 		case PWM9:
 			io_set_pwm(PWM9, value);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(PWM10)
 		case PWM10:
 			io_set_pwm(PWM10, value);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(PWM11)
 		case PWM11:
 			io_set_pwm(PWM11, value);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(PWM12)
 		case PWM12:
 			io_set_pwm(PWM12, value);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(PWM13)
 		case PWM13:
 			io_set_pwm(PWM13, value);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(PWM14)
 		case PWM14:
 			io_set_pwm(PWM14, value);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(PWM15)
 		case PWM15:
 			io_set_pwm(PWM15, value);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(SERVO0)
 		case SERVO0:
 			io_set_pwm(SERVO0, value);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(SERVO1)
 		case SERVO1:
 			io_set_pwm(SERVO1, value);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(SERVO2)
 		case SERVO2:
 			io_set_pwm(SERVO2, value);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(SERVO3)
 		case SERVO3:
 			io_set_pwm(SERVO3, value);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(SERVO4)
 		case SERVO4:
 			io_set_pwm(SERVO4, value);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(SERVO5)
 		case SERVO5:
 			io_set_pwm(SERVO5, value);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT0)
 		case DOUT0:
 			io_set_output(DOUT0);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT1)
 		case DOUT1:
 			io_set_output(DOUT1);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT2)
 		case DOUT2:
 			io_set_output(DOUT2);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT3)
 		case DOUT3:
 			io_set_output(DOUT3);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT4)
 		case DOUT4:
 			io_set_output(DOUT4);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT5)
 		case DOUT5:
 			io_set_output(DOUT5);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT6)
 		case DOUT6:
 			io_set_output(DOUT6);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT7)
 		case DOUT7:
 			io_set_output(DOUT7);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT8)
 		case DOUT8:
 			io_set_output(DOUT8);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT9)
 		case DOUT9:
 			io_set_output(DOUT9);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT10)
 		case DOUT10:
 			io_set_output(DOUT10);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT11)
 		case DOUT11:
 			io_set_output(DOUT11);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT12)
 		case DOUT12:
 			io_set_output(DOUT12);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT13)
 		case DOUT13:
 			io_set_output(DOUT13);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT14)
 		case DOUT14:
 			io_set_output(DOUT14);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT15)
 		case DOUT15:
 			io_set_output(DOUT15);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT16)
 		case DOUT16:
 			io_set_output(DOUT16);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT17)
 		case DOUT17:
 			io_set_output(DOUT17);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT18)
 		case DOUT18:
 			io_set_output(DOUT18);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT19)
 		case DOUT19:
 			io_set_output(DOUT19);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT20)
 		case DOUT20:
 			io_set_output(DOUT20);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT21)
 		case DOUT21:
 			io_set_output(DOUT21);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT22)
 		case DOUT22:
 			io_set_output(DOUT22);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT23)
 		case DOUT23:
 			io_set_output(DOUT23);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT24)
 		case DOUT24:
 			io_set_output(DOUT24);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT25)
 		case DOUT25:
 			io_set_output(DOUT25);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT26)
 		case DOUT26:
 			io_set_output(DOUT26);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT27)
 		case DOUT27:
 			io_set_output(DOUT27);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT28)
 		case DOUT28:
 			io_set_output(DOUT28);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT29)
 		case DOUT29:
 			io_set_output(DOUT29);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT30)
 		case DOUT30:
 			io_set_output(DOUT30);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT31)
 		case DOUT31:
 			io_set_output(DOUT31);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT32)
 		case DOUT32:
 			io_set_output(DOUT32);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT33)
 		case DOUT33:
 			io_set_output(DOUT33);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT34)
 		case DOUT34:
 			io_set_output(DOUT34);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT35)
 		case DOUT35:
 			io_set_output(DOUT35);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT36)
 		case DOUT36:
 			io_set_output(DOUT36);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT37)
 		case DOUT37:
 			io_set_output(DOUT37);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT38)
 		case DOUT38:
 			io_set_output(DOUT38);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT39)
 		case DOUT39:
 			io_set_output(DOUT39);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT40)
 		case DOUT40:
 			io_set_output(DOUT40);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT41)
 		case DOUT41:
 			io_set_output(DOUT41);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT42)
 		case DOUT42:
 			io_set_output(DOUT42);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT43)
 		case DOUT43:
 			io_set_output(DOUT43);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT44)
 		case DOUT44:
 			io_set_output(DOUT44);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT45)
 		case DOUT45:
 			io_set_output(DOUT45);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT46)
 		case DOUT46:
 			io_set_output(DOUT46);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT47)
 		case DOUT47:
 			io_set_output(DOUT47);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT48)
 		case DOUT48:
 			io_set_output(DOUT48);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT49)
 		case DOUT49:
 			io_set_output(DOUT49);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(SPI_CS)
 		case SPI_CS:
 			io_set_output(SPI_CS);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(SPI2_CS)
 		case SPI2_CS:
 			io_set_output(SPI2_CS);
-			break;
+			return;
 #endif
 		}
 	}
@@ -1578,376 +1564,390 @@ void io_set_pinvalue(uint8_t pin, uint8_t value)
 #if ASSERT_PIN(PWM0)
 		case PWM0:
 			io_set_pwm(PWM0, 0);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(PWM1)
 		case PWM1:
 			io_set_pwm(PWM1, 0);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(PWM2)
 		case PWM2:
 			io_set_pwm(PWM2, 0);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(PWM3)
 		case PWM3:
 			io_set_pwm(PWM3, 0);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(PWM4)
 		case PWM4:
 			io_set_pwm(PWM4, 0);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(PWM5)
 		case PWM5:
 			io_set_pwm(PWM5, 0);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(PWM6)
 		case PWM6:
 			io_set_pwm(PWM6, 0);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(PWM7)
 		case PWM7:
 			io_set_pwm(PWM7, 0);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(PWM8)
 		case PWM8:
 			io_set_pwm(PWM8, 0);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(PWM9)
 		case PWM9:
 			io_set_pwm(PWM9, 0);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(PWM10)
 		case PWM10:
 			io_set_pwm(PWM10, 0);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(PWM11)
 		case PWM11:
 			io_set_pwm(PWM11, 0);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(PWM12)
 		case PWM12:
 			io_set_pwm(PWM12, 0);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(PWM13)
 		case PWM13:
 			io_set_pwm(PWM13, 0);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(PWM14)
 		case PWM14:
 			io_set_pwm(PWM14, 0);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(PWM15)
 		case PWM15:
 			io_set_pwm(PWM15, 0);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(SERVO0)
 		case SERVO0:
 			io_set_pwm(SERVO0, 0);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(SERVO1)
 		case SERVO1:
 			io_set_pwm(SERVO1, 0);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(SERVO2)
 		case SERVO2:
 			io_set_pwm(SERVO2, 0);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(SERVO3)
 		case SERVO3:
 			io_set_pwm(SERVO3, 0);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(SERVO4)
 		case SERVO4:
 			io_set_pwm(SERVO4, 0);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(SERVO5)
 		case SERVO5:
 			io_set_pwm(SERVO5, 0);
-			break;
+			return;
 #endif
 
 #if ASSERT_PIN(DOUT0)
 		case DOUT0:
 			io_clear_output(DOUT0);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT1)
 		case DOUT1:
 			io_clear_output(DOUT1);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT2)
 		case DOUT2:
 			io_clear_output(DOUT2);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT3)
 		case DOUT3:
 			io_clear_output(DOUT3);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT4)
 		case DOUT4:
 			io_clear_output(DOUT4);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT5)
 		case DOUT5:
 			io_clear_output(DOUT5);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT6)
 		case DOUT6:
 			io_clear_output(DOUT6);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT7)
 		case DOUT7:
 			io_clear_output(DOUT7);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT8)
 		case DOUT8:
 			io_clear_output(DOUT8);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT9)
 		case DOUT9:
 			io_clear_output(DOUT9);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT10)
 		case DOUT10:
 			io_clear_output(DOUT10);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT11)
 		case DOUT11:
 			io_clear_output(DOUT11);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT12)
 		case DOUT12:
 			io_clear_output(DOUT12);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT13)
 		case DOUT13:
 			io_clear_output(DOUT13);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT14)
 		case DOUT14:
 			io_clear_output(DOUT14);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT15)
 		case DOUT15:
 			io_clear_output(DOUT15);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT16)
 		case DOUT16:
 			io_clear_output(DOUT16);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT17)
 		case DOUT17:
 			io_clear_output(DOUT17);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT18)
 		case DOUT18:
 			io_clear_output(DOUT18);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT19)
 		case DOUT19:
 			io_clear_output(DOUT19);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT20)
 		case DOUT20:
 			io_clear_output(DOUT20);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT21)
 		case DOUT21:
 			io_clear_output(DOUT21);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT22)
 		case DOUT22:
 			io_clear_output(DOUT22);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT23)
 		case DOUT23:
 			io_clear_output(DOUT23);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT24)
 		case DOUT24:
 			io_clear_output(DOUT24);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT25)
 		case DOUT25:
 			io_clear_output(DOUT25);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT26)
 		case DOUT26:
 			io_clear_output(DOUT26);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT27)
 		case DOUT27:
 			io_clear_output(DOUT27);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT28)
 		case DOUT28:
 			io_clear_output(DOUT28);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT29)
 		case DOUT29:
 			io_clear_output(DOUT29);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT30)
 		case DOUT30:
 			io_clear_output(DOUT30);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT31)
 		case DOUT31:
 			io_clear_output(DOUT31);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT32)
 		case DOUT32:
 			io_clear_output(DOUT32);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT33)
 		case DOUT33:
 			io_clear_output(DOUT33);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT34)
 		case DOUT34:
 			io_clear_output(DOUT34);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT35)
 		case DOUT35:
 			io_clear_output(DOUT35);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT36)
 		case DOUT36:
 			io_clear_output(DOUT36);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT37)
 		case DOUT37:
 			io_clear_output(DOUT37);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT38)
 		case DOUT38:
 			io_clear_output(DOUT38);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT39)
 		case DOUT39:
 			io_clear_output(DOUT39);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT40)
 		case DOUT40:
 			io_clear_output(DOUT40);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT41)
 		case DOUT41:
 			io_clear_output(DOUT41);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT42)
 		case DOUT42:
 			io_clear_output(DOUT42);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT43)
 		case DOUT43:
 			io_clear_output(DOUT43);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT44)
 		case DOUT44:
 			io_clear_output(DOUT44);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT45)
 		case DOUT45:
 			io_clear_output(DOUT45);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT46)
 		case DOUT46:
 			io_clear_output(DOUT46);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT47)
 		case DOUT47:
 			io_clear_output(DOUT47);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT48)
 		case DOUT48:
 			io_clear_output(DOUT48);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(DOUT49)
 		case DOUT49:
 			io_clear_output(DOUT49);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(SPI_CS)
 		case SPI_CS:
 			io_clear_output(SPI_CS);
-			break;
+			return;
 #endif
 #if ASSERT_PIN(SPI2_CS)
 		case SPI2_CS:
 			io_clear_output(SPI2_CS);
-			break;
+			return;
 #endif
 		}
 	}
+
+#if ASSERT_IPC_NONRT()
+// if the pin is not defined in the NonRT side tries to control the remote pin (RT site)
+#if ASSERT_IPC_MULTICORE()
+	if (ipc_get_current_core() == IPC_NON_RT_CORE)
+#endif
+	{
+		uint8_t packet[2] = {pin, value};
+		ipc_exec(IO_SET_PINVALUE, packet, sizeof(packet), NULL, 0);
+#if ASSERT_IPC_MULTICORE()
+		return;
+#endif
+	}
+#endif
 
 	// this ensures the pin is updated after writing (but might lead to slow or sucessive multiple readings and make firmware slow)
 	// extended pins (when not updated by an ISR), are updated frequently in the main loop
@@ -1962,24 +1962,10 @@ void io_set_pinvalue(uint8_t pin, uint8_t value)
 	// 	}
 	// #endif
 	// #endif
-#endif
 }
 
 int16_t io_get_pinvalue(uint8_t pin)
 {
-#if ASSERT_IPC_NONRT()
-#if ASSERT_IPC_MULTICORE()
-	if (ipc_get_current_core() == IPC_NON_RT_CORE)
-#endif
-	{
-		int16_t value = -1;
-		ipc_exec(IO_GET_PINVALUE, &pin, sizeof(pin), &value, sizeof(value));
-		return value;
-	}
-#endif
-
-#if ASSERT_IPC_RT()
-
 	// this ensures the pin is updated before reading (but might lead to slow or sucessive multiple readings and make firmware slow)
 	// extended pins (when not updated by an ISR), are updated frequently in the main loop
 	// for this reason will be assumed that extended pins might not update instantly
@@ -2710,6 +2696,17 @@ int16_t io_get_pinvalue(uint8_t pin)
 		return (mcu_get_output(SPI2_CS) != 0);
 #endif
 	}
-	return -1;
+
+#if ASSERT_IPC_NONRT()
+#if ASSERT_IPC_MULTICORE()
+	if (ipc_get_current_core() == IPC_NON_RT_CORE)
 #endif
+	{
+		int16_t value = -1;
+		ipc_exec(IO_GET_PINVALUE, &pin, sizeof(pin), &value, sizeof(value));
+		return value;
+	}
+#endif
+
+	return -1;
 }
