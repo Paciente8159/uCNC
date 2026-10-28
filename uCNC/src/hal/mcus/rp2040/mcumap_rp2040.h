@@ -1420,7 +1420,7 @@ extern "C"
 #define mcu_get_global_isr() (__get_PRIMASK() == 0u)
 #define mcu_in_isr_context() (__get_IPSR() != 0)
 
-#define mcu_free_micros() ((uint32_t)((((SysTick->LOAD + 1) - SysTick->VAL) * 1000UL) / (SysTick->LOAD + 1)))
+#define mcu_free_micros() (mcu_micros() % 1000)
 
 #if (defined(ENABLE_SOCKETS) || defined(ENABLE_BLUETOOTH))
 #ifndef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS

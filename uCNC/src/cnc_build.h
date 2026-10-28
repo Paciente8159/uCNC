@@ -25,7 +25,7 @@ extern "C" {
 #endif
 
 #define CNC_MAJOR_MINOR_VERSION "1.17"
-#define CNC_PATCH_VERSION ".1"
+#define CNC_PATCH_VERSION ".2"
 // CNC version for printing
 #define CNC_VERSION CNC_MAJOR_MINOR_VERSION CNC_PATCH_VERSION
 // CNC module version (numeric version of the printing version). May change as

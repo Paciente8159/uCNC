@@ -153,7 +153,7 @@ const settings_t __rom__ default_settings =
 #endif
 #endif
 #if ENCODERS > 0
-		.encoders_pulse_invert_mask = DEFAULT_ENCODERS_DIR_INV_MASK,
+		.encoders_pulse_invert_mask = DEFAULT_ENCODERS_PULSE_INV_MASK,
 		.encoders_dir_invert_mask = DEFAULT_ENCODERS_DIR_INV_MASK,
 		.encoders_resolution = DEFAULT_ENCODERS_RESOLUTION,
 #endif
@@ -193,7 +193,7 @@ const setting_id_t __rom__ g_settings_id_table[] = {
 	{.id = 31, .memptr = &g_settings.spindle_min_rpm, .type = SETTING_TYPE_UINT16},
 	{.id = 32, .memptr = &g_settings.tool_mode, .type = SETTING_TYPE_UINT8},
 #ifdef ENABLE_LASER_PPI
-	{.id = 33, .memptr = &g_settings.step_per_mm[0], .type = SETTING_TYPE_FLOAT},
+	{.id = 33, .memptr = &g_settings.laser_ppi, .type = SETTING_TYPE_UINT16},
 	{.id = 34, .memptr = &g_settings.laser_ppi_uswidth, .type = SETTING_TYPE_UINT16},
 	{.id = 35, .memptr = &g_settings.laser_ppi_mixmode_ppi, .type = SETTING_TYPE_FLOAT},
 	{.id = 36, .memptr = &g_settings.laser_ppi_mixmode_uswidth, .type = SETTING_TYPE_FLOAT},
