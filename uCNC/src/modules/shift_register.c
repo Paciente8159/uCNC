@@ -144,7 +144,10 @@ MCU_CALLBACK void __attribute__((weak)) shift_register_io_pins(void)
 		}
 
 #if (IC74HC165_COUNT > 0)
-		memcpy((void *)ic74hc165_io_pins, (const void *)pins, IC74HC165_COUNT);
+		for (uint8_t i = 0; i < IC74HC165_COUNT; i++)
+		{
+			ic74hc165_io_pins[i] = pins[SHIFT_REGISTER_BYTES - 1 - i];
+		}
 		mcu_clear_output(IC74HC165_LOAD); // allow a new load
 #endif
 #if (IC74HC595_COUNT > 0)
