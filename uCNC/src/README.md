@@ -13,7 +13,7 @@ _**Jump to section**_
 * [Adding custom modules to µCNC](#adding-custom-modules-to-µcnc)
    * [µCNC existing events/delegates](#µcnc-existing-eventsdelegates)
    * [µCNC existing hooks](#µcnc-existing-hooks)
-   * [modules.h and events](#modulesh-and-events)
+   * [module.h and events](#moduleh-and-events)
    * [Creating a new custom event listener](#creating-a-new-custom-event-listener)
    * [Creating a new custom event](#creating-a-new-custom-event)
 
@@ -30,45 +30,47 @@ Version 1.8 also introduces the concept of simple hooks. These hooks are simple 
 
 ## µCNC existing events/delegates
 
-Without having to modify core code inside µCNC it is possible to listen to several already existing events. Here is a list of current events (current module version number is 11700):
+Without having to modify core code inside µCNC it is possible to listen to several already existing events. Here is a list of current events (current module API version is 11700):
 
 __NOTE__: Not all event hooks might be listed here. To find all available event hooks declarations, do a search on all files (on VSCode in Windows it's Ctrl+Shift+F) of the project of `DECL_EVENT_HANDLER`. You can also search for the `EVENT_INVOKE` to see what argument is being passed to the event handler.
 
 | Event name | Argument | Enable option | Description |
 | --- | --- | --- | --- |
-| gcode_parse | gcode_parse_args_t* | ENABLE_PARSER_MODULES | Fires when a gcode command was not captured/understood by the core parser is trying to parse the code. Arg is a pointer to a gcode_parse_args_t struct |
-| gcode_exec | gcode_exec_args_t* | ENABLE_PARSER_MODULES | Fires when a gcode command that was not captured/understood by the core parser is intercepted by gcode_parse event an recognized as an extended gcode command. Arg is a pointer to a gcode_exec_args_t struct |
-| gcode_exec_modifier | gcode_exec_args_t* | ENABLE_PARSER_MODULES | Fires prior to gcode execution phase and can be used to modify the parsed command or execute custom actions or issue motions before gcode execution. Arg is a pointer to a gcode_exec_args_t struct |
-| gcode_before_motion | gcode_exec_args_t* | ENABLE_PARSER_MODULES | Fires before a motion group command is executed (G0, G1, G2, etc...). Arg is a pointer to a gcode_exec_args_t struct |
+| gcode_parse | gcode_parse_args_t* | ENABLE_PARSER_MODULES | Fires when the core parser encounters an unsupported G/M code or an unused word. Set `*error` to `STATUS_OK` to claim the command. Arg is a pointer to a gcode_parse_args_t struct |
+| gcode_exec | gcode_exec_args_t* | ENABLE_PARSER_MODULES | Fires when an extended command claimed through gcode_parse reaches execution. This includes standalone extended commands and extended motion commands. Arg is a pointer to a gcode_exec_args_t struct |
+| gcode_exec_modifier | gcode_exec_args_t* | ENABLE_PARSER_MODULES | Fires before the command execution phase. Can inspect or modify the parsed command, execute custom actions or issue motions before gcode execution. Arg is a pointer to a gcode_exec_args_t struct |
+| gcode_before_motion | gcode_exec_args_t* | ENABLE_PARSER_MODULES | Fires before a motion group command is executed (G0, G1, G2, etc...), after target coordinates and motion block data are prepared. Arg is a pointer to a gcode_exec_args_t struct |
 | gcode_after_motion | gcode_exec_args_t* | ENABLE_PARSER_MODULES | Fires after a motion group command is executed (G0, G1, G2, etc...). Arg is a pointer to a gcode_exec_args_t struct |
-| grbl_cmd | grbl_cmd_args_t* | ENABLE_PARSER_MODULES | Fires when a custom/unknown '$' grbl type command is received. Arg is a pointer to a grbl_cmd_args_t struct |
-| parse_token | uint8_t ** | ENABLE_PARSER_MODULES | Fires when a custom/unknown token/uint8_t is received for further processing. Arg is the address of the local word variable (a uint8_t**); store the accepted character there and return EVENT_HANDLED to accept it |
-| parser_get_modes | uint8_t * | ENABLE_PARSER_MODULES | Fires when $G command is issued and the active modal states array is being requested (can be used to modify the active modes with extended gcodes). Arg is a pointer to an uint8_t array with the parser motion groups current values |
+| grbl_cmd | grbl_cmd_args_t* | ENABLE_PARSER_MODULES or BOARD_HAS_CUSTOM_SYSTEM_COMMANDS | Fires after a `$` system command is parsed. Used to handle custom or unknown system commands. Set `*error` to `STATUS_OK` to accept the command. Arg is a pointer to a grbl_cmd_args_t struct |
+| parse_token | uint8_t * | ENABLE_PARSER_MODULES | Fires when an unrecognized character is received during tokenization. Arg points to the current word variable (a `uint8_t *`); store the accepted character in `*(uint8_t *)args` and return EVENT_HANDLED to accept it |
+| parser_get_modes | uint8_t * | ENABLE_PARSER_MODULES | Fires while the `$G` modal state report is being assembled. Arg is a pointer to the modal groups array; modify it to report extended modal states |
 | parser_reset | parser_state_t * | ENABLE_PARSER_MODULES | Fires on parser reset. Arg is a pointer to the parser state being reset |
 | cnc_reset | NULL | ENABLE_MAIN_LOOP_MODULES | Fires when µCNC resets |
-| cnc_dotasks | NULL | ENABLE_MAIN_LOOP_MODULES | Fires on the main loop running. Any repeating task should be hooked here |
-| cnc_io_dotasks | NULL | ENABLE_MAIN_LOOP_MODULES | Fires on the main IO loop running. This is similar to cnc_dotasks, the main difference is that this task will run also during delays |
+| cnc_dotasks | NULL | ENABLE_MAIN_LOOP_MODULES | Fires on each main loop iteration. Any repeating task should be hooked here |
+| cnc_io_dotasks | NULL | ENABLE_MAIN_LOOP_MODULES | Fires on each main IO loop iteration. This is similar to cnc_dotasks, but also runs during delays |
 | cnc_stop | NULL | ENABLE_MAIN_LOOP_MODULES | Fires when a halt/stop condition is triggered |
 | cnc_parse_cmd_error | uint8_t * | ENABLE_MAIN_LOOP_MODULES | Fires when an invalid command is received. Arg is a pointer to the error code |
-| cnc_alarm | NULL | ENABLE_MAIN_LOOP_MODULES | Fires when an alarm is triggered |
-| settings_extended_change | setting_args_t* | ENABLE_SETTINGS_MODULES | Fires when a $ setting is changed. Arg is a pointer to a setting_args_t struct identifying the changed setting id and value |
-| settings_extended_load | bool * | ENABLE_SETTINGS_MODULES | Fires when the base settings ($) are loaded from memory. Arg is a pointer to a bool (is_machine_settings) |
-| settings_extended_save | bool * | ENABLE_SETTINGS_MODULES | Fires when the base settings ($) are saved into memory. Arg is a pointer to a bool (is_machine_settings) |
-| settings_extended_erase | bool * | ENABLE_SETTINGS_MODULES | Fires when the base settings are erased/reset ($). This will only be triggered when the base address of the settings is targeted. Arg is a pointer to a bool (is_machine_settings) |
+| cnc_alarm | NULL | ENABLE_MAIN_LOOP_MODULES | Fires when an alarm is triggered. No argument is passed |
+| settings_extended_change | setting_args_t* | ENABLE_SETTINGS_MODULES | Fires when an extended `$` setting is changed. Arg is a pointer to a setting_args_t struct identifying the changed setting id and value |
+| settings_extended_load | bool * | ENABLE_SETTINGS_MODULES | Fires when the base machine settings are loaded from memory. Arg is a pointer to a bool (is_machine_settings); the event only propagates when this is true |
+| settings_extended_save | bool * | ENABLE_SETTINGS_MODULES | Fires when the base machine settings are saved into memory. Arg is a pointer to a bool (is_machine_settings); the event only propagates when this is true |
+| settings_extended_erase | bool * | ENABLE_SETTINGS_MODULES | Fires when the base settings are erased/reset. This is only triggered when the base address of the settings is targeted. Arg is a pointer to a bool (is_machine_settings) |
 | proto_status | NULL | - | Fires when printing the status message |
 | proto_cnc_settings | NULL | ENABLE_SETTINGS_MODULES | Fires when printing settings values |
-| proto_cnc_info | NULL | ENABLE_SYSTEM_INFO | Fires when printing response to $I command |
-| proto_pins_states | NULL | ENABLE_IO_MODULES | Fires when $P command is printing the pins states |
-| proto_gcode_modes | NULL | ENABLE_PARSER_MODULES | Fires when $G printing modals states message |
-| input_change | uint8_t* | ENABLE_IO_MODULES | Fires when a generic input (DIN0-7) pin changes state. Args is an uint8_t array with 2 values. The first is the inputs current values mask and the second a maks with the inputs that changed since the last time |
+| proto_cnc_info | NULL | ENABLE_SYSTEM_INFO | Fires when printing the response to the `$I` command |
+| proto_pins_states | NULL | ENABLE_IO_MODULES | Fires when the `$P` command prints the pin states |
+| proto_gcode_modes | NULL | ENABLE_PARSER_MODULES | Fires when the `$G` command prints the modal states message |
+| input_change | uint8_t* | ENABLE_IO_MODULES | Fires when a generic input (DIN0-7) pin changes state. Arg is a 2-byte array: `array[0]` is the current inputs mask and `array[1]` is the mask of inputs that changed since the last time |
 | probe_enable | NULL | ENABLE_IO_MODULES | Fires when the probe is enabled |
 | probe_disable | NULL | ENABLE_IO_MODULES | Fires when the probe is disabled |
-| mc_home_axis_start | homing_status_t* | ENABLE_MOTION_CONTROL_MODULES | Fires once per axis when homing motion is starting. Pointer to homing_status_t struct with homming information |
-| mc_home_axis_finish | homing_status_t* | ENABLE_MOTION_CONTROL_MODULES | Fires once per axis when homing motion is finnished |
+| mc_home_axis_start | homing_status_t* | ENABLE_MOTION_CONTROL_MODULES | Fires once per axis when homing motion is starting. Arg is a pointer to a homing_status_t struct with homing information |
+| mc_home_axis_finish | homing_status_t* | ENABLE_MOTION_CONTROL_MODULES | Fires once per axis when homing motion is finished. Arg is a pointer to a homing_status_t struct with the final homing status |
 | mc_line_segment | motion_data_t* | ENABLE_MOTION_CONTROL_MODULES | Fires when a line segment is about to be sent from the motion control to the planner. Arg is a pointer to a motion_data_t struct with the current motion block data |
-| mc_line_calc_segments | uint32_t* | ENABLE_MOTION_CONTROL_MODULES & MOTION_SEGMENTED | Allows to modify the amount of segments to be passed to the planner on a mc_line command. Arg is a pointer to an integer that defines the amount of segments to break the motion into. |
-| mc_line_segment_pre | mc_line_segment_pre_args_t* | ENABLE_MOTION_CONTROL_MODULES | Fired before a calling mc_line_segment with the data to be sent to the planner. Arg is a pointer to a mc_line_segment_pre_args_t struct with the current target coordinates, target step position and motion block data |
+| mc_line_calc_segments | mc_line_calc_segments_args_t* | ENABLE_MOTION_CONTROL_MODULES & MOTION_SEGMENTED | Allows modifying the number of segments used for a `mc_line` command. Arg is a pointer to a mc_line_calc_segments_args_t struct |
+| mc_line_segment_pre | mc_line_segment_pre_args_t* | ENABLE_MOTION_CONTROL_MODULES | Fires before each `mc_line_segment` call with the data to be sent to the planner. Arg is a pointer to a mc_line_segment_pre_args_t struct with the current target coordinates, target step position and motion block data |
 | planner_pre_output | planner_block_t* | ENABLE_PLANNER_MODULES | **WARNING: This event must not run any code that requires to know the code context (like printing) to prevent deadlocks**Fires right before a section of the current planner block is sent to the step generation (interpolator) ISR. It's possible to perform changes and modifications to the steps being generated with a very small delay. The delay is defined by the size of the interpolator buffer `INTERPOLATOR_BUFFER_SIZE` and the stepping sample frequency `INTERPOLATOR_FREQ`  |
+
+The `websocket_client_connected`, `websocket_client_disconnected`, `websocket_client_error` and `websocket_client_receive` events declared in `src/modules/websocket.h` are reserved for socket/HAL integrations. The current `src/modules/net/websocket.c` implementation reports these conditions through the `websocket_protocol_t` callbacks instead.
 
 Each of these events exposes a delegate and and event that have the following naming convention:
 
@@ -93,7 +95,7 @@ typedef struct gcode_parse_args_
 {
 	uint8_t word; // This is the GCode word being parsed (usually 'G' or 'M')
 	uint8_t code; // This is the GCode word argument converted to uint8_t format (example 98)
-	uint8_t *error; // Pointer to the parser current error code (STATUS_GCODE_EXTENDED_UNSUPPORTED)
+	uint8_t *error; // Pointer to the parser current error code (STATUS_GCODE_UNSUPPORTED_COMMAND or STATUS_GCODE_UNUSED_WORDS)
 	float value; // This is the actual GCode word argument parsed as float. Useful if code has mantissa or is bigger then 255 (example 98.1)
 	parser_state_t *new_state; // The current parser state (struct)
 	parser_words_t *words; // The current parser words argument values (struct)
@@ -110,7 +112,7 @@ gcode_exec_args_t* - Pointer to a struct of type gcode_exec_args_t. The gcode_ex
 ```
 typedef struct gcode_exec_args_
 {
-	uint8_t *error; // Pointer to the parser error code. Set *error to STATUS_OK to claim the extended code
+	uint8_t *error; // Pointer to the parser error code. Set *error to STATUS_OK to indicate successful execution
 	parser_state_t *new_state; // The current parser state (struct)
 	parser_words_t *words; // The current parser words argument values (struct)
 	parser_cmd_explicit_t *cmd; // The current parser GCode command active words/groups
@@ -135,6 +137,20 @@ typedef struct grbl_cmd_args_
 } grbl_cmd_args_t;
 ```
 
+#### settings_extended_change
+
+**Input args:**
+
+setting_args_t* - Pointer to a struct of type setting_args_t. The setting_args_t struct is defined like this:
+
+```
+typedef struct setting_args_
+{
+	uint16_t id; // the changed setting id
+	float value; // the new setting value
+} setting_args_t;
+```
+
 #### parser_get_modes
 
 **Input args:**
@@ -145,9 +161,9 @@ uint8_t* - An array with the parser current active modal states
 
 **Input args:**
 
-uint8_t* - An array with the DIN7- states. `array[0]` contains the mask value of pins DIN7(MSB) to DIN0(LSB). `array[1]` contains the mask value of all pins DIN7(MSB) to DIN0(LSB) that changed state since the last time.
+uint8_t* - An array with the DIN0-7 states. `array[0]` contains the mask value of pins DIN7(MSB) to DIN0(LSB). `array[1]` contains the mask value of all pins DIN7(MSB) to DIN0(LSB) that changed state since the last time.
 
-#### mc_home_axis_start and mc_home_axis_finnish
+#### mc_home_axis_start and mc_home_axis_finish
 
 **Input args:**
 
@@ -155,8 +171,8 @@ homing_status_t* - Pointer to a struct of type homing_status_t. The homing_statu
 
 ```
 typedef struct homing_status_ {
-	uint8_t axis; // current axis homming (mask)
-	uint8_t axis_limit; // current axis homming limit switch enabled (mask)
+	uint8_t axis; // current axis homing (mask)
+	uint8_t axis_limit; // current axis homing limit switch enabled (mask)
 	uint8_t status; // status of the motion (defaults to STATUS_OK)
 } homing_status_t;
 ```
@@ -191,21 +207,54 @@ typedef struct
 } motion_data_t;
 ```
 
+#### mc_line_calc_segments
+
+**Input args:**
+
+mc_line_calc_segments_args_t* - Pointer to a struct of type mc_line_calc_segments_args_t. The struct is defined like this:
+
+```
+typedef struct mc_line_calc_segments_args_
+{
+	uint32_t *line_segments; // pointer to the calculated segment count
+	float line_dist; // total distance of the line
+	float *dir_vect; // direction vector
+	uint32_t max_steps; // maximum number of steps in the line
+} mc_line_calc_segments_args_t;
+```
+
+#### mc_line_segment_pre
+
+**Input args:**
+
+mc_line_segment_pre_args_t* - Pointer to a struct of type mc_line_segment_pre_args_t. The struct is defined like this:
+
+```
+typedef struct mc_line_segment_pre_args_
+{
+	float *target; // target coordinates
+	int32_t *target_steps; // target step position
+	motion_data_t *block_data; // motion block data
+} mc_line_segment_pre_args_t;
+```
+
 ## µCNC existing hooks
 
-These are the list of available hooks inside 
+These are the hooks currently exposed by the core and modules.
 
 __NOTE__: Not all simple hooks may be listed here. To find all available simple hooks declarations, do a search on all files (on VSCode in Windows it's Ctrl+Shift+F) of the project of `DECL_HOOK`. You can also search for the `HOOK_INVOKE` to see what argument is being passed to the simple hook handler.
 
-| Event name | Argument | Enable option | Description |
+| Hook name | Argument | Enable option | Description |
 | --- | --- | --- | --- |
-| itp_rt_pre_stepbits | int*, int* | ENABLE_RT_SYNC_MOTIONS | **DEPRECATED-DO NOT USE** Fires when the next computed step bits and dirs have been computed to be output. Args are a pointer the stepbit var and a pointer to a dirbit var |
-| itp_rt_stepbits | int, int | ENABLE_RT_SYNC_MOTIONS | Fires when the setpbits have been output to the IO. Args are the stepbit mask value and the step ISR flags value |
-| encoder_index | void | ENCODER_COUNT | Fires when the index of the specialized rpm encoder is triggered. Has no args |
+| itp_rt_pre_stepbits | uint8_t*, uint8_t* | ENABLE_RT_SYNC_MOTIONS | **REMOVED** The declaration is commented out in `interpolator.h`. Use `itp_rt_stepbits` instead |
+| itp_rt_stepbits | uint8_t, uint8_t | ENABLE_RT_SYNC_MOTIONS | Fires after the step bits have been output to the IO. Args are the step bit mask value and the real-time segment flags |
+| tool_atc_unmount | uint8_t, uint8_t * | ENABLE_ATC_HOOKS (TOOL_COUNT > 1) | Fires before the current tool is unmounted during a tool change. Args are the previous tool index and a pointer to the status/error code |
+| tool_atc_mount | uint8_t, uint8_t * | ENABLE_ATC_HOOKS (TOOL_COUNT > 1) | Fires after the new tool is mounted during a tool change. Args are the new tool index and a pointer to the status/error code |
+| enc0_index ... enc7_index | void | ENCODERS > 0 (with ENCx_INDEX or ENCx_VIRTUAL_INDEX) | Fires when the index input or virtual index of the corresponding encoder is triggered. Has no args |
 
-## modules.h and events 
+## module.h and events
 
-`src/module.h` exposes a few handy macros that make event listeners, or custom events creations easy.
+`src/module.h` exposes a few handy macros that make event listeners or custom event creation easy.
 
 ### event creation
 

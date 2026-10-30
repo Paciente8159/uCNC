@@ -13,15 +13,13 @@ state, timers, streams, and RAM-only settings between fixture groups.
 Run the complete baseline suite with:
 
 ```powershell
-C:\Users\JCEM\.platformio\penv\Scripts\pio.exe test -e EMULATOR_WINDOWS_TEST
+pio test -e EMULATOR_WINDOWS_TEST
 ```
 
 Run one fixture with, for example:
 
 ```powershell
-C:\Users\JCEM\.platformio\penv\Scripts\pio.exe test `
-  -e EMULATOR_WINDOWS_TEST `
-  -f test_grbl_motion
+pio test -e EMULATOR_WINDOWS_TEST -f test_grbl_motion
 ```
 
 ## Fixture coverage
