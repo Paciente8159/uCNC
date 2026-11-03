@@ -162,7 +162,7 @@ This HAL is manages the way the linear actuators and the 3D Cartesian space axis
 
    * Add the new kinematic to `kinematics.h` file and give it an ID. Add the needed libraries to load in the `kinematicdefs.h` file. 
 
-Now just edit the config file to specify the kinemtics file you want to use and recompile µCNC for your board.
+Now just edit the config file to specify the kinematics file you want to use and recompile µCNC for your board.
 
 **3. Custom kinematic settings integration to µCNC**
 
@@ -177,9 +177,9 @@ If you need uint32_t you should store it as a float. You can also use arrays of 
 	 * this declares the variables to be used
 	 */
 	#define KINEMATICS_VARS_DECL   \
-		float my_kynematic_var1;     \
-		uint8_t my_kynematic_var2;   \
-		uint16_t my_kynematic_var3[3];
+		float my_kinematic_var1;     \
+		uint8_t my_kinematic_var2;   \
+		uint16_t my_kinematic_var3[3];
 ```
 
 ```
@@ -187,17 +187,17 @@ If you need uint32_t you should store it as a float. You can also use arrays of 
 	 * this initializes each variable with the default values
 	 */
 	#define KINEMATICS_VARS_DEFAULTS_INIT   \
-		.my_kynematic_var1 = 1.5f,             \
-		.my_kynematic_var2 = 3,     \
-		.my_kynematic_var3 = {0, 1, 2},
+		.my_kinematic_var1 = 1.5f,             \
+		.my_kinematic_var2 = 3,     \
+		.my_kinematic_var3 = {0, 1, 2},
 ```
 
 ```
 	/**
 	 * this integrates the variables in the global settings (global g_settings struct) API and assigned each setting an ID and the appropriate type
-	 * for example to access my_kynematic_var1 you assign id 28 then you can use command $28= to change it's value
+	 * for example to access my_kinematic_var1 you assign id 28 then you can use command $28= to change it's value
 	 * in the case of an array you assign the id of the first index and all subsequent values allow to access the other array positions
-	 * for example my_kynematic_var3 id is 106. To access my_kynematic_var3[1] you access id 106 + 1 that is $107=
+	 * for example my_kinematic_var3 id is 106. To access my_kinematic_var3[1] you access id 106 + 1 that is $107=
 	 *
 	 * check the types [here](https://github.com/Paciente8159/uCNC/blob/2366e954879c59935c8d9c40f73a8b78f06f2e2c/uCNC/src/interface/grbl_settings.h#L178)
 	 * Also note that the global g_settings struct expects the ID's to be in the range of 0-255
@@ -205,9 +205,9 @@ If you need uint32_t you should store it as a float. You can also use arrays of 
    *
 	 */
 	#define KINEMATICS_VARS_SETTINGS_INIT   \
-		{.id = 28, .memptr = &g_settings.my_kynematic_var1, .type = SETTING_TYPE_FLOAT},																			\
-		{.id = 29, .memptr = &g_settings.my_kynematic_var2, .type = SETTING_TYPE_UINT8},																			\
-		{.id = 106, .memptr = &g_settings.my_kynematic_var3, .type = SETTING_TYPE_UINT16 | SETTING_ARRAY | SETTING_ARRCNT(3)},
+		{.id = 28, .memptr = &g_settings.my_kinematic_var1, .type = SETTING_TYPE_FLOAT},																			\
+		{.id = 29, .memptr = &g_settings.my_kinematic_var2, .type = SETTING_TYPE_UINT8},																			\
+		{.id = 106, .memptr = &g_settings.my_kinematic_var3, .type = SETTING_TYPE_UINT16 | SETTING_ARRAY | SETTING_ARRCNT(3)},
 ```
 
 You can also integrate this into the system menu API to allow these variables to be edited via displays that work over the system menu module
@@ -222,10 +222,10 @@ Here is an example for adding the settings in the kinematics menu
 	 * for arrays you need to declare them explicitly
 	 */
 	#define KINEMATICS_VARS_SYSTEM_MENU_INIT   \
-		DECL_MENU_VAR(SYSTEM_MENU_ID_KINEMATIC_SETTINGS, s28, "kynematic var1", &g_settings.my_kynematic_var1, VAR_TYPE_FLOAT); \
-		DECL_MENU_VAR(SYSTEM_MENU_ID_KINEMATIC_SETTINGS, s29, "kynematic var2", &g_settings.my_kynematic_var2, VAR_TYPE_UINT8); \
-		DECL_MENU_VAR(SYSTEM_MENU_ID_KINEMATIC_SETTINGS, s106, "kynematic var3[0]", &g_settings.my_kynematic_var3[0], VAR_TYPE_UINT16); \
-		DECL_MENU_VAR(SYSTEM_MENU_ID_KINEMATIC_SETTINGS, s107, "kynematic var3[1]", &g_settings.my_kynematic_var3[1], VAR_TYPE_UINT16); \
-		DECL_MENU_VAR(SYSTEM_MENU_ID_KINEMATIC_SETTINGS, s108, "kynematic var3[2]", &g_settings.my_kynematic_var3[2], VAR_TYPE_UINT16);
+		DECL_MENU_VAR(SYSTEM_MENU_ID_KINEMATIC_SETTINGS, s28, "kinematic var1", &g_settings.my_kinematic_var1, VAR_TYPE_FLOAT); \
+		DECL_MENU_VAR(SYSTEM_MENU_ID_KINEMATIC_SETTINGS, s29, "kinematic var2", &g_settings.my_kinematic_var2, VAR_TYPE_UINT8); \
+		DECL_MENU_VAR(SYSTEM_MENU_ID_KINEMATIC_SETTINGS, s106, "kinematic var3[0]", &g_settings.my_kinematic_var3[0], VAR_TYPE_UINT16); \
+		DECL_MENU_VAR(SYSTEM_MENU_ID_KINEMATIC_SETTINGS, s107, "kinematic var3[1]", &g_settings.my_kinematic_var3[1], VAR_TYPE_UINT16); \
+		DECL_MENU_VAR(SYSTEM_MENU_ID_KINEMATIC_SETTINGS, s108, "kinematic var3[2]", &g_settings.my_kinematic_var3[2], VAR_TYPE_UINT16);
 ```
 		

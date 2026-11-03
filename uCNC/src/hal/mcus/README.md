@@ -384,7 +384,7 @@ Also internally **AT LEAST** these macros need to be defined
 
    **3. Add the new board and mcu libraries to µCNC**
 
-   * The mcu to the `mcus.h` file and give it an ID. Add the needed libraries to load if the MCU is chosen in the `mcudefs.f` file.
+   * The mcu to the `mcus.h` file and give it an ID. Add the needed libraries to load if the MCU is chosen in the `mcudefs.h` file.
    
    **4. Create the project and build**
    From this point on you just need to create a project to run the program. This can be either a `main` file and a `makefile` and build, or using Arduino IDE to compile the project (the appropriate core/board manager must also be installed).
@@ -412,7 +412,7 @@ Again the example bellow will (I hope) help to clarify this.
 
 Now for a practical example of how to implement all this.
 
-Let's create a boarmap were we link the internal µCNC pins and then make the MCU execute the desired action.
+Let's create a boardmap where we link the internal µCNC pins and then make the MCU execute the desired action.
 This example will use Arduino IDE as a base, but you can use (and I recommend) using baremetal or as close to the MCU programming as possible for best performance.
 
 In our boardmap we need to create a way to assign out pins. These names and definitions can be set freely. Accross all MCU it was conventioned to use a friendly_name_BIT and friendly_name_PORT, but this is not mandatory. For example in AVR to set up a pin we do it like this:

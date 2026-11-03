@@ -97,9 +97,13 @@ extern "C"
 
 	/**
 	 * This is an example of how to use RP2040 PIO to control
-	 * up to 4 chainned 74hc595 (32 output pins) using only 3 pins
-	 * from the board.
-	 * The 3 pins should be sequential (for example GPIO's 26, 27 and 28)
+	 * up to 4 chainned 74HC595 (32 output pins) and read up to
+	 * 4 chainned 74HC165 (32 input pins), sharing a single clock
+	 * and a single latch pin (2 pulse latch strategy).
+	 *
+	 * The clock and latch pins should be sequential starting by
+	 * data, then clock, then latch (for example GPIO's 26, 27 and 28).
+	 * The 74HC165 data input pin is the next sequential GPIO by default.
 	 *
 	 * RP2040 does not yet support software generate PWM
 	 *
@@ -114,6 +118,9 @@ extern "C"
 	// // enabling IC74HC595_CUSTOM_SHIFT_IO will force IC74HC595_COUNT to be set to 4 no matter what
 	// // support up to 4 chained 74HC595. Less can be used (overflow bits will be discarded like in the ESP32 I2S implementation)
 	// #define IC74HC595_COUNT 4
+	// // To also read 74HC165 inputs define IC74HC165_COUNT (forced to 4) and the input pin
+	// #define IC74HC165_COUNT 4
+	// #define IC74HC595_PIO_DATA_IN 29 // optional, defaults to IC74HC595_PIO_DATA + 3
 
 	// #define STEP0_EN_IO_OFFSET 0
 	// #define STEP0_IO_OFFSET 1

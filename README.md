@@ -187,10 +187,10 @@ These include:
 
 ### G-Codes support
 
-µCNC for now supports most of the RS274NGC v3:
+µCNC supports most of the RS274NGC v3 specification. The core parser handles the commands listed below directly. Additional commands are provided by parser extension modules in the separate [µCNC-modules repository](https://github.com/Paciente8159/uCNC-modules).
 
 ```
-List of Supported G-Codes since µCNC 1.9.2:
+List of G-Codes supported by the current core parser:
   - Non-Modal Commands: G4, G10*, G28, G30, G53, G92, G92.1, G92.2, G92.3
   - Motion Modes: G0, G1, G2, G3, G38.2, G38.3, G38.4, G38.5, G80, G81*, G82*, G83*, G85*, G86*, G89*
   - Feed Rate Modes: G93, G94
@@ -199,13 +199,14 @@ List of Supported G-Codes since µCNC 1.9.2:
   - Plane Select Modes: G17, G18, G19
   - Tool Length Offset Modes: G43, G43.1*, G49
   - Cutter Compensation Modes: G40
-  - Coordinate System Modes: G54, G55, G56, G57, G58, G59, G59.1, G59.2, G59.3
+  - Coordinate System Modes: G54, G55, G56, G57, G58, G59, G59.1*, G59.2*, G59.3*
   - Control Modes: G61, G61.1, G64
-  - Program Flow: M0, M1, M2, M30(same has M2), M60(same has M0)
+  - Override Control: M48, M49
+  - Program Flow: M0, M1, M2, M30 (same as M2), M60 (same as M0)
   - Coolant Control: M7, M8, M9
   - Spindle Control: M3, M4, M5
   - Tool Change: M6
-  - Valid Non-Command Words: A, B, C, F, H, I, J, K, L, N, P, Q, R, S, T, X, Y, Z
+  - Valid Non-Command Words: A, B, C, D, F, H, I, J, K, L, N, P, Q, R, S, T, X, Y, Z
 	- User(read/write) and parser(read only) parameters like #5221 (#5221 returns the G38 result for X axis)
 	- Expressions like [1 + acos[0] - [#3 ** [4.0/2]]]
 	- O-Codes (must run from files)
@@ -214,8 +215,8 @@ List of Supported G-Codes since µCNC 1.9.2:
     - Bilinear surface mapping: G39,G39.1,G39.2*
     - Servo Control: M10*
     - Digital pins/trimpot settings: M351* (set/get microsteps), M907* (set/get current via digipot)
-    - Laser PPI M126*(mode) M127*(PPI) and M128*(Pulse width)
-    - Valid Non-Command Words: E (used by 3D printing firmware like [Marlin](https://github.com/MarlinFirmware/Marlin)) (currently not used)
+    - Laser PPI: M126*(mode), M127*(PPI) and M128*(pulse width)
+    - Valid Non-Command Word: E (used by 3D printing firmware like [Marlin](https://github.com/MarlinFirmware/Marlin); maps to the A axis when GCODE_ACCEPT_WORD_E is enabled)
 
 * see notes
 
@@ -225,41 +226,47 @@ NOTES:
 
 - _also G10 L2 P28 and P30 to set homing coordinates_
 - _also G10 L2 P0 to set the current coordinates system offset_
-- _G59.1, G59.2 and G59.3 can be enabled in config_
+- _G81, G82, G83, G85, G86 and G89 are only active when ENABLE_CANNED_CYCLES is enabled_
+- _G59.1 requires COORD_SYS_COUNT to be set to 7 or more; G59.2 requires 8 or more; G59.3 requires 9 (maximum 9)_
 - _G43.1 was kept to be back compatible with Grbl using Z word to set the offset_
 - _M1 stop condition can be set in HAL file_
 - _M6 additional tools can be defined in HAL file_
 - _M10 only active if servo motors are configured_
-- _G39,G39.1,G39.2 only active if Height Map enabled_
+- _G39,G39.1,G39.2 only active if Height Map is enabled (G39.1 disables HMAP and G39.2 re-enables it)_
+- _M126, M127 and M128 are provided by the laser PPI tool, require ENABLE_PARSER_MODULES and are only active when ENABLE_LASER_PPI is enabled_
+- _M351 and M907 are provided by built-in modules (ENABLE_DIGITAL_MSTEP and STEPPER_CURR_DIGIPOT) and require ENABLE_PARSER_MODULES_
+- _features can be removed with DISABLE_ARC_SUPPORT, DISABLE_PROBING_SUPPORT, DISABLE_COORD_SYS_SUPPORT, DISABLE_HOME_SUPPORT, DISABLE_G10_SUPPORT and DISABLE_PATH_MODES_
 
-Other G/M codes available via [external modules](https://github.com/Paciente8159/uCNC-modules)
+Other G/M codes and CNC features available via [external modules](https://github.com/Paciente8159/uCNC-modules). External modules target µCNC 1.16+; always use the module release that matches the core version.
+
+G/M code extension modules:
   - Cubic and quadratic splines: G5/G5.1
   - Lathe radius mode: G7/G8
-  - Spindle synchronized motion: G33
+  - Spindle synchronized motion: G33 (requires ENABLE_RT_SYNC_MOTIONS)
   - Constant surface speed: G96/G97
+  - Set home position from current position: G28.1/G30.1
   - Stepper enable/disable: M17/M18
   - General Pin Control: M42
-  - Enable/disable digital output pin synched/immediately: M62/M63/M64/M65
-  - Enable/disable analog output pin synched/immediately: M67/M68
+  - Enable/disable digital output pin synchronized/immediately: M62/M63/M64/M65
+  - Wait for digital/analog input: M66
+  - Enable/disable analog output pin synchronized/immediately: M67/M68
   - Enable/disable a digital output that controls the PSU: M80/M81
+  - Play tone via PWM pin: M300
+  - Trinamic driver support and configuration commands: M350 (set/get microsteps), M906 (set/get current), M913 (stealthchop threshold), M914 (stall sensitivity - stallGuard capable chips only), M920 (set/get register)
+
+Other external modules:
   - Smoothieware laser clustering mode modified gcode
   - Support for small LCD crystal displays with I2C interface
   - Support for monochromatic 128x64 displays (like Reprap fullgraphic discount)
   - Mobile web pendant via Wifi
   - BL touch module
   - SD card support using SPI
-  - Wait for digital/analog input: M66
-  - Set home position from current position: G28.1/G30.1
-  - Play tone via PWM pin: M300
-  - Trinamic driver support and config commands: M350* (set/get microsteps), M906* (set/get current), 913* (stealthchop threshold), 914* (stall sensitivity-stallGuard capable chips only), 920* (set/get register)
   - Joystick support
   - Single axis homing
   - I2C EEPROM support
-  - SDIO card support (STM32 only) 
+  - SDIO card support (STM32 only)
 
 **ALL custom G/M codes require at least ENABLE_PARSER_MODULES option enabled**
-
-TODO List of G-Codes in µCNC future releases:
 
 ### µCNC capabilities
 

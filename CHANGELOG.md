@@ -6,6 +6,23 @@
 
 # Changelog
 
+## [1.17.3] - 30-10-2026
+
+### Added
+
+- Added RPico 2040/2350 custom PIO IO extender input capabilities to support 74H165 IC's (#1010)
+
+### Fixed
+
+- fixed soft reset not reseting feed overrides to default values (#1001)
+- WiFi behavior normalization for (RP2040/2350, ESP8266 and ESP32) (#1002)
+- fixed interpolatior initialization that affected ESP32 (#1003)
+- fixed the laser pulse-frequency setting ($33) wrote its value into the stepper calibration table instead of the laser frequency, so configuring the laser also corrupted an axis calibration (#1004)
+- fixed the encoder pulse-inversion default reused the direction-inversion default (#1004)
+- fixed the display menu the "Step inv" entry edited the direction mask, the height-map entries all shared a single label, the C-axis backlash entry was never compiled, and settings that accept negative values could not be set below zero. Signed values are now gated to the settings that allow them (#1004)
+- fixed virtual emulator debugging using PIO Debug (#1000)
+- fixed generic bit-banging 74H165 IC's byte ordering (#1009)
+
 ## [1.17.2] - 10-10-2026
 
 ### Added

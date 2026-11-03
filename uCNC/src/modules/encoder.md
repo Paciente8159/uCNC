@@ -117,7 +117,16 @@ By default each incremental encoder is read on each run of the `cnc_io_dotasks` 
 
 ---
 
-# 5. Index Pin Support (`ENCx_INDEX`)
+# 5. Index Support (`ENCx_INDEX` and virtual index)
+
+µCNC supports two index sources for each encoder:
+
+- a physical **index pin** (`ENCx_INDEX`), and
+- a **virtual index** generated from the encoder position (`ENCx_VIRTUAL_INDEX`).
+
+Both sources call the same `encX_index` simple hook. Physical index detection runs from the encoder pulse ISR, while virtual index detection runs from the `cnc_io_dotasks` event. Keep hook callbacks short and non-blocking, especially for physical index pins.
+
+## 5.1 Physical index pin (`ENCx_INDEX`)
 
 An encoder can optionally define an **index pin**, which pulses once per revolution. **NOTE:** for this to work as desired the index pin must be active when the `PULSE` pin switches from inactive to active state. This is beacuse the pins state sampling is done on each transition low->high transition on the `PULSE` pin:
 
@@ -130,12 +139,12 @@ When defined:
 1. The encoder module checks the index pin on every pulse:
    ```c
    if (io_get_input(ENCx_INDEX)) {
-       HOOK_INVOKE(encx_index);
+       HOOK_INVOKE(enc0_index); // enc0_index through enc7_index, matching the encoder number
    }
    ```
 2. A hook is automatically created during module initialization:
    ```c
-   CREATE_HOOK(encx_index);
+   CREATE_HOOK(enc0_index); // one hook per configured encoder (enc0_index ... enc7_index)
    ```
 
 **What this allows:**
@@ -150,6 +159,28 @@ Index hooks are one of the ways to extend functionalities in the encoder system.
 **Other options:**
 
 For custom index applications that require independent detection of the index pin transition, this options must not be set. Instead use the generic pin `input_change` event available by enabling `ENABLE_IO_MODULES`.
+
+## 5.2 Virtual index (`ENCx_VIRTUAL_INDEX`)
+
+A virtual index does not require an index input pin. The encoder module derives index events from the encoder position and a configured counts-per-revolution value. Enable it per encoder:
+
+```c
+#define ENC0_VIRTUAL_INDEX 1
+#define ENC0_VIRTUAL_INDEX_CPR 2000 // counts per revolution; falls back to the $15x PPR setting when 0
+```
+
+Optional tuning macros:
+
+| Macro | Default | Purpose |
+|-------|---------|---------|
+| `ENCx_VIRTUAL_INDEX_CPR` | `0` | Counts per revolution used to calculate index slots. `0` uses the encoder PPR setting |
+| `ENCx_VIRTUAL_INDEX_OFFSET` | `0` | Position offset applied when the index origin is established |
+| `ENCx_VIRTUAL_INDEX_HYSTERESIS` | `1` | Minimum distance from a slot boundary required to accept a virtual index |
+| `ENCx_VIRTUAL_INDEX_ONLY` | `0` | When set, a configured physical `ENCx_INDEX` pin is ignored and only the virtual index is used |
+| `ENCx_INDEX_RESET_POSITION` | not set | If defined, the virtual index resets the encoder position to this value and records the index reference |
+| `ENCODER_VIRTUAL_INDEX_FIRE_HOOK` | `1` | Set to `0` to keep virtual index bookkeeping without invoking the `encX_index` hook |
+
+Virtual index events are accepted when the encoder crosses a slot boundary defined by `ENCx_VIRTUAL_INDEX_CPR`, subject to `ENCx_VIRTUAL_INDEX_HYSTERESIS`. The module records the index reference (`origin`, last position, delta statistics) and, when `ENCODER_VIRTUAL_INDEX_FIRE_HOOK` is enabled, invokes the matching `encX_index` hook.
 
 ---
 
@@ -234,7 +265,8 @@ for each encoder with a custom read function.
 | `ENCx_PULSE`, `ENCx_DIR`, `ENCx_PPR` | Pin and resolution | Core encoder configuration |
 | `ENCx_TYPE` | Encoder type | Selects pulse/dir, I²C, SSI, or custom |
 | `ENCx_IS_INCREMENTAL` | Incremental mode | Differential updates and wrap‑around |
-| `ENCx_INDEX` | Index pin | Creates index hook and callback support |
+| `ENCx_INDEX` | Physical index pin | Creates index hook and callback support |
+| `ENCx_VIRTUAL_INDEX`, `ENCx_VIRTUAL_INDEX_CPR`, `ENCx_VIRTUAL_INDEX_OFFSET`, `ENCx_VIRTUAL_INDEX_HYSTERESIS`, `ENCx_VIRTUAL_INDEX_ONLY`, `ENCx_INDEX_RESET_POSITION` | Virtual index | Derives index events from position; calls the same index hook |
 | `STEPx_ENCODER` | Bind encoder to stepper | Closed‑loop and homing sync |
 | `ENABLE_MAIN_LOOP_MODULES` | Background updates | Required for incremental encoders |
 
