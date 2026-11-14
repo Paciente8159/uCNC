@@ -25,19 +25,74 @@
 extern "C"
 {
 #include "../../../cnc.h"
+	// /**
+	//  * The RT side of the multicore build. Core 0 launched this and then goes on
+	//  * to initialize the NonRT side, which handshakes with this core over the IPC
+	//  * transport (ipc_init), so this has to reach cnc_run_rt() as soon as it can:
+	//  * that loop is what answers the handshake.
+	//  *
+	//  * cnc_init_modules() is deliberately not called here. The two cores share one
+	//  * module and listener list, and core 0 initializes it once.
+	//  * **/
+	// void rp2040_core1_loop()
+	// {
+	// 	cnc_init_rt();
+	// 	cnc_run_rt();
+	// }
+
 	/**
-	 * The RT side of the multicore build. Core 0 launched this and then goes on
-	 * to initialize the NonRT side, which handshakes with this core over the IPC
-	 * transport (ipc_init), so this has to reach cnc_run_rt() as soon as it can:
-	 * that loop is what answers the handshake.
+	 * Pushes one word, giving up instead of blocking forever. The peer may not be
+	 * draining yet, and this runs on the core that also has to keep stepping, so a
+	 * stalled peer must not stall the machine.
 	 *
-	 * cnc_init_modules() is deliberately not called here. The two cores share one
-	 * module and listener list, and core 0 initializes it once.
+	 * The Arduino-Pico RP2040 FIFO is a pair of RAM queues, not the SIO hardware
+	 * FIFO, so push_nb() is the non blocking enqueue and available() is what
+	 * reports a pending word. Mixing these with multicore_fifo_*() in the
+	 * transport would never see the other core's data.
 	 * **/
-	void rp2040_core1_loop()
+	bool rp2040_fifo_push(uint32_t word)
 	{
-		cnc_init_rt();
-		cnc_run_rt();
+		uint32_t start = mcu_millis();
+		while (!rp2040.fifo.push_nb(word))
+		{
+			if ((mcu_millis() - start) > IPC_ACK_TIMEOUT)
+			{
+				return false;
+			}
+			tight_loop_contents();
+		}
+
+		return true;
+	}
+
+	/**
+	 * Reports whether a word is already waiting in this core's queue. The
+	 * transport uses it to avoid a blocking pop when there is nothing to read.
+	 * **/
+	bool rp2040_fifo_available(void)
+	{
+		return rp2040.fifo.available() > 0;
+	}
+
+	/**
+	 * Pops one word, giving up instead of blocking forever. The peer may stall part
+	 * way through a frame, and this runs on the core that also has to keep
+	 * stepping, so a truncated message must not hang the receiver. The deadline is
+	 * the whole wait, so a peer that dribbles words cannot stretch it.
+	 * **/
+	bool rp2040_fifo_pop(uint32_t *word, uint32_t start)
+	{
+		while (!rp2040_fifo_available())
+		{
+			if ((mcu_millis() - start) > IPC_ACK_TIMEOUT)
+			{
+				return false;
+			}
+			tight_loop_contents();
+		}
+
+		*word = rp2040.fifo.pop();
+		return true;
 	}
 }
 
@@ -701,20 +756,20 @@ extern "C" void rp2040_wifi_bt_init(void)
 #ifdef ENABLE_SOCKETS
 	FLASH_FS.begin();
 	flash_fs = {
-			.drive = 'C',
-			.open = flash_fs_open,
-			.read = flash_fs_read,
-			.write = flash_fs_write,
-			.seek = flash_fs_seek,
-			.available = flash_fs_available,
-			.close = flash_fs_close,
-			.remove = flash_fs_remove,
-			.opendir = flash_fs_opendir,
-			.mkdir = flash_fs_mkdir,
-			.rmdir = flash_fs_rmdir,
-			.next_file = flash_fs_next_file,
-			.finfo = flash_fs_info,
-			.next = NULL};
+		.drive = 'C',
+		.open = flash_fs_open,
+		.read = flash_fs_read,
+		.write = flash_fs_write,
+		.seek = flash_fs_seek,
+		.available = flash_fs_available,
+		.close = flash_fs_close,
+		.remove = flash_fs_remove,
+		.opendir = flash_fs_opendir,
+		.mkdir = flash_fs_mkdir,
+		.rmdir = flash_fs_rmdir,
+		.next_file = flash_fs_next_file,
+		.finfo = flash_fs_info,
+		.next = NULL};
 	fs_mount(&flash_fs);
 #endif
 

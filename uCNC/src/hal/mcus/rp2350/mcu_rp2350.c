@@ -92,11 +92,11 @@ void ic74hc595_pio_init()
 	uint offset = pio_add_program(pio_ic74hc595, &ic74hc595_program);
 	ic74hc595_program_init(pio_ic74hc595, sm_ic74hc595, offset, IC74HC595_PIO_DATA, IC74HC595_PIO_CLK, IC74HC595_PIO_LATCH,
 #if (IC74HC165_COUNT > 0)
-		IC74HC595_PIO_DATA_IN,
+						   IC74HC595_PIO_DATA_IN,
 #else
-		0,
+						   0,
 #endif
-		IC74HC595_PIO_FREQ);
+						   IC74HC595_PIO_FREQ);
 }
 
 // IO is updated at a fixed rate (blocking)
@@ -370,25 +370,15 @@ void mcu_rtc_isr(void)
 uint8_t ipc_get_current_core(void) { return (uint8_t)get_core_num(); }
 
 /**
- * Pushes one word, giving up instead of blocking forever. The peer may not be
- * draining yet, and this runs on the core that also has to keep stepping, so a
- * stalled peer must not stall the machine.
+ * The FIFO wrappers live in rp2350_arduino.cpp because the Arduino-Pico FIFO is
+ * a C++ object. On the RP2350 it is backed by a pair of RAM queues, not by the
+ * SIO hardware FIFO, so the transport must use these wrappers everywhere: a
+ * multicore_fifo_rvalid() check would never see a word posted by
+ * rp2040.fifo.push() on the other core.
  * **/
-static bool rp2350_fifo_push(uint32_t word)
-{
-	uint32_t start = mcu_millis();
-	while (!multicore_fifo_wready())
-	{
-		if ((mcu_millis() - start) > IPC_ACK_TIMEOUT)
-		{
-			return false;
-		}
-		tight_loop_contents();
-	}
-
-	multicore_fifo_push_blocking(word);
-	return true;
-}
+extern bool rp2350_fifo_push(uint32_t word);
+extern bool rp2350_fifo_pop(uint32_t *word, uint32_t start);
+extern bool rp2350_fifo_available(void);
 
 int8_t ipc_send(const ipc_packet_t *packet)
 {
@@ -425,27 +415,6 @@ int8_t ipc_send(const ipc_packet_t *packet)
 	return IPC_STATUS_OK;
 }
 
-/**
- * Pops one word, giving up instead of blocking forever. The peer may stall part
- * way through a frame, and this runs on the core that also has to keep
- * stepping, so a truncated message must not hang the receiver. The deadline is
- * the whole wait, so a peer that dribbles words cannot stretch it.
- * **/
-static bool rp2350_fifo_pop(uint32_t *word, uint32_t start)
-{
-	while (!multicore_fifo_rvalid())
-	{
-		if ((mcu_millis() - start) > IPC_ACK_TIMEOUT)
-		{
-			return false;
-		}
-		tight_loop_contents();
-	}
-
-	*word = multicore_fifo_pop_blocking();
-	return true;
-}
-
 int8_t ipc_receive(ipc_packet_t *packet)
 {
 	uint32_t start = mcu_millis();
@@ -462,7 +431,7 @@ int8_t ipc_receive(ipc_packet_t *packet)
 
 		size_t plen = RP2350_FIFO_LEN(hdr);
 		bool match = (RP2350_FIFO_TYPE(hdr) == packet->type) &&
-							 (RP2350_FIFO_SEQ(hdr) == packet->seq);
+					 (RP2350_FIFO_SEQ(hdr) == packet->seq);
 
 		uint32_t status_word;
 
@@ -483,9 +452,14 @@ int8_t ipc_receive(ipc_packet_t *packet)
 			 * in the FIFO is drained, so a bogus length cannot stall this loop; the
 			 * rest is left to the sender's timeout.
 			 * **/
-			for (size_t w = 0; (w < RP2350_FIFO_WORDS(plen)) && multicore_fifo_rvalid(); w++)
+			uint32_t drop_start = mcu_millis();
+			for (size_t w = 0; (w < RP2350_FIFO_WORDS(plen)) && rp2350_fifo_available(); w++)
 			{
-				multicore_fifo_pop_blocking();
+				uint32_t drop;
+				if (!rp2350_fifo_pop(&drop, drop_start))
+				{
+					break;
+				}
 			}
 			return IPC_STATUS_BAD_REPLY;
 		}
@@ -540,7 +514,7 @@ void ipc_poll(void)
 	}
 
 	// one request at a time, no backpressure
-	if (g_ipc_data_available || !multicore_fifo_rvalid())
+	if (g_ipc_data_available || !rp2350_fifo_available())
 	{
 		return;
 	}
@@ -612,6 +586,15 @@ void ipc_poll(void)
 
 #endif
 
+#ifdef RP2350_RUN_MULTICORE
+/**
+ * places the NonRT core in wait for the RT core to start running
+ */
+void cnc_init_rt(void)
+{
+	delay(50);
+}
+
 /**
  * The RT side of the multicore build, for the Arduino-Pico second core entry.
  * Core 0 launched this and then goes on to initialize the NonRT side, which
@@ -626,16 +609,16 @@ void setup1()
 }
 
 /**
- * Both this and rp2350_core1_loop() lead to the same RT loop. Which one runs
+ * Both this and rp2040_core1_loop() lead to the same RT loop. Which one runs
  * depends on whether the build launches core 1 itself (multicore_launch_core1,
  * see ucnc_init in mcumap_rp2350.h) or leaves the second core to the
  * Arduino-Pico core, which calls setup1() and loop1().
  * **/
 void loop1()
 {
-	cnc_init_rt();
 	cnc_run_rt();
 }
+#endif
 
 /**
  * initializes the mcu
@@ -830,7 +813,7 @@ static void mcu_itp_isr(void)
 
 	if (!resetstep)
 	{
-			mcu_step_cb();
+		mcu_step_cb();
 	}
 
 	else
@@ -983,7 +966,7 @@ static void mcu_oneshot_isr(void)
 {
 	if (mcu_timeout_cb)
 	{
-			mcu_timeout_cb();
+		mcu_timeout_cb();
 	}
 }
 

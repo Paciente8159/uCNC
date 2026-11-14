@@ -576,11 +576,17 @@ uint8_t settings_change(setting_offset_t id, float value)
 					((uint8_t *)s.memptr)[(uint8_t)id - s.id] = value8;
 					break;
 				case SETTING_TYPE_UINT16:
-					((uint16_t *)s.memptr)[(uint8_t)id - s.id] = value16;
+				{
+					uint8_t *dst = (uint8_t *)s.memptr + (((uint8_t)id - s.id) * sizeof(value16));
+					memcpy(dst, &value16, sizeof(value16));
 					break;
+				}
 				default: // default is float
-					((float *)s.memptr)[(uint8_t)id - s.id] = value;
+				{
+					uint8_t *dst = (uint8_t *)s.memptr + (((uint8_t)id - s.id) * sizeof(value));
+					memcpy(dst, &value, sizeof(value));
 					break;
+				}
 				}
 
 				result = STATUS_OK;

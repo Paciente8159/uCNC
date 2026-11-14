@@ -103,12 +103,10 @@ void ipc_clear_fault(void)
   g_ipc_fault = false;
 }
 
-#ifndef IPC_CURRENT_CORE_OVERRIDE
-uint8_t ipc_get_current_core(void)
+uint8_t __attribute__((weak)) ipc_get_current_core(void)
 {
   return IPC_RT_CORE;
 }
-#endif
 
 /**
  * master to slave communication messages (orchestrator to executor)

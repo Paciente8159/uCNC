@@ -38,6 +38,71 @@ static float system_menu_clamp_float(uint8_t vartype, float value)
 	return CLAMP(__FLT_MIN__, value, __FLT_MAX__);
 }
 
+/**
+ * Menu values may live in packed settings structs, where a float or a uint16_t
+ * can sit on an unaligned address. Never dereference argptr with a typed
+ * pointer; go through memcpy so Cortex-M0+ does not fault.
+ * **/
+static bool system_menu_get_bool(const void *ptr)
+{
+	bool value;
+	memcpy(&value, ptr, sizeof(value));
+	return value;
+}
+
+static void system_menu_set_bool(void *ptr, bool value)
+{
+	memcpy(ptr, &value, sizeof(value));
+}
+
+static uint8_t system_menu_get_uint8(const void *ptr)
+{
+	uint8_t value;
+	memcpy(&value, ptr, sizeof(value));
+	return value;
+}
+
+static void system_menu_set_uint8(void *ptr, uint8_t value)
+{
+	memcpy(ptr, &value, sizeof(value));
+}
+
+static uint16_t system_menu_get_uint16(const void *ptr)
+{
+	uint16_t value;
+	memcpy(&value, ptr, sizeof(value));
+	return value;
+}
+
+static void system_menu_set_uint16(void *ptr, uint16_t value)
+{
+	memcpy(ptr, &value, sizeof(value));
+}
+
+static uint32_t system_menu_get_uint32(const void *ptr)
+{
+	uint32_t value;
+	memcpy(&value, ptr, sizeof(value));
+	return value;
+}
+
+static void system_menu_set_uint32(void *ptr, uint32_t value)
+{
+	memcpy(ptr, &value, sizeof(value));
+}
+
+static float system_menu_get_float(const void *ptr)
+{
+	float value;
+	memcpy(&value, ptr, sizeof(value));
+	return value;
+}
+
+static void system_menu_set_float(void *ptr, float value)
+{
+	memcpy(ptr, &value, sizeof(value));
+}
+
 static uint8_t system_menu_get_item_count(uint8_t menu_id);
 static bool system_menu_action_settings_cmd(uint8_t action, system_menu_item_t *item);
 static bool system_menu_action_jog(uint8_t action, system_menu_item_t *item);
@@ -904,28 +969,40 @@ bool system_menu_action_edit_simple(uint8_t action, system_menu_item_t *item)
 		switch (vartype)
 		{
 		case VAR_TYPE_BOOLEAN:
-			(*(bool *)item->argptr) = inc;
+			system_menu_set_bool(item->argptr, inc);
 			break;
 		case VAR_TYPE_INT8:
 		case VAR_TYPE_UINT8:
-			(*(uint8_t *)item->argptr) += (inc) ? 1 : -1;
-			(*(uint8_t *)item->argptr) = CLAMP(0, (*(uint8_t *)item->argptr), 0xFF);
+		{
+			uint8_t value = system_menu_get_uint8(item->argptr);
+			value = (uint8_t)(value + ((inc) ? 1 : -1));
+			system_menu_set_uint8(item->argptr, (uint8_t)CLAMP(0, value, 0xFF));
 			break;
+		}
 		case VAR_TYPE_INT16:
 		case VAR_TYPE_UINT16:
-			(*(uint16_t *)item->argptr) += (inc) ? 1 : -1;
-			(*(uint16_t *)item->argptr) = CLAMP(0, (*(uint16_t *)item->argptr), 0xFFFF);
+		{
+			uint16_t value = system_menu_get_uint16(item->argptr);
+			value = (uint16_t)(value + ((inc) ? 1 : -1));
+			system_menu_set_uint16(item->argptr, (uint16_t)CLAMP(0, value, 0xFFFF));
 			break;
+		}
 		case VAR_TYPE_INT32:
 		case VAR_TYPE_UINT32:
-			(*(uint32_t *)item->argptr) += (inc) ? 1 : -1;
-			(*(uint32_t *)item->argptr) = CLAMP(0, (*(uint32_t *)item->argptr), 0xFFFFFFFF);
+		{
+			uint32_t value = system_menu_get_uint32(item->argptr);
+			value = (uint32_t)(value + ((inc) ? 1 : -1));
+			system_menu_set_uint32(item->argptr, (uint32_t)CLAMP(0, value, 0xFFFFFFFF));
 			break;
+		}
 		case VAR_TYPE_FLOAT:
 		case VAR_TYPE_FLOAT_SIGNED:
-			(*(float *)item->argptr) += (inc) ? 1 : -1;
-			(*(float *)item->argptr) = system_menu_clamp_float(vartype, (*(float *)item->argptr));
+		{
+			float value = system_menu_get_float(item->argptr);
+			value += (inc) ? 1.0f : -1.0f;
+			system_menu_set_float(item->argptr, system_menu_clamp_float(vartype, value));
 			break;
+		}
 		}
 
 		return true;
@@ -1007,7 +1084,7 @@ bool system_menu_action_edit(uint8_t action, system_menu_item_t *item)
 		{
 		case VAR_TYPE_BOOLEAN:
 			// Set boolean
-			(*(bool *)item->argptr) = digit != 0;
+			system_menu_set_bool(item->argptr, digit != 0);
 			// Boolean has only one digit
 			g_system_menu.current_multiplier = 0;
 			break;
@@ -1015,44 +1092,54 @@ bool system_menu_action_edit(uint8_t action, system_menu_item_t *item)
 		case VAR_TYPE_FLOAT_SIGNED:
 		{
 			// Modify digit. Signed floats edit the digit on the magnitude to preserve the sign
-			float *value = (float *)item->argptr;
+			float value = system_menu_get_float(item->argptr);
 			float scale = powf(10.0f, (currentmult - 3));
-			bool negative = (vartype == VAR_TYPE_FLOAT_SIGNED) && (*value < 0);
-			float magnitude = (negative) ? -*value : *value;
+			bool negative = (vartype == VAR_TYPE_FLOAT_SIGNED) && (value < 0);
+			float magnitude = (negative) ? -value : value;
 			current_digit = ((int)(magnitude / scale)) % 10;
 			magnitude += (digit - current_digit) * scale;
-			*value = (negative) ? -magnitude : magnitude;
+			value = (negative) ? -magnitude : magnitude;
 			// Clamp
-			*value = system_menu_clamp_float(vartype, *value);
+			value = system_menu_clamp_float(vartype, value);
+			system_menu_set_float(item->argptr, value);
 			g_system_menu.current_multiplier = CLAMP(-1, currentmult + 1, 9);
 		}
 		break;
 		case VAR_TYPE_INT8:
 		case VAR_TYPE_UINT8:
+		{
 			// Modify digit
-			current_digit = ((*(uint8_t *)item->argptr) / (int)powf(10.0f, currentmult)) % 10;
-			(*(uint8_t *)item->argptr) += (digit - current_digit) * powf(10.0f, currentmult);
+			uint8_t value = system_menu_get_uint8(item->argptr);
+			current_digit = ((value / (int)powf(10.0f, currentmult)) % 10);
+			value = (uint8_t)(value + (digit - current_digit) * powf(10.0f, currentmult));
 			// Clamp
-			(*(uint8_t *)item->argptr) = CLAMP(0, (*(uint8_t *)item->argptr), 0xFF);
+			system_menu_set_uint8(item->argptr, (uint8_t)CLAMP(0, value, 0xFF));
 			g_system_menu.current_multiplier = CLAMP(-1, currentmult + 1, 2);
 			break;
+		}
 		case VAR_TYPE_INT16:
 		case VAR_TYPE_UINT16:
-			current_digit = ((*(uint16_t *)item->argptr) / (int)powf(10.0f, currentmult)) % 10;
-			(*(uint16_t *)item->argptr) += (digit - current_digit) * powf(10.0f, currentmult);
+		{
+			uint16_t value = system_menu_get_uint16(item->argptr);
+			current_digit = ((value / (int)powf(10.0f, currentmult)) % 10);
+			value = (uint16_t)(value + (digit - current_digit) * powf(10.0f, currentmult));
 			// Clamp
-			(*(uint16_t *)item->argptr) = CLAMP(0, (*(uint16_t *)item->argptr), 0xFFFF);
+			system_menu_set_uint16(item->argptr, (uint16_t)CLAMP(0, value, 0xFFFF));
 			g_system_menu.current_multiplier = CLAMP(-1, currentmult + 1, 4);
 			break;
+		}
 		case VAR_TYPE_INT32:
 		case VAR_TYPE_UINT32:
+		{
 			// Modify digit
-			current_digit = ((*(uint32_t *)item->argptr) / (int)powf(10.0f, currentmult)) % 10;
-			(*(uint32_t *)item->argptr) += (digit - current_digit) * powf(10.0f, currentmult);
+			uint32_t value = system_menu_get_uint32(item->argptr);
+			current_digit = ((value / (int)powf(10.0f, currentmult)) % 10);
+			value = (uint32_t)(value + (digit - current_digit) * powf(10.0f, currentmult));
 			// Clamp
-			(*(uint32_t *)item->argptr) = CLAMP(0, (*(uint32_t *)item->argptr), 0xFFFFFFFF);
+			system_menu_set_uint32(item->argptr, (uint32_t)CLAMP(0, value, 0xFFFFFFFF));
 			g_system_menu.current_multiplier = CLAMP(-1, currentmult + 1, 9);
 			break;
+		}
 		default:
 			break;
 		}
@@ -1070,28 +1157,40 @@ bool system_menu_action_edit(uint8_t action, system_menu_item_t *item)
 		switch (vartype)
 		{
 		case VAR_TYPE_BOOLEAN:
-			(*(bool *)item->argptr) = (modifier != 0);
+			system_menu_set_bool(item->argptr, (modifier != 0));
 			break;
 		case VAR_TYPE_INT8:
 		case VAR_TYPE_UINT8:
-			(*(uint8_t *)item->argptr) += (uint8_t)modifier;
-			(*(uint8_t *)item->argptr) = CLAMP(0, (*(uint8_t *)item->argptr), 0xFF);
+		{
+			uint8_t value = system_menu_get_uint8(item->argptr);
+			value = (uint8_t)(value + (uint8_t)modifier);
+			system_menu_set_uint8(item->argptr, (uint8_t)CLAMP(0, value, 0xFF));
 			break;
+		}
 		case VAR_TYPE_INT16:
 		case VAR_TYPE_UINT16:
-			(*(uint16_t *)item->argptr) += (uint16_t)modifier;
-			(*(uint16_t *)item->argptr) = CLAMP(0, (*(uint16_t *)item->argptr), 0xFFFF);
+		{
+			uint16_t value = system_menu_get_uint16(item->argptr);
+			value = (uint16_t)(value + (uint16_t)modifier);
+			system_menu_set_uint16(item->argptr, (uint16_t)CLAMP(0, value, 0xFFFF));
 			break;
+		}
 		case VAR_TYPE_INT32:
 		case VAR_TYPE_UINT32:
-			(*(uint32_t *)item->argptr) += (uint32_t)modifier;
-			(*(uint32_t *)item->argptr) = CLAMP(0, (*(uint32_t *)item->argptr), 0xFFFFFFFF);
+		{
+			uint32_t value = system_menu_get_uint32(item->argptr);
+			value = (uint32_t)(value + (uint32_t)modifier);
+			system_menu_set_uint32(item->argptr, (uint32_t)CLAMP(0, value, 0xFFFFFFFF));
 			break;
+		}
 		case VAR_TYPE_FLOAT:
 		case VAR_TYPE_FLOAT_SIGNED:
-			(*(float *)item->argptr) += modifier;
-			(*(float *)item->argptr) = system_menu_clamp_float(vartype, (*(float *)item->argptr));
+		{
+			float value = system_menu_get_float(item->argptr);
+			value += modifier;
+			system_menu_set_float(item->argptr, system_menu_clamp_float(vartype, value));
 			break;
+		}
 		}
 	}
 	else
@@ -1220,24 +1319,24 @@ void system_menu_item_render_var_arg(uint8_t render_flags, system_menu_item_t *i
 	switch (vartype)
 	{
 	case VAR_TYPE_BOOLEAN:
-		buffer[0] = (*((bool *)item->argptr)) ? '1' : '0';
+		buffer[0] = system_menu_get_bool(item->argptr) ? '1' : '0';
 		buffer[1] = 0;
 		break;
 	case VAR_TYPE_INT8:
 	case VAR_TYPE_UINT8:
-		system_menu_int_to_str(buffer, (uint32_t)*((uint8_t *)item->argptr));
+		system_menu_int_to_str(buffer, (uint32_t)system_menu_get_uint8(item->argptr));
 		break;
 	case VAR_TYPE_INT16:
 	case VAR_TYPE_UINT16:
-		system_menu_int_to_str(buffer, (uint32_t)*((uint16_t *)item->argptr));
+		system_menu_int_to_str(buffer, (uint32_t)system_menu_get_uint16(item->argptr));
 		break;
 	case VAR_TYPE_INT32:
 	case VAR_TYPE_UINT32:
-		system_menu_int_to_str(buffer, (uint32_t)*((uint32_t *)item->argptr));
+		system_menu_int_to_str(buffer, (uint32_t)system_menu_get_uint32(item->argptr));
 		break;
 	case VAR_TYPE_FLOAT:
 	case VAR_TYPE_FLOAT_SIGNED:
-		system_menu_flt_to_str(buffer, *((float *)item->argptr));
+		system_menu_flt_to_str(buffer, system_menu_get_float(item->argptr));
 		break;
 	default:
 		buff_ptr = item->argptr;

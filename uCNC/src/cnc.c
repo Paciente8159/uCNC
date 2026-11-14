@@ -247,7 +247,7 @@ void cnc_init_modules(void)
  * cnc_run_rt(), and composes its own order out of the cnc_init_* pieces instead
  * of calling cnc_init() (see ucnc_init in the RP2040/RP2350 headers).
  * */
-void cnc_init_rt(void)
+void __attribute((weak)) cnc_init_rt(void)
 {
 }
 #endif
@@ -256,15 +256,15 @@ void cnc_init(void)
 {
   cnc_init_common();
 
+#if ASSERT_IPC_RT()
+  cnc_init_rt();
+#endif
+
 #if ASSERT_IPC_HAS_NONRT()
   cnc_init_nonrt();
 #endif
 
   cnc_init_modules();
-
-#if ASSERT_IPC_RT()
-  cnc_init_rt();
-#endif
 
   // the homing reference is unknown until a homing cycle runs
   if (g_settings.homing_enabled)

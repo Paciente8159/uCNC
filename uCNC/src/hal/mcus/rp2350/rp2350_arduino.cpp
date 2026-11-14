@@ -39,6 +39,61 @@ extern "C"
 		cnc_init_rt();
 		cnc_run_rt();
 	}
+
+	/**
+	 * Pushes one word, giving up instead of blocking forever. The peer may not be
+	 * draining yet, and this runs on the core that also has to keep stepping, so a
+	 * stalled peer must not stall the machine.
+	 *
+	 * The Arduino-Pico RP2040 FIFO is a pair of RAM queues, not the SIO hardware
+	 * FIFO, so push_nb() is the non blocking enqueue and available() is what
+	 * reports a pending word. Mixing these with multicore_fifo_*() in the
+	 * transport would never see the other core's data.
+	 * **/
+	bool rp2350_fifo_push(uint32_t word)
+	{
+		uint32_t start = mcu_millis();
+		while (!rp2040.fifo.push_nb(word))
+		{
+			if ((mcu_millis() - start) > IPC_ACK_TIMEOUT)
+			{
+				return false;
+			}
+			tight_loop_contents();
+		}
+
+		return true;
+	}
+
+	/**
+	 * Reports whether a word is already waiting in this core's queue. The
+	 * transport uses it to avoid a blocking pop when there is nothing to read.
+	 * **/
+	bool rp2350_fifo_available(void)
+	{
+		return rp2040.fifo.available() > 0;
+	}
+
+	/**
+	 * Pops one word, giving up instead of blocking forever. The peer may stall part
+	 * way through a frame, and this runs on the core that also has to keep
+	 * stepping, so a truncated message must not hang the receiver. The deadline is
+	 * the whole wait, so a peer that dribbles words cannot stretch it.
+	 * **/
+	bool rp2350_fifo_pop(uint32_t *word, uint32_t start)
+	{
+		while (!rp2040_fifo_available())
+		{
+			if ((mcu_millis() - start) > IPC_ACK_TIMEOUT)
+			{
+				return false;
+			}
+			tight_loop_contents();
+		}
+
+		*word = rp2040.fifo.pop();
+		return true;
+	}
 }
 
 /**

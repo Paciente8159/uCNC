@@ -84,7 +84,8 @@ uint8_t rp2040_pwm[16];
 static PIO pio_ic74hc595;
 static uint sm_ic74hc595;
 
-void ic74hc595_pio_init() {
+void ic74hc595_pio_init()
+{
   pio_ic74hc595 = pio0;
   sm_ic74hc595 = 0;
   uint offset = pio_add_program(pio_ic74hc595, &ic74hc595_program);
@@ -100,7 +101,8 @@ void ic74hc595_pio_init() {
 }
 
 // IO is updated at a fixed rate (blocking)
-MCU_CALLBACK void shift_register_io_pins(void) {
+MCU_CALLBACK void shift_register_io_pins(void)
+{
   uint32_t out = *((volatile uint32_t *)&ic74hc595_io_pins[0]);
   ic74hc595_program_write(pio_ic74hc595, sm_ic74hc595, out);
 
@@ -125,7 +127,8 @@ void mcu_controls_isr(void) { mcu_controls_changed_cb(); }
 
 // RTC, ONESHOT, and SERVO alarms
 // slow rate alarms all share a single timer
-typedef struct rp2040_alarm_ {
+typedef struct rp2040_alarm_
+{
   uint32_t timeout;
   void (*alarm_cb)(void);
   struct rp2040_alarm_ *next;
@@ -133,37 +136,45 @@ typedef struct rp2040_alarm_ {
 
 volatile rp2040_alarm_t *mcu_alarms;
 // the alarm isr processes all executes all pending RTC, ONESHOT and SERVO isr's
-void mcu_alarm_isr(void) {
+void mcu_alarm_isr(void)
+{
   hw_clear_bits(&timer_hw->intr, (1U << ALARM_TIMER));
   uint32_t time = 0;
-  if (mcu_alarms) {
+  if (mcu_alarms)
+  {
     while (time = (uint32_t)timer_hw->timerawl, MEM_BARRIER,
-           mcu_alarms->timeout <= time) {
+           mcu_alarms->timeout <= time)
+    {
       rp2040_alarm_t *alarm = (rp2040_alarm_t *)mcu_alarms;
       // advance
       mcu_alarms = mcu_alarms->next;
       // dequeue
       alarm->next = NULL;
-      if (alarm->alarm_cb) {
+      if (alarm->alarm_cb)
+      {
         alarm->alarm_cb();
       }
 
       // no more alarms
-      if (!mcu_alarms) {
+      if (!mcu_alarms)
+      {
         timer_hw->alarm[ALARM_TIMER] = 0xFFFFFFFF;
         return;
       }
     }
 
     timer_hw->alarm[ALARM_TIMER] = mcu_alarms->timeout;
-  } else {
+  }
+  else
+  {
     // just re-arm
     timer_hw->alarm[ALARM_TIMER] = 0xFFFFFFFF;
   }
 }
 
 // initializes the alarm isr
-void mcu_alarms_init(void) {
+void mcu_alarms_init(void)
+{
   hw_set_bits(&timer_hw->inte, 1u << ALARM_TIMER);
   // Set irq handler for alarm irq
   irq_set_exclusive_handler(ALARM_TIMER_IRQ, mcu_alarm_isr);
@@ -175,36 +186,45 @@ void mcu_alarms_init(void) {
 }
 
 // enqueues an alarm for execution
-void mcu_enqueue_alarm(rp2040_alarm_t *a, uint32_t timeout_us) {
+void mcu_enqueue_alarm(rp2040_alarm_t *a, uint32_t timeout_us)
+{
   uint64_t target = timer_hw->timerawl + timeout_us;
   a->timeout = (uint32_t)target;
   a->next = NULL;
 
-  ATOMIC_CODEBLOCK {
+  ATOMIC_CODEBLOCK
+  {
     rp2040_alarm_t *ptr = (rp2040_alarm_t *)mcu_alarms;
     // is the only
-    if (!ptr) {
+    if (!ptr)
+    {
       mcu_alarms = a;
       // adjust alarm to next event
       timer_hw->alarm[ALARM_TIMER] = mcu_alarms->timeout;
-    } else {
-      while (ptr) {
+    }
+    else
+    {
+      while (ptr)
+      {
         // comes before first alarm in queue
         if (ptr->timeout < target && ptr->timeout < (uint32_t)target &&
-            ptr == mcu_alarms) {
+            ptr == mcu_alarms)
+        {
           a->next = (rp2040_alarm_t *)mcu_alarms;
           mcu_alarms = a;
           break;
         }
 
         // will be the last in queue
-        if (!ptr->next) {
+        if (!ptr->next)
+        {
           ptr->next = a;
           break;
         }
 
         // insert mid queue
-        if (ptr->next->timeout > target) {
+        if (ptr->next->timeout > target)
+        {
           a->next = ptr->next;
           ptr->next = a;
           break;
@@ -222,7 +242,8 @@ static uint32_t mcu_servos[6];
 static rp2040_alarm_t servo_alarm;
 #define servo_start_timeout(X) mcu_enqueue_alarm(&servo_alarm, (X))
 
-static void mcu_clear_servos(void) {
+static void mcu_clear_servos(void)
+{
 #if ASSERT_PIN(SERVO0)
   io_clear_output(SERVO0);
 #endif
@@ -252,7 +273,8 @@ static rp2040_alarm_t rtc_alarm;
 // 	NVIC_ClearPendingIRQ(PendSV_IRQn);
 // }
 
-void mcu_rtc_isr(void) {
+void mcu_rtc_isr(void)
+{
   // enqueue alarm again
   mcu_enqueue_alarm(&rtc_alarm, 1000UL);
 
@@ -261,7 +283,8 @@ void mcu_rtc_isr(void) {
   static uint8_t ms_servo_counter = 0;
   uint8_t servo_counter = ms_servo_counter;
 
-  switch (servo_counter) {
+  switch (servo_counter)
+  {
 #if ASSERT_PIN(SERVO0)
   case SERVO0_FRAME:
     servo_start_timeout(mcu_servos[0]);
@@ -346,44 +369,44 @@ void mcu_rtc_isr(void) {
 uint8_t ipc_get_current_core(void) { return (uint8_t)get_core_num(); }
 
 /**
- * Pushes one word, giving up instead of blocking forever. The peer may not be
- * draining yet, and this runs on the core that also has to keep stepping, so a
- * stalled peer must not stall the machine.
+ * The FIFO wrappers live in rp2040_arduino.cpp because the Arduino-Pico FIFO is
+ * a C++ object. On the RP2040 it is backed by a pair of RAM queues, not by the
+ * SIO hardware FIFO, so the transport must use these wrappers everywhere: a
+ * multicore_fifo_rvalid() check would never see a word posted by
+ * rp2040.fifo.push() on the other core.
  * **/
-static bool rp2040_fifo_push(uint32_t word) {
-  uint32_t start = mcu_millis();
-  while (!multicore_fifo_wready()) {
-    if ((mcu_millis() - start) > IPC_ACK_TIMEOUT) {
-      return false;
-    }
-    tight_loop_contents();
-  }
+extern bool rp2040_fifo_push(uint32_t word);
+extern bool rp2040_fifo_pop(uint32_t *word, uint32_t start);
+extern bool rp2040_fifo_available(void);
 
-  multicore_fifo_push_blocking(word);
-  return true;
-}
-
-int8_t ipc_send(const ipc_packet_t *packet) {
-  if (!packet || (packet->len > IPC_MAX_PAYLOAD)) {
+int8_t ipc_send(const ipc_packet_t *packet)
+{
+  if (!packet || (packet->len > IPC_MAX_PAYLOAD))
+  {
     return IPC_STATUS_OVERSIZE;
   }
 
   const uint8_t *src = packet->payload;
 
-  if (!rp2040_fifo_push(RP2040_FIFO_HDR(packet->len, packet->type, packet->seq))) {
+  if (!rp2040_fifo_push(RP2040_FIFO_HDR(packet->len, packet->type, packet->seq)))
+  {
     return IPC_STATUS_IO;
   }
 
-  if (!rp2040_fifo_push((uint32_t)(uint8_t)packet->status)) {
+  if (!rp2040_fifo_push((uint32_t)(uint8_t)packet->status))
+  {
     return IPC_STATUS_IO;
   }
 
-  for (size_t i = 0; i < packet->len; i += 4) {
+  for (size_t i = 0; i < packet->len; i += 4)
+  {
     uint32_t word = 0;
-    for (size_t j = 0; (j < 4) && ((i + j) < packet->len); j++) {
+    for (size_t j = 0; (j < 4) && ((i + j) < packet->len); j++)
+    {
       word |= ((uint32_t)src[i + j]) << (8 * j);
     }
-    if (!rp2040_fifo_push(word)) {
+    if (!rp2040_fifo_push(word))
+    {
       return IPC_STATUS_IO;
     }
   }
@@ -391,32 +414,17 @@ int8_t ipc_send(const ipc_packet_t *packet) {
   return IPC_STATUS_OK;
 }
 
-/**
- * Pops one word, giving up instead of blocking forever. The peer may stall part
- * way through a frame, and this runs on the core that also has to keep
- * stepping, so a truncated message must not hang the receiver. The deadline is
- * the whole wait, so a peer that dribbles words cannot stretch it.
- * **/
-static bool rp2040_fifo_pop(uint32_t *word, uint32_t start) {
-  while (!multicore_fifo_rvalid()) {
-    if ((mcu_millis() - start) > IPC_ACK_TIMEOUT) {
-      return false;
-    }
-    tight_loop_contents();
-  }
-
-  *word = multicore_fifo_pop_blocking();
-  return true;
-}
-
-int8_t ipc_receive(ipc_packet_t *packet) {
+int8_t ipc_receive(ipc_packet_t *packet)
+{
   uint32_t start = mcu_millis();
   uint8_t *dst = packet->payload;
 
-  for (;;) {
+  for (;;)
+  {
     uint32_t hdr;
 
-    if (!rp2040_fifo_pop(&hdr, start)) {
+    if (!rp2040_fifo_pop(&hdr, start))
+    {
       return IPC_STATUS_TIMEOUT;
     }
 
@@ -426,14 +434,16 @@ int8_t ipc_receive(ipc_packet_t *packet) {
 
     uint32_t status_word;
 
-    if (!rp2040_fifo_pop(&status_word, start)) {
+    if (!rp2040_fifo_pop(&status_word, start))
+    {
       // the frame started but never finished, so the stream is out of step
       return IPC_STATUS_BAD_REPLY;
     }
 
     int8_t status = (int8_t)(uint8_t)status_word;
 
-    if (plen > IPC_MAX_PAYLOAD) {
+    if (plen > IPC_MAX_PAYLOAD)
+    {
       /**
        * Cannot happen with a conforming sender, which refuses to send more than
        * the buffer holds, so the stream is out of step. The message is dropped
@@ -441,35 +451,47 @@ int8_t ipc_receive(ipc_packet_t *packet) {
        * FIFO is drained, so a bogus length cannot stall this loop; the rest is
        * left to the sender's timeout.
        * **/
-      for (size_t w = 0; (w < RP2040_FIFO_WORDS(plen)) && multicore_fifo_rvalid(); w++) {
-        multicore_fifo_pop_blocking();
+      uint32_t drop_start = mcu_millis();
+      for (size_t w = 0; (w < RP2040_FIFO_WORDS(plen)) && rp2040_fifo_available(); w++)
+      {
+        uint32_t drop;
+        if (!rp2040_fifo_pop(&drop, drop_start))
+        {
+          break;
+        }
       }
       return IPC_STATUS_BAD_REPLY;
     }
 
     // the payload is consumed whether or not it is the message being waited
     // for, so the stream stays framed
-    for (size_t w = 0; w < RP2040_FIFO_WORDS(plen); w++) {
+    for (size_t w = 0; w < RP2040_FIFO_WORDS(plen); w++)
+    {
       uint32_t word;
 
-      if (!rp2040_fifo_pop(&word, start)) {
+      if (!rp2040_fifo_pop(&word, start))
+      {
         // truncated frame, so the stream cannot be framed anymore
         return IPC_STATUS_BAD_REPLY;
       }
 
-      if (!match || !dst) {
+      if (!match || !dst)
+      {
         continue;
       }
 
-      for (size_t b = 0; b < 4; b++) {
+      for (size_t b = 0; b < 4; b++)
+      {
         size_t idx = (w << 2) + b;
-        if ((idx < plen) && (idx < packet->len)) {
+        if ((idx < plen) && (idx < packet->len))
+        {
           dst[idx] = (uint8_t)(word >> (b << 3));
         }
       }
     }
 
-    if (match) {
+    if (match)
+    {
       packet->status = status;
       return status;
     }
@@ -483,34 +505,40 @@ int8_t ipc_receive(ipc_packet_t *packet) {
  * the reply to its own request inside ipc_receive, which consumes it before any
  * poll could see it.
  * **/
-void ipc_poll(void) {
-  if (ipc_get_current_core() != IPC_RT_CORE) {
+void ipc_poll(void)
+{
+  if (ipc_get_current_core() != IPC_RT_CORE)
+  {
     return;
   }
 
   // one request at a time, no backpressure
-  if (g_ipc_data_available || !multicore_fifo_rvalid()) {
+  if (g_ipc_data_available || !rp2040_fifo_available())
+  {
     return;
   }
 
   uint32_t start = mcu_millis();
   uint32_t hdr;
 
-  if (!rp2040_fifo_pop(&hdr, start)) {
+  if (!rp2040_fifo_pop(&hdr, start))
+  {
     return;
   }
 
   size_t plen = RP2040_FIFO_LEN(hdr);
   uint32_t status_word;
 
-  if (!rp2040_fifo_pop(&status_word, start)) {
+  if (!rp2040_fifo_pop(&status_word, start))
+  {
     // the frame started but never finished, so the stream is out of step
     return;
   }
 
   int8_t status = (int8_t)(uint8_t)status_word;
 
-  if (plen > IPC_MAX_PAYLOAD) {
+  if (plen > IPC_MAX_PAYLOAD)
+  {
     /**
      * Cannot happen with a conforming sender, which refuses to send more than
      * the buffer holds, so the stream is out of step. The message is dropped
@@ -518,8 +546,14 @@ void ipc_poll(void) {
      * is drained, so a bogus length cannot stall this loop; the rest is left to
      * the sender's timeout.
      * **/
-    for (size_t w = 0; (w < RP2040_FIFO_WORDS(plen)) && multicore_fifo_rvalid(); w++) {
-      multicore_fifo_pop_blocking();
+    uint32_t drop_start = mcu_millis();
+    for (size_t w = 0; (w < RP2040_FIFO_WORDS(plen)) && rp2040_fifo_available(); w++)
+    {
+      uint32_t drop;
+      if (!rp2040_fifo_pop(&drop, drop_start))
+      {
+        break;
+      }
     }
     return;
   }
@@ -531,17 +565,21 @@ void ipc_poll(void) {
   packet->len = plen;
   packet->payload = g_ipc_buffer + IPC_PAYLOAD_OFFSET;
 
-  for (size_t w = 0; w < RP2040_FIFO_WORDS(plen); w++) {
+  for (size_t w = 0; w < RP2040_FIFO_WORDS(plen); w++)
+  {
     uint32_t word;
 
-    if (!rp2040_fifo_pop(&word, start)) {
+    if (!rp2040_fifo_pop(&word, start))
+    {
       // truncated frame, so the stream cannot be framed anymore
       return;
     }
 
-    for (size_t b = 0; b < 4; b++) {
+    for (size_t b = 0; b < 4; b++)
+    {
       size_t idx = (w << 2) + b;
-      if (idx < plen) {
+      if (idx < plen)
+      {
         packet->payload[idx] = (uint8_t)(word >> (b << 3));
       }
     }
@@ -579,11 +617,46 @@ void ipc_poll(void) {
 // #endif
 // }
 
-void mcu_i2c_init(void) {
+void mcu_i2c_init(void)
+{
 #ifdef MCU_HAS_I2C
   mcu_i2c_config(I2C_FREQ);
 #endif
 }
+
+#ifdef RP2040_RUN_MULTICORE
+/**
+ * places the NonRT core in wait for the RT core to start running
+ */
+void cnc_init_rt(void)
+{
+  delay(50);
+}
+
+/**
+ * The RT side of the multicore build, for the Arduino-Pico second core entry.
+ * Core 0 launched this and then goes on to initialize the NonRT side, which
+ * handshakes with this core over the IPC transport (ipc_init), so this has to
+ * reach cnc_run_rt() as soon as it can: that loop answers the handshake.
+ *
+ * cnc_init_modules() is deliberately not called here. The two cores share one
+ * module and listener list, and core 0 initializes it once.
+ * **/
+void setup1()
+{
+}
+
+/**
+ * Both this and rp2040_core1_loop() lead to the same RT loop. Which one runs
+ * depends on whether the build launches core 1 itself (multicore_launch_core1,
+ * see ucnc_init in mcumap_rp2350.h) or leaves the second core to the
+ * Arduino-Pico core, which calls setup1() and loop1().
+ * **/
+void loop1()
+{
+  cnc_run_rt();
+}
+#endif
 
 /**
  * initializes the mcu
@@ -593,7 +666,8 @@ void mcu_i2c_init(void) {
  *   - configure uart or usb
  *   - start the internal RTC
  * */
-void mcu_init(void) {
+void mcu_init(void)
+{
   mcu_io_init();
 
 #ifdef IC74HC595_CUSTOM_SHIFT_IO
@@ -671,7 +745,8 @@ uint8_t mcu_get_pwm(uint8_t pwm) { return 0; }
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_set_servo
-void mcu_set_servo(uint8_t servo, uint8_t value) {
+void mcu_set_servo(uint8_t servo, uint8_t value)
+{
 #if SERVOS_MASK > 0
   mcu_servos[servo - SERVO_PINS_OFFSET] =
       (((2000UL * value) >> 8) + 500); // quick aproximation should be divided
@@ -688,7 +763,8 @@ void mcu_set_servo(uint8_t servo, uint8_t value) {
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_get_servo
-uint8_t mcu_get_servo(uint8_t servo) {
+uint8_t mcu_get_servo(uint8_t servo)
+{
 #if SERVOS_MASK > 0
   return (((mcu_servos[servo - SERVO_PINS_OFFSET] - 500) << 8) / 2000);
 #else
@@ -704,7 +780,8 @@ uint8_t mcu_get_servo(uint8_t servo) {
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_enable_global_isr
-void mcu_enable_global_isr(void) {
+void mcu_enable_global_isr(void)
+{
   // ets_intr_unlock();
   rp2040_global_isr_enabled = true;
 }
@@ -715,7 +792,8 @@ void mcu_enable_global_isr(void) {
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_disable_global_isr
-void mcu_disable_global_isr(void) {
+void mcu_disable_global_isr(void)
+{
   rp2040_global_isr_enabled = false;
   // ets_intr_lock();
 }
@@ -733,7 +811,8 @@ bool mcu_get_global_isr(void) { return rp2040_global_isr_enabled; }
 
 // static uint32_t mcu_step_counter;
 static uint32_t mcu_step_reload;
-static void mcu_itp_isr(void) {
+static void mcu_itp_isr(void)
+{
   static bool resetstep = false;
 
   mcu_disable_global_isr();
@@ -742,11 +821,13 @@ static void mcu_itp_isr(void) {
   uint32_t target = (uint32_t)timer_hw->timerawl + mcu_step_reload;
   timer_hw->alarm[ITP_TIMER] = target;
 
-  if (!resetstep) {
+  if (!resetstep)
+  {
     mcu_step_cb();
   }
 
-  else {
+  else
+  {
     mcu_step_reset_cb();
   }
 
@@ -758,12 +839,14 @@ static void mcu_itp_isr(void) {
  * convert step rate to clock cycles
  * */
 void mcu_freq_to_clocks(float frequency, uint16_t *ticks,
-                        uint16_t *prescaller) {
+                        uint16_t *prescaller)
+{
   frequency = CLAMP((float)F_STEP_MIN, frequency, (float)F_STEP_MAX);
   // up and down counter (generates half the step rate at each event)
   uint32_t totalticks = (uint32_t)((float)(1000000UL >> 1) / frequency);
   *prescaller = 0;
-  while (totalticks > 0xFFFF) {
+  while (totalticks > 0xFFFF)
+  {
     (*prescaller) += 1;
     totalticks >>= 1;
   }
@@ -771,7 +854,8 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks,
   *ticks = (uint16_t)totalticks;
 }
 
-float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller) {
+float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller)
+{
   return ((float)(1000000UL >> 1) / (float)(((uint32_t)ticks) << prescaller));
 }
 
@@ -779,7 +863,8 @@ float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller) {
  * starts the timer interrupt that generates the step pulses for the
  * interpolator
  * */
-void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller) {
+void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
+{
   hw_set_bits(&timer_hw->inte, 1u << ITP_TIMER);
   // Set irq handler for alarm irq
   irq_set_exclusive_handler(ITP_TIMER_IRQ, mcu_itp_isr);
@@ -804,7 +889,8 @@ void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller) {
  * changes the step rate of the timer interrupt that generates the step pulses
  * for the interpolator
  * */
-void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller) {
+void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller)
+{
   uint32_t target = (((uint32_t)ticks) << prescaller);
   mcu_step_reload = target;
 
@@ -818,7 +904,8 @@ void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller) {
 /**
  * stops the timer interrupt that generates the step pulses for the interpolator
  * */
-void mcu_stop_itp_isr(void) {
+void mcu_stop_itp_isr(void)
+{
   irq_set_enabled(ITP_TIMER_IRQ, false);
   hw_clear_bits(&timer_hw->inte, 1u << ITP_TIMER);
 }
@@ -828,7 +915,8 @@ void mcu_stop_itp_isr(void) {
  * for the moment these are:
  *   - if USB is enabled and MCU uses tinyUSB framework run tinyUSB tud_task
  * */
-void mcu_dotasks(void) {
+void mcu_dotasks(void)
+{
   /**
    * Pumps the streams. A build that holds both sides calls this from the NonRT
    * core only (see cnc_io_dotasks), so the UART/USB is driven from a single
@@ -843,8 +931,10 @@ void mcu_dotasks(void) {
  * gets a byte at the given EEPROM (or other non volatile memory) address of the
  * MCU.
  * */
-uint8_t mcu_eeprom_getc(uint16_t address) {
-  if (NVM_STORAGE_SIZE <= address) {
+uint8_t mcu_eeprom_getc(uint16_t address)
+{
+  if (NVM_STORAGE_SIZE <= address)
+  {
     DBGMSG("EEPROM invalid address @ %u", address);
     return 0;
   }
@@ -859,8 +949,10 @@ uint8_t mcu_eeprom_getc(uint16_t address) {
  * sets a byte at the given EEPROM (or other non volatile memory) address of the
  * MCU.
  * */
-void mcu_eeprom_putc(uint16_t address, uint8_t value) {
-  if (NVM_STORAGE_SIZE <= address) {
+void mcu_eeprom_putc(uint16_t address, uint8_t value)
+{
+  if (NVM_STORAGE_SIZE <= address)
+  {
     DBGMSG("EEPROM invalid address @ %u", address);
   }
 #ifndef RAM_ONLY_SETTINGS
@@ -871,7 +963,8 @@ void mcu_eeprom_putc(uint16_t address, uint8_t value) {
 /**
  * flushes all recorded registers into the eeprom.
  * */
-void mcu_eeprom_flush(void) {
+void mcu_eeprom_flush(void)
+{
 #ifndef RAM_ONLY_SETTINGS
   rp2040_eeprom_flush();
 #endif
@@ -884,14 +977,17 @@ void mcu_eeprom_flush(void) {
 
 static uint32_t rp2040_oneshot_reload;
 static rp2040_alarm_t oneshot_alarm;
-static void mcu_oneshot_isr(void) {
-  if (mcu_timeout_cb) {
+static void mcu_oneshot_isr(void)
+{
+  if (mcu_timeout_cb)
+  {
     mcu_timeout_cb();
   }
 }
 
 #ifndef mcu_config_timeout
-void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout) {
+void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
+{
   // mcu_timeout_cb = fp;
   oneshot_alarm.alarm_cb = &mcu_oneshot_isr;
   rp2040_oneshot_reload = timeout;
@@ -903,7 +999,8 @@ void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout) {
  * starts the timeout. Once hit the the respective callback is called
  * */
 #ifndef mcu_start_timeout
-void mcu_start_timeout() {
+void mcu_start_timeout()
+{
   // hw_set_bits(&timer_hw->inte, 1u << ONESHOT_TIMER);
   // // Enable interrupt in block and at processor
   // // Alarm is only 32 bits so if trying to delay more
@@ -936,7 +1033,8 @@ void mcu_start_timeout() {
 
 static spi_config_t rp2040_spi_config;
 
-void mcu_spi_init(void) {
+void mcu_spi_init(void)
+{
   spi_init(SPI_HW, SPI_FREQ);
   // Enable SPI 0 at 1 MHz and connect to GPIOs
   gpio_set_function(SPI_CLK_BIT, GPIO_FUNC_SPI);
@@ -947,7 +1045,8 @@ void mcu_spi_init(void) {
 #endif
 }
 
-void mcu_spi_config(spi_config_t config, uint32_t frequency) {
+void mcu_spi_config(spi_config_t config, uint32_t frequency)
+{
   rp2040_spi_config = config;
   spi_deinit(SPI_HW);
   spi_set_baudrate(SPI_HW, frequency);
@@ -956,14 +1055,16 @@ void mcu_spi_config(spi_config_t config, uint32_t frequency) {
   mcu_spi_init();
 }
 
-uint8_t mcu_spi_xmit(uint8_t data) {
+uint8_t mcu_spi_xmit(uint8_t data)
+{
   spi_get_hw(SPI_HW)->dr = data;
   while ((spi_get_hw(SPI_HW)->sr & SPI_SSPSR_BSY_BITS))
     ;
   return (spi_get_hw(SPI_HW)->dr & 0xFF);
 }
 
-void mcu_spi_start(spi_config_t config, uint32_t frequency) {
+void mcu_spi_start(spi_config_t config, uint32_t frequency)
+{
   mcu_spi_config(config, frequency);
 }
 
@@ -973,14 +1074,17 @@ void mcu_spi_stop(void) {}
 #define BULK_SPI_TIMEOUT (1000 / INTERPOLATOR_FREQ)
 #endif
 
-bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len) {
+bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
+{
   static bool transmitting = false;
   // Grab some unused dma channels
   static uint dma_tx = 0;
   static uint dma_rx = 0;
 
-  if (rp2040_spi_config.enable_dma) {
-    if (!transmitting) {
+  if (rp2040_spi_config.enable_dma)
+  {
+    if (!transmitting)
+    {
       uint32_t startmask = (1u << dma_tx);
       // We set the outbound DMA to transfer from a memory buffer to the SPI
       // transmit FIFO paced by the SPI TX FIFO DREQ The default is for the read
@@ -995,10 +1099,11 @@ bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len) {
           dma_tx, &c,
           &spi_get_hw(SPI_HW)->dr, // write address
           out,                     // read address
-          len,    // element count (each element is of size transfer_data_size)
-          false); // don't start yet
+          len,                     // element count (each element is of size transfer_data_size)
+          false);                  // don't start yet
 
-      if (in) {
+      if (in)
+      {
         // We set the inbound DMA to transfer from the SPI receive FIFO to a
         // memory buffer paced by the SPI RX FIFO DREQ We configure the read
         // address to remain unchanged for each element, but the write address
@@ -1013,8 +1118,8 @@ bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len) {
             dma_rx, &c,
             in,                      // write address
             &spi_get_hw(SPI_HW)->dr, // read address
-            len, // element count (each element is of size transfer_data_size)
-            false); // don't start yet
+            len,                     // element count (each element is of size transfer_data_size)
+            false);                  // don't start yet
 
         startmask |= (1u << dma_rx);
       }
@@ -1022,23 +1127,31 @@ bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len) {
       // start the DMA transmission
       dma_start_channel_mask(startmask);
       transmitting = true;
-    } else {
-      if (!dma_channel_is_busy(dma_tx) && !dma_channel_is_busy(dma_rx)) {
+    }
+    else
+    {
+      if (!dma_channel_is_busy(dma_tx) && !dma_channel_is_busy(dma_rx))
+      {
         dma_channel_unclaim(dma_tx);
         dma_channel_unclaim(dma_rx);
         transmitting = false;
       }
     }
-  } else {
+  }
+  else
+  {
     transmitting = false;
     uint32_t timeout = BULK_SPI_TIMEOUT + mcu_millis();
-    while (len--) {
+    while (len--)
+    {
       uint8_t c = mcu_spi_xmit(*out++);
-      if (in) {
+      if (in)
+      {
         *in++ = c;
       }
 
-      if (timeout < mcu_millis()) {
+      if (timeout < mcu_millis())
+      {
         timeout = BULK_SPI_TIMEOUT + mcu_millis();
         TASK_YIELD();
       }
@@ -1059,7 +1172,8 @@ bool mcu_spi_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len) {
 
 static spi_config_t rp2040_spi2_config;
 
-void mcu_spi2_init(void) {
+void mcu_spi2_init(void)
+{
   spi_init(SPI2_HW, SPI2_FREQ);
   // Enable SPI 0 at 1 MHz and connect to GPIOs
   gpio_set_function(SPI2_CLK_BIT, GPIO_FUNC_SPI);
@@ -1070,7 +1184,8 @@ void mcu_spi2_init(void) {
 #endif
 }
 
-void mcu_spi2_config(spi_config_t config, uint32_t frequency) {
+void mcu_spi2_config(spi_config_t config, uint32_t frequency)
+{
   rp2040_spi2_config = config;
   spi_deinit(SPI2_HW);
   spi_set_baudrate(SPI2_HW, frequency);
@@ -1079,14 +1194,16 @@ void mcu_spi2_config(spi_config_t config, uint32_t frequency) {
   mcu_spi2_init();
 }
 
-uint8_t mcu_spi2_xmit(uint8_t data) {
+uint8_t mcu_spi2_xmit(uint8_t data)
+{
   spi_get_hw(SPI2_HW)->dr = data;
   while ((spi_get_hw(SPI2_HW)->sr & SPI_SSPSR_BSY_BITS))
     ;
   return (spi_get_hw(SPI2_HW)->dr & 0xFF);
 }
 
-void mcu_spi2_start(spi_config_t config, uint32_t frequency) {
+void mcu_spi2_start(spi_config_t config, uint32_t frequency)
+{
   mcu_spi2_config(config, frequency);
 }
 
@@ -1096,14 +1213,17 @@ void mcu_spi2_stop(void) {}
 #define BULK_SPI2_TIMEOUT (1000 / INTERPOLATOR_FREQ)
 #endif
 
-bool mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len) {
+bool mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len)
+{
   static bool transmitting = false;
   // Grab some unused dma channels
   static uint dma_tx = 0;
   static uint dma_rx = 0;
 
-  if (rp2040_spi2_config.enable_dma) {
-    if (!transmitting) {
+  if (rp2040_spi2_config.enable_dma)
+  {
+    if (!transmitting)
+    {
       uint32_t startmask = (1u << dma_tx);
       // We set the outbound DMA to transfer from a memory buffer to the SPI
       // transmit FIFO paced by the SPI TX FIFO DREQ The default is for the read
@@ -1118,10 +1238,11 @@ bool mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len) {
           dma_tx, &c,
           &spi_get_hw(SPI2_HW)->dr, // write address
           out,                      // read address
-          len,    // element count (each element is of size transfer_data_size)
-          false); // don't start yet
+          len,                      // element count (each element is of size transfer_data_size)
+          false);                   // don't start yet
 
-      if (in) {
+      if (in)
+      {
         // We set the inbound DMA to transfer from the SPI receive FIFO to a
         // memory buffer paced by the SPI RX FIFO DREQ We configure the read
         // address to remain unchanged for each element, but the write address
@@ -1136,8 +1257,8 @@ bool mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len) {
             dma_rx, &c,
             in,                       // write address
             &spi_get_hw(SPI2_HW)->dr, // read address
-            len, // element count (each element is of size transfer_data_size)
-            false); // don't start yet
+            len,                      // element count (each element is of size transfer_data_size)
+            false);                   // don't start yet
 
         startmask |= (1u << dma_rx);
       }
@@ -1145,23 +1266,31 @@ bool mcu_spi2_bulk_transfer(const uint8_t *out, uint8_t *in, uint16_t len) {
       // start the DMA transmission
       dma_start_channel_mask(startmask);
       transmitting = true;
-    } else {
-      if (!dma_channel_is_busy(dma_tx) && !dma_channel_is_busy(dma_rx)) {
+    }
+    else
+    {
+      if (!dma_channel_is_busy(dma_tx) && !dma_channel_is_busy(dma_rx))
+      {
         dma_channel_unclaim(dma_tx);
         dma_channel_unclaim(dma_rx);
         transmitting = false;
       }
     }
-  } else {
+  }
+  else
+  {
     transmitting = false;
     uint32_t timeout = BULK_SPI2_TIMEOUT + mcu_millis();
-    while (len--) {
+    while (len--)
+    {
       uint8_t c = mcu_spi2_xmit(*out++);
-      if (in) {
+      if (in)
+      {
         *in++ = c;
       }
 
-      if (timeout < mcu_millis()) {
+      if (timeout < mcu_millis())
+      {
         timeout = BULK_SPI2_TIMEOUT + mcu_millis();
         TASK_YIELD();
       }

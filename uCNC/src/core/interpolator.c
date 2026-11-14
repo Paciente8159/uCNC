@@ -296,17 +296,22 @@ void itp_push_sgm(bool advance_block, itp_segment_t *sgm)
 #endif
 
 #if ASSERT_IPC_RT()
-  sgm->block = itp_get_blk();
+  itp_block_t *itp_blk = itp_get_blk();
+#if ASSERT_IPC_HAS_NONRT()
+  // The NonRT wrote this segment into the shared ring, but the trailing block
+  // pointer is not part of the IPC payload (its size is architecture
+  // dependent). Attach the RT-local block to the ring slot the ISR executes;
+  // sgm itself points at the IPC payload, not at that slot.
+  memcpy(&itp_sgm_data[itp_sgm_data_write].block, &itp_blk, sizeof(itp_blk));
+#else
+  sgm->block = itp_blk;
+  memcpy(&itp_sgm_data[itp_sgm_data_write], sgm, sizeof(itp_segment_t));
+#endif
   // pushes a new segment to the execution queue
   if (advance_block)
   {
     itp_blk_buffer_write();
   }
-#if !ASSERT_IPC_HAS_NONRT()
-  memcpy(&itp_sgm_data[itp_sgm_data_write], sgm, sizeof(itp_segment_t));
-#else
-  (void)sgm;
-#endif
   itp_sgm_buffer_write();
   // the same answer the RT side sends over the transport (see above)
   itp_sgm_full = itp_sgm_is_full();
@@ -940,13 +945,27 @@ void itp_run(void)
     // block
     sgm->remaining_steps = segm_steps << dss;
     dss_speed = MIN(dss_speed, max_step_rate);
-    itp_step_rate_convert(dss_speed, &(sgm->timer_counter),
-                          &(sgm->timer_prescaller));
+    {
+      // sgm is packed: timer_counter sits at an odd offset, so it may not be
+      // handed to a function as a uint16_t*. Convert into aligned locals and
+      // store back through the packed struct.
+      uint16_t ticks;
+      uint16_t prescaller;
+      itp_step_rate_convert(dss_speed, &ticks, &prescaller);
+      sgm->timer_counter = ticks;
+      sgm->timer_prescaller = prescaller;
+    }
 #else
     sgm->remaining_steps = segm_steps;
     current_speed = MIN(current_speed, max_step_rate);
-    itp_step_rate_convert(MAX(INTERPOLATOR_FREQ, current_speed),
-                          &(sgm->timer_counter), &(sgm->timer_prescaller));
+    {
+      uint16_t ticks;
+      uint16_t prescaller;
+      itp_step_rate_convert(MAX(INTERPOLATOR_FREQ, current_speed), &ticks,
+                            &prescaller);
+      sgm->timer_counter = ticks;
+      sgm->timer_prescaller = prescaller;
+    }
 #endif
     sgm->feed = current_speed * feed_convert;
 #if TOOL_COUNT > 0

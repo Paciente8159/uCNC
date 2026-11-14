@@ -861,12 +861,19 @@ void proto_cnc_settings(void)
 				proto_gcode_setting_line_int(s.id, val);
 				break;
 			case SETTING_TYPE_UINT16:
-				val = (uint32_t)(((uint16_t *)s.memptr)[j]);
-				proto_gcode_setting_line_int(s.id, val);
+			{
+				uint16_t setting_value;
+				memcpy(&setting_value, (const uint8_t *)s.memptr + (j * sizeof(setting_value)), sizeof(setting_value));
+				proto_gcode_setting_line_int(s.id, (uint32_t)setting_value);
 				break;
+			}
 			default: // default is float
-				proto_gcode_setting_line_flt(s.id, ((float *)s.memptr)[j]);
+			{
+				float setting_value;
+				memcpy(&setting_value, (const uint8_t *)s.memptr + (j * sizeof(setting_value)), sizeof(setting_value));
+				proto_gcode_setting_line_flt(s.id, setting_value);
 				break;
+			}
 			}
 			s.id++;
 		}

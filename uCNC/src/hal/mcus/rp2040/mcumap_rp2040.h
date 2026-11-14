@@ -1488,19 +1488,9 @@ extern "C"
  * it is called on.
  * **/
 #ifdef RP2040_RUN_MULTICORE
-#define IPC_MODE IPC_MULTICORE
+#define IPC_MODE (IPC_MULTICORE | IPC_SHARED_MEM)
 #define IPC_NON_RT_CORE 0
 #define IPC_RT_CORE 1
-#define IPC_CURRENT_CORE_OVERRIDE
-	/**
-	 * Launch multicore
-	 * **/
-	extern void rp2040_core1_loop();
-#define ucnc_init()                          \
-	cnc_init_common();                         \
-	multicore_launch_core1(rp2040_core1_loop); \
-	cnc_init_nonrt();                          \
-	cnc_init_modules()
 
 #endif
 

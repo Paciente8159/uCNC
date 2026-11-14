@@ -297,8 +297,7 @@ extern "C"
   bool ipc_has_fault(void);
   void ipc_clear_fault(void);
   // gets the current core ID. An MCU that has real cores provides its own and
-  // defines IPC_CURRENT_CORE_OVERRIDE; every other build gets the default in
-  // ipc.c.
+  // every other build gets the default in ipc.c.
   //
   // The override is a build flag rather than a weak symbol on purpose. With
   // MinGW/PE a strong reference does not resolve against a weak definition, and
