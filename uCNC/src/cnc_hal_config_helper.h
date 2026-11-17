@@ -52,8 +52,8 @@ extern "C"
 // machine tools configurations
 #include "hal/tools/tool.h" //configures the kinematics for the cnc machine
 // final HAL configurations
-#include "../cnc_hal_config.h"		//inicializes the HAL hardcoded connections
-#include "../cnc_hal_overrides.h"	//config override file
+#include "../cnc_hal_config.h"			//inicializes the HAL hardcoded connections
+#include "../cnc_hal_overrides.h"		//config override file
 #include "modules/shift_register.h" // io extender
 
 	/**
@@ -386,8 +386,6 @@ extern "C"
 #error "The current MCU does not support ONESHOT_TIMER or the ONESHOT_TIMER is not configured"
 #endif
 #endif
-
-
 
 #ifdef ABC_INDEP_FEED_CALC
 #ifdef ENABLE_LINACT_PLANNER
@@ -1983,11 +1981,90 @@ extern "C"
 #define LIMITS_DUAL_INV_MASK (LIMIT_X2_INV_MASK | LIMIT_Y2_INV_MASK | LIMIT_Z2_INV_MASK)
 #define LIMITS_INV_MASK (LIMIT_X_INV_MASK | LIMIT_Y_INV_MASK | LIMIT_Z_INV_MASK | LIMIT_A_INV_MASK | LIMIT_B_INV_MASK | LIMIT_C_INV_MASK | LIMITS_DUAL_INV_MASK)
 
-#ifndef LIMITS_NORMAL_OPERATION_MASK
-#ifdef DISABLE_ROTATIONAL_AXIS_LIMITS_AFTER_HOMING
-#define LIMITS_NORMAL_OPERATION_MASK (LIMIT_A_IO_MASK | LIMIT_B_IO_MASK | LIMIT_C_IO_MASK)
+/**
+ * Rotational axis
+ * Rotational axis can have a homing limit switch but since they rotate freely they disable the limits after homing
+ * Also when homing they ignore all other triggered limits. The user must ensure the limits and motors are correctly wired to prevent a crash
+ */
+#ifdef AXIS_X_IS_ROTATIONAL
+#define LIMIT_X_ROTATIONAL_MASK LIMIT_X_IO_MASK
 #else
-#define LIMITS_NORMAL_OPERATION_MASK 0
+#define LIMIT_X_ROTATIONAL_MASK 0
+#endif
+#ifdef AXIS_Y_IS_ROTATIONAL
+#define LIMIT_Y_ROTATIONAL_MASK LIMIT_Y_IO_MASK
+#else
+#define LIMIT_Y_ROTATIONAL_MASK 0
+#endif
+#ifdef AXIS_Z_IS_ROTATIONAL
+#define LIMIT_Z_ROTATIONAL_MASK LIMIT_Z_IO_MASK
+#else
+#define LIMIT_Z_ROTATIONAL_MASK 0
+#endif
+#ifdef AXIS_A_IS_ROTATIONAL
+#define LIMIT_A_ROTATIONAL_MASK LIMIT_A_IO_MASK
+#else
+#define LIMIT_A_ROTATIONAL_MASK 0
+#endif
+#ifdef AXIS_B_IS_ROTATIONAL
+#define LIMIT_B_ROTATIONAL_MASK LIMIT_B_IO_MASK
+#else
+#define LIMIT_B_ROTATIONAL_MASK 0
+#endif
+#ifdef AXIS_C_IS_ROTATIONAL
+#define LIMIT_C_ROTATIONAL_MASK LIMIT_C_IO_MASK
+#else
+#define LIMIT_C_ROTATIONAL_MASK 0
+#endif
+
+#ifdef DISABLE_ROTATIONAL_AXIS_LIMITS_AFTER_HOMING
+#define LIMITS_ROTATIONAL_FILTER_MASK (LIMIT_X_ROTATIONAL_MASK | LIMIT_Y_ROTATIONAL_MASK | LIMIT_Z_ROTATIONAL_MASK | LIMIT_A_ROTATIONAL_MASK | LIMIT_B_ROTATIONAL_MASK | LIMIT_C_ROTATIONAL_MASK)
+#else
+#define LIMITS_ROTATIONAL_FILTER_MASK 0
+#endif
+
+#ifdef AXIS_X_IS_ROTATIONAL
+#define LIMIT_X_OFFSET_MASK AXIS_X
+#else
+#define LIMIT_X_OFFSET_MASK 0
+#endif
+#ifdef AXIS_Y_IS_ROTATIONAL
+#define LIMIT_Y_OFFSET_MASK AXIS_Y
+#else
+#define LIMIT_Y_OFFSET_MASK 0
+#endif
+#ifdef AXIS_Z_IS_ROTATIONAL
+#define LIMIT_Z_OFFSET_MASK AXIS_Z
+#else
+#define LIMIT_Z_OFFSET_MASK 0
+#endif
+#ifdef AXIS_A_IS_ROTATIONAL
+#define LIMIT_A_OFFSET_MASK AXIS_A
+#else
+#define LIMIT_A_OFFSET_MASK 0
+#endif
+#ifdef AXIS_B_IS_ROTATIONAL
+#define LIMIT_B_OFFSET_MASK AXIS_B
+#else
+#define LIMIT_B_OFFSET_MASK 0
+#endif
+#ifdef AXIS_C_IS_ROTATIONAL
+#define LIMIT_C_OFFSET_MASK AXIS_C
+#else
+#define LIMIT_C_OFFSET_MASK 0
+#endif
+
+#ifdef DISABLE_ROTATIONAL_AXIS_OFFSET_AFTER_HOMING
+#define AXIS_HOMING_OFFSET_FILTER_MASK (LIMIT_X_OFFSET_MASK | LIMIT_Y_OFFSET_MASK | LIMIT_Z_OFFSET_MASK | LIMIT_A_OFFSET_MASK | LIMIT_B_OFFSET_MASK | LIMIT_C_OFFSET_MASK)
+#else
+#define AXIS_HOMING_OFFSET_FILTER_MASK 0
+#endif
+
+#ifndef LIMITS_NORM_OP_FILTER_MASK
+#ifdef DISABLE_ROTATIONAL_AXIS_LIMITS_AFTER_HOMING
+#define LIMITS_NORM_OP_FILTER_MASK LIMITS_ROTATIONAL_FILTER_MASK
+#else
+#define LIMITS_NORM_OP_FILTER_MASK 0
 #endif
 #endif
 

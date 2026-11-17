@@ -449,10 +449,10 @@ uint8_t io_get_raw_limits(void)
 	uint8_t inv = g_settings.limits_invert_mask;
 	uint8_t result = (value ^ (inv & LIMITS_INV_MASK));
 
-#if (LIMITS_NORMAL_OPERATION_MASK != 0)
+#if (LIMITS_NORM_OP_FILTER_MASK != 0)
 	if (!cnc_get_exec_state(EXEC_HOMING))
 	{
-		result &= ~LIMITS_NORMAL_OPERATION_MASK;
+		result &= ~LIMITS_NORM_OP_FILTER_MASK;
 	}
 #endif
 

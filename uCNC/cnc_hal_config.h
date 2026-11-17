@@ -117,12 +117,31 @@ extern "C"
 // #define ENABLE_XY_SIMULTANEOUS_HOMING
 
 /**
+ * You can configure any AXIS to work as a rotational AXIS
+ * Rotational AXIS limits are ignored when homing other axis. This prevent the axis from triggering an alarm on other axis homing (false incorrect limit error)
+ * BEWARE that incorrect wiring can lead to a machine crash
+ */
+// #define AXIS_X_IS_ROTATIONAL
+// #define AXIS_Y_IS_ROTATIONAL
+// #define AXIS_Z_IS_ROTATIONAL
+// #define AXIS_A_IS_ROTATIONAL
+// #define AXIS_B_IS_ROTATIONAL
+// #define AXIS_C_IS_ROTATIONAL
+
+/**
  * Rotational axis - disable limits after homing
  * Enable this option if you want to disable the limits for rotation axis to work
  * allowing them to rotatle freely
  *
  */
 // #define DISABLE_ROTATIONAL_AXIS_LIMITS_AFTER_HOMING
+
+/**
+ * Rotational axis - disable homing offset
+ * Enable this option if you want to disable the homing offset to move a rotational axis from the true 0 after homing
+ *
+ */
+// #define DISABLE_ROTATIONAL_AXIS_OFFSET_AFTER_HOMING
 
 /**
  * Decouple rotational axis from speed profile.
